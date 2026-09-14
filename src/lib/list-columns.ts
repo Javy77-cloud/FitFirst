@@ -31,7 +31,7 @@ export type ListColumnLayout = {
   sort: ListSort | null;
 };
 
-export const COLUMN_STORAGE_PREFIX = "ff-list-columns:v1";
+export const COLUMN_STORAGE_PREFIX = "ff-list-columns:v3";
 export const MIN_COLUMN_WIDTH = 56;
 /** Checkbox column can sit narrower than labeled columns. */
 export const MIN_PICK_COLUMN_WIDTH = 32;
@@ -58,7 +58,8 @@ export function defaultVisibleIds(columns: ListColumn[]): string[] {
   const ids = columns
     .filter((column) => column.locked || column.defaultOn !== false)
     .map((column) => column.id);
-  return isDealsListColumns(columns) ? normalizeDealsVisibleColumns(ids) : ids;
+  const normalized = isDealsListColumns(columns) ? normalizeDealsVisibleColumns(ids) : ids;
+  return pinPickColumnFirst(normalized);
 }
 
 export function fromDeskColumns(
@@ -77,35 +78,84 @@ export function fromDeskColumns(
     : cols;
 }
 
+
+/** Checkbox column always leads — saved layouts must not bury pick mid-row. */
+export function pinPickColumnFirst(ids: string[]): string[] {
+  if (!ids.includes("pick")) return ids;
+  return ["pick", ...ids.filter((id) => id !== "pick")];
+}
+
+/** Raw user-saved column ids — keep unknowns so layout/catalog growth can restore them later. */
+export function sanitizeStoredColumnIds(stored: unknown): string[] | null {
+  if (!Array.isArray(stored)) return null;
+  const ids = stored.filter(
+    (id): id is string => typeof id === "string" && id.trim().length > 0,
+  );
+  return ids.length ? pinPickColumnFirst(ids) : null;
+}
+
+/**
+ * Insert missing locked ids without scrambling the user's existing order.
+ * Places each locked id before the first already-visible catalog neighbor that
+ * comes after it in catalog order (fallback: append).
+ */
+function insertMissingLockedInCatalogOrder(
+  visible: string[],
+  locked: string[],
+  catalogOrder: string[],
+): string[] {
+  const next = [...visible];
+  for (const id of locked) {
+    if (next.includes(id)) continue;
+    const catIdx = catalogOrder.indexOf(id);
+    let insertAt = next.length;
+    if (catIdx >= 0) {
+      for (let i = 0; i < next.length; i++) {
+        const neighborIdx = catalogOrder.indexOf(next[i]!);
+        if (neighborIdx > catIdx) {
+          insertAt = i;
+          break;
+        }
+      }
+    }
+    next.splice(insertAt, 0, id);
+  }
+  return next;
+}
+
 export function mergeVisibleColumns(
   columns: ListColumn[],
   stored: unknown,
 ): string[] {
   const defaults = defaultVisibleIds(columns);
   const locked = columns.filter((column) => column.locked).map((column) => column.id);
-  const allowed = new Set(allColumnIds(columns));
+  const catalogOrder = allColumnIds(columns);
+  const allowed = new Set(catalogOrder);
   if (!Array.isArray(stored)) return defaults;
   const visible = stored.filter(
     (id): id is string => typeof id === "string" && allowed.has(id),
   );
-  const missingLocked = locked.filter((id) => !visible.includes(id));
-  const next = missingLocked.length ? [...missingLocked, ...visible] : visible;
-  const result = next.length ? next : defaults;
+  // Never replace the whole blob with sitewide defaults when custom keys were
+  // filtered out (that wiped Priority / Pipeline / Selling Agency prefs).
+  // Empty / all-unknown prefs → locked shell only; growth appends defaultOn:true next.
+  const base = insertMissingLockedInCatalogOrder(visible, locked, catalogOrder);
+  const seeded = base.length ? base : defaults;
+  // layout/catalog growth — defaultOn columns must appear even when older prefs omit them.
+  // APPEND only — never prepend / never rewrite existing user order.
+  const present = new Set(seeded);
+  const missingDefaultOn = columns
+    .filter(
+      (column) =>
+        (column.locked || column.defaultOn === true) &&
+        allowed.has(column.id) &&
+        !present.has(column.id),
+    )
+    .map((column) => column.id);
+  const withGrowth = missingDefaultOn.length ? [...seeded, ...missingDefaultOn] : seeded;
   const normalized = isDealsListColumns(columns)
-    ? normalizeDealsVisibleColumns(result)
-    : result;
-  // Deals: only auto-restore defaults when prefs collapsed to locked shells after dead keys dropped.
-  // Do not override an intentional custom set (e.g. Priority / Pipeline / Selling Agency).
-  if (isDealsListColumns(columns)) {
-    const unlockedVisible = normalized.filter((id) => id !== "pick");
-    const lockedShell = new Set(["title", "stage", "tags"]);
-    const onlyLockedShell =
-      unlockedVisible.length > 0 && unlockedVisible.every((id) => lockedShell.has(id));
-    if (onlyLockedShell && defaults.filter((id) => id !== "pick").length > unlockedVisible.length) {
-      return defaults;
-    }
-  }
-  return normalized;
+    ? normalizeDealsVisibleColumns(withGrowth)
+    : withGrowth;
+  return pinPickColumnFirst(normalized);
 }
 
 export function isPickColumn(columnId: string): boolean {
@@ -130,7 +180,19 @@ export function defaultColumnWidth(column: ListColumn): number {
       : 44;
   }
   if (column.defaultWidth != null) return clampColumnWidth(column.defaultWidth, column.id);
-  if (isLiveSearchColumn(column)) return 260;
+  // Primary name / title columns stay wide even without a header search input.
+  const label = column.label.trim().toLowerCase();
+  if (
+    column.id === "name" ||
+    column.id === "business" ||
+    column.id === "policy" ||
+    column.id === "title" ||
+    label === "name" ||
+    label === "business name" ||
+    label === "policy"
+  ) {
+    return 260;
+  }
   const fromLabel = column.label.trim().length * 9 + 56;
   return clampColumnWidth(Math.max(112, Math.min(220, fromLabel)), column.id);
 }
@@ -140,12 +202,13 @@ export function listSortForColumn(key: string, dir: ListSortDir | null): ListSor
   return { key, dir };
 }
 
-/** Name (and the Deals list Deal column) is live contains-search — never ASC/DESC. */
-export function isLiveSearchColumn(column: Pick<ListColumn, "id" | "label" | "liveSearch">): boolean {
-  if (column.liveSearch) return true;
-  const label = column.label.trim().toLowerCase();
-  if (!label) return false;
-  return column.id === "name" || label === "name";
+/**
+ * Header live-search inputs are off sitewide — Contains search lives on the
+ * filters row (PageFiltersBar / queue toolbar). Kept so column-table still
+ * compiles; always false.
+ */
+export function isLiveSearchColumn(_column: Pick<ListColumn, "id" | "label" | "liveSearch">): boolean {
+  return false;
 }
 
 export function isListColumnSortable(column: Pick<ListColumn, "id" | "label">): boolean {
@@ -221,20 +284,49 @@ export function parseStoredColumnLayout(raw: unknown): {
   };
 }
 
+/** Prefer current key; fall back to older ff-list-columns versions so bumps do not orphan prefs. */
+function readLocalColumnLayoutRaw(moduleId: string): string | null {
+  if (typeof window === "undefined") return null;
+  const keys = [
+    columnStorageKey(moduleId),
+    `ff-list-columns:v2:${moduleId}`,
+    `ff-list-columns:v1:${moduleId}`,
+  ];
+  const seen = new Set<string>();
+  for (const key of keys) {
+    if (seen.has(key)) continue;
+    seen.add(key);
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (raw) return raw;
+    } catch {
+      /* private mode */
+    }
+  }
+  return null;
+}
+
 export function loadColumnLayout(moduleId: string, columns: ListColumn[]): ListColumnLayout {
   const defaults = defaultVisibleIds(columns);
   if (typeof window === "undefined") {
     return { columns: defaults, widths: {}, sort: null };
   }
   try {
-    const raw = window.localStorage.getItem(columnStorageKey(moduleId));
+    const raw = readLocalColumnLayoutRaw(moduleId);
     if (!raw) return { columns: defaults, widths: {}, sort: null };
     const parsed = parseStoredColumnLayout(JSON.parse(raw));
-    return {
+    const layout = {
       columns: mergeVisibleColumns(columns, parsed.columns),
       widths: mergeColumnWidths(columns, parsed.widths),
       sort: parseListSort(parsed.sort),
     };
+    // Migrate legacy v1/v2 blobs onto the current key without changing order.
+    saveColumnLayout(moduleId, {
+      columns: sanitizeStoredColumnIds(parsed.columns) ?? layout.columns,
+      widths: layout.widths,
+      sort: layout.sort,
+    });
+    return layout;
   } catch {
     return { columns: defaults, widths: {}, sort: null };
   }
@@ -283,13 +375,14 @@ export function toggleColumnVisibility(
 }
 
 export function reorderVisibleColumns(visible: string[], fromId: string, toId: string): string[] {
+  if (fromId === "pick" || toId === "pick") return pinPickColumnFirst(visible);
   const from = visible.indexOf(fromId);
   const to = visible.indexOf(toId);
   if (from < 0 || to < 0 || from === to) return visible;
   const next = [...visible];
   const [moved] = next.splice(from, 1);
   next.splice(to, 0, moved);
-  return next;
+  return pinPickColumnFirst(next);
 }
 
 export function shownColumns(columns: ListColumn[], visible: string[]): ListColumn[] {
@@ -418,7 +511,7 @@ export function leadsListColumnsFromLayout(
 
 export const LEADS_LIST_COLUMNS: ListColumn[] = leadsListColumnsFromLayout();
 
-export const CONTACTS_LIST_COLUMNS: ListColumn[] = [
+const CONTACTS_SYSTEM_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
   { id: "name", label: "Name", locked: true },
   { id: "phone", label: "Phone" },
@@ -430,6 +523,90 @@ export const CONTACTS_LIST_COLUMNS: ListColumn[] = [
   { id: "lastActivity", label: "Last Activity" },
 ];
 
+/** Layout keys already covered by Contacts system columns (name / status / phone / email). */
+const CONTACTS_LAYOUT_COVERED = new Set([
+  "first_name",
+  "last_name",
+  "middle_name",
+  "name",
+  "client_status",
+  "status",
+  "phone",
+  "email",
+]);
+
+const CONTACTS_LAYOUT_WIDTHS: Record<string, number> = {
+  source: 160,
+  mailing_address: 200,
+  city: 120,
+  state: 80,
+  zip: 90,
+  date_of_birth: 120,
+};
+
+function humanizeFieldKey(key: string): string {
+  return key
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+/** Standing Contacts list fields — keep even when Edit Layout omits them (Javy prefs). */
+const STANDING_CONTACTS_LIST_FIELD_KEYS = new Set([
+  "picklist", // Preferred Language — still on Rivera column prefs
+  "date_of_birth",
+]);
+
+export function contactsListColumnsFromLayout(
+  layout?: FieldLayout | null,
+  fields: readonly CustomFieldDef[] = defaultFieldsForModule("contacts"),
+): ListColumn[] {
+  const layoutKeys = new Set(allLayoutFieldKeys(layout ?? defaultLayoutForModule("contacts")));
+  const byKey = new Map(fields.map((field) => [field.key, field]));
+  const extras: ListColumn[] = [];
+  const seen = new Set(CONTACTS_SYSTEM_COLUMNS.map((column) => column.id));
+
+  // Source is common on contact layouts — surface it after email when present.
+  if (layoutKeys.has("source") && !seen.has("source")) {
+    extras.push({
+      id: "source",
+      label: byKey.get("source")?.label ?? "Source",
+      defaultWidth: CONTACTS_LAYOUT_WIDTHS.source,
+    });
+    seen.add("source");
+  }
+
+  const candidateKeys = new Set([...layoutKeys, ...STANDING_CONTACTS_LIST_FIELD_KEYS]);
+  for (const key of candidateKeys) {
+    if (seen.has(key) || CONTACTS_LAYOUT_COVERED.has(key)) continue;
+    const field = byKey.get(key);
+    if (!field && !layoutKeys.has(key)) continue; // standing key only when field exists
+    extras.push({
+      id: key,
+      label: field?.label ?? humanizeFieldKey(key),
+      defaultOn: false,
+      defaultWidth: CONTACTS_LAYOUT_WIDTHS[key],
+    });
+    seen.add(key);
+  }
+
+  const sourceCol = extras.find((column) => column.id === "source");
+  const otherExtras = extras.filter((column) => column.id !== "source");
+  const [pick, name, phone, email, ...restSystem] = CONTACTS_SYSTEM_COLUMNS;
+  return [
+    pick,
+    name,
+    phone,
+    email,
+    ...(sourceCol ? [sourceCol] : []),
+    ...restSystem,
+    ...otherExtras,
+  ];
+}
+
+export const CONTACTS_LIST_COLUMNS: ListColumn[] = contactsListColumnsFromLayout();
+
 export function dealsListColumnsFromFields(
   fields: readonly CustomFieldDef[],
   layout?: FieldLayout | null,
@@ -437,7 +614,7 @@ export function dealsListColumnsFromFields(
   return fromDeskColumns(dealsColumnsFromFields(fields, layout), {
     pick: true,
     lock: ["title", "stage", "tags"],
-  }).map((column) => (column.id === "title" ? { ...column, liveSearch: true } : column));
+  });
 }
 
 export const DEALS_LIST_COLUMNS: ListColumn[] = dealsListColumnsFromFields(
@@ -445,7 +622,7 @@ export const DEALS_LIST_COLUMNS: ListColumn[] = dealsListColumnsFromFields(
   defaultLayoutForModule("deals"),
 );
 
-export const ACCOUNTS_LIST_COLUMNS: ListColumn[] = [
+const ACCOUNTS_SYSTEM_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
   { id: "business", label: "Business Name", locked: true },
   { id: "status", label: "Status" },
@@ -456,16 +633,77 @@ export const ACCOUNTS_LIST_COLUMNS: ListColumn[] = [
   { id: "lastActivity", label: "Last Activity" },
 ];
 
+/** Layout keys already covered by Businesses system columns. */
+const ACCOUNTS_LAYOUT_COVERED = new Set([
+  "name",
+  "business_name",
+  "legal_name",
+  "dba",
+  "client_status",
+  "status",
+  "industry",
+  "source",
+]);
+
+const ACCOUNTS_LAYOUT_WIDTHS: Record<string, number> = {
+  phone: 140,
+  email: 180,
+  mailing_address: 200,
+  city: 120,
+  state: 80,
+  zip: 90,
+  ein: 120,
+};
+
+export function accountsListColumnsFromLayout(
+  layout?: FieldLayout | null,
+  fields: readonly CustomFieldDef[] = defaultFieldsForModule("businesses"),
+): ListColumn[] {
+  const layoutKeys = new Set(allLayoutFieldKeys(layout ?? defaultLayoutForModule("businesses")));
+  const byKey = new Map(fields.map((field) => [field.key, field]));
+  const extras: ListColumn[] = [];
+  const seen = new Set(ACCOUNTS_SYSTEM_COLUMNS.map((column) => column.id));
+
+  for (const key of layoutKeys) {
+    if (seen.has(key) || ACCOUNTS_LAYOUT_COVERED.has(key)) continue;
+    const field = byKey.get(key);
+    extras.push({
+      id: key,
+      label: field?.label ?? humanizeFieldKey(key),
+      defaultOn: false,
+      defaultWidth: ACCOUNTS_LAYOUT_WIDTHS[key],
+    });
+    seen.add(key);
+  }
+
+  return [...ACCOUNTS_SYSTEM_COLUMNS, ...extras];
+}
+
+export const ACCOUNTS_LIST_COLUMNS: ListColumn[] = accountsListColumnsFromLayout();
+
 export const POLICIES_LIST_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
   { id: "policy", label: "Policy", locked: true },
   { id: "status", label: "Status" },
   { id: "party", label: "Party" },
   { id: "carrier", label: "Carrier" },
+  { id: "owner", label: "Assigned", defaultOn: false },
   { id: "premium", label: "Premium" },
   { id: "expires", label: "Expires" },
   { id: "esign", label: "E-sign", locked: true },
   { id: "tags", label: "Tags" },
+];
+
+export const RENEWALS_LIST_COLUMNS: ListColumn[] = [
+  { id: "policy", label: "Policy", locked: true, defaultWidth: 280 },
+  { id: "lob", label: "LOB" },
+  { id: "subtype", label: "Subtype", defaultOn: false },
+  { id: "carrier", label: "Carrier" },
+  { id: "expires", label: "Expiration" },
+  { id: "days", label: "Days" },
+  { id: "premium", label: "Premium", defaultOn: false },
+  { id: "stage", label: "Stage" },
+  { id: "client", label: "Client", defaultOn: false },
 ];
 
 export const CARRIERS_LIST_COLUMNS: ListColumn[] = [
@@ -487,12 +725,55 @@ export const CARRIERS_LIST_COLUMNS: ListColumn[] = [
   { id: "tags", label: "Tags" },
 ];
 
-export const TASKS_LIST_COLUMNS: ListColumn[] = [
+const TASKS_SYSTEM_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
   { id: "task", label: "Task", locked: true },
+  { id: "record", label: "Linked record", locked: true },
+  { id: "recordType", label: "Record type" },
+  { id: "taskType", label: "Task type" },
   { id: "due", label: "Due" },
   { id: "status", label: "Status" },
+  // Locked so Columns prefs / stale localStorage cannot hide them (Javy standing).
+  { id: "priority", label: "Priority", locked: true, defaultOn: true },
+  { id: "tags", label: "Tags", locked: true, defaultOn: true },
 ];
+
+const TASKS_LAYOUT_COVERED = new Set([
+  "title",
+  "task_type",
+  "due_date",
+  "status",
+  "priority",
+  "tags",
+  "linked_record",
+  "record_type",
+  "assignee",
+  "notes",
+]);
+
+/** Agency Task layout fields (priority, tags, …) become optional list columns. */
+export function tasksListColumnsFromLayout(
+  layout?: FieldLayout | null,
+  fields: readonly CustomFieldDef[] = defaultFieldsForModule("tasks"),
+): ListColumn[] {
+  const layoutKeys = new Set(allLayoutFieldKeys(layout ?? defaultLayoutForModule("tasks")));
+  const byKey = new Map(fields.map((field) => [field.key, field]));
+  const extras: ListColumn[] = [];
+  const seen = new Set(TASKS_SYSTEM_COLUMNS.map((column) => column.id));
+  for (const key of layoutKeys) {
+    if (seen.has(key) || TASKS_LAYOUT_COVERED.has(key)) continue;
+    const field = byKey.get(key);
+    extras.push({
+      id: key,
+      label: field?.label ?? humanizeFieldKey(key),
+      defaultOn: key === "priority" || key === "tags",
+    });
+    seen.add(key);
+  }
+  return [...TASKS_SYSTEM_COLUMNS, ...extras];
+}
+
+export const TASKS_LIST_COLUMNS: ListColumn[] = tasksListColumnsFromLayout();
 
 export const QUOTES_LIST_COLUMNS: ListColumn[] = [
   { id: "rank", label: "Rank" },

@@ -144,7 +144,7 @@ export function isPipelineSheetView(view: PipelineViewId): boolean {
   return view === "list" || view === "grid";
 }
 
-export function dealsHref(opts: {
+export type PipelineDeskHrefOpts = {
   pipeline?: string | null;
   view?: string | null;
   stage?: string | null;
@@ -153,12 +153,24 @@ export function dealsHref(opts: {
   family?: string | null;
   pcSub?: string | null;
   attention?: string | null;
-} = {}) {
+};
+
+export type PipelineDeskBasePath = "/deals" | "/renewals";
+
+/** Renewals book defaults to Board when no saved view / URL param. */
+export function parseRenewalsView(raw?: string | null): PipelineViewId {
+  if (raw === "list" || raw === "table") return "list";
+  if (raw === "funnel" || raw === "grid") return raw;
+  return "board";
+}
+
+export function pipelineDeskHref(basePath: PipelineDeskBasePath, opts: PipelineDeskHrefOpts = {}) {
   const params = new URLSearchParams();
   if (opts.pipeline && opts.pipeline !== "all") params.set("pipeline", opts.pipeline);
   // When view is provided (including list), always write it so URL wins over cookie default.
   if (opts.view != null && String(opts.view).length > 0) {
-    params.set("view", parsePipelineView(opts.view));
+    const view = basePath === "/renewals" ? parseRenewalsView(opts.view) : parsePipelineView(opts.view);
+    params.set("view", view);
   }
   if (opts.stage) params.set("stage", opts.stage);
   if (opts.lifeSub) params.set("lifeSub", opts.lifeSub);
@@ -167,7 +179,15 @@ export function dealsHref(opts: {
   if (opts.pcSub) params.set("pcSub", opts.pcSub);
   if (opts.attention) params.set("attention", opts.attention);
   const qs = params.toString();
-  return qs ? `/deals?${qs}` : "/deals";
+  return qs ? `${basePath}?${qs}` : basePath;
+}
+
+export function dealsHref(opts: PipelineDeskHrefOpts = {}) {
+  return pipelineDeskHref("/deals", opts);
+}
+
+export function renewalsHref(opts: PipelineDeskHrefOpts = {}) {
+  return pipelineDeskHref("/renewals", opts);
 }
 
 export function pipelineHref(slug: string, view?: string, stage?: string) {

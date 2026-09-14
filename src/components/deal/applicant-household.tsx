@@ -11,8 +11,10 @@ import { cn } from "@/lib/utils";
 /** Applicant + Co-applicant together so Married can require a spouse live. */
 export function ApplicantHousehold({
   values,
+  hasCoApplicantFlag,
 }: {
   values: Record<string, QuoteSheetFieldValue>;
+  hasCoApplicantFlag?: string | null;
 }) {
   const [marital, setMarital] = useState(values.applicant_marital_status?.value ?? "");
   const applicantFields = useMemo(() => APPLICANT_CORE_FIELDS, []);
@@ -70,7 +72,7 @@ export function ApplicantHousehold({
                         className,
                       )}
                     >
-                      <option value="">Select…</option>
+                      <option value="">None</option>
                       {field.options.map((opt) => (
                         <option key={opt} value={opt}>
                           {opt}
@@ -96,7 +98,7 @@ export function ApplicantHousehold({
           })}
         </div>
       </div>
-      <CoApplicantBlock values={values} maritalStatus={marital} />
+      <CoApplicantBlock values={values} maritalStatus={marital} hasCoApplicantFlag={hasCoApplicantFlag} />
     </>
   );
 }

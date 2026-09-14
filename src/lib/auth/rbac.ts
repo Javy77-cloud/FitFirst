@@ -5,6 +5,8 @@ export type Actor = {
   name: string;
   email: string;
   role: UserRole;
+  /** Agent flag: same client book as admin (canSeeAgencyWidgets). */
+  canSeeAgencyBook?: boolean;
 };
 
 export function isAdmin(actor: Actor | null | undefined): boolean {
@@ -19,7 +21,7 @@ export function canSeeOwned(
   actor: Actor,
   ownerId: string | null | undefined,
 ): boolean {
-  if (isAdmin(actor)) return true;
+  if (isAdmin(actor) || actor.canSeeAgencyBook) return true;
   return ownerId === actor.id;
 }
 
@@ -36,7 +38,7 @@ export function canPostAsk(actor: Actor): boolean {
 }
 
 export function visibleOwnerId(actor: Actor): string | null {
-  return isAdmin(actor) ? null : actor.id;
+  return isAdmin(actor) || actor.canSeeAgencyBook ? null : actor.id;
 }
 
 export function commissionViewFor(actor: Actor, requested?: string | null): "mine" | "agency" {

@@ -19,6 +19,7 @@ import { isInForceStatus } from "./status";
 import { applyPolicyChange, parseIsoDate, type PolicyChangeInput } from "./workflow";
 import { writeEoAuditSafe } from "@/lib/eo-audit/write";
 import { recordPolicyFieldChanges } from "./record-changes";
+import { appendTermFromEndorsement } from "@/lib/ams/ensure-term";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -137,6 +138,15 @@ export async function filePolicyChange(input: FilePolicyChangeInput) {
     eventId: event.id,
     changedAt: drafted.event.effectiveDate,
   });
+
+  if (input.kind === "endorsement") {
+    await appendTermFromEndorsement({
+      policyId: policy.id,
+      effectiveDate: drafted.event.effectiveDate,
+      premium: drafted.policy.premium,
+      notes: drafted.event.summary,
+    });
+  }
 
   if (!isInForceStatus(drafted.policy.status)) {
     await db

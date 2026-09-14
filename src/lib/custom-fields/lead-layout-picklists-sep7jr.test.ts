@@ -50,6 +50,8 @@ describe("sep7jr Lead layout picklists + convert map", () => {
     expect(dealByKey.preferred_language?.type).toBe("picklist");
 
     const layoutKeys = allLayoutFieldKeys(defaultLayoutForModule("leads"));
+    expect(byKey.insurance_subtype?.label).toBe("Insurance Form");
+    expect(byKey.insurance_category?.label).toBe("Insurance Category");
     expect(layoutKeys).toEqual(
       expect.arrayContaining([
         "mailing_address",
@@ -58,16 +60,18 @@ describe("sep7jr Lead layout picklists + convert map", () => {
         "insurance_type",
         "insurance_subtype",
         "temperature",
-        "status",
       ]),
     );
+    expect(layoutKeys).toContain("status");
+    expect(layoutKeys).toContain("cadence");
+    expect(layoutKeys).not.toContain("insurance_type_desired");
   });
 
   it("maps Lead picklists onto Deal field values + native quoting/pipeline on convert", () => {
     expect(pipelineSlugFromLeadPipeline("P&C")).toBe("p-c");
     expect(pipelineSlugFromLeadPipeline("Life")).toBe("life");
     expect(LEAD_TO_DEAL_CUSTOM_KEYS).toEqual(
-      expect.arrayContaining(["contact_mailing_address", "pipeline", "insurance_type", "insurance_subtype"]),
+      expect.arrayContaining(["contact_mailing_address", "pipeline", "insurance_type", "insurance_category", "insurance_subtype"]),
     );
 
     const lead = {
@@ -85,7 +89,7 @@ describe("sep7jr Lead layout picklists + convert map", () => {
     };
     const custom = {
       pipeline: "P&C",
-      insurance_type: "Home",
+      insurance_type: "PC",
       insurance_subtype: "HO3",
       contact_mailing_address: "PO Box 12",
     };
@@ -103,11 +107,15 @@ describe("sep7jr Lead layout picklists + convert map", () => {
     const values = dealValuesFromLead(lead, CORE_FIELDS, null, custom);
     expect(values.contact_mailing_address).toBe("PO Box 12");
     expect(values.insurance_subtype).toBe("HO3");
+    expect(values.picklist_5n3i).toBe("P&C");
+    expect(values.picklist).toBe("HO3");
   });
 
   it("upgrades catalog types in store and stops resurrecting removed Lead layout fields", () => {
     const store = source("src/lib/custom-fields/store.ts");
     expect(store).toMatch(/ensureLeadCatalogUpgrades/);
+    expect(store).toMatch(/migrateLeadLayouts/);
+    expect(source("src/lib/custom-fields/migrate-lead-layout.ts")).toMatch(/LEAD_LAYOUT_STRIP_KEYS/);
     expect(store).toMatch(/LEAD_CATALOG_UPGRADE_KEYS/);
     expect(store).toMatch(/do not resurrect deleted fields/);
     expect(store).toMatch(/module === "carriers"/);

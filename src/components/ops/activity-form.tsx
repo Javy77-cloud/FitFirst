@@ -129,7 +129,7 @@ export function ActivityForm({
             defaultValue={seed.contactId ?? ""}
             className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
           >
-            <option value="">—</option>
+            <option value="">None</option>
             {related.contacts.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.lastName}, {c.firstName}
@@ -144,7 +144,7 @@ export function ActivityForm({
             defaultValue={seed.policyId ?? ""}
             className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
           >
-            <option value="">—</option>
+            <option value="">None</option>
             {related.policies.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.policyNumber}
@@ -160,7 +160,7 @@ export function ActivityForm({
           defaultValue={seed.dealId ?? ""}
           className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
         >
-          <option value="">—</option>
+          <option value="">None</option>
           {related.deals.map((d) => (
             <option key={d.id} value={d.id}>
               {d.title}

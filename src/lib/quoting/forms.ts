@@ -24,9 +24,28 @@ export function companionLines(formId: string): ShopLine[] {
 
 export function sheetsToPrepare(formId: string): ShopLine[] {
   const form = quotingFormById(formId);
-  if (!form) return ["home"];
-  const lines = new Set<ShopLine>([form.shopLine, ...companionLines(formId)]);
-  return Array.from(lines);
+  if (form) {
+    const lines = new Set<ShopLine>([form.shopLine, ...companionLines(formId)]);
+    return Array.from(lines);
+  }
+  const lower = (formId ?? "").trim().toLowerCase();
+  if (
+    lower === "life" ||
+    lower.includes("life") ||
+    lower === "iul" ||
+    lower.includes("final expense")
+  ) {
+    return ["life"];
+  }
+  if (
+    lower === "health" ||
+    lower.includes("health") ||
+    lower.includes("medicare") ||
+    lower.includes("marketplace")
+  ) {
+    return ["health"];
+  }
+  return ["home"];
 }
 
 export function canUnlockQuoting(input: { reviewed: boolean; sure: boolean }): boolean {
@@ -64,11 +83,23 @@ const LEGACY_INSURANCE_TYPE_TO_FORM: Record<string, QuotingFormId> = {
   Umbrella: "HO3",
   GL: "GL",
   BOP: "BOP",
-  Life: "HO3",
-  Health: "HO3",
+  // Life / Health are freeform subtypes — never coerce to HO3.
   RV: "PA",
   "Workers Comp": "WC",
   "Workers' Comp": "WC",
+};
+
+const LIFE_HEALTH_PICK: Record<string, { quotingForm: string; policySubType: string; lineOfBusiness: string; quotingLine: ShopLine }> = {
+  life: { quotingForm: "Term Life", policySubType: "Term Life", lineOfBusiness: "LIFE", quotingLine: "life" },
+  "term life": { quotingForm: "Term Life", policySubType: "Term Life", lineOfBusiness: "LIFE", quotingLine: "life" },
+  "whole life": { quotingForm: "Whole Life", policySubType: "Whole Life", lineOfBusiness: "LIFE", quotingLine: "life" },
+  iul: { quotingForm: "IUL", policySubType: "IUL", lineOfBusiness: "LIFE", quotingLine: "life" },
+  "final expense": { quotingForm: "Final Expense", policySubType: "Final Expense", lineOfBusiness: "LIFE", quotingLine: "life" },
+  health: { quotingForm: "Marketplace", policySubType: "Marketplace", lineOfBusiness: "HEALTH", quotingLine: "health" },
+  marketplace: { quotingForm: "Marketplace", policySubType: "Marketplace", lineOfBusiness: "HEALTH", quotingLine: "health" },
+  "medicare advantage": { quotingForm: "Medicare Advantage", policySubType: "Medicare Advantage", lineOfBusiness: "HEALTH", quotingLine: "health" },
+  "medicare a&b": { quotingForm: "Medicare A&B", policySubType: "Medicare A&B", lineOfBusiness: "HEALTH", quotingLine: "health" },
+  supplemental: { quotingForm: "Supplemental", policySubType: "Supplemental", lineOfBusiness: "HEALTH", quotingLine: "health" },
 };
 
 /** Picklist / legacy LOB words → quoting form id (HO3, PA, …). */
@@ -94,12 +125,33 @@ export function insuranceSubtypeOptions(): string[] {
 
 /** Map a LinePicker / subtype pick onto deal create fields. */
 export function dealCreateFieldsFromPick(raw: string | null | undefined): {
-  quotingForm: QuotingFormId;
+  quotingForm: string;
   policySubType: string;
   lineOfBusiness: string;
   quotingLine: ShopLine;
 } {
-  const formId = coerceQuotingFormId(raw) ?? "HO3";
+  const trimmed = (raw ?? "").trim();
+  const lifeHealth = LIFE_HEALTH_PICK[trimmed.toLowerCase()];
+  if (lifeHealth) return { ...lifeHealth };
+  // Unknown Life/Health freeform label (agency custom subfilter) → keep label, route by keywords.
+  const lower = trimmed.toLowerCase();
+  if (trimmed && (lower.includes("life") || lower === "iul" || lower.includes("final expense"))) {
+    return {
+      quotingForm: trimmed,
+      policySubType: trimmed,
+      lineOfBusiness: "LIFE",
+      quotingLine: "life",
+    };
+  }
+  if (trimmed && (lower.includes("health") || lower.includes("medicare") || lower.includes("marketplace"))) {
+    return {
+      quotingForm: trimmed,
+      policySubType: trimmed,
+      lineOfBusiness: "HEALTH",
+      quotingLine: "health",
+    };
+  }
+  const formId = coerceQuotingFormId(trimmed) ?? "HO3";
   const form = quotingFormById(formId) ?? quotingFormById("HO3")!;
   return {
     quotingForm: form.id,

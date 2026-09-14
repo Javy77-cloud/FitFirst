@@ -7,6 +7,9 @@ import {
 } from "@/lib/custom-fields/defaults";
 import { APPLICANT_SECTION_FIELD_KEYS } from "@/lib/custom-fields/applicant-fields";
 import { needsEssentialDealMigration, stripLegacyDealLayout } from "@/lib/custom-fields/layout";
+import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
+import { compareSheetValues } from "@/lib/desk/sheet-layout";
+import { STANDING_DEAL_LIST_FIELD_KEYS } from "@/lib/deals/deal-columns";
 import { AGENT_DEAL_TAB_LABELS, AGENT_DEAL_TABS, parseAgentDealTab } from "./tabs";
 
 function source(file: string) {
@@ -137,6 +140,37 @@ describe("Deal Details tab", () => {
     expect(stripped.columns[0].sections.map((section) => section.id)).toEqual(["contact"]);
     expect(stripped.columns[1].sections.map((section) => section.id)).toEqual(["address"]);
     // sep7js splits Address → Insured + Mailing on load; strip keeps legacy id until migrate
+  });
+
+
+  it("preserves list-only Priority on Details save (no blank write for omitted fields)", () => {
+    const save = source("src/app/actions/custom-fields.ts");
+    // Must merge via customValuesFromForm scoped to Details layout — not loop all defs → "".
+    expect(save).toMatch(/export async function saveDealFieldValues/);
+    expect(save).toMatch(/customValuesFromForm\(formData, defsOnDetails\)/);
+    expect(save).toMatch(/allLayoutFieldKeys\(layout\)/);
+    expect(save).toMatch(/picklist_8mus/);
+    expect(save).not.toMatch(
+      /const value = formData\.has\(`field_\$\{field\.key\}`\) \? String\(formData\.get\(`field_\$\{field\.key\}`\) \?\? ""\) : ""/,
+    );
+
+    const defs = [
+      { key: "first_name", label: "First name", type: "single_line" as const },
+      { key: "picklist_8mus", label: "Priority", type: "picklist" as const, options: ["1", "2", "3"] },
+      { key: "picklist_yp0c", label: "Selling Agency", type: "picklist" as const, options: ["A"] },
+    ];
+    const form = new FormData();
+    form.set("field_first_name", "Gloria");
+    const custom = customValuesFromForm(form, defs);
+    expect(custom).toEqual({ first_name: "Gloria" });
+    expect(custom).not.toHaveProperty("picklist_8mus");
+    expect(custom).not.toHaveProperty("picklist_yp0c");
+    expect(STANDING_DEAL_LIST_FIELD_KEYS.has("picklist_8mus")).toBe(true);
+
+    // Priority sort: blank/cleared values sort after Priority 1 (nulls last on asc).
+    expect(compareSheetValues("", "1")).toBeGreaterThan(0);
+    expect(compareSheetValues("1", "")).toBeLessThan(0);
+    expect(compareSheetValues("1", "2")).toBeLessThan(0);
   });
 
   it("leaves Documents, Markets, Quotes, and the deal rail wired on the deal page", () => {

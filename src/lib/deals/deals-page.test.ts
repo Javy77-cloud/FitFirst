@@ -115,6 +115,12 @@ describe("Deals page sep7h", () => {
     expect(strip).not.toMatch(/mini-calendar|MiniCalendar/);
     const chrome = source("src/app/globals.css");
     expect(chrome).toMatch(/\.deal-upload-activity/);
+    // Negative-margin lift overlaps List/Grid/Board/Funnel + line filters — must not steal clicks.
+    expect(chrome).toMatch(/\.deal-workspace-bar \{[\s\S]*z-index: 5;/);
+    expect(chrome).toMatch(/\.deal-workspace-bar \{[\s\S]*isolation: isolate;/);
+    expect(chrome).toMatch(/\.deal-upload-activity \{[\s\S]*pointer-events: none;/);
+    expect(chrome).toMatch(/\.deal-today-slot \{[\s\S]*pointer-events: none;/);
+    expect(chrome).toMatch(/\.deal-today-strip \{[\s\S]*pointer-events: auto;/);
     expect(chrome).toMatch(/flex-wrap: nowrap/);
     expect(chrome).toMatch(/align-items: center/);
     expect(chrome).not.toMatch(/\.deal-attach-slot/);

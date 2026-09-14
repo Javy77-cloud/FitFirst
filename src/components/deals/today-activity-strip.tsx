@@ -21,10 +21,12 @@ export function TodayActivityStrip({
   counts,
   active,
   now,
+  basePath = "/deals",
 }: {
   counts: Record<DealTodayActivityType, number>;
   active?: DealTodayActivityType | null;
   now?: Date;
+  basePath?: "/deals" | "/renewals";
 }) {
   const dated = formatTodayActivityDate(now);
   return (
@@ -57,7 +59,7 @@ export function TodayActivityStrip({
           return (
             <Link
               key={chip.id}
-              href={todayActivityWorkHref(chip.id)}
+              href={todayActivityWorkHref(chip.id, basePath)}
               className="deal-today-item inline-flex shrink-0 items-center justify-center text-center"
               style={{
                 color: tone.chipFg,

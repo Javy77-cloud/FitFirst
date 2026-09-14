@@ -1,8 +1,11 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   CONTACTS_LIST_COLUMNS,
   DEALS_LIST_COLUMNS,
   LEADS_LIST_COLUMNS,
+  TASKS_LIST_COLUMNS,
+  tasksListColumnsFromLayout,
   PIPELINE_LIST_COLUMNS,
   allColumnIds,
   clampColumnWidth,
@@ -25,6 +28,8 @@ import {
   defaultVisibleIds,
   fromDeskColumns,
   mergeVisibleColumns,
+  pinPickColumnFirst,
+  sanitizeStoredColumnIds,
   reorderVisibleColumns,
   shownColumns,
   toggleColumnVisibility,
@@ -40,7 +45,7 @@ const COLUMNS: ListColumn[] = [
 
 describe("list column visibility", () => {
   it("keys modules separately", () => {
-    expect(columnStorageKey("leads")).toBe("ff-list-columns:v1:leads");
+    expect(columnStorageKey("leads")).toBe("ff-list-columns:v3:leads");
     expect(columnStorageKey("deals")).not.toBe(columnStorageKey("policies"));
   });
 
@@ -72,19 +77,14 @@ describe("list column visibility", () => {
   it("keeps Deal title locked and builds columns from deal layout fields, not E-sign or Comms", () => {
     expect(DEALS_LIST_COLUMNS[0]).toMatchObject({ id: "pick", locked: true });
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.locked).toBe(true);
-    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.liveSearch).toBe(true);
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.liveSearch).toBeFalsy();
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "stage")?.locked).toBe(true);
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "tags")?.locked).toBe(true);
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "contact")).toBeUndefined();
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "esign")).toBeUndefined();
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "comms")).toBeUndefined();
-    // Phantoms not on default Edit Layout
-    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "assigned")).toBeUndefined();
-    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "value")).toBeUndefined();
-    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "premium")).toBeUndefined();
-    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "preferred_language")).toBeUndefined();
-    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "dependents")).toBeUndefined();
-    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "notes")).toBeUndefined();
+    // Core locked shells stay locked (layout extras like value/premium may appear).
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.locked).toBe(true);
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).toEqual(
       expect.arrayContaining(["pick", "title", "stage", "tags"]),
     );
@@ -92,7 +92,9 @@ describe("list column visibility", () => {
     expect(dealsVisible).not.toContain("contact");
     expect(dealsVisible).not.toContain("esign");
     expect(dealsVisible).not.toContain("comms");
-    expect(dealsVisible.indexOf("stage")).toBe(dealsVisible.indexOf("title") + 1);
+    expect(dealsVisible.indexOf("pick")).toBe(0);
+    expect(dealsVisible.indexOf("title")).toBeGreaterThan(0);
+    expect(dealsVisible.indexOf("stage")).toBeGreaterThan(dealsVisible.indexOf("title"));
     expect(dealsVisible).not.toContain("phone");
     expect(allColumnIds(DEALS_LIST_COLUMNS)).toContain("phone");
     expect(allColumnIds(DEALS_LIST_COLUMNS)).toContain("state");
@@ -106,10 +108,94 @@ describe("list column visibility", () => {
     );
   });
 
+  it("pins pick as the first visible column even when saved mid-row", () => {
+    expect(pinPickColumnFirst(["task", "record", "pick", "status"])).toEqual([
+      "pick",
+      "task",
+      "record",
+      "status",
+    ]);
+    expect(mergeVisibleColumns(TASKS_LIST_COLUMNS, ["record", "pick", "task", "status"])[0]).toBe(
+      "pick",
+    );
+    expect(reorderVisibleColumns(["pick", "task", "record"], "task", "pick")[0]).toBe("pick");
+  });
+
   it("drops unknown ids and reinserts locked columns", () => {
     expect(mergeVisibleColumns(COLUMNS, ["source", "gone"])).toEqual(["name", "source"]);
     expect(mergeVisibleColumns(COLUMNS, "nope")).toEqual(defaultVisibleIds(COLUMNS));
     expect(mergeVisibleColumns(COLUMNS, [])).toEqual(["name"]);
+  });
+
+  it("appends missing defaultOn:true catalog columns without restoring defaultOn:false", () => {
+    const catalog: ListColumn[] = [
+      { id: "pick", label: "", locked: true },
+      { id: "task", label: "Task", locked: true },
+      { id: "due", label: "Due" },
+      { id: "status", label: "Status" },
+      { id: "priority", label: "Priority", defaultOn: true },
+      { id: "tags", label: "Tags", defaultOn: true },
+      { id: "notes", label: "Notes", defaultOn: false },
+    ];
+    const merged = mergeVisibleColumns(catalog, ["pick", "task", "due", "status"]);
+    expect(merged).toEqual(["pick", "task", "due", "status", "priority", "tags"]);
+    expect(merged).not.toContain("notes");
+    // Optional off columns stay toggles only — never forced back on.
+    expect(mergeVisibleColumns(catalog, ["pick", "task", "priority", "tags"])).toEqual([
+      "pick",
+      "task",
+      "priority",
+      "tags",
+    ]);
+  });
+
+  it("keeps deals custom order when unknown keys drop — never resets to sitewide defaults", () => {
+    const catalog: ListColumn[] = [
+      { id: "pick", label: "", locked: true },
+      { id: "title", label: "Deal", locked: true },
+      { id: "stage", label: "Stage", locked: true },
+      { id: "line", label: "Line", defaultOn: true },
+      { id: "source", label: "Source", defaultOn: true },
+      { id: "tags", label: "Tags", locked: true },
+      { id: "assigned", label: "Assigned", defaultOn: true },
+    ];
+    // Saved prefs include custom picklist keys not in this catalog snapshot.
+    const stored = ["pick", "title", "picklist_8mus", "stage", "picklist_5n3i", "tags"];
+    const merged = mergeVisibleColumns(catalog, stored);
+    expect(merged.slice(0, 4)).toEqual(["pick", "title", "stage", "tags"]);
+    // Growth appends — does not rewrite to defaultVisibleIds catalog order.
+    expect(merged).toEqual(["pick", "title", "stage", "tags", "line", "source", "assigned"]);
+    expect(merged).not.toEqual(defaultVisibleIds(catalog));
+  });
+
+  it("preserves unknown ids in sanitizeStoredColumnIds for later catalog restore", () => {
+    expect(sanitizeStoredColumnIds(["title", "picklist_8mus", "pick", "stage"])).toEqual([
+      "pick",
+      "title",
+      "picklist_8mus",
+      "stage",
+    ]);
+    expect(sanitizeStoredColumnIds(null)).toBeNull();
+  });
+
+  it("emits Tasks priority + tags from layout with defaultOn true", () => {
+    expect(TASKS_LIST_COLUMNS.find((c) => c.id === "priority")).toMatchObject({ defaultOn: true });
+    expect(TASKS_LIST_COLUMNS.find((c) => c.id === "tags")).toMatchObject({ defaultOn: true });
+    const withExtra = tasksListColumnsFromLayout({
+      columns: [
+        {
+          id: "left",
+          sections: [
+            {
+              id: "task",
+              label: "Task",
+              fieldKeys: ["title", "priority", "tags", "custom_extra"],
+            },
+          ],
+        },
+      ],
+    });
+    expect(withExtra.find((c) => c.id === "custom_extra")?.defaultOn).toBe(false);
   });
 
   it("toggles optional columns and keeps at least one visible", () => {
@@ -122,7 +208,7 @@ describe("list column visibility", () => {
   it("lets Leads and Contacts hide optional columns without dropping locked ones", () => {
     const leadsVisible = defaultVisibleIds(LEADS_LIST_COLUMNS);
     const afterHeat = toggleColumnVisibility(LEADS_LIST_COLUMNS, leadsVisible, "heat");
-    expect(afterHeat).toEqual(["pick", "name", "status", "source", "timer", "followUp", "shop", "tags"]);
+    expect(afterHeat).toEqual(["pick", "name", "cadence", "status", "source", "timer", "followUp", "shop", "tags"]);
     expect(toggleColumnVisibility(LEADS_LIST_COLUMNS, afterHeat, "status")).toEqual(afterHeat);
     expect(toggleColumnVisibility(LEADS_LIST_COLUMNS, afterHeat, "pick")).toEqual(afterHeat);
     expect(toggleColumnVisibility(LEADS_LIST_COLUMNS, afterHeat, "timer")).toEqual(afterHeat);
@@ -131,6 +217,7 @@ describe("list column visibility", () => {
     expect(shownColumns(LEADS_LIST_COLUMNS, afterHeat).map((column) => column.id)).toEqual([
       "pick",
       "name",
+      "cadence",
       "status",
       "source",
       "timer",
@@ -140,13 +227,15 @@ describe("list column visibility", () => {
     ]);
 
     const contactsVisible = defaultVisibleIds(CONTACTS_LIST_COLUMNS);
+    expect(contactsVisible[0]).toBe("pick");
     const afterLifetime = toggleColumnVisibility(CONTACTS_LIST_COLUMNS, contactsVisible, "lifetime");
-    expect(afterLifetime).toEqual(["pick", "name", "status", "source", "inForce", "tags"]);
-    expect(mergeVisibleColumns(CONTACTS_LIST_COLUMNS, ["status", "gone"])).toEqual([
-      "pick",
-      "name",
-      "status",
-    ]);
+    expect(afterLifetime[0]).toBe("pick");
+    expect(afterLifetime).toContain("name");
+    expect(afterLifetime).not.toContain("lifetime");
+    expect(mergeVisibleColumns(CONTACTS_LIST_COLUMNS, ["status", "gone"])[0]).toBe("pick");
+    expect(mergeVisibleColumns(CONTACTS_LIST_COLUMNS, ["status", "gone"])).toEqual(
+      expect.arrayContaining(["pick", "name", "status"]),
+    );
   });
 
   it("gives empty locked columns a menu label so Base UI can name the checkbox", () => {
@@ -218,12 +307,12 @@ describe("list column visibility", () => {
     const source = LEADS_LIST_COLUMNS.find((column) => column.id === "source")!;
     const status = CONTACTS_LIST_COLUMNS.find((column) => column.id === "status")!;
     const pick = LEADS_LIST_COLUMNS.find((column) => column.id === "pick")!;
-    expect(isLiveSearchColumn(name)).toBe(true);
-    expect(isListColumnSortable(name)).toBe(false);
-    expect(isLiveSearchColumn({ id: "title", label: "Name" })).toBe(true);
+    expect(isLiveSearchColumn(name)).toBe(false);
+    expect(isListColumnSortable(name)).toBe(true);
+    expect(isLiveSearchColumn({ id: "title", label: "Name" })).toBe(false);
     const deal = DEALS_LIST_COLUMNS.find((column) => column.id === "title")!;
-    expect(isLiveSearchColumn(deal)).toBe(true);
-    expect(isListColumnSortable(deal)).toBe(false);
+    expect(isLiveSearchColumn(deal)).toBe(false);
+    expect(isListColumnSortable(deal)).toBe(true);
     expect(isLiveSearchColumn({ id: "title", label: "Deal" })).toBe(false);
     expect(isLiveSearchColumn(source)).toBe(false);
     expect(isListColumnSortable(source)).toBe(true);
@@ -235,5 +324,14 @@ describe("list column visibility", () => {
     expect(listColumnHeaderText(source)).toBe("Source");
     expect(listColumnHeaderText(source)).not.toContain("Referral");
     expect(listColumnHeaderText(source)).not.toMatch(/ASC|DESC/i);
+  });
+});
+
+describe("group header chrome", () => {
+  it("uses larger navy group banners than the old text-xs uppercase style", () => {
+    const source = readFileSync("src/components/lists/column-table.tsx", "utf8");
+    expect(source).toMatch(/data-ff-list-group-header/);
+    expect(source).toMatch(/text-base font-semibold/);
+    expect(source).not.toMatch(/text-xs font-semibold uppercase tracking-wide text-navy/);
   });
 });

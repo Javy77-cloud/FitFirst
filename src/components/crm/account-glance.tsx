@@ -1,4 +1,5 @@
 
+import { CheckCircle2, XCircle } from "lucide-react";
 import { formatMoney } from "@/lib/domain";
 
 export function AccountGlance({
@@ -10,6 +11,7 @@ export function AccountGlance({
   emailOptOut,
   smsOptOut,
   defaultOpen = true,
+  commsFormat = "legacy",
 }: {
   policyCount: number;
   activePolicyCount: number;
@@ -20,6 +22,8 @@ export function AccountGlance({
   smsOptOut?: boolean;
   /** When false, render without outer card chrome (caller wraps). */
   defaultOpen?: boolean;
+  /** "status" = Email: OK · SMS: OK with icons (Contacts). Default keeps Business pages unchanged. */
+  commsFormat?: "legacy" | "status";
 }) {
   return (
     <section className="ff-card mb-4 p-4" data-ff-at-a-glance="" data-ff-glance-open={defaultOpen ? "1" : "0"}>
@@ -63,18 +67,57 @@ export function AccountGlance({
         ) : null}
       </dl>
       {emailOptOut != null || smsOptOut != null ? (
-        <p className="mt-3 text-sm">
-          {emailOptOut ? (
-            <span className="mr-3 rounded-sm bg-muted px-1.5 py-0.5 text-helper uppercase">Email Opted Out</span>
-          ) : (
-            <span className="mr-3 text-helper text-muted-foreground">Email Ok</span>
-          )}
-          {smsOptOut ? (
-            <span className="rounded-sm bg-muted px-1.5 py-0.5 text-helper uppercase">SMS Opted Out</span>
-          ) : (
-            <span className="text-helper text-muted-foreground">SMS Ok</span>
-          )}
-        </p>
+        commsFormat === "status" ? (
+          <p
+            className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
+            data-ff-glance-comms="status"
+          >
+            <span className="inline-flex items-center gap-1">
+              Email:{" "}
+              {emailOptOut ? (
+                <>
+                  <XCircle className="size-3.5 text-[#BF0A30]" aria-hidden />
+                  <span className="font-medium text-[#BF0A30]">Opted Out</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="size-3.5 text-emerald-600" aria-hidden />
+                  <span className="font-medium text-emerald-700">OK</span>
+                </>
+              )}
+            </span>
+            <span className="text-muted-foreground" aria-hidden>
+              ·
+            </span>
+            <span className="inline-flex items-center gap-1">
+              SMS:{" "}
+              {smsOptOut ? (
+                <>
+                  <XCircle className="size-3.5 text-[#BF0A30]" aria-hidden />
+                  <span className="font-medium text-[#BF0A30]">Opted Out</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="size-3.5 text-emerald-600" aria-hidden />
+                  <span className="font-medium text-emerald-700">OK</span>
+                </>
+              )}
+            </span>
+          </p>
+        ) : (
+          <p className="mt-3 text-sm">
+            {emailOptOut ? (
+              <span className="mr-3 rounded-sm bg-muted px-1.5 py-0.5 text-helper uppercase">Email Opted Out</span>
+            ) : (
+              <span className="mr-3 text-helper text-muted-foreground">Email Ok</span>
+            )}
+            {smsOptOut ? (
+              <span className="rounded-sm bg-muted px-1.5 py-0.5 text-helper uppercase">SMS Opted Out</span>
+            ) : (
+              <span className="text-helper text-muted-foreground">SMS Ok</span>
+            )}
+          </p>
+        )
       ) : null}
     </section>
   );

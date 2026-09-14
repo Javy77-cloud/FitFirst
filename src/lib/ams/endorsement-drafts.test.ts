@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ENDORSEMENT_DRAFT_DISCLAIMER } from "@/lib/domain-ams";
 import {
+  endorsementAdvanceLabel,
   endorsementDraftFilesPolicy,
   endorsementDraftLine,
   isOpenEndorsementDraft,
@@ -8,8 +9,8 @@ import {
   validateEndorsementDraft,
 } from "./endorsement-drafts";
 
-describe("endorsement draft stubs", () => {
-  it("drafts Elena mortgagee wording without filing the Policy", () => {
+describe("endorsement draft pipeline", () => {
+  it("creates a draft and advances drafted → submitted → approved → filed → effective", () => {
     const parsed = validateEndorsementDraft({
       formCode: "mortgagee",
       wording: "Add First Community Bank ISAOA as mortgagee. Desk stub only.",
@@ -18,14 +19,22 @@ describe("endorsement draft stubs", () => {
     });
     expect(parsed.ok).toBe(true);
     expect(endorsementDraftFilesPolicy()).toBe(false);
-    expect(nextEndorsementDraftStatus("drafted", "ready")).toBe("ready");
+    expect(nextEndorsementDraftStatus("drafted", "advance")).toBe("submitted");
+    expect(nextEndorsementDraftStatus("submitted", "advance")).toBe("approved");
+    expect(nextEndorsementDraftStatus("approved", "advance")).toBe("filed");
+    expect(nextEndorsementDraftStatus("filed", "advance")).toBe("effective");
+    expect(nextEndorsementDraftStatus("effective", "advance")).toBeNull();
+    expect(nextEndorsementDraftStatus("drafted", "ready")).toBe("submitted");
+    expect(nextEndorsementDraftStatus("ready", "advance")).toBe("approved");
     expect(nextEndorsementDraftStatus("drafted", "withdraw")).toBe("withdrawn");
-    expect(nextEndorsementDraftStatus("ready", "withdraw")).toBe("withdrawn");
-    expect(nextEndorsementDraftStatus("ready", "ready")).toBeNull();
+    expect(nextEndorsementDraftStatus("submitted", "withdraw")).toBe("withdrawn");
     expect(isOpenEndorsementDraft("drafted")).toBe(true);
+    expect(isOpenEndorsementDraft("filed")).toBe(true);
+    expect(isOpenEndorsementDraft("effective")).toBe(false);
     expect(isOpenEndorsementDraft("withdrawn")).toBe(false);
+    expect(endorsementAdvanceLabel("drafted")).toBe("Submit");
     expect(endorsementDraftLine("mortgagee", "HO3-ELENA-2026")).toContain("HO3-ELENA-2026");
-    expect(ENDORSEMENT_DRAFT_DISCLAIMER.toLowerCase()).toContain("does not file");
+    expect(ENDORSEMENT_DRAFT_DISCLAIMER.toLowerCase()).toContain("drafted");
   });
 
   it("requires form, wording, and effective date", () => {

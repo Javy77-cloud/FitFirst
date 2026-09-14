@@ -33,7 +33,7 @@ export default async function ManageTagsPage({
   const tags = await listModuleTags(module);
 
   return (
-    <SettingsShell title="Manage tags" current="tags">
+    <SettingsShell title="Manage Tags" current="tags">
       <p className="mb-4 text-sm text-muted-foreground">
         Each module has its own catalog. Create, rename, color, merge, or delete here — assigning a
         tag on a row never creates a new one.
@@ -91,6 +91,7 @@ export default async function ManageTagsPage({
               </p>
               <form action={updateModuleTagColor} className="flex flex-wrap items-center gap-2" data-ff-tag-color-edit={tag.name}>
                 <input type="hidden" name="module" value={module} />
+                <input type="hidden" name="returnTo" value={`/settings/tags?module=${module}`} />
                 <input type="hidden" name="name" value={tag.name} />
                 <input
                   type="color"
@@ -100,7 +101,7 @@ export default async function ManageTagsPage({
                   aria-label={`Edit color for ${formatTagLabel(tag.name)}`}
                 />
                 <Button type="submit" size="xs" variant="outline">
-                  Save color
+                  Save Color
                 </Button>
               </form>
               <form action={renameModuleTag} className="flex flex-wrap items-center gap-2">

@@ -40,6 +40,13 @@ import {
 import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
 import { QuoteFileActions, type QuoteFileRow } from "@/components/deal/quote-file-actions";
+import { QuoteCompareDialog, type QuoteCompareColumn } from "@/components/deal/quote-compare-dialog";
+import {
+  canAddToCompare,
+  QUOTE_COMPARE_TIP,
+  sortByPremiumAsc,
+  toggleCompareSelection,
+} from "@/lib/quotes/compare-selection";
 import { AlertTriangle, ChevronDown, ChevronRight, EyeOff, RefreshCw, Star } from "lucide-react";
 
 type Row = { quote: Quote; carrier: Carrier; premium: Quote["premium"] };
@@ -351,11 +358,29 @@ export function QuotesResultsTable({
   const [alertQuoteId, setAlertQuoteId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [premiumFloors, setPremiumFloors] = useState<Record<string, number>>({});
+  const [compareSelected, setCompareSelected] = useState<string[]>([]);
+  const [compareOpen, setCompareOpen] = useState(false);
 
   const sections = useMemo(
     () => groupQuotesBySection(list, (row) => row.quote.riskOutcome),
     [list],
   );
+  const compareColumns = useMemo((): QuoteCompareColumn[] => {
+    const picked = list.filter((row) => compareSelected.includes(row.quote.id));
+    const sorted = sortByPremiumAsc(picked, (row) => row.quote.premium);
+    return sorted.map(({ quote, carrier }) => ({
+      quoteId: quote.id,
+      carrierName: carrier.name,
+      premium: quote.premium,
+      quoteNumber: quote.quoteNumber,
+      coverageA: quote.coverageA,
+      aopDeductible: quote.aopDeductible,
+      hurricaneDeductible: quote.hurricaneDeductible,
+      notes: quote.notes,
+      carrierFiles: quoteFilesByQuoteId[quote.id]?.carrier ?? [],
+    }));
+  }, [list, compareSelected, quoteFilesByQuoteId]);
+  const compareCount = compareSelected.length;
   const recheckCount = recheckMarked.length;
   const anyRecheck = recheckCount > 0;
 
@@ -528,9 +553,23 @@ export function QuotesResultsTable({
             onClick={() => setExpanded({})}
             data-ff-quotes-collapse-all-details=""
             className="gap-1.5 border-primary/35 bg-primary/5 text-navy hover:bg-primary/10"
-            title="Collapse all open Details"
+            title="Collapse All Open Details"
           >
-            Collapse all
+            Collapse All
+          </Button>
+
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={compareCount === 0}
+            onClick={() => setCompareOpen(true)}
+            data-ff-quotes-compare=""
+            data-ff-quotes-compare-count={compareCount}
+            className="gap-1.5 border-primary/35 bg-primary/5 text-navy hover:bg-primary/10"
+            title={QUOTE_COMPARE_TIP}
+          >
+            {compareCount > 0 ? `Compare (${compareCount})` : "Compare"}
           </Button>
 
           {hidesEffectivelyApplied ? (
@@ -542,10 +581,10 @@ export function QuotesResultsTable({
               data-ff-quotes-show-hidden=""
               data-ff-quotes-hidden-count={hideCount}
               className="gap-1.5"
-              title="Show hide-marked quotes again"
+              title="Show Hide-Marked Quotes Again"
             >
               <EyeOff className="size-3.5 text-muted-foreground" />
-              Show hidden ({hideCount})
+              Show Hidden ({hideCount})
             </Button>
           ) : anyHide ? (
             <Button
@@ -559,7 +598,7 @@ export function QuotesResultsTable({
               title={`Hide ${hideCount} marked quote${hideCount === 1 ? "" : "s"} (session only)`}
             >
               <EyeOff className="size-3.5 text-muted-foreground" />
-              Hide marked ({hideCount})
+              Hide Marked ({hideCount})
             </Button>
           ) : null}
         </div>
@@ -670,6 +709,35 @@ export function QuotesResultsTable({
                           )}
                         >
                           <div className="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:flex-nowrap">
+                            {section.key === "bindable" || section.key === "conditional" ? (
+                              <label
+                                className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center"
+                                data-ff-quote-compare-pick={quote.id}
+                                title={
+                                  compareSelected.includes(quote.id)
+                                    ? "Remove From Compare"
+                                    : canAddToCompare(compareSelected, quote.id)
+                                      ? "Add To Compare (Max 3)"
+                                      : "Maximum 3 Quotes"
+                                }
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="size-4 accent-[var(--ff-navy,#002868)]"
+                                  checked={compareSelected.includes(quote.id)}
+                                  disabled={
+                                    !compareSelected.includes(quote.id) &&
+                                    !canAddToCompare(compareSelected, quote.id)
+                                  }
+                                  onChange={() =>
+                                    setCompareSelected((current) =>
+                                      toggleCompareSelection(current, quote.id),
+                                    )
+                                  }
+                                  aria-label={`Compare ${carrier.name}`}
+                                />
+                              </label>
+                            ) : null}
                             <span
                               data-ff-quote-status-pill={outcome}
                               className={cn(
@@ -706,8 +774,8 @@ export function QuotesResultsTable({
                                 )}
                                 title={
                                   isRecheckMarked
-                                    ? "Marked for recheck — click to unmark"
-                                    : "Mark for recheck"
+                                    ? "Marked For Recheck — Click To Unmark"
+                                    : "Mark For Recheck"
                                 }
                               >
                                 <RecheckMarkIcon lit={isRecheckMarked} />
@@ -731,8 +799,8 @@ export function QuotesResultsTable({
                                 )}
                                 title={
                                   isHideMarked
-                                    ? "Marked to hide — click to unmark"
-                                    : "Mark to hide (session)"
+                                    ? "Marked To Hide — Click To Unmark"
+                                    : "Mark To Hide (Session)"
                                 }
                               >
                                 <EyeOff
@@ -797,6 +865,12 @@ export function QuotesResultsTable({
                                 size="xs"
                                 disabled={!canBind}
                                 data-ff-quote-bind={quote.id}
+                                data-ff-no-hover=""
+                                className={cn(
+                                  "!bg-[#002868] !text-white !border-[#002868]",
+                                  "hover:!bg-[#BF0A30] hover:!text-white hover:!border-[#BF0A30]",
+                                  "disabled:!bg-[#002868] disabled:!text-white disabled:!border-[#002868] disabled:opacity-55",
+                                )}
                                 title={canBind ? "Bind (wire later)" : "Bind only when Bindable"}
                               >
                                 Bind
@@ -811,7 +885,7 @@ export function QuotesResultsTable({
                                     window.open(openHref, "_blank", "noopener,noreferrer")
                                   }
                                 >
-                                  Open in carrier
+                                  Open In Carrier
                                 </Button>
                               ) : (
                                 <Button
@@ -822,7 +896,7 @@ export function QuotesResultsTable({
                                   title="Portal URL / deep-link placeholder until APIs exist"
                                   onClick={() => undefined}
                                 >
-                                  Open in carrier
+                                  Open In Carrier
                                 </Button>
                               )}
                               <QuoteFileActions
@@ -957,6 +1031,12 @@ export function QuotesResultsTable({
           );
         })}
       </div>
+
+      <QuoteCompareDialog
+        open={compareOpen}
+        onOpenChange={setCompareOpen}
+        columns={compareColumns}
+      />
 
       <BindRecheckAlertDialog
         open={Boolean(alertQuoteId)}

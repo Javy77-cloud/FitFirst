@@ -312,6 +312,7 @@ export async function setDealSheetProduct(formData: FormData) {
   const [account] = deal.accountId
     ? await db.select().from(accounts).where(eq(accounts.id, deal.accountId))
     : [];
+  const custom = await loadRecordValues(dealId).catch(() => ({} as Record<string, string>));
   await db
     .update(deals)
     .set({
@@ -321,11 +322,15 @@ export async function setDealSheetProduct(formData: FormData) {
       policySubType: productRaw,
       title: dealTitleForRecords({
         lineOfBusiness,
+        firstName: custom.first_name || undefined,
+        lastName: custom.last_name || undefined,
         primaryNamedInsured: deal.primaryNamedInsured,
         title: deal.title,
         contact,
         lead,
         account,
+        quotingForm: formId ?? deal.quotingForm,
+        policySubType: productRaw,
       }),
       updatedAt: new Date(),
     })
@@ -724,6 +729,8 @@ export async function runFillFromDealDetails(
       propertyOneliner: deal.propertyOneliner,
       currentCarrier: deal.currentCarrier,
       coverageAmount: deal.coverageAmount,
+      quotingForm: deal.quotingForm,
+      policySubType: deal.policySubType,
       stored,
       risk: risk ?? null,
       contact: contact

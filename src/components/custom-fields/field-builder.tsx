@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { GripVertical, MoreHorizontal, Trash2 } from "lucide-react";
-import { deleteDealLayoutField, saveDealFieldLayout } from "@/app/actions/custom-fields";
+import { Copy, GripVertical, MoreHorizontal, Trash2 } from "lucide-react";
+import { saveDealFieldLayout } from "@/app/actions/custom-fields";
 import {
   fieldLayoutModuleLabel,
   type FieldLayoutModule,
@@ -36,8 +36,12 @@ import {
   insertIndexFromClientY,
   moveField,
   moveSection,
+  duplicateSection,
+  insertFieldAfter,
   relabelSection,
   removeFieldFromLayout,
+  removeFieldOccurrence,
+  layoutContainsFieldKey,
   columnIdFromHitStack,
   resolveFieldDrop,
   resolveSectionDrop,
@@ -46,7 +50,7 @@ import {
 } from "@/lib/custom-fields/layout";
 import { asList } from "@/lib/safe-list";
 import { humanizeFieldKey, resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
-import { sanitizePicklistOptions, type FieldPicklist } from "@/lib/custom-fields/picklists";
+import { cloneFieldDef, sanitizePicklistOptions, type FieldPicklist } from "@/lib/custom-fields/picklists";
 import {
   CUSTOM_FIELD_TYPE_LABELS,
   CUSTOM_FIELD_TYPES,
@@ -232,9 +236,19 @@ export function FieldBuilder({
   function beginPointerDrag(payload: DragPayload, event: React.PointerEvent) {
     if (event.button !== 0) return;
     const target = event.target as HTMLElement;
-    if (target.closest("input, textarea, select, [data-ff-field-menu], [data-slot='dropdown-menu-trigger']")) return;
+    if (
+      target.closest(
+        "input, textarea, select, [data-ff-field-actions], [data-ff-field-menu], [data-ff-field-remove], [data-slot='dropdown-menu-trigger'], [data-slot='dropdown-menu-content'], [data-slot='dropdown-menu-item']",
+      ) &&
+      !target.closest("[data-ff-field-handle], [data-ff-section-handle]")
+    ) {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    let armed = false;
     dragRef.current = payload;
     dropHintRef.current = null;
     setDrag(payload);
@@ -250,6 +264,12 @@ export function FieldBuilder({
     const move = (moveEvent: PointerEvent) => {
       const current = dragRef.current;
       if (!current) return;
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      if (!armed) {
+        if (dx * dx + dy * dy < 36) return; // ~6px threshold — clicks are not drops
+        armed = true;
+      }
       const next = dropHintFromPoint(moveEvent.clientX, moveEvent.clientY, current);
       dropHintRef.current = next;
       paintDropHint(next);
@@ -257,9 +277,13 @@ export function FieldBuilder({
     };
     const up = (upEvent: PointerEvent) => {
       const current = dragRef.current;
-      if (!current) {
+      if (!current || !armed) {
         clearPaintedHint();
         detachPointerListeners();
+        dragRef.current = null;
+        dropHintRef.current = null;
+        setDrag(null);
+        setDropHint(null);
         return;
       }
       const hint = dropHintFromPoint(upEvent.clientX, upEvent.clientY, current) ?? dropHintRef.current;
@@ -401,24 +425,38 @@ export function FieldBuilder({
     patchField(key, { label: trimmed });
   }
 
-  function removeField(key: string) {
-    setLayout((current) => removeFieldFromLayout(current, key));
-    setFields((current) => current.filter((field) => field.key !== key));
-    if (dialog?.key === key) setDialog(null);
-  }
-
-  async function persistRemoveField(key: string) {
-    removeField(key);
-    const form = new FormData();
-    form.set("key", key);
-    form.set("line", line);
-    form.set("module", module);
-    try {
-      await deleteDealLayoutField(form);
-    } catch {
-      // redirect() from flashAction throws; treat as success
+  function removeField(key: string, sectionId?: string) {
+    let nextLayout: FieldLayout | null = null;
+    setLayout((current) => {
+      nextLayout = sectionId
+        ? removeFieldOccurrence(current, sectionId, key)
+        : removeFieldFromLayout(current, key);
+      return nextLayout;
+    });
+    // Field catalog stays if another slot still uses the key (duplicate sections).
+    if (nextLayout && !layoutContainsFieldKey(nextLayout, key)) {
+      setFields((fieldsCurrent) => fieldsCurrent.filter((field) => field.key !== key));
+      if (dialog?.key === key) setDialog(null);
     }
   }
+
+  function duplicateField(key: string) {
+    const source = fields.find((field) => field.key === key);
+    if (!source) return;
+    const copy = cloneFieldDef(
+      source,
+      fields.map((field) => field.key),
+    );
+    setFields((current) => {
+      const at = current.findIndex((field) => field.key === key);
+      if (at < 0) return [...current, copy];
+      const next = [...current];
+      next.splice(at + 1, 0, copy);
+      return next;
+    });
+    setLayout((current) => insertFieldAfter(current, key, copy.key));
+  }
+
 
   return (
     <div
@@ -510,14 +548,39 @@ export function FieldBuilder({
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {column.id === "left" ? "Left column" : "Right column"}
             </p>
-            {asList(column.sections).map((section) => {
-              const sectionActive = dropHint?.columnId === column.id && dropHint.sectionId === section.id;
+            {(() => {
+              const sectionDrag =
+                drag?.kind === "section" || drag?.kind === "new-section";
+              const insertBeforeSectionId = sectionDrag
+                ? (dropHint?.columnId === column.id
+                    ? (dropHint.beforeSectionId ?? dropHint.sectionId)
+                    : undefined)
+                : undefined;
+              const appendSection =
+                sectionDrag &&
+                dropHint?.columnId === column.id &&
+                !insertBeforeSectionId;
+              return (
+                <>
+            {asList(column.sections).map((section, sectionIndex) => {
+              const sectionActive =
+                !sectionDrag &&
+                dropHint?.columnId === column.id &&
+                dropHint.sectionId === section.id;
+              const showSectionInsertLine =
+                sectionDrag && insertBeforeSectionId === section.id;
               return (
                 <div
-                  key={section.id}
+                  key={`${column.id}:${section.id}:${sectionIndex}`}
+                  className="space-y-2"
+                  data-ff-section-slot={section.id}
+                >
+                  {showSectionInsertLine ? <DropLine /> : null}
+                <div
                   className={cn(
                     "ff-card space-y-2 p-3",
                     sectionActive && "ring-2 ring-sky-400 ring-offset-2 ring-offset-background",
+                    showSectionInsertLine && "ring-1 ring-sky-300",
                   )}
                   onDragOver={(event) => {
                     event.preventDefault();
@@ -525,7 +588,7 @@ export function FieldBuilder({
                   }}
                   onDrop={(event) => handleDrop(column.id, event)}
                   data-ff-builder-section={section.id}
-                  data-ff-drop-section={sectionActive ? "1" : undefined}
+                  data-ff-drop-section={sectionActive || showSectionInsertLine ? "1" : undefined}
                 >
                   {preview ? (
                     <h3 className="text-xs font-medium text-navy">{section.label}</h3>
@@ -550,20 +613,42 @@ export function FieldBuilder({
                           className="h-8"
                           onChange={(event) =>
                             setLayout((current) =>
-                              relabelSection(current, section.id, event.target.value || section.label),
+                              relabelSection(current, section.id, event.target.value, {
+                                allowEmpty: true,
+                              }),
                             )
                           }
+                          onBlur={(event) => {
+                            const next = event.target.value.trim();
+                            if (next) return;
+                            setLayout((current) => relabelSection(current, section.id, "Section"));
+                          }}
                           data-ff-section-label={section.id}
                         />
                       </div>
-                      <Button
-                        type="button"
-                        size="xs"
-                        variant="ghost"
-                        onClick={() => setLayout((current) => deleteSection(current, section.id))}
-                      >
-                        Delete
-                      </Button>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Button
+                          type="button"
+                          size="xs"
+                          variant="ghost"
+                          title="Duplicate section"
+                          aria-label={`Duplicate ${section.label || "section"}`}
+                          onClick={() =>
+                            setLayout((current) => duplicateSection(current, section.id))
+                          }
+                          data-ff-section-duplicate={section.id}
+                        >
+                          <Copy className="size-3.5" />
+                        </Button>
+                        <Button
+                          type="button"
+                          size="xs"
+                          variant="ghost"
+                          onClick={() => setLayout((current) => deleteSection(current, section.id))}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </div>
                   )}
                   {asList(section.fieldKeys).length === 0 ? (
@@ -577,7 +662,7 @@ export function FieldBuilder({
                       Drop a field here
                     </div>
                   ) : null}
-                  {asList(section.fieldKeys).map((key) => {
+                  {asList(section.fieldKeys).map((key, fieldIndex) => {
                     const field = byKey[key] ?? {
                       key,
                       label: humanizeFieldKey(key),
@@ -585,7 +670,7 @@ export function FieldBuilder({
                     };
                     const showLine = sectionActive && dropHint?.beforeKey === key;
                     return (
-                      <div key={key}>
+                      <div key={`${section.id}:${key}:${fieldIndex}`}>
                         {showLine ? <DropLine /> : null}
                         <BuilderFieldRow
                           field={field}
@@ -602,17 +687,24 @@ export function FieldBuilder({
                           onRequired={() => patchField(key, { required: !field.required })}
                           onPermissions={() => setDialog({ kind: "permissions", key })}
                           onProperties={() => setDialog({ kind: "properties", key })}
-                          onRemove={() => void persistRemoveField(key)}
+                          onDuplicate={() => duplicateField(key)}
+                          onRemove={() => removeField(key, section.id)}
                         />
                       </div>
                     );
                   })}
+                  {/* Field-drop append line stays inside the section; section-drop line is above slots. */}
                   {sectionActive && !dropHint?.beforeKey && asList(section.fieldKeys).length > 0 ? (
                     <DropLine />
                   ) : null}
                 </div>
+                </div>
               );
             })}
+            {appendSection ? <DropLine /> : null}
+                </>
+              );
+            })()}
           </div>
         ))}
       </div>
@@ -670,6 +762,7 @@ function BuilderFieldRow({
   onRequired,
   onPermissions,
   onProperties,
+  onDuplicate,
   onRemove,
 }: {
   field: CustomFieldDef;
@@ -683,6 +776,7 @@ function BuilderFieldRow({
   onRequired: () => void;
   onPermissions: () => void;
   onProperties: () => void;
+  onDuplicate: () => void;
   onRemove: () => void;
 }) {
   if (preview) {
@@ -709,12 +803,10 @@ function BuilderFieldRow({
 
   return (
     <div
-      onDragStart={onDragStart}
-      onPointerDown={onPointerDown}
       onDragOver={onDragOver}
       onDrop={onDrop}
       className={cn(
-        "flex cursor-grab items-center justify-between gap-2 rounded-md border border-border bg-background px-2 py-1.5",
+        "flex items-center justify-between gap-2 rounded-md border border-border bg-background px-2 py-1.5",
         dragging && "pointer-events-none opacity-40",
       )}
       data-ff-builder-field={field.key}
@@ -722,20 +814,37 @@ function BuilderFieldRow({
       data-ff-dragging={dragging ? "1" : undefined}
     >
       <span className="flex min-w-0 items-center gap-1.5 truncate text-sm text-navy">
-        <GripVertical className="size-3.5 shrink-0 text-muted-foreground" data-ff-field-handle={field.key} />
+        <button
+          type="button"
+          draggable
+          aria-label={`Drag ${field.label}`}
+          className="inline-flex size-7 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-navy"
+          data-ff-field-handle={field.key}
+          onDragStart={onDragStart}
+          onPointerDown={onPointerDown}
+        >
+          <GripVertical className="size-3.5" />
+        </button>
         <FieldTypeIcon type={field.type} />
         <span className="truncate" data-ff-field-label={field.key}>
           {field.label}
         </span>
         {field.required ? <span className="text-destructive">*</span> : null}
       </span>
-      <FieldRowMenu
-        field={field}
-        onRequired={onRequired}
-        onPermissions={onPermissions}
-        onProperties={onProperties}
-        onRemove={onRemove}
-      />
+      <div
+        onPointerDown={(event) => event.stopPropagation()}
+        onMouseDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <FieldRowMenu
+          field={field}
+          onRequired={onRequired}
+          onPermissions={onPermissions}
+          onProperties={onProperties}
+          onDuplicate={onDuplicate}
+          onRemove={onRemove}
+        />
+      </div>
     </div>
   );
 }
@@ -745,12 +854,14 @@ function FieldRowMenu({
   onRequired,
   onPermissions,
   onProperties,
+  onDuplicate,
   onRemove,
 }: {
   field: CustomFieldDef;
   onRequired: () => void;
   onPermissions: () => void;
   onProperties: () => void;
+  onDuplicate: () => void;
   onRemove: () => void;
 }) {
   return (
@@ -801,6 +912,9 @@ function FieldRowMenu({
             </DropdownMenuItem>
             <DropdownMenuItem data-ff-field-menu-item="properties" onClick={onProperties}>
               Edit properties
+            </DropdownMenuItem>
+            <DropdownMenuItem data-ff-field-menu-item="duplicate" onClick={onDuplicate}>
+              Duplicate field
             </DropdownMenuItem>
             <DropdownMenuItem
               data-ff-field-menu-item="remove"

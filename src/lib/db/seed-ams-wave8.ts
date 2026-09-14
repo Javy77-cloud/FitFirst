@@ -88,13 +88,13 @@ export async function seedAmsWave8() {
       id: AMS_WAVE8_IDS.haleRenewalQueue,
       tenantId: TENANT_ID,
       policyId: HALE_POLICY_ID,
-      stage: "quoting",
+      stage: "contacted",
       notes: "Heritage proposed $2,547 vs current $2,184. Desk queue stub. Do not bind. Do not file.",
     })
     .onConflictDoUpdate({
       target: renewalQueue.id,
       set: {
-        stage: "quoting",
+        stage: "contacted",
         notes: "Heritage proposed $2,547 vs current $2,184. Desk queue stub. Do not bind. Do not file.",
         updatedAt: new Date(),
       },

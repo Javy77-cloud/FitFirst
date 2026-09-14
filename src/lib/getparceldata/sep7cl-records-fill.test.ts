@@ -30,7 +30,7 @@ describe("sep7cl Fill from property records via getparceldata", () => {
         product: "homeowners",
       }),
     );
-    expect(html).toContain("Fill master sheet");
+    expect(html).toContain("Fill Master Sheet");
   });
 
   it("wires getparceldata point URL, BYO key, and vault provider", () => {

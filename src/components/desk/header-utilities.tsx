@@ -227,9 +227,10 @@ export function HeaderUtilities({
               type="button"
               variant="ghost"
               size="icon-sm"
-              className={chromeButtonClass()}
+              className={cn(chromeButtonClass(), "ml-3")}
               aria-label="Profile menu"
               title="Profile"
+              data-ff-header-profile=""
             />
           }
         >

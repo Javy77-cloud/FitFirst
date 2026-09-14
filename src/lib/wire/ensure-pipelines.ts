@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { deals, pipelineStages, pipelines } from "@/lib/db/schema";
 import { defaultStageColor } from "@/lib/desk/status-colors";
 import { SEEDED_PIPELINES } from "./pipeline";
+import { RENEWAL_QUEUE_STAGE_LABELS, RENEWAL_QUEUE_STAGES } from "@/lib/domain-ams";
 
 /** Insert missing boards / stages and split Archive off Won-Lost on existing desks. */
 export async function ensureSeededPipelines() {
@@ -120,6 +121,7 @@ export async function ensureSeededPipelines() {
   }
 
   await splitArchiveOffWonLost(tenantId);
+  await ensureRenewalsPipeline();
 }
 
 async function splitArchiveOffWonLost(tenantId: string) {
@@ -163,4 +165,86 @@ async function splitArchiveOffWonLost(tenantId: string) {
       await db.update(pipelineStages).set({ pipelineId: archive.id, sortOrder: 0 }).where(eq(pipelineStages.id, stage.id));
     }
   }
+}
+
+
+const RENEWALS_STAGE_COLORS: Record<string, string> = {
+  upcoming: "slate",
+  contacted: "blue",
+  quoted: "amber",
+  bound: "green",
+  lost: "red",
+};
+
+/** Seeded renewals board — not a deals switcher tab. Inserts missing row/stages only (keeps admin edits). */
+export async function ensureRenewalsPipeline() {
+  const tenantId = DEFAULT_TENANT_ID;
+  const id = PIPELINE_IDS_BY_SLUG.renewals;
+  const [existing] = await db
+    .select()
+    .from(pipelines)
+    .where(and(eq(pipelines.tenantId, tenantId), eq(pipelines.slug, "renewals")));
+  const pipelineId = existing?.id ?? id;
+  if (!existing) {
+    await db.insert(pipelines).values({
+      id,
+      tenantId,
+      name: "Renewals",
+      slug: "renewals",
+      kind: "shopping",
+      seeded: true,
+      sortOrder: 90,
+    });
+  }
+  const stages = await db
+    .select()
+    .from(pipelineStages)
+    .where(and(eq(pipelineStages.tenantId, tenantId), eq(pipelineStages.pipelineId, pipelineId)))
+    .then((rows) => rows);
+  const have = new Set(stages.map((row) => row.slug));
+  for (const [sortOrder, slug] of RENEWAL_QUEUE_STAGES.entries()) {
+    if (have.has(slug)) continue;
+    await db
+      .insert(pipelineStages)
+      .values({
+        tenantId,
+        pipelineId,
+        name: RENEWAL_QUEUE_STAGE_LABELS[slug],
+        slug,
+        sortOrder,
+        color: RENEWALS_STAGE_COLORS[slug] ?? defaultStageColor(sortOrder, slug),
+        seeded: true,
+      })
+      .onConflictDoNothing();
+  }
+  return getRenewalsPipeline();
+}
+
+export async function getRenewalsPipeline() {
+  const tenantId = DEFAULT_TENANT_ID;
+  const [board] = await db
+    .select()
+    .from(pipelines)
+    .where(and(eq(pipelines.tenantId, tenantId), eq(pipelines.slug, "renewals")));
+  if (!board) return null;
+  const stages = await db
+    .select()
+    .from(pipelineStages)
+    .where(and(eq(pipelineStages.tenantId, tenantId), eq(pipelineStages.pipelineId, board.id)));
+  stages.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+  return {
+    id: board.id,
+    slug: board.slug,
+    name: board.name,
+    kind: board.kind,
+    seeded: board.seeded,
+    stages: stages.map((item) => ({
+      id: item.id,
+      slug: item.slug,
+      name: item.name,
+      sortOrder: item.sortOrder,
+      color: item.color,
+      seeded: item.seeded,
+    })),
+  };
 }

@@ -1,10 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { ComparePanel } from "@/components/policy/compare-panel";
-import { buttonVariants } from "@/components/ui/button";
+import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { getPolicyWorkspace } from "@/lib/db/queries";
-import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -24,16 +22,19 @@ export default async function PolicyComparePage({
   const current = terms.find((term) => term.role === "current");
   const proposed = terms.find((term) => term.role === "proposed");
   const title = `Compare renewal · ${policy.policyNumber}`;
+  const policyLabel = policy.policyNumber?.trim() || "Policy";
 
   return (
-    <AppShell
-      title={title}
-      actions={
-        <Link href={`/policies/${policy.id}`} className={cn(buttonVariants({ variant: "outline" }))}>
-          Back to policy
-        </Link>
-      }
-    >
+    <AppShell title={title}>
+      <DeskPageTrail
+        backLabel="Back to policy"
+        fallbackHref={`/policies/${policy.id}`}
+        crumbs={[
+          { href: "/policies", label: "Policies" },
+          { href: `/policies/${policy.id}`, label: policyLabel },
+          { label: "Renew / Compare" },
+        ]}
+      />
       {error ? (
         <section className="mb-4 rounded-md border border-fit-red bg-fit-red-bg px-4 py-3 text-sm text-fit-red">
           {error}

@@ -113,6 +113,7 @@ export function visiblePipelineBoards<T extends { slug: string }>(
   settings: Pick<DeskLineSettings, "writeLife" | "writeHealth">,
 ): T[] {
   return boards.filter((board) => {
+    if (board.slug === "renewals") return false;
     if (board.slug === "life" && !settings.writeLife) return false;
     if (board.slug === "health" && !settings.writeHealth) return false;
     return true;

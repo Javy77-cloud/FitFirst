@@ -3,7 +3,7 @@
 import { TrackingStatusBadge } from "@/components/quotes/status-badge";
 import { ExpandCollapseControl } from "@/components/quotes/expand-collapse";
 import { QuoteActionsMenu, QuoteLostReason } from "@/components/quotes/quote-actions";
-import { formatMoney } from "@/lib/domain";
+import { formatDay, formatMoney } from "@/lib/domain";
 import { quoteIdentity } from "@/lib/quotes/board";
 import type { TrackingRow } from "@/lib/quotes/tracking";
 import { cn } from "@/lib/utils";
@@ -89,8 +89,8 @@ export function QuoteCard({
               label="Date"
               value={
                 row.attemptedAt instanceof Date
-                  ? row.attemptedAt.toISOString().slice(0, 10)
-                  : String(row.attemptedAt).slice(0, 10)
+                  ? formatDay(row.attemptedAt)
+                  : formatDay(String(row.attemptedAt))
               }
             />
             <Detail label="Bindable" value={row.bindable ? "Yes" : "No"} />

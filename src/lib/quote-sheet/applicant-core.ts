@@ -194,6 +194,14 @@ export const CO_APPLICANT_FIELDS: QuoteFieldDef[] = [
     extractKey: "co_applicant_relationship_to_insured",
   },
   {
+    key: "co_applicant_gender",
+    label: "Gender",
+    group: "Co-applicant",
+    input: "select",
+    options: [...GENDER_OPTIONS],
+    extractKey: "co_applicant_gender",
+  },
+  {
     key: "co_applicant_marital_status",
     label: "Marital status",
     group: "Co-applicant",
@@ -208,6 +216,22 @@ export const CO_APPLICANT_FIELDS: QuoteFieldDef[] = [
     input: "select",
     options: [...OCCUPATION_OPTIONS],
     extractKey: "co_applicant_occupation",
+  },
+  {
+    key: "co_applicant_employment",
+    label: "Employment",
+    group: "Co-applicant",
+    input: "select",
+    options: [...EMPLOYMENT_STATUS_OPTIONS],
+    extractKey: "co_applicant_employment",
+  },
+  {
+    key: "co_applicant_education_level",
+    label: "Education level",
+    group: "Co-applicant",
+    input: "select",
+    options: [...EDUCATION_LEVEL_OPTIONS],
+    extractKey: "co_applicant_education_level",
   },
   { key: "co_applicant_dob", label: "Date of birth", group: "Co-applicant", extractKey: "co_applicant_dob" },
   { key: "co_applicant_email", label: "Email", group: "Co-applicant", extractKey: "co_applicant_email" },
@@ -230,6 +254,10 @@ export function coApplicantHasValue(
 
 export function coApplicantRequired(
   values: Record<string, { value?: string; status?: string } | undefined>,
+  opts?: { hasCoApplicantFlag?: string | null },
 ): boolean {
+  const flag = String(opts?.hasCoApplicantFlag ?? "").trim().toLowerCase();
+  // Deal Details "No co-applicant" wins — do not require co-app name/fields on sheet save.
+  if (["false", "0", "no", "off"].includes(flag)) return false;
   return isMarriedStatus(values.applicant_marital_status?.value);
 }

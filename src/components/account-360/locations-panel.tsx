@@ -1,7 +1,7 @@
 // @ts-nocheck — leftover 360 writer; business detail uses BusinessLocationsSection.
 import { AddLocationForm } from "@/components/account-360/add-location-form";
 import { PropertyAddressLine } from "@/components/address-links";
-import { formatMoney, lineLabel } from "@/lib/domain";
+import { formatDay, formatMoney, lineLabel } from "@/lib/domain";
 import { groupPoliciesByLocation, unassignedLocationPolicies } from "@/lib/locations";
 import type { Location, Policy } from "@/lib/db/schema";
 
@@ -88,7 +88,7 @@ export function LocationsPanel({
                             <td>{lineLabel(policy.lineOfBusiness)}</td>
                             <td>{carrierName ?? "—"}</td>
                             <td>{formatMoney(policy.premium)}</td>
-                            <td>{policy.expirationDate.toISOString().slice(0, 10)}</td>
+                            <td>{formatDay(policy.expirationDate)}</td>
                           </tr>
                         ))}
                       </tbody>

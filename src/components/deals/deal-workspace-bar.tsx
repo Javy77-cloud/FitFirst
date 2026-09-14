@@ -1,13 +1,18 @@
 import Link from "next/link";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
 import { PipelineViewDefaultStar } from "@/components/deals/pipeline-view-default-star";
+import { PipelineViewsMenu } from "@/components/deals/pipeline-views-menu";
+import type { PipelineStageView } from "@/lib/wire/pipeline-cards";
 import {
   dealsHref,
   isPipelineSheetView,
   parsePipelineView,
+  parseRenewalsView,
   pipelineTabLabel,
+  type PipelineDeskHrefOpts,
   type PipelineViewId,
 } from "@/lib/wire/pipeline";
+import { PIPELINE_VIEW_COOKIE, RENEWALS_VIEW_COOKIE, type PipelineViewCookie } from "@/lib/wire/pipeline-view-cookies";
 import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 
 type BoardTab = { slug: string; name: string };
@@ -21,7 +26,7 @@ const VIEWS: Array<[PipelineViewId, string]> = [
 
 const ACTIVE_SLUGS = ["p-c", "health", "life"] as const;
 const CLOSED_SLUGS = ["won-lost", "archive"] as const;
-const SKIP_SLUGS = new Set(["law", "legal", "flood"]);
+const SKIP_SLUGS = new Set(["law", "legal", "flood", "renewals"]);
 const PC_SUBS = [
   { id: "home", label: "Home" },
   { id: "auto", label: "Auto" },
@@ -45,6 +50,12 @@ export function DealWorkspaceBar({
   healthSub,
   attention,
   settings,
+  stagePipelineId = null,
+  stageRows = [],
+  canEditStages = false,
+  hrefBuilder = dealsHref,
+  cookieKey = PIPELINE_VIEW_COOKIE,
+  boardWhenNoPipeline = "p-c",
 }: {
   boards: BoardTab[];
   pipeline?: string | null;
@@ -58,8 +69,17 @@ export function DealWorkspaceBar({
   healthSub?: string | null;
   attention?: string | null;
   settings: DeskLineSettings;
+  /** Active board for Edit stages (⋯ menu). */
+  stagePipelineId?: string | null;
+  stageRows?: PipelineStageView[];
+  canEditStages?: boolean;
+  hrefBuilder?: (opts?: PipelineDeskHrefOpts) => string;
+  cookieKey?: PipelineViewCookie;
+  /** Board/funnel without a selected filter tab. Deals uses p-c; renewals stays on All. */
+  boardWhenNoPipeline?: string | null;
 }) {
-  const parsedView = parsePipelineView(view);
+  const parsedView =
+    cookieKey === RENEWALS_VIEW_COOKIE ? parseRenewalsView(view) : parsePipelineView(view);
   const extras = {
     view: parsedView,
     stage,
@@ -82,16 +102,17 @@ export function DealWorkspaceBar({
           : [];
 
   return (
-    <div className="mb-1 space-y-2">
+    <div className="deal-workspace-bar mb-1 space-y-2" data-testid="deal-workspace-bar">
+      {/* Chip row: gap-x-4 / gap-x-5 retired; live class is gap-x-6. */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
         <div className={FF_CHIP_TAB_GROUP} data-testid="deal-line-filters">
-          <Link href={dealsHref({ ...extras, pipeline: null, pcSub: null, lifeSub: null, healthSub: null })} className={chipClass(!pipeline)} data-active={!pipeline ? "true" : "false"}>
+          <Link href={hrefBuilder({ ...extras, pipeline: null, pcSub: null, lifeSub: null, healthSub: null })} className={chipClass(!pipeline)} data-active={!pipeline ? "true" : "false"}>
             All
           </Link>
           {left.map((item) => (
             <Link
               key={item.slug}
-              href={dealsHref({
+              href={hrefBuilder({
                 ...extras,
                 pipeline: item.slug,
                 family: null,
@@ -110,7 +131,7 @@ export function DealWorkspaceBar({
           {right.map((item) => (
             <Link
               key={item.slug}
-              href={dealsHref({
+              href={hrefBuilder({
                 ...extras,
                 pipeline: item.slug,
                 family: null,
@@ -128,9 +149,9 @@ export function DealWorkspaceBar({
           {VIEWS.map(([id, label]) => (
             <Link
               key={id}
-              href={dealsHref({
+              href={hrefBuilder({
                 ...extras,
-                pipeline: pipeline || (isPipelineSheetView(id) ? null : "p-c"),
+                pipeline: pipeline || (isPipelineSheetView(id) ? null : boardWhenNoPipeline),
                 view: id,
                 stage: isPipelineSheetView(id) ? stage : null,
               })}
@@ -140,7 +161,12 @@ export function DealWorkspaceBar({
               {label}
             </Link>
           ))}
-          <PipelineViewDefaultStar currentView={parsedView} defaultView={defaultView ?? null} />
+          <PipelineViewDefaultStar currentView={parsedView} defaultView={defaultView ?? null} cookieKey={cookieKey} />
+          <PipelineViewsMenu
+            pipelineId={stagePipelineId}
+            stages={stageRows}
+            canEditStages={canEditStages}
+          />
         </span>
       </div>
       {subtypeChips.length > 0 ? (
@@ -155,7 +181,7 @@ export function DealWorkspaceBar({
             return (
               <Link
                 key={`${item.key}-${item.id}`}
-                href={dealsHref({
+                href={hrefBuilder({
                   ...extras,
                   pipeline,
                   family: null,

@@ -1,6 +1,6 @@
 /** One-button master sheet Fill — Home: Deal → Property → Docs; Auto: Deal → Docs → VIN. */
 
-export const FILL_MASTER_SHEET_LABEL = "Fill master sheet";
+export const FILL_MASTER_SHEET_LABEL = "Fill Master Sheet";
 
 export const MASTER_FILL_STEP_DEAL = "Loading deal details…";
 export const MASTER_FILL_STEP_PROPERTY = "Loading property details…";

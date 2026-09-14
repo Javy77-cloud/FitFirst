@@ -12,6 +12,7 @@ describe("list bulk helpers", () => {
     expect(tagModuleForCrmList("carriers")).toBe("carriers");
     expect(importEntityForCrmList("carriers")).toBe("carriers");
     expect(tagModuleForCrmList("businesses")).toBe("accounts");
+    expect(tagModuleForCrmList("tasks")).toBe("tasks");
     expect(importEntityForCrmList("businesses")).toBe("businesses");
   });
 

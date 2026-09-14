@@ -1,4 +1,5 @@
 import type { ConvertLead } from "@/lib/crm/convert";
+import { mergeDealListCascadeSync } from "@/lib/deals/insurance-cascade";
 import { APPLICANT_CUSTOM_KEYS } from "./applicant-fields";
 
 export const LEAD_CARRY_FIELDS = [
@@ -138,10 +139,25 @@ export const LEAD_TO_DEAL_FIELD_KEYS: Array<{ key: string; systemKey: string }> 
 /** Custom-field keys that copy Lead → Deal by the same field key (no native column). */
 export const LEAD_TO_DEAL_CUSTOM_KEYS = [
   "contact_mailing_address",
+  "contact_mailing_city",
+  "contact_mailing_state",
+  "contact_mailing_zip",
   "pipeline",
   "insurance_type",
+  "insurance_category",
   "insurance_subtype",
   ...APPLICANT_CUSTOM_KEYS,
+  "co_applicant_first_name",
+  "co_applicant_last_name",
+  "co_applicant_email",
+  "co_applicant_phone",
+  "co_applicant_dob",
+  "co_applicant_relationship_to_insured",
+  "co_applicant_gender",
+  "co_applicant_marital_status",
+  "co_applicant_occupation",
+  "co_applicant_employment",
+  "co_applicant_education_level",
 ] as const;
 
 export function dealValuesFromLead(
@@ -171,7 +187,13 @@ export function dealValuesFromLead(
       const raw = (leadCustom[key] ?? "").trim();
       if (raw && !values[key]) values[key] = raw;
     }
+    // Same layout keys Lead ↔ Deal: copy any filled lead custom value the deal catalog knows.
+    for (const field of fields) {
+      const raw = (leadCustom[field.key] ?? "").trim();
+      if (raw && !values[field.key]) values[field.key] = raw;
+    }
   }
 
-  return values;
+  return mergeDealListCascadeSync(values);
 }
+

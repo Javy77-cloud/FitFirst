@@ -26,6 +26,14 @@ const agent: Actor = {
   role: "agent",
 };
 
+const agencyBookAgent: Actor = {
+  id: "agent-garcia",
+  name: "Javier Garcia",
+  email: "javier@local",
+  role: "agent",
+  canSeeAgencyBook: true,
+};
+
 describe("RBAC", () => {
   it("treats Javy as Admin who sees every owner", () => {
     expect(isAdmin(admin)).toBe(true);
@@ -46,6 +54,19 @@ describe("RBAC", () => {
     expect(canResolveAsk(agent)).toBe(false);
     expect(canPostAsk(agent)).toBe(false);
     expect(visibleOwnerId(agent)).toBe(agent.id);
+  });
+
+  it("lets an agency-book agent see other owners' records without admin powers", () => {
+    expect(isAgent(agencyBookAgent)).toBe(true);
+    expect(isAdmin(agencyBookAgent)).toBe(false);
+    expect(canSeeOwned(agencyBookAgent, admin.id)).toBe(true);
+    expect(canSeeOwned(agencyBookAgent, agent.id)).toBe(true);
+    expect(canSeeOwned(agencyBookAgent, null)).toBe(true);
+    expect(visibleOwnerId(agencyBookAgent)).toBeNull();
+    expect(canAssignOwner(agencyBookAgent)).toBe(false);
+    expect(canResolveAsk(agencyBookAgent)).toBe(false);
+    expect(canPostAsk(agencyBookAgent)).toBe(false);
+    expect(commissionViewFor(agencyBookAgent, "agency")).toBe("mine");
   });
 
   it("forces Agents onto My commissions and lets Admin toggle Agency", () => {

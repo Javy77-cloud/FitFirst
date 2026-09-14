@@ -1,5 +1,10 @@
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
+import {
+  CO_APPLICANT_FIELDS,
+  coApplicantHasValue,
+  coApplicantRequired,
+} from "./applicant-core";
 import { fieldsForLine } from "./catalog";
 
 export const SUPER_COPY_LABEL = "copy from this, not the PDFs";
@@ -45,17 +50,22 @@ export function buildSuperCopyPacket(input: {
   contactName?: string | null;
   contactDob?: string | null;
 }): SuperCopyPacket {
-  const fields = fieldsForLine(input.line).map((def) => {
-    const cell = input.values[def.key];
-    return {
-      key: def.key,
-      label: def.label,
-      group: def.group,
-      value: cell?.value ?? "",
-      status: cell?.status ?? "missing",
-      source: cell?.source ?? "blank",
-    };
-  });
+  const includeCoApplicant =
+    coApplicantHasValue(input.values) || coApplicantRequired(input.values);
+  const coKeys = new Set(CO_APPLICANT_FIELDS.map((field) => field.key));
+  const fields = fieldsForLine(input.line)
+    .filter((def) => includeCoApplicant || !coKeys.has(def.key))
+    .map((def) => {
+      const cell = input.values[def.key];
+      return {
+        key: def.key,
+        label: def.label,
+        group: def.group,
+        value: cell?.value ?? "",
+        status: cell?.status ?? "missing",
+        source: cell?.source ?? "blank",
+      };
+    });
   const filled: Record<string, string> = {};
   for (const field of fields) {
     if (field.value.trim()) filled[field.key] = field.value;

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ensureQuoteSheet } from "@/app/actions/quote-sheet";
 import { AppShell } from "@/components/app-shell";
+import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
@@ -51,8 +52,10 @@ import { loadModuleLayoutBundle } from "@/lib/custom-fields/store";
 import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { mergeDealSystemValues } from "@/lib/custom-fields/values";
+import { HAS_CO_APPLICANT_KEY } from "@/lib/custom-fields/co-applicant-fields";
 import { pipelineFamilyFromDeal } from "@/lib/deals/insurance-cascade";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
+import { DEFAULT_HEALTH_SUBFILTERS, DEFAULT_LIFE_SUBFILTERS } from "@/lib/desk/line-settings";
 import { SavedToast } from "@/components/desk/saved-toast";
 import { ACTION_FLASH, ACTION_FLASH_MESSAGE, isActionFlash } from "@/lib/desk/action-flash";
 import { eq } from "drizzle-orm";
@@ -68,10 +71,17 @@ export default async function DealPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; notice?: string; field?: string; line?: string; product?: string }>;
+  searchParams: Promise<{
+    tab?: string;
+    notice?: string;
+    field?: string;
+    line?: string;
+    product?: string;
+    fromPolicy?: string;
+  }>;
 }) {
   const { id } = await params;
-  const { tab, field, line: lineParam, product, notice } = await searchParams;
+  const { tab, field, line: lineParam, product, notice, fromPolicy } = await searchParams;
   const focusField = parseSheetFieldParam(field);
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
@@ -125,10 +135,11 @@ export default async function DealPage({
     agencyName: agencyRow?.agencyName,
     officeAddress: agencyRow?.officeAddress,
   });
-  const quotingForm = quotingFormById(deal.quotingForm ?? "") ?? quotingFormById("HO3");
+  // Do NOT invent HO3 when quotingForm is blank — LIFE/HEALTH would open Homeowners.
+  const quotingForm = quotingFormById(deal.quotingForm ?? "");
   const sheetLine = resolveDealSheetLine({
     lineParam,
-    quotingLine: deal.quotingLine ?? quotingForm?.shopLine,
+    quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
     lineOfBusiness: deal.lineOfBusiness,
   });
   const activeSheet =
@@ -149,8 +160,17 @@ export default async function DealPage({
     policySubType: deal.policySubType,
     lineOfBusiness: deal.lineOfBusiness,
     quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? sheetLine,
-    quotingForm: deal.quotingForm ?? quotingForm?.id,
+    quotingForm: deal.quotingForm,
   });
+  const masterFormLabel =
+    quotingForm?.label ||
+    deal.policySubType ||
+    deal.quotingForm ||
+    (selectedProduct === "life"
+      ? "Term Life"
+      : selectedProduct === "health"
+        ? "Health"
+        : "HO3");
   const health = activeSheet ? reportFromSheet(sheetLine, activeSheet.values) : null;
   const unlocked = quotingUnlockedForDeal(deal);
   const tabParam = tab;
@@ -187,6 +207,17 @@ export default async function DealPage({
         email: contact?.email ?? lead?.email,
       }}
     >
+      <DeskPageTrail
+        backLabel={fromPolicy ? "Back to policy" : "Back"}
+        fallbackHref={fromPolicy ? `/policies/${fromPolicy}` : "/deals"}
+        crumbs={[
+          { href: "/deals", label: "Deals" },
+          ...(fromPolicy
+            ? [{ href: `/policies/${fromPolicy}`, label: "Policy" }]
+            : []),
+          { label: "Deal" },
+        ]}
+      />
       <ClientScriptRunner
         scripts={scripts.map((script) => ({
           id: script.id,
@@ -316,13 +347,9 @@ export default async function DealPage({
                         })}
                         quotingForm={deal.quotingForm}
                         policySubType={deal.policySubType}
-                        lifeHealthOptions={
-                          pipelineFamilyFromDeal({ lineOfBusiness: deal.lineOfBusiness }) === "life"
-                            ? (deskLineSettings?.lifeOptions ?? [])
-                            : pipelineFamilyFromDeal({ lineOfBusiness: deal.lineOfBusiness }) === "health"
-                              ? (deskLineSettings?.healthOptions ?? [])
-                              : []
-                        }
+                        lifeOptions={(deskLineSettings?.lifeOptions?.length ? deskLineSettings.lifeOptions : DEFAULT_LIFE_SUBFILTERS)}
+                        healthOptions={(deskLineSettings?.healthOptions?.length ? deskLineSettings.healthOptions : DEFAULT_HEALTH_SUBFILTERS)}
+                        lifeHealthOptions={(deskLineSettings?.lifeOptions?.length ? deskLineSettings.lifeOptions : DEFAULT_LIFE_SUBFILTERS)}
                       />
                     ) : id === "documents" ? (
                       <DocumentsPanel
@@ -335,10 +362,11 @@ export default async function DealPage({
                         health={health}
                         sheetLine={sheetLine}
                         sheetValues={activeSheet.values}
-                        formLabel={quotingForm?.label ?? "HO3"}
+                        formLabel={masterFormLabel}
                         unlocked={unlocked}
                         approvedBy={deal.sheetApprovedBy}
                         product={selectedProduct}
+                        hasCoApplicantFlag={dealValues[HAS_CO_APPLICANT_KEY] ?? null}
                       />
                     ) : id === "markets" ? (
                       <MarketsPanel
@@ -359,7 +387,7 @@ export default async function DealPage({
                         logs={logs}
                         quoteNotes={quoteNotes}
                         quoteResultsNote={deal.quoteResultsNote}
-                        formId={quotingForm?.id ?? "HO3"}
+                        formId={quotingForm?.id ?? deal.quotingForm ?? masterFormLabel}
                         confirmLogs={allQuoteLogs.map((row) => ({
                           carrierId: row.log.carrierId,
                           why: row.log.why,

@@ -53,6 +53,7 @@ export function CertificateRequestForm({
   const [holderName, setHolderName] = useState("");
   const [holderAddress, setHolderAddress] = useState("");
   const [additionalInsured, setAdditionalInsured] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const selected = useMemo(
     () => interests.find((row) => row.id === interestId) ?? null,
@@ -161,76 +162,88 @@ export function CertificateRequestForm({
           className="mt-1 min-h-20"
         />
       </div>
-      <div>
-        <Label htmlFor="jobLocation" className="text-xs">
-          Job / location <span className="font-normal text-muted-foreground">(optional)</span>
-        </Label>
-        <Input
-          id="jobLocation"
-          name="jobLocation"
-          disabled={!canRequest}
-          placeholder="Job site, project name, or operations description"
-          className="mt-1"
-        />
-      </div>
-      <div>
-        <Label htmlFor="additionalInsured" className="text-xs">
-          Additional insured <span className="font-normal text-muted-foreground">(optional)</span>
-        </Label>
-        <Input
-          id="additionalInsured"
-          name="additionalInsured"
-          disabled={!canRequest}
-          value={additionalInsured}
-          onChange={(event) => setAdditionalInsured(event.target.value)}
-          placeholder="Same as holder, or a named AI"
-          className="mt-1"
-        />
-      </div>
-      <div>
-        <Label htmlFor="specialWording" className="text-xs">
-          Special wording <span className="font-normal text-muted-foreground">(stub only)</span>
-        </Label>
-        <Textarea
-          id="specialWording"
-          name="specialWording"
-          disabled={!canRequest}
-          placeholder="Additional insured as respects operations only. Desk stub — not ACORD."
-          className="mt-1 min-h-16"
-        />
-      </div>
-      <label className="flex items-start gap-2 text-sm text-navy">
-        <input
-          type="checkbox"
-          name="waiverOfSubrogation"
-          value="1"
-          disabled={!canRequest}
-          className="mt-1"
-        />
-        Waiver of subrogation (desk stub only — not ACORD)
-      </label>
-      <label className="flex items-start gap-2 text-sm text-navy">
-        <input
-          type="checkbox"
-          name="primaryNoncontributory"
-          value="1"
-          disabled={!canRequest}
-          className="mt-1"
-        />
-        Primary &amp; noncontributory (desk stub only — not ACORD)
-      </label>
-      {policyId && !selected ? (
-        <label className="flex items-start gap-2 text-sm text-navy">
-          <input
-            type="checkbox"
-            name="addAsAi"
-            value="1"
-            defaultChecked
-            disabled={!canRequest}
-            className="mt-1"
-          />
-          Also add this holder as an additional insured on the Policy. Does not file an endorsement.
-        </label>
+      <button
+        type="button"
+        className="text-sm font-medium text-primary hover:underline"
+        onClick={() => setShowAdvanced((v) => !v)}
+        data-ff-coi-advanced-toggle=""
+      >
+        {showAdvanced ? "Hide advanced fields" : "Show advanced fields"}
+      </button>
+      {showAdvanced ? (
+        <div className="space-y-3 rounded-md border border-border p-3" data-ff-coi-advanced="">
+          <div>
+            <Label htmlFor="jobLocation" className="text-xs">
+              Job / location <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
+            <Input
+              id="jobLocation"
+              name="jobLocation"
+              disabled={!canRequest}
+              placeholder="Job site, project name, or operations description"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="additionalInsured" className="text-xs">
+              Additional insured <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
+            <Input
+              id="additionalInsured"
+              name="additionalInsured"
+              disabled={!canRequest}
+              value={additionalInsured}
+              onChange={(event) => setAdditionalInsured(event.target.value)}
+              placeholder="Same as holder, or a named AI"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="specialWording" className="text-xs">
+              Special wording <span className="font-normal text-muted-foreground">(stub only)</span>
+            </Label>
+            <Textarea
+              id="specialWording"
+              name="specialWording"
+              disabled={!canRequest}
+              placeholder="Additional insured as respects operations only. Desk stub — not ACORD."
+              className="mt-1 min-h-16"
+            />
+          </div>
+          <label className="flex items-start gap-2 text-sm text-navy">
+            <input
+              type="checkbox"
+              name="waiverOfSubrogation"
+              value="1"
+              disabled={!canRequest}
+              className="mt-1"
+            />
+            Waiver of subrogation (desk stub only — not ACORD)
+          </label>
+          <label className="flex items-start gap-2 text-sm text-navy">
+            <input
+              type="checkbox"
+              name="primaryNoncontributory"
+              value="1"
+              disabled={!canRequest}
+              className="mt-1"
+            />
+            Primary &amp; noncontributory (desk stub only — not ACORD)
+          </label>
+          {policyId && !selected ? (
+            <label className="flex items-start gap-2 text-sm text-navy">
+              <input
+                type="checkbox"
+                name="addAsAi"
+                value="1"
+                defaultChecked
+                disabled={!canRequest}
+                className="mt-1"
+              />
+              Also add this holder as an additional insured on the Policy. Does not file an endorsement.
+            </label>
+          ) : null}
+        </div>
       ) : null}
       {error ? (
         <p className="text-sm text-destructive" role="alert">

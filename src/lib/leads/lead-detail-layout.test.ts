@@ -6,7 +6,7 @@ function source(file: string) {
 }
 
 describe("lead detail layout + per-line documents", () => {
-  it("keeps layout + narrow docs + context rail that does not stack at normal widths", () => {
+  it("keeps full-width fields + 420px context rail (no docs column)", () => {
     const page = source("src/app/leads/[id]/page.tsx");
     const desk = source("src/components/leads/lead-detail-workspace.tsx");
     const form = source("src/components/crm/lead-form-fields.tsx");
@@ -18,13 +18,15 @@ describe("lead detail layout + per-line documents", () => {
     expect(header).not.toMatch(/Personal lines worksheet/);
     expect(header).toMatch(/\{title\}/);
     expect(header).toMatch(/showBrand/);
-    expect(page).toMatch(/View related deal/);
+    expect(page).toMatch(/View Related Deal/);
     expect(page).toMatch(/LeadDetailWorkspace/);
     expect(page).not.toMatch(/uploadDocument/);
-    expect(desk).toMatch(/data-ff-lead-layout="layout-docs-rail"/);
-    expect(desk).toMatch(/grid-cols-\[minmax\(0,1\.4fr\)_minmax\(0,0\.7fr\)_minmax\(280px,320px\)\]/);
+    expect(desk).toMatch(/data-ff-lead-layout="layout-rail"/);
+    expect(desk).toMatch(/gridTemplateColumns: "minmax\(0, 1fr\) 420px"/);
+    expect(desk).toMatch(/data-ff-deal-right-rail/);
+    expect(desk).toMatch(/data-ff-lead-context-rail/);
     expect(desk).toMatch(/data-ff-lead-edit-layout/);
-    expect(desk).toMatch(/data-ff-lead-docs-col/);
+    // docs column removed (Javy 2026-09-11)
     expect(desk).toMatch(/data-ff-lead-context-rail/);
     expect(desk).not.toMatch(/lg:grid-cols/);
     expect(page).toMatch(/RecordContextRail/);
@@ -64,7 +66,7 @@ describe("lead detail layout + per-line documents", () => {
     const picker = source("src/components/choose-file-button.tsx");
     expect(panel).toMatch(/data-ff-line-dropzone/);
     expect(panel).toMatch(/ChooseFileButton/);
-    expect(panel).toMatch(/\+ Add file/);
+    expect(panel).toMatch(/\+ Add another file/);
     expect(panel).toMatch(/FileActionMenu/);
     expect(panel).toMatch(/FileDeleteIcon|FileActionMenu/);
     expect(panel).toMatch(/ff-file-row/);
@@ -78,18 +80,18 @@ describe("lead detail layout + per-line documents", () => {
     expect(picker).toMatch(/fileName \|\| "Choose file"/);
   });
 
-  it("keeps Save lead and Convert on one compact right-aligned row, then toasts and leaves the form", () => {
+  it("keeps Save Lead under the fields (not under the rail), then toasts", () => {
     const desk = source("src/components/leads/lead-detail-workspace.tsx");
     const save = source("src/app/actions/record-edit.ts");
     expect(desk).toMatch(/data-ff-lead-actions/);
     expect(desk).toMatch(/justify-end/);
-    expect(desk).toMatch(/variant="link"/);
-    expect(desk).toMatch(/Save lead/);
-    expect(desk).toMatch(/data-ff-convert-deal/);
-    expect(desk).toMatch(/>\s*Convert\s*</);
+    expect(desk).toMatch(/Save Lead/);
+    expect(desk).toMatch(/data-ff-save-lead/);
+    expect(desk).not.toMatch(/data-ff-convert-deal/);
     expect(desk).not.toMatch(/FormPrimaryActions/);
     expect(desk).not.toMatch(/ff-convert-action/);
     expect(desk).not.toMatch(/ff-primary-action/);
+    expect(desk).toMatch(/data-ff-lead-context-rail/);
     expect(save).toMatch(/flashAction\("\/leads", "lead-saved"\)/);
   });
 

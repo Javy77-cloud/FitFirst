@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { formatMoney } from "@/lib/domain";
+import { formatDay, formatMoney } from "@/lib/domain";
 import type { HomeContestView } from "@/lib/db/queries";
 
 export function ContestBoard({
@@ -38,7 +38,7 @@ export function ContestBoard({
           <div className="text-sm font-semibold text-navy">{contest.title}</div>
           <p className="mt-1 text-helper text-muted-foreground">{contest.rules}</p>
           <p className="mt-1 text-helper text-muted-foreground">
-            {contest.startsAt.toISOString().slice(0, 10)} → {contest.endsAt.toISOString().slice(0, 10)} ·{" "}
+            {formatDay(contest.startsAt)} → {formatDay(contest.endsAt)} ·{" "}
             {contest.metric === "policy_count" ? "Policy count" : "Total premium"}
           </p>
           {contest.standings.length === 0 ? (

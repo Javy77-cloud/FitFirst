@@ -102,7 +102,7 @@ function InlineRow({
               }
             }}
           >
-            <option value="">—</option>
+            <option value="">None</option>
             {(field.options ?? []).map((opt) => (
               <option key={opt} value={opt}>
                 {opt}

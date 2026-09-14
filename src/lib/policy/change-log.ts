@@ -61,6 +61,7 @@ export const POLICY_HISTORY_FIELDS = [
   { key: "premisesCity", label: "Premises city" },
   { key: "premisesState", label: "Premises state" },
   { key: "premisesZip", label: "Premises ZIP" },
+  { key: "labelOverride", label: "Display name" },
 ] as const;
 
 const FIELD_LABELS = Object.fromEntries(

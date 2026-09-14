@@ -20,6 +20,7 @@ import {
 import { autoSnapshotFieldsForDeal } from "@/lib/appetite/auto-premium-capture";
 import { lineLearningSnapshotFieldsForDeal } from "@/lib/appetite/line-learning-capture";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
+import { persistDealWorkTab } from "@/lib/deals/work-tab";
 import { withFlash } from "@/lib/flash";
 import { shopDealQuotes } from "@/app/actions/quotes";
 import { persistQuoteSheetValues, runFillDealSheets } from "@/app/actions/quote-sheet";
@@ -154,6 +155,7 @@ export async function approveMasterSheet(formData: FormData) {
 
   if (str(formData, "requestQuotes") === "yes") {
     await shopDealQuotes(dealId, "appetite");
+    await persistDealWorkTab(dealId, "markets").catch(() => null);
     revalidatePath(`/deals/${dealId}`);
     redirect(withFlash(`/deals/${dealId}?tab=markets&line=${line}`, "quotes-requested"));
   }

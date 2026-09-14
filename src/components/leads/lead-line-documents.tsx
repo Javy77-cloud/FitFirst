@@ -140,6 +140,7 @@ function LineCard({
   const [open, setOpen] = useState(defaultOpen);
   const [slots, setSlots] = useState([0]);
   const [nextSlot, setNextSlot] = useState(1);
+  const [pendingNames, setPendingNames] = useState<Record<number, string>>({});
   const formRef = useRef<HTMLFormElement>(null);
   const label = labelForDocCardKey(cardKey);
   const formId = cardKey.startsWith(FORM_TAG_PREFIX)
@@ -153,9 +154,7 @@ function LineCard({
     return `${docs.length} files`;
   }, [docs.length]);
 
-  function submitSoon() {
-    window.setTimeout(() => formRef.current?.requestSubmit(), 0);
-  }
+  const pendingCount = Object.values(pendingNames).filter(Boolean).length;
 
   return (
     <article className="min-w-0 rounded-md border border-border" data-ff-line-card={cardAttr}>
@@ -191,43 +190,81 @@ function LineCard({
                 event.preventDefault();
                 const files = Array.from(event.dataTransfer.files);
                 if (files.length === 0 || !formRef.current) return;
-                const first = formRef.current.querySelector<HTMLInputElement>('input[type="file"]');
-                if (!first) return;
-                const transfer = new DataTransfer();
-                for (const file of files) transfer.items.add(file);
-                first.files = transfer.files;
-                first.dispatchEvent(new Event("change", { bubbles: true }));
-                formRef.current.requestSubmit();
+                // Fill empty slots first, then append slots for leftovers — do not auto-submit.
+                const names: Record<number, string> = { ...pendingNames };
+                const needed = Math.max(0, files.length - slots.length);
+                if (needed > 0) {
+                  const add: number[] = [];
+                  let n = nextSlot;
+                  for (let i = 0; i < needed; i += 1) {
+                    add.push(n);
+                    n += 1;
+                  }
+                  setSlots((current) => [...current, ...add]);
+                  setNextSlot(n);
+                }
+                window.setTimeout(() => {
+                  const inputs = formRef.current?.querySelectorAll<HTMLInputElement>('input[type="file"]');
+                  if (!inputs) return;
+                  files.forEach((file, i) => {
+                    const input = inputs[i];
+                    if (!input) return;
+                    const transfer = new DataTransfer();
+                    transfer.items.add(file);
+                    input.files = transfer.files;
+                    names[i] = file.name;
+                    input.dispatchEvent(new Event("change", { bubbles: true }));
+                  });
+                  setPendingNames({ ...names });
+                }, 0);
               }}
             >
               <p className="mb-2 text-xs text-muted-foreground">
-                Drop a {label} file here, or choose one below.
+                Drop files here or choose below. Add as many as you need, then Upload.
               </p>
               <div className="space-y-2">
                 {slots.map((id, index) => (
-                  <div key={id} className="flex min-w-0 items-center" data-ff-file-slot={index}>
+                  <div key={id} className="min-w-0 space-y-1" data-ff-file-slot={index}>
                     <ChooseFileButton
                       name={`files_${index}`}
                       accept=".pdf,.txt,.md,.jpg,.jpeg,.png,.webp,.heic,.heif,image/*"
                       className="max-w-full min-w-0"
                       onFile={(file) => {
-                        if (file) submitSoon();
+                        setPendingNames((current) => {
+                          const next = { ...current };
+                          if (file) next[index] = file.name;
+                          else delete next[index];
+                          return next;
+                        });
                       }}
                     />
+                    {pendingNames[index] ? (
+                      <p
+                        className="truncate text-xs font-medium text-navy"
+                        title={pendingNames[index]}
+                        data-ff-pending-filename={index}
+                      >
+                        {pendingNames[index]}
+                      </p>
+                    ) : null}
                   </div>
                 ))}
               </div>
-              <div className="mt-2">
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
+                  data-ff-add-another-file=""
                   onClick={() => {
                     setSlots((current) => [...current, nextSlot]);
                     setNextSlot((value) => value + 1);
                   }}
                 >
-                  + Add file
+                  + Add another file
+                </Button>
+                <Button type="submit" size="sm" disabled={pendingCount === 0} data-ff-upload-line-files="">
+                  Upload {pendingCount > 0 ? `(${pendingCount})` : ""}
                 </Button>
               </div>
             </div>
@@ -235,7 +272,7 @@ function LineCard({
           {docs.length === 0 ? (
             <p className="text-xs text-muted-foreground">No files on {label} yet.</p>
           ) : (
-            <ul className="min-w-0 space-y-1.5">
+            <ul className="min-w-0 space-y-1.5" data-ff-line-file-list="">
               {docs.map((doc) => (
                 <li
                   key={doc.id}
@@ -267,6 +304,7 @@ function LineCard({
                     <span
                       title={doc.filename}
                       className="min-w-0 flex-1 truncate whitespace-nowrap text-sm font-medium text-navy"
+                      data-ff-line-filename=""
                     >
                       {doc.filename}
                     </span>

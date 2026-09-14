@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   convertFieldCopy,
   dealNotesFromLead,
+  lobFromLeadInsuranceCustom,
   pipelineSlugForLine,
   resolveConvertLine,
   shopLinesForConvert,
@@ -34,9 +35,24 @@ describe("lead → deal convert copy", () => {
     expect(shopLinesForConvert("AUTO")).toEqual(["auto"]);
   });
 
+  it("derives LOB from lead Insurance subtype / Type — not silent HO", () => {
+    expect(lobFromLeadInsuranceCustom({ insurance_subtype: "Auto" })).toBe("AUTO");
+    expect(lobFromLeadInsuranceCustom({ insurance_subtype: "PA" })).toBe("AUTO");
+    expect(lobFromLeadInsuranceCustom({ insurance_type: "Auto" })).toBe("AUTO");
+    expect(lobFromLeadInsuranceCustom({ insurance_subtype: "HO3" })).toBe("HO");
+    expect(lobFromLeadInsuranceCustom({ insurance_type: "Life" })).toBe("LIFE");
+    expect(lobFromLeadInsuranceCustom({ insurance_type: "Flood" })).toBe("FLOOD");
+    expect(lobFromLeadInsuranceCustom({ insurance_subtype: "GL" })).toBe("GL");
+    expect(
+      resolveConvertLine("HO", "HO", { insurance_subtype: "Auto", insurance_type: "Auto" }),
+    ).toBe("AUTO");
+    expect(resolveConvertLine("HO", null, { insurance_type: "Workers Comp" })).toBe("WC");
+    expect(resolveConvertLine("", null, {})).toBe("HO");
+  });
+
   it("copies every lead field that has a home on the deal / risk / sheet", () => {
     const copy = convertFieldCopy(elena, "HO", "FL");
-    expect(copy.title).toBe("Elena Ruiz / Home");
+    expect(copy.title).toBe("Elena Ruiz / Homeowners");
     expect(copy.primaryNamedInsured).toBe("Elena M Ruiz");
     expect(copy.dealState).toBe("FL");
     expect(copy.pipelineSlug).toBe("p-c");
@@ -61,6 +77,41 @@ describe("lead → deal convert copy", () => {
     expect(copy.fieldValues.source).toBe("dec_drop");
     expect(copy.fieldValues.preferred_language).toBe("es");
     expect(copy.fieldValues.notes).toBe("Melbourne HO drop");
+  });
+
+  it("Auto subtype on lead → Auto title, quotingForm PA, auto shop line", () => {
+    const copy = convertFieldCopy(
+      { ...elena, insuranceTypeDesired: null },
+      "AUTO",
+      "FL",
+      null,
+      { insurance_type: "Auto", insurance_subtype: "Auto" },
+    );
+    expect(copy.title).toBe("Elena Ruiz / Auto");
+    expect(copy.quotingForm).toBe("PA");
+    expect(copy.quotingLine).toBe("auto");
+    expect(copy.shopLines).toEqual(["auto"]);
+    expect(copy.sheetLine).toBe("auto");
+    expect(copy.fieldValues.insurance_type).toBe("Auto");
+    expect(copy.fieldValues.insurance_subtype).toBe("Auto");
+    expect(copy.policySubType).toBe("Auto");
+  });
+
+
+  it("Life subtype on lead → LIFE title, Term Life form, life shop line (not HO3)", () => {
+    const copy = convertFieldCopy(
+      { ...elena, insuranceTypeDesired: null },
+      "LIFE",
+      "FL",
+      null,
+      { insurance_type: "Life", insurance_subtype: "Term Life" },
+    );
+    expect(copy.title).toBe("Elena Ruiz / Term Life");
+    expect(copy.quotingForm).toBe("Term Life");
+    expect(copy.quotingLine).toBe("life");
+    expect(copy.shopLines).toEqual(["life"]);
+    expect(copy.sheetLine).toBe("life");
+    expect(copy.policySubType).toBe("Term Life");
   });
 
   it("keeps Ana-style notes when the lead already has them", () => {

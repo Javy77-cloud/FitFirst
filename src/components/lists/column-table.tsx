@@ -34,6 +34,7 @@ import {
   parseListSort,
   preferColumnWidths,
   reorderVisibleColumns,
+  sanitizeStoredColumnIds,
   saveColumnLayout,
   shownColumns,
   toggleColumnVisibility,
@@ -55,6 +56,8 @@ export type ColumnRow = {
   hay?: string;
   /** Hidden on the default list; still searchable. Used for Lost / parked Nurture. */
   parked?: boolean;
+  /** Full-width group banner (Tasks Group by). Not selectable; shares one table widths. */
+  groupHeader?: string;
   cells: Record<string, ReactNode>;
   /** Optional explicit sort keys. Falls back to rendered text. */
   sort?: Record<string, string | number | null | undefined>;
@@ -87,6 +90,7 @@ export function ColumnTable({
   initialVisible,
   initialWidths,
   initialSort,
+  showListChrome = true,
 }: {
   moduleId: string;
   searchModuleId?: string;
@@ -98,6 +102,8 @@ export function ColumnTable({
   initialVisible?: string[];
   initialWidths?: Record<string, number>;
   initialSort?: ListSort | null;
+  /** Grouped lists: only the first table should own Columns / ⋯ Settings chrome. */
+  showListChrome?: boolean;
 }) {
   const queryModule = searchModuleId ?? moduleId;
   const liveQuery = useLiveContainsQuery(queryModule, initialQuery);
@@ -108,6 +114,11 @@ export function ColumnTable({
       return true;
     });
   }, [liveQuery, rows]);
+  // prefsColumns = user-saved order (may include unknown keys). visible = display merge.
+  // Width/sort persists must write prefsColumns — never the growth-merged display list.
+  const [prefsColumns, setPrefsColumns] = useState<string[] | null>(() =>
+    sanitizeStoredColumnIds(initialVisible),
+  );
   const [visible, setVisible] = useState(() =>
     initialVisible
       ? mergeVisibleColumns(columns, initialVisible)
@@ -128,14 +139,17 @@ export function ColumnTable({
   useEffect(() => {
     const local = loadColumnLayout(moduleId, columns);
     if (initialVisible) {
-      const merged = mergeVisibleColumns(columns, initialVisible);
+      const raw = sanitizeStoredColumnIds(initialVisible) ?? initialVisible;
+      const merged = mergeVisibleColumns(columns, raw);
       // Local drag widths stick; fill gaps from desk prefs (empty server must not wipe).
       const nextWidths = preferColumnWidths(columns, local.widths, initialWidths ?? {});
       const nextSort = parseListSort(initialSort) ?? local.sort;
+      setPrefsColumns(sanitizeStoredColumnIds(raw));
       setVisible(merged);
       setWidths(nextWidths);
       setSort(nextSort);
-      saveColumnLayout(moduleId, { columns: merged, widths: nextWidths, sort: nextSort });
+      // Cache RAW user prefs locally — not the growth-merged display order.
+      saveColumnLayout(moduleId, { columns: raw, widths: nextWidths, sort: nextSort });
       return;
     }
     setVisible(local.columns);
@@ -145,13 +159,18 @@ export function ColumnTable({
     void fetchListColumnLayout(moduleId).then((stored) => {
       if (cancelled || !stored) return;
       const latestLocal = loadColumnLayout(moduleId, columns);
-      const merged = mergeVisibleColumns(columns, stored.columns ?? latestLocal.columns);
+      const raw =
+        sanitizeStoredColumnIds(stored.columns) ??
+        sanitizeStoredColumnIds(latestLocal.columns) ??
+        latestLocal.columns;
+      const merged = mergeVisibleColumns(columns, raw);
       const nextWidths = preferColumnWidths(columns, latestLocal.widths, stored.widths);
       const nextSort = parseListSort(stored.sort) ?? latestLocal.sort;
+      setPrefsColumns(sanitizeStoredColumnIds(raw));
       setVisible(merged);
       setWidths(nextWidths);
       setSort(nextSort);
-      saveColumnLayout(moduleId, { columns: merged, widths: nextWidths, sort: nextSort });
+      saveColumnLayout(moduleId, { columns: raw, widths: nextWidths, sort: nextSort });
     });
     return () => {
       cancelled = true;
@@ -176,6 +195,7 @@ export function ColumnTable({
   }, [rows, shown]);
   const filteredRows = useMemo(() => {
     return visibleRows.filter((row) => {
+      if (row.groupHeader) return true;
       for (const column of shown) {
         if (!isValueFilterColumn(column)) continue;
         const selected = valueFilters[column.id];
@@ -187,11 +207,35 @@ export function ColumnTable({
   }, [shown, valueFilters, visibleRows]);
   const sortedRows = useMemo(() => {
     const sortColumn = sort ? shown.find((column) => column.id === sort.key) : null;
+    const hasGroups = filteredRows.some((row) => row.groupHeader);
     if (!sort || !sortColumn || isLiveSearchColumn(sortColumn)) return filteredRows;
-    return [...filteredRows].sort((a, b) => {
-      const cmp = compareSheetValues(rowSortValue(a, sort.key), rowSortValue(b, sort.key));
-      return sort.dir === "asc" ? cmp : -cmp;
-    });
+    if (!hasGroups) {
+      return [...filteredRows].sort((a, b) => {
+        const cmp = compareSheetValues(rowSortValue(a, sort.key), rowSortValue(b, sort.key));
+        return sort.dir === "asc" ? cmp : -cmp;
+      });
+    }
+    // Keep group banners fixed; sort only the data rows inside each section.
+    const out: ColumnRow[] = [];
+    let bucket: ColumnRow[] = [];
+    function flush() {
+      bucket.sort((a, b) => {
+        const cmp = compareSheetValues(rowSortValue(a, sort!.key), rowSortValue(b, sort!.key));
+        return sort!.dir === "asc" ? cmp : -cmp;
+      });
+      out.push(...bucket);
+      bucket = [];
+    }
+    for (const row of filteredRows) {
+      if (row.groupHeader) {
+        flush();
+        out.push(row);
+      } else {
+        bucket.push(row);
+      }
+    }
+    flush();
+    return out;
   }, [filteredRows, shown, sort]);
   const paged = useMemo(() => paginateRows(sortedRows, page, pageSize), [sortedRows, page, pageSize]);
 
@@ -212,18 +256,38 @@ export function ColumnTable({
   }, [page, paged.page]);
 
   function persist(next: ListColumnLayout) {
-    setVisible(next.columns);
+    const savedColumns = sanitizeStoredColumnIds(next.columns) ?? next.columns;
+    setPrefsColumns(savedColumns);
+    setVisible(mergeVisibleColumns(columns, savedColumns));
     setWidths(next.widths);
     setSort(next.sort);
-    saveColumnLayout(moduleId, next);
-    void saveListColumnPrefs(moduleId, next.columns, { widths: next.widths, sort: next.sort });
+    saveColumnLayout(moduleId, { ...next, columns: savedColumns });
+    void saveListColumnPrefs(moduleId, savedColumns, { widths: next.widths, sort: next.sort });
+  }
+
+  /** Width/sort-only: never replace the saved column order with the growth-merged display list. */
+  function persistMeta(patch: { widths?: Record<string, number>; sort?: ListSort | null }) {
+    const savedColumns = prefsColumns ?? sanitizeStoredColumnIds(visible) ?? visible;
+    const nextWidths = patch.widths ?? widths;
+    const nextSort = patch.sort === undefined ? sort : patch.sort;
+    setWidths(nextWidths);
+    setSort(nextSort);
+    saveColumnLayout(moduleId, { columns: savedColumns, widths: nextWidths, sort: nextSort });
+    void saveListColumnPrefs(moduleId, savedColumns, { widths: nextWidths, sort: nextSort });
   }
 
   function persistPartial(patch: Partial<ListColumnLayout>) {
-    persist({
-      columns: patch.columns ?? visible,
-      widths: patch.widths ?? widths,
-      sort: patch.sort === undefined ? sort : patch.sort,
+    if (patch.columns) {
+      persist({
+        columns: patch.columns,
+        widths: patch.widths ?? widths,
+        sort: patch.sort === undefined ? sort : patch.sort,
+      });
+      return;
+    }
+    persistMeta({
+      widths: patch.widths,
+      sort: patch.sort,
     });
   }
 
@@ -256,7 +320,12 @@ export function ColumnTable({
   }
 
   const visibleIds = paged.slice.map((row) => row.id ?? row.key);
-  const matchingIds = sortedRows.map((row) => row.id ?? row.key);
+  const matchingIds = sortedRows.filter((row) => !row.groupHeader).map((row) => row.id ?? row.key);
+  const selection = useOptionalSelection();
+  const selectedSet = useMemo(
+    () => new Set(selection?.selected ?? []),
+    [selection?.selected],
+  );
 
   function onPageSize(next: PageSizeOption) {
     setPageSize(next);
@@ -291,7 +360,7 @@ export function ColumnTable({
     <div className="overflow-x-auto">
       <ListScopeReporter visibleIds={visibleIds} matchingIds={matchingIds} />
       <ListVisibleColumnsReporter columns={columns} visible={visible} />
-      <ListColumnsChrome>{chrome}</ListColumnsChrome>
+      {showListChrome ? <ListColumnsChrome>{chrome}</ListColumnsChrome> : null}
       <table className="ff-table ff-list-table" style={{ width: tableWidth, minWidth: tableWidth }}>
         <colgroup>
           {columnPixelWidths.map((column) => (
@@ -338,8 +407,38 @@ export function ColumnTable({
               </td>
             </tr>
           ) : (
-            paged.slice.map((row) => (
-              <tr key={row.key} id={row.id}>
+            paged.slice.map((row) => {
+              if (row.groupHeader) {
+                const sep = row.groupHeader.lastIndexOf(" · ");
+                const groupLabel = sep >= 0 ? row.groupHeader.slice(0, sep) : row.groupHeader;
+                const groupCount = sep >= 0 ? row.groupHeader.slice(sep + 3) : null;
+                return (
+                  <tr key={row.key} data-ff-list-group-header={row.groupHeader}>
+                    <td
+                      colSpan={Math.max(shown.length, 1)}
+                      className="border-b border-navy/15 bg-muted/40 px-3 py-2.5 text-navy"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <span className="text-base font-semibold tracking-normal">{groupLabel}</span>
+                        {groupCount != null && groupCount !== "" ? (
+                          <span className="rounded-full bg-navy/10 px-2 py-0.5 text-xs font-medium tabular-nums text-navy">
+                            {groupCount}
+                          </span>
+                        ) : null}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              }
+              const rowId = row.id ?? row.key;
+              const isSelected = selectedSet.has(rowId);
+              return (
+              <tr
+                key={row.key}
+                id={row.id}
+                className={isSelected ? "ff-row-selected" : undefined}
+                data-ff-row-selected={isSelected ? "true" : undefined}
+              >
                 {shown.map((column) => (
                   <td
                     key={column.id}
@@ -351,7 +450,8 @@ export function ColumnTable({
                   </td>
                 ))}
               </tr>
-            ))
+              );
+            })
           )}
         </tbody>
       </table>
@@ -447,7 +547,7 @@ function ListColumnHeader({
           <LiveContainsInput
             moduleId={searchModuleId}
             initialQuery={initialQuery}
-            placeholder="Search names…"
+            placeholder={`Search ${headerText}…`}
             aria-label={`Search ${headerText}`}
             className="min-w-[7rem] flex-1"
             inputClassName="h-6 w-full min-w-[7rem]"

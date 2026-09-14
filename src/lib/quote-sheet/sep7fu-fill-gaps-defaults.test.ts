@@ -206,6 +206,7 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
       "Basement",
     ]);
     expect(home.find((f) => f.key === "construction")?.options).toEqual([
+      "Masonry",
       "Frame",
       "Frame-Stucco",
       "Aluminum siding",
@@ -240,6 +241,10 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     expect(sheetKeysForGeminiKey("mortgagee_address")).toEqual(["mortgagee_address"]);
     expect(GEMINI_EXTRACT_JSON_KEYS).toContain("current_carrier");
     expect(GEMINI_EXTRACT_JSON_KEYS).toContain("mortgagee_address");
+    expect(GEMINI_EXTRACT_JSON_KEYS).toContain("form");
+    expect(GEMINI_EXTRACT_JSON_KEYS).toContain("sprinkler");
+    expect(GEMINI_EXTRACT_JSON_KEYS).toContain("bceg_grade");
+    expect(GEMINI_EXTRACT_JSON_KEYS).toContain("landlord_liability");
 
     const applied = applyExtractedToSheet("home", emptySheetValues("home"), [
       { fieldKey: "months_occupied", normalizedValue: "12", sourceLabel: "dec page" },

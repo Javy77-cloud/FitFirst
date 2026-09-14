@@ -2,6 +2,7 @@ import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import { firstFilled, type LeadCopyFields } from "@/lib/desk/copy-once";
 import { fieldIsBlank } from "@/lib/quote-sheet/apply";
 import { isLockedSheetField } from "@/lib/lifecycle/quote-sheet";
+import { isCoApplicantEnabled } from "@/lib/custom-fields/co-applicant-fields";
 
 export const DEAL_DETAILS_SOURCE_LABEL = "deal details";
 
@@ -18,7 +19,6 @@ export function formatDobForSheet(raw?: string | null): string {
   }
   return text;
 }
-
 
 export type DealSheetCopyParty = {
   firstName?: string | null;
@@ -39,7 +39,10 @@ export type DealSheetCopyInput = {
   propertyOneliner?: string | null;
   currentCarrier?: string | null;
   coverageAmount?: number | null;
-  /** Deal custom-field bag (first_name, mailing_address, …). */
+  /** Deal quoting form / policy subtype (HO3, DP3, …) → master-sheet form. */
+  quotingForm?: string | null;
+  policySubType?: string | null;
+  /** Deal custom-field bag (layout Details: applicant + co-applicant + addresses). */
   stored?: Record<string, string>;
   risk?: {
     address1?: string | null;
@@ -66,9 +69,9 @@ function personName(parts: Array<string | null | undefined>): string {
 }
 
 /**
- * Copy deal / contact / risk blanks onto the master sheet.
- * Leaves cells as CHECK (never auto-confirm) so the agent reviews + Confirms.
- * Never overwrites agent|confirmed|javy cells.
+ * Copy Deal Details (layout) onto the master sheet — FIRST Fill step.
+ * Reads applicant + co-applicant + addresses from the deal field bag, then contact/lead/risk fallbacks.
+ * Leaves cells as CHECK (never auto-confirm). Never overwrites agent|confirmed|javy cells.
  */
 export function fillSheetFromDealDetails(
   input: DealSheetCopyInput,
@@ -108,7 +111,17 @@ export function fillSheetFromDealDetails(
   );
   put("named_insured", named);
   put("applicant_name", named);
-  put("secondary_named_insured", input.secondaryNamedInsured);
+  const coEnabled = isCoApplicantEnabled(stored);
+  put(
+    "secondary_named_insured",
+    firstFilled(
+      input.secondaryNamedInsured,
+      stored.secondary_named_insured,
+      coEnabled
+        ? personName([stored.co_applicant_first_name, stored.co_applicant_last_name])
+        : "",
+    ),
+  );
 
   const primaryDob = formatDobForSheet(
     firstFilled(
@@ -120,61 +133,162 @@ export function fillSheetFromDealDetails(
     ),
   );
   put("applicant_dob", primaryDob);
-  // Auto Drivers block — same named insured DOB from Deal Details.
   put("driver_1_dob", primaryDob);
   put("driver_1_name", named);
-  // Gender / occupation — pass through only when already on the deal; leave blank otherwise (Heather).
+
   const gender = firstFilled(stored.applicant_gender, stored.gender, stored.sex);
   put("applicant_gender", gender);
   put("driver_1_gender", gender);
+
   const occupation = firstFilled(stored.applicant_occupation, stored.occupation);
   put("applicant_occupation", occupation);
   put("driver_1_occupation", occupation);
 
-  const coDob = formatDobForSheet(
-    firstFilled(
-      stored.co_applicant_dob,
-      stored.co_applicant_date_of_birth,
-      stored.secondary_dob,
-      stored.secondary_date_of_birth,
-      stored.spouse_dob,
-      stored.spouse_date_of_birth,
-    ),
-  );
-  put("co_applicant_dob", coDob);
   put(
-    "co_applicant_name",
+    "applicant_employment",
+    firstFilled(stored.applicant_employment, stored.employment, stored.employment_status),
+  );
+  put(
+    "applicant_marital_status",
+    firstFilled(stored.applicant_marital_status, stored.marital_status),
+  );
+  put(
+    "applicant_education_level",
+    firstFilled(stored.applicant_education_level, stored.education_level, stored.education),
+  );
+  put("entity_type", firstFilled(stored.entity_type));
+
+  // Form / landlord — layout standing: Deal Details → Fill (never invent).
+  put(
+    "form",
     firstFilled(
-      input.secondaryNamedInsured,
-      stored.co_applicant_name,
-      stored.secondary_named_insured,
-      personName([stored.co_applicant_first_name, stored.co_applicant_last_name]),
+      stored.form,
+      stored.insurance_subtype,
+      input.quotingForm,
+      input.policySubType,
     ),
   );
+  put("lease_term", firstFilled(stored.lease_term));
+  put("tenant_name", firstFilled(stored.tenant_name));
+  put("landlord_liability", firstFilled(stored.landlord_liability));
+  put("loss_of_rents", firstFilled(stored.loss_of_rents));
+  put("animals", firstFilled(stored.animals));
+  put("primary_heat", firstFilled(stored.primary_heat));
+  put("business_on_premises", firstFilled(stored.business_on_premises));
+  put("insurance_score_range", firstFilled(stored.insurance_score_range));
+  put("months_occupied", firstFilled(stored.months_occupied));
+  put("resided_under_2_years", firstFilled(stored.resided_under_2_years));
 
   put("applicant_phone", firstFilled(stored.phone, contact?.phone, lead?.phone));
   put("applicant_email", firstFilled(stored.email, contact?.email, lead?.email));
 
-  const mailing = firstFilled(
+  // Co-applicant — only when Deal Details switch is On (default Off if all blank).
+  if (coEnabled) {
+    const coName = firstFilled(
+      input.secondaryNamedInsured,
+      stored.co_applicant_name,
+      stored.secondary_named_insured,
+      personName([stored.co_applicant_first_name, stored.co_applicant_last_name]),
+    );
+    put("co_applicant_name", coName);
+
+    const coDob = formatDobForSheet(
+      firstFilled(
+        stored.co_applicant_dob,
+        stored.co_applicant_date_of_birth,
+        stored.secondary_dob,
+        stored.secondary_date_of_birth,
+        stored.spouse_dob,
+        stored.spouse_date_of_birth,
+      ),
+    );
+    put("co_applicant_dob", coDob);
+    put(
+      "co_applicant_email",
+      firstFilled(stored.co_applicant_email, stored.secondary_email, stored.spouse_email),
+    );
+    put(
+      "co_applicant_phone",
+      firstFilled(stored.co_applicant_phone, stored.secondary_phone, stored.spouse_phone),
+    );
+    put(
+      "co_applicant_relationship_to_insured",
+      firstFilled(
+        stored.co_applicant_relationship_to_insured,
+        stored.co_applicant_relationship,
+        stored.relationship_to_insured,
+      ),
+    );
+    put(
+      "co_applicant_marital_status",
+      firstFilled(stored.co_applicant_marital_status, stored.spouse_marital_status),
+    );
+    put(
+      "co_applicant_occupation",
+      firstFilled(stored.co_applicant_occupation, stored.spouse_occupation),
+    );
+    put(
+      "co_applicant_gender",
+      firstFilled(stored.co_applicant_gender, stored.spouse_gender),
+    );
+    put(
+      "co_applicant_employment",
+      firstFilled(stored.co_applicant_employment, stored.spouse_employment),
+    );
+    put(
+      "co_applicant_education_level",
+      firstFilled(stored.co_applicant_education_level, stored.spouse_education_level),
+    );
+  }
+
+  // Insured / property address (risk + deal insured fields)
+  const insuredStreet = firstFilled(
+    risk?.address1,
     stored.mailing_address,
+    (input.propertyOneliner ?? "").split("·")[0],
+  );
+  const insuredCity = firstFilled(risk?.city, stored.city, contact?.city, lead?.city);
+  const insuredState = firstFilled(risk?.state, stored.state, contact?.state, lead?.state);
+  const insuredZip = firstFilled(risk?.zip, stored.zip, contact?.zip, lead?.zip);
+
+  put("address1", insuredStreet);
+  put("city", insuredCity);
+  put("state", insuredState);
+  put("zip", insuredZip);
+  put("county", risk?.county);
+
+  // Mailing / applicant address — contact_mailing_* preferred, else insured
+  const mailStreet = firstFilled(
+    stored.contact_mailing_address,
     contact?.mailingAddress,
     lead?.mailingAddress,
+    insuredStreet,
   );
-  put("mailing_address", mailing);
-  put("applicant_address", mailing);
+  const mailCity = firstFilled(
+    stored.contact_mailing_city,
+    contact?.city,
+    lead?.city,
+    insuredCity,
+  );
+  const mailState = firstFilled(
+    stored.contact_mailing_state,
+    contact?.state,
+    lead?.state,
+    insuredState,
+  );
+  const mailZip = firstFilled(
+    stored.contact_mailing_zip,
+    contact?.zip,
+    lead?.zip,
+    insuredZip,
+  );
 
-  const mailCity = firstFilled(stored.city, contact?.city, lead?.city);
-  const mailState = firstFilled(stored.state, contact?.state, lead?.state);
-  const mailZip = firstFilled(stored.zip, contact?.zip, lead?.zip);
-
-  // Property / insured address — risk wins; fall back to deal oneliner street.
-  const street =
-    firstFilled(risk?.address1, (input.propertyOneliner ?? "").split("·")[0]) || "";
-  put("address1", street);
-  put("city", firstFilled(risk?.city, mailCity));
-  put("state", firstFilled(risk?.state, mailState));
-  put("zip", firstFilled(risk?.zip, mailZip));
-  put("county", risk?.county);
+  put("mailing_address", mailStreet);
+  put("applicant_address", mailStreet);
+  // Some sheets use discrete mailing city/state/zip — only fill if those keys exist blank later via put
+  put("mailing_city", mailCity);
+  put("mailing_state", mailState);
+  put("mailing_zip", mailZip);
 
   put("current_carrier", firstFilled(input.currentCarrier, stored.current_carrier));
 

@@ -3,19 +3,122 @@ import { AppShell } from "@/components/app-shell";
 import { RecordLink } from "@/components/record-links";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { formatInDeskEsignList } from "@/lib/esign/in-desk";
-import { listPolicies, type PolicyListFilter } from "@/lib/db/queries";
+import { listPolicies } from "@/lib/db/queries";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { POLICIES_LIST_COLUMNS } from "@/lib/list-columns";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
-import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
-import { LINES } from "@/lib/domain";
-import { firstParam } from "@/lib/saved-filters";
+import { PipelineFilterPopover } from "@/components/filters/pipeline-filter-popover";
+import { firstParam, pickFilterParams } from "@/lib/saved-filters";
+import {
+  enabledPageFilters,
+  filterFieldsFromPageFilters,
+  PAGE_FILTER_SEARCH_CLASS,
+  PAGE_FILTER_SEARCH_INPUT_CLASS,
+  mergeLiveOptions,
+  matchesPageFilters,
+  pageFilterParamKeys,
+} from "@/lib/page-filters";
+import { loadPageFilterPrefs } from "@/lib/page-filters/store";
+import { currentDeskSession } from "@/lib/auth/session";
 import { haystack } from "@/lib/search/live-query";
 import { AssignRecordTags } from "@/components/tags/assign-record-tags";
 import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
+import { buildPolicyLabel } from "@/lib/policy/auto-label";
+import { getAgencyPolicyLabelTemplate } from "@/lib/policy/auto-label-prefs";
+import { IN_FORCE_STATUSES, LAPSE_STATUSES } from "@/lib/home/aggregate";
+import {
+  addUtcDays,
+  DESK_AS_OF,
+  endOfUtcMonth,
+  priorMonth,
+  startOfUtcMonth,
+} from "@/lib/home/as-of";
+import { partyLabel } from "@/lib/desk/policy-name";
+import { PolicyQuickActions } from "@/components/policy/policy-quick-actions";
+
+function policyListLabel(
+  labelTemplate: Parameters<typeof buildPolicyLabel>[0],
+  policy: {
+    labelOverride?: string | null;
+    policyNumber: string;
+    policyType?: string | null;
+    lineOfBusiness: string;
+    formType?: string | null;
+    policySubType?: string | null;
+    status: string;
+    effectiveDate: Date | string;
+    expirationDate: Date | string;
+  },
+  party: { ownerName?: string | null; carrier?: string | null },
+) {
+  const override = policy.labelOverride?.trim();
+  if (override) return override;
+  return buildPolicyLabel(labelTemplate, {
+    ownerName: party.ownerName,
+    carrier: party.carrier,
+    policyType: policy.policyType,
+    policyNumber: policy.policyNumber,
+    lineOfBusiness: policy.lineOfBusiness,
+    formType: policy.formType,
+    policySubType: policy.policySubType,
+    status: policy.status,
+    effectiveDate: policy.effectiveDate,
+    expirationDate: policy.expirationDate,
+  });
+}
+
+function policyFilterValues(
+  policy: {
+    status: string;
+    lineOfBusiness: string;
+    effectiveDate: Date;
+    expirationDate: Date;
+    carrierId?: string | null;
+  },
+  carrierName?: string | null,
+) {
+  const status = policy.status.toLowerCase();
+  const statusValues = [policy.status];
+  if (IN_FORCE_STATUSES.has(status)) statusValues.push("in_force");
+
+  const written: string[] = [];
+  const renewal: string[] = [];
+  const attention: string[] = [];
+  const asOf = DESK_AS_OF;
+
+  if (LAPSE_STATUSES.has(status)) attention.push("lapse");
+
+  if (IN_FORCE_STATUSES.has(status)) {
+    const effective = policy.effectiveDate;
+    if (effective >= startOfUtcMonth(asOf) && effective <= endOfUtcMonth(asOf)) {
+      written.push("this_month");
+    }
+    const last = priorMonth(asOf);
+    if (effective >= startOfUtcMonth(last) && effective <= endOfUtcMonth(last)) {
+      written.push("last_month");
+    }
+    if (policy.expirationDate > asOf) {
+      for (const days of [30, 60, 90] as const) {
+        if (policy.expirationDate <= addUtcDays(asOf, days)) {
+          renewal.push(String(days));
+        }
+      }
+    }
+  }
+
+  return {
+    status: statusValues,
+    line: policy.lineOfBusiness,
+    written,
+    renewal,
+    attention,
+    carrier: carrierName ?? "",
+    carrierId: policy.carrierId ?? "",
+  };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +128,7 @@ const FILTER_COPY: Record<string, string> = {
   "written:last_month": "In-force terms effective last desk month (August 2026).",
   "renewal:30": "In-force terms expiring in the next 30 days.",
   "renewal:60": "In-force terms expiring in the next 60 days.",
+  "renewal:90": "In-force terms expiring in the next 90 days.",
   "attention:lapse": "Lapsed, cancelled, or expired — not in-force premium.",
 };
 
@@ -35,18 +139,22 @@ export default async function PoliciesPage({
 }) {
   const params = await searchParams;
   const q = firstParam(params.q) ?? "";
-  const filter: PolicyListFilter = {
-    status: firstParam(params.status),
-    written: firstParam(params.written),
-    renewal: firstParam(params.renewal),
-    line: firstParam(params.line),
-    carrier: firstParam(params.carrier),
-    attention: firstParam(params.attention),
-  };
-  const [rows, tagCatalog] = await Promise.all([
-    listPolicies(filter),
+  const [all, tagCatalog, labelTemplate, pageFilters, session] = await Promise.all([
+    listPolicies(),
     listModuleTags("policies").catch(() => []),
+    getAgencyPolicyLabelTemplate(),
+    loadPageFilterPrefs("policies"),
+    currentDeskSession(),
   ]);
+  const visibleFilters = mergeLiveOptions(enabledPageFilters(pageFilters), {
+    line: all.map(({ policy }) => policy.lineOfBusiness),
+    carrier: all.map(({ carrier }) => carrier?.name ?? ""),
+    status: all.map(({ policy }) => policy.status),
+  });
+  const filter = pickFilterParams(params, pageFilterParamKeys(visibleFilters));
+  const rows = all.filter(({ policy, carrier }) =>
+    matchesPageFilters(policyFilterValues(policy, carrier?.name), filter),
+  );
   const key = Object.entries(filter)
     .filter(([, value]) => value)
     .map(([name, value]) => `${name}:${value}`)
@@ -61,57 +169,19 @@ export default async function PoliciesPage({
   return (
     <AppShell title="Policies">
       <p className="mb-3 text-base text-muted-foreground">{hint}</p>
-      <SavedFiltersBar
+      <PipelineFilterPopover
         moduleId="policies"
-        searchPlaceholder="Contains policy #, party, carrier…"
-        fields={[
-          {
-            key: "status",
-            label: "Status",
-            options: [
-              { value: "in_force", label: "in force" },
-              { value: "active", label: "active" },
-              { value: "bound", label: "bound" },
-              { value: "pending", label: "pending" },
-              { value: "lapsed", label: "lapsed" },
-            ],
-          },
-          {
-            key: "line",
-            label: "Line",
-            options: LINES.map((value) => ({ value, label: value })),
-          },
-          {
-            key: "written",
-            label: "Written",
-            options: [
-              { value: "this_month", label: "this month" },
-              { value: "last_month", label: "last month" },
-            ],
-          },
-          {
-            key: "renewal",
-            label: "Renewal",
-            options: [
-              { value: "30", label: "30 days" },
-              { value: "60", label: "60 days" },
-            ],
-          },
-          {
-            key: "attention",
-            label: "Attention",
-            options: [{ value: "lapse", label: "lapse" }],
-          },
-        ]}
+        fields={filterFieldsFromPageFilters(visibleFilters)}
+        searchPlaceholder="Contains Policy #, Party, Carrier…"
+        preserveParams={[]}
+        canConfigure={session.isAdmin}
+        searchClassName={PAGE_FILTER_SEARCH_CLASS}
+        searchInputClassName={PAGE_FILTER_SEARCH_INPUT_CLASS}
       />
       {key ? (
         <p className="mb-3 text-sm">
           <Link href="/policies" className="text-primary hover:underline">
             Clear filter
-          </Link>
-          {" · "}
-          <Link href="/" className="text-primary hover:underline">
-            Back to home
           </Link>
         </p>
       ) : null}
@@ -119,9 +189,12 @@ export default async function PoliciesPage({
         <ModuleListActions
           module="policies"
           recordIds={rows.map(({ policy }) => policy.id)}
-          records={rows.map(({ policy, contact, account }) => ({
+          records={rows.map(({ policy, contact, account, carrier }) => ({
             id: policy.id,
-            label: policy.policyNumber,
+            label: policyListLabel(labelTemplate, policy, {
+              ownerName: partyLabel(contact, account),
+              carrier: carrier?.name,
+            }),
             email: contact?.email ?? account?.email,
             phone: contact?.phone ?? account?.phone,
             policyId: policy.id,
@@ -135,13 +208,18 @@ export default async function PoliciesPage({
           initialQuery={q}
           columns={POLICIES_LIST_COLUMNS}
           empty="No policies match. Bind a shopping deal when a market is actually written."
-          rows={rows.map(({ policy, contact, account, carrier }) => ({
+          rows={rows.map(({ policy, contact, account, carrier, owner }) => ({
             key: policy.id,
             hay: haystack([
+              policyListLabel(labelTemplate, policy, {
+                ownerName: partyLabel(contact, account),
+                carrier: carrier?.name,
+              }),
               policy.policyNumber,
               policy.lineOfBusiness,
               policy.status,
               carrier?.name,
+              owner?.name,
               contact ? `${contact.lastName} ${contact.firstName}` : null,
               account?.name,
               ...(policy.tags ?? []),
@@ -154,6 +232,7 @@ export default async function PoliciesPage({
                 ? `${contact.lastName}, ${contact.firstName}`
                 : (account?.name ?? ""),
               carrier: carrier?.name ?? "",
+              owner: owner?.name ?? "",
               premium: policy.premium ?? "",
               expires: policy.expirationDate.toISOString(),
               esign: policy.esignStatus ?? "",
@@ -162,9 +241,23 @@ export default async function PoliciesPage({
             cells: {
               pick: <SelectRowCheckbox id={policy.id} />,
               policy: (
-                <span className="font-medium">
-                  <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
-                </span>
+                <div className="flex min-w-0 items-center gap-1">
+                  <span className="min-w-0 truncate font-medium">
+                    <RecordLink href={`/policies/${policy.id}`}>
+                      {policyListLabel(labelTemplate, policy, {
+                        ownerName: partyLabel(contact, account),
+                        carrier: carrier?.name,
+                      })}
+                    </RecordLink>
+                  </span>
+                  <PolicyQuickActions
+                    policyId={policy.id}
+                    phone={contact?.phone ?? account?.phone ?? null}
+                    email={contact?.email ?? account?.email ?? null}
+                    contactId={contact?.id ?? policy.contactId}
+                    accountId={account?.id ?? policy.accountId}
+                  />
+                </div>
               ),
               status: <PolicyStatusBadge status={policy.status} />,
               party: contact ? (
@@ -177,6 +270,7 @@ export default async function PoliciesPage({
                 "—"
               ),
               carrier: carrier?.name ?? "—",
+              owner: owner?.name ?? "—",
               premium: formatMoney(policy.premium),
               expires: formatDay(policy.expirationDate),
               esign: formatInDeskEsignList(

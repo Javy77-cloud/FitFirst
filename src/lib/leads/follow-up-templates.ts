@@ -227,14 +227,19 @@ export function isClockTriggerStatus(status: string | null | undefined): status 
   return normalizeClockStatus(status) in CLOCK_TRIGGER_STATUSES;
 }
 
-/** Clock starts on the status the template is bound to — new / contacted / warm / cold. */
+/** Clock starts on Cadence the template is bound to — new / contacted / warm / cold. */
 export function canStartFollowUpClock(status: string | null | undefined): boolean {
-  return isClockTriggerStatus(status);
+  const key = normalizeClockStatus(status);
+  return Boolean(key && key !== "none");
 }
 
 export function pickTemplateForLead<T extends FollowUpTemplateRecord>(
   templates: T[] | null | undefined,
-  lead: { followUpTemplateId?: string | null; status?: string | null } | null | undefined,
+  lead: {
+    followUpTemplateId?: string | null;
+    status?: string | null;
+    cadence?: string | null;
+  } | null | undefined,
 ): T | null {
   const enabled = asTemplateList(templates).filter((row) => row.enabled !== false && row.id);
   if (!lead) return null;
@@ -242,26 +247,30 @@ export function pickTemplateForLead<T extends FollowUpTemplateRecord>(
     const override = enabled.find((row) => row.id === lead.followUpTemplateId);
     if (override && !isDefaultFollowUpTemplate(override)) return override;
   }
-  const status = normalizeClockStatus(lead.status);
-  if (status === DEFAULT_FOLLOW_UP_TRIGGER || status === "default") {
+  // Follow-up clocks bind to Cadence (new/contacted/warm/cold + agency picklist values).
+  const clockKey = normalizeClockStatus(lead.cadence ?? lead.status);
+  if (!clockKey || clockKey === "none") return null;
+  if (clockKey === DEFAULT_FOLLOW_UP_TRIGGER || clockKey === "default") {
     return findDefaultFollowUpTemplate(enabled);
   }
-  if (!isClockTriggerStatus(status)) return null;
-  const boundName = CLOCK_TRIGGER_STATUSES[status];
+  const byTrigger = enabled.find((row) => normalizeClockStatus(row.triggerStatus) === clockKey);
+  if (byTrigger) return byTrigger;
+  if (!isClockTriggerStatus(clockKey)) return null;
+  const boundName = CLOCK_TRIGGER_STATUSES[clockKey];
   return (
-    enabled.find((row) => normalizeClockStatus(row.triggerStatus) === status) ??
     enabled.find((row) => followUpTemplateChipName(row) === boundName) ??
     enabled.find((row) => (row.name ?? "").trim() === boundName) ??
     null
   );
 }
 
-/** Hold when the status has no bound template and there is no override. */
+/** Hold when Cadence has no bound template and there is no override. */
 export function shouldHoldFollowUpUntilFirstContact(lead: {
-  status: string;
+  status?: string;
+  cadence?: string | null;
   firstContactAt?: Date | string | null;
 }): boolean {
-  return !canStartFollowUpClock(lead.status);
+  return !canStartFollowUpClock(lead.cadence ?? lead.status);
 }
 
 export function dedupeFollowUpSteps<T extends { id?: string | null; sortOrder?: number | null }>(

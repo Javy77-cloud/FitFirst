@@ -1,17 +1,30 @@
 /** Work-queue rules for the Leads page. Converted leads are Deals-only. */
 
-export const LEAD_QUEUE_STATUSES = ["new", "contacted", "qualified", "warm", "cold", "nurture", "lost"] as const;
+/** Cadence on the lead list (was the old Status column). Order locked. */
+export const LEAD_CADENCES = ["none", "new", "contacted", "warm", "cold"] as const;
+export type LeadCadence = (typeof LEAD_CADENCES)[number];
+
+export const LEAD_CADENCE_FILTERS = [
+  { value: "none", label: "None" },
+  { value: "new", label: "New" },
+  { value: "contacted", label: "Contacted" },
+  { value: "warm", label: "Warm" },
+  { value: "cold", label: "Cold" },
+] as const;
+
+/** Pipeline Status — In progress / Nurture / Lost / Converted. Converted auto-creates a Deal. */
+export const LEAD_QUEUE_STATUSES = ["in_progress", "nurture", "lost", "converted"] as const;
 export type LeadQueueStatus = (typeof LEAD_QUEUE_STATUSES)[number];
 
 export const LEAD_QUEUE_STATUS_FILTERS = [
-  { value: "new", label: "new" },
-  { value: "contacted", label: "contacted" },
-  { value: "qualified", label: "in-progress" },
-  { value: "warm", label: "warm" },
-  { value: "cold", label: "cold" },
+  { value: "in_progress", label: "In progress" },
   { value: "nurture", label: "Nurture" },
   { value: "lost", label: "Lost" },
+  { value: "converted", label: "Converted" },
 ] as const;
+
+/** @deprecated old mixed status set — kept for one-time data migration helpers */
+export const LEGACY_LEAD_CADENCE_STATUSES = ["new", "contacted", "warm", "cold"] as const;
 
 export const NURTURE_DELAY_UNITS = ["days", "months"] as const;
 export type NurtureDelayUnit = (typeof NURTURE_DELAY_UNITS)[number];
@@ -26,22 +39,72 @@ export const FIRST_CONTACT_SLA_MS = 5 * 60 * 1000;
 
 const CONVERTED = new Set(["converted"]);
 
+export function normalizeLeadCadence(value: string | null | undefined): string {
+  const raw = (value ?? "none").trim().toLowerCase();
+  if (raw === "new") return "new";
+  if (raw === "contacted" || raw === "contact") return "contacted";
+  if (raw === "warm") return "warm";
+  if (raw === "cold") return "cold";
+  if (raw === "" || raw === "none" || raw === "null") return "none";
+  // Agency-added Settings picklist values (e.g. "VIP") → slug for templates/follow-up.
+  const slug = raw.replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  return slug || "none";
+}
+
+export function leadCadenceLabel(value: string | null | undefined): string {
+  const cadence = normalizeLeadCadence(value);
+  const hit = LEAD_CADENCE_FILTERS.find((row) => row.value === cadence);
+  if (hit) return hit.label;
+  if (!cadence || cadence === "none") return "None";
+  return cadence
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 export function normalizeLeadStatus(status: string | null | undefined): string {
-  const raw = (status ?? "new").trim().toLowerCase();
-  if (raw === "in_progress" || raw === "in-progress" || raw === "in progress") return "qualified";
+  const raw = (status ?? "in_progress").trim().toLowerCase();
+  if (raw === "in_progress" || raw === "in-progress" || raw === "in progress" || raw === "qualified") {
+    return "in_progress";
+  }
+  if (raw === "converted" || raw === "convert" || raw === "archived" || raw === "archive") return "converted";
   if (raw === "recycled" || raw === "junk" || raw === "unqualified") return "lost";
   if (raw === "nurture" || raw === "nurturing") return "nurture";
-  if (raw === "qualif" || raw.includes("qualif")) return raw.includes("unqual") ? "lost" : "qualified";
-  return raw || "new";
+  if (raw === "lost") return "lost";
+  // Legacy cadence values that used to live in status — treat as still in progress
+  if (raw === "new" || raw === "contacted" || raw === "warm" || raw === "cold") return "in_progress";
+  if (raw === "qualif" || raw.includes("qualif")) return raw.includes("unqual") ? "lost" : "in_progress";
+  return "in_progress";
 }
 
 export function leadStatusLabel(status: string | null | undefined): string {
   const value = normalizeLeadStatus(status);
-  if (value === "qualified") return "in-progress";
+  if (value === "in_progress") return "In progress";
   if (value === "lost") return "Lost";
   if (value === "nurture") return "Nurture";
-  if (value === "cold") return "Cold (not interested)";
-  return value || "new";
+  if (value === "converted") return "Converted";
+  return value || "In progress";
+}
+
+/** Split a legacy mixed status into { cadence, status }. */
+export function splitLegacyLeadStatus(status: string | null | undefined): {
+  cadence: LeadCadence;
+  status: LeadQueueStatus;
+} {
+  const raw = (status ?? "").trim().toLowerCase();
+  if (raw === "new" || raw === "contacted" || raw === "warm" || raw === "cold") {
+    return { cadence: normalizeLeadCadence(raw), status: "in_progress" };
+  }
+  if (raw === "nurture" || raw === "nurturing") return { cadence: "none", status: "nurture" };
+  if (raw === "lost" || raw === "junk" || raw === "unqualified") return { cadence: "none", status: "lost" };
+  if (raw === "converted" || raw === "archived" || raw === "archive") {
+    return { cadence: "none", status: "converted" };
+  }
+  if (raw === "qualified" || raw === "in_progress" || raw === "in-progress" || raw === "in progress") {
+    return { cadence: "none", status: "in_progress" };
+  }
+  return { cadence: "none", status: "in_progress" };
 }
 
 export function isNurtureDelayUnit(value: string | null | undefined): value is NurtureDelayUnit {
@@ -95,7 +158,16 @@ export function temperatureForStatus(
   current: string | null | undefined,
 ): LeadTemperature {
   const value = normalizeLeadStatus(status);
-  if (value === "cold" || value === "lost") return "cold";
+  if (value === "lost") return "cold";
+  return current ? normalizeLeadTemperature(current) : "hot";
+}
+
+export function temperatureForCadence(
+  cadence: string | null | undefined,
+  current: string | null | undefined,
+): LeadTemperature {
+  const value = normalizeLeadCadence(cadence);
+  if (value === "cold") return "cold";
   if (value === "warm") return "warm";
   if (value === "new") return current ? normalizeLeadTemperature(current) : "hot";
   return current ? normalizeLeadTemperature(current) : "hot";
@@ -110,8 +182,13 @@ export function isLeadOnQueue(lead: { status?: string | null; convertedDealId?: 
   return !isConvertedLead(lead);
 }
 
-export function isUntouchedLead(lead: { status?: string | null; firstContactAt?: Date | string | null }): boolean {
-  return !lead.firstContactAt && normalizeLeadStatus(lead.status) === "new";
+export function isUntouchedLead(lead: {
+  status?: string | null;
+  cadence?: string | null;
+  firstContactAt?: Date | string | null;
+}): boolean {
+  const cadence = lead.cadence != null ? normalizeLeadCadence(lead.cadence) : splitLegacyLeadStatus(lead.status).cadence;
+  return !lead.firstContactAt && cadence === "new";
 }
 
 export function sortLeadQueue<T extends { status?: string | null; firstContactAt?: Date | string | null; createdAt: Date | string }>(
@@ -126,12 +203,22 @@ export function sortLeadQueue<T extends { status?: string | null; firstContactAt
 }
 
 export function matchesLeadQueueFilters<
-  T extends { status?: string | null; source?: string | null; temperature?: string | null },
+  T extends {
+    status?: string | null;
+    cadence?: string | null;
+    source?: string | null;
+    temperature?: string | null;
+  },
 >(
   lead: T,
-  filter: { status?: string; source?: string; temperature?: string },
+  filter: { status?: string; cadence?: string; source?: string; temperature?: string },
 ): boolean {
   if (filter.status && normalizeLeadStatus(lead.status) !== normalizeLeadStatus(filter.status)) return false;
+  if (filter.cadence) {
+    const cadence =
+      lead.cadence != null ? normalizeLeadCadence(lead.cadence) : splitLegacyLeadStatus(lead.status).cadence;
+    if (cadence !== normalizeLeadCadence(filter.cadence)) return false;
+  }
   if (filter.source && (lead.source ?? "") !== filter.source) return false;
   if (filter.temperature) {
     const heat = (lead.temperature ?? "").toLowerCase();

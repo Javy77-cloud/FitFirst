@@ -144,7 +144,7 @@ function BlockCell({
     <div className="flex flex-col gap-1">
       {input === "select" && options?.length ? (
         <select name={fieldKey} defaultValue={cell?.value ?? ""} className={cn(className, "w-full rounded-md border border-input bg-background px-2")}>
-          <option value="">—</option>
+          <option value="">None</option>
           {options.map((opt) => (
             <option key={opt} value={opt}>
               {opt}

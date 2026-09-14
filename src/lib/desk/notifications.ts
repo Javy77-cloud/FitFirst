@@ -13,8 +13,16 @@ export const NOTIFICATION_EMPTY_PANEL =
 export const NOTIFICATION_EMPTY_BOARD =
   "No notifications on this desk. Playbooks, asks, and work-queue pings land here. Nothing emails the agent.";
 
-export function recentNotifications<T>(rows: readonly T[], limit = RECENT_NOTIFICATION_LIMIT): T[] {
-  return rows.slice(0, limit);
+/** Prefer unread rows so the bell panel can clear the badge, then fill with recent read. */
+export function recentNotifications<T extends { read: boolean }>(
+  rows: readonly T[],
+  limit = RECENT_NOTIFICATION_LIMIT,
+): T[] {
+  const unread = rows.filter((row) => !row.read);
+  if (unread.length >= limit) return unread.slice(0, limit);
+  const unreadIds = new Set(unread.map((row) => (row as { id?: string }).id).filter(Boolean));
+  const readFill = rows.filter((row) => row.read && !unreadIds.has((row as { id?: string }).id));
+  return [...unread, ...readFill].slice(0, limit);
 }
 
 export function unreadNotificationCount(rows: readonly { read: boolean }[]): number {

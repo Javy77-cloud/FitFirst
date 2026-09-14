@@ -19,7 +19,7 @@ describe("sep7ce Fill from property records", () => {
     const sheet = source("src/components/deal/master-sheet-compare.tsx");
     expect(sheet).toMatch(/MasterSheetFillButton/);
     expect(sheet).toMatch(/Confirm extracted/);
-    expect(sheet.indexOf("MasterSheetFillButton")).toBeLessThan(sheet.indexOf("Save sheet"));
+    expect(sheet.indexOf("MasterSheetFillButton")).toBeLessThan(sheet.indexOf("Save Sheet"));
     const action = source("src/app/actions/quote-sheet.ts");
     expect(action).toMatch(/fillFromPropertyRecords/);
     expect(action).toMatch(/runFillFromPropertyRecords/);
@@ -32,12 +32,12 @@ describe("sep7ce Fill from property records", () => {
         product: "homeowners",
       }),
     );
-    expect(html).toContain("Fill master sheet");
+    expect(html).toContain("Fill Master Sheet");
     expect(html).toContain("Parcel ID");
     expect(html).toContain("Assessed value");
     expect(html).toContain("Records check");
     expect(html).toContain("Square footage");
-    expect(html.indexOf("Fill master sheet")).toBeLessThan(html.indexOf("Save sheet"));
+    expect(html.indexOf("Fill Master Sheet")).toBeLessThan(html.indexOf("Save Sheet"));
   });
 
   it("adds Parcel ID, Assessed value, Records check, and Square footage on the HO sheet", () => {

@@ -148,7 +148,7 @@ export default async function PeopleAgentsPage({
                     <td className="px-4 py-3 text-helper text-muted-foreground">
                       {person.canAccessModules ? "Modules" : "No modules"}
                       {" · "}
-                      {person.canSeeAgencyWidgets ? "Agency widgets" : "Own book"}
+                      {person.canSeeAgencyWidgets ? "Agency book" : "Own book"}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col items-start gap-1.5">
@@ -229,8 +229,11 @@ export default async function PeopleAgentsPage({
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="canSeeAgencyWidgets" />
-            Can see agency widgets
+            Can see agency book
           </label>
+          <p className="sm:col-span-2 text-helper text-muted-foreground">
+            Agency book: agent sees the whole agency book (same records as admin), still with agent permissions.
+          </p>
           <div className="sm:col-span-2">
             <Button type="submit">Create agent + invite stub</Button>
           </div>

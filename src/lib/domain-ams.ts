@@ -1,3 +1,4 @@
+import { formatDisplayDate } from "@/lib/dates/display-format";
 /** Additive constants consumed by later desk slices. Re-exported from domain.ts. */
 
 export const APPOINTMENT_LINES = ["HO", "AUTO", "FLOOD", "UMBRELLA"] as const;
@@ -59,9 +60,7 @@ export const MATCH_REASON_LABELS: Record<MatchReason, string> = {
 };
 
 export function formatDate(value: Date | string | null | undefined): string {
-  if (value == null || value === "") return "—";
-  const iso = value instanceof Date ? value.toISOString() : value;
-  return iso.slice(0, 10);
+  return formatDisplayDate(value);
 }
 
 export const CLAIM_STATUSES = ["inquiry", "referred_to_carrier", "closed"] as const;
@@ -216,9 +215,8 @@ export function vehicleUseLabel(value: string | null | undefined): string {
 }
 
 export function formatDob(value: Date | string | null | undefined): string {
-  if (!value) return "—";
-  const iso = typeof value === "string" ? value : value.toISOString();
-  return iso.slice(0, 10);
+  // Same sitewide desk format as formatDay / formatDate (default M-D-Y).
+  return formatDisplayDate(value);
 }
 
 export function formatVehicleTitle(vehicle: {
@@ -354,7 +352,19 @@ export const SERVICING_DOC_LABELS: Record<ServicingDocKey, string> = {
   aor: "AOR packet",
 };
 
-export const SERVICING_CHECK_KEYS = ["renewal_docs", "inspection", "mortgagee", "id_cards"] as const;
+export const SERVICING_CHECK_KEYS = [
+  "renewal_docs",
+  "inspection",
+  "mortgagee",
+  "id_cards",
+  "roof_docs",
+  "beneficiary",
+  "medical_exam",
+  "underwriting",
+  "coi",
+  "loss_runs",
+  "ai_endorsements",
+] as const;
 export type ServicingCheckKey = (typeof SERVICING_CHECK_KEYS)[number];
 
 export const SERVICING_CHECK_LABELS: Record<ServicingCheckKey, string> = {
@@ -362,6 +372,13 @@ export const SERVICING_CHECK_LABELS: Record<ServicingCheckKey, string> = {
   inspection: "Inspection",
   mortgagee: "Mortgagee",
   id_cards: "ID cards",
+  roof_docs: "Roof docs",
+  beneficiary: "Beneficiary",
+  medical_exam: "Medical exam",
+  underwriting: "Underwriting",
+  coi: "COI",
+  loss_runs: "Loss runs",
+  ai_endorsements: "AI endorsements",
 };
 
 export const SERVICING_CHECK_STATUSES = ["complete", "incomplete"] as const;
@@ -576,12 +593,28 @@ export const ENDORSEMENT_FORM_LABELS: Record<EndorsementFormCode, string> = {
   other: "Other endorsement wording",
 };
 
-export const ENDORSEMENT_DRAFT_STATUSES = ["drafted", "ready", "withdrawn"] as const;
+/** Pipeline on policy Endorsements tab. Legacy `ready` normalizes to `submitted`. */
+export const ENDORSEMENT_PIPELINE_STATUSES = [
+  "drafted",
+  "submitted",
+  "approved",
+  "filed",
+  "effective",
+] as const;
+export type EndorsementPipelineStatus = (typeof ENDORSEMENT_PIPELINE_STATUSES)[number];
+
+export const ENDORSEMENT_DRAFT_STATUSES = [
+  ...ENDORSEMENT_PIPELINE_STATUSES,
+  "withdrawn",
+] as const;
 export type EndorsementDraftStatus = (typeof ENDORSEMENT_DRAFT_STATUSES)[number];
 
 export const ENDORSEMENT_DRAFT_STATUS_LABELS: Record<EndorsementDraftStatus, string> = {
   drafted: "Drafted",
-  ready: "Ready to file",
+  submitted: "Submitted",
+  approved: "Approved",
+  filed: "Filed",
+  effective: "Effective",
   withdrawn: "Withdrawn",
 };
 
@@ -593,28 +626,37 @@ export function isEndorsementDraftStatus(value: string): value is EndorsementDra
   return (ENDORSEMENT_DRAFT_STATUSES as readonly string[]).includes(value);
 }
 
+/** Map legacy `ready` → `submitted` for display / advance. */
+export function normalizeEndorsementDraftStatus(status: string): EndorsementDraftStatus | null {
+  if (status === "ready") return "submitted";
+  return isEndorsementDraftStatus(status) ? status : null;
+}
+
 export function endorsementFormLabel(code: string): string {
   return isEndorsementFormCode(code) ? ENDORSEMENT_FORM_LABELS[code] : code.replaceAll("_", " ");
 }
 
 export function endorsementDraftStatusLabel(status: string): string {
-  return isEndorsementDraftStatus(status)
-    ? ENDORSEMENT_DRAFT_STATUS_LABELS[status]
-    : status.replaceAll("_", " ");
+  const normalized = normalizeEndorsementDraftStatus(status);
+  return normalized ? ENDORSEMENT_DRAFT_STATUS_LABELS[normalized] : status.replaceAll("_", " ");
 }
 
 export const ENDORSEMENT_DRAFT_NEXT_STEPS: Record<EndorsementDraftStatus, string> = {
-  drafted: "Desk wording only. Mark ready when the packet is complete. Does not file.",
-  ready: "Wording is ready. File still happens on the service request — this stub does not change the Policy.",
+  drafted: "Draft from this policy. Submit when wording is ready.",
+  submitted: "Submitted for review. Approve when the packet looks good.",
+  approved: "Approved. Mark filed when sent to the carrier / book.",
+  filed: "Filed on the diary. Mark effective when the change is in force.",
+  effective: "Effective — pipeline complete. Policy terms still update only when you file a change.",
   withdrawn: "Withdrawn. Policy unchanged.",
 };
 
 export function endorsementDraftNextStep(status: string): string {
-  return isEndorsementDraftStatus(status) ? ENDORSEMENT_DRAFT_NEXT_STEPS[status] : "";
+  const normalized = normalizeEndorsementDraftStatus(status);
+  return normalized ? ENDORSEMENT_DRAFT_NEXT_STEPS[normalized] : "";
 }
 
 export const ENDORSEMENT_DRAFT_DISCLAIMER =
-  "Endorsement draft stub only. Marking ready does not file the change and does not update the Policy.";
+  "Endorsement pipeline tracks drafted → submitted → approved → filed → effective. Advancing status is diary only unless you also file a policy change.";
 
 export const SUSPENSE_AGE_BUCKETS = ["current", "watch", "aging", "stale"] as const;
 export type SuspenseAgeBucket = (typeof SUSPENSE_AGE_BUCKETS)[number];
@@ -654,6 +696,10 @@ export const SERVICE_TIMELINE_EVENTS = [
   "notice_mailed",
   "notice_withdrawn",
   "endorsement_drafted",
+  "endorsement_submitted",
+  "endorsement_approved",
+  "endorsement_filed",
+  "endorsement_effective",
   "endorsement_draft_ready",
   "endorsement_draft_withdrawn",
   "inspection_requested",
@@ -688,6 +734,10 @@ export const SERVICE_TIMELINE_EVENT_LABELS: Record<ServiceTimelineEvent, string>
   notice_mailed: "Notice mailed",
   notice_withdrawn: "Notice withdrawn",
   endorsement_drafted: "Endorsement drafted",
+  endorsement_submitted: "Endorsement submitted",
+  endorsement_approved: "Endorsement approved",
+  endorsement_filed: "Endorsement filed",
+  endorsement_effective: "Endorsement effective",
   endorsement_draft_ready: "Endorsement ready",
   endorsement_draft_withdrawn: "Endorsement withdrawn",
   inspection_requested: "Inspection requested",
@@ -737,45 +787,65 @@ export const HOLDER_CONTACT_DISCLAIMER =
 
 export const RENEWAL_QUEUE_STAGES = [
   "upcoming",
-  "quoting",
-  "offered",
-  "accepted",
+  "contacted",
+  "quoted",
+  "bound",
   "lost",
 ] as const;
 export type RenewalQueueStage = (typeof RENEWAL_QUEUE_STAGES)[number];
 
 export const RENEWAL_QUEUE_STAGE_LABELS: Record<RenewalQueueStage, string> = {
   upcoming: "Upcoming",
-  quoting: "Quoting",
-  offered: "Offered",
-  accepted: "Accepted (stub)",
+  contacted: "Contacted",
+  quoted: "Quoted",
+  bound: "Bound",
   lost: "Lost",
+};
+
+/** Short column hints for the renewals board (deals-style). */
+export const RENEWAL_QUEUE_STAGE_HINTS: Record<RenewalQueueStage, string> = {
+  upcoming: "90+ days out, or not yet worked",
+  contacted: "Client reached — waiting on quote",
+  quoted: "Renewal quote delivered",
+  bound: "Renewal bound (desk stub — same Policy)",
+  lost: "Did not renew",
 };
 
 export function isRenewalQueueStage(value: string): value is RenewalQueueStage {
   return (RENEWAL_QUEUE_STAGES as readonly string[]).includes(value);
 }
 
+/** Map legacy queue stages from earlier AMS stubs. */
+export function normalizeRenewalQueueStage(value: string): RenewalQueueStage | null {
+  if (isRenewalQueueStage(value)) return value;
+  if (value === "quoting") return "contacted";
+  if (value === "offered") return "quoted";
+  if (value === "accepted") return "bound";
+  return null;
+}
+
 export function renewalQueueStageLabel(stage: string): string {
-  return isRenewalQueueStage(stage)
-    ? RENEWAL_QUEUE_STAGE_LABELS[stage]
+  const normalized = normalizeRenewalQueueStage(stage);
+  return normalized
+    ? RENEWAL_QUEUE_STAGE_LABELS[normalized]
     : stage.replaceAll("_", " ");
 }
 
 export const RENEWAL_QUEUE_NEXT_STEPS: Record<RenewalQueueStage, string> = {
-  upcoming: "On the renewal list. Move to quoting when you start the market check — no rater.",
-  quoting: "Desk quoting stub. Compare current vs proposed on the Policy. Does not bind.",
-  offered: "Proposal logged in-desk. Accept does not write a new Policy.",
-  accepted: "Stub only. The same Policy stays in force. No bind from this queue.",
+  upcoming: "On the renewals board. Contact the client when you start — no rater.",
+  contacted: "Client contacted. Move to Quoted when a renewal quote is out.",
+  quoted: "Quote delivered. Bound is a desk stub and does not rewrite the Policy.",
+  bound: "Stub only. The same Policy stays in force. No new bind from this board.",
   lost: "Logged as lost. Policy status stays as-is.",
 };
 
 export function renewalQueueNextStep(stage: string): string {
-  return isRenewalQueueStage(stage) ? RENEWAL_QUEUE_NEXT_STEPS[stage] : "";
+  const normalized = normalizeRenewalQueueStage(stage);
+  return normalized ? RENEWAL_QUEUE_NEXT_STEPS[normalized] : "";
 }
 
 export const RENEWAL_QUEUE_DISCLAIMER =
-  "Renewal pipeline queue stub only. Moving a card does not bind, rewrite, or cancel the Policy. No rater. Quotes are not Policies.";
+  "Renewals pipeline board. Drag cards like Deals. Moving a card does not bind, rewrite, or cancel the Policy. No rater. Quotes are not Policies.";
 
 export const INSPECTION_KINDS = ["four_point", "wind_mit", "roof", "photo"] as const;
 export type InspectionKind = (typeof INSPECTION_KINDS)[number];

@@ -44,16 +44,29 @@ function DealStage({ stage }: { stage: string }) {
 export function RecordContextRail({
   context,
   policyFacts,
+  defaultTab = "info",
+  headingName,
 }: {
   context: RecordContextPayload;
   policyFacts?: RailPolicyFacts;
+  /** Leads list focuses Conversations so logs swap when rail lead changes. */
+  defaultTab?: "info" | "conversations";
+  /** Optional focused record name shown above tabs (leads list). */
+  headingName?: string;
 }) {
-  const [tab, setTab] = useState<"info" | "conversations">("info");
+  const [tab, setTab] = useState<"info" | "conversations">(defaultTab);
   const [personKey, setPersonKey] = useState(context.people[0]?.key ?? "");
   const person = context.people.find((row) => row.key === personKey) ?? context.people[0] ?? null;
 
   return (
-    <div className="ff-card min-w-0 w-full max-w-full overflow-hidden">
+    <div className="ff-card min-w-0 w-full max-w-full overflow-hidden" data-ff-record-context-rail="">
+      {headingName ? (
+        <div className="border-b border-border px-3 py-2">
+          <p className="truncate text-sm font-semibold text-navy" data-ff-rail-heading="">
+            {headingName}
+          </p>
+        </div>
+      ) : null}
       {context.people.length > 1 ? (
         <div className="border-b border-border px-3 py-2">
           <label className="sr-only" htmlFor="rail-person">

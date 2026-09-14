@@ -15,8 +15,8 @@ export function DeveloperHubCoreStub({
     <SettingsShell title={title} current={current}>
       <p className="mb-3 max-w-3xl text-sm text-muted-foreground">{body}</p>
       <p className="text-sm">
-        <Link href="/settings/developer-hub" className="text-primary hover:underline">
-          Back to Developer Hub
+        <Link href="/settings/developer-hub" className="font-medium text-[#002868] hover:underline">
+          Developer Hub
         </Link>
       </p>
     </SettingsShell>

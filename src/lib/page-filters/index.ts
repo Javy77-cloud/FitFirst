@@ -13,7 +13,9 @@ export {
 export { defaultPageFilters } from "./defaults";
 export { pageFilterFields } from "./fields";
 export {
+  applyPageFilterPrefsToFields,
   enabledPageFilters,
+  filterFieldsFromPageFilters,
   isPageFilterModule,
   mergeLiveOptions,
   newPageFilterId,

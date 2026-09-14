@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { formatMoney } from "@/lib/domain";
+import { formatDay, formatMoney } from "@/lib/domain";
 import type { Policy, PolicyCoverageLine, PolicyTerm, RenewalCompareLog } from "@/lib/db/schema";
 import {
   coverageRows,
@@ -69,12 +69,12 @@ export function ComparePanel({
               <td className="font-medium">Term</td>
               <td>
                 {current
-                  ? `${isoDate(current.termEffective)} → ${isoDate(current.termExpiration)}`
+                  ? `${formatDay(current.termEffective)} → ${formatDay(current.termExpiration)}`
                   : "—"}
               </td>
               <td>
                 {proposed
-                  ? `${isoDate(proposed.termEffective)} → ${isoDate(proposed.termExpiration)}`
+                  ? `${formatDay(proposed.termEffective)} → ${formatDay(proposed.termExpiration)}`
                   : "—"}
               </td>
             </tr>
@@ -210,7 +210,7 @@ export function ComparePanel({
                 {logs.map((log) => (
                   <tr key={log.id}>
                     <td className="whitespace-nowrap text-xs">
-                      {log.createdAt.toISOString().slice(0, 10)}
+                      {formatDay(log.createdAt)}
                     </td>
                     <td className="uppercase text-xs">{log.eventType.replaceAll("_", " ")}</td>
                     <td className="text-xs">{log.summary}</td>

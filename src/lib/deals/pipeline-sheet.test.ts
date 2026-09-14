@@ -86,6 +86,8 @@ describe("pipeline list / grid sheet", () => {
 
   it("keeps system columns read-only in Grid and maps field types to controls", () => {
     expect(isPipelineGridEditable("title")).toBe(false);
+    expect(isPipelineGridEditable("picklist_5n3i")).toBe(false);
+    expect(isPipelineGridEditable("picklist")).toBe(false);
     expect(isPipelineGridEditable("updated")).toBe(false);
     expect(isPipelineGridEditable("tags")).toBe(false);
     expect(isPipelineGridEditable("stage")).toBe(true);

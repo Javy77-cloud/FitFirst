@@ -13,7 +13,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { id: "lead", label: "Add Lead", href: "/leads/new" },
   { id: "deal", label: "Add Deal", href: "/deals/new" },
   { id: "policy", label: "Add Policy", href: "/policies/new" },
-  { id: "task", label: "Add Task", href: "/tasks/new" },
+  { id: "task", label: "Add Task", href: "/tasks?newTask=1" },
   { id: "meeting", label: "Add Meeting", href: "/meetings/new" },
 ];
 

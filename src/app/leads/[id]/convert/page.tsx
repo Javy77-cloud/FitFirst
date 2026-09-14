@@ -1,14 +1,12 @@
-import { notFound } from "next/navigation";
-import { createDealFromLead } from "@/app/actions/crm";
-import { AppShell } from "@/components/app-shell";
-import { Button } from "@/components/ui/button";
-import { formatPersonName } from "@/lib/crm/display";
-import { LEAD_CARRY_FIELDS } from "@/lib/custom-fields/transfer";
+import { notFound, redirect } from "next/navigation";
+import { convertLeadToDeal } from "@/app/actions/crm";
 import { getLead } from "@/lib/db/queries";
 import { isUuid } from "@/lib/ids";
+import { parseSelectedShopLines } from "@/lib/leads/line-documents";
 
 export const dynamic = "force-dynamic";
 
+/** Leftover /convert URLs: copy every lead field and land on Deal Details. No picker. */
 export default async function ConvertLeadPage({
   params,
   searchParams,
@@ -23,63 +21,14 @@ export default async function ConvertLeadPage({
   if (!row) notFound();
   const { lead, deal } = row;
   if (deal) {
-    notFound();
+    redirect(`/deals/${deal.id}`);
   }
-  const values: Record<string, string> = {
-    firstName: lead.firstName ?? "",
-    middleName: lead.middleName ?? "",
-    lastName: lead.lastName ?? "",
-    dateOfBirth: lead.dateOfBirth ?? "",
-    email: lead.email ?? "",
-    phone: lead.phone ?? "",
-    mailingAddress: lead.mailingAddress ?? "",
-    city: lead.city ?? "",
-    state: lead.state ?? "",
-    zip: lead.zip ?? "",
-    notes: lead.notes ?? "",
-    source: lead.source ?? "",
-    preferredLanguage: lead.preferredLanguage ?? "",
-  };
-
-  return (
-    <AppShell title="Convert lead" utilityChrome showBrand={false}>
-      <h1 className="text-xl font-semibold text-navy">Carry fields to the deal</h1>
-      <p className="mt-1 mb-4 text-sm text-muted-foreground">
-        {formatPersonName(lead)} — every lead field copies onto the deal automatically. Phone,
-        email, source, address, notes, and matching custom fields land on the new shop.
-      </p>
-      <form action={createDealFromLead} className="max-w-xl space-y-4" data-ff-lead-carry>
-        <input type="hidden" name="leadId" value={lead.id} />
-        <input type="hidden" name="state" value={lead.state ?? "FL"} />
-        <input type="hidden" name="line" value={query.line || lead.insuranceTypeDesired || "HO"} />
-        <input type="hidden" name="shopLines" value={query.shopLines ?? ""} />
-        <ul className="space-y-2">
-          {LEAD_CARRY_FIELDS.map((field) => (
-            <li key={field.key} className="flex items-start gap-3 rounded-md border border-border px-3 py-2">
-              <input
-                type="checkbox"
-                name="carryField"
-                value={field.key}
-                defaultChecked
-                disabled
-                className="mt-1"
-                id={`carry-${field.key}`}
-              />
-              <label htmlFor={`carry-${field.key}`} className="min-w-0">
-                <span className="block text-sm font-medium text-navy">{field.label}</span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  {values[field.key] || "Blank on the lead"}
-                </span>
-              </label>
-            </li>
-          ))}
-        </ul>
-        <div className="flex justify-end gap-3">
-          <Button type="submit" data-ff-convert-deal>
-            Convert lead
-          </Button>
-        </div>
-      </form>
-    </AppShell>
+  const dealId = await convertLeadToDeal(
+    lead.id,
+    query.line || lead.insuranceTypeDesired || "HO",
+    lead.state || "FL",
+    parseSelectedShopLines(query.shopLines ?? ""),
+    null,
   );
+  redirect(`/deals/${dealId}?tab=details`);
 }

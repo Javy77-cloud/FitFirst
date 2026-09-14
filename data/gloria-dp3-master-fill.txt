@@ -1,0 +1,77 @@
+stored {
+  gender: 'Female',
+  occ: 'Business owner',
+  subtype: 'DP3',
+  email: 'edmersonv@gmail.com'
+}
+deal fill keys []
+deal skipped [
+  'named_insured',
+  'applicant_name',
+  'applicant_dob',
+  'driver_1_dob',
+  'driver_1_name',
+  'applicant_gender',
+  'driver_1_gender',
+  'applicant_occupation',
+  'driver_1_occupation',
+  'applicant_employment',
+  'applicant_marital_status',
+  'applicant_education_level',
+  'entity_type',
+  'form',
+  'applicant_phone',
+  'applicant_email',
+  'address1',
+  'city',
+  'state',
+  'zip',
+  'county',
+  'mailing_address',
+  'applicant_address',
+  'mailing_city',
+  'mailing_state',
+  'mailing_zip',
+  'current_carrier',
+  'coverage_a'
+]
+defaults filled []
+property ok 0 Merged 16 field(s) from GetParcelData, FEMA for empty-only fill.
+
+--- AFTER deal+defaults+property ---
+DP3 filled 106 yellow 37 pct 74
+DP3 YELLOW: assessment_year, bfe, date_inspected, electrical_circuit_amps, electrical_updated, electrical_year, elevation, fire_district, flood_policy, four_point_date, four_point_result, hvac_year, inspection_company, lease_term, legal_description, license_or_certificate_number, notes, plumbing_year, primary_heat, primary_plumbing_type, rce_source, replacement_cost_estimate, roof_condition, roof_deck, roof_deck_attachment, roof_to_wall, secondary_named_insured, secondary_water, subdivision, tenant_name, terrain, water_heater_year, wind_mit_date, wind_mit_form, wind_mit_inspector, wind_speed, zoning
+  form="DP3" src=extracted status=check
+  construction="Masonry" src=extracted status=check
+  applicant_gender="Female" src=agent status=check
+  applicant_occupation="Business owner" src=agent status=check
+  applicant_employment="Employed" src=agent status=check
+  applicant_marital_status="Married" src=agent status=check
+  applicant_education_level="Associate" src=agent status=check
+  entity_type="Individual" src=agent status=check
+  deadbolts="yes" src=agent status=check
+  animals="no" src=agent status=check
+  smoke_detectors="no" src=agent status=check
+  pool="no" src=agent status=check
+  named_insured="Gloria Martinez" src=agent status=check
+  lease_term="" src=blank status=missing
+  landlord_liability="100000" src=extracted status=check
+  loss_of_rents="30900" src=extracted status=check
+HO3 filled 92 yellow 63 pct 59
+HO3 YELLOW: additional_living, applicant_dob, assessment_year, building_code, co_applicant_dob, co_applicant_education_level, co_applicant_email, co_applicant_employment, co_applicant_gender, co_applicant_marital_status, co_applicant_name, co_applicant_occupation, co_applicant_phone, co_applicant_relationship_to_insured, contents_limit, date_inspected, electrical_circuit_amps, electrical_updated, electrical_year, elevation, entity_type, fire_district, flood_policy, form, four_point_date, four_point_result, hvac_year, inspection_company, landlord_liability, lease_term, legal_description, license_or_certificate_number, loss_of_rents, months_occupied, notes, opening_protection, plumbing_year, primary_heat, primary_plumbing_type, rce_source, renters_liability, replacement_cost_estimate, roof_condition, roof_covering, roof_deck, roof_deck_attachment, roof_shape, roof_to_wall, roof_year, secondary_named_insured, secondary_water, subdivision, tenant_name, terrain, usage, water_backup, water_heater_year, wind_mit_date, wind_mit_form, wind_mit_inspector, wind_speed, year_purchased, zoning
+  form="" src=blank status=missing
+  construction="Masonry" src=extracted status=check
+  applicant_gender="Female" src=agent status=confirmed
+  applicant_occupation="Business owner" src=agent status=confirmed
+  applicant_employment="Employed" src=agent status=confirmed
+  applicant_marital_status="Married" src=agent status=confirmed
+  applicant_education_level="Associate" src=agent status=confirmed
+  entity_type="" src=blank status=missing
+  deadbolts="yes" src=agent status=confirmed
+  animals="no" src=agent status=confirmed
+  smoke_detectors="no" src=agent status=confirmed
+  pool="no" src=agent status=confirmed
+  named_insured="Gloria Martinez" src=agent status=confirmed
+  lease_term="" src=blank status=missing
+  landlord_liability="" src=blank status=missing
+  loss_of_rents="" src=blank status=missing

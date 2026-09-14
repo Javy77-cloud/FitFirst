@@ -8,6 +8,7 @@ import { matchesDealFilters } from "@/lib/crm/lists";
 import {
   dealSearchHaystack,
   dealTitleFromPerson,
+  dealTitleFormWord,
   dealTitleLobWord,
   formatDealTitle,
   isLegacyShopTitle,
@@ -195,5 +196,93 @@ describe("sep7bq — First Last / Lob backfill", () => {
     expect(sql).not.toMatch(/db:seed/);
     expect(source("src/lib/deals/retitle.ts")).toMatch(/dealTitleForRecords/);
     expect(source("src/lib/deals/deal-title.ts")).toMatch(/formatDealPersonName/);
+  });
+});
+
+describe("sep7 — Deal Details applicant rename retitles even when lead differs", () => {
+  it("builds First Last / Lob from deal fields and ignores linked lead/contact names", () => {
+    // Edmerson Vasquez lead → Gloria Martinez applicant on Deal Details
+    expect(
+      formatDealTitle({
+        firstName: "Gloria",
+        lastName: "Martinez",
+        primaryNamedInsured: "Edmerson Vazquez",
+        existingTitle: "Edmerson Vazquez / Homeowners",
+        lead: { firstName: "Edmerson", lastName: "Vazquez" },
+        contact: { firstName: "Edmerson", lastName: "Vazquez" },
+        line: "HO",
+      }),
+    ).toBe("Gloria Martinez / Homeowners");
+    expect(
+      dealTitleForRecords({
+        lineOfBusiness: "HO",
+        firstName: "Gloria",
+        lastName: "Martinez",
+        primaryNamedInsured: "Gloria Martinez",
+        title: "Edmerson Vazquez / Homeowners",
+        lead: { firstName: "Edmerson", lastName: "Vazquez" },
+      }),
+    ).toBe("Gloria Martinez / Homeowners");
+    // Insured/applicant fields beat lead when explicit first/last absent
+    expect(
+      dealTitleForRecords({
+        lineOfBusiness: "HO",
+        primaryNamedInsured: "Gloria Martinez",
+        title: "Edmerson Vazquez / Homeowners",
+        lead: { firstName: "Edmerson", lastName: "Vazquez" },
+      }),
+    ).toBe("Gloria Martinez / Homeowners");
+    expect(source("src/app/actions/custom-fields.ts")).toMatch(/formatDealTitle/);
+    expect(source("src/app/actions/custom-fields.ts")).toMatch(
+      /Omit contact\/lead|omit contact\/lead|intentionally omit contact/i,
+    );
+    expect(source("src/app/actions/custom-fields.ts")).toMatch(/leadId \/ contactId are intentionally not touched/);
+  });
+});
+
+
+describe("sep13 — deal title uses deepest cascade form label", () => {
+  it("prefers HO3 / DP3 / Term Life over generic Homeowners", () => {
+    expect(dealTitleFormWord("HO3")).toBe("HO3");
+    expect(dealTitleFormWord("DP3")).toBe("DP3");
+    expect(dealTitleFormWord("Term Life")).toBe("Term Life");
+    expect(dealTitleFormWord("homeowners")).toBeNull();
+    expect(dealTitleLobWord("HO", "DP3")).toBe("DP3");
+    expect(dealTitleLobWord("HO", "HO3")).toBe("HO3");
+    expect(dealTitleLobWord("HO", "Term Life")).toBe("Term Life");
+    expect(dealTitleLobWord("HO")).toBe("Homeowners");
+    expect(
+      formatDealTitle({
+        firstName: "Gloria",
+        lastName: "Martinez",
+        line: "HO",
+        quotingForm: "DP3",
+        policySubType: "DP3",
+      }),
+    ).toBe("Gloria Martinez / DP3");
+    expect(
+      formatDealTitle({
+        firstName: "Gloria",
+        lastName: "Martinez",
+        line: "HO",
+        quotingForm: "HO3",
+      }),
+    ).toBe("Gloria Martinez / HO3");
+    expect(
+      formatDealTitle({
+        firstName: "Tyler",
+        lastName: "Bhattel",
+        line: "LIFE",
+        policySubType: "Term Life",
+      }),
+    ).toBe("Tyler Bhattel / Term Life");
+    expect(source("src/app/actions/custom-fields.ts")).toMatch(/quotingForm: form\?\.id/);
+    expect(source("src/components/custom-fields/deal-details-panel.tsx")).toMatch(
+      /isInsuranceQuoteRequestSection|data-ff-insurance-quote-request/,
+    );
+    expect(source("src/components/custom-fields/deal-details-panel.tsx")).toMatch(/Required/);
+    expect(source("src/components/custom-fields/record-layout-form.tsx")).toMatch(
+      /data-ff-insurance-quote-request/,
+    );
   });
 });

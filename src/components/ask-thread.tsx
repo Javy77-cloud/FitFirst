@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { Actor } from "@/lib/auth/rbac";
 import { canResolveAsk } from "@/lib/auth/rbac";
-import type { AskEntityType } from "@/lib/domain";
+import { formatDay, type AskEntityType } from "@/lib/domain";
 
 type AskRow = {
   ask: {
@@ -55,7 +55,7 @@ export function AskThread({
                     {" · "}
                     {ask.kind === "payout" ? "payout request" : "question"}
                     {" · "}
-                    {ask.createdAt.toISOString().slice(0, 10)}
+                    {formatDay(ask.createdAt)}
                     {" · "}
                     <span className={ask.status === "open" ? "text-fit-yellow" : "text-fit-green"}>
                       {ask.status}

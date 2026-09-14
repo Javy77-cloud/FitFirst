@@ -36,6 +36,7 @@ function toActor(row: {
   email: string;
   role: string;
   tenantId?: string;
+  canSeeAgencyWidgets?: boolean | null;
 }): ApiActor {
   const role: UserRole = row.role === "agent" ? "agent" : "admin";
   return {
@@ -44,6 +45,7 @@ function toActor(row: {
     email: row.email,
     role,
     tenantId: row.tenantId ?? DEFAULT_TENANT_ID,
+    canSeeAgencyBook: Boolean(row.canSeeAgencyWidgets),
   };
 }
 
@@ -60,6 +62,7 @@ async function loadUser(id: string): Promise<ApiActor | null> {
     email: user.email,
     role: user.role,
     tenantId: user.tenantId,
+    canSeeAgencyWidgets: user.canSeeAgencyWidgets,
   });
 }
 

@@ -19,7 +19,7 @@ export function LibraryUpload({
       <div>
         <Label className="text-xs">Deal</Label>
         <select name="dealId" className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm">
-          <option value="">—</option>
+          <option value="">None</option>
           {related.deals.map((d) => (
             <option key={d.id} value={d.id}>
               {d.title}
@@ -30,7 +30,7 @@ export function LibraryUpload({
       <div>
         <Label className="text-xs">Contact</Label>
         <select name="contactId" className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm">
-          <option value="">—</option>
+          <option value="">None</option>
           {related.contacts.map((c) => (
             <option key={c.id} value={c.id}>
               {c.lastName}, {c.firstName}
@@ -41,7 +41,7 @@ export function LibraryUpload({
       <div>
         <Label className="text-xs">Policy</Label>
         <select name="policyId" className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm">
-          <option value="">—</option>
+          <option value="">None</option>
           {related.policies.map((p) => (
             <option key={p.id} value={p.id}>
               {p.policyNumber}

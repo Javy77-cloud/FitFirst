@@ -18,6 +18,29 @@ function downloadCsv(filename: string, csv: string) {
   URL.revokeObjectURL(url);
 }
 
+export async function runListExportCsv(input: {
+  module: CrmListModule;
+  ids: string[];
+}): Promise<{ ok: boolean; message: string }> {
+  if (input.ids.length === 0) {
+    return { ok: false, message: "Select rows or apply a filter first." };
+  }
+  const form = new FormData();
+  form.set("module", input.module);
+  for (const id of input.ids) form.append("recordId", id);
+  const result = await exportSelectedCsv(form);
+  if (result.ok && result.csv && result.filename) {
+    downloadCsv(result.filename, result.csv);
+  }
+  return { ok: result.ok, message: result.message };
+}
+
+export function listExportCsvLabel(selectedCount: number, filteredCount: number): string {
+  if (selectedCount > 0) return `Export CSV (${selectedCount})`;
+  if (filteredCount > 0) return `Export CSV (${filteredCount} filtered)`;
+  return "Export CSV";
+}
+
 export function ListExportButton({
   module,
   selected,
@@ -37,28 +60,13 @@ export function ListExportButton({
   if (!importEntityForCrmList(module)) return null;
 
   const ids = selected.length ? selected : filteredIds;
-  const label =
-    selected.length > 0
-      ? `Export CSV (${selected.length})`
-      : filteredIds.length > 0
-        ? `Export CSV (${filteredIds.length} filtered)`
-        : "Export CSV";
+  const label = listExportCsvLabel(selected.length, filteredIds.length);
 
   async function run() {
-    if (ids.length === 0) {
-      onMessage("Select rows or apply a filter first.");
-      return;
-    }
     onBusy(true);
-    const form = new FormData();
-    form.set("module", module);
-    for (const id of ids) form.append("recordId", id);
-    const result = await exportSelectedCsv(form);
+    const result = await runListExportCsv({ module, ids });
     onBusy(false);
     onMessage(result.message);
-    if (result.ok && result.csv && result.filename) {
-      downloadCsv(result.filename, result.csv);
-    }
   }
 
   return (

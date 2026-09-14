@@ -22,7 +22,7 @@ export function CarrierDetailWorkspace({
       </div>
       {rail ? (
         <aside
-          className="min-w-0 w-full space-y-3 overflow-x-hidden pt-0"
+          className="min-w-0 w-full space-y-3 pt-0"
           data-ff-carrier-context-rail=""
           data-ff-deal-right-rail=""
         >

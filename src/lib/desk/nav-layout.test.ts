@@ -27,6 +27,7 @@ import {
   removeSubmenuLink,
   reorderPrimaries,
   reorderSubmenu,
+  AGENT_PRIMARY_ORDER,
   resolveNavLayout,
   showPrimary,
   splitNavSections,
@@ -49,13 +50,13 @@ describe("nav layout defaults", () => {
       "leads",
       "deals",
       "contacts",
-      "policies",
       "business",
+      "policies",
       "carriers",
-      "divider",
       "tasks",
       "calendar",
       "templates",
+      "divider",
       "reports",
       "settings",
       "admin",
@@ -67,8 +68,8 @@ describe("nav layout defaults", () => {
       "Leads",
       "Deals",
       "Contacts",
-      "Policies",
       "Business",
+      "Policies",
       "Carriers",
       "Tasks",
       "Calendar",
@@ -91,7 +92,7 @@ describe("nav layout defaults", () => {
   });
 
   it("leaves Deals without a Quotes child and keeps template / admin / policies children only", () => {
-    expect(NAV_LAYOUT_VERSION).toBe(9);
+    expect(NAV_LAYOUT_VERSION).toBe(12);
     const rows = resolveNavLayout(null);
     const byId = Object.fromEntries(
       rows.filter((row) => row.kind === "item").map((row) => [row.id, row]),
@@ -100,15 +101,16 @@ describe("nav layout defaults", () => {
     expect(byId.leads.submenu).toEqual([]);
     expect(byId.contacts.submenu).toEqual([]);
     expect(DEFAULT_SUBMENUS.policies).toEqual([...POLICIES_DEFAULT_KIDS]);
-    expect(DEFAULT_SUBMENUS.policies).toEqual(["my-book", "renewals", "certificates"]);
+    expect(DEFAULT_SUBMENUS.policies).toEqual(["renewals", "certificates"]);
     expect(DEFAULT_SUBMENUS.tasks).toEqual([]);
     expect(DEFAULT_SUBMENUS.calendar).toEqual([]);
     expect(DEFAULT_SUBMENUS.reports).toEqual([]);
     expect(DEFAULT_SUBMENUS.settings).toEqual([]);
-    expect(byId.policies.submenu.map((item) => item.id)).toEqual(["my-book", "renewals", "certificates"]);
-    expect(byId.policies.submenu.map((item) => item.label)).toEqual(["My Book", "Renewals", "Certificates"]);
+    expect(byId.policies.submenu.map((item) => item.id)).toEqual(["renewals", "certificates"]);
+    expect(byId.policies.submenu.map((item) => item.label)).toEqual(["Renewals", "Certificates"]);
     expect(byId.policies.link.href).toBe("/policies");
-    expect(byId.policies.submenu.find((item) => item.id === "my-book")?.href).toBe("/policies");
+    expect(byId.policies.submenu.find((item) => item.id === "renewals")?.href).toBe("/renewals");
+    expect(byId.policies.submenu.find((item) => item.id === "certificates")?.href).toBe("/certificates");
     expect(byId.policies.submenu.every((item) => item.children.length === 0)).toBe(true);
     expect(byId.tasks.submenu).toEqual([]);
     expect(byId.calendar.submenu).toEqual([]);
@@ -206,14 +208,83 @@ describe("nav layout defaults", () => {
     }
     const policies = agent.find((row) => row.kind === "item" && row.id === "policies");
     expect(policies && policies.kind === "item" ? policies.submenu.map((item) => item.id) : []).toEqual([
-      "my-book",
       "renewals",
       "certificates",
     ]);
-    expect(ids).toContain("home");
-    expect(ids).toContain("templates");
-    expect(ids).toContain("reports");
-    expect(ids).toContain("policies");
+    // Shared CRM strip; adminOnly filtered at resolve (settings/admin/operations gone).
+    expect(ids).toEqual([
+      "home",
+      "leads",
+      "deals",
+      "contacts",
+      "business",
+      "policies",
+      "carriers",
+      "tasks",
+      "calendar",
+      "templates",
+      "reports",
+    ]);
+  });
+
+  it("uses the shared initial primary strip for agents (adminOnly filtered)", () => {
+    const agent = resolveNavLayout(null, { isAdmin: false });
+    expect([...AGENT_PRIMARY_ORDER]).toEqual([...DEFAULT_PRIMARY_ORDER]);
+    expect(itemIds(agent)).toEqual(
+      [...DEFAULT_PRIMARY_ORDER].filter(
+        (id) => id !== "divider" && !["settings", "admin", "operations"].includes(id),
+      ),
+    );
+  });
+
+  it("keeps a customized agent primary order after save (no force strip)", () => {
+    const custom = normalizeNavLayout(
+      {
+        version: 12,
+        primaryOrder: [
+          "contacts",
+          "business",
+          "policies",
+          "carriers",
+          "home",
+          "leads",
+          "deals",
+          "tasks",
+          "calendar",
+          "templates",
+          "divider",
+          "reports",
+          "settings",
+          "admin",
+          "operations",
+        ],
+        hiddenPrimaryIds: [],
+        submenus: { policies: ["renewals", "certificates"] },
+      },
+      { isAdmin: false },
+    );
+    expect(itemIds(resolveNavLayout(custom, { isAdmin: false }))).toEqual([
+      "contacts",
+      "business",
+      "policies",
+      "carriers",
+      "home",
+      "leads",
+      "deals",
+      "tasks",
+      "calendar",
+      "templates",
+      "reports",
+    ]);
+  });
+
+  it("reorders primary items on after-drop instead of nesting into the target", () => {
+    const start = defaultStoredNavLayout({ isAdmin: true });
+    const next = applyNavDrop(start, "business", { type: "after", id: "contacts" });
+    const ids = next.primaryOrder.filter((id) => id !== "divider");
+    const contactsAt = ids.indexOf("contacts");
+    expect(ids[contactsAt + 1]).toBe("business");
+    expect(next.submenus.contacts ?? []).not.toContain("business");
   });
 
   it("keeps live desk destinations reachable and omits stubs", () => {
@@ -225,7 +296,7 @@ describe("nav layout defaults", () => {
     expect(hrefs).not.toContain("/quotes");
     expect(ids).not.toContain("merge");
     expect(ids).not.toContain("social");
-    expect(ids).toContain("my-book");
+    expect(ids).not.toContain("my-book");
     expect(ids).toContain("renewals");
     expect(ids).toContain("certificates");
     expect(ids).toContain("book-health");
@@ -264,7 +335,7 @@ describe("nav layout defaults", () => {
       hiddenPrimaryIds: ["operations", "billing"],
       submenus: { admin: ["agents", "operations"], operations: [] },
     });
-    expect(next.version).toBe(9);
+    expect(next.version).toBe(12);
     expect(next.primaryOrder.at(-1)).toBe("operations");
     expect(next.hiddenPrimaryIds).toEqual([]);
     expect(next.submenus.admin).not.toContain("operations");
@@ -284,13 +355,24 @@ describe("nav layout defaults", () => {
     expect(DEFAULT_SUBMENUS.admin).not.toContain("billing");
     expect(DEFAULT_SUBMENUS.admin).not.toContain("compliance");
     expect([...DEFAULT_SUBMENUS.operations]).toEqual([...OPERATIONS_NAV_IDS]);
-    expect([...DEFAULT_SUBMENUS.policies]).toEqual(["my-book", "renewals", "certificates"]);
+    expect([...DEFAULT_SUBMENUS.policies]).toEqual(["renewals", "certificates"]);
   });
 
   it("splits utility items after the divider so they can stay pinned", () => {
     const { main, utility } = splitNavSections(resolveNavLayout(null));
-    expect(itemIds(main)).toEqual(["home", "leads", "deals", "contacts", "policies", "business", "carriers"]);
-    expect(itemIds(utility)).toEqual(["tasks", "calendar", "templates", "reports", "settings", "admin", "operations"]);
+    expect(itemIds(main)).toEqual([
+      "home",
+      "leads",
+      "deals",
+      "contacts",
+      "business",
+      "policies",
+      "carriers",
+      "tasks",
+      "calendar",
+      "templates",
+    ]);
+    expect(itemIds(utility)).toEqual(["reports", "settings", "admin", "operations"]);
   });
 });
 
@@ -314,7 +396,7 @@ describe("normalizeNavLayout", () => {
     expect(stale.primaryOrder).toEqual([...DEFAULT_PRIMARY_ORDER]);
     expect(stale.hiddenPrimaryIds).toEqual([]);
     expect(stale.submenus.contacts).toEqual([]);
-    expect(stale.submenus.policies).toEqual(["my-book", "renewals", "certificates"]);
+    expect(stale.submenus.policies).toEqual(["renewals", "certificates"]);
     expect(stale.primaryOrder.at(-1)).toBe("operations");
     expect(stale.submenus.admin).not.toContain("operations");
     expect(stale.submenus.admin).not.toContain("billing");

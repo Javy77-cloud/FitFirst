@@ -13,6 +13,7 @@ import {
 } from "@/lib/lifecycle/activity";
 import { and, eq } from "drizzle-orm";
 import { flashAction } from "@/lib/flash-action";
+import { resolvePolicyProducerName } from "@/lib/activity/producer";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -126,6 +127,7 @@ export async function logDeskActivity(formData: FormData) {
     })
     .returning();
 
+  const producerName = await resolvePolicyProducerName(related.policyId);
   await db.insert(activityLogs).values({
     tenantId: DEFAULT_TENANT_ID,
     activityId: activity.id,
@@ -139,6 +141,7 @@ export async function logDeskActivity(formData: FormData) {
     leadId: related.leadId,
     direction,
     durationSeconds,
+    producerName,
   });
 
   // In-app popup reminder (task / call / email draft). Always popup — never emails the agent by default.
@@ -200,6 +203,7 @@ export async function completeDeskActivity(formData: FormData) {
     })
     .where(eq(activities.id, id));
 
+  const producerName = await resolvePolicyProducerName(activity.policyId);
   await db.insert(activityLogs).values({
     tenantId: DEFAULT_TENANT_ID,
     activityId: activity.id,
@@ -212,6 +216,7 @@ export async function completeDeskActivity(formData: FormData) {
     dealId: activity.dealId,
     leadId: activity.leadId,
     durationSeconds,
+    producerName,
   });
 
   if (activity.leadId && /follow-up/i.test(activity.title)) {
@@ -246,6 +251,7 @@ export async function updateDeskActivity(formData: FormData) {
     })
     .where(eq(activities.id, id));
 
+  const producerName = await resolvePolicyProducerName(activity.policyId);
   await db.insert(activityLogs).values({
     tenantId: DEFAULT_TENANT_ID,
     activityId: activity.id,
@@ -256,6 +262,7 @@ export async function updateDeskActivity(formData: FormData) {
     accountId: activity.accountId,
     policyId: activity.policyId,
     dealId: activity.dealId,
+    producerName,
   });
 
   revalidateRelated(activity);
@@ -298,6 +305,7 @@ export async function rescheduleDeskActivity(formData: FormData) {
     })
     .where(eq(activities.id, id));
 
+  const producerName = await resolvePolicyProducerName(activity.policyId);
   await db.insert(activityLogs).values({
     tenantId: DEFAULT_TENANT_ID,
     activityId: id,
@@ -310,6 +318,7 @@ export async function rescheduleDeskActivity(formData: FormData) {
     dealId: activity.dealId,
     leadId: activity.leadId,
     direction: "internal",
+    producerName,
   });
 
   revalidateRelated(activity);

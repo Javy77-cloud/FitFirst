@@ -6,8 +6,8 @@ export function SourceSelect({
   id = "source",
   defaultValue,
   label = "Source",
-  allowEmpty = false,
-  emptyLabel = "Pick a source",
+  allowEmpty = true,
+  emptyLabel = "None",
 }: {
   name?: string;
   id?: string;

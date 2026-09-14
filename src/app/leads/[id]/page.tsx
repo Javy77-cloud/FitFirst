@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { formatPersonName } from "@/lib/crm/display";
 import { sourceLabel } from "@/lib/crm/sources";
 import { LINE_LABELS } from "@/lib/crm/bind";
-import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { AwardLeadForm } from "@/components/leads/award-form";
 import { LeadDetailWorkspace } from "@/components/leads/lead-detail-workspace";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
@@ -34,6 +33,8 @@ import { suggestedTagsFor } from "@/lib/tags/module-tags";
 import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
 import { mergeRecordSystemValues } from "@/lib/custom-fields/resolve-layout";
 import { loadModuleLayoutBundle } from "@/lib/custom-fields/store";
+import { loadDeskLineSettings } from "@/lib/db/line-settings";
+import { DEFAULT_HEALTH_SUBFILTERS, DEFAULT_LIFE_SUBFILTERS } from "@/lib/desk/line-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ export default async function LeadDetailPage({
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [row, users, session, agents, routingLog, macros, buttons, scripts, tagExtra, leadLayout] =
+  const [row, users, session, agents, routingLog, macros, buttons, scripts, tagExtra, leadLayout, deskLineSettings] =
     await Promise.all([
       getLead(id),
       listDeskUsers(),
@@ -56,6 +57,7 @@ export default async function LeadDetailPage({
       listEnabledScriptsFor("leads", "edit"),
       listModuleTags("leads").catch(() => [] as { name: string; color: string | null }[]),
       loadModuleLayoutBundle("leads", id).catch(() => null),
+      loadDeskLineSettings().catch(() => null),
     ]);
   if (!row) notFound();
   const { lead, deal, docs } = row;
@@ -81,9 +83,6 @@ export default async function LeadDetailPage({
         email: lead.email,
       }}
     >
-      <div className="mb-3 flex justify-end">
-        <EditLayoutLink module="leads" />
-      </div>
       <RecordDeveloperActions
         module="leads"
         recordId={lead.id}
@@ -113,7 +112,7 @@ export default async function LeadDetailPage({
           {deal ? (
             <RelatedRecordNav
               href={`/deals/${deal.id}`}
-              label="View related deal"
+              label="View Related Deal"
               testId="view-related-deal"
             />
           ) : null}
@@ -175,14 +174,13 @@ export default async function LeadDetailPage({
       <RecordSection
         id="record"
         title="This lead"
-        summary="Edit layout, documents by line, and info/comms rail."
+        summary="Edit layout fields and conversations rail."
       >
         <LeadDetailWorkspace
           leadId={lead.id}
           dealId={deal?.id ?? null}
           insuranceTypeDesired={lead.insuranceTypeDesired}
           state={lead.state ?? "FL"}
-          canConvert={!deal}
           docs={docs}
           rail={<RecordContextRail context={context} />}
         >
@@ -195,6 +193,8 @@ export default async function LeadDetailPage({
               leadLayout?.stored ?? {},
               leadLayout?.fields ?? [],
             )}
+            lifeOptions={(deskLineSettings?.lifeOptions?.length ? deskLineSettings.lifeOptions : DEFAULT_LIFE_SUBFILTERS)}
+            healthOptions={(deskLineSettings?.healthOptions?.length ? deskLineSettings.healthOptions : DEFAULT_HEALTH_SUBFILTERS)}
           />
         </LeadDetailWorkspace>
       </RecordSection>

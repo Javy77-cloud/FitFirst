@@ -11,6 +11,7 @@ import {
   HISTORY_CONFIDENCE_LABEL,
   historyToneClass,
 } from "@/lib/deals/carrier-history";
+import { formatDay } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
 
@@ -84,7 +85,7 @@ export default async function CarrierHistoryPage() {
                     <td>{row.lineOfBusiness}</td>
                     <td className="whitespace-nowrap text-xs">
                       {row.lastPullAt
-                        ? new Date(row.lastPullAt).toISOString().slice(0, 10)
+                        ? formatDay(row.lastPullAt)
                         : "—"}
                       <div className="text-muted-foreground">{row.pullCount} pull{row.pullCount === 1 ? "" : "s"}</div>
                     </td>

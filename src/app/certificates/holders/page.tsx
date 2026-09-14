@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { archiveHolderContact } from "@/app/actions/ams";
 import { AppShell } from "@/components/app-shell";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
@@ -35,11 +36,14 @@ export default async function CertificateHoldersPage({
       <p className="mb-4 text-base text-muted-foreground">
         {HOLDER_CONTACT_DISCLAIMER} {ACORD_STUB_DISCLAIMER}
       </p>
+      <DeskPageTrail
+        fallbackHref="/certificates"
+        crumbs={[
+          { href: "/certificates", label: "Certificates" },
+          { label: "Holders" },
+        ]}
+      />
       <p className="mb-4 text-sm">
-        <Link href="/certificates" className="text-primary hover:underline">
-          Back to COI queue
-        </Link>
-        {" · "}
         <Link href="/certificates/holders" className="text-primary hover:underline">
           Active contacts
         </Link>

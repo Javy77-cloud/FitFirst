@@ -93,8 +93,9 @@ export function MasterSheetFillButton({
         type="button"
         size="default"
         variant="default"
-        className="h-10 min-w-[9.5rem] px-4 text-sm font-semibold tracking-wide whitespace-nowrap bg-fit-green-bg text-fit-green border border-fit-green/40 shadow-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-fit-green hover:text-white hover:border-fit-green hover:shadow-md active:translate-y-0"
+        className="h-10 min-w-[9.5rem] px-4 text-base font-semibold tracking-wide whitespace-nowrap shadow-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
         data-ff-fill-master-sheet=""
+        data-ff-no-hover=""
         disabled={busy}
         onClick={() => void runFill()}
       >

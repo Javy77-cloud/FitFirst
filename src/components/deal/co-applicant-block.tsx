@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
+import { isCoApplicantExplicitlyOff } from "@/lib/custom-fields/co-applicant-fields";
 import {
   CO_APPLICANT_FIELDS,
   coApplicantHasValue,
@@ -12,30 +13,40 @@ import {
 import { SHEET_GROUP_HEADER_STYLE, sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
 import { cn } from "@/lib/utils";
 
-/** Additive co-applicant — required when applicant marital status is Married (spouse). */
+/** Additive co-applicant — required when Married, unless Deal Details switch is Off. */
 export function CoApplicantBlock({
   values,
   maritalStatus,
+  hasCoApplicantFlag,
 }: {
   values: Record<string, QuoteSheetFieldValue>;
   maritalStatus?: string;
+  /** Raw Deal Details `has_co_applicant` value (true/false). Explicit Off collapses + skips required. */
+  hasCoApplicantFlag?: string | null;
 }) {
-  const savedMarried = coApplicantRequired(values);
-  const liveMarried = isMarriedStatus(maritalStatus ?? values.applicant_marital_status?.value);
-  const required = liveMarried || savedMarried;
+  const forcedOff = isCoApplicantExplicitlyOff(hasCoApplicantFlag);
+  const savedMarried = coApplicantRequired(values, { hasCoApplicantFlag });
+  const liveMarried =
+    !forcedOff && isMarriedStatus(maritalStatus ?? values.applicant_marital_status?.value);
+  const required = !forcedOff && (liveMarried || savedMarried);
   const seeded = useMemo(() => coApplicantHasValue(values), [values]);
-  const [manualOpen, setManualOpen] = useState(seeded);
-  const open = required || manualOpen || seeded;
+  const [manualOpen, setManualOpen] = useState(seeded && !forcedOff);
+  const open = !forcedOff && (required || manualOpen || seeded);
 
   useEffect(() => {
+    if (forcedOff) {
+      setManualOpen(false);
+      return;
+    }
     if (required) setManualOpen(true);
-  }, [required]);
+  }, [required, forcedOff]);
 
   return (
     <div
       className="border-b border-border/70 last:border-b-0"
       data-ff-co-applicant=""
       data-ff-co-applicant-required={required ? "1" : "0"}
+      data-ff-co-applicant-off={forcedOff ? "1" : "0"}
     >
       <div
         className={sheetGroupHeaderClass("Co-applicant")}
@@ -44,7 +55,11 @@ export function CoApplicantBlock({
       >
         Co-applicant{required ? " (required — spouse)" : ""}
       </div>
-      {open ? (
+      {forcedOff ? (
+        <p className="px-3 py-2 text-sm text-muted-foreground" data-ff-co-applicant-off-hint="">
+          No co-applicant
+        </p>
+      ) : open ? (
         <div
           className="grid grid-cols-1 gap-x-4 gap-y-1 px-2 py-1.5 sm:grid-cols-2"
           data-ff-co-applicant-fields=""
@@ -95,7 +110,7 @@ export function CoApplicantBlock({
                         className,
                       )}
                     >
-                      <option value="">Select…</option>
+                      <option value="">None</option>
                       {field.options.map((opt) => (
                         <option key={opt} value={opt}>
                           {opt}

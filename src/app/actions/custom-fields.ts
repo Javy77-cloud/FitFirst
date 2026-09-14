@@ -23,9 +23,14 @@ import {
   fieldBuilderHref,
   fieldLayoutListHref,
   parseLayoutModule,
+  requireLayoutModule,
   type FieldLayoutModule,
 } from "@/lib/custom-fields/modules";
 import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
+import {
+  HAS_CO_APPLICANT_KEY,
+  normalizeHasCoApplicantFlag,
+} from "@/lib/custom-fields/co-applicant-fields";
 import { applyModuleSystemValues } from "@/lib/custom-fields/record-system";
 import {
   addFieldToSection,
@@ -33,18 +38,24 @@ import {
   deleteSection,
   relabelSection,
   removeFieldFromLayout,
+  removeFieldOccurrence,
+  layoutContainsFieldKey,
 } from "@/lib/custom-fields/layout";
 import {
+  allLayoutFieldKeys,
   isCustomFieldType,
   parseLayout,
   slugifyFieldKey,
   type CustomFieldDef,
   type CustomFieldType,
 } from "@/lib/custom-fields/types";
+import { persistDealWorkTab } from "@/lib/deals/work-tab";
+import { dealListCascadeSyncValues } from "@/lib/deals/insurance-cascade";
 import { dealDetailsSavedHref } from "@/lib/flash";
 import { flashAction } from "@/lib/flash-action";
 import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
-import { sheetProductForQuotingForm } from "@/lib/deals/deal-line";
+import { resolveDealProduct, sheetProductForQuotingForm } from "@/lib/deals/deal-line";
+import { formatDealPersonName, formatDealTitle } from "@/lib/deals/deal-title";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 
@@ -57,7 +68,8 @@ function lineFrom(form: FormData) {
 }
 
 function moduleFrom(form: FormData): FieldLayoutModule {
-  return parseLayoutModule(str(form, "module"));
+  // Mutations must name the module explicitly — blank must not fall through to deals.
+  return requireLayoutModule(str(form, "module"));
 }
 
 function revalidateDealSurfaces(dealId?: string, line?: string, module: FieldLayoutModule = "deals") {
@@ -125,6 +137,7 @@ export async function saveDealFieldLayout(formData: FormData) {
     }
   }
   if (module === "deals") {
+    // Deals only: one layout mirrored to every LOB line — never call this for leads/etc.
     await saveLayoutForEveryLine(layout);
   } else {
     await saveLayoutForModule(module, layout);
@@ -212,24 +225,36 @@ export async function deleteDealLayoutField(formData: FormData) {
   const line = lineFrom(formData);
   const module = moduleFrom(formData);
   const key = str(formData, "key");
+  const sectionId = str(formData, "sectionId");
   if (!key) return;
   // Tip sep7gu: Remove = layout-only first. Catalog delete is best-effort
   // (system/CORE keys get re-ensured; FK errors must not undo layout remove).
+  // When sectionId is set, remove only that one slot so duplicate keys elsewhere stay.
   if (module === "deals") {
-    const layout = removeFieldFromLayout(await loadLayoutForLine(line), key);
+    const current = await loadLayoutForLine(line);
+    const layout = sectionId
+      ? removeFieldOccurrence(current, sectionId, key)
+      : removeFieldFromLayout(current, key);
     await saveLayoutForEveryLine(layout);
-    try {
-      await deleteFieldDef(key, "deals");
-    } catch {
-      /* layout already saved */
+    if (!layoutContainsFieldKey(layout, key)) {
+      try {
+        await deleteFieldDef(key, "deals");
+      } catch {
+        /* layout already saved */
+      }
     }
   } else {
-    const layout = removeFieldFromLayout(await loadLayoutForModule(module, line), key);
+    const current = await loadLayoutForModule(module, line);
+    const layout = sectionId
+      ? removeFieldOccurrence(current, sectionId, key)
+      : removeFieldFromLayout(current, key);
     await saveLayoutForModule(module, layout);
-    try {
-      await deleteFieldDef(key, module);
-    } catch {
-      /* layout already saved */
+    if (!layoutContainsFieldKey(layout, key)) {
+      try {
+        await deleteFieldDef(key, module);
+      } catch {
+        /* layout already saved */
+      }
     }
   }
   revalidateDealSurfaces(str(formData, "dealId") || undefined, line, module);
@@ -242,56 +267,135 @@ export async function saveDealFieldValues(formData: FormData) {
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) throw new Error("Deal details could not be saved.");
   const defs = await listDealFieldDefs();
-  const custom: Record<string, string> = {};
+  // Details is a partial form: only persist fields on the Deal Details layout.
+  // List-only catalog fields (Priority picklist_8mus, Selling Agency, Pipeline, …)
+  // must not be wiped to "" when the agent edits name/address/etc.
+  const line = str(formData, "line") || deal.lineOfBusiness || "HO";
+  const layout = await loadLayoutForModule("deals", line);
+  const layoutKeys = new Set(allLayoutFieldKeys(layout));
+  const defsOnDetails = defs.filter((field) => layoutKeys.has(field.key));
+  const custom = {
+    ...customValuesFromForm(formData, defsOnDetails),
+  };
+  // Co-applicant switch is UI-owned (not a layout field row). Always persist when posted.
+  if (formData.has(`field_${HAS_CO_APPLICANT_KEY}`)) {
+    custom[HAS_CO_APPLICANT_KEY] = normalizeHasCoApplicantFlag(
+      formData.get(`field_${HAS_CO_APPLICANT_KEY}`),
+    );
+  }
+  Object.assign(
+    custom,
+    dealListCascadeSyncValues({
+      insuranceType: custom.insurance_type,
+      insuranceSubtype: custom.insurance_subtype,
+    }),
+  );
   const system: Record<string, string> = {};
-  for (const field of defs) {
-    if (field.type === "formula") continue;
-    const value = formData.has(`field_${field.key}`) ? String(formData.get(`field_${field.key}`) ?? "") : "";
-    if (field.type === "multi_select") {
-      custom[field.key] = formData
-        .getAll(`field_${field.key}`)
-        .map((item) => String(item))
-        .filter(Boolean)
-        .join(",");
-      continue;
+  for (const field of defsOnDetails) {
+    if (!field.systemKey) continue;
+    if (Object.prototype.hasOwnProperty.call(custom, field.key)) {
+      system[field.systemKey] = custom[field.key];
     }
-    if (field.type === "checkbox") {
-      custom[field.key] = formData.get(`field_${field.key}`) ? "true" : "";
-      continue;
-    }
-    if (field.systemKey) system[field.systemKey] = value;
-    custom[field.key] = value;
   }
   const pipelineFamily = str(formData, "pipelineFamily");
   if (pipelineFamily) system.pipelineFamily = pipelineFamily;
-  await writeRecordValues(dealId, custom);
-  await applySystemDealValues(dealId, system);
+  if (Object.keys(custom).length) {
+    await writeRecordValues(dealId, custom);
+  }
+  if (Object.keys(system).length) {
+    await applySystemDealValues(dealId, system);
+  }
+  await persistDealWorkTab(dealId, "documents").catch(() => null);
   revalidatePath(`/deals/${dealId}`);
+  revalidatePath("/deals");
+  revalidatePath("/pipeline");
   const formId = coerceQuotingFormId(system.quotingForm);
   const form = formId ? quotingFormById(formId) : null;
-  const product = formId ? sheetProductForQuotingForm(formId) : null;
+  const familyFlash = String(system.pipelineFamily ?? "").trim().toLowerCase();
+  const product =
+    (formId ? sheetProductForQuotingForm(formId) : null) ||
+    sheetProductForQuotingForm(system.quotingForm) ||
+    (familyFlash === "life"
+      ? "life"
+      : familyFlash === "health"
+        ? "health"
+        : null);
+  const flashLine =
+    form?.shopLine ||
+    (familyFlash === "life" ? "life" : familyFlash === "health" ? "health" : null) ||
+    str(formData, "line");
   flashAction(
     dealDetailsSavedHref(dealId, {
-      line: form?.shopLine || str(formData, "line"),
+      line: flashLine,
       product: product || str(formData, "product"),
     }),
     "deal-details-saved",
   );
 }
 
-async function applySystemDealValues(dealId: string, system: Record<string, string>) {
-  const named = system.primaryNamedInsured?.trim();
+export async function applySystemDealValues(dealId: string, system: Record<string, string>) {
+  const [existing] = await db.select().from(deals).where(eq(deals.id, dealId));
+  if (!existing) return;
+
+  const firstName = (system.firstName ?? "").trim();
+  const lastName = (system.lastName ?? "").trim();
+  const fromApplicant = formatDealPersonName(firstName, lastName);
+  // Named-insured field if present; else rebuild from Deal Details first/last.
+  // Do not keep a stale convert-time insured name when applicant fields changed.
+  const namedExplicit = (system.primaryNamedInsured ?? "").trim();
+  const named = namedExplicit || fromApplicant || existing.primaryNamedInsured || undefined;
+
   const notes = system.notes;
   const state = system.state?.trim();
   const rawSubtype = system.quotingForm?.trim() ?? "";
   const formId = coerceQuotingFormId(rawSubtype);
   const form = formId ? quotingFormById(formId) : null;
   const product = formId ? sheetProductForQuotingForm(formId) : null;
-  const family = String(system.pipelineFamily ?? "").trim().toLowerCase();
+  const familyRaw = String(system.pipelineFamily ?? "").trim().toLowerCase();
+  const fromSubtypeProduct = sheetProductForQuotingForm(rawSubtype);
+  // Cascade may still post pipelineFamily=pc while subtype is Term Life — trust subtype.
+  const family =
+    familyRaw === "life" || familyRaw === "health"
+      ? familyRaw
+      : fromSubtypeProduct === "life"
+        ? "life"
+        : fromSubtypeProduct === "health"
+          ? "health"
+          : familyRaw;
+
+  const nextLine =
+    form?.lob ||
+    (rawSubtype
+      ? family === "life"
+        ? "LIFE"
+        : family === "health"
+          ? "HEALTH"
+          : existing.lineOfBusiness
+      : existing.lineOfBusiness);
+
+  // Always recompute title from THIS deal's applicant/insured fields + LOB.
+  // Omit contact/lead so a linked lead name cannot freeze or overwrite the title.
+  // leadId / contactId are intentionally not touched.
+  const title = formatDealTitle({
+    firstName: firstName || undefined,
+    lastName: lastName || undefined,
+    primaryNamedInsured: named,
+    existingTitle: existing.title,
+    line: nextLine,
+    quotingForm: form?.id ?? (rawSubtype || undefined),
+    policySubType: form?.label ?? (rawSubtype || undefined),
+  });
+
+  const lifeHealthLine =
+    family === "life" ? "life" : family === "health" ? "health" : null;
+  const lifeHealthLob =
+    family === "life" ? "LIFE" : family === "health" ? "HEALTH" : null;
+
   await db
     .update(deals)
     .set({
       primaryNamedInsured: named || undefined,
+      title,
       notes: notes ?? undefined,
       state: state || undefined,
       ...(form
@@ -304,18 +408,30 @@ async function applySystemDealValues(dealId: string, system: Record<string, stri
           }
         : rawSubtype
           ? {
+              // Life/Health freeform subtype — store label as quotingForm too.
+              quotingForm: rawSubtype,
               policySubType: rawSubtype,
-              ...(family === "life"
-                ? { lineOfBusiness: "LIFE", quotingLine: "life" }
-                : family === "health"
-                  ? { lineOfBusiness: "HEALTH", quotingLine: "health" }
-                  : {}),
+              ...(lifeHealthLob
+                ? { lineOfBusiness: lifeHealthLob, quotingLine: lifeHealthLine! }
+                : {}),
             }
           : {}),
       updatedAt: new Date(),
     })
     .where(eq(deals.id, dealId));
-  if (form && product) {
+
+  const sheetProduct =
+    product ||
+    (lifeHealthLine
+      ? resolveDealProduct({
+          quotingForm: rawSubtype || null,
+          policySubType: rawSubtype || null,
+          lineOfBusiness: lifeHealthLob,
+          quotingLine: lifeHealthLine,
+        })
+      : null);
+  const sheetLine = form?.shopLine || lifeHealthLine || null;
+  if (sheetLine && sheetProduct) {
     let [sheet] = await db
       .select()
       .from(quoteSheets)
@@ -323,7 +439,7 @@ async function applySystemDealValues(dealId: string, system: Record<string, stri
         and(
           eq(quoteSheets.tenantId, DEFAULT_TENANT_ID),
           eq(quoteSheets.dealId, dealId),
-          eq(quoteSheets.line, form.shopLine),
+          eq(quoteSheets.line, sheetLine),
         ),
       );
     if (!sheet) {
@@ -332,8 +448,8 @@ async function applySystemDealValues(dealId: string, system: Record<string, stri
         .values({
           tenantId: DEFAULT_TENANT_ID,
           dealId,
-          line: form.shopLine,
-          values: emptySheetValues(form.shopLine, product),
+          line: sheetLine,
+          values: emptySheetValues(sheetLine, sheetProduct),
         })
         .returning();
       sheet = created;
@@ -344,7 +460,7 @@ async function applySystemDealValues(dealId: string, system: Record<string, stri
         .set({
           values: {
             ...sheet.values,
-            sheet_product: { value: product, status: "confirmed", source: "agent" },
+            sheet_product: { value: sheetProduct, status: "confirmed", source: "agent" },
           },
           updatedAt: new Date(),
         })

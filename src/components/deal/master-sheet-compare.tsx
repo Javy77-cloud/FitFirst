@@ -32,6 +32,7 @@ export function MasterSheetWorkspace({
   formLabel,
   unlocked,
   approvedBy,
+  hasCoApplicantFlag,
 }: {
   dealId: string;
   line: ShopLine;
@@ -42,6 +43,7 @@ export function MasterSheetWorkspace({
   formLabel: string;
   unlocked: boolean;
   approvedBy?: string | null;
+  hasCoApplicantFlag?: string | null;
 }) {
   async function persistSheet(opts?: { flash?: boolean }) {
     const el = document.getElementById(MASTER_SHEET_FORM_ID);
@@ -62,6 +64,7 @@ export function MasterSheetWorkspace({
         sourceDocCount={sourceDocCount}
         formId={MASTER_SHEET_FORM_ID}
         persistSheet={() => persistSheet()}
+        hasCoApplicantFlag={hasCoApplicantFlag}
       />
       <SheetApproveGate
         dealId={dealId}
@@ -84,6 +87,7 @@ export function MasterSheetCompare({
   sourceDocCount = 0,
   formId = MASTER_SHEET_FORM_ID,
   persistSheet,
+  hasCoApplicantFlag,
 }: {
   dealId: string;
   line: ShopLine;
@@ -93,6 +97,7 @@ export function MasterSheetCompare({
   sourceDocCount?: number;
   formId?: string;
   persistSheet?: () => Promise<void>;
+  hasCoApplicantFlag?: string | null;
 }) {
   const product = parseSheetProduct(productParam ?? values.sheet_product?.value, line);
   const catalog = asList(fieldsForLine(line, product));
@@ -149,7 +154,7 @@ export function MasterSheetCompare({
         <div data-ff-master-sheet-scroll="" className="overflow-visible">
           {groups.map((group) =>
             group.group === "Applicant" ? (
-              <ApplicantHousehold key="applicant-household" values={values} />
+              <ApplicantHousehold key="applicant-household" values={values} hasCoApplicantFlag={hasCoApplicantFlag} />
             ) : group.group === "Co-applicant" ? null : group.group === "Vehicle" || group.group === "Vehicles" ? (
               <RepeatableUnitBlocks
                 key={group.group}
@@ -322,7 +327,7 @@ function SheetCell({
             locked && "opacity-70",
           )}
         >
-          <option value="">Select…</option>
+          <option value="">None</option>
           {options.map((opt) => (
             <option key={opt} value={opt}>
               {opt}

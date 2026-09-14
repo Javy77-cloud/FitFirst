@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { accounts, carriers, contacts, deals, deskModuleTags, leads, policies } from "@/lib/db/schema";
+import { accounts, carriers, contacts, deals, deskModuleTags, leads, policies, reviewTasks } from "@/lib/db/schema";
 import { getActor } from "@/lib/auth/session";
 import {
   isTagModule,
@@ -30,6 +30,7 @@ function revalidateModule(module: TagModule, recordId?: string) {
   revalidatePath("/settings/tags");
   if (module === "deals") revalidatePath("/pipeline");
   if (module === "accounts") revalidatePath("/businesses");
+  if (module === "tasks") revalidatePath("/tasks");
 }
 
 export async function saveRecordTags(formData: FormData) {
@@ -70,6 +71,11 @@ export async function writeRecordTags(module: TagModule, recordId: string, tags:
       .update(carriers)
       .set({ tags: next, updatedAt: new Date() })
       .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, recordId)));
+  } else if (module === "tasks") {
+    await db
+      .update(reviewTasks)
+      .set({ tags: next })
+      .where(and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), eq(reviewTasks.id, recordId)));
   } else {
     await db
       .update(policies)
@@ -102,6 +108,12 @@ async function recordsForModule(module: TagModule) {
       .select({ id: carriers.id, tags: carriers.tags })
       .from(carriers)
       .where(eq(carriers.tenantId, DEFAULT_TENANT_ID));
+  }
+  if (module === "tasks") {
+    return db
+      .select({ id: reviewTasks.id, tags: reviewTasks.tags })
+      .from(reviewTasks)
+      .where(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID));
   }
   return db
     .select({ id: policies.id, tags: policies.tags })
@@ -288,6 +300,11 @@ export async function updateModuleTagColor(formData: FormData) {
       set: { color, updatedAt: new Date() },
     });
   revalidateModule(module);
-  flashStay(formData, `/settings/tags?module=${module}`, "tag-color-saved");
+  // Dialog callers (Manage tags on lists) must stay put — no redirect.
+  // Settings page passes returnTo so toast + soft refresh still work there.
+  const stay = String(formData.get("next") ?? formData.get("returnTo") ?? "").trim();
+  if (stay.startsWith("/") && !stay.startsWith("//")) {
+    flashStay(formData, stay, "tag-color-saved");
+  }
 }
 

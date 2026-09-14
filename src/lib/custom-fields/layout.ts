@@ -17,11 +17,37 @@ export function addSection(layout: FieldLayout, columnId: string, label = "New s
   return next;
 }
 
-export function relabelSection(layout: FieldLayout, sectionId: string, label: string): FieldLayout {
+export function relabelSection(
+  layout: FieldLayout,
+  sectionId: string,
+  label: string,
+  opts?: { allowEmpty?: boolean },
+): FieldLayout {
   const next = cloneLayout(layout);
   for (const column of next.columns) {
     const section = column.sections.find((item) => item.id === sectionId);
-    if (section) section.label = label.trim() || section.label;
+    if (!section) continue;
+    // While typing, allow empty / partial labels. Empty-on-blur falls back to "Section".
+    if (opts?.allowEmpty) section.label = label;
+    else section.label = label.trim() || "Section";
+  }
+  return next;
+}
+
+/** Clone a section in place (same fields). New section id; label gets " (copy)". */
+export function duplicateSection(layout: FieldLayout, sectionId: string): FieldLayout {
+  const next = cloneLayout(layout);
+  for (const column of next.columns) {
+    const idx = column.sections.findIndex((item) => item.id === sectionId);
+    if (idx < 0) continue;
+    const source = column.sections[idx]!;
+    const copy = {
+      id: newSectionId(),
+      label: `${source.label.trim() || "Section"} (copy)`,
+      fieldKeys: [...source.fieldKeys],
+    };
+    column.sections.splice(idx + 1, 0, copy);
+    break;
   }
   return next;
 }
@@ -45,6 +71,31 @@ export function addFieldToSection(layout: FieldLayout, sectionId: string, fieldK
   return next;
 }
 
+
+/** Remove a single occurrence of a field key from one section (duplicates stay elsewhere). */
+export function removeFieldOccurrence(
+  layout: FieldLayout,
+  sectionId: string,
+  fieldKey: string,
+): FieldLayout {
+  const next = cloneLayout(layout);
+  for (const column of next.columns) {
+    const section = column.sections.find((item) => item.id === sectionId);
+    if (!section) continue;
+    const at = section.fieldKeys.indexOf(fieldKey);
+    if (at < 0) continue;
+    section.fieldKeys.splice(at, 1);
+    break;
+  }
+  return next;
+}
+
+export function layoutContainsFieldKey(layout: FieldLayout, fieldKey: string): boolean {
+  return layout.columns.some((column) =>
+    column.sections.some((section) => section.fieldKeys.includes(fieldKey)),
+  );
+}
+
 export function removeFieldFromLayout(layout: FieldLayout, fieldKey: string): FieldLayout {
   const next = cloneLayout(layout);
   for (const column of next.columns) {
@@ -54,6 +105,7 @@ export function removeFieldFromLayout(layout: FieldLayout, fieldKey: string): Fi
   }
   return next;
 }
+
 
 export function insertFieldAfter(layout: FieldLayout, afterKey: string, fieldKey: string): FieldLayout {
   const next = removeFieldFromLayout(layout, fieldKey);

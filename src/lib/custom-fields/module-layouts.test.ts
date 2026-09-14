@@ -45,6 +45,7 @@ describe("sep7bv equal-width chips + Edit Layout on every CRM module", () => {
       "contacts",
       "businesses",
       "carriers",
+      "tasks",
     ]);
     expect(FIELD_LAYOUT_MODULE_LABEL).toEqual({
       leads: "Leads",
@@ -53,6 +54,7 @@ describe("sep7bv equal-width chips + Edit Layout on every CRM module", () => {
       contacts: "Contacts",
       businesses: "Business",
       carriers: "Carriers",
+      tasks: "Tasks",
     });
     expect(parseLayoutModule("business")).toBe("businesses");
     expect(parseLayoutModule("accounts")).toBe("businesses");

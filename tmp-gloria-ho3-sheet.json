@@ -1,0 +1,808 @@
+home|t|2026-09-13 17:02:20.211-04|{
+    "bfe": {
+        "value": "0",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "zip": {
+        "value": "34747",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "beds": {
+        "value": "4",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "city": {
+        "value": "Kissimmee",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "form": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "pool": {
+        "value": "no",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "acres": {
+        "value": "0.066",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "baths": {
+        "value": "3",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "flash": {
+        "value": "0",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "notes": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "state": {
+        "value": "FL",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "usage": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "county": {
+        "value": "OSCEOLA",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "zoning": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "animals": {
+        "value": "no",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "carport": {
+        "value": "no",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "hydrant": {
+        "value": "Within 1,000 feet",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "stories": {
+        "value": "2",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "terrain": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "address1": {
+        "value": "8944 Adriatico LN",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "basement": {
+        "value": "no",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "exterior": {
+        "value": "Masonry",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "land_use": {
+        "value": "001",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "returnTo": {
+        "value": "/deals/8f4e7b68-2de3-458e-914b-ba60ea3c47aa?tab=documents&line=home",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "deadbolts": {
+        "value": "yes",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "dog_breed": {
+        "value": "no",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "elevation": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "homestead": {
+        "value": "0",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "hvac_year": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "occupancy": {
+        "value": "Occupied",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "parcel_id": {
+        "value": "182527558700010920",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "roof_deck": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "roof_year": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "sprinkler": {
+        "value": "no",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "claims_5yr": {
+        "value": "0",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "coverage_a": {
+        "value": "433613",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "coverage_b": {
+        "value": "43368",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "coverage_c": {
+        "value": "108404",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "coverage_d": {
+        "value": "86723",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "coverage_e": {
+        "value": "300000",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "coverage_f": {
+        "value": "1000",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "firm_panel": {
+        "value": "12097C0020G",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "flood_zone": {
+        "value": "X",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "foundation": {
+        "value": "Slab",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "land_value": {
+        "value": "70000.0",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "lease_term": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "pool_fence": {
+        "value": "no",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "rce_source": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "roof_shape": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "sale_price": {
+        "value": "0",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "trampoline": {
+        "value": "no",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "wind_speed": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "year_built": {
+        "value": "2017",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "entity_type": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "garage_type": {
+        "value": "2",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "loan_number": {
+        "value": "0509210662",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "mailing_zip": {
+        "value": "33016",
+        "source": "agent",
+        "status": "check",
+        "sourceLabel": "deal details"
+    },
+    "mobile_home": {
+        "value": "no",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "square_feet": {
+        "value": "2102",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "subdivision": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "tenant_name": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "construction": {
+        "value": "Masonry",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "flood_policy": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "living_units": {
+        "value": "1",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "mailing_city": {
+        "value": "Miami",
+        "source": "agent",
+        "status": "check",
+        "sourceLabel": "deal details"
+    },
+    "primary_heat": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "roof_to_wall": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "water_backup": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "applicant_dob": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "building_code": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "central_alarm": {
+        "value": "no",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "driver_1_name": {
+        "value": "Gloria Martinez",
+        "source": "agent",
+        "status": "check",
+        "sourceLabel": "deal details"
+    },
+    "fire_district": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "loss_of_rents": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "mailing_state": {
+        "value": "Fl",
+        "source": "agent",
+        "status": "check",
+        "sourceLabel": "deal details"
+    },
+    "named_insured": {
+        "value": "Gloria Martinez",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "plumbing_year": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "policy_number": {
+        "value": "1501-1703-2475",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "records_check": {
+        "value": "Applicant name: API says MARTINEZ GLORIA, sheet says Gloria Martinez (from agent). Named insured: API says MARTINEZ GLORIA, sheet says Gloria Martinez (from agent). mailing address: API says 16021 NW 79TH CT, MIAMI LAKES, FL 33016, sheet says 16021 NW 79CT (from agent). address1: Gemini says 10358 NW 30 TER Doral, sheet says 8944 Adriatico LN (from agent). address1: Gemini says 10358 NW 30 TER Doral, sheet says 8944 Adriatico LN (from agent). applicant address: Gemini says 8944 ADRIATICO LN KISSIMMEE, FL 34747, sheet says 16021 NW 79CT (from agent). applicant phone: Gemini says (786) 303-0316, sheet says 1-508-922-0612 (from agent). mailing address: Gemini says 10358 NW 30 TER Doral, FL 33172, sheet says 16021 NW 79CT (from agent).",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "roof_covering": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "sheet_product": {
+        "value": "homeowners",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "wind_mit_date": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "wind_mit_form": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "aop_deductible": {
+        "value": "2500",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "applicant_name": {
+        "value": "Gloria Martinez",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "assessed_value": {
+        "value": "402800.0",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "contents_limit": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "date_inspected": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "effective_date": {
+        "value": "06/28/2026",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "miles_to_coast": {
+        "value": "52.7",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "mortgagee_name": {
+        "value": "WELLS FARGO BANK, NA, ITS SUCCESSORS AND/OR ASSIGNS",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "roof_condition": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "year_effective": {
+        "value": "2017",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "year_purchased": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "applicant_email": {
+        "value": "edmersonv@gmail.com",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "applicant_phone": {
+        "value": "1-508-922-0612",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "assessment_year": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "current_carrier": {
+        "value": "Universal Property & Casualty Insurance Company",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "current_premium": {
+        "value": "6567.76",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "driver_1_gender": {
+        "value": "Female",
+        "source": "agent",
+        "status": "check",
+        "sourceLabel": "deal details"
+    },
+    "electrical_year": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "expiration_date": {
+        "value": "06/28/2027",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "four_point_date": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "mailing_address": {
+        "value": "16021 NW 79CT",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "months_occupied": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "secondary_water": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "smoke_detectors": {
+        "value": "no",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "applicant_gender": {
+        "value": "Female",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "co_applicant_dob": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "ordinance_or_law": {
+        "value": "108403",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "protection_class": {
+        "value": "3",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "additional_living": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "applicant_address": {
+        "value": "16021 NW 79CT",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "co_applicant_name": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "four_point_result": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "improvement_value": {
+        "value": "332800.0",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "legal_description": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "mortgagee_address": {
+        "value": "PO Box 100515 Florence, SC 29502",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "renters_liability": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "water_heater_year": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "co_applicant_email": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "co_applicant_phone": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "electrical_updated": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "inspection_company": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "landlord_liability": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "number_of_families": {
+        "value": "1",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "opening_protection": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "wind_mit_inspector": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "years_with_carrier": {
+        "value": "2",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "co_applicant_gender": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "driver_1_occupation": {
+        "value": "Business owner",
+        "source": "agent",
+        "status": "check",
+        "sourceLabel": "deal details"
+    },
+    "firm_effective_date": {
+        "value": "2013-06-18",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "sinkhole_deductible": {
+        "value": "no",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "applicant_employment": {
+        "value": "Employed",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "applicant_occupation": {
+        "value": "Business owner",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "business_on_premises": {
+        "value": "no",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "hurricane_deductible": {
+        "value": "8672",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "roof_deck_attachment": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "wind_hail_deductible": {
+        "value": "2500",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "miles_to_fire_station": {
+        "value": "Within 5 miles",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "primary_plumbing_type": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "co_applicant_employment": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "co_applicant_occupation": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "electrical_circuit_amps": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "secondary_named_insured": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "applicant_marital_status": {
+        "value": "Married",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "applicant_education_level": {
+        "value": "Associate",
+        "source": "agent",
+        "status": "confirmed"
+    },
+    "replacement_cost_estimate": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "co_applicant_marital_status": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "co_applicant_education_level": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "current_policy_named_insured": {
+        "value": "GLORIA MARTINEZ",
+        "source": "extracted",
+        "status": "check",
+        "sourceLabel": "dec page"
+    },
+    "license_or_certificate_number": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    },
+    "permission_pull_credit_history": {
+        "value": "yes",
+        "source": "agent",
+        "status": "check",
+        "sourceLabel": "default"
+    },
+    "permission_pull_driving_history": {
+        "value": "yes",
+        "source": "agent",
+        "status": "check",
+        "sourceLabel": "default"
+    },
+    "co_applicant_relationship_to_insured": {
+        "value": "",
+        "source": "blank",
+        "status": "missing"
+    }
+}

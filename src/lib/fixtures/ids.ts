@@ -135,6 +135,7 @@ export const PIPELINE_LIFE_ID = "55555555-5555-4555-8555-555555555503";
 export const PIPELINE_WON_LOST_ID = "55555555-5555-4555-8555-555555555504";
 export const PIPELINE_FLOOD_ID = "55555555-5555-4555-8555-555555555505";
 export const PIPELINE_ARCHIVE_ID = "55555555-5555-4555-8555-555555555506";
+export const PIPELINE_RENEWALS_ID = "55555555-5555-4555-8555-555555555507";
 
 export const PIPELINE_IDS_BY_SLUG: Record<string, string> = {
   "p-c": PIPELINE_PC_ID,
@@ -143,6 +144,7 @@ export const PIPELINE_IDS_BY_SLUG: Record<string, string> = {
   "won-lost": PIPELINE_WON_LOST_ID,
   flood: PIPELINE_FLOOD_ID,
   archive: PIPELINE_ARCHIVE_ID,
+  renewals: PIPELINE_RENEWALS_ID,
 };
 
 export const HARBOR_LEAD_ID = "66666666-6666-4666-8666-666666666661";
@@ -249,6 +251,8 @@ export const HEALTH_SHEET_ID = "cc888888-8888-4888-8888-000000000804";
 
 export const ADMIN_USER_ID = "44444444-4444-4444-8444-444444444401";
 export const AGENT_USER_ID = "44444444-4444-4444-8444-444444444402";
+/** Agency-book agent (same book as admin; agent chrome). Off ADMIN/AGENT 401–402. */
+export const GARCIA_AGENT_USER_ID = "44444444-4444-4444-8444-444444444403";
 /** Stable hashed demo bearer for /api/v1 (plaintext `ff_demo_admin`). */
 export const DEMO_API_TOKEN_ID = "a0111111-a011-4111-8111-a01111111101";
 /** Frozen demo producer. Off ADMIN/AGENT 401–403 and Elena 441–461. */
@@ -260,6 +264,7 @@ export const PENDING_MFA_USER_ID = "44444444-4444-4444-8444-4444444444f2";
 export const PENDING_MFA_INVITE = "invite-nora-pending-mfa-desk";
 export const ADMIN_NAME = "Javy Rivera";
 export const AGENT_NAME = "Maya Chen";
+export const GARCIA_AGENT_NAME = "Javier Garcia";
 
 /** Policy + document versions on Elena. Off pack E quote/proposal …4e1–4e3 and quote PDF …4d1/4d2. */
 export const ELENA_DOC_DEC_ID = "b0421111-b042-4042-8042-b04211111101";
@@ -505,7 +510,7 @@ export const DESK_AGENT_IDS = {
 export const SEEDED_DESK_AGENTS = [
   { id: DESK_AGENT_IDS.admin, slug: "admin", displayName: "Agency admin", role: "admin" },
   { id: DESK_AGENT_IDS.javy, slug: "javy", displayName: "Javy Garcia", role: "agent" },
-  { id: DESK_AGENT_IDS.producer, slug: "producer", displayName: "Desk producer", role: "agent" },
+  { id: GARCIA_AGENT_USER_ID, slug: "javier", displayName: "Javier Garcia", role: "agent" },
   { id: FROZEN_AGENT_USER_ID, slug: "luis", displayName: "Luis Vega", role: "agent" },
   { id: PENDING_MFA_USER_ID, slug: "nora", displayName: "Nora Frost", role: "agent" },
 ] as const;

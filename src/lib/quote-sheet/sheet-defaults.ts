@@ -218,6 +218,13 @@ export const PRIMARY_HEAT_OPTIONS = [
   "Other",
 ] as const;
 
+/** People's Trust / Slate insurance score range (Gloria HO3 2026-09-13). */
+export const INSURANCE_SCORE_RANGE_OPTIONS = [
+  "Above Average",
+  "Average",
+  "Below Average",
+] as const;
+
 /** Primary plumbing type (carrier portals — Javy 2026-09-09). */
 export const PRIMARY_PLUMBING_OPTIONS = [
   "Copper",
@@ -249,6 +256,7 @@ export const FOUNDATION_OPTIONS = [
 
 /** Construction = wall construction (11) — Javy 2026-09-09 night lock. */
 export const CONSTRUCTION_OPTIONS = [
+  "Masonry",
   "Frame",
   "Frame-Stucco",
   "Aluminum siding",

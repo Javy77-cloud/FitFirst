@@ -194,7 +194,7 @@ export function QuoteFileActions({
     <>
       <div className="flex shrink-0 items-center gap-1" data-ff-quote-file-actions={quoteId}>
         <IconBadgeButton
-          title="Download quote file from carrier"
+          title="Download Quote File From Carrier"
           count={carrierFiles.length}
           onClick={() => toggle("carrier")}
           testId={`quote-carrier-files-${quoteId}`}
@@ -202,7 +202,7 @@ export function QuoteFileActions({
           <Download className="size-3.5" />
         </IconBadgeButton>
         <IconBadgeButton
-          title="Quick quote view"
+          title="Quick Quote View"
           count={0}
           onClick={() => toggle("quick")}
           testId={`quote-quick-view-${quoteId}`}
@@ -210,7 +210,7 @@ export function QuoteFileActions({
           <Eye className="size-3.5" />
         </IconBadgeButton>
         <IconBadgeButton
-          title="Upload / view our quote files"
+          title="Upload / View Our Quote Files"
           count={agencyFiles.length}
           onClick={() => toggle("agency")}
           testId={`quote-agency-files-${quoteId}`}
@@ -222,7 +222,7 @@ export function QuoteFileActions({
       <Dialog open={open === "carrier"} onOpenChange={(next) => setOpen(next ? "carrier" : null)}>
         <DialogContent className="sm:max-w-md" data-ff-quote-carrier-files-dialog={quoteId}>
           <DialogHeader>
-            <DialogTitle className="text-navy">Carrier quote files</DialogTitle>
+            <DialogTitle className="text-navy">Carrier Quote Files</DialogTitle>
             <DialogDescription>
               {carrierName} · files tagged from the carrier API or bot snapshot.
             </DialogDescription>
@@ -246,7 +246,7 @@ export function QuoteFileActions({
       <Dialog open={open === "quick"} onOpenChange={(next) => setOpen(next ? "quick" : null)}>
         <DialogContent className="sm:max-w-lg" data-ff-quote-quick-view-dialog={quoteId}>
           <DialogHeader>
-            <DialogTitle className="text-navy">Quick quote view</DialogTitle>
+            <DialogTitle className="text-navy">Quick Quote View</DialogTitle>
             <DialogDescription>{carrierName}</DialogDescription>
           </DialogHeader>
           <dl className="grid grid-cols-[7.5rem_1fr] gap-x-3 gap-y-2 text-sm" data-ff-quote-quick-view="">

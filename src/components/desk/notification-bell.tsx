@@ -112,6 +112,7 @@ export function NotificationBell({
                 setLocallyRead((prev) => [...prev, ...ids]);
                 setLocalUnread((count) => Math.max(0, count - ids.length));
               }}
+              onMarkedAllRead={() => setLocalUnread(0)}
               alerts={recent.map((alert) => ({
                 id: alert.id,
                 title: alert.title,

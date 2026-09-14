@@ -12,6 +12,8 @@ import {
   duplicateSelectedRecord,
   openMergeForSelection,
 } from "@/app/actions/list-selection";
+import { createDealFromSourceDeal } from "@/app/actions/deal-create";
+import { assignSelectedOwner } from "@/app/actions/list-bulk";
 import { confirmDeleteOnce, confirmHardDelete } from "@/lib/desk/confirm-hard-delete";
 import { DealDocsUpload } from "@/components/deal/deal-docs-upload";
 import { Button } from "@/components/ui/button";
@@ -37,7 +39,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { runListExportCsv } from "@/components/lists/list-export-button";
 import { asDevHubModule, listSelectionActions, type CrmListModule, type SelectionRecord } from "@/lib/lists/selection-actions";
+import type { MassUpdateOwner } from "@/components/lists/mass-update";
 
 type MacroOption = { id: string; name: string; kind?: string };
 type ButtonOption = {
@@ -61,7 +65,9 @@ function ActionLabel({ label, reason }: { label: string; reason?: string }) {
 export function SelectionActionsMenu({
   module,
   selected,
+  filteredIds = [],
   records,
+  owners = [],
   macros,
   buttons,
   busy,
@@ -72,7 +78,9 @@ export function SelectionActionsMenu({
 }: {
   module: CrmListModule;
   selected: string[];
+  filteredIds?: string[];
   records: SelectionRecord[];
+  owners?: MassUpdateOwner[];
   macros: MacroOption[];
   buttons: ButtonOption[];
   busy: boolean;
@@ -90,15 +98,18 @@ export function SelectionActionsMenu({
     module,
     selected: selectedRecords,
     hasMacros: macros.length > 0,
+    filteredCount: filteredIds.length,
   });
   const hubModule = asDevHubModule(module);
   const [compose, setCompose] = useState<"email" | "sms" | null>(null);
   const [attachOpen, setAttachOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assignOwnerId, setAssignOwnerId] = useState("");
   const [subject, setSubject] = useState("Desk follow-up");
   const [body, setBody] = useState("");
   const deleteLock = useRef(false);
 
-  if (selected.length === 0) return null;
+  // Keep Actions visible so Export CSV works on the filtered set with no row ticks.
 
   function formWithIds(): FormData {
     const form = new FormData();
@@ -115,9 +126,41 @@ export function SelectionActionsMenu({
     else if (result.ok) router.refresh();
   }
 
+  async function onExportCsv() {
+    const ids = selected.length ? selected : filteredIds;
+    onBusy(true);
+    const result = await runListExportCsv({ module, ids });
+    onBusy(false);
+    onMessage(result.message);
+  }
+
   async function onDuplicate() {
     onBusy(true);
     await finish(await duplicateSelectedRecord(formWithIds()));
+  }
+
+  async function onCreateNewDeal() {
+    if (module !== "deals" || selected.length !== 1) {
+      onMessage("Pick one deal to create a new shop for the same contact.");
+      return;
+    }
+    onBusy(true);
+    const form = new FormData();
+    form.set("sourceDealId", selected[0]!);
+    await finish(await createDealFromSourceDeal(form));
+  }
+
+  async function onAssign() {
+    if (!assignOwnerId) {
+      onMessage("Pick an owner.");
+      return;
+    }
+    onBusy(true);
+    const form = formWithIds();
+    form.set("ownerId", assignOwnerId);
+    const result = await assignSelectedOwner(form);
+    if (result.ok) setAssignOpen(false);
+    await finish(result);
   }
 
   async function onMerge() {
@@ -257,6 +300,15 @@ export function SelectionActionsMenu({
       setAttachOpen(true);
       return;
     }
+    if (id === "assign") {
+      setAssignOwnerId(owners[0]?.id ?? "");
+      setAssignOpen(true);
+      return;
+    }
+    if (id === "export_csv") {
+      void onExportCsv();
+      return;
+    }
     if (id === "print") {
       window.print();
       return;
@@ -273,6 +325,7 @@ export function SelectionActionsMenu({
       return;
     }
     if (id === "duplicate") void onDuplicate();
+    if (id === "create_new_deal") void onCreateNewDeal();
     if (id === "merge") void onMerge();
     if (id === "archive") void onArchive();
     if (id === "delete") void onDelete();
@@ -280,10 +333,18 @@ export function SelectionActionsMenu({
   }
 
   const extras = actions.filter(
-    (item) => item.id === "convert" || item.id === "bind" || item.id === "attach_document",
+    (item) =>
+      item.id === "convert" ||
+      item.id === "bind" ||
+      item.id === "attach_document" ||
+      item.id === "create_new_deal" ||
+      item.id === "assign",
   );
   const core = actions.filter(
-    (item) => !["convert", "bind", "attach_document", "run_macro", "delete"].includes(item.id),
+    (item) =>
+      !["convert", "bind", "attach_document", "create_new_deal", "assign", "run_macro", "delete"].includes(
+        item.id,
+      ),
   );
   const runMacro = actions.find((item) => item.id === "run_macro");
   const del = actions.find((item) => item.id === "delete");
@@ -349,7 +410,7 @@ export function SelectionActionsMenu({
       <Dialog open={compose !== null} onOpenChange={(open) => !open && setCompose(null)}>
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>{compose === "sms" ? "Queue SMS" : "Queue email"}</DialogTitle>
+            <DialogTitle>{compose === "sms" ? "Queue SMS" : "Queue Email"}</DialogTitle>
             <DialogDescription>
               Writes the desk outbound queue and activity log. No vendor send from this menu.
             </DialogDescription>
@@ -435,6 +496,53 @@ export function SelectionActionsMenu({
           ) : null}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
+        <DialogContent className="sm:max-w-sm" showCloseButton data-testid="list-assign-owner">
+          <DialogHeader>
+            <DialogTitle>Assign owner</DialogTitle>
+            <DialogDescription>
+              Sets the owner/agent on {selected.length} selected{" "}
+              {selected.length === 1 ? "row" : "rows"}. Soft-refresh after save.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="list-assign-owner" className="text-xs">
+                Owner
+              </Label>
+              <select
+                id="list-assign-owner"
+                className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+                value={assignOwnerId}
+                onChange={(event) => setAssignOwnerId(event.target.value)}
+                data-testid="list-assign-owner-select"
+              >
+                <option value="">Pick an owner…</option>
+                {owners.map((owner) => (
+                  <option key={owner.id} value={owner.id}>
+                    {owner.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" size="sm" onClick={() => setAssignOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={busy || !assignOwnerId || owners.length === 0}
+              onClick={() => void onAssign()}
+            >
+              Assign {selected.length}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </>
 
   );
@@ -454,6 +562,8 @@ function ActionItem({
       disabled={!action.enabled || busy}
       variant={action.variant}
       title={action.reason}
+      data-testid={action.id === "export_csv" ? "list-export-csv" : undefined}
+      data-ff-list-export={action.id === "export_csv" ? "" : undefined}
       onClick={() => {
         if (!action.enabled) return;
         onPick(action.id, action.href);

@@ -13,7 +13,8 @@ import { upsertFieldDef } from "@/lib/custom-fields/store";
 
 export const BUSINESS_ENTITY_TYPE_PICKLIST = "Business Entity Type";
 export const BUSINESS_INDUSTRY_PICKLIST = "Business Industry";
-export const BUSINESS_SOURCE_PICKLIST = "Business Source";
+/** Shared sitewide Lead Source global list (same as Contacts / Leads). */
+export const BUSINESS_SOURCE_PICKLIST = "Lead Source";
 
 export const BUSINESS_DETAIL_PICKLIST_BINDINGS = [
   {

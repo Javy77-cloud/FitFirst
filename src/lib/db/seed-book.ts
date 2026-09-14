@@ -4,6 +4,7 @@ import {
   ADMIN_USER_ID,
   AGENCY_SETTINGS_ID,
   AGENT_USER_ID,
+  GARCIA_AGENT_USER_ID,
   FROZEN_AGENT_ALERT_ID,
   FROZEN_AGENT_MESSAGE_ID,
   FROZEN_AGENT_USER_ID,
@@ -38,6 +39,7 @@ import {
   TENANT_ID,
 } from "../fixtures/ids";
 import { DEMO_JAVY_TOTP_SECRET } from "../auth/totp";
+import { hashPassword } from "../auth/password";
 import { db } from "./index";
 import {
   agencySettings,
@@ -328,6 +330,74 @@ export async function seedUsersAndBook() {
         meetingAddress: "Suite 112 · producer desk",
         updatedAt: new Date(),
       },
+    });
+
+  const garciaPasswordHash = hashPassword("javier");
+  await db
+    .insert(users)
+    .values({
+      id: GARCIA_AGENT_USER_ID,
+      tenantId: TENANT_ID,
+      name: "Javier Garcia",
+      email: "javier@fitfirst.local",
+      username: "javier",
+      role: "agent",
+      passwordHash: garciaPasswordHash,
+      active: true,
+      accessStatus: "active",
+      canAccessModules: true,
+      canSeeAgencyWidgets: true,
+      officeLabel: "Palm Bay HQ",
+      territoryLabel: "Brevard",
+      mustSetPassword: false,
+      mfaEnrolled: true,
+      mustEnrollMfa: false,
+      mfaMethod: "email",
+      mfaEmail: "javier@fitfirst.local",
+      mfaSecret: DEMO_JAVY_TOTP_SECRET,
+      totpSecret: DEMO_JAVY_TOTP_SECRET,
+      mfaDemoBypass: true,
+      meetingAddress: "Suite 113 · agency book desk",
+    })
+    .onConflictDoUpdate({
+      target: users.id,
+      set: {
+        name: "Javier Garcia",
+        email: "javier@fitfirst.local",
+        username: "javier",
+        role: "agent",
+        passwordHash: garciaPasswordHash,
+        active: true,
+        accessStatus: "active",
+        canAccessModules: true,
+        canSeeAgencyWidgets: true,
+        officeLabel: "Palm Bay HQ",
+        territoryLabel: "Brevard",
+        mustSetPassword: false,
+        mfaEnrolled: true,
+        mustEnrollMfa: false,
+        mfaMethod: "email",
+        mfaEmail: "javier@fitfirst.local",
+        mfaSecret: DEMO_JAVY_TOTP_SECRET,
+        totpSecret: DEMO_JAVY_TOTP_SECRET,
+        mfaDemoBypass: true,
+        meetingAddress: "Suite 113 · agency book desk",
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(deskAgents)
+    .values({
+      id: GARCIA_AGENT_USER_ID,
+      tenantId: TENANT_ID,
+      slug: "javier",
+      displayName: "Javier Garcia",
+      role: "agent",
+    })
+    .onConflictDoUpdate({
+      target: deskAgents.id,
+      set: { displayName: "Javier Garcia", role: "agent", slug: "javier" },
     });
 
   await db

@@ -29,6 +29,7 @@ import { RecordTags } from "@/components/tags/record-tags";
 import { fieldBuilderHref } from "@/lib/custom-fields/modules";
 import { colorsFromModuleTags } from "@/lib/tags/tag-colors";
 import { suggestedTagsFor } from "@/lib/tags/module-tags";
+import { BusinessLayoutTemplatePicker } from "@/components/businesses/business-layout-template-picker";
 
 const LABEL_TO_KEY: Record<string, string> = {
   Name: "name",
@@ -88,6 +89,7 @@ export function BusinessOverflowMenu({
   const [assignOpen, setAssignOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [mergeOpen, setMergeOpen] = useState(false);
+  const [layoutOpen, setLayoutOpen] = useState(false);
   const [reminderNote, setReminderNote] = useState("");
 
   const [q, setQ] = useState("");
@@ -161,6 +163,7 @@ export function BusinessOverflowMenu({
           >
             Edit Layout
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setLayoutOpen(true)}>Layout Templates</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setAssignOpen(true)}>Assign</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setReminderOpen(true)}>Set Reminder</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setArchiveOpen(true)}>Archive</DropdownMenuItem>
@@ -185,6 +188,25 @@ export function BusinessOverflowMenu({
             )}
             colors={colorsFromModuleTags(tagExtra)}
           />
+        </DialogContent>
+      </Dialog>
+
+
+      <Dialog open={layoutOpen} onOpenChange={setLayoutOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Layout Templates</DialogTitle>
+            <DialogDescription>
+              Classic (Dense, one column) or Card (Two column). Saved per agency.
+            </DialogDescription>
+          </DialogHeader>
+          {layoutOpen ? (
+            <BusinessLayoutTemplatePicker
+              key="business-layout-templates"
+              accountId={accountId}
+              onApplied={() => setLayoutOpen(false)}
+            />
+          ) : null}
         </DialogContent>
       </Dialog>
 

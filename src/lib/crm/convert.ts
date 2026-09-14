@@ -6,7 +6,7 @@ import { CORE_FIELDS } from "@/lib/custom-fields/defaults";
 import { pipelineSlugFromLeadPipeline } from "@/lib/custom-fields/lead-picklist-options";
 import { dealValuesFromLead, filterLeadForCarry } from "@/lib/custom-fields/transfer";
 import { formatDealTitle } from "@/lib/deals/deal-title";
-import { coerceQuotingFormId } from "@/lib/quoting/forms";
+import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
 
 export type ConvertLead = LeadCopyFields & {
   lastName: string;
@@ -29,9 +29,76 @@ export function shopLinesForConvert(primaryLine: string): ShopLine[] {
   return fromLob ? [fromLob] : ["home"];
 }
 
-export function resolveConvertLine(requested: string | null | undefined, leadLine?: string | null) {
+/** Insurance Type picklist labels → LOB when subtype is empty / Life / Health. */
+const INSURANCE_TYPE_LABEL_TO_LOB: Record<string, string> = {
+  // Legacy product-line labels still resolve when stored on older leads.
+  home: "HO",
+  homeowners: "HO",
+  landlord: "HO",
+  renters: "HO",
+  auto: "AUTO",
+  "rec / rv": "RV",
+  "rec/rv": "RV",
+  rv: "RV",
+  "recreational vehicle": "RV",
+  flood: "FLOOD",
+  umbrella: "UMBRELLA",
+  commercial: "GL",
+  life: "LIFE",
+  health: "HEALTH",
+  gl: "GL",
+  bop: "BOP",
+  "workers comp": "WC",
+  "workers' comp": "WC",
+};
+
+function lobFromFormOrLabel(raw: string | null | undefined): string | null {
+  const value = (raw ?? "").trim();
+  if (!value) return null;
+  if ((LINES as readonly string[]).includes(value)) return value;
+  if ((LINES as readonly string[]).includes(value.toUpperCase())) return value.toUpperCase();
+  const formId = coerceQuotingFormId(value);
+  if (formId) {
+    // Life / Health legacy map points at HO3 — prefer label map for those words.
+    const lower = value.toLowerCase();
+    if (lower === "life" || lower === "health") {
+      return INSURANCE_TYPE_LABEL_TO_LOB[lower] ?? null;
+    }
+    const form = quotingFormById(formId);
+    if (form?.lob && (LINES as readonly string[]).includes(form.lob)) return form.lob;
+  }
+  return INSURANCE_TYPE_LABEL_TO_LOB[value.toLowerCase()] ?? null;
+}
+
+/**
+ * Prefer lead custom Insurance subtype, then Insurance Type.
+ * Used so convert does not silently fall to HO when the lead already named a product.
+ */
+export function lobFromLeadInsuranceCustom(
+  leadCustom?: Record<string, string> | null,
+): string | null {
+  if (!leadCustom) return null;
+  const subtype = (leadCustom.insurance_subtype ?? "").trim();
+  const type = (leadCustom.insurance_type ?? "").trim();
+  return lobFromFormOrLabel(subtype) ?? lobFromFormOrLabel(type);
+}
+
+/**
+ * Resolve convert LOB: lead custom subtype/type first, then explicit requested,
+ * then insuranceTypeDesired, else HO schema default.
+ */
+export function resolveConvertLine(
+  requested: string | null | undefined,
+  leadLine?: string | null,
+  leadCustom?: Record<string, string> | null,
+) {
+  const fromCustom = lobFromLeadInsuranceCustom(leadCustom);
+  if (fromCustom) return fromCustom;
   if (requested && (LINES as readonly string[]).includes(requested)) return requested;
-  if (leadLine && (LINES as readonly string[]).includes(leadLine)) return leadLine;
+  const fromDesired = lobFromFormOrLabel(leadLine) ?? (
+    leadLine && (LINES as readonly string[]).includes(leadLine) ? leadLine : null
+  );
+  if (fromDesired) return fromDesired;
   return "HO";
 }
 
@@ -50,11 +117,17 @@ export function dealNotesFromLead(lead: ConvertLead): string | null {
   return parts.length ? parts.join("\n") : null;
 }
 
-export function dealTitleFromLead(lead: ConvertLead, line: string) {
+export function dealTitleFromLead(
+  lead: ConvertLead,
+  line: string,
+  form?: { quotingForm?: string | null; policySubType?: string | null },
+) {
   return formatDealTitle({
     firstName: lead.firstName,
     lastName: lead.lastName,
     line,
+    quotingForm: form?.quotingForm,
+    policySubType: form?.policySubType,
   });
 }
 
@@ -71,23 +144,38 @@ export function convertFieldCopy(
   const shopLines = shopLinesForConvert(line);
   const fromPipeline = pipelineSlugFromLeadPipeline(leadCustom?.pipeline);
   const subtypeRaw = (leadCustom?.insurance_subtype ?? "").trim();
-  const quotingForm = coerceQuotingFormId(subtypeRaw);
+  const typeRaw = (leadCustom?.insurance_type ?? "").trim();
+  // Do not coerce Life/Health type words through legacy HO3 mapping.
+  const pcFormId =
+    coerceQuotingFormId(subtypeRaw) ??
+    (line === "LIFE" || line === "HEALTH" ? null : coerceQuotingFormId(typeRaw)) ??
+    null;
+  const form = pcFormId ? quotingFormById(pcFormId) : null;
+  const policySubType = subtypeRaw || form?.label || null;
+  const lifeHealthForm =
+    line === "LIFE" || line === "HEALTH" ? subtypeRaw || null : null;
+  const quotingForm = form?.id ?? lifeHealthForm;
+  const quotingLine = (form?.shopLine ?? shopLines[0] ?? "home") as ShopLine;
   return {
     dealState,
     shopLines,
     pipelineSlug: fromPipeline || pipelineSlugForLine(line),
-    title: dealTitleFromLead(lead, line),
+    title: dealTitleFromLead(lead, line, {
+      quotingForm: quotingForm ?? null,
+      policySubType,
+    }),
     notes: dealNotesFromLead(filtered),
     source: filtered.source ?? null,
     primaryNamedInsured: namedInsuredFromLead(filtered) || null,
     risk: leadOntoRisk(filtered, dealState),
     sheetValues: fillSheetFromLead(filtered),
-    sheetLine: (line === "AUTO" ? "auto" : shopLines[0] ?? "home") as ShopLine,
+    sheetLine: (line === "AUTO" ? "auto" : quotingLine) as ShopLine,
+    quotingLine,
     carried: filtered,
     fieldValues: dealValuesFromLead(filtered, CORE_FIELDS, carryFields, leadCustom),
     quotingForm: quotingForm ?? null,
-    policySubType: subtypeRaw || null,
-    insuranceType: (leadCustom?.insurance_type ?? "").trim() || null,
+    policySubType,
+    insuranceType: typeRaw || null,
     contactMailingAddress: (leadCustom?.contact_mailing_address ?? "").trim() || null,
   };
 }

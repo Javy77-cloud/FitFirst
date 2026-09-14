@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function NewCallPage() {
   const options = await listRelatedOptions();
   return (
-    <AppShell title="Log call" eyebrow="New">
+    <AppShell title="Log Call" eyebrow="New">
       <form action={createHeaderCall} className="ff-card max-w-xl space-y-3 p-4">
         <p className="text-sm text-muted-foreground">
           Desk call note — not a live trunk. Assign it to a Contact, Policy, Business, or Lead.

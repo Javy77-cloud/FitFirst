@@ -1,3 +1,4 @@
+import { formatDisplayDate } from "@/lib/dates/display-format";
 export const DEFAULT_TENANT_ID =
   process.env.TENANT_ID ?? "11111111-1111-4111-8111-111111111111";
 
@@ -837,10 +838,8 @@ export const CARRIER_BINDING_LABEL: Record<CarrierBinding, string> = {
 };
 
 export function formatDay(value: Date | string | null | undefined): string {
-  if (!value) return "—";
-  const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toISOString().slice(0, 10);
+  // Desk display default M-D-Y. Pass personal format via formatDisplayDate when prefs are loaded.
+  return formatDisplayDate(value);
 }
 
 export function clientStatusLabel(status: ClientStatus): string {

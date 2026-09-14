@@ -31,7 +31,11 @@ export function ActorSwitcher({
       <div className="text-caption text-sidebar-foreground/90">
         {actor.name}
         {" · "}
-        {actor.role === "admin" ? "Admin · full desk" : "Agent · own book"}
+        {actor.role === "admin"
+          ? "Admin · full desk"
+          : actor.canSeeAgencyBook
+            ? "Agent · agency book"
+            : "Agent · own book"}
       </div>
       <button
         type="submit"

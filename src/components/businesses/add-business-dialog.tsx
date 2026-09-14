@@ -252,7 +252,7 @@ export function AddBusinessDialog({
                   value={entityType}
                   onChange={(e) => setEntityType(e.target.value)}
                 >
-                  <option value="">Pick a type</option>
+                  <option value="">None</option>
                   {BUSINESS_ENTITY_TYPE_OPTIONS.map((opt) => (
                     <option key={opt} value={opt}>
                       {opt}
@@ -271,7 +271,7 @@ export function AddBusinessDialog({
                   value={industry}
                   onChange={(e) => setIndustry(e.target.value)}
                 >
-                  <option value="">Pick an industry</option>
+                  <option value="">None</option>
                   {BUSINESS_INDUSTRY_OPTIONS.map((opt) => (
                     <option key={opt} value={opt}>
                       {opt}

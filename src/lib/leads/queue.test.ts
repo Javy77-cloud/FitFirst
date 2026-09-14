@@ -8,33 +8,38 @@ import {
   isLeadOnQueue,
   isParkedFromDefaultLeadsView,
   isUntouchedLead,
+  leadCadenceLabel,
   leadStatusLabel,
   matchesLeadQueueFilters,
+  normalizeLeadCadence,
   normalizeLeadStatus,
   normalizeLeadTemperature,
   nurtureDueAt,
   responseTimerState,
   searchMatchLabel,
   sortLeadQueue,
+  splitLegacyLeadStatus,
   temperatureForStatus,
+  temperatureForCadence,
 } from "./queue";
 
+
 describe("lead queue status", () => {
-  it("maps product names onto existing enums and adds warm/cold", () => {
-    expect(normalizeLeadStatus("in-progress")).toBe("qualified");
+  it("maps pipeline Status + Cadence cleanly", () => {
+    expect(normalizeLeadStatus("in-progress")).toBe("in_progress");
+    expect(normalizeLeadStatus("qualified")).toBe("in_progress");
     expect(normalizeLeadStatus("recycled")).toBe("lost");
-    expect(normalizeLeadStatus("warm")).toBe("warm");
-    expect(normalizeLeadStatus("cold")).toBe("cold");
-    expect(leadStatusLabel("qualified")).toBe("in-progress");
+    expect(normalizeLeadStatus("warm")).toBe("in_progress"); // legacy cadence value
+    expect(normalizeLeadStatus("converted")).toBe("converted");
+    expect(leadStatusLabel("in_progress")).toBe("In progress");
     expect(leadStatusLabel("lost")).toBe("Lost");
     expect(leadStatusLabel("nurture")).toBe("Nurture");
-    expect(leadStatusLabel("cold")).toBe("Cold (not interested)");
-    expect(leadStatusLabel("warm")).toBe("warm");
+    expect(leadStatusLabel("converted")).toBe("Converted");
     expect(normalizeLeadStatus("nurture")).toBe("nurture");
   });
 
   it("removes converted leads from the work queue", () => {
-    expect(isLeadOnQueue({ status: "new" })).toBe(true);
+    expect(isLeadOnQueue({ status: "in_progress" })).toBe(true);
     expect(isLeadOnQueue({ status: "converted" })).toBe(false);
     expect(isConvertedLead({ status: "contacted", convertedDealId: "deal-1" })).toBe(true);
     expect(isLeadOnQueue({ status: "lost" })).toBe(true);
@@ -103,9 +108,10 @@ describe("lead queue filters", () => {
   it("defaults brand-new leads to Hot and maps warm/cold statuses", () => {
     expect(normalizeLeadTemperature(null)).toBe("hot");
     expect(normalizeLeadTemperature("warm")).toBe("warm");
-    expect(temperatureForStatus("new", null)).toBe("hot");
-    expect(temperatureForStatus("warm", "hot")).toBe("warm");
-    expect(temperatureForStatus("cold", "hot")).toBe("cold");
+    expect(temperatureForCadence("new", null)).toBe("hot");
+    expect(temperatureForCadence("warm", "hot")).toBe("warm");
+    expect(temperatureForCadence("cold", "hot")).toBe("cold");
+    expect(temperatureForStatus("lost", "hot")).toBe("cold");
   });
 });
 

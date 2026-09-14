@@ -70,6 +70,17 @@ export const GEMINI_EXTRACT_JSON_KEYS = [
   "current_carrier",
   "secondary_named_insured",
   "mortgagee_address",
+  "protection_class",
+  "number_of_families",
+  // DP3 / Southern Oak / UPCIC dec rating block extras
+  "form",
+  "sprinkler",
+  "fire_alarm",
+  "central_alarm",
+  "bceg_grade",
+  "loss_of_rents",
+  "landlord_liability",
+  "fair_rental_value",
 ] as const;
 
 /** Personal Auto dec / ID card / photo of auto dec. */
@@ -215,7 +226,9 @@ Field meaning guidance (from desk synonym brief):
 - Four-point: Insured/Applicant Name; Address Inspected; year built; stories (MUST when labeled); roof covering / year; construction_type; electrical_year / plumbing_year / hvac_year / water_heater_year (MUST when labeled — year of last update, age, or approx year); electrical_updated (MUST when labeled); electrical_circuit_amps (MUST when labeled — total/circuit amps as digits only, e.g. 200); occupancy / months_occupied when on the form; roof_condition; date_inspected (prefer label "Date Inspected" at top of 4pt — not a stale form stamp); four_point_date; license_number; inspection_company.
 - Dec: Named insured; Residence premises / Location; Coverage A; hurricane / AOP / wind-hail deductibles;
   policy number; premium; effective/expiration; mortgagee + mortgagee_address; loan number; ordinance or law; water backup; scheduled personal property;
-  Cov B–F when printed; sinkhole_deductible; current_carrier (company/writing company); secondary_named_insured.
+  Cov B–F when printed; sinkhole_deductible; current_carrier (company/writing company); secondary_named_insured;
+  form (HO3/DP-3); opening_protection; sprinkler; fire_alarm/central_alarm; bceg_grade; roof_covering/shape/year;
+  loss_of_rents/fair_rental_value; landlord_liability (Cov L on DP).
 `;
 }
 
@@ -231,7 +244,7 @@ export function buildGeminiUserPrompt(docType?: string | null, shopLine?: string
       "This is a four-point inspection. MUST fill when labeled on the form: date_inspected (top 'Date Inspected' / 'Date of Inspection' — NOT a footer form-revision stamp), four_point_date (same value when only one date), applicant_name, property_address, year_built, stories, roof_covering, roof_year, construction_type, electrical_year, plumbing_year, hvac_year, water_heater_year, electrical_updated, electrical_circuit_amps, license_number, inspection_company, occupancy, months_occupied. Also fill when present: roof_condition, usage. Prefer date_inspected from the top Date Inspected label over any other date stamp. stories / water_heater_year / electrical_updated / electrical_circuit_amps are required when the form shows them. electrical_circuit_amps: digits only from Total Amps / Circuit Amps / Amps = N (e.g. 200 amps → 200). For system years use the printed year of last update / age / approx year (convert age-in-years to an approximate calendar year when the form shows age only).";
   } else if (kind === "dec" || kind.includes("dec") || kind.includes("declar") || kind === "policy") {
     focus =
-      "This is a dec/policy. MUST fill when present: named_insured/current_policy_name_insured, secondary_named_insured, property_address, coverage_a, coverage_b, coverage_c, coverage_d, coverage_e, coverage_f, hurricane_deductible, aop_deductible, wind_hail_deductible, ordinance_law, water_backup, sinkhole_deductible, policy_number, current_premium, current_carrier, effective_date, expiration_date, mortgagee, mortgagee_address, loan_number. Cov A alone is OK when B–F are missing. If the image is actually a four-point (or clearly shows Date Inspected / Date of Inspection), ALSO fill date_inspected and four_point_date from that top inspection date — do not ignore it just because the upload type said dec.";
+      "This is a dec/policy. MUST fill when present: named_insured/current_policy_name_insured, secondary_named_insured, property_address, coverage_a, coverage_b, coverage_c, coverage_d, coverage_e, coverage_f, hurricane_deductible, aop_deductible, wind_hail_deductible, ordinance_law, water_backup, sinkhole_deductible, policy_number, current_premium, current_carrier, effective_date, expiration_date, mortgagee, mortgagee_address, loan_number, protection_class, number_of_families, year_built, construction_type, occupancy, usage, form (HO3/DP-3/DP3/HO-3 etc from title or Form line), opening_protection, sprinkler (Automatic Sprinklers), fire_alarm / central_alarm (Fire Alarm / Burglar), bceg_grade (BCEG Grade), roof_covering, roof_shape, roof_year, loss_of_rents / fair_rental_value (Coverage D Fair Rental Value limit), landlord_liability (Coverage L Personal Liability when dwelling/DP). For sinkhole_deductible: if the dec says the policy does NOT provide sinkhole coverage (or only catastrophic ground cover collapse) and sinkhole may be purchased for additional premium, set sinkhole_deductible to No — do not leave it blank. For water_backup: only fill when an endorsement/limit is printed; do not invent. For sprinkler/fire_alarm/opening_protection: when Rating Information says None, set value to no or None — do not leave blank. Cov A alone is OK when B–F are missing. If the image is actually a four-point (or clearly shows Date Inspected / Date of Inspection), ALSO fill date_inspected and four_point_date from that top inspection date — do not ignore it just because the upload type said dec.";
   } else if (kind === "photo" || kind.includes("photo") || kind === "inspection" || kind.includes("inspect")) {
     focus =
       "This may be a phone photo (JPEG/PNG/HEIC) of a dec, wind mit, 4-point, or inspection — not a PDF. Read the visible text from the image and fill every labeled field you can see. Prefer the same keys as dec / wind mit / four-point when the form type is clear from the page.";

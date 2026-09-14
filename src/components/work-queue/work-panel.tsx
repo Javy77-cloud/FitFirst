@@ -13,6 +13,7 @@ import { FieldSelect } from "@/components/policy/field-select";
 import { ADMIN_USER_ID } from "@/lib/fixtures/ids";
 import type { DeskUser, PolicyWorkFlag, PolicyWorkNote, ReviewTask } from "@/lib/db/schema";
 import { WORK_FLAGS, WORK_STATUSES, workFlagLabel, workStatusLabel } from "@/lib/work-queue/types";
+import { formatDay } from "@/lib/domain";
 import { WorkFlagPills } from "./flag-pills";
 
 function dueDefault() {
@@ -174,7 +175,7 @@ export function PolicyWorkPanel({
                 <li key={task.id} className="rounded-md border border-border px-3 py-2">
                   <div className="text-sm font-medium">{task.title}</div>
                   <div className="text-base text-muted-foreground">
-                    Due {task.dueDate.toISOString().slice(0, 10)} · {task.kind.replaceAll("_", " ")}
+                    Due {formatDay(task.dueDate)} · {task.kind.replaceAll("_", " ")}
                   </div>
                 </li>
               ))}

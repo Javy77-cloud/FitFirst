@@ -12,6 +12,15 @@ import { db } from "@/lib/db";
 import { alerts, reviewTasks } from "@/lib/db/schema";
 import { flashAction } from "@/lib/flash-action";
 import { isSnoozeDelayUnit, snoozeDueAt } from "@/lib/leads/follow-up-templates";
+import {
+  composeDeskTaskTitle,
+  isDeskTaskType,
+} from "@/lib/tasks/task-types";
+import { defaultFieldsForModule } from "@/lib/custom-fields/modules";
+import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
+import { applyModuleSystemValues } from "@/lib/custom-fields/record-system";
+import { listFieldDefs, writeRecordValues } from "@/lib/custom-fields/store";
+import { normalizeTags, parseTagsFromForm } from "@/lib/tags/module-tags";
 
 function revalidateNotificationSurfaces() {
   revalidatePath("/");
@@ -70,6 +79,138 @@ export async function completeTask(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/tasks");
   if (id) revalidatePath(`/tasks/${id}`);
+}
+
+
+/** Sitewide Create Task form — review_tasks with linked record + assignee. */
+export async function createDeskTask(formData: FormData) {
+  const session = await currentDeskSession();
+  if (!session.signedIn) return;
+
+  const kindRaw = String(formData.get("kind") ?? "work_reminder").trim();
+  const kind = isDeskTaskType(kindRaw) ? kindRaw : "work_reminder";
+  const notes = String(formData.get("titleNotes") ?? "").trim();
+  const titleRaw = String(formData.get("title") ?? "").trim();
+  const title = titleRaw || composeDeskTaskTitle(kind, notes);
+
+  const contactId = isDeskUuid(String(formData.get("contactId") ?? ""))
+    ? String(formData.get("contactId")).trim()
+    : null;
+  const dealId = isDeskUuid(String(formData.get("dealId") ?? ""))
+    ? String(formData.get("dealId")).trim()
+    : null;
+  const policyId = isDeskUuid(String(formData.get("policyId") ?? ""))
+    ? String(formData.get("policyId")).trim()
+    : null;
+  const accountId = isDeskUuid(String(formData.get("accountId") ?? ""))
+    ? String(formData.get("accountId")).trim()
+    : null;
+  const leadId = isDeskUuid(String(formData.get("leadId") ?? ""))
+    ? String(formData.get("leadId")).trim()
+    : null;
+  const recordId = isDeskUuid(String(formData.get("recordId") ?? ""))
+    ? String(formData.get("recordId")).trim()
+    : null;
+  const recordType = String(formData.get("recordType") ?? "").trim();
+  if (!recordId) return;
+
+  const assigneeRaw = String(formData.get("assigneeId") ?? "").trim();
+  const assigneeId = isDeskUuid(assigneeRaw) ? assigneeRaw : session.userId;
+
+  const dueRaw = String(formData.get("dueDate") ?? "").trim();
+  const dueDate = dueRaw ? new Date(`${dueRaw}T16:00:00.000Z`) : new Date();
+
+  // Ensure FK columns match picked record type when only recordId was set.
+  let contact = contactId;
+  let deal = dealId;
+  let policy = policyId;
+  let account = accountId;
+  let lead = leadId;
+  if (recordType === "contact" && !contact) contact = recordId;
+  if (recordType === "deal" && !deal) deal = recordId;
+  if (recordType === "policy" && !policy) policy = recordId;
+  if (recordType === "business" && !account) account = recordId;
+  if (recordType === "lead" && !lead) lead = recordId;
+
+  const statusFromField = String(formData.get("field_status") ?? "").trim();
+  const initialStatus = statusFromField || "open";
+
+  const [row] = await db
+    .insert(reviewTasks)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      title,
+      kind,
+      dueDate,
+      status: initialStatus,
+      contactId: contact,
+      dealId: deal,
+      policyId: policy,
+      accountId: account,
+      leadId: lead,
+      assigneeId,
+      ...(initialStatus === "done" ? { completedAt: new Date() } : {}),
+    })
+    .returning();
+
+  if (row) {
+    const defs = await listFieldDefs("tasks").catch(() => defaultFieldsForModule("tasks"));
+    const custom = customValuesFromForm(formData, defs);
+    if (Object.keys(custom).length > 0) {
+      await writeRecordValues(row.id, custom, "tasks");
+    }
+    const taskTags = normalizeTags([
+      ...parseTagsFromForm(formData),
+      ...(custom.tags != null ? [custom.tags] : []),
+    ]);
+    if (taskTags.length > 0) {
+      await db.update(reviewTasks).set({ tags: taskTags }).where(eq(reviewTasks.id, row.id));
+    }
+    // Keep review_tasks.status in sync when layout status picklist is present.
+    if (statusFromField && statusFromField !== initialStatus) {
+      await db
+        .update(reviewTasks)
+        .set({
+          status: statusFromField,
+          ...(statusFromField === "done" ? { completedAt: new Date() } : {}),
+        })
+        .where(eq(reviewTasks.id, row.id));
+    }
+    await applyModuleSystemValues(
+      "tasks",
+      row.id,
+      {
+        ...custom,
+        title,
+        kind,
+        dueDate: dueRaw,
+        due_date: dueRaw,
+        assigneeId: assigneeId ?? "",
+        assignee: assigneeId ?? "",
+        status: statusFromField || custom.status || initialStatus,
+      },
+      defs,
+    );
+  }
+
+  await emitDeskEvent("task.due", {
+    title,
+    dueDate: dueDate.toISOString(),
+    dealId: deal,
+    contactId: contact,
+    policyId: policy,
+  });
+  revalidateTasks({ dealId: deal, contactId: contact, policyId: policy });
+  if (account) revalidatePath(`/businesses/${account}`);
+  if (lead) revalidatePath(`/leads/${lead}`);
+  if (row) revalidatePath(`/tasks/${row.id}`);
+
+  const returnTo = String(formData.get("returnTo") ?? "").trim();
+  if (returnTo.startsWith("/")) {
+    flashAction(returnTo, "task-saved");
+    return;
+  }
+  if (row) flashAction(`/tasks/${row.id}`, "task-saved");
 }
 
 export async function createReviewTask(formData: FormData) {

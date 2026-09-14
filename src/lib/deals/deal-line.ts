@@ -59,6 +59,9 @@ const PRODUCT_TO_FORM: Partial<Record<SheetProduct, string>> = {
   workers_comp: "WC",
   rv: "RV",
   umbrella: "UMBRELLA",
+  // Life / Health store freeform subtype labels in quotingForm (Term Life, …).
+  life: "Term Life",
+  health: "Marketplace",
 };
 
 /** Master-sheet product catalog driven by quoting form / insurance subtype. */
@@ -78,9 +81,20 @@ const FORM_TO_PRODUCT: Record<string, SheetProduct> = {
   BOP: "bop",
 };
 
+/** Life freeform subtype labels stored in quotingForm / policySubType. */
+const LIFE_FORM_LABEL =
+  /^(life|term\s*life|whole\s*life|universal\s*life|variable\s*life|indexed\s*universal\s*life|iul|final\s*expense)$/i;
+const HEALTH_FORM_LABEL =
+  /^(health|marketplace|medicare(?:\s*(?:advantage|a\s*&\s*b|a\s*and\s*b|parts?\s*a))?|supplemental(?:\s*health)?|medigap|medicare\s*supplement)$/i;
+
 export function sheetProductForQuotingForm(formId: string | null | undefined): SheetProduct | null {
   if (!formId) return null;
-  return FORM_TO_PRODUCT[formId] ?? null;
+  const trimmed = formId.trim();
+  if (!trimmed) return null;
+  if (FORM_TO_PRODUCT[trimmed]) return FORM_TO_PRODUCT[trimmed]!;
+  if (LIFE_FORM_LABEL.test(trimmed)) return "life";
+  if (HEALTH_FORM_LABEL.test(trimmed)) return "health";
+  return null;
 }
 
 export function shopLineForProduct(product: SheetProduct): ShopLine {
@@ -104,8 +118,21 @@ export function resolveDealProduct(input: {
   quotingForm?: string | null;
 }): SheetProduct {
   if (isSheetProduct(input.productParam)) return input.productParam;
+  const line = parseShopLine(
+    input.quotingLine,
+    LOB_TO_SHOP_LINE[input.lineOfBusiness ?? ""] ?? "home",
+  );
   const fromForm = sheetProductForQuotingForm(input.quotingForm);
+  const fromSubtype = sheetProductForQuotingForm(input.policySubType);
+  // LIFE / HEALTH LOB (or quoting_line) wins over a stale P&C form — blank
+  // quoting_form historically fell back to HO3 and opened Homeowners.
+  if (line === "life" || line === "health") {
+    if (fromForm && shopLineForProduct(fromForm) === line) return fromForm;
+    if (fromSubtype && shopLineForProduct(fromSubtype) === line) return fromSubtype;
+    return defaultProductForLine(line);
+  }
   if (fromForm) return fromForm;
+  if (fromSubtype) return fromSubtype;
   if (isSheetProduct(input.sheetProduct)) return input.sheetProduct;
   if (isSheetProduct(input.policySubType)) return input.policySubType;
   const picked = Boolean(
@@ -116,10 +143,6 @@ export function resolveDealProduct(input: {
       input.quotingForm,
   );
   if (!picked) return "homeowners";
-  const line = parseShopLine(
-    input.quotingLine,
-    LOB_TO_SHOP_LINE[input.lineOfBusiness ?? ""] ?? "home",
-  );
   return defaultProductForLine(line);
 }
 

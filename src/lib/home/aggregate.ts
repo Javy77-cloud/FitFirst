@@ -20,6 +20,7 @@ import {
 } from "./kpis";
 import { leaderboardPair, type HomeAgent, type LeaderRow } from "./leaderboard";
 import { HOME_LINE_KEYS, HOME_LINE_LABEL, homeLineKey, type HomeLineKey } from "./lines";
+import { formatDay } from "@/lib/domain";
 
 export const IN_FORCE_STATUSES = new Set(["active", "bound"]);
 export const LAPSE_STATUSES = new Set(["lapsed", "lapse", "cancelled", "canceled", "expired"]);
@@ -259,7 +260,7 @@ export function attentionItems(input: {
       id: `task-${task.id}`,
       kind: "task",
       title: task.title,
-      detail: `Due ${task.dueDate.toISOString().slice(0, 10)} · ${task.kind.replaceAll("_", " ")}`,
+      detail: `Due ${formatDay(task.dueDate)} · ${task.kind.replaceAll("_", " ")}`,
       href: task.dealId ? `/deals/${task.dealId}` : task.policyId ? `/policies/${task.policyId}` : "/work-queue",
       dueAt: task.dueDate,
       priority: attentionPriority({ kind: "task", dueAt: task.dueDate, asOf }),
@@ -272,7 +273,7 @@ export function attentionItems(input: {
       id: `lapse-${policy.id}`,
       kind: "lapse",
       title: `${policy.contactName} · ${policy.policyNumber} lapsed`,
-      detail: `${policy.lineOfBusiness} · ${policy.expirationDate.toISOString().slice(0, 10)}`,
+      detail: `${policy.lineOfBusiness} · ${formatDay(policy.expirationDate)}`,
       href: `/policies/${policy.id}`,
       dueAt: policy.expirationDate,
       priority: attentionPriority({ kind: "lapse", dueAt: policy.expirationDate, asOf }),

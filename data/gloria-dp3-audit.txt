@@ -1,0 +1,478 @@
+
+========== DP3 03dccdd7-db06-4c89-9b7a-cf0a2064d044 ==========
+docs [
+  {
+    "id": "83c6b35f-3f68-4a4b-bd39-c1f5314c8232",
+    "filename": "DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf",
+    "doc_type": "dec",
+    "mime_type": "application/pdf",
+    "storage_path": "11111111-1111-4111-8111-111111111111/03dccdd7-db06-4c89-9b7a-cf0a2064d044/83c6b35f-3f68-4a4b-bd39-c1f5314c8232-DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf",
+    "created_at": "2026-09-13 17:05:12.135774-04"
+  }
+]
+extracted_fields count 41
+  address = "16021 NW 79TH CT" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  address1 = "16021 NW 79TH CT" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  aop_deductible = "2500" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  applicant_address = "10358 NW 30TH TER, DORAL, FL 33172-5050" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  applicant_name = "GLORIA MARTINEZ" conf=0.950 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  city = "DORAL" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  construction = "Masonry" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  county = "MIAMI-DADE" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  coverage_a = "309000" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  coverage_b = "30900" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  coverage_c = "30000" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  coverage_d = "30900" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  coverage_e = "100000" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  coverage_f = "2000" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  current_carrier = "Southern Oak Insurance Company" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  current_policy_named_insured = "GLORIA MARTINEZ" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  current_premium = "5591.27" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  effective_date = "10/18/2025" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  expiration_date = "10/18/2026" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  hurricane_deductible = "6180" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  loan_number = "0335150561" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  mailing_address = "16021 NW 79TH CT, MIAMI LAKES, FL 33016" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  mortgagee = "WELLS FARGO BANK NA 936 ITS SUCCESSORS AND/OR ASSI" conf=0.950 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  mortgagee_address = "PO BOX 100515 FLORENCE, SC 29502-0515, United States" conf=0.950 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  mortgagee_name = "WELLS FARGO BANK NA 936 ITS SUCCESSORS AND/OR ASSI" conf=0.950 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  named_insured = "GLORIA MARTINEZ" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  number_of_families = "1" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  occupancy = "Tenant" conf=0.950 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  ordinance_or_law = "10%" conf=0.950 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  policy_number = "DF000353874-02-0000" conf=0.990 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  protection_class = "02" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  roof_covering = "Tile-Clay" conf=0.950 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  roof_shape = "C" conf=0.950 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  roof_year = "2006" conf=0.950 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  sinkhole_deductible = "No" conf=0.950 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  state = "FL" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  usage = "Rental" conf=0.950 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  water_backup = "15450" conf=0.950 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  wind_hail_deductible = "2500" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  year_built = "2006" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+  zip = "33172-5050" conf=0.980 file=DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf
+
+--- sheet line home updated 2026-09-13 17:09:33.731-04 total 143 filled 84 empty/yellow 59
+FILLED:
+  acres | "0.0338" | src=agent status=confirmed
+  address1 | "10358 NW 30th TER" | src=agent status=confirmed
+  aop_deductible | "2500" | src=extracted status=check
+  applicant_address | "16021 NW 79Th CT" | src=agent status=confirmed
+  applicant_dob | "1/1/1975" | src=agent status=confirmed
+  applicant_email | "edmersonv@gmail.com" | src=agent status=confirmed
+  applicant_name | "Gloria Martinez" | src=agent status=confirmed
+  applicant_phone | "1-508-922-0612" | src=agent status=confirmed
+  assessed_value | "463402.0" | src=agent status=confirmed
+  basement | "no" | src=agent status=confirmed
+  baths | "2" | src=agent status=confirmed
+  beds | "3" | src=agent status=confirmed
+  carport | "no" | src=agent status=confirmed
+  city | "Doral" | src=agent status=confirmed
+  claims_5yr | "0" | src=agent status=confirmed
+  county | "MIAMI-DADE" | src=extracted status=check
+  coverage_a | "309000" | src=extracted status=check
+  coverage_b | "30900" | src=extracted status=check
+  coverage_c | "30000" | src=extracted status=check
+  coverage_d | "30900" | src=extracted status=check
+  coverage_e | "100000" | src=extracted status=check
+  coverage_f | "2000" | src=extracted status=check
+  current_carrier | "Southern Oak Insurance Company" | src=extracted status=check
+  current_policy_named_insured | "GLORIA MARTINEZ" | src=extracted status=check
+  current_premium | "5591.27" | src=extracted status=check
+  driver_1_dob | "1/1/1975" | src=agent status=check
+  driver_1_gender | "Female" | src=agent status=check
+  driver_1_name | "Gloria Martinez" | src=agent status=check
+  driver_1_occupation | "Business owner" | src=agent status=check
+  effective_date | "10/18/2025" | src=extracted status=check
+  expiration_date | "10/18/2026" | src=extracted status=check
+  exterior | "Masonry" | src=agent status=confirmed
+  firm_effective_date | "2009-09-11" | src=agent status=confirmed
+  firm_panel | "12086C0286L" | src=agent status=confirmed
+  flash | "0" | src=agent status=confirmed
+  flood_zone | "X" | src=agent status=confirmed
+  foundation | "Slab" | src=agent status=confirmed
+  garage_type | "2" | src=agent status=confirmed
+  homestead | "0" | src=agent status=confirmed
+  hurricane_deductible | "2%" | src=agent status=confirmed
+  hydrant | "Within 1,000 feet" | src=agent status=confirmed
+  improvement_value | "463402.0" | src=agent status=confirmed
+  land_use | "004" | src=agent status=confirmed
+  land_value | "0.0" | src=agent status=confirmed
+  living_units | "1" | src=agent status=confirmed
+  loan_number | "0335150561" | src=extracted status=check
+  mailing_address | "16021 NW 79Th CT" | src=agent status=confirmed
+  mailing_city | "Miami" | src=agent status=check
+  mailing_state | "Fl" | src=agent status=check
+  mailing_zip | "33016" | src=agent status=check
+  miles_to_coast | "15.3" | src=agent status=confirmed
+  miles_to_fire_station | "Within 5 miles" | src=agent status=confirmed
+  months_occupied | "9 months or more" | src=agent status=confirmed
+  mortgagee_address | "PO BOX 100515 FLORENCE, SC 29502-0515, United States" | src=extracted status=check
+  mortgagee_name | "WELLS FARGO BANK NA 936 ITS SUCCESSORS AND/OR ASSI" | src=extracted status=check
+  named_insured | "Edmerson Vazquez" | src=agent status=confirmed
+  notes | "Email edmersonv@gmail.com · Phone 1-508-922-0612 · Language English" | src=agent status=confirmed
+  number_of_families | "1" | src=extracted status=check
+  occupancy | "Tenant" | src=extracted status=check
+  ordinance_or_law | "10%" | src=extracted status=check
+  parcel_id | "3530291140880" | src=agent status=confirmed
+  permission_pull_credit_history | "yes" | src=agent status=check
+  permission_pull_driving_history | "yes" | src=agent status=check
+  policy_number | "DF000353874-02-0000" | src=extracted status=check
+  protection_class | "02" | src=extracted status=check
+  records_check | "Named insured: API says GLORIA MARTINEZ, sheet says Edmerson Vazquez (from agent). mailing address: API says 10358 NW 30 TERR, DORAL, FL 33172, sheet says 16021 NW 79Th CT (from agent). address1: Gemini says 16021 NW 79TH CT, sheet says 10358 NW 30th TER (from agent). address1: Gemini says 16021 NW 79TH CT, sheet says 10358 NW 30th TER (from agent). applicant address: Gemini says 10358 NW 30TH TER, DORAL, FL 33172-5050, sheet says 16021 NW 79Th CT (from agent). zip: Gemini says 33172-5050, sheet says 33172 (from agent). mailing address: Gemini says 16021 NW 79TH CT, MIAMI LAKES, FL 33016, sheet says 16021 NW 79Th CT (from agent). Named insured: Gemini says GLORIA MARTINEZ, sheet says Edmerson Vazquez (from agent)." | src=agent status=confirmed
+  returnTo | "/deals/03dccdd7-db06-4c89-9b7a-cf0a2064d044?tab=documents&line=home" | src=agent status=confirmed
+  roof_covering | "Tile-Clay" | src=extracted status=check
+  roof_shape | "C" | src=extracted status=check
+  roof_year | "2006" | src=extracted status=check
+  sale_price | "0" | src=agent status=confirmed
+  sheet_product | "landlord" | src=agent status=confirmed
+  sinkhole_deductible | "No" | src=extracted status=check
+  square_feet | "1854" | src=agent status=confirmed
+  state | "FL" | src=agent status=confirmed
+  stories | "2" | src=agent status=confirmed
+  usage | "Rental" | src=extracted status=check
+  water_backup | "15450" | src=extracted status=check
+  wind_hail_deductible | "2500" | src=extracted status=check
+  year_built | "2006" | src=extracted status=check
+  year_effective | "2006" | src=agent status=confirmed
+  year_purchased | "2022" | src=agent status=confirmed
+  years_with_carrier | "2" | src=agent status=confirmed
+  zip | "33172" | src=agent status=confirmed
+EMPTY/YELLOW:
+  animals | "" | src=blank status=missing reason=""
+  applicant_education_level | "" | src=blank status=missing reason=""
+  applicant_employment | "" | src=blank status=missing reason=""
+  applicant_gender | "" | src=blank status=missing reason=""
+  applicant_marital_status | "" | src=blank status=missing reason=""
+  applicant_occupation | "" | src=blank status=missing reason=""
+  assessment_year | "" | src=blank status=missing reason=""
+  bfe | "" | src=blank status=missing reason=""
+  building_code | "" | src=blank status=missing reason=""
+  business_on_premises | "" | src=blank status=missing reason=""
+  central_alarm | "" | src=blank status=missing reason=""
+  construction | "" | src=blank status=missing reason=""
+  date_inspected | "" | src=blank status=missing reason=""
+  deadbolts | "" | src=blank status=missing reason=""
+  dog_breed | "" | src=blank status=missing reason=""
+  electrical_circuit_amps | "" | src=blank status=missing reason=""
+  electrical_updated | "" | src=blank status=missing reason=""
+  electrical_year | "" | src=blank status=missing reason=""
+  elevation | "" | src=blank status=missing reason=""
+  entity_type | "" | src=blank status=missing reason=""
+  fire_district | "" | src=blank status=missing reason=""
+  flood_policy | "" | src=blank status=missing reason=""
+  form | "" | src=blank status=missing reason=""
+  four_point_date | "" | src=blank status=missing reason=""
+  four_point_result | "" | src=blank status=missing reason=""
+  hvac_year | "" | src=blank status=missing reason=""
+  inspection_company | "" | src=blank status=missing reason=""
+  landlord_liability | "" | src=blank status=missing reason=""
+  lease_term | "" | src=blank status=missing reason=""
+  legal_description | "" | src=blank status=missing reason=""
+  license_or_certificate_number | "" | src=blank status=missing reason=""
+  loss_of_rents | "" | src=blank status=missing reason=""
+  mobile_home | "" | src=blank status=missing reason=""
+  opening_protection | "" | src=blank status=missing reason=""
+  plumbing_year | "" | src=blank status=missing reason=""
+  pool | "" | src=blank status=missing reason=""
+  pool_fence | "" | src=blank status=missing reason=""
+  primary_heat | "" | src=blank status=missing reason=""
+  primary_plumbing_type | "" | src=blank status=missing reason=""
+  rce_source | "" | src=blank status=missing reason=""
+  replacement_cost_estimate | "" | src=blank status=missing reason=""
+  roof_condition | "" | src=blank status=missing reason=""
+  roof_deck | "" | src=blank status=missing reason=""
+  roof_deck_attachment | "" | src=blank status=missing reason=""
+  roof_to_wall | "" | src=blank status=missing reason=""
+  secondary_named_insured | "" | src=blank status=missing reason=""
+  secondary_water | "" | src=blank status=missing reason=""
+  smoke_detectors | "" | src=blank status=missing reason=""
+  sprinkler | "" | src=blank status=missing reason=""
+  subdivision | "" | src=blank status=missing reason=""
+  tenant_name | "" | src=blank status=missing reason=""
+  terrain | "" | src=blank status=missing reason=""
+  trampoline | "" | src=blank status=missing reason=""
+  water_heater_year | "" | src=blank status=missing reason=""
+  wind_mit_date | "" | src=blank status=missing reason=""
+  wind_mit_form | "" | src=blank status=missing reason=""
+  wind_mit_inspector | "" | src=blank status=missing reason=""
+  wind_speed | "" | src=blank status=missing reason=""
+  zoning | "" | src=blank status=missing reason=""
+risks [
+  {
+    "id": "fe30db6a-9e7b-42a2-b46c-2c7ced26e2e3",
+    "tenant_id": "11111111-1111-4111-8111-111111111111",
+    "deal_id": "03dccdd7-db06-4c89-9b7a-cf0a2064d044",
+    "contact_id": null,
+    "risk_type": "property",
+    "address1": "10358 NW 30th TER",
+    "city": "Doral",
+    "county": "MIAMI-DADE",
+    "state": "FL",
+    "zip": "33172",
+    "year_built": 2006,
+    "construction": "Masonry",
+    "occupancy": "Tenant",
+    "stories": 2,
+    "square_feet": 1854,
+    "coverage_a": 309000,
+    "roof_year": 2006,
+    "roof_covering": "Tile-Clay",
+    "opening_protection": null,
+    "pool": false,
+    "protection_class": "02",
+    "miles_to_coast": 15.3,
+    "mobile_home": false,
+    "replacement_cost_estimate": null,
+    "vin": null,
+    "vehicle_year": null,
+    "vehicle_make": null,
+    "vehicle_model": null,
+    "vehicle_usage": null,
+    "garaging_zip": null,
+    "created_at": "2026-09-13 14:21:08.357185-04",
+    "updated_at": "2026-09-13 17:10:04.027-04"
+  }
+]
+
+========== HO3 8f4e7b68-2de3-458e-914b-ba60ea3c47aa ==========
+docs [
+  {
+    "id": "ba93a30a-16a5-4efa-9c05-d1f010d23a55",
+    "filename": "Declaration Page .pdf",
+    "doc_type": "dec",
+    "mime_type": "application/pdf",
+    "storage_path": "11111111-1111-4111-8111-111111111111/8f4e7b68-2de3-458e-914b-ba60ea3c47aa/ba93a30a-16a5-4efa-9c05-d1f010d23a55-Declaration Page .pdf",
+    "created_at": "2026-09-13 16:46:09.455312-04"
+  }
+]
+extracted_fields count 33
+  address = "10358 NW 30 TER Doral" conf=0.950 file=Declaration Page .pdf
+  address1 = "10358 NW 30 TER Doral" conf=0.950 file=Declaration Page .pdf
+  aop_deductible = "2500" conf=0.950 file=Declaration Page .pdf
+  applicant_address = "8944 ADRIATICO LN KISSIMMEE, FL 34747" conf=0.950 file=Declaration Page .pdf
+  applicant_name = "GLORIA MARTINEZ" conf=0.950 file=Declaration Page .pdf
+  city = "KISSIMMEE" conf=0.950 file=Declaration Page .pdf
+  construction = "Masonry" conf=0.950 file=Declaration Page .pdf
+  county = "OSCEOLA" conf=0.950 file=Declaration Page .pdf
+  coverage_a = "433613" conf=0.950 file=Declaration Page .pdf
+  coverage_b = "43368" conf=0.950 file=Declaration Page .pdf
+  coverage_c = "108404" conf=0.950 file=Declaration Page .pdf
+  coverage_d = "86723" conf=0.950 file=Declaration Page .pdf
+  coverage_e = "300000" conf=0.950 file=Declaration Page .pdf
+  coverage_f = "1000" conf=0.950 file=Declaration Page .pdf
+  current_carrier = "Universal Property & Casualty Insurance Company" conf=0.950 file=Declaration Page .pdf
+  current_policy_named_insured = "GLORIA MARTINEZ" conf=0.950 file=Declaration Page .pdf
+  current_premium = "6567.76" conf=0.950 file=Declaration Page .pdf
+  effective_date = "06/28/2026" conf=0.950 file=Declaration Page .pdf
+  expiration_date = "06/28/2027" conf=0.950 file=Declaration Page .pdf
+  hurricane_deductible = "8672" conf=0.950 file=Declaration Page .pdf
+  loan_number = "0509210662" conf=0.950 file=Declaration Page .pdf
+  mailing_address = "10358 NW 30 TER Doral, FL 33172" conf=0.950 file=Declaration Page .pdf
+  mortgagee = "WELLS FARGO BANK, NA, ITS SUCCESSORS AND/OR ASSIGNS" conf=0.950 file=Declaration Page .pdf
+  mortgagee_address = "PO Box 100515 Florence, SC 29502" conf=0.950 file=Declaration Page .pdf
+  mortgagee_name = "WELLS FARGO BANK, NA, ITS SUCCESSORS AND/OR ASSIGNS" conf=0.950 file=Declaration Page .pdf
+  named_insured = "GLORIA MARTINEZ" conf=0.950 file=Declaration Page .pdf
+  occupancy = "Occupied" conf=0.900 file=Declaration Page .pdf
+  ordinance_or_law = "108403" conf=0.950 file=Declaration Page .pdf
+  phone = "(786) 303-0316" conf=0.950 file=Declaration Page .pdf
+  policy_number = "1501-1703-2475" conf=0.950 file=Declaration Page .pdf
+  state = "FL" conf=0.950 file=Declaration Page .pdf
+  year_built = "2017" conf=0.950 file=Declaration Page .pdf
+  zip = "34747" conf=0.950 file=Declaration Page .pdf
+
+--- sheet line home updated 2026-09-13 17:05:08.348022-04 total 155 filled 92 empty/yellow 63
+FILLED:
+  acres | "0.066" | src=agent status=confirmed
+  address1 | "8944 Adriatico LN" | src=agent status=confirmed
+  animals | "no" | src=agent status=confirmed
+  aop_deductible | "2500" | src=extracted status=check
+  applicant_address | "16021 NW 79CT" | src=agent status=confirmed
+  applicant_education_level | "Associate" | src=agent status=confirmed
+  applicant_email | "edmersonv@gmail.com" | src=agent status=confirmed
+  applicant_employment | "Employed" | src=agent status=confirmed
+  applicant_gender | "Female" | src=agent status=confirmed
+  applicant_marital_status | "Married" | src=agent status=confirmed
+  applicant_name | "Gloria Martinez" | src=agent status=confirmed
+  applicant_occupation | "Business owner" | src=agent status=confirmed
+  applicant_phone | "1-508-922-0612" | src=agent status=confirmed
+  assessed_value | "402800.0" | src=agent status=confirmed
+  basement | "no" | src=agent status=confirmed
+  baths | "3" | src=agent status=confirmed
+  beds | "4" | src=agent status=confirmed
+  bfe | "0" | src=agent status=confirmed
+  business_on_premises | "no" | src=agent status=confirmed
+  carport | "no" | src=agent status=confirmed
+  central_alarm | "no" | src=agent status=confirmed
+  city | "Kissimmee" | src=agent status=confirmed
+  claims_5yr | "0" | src=agent status=confirmed
+  construction | "Masonry" | src=extracted status=check
+  county | "OSCEOLA" | src=extracted status=check
+  coverage_a | "433613" | src=extracted status=check
+  coverage_b | "43368" | src=extracted status=check
+  coverage_c | "108404" | src=extracted status=check
+  coverage_d | "86723" | src=extracted status=check
+  coverage_e | "300000" | src=extracted status=check
+  coverage_f | "1000" | src=extracted status=check
+  current_carrier | "Universal Property & Casualty Insurance Company" | src=extracted status=check
+  current_policy_named_insured | "GLORIA MARTINEZ" | src=extracted status=check
+  current_premium | "6567.76" | src=extracted status=check
+  deadbolts | "yes" | src=agent status=confirmed
+  dog_breed | "no" | src=agent status=confirmed
+  driver_1_gender | "Female" | src=agent status=check
+  driver_1_name | "Gloria Martinez" | src=agent status=check
+  driver_1_occupation | "Business owner" | src=agent status=check
+  effective_date | "06/28/2026" | src=extracted status=check
+  expiration_date | "06/28/2027" | src=extracted status=check
+  exterior | "Masonry" | src=agent status=confirmed
+  firm_effective_date | "2013-06-18" | src=agent status=confirmed
+  firm_panel | "12097C0020G" | src=agent status=confirmed
+  flash | "0" | src=agent status=confirmed
+  flood_zone | "X" | src=agent status=confirmed
+  foundation | "Slab" | src=agent status=confirmed
+  garage_type | "2" | src=agent status=confirmed
+  homestead | "0" | src=agent status=confirmed
+  hurricane_deductible | "8672" | src=extracted status=check
+  hydrant | "Within 1,000 feet" | src=agent status=confirmed
+  improvement_value | "332800.0" | src=agent status=confirmed
+  land_use | "001" | src=agent status=confirmed
+  land_value | "70000.0" | src=agent status=confirmed
+  living_units | "1" | src=agent status=confirmed
+  loan_number | "0509210662" | src=extracted status=check
+  mailing_address | "16021 NW 79CT" | src=agent status=confirmed
+  mailing_city | "Miami" | src=agent status=check
+  mailing_state | "Fl" | src=agent status=check
+  mailing_zip | "33016" | src=agent status=check
+  miles_to_coast | "52.7" | src=agent status=confirmed
+  miles_to_fire_station | "Within 5 miles" | src=agent status=confirmed
+  mobile_home | "no" | src=agent status=confirmed
+  mortgagee_address | "PO Box 100515 Florence, SC 29502" | src=extracted status=check
+  mortgagee_name | "WELLS FARGO BANK, NA, ITS SUCCESSORS AND/OR ASSIGNS" | src=extracted status=check
+  named_insured | "Gloria Martinez" | src=agent status=confirmed
+  number_of_families | "1" | src=extracted status=check
+  occupancy | "Occupied" | src=extracted status=check
+  ordinance_or_law | "108403" | src=extracted status=check
+  parcel_id | "182527558700010920" | src=agent status=confirmed
+  permission_pull_credit_history | "yes" | src=agent status=check
+  permission_pull_driving_history | "yes" | src=agent status=check
+  policy_number | "1501-1703-2475" | src=extracted status=check
+  pool | "no" | src=agent status=confirmed
+  pool_fence | "no" | src=agent status=confirmed
+  protection_class | "3" | src=agent status=confirmed
+  records_check | "Applicant name: API says MARTINEZ GLORIA, sheet says Gloria Martinez (from agent). Named insured: API says MARTINEZ GLORIA, sheet says Gloria Martinez (from agent). mailing address: API says 16021 NW 79TH CT, MIAMI LAKES, FL 33016, sheet says 16021 NW 79CT (from agent). address1: Gemini says 10358 NW 30 TER Doral, sheet says 8944 Adriatico LN (from agent). address1: Gemini says 10358 NW 30 TER Doral, sheet says 8944 Adriatico LN (from agent). applicant address: Gemini says 8944 ADRIATICO LN KISSIMMEE, FL 34747, sheet says 16021 NW 79CT (from agent). applicant phone: Gemini says (786) 303-0316, sheet says 1-508-922-0612 (from agent). mailing address: Gemini says 10358 NW 30 TER Doral, FL 33172, sheet says 16021 NW 79CT (from agent)." | src=agent status=confirmed
+  returnTo | "/deals/8f4e7b68-2de3-458e-914b-ba60ea3c47aa?tab=documents&line=home" | src=agent status=confirmed
+  sale_price | "0" | src=agent status=confirmed
+  sheet_product | "homeowners" | src=agent status=confirmed
+  sinkhole_deductible | "no" | src=agent status=confirmed
+  smoke_detectors | "no" | src=agent status=confirmed
+  sprinkler | "no" | src=agent status=confirmed
+  square_feet | "2102" | src=agent status=confirmed
+  state | "FL" | src=agent status=confirmed
+  stories | "2" | src=agent status=confirmed
+  trampoline | "no" | src=agent status=confirmed
+  wind_hail_deductible | "2500" | src=agent status=confirmed
+  year_built | "2017" | src=extracted status=check
+  year_effective | "2017" | src=agent status=confirmed
+  years_with_carrier | "2" | src=agent status=confirmed
+  zip | "34747" | src=agent status=confirmed
+EMPTY/YELLOW:
+  additional_living | "" | src=blank status=missing reason=""
+  applicant_dob | "" | src=blank status=missing reason=""
+  assessment_year | "" | src=blank status=missing reason=""
+  building_code | "" | src=blank status=missing reason=""
+  co_applicant_dob | "" | src=blank status=missing reason=""
+  co_applicant_education_level | "" | src=blank status=missing reason=""
+  co_applicant_email | "" | src=blank status=missing reason=""
+  co_applicant_employment | "" | src=blank status=missing reason=""
+  co_applicant_gender | "" | src=blank status=missing reason=""
+  co_applicant_marital_status | "" | src=blank status=missing reason=""
+  co_applicant_name | "" | src=blank status=missing reason=""
+  co_applicant_occupation | "" | src=blank status=missing reason=""
+  co_applicant_phone | "" | src=blank status=missing reason=""
+  co_applicant_relationship_to_insured | "" | src=blank status=missing reason=""
+  contents_limit | "" | src=blank status=missing reason=""
+  date_inspected | "" | src=blank status=missing reason=""
+  electrical_circuit_amps | "" | src=blank status=missing reason=""
+  electrical_updated | "" | src=blank status=missing reason=""
+  electrical_year | "" | src=blank status=missing reason=""
+  elevation | "" | src=blank status=missing reason=""
+  entity_type | "" | src=blank status=missing reason=""
+  fire_district | "" | src=blank status=missing reason=""
+  flood_policy | "" | src=blank status=missing reason=""
+  form | "" | src=blank status=missing reason=""
+  four_point_date | "" | src=blank status=missing reason=""
+  four_point_result | "" | src=blank status=missing reason=""
+  hvac_year | "" | src=blank status=missing reason=""
+  inspection_company | "" | src=blank status=missing reason=""
+  landlord_liability | "" | src=blank status=missing reason=""
+  lease_term | "" | src=blank status=missing reason=""
+  legal_description | "" | src=blank status=missing reason=""
+  license_or_certificate_number | "" | src=blank status=missing reason=""
+  loss_of_rents | "" | src=blank status=missing reason=""
+  months_occupied | "" | src=blank status=missing reason=""
+  notes | "" | src=blank status=missing reason=""
+  opening_protection | "" | src=blank status=missing reason=""
+  plumbing_year | "" | src=blank status=missing reason=""
+  primary_heat | "" | src=blank status=missing reason=""
+  primary_plumbing_type | "" | src=blank status=missing reason=""
+  rce_source | "" | src=blank status=missing reason=""
+  renters_liability | "" | src=blank status=missing reason=""
+  replacement_cost_estimate | "" | src=blank status=missing reason=""
+  roof_condition | "" | src=blank status=missing reason=""
+  roof_covering | "" | src=blank status=missing reason=""
+  roof_deck | "" | src=blank status=missing reason=""
+  roof_deck_attachment | "" | src=blank status=missing reason=""
+  roof_shape | "" | src=blank status=missing reason=""
+  roof_to_wall | "" | src=blank status=missing reason=""
+  roof_year | "" | src=blank status=missing reason=""
+  secondary_named_insured | "" | src=blank status=missing reason=""
+  secondary_water | "" | src=blank status=missing reason=""
+  subdivision | "" | src=blank status=missing reason=""
+  tenant_name | "" | src=blank status=missing reason=""
+  terrain | "" | src=blank status=missing reason=""
+  usage | "" | src=blank status=missing reason=""
+  water_backup | "" | src=blank status=missing reason=""
+  water_heater_year | "" | src=blank status=missing reason=""
+  wind_mit_date | "" | src=blank status=missing reason=""
+  wind_mit_form | "" | src=blank status=missing reason=""
+  wind_mit_inspector | "" | src=blank status=missing reason=""
+  wind_speed | "" | src=blank status=missing reason=""
+  year_purchased | "" | src=blank status=missing reason=""
+  zoning | "" | src=blank status=missing reason=""
+risks [
+  {
+    "id": "c49fb145-5e00-4abd-ac63-a3d64a2cbb66",
+    "tenant_id": "11111111-1111-4111-8111-111111111111",
+    "deal_id": "8f4e7b68-2de3-458e-914b-ba60ea3c47aa",
+    "contact_id": null,
+    "risk_type": "property",
+    "address1": "8944 Adriatico LN",
+    "city": "Kissimmee",
+    "county": "OSCEOLA",
+    "state": "FL",
+    "zip": "34747",
+    "year_built": 2017,
+    "construction": "Masonry",
+    "occupancy": "Occupied",
+    "stories": 2,
+    "square_feet": 2102,
+    "coverage_a": 433613,
+    "roof_year": null,
+    "roof_covering": null,
+    "opening_protection": null,
+    "pool": false,
+    "protection_class": "3",
+    "miles_to_coast": 52.7,
+    "mobile_home": false,
+    "replacement_cost_estimate": null,
+    "vin": null,
+    "vehicle_year": null,
+    "vehicle_make": null,
+    "vehicle_model": null,
+    "vehicle_usage": null,
+    "garaging_zip": null,
+    "created_at": "2026-09-13 14:41:10.951494-04",
+    "updated_at": "2026-09-13 17:03:37.348-04"
+  }
+]

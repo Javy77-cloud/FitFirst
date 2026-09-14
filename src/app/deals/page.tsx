@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { SavedToast } from "@/components/desk/saved-toast";
-import { buttonVariants } from "@/components/ui/button";
 import { DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
 import { DealWorkQueuePanel } from "@/components/deals/deal-work-queue-panel";
+import { AddNewDealDialog } from "@/components/deals/add-new-deal-dialog";
 import { DealsTable } from "@/components/deals/deals-table";
 import { TodayActivityStrip } from "@/components/deals/today-activity-strip";
 import { PipelineWorkspace } from "@/components/pipeline/workspace";
+import { PipelineBookModeToggle } from "@/components/pipeline/book-mode-toggle";
+import { RenewalsDesk } from "@/components/renewals/renewals-desk";
 import { requireSignedIn } from "@/lib/auth/guards";
 import { loadDealPipelineDesk } from "@/lib/deals/pipeline-desk-data";
 import {
@@ -17,11 +19,19 @@ import {
   type DealListFilter,
 } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
-import { cn } from "@/lib/utils";
 import { isPipelineSheetView, parsePipelineView } from "@/lib/wire/pipeline";
 import { presentPipelineCard } from "@/lib/wire/pipeline-cards";
 import { listModuleTags } from "@/app/actions/record-tags";
 import { readDefaultPipelineView } from "@/app/actions/pipeline-view-prefs";
+import { PipelineFilterPopover } from "@/components/filters/pipeline-filter-popover";
+import { loadPageFilterPrefs } from "@/lib/page-filters/store";
+import {
+  buildDealPipelineFilterFields,
+  DEAL_PIPELINE_FILTER_KEYS,
+  DEAL_PIPELINE_PRESERVE_PARAMS,
+  matchesDealPipelineColumnFilters,
+} from "@/lib/deals/pipeline-column-filters";
+import { pickFilterParams } from "@/lib/saved-filters";
 
 export const dynamic = "force-dynamic";
 
@@ -43,23 +53,33 @@ export default async function DealsPage({
   const session = await requireSignedIn();
   const params = await searchParams;
   const pipeline = first(params.pipeline);
+  const book = first(params.book) === "renewals" ? "renewals" : "new";
+  if (book === "renewals") {
+    return (
+      <AppShell title="Deals / Pipeline" eyebrow="">
+        <RenewalsDesk searchParams={params} canEditStages={session.isAdmin} />
+      </AppShell>
+    );
+  }
   const viewParam = first(params.view);
   const savedDefaultView = await readDefaultPipelineView();
   const view = parsePipelineView(viewParam ?? savedDefaultView ?? undefined);
   const stage = first(params.stage);
   const q = first(params.q) ?? "";
   const queue = first(params.queue);
+  const columnFilter = pickFilterParams(params, [...DEAL_PIPELINE_FILTER_KEYS]);
   const filter: DealListFilter = {
-    stage,
+    stage: columnFilter.stage ?? stage,
     attention: first(params.attention),
     family: first(params.family),
     pcSub: first(params.pcSub),
     lifeSub: first(params.lifeSub),
     healthSub: first(params.healthSub),
+    ownerId: columnFilter.assigned,
   };
   const boardSlug = pipeline || "p-c";
   const selectedPipeline = pipeline || (isPipelineSheetView(view) ? undefined : "p-c");
-  const [boardData, listRows, userRows, lineSettings, desk, tagCatalog] = await Promise.all([
+  const [boardData, listRows, userRows, lineSettings, desk, tagCatalog, pageFilterPrefs] = await Promise.all([
     getPipelineBoard(boardSlug, {
       lifeSub: filter.lifeSub,
       healthSub: filter.healthSub,
@@ -75,19 +95,42 @@ export default async function DealsPage({
     loadDeskLineSettings(),
     loadDealPipelineDesk(queue),
     listModuleTags("deals").catch(() => []),
+    loadPageFilterPrefs("deals-pipeline"),
   ]);
   const boards = boardData?.boards ?? [];
   const settings = boardData?.lineSettings ?? lineSettings;
-  const tableRows =
+  const users = new Map(userRows.map((user) => [user.id, user.name]));
+  const agents = userRows.map((user) => ({ id: user.id, name: user.name }));
+  const board = boardData?.board ?? null;
+  const rawTableRows =
     filter.attention === "bound_pending" || (isPipelineSheetView(view) && !pipeline)
       ? (listRows ?? [])
       : isPipelineSheetView(view) && boardData
         ? boardData.cards
         : [];
-  const users = new Map(userRows.map((user) => [user.id, user.name]));
-  const agents = userRows.map((user) => ({ id: user.id, name: user.name }));
-  const presented = (boardData?.cards ?? []).map(presentPipelineCard);
-  const board = boardData?.board ?? null;
+  const tableRows = rawTableRows.filter((row) =>
+    matchesDealPipelineColumnFilters(row.deal, columnFilter),
+  );
+  const boardCards = (boardData?.cards ?? []).filter((row) =>
+    matchesDealPipelineColumnFilters(row.deal, columnFilter),
+  );
+  const presented = boardCards.map(presentPipelineCard);
+  const optionDeals = [
+    ...boardCards.map((row) => row.deal),
+    ...(listRows ?? []).map((row) => row.deal),
+  ];
+  const pipelineFilterFields = buildDealPipelineFilterFields({
+    deals: optionDeals,
+    agents,
+    stages: [
+      ...(board?.stages ?? []).map((item) => ({ slug: item.slug, name: item.name })),
+      ...(boardData?.boards ?? []).flatMap((item) =>
+        item.stages.map((stageRow) => ({ slug: stageRow.slug, name: stageRow.name })),
+      ),
+    ],
+    tags: tagCatalog.map((tag) => tag.name),
+    prefs: pageFilterPrefs,
+  });
   const notice = first(params.notice);
   const saved = first(params.saved) === "1";
   // Tip sep7gn: no list/grid/board/funnel instructional blurbs under the title.
@@ -105,15 +148,7 @@ export default async function DealsPage({
               : "";
 
   return (
-    <AppShell
-      title="Deals / Pipeline"
-      eyebrow=""
-      actions={
-        <Link href="/deals/new" className={cn(buttonVariants())}>
-          New shopping deal
-        </Link>
-      }
-    >
+    <AppShell title="Deals / Pipeline" eyebrow="">
       <SavedToast show={saved} message="Deal saved." listHref="/deals" />
       {hint ? <p className="mb-3 text-sm text-muted-foreground">{hint}</p> : null}
       {notice === "need-deal" ? (
@@ -137,6 +172,14 @@ export default async function DealsPage({
         </p>
       ) : null}
 
+      <div className="mb-3" data-ff-pipeline-book-toggle-wrap="">
+        <PipelineBookModeToggle
+          mode="new"
+          newHref="/deals?view=board"
+          renewalsHref="/renewals"
+        />
+      </div>
+
       <DealWorkspaceBar
         boards={boards.map((item) => ({ slug: item.slug, name: item.name }))}
         pipeline={selectedPipeline}
@@ -149,33 +192,26 @@ export default async function DealsPage({
         healthSub={filter.healthSub}
         attention={filter.attention}
         settings={settings}
+        canEditStages={session.isAdmin}
+        stagePipelineId={board?.id ?? null}
+        stageRows={
+          board
+            ? board.stages.map((item) => ({
+                id: item.id,
+                slug: item.slug,
+                name: item.name,
+                sortOrder: item.sortOrder,
+                color: item.color,
+                seeded: item.seeded,
+              }))
+            : []
+        }
       />
 
       {desk.queueType ? <DealWorkQueuePanel type={desk.queueType} items={desk.queueItems} /> : null}
 
-      <div
-        className="deal-upload-activity"
-        data-testid="deal-upload-activity"
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          flexWrap: "nowrap",
-          alignItems: "center",
-          gap: 4,
-          marginBottom: 0,
-          paddingBottom: "2.5rem",
-          transform: "none",
-        }}
-      >
-        <div
-          className="deal-today-slot"
-          style={{
-            flex: 1,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
+      <div className="deal-upload-activity" data-testid="deal-upload-activity">
+        <div className="deal-today-slot">
           <TodayActivityStrip counts={desk.todayCounts} active={desk.queueType} />
         </div>
       </div>
@@ -183,6 +219,13 @@ export default async function DealsPage({
       <div className="deal-activity-list-spacer" data-ff-activity-list-spacer="" aria-hidden />
 
       <div className="deal-list-below-activity" data-ff-deal-list-below-activity>
+        <PipelineFilterPopover
+          moduleId="deals-pipeline"
+          fields={pipelineFilterFields}
+          searchPlaceholder="Contains deal, insured, phone…"
+          preserveParams={DEAL_PIPELINE_PRESERVE_PARAMS}
+          canConfigure={session.isAdmin}
+        />
         {isPipelineSheetView(view) ? (
           <>
             {pipeline ||
@@ -208,9 +251,17 @@ export default async function DealsPage({
             />
           </>
         ) : board ? (
-          <PipelineWorkspace
-            canEditStages={session.isAdmin}
+          <>
+            <div
+              className="mb-3 flex items-center justify-end"
+              data-ff-deals-board-actions=""
+            >
+              <AddNewDealDialog />
+            </div>
+            <PipelineWorkspace
             agents={agents}
+            initialQuery={q}
+            searchModuleId="deals-pipeline"
             board={{
               id: board.id,
               slug: board.slug,
@@ -231,6 +282,8 @@ export default async function DealsPage({
             stageFilter={stage}
             tagCatalog={tagCatalog}
           />
+          </>
+
         ) : (
           <p className="text-sm text-muted-foreground">
             No pipeline boards yet. Table still lists every deal on this book.

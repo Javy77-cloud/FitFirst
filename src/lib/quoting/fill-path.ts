@@ -24,7 +24,7 @@ export const MASTER_TO_FILL_STEPS: FillPathStep[] = [
   {
     n: 3,
     id: "fill",
-    label: "Fill master sheet",
+    label: "Fill Master Sheet",
     hint: "Parses those source docs into the Quote Sheet. Blanks only. Yellow missing / blue CHECK.",
   },
   {

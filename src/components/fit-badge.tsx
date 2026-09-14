@@ -38,10 +38,19 @@ const STAGE_LABEL: Record<string, string> = {
 export function StagePill({
   stage,
   color,
+  className,
 }: {
   stage: string;
   color?: string | null;
+  className?: string;
 }) {
   const label = STAGE_LABEL[stage] ?? stage.replaceAll("_", " ");
-  return <StatusBadge color={stageColorFromNameOrSlug(stage, color)}>{label}</StatusBadge>;
+  return (
+    <StatusBadge
+      color={stageColorFromNameOrSlug(stage, color)}
+      className={cn("max-w-none whitespace-nowrap", className)}
+    >
+      {label}
+    </StatusBadge>
+  );
 }

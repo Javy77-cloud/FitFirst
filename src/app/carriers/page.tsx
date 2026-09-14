@@ -5,10 +5,13 @@ import { formatMoney } from "@/lib/domain";
 import { listCarriersDesk } from "@/lib/db/queries";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { CARRIERS_LIST_COLUMNS, type ListColumn } from "@/lib/list-columns";
-import { PageFiltersBar } from "@/components/filters/page-filters-bar";
+import { PipelineFilterPopover } from "@/components/filters/pipeline-filter-popover";
 import { firstParam, pickFilterParams } from "@/lib/saved-filters";
 import {
   enabledPageFilters,
+  filterFieldsFromPageFilters,
+  PAGE_FILTER_SEARCH_CLASS,
+  PAGE_FILTER_SEARCH_INPUT_CLASS,
   matchesPageFilters,
   pageFilterParamKeys,
 } from "@/lib/page-filters";
@@ -29,7 +32,7 @@ import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
 import Link from "next/link";
 import { AddCarrierDialog } from "@/components/carriers/add-carrier-dialog";
-import { portalCredentialLabel } from "@/lib/carriers/portal-status";
+import { CarrierPortalStatusCell } from "@/components/carriers/carrier-portal-status-cell";
 import { formatDisplayDate } from "@/lib/dates/display-format";
 
 export const dynamic = "force-dynamic";
@@ -262,11 +265,14 @@ export default async function CarriersPage({
           </div>
         </section>
       ) : null}
-      <PageFiltersBar
+      <PipelineFilterPopover
         moduleId="carriers"
-        filters={visibleFilters}
+        fields={filterFieldsFromPageFilters(visibleFilters)}
         searchPlaceholder="Contains Name, Agency Code, Appetite, Or Don't Write…"
+        preserveParams={[]}
         canConfigure={session.isAdmin}
+        searchClassName={PAGE_FILTER_SEARCH_CLASS}
+        searchInputClassName={PAGE_FILTER_SEARCH_INPUT_CLASS}
       />
       <section className="ff-card overflow-hidden">
         <ModuleListActions
@@ -431,17 +437,14 @@ export default async function CarriersPage({
                     <span className="text-xs">{carrier.amBestRating || "—"}</span>
                   ),
                   portal: (
-                    <span
-                      className={
-                        portalCredStatus === "connected"
-                          ? "text-xs font-medium text-green-800"
-                          : portalCredStatus === "no_portal"
-                            ? "text-xs text-muted-foreground"
-                            : "text-xs font-medium text-amber-800"
+                    <CarrierPortalStatusCell
+                      carrierId={carrier.id}
+                      status={portalCredStatus}
+                      href={
+                        (carrier.portalUrl || carrier.agentPortalUrl || carrier.website || "").trim() ||
+                        null
                       }
-                    >
-                      {portalCredentialLabel(portalCredStatus)}
-                    </span>
+                    />
                   ),
                   tags: (
                     <AssignRecordTags

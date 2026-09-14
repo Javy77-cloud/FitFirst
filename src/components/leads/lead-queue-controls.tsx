@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   overrideLeadFollowUpTemplate,
   scheduleLeadNurture,
-  updateLeadQueueStatus,
+  updateLeadCadence,
+  updateLeadPipelineStatus,
   updateLeadTemperature,
 } from "@/app/actions/lead-follow-up";
 import { publishLeadClock, subscribeLeadClock } from "@/lib/leads/clock-sync";
@@ -28,32 +29,39 @@ import {
   REMIND_VIA_LABELS,
 } from "@/lib/leads/follow-up-templates";
 import {
+  LEAD_CADENCE_FILTERS,
   LEAD_QUEUE_STATUS_FILTERS,
   LEAD_TEMPERATURES,
   NURTURE_DELAY_UNITS,
+  leadCadenceLabel,
   leadStatusLabel,
+  normalizeLeadCadence,
   normalizeLeadTemperature,
   type LeadTemperature,
 } from "@/lib/leads/queue";
 import { cn } from "@/lib/utils";
 
-export function LeadStatusSelect({ leadId, status }: { leadId: string; status: string }) {
+export const CONVERT_LEAD_CONFIRM_TITLE = "Convert this lead to a deal?";
+export const CONVERT_LEAD_CONFIRM_DESCRIPTION =
+  "This creates a deal from the lead and moves it off the open queue. You can open the deal from Deals afterward.";
+export const CONVERT_LEAD_CONFIRM_LABEL = "Convert to deal";
+
+export function LeadCadenceSelect({ leadId, cadence }: { leadId: string; cadence: string }) {
   const router = useRouter();
-  const [value, setValue] = useState(status);
+  const [value, setValue] = useState(normalizeLeadCadence(cadence));
   const [pending, start] = useTransition();
-  const [nurtureOpen, setNurtureOpen] = useState(false);
 
   useEffect(() => {
-    setValue(status);
-  }, [leadId, status]);
+    setValue(normalizeLeadCadence(cadence));
+  }, [leadId, cadence]);
 
-  function commitStatus(next: string) {
-    setValue(next);
+  function commitCadence(next: string) {
+    setValue(normalizeLeadCadence(next));
     const form = new FormData();
     form.set("leadId", leadId);
-    form.set("status", next);
+    form.set("cadence", next);
     start(async () => {
-      const result = await updateLeadQueueStatus(form);
+      const result = await updateLeadCadence(form);
       if (leadId) {
         publishLeadClock({
           leadId,
@@ -66,18 +74,84 @@ export function LeadStatusSelect({ leadId, status }: { leadId: string; status: s
   }
 
   return (
+    <select
+      name={`cadence-${leadId}`}
+      value={value}
+      disabled={pending}
+      aria-label="Cadence"
+      data-lead-id={leadId}
+      data-ff-lead-cadence=""
+      onChange={(event) => commitCadence(event.target.value)}
+      className="h-7 max-w-[8.5rem] rounded-md border border-border bg-card px-1.5 text-xs text-navy"
+    >
+      {LEAD_CADENCE_FILTERS.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+      {!LEAD_CADENCE_FILTERS.some((option) => option.value === value) ? (
+        <option value={value}>{leadCadenceLabel(value)}</option>
+      ) : null}
+    </select>
+  );
+}
+
+/** @deprecated use LeadCadenceSelect — kept for any leftover imports */
+export function LeadStatusSelect({ leadId, status }: { leadId: string; status: string }) {
+  return <LeadCadenceSelect leadId={leadId} cadence={status} />;
+}
+
+export function LeadPipelineStatusSelect({ leadId, status }: { leadId: string; status: string }) {
+  const router = useRouter();
+  const [value, setValue] = useState(status);
+  const [pending, start] = useTransition();
+  const [nurtureOpen, setNurtureOpen] = useState(false);
+  const [lostOpen, setLostOpen] = useState(false);
+  const [convertOpen, setConvertOpen] = useState(false);
+
+  useEffect(() => {
+    setValue(status);
+  }, [leadId, status]);
+
+  function commitStatus(next: string) {
+    setValue(next);
+    const form = new FormData();
+    form.set("leadId", leadId);
+    form.set("status", next);
+    start(async () => {
+      await updateLeadPipelineStatus(form);
+      router.refresh();
+    });
+  }
+
+  function revertSelect() {
+    setValue(status);
+  }
+
+  return (
     <>
       <select
-        name={`status-${leadId}`}
+        name={`pipeline-status-${leadId}`}
         value={value}
         disabled={pending}
-        aria-label="Lead status"
+        aria-label="Status"
         data-lead-id={leadId}
+        data-ff-lead-status=""
         onChange={(event) => {
           const next = event.target.value;
           if (next === "nurture") {
             setValue("nurture");
             setNurtureOpen(true);
+            return;
+          }
+          if (next === "lost") {
+            setValue("lost");
+            setLostOpen(true);
+            return;
+          }
+          if (next === "converted") {
+            setValue("converted");
+            setConvertOpen(true);
             return;
           }
           commitStatus(next);
@@ -101,7 +175,84 @@ export function LeadStatusSelect({ leadId, status }: { leadId: string; status: s
           if (!open && status !== "nurture") setValue(status);
         }}
       />
+      <LeadStatusConfirmDialog
+        open={lostOpen}
+        title="Mark lead as lost?"
+        description="This removes the lead from the open queue. You can still find it with a Lost filter or search."
+        confirmLabel="Mark as lost"
+        confirmVariant="danger"
+        pending={pending}
+        onCancel={() => {
+          setLostOpen(false);
+          revertSelect();
+        }}
+        onConfirm={() => {
+          setLostOpen(false);
+          commitStatus("lost");
+        }}
+      />
+      <LeadStatusConfirmDialog
+        open={convertOpen}
+        title={CONVERT_LEAD_CONFIRM_TITLE}
+        description={CONVERT_LEAD_CONFIRM_DESCRIPTION}
+        confirmLabel={CONVERT_LEAD_CONFIRM_LABEL}
+        pending={pending}
+        onCancel={() => {
+          setConvertOpen(false);
+          revertSelect();
+        }}
+        onConfirm={() => {
+          setConvertOpen(false);
+          commitStatus("converted");
+        }}
+      />
     </>
+  );
+}
+
+export function LeadStatusConfirmDialog({
+  open,
+  title,
+  description,
+  confirmLabel,
+  confirmVariant = "primary",
+  pending,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  confirmVariant?: "primary" | "danger";
+  pending: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(next) => { if (!next) onCancel(); }}>
+      <DialogContent className="w-[min(100%-2rem,420px)] max-w-[420px] gap-3 p-5 sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={confirmVariant === "danger" ? "destructive" : "default"}
+            disabled={pending}
+            onClick={onConfirm}
+            data-ff-lead-status-confirm=""
+          >
+            {pending ? "Working…" : confirmLabel}
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={onCancel} disabled={pending}>
+            Cancel
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -309,6 +460,7 @@ export function LeadTemplateOverride({
         }}
         className="h-7 max-w-[11.5rem] rounded-md border border-border bg-card px-1.5 text-xs text-navy"
       >
+        <option value="">None</option>
         {overrides.map((option) => (
           <option key={option.triggerStatus} value={option.templateId} disabled={!option.templateId}>
             {option.label}

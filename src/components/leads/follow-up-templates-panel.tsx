@@ -30,7 +30,7 @@ import {
   followUpTemplateFullName,
   remindViaLabel,
 } from "@/lib/leads/follow-up-templates";
-import { LEAD_QUEUE_STATUS_FILTERS, leadStatusLabel } from "@/lib/leads/queue";
+import { LEAD_CADENCE_FILTERS, LEAD_QUEUE_STATUS_FILTERS, leadCadenceLabel, leadStatusLabel } from "@/lib/leads/queue";
 
 export type FollowUpTemplateView = {
   id: string;
@@ -59,15 +59,20 @@ function emptySteps() {
   return EMPTY_STEP_DEFAULTS.map((step) => ({ ...step }));
 }
 
-function triggerOptions() {
-  const seeded = TEMPLATE_TRIGGER_STATUSES.map((row) => ({
+function triggerOptions(extraTriggers: string[] = []) {
+  // Templates bind to Cadence (Settings → Picklists → Lead cadence), not pipeline Status.
+  const seeded = LEAD_CADENCE_FILTERS.filter((row) => row.value !== "none").map((row) => ({
     value: row.value,
     label: row.label,
   }));
-  const extra = LEAD_QUEUE_STATUS_FILTERS.filter(
-    (option) => !seeded.some((row) => row.value === option.value),
-  ).map((option) => ({ value: option.value, label: option.label }));
-  return [...seeded, ...extra];
+  const seen = new Set(seeded.map((row) => row.value));
+  for (const raw of extraTriggers) {
+    const value = (raw ?? "").trim().toLowerCase();
+    if (!value || value === "none" || seen.has(value)) continue;
+    seen.add(value);
+    seeded.push({ value, label: leadCadenceLabel(value) });
+  }
+  return seeded;
 }
 
 export function FollowUpTemplatesPanel({ templates }: { templates?: FollowUpTemplateView[] | null }) {
@@ -155,7 +160,7 @@ export function FollowUpTemplatesPanel({ templates }: { templates?: FollowUpTemp
                       defaultValue={editing.triggerStatus}
                       className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm"
                     >
-                      {triggerOptions().map((option) => (
+                      {triggerOptions(list.map((t) => t.triggerStatus)).map((option) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
                         </option>

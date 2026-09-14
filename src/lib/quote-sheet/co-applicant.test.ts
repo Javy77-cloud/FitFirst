@@ -68,8 +68,11 @@ describe("applicant / co-applicant household", () => {
       expect.arrayContaining([
         "co_applicant_name",
         "co_applicant_relationship_to_insured",
+        "co_applicant_gender",
         "co_applicant_marital_status",
         "co_applicant_occupation",
+        "co_applicant_employment",
+        "co_applicant_education_level",
         "co_applicant_dob",
         "co_applicant_email",
         "co_applicant_phone",
@@ -90,6 +93,21 @@ describe("applicant / co-applicant household", () => {
         applicant_marital_status: { value: "Married", status: "confirmed" },
       }),
     ).toBe(true);
+  });
+
+  it("Deal Details Off does not require co-applicant even when Married", () => {
+    expect(
+      coApplicantRequired(
+        { applicant_marital_status: { value: "Married", status: "confirmed" } },
+        { hasCoApplicantFlag: "false" },
+      ),
+    ).toBe(false);
+    expect(
+      coApplicantRequired(
+        { applicant_marital_status: { value: "Married", status: "confirmed" } },
+        { hasCoApplicantFlag: "off" },
+      ),
+    ).toBe(false);
   });
 
   it("is on Home and Auto", () => {

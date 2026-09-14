@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   AGENT_DEAL_TABS,
+  DEAL_WORK_TAB_KEY,
   dealTabShowsAsk,
   dealTabShowsCommsLogs,
   dealTabShowsEmailSend,
   hasMeaningfulDealFieldValues,
   parseAgentDealTab,
+  nextPersistedWorkTab,
+  persistedDealWorkTab,
   resolveDealResumeTab,
 } from "./tabs";
 
@@ -101,3 +104,57 @@ describe("resolveDealResumeTab", () => {
   });
 });
 
+  it("ignores the persisted work-tab key when judging whether Details has values", () => {
+    expect(hasMeaningfulDealFieldValues({ [DEAL_WORK_TAB_KEY]: "details" })).toBe(false);
+    expect(
+      hasMeaningfulDealFieldValues({ [DEAL_WORK_TAB_KEY]: "markets", named_insured: "Elena" }),
+    ).toBe(true);
+  });
+
+  it("prefers the persisted work tab over inferred signals so convert stays on Details", () => {
+    expect(persistedDealWorkTab({ [DEAL_WORK_TAB_KEY]: "details" })).toBe("details");
+    expect(
+      resolveDealResumeTab({
+        recordValues: { [DEAL_WORK_TAB_KEY]: "details", first_name: "Elena", named_insured: "Elena Ruiz" },
+        quotingUnlocked: false,
+        sheetFilled: false,
+      }),
+    ).toBe("details");
+    expect(
+      resolveDealResumeTab({
+        recordValues: { [DEAL_WORK_TAB_KEY]: "documents", named_insured: "Elena" },
+        quotingUnlocked: true,
+      }),
+    ).toBe("documents");
+    expect(
+      resolveDealResumeTab({
+        recordValues: { [DEAL_WORK_TAB_KEY]: "markets", named_insured: "Elena" },
+        quotingUnlocked: true,
+        quotesRequested: false,
+        hasNonStubQuotes: false,
+      }),
+    ).toBe("markets");
+    expect(
+      resolveDealResumeTab({
+        recordValues: { [DEAL_WORK_TAB_KEY]: "quotes", named_insured: "Elena" },
+        quotesRequested: true,
+      }),
+    ).toBe("quotes");
+  });
+
+  it("wires persistDealWorkTab on convert and each stage advance", () => {
+    const { readFileSync } = require("node:fs") as typeof import("node:fs");
+    const src = (file: string) => readFileSync(file, "utf8");
+    expect(src("src/app/actions/crm.ts")).toMatch(/persistDealWorkTab\(deal\.id, "details"\)/);
+    expect(src("src/app/actions/custom-fields.ts")).toMatch(/persistDealWorkTab\(dealId, "documents"\)/);
+    expect(src("src/app/actions/quoting.ts")).toMatch(/persistDealWorkTab\(dealId, "markets"\)/);
+    expect(src("src/app/actions/quotes.ts")).toMatch(/persistDealWorkTab\(dealId, "quotes"\)/);
+  });
+
+  it("never moves an in-progress deal backward", () => {
+    expect(nextPersistedWorkTab(null, "details")).toBe("details");
+    expect(nextPersistedWorkTab("details", "documents")).toBe("documents");
+    expect(nextPersistedWorkTab("markets", "documents")).toBe("markets");
+    expect(nextPersistedWorkTab("quotes", "details")).toBe("quotes");
+    expect(nextPersistedWorkTab("documents", "documents")).toBe("documents");
+  });

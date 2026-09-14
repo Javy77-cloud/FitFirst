@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { markAlertRead, markSelectedAlertsRead } from "@/app/actions/alerts";
+import { markAlertRead, markAllAlertsRead, markSelectedAlertsRead } from "@/app/actions/alerts";
 import { Button } from "@/components/ui/button";
 import {
   canRunNotificationBulk,
@@ -34,11 +34,13 @@ export function NotificationChecklist({
   empty,
   resetKey,
   onMarkedRead,
+  onMarkedAllRead,
 }: {
   alerts: ChecklistAlert[];
   empty: string;
   resetKey: string | number | boolean;
   onMarkedRead?: (ids: string[]) => void;
+  onMarkedAllRead?: () => void;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>(() => emptyNotificationSelection());
@@ -79,6 +81,18 @@ export function NotificationChecklist({
     router.refresh();
   }
 
+  async function markAll() {
+    const unreadIds = rows.filter((alert) => !alert.read).map((alert) => alert.id);
+    await markAllAlertsRead();
+    setSelected(emptyNotificationSelection());
+    if (unreadIds.length) {
+      setLocallyRead((prev) => [...prev, ...unreadIds]);
+      onMarkedRead?.(unreadIds);
+    }
+    onMarkedAllRead?.();
+    router.refresh();
+  }
+
   return (
     <div data-testid="notification-checklist">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
@@ -92,16 +106,28 @@ export function NotificationChecklist({
           />
           Select all
         </label>
-        <Button
-          type="button"
-          size="xs"
-          variant="ghost"
-          disabled={!bulkEnabled}
-          onClick={() => void markChecked()}
-          data-testid="notification-bulk-read"
-        >
-          Mark selected as read
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            size="xs"
+            variant="ghost"
+            disabled={!rows.some((alert) => !alert.read)}
+            onClick={() => void markAll()}
+            data-testid="notification-mark-all-read"
+          >
+            Mark All as Read
+          </Button>
+          <Button
+            type="button"
+            size="xs"
+            variant="ghost"
+            disabled={!bulkEnabled}
+            onClick={() => void markChecked()}
+            data-testid="notification-bulk-read"
+          >
+            Mark selected as read
+          </Button>
+        </div>
       </div>
 
       {rows.length === 0 ? (

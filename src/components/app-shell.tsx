@@ -49,7 +49,7 @@ export async function AppShell({
     listUsers(),
     listAlerts(),
   ]);
-  const navLayout = await getStoredNavLayout(session.userId);
+  const navLayout = await getStoredNavLayout(session.userId, { isAdmin: session.isAdmin });
   const mobileNav = flattenResolvedNav(resolveNavLayout(navLayout, { isAdmin: session.isAdmin }));
   if (session.signedIn && session.mfaStatus === "challenge") redirect("/login/mfa");
   if (session.signedIn && session.mfaStatus === "pending" && !allowMfaPending) {

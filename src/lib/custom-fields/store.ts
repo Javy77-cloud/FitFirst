@@ -9,7 +9,11 @@ import {
 } from "@/lib/db/schema";
 import type { ConvertLead } from "@/lib/crm/convert";
 import { catalogForLines, CORE_FIELDS, defaultFieldsForLine, DEAL_LAYOUT_LINES } from "./defaults";
-import { allPcSubtypeLabels } from "@/lib/deals/insurance-cascade";
+import {
+  LEAD_INSURANCE_CATEGORY_OPTIONS,
+  LEAD_INSURANCE_TYPE_OPTIONS,
+} from "./lead-picklist-options";
+import { allPcCategoryLabels, allPcSubtypeLabels } from "@/lib/deals/insurance-cascade";
 import { needsEssentialDealMigration, stripLegacyDealLayout } from "./layout";
 import {
   defaultFieldsForModule,
@@ -102,19 +106,63 @@ async function ensureInsuranceSubtypeField() {
     .from(deskCustomFields)
     .where(and(eq(deskCustomFields.tenantId, DEFAULT_TENANT_ID), eq(deskCustomFields.module, "deals")));
   const options = allPcSubtypeLabels();
+  // Never hijack insurance_type — Type + subtype are separate (cascade renders on subtype).
   const target =
     existing.find((row) => row.systemKey === "quotingForm") ??
-    existing.find((row) => /^insurance subtype$/i.test(row.label)) ??
-    existing.find((row) => /^insurance type$/i.test(row.label)) ??
-    existing.find((row) => row.key === "picklist");
+    existing.find((row) => row.key === "insurance_subtype") ??
+    existing.find((row) => /^insurance subtype$/i.test(row.label));
   const key = target?.key ?? "insurance_subtype";
   await upsertFieldDef({
     key,
-    label: "Insurance subtype",
+    label: "Insurance Form",
     type: "picklist",
     options,
     systemKey: "quotingForm",
   });
+  // Ensure Insurance Type exists / stays locked to PC / Life / Health.
+  await upsertFieldDef({
+    key: "insurance_type",
+    label: "Insurance Type",
+    type: "picklist",
+    options: [...LEAD_INSURANCE_TYPE_OPTIONS],
+  });
+  // Middle cascade field — Home / Auto / … under Type=PC.
+  await upsertFieldDef({
+    key: "insurance_category",
+    label: "Insurance Category",
+    type: "picklist",
+    options: [...LEAD_INSURANCE_CATEGORY_OPTIONS],
+  });
+}
+
+async function ensureLeadInsuranceTypeOptions() {
+  await upsertFieldDef(
+    {
+      key: "insurance_type",
+      label: "Insurance Type",
+      type: "picklist",
+      options: [...LEAD_INSURANCE_TYPE_OPTIONS],
+    },
+    "leads",
+  );
+  await upsertFieldDef(
+    {
+      key: "insurance_category",
+      label: "Insurance Category",
+      type: "picklist",
+      options: [...LEAD_INSURANCE_CATEGORY_OPTIONS],
+    },
+    "leads",
+  );
+  await upsertFieldDef(
+    {
+      key: "insurance_subtype",
+      label: "Insurance Form",
+      type: "picklist",
+      options: allPcSubtypeLabels(),
+    },
+    "leads",
+  );
 }
 
 export async function ensureDealFieldCatalog() {
@@ -184,6 +232,7 @@ const LEAD_CATALOG_UPGRADE_KEYS = new Set([
   "contact_mailing_address",
   "pipeline",
   "insurance_type",
+  "insurance_category",
   "insurance_subtype",
   ...APPLICANT_CUSTOM_KEYS,
 ]);
@@ -304,6 +353,11 @@ async function ensureContactCatalogUpgrades() {
       field.key === "source" ||
       field.key === "referral" ||
       field.key === "mailing_address" ||
+      field.key === "marital_status" ||
+      field.key === "education_level" ||
+      field.key === "employment_status" ||
+      field.key === "preferred_contact_method" ||
+      field.key === "preferred_contact_time" ||
       field.key === "recent_life_events" ||
       field.key === "existing_coverage_types" ||
       field.key === "cross_selling_opportunity" ||
@@ -322,18 +376,8 @@ export async function ensureContactDetailLayout(): Promise<FieldLayout> {
   const rows = await loadSavedLayoutRows("contacts").catch(() => []);
   const preferred = MODULE_LAYOUT_LINE;
   const picked = pickSavedModuleLayout(rows, "contacts", preferred);
-  const keys = new Set(allLayoutFieldKeys(picked ?? { columns: [] }));
-  const needed = [
-    "marital_status",
-    "recent_life_events",
-    "existing_coverage_types",
-    "cross_selling_opportunity",
-    "is_homeowner",
-    "is_business_owner",
-  ];
-  const missing = needed.some((key) => !keys.has(key));
-  const rightEmpty = !(picked?.columns?.[1]?.sections?.length);
-  if (missing || rightEmpty || !picked) {
+  // Agency-saved layouts win. Empty right = Classic (Dense) one-column — never reseed Card.
+  if (!picked) {
     await saveLayoutForModule("contacts", next);
     return next;
   }
@@ -423,12 +467,36 @@ export async function ensureBusinessDetailLayout(force = false): Promise<FieldLa
     await saveLayoutForModule("businesses", next);
     return next;
   }
-  if (businessNamePhoneSameColumn(picked)) {
+  // Classic (Dense) keeps an empty right on purpose — do not split phone into a second column.
+  const oneCol = !(picked.columns[1]?.sections?.length);
+  if (!oneCol && businessNamePhoneSameColumn(picked)) {
     const migrated = migrateBusinessPhoneOppositeColumn(picked);
     await saveLayoutForModule("businesses", migrated);
     return migrated;
   }
   return picked;
+}
+
+
+async function ensureTaskCatalogUpgrades() {
+  const defaults = defaultFieldsForModule("tasks");
+  const status = defaults.find((field) => field.key === "status");
+  if (!status?.options?.length) return;
+  const existing = await db
+    .select()
+    .from(deskCustomFields)
+    .where(
+      and(
+        eq(deskCustomFields.tenantId, DEFAULT_TENANT_ID),
+        eq(deskCustomFields.module, "tasks"),
+        eq(deskCustomFields.key, "status"),
+      ),
+    );
+  const row = existing[0];
+  if (!row) return;
+  const opts = Array.isArray(row.options) ? (row.options as unknown[]) : [];
+  if (opts.length > 0 && row.type === "picklist") return;
+  await upsertFieldDef(status, "tasks");
 }
 
 export async function ensureModuleFieldCatalog(module: FieldLayoutModule) {
@@ -443,8 +511,12 @@ export async function ensureModuleFieldCatalog(module: FieldLayoutModule) {
   }
   // Always seed any new module defaults — sparse catalogs from early tips stay incomplete otherwise.
   await insertMissingFields(module, defaultFieldsForModule(module));
-  if (module === "leads") await ensureLeadCatalogUpgrades();
+  if (module === "leads") {
+    await ensureLeadCatalogUpgrades();
+    await ensureLeadInsuranceTypeOptions();
+  }
   if (module === "contacts") await ensureContactCatalogUpgrades();
+  if (module === "tasks") await ensureTaskCatalogUpgrades();
   if (module === "businesses") await ensureBusinessDetailPicklists().catch(() => null);
   await ensureOccupationFieldBindings(module);
   const rows = await db

@@ -70,10 +70,10 @@ export function DeskHeader({
           <h1 className="text-xl font-semibold text-navy">{title}</h1>
         </div>
       )}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 pl-6 sm:pl-10 md:pl-14">
         <SmartSearch />
       </div>
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="ml-auto flex items-center gap-1.5" data-ff-header-quick="">
         <HeaderRecordActions record={recordContext} />
         <NotificationBell unread={unread} alerts={alerts} />
         {utilityChrome ? null : (
@@ -87,14 +87,16 @@ export function DeskHeader({
             <span className="sr-only">Support</span>
           </button>
         )}
-        <ProfileMenu
-          actor={actor}
-          users={users}
-          signedIn={signedIn}
-          canSwitchRole={canSwitchRole}
-          impersonatorName={impersonatorName}
-          isImpersonating={isImpersonating}
-        />
+        <div className="ml-3 flex items-center" data-ff-header-profile="">
+          <ProfileMenu
+            actor={actor}
+            users={users}
+            signedIn={signedIn}
+            canSwitchRole={canSwitchRole}
+            impersonatorName={impersonatorName}
+            isImpersonating={isImpersonating}
+          />
+        </div>
         {utilityChrome ? null : actions}
       </div>
     </header>

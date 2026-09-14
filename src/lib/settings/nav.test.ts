@@ -29,6 +29,9 @@ describe("settings IA cards", () => {
     expect(SETTINGS_NAV_IDS).toContain("outbound");
     expect(SETTINGS_NAV_IDS).toContain("import");
     expect(SETTINGS_NAV_IDS).toContain("picklists");
+    expect(SETTINGS_NAV_IDS).toContain("policy-labels");
+    expect(SETTINGS_NAV_IDS).toContain("agent-policy-access");
+    expect(settingsGroupFor("policy-labels")).toBe("agency-people");
     expect(settingsGroupFor("picklists")).toBe("agency-people");
     expect(settingsGroupFor("agents")).toBe("agency-people");
     expect(settingsGroupFor("people")).toBe("agency-people");
@@ -46,7 +49,7 @@ describe("settings IA cards", () => {
     expect(SETTINGS_NAV.find((group) => group.id === "agency-people")?.badge).toBe("Admin");
     expect(SETTINGS_NAV.find((group) => group.id === "desk-phone")?.badge).toBe("Admin");
     expect(SETTINGS_NAV.find((group) => group.id === "agency-people")?.children.map((child) => child.id)).toEqual(
-      expect.arrayContaining(["agency", "agents", "offices", "territories", "routing"]),
+      expect.arrayContaining(["agency", "agents", "offices", "territories", "routing", "agent-policy-access"]),
     );
     expect(SETTINGS_NAV.find((group) => group.id === "desk-phone")?.children.map((child) => child.id)).toEqual(
       expect.arrayContaining(["phone", "communications", "email", "outbound"]),

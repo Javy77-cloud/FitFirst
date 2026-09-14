@@ -3,13 +3,14 @@ import {
   CARRIERS_LIST_COLUMNS,
   CONTACTS_LIST_COLUMNS,
   POLICIES_LIST_COLUMNS,
+  TASKS_LIST_COLUMNS,
   type ListColumn,
 } from "@/lib/list-columns";
 import { titleCaseLabel } from "@/lib/ui/title-case";
 import { defaultPageFilters } from "./defaults";
 import type { PageFilterField, PageFilterModule } from "./types";
 
-const EXTRA_FIELDS: Record<PageFilterModule, PageFilterField[]> = {
+const EXTRA_FIELDS: Partial<Record<PageFilterModule, PageFilterField[]>> = {
   contacts: [{ key: "source", label: "Source" }],
   businesses: [{ key: "source", label: "Source" }],
   policies: [
@@ -22,13 +23,23 @@ const EXTRA_FIELDS: Record<PageFilterModule, PageFilterField[]> = {
     { key: "line", label: "LOB" },
     { key: "business", label: "Book" },
   ],
+  "deals-pipeline": [],
+  "renewals-pipeline": [],
+  tasks: [
+    { key: "kind", label: "Task Type" },
+    { key: "due", label: "Due" },
+    { key: "assignee", label: "Assignee" },
+    { key: "priority", label: "Priority" },
+    { key: "tags", label: "Tags" },
+  ],
 };
 
-const MODULE_COLUMNS: Record<PageFilterModule, ListColumn[]> = {
+const MODULE_COLUMNS: Partial<Record<PageFilterModule, ListColumn[]>> = {
   contacts: CONTACTS_LIST_COLUMNS,
   businesses: ACCOUNTS_LIST_COLUMNS,
   policies: POLICIES_LIST_COLUMNS,
   carriers: CARRIERS_LIST_COLUMNS,
+  tasks: TASKS_LIST_COLUMNS,
 };
 
 function pushField(out: PageFilterField[], seen: Set<string>, key: string, label: string) {
@@ -48,10 +59,10 @@ export function pageFilterFields(
   for (const row of defaultPageFilters(module)) {
     pushField(out, seen, row.fieldKey, row.label);
   }
-  for (const extra of EXTRA_FIELDS[module]) {
+  for (const extra of EXTRA_FIELDS[module] ?? []) {
     pushField(out, seen, extra.key, extra.label);
   }
-  const cols = columns ?? MODULE_COLUMNS[module];
+  const cols = columns ?? MODULE_COLUMNS[module] ?? [];
   for (const column of cols) {
     if (!column.label.trim() || column.id === "pick") continue;
     pushField(out, seen, column.id, column.label);

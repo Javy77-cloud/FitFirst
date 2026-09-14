@@ -319,7 +319,7 @@ function SheetField({
             readOnly && "opacity-70",
           )}
         >
-          <option value="">Select…</option>
+          <option value="">None</option>
           {options.map((opt) => (
             <option key={opt} value={opt}>
               {opt}

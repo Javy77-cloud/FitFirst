@@ -1,10 +1,12 @@
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { accounts, carriers, contacts, deals, leads, policies } from "@/lib/db/schema";
+import { accounts, carriers, contacts, deals, leads, policies, reviewTasks } from "@/lib/db/schema";
 import type { FieldLayoutModule } from "./modules";
 import type { CustomFieldDef } from "./types";
 import { replaceEin } from "@/lib/pii/write";
+import { formatPhoneStandard } from "@/lib/phone/format";
+import { normalizeTags } from "@/lib/tags/module-tags";
 
 function str(values: Record<string, string>, ...keys: Array<string | null | undefined>) {
   for (const key of keys) {
@@ -62,7 +64,7 @@ export async function applyModuleSystemValues(
         firstName: keep(str(values, "first_name", "firstName"), existing.firstName) as string,
         lastName: keep(str(values, "last_name", "lastName"), existing.lastName) as string,
         email: keep(str(values, "email"), existing.email) as typeof existing.email,
-        phone: keep(str(values, "phone"), existing.phone) as typeof existing.phone,
+        phone: keep(formatPhoneStandard(str(values, "phone")) || str(values, "phone") || null, existing.phone) as typeof existing.phone,
         source: keep(str(values, "source"), existing.source) as typeof existing.source,
         notes: keep(str(values, "notes"), existing.notes) as typeof existing.notes,
         middleName: keep(str(values, "middle_name", "middleName"), existing.middleName) as typeof existing.middleName,
@@ -101,7 +103,7 @@ export async function applyModuleSystemValues(
         firstName: keep(str(values, "first_name", "firstName"), existing.firstName) as string,
         lastName: keep(str(values, "last_name", "lastName"), existing.lastName) as string,
         email: keep(str(values, "email"), existing.email) as typeof existing.email,
-        phone: keep(str(values, "phone"), existing.phone) as typeof existing.phone,
+        phone: keep(formatPhoneStandard(str(values, "phone")) || str(values, "phone") || null, existing.phone) as typeof existing.phone,
         mailingAddress: keep(
           str(values, "mailing_address", "mailingAddress"),
           existing.mailingAddress,
@@ -109,6 +111,29 @@ export async function applyModuleSystemValues(
         city: keep(str(values, "city"), existing.city) as typeof existing.city,
         state: keep(str(values, "state"), existing.state) as typeof existing.state,
         zip: keep(str(values, "zip"), existing.zip) as typeof existing.zip,
+        dateOfBirth: keep(
+          str(values, "date_of_birth", "dateOfBirth"),
+          existing.dateOfBirth,
+        ) as typeof existing.dateOfBirth,
+        maritalStatus: keep(
+          str(values, "marital_status", "maritalStatus"),
+          existing.maritalStatus,
+        ) as typeof existing.maritalStatus,
+        preferredLanguage: keep(
+          str(values, "preferred_language", "preferredLanguage"),
+          existing.preferredLanguage,
+        ) as typeof existing.preferredLanguage,
+        notes: keep(str(values, "notes"), existing.notes) as typeof existing.notes,
+        lifeNotes: keep(str(values, "life_notes", "lifeNotes"), existing.lifeNotes) as typeof existing.lifeNotes,
+        healthNotes: keep(
+          str(values, "health_notes", "healthNotes"),
+          existing.healthNotes,
+        ) as typeof existing.healthNotes,
+        source: keep(str(values, "source"), existing.source) as typeof existing.source,
+        clientStatus: keep(
+          str(values, "client_status", "clientStatus"),
+          existing.clientStatus,
+        ) as typeof existing.clientStatus,
         updatedAt: new Date(),
       })
       .where(eq(contacts.id, recordId));
@@ -126,7 +151,7 @@ export async function applyModuleSystemValues(
         name: keep(str(values, "business_name", "name"), existing.name) as string,
         dba: keep(str(values, "dba"), existing.dba) as typeof existing.dba,
         legalName: keep(str(values, "legal_name", "legalName"), existing.legalName) as typeof existing.legalName,
-        phone: keep(str(values, "phone"), existing.phone) as typeof existing.phone,
+        phone: keep(formatPhoneStandard(str(values, "phone")) || str(values, "phone") || null, existing.phone) as typeof existing.phone,
         email: keep(str(values, "email"), existing.email) as typeof existing.email,
         mailingAddress: keep(
           str(values, "mailing_address", "mailingAddress"),
@@ -264,5 +289,40 @@ export async function applyModuleSystemValues(
         updatedAt: new Date(),
       })
       .where(eq(deals.id, recordId));
+    return;
+  }
+  if (module === "tasks") {
+    const [existing] = await db
+      .select()
+      .from(reviewTasks)
+      .where(and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), eq(reviewTasks.id, recordId)));
+    if (!existing) return;
+    const nextTitle = str(values, "title");
+    const nextKind = str(values, "kind", "task_type");
+    const nextStatus = str(values, "status");
+    const nextAssignee = str(values, "assigneeId", "assignee");
+    const dueRaw = str(values, "dueDate", "due_date");
+    const nextDue = asDate(dueRaw);
+    const patch: {
+      title?: string;
+      kind?: string;
+      status?: string;
+      assigneeId?: string | null;
+      dueDate?: Date;
+      completedAt?: Date | null;
+      tags?: string[];
+    } = {};
+    if (nextTitle) patch.title = nextTitle;
+    if (nextKind) patch.kind = nextKind;
+    if (nextStatus) {
+      patch.status = nextStatus;
+      if (nextStatus === "done" && !existing.completedAt) patch.completedAt = new Date();
+      if (nextStatus !== "done") patch.completedAt = null;
+    }
+    if (nextAssignee) patch.assigneeId = nextAssignee;
+    if (nextDue) patch.dueDate = nextDue;
+    if (values.tags != null) patch.tags = normalizeTags(values.tags);
+    if (Object.keys(patch).length === 0) return;
+    await db.update(reviewTasks).set(patch).where(eq(reviewTasks.id, recordId));
   }
 }

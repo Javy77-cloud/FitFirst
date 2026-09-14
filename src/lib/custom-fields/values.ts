@@ -5,8 +5,8 @@ function insuranceSubtypeField(fields: readonly CustomFieldDef[] | undefined) {
   if (!fields?.length) return null;
   return (
     fields.find((field) => field.systemKey === "quotingForm") ??
+    fields.find((field) => field.key === "insurance_subtype") ??
     fields.find((field) => /^insurance subtype$/i.test(field.label)) ??
-    fields.find((field) => /^insurance type$/i.test(field.label)) ??
     null
   );
 }

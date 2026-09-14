@@ -11,10 +11,11 @@ import {
   defaultLayoutForLine,
 } from "./defaults";
 import { APPLICANT_SECTION_FIELD_KEYS } from "./applicant-fields";
+import { CO_APPLICANT_SECTION_FIELD_KEYS } from "./co-applicant-fields";
 import { formatCurrencyDisplay, parseNumericInput } from "./format";
 import { evaluateFormula, extractFormulaFields } from "./formula";
 import { FIELD_TYPE_ICON_NAMES, iconNameForType } from "./icons";
-import { addSection, insertFieldAfter, insertIndexFromClientY, moveField, relabelSection } from "./layout";
+import { addSection, duplicateSection, insertFieldAfter, insertIndexFromClientY, layoutContainsFieldKey, moveField, relabelSection, removeFieldOccurrence } from "./layout";
 import {
   cloneFieldDef,
   MAX_PICKLIST_OPTIONS,
@@ -29,7 +30,9 @@ import {
   LINE_OF_BUSINESS_OPTIONS,
   STARTER_FIELD_PICKLISTS,
   STARTER_PICKLIST_CARRIERS,
+  STARTER_PICKLIST_LEAD_CADENCE,
   STARTER_PICKLIST_LINES,
+  STARTER_PICKLIST_OCCUPATIONS,
   STARTER_PICKLIST_US_STATES,
   US_STATE_OPTIONS,
   missingStarterPicklistNames,
@@ -233,7 +236,9 @@ describe("deal field builder", () => {
       STARTER_PICKLIST_US_STATES,
       STARTER_PICKLIST_LINES,
       STARTER_PICKLIST_CARRIERS,
-        ]);
+      STARTER_PICKLIST_LEAD_CADENCE,
+      STARTER_PICKLIST_OCCUPATIONS,
+    ]);
     expect(US_STATE_OPTIONS).toHaveLength(51);
     expect(US_STATE_OPTIONS).toContain("FL — Florida");
     expect(LINE_OF_BUSINESS_OPTIONS).toEqual(expect.arrayContaining(["Homeowners", "Auto", "Flood", "Workers Comp"]));
@@ -241,7 +246,15 @@ describe("deal field builder", () => {
     expect(LINE_OF_BUSINESS_OPTIONS).not.toContain("Workers' Comp");
     expect(COMMON_CARRIER_OPTIONS).toEqual(expect.arrayContaining(["Tailrow", "Progressive", "Citizens"]));
     expect(missingStarterPicklistNames([])).toEqual([...STARTER_FIELD_PICKLISTS.map((list) => list.name)]);
-    expect(missingStarterPicklistNames(["US states", "Lines of business", "Common carriers"])).toEqual([]);
+    expect(
+      missingStarterPicklistNames([
+        "US states",
+        "Lines of business",
+        "Common carriers",
+        "Lead cadence",
+        "Occupations",
+      ]),
+    ).toEqual([]);
     expect(formatCurrencyDisplay("321000")).toBe("321,000.00");
     expect(parseNumericInput("$321,000.00")).toBe("321000");
   });
@@ -375,17 +388,27 @@ describe("deal field builder", () => {
         ...ESSENTIAL_CONTACT_KEYS,
         ...ESSENTIAL_ADDRESS_KEYS,
         "contact_mailing_address",
+        "contact_mailing_city",
+        "contact_mailing_state",
+        "contact_mailing_zip",
         ...APPLICANT_SECTION_FIELD_KEYS,
+        ...CO_APPLICANT_SECTION_FIELD_KEYS,
       ]),
     );
     expect(salonKeys).toEqual(homeKeys);
     expect(homeKeys).not.toContain("roof_year");
     expect(homeKeys).not.toContain("occupancy");
-    expect(home.columns[0].sections.map((section) => section.label)).toEqual(["Contact", "Applicant"]);
+    expect(home.columns[0].sections.map((section) => section.label)).toEqual([
+      "Contact",
+      "Applicant",
+      "Co-applicant",
+    ]);
     expect(home.columns[1].sections.map((section) => section.label)).toEqual([
+      "Details",
       "Insured Address",
       "Mailing Address",
     ]);
+    expect(homeKeys).toEqual(expect.arrayContaining(["insurance_type", "insurance_category", "insurance_subtype"]));
   });
 
   it("keeps LOB field catalogs so the builder can add them later", () => {
@@ -433,7 +456,56 @@ describe("deal field builder", () => {
       "last_name",
       "email",
       "phone",
+      "date_of_birth",
     ]);
+  });
+
+
+  it("removes only one slot when the same field key appears twice", () => {
+    const start = {
+      columns: [
+        {
+          id: "left",
+          sections: [
+            {
+              id: "co_applicant",
+              label: "Co-applicant",
+              fieldKeys: ["co_applicant_marital_status", "co_applicant_occupation"],
+            },
+            {
+              id: "co_applicant_copy",
+              label: "Co-applicant (copy)",
+              fieldKeys: ["co_applicant_marital_status", "co_applicant_occupation"],
+            },
+          ],
+        },
+        { id: "right", sections: [] },
+      ],
+    };
+    const next = removeFieldOccurrence(start, "co_applicant", "co_applicant_marital_status");
+    expect(next.columns[0].sections[0].fieldKeys).toEqual(["co_applicant_occupation"]);
+    expect(next.columns[0].sections[1].fieldKeys).toEqual([
+      "co_applicant_marital_status",
+      "co_applicant_occupation",
+    ]);
+    expect(layoutContainsFieldKey(next, "co_applicant_marital_status")).toBe(true);
+  });
+
+
+  it("allows clearing a section label while typing and duplicates a section", () => {
+    const start = addSection(defaultLayoutForLine("HO"), "left", "New section");
+    const id = start.columns[0].sections.at(-1)!.id;
+    const mid = relabelSection(start, id, "N", { allowEmpty: true });
+    expect(mid.columns[0].sections.at(-1)!.label).toBe("N");
+    const cleared = relabelSection(mid, id, "", { allowEmpty: true });
+    expect(cleared.columns[0].sections.at(-1)!.label).toBe("");
+    const blurred = relabelSection(cleared, id, "");
+    expect(blurred.columns[0].sections.at(-1)!.label).toBe("Section");
+    const withCo = addSection(start, "left", "Co-applicant");
+    const coId = withCo.columns[0].sections.at(-1)!.id;
+    const duped = duplicateSection(withCo, coId);
+    const labels = duped.columns[0].sections.map((s) => s.label);
+    expect(labels.filter((l) => l.startsWith("Co-applicant")).length).toBeGreaterThanOrEqual(2);
   });
 
   it("ships an additive picklist migrate and does not touch deal Documents / Markets / Quotes files", () => {

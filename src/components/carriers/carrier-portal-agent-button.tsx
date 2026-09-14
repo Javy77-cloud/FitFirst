@@ -9,15 +9,29 @@ export function CarrierPortalAgentButton({ carrierId }: { carrierId: string }) {
   const [busy, setBusy] = useState(false);
 
   async function openPortal() {
-    setBusy(true);
     setError(null);
+    // Sync open under the click (avoids popup blockers). FitFirst stays on this tab.
+    const tab = window.open("about:blank", "_blank");
+    if (tab) {
+      try {
+        tab.opener = null;
+      } catch {
+        /* ignore */
+      }
+    }
+    setBusy(true);
     const result = await openCarrierPortalUrl(carrierId);
     setBusy(false);
     if (!result.ok) {
+      tab?.close();
       setError(result.error);
       return;
     }
-    window.open(result.url, "_blank", "noopener,noreferrer");
+    if (tab) {
+      tab.location.href = result.url;
+    } else {
+      window.open(result.url, "_blank", "noopener,noreferrer");
+    }
   }
 
   return (
@@ -26,7 +40,7 @@ export function CarrierPortalAgentButton({ carrierId }: { carrierId: string }) {
         Log in to carrier portal
       </Button>
       <p className="text-xs text-muted-foreground">
-        Opens the portal URL in a new tab. Credentials stay with Admin — this never shows a password.
+        Opens the portal in a new tab. FitFirst stays open. Credentials stay with Admin.
       </p>
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>

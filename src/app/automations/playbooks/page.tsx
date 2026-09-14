@@ -22,6 +22,7 @@ import {
   listGuidedAutomations,
 } from "@/lib/db/automation-queries";
 import { cn } from "@/lib/utils";
+import { formatDay } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
 
@@ -176,7 +177,7 @@ export default async function AutomationsPlaybooksPage({
                       )}
                     </td>
                     <td className="text-xs text-muted-foreground">
-                      {run.firedAt.toISOString().slice(0, 10)}
+                      {formatDay(run.firedAt)}
                     </td>
                   </tr>
                 );

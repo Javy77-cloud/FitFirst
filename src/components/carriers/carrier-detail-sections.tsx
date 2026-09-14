@@ -2,19 +2,17 @@
 
 import Link from "next/link";
 import { CollapsibleSection } from "@/components/contacts/collapsible-section";
-import { PortalLoginAdmin } from "@/components/carriers/portal-login-admin";
+import { PortalLoginBlock } from "@/components/carriers/portal-login-block";
 import { CarrierPortalAgentButton } from "@/components/carriers/carrier-portal-agent-button";
 import {
   CarrierAmBestFields,
   CarrierContactFields,
   CarrierIdentityFields,
-  CarrierPortalUrlField,
 } from "@/components/carriers/carrier-inline-fields";
 import { CarrierCommissionTable } from "@/components/carriers/carrier-commission-table";
 import { CarrierTimelineSection } from "@/components/carriers/carrier-timeline-section";
 import { StructuredAppetiteTable } from "@/components/carriers/structured-appetite-table";
 import { StructuredDontWriteTable } from "@/components/carriers/structured-dont-write-table";
-import { CarrierScorecardSection } from "@/components/carriers/carrier-kpi-strip";
 import { normalizeCommissionSchedule, type CommissionScheduleRow } from "@/lib/carriers/commission";
 import type { AppetiteNoteRow, DontWriteNoteRow } from "@/lib/carriers/appetite-rows";
 import type { QuoteHandoffReadiness } from "@/lib/carriers/secrets";
@@ -66,6 +64,7 @@ export function CarrierDetailSections({
   newBusinessCommPct: string;
   renewalCommPct: string;
   portal: {
+    agencyCode?: string | null;
     usernameHint: string | null;
     hasUsername: boolean;
     hasPassword: boolean;
@@ -85,6 +84,7 @@ export function CarrierDetailSections({
   amBestHistory?: { rating: string; outlook: string; date: string }[];
   kpi: CarrierKpiSnapshot;
 }) {
+  void kpi;
   const schedule = normalizeCommissionSchedule(commissionRows, {
     newBusinessPct: newBusinessCommPct,
     renewalPct: renewalCommPct,
@@ -96,41 +96,22 @@ export function CarrierDetailSections({
         <CarrierIdentityFields carrierId={carrierId} values={identity} admin={admin} />
       </CollapsibleSection>
 
-      <CollapsibleSection id="contact" title="Contact" defaultOpen>
+      <CollapsibleSection id="contact" title="Contact" defaultOpen={false}>
         <CarrierContactFields carrierId={carrierId} values={contact} admin={admin} />
       </CollapsibleSection>
 
       {admin ? (
-        <CollapsibleSection
-          id="portal-login"
-          title="Portal Login"
-          badge={
-            portal.readiness.ready ? (
-              <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-800">
-                Ready
-              </span>
-            ) : (
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
-                Missing items
-              </span>
-            )
-          }
-          defaultOpen={false}
-        >
-          <CarrierPortalUrlField
-            carrierId={carrierId}
-            value={portal.portalUrl ?? ""}
-            admin={admin}
-          />
-          <PortalLoginAdmin
-            carrierId={carrierId}
-            usernameHint={portal.usernameHint}
-            hasUsername={portal.hasUsername}
-            hasPassword={portal.hasPassword}
-            readiness={portal.readiness}
-            audits={portal.audits}
-          />
-        </CollapsibleSection>
+        <PortalLoginBlock
+          carrierId={carrierId}
+          agencyCode={portal.agencyCode}
+          usernameHint={portal.usernameHint}
+          hasUsername={portal.hasUsername}
+          hasPassword={portal.hasPassword}
+          readiness={portal.readiness}
+          audits={portal.audits}
+          portalUrl={portal.portalUrl}
+          admin={admin}
+        />
       ) : (
         <CollapsibleSection id="portal-login-agent" title="Carrier portal" defaultOpen={false}>
           <CarrierPortalAgentButton carrierId={carrierId} />
@@ -220,10 +201,6 @@ export function CarrierDetailSections({
         <CarrierTimelineSection
           rows={admin ? timeline : timeline.filter((row) => row.kind !== "credential")}
         />
-      </CollapsibleSection>
-
-      <CollapsibleSection id="scorecard" title="Carrier Scorecard" defaultOpen={false}>
-        <CarrierScorecardSection kpi={kpi} />
       </CollapsibleSection>
     </div>
   );

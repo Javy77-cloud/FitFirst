@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ColumnTable } from "@/components/lists/column-table";
 import { QUOTES_LIST_COLUMNS } from "@/lib/list-columns";
 import { TrackingStatusBadge } from "@/components/quotes/status-badge";
-import { formatMoney } from "@/lib/domain";
+import { formatDay, formatMoney } from "@/lib/domain";
 import { cheapestQuotedSummary, type TrackingShop } from "@/lib/quotes/tracking";
 
 export function TrackingTable({
@@ -47,7 +47,7 @@ export function TrackingTable({
           quoteNumber: <span className="font-mono text-xs">{row.quoteNumber ?? "—"}</span>,
           date: (
             <span className="whitespace-nowrap text-xs">
-              {row.attemptedAt.toISOString().slice(0, 10)}
+              {formatDay(row.attemptedAt)}
             </span>
           ),
           links: (

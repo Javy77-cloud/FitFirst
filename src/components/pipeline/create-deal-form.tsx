@@ -62,7 +62,7 @@ export function PipelineCreateDealForm({
       </div>
       {pipelineSlug === "life" ? (
         <select name="policySubType" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
-          <option value="">Life type</option>
+          <option value="">None</option>
           {lifeOptions.map((option) => (
             <option key={option.slug} value={option.label}>
               {option.label}
@@ -72,7 +72,7 @@ export function PipelineCreateDealForm({
       ) : null}
       {pipelineSlug === "health" ? (
         <select name="policySubType" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
-          <option value="">Health type</option>
+          <option value="">None</option>
           {healthOptions.map((option) => (
             <option key={option.slug} value={option.label}>
               {option.label}
@@ -84,7 +84,12 @@ export function PipelineCreateDealForm({
         <PcSubtypeCascade defaultSubtypeId="HO3" />
       ) : null}
       {cta.kind !== "select" ? (
-        <select name="stageSlug" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
+        <select
+          name="stageSlug"
+          required
+          className="h-8 rounded-md border border-input bg-card px-2 text-sm"
+        >
+          <option value="">None</option>
           {stages.map((item) => (
             <option key={item.slug} value={item.slug}>
               {item.name}

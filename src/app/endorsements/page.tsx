@@ -1,5 +1,6 @@
 import { advanceEndorsementDraft } from "@/app/actions/ams";
 import { AppShell } from "@/components/app-shell";
+import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { RecordLink } from "@/components/record-links";
 import { StatusBadge } from "@/components/status-badge";
@@ -22,13 +23,29 @@ export default async function EndorsementsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
+  const policyIdParam = typeof params.policy === "string" ? params.policy : undefined;
   const rows = await listEndorsementDrafts();
   const error = typeof params.error === "string" ? params.error : undefined;
   const notice = typeof params.notice === "string" ? params.notice : undefined;
 
   return (
     <AppShell title="Endorsement drafts">
-      <p className="mb-4 text-base text-muted-foreground">{ENDORSEMENT_DRAFT_DISCLAIMER}</p>
+      <DeskPageTrail
+        backLabel={policyIdParam ? "Back to policy" : "Back"}
+        fallbackHref={policyIdParam ? `/policies/${policyIdParam}` : "/policies"}
+        crumbs={[
+          { href: "/policies", label: "Policies" },
+          ...(policyIdParam
+            ? [{ href: `/policies/${policyIdParam}`, label: "Policy" }]
+            : []),
+          { label: "Endorsements" },
+        ]}
+      />
+      <p className="mb-4 text-base text-muted-foreground">
+        Endorsement drafts from a Policy — status pipeline only. Draft does not file. Link back to
+        the Policy from each row.
+      </p>
+      <p className="mb-2 text-xs text-muted-foreground">{ENDORSEMENT_DRAFT_DISCLAIMER}</p>
       {error ? (
         <p className="mb-3 text-sm text-destructive" role="alert">
           {error}
@@ -41,7 +58,7 @@ export default async function EndorsementsPage({
         <DeskColumnTable
           moduleId="endorsements"
           columns={ENDORSEMENTS_LIST_COLUMNS}
-          empty="No endorsement wording stubs yet. Draft one from a Policy — it does not file."
+          empty="No endorsement drafts yet. Create a draft from a Policy."
           rows={rows.map(({ draft, policy, contact, account }) => ({
             key: draft.id,
             cells: {

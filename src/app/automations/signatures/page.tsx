@@ -22,6 +22,7 @@ import {
   listPendingSignatureApprovals,
   listSignaturesWithOwners,
 } from "@/lib/db/automation-queries";
+import { formatDay } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
 
@@ -137,7 +138,7 @@ export default async function AutomationsSignaturesPage({
                       <p className="text-xs text-muted-foreground">
                         From {owner?.name ?? "agent"} · submitted{" "}
                         {signature.submittedAt
-                          ? signature.submittedAt.toISOString().slice(0, 10)
+                          ? formatDay(signature.submittedAt)
                           : "—"}
                       </p>
                       <pre className="whitespace-pre-wrap font-sans text-xs">{signature.bodyEn}</pre>

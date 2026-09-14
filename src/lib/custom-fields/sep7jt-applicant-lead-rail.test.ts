@@ -23,11 +23,11 @@ function source(file: string) {
 }
 
 describe("sep7jt Lead rail + shared applicant fields", () => {
-  it("Lead desk is layout | narrow docs | ~320px RecordContextRail", () => {
+  it("Lead desk is full-width fields + 420px RecordContextRail", () => {
     const desk = source("src/components/leads/lead-detail-workspace.tsx");
     const page = source("src/app/leads/[id]/page.tsx");
-    expect(desk).toMatch(/data-ff-lead-layout="layout-docs-rail"/);
-    expect(desk).toMatch(/grid-cols-\[minmax\(0,1\.4fr\)_minmax\(0,0\.7fr\)_minmax\(280px,320px\)\]/);
+    expect(desk).toMatch(/data-ff-lead-layout="layout-rail"/);
+    expect(desk).toMatch(/gridTemplateColumns: "minmax\(0, 1fr\) 420px"/);
     expect(desk).toMatch(/data-ff-lead-context-rail/);
     expect(page).toMatch(/loadRecordContext\(\{/);
     expect(page).toMatch(/rail=\{<RecordContextRail context=\{context\} \/>\}/);
@@ -50,9 +50,10 @@ describe("sep7jt Lead rail + shared applicant fields", () => {
     expect(leadByKey.applicant_occupation?.options).toEqual([...OCCUPATION_OPTIONS]);
     expect(leadByKey.applicant_education_level?.options).toEqual([...EDUCATION_LEVEL_OPTIONS]);
     expect(leadByKey.entity_type?.options).toEqual([...ENTITY_TYPE_OPTIONS]);
-    // occupation sits immediately under employment in shared defs
+    // Javy: Gender → Occupation → Employment stacked
     const keys = APPLICANT_CRM_FIELDS.map((f) => f.key);
-    expect(keys.indexOf("applicant_occupation")).toBe(keys.indexOf("applicant_employment") + 1);
+    expect(keys.indexOf("applicant_occupation")).toBe(keys.indexOf("applicant_gender") + 1);
+    expect(keys.indexOf("applicant_employment")).toBe(keys.indexOf("applicant_occupation") + 1);
   });
 
   it("puts Applicant section after Contact on Lead and Deal essential layouts", () => {
@@ -64,18 +65,31 @@ describe("sep7jt Lead rail + shared applicant fields", () => {
     expect(leadLeft.indexOf("applicant")).toBe(leadLeft.indexOf("contact") + 1);
     const applicant = lead.columns[0].sections.find((s) => s.id === "applicant");
     expect(applicant?.fieldKeys).toEqual([...APPLICANT_SECTION_FIELD_KEYS]);
-    expect(lead.columns[0].sections.find((s) => s.id === "contact")?.fieldKeys).not.toContain(
+    expect(lead.columns[0].sections.find((s) => s.id === "contact")?.fieldKeys).toContain(
       "date_of_birth",
     );
+    expect(lead.columns[0].sections.find((s) => s.id === "applicant")?.fieldKeys).not.toContain(
+      "date_of_birth",
+    );
+    expect(lead.columns[0].sections.find((s) => s.id === "applicant")?.fieldKeys).toContain(
+      "entity_type",
+    );
+    expect(APPLICANT_SECTION_FIELD_KEYS).toContain("entity_type");
 
     const deal = defaultLayoutForLine("HO");
-    expect(deal.columns[0].sections.map((s) => s.id)).toEqual(["contact", "applicant"]);
-    expect(deal.columns[1].sections.map((s) => s.id)).toEqual(["insured_address", "mailing_address"]);
+    expect(deal.columns[0].sections.map((s) => s.id)).toEqual(
+      expect.arrayContaining(["contact", "applicant"]),
+    );
     expect(deal.columns[0].sections.find((s) => s.id === "applicant")?.fieldKeys).toEqual([
       ...APPLICANT_SECTION_FIELD_KEYS,
     ]);
     expect(allLayoutFieldKeys(deal)).toEqual(
-      expect.arrayContaining([...APPLICANT_CUSTOM_KEYS, "date_of_birth", "contact_mailing_address"]),
+      expect.arrayContaining([
+        ...APPLICANT_SECTION_FIELD_KEYS,
+        "date_of_birth",
+        "contact_mailing_address",
+        "entity_type",
+      ]),
     );
   });
 

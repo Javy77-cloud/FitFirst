@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronDown, ChevronLeft, ChevronRight, CircleHelp } from "lucide-react";
 import {
   deleteDeskActivity,
   logDeskActivity,
@@ -15,35 +16,38 @@ import {
 } from "@/components/calendar/company-meeting-form";
 import { RelatedRecordFields, type RelatedOptions } from "@/components/desk/related-fields";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  contactActionButtonClass,
-  contactActionButtonStyle,
-  isContactActionKind,
-} from "@/lib/desk/contact-actions";
 import { ACTIVITY_COLORS } from "@/lib/desk/comms";
 import { cn } from "@/lib/utils";
 import { CALL_OUTCOMES } from "@/lib/domain";
 import { isCompanyEventType, videoHrefFromEvent, type CompanyEventType } from "@/lib/meetings/company";
 import {
   activitiesOnDay,
-  addDays,
-  addMonths,
+  activitiesOnView,
+  activityAnchor,
+  CALENDAR_ADMIN_ADD,
   CALENDAR_TOOLBAR_ROWS,
   CALENDAR_VIEWS,
   dayHours,
   eventHeightPx,
   eventToneColor,
-  filterCalendarActivities,
+  formatCalendarTitle,
   formatTime,
   kindClass,
   monthCells,
   rescheduleWindow,
   serializeCalendarActivity,
+  shiftCalendarAnchor,
   slotStart,
-  startOfWeek,
   toDate,
   toDateParam,
   toDateTimeLocal,
@@ -51,18 +55,31 @@ import {
   type CalendarActivity,
   type CalendarView,
 } from "@/lib/ops/calendar";
+import {
+  holidayOnDay,
+  usFederalHolidaysInRange,
+  type UsFederalHoliday,
+} from "@/lib/ops/us-federal-holidays";
 
 const KINDS = ["task", "meeting", "call", "email", "sms"] as const;
+const KIND_LABELS: Record<(typeof KINDS)[number], string> = {
+  task: "Task",
+  meeting: "Meeting",
+  call: "Call",
+  email: "Email",
+  sms: "SMS",
+};
 const HOURS = dayHours(7, 19);
 const HOUR_H = 48;
+const GRID_HELP =
+  "Drag an event, or select it and click an empty day or hour to reschedule. Double-click an empty slot to add.";
 
 export type CalendarEvent = ReturnType<typeof serializeCalendarActivity>;
 
-function hrefFor(view: CalendarView, date: Date, kinds: string[]) {
+function hrefFor(view: CalendarView, date: Date) {
   const params = new URLSearchParams();
   params.set("view", view);
   params.set("date", toDateParam(date));
-  if (kinds.length && kinds.length < KINDS.length) params.set("kinds", kinds.join(","));
   return `/calendar?${params.toString()}`;
 }
 
@@ -71,11 +88,13 @@ export function DeskCalendar({
   options,
   initialView,
   initialDate,
-  initialKinds,
+  initialKinds = [],
   isAdmin = false,
   offices = [],
   territories = [],
   openEventId = null,
+  markSundayNonWorking = true,
+  showUsFederalHolidays = true,
 }: {
   events: CalendarEvent[];
   options: RelatedOptions;
@@ -86,14 +105,16 @@ export function DeskCalendar({
   offices?: InviteCatalogOption[];
   territories?: InviteCatalogOption[];
   openEventId?: string | null;
+  markSundayNonWorking?: boolean;
+  showUsFederalHolidays?: boolean;
 }) {
   const router = useRouter();
+  void initialKinds; // kinds URL param unused — UI shows all types
   const [view, setView] = useState<CalendarView>(initialView);
   const [anchor, setAnchor] = useState(() => {
     const d = initialDate ? new Date(`${initialDate}T12:00:00`) : new Date();
     return Number.isNaN(d.getTime()) ? new Date() : d;
   });
-  const [kinds, setKinds] = useState<string[]>(initialKinds.length ? initialKinds : [...KINDS]);
   const [editing, setEditing] = useState<CalendarEvent | "new" | "company" | "training" | null>(null);
   const [draftKind, setDraftKind] = useState<(typeof KINDS)[number]>("task");
   const [draftStart, setDraftStart] = useState<string>("");
@@ -101,10 +122,19 @@ export function DeskCalendar({
   const [dragging, setDragging] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const rows = useMemo(
-    () => filterCalendarActivities(events, { kinds }),
-    [events, kinds],
+  // Always show all kinds — legend is static, no kind filter in the UI.
+  const rows = events;
+
+  const onThisView = useMemo(
+    () => activitiesOnView(rows, view, anchor),
+    [rows, view, anchor],
   );
+
+  const federalHolidays = useMemo(() => {
+    if (!showUsFederalHolidays) return [] as UsFederalHoliday[];
+    const cells = monthCells(anchor);
+    return usFederalHolidaysInRange(cells[0].date, cells[cells.length - 1].date);
+  }, [anchor, showUsFederalHolidays]);
 
   useEffect(() => {
     if (!openEventId) return;
@@ -112,17 +142,10 @@ export function DeskCalendar({
     if (match) setEditing(match);
   }, [openEventId, events]);
 
-  function go(nextView: CalendarView, nextDate: Date, nextKinds = kinds) {
+  function go(nextView: CalendarView, nextDate: Date) {
     setView(nextView);
     setAnchor(nextDate);
-    router.replace(hrefFor(nextView, nextDate, nextKinds), { scroll: false });
-  }
-
-  function toggleKind(kind: string) {
-    const next = kinds.includes(kind) ? kinds.filter((k) => k !== kind) : [...kinds, kind];
-    const resolved = next.length ? next : [...KINDS];
-    setKinds(resolved);
-    router.replace(hrefFor(view, anchor, resolved), { scroll: false });
+    router.replace(hrefFor(nextView, nextDate), { scroll: false });
   }
 
   async function dropOn(eventId: string, nextStart: Date) {
@@ -175,46 +198,66 @@ export function DeskCalendar({
   }
 
   const week = weekDays(anchor);
-  const title =
-    view === "day"
-      ? anchor.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })
-      : view === "week"
-        ? `${week[0].toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${week[6].toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
-        : anchor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const title = formatCalendarTitle(view, anchor);
+
+  const addEventMenu = (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            type="button"
+            className="h-9 gap-1.5 bg-navy !px-5 text-sm font-semibold text-white hover:bg-navy/90 hover:text-white"
+          />
+        }
+      >
+        {CALENDAR_TOOLBAR_ROWS[1][0]}
+        <ChevronDown className="size-4 opacity-90" data-icon="inline-end" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-44">
+        {KINDS.map((kind, index) => (
+          <DropdownMenuItem
+            key={kind}
+            onClick={() => openNew(undefined, kind)}
+          >
+            <span
+              className="mr-1.5 inline-block size-2.5 rounded-sm"
+              style={{ background: ACTIVITY_COLORS[kind] }}
+              aria-hidden
+            />
+            {CALENDAR_TOOLBAR_ROWS[1][index + 1]}
+          </DropdownMenuItem>
+        ))}
+        {isAdmin ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => {
+                setDraftStart("");
+                setEditing("company");
+              }}
+            >
+              {CALENDAR_ADMIN_ADD[0]}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                setDraftStart("");
+                setEditing("training");
+              }}
+            >
+              {CALENDAR_ADMIN_ADD[1]}
+            </DropdownMenuItem>
+          </>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
-    <div className="space-y-3">
-      <nav aria-label="Calendar toolbar" className="space-y-1.5">
-        <div className="flex flex-wrap items-center gap-1" data-calendar-toolbar="add">
-          <Button type="button" size="sm" onClick={() => openNew()}>
-            {CALENDAR_TOOLBAR_ROWS[0][0]}
-          </Button>
-          {isAdmin ? (
-            <>
-              <Button
-                type="button"
-                size="sm"
-                className="bg-fit-flag text-white hover:bg-fit-flag/90"
-                onClick={() => {
-                  setDraftStart("");
-                  setEditing("company");
-                }}
-              >
-                {CALENDAR_TOOLBAR_ROWS[0][1]}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => {
-                  setDraftStart("");
-                  setEditing("training");
-                }}
-              >
-                {CALENDAR_TOOLBAR_ROWS[0][2]}
-              </Button>
-            </>
-          ) : null}
-        </div>
+    <div className="-mt-8 space-y-1">
+      <nav
+        aria-label="Calendar toolbar"
+        className="grid gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-center"
+      >
         <div className="flex flex-wrap items-center gap-1" data-calendar-toolbar="view">
           {CALENDAR_VIEWS.map((v, index) => (
             <Button
@@ -224,80 +267,65 @@ export function DeskCalendar({
               variant={view === v ? "default" : "outline"}
               onClick={() => go(v, anchor)}
             >
-              {CALENDAR_TOOLBAR_ROWS[1][index]}
+              {CALENDAR_TOOLBAR_ROWS[0][index]}
             </Button>
           ))}
+          <span
+            className="ml-0.5 inline-flex size-6 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-navy"
+            title={GRID_HELP}
+            aria-label={GRID_HELP}
+            role="img"
+            data-ff-calendar-help=""
+          >
+            <CircleHelp className="size-3.5" strokeWidth={2} />
+          </span>
         </div>
-        <div className="flex flex-wrap items-center gap-1" data-calendar-toolbar="kind">
-          {KINDS.map((kind, index) => (
-            <Button
-              key={kind}
-              type="button"
-              size="sm"
-              variant={isContactActionKind(kind) ? "ghost" : "outline"}
-              className={cn(
-                isContactActionKind(kind) && contactActionButtonClass(kind),
-                isContactActionKind(kind) && "rounded text-white hover:opacity-90 hover:text-white",
-              )}
-              style={isContactActionKind(kind) ? contactActionButtonStyle(kind) : undefined}
-              onClick={() => openNew(undefined, kind)}
-            >
-              {CALENDAR_TOOLBAR_ROWS[2][index]}
-            </Button>
-          ))}
-        </div>
-      </nav>
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-1">
+        <div
+          className="flex flex-wrap items-center justify-center gap-0.5"
+          data-calendar-toolbar="date"
+        >
           <Button
             type="button"
             size="sm"
             variant="outline"
-            onClick={() =>
-              go(view, view === "month" ? addMonths(anchor, -1) : addDays(anchor, view === "day" ? -1 : -7))
-            }
+            className="size-8 px-0"
+            aria-label={view === "month" ? "Previous month" : view === "week" ? "Previous week" : "Previous day"}
+            onClick={() => go(view, shiftCalendarAnchor(view, anchor, -1))}
           >
-            {view === "month" ? "Previous month" : view === "week" ? "Previous week" : "Previous day"}
+            <ChevronLeft className="size-4" />
           </Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => go(view, new Date())}>
+          <h2 className="min-w-[9rem] px-1 text-center text-lg font-semibold tracking-tight text-navy sm:min-w-[12rem] sm:text-xl">
+            {title}
+          </h2>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="size-8 px-0"
+            aria-label={view === "month" ? "Next month" : view === "week" ? "Next week" : "Next day"}
+            onClick={() => go(view, shiftCalendarAnchor(view, anchor, 1))}
+          >
+            <ChevronRight className="size-4" />
+          </Button>
+          <Button
+            type="button"
+            className="ml-1.5 h-10 rounded-full bg-navy px-5 text-base font-semibold text-white shadow-sm hover:bg-navy/90 hover:text-white"
+            onClick={() => go(view, new Date())}
+          >
             Today
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() =>
-              go(view, view === "month" ? addMonths(anchor, 1) : addDays(anchor, view === "day" ? 1 : 7))
-            }
-          >
-            {view === "month" ? "Next month" : view === "week" ? "Next week" : "Next day"}
-          </Button>
-          <h2 className="ml-2 text-sm font-semibold text-navy">{title}</h2>
         </div>
-        <div className="flex flex-wrap gap-2" aria-label="Show activity types">
-          {KINDS.map((kind) => (
-            <label key={kind} className="flex items-center gap-1.5 text-xs">
-              <input
-                type="checkbox"
-                checked={kinds.includes(kind)}
-                onChange={() => toggleKind(kind)}
-              />
-              <span
-                className="rounded-sm px-1.5 py-0.5 font-semibold uppercase text-white"
-                style={{ background: ACTIVITY_COLORS[kind] }}
-              >
-                {kind}
-              </span>
-            </label>
-          ))}
-        </div>
-      </div>
+        <div className="hidden sm:block" data-calendar-toolbar="add" aria-hidden />
+      </nav>
+
+      <WeekAheadStrip
+        anchor={anchor}
+        rows={rows}
+        activeDay={view === "day" ? anchor : null}
+        onPickDay={(day) => go("day", day)}
+      />
+
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      <p className="text-xs text-muted-foreground">
-        Click a chip to edit. Drag it, or select it and click an empty day/hour to reschedule. Color
-        is by type — same log as Contact and Policy 360.
-      </p>
       {selectedId ? (
         <p className="text-xs text-navy">
           Selected — click an empty slot to move it, or{" "}
@@ -307,6 +335,28 @@ export function DeskCalendar({
           .
         </p>
       ) : null}
+
+      <div className="-mt-0.5 mb-0 flex flex-wrap items-end justify-between gap-1 py-0.5">
+        <div className="flex flex-wrap items-center gap-2" aria-label="Color legend">
+          <span className="text-xs font-semibold text-muted-foreground">Color legend.</span>
+          {KINDS.map((kind) => (
+            <span key={kind} className="inline-flex items-center gap-1.5 text-xs text-navy">
+              <span
+                className="inline-block size-2.5 rounded-sm"
+                style={{ background: ACTIVITY_COLORS[kind] }}
+                aria-hidden
+              />
+              {KIND_LABELS[kind]}
+            </span>
+          ))}
+        </div>
+        <div
+          className="-mt-3 mb-0.5 flex items-center gap-1 self-start"
+          data-calendar-toolbar="add-above-grid"
+        >
+          {addEventMenu}
+        </div>
+      </div>
 
       {view === "month" ? (
         <MonthGrid
@@ -330,6 +380,8 @@ export function DeskCalendar({
           selectedId={selectedId}
           onSelect={openEvent}
           onEmpty={(day) => void placeOn(day)}
+          markSundayNonWorking={markSundayNonWorking}
+          holidays={federalHolidays}
         />
       ) : (
         <TimeGrid
@@ -347,32 +399,34 @@ export function DeskCalendar({
         />
       )}
 
-      <section className="ff-card overflow-x-auto">
-        <div className="border-b border-border px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
-          On this view
-        </div>
-        {rows.length === 0 ? (
-          <p className="px-3 py-4 text-sm text-muted-foreground">Nothing in this filter.</p>
-        ) : (
-          <ul className="divide-y divide-border">
-            {rows.slice(0, 12).map((row) => (
-              <li key={row.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
-                <span
-                  className="rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white"
-                  style={{ background: eventToneColor(row) }}
-                >
-                  {isCompanyEventType(row.meetingType) ? row.meetingType : row.kind}
-                </span>
-                <span className="font-medium text-navy">{row.title}</span>
-                <span className="text-xs text-muted-foreground">{formatTime(row.startAt ?? row.dueAt)}</span>
-                <Button type="button" size="sm" variant="outline" onClick={() => openEvent(serializeCalendarActivity(row))}>
-                  Edit
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {view !== "month" ? (
+        <section className="ff-card overflow-x-auto">
+          <div className="border-b border-border px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
+            On this view
+          </div>
+          {onThisView.length === 0 ? (
+            <p className="px-3 py-4 text-sm text-muted-foreground">Nothing on this {view}.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {onThisView.slice(0, 12).map((row) => (
+                <li key={row.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
+                  <span
+                    className="rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white"
+                    style={{ background: eventToneColor(row) }}
+                  >
+                    {isCompanyEventType(row.meetingType) ? row.meetingType : row.kind}
+                  </span>
+                  <span className="font-medium text-navy">{row.title}</span>
+                  <span className="text-xs text-muted-foreground">{formatTime(row.startAt ?? row.dueAt)}</span>
+                  <Button type="button" size="sm" variant="outline" onClick={() => openEvent(serializeCalendarActivity(row))}>
+                    Edit
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
 
       {editing === "company" || editing === "training" || (editing && editing !== "new" && isCompanyEventType(editing.meetingType)) ? (
         <CompanyMeetingForm
@@ -405,6 +459,123 @@ export function DeskCalendar({
   );
 }
 
+function WeekAheadStrip({
+  anchor,
+  rows,
+  activeDay,
+  onPickDay,
+}: {
+  anchor: Date;
+  rows: CalendarActivity[];
+  activeDay: Date | null;
+  onPickDay: (day: Date) => void;
+}) {
+  const days = weekDays(anchor);
+  return (
+    <div
+      className="mt-0 mb-0 flex flex-col items-center gap-0.5 overflow-visible"
+      aria-label="This week"
+      data-ff-calendar-week-tiles=""
+      style={{ overflow: "visible" }}
+    >
+      <p className="text-xs font-semibold uppercase tracking-wide text-navy/70">This week</p>
+      <div
+        className="inline-flex flex-wrap items-end justify-center gap-4 overflow-visible pb-1 sm:gap-[1.15rem]"
+        style={{ overflow: "visible" }}
+      >
+        {days.map((day) => {
+          const items = activitiesOnDay(rows, day);
+          const count = items.length;
+          const isActive =
+            activeDay != null &&
+            day.getFullYear() === activeDay.getFullYear() &&
+            day.getMonth() === activeDay.getMonth() &&
+            day.getDate() === activeDay.getDate();
+          const hasEvents = count > 0;
+          return (
+            <button
+              key={toDateParam(day)}
+              type="button"
+              onClick={() => onPickDay(day)}
+              className="group flex w-[5.5rem] flex-col items-center gap-1 overflow-visible text-center"
+              style={{ overflow: "visible" }}
+              title={`Open ${day.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}`}
+              data-ff-week-tile={toDateParam(day)}
+              data-ff-week-count={count}
+            >
+              <span
+                className={cn(
+                  "text-[11px] font-semibold uppercase tracking-wide",
+                  isActive ? "text-navy" : "text-muted-foreground",
+                )}
+              >
+                {day.toLocaleDateString("en-US", { weekday: "short" })}
+              </span>
+              <span
+                className="relative inline-flex overflow-visible"
+                style={{ overflow: "visible", width: 72, height: 72 }}
+              >
+                <span
+                  data-ff-week-square=""
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 16,
+                    border: isActive
+                      ? "2.5px solid #002868"
+                      : hasEvents
+                        ? "2.5px solid rgba(0,40,104,0.55)"
+                        : "2.5px solid rgba(0,40,104,0.28)",
+                    background: isActive
+                      ? "#002868"
+                      : hasEvents
+                        ? "#ffffff"
+                        : "linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)",
+                    color: isActive ? "#ffffff" : "#002868",
+                    boxShadow: isActive
+                      ? "0 6px 14px rgba(0,40,104,0.4), 0 2px 4px rgba(0,0,0,0.2)"
+                      : "0 5px 12px rgba(0,40,104,0.2), 0 2px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.95)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 20,
+                    fontWeight: 600,
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    transition: "transform 150ms ease-out, box-shadow 150ms ease-out, background 150ms ease-out, border-color 150ms ease-out",
+                  }}
+                  className="group-hover:-translate-y-1 group-hover:scale-[1.08]"
+                >
+                  {day.getDate()}
+                </span>
+                {hasEvents ? (
+                  <span
+                    style={{
+                      minWidth: 24,
+                      height: 24,
+                      borderRadius: 8,
+                      right: 0,
+                      bottom: 0,
+                      background: "#BF0A30",
+                      boxShadow: "0 3px 8px rgba(191,10,48,0.5), 0 1px 2px rgba(0,0,0,0.25)",
+                    }}
+                    className="absolute z-20 inline-flex items-center justify-center border-2 border-white px-1 text-xs font-bold tabular-nums leading-none text-white"
+                    aria-label={`${count} events`}
+                    data-ff-week-counter=""
+                  >
+                    {count}
+                  </span>
+                ) : null}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function MonthGrid({
   anchor,
   rows,
@@ -414,6 +585,8 @@ function MonthGrid({
   onDropDay,
   onSelect,
   onEmpty,
+  markSundayNonWorking = true,
+  holidays = [],
 }: {
   anchor: Date;
   rows: CalendarActivity[];
@@ -423,24 +596,67 @@ function MonthGrid({
   onDropDay: (id: string, day: Date) => void;
   onSelect: (event: CalendarEvent) => void;
   onEmpty: (day: Date) => void;
+  markSundayNonWorking?: boolean;
+  holidays?: UsFederalHoliday[];
 }) {
   const cells = monthCells(anchor);
   return (
     <div className="overflow-x-auto rounded-md border border-border bg-card">
-      <div className="grid grid-cols-7 border-b border-border text-center text-[11px] font-semibold uppercase text-muted-foreground">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-          <div key={d} className="px-1 py-1.5">
-            {d}
-          </div>
-        ))}
+      <div className="grid grid-cols-7 border-b border-border text-center text-[11px] font-semibold uppercase">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d, index) => {
+          const weekend = index === 0 || index === 6;
+          return (
+            <div
+              key={d}
+              className="px-1 py-1.5"
+              style={
+                weekend
+                  ? { background: "#fce8ec", color: "#9f1239" }
+                  : { background: "#e8f6ee", color: "#166534" }
+              }
+            >
+              {d}
+            </div>
+          );
+        })}
       </div>
       <div className="grid grid-cols-7">
         {cells.map((cell) => {
           const items = activitiesOnDay(rows, cell.date);
+          const isSunday = cell.date.getDay() === 0;
+          const sundayTint = markSundayNonWorking && isSunday;
+          const holiday = holidayOnDay(holidays, cell.date);
+          const now = new Date();
+          const isToday =
+            cell.date.getFullYear() === now.getFullYear() &&
+            cell.date.getMonth() === now.getMonth() &&
+            cell.date.getDate() === now.getDate();
           return (
             <div
               key={toDateParam(cell.date)}
-              className={`min-h-28 border-b border-r border-border p-1 ${cell.inMonth ? "bg-card" : "bg-secondary/40"} ${dragging ? "outline-dashed outline-1 outline-primary/40" : ""}`}
+              data-calendar-sunday={sundayTint ? "1" : undefined}
+              data-calendar-today={isToday ? "1" : undefined}
+              className={cn(
+                "relative min-h-40 border-b border-r border-border p-1",
+                holiday
+                  ? "bg-[linear-gradient(135deg,rgba(0,40,104,0.10)_0%,rgba(255,255,255,0.9)_45%,rgba(191,10,48,0.10)_100%)]"
+                  : cell.inMonth
+                    ? sundayTint
+                      ? "bg-muted/55"
+                      : "bg-card"
+                    : sundayTint
+                      ? "bg-muted/40"
+                      : "bg-secondary/40",
+                isToday && "z-[1] ring-2 ring-inset ring-navy/45",
+                dragging && "outline-dashed outline-1 outline-primary/40",
+              )}
+              style={
+                isToday
+                  ? {
+                      boxShadow: "inset 0 0 0 2px rgba(0, 40, 104, 0.42)",
+                    }
+                  : undefined
+              }
               onDragOver={(e) => {
                 e.preventDefault();
               }}
@@ -451,7 +667,36 @@ function MonthGrid({
               }}
               onDoubleClick={() => onEmpty(cell.date)}
             >
-              <div className="mb-1 text-[11px] text-muted-foreground">{cell.date.getDate()}</div>
+              <div className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                <span
+                  className={cn(
+                    cell.inMonth && "text-navy",
+                    isToday &&
+                      "inline-flex size-6 items-center justify-center rounded-full bg-navy text-[11px] font-bold text-white shadow-sm",
+                  )}
+                >
+                  {cell.date.getDate()}
+                </span>
+                {isToday ? (
+                  <span className="rounded-sm bg-navy/10 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide text-navy">
+                    Today
+                  </span>
+                ) : null}
+              </div>
+              {holiday ? (
+                <div
+                  className="mb-0.5 truncate rounded-sm px-1 py-0.5 text-left text-[10px] font-semibold leading-tight"
+                  style={{
+                    background: "linear-gradient(90deg, #002868 0%, #002868 55%, #BF0A30 100%)",
+                    color: "#ffffff",
+                    textShadow: "0 1px 1px rgba(0,0,0,0.35)",
+                  }}
+                  title={holiday.name}
+                  data-ff-calendar-holiday={holiday.name}
+                >
+                  ★ {holiday.name.replace(" (Observed)", "")} ★
+                </div>
+              ) : null}
               <div className="space-y-0.5">
                 {items.slice(0, 4).map((item) => (
                   <EventChip
@@ -493,10 +738,17 @@ function TimeGrid({
   onSelect: (event: CalendarEvent) => void;
   onEmpty: (day: Date, hour: number) => void;
 }) {
+  const singleDay = days.length === 1;
+  const gridStart = HOURS[0];
+  const totalH = HOURS.length * HOUR_H;
+
   return (
-    <div className="overflow-x-auto rounded-md border border-border bg-card">
+    <div
+      className="overflow-x-auto rounded-md border border-border bg-card"
+            aria-label={singleDay ? "Day time grid" : "Week time grid"}
+    >
       <div
-        className="grid min-w-[720px]"
+        className={cn("grid", singleDay ? "min-w-[320px]" : "min-w-[720px]")}
         style={{ gridTemplateColumns: `56px repeat(${days.length}, minmax(0, 1fr))` }}
       >
         <div className="border-b border-r border-border" />
@@ -508,100 +760,96 @@ function TimeGrid({
             <div className="text-sm font-semibold text-navy">{day.getDate()}</div>
           </div>
         ))}
-        {HOURS.map((hour) => (
-          <HourRow
-            key={hour}
-            hour={hour}
-            days={days}
-            rows={rows}
-            dragging={dragging}
-            selectedId={selectedId}
-            onDragStart={onDragStart}
-            onDropSlot={onDropSlot}
-            onSelect={onSelect}
-            onEmpty={onEmpty}
-          />
-        ))}
+
+        <div className="relative border-r border-border">
+          {HOURS.map((hour) => {
+            const label = new Date(2026, 0, 1, hour).toLocaleTimeString("en-US", {
+              hour: "numeric",
+            });
+            return (
+              <div
+                key={hour}
+                className="border-b border-border px-1 text-right text-[11px] text-muted-foreground"
+                style={{ height: HOUR_H }}
+              >
+                <span className="-mt-2 inline-block">{label}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {days.map((day) => {
+          const dayItems = activitiesOnDay(rows, day).filter((item) => {
+            const start = activityAnchor(item);
+            if (!start) return false;
+            const h = start.getHours();
+            return h >= gridStart && h <= HOURS[HOURS.length - 1];
+          });
+          return (
+            <div
+              key={`col-${toDateParam(day)}`}
+              className={cn("relative border-r border-border", dragging ? "bg-primary/5" : "")}
+              style={{ height: totalH }}
+            >
+              {HOURS.map((hour) => (
+                <div
+                  key={`${toDateParam(day)}-${hour}`}
+                  className="absolute inset-x-0 border-b border-border"
+                  style={{ top: (hour - gridStart) * HOUR_H, height: HOUR_H }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const id = e.dataTransfer.getData("text/activity-id");
+                    if (id) onDropSlot(id, day, hour);
+                  }}
+                  onDoubleClick={() => onEmpty(day, hour)}
+                />
+              ))}
+              {dayItems.map((item) => {
+                const start = activityAnchor(item);
+                if (!start) return null;
+                const top =
+                  (start.getHours() - gridStart) * HOUR_H +
+                  (start.getMinutes() / 60) * HOUR_H;
+                const height = Math.min(eventHeightPx(item, HOUR_H), HOUR_H * 4);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData("text/activity-id", item.id);
+                      e.dataTransfer.effectAllowed = "move";
+                      onDragStart(item.id);
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelect(serializeCalendarActivity(item));
+                    }}
+                    className={cn(
+                      "absolute inset-x-1 z-10 overflow-hidden rounded-sm px-1 py-0.5 text-left text-[11px] font-medium text-white",
+                      kindClass(item.kind, item.meetingType),
+                      selectedId === item.id && "ring-2 ring-white",
+                    )}
+                    style={{
+                      top,
+                      height: Math.max(height, 18),
+                      background: eventToneColor(item),
+                    }}
+                    title={`${item.title} · ${formatTime(item.startAt ?? item.dueAt)}`}
+                  >
+                    <span className="block truncate">{item.title}</span>
+                    <span className="block text-[10px] opacity-80">
+                      {formatTime(item.startAt ?? item.dueAt)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
     </div>
-  );
-}
-
-function HourRow({
-  hour,
-  days,
-  rows,
-  dragging,
-  selectedId,
-  onDragStart,
-  onDropSlot,
-  onSelect,
-  onEmpty,
-}: {
-  hour: number;
-  days: Date[];
-  rows: CalendarActivity[];
-  dragging: string | null;
-  selectedId: string | null;
-  onDragStart: (id: string) => void;
-  onDropSlot: (id: string, day: Date, hour: number) => void;
-  onSelect: (event: CalendarEvent) => void;
-  onEmpty: (day: Date, hour: number) => void;
-}) {
-  const label = new Date(2026, 0, 1, hour).toLocaleTimeString("en-US", {
-    hour: "numeric",
-  });
-  return (
-    <>
-      <div className="border-b border-r border-border px-1 py-1 text-right text-[11px] text-muted-foreground">
-        {label}
-      </div>
-      {days.map((day) => {
-        const items = activitiesOnDay(rows, day).filter((item) => {
-          const start = toDate(item.startAt) ?? toDate(item.dueAt);
-          return start ? start.getHours() === hour : false;
-        });
-        return (
-          <div
-            key={`${toDateParam(day)}-${hour}`}
-            className={`relative border-b border-r border-border ${dragging ? "bg-primary/5" : ""}`}
-            style={{ minHeight: HOUR_H }}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              const id = e.dataTransfer.getData("text/activity-id");
-              if (id) onDropSlot(id, day, hour);
-            }}
-            onDoubleClick={() => onEmpty(day, hour)}
-          >
-            {items.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.setData("text/activity-id", item.id);
-                  e.dataTransfer.effectAllowed = "move";
-                  onDragStart(item.id);
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelect(serializeCalendarActivity(item));
-                }}
-                className={`absolute inset-x-1 top-0 z-10 overflow-hidden rounded-sm px-1 py-0.5 text-left text-[11px] font-medium text-white ${kindClass(item.kind, item.meetingType)} ${selectedId === item.id ? "ring-2 ring-white" : ""}`}
-                style={{
-                  height: Math.min(eventHeightPx(item, HOUR_H), HOUR_H * 4),
-                  background: eventToneColor(item),
-                }}
-              >
-                <span className="block truncate">{item.title}</span>
-                <span className="block text-[10px] opacity-80">{formatTime(item.startAt ?? item.dueAt)}</span>
-              </button>
-            ))}
-          </div>
-        );
-      })}
-    </>
   );
 }
 
@@ -729,7 +977,7 @@ function CalendarEditor({
               defaultValue={event?.outcome ?? ""}
               className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
             >
-              <option value="">—</option>
+              <option value="">None</option>
               {CALL_OUTCOMES.map((o) => (
                 <option key={o} value={o}>
                   {o.replaceAll("_", " ")}
@@ -794,4 +1042,3 @@ function CalendarEditor({
     </div>
   );
 }
-

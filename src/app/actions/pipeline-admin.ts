@@ -6,7 +6,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { dealCreateFieldsFromPick } from "@/lib/quoting/forms";
 import { db } from "@/lib/db";
-import { accounts, contacts, deals, pipelineStages, pipelines } from "@/lib/db/schema";
+import { accounts, contacts, deals, pipelineStages, pipelines, renewalQueue } from "@/lib/db/schema";
 import { currentDeskSession } from "@/lib/auth/session";
 import { formatPersonName } from "@/lib/crm/display";
 import { formatDealTitle } from "@/lib/deals/deal-title";
@@ -59,6 +59,7 @@ export async function createPipelineDeal(formData: FormData) {
   const existingDealId = isUuid(str(formData, "existingDealId")) ? str(formData, "existingDealId") : "";
   if (existingDealId) {
     revalidatePath("/deals");
+  revalidatePath("/renewals");
     redirect(`/deals/${existingDealId}`);
   }
   if (title) {
@@ -66,6 +67,7 @@ export async function createPipelineDeal(formData: FormData) {
     const existing = matchDealLookup(lookup, title);
     if (existing) {
       revalidatePath("/deals");
+  revalidatePath("/renewals");
       redirect(`/deals/${existing.id}`);
     }
   }
@@ -86,6 +88,12 @@ export async function createPipelineDeal(formData: FormData) {
     (pipelineSlug === "life" ? "LIFE" : pipelineSlug === "health" ? "HEALTH" : "HO");
   const policySubType =
     picked?.policySubType || str(formData, "policySubType") || null;
+  const quotingForm =
+    picked?.quotingForm ||
+    (pipelineSlug === "life" || pipelineSlug === "health" ? policySubType : null);
+  const quotingLine =
+    picked?.quotingLine ||
+    (pipelineSlug === "life" ? "life" : pipelineSlug === "health" ? "health" : null);
   const namedTitle = formatDealTitle({
     firstName: pickedContact?.firstName,
     lastName: pickedContact?.lastName,
@@ -93,13 +101,15 @@ export async function createPipelineDeal(formData: FormData) {
     primaryNamedInsured: pickedContact ? formatPersonName(pickedContact) : title,
     existingTitle: title,
     line: lineOfBusiness,
+    quotingForm,
+    policySubType,
   });
   await db.insert(deals).values({
     tenantId: DEFAULT_TENANT_ID,
     title: namedTitle,
     lineOfBusiness,
-    quotingForm: picked?.quotingForm ?? null,
-    quotingLine: picked?.quotingLine ?? null,
+    quotingForm: quotingForm ?? null,
+    quotingLine: quotingLine ?? null,
     policySubType,
     pipelineStage: dealStageForPipeline(stageSlug),
     pipelineStageSlug: stageSlug,
@@ -116,6 +126,7 @@ export async function createPipelineDeal(formData: FormData) {
       : pickedAccount?.name ?? null,
   });
   revalidatePath("/deals");
+  revalidatePath("/renewals");
   redirect(`/deals?pipeline=${encodeURIComponent(pipelineSlug)}`);
 }
 
@@ -151,6 +162,7 @@ export async function addPipelineStage(formData: FormData) {
     seeded: false,
   });
   revalidatePath("/deals");
+  revalidatePath("/renewals");
 }
 
 export async function relabelPipelineStage(formData: FormData) {
@@ -163,19 +175,33 @@ export async function relabelPipelineStage(formData: FormData) {
     .set({ name })
     .where(and(eq(pipelineStages.tenantId, DEFAULT_TENANT_ID), eq(pipelineStages.id, id)));
   revalidatePath("/deals");
+  revalidatePath("/renewals");
 }
 
-/** Tip sep7gs: Admin can set stage pill color from Edit stages. */
+/** Tip sep7gs: Admin can set stage pill color from Edit stages.
+ * Same slug (e.g. gather) shares one color across every pipeline board (P&C / Flood / Life / Health).
+ */
 export async function setPipelineStageColor(formData: FormData) {
   await assertAdmin();
   const id = str(formData, "stageId");
   const color = str(formData, "color").toLowerCase();
   if (!id || !(STATUS_COLOR_KEYS as readonly string[]).includes(color)) return;
+  const [stage] = await db
+    .select()
+    .from(pipelineStages)
+    .where(and(eq(pipelineStages.tenantId, DEFAULT_TENANT_ID), eq(pipelineStages.id, id)));
+  if (!stage) return;
   await db
     .update(pipelineStages)
     .set({ color: color as StatusColorKey })
-    .where(and(eq(pipelineStages.tenantId, DEFAULT_TENANT_ID), eq(pipelineStages.id, id)));
+    .where(
+      and(
+        eq(pipelineStages.tenantId, DEFAULT_TENANT_ID),
+        eq(pipelineStages.slug, stage.slug),
+      ),
+    );
   revalidatePath("/deals");
+  revalidatePath("/renewals");
   flashAction("/deals", "stage-color-saved");
 }
 
@@ -211,11 +237,22 @@ export async function deletePipelineStage(formData: FormData) {
       .where(
         and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.pipelineStageSlug, stage.slug)),
       );
+    const [pipe] = await db
+      .select({ slug: pipelines.slug })
+      .from(pipelines)
+      .where(eq(pipelines.id, stage.pipelineId));
+    if (pipe?.slug === "renewals") {
+      await db
+        .update(renewalQueue)
+        .set({ stage: fallback.slug, updatedAt: new Date() })
+        .where(and(eq(renewalQueue.tenantId, DEFAULT_TENANT_ID), eq(renewalQueue.stage, stage.slug)));
+    }
   }
   await db
     .delete(pipelineStages)
     .where(and(eq(pipelineStages.tenantId, DEFAULT_TENANT_ID), eq(pipelineStages.id, id)));
   revalidatePath("/deals");
+  revalidatePath("/renewals");
 }
 
 export async function reorderPipelineStage(formData: FormData) {
@@ -244,6 +281,7 @@ export async function reorderPipelineStage(formData: FormData) {
   await db.update(pipelineStages).set({ sortOrder: swap.sortOrder }).where(eq(pipelineStages.id, stage.id));
   await db.update(pipelineStages).set({ sortOrder: stage.sortOrder }).where(eq(pipelineStages.id, swap.id));
   revalidatePath("/deals");
+  revalidatePath("/renewals");
 }
 
 export async function saveCommissionRate(formData: FormData) {
@@ -330,14 +368,23 @@ export async function updateCarrierContact(formData: FormData) {
       website: str(formData, "website") || null,
       agentPortalUrl: str(formData, "agentPortalUrl") || null,
       carrierInfo: str(formData, "carrierInfo") || null,
+      phone: str(formData, "phone") || null,
+      email: str(formData, "email") || null,
+      mailingAddress: str(formData, "mailingAddress") || null,
       amBestRating: str(formData, "amBestRating") || null,
+      amBestOutlook: str(formData, "amBestOutlook") || null,
       underwriterName: str(formData, "underwriterName") || null,
       underwriterEmail: str(formData, "underwriterEmail") || null,
       underwriterPhone: str(formData, "underwriterPhone") || null,
       accountManagerName: str(formData, "accountManagerName") || null,
       accountManagerEmail: str(formData, "accountManagerEmail") || null,
       accountManagerPhone: str(formData, "accountManagerPhone") || null,
+      claimsContactName: str(formData, "claimsContactName") || null,
+      claimsContactEmail: str(formData, "claimsContactEmail") || null,
       claimsPhone: str(formData, "claimsPhone") || null,
+      marketingContactName: str(formData, "marketingContactName") || null,
+      marketingContactPhone: str(formData, "marketingContactPhone") || null,
+      marketingContactEmail: str(formData, "marketingContactEmail") || null,
       billingPhone: str(formData, "billingPhone") || null,
       newBusinessCommPct: str(formData, "newBusinessCommPct") || null,
       renewalCommPct: str(formData, "renewalCommPct") || null,
@@ -347,6 +394,14 @@ export async function updateCarrierContact(formData: FormData) {
       appetiteNotes: str(formData, "appetiteNotes") || null,
       dontWriteNotes: str(formData, "dontWriteNotes") || null,
       writtenLines: written.length ? written : undefined,
+      active: (() => {
+        const statusRaw = str(formData, "status").toLowerCase();
+        if (!statusRaw && str(formData, "active") === "") return undefined;
+        if (statusRaw) return statusRaw !== "inactive" && statusRaw !== "false";
+        const a = str(formData, "active").toLowerCase();
+        if (!a) return undefined;
+        return a !== "false" && a !== "0" && a !== "inactive";
+      })(),
       updatedAt: new Date(),
     })
     .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, id)));

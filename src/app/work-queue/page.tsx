@@ -1,19 +1,21 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import {
-  WORK_QUEUE_ATTENTION_COLUMNS,
   WORK_QUEUE_FLAGS_COLUMNS,
   WORK_QUEUE_POLICIES_COLUMNS,
 } from "@/lib/list-columns";
 import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { SavedFiltersBar } from "@/components/filters/saved-filters-bar";
 import { WorkFlagPills, WorkStatusPill } from "@/components/work-queue/flag-pills";
+import { GroupedAttentionTable } from "@/components/work-queue/grouped-attention";
 import { listPolicies, ownerHomeDashboard } from "@/lib/db/queries";
 import { firstParam, matchesField, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 import { haystack } from "@/lib/search/live-query";
 import { listDeskWorkQueue } from "@/lib/work-queue/list";
 import { workStatusLabel } from "@/lib/work-queue/types";
+import { formatDay } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,7 @@ export default async function WorkQueuePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
+  const policyIdParam = typeof params.policy === "string" ? params.policy : undefined;
   const filter = pickFilterParams(params, ["kind", "status", "assignee", "flag"]);
   const q = firstParam(params.q) ?? "";
   const [{ snapshot }, rows, workRows] = await Promise.all([
@@ -50,6 +53,19 @@ export default async function WorkQueuePage({
 
   return (
     <AppShell title="Work queue">
+      <DeskPageTrail
+        backLabel={policyIdParam ? "Back to policy" : "Back"}
+        fallbackHref={policyIdParam ? `/policies/${policyIdParam}` : "/"}
+        crumbs={[
+          ...(policyIdParam
+            ? [
+                { href: "/policies", label: "Policies" },
+                { href: `/policies/${policyIdParam}`, label: "Policy" },
+              ]
+            : []),
+          { label: "Work queue" },
+        ]}
+      />
       <p className="mb-3 text-base text-muted-foreground">
         Flags, notes, assignee, and in-app pings on the file — separate from Bound / Active /
         Lapse. Pings land on the assignee&apos;s bell. Nothing emails.
@@ -132,24 +148,17 @@ export default async function WorkQueuePage({
         <div className="border-b border-border px-4 py-2 text-base font-semibold text-navy">
           Needs attention
         </div>
-        <DeskColumnTable
-          moduleId="work-queue-attention"
-          searchModuleId="work-queue"
-          initialQuery={q}
-          columns={WORK_QUEUE_ATTENTION_COLUMNS}
-          empty="Queue is clear."
-          rows={attention.map((item) => ({
-            key: item.id,
-            hay: haystack([item.kind, item.title, item.detail]),
-            cells: {
-              kind: <span className="uppercase">{item.kind.replaceAll("_", " ")}</span>,
-              item: (
-                <Link href={item.href} className="font-medium text-primary hover:underline">
-                  {item.title}
-                </Link>
-              ),
-              detail: <span className="text-base text-muted-foreground">{item.detail}</span>,
-            },
+        <p className="border-b border-border px-4 py-2 text-sm text-muted-foreground">
+          Identical Collect / Servicing checklist rows are grouped by item type with a count —
+          expand a group to open each Policy. Soft-refresh keeps the grouping.
+        </p>
+        <GroupedAttentionTable
+          items={attention.map((item) => ({
+            id: item.id,
+            kind: item.kind,
+            title: item.title,
+            detail: item.detail,
+            href: item.href,
           }))}
         />
       </section>
@@ -183,7 +192,7 @@ export default async function WorkQueuePage({
               ),
               status: <PolicyStatusBadge status={policy.status} />,
               party: contact ? `${contact.lastName}, ${contact.firstName}` : account?.name ?? "—",
-              expires: policy.expirationDate.toISOString().slice(0, 10),
+              expires: formatDay(policy.expirationDate),
             },
           }))}
         />

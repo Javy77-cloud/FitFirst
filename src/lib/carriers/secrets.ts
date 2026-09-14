@@ -97,7 +97,14 @@ export function quoteHandoffReadiness(input: {
   };
 }
 
-export function publicCarrierView(carrier: Carrier, isAdmin: boolean): PublicCarrier {
+export function publicCarrierView(
+  carrier: Carrier,
+  isAdminOrOpts: boolean | { revealPortal?: boolean },
+): PublicCarrier {
+  const revealPortal =
+    typeof isAdminOrOpts === "boolean"
+      ? isAdminOrOpts
+      : Boolean(isAdminOrOpts.revealPortal);
   const {
     portalUsernameEnc,
     portalUsernameIv,
@@ -108,7 +115,7 @@ export function publicCarrierView(carrier: Carrier, isAdmin: boolean): PublicCar
   } = carrier;
   const hasPortalUsername = Boolean(portalUsernameEnc && portalUsernameIv);
   const hasPortalPassword = Boolean(portalPasswordEnc && portalPasswordIv);
-  if (!isAdmin) {
+  if (!revealPortal) {
     return {
       ...rest,
       portalUsernameHint: null,

@@ -183,7 +183,43 @@
   box-shadow: var(--ff-shadow);
 }
 
-/* Tip sep7gl: list Attach panel removed; band keeps Today's Activity centered. */
+/* FitFirst layout section cards — soft tint + shadow (Javy 2026-09-12) */
+[data-ff-record-section] {
+  background: #f8fafc !important;
+  box-shadow: 0 1px 2px rgba(15, 39, 68, 0.06), 0 4px 12px rgba(15, 39, 68, 0.08) !important;
+  padding: 1rem 1.25rem !important; /* room from edges — Javy 2026-09-12 */
+}
+[data-ff-record-section] > h3 {
+  font-size: 1rem; /* text-base — clearly above field label text-xs */
+  font-weight: 600;
+  line-height: 1.35;
+  color: #002868;
+}
+
+
+/* Tip sep7gl: list Attach panel removed; band keeps Today's Activity centered.
+   Lift uses negative margin (~2 lines) and can overlap DealWorkspaceBar.
+   Durable unlock (not pointer-events alone):
+   1) .deal-workspace-bar stacks above the activity band (z-index + isolate).
+   2) Empty bar chrome uses pointer-events:none so center Today chips still
+      receive clicks through the gap between line filters and view switcher.
+   3) Band/slot stay pointer-events:none; strip re-enables auto.
+   Inline page styles must NOT re-assert margin-top without these rules. */
+.deal-workspace-bar {
+  position: relative;
+  z-index: 5;
+  isolation: isolate;
+  /* Empty flex middle must not steal hits from Today strip underneath. */
+  pointer-events: none;
+}
+.deal-workspace-bar [data-testid="deal-line-filters"],
+.deal-workspace-bar [data-testid="deal-closed-filters"],
+.deal-workspace-bar [data-testid="deal-pipeline-views"],
+.deal-workspace-bar [aria-label="Subtype"] {
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+}
 .deal-upload-activity {
   display: flex;
   flex-direction: row;
@@ -191,10 +227,15 @@
   align-items: center;
   gap: 4px;
   overflow: visible;
+  position: relative;
+  z-index: 1;
+  /* Lift whole counters band ~2 lines (feel-pass: tighter page). */
+  margin-top: -2.5rem;
   margin-bottom: 0 !important;
-  /* Tip sep7hw: empty air UNDER the chips (not a sibling spacer). ~2+ lines. */
-  padding-bottom: 2.5rem !important;
+  /* ~1.5 lines between chips and the list (was 2.5rem / ~2+ lines). */
+  padding-bottom: 1.5rem !important;
   transform: none !important;
+  pointer-events: none;
 }
 .deal-activity-list-spacer {
   display: none !important;
@@ -209,10 +250,14 @@
   justify-content: center;
   align-items: center;
   min-width: 0;
+  pointer-events: none;
 }
 
 /* Activity strip is open to the page — no panel fill behind chips. */
 .deal-today-strip {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
   width: max-content;
   max-width: 100%;
   overflow: visible;
@@ -447,6 +492,25 @@ body[data-ff-col-resize] {
 }
 .ff-table tr:hover td {
   background: var(--ff-wash);
+}
+/* Selected list rows — same wash as hover (Javy 2026-09-12) */
+.ff-table tbody tr[data-ff-row-selected="true"] td,
+.ff-table tbody tr.ff-row-selected td,
+.ff-list-table tbody tr[data-ff-row-selected="true"] td,
+.ff-list-table tbody tr.ff-row-selected td {
+  background: var(--ff-wash) !important;
+}
+.ff-table tbody tr[data-ff-row-selected="true"] td.ff-col-manage,
+.ff-table tbody tr[data-ff-row-selected="true"] td.ff-col-pinned,
+.ff-table tbody tr.ff-row-selected td.ff-col-manage,
+.ff-table tbody tr.ff-row-selected td.ff-col-pinned {
+  background: var(--ff-wash) !important;
+}
+.ff-leads-queue .ff-table tbody tr[data-ff-row-selected="true"] td,
+.ff-leads-queue .ff-table tbody tr[data-ff-row-selected="true"] td.ff-col-manage,
+.ff-leads-queue .ff-table tbody tr.ff-row-selected td,
+.ff-leads-queue .ff-table tbody tr.ff-row-selected td.ff-col-manage {
+  background: #e8eaed !important;
 }
 /* Light row dividers on every shared table — leads queue keeps a neutral gray hover. */
 .ff-leads-queue .ff-table tbody td {
@@ -829,6 +893,52 @@ body[data-ff-col-resize] {
   opacity: 1 !important;
 }
 
+/* Documents — Fill Master Sheet: Old Glory blue default → flag red on hover (Javy 2026-09-11) */
+button[data-ff-fill-master-sheet]:enabled {
+  background: #002868 !important;
+  color: #ffffff !important;
+  border-color: #002868 !important;
+  filter: none !important;
+}
+button[data-ff-fill-master-sheet]:enabled:hover {
+  background: #BF0A30 !important;
+  color: #ffffff !important;
+  border-color: #BF0A30 !important;
+  filter: none !important;
+}
+button[data-ff-fill-master-sheet]:disabled {
+  background: #002868 !important;
+  color: #ffffff !important;
+  border-color: #002868 !important;
+  opacity: 0.55;
+}
+
+/* Quotes Bindable — Bind = Old Glory default → flag red on hover (Javy 2026-09-11) */
+button[data-ff-quote-bind]:enabled,
+button[data-slot="button"][data-ff-quote-bind]:enabled,
+a[data-ff-quote-bind] {
+  background: #002868 !important;
+  color: #ffffff !important;
+  border-color: #002868 !important;
+  filter: none !important;
+}
+button[data-ff-quote-bind]:enabled:hover,
+button[data-slot="button"][data-ff-quote-bind]:enabled:hover,
+a[data-ff-quote-bind]:hover {
+  background: #BF0A30 !important;
+  color: #ffffff !important;
+  border-color: #BF0A30 !important;
+  filter: none !important;
+}
+button[data-ff-quote-bind]:disabled,
+button[data-slot="button"][data-ff-quote-bind]:disabled {
+  background: #002868 !important;
+  color: #ffffff !important;
+  border-color: #002868 !important;
+  opacity: 0.55;
+  filter: none !important;
+}
+
 /* Clickable affordance: buttons should visibly react on hover. */
 button:enabled:not([data-ff-no-hover]):hover {
   filter: brightness(0.97);
@@ -854,4 +964,88 @@ button:enabled:not([data-ff-no-hover]):active {
   background: #002868 !important;
   color: #ffffff !important;
   border-bottom: 1px solid var(--ff-sidebar-line, #1a3d7a);
+}
+
+/* Portal Login Save — forced colors (Tailwind arbitrary bg can miss on new files) */
+button[data-ff-carrier-portal-save],
+.ff-portal-save {
+  background-color: #002868 !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  border: 1px solid #002868 !important;
+}
+button[data-ff-carrier-portal-save]:hover:not(:disabled),
+.ff-portal-save:hover:not(:disabled) {
+  background-color: #BF0A30 !important;
+  border-color: #BF0A30 !important;
+  color: #ffffff !important;
+}
+[data-ff-carrier-portal-save-bar],
+.ff-portal-save-bar {
+  background-color: #eef2f7 !important;
+  border: 1px solid color-mix(in srgb, #002868 25%, transparent) !important;
+}
+
+
+/* Policy Billing Add installment + Endorsements Create — forced navy (same washout fix as portal Save) */
+button[data-ff-add-installment],
+button[data-ff-create-endorsement],
+button[data-ff-save-installment],
+.ff-policy-primary-btn {
+  background-color: #002868 !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  border: 1px solid #002868 !important;
+}
+button[data-ff-add-installment]:hover:not(:disabled),
+button[data-ff-create-endorsement]:hover:not(:disabled),
+button[data-ff-save-installment]:hover:not(:disabled),
+.ff-policy-primary-btn:hover:not(:disabled) {
+  background-color: #BF0A30 !important;
+  border-color: #BF0A30 !important;
+  color: #ffffff !important;
+}
+
+
+/* Carriers list — Connected opens portal */
+button[data-ff-carrier-portal-open],
+a[data-ff-carrier-portal-open],
+a[data-ff-carrier-portal-status="connected"] {
+  background-color: #166534 !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  border: 1px solid #166534 !important;
+}
+button[data-ff-carrier-portal-open]:hover:not(:disabled),
+a[data-ff-carrier-portal-open]:hover,
+a[data-ff-carrier-portal-status="connected"]:hover {
+  background-color: #14532d !important;
+  border-color: #14532d !important;
+  color: #ffffff !important;
+}
+
+/* Calendar week strip — keep red count badges from being clipped (Safari/button overflow). */
+[data-ff-calendar-week-tiles],
+[data-ff-calendar-week-tiles] button[data-ff-week-tile],
+[data-ff-week-tile] {
+  overflow: visible !important;
+}
+[data-ff-week-counter] {
+  z-index: 20;
+  pointer-events: none;
+}
+
+/* Calendar this-week tiles — visible rounded boxes + hover lift/white (Javy) */
+[data-ff-week-tile]:hover [data-ff-week-square] {
+  background: #ffffff !important;
+  border-color: #002868 !important;
+  color: #002868 !important;
+  transform: translateY(-4px) scale(1.08);
+  box-shadow:
+    0 12px 24px rgba(0, 40, 104, 0.3),
+    0 4px 10px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+[data-ff-week-tile]:hover [data-ff-week-counter] {
+  transform: scale(1.1);
 }

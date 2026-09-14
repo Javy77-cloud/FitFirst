@@ -4,6 +4,7 @@ import {
   LEAD_INSURANCE_DESIRE_OPTIONS,
   LEAD_INSURANCE_SUBTYPE_OPTIONS,
   LEAD_INSURANCE_TYPE_OPTIONS,
+  LEAD_INSURANCE_CATEGORY_OPTIONS,
   LEAD_LANGUAGE_OPTIONS,
   LEAD_PIPELINE_OPTIONS,
   LEAD_CADENCE_OPTIONS,
@@ -28,6 +29,7 @@ export const FIELD_LAYOUT_MODULES = [
   "contacts",
   "businesses",
   "carriers",
+  "tasks",
 ] as const;
 
 export type FieldLayoutModule = (typeof FIELD_LAYOUT_MODULES)[number];
@@ -39,6 +41,7 @@ export const FIELD_LAYOUT_MODULE_LABEL: Record<FieldLayoutModule, string> = {
   contacts: "Contacts",
   businesses: "Business",
   carriers: "Carriers",
+  tasks: "Tasks",
 };
 
 export const FIELD_LAYOUT_MODULE_LIST_HREF: Record<FieldLayoutModule, string> = {
@@ -48,6 +51,7 @@ export const FIELD_LAYOUT_MODULE_LIST_HREF: Record<FieldLayoutModule, string> = 
   contacts: "/contacts",
   businesses: "/accounts",
   carriers: "/carriers",
+  tasks: "/tasks",
 };
 
 /** Sentinel LOB for modules that share one layout (not per-line deals). */
@@ -96,8 +100,14 @@ const LEAD_FIELDS: CustomFieldDef[] = [
     options: [...LEAD_INSURANCE_TYPE_OPTIONS],
   },
   {
+    key: "insurance_category",
+    label: "Insurance Category",
+    type: "picklist",
+    options: [...LEAD_INSURANCE_CATEGORY_OPTIONS],
+  },
+  {
     key: "insurance_subtype",
-    label: "Insurance subtype",
+    label: "Insurance Form",
     type: "picklist",
     options: [...LEAD_INSURANCE_SUBTYPE_OPTIONS],
   },
@@ -177,6 +187,11 @@ const BUSINESS_FIELDS: CustomFieldDef[] = [
 
 const CARRIER_FIELDS: CustomFieldDef[] = [
   { key: "name", label: "Carrier name", type: "single_line", systemKey: "name", required: true },
+  { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
+  { key: "email", label: "Email", type: "email", systemKey: "email" },
+  { key: "mailing_address", label: "Mailing address", type: "single_line", systemKey: "mailingAddress" },
+  { key: "am_best_outlook", label: "AM Best outlook", type: "single_line", systemKey: "amBestOutlook" },
+  { key: "marketing_contact_name", label: "Marketing contact", type: "single_line", systemKey: "marketingContactName" },
   { key: "naic", label: "NAIC", type: "single_line", systemKey: "naic" },
   { key: "am_best_rating", label: "AM Best", type: "single_line", systemKey: "amBestRating" },
   { key: "territory", label: "Territory", type: "single_line", systemKey: "territory" },
@@ -206,6 +221,19 @@ const CARRIER_FIELDS: CustomFieldDef[] = [
   { key: "portal_status", label: "Portal status", type: "single_line", systemKey: "portalStatus" },
 ];
 
+const TASK_FIELDS: CustomFieldDef[] = [
+  { key: "title", label: "Title", type: "single_line", systemKey: "title" },
+  { key: "task_type", label: "Task type", type: "picklist", systemKey: "kind" },
+  { key: "due_date", label: "Due date", type: "date", systemKey: "dueDate" },
+  { key: "status", label: "Status", type: "picklist", options: ["open", "done"], systemKey: "status" },
+  { key: "priority", label: "Priority", type: "picklist", options: ["none", "low", "normal", "high"] },
+  { key: "tags", label: "Tags", type: "multi_line" },
+  { key: "assignee", label: "Assignee", type: "single_line", systemKey: "assigneeId" },
+  { key: "linked_record", label: "Linked record", type: "single_line" },
+  { key: "record_type", label: "Record type", type: "picklist" },
+  { key: "notes", label: "Notes", type: "multi_line" },
+];
+
 export function isFieldLayoutModule(value: string | null | undefined): value is FieldLayoutModule {
   return Boolean(value && (FIELD_LAYOUT_MODULES as readonly string[]).includes(value));
 }
@@ -228,7 +256,7 @@ export function requireLayoutModule(value: string | null | undefined): FieldLayo
     .toLowerCase();
   if (raw === "accounts" || raw === "business" || raw === "account") return "businesses";
   if (isFieldLayoutModule(raw)) return raw;
-  throw new Error("Layout module is required (leads, deals, policies, contacts, businesses, or carriers).");
+  throw new Error("Layout module is required (leads, deals, policies, contacts, businesses, carriers, or tasks).");
 }
 
 export function fieldLayoutModuleLabel(module: FieldLayoutModule): string {
@@ -251,10 +279,20 @@ export function defaultFieldsForModule(module: FieldLayoutModule): CustomFieldDe
   if (module === "contacts") return CONTACT_MODULE_FIELDS;
   if (module === "policies") return POLICY_FIELDS;
   if (module === "businesses") return BUSINESS_FIELDS;
+  if (module === "tasks") return TASK_FIELDS;
   return CARRIER_FIELDS;
 }
 
 export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
+  if (module === "tasks") {
+    return twoCol(
+      [
+        section("task", "Task", ["title", "task_type", "due_date", "status", "priority"]),
+        section("link", "Linked record", ["linked_record", "record_type", "assignee"]),
+      ],
+      [section("extra", "Extra", ["tags", "notes"])],
+    );
+  }
   if (module === "deals") return defaultLayoutForLine("HO");
   if (module === "leads") {
     return twoCol(
@@ -272,6 +310,7 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
           "temperature",
           "pipeline",
           "insurance_type",
+          "insurance_category",
           "insurance_subtype",
           "preferred_language",
           "notes",
@@ -342,3 +381,18 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
   }
   return emptyLayout();
 }
+
+/** Business Card (Two column) — stock even left|right layout. */
+export function businessCardLayout(): FieldLayout {
+  return defaultLayoutForModule("businesses");
+}
+
+/**
+ * Business Classic (Dense) — one column for narrower monitors.
+ * Stacks every section into the left column; empty right → record form one-col.
+ */
+export function businessClassicLayout(): FieldLayout {
+  const card = businessCardLayout();
+  return twoCol([...card.columns[0].sections, ...card.columns[1].sections], []);
+}
+

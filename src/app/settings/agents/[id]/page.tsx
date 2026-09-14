@@ -209,8 +209,9 @@ export default async function AgentDetailPage({
           <section className="ff-card p-4">
             <h2 className="text-sm font-semibold text-navy">Privileges</h2>
             <p className="mb-3 text-helper text-muted-foreground">
-              Modules are CRM and pipeline. Agency widgets are the Home book totals. Office and
-              territory are assignment hooks until a dedicated map lands.
+              Modules are CRM and pipeline. Agency book means the agent sees the whole agency book
+              (same records as admin), still with agent permissions. Office and territory are
+              assignment hooks until a dedicated map lands.
             </p>
             <form action={saveAgentPrivileges} className="space-y-3">
               <input type="hidden" name="userId" value={person.id} />
@@ -224,7 +225,7 @@ export default async function AgentDetailPage({
                   name="canSeeAgencyWidgets"
                   defaultChecked={person.canSeeAgencyWidgets}
                 />
-                Can see agency widgets
+                Can see agency book
               </label>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>

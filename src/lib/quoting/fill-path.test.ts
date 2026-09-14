@@ -14,7 +14,7 @@ describe("master sheet → Fill path labels", () => {
     expect(MASTER_TO_FILL_STEPS.map((step) => step.label)).toEqual([
       "Drop source docs",
       "Choose quoting line",
-      "Fill master sheet",
+      "Fill Master Sheet",
       "Glance yellow / CHECK",
       "Approve, then Send to Fill",
     ]);

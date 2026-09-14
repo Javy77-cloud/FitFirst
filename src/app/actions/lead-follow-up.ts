@@ -38,9 +38,11 @@ import {
 } from "@/lib/leads/follow-up-templates";
 import {
   isNurtureDelayUnit,
+  normalizeLeadCadence,
   normalizeLeadStatus,
   normalizeLeadTemperature,
   nurtureDueAt,
+  temperatureForCadence,
   temperatureForStatus,
 } from "@/lib/leads/queue";
 
@@ -84,27 +86,26 @@ async function followUpResultForLead(
   return { dueAt: null as string | null, followUpName };
 }
 
-export async function updateLeadQueueStatus(formData: FormData) {
+/** Cadence drives follow-up clocks (new / contacted / warm / cold / none). */
+export async function updateLeadCadence(formData: FormData) {
   const leadId = str(formData, "leadId");
-  const status = normalizeLeadStatus(str(formData, "status"));
-  if (!leadId || !status) return { dueAt: null as string | null, followUpName: "" };
+  const cadence = normalizeLeadCadence(str(formData, "cadence") || str(formData, "status"));
+  if (!leadId) return { dueAt: null as string | null, followUpName: "" };
   const [existing] = await db
     .select()
     .from(leads)
     .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
   if (!existing) return { dueAt: null, followUpName: "" };
-  if (status === "nurture") return { dueAt: null, followUpName: "" };
-  const statusChanged = normalizeLeadStatus(existing.status) !== status;
-  if (statusChanged) {
+  const prev = normalizeLeadCadence((existing as { cadence?: string | null }).cadence);
+  const cadenceChanged = prev !== cadence;
+  if (cadenceChanged) {
     await db
       .update(leads)
       .set({
-        status,
-        temperature: temperatureForStatus(status, existing.temperature),
-        nurtureUntil: null,
-        nurtureRemindVia: null,
+        cadence,
+        temperature: temperatureForCadence(cadence, existing.temperature),
         updatedAt: new Date(),
-      })
+      } as any)
       .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
   }
   const open = await db
@@ -117,12 +118,68 @@ export async function updateLeadQueueStatus(formData: FormData) {
         eq(leadFollowUpQueue.status, "queued"),
       ),
     );
-  const needsSchedule = statusChanged || (canStartFollowUpClock(status) && open.length === 0);
+  const needsSchedule = cadenceChanged || (canStartFollowUpClock(cadence) && open.length === 0);
   const scheduled = needsSchedule
-    ? await fireLeadFollowUpForStatus(leadId, status)
+    ? await fireLeadFollowUpForStatus(leadId, cadence)
     : { dueAt: open[0]?.dueAt };
   revalidateLeads(leadId);
-  return followUpResultForLead(leadId, status, existing.followUpTemplateId, scheduled);
+  return followUpResultForLead(leadId, cadence, existing.followUpTemplateId, scheduled);
+}
+
+/** @deprecated Cadence used to live in status — route old callers to updateLeadCadence. */
+export async function updateLeadQueueStatus(formData: FormData) {
+  if (!formData.get("cadence") && formData.get("status")) {
+    formData.set("cadence", String(formData.get("status")));
+  }
+  return updateLeadCadence(formData);
+}
+
+/** Pipeline Status: In progress / Nurture / Lost / Converted. Converted = convert lead → deal. */
+export async function updateLeadPipelineStatus(formData: FormData) {
+  const leadId = str(formData, "leadId");
+  const status = normalizeLeadStatus(str(formData, "status"));
+  if (!leadId || !status) return;
+  const [existing] = await db
+    .select()
+    .from(leads)
+    .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
+  if (!existing) return;
+  if (status === "nurture") return; // nurture dialog owns save
+
+  if (status === "converted") {
+    if (existing.convertedDealId) {
+      await db
+        .update(leads)
+        .set({ status: "converted", updatedAt: new Date() })
+        .where(eq(leads.id, leadId));
+      revalidateLeads(leadId);
+      return;
+    }
+    const { convertLeadToDeal } = await import("@/app/actions/crm");
+    await convertLeadToDeal(
+      leadId,
+      existing.insuranceTypeDesired || "HO",
+      existing.state || "FL",
+      [],
+      null,
+    );
+    revalidateLeads(leadId);
+    return;
+  }
+
+  if (normalizeLeadStatus(existing.status) !== status) {
+    await db
+      .update(leads)
+      .set({
+        status,
+        temperature: temperatureForStatus(status, existing.temperature),
+        nurtureUntil: status === "lost" ? null : existing.nurtureUntil,
+        nurtureRemindVia: status === "lost" ? null : existing.nurtureRemindVia,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
+  }
+  revalidateLeads(leadId);
 }
 
 export async function scheduleLeadNurture(formData: FormData) {
@@ -185,9 +242,10 @@ export async function overrideLeadFollowUpTemplate(formData: FormData) {
     .update(leads)
     .set({ followUpTemplateId: nextId, updatedAt: new Date() })
     .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
-  const scheduled = await fireLeadFollowUpForStatus(leadId, existing.status);
+  const cadence = normalizeLeadCadence((existing as { cadence?: string | null }).cadence);
+  const scheduled = await fireLeadFollowUpForStatus(leadId, cadence);
   revalidateLeads(leadId);
-  return followUpResultForLead(leadId, existing.status, nextId, scheduled);
+  return followUpResultForLead(leadId, cadence, nextId, scheduled);
 }
 
 export async function logLeadQueueContact(formData: FormData) {

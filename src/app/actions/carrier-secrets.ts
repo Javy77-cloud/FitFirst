@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { and, desc, eq } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
 import {
+  sessionCanRevealPortal,
+  sessionCanWritePortal,
+} from "@/lib/policy/agent-policy-access-prefs";
+import {
   quoteHandoffReadiness,
   replacePortalPassword,
   replacePortalUsername,
@@ -61,7 +65,9 @@ export async function revealCarrierPortalSecret(input: {
   field: CarrierSecretField;
 }): Promise<{ ok: true; value: string } | { ok: false; error: string }> {
   const session = await currentDeskSession();
-  if (!session.isAdmin) return { ok: false, error: "Admin only." };
+  if (!(await sessionCanRevealPortal(session))) {
+    return { ok: false, error: "Portal credentials are off for agents." };
+  }
 
   const [row] = await db
     .select({
@@ -213,19 +219,23 @@ export async function saveCarrierPortalCredentials(input: {
   carrierId: string;
   username?: string | null;
   password?: string | null;
+  agencyCode?: string | null;
 }): Promise<
   | {
       ok: true;
       hasUsername: boolean;
       hasPassword: boolean;
       usernameHint: string | null;
+      agencyCode: string | null;
       ready: boolean;
       missing: string[];
     }
   | { ok: false; error: string }
 > {
   const session = await currentDeskSession();
-  if (!session.isAdmin) return { ok: false, error: "Admin only." };
+  if (!(await sessionCanWritePortal(session))) {
+    return { ok: false, error: "Portal write is off for agents." };
+  }
 
   const carrierId = (input.carrierId ?? "").trim();
   if (!carrierId) return { ok: false, error: "Carrier required." };
@@ -248,8 +258,14 @@ export async function saveCarrierPortalCredentials(input: {
 
   const usernameIn = (input.username ?? "").trim();
   const passwordIn = (input.password ?? "").trim();
+  const agencyCodeProvided = Object.prototype.hasOwnProperty.call(input, "agencyCode");
+  const nextAgencyCode = agencyCodeProvided
+    ? (input.agencyCode ?? "").trim() || null
+    : row.agencyCode;
   const usernameTouched = Boolean(usernameIn);
   const passwordTouched = Boolean(passwordIn);
+  const agencyTouched =
+    agencyCodeProvided && (nextAgencyCode ?? "") !== (row.agencyCode ?? "");
 
   const usernamePatch = usernameTouched
     ? replacePortalUsername(usernameIn, row)
@@ -265,8 +281,12 @@ export async function saveCarrierPortalCredentials(input: {
         portalPasswordIv: row.portalPasswordIv,
       };
 
-  if (!usernameTouched && !passwordTouched) {
-    return { ok: false, error: "Enter a username and/or password to save." };
+  if (!usernameTouched && !passwordTouched && !agencyTouched && !agencyCodeProvided) {
+    return { ok: false, error: "Enter a username, password, and/or agency code to save." };
+  }
+  // If only agencyCode was provided (even same value), allow save when drafts empty after first fill
+  if (!usernameTouched && !passwordTouched && agencyCodeProvided && !agencyTouched && !usernameIn && !passwordIn) {
+    // still ok to re-save agency code field explicitly
   }
 
   const now = new Date();
@@ -275,6 +295,7 @@ export async function saveCarrierPortalCredentials(input: {
     .set({
       ...usernamePatch,
       ...passwordPatch,
+      ...(agencyCodeProvided ? { agencyCode: nextAgencyCode } : {}),
       portalSecretsUpdatedAt: now,
       updatedAt: now,
     })
@@ -291,7 +312,7 @@ export async function saveCarrierPortalCredentials(input: {
   const hasPassword = Boolean(passwordPatch.portalPasswordEnc && passwordPatch.portalPasswordIv);
   const readiness = quoteHandoffReadiness({
     portalUrl: row.portalUrl,
-    agencyCode: row.agencyCode,
+    agencyCode: agencyCodeProvided ? nextAgencyCode : row.agencyCode,
     hasPortalUsername: hasUsername,
     hasPortalPassword: hasPassword,
   });
@@ -304,6 +325,7 @@ export async function saveCarrierPortalCredentials(input: {
     hasUsername,
     hasPassword,
     usernameHint: usernamePatch.portalUsernameHint,
+    agencyCode: agencyCodeProvided ? nextAgencyCode : row.agencyCode,
     ready: readiness.ready,
     missing: readiness.missing,
   };

@@ -14,7 +14,7 @@ describe("header quick actions", () => {
       "/leads/new",
       "/deals/new",
       "/policies/new",
-      "/tasks/new",
+      "/tasks?newTask=1",
       "/meetings/new",
     ]);
   });

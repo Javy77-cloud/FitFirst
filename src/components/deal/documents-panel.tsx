@@ -24,6 +24,7 @@ export function DocumentsPanel({
   approvedBy,
   product,
   pendingFill = false,
+  hasCoApplicantFlag,
 }: {
   dealId: string;
   riskId: string;
@@ -38,6 +39,7 @@ export function DocumentsPanel({
   approvedBy?: string | null;
   product: SheetProduct;
   pendingFill?: boolean;
+  hasCoApplicantFlag?: string | null;
 }) {
   const sourceDocs = asList(docs).filter((d) => isDocumentsSourceDoc(d));
   const lineDocs = sourceDocs.filter((d) => docCardKeyFromTags(d.tags));
@@ -93,6 +95,7 @@ export function DocumentsPanel({
           formLabel={formLabel}
           unlocked={unlocked}
           approvedBy={approvedBy}
+          hasCoApplicantFlag={hasCoApplicantFlag}
         />
         {health ? (
           <p className="text-helper text-muted-foreground">

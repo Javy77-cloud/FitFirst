@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { leadValuesFromForm } from "@/lib/crm/lead-fields";
+import { normalizeLeadCadence, temperatureForCadence } from "@/lib/leads/queue";
+import { canStartFollowUpClock } from "@/lib/leads/follow-up-templates";
+import { fireLeadFollowUpForStatus } from "@/lib/leads/apply-follow-up";
 import { normalizeRecordSource } from "@/lib/crm/sources";
 import { db } from "@/lib/db";
 import { accounts, contacts, deals, leads } from "@/lib/db/schema";
@@ -131,6 +134,9 @@ export async function updateLeadRecord(formData: FormData) {
     .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, id)));
   if (!existing) return;
   const values = leadValuesFromForm(formData);
+  const prevCadence = normalizeLeadCadence((existing as { cadence?: string | null }).cadence);
+  const nextCadence = values.cadence ? normalizeLeadCadence(values.cadence) : prevCadence;
+  const cadenceChanged = nextCadence !== prevCadence;
   await db
     .update(leads)
     .set({
@@ -147,16 +153,21 @@ export async function updateLeadRecord(formData: FormData) {
       insuranceTypeDesired: values.insuranceTypeDesired || existing.insuranceTypeDesired,
       preferredLanguage: values.preferredLanguage || existing.preferredLanguage,
       status: values.status || existing.status,
-      temperature: values.temperature || existing.temperature,
+      temperature: values.temperature || temperatureForCadence(nextCadence, existing.temperature),
+      cadence: nextCadence,
       source: values.source || existing.source,
       notes: values.notes || existing.notes,
       updatedAt: new Date(),
-    })
+    } as any)
     .where(eq(leads.id, id));
   const defs = await listFieldDefs("leads").catch(() => []);
   const custom = customValuesFromForm(formData, defs);
+  delete custom.cadence;
   if (Object.keys(custom).length) {
     await writeRecordValues(id, custom, "leads");
+  }
+  if (cadenceChanged || canStartFollowUpClock(nextCadence)) {
+    await fireLeadFollowUpForStatus(id, nextCadence).catch(() => null);
   }
   revalidatePath(`/leads/${id}`);
   revalidatePath("/leads");

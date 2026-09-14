@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   activitiesOnDay,
+  activitiesOnView,
   activityOnDay,
+  CALENDAR_ADMIN_ADD,
   CALENDAR_TOOLBAR_ROWS,
   filterCalendarActivities,
+  formatCalendarTitle,
   formatWhen,
   isActivityKind,
   kindClass,
@@ -14,6 +17,7 @@ import {
   parseTags,
   rangeForView,
   rescheduleWindow,
+  shiftCalendarAnchor,
   startOfWeek,
   toDateParam,
   weekDays,
@@ -50,12 +54,12 @@ const meeting = {
 };
 
 describe("calendar helpers", () => {
-  it("locks Javy’s three calendar toolbar rows", () => {
+  it("locks Javy’s calendar toolbar rows (views + Add event menu)", () => {
     expect(CALENDAR_TOOLBAR_ROWS).toEqual([
-      ["Add event", "Add company meeting", "Add training"],
       ["Month", "Week", "Day"],
-      ["Task", "Meeting", "Call", "Email", "SMS"],
+      ["Add Event", "Task", "Meeting", "Call", "Email", "SMS"],
     ]);
+    expect(CALENDAR_ADMIN_ADD).toEqual(["Add Company Meeting", "Add Training"]);
   });
 
   it("builds a 6x7 month grid starting Sunday", () => {
@@ -70,6 +74,24 @@ describe("calendar helpers", () => {
     const onDay = activitiesOnDay([task, meeting], day);
     expect(onDay.map((a) => a.kind)).toEqual(["task", "meeting"]);
     expect(activityOnDay(task, new Date(2026, 8, 3))).toBe(false);
+  });
+
+  it("scopes On this view to day or week and hides month", () => {
+    const other = {
+      ...task,
+      id: "t2",
+      dueAt: new Date(2026, 8, 8, 10, 0),
+      title: "Next week task",
+    };
+    const anchor = new Date(2026, 8, 2);
+    expect(activitiesOnView([task, meeting, other], "month", anchor)).toEqual([]);
+    expect(activitiesOnView([task, meeting, other], "day", anchor).map((r) => r.id)).toEqual([
+      "t1",
+      "m1",
+    ]);
+    const weekIds = activitiesOnView([task, meeting, other], "week", anchor).map((r) => r.id);
+    expect(weekIds).toEqual(["t1", "m1"]);
+    expect(weekIds).not.toContain("t2");
   });
 
   it("maps kinds to --ff-* calendar classes and shares Call / SMS / Email with CONTACT_ACTION_COLORS", () => {
@@ -118,12 +140,26 @@ describe("calendar helpers", () => {
     expect(parseCalendarView("nope")).toBe("month");
   });
 
-  it("parses date params and week days", () => {
+    it("parses date params and week days", () => {
     const d = parseDateParam("2026-09-02");
     expect(toDateParam(d)).toBe("2026-09-02");
     const week = weekDays(d);
     expect(week).toHaveLength(7);
     expect(startOfWeek(d).getDay()).toBe(0);
     expect(parseTags("HO3, Renewal-Watch ;  ")).toEqual(["ho3", "renewal-watch"]);
+  });
+
+  it("formats center toolbar titles for month week and day", () => {
+    const day = new Date(2026, 8, 13); // Sunday Sep 13 2026
+    expect(formatCalendarTitle("month", day)).toBe("September 2026");
+    expect(formatCalendarTitle("day", day)).toMatch(/Sunday.*September.*13.*2026/);
+    expect(formatCalendarTitle("week", day)).toMatch(/Sep/);
+  });
+
+  it("shifts anchor by month week or day", () => {
+    const day = new Date(2026, 8, 13);
+    expect(toDateParam(shiftCalendarAnchor("day", day, 1))).toBe("2026-09-14");
+    expect(toDateParam(shiftCalendarAnchor("week", day, -1))).toBe("2026-09-06");
+    expect(toDateParam(shiftCalendarAnchor("month", day, 1))).toBe("2026-10-13");
   });
 });

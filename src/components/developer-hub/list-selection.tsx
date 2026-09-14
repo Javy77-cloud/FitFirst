@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SelectionActionsMenu } from "@/components/lists/selection-actions-menu";
 import { MassTagMenu, type MassTagCatalogRow } from "@/components/lists/mass-tag-menu";
-import { ListExportButton } from "@/components/lists/list-export-button";
 import { MassAssignMenu } from "@/components/lists/mass-assign-menu";
 import { tagModuleForCrmList } from "@/lib/lists/list-bulk";
 import {
@@ -213,7 +212,9 @@ export function ListMassBar({
         <SelectionActionsMenu
           module={module}
           selected={selected}
+          filteredIds={recordIds}
           records={resolvedRecords}
+          owners={owners}
           macros={macros}
           buttons={buttons}
           busy={busy}
@@ -246,14 +247,6 @@ export function ListMassBar({
             onClear={clear}
           />
         ) : null}
-        <ListExportButton
-          module={module}
-          selected={selected}
-          filteredIds={recordIds}
-          busy={busy}
-          onBusy={setBusy}
-          onMessage={setMessage}
-        />
         <MassAssignMenu
           module={module}
           selected={selected}
@@ -272,14 +265,7 @@ export function ListMassBar({
             Clear
           </button>
         ) : null}
-        {showMacrosLink ? (
-          <a
-            href="/settings/developer-hub/macros"
-            className="text-xs text-muted-foreground hover:text-primary hover:underline"
-          >
-            Settings · Macros
-          </a>
-        ) : null}
+        {/* Macros: Add Macro is under list ⋯ Settings */}
         <span
           data-ff-list-chrome=""
           className="ml-auto inline-flex items-center gap-1"

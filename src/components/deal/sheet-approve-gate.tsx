@@ -102,11 +102,11 @@ export function SheetApproveGate({
           onChange={(event) => setReviewed(event.target.checked)}
           className="mt-0.5"
         />
-        <span>I visually reviewed this master sheet.</span>
+        <span>I Visually Reviewed This Master Sheet.</span>
       </label>
       <div className="mt-3">
         <Button type="submit" size="sm" disabled={!reviewed || pending}>
-          {pending ? "Requesting quotes…" : "Confirm & request quotes"}
+          {pending ? "Requesting quotes…" : "Confirm & Request Quotes"}
         </Button>
       </div>
       {error ? <p className="mt-2 text-xs text-fit-flag">{error}</p> : null}

@@ -9,6 +9,9 @@ export const AGENT_DEAL_TAB_LABELS: Record<AgentDealTab, string> = {
   quotes: "Quotes",
 };
 
+/** Reserved custom-field key — current incomplete work tab. Not a layout field. */
+export const DEAL_WORK_TAB_KEY = "ff_work_tab";
+
 const LEGACY_TAB_ALIASES: Record<string, AgentDealTab> = {
   "quote-sheet": "documents",
   sheet: "documents",
@@ -24,6 +27,28 @@ export function parseAgentDealTab(value: string | undefined | null): AgentDealTa
 
 export function isAgentDealTab(value: string | undefined | null): value is AgentDealTab {
   return (AGENT_DEAL_TABS as readonly string[]).includes(value ?? "");
+}
+
+export function parsePersistedDealWorkTab(
+  value: string | null | undefined,
+): AgentDealTab | null {
+  const raw = String(value ?? "").trim();
+  return isAgentDealTab(raw) ? raw : null;
+}
+
+export function persistedDealWorkTab(
+  values: Record<string, string | null | undefined> | null | undefined,
+): AgentDealTab | null {
+  return parsePersistedDealWorkTab(values?.[DEAL_WORK_TAB_KEY]);
+}
+
+/** Persist only advances — never moves an in-progress deal backward. */
+export function nextPersistedWorkTab(
+  existing: AgentDealTab | null | undefined,
+  incoming: AgentDealTab,
+): AgentDealTab {
+  if (!existing) return incoming;
+  return AGENT_DEAL_TABS.indexOf(incoming) > AGENT_DEAL_TABS.indexOf(existing) ? incoming : existing;
 }
 
 /** Ask a teammate is admin-only on other records — never on a Deal tab. */
@@ -46,7 +71,10 @@ export function hasMeaningfulDealFieldValues(
   values: Record<string, string | null | undefined> | null | undefined,
 ): boolean {
   if (!values) return false;
-  return Object.values(values).some((value) => String(value ?? "").trim().length > 0);
+  return Object.entries(values).some(([key, value]) => {
+    if (key === DEAL_WORK_TAB_KEY) return false;
+    return String(value ?? "").trim().length > 0;
+  });
 }
 
 export type DealResumeSignals = {
@@ -66,22 +94,25 @@ export type DealResumeSignals = {
  * Next unfinished Deal tab when the URL has no explicit `?tab=`.
  * Manual `?tab=` clicks still win via parseAgentDealTab on the page.
  *
+ * Persisted `ff_work_tab` is the source of truth once convert / a stage
+ * completion wrote it — so a convert that already copied lead fields still
+ * lands on Details, and reopen stays on Markets until quotes are requested.
+ *
+ * Without a persisted tab (older deals), infer from sheet / shop signals.
  * Fill master sheet must NOT jump to Markets — stay on Documents until the
- * agent checks visual review and hits Confirm & request quotes (quotingUnlocked
- * / quotesRequested). sheetFilled alone is not enough.
+ * agent checks visual review and hits Confirm & request quotes.
  */
 export function resolveDealResumeTab(ctx: DealResumeSignals): AgentDealTab {
+  const persisted = persistedDealWorkTab(ctx.recordValues);
+  if (persisted) return persisted;
+
   const detailsDone = hasMeaningfulDealFieldValues(ctx.recordValues);
   if (!detailsDone) return "details";
 
   const quotesReady = Boolean(ctx.quotesRequested) || Boolean(ctx.hasNonStubQuotes);
-  // Shop already ran → Quotes
   if (quotesReady) return "quotes";
 
-  // Confirm & request quotes unlocks quoting — then Markets is next.
-  // sheetFilled alone (Fill master sheet) must stay on Documents for visual review.
   if (Boolean(ctx.quotingUnlocked)) return "markets";
 
   return "documents";
 }
-

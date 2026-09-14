@@ -1,9 +1,10 @@
 import { and, asc, desc, eq, exists, gte, inArray, isNull, lte, ne, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { alias, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { canSeeOwned } from "@/lib/auth/rbac";
-import { currentDeskSession, getActor, type DeskSession } from "@/lib/auth/session";
+import { currentDeskSession, getActor, sessionSeesAgencyBook, type DeskSession } from "@/lib/auth/session";
 import { alertVisibleWhere } from "@/lib/alerts/visibility";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { sessionCanRevealPortal } from "@/lib/policy/agent-policy-access-prefs";
 import { isUuid } from "@/lib/ids";
 import { clientStatusFromCounts, isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
 import { addUtcDays, DESK_AS_OF, priorMonth, startOfUtcMonth, endOfUtcMonth } from "@/lib/home/as-of";
@@ -158,6 +159,7 @@ export type TimelineItem = {
   subject: string | null;
   fromAddress: string | null;
   toAddress: string | null;
+  producerName: string | null;
 };
 
 export async function listActivityTimeline(filter: {
@@ -219,6 +221,7 @@ export async function listActivityTimeline(filter: {
       subject: log.subject,
       fromAddress: log.fromAddress,
       toAddress: log.toAddress,
+      producerName: log.producerName ?? null,
     })),
     ...history.map((row) => ({
       id: row.id,
@@ -240,6 +243,7 @@ export async function listActivityTimeline(filter: {
       subject: null,
       fromAddress: null,
       toAddress: null,
+      producerName: null,
     })),
   ];
   items.sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
@@ -372,7 +376,8 @@ export async function getCarrier(id: string) {
     .leftJoin(appetiteRules, eq(appetiteRules.carrierId, carriers.id))
     .where(and(eq(carriers.tenantId, tenant()), eq(carriers.id, id)));
   if (!row) return null;
-  return { carrier: publicCarrierView(row.carrier, session.isAdmin), rule: row.rule };
+  const revealPortal = await sessionCanRevealPortal(session);
+  return { carrier: publicCarrierView(row.carrier, { revealPortal }), rule: row.rule };
 }
 
 export async function listCalendarActivities(_from: Date, _to: Date) {
@@ -392,7 +397,7 @@ export async function listCalendarActivities(_from: Date, _to: Date) {
             ),
         )
       : sql`false`;
-  const scope = session.isAdmin
+  const scope = sessionSeesAgencyBook(session)
     ? undefined
     : session.name
       ? or(eq(activities.assignee, session.name), eq(activities.assignee, session.userId ?? ""), invited)
@@ -406,7 +411,7 @@ export async function listCalendarActivities(_from: Date, _to: Date) {
 
 export async function listCallLog() {
   const session = await currentDeskSession();
-  const scope = session.isAdmin
+  const scope = sessionSeesAgencyBook(session)
     ? undefined
     : session.name
       ? or(eq(activities.assignee, session.name), eq(activities.assignee, session.userId ?? ""))
@@ -524,13 +529,13 @@ export async function getLatestInDeskEnvelope(input: {
 const tenant = () => DEFAULT_TENANT_ID;
 
 function ownerWhere(session: DeskSession, column: AnyPgColumn): SQL | undefined {
-  if (session.isAdmin) return undefined;
+  if (sessionSeesAgencyBook(session)) return undefined;
   if (session.userId) return eq(column, session.userId);
   return sql`false`;
 }
 
 function canViewOwned(session: DeskSession, ownerId: string | null | undefined): boolean {
-  if (session.isAdmin) return true;
+  if (sessionSeesAgencyBook(session)) return true;
   if (!session.signedIn || !session.userId) return false;
   return ownerId === session.userId;
 }
@@ -701,13 +706,13 @@ export async function listPartyTypeahead(): Promise<PartyRecord[]> {
         ),
       )
       .orderBy(asc(accounts.name)),
-    session.isAdmin
+    sessionSeesAgencyBook(session)
       ? Promise.resolve([] as Array<{ accountId: string | null; ownerId: string | null }>)
       : db
           .select({ accountId: policies.accountId, ownerId: policies.ownerId })
           .from(policies)
           .where(eq(policies.tenantId, tenant())),
-    session.isAdmin
+    sessionSeesAgencyBook(session)
       ? Promise.resolve([] as Array<{ accountId: string | null; ownerId: string | null }>)
       : db
           .select({ accountId: contactAccounts.accountId, ownerId: contacts.ownerId })
@@ -727,7 +732,7 @@ export async function listPartyTypeahead(): Promise<PartyRecord[]> {
 
   const businesses: PartyRecord[] = accountRows
     .filter((row) => {
-      if (session.isAdmin) return true;
+      if (sessionSeesAgencyBook(session)) return true;
       const policyHit = policyRows.some((p) => p.accountId === row.id && p.ownerId === session.userId);
       const contactHit = linkedContacts.some(
         (link) => link.accountId === row.id && link.ownerId === session.userId,
@@ -870,7 +875,7 @@ export async function listAccounts(filter: { status?: string; city?: string; ind
       clientStatus: clientStatusFromCounts(counts.lifetime, counts.inForce),
     };
   }).filter((row) => {
-    if (!session.isAdmin) {
+    if (!sessionSeesAgencyBook(session)) {
       const policyHit = allPolicies.some((p) => p.accountId === row.id && p.ownerId === session.userId);
       const contactHit = allLinks.some((link) => link.accountId === row.id && link.ownerId === session.userId);
       if (!policyHit && !contactHit) return false;
@@ -942,13 +947,15 @@ export async function listPolicies(filter: PolicyListFilter = {}) {
         policy.effectiveDate <= endOfUtcMonth(last)
       );
     }
-    if (filter.renewal === "30" || filter.renewal === "60") {
-      const days = filter.renewal === "30" ? 30 : 60;
-      return (
-        IN_FORCE_STATUSES.has(status) &&
-        policy.expirationDate > asOf &&
-        policy.expirationDate <= addUtcDays(asOf, days)
-      );
+    if (filter.renewal) {
+      const days = Number(filter.renewal);
+      if (Number.isFinite(days) && days > 0) {
+        return (
+          IN_FORCE_STATUSES.has(status) &&
+          policy.expirationDate > asOf &&
+          policy.expirationDate <= addUtcDays(asOf, days)
+        );
+      }
     }
     if (filter.ownerId && policy.ownerId !== filter.ownerId) return false;
     if (filter.family && family !== filter.family) return false;
@@ -1188,7 +1195,7 @@ export async function getAccountWorkspace(id: string) {
   const lifetime = relatedPolicies.length;
   const inForce = relatedPolicies.filter((row) => isInForcePolicyStatus(row.policy.status)).length;
   const session = await currentDeskSession();
-  if (!session.isAdmin) {
+  if (!sessionSeesAgencyBook(session)) {
     const ownsRelated =
       relatedPolicies.some((row) => row.policy.ownerId === session.userId) ||
       relatedDeals.some((deal) => deal.ownerId === session.userId) ||
@@ -1414,8 +1421,9 @@ export async function listCarriers() {
     .leftJoin(appetiteRules, eq(appetiteRules.carrierId, carriers.id))
     .where(eq(carriers.tenantId, tenant()))
     .orderBy(asc(carriers.name));
+  const revealPortal = await sessionCanRevealPortal(session);
   return rows.map(({ carrier, rule }) => ({
-    carrier: publicCarrierView(carrier, session.isAdmin),
+    carrier: publicCarrierView(carrier, { revealPortal }),
     rule,
   }));
 }
@@ -1446,7 +1454,13 @@ export async function listCarriersDesk(): Promise<CarrierDeskRow[]> {
     })
     .from(carriers)
     .leftJoin(appetiteRules, eq(appetiteRules.carrierId, carriers.id))
-    .where(eq(carriers.tenantId, tenant()))
+    .where(
+      and(
+        eq(carriers.tenantId, tenant()),
+        sql`coalesce(${carriers.active}, true) = true`,
+        sql`lower(${carriers.name}) not like '%(merged)%'`,
+      ),
+    )
     .orderBy(asc(carriers.name));
 
   const policyAgg = await db
@@ -1541,8 +1555,9 @@ export async function listCarriersDesk(): Promise<CarrierDeskRow[]> {
 
   const { computeHitRate } = await import("@/lib/carriers/metrics");
 
+  const revealPortal = await sessionCanRevealPortal(session);
   return rows.map(({ carrier, rule }) => {
-    const pub = publicCarrierView(carrier, session.isAdmin);
+    const pub = publicCarrierView(carrier, { revealPortal });
     const agg = policyMap.get(carrier.id) ?? { activeCount: 0, premiumVolume: 0, lastIssuedAt: null as Date | null };
     const lastQuoteAt = quoteMap.get(carrier.id) ?? null;
     const lastIssuedAt = agg.lastIssuedAt ?? null;
@@ -1873,8 +1888,9 @@ export async function getCarrierWorkspace(id: string) {
     commissionSpark: sparkRows.map((r) => Number(r.amount ?? 0)),
   });
 
+  const revealPortal = await sessionCanRevealPortal(session);
   return {
-    carrier: publicCarrierView(row.carrier, session.isAdmin),
+    carrier: publicCarrierView(row.carrier, { revealPortal }),
     rule: row.rule,
     activePolicyCount: Number(policyStats?.activeCount ?? 0),
     policyCount: Number(policyStats?.total ?? 0),
@@ -2169,7 +2185,11 @@ export async function listFillLearningForLookup() {
 export async function listAlerts(unreadOnly = false) {
   const session = await currentDeskSession();
   const visible = alertVisibleWhere(session, tenant());
-  const where = unreadOnly ? and(visible, isNull(alerts.readAt)) : visible;
+  /** Future createdAt = scheduled in-app reminder (not due yet). Hide until fire time. */
+  const due = lte(alerts.createdAt, new Date());
+  const where = unreadOnly
+    ? and(visible, due, isNull(alerts.readAt))
+    : and(visible, due);
   return db.select().from(alerts).where(where).orderBy(desc(alerts.createdAt));
 }
 
@@ -2235,7 +2255,7 @@ export async function getDealWorkspace(dealId: string) {
     .where(and(eq(deals.tenantId, tenant()), eq(deals.id, dealId)));
   if (!deal) return null;
   const session = await currentDeskSession();
-  if (!session.isAdmin && session.userId && deal.ownerId !== session.userId) return null;
+  if (!sessionSeesAgencyBook(session) && session.userId && deal.ownerId !== session.userId) return null;
 
   const [risk] = await db
     .select()
@@ -2399,7 +2419,7 @@ export async function refreshPartyCounts(party: {
 export async function dashboardStats() {
   const session = await currentDeskSession();
   const ownerSql =
-    session.isAdmin || !session.userId ? sql`` : sql` and owner_id = ${session.userId}`;
+    sessionSeesAgencyBook(session) || !session.userId ? sql`` : sql` and owner_id = ${session.userId}`;
   const [row] = await db
     .select({
       leads: sql<number>`(select count(*) from leads where tenant_id = ${tenant()}${ownerSql})`,
@@ -2408,7 +2428,7 @@ export async function dashboardStats() {
       contacts: sql<number>`(select count(*) from contacts where tenant_id = ${tenant()}${ownerSql})`,
       policies: sql<number>`(select count(*) from policies where tenant_id = ${tenant()}${ownerSql})`,
       unreadAlerts: sql<number>`(select count(*) from alerts where tenant_id = ${tenant()} and read_at is null${
-        session.isAdmin || !session.userId
+        sessionSeesAgencyBook(session) || !session.userId
           ? sql``
           : sql` and (user_id is null or user_id = ${session.userId})`
       })`,
@@ -2602,7 +2622,7 @@ export async function smartSearch(query: string): Promise<SearchHit[]> {
     }
   }
   for (const row of accountRows) {
-    if (!session.isAdmin) {
+    if (!sessionSeesAgencyBook(session)) {
       const owns = policyRows.some((policy) => policy.accountId === row.id && policy.ownerId === session.userId);
       if (!owns) continue;
     }

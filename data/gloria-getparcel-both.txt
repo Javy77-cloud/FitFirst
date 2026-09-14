@@ -1,0 +1,70 @@
+
+==== DP3 Miami-Dade ok GetParcelData returned 14 field(s) for empty-only fill. beds/baths/sqft/stories not in county feed.
+called true lat 25.802634943185 lng -80.363960638812
+  parcel_id="3530291140880"
+  apn="3530291140880"
+  year_built="2006"
+  building_area=null
+  bedrooms=null
+  bathrooms=null
+  stories=null
+  number_of_units=null
+  assessed_value="463402.0"
+  land_value="0.0"
+  improvement_value="463402.0"
+  assessment_year=null
+  zoning=null
+  legal_description=null
+  subdivision_name=null
+  flood_zone="X"
+  homestead="0"
+  sale_price="0"
+  sale_date=null
+  owner_name="GLORIA MARTINEZ"
+  property_address_line1="10358 NW 30 TER"
+  property_city="Doral"
+  property_zip="33172"
+  county_geoid="12086"
+  acreage="0.033834513312429204"
+  land_use="004"
+  construction_type=null
+  exterior=null
+  foundation=null
+  roof_type=null
+  pool=null
+facts year_built=2006 | year_effective=2006 | flood_zone=X | parcel_id=3530291140880 | assessed_value=463402.0 | land_value=0.0 | improvement_value=463402.0 | sale_price=0 | homestead=0 | land_use=004 | acres=0.0338 | applicant_name=GLORIA MARTINEZ | named_insured=GLORIA MARTINEZ | mailing_address=10358 NW 30 TERR, DORAL, FL 33172
+
+==== HO3 Osceola ok GetParcelData returned 14 field(s) for empty-only fill. beds/baths/sqft/stories not in county feed.
+called true lat 28.311574723717 lng -81.647323054097
+  parcel_id="182527558700010920"
+  apn="182527558700010920"
+  year_built="2017"
+  building_area=null
+  bedrooms=null
+  bathrooms=null
+  stories=null
+  number_of_units=null
+  assessed_value="402800.0"
+  land_value="70000.0"
+  improvement_value="332800.0"
+  assessment_year=null
+  zoning=null
+  legal_description=null
+  subdivision_name=null
+  flood_zone="X"
+  homestead="0"
+  sale_price="0"
+  sale_date=null
+  owner_name="MARTINEZ GLORIA"
+  property_address_line1="8944 ADRIATICO LN"
+  property_city="KISSIMMEE"
+  property_zip="34747"
+  county_geoid="12097"
+  acreage="0.06603638154191585"
+  land_use="001"
+  construction_type=null
+  exterior=null
+  foundation=null
+  roof_type=null
+  pool=null
+facts year_built=2017 | year_effective=2017 | flood_zone=X | parcel_id=182527558700010920 | assessed_value=402800.0 | land_value=70000.0 | improvement_value=332800.0 | sale_price=0 | homestead=0 | land_use=001 | acres=0.066 | applicant_name=MARTINEZ GLORIA | named_insured=MARTINEZ GLORIA | mailing_address=16021 NW 79TH CT, MIAMI LAKES, FL 33016

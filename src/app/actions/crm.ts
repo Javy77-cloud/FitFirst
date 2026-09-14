@@ -58,6 +58,7 @@ import { activityLogBody } from "@/lib/lifecycle/activity";
 import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
 import { leadValuesFromForm } from "@/lib/crm/lead-fields";
 import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
+import { dealListCascadeSyncValues } from "@/lib/deals/insurance-cascade";
 import { applySystemDealValues } from "@/app/actions/custom-fields";
 import { listFieldDefs, writeRecordValues } from "@/lib/custom-fields/store";
 import { normalizeLeadCadence } from "@/lib/leads/queue";
@@ -71,6 +72,7 @@ import {
 } from "@/lib/crm/contact-bind-transfer";
 import { convertFieldCopy, resolveConvertLine } from "@/lib/crm/convert";
 import { loadRecordValues, writeCarriedLeadValues } from "@/lib/custom-fields/store";
+import { persistDealWorkTab } from "@/lib/deals/work-tab";
 import {
   documentLinesFromDocs,
   parseSelectedShopLines,
@@ -254,8 +256,9 @@ export async function convertLeadToDeal(
   if (!lead) throw new Error("Lead not found");
   if (lead.convertedDealId) return lead.convertedDealId;
 
-  const dealLine = resolveConvertLine(line, lead.insuranceTypeDesired);
   const leadCustom = await loadRecordValues(leadId, "leads").catch(() => ({} as Record<string, string>));
+  // Prefer lead Insurance subtype / Type custom fields over silent HO default.
+  const dealLine = resolveConvertLine(line, lead.insuranceTypeDesired, leadCustom);
   const copy = convertFieldCopy(lead, dealLine, state, carryFields, leadCustom);
   const leadDocs = await db
     .select()
@@ -315,6 +318,7 @@ export async function convertLeadToDeal(
       primaryNamedInsured: copy.primaryNamedInsured,
       source: copy.source,
       quotingForm: copy.quotingForm,
+      quotingLine: copy.quotingLine,
       policySubType: copy.policySubType,
       tags: carryLeadTagsToContact(lead.tags),
     })
@@ -338,6 +342,16 @@ export async function convertLeadToDeal(
   });
   await insertSheetsForDeal(deal.id, shopLines);
   await writeCarriedLeadValues(deal.id, { ...lead, id: leadId }, carryFields, leadCustom).catch(() => null);
+  if (copy.quotingForm || copy.policySubType || copy.insuranceType) {
+    await applySystemDealValues(deal.id, {
+      ...(copy.quotingForm || copy.policySubType
+        ? { quotingForm: copy.quotingForm || copy.policySubType || "" }
+        : {}),
+      ...(copy.primaryNamedInsured ? { primaryNamedInsured: copy.primaryNamedInsured } : {}),
+      ...(copy.dealState ? { state: copy.dealState } : {}),
+    }).catch(() => null);
+  }
+  await persistDealWorkTab(deal.id, "details").catch(() => null);
 
   if (risk && leadDocs.length > 0) {
     await db
@@ -399,7 +413,7 @@ export async function createDealFromLead(formData: FormData) {
   );
   revalidatePath("/deals");
   revalidatePath("/leads");
-  redirect(`/deals/${dealId}`);
+  redirect(`/deals/${dealId}?tab=details`);
 }
 
 export async function createDeal(formData: FormData) {
@@ -500,8 +514,12 @@ export async function createDeal(formData: FormData) {
       : line === "HEALTH"
         ? str(formData, "healthSubType") || str(formData, "policySubType") || picked.policySubType
         : picked.policySubType;
+  const quotingForm =
+    line === "LIFE" || line === "HEALTH" ? policySubType || picked.quotingForm : picked.quotingForm;
+  const quotingLine =
+    line === "LIFE" ? "life" : line === "HEALTH" ? "health" : picked.quotingLine;
   const shopLines = Array.from(
-    new Set([...sheetsToPrepare(picked.quotingForm), ...shopLinesFromForm(formData, line)]),
+    new Set([...sheetsToPrepare(quotingForm), ...shopLinesFromForm(formData, line)]),
   );
   const pipelineSlug = line === "HEALTH" ? "health" : line === "LIFE" ? "life" : line === "FLOOD" ? "flood" : "p-c";
   const [pipeline] = await db.select().from(pipelines).where(eq(pipelines.slug, pipelineSlug));
@@ -524,13 +542,15 @@ export async function createDeal(formData: FormData) {
         lastName: pickedAccount && !pickedContact ? "" : lastName,
         accountName: pickedAccount && !pickedContact ? pickedAccount.name : null,
         line,
+        quotingForm,
+        policySubType,
       }),
       pipelineStage: "shopping",
       pipelineId: pipeline?.id ?? null,
       pipelineStageSlug: "gather",
       lineOfBusiness: line,
-      quotingForm: picked.quotingForm,
-      quotingLine: picked.quotingLine,
+      quotingForm,
+      quotingLine,
       source: lead.source ?? source,
       policySubType,
       state: state || "FL",
@@ -565,13 +585,22 @@ export async function createDeal(formData: FormData) {
   await db.insert(quoteSheets).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
-    line: picked.quotingLine,
+    line: quotingLine,
     values: fillSheetFromLead(lead) as typeof quoteSheets.$inferInsert.values,
   });
   await insertSheetsForDeal(deal.id, shopLines);
 
   const defs = await listFieldDefs("deals").catch(() => []);
   const custom = customValuesFromForm(formData, defs);
+  Object.assign(
+    custom,
+    dealListCascadeSyncValues({
+      insuranceType: custom.insurance_type,
+      insuranceSubtype: custom.insurance_subtype,
+      quotingForm,
+      policySubType,
+    }),
+  );
   if (Object.keys(custom).length) {
     await writeRecordValues(deal.id, custom, "deals");
   }

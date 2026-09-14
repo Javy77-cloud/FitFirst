@@ -45,6 +45,17 @@ describe("notification board helpers", () => {
     expect(notificationBellHasUnread(unreadNotificationCount([]))).toBe(false);
   });
 
+  it("prefers unread rows in the bell panel over newer read noise", () => {
+    const rows = [
+      { id: "new-read", read: true },
+      { id: "new-read-2", read: true },
+      { id: "old-unread", read: false },
+      { id: "old-unread-2", read: false },
+    ];
+    const recent = recentNotifications(rows, 3);
+    expect(recent.map((row) => row.id)).toEqual(["old-unread", "old-unread-2", "new-read"]);
+  });
+
   it("shows a bell badge only while unread count is above zero", () => {
     expect(notificationBellHasUnread(1)).toBe(true);
     expect(notificationBellHasUnread(3)).toBe(true);

@@ -17,10 +17,10 @@ export const APPLICANT_CRM_FIELDS: CustomFieldDef[] = [
     options: [...GENDER_OPTIONS],
   },
   {
-    key: "applicant_marital_status",
-    label: "Marital status",
+    key: "applicant_occupation",
+    label: "Occupation",
     type: "picklist",
-    options: [...MARITAL_STATUS_OPTIONS],
+    options: [...OCCUPATION_OPTIONS],
   },
   {
     key: "applicant_employment",
@@ -29,10 +29,10 @@ export const APPLICANT_CRM_FIELDS: CustomFieldDef[] = [
     options: [...EMPLOYMENT_STATUS_OPTIONS],
   },
   {
-    key: "applicant_occupation",
-    label: "Occupation",
+    key: "applicant_marital_status",
+    label: "Marital status",
     type: "picklist",
-    options: [...OCCUPATION_OPTIONS],
+    options: [...MARITAL_STATUS_OPTIONS],
   },
   {
     key: "applicant_education_level",
@@ -48,22 +48,21 @@ export const APPLICANT_CRM_FIELDS: CustomFieldDef[] = [
   },
 ];
 
-/** Layout order: DOB then gender → marital → employment → occupation → education → entity. */
+/** Layout order: Gender → Occupation → Employment → Marital → Education → Entity type. DOB stays on Contact. */
 export const APPLICANT_SECTION_FIELD_KEYS = [
-  "date_of_birth",
   "applicant_gender",
-  "applicant_marital_status",
-  "applicant_employment",
   "applicant_occupation",
+  "applicant_employment",
+  "applicant_marital_status",
   "applicant_education_level",
   "entity_type",
 ] as const;
 
 export const APPLICANT_CUSTOM_KEYS = [
   "applicant_gender",
-  "applicant_marital_status",
-  "applicant_employment",
   "applicant_occupation",
+  "applicant_employment",
+  "applicant_marital_status",
   "applicant_education_level",
   "entity_type",
 ] as const;

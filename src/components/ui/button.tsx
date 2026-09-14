@@ -1,6 +1,8 @@
+import * as React from "react"
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 
+import { titleCaseLabel } from "@/lib/ui/title-case"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
@@ -40,18 +42,44 @@ const buttonVariants = cva(
   }
 )
 
+function titleCaseChildren(children: React.ReactNode): React.ReactNode {
+  if (typeof children === "string") {
+    // Skip pure icons / single short tokens with no space — still title-case multi-word
+    if (!children.trim() || !/\s/.test(children.trim())) {
+      // Single word buttons still get first letter upper (Save, Close) via titleCaseLabel
+      return titleCaseLabel(children)
+    }
+    return titleCaseLabel(children)
+  }
+  if (Array.isArray(children)) {
+    return children.map((child, index) => {
+      if (typeof child === "string" && /\s/.test(child.trim())) {
+        return <React.Fragment key={index}>{titleCaseLabel(child)}</React.Fragment>
+      }
+      if (typeof child === "string") {
+        return <React.Fragment key={index}>{titleCaseLabel(child)}</React.Fragment>
+      }
+      return child
+    })
+  }
+  return children
+}
+
 function Button({
   className,
   variant = "default",
   size = "default",
+  children,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size }), className)}
       {...props}
-    />
+    >
+      {titleCaseChildren(children)}
+    </ButtonPrimitive>
   )
 }
 

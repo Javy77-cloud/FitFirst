@@ -27,6 +27,7 @@ import {
   COMMUTE_DAYS_WEEK_OPTIONS,
   VEHICLE_LIENHOLDER_OPTIONS,
   PRIMARY_HEAT_OPTIONS,
+  INSURANCE_SCORE_RANGE_OPTIONS,
   PRIMARY_PLUMBING_OPTIONS,
   USAGE_OPTIONS,
   AUTO_VEHICLE_USAGE_OPTIONS,
@@ -90,6 +91,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "occupancy", label: "Occupancy", group: "Property", input: "select", options: [...OCCUPANCY_OPTIONS], extractKey: "occupancy" },
   { key: "usage", label: "Usage", group: "Property", input: "select", options: [...USAGE_OPTIONS], extractKey: "usage" },
   { key: "months_occupied", label: "Months occupied", group: "Property", input: "select", options: [...MONTHS_OCCUPIED_OPTIONS], extractKey: "months_occupied" },
+  { key: "resided_under_2_years", label: "Resided at risk address under 2 years?", group: "Property", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "number_of_families", label: "Number of families", group: "Property", input: "number" },
   { key: "year_built", label: "Year built", group: "Dwelling", input: "number", extractKey: "year_built", products: [...HO_LL] },
   { key: "year_effective", label: "Effective year", group: "Dwelling", input: "number", products: [...HO_LL] },
@@ -233,6 +235,13 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "contents_limit", label: "Contents limit", group: "Renters", input: "number", products: [...RENT] },
   { key: "renters_liability", label: "Renters liability", group: "Renters", products: [...RENT] },
   { key: "additional_living", label: "Additional living expense", group: "Renters", products: [...RENT] },
+  {
+    key: "insurance_score_range",
+    label: "Insurance score range",
+    group: "Authorizations",
+    input: "select",
+    options: [...INSURANCE_SCORE_RANGE_OPTIONS],
+  },
   { key: "notes", label: "Shop notes", group: "Notes", input: "textarea" },
 ];
 

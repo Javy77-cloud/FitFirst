@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AddNewDealDialog } from "@/components/deals/add-new-deal-dialog";
 import { DealQuickActions } from "@/components/deals/deal-quick-actions";
 import { DealStageSelect } from "@/components/deals/deal-stage-select";
 import { DealStaleBadge } from "@/components/deals/deal-stale-badge";
@@ -75,6 +76,7 @@ export async function DealsTable({
   users,
   agents: _agents = [],
   initialQuery = "",
+  searchModuleId = "deals-pipeline",
   nextByDeal = new Map(),
   mode = "list",
 }: {
@@ -82,6 +84,7 @@ export async function DealsTable({
   users: Map<string, string>;
   agents?: DeskUserOption[];
   initialQuery?: string;
+  searchModuleId?: string;
   nextByDeal?: Map<string, string>;
   mode?: PipelineSheetMode;
 }) {
@@ -104,6 +107,12 @@ export async function DealsTable({
 
   return (
     <section className="ff-card overflow-x-auto" data-ff-pipe-mode={mode}>
+      <div
+        className="flex items-center justify-end border-b border-border px-3 py-2"
+        data-ff-deals-list-actions=""
+      >
+        <AddNewDealDialog />
+      </div>
       <ModuleListActions
         module="deals"
         showMacrosLink={false}
@@ -126,6 +135,7 @@ export async function DealsTable({
       >
         <DeskColumnTable
           moduleId="deals"
+          searchModuleId={searchModuleId}
           initialQuery={initialQuery}
           columns={columns}
           empty="No deals match this filter. Shopping stays on the deal list — quotes are not policies."

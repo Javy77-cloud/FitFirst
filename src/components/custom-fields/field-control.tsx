@@ -7,12 +7,16 @@ import { formatCurrencyDisplay, parseNumericInput } from "@/lib/custom-fields/fo
 import { resolvedFieldValue, sanitizePicklistOptions } from "@/lib/custom-fields/picklists";
 import {
   InsuranceCascadeControl,
+  isInsuranceCategoryField,
   isInsuranceSubtypeField,
+  isInsuranceTypeField,
 } from "@/components/custom-fields/insurance-cascade-control";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
 import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { addressFillForKey, isStreetAddressField } from "@/lib/address/keys";
+import { MultiSelectField } from "@/components/custom-fields/multi-select-field";
+import { formatPhoneStandard } from "@/lib/phone/format";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -27,6 +31,9 @@ export function FieldControl({
   quotingForm,
   policySubType,
   lifeHealthOptions = [],
+  lifeOptions = [],
+  healthOptions = [],
+  onMultiSelectChange,
 }: {
   field: CustomFieldDef;
   value: string;
@@ -38,6 +45,9 @@ export function FieldControl({
   quotingForm?: string | null;
   policySubType?: string | null;
   lifeHealthOptions?: Array<{ slug?: string; label: string }>;
+  lifeOptions?: Array<{ slug?: string; label: string }>;
+  healthOptions?: Array<{ slug?: string; label: string }>;
+  onMultiSelectChange?: (joined: string) => void;
 }) {
   const resolved = resolvedFieldValue(field, value);
   const required = Boolean(field.required);
@@ -58,6 +68,9 @@ export function FieldControl({
         quotingForm={quotingForm}
         policySubType={policySubType}
         lifeHealthOptions={lifeHealthOptions}
+        lifeOptions={lifeOptions}
+        healthOptions={healthOptions}
+        onMultiSelectChange={onMultiSelectChange}
       />
     </div>
   );
@@ -76,6 +89,9 @@ function TypedControl({
   quotingForm,
   policySubType,
   lifeHealthOptions = [],
+  lifeOptions = [],
+  healthOptions = [],
+  onMultiSelectChange,
 }: {
   field: CustomFieldDef;
   value: string;
@@ -89,16 +105,60 @@ function TypedControl({
   quotingForm?: string | null;
   policySubType?: string | null;
   lifeHealthOptions?: Array<{ slug?: string; label: string }>;
+  lifeOptions?: Array<{ slug?: string; label: string }>;
+  healthOptions?: Array<{ slug?: string; label: string }>;
+  onMultiSelectChange?: (joined: string) => void;
 }) {
-  if (isInsuranceSubtypeField(field)) {
+  // 3-level cascade: Type → Category → Form. Type field owns the UI;
+  // category + subtype siblings are skipped so we do not render three cascades.
+  if (isInsuranceTypeField(field)) {
     return (
       <InsuranceCascadeControl
-        name={name}
+        typeName={name}
+        categoryName="field_insurance_category"
+        subtypeName="field_insurance_subtype"
         form={form}
         family={pipelineFamily}
+        typeValue={value || values.insurance_type || ""}
+        categoryValue={values.insurance_category || ""}
+        value={values.insurance_subtype || policySubType || quotingForm || ""}
+        quotingForm={quotingForm}
+        policySubType={policySubType || values.insurance_subtype || ""}
+        lifeOptions={lifeOptions}
+        healthOptions={healthOptions}
+        lifeHealthOptions={lifeHealthOptions}
+        required={required}
+        disabled={disabled}
+      />
+    );
+  }
+  if (isInsuranceCategoryField(field)) {
+    if (
+      Object.prototype.hasOwnProperty.call(values, "insurance_type") ||
+      values.insurance_type !== undefined
+    ) {
+      return <div className="hidden" data-ff-insurance-category-owned-by-type />;
+    }
+  }
+  if (isInsuranceSubtypeField(field)) {
+    // When Insurance Type is also on the form, it owns the cascade (writes all hiddens).
+    if (Object.prototype.hasOwnProperty.call(values, "insurance_type") || values.insurance_type !== undefined) {
+      return <div className="hidden" data-ff-insurance-subtype-owned-by-type />;
+    }
+    return (
+      <InsuranceCascadeControl
+        typeName="field_insurance_type"
+        categoryName="field_insurance_category"
+        subtypeName={name}
+        form={form}
+        family={pipelineFamily}
+        typeValue={values.insurance_type || ""}
+        categoryValue={values.insurance_category || ""}
         value={value}
         quotingForm={quotingForm ?? value}
         policySubType={policySubType}
+        lifeOptions={lifeOptions}
+        healthOptions={healthOptions}
         lifeHealthOptions={lifeHealthOptions}
         required={required}
         disabled={disabled}
@@ -156,7 +216,7 @@ function TypedControl({
         className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm"
         data-ff-picklist={field.key}
       >
-        <option value="">Select</option>
+        <option value="">None</option>
         {options.map((option, index) => (
           <option key={`${field.key}:${index}:${option}`} value={option}>
             {option}
@@ -166,24 +226,22 @@ function TypedControl({
     );
   }
   if (field.type === "multi_select") {
-    const selected = new Set(value.split(",").filter(Boolean));
+    // Long lists (e.g. Existing Coverage / policy subtypes) get type-to-filter.
+    const searchable =
+      field.key === "existing_coverage_types" ||
+      options.length >= 12;
     return (
-      <div className="mt-1 flex flex-wrap gap-2" data-ff-multi-select={field.key}>
-        {options.map((option, index) => (
-          <label key={`${field.key}:${index}:${option}`} className="flex items-center gap-1 text-xs">
-            <input
-              type="checkbox"
-              name={name}
-              value={option}
-              defaultChecked={selected.has(option)}
-              disabled={disabled}
-              form={form}
-            />
-            {option}
-          </label>
-        ))}
-        {options.length === 0 ? <p className="text-xs text-muted-foreground">No options yet.</p> : null}
-      </div>
+      <MultiSelectField
+        name={name}
+        options={options}
+        value={value}
+        disabled={disabled}
+        form={form}
+        searchable={searchable}
+        label={field.label}
+        fieldKey={field.key}
+        onChange={onMultiSelectChange}
+      />
     );
   }
   if (field.type === "image") {
@@ -255,6 +313,20 @@ function TypedControl({
     );
   }
 
+  if (field.type === "phone") {
+    return (
+      <PhoneInput
+        name={name}
+        value={value}
+        disabled={disabled}
+        required={required}
+        form={form}
+        label={field.label}
+        fieldKey={field.key}
+      />
+    );
+  }
+
   const inputType =
     field.type === "email"
       ? "email"
@@ -264,9 +336,7 @@ function TypedControl({
           ? "datetime-local"
           : field.type === "number"
             ? "number"
-            : field.type === "phone"
-              ? "tel"
-              : "text";
+            : "text";
 
   return (
     <Input
@@ -279,6 +349,47 @@ function TypedControl({
       aria-label={field.label}
       className="mt-1 h-8"
       data-ff-single-line={field.type === "single_line" ? field.key : undefined}
+    />
+  );
+}
+
+function PhoneInput({
+  name,
+  value,
+  disabled,
+  form,
+  required,
+  label,
+  fieldKey,
+}: {
+  name: string;
+  value: string;
+  disabled?: boolean;
+  form?: string;
+  required?: boolean;
+  label: string;
+  fieldKey: string;
+}) {
+  const [text, setText] = useState(() => (value ? formatPhoneStandard(value) : ""));
+
+  return (
+    <Input
+      name={name}
+      type="tel"
+      inputMode="tel"
+      value={text}
+      onChange={(event) => setText(event.target.value)}
+      onBlur={() => {
+        const next = formatPhoneStandard(text);
+        setText(next);
+      }}
+      disabled={disabled}
+      required={required}
+      form={form}
+      aria-label={label}
+      placeholder="1-555-555-5555"
+      className="mt-1 h-8"
+      data-ff-phone={fieldKey}
     />
   );
 }

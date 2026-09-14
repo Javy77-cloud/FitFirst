@@ -1,14 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 import {
   linkContactBusiness,
   searchBusinessesForLink,
   unlinkContactBusiness,
 } from "@/app/actions/contacts-ops";
+import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
 export function LinkedBusinessLine({
@@ -36,16 +44,11 @@ export function LinkedBusinessLine({
 
   const primary = businesses[0];
   return (
-    <div
-      className="flex flex-wrap items-center gap-2 text-sm"
-      data-ff-linked-business-line=""
-    >
+    <div className="flex flex-wrap items-center gap-2 text-sm" data-ff-linked-business-line="">
       <span className="text-muted-foreground">Business</span>
       {primary ? (
         <>
-          <Link href={`/accounts/${primary.id}`} className="font-medium text-[#002868] hover:underline">
-            {primary.name}
-          </Link>
+          <RecordLink href={`/accounts/${primary.id}`}>{primary.name}</RecordLink>
           <form
             action={async () => {
               const fd = new FormData();
@@ -60,11 +63,37 @@ export function LinkedBusinessLine({
             </Button>
           </form>
           {businesses.length > 1 ? (
-            <span className="text-xs text-muted-foreground">+{businesses.length - 1} more</span>
+            <span className="text-xs text-muted-foreground">+{businesses.length - 1} More</span>
           ) : null}
         </>
-      ) : open ? (
-        <div className="flex w-full flex-col gap-2 sm:max-w-sm">
+      ) : (
+        <>
+          <span className="text-muted-foreground">No Business Yet — Add One.</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1"
+            onClick={() => setOpen(true)}
+          >
+            <Plus className="size-3.5" />
+            Link Business
+          </Button>
+        </>
+      )}
+
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) setQ("");
+        }}
+      >
+        <DialogContent className="sm:max-w-md" data-ff-link-business-dialog="">
+          <DialogHeader>
+            <DialogTitle>Link Business</DialogTitle>
+            <DialogDescription>Search an existing business account.</DialogDescription>
+          </DialogHeader>
           <Input
             className="h-8"
             placeholder="Search Business…"
@@ -72,12 +101,12 @@ export function LinkedBusinessLine({
             onChange={(e) => setQ(e.target.value)}
             autoFocus
           />
-          <ul className="max-h-36 space-y-1 overflow-y-auto">
+          <ul className="max-h-56 space-y-1 overflow-y-auto text-sm">
             {hits.map((row) => (
               <li key={row.id}>
                 <button
                   type="button"
-                  className="w-full rounded px-2 py-1 text-left hover:bg-muted"
+                  className="w-full rounded px-2 py-1.5 text-left hover:bg-muted"
                   onClick={async () => {
                     const fd = new FormData();
                     fd.set("contactId", contactId);
@@ -92,15 +121,8 @@ export function LinkedBusinessLine({
               </li>
             ))}
           </ul>
-          <Button type="button" size="sm" variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-        </div>
-      ) : (
-        <Button type="button" size="sm" variant="outline" className="h-7" onClick={() => setOpen(true)}>
-          Link Business
-        </Button>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

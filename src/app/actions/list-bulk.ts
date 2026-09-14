@@ -15,6 +15,7 @@ import {
   deals,
   leads,
   policies,
+  reviewTasks,
   users,
 } from "@/lib/db/schema";
 import { dealTransferNotification } from "@/lib/deals/transfer";
@@ -96,6 +97,13 @@ async function readRecordTags(tagModule: TagModule, recordId: string): Promise<s
       .select({ tags: carriers.tags })
       .from(carriers)
       .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, recordId)));
+    return normalizeTags(row?.tags);
+  }
+  if (tagModule === "tasks") {
+    const [row] = await db
+      .select({ tags: reviewTasks.tags })
+      .from(reviewTasks)
+      .where(and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), eq(reviewTasks.id, recordId)));
     return normalizeTags(row?.tags);
   }
   const [row] = await db

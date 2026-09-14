@@ -7,13 +7,16 @@ function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-/** Pipeline is Deals. Keep old bookmarks alive. */
+/** Pipeline is Deals. Keep old bookmarks alive. Renewals book lands on /renewals. */
 export default async function PipelineRedirectPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
+  if (first(params.book) === "renewals" || first(params.mode) === "renewals") {
+    redirect("/renewals");
+  }
   // Pass view only when present so cookie default still applies on bare /pipeline.
   redirect(
     dealsHref({

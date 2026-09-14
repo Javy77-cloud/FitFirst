@@ -9,6 +9,8 @@ import {
   parsePipelineView,
   pipelineFunnelRows,
   dealsHref,
+  renewalsHref,
+  parseRenewalsView,
   pipelineHref,
   pipelinePageTitle,
   pipelineTabLabel,
@@ -211,5 +213,24 @@ describe("pipeline views", () => {
       { slug: "quote_sent", count: 2 },
       { slug: "closed_won", count: 0 },
     ]);
+  });
+});
+
+describe("renewals href / default view", () => {
+  it("mirrors dealsHref on /renewals and defaults to board", () => {
+    expect(parseRenewalsView(undefined)).toBe("board");
+    expect(parseRenewalsView("kanban")).toBe("board");
+    expect(parseRenewalsView("list")).toBe("list");
+    expect(parseRenewalsView("table")).toBe("list");
+    expect(parseRenewalsView("grid")).toBe("grid");
+    expect(parseRenewalsView("funnel")).toBe("funnel");
+    expect(renewalsHref({})).toBe("/renewals");
+    expect(renewalsHref({ view: "board" })).toBe("/renewals?view=board");
+    expect(renewalsHref({ pipeline: "p-c", view: "list", pcSub: "home" })).toBe(
+      "/renewals?pipeline=p-c&view=list&pcSub=home",
+    );
+    expect(renewalsHref({ pipeline: "won-lost", view: "funnel" })).toBe(
+      "/renewals?pipeline=won-lost&view=funnel",
+    );
   });
 });

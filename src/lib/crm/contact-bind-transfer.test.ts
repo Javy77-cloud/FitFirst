@@ -48,6 +48,15 @@ describe("hasCoApplicantIdentity", () => {
     expect(hasCoApplicantIdentity({})).toBe(false);
     expect(hasCoApplicantIdentity({ co_applicant_first_name: "A" })).toBe(true);
   });
+
+  it("respects explicit Off switch", () => {
+    expect(
+      hasCoApplicantIdentity({
+        has_co_applicant: "false",
+        co_applicant_first_name: "A",
+      }),
+    ).toBe(false);
+  });
 });
 
 describe("contactSystemPatchFromValues", () => {

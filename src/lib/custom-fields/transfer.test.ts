@@ -24,21 +24,25 @@ const elena = {
   insuranceTypeDesired: "HO",
 };
 
-describe("selective lead → deal carry", () => {
-  it("ships a convert screen with checkboxes for each lead field", () => {
+describe("lead → deal convert carry", () => {
+  it("skips the carry-fields picker and converts every transferable field", () => {
     const page = source("src/app/leads/[id]/convert/page.tsx");
-    expect(page).toMatch(/data-ff-lead-carry/);
-    expect(page).toMatch(/carryField/);
-    expect(page).toMatch(/LEAD_CARRY_FIELDS/);
-    expect(page).toMatch(/createDealFromLead/);
-    expect(page).toMatch(/every lead field copies onto the deal automatically/);
+    expect(page).toMatch(/convertLeadToDeal/);
+    expect(page).toMatch(/tab=details/);
+    expect(page).not.toMatch(/data-ff-lead-carry/);
+    expect(page).not.toMatch(/carryField/);
+    expect(page).not.toMatch(/Carry fields to the deal/);
+    expect(page).not.toMatch(/LEAD_CARRY_FIELDS/);
+    expect(source("src/components/leads/start-shop-form.tsx")).toMatch(/createDealFromLead/);
+    expect(source("src/components/leads/start-shop-form.tsx")).not.toMatch(/\/leads\/\$\{leadId\}\/convert/);
+    expect(source("src/app/actions/crm.ts")).toMatch(/persistDealWorkTab\(deal\.id, "details"\)/);
+    expect(source("src/app/actions/crm.ts")).toMatch(/redirect\(`\/deals\/\$\{dealId\}\?tab=details`\)/);
     expect(LEAD_CARRY_FIELDS.map((field) => field.key)).toEqual(
       expect.arrayContaining(["firstName", "email", "phone", "mailingAddress", "notes"]),
     );
-    expect(source("src/components/leads/lead-detail-workspace.tsx")).toMatch(/\/leads\/\$\{leadId\}\/convert/);
   });
 
-  it("copies only the fields the agent checked", () => {
+  it("still can blank unselected fields for older selective callers", () => {
     const filtered = filterLeadForCarry(elena, ["firstName", "email"]);
     expect(filtered.firstName).toBe("Elena");
     expect(filtered.email).toBe("elena.ruiz@example.com");
@@ -50,10 +54,10 @@ describe("selective lead → deal carry", () => {
     expect(copy.risk.city).toBe("Melbourne");
     expect(copy.sheetValues.named_insured?.value ?? "").toBe("");
     expect(copy.primaryNamedInsured).toBeNull();
-    expect(copy.title).toBe("Elena Ruiz / Home");
+    expect(copy.title).toBe("Elena Ruiz / Homeowners");
   });
 
-  it("treats a missing carry list as all-fields (legacy convert)", () => {
+  it("treats a missing carry list as all-fields (convert default)", () => {
     const copy = convertFieldCopy(elena, "HO", "FL");
     expect(copy.primaryNamedInsured).toBe("Elena M Ruiz");
     expect(copy.risk.address1).toBe("412 Harbor Isle Dr");

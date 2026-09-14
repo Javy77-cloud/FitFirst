@@ -33,7 +33,7 @@ export function LeadFormFields({
   /** Detail page uses line cards as the only lines-of-interest control. */
   hideLineSelect?: boolean;
 }) {
-  const language = lead?.preferredLanguage ?? "en";
+  const language = lead?.preferredLanguage ?? "";
   const knownLanguage = LEAD_LANGUAGES.some((lang) => lang.value === language);
 
   return (
@@ -157,6 +157,7 @@ export function LeadFormFields({
             defaultValue={language}
             className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
           >
+            <option value="">None</option>
             {LEAD_LANGUAGES.map((lang) => (
               <option key={lang.value} value={lang.value}>
                 {lang.label}

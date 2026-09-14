@@ -207,7 +207,7 @@ export function PolicyCommissionBlock({
               disabled={readOnly}
               onChange={(e) => setLine({ insuranceType: e.target.value })}
             >
-              <option value="">Select…</option>
+              <option value="">None</option>
               {INSURANCE_TYPES.map((value) => (
                 <option key={value} value={value}>
                   {value}
@@ -223,7 +223,7 @@ export function PolicyCommissionBlock({
               disabled={readOnly}
               onChange={(e) => setLine({ policyType: e.target.value })}
             >
-              <option value="">Select…</option>
+              <option value="">None</option>
               {typeOptions.map((value) => (
                 <option key={value} value={value}>
                   {value}
@@ -239,7 +239,7 @@ export function PolicyCommissionBlock({
               disabled={readOnly}
               onChange={(e) => setLine({ policySubType: e.target.value })}
             >
-              <option value="">Select…</option>
+              <option value="">None</option>
               {subOptions.map((value) => (
                 <option key={value} value={value}>
                   {value}
@@ -294,7 +294,7 @@ export function PolicyCommissionBlock({
                 setForm((prev) => ({ ...prev, premiumFrequency: e.target.value }));
               }}
             >
-              <option value="">Select…</option>
+              <option value="">None</option>
               {PREMIUM_FREQUENCIES.map((value) => (
                 <option key={value} value={value}>
                   {value}
@@ -347,7 +347,7 @@ export function PolicyCommissionBlock({
               disabled={readOnly}
               onChange={(e) => setForm((prev) => ({ ...prev, paymentStatus: e.target.value }))}
             >
-              <option value="">Select…</option>
+              <option value="">None</option>
               {PAYMENT_STATUSES.map((value) => (
                 <option key={value} value={value}>
                   {value}

@@ -5,13 +5,16 @@ import { Star } from "lucide-react";
 import { saveDefaultPipelineViewAction } from "@/app/actions/pipeline-view-prefs";
 import { cn } from "@/lib/utils";
 import type { PipelineViewId } from "@/lib/wire/pipeline";
+import { PIPELINE_VIEW_COOKIE, type PipelineViewCookie } from "@/lib/wire/pipeline-view-cookies";
 
 export function PipelineViewDefaultStar({
   currentView,
   defaultView,
+  cookieKey = PIPELINE_VIEW_COOKIE,
 }: {
   currentView: PipelineViewId;
   defaultView: PipelineViewId | null;
+  cookieKey?: PipelineViewCookie;
 }) {
   const [pending, startTransition] = useTransition();
   const isDefault = defaultView === currentView;
@@ -20,6 +23,7 @@ export function PipelineViewDefaultStar({
   function onClick() {
     const data = new FormData();
     data.set("view", isDefault ? "" : currentView);
+    data.set("cookie", cookieKey);
     startTransition(async () => {
       await saveDefaultPipelineViewAction(data);
     });

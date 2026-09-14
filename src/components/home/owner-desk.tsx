@@ -12,7 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { markAlertRead } from "@/app/actions/alerts";
-import { formatMoney } from "@/lib/domain";
+import { formatDay, formatMoney } from "@/lib/domain";
 import type { OwnerHomeSnapshot } from "@/lib/home/aggregate";
 import type { HitLostReport } from "@/lib/reporting/hit-lost";
 import { HitLostCards } from "./hit-lost-cards";
@@ -630,7 +630,7 @@ export function OwnerDesk({
                                   <div className="min-w-0">
                                     <div className="text-sm font-medium text-navy">{item.title}</div>
                                     <div className="text-[12px] text-muted-foreground">
-                                      {item.detail} · due {item.dueAt.toISOString().slice(0, 10)} · {item.priority} ·{" "}
+                                      {item.detail} · due {formatDay(item.dueAt)} · {item.priority} ·{" "}
                                       {item.status}
                                     </div>
                                   </div>

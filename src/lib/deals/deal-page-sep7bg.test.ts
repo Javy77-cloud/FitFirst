@@ -26,7 +26,7 @@ describe("sep7bg deal page four fixes", () => {
     expect(html).toMatch(/Add carrier manually/);
     expect(html).toMatch(/data-ff-load-home-shop-list/);
     expect(html).not.toMatch(/In appetite/);
-    expect(html).not.toMatch(/Approve & request quotes/);
+    expect(html).not.toMatch(/Request Quotes/);
 
     const evaluate = source("src/lib/appetite/evaluate-deal.ts");
     expect(evaluate).toMatch(/hasMarketLookupInput/);

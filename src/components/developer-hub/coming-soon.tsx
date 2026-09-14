@@ -19,8 +19,8 @@ export function DeveloperComingSoon({
           → Developer Hub can link here without pretending the editor exists on this branch.
         </p>
         <p className="text-sm">
-          <Link href="/settings/developer" className="text-primary hover:underline">
-            Back to Developer Hub
+          <Link href="/settings/developer" className="font-medium text-[#002868] hover:underline">
+            Developer Hub
           </Link>
         </p>
       </div>

@@ -1,4 +1,5 @@
 import { isProtectedAnaRecord } from "@/lib/developer-hub/protected";
+import { importEntityForCrmList } from "@/lib/lists/list-bulk";
 import { DEV_HUB_MODULES, type DevHubModule } from "@/lib/developer-hub/types";
 
 export const CRM_LIST_MODULES = [
@@ -32,12 +33,15 @@ export type SelectionActionId =
   | "convert"
   | "bind"
   | "attach_document"
+  | "assign"
   | "duplicate"
+  | "create_new_deal"
   | "merge"
   | "email"
   | "sms"
   | "call"
   | "print"
+  | "export_csv"
   | "run_macro"
   | "archive"
   | "delete";
@@ -59,6 +63,8 @@ const DUPLICATE_OK: CrmListModule[] = [
   "tasks",
   "campaigns",
 ];
+/** Keep in sync with MASS_ASSIGN_OWNER_MODULES in list-bulk.ts */
+const ASSIGN_OK: CrmListModule[] = ["leads", "contacts", "deals", "policies"];
 const MERGE_OK: CrmListModule[] = ["leads", "contacts"];
 const ARCHIVE_OK: CrmListModule[] = ["leads", "contacts", "deals"];
 const DELETE_OK: CrmListModule[] = ["leads", "tasks"];
@@ -100,8 +106,9 @@ export function listSelectionActions(input: {
   module: CrmListModule;
   selected: SelectionRecord[];
   hasMacros?: boolean;
+  filteredCount?: number;
 }): SelectionAction[] {
-  const { module, selected, hasMacros = false } = input;
+  const { module, selected, hasMacros = false, filteredCount = 0 } = input;
   const count = selected.length;
   const locked = lockedReason(selected);
   const emails = recordsWithEmail(selected);
@@ -158,6 +165,42 @@ export function listSelectionActions(input: {
     } else {
       actions.push(withReason("attach_document", "Attach document", true));
     }
+
+    if (count !== 1) {
+      actions.push(
+        withReason(
+          "create_new_deal",
+          "Create New Deal",
+          false,
+          "Pick one deal to copy details for the same contact.",
+        ),
+      );
+    } else if (locked) {
+      actions.push(withReason("create_new_deal", "Create New Deal", false, locked));
+    } else {
+      actions.push(withReason("create_new_deal", "Create New Deal", true));
+    }
+  }
+
+  // Bulk Assign owner/agent — leads, contacts, deals, policies (see list-bulk).
+  if (!ASSIGN_OK.includes(module)) {
+    const reason =
+      module === "carriers"
+        ? "Carriers stay on the shared appetite book — no owner to assign."
+        : module === "businesses"
+          ? "Assign owner is not wired for Businesses yet (no owner column)."
+          : module === "tasks"
+            ? "Tasks use assignee on the task row — not list Assign."
+            : "Assign owner is not on this list.";
+    actions.push(withReason("assign", "Assign", false, reason));
+  } else if (count === 0) {
+    actions.push(withReason("assign", "Assign", false, "Select rows to assign an owner."));
+  } else if (locked) {
+    actions.push(withReason("assign", "Assign", false, locked));
+  } else {
+    actions.push(
+      withReason("assign", count === 1 ? "Assign" : `Assign (${count})`, true),
+    );
   }
 
   if (count !== 1) {
@@ -214,6 +257,21 @@ export function listSelectionActions(input: {
       ? withReason("print", "Print", false, "Select rows first.")
       : withReason("print", "Print", true),
   );
+
+  if (importEntityForCrmList(module)) {
+    const exportEnabled = count > 0 || filteredCount > 0;
+    const exportLabel =
+      count > 0
+        ? `Export CSV (${count})`
+        : filteredCount > 0
+          ? `Export CSV (${filteredCount} filtered)`
+          : "Export CSV";
+    actions.push(
+      exportEnabled
+        ? withReason("export_csv", exportLabel, true)
+        : withReason("export_csv", exportLabel, false, "Select rows or apply a filter first."),
+    );
+  }
 
   if (!hasMacros) {
     actions.push(

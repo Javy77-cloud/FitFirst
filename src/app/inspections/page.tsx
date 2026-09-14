@@ -1,6 +1,7 @@
 import { createPolicyInspection } from "@/app/actions/ams";
 import { InspectionActions } from "@/components/ams/inspection-actions";
 import { AppShell } from "@/components/app-shell";
+import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { RecordLink } from "@/components/record-links";
 import { StatusBadge } from "@/components/status-badge";
@@ -14,6 +15,7 @@ import {
   inspectionNextStep,
   inspectionStatusLabel,
 } from "@/lib/domain-ams";
+import { suggestInspectionDateIso } from "@/lib/ams/inspection-suggest";
 import { listPolicyInspections } from "@/lib/ams/queries";
 import { ELENA_POLICY_ID } from "@/lib/fixtures/ids";
 
@@ -25,24 +27,40 @@ export default async function InspectionsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
+  const policyIdParam = typeof params.policy === "string" ? params.policy : undefined;
   const status = typeof params.status === "string" ? params.status : undefined;
-  const rows = await listPolicyInspections(undefined, status);
+  const rows = await listPolicyInspections(policyIdParam, status);
   const error = typeof params.error === "string" ? params.error : undefined;
   const notice = typeof params.notice === "string" ? params.notice : undefined;
+  const suggestPhoto = suggestInspectionDateIso({ kind: "photo", state: "FL" });
+  const policyId = policyIdParam || ELENA_POLICY_ID;
 
   return (
     <AppShell title="Inspections">
+      <DeskPageTrail
+        backLabel={policyIdParam ? "Back to policy" : "Back"}
+        fallbackHref={policyIdParam ? `/policies/${policyIdParam}` : "/policies"}
+        crumbs={[
+          { href: "/policies", label: "Policies" },
+          ...(policyIdParam
+            ? [{ href: `/policies/${policyIdParam}`, label: "Policy" }]
+            : []),
+          { label: "Inspections" },
+        ]}
+      />
       <p className="mb-4 text-base text-muted-foreground">{INSPECTION_DISCLAIMER}</p>
       <p className="mb-4 text-sm">
+        Status pipeline:{" "}
         <RecordLink href="/inspections">All</RecordLink>
         {" · "}
         <RecordLink href="/inspections?status=requested">Requested</RecordLink>
         {" · "}
         <RecordLink href="/inspections?status=scheduled">Scheduled</RecordLink>
         {" · "}
-        <RecordLink href="/service-timeline">Service timeline</RecordLink>
+        <RecordLink href="/inspections?status=completed">Completed</RecordLink>
         {" · "}
-        <RecordLink href="/installments">Installments</RecordLink>
+        <RecordLink href="/inspections?status=waived">Waived</RecordLink>
+
       </p>
       {error ? (
         <p className="mb-3 text-sm text-destructive" role="alert">
@@ -54,13 +72,19 @@ export default async function InspectionsPage({
       ) : null}
 
       <section className="ff-card mb-4 p-4">
-        <h2 className="text-base font-semibold text-navy">Request an inspection</h2>
+        <h2 className="text-base font-semibold text-navy">Schedule an inspection</h2>
         <p className="mt-1 mb-3 text-sm text-muted-foreground">
-          Default Policy is Elena HO3. Completing later does not file the endorsement.
+          Assign an inspector (vendor), auto-suggested next date by type/state (FL photo →{" "}
+          {suggestPhoto}). Completing does not file an endorsement. Result + photos land on the
+          policy documents when uploaded.
         </p>
-        <form action={createPolicyInspection} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <input type="hidden" name="policyId" value={ELENA_POLICY_ID} />
-          <input type="hidden" name="returnTo" value="/inspections" />
+        <form action={createPolicyInspection} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <input type="hidden" name="policyId" value={policyId} />
+          <input
+            type="hidden"
+            name="returnTo"
+            value={policyIdParam ? `/policies/${policyIdParam}` : "/inspections"}
+          />
           <select
             name="kind"
             className="h-9 rounded-md border border-input bg-card px-2 text-sm"
@@ -74,12 +98,22 @@ export default async function InspectionsPage({
           </select>
           <input
             name="vendor"
-            placeholder="Vendor"
+            placeholder="Inspector / vendor assign"
             className="h-9 rounded-md border border-input bg-card px-2 text-sm"
           />
-          <input name="scheduledOn" type="date" className="h-9 rounded-md border border-input bg-card px-2 text-sm" />
+          <input
+            name="scheduledOn"
+            type="date"
+            defaultValue={suggestPhoto}
+            className="h-9 rounded-md border border-input bg-card px-2 text-sm"
+          />
+          <input
+            name="notes"
+            placeholder="Notes / result (optional)"
+            className="h-9 rounded-md border border-input bg-card px-2 text-sm sm:col-span-2"
+          />
           <Button type="submit" size="sm">
-            Request
+            Schedule / request
           </Button>
         </form>
       </section>
@@ -88,24 +122,35 @@ export default async function InspectionsPage({
         <DeskColumnTable
           moduleId="inspections"
           columns={INSPECTIONS_LIST_COLUMNS}
-          empty="No inspections in this view. Elena roof is scheduled; Hale wind mit is requested."
+          empty="No inspections in this view."
           rows={rows.map(({ inspection, policy, contact, account }) => ({
             key: inspection.id,
             cells: {
               policy: (
                 <>
                   <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
-                  {inspection.notes ? (
-                    <div className="text-sm text-muted-foreground">{inspection.notes}</div>
+                  {inspection.notes || inspection.result ? (
+                    <div className="text-sm text-muted-foreground">
+                      {[inspection.result, inspection.notes].filter(Boolean).join(" · ")}
+                    </div>
                   ) : null}
+                  <div className="mt-1 text-xs">
+                    <RecordLink href={`/policies/${policy.id}`}>Open policy</RecordLink>
+                  </div>
                 </>
               ),
               kind: inspectionKindLabel(inspection.kind),
-              status: <StatusBadge status={inspection.status}>{inspectionStatusLabel(inspection.status)}</StatusBadge>,
+              status: (
+                <StatusBadge status={inspection.status}>
+                  {inspectionStatusLabel(inspection.status)}
+                </StatusBadge>
+              ),
               next: inspectionNextStep(inspection.status),
               party: contact ? `${contact.lastName}, ${contact.firstName}` : account?.name ?? "—",
               when: inspection.scheduledOn ? formatDay(inspection.scheduledOn) : "—",
-              actions: <InspectionActions inspectionId={inspection.id} status={inspection.status} />,
+              actions: (
+                <InspectionActions inspectionId={inspection.id} status={inspection.status} />
+              ),
             },
           }))}
         />

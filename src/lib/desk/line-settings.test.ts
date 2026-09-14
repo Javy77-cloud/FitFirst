@@ -54,7 +54,7 @@ describe("LOB hide toggles", () => {
     ]);
     expect(
       visiblePipelineBoards(
-        [{ slug: "p-c" }, { slug: "life" }, { slug: "health" }, { slug: "won-lost" }],
+        [{ slug: "p-c" }, { slug: "life" }, { slug: "health" }, { slug: "won-lost" }, { slug: "renewals" }],
         hiddenBoth,
       ).map((row) => row.slug),
     ).toEqual(["p-c", "won-lost"]);

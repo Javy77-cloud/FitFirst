@@ -35,7 +35,7 @@ describe("management lead offers", () => {
     expect(canTakeOwnership("open", "referral")).toBe(false);
     expect(parseLeadOfferKind("inbound_email")).toBe("inbound_email");
     expect(claimRelationLabel("know_client")).toBe("I know this client");
-    expect(claimRelationLabel("new_lead")).toBe("New lead");
+    expect(claimRelationLabel("new_lead")).toBe("New Lead");
   });
 
   it("parses inbound From into a lead identity", () => {

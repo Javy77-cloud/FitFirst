@@ -66,6 +66,7 @@ import {
   type ServicingFile,
   type ServicingTask,
 } from "./checklist";
+import { ensureCurrentPolicyTerm } from "./ensure-term";
 import { packetTaskTitle, packetTasksByKey, type PacketTask } from "./packet-tasks";
 import {
   bucketRenewalRows,
@@ -285,6 +286,7 @@ export async function loadPolicyServicing(policyId: string) {
     .from(policies)
     .where(and(eq(policies.tenantId, tenant()), eq(policies.id, policyId)));
   if (!policy) return null;
+  await ensureCurrentPolicyTerm(policyId);
   await ensureServicingSuspense(policyId);
   const [
     files,
@@ -374,6 +376,7 @@ export async function loadPolicyServicing(policyId: string) {
       expirationDate: policy.expirationDate,
       nextTask,
       checks,
+      lineOfBusiness: policy.lineOfBusiness,
     }),
   };
 }
@@ -520,7 +523,7 @@ export async function loadBookHealth(ownerId?: string) {
           .where(
             and(
               eq(renewalQueue.tenantId, tenant()),
-              inArray(renewalQueue.stage, ["upcoming", "quoting", "offered"]),
+              inArray(renewalQueue.stage, ["upcoming", "contacted", "quoted"]),
             ),
           )
       )[0]?.n ?? 0,

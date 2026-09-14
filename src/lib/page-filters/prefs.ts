@@ -1,3 +1,4 @@
+import type { FilterField } from "@/lib/saved-filters";
 import { titleCaseLabel } from "@/lib/ui/title-case";
 import { defaultPageFilters } from "./defaults";
 import { pageFilterFields } from "./fields";
@@ -88,8 +89,8 @@ export function resolvePageFilters(module: PageFilterModule, stored: unknown): P
   return next;
 }
 
-export function enabledPageFilters(filters: PageFilter[]): PageFilter[] {
-  return filters.filter((row) => row.enabled);
+export function enabledPageFilters(filters: PageFilter[] | null | undefined): PageFilter[] {
+  return (filters ?? []).filter((row) => row.enabled);
 }
 
 export function pageFilterParamKeys(filters: PageFilter[]): string[] {
@@ -100,11 +101,12 @@ export function mergeLiveOptions(
   filters: PageFilter[],
   live: Record<string, Array<string | null | undefined>>,
 ): PageFilter[] {
-  return filters.map((filter) => {
+  return (filters ?? []).map((filter) => {
     const extras = live[filter.fieldKey];
-    if (!extras?.length) return filter;
-    const seen = new Set(filter.options.map((option) => option.value.toLowerCase()));
-    const options = [...filter.options];
+    const baseOptions = filter.options ?? [];
+    if (!extras?.length) return { ...filter, options: baseOptions };
+    const seen = new Set(baseOptions.map((option) => option.value.toLowerCase()));
+    const options = [...baseOptions];
     for (const raw of extras) {
       const value = raw?.trim();
       if (!value || seen.has(value.toLowerCase())) continue;
@@ -133,4 +135,52 @@ export function seedPageFilter(module: PageFilterModule, fieldKey: string): Page
     enabled: true,
     options: [],
   };
+}
+
+/** Enabled agency prefs → PipelineFilterPopover FilterField[]. */
+export function filterFieldsFromPageFilters(filters: PageFilter[] | null | undefined): FilterField[] {
+  return enabledPageFilters(filters).map((row) => ({
+    key: row.fieldKey,
+    label: row.label,
+    options: (row.options ?? []).map((option) => ({ value: option.value, label: option.label })),
+  }));
+}
+
+/**
+ * Toggle / reorder live pipeline FilterField[] from agency page-filter prefs.
+ * Empty stored list = cleared (no fields). Live options win when present.
+ */
+export function applyPageFilterPrefsToFields(
+  fields: FilterField[] | null | undefined,
+  prefs: PageFilter[] | null | undefined,
+): FilterField[] {
+  const prefList = prefs ?? [];
+  if (prefList.length === 0) return [];
+  const enabled = enabledPageFilters(prefList);
+  const byKey = new Map((fields ?? []).map((field) => [field.key, field]));
+  const out: FilterField[] = [];
+  for (const pref of enabled) {
+    const live = byKey.get(pref.fieldKey);
+    const prefOptions = (pref.options ?? []).map((option) => ({
+      value: option.value,
+      label: option.label,
+    }));
+    if (live) {
+      const liveOptions = live.options ?? [];
+      out.push({
+        key: live.key,
+        label: pref.label || live.label,
+        options: liveOptions.length > 0 ? liveOptions : prefOptions,
+      });
+      continue;
+    }
+    if (prefOptions.length) {
+      out.push({
+        key: pref.fieldKey,
+        label: pref.label,
+        options: prefOptions,
+      });
+    }
+  }
+  return out;
 }

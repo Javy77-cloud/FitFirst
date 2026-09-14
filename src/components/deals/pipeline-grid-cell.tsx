@@ -152,7 +152,7 @@ export function PipelineGridCell({
           persist(next);
         }}
       >
-        <option value="">Select</option>
+        <option value="">None</option>
         {options.map((option) => (
           <option key={`${columnId}:${option.value}`} value={option.value}>
             {option.label}

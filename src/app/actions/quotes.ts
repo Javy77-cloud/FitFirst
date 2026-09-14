@@ -38,6 +38,7 @@ import {
   excludedCarrierIdsFromLogs,
   manualCarrierIdsFromLogs,
 } from "@/lib/deals/manual-markets";
+import { persistDealWorkTab } from "@/lib/deals/work-tab";
 import { flashAction } from "@/lib/flash-action";
 
 export async function shopInAppetiteAction(formData: FormData) {
@@ -55,6 +56,7 @@ export async function requestAppetiteQuotesAction(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "");
   const selectedIds = selectedCarrierIdsFromForm(formData);
   await shopDealQuotes(dealId, "appetite", selectedIds.length ? selectedIds : undefined);
+  await persistDealWorkTab(dealId, "quotes").catch(() => null);
   flashAction(`/deals/${dealId}?tab=quotes`, "quotes-requested");
 }
 
@@ -62,6 +64,8 @@ export async function requestStretchQuotesAction(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "");
   const selectedIds = selectedCarrierIdsFromForm(formData);
   await shopDealQuotes(dealId, "stretch", selectedIds.length ? selectedIds : undefined);
+  await persistDealWorkTab(dealId, "quotes").catch(() => null);
+  flashAction(`/deals/${dealId}?tab=quotes`, "quotes-requested");
 }
 
 export async function shopInAppetite(dealId: string) {

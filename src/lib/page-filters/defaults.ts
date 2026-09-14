@@ -123,11 +123,63 @@ const CARRIERS_DEFAULTS: PageFilter[] = [
   ]),
 ];
 
+
+const DEALS_PIPELINE_DEFAULTS: PageFilter[] = [
+  filter("deals-pipeline-stage", "Stage", "stage", []),
+  filter("deals-pipeline-line", "Line", "line", []),
+  filter("deals-pipeline-subType", "Subtype", "subType", []),
+  filter("deals-pipeline-source", "Source", "source", []),
+  filter("deals-pipeline-assigned", "Assigned", "assigned", []),
+  filter("deals-pipeline-tags", "Tags", "tags", []),
+  filter("deals-pipeline-carrier", "Carrier", "carrier", []),
+];
+
+const RENEWALS_PIPELINE_DEFAULTS: PageFilter[] = [
+  filter("renewals-pipeline-stage", "Stage", "stage", []),
+  filter("renewals-pipeline-line", "Line", "line", []),
+  filter("renewals-pipeline-carrier", "Carrier", "carrier", []),
+  filter("renewals-pipeline-subType", "Policy Subtype", "subType", []),
+  filter("renewals-pipeline-daysBand", "Days Band", "daysBand", [
+    option("overdue", "Overdue"),
+    option("0-30", "0–30 Days"),
+    option("31-60", "31–60 Days"),
+    option("61-90", "61–90 Days"),
+    option("91-180", "91–180 Days"),
+  ]),
+];
+
+
+const TASKS_DEFAULTS: PageFilter[] = [
+  filter("tasks-status", "Status", "status", [
+    option("open", "Open"),
+    option("done", "Done"),
+    option("completed", "Completed"),
+  ]),
+  filter("tasks-kind", "Task Type", "kind", []),
+  filter("tasks-due", "Due", "due", [
+    option("overdue", "Overdue", "#BF0A30"),
+    option("today", "Today", "#EAB308"),
+    option("this_week", "This Week", "#F97316"),
+    option("later", "Later", "#64748B"),
+  ]),
+  filter("tasks-assignee", "Assignee", "assignee", []),
+  filter("tasks-priority", "Priority", "priority", [
+    option("none", "None"),
+    option("low", "Low"),
+    option("normal", "Normal"),
+    option("high", "High"),
+  ]),
+  filter("tasks-tags", "Tags", "tags", []),
+];
+
 const DEFAULTS: Record<PageFilterModule, PageFilter[]> = {
   contacts: CONTACTS_DEFAULTS,
   businesses: BUSINESSES_DEFAULTS,
   policies: POLICIES_DEFAULTS,
   carriers: CARRIERS_DEFAULTS,
+  "deals-pipeline": DEALS_PIPELINE_DEFAULTS,
+  "renewals-pipeline": RENEWALS_PIPELINE_DEFAULTS,
+  tasks: TASKS_DEFAULTS,
 };
 
 export function defaultPageFilters(module: PageFilterModule): PageFilter[] {

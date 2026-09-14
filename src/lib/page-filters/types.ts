@@ -1,4 +1,12 @@
-export const PAGE_FILTER_MODULES = ["contacts", "businesses", "policies", "carriers"] as const;
+export const PAGE_FILTER_MODULES = [
+  "contacts",
+  "businesses",
+  "policies",
+  "carriers",
+  "deals-pipeline",
+  "renewals-pipeline",
+  "tasks",
+] as const;
 
 export type PageFilterModule = (typeof PAGE_FILTER_MODULES)[number];
 

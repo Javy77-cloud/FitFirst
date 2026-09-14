@@ -9,11 +9,14 @@ import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { accountsListColumnsFromLayout } from "@/lib/list-columns";
 import { listFieldDefs, loadLayoutForModule, loadRecordValuesForIds } from "@/lib/custom-fields/store";
 import { mergeRecordSystemValues } from "@/lib/custom-fields/resolve-layout";
-import { PageFiltersBar } from "@/components/filters/page-filters-bar";
+import { PipelineFilterPopover } from "@/components/filters/pipeline-filter-popover";
 import { formatDay } from "@/lib/domain";
 import { firstParam, pickFilterParams } from "@/lib/saved-filters";
 import {
   enabledPageFilters,
+  filterFieldsFromPageFilters,
+  PAGE_FILTER_SEARCH_CLASS,
+  PAGE_FILTER_SEARCH_INPUT_CLASS,
   mergeLiveOptions,
   matchesPageFilters,
   pageFilterParamKeys,
@@ -98,11 +101,14 @@ export default async function AccountsPage({
         Commercial bind creates a Business (Account). Personal HO stays on a Contact. The same
         person can be linked here without moving their personal policies. New Business uses a popup.
       </p>
-      <PageFiltersBar
+      <PipelineFilterPopover
         moduleId="businesses"
-        filters={visibleFilters}
+        fields={filterFieldsFromPageFilters(visibleFilters)}
         searchPlaceholder="Contains Name, EIN, Or Phone…"
+        preserveParams={[]}
         canConfigure={session.isAdmin}
+        searchClassName={PAGE_FILTER_SEARCH_CLASS}
+        searchInputClassName={PAGE_FILTER_SEARCH_INPUT_CLASS}
       />
       <section className="ff-card overflow-hidden" data-ff-businesses-list="">
         <div

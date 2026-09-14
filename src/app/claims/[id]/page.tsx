@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { ClaimRecord } from "@/components/claims/claim-record";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
@@ -42,8 +43,19 @@ export default async function ClaimDetailPage({ params }: { params: Promise<{ id
     },
   );
 
+  const policyId = workspace.policy?.id ?? workspace.claim.policyId ?? null;
+
   return (
     <AppShell title="Claim" eyebrow="Claims log">
+      <DeskPageTrail
+        backLabel={policyId ? "Back to policy" : "Back"}
+        fallbackHref={policyId ? `/policies/${policyId}` : "/claims"}
+        crumbs={[
+          { href: "/claims", label: "Claims log" },
+          ...(policyId ? [{ href: `/policies/${policyId}`, label: "Policy" }] : []),
+          { label: "Claim" },
+        ]}
+      />
       <RecordDetailLayout
         main={<ClaimRecord workspace={workspace} postedBy={session.name || "Javy"} />}
         rail={<RecordContextRail context={context} />}

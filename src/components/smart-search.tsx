@@ -90,9 +90,13 @@ export function SmartSearch({ defaultQuery = "" }: { defaultQuery?: string }) {
   const showPanel = open && Boolean(trimmed);
 
   return (
-    <div ref={rootRef} className="relative w-full max-w-xl">
-      <form action="/search" method="get" onSubmit={onSubmit} className="flex items-center gap-1">
+    <div ref={rootRef} className="relative w-full max-w-xl" data-ff-smart-search="">
+      <form action="/search" method="get" onSubmit={onSubmit} className="flex items-center gap-2">
+        <label htmlFor={listId + "-input"} className="shrink-0 text-sm font-medium text-gray-400">
+          Search
+        </label>
         <input
+          id={listId + "-input"}
           type="search"
           name="q"
           value={query}
@@ -118,7 +122,7 @@ export function SmartSearch({ defaultQuery = "" }: { defaultQuery?: string }) {
               setActive((index) => (index - 1 + hits.length) % hits.length);
             }
           }}
-          placeholder="Search contacts, leads, deals, businesses, policies, carriers"
+          placeholder="Contacts, leads, deals, businesses, policies, carriers…"
           autoComplete="off"
           role="combobox"
           aria-expanded={showPanel}

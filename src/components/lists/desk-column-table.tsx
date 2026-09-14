@@ -1,5 +1,7 @@
+import "server-only";
+
 import { loadListColumnLayout } from "@/lib/desk/column-prefs";
-import { mergeColumnWidths, mergeVisibleColumns, type ListColumn } from "@/lib/list-columns";
+import { mergeColumnWidths, sanitizeStoredColumnIds, type ListColumn } from "@/lib/list-columns";
 import { ColumnTable, type ColumnRow } from "@/components/lists/column-table";
 import type { ReactNode } from "react";
 
@@ -11,6 +13,7 @@ export async function DeskColumnTable({
   rows,
   empty,
   defaultSort,
+  showListChrome = true,
 }: {
   moduleId: string;
   searchModuleId?: string;
@@ -19,9 +22,12 @@ export async function DeskColumnTable({
   rows: ColumnRow[];
   empty?: ReactNode;
   defaultSort?: { key: string; dir: "asc" | "desc" } | null;
+  showListChrome?: boolean;
 }) {
   const stored = await loadListColumnLayout(moduleId);
-  const initialVisible = stored?.columns ? mergeVisibleColumns(columns, stored.columns) : undefined;
+  // Pass RAW saved ids (including unknowns). Pre-merging here used to drop custom
+  // picklist keys, collapse deals to the locked shell, then persist wiped defaults.
+  const initialVisible = sanitizeStoredColumnIds(stored?.columns) ?? undefined;
   const initialWidths = stored ? mergeColumnWidths(columns, stored.widths) : undefined;
   return (
     <ColumnTable
@@ -34,6 +40,7 @@ export async function DeskColumnTable({
       initialVisible={initialVisible}
       initialWidths={initialWidths}
       initialSort={stored?.sort ?? defaultSort ?? null}
+      showListChrome={showListChrome}
     />
   );
 }

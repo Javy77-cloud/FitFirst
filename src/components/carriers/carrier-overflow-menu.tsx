@@ -182,7 +182,7 @@ export function CarrierOverflowMenu({
           <DialogHeader>
             <DialogTitle>Merge carrier</DialogTitle>
             <DialogDescription>
-              Honest stub: inactivates the duplicate. Policy FK rewrite is not automated yet.
+              Merges the selected carrier into this one — policies, quotes, and portal login move over. The duplicate is retired.
             </DialogDescription>
           </DialogHeader>
           <Input

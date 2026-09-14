@@ -16,7 +16,8 @@ export async function saveNavLayoutAction(
   if (!session.signedIn || !session.userId) {
     return { ok: false, error: "Sign in to save your menu." };
   }
-  const saved = await upsertStoredNavLayout(session.userId, normalizeNavLayout(layout));
+  const opts = { isAdmin: session.isAdmin };
+  const saved = await upsertStoredNavLayout(session.userId, normalizeNavLayout(layout, opts), opts);
   refreshNav();
   return { ok: true, layout: saved };
 }
@@ -28,9 +29,10 @@ export async function resetNavLayoutAction(): Promise<
   if (!session.signedIn || !session.userId) {
     return { ok: false, error: "Sign in to reset your menu." };
   }
-  await upsertStoredNavLayout(session.userId, null);
+  const opts = { isAdmin: session.isAdmin };
+  await upsertStoredNavLayout(session.userId, null, opts);
   refreshNav();
-  return { ok: true, layout: defaultStoredNavLayout() };
+  return { ok: true, layout: defaultStoredNavLayout(opts) };
 }
 
 export async function savePersonalPrefsAction(formData: FormData) {
@@ -38,19 +40,22 @@ export async function savePersonalPrefsAction(formData: FormData) {
   if (!session.signedIn || !session.userId) {
     return;
   }
-  const current = await (await import("@/lib/db/nav-prefs")).getStoredNavLayout(session.userId);
+  const opts = { isAdmin: session.isAdmin };
+  const current = await (await import("@/lib/db/nav-prefs")).getStoredNavLayout(session.userId, opts);
   const timezone = String(formData.get("timezone") ?? "").trim();
   const emailSignature = String(formData.get("emailSignature") ?? "");
   const notifyInApp = formData.get("notifyInApp") === "true" || formData.get("notifyInApp") === "on";
+  const dateFormat = String(formData.get("dateFormat") ?? "").trim();
   const next = {
     ...current,
     personal: {
       timezone: timezone || undefined,
       emailSignature,
       notifyInApp,
+      dateFormat: dateFormat || undefined,
     },
   };
-  await upsertStoredNavLayout(session.userId, next);
+  await upsertStoredNavLayout(session.userId, next, opts);
   refreshNav();
   const { flashAction } = await import("@/lib/flash-action");
   flashAction("/me", "settings-saved");

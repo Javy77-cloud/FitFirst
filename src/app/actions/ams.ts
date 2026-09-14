@@ -31,6 +31,7 @@ import {
 import { getAccountWorkspace } from "@/lib/db/queries";
 import { filePolicyChange } from "@/lib/policy/service";
 import { parseIsoDate } from "@/lib/policy/workflow";
+import { resolvePolicyProducerName } from "@/lib/activity/producer";
 import {
   applyServiceRequestAction,
   serviceKindLabel,
@@ -109,6 +110,7 @@ import {
   isInspectionStatus,
   isInstallmentStatus,
   isRenewalQueueStage,
+  normalizeRenewalQueueStage,
 } from "@/lib/domain-ams";
 import type { PolicyChangeKind } from "@/lib/policy/status";
 import type { CarrierDownloadProvider } from "@/lib/domain-ams";
@@ -131,10 +133,11 @@ function asAction(value: string): ServiceRequestAction | null {
 }
 
 function bounce(path: string, error?: string, notice?: string): never {
-  const params = new URLSearchParams();
-  if (error) params.set("error", error);
-  if (notice) params.set("notice", notice);
-  redirect(params.size ? `${path}?${params.toString()}` : path);
+  const url = new URL(path, "http://ff.local");
+  if (error) url.searchParams.set("error", error);
+  if (notice) url.searchParams.set("notice", notice);
+  const qs = url.searchParams.toString();
+  redirect(qs ? `${url.pathname}?${qs}` : url.pathname);
 }
 
 async function actorName() {
@@ -187,6 +190,7 @@ async function writeServicingLog(input: {
   accountId?: string | null;
   dealId?: string | null;
 }) {
+  const producerName = await resolvePolicyProducerName(input.policyId);
   const [activity] = await db
     .insert(activities)
     .values({
@@ -211,6 +215,7 @@ async function writeServicingLog(input: {
     accountId: input.accountId ?? null,
     policyId: input.policyId ?? null,
     dealId: input.dealId ?? null,
+    producerName,
   });
 }
 
@@ -814,6 +819,23 @@ export async function toggleServicingCheck(formData: FormData) {
   bounce(`/policies/${policyId}`, undefined, nextStatus === "complete" ? "check_complete" : "check_open");
 }
 
+function parseNotifyAt(formData: FormData): Date {
+  const raw = str(formData, "notifyAt");
+  if (raw) {
+    const fromIso = parseIsoDate(raw);
+    if (fromIso) return fromIso;
+    const d = new Date(raw);
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+  const mins = Number(str(formData, "notifyInMinutes"));
+  if (Number.isFinite(mins) && mins > 0) {
+    return new Date(Date.now() + mins * 60 * 1000);
+  }
+  const due = new Date();
+  due.setDate(due.getDate() + 1);
+  return due;
+}
+
 export async function createServicingTask(formData: FormData) {
   const policyId = str(formData, "policyId");
   const itemKey = str(formData, "itemKey");
@@ -836,6 +858,8 @@ export async function createServicingTask(formData: FormData) {
     );
   if (existing?.taskId) bounce(`/policies/${policyId}`, undefined, "task_exists");
 
+  const notifyAt = parseNotifyAt(formData);
+  const title = servicingTaskTitle(itemKey, workspace.policy.policyNumber);
   const [task] = await db
     .insert(reviewTasks)
     .values({
@@ -844,8 +868,8 @@ export async function createServicingTask(formData: FormData) {
       contactId: workspace.policy.contactId,
       accountId: workspace.policy.accountId,
       kind: "servicing",
-      title: servicingTaskTitle(itemKey, workspace.policy.policyNumber),
-      dueDate: workspace.policy.expirationDate ?? new Date(),
+      title,
+      dueDate: notifyAt,
       status: "open",
     })
     .returning();
@@ -855,16 +879,30 @@ export async function createServicingTask(formData: FormData) {
     status: existing?.status === "complete" ? "complete" : "incomplete",
     taskId: task.id,
   });
+  const session = await currentDeskSession();
+  const alertAt = notifyAt.getTime() > Date.now() ? notifyAt : new Date();
+  await db.insert(alerts).values({
+    tenantId: DEFAULT_TENANT_ID,
+    kind: "task_reminder",
+    title,
+    body: `Servicing checklist · ${itemKey.replaceAll("_", " ")}. In-app reminder — nothing emailed.`,
+    severity: "info",
+    entityType: "review_task",
+    entityId: task.id,
+    userId: session.userId,
+    recipientUserId: session.userId,
+    createdAt: alertAt,
+  });
   await writeServicingLog({
-    title: servicingTaskTitle(itemKey, workspace.policy.policyNumber),
-    body: servicingTaskBody(itemKey, workspace.policy.policyNumber),
+    title,
+    body: `${servicingTaskBody(itemKey, workspace.policy.policyNumber)} Notify ${notifyAt.toISOString()}.`,
     eventType: "servicing_task",
     policyId,
     contactId: workspace.policy.contactId,
     accountId: workspace.policy.accountId,
     dealId: workspace.policy.dealId,
   });
-  refreshPolicy(policyId, ["/tasks"]);
+  refreshPolicy(policyId, ["/tasks", "/notifications", "/alerts"]);
   bounce(`/policies/${policyId}`, undefined, "task_created");
 }
 
@@ -930,29 +968,45 @@ export async function createPacketTask(formData: FormData) {
     bounce(`/policies/${policyId}`, undefined, "task_exists");
   }
   const title = packetTaskTitle(key, workspace.policy.policyNumber);
-  const due = new Date();
-  due.setUTCDate(due.getUTCDate() + 7);
-  await db.insert(reviewTasks).values({
+  const notifyAt = parseNotifyAt(formData);
+  const [task] = await db
+    .insert(reviewTasks)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      policyId,
+      contactId: workspace.policy.contactId,
+      accountId: workspace.policy.accountId,
+      dealId: workspace.policy.dealId,
+      kind: servicingTaskKind(key),
+      title,
+      dueDate: notifyAt,
+      status: "open",
+    })
+    .returning();
+  const session = await currentDeskSession();
+  const alertAt = notifyAt.getTime() > Date.now() ? notifyAt : new Date();
+  await db.insert(alerts).values({
     tenantId: DEFAULT_TENANT_ID,
-    policyId,
-    contactId: workspace.policy.contactId,
-    accountId: workspace.policy.accountId,
-    dealId: workspace.policy.dealId,
-    kind: servicingTaskKind(key),
+    kind: "task_reminder",
     title,
-    dueDate: due,
-    status: "open",
+    body: `${title}. In-app packet reminder — nothing emailed.`,
+    severity: "info",
+    entityType: "review_task",
+    entityId: task.id,
+    userId: session.userId,
+    recipientUserId: session.userId,
+    createdAt: alertAt,
   });
   await writeServicingLog({
     title,
-    body: `${title}. In-app task only — shopping docs stay on the Deal.`,
+    body: `${title}. In-app task only — shopping docs stay on the Deal. Notify ${notifyAt.toISOString()}.`,
     eventType: "packet_task",
     policyId,
     contactId: workspace.policy.contactId,
     accountId: workspace.policy.accountId,
     dealId: workspace.policy.dealId,
   });
-  refreshPolicy(policyId, ["/tasks", "/book-health"]);
+  refreshPolicy(policyId, ["/tasks", "/book-health", "/notifications", "/alerts"]);
   bounce(`/policies/${policyId}`, undefined, "packet_task");
 }
 
@@ -1190,42 +1244,59 @@ export async function createEndorsementDraft(formData: FormData) {
     dealId: workspace.policy.dealId,
   });
   refreshPolicy(policyId, ["/endorsements", "/service-requests"]);
-  bounce(`/policies/${policyId}`, undefined, "endorsement_drafted");
+  bounce(`/policies/${policyId}?tab=endorsements`, undefined, "endorsement_drafted");
 }
 
 export async function advanceEndorsementDraft(formData: FormData) {
   const draftId = str(formData, "draftId");
-  const action = (str(formData, "action") === "withdraw" ? "withdraw" : "ready") as EndorsementDraftAction;
+  const rawAction = str(formData, "action");
+  const action = (
+    rawAction === "withdraw"
+      ? "withdraw"
+      : rawAction === "ready"
+        ? "ready"
+        : "advance"
+  ) as EndorsementDraftAction;
   const returnTo = str(formData, "returnTo") || "/endorsements";
   const loaded = await getEndorsementDraft(draftId);
   if (!loaded) bounce(returnTo, "Endorsement draft not found.");
-  const next = nextEndorsementDraftStatus(
-    loaded.draft.status as "drafted" | "ready" | "withdrawn",
-    action,
-  );
+  const next = nextEndorsementDraftStatus(loaded.draft.status, action);
   if (!next) bounce(returnTo, `Cannot ${action} a ${loaded.draft.status} draft.`);
   await db
     .update(endorsementDrafts)
     .set({ status: next, updatedAt: new Date() })
     .where(eq(endorsementDrafts.id, loaded.draft.id));
+  const eventType =
+    next === "withdrawn"
+      ? "endorsement_draft_withdrawn"
+      : next === "submitted"
+        ? "endorsement_submitted"
+        : next === "approved"
+          ? "endorsement_approved"
+          : next === "filed"
+            ? "endorsement_filed"
+            : next === "effective"
+              ? "endorsement_effective"
+              : "endorsement_drafted";
   await writeServicingLog({
     title: `${endorsementDraftLine(loaded.draft.formCode, loaded.policy.policyNumber)} · ${next}`,
     body:
-      next === "ready"
-        ? `Wording marked ready. ${loaded.policy.policyNumber} is unchanged. File still happens on the service request.`
-        : `Endorsement draft withdrawn. ${loaded.policy.policyNumber} unchanged.`,
-    eventType: next === "ready" ? "endorsement_draft_ready" : "endorsement_draft_withdrawn",
+      next === "withdrawn"
+        ? `Endorsement draft withdrawn. ${loaded.policy.policyNumber} unchanged.`
+        : `${loaded.policy.policyNumber} endorsement marked ${next.replaceAll("_", " ")}. Diary status only — does not auto-change policy terms.`,
+    eventType,
     policyId: loaded.policy.id,
     contactId: loaded.policy.contactId,
     accountId: loaded.policy.accountId,
     dealId: loaded.policy.dealId,
   });
   refreshPolicy(loaded.policy.id, ["/endorsements", "/service-requests"]);
-  bounce(
-    returnTo.includes("/policies/") ? `/policies/${loaded.policy.id}` : "/endorsements",
-    undefined,
-    next,
-  );
+  const dest = returnTo.includes("/policies/")
+    ? returnTo.includes("tab=")
+      ? returnTo
+      : `/policies/${loaded.policy.id}?tab=endorsements`
+    : "/endorsements";
+  bounce(dest, undefined, next);
 }
 
 export async function addServiceNote(formData: FormData) {
@@ -1380,8 +1451,9 @@ export async function advanceRenewalQueue(formData: FormData) {
   if (!action) bounce(returnTo, "Choose a queue action.");
   const loaded = await getRenewalQueue(queueId);
   if (!loaded) bounce(returnTo, "Renewal queue row not found.");
-  if (!isRenewalQueueStage(loaded.queue.stage)) bounce(returnTo, "Queue stage is not recognized.");
-  const next = nextRenewalQueueStage(loaded.queue.stage, action);
+  const currentStage = normalizeRenewalQueueStage(loaded.queue.stage);
+  if (!currentStage) bounce(returnTo, "Queue stage is not recognized.");
+  const next = nextRenewalQueueStage(currentStage, action);
   if (!next) bounce(returnTo, `Cannot ${action} a ${loaded.queue.stage} card.`);
   await db
     .update(renewalQueue)
@@ -1394,10 +1466,10 @@ export async function advanceRenewalQueue(formData: FormData) {
   await writeServicingLog({
     title: renewalQueueLine(loaded.policy.policyNumber, next),
     body:
-      next === "accepted"
-        ? `${loaded.policy.policyNumber} marked accepted on the queue stub. Same Policy stays in force. Did not bind.`
+      next === "bound"
+        ? `${loaded.policy.policyNumber} marked bound on the renewals board stub. Same Policy stays in force. Did not bind.`
         : next === "lost"
-          ? `${loaded.policy.policyNumber} marked lost on the queue stub. Policy status unchanged.`
+          ? `${loaded.policy.policyNumber} marked lost on the renewals board stub. Policy status unchanged.`
           : `${loaded.policy.policyNumber} moved to ${next}. Desk stub only — no rater, no bind.`,
     eventType: "renewal_queue_moved",
     policyId: loaded.policy.id,
@@ -1405,7 +1477,7 @@ export async function advanceRenewalQueue(formData: FormData) {
     accountId: loaded.policy.accountId,
     dealId: loaded.policy.dealId,
   });
-  refreshPolicy(loaded.policy.id, ["/renewals/queue", "/renewals"]);
+  refreshPolicy(loaded.policy.id, ["/renewals/queue", "/renewals", "/deals"]);
   bounce(returnTo, undefined, next);
 }
 
@@ -1495,38 +1567,62 @@ export async function advancePolicyInspection(formData: FormData) {
 
 export async function createPolicyInstallment(formData: FormData) {
   const policyId = str(formData, "policyId");
-  const returnTo = str(formData, "returnTo") || (isUuid(policyId) ? `/policies/${policyId}` : "/installments");
+  const returnTo =
+    str(formData, "returnTo") ||
+    (isUuid(policyId) ? `/policies/${policyId}?tab=billing` : "/installments");
   if (!isUuid(policyId)) bounce(returnTo, "Policy is required.");
   const { getPolicyWorkspace } = await import("@/lib/db/queries");
   const workspace = await getPolicyWorkspace(policyId);
   if (!workspace) bounce(returnTo, "Policy not found.");
+  const billTypeRaw = str(formData, "billType") || "agency_bill";
   const parsed = validateInstallmentDraft({
-    billType: str(formData, "billType"),
+    billType: billTypeRaw,
     amount: str(formData, "amount"),
     dueOn: parseIsoDate(str(formData, "dueOn")),
     notes: str(formData, "notes"),
   });
   if (!parsed.ok) bounce(returnTo, parsed.error);
+  const statusRaw = str(formData, "status").toLowerCase();
+  /** Billing form: paid | overdue. AMS panel leaves blank → scheduled. */
+  const status =
+    statusRaw === "paid" || statusRaw === "received"
+      ? "received"
+      : statusRaw === "overdue" || statusRaw === "past_due"
+        ? "past_due"
+        : "scheduled";
+  const receivedAt = status === "received" ? new Date() : null;
   await db.insert(policyInstallments).values({
     tenantId: DEFAULT_TENANT_ID,
     policyId,
     billType: parsed.billType,
-    status: "scheduled",
+    status,
     amount: parsed.amount,
     dueOn: parsed.dueOn,
+    receivedAt,
     notes: parsed.notes,
   });
+  const eventType =
+    status === "received"
+      ? "installment_received"
+      : status === "past_due"
+        ? "installment_past_due"
+        : "installment_scheduled";
   await writeServicingLog({
-    title: installmentLine(workspace.policy.policyNumber, "scheduled"),
-    body: `${workspace.policy.policyNumber} ${parsed.billType.replaceAll("_", " ")} installment ${parsed.amount} scheduled. Diary only — no Stripe.`,
-    eventType: "installment_scheduled",
+    title: installmentLine(workspace.policy.policyNumber, status),
+    body: `${workspace.policy.policyNumber} ${parsed.billType.replaceAll("_", " ")} installment ${parsed.amount} · ${status.replaceAll("_", " ")}. Diary only — no Stripe.`,
+    eventType,
     policyId,
     contactId: workspace.policy.contactId,
     accountId: workspace.policy.accountId,
     dealId: workspace.policy.dealId,
   });
   refreshPolicy(policyId, ["/installments"]);
-  bounce(returnTo.includes("/policies/") ? `/policies/${policyId}` : "/installments", undefined, "scheduled");
+  const dest = returnTo.includes("/policies/")
+    ? returnTo.includes("tab=")
+      ? returnTo
+      : `/policies/${policyId}?tab=billing`
+    : "/installments";
+  bounce(dest, undefined, status === "received" ? "paid" : status === "past_due" ? "overdue" : "scheduled");
 }
 
 export async function advancePolicyInstallment(formData: FormData) {
@@ -1579,7 +1675,16 @@ export async function advancePolicyInstallment(formData: FormData) {
 const HOLDER_CONTACT_NOTE = "Does not issue a COI and does not file an endorsement.";
 
 function asRenewalQueueAction(value: string): RenewalQueueAction | null {
-  if (value === "quote" || value === "offer" || value === "accept" || value === "lose" || value === "reset") {
+  if (
+    value === "contact" ||
+    value === "quote" ||
+    value === "bind" ||
+    value === "lose" ||
+    value === "reset" ||
+    value === "offer" ||
+    value === "accept" ||
+    value === "quote_legacy"
+  ) {
     return value;
   }
   return null;

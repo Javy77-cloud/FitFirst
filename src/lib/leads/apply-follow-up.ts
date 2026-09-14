@@ -151,7 +151,11 @@ async function scheduleNextLiveStep(input: {
       triggerStatus: row.triggerStatus,
       enabled: row.enabled,
     })),
-    { followUpTemplateId: input.templateId ?? lead.followUpTemplateId, status: normalizeLeadStatus(lead.status) },
+    {
+      followUpTemplateId: input.templateId ?? lead.followUpTemplateId,
+      status: normalizeLeadStatus(lead.status),
+      cadence: (lead as { cadence?: string | null }).cadence ?? null,
+    },
   );
   if (!picked) return { scheduled: 0 };
   const templateSteps = dedupeFollowUpSteps(
@@ -182,12 +186,17 @@ export async function fireLeadFollowUpForStatus(leadId: string, status: string, 
     .from(leads)
     .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, leadId)));
   if (!lead) return { scheduled: 0 };
-  const normalized = normalizeLeadStatus(status);
-  if (normalized === "lost" || normalized === "nurture" || normalized === "converted") {
+  // Callers pass Cadence (new/contacted/warm/cold/custom). Pipeline status still gates lost/nurture/converted.
+  const cadence =
+    (status ?? "").trim().toLowerCase() ||
+    (lead as { cadence?: string | null }).cadence ||
+    "none";
+  const pipeline = normalizeLeadStatus(lead.status);
+  if (pipeline === "lost" || pipeline === "nurture" || pipeline === "converted") {
     await cancelLeadFollowUps(leadId);
     return { scheduled: 0, held: true as const };
   }
-  if (shouldHoldFollowUpUntilFirstContact({ status: normalized, firstContactAt: lead.firstContactAt })) {
+  if (shouldHoldFollowUpUntilFirstContact({ cadence, status: pipeline, firstContactAt: lead.firstContactAt })) {
     await cancelLeadFollowUps(leadId);
     return { scheduled: 0, held: true as const };
   }

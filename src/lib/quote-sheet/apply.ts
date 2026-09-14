@@ -34,6 +34,16 @@ export type ApplyFillResult = {
   skippedKeys: string[];
 };
 
+/** Dec Rating Information "None" / "No" → sheet yes/no (or leave letter codes alone). */
+function normalizeYesNoNone(raw: string): string {
+  const t = raw.trim();
+  if (!t) return t;
+  const lower = t.toLowerCase().replace(/\s+/g, " ");
+  if (lower === "none" || lower === "n/a" || lower === "na" || lower === "no" || lower === "false") return "no";
+  if (lower === "yes" || lower === "y" || lower === "true") return "yes";
+  return t;
+}
+
 export function fieldIsBlank(field?: QuoteSheetFieldValue | null): boolean {
   if (!field) return true;
   return field.value.trim() === "" || field.status === "missing";
@@ -147,6 +157,31 @@ export function applyExtractedToSheet(
     if (key === "occupancy") nextValue = normalizeOccupancy(nextValue);
     if (key === "hydrant") nextValue = normalizeDistanceToHydrant(nextValue);
     if (key === "miles_to_fire_station") nextValue = normalizeDistanceToStation(nextValue);
+    if (
+      key === "sprinkler" ||
+      key === "central_alarm" ||
+      key === "smoke_detectors" ||
+      key === "deadbolts" ||
+      key === "mobile_home" ||
+      key === "pool" ||
+      key === "pool_fence" ||
+      key === "trampoline" ||
+      key === "animals" ||
+      key === "business_on_premises"
+    ) {
+      nextValue = normalizeYesNoNone(nextValue);
+    }
+    if (key === "opening_protection") {
+      const lower = nextValue.toLowerCase();
+      if (lower === "none" || lower === "n/a" || lower === "na") nextValue = "N";
+    }
+    if (key === "form") {
+      const compact = nextValue.toUpperCase().replace(/\s+/g, "").replace(/-/g, "");
+      if (compact === "DP3" || compact === "DWELLINGDP3") nextValue = "DP3";
+      else if (compact === "HO3" || compact === "HOMEOWNERS3" || compact === "HOMEOWNER3") nextValue = "HO3";
+      else if (compact === "HO6") nextValue = "HO6";
+      else if (compact === "DP1") nextValue = "DP1";
+    }
     const sourceLabel = cellSourceDocument(item, source);
     if (!nextValue) {
       if (item.blankAfterMatch && fieldIsBlank(current)) {

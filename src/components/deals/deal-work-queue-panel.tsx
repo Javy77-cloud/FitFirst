@@ -16,15 +16,17 @@ import Link from "next/link";
 export function DealWorkQueuePanel({
   type,
   items,
+  closeHref = "/deals",
 }: {
   type: DealTodayActivityType;
   items: DealActivityTouch[];
+  closeHref?: string;
 }) {
   const router = useRouter();
   const chip = DEAL_TODAY_ACTIVITY_CHIPS.find((row) => row.id === type);
 
   function closeQueue() {
-    router.push("/deals");
+    router.push(closeHref);
   }
 
   return (

@@ -1,26 +1,65 @@
 import { describe, expect, it } from "vitest";
 import { clientStatusFromCounts } from "@/lib/lifecycle/client-status";
 import {
-  CONTACT_SECTIONS,
+  CONTACT_SECTION_NAV_MAX,
+  CONTACT_SECTION_POOL,
+  DEFAULT_CONTACT_SECTION_NAV_IDS,
   canAskTeammateOnContact,
+  contactSectionDefsForNav,
   contactSectionsForRole,
+  normalizeContactSectionNavIds,
   relatedIdsFromEntity,
 } from "./contact-sections";
 
 describe("contact record sections", () => {
-  it("lists a left-nav jump set with timeline and opt-outs, and no Ask", () => {
+  it("default nav is full pool up to max and never exceeds max", () => {
+    expect(CONTACT_SECTION_NAV_MAX).toBe(12);
+    expect(DEFAULT_CONTACT_SECTION_NAV_IDS).toHaveLength(
+      Math.min(CONTACT_SECTION_POOL.length, CONTACT_SECTION_NAV_MAX),
+    );
+    expect(DEFAULT_CONTACT_SECTION_NAV_IDS).toEqual([
+      "at-a-glance",
+      "contact-details",
+      "policies",
+      "deals",
+      "timeline",
+      "emails",
+      "sms",
+      "meetings",
+      "documents",
+      "notes",
+    ]);
+    expect(CONTACT_SECTION_POOL.map((s) => s.id)).toEqual([
+      "at-a-glance",
+      "contact-details",
+      "policies",
+      "deals",
+      "timeline",
+      "emails",
+      "sms",
+      "meetings",
+      "documents",
+      "notes",
+    ]);
+    expect(normalizeContactSectionNavIds(CONTACT_SECTION_POOL.map((s) => s.id))).toHaveLength(
+      Math.min(CONTACT_SECTION_POOL.length, CONTACT_SECTION_NAV_MAX),
+    );
+    expect(normalizeContactSectionNavIds(["bogus", "policies", "policies", "notes"]).map((id) => id)).toEqual([
+      "policies",
+      "notes",
+    ]);
+  });
+
+  it("role helper returns selected defs without Ask a teammate", () => {
     const admin = contactSectionsForRole(true);
     const agent = contactSectionsForRole(false);
-    expect(admin.map((s) => s.id)).toEqual(CONTACT_SECTIONS.map((s) => s.id));
-    expect(admin.some((s) => s.id === "timeline")).toBe(true);
-    expect(admin.every((s) => s.id !== "timeline" || s.label !== "Ask a teammate")).toBe(true);
-    expect(agent.some((s) => s.id === "timeline")).toBe(true);
-    expect(agent.some((s) => s.id === "optouts")).toBe(true);
-    expect(agent.some((s) => s.id === "claims")).toBe(true);
-    expect(agent.some((s) => s.id === "gaps")).toBe(true);
-    expect(agent.find((s) => s.id === "gaps")?.label).toBe("Coverage gaps");
-    expect(admin.map((s) => s.label).join(" ")).not.toMatch(/ask a teammate/i);
-    expect(agent.map((s) => s.label).join(" ")).not.toMatch(/activity log/i);
+    expect(admin.map((s) => s.id)).toEqual(DEFAULT_CONTACT_SECTION_NAV_IDS);
+    expect(agent.map((s) => s.id)).toEqual(DEFAULT_CONTACT_SECTION_NAV_IDS);
+    expect(admin.every((s) => s.label !== "Ask a teammate")).toBe(true);
+    expect(contactSectionDefsForNav(["timeline", "notes"]).map((s) => s.id)).toEqual([
+      "timeline",
+      "notes",
+    ]);
   });
 
   it("removes Ask a teammate from Contact for every role", () => {

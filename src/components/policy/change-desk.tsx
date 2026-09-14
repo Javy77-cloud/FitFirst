@@ -1,7 +1,7 @@
 import { CancellationForm, EndorsementForm, NonRenewalForm } from "@/components/policy/change-forms";
 import { DeskDetails } from "@/components/desk-details";
 import { isInForceStatus } from "@/lib/policy/status";
-import { filedChangeOutcome, policyRecordOutcome } from "@/lib/policy/outcomes";
+import { filedChangeOutcome } from "@/lib/policy/outcomes";
 import { cn } from "@/lib/utils";
 
 export function PolicyOutcomeBanner({
@@ -26,10 +26,12 @@ export function PolicyOutcomeBanner({
     );
   }
 
-  const outcome =
-    filed === "endorsement" || filed === "cancellation" || filed === "non_renewal"
-      ? filedChangeOutcome(filed, policy)
-      : policyRecordOutcome(policy);
+  // Status lives on the header status dot — no always-on "Active — in force" banner.
+  if (filed !== "endorsement" && filed !== "cancellation" && filed !== "non_renewal") {
+    return null;
+  }
+
+  const outcome = filedChangeOutcome(filed, policy);
 
   return (
     <section

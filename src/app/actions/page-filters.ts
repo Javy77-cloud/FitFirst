@@ -15,6 +15,8 @@ const MODULE_PATHS: Record<string, string[]> = {
   businesses: ["/accounts", "/businesses"],
   policies: ["/policies"],
   carriers: ["/carriers"],
+  "deals-pipeline": ["/deals"],
+  "renewals-pipeline": ["/renewals"],
 };
 
 export async function fetchPageFilterPrefs(moduleId: string): Promise<PageFilter[]> {

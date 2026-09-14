@@ -30,6 +30,8 @@ export async function retitleExistingDeals(): Promise<number> {
       contact: row.contact,
       lead: row.lead,
       account: row.account,
+      quotingForm: row.deal.quotingForm,
+      policySubType: row.deal.policySubType,
     });
     if (!next || next === row.deal.title) continue;
     await db

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { advanceCertificateRequest } from "@/app/actions/ams";
 import { AppShell } from "@/components/app-shell";
+import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { CertificateRequestForm } from "@/components/ams/certificate-request-form";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { RecordLink } from "@/components/record-links";
@@ -21,6 +22,7 @@ export default async function CertificatesPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
+  const policyIdParam = typeof params.policy === "string" ? params.policy : undefined;
   const [{ requests, issued }, harborInterests, holderContacts] = await Promise.all([
     listCertificateQueue(),
     listAccountInterests(HARBOR_ACCOUNT_ID),
@@ -31,6 +33,17 @@ export default async function CertificatesPage({
 
   return (
     <AppShell title="Certificates">
+      <DeskPageTrail
+        backLabel={policyIdParam ? "Back to policy" : "Back"}
+        fallbackHref={policyIdParam ? `/policies/${policyIdParam}` : "/policies"}
+        crumbs={[
+          { href: "/policies", label: "Policies" },
+          ...(policyIdParam
+            ? [{ href: `/policies/${policyIdParam}`, label: "Policy" }]
+            : []),
+          { label: "Certificates" },
+        ]}
+      />
       <p className="mb-4 text-base text-muted-foreground">{ACORD_STUB_DISCLAIMER}</p>
       <p className="mb-4 text-sm">
         <Link href="/certificates/holders" className="text-primary hover:underline">
@@ -77,7 +90,15 @@ export default async function CertificatesPage({
                 .filter((row) => row.request.status === "requested")
                 .map(({ request, account }) => (
                   <li key={request.id} className="space-y-2 px-4 py-3">
-                    <div className="font-medium text-navy">{request.holderName}</div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="font-medium text-navy">{request.holderName}</div>
+                      <span
+                        className="rounded-sm border border-border px-1.5 py-0.5 text-[11px] font-semibold uppercase text-navy"
+                        data-ff-coi-status="pending"
+                      >
+                        Pending
+                      </span>
+                    </div>
                     <div className="text-sm text-muted-foreground">
                       <RecordLink href={`/accounts/${account.id}`}>{account.name}</RecordLink>
                       {request.jobLocation ? ` · ${request.jobLocation}` : ""}
@@ -134,6 +155,14 @@ export default async function CertificatesPage({
               ),
               holder: certificate.holderName,
               business: account?.name ?? "—",
+              status: (
+                <span
+                  className="rounded-sm border border-border px-1.5 py-0.5 text-[11px] font-semibold uppercase text-[var(--ff-green)]"
+                  data-ff-coi-status="issued"
+                >
+                  Issued
+                </span>
+              ),
               issued: formatDay(certificate.issuedAt),
               flags: certificateFlagLabels(certificate).join(" · ") || "—",
             },

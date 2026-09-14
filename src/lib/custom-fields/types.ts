@@ -72,6 +72,7 @@ export const FIELD_ROW_MENU_ITEMS = [
   "Mark as required",
   "Set permissions",
   "Edit properties",
+  "Duplicate field",
   "Remove field",
 ] as const;
 

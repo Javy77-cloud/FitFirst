@@ -7,10 +7,18 @@ import { db } from "@/lib/db";
 import { accounts, contactAccounts, contactCoapplicants, contacts } from "@/lib/db/schema";
 import { executeMerge } from "@/lib/merge/execute";
 import { MergeLockError } from "@/lib/merge/lock";
-import { listFieldDefs, writeRecordValues } from "@/lib/custom-fields/store";
+import { listFieldDefs, saveLayoutForModule, writeRecordValues, loadLayoutForModule } from "@/lib/custom-fields/store";
+import { applyModuleSystemValues } from "@/lib/custom-fields/record-system";
+import {
+  customFieldKeyFor,
+  systemColumnForFieldKey,
+} from "@/lib/contacts/contact-field-patch";
 import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
 import { writeSsn } from "@/lib/pii/write";
 import { emitDeskEvent } from "@/lib/developer-hub/events";
+import { contactCardLayout, contactClassicLayout } from "@/lib/contacts/contact-field-catalog";
+import { layoutTemplateKind, type LayoutTemplateKind } from "@/lib/custom-fields/layout-template";
+import { fieldPreview } from "@/lib/merge/preview";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -154,14 +162,61 @@ export async function unlinkContactBusiness(formData: FormData) {
   return { ok: true as const };
 }
 
-/** Survivor = current contact; archive the other. */
+/** Survivor = current contact; archive the other. Optional picks JSON: { email: "duplicate", ... }. */
 export async function mergeContactIntoSurvivor(formData: FormData) {
   const keeperId = str(formData, "keeperId");
   const duplicateId = str(formData, "duplicateId");
   if (!keeperId || !duplicateId || keeperId === duplicateId) {
     return { ok: false as const, error: "Pick a different contact to merge." };
   }
+  const picksRaw = str(formData, "picks");
+  let picks: Record<string, "keeper" | "duplicate"> = {};
+  if (picksRaw) {
+    try {
+      picks = JSON.parse(picksRaw) as Record<string, "keeper" | "duplicate">;
+    } catch {
+      picks = {};
+    }
+  }
   try {
+    // Apply explicit duplicate→keeper field picks before archive merge.
+    if (Object.keys(picks).length > 0) {
+      const [keeper] = await db
+        .select()
+        .from(contacts)
+        .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, keeperId)));
+      const [duplicate] = await db
+        .select()
+        .from(contacts)
+        .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, duplicateId)));
+      if (keeper && duplicate) {
+        const patch: Record<string, unknown> = {};
+        const systemKeys = [
+          "email",
+          "phone",
+          "mailingAddress",
+          "city",
+          "state",
+          "zip",
+          "dateOfBirth",
+          "notes",
+          "lifeNotes",
+          "healthNotes",
+          "source",
+        ] as const;
+        for (const key of systemKeys) {
+          if (picks[key] === "duplicate") {
+            patch[key] = (duplicate as Record<string, unknown>)[key];
+          }
+        }
+        if (Object.keys(patch).length) {
+          await db
+            .update(contacts)
+            .set({ ...patch, updatedAt: new Date() } as never)
+            .where(eq(contacts.id, keeperId));
+        }
+      }
+    }
     await executeMerge({ entityType: "contact", keeperId, duplicateId });
   } catch (error) {
     if (error instanceof MergeLockError) {
@@ -258,6 +313,56 @@ export async function createContactPopup(formData: FormData) {
   return { ok: true as const, id: row.id };
 }
 
+
+/** Blur-save a single contact field (system column and/or custom value). */
+export async function updateContactField(input: {
+  contactId: string;
+  fieldKey: string;
+  value: string;
+}) {
+  const contactId = String(input.contactId ?? "").trim();
+  const fieldKey = String(input.fieldKey ?? "").trim();
+  const raw = String(input.value ?? "");
+  const value = raw.trim();
+  if (!contactId || !fieldKey) return { ok: false as const, error: "Missing field." };
+
+  const [existing] = await db
+    .select()
+    .from(contacts)
+    .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, contactId)));
+  if (!existing) return { ok: false as const, error: "Contact not found." };
+
+  const customKey = customFieldKeyFor(fieldKey);
+  const column = systemColumnForFieldKey(fieldKey);
+
+  // Required identity fields never blank.
+  if (column === "firstName" || column === "lastName") {
+    if (!value) return { ok: false as const, error: "Name is required." };
+  }
+
+  const defs = await listFieldDefs("contacts");
+  const patch = { [customKey]: value };
+  await writeRecordValues(contactId, patch, "contacts");
+
+  if (column) {
+    const nextValue =
+      column === "firstName" || column === "lastName"
+        ? value
+        : value || null;
+    await db
+      .update(contacts)
+      .set({ [column]: nextValue, updatedAt: new Date() } as never)
+      .where(eq(contacts.id, contactId));
+  } else {
+    await applyModuleSystemValues("contacts", contactId, patch, defs);
+  }
+
+  await emitDeskEvent("record.updated", { entityType: "contact", entityId: contactId });
+  revalidatePath(`/contacts/${contactId}`);
+  revalidatePath("/contacts");
+  return { ok: true as const };
+}
+
 export async function searchContactsForLink(query: string, excludeId?: string) {
   const q = query.trim().toLowerCase();
   const clauses = [
@@ -295,4 +400,57 @@ export async function searchBusinessesForLink(query: string) {
     .limit(80);
   if (!q) return rows.slice(0, 20);
   return rows.filter((row) => row.name.toLowerCase().includes(q)).slice(0, 20);
+}
+
+
+/** Which Contacts layout template is active for this agency (from saved columns). */
+export async function readContactLayoutTemplate(): Promise<LayoutTemplateKind> {
+  const layout = await loadLayoutForModule("contacts");
+  return layoutTemplateKind(layout);
+}
+
+/** Classic / Card layout templates — persist per agency (tenant) via contacts module layout. */
+export async function applyContactLayoutTemplate(formData: FormData) {
+  const kind = str(formData, "template") === "classic" ? "classic" : "card";
+  const layout = kind === "classic" ? contactClassicLayout() : contactCardLayout();
+  await saveLayoutForModule("contacts", layout);
+  revalidatePath("/contacts");
+  revalidatePath("/settings/field-builder");
+  return { ok: true as const, template: kind as LayoutTemplateKind };
+}
+
+/** Side-by-side merge preview for overflow Merge dialog. */
+export async function loadContactMergePreview(keeperId: string, duplicateId: string) {
+  const [keeper] = await db
+    .select()
+    .from(contacts)
+    .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, keeperId)));
+  const [duplicate] = await db
+    .select()
+    .from(contacts)
+    .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, duplicateId)));
+  if (!keeper || !duplicate) return { ok: false as const, error: "Contact not found." };
+  const rows = fieldPreview(
+    "contact",
+    keeper as unknown as Record<string, unknown>,
+    duplicate as unknown as Record<string, unknown>,
+  );
+  return {
+    ok: true as const,
+    keeper: {
+      id: keeper.id,
+      firstName: keeper.firstName,
+      lastName: keeper.lastName,
+      email: keeper.email,
+      phone: keeper.phone,
+    },
+    duplicate: {
+      id: duplicate.id,
+      firstName: duplicate.firstName,
+      lastName: duplicate.lastName,
+      email: duplicate.email,
+      phone: duplicate.phone,
+    },
+    rows,
+  };
 }

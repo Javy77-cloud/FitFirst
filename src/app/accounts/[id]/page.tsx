@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { and, desc, eq, ne } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
+import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { ClientStatusPill } from "@/components/record-links";
 import { getAccountWorkspace, listRecordActivities } from "@/lib/db/queries";
 import { db } from "@/lib/db";
@@ -45,10 +46,14 @@ function kindMatches(kind: string, target: string) {
 
 export default async function AccountDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const paramsIn = await searchParams;
+  const fromPolicy = typeof paramsIn.fromPolicy === "string" ? paramsIn.fromPolicy : undefined;
   const workspace = await getAccountWorkspace(id);
   if (!workspace) notFound();
   const {
@@ -185,6 +190,17 @@ export default async function AccountDetailPage({
         email: account.email,
       }}
     >
+      <DeskPageTrail
+        backLabel={fromPolicy ? "Back to policy" : "Back"}
+        fallbackHref={fromPolicy ? `/policies/${fromPolicy}` : "/accounts"}
+        crumbs={[
+          { href: "/accounts", label: "Business" },
+          ...(fromPolicy
+            ? [{ href: `/policies/${fromPolicy}`, label: "Policy" }]
+            : []),
+          { label: "Business" },
+        ]}
+      />
       <div className="mb-3 space-y-1" data-ff-business-header-bar="">
         <div className="flex flex-wrap items-start gap-2">
           <div className="mt-2 shrink-0">
@@ -328,6 +344,7 @@ export default async function AccountDetailPage({
                   fields={businessLayout?.fields ?? []}
                   values={fieldValues}
                   saveLabel="Save Business"
+                  clickToEdit
                 />
               </section>
               <RecordModuleMacros module="businesses" recordId={account.id} />

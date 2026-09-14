@@ -67,7 +67,9 @@ export function ProfileMenu({
                 ? `Viewing as ${actor.role === "admin" ? "Admin" : "Agent"}`
                 : actor.role === "admin"
                   ? "Admin · full desk"
-                  : "Agent · own book"}
+                  : actor.canSeeAgencyBook
+                    ? "Agent · agency book"
+                    : "Agent · own book"}
             </div>
           </DropdownMenuLabel>
         </DropdownMenuGroup>

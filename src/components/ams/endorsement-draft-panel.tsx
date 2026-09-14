@@ -11,6 +11,7 @@ import {
   endorsementDraftStatusLabel,
   endorsementFormLabel,
 } from "@/lib/domain-ams";
+import { endorsementAdvanceLabel } from "@/lib/ams/endorsement-drafts";
 import type { EndorsementDraft, PolicyServiceRequest } from "@/lib/db/schema";
 
 export function EndorsementDraftPanel({
@@ -51,28 +52,28 @@ export function EndorsementDraftPanel({
               </p>
               <p className="text-sm">{draft.wording}</p>
               <p className="text-sm text-muted-foreground">{endorsementDraftNextStep(draft.status)}</p>
-              {draft.status === "drafted" || draft.status === "ready" ? (
-                <div className="flex flex-wrap gap-2">
-                  {draft.status === "drafted" ? (
-                    <form action={advanceEndorsementDraft}>
-                      <input type="hidden" name="draftId" value={draft.id} />
-                      <input type="hidden" name="action" value="ready" />
-                      <input type="hidden" name="returnTo" value={`/policies/${policyId}`} />
-                      <Button type="submit" size="sm">
-                        Mark ready
-                      </Button>
-                    </form>
-                  ) : null}
+              <div className="flex flex-wrap gap-2">
+                {endorsementAdvanceLabel(draft.status) ? (
+                  <form action={advanceEndorsementDraft}>
+                    <input type="hidden" name="draftId" value={draft.id} />
+                    <input type="hidden" name="action" value="advance" />
+                    <input type="hidden" name="returnTo" value={`/policies/${policyId}?tab=endorsements`} />
+                    <Button type="submit" size="sm">
+                      {endorsementAdvanceLabel(draft.status)}
+                    </Button>
+                  </form>
+                ) : null}
+                {draft.status !== "withdrawn" && draft.status !== "effective" ? (
                   <form action={advanceEndorsementDraft}>
                     <input type="hidden" name="draftId" value={draft.id} />
                     <input type="hidden" name="action" value="withdraw" />
-                    <input type="hidden" name="returnTo" value={`/policies/${policyId}`} />
+                    <input type="hidden" name="returnTo" value={`/policies/${policyId}?tab=endorsements`} />
                     <Button type="submit" size="sm" variant="secondary">
                       Withdraw
                     </Button>
                   </form>
-                </div>
-              ) : null}
+                ) : null}
+              </div>
             </li>
           ))}
         </ul>

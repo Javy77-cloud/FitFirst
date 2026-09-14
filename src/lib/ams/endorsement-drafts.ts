@@ -1,24 +1,56 @@
 import {
   ENDORSEMENT_DRAFT_DISCLAIMER,
+  ENDORSEMENT_PIPELINE_STATUSES,
   endorsementDraftNextStep,
   endorsementFormLabel,
-  isEndorsementDraftStatus,
   isEndorsementFormCode,
+  normalizeEndorsementDraftStatus,
   type EndorsementDraftStatus,
   type EndorsementFormCode,
+  type EndorsementPipelineStatus,
 } from "@/lib/domain-ams";
 
-export type EndorsementDraftAction = "ready" | "withdraw";
+export type EndorsementDraftAction = "advance" | "withdraw" | "ready";
+
+const PIPELINE = ENDORSEMENT_PIPELINE_STATUSES as readonly EndorsementPipelineStatus[];
 
 export function nextEndorsementDraftStatus(
-  status: EndorsementDraftStatus,
+  status: string,
   action: EndorsementDraftAction,
 ): EndorsementDraftStatus | null {
-  if (action === "withdraw" && (status === "drafted" || status === "ready")) {
+  const current = normalizeEndorsementDraftStatus(status);
+  if (!current) return null;
+
+  if (action === "withdraw") {
+    if (current === "withdrawn" || current === "effective") return null;
     return "withdrawn";
   }
-  if (action === "ready" && status === "drafted") return "ready";
+
+  // Legacy "ready" action → submit
+  if (action === "ready") {
+    if (current === "drafted") return "submitted";
+    return null;
+  }
+
+  if (action === "advance") {
+    const idx = PIPELINE.indexOf(current as EndorsementPipelineStatus);
+    if (idx < 0 || idx >= PIPELINE.length - 1) return null;
+    return PIPELINE[idx + 1];
+  }
+
   return null;
+}
+
+export function endorsementAdvanceLabel(status: string): string | null {
+  const next = nextEndorsementDraftStatus(status, "advance");
+  if (!next) return null;
+  const labels: Record<string, string> = {
+    submitted: "Submit",
+    approved: "Approve",
+    filed: "Mark filed",
+    effective: "Mark effective",
+  };
+  return labels[next] ?? `Advance to ${next}`;
 }
 
 export function endorsementDraftFilesPolicy(): false {
@@ -55,7 +87,13 @@ export function validateEndorsementDraft(input: {
 }
 
 export function isOpenEndorsementDraft(status: string): boolean {
-  return isEndorsementDraftStatus(status) && (status === "drafted" || status === "ready");
+  const current = normalizeEndorsementDraftStatus(status);
+  return (
+    current === "drafted" ||
+    current === "submitted" ||
+    current === "approved" ||
+    current === "filed"
+  );
 }
 
 export function endorsementDraftLine(formCode: string, policyNumber: string): string {

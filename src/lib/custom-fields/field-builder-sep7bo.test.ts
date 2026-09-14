@@ -14,7 +14,7 @@ function source(file: string) {
 }
 
 describe("sep7bo field builder rows, palette, preview drag", () => {
-  it("renders every field as a collapsed row with the four-item menu", () => {
+  it("renders every field as a collapsed row with the field-row menu", () => {
     const builder = source("src/components/custom-fields/field-builder.tsx");
     expect(builder).toMatch(/data-ff-field-row="collapsed"/);
     expect(builder).toMatch(/data-ff-field-menu=/);
@@ -36,8 +36,10 @@ describe("sep7bo field builder rows, palette, preview drag", () => {
       "Mark as required",
       "Set permissions",
       "Edit properties",
+      "Duplicate field",
       "Remove field",
     ]);
+    expect(builder).toMatch(/data-ff-field-menu-item="duplicate"/);
   });
 
   it("opens Edit properties as a popup with name, type, and lookup module", () => {

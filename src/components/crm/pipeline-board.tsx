@@ -1,15 +1,14 @@
 import Link from "next/link";
+import { AddNewDealDialog } from "@/components/deals/add-new-deal-dialog";
 import { DealBoardStageMove } from "@/components/deals/deal-board-stage-move";
 import { DealRowActions } from "@/components/crm/deal-row-actions";
 import { InsuredLink } from "@/components/crm/insured-link";
 import { LinkedValue } from "@/components/crm/linked-value";
 import { StagePill } from "@/components/fit-badge";
-import { buttonVariants } from "@/components/ui/button";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { insuredContactName, insuredHref, matchesDealFilters, type DealListFilter } from "@/lib/crm/lists";
 import { homeAddressFromRecords } from "@/lib/meetings/types";
 import { formatMoney } from "@/lib/domain";
-import { cn } from "@/lib/utils";
 import type { DealListRow } from "@/lib/db/queries";
 import type { PipelineStageRow } from "@/lib/db/schema";
 
@@ -75,9 +74,7 @@ export function PipelineBoard({
           Call or schedule a meeting from the card. Phone and email are already on the shop — do
           not open the deal just to copy them. Bound stays locked.
         </p>
-        <Link href="/deals/new" className={cn(buttonVariants({ size: "sm" }))}>
-          Create deal
-        </Link>
+        <AddNewDealDialog triggerSize="sm" />
       </div>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
         {columns.map((stage) => {

@@ -306,6 +306,17 @@ export const agencySettings = pgTable(
     } | null>(),
     /** When false (default), admins cannot rename/override auto-labels on policy detail. */
     allowPolicyLabelOverride: boolean("allow_policy_label_override").notNull().default(false),
+    /** Agent policies module: four areas × { read, write }. */
+    agentPolicyAccess: jsonb("agent_policy_access").$type<{
+      portalCredentials?: { read?: boolean; write?: boolean };
+      commissionBreakdown?: { read?: boolean; write?: boolean };
+      lifecycleActions?: { read?: boolean; write?: boolean };
+      renewalPipelineDrag?: { read?: boolean; write?: boolean };
+    } | null>(),
+    /** Tint Sunday cells on the desk calendar (non-working day look). Agency default on. */
+    calendarMarkSundayNonWorking: boolean("calendar_mark_sunday_non_working").notNull().default(true),
+    /** Show US federal holiday labels on calendar cells. Agency default on. */
+    calendarShowUsFederalHolidays: boolean("calendar_show_us_federal_holidays").notNull().default(true),
     ...timestamps,
   },
   (t) => [uniqueIndex("agency_settings_tenant_idx").on(t.tenantId)],
@@ -1047,12 +1058,15 @@ export const reviewTasks = pgTable(
     accountId: uuid("account_id"),
     policyId: uuid("policy_id").references(() => policies.id),
     dealId: uuid("deal_id").references(() => deals.id),
+    leadId: uuid("lead_id"),
+    assigneeId: uuid("assignee_id"),
     kind: text("kind").notNull(),
     title: text("title").notNull(),
     dueDate: timestamp("due_date", { withTimezone: true }).notNull(),
     status: text("status").notNull().default("open"),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     workItemId: uuid("work_item_id"),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -1817,6 +1831,8 @@ export const activityLogs = pgTable(
     fromAddress: text("from_address"),
     toAddress: text("to_address"),
     durationSeconds: integer("duration_seconds"),
+    /** Policy producer name stamped at write time for Activity & Timeline. */
+    producerName: text("producer_name"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

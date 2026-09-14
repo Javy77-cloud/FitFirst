@@ -37,6 +37,8 @@ import { cn } from "@/lib/utils";
 
 const NAV_LAYOUT_CACHE = `ff-nav-layout:v${NAV_LAYOUT_VERSION}`;
 const DRAG_THRESHOLD_PX = 4;
+/** Hover a folder while dragging before it expands (Finder-style). */
+const HOVER_OPEN_MS = 1000;
 
 type DragPayload = { id: string };
 
@@ -44,7 +46,7 @@ function readCachedLayout(): StoredNavLayout | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(NAV_LAYOUT_CACHE);
-    return raw ? normalizeNavLayout(JSON.parse(raw) as unknown) : null;
+    return raw ? normalizeNavLayout(JSON.parse(raw) as unknown, { isAdmin: true }) : null;
   } catch {
     return null;
   }
@@ -53,7 +55,7 @@ function readCachedLayout(): StoredNavLayout | null {
 function writeCachedLayout(layout: StoredNavLayout): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(NAV_LAYOUT_CACHE, JSON.stringify(normalizeNavLayout(layout)));
+    window.localStorage.setItem(NAV_LAYOUT_CACHE, JSON.stringify(normalizeNavLayout(layout, { isAdmin: true })));
   } catch {
     /* private mode / quota */
   }
@@ -86,7 +88,7 @@ export function DeskSidebar({
   const pathname = usePathname();
   const search = useSearchParams();
   const [layout, setLayout] = useState<StoredNavLayout>(() =>
-    normalizeNavLayout(initialLayout ?? defaultStoredNavLayout()),
+    normalizeNavLayout(initialLayout ?? defaultStoredNavLayout({ isAdmin }), { isAdmin }),
   );
   const [openId, setOpenId] = useState(() => primaryIdForPath(pathname, layout, isAdmin));
   const [rail, setRail] = useState<SidebarRail>("expanded");
@@ -100,6 +102,8 @@ export function DeskSidebar({
   const persistChain = useRef(Promise.resolve());
   const persistEpoch = useRef(0);
   const dragRef = useRef<DragPayload | null>(null);
+  const hoverOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverFolderId = useRef<string | null>(null);
   const didDragRef = useRef(false);
   const originRef = useRef({ x: 0, y: 0 });
   const layoutRef = useRef(layout);
@@ -113,7 +117,7 @@ export function DeskSidebar({
     const prefs = readSidebarPrefs();
     setRail(prefs.rail);
     const cached = persistEnabled ? null : readCachedLayout();
-    const nextLayout = normalizeNavLayout(initialLayout ?? cached ?? defaultStoredNavLayout());
+    const nextLayout = normalizeNavLayout(initialLayout ?? cached ?? defaultStoredNavLayout({ isAdmin }), { isAdmin });
     setLayout(nextLayout);
     setOpenId(resolveOpenSection(pathname, prefs.openId));
     setReady(true);
@@ -133,7 +137,7 @@ export function DeskSidebar({
   }, [openId, rail, ready]);
 
   function persist(next: StoredNavLayout) {
-    const normalized = normalizeNavLayout(next);
+    const normalized = normalizeNavLayout(next, { isAdmin });
     setLayout(normalized);
     writeCachedLayout(normalized);
     setSaveError(null);
@@ -175,7 +179,7 @@ export function DeskSidebar({
       clearTimeout(persistTimer.current);
       persistTimer.current = null;
     }
-    const next = defaultStoredNavLayout();
+    const next = defaultStoredNavLayout({ isAdmin });
     setLayout(next);
     writeCachedLayout(next);
     setSaveError(null);
@@ -208,12 +212,27 @@ export function DeskSidebar({
         if (Math.hypot(dx, dy) >= DRAG_THRESHOLD_PX) didDragRef.current = true;
         const key = dropKeyFromPoint(event.clientX, event.clientY);
         setDropTarget(key);
-        if (key?.startsWith("into:") || key?.startsWith("end-folder:")) {
-          const folderId = key.startsWith("into:") ? key.slice(5) : key.slice("end-folder:".length);
-          if (folderId) setOpenId(folderId);
+        let folderId: string | null = null;
+        if (key?.startsWith("into:")) folderId = key.slice(5);
+        else if (key?.startsWith("end-folder:")) folderId = key.slice("end-folder:".length);
+        if (folderId) {
+          if (hoverFolderId.current !== folderId) {
+            if (hoverOpenTimer.current) clearTimeout(hoverOpenTimer.current);
+            hoverFolderId.current = folderId;
+            hoverOpenTimer.current = setTimeout(() => {
+              setOpenId(folderId!);
+            }, HOVER_OPEN_MS);
+          }
+        } else if (hoverFolderId.current) {
+          if (hoverOpenTimer.current) clearTimeout(hoverOpenTimer.current);
+          hoverOpenTimer.current = null;
+          hoverFolderId.current = null;
         }
       },
       onPointerUp: (event: React.PointerEvent) => {
+        if (hoverOpenTimer.current) clearTimeout(hoverOpenTimer.current);
+        hoverOpenTimer.current = null;
+        hoverFolderId.current = null;
         if (!dragRef.current) return;
         if (didDragRef.current) {
           event.preventDefault();
@@ -225,6 +244,9 @@ export function DeskSidebar({
         setDropTarget(null);
       },
       onPointerCancel: () => {
+        if (hoverOpenTimer.current) clearTimeout(hoverOpenTimer.current);
+        hoverOpenTimer.current = null;
+        hoverFolderId.current = null;
         dragRef.current = null;
         setDraggingId(null);
         setDropTarget(null);
@@ -246,7 +268,7 @@ export function DeskSidebar({
   }
 
   function renderItem(row: ResolvedNavItem, _section: "main" | "utility") {
-    const open = customizing ? row.submenu.length > 0 : openId === row.id;
+    const open = openId === row.id;
     const Icon = row.link.icon;
     const panelId = `ff-nav-${row.id}`;
     const submenuItemActive = (item: ResolvedNavItem["submenu"][number]) => {
@@ -261,8 +283,7 @@ export function DeskSidebar({
         submenuItemActive(item) || (item.children ?? []).some((child) => pathIsActive(pathname, child)),
     );
     const primaryActive = pathIsActive(pathname, row.link) && !deepestActive;
-    const showChevron = !narrow && !customizing && row.submenu.length > 0;
-    const intoKey = dropKey({ type: "into", id: row.id });
+    const showChevron = !narrow && row.submenu.length > 0;
     const beforeKey = dropKey({ type: "before", id: row.id });
     const afterKey = dropKey({ type: "after", id: row.id });
     const endFolderKey = dropKey({ type: "end-folder", parentId: row.id });
@@ -279,12 +300,12 @@ export function DeskSidebar({
           />
         ) : null}
         <div
-          {...dropHandlers(intoKey)}
+          {...dropHandlers(afterKey)}
           {...bindDrag(row.id, row.link.label)}
           data-nav-dragging={dragging ? "1" : undefined}
           className={cn(
             "flex items-center rounded-md",
-            zoneClass(dropTarget === intoKey, "nest"),
+            zoneClass(dropTarget === afterKey, "gap"),
             customizing && row.hidden ? "opacity-55" : "",
             customizing ? "cursor-grab active:cursor-grabbing" : "",
             dragging ? "pointer-events-none opacity-40" : "",

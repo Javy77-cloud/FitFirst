@@ -12,13 +12,13 @@ export function RenewalQueueActions({
   returnTo?: string;
 }) {
   const actions: { action: string; label: string; next: RenewalQueueStage | "reset" }[] = [];
-  if (stage === "upcoming") actions.push({ action: "quote", label: "Start quoting", next: "quoting" });
-  if (stage === "quoting") actions.push({ action: "offer", label: "Mark offered", next: "offered" });
-  if (stage === "offered") actions.push({ action: "accept", label: "Accept (stub)", next: "accepted" });
-  if (stage === "upcoming" || stage === "quoting" || stage === "offered") {
+  if (stage === "upcoming") actions.push({ action: "contact", label: "Mark contacted", next: "contacted" });
+  if (stage === "contacted") actions.push({ action: "quote", label: "Mark quoted", next: "quoted" });
+  if (stage === "quoted") actions.push({ action: "bind", label: "Mark bound (stub)", next: "bound" });
+  if (stage === "upcoming" || stage === "contacted" || stage === "quoted") {
     actions.push({ action: "lose", label: "Mark lost", next: "lost" });
   }
-  if (stage === "accepted" || stage === "lost" || stage === "offered") {
+  if (stage === "bound" || stage === "lost" || stage === "quoted") {
     actions.push({ action: "reset", label: "Return to upcoming", next: "reset" });
   }
 
@@ -31,7 +31,7 @@ export function RenewalQueueActions({
           <input type="hidden" name="queueId" value={queueId} />
           <input type="hidden" name="action" value={row.action} />
           <input type="hidden" name="returnTo" value={returnTo} />
-          <Button type="submit" size="sm" variant={row.action === "accept" ? "outline" : "default"}>
+          <Button type="submit" size="sm" variant={row.action === "bind" ? "outline" : "default"}>
             {row.label}
           </Button>
         </form>

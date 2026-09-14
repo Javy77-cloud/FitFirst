@@ -92,3 +92,20 @@ describe("quoting forms", () => {
     expect(quotingUnlockedForDeal({ quotingUnlocked: false, pipelineStage: "bound" })).toBe(true);
   });
 });
+
+  it("maps Life / Term Life picks onto life quoting line (never HO3)", () => {
+    expect(coerceQuotingFormId("Life")).toBeNull();
+    expect(coerceQuotingFormId("Health")).toBeNull();
+    expect(dealCreateFieldsFromPick("Term Life")).toEqual({
+      quotingForm: "Term Life",
+      policySubType: "Term Life",
+      lineOfBusiness: "LIFE",
+      quotingLine: "life",
+    });
+    expect(dealCreateFieldsFromPick("Life")).toMatchObject({
+      lineOfBusiness: "LIFE",
+      quotingLine: "life",
+    });
+    expect(sheetsToPrepare("Term Life")).toEqual(["life"]);
+  });
+

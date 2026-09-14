@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LiveContainsInput } from "@/components/search/live-contains-input";
-import { ConfigurePageFiltersButton } from "@/components/filters/configure-page-filters";
+import { PageFilterChromeProvider } from "@/components/filters/page-filter-chrome-context";
 import {
   filterStorageKey,
   parseSavedFilters,
@@ -22,6 +21,17 @@ import {
   type PageFilter,
 } from "@/lib/page-filters";
 import { titleCaseLabel } from "@/lib/ui/title-case";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
+import { Button } from "@/components/ui/button";
+import { ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 function readSaved(moduleId: string): SavedNamedFilter[] {
   try {
@@ -69,6 +79,8 @@ export function PageFiltersBar({
   const [saved, setSaved] = useState<SavedNamedFilter[]>([]);
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState("");
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
 
   useEffect(() => {
     setSaved(readSaved(moduleId));
@@ -91,10 +103,13 @@ export function PageFiltersBar({
 
   function saveCurrent() {
     const label = name.trim();
-    if (!label || Object.keys(current).length === 0) return;
+    const params = { ...current };
+    const live = getLiveQuery(moduleId).trim();
+    if (live) params.q = live;
+    if (!label || Object.keys(params).length === 0) return;
     const next = [
-      ...saved.filter((row) => !sameFilterParams(row.params, current)),
-      { id: crypto.randomUUID(), name: label, params: current },
+      ...saved.filter((row) => !sameFilterParams(row.params, params)),
+      { id: crypto.randomUUID(), name: label, params },
     ];
     setSaved(next);
     writeSaved(moduleId, next);
@@ -107,11 +122,32 @@ export function PageFiltersBar({
     const next = saved.filter((row) => row.id !== id);
     setSaved(next);
     writeSaved(moduleId, next);
+    if (renamingId === id) {
+      setRenamingId(null);
+      setRenameDraft("");
+    }
   }
 
-  const hasCurrent = Object.keys(current).length > 0;
+  function commitRename(id: string) {
+    const label = renameDraft.trim();
+    if (!label) {
+      setRenamingId(null);
+      setRenameDraft("");
+      return;
+    }
+    const next = saved.map((row) => (row.id === id ? { ...row, name: label } : row));
+    setSaved(next);
+    writeSaved(moduleId, next);
+    setRenamingId(null);
+    setRenameDraft("");
+    flashAction("filter-saved");
+  }
+
+  const liveQ = getLiveQuery(moduleId).trim();
+  const hasCurrent = Object.keys(current).length > 0 || Boolean(liveQ);
 
   return (
+    <PageFilterChromeProvider canConfigure={canConfigure} moduleId={moduleId}>
     <div className="mb-3 flex flex-wrap items-center gap-1.5 text-xs" data-ff-page-filters={moduleId}>
       <LiveContainsInput
         moduleId={moduleId}
@@ -126,8 +162,14 @@ export function PageFiltersBar({
         const picked = field.options.find((option) => option.value === selected);
         const color = picked?.color ?? null;
         return (
-          <label key={field.id} className="inline-flex items-center gap-1 text-muted-foreground">
-            <span className="sr-only">{field.label}</span>
+          <label
+            key={field.id}
+            className="inline-flex items-center gap-1.5 text-muted-foreground"
+            data-ff-page-filter={field.fieldKey}
+          >
+            <span className="shrink-0 text-[11px] font-medium text-navy/80">
+              {field.label}
+            </span>
             {color ? (
               <span
                 aria-hidden
@@ -157,65 +199,150 @@ export function PageFiltersBar({
         );
       })}
 
-      {saved.map((row) => {
-        const active = sameFilterParams(row.params, current);
-        return (
-          <span key={row.id} className="inline-flex items-center">
-            <button
-              type="button"
-              onClick={() => go(row.params)}
-              className={cn(
-                "h-8 rounded-md border px-2 font-medium",
-                active
-                  ? "border-primary/40 bg-secondary text-navy"
-                  : "border-border bg-card text-muted-foreground hover:text-navy",
-              )}
-            >
-              {titleCaseLabel(row.name)}
-            </button>
-            <button
-              type="button"
-              onClick={() => remove(row.id)}
-              aria-label={`Remove ${row.name}`}
-              className="ml-0.5 size-5 rounded-sm text-muted-foreground hover:bg-muted hover:text-[#BF0A30]"
-            >
-              ×
-            </button>
-          </span>
-        );
-      })}
+      {saved.length ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1 px-2 text-xs font-medium text-navy"
+                data-ff-saved-filters=""
+              />
+            }
+          >
+            Saved filters
+            {saved.some((row) => sameFilterParams(row.params, current)) ? (
+              <span className="text-muted-foreground">
+                · {titleCaseLabel(saved.find((row) => sameFilterParams(row.params, current))!.name)}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">({saved.length})</span>
+            )}
+            <ChevronDown className="size-3.5 opacity-80" data-icon="inline-end" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-64 p-1" data-ff-saved-filters-menu="">
+            <DropdownMenuGroup>
+            <DropdownMenuLabel className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Saved filters
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {saved.map((row) => {
+              const active = sameFilterParams(row.params, current);
+              const renaming = renamingId === row.id;
+              return (
+                <div
+                  key={row.id}
+                  className={cn(
+                    "flex items-center gap-1 rounded-md px-1 py-1",
+                    active ? "bg-secondary" : "hover:bg-muted/60",
+                  )}
+                  data-ff-saved-filter={row.id}
+                >
+                  {renaming ? (
+                    <input
+                      value={renameDraft}
+                      onChange={(event) => setRenameDraft(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          commitRename(row.id);
+                        }
+                        if (event.key === "Escape") {
+                          setRenamingId(null);
+                          setRenameDraft("");
+                        }
+                      }}
+                      onClick={(event) => event.stopPropagation()}
+                      className="h-7 min-w-0 flex-1 rounded-md border border-[#6b7280] bg-card px-1.5 text-xs text-navy"
+                      autoFocus
+                      aria-label={`Rename ${row.name}`}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className="min-w-0 flex-1 truncate px-1.5 py-1 text-left text-xs font-medium text-navy"
+                      onClick={() => go(row.params)}
+                    >
+                      {titleCaseLabel(row.name)}
+                    </button>
+                  )}
+                  {renaming ? (
+                    <button
+                      type="button"
+                      className="shrink-0 px-1 text-[11px] font-medium text-[#002868] hover:underline"
+                      onClick={() => commitRename(row.id)}
+                    >
+                      Done
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="shrink-0 px-1 text-[11px] text-muted-foreground hover:text-navy hover:underline"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setRenamingId(row.id);
+                        setRenameDraft(row.name);
+                      }}
+                    >
+                      Rename
+                    </button>
+                  )}
+                  <FileDeleteIcon
+                    type="button"
+                    label={`Delete ${row.name}`}
+                    className="size-7 shrink-0 p-1.5"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      remove(row.id);
+                    }}
+                  />
+                </div>
+              );
+            })}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
 
-      {hasCurrent ? (
-        naming ? (
-          <span className="inline-flex items-center gap-1">
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") saveCurrent();
-                if (event.key === "Escape") setNaming(false);
-              }}
-              placeholder="Name"
-              className="h-8 w-28 rounded-md border border-[#6b7280] bg-card px-2 text-xs"
-              autoFocus
-            />
-            <button type="button" onClick={saveCurrent} className="text-xs font-medium text-primary hover:underline">
-              Save
-            </button>
-            <button type="button" onClick={() => setNaming(false)} className="text-xs text-muted-foreground">
-              Cancel
-            </button>
-          </span>
-        ) : (
+      {naming ? (
+        <span className="inline-flex items-center gap-1" data-ff-page-filter-save-as="">
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") saveCurrent();
+              if (event.key === "Escape") setNaming(false);
+            }}
+            placeholder="Name"
+            className="h-8 w-28 rounded-md border border-[#6b7280] bg-card px-2 text-xs"
+            autoFocus
+          />
           <button
             type="button"
-            onClick={() => setNaming(true)}
-            className="h-8 rounded-md border border-border bg-card px-2 text-xs font-medium text-navy hover:bg-secondary"
+            onClick={saveCurrent}
+            disabled={!hasCurrent || !name.trim()}
+            className="text-xs font-medium text-primary hover:underline disabled:opacity-40"
           >
-            Save As…
+            Save
           </button>
-        )
-      ) : null}
+          <button type="button" onClick={() => setNaming(false)} className="text-xs text-muted-foreground">
+            Cancel
+          </button>
+        </span>
+      ) : (
+        <button
+          type="button"
+          data-ff-page-filter-save-as=""
+          onClick={() => setNaming(true)}
+          disabled={!hasCurrent}
+          title={hasCurrent ? "Save current filters" : "Set a filter or search first"}
+          className="h-8 rounded-md border border-border bg-card px-2 text-xs font-medium text-navy hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Save As…
+        </button>
+      )}
 
       {hasCurrent ? (
         <button
@@ -230,28 +357,7 @@ export function PageFiltersBar({
         </button>
       ) : null}
 
-      {canConfigure ? <ConfigurePageFiltersSlot moduleId={moduleId} /> : null}
     </div>
+    </PageFilterChromeProvider>
   );
-}
-
-function ConfigurePageFiltersSlot({ moduleId }: { moduleId: string }) {
-  const [host, setHost] = useState<Element | null>(null);
-
-  useEffect(() => {
-    function find() {
-      setHost(document.querySelector("[data-ff-list-chrome]"));
-    }
-    find();
-    const tick = window.setInterval(find, 120);
-    const stop = window.setTimeout(() => window.clearInterval(tick), 2500);
-    return () => {
-      window.clearInterval(tick);
-      window.clearTimeout(stop);
-    };
-  }, []);
-
-  const button = <ConfigurePageFiltersButton moduleId={moduleId} />;
-  if (host) return createPortal(button, host);
-  return button;
 }

@@ -7,6 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { requireSignedIn } from "@/lib/auth/guards";
 import { getStoredNavLayout } from "@/lib/db/nav-prefs";
+import {
+  DATE_DISPLAY_FORMATS,
+  DATE_DISPLAY_FORMAT_LABELS,
+  normalizeDateDisplayFormat,
+} from "@/lib/dates/display-format";
 
 export const dynamic = "force-dynamic";
 
@@ -126,6 +131,28 @@ export default async function PersonalSettingsPage({
                 </Link>{" "}
                 for recent pings. Nothing emails you from this desk.
               </p>
+            </section>
+
+
+            <section id="date-format" className="ff-card space-y-2 p-4">
+              <h2 className="text-sm font-semibold text-navy">Date format</h2>
+              <p className="text-sm text-muted-foreground">
+                How dates show on lists and desk cards for you. Stored values stay ISO; only the
+                display changes. Default is M-D-Y.
+              </p>
+              <Label className="text-xs">Display format</Label>
+              <select
+                name="dateFormat"
+                defaultValue={normalizeDateDisplayFormat(personal.dateFormat)}
+                className="mt-1 h-9 w-full max-w-sm rounded-md border border-input bg-card px-2 text-sm"
+                data-ff-date-format-pref=""
+              >
+                {DATE_DISPLAY_FORMATS.map((format) => (
+                  <option key={format} value={format}>
+                    {DATE_DISPLAY_FORMAT_LABELS[format]}
+                  </option>
+                ))}
+              </select>
             </section>
 
             <section id="timezone" className="ff-card space-y-2 p-4">

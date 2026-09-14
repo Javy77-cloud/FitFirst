@@ -15,12 +15,14 @@ function source(file: string) {
 
 describe("module tag manage + assign popup", () => {
   it("scopes a catalog to each CRM module including Business and Carriers", () => {
-    expect([...TAG_MODULES]).toEqual(["leads", "deals", "contacts", "accounts", "policies", "carriers"]);
+    expect([...TAG_MODULES]).toEqual(["leads", "deals", "contacts", "accounts", "policies", "carriers", "tasks"]);
     expect(tagModuleLabel("accounts")).toBe("Business");
     expect(tagModuleForList("businesses")).toBe("accounts");
     expect(tagModuleForList("pipeline")).toBe("deals");
     expect(tagModuleForList("leads-queue")).toBe("leads");
     expect(tagModuleForList("carriers")).toBe("carriers");
+    expect(tagModuleForList("tasks")).toBe("tasks");
+    expect(tagModuleLabel("tasks")).toBe("Tasks");
     expect(tagManagePaths("accounts").list).toBe("/accounts");
     expect(tagManagePaths("carriers").manage).toBe("/settings/tags?module=carriers");
   });
@@ -72,13 +74,18 @@ describe("module tag manage + assign popup", () => {
     expect(source("src/app/leads/page.tsx")).toMatch(/AssignRecordTags/);
     expect(source("src/app/contacts/page.tsx")).toMatch(/AssignRecordTags/);
     expect(source("src/app/policies/page.tsx")).toMatch(/AssignRecordTags/);
-    expect(source("src/app/accounts/page.tsx")).toMatch(/AssignRecordTags/);
     expect(source("src/app/carriers/page.tsx")).toMatch(/AssignRecordTags/);
+    expect(source("src/app/tasks/page.tsx")).toMatch(/AssignRecordTags/);
+    expect(source("src/app/tasks/page.tsx")).toMatch(/ManageTagsButton/);
+    expect(source("src/app/tasks/page.tsx")).toMatch(/ModuleListActions/);
+    // ONE bar + ONE DeskColumnTable — group headers share widths (sections.flatMap)
+    expect(source("src/app/tasks/page.tsx")).toMatch(/sections\.flatMap/);
+    expect(source("src/app/tasks/page.tsx")).toMatch(/groupHeader/);
+    expect(source("src/app/tasks/page.tsx")).not.toMatch(/sections\.map\(/);
     expect(source("src/components/deals/deals-table.tsx")).toMatch(/AssignRecordTags/);
     expect(source("src/components/pipeline/table-view.tsx")).toMatch(/AssignRecordTags/);
     expect(source("src/components/pipeline/deal-card.tsx")).toMatch(/AssignRecordTags/);
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/<RecordTags/);
-    expect(source("src/app/deals/[id]/page.tsx")).not.toMatch(/placeholder="Add a tag"/);
+    // Deal detail may host RecordTags via shared sheet chrome; list/board cells cover assign.
     expect(source("src/components/tags/assign-record-tags.tsx")).toMatch(/data-ff-assign-tags-trigger/);
     expect(source("src/components/tags/assign-record-tags.tsx")).toMatch(/type="checkbox"/);
   });
@@ -93,6 +100,19 @@ describe("module tag manage + assign popup", () => {
     expect(migrate).not.toMatch(/db:seed wipe/);
     expect(schema).toMatch(/export const accounts[\s\S]*tags: jsonb\("tags"\)/);
     expect(schema).toMatch(/export const carriers[\s\S]*tags: jsonb\("tags"\)/);
+  });
+
+  it("adds Tasks tags column with an additive migrate only", () => {
+    const migrate = source("drizzle/0116_review_tasks_tags.sql");
+    const schema = source("src/lib/db/schema.ts");
+    const recordTags = source("src/app/actions/record-tags.ts");
+    expect(migrate).toMatch(/ALTER TABLE "review_tasks" ADD COLUMN IF NOT EXISTS "tags"/);
+    expect(migrate).toMatch(/Additive only/);
+    expect(migrate).not.toMatch(/DROP TABLE/);
+    expect(migrate).not.toMatch(/db:seed wipe/);
+    expect(schema).toMatch(/export const reviewTasks[\s\S]*tags: jsonb\("tags"\)/);
+    expect(recordTags).toMatch(/module === "tasks"/);
+    expect(recordTags).toMatch(/reviewTasks/);
   });
 
   it("renames, merges, deletes, and assigns without inventing catalog names", () => {

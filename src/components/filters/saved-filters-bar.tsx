@@ -117,7 +117,7 @@ export function SavedFiltersBar({
             onChange={(event) => setField(field.key, event.target.value)}
             className="h-7 max-w-[9.5rem] rounded-md border border-border bg-card px-1.5 text-xs text-navy"
           >
-            <option value="">{field.label}</option>
+            <option value="">None</option>
             {field.options.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}

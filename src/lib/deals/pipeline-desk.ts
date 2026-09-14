@@ -116,8 +116,11 @@ export function filterTodayDealActivity(
   });
 }
 
-export function todayActivityWorkHref(type: DealTodayActivityType): string {
-  return `/deals?queue=${type}`;
+export function todayActivityWorkHref(
+  type: DealTodayActivityType,
+  basePath: "/deals" | "/renewals" = "/deals",
+): string {
+  return `${basePath}?queue=${type}`;
 }
 
 /** Tasks page is the work queue for now — relabel later. */

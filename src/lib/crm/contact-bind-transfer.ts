@@ -2,6 +2,7 @@ import {
   CO_APPLICANT_TO_CONTACT_FIELD_MAP,
   DEAL_TO_CONTACT_FIELD_MAP,
 } from "@/lib/contacts/contact-field-catalog";
+import { isCoApplicantEnabled } from "@/lib/custom-fields/co-applicant-fields";
 
 function blank(value: string | null | undefined): boolean {
   return !String(value ?? "").trim();
@@ -46,6 +47,7 @@ export function emptyOnlyCoApplicantContactValues(
 export function hasCoApplicantIdentity(
   incoming: Record<string, string | null | undefined>,
 ): boolean {
+  if (!isCoApplicantEnabled(incoming)) return false;
   const first = String(incoming.co_applicant_first_name ?? "").trim();
   const last = String(incoming.co_applicant_last_name ?? "").trim();
   return Boolean(first || last);

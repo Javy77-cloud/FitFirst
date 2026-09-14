@@ -21,6 +21,7 @@ export async function searchActivityRecords(query: string): Promise<ActivityReco
     name: session.name,
     email: session.email ?? "",
     role: session.isAdmin ? ("admin" as const) : ("agent" as const),
+    canSeeAgencyBook: Boolean(session.user?.canSeeAgencyWidgets),
   };
   const [leadRows, dealRows, contactRows, accountRows] = await Promise.all([
     db.select().from(leads).where(eq(leads.tenantId, DEFAULT_TENANT_ID)),

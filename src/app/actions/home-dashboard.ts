@@ -384,7 +384,7 @@ export async function takeOwnershipLeadOffer(formData: FormData) {
     })
     .where(and(eq(leadOffers.id, offer.id), eq(leadOffers.status, "open"), isNull(leadOffers.claimedBy)));
 
-  const relationLabel = relation === "know_client" ? "I know this client" : "New lead";
+  const relationLabel = relation === "know_client" ? "I know this client" : "New Lead";
   await db.insert(alerts).values({
     tenantId: DEFAULT_TENANT_ID,
     kind: "lead_offer",

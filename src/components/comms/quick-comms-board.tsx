@@ -16,6 +16,8 @@ import { type MeetingType } from "@/lib/meetings/types";
 const QC_MEETING_ORDER: MeetingType[] = ["in_office", "in_home", "video"];
 import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 import { cn } from "@/lib/utils";
+import { CreateTaskForm } from "@/components/tasks/create-task-form";
+import type { TaskRecordType } from "@/lib/tasks/task-types";
 
 const KIND_TONE: Record<ActivityKind, string> = {
   task: "bg-[#dbeafe] text-[#1d4e89]",
@@ -337,6 +339,38 @@ export function QuickCommsBoard({
         </p>
       ) : null}
 
+      {kind === "task" ? (
+        <div
+          className="my-3 rounded-md border border-border p-3"
+          data-ff-quick-comms-form="task"
+        >
+          <CreateTaskForm
+            compact
+            lockRecord={Boolean(policyId || dealId || contactId || accountId || leadId)}
+            submitLabel="Add task"
+            defaults={{
+              recordType: (policyId
+                ? "policy"
+                : dealId
+                  ? "deal"
+                  : contactId
+                    ? "contact"
+                    : accountId
+                      ? "business"
+                      : leadId
+                        ? "lead"
+                        : "contact") as TaskRecordType,
+              recordId: (policyId || dealId || contactId || accountId || leadId) ?? undefined,
+              recordName: contactName || undefined,
+              contactId,
+              accountId,
+              dealId,
+              policyId,
+              leadId,
+            }}
+          />
+        </div>
+      ) : (
       <form
         key={kind}
         action={submitKind}
@@ -349,57 +383,6 @@ export function QuickCommsBoard({
         {accountId ? <input type="hidden" name="accountId" value={accountId} /> : null}
         {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}
         <input type="hidden" name="kind" value={kind} />
-
-        {kind === "task" ? (
-          <>
-            <div>
-              <Label className="text-xs">Title</Label>
-              <Input name="title" required className="mt-1 h-8" defaultValue={defaultTitle} />
-              {contactName ? (
-                <p className="mt-0.5 text-[11px] text-muted-foreground">For {contactName}</p>
-              ) : null}
-            </div>
-            <div>
-              <Label className="text-xs">Date</Label>
-              <Input name="dueDate" type="date" className="mt-1 h-8" />
-            </div>
-            <div>
-              <Label className="text-xs">Time</Label>
-              <Input name="dueTime" type="time" className="mt-1 h-8" />
-            </div>
-            <div>
-              <Label className="text-xs">Reminder</Label>
-              <select
-                name="reminderMinutes"
-                className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-              >
-                {REMINDER_OPTIONS.map((opt) => (
-                  <option key={opt.value || "none"} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label className="text-xs">Notify channel</Label>
-              <select
-                name="notifyChannel"
-                className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-                defaultValue="popup"
-              >
-                <option value="popup">Popup (in-app)</option>
-                <option value="email">Email (optional — still pops in-app)</option>
-              </select>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
-                Popup is default. Email only stores a preference — Javy is not emailed for CRM
-                alerts.
-              </p>
-            </div>
-            <Button type="submit" size="sm" className="mt-1 w-full">
-              Add task
-            </Button>
-          </>
-        ) : null}
 
         {kind === "meeting" ? (
           <>
@@ -720,6 +703,8 @@ export function QuickCommsBoard({
           </>
         ) : null}
       </form>
+      )}
+
 
       {filtered.length === 0 ? (
         <p className="text-base text-muted-foreground">

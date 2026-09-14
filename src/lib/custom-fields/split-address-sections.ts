@@ -1,7 +1,12 @@
 import type { FieldLayout, LayoutSection } from "./types";
 
 const INSURED_KEYS = new Set(["mailing_address", "city", "state", "zip"]);
-const MAILING_KEYS = new Set(["contact_mailing_address"]);
+const MAILING_KEYS = new Set([
+  "contact_mailing_address",
+  "contact_mailing_city",
+  "contact_mailing_state",
+  "contact_mailing_zip",
+]);
 
 function sectionHasBoth(section: LayoutSection): boolean {
   const keys = new Set(section.fieldKeys);
@@ -55,6 +60,51 @@ export function splitInsuredMailingAddressSections(layout: FieldLayout): FieldLa
           });
         }
         return out.length ? out : [section];
+      }),
+    })),
+  };
+}
+
+/** Ensure Mailing Address has street + city + state + zip like Insured Address. */
+export function needsMailingAddressParity(layout: FieldLayout): boolean {
+  for (const col of layout.columns) {
+    for (const section of col.sections) {
+      if (section.id !== "mailing_address" && !/^mailing address$/i.test(section.label.trim())) continue;
+      const keys = new Set(section.fieldKeys);
+      if (
+        keys.has("contact_mailing_address") &&
+        (!keys.has("contact_mailing_city") ||
+          !keys.has("contact_mailing_state") ||
+          !keys.has("contact_mailing_zip"))
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+const MAILING_PARITY_KEYS = [
+  "contact_mailing_address",
+  "contact_mailing_city",
+  "contact_mailing_state",
+  "contact_mailing_zip",
+] as const;
+
+export function ensureMailingAddressParity(layout: FieldLayout): FieldLayout {
+  if (!needsMailingAddressParity(layout)) return layout;
+  return {
+    columns: layout.columns.map((col) => ({
+      ...col,
+      sections: col.sections.map((section) => {
+        if (section.id !== "mailing_address" && !/^mailing address$/i.test(section.label.trim())) {
+          return section;
+        }
+        const keys = [...section.fieldKeys];
+        for (const key of MAILING_PARITY_KEYS) {
+          if (!keys.includes(key)) keys.push(key);
+        }
+        return { ...section, fieldKeys: keys };
       }),
     })),
   };

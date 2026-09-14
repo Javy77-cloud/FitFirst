@@ -14,6 +14,8 @@ export const PIPELINE_GRID_READONLY = new Set([
   "updated",
   "tags",
   "shopLines",
+  "picklist_5n3i", // Pipeline — filled from Details Insurance Type
+  "picklist", // Insurance subtype — filled from Details form
 ]);
 
 export type PipelineGridControl =

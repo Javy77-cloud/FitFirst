@@ -60,7 +60,7 @@ describe("manual markets", () => {
     expect(panel).not.toMatch(/No stretch markets/);
     expect(panel).not.toMatch(/Nothing to skip/);
     expect(panel).toMatch(/marketBucketLabel\("appetite"\)/);
-    expect(panel).toMatch(/Approve & request quotes/);
+    expect(panel).toMatch(/Request Quotes/);
     const emptyBranch = panel.slice(
       panel.indexOf("if (!hasData)"),
       panel.indexOf("const approveLabel"),
@@ -100,7 +100,7 @@ describe("manual markets", () => {
     expect(html).toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
     expect(html).toMatch(/Add carrier manually/);
     expect(html).not.toMatch(/In appetite/);
-    expect(html).not.toMatch(/Approve & request quotes/);
+    expect(html).not.toMatch(/Request Quotes/);
   });
 
   it("stays blank when evaluateDeal auto-returns matches and the agent has not acted", () => {

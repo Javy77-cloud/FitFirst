@@ -111,9 +111,9 @@ describe("deal detail final rebuild", () => {
     expect(source("src/components/deal/master-sheet-compare.tsx")).toMatch(/persistSheet/);
     const gate = source("src/components/deal/sheet-approve-gate.tsx");
     expect(gate).toMatch(/I visually reviewed this master sheet\./);
-    expect(gate).toMatch(/Confirm & request quotes/);
+    expect(gate).toMatch(/Confirm & Request Quotes/);
     expect(gate).not.toMatch(/: "Confirm sheet"/);
-    expect(gate).not.toMatch(/Approve & request quotes/);
+    expect(gate).not.toMatch(/Approve & Request Quotes/);
     expect(gate).toMatch(/disabled=\{!reviewed \|\| pending\}/);
     expect(gate).toMatch(/requestQuotes/);
     expect(docs).toMatch(/FileActionMenu/);
@@ -172,12 +172,12 @@ describe("deal detail final rebuild", () => {
     const markets = source("src/components/deal/markets-panel.tsx");
     const body = markets.slice(markets.indexOf("return ("));
     expect(body).toMatch(/In appetite|marketBucketLabel\("appetite"\)/);
-    expect(body).toMatch(/Approve & request quotes/);
+    expect(body).toMatch(/Request Quotes/);
     expect(body).toMatch(/PaidApiWall/);
     expect(body).toMatch(/dealLine/);
     expect(body).toMatch(/data-ff-markets-empty/);
-    expect(body.indexOf("data-ff-markets-empty")).toBeLessThan(body.indexOf("Approve & request quotes"));
-    expect(body.indexOf("Approve & request quotes")).toBeLessThan(body.indexOf("<MarketsSelectTable"));
+    expect(body.indexOf("data-ff-markets-empty")).toBeLessThan(body.indexOf("Request Quotes"));
+    expect(body.indexOf("Request Quotes")).toBeLessThan(body.indexOf("<MarketsSelectTable"));
     expect(body.indexOf("<MarketsSelectTable")).toBeLessThan(body.lastIndexOf("<ManualCarrierAdd"));
   });
 

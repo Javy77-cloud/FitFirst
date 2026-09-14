@@ -5,7 +5,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LiveContainsInput } from "@/components/search/live-contains-input";
 import { FollowUpTemplatesPanel, type FollowUpTemplateView } from "@/components/leads/follow-up-templates-panel";
 import { useLiveContainsQuery } from "@/hooks/use-live-contains-query";
-import { LEAD_QUEUE_STATUS_FILTERS } from "@/lib/leads/queue";
+import {
+  LEAD_CADENCE_FILTERS, LEAD_QUEUE_STATUS_FILTERS } from "@/lib/leads/queue";
 import { matchesContains } from "@/lib/search/live-query";
 import { searchMatchLabel } from "@/lib/leads/queue";
 import { cn } from "@/lib/utils";
@@ -55,6 +56,20 @@ export function LeadsQueueToolbar({
         </span>
       ) : null}
       <label className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+        <span className="sr-only">Cadence</span>
+        <select
+          aria-label="Cadence"
+          value={search.get("cadence") ?? ""}
+          onChange={(event) => setParam("cadence", event.target.value)}
+          className="h-7 max-w-[9.5rem] rounded-md border border-border bg-card px-1.5 text-xs text-navy"
+        >
+          <option value="">Cadence</option>
+          {LEAD_CADENCE_FILTERS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
         <span className="sr-only">Status</span>
         <select
           aria-label="Status"

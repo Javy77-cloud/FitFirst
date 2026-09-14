@@ -9,7 +9,7 @@ import {
 import { remapNavIds, remapNavSubmenus } from "@/lib/desk/nav-aliases";
 
 /** Bump when the signed default rail changes so stale per-user prefs reset. */
-export const NAV_LAYOUT_VERSION = 9 as const;
+export const NAV_LAYOUT_VERSION = 12 as const;
 export const DIVIDER_ID = "divider";
 
 /** Admin-only Operations folder. Default rail places it top-level; Customize can nest or promote it. */
@@ -24,8 +24,8 @@ export const OPERATIONS_NAV_IDS = [
   "marketplace",
 ] as const;
 
-/** Flat Policies kids. Parent href lands on My Book. */
-export const POLICIES_DEFAULT_KIDS = ["my-book", "renewals", "certificates"] as const;
+/** Flat Policies kids. Parent click = My Book (/policies); no My Book folder. */
+export const POLICIES_DEFAULT_KIDS = ["renewals", "certificates"] as const;
 
 /** Catalog extras that used to nest in the default rail — Customize can still add them. */
 export const CATALOG_ONLY_DEFAULT_EXTRAS = [
@@ -37,31 +37,35 @@ export const CATALOG_ONLY_DEFAULT_EXTRAS = [
   "commissions",
 ] as const;
 
-/** Default rail, top → bottom. Divider splits CRM from utility. */
+/**
+ * Shared initial left rail for admin + agents (Rivera prefs / full CRM strip).
+ * Divider splits main CRM from utility. Agents still filter adminOnly at resolve time.
+ */
 export const DEFAULT_PRIMARY_ORDER = [
   "home",
   "leads",
   "deals",
   "contacts",
-  "policies",
   "business",
+  "policies",
   "carriers",
-  DIVIDER_ID,
   "tasks",
   "calendar",
   "templates",
+  DIVIDER_ID,
   "reports",
   "settings",
   "admin",
   "operations",
 ] as const;
 
+/** Same initial rail as admin; adminOnly links filtered for agents at resolve time. */
+export const AGENT_PRIMARY_ORDER = DEFAULT_PRIMARY_ORDER;
+
 export const DEFAULT_COLLAPSED_IDS = ["business", "carriers"] as const;
 
+/** Items typically after the divider (utility strip). */
 export const UTILITY_PRIMARY_IDS = [
-  "tasks",
-  "calendar",
-  "templates",
   "reports",
   "settings",
   "admin",
@@ -74,6 +78,7 @@ export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
   deals: [],
   contacts: [],
   policies: POLICIES_DEFAULT_KIDS,
+  renewals: [],
   business: [],
   carriers: [],
   tasks: [],
@@ -98,6 +103,8 @@ export type PersonalDeskPrefs = {
   timezone?: string;
   emailSignature?: string;
   notifyInApp?: boolean;
+  /** Desk date display: mdy (default) | ymd | dmy */
+  dateFormat?: string;
 };
 
 export type StoredNavLayout = {
@@ -141,13 +148,17 @@ function parsePersonal(raw: unknown): PersonalDeskPrefs | undefined {
   if (typeof value.timezone === "string") personal.timezone = value.timezone;
   if (typeof value.emailSignature === "string") personal.emailSignature = value.emailSignature;
   if (typeof value.notifyInApp === "boolean") personal.notifyInApp = value.notifyInApp;
+  if (typeof value.dateFormat === "string") personal.dateFormat = value.dateFormat;
   return Object.keys(personal).length ? personal : undefined;
 }
 
-export function defaultStoredNavLayout(): StoredNavLayout {
+export type NavLayoutOptions = { isAdmin?: boolean };
+
+export function defaultStoredNavLayout(options: NavLayoutOptions = {}): StoredNavLayout {
+  const isAdmin = options.isAdmin !== false;
   return {
     version: NAV_LAYOUT_VERSION,
-    primaryOrder: [...DEFAULT_PRIMARY_ORDER],
+    primaryOrder: isAdmin ? [...DEFAULT_PRIMARY_ORDER] : [...AGENT_PRIMARY_ORDER],
     hiddenPrimaryIds: [],
     submenus: Object.fromEntries(
       Object.entries(DEFAULT_SUBMENUS).map(([id, items]) => [id, [...items]]),
@@ -203,14 +214,18 @@ function allUsedIds(primaryOrder: string[], submenus: Record<string, string[]>):
   return used;
 }
 
-function insertMissingDefaults(primaryOrder: string[], used: Set<string>): string[] {
+function insertMissingDefaults(
+  primaryOrder: string[],
+  used: Set<string>,
+  defaults: readonly string[] = DEFAULT_PRIMARY_ORDER,
+): string[] {
   const next = [...primaryOrder];
-  for (const id of DEFAULT_PRIMARY_ORDER) {
+  for (const id of defaults) {
     if (used.has(id)) continue;
-    const defaultIndex = DEFAULT_PRIMARY_ORDER.indexOf(id);
+    const defaultIndex = defaults.indexOf(id);
     let insertAt = next.length;
     for (let i = defaultIndex - 1; i >= 0; i--) {
-      const neighbor = DEFAULT_PRIMARY_ORDER[i];
+      const neighbor = defaults[i];
       const pos = next.indexOf(neighbor);
       if (pos >= 0) {
         insertAt = pos + 1;
@@ -224,8 +239,10 @@ function insertMissingDefaults(primaryOrder: string[], used: Set<string>): strin
 }
 
 /** Merge a saved JSON blob with today's catalog so new modules still appear. */
-export function normalizeNavLayout(raw: unknown): StoredNavLayout {
-  const fallback = defaultStoredNavLayout();
+export function normalizeNavLayout(raw: unknown, options: NavLayoutOptions = {}): StoredNavLayout {
+  const isAdmin = options.isAdmin !== false;
+  const fallback = defaultStoredNavLayout({ isAdmin });
+  const defaultOrder = isAdmin ? DEFAULT_PRIMARY_ORDER : AGENT_PRIMARY_ORDER;
   if (!raw || typeof raw !== "object") return fallback;
   const parsed = raw as Partial<StoredNavLayout> & { version?: number };
   const personal = parsePersonal((parsed as { personal?: unknown }).personal);
@@ -261,7 +278,11 @@ export function normalizeNavLayout(raw: unknown): StoredNavLayout {
     submenus[parent] = cleaned;
   }
 
-  let primaryOrder = insertMissingDefaults(knownSaved.filter((id) => !isDividerId(id) || true), used);
+  let primaryOrder = insertMissingDefaults(
+    knownSaved.filter((id) => !isDividerId(id) || true),
+    used,
+    defaultOrder,
+  );
   primaryOrder = uniqueKnown(primaryOrder);
 
   if (!primaryOrder.includes(DIVIDER_ID)) {
@@ -307,22 +328,28 @@ export function normalizeNavLayout(raw: unknown): StoredNavLayout {
   };
 }
 
-export function parseStoredNavLayout(raw: string | null | undefined): StoredNavLayout {
-  if (!raw) return defaultStoredNavLayout();
+export function parseStoredNavLayout(
+  raw: string | null | undefined,
+  options: NavLayoutOptions = {},
+): StoredNavLayout {
+  if (!raw) return defaultStoredNavLayout(options);
   try {
-    return normalizeNavLayout(JSON.parse(raw) as unknown);
+    return normalizeNavLayout(JSON.parse(raw) as unknown, options);
   } catch {
-    return defaultStoredNavLayout();
+    return defaultStoredNavLayout(options);
   }
 }
 
 export function resolveNavLayout(
   stored: StoredNavLayout | null | undefined,
-  options: { isAdmin?: boolean } = {},
+  options: NavLayoutOptions = {},
 ): ResolvedNavRow[] {
-  const layout = normalizeNavLayout(stored);
   const isAdmin = options.isAdmin !== false;
-  return layout.primaryOrder
+  // Honor saved Customize order for everyone. Agents still skip adminOnly links.
+  // Default strip for agents comes from defaultStoredNavLayout({ isAdmin: false }).
+  const layout = normalizeNavLayout(stored, { isAdmin });
+  const primaryOrder = layout.primaryOrder;
+  return primaryOrder
     .map((id): ResolvedNavRow | null => {
       if (isDividerId(id)) return { kind: "divider", id: DIVIDER_ID };
       const link = getNavLink(id);
@@ -617,6 +644,8 @@ export function unusedCatalogLinks(
   const isAdmin = options.isAdmin !== false;
   return NAV_LINK_CATALOG.filter((link) => {
     if (taken.has(link.id)) return false;
+    // My Book is the Policies parent click — not a separate folder to re-add.
+    if (link.id === "my-book") return false;
     if (!isAdmin && link.adminOnly) return false;
     return true;
   });
@@ -665,6 +694,8 @@ export function availableSubmenuLinks(
   const isAdmin = options.isAdmin !== false;
   return NAV_LINK_CATALOG.filter((link) => {
     if (taken.has(link.id)) return false;
+    // My Book is the Policies parent click — not a separate folder to re-add.
+    if (link.id === "my-book") return false;
     if (!isAdmin && link.adminOnly) return false;
     return true;
   });

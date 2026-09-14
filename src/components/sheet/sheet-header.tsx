@@ -101,7 +101,7 @@ export function SheetHeader({
                 data-ff-manage-tags=""
                 className="flex w-full rounded-md px-2 py-1.5 text-left text-navy hover:bg-muted"
               >
-                Manage tags
+                Manage Tags
                 <span className="ml-auto text-[11px] text-muted-foreground">
                   {tagModuleLabel(tagModule)}
                 </span>

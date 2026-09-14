@@ -156,7 +156,7 @@ export function ManageTagsDialog({
                       aria-label={`Edit color for ${formatTagLabel(tag.name)}`}
                     />
                     <Button type="submit" size="xs" variant="outline">
-                      Save color
+                      Save Color
                     </Button>
                   </form>
                   <form

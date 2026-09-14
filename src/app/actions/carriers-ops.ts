@@ -13,9 +13,21 @@ import {
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
+  appetiteEngineRules,
+  appetiteRules,
+  appetiteShadowPredictions,
   carrierActivityEvents,
   carrierAmBestHistory,
+  carrierAppointments,
+  carrierGoals,
+  carrierSecretRevealLogs,
   carriers,
+  commissions,
+  fillFeedbackLogs,
+  fillLearningLogs,
+  policies,
+  quoteAttemptLogs,
+  quotes,
 } from "@/lib/db/schema";
 import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { isUuid } from "@/lib/ids";
@@ -135,6 +147,24 @@ export async function createCarrierPopup(
 
   const name = str(formData, "name");
   if (!name) return { ok: false, error: "Carrier Name Is Required." };
+
+  const [nameClash] = await db
+    .select({ id: carriers.id })
+    .from(carriers)
+    .where(
+      and(
+        eq(carriers.tenantId, DEFAULT_TENANT_ID),
+        sql`lower(trim(${carriers.name})) = ${name.trim().toLowerCase()}`,
+        sql`coalesce(${carriers.active}, true) = true`,
+      ),
+    )
+    .limit(1);
+  if (nameClash) {
+    return {
+      ok: false,
+      error: "A carrier with that name already exists. Open it or merge the duplicate.",
+    };
+  }
 
   const written = parseWrittenLines(str(formData, "writtenLines"));
   const statusRaw = str(formData, "status").toLowerCase();
@@ -415,6 +445,8 @@ export async function searchCarriersForMerge(q: string): Promise<
       and(
         eq(carriers.tenantId, DEFAULT_TENANT_ID),
         sql`lower(${carriers.name}) like ${"%" + needle + "%"}`,
+        sql`coalesce(${carriers.active}, true) = true`,
+        sql`lower(${carriers.name}) not like '%(merged)%'`,
       ),
     )
     .limit(12);
@@ -432,21 +464,135 @@ export async function mergeCarrierIntoSurvivor(input: {
   if (!isUuid(keepId) || !isUuid(dropId) || keepId === dropId) {
     return { ok: false, error: "Pick Two Different Carriers." };
   }
-  // Honest stub: deactivate duplicate; do not rewrite policy FKs yet.
+
+  const [keep] = await db
+    .select()
+    .from(carriers)
+    .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, keepId)));
+  const [drop] = await db
+    .select()
+    .from(carriers)
+    .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, dropId)));
+  if (!keep || !drop) return { ok: false, error: "Carrier Not Found." };
+
+  // Prefer non-empty drop fields onto blank keeper fields (credentials included).
+  function fillText(a: string | null | undefined, b: string | null | undefined): string | null {
+    const left = (a ?? "").trim();
+    if (left) return a ?? null;
+    const right = (b ?? "").trim();
+    return right ? (b ?? null) : null;
+  }
+  function fillDate(a: Date | null | undefined, b: Date | null | undefined): Date | null {
+    return a ?? b ?? null;
+  }
+
+  const keepHasUser = Boolean(keep.portalUsernameEnc && keep.portalUsernameIv);
+  const dropHasUser = Boolean(drop.portalUsernameEnc && drop.portalUsernameIv);
+  const keepHasPass = Boolean(keep.portalPasswordEnc && keep.portalPasswordIv);
+  const dropHasPass = Boolean(drop.portalPasswordEnc && drop.portalPasswordIv);
+
+  await db
+    .update(carriers)
+    .set({
+      agencyCode: fillText(keep.agencyCode, drop.agencyCode),
+      website: fillText(keep.website, drop.website),
+      phone: fillText(keep.phone, drop.phone),
+      email: fillText(keep.email, drop.email),
+      mailingAddress: fillText(keep.mailingAddress, drop.mailingAddress),
+      portalUrl: fillText(keep.portalUrl, drop.portalUrl),
+      agentPortalUrl: fillText(keep.agentPortalUrl, drop.agentPortalUrl),
+      portalLogin: fillText(keep.portalLogin, drop.portalLogin),
+      customerServicePhone: fillText(keep.customerServicePhone, drop.customerServicePhone),
+      agentPhone: fillText(keep.agentPhone, drop.agentPhone),
+      underwriterName: fillText(keep.underwriterName, drop.underwriterName),
+      underwriterEmail: fillText(keep.underwriterEmail, drop.underwriterEmail),
+      underwriterPhone: fillText(keep.underwriterPhone, drop.underwriterPhone),
+      claimsContactName: fillText(keep.claimsContactName, drop.claimsContactName),
+      claimsContactEmail: fillText(keep.claimsContactEmail, drop.claimsContactEmail),
+      claimsPhone: fillText(keep.claimsPhone, drop.claimsPhone),
+      amBestRating: fillText(keep.amBestRating, drop.amBestRating),
+      amBestOutlook: fillText(keep.amBestOutlook, drop.amBestOutlook),
+      amBestDate: fillDate(keep.amBestDate, drop.amBestDate),
+      carrierInfo: fillText(keep.carrierInfo, drop.carrierInfo),
+      appetiteNotes: fillText(keep.appetiteNotes, drop.appetiteNotes),
+      dontWriteNotes: fillText(keep.dontWriteNotes, drop.dontWriteNotes),
+      naic: fillText(keep.naic, drop.naic),
+      territory: fillText(keep.territory, drop.territory),
+      newBusinessCommPct: fillText(keep.newBusinessCommPct, drop.newBusinessCommPct),
+      renewalCommPct: fillText(keep.renewalCommPct, drop.renewalCommPct),
+      portalUsernameEnc: keepHasUser ? keep.portalUsernameEnc : drop.portalUsernameEnc,
+      portalUsernameIv: keepHasUser ? keep.portalUsernameIv : drop.portalUsernameIv,
+      portalUsernameHint: keepHasUser ? keep.portalUsernameHint : drop.portalUsernameHint,
+      portalPasswordEnc: keepHasPass ? keep.portalPasswordEnc : drop.portalPasswordEnc,
+      portalPasswordIv: keepHasPass ? keep.portalPasswordIv : drop.portalPasswordIv,
+      writtenLines:
+        (keep.writtenLines?.length ?? 0) > 0 ? keep.writtenLines : drop.writtenLines,
+      active: true,
+      deskStatus: keep.deskStatus === "inactive" ? drop.deskStatus ?? "active" : keep.deskStatus,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, keepId)));
+
+  // Re-point every known FK from drop → keep.
+  await db.update(policies).set({ carrierId: keepId }).where(eq(policies.carrierId, dropId));
+  await db.update(quotes).set({ carrierId: keepId }).where(eq(quotes.carrierId, dropId));
+  await db.update(quoteAttemptLogs).set({ carrierId: keepId }).where(eq(quoteAttemptLogs.carrierId, dropId));
+  await db.update(commissions).set({ carrierId: keepId }).where(eq(commissions.carrierId, dropId));
+  await db.update(fillFeedbackLogs).set({ carrierId: keepId }).where(eq(fillFeedbackLogs.carrierId, dropId));
+  await db.update(fillLearningLogs).set({ carrierId: keepId }).where(eq(fillLearningLogs.carrierId, dropId));
+  await db.update(carrierSecretRevealLogs).set({ carrierId: keepId }).where(eq(carrierSecretRevealLogs.carrierId, dropId));
+  await db.update(carrierAmBestHistory).set({ carrierId: keepId }).where(eq(carrierAmBestHistory.carrierId, dropId));
+  await db.update(carrierActivityEvents).set({ carrierId: keepId }).where(eq(carrierActivityEvents.carrierId, dropId));
+  await db.update(carrierAppointments).set({ carrierId: keepId }).where(eq(carrierAppointments.carrierId, dropId));
+  await db.update(carrierGoals).set({ carrierId: keepId }).where(eq(carrierGoals.carrierId, dropId));
+  await db.update(appetiteEngineRules).set({ carrierId: keepId }).where(eq(appetiteEngineRules.carrierId, dropId));
+  await db.update(appetiteShadowPredictions).set({ carrierId: keepId }).where(eq(appetiteShadowPredictions.carrierId, dropId));
+
+  // Appetite rules: move only when keep has none; otherwise drop the duplicate's rows.
+  const keepRules = await db
+    .select({ id: appetiteRules.id })
+    .from(appetiteRules)
+    .where(and(eq(appetiteRules.tenantId, DEFAULT_TENANT_ID), eq(appetiteRules.carrierId, keepId)))
+    .limit(1);
+  if (keepRules.length === 0) {
+    await db
+      .update(appetiteRules)
+      .set({ carrierId: keepId })
+      .where(and(eq(appetiteRules.tenantId, DEFAULT_TENANT_ID), eq(appetiteRules.carrierId, dropId)));
+  } else {
+    await db
+      .delete(appetiteRules)
+      .where(and(eq(appetiteRules.tenantId, DEFAULT_TENANT_ID), eq(appetiteRules.carrierId, dropId)));
+  }
+
+  // Retire duplicate so list never shows two of the same name.
   await db
     .update(carriers)
     .set({
       active: false,
-      carrierInfo: sql`coalesce(${carriers.carrierInfo}, '') || ${"\\n[Merged into " + keepId + "]"}`,
+      deskStatus: "inactive",
+      name: `${drop.name} (merged)`,
+      carrierInfo: sql`coalesce(${carriers.carrierInfo}, '') || ${"\\n[Merged into " + keepId + " on " + new Date().toISOString().slice(0, 10) + "]"}`,
       updatedAt: new Date(),
     })
-    .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, dropId), ne(carriers.id, keepId)));
+    .where(and(eq(carriers.tenantId, DEFAULT_TENANT_ID), eq(carriers.id, dropId)));
+
+  await db.insert(carrierActivityEvents).values({
+    tenantId: DEFAULT_TENANT_ID,
+    carrierId: keepId,
+    kind: "merge",
+    title: "Carrier merged",
+    detail: `Merged “${drop.name}” (${dropId}) into this record.`,
+    actorId: admin.userId,
+    actorName: admin.name,
+    occurredAt: new Date(),
+  });
+
   revalidatePath("/carriers");
   revalidatePath(`/carriers/${keepId}`);
   revalidatePath(`/carriers/${dropId}`);
   return { ok: true, survivorId: keepId };
 }
-
 
 export async function saveCarrierAppetiteRows(input: {
   carrierId: string;

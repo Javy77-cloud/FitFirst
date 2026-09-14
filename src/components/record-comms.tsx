@@ -98,7 +98,7 @@ export function RecordComms({
           <HiddenRelated {...related} />
           {email ? <input type="hidden" name="toAddress" value={email} /> : null}
           <div className="sm:col-span-2">
-            <p className="text-xs font-semibold text-navy">Queue email</p>
+            <p className="text-xs font-semibold text-navy">Queue Email</p>
             <p className="text-[11px] text-muted-foreground">
               Logs intent on the timeline and the outbound queue. Nothing sends — vendor later.
             </p>

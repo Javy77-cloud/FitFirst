@@ -26,7 +26,7 @@ export function RelatedRecordFields({
           defaultValue={defaults?.contactId ?? ""}
           className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
         >
-          <option value="">—</option>
+          <option value="">None</option>
           {options.contacts.map((c) => (
             <option key={c.id} value={c.id}>
               {c.lastName}, {c.firstName}
@@ -41,7 +41,7 @@ export function RelatedRecordFields({
           defaultValue={defaults?.policyId ?? ""}
           className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
         >
-          <option value="">—</option>
+          <option value="">None</option>
           {options.policies.map((p) => (
             <option key={p.id} value={p.id}>
               {p.policyNumber}
@@ -56,7 +56,7 @@ export function RelatedRecordFields({
           defaultValue={defaults?.dealId ?? ""}
           className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
         >
-          <option value="">—</option>
+          <option value="">None</option>
           {options.deals.map((d) => (
             <option key={d.id} value={d.id}>
               {d.title}
@@ -71,7 +71,7 @@ export function RelatedRecordFields({
           defaultValue={defaults?.accountId ?? ""}
           className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
         >
-          <option value="">—</option>
+          <option value="">None</option>
           {options.businesses.map((b) => (
             <option key={b.id} value={b.id}>
               {b.name}
@@ -86,7 +86,7 @@ export function RelatedRecordFields({
           defaultValue={defaults?.leadId ?? ""}
           className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
         >
-          <option value="">—</option>
+          <option value="">None</option>
           {options.leads.map((l) => (
             <option key={l.id} value={l.id}>
               {l.lastName}, {l.firstName}
@@ -101,7 +101,7 @@ export function RelatedRecordFields({
           defaultValue={defaults?.assignee ?? ""}
           className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
         >
-          <option value="">—</option>
+          <option value="">None</option>
           {options.users.map((u) => (
             <option key={u.id} value={u.name}>
               {u.name}

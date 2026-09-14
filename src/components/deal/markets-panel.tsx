@@ -79,7 +79,7 @@ export function MarketsPanel({
           </p>
           <p className="text-sm text-muted-foreground">
             No carriers on this deal yet. Load a shop list or add carriers below,
-            then approve & request quotes — or confirm the sheet to unlock shopping.
+            then request quotes — or confirm the sheet to unlock shopping.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <LoadShopListButton dealId={dealId} dealLine={dealLine} />
@@ -98,13 +98,13 @@ export function MarketsPanel({
   const approveLabel =
     unlocked
       ? selectedAppetiteCount > 0
-        ? `Approve & request quotes (${selectedAppetiteCount})`
-        : "Approve & request quotes"
-      : "Approve sheet to request";
+        ? `Request Quotes (${selectedAppetiteCount})`
+        : "Request Quotes"
+      : "Request Quotes";
   const stretchLabel =
     selectedStretchCount > 0
-      ? `Request stretch quotes (${selectedStretchCount})`
-      : "Request stretch quotes";
+      ? `Request Stretch Quotes (${selectedStretchCount})`
+      : "Request Stretch Quotes";
 
   const appetiteToolbar = (
     <>

@@ -61,7 +61,7 @@ describe("sep7bn Markets start from scratch on every deal", () => {
     expect(html).toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
     expect(html).toMatch(/Add carrier manually/);
     expect(html).not.toMatch(/In appetite/);
-    expect(html).not.toMatch(/Approve & request quotes/);
+    expect(html).not.toMatch(/Request Quotes/);
     // Home Co may appear in the manual-add select; it must not paint as a shopped row.
     expect(html).not.toMatch(/data-ff-markets-select|MarketsSelectTable/);
   });

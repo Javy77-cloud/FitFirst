@@ -5,6 +5,7 @@ export const TAG_MODULES = [
   "accounts",
   "policies",
   "carriers",
+  "tasks",
 ] as const;
 export type TagModule = (typeof TAG_MODULES)[number];
 
@@ -15,6 +16,7 @@ export const TAG_MODULE_LABELS: Record<TagModule, string> = {
   accounts: "Business",
   policies: "Policies",
   carriers: "Carriers",
+  tasks: "Tasks",
 };
 
 export const TAG_MODULE_PATHS: Record<TagModule, { list: string; detail: (id: string) => string }> = {
@@ -24,6 +26,7 @@ export const TAG_MODULE_PATHS: Record<TagModule, { list: string; detail: (id: st
   accounts: { list: "/accounts", detail: (id) => `/accounts/${id}` },
   policies: { list: "/policies", detail: (id) => `/policies/${id}` },
   carriers: { list: "/carriers", detail: (id) => `/carriers/${id}` },
+  tasks: { list: "/tasks", detail: (id) => `/tasks/${id}` },
 };
 
 export const SUGGESTED_MODULE_TAGS: Record<TagModule, readonly string[]> = {
@@ -33,6 +36,7 @@ export const SUGGESTED_MODULE_TAGS: Record<TagModule, readonly string[]> = {
   accounts: ["client", "commercial", "target", "vip", "review-due"],
   policies: ["renewal", "review-due", "claim", "endorsement"],
   carriers: ["preferred", "surplus", "admitted", "review", "do-not-write"],
+  tasks: ["follow-up", "renewal", "urgent", "document", "claim"],
 };
 
 const LEAD_ONLY = new Set(["hot", "inbound", "web"]);

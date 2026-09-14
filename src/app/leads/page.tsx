@@ -1,18 +1,16 @@
 import Link from "next/link";
-import { createLead } from "@/app/actions/crm";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { StartShopForm } from "@/components/leads/start-shop-form";
 import { AppShell } from "@/components/app-shell";
-import { RecordLink } from "@/components/record-links";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { RecordContextRail } from "@/components/record-context/record-context-rail";
+import { LeadListRailFocus } from "@/components/leads/lead-list-rail-focus";
 import { listLeads } from "@/lib/db/queries";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { leadsListColumnsFromLayout } from "@/lib/list-columns";
 import { listFieldDefs, loadLayoutForModule } from "@/lib/custom-fields/store";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
-import { SourceSelect } from "@/components/crm/source-select";
 import { sourceFilterOptions, sourceLabel } from "@/lib/crm/sources";
 import { firstParam, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 import { haystack } from "@/lib/search/live-query";
@@ -25,7 +23,9 @@ import {
   isLeadOnQueue,
   isParkedFromDefaultLeadsView,
   matchesLeadQueueFilters,
+  normalizeLeadCadence,
   normalizeLeadStatus,
+  splitLegacyLeadStatus,
   sortLeadQueue,
   toIsoString,
 } from "@/lib/leads/queue";
@@ -34,14 +34,18 @@ import { ResponseTimer } from "@/components/leads/response-timer";
 import {
   LeadHeatToggle,
   LeadLogContact,
-  LeadStatusSelect,
+  LeadCadenceSelect,
+  LeadPipelineStatusSelect,
   LeadTemplateOverride,
 } from "@/components/leads/lead-queue-controls";
-import { FormPrimaryActions } from "@/components/desk/form-actions";
 import { LeadSavedToast } from "@/components/leads/lead-saved-toast";
+import { LeadMotivation } from "@/components/leads/lead-motivation";
+import { loadLeadMotivationStats } from "@/lib/leads/motivation-data";
 import { AssignRecordTags } from "@/components/tags/assign-record-tags";
 import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
+import { loadRecordContext } from "@/lib/record-context";
+import type { RecordContextPayload } from "@/lib/record-context-types";
 
 export const dynamic = "force-dynamic";
 
@@ -51,17 +55,18 @@ export default async function LeadsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const filter = pickFilterParams(params, ["status", "source", "temperature"]);
+  const filter = pickFilterParams(params, ["status", "cadence", "source", "temperature"]);
   const q = firstParam(params.q) ?? "";
   const saved = firstParam(params.saved) === "1";
   await resetLeadsWithoutLoggedContact().catch(() => null);
   await releaseDueLeadFollowUps().catch(() => null);
-  const [all, loadedTemplates, tagCatalog, leadLayout, leadFields] = await Promise.all([
+  const [all, loadedTemplates, tagCatalog, leadLayout, leadFields, motivation] = await Promise.all([
     listLeads(),
     listFollowUpTemplates().catch(() => []),
     listModuleTags("leads").catch(() => []),
     loadLayoutForModule("leads").catch(() => null),
     listFieldDefs("leads").catch(() => []),
+    loadLeadMotivationStats().catch(() => []),
   ]);
   const leadColumns = leadsListColumnsFromLayout(leadLayout, leadFields);
   const templates = Array.isArray(loadedTemplates) ? loadedTemplates : [];
@@ -100,16 +105,42 @@ export default async function LeadsPage({
     if (item.status === "completed") finishedByLead.add(item.leadId);
   }
 
+  const railParam = firstParam(params.rail);
+  const railLead =
+    (railParam ? rows.find((lead) => lead.id === railParam) : null) ?? rows[0] ?? null;
+  const emptyRail: RecordContextPayload = {
+    people: [],
+    deals: [],
+    policies: [],
+    openActivities: [],
+    conversations: [],
+    newDealHref: "/deals/new",
+    newActivityHref: "/calendar",
+  };
+  const railContext = railLead
+    ? await loadRecordContext({
+        leadId: railLead.id,
+        dealId: railLead.convertedDealId ?? null,
+      })
+    : emptyRail;
+
   return (
     <AppShell title="Leads">
       <LeadSavedToast show={saved} />
-      <p className="mb-3 text-base text-muted-foreground">
-        Work queue only — converted leads live on Deals. Untouched first, newest arrival next.
-        Status new starts Aggressive. Contacted starts Default. Warm starts Steady. Cold starts
-        Drip. Overrides stay on that lead only. Temp badges stay Hot / Warm / Cold. Lost stays
-        off this list until you search. Nurture parks until the contact-again date.
-      </p>
-      <LeadsQueueToolbar
+      <div
+        className="grid w-full items-start"
+        style={{ gridTemplateColumns: "minmax(0, 1fr) 420px", columnGap: "1.25rem", rowGap: "1.25rem" }}
+        data-ff-leads-list-layout="list-rail"
+        data-ff-leads-workspace=""
+      >
+        <div className="min-w-0" style={{ gridColumn: 1, gridRow: 1 }} data-ff-leads-heading="">
+          <p className="mb-3 text-base text-muted-foreground">
+            Work queue only — converted leads live on Deals. Untouched first, newest arrival next.
+            Cadence drives follow-up clocks. Temp badges stay Hot / Warm / Cold. Lost stays off this
+            list until you search. Nurture parks until the contact-again date. Click a name to open
+            the lead layout. The right rail shows Conversations for the focused/open queue lead.
+          </p>
+          <LeadsQueueToolbar
         sources={uniqueOptions(
           queue.map((lead) => lead.source),
           sourceFilterOptions(),
@@ -129,47 +160,35 @@ export default async function LeadsPage({
         templates={templates}
         dueCount={dueCount}
       />
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Link href="/leads/new">
-          <Button type="button" size="sm">
-            New lead
-          </Button>
-        </Link>
-      </div>
-      <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <div className="space-y-4">
-          <form action={createLead} className="ff-card space-y-3 p-4">
-            <h2 className="text-base font-semibold text-navy">New lead</h2>
-            <div>
-              <Label htmlFor="firstName" className="text-xs">
-                First name
-              </Label>
-              <Input id="firstName" name="firstName" required className="mt-1 h-8" />
-            </div>
-            <div>
-              <Label htmlFor="lastName" className="text-xs">
-                Last name
-              </Label>
-              <Input id="lastName" name="lastName" required className="mt-1 h-8" />
-            </div>
-            <div>
-              <Label htmlFor="phone" className="text-xs">
-                Phone
-              </Label>
-              <Input id="phone" name="phone" className="mt-1 h-8" />
-            </div>
-            <div>
-              <Label htmlFor="email" className="text-xs">
-                Email
-              </Label>
-              <Input id="email" name="email" type="email" className="mt-1 h-8" />
-            </div>
-            <SourceSelect defaultValue="referral" />
-            <FormPrimaryActions submitLabel="Save lead" />
-          </form>
         </div>
-
-        <section className="ff-leads-queue ff-card overflow-hidden">
+        <div
+          className="flex items-start justify-end"
+          style={{ gridColumn: 2, gridRow: 1 }}
+          data-ff-lead-motivation-gap=""
+        >
+          <LeadMotivation stats={motivation} />
+        </div>
+        <div
+          className="min-w-0"
+          style={{ gridColumn: 1, gridRow: 2 }}
+          data-ff-leads-list-panel=""
+        >
+        <section className="ff-leads-queue ff-card min-w-0 overflow-hidden">
+          <div
+            className="flex items-center justify-end border-b border-border px-3 py-2"
+            data-ff-leads-list-actions=""
+          >
+            <Link
+              href="/leads/new"
+              className={cn(
+                buttonVariants({ size: "default" }),
+                "hover:!bg-fit-red hover:!text-white hover:!border-fit-red",
+              )}
+              data-ff-new-lead=""
+            >
+              New Lead
+            </Link>
+          </div>
           <ModuleListActions
             module="leads"
             showMacrosLink={false}
@@ -191,12 +210,16 @@ export default async function LeadsPage({
               initialQuery={q}
               columns={leadColumns}
               empty={
-                firstParam(params.status) || firstParam(params.source) || firstParam(params.temperature)
+                firstParam(params.status) || firstParam(params.cadence) || firstParam(params.source) || firstParam(params.temperature)
                   ? "No leads match this filter."
                   : "No open leads. Converted records are on Deals."
               }
               rows={rows.map((lead) => {
                 const status = normalizeLeadStatus(lead.status);
+                const cadence = normalizeLeadCadence(
+                  (lead as { cadence?: string | null }).cadence ??
+                    splitLegacyLeadStatus(lead.status).cadence,
+                );
                 const queuedDue = nextByLead.get(lead.id);
                 const releasedDue = releasedByLead.get(lead.id);
                 const nextDue = queuedDue ?? releasedDue;
@@ -233,15 +256,24 @@ export default async function LeadsPage({
                     pick: <SelectRowCheckbox id={lead.id} />,
                     name: (
                       <div className="flex min-w-0 items-center gap-1">
-                        <span className="min-w-0 truncate">
-                          <RecordLink href={`/leads/${lead.id}`}>
-                            {lead.lastName}, {lead.firstName}
-                          </RecordLink>
-                        </span>
+                        <LeadListRailFocus
+                          leadId={lead.id}
+                          label={`${lead.lastName}, ${lead.firstName}`}
+                          active={railLead?.id === lead.id}
+                        />
                         <LeadLogContact leadId={lead.id} phone={lead.phone} email={lead.email} />
                       </div>
                     ),
-                    status: <LeadStatusSelect key={`status-${lead.id}`} leadId={lead.id} status={status} />,
+                    cadence: (
+                      <LeadCadenceSelect key={`cadence-${lead.id}`} leadId={lead.id} cadence={cadence} />
+                    ),
+                    status: (
+                      <LeadPipelineStatusSelect
+                        key={`status-${lead.id}`}
+                        leadId={lead.id}
+                        status={status}
+                      />
+                    ),
                     source: sourceLabel(lead.source),
                     timer: (
                       <ResponseTimer
@@ -297,6 +329,27 @@ export default async function LeadsPage({
             />
           </ModuleListActions>
         </section>
+        </div>
+
+        <aside
+          className="min-w-0 w-full space-y-3 overflow-x-hidden"
+          style={{ gridColumn: 2, gridRow: 2 }}
+          data-ff-leads-list-rail=""
+          data-ff-deal-right-rail=""
+        >
+          {railLead ? (
+            <RecordContextRail
+              key={railLead.id}
+              context={railContext}
+              defaultTab="conversations"
+              headingName={`${railLead.firstName} ${railLead.lastName}`.trim()}
+            />
+          ) : (
+            <div className="ff-card p-4 text-sm text-muted-foreground">
+              No open lead selected. Queue a lead to see Conversations.
+            </div>
+          )}
+        </aside>
       </div>
     </AppShell>
   );

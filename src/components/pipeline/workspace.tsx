@@ -1,33 +1,55 @@
 "use client";
 
+import { useMemo } from "react";
 import { PipelineFieldPicker } from "@/components/pipeline/field-picker";
 import { PipelineFunnelView } from "@/components/pipeline/funnel-view";
 import { PipelineKanban } from "@/components/pipeline/kanban";
-import { PipelineStageEditor } from "@/components/pipeline/stage-editor";
 import { PipelineTableView } from "@/components/pipeline/table-view";
 import { SheetSettingsMenu } from "@/components/lists/sheet-settings-menu";
 import type { DeskUserOption } from "@/lib/deals/transfer";
 import type { TagCatalogRow } from "@/components/tags/assign-record-tags";
 import type { PipelineViewId } from "@/lib/wire/pipeline";
 import type { PipelineBoardView, PipelineCardView } from "@/lib/wire/pipeline-cards";
+import { useLiveContainsQuery } from "@/hooks/use-live-contains-query";
+import { matchesContains } from "@/lib/search/live-query";
 
 export function PipelineWorkspace({
   board,
   cards,
   view,
   stageFilter,
-  canEditStages = false,
   agents = [],
   tagCatalog = [],
+  searchModuleId = "deals-pipeline",
+  initialQuery = "",
 }: {
   board: PipelineBoardView;
   cards: PipelineCardView[];
   view: PipelineViewId;
   stageFilter?: string | null;
-  canEditStages?: boolean;
   agents?: DeskUserOption[];
   tagCatalog?: TagCatalogRow[];
+  searchModuleId?: string;
+  initialQuery?: string;
 }) {
+  const liveQuery = useLiveContainsQuery(searchModuleId, initialQuery);
+  const visibleCards = useMemo(
+    () =>
+      cards.filter((card) =>
+        matchesContains(
+          liveQuery,
+          card.title,
+          card.insured,
+          card.phone,
+          card.email,
+          card.lineOfBusiness,
+          card.carrier,
+          card.pipelineStage,
+          ...(card.tags ?? []),
+        ),
+      ),
+    [cards, liveQuery],
+  );
   const hint =
     board.slug === "won-lost"
       ? "Closed Won and Closed Lost from every shopping board. Archived is its own tab — parking here does not cancel emails hung on won date."
@@ -58,19 +80,18 @@ export function PipelineWorkspace({
           )}
         </div>
       </div>
-      {canEditStages ? <PipelineStageEditor pipelineId={board.id} stages={board.stages} /> : null}
       {view === "list" || view === "grid" ? (
         <PipelineTableView
           board={board}
-          cards={cards}
+          cards={visibleCards}
           stageFilter={stageFilter}
           agents={agents}
           tagCatalog={tagCatalog}
         />
       ) : view === "funnel" ? (
-        <PipelineFunnelView board={board} cards={cards} />
+        <PipelineFunnelView board={board} cards={visibleCards} />
       ) : (
-        <PipelineKanban board={board} cards={cards} agents={agents} tagCatalog={tagCatalog} />
+        <PipelineKanban board={board} cards={visibleCards} agents={agents} tagCatalog={tagCatalog} />
       )}
     </div>
   );

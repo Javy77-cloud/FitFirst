@@ -28,8 +28,10 @@ function auditLabel(fieldKey: string) {
   return fieldKey;
 }
 
+/** Admin vault for this carrier only — agency code differs per carrier. */
 export function PortalLoginAdmin({
   carrierId,
+  agencyCode: agencyCodeInitial,
   usernameHint,
   hasUsername,
   hasPassword,
@@ -37,12 +39,14 @@ export function PortalLoginAdmin({
   audits,
 }: {
   carrierId: string;
+  agencyCode?: string | null;
   usernameHint: string | null;
   hasUsername: boolean;
   hasPassword: boolean;
   readiness: QuoteHandoffReadiness;
   audits: AuditRow[];
 }) {
+  const [agencyCodeDraft, setAgencyCodeDraft] = useState(agencyCodeInitial?.trim() ?? "");
   const [usernameDraft, setUsernameDraft] = useState("");
   const [passwordDraft, setPasswordDraft] = useState("");
   const [username, setUsername] = useState<string | null>(null);
@@ -85,6 +89,7 @@ export function PortalLoginAdmin({
     setSavedFlash(null);
     const result = await saveCarrierPortalCredentials({
       carrierId,
+      agencyCode: agencyCodeDraft,
       username: usernameDraft,
       password: passwordDraft,
     });
@@ -96,8 +101,10 @@ export function PortalLoginAdmin({
     setStoredUser(result.hasUsername);
     setStoredPass(result.hasPassword);
     setHint(result.usernameHint);
+    setAgencyCodeDraft(result.agencyCode ?? "");
     setCheck({
       ...check,
+      agencyCode: Boolean(result.agencyCode?.trim()),
       username: result.hasUsername,
       password: result.hasPassword,
       ready: result.ready,
@@ -105,7 +112,7 @@ export function PortalLoginAdmin({
     });
     setUsernameDraft("");
     setPasswordDraft("");
-    setSavedFlash("Credentials saved to admin vault.");
+    setSavedFlash("Saved for this carrier — agency code, username, and password.");
     setLocalAudits((rows) => [
       {
         id: `local-save-${Date.now()}`,
@@ -145,7 +152,43 @@ export function PortalLoginAdmin({
 
   return (
     <div className="space-y-4" data-ff-carrier-portal-login="">
+      <div
+        className="ff-portal-save-bar mb-1 flex flex-wrap items-center gap-2 rounded-md px-3 py-2" style={{ backgroundColor: "#eef2f7", border: "1px solid rgba(0,40,104,0.25)" }}
+        data-ff-carrier-portal-save-bar=""
+      >
+        <button
+          type="button"
+          disabled={busy === "save"}
+          onClick={() => void saveCredentials()}
+          data-ff-carrier-portal-save=""
+          className="ff-portal-save inline-flex h-8 items-center rounded-md px-4 text-xs font-semibold disabled:opacity-50"
+          style={{ backgroundColor: "#002868", color: "#ffffff", borderColor: "#002868" }}
+        >
+          {busy === "save" ? "Saving…" : "Save"}
+        </button>
+        <span className="text-xs text-muted-foreground">
+          This carrier only — agency code, username, password. Nothing auto-saves.
+        </span>
+      </div>
+      {savedFlash ? <p className="text-xs font-medium text-green-800">{savedFlash}</p> : null}
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+
       <div className="grid gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <Label className="text-xs">Agency code</Label>
+          <Input
+            name="portalAgencyCode"
+            autoComplete="off"
+            value={agencyCodeDraft}
+            onChange={(e) => setAgencyCodeDraft(e.target.value)}
+            placeholder="This carrier’s agency / producer code"
+            className="mt-1 h-8"
+            data-ff-carrier-agency-code=""
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Unique per carrier — not shared across the book.
+          </p>
+        </div>
         <div>
           <Label className="text-xs">Portal username</Label>
           <div className="mt-1 flex gap-2">
@@ -213,30 +256,12 @@ export function PortalLoginAdmin({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          size="sm"
-          className="bg-[#002868] text-white hover:bg-[#002868]/90"
-          disabled={busy === "save"}
-          onClick={() => void saveCredentials()}
-          data-ff-carrier-portal-save=""
-        >
-          {busy === "save" ? "Saving…" : "Save"}
-        </Button>
-        <span className="text-xs text-muted-foreground">
-          Explicit Save required — credentials do not auto-save.
-        </span>
-      </div>
-      {savedFlash ? <p className="text-xs font-medium text-green-800">{savedFlash}</p> : null}
-
       <div className="rounded-md border border-border bg-secondary/40 px-3 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="text-sm font-semibold text-navy">Quote handoff readiness</p>
             <p className="text-xs text-muted-foreground">
-              Stores URL, agency code, and login for later portal fill. Chrome Fill already exists —
-              this bot does not open the carrier site.
+              Stores URL, this carrier’s agency code, and login for later portal fill.
             </p>
           </div>
           <span
@@ -272,8 +297,6 @@ export function PortalLoginAdmin({
           <p className="mt-2 text-xs text-muted-foreground">URL reachable: {reachable ? "Y" : "N"}</p>
         ) : null}
       </div>
-
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
 
       <div>
         <p className="text-xs font-medium text-navy">Audit stub</p>

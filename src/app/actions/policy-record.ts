@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { accounts, commissions, contacts, policies, policyAutomations, reviewTasks } from "@/lib/db/schema";
+import { accounts, carriers, clientHistory, commissions, contacts, policies, policyAutomations, reviewTasks } from "@/lib/db/schema";
 import { addUtcDays, DESK_AS_OF } from "@/lib/home/as-of";
 import { inferLineFamily, isOepLine, previewCommission, type LineFamily } from "@/lib/desk/commission-line";
 import {
@@ -23,6 +23,8 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { withHistoryDefaults } from "@/lib/policy/change-log";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 import { flashAction } from "@/lib/flash-action";
+import { isPolicySensitiveInlineKey, sensitiveFieldConfirmCopy } from "@/lib/policy/sensitive-fields";
+import { getAllowPolicyLabelOverride } from "@/lib/policy/auto-label-prefs";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -281,4 +283,213 @@ async function upsertPolicyCommission(
       ...values,
     });
   }
+}
+
+
+/** Fields agents/admins may inline-edit on Overview (commission % is locked for everyone). */
+const POLICY_INLINE_KEYS = new Set([
+  "policyNumber",
+  "status",
+  "lineOfBusiness",
+  "policyType",
+  "policySubType",
+  "insuranceType",
+  "premium",
+  "billingFrequency",
+  "producer",
+  "sellingAgency",
+  "formType",
+  "premisesAddress",
+  "premisesCity",
+  "premisesState",
+  "premisesZip",
+  "faceAmount",
+  "policyTerm",
+  "carrierId",
+  "effectiveDate",
+  "expirationDate",
+  "renewalDate",
+]);
+
+const LOCKED_COMPUTED_KEYS = new Set(["commission4Pct", "labelOverride"]);
+
+function parsePolicyDateInput(raw: string): Date | null {
+  const t = raw.trim();
+  if (!t) return null;
+  const d = new Date(`${t}T12:00:00.000Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Click-to-edit blur-save for policy detail fields. Admin-only; agents get read-only Overview. */
+export async function updatePolicyField(input: {
+  policyId: string;
+  fieldKey: string;
+  value: string;
+  /** Required true for sensitive fields after UI confirm dialog. */
+  confirmed?: boolean;
+}): Promise<{ ok: true } | { ok: false; error: string; needsConfirm?: boolean }> {
+  const session = await currentDeskSession();
+  if (!session.isAdmin) {
+    return { ok: false, error: "Only admins can edit policy fields." };
+  }
+
+  const id = input.policyId?.trim();
+  const fieldKey = input.fieldKey?.trim();
+  if (!id || !fieldKey) {
+    return { ok: false, error: "Unknown field." };
+  }
+  if (LOCKED_COMPUTED_KEYS.has(fieldKey)) {
+    return { ok: false, error: "That field is locked." };
+  }
+  if (!POLICY_INLINE_KEYS.has(fieldKey)) {
+    return { ok: false, error: "Unknown field." };
+  }
+
+  if (isPolicySensitiveInlineKey(fieldKey) && !input.confirmed) {
+    return {
+      ok: false,
+      needsConfirm: true,
+      error: sensitiveFieldConfirmCopy(fieldKey),
+    };
+  }
+
+  const [existing] = await db
+    .select()
+    .from(policies)
+    .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, id)));
+  if (!existing) return { ok: false, error: "Policy not found." };
+
+  const raw = (input.value ?? "").trim();
+  let patch: Record<string, unknown> = {};
+  if (fieldKey === "carrierId") {
+    patch = { carrierId: raw || null };
+  } else if (fieldKey === "premium" || fieldKey === "faceAmount") {
+    patch = { [fieldKey]: raw === "" ? null : raw };
+  } else if (
+    fieldKey === "effectiveDate" ||
+    fieldKey === "expirationDate" ||
+    fieldKey === "renewalDate"
+  ) {
+    if (fieldKey === "renewalDate" && raw === "") {
+      patch = { renewalDate: null };
+    } else {
+      const d = parsePolicyDateInput(raw);
+      if (!d && fieldKey !== "renewalDate") {
+        return { ok: false, error: "Enter a valid date (YYYY-MM-DD)." };
+      }
+      if (!d && fieldKey === "renewalDate") {
+        patch = { renewalDate: null };
+      } else {
+        patch = { [fieldKey]: d };
+      }
+    }
+  } else {
+    patch = { [fieldKey]: raw || null };
+  }
+
+  await db
+    .update(policies)
+    .set({ ...patch, updatedAt: new Date() })
+    .where(eq(policies.id, id));
+
+  await recordPolicyFieldChanges({
+    policyId: id,
+    before: withHistoryDefaults(existing as unknown as Record<string, unknown>, {}),
+    after: { ...(existing as unknown as Record<string, unknown>), ...patch },
+    source: "record_edit",
+  });
+
+  if (fieldKey === "effectiveDate" || fieldKey === "expirationDate" || fieldKey === "renewalDate") {
+    await syncPolicyDateAutomations(id);
+  }
+
+  revalidatePath(`/policies/${id}`);
+  revalidatePath("/policies");
+  return { ok: true };
+}
+
+/** Admin-only manual display-name override. Empty clears override (back to auto-label). Logs Activity. */
+export async function updatePolicyLabelOverride(input: {
+  policyId: string;
+  labelOverride: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await currentDeskSession();
+  if (!session.isAdmin) {
+    return { ok: false, error: "Only admins can rename policies." };
+  }
+  const id = input.policyId?.trim();
+  if (!id) return { ok: false, error: "Policy not found." };
+
+  const [existing] = await db
+    .select()
+    .from(policies)
+    .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, id)));
+  if (!existing) return { ok: false, error: "Policy not found." };
+
+  const next = (input.labelOverride ?? "").trim() || null;
+  // Setting a new override requires the Settings toggle; clearing is always allowed for admins.
+  if (next) {
+    const allowed = await getAllowPolicyLabelOverride();
+    if (!allowed) {
+      return {
+        ok: false,
+        error: "Manual label overrides are locked. Enable them in Settings → Policy labels.",
+      };
+    }
+  }
+  const before = (existing as { labelOverride?: string | null }).labelOverride ?? null;
+  if ((before ?? "") === (next ?? "")) {
+    return { ok: true };
+  }
+
+  await db
+    .update(policies)
+    .set({ labelOverride: next, updatedAt: new Date() })
+    .where(eq(policies.id, id));
+
+  await recordPolicyFieldChanges({
+    policyId: id,
+    before: withHistoryDefaults(existing as unknown as Record<string, unknown>, {}),
+    after: {
+      ...(existing as unknown as Record<string, unknown>),
+      labelOverride: next,
+    },
+    source: "record_edit",
+  });
+
+  await db.insert(clientHistory).values({
+    tenantId: DEFAULT_TENANT_ID,
+    contactId: existing.contactId,
+    accountId: existing.accountId,
+    dealId: existing.dealId,
+    policyId: id,
+    eventType: "policy_label_override",
+    body: next
+      ? `Display name overridden to "${next}" (was auto-label${before ? `: "${before}"` : ""}).`
+      : `Display name override cleared${before ? ` (was "${before}")` : ""}; auto-label restored.`,
+    occurredAt: new Date(),
+  });
+
+  revalidatePath(`/policies/${id}`);
+  revalidatePath("/policies");
+  return { ok: true };
+}
+
+/** Agent-safe carrier name lookup for policy carrier field (not merge). */
+export async function searchCarriersForPolicyLink(
+  q: string,
+): Promise<{ id: string; name: string }[]> {
+  const needle = q.trim().toLowerCase();
+  if (needle.length < 1) return [];
+  const rows = await db
+    .select({ id: carriers.id, name: carriers.name })
+    .from(carriers)
+    .where(
+      and(
+        eq(carriers.tenantId, DEFAULT_TENANT_ID),
+        sql`lower(${carriers.name}) like ${"%" + needle + "%"}`,
+      ),
+    )
+    .limit(12);
+  return rows;
 }

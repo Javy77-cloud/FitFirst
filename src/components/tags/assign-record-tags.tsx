@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { Tag } from "lucide-react";
 import { createPortal } from "react-dom";
 import { saveRecordTags } from "@/app/actions/record-tags";
 import { Button } from "@/components/ui/button";
@@ -26,12 +27,15 @@ export function AssignRecordTags({
   tags,
   catalog,
   compact = true,
+  appearance = "chips",
 }: {
   module: TagModule;
   recordId: string;
   tags: string[] | null | undefined;
   catalog: TagCatalogRow[];
   compact?: boolean;
+  /** chips = default chip row; addLink = Zoho-style Tag icon + Add Tags under a name */
+  appearance?: "chips" | "addLink";
 }) {
   const mounted = useClientMounted();
   const [open, setOpen] = useState(false);
@@ -101,17 +105,36 @@ export function AssignRecordTags({
       <button
         ref={buttonRef}
         type="button"
-        className="min-w-0 max-w-full rounded-sm text-left hover:bg-muted/60"
+        className={
+          appearance === "addLink"
+            ? "inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-sm text-left text-sm text-muted-foreground hover:text-[#002868]"
+            : "min-w-0 max-w-full rounded-sm text-left hover:bg-muted/60"
+        }
         onClick={() => {
           setDraft(current);
           setOpen((value) => !value);
         }}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={current.length ? "Change tags" : "Assign tags"}
+        aria-label={current.length ? "Edit Tags" : "Add Tags"}
         data-ff-assign-tags-trigger=""
+        data-ff-assign-tags-appearance={appearance}
       >
-        <TagChips tags={current} colors={colors} />
+        {appearance === "addLink" ? (
+          <>
+            <Tag className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+            {current.length ? (
+              <span className="inline-flex min-w-0 flex-wrap items-center gap-1.5">
+                <TagChips tags={current} colors={colors} />
+                <span className="text-sm font-normal text-muted-foreground">Edit Tags</span>
+              </span>
+            ) : (
+              <span className="text-sm font-normal">Add Tags</span>
+            )}
+          </>
+        ) : (
+          <TagChips tags={current} colors={colors} />
+        )}
       </button>
       {mounted && open && panel && typeof document !== "undefined"
         ? createPortal(

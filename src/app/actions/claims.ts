@@ -194,8 +194,38 @@ export async function logClaim(formData: FormData) {
       reporterPhone: intake.reporterPhone,
       producerId,
       status: intake.status,
+      severity: ["low", "moderate", "high", "critical"].includes(str(formData, "severity"))
+        ? str(formData, "severity")
+        : "moderate",
+      carrierNotifiedAt: formData.has("notifyCarrier") ? new Date() : null,
     })
     .returning();
+
+  // Optional loss photos
+  const photoEntries = formData.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
+  for (const file of photoEntries.slice(0, 8)) {
+    const dir = path.join(uploadRoot, "claims", claim.id);
+    await mkdir(dir, { recursive: true });
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const storagePath = path.join(dir, `${randomUUID()}-${safe}`);
+    await writeFile(storagePath, Buffer.from(await file.arrayBuffer()));
+    await db.insert(claimAttachments).values({
+      tenantId: DEFAULT_TENANT_ID,
+      claimId: claim.id,
+      filename: file.name,
+      mimeType: file.type || "application/octet-stream",
+      storagePath,
+      docType: "loss_photo",
+    });
+  }
+  if (formData.has("notifyCarrier")) {
+    await recordActivity(
+      claim.id,
+      "carrier_notify_stub",
+      "Notify carrier stamped on the desk — no carrier portal connected.",
+      who,
+    );
+  }
 
   const linked = [policy?.policyNumber, contact ? `${contact.lastName}, ${contact.firstName}` : null]
     .filter(Boolean)

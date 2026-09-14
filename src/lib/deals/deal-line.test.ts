@@ -77,3 +77,23 @@ describe("deal line of business", () => {
     expect(DEAL_LINE_OPTIONS.some((row) => row.value === "bop")).toBe(true);
   });
 });
+
+  it("routes LIFE / Term Life to the life master sheet (not homeowners)", () => {
+    expect(sheetProductForQuotingForm("Term Life")).toBe("life");
+    expect(sheetProductForQuotingForm("Whole Life")).toBe("life");
+    expect(resolveDealProduct({ lineOfBusiness: "LIFE" })).toBe("life");
+    expect(resolveDealProduct({ quotingForm: "Term Life", lineOfBusiness: "LIFE" })).toBe("life");
+    expect(resolveDealProduct({ policySubType: "Term Life", lineOfBusiness: "LIFE" })).toBe("life");
+    // Stale HO3 quoting_form must not win over LIFE LOB
+    expect(
+      resolveDealProduct({ quotingForm: "HO3", lineOfBusiness: "LIFE", quotingLine: "life" }),
+    ).toBe("life");
+    expect(resolveDealSheetLine({ lineOfBusiness: "LIFE" })).toBe("life");
+  });
+
+  it("routes HEALTH subtypes to the health master sheet", () => {
+    expect(sheetProductForQuotingForm("Marketplace")).toBe("health");
+    expect(resolveDealProduct({ lineOfBusiness: "HEALTH" })).toBe("health");
+    expect(resolveDealSheetLine({ lineOfBusiness: "HEALTH" })).toBe("health");
+  });
+

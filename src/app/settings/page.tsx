@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { deleteAgencyLogo, saveAgencyBrand, saveEmailTemplate, uploadAgencyLogo } from "@/app/actions/agency";
+import { saveCalendarAgencySettings } from "@/app/actions/calendar-settings";
 import { ChooseFiles } from "@/components/choose-files";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
@@ -15,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { loadAgencyBrand } from "@/lib/desk/brand";
+import { getCalendarAgencyPrefs } from "@/lib/ops/calendar-agency-prefs";
 import { LINE_FAMILIES, LINE_FAMILY_LABEL } from "@/lib/desk/commission-line";
 import { getTelephonySettings, listEmailTemplates, listEmailTriggers } from "@/lib/db/queries";
 import { listCatalogItems } from "@/lib/integrations/catalog-store";
@@ -28,13 +30,14 @@ export default async function SettingsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await requireAdminPage();
-  const [brand, templates, triggers, telephony, catalog, query] = await Promise.all([
+  const [brand, templates, triggers, telephony, catalog, query, calendarPrefs] = await Promise.all([
     loadAgencyBrand(),
     listEmailTemplates(),
     listEmailTriggers(),
     getTelephonySettings(),
     listCatalogItems(),
     searchParams,
+    getCalendarAgencyPrefs(),
   ]);
   const catalogConnected = catalog.some((item) => item.connected);
   const provider = (telephony?.provider ?? "none") as TelephonyProvider;
@@ -157,6 +160,59 @@ export default async function SettingsPage({
                 Lead routing
               </Link>
             </div>
+          </SettingsSection>
+
+
+          <SettingsSection
+            id="calendar-agency"
+            title="Calendar"
+            badge="Admin"
+            summary="Sunday tint and US federal holiday labels on the desk calendar."
+          >
+            <p className="text-sm text-muted-foreground">
+              Agency choice from day one. Agents still schedule over holidays — labels are
+              reference only. Sunday tint is a non-working look, not a hard block.
+            </p>
+            <form action={saveCalendarAgencySettings} className="mt-3 space-y-3">
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="calendarMarkSundayNonWorking"
+                  value="true"
+                  defaultChecked={calendarPrefs.calendarMarkSundayNonWorking}
+                  className="mt-1"
+                />
+                <span>
+                  <span className="font-medium text-navy">Mark Sunday as non-working</span>
+                  <span className="mt-0.5 block text-helper text-muted-foreground">
+                    Tint Sunday cells light gray on the month grid. Default on.
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="calendarShowUsFederalHolidays"
+                  value="true"
+                  defaultChecked={calendarPrefs.calendarShowUsFederalHolidays}
+                  className="mt-1"
+                />
+                <span>
+                  <span className="font-medium text-navy">Show US federal holidays</span>
+                  <span className="mt-0.5 block text-helper text-muted-foreground">
+                    Label New Year&apos;s, MLK, Presidents&apos; Day, Memorial Day, Juneteenth,
+                    Independence Day, Labor Day, Columbus Day, Veterans Day, Thanksgiving, and
+                    Christmas (observed dates). Default on.
+                  </span>
+                </span>
+              </label>
+              <Button type="submit" size="sm">
+                Save calendar settings
+              </Button>
+            </form>
+            <Link href="/calendar" className="mt-3 inline-block text-sm text-primary hover:underline">
+              Open calendar
+            </Link>
           </SettingsSection>
 
           <SettingsSection
@@ -391,7 +447,8 @@ export default async function SettingsPage({
             summary="Month / week / day on the desk. Google stays a stub."
           >
             <p className="text-sm text-muted-foreground">
-              Your tasks, calls, and meetings. Drag to reschedule. Color is by type.
+              Your tasks, calls, and meetings. Drag to reschedule. Color is by type. Sunday tint
+              and US federal holiday labels follow the agency Calendar settings above.
             </p>
             <Link href="/calendar" className="mt-3 inline-block text-sm text-primary hover:underline">
               Open calendar

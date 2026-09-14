@@ -58,8 +58,11 @@ describe("pipeline table deal-field columns", () => {
     expect(keys).toContain("phone");
     expect(keys).toContain("notes");
     expect(keys).toContain("roof_year");
-    expect(keys).not.toContain("assigned");
-    expect(keys).not.toContain("value");
+    // Core pipeline columns stay on the list even when Edit Layout omits them.
+    expect(keys).toContain("line");
+    expect(keys).toContain("source");
+    expect(keys).toContain("assigned");
+    expect(keys).toContain("value");
     expect(keys).not.toContain("premium");
     expect(keys).not.toContain("preferred_language");
     expect(keys).not.toContain("esign");
@@ -204,3 +207,21 @@ describe("Notes field type", () => {
     ).toBe(false);
   });
 });
+
+describe("list Pipeline / subtype columns fall back to Details cascade", () => {
+  it("fills empty picklist_5n3i from insurance_type and picklist from form", () => {
+    const deal = {
+      title: "Gloria Martinez / DP3",
+      pipelineStage: "shopping",
+      lineOfBusiness: "HO",
+      quotingForm: "DP3",
+      policySubType: "DP3",
+    };
+    const pipelineField = { key: "picklist_5n3i", label: "Pipeline", type: "picklist" as const };
+    const subtypeField = { key: "picklist", label: "Insurance subtype", type: "picklist" as const };
+    expect(dealFieldRawValue(pipelineField, deal, { insurance_type: "PC", picklist_5n3i: "" })).toBe("P&C");
+    expect(dealFieldRawValue(subtypeField, deal, { insurance_subtype: "DP3", picklist: "" })).toBe("DP3");
+    expect(dealFieldRawValue(pipelineField, deal, { picklist_5n3i: "Life" })).toBe("Life");
+  });
+});
+

@@ -15,6 +15,7 @@ describe("per-module tags", () => {
   it("keeps suggested defaults per module", () => {
     expect(TAG_MODULES).toContain("accounts");
     expect(TAG_MODULES).toContain("carriers");
+    expect(TAG_MODULES).toContain("tasks");
     expect(tagModuleLabel("accounts")).toBe("Business");
     expect(tagModuleForList("leads")).toBe("leads");
     expect(tagModuleForList("leads-queue")).toBe("leads");
@@ -24,6 +25,9 @@ describe("per-module tags", () => {
     expect(SUGGESTED_MODULE_TAGS.accounts).toContain("commercial");
     expect(SUGGESTED_MODULE_TAGS.policies).toContain("renewal");
     expect(SUGGESTED_MODULE_TAGS.carriers).toContain("preferred");
+    expect(SUGGESTED_MODULE_TAGS.tasks).toContain("follow-up");
+    expect(tagModuleForList("tasks")).toBe("tasks");
+    expect(tagModuleLabel("tasks")).toBe("Tasks");
   });
 
   it("carries sensible lead tags onto a contact", () => {

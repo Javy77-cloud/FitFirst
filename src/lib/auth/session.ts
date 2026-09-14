@@ -47,6 +47,7 @@ export type DeskSession = {
 const DEMO_PASSWORDS: Record<string, string> = {
   "javy@fitfirst.local": "javy",
   "maya@fitfirst.local": "maya",
+  "javier@fitfirst.local": "javier",
 };
 
 export const DEMO_USERS = {
@@ -59,12 +60,13 @@ export const DEMO_USERS = {
     summary: "Whole book. Settings, integrations, global lists, Ask a teammate.",
   },
   agent: {
-    email: "maya@fitfirst.local",
-    password: "maya",
-    name: "Maya Chen",
+    email: "javier@fitfirst.local",
+    password: "javier",
+    name: "Javier Garcia",
     role: "agent" as const,
     label: "Agent",
-    summary: "Own book. CRM, pipeline, calendar, and client email/SMS when connected.",
+    summary:
+      "Same agency book as admin (Policies, Contacts, Deals). Agent chrome still applies via Agent Policy Access.",
   },
 } as const;
 
@@ -195,8 +197,12 @@ export async function pendingMfaUser(): Promise<User | null> {
   }
 }
 
+export function sessionSeesAgencyBook(session: DeskSession): boolean {
+  return session.isAdmin || Boolean(session.user?.canSeeAgencyWidgets);
+}
+
 export function scopeOwnerId(session: DeskSession): string | null {
-  return session.isAdmin ? null : session.userId;
+  return sessionSeesAgencyBook(session) ? null : session.userId;
 }
 
 export async function getActor(): Promise<Actor> {
@@ -207,6 +213,7 @@ export async function getActor(): Promise<Actor> {
       name: session.user.name,
       email: session.user.email,
       role: session.user.role === "agent" ? "agent" : "admin",
+      canSeeAgencyBook: Boolean(session.user?.canSeeAgencyWidgets),
     };
   }
   return {

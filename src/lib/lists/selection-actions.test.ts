@@ -28,6 +28,8 @@ describe("listSelectionActions", () => {
     expect(deal.find((item) => item.id === "bind")?.href).toBe("/deals/d1#bind");
     expect(deal.find((item) => item.id === "attach_document")?.enabled).toBe(true);
     expect(deal.find((item) => item.id === "attach_document")?.label).toBe("Attach document");
+    expect(deal.find((item) => item.id === "create_new_deal")?.enabled).toBe(true);
+    expect(deal.find((item) => item.id === "create_new_deal")?.label).toBe("Create New Deal");
 
     const bound = listSelectionActions({
       module: "deals",
@@ -59,6 +61,8 @@ describe("listSelectionActions", () => {
     expect(deals.find((item) => item.id === "merge")?.reason).toMatch(/Leads and Contacts/);
     expect(deals.find((item) => item.id === "attach_document")?.enabled).toBe(false);
     expect(deals.find((item) => item.id === "attach_document")?.reason).toMatch(/Pick one deal/);
+    expect(deals.find((item) => item.id === "create_new_deal")?.enabled).toBe(false);
+    expect(deals.find((item) => item.id === "create_new_deal")?.reason).toMatch(/Pick one deal/);
   });
 
   it("wires email and SMS only when the selected rows have addresses", () => {
@@ -75,6 +79,32 @@ describe("listSelectionActions", () => {
     });
     expect(both.find((item) => item.id === "email")?.enabled).toBe(true);
     expect(both.find((item) => item.id === "sms")?.enabled).toBe(true);
+  });
+
+
+  it("enables Assign on policies, contacts, and deals", () => {
+    const none = listSelectionActions({ module: "policies", selected: [] });
+    expect(none.find((item) => item.id === "assign")?.enabled).toBe(false);
+
+    const policies = listSelectionActions({
+      module: "policies",
+      selected: [rec({ id: "p1" }), rec({ id: "p2" })],
+    });
+    expect(policies.find((item) => item.id === "assign")?.enabled).toBe(true);
+    expect(policies.find((item) => item.id === "assign")?.label).toBe("Assign (2)");
+
+    const contacts = listSelectionActions({
+      module: "contacts",
+      selected: [rec({ id: "c1" })],
+    });
+    expect(contacts.find((item) => item.id === "assign")?.enabled).toBe(true);
+
+    const carriers = listSelectionActions({
+      module: "carriers",
+      selected: [rec({ id: "x1" })],
+    });
+    expect(carriers.find((item) => item.id === "assign")?.enabled).toBe(false);
+    expect(carriers.find((item) => item.id === "assign")?.reason).toMatch(/appetite book/i);
   });
 
   it("never enables Call — the desk has no live trunk", () => {
@@ -140,6 +170,40 @@ describe("listSelectionActions", () => {
       selected: [rec({ id: CONTACT_ID })],
     });
     expect(contact.find((item) => item.id === "duplicate")?.enabled).toBe(false);
+  });
+
+
+  it("adds Export CSV on importable CRM lists, not tasks", () => {
+    const empty = listSelectionActions({ module: "contacts", selected: [], filteredCount: 0 });
+    expect(empty.find((item) => item.id === "export_csv")?.enabled).toBe(false);
+    expect(empty.find((item) => item.id === "export_csv")?.reason).toMatch(/filter first/);
+
+    const filtered = listSelectionActions({ module: "contacts", selected: [], filteredCount: 12 });
+    expect(filtered.find((item) => item.id === "export_csv")?.enabled).toBe(true);
+    expect(filtered.find((item) => item.id === "export_csv")?.label).toBe("Export CSV (12 filtered)");
+
+    const picked = listSelectionActions({
+      module: "leads",
+      selected: [rec({ id: "a" })],
+      filteredCount: 12,
+    });
+    expect(picked.find((item) => item.id === "export_csv")?.label).toBe("Export CSV (1)");
+
+    const tasks = listSelectionActions({
+      module: "tasks",
+      selected: [rec({ id: "t1" })],
+      filteredCount: 4,
+    });
+    expect(tasks.find((item) => item.id === "export_csv")).toBeUndefined();
+
+    for (const module of ["leads", "contacts", "deals", "policies", "businesses", "carriers"] as const) {
+      const row = listSelectionActions({
+        module,
+        selected: [rec({ id: "x1" })],
+        filteredCount: 1,
+      }).find((item) => item.id === "export_csv");
+      expect(row?.enabled).toBe(true);
+    }
   });
 
   it("enables print and macros when rows are selected", () => {

@@ -1,4 +1,9 @@
 import { pipelineSlugForLine } from "@/lib/crm/convert";
+import {
+  DEAL_LIST_PIPELINE_KEY,
+  DEAL_LIST_SUBTYPE_KEY,
+  dealListCascadeSyncValues,
+} from "@/lib/deals/insurance-cascade";
 import { sourceLabel } from "@/lib/crm/sources";
 import { CORE_FIELDS } from "@/lib/custom-fields/defaults";
 import { formatCurrencyDisplay } from "@/lib/custom-fields/format";
@@ -40,7 +45,7 @@ export const DEAL_NATIVE_COLUMNS: ColumnDef[] = [
 const NATIVE_KEYS = new Set(DEAL_NATIVE_COLUMNS.map((column) => column.key));
 const LOCKED_NATIVE = new Set<string>(LOCKED_DEAL_LIST_COLUMN_IDS);
 
-/** Layout field keys that unlock a native list column (Coverage value / Assigned / etc.). */
+/** Layout field keys that unlock optional native list columns (premium / updated / subtype). */
 const NATIVE_LAYOUT_ALIASES: Record<string, readonly string[]> = {
   line: ["line", "line_of_business"],
   subType: ["sub_type", "policy_sub_type", "subType"],
@@ -52,17 +57,42 @@ const NATIVE_LAYOUT_ALIASES: Record<string, readonly string[]> = {
   updated: ["updated", "updated_at"],
 };
 
+/**
+ * Core pipeline list columns — always offered even when Edit Layout is contact/address-only.
+ * Optional natives (subType, shopLines, premium, updated) still need a layout key.
+ */
+const ALWAYS_LIST_NATIVE = new Set(
+  DEAL_NATIVE_COLUMNS.filter((column) => column.defaultOn !== false).map((column) => column.key),
+);
+
 /** Catalog fields that should start visible — the rest stay in the picker. */
-const DEFAULT_ON_FIELD_KEYS = new Set(["state"]);
+const DEFAULT_ON_FIELD_KEYS = new Set(["state", "pipeline"]);
 
 export function layoutKeysForColumns(layout: FieldLayout | null | undefined): Set<string> {
   return new Set(allLayoutFieldKeys(layout ?? defaultLayoutForModule("deals")));
 }
 
 export function nativeColumnAllowedByLayout(columnId: string, layoutKeys: Set<string>): boolean {
-  if (LOCKED_NATIVE.has(columnId)) return true;
+  if (LOCKED_NATIVE.has(columnId) || ALWAYS_LIST_NATIVE.has(columnId)) return true;
   const aliases = NATIVE_LAYOUT_ALIASES[columnId] ?? [columnId];
   return aliases.some((key) => layoutKeys.has(key));
+}
+
+/** Standing deal-list catalog fields — stay available even when Edit Layout omitted Details. */
+export const STANDING_DEAL_LIST_FIELD_KEYS = new Set([
+  "pipeline",
+  "picklist_5n3i", // Pipeline (legacy key still on Javy's column prefs)
+  "picklist_yp0c", // Selling Agency
+  "picklist_8mus", // Priority
+  "picklist", // Insurance subtype
+  "new_field", // Notes (his list Notes column)
+]);
+
+export function isAlwaysOnDealListCatalogField(field: { key: string; label: string }): boolean {
+  if (STANDING_DEAL_LIST_FIELD_KEYS.has(field.key)) return true;
+  const label = field.label.trim();
+  if (field.key === "pipeline") return true;
+  return /^(pipeline|selling agency|priority|insurance subtype)$/i.test(label);
 }
 
 export type DealStageOption = {
@@ -84,6 +114,7 @@ export type DealColumnDeal = {
   pipelineId?: string | null;
   lineOfBusiness: string;
   policySubType?: string | null;
+  quotingForm?: string | null;
   shopLines?: string[] | null;
   source?: string | null;
   state?: string | null;
@@ -109,14 +140,33 @@ export function dealsColumnsFromFields(
   );
   const fromCatalog: ColumnDef[] = [];
   const seen = new Set(natives.map((column) => column.key));
+  const seenAlwaysLabels = new Set<string>();
+  const hasCanonicalPipeline = fields.some((field) => field.key === "pipeline");
   for (const field of fields) {
     if (seen.has(field.key) || isDeadDealColumn(field.key)) continue;
-    if (!layoutKeys.has(field.key)) continue;
+    const alwaysOn = isAlwaysOnDealListCatalogField(field);
+    if (!layoutKeys.has(field.key) && !alwaysOn) continue;
+    const labelKey = field.label.trim().toLowerCase();
+    if (alwaysOn) {
+      // Keep standing keys (incl. legacy picklist_5n3i) even if a canonical `pipeline` exists.
+      if (
+        field.key.startsWith("picklist_") &&
+        labelKey === "pipeline" &&
+        hasCanonicalPipeline &&
+        !STANDING_DEAL_LIST_FIELD_KEYS.has(field.key)
+      ) {
+        continue;
+      }
+      if (seenAlwaysLabels.has(labelKey) && !STANDING_DEAL_LIST_FIELD_KEYS.has(field.key)) continue;
+      if (!STANDING_DEAL_LIST_FIELD_KEYS.has(field.key)) seenAlwaysLabels.add(labelKey);
+      else seenAlwaysLabels.add(labelKey);
+    }
     seen.add(field.key);
     fromCatalog.push({
       key: field.key,
       label: field.label,
       defaultOn:
+        alwaysOn ||
         DEFAULT_ON_FIELD_KEYS.has(field.key) ||
         /^(pipeline|selling agency)$/i.test(field.label.trim()),
     });
@@ -149,6 +199,18 @@ export function dealFieldRawValue(
 ): string {
   const storedValue = stored[field.key];
   if (storedValue != null && storedValue !== "") return storedValue;
+  const synced = dealListCascadeSyncValues({
+    insuranceType: stored.insurance_type,
+    insuranceSubtype: stored.insurance_subtype,
+    quotingForm: deal.quotingForm,
+    policySubType: deal.policySubType,
+  });
+  if (field.key === DEAL_LIST_PIPELINE_KEY) {
+    return synced[DEAL_LIST_PIPELINE_KEY] ?? nativeValueFromDeal(deal, field.systemKey);
+  }
+  if (field.key === DEAL_LIST_SUBTYPE_KEY) {
+    return synced[DEAL_LIST_SUBTYPE_KEY] ?? nativeValueFromDeal(deal, field.systemKey);
+  }
   return nativeValueFromDeal(deal, field.systemKey);
 }
 

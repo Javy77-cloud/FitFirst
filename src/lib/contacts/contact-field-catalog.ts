@@ -1,4 +1,5 @@
 import type { CustomFieldDef, FieldLayout } from "@/lib/custom-fields/types";
+import { POLICY_SUB_TYPES } from "@/lib/commissions/zoho-fields";
 
 export const CONTACT_EDUCATION_OPTIONS = [
   "High School",
@@ -28,6 +29,40 @@ export const CONTACT_EMPLOYMENT_OPTIONS = [
 export const CONTACT_METHOD_OPTIONS = ["Phone", "Email", "Text", "Mail"] as const;
 export const CONTACT_TIME_OPTIONS = ["Morning", "Afternoon", "Evening", "Anytime"] as const;
 
+/** Starter options for Settings → Picklists → Recent Life Events. */
+export const CONTACT_RECENT_LIFE_EVENT_OPTIONS = [
+  "Marriage",
+  "Divorce",
+  "New Baby",
+  "New Home Purchase",
+  "Moved",
+  "Remodel / Renovation",
+  "Job Change",
+  "Retirement",
+  "Death In Family",
+  "Empty Nest",
+  "Other",
+] as const;
+
+/** Starter options for Settings → Picklists → Cross-Selling Opportunities. */
+export const CONTACT_CROSS_SELL_OPTIONS = [
+  "Auto",
+  "Home",
+  "Flood",
+  "Umbrella",
+  "Life",
+  "Health",
+  "Renters",
+  "Condo",
+  "Boat",
+  "Motorcycle",
+  "Business / Commercial",
+  "Other",
+] as const;
+
+/** Existing coverage multi-select — same labels as Global Lists → Policy sub-types. */
+export const CONTACT_EXISTING_COVERAGE_OPTIONS = [...POLICY_SUB_TYPES];
+
 /** Full Contact module field catalog — Edit Layout + bind transfer. */
 export const CONTACT_MODULE_FIELDS: CustomFieldDef[] = [
   { key: "first_name", label: "First Name", type: "single_line", systemKey: "firstName", required: true },
@@ -36,18 +71,23 @@ export const CONTACT_MODULE_FIELDS: CustomFieldDef[] = [
   { key: "email", label: "Email", type: "email", systemKey: "email" },
   { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
   { key: "date_of_birth", label: "Date Of Birth", type: "dob", systemKey: "dateOfBirth" },
-  { key: "occupation", label: "Occupation", type: "single_line" },
+  /** Options come from global Settings picklist "Occupations" — never hardcode in UI. */
+  { key: "occupation", label: "Occupation", type: "picklist", options: [] },
   {
     key: "education_level",
     label: "Education Level",
     type: "picklist",
     options: [...CONTACT_EDUCATION_OPTIONS],
   },
+  /**
+   * Options from Global List "Marital Status" — bound in contact-detail-picklists.
+   * Live DB may still be single_line until ensure upgrades the field type.
+   */
   {
     key: "marital_status",
     label: "Marital Status",
     type: "picklist",
-    options: [...CONTACT_MARITAL_OPTIONS],
+    options: [],
     systemKey: "maritalStatus",
   },
   {
@@ -56,7 +96,7 @@ export const CONTACT_MODULE_FIELDS: CustomFieldDef[] = [
     type: "picklist",
     options: [...CONTACT_EMPLOYMENT_OPTIONS],
   },
-  { key: "mailing_address", label: "Insured Address", type: "address", systemKey: "mailingAddress" },
+  { key: "mailing_address", label: "Address", type: "address", systemKey: "mailingAddress" },
   { key: "city", label: "City", type: "single_line", systemKey: "city" },
   { key: "state", label: "State", type: "single_line", systemKey: "state" },
   { key: "zip", label: "ZIP", type: "single_line", systemKey: "zip" },
@@ -77,8 +117,29 @@ export const CONTACT_MODULE_FIELDS: CustomFieldDef[] = [
     options: [...CONTACT_TIME_OPTIONS],
   },
   { key: "preferred_language", label: "Preferred Language", type: "single_line", systemKey: "preferredLanguage" },
-  { key: "source", label: "Source", type: "single_line", systemKey: "source" },
-  { key: "referral", label: "Referral", type: "single_line" },
+  {
+    key: "recent_life_events",
+    label: "Recent Life Events",
+    type: "multi_select",
+    options: [...CONTACT_RECENT_LIFE_EVENT_OPTIONS],
+  },
+  {
+    key: "existing_coverage_types",
+    label: "Existing Coverage Type",
+    type: "multi_select",
+    options: [...CONTACT_EXISTING_COVERAGE_OPTIONS],
+  },
+  {
+    key: "cross_selling_opportunity",
+    label: "Cross-Selling Opportunity",
+    type: "picklist",
+    options: [...CONTACT_CROSS_SELL_OPTIONS],
+  },
+  { key: "is_homeowner", label: "Homeowner", type: "checkbox" },
+  { key: "is_business_owner", label: "Business Owner", type: "checkbox" },
+  /** Options from Global List "Lead Source" — bound in contact-detail-picklists. */
+  { key: "source", label: "Lead Source", type: "picklist", options: [], systemKey: "source" },
+  { key: "referral", label: "Referred By", type: "single_line" },
   { key: "life_notes", label: "Life Notes (CRM Only)", type: "multi_line", systemKey: "lifeNotes" },
   { key: "health_notes", label: "Health Notes (CRM Only)", type: "multi_line", systemKey: "healthNotes" },
   { key: "pc_notes", label: "P&C Notes (CRM Only)", type: "multi_line" },
@@ -99,79 +160,57 @@ function twoCol(left: ReturnType<typeof section>[], right: ReturnType<typeof sec
   };
 }
 
-/** Card template — two column spacious. */
+/**
+ * Contact Details / Edit Layout default — two even columns.
+ * Left: identity + address + marital. Right: prefs, life events, coverage, cross-sell, owners, lead source.
+ */
 export function contactCardLayout(): FieldLayout {
   return twoCol(
     [
       section("identity", "Contact", [
         "first_name",
-        "middle_name",
         "last_name",
         "email",
         "phone",
         "date_of_birth",
-      ]),
-      section("demographics", "Demographics", [
-        "occupation",
-        "employment_status",
-        "marital_status",
-        "education_level",
-      ]),
-      section("insured", "Insured Address", ["mailing_address", "city", "state", "zip"]),
-      section("mailing", "Mailing Address", [
-        "contact_mailing_address",
-        "contact_mailing_city",
-        "contact_mailing_state",
-        "contact_mailing_zip",
-      ]),
-    ],
-    [
-      section("prefs", "Preferences", [
-        "preferred_contact_method",
-        "preferred_contact_time",
-        "preferred_language",
-        "source",
-        "referral",
-      ]),
-      section("crm_notes", "CRM Notes", ["life_notes", "health_notes", "pc_notes", "notes"]),
-    ],
-  );
-}
-
-/** Classic template — dense primary column + empty right (FieldLayout is always two-col). */
-export function contactClassicLayout(): FieldLayout {
-  return twoCol(
-    [
-      section("identity", "Contact", [
-        "first_name",
-        "middle_name",
-        "last_name",
-        "email",
-        "phone",
-        "date_of_birth",
-        "occupation",
-        "employment_status",
-        "marital_status",
-        "education_level",
         "mailing_address",
         "city",
         "state",
         "zip",
-        "contact_mailing_address",
-        "contact_mailing_city",
-        "contact_mailing_state",
-        "contact_mailing_zip",
-        "preferred_contact_method",
-        "preferred_contact_time",
-        "source",
-        "referral",
-        "life_notes",
-        "health_notes",
-        "pc_notes",
+        "marital_status",
       ]),
     ],
-    [],
+    [
+      section("prefs", "Preferences", [
+        "occupation",
+        "education_level",
+        "preferred_contact_method",
+        "preferred_contact_time",
+      ]),
+      section("opportunities", "Coverage & Opportunities", [
+        "recent_life_events",
+        "existing_coverage_types",
+        "cross_selling_opportunity",
+        "is_homeowner",
+        "is_business_owner",
+      ]),
+      section("intake", "Lead Source", ["source", "referral"]),
+    ],
   );
+}
+
+/**
+ * Classic (Dense) — one column for narrower monitors.
+ * All card sections stack in the left column; right stays empty so the
+ * record form can render as a true single column.
+ */
+export function contactClassicLayout(): FieldLayout {
+  const card = contactCardLayout();
+  const stacked = [
+    ...card.columns[0].sections,
+    ...card.columns[1].sections,
+  ];
+  return twoCol(stacked, []);
 }
 
 /** Deal/Lead custom keys → Contact field keys for empty-only bind transfer. */

@@ -1,4 +1,5 @@
 import { MODULE_LAYOUT_LINE, type FieldLayoutModule } from "./modules";
+import { formatPhoneStandard } from "@/lib/phone/format";
 import {
   allLayoutFieldKeys,
   parseLayout,
@@ -127,7 +128,9 @@ export function customValuesFromForm(
       continue;
     }
     if (form.has(`field_${field.key}`)) {
-      custom[field.key] = String(form.get(`field_${field.key}`) ?? "");
+      const raw = String(form.get(`field_${field.key}`) ?? "");
+      custom[field.key] =
+        field.type === "phone" ? formatPhoneStandard(raw) || raw : raw;
     }
   }
   return custom;

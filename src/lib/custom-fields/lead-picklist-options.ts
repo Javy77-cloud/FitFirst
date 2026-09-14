@@ -2,14 +2,19 @@
 
 import { LINES } from "@/lib/domain";
 import { LEAD_LANGUAGES } from "@/lib/crm/lead-fields";
-import { LEAD_QUEUE_STATUSES, LEAD_TEMPERATURES } from "@/lib/leads/queue";
-import { allPcSubtypeLabels, insuranceTypesForFamily } from "@/lib/deals/insurance-cascade";
+import {
+  LEAD_CADENCE_FILTERS,
+  LEAD_QUEUE_STATUS_FILTERS,
+  LEAD_TEMPERATURES,
+} from "@/lib/leads/queue";
+import { allPcCategoryLabels, allPcSubtypeLabels, INSURANCE_TYPE_OPTIONS } from "@/lib/deals/insurance-cascade";
 import { SEEDED_PIPELINES } from "@/lib/wire/pipeline";
 import { LINE_OF_BUSINESS_OPTIONS } from "./starter-picklists";
 
 export const LEAD_TEMPERATURE_OPTIONS: string[] = [...LEAD_TEMPERATURES];
 
-export const LEAD_STATUS_OPTIONS: string[] = [...LEAD_QUEUE_STATUSES];
+export const LEAD_STATUS_OPTIONS: string[] = LEAD_QUEUE_STATUS_FILTERS.map((row) => row.label);
+export const LEAD_CADENCE_OPTIONS: string[] = LEAD_CADENCE_FILTERS.map((row) => row.label);
 
 export const LEAD_LANGUAGE_OPTIONS: string[] = LEAD_LANGUAGES.map((row) => row.value);
 
@@ -21,16 +26,13 @@ export const LEAD_PIPELINE_OPTIONS: string[] = SEEDED_PIPELINES.filter((board) =
   (board) => (board.slug === "p-c" ? "P&C" : board.name),
 );
 
-/** Deal Details Insurance Type cascade options (all families). */
-export const LEAD_INSURANCE_TYPE_OPTIONS: string[] = [
-  ...new Set([
-    ...insuranceTypesForFamily("pc").map((row) => row.label),
-    ...insuranceTypesForFamily("life").map((row) => row.label),
-    ...insuranceTypesForFamily("health").map((row) => row.label),
-  ]),
-];
+/** Lead + Deal Insurance Type — Javy locked: PC / Life / Health only. */
+export const LEAD_INSURANCE_TYPE_OPTIONS: string[] = INSURANCE_TYPE_OPTIONS.map((row) => row.label);
 
-/** Same P&C subtype labels Deals seed on Insurance subtype. */
+/** Middle category labels under Type=PC (Home / Auto / …). */
+export const LEAD_INSURANCE_CATEGORY_OPTIONS: string[] = allPcCategoryLabels();
+
+/** Same P&C form labels Deals seed on Insurance Form / subtype. */
 export const LEAD_INSURANCE_SUBTYPE_OPTIONS: string[] = allPcSubtypeLabels();
 
 /** Prefer the shared Lines-of-business starter list labels when a UI wants friendly names. */

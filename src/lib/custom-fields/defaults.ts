@@ -1,6 +1,7 @@
 import type { LineOfBusiness } from "@/lib/domain";
 import type { CustomFieldDef, FieldLayout, LayoutSection } from "./types";
 import { APPLICANT_CRM_FIELDS, applicantLayoutSection } from "./applicant-fields";
+import { CO_APPLICANT_CRM_FIELDS, coApplicantLayoutSection } from "./co-applicant-fields";
 
 function section(id: string, label: string, fieldKeys: string[]): LayoutSection {
   return { id, label, fieldKeys };
@@ -15,6 +16,9 @@ export const CORE_FIELDS: CustomFieldDef[] = [
   { key: "date_of_birth", label: "Date of birth", type: "dob", systemKey: "dateOfBirth" },
   { key: "mailing_address", label: "Insured Address", type: "address", systemKey: "mailingAddress" },
   { key: "contact_mailing_address", label: "Mailing Address", type: "address" },
+  { key: "contact_mailing_city", label: "City", type: "single_line" },
+  { key: "contact_mailing_state", label: "State", type: "single_line" },
+  { key: "contact_mailing_zip", label: "ZIP", type: "single_line" },
   { key: "city", label: "City", type: "single_line", systemKey: "city" },
   { key: "state", label: "State", type: "single_line", systemKey: "state" },
   { key: "zip", label: "ZIP", type: "single_line", systemKey: "zip" },
@@ -37,20 +41,23 @@ export const CORE_FIELDS: CustomFieldDef[] = [
     key: "insurance_type",
     label: "Insurance Type",
     type: "picklist",
-    options: [
-      "Home",
-      "Landlord",
-      "Renters",
-      "Auto",
-      "Rec / RV",
-      "Flood",
-      "Umbrella",
-      "Commercial",
-      "Life",
-      "Health",
-    ],
+    options: ["PC", "Life", "Health"],
+  },
+  {
+    key: "insurance_category",
+    label: "Insurance Category",
+    type: "picklist",
+    options: [],
+  },
+  {
+    key: "insurance_subtype",
+    label: "Insurance Form",
+    type: "picklist",
+    options: [],
+    systemKey: "quotingForm",
   },
   ...APPLICANT_CRM_FIELDS,
+  ...CO_APPLICANT_CRM_FIELDS,
 ];
 
 const LOB_FIELDS: Record<string, CustomFieldDef[]> = {
@@ -62,6 +69,13 @@ const LOB_FIELDS: Record<string, CustomFieldDef[]> = {
     { key: "stories", label: "Stories", type: "number" },
     { key: "roof_photo", label: "Roof photo", type: "image" },
     { key: "dwell_pct", label: "Other structures %", type: "formula", formula: "coverage_a * 0.1" },
+    { key: "lease_term", label: "Lease term", type: "single_line" },
+    { key: "tenant_name", label: "Tenant name", type: "single_line" },
+    { key: "landlord_liability", label: "Landlord liability", type: "currency" },
+    { key: "loss_of_rents", label: "Loss of rents", type: "currency" },
+    { key: "animals", label: "Animals on premises", type: "picklist", options: ["yes", "no"] },
+    { key: "primary_heat", label: "Primary heat", type: "single_line" },
+    { key: "business_on_premises", label: "Business on premises", type: "picklist", options: ["yes", "no"] },
   ],
   AUTO: [
     { key: "vin", label: "VIN", type: "single_line" },
@@ -135,12 +149,19 @@ export const STRIPPED_DEAL_SECTION_IDS = [
 function essentialSections(): { left: LayoutSection[]; right: LayoutSection[] } {
   return {
     left: [
-      section("contact", "Contact", [...ESSENTIAL_CONTACT_KEYS]),
+      section("contact", "Contact", [...ESSENTIAL_CONTACT_KEYS, "date_of_birth"]),
       applicantLayoutSection(),
+      coApplicantLayoutSection(),
     ],
     right: [
+      section("details", "Details", ["pipeline", "insurance_type", "insurance_category", "insurance_subtype"]),
       section("insured_address", "Insured Address", ["mailing_address", "city", "state", "zip"]),
-      section("mailing_address", "Mailing Address", ["contact_mailing_address"]),
+      section("mailing_address", "Mailing Address", [
+        "contact_mailing_address",
+        "contact_mailing_city",
+        "contact_mailing_state",
+        "contact_mailing_zip",
+      ]),
     ],
   };
 }

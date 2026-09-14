@@ -63,6 +63,8 @@ export function emptySheetValues(): Record<string, QuoteSheetFieldValue> {
 
 export function isLockedSheetField(field: QuoteSheetFieldValue | undefined): boolean {
   if (!field) return false;
+  // Blank / missing cells are never locked — Fill must be able to recover cleared fields.
+  if (field.status === "missing" || !String(field.value ?? "").trim()) return false;
   if (field.source === "javy" || field.source === "agent") return true;
   if (field.status === "confirmed" && field.source === "seed") return true;
   return false;

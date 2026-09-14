@@ -244,6 +244,7 @@ export default async function CarrierRecordPage({
           newBusinessCommPct={carrier.newBusinessCommPct ?? ""}
           renewalCommPct={carrier.renewalCommPct ?? ""}
           portal={{
+            agencyCode: carrier.agencyCode,
             usernameHint: carrier.portalUsernameHint,
             hasUsername: carrier.hasPortalUsername,
             hasPassword: carrier.hasPortalPassword,

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { DEMO_ORG_API_KEY } from "@/lib/developer-hub/keys";
 import { listOrgApiKeys } from "@/lib/developer-hub/store";
+import { formatDay } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
 
@@ -75,7 +76,7 @@ export default async function ApiKeysPage({
                     <td>
                       <code className="text-xs">{key.prefix}…</code>
                     </td>
-                    <td className="whitespace-nowrap text-xs">{key.createdAt.toISOString().slice(0, 10)}</td>
+                    <td className="whitespace-nowrap text-xs">{formatDay(key.createdAt)}</td>
                     <td className="whitespace-nowrap text-xs">
                       {key.lastUsedAt ? key.lastUsedAt.toISOString().slice(0, 16).replace("T", " ") : "—"}
                     </td>

@@ -33,12 +33,14 @@ export type CalendarActivity = {
 export const CALENDAR_VIEWS = ["month", "week", "day"] as const;
 export type CalendarView = (typeof CALENDAR_VIEWS)[number];
 
-/** Javy calendar chrome — three rows, exact labels. */
+/** Javy calendar chrome — view switcher + Add event menu labels. */
 export const CALENDAR_TOOLBAR_ROWS = [
-  ["Add event", "Add company meeting", "Add training"],
   ["Month", "Week", "Day"],
-  ["Task", "Meeting", "Call", "Email", "SMS"],
+  ["Add Event", "Task", "Meeting", "Call", "Email", "SMS"],
 ] as const;
+
+/** Admin-only add actions (same Add event menu, under a separator). */
+export const CALENDAR_ADMIN_ADD = ["Add Company Meeting", "Add Training"] as const;
 
 export function isCalendarView(value: string | null | undefined): value is CalendarView {
   return value === "month" || value === "week" || value === "day";
@@ -127,6 +129,31 @@ export function eventHeightPx(activity: CalendarActivity, hourHeight = 48): numb
   if (!start || !end) return Math.round(hourHeight * 0.7);
   const hours = Math.max(0.35, (end.getTime() - start.getTime()) / (60 * 60 * 1000));
   return Math.round(hours * hourHeight);
+}
+
+
+/** Center toolbar label for month / week / day. */
+export function formatCalendarTitle(view: CalendarView, anchor: Date): string {
+  if (view === "day") {
+    return anchor.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
+  if (view === "week") {
+    const week = weekDays(anchor);
+    return `${week[0].toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${week[6].toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+  }
+  return anchor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+/** Move anchor by one month / week / day matching the current view. */
+export function shiftCalendarAnchor(view: CalendarView, anchor: Date, direction: -1 | 1): Date {
+  if (view === "month") return addMonths(anchor, direction);
+  if (view === "week") return addDays(anchor, direction * 7);
+  return addDays(anchor, direction);
 }
 
 export function serializeCalendarActivity(row: CalendarActivity) {
@@ -226,6 +253,26 @@ export function activitiesOnDay(activities: CalendarActivity[], day: Date): Cale
       const tb = activityAnchor(b)?.getTime() ?? 0;
       return ta - tb;
     });
+}
+
+/** Events for the "On this view" panel — day or week only; month returns []. */
+export function activitiesOnView(
+  activities: CalendarActivity[],
+  view: CalendarView,
+  anchor: Date,
+): CalendarActivity[] {
+  if (view === "month") return [];
+  if (view === "day") return activitiesOnDay(activities, anchor);
+  const seen = new Set<string>();
+  const out: CalendarActivity[] = [];
+  for (const day of weekDays(anchor)) {
+    for (const row of activitiesOnDay(activities, day)) {
+      if (seen.has(row.id)) continue;
+      seen.add(row.id);
+      out.push(row);
+    }
+  }
+  return out;
 }
 
 export function kindClass(kind: string, meetingType?: string | null): string {

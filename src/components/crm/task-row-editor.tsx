@@ -34,6 +34,7 @@ export function TaskRowEditor({
             defaultValue={task.kind}
             className="h-7 w-full rounded-md border border-input bg-card px-1.5 text-xs"
           >
+            <option value="">None</option>
             {KINDS.map((kind) => (
               <option key={kind} value={kind}>
                 {kind.replaceAll("_", " ")}
@@ -45,6 +46,7 @@ export function TaskRowEditor({
             defaultValue={task.status}
             className="h-7 w-full rounded-md border border-input bg-card px-1.5 text-xs"
           >
+            <option value="">None</option>
             <option value="open">open</option>
             <option value="done">done</option>
           </select>

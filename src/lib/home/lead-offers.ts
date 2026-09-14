@@ -59,7 +59,7 @@ export function offerStatusLabel(status: string): string {
 
 export function claimRelationLabel(relation: string | null | undefined): string | null {
   if (relation === "know_client") return "I know this client";
-  if (relation === "new_lead") return "New lead";
+  if (relation === "new_lead") return "New Lead";
   return null;
 }
 

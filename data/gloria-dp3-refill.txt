@@ -1,0 +1,84 @@
+seeded dec yellows + gloria NI
+running Fill…
+Warning: TT: undefined function: 32
+Warning: TT: undefined function: 32
+Warning: TT: undefined function: 32
+Warning: TT: undefined function: 32
+[runFillQuoteSheet] persisted {
+  dealId: '03dccdd7-db06-4c89-9b7a-cf0a2064d044',
+  filename: 'DF000353874 - GLORIA MARTINEZ - DEC PAGE.pdf',
+  filledKeyNames: []
+}
+fill result {
+  "filledKeys": [],
+  "skippedKeys": [
+    "applicant_name",
+    "address1",
+    "address1",
+    "applicant_address",
+    "city",
+    "state",
+    "zip",
+    "year_built",
+    "roof_covering",
+    "roof_shape",
+    "opening_protection",
+    "mailing_address",
+    "occupancy",
+    "usage",
+    "construction",
+    "coverage_a",
+    "ordinance_or_law",
+    "hurricane_deductible",
+    "aop_deductible",
+    "wind_hail_deductible",
+    "named_insured",
+    "current_policy_named_insured",
+    "policy_number",
+    "current_premium",
+    "effective_date",
+    "expiration_date",
+    "mortgagee_name",
+    "mortgagee_name",
+    "loan_number",
+    "county",
+    "roof_year",
+    "coverage_b",
+    "coverage_c",
+    "coverage_d",
+    "sinkhole_deductible",
+    "current_carrier",
+    "mortgagee_address",
+    "protection_class",
+    "number_of_families",
+    "form",
+    "sprinkler",
+    "central_alarm",
+    "building_code",
+    "loss_of_rents",
+    "landlord_liability",
+    "coverage_e"
+  ]
+}
+filled 91 yellow 52 total 143
+YELLOW KEYS: animals, applicant_education_level, applicant_email, applicant_employment, applicant_gender, applicant_marital_status, applicant_occupation, assessment_year, bfe, business_on_premises, date_inspected, deadbolts, dog_breed, electrical_circuit_amps, electrical_updated, electrical_year, elevation, entity_type, fire_district, flood_policy, four_point_date, four_point_result, hvac_year, inspection_company, lease_term, legal_description, license_or_certificate_number, notes, plumbing_year, pool, pool_fence, primary_heat, primary_plumbing_type, rce_source, replacement_cost_estimate, roof_condition, roof_deck, roof_deck_attachment, roof_to_wall, secondary_named_insured, secondary_water, smoke_detectors, subdivision, tenant_name, terrain, trampoline, water_heater_year, wind_mit_date, wind_mit_form, wind_mit_inspector, wind_speed, zoning
+  named_insured = "Gloria Martinez" src=agent status=check
+  form = "DP3" src=extracted status=check
+  construction = "Masonry" src=extracted status=check
+  opening_protection = "N" src=extracted status=check
+  sprinkler = "no" src=extracted status=check
+  central_alarm = "no" src=extracted status=check
+  building_code = "04" src=extracted status=check
+  loss_of_rents = "30900" src=extracted status=check
+  landlord_liability = "100000" src=extracted status=check
+  applicant_gender = "" src=blank status=missing
+  applicant_occupation = "" src=blank status=missing
+  applicant_employment = "" src=blank status=missing
+  applicant_marital_status = "" src=blank status=missing
+  applicant_education_level = "" src=blank status=missing
+  entity_type = "" src=blank status=missing
+  mobile_home = "no" src=extracted status=check
+  deadbolts = "" src=blank status=missing
+  animals = "" src=blank status=missing
+  lease_term = "" src=blank status=missing
+  tenant_name = "" src=blank status=missing

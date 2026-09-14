@@ -9,6 +9,7 @@ import {
   fieldClass,
 } from "@/components/claims/field";
 import { ClaimsDeskNotice } from "@/components/claims/desk-notice";
+import { ChooseFiles } from "@/components/choose-files";
 import { FormPrimaryActions } from "@/components/desk/form-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -170,6 +171,31 @@ export function FnolIntakeForm({
           className={`${fieldClass} h-auto min-h-20`}
         />
       </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <Label className="text-xs">Severity</Label>
+          <select name="severity" defaultValue="moderate" className={`${fieldClass} mt-1`}>
+            <option value="low">Low</option>
+            <option value="moderate">Moderate</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+        <div>
+          <Label className="text-xs">Loss photos</Label>
+          <ChooseFiles name="photos" multiple accept="image/*" className="mt-1" />
+          <p className="mt-1 text-[11px] text-muted-foreground">Optional. Stored on the claim file.</p>
+        </div>
+      </div>
+      <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" name="notifyCarrier" value="1" className="mt-1" />
+        <span>
+          <span className="font-medium text-navy">Notify carrier</span>
+          <span className="mt-0.5 block text-xs text-muted-foreground">
+            Honest stub — stamps carrier notified on the claim. No portal push yet.
+          </span>
+        </span>
+      </label>
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" name="notifyProducer" value="1" defaultChecked className="mt-1" />
         <span>

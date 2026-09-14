@@ -8,6 +8,7 @@ import { requireAdminPage } from "@/lib/auth/guards";
 import { listFillLearningLogs } from "@/lib/db/queries";
 import { fillLearningDocTypeLabel } from "@/lib/fill-learning/doc-types";
 import { cn } from "@/lib/utils";
+import { formatDay } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,7 @@ export default async function FillLearningLogsPage() {
                     className="whitespace-nowrap text-xs"
                     sortValue={log.loggedAt.toISOString()}
                   >
-                    {log.loggedAt.toISOString().slice(0, 10)}
+                    {formatDay(log.loggedAt)}
                   </Col>
                   <Col table="fill-learning" col="deal">
                     {deal ? (

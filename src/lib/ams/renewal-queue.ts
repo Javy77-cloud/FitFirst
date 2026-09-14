@@ -1,25 +1,38 @@
 import {
   RENEWAL_QUEUE_DISCLAIMER,
   isRenewalQueueStage,
+  normalizeRenewalQueueStage,
   renewalQueueNextStep,
   type RenewalQueueStage,
 } from "@/lib/domain-ams";
 
-export type RenewalQueueAction = "quote" | "offer" | "accept" | "lose" | "reset";
+export type RenewalQueueAction = "contact" | "quote" | "bind" | "lose" | "reset" | "quote_legacy" | "offer" | "accept";
 
+/** Drag / advance map for the renewals board stages. */
 export function nextRenewalQueueStage(
-  stage: RenewalQueueStage,
+  stage: RenewalQueueStage | string,
   action: RenewalQueueAction,
 ): RenewalQueueStage | null {
-  if (action === "reset" && (stage === "accepted" || stage === "lost" || stage === "offered")) {
+  const current = normalizeRenewalQueueStage(stage) ?? (isRenewalQueueStage(stage) ? stage : null);
+  if (!current) return null;
+
+  if (action === "reset" && (current === "bound" || current === "lost" || current === "quoted")) {
     return "upcoming";
   }
-  if (action === "lose" && (stage === "upcoming" || stage === "quoting" || stage === "offered")) {
+  if (
+    action === "lose" &&
+    (current === "upcoming" || current === "contacted" || current === "quoted")
+  ) {
     return "lost";
   }
-  if (action === "quote" && stage === "upcoming") return "quoting";
-  if (action === "offer" && stage === "quoting") return "offered";
-  if (action === "accept" && stage === "offered") return "accepted";
+  // New names
+  if (action === "contact" && current === "upcoming") return "contacted";
+  if (action === "quote" && current === "contacted") return "quoted";
+  if (action === "bind" && current === "quoted") return "bound";
+  // Legacy action aliases from older queue UI
+  if ((action === "quote_legacy" || action === "quote") && current === "upcoming") return "contacted";
+  if (action === "offer" && current === "contacted") return "quoted";
+  if (action === "accept" && current === "quoted") return "bound";
   return null;
 }
 
@@ -32,7 +45,10 @@ export function renewalQueueBindsPolicy(): false {
 }
 
 export function isOpenRenewalQueue(stage: string): boolean {
-  return isRenewalQueueStage(stage) && (stage === "upcoming" || stage === "quoting" || stage === "offered");
+  const normalized = normalizeRenewalQueueStage(stage);
+  return Boolean(
+    normalized && (normalized === "upcoming" || normalized === "contacted" || normalized === "quoted"),
+  );
 }
 
 export function renewalQueueLine(policyNumber: string, stage: string): string {

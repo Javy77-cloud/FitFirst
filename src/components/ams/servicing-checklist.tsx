@@ -1,4 +1,6 @@
-import { createPacketTask, createServicingTask, toggleServicingCheck } from "@/app/actions/ams";
+import Link from "next/link";
+import { toggleServicingCheck } from "@/app/actions/ams";
+import { CreateServicingTaskDialog } from "@/components/ams/create-servicing-task-dialog";
 import { Button } from "@/components/ui/button";
 import type { ServicingChecklist } from "@/lib/ams/checklist";
 import type { PacketTask } from "@/lib/ams/packet-tasks";
@@ -22,18 +24,38 @@ export function ServicingChecklistCard({
     return true;
   });
 
+  const total = checklist.readyCount + checklist.missingCount;
+  const pct = total > 0 ? Math.round((checklist.readyCount / total) * 100) : 0;
+
   return (
-    <section className="ff-card mb-4 p-4">
+    <section className="ff-card mb-4 p-4" data-ff-servicing-checklist="">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-base font-semibold text-navy">Servicing checklist</h2>
         <p className="text-sm text-muted-foreground">
           {checklist.readyCount} complete · {checklist.missingCount} incomplete
+          {checklist.lobFamily !== "classic" ? ` · ${checklist.lobFamily}` : ""}
         </p>
       </div>
-      <p className="mt-1 text-base text-muted-foreground">
-        Dec, ID cards, and AOR live on this Policy after bind. Renewal docs, inspection, and
-        mortgagee are desk checks — mark complete when the packet lands. Shopping docs stay on
-        the Deal. Missing packet slots and incomplete items can open an in-app Task.
+      <div className="mt-2" data-ff-checklist-progress="">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>Progress</span>
+          <span>{pct}%</span>
+        </div>
+        <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-[var(--ff-green)] transition-all"
+            style={{ width: `${pct}%` }}
+            role="progressbar"
+            aria-valuenow={pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          />
+        </div>
+      </div>
+      <p className="mt-2 text-base text-muted-foreground">
+        Template by line. Each incomplete item opens a task or collects a packet. Auto-filled from
+        files on the policy when possible — no busywork re-entry. Lender not in system: create the
+        contact once from Coverage.
       </p>
       <ul className="mt-3 divide-y divide-border rounded-md border border-border">
         {checklist.items.map((item) => {
@@ -43,23 +65,42 @@ export function ServicingChecklistCard({
               ? "id_card"
               : null;
           const openTask = packetKey ? packetByKey[packetKey] : undefined;
+          const taskId = item.taskId || openTask?.id || null;
           return (
-            <li key={item.key} className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-start sm:gap-3">
+            <li
+              key={item.key}
+              className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-start sm:gap-3"
+              data-ff-checklist-item={item.key}
+              data-ok={item.ok ? "true" : "false"}
+            >
               <span
                 className={`shrink-0 text-xs font-semibold uppercase ${
                   item.ok ? "text-[var(--ff-green)]" : "text-muted-foreground"
                 }`}
               >
-                {item.ok ? (item.toggleable ? "Complete" : "On file") : item.toggleable ? "Incomplete" : "Missing"}
+                {item.ok
+                  ? item.toggleable
+                    ? "Complete"
+                    : "On file"
+                  : item.toggleable
+                    ? "Incomplete"
+                    : "Missing"}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="font-medium text-navy">{item.label}</div>
                 <div className="text-sm text-muted-foreground">{item.detail}</div>
-                {openTask ? (
+                {!item.ok && taskId ? (
+                  <p className="mt-1 text-sm">
+                    <Link
+                      href={`/tasks?q=${encodeURIComponent(item.label)}`}
+                      className="text-primary hover:underline"
+                      data-ff-checklist-task-link={taskId}
+                    >
+                      Open linked task
+                    </Link>
+                  </p>
+                ) : openTask ? (
                   <p className="mt-1 text-sm text-navy">Task open: {openTask.title}</p>
-                ) : null}
-                {item.taskId && !openTask ? (
-                  <p className="mt-1 text-xs uppercase text-muted-foreground">Task open</p>
                 ) : null}
               </div>
               <div className="flex flex-wrap gap-1">
@@ -68,30 +109,34 @@ export function ServicingChecklistCard({
                     <form action={toggleServicingCheck}>
                       <input type="hidden" name="policyId" value={policyId} />
                       <input type="hidden" name="itemKey" value={item.key} />
-                      <input type="hidden" name="status" value={item.ok ? "incomplete" : "complete"} />
+                      <input
+                        type="hidden"
+                        name="status"
+                        value={item.ok ? "incomplete" : "complete"}
+                      />
                       <Button type="submit" size="sm" variant={item.ok ? "outline" : "default"}>
                         {item.ok ? "Reopen" : "Mark complete"}
                       </Button>
                     </form>
-                    {!item.ok && !item.taskId ? (
-                      <form action={createServicingTask}>
-                        <input type="hidden" name="policyId" value={policyId} />
-                        <input type="hidden" name="itemKey" value={item.key} />
-                        <Button type="submit" size="sm" variant="secondary">
-                          Create task
-                        </Button>
-                      </form>
+                    {!item.ok && !taskId ? (
+                      <CreateServicingTaskDialog
+                        policyId={policyId}
+                        itemKey={item.key}
+                        mode="servicing"
+                        label="Create task"
+                        triggerVariant="secondary"
+                      />
                     ) : null}
                   </>
                 ) : null}
                 {!item.ok && packetKey && !openTask ? (
-                  <form action={createPacketTask}>
-                    <input type="hidden" name="policyId" value={policyId} />
-                    <input type="hidden" name="docKey" value={packetKey} />
-                    <Button type="submit" size="sm" variant="outline">
-                      Collect packet
-                    </Button>
-                  </form>
+                  <CreateServicingTaskDialog
+                    policyId={policyId}
+                    itemKey={packetKey}
+                    mode="packet"
+                    label="Collect packet"
+                    triggerVariant="outline"
+                  />
                 ) : null}
               </div>
             </li>
@@ -101,7 +146,10 @@ export function ServicingChecklistCard({
           const openTask = packetByKey[key];
           const missing = missingPackets.includes(key);
           return (
-            <li key={key} className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-start sm:gap-3">
+            <li
+              key={key}
+              className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-start sm:gap-3"
+            >
               <span
                 className={`shrink-0 text-xs font-semibold uppercase ${
                   missing ? "text-muted-foreground" : "text-[var(--ff-green)]"
@@ -117,17 +165,24 @@ export function ServicingChecklistCard({
                     : "Issued packet is on this record."}
                 </div>
                 {openTask ? (
-                  <p className="mt-1 text-sm text-navy">Task open: {openTask.title}</p>
+                  <p className="mt-1 text-sm">
+                    <Link
+                      href={`/tasks?q=${encodeURIComponent(openTask.title)}`}
+                      className="text-primary hover:underline"
+                    >
+                      Open linked task
+                    </Link>
+                  </p>
                 ) : null}
               </div>
               {missing && !openTask ? (
-                <form action={createPacketTask}>
-                  <input type="hidden" name="policyId" value={policyId} />
-                  <input type="hidden" name="docKey" value={key} />
-                  <Button type="submit" size="sm" variant="outline">
-                    Create task
-                  </Button>
-                </form>
+                <CreateServicingTaskDialog
+                  policyId={policyId}
+                  itemKey={key}
+                  mode="packet"
+                  label="Create task"
+                  triggerVariant="outline"
+                />
               ) : null}
             </li>
           );
