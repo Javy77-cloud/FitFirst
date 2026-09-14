@@ -4184,6 +4184,90 @@ export type AppetiteEngineRule = typeof appetiteEngineRules.$inferSelect;
 export type AppetiteShadowPrediction = typeof appetiteShadowPredictions.$inferSelect;
 export type AppetiteEdgeCase = typeof appetiteEdgeCases.$inferSelect;
 
+/**
+ * Carrier Appetite v1 — slug-keyed FL specialty catalog.
+ * Identity is `carrier_id` (slide, universal_pc, uicna). Do not merge Universal P&C with UICNA.
+ * Separate from UUID `carriers` so Carriers / Markets UI is unchanged.
+ */
+export const carrierAppetite = pgTable(
+  "carrier_appetite",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    /** Stable slug. Unique per tenant. */
+    carrierId: text("carrier_id").notNull(),
+    legalName: text("legal_name").notNull(),
+    /** national | regional | fl_property | e_and_s | specialty | life | health */
+    segment: text("segment").notNull(),
+    linesOffered: jsonb("lines_offered").$type<string[]>().notNull().default([]),
+    linesNotOffered: jsonb("lines_not_offered").$type<string[]>().notNull().default([]),
+    /** Expanded 2-letter US codes. Never invent 50 unless source said US. */
+    statesAvailable: jsonb("states_available").$type<string[]>().notNull().default([]),
+    statesRestricted: jsonb("states_restricted").$type<string[]>().notNull().default([]),
+    /** Original CSV tokens before expansion (SE_coastal, US, …). */
+    statesRaw: jsonb("states_raw").$type<string[]>().notNull().default([]),
+    portalName: text("portal_name"),
+    csPhone: text("cs_phone"),
+    /** CSV v1 has no claims phone — column reserved. */
+    claimsPhone: text("claims_phone"),
+    rateable: boolean("rateable").notNull().default(true),
+    hardDeclines: jsonb("hard_declines").$type<string[]>().notNull().default([]),
+    softCautions: jsonb("soft_cautions").$type<string[]>().notNull().default([]),
+    preferredSignals: jsonb("preferred_signals").$type<string[]>().notNull().default([]),
+    /** open | selective | restricted | closed_new_biz */
+    catPosture: text("cat_posture").notNull().default("selective"),
+    notesForAgent: text("notes_for_agent"),
+    quotePriority: integer("quote_priority"),
+    flHoOrder: integer("fl_ho_order"),
+    needsStateConfirm: boolean("needs_state_confirm").notNull().default(false),
+    linkedCarrierId: uuid("linked_carrier_id").references(() => carriers.id),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("carrier_appetite_tenant_slug_uidx").on(t.tenantId, t.carrierId),
+    index("carrier_appetite_tenant_rateable_idx").on(t.tenantId, t.rateable),
+  ],
+);
+
+/** Quote-gate decision log — agent can see WHY a carrier was Skip-Decline. */
+export const appetiteQuoteDecisions = pgTable(
+  "appetite_quote_decisions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    carrierId: text("carrier_id").notNull(),
+    dealId: uuid("deal_id").references(() => deals.id),
+    riskId: uuid("risk_id").references(() => risks.id),
+    masterId: uuid("master_id"),
+    /** Quote | Maybe | Skip-Decline */
+    status: text("status").notNull(),
+    matchingRule: text("matching_rule"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("appetite_quote_decisions_deal_idx").on(t.tenantId, t.dealId, t.createdAt),
+    index("appetite_quote_decisions_carrier_idx").on(t.tenantId, t.carrierId, t.createdAt),
+  ],
+);
+
+/** Admin-editable gate prefs (FL HO order override, Citizens within-% stub). No code deploy. */
+export const appetiteGatePrefs = pgTable(
+  "appetite_gate_prefs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    /** Override array of slugs. Null → use seeded fl_ho_order / DEFAULT_FL_HO_ORDER. */
+    flHoOrder: jsonb("fl_ho_order").$type<string[] | null>(),
+    citizensWithinPct: real("citizens_within_pct").notNull().default(20),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("appetite_gate_prefs_tenant_uidx").on(t.tenantId)],
+);
+
+export type CarrierAppetite = typeof carrierAppetite.$inferSelect;
+export type AppetiteQuoteDecision = typeof appetiteQuoteDecisions.$inferSelect;
+export type AppetiteGatePrefs = typeof appetiteGatePrefs.$inferSelect;
+
 export type ExtractionAttempt = typeof extractionAttempts.$inferSelect;
 export type ExtractionFieldAttempt = typeof extractionFieldAttempts.$inferSelect;
 export type ExtractionCorrection = typeof extractionCorrections.$inferSelect;

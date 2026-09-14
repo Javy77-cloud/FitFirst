@@ -21,6 +21,7 @@ import { hasMarketLookupInput, sheetHasMarketFacts } from "@/lib/deals/manual-ma
 
 type SheetValues = Record<string, { value?: string | null } | null> | null;
 
+/** Markets matcher (legacy appetite_rules). Portal skip-decline lives in shopDealQuotes + quote-gate. */
 export async function evaluateDealMarkets(risk: Risk, sheetValues?: SheetValues): Promise<CarrierMatch[]> {
   if (sheetValues !== undefined && !sheetHasMarketFacts(sheetValues)) {
     return [];

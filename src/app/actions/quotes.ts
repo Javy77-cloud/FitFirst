@@ -40,6 +40,8 @@ import {
 } from "@/lib/deals/manual-markets";
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
 import { flashAction } from "@/lib/flash-action";
+import { snapshotFromRisk } from "@/lib/appetite/gate/snapshot";
+import { runAndPersistQuoteGate } from "@/lib/appetite/gate/store";
 
 export async function shopInAppetiteAction(formData: FormData) {
   await shopInAppetite(String(formData.get("dealId") ?? ""));
@@ -100,6 +102,22 @@ export async function shopDealQuotes(
     .where(eq(quoteAttemptLogs.tenantId, DEFAULT_TENANT_ID));
 
   const snapshot = riskFromRecord(risk);
+  const named = await db.select({ id: carriers.id, name: carriers.name }).from(carriers);
+  const nameById = new Map(named.map((row) => [row.id, row.name]));
+  const gateFilter = await runAndPersistQuoteGate({
+    snapshot: snapshotFromRisk({
+      risk,
+      deal,
+      admittedDeclinedCount: logs.filter(
+        (log) => log.dealId === dealId && log.result === "declined" && !log.bindable,
+      ).length,
+    }),
+    uuidToName: nameById,
+  }).catch((err) => {
+    console.error("appetite quote-gate failed", err);
+    return null;
+  });
+  const skipGateIds = new Set(gateFilter?.skipLinkedCarrierIds ?? []);
   const appointedMap = await appointedByCarrierLine();
   const prior: PriorAttempt[] = logs
     .filter((log) => isMatchPriorResult(log.result))
@@ -151,11 +169,9 @@ export async function shopDealQuotes(
     }
   }
 
-  const named = await db.select({ id: carriers.id, name: carriers.name }).from(carriers);
-  const nameById = new Map(named.map((row) => [row.id, row.name]));
-
   // Live desk: do not invent stub premiums. Real quotes come from Chrome Fill / portal paste.
-  for (const carrierId of [...shopIds].filter((id) => !excludedIds.has(id))) {
+  // Quote-gate Skip-Decline: do not open a portal for that carrier.
+  for (const carrierId of [...shopIds].filter((id) => !excludedIds.has(id) && !skipGateIds.has(id))) {
     const match = byId.get(carrierId);
     const carrierName = match?.carrierName ?? nameById.get(carrierId) ?? "Carrier";
     const portal = portalFor(carrierId, carrierName);
