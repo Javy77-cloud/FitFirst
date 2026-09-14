@@ -47,9 +47,12 @@ describe("sep7cl Fill from property records via getparceldata", () => {
     expect(action).toMatch(/fillFromPropertyRecords/);
     expect(action).toMatch(/orchestratePropertyFill/);
     expect(action).toMatch(/loadGetParcelDataApiKey/);
+    expect(action).toMatch(/loadPermitStackApiKey/);
     expect(action).toMatch(/addressFromSheet/);
     expect(env).toMatch(/GETPARCELDATA_API_KEY=/);
+    expect(env).toMatch(/PERMITSTACK_API_KEY=/);
     expect(vault).toMatch(/GETPARCELDATA_VAULT_PROVIDER = "getparceldata"/);
+    expect(vault).toMatch(/PERMITSTACK_VAULT_PROVIDER = "permitstack"/);
   });
 
   it("still exposes Parcel ID / Assessed value / Records check on HO", () => {

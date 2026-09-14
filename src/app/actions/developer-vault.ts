@@ -6,8 +6,10 @@ import { userIsSiteDeveloper } from "@/lib/developer/site-developer";
 import {
   clearFedExVault,
   clearGetParcelDataVault,
+  clearPermitStackVault,
   saveFedExVault,
   saveGetParcelDataVault,
+  savePermitStackVault,
 } from "@/lib/developer/vault";
 import { flashAction } from "@/lib/flash-action";
 
@@ -95,4 +97,35 @@ export async function clearGetParcelDataVaultAction() {
   }
   await clearGetParcelDataVault(session.userId);
   flashAction(VAULT_HREF, "getparceldata-vault-cleared");
+}
+
+export async function savePermitStackVaultAction(formData: FormData) {
+  let session;
+  try {
+    session = await requireSiteDeveloper();
+  } catch {
+    flashAction(VAULT_HREF, "Site developer only.", "error");
+  }
+  const apiKey = String(formData.get("apiKey") ?? "");
+  try {
+    await savePermitStackVault({
+      apiKey,
+      actorId: session.userId,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not save PermitStack API key.";
+    flashAction(VAULT_HREF, message, "error");
+  }
+  flashAction(VAULT_HREF, "permitstack-vault-saved");
+}
+
+export async function clearPermitStackVaultAction() {
+  let session;
+  try {
+    session = await requireSiteDeveloper();
+  } catch {
+    flashAction(VAULT_HREF, "Site developer only.", "error");
+  }
+  await clearPermitStackVault(session.userId);
+  flashAction(VAULT_HREF, "permitstack-vault-cleared");
 }

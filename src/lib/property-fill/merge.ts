@@ -4,19 +4,23 @@ import {
   COUNTY_PA_LABEL,
   FEMA_LABEL,
   FLOODZONEMAP_LABEL,
+  PERMITSTACK_LABEL,
   PROPERTY_RECORDS_LABEL,
 } from "./types";
 
 /**
- * Merge order (locked 2026-09-10):
- * GetParcel → County PA → FloodZoneMap (wins on conflicts) → FEMA empty-only
- * (FEMA must NEVER overwrite FloodZoneMap — or any earlier key).
+ * Merge order (empty-only / CHECK apply upstream; never invent):
+ * 1) County PA → FloodZoneMap (wins flood conflicts) → FEMA empty-only
+ * 2) GetParcelData empty-only (paid; live HTTP when key present)
+ * 3) PermitStack empty-only (paid; roof/HVAC/WH years when confident)
+ * FEMA must NEVER overwrite FloodZoneMap — or any earlier key.
  */
 export function mergePropertyFillFacts(parts: {
   getParcel?: PropertyRecordsFact[];
   countyPa?: PropertyRecordsFact[];
   floodZoneMap?: PropertyRecordsFact[];
   fema?: PropertyRecordsFact[];
+  permitStack?: PropertyRecordsFact[];
 }): { facts: PropertyRecordsFact[]; sourcesUsed: PropertyFillSourceId[] } {
   const byKey = new Map<string, PropertyRecordsFact>();
   const sourcesUsed: PropertyFillSourceId[] = [];
@@ -42,10 +46,11 @@ export function mergePropertyFillFacts(parts: {
     if (used) sourcesUsed.push(source);
   };
 
-  applyOverwrite(parts.getParcel, "property-records");
   applyOverwrite(parts.countyPa, "county-pa");
   applyOverwrite(parts.floodZoneMap, "floodzonemap");
   applyEmptyOnly(parts.fema, "fema");
+  applyEmptyOnly(parts.getParcel, "property-records");
+  applyEmptyOnly(parts.permitStack, "permitstack");
 
   return { facts: [...byKey.values()], sourcesUsed };
 }
@@ -69,6 +74,7 @@ export function toastForPropertyFill(args: {
     if (id === "property-records") return PROPERTY_RECORDS_LABEL;
     if (id === "county-pa") return COUNTY_PA_LABEL;
     if (id === "floodzonemap") return FLOODZONEMAP_LABEL;
+    if (id === "permitstack") return PERMITSTACK_LABEL;
     return FEMA_LABEL;
   });
   const unique = [...new Set(labels)];

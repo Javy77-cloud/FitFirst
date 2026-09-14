@@ -56,6 +56,7 @@ describe("sep7ce Fill from property records", () => {
     expect(action).toMatch(/applyPropertyRecordsToSheet/);
     expect(action).toMatch(/orchestratePropertyFill/);
     expect(action).toMatch(/loadGetParcelDataApiKey/);
+    expect(action).toMatch(/loadPermitStackApiKey/);
   });
 
   it("does not rewrite document extraction maps", () => {

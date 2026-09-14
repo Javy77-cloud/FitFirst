@@ -9,6 +9,8 @@ import { geocodePropertyAddress } from "@/lib/getparceldata/geocode";
 import { getParcelDataKeyReady } from "@/lib/getparceldata/key";
 import { parcelVintage, type PropertyRecordsFact } from "@/lib/getparceldata/map";
 import { NO_ADDRESS_MESSAGE } from "@/lib/getparceldata/client";
+import { searchPermitStackHistory } from "@/lib/permitstack/client";
+import { permitStackKeyReady } from "@/lib/permitstack/key";
 import { factsFromCountyPa } from "./counties/registry";
 import { factsFromFemaNfhl } from "./fema";
 import { factsFromFloodZoneMap } from "./floodzonemap";
@@ -20,13 +22,15 @@ type FetchLike = typeof fetch;
 export type OrchestrateInput = {
   address: PropertyAddressQuery;
   apiKey: string | null | undefined;
+  permitStackKey?: string | null;
   fetchImpl?: FetchLike;
 };
 
 /**
  * Single Fill-from-property-records pipeline:
- * GetParcelData (BYO key) → County PA GIS (free) → FloodZoneMap (free) → FEMA NFHL empty-only (free).
- * One fact list, empty-only apply upstream. FloodZoneMap wins over FEMA on conflicts.
+ * County PA GIS (free) → FloodZoneMap (free) → FEMA NFHL empty-only (free)
+ * → GetParcelData (BYO key, live HTTP) → PermitStack (BYO key, live HTTP).
+ * One fact list, empty-only apply upstream. Docs/Gemini stay on a separate Fill step.
  */
 export async function orchestratePropertyFill(
   input: OrchestrateInput,
@@ -50,6 +54,7 @@ export async function orchestratePropertyFill(
   }
 
   const keyReady = getParcelDataKeyReady(input.apiKey);
+  const permitKeyReady = permitStackKeyReady(input.permitStackKey);
   const geo = await geocodePropertyAddress(input.address, fetchImpl);
   const addressLine = formatPropertyAddress(input.address);
 
@@ -67,6 +72,20 @@ export async function orchestratePropertyFill(
         called: false,
       });
 
+  const permitStackPromise = permitKeyReady
+    ? searchPermitStackHistory(input.address, input.permitStackKey, fetchImpl).catch(() => ({
+        status: "error" as const,
+        facts: [] as PropertyRecordsFact[],
+        message: "PermitStack was not reachable. No permit years were written.",
+        called: true,
+      }))
+    : Promise.resolve({
+        status: "needs_key" as const,
+        facts: [] as PropertyRecordsFact[],
+        message: "PermitStack key not configured; continuing with other sources.",
+        called: false,
+      });
+
   const countyPromise = factsFromCountyPa(input.address, fetchImpl);
 
   const floodZoneMapPromise = factsFromFloodZoneMap(
@@ -81,8 +100,9 @@ export async function orchestratePropertyFill(
       ? factsFromFemaNfhl(geo.lat, geo.lng, fetchImpl).catch(() => [] as PropertyRecordsFact[])
       : Promise.resolve([] as PropertyRecordsFact[]);
 
-  const [lookup, county, floodZoneMapFacts, femaFacts] = await Promise.all([
+  const [lookup, permitStack, county, floodZoneMapFacts, femaFacts] = await Promise.all([
     getParcelPromise,
+    permitStackPromise,
     countyPromise,
     floodZoneMapPromise,
     femaPromise,
@@ -93,6 +113,7 @@ export async function orchestratePropertyFill(
     countyPa: county.facts,
     floodZoneMap: floodZoneMapFacts,
     fema: femaFacts,
+    permitStack: permitStack.status === "ok" ? permitStack.facts : [],
   });
 
   const vintage =
@@ -100,7 +121,13 @@ export async function orchestratePropertyFill(
     "";
 
   if (!facts.length) {
-    if (!keyReady && !county.facts.length && !floodZoneMapFacts.length && !femaFacts.length) {
+    if (
+      !keyReady &&
+      !permitKeyReady &&
+      !county.facts.length &&
+      !floodZoneMapFacts.length &&
+      !femaFacts.length
+    ) {
       return {
         status: "needs_key",
         facts: [],
@@ -110,12 +137,15 @@ export async function orchestratePropertyFill(
         lookup,
       };
     }
-    const status = lookup.status === "error" ? "error" : "not_found";
+    const status = lookup.status === "error" && permitStack.status === "error" ? "error" : "not_found";
     return {
       status,
       facts: [],
       sourcesUsed,
-      message: lookup.message || "No parcel fields from GetParcel, county PA, FloodZoneMap, or FEMA.",
+      message:
+        lookup.message ||
+        permitStack.message ||
+        "No parcel fields from county PA, FloodZoneMap, FEMA, GetParcel, or PermitStack.",
       toast: status === "error" ? "property-records-error" : "property-records-not-found",
       lookup,
     };
@@ -126,6 +156,7 @@ export async function orchestratePropertyFill(
       if (id === "property-records") return "GetParcelData";
       if (id === "county-pa") return `county PA (${county.adapterId ?? "?"})`;
       if (id === "floodzonemap") return "FloodZoneMap";
+      if (id === "permitstack") return "PermitStack";
       return "FEMA";
     })
     .join(", ");

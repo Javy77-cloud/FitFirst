@@ -74,7 +74,7 @@ describe("sep7co Fill property records = GetParcel + County PA + FEMA", () => {
     expect(wiredCountyIds()).not.toContain("broward");
   });
 
-  it("merges GetParcel → County PA → FloodZoneMap → FEMA empty-only (FZM wins flood_zone)", () => {
+  it("merges County PA → FloodZoneMap → FEMA empty-only, then GetParcel empty-only (FZM wins flood_zone)", () => {
     const gpd: PropertyRecordsFact[] = [
       { fieldKey: "flood_zone", sheetKey: "flood_zone", value: "X", sourceLabel: "property records", kind: "county" },
       { fieldKey: "acres", sheetKey: "acres", value: "0.3", sourceLabel: "property records", kind: "county" },
@@ -97,7 +97,7 @@ describe("sep7co Fill property records = GetParcel + County PA + FEMA", () => {
       floodZoneMap: fzm,
       fema,
     });
-    expect(sourcesUsed).toEqual(["property-records", "county-pa", "floodzonemap", "fema"]);
+    expect(sourcesUsed).toEqual(["county-pa", "floodzonemap", "fema", "property-records"]);
     expect(facts.find((f) => f.sheetKey === "flood_zone")?.value).toBe("AE");
     expect(facts.find((f) => f.sheetKey === "flood_zone")?.sourceLabel).toBe("FloodZoneMap");
     expect(facts.find((f) => f.sheetKey === "firm_panel")?.value).toBe("12071C0581F");
@@ -107,6 +107,25 @@ describe("sep7co Fill property records = GetParcel + County PA + FEMA", () => {
     expect(toastForPropertyFill({ filledCount: 5, sourcesUsed })).toMatch(/county PA/);
     expect(toastForPropertyFill({ filledCount: 5, sourcesUsed })).toMatch(/FloodZoneMap/);
     expect(toastForPropertyFill({ filledCount: 5, sourcesUsed })).toMatch(/FEMA/);
+  });
+
+  it("fills PermitStack years empty-only and never overwrites earlier roof_year", () => {
+    const county: PropertyRecordsFact[] = [
+      { fieldKey: "roof_year", sheetKey: "roof_year", value: "2010", sourceLabel: "county PA", kind: "county" },
+    ];
+    const permits: PropertyRecordsFact[] = [
+      { fieldKey: "roof_year", sheetKey: "roof_year", value: "2021", sourceLabel: "PermitStack", kind: "permit" },
+      { fieldKey: "hvac_year", sheetKey: "hvac_year", value: "2019", sourceLabel: "PermitStack", kind: "permit" },
+    ];
+    const { facts, sourcesUsed } = mergePropertyFillFacts({
+      countyPa: county,
+      permitStack: permits,
+    });
+    expect(sourcesUsed).toEqual(["county-pa", "permitstack"]);
+    expect(facts.find((f) => f.sheetKey === "roof_year")?.value).toBe("2010");
+    expect(facts.find((f) => f.sheetKey === "roof_year")?.sourceLabel).toBe("county PA");
+    expect(facts.find((f) => f.sheetKey === "hvac_year")?.value).toBe("2019");
+    expect(toastForPropertyFill({ filledCount: 2, sourcesUsed })).toMatch(/PermitStack/);
   });
 
   it("maps Lee PA Cypress Point house fields from ArcGIS attrs", async () => {

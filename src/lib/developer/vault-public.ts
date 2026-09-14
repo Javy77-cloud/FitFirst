@@ -7,6 +7,8 @@ export const FLORIDA_PROPERTY_VAULT_PROVIDER = "florida_property";
 export const FLORIDA_PROPERTY_VAULT_LABEL = "Florida Property API";
 export const GETPARCELDATA_VAULT_PROVIDER = "getparceldata";
 export const GETPARCELDATA_VAULT_LABEL = "GetParcelData";
+export const PERMITSTACK_VAULT_PROVIDER = "permitstack";
+export const PERMITSTACK_VAULT_LABEL = "PermitStack";
 export const SECRET_MASK = "****************";
 
 export type VaultPublicStatus = {

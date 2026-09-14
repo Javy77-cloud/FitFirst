@@ -1,16 +1,21 @@
 import { ApiVaultPanel } from "@/components/developer-hub/api-vault-panel";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { requireAdminPage } from "@/lib/auth/guards";
-import { loadFedExPublicStatus, loadGetParcelDataPublicStatus } from "@/lib/developer/vault";
+import {
+  loadFedExPublicStatus,
+  loadGetParcelDataPublicStatus,
+  loadPermitStackPublicStatus,
+} from "@/lib/developer/vault";
 import { NHTSA_VPIC_SETTINGS_NOTE } from "@/lib/vin-decode";
 
 export const dynamic = "force-dynamic";
 
 export default async function DeveloperApiVaultPage() {
   const session = await requireAdminPage();
-  const [fedex, getParcelData] = await Promise.all([
+  const [fedex, getParcelData, permitStack] = await Promise.all([
     loadFedExPublicStatus(),
     loadGetParcelDataPublicStatus(),
+    loadPermitStackPublicStatus(),
   ]);
 
   return (
@@ -20,7 +25,12 @@ export default async function DeveloperApiVaultPage() {
         with no reveal. Only a site developer can unlock, rotate, or clear. Keys are encrypted at
         rest with the same AES-256-GCM pattern as carrier portal / PII secrets.
       </p>
-      <ApiVaultPanel canEdit={session.isSiteDeveloper} fedex={fedex} getParcelData={getParcelData} />
+      <ApiVaultPanel
+        canEdit={session.isSiteDeveloper}
+        fedex={fedex}
+        getParcelData={getParcelData}
+        permitStack={permitStack}
+      />
       <p className="mt-4 max-w-3xl text-sm text-muted-foreground" data-ff-nhtsa-vpic-note="">
         {NHTSA_VPIC_SETTINGS_NOTE}
       </p>
