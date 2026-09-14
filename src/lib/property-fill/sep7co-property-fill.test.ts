@@ -55,6 +55,25 @@ describe("sep7co Fill property records = GetParcel + County PA + FEMA", () => {
     expect(wiredCountyIds()).toEqual(expect.arrayContaining(["lee", "hillsborough", "orange"]));
   });
 
+  it("wires additional free FL county PA adapters", () => {
+    expect(wiredCountyIds()).toEqual(
+      expect.arrayContaining([
+        "miami-dade",
+        "palm-beach",
+        "pinellas",
+        "duval",
+        "sarasota",
+        "collier",
+        "manatee",
+        "pasco",
+        "polk",
+        "brevard",
+        "volusia",
+      ]),
+    );
+    expect(wiredCountyIds()).not.toContain("broward");
+  });
+
   it("merges GetParcel → County PA → FloodZoneMap → FEMA empty-only (FZM wins flood_zone)", () => {
     const gpd: PropertyRecordsFact[] = [
       { fieldKey: "flood_zone", sheetKey: "flood_zone", value: "X", sourceLabel: "property records", kind: "county" },
