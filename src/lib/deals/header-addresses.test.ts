@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { DealPackageShell } from "@/components/deal/deal-package-shell";
+import { formatDob } from "@/lib/domain";
 import {
   INSURED_ADDRESS_LABEL,
   MAILING_ADDRESS_LABEL,
@@ -183,7 +184,8 @@ describe("DealPackageShell address display", () => {
     expect(html).not.toContain(MAILING_ADDRESS_LABEL);
     expect(html).toContain("Gloria Martinez");
     expect(html).toContain("786-555-0100");
-    expect(html).toContain("1980-01-02");
+    expect(html).toContain(formatDob("1980-01-02"));
+    expect(html).not.toContain("1980-01-02");
     expect(html).toContain("Javy");
     expect(html).toContain("Name");
     expect(html).toContain("Phones");
@@ -216,12 +218,31 @@ describe("DealPackageShell address display", () => {
     expect(html).toContain("Javy");
   });
 
+  it("formats header DOB as month/day/year via the sitewide helper", () => {
+    const html = renderToString(
+      createElement(DealPackageShell, {
+        name: "Gloria Martinez",
+        phones: ["786-555-0100"],
+        dob: "1990-05-15",
+        insuredAddress: palmBay,
+        mailingAddress: palmBay,
+        owner: "Javy",
+      }),
+    );
+    expect(formatDob("1990-05-15")).toBe("5-15-1990");
+    expect(html).toContain("5-15-1990");
+    expect(html).not.toContain("1990-05-15");
+    expect(html).toMatch(/data-ff-header-dob/);
+  });
+
   it("keeps name, phones, DOB, and staff in the shared shell source", () => {
     const shell = source("src/components/deal/deal-package-shell.tsx");
     const page = source("src/app/deals/[id]/page.tsx");
     expect(shell).toMatch(/label: "Name"/);
     expect(shell).toMatch(/label: "Phones"/);
     expect(shell).toMatch(/label: "DOB"/);
+    expect(shell).toMatch(/formatDob\(dob\)/);
+    expect(shell).toMatch(/from "@\/lib\/domain"/);
     expect(shell).toMatch(/label: "Owner"/);
     expect(shell).toContain("INSURED_ADDRESS_LABEL");
     expect(shell).toContain("MAILING_ADDRESS_LABEL");

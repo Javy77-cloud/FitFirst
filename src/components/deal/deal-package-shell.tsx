@@ -6,6 +6,7 @@ import {
   type HeaderAddressParts,
 } from "@/lib/deals/header-addresses";
 import { formatMailingLine, humanizeDealStage } from "@/lib/deals/package-lines";
+import { formatDob } from "@/lib/domain";
 
 export function DealPackageShell({
   name,
@@ -33,7 +34,7 @@ export function DealPackageShell({
   const rows = [
     { label: "Name", value: name || "—", key: "name" },
     { label: "Phones", value: phoneText, key: "phones" },
-    { label: "DOB", value: dob?.trim() || "—", key: "dob" },
+    { label: "DOB", value: formatDob(dob), key: "dob" },
     { label: INSURED_ADDRESS_LABEL, value: insuredLine, key: "insured" },
     ...(showMailing && mailingLine
       ? [{ label: MAILING_ADDRESS_LABEL, value: mailingLine, key: "mailing" }]
@@ -57,6 +58,7 @@ export function DealPackageShell({
             className="truncate text-navy"
             title={row.value}
             data-ff-header-address={row.key === "insured" || row.key === "mailing" ? row.key : undefined}
+            data-ff-header-dob={row.key === "dob" ? "" : undefined}
           >
             {row.value}
           </dd>
