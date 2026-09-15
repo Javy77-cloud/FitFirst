@@ -3,6 +3,7 @@ import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { CompleteTaskForm } from "@/components/crm/complete-task-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { taskDueInputParts } from "@/lib/tasks/due-at";
 
 const KINDS = ["task", "call", "sms", "email", "30_day", "60_day", "90_day", "expiration"] as const;
 
@@ -50,7 +51,18 @@ export function TaskRowEditor({
             <option value="open">open</option>
             <option value="done">done</option>
           </select>
-          <Input name="dueDate" type="date" defaultValue={task.dueDate} className="h-7 text-xs" />
+          <Input
+            name="dueDate"
+            type="date"
+            defaultValue={taskDueInputParts(task.dueDate).date || task.dueDate.slice(0, 10)}
+            className="h-7 text-xs"
+          />
+          <Input
+            name="dueTime"
+            type="time"
+            defaultValue={taskDueInputParts(task.dueDate).time}
+            className="h-7 text-xs"
+          />
           <Button type="submit" size="xs">
             Save
           </Button>

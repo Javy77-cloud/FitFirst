@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { StagePill } from "@/components/fit-badge";
 import { ACTIVITY_KIND_LABEL, formatDay, type ActivityKind } from "@/lib/domain";
 import { getActivityRecord, getReviewTaskRecord, loadRecordContext } from "@/lib/record-context";
+import { formatTaskDueAt, taskDueInputParts } from "@/lib/tasks/due-at";
 
 export async function ActivityRecordPage({
   id,
@@ -71,7 +72,11 @@ export async function ActivityRecordPage({
                 <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
                   <div>
                     <dt className="text-caption uppercase text-muted-foreground">Due / start</dt>
-                    <dd>{formatDay(activity.dueAt ?? activity.startAt)}</dd>
+                    <dd>
+                      {activity.kind === "task"
+                        ? formatTaskDueAt(activity.dueAt ?? activity.startAt)
+                        : formatDay(activity.dueAt ?? activity.startAt)}
+                    </dd>
                   </div>
                   <div>
                     <dt className="text-caption uppercase text-muted-foreground">End</dt>
@@ -174,6 +179,7 @@ export async function ActivityRecordPage({
   const review = await getReviewTaskRecord(id);
   if (!review) notFound();
   const { task, contact, deal, policy, account } = review;
+  const dueParts = taskDueInputParts(task.dueDate);
   const context = await loadRecordContext({
     contactId: task.contactId,
     dealId: task.dealId,
@@ -194,7 +200,7 @@ export async function ActivityRecordPage({
             <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
               <div>
                 <dt className="text-caption uppercase text-muted-foreground">Due</dt>
-                <dd>{formatDay(task.dueDate)}</dd>
+                <dd>{formatTaskDueAt(task.dueDate)}</dd>
               </div>
               <div>
                 <dt className="text-caption uppercase text-muted-foreground">Status</dt>
@@ -239,11 +245,20 @@ export async function ActivityRecordPage({
                 </select>
               </label>
               <label className="block text-helper text-muted-foreground">
-                Due
+                Due date
                 <Input
                   name="dueDate"
                   type="date"
-                  defaultValue={task.dueDate.toISOString().slice(0, 10)}
+                  defaultValue={dueParts.date}
+                  className="mt-1 h-8"
+                />
+              </label>
+              <label className="block text-helper text-muted-foreground">
+                Due time
+                <Input
+                  name="dueTime"
+                  type="time"
+                  defaultValue={dueParts.time}
                   className="mt-1 h-8"
                 />
               </label>

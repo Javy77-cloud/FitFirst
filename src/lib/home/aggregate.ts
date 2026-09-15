@@ -21,6 +21,7 @@ import {
 import { leaderboardPair, type HomeAgent, type LeaderRow } from "./leaderboard";
 import { HOME_LINE_KEYS, HOME_LINE_LABEL, homeLineKey, type HomeLineKey } from "./lines";
 import { formatDay } from "@/lib/domain";
+import { formatTaskDueAt } from "@/lib/tasks/due-at";
 
 export const IN_FORCE_STATUSES = new Set(["active", "bound"]);
 export const LAPSE_STATUSES = new Set(["lapsed", "lapse", "cancelled", "canceled", "expired"]);
@@ -260,7 +261,7 @@ export function attentionItems(input: {
       id: `task-${task.id}`,
       kind: "task",
       title: task.title,
-      detail: `Due ${formatDay(task.dueDate)} · ${task.kind.replaceAll("_", " ")}`,
+      detail: `Due ${formatTaskDueAt(task.dueDate)} · ${task.kind.replaceAll("_", " ")}`,
       href: task.dealId ? `/deals/${task.dealId}` : task.policyId ? `/policies/${task.policyId}` : "/work-queue",
       dueAt: task.dueDate,
       priority: attentionPriority({ kind: "task", dueAt: task.dueDate, asOf }),
