@@ -13,18 +13,26 @@ export function hrefFromClickTarget(target: EventTarget | null): string | null {
   return anchor.getAttribute("href");
 }
 
-export function isInternalDeskNavigation(href: string, current: NavigationOrigin): boolean {
+export function currentDeskPath(current: Pick<NavigationOrigin, "pathname" | "search">): string {
+  return `${current.pathname}${current.search}`;
+}
+
+export function resolveInternalDeskPath(href: string, current: NavigationOrigin): string | null {
   const trimmed = href.trim();
   if (!trimmed || trimmed.startsWith("#") || trimmed.startsWith("mailto:") || trimmed.startsWith("tel:")) {
-    return false;
+    return null;
   }
   try {
-    const url = new URL(trimmed, current.origin);
-    if (url.origin !== current.origin) return false;
-    const nextSearch = url.search;
-    if (url.pathname === current.pathname && nextSearch === current.search) return false;
-    return true;
+    const url = new URL(trimmed, `${current.origin}${currentDeskPath(current)}`);
+    if (url.origin !== current.origin) return null;
+    return `${url.pathname}${url.search}`;
   } catch {
-    return false;
+    return null;
   }
+}
+
+export function isInternalDeskNavigation(href: string, current: NavigationOrigin): boolean {
+  const next = resolveInternalDeskPath(href, current);
+  if (!next) return false;
+  return next !== currentDeskPath(current);
 }

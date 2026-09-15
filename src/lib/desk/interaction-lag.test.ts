@@ -37,7 +37,7 @@ describe("desk click-lag fixes", () => {
 
   it("paints pending feedback before the server round-trip returns", () => {
     expect(source("src/components/desk/form-actions.tsx")).toMatch(/useFormStatus/);
-    expect(source("src/components/desk/pending-tab-list.tsx")).toMatch(/setOptimisticId/);
+    expect(source("src/components/desk/pending-tab-list.tsx")).toMatch(/setOptimistic/);
     expect(source("src/components/desk-sidebar.tsx")).toMatch(/PendingLink/);
     expect(source("src/app/layout.tsx")).toMatch(/NavigationProgress/);
     expect(source("src/app/loading.tsx")).toMatch(/DeskRouteLoading/);

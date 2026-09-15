@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { PendingLink } from "@/components/desk/pending-link";
+import { currentDeskPath } from "@/lib/desk/interaction-pending";
 import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 import { cn } from "@/lib/utils";
 
@@ -23,13 +24,12 @@ export function PendingTabList({
 }) {
   const pathname = usePathname() ?? "";
   const search = useSearchParams();
-  const [optimisticId, setOptimisticId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setOptimisticId(null);
-  }, [pathname, search]);
-
-  const activeId = optimisticId ?? currentId;
+  const navKey = currentDeskPath({
+    pathname,
+    search: search.toString() ? `?${search.toString()}` : "",
+  });
+  const [optimistic, setOptimistic] = useState<{ from: string; id: string } | null>(null);
+  const activeId = optimistic?.from === navKey ? optimistic.id : currentId;
 
   return (
     <div role="tablist" aria-label={ariaLabel} className={FF_CHIP_TAB_GROUP}>
@@ -44,7 +44,7 @@ export function PendingTabList({
             role="tab"
             aria-selected={selected}
             className={cn(chipTabClass(selected))}
-            onClick={() => setOptimisticId(tab.id)}
+            onClick={() => setOptimistic({ from: navKey, id: tab.id })}
           >
             {tab.label}
           </PendingLink>

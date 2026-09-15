@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isInternalDeskNavigation } from "./interaction-pending";
+import { currentDeskPath, isInternalDeskNavigation, resolveInternalDeskPath } from "./interaction-pending";
 
 const here = {
   pathname: "/deals/abc",
@@ -20,5 +20,10 @@ describe("desk navigation pending helpers", () => {
     expect(isInternalDeskNavigation("mailto:javy@fitfirst.local", here)).toBe(false);
     expect(isInternalDeskNavigation("https://example.com/leads", here)).toBe(false);
     expect(isInternalDeskNavigation("", here)).toBe(false);
+  });
+
+  it("resolves a relative tab href against the current deal path", () => {
+    expect(resolveInternalDeskPath("?tab=quotes", here)).toBe("/deals/abc?tab=quotes");
+    expect(currentDeskPath(here)).toBe("/deals/abc?tab=details");
   });
 });
