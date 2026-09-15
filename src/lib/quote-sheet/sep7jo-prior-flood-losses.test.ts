@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { blankSheetWithDefaults, fieldsForLine } from "./catalog";
 import {
+  FLOOD_EFFECTIVE_DATE_TYPE_OPTIONS,
+  FLOOD_QUOTE_REASON_OPTIONS,
   FLOOD_SHEET_EMPTY_DEFAULTS,
   YES_NO_OPTIONS,
   floodEffectiveDateDefault,
@@ -33,19 +35,14 @@ describe("sep7jo Flood prior_flood_losses + quote reason + effective date", () =
     const reason = fields.find((f) => f.key === "flood_quote_reason");
     expect(reason).toBeTruthy();
     expect(reason?.group).toBe("Current policy");
-    expect(reason?.options).toEqual([
-      "Shopping / comparison",
-      "New purchase",
-      "No current flood — shopping",
-      "Other",
-    ]);
+    expect(reason?.options).toEqual([...FLOOD_QUOTE_REASON_OPTIONS]);
   });
 
   it("fieldsForLine(flood) includes effective_date and effective_date_type", () => {
     const fields = fieldsForLine("flood");
     expect(fields.find((f) => f.key === "effective_date")?.label).toMatch(/30 days/);
     const typ = fields.find((f) => f.key === "effective_date_type");
-    expect(typ?.options).toEqual(["New business", "Renewal", "Rewrite", "Other"]);
+    expect(typ?.options).toEqual([...FLOOD_EFFECTIVE_DATE_TYPE_OPTIONS]);
   });
 
   it("does not static-default prior_flood_losses / flood_quote_reason on FLOOD_SHEET_EMPTY_DEFAULTS", () => {

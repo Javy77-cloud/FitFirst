@@ -86,6 +86,85 @@ export const AUTO_ANNUAL_MILES_OPTIONS = [
 /** Accidents / violations count last 3 years (Auto driving record — Javy 2026-09-10). */
 export const AUTO_INCIDENT_COUNT_OPTIONS = ["None", "1", "2", "3+"] as const;
 
+/**
+ * Driver license status — industry personal-auto set.
+ * Overlaps household exclude reasons (Never licensed / Suspended / Revoked).
+ * QuoteRUSH Auto harvest labels were not in-repo; do not treat these as QR-verbatim.
+ */
+export const LICENSE_STATUS_OPTIONS = [
+  "Valid",
+  "Permit",
+  "Restricted",
+  "Expired",
+  "Suspended",
+  "Revoked",
+  "International",
+  "Never licensed",
+] as const;
+
+/**
+ * Rated-driver relationship to the named insured.
+ * "Named insured" plus the existing household relationship list.
+ */
+export const AUTO_DRIVER_RELATIONSHIP_OPTIONS = [
+  "Named insured",
+  "Spouse",
+  "Child",
+  "Parent",
+  "Sibling",
+  "Other relative",
+  "Roommate",
+  "Excluded",
+  "Listed non-driver",
+] as const;
+
+/**
+ * FL Auto BI split limits seen in FitFirst quote notes (10/20, 50/100)
+ * plus the usual personal-lines steps. QR Auto harvest strings were not in-repo.
+ */
+export const AUTO_BI_LIMIT_OPTIONS = [
+  "10/20",
+  "25/50",
+  "50/100",
+  "100/300",
+  "250/500",
+  "300/300",
+  "500/500",
+] as const;
+
+/** FL Auto PD limits from FitFirst quote notes (10k / 25k) plus usual steps. */
+export const AUTO_PD_LIMIT_OPTIONS = ["10000", "25000", "50000", "100000"] as const;
+
+/** UM / UIM — same splits as BI, plus None / Rejected from FitFirst quote notes. */
+export const AUTO_UM_UIM_OPTIONS = [
+  "None",
+  "Rejected",
+  "10/20",
+  "25/50",
+  "50/100",
+  "100/300",
+  "250/500",
+] as const;
+
+/**
+ * FL PIP amounts from FitFirst quote notes (PIP 1k, PIP $10k / $1k ded).
+ * Stored as bare numbers to match flood/home deductible style.
+ */
+export const AUTO_PIP_OPTIONS = ["10000", "1000", "None"] as const;
+
+/**
+ * Comp / collision deductibles — AOP dollar set plus $250 (lienholder deds in notes).
+ */
+export const AUTO_PHYS_DAM_DEDUCTIBLE_OPTIONS = [
+  "250",
+  "500",
+  "1000",
+  "1500",
+  "2000",
+  "2500",
+  "5000",
+] as const;
+
 /** FL Auto portal–style relationships for household / related persons (Gaya standing). */
 export const AUTO_HOUSEHOLD_RELATIONSHIP_OPTIONS = [
   "Spouse",
@@ -583,6 +662,8 @@ export function normalizeUsage(raw: string | null | undefined): string {
   const lower = text.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
   const map: Record<string, (typeof USAGE_OPTIONS)[number]> = {
     primary: "Primary",
+    "primary / owner": "Primary",
+    "primary owner": "Primary",
     "owner occupied": "Primary",
     owner: "Primary",
     secondary: "Secondary",
@@ -841,6 +922,68 @@ export function normalizeFloodZone(raw: string | null | undefined): string {
   return hit ?? text;
 }
 
+export function normalizeLicenseStatus(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+  if (lower === "valid" || lower === "active" || lower === "licensed") return "Valid";
+  if (lower === "permit" || lower.includes("learner")) return "Permit";
+  if (lower.includes("restrict")) return "Restricted";
+  if (lower.includes("expir")) return "Expired";
+  if (lower.includes("suspend")) return "Suspended";
+  if (lower.includes("revok")) return "Revoked";
+  if (lower.includes("international") || lower.includes("foreign")) return "International";
+  if (lower.includes("never") || lower === "unlicensed" || lower === "not licensed") {
+    return "Never licensed";
+  }
+  const hit = LICENSE_STATUS_OPTIONS.find((opt) => opt.toLowerCase() === lower);
+  return hit ?? text;
+}
+
+export function normalizeAutoSplitLimit(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const compact = text.replace(/[$,\s]/g, "").replace(/-/g, "/").toLowerCase();
+  if (compact === "none" || compact === "n/a" || compact === "na") return "None";
+  if (compact === "rejected" || compact === "declined" || compact === "waived") return "Rejected";
+  const slash = compact.match(/^(\d{2,3})\/(\d{2,3})$/);
+  if (slash) {
+    const next = `${Number(slash[1])}/${Number(slash[2])}`;
+    const known = [
+      ...AUTO_BI_LIMIT_OPTIONS,
+      ...AUTO_UM_UIM_OPTIONS,
+    ] as readonly string[];
+    if (known.includes(next)) return next;
+  }
+  return text;
+}
+
+export function normalizeAutoDollarLimit(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const compact = text.toLowerCase().replace(/[\s$,]/g, "");
+  if (compact === "none" || compact === "n/a" || compact === "na") return "None";
+  const fromK = compact.match(/^(\d+)k$/);
+  const digits = fromK ? `${fromK[1]}000` : text.replace(/[^0-9]/g, "");
+  if (!digits) return text;
+  if (AUTO_PD_LIMIT_OPTIONS.includes(digits as (typeof AUTO_PD_LIMIT_OPTIONS)[number])) return digits;
+  if (AUTO_PIP_OPTIONS.includes(digits as (typeof AUTO_PIP_OPTIONS)[number])) return digits;
+  if (AUTO_PHYS_DAM_DEDUCTIBLE_OPTIONS.includes(digits as (typeof AUTO_PHYS_DAM_DEDUCTIBLE_OPTIONS)[number])) {
+    return digits;
+  }
+  if (FLOOD_DEDUCTIBLE_OPTIONS.includes(digits as (typeof FLOOD_DEDUCTIBLE_OPTIONS)[number])) {
+    return digits;
+  }
+  return text;
+}
+
+export function normalizeFloodOccupancyUse(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  if (text === "Other" || text.toLowerCase() === "other") return "Other";
+  return normalizeUsage(text);
+}
+
 export function normalizeProtectionClass(raw: string | null | undefined): string {
   const text = (raw ?? "").trim();
   if (!text) return "";
@@ -986,6 +1129,16 @@ export function applyMasterSheetDefaults(
     ["stories", normalizeStories],
     ["flood_zone", normalizeFloodZone],
     ["protection_class", normalizeProtectionClass],
+    ["occupancy_use", normalizeFloodOccupancyUse],
+    ["driver_1_status", normalizeLicenseStatus],
+    ["liability_bi", normalizeAutoSplitLimit],
+    ["um_uim", normalizeAutoSplitLimit],
+    ["liability_pd", normalizeAutoDollarLimit],
+    ["pip", normalizeAutoDollarLimit],
+    ["comp_deductible", normalizeAutoDollarLimit],
+    ["collision_deductible", normalizeAutoDollarLimit],
+    ["building_deductible", normalizeAutoDollarLimit],
+    ["contents_deductible", normalizeAutoDollarLimit],
   ];
   for (const [key, normalize] of selectNormalizers) {
     const cell = values[key];
@@ -1063,6 +1216,53 @@ export const FLOOD_OCCUPANCY_OPTIONS = [
   "Non-residential / commercial",
   "Detached garage / guest house",
   "Other",
+] as const;
+
+/**
+ * Flood occupancy use — home USAGE_OPTIONS plus Other.
+ * Legacy catalog label "Primary / Owner" normalizes to Primary.
+ */
+export const FLOOD_OCCUPANCY_USE_OPTIONS = [...USAGE_OPTIONS, "Other"] as const;
+
+/** Flood dwelling / building type — existing FitFirst flood catalog list. */
+export const FLOOD_BUILDING_TYPE_OPTIONS = [
+  "Single-family",
+  "Townhouse",
+  "Condo",
+  "2-4 family",
+  "Other",
+] as const;
+
+/** Flood effective-date type — existing FitFirst flood catalog list. */
+export const FLOOD_EFFECTIVE_DATE_TYPE_OPTIONS = [
+  "New business",
+  "Renewal",
+  "Rewrite",
+  "Other",
+] as const;
+
+/** Why requesting this flood quote — existing FitFirst flood catalog list. */
+export const FLOOD_QUOTE_REASON_OPTIONS = [
+  "Shopping / comparison",
+  "New purchase",
+  "No current flood — shopping",
+  "Other",
+] as const;
+
+/**
+ * Flood building / contents deductibles.
+ * AOP dollar set plus 1250 / 10000 (common NFIP). Default remains "1000".
+ * QR Flood harvest strings were not in-repo.
+ */
+export const FLOOD_DEDUCTIBLE_OPTIONS = [
+  "500",
+  "1000",
+  "1250",
+  "1500",
+  "2000",
+  "2500",
+  "5000",
+  "10000",
 ] as const;
 
 /** Common GL/BOP liability occurrence limits. */

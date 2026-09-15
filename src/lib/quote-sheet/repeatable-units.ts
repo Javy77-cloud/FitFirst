@@ -4,7 +4,9 @@ import {
   AUTO_HOUSEHOLD_RELATIONSHIP_OPTIONS,
   AUTO_HOUSEHOLD_SEPARATE_POLICY_STATUS_OPTIONS,
   AUTO_HOUSEHOLD_STATUS_OPTIONS,
+  AUTO_DRIVER_RELATIONSHIP_OPTIONS,
   AUTO_VEHICLE_USAGE_OPTIONS,
+  LICENSE_STATUS_OPTIONS,
   VEHICLE_OWNERSHIP_OPTIONS,
   VEHICLE_OWNERSHIP_LENGTH_OPTIONS,
   COMMUTE_DAYS_WEEK_OPTIONS,
@@ -15,6 +17,7 @@ import {
   EMPLOYMENT_STATUS_OPTIONS,
   YES_NO_OPTIONS,
 } from "@/lib/quote-sheet/sheet-defaults";
+import { MARITAL_STATUS_OPTIONS } from "@/lib/quote-sheet/applicant-core";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { SheetProduct } from "@/lib/quote-sheet/products";
 
@@ -105,6 +108,12 @@ export const VEHICLE_BLOCK_FIELDS: RepeatableField[] = [
     input: "select",
     options: YES_NO_OPTIONS,
   },
+  {
+    suffix: "garaging_at_residence",
+    label: "Garaged at residence?",
+    input: "select",
+    options: YES_NO_OPTIONS,
+  },
   { suffix: "garaging_zip", label: "Garaging ZIP" },
   { suffix: "garaging_address", label: "Address" },
 ];
@@ -116,8 +125,15 @@ export const DRIVER_BLOCK_FIELDS: RepeatableField[] = [
   { suffix: "occupation", label: "Occupation / job category", input: "select", options: OCCUPATION_OPTIONS },
   { suffix: "employment", label: "Employment", input: "select", options: EMPLOYMENT_STATUS_OPTIONS },
   { suffix: "education_level", label: "Education level", input: "select", options: EDUCATION_LEVEL_OPTIONS },
+  { suffix: "marital_status", label: "Marital status", input: "select", options: MARITAL_STATUS_OPTIONS },
+  {
+    suffix: "relationship",
+    label: "Relationship",
+    input: "select",
+    options: AUTO_DRIVER_RELATIONSHIP_OPTIONS,
+  },
   { suffix: "license", label: "License" },
-  { suffix: "status", label: "Status" },
+  { suffix: "status", label: "License status", input: "select", options: LICENSE_STATUS_OPTIONS },
   { suffix: "years_licensed", label: "Years licensed", input: "number" },
 ];
 
@@ -186,6 +202,7 @@ const VEHICLE_1_KEYS: Record<string, string> = {
   commute_miles_daily: "commute_miles_daily",
   rideshare: "rideshare",
   aftermarket_parts: "aftermarket_parts",
+  garaging_at_residence: "garaging_at_residence",
   garaging_zip: "garaging_zip",
   garaging_address: "garaging_address",
 };
@@ -230,7 +247,7 @@ export function repeatableFieldKey(kind: RepeatableKind, index: number, suffix: 
 
 export function isRepeatableSheetKey(key: string): boolean {
   if (Object.values(VEHICLE_1_KEYS).includes(key)) return true;
-  return /^(vehicle|driver|household)_\d+_(vin|year|make|model|body_class|fuel_type|engine|usage|ownership|ownership_length|lienholder|lienholder_other|purchased_new|original_cost_new|annual_miles|commute_days_week|commute_miles_daily|rideshare|aftermarket_parts|garaging_zip|garaging_address|name|dob|gender|occupation|employment|education_level|license|status|years_licensed|relationship|exclude_reason|separate_auto_policy|separate_policy_status|age_first_licensed|suspension_5yr)$/.test(
+  return /^(vehicle|driver|household)_\d+_(vin|year|make|model|body_class|fuel_type|engine|usage|ownership|ownership_length|lienholder|lienholder_other|purchased_new|original_cost_new|annual_miles|commute_days_week|commute_miles_daily|rideshare|aftermarket_parts|garaging_at_residence|garaging_zip|garaging_address|name|dob|gender|occupation|employment|education_level|marital_status|license|status|years_licensed|relationship|exclude_reason|separate_auto_policy|separate_policy_status|age_first_licensed|suspension_5yr)$/.test(
     key,
   );
 }
