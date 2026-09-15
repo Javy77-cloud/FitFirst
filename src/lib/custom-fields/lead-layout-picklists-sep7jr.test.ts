@@ -70,6 +70,8 @@ describe("sep7jr Lead layout picklists + convert map", () => {
   it("maps Lead picklists onto Deal field values + native quoting/pipeline on convert", () => {
     expect(pipelineSlugFromLeadPipeline("P&C")).toBe("p-c");
     expect(pipelineSlugFromLeadPipeline("Life")).toBe("life");
+    expect(pipelineSlugFromLeadPipeline("Flood")).toBe("p-c");
+    expect(pipelineSlugFromLeadPipeline("Flood")).toBe("p-c");
     expect(LEAD_TO_DEAL_CUSTOM_KEYS).toEqual(
       expect.arrayContaining(["contact_mailing_address", "pipeline", "insurance_type", "insurance_category", "insurance_subtype"]),
     );

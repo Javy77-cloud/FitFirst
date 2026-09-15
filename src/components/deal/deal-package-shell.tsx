@@ -1,13 +1,22 @@
+import type { ReactNode } from "react";
 import {
   INSURED_ADDRESS_LABEL,
   MAILING_ADDRESS_LABEL,
   formatHeaderAddress,
+  formatHeaderDob,
   mailingHeaderValue,
   shouldShowMailingAddress,
+  uniqueDisplayPhones,
   type HeaderAddressParts,
 } from "@/lib/deals/header-addresses";
 import { formatMailingLine, humanizeDealStage } from "@/lib/deals/package-lines";
-import { formatDob } from "@/lib/domain";
+
+type HeaderField = {
+  label: string;
+  value: string;
+  key: string;
+  control?: ReactNode;
+};
 
 export function DealPackageShell({
   name,
@@ -18,6 +27,7 @@ export function DealPackageShell({
   stage,
   owner,
   activity,
+  stageControl,
 }: {
   name: string;
   phones: string[];
@@ -27,41 +37,57 @@ export function DealPackageShell({
   stage?: string | null;
   owner?: string | null;
   activity?: string | null;
+  stageControl?: ReactNode;
 }) {
-  const phoneText = phones.filter(Boolean).join(" · ") || "—";
+  const phoneText = uniqueDisplayPhones(phones).join(" · ") || "—";
   const insuredLine = formatHeaderAddress(insuredAddress) || "—";
   const mailingDistinct = shouldShowMailingAddress(insuredAddress, mailingAddress);
   const mailingLine = mailingHeaderValue(insuredAddress, mailingAddress);
-  const rows = [
-    { label: "Name", value: name || "—", key: "name" },
-    { label: "Phones", value: phoneText, key: "phones" },
-    { label: "DOB", value: formatDob(dob), key: "dob" },
-    { label: INSURED_ADDRESS_LABEL, value: insuredLine, key: "insured" },
-    { label: MAILING_ADDRESS_LABEL, value: mailingLine, key: "mailing" },
-    { label: "Stage", value: humanizeDealStage(stage), key: "stage" },
-    { label: "Owner", value: owner?.trim() || "—", key: "owner" },
-    { label: "Activity", value: activity?.trim() || "—", key: "activity" },
+  const columns: HeaderField[][] = [
+    [
+      { label: "Name", value: name || "—", key: "name" },
+      { label: "Stage", value: humanizeDealStage(stage), key: "stage", control: stageControl },
+    ],
+    [
+      { label: "Phones", value: phoneText, key: "phones" },
+      { label: "Owner", value: owner?.trim() || "—", key: "owner" },
+    ],
+    [
+      { label: "DOB", value: formatHeaderDob(dob), key: "dob" },
+      { label: "Activity", value: activity?.trim() || "—", key: "activity" },
+    ],
+    [
+      { label: INSURED_ADDRESS_LABEL, value: insuredLine, key: "insured" },
+      { label: MAILING_ADDRESS_LABEL, value: mailingLine, key: "mailing" },
+    ],
   ];
   return (
     <dl
-      className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs sm:grid-cols-4"
+      className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-xs sm:grid-cols-4"
       data-ff-deal-package-shell=""
       data-ff-header-show-mailing={mailingDistinct ? "1" : "0"}
       data-ff-header-mailing-same={mailingDistinct ? "0" : "1"}
+      data-ff-header-cols="name-stage,phones-owner,dob-activity,insured-mailing"
     >
-      {rows.map((row) => (
-        <div key={row.key} className="min-w-0">
-          <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {row.label}
-          </dt>
-          <dd
-            className="truncate text-navy"
-            title={row.value}
-            data-ff-header-address={row.key === "insured" || row.key === "mailing" ? row.key : undefined}
-            data-ff-header-dob={row.key === "dob" ? "" : undefined}
-          >
-            {row.value}
-          </dd>
+      {columns.map((col, colIndex) => (
+        <div key={col.map((row) => row.key).join("-")} className="min-w-0 space-y-1" data-ff-header-col={colIndex + 1}>
+          {col.map((row) => (
+            <div key={row.key} className="min-w-0">
+              <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {row.label}
+              </dt>
+              <dd
+                className="min-w-0 text-navy"
+                title={row.value}
+                data-ff-header-address={row.key === "insured" || row.key === "mailing" ? row.key : undefined}
+                data-ff-header-dob={row.key === "dob" ? "" : undefined}
+                data-ff-header-stage={row.key === "stage" ? "" : undefined}
+                data-ff-header-phones={row.key === "phones" ? "" : undefined}
+              >
+                {row.control ?? <span className="block truncate">{row.value}</span>}
+              </dd>
+            </div>
+          ))}
         </div>
       ))}
     </dl>

@@ -3,16 +3,17 @@ import { readFileSync } from "node:fs";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { DealPackageShell } from "@/components/deal/deal-package-shell";
-import { formatDob } from "@/lib/domain";
 import {
   INSURED_ADDRESS_LABEL,
   MAILING_ADDRESS_LABEL,
   SAME_AS_INSURED_VALUE,
+  formatHeaderDob,
   headerAddressesEqual,
   mailingHeaderValue,
   normalizeHeaderAddress,
   resolveDealHeaderAddresses,
   shouldShowMailingAddress,
+  uniqueDisplayPhones,
 } from "./header-addresses";
 
 function source(file: string) {
@@ -196,7 +197,8 @@ describe("DealPackageShell address display", () => {
     expect(html).not.toContain("88 Pine Ave");
     expect(html).toContain("Gloria Martinez");
     expect(html).toContain("786-555-0100");
-    expect(html).toContain(formatDob("1980-01-02"));
+    expect(html).toContain(formatHeaderDob("1980-01-02"));
+    expect(html).toContain("01/02/1980");
     expect(html).not.toContain("1980-01-02");
     expect(html).toContain("Javy");
     expect(html).toContain("Name");
@@ -245,9 +247,10 @@ describe("DealPackageShell address display", () => {
         owner: "Javy",
       }),
     );
-    expect(formatDob("1990-05-15")).toBe("5-15-1990");
-    expect(html).toContain("5-15-1990");
+    expect(formatHeaderDob("1990-05-15")).toBe("05/15/1990");
+    expect(html).toContain("05/15/1990");
     expect(html).not.toContain("1990-05-15");
+    expect(html).not.toContain("5-15-1990");
     expect(html).toMatch(/data-ff-header-dob/);
     expect(html).toContain(SAME_AS_INSURED_VALUE);
   });
@@ -275,8 +278,8 @@ describe("DealPackageShell address display", () => {
     expect(shell).toMatch(/label: "Name"/);
     expect(shell).toMatch(/label: "Phones"/);
     expect(shell).toMatch(/label: "DOB"/);
-    expect(shell).toMatch(/formatDob\(dob\)/);
-    expect(shell).toMatch(/from "@\/lib\/domain"/);
+    expect(shell).toMatch(/formatHeaderDob\(dob\)/);
+    expect(shell).toMatch(/uniqueDisplayPhones/);
     expect(shell).toMatch(/label: "Owner"/);
     expect(shell).toContain("INSURED_ADDRESS_LABEL");
     expect(shell).toContain("MAILING_ADDRESS_LABEL");
@@ -290,5 +293,53 @@ describe("DealPackageShell address display", () => {
     expect(page).toMatch(/phones=\{/);
     expect(page).toMatch(/dob=\{/);
     expect(page).toMatch(/owner=\{ownerRow\?\.name\}/);
+    expect(page).toMatch(/DealStageSelect/);
+    expect(page).toMatch(/stageControl=/);
+    expect(page).toMatch(/uniqueDisplayPhones/);
+  });
+
+  it("keeps a stable 4-column header: name/stage, phones/owner, dob/activity, addresses", () => {
+    const html = renderToString(
+      createElement(DealPackageShell, {
+        name: "Gloria Martinez",
+        phones: ["786-555-0100"],
+        dob: "1980-01-02",
+        insuredAddress: palmBay,
+        mailingAddress: orlando,
+        stage: "gather",
+        owner: "Javy",
+        activity: "Lead converted · Homeowners / HO3",
+      }),
+    );
+    expect(html).toMatch(/data-ff-header-cols="name-stage,phones-owner,dob-activity,insured-mailing"/);
+    expect(html.indexOf("Name")).toBeLessThan(html.indexOf("Stage"));
+    expect(html.indexOf("Stage")).toBeLessThan(html.indexOf("Phones"));
+    expect(html.indexOf("Phones")).toBeLessThan(html.indexOf("Owner"));
+    expect(html.indexOf("Owner")).toBeLessThan(html.indexOf("DOB"));
+    expect(html.indexOf("DOB")).toBeLessThan(html.indexOf("Activity"));
+    expect(html.indexOf("Activity")).toBeLessThan(html.indexOf(INSURED_ADDRESS_LABEL));
+    expect(html.indexOf(INSURED_ADDRESS_LABEL)).toBeLessThan(html.indexOf(MAILING_ADDRESS_LABEL));
+    expect(html.indexOf("Gloria Martinez")).toBeLessThan(html.indexOf("Gather info"));
+    expect(html.indexOf("Gather info")).toBeLessThan(html.indexOf("786-555-0100"));
+    expect(html.indexOf("01/02/1980")).toBeLessThan(html.indexOf(INSURED_ADDRESS_LABEL));
+    // Mailing lives in col 4 under insured — never under name.
+    expect(html.indexOf("Gloria Martinez")).toBeLessThan(html.indexOf(MAILING_ADDRESS_LABEL));
+    expect(html.indexOf("Gather info")).toBeLessThan(html.indexOf(MAILING_ADDRESS_LABEL));
+  });
+
+  it("shows one phone when primary and secondary normalize to the same digits", () => {
+    expect(
+      uniqueDisplayPhones(["(786) 555-0100", "786-555-0100", "+1 786 555 0100", "321-555-0199"]),
+    ).toEqual(["(786) 555-0100", "321-555-0199"]);
+    const html = renderToString(
+      createElement(DealPackageShell, {
+        name: "Heather Flood",
+        phones: ["(786) 555-0100", "786-555-0100"],
+        insuredAddress: palmBay,
+        mailingAddress: palmBay,
+      }),
+    );
+    expect(html).toContain("(786) 555-0100");
+    expect(html).not.toContain("786-555-0100");
   });
 });

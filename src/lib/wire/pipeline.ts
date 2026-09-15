@@ -47,6 +47,21 @@ export const PIPELINE_FIELDS: PipelineFieldDef[] = [
   { id: "tags", label: "Tags", defaultOn: true },
 ];
 
+/** Agency P&C board — Home / Auto / Flood / other PC lines share this set. */
+export const PC_SHOPPING_STAGES: { slug: string; name: string }[] = [
+  { slug: "gather", name: "Gather info" },
+  { slug: "quotes", name: "Meet / Quotes" },
+  { slug: "review", name: "Review" },
+  { slug: "quote_sent", name: "Quote Sent" },
+  { slug: "bound", name: "Bound" },
+  { slug: "pending_inspection", name: "Pending Inspection" },
+  { slug: "closed_won", name: "Closed Won" },
+  { slug: "closed_lost", name: "Closed Lost" },
+];
+
+/** Life includes Meet / Quotes; Health keeps the same quotes-style stages. */
+export const LIFE_HEALTH_STAGES: { slug: string; name: string }[] = [...PC_SHOPPING_STAGES];
+
 /**
  * Real switcher boards. Flood is a normal shopping board (not admin-added).
  * Won-Lost and Archived are separate parking tabs.
@@ -57,60 +72,28 @@ export const SEEDED_PIPELINES: SeededPipeline[] = [
     name: "P&C pipeline",
     kind: "shopping",
     seeded: true,
-    stages: [
-      { slug: "gather", name: "Gather Info" },
-      { slug: "quotes", name: "Meet / Quotes" },
-      { slug: "review", name: "Review" },
-      { slug: "quote_sent", name: "Quote Sent" },
-      { slug: "bound", name: "Bound" },
-      { slug: "pending_inspection", name: "Pending Inspection" },
-      { slug: "closed_won", name: "Closed Won" },
-      { slug: "closed_lost", name: "Closed Lost" },
-    ],
+    stages: [...PC_SHOPPING_STAGES],
   },
   {
     slug: "health",
     name: "Health",
     kind: "shopping",
     seeded: true,
-    stages: [
-      { slug: "gather", name: "Gather Info" },
-      { slug: "review", name: "Review" },
-      { slug: "quote_sent", name: "Quote Sent" },
-      { slug: "bound", name: "Bound" },
-      { slug: "pending_inspection", name: "Pending Inspection" },
-      { slug: "closed_won", name: "Closed Won" },
-      { slug: "closed_lost", name: "Closed Lost" },
-    ],
+    stages: [...LIFE_HEALTH_STAGES],
   },
   {
     slug: "life",
     name: "Life",
     kind: "shopping",
     seeded: true,
-    stages: [
-      { slug: "gather", name: "Gather Info" },
-      { slug: "review", name: "Review" },
-      { slug: "quote_sent", name: "Quote Sent" },
-      { slug: "bound", name: "Bound" },
-      { slug: "pending_inspection", name: "Pending Inspection" },
-      { slug: "closed_won", name: "Closed Won" },
-      { slug: "closed_lost", name: "Closed Lost" },
-    ],
+    stages: [...LIFE_HEALTH_STAGES],
   },
   {
     slug: "flood",
     name: "Flood",
     kind: "shopping",
     seeded: true,
-    stages: [
-      { slug: "gather", name: "Gather Info" },
-      { slug: "quote_sent", name: "Quote Sent" },
-      { slug: "bound", name: "Bound" },
-      { slug: "pending_inspection", name: "Pending Inspection" },
-      { slug: "closed_won", name: "Closed Won" },
-      { slug: "closed_lost", name: "Closed Lost" },
-    ],
+    stages: [...PC_SHOPPING_STAGES],
   },
   {
     slug: "won-lost",

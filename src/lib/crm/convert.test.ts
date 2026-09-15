@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  convertActivityLineLabel,
+  convertActivityTitle,
   convertFieldCopy,
   dealNotesFromLead,
   lobFromLeadInsuranceCustom,
   pipelineSlugForLine,
+  relabelConvertActivityTitle,
   resolveConvertLine,
   shopLinesForConvert,
 } from "./convert";
@@ -31,6 +34,7 @@ describe("lead → deal convert copy", () => {
     expect(resolveConvertLine("AUTO", "HO")).toBe("AUTO");
     expect(pipelineSlugForLine("HO")).toBe("p-c");
     expect(pipelineSlugForLine("HEALTH")).toBe("health");
+    expect(pipelineSlugForLine("FLOOD")).toBe("p-c");
     expect(shopLinesForConvert("HO")).toEqual(["home"]);
     expect(shopLinesForConvert("AUTO")).toEqual(["auto"]);
   });
@@ -116,5 +120,49 @@ describe("lead → deal convert copy", () => {
 
   it("keeps Ana-style notes when the lead already has them", () => {
     expect(dealNotesFromLead({ lastName: "Dib", notes: "Palm Bay HO3 shop" })).toBe("Palm Bay HO3 shop");
+  });
+
+  it("labels convert/activity from the deal line/product — not hardcoded Homeowners", () => {
+    expect(
+      convertActivityLineLabel({
+        lineOfBusiness: "LIFE",
+        quotingForm: "Term Life",
+        policySubType: "Term Life",
+      }),
+    ).toBe("Life / Term Life");
+    expect(
+      convertActivityTitle({
+        lineOfBusiness: "LIFE",
+        quotingForm: "Term Life",
+        policySubType: "Term Life",
+      }),
+    ).toBe("Lead converted · Life / Term Life");
+    expect(
+      convertActivityLineLabel({
+        lineOfBusiness: "HO",
+        quotingForm: "HO3",
+        policySubType: "HO3",
+      }),
+    ).toBe("Homeowners / HO3");
+    expect(
+      convertActivityLineLabel({
+        lineOfBusiness: "HEALTH",
+        quotingForm: "Marketplace",
+        policySubType: "Marketplace",
+      }),
+    ).toBe("Health / Marketplace");
+    expect(
+      relabelConvertActivityTitle("Lead converted to homeowners", {
+        lineOfBusiness: "LIFE",
+        quotingForm: "Term Life",
+        policySubType: "Term Life",
+      }),
+    ).toBe("Lead converted · Life / Term Life");
+    expect(
+      relabelConvertActivityTitle("Call logged", {
+        lineOfBusiness: "LIFE",
+        quotingForm: "Term Life",
+      }),
+    ).toBe("Call logged");
   });
 });

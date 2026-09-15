@@ -260,6 +260,9 @@ describe("shared shell helpers", () => {
       }),
     ).toBe("12 Oak St · Palm Bay, FL · 32909");
     expect(humanizeDealStage("quote_sent")).toBe("Quote Sent");
+    expect(humanizeDealStage("gather")).toBe("Gather info");
+    expect(humanizeDealStage("Gather")).toBe("Gather info");
+    expect(humanizeDealStage("Gather Info")).toBe("Gather info");
   });
 });
 

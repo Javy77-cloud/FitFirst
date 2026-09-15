@@ -13,9 +13,11 @@ import { ClientScriptRunner } from "@/components/developer-hub/client-script-run
 import {
   getDealWorkspace,
   listCarriers,
+  listPipelines,
   listQuoteLogs,
   listRecordActivities,
 } from "@/lib/db/queries";
+import { ensureSeededPipelines } from "@/lib/wire/ensure-pipelines";
 import { listEnabledScriptsFor } from "@/lib/db/developer-hub-queries";
 import {
   AGENT_DEAL_TAB_LABELS,
@@ -43,6 +45,10 @@ import {
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
 import { DealPackageLinesForm } from "@/components/deal/deal-package-lines-form";
 import { DealPackageShell } from "@/components/deal/deal-package-shell";
+import { DealStageSelect } from "@/components/deals/deal-stage-select";
+import { relabelConvertActivityTitle } from "@/lib/crm/convert";
+import { dealStageView } from "@/lib/deals/deal-columns";
+import { uniqueDisplayPhones } from "@/lib/deals/header-addresses";
 import {
   excludedCarrierIdsFromLogs,
   hasShopMarketAction,
@@ -104,7 +110,7 @@ export default async function DealPage({
     sheets,
     jobs,
   } = workspace;
-  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow] =
+  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow, pipelines] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
       listEnabledScriptsFor("deals", "edit"),
@@ -121,7 +127,11 @@ export default async function DealPage({
             .then((rows) => rows[0] ?? null)
             .catch(() => null)
         : Promise.resolve(null),
+      ensureSeededPipelines()
+        .catch(() => null)
+        .then(() => listPipelines().catch(() => [])),
     ]);
+  const stageView = dealStageView(deal, pipelines);
   const dealLayout = dealLayoutBundle?.layout ?? null;
   const dealFields = dealLayoutBundle?.fields ?? [];
   const dealValues = dealLayoutBundle?.stored ?? {};
@@ -317,15 +327,35 @@ export default async function DealPage({
               </h1>
               <DealPackageShell
                 name={partyName}
-                phones={[contact?.phone ?? lead?.phone, dealValues.phone, dealValues.mobile_phone].filter(
-                  (value, index, all): value is string => Boolean(value) && all.indexOf(value) === index,
-                )}
+                phones={uniqueDisplayPhones([
+                  contact?.phone ?? lead?.phone,
+                  dealValues.phone,
+                  dealValues.mobile_phone,
+                  dealValues.secondary_phone,
+                ])}
                 dob={dealValues.date_of_birth || contact?.dateOfBirth || lead?.dateOfBirth}
                 insuredAddress={headerAddresses.insured}
                 mailingAddress={headerAddresses.mailing}
-                stage={deal.pipelineStageSlug || deal.pipelineStage}
+                stage={stageView.name}
                 owner={ownerRow?.name}
-                activity={comms[0]?.title ?? (comms.length ? `${comms.length} activities` : null)}
+                activity={
+                  relabelConvertActivityTitle(comms[0]?.title ?? null, {
+                    lineOfBusiness: deal.lineOfBusiness,
+                    quotingForm: deal.quotingForm,
+                    policySubType: deal.policySubType,
+                  }) ?? (comms.length ? `${comms.length} activities` : null)
+                }
+                stageControl={
+                  <DealStageSelect
+                    dealId={deal.id}
+                    pipelineSlug={stageView.pipelineSlug}
+                    stageSlug={stageView.slug}
+                    stages={stageView.stages}
+                    dealTitle={deal.title}
+                    toastOnSave
+                    className="max-w-full"
+                  />
+                }
               />
               {packageLines.length ? (
                 <>

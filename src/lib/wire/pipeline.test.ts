@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  LIFE_HEALTH_STAGES,
+  PC_SHOPPING_STAGES,
   SEEDED_PIPELINES,
   dealMatchesBoard,
   dealMatchesStage,
@@ -54,6 +56,11 @@ describe("pipeline switcher", () => {
       "closed_won",
       "closed_lost",
     ]);
+    expect(PC_SHOPPING_STAGES.find((stage) => stage.slug === "gather")?.name).toBe("Gather info");
+    expect(SEEDED_PIPELINES.find((board) => board.slug === "p-c")?.stages).toEqual(PC_SHOPPING_STAGES);
+    expect(SEEDED_PIPELINES.find((board) => board.slug === "flood")?.stages).toEqual(PC_SHOPPING_STAGES);
+    expect(SEEDED_PIPELINES.find((board) => board.slug === "life")?.stages).toEqual(LIFE_HEALTH_STAGES);
+    expect(LIFE_HEALTH_STAGES.map((stage) => stage.slug)).toContain("quotes");
     for (const slug of ["health", "life", "flood"] as const) {
       const stages = SEEDED_PIPELINES.find((board) => board.slug === slug)?.stages.map((s) => s.slug) ?? [];
       const qs = stages.indexOf("quote_sent");
@@ -198,7 +205,7 @@ describe("pipeline views", () => {
   it("summarizes stage counts for the funnel and click-through", () => {
     const rows = pipelineFunnelRows(
       [
-        { slug: "gather", name: "Gather Info", color: "blue" },
+        { slug: "gather", name: "Gather info", color: "blue" },
         { slug: "quote_sent", name: "Quote Sent", color: "violet" },
         { slug: "closed_won", name: "Closed Won", color: "green" },
       ],

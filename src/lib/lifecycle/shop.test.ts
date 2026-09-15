@@ -8,10 +8,11 @@ describe("pipelineSlugForLine", () => {
     expect(pipelineSlugForLine("GL")).toBe("p-c");
   });
 
-  it("routes health, life, and flood to their boards", () => {
+  it("routes health and life to their boards; Flood stays on P&C", () => {
     expect(pipelineSlugForLine("HEALTH")).toBe("health");
     expect(pipelineSlugForLine("LIFE")).toBe("life");
-    expect(pipelineSlugForLine("FLOOD")).toBe("flood");
+    expect(pipelineSlugForLine("FLOOD")).toBe("p-c");
+    expect(pipelineSlugForLine("NFIP")).toBe("p-c");
   });
 });
 

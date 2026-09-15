@@ -44,7 +44,7 @@ export function pipelineSlugFromLeadPipeline(value: string | null | undefined): 
   if (raw === "p&c" || raw === "p-c" || raw === "pc" || raw.includes("p&c")) return "p-c";
   if (raw === "life" || raw.startsWith("life")) return "life";
   if (raw === "health" || raw.startsWith("health")) return "health";
-  if (raw === "flood" || raw.startsWith("flood")) return "flood";
+  if (raw === "flood" || raw.startsWith("flood")) return "p-c";
   const hit = SEEDED_PIPELINES.find(
     (board) => board.slug === raw || board.name.toLowerCase() === raw || board.name.toLowerCase().startsWith(raw),
   );

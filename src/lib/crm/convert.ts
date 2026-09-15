@@ -5,8 +5,13 @@ import { fillSheetFromLead, leadOntoRisk, type LeadCopyFields } from "@/lib/desk
 import { CORE_FIELDS } from "@/lib/custom-fields/defaults";
 import { pipelineSlugFromLeadPipeline } from "@/lib/custom-fields/lead-picklist-options";
 import { dealValuesFromLead, filterLeadForCarry } from "@/lib/custom-fields/transfer";
-import { formatDealTitle } from "@/lib/deals/deal-title";
-import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
+import { DEAL_TITLE_LOB_WORDS, dealTitleFormWord, dealTitleLobWord, formatDealTitle } from "@/lib/deals/deal-title";
+import { pipelineSlugForLine as pipelineSlugForLineFromShop } from "@/lib/lifecycle/shop";
+import { coerceQuotingFormId, dealCreateFieldsFromPick, quotingFormById } from "@/lib/quoting/forms";
+
+export function pipelineSlugForLine(line: string) {
+  return pipelineSlugForLineFromShop(line);
+}
 
 export type ConvertLead = LeadCopyFields & {
   lastName: string;
@@ -16,13 +21,6 @@ export type ConvertLead = LeadCopyFields & {
   status?: string | null;
   temperature?: string | null;
 };
-
-export function pipelineSlugForLine(line: string) {
-  if (line === "HEALTH") return "health";
-  if (line === "LIFE") return "life";
-  if (line === "FLOOD") return "flood";
-  return "p-c";
-}
 
 export function shopLinesForConvert(primaryLine: string): ShopLine[] {
   const fromLob = LOB_TO_SHOP_LINE[primaryLine];
@@ -156,11 +154,17 @@ export function convertFieldCopy(
     (line === "LIFE" || line === "HEALTH" ? null : coerceQuotingFormId(typeRaw)) ??
     null;
   const form = pcFormId ? quotingFormById(pcFormId) : null;
-  const policySubType = subtypeRaw || form?.label || null;
-  const lifeHealthForm =
-    line === "LIFE" || line === "HEALTH" ? subtypeRaw || null : null;
-  const quotingForm = form?.id ?? lifeHealthForm;
-  const quotingLine = (form?.shopLine ?? shopLines[0] ?? "home") as ShopLine;
+  let policySubType = subtypeRaw || form?.label || null;
+  let quotingForm = form?.id ?? (line === "LIFE" || line === "HEALTH" ? subtypeRaw || null : null);
+  let quotingLine = (form?.shopLine ?? shopLines[0] ?? "home") as ShopLine;
+  if (line === "LIFE" || line === "HEALTH") {
+    const picked = dealCreateFieldsFromPick(
+      subtypeRaw || typeRaw || (line === "LIFE" ? "Life" : "Health"),
+    );
+    quotingForm = picked.quotingForm;
+    policySubType = picked.policySubType;
+    quotingLine = picked.quotingLine;
+  }
   return {
     dealState,
     shopLines,
@@ -183,4 +187,39 @@ export function convertFieldCopy(
     insuranceType: typeRaw || null,
     contactMailingAddress: (leadCustom?.contact_mailing_address ?? "").trim() || null,
   };
+}
+
+export type ConvertActivityDeal = {
+  lineOfBusiness?: string | null;
+  quotingForm?: string | null;
+  policySubType?: string | null;
+};
+
+/** Line + product for convert/activity copy — never a hardcoded Homeowners. */
+export function convertActivityLineLabel(input: ConvertActivityDeal): string {
+  const line = (input.lineOfBusiness ?? "").trim().toUpperCase();
+  const form =
+    dealTitleFormWord(input.quotingForm) ?? dealTitleFormWord(input.policySubType);
+  const family = (line && DEAL_TITLE_LOB_WORDS[line]) || null;
+  if (form && family && form.toLowerCase() !== family.toLowerCase()) {
+    return `${family} / ${form}`;
+  }
+  return form || family || dealTitleLobWord(line || null, input.quotingForm ?? input.policySubType);
+}
+
+export function convertActivityTitle(input: ConvertActivityDeal): string {
+  return `Lead converted · ${convertActivityLineLabel(input)}`;
+}
+
+const CONVERT_ACTIVITY_RE = /lead converted|converted ·|converted to/i;
+
+/** Rewrite convert log titles that used the wrong line (e.g. Homeowners on a Life deal). */
+export function relabelConvertActivityTitle(
+  title: string | null | undefined,
+  deal: ConvertActivityDeal,
+): string | null {
+  const raw = (title ?? "").trim();
+  if (!raw) return title ?? null;
+  if (!CONVERT_ACTIVITY_RE.test(raw)) return title ?? null;
+  return convertActivityTitle(deal);
 }

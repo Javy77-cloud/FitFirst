@@ -253,11 +253,21 @@ export function resolveDealPipeline(
   deal: DealColumnDeal,
   boards: readonly DealPipelineBoard[],
 ): DealPipelineBoard | null {
+  const lineSlug = pipelineSlugForLine(deal.lineOfBusiness);
+  // Flood and other PC lines always use the P&C stage set, even if the row
+  // is still pointed at the legacy Flood board.
+  if (lineSlug === "p-c") {
+    const pc = boards.find((board) => board.slug === "p-c");
+    if (pc) return pc;
+  }
   if (deal.pipelineId) {
     const byId = boards.find((board) => board.id === deal.pipelineId);
+    if (byId && byId.slug === "flood") {
+      return boards.find((board) => board.slug === "p-c") ?? byId;
+    }
     if (byId) return byId;
   }
-  const byLine = boards.find((board) => board.slug === pipelineSlugForLine(deal.lineOfBusiness));
+  const byLine = boards.find((board) => board.slug === lineSlug);
   return byLine ?? boards.find((board) => board.slug === "p-c") ?? boards[0] ?? null;
 }
 
