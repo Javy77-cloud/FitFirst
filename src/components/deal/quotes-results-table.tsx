@@ -3,7 +3,6 @@
 import { Fragment, useMemo, useState, useTransition } from "react";
 import {
   acceptQuoteFloorAndRecheckAction,
-  clearBindRecheckAckAction,
   recheckQuotesAction,
   saveBindRecheckAckAction,
   saveQuoteAgentRatingAction,
@@ -23,8 +22,8 @@ import {
 import {
   BIND_GATE_COPY,
   bindGateReady,
+  bindRecheckTermsFromQuote,
   canBindAfterRecheckAck,
-  clearBindRecheckReasonOk,
   quoteBindRecheckAcked,
 } from "@/lib/deals/bind-gate";
 import { formatMoney } from "@/lib/domain";
@@ -52,6 +51,24 @@ import {
 import { AlertTriangle, ChevronDown, ChevronRight, EyeOff, RefreshCw, Star } from "lucide-react";
 
 type Row = { quote: Quote; carrier: Carrier; premium: Quote["premium"] };
+
+function quoteRecheckAcked(quote: Quote | null | undefined): boolean {
+  if (!quote) return false;
+  return quoteBindRecheckAcked({
+    ackedAt: quote.bindRecheckAckedAt,
+    fingerprint: quote.bindRecheckAckFingerprint,
+    terms: bindRecheckTermsFromQuote(quote),
+  });
+}
+
+function quoteCanBind(quote: Quote, bindable: boolean): boolean {
+  return canBindAfterRecheckAck({
+    bindable,
+    ackedAt: quote.bindRecheckAckedAt,
+    fingerprint: quote.bindRecheckAckFingerprint,
+    terms: bindRecheckTermsFromQuote(quote),
+  });
+}
 
 function carrierOpenHref(quote: Quote, carrier: Carrier): string | null {
   const raw =
@@ -155,10 +172,9 @@ function BindRecheckAlertDialog({
   dealId: string;
   requestedCoverageA?: number | null;
 }) {
-  const alreadyAcked = quoteBindRecheckAcked(quote?.bindRecheckAckedAt);
+  const alreadyAcked = quoteRecheckAcked(quote);
   const [checks, setChecks] = useState({ premium: false, coverages: false, deductibles: false });
   const [acceptFloor, setAcceptFloor] = useState(false);
-  const [clearReason, setClearReason] = useState("");
   const [reQuotePending, startReQuote] = useTransition();
   const [savePending, startSave] = useTransition();
   const checklistKey = `${quote?.id ?? "none"}:${open ? "open" : "closed"}`;
@@ -178,7 +194,6 @@ function BindRecheckAlertDialog({
   function resetLocal() {
     setChecks({ premium: false, coverages: false, deductibles: false });
     setAcceptFloor(false);
-    setClearReason("");
   }
 
   const verifyReady = alreadyAcked || bindGateReady(checks);
@@ -210,19 +225,6 @@ function BindRecheckAlertDialog({
     data.set("deductibles", checks.deductibles ? "1" : "0");
     startSave(async () => {
       await saveBindRecheckAckAction(data);
-      resetLocal();
-      onOpenChange(false);
-    });
-  }
-
-  function onClearAck() {
-    if (!quote || !alreadyAcked || !clearBindRecheckReasonOk(clearReason)) return;
-    const data = new FormData();
-    data.set("dealId", dealId);
-    data.set("quoteId", quote.id);
-    data.set("reason", clearReason.trim());
-    startSave(async () => {
-      await clearBindRecheckAckAction(data);
       resetLocal();
       onOpenChange(false);
     });
@@ -310,29 +312,6 @@ function BindRecheckAlertDialog({
             </p>
           ) : null}
         </div>
-        {alreadyAcked ? (
-          <div
-            className="space-y-2 rounded-lg border border-border bg-muted/40 p-3"
-            data-ff-quote-bind-alert-uncheck=""
-          >
-            <h4 className="text-sm font-semibold text-navy">{BIND_GATE_COPY.uncheckHeading}</h4>
-            <label className="block space-y-1 text-sm text-navy">
-              <span>{BIND_GATE_COPY.uncheckReason}</span>
-              <textarea
-                value={clearReason}
-                onChange={(event) => setClearReason(event.target.value)}
-                rows={2}
-                className="w-full rounded-md border border-border bg-card px-2 py-1.5 text-sm"
-                data-ff-quote-bind-alert-uncheck-reason=""
-              />
-            </label>
-            {!clearBindRecheckReasonOk(clearReason) ? (
-              <p className="text-xs text-fit-flag" data-ff-quote-bind-alert-uncheck-blocked="">
-                {BIND_GATE_COPY.uncheckBlocked}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
         {showFloorOverride ? (
           <div
             className="space-y-2 rounded-lg border border-fit-flag/30 bg-fit-flag/5 p-3"
@@ -357,18 +336,7 @@ function BindRecheckAlertDialog({
           </div>
         ) : null}
         <DialogFooter>
-          {alreadyAcked ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={!clearBindRecheckReasonOk(clearReason) || savePending}
-              onClick={onClearAck}
-              data-ff-quote-bind-alert-uncheck-save=""
-            >
-              {BIND_GATE_COPY.uncheckConfirm}
-            </Button>
-          ) : (
+          {alreadyAcked ? null : (
             <Button
               type="button"
               size="sm"
@@ -711,11 +679,8 @@ export function QuotesResultsTable({
                     const outcome = outcomeFor(quote, carrier.id);
                     const quoteBindable =
                       outcome === "bindable" || quote.nextStep === "can_bind" || quote.bindable;
-                    const recheckAcked = quoteBindRecheckAcked(quote.bindRecheckAckedAt);
-                    const canBind = canBindAfterRecheckAck({
-                      bindable: Boolean(quoteBindable),
-                      ackedAt: quote.bindRecheckAckedAt,
-                    });
+                    const recheckAcked = quoteRecheckAcked(quote);
+                    const canBind = quoteCanBind(quote, Boolean(quoteBindable));
                     const openHref = carrierOpenHref(quote, carrier);
                     const detailsDefaultOpen = false;
                     const detailsOpen =

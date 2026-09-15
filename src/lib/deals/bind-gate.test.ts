@@ -7,13 +7,16 @@ import type { Carrier, Quote } from "@/lib/db/schema";
 import {
   BIND_GATE_COPY,
   bindGateReady,
+  bindRecheckTermsFingerprint,
+  bindRecheckTermsFromQuote,
   canBindAfterRecheckAck,
-  clearBindRecheckReasonOk,
   quoteBindRecheckAcked,
 } from "./bind-gate";
 
+const ACKED_AT = new Date("2026-09-15T12:00:00Z");
+
 function quote(partial: Partial<Quote> & Pick<Quote, "id">): Quote {
-  return {
+  const base = {
     tenantId: "t",
     dealId: "deal-1",
     riskId: "risk-1",
@@ -40,9 +43,20 @@ function quote(partial: Partial<Quote> & Pick<Quote, "id">): Quote {
     quoteRunId: "run-2",
     shopLine: "home",
     bindRecheckAckedAt: null,
-    bindRecheckClearedReason: null,
+    bindRecheckAckFingerprint: null,
     ...partial,
-  } as Quote;
+  };
+  return base as Quote;
+}
+
+function ackedQuote(partial: Partial<Quote> & Pick<Quote, "id">): Quote {
+  const row = quote(partial);
+  return quote({
+    ...row,
+    bindRecheckAckedAt: row.bindRecheckAckedAt ?? ACKED_AT,
+    bindRecheckAckFingerprint:
+      row.bindRecheckAckFingerprint ?? bindRecheckTermsFingerprint(bindRecheckTermsFromQuote(row)),
+  });
 }
 
 const carrier = {
@@ -66,39 +80,78 @@ describe("bind gate", () => {
     expect(BIND_GATE_COPY.reQuote).toBe("Re-quote");
   });
 
-  it("Save is the primary acknowledgment and turns the icon green only after ack", () => {
+  it("Save is the primary acknowledgment and turns the icon green only after a matching fingerprint", () => {
     expect(BIND_GATE_COPY.save).toBe("Save");
     expect(BIND_GATE_COPY.saveTitle).toMatch(/premium|coverage|deductible/i);
+    const terms = bindRecheckTermsFromQuote(quote({ id: "q-terms" }));
+    const fingerprint = bindRecheckTermsFingerprint(terms);
     expect(quoteBindRecheckAcked(null)).toBe(false);
-    expect(quoteBindRecheckAcked("")).toBe(false);
-    expect(quoteBindRecheckAcked(new Date("2026-09-15T12:00:00Z"))).toBe(true);
-    expect(canBindAfterRecheckAck({ bindable: true, ackedAt: null })).toBe(false);
-    expect(canBindAfterRecheckAck({ bindable: true, ackedAt: new Date() })).toBe(true);
-    expect(canBindAfterRecheckAck({ bindable: false, ackedAt: new Date() })).toBe(false);
+    expect(quoteBindRecheckAcked(ACKED_AT)).toBe(false);
+    expect(quoteBindRecheckAcked({ ackedAt: null, fingerprint, terms })).toBe(false);
+    expect(quoteBindRecheckAcked({ ackedAt: ACKED_AT, fingerprint: null, terms })).toBe(false);
+    expect(quoteBindRecheckAcked({ ackedAt: ACKED_AT, fingerprint, terms })).toBe(true);
+    expect(canBindAfterRecheckAck({ bindable: true, ackedAt: null, fingerprint, terms })).toBe(false);
+    expect(canBindAfterRecheckAck({ bindable: true, ackedAt: ACKED_AT, fingerprint, terms })).toBe(true);
+    expect(canBindAfterRecheckAck({ bindable: false, ackedAt: ACKED_AT, fingerprint, terms })).toBe(false);
   });
 
-  it("requires a reason to uncheck a saved acknowledgment", () => {
-    expect(clearBindRecheckReasonOk("")).toBe(false);
-    expect(clearBindRecheckReasonOk("   ")).toBe(false);
-    expect(clearBindRecheckReasonOk("Quoted the wrong Cov A — need to re-verify")).toBe(true);
-    expect(BIND_GATE_COPY.uncheckBlocked).toMatch(/reason/i);
+  it("invalidates a saved ack when premium, coverage, deductible, or quote run change", () => {
+    const terms = bindRecheckTermsFromQuote(quote({ id: "q-fp" }));
+    const fingerprint = bindRecheckTermsFingerprint(terms);
+    expect(
+      quoteBindRecheckAcked({
+        ackedAt: ACKED_AT,
+        fingerprint,
+        terms: { ...terms, premium: "9999" },
+      }),
+    ).toBe(false);
+    expect(
+      quoteBindRecheckAcked({
+        ackedAt: ACKED_AT,
+        fingerprint,
+        terms: { ...terms, coverageA: 400000 },
+      }),
+    ).toBe(false);
+    expect(
+      quoteBindRecheckAcked({
+        ackedAt: ACKED_AT,
+        fingerprint,
+        terms: { ...terms, aopDeductible: "2%" },
+      }),
+    ).toBe(false);
+    expect(
+      quoteBindRecheckAcked({
+        ackedAt: ACKED_AT,
+        fingerprint,
+        terms: { ...terms, quoteRunId: "run-3" },
+      }),
+    ).toBe(false);
+    expect(canBindAfterRecheckAck({ bindable: true, ackedAt: ACKED_AT, fingerprint, terms: { ...terms, premium: "1" } })).toBe(
+      false,
+    );
+    expect(BIND_GATE_COPY.staleHint).toMatch(/terms changed/i);
     expect(BIND_GATE_COPY.bindBlockedUntilSave).toMatch(/Save/i);
   });
 
-  it("quotes table uses Save, gates Bind, and greens the icon after ack", () => {
+  it("quotes table uses Save, gates Bind, and has no manual uncheck-with-reason UI", () => {
     const table = readFileSync("src/components/deal/quotes-results-table.tsx", "utf8");
     expect(table).toMatch(/data-ff-quote-bind-alert-save=/);
     expect(table).toMatch(/BIND_GATE_COPY\.save/);
     expect(table).not.toMatch(/>\s*Close\s*</);
     expect(table).toMatch(/saveBindRecheckAckAction/);
-    expect(table).toMatch(/clearBindRecheckAckAction/);
+    expect(table).not.toMatch(/clearBindRecheckAckAction/);
+    expect(table).not.toMatch(/data-ff-quote-bind-alert-uncheck/);
     expect(table).toMatch(/data-ff-quote-bind-alert-state=\{recheckAcked \? "acked" : "open"\}/);
-    expect(table).toMatch(/canBindAfterRecheckAck/);
-    expect(table).toMatch(/data-ff-quote-bind-alert-uncheck-reason=/);
+    expect(table).toMatch(/quoteCanBind|canBindAfterRecheckAck/);
     const actions = readFileSync("src/app/actions/quotes.ts", "utf8");
     expect(actions).toMatch(/export async function saveBindRecheckAckAction/);
-    expect(actions).toMatch(/export async function clearBindRecheckAckAction/);
-    expect(actions).toMatch(/A reason is required to uncheck this disclosure/);
+    expect(actions).not.toMatch(/export async function clearBindRecheckAckAction/);
+    expect(actions).toMatch(/bindRecheckTermsFingerprint/);
+    expect(actions).toMatch(/clearBindRecheckAcks\(dealId, ids\)/);
+    expect(actions).toMatch(/coverageA: floor, \.\.\.BIND_RECHECK_CLEAR_PATCH/);
+    const persist = readFileSync("src/lib/deals/shop-flow-persist.ts", "utf8");
+    expect(persist).toMatch(/export async function clearBindRecheckAcks/);
+    expect(persist).toMatch(/await clearBindRecheckAcks\(dealId\)/);
   });
 
   it("renders Bind disabled until Save, then greens the warning after ack", () => {
@@ -124,20 +177,39 @@ describe("bind gate", () => {
         formId: "HO3",
         confirmLogs: [],
         resultByCarrier: {},
-        rows: [
-          {
-            quote: quote({
-              id: "q-acked",
-              bindRecheckAckedAt: new Date("2026-09-15T12:00:00Z"),
-            }),
-            carrier,
-          },
-        ],
+        rows: [{ quote: ackedQuote({ id: "q-acked" }), carrier }],
       }),
     );
     expect(saved).toMatch(/data-ff-quote-bind-alert-state="acked"/);
     expect(saved).toMatch(/data-ff-quote-bind-gated="ready"/);
     expect(saved).toContain(BIND_GATE_COPY.ackedHint);
     expect(saved).toMatch(/text-fit-green/);
+
+    const stale = renderToString(
+      createElement(QuotesResultsTable, {
+        dealId: "deal-1",
+        formId: "HO3",
+        confirmLogs: [],
+        resultByCarrier: {},
+        rows: [
+          {
+            quote: quote({
+              id: "q-stale",
+              bindRecheckAckedAt: ACKED_AT,
+              bindRecheckAckFingerprint: bindRecheckTermsFingerprint({
+                premium: "100",
+                coverageA: 1,
+                hurricaneDeductible: "1%",
+                aopDeductible: "1%",
+                quoteRunId: "old",
+              }),
+            }),
+            carrier,
+          },
+        ],
+      }),
+    );
+    expect(stale).toMatch(/data-ff-quote-bind-alert-state="open"/);
+    expect(stale).toMatch(/data-ff-quote-bind-gated="blocked"/);
   });
 });

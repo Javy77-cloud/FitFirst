@@ -34,6 +34,8 @@ function quote(partial: Partial<Quote> & Pick<Quote, "id">): Quote {
     createdAt: new Date("2026-09-01T12:00:00.000Z"),
     quoteRunId: "run-2",
     shopLine: "home",
+    bindRecheckAckedAt: null,
+    bindRecheckAckFingerprint: null,
     ...partial,
   } as Quote;
 }

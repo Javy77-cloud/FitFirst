@@ -1519,8 +1519,8 @@ export const quotes = pgTable(
     shopLine: text("shop_line"),
     /** Agent Saved the bind-recheck disclosure (premium / coverage / deductible). */
     bindRecheckAckedAt: timestamp("bind_recheck_acked_at", { withTimezone: true }),
-    /** Required reason when the agent later clears that acknowledgment. */
-    bindRecheckClearedReason: text("bind_recheck_cleared_reason"),
+    /** Terms fingerprint at Save — ack is invalid if premium / coverage / deductible / run change. */
+    bindRecheckAckFingerprint: text("bind_recheck_ack_fingerprint"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

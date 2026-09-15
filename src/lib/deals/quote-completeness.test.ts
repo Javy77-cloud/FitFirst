@@ -192,6 +192,8 @@ describe("quote completeness", () => {
       createdAt: new Date("2026-09-01T12:00:00.000Z"),
       quoteRunId: "run-2",
       shopLine: "home",
+      bindRecheckAckedAt: null,
+      bindRecheckAckFingerprint: null,
     } as Quote;
     const html = renderToString(
       createElement(QuotesPanel, {

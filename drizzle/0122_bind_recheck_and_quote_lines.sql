@@ -1,6 +1,6 @@
 -- Bind-recheck disclosure persistence + line-tag backfill for multi-product deals.
 ALTER TABLE "quotes" ADD COLUMN IF NOT EXISTS "bind_recheck_acked_at" timestamptz;
-ALTER TABLE "quotes" ADD COLUMN IF NOT EXISTS "bind_recheck_cleared_reason" text;
+ALTER TABLE "quotes" ADD COLUMN IF NOT EXISTS "bind_recheck_ack_fingerprint" text;
 
 -- Prefer the attempt-log LOB when shop_line is missing or the default home stamp is wrong.
 UPDATE "quotes" AS q

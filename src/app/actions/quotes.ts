@@ -41,7 +41,11 @@ import {
   manualCarrierIdsFromLogs,
 } from "@/lib/deals/manual-markets";
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
-import { loadDealRiskFingerprint, persistDealShopFlow } from "@/lib/deals/shop-flow-persist";
+import {
+  clearBindRecheckAcks,
+  loadDealRiskFingerprint,
+  persistDealShopFlow,
+} from "@/lib/deals/shop-flow-persist";
 import {
   nextShopFlowAfterQuoteRun,
   parseShopFlow,
@@ -49,8 +53,10 @@ import {
 } from "@/lib/deals/shop-flow";
 import { flashAction } from "@/lib/flash-action";
 import {
+  BIND_RECHECK_CLEAR_PATCH,
   bindGateReady,
-  clearBindRecheckReasonOk,
+  bindRecheckTermsFingerprint,
+  bindRecheckTermsFromQuote,
   type BindGateChecks,
 } from "@/lib/deals/bind-gate";
 import { snapshotFromRisk } from "@/lib/appetite/gate/snapshot";
@@ -123,7 +129,7 @@ async function persistShopFlowAfterQuoteRequest(
       const prevId = currentRun || randomUUID();
       await db
         .update(quotes)
-        .set({ quoteRunId: prevId, shopLine: line })
+        .set({ quoteRunId: prevId, shopLine: line, ...BIND_RECHECK_CLEAR_PATCH })
         .where(inArray(quotes.id, toArchive.map((quote) => quote.id)));
     }
     runId = randomUUID();
@@ -573,6 +579,7 @@ export async function recheckQuotesAction(formData: FormData) {
   if (ids.length === 0) throw new Error("Mark at least one quote to recheck.");
 
   const { count: n } = await queueRecheckNotesForQuotes(dealId, ids);
+  await clearBindRecheckAcks(dealId, ids);
 
   revalidatePath(`/deals/${dealId}`);
   flashAction(
@@ -600,7 +607,7 @@ export async function acceptQuoteFloorAndRecheckAction(formData: FormData) {
 
   await db
     .update(quotes)
-    .set({ coverageA: floor })
+    .set({ coverageA: floor, ...BIND_RECHECK_CLEAR_PATCH })
     .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId), eq(quotes.tenantId, DEFAULT_TENANT_ID)));
 
   const session = await currentDeskSession();
@@ -635,42 +642,14 @@ export async function saveBindRecheckAckAction(formData: FormData) {
   if (!bindGateReady(bindRecheckChecksFromForm(formData))) {
     throw new Error("Confirm premium, coverages, and deductibles before saving.");
   }
-  await requireQuoteForDeal(dealId, quoteId);
+  const row = await requireQuoteForDeal(dealId, quoteId);
   await db
     .update(quotes)
     .set({
       bindRecheckAckedAt: new Date(),
-      bindRecheckClearedReason: null,
+      bindRecheckAckFingerprint: bindRecheckTermsFingerprint(bindRecheckTermsFromQuote(row)),
     })
     .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId), eq(quotes.tenantId, DEFAULT_TENANT_ID)));
   revalidatePath(`/deals/${dealId}`);
   flashAction(dealQuotesPath(dealId), "Recheck saved");
-}
-
-/** Clear a saved bind-recheck acknowledgment — reason required (liability trail). */
-export async function clearBindRecheckAckAction(formData: FormData) {
-  const dealId = String(formData.get("dealId") ?? "").trim();
-  const quoteId = String(formData.get("quoteId") ?? "").trim();
-  const reason = String(formData.get("reason") ?? "").trim();
-  if (!dealId || !quoteId) throw new Error("Deal and quote are required.");
-  if (!clearBindRecheckReasonOk(reason)) {
-    throw new Error("A reason is required to uncheck this disclosure.");
-  }
-  await requireQuoteForDeal(dealId, quoteId);
-  await db
-    .update(quotes)
-    .set({
-      bindRecheckAckedAt: null,
-      bindRecheckClearedReason: reason,
-    })
-    .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId), eq(quotes.tenantId, DEFAULT_TENANT_ID)));
-  const session = await currentDeskSession();
-  await db.insert(quoteNotes).values({
-    tenantId: DEFAULT_TENANT_ID,
-    quoteId,
-    body: `Bind recheck acknowledgment cleared: ${reason}`,
-    createdBy: session.name?.trim() || session.email || "agent",
-  });
-  revalidatePath(`/deals/${dealId}`);
-  flashAction(dealQuotesPath(dealId), "Recheck cleared");
 }

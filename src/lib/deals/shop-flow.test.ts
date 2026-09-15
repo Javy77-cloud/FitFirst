@@ -322,6 +322,9 @@ describe("deal page + action wiring", () => {
     expect(readFileSync("src/app/actions/documents.ts", "utf8")).toMatch(
       /markShopFlowStaleAfterRiskChange/,
     );
+    expect(readFileSync("src/lib/deals/shop-flow-persist.ts", "utf8")).toMatch(
+      /clearBindRecheckAcks\(dealId\)/,
+    );
   });
 });
 
@@ -361,7 +364,7 @@ describe("Quotes panel line + previous chrome", () => {
       quoteRunId: null,
       shopLine: "home",
       bindRecheckAckedAt: null,
-      bindRecheckClearedReason: null,
+      bindRecheckAckFingerprint: null,
       ...partial,
     } as Quote;
   }
