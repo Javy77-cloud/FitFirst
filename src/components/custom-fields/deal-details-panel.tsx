@@ -5,6 +5,7 @@ import { saveDealFieldValues, uploadDealFieldImage } from "@/app/actions/custom-
 import { FieldControl } from "@/components/custom-fields/field-control";
 import { Button } from "@/components/ui/button";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
+import type { PcPackageLine } from "@/lib/deals/package-lines";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { parseLayout, type CustomFieldDef, type FieldLayout } from "@/lib/custom-fields/types";
 import {
@@ -33,6 +34,8 @@ function CoApplicantDealSection({
   lifeOptions,
   healthOptions,
   dealId,
+  packageLines = [],
+  activePackageLine = null,
 }: {
   sectionLabel: string;
   quoteReq: boolean;
@@ -48,6 +51,8 @@ function CoApplicantDealSection({
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
   dealId: string;
+  packageLines?: readonly PcPackageLine[];
+  activePackageLine?: PcPackageLine | null;
 }) {
   const initialOn = useMemo(() => isCoApplicantEnabled(values), [values]);
   const [enabled, setEnabled] = useState(initialOn);
@@ -119,6 +124,8 @@ function CoApplicantDealSection({
                 lifeHealthOptions={lifeHealthOptions}
                 lifeOptions={lifeOptions}
                 healthOptions={healthOptions}
+                packageLines={packageLines}
+                activePackageLine={activePackageLine}
               />
               {field.type === "image" ? (
                 <form action={uploadDealFieldImage} className="flex items-center gap-2">
@@ -154,6 +161,8 @@ export function DealDetailsPanel({
   lifeHealthOptions = [],
   lifeOptions = [],
   healthOptions = [],
+  packageLines = [],
+  activePackageLine = null,
 }: {
   dealId: string;
   line: string;
@@ -166,6 +175,8 @@ export function DealDetailsPanel({
   lifeHealthOptions?: Array<{ slug?: string; label: string }>;
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
+  packageLines?: readonly PcPackageLine[];
+  activePackageLine?: PcPackageLine | null;
 }) {
   const safeLayout = parseLayout(layout);
   const fieldList = resolveLayoutFields(safeLayout, asList(fields));
@@ -178,6 +189,7 @@ export function DealDetailsPanel({
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="line" value={line} />
         <input type="hidden" name="pipelineFamily" value={pipelineFamily} />
+        {activePackageLine ? <input type="hidden" name="activePackageLine" value={activePackageLine} /> : null}
       </form>
       <div
         className="grid grid-cols-2 gap-4 max-[699px]:grid-cols-1"
@@ -209,6 +221,8 @@ export function DealDetailsPanel({
                     lifeOptions={lifeOptions}
                     healthOptions={healthOptions}
                     dealId={dealId}
+                    packageLines={packageLines}
+                    activePackageLine={activePackageLine}
                   />
                 );
               }
@@ -267,6 +281,8 @@ export function DealDetailsPanel({
                           lifeHealthOptions={lifeHealthOptions}
                           lifeOptions={lifeOptions}
                           healthOptions={healthOptions}
+                          packageLines={packageLines}
+                          activePackageLine={activePackageLine}
                         />
                         {field.type === "image" ? (
                           <form action={uploadDealFieldImage} className="flex items-center gap-2">

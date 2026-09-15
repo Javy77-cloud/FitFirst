@@ -51,6 +51,7 @@ export function SheetApproveGate({
           }}
         >
           <input type="hidden" name="dealId" value={dealId} />
+          <input type="hidden" name="line" value={line} />
           <Button type="submit" size="sm">
             Confirm & request quotes
           </Button>

@@ -77,7 +77,7 @@ describe("Deal Details tab", () => {
   it("colors Edit layout as a filled primary action, still opening the field builder", () => {
     const panel = source("src/components/custom-fields/deal-details-panel.tsx");
     const link = source("src/components/custom-fields/edit-layout-link.tsx");
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/<EditLayoutLink module="deals" line=\{deal\.lineOfBusiness\} \/>/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/<EditLayoutLink module="deals" line=\{activeLob\} \/>/);
     expect(link).toMatch(/buttonVariants\(\{ variant: "default", size \}\)/);
     expect(link).not.toMatch(/variant: "outline"/);
     expect(link).not.toMatch(/variant: "ghost"/);

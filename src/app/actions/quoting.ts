@@ -33,6 +33,7 @@ import {
   quotingUnlockedForDeal,
   sheetsToPrepare,
 } from "@/lib/quoting/forms";
+import { mergeShopLinesKeepExisting } from "@/lib/deals/package-lines";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -79,7 +80,7 @@ export async function setQuotingLine(formData: FormData) {
   const deal = await loadDeal(dealId);
   if (!deal) throw new Error("Deal not found.");
 
-  const lines = sheetsToPrepare(formId);
+  const lines = mergeShopLinesKeepExisting(deal.shopLines, sheetsToPrepare(formId));
   await ensureSheetsForDeal(dealId, lines);
   await runFillDealSheets(dealId, form.shopLine);
 
@@ -154,7 +155,7 @@ export async function approveMasterSheet(formData: FormData) {
   }
 
   if (str(formData, "requestQuotes") === "yes") {
-    await shopDealQuotes(dealId, "appetite");
+    await shopDealQuotes(dealId, "appetite", undefined, line);
     await persistDealWorkTab(dealId, "markets").catch(() => null);
     revalidatePath(`/deals/${dealId}`);
     redirect(withFlash(`/deals/${dealId}?tab=markets&line=${line}`, "quotes-requested"));

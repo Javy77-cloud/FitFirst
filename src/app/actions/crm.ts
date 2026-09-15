@@ -21,6 +21,11 @@ import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { flashAction } from "@/lib/flash-action";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 import { BindBlockedError } from "@/lib/crm/bind";
+import {
+  lobsToBindForDeal,
+  pickQuoteForLine,
+  unboundPolicyLines,
+} from "@/lib/deals/package-lines";
 import { assertAnaUnbound } from "@/lib/crm/bind-path";
 import { formatPersonName } from "@/lib/crm/display";
 import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
@@ -49,6 +54,7 @@ import {
   pipelineStages,
   policies,
   quoteSheets,
+  quoteAttemptLogs,
   quotes,
   reviewTasks,
   risks,
@@ -1212,10 +1218,9 @@ export async function bindDeal(formData: FormData) {
   const bindTarget = str(formData, "bindTarget") || deal.bindTarget || "contact";
   let contactId = deal.contactId;
   let accountId = deal.accountId;
-  const [sheet] = await db
-    .select()
-    .from(quoteSheets)
-    .where(eq(quoteSheets.dealId, dealId));
+  const allSheets = await db.select().from(quoteSheets).where(eq(quoteSheets.dealId, dealId));
+  const homeSheet = allSheets.find((row) => row.line === "home");
+  const sheet = homeSheet ?? allSheets[0];
   const sheetValues = sheet?.values ?? {};
 
   if (bindTarget === "account") {
@@ -1341,66 +1346,86 @@ export async function bindDeal(formData: FormData) {
   }
 
   const existingPolicies = await db.select().from(policies).where(eq(policies.dealId, dealId));
-  const alreadyBound = existingPolicies.find((row) => row.lineOfBusiness === deal.lineOfBusiness);
-  if (alreadyBound) {
+  const wantedLobs = lobsToBindForDeal({
+    shopLines: deal.shopLines,
+    lineOfBusiness: deal.lineOfBusiness,
+  });
+  const linesToBind = unboundPolicyLines(wantedLobs, existingPolicies);
+  const alreadyBound = existingPolicies.find((row) => wantedLobs.includes(row.lineOfBusiness));
+  if (linesToBind.length === 0 && alreadyBound) {
     revalidatePath(`/deals/${dealId}`);
     redirect(`/policies/${alreadyBound.id}`);
   }
 
   const dealQuotes = await db.select().from(quotes).where(eq(quotes.dealId, dealId));
-  const copiedQuote = dealQuotes.find((row) => row.bindable) ?? dealQuotes[0];
+  const bindLogs = await db
+    .select({ id: quoteAttemptLogs.id, lineOfBusiness: quoteAttemptLogs.lineOfBusiness })
+    .from(quoteAttemptLogs)
+    .where(eq(quoteAttemptLogs.dealId, dealId));
+  const primaryLob = wantedLobs[0] ?? deal.lineOfBusiness;
   const effective = new Date();
   const expiration = new Date(effective);
   expiration.setFullYear(expiration.getFullYear() + 1);
-  const premiumRaw = str(formData, "premium") || copiedQuote?.premium || null;
   const wonAt = new Date();
+  const formPremium = str(formData, "premium");
+  const formPolicyNumber = str(formData, "policyNumber");
 
-  const premiumNum = Number(str(formData, "premium") || 0) || 0;
-  const [policy] = await db
-    .insert(policies)
-    .values({
-      tenantId: DEFAULT_TENANT_ID,
-      contactId: bindTarget === "account" ? null : contactId,
-      accountId: bindTarget === "account" ? accountId : null,
-      dealId,
-      riskId: risk?.id,
-      carrierId: copiedQuote?.carrierId ?? null,
-      policyNumber: str(formData, "policyNumber") || `FF-${Date.now().toString().slice(-8)}`,
-      lineOfBusiness: deal.lineOfBusiness,
-      status: "bound",
-      effectiveDate: effective,
-      expirationDate: expiration,
-      premium: premiumRaw,
-      coverageA: risk?.coverageA ?? copiedQuote?.coverageA ?? null,
-      premisesAddress: risk?.address1 || lead?.mailingAddress || null,
-      premisesCity: risk?.city || lead?.city || null,
-      premisesState: risk?.state || lead?.state || null,
-      premisesZip: risk?.zip || lead?.zip || null,
-    })
-    .returning();
+  const boundPolicies: (typeof policies.$inferSelect)[] = [];
+  for (const [index, lob] of (linesToBind.length ? linesToBind : [deal.lineOfBusiness]).entries()) {
+    const copiedQuote = pickQuoteForLine(dealQuotes, bindLogs, lob, { primaryLob });
+    const premiumRaw = (index === 0 ? formPremium : "") || copiedQuote?.premium || null;
+    const premiumNum = Number(index === 0 ? formPremium : "") || 0;
+    const [policy] = await db
+      .insert(policies)
+      .values({
+        tenantId: DEFAULT_TENANT_ID,
+        contactId: bindTarget === "account" ? null : contactId,
+        accountId: bindTarget === "account" ? accountId : null,
+        dealId,
+        riskId: risk?.id,
+        carrierId: copiedQuote?.carrierId ?? null,
+        policyNumber:
+          (index === 0 ? formPolicyNumber : "") ||
+          `FF-${Date.now().toString().slice(-8)}${index > 0 ? String(index) : ""}`,
+        lineOfBusiness: lob,
+        status: "bound",
+        effectiveDate: effective,
+        expirationDate: expiration,
+        premium: premiumRaw,
+        coverageA: risk?.coverageA ?? copiedQuote?.coverageA ?? null,
+        premisesAddress: risk?.address1 || lead?.mailingAddress || null,
+        premisesCity: risk?.city || lead?.city || null,
+        premisesState: risk?.state || lead?.state || null,
+        premisesZip: risk?.zip || lead?.zip || null,
+      })
+      .returning();
+    boundPolicies.push(policy);
 
-  if (premiumNum > 0) {
-    const due = new Date(effective);
-    due.setUTCDate(due.getUTCDate() + 30);
-    const split = splitCommission(
-      premiumNum,
-      DEFAULT_COMMISSION_RATE_PCT,
-      DEFAULT_PRODUCER_SPLIT_PCT,
-    );
-    await db.insert(commissions).values({
-      tenantId: DEFAULT_TENANT_ID,
-      agentId: actor.id,
-      policyId: policy.id,
-      carrierId: policy.carrierId,
-      lineOfBusiness: deal.lineOfBusiness,
-      premium: premiumNum.toFixed(2),
-      ratePct: DEFAULT_COMMISSION_RATE_PCT.toFixed(2),
-      amount: split.producerAmount.toFixed(2),
-      status: "pending",
-      dueDate: due,
-      period: periodKey(effective),
-    });
+    if (premiumNum > 0) {
+      const due = new Date(effective);
+      due.setUTCDate(due.getUTCDate() + 30);
+      const split = splitCommission(
+        premiumNum,
+        DEFAULT_COMMISSION_RATE_PCT,
+        DEFAULT_PRODUCER_SPLIT_PCT,
+      );
+      await db.insert(commissions).values({
+        tenantId: DEFAULT_TENANT_ID,
+        agentId: actor.id,
+        policyId: policy.id,
+        carrierId: policy.carrierId,
+        lineOfBusiness: lob,
+        premium: premiumNum.toFixed(2),
+        ratePct: DEFAULT_COMMISSION_RATE_PCT.toFixed(2),
+        amount: split.producerAmount.toFixed(2),
+        status: "pending",
+        dueDate: due,
+        period: periodKey(effective),
+      });
+    }
   }
+  const policy = boundPolicies[0];
+  if (!policy) throw new Error("Bind did not create a policy.");
 
   await db
     .update(deals)
@@ -1440,7 +1465,7 @@ export async function bindDeal(formData: FormData) {
     dealId,
     policyId: policy.id,
     eventType: "bind",
-    body: `Bound ${deal.lineOfBusiness} ${policy.policyNumber}. Policy created only after bind — quotes stayed on the deal.`,
+    body: `Bound ${boundPolicies.map((row) => `${row.lineOfBusiness} ${row.policyNumber}`).join(", ")}. One contact, one policy per line — quotes stayed on the deal.`,
   });
 
   await recordPolicyFieldChanges({

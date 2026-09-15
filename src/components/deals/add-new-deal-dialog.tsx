@@ -17,6 +17,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PackageLineCheckboxes } from "@/components/deals/package-line-checkboxes";
+import { normalizePackageLines, type PcPackageLine } from "@/lib/deals/package-lines";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +42,7 @@ export function AddNewDealDialog({
   const debounced = useDebouncedValue(query, 200);
   const [hits, setHits] = useState<CreateDealPickHit[]>([]);
   const [searching, setSearching] = useState(false);
+  const [packageLines, setPackageLines] = useState<PcPackageLine[]>(["home"]);
 
   useEffect(() => {
     if (!open || step !== "search") return;
@@ -73,6 +76,7 @@ export function AddNewDealDialog({
     setQuery("");
     setHits([]);
     setSearching(false);
+    setPackageLines(["home"]);
   }
 
   function onOpenChange(next: boolean) {
@@ -84,7 +88,9 @@ export function AddNewDealDialog({
     setBusy(true);
     setError(null);
     try {
-      const result = await createDealFromScratch();
+      const fd = new FormData();
+      for (const line of normalizePackageLines(packageLines)) fd.append("shopLines", line);
+      const result = await createDealFromScratch(fd);
       if (!result.ok) {
         setError("message" in result ? result.message : "Could not create deal.");
         return;
@@ -107,6 +113,7 @@ export function AddNewDealDialog({
       const fd = new FormData();
       fd.set("kind", hit.kind);
       fd.set("id", hit.id);
+      for (const line of normalizePackageLines(packageLines)) fd.append("shopLines", line);
       const result = await createDealFromExistingPick(fd);
       if (!result.ok || !result.href) {
         setError(result.message || "Could not create deal.");
@@ -148,10 +155,19 @@ export function AddNewDealDialog({
             </DialogTitle>
             <DialogDescription>
               {step === "choose"
-                ? "Start blank on Deal Details, or copy details from a contact’s prior shop and land on Documents."
+                ? "Pick Home / Auto / Flood for this shop, then start blank or copy an existing contact."
                 : "Search by deal name or contact name. Picking one creates a new deal with details copied."}
             </DialogDescription>
           </DialogHeader>
+
+          <div data-ff-package-lines="">
+            <PackageLineCheckboxes
+              selected={packageLines}
+              onChange={setPackageLines}
+              disabled={busy}
+              idPrefix="add-deal-pkg"
+            />
+          </div>
 
           {step === "choose" ? (
             <div className="flex flex-col gap-2" data-ff-add-new-deal-choose="">

@@ -20,7 +20,7 @@ describe("sep7fw Documents Confirm → Markets; Markets Approve → Quotes", () 
     );
     const quotes = source("src/app/actions/quotes.ts");
     expect(quotes).toMatch(
-      /flashAction\(`\/deals\/\$\{dealId\}\?tab=quotes`, "quotes-requested"\)/,
+      /flashAction\(`\/deals\/\$\{dealId\}\?tab=quotes\$\{line \? `&line=\$\{line\}` : ""\}`, "quotes-requested"\)/,
     );
     expect(quotes).not.toMatch(
       /flashAction\(`\/deals\/\$\{dealId\}\?tab=markets`, "quotes-requested"\)/,
@@ -68,6 +68,6 @@ describe("sep7fw Documents Confirm → Markets; Markets Approve → Quotes", () 
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/<QuotesPanel/);
     expect(page).toMatch(/carriers=\{carrierOptions\}/);
-    expect(page).toMatch(/dealLine=\{deal\.lineOfBusiness\}/);
+    expect(page).toMatch(/dealLine=\{activeLob\}/);
   });
 });

@@ -33,6 +33,17 @@ import { loadRecordContext } from "@/lib/record-context";
 import { quotingFormById, quotingUnlockedForDeal } from "@/lib/quoting/forms";
 import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line";
 import {
+  formatMailingLine,
+  logBelongsToLine,
+  quoteBelongsToLine,
+  resolveActivePackageLine,
+  resolveLineQuotingForm,
+  resolveVisiblePackageLines,
+} from "@/lib/deals/package-lines";
+import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
+import { DealPackageLinesForm } from "@/components/deal/deal-package-lines-form";
+import { DealPackageShell } from "@/components/deal/deal-package-shell";
+import {
   excludedCarrierIdsFromLogs,
   hasShopMarketAction,
   manualCarrierIdsFromLogs,
@@ -53,8 +64,8 @@ import { SavedToast } from "@/components/desk/saved-toast";
 import { ACTION_FLASH, ACTION_FLASH_MESSAGE, isActionFlash } from "@/lib/desk/action-flash";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { agencySettings } from "@/lib/db/schema";
-import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { agencySettings, users } from "@/lib/db/schema";
+import { DEFAULT_TENANT_ID, SHOP_LINE_TO_LOB } from "@/lib/domain";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
 
 export const dynamic = "force-dynamic";
@@ -92,7 +103,7 @@ export default async function DealPage({
     sheets,
     jobs,
   } = workspace;
-  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings] =
+  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
       listEnabledScriptsFor("deals", "edit"),
@@ -101,6 +112,14 @@ export default async function DealPage({
       loadDealMotivationStats(),
       loadModuleLayoutBundle("deals", deal.id, deal.lineOfBusiness).catch(() => null),
       loadDeskLineSettings().catch(() => null),
+      deal.ownerId
+        ? db
+            .select({ name: users.name })
+            .from(users)
+            .where(eq(users.id, deal.ownerId))
+            .then((rows) => rows[0] ?? null)
+            .catch(() => null)
+        : Promise.resolve(null),
     ]);
   const dealLayout = dealLayoutBundle?.layout ?? null;
   const dealFields = dealLayoutBundle?.fields ?? [];
@@ -127,18 +146,56 @@ export default async function DealPage({
   });
   // Do NOT invent HO3 when quotingForm is blank — LIFE/HEALTH would open Homeowners.
   const quotingForm = quotingFormById(deal.quotingForm ?? "");
-  const sheetLine = resolveDealSheetLine({
+  const packageLines = resolveVisiblePackageLines({
+    shopLines: deal.shopLines,
+    lineOfBusiness: deal.lineOfBusiness,
+    quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
+  });
+  const activePackageLine = resolveActivePackageLine({
     lineParam,
+    packageLines,
     quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
     lineOfBusiness: deal.lineOfBusiness,
   });
+  const sheetLine =
+    activePackageLine ??
+    resolveDealSheetLine({
+      lineParam,
+      quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
+      lineOfBusiness: deal.lineOfBusiness,
+    });
   const activeSheet =
     sheets.find((row) => row.line === sheetLine) ?? (await ensureQuoteSheet(deal.id, sheetLine));
-  const dealLogs = logs.map((row) => row.log);
+  const lineForm = resolveLineQuotingForm({
+    sheetValues: activeSheet.values,
+    sheetLine,
+    dealQuotingForm: deal.quotingForm,
+    dealQuotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
+    dealLineOfBusiness: deal.lineOfBusiness,
+  });
+  const lineQuotingForm = quotingFormById(lineForm);
+  const activeLob = SHOP_LINE_TO_LOB[sheetLine] ?? deal.lineOfBusiness;
+  const isPrimaryPackageLine = !packageLines.length || packageLines[0] === sheetLine;
+  const lineLogs =
+    packageLines.length > 1
+      ? logs.filter((row) => logBelongsToLine(row.log.lineOfBusiness, activeLob, isPrimaryPackageLine))
+      : logs;
+  const lineQuotes =
+    packageLines.length > 1
+      ? quotes.filter((row) =>
+          quoteBelongsToLine({
+            quoteAttemptLogId: row.quote.quoteAttemptLogId,
+            logs: logs.map((item) => item.log),
+            lob: activeLob,
+            isPrimaryLine: isPrimaryPackageLine,
+          }),
+        )
+      : quotes;
+  const dealLogs = lineLogs.map((row) => row.log);
   const excludedMarketIds = new Set(excludedCarrierIdsFromLogs(dealLogs));
   const shopMarketsAction = hasShopMarketAction(
     dealLogs,
-    quotes.map((row) => row.quote),
+    lineQuotes.map((row) => row.quote),
   );
   const rawMatches =
     shopMarketsAction && risk ? await evaluateDealMarkets(risk, activeSheet.values) : [];
@@ -148,12 +205,13 @@ export default async function DealPage({
     productParam: product,
     sheetProduct: activeSheet.values.sheet_product?.value,
     policySubType: deal.policySubType,
-    lineOfBusiness: deal.lineOfBusiness,
-    quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? sheetLine,
-    quotingForm: deal.quotingForm,
+    lineOfBusiness: activeLob,
+    quotingLine: sheetLine,
+    quotingForm: lineForm,
   });
   const masterFormLabel =
-    quotingForm?.label ||
+    lineQuotingForm?.label ||
+    lineForm ||
     deal.policySubType ||
     deal.quotingForm ||
     (selectedProduct === "life"
@@ -172,9 +230,9 @@ export default async function DealPage({
         sheetFilled: sheetHasMarketFacts(activeSheet?.values),
         quotesRequested: hasShopMarketAction(
           dealLogs,
-          quotes.map((row) => row.quote),
+          lineQuotes.map((row) => row.quote),
         ),
-        hasNonStubQuotes: quotes.some((row) => row.quote.stub === false),
+        hasNonStubQuotes: lineQuotes.some((row) => row.quote.stub === false),
       });
   const manualIds = manualCarrierIdsFromLogs(dealLogs).filter((id) => !excludedMarketIds.has(id));
   const carrierOptions = carrierRows.map((row) => ({
@@ -243,11 +301,49 @@ export default async function DealPage({
           active={activeTab}
           extraQuery={{ line: sheetLine, product: selectedProduct }}
           panelClassName="mt-0"
-          toolbar={activeTab === "details" ? <EditLayoutLink module="deals" line={deal.lineOfBusiness} /> : null}
+          toolbar={activeTab === "details" ? <EditLayoutLink module="deals" line={activeLob} /> : null}
           heading={
-            <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
-              {deal.title}
-            </h1>
+            <div className="min-w-0">
+              <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
+                {deal.title}
+              </h1>
+              <DealPackageShell
+                name={partyName}
+                phones={[contact?.phone ?? lead?.phone, dealValues.phone, dealValues.mobile_phone].filter(
+                  (value, index, all): value is string => Boolean(value) && all.indexOf(value) === index,
+                )}
+                dob={dealValues.date_of_birth || contact?.dateOfBirth || lead?.dateOfBirth}
+                mailing={formatMailingLine({
+                  address1:
+                    dealValues.contact_mailing_address ||
+                    dealValues.mailing_address ||
+                    contact?.mailingAddress ||
+                    risk.address1,
+                  city: dealValues.contact_mailing_city || dealValues.city || contact?.city || risk.city,
+                  state: dealValues.contact_mailing_state || dealValues.state || contact?.state || risk.state,
+                  zip: dealValues.contact_mailing_zip || dealValues.zip || contact?.zip || risk.zip,
+                })}
+                stage={deal.pipelineStageSlug || deal.pipelineStage}
+                owner={ownerRow?.name}
+                activity={comms[0]?.title ?? (comms.length ? `${comms.length} activities` : null)}
+              />
+              {packageLines.length ? (
+                <>
+                  <DealPackageLinesForm
+                    dealId={deal.id}
+                    selected={packageLines}
+                    activeLine={sheetLine}
+                    tab={activeTab}
+                  />
+                  <DealLineSwitcher
+                    dealId={deal.id}
+                    lines={packageLines}
+                    active={activePackageLine ?? packageLines[0]!}
+                    tab={activeTab}
+                  />
+                </>
+              ) : null}
+            </div>
           }
           corner={
             <div
@@ -316,15 +412,17 @@ export default async function DealPage({
                     {id === "details" ? (
                       <DealDetailsPanel
                         dealId={deal.id}
-                        line={deal.lineOfBusiness}
+                        line={activeLob}
                         layout={dealLayout ?? defaultLayoutForModule("deals")}
                         fields={dealFields.length ? dealFields : resolveLayoutFields(dealLayout ?? defaultLayoutForModule("deals"), dealFields)}
                         values={mergeDealSystemValues(deal, lead, dealValues, dealFields)}
                         pipelineFamily={pipelineFamilyFromDeal({
                           lineOfBusiness: deal.lineOfBusiness,
                         })}
-                        quotingForm={deal.quotingForm}
-                        policySubType={deal.policySubType}
+                        quotingForm={lineForm}
+                        policySubType={lineQuotingForm?.label ?? deal.policySubType}
+                        packageLines={packageLines}
+                        activePackageLine={activePackageLine}
                         lifeOptions={(deskLineSettings?.lifeOptions?.length ? deskLineSettings.lifeOptions : DEFAULT_LIFE_SUBFILTERS)}
                         healthOptions={(deskLineSettings?.healthOptions?.length ? deskLineSettings.healthOptions : DEFAULT_HEALTH_SUBFILTERS)}
                         lifeHealthOptions={(deskLineSettings?.lifeOptions?.length ? deskLineSettings.lifeOptions : DEFAULT_LIFE_SUBFILTERS)}
@@ -356,16 +454,18 @@ export default async function DealPage({
                         explicitLookup={shopMarketsAction}
                         sheetHasValues={agentMarketsAction}
                         carriers={carrierOptions}
-                        dealLine={deal.lineOfBusiness}
+                        dealLine={activeLob}
+                        shopLine={sheetLine}
                       />
                     ) : (
                       <QuotesPanel
                         dealId={deal.id}
-                        quotes={quotes}
-                        logs={logs}
+                        quotes={lineQuotes}
+                        logs={lineLogs}
                         quoteNotes={quoteNotes}
                         quoteResultsNote={deal.quoteResultsNote}
-                        formId={quotingForm?.id ?? deal.quotingForm ?? masterFormLabel}
+                        formId={lineQuotingForm?.id ?? lineForm ?? masterFormLabel}
+                        shopLine={sheetLine}
                         confirmLogs={allQuoteLogs.map((row) => ({
                           carrierId: row.log.carrierId,
                           why: row.log.why,
@@ -374,7 +474,7 @@ export default async function DealPage({
                         docs={docs}
                         fileVersions={fileVersions}
                         carriers={carrierOptions}
-                        dealLine={deal.lineOfBusiness}
+                        dealLine={activeLob}
                       />
                     )}
 

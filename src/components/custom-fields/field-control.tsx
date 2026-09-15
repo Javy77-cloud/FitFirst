@@ -12,6 +12,7 @@ import {
   isInsuranceTypeField,
 } from "@/components/custom-fields/insurance-cascade-control";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
+import type { PcPackageLine } from "@/lib/deals/package-lines";
 import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { addressFillForKey, isStreetAddressField } from "@/lib/address/keys";
@@ -33,6 +34,8 @@ export function FieldControl({
   lifeHealthOptions = [],
   lifeOptions = [],
   healthOptions = [],
+  packageLines = [],
+  activePackageLine = null,
   onMultiSelectChange,
 }: {
   field: CustomFieldDef;
@@ -47,6 +50,8 @@ export function FieldControl({
   lifeHealthOptions?: Array<{ slug?: string; label: string }>;
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
+  packageLines?: readonly PcPackageLine[];
+  activePackageLine?: PcPackageLine | null;
   onMultiSelectChange?: (joined: string) => void;
 }) {
   const resolved = resolvedFieldValue(field, value);
@@ -70,6 +75,8 @@ export function FieldControl({
         lifeHealthOptions={lifeHealthOptions}
         lifeOptions={lifeOptions}
         healthOptions={healthOptions}
+        packageLines={packageLines}
+        activePackageLine={activePackageLine}
         onMultiSelectChange={onMultiSelectChange}
       />
     </div>
@@ -91,6 +98,8 @@ function TypedControl({
   lifeHealthOptions = [],
   lifeOptions = [],
   healthOptions = [],
+  packageLines = [],
+  activePackageLine = null,
   onMultiSelectChange,
 }: {
   field: CustomFieldDef;
@@ -107,6 +116,8 @@ function TypedControl({
   lifeHealthOptions?: Array<{ slug?: string; label: string }>;
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
+  packageLines?: readonly PcPackageLine[];
+  activePackageLine?: PcPackageLine | null;
   onMultiSelectChange?: (joined: string) => void;
 }) {
   // 3-level cascade: Type → Category → Form. Type field owns the UI;
@@ -129,6 +140,8 @@ function TypedControl({
         lifeHealthOptions={lifeHealthOptions}
         required={required}
         disabled={disabled}
+        packageLines={packageLines}
+        activePackageLine={activePackageLine}
       />
     );
   }
@@ -162,6 +175,8 @@ function TypedControl({
         lifeHealthOptions={lifeHealthOptions}
         required={required}
         disabled={disabled}
+        packageLines={packageLines}
+        activePackageLine={activePackageLine}
       />
     );
   }
