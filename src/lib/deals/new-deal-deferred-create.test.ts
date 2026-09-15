@@ -54,11 +54,19 @@ describe("Add New Deal defers insert until Save", () => {
       }),
     ).toEqual({
       shopLines: ["auto", "flood"],
+      explicitShopLines: true,
       contactId: CONTACT_ID,
       sourceDealId: DEAL_ID,
     });
     expect(parseNewDealSearchParams({ shopLines: "home,auto" })).toEqual({
       shopLines: ["home", "auto"],
+      explicitShopLines: true,
+      contactId: null,
+      sourceDealId: null,
+    });
+    expect(parseNewDealSearchParams({})).toEqual({
+      shopLines: ["home"],
+      explicitShopLines: false,
       contactId: null,
       sourceDealId: null,
     });
@@ -144,6 +152,32 @@ describe("Add New Deal defers insert until Save", () => {
     expect(forceNewShopOnSave(formFrom({}))).toBe(false);
     expect(shopLinesForNewDealSave(formFrom({}))).toBeUndefined();
     expect(packageDraftForNewDealSave(formFrom({ shopLines: ["auto"] }))?.quotingForm).toBe("PA");
+  });
+
+  it("Save-only create carries commercial GL/WC/BOP without inserting", () => {
+    expect(newDealCreateHref({ shopLines: ["bop", "general_liability"] })).toBe(
+      "/deals/new?shopLines=general_liability&shopLines=bop",
+    );
+    expect(
+      parseNewDealSearchParams({ shopLines: ["workers_comp", "bop"] }),
+    ).toMatchObject({
+      shopLines: ["workers_comp", "bop"],
+    });
+    expect(
+      packageDraftForNewDealSave(
+        formFrom({ shopLines: ["general_liability", "workers_comp", "bop"] }),
+      ),
+    ).toMatchObject({
+      shopLines: ["general_liability", "workers_comp", "bop"],
+      quotingForm: "GL",
+      lineOfBusiness: "GL",
+      family: "commercial",
+      bindTarget: "account",
+    });
+    const dialog = readFileSync("src/components/deals/add-new-deal-dialog.tsx", "utf8");
+    expect(dialog).toMatch(/PackageFamilyToggle/);
+    expect(dialog).toMatch(/commercial/);
+    expect(dialog).not.toMatch(/createDealFromScratch/);
   });
 
   it("merges copied contact/deal values onto the empty create layout", () => {

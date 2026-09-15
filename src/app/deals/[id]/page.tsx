@@ -37,6 +37,7 @@ import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line"
 import { resolveDealHeaderAddresses } from "@/lib/deals/header-addresses";
 import {
   logBelongsToLine,
+  packageFamilyOf,
   quoteBelongsToLine,
   resolveActivePackageLine,
   resolveLineQuotingForm,
@@ -326,9 +327,14 @@ export default async function DealPage({
                 {deal.title}
               </h1>
               <DealPackageShell
-                name={partyName}
+                name={
+                  packageFamilyOf(packageLines) === "commercial"
+                    ? account?.name || partyName
+                    : partyName
+                }
                 phones={uniqueDisplayPhones([
                   contact?.phone ?? lead?.phone,
+                  account?.phone,
                   dealValues.phone,
                   dealValues.mobile_phone,
                   dealValues.secondary_phone,

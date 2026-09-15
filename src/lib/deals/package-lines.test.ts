@@ -9,8 +9,11 @@ import {
   logBelongsToLine,
   mergePackageShopLines,
   mergeShopLinesKeepExisting,
+  normalizeCommercialPackageLines,
   normalizePackageLines,
+  normalizeSelectedPackageLines,
   packageCreateDraft,
+  packageFamilyOf,
   packageLinesFromForm,
   packageLinesFromFormOrUndefined,
   pickQuoteForLine,
@@ -21,6 +24,7 @@ import {
   resolveShopLineAndLob,
   resolveVisiblePackageLines,
   sheetHasUserData,
+  shopLinesAfterCascadeForm,
   unboundPolicyLines,
 } from "./package-lines";
 
@@ -266,6 +270,90 @@ describe("shared shell helpers", () => {
   });
 });
 
+describe("commercial package selection + sheets + routing", () => {
+  it("defaults to GL and keeps GL → WC → BOP order without mixing personal or Life", () => {
+    expect(normalizeCommercialPackageLines([])).toEqual(["general_liability"]);
+    expect(normalizeSelectedPackageLines(["bop", "life", "home", "workers_comp"])).toEqual([
+      "home",
+    ]);
+    expect(normalizeSelectedPackageLines(["bop", "workers_comp", "general_liability"])).toEqual([
+      "general_liability",
+      "workers_comp",
+      "bop",
+    ]);
+    expect(packageFamilyOf(["general_liability", "bop"])).toBe("commercial");
+    expect(packageFamilyOf(["home", "general_liability"])).toBe("personal");
+    expect(packageLinesFromForm({ getAll: () => ["workers_comp", "bop"], get: () => "" })).toEqual([
+      "workers_comp",
+      "bop",
+    ]);
+    expect(packageCreateDraft(["bop", "workers_comp"])).toMatchObject({
+      shopLines: ["workers_comp", "bop"],
+      quotingLine: "workers_comp",
+      quotingForm: "WC",
+      lineOfBusiness: "WC",
+      family: "commercial",
+      accountKind: "commercial",
+      bindTarget: "account",
+    });
+  });
+
+  it("seeds per-line GL / WC / BOP forms and routes ?line=", () => {
+    expect(defaultFormForPackageLine("general_liability")).toBe("GL");
+    expect(defaultFormForPackageLine("workers_comp")).toBe("WC");
+    expect(defaultFormForPackageLine("bop")).toBe("BOP");
+    expect(
+      resolveVisiblePackageLines({ shopLines: ["general_liability", "bop"] }),
+    ).toEqual(["general_liability", "bop"]);
+    expect(resolveVisiblePackageLines({ lineOfBusiness: "WC" })).toEqual(["workers_comp"]);
+    expect(
+      resolveVisiblePackageLines({
+        shopLines: ["home", "auto", "general_liability"],
+        lineOfBusiness: "HO",
+      }),
+    ).toEqual(["home", "auto"]);
+    expect(
+      resolveActivePackageLine({
+        lineParam: "bop",
+        packageLines: ["general_liability", "workers_comp", "bop"],
+        quotingLine: "general_liability",
+        lineOfBusiness: "GL",
+      }),
+    ).toBe("bop");
+    expect(
+      dealLineSwitcherHref({ dealId: "deal-9", line: "workers_comp", tab: "quotes" }),
+    ).toBe("/deals/deal-9?tab=quotes&line=workers_comp");
+  });
+
+  it("creates a commercial sheet draft and binds one policy per commercial line", () => {
+    expect(packageCreateDraft(["general_liability"]).quotingForm).toBe("GL");
+    expect(
+      lobsToBindForDeal({
+        shopLines: ["general_liability", "workers_comp", "bop"],
+        lineOfBusiness: "GL",
+      }),
+    ).toEqual(["GL", "WC", "BOP"]);
+    expect(
+      unboundPolicyLines(["GL", "WC", "BOP"], [{ lineOfBusiness: "GL" }]),
+    ).toEqual(["WC", "BOP"]);
+    expect(
+      mergePackageShopLines(["general_liability", "home"], ["general_liability", "bop"]),
+    ).toEqual(["general_liability", "bop", "home"]);
+  });
+
+  it("switches family when cascade form becomes Commercial, without mixing Life/Health", () => {
+    expect(shopLinesAfterCascadeForm(["home", "auto"], "general_liability")).toEqual([
+      "general_liability",
+    ]);
+    expect(shopLinesAfterCascadeForm(["general_liability", "bop"], "home")).toEqual([
+      "general_liability",
+      "bop",
+      "home",
+    ]);
+    expect(resolveVisiblePackageLines({ shopLines: ["life"], lineOfBusiness: "LIFE" })).toEqual([]);
+  });
+});
+
 describe("create + detail wiring", () => {
   it("Add New Deal collects package lines and Save persists them; detail switches on ?line=", () => {
     const dialog = readFileSync("src/components/deals/add-new-deal-dialog.tsx", "utf8");
@@ -292,5 +380,23 @@ describe("create + detail wiring", () => {
     expect(page).toMatch(/DealPackageShell/);
     expect(page).toMatch(/resolveActivePackageLine/);
     expect(page).not.toMatch(/DealLineSelector/);
+    const checkboxes = readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8");
+    expect(checkboxes).toMatch(/COMMERCIAL_PACKAGE_LINES/);
+    expect(checkboxes).toMatch(/general_liability/);
+    expect(checkboxes).toMatch(/Workers' Comp/);
+    expect(checkboxes).toMatch(/BOP/);
+    expect(checkboxes).not.toMatch(/Life/);
+    expect(checkboxes).not.toMatch(/Health/);
+    expect(checkboxes).not.toMatch(/commercial_auto/);
+    const pkg = readFileSync("src/lib/deals/package-lines.ts", "utf8");
+    expect(pkg).toMatch(/general_liability/);
+    expect(pkg).toMatch(/workers_comp/);
+    expect(pkg).toMatch(/\bbop\b/);
+    expect(readFileSync("src/components/deals/add-new-deal-dialog.tsx", "utf8")).toMatch(
+      /PackageFamilyToggle/,
+    );
+    expect(readFileSync("src/app/actions/quote-sheet.ts", "utf8")).toMatch(
+      /normalizeSelectedPackageLines/,
+    );
   });
 });

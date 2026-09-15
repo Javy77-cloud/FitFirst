@@ -289,7 +289,9 @@ describe("DealPackageShell address display", () => {
     expect(page).toMatch(/resolveDealHeaderAddresses/);
     expect(page).toMatch(/insuredAddress=\{headerAddresses\.insured\}/);
     expect(page).toMatch(/mailingAddress=\{headerAddresses\.mailing\}/);
-    expect(page).toMatch(/name=\{partyName\}/);
+    expect(page).toMatch(/name=\{/);
+    expect(page).toMatch(/partyName/);
+    expect(page).toMatch(/account\?\.name/);
     expect(page).toMatch(/phones=\{/);
     expect(page).toMatch(/dob=\{/);
     expect(page).toMatch(/owner=\{ownerRow\?\.name\}/);

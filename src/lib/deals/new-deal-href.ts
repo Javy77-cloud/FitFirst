@@ -1,13 +1,15 @@
 import { isUuid } from "@/lib/ids";
 import {
-  normalizePackageLines,
+  normalizeSelectedPackageLines,
   packageCreateDraft,
   packageLinesFromFormOrUndefined,
-  type PcPackageLine,
+  type PackageLine,
 } from "@/lib/deals/package-lines";
 
 export type NewDealCreateQuery = {
-  shopLines: PcPackageLine[];
+  shopLines: PackageLine[];
+  /** True when the URL listed shopLines — do not invent a package for bare /deals/new. */
+  explicitShopLines: boolean;
   contactId: string | null;
   sourceDealId: string | null;
 };
@@ -50,7 +52,7 @@ export function newDealCreateHref(input: {
   sourceDealId?: string | null;
 }): string {
   const params = new URLSearchParams();
-  for (const line of normalizePackageLines(input.shopLines)) {
+  for (const line of normalizeSelectedPackageLines(input.shopLines)) {
     params.append("shopLines", line);
   }
   if (uuidOrNull(input.contactId ?? "")) params.set("contactId", input.contactId as string);
@@ -62,8 +64,10 @@ export function newDealCreateHref(input: {
 export function parseNewDealSearchParams(
   params: Record<string, string | string[] | undefined> | URLSearchParams,
 ): NewDealCreateQuery {
+  const listed = paramList(params, "shopLines").map((item) => item.trim()).filter(Boolean);
   return {
-    shopLines: normalizePackageLines(paramList(params, "shopLines")),
+    shopLines: normalizeSelectedPackageLines(listed),
+    explicitShopLines: listed.length > 0,
     contactId: uuidOrNull(paramOne(params, "contactId")),
     sourceDealId: uuidOrNull(paramOne(params, "sourceDealId")),
   };
@@ -87,7 +91,7 @@ export function forceNewShopOnSave(form?: Searchish | null): boolean {
 }
 
 /** Package checkboxes collected on the create form — persist these on Save. */
-export function shopLinesForNewDealSave(form?: Searchish | null): PcPackageLine[] | undefined {
+export function shopLinesForNewDealSave(form?: Searchish | null): PackageLine[] | undefined {
   const lines = packageLinesFromFormOrUndefined(form);
   return lines?.length ? packageCreateDraft(lines).shopLines : undefined;
 }

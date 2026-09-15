@@ -3,13 +3,19 @@
 import { useMemo, useState } from "react";
 import {
   cascadeFromDeal,
+  cascadeFromPackageLine,
+  categoryForPackageLine,
   categoriesForType,
   formsForCategory,
   INSURANCE_TYPE_OPTIONS,
   type InsuranceTypeId,
   type PipelineFamily,
 } from "@/lib/deals/insurance-cascade";
-import type { PcPackageLine } from "@/lib/deals/package-lines";
+import {
+  isCommercialPackageLine,
+  packageFamilyOf,
+  type PackageLine,
+} from "@/lib/deals/package-lines";
 import {
   DEFAULT_HEALTH_SUBFILTERS,
   DEFAULT_LIFE_SUBFILTERS,
@@ -69,8 +75,8 @@ export function InsuranceCascadeControl({
   lifeHealthOptions?: Array<{ slug?: string; label: string }>;
   required?: boolean;
   disabled?: boolean;
-  packageLines?: readonly PcPackageLine[];
-  activePackageLine?: PcPackageLine | null;
+  packageLines?: readonly PackageLine[];
+  activePackageLine?: PackageLine | null;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
   const lifeOpts = lifeOptions.length
@@ -83,24 +89,41 @@ export function InsuranceCascadeControl({
     : DEFAULT_HEALTH_SUBFILTERS;
 
   const packageMode = packageLines.length > 0 && family === "pc";
+  const packageFamily = packageFamilyOf(packageLines);
+  const lockCategory =
+    packageMode &&
+    (packageFamily === "commercial" ||
+      Boolean(activePackageLine && activePackageLine !== "home"));
   const initial = useMemo(() => {
     const fromType = packageMode ? "pc" : typeIdFromLabel(typeValue);
     const opts =
       fromType === "health" ? healthOpts : fromType === "life" ? lifeOpts : lifeOpts;
-    const base = cascadeFromDeal({
-      family: fromType || family,
-      quotingForm: quotingForm || value,
-      policySubType: policySubType || value,
-      categoryValue:
-        activePackageLine && activePackageLine !== "home"
-          ? activePackageLine
-          : categoryValue || undefined,
-      lifeHealthOptions: opts,
-    });
+    const packaged =
+      packageMode && activePackageLine
+        ? cascadeFromPackageLine({
+            line: activePackageLine,
+            quotingForm: quotingForm || value,
+          })
+        : null;
+    const base =
+      packaged ??
+      cascadeFromDeal({
+        family: fromType || family,
+        quotingForm: quotingForm || value,
+        policySubType: policySubType || value,
+        categoryValue:
+          activePackageLine && activePackageLine !== "home" && !isCommercialPackageLine(activePackageLine)
+            ? activePackageLine
+            : isCommercialPackageLine(activePackageLine)
+              ? "commercial"
+              : categoryValue || undefined,
+        lifeHealthOptions: opts,
+      });
     return {
       typeId: (fromType || base.typeId) as InsuranceTypeId,
-      categoryId:
-        activePackageLine && activePackageLine !== "home" ? activePackageLine : base.categoryId,
+      categoryId: activePackageLine
+        ? categoryForPackageLine(activePackageLine)
+        : base.categoryId,
       subtypeId: base.subtypeId,
     };
     // mount defaults only
@@ -204,7 +227,7 @@ export function InsuranceCascadeControl({
           disabled={
             disabled ||
             !typeId ||
-            (packageMode && Boolean(activePackageLine && activePackageLine !== "home"))
+            lockCategory
           }
           required={required}
           onChange={(event) => onCategoryChange(event.target.value)}

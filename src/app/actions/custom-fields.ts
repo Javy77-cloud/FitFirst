@@ -57,7 +57,7 @@ import { dealDetailsSavedHref } from "@/lib/flash";
 import { flashAction } from "@/lib/flash-action";
 import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
 import { resolveDealProduct, sheetProductForQuotingForm } from "@/lib/deals/deal-line";
-import { isPcPackageLine, mergeShopLinesKeepExisting } from "@/lib/deals/package-lines";
+import { isPackageLine, shopLinesAfterCascadeForm } from "@/lib/deals/package-lines";
 import { formatDealPersonName, formatDealTitle } from "@/lib/deals/deal-title";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
@@ -411,8 +411,8 @@ export async function applySystemDealValues(dealId: string, system: Record<strin
             lineOfBusiness: form.lob,
             // Tip sep7gv: store human subtype label (HO3), not sheet product id.
             policySubType: form.label,
-            ...(isPcPackageLine(form.shopLine)
-              ? { shopLines: mergeShopLinesKeepExisting(existing.shopLines, [form.shopLine]) }
+            ...(isPackageLine(form.shopLine)
+              ? { shopLines: shopLinesAfterCascadeForm(existing.shopLines, form.shopLine) }
               : {}),
           }
         : rawSubtype

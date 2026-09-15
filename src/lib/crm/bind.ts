@@ -34,7 +34,7 @@ export function isCrmOnlyLine(line: string): line is CrmOnlyLine {
 export const ACCOUNT_KINDS = ["personal", "commercial"] as const;
 export type AccountKind = (typeof ACCOUNT_KINDS)[number];
 
-export const COMMERCIAL_LINES = ["GL"] as const;
+export const COMMERCIAL_LINES = ["GL", "WC", "BOP"] as const;
 
 export function isCommercialLine(line: string): boolean {
   return (COMMERCIAL_LINES as readonly string[]).includes(line);

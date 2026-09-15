@@ -24,7 +24,10 @@ import { BindBlockedError } from "@/lib/crm/bind";
 import { sheetProductForQuotingForm } from "@/lib/deals/deal-line";
 import {
   defaultFormForShopLine,
+  isCommercialPackageLine,
   lobsToBindForDeal,
+  normalizeCommercialPackageLines,
+  packageCreateDraft,
   pickQuoteForLine,
   unboundPolicyLines,
 } from "@/lib/deals/package-lines";
@@ -562,32 +565,53 @@ export async function createDeal(formData: FormData) {
   const picked = isHiddenLine(pickedRaw.lineOfBusiness, createSettings)
     ? dealCreateFieldsFromPick("HO3")
     : pickedRaw;
+  const commercialFromCascade = isCommercialPackageLine(picked.quotingLine);
+  const commercialDraft =
+    packageDraft?.family === "commercial"
+      ? packageDraft
+      : commercialFromCascade
+        ? packageCreateDraft(
+            normalizeCommercialPackageLines([
+              picked.quotingLine,
+              ...(packageDraft?.shopLines ?? []),
+            ]),
+          )
+        : null;
+  const effectiveDraft = commercialDraft ?? packageDraft;
   const line =
-    packageDraft && !str(formData, "line") && !str(formData, "field_insurance_subtype")
-      ? packageDraft.lineOfBusiness
-      : picked.lineOfBusiness;
+    commercialDraft
+      ? commercialDraft.lineOfBusiness
+      : packageDraft && !str(formData, "line") && !str(formData, "field_insurance_subtype")
+        ? packageDraft.lineOfBusiness
+        : picked.lineOfBusiness;
   const policySubType =
     line === "LIFE"
       ? str(formData, "lifeSubType") || str(formData, "policySubType") || picked.policySubType
       : line === "HEALTH"
         ? str(formData, "healthSubType") || str(formData, "policySubType") || picked.policySubType
-        : picked.policySubType;
+        : commercialDraft
+          ? commercialDraft.quotingForm
+          : picked.policySubType;
   const quotingForm =
     line === "LIFE" || line === "HEALTH"
       ? policySubType || picked.quotingForm
-      : packageDraft && !str(formData, "field_insurance_subtype") && !str(formData, "quotingForm")
-        ? packageDraft.quotingForm
-        : picked.quotingForm;
+      : commercialDraft
+        ? commercialDraft.quotingForm
+        : packageDraft && !str(formData, "field_insurance_subtype") && !str(formData, "quotingForm")
+          ? packageDraft.quotingForm
+          : picked.quotingForm;
   const quotingLine =
     line === "LIFE"
       ? "life"
       : line === "HEALTH"
         ? "health"
-        : packageDraft && !str(formData, "field_insurance_subtype") && !str(formData, "quotingForm")
-          ? packageDraft.quotingLine
-          : picked.quotingLine;
-  const shopLines = packageDraft
-    ? [...packageDraft.shopLines]
+        : commercialDraft
+          ? commercialDraft.quotingLine
+          : packageDraft && !str(formData, "field_insurance_subtype") && !str(formData, "quotingForm")
+            ? packageDraft.quotingLine
+            : picked.quotingLine;
+  const shopLines = effectiveDraft
+    ? [...effectiveDraft.shopLines]
     : Array.from(
         new Set([...sheetsToPrepare(quotingForm), ...shopLinesFromForm(formData, line)]),
       );
@@ -625,8 +649,9 @@ export async function createDeal(formData: FormData) {
       policySubType,
       state: state || sourceDeal?.state || "FL",
       ownerId: actor.id,
-      accountKind: pickedAccount && !pickedContact ? "commercial" : "personal",
-      bindTarget: pickedAccount && !pickedContact ? "account" : "contact",
+      accountKind:
+        commercialDraft || (pickedAccount && !pickedContact) ? "commercial" : "personal",
+      bindTarget: commercialDraft || (pickedAccount && !pickedContact) ? "account" : "contact",
       primaryNamedInsured,
       notes: str(formData, "notes") || str(formData, "field_notes") || sourceDeal?.notes || null,
       shopLines,
@@ -656,7 +681,7 @@ export async function createDeal(formData: FormData) {
     dealId: deal.id,
     contactId: sourceRisk?.contactId ?? pickedContact?.id ?? null,
     riskType:
-      packageDraft?.riskType ??
+      effectiveDraft?.riskType ??
       (deal.lineOfBusiness === "AUTO" ? "auto" : sourceRisk?.riskType ?? "property"),
     address1: mailingAddress || sourceRisk?.address1 || fromLead.address1,
     city: city || sourceRisk?.city || fromLead.city,
@@ -1323,14 +1348,27 @@ export async function bindDeal(formData: FormData) {
   let contactId = deal.contactId;
   let accountId = deal.accountId;
   const allSheets = await db.select().from(quoteSheets).where(eq(quoteSheets.dealId, dealId));
-  const homeSheet = allSheets.find((row) => row.line === "home");
-  const sheet = homeSheet ?? allSheets[0];
+  const wantedLobsPreview = lobsToBindForDeal({
+    shopLines: deal.shopLines,
+    lineOfBusiness: deal.lineOfBusiness,
+  });
+  const primaryShop =
+    LOB_TO_SHOP_LINE[wantedLobsPreview[0] ?? ""] ??
+    (deal.quotingLine as ShopLine | null) ??
+    "home";
+  const sheet =
+    allSheets.find((row) => row.line === primaryShop) ??
+    allSheets.find((row) => row.line === deal.quotingLine) ??
+    allSheets.find((row) => row.line === "home") ??
+    allSheets[0];
   const sheetValues = sheet?.values ?? {};
 
   if (bindTarget === "account") {
+    const personName = [lead?.firstName, lead?.lastName].filter(Boolean).join(" ").trim();
     const identity = {
       name:
         str(formData, "businessName") ||
+        personName ||
         `${lead?.lastName ?? "Bound"} ${deal.lineOfBusiness}`.trim(),
       ein: str(formData, "ein") || null,
     };

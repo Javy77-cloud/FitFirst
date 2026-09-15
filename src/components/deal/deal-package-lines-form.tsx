@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { setDealPackageLines } from "@/app/actions/quote-sheet";
 import { PackageLineCheckboxes } from "@/components/deals/package-line-checkboxes";
-import { normalizePackageLines, type PcPackageLine } from "@/lib/deals/package-lines";
+import {
+  normalizeSelectedPackageLines,
+  packageFamilyOf,
+  type PackageLine,
+} from "@/lib/deals/package-lines";
 
 export function DealPackageLinesForm({
   dealId,
@@ -12,11 +16,12 @@ export function DealPackageLinesForm({
   tab,
 }: {
   dealId: string;
-  selected: readonly PcPackageLine[];
+  selected: readonly PackageLine[];
   activeLine?: string | null;
   tab?: string | null;
 }) {
-  const [lines, setLines] = useState<PcPackageLine[]>(() => normalizePackageLines(selected));
+  const family = packageFamilyOf(selected);
+  const [lines, setLines] = useState<PackageLine[]>(() => normalizeSelectedPackageLines(selected));
 
   return (
     <form action={setDealPackageLines} className="mt-2" data-ff-deal-package-edit="">
@@ -27,6 +32,7 @@ export function DealPackageLinesForm({
         selected={lines}
         onChange={setLines}
         idPrefix={`deal-${dealId}-pkg`}
+        family={family}
       />
       <button
         type="submit"
