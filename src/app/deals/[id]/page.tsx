@@ -22,6 +22,7 @@ import { listEnabledScriptsFor } from "@/lib/db/developer-hub-queries";
 import {
   AGENT_DEAL_TAB_LABELS,
   AGENT_DEAL_TABS,
+  hasMeaningfulDealFieldValues,
   parseAgentDealTab,
   resolveDealResumeTab,
 } from "@/lib/deals/tabs";
@@ -54,6 +55,12 @@ import { productSectionComplete, productSectionProgress } from "@/lib/deals/prod
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
 import { DealPackageLinesForm } from "@/components/deal/deal-package-lines-form";
 import { DealFlowRail } from "@/components/deals/deal-flow-rail";
+import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
+import {
+  parseShopFlow,
+  resolveShopFlowCompletion,
+  riskFingerprint,
+} from "@/lib/deals/shop-flow";
 import { DealPackageShell } from "@/components/deal/deal-package-shell";
 import { DealHeaderStage } from "@/components/deals/deal-header-stage";
 import { relabelConvertActivityTitle } from "@/lib/crm/convert";
@@ -227,17 +234,17 @@ export default async function DealPage({
     packageLines.length > 1
       ? logs.filter((row) => logBelongsToLine(row.log.lineOfBusiness, activeLob, isPrimaryPackageLine))
       : logs;
-  const lineQuotes =
-    packageLines.length > 1
-      ? quotes.filter((row) =>
-          quoteBelongsToLine({
-            quoteAttemptLogId: row.quote.quoteAttemptLogId,
-            logs: logs.map((item) => item.log),
-            lob: activeLob,
-            isPrimaryLine: isPrimaryPackageLine,
-          }),
-        )
-      : quotes;
+  const lineQuotes = quotes.filter((row) =>
+    quoteBelongsToLine({
+      quoteAttemptLogId: row.quote.quoteAttemptLogId,
+      shopLine: row.quote.shopLine,
+      notes: row.quote.notes,
+      logs: logs.map((item) => item.log),
+      lob: activeLob,
+      isPrimaryLine: isPrimaryPackageLine,
+      multiLine: packageLines.length > 1,
+    }),
+  );
   const dealLogs = lineLogs.map((row) => row.log);
   const excludedMarketIds = new Set(excludedCarrierIdsFromLogs(dealLogs));
   const shopMarketsAction = hasShopMarketAction(
@@ -281,6 +288,24 @@ export default async function DealPage({
         ),
         hasNonStubQuotes: lineQuotes.some((row) => row.quote.stub === false),
       });
+  const currentFingerprint = riskFingerprint({
+    sheets,
+    docs: docs.filter((doc) => isDocumentsSourceDoc(doc)),
+  });
+  const shopFlow = parseShopFlow(deal.shopFlow);
+  const flowCompletion = resolveShopFlowCompletion({
+    detailsComplete:
+      hasMeaningfulDealFieldValues(dealValues) ||
+      dealProducts.some((id) => productSectionComplete(id, dealValues)) ||
+      sheets.some((row) => sheetHasUserData(row.values)),
+    documentsComplete:
+      Boolean(health && sheetHasUserData(activeSheet.values)) ||
+      sheets.some((row) => sheetHasUserData(row.values)),
+    hasMarkets: shopMarketsAction || agentMarketsAction,
+    hasQuotes: lineQuotes.some((row) => row.quote.stub === false),
+    currentFingerprint,
+    saved: shopFlow,
+  });
   const manualIds = manualCarrierIdsFromLogs(dealLogs).filter((id) => !excludedMarketIds.has(id));
   const carrierOptions = carrierRows.map((row) => ({
     id: row.carrier.id,
@@ -390,6 +415,7 @@ export default async function DealPage({
                   <div className="mt-3">
                     <DealFlowRail
                       current={activeTab}
+                      completed={flowCompletion.completed}
                       activeLabel={dealProductDef(activeProduct).label}
                       productComplete={
                         productSectionComplete(activeProduct, dealValues) ||
@@ -562,6 +588,8 @@ export default async function DealPage({
                         quoteResultsNote={deal.quoteResultsNote}
                         formId={lineQuotingForm?.id ?? lineForm ?? masterFormLabel}
                         shopLine={sheetLine}
+                        currentQuoteRunId={shopFlow.quoteRuns?.[sheetLine] ?? null}
+                        multiLine={packageLines.length > 1}
                         confirmLogs={allQuoteLogs.map((row) => ({
                           carrierId: row.log.carrierId,
                           why: row.log.why,

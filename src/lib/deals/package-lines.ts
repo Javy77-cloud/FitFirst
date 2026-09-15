@@ -18,6 +18,7 @@ import {
   uniqueLobsToBind,
   type DealProductId,
 } from "@/lib/deals/deal-products";
+import { quoteMatchesShopLine, shopLineFromLob } from "@/lib/deals/shop-flow";
 
 /** @deprecated Prefer DealProductId — kept for Home/Auto/Flood chip aliases. */
 export const PC_PACKAGE_LINES = ["home", "auto", "flood"] as const;
@@ -272,14 +273,31 @@ export function pickQuoteForLine<
 
 export function quoteBelongsToLine(input: {
   quoteAttemptLogId?: string | null;
+  shopLine?: string | null;
+  notes?: string | null;
   logs: readonly { id: string; lineOfBusiness?: string | null }[];
   lob: string;
   isPrimaryLine: boolean;
+  /** When true, untagged quotes do not spill onto every product chip. */
+  multiLine?: boolean;
 }): boolean {
-  if (!input.quoteAttemptLogId) return input.isPrimaryLine;
-  const log = input.logs.find((row) => row.id === input.quoteAttemptLogId);
-  if (!log) return input.isPrimaryLine;
-  return (log.lineOfBusiness ?? "").toUpperCase() === input.lob.toUpperCase();
+  const wanted = shopLineFromLob(input.lob);
+  if (!wanted) {
+    if (!input.quoteAttemptLogId) return input.isPrimaryLine;
+    const log = input.logs.find((row) => row.id === input.quoteAttemptLogId);
+    if (!log) return input.isPrimaryLine;
+    return (log.lineOfBusiness ?? "").toUpperCase() === input.lob.toUpperCase();
+  }
+  return quoteMatchesShopLine(
+    {
+      shopLine: input.shopLine,
+      quoteAttemptLogId: input.quoteAttemptLogId,
+      notes: input.notes,
+      logs: input.logs,
+    },
+    wanted,
+    { multiLine: input.multiLine ?? false, isPrimaryLine: input.isPrimaryLine },
+  );
 }
 
 export function logBelongsToLine(

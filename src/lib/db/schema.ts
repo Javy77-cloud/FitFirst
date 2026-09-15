@@ -695,6 +695,12 @@ export const deals = pgTable(
     zohoId: text("zoho_id"),
     sourceId: text("source_id"),
     tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    /** Last shopped sheet/docs fingerprint + per-line quote-run ids. */
+    shopFlow: jsonb("shop_flow").$type<{
+      marketsFingerprint?: string | null;
+      quotesFingerprint?: string | null;
+      quoteRuns?: Partial<Record<string, string>>;
+    } | null>(),
     ...timestamps,
   },
   (t) => [
@@ -1507,6 +1513,10 @@ export const quotes = pgTable(
     /** Plain-English bind requirement chips for Details (not portal why). */
     bindRequirements: jsonb("bind_requirements").$type<string[] | null>(),
     stub: boolean("stub").notNull().default(true),
+    /** Generation for Previous quotes vs the current run. */
+    quoteRunId: uuid("quote_run_id"),
+    /** home / auto / flood — line chip filter. */
+    shopLine: text("shop_line"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
