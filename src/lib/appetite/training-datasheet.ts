@@ -36,7 +36,7 @@ export type AppetiteLineKey = (typeof APPETITE_LINE_TABS)[number]["key"];
 export const DEFAULT_APPETITE_LINE: AppetiteLineKey = "HO";
 
 const LINE_ALIASES: Record<AppetiteLineKey, string[]> = {
-  HO: ["HO", "HO3", "HO5", "HO6", "HO8", "MH", "HOME", "HOMEOWNERS", "DP3"],
+  HO: ["HO", "HO3", "HO5", "HO6", "HO8", "MH", "MHO", "MDP", "HOME", "HOMEOWNERS", "DP3"],
   AUTO: ["AUTO", "PA", "PERSONAL_AUTO", "MOTORCYCLE"],
   RV: ["RV", "TRAVEL_TRAILER", "CAMPER"],
   BOAT: ["BOAT", "WATERCRAFT", "YACHT", "YATCH"],

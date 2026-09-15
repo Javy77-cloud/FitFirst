@@ -34,6 +34,8 @@ const LINE_ALIASES: Record<string, RoutingLine> = {
   ho3: "HO",
   ho8: "HO",
   mh: "HO",
+  mho: "HO",
+  mdp: "HO",
   home: "HO",
   homeowners: "HO",
   homeowner: "HO",

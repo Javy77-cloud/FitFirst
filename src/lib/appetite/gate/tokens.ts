@@ -163,6 +163,8 @@ function isHomeownersLine(line: string): boolean {
     u === "HO6" ||
     u === "HO8" ||
     u === "MH" ||
+    u === "MHO" ||
+    u === "MDP" ||
     u === "HO_MP"
   );
 }

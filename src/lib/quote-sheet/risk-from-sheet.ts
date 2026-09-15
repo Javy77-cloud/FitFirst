@@ -1,5 +1,6 @@
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { RiskSnapshot } from "@/lib/domain";
+import { storiesAsNumber } from "./sheet-defaults";
 
 function sheetValue(
   values: Record<string, QuoteSheetFieldValue> | null | undefined,
@@ -42,7 +43,7 @@ export function riskFromQuoteSheet(
 
   const yearBuilt = sheetNumber(values, "year_built");
   const roofYear = sheetNumber(values, "roof_year");
-  const stories = sheetNumber(values, "stories");
+  const stories = storiesAsNumber(sheetValue(values, "stories"));
   const milesToCoast = sheetNumber(values, "miles_to_coast");
   const coverageA = sheetNumber(values, "coverage_a");
   const replacementCostEstimate = sheetNumber(values, "replacement_cost_estimate");

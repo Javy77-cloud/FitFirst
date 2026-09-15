@@ -55,7 +55,8 @@ const FORM_CATEGORY: Record<QuotingFormId, Exclude<InsuranceCategoryId, "life" |
   HO5: "home",
   HO6: "home",
   HO8: "home",
-  MH: "home",
+  MHO: "home",
+  MDP: "renter_landlord",
   DP1: "renter_landlord",
   DP3: "renter_landlord",
   HO4: "renter_landlord",
@@ -72,8 +73,8 @@ const FORM_CATEGORY: Record<QuotingFormId, Exclude<InsuranceCategoryId, "life" |
 };
 
 const CATEGORY_FORMS: Record<Exclude<InsuranceCategoryId, "life" | "health">, QuotingFormId[]> = {
-  home: ["HO3", "HO5", "HO6", "HO8", "MH"],
-  renter_landlord: ["HO4", "DP1", "DP3"],
+  home: ["HO3", "HO5", "HO6", "HO8", "MHO"],
+  renter_landlord: ["HO4", "DP1", "DP3", "MDP"],
   auto: ["PA", "MOTORCYCLE"],
   rec: ["RV", "BOAT"],
   flood: ["FLOOD"],
@@ -256,12 +257,21 @@ export function categoryIdFromLabel(raw: string | null | undefined): InsuranceCa
     v.includes("homeowner") ||
     v === "ho8" ||
     v === "mh" ||
+    v === "mho" ||
     v.includes("manufactured") ||
-    v.includes("mobile home")
+    (v.includes("mobile home") && !v.includes("dwelling") && !v.includes("renter"))
   ) {
     return "home";
   }
-  if (v.includes("renter") || v.includes("landlord") || v === "dp1" || v === "dp3" || v === "ho4") {
+  if (
+    v.includes("renter") ||
+    v.includes("landlord") ||
+    v === "dp1" ||
+    v === "dp3" ||
+    v === "ho4" ||
+    v === "mdp" ||
+    v.includes("dwelling fire")
+  ) {
     return "renter_landlord";
   }
   if (v === "auto" || v.includes("personal auto") || v.includes("motorcycle")) return "auto";

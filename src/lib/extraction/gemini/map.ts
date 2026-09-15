@@ -77,7 +77,7 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   sprinkler: ["sprinkler"],
   fire_alarm: ["central_alarm", "fire_alarm"],
   central_alarm: ["central_alarm"],
-  bceg_grade: ["building_code", "bceg_grade"],
+  bceg_grade: ["bceg_grade"],
   loss_of_rents: ["loss_of_rents"],
   fair_rental_value: ["loss_of_rents", "coverage_d"],
   landlord_liability: ["landlord_liability", "coverage_e"],

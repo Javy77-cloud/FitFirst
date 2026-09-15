@@ -56,7 +56,7 @@ describe("gemini map key mapping", () => {
     expect(sheetKeysForGeminiKey("form")).toEqual(["form"]);
     expect(sheetKeysForGeminiKey("sprinkler")).toEqual(["sprinkler"]);
     expect(sheetKeysForGeminiKey("fire_alarm")).toEqual(["central_alarm", "fire_alarm"]);
-    expect(sheetKeysForGeminiKey("bceg_grade")).toEqual(["building_code", "bceg_grade"]);
+    expect(sheetKeysForGeminiKey("bceg_grade")).toEqual(["bceg_grade"]);
     expect(sheetKeysForGeminiKey("loss_of_rents")).toEqual(["loss_of_rents"]);
     expect(sheetKeysForGeminiKey("fair_rental_value")).toEqual(["loss_of_rents", "coverage_d"]);
     expect(sheetKeysForGeminiKey("landlord_liability")).toEqual(["landlord_liability", "coverage_e"]);

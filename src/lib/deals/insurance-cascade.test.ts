@@ -38,9 +38,14 @@ describe("insurance cascade", () => {
     expect(labels).not.toContain("HO3");
   });
 
-  it("Home category forms are HO3/HO5/HO6/HO8/MH", () => {
+  it("Home category forms are HO3/HO5/HO6/HO8/MHO", () => {
     const ids = formsForCategory("pc", "home").map((s) => s.id);
-    expect(ids).toEqual(["HO3", "HO5", "HO6", "HO8", "MH"]);
+    expect(ids).toEqual(["HO3", "HO5", "HO6", "HO8", "MHO"]);
+  });
+
+  it("Renter/Landlord includes MDP as a distinct mobile dwelling/renters form", () => {
+    const ids = formsForCategory("pc", "renter_landlord").map((s) => s.id);
+    expect(ids).toEqual(["HO4", "DP1", "DP3", "MDP"]);
   });
 
   it("Auto keeps Motorcycle distinct from PA", () => {
@@ -65,9 +70,13 @@ describe("insurance cascade", () => {
       categoryId: "home",
       subtypeId: "HO8",
     });
-    expect(cascadeFromDeal({ family: "pc", quotingForm: "MH" })).toMatchObject({
+    expect(cascadeFromDeal({ family: "pc", quotingForm: "MHO" })).toMatchObject({
       categoryId: "home",
-      subtypeId: "MH",
+      subtypeId: "MHO",
+    });
+    expect(cascadeFromDeal({ family: "pc", quotingForm: "MDP" })).toMatchObject({
+      categoryId: "renter_landlord",
+      subtypeId: "MDP",
     });
     expect(cascadeFromDeal({ family: "pc", quotingForm: "MOTORCYCLE" })).toMatchObject({
       categoryId: "auto",
@@ -81,11 +90,6 @@ describe("insurance cascade", () => {
       categoryId: "commercial",
       subtypeId: "CA",
     });
-  });
-
-  it("Renter/Landlord forms are HO4/DP1/DP3", () => {
-    const ids = formsForCategory("pc", "renter_landlord").map((s) => s.id);
-    expect(ids).toEqual(["HO4", "DP1", "DP3"]);
   });
 
   it("cascadeFromDeal defaults HO3 under Type=PC Category=Home", () => {
@@ -120,7 +124,9 @@ describe("insurance cascade", () => {
     expect(categoryIdFromLabel("Boat/Watercraft")).toBe("rec");
     expect(categoryIdFromLabel("Commercial Auto")).toBe("commercial");
     expect(categoryIdFromLabel("HO8")).toBe("home");
+    expect(categoryIdFromLabel("MHO")).toBe("home");
     expect(categoryIdFromLabel("mobile home")).toBe("home");
+    expect(categoryIdFromLabel("MDP")).toBe("renter_landlord");
   });
 });
 

@@ -28,6 +28,8 @@ export function appointmentLine(lineOfBusiness: string): string {
     raw === "HO6" ||
     raw === "HO8" ||
     raw === "MH" ||
+    raw === "MHO" ||
+    raw === "MDP" ||
     raw === "HOME" ||
     raw === "HOMEOWNERS"
   ) {

@@ -62,7 +62,9 @@ describe("deal line of business", () => {
     expect(sheetProductForQuotingForm("HO5")).toBe("homeowners");
     expect(sheetProductForQuotingForm("HO6")).toBe("homeowners");
     expect(sheetProductForQuotingForm("HO8")).toBe("homeowners");
+    expect(sheetProductForQuotingForm("MHO")).toBe("homeowners");
     expect(sheetProductForQuotingForm("MH")).toBe("homeowners");
+    expect(sheetProductForQuotingForm("MDP")).toBe("renters");
     expect(sheetProductForQuotingForm("DP1")).toBe("landlord");
     expect(sheetProductForQuotingForm("DP3")).toBe("landlord");
     expect(sheetProductForQuotingForm("PA")).toBe("auto");

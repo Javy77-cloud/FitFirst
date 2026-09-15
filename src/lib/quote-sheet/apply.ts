@@ -15,15 +15,19 @@ import {
   normalizeClaims5yr,
   normalizeDistanceToHydrant,
   normalizeDistanceToStation,
+  normalizeFloodZone,
   normalizeGender,
+  normalizeInsuranceScoreRange,
   normalizeMonthsOccupied,
   normalizeOccupancy,
   normalizeOpeningProtection,
+  normalizeProtectionClass,
   normalizeRoofCovering,
   normalizeRoofDeckAttachment,
   normalizeRoofShape,
   normalizeRoofToWall,
   normalizeSecondaryWater,
+  normalizeStories,
   normalizeTerrain,
   normalizeUsage,
   normalizeWaterBackup,
@@ -192,9 +196,13 @@ export function applyExtractedToSheet(
     if (key === "opening_protection") nextValue = normalizeOpeningProtection(nextValue);
     if (key === "water_backup") nextValue = normalizeWaterBackup(nextValue);
     if (key === "claims_5yr") nextValue = normalizeClaims5yr(nextValue);
+    if (key === "insurance_score_range") nextValue = normalizeInsuranceScoreRange(nextValue);
     if (key === "roof_to_wall") nextValue = normalizeRoofToWall(nextValue);
     if (key === "secondary_water") nextValue = normalizeSecondaryWater(nextValue);
     if (key === "wind_speed") nextValue = normalizeWindSpeed(nextValue);
+    if (key === "stories") nextValue = normalizeStories(nextValue);
+    if (key === "flood_zone") nextValue = normalizeFloodZone(nextValue);
+    if (key === "protection_class") nextValue = normalizeProtectionClass(nextValue);
     if (key === "building_code") nextValue = normalizeBuildingCode(nextValue);
     if (key === "roof_covering") nextValue = normalizeRoofCovering(nextValue);
     if (key === "roof_shape") nextValue = normalizeRoofShape(nextValue);
@@ -209,7 +217,8 @@ export function applyExtractedToSheet(
       else if (compact === "HO3" || compact === "HOMEOWNERS3" || compact === "HOMEOWNER3") nextValue = "HO3";
       else if (compact === "HO6") nextValue = "HO6";
       else if (compact === "HO8") nextValue = "HO8";
-      else if (compact === "MH") nextValue = "MH";
+      else if (compact === "MH" || compact === "MHO") nextValue = "MHO";
+      else if (compact === "MDP") nextValue = "MDP";
       else if (compact === "DP1") nextValue = "DP1";
     }
     const sourceLabel = cellSourceDocument(item, source);

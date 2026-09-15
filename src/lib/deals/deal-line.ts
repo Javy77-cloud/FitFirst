@@ -73,7 +73,9 @@ const FORM_TO_PRODUCT: Record<string, SheetProduct> = {
   HO5: "homeowners", // stub → home catalog like HO3
   HO6: "homeowners",
   HO8: "homeowners",
-  MH: "homeowners",
+  MHO: "homeowners",
+  MH: "homeowners", // legacy alias → MHO
+  MDP: "renters",
   DP1: "landlord",
   DP3: "landlord",
   HO4: "renters",

@@ -33,7 +33,9 @@ describe("quoting forms", () => {
     expect(quotingFormById("DP1")?.label).toBe("DP1");
     expect(quotingFormById("PA")?.label).toBe("Auto");
     expect(quotingFormById("HO8")?.shopLine).toBe("home");
-    expect(quotingFormById("MH")?.label).toBe("MH");
+    expect(quotingFormById("MHO")?.label).toBe("MHO");
+    expect(quotingFormById("MDP")?.label).toBe("MDP");
+    expect(coerceQuotingFormId("MH")).toBe("MHO");
     expect(quotingFormById("MOTORCYCLE")?.label).toBe("Motorcycle");
     expect(quotingFormById("BOAT")?.label).toBe("Boat/Watercraft");
     expect(quotingFormById("CA")?.label).toBe("Commercial Auto");
@@ -61,7 +63,8 @@ describe("quoting forms", () => {
         "HO5",
         "HO6",
         "HO8",
-        "MH",
+        "MHO",
+        "MDP",
         "DP1",
         "DP3",
         "Auto",

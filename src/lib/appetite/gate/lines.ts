@@ -4,7 +4,7 @@
  */
 
 const FAMILY: Record<string, string[]> = {
-  HO: ["HO", "HO3", "HO4", "HO5", "HO6", "HO8", "MH", "HO_MP"],
+  HO: ["HO", "HO3", "HO4", "HO5", "HO6", "HO8", "MH", "MHO", "MDP", "HO_MP"],
   HO3: ["HO3"],
   HO4: ["HO4"],
   HO5: ["HO5"],

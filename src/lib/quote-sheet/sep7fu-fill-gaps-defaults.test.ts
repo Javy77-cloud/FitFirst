@@ -107,15 +107,15 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
 
   it("applies empty-only defaults and normalizes months_occupied picklist", () => {
     expect([...MONTHS_OCCUPIED_OPTIONS]).toEqual([
-      "0 to 3 months",
-      "4 to 8 months",
-      "9 months or more",
+      "0-3 months",
+      "4-8 months",
+      "9+ months",
     ]);
     expect([...USAGE_OPTIONS]).toEqual([
       "Primary",
-      "Secondary",
-      "Seasonal",
       "Rental",
+      "Seasonal",
+      "Secondary",
       "Vacant",
     ]);
     expect([...AUTO_VEHICLE_USAGE_OPTIONS]).toEqual([
@@ -138,10 +138,12 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     expect(AUTO_ANNUAL_MILES_OPTIONS.at(-1)).toBe("25,000+");
 
 
-    expect(normalizeMonthsOccupied("12")).toBe("9 months or more");
-    expect(normalizeMonthsOccupied("8")).toBe("4 to 8 months");
-    expect(normalizeMonthsOccupied("2")).toBe("0 to 3 months");
-    expect(normalizeMonthsOccupied("9-12")).toBe("9 months or more");
+    expect(normalizeMonthsOccupied("12")).toBe("9+ months");
+    expect(normalizeMonthsOccupied("8")).toBe("4-8 months");
+    expect(normalizeMonthsOccupied("2")).toBe("0-3 months");
+    expect(normalizeMonthsOccupied("9-12")).toBe("9+ months");
+    expect(normalizeMonthsOccupied("0 to 3 months")).toBe("0-3 months");
+    expect(normalizeMonthsOccupied("9 months or more")).toBe("9+ months");
     expect(normalizeUsage("tenant occupied")).toBe("Rental");
     expect(normalizeUsage("primary")).toBe("Primary");
 
@@ -167,18 +169,18 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     expect(home.find((f) => f.key === "claims_3yr")).toBeUndefined();
     expect(home.find((f) => f.key === "claims_5yr")).toBeTruthy();
     expect(home.find((f) => f.key === "months_occupied")?.options).toEqual([
-      "0 to 3 months",
-      "4 to 8 months",
-      "9 months or more",
+      "0-3 months",
+      "4-8 months",
+      "9+ months",
     ]);
     expect(home.find((f) => f.key === "occupancy")?.options).toEqual(["Owner", "Tenant"]);
     expect(normalizeOccupancy("Tenant Occupied")).toBe("Tenant");
     expect(normalizeOccupancy("owner occupied")).toBe("Owner");
     expect(home.find((f) => f.key === "usage")?.options).toEqual([
       "Primary",
-      "Secondary",
-      "Seasonal",
       "Rental",
+      "Seasonal",
+      "Secondary",
       "Vacant",
     ]);
     expect(home.find((f) => f.key === "hydrant")?.label).toBe("Distance to hydrant");
@@ -221,9 +223,14 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     ]);
     expect(home.find((f) => f.key === "basement")?.options).toEqual(["yes", "no"]);
     expect(home.find((f) => f.key === "wind_hail_deductible")?.options).toEqual([
+      "500",
       "1000",
       "2000",
       "2500",
+      "5000",
+      "1%",
+      "2%",
+      "5%",
     ]);
     expect(home.find((f) => f.key === "hurricane_deductible")?.options).toEqual([
       "1%",
@@ -231,6 +238,15 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
       "3%",
       "4%",
       "5%",
+      "10%",
+    ]);
+    expect(home.find((f) => f.key === "aop_deductible")?.options).toEqual([
+      "500",
+      "1000",
+      "1500",
+      "2000",
+      "2500",
+      "5000",
     ]);
     expect(source("src/components/deal/quote-sheet-form.tsx")).toMatch(/data-ff-sheet-picklist/);
   });
@@ -249,7 +265,7 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     const applied = applyExtractedToSheet("home", emptySheetValues("home"), [
       { fieldKey: "months_occupied", normalizedValue: "12", sourceLabel: "dec page" },
     ]);
-    expect(applied.values.months_occupied.value).toBe("9 months or more");
+    expect(applied.values.months_occupied.value).toBe("9+ months");
   });
 
   it("synonyms prefer Date Inspected for date_inspected", () => {
