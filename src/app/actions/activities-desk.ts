@@ -10,6 +10,7 @@ import {
   assertRelatedRecord,
   defaultActivityTitle,
   hasRelatedRecord,
+  shouldWriteCommsActivityLog,
 } from "@/lib/lifecycle/activity";
 import { and, eq } from "drizzle-orm";
 import { flashAction } from "@/lib/flash-action";
@@ -103,6 +104,17 @@ export async function logDeskActivity(formData: FormData) {
     notes = notes ? `${notes}\n${line}` : line;
   }
 
+  const dueAt = when(formData, "dueAt");
+  const startAt = when(formData, "startAt") ?? dueAt;
+  const writeLog = shouldWriteCommsActivityLog({ kind, eventType, status, outcome });
+  const isScheduledComms =
+    (kind === "call" || kind === "email" || kind === "sms") &&
+    status === "open" &&
+    Boolean(dueAt || startAt);
+  if ((kind === "call" || kind === "email" || kind === "sms") && !writeLog && !isScheduledComms) {
+    return;
+  }
+
   const [activity] = await db
     .insert(activities)
     .values({
@@ -111,8 +123,8 @@ export async function logDeskActivity(formData: FormData) {
       title,
       notes,
       status,
-      dueAt: when(formData, "dueAt"),
-      startAt: when(formData, "startAt") ?? when(formData, "dueAt"),
+      dueAt,
+      startAt,
       endAt: when(formData, "endAt"),
       assignee: str(formData, "assignee") || null,
       outcome,
@@ -128,21 +140,23 @@ export async function logDeskActivity(formData: FormData) {
     .returning();
 
   const producerName = await resolvePolicyProducerName(related.policyId);
-  await db.insert(activityLogs).values({
-    tenantId: DEFAULT_TENANT_ID,
-    activityId: activity.id,
-    kind,
-    eventType,
-    body: activityLogBody(kind, eventType, title, { durationSeconds, outcome }),
-    contactId: related.contactId,
-    accountId: related.accountId,
-    policyId: related.policyId,
-    dealId: related.dealId,
-    leadId: related.leadId,
-    direction,
-    durationSeconds,
-    producerName,
-  });
+  if (writeLog) {
+    await db.insert(activityLogs).values({
+      tenantId: DEFAULT_TENANT_ID,
+      activityId: activity.id,
+      kind,
+      eventType,
+      body: activityLogBody(kind, eventType, title, { durationSeconds, outcome }),
+      contactId: related.contactId,
+      accountId: related.accountId,
+      policyId: related.policyId,
+      dealId: related.dealId,
+      leadId: related.leadId,
+      direction,
+      durationSeconds,
+      producerName,
+    });
+  }
 
   // In-app popup reminder (task / call / email draft). Always popup — never emails the agent by default.
   const due = activity.dueAt ?? activity.startAt;
@@ -191,6 +205,11 @@ export async function completeDeskActivity(formData: FormData) {
   const outcome = str(formData, "outcome") || activity.outcome;
   const notes = str(formData, "notes") || activity.notes;
   const durationSeconds = optionalInt(formData, "durationSeconds") ?? activity.durationSeconds;
+
+  if (activity.kind === "call") {
+    const close = canCloseCall({ outcome, notes });
+    if (!close.ok) return;
+  }
 
   await db
     .update(activities)

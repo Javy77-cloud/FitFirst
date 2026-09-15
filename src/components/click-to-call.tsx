@@ -1,27 +1,22 @@
-import { pingClickToCall } from "@/app/actions/click-to-call";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { telHref } from "@/lib/desk/contact-actions";
+import { cn } from "@/lib/utils";
 
 export function ClickToCall({
-  entityType,
-  entityId,
   name,
   phone,
 }: {
-  entityType: string;
-  entityId: string;
+  entityType?: string;
+  entityId?: string;
   name: string;
   phone?: string | null;
 }) {
-  if (!phone) return null;
+  const href = telHref(phone);
+  if (!href) return null;
   return (
-    <form action={pingClickToCall} className="inline">
-      <input type="hidden" name="entityType" value={entityType} />
-      <input type="hidden" name="entityId" value={entityId} />
-      <input type="hidden" name="name" value={name} />
-      <input type="hidden" name="phone" value={phone} />
-      <Button type="submit" size="xs" variant="outline">
-        Click-to-call {phone}
-      </Button>
-    </form>
+    <a href={href} className={cn(buttonVariants({ size: "xs", variant: "outline" }))}>
+      Click-to-call {phone}
+      <span className="sr-only"> {name}</span>
+    </a>
   );
 }

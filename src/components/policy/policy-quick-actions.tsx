@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Activity } from "lucide-react";
 import { logDeskActivity } from "@/app/actions/activities-desk";
-import { sendDeskEmail, sendDeskSms } from "@/app/actions/comms";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -136,10 +135,6 @@ function QuickLink({
   label,
   enabled,
   href,
-  policyId,
-  contactId,
-  accountId,
-  notes,
 }: {
   kind: "call";
   label: string;
@@ -151,39 +146,21 @@ function QuickLink({
   notes: string;
 }) {
   return (
-    <form
-      action={async () => {
-        const form = new FormData();
-        form.set("kind", kind);
-        form.set("title", "Phone call");
-        form.set("notes", notes);
-        form.set("body", notes);
-        form.set("direction", "outbound");
-        form.set("policyId", policyId);
-        form.set("allowOrphan", "1");
-        if (contactId) form.set("contactId", contactId);
-        if (accountId) form.set("accountId", accountId);
-        await logDeskActivity(form);
-        if (href && typeof window !== "undefined") window.location.href = href;
+    <button
+      type="button"
+      disabled={!enabled}
+      onClick={() => {
+        if (href) window.location.href = href;
       }}
-      className="block w-full"
+      className={cn(menuBtn, contactActionButtonClass(kind))}
+      style={contactActionButtonStyle(kind)}
     >
-      <button
-        type="submit"
-        disabled={!enabled}
-        className={cn(menuBtn, contactActionButtonClass(kind))}
-        style={contactActionButtonStyle(kind)}
-      >
-        {label}
-      </button>
-    </form>
+      {label}
+    </button>
   );
 }
 
 function SmsQuick({
-  policyId,
-  contactId,
-  accountId,
   phone,
   enabled,
 }: {
@@ -195,36 +172,21 @@ function SmsQuick({
 }) {
   const href = smsHref(phone);
   return (
-    <form
-      action={async () => {
-        const form = new FormData();
-        form.set("direction", "outbound");
-        form.set("body", phone ? `Texted ${phone}` : "Text message logged from policies list.");
-        if (phone) form.set("phone", phone);
-        form.set("policyId", policyId);
-        if (contactId) form.set("contactId", contactId);
-        if (accountId) form.set("accountId", accountId);
-        await sendDeskSms(form);
-        if (href && typeof window !== "undefined") window.location.href = href;
+    <button
+      type="button"
+      disabled={!enabled}
+      onClick={() => {
+        if (href) window.location.href = href;
       }}
-      className="block w-full"
+      className={cn(menuBtn, contactActionButtonClass("sms"))}
+      style={contactActionButtonStyle("sms")}
     >
-      <button
-        type="submit"
-        disabled={!enabled}
-        className={cn(menuBtn, contactActionButtonClass("sms"))}
-        style={contactActionButtonStyle("sms")}
-      >
-        SMS
-      </button>
-    </form>
+      SMS
+    </button>
   );
 }
 
 function EmailQuick({
-  policyId,
-  contactId,
-  accountId,
   email,
   enabled,
 }: {
@@ -236,28 +198,16 @@ function EmailQuick({
 }) {
   const href = mailtoHref(email);
   return (
-    <form
-      action={async () => {
-        const form = new FormData();
-        form.set("subject", "Desk follow-up");
-        form.set("body", email ? `Emailed ${email} from the policies list.` : "Email logged from policies list.");
-        if (email) form.set("toAddress", email);
-        form.set("policyId", policyId);
-        if (contactId) form.set("contactId", contactId);
-        if (accountId) form.set("accountId", accountId);
-        await sendDeskEmail(form);
-        if (href && typeof window !== "undefined") window.location.href = href;
+    <button
+      type="button"
+      disabled={!enabled}
+      onClick={() => {
+        if (href) window.location.href = href;
       }}
-      className="block w-full"
+      className={cn(menuBtn, contactActionButtonClass("email"))}
+      style={contactActionButtonStyle("email")}
     >
-      <button
-        type="submit"
-        disabled={!enabled}
-        className={cn(menuBtn, contactActionButtonClass("email"))}
-        style={contactActionButtonStyle("email")}
-      >
-        Email
-      </button>
-    </form>
+      Email
+    </button>
   );
 }

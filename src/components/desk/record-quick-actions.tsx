@@ -2,7 +2,6 @@
 
 import { createDealOutreach } from "@/app/actions/crm";
 import { logDeskActivity } from "@/app/actions/activities-desk";
-import { sendDeskEmail, sendDeskSms } from "@/app/actions/comms";
 import {
   contactActionButtonClass,
   contactActionButtonStyle,
@@ -85,8 +84,6 @@ function QuickLink({
   label,
   enabled,
   href,
-  related,
-  notes,
 }: {
   kind: "call";
   label: string;
@@ -96,42 +93,24 @@ function QuickLink({
   notes: string;
 }) {
   return (
-    <form
-      action={async () => {
-        const form = new FormData();
-        form.set("kind", kind);
-        form.set("title", "Phone call");
-        form.set("notes", notes);
-        form.set("body", notes);
-        form.set("direction", "outbound");
-        form.set("allowOrphan", "1");
-        if (related.dealId) form.set("dealId", related.dealId);
-        if (related.leadId) form.set("leadId", related.leadId);
-        if (related.contactId) form.set("contactId", related.contactId);
-        if (related.accountId) form.set("accountId", related.accountId);
-        if (related.policyId) form.set("policyId", related.policyId);
-        await logDeskActivity(form);
-        if (href && typeof window !== "undefined") window.location.href = href;
+    <button
+      type="button"
+      disabled={!enabled}
+      onClick={() => {
+        if (href) window.location.href = href;
       }}
-      className="inline"
+      className={cn(
+        "inline-flex h-6 items-center rounded px-2 text-[11px] font-semibold text-white disabled:opacity-40",
+        contactActionButtonClass(kind),
+      )}
+      style={contactActionButtonStyle(kind)}
     >
-      <button
-        type="submit"
-        disabled={!enabled}
-        className={cn(
-          "inline-flex h-6 items-center rounded px-2 text-[11px] font-semibold text-white disabled:opacity-40",
-          contactActionButtonClass(kind),
-        )}
-        style={contactActionButtonStyle(kind)}
-      >
-        {label}
-      </button>
-    </form>
+      {label}
+    </button>
   );
 }
 
 function SmsQuick({
-  related,
   phone,
   enabled,
 }: {
@@ -141,39 +120,24 @@ function SmsQuick({
 }) {
   const href = smsHref(phone);
   return (
-    <form
-      action={async () => {
-        const form = new FormData();
-        form.set("direction", "outbound");
-        form.set("body", phone ? `Texted ${phone}` : "Text message logged from the record.");
-        if (phone) form.set("phone", phone);
-        if (related.dealId) form.set("dealId", related.dealId);
-        if (related.leadId) form.set("leadId", related.leadId);
-        if (related.contactId) form.set("contactId", related.contactId);
-        if (related.accountId) form.set("accountId", related.accountId);
-        if (related.policyId) form.set("policyId", related.policyId);
-        await sendDeskSms(form);
-        if (href && typeof window !== "undefined") window.location.href = href;
+    <button
+      type="button"
+      disabled={!enabled}
+      onClick={() => {
+        if (href) window.location.href = href;
       }}
-      className="inline"
+      className={cn(
+        "inline-flex h-6 items-center rounded px-2 text-[11px] font-semibold text-white disabled:opacity-40",
+        contactActionButtonClass("sms"),
+      )}
+      style={contactActionButtonStyle("sms")}
     >
-      <button
-        type="submit"
-        disabled={!enabled}
-        className={cn(
-          "inline-flex h-6 items-center rounded px-2 text-[11px] font-semibold text-white disabled:opacity-40",
-          contactActionButtonClass("sms"),
-        )}
-        style={contactActionButtonStyle("sms")}
-      >
-        SMS
-      </button>
-    </form>
+      SMS
+    </button>
   );
 }
 
 function EmailQuick({
-  related,
   email,
   enabled,
 }: {
@@ -183,34 +147,20 @@ function EmailQuick({
 }) {
   const href = mailtoHref(email);
   return (
-    <form
-      action={async () => {
-        const form = new FormData();
-        form.set("subject", "Desk follow-up");
-        form.set("body", email ? `Emailed ${email} from the record.` : "Email logged from the record.");
-        if (email) form.set("toAddress", email);
-        if (related.dealId) form.set("dealId", related.dealId);
-        if (related.leadId) form.set("leadId", related.leadId);
-        if (related.contactId) form.set("contactId", related.contactId);
-        if (related.accountId) form.set("accountId", related.accountId);
-        if (related.policyId) form.set("policyId", related.policyId);
-        await sendDeskEmail(form);
-        if (href && typeof window !== "undefined") window.location.href = href;
+    <button
+      type="button"
+      disabled={!enabled}
+      onClick={() => {
+        if (href) window.location.href = href;
       }}
-      className="inline"
+      className={cn(
+        "inline-flex h-6 items-center rounded px-2 text-[11px] font-semibold text-white disabled:opacity-40",
+        contactActionButtonClass("email"),
+      )}
+      style={contactActionButtonStyle("email")}
     >
-      <button
-        type="submit"
-        disabled={!enabled}
-        className={cn(
-          "inline-flex h-6 items-center rounded px-2 text-[11px] font-semibold text-white disabled:opacity-40",
-          contactActionButtonClass("email"),
-        )}
-        style={contactActionButtonStyle("email")}
-      >
-        Email
-      </button>
-    </form>
+      Email
+    </button>
   );
 }
 

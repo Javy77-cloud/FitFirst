@@ -7,6 +7,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { leadFollowUpQueue, leadFollowUpSteps, leadFollowUpTemplates, leads } from "@/lib/db/schema";
 import { writeDeskComms } from "@/lib/desk/write-comms";
+import { shouldWriteCommsActivityLog } from "@/lib/lifecycle/activity";
 import { flashAction } from "@/lib/flash-action";
 import { enqueueOutboundJob } from "@/lib/desk/outbound-queue";
 import {
@@ -260,18 +261,36 @@ export async function logLeadQueueContact(formData: FormData) {
   const leadName = `${lead.lastName}, ${lead.firstName}`;
   const kind = methodRaw === "text" ? "sms" : methodRaw;
   const message = str(formData, "message") || `Logged ${methodRaw} from the Leads queue.`;
+  const outcome = str(formData, "outcome") || null;
+  const sent = str(formData, "sent") === "1" || str(formData, "completed") === "1";
+  const eventType = kind === "call" ? "logged" : "queued";
+  if (
+    !shouldWriteCommsActivityLog({
+      kind,
+      eventType,
+      status: kind === "call" ? "completed" : "open",
+      outcome,
+    }) ||
+    (kind !== "call" && !sent)
+  ) {
+    return followUpResultForLead(leadId, lead.status, lead.followUpTemplateId);
+  }
   const written = await writeDeskComms({
     kind,
     title: `${methodRaw} · ${leadName}`,
     body: `${message}\n\n${outboundStubLabel(methodRaw)}`,
     direction: "outbound",
-    eventType: "logged",
-    status: "completed",
+    eventType,
+    status: kind === "call" ? "completed" : "open",
+    outcome,
     leadId,
     phoneNumber: lead.phone,
     toAddress: methodRaw === "email" ? lead.email : methodRaw === "text" ? lead.phone : null,
     logEmailJob: false,
   });
+  if (!written.activity) {
+    return followUpResultForLead(leadId, lead.status, lead.followUpTemplateId);
+  }
   if (methodRaw === "email" || methodRaw === "text") {
     await enqueueOutboundJob({
       channel: methodRaw === "text" ? "sms" : "email",

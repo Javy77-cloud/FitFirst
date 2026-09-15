@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ActivityRecordPicker } from "@/components/activities/record-picker";
 import type { ActivityRecordHit } from "@/lib/activities/record-picker";
 import { mailtoHref, smsHref, telHref } from "@/lib/desk/contact-actions";
+import { CALL_OUTCOMES } from "@/lib/domain";
 import type { HeaderRecordContext } from "@/lib/desk/header-record";
 import { cn } from "@/lib/utils";
 
@@ -169,7 +170,9 @@ function CallComposer({
     <>
       <DialogHeader>
         <DialogTitle>Call {name}</DialogTitle>
-        <DialogDescription>In-desk dialer. Logs the call on this record. No live trunk.</DialogDescription>
+        <DialogDescription>
+          Opens a dialer. The timeline logs the call only after you save an outcome.
+        </DialogDescription>
       </DialogHeader>
       <ActivityRecordPicker onPick={onPick} />
       <form
@@ -178,7 +181,12 @@ function CallComposer({
           formData.set("title", digits ? `Call · ${digits}` : `Call · ${name}`);
           formData.set("direction", "outbound");
           formData.set("status", "completed");
-          formData.set("notes", digits ? `Dial ${digits} (logged note — no live trunk).` : "Logged call from the desk.");
+          if (!String(formData.get("notes") ?? "").trim()) {
+            formData.set(
+              "notes",
+              digits ? `Dial ${digits}.` : "Call logged from the desk.",
+            );
+          }
           await logDeskActivity(formData);
           onDone();
         }}
@@ -210,6 +218,28 @@ function CallComposer({
           <Button type="button" size="sm" variant="ghost" onClick={() => setDigits("")}>
             Clear
           </Button>
+        </div>
+        <div>
+          <Label className="text-xs">Outcome</Label>
+          <select
+            name="outcome"
+            required
+            defaultValue=""
+            className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+          >
+            <option value="" disabled>
+              Select outcome
+            </option>
+            {CALL_OUTCOMES.map((outcome) => (
+              <option key={outcome} value={outcome}>
+                {outcome.replaceAll("_", " ")}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label className="text-xs">Notes</Label>
+          <Textarea name="notes" className="mt-1 min-h-16" placeholder="What happened on the line" />
         </div>
         <div className="flex flex-wrap gap-2">
           {dial ? (

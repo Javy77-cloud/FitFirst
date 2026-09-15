@@ -287,26 +287,10 @@ export function QuickCommsBoard({
     await afterCarrierComms(label);
   }
 
-  async function callNow() {
-    if (callBusy) return;
+  function callNow() {
+    if (callBusy || !dial) return;
     setCallBusy(true);
-    try {
-      const formData = new FormData();
-      stampRelated(formData);
-      formData.set("kind", "call");
-      formData.set("title", defaultTitle);
-      formData.set("direction", "outbound");
-      formData.set("status", "completed");
-      if (contactPhone) formData.set("phone", contactPhone);
-      formData.set("notes", "Click-to-call from Quick Comms");
-      await logDeskActivity(formData);
-      await afterCarrierComms("Click-To-Call");
-      if (dial) {
-        window.location.href = dial;
-      }
-    } finally {
-      setCallBusy(false);
-    }
+    window.location.href = dial;
   }
 
   return (
@@ -502,15 +486,15 @@ export function QuickCommsBoard({
                   size="sm"
                   className="mt-1 w-full"
                   disabled={!dial || callBusy}
-                  onClick={() => void callNow()}
+                  onClick={() => callNow()}
                 >
-                  {callBusy ? "Logging…" : `Call ${contactName?.trim() || party}`}
+                  {callBusy ? "Opening…" : `Call ${contactName?.trim() || party}`}
                 </Button>
                 {!dial ? (
                   <p className="text-[11px] text-muted-foreground">Add a phone on the contact first.</p>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
-                    Opens the device dialer and logs the call activity.
+                    Opens the device dialer. Log the call after it ends with an outcome.
                   </p>
                 )}
               </>

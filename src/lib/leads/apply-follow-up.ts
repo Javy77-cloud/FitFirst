@@ -394,7 +394,7 @@ async function notifyAgentFollowUpDue(input: {
       eventType: "created",
       logEmailJob: false,
     });
-    activityId = written.activity.id;
+    activityId = written.activity?.id ?? activityId;
   }
   if (input.remindVia === "email" && shouldEmailAgentReminder(input.ownerEmail)) {
     const [job] = await db
@@ -458,7 +458,7 @@ export async function scheduleLeadNurtureReminder(
       eventType: "created",
       logEmailJob: false,
     });
-    activityId = written.activity.id;
+    activityId = written.activity?.id ?? activityId;
   }
   await db.insert(leadFollowUpQueue).values({
     tenantId: DEFAULT_TENANT_ID,

@@ -1,5 +1,6 @@
 import { logDeskActivity } from "@/app/actions/activities-desk";
 import { logInboundEmail, sendDeskEmail, sendDeskSms } from "@/app/actions/comms";
+import { CALL_OUTCOMES } from "@/lib/domain";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -200,6 +201,17 @@ export function RecordComms({
           <div>
             <Label className="text-xs">Title</Label>
             <Input name="title" required className="mt-1 h-8" placeholder="Follow-up" />
+          </div>
+          <div>
+            <Label className="text-xs">Call outcome</Label>
+            <select name="outcome" className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm" defaultValue="">
+              <option value="">Needed to log a call</option>
+              {CALL_OUTCOMES.map((outcome) => (
+                <option key={outcome} value={outcome}>
+                  {outcome.replaceAll("_", " ")}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="sm:col-span-2">
             <Label className="text-xs">Notes</Label>
