@@ -31,16 +31,19 @@ WHERE q."quote_attempt_log_id" = l."id"
   );
 
 -- Notes-based tag when still blank (or home-stamped against a clear Auto / Flood note).
+-- Flood: explicit product cues only (NFIP, Beyond Floods, Flood Flow, notes
+-- starting with Flood, flood form, excess flood). Do NOT treat HO3/homeowners
+-- package-premium wording ("with flood" / "without flood") as flood.
 UPDATE "quotes"
 SET "shop_line" = 'flood'
 WHERE (coalesce("shop_line", '') = '' OR "shop_line" = 'home')
-  AND coalesce("notes", '') ~* '\y(flood|nfip)\y';
+  AND coalesce("notes", '') ~* '(\ynfip\y|beyond[[:space:]]+floods|flood[[:space:]]+flow|flow[[:space:]]+flood|^\s*flood\y|\yflood[[:space:]]+form\y|\yform[[:space:]]+flood\y|excess[[:space:]]+flood)';
 
 UPDATE "quotes"
 SET "shop_line" = 'auto'
 WHERE (coalesce("shop_line", '') = '' OR "shop_line" = 'home')
   AND coalesce("notes", '') ~* '\y(auto|vin|personal auto|\ypa\y|motorcycle|form\s+pa)\y'
-  AND coalesce("notes", '') !~* '\y(flood|nfip)\y';
+  AND coalesce("notes", '') !~* '(\ynfip\y|beyond[[:space:]]+floods|flood[[:space:]]+flow|flow[[:space:]]+flood|^\s*flood\y|\yflood[[:space:]]+form\y|\yform[[:space:]]+flood\y|excess[[:space:]]+flood)';
 
 UPDATE "quotes"
 SET "shop_line" = 'home'
