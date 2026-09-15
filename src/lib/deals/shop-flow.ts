@@ -2,6 +2,11 @@ import { createHash } from "node:crypto";
 import { LOB_TO_SHOP_LINE, SHOP_LINE_TO_LOB, isShopLine, type ShopLine } from "@/lib/domain";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 import type { DealFlowStepId } from "@/lib/deals/product-ui";
+import { dealProductDef, parseDealProduct } from "@/lib/deals/deal-products";
+import {
+  parseProductStages,
+  type DealProductStages,
+} from "@/lib/deals/product-stages";
 
 /** Persisted on deals.shop_flow — last shopped risk snapshot + per-line quote runs. */
 export type DealShopFlowState = {
@@ -9,6 +14,12 @@ export type DealShopFlowState = {
   quotesFingerprint?: string | null;
   /** Active quote-run id per shop line. */
   quoteRuns?: Partial<Record<string, string>>;
+  /** Per-product pipeline stage + selected quote ids (Gloria HO3 ≠ DP3). */
+  productStages?: DealProductStages;
+  /** Per-line Markets/Quotes fingerprints — edit Home does not stale Auto. */
+  lineFingerprints?: Partial<Record<string, { markets?: string | null; quotes?: string | null }>>;
+  /** Carriers requested on the current run, keyed by shop line. */
+  requestScopes?: Partial<Record<string, string[]>>;
 };
 
 /** Empty string means “was complete, now stale — re-run Markets/Quotes”. */
@@ -37,11 +48,31 @@ export function parseShopFlow(raw: unknown): DealShopFlowState {
       if (typeof id === "string" && id.trim()) quoteRuns[line] = id.trim();
     }
   }
+  const lineFingerprints: DealShopFlowState["lineFingerprints"] = {};
+  if (row.lineFingerprints && typeof row.lineFingerprints === "object") {
+    for (const [line, fp] of Object.entries(row.lineFingerprints)) {
+      if (!fp || typeof fp !== "object") continue;
+      lineFingerprints[line] = {
+        markets: typeof fp.markets === "string" ? fp.markets : null,
+        quotes: typeof fp.quotes === "string" ? fp.quotes : null,
+      };
+    }
+  }
+  const requestScopes: Partial<Record<string, string[]>> = {};
+  if (row.requestScopes && typeof row.requestScopes === "object") {
+    for (const [line, ids] of Object.entries(row.requestScopes)) {
+      if (!Array.isArray(ids)) continue;
+      requestScopes[line] = ids.map((id) => String(id ?? "").trim()).filter(Boolean);
+    }
+  }
   return {
     marketsFingerprint:
       typeof row.marketsFingerprint === "string" ? row.marketsFingerprint : null,
     quotesFingerprint: typeof row.quotesFingerprint === "string" ? row.quotesFingerprint : null,
     quoteRuns,
+    productStages: parseProductStages(row.productStages),
+    lineFingerprints,
+    requestScopes,
   };
 }
 
@@ -98,10 +129,27 @@ export function fingerprintsMatch(
 const FLOOD_PRODUCT_NOTE =
   /\bnfip\b|beyond\s+floods|flood\s+flow|flow\s+flood|^\s*flood\b|\bflood\s+form\b|\bform\s+flood\b|excess\s+flood/;
 const HOME_FORM_NOTE = /\bho[34658]\b|\bhomeowners\b|\bdp[13]\b|\bdwelling\b|\bmho\b|\bmdp\b/;
+const LANDLORD_FORM_NOTE = /\bdp[13]\b|\bdwelling\b|\blandlord\b/;
+const HOMEOWNERS_FORM_NOTE = /\bho[3568]\b|\bhomeowners\b|\bmho\b/;
+const RENTERS_FORM_NOTE = /\bho4\b|\brenters\b|\bmdp\b/;
 const INCIDENTAL_FLOOD_COMPARE = /\b(?:with|without)\s+flood\b/;
 
 export function notesLookLikeFloodProduct(notes: string | null | undefined): boolean {
   return FLOOD_PRODUCT_NOTE.test((notes ?? "").toLowerCase());
+}
+
+/** Split HO3 vs DP3 on the shared home shop line (Gloria). */
+export function inferHomeProductFromQuoteNotes(
+  notes: string | null | undefined,
+): "homeowners" | "landlord" | "renters" | null {
+  const blob = (notes ?? "").toLowerCase();
+  if (!blob.trim()) return null;
+  if (RENTERS_FORM_NOTE.test(blob)) return "renters";
+  if (LANDLORD_FORM_NOTE.test(blob) && !HOMEOWNERS_FORM_NOTE.test(blob)) return "landlord";
+  if (HOMEOWNERS_FORM_NOTE.test(blob) && !LANDLORD_FORM_NOTE.test(blob)) return "homeowners";
+  if (LANDLORD_FORM_NOTE.test(blob)) return "landlord";
+  if (HOMEOWNERS_FORM_NOTE.test(blob)) return "homeowners";
+  return null;
 }
 
 export function inferShopLineFromQuoteNotes(notes: string | null | undefined): ShopLine | null {
@@ -167,6 +215,30 @@ export function shopLineToPersist(input: {
   return resolveQuoteShopLine(input);
 }
 
+export function quoteMatchesDealProduct(
+  input: {
+    shopLine?: string | null;
+    quoteAttemptLogId?: string | null;
+    notes?: string | null;
+    logs?: readonly { id: string; lineOfBusiness?: string | null }[] | null;
+  },
+  product: string,
+  opts?: { multiLine?: boolean; isPrimaryLine?: boolean },
+): boolean {
+  const wanted = parseDealProduct(product);
+  if (!wanted) return quoteMatchesShopLine(input, "home", opts);
+  const defShop = dealProductDef(wanted).shopLine;
+  if (defShop !== "home") {
+    return quoteMatchesShopLine(input, defShop, opts);
+  }
+  const fromNotes = inferHomeProductFromQuoteNotes(input.notes);
+  if (fromNotes) return fromNotes === wanted;
+  if (opts?.multiLine && (wanted === "homeowners" || wanted === "landlord" || wanted === "renters")) {
+    return false;
+  }
+  return quoteMatchesShopLine(input, "home", opts);
+}
+
 export function quoteMatchesShopLine(
   input: {
     shopLine?: string | null;
@@ -195,12 +267,15 @@ export function resolveShopFlowCompletion(input: {
   hasQuotes: boolean;
   currentFingerprint: string;
   saved?: DealShopFlowState | null;
+  /** When set, Markets/Quotes use this line’s fingerprint instead of the deal-wide one. */
+  line?: string | null;
 }): ShopFlowCompletion {
   const saved = parseShopFlow(input.saved);
-  const marketsLive =
-    input.hasMarkets && fingerprintsMatch(saved.marketsFingerprint, input.currentFingerprint);
-  const quotesLive =
-    input.hasQuotes && fingerprintsMatch(saved.quotesFingerprint, input.currentFingerprint);
+  const lineFp = input.line ? saved.lineFingerprints?.[input.line] : null;
+  const marketsSaved = lineFp?.markets ?? saved.marketsFingerprint;
+  const quotesSaved = lineFp?.quotes ?? saved.quotesFingerprint;
+  const marketsLive = input.hasMarkets && fingerprintsMatch(marketsSaved, input.currentFingerprint);
+  const quotesLive = input.hasQuotes && fingerprintsMatch(quotesSaved, input.currentFingerprint);
   const completed: DealFlowStepId[] = ["create"];
   if (input.detailsComplete) completed.push("details");
   if (input.documentsComplete) completed.push("documents");
@@ -299,33 +374,108 @@ export function nextShopFlowAfterQuoteRun(input: {
   line: ShopLine;
   fingerprint: string;
   newRunId: string;
+  requestCarrierIds?: readonly string[] | null;
 }): DealShopFlowState {
   const saved = parseShopFlow(input.saved);
   return {
+    ...saved,
     marketsFingerprint: input.fingerprint,
     quotesFingerprint: input.fingerprint,
     quoteRuns: { ...saved.quoteRuns, [input.line]: input.newRunId },
+    lineFingerprints: {
+      ...saved.lineFingerprints,
+      [input.line]: { markets: input.fingerprint, quotes: input.fingerprint },
+    },
+    requestScopes: {
+      ...saved.requestScopes,
+      [input.line]: [...(input.requestCarrierIds ?? [])],
+    },
   };
 }
 
 export function nextShopFlowAfterMarkets(input: {
   saved?: DealShopFlowState | null;
   fingerprint: string;
+  line?: ShopLine | null;
 }): DealShopFlowState {
   const saved = parseShopFlow(input.saved);
-  return {
+  const next: DealShopFlowState = {
     ...saved,
     marketsFingerprint: input.fingerprint,
   };
+  if (input.line) {
+    next.lineFingerprints = {
+      ...saved.lineFingerprints,
+      [input.line]: { ...saved.lineFingerprints?.[input.line], markets: input.fingerprint },
+    };
+  }
+  return next;
 }
 
 export function staleShopFlow(saved?: DealShopFlowState | null): DealShopFlowState {
   const current = parseShopFlow(saved);
+  const lineFingerprints = { ...current.lineFingerprints };
+  for (const line of Object.keys(lineFingerprints)) {
+    lineFingerprints[line] = { markets: STALE_SHOP_FINGERPRINT, quotes: STALE_SHOP_FINGERPRINT };
+  }
   return {
     ...current,
     marketsFingerprint: STALE_SHOP_FINGERPRINT,
     quotesFingerprint: STALE_SHOP_FINGERPRINT,
+    lineFingerprints,
   };
+}
+
+/** Invalidate Markets+Quotes for one shop line after that line’s sheet changes. */
+export function staleShopFlowForLine(
+  saved: DealShopFlowState | null | undefined,
+  line: string,
+): DealShopFlowState {
+  const current = parseShopFlow(saved);
+  return {
+    ...current,
+    lineFingerprints: {
+      ...current.lineFingerprints,
+      [line]: { markets: STALE_SHOP_FINGERPRINT, quotes: STALE_SHOP_FINGERPRINT },
+    },
+  };
+}
+
+export type PriorUnderCarrier<T> = {
+  current: T;
+  prior: T | null;
+  priorLabel: string | null;
+};
+
+/** Pair each current quote with the same carrier’s latest prior run — not three Previous sections. */
+export function attachPriorUnderCarrier<T>(
+  current: readonly T[],
+  previous: readonly QuoteRunGroup<T>[],
+  getCarrierId: (row: T) => string,
+): PriorUnderCarrier<T>[] {
+  const priorByCarrier = new Map<string, { row: T; quotedAt: Date; label: string }>();
+  for (const group of previous) {
+    for (const row of group.rows) {
+      const carrierId = getCarrierId(row);
+      if (!carrierId) continue;
+      const existing = priorByCarrier.get(carrierId);
+      if (!existing || group.quotedAt > existing.quotedAt) {
+        priorByCarrier.set(carrierId, {
+          row,
+          quotedAt: group.quotedAt,
+          label: `Prior · ${formatRunWhen(group.quotedAt)}`,
+        });
+      }
+    }
+  }
+  return current.map((row) => {
+    const prior = priorByCarrier.get(getCarrierId(row));
+    return {
+      current: row,
+      prior: prior?.row ?? null,
+      priorLabel: prior?.label ?? null,
+    };
+  });
 }
 
 export function shopLineLabel(line: ShopLine): string {

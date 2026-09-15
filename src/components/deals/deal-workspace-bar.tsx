@@ -126,25 +126,6 @@ export function DealWorkspaceBar({
             </Link>
           ))}
         </div>
-        {right.length > 0 ? <span className="mx-2 h-6 w-px self-center bg-border" aria-hidden /> : null}
-        <div className={FF_CHIP_TAB_GROUP} data-testid="deal-closed-filters">
-          {right.map((item) => (
-            <Link
-              key={item.slug}
-              href={hrefBuilder({
-                ...extras,
-                pipeline: item.slug,
-                family: null,
-                lifeSub: null,
-                healthSub: null,
-                pcSub: null,
-              })}
-              className={chipClass(item.slug === pipeline)} data-active={item.slug === pipeline ? "true" : "false"}
-            >
-              {pipelineTabLabel(item)}
-            </Link>
-          ))}
-        </div>
         <span className={`ml-auto ${FF_CHIP_TAB_GROUP}`} data-testid="deal-pipeline-views" aria-label="List Grid Board Funnel">
           {VIEWS.map(([id, label]) => (
             <Link
@@ -168,6 +149,35 @@ export function DealWorkspaceBar({
             canEditStages={canEditStages}
           />
         </span>
+        {right.length > 0 ? (
+          <div
+            className="flex items-center gap-2 text-[11px] text-muted-foreground"
+            data-testid="deal-closed-filters"
+            data-ff-deal-closed-quiet=""
+          >
+            {right.map((item) => (
+              <Link
+                key={item.slug}
+                href={hrefBuilder({
+                  ...extras,
+                  pipeline: item.slug,
+                  family: null,
+                  lifeSub: null,
+                  healthSub: null,
+                  pcSub: null,
+                })}
+                className={
+                  item.slug === pipeline
+                    ? "font-semibold text-navy underline-offset-2"
+                    : "hover:text-navy hover:underline"
+                }
+                data-active={item.slug === pipeline ? "true" : "false"}
+              >
+                {pipelineTabLabel(item)}
+              </Link>
+            ))}
+          </div>
+        ) : null}
       </div>
       {subtypeChips.length > 0 ? (
         <div className={FF_CHIP_TAB_GROUP} aria-label="Subtype">

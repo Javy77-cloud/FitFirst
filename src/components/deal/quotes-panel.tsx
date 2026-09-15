@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import type { QuoteFileRow } from "@/components/deal/quote-file-actions";
@@ -10,7 +8,13 @@ import { cn } from "@/lib/utils";
 import { isQuoteFileDoc } from "@/lib/deals/quote-docs";
 import { sortQuotesByRatingThenPremium } from "@/lib/deals/quote-sort";
 import type { LineQuoteCompleteness } from "@/lib/deals/quote-completeness";
-import { groupQuotesByRun, quoteMatchesShopLine, shopLineLabel } from "@/lib/deals/shop-flow";
+import {
+  attachPriorUnderCarrier,
+  groupQuotesByRun,
+  quoteMatchesDealProduct,
+  quoteMatchesShopLine,
+  shopLineLabel,
+} from "@/lib/deals/shop-flow";
 import { isShopLine, type ShopLine } from "@/lib/domain";
 import type { Carrier, Document, DocumentVersion, Quote, QuoteAttemptLog, QuoteNote } from "@/lib/db/schema";
 
@@ -58,46 +62,14 @@ function toQuoteFileRow(doc: Document, versions: DocumentVersion[]): QuoteFileRo
 function MissingQuotesBanner({ completeness }: { completeness: LineQuoteCompleteness | null }) {
   if (!completeness || completeness.complete) return null;
   return (
-    <div
-      className="flex flex-wrap items-start gap-2 rounded-lg border border-fit-flag/40 bg-fit-flag/10 px-3 py-2"
+    <p
+      className="text-[11px] text-fit-flag"
       data-ff-quotes-missing-warning=""
       data-ff-quotes-missing-line={completeness.line}
+      data-ff-quotes-missing-summary=""
     >
-      <span className="rounded-full bg-fit-flag px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-        Missing quotes
-      </span>
-      <p className="min-w-0 flex-1 text-sm text-navy" data-ff-quotes-missing-summary="">
-        {completeness.summary}
-      </p>
-    </div>
-  );
-}
-
-function PreviousQuotesBlock({
-  label,
-  count,
-  children,
-}: {
-  label: string;
-  count: number;
-  children: ReactNode;
-}) {
-  return (
-    <details className="ff-card overflow-hidden" data-ff-quotes-previous="" data-ff-quotes-previous-open="false">
-      <summary
-        className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-left hover:bg-muted/40 [&::-webkit-details-marker]:hidden"
-        data-ff-quotes-previous-toggle=""
-      >
-        <ChevronRight className="size-4 text-primary [[open]_&]:hidden" />
-        <ChevronDown className="hidden size-4 text-primary [[open]_&]:block" />
-        <h3 className="text-sm font-semibold text-navy">{label}</h3>
-        <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground shadow-sm">
-          {count}
-        </span>
-        <span className="text-[11px] text-muted-foreground">Expand to compare</span>
-      </summary>
-      <div className="border-t border-border/70">{children}</div>
-    </details>
+      {completeness.summary}
+    </p>
   );
 }
 
@@ -119,6 +91,9 @@ export function QuotesPanel({
   multiLine = false,
   completeness = null,
   boundQuoteId = null,
+  product = null,
+  selectedQuoteIds = [],
+  sheetStale = false,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -138,21 +113,24 @@ export function QuotesPanel({
   multiLine?: boolean;
   completeness?: LineQuoteCompleteness | null;
   boundQuoteId?: string | null;
+  product?: string | null;
+  selectedQuoteIds?: string[];
+  sheetStale?: boolean;
 }) {
   const activeLine: ShopLine | null = isShopLine(shopLine) ? shopLine : null;
   const lineLogs = logs.map((row) => row.log);
   const scoped = quotes.filter((row) => {
+    const input = {
+      shopLine: row.quote.shopLine,
+      quoteAttemptLogId: row.quote.quoteAttemptLogId,
+      notes: row.quote.notes,
+      logs: lineLogs,
+    };
+    if (product && (product === "homeowners" || product === "landlord" || product === "renters")) {
+      return quoteMatchesDealProduct(input, product, { multiLine, isPrimaryLine: !multiLine });
+    }
     if (!activeLine) return true;
-    return quoteMatchesShopLine(
-      {
-        shopLine: row.quote.shopLine,
-        quoteAttemptLogId: row.quote.quoteAttemptLogId,
-        notes: row.quote.notes,
-        logs: lineLogs,
-      },
-      activeLine,
-      { multiLine, isPrimaryLine: !multiLine },
-    );
+    return quoteMatchesShopLine(input, activeLine, { multiLine, isPrimaryLine: !multiLine });
   });
   const liveQuotes = scoped.filter((row) => !row.quote.stub);
   const sorted = sortQuotesByRatingThenPremium(
@@ -194,6 +172,19 @@ export function QuotesPanel({
     sorted,
     (row) => ({ runId: row.quote.quoteRunId, createdAt: row.quote.createdAt }),
     currentQuoteRunId,
+  );
+  const paired = attachPriorUnderCarrier(
+    grouped.current,
+    grouped.previous,
+    (row) => row.quote.carrierId,
+  );
+  const priorByQuoteId = Object.fromEntries(
+    paired
+      .filter((row) => row.prior)
+      .map((row) => [
+        row.current.quote.id,
+        { quote: row.prior!.quote, carrier: row.prior!.carrier, label: row.priorLabel },
+      ]),
   );
   const lineLabel = activeLine ? shopLineLabel(activeLine) : null;
 
@@ -254,6 +245,10 @@ export function QuotesPanel({
             requestedCoverageA={requestedCoverageA}
             quoteFilesByQuoteId={quoteFilesByQuoteId}
             boundQuoteId={boundQuoteId}
+            selectedQuoteIds={selectedQuoteIds}
+            product={product}
+            sheetStale={sheetStale}
+            priorByQuoteId={priorByQuoteId}
           />
         </section>
       ) : (
@@ -262,27 +257,10 @@ export function QuotesPanel({
             {lineLabel ? `Current ${lineLabel} quotes` : "Current quotes"}
           </h3>
           <p className="text-sm text-muted-foreground">
-            No current quotes yet. Previous runs stay below for compare.
+            No current quotes yet. Prior premiums stay under each carrier after a re-request.
           </p>
         </div>
       )}
-      {grouped.previous.map((group) => (
-        <PreviousQuotesBlock key={group.runId} label={group.label} count={group.rows.length}>
-          <QuotesResultsTable
-            dealId={dealId}
-            rows={group.rows}
-            formId={formId}
-            confirmLogs={confirmLogs}
-            resultByCarrier={resultByCarrier}
-            whyByCarrier={whyByCarrier}
-            lostReasonByCarrier={lostReasonByCarrier}
-            notesByQuote={notesByQuote}
-            requestedCoverageA={requestedCoverageA}
-            quoteFilesByQuoteId={quoteFilesByQuoteId}
-            boundQuoteId={boundQuoteId}
-          />
-        </PreviousQuotesBlock>
-      ))}
     </div>
   );
 }

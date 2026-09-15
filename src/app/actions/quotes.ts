@@ -6,7 +6,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { matchCarrier, rankFits, riskFromRecord } from "@/lib/appetite/match";
 import { toAppetiteInput } from "@/lib/appetite/rule-input";
 import { portalFor } from "@/lib/appetite/portals";
-import { appointmentLine, DEFAULT_TENANT_ID, type PriorAttempt } from "@/lib/domain";
+import { appointmentLine, DEFAULT_TENANT_ID, writesDealLine, type PriorAttempt } from "@/lib/domain";
 import { resolveShopLineAndLob } from "@/lib/deals/package-lines";
 import { db } from "@/lib/db";
 import { appointedByCarrierLine } from "@/lib/db/queries";
@@ -17,6 +17,7 @@ import {
   pipelines,
   quoteAttemptLogs,
   quoteNotes,
+  quoteSheets,
   quotes,
   risks,
 } from "@/lib/db/schema";
@@ -33,7 +34,7 @@ import {
 import { moveDealToStage } from "@/app/actions/pipeline";
 import { applySavedSheetToDeal } from "@/app/actions/quote-sheet";
 import { attachFinalizedQuotePdfs } from "@/lib/lifecycle/hooks";
-import { isMatchPriorResult, quotingUnlockedForDeal } from "@/lib/quoting/forms";
+import { isMatchPriorResult, quotingUnlockedForLine } from "@/lib/quoting/forms";
 import {
   EXPLICIT_MARKET_ACTION_MARKER,
   MANUAL_MARKET_MARKER,
@@ -52,6 +53,8 @@ import {
   parseShopFlow,
   quoteMatchesShopLine,
 } from "@/lib/deals/shop-flow";
+import { parseDealProduct } from "@/lib/deals/deal-products";
+import { parseProductStages, setProductStage } from "@/lib/deals/product-stages";
 import { flashAction } from "@/lib/flash-action";
 import {
   BIND_RECHECK_CLEAR_PATCH,
@@ -99,7 +102,11 @@ export async function shopInAppetite(dealId: string) {
 async function persistShopFlowAfterQuoteRequest(
   dealId: string,
   line: ReturnType<typeof resolveShopLineAndLob>["line"],
-  opts: { archiveCurrent: boolean; logs: { id: string; lineOfBusiness?: string | null }[] },
+  opts: {
+    archiveCurrent: boolean;
+    logs: { id: string; lineOfBusiness?: string | null }[];
+    requestCarrierIds?: string[];
+  },
 ) {
   const fingerprint = await loadDealRiskFingerprint(dealId);
   const [deal] = await db.select({ shopFlow: deals.shopFlow }).from(deals).where(eq(deals.id, dealId));
@@ -148,7 +155,13 @@ async function persistShopFlowAfterQuoteRequest(
 
   await persistDealShopFlow(
     dealId,
-    nextShopFlowAfterQuoteRun({ saved, line, fingerprint, newRunId: runId }),
+    nextShopFlowAfterQuoteRun({
+      saved,
+      line,
+      fingerprint,
+      newRunId: runId,
+      requestCarrierIds: opts.requestCarrierIds,
+    }),
   );
 }
 
@@ -156,10 +169,12 @@ async function archiveLineQuotesForNewRun(input: {
   dealId: string;
   line: ReturnType<typeof resolveShopLineAndLob>["line"];
   logs: { id: string; lineOfBusiness?: string | null }[];
+  requestCarrierIds?: string[];
 }) {
   await persistShopFlowAfterQuoteRequest(input.dealId, input.line, {
     archiveCurrent: true,
     logs: input.logs,
+    requestCarrierIds: input.requestCarrierIds,
   });
 }
 
@@ -180,7 +195,17 @@ export async function shopDealQuotes(
   }
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
   if (!deal || !risk) throw new Error("Deal or master risk is missing");
-  if (!quotingUnlockedForDeal(deal)) {
+  const [lineSheet] = await db
+    .select({ quotingUnlocked: quoteSheets.quotingUnlocked, approvedAt: quoteSheets.approvedAt })
+    .from(quoteSheets)
+    .where(
+      and(
+        eq(quoteSheets.tenantId, DEFAULT_TENANT_ID),
+        eq(quoteSheets.dealId, dealId),
+        eq(quoteSheets.line, resolved.line),
+      ),
+    );
+  if (!quotingUnlockedForLine({ deal, sheet: lineSheet })) {
     throw new Error("Approve the master sheet before shopping markets.");
   }
 
@@ -229,8 +254,11 @@ export async function shopDealQuotes(
       snapCoverageA: log.snapCoverageA,
     }));
 
+  const lineRules = rules.filter(({ carrier }) =>
+    writesDealLine(carrier.writtenLines ?? [], resolved.lob),
+  );
   const matches = rankFits(
-    rules.map(({ rule, carrier }) => {
+    lineRules.map(({ rule, carrier }) => {
       const line = appointmentLine(rule.lineOfBusiness);
       const key = `${carrier.id}:${line}`;
       const appointed = appointedMap.has(key) ? appointedMap.get(key)! : null;
@@ -258,6 +286,7 @@ export async function shopDealQuotes(
       dealId,
       line: resolved.line,
       logs: dealLogs,
+      requestCarrierIds: selectedCarrierIds,
     });
   } else {
     const existing = await db.select().from(quotes).where(eq(quotes.dealId, dealId));
@@ -314,11 +343,6 @@ export async function shopDealQuotes(
       logs: dealLogs,
     });
   }
-
-  await db
-    .update(deals)
-    .set({ pipelineStage: "quoting", updatedAt: new Date() })
-    .where(eq(deals.id, dealId));
 
   await attachFinalizedQuotePdfs(dealId);
 
@@ -434,11 +458,51 @@ export async function saveQuoteAgentRatingAction(formData: FormData) {
 }
 
 
-async function syncDealPipelineFromQuoteStatus(dealId: string, agentStatus: AgentStatus) {
+async function syncDealPipelineFromQuoteStatus(
+  dealId: string,
+  agentStatus: AgentStatus,
+  quoteId?: string,
+) {
   const stageSlug = pipelineSlugForAgentStatus(agentStatus);
   if (!stageSlug) return;
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) return;
+  const quoteRow = quoteId
+    ? await db
+        .select({ notes: quotes.notes, shopLine: quotes.shopLine })
+        .from(quotes)
+        .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId)))
+        .then((rows) => rows[0] ?? null)
+    : null;
+  const product =
+    parseDealProduct(quoteRow?.shopLine ?? "") ||
+    parseDealProduct(quoteRow?.notes ?? "") ||
+    parseDealProduct(
+      String(
+        (deal as { shopProducts?: string[] | null }).shopProducts?.[0] ??
+          deal.quotingForm ??
+          deal.quotingLine ??
+          "",
+      ),
+    );
+  if (product && quoteId) {
+    const saved = parseShopFlow(deal.shopFlow);
+    const stages = parseProductStages(saved.productStages);
+    const current = stages[product];
+    const selected = new Set(current?.selectedQuoteIds ?? []);
+    selected.add(quoteId);
+    await persistDealShopFlow(dealId, {
+      ...saved,
+      productStages: setProductStage(stages, product, {
+        stage: stageSlug,
+        selectedQuoteIds: [...selected],
+      }),
+    });
+    const multi = Array.isArray((deal as { shopProducts?: string[] | null }).shopProducts)
+      ? ((deal as { shopProducts: string[] }).shopProducts.length > 1)
+      : Array.isArray(deal.shopLines) && deal.shopLines.length > 1;
+    if (multi) return;
+  }
   let pipelineSlug = "p-c";
   if (deal.pipelineId) {
     const [board] = await db
@@ -474,7 +538,7 @@ export async function saveQuoteAgentStatusAction(formData: FormData) {
     })
     .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId)));
 
-  await syncDealPipelineFromQuoteStatus(dealId, agentStatus);
+  await syncDealPipelineFromQuoteStatus(dealId, agentStatus, quoteId);
 
   if (agentStatus === "dead" && reasonForNo) {
     await db.insert(quoteAttemptLogs).values({
@@ -510,7 +574,7 @@ export async function saveQuoteReasonForNoAction(formData: FormData) {
     .update(quotes)
     .set({ agentStatus: "dead", reasonForNo: reasonRaw })
     .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId)));
-  await syncDealPipelineFromQuoteStatus(dealId, "dead");
+  await syncDealPipelineFromQuoteStatus(dealId, "dead", quoteId);
   await db.insert(quoteAttemptLogs).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId,

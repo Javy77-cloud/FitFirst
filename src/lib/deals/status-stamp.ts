@@ -54,6 +54,7 @@ export function isBoundQuote(input: {
 
 export function pickBoundQuoteId(input: {
   dealBound?: boolean;
+  selectedQuoteIds?: readonly string[] | null;
   quotes: readonly {
     id: string;
     bindable?: boolean | null;
@@ -62,9 +63,11 @@ export function pickBoundQuoteId(input: {
   }[];
 }): string | null {
   const live = input.quotes.filter((row) => row.stub !== true);
+  const liveIds = new Set(live.map((row) => row.id));
+  const selected = (input.selectedQuoteIds ?? []).filter((id) => liveIds.has(id));
+  if (selected[0]) return selected[0]!;
   const marked = live.find((row) => (row.agentStatus ?? "").toLowerCase() === "bound");
   if (marked) return marked.id;
-  if (!input.dealBound) return null;
-  // Only pin a live quote. Stub rows are hidden on Quotes and must not fake BOUND.
-  return live.find((row) => row.bindable)?.id ?? live[0]?.id ?? null;
+  // Never auto-bind the cheapest bindable. Late stages require an explicit pick.
+  return null;
 }

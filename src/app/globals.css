@@ -1096,31 +1096,45 @@ a[data-ff-carrier-portal-status="connected"]:hover {
 }
 
 .ff-deal-status-stamp {
-  position: sticky;
-  top: 28vh;
-  z-index: 30;
+  position: absolute;
+  top: 4.5rem;
+  left: 50%;
+  z-index: 8;
   display: flex;
-  height: 0;
+  width: max-content;
+  max-width: min(22rem, calc(100vw - 2rem));
   justify-content: center;
   overflow: visible;
   pointer-events: none;
+  transform: translateX(-50%);
 }
 
 .ff-deal-status-stamp-ink {
-  display: inline-block;
-  margin-top: 2.5rem;
-  border: 5px solid currentColor;
-  border-radius: 8px;
-  padding: 0.55rem 1rem;
-  font-size: 1.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 4.25rem;
+  min-width: 13.5rem;
+  padding: 0.85rem 1.35rem;
+  border: 7px solid currentColor;
+  border-radius: 6px;
+  font-family: "Palatino Linotype", Palatino, "Book Antiqua", "Times New Roman", serif;
+  font-size: 2.15rem;
   font-weight: 800;
-  letter-spacing: 0.16em;
-  line-height: 1;
+  letter-spacing: 0.1em;
+  line-height: 1.05;
+  text-align: center;
   text-transform: uppercase;
-  background: color-mix(in srgb, currentColor 10%, #fffcf7 70%);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in srgb, #f3e6c6 88%, currentColor 12%) 0 2px,
+      color-mix(in srgb, #fff8e8 82%, currentColor 8%) 2px 4px
+    );
   box-shadow:
-    0 0 0 4px color-mix(in srgb, currentColor 22%, transparent),
-    inset 0 0 0 1px color-mix(in srgb, currentColor 30%, transparent);
+    0 0 0 3px color-mix(in srgb, currentColor 28%, transparent),
+    inset 0 0 0 2px color-mix(in srgb, currentColor 35%, #fff8e8),
+    0 10px 18px color-mix(in srgb, #3d2a10 18%, transparent);
   animation: ff-stamp-ink-hit 0.62s cubic-bezier(0.2, 0.85, 0.25, 1) both;
 }
 

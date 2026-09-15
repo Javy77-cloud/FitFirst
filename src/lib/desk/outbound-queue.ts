@@ -50,6 +50,7 @@ export type EnqueueOutboundInput = {
   activityId?: string | null;
   emailOptOut?: boolean | null;
   smsOptOut?: boolean | null;
+  attachmentIds?: string[] | null;
 };
 
 export async function enqueueOutboundJob(input: EnqueueOutboundInput) {
@@ -79,6 +80,7 @@ export async function enqueueOutboundJob(input: EnqueueOutboundInput) {
       holdReason: decision.holdReason,
       vendor: null,
       scheduledFor: now,
+      attachmentIds: (input.attachmentIds ?? []).map((id) => String(id).trim()).filter(Boolean),
     })
     .returning();
   return { job, decision };

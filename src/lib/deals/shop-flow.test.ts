@@ -7,12 +7,15 @@ import { QuotesPanel } from "@/components/deal/quotes-panel";
 import type { Carrier, Quote } from "@/lib/db/schema";
 import {
   STALE_SHOP_FINGERPRINT,
+  attachPriorUnderCarrier,
   fingerprintsMatch,
   groupQuotesByRun,
+  inferHomeProductFromQuoteNotes,
   inferShopLineFromQuoteNotes,
   nextShopFlowAfterQuoteRun,
   notesLookLikeFloodProduct,
   parseShopFlow,
+  quoteMatchesDealProduct,
   quoteMatchesShopLine,
   resolveQuoteShopLine,
   resolveShopFlowCompletion,
@@ -20,6 +23,7 @@ import {
   sheetValuesFingerprint,
   shopLineToPersist,
   staleShopFlow,
+  staleShopFlowForLine,
 } from "./shop-flow";
 
 const homeSheet = {
@@ -317,6 +321,82 @@ describe("line-scoped quotes", () => {
   });
 });
 
+describe("prior under carrier + line-scoped stale", () => {
+  it("pairs the latest prior run under the current carrier row", () => {
+    const grouped = groupQuotesByRun(
+      [
+        { id: "old", carrierId: "c1", runId: "run-1", createdAt: new Date("2026-08-01T12:00:00Z") },
+        { id: "cur", carrierId: "c1", runId: "run-2", createdAt: new Date("2026-09-15T12:00:00Z") },
+        { id: "other", carrierId: "c2", runId: "run-2", createdAt: new Date("2026-09-15T12:00:00Z") },
+      ],
+      (row) => ({ runId: row.runId, createdAt: row.createdAt }),
+      "run-2",
+    );
+    const paired = attachPriorUnderCarrier(grouped.current, grouped.previous, (row) => row.carrierId);
+    expect(paired).toHaveLength(2);
+    expect(paired.find((row) => row.current.id === "cur")?.prior?.id).toBe("old");
+    expect(paired.find((row) => row.current.id === "cur")?.priorLabel).toMatch(/^Prior ·/);
+    expect(paired.find((row) => row.current.id === "other")?.prior).toBeNull();
+  });
+
+  it("stales one shop line without wiping the others", () => {
+    const next = staleShopFlowForLine(
+      {
+        lineFingerprints: { home: { markets: "h", quotes: "h" }, auto: { markets: "a", quotes: "a" } },
+        marketsFingerprint: "deal",
+        quotesFingerprint: "deal",
+      },
+      "home",
+    );
+    expect(next.lineFingerprints?.home).toEqual({
+      markets: STALE_SHOP_FINGERPRINT,
+      quotes: STALE_SHOP_FINGERPRINT,
+    });
+    expect(next.lineFingerprints?.auto).toEqual({ markets: "a", quotes: "a" });
+    expect(
+      resolveShopFlowCompletion({
+        detailsComplete: true,
+        documentsComplete: true,
+        hasMarkets: true,
+        hasQuotes: true,
+        currentFingerprint: "h",
+        saved: next,
+        line: "home",
+      }).isComplete("quotes"),
+    ).toBe(false);
+    expect(
+      resolveShopFlowCompletion({
+        detailsComplete: true,
+        documentsComplete: true,
+        hasMarkets: true,
+        hasQuotes: true,
+        currentFingerprint: "a",
+        saved: next,
+        line: "auto",
+      }).isComplete("quotes"),
+    ).toBe(true);
+  });
+
+  it("splits HO3 vs DP3 on the shared home shop line", () => {
+    expect(inferHomeProductFromQuoteNotes("HO3 bindable Citizens")).toBe("homeowners");
+    expect(inferHomeProductFromQuoteNotes("DP3 landlord dwelling")).toBe("landlord");
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "HO3 bindable", logs: [] },
+        "landlord",
+        { multiLine: true },
+      ),
+    ).toBe(false);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "HO3 bindable", logs: [] },
+        "homeowners",
+        { multiLine: true },
+      ),
+    ).toBe(true);
+  });
+});
+
 describe("previous quotes stay, current run is primary", () => {
   it("collapses earlier runs under Previous quotes and keeps the current set expanded", () => {
     const rows = [
@@ -379,7 +459,10 @@ describe("deal page + action wiring", () => {
       /markShopFlowStaleAfterRiskChange/,
     );
     expect(readFileSync("src/lib/deals/shop-flow-persist.ts", "utf8")).toMatch(
-      /clearBindRecheckAcks\(dealId\)/,
+      /clearBindRecheckAcks\(dealId/,
+    );
+    expect(readFileSync("src/lib/deals/shop-flow-persist.ts", "utf8")).toMatch(
+      /sheet_invalidated/,
     );
   });
 });
@@ -425,7 +508,7 @@ describe("Quotes panel line + previous chrome", () => {
     } as Quote;
   }
 
-  it("shows only the active line and collapses previous runs", () => {
+  it("shows only the active line and tucks prior premium under the carrier", () => {
     const html = renderToString(
       createElement(QuotesPanel, {
         dealId: "deal-1",
@@ -462,8 +545,9 @@ describe("Quotes panel line + previous chrome", () => {
     expect(html).toMatch(/data-ff-quotes-current=""/);
     expect(html).toMatch(/data-ff-quote-row="cur"/);
     expect(html).not.toMatch(/data-ff-quote-row="auto-cur"/);
-    expect(html).toMatch(/data-ff-quotes-previous=""/);
-    expect(html).toMatch(/Previous quotes/);
-    expect(html).toMatch(/data-ff-quotes-previous-open="false"/);
+    expect(html).toMatch(/data-ff-quote-prior="cur"/);
+    expect(html).toMatch(/Prior ·/);
+    expect(html).not.toMatch(/data-ff-quotes-previous=/);
+    expect(html).not.toMatch(/Previous quotes ·/);
   });
 });

@@ -1,0 +1,190 @@
+import {
+  dealProductDef,
+  isDealProductId,
+  parseDealProduct,
+  type DealProductId,
+} from "@/lib/deals/deal-products";
+import { resolveDealStampStage, type DealStampStage } from "@/lib/deals/status-stamp";
+
+/** Stages that stamp the product and must name the quote(s) first. */
+export const LATE_PRODUCT_STAGES = [
+  "quote_sent",
+  "bound",
+  "pending_inspection",
+  "closed_won",
+] as const;
+export type LateProductStage = (typeof LATE_PRODUCT_STAGES)[number];
+
+/** Captain closed-lost reasons — product-level, not a carrier decline. */
+export const PRODUCT_LOST_REASONS = [
+  "current_coverage_better",
+  "no_better_offer",
+  "price",
+  "timing",
+  "no_response",
+  "bound_elsewhere",
+  "other",
+] as const;
+export type ProductLostReason = (typeof PRODUCT_LOST_REASONS)[number];
+
+export const PRODUCT_LOST_REASON_LABELS: Record<ProductLostReason, string> = {
+  current_coverage_better: "Current coverage better",
+  no_better_offer: "No better offer",
+  price: "Premium too high",
+  timing: "Timing / not ready",
+  no_response: "No response",
+  bound_elsewhere: "Bound with competitor",
+  other: "Other",
+};
+
+export type DealProductStageState = {
+  stage: string;
+  selectedQuoteIds: string[];
+  lostReason?: string | null;
+};
+
+export type DealProductStages = Partial<Record<string, DealProductStageState>>;
+
+const LATE_SET = new Set<string>(LATE_PRODUCT_STAGES);
+
+export function isLateProductStage(stage?: string | null): stage is LateProductStage {
+  const key = normalizeStageSlug(stage);
+  return Boolean(key && LATE_SET.has(key));
+}
+
+export function normalizeStageSlug(stage?: string | null): string {
+  return (stage ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[/·]+/g, " ")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+export function isProductLostReason(value: string | null | undefined): value is ProductLostReason {
+  return Boolean(value && (PRODUCT_LOST_REASONS as readonly string[]).includes(value));
+}
+
+export function parseProductStages(raw: unknown): DealProductStages {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: DealProductStages = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!isDealProductId(key) && !parseDealProduct(key)) continue;
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    const row = value as { stage?: unknown; selectedQuoteIds?: unknown; lostReason?: unknown };
+    const stage = typeof row.stage === "string" ? normalizeStageSlug(row.stage) : "";
+    const selectedQuoteIds = Array.isArray(row.selectedQuoteIds)
+      ? row.selectedQuoteIds.map((id) => String(id ?? "").trim()).filter(Boolean)
+      : [];
+    const lostReason =
+      typeof row.lostReason === "string" && row.lostReason.trim() ? row.lostReason.trim() : null;
+    if (!stage && !selectedQuoteIds.length && !lostReason) continue;
+    out[key] = { stage: stage || "gather", selectedQuoteIds, lostReason };
+  }
+  return out;
+}
+
+export function productStageFor(
+  stages: DealProductStages | null | undefined,
+  product: DealProductId,
+  fallbackStage?: string | null,
+): DealProductStageState {
+  const stored = stages?.[product];
+  if (stored) {
+    return {
+      stage: stored.stage || normalizeStageSlug(fallbackStage) || "gather",
+      selectedQuoteIds: stored.selectedQuoteIds ?? [],
+      lostReason: stored.lostReason ?? null,
+    };
+  }
+  return {
+    stage: normalizeStageSlug(fallbackStage) || "gather",
+    selectedQuoteIds: [],
+    lostReason: null,
+  };
+}
+
+export function setProductStage(
+  stages: DealProductStages | null | undefined,
+  product: DealProductId,
+  patch: Partial<DealProductStageState>,
+): DealProductStages {
+  const current = productStageFor(stages, product);
+  const next: DealProductStageState = {
+    stage: patch.stage != null ? normalizeStageSlug(patch.stage) || current.stage : current.stage,
+    selectedQuoteIds: patch.selectedQuoteIds ?? current.selectedQuoteIds,
+    lostReason:
+      patch.lostReason === undefined ? current.lostReason : patch.lostReason,
+  };
+  if (normalizeStageSlug(next.stage) !== "closed_lost") {
+    next.lostReason = next.lostReason ?? null;
+  }
+  return { ...stages, [product]: next };
+}
+
+export function lateStageNeedsQuoteSelection(input: {
+  stage?: string | null;
+  selectedQuoteIds?: readonly string[] | null;
+}): boolean {
+  if (!isLateProductStage(input.stage)) return false;
+  return (input.selectedQuoteIds ?? []).filter(Boolean).length === 0;
+}
+
+export function selectedQuoteHighlightId(input: {
+  selectedQuoteIds?: readonly string[] | null;
+  boundQuoteId?: string | null;
+  stage?: string | null;
+}): string | null {
+  const selected = (input.selectedQuoteIds ?? []).map((id) => id.trim()).filter(Boolean);
+  if (selected[0]) return selected[0]!;
+  if (input.boundQuoteId) return input.boundQuoteId;
+  return null;
+}
+
+export function isSelectedQuote(
+  quoteId: string,
+  selectedQuoteIds?: readonly string[] | null,
+): boolean {
+  return (selectedQuoteIds ?? []).includes(quoteId);
+}
+
+/** HO3 / DP3 / PA when the form is known — not generic Home / Landlord. */
+export function productChipLabel(input: {
+  product: DealProductId;
+  quotingForm?: string | null;
+  sheetForm?: string | null;
+}): string {
+  const def = dealProductDef(input.product);
+  const form = (input.sheetForm || input.quotingForm || def.quotingForm || "").trim();
+  if (input.product === "homeowners") {
+    if (/^ho[3568]$/i.test(form) || /^mho$/i.test(form)) return form.toUpperCase();
+    return form && form !== "Homeowners" ? form : "HO3";
+  }
+  if (input.product === "landlord") {
+    if (/^dp[13]$/i.test(form)) return form.toUpperCase();
+    return form && !/landlord/i.test(form) ? form : "DP3";
+  }
+  if (input.product === "renters") return /^ho4$/i.test(form) ? "HO4" : form || "HO4";
+  if (input.product === "auto") return /^pa$/i.test(form) ? "PA" : form || "Auto";
+  if (input.product === "flood") return "Flood";
+  return form || def.label;
+}
+
+export function productStampStage(
+  productState: DealProductStageState | null | undefined,
+  fallbackStage?: string | null,
+  boundAt?: Date | string | null,
+): DealStampStage | null {
+  return resolveDealStampStage(productState?.stage ?? fallbackStage, fallbackStage, boundAt);
+}
+
+/**
+ * Ready = this product has its quotes in — not “sheet has any cell”.
+ * Shared home sheets used to mark HO3 + DP3 + Flood ready together.
+ */
+export function productReadyFromQuotes(input: {
+  complete?: boolean | null;
+  shopped?: boolean | null;
+}): boolean {
+  return Boolean(input.complete);
+}

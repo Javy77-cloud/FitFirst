@@ -36,6 +36,8 @@ describe("deal status stamp", () => {
     expect(css).toMatch(/ff-stamp-ink-hit/);
     expect(css).toMatch(/prefers-reduced-motion/);
     expect(css).toMatch(/pointer-events:\s*none/);
+    expect(css).toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: absolute;/);
+    expect(css).not.toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: sticky;/);
   });
 
   it("picks the real bound quote — does not invent one on an unbound deal", () => {
@@ -60,6 +62,16 @@ describe("deal status stamp", () => {
     expect(
       pickBoundQuoteId({
         dealBound: true,
+        quotes: [
+          { id: "stub", bindable: true, agentStatus: "new", stub: true },
+          { id: "live", bindable: true, agentStatus: "new", stub: false },
+        ],
+      }),
+    ).toBeNull();
+    expect(
+      pickBoundQuoteId({
+        dealBound: true,
+        selectedQuoteIds: ["live"],
         quotes: [
           { id: "stub", bindable: true, agentStatus: "new", stub: true },
           { id: "live", bindable: true, agentStatus: "new", stub: false },

@@ -74,6 +74,10 @@ export async function sendDeskEmail(formData: FormData) {
     ...ids,
   });
   if (!written.activity) return;
+  const attachmentIds = formData
+    .getAll("attachDoc")
+    .map((value) => String(value ?? "").trim())
+    .filter(Boolean);
   const { job, decision } = await enqueueOutboundJob({
     channel: "email",
     toAddress,
@@ -81,6 +85,7 @@ export async function sendDeskEmail(formData: FormData) {
     subject: subject || "Email",
     body,
     activityId: written.activity.id,
+    attachmentIds,
     ...ids,
     ...optOuts,
   });

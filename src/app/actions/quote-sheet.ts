@@ -200,7 +200,7 @@ export async function persistQuoteSheetValues(
   await syncRiskFromSheet(dealId, values, "save");
   await syncHeaderFromSheet(dealId, values, "save");
   if (sheetValuesFingerprint(sheet.values) !== sheetValuesFingerprint(values)) {
-    await markShopFlowStaleAfterRiskChange(dealId);
+    await markShopFlowStaleAfterRiskChange(dealId, line);
   }
   return values;
 }

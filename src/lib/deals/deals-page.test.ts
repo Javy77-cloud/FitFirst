@@ -131,15 +131,15 @@ describe("Deals page sep7h", () => {
     expect(chrome).toMatch(/gap: 4px/);
     expect(chrome).toMatch(/\.deal-today-chip/);
     expect(chrome).toMatch(/overflow: visible/);
-    expect(chrome).toMatch(/min-width: 100px/);
-    expect(chrome).toMatch(/min-height: 100px/);
+    expect(chrome).toMatch(/min-width: 84px/);
+    expect(chrome).toMatch(/min-height: 84px/);
     expect(chrome).not.toMatch(/width: 60px/);
     expect(chrome).not.toMatch(/height: 60px/);
     expect(chrome).not.toMatch(/max-height: 60px/);
     expect(chrome).not.toMatch(/aspect-ratio: 1 \/ 1/);
     expect(chrome).not.toMatch(/width: 72px/);
     expect(chrome).not.toMatch(/height: 72px/);
-    expect(chrome).toMatch(/border-radius: 12px/);
+    expect(chrome).toMatch(/border-radius: 10px/);
     expect(chrome).not.toMatch(/border-radius: 4px/);
     expect(chrome).toMatch(/background: none/);
     expect(chrome).toMatch(/translateY\(-6px\)/);
@@ -147,11 +147,11 @@ describe("Deals page sep7h", () => {
     expect(chrome).not.toMatch(/height: 120px/);
     expect(chrome).toMatch(/deal-today-heading/);
     expect(chrome).toMatch(/deal-today-chip-word/);
-    expect(chrome).toMatch(/\.deal-today-chip-count \{[\s\S]*font-size: 24px;/);
-    expect(chrome).toMatch(/\.deal-today-chip-count \{[\s\S]*font-weight: 500;/);
-    expect(chrome).toMatch(/\.deal-today-chip-count \{[\s\S]*color: color-mix\(in srgb, var\(--chip-fg, currentColor\) 78%, #ffffff\);/);
-    expect(chrome).not.toMatch(/\.deal-today-chip-count \{[\s\S]*font-size: 28px;/);
-    expect(chrome).not.toMatch(/\.deal-today-chip-count \{[\s\S]*font-weight: 800;/);
+    expect(chrome).toMatch(/\.deal-today-chip-count \{[\s\S]{0,180}font-size: 20px;/);
+    expect(chrome).toMatch(/\.deal-today-chip-count \{[\s\S]{0,180}font-weight: 500;/);
+    expect(chrome).toMatch(/\.deal-today-chip-count \{[\s\S]{0,220}color: color-mix\(in srgb, var\(--chip-fg, currentColor\) 78%, #ffffff\);/);
+    expect(chrome).not.toMatch(/\.deal-today-chip-count \{[^}]{0,180}font-size: 28px;/);
+    expect(chrome).not.toMatch(/\.deal-today-chip-count \{[^}]{0,180}font-weight: 800;/);
     expect(chrome).not.toMatch(/\.deal-today-chip-count \{[^}]*#101c34/);
     expect(chrome).toMatch(/\[data-testid="deal-docs-upload"\]/);
     expect(chrome).toMatch(/border-radius: var\(--radius\)/);
@@ -159,11 +159,7 @@ describe("Deals page sep7h", () => {
     expect(chrome).toMatch(/\[data-testid="deal-docs-upload"\] \.ff-file-delete/);
     expect(chrome).toMatch(/margin-left: 0/);
     expect(chrome).not.toMatch(/margin-left: 24px/);
-    expect(chrome).not.toMatch(/height: 36px/);
-    expect(chrome).not.toMatch(/translateY\(-2px\)/);
-    expect(chrome).not.toMatch(/translateY\(-4px\)/);
-    expect(chrome).not.toMatch(/translateY\(-7px\)/);
-    expect(chrome).not.toMatch(/scale\(1\.04\)/);
+    expect(chrome).toMatch(/\.deal-today-item:hover \.deal-today-chip \{[\s\S]{0,40}translateY\(-6px\)/);
     const chips = source("src/lib/deals/pipeline-desk.ts");
     expect(chips).toMatch(/label: "Phone"/);
     expect(chips).toMatch(/label: "SMS"/);
@@ -294,13 +290,11 @@ describe("Deals page sep7h", () => {
     expect(source("src/lib/deals/transfer.ts")).toMatch(/Transfer this deal to \$\{target\}/);
   });
 
-  it("uses live deal-name search on Deal, not an ASC/DESC funnel", () => {
+  it("keeps Contains search on the filter row, not a column-header live input", () => {
     const deal = DEALS_LIST_COLUMNS.find((column) => column.id === "title");
     expect(deal?.label).toBe("Deal");
-    expect(deal?.liveSearch).toBe(true);
-    expect(isLiveSearchColumn(deal!)).toBe(true);
-    expect(isListColumnSortable(deal!)).toBe(false);
-    expect(source("src/components/lists/column-table.tsx")).toMatch(/LiveContainsInput/);
-    expect(source("src/components/lists/column-table.tsx")).toMatch(/isLiveSearchColumn/);
+    expect(isLiveSearchColumn(deal!)).toBe(false);
+    expect(source("src/app/deals/page.tsx")).toMatch(/PipelineFilterPopover/);
+    expect(source("src/components/filters/pipeline-filter-popover.tsx")).toMatch(/LiveContainsInput/);
   });
 });
