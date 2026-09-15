@@ -9,7 +9,7 @@
  * Safe to re-run: archived donors are skipped; a single open deal with the required
  * products is treated as already merged.
  */
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../src/lib/db";
 import {
   activities,
@@ -181,13 +181,22 @@ async function copyBlankCustomFields(donorId: string, survivorId: string) {
 }
 
 async function archiveDonor(donorId: string, survivorId: string) {
+  const [donor] = await db
+    .select({ notes: deals.notes })
+    .from(deals)
+    .where(eq(deals.id, donorId));
+  const suffix = `Merged into ${survivorId} (multi-product).`;
+  const current = (donor?.notes ?? "").trim();
+  const notes = current.includes(suffix)
+    ? current
+    : [current, suffix].filter(Boolean).join(" ");
   await db
     .update(deals)
     .set({
       archivedAt: new Date(),
       pipelineStage: "archive",
       pipelineStageSlug: "archive",
-      notes: sql`trim(both from concat(coalesce(${deals.notes}, ''), ${` Merged into ${survivorId} (multi-product).`}))`,
+      notes,
       updatedAt: new Date(),
     })
     .where(eq(deals.id, donorId));
