@@ -18,6 +18,7 @@ export const EMPTY_HEADER_ADDRESS: HeaderAddressParts = {
 
 export const INSURED_ADDRESS_LABEL = "Insured address";
 export const MAILING_ADDRESS_LABEL = "Mailing address";
+export const SAME_AS_INSURED_VALUE = "Same as insured address";
 
 type StreetCityStateZip = {
   address1?: string | null;
@@ -104,12 +105,23 @@ export function headerAddressesEqual(
   return compared > 0;
 }
 
+/** True when mailing is a distinct address and should be printed in full. */
 export function shouldShowMailingAddress(
   insured: HeaderAddressParts | null | undefined,
   mailing: HeaderAddressParts | null | undefined,
 ): boolean {
   if (isHeaderAddressEmpty(mailing)) return false;
   return !headerAddressesEqual(insured, mailing);
+}
+
+export function mailingHeaderValue(
+  insured: HeaderAddressParts | null | undefined,
+  mailing: HeaderAddressParts | null | undefined,
+): string {
+  if (shouldShowMailingAddress(insured, mailing)) {
+    return formatHeaderAddress(mailing);
+  }
+  return SAME_AS_INSURED_VALUE;
 }
 
 function partsFrom(

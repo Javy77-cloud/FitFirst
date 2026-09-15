@@ -7,7 +7,9 @@ import { formatDob } from "@/lib/domain";
 import {
   INSURED_ADDRESS_LABEL,
   MAILING_ADDRESS_LABEL,
+  SAME_AS_INSURED_VALUE,
   headerAddressesEqual,
+  mailingHeaderValue,
   normalizeHeaderAddress,
   resolveDealHeaderAddresses,
   shouldShowMailingAddress,
@@ -52,24 +54,31 @@ describe("deal header address compare", () => {
     ).toBe(normalizeHeaderAddress(palmBay));
   });
 
-  it("hides mailing when it is empty", () => {
+  it("treats empty mailing as same as insured", () => {
     expect(shouldShowMailingAddress(palmBay, { address1: "", city: "", state: "", zip: "" })).toBe(
       false,
     );
     expect(headerAddressesEqual(palmBay, { address1: "  ", city: "", state: "", zip: "" })).toBe(
       true,
     );
+    expect(mailingHeaderValue(palmBay, { address1: "", city: "", state: "", zip: "" })).toBe(
+      SAME_AS_INSURED_VALUE,
+    );
   });
 
-  it("hides mailing when only the street is filled and it matches insured", () => {
+  it("treats a matching street-only mailing as same as insured", () => {
     expect(
       shouldShowMailingAddress(palmBay, { address1: "12 Oak Street", city: "", state: "", zip: "" }),
     ).toBe(false);
+    expect(
+      mailingHeaderValue(palmBay, { address1: "12 Oak Street", city: "", state: "", zip: "" }),
+    ).toBe(SAME_AS_INSURED_VALUE);
   });
 
-  it("shows mailing when street/city/state/zip differ", () => {
+  it("prints the full mailing line when street/city/state/zip differ", () => {
     expect(shouldShowMailingAddress(palmBay, orlando)).toBe(true);
     expect(headerAddressesEqual(palmBay, orlando)).toBe(false);
+    expect(mailingHeaderValue(palmBay, orlando)).toBe("88 Pine Ave · Orlando, FL · 32801");
     expect(
       shouldShowMailingAddress(palmBay, {
         address1: "12 Oak St",
@@ -106,7 +115,7 @@ describe("resolveDealHeaderAddresses", () => {
     expect(resolved.showMailing).toBe(true);
   });
 
-  it("falls back to risk / contact for insured and hides mailing when unset", () => {
+  it("falls back to risk / contact for insured and treats unset mailing as same", () => {
     const resolved = resolveDealHeaderAddresses({
       stored: {},
       risk: palmBay,
@@ -114,6 +123,7 @@ describe("resolveDealHeaderAddresses", () => {
     });
     expect(resolved.insured).toEqual(palmBay);
     expect(resolved.showMailing).toBe(false);
+    expect(mailingHeaderValue(resolved.insured, resolved.mailing)).toBe(SAME_AS_INSURED_VALUE);
   });
 
   it("does not treat lead/contact mailingAddress as a distinct mailing row", () => {
@@ -162,7 +172,7 @@ describe("resolveDealHeaderAddresses", () => {
 });
 
 describe("DealPackageShell address display", () => {
-  it("shows insured only when mailing is the same or empty", () => {
+  it("keeps a compact mailing row when mailing is the same or empty", () => {
     const html = renderToString(
       createElement(DealPackageShell, {
         name: "Gloria Martinez",
@@ -181,7 +191,9 @@ describe("DealPackageShell address display", () => {
     );
     expect(html).toContain(INSURED_ADDRESS_LABEL);
     expect(html).toContain("12 Oak St");
-    expect(html).not.toContain(MAILING_ADDRESS_LABEL);
+    expect(html).toContain(MAILING_ADDRESS_LABEL);
+    expect(html).toContain(SAME_AS_INSURED_VALUE);
+    expect(html).not.toContain("88 Pine Ave");
     expect(html).toContain("Gloria Martinez");
     expect(html).toContain("786-555-0100");
     expect(html).toContain(formatDob("1980-01-02"));
@@ -192,7 +204,9 @@ describe("DealPackageShell address display", () => {
     expect(html).toContain("DOB");
     expect(html).toContain("Owner");
     expect(html).toMatch(/data-ff-header-address="insured"/);
-    expect(html).not.toMatch(/data-ff-header-address="mailing"/);
+    expect(html).toMatch(/data-ff-header-address="mailing"/);
+    expect(html).toMatch(/data-ff-header-mailing-same="1"/);
+    expect(html.indexOf(INSURED_ADDRESS_LABEL)).toBeLessThan(html.indexOf(MAILING_ADDRESS_LABEL));
   });
 
   it("shows mailing underneath insured when the addresses differ", () => {
@@ -214,6 +228,8 @@ describe("DealPackageShell address display", () => {
     expect(html.indexOf(INSURED_ADDRESS_LABEL)).toBeLessThan(html.indexOf(MAILING_ADDRESS_LABEL));
     expect(html.indexOf("12 Oak St")).toBeLessThan(html.indexOf("88 Pine Ave"));
     expect(html).toMatch(/data-ff-header-address="mailing"/);
+    expect(html).toMatch(/data-ff-header-show-mailing="1"/);
+    expect(html).not.toContain(SAME_AS_INSURED_VALUE);
     expect(html).toContain("Gloria Martinez");
     expect(html).toContain("Javy");
   });
@@ -233,6 +249,24 @@ describe("DealPackageShell address display", () => {
     expect(html).toContain("5-15-1990");
     expect(html).not.toContain("1990-05-15");
     expect(html).toMatch(/data-ff-header-dob/);
+    expect(html).toContain(SAME_AS_INSURED_VALUE);
+  });
+
+  it("shows Same as insured address when mailing is empty", () => {
+    const html = renderToString(
+      createElement(DealPackageShell, {
+        name: "Gloria Martinez",
+        phones: ["786-555-0100"],
+        insuredAddress: palmBay,
+        mailingAddress: { address1: "", city: "", state: "", zip: "" },
+        owner: "Javy",
+      }),
+    );
+    expect(html).toContain(INSURED_ADDRESS_LABEL);
+    expect(html).toContain("12 Oak St");
+    expect(html).toContain(MAILING_ADDRESS_LABEL);
+    expect(html).toContain(SAME_AS_INSURED_VALUE);
+    expect(html).toMatch(/data-ff-header-mailing-same="1"/);
   });
 
   it("keeps name, phones, DOB, and staff in the shared shell source", () => {
@@ -246,9 +280,9 @@ describe("DealPackageShell address display", () => {
     expect(shell).toMatch(/label: "Owner"/);
     expect(shell).toContain("INSURED_ADDRESS_LABEL");
     expect(shell).toContain("MAILING_ADDRESS_LABEL");
-    expect(shell).toMatch(/shouldShowMailingAddress/);
+    expect(shell).toMatch(/mailingHeaderValue/);
     expect(shell).not.toMatch(/label: "Mailing"/);
-    expect(shell).not.toMatch(/Mailing same as insured/);
+    expect(source("src/lib/deals/header-addresses.ts")).toContain("Same as insured address");
     expect(page).toMatch(/resolveDealHeaderAddresses/);
     expect(page).toMatch(/insuredAddress=\{headerAddresses\.insured\}/);
     expect(page).toMatch(/mailingAddress=\{headerAddresses\.mailing\}/);
