@@ -32,8 +32,8 @@ import { SheetFieldFocus } from "@/components/completeness/sheet-field-focus";
 import { loadRecordContext } from "@/lib/record-context";
 import { quotingFormById, quotingUnlockedForDeal } from "@/lib/quoting/forms";
 import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line";
+import { resolveDealHeaderAddresses } from "@/lib/deals/header-addresses";
 import {
-  formatMailingLine,
   logBelongsToLine,
   quoteBelongsToLine,
   resolveActivePackageLine,
@@ -100,6 +100,7 @@ export default async function DealPage({
     logs,
     lead,
     contact,
+    account,
     sheets,
     jobs,
   } = workspace;
@@ -134,6 +135,13 @@ export default async function DealPage({
   const partyName =
     deal.primaryNamedInsured ??
     (contact ? `${contact.firstName} ${contact.lastName}` : lead ? `${lead.firstName} ${lead.lastName}` : deal.title);
+  const headerAddresses = resolveDealHeaderAddresses({
+    stored: dealValues,
+    risk,
+    contact,
+    lead,
+    account,
+  });
   const clientAddress = homeAddressFromRecords({ risk, lead, contact });
   const [agencyRow] = await db
     .select()
@@ -313,16 +321,8 @@ export default async function DealPage({
                   (value, index, all): value is string => Boolean(value) && all.indexOf(value) === index,
                 )}
                 dob={dealValues.date_of_birth || contact?.dateOfBirth || lead?.dateOfBirth}
-                mailing={formatMailingLine({
-                  address1:
-                    dealValues.contact_mailing_address ||
-                    dealValues.mailing_address ||
-                    contact?.mailingAddress ||
-                    risk.address1,
-                  city: dealValues.contact_mailing_city || dealValues.city || contact?.city || risk.city,
-                  state: dealValues.contact_mailing_state || dealValues.state || contact?.state || risk.state,
-                  zip: dealValues.contact_mailing_zip || dealValues.zip || contact?.zip || risk.zip,
-                })}
+                insuredAddress={headerAddresses.insured}
+                mailingAddress={headerAddresses.mailing}
                 stage={deal.pipelineStageSlug || deal.pipelineStage}
                 owner={ownerRow?.name}
                 activity={comms[0]?.title ?? (comms.length ? `${comms.length} activities` : null)}
