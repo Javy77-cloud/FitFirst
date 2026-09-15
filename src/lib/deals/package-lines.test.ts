@@ -302,6 +302,28 @@ describe("multi-line bind path", () => {
         multiLine: true,
       }),
     ).toBe(true);
+    expect(
+      quoteBelongsToLine({
+        shopLine: "home",
+        quoteAttemptLogId: null,
+        notes: "Floor only HO3 Edison · without flood ($6,200 with flood)",
+        logs: [],
+        lob: "FLOOD",
+        isPrimaryLine: false,
+        multiLine: true,
+      }),
+    ).toBe(false);
+    expect(
+      quoteBelongsToLine({
+        shopLine: "home",
+        quoteAttemptLogId: null,
+        notes: "Floor only HO3 Edison · without flood ($6,200 with flood)",
+        logs: [],
+        lob: "HO",
+        isPrimaryLine: true,
+        multiLine: true,
+      }),
+    ).toBe(true);
   });
 
   it("resolves shop line + LOB for market requests without changing single-line defaults", () => {
