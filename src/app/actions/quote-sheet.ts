@@ -115,8 +115,15 @@ import { DEAL_ID } from "@/lib/fixtures/ids";
 import {
   lobForProduct,
   quotingFormForProduct,
+  sheetProductForQuotingForm,
   shopLineForProduct,
 } from "@/lib/deals/deal-line";
+import {
+  defaultFormForShopLine,
+  mergePackageShopLines,
+  normalizePackageLines,
+  primaryPackageLine,
+} from "@/lib/deals/package-lines";
 import { flashAction } from "@/lib/flash-action";
 import { isDocumentsSourceDoc, isQuoteFileDoc } from "@/lib/deals/quote-docs";
 import { withFlash } from "@/lib/flash";
@@ -142,13 +149,22 @@ export async function ensureQuoteSheet(dealId: string, line: ShopLine) {
       ),
     );
   if (existing) return existing;
+  const values = blankSheetWithDefaults(line);
+  const form = defaultFormForShopLine(line);
+  if (form) {
+    values.quoting_form = { value: form, status: "confirmed", source: "agent" };
+    const product = sheetProductForQuotingForm(form);
+    if (product) {
+      values.sheet_product = { value: product, status: "confirmed", source: "agent" };
+    }
+  }
   const [created] = await db
     .insert(quoteSheets)
     .values({
       tenantId: DEFAULT_TENANT_ID,
       dealId,
       line,
-      values: blankSheetWithDefaults(line),
+      values,
     })
     .returning();
   return created;
@@ -365,6 +381,37 @@ export async function addShopLine(formData: FormData) {
   await ensureQuoteSheet(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);
   redirect(withFlash(`/deals/${dealId}?tab=documents&line=${lineRaw}`, "deal-updated"));
+}
+
+/** Add/remove Home + Auto + Flood on one deal. New lines get a sheet; removed lines stay stored but hidden. */
+export async function setDealPackageLines(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  const tab = str(formData, "tab");
+  const currentLine = str(formData, "currentLine");
+  const nextPackage = normalizePackageLines(formData.getAll("shopLines").map((value) => String(value)));
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  if (!deal) throw new Error("Deal not found");
+  const next = mergePackageShopLines(deal.shopLines, nextPackage);
+  const added = nextPackage.filter((line) => !(deal.shopLines ?? []).includes(line));
+  for (const line of added) {
+    await ensureQuoteSheet(dealId, line);
+  }
+  const primary = primaryPackageLine(nextPackage);
+  const keepCurrent = nextPackage.includes(currentLine as (typeof nextPackage)[number]);
+  const active = keepCurrent ? currentLine : primary;
+  await db
+    .update(deals)
+    .set({
+      shopLines: next,
+      quotingLine: active || deal.quotingLine,
+      updatedAt: new Date(),
+    })
+    .where(eq(deals.id, dealId));
+  revalidatePath(`/deals/${dealId}`);
+  const query = new URLSearchParams();
+  if (tab) query.set("tab", tab);
+  query.set("line", active || primary);
+  redirect(withFlash(`/deals/${dealId}?${query.toString()}`, "deal-updated"));
 }
 
 function addressFromDealRecord(input: {

@@ -26,6 +26,8 @@ describe("New Deal uses the live Deal Edit Layout", () => {
     expect(dialog).toMatch(/createDealFromScratch/);
     expect(dialog).toMatch(/createDealFromExistingPick/);
     expect(dialog).toMatch(/searchDealsForCreate/);
+    expect(dialog).toMatch(/data-ff-package-lines/);
+    expect(dialog).toMatch(/PackageLineCheckboxes/);
     const actions = readFileSync("src/app/actions/deal-create.ts", "utf8");
     expect(actions).toMatch(/persistDealWorkTab\(deal\.id, "details"\)/);
     expect(actions).toMatch(/persistDealWorkTab\(deal\.id, "documents"\)/);

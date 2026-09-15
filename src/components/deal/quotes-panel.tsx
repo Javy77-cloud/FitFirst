@@ -63,6 +63,7 @@ export function QuotesPanel({
   fileVersions = [],
   carriers = [],
   dealLine = "HO",
+  shopLine,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -77,6 +78,7 @@ export function QuotesPanel({
   fileVersions?: DocumentVersion[];
   carriers?: { id: string; name: string; writtenLines?: string[] | null }[];
   dealLine?: string;
+  shopLine?: string;
 }) {
   const liveQuotes = quotes.filter((row) => !row.quote.stub);
   const sorted = sortQuotesByRatingThenPremium(
@@ -122,7 +124,7 @@ export function QuotesPanel({
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <Link
-              href={`/deals/${dealId}?tab=markets`}
+              href={`/deals/${dealId}?tab=markets${shopLine ? `&line=${shopLine}` : ""}`}
               className={cn(buttonVariants({ size: "sm", variant: "default" }))}
               data-ff-quotes-go-markets=""
             >

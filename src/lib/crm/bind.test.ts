@@ -1,4 +1,6 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { lobsToBindForDeal, pickQuoteForLine, unboundPolicyLines } from "@/lib/deals/package-lines";
 import {
   BindBlockedError,
   QUOTE_CREATES_POLICY,
@@ -161,6 +163,41 @@ describe("bind contract", () => {
     });
     expect(health.contactDraft.healthNotes).toBe("Medicare supplement");
     expect(health.contactDraft.lifeNotes).toBeNull();
+  });
+
+  it("packages Home + Auto + Flood as one contact and one policy per unbound line", () => {
+    expect(lobsToBindForDeal({ shopLines: ["home", "auto"], lineOfBusiness: "HO" })).toEqual([
+      "HO",
+      "AUTO",
+    ]);
+    expect(unboundPolicyLines(["HO", "AUTO"], [{ lineOfBusiness: "HO" }])).toEqual(["AUTO"]);
+    const quote = pickQuoteForLine(
+      [
+        { bindable: true, quoteAttemptLogId: "h", premium: "1" },
+        { bindable: false, quoteAttemptLogId: "a", premium: "2" },
+      ],
+      [
+        { id: "h", lineOfBusiness: "HO" },
+        { id: "a", lineOfBusiness: "AUTO" },
+      ],
+      "AUTO",
+    );
+    expect(quote?.premium).toBe("2");
+    expect(planBind({
+      deal: baseDeal(),
+      lead,
+      contact: null,
+      risk,
+      policyNumber: "FF-10000001",
+      premium: "1840.50",
+      carrierId: null,
+      now,
+    }).policy.lineOfBusiness).toBe("HO");
+    const bindAction = readFileSync("src/app/actions/crm.ts", "utf8");
+    expect(bindAction).toMatch(/lobsToBindForDeal/);
+    expect(bindAction).toMatch(/unboundPolicyLines/);
+    expect(bindAction).toMatch(/pickQuoteForLine/);
+    expect(bindAction).toMatch(/one policy per line/);
   });
 
   it("builds a stub policy number from the clock", () => {

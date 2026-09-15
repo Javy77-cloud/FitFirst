@@ -6,6 +6,7 @@ import { matchCarrier, rankFits, riskFromRecord } from "@/lib/appetite/match";
 import { toAppetiteInput } from "@/lib/appetite/rule-input";
 import { portalFor } from "@/lib/appetite/portals";
 import { appointmentLine, DEFAULT_TENANT_ID, type PriorAttempt, type ShopLine } from "@/lib/domain";
+import { resolveShopLineAndLob } from "@/lib/deals/package-lines";
 import { db } from "@/lib/db";
 import { appointedByCarrierLine } from "@/lib/db/queries";
 import {
@@ -57,17 +58,19 @@ function selectedCarrierIdsFromForm(formData: FormData): string[] {
 export async function requestAppetiteQuotesAction(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "");
   const selectedIds = selectedCarrierIdsFromForm(formData);
-  await shopDealQuotes(dealId, "appetite", selectedIds.length ? selectedIds : undefined);
+  const line = String(formData.get("line") ?? "").trim();
+  await shopDealQuotes(dealId, "appetite", selectedIds.length ? selectedIds : undefined, line || undefined);
   await persistDealWorkTab(dealId, "quotes").catch(() => null);
-  flashAction(`/deals/${dealId}?tab=quotes`, "quotes-requested");
+  flashAction(`/deals/${dealId}?tab=quotes${line ? `&line=${line}` : ""}`, "quotes-requested");
 }
 
 export async function requestStretchQuotesAction(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "");
   const selectedIds = selectedCarrierIdsFromForm(formData);
-  await shopDealQuotes(dealId, "stretch", selectedIds.length ? selectedIds : undefined);
+  const line = String(formData.get("line") ?? "").trim();
+  await shopDealQuotes(dealId, "stretch", selectedIds.length ? selectedIds : undefined, line || undefined);
   await persistDealWorkTab(dealId, "quotes").catch(() => null);
-  flashAction(`/deals/${dealId}?tab=quotes`, "quotes-requested");
+  flashAction(`/deals/${dealId}?tab=quotes${line ? `&line=${line}` : ""}`, "quotes-requested");
 }
 
 export async function shopInAppetite(dealId: string) {
@@ -78,11 +81,16 @@ export async function shopDealQuotes(
   dealId: string,
   pass: "appetite" | "stretch",
   selectedCarrierIds?: string[],
+  shopLineOrLob?: string,
 ) {
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  const resolved = resolveShopLineAndLob({
+    override: shopLineOrLob,
+    quotingLine: deal?.quotingLine,
+    lineOfBusiness: deal?.lineOfBusiness,
+  });
   if (deal) {
-    const line = (deal.quotingLine || "home") as ShopLine;
-    await applySavedSheetToDeal(dealId, line);
+    await applySavedSheetToDeal(dealId, resolved.line);
   }
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
   if (!deal || !risk) throw new Error("Deal or master risk is missing");
@@ -181,7 +189,7 @@ export async function shopDealQuotes(
       riskId: risk.id,
     });
     const manual = manualIds.has(carrierId);
-    const shopLob = deal.lineOfBusiness || "HO";
+    const shopLob = resolved.lob || deal.lineOfBusiness || "HO";
     const shopAutoSnap = await autoSnapshotFieldsForDeal(dealId, shopLob);
     await db.insert(quoteAttemptLogs).values({
       tenantId: DEFAULT_TENANT_ID,

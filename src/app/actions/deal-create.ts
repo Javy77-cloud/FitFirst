@@ -8,7 +8,7 @@ import { flashAction } from "@/lib/flash-action";
 import { isUuid } from "@/lib/ids";
 import { db } from "@/lib/db";
 import { accounts, contacts, deals, quoteSheets, risks } from "@/lib/db/schema";
-import { emptySheetValues } from "@/lib/quote-sheet/catalog";
+import { blankSheetWithDefaults } from "@/lib/quote-sheet/catalog";
 import { loadRecordValues, writeRecordValues } from "@/lib/custom-fields/store";
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
 import { formatDealTitle } from "@/lib/deals/deal-title";
@@ -17,6 +17,13 @@ import {
   titleForCopiedDeal,
   type CreateDealPickHit,
 } from "@/lib/deals/create-from-source";
+import { sheetProductForQuotingForm } from "@/lib/deals/deal-line";
+import {
+  defaultFormForShopLine,
+  packageCreateDraft,
+  packageLinesFromForm,
+  packageLinesFromFormOrUndefined,
+} from "@/lib/deals/package-lines";
 import { matchesQuery } from "@/lib/wire/search";
 
 function str(form: FormData, key: string) {
@@ -34,6 +41,19 @@ function shopLinesFor(row: { shopLines?: string[] | null; lineOfBusiness?: strin
   return ["home"];
 }
 
+function seededSheetValues(line: ShopLine) {
+  const values = blankSheetWithDefaults(line);
+  const form = defaultFormForShopLine(line);
+  if (form) {
+    values.quoting_form = { value: form, status: "confirmed", source: "agent" };
+    const product = sheetProductForQuotingForm(form);
+    if (product) {
+      values.sheet_product = { value: product, status: "confirmed", source: "agent" };
+    }
+  }
+  return values;
+}
+
 async function insertBlankSheets(dealId: string, lines: ShopLine[]) {
   if (!lines.length) return;
   await db.insert(quoteSheets).values(
@@ -41,7 +61,7 @@ async function insertBlankSheets(dealId: string, lines: ShopLine[]) {
       tenantId: DEFAULT_TENANT_ID,
       dealId,
       line,
-      values: emptySheetValues(line),
+      values: seededSheetValues(line),
     })),
   );
 }
@@ -57,10 +77,17 @@ function revalidateDeal(dealId: string) {
 }
 
 /** Blank Deal from scratch → Deal Details (ff_work_tab=details). */
-export async function createDealFromScratch(): Promise<{ ok: true; id: string; href: string } | { ok: false; message: string }> {
+export async function createDealFromScratch(
+  formData?: FormData,
+): Promise<{ ok: true; id: string; href: string } | { ok: false; message: string }> {
   const actor = await getActor();
-  const line = "HO";
-  const title = formatDealTitle({ firstName: "New", lastName: "Shop", line });
+  const draft = packageCreateDraft(packageLinesFromForm(formData));
+  const title = formatDealTitle({
+    firstName: "New",
+    lastName: "Shop",
+    line: draft.lineOfBusiness,
+    quotingForm: draft.quotingForm,
+  });
   const [deal] = await db
     .insert(deals)
     .values({
@@ -68,11 +95,14 @@ export async function createDealFromScratch(): Promise<{ ok: true; id: string; h
       title,
       pipelineStage: "shopping",
       pipelineStageSlug: "gather",
-      lineOfBusiness: line,
+      lineOfBusiness: draft.lineOfBusiness,
+      quotingLine: draft.quotingLine,
+      quotingForm: draft.quotingForm,
+      policySubType: draft.quotingForm,
       state: "FL",
       ownerId: actor.id || null,
       source: "manual",
-      shopLines: ["home"],
+      shopLines: draft.shopLines,
       accountKind: "personal",
       bindTarget: "contact",
     })
@@ -81,20 +111,20 @@ export async function createDealFromScratch(): Promise<{ ok: true; id: string; h
   await db.insert(risks).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
-    riskType: "property",
+    riskType: draft.riskType,
     state: "FL",
   });
-  await insertBlankSheets(deal.id, ["home"]);
+  await insertBlankSheets(deal.id, draft.shopLines);
   await persistDealWorkTab(deal.id, "details").catch(() => null);
 
   revalidateDeal(deal.id);
-  const href = `/deals/${deal.id}`;
+  const href = `/deals/${deal.id}?line=${draft.quotingLine}`;
   return { ok: true, id: deal.id, href };
 }
 
 /** Form/action wrapper that redirects after scratch create. */
-export async function createDealFromScratchAction() {
-  const result = await createDealFromScratch();
+export async function createDealFromScratchAction(formData?: FormData) {
+  const result = await createDealFromScratch(formData);
   if (!result.ok) throw new Error(result.message);
   flashAction(result.href, "deal-saved");
 }
@@ -142,13 +172,20 @@ async function latestDealForContact(contactId: string): Promise<string | null> {
   return row?.id ?? null;
 }
 
-async function createCopiedDeal(source: SourceBundle): Promise<string> {
+async function createCopiedDeal(
+  source: SourceBundle,
+  packageLines?: ReturnType<typeof packageLinesFromForm>,
+): Promise<string> {
   const actor = await getActor();
   const { deal: row, contact, account, custom, risk } = source;
-  const shopLines = shopLinesFor(row);
+  const draft = packageLines?.length ? packageCreateDraft(packageLines) : null;
+  const shopLines = draft?.shopLines ?? shopLinesFor(row);
+  const lineOfBusiness = draft?.lineOfBusiness ?? row.lineOfBusiness;
+  const quotingLine = draft?.quotingLine ?? row.quotingLine;
+  const quotingForm = draft?.quotingForm ?? row.quotingForm;
   const title = titleForCopiedDeal({
     title: row.title,
-    lineOfBusiness: row.lineOfBusiness,
+    lineOfBusiness,
     primaryNamedInsured: row.primaryNamedInsured,
     firstName: contact?.firstName,
     lastName: contact?.lastName,
@@ -167,21 +204,21 @@ async function createCopiedDeal(source: SourceBundle): Promise<string> {
       pipelineStage: "shopping",
       pipelineStageSlug: "gather",
       pipelineId: row.pipelineId,
-      lineOfBusiness: row.lineOfBusiness,
+      lineOfBusiness,
       bindTarget: row.bindTarget,
       state: row.state,
       notes: row.notes,
       primaryNamedInsured: row.primaryNamedInsured,
       secondaryNamedInsured: row.secondaryNamedInsured,
       shopLines,
-      policySubType: row.policySubType,
+      policySubType: draft?.quotingForm ?? row.policySubType,
       propertyOneliner: row.propertyOneliner,
       currentCarrier: row.currentCarrier,
       accountKind: row.accountKind,
       ownerId: row.ownerId || actor.id || null,
       source: row.source ?? "manual",
-      quotingForm: row.quotingForm,
-      quotingLine: row.quotingLine,
+      quotingForm,
+      quotingLine,
       coverageAmount: row.coverageAmount,
       tags: row.tags ?? [],
     })
@@ -251,11 +288,13 @@ export async function createDealFromSourceDeal(
   }
   const source = await loadSourceDeal(sourceDealId);
   if (!source) return { ok: false, message: "Deal not found." };
-  const id = await createCopiedDeal(source);
+  const packageLines = packageLinesFromFormOrUndefined(formData);
+  const id = await createCopiedDeal(source, packageLines);
+  const line = packageLines ? packageCreateDraft(packageLines).quotingLine : "";
   return {
     ok: true,
     message: `Created ${source.deal.title.replace(/\s*\(copy\)\s*$/i, "").trim()} shop.`,
-    href: `/deals/${id}`,
+    href: line ? `/deals/${id}?line=${line}` : `/deals/${id}`,
     id,
   };
 }
@@ -283,6 +322,7 @@ export async function createDealFromExistingPick(
   if (kind === "deal") {
     const fd = new FormData();
     fd.set("sourceDealId", id);
+    for (const line of formData.getAll("shopLines")) fd.append("shopLines", String(line));
     return createDealFromSourceDeal(fd);
   }
 
@@ -290,6 +330,7 @@ export async function createDealFromExistingPick(
   if (latestId) {
     const fd = new FormData();
     fd.set("sourceDealId", latestId);
+    for (const line of formData.getAll("shopLines")) fd.append("shopLines", String(line));
     return createDealFromSourceDeal(fd);
   }
 
@@ -301,11 +342,12 @@ export async function createDealFromExistingPick(
     .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, id)));
   if (!contact) return { ok: false, message: "Contact not found." };
 
-  const line = "HO";
+  const draft = packageCreateDraft(packageLinesFromForm(formData));
   const title = formatDealTitle({
     firstName: contact.firstName,
     lastName: contact.lastName,
-    line,
+    line: draft.lineOfBusiness,
+    quotingForm: draft.quotingForm,
   });
   const [deal] = await db
     .insert(deals)
@@ -316,11 +358,14 @@ export async function createDealFromExistingPick(
       title,
       pipelineStage: "shopping",
       pipelineStageSlug: "gather",
-      lineOfBusiness: line,
+      lineOfBusiness: draft.lineOfBusiness,
+      quotingLine: draft.quotingLine,
+      quotingForm: draft.quotingForm,
+      policySubType: draft.quotingForm,
       state: contact.state || "FL",
       ownerId: contact.ownerId || actor.id || null,
       source: contact.source ?? "manual",
-      shopLines: ["home"],
+      shopLines: draft.shopLines,
       accountKind: "personal",
       bindTarget: "contact",
       primaryNamedInsured: [contact.firstName, contact.lastName].filter(Boolean).join(" ").trim() || null,
@@ -332,13 +377,13 @@ export async function createDealFromExistingPick(
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
     contactId: contact.id,
-    riskType: "property",
+    riskType: draft.riskType,
     address1: contact.mailingAddress,
     city: contact.city,
     state: contact.state || "FL",
     zip: contact.zip,
   });
-  await insertBlankSheets(deal.id, ["home"]);
+  await insertBlankSheets(deal.id, draft.shopLines);
 
   const seeded: Record<string, string> = {};
   if (contact.firstName) seeded.first_name = contact.firstName;
@@ -362,7 +407,7 @@ export async function createDealFromExistingPick(
   return {
     ok: true,
     message: `Created deal for ${contact.firstName} ${contact.lastName}.`.trim(),
-    href: `/deals/${deal.id}`,
+    href: `/deals/${deal.id}?line=${draft.quotingLine}`,
     id: deal.id,
   };
 }

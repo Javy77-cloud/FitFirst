@@ -9,6 +9,7 @@ import {
   type InsuranceTypeId,
   type PipelineFamily,
 } from "@/lib/deals/insurance-cascade";
+import type { PcPackageLine } from "@/lib/deals/package-lines";
 import { DEFAULT_HEALTH_SUBFILTERS, DEFAULT_LIFE_SUBFILTERS } from "@/lib/desk/line-settings";
 
 function typeIdFromLabel(raw: string | null | undefined): InsuranceTypeId | "" {
@@ -38,6 +39,8 @@ export function InsuranceCascadeControl({
   lifeHealthOptions = [],
   required,
   disabled,
+  packageLines = [],
+  activePackageLine = null,
 }: {
   /** Hidden input name for parent Insurance Type (PC / Life / Health). */
   typeName?: string;
@@ -60,6 +63,8 @@ export function InsuranceCascadeControl({
   lifeHealthOptions?: Array<{ slug?: string; label: string }>;
   required?: boolean;
   disabled?: boolean;
+  packageLines?: readonly PcPackageLine[];
+  activePackageLine?: PcPackageLine | null;
 }) {
   const lifeOpts = lifeOptions.length
     ? lifeOptions
@@ -70,20 +75,25 @@ export function InsuranceCascadeControl({
     ? healthOptions
     : DEFAULT_HEALTH_SUBFILTERS;
 
+  const packageMode = packageLines.length > 0 && family === "pc";
   const initial = useMemo(() => {
-    const fromType = typeIdFromLabel(typeValue);
+    const fromType = packageMode ? "pc" : typeIdFromLabel(typeValue);
     const opts =
       fromType === "health" ? healthOpts : fromType === "life" ? lifeOpts : lifeOpts;
     const base = cascadeFromDeal({
       family: fromType || family,
       quotingForm: quotingForm || value,
       policySubType: policySubType || value,
-      categoryValue: categoryValue || undefined,
+      categoryValue:
+        activePackageLine && activePackageLine !== "home"
+          ? activePackageLine
+          : categoryValue || undefined,
       lifeHealthOptions: opts,
     });
     return {
       typeId: (fromType || base.typeId) as InsuranceTypeId,
-      categoryId: base.categoryId,
+      categoryId:
+        activePackageLine && activePackageLine !== "home" ? activePackageLine : base.categoryId,
       subtypeId: base.subtypeId,
     };
     // mount defaults only
@@ -161,7 +171,7 @@ export function InsuranceCascadeControl({
         Pipeline
         <select
           value={typeId}
-          disabled={disabled}
+          disabled={disabled || packageMode}
           required={required}
           onChange={(event) => onTypeChange(event.target.value as InsuranceTypeId | "")}
           className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-navy"
@@ -180,7 +190,11 @@ export function InsuranceCascadeControl({
         Insurance Category
         <select
           value={selectedCat?.id ?? categoryId ?? ""}
-          disabled={disabled || !typeId}
+          disabled={
+            disabled ||
+            !typeId ||
+            (packageMode && Boolean(activePackageLine && activePackageLine !== "home"))
+          }
           required={required}
           onChange={(event) => onCategoryChange(event.target.value)}
           className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-navy"

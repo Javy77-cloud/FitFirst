@@ -1,6 +1,6 @@
 import type { ShopLine } from "@/lib/domain";
 
-/** One deal, one product. Auto and home are two deals under the same person. */
+/** Master-sheet product catalog. Personal PC can package Home + Auto + Flood on one deal. */
 export const SHEET_PRODUCTS = [
   "homeowners",
   "renters",

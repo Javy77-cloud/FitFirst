@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import {
   cascadeFromDeal,
+  cascadeFromPackageLine,
+  categoryForPackageLine,
   categoriesForType,
   categoryIdFromLabel,
   DEAL_LIST_PIPELINE_KEY,
@@ -89,6 +91,27 @@ describe("insurance cascade", () => {
     expect(cascadeFromDeal({ family: "pc", quotingForm: "CA" })).toMatchObject({
       categoryId: "commercial",
       subtypeId: "CA",
+    });
+  });
+
+  it("package deals keep Type=PC and Form per Home/Auto/Flood line", () => {
+    expect(categoryForPackageLine("home")).toBe("home");
+    expect(categoryForPackageLine("auto")).toBe("auto");
+    expect(categoryForPackageLine("flood")).toBe("flood");
+    expect(cascadeFromPackageLine({ line: "auto", quotingForm: "PA" })).toMatchObject({
+      typeId: "pc",
+      categoryId: "auto",
+      subtypeId: "PA",
+    });
+    expect(cascadeFromPackageLine({ line: "flood" })).toMatchObject({
+      typeId: "pc",
+      categoryId: "flood",
+      subtypeId: "FLOOD",
+    });
+    expect(cascadeFromPackageLine({ line: "home", quotingForm: "HO6" })).toMatchObject({
+      typeId: "pc",
+      categoryId: "home",
+      subtypeId: "HO6",
     });
   });
 

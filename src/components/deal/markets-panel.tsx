@@ -21,6 +21,7 @@ export function MarketsPanel({
   sheetHasValues = false,
   carriers = [],
   dealLine = "HO",
+  shopLine,
 }: {
   dealId: string;
   matches: CarrierMatch[];
@@ -30,6 +31,7 @@ export function MarketsPanel({
   sheetHasValues?: boolean;
   carriers?: { id: string; name: string; writtenLines?: string[] | null }[];
   dealLine?: string;
+  shopLine?: string;
 }) {
   const [selected, setSelected] = useState<string[]>([]);
   const manual = new Set(asList(manualIds));
@@ -114,6 +116,7 @@ export function MarketsPanel({
       </p>
       <form action={requestAppetiteQuotesAction}>
         <input type="hidden" name="dealId" value={dealId} />
+        {shopLine ? <input type="hidden" name="line" value={shopLine} /> : null}
         {shopCarrierIds.map((id) => (
           <input key={`appetite-${id}`} type="hidden" name="carrierId" value={id} />
         ))}
@@ -177,6 +180,7 @@ export function MarketsPanel({
         />
         <form action={requestStretchQuotesAction} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="dealId" value={dealId} />
+          {shopLine ? <input type="hidden" name="line" value={shopLine} /> : null}
           {shopCarrierIds.map((id) => (
             <input key={`stretch-${id}`} type="hidden" name="carrierId" value={id} />
           ))}
