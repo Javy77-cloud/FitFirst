@@ -335,32 +335,34 @@ function BindRecheckAlertDialog({
             </p>
           </div>
         ) : null}
-        <DialogFooter>
-          {alreadyAcked ? null : (
-            <Button
-              type="button"
-              size="sm"
-              disabled={!bindGateReady(checks) || savePending}
-              title={BIND_GATE_COPY.saveTitle}
-              onClick={onSave}
-              data-ff-quote-bind-alert-save=""
-            >
-              {BIND_GATE_COPY.save}
-            </Button>
-          )}
-          {showFloorOverride ? (
-            <Button
-              type="button"
-              size="sm"
-              disabled={!canReQuote || reQuotePending}
-              title={BIND_GATE_COPY.reQuoteTitle}
-              onClick={onReQuote}
-              data-ff-quote-bind-alert-requote=""
-            >
-              {BIND_GATE_COPY.reQuote}
-            </Button>
-          ) : null}
-        </DialogFooter>
+        {alreadyAcked && !showFloorOverride ? null : (
+          <DialogFooter>
+            {alreadyAcked ? null : (
+              <Button
+                type="button"
+                size="sm"
+                disabled={!bindGateReady(checks) || savePending}
+                title={BIND_GATE_COPY.saveTitle}
+                onClick={onSave}
+                data-ff-quote-bind-alert-save=""
+              >
+                {BIND_GATE_COPY.save}
+              </Button>
+            )}
+            {showFloorOverride ? (
+              <Button
+                type="button"
+                size="sm"
+                disabled={!canReQuote || reQuotePending}
+                title={BIND_GATE_COPY.reQuoteTitle}
+                onClick={onReQuote}
+                data-ff-quote-bind-alert-requote=""
+              >
+                {BIND_GATE_COPY.reQuote}
+              </Button>
+            ) : null}
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

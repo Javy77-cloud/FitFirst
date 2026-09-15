@@ -90,7 +90,7 @@ export const BIND_GATE_COPY = {
   bindBlockedUntilSave: "Save this recheck before you can Bind.",
   save: "Save",
   saveTitle: "I verified premium, coverage, and deductible for this quote",
-  ackedHint: "Saved — premium, coverage, and deductible verified.",
+  ackedHint: "Saved — premium, coverage, and deductible verified. Holds until this quote is rechecked or those terms change.",
   staleHint: "Quote terms changed — Save this recheck again before Bind.",
   acceptFloorHeading: "Meet carrier minimum for this quote only",
   acceptFloorHelp:
