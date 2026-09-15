@@ -64,7 +64,7 @@ Mystery scribble: invent-me
     expect(applied.values.roof_deck.value).toMatch(/8d/i);
     expect(applied.values.roof_to_wall.value.toLowerCase()).toContain("clip");
     expect(applied.values.roof_shape.value).toBe("hip");
-    expect(applied.values.secondary_water.value).toBe("yes");
+    expect(applied.values.secondary_water.value).toBe("Yes");
     expect(applied.values.opening_protection.status).toBe("check");
     expect(applied.values.coverage_a.value).toBe("");
     expect(applied.values.coverage_a.status).toBe("missing");

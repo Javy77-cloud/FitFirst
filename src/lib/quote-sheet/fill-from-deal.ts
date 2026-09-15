@@ -39,7 +39,7 @@ export type DealSheetCopyInput = {
   propertyOneliner?: string | null;
   currentCarrier?: string | null;
   coverageAmount?: number | null;
-  /** Deal quoting form / policy subtype (HO3, DP3, …) → master-sheet form. */
+  /** Deal quoting form / policy subtype (HO3, DP3, …) — cascade owns this, not the sheet. */
   quotingForm?: string | null;
   policySubType?: string | null;
   /** Deal custom-field bag (layout Details: applicant + co-applicant + addresses). */
@@ -158,16 +158,7 @@ export function fillSheetFromDealDetails(
   );
   put("entity_type", firstFilled(stored.entity_type));
 
-  // Form / landlord — layout standing: Deal Details → Fill (never invent).
-  put(
-    "form",
-    firstFilled(
-      stored.form,
-      stored.insurance_subtype,
-      input.quotingForm,
-      input.policySubType,
-    ),
-  );
+  // Quoting form lives on the insurance cascade — do not copy onto the master sheet.
   put("lease_term", firstFilled(stored.lease_term));
   put("tenant_name", firstFilled(stored.tenant_name));
   put("landlord_liability", firstFilled(stored.landlord_liability));

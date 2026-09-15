@@ -10,7 +10,29 @@ import {
   valuesDiffer,
 } from "./records-check";
 import { isSheetFormMetaKey, submittedSheetValues } from "./save-values";
-import { normalizeDistanceToHydrant, normalizeDistanceToStation, normalizeGender, normalizeMonthsOccupied, normalizeOccupancy, normalizeUsage } from "./sheet-defaults";
+import {
+  normalizeBuildingCode,
+  normalizeClaims5yr,
+  normalizeDistanceToHydrant,
+  normalizeDistanceToStation,
+  normalizeFloodZone,
+  normalizeGender,
+  normalizeInsuranceScoreRange,
+  normalizeMonthsOccupied,
+  normalizeOccupancy,
+  normalizeOpeningProtection,
+  normalizeProtectionClass,
+  normalizeRoofCovering,
+  normalizeRoofDeckAttachment,
+  normalizeRoofShape,
+  normalizeRoofToWall,
+  normalizeSecondaryWater,
+  normalizeStories,
+  normalizeTerrain,
+  normalizeUsage,
+  normalizeWaterBackup,
+  normalizeWindSpeed,
+} from "./sheet-defaults";
 
 export type ExtractedInput = {
   fieldKey: string;
@@ -171,15 +193,32 @@ export function applyExtractedToSheet(
     ) {
       nextValue = normalizeYesNoNone(nextValue);
     }
-    if (key === "opening_protection") {
-      const lower = nextValue.toLowerCase();
-      if (lower === "none" || lower === "n/a" || lower === "na") nextValue = "N";
+    if (key === "opening_protection") nextValue = normalizeOpeningProtection(nextValue);
+    if (key === "water_backup") nextValue = normalizeWaterBackup(nextValue);
+    if (key === "claims_5yr") nextValue = normalizeClaims5yr(nextValue);
+    if (key === "insurance_score_range") nextValue = normalizeInsuranceScoreRange(nextValue);
+    if (key === "roof_to_wall") nextValue = normalizeRoofToWall(nextValue);
+    if (key === "secondary_water") nextValue = normalizeSecondaryWater(nextValue);
+    if (key === "wind_speed") nextValue = normalizeWindSpeed(nextValue);
+    if (key === "stories") nextValue = normalizeStories(nextValue);
+    if (key === "flood_zone") nextValue = normalizeFloodZone(nextValue);
+    if (key === "protection_class") nextValue = normalizeProtectionClass(nextValue);
+    if (key === "building_code") nextValue = normalizeBuildingCode(nextValue);
+    if (key === "roof_covering") nextValue = normalizeRoofCovering(nextValue);
+    if (key === "roof_shape") nextValue = normalizeRoofShape(nextValue);
+    if (key === "roof_deck" || key === "roof_deck_attachment") {
+      nextValue = normalizeRoofDeckAttachment(nextValue);
     }
+    if (key === "terrain") nextValue = normalizeTerrain(nextValue);
     if (key === "form") {
+      // Cascade owns quoting form. Normalize leftover stored values only.
       const compact = nextValue.toUpperCase().replace(/\s+/g, "").replace(/-/g, "");
       if (compact === "DP3" || compact === "DWELLINGDP3") nextValue = "DP3";
       else if (compact === "HO3" || compact === "HOMEOWNERS3" || compact === "HOMEOWNER3") nextValue = "HO3";
       else if (compact === "HO6") nextValue = "HO6";
+      else if (compact === "HO8") nextValue = "HO8";
+      else if (compact === "MH" || compact === "MHO") nextValue = "MHO";
+      else if (compact === "MDP") nextValue = "MDP";
       else if (compact === "DP1") nextValue = "DP1";
     }
     const sourceLabel = cellSourceDocument(item, source);

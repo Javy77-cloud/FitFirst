@@ -25,19 +25,19 @@ export function normalizeGender(raw: string | null | undefined): string {
   return "";
 }
 
-/** Months occupied — three desk buckets (Javy 2026-09-09). */
+/** Months occupied — QuoteRUSH 2026-09-15 (0-3; 4-8; 9+ months). */
 export const MONTHS_OCCUPIED_OPTIONS = [
-  "0 to 3 months",
-  "4 to 8 months",
-  "9 months or more",
+  "0-3 months",
+  "4-8 months",
+  "9+ months",
 ] as const;
 
-/** Usage / how the dwelling is used (Javy 2026-09-09). */
+/** Usage — QuoteRUSH 2026-09-15 (Primary; Rental; Seasonal; Secondary; Vacant). */
 export const USAGE_OPTIONS = [
   "Primary",
-  "Secondary",
-  "Seasonal",
   "Rental",
+  "Seasonal",
+  "Secondary",
   "Vacant",
 ] as const;
 
@@ -218,11 +218,191 @@ export const PRIMARY_HEAT_OPTIONS = [
   "Other",
 ] as const;
 
-/** People's Trust / Slate insurance score range (Gloria HO3 2026-09-13). */
+/**
+ * QuoteRUSH Assumed Credit Score (2026-09-15).
+ * Legacy People's Trust/Slate "Above Average" maps to Excellent.
+ */
 export const INSURANCE_SCORE_RANGE_OPTIONS = [
-  "Above Average",
   "Average",
   "Below Average",
+  "Excellent",
+  "Poor",
+  "Very Good",
+] as const;
+
+/** QuoteRUSH Water Backup/Sump Overflow (2026-09-15). Dollar strings for Super-Copy. */
+export const WATER_BACKUP_OPTIONS = [
+  "$2,000",
+  "$5,000",
+  "$10,000",
+  "$15,000",
+  "$20,000",
+  "$25,000",
+  "$30,000",
+  "$50,000",
+] as const;
+
+/**
+ * Claims last 5 years — store pasteable tokens.
+ * "No claims" is the explicit zero (also accepts 0 / none).
+ */
+export const CLAIMS_5YR_OPTIONS = ["No claims", "1", "2", "3", "4+"] as const;
+
+/** QuoteRUSH SWR is No/Yes; Unknown kept for OIR C / undetermined. */
+export const YES_NO_UNKNOWN_OPTIONS = ["No", "Yes", "Unknown"] as const;
+
+/** QuoteRUSH Roof Wall Connection (2026-09-15). */
+export const ROOF_TO_WALL_OPTIONS = [
+  "Clips",
+  "Double Wraps",
+  "N/A",
+  "Single Wraps",
+  "Structural",
+  "Toe Nails",
+  "Unknown",
+] as const;
+
+/**
+ * QuoteRUSH Wind Speed/Design showed 100/110/120 (2026-09-15).
+ * 130/140/150/HVHZ kept for OIR / other carriers.
+ */
+export const WIND_SPEED_OPTIONS = ["100", "110", "120", "130", "140", "150", "HVHZ"] as const;
+
+/**
+ * QuoteRUSH Building Code showed A/B/C (2026-09-15).
+ * D kept for OIR-B1-1802 unknown / does not meet A–C.
+ */
+export const BUILDING_CODE_OPTIONS = ["A", "B", "C", "D"] as const;
+
+/** QuoteRUSH roof covering / wind-mit FBC compliance (2026-09-15). */
+export const ROOF_COVERING_OPTIONS = [
+  "Meets FBC 1994",
+  "Meets FBC 2001",
+  "Non-FBC",
+  "Reinf Concrete Roof Deck",
+  "Unknown",
+] as const;
+
+/** Roof geometry from `WIND_MIT_CHECKBOX_MAPS.roof_shape`. */
+export const ROOF_SHAPE_OPTIONS = ["hip", "flat", "other"] as const;
+
+/** QuoteRUSH roof deck attachment (2026-09-15). */
+export const ROOF_DECK_ATTACHMENT_OPTIONS = [
+  "Level A",
+  "Level B",
+  "Level C",
+  "Metal Deck - Type II or III",
+  "Reinforced Concrete Roof Deck",
+  "Unknown",
+  "Wood Deck - Type II only",
+] as const;
+
+/** QuoteRUSH opening protection (2026-09-15). */
+export const OPENING_PROTECTION_OPTIONS = [
+  "Basic",
+  "Hurricane Protection",
+  "Unknown or None",
+] as const;
+
+/**
+ * QuoteRUSH Terrain showed Exposure B / Exposure C (2026-09-15).
+ * Exposure D kept for OIR terrain D.
+ */
+export const TERRAIN_OPTIONS = ["Exposure B", "Exposure C", "Exposure D"] as const;
+
+/** QuoteRUSH-style stories including bi/tri-level (2026-09-15 follow-up). */
+export const STORIES_OPTIONS = ["1", "2", "3", "4+", "Bi-Level", "Tri-Level"] as const;
+
+/** ISO protection class 1–10. */
+export const PROTECTION_CLASS_OPTIONS = [
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+] as const;
+
+/** ISO BCEG grade — Super-Copy helper. */
+export const BCEG_OPTIONS = [
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "Ungraded",
+  "N/A",
+] as const;
+
+/** Common FEMA flood zones for home Super-Copy. */
+export const FLOOD_ZONE_OPTIONS = [
+  "A",
+  "AE",
+  "AH",
+  "AO",
+  "AR",
+  "A99",
+  "V",
+  "VE",
+  "X",
+  "X-Shaded",
+  "B",
+  "C",
+  "D",
+] as const;
+
+/** Dwelling structure type — Super-Copy helper. */
+export const STRUCTURE_TYPE_OPTIONS = [
+  "Single Family",
+  "Townhouse",
+  "Condo",
+  "Duplex",
+  "Rowhouse",
+  "Mobile Home",
+  "Manufactured Home",
+] as const;
+
+/** Pool type — Super-Copy helper (keep `pool` yes/no separate). */
+export const POOL_TYPE_OPTIONS = [
+  "None",
+  "Above Ground",
+  "In Ground",
+  "Indoor",
+  "Community",
+] as const;
+
+/** 4-point system update type. */
+export const FOUR_POINT_UPDATE_TYPE_OPTIONS = [
+  "Complete",
+  "Partial",
+  "None",
+  "Unknown",
+] as const;
+
+export const ROOF_UPDATE_TYPE_OPTIONS = [
+  "Complete replacement",
+  "Partial",
+  "Overlay",
+  "None",
+  "Unknown",
+] as const;
+
+export const WATER_HEATER_LOCATION_OPTIONS = [
+  "Garage",
+  "Interior closet",
+  "Exterior closet",
+  "Attic",
+  "Utility room",
+  "Other",
 ] as const;
 
 /** Primary plumbing type (carrier portals — Javy 2026-09-09). */
@@ -236,7 +416,10 @@ export const PRIMARY_PLUMBING_OPTIONS = [
   "Other",
 ] as const;
 
-/** Exterior = wall type (Javy 2026-09-09 night lock). */
+/**
+ * Exterior = QuoteRUSH Wall Type (kept separate from construction).
+ * 2026-09-15 harvest did not list full Wall Type values; keep close FitFirst vocab.
+ */
 export const EXTERIOR_OPTIONS = [
   "Masonry",
   "Frame",
@@ -254,7 +437,10 @@ export const FOUNDATION_OPTIONS = [
   "Basement",
 ] as const;
 
-/** Construction = wall construction (11) — Javy 2026-09-09 night lock. */
+/**
+ * Construction = QuoteRUSH Wall Construction (kept separate from exterior).
+ * 2026-09-15 harvest did not list full Wall Construction values; keep close FitFirst vocab.
+ */
 export const CONSTRUCTION_OPTIONS = [
   "Masonry",
   "Frame",
@@ -270,9 +456,19 @@ export const CONSTRUCTION_OPTIONS = [
   "Asbestos",
 ] as const;
 
-export const WIND_HAIL_DEDUCTIBLE_OPTIONS = ["1000", "2000", "2500"] as const;
-export const HURRICANE_DEDUCTIBLE_OPTIONS = ["1%", "2%", "3%", "4%", "5%"] as const;
-export const AOP_DEDUCTIBLE_OPTIONS = ["1000", "2000", "2500"] as const;
+/** Expanded toward QuoteRUSH Coverage-tab deductibles (full harvest not listed). */
+export const WIND_HAIL_DEDUCTIBLE_OPTIONS = [
+  "500",
+  "1000",
+  "2000",
+  "2500",
+  "5000",
+  "1%",
+  "2%",
+  "5%",
+] as const;
+export const HURRICANE_DEDUCTIBLE_OPTIONS = ["1%", "2%", "3%", "4%", "5%", "10%"] as const;
+export const AOP_DEDUCTIBLE_OPTIONS = ["500", "1000", "1500", "2000", "2500", "5000"] as const;
 
 /**
  * Empty-cell defaults for new blank sheets / Fill.
@@ -328,9 +524,9 @@ export const FLOOD_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
 };
 
 
-const MONTHS_0_3 = "0 to 3 months";
-const MONTHS_4_8 = "4 to 8 months";
-const MONTHS_9_PLUS = "9 months or more";
+const MONTHS_0_3 = "0-3 months";
+const MONTHS_4_8 = "4-8 months";
+const MONTHS_9_PLUS = "9+ months";
 
 /** Normalize free months / legacy buckets into the three picklist options. */
 export function normalizeMonthsOccupied(raw: string | null | undefined): string {
@@ -364,7 +560,9 @@ export function normalizeMonthsOccupied(raw: string | null | undefined): string 
     compact === "9–12" ||
     compact === "9to12" ||
     lower === "9 months or more" ||
-    lower.includes("9 months or more")
+    lower.includes("9 months or more") ||
+    lower === "9+ months" ||
+    lower.includes("9+ months")
   ) {
     return MONTHS_9_PLUS;
   }
@@ -396,6 +594,261 @@ export function normalizeUsage(raw: string | null | undefined): string {
     vacant: "Vacant",
   };
   return map[lower] ?? text;
+}
+
+const WATER_BACKUP_BY_AMOUNT: Record<string, (typeof WATER_BACKUP_OPTIONS)[number]> = {
+  "2000": "$2,000",
+  "5000": "$5,000",
+  "10000": "$10,000",
+  "15000": "$15,000",
+  "20000": "$20,000",
+  "25000": "$25,000",
+  "30000": "$30,000",
+  "50000": "$50,000",
+};
+
+export function normalizeWaterBackup(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  if (WATER_BACKUP_OPTIONS.includes(text as (typeof WATER_BACKUP_OPTIONS)[number])) return text;
+  const digits = text.replace(/[^0-9]/g, "");
+  if (WATER_BACKUP_BY_AMOUNT[digits]) return WATER_BACKUP_BY_AMOUNT[digits];
+  return text;
+}
+
+export function normalizeInsuranceScoreRange(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+  // Legacy People's Trust/Slate "Above Average" → QuoteRUSH Excellent.
+  if (lower === "above average" || lower === "excellent") return "Excellent";
+  if (lower === "very good" || lower === "verygood") return "Very Good";
+  if (lower === "average") return "Average";
+  if (lower === "below average" || lower === "belowaverage") return "Below Average";
+  if (lower === "poor") return "Poor";
+  const hit = INSURANCE_SCORE_RANGE_OPTIONS.find((opt) => opt.toLowerCase() === lower);
+  return hit ?? text;
+}
+
+export function normalizeClaims5yr(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase().replace(/\s+/g, " ").trim();
+  if (
+    lower === "0" ||
+    lower === "none" ||
+    lower === "no" ||
+    lower === "no claims" ||
+    lower === "no claim" ||
+    lower === "zero"
+  ) {
+    return "No claims";
+  }
+  if (lower === "4+" || lower === "4 or more" || lower.startsWith("4+") || Number(lower) >= 4) {
+    return "4+";
+  }
+  if (lower === "1" || lower === "2" || lower === "3") return lower;
+  return CLAIMS_5YR_OPTIONS.includes(text as (typeof CLAIMS_5YR_OPTIONS)[number]) ? text : text;
+}
+
+export function normalizeRoofToWall(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+  const letter = lower.match(/^(?:([a-h])(?:\s*[.)\-:]|$))/);
+  const byLetter: Record<string, (typeof ROOF_TO_WALL_OPTIONS)[number]> = {
+    a: "Toe Nails",
+    b: "Clips",
+    c: "Single Wraps",
+    d: "Double Wraps",
+    e: "Structural",
+    f: "N/A",
+    g: "Unknown",
+    h: "N/A",
+  };
+  if (letter && byLetter[letter[1]!]) return byLetter[letter[1]!];
+  if (lower.includes("toe nail") || lower.includes("toenail")) return "Toe Nails";
+  if (lower.includes("clip")) return "Clips";
+  if (lower.includes("single wrap")) return "Single Wraps";
+  if (lower.includes("double wrap")) return "Double Wraps";
+  if (lower.includes("structural")) return "Structural";
+  if (lower.includes("no attic") || lower === "n/a" || lower === "na" || lower === "other") return "N/A";
+  if (lower === "unknown" || lower.includes("unidentified")) return "Unknown";
+  const titled = ROOF_TO_WALL_OPTIONS.find((opt) => opt.toLowerCase() === lower);
+  return titled ?? text;
+}
+
+export function normalizeSecondaryWater(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase().replace(/\s+/g, " ").trim();
+  if (
+    lower === "a" ||
+    lower.startsWith("a.") ||
+    lower === "yes" ||
+    lower === "y" ||
+    lower.includes("sealed")
+  ) {
+    return "Yes";
+  }
+  if (lower === "b" || lower.startsWith("b.") || lower === "no" || lower === "n" || lower === "false") {
+    return "No";
+  }
+  if (
+    lower === "c" ||
+    lower.startsWith("c.") ||
+    lower === "unknown" ||
+    lower.includes("undetermined")
+  ) {
+    return "Unknown";
+  }
+  const hit = YES_NO_UNKNOWN_OPTIONS.find((opt) => opt.toLowerCase() === lower);
+  return hit ?? text;
+}
+
+export function normalizeWindSpeed(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const upper = text.toUpperCase().replace(/\s+/g, "");
+  if (upper.includes("HVHZ")) return "HVHZ";
+  if (WIND_SPEED_OPTIONS.includes(text as (typeof WIND_SPEED_OPTIONS)[number])) return text;
+  const mph = text.match(/\b(100|110|120|130|140|150)\b/);
+  if (mph) return mph[1]!;
+  return text;
+}
+
+export function normalizeBuildingCode(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const lead = text.match(/^([A-Da-d])(?:\s*[.)\-:]|$)/);
+  if (lead) return lead[1]!.toUpperCase();
+  const lower = text.toLowerCase().replace(/\s+/g, " ").trim();
+  if (lower.includes("unknown") || lower.includes("does not meet")) return "D";
+  if (BUILDING_CODE_OPTIONS.includes(text as (typeof BUILDING_CODE_OPTIONS)[number])) return text;
+  return text;
+}
+
+export function normalizeRoofCovering(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  if (ROOF_COVERING_OPTIONS.includes(text as (typeof ROOF_COVERING_OPTIONS)[number])) return text;
+  const lower = text.toLowerCase().replace(/\s+/g, " ").trim();
+  if (lower.includes("1994")) return "Meets FBC 1994";
+  if (lower.includes("2001")) return "Meets FBC 2001";
+  if (lower.includes("non-fbc") || lower.includes("non fbc")) return "Non-FBC";
+  if (lower.includes("reinf") || (lower.includes("concrete") && lower.includes("deck"))) {
+    return "Reinf Concrete Roof Deck";
+  }
+  if (lower === "unknown" || lower.includes("unidentified")) return "Unknown";
+  return text;
+}
+
+export function normalizeRoofShape(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase().replace(/\s+/g, " ").trim();
+  if (lower === "a" || lower.startsWith("a.") || lower.includes("hip")) return "hip";
+  if (lower === "b" || lower.startsWith("b.") || lower.includes("flat")) return "flat";
+  if (lower === "c" || lower.startsWith("c.") || lower.includes("gable") || lower.includes("other")) {
+    return "other";
+  }
+  const hit = ROOF_SHAPE_OPTIONS.find((opt) => opt === lower);
+  return hit ?? text;
+}
+
+export function normalizeRoofDeckAttachment(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  if (ROOF_DECK_ATTACHMENT_OPTIONS.includes(text as (typeof ROOF_DECK_ATTACHMENT_OPTIONS)[number])) {
+    return text;
+  }
+  const lower = text.toLowerCase().replace(/\s+/g, " ").trim();
+  if (/^(level\s*)?a\b/.test(lower) || lower === "a") return "Level A";
+  if (/^(level\s*)?b\b/.test(lower) || lower === "b") return "Level B";
+  if (/^(level\s*)?c\b/.test(lower) || lower === "c") return "Level C";
+  if (lower.includes("metal")) return "Metal Deck - Type II or III";
+  if (lower.includes("wood")) return "Wood Deck - Type II only";
+  if (lower.includes("concrete") || lower === "d") return "Reinforced Concrete Roof Deck";
+  if (lower === "unknown" || lower.includes("unidentified") || lower === "g") return "Unknown";
+  return text;
+}
+
+export function normalizeOpeningProtection(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  if (OPENING_PROTECTION_OPTIONS.includes(text as (typeof OPENING_PROTECTION_OPTIONS)[number])) {
+    return text;
+  }
+  const lower = text.toLowerCase().replace(/\s+/g, " ").trim();
+  if (
+    lower === "none" ||
+    lower === "n/a" ||
+    lower === "na" ||
+    lower === "n" ||
+    lower === "x" ||
+    lower === "unknown" ||
+    lower.includes("unknown or none")
+  ) {
+    return "Unknown or None";
+  }
+  if (lower.includes("hurricane") || lower === "a" || lower.includes("class a") || lower === "full") {
+    return "Hurricane Protection";
+  }
+  if (lower === "basic" || lower === "b" || lower.includes("class b")) return "Basic";
+  return text;
+}
+
+export function normalizeTerrain(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  if (TERRAIN_OPTIONS.includes(text as (typeof TERRAIN_OPTIONS)[number])) return text;
+  const letter = text.match(/^(?:exposure\s*)?([BCDbcd])(?:\s*[.)\-:]|$)/);
+  if (letter) return `Exposure ${letter[1]!.toUpperCase()}` as (typeof TERRAIN_OPTIONS)[number];
+  return text;
+}
+
+export function normalizeStories(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  if (STORIES_OPTIONS.includes(text as (typeof STORIES_OPTIONS)[number])) return text;
+  const lower = text.toLowerCase();
+  if (lower.includes("bi")) return "Bi-Level";
+  if (lower.includes("tri") || lower.includes("split")) return "Tri-Level";
+  const n = Number(text.replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(n)) return text;
+  if (n >= 4) return "4+";
+  if (n >= 1) return String(Math.trunc(n));
+  return text;
+}
+
+/** Appetite / risk snapshot still wants a number. */
+export function storiesAsNumber(raw: string | null | undefined): number | null {
+  const normalized = normalizeStories(raw);
+  if (!normalized) return null;
+  if (normalized === "4+") return 4;
+  if (normalized === "Bi-Level") return 2;
+  if (normalized === "Tri-Level") return 3;
+  const n = Number(normalized);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function normalizeFloodZone(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const upper = text.toUpperCase().replace(/\s+/g, "");
+  if (upper === "XSHADED" || upper === "X-SHADED" || upper === "SHADEDX") return "X-Shaded";
+  const hit = FLOOD_ZONE_OPTIONS.find((opt) => opt.toUpperCase() === upper);
+  return hit ?? text;
+}
+
+export function normalizeProtectionClass(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const digits = text.replace(/[^0-9]/g, "");
+  if (PROTECTION_CLASS_OPTIONS.includes(digits as (typeof PROTECTION_CLASS_OPTIONS)[number])) {
+    return digits;
+  }
+  return text;
 }
 
 export function normalizeOccupancy(raw: string | null | undefined): string {
@@ -514,6 +967,32 @@ export function applyMasterSheetDefaults(
     const next = normalizeMonthsOccupied(months.value);
     if (next && next !== months.value) {
       values.months_occupied = { ...months, value: next };
+    }
+  }
+  const selectNormalizers: Array<[string, (raw: string | null | undefined) => string]> = [
+    ["water_backup", normalizeWaterBackup],
+    ["claims_5yr", normalizeClaims5yr],
+    ["insurance_score_range", normalizeInsuranceScoreRange],
+    ["roof_to_wall", normalizeRoofToWall],
+    ["secondary_water", normalizeSecondaryWater],
+    ["wind_speed", normalizeWindSpeed],
+    ["building_code", normalizeBuildingCode],
+    ["roof_covering", normalizeRoofCovering],
+    ["roof_shape", normalizeRoofShape],
+    ["roof_deck", normalizeRoofDeckAttachment],
+    ["roof_deck_attachment", normalizeRoofDeckAttachment],
+    ["opening_protection", normalizeOpeningProtection],
+    ["terrain", normalizeTerrain],
+    ["stories", normalizeStories],
+    ["flood_zone", normalizeFloodZone],
+    ["protection_class", normalizeProtectionClass],
+  ];
+  for (const [key, normalize] of selectNormalizers) {
+    const cell = values[key];
+    if (!cell?.value?.trim()) continue;
+    const next = normalize(cell.value);
+    if (next && next !== cell.value) {
+      values[key] = { ...cell, value: next };
     }
   }
   return { values, filledKeys };

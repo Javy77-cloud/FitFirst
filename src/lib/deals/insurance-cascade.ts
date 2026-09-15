@@ -54,26 +54,32 @@ const FORM_CATEGORY: Record<QuotingFormId, Exclude<InsuranceCategoryId, "life" |
   HO3: "home",
   HO5: "home",
   HO6: "home",
+  HO8: "home",
+  MHO: "home",
+  MDP: "renter_landlord",
   DP1: "renter_landlord",
   DP3: "renter_landlord",
   HO4: "renter_landlord",
   PA: "auto",
+  MOTORCYCLE: "auto",
   RV: "rec",
+  BOAT: "rec",
   UMBRELLA: "umbrella",
   FLOOD: "flood",
   GL: "commercial",
   WC: "commercial",
   BOP: "commercial",
+  CA: "commercial",
 };
 
 const CATEGORY_FORMS: Record<Exclude<InsuranceCategoryId, "life" | "health">, QuotingFormId[]> = {
-  home: ["HO3", "HO5", "HO6"],
-  renter_landlord: ["HO4", "DP1", "DP3"],
-  auto: ["PA"],
-  rec: ["RV"],
+  home: ["HO3", "HO5", "HO6", "HO8", "MHO"],
+  renter_landlord: ["HO4", "DP1", "DP3", "MDP"],
+  auto: ["PA", "MOTORCYCLE"],
+  rec: ["RV", "BOAT"],
   flood: ["FLOOD"],
   umbrella: ["UMBRELLA"],
-  commercial: ["GL", "WC", "BOP"],
+  commercial: ["GL", "WC", "BOP", "CA"],
 };
 
 export function pipelineFamilyFromDeal(input: {
@@ -246,15 +252,42 @@ export function cascadeFromDeal(input: {
 export function categoryIdFromLabel(raw: string | null | undefined): InsuranceCategoryId | "" {
   const v = (raw ?? "").trim().toLowerCase();
   if (!v) return "";
-  if (v === "home" || v.includes("homeowner")) return "home";
-  if (v.includes("renter") || v.includes("landlord") || v === "dp1" || v === "dp3" || v === "ho4") {
+  if (
+    v === "home" ||
+    v.includes("homeowner") ||
+    v === "ho8" ||
+    v === "mh" ||
+    v === "mho" ||
+    v.includes("manufactured") ||
+    (v.includes("mobile home") && !v.includes("dwelling") && !v.includes("renter"))
+  ) {
+    return "home";
+  }
+  if (
+    v.includes("renter") ||
+    v.includes("landlord") ||
+    v === "dp1" ||
+    v === "dp3" ||
+    v === "ho4" ||
+    v === "mdp" ||
+    v.includes("dwelling fire")
+  ) {
     return "renter_landlord";
   }
-  if (v === "auto" || v.includes("personal auto")) return "auto";
-  if (v.includes("rec") || v.includes("rv") || v.includes("boat")) return "rec";
+  if (v === "auto" || v.includes("personal auto") || v.includes("motorcycle")) return "auto";
+  if (v.includes("rec") || v.includes("rv") || v.includes("boat") || v.includes("watercraft")) return "rec";
   if (v === "flood") return "flood";
   if (v === "umbrella") return "umbrella";
-  if (v === "commercial" || v === "gl" || v === "wc" || v === "bop" || v.includes("liability") || v.includes("workers")) {
+  if (
+    v === "commercial" ||
+    v === "gl" ||
+    v === "wc" ||
+    v === "bop" ||
+    v === "ca" ||
+    v.includes("commercial auto") ||
+    v.includes("liability") ||
+    v.includes("workers")
+  ) {
     return "commercial";
   }
   const hit = PC_CATEGORY_OPTIONS.find((row) => row.label.toLowerCase() === v || row.id === v);

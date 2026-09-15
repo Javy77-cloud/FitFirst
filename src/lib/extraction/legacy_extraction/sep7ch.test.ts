@@ -95,8 +95,8 @@ Opening Protection:
     const applied = applyExtractedToSheet("home", emptySheetValues("home"), extracted.fields);
     expect(applied.values.building_code.value).toBe("B");
     expect(applied.values.wind_speed.value).toBe("140");
-    expect(applied.values.roof_to_wall.value).toBe("clips");
-    expect(applied.values.roof_deck_attachment.value).toBe("C");
+    expect(applied.values.roof_to_wall.value).toBe("Clips");
+    expect(applied.values.roof_deck_attachment.value).toBe("Level C");
   });
 });
 
@@ -224,6 +224,16 @@ describe("sep7ch master sheet fields", () => {
       "current_policy_named_insured",
       "wind_speed",
       "stories",
+      "structure_type",
+      "pool_type",
+      "bceg_grade",
+      "protection_class",
+      "flood_zone",
+      "electrical_update_type",
+      "plumbing_update_type",
+      "heat_update_type",
+      "roof_update_type",
+      "water_heater_location",
       "electrical_year",
       "hvac_year",
       "water_heater_year",
@@ -232,12 +242,10 @@ describe("sep7ch master sheet fields", () => {
       "usage",
       "ordinance_or_law",
       "water_backup",
-      "scheduled_personal",
       "wind_hail_deductible",
       "mortgagee_name",
       "loan_number",
       "mortgagee_address",
-      "loss_assessment",
       "deadbolts",
     ]) {
       expect(keys.has(key), key).toBe(true);

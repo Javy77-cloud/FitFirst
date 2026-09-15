@@ -11,17 +11,19 @@ export type DeskLine = {
   shopLine: ShopLine;
 };
 
-const COMMERCIAL_LOBS = new Set(["GL", "WC", "BOP"]);
+const COMMERCIAL_LOBS = new Set(["GL", "WC", "BOP", "CA"]);
+const COMMERCIAL_FORM_IDS = new Set(["CA"]);
 
-function bookForForm(lob: string): LineBook {
-  return COMMERCIAL_LOBS.has(lob) ? "commercial" : "personal";
+function bookForForm(form: { id: string; lob: string }): LineBook {
+  if (COMMERCIAL_FORM_IDS.has(form.id) || COMMERCIAL_LOBS.has(form.lob)) return "commercial";
+  return "personal";
 }
 
 /** Policy subtypes for the deal create typeahead — same catalog as QUOTING_FORMS. */
 export const DESK_LINES: DeskLine[] = QUOTING_FORMS.map((form) => ({
   code: form.id,
   label: form.label,
-  book: bookForForm(form.lob),
+  book: bookForForm(form),
   lob: form.lob,
   shopLine: form.shopLine,
 }));
