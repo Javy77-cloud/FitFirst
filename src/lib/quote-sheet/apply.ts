@@ -36,6 +36,9 @@ import {
   normalizeUsage,
   normalizeWaterBackup,
   normalizeWindSpeed,
+  normalizeLifeProductType,
+  normalizeHealthPlanType,
+  normalizeTobaccoStatus,
 } from "./sheet-defaults";
 
 export type ExtractedInput = {
@@ -221,6 +224,9 @@ export function applyExtractedToSheet(
     ) {
       nextValue = normalizeAutoDollarLimit(nextValue);
     }
+    if (key === "product_type") nextValue = normalizeLifeProductType(nextValue) || nextValue;
+    if (key === "plan_type") nextValue = normalizeHealthPlanType(nextValue) || nextValue;
+    if (key === "tobacco_status") nextValue = normalizeTobaccoStatus(nextValue) || nextValue;
     if (key === "protection_class") nextValue = normalizeProtectionClass(nextValue);
     if (key === "building_code") nextValue = normalizeBuildingCode(nextValue);
     if (key === "roof_covering") nextValue = normalizeRoofCovering(nextValue);

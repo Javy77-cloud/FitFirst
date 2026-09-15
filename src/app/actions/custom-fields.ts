@@ -50,7 +50,9 @@ import {
   type CustomFieldType,
 } from "@/lib/custom-fields/types";
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
-import { dealListCascadeSyncValues } from "@/lib/deals/insurance-cascade";
+import { dealListCascadeSyncValues, pipelineFamilyFromDeal } from "@/lib/deals/insurance-cascade";
+import { allowLifeHealthFamily } from "@/lib/desk/line-settings";
+import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { dealDetailsSavedHref } from "@/lib/flash";
 import { flashAction } from "@/lib/flash-action";
 import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
@@ -355,7 +357,7 @@ export async function applySystemDealValues(dealId: string, system: Record<strin
   const familyRaw = String(system.pipelineFamily ?? "").trim().toLowerCase();
   const fromSubtypeProduct = sheetProductForQuotingForm(rawSubtype);
   // Cascade may still post pipelineFamily=pc while subtype is Term Life — trust subtype.
-  const family =
+  const requestedFamily =
     familyRaw === "life" || familyRaw === "health"
       ? familyRaw
       : fromSubtypeProduct === "life"
@@ -363,6 +365,9 @@ export async function applySystemDealValues(dealId: string, system: Record<strin
         : fromSubtypeProduct === "health"
           ? "health"
           : familyRaw;
+  const settings = await loadDeskLineSettings();
+  const existingFamily = pipelineFamilyFromDeal({ lineOfBusiness: existing.lineOfBusiness });
+  const family = allowLifeHealthFamily(requestedFamily, existingFamily, settings);
 
   const nextLine =
     form?.lob ||

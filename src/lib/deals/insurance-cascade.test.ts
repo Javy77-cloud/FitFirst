@@ -185,6 +185,14 @@ describe("deal list cascade sync", () => {
     });
   });
 
+  it("cascade Type picker hides Life/Health when write toggles are off", () => {
+    const control = readFileSync("src/components/custom-fields/insurance-cascade-control.tsx", "utf8");
+    expect(control).toMatch(/visibleInsuranceTypes/);
+    expect(control).toMatch(/lineSettings/);
+    const details = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
+    expect(details).toMatch(/lineSettings=\{deskLineSettings\}/);
+  });
+
   it("Details save + convert persist list keys; cascade parent reads Pipeline", () => {
     expect(readFileSync("src/app/actions/custom-fields.ts", "utf8")).toMatch(/dealListCascadeSyncValues/);
     expect(readFileSync("src/app/actions/crm.ts", "utf8")).toMatch(/dealListCascadeSyncValues/);

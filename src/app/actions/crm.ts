@@ -270,7 +270,11 @@ export async function convertLeadToDeal(
 
   const leadCustom = await loadRecordValues(leadId, "leads").catch(() => ({} as Record<string, string>));
   // Prefer lead Insurance subtype / Type custom fields over silent HO default.
-  const dealLine = resolveConvertLine(line, lead.insuranceTypeDesired, leadCustom);
+  const { loadDeskLineSettings } = await import("@/lib/db/line-settings");
+  const { isHiddenLine } = await import("@/lib/desk/line-settings");
+  const lineSettings = await loadDeskLineSettings();
+  const requestedLine = resolveConvertLine(line, lead.insuranceTypeDesired, leadCustom);
+  const dealLine = isHiddenLine(requestedLine, lineSettings) ? "HO" : requestedLine;
   const copy = convertFieldCopy(lead, dealLine, state, carryFields, leadCustom);
   const leadDocs = await db
     .select()
@@ -536,10 +540,17 @@ export async function createDeal(formData: FormData) {
     str(formData, "line") ||
     packageDraft?.quotingForm ||
     "HO3";
-  const picked = dealCreateFieldsFromPick(formRaw);
-  const line = packageDraft && !str(formData, "line") && !str(formData, "field_insurance_subtype")
-    ? packageDraft.lineOfBusiness
-    : picked.lineOfBusiness;
+  const pickedRaw = dealCreateFieldsFromPick(formRaw);
+  const { loadDeskLineSettings } = await import("@/lib/db/line-settings");
+  const { isHiddenLine } = await import("@/lib/desk/line-settings");
+  const createSettings = await loadDeskLineSettings();
+  const picked = isHiddenLine(pickedRaw.lineOfBusiness, createSettings)
+    ? dealCreateFieldsFromPick("HO3")
+    : pickedRaw;
+  const line =
+    packageDraft && !str(formData, "line") && !str(formData, "field_insurance_subtype")
+      ? packageDraft.lineOfBusiness
+      : picked.lineOfBusiness;
   const policySubType =
     line === "LIFE"
       ? str(formData, "lifeSubType") || str(formData, "policySubType") || picked.policySubType
@@ -708,9 +719,13 @@ export async function createDealFromDecDrop(formData: FormData) {
   }
   const firstName = str(formData, "firstName") || "Dec";
   const lastName = str(formData, "lastName") || "Drop";
-  const line = LINES.includes(str(formData, "line") as (typeof LINES)[number])
+  const lineRaw = LINES.includes(str(formData, "line") as (typeof LINES)[number])
     ? str(formData, "line")
     : "HO";
+  const { loadDeskLineSettings } = await import("@/lib/db/line-settings");
+  const { isHiddenLine } = await import("@/lib/desk/line-settings");
+  const decSettings = await loadDeskLineSettings();
+  const line = isHiddenLine(lineRaw, decSettings) ? "HO" : lineRaw;
 
   const [lead] = await db
     .insert(leads)

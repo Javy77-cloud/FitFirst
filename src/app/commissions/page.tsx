@@ -20,6 +20,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { commissions, policies, users } from "@/lib/db/schema";
 import { RecordLink } from "@/components/record-links";
+import { loadDeskLineSettings } from "@/lib/db/line-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +57,13 @@ export default async function CommissionsPage({
 }) {
   const session = await currentDeskSession();
   const params = await searchParams;
-  const family = first(params.family);
+  const lineSettings = await loadDeskLineSettings();
+  const familyRaw = first(params.family);
+  const family =
+    (familyRaw === "life" && !lineSettings.writeLife) ||
+    (familyRaw === "health" && !lineSettings.writeHealth)
+      ? undefined
+      : familyRaw;
   const sub = first(params.sub);
   const rangeRaw = first(params.range);
   const range = isCommissionPeriod(rangeRaw) ? rangeRaw : "all";
@@ -150,7 +157,13 @@ export default async function CommissionsPage({
           paid: paidRows.length,
         }}
       />
-      <CommissionFilters family={family} sub={sub} range={range} status={status} />
+      <CommissionFilters
+        family={family}
+        sub={sub}
+        range={range}
+        status={status}
+        lineSettings={lineSettings}
+      />
       {filtered ? (
         <p className="mb-3 text-base text-muted-foreground">
           Showing {visible.length} row{visible.length === 1 ? "" : "s"} for this cut.

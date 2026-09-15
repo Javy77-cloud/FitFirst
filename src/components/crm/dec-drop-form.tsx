@@ -4,8 +4,10 @@ import { LineSelect } from "@/components/crm/line-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { loadDeskLineSettings } from "@/lib/db/line-settings";
 
-export function DecDropForm() {
+export async function DecDropForm() {
+  const settings = await loadDeskLineSettings();
   return (
     <form action={createDealFromDecDrop} className="ff-card space-y-3 p-4">
       <div>
@@ -44,7 +46,7 @@ export function DecDropForm() {
           <Label htmlFor="decLine" className="text-xs">
             Line
           </Label>
-          <LineSelect id="decLine" />
+          <LineSelect id="decLine" settings={settings} />
         </div>
         <div>
           <Label htmlFor="decFile" className="text-xs">

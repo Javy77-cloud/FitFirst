@@ -13,6 +13,7 @@ import {
 } from "@/lib/custom-fields/insurance-quote-section";
 import { asList } from "@/lib/safe-list";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
+import type { DeskLineSettings } from "@/lib/desk/line-settings";
 
 export function RecordLayoutFields({
   module,
@@ -25,6 +26,7 @@ export function RecordLayoutFields({
   pipelineFamily = "pc",
   lifeOptions = [],
   healthOptions = [],
+  lineSettings,
 }: {
   module: FieldLayoutModule;
   layout: FieldLayout;
@@ -37,6 +39,7 @@ export function RecordLayoutFields({
   pipelineFamily?: PipelineFamily;
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
+  lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
   const safeLayout = parseLayout(layout);
   const fieldList = resolveLayoutFields(safeLayout, asList(fields));
@@ -128,6 +131,7 @@ export function RecordLayoutFields({
                         pipelineFamily={pipelineFamily}
                         lifeOptions={lifeOptions}
                         healthOptions={healthOptions}
+                        lineSettings={lineSettings}
                       />
                     ) : (
                       <FieldControl
@@ -139,6 +143,7 @@ export function RecordLayoutFields({
                         pipelineFamily={pipelineFamily}
                         lifeOptions={lifeOptions}
                         healthOptions={healthOptions}
+                        lineSettings={lineSettings}
                       />
                     )}
                   </div>

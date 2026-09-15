@@ -14,6 +14,7 @@ import { formatDisplayDate } from "@/lib/dates/display-format";
 import { flashAction } from "@/lib/flash-client";
 import { cn } from "@/lib/utils";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
+import type { DeskLineSettings } from "@/lib/desk/line-settings";
 
 async function persistRecordField(module: FieldLayoutModule, recordId: string, fieldKey: string, value: string) {
   if (module === "businesses") {
@@ -97,6 +98,7 @@ export function ClickToEditField({
   lifeHealthOptions = [],
   lifeOptions = [],
   healthOptions = [],
+  lineSettings,
 }: {
   field: CustomFieldDef;
   value: string;
@@ -110,6 +112,7 @@ export function ClickToEditField({
   lifeHealthOptions?: Array<{ slug?: string; label: string }>;
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
+  lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(value);
@@ -262,6 +265,7 @@ export function ClickToEditField({
         lifeHealthOptions={lifeHealthOptions}
         lifeOptions={lifeOptions}
         healthOptions={healthOptions}
+        lineSettings={lineSettings}
         onMultiSelectChange={(joined) => {
           // Keep editing open while picking; persist each change so blur isn't required.
           const previous = saved;
