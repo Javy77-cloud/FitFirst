@@ -35,7 +35,7 @@ describe("dec extraction coverage vs the 12-field miss", () => {
     expect(filled.values.city.value).toBe("Melbourne");
     expect(filled.values.current_carrier.value).toMatch(/Citizens/i);
     expect(filled.values.policy_number.value).toBe("FG-HO3-2026-4411");
-    expect(filled.values.form.value).toBe("HO-3");
+    expect(filled.values.form).toBeUndefined();
     expect(filled.values.effective_date.value).toBe("03/01/2026");
     expect(filled.values.expiration_date.value).toBe("03/01/2027");
     expect(filled.values.coverage_a.value).toBe("280000");
@@ -46,9 +46,9 @@ describe("dec extraction coverage vs the 12-field miss", () => {
     expect(filled.values.coverage_f.value).toBe("2000");
     expect(filled.values.year_built.value).toBe("1998");
     expect(filled.values.roof_year.value).toBe("2018");
-    expect(filled.values.roof_covering.value).toBe("shingle");
+    expect(filled.values.roof_covering.value).toBe("Asphalt/Fiberglass Shingle");
     expect(filled.values.roof_shape.value).toBe("hip");
-    expect(filled.values.occupancy.value).toBe("owner");
+    expect(filled.values.occupancy.value).toBe("Owner");
     expect(filled.values.construction.value).toBe("masonry");
     expect(filled.values.current_premium.value).toBe("4200");
     expect(filled.values.coverage_a.source).toBe("photo-ocr");

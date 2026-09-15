@@ -22,10 +22,19 @@ export const WRITTEN_LINE_LABELS: Record<string, string> = {
 
 export function appointmentLine(lineOfBusiness: string): string {
   const raw = lineOfBusiness.trim().toUpperCase();
-  if (raw === "HO3" || raw === "HO5" || raw === "HO6" || raw === "HOME" || raw === "HOMEOWNERS") {
+  if (
+    raw === "HO3" ||
+    raw === "HO5" ||
+    raw === "HO6" ||
+    raw === "HO8" ||
+    raw === "MH" ||
+    raw === "HOME" ||
+    raw === "HOMEOWNERS"
+  ) {
     return "HO";
   }
-  if (raw === "PA" || raw === "PERSONAL_AUTO") return "AUTO";
+  if (raw === "PA" || raw === "PERSONAL_AUTO" || raw === "MOTORCYCLE") return "AUTO";
+  if (raw === "CA" || raw === "COMMERCIAL_AUTO") return "AUTO";
   if (raw === "PU" || raw === "PUP") return "UMBRELLA";
   return raw;
 }

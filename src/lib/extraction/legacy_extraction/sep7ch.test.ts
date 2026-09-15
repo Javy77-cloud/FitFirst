@@ -93,9 +93,9 @@ Opening Protection:
     );
 
     const applied = applyExtractedToSheet("home", emptySheetValues("home"), extracted.fields);
-    expect(applied.values.building_code.value).toBe("B");
+    expect(applied.values.building_code.value).toBe("B. FBC 2007 and later");
     expect(applied.values.wind_speed.value).toBe("140");
-    expect(applied.values.roof_to_wall.value).toBe("clips");
+    expect(applied.values.roof_to_wall.value).toBe("Clips");
     expect(applied.values.roof_deck_attachment.value).toBe("C");
   });
 });

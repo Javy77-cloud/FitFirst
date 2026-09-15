@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   cascadeFromDeal,
   categoriesForType,
+  categoryIdFromLabel,
   DEAL_LIST_PIPELINE_KEY,
   DEAL_LIST_SUBTYPE_KEY,
   dealListCascadeSyncValues,
@@ -37,9 +38,49 @@ describe("insurance cascade", () => {
     expect(labels).not.toContain("HO3");
   });
 
-  it("Home category forms are HO3/HO5/HO6", () => {
+  it("Home category forms are HO3/HO5/HO6/HO8/MH", () => {
     const ids = formsForCategory("pc", "home").map((s) => s.id);
-    expect(ids).toEqual(["HO3", "HO5", "HO6"]);
+    expect(ids).toEqual(["HO3", "HO5", "HO6", "HO8", "MH"]);
+  });
+
+  it("Auto keeps Motorcycle distinct from PA", () => {
+    const ids = formsForCategory("pc", "auto").map((s) => s.id);
+    expect(ids).toEqual(["PA", "MOTORCYCLE"]);
+  });
+
+  it("Recreational includes RV and Boat/Watercraft", () => {
+    const forms = formsForCategory("pc", "rec");
+    expect(forms.map((s) => s.id)).toEqual(["RV", "BOAT"]);
+    expect(forms.map((s) => s.label)).toEqual(["Recreational vehicle", "Boat/Watercraft"]);
+  });
+
+  it("Commercial includes CA as a distinct form", () => {
+    const ids = formsForCategory("pc", "commercial").map((s) => s.id);
+    expect(ids).toEqual(["GL", "WC", "BOP", "CA"]);
+  });
+
+  it("resolves HO8, MH, Motorcycle, Boat, and CA onto the right category", () => {
+    expect(cascadeFromDeal({ family: "pc", quotingForm: "HO8" })).toMatchObject({
+      typeId: "pc",
+      categoryId: "home",
+      subtypeId: "HO8",
+    });
+    expect(cascadeFromDeal({ family: "pc", quotingForm: "MH" })).toMatchObject({
+      categoryId: "home",
+      subtypeId: "MH",
+    });
+    expect(cascadeFromDeal({ family: "pc", quotingForm: "MOTORCYCLE" })).toMatchObject({
+      categoryId: "auto",
+      subtypeId: "MOTORCYCLE",
+    });
+    expect(cascadeFromDeal({ family: "pc", quotingForm: "BOAT" })).toMatchObject({
+      categoryId: "rec",
+      subtypeId: "BOAT",
+    });
+    expect(cascadeFromDeal({ family: "pc", quotingForm: "CA" })).toMatchObject({
+      categoryId: "commercial",
+      subtypeId: "CA",
+    });
   });
 
   it("Renter/Landlord forms are HO4/DP1/DP3", () => {
@@ -69,6 +110,17 @@ describe("insurance cascade", () => {
     const ids = policySubtypesForType("pc", "pc").map((s) => s.id);
     expect(ids).toContain("HO3");
     expect(ids).toContain("PA");
+    expect(ids).toContain("MOTORCYCLE");
+    expect(ids).toContain("BOAT");
+    expect(ids).toContain("CA");
+  });
+
+  it("maps motorcycle / boat / CA labels onto cascade categories", () => {
+    expect(categoryIdFromLabel("Motorcycle")).toBe("auto");
+    expect(categoryIdFromLabel("Boat/Watercraft")).toBe("rec");
+    expect(categoryIdFromLabel("Commercial Auto")).toBe("commercial");
+    expect(categoryIdFromLabel("HO8")).toBe("home");
+    expect(categoryIdFromLabel("mobile home")).toBe("home");
   });
 });
 

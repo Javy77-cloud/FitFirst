@@ -56,7 +56,6 @@ Dwelling limit from the dec. Do not use Zillow list price.
 export const DEC_COVERAGE_MISS_KEYS = [
   "named_insured",
   "policy_number",
-  "form",
   "effective_date",
   "expiration_date",
   "coverage_b",
@@ -83,7 +82,6 @@ export const DEC_COVERAGE_TARGET_KEYS = [
   "zip",
   "current_carrier",
   "policy_number",
-  "form",
   "effective_date",
   "expiration_date",
   "occupancy",

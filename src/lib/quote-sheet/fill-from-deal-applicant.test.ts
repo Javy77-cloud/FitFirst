@@ -72,7 +72,7 @@ describe("fill master sheet from Deal Details (applicant + co-applicant)", () =>
     expect(result.values.applicant_dob.sourceLabel).toBe("deal details");
   });
 
-  it("copies quotingForm / insurance_subtype onto form and landlord layout keys", () => {
+  it("copies landlord layout keys from Deal Details and leaves form to the cascade", () => {
     const existing = emptySheetValues("home", "landlord");
     const result = fillSheetFromDealDetails(
       {
@@ -91,7 +91,7 @@ describe("fill master sheet from Deal Details (applicant + co-applicant)", () =>
       },
       existing,
     );
-    expect(result.values.form.value).toBe("DP3");
+    expect(result.values.form).toBeUndefined();
     expect(result.values.lease_term.value).toBe("12 months");
     expect(result.values.tenant_name.value).toBe("Jane Tenant");
     expect(result.values.landlord_liability.value).toBe("100000");
@@ -99,6 +99,5 @@ describe("fill master sheet from Deal Details (applicant + co-applicant)", () =>
     expect(result.values.animals.value).toBe("no");
     expect(result.values.primary_heat.value).toBe("Central air / heat");
     expect(result.values.business_on_premises.value).toBe("no");
-    expect(result.values.form.sourceLabel).toBe("deal details");
   });
 });

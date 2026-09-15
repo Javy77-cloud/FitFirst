@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEAL_LINE_OPTIONS,
   lobForProduct,
+  quotingFormForProduct,
   resolveDealProduct,
   resolveDealSheetLine,
   sheetProductForQuotingForm,
@@ -24,6 +25,7 @@ describe("deal line of business", () => {
     expect(shopLineForProduct("motorcycle")).toBe("auto");
     expect(shopLineForProduct("commercial_auto")).toBe("auto");
     expect(shopLineForProduct("rv")).toBe("rec_rv");
+    expect(shopLineForProduct("boat")).toBe("rec_rv");
     expect(lobForProduct("flood")).toBe("FLOOD");
     expect(lobForProduct("gl")).toBe("GL");
     expect(shopLineForProduct("bop")).toBe("bop");
@@ -40,6 +42,7 @@ describe("deal line of business", () => {
         "Landlord",
         "Auto",
         "RV",
+        "Boat/Watercraft",
         "Motorcycle",
         "Flood",
         "GL",
@@ -58,9 +61,19 @@ describe("deal line of business", () => {
     expect(sheetProductForQuotingForm("HO3")).toBe("homeowners");
     expect(sheetProductForQuotingForm("HO5")).toBe("homeowners");
     expect(sheetProductForQuotingForm("HO6")).toBe("homeowners");
+    expect(sheetProductForQuotingForm("HO8")).toBe("homeowners");
+    expect(sheetProductForQuotingForm("MH")).toBe("homeowners");
     expect(sheetProductForQuotingForm("DP1")).toBe("landlord");
     expect(sheetProductForQuotingForm("DP3")).toBe("landlord");
     expect(sheetProductForQuotingForm("PA")).toBe("auto");
+    expect(sheetProductForQuotingForm("MOTORCYCLE")).toBe("motorcycle");
+    expect(sheetProductForQuotingForm("BOAT")).toBe("boat");
+    expect(sheetProductForQuotingForm("CA")).toBe("commercial_auto");
+    expect(quotingFormForProduct("motorcycle")).toBe("MOTORCYCLE");
+    expect(quotingFormForProduct("commercial_auto")).toBe("CA");
+    expect(quotingFormForProduct("boat")).toBe("BOAT");
+    expect(resolveDealProduct({ quotingForm: "MOTORCYCLE" })).toBe("motorcycle");
+    expect(resolveDealProduct({ quotingForm: "CA" })).toBe("commercial_auto");
     expect(resolveDealProduct({ quotingForm: "HO6", sheetProduct: "renters" })).toBe("homeowners");
     expect(resolveDealProduct({ quotingForm: "DP1" })).toBe("landlord");
   });

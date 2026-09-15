@@ -32,8 +32,16 @@ describe("quoting forms", () => {
     expect(quotingFormById("DP1")?.shopLine).toBe("home");
     expect(quotingFormById("DP1")?.label).toBe("DP1");
     expect(quotingFormById("PA")?.label).toBe("Auto");
+    expect(quotingFormById("HO8")?.shopLine).toBe("home");
+    expect(quotingFormById("MH")?.label).toBe("MH");
+    expect(quotingFormById("MOTORCYCLE")?.label).toBe("Motorcycle");
+    expect(quotingFormById("BOAT")?.label).toBe("Boat/Watercraft");
+    expect(quotingFormById("CA")?.label).toBe("Commercial Auto");
     expect(sheetsToPrepare("HO5")).toEqual(["home"]);
     expect(sheetsToPrepare("DP1")).toEqual(["home"]);
+    expect(sheetsToPrepare("MOTORCYCLE")).toEqual(["auto"]);
+    expect(sheetsToPrepare("BOAT")).toEqual(["rec_rv"]);
+    expect(sheetsToPrepare("CA")).toEqual(["auto"]);
   });
 
   it("coerces Insurance subtype labels and legacy Home/Auto words to form ids", () => {
@@ -41,9 +49,27 @@ describe("quoting forms", () => {
     expect(coerceQuotingFormId("Auto")).toBe("PA");
     expect(coerceQuotingFormId("Home")).toBe("HO3");
     expect(coerceQuotingFormId("Landlord")).toBe("DP3");
+    expect(coerceQuotingFormId("Motorcycle")).toBe("MOTORCYCLE");
+    expect(coerceQuotingFormId("Commercial Auto")).toBe("CA");
+    expect(coerceQuotingFormId("Boat")).toBe("BOAT");
     expect(quotingFormLabel("PA")).toBe("Auto");
+    expect(quotingFormLabel("MOTORCYCLE")).toBe("Motorcycle");
+    expect(quotingFormLabel("CA")).toBe("Commercial Auto");
     expect(insuranceSubtypeOptions()).toEqual(
-      expect.arrayContaining(["HO3", "HO5", "HO6", "DP1", "DP3", "Auto", "Flood"]),
+      expect.arrayContaining([
+        "HO3",
+        "HO5",
+        "HO6",
+        "HO8",
+        "MH",
+        "DP1",
+        "DP3",
+        "Auto",
+        "Motorcycle",
+        "Boat/Watercraft",
+        "Commercial Auto",
+        "Flood",
+      ]),
     );
   });
 

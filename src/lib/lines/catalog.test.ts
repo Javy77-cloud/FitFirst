@@ -6,10 +6,28 @@ describe("desk line catalog", () => {
     expect(lineBook("HO3")).toBe("personal");
     expect(lineBook("DP1")).toBe("personal");
     expect(lineBook("GL")).toBe("commercial");
+    expect(lineBook("CA")).toBe("commercial");
+    expect(lineBook("MOTORCYCLE")).toBe("personal");
     expect(linesForBook("personal")[0]?.code).toBe("HO3");
     expect(linesForBook("commercial")[0]?.code).toBe("GL");
     expect(DESK_LINES.map((line) => line.code)).toEqual(
-      expect.arrayContaining(["HO3", "DP1", "DP3", "HO5", "HO6", "PA", "FLOOD", "GL", "WC", "BOP"]),
+      expect.arrayContaining([
+        "HO3",
+        "DP1",
+        "DP3",
+        "HO5",
+        "HO6",
+        "HO8",
+        "MH",
+        "PA",
+        "MOTORCYCLE",
+        "BOAT",
+        "CA",
+        "FLOOD",
+        "GL",
+        "WC",
+        "BOP",
+      ]),
     );
     expect(DESK_LINES.some((line) => line.label === "Homeowners")).toBe(false);
   });

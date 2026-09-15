@@ -155,7 +155,16 @@ function normalizeLineToken(line: string): string {
 
 function isHomeownersLine(line: string): boolean {
   const u = normalizeLineToken(line);
-  return u === "HO" || u === "HO3" || u === "HO4" || u === "HO5" || u === "HO6" || u === "HO_MP";
+  return (
+    u === "HO" ||
+    u === "HO3" ||
+    u === "HO4" ||
+    u === "HO5" ||
+    u === "HO6" ||
+    u === "HO8" ||
+    u === "MH" ||
+    u === "HO_MP"
+  );
 }
 
 export function firstMatchingToken(tokens: string[], snap: MasterRiskSnapshot): string | null {
