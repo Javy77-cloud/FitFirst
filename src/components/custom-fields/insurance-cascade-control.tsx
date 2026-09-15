@@ -10,6 +10,7 @@ import {
   type PipelineFamily,
 } from "@/lib/deals/insurance-cascade";
 import type { PcPackageLine } from "@/lib/deals/package-lines";
+import { isPcPackageLine } from "@/lib/deals/package-lines";
 import {
   DEFAULT_HEALTH_SUBFILTERS,
   DEFAULT_LIFE_SUBFILTERS,
@@ -69,8 +70,8 @@ export function InsuranceCascadeControl({
   lifeHealthOptions?: Array<{ slug?: string; label: string }>;
   required?: boolean;
   disabled?: boolean;
-  packageLines?: readonly PcPackageLine[];
-  activePackageLine?: PcPackageLine | null;
+  packageLines?: readonly string[];
+  activePackageLine?: string | null;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
   const lifeOpts = lifeOptions.length
@@ -82,7 +83,10 @@ export function InsuranceCascadeControl({
     ? healthOptions
     : DEFAULT_HEALTH_SUBFILTERS;
 
-  const packageMode = packageLines.length > 0 && family === "pc";
+  const packageMode =
+    family === "pc" &&
+    packageLines.length > 0 &&
+    packageLines.every((line) => isPcPackageLine(line));
   const initial = useMemo(() => {
     const fromType = packageMode ? "pc" : typeIdFromLabel(typeValue);
     const opts =

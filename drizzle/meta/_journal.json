@@ -841,6 +841,13 @@
       "when": 1789073000000,
       "tag": "0119_appetite_nationals_state",
       "breakpoints": true
+    },
+    {
+      "idx": 120,
+      "version": "7",
+      "when": 1789074000000,
+      "tag": "0120_deal_shop_products",
+      "breakpoints": true
     }
   ]
 }

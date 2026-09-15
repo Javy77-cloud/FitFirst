@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { setDealPackageLines } from "@/app/actions/quote-sheet";
-import { PackageLineCheckboxes } from "@/components/deals/package-line-checkboxes";
-import { normalizePackageLines, type PcPackageLine } from "@/lib/deals/package-lines";
+import { ProductPicker } from "@/components/deals/product-picker";
+import { normalizeDealProducts, type DealProductId } from "@/lib/deals/deal-products";
 
 export function DealPackageLinesForm({
   dealId,
@@ -12,29 +12,43 @@ export function DealPackageLinesForm({
   tab,
 }: {
   dealId: string;
-  selected: readonly PcPackageLine[];
+  selected: readonly string[];
   activeLine?: string | null;
   tab?: string | null;
 }) {
-  const [lines, setLines] = useState<PcPackageLine[]>(() => normalizePackageLines(selected));
+  const [products, setProducts] = useState<DealProductId[]>(() => normalizeDealProducts(selected));
+  const [open, setOpen] = useState(false);
 
   return (
     <form action={setDealPackageLines} className="mt-2" data-ff-deal-package-edit="">
       <input type="hidden" name="dealId" value={dealId} />
       <input type="hidden" name="currentLine" value={activeLine ?? ""} />
       <input type="hidden" name="tab" value={tab ?? ""} />
-      <PackageLineCheckboxes
-        selected={lines}
-        onChange={setLines}
-        idPrefix={`deal-${dealId}-pkg`}
-      />
       <button
-        type="submit"
-        className="mt-1.5 text-[11px] font-medium text-primary hover:underline"
-        data-ff-deal-package-save=""
+        type="button"
+        className="text-[11px] font-semibold text-navy underline-offset-2 hover:underline"
+        data-ff-deal-package-toggle=""
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
       >
-        Update package lines
+        {open ? "Hide product picker" : "Add / change products"}
       </button>
+      {open ? (
+        <div className="mt-2 rounded-lg border border-border bg-[var(--ff-card)] p-3">
+          <ProductPicker
+            selected={products}
+            onChange={setProducts}
+            idPrefix={`deal-${dealId}-pkg`}
+          />
+          <button
+            type="submit"
+            className="mt-2 rounded-md bg-navy px-2.5 py-1 text-[11px] font-semibold text-white"
+            data-ff-deal-package-save=""
+          >
+            Update products
+          </button>
+        </div>
+      ) : null}
     </form>
   );
 }

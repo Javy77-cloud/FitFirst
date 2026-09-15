@@ -5,7 +5,15 @@ import { saveDealFieldValues, uploadDealFieldImage } from "@/app/actions/custom-
 import { FieldControl } from "@/components/custom-fields/field-control";
 import { Button } from "@/components/ui/button";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
-import type { PcPackageLine } from "@/lib/deals/package-lines";
+import { dealProductDef, type DealProductId } from "@/lib/deals/deal-products";
+import {
+  catalogFieldsForProducts,
+  isProductDealSection,
+  isSharedDealSection,
+  layoutForActiveProduct,
+} from "@/lib/deals/product-layout";
+import { themeForProduct } from "@/lib/deals/product-ui";
+import { cn } from "@/lib/utils";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { parseLayout, type CustomFieldDef, type FieldLayout } from "@/lib/custom-fields/types";
@@ -53,8 +61,8 @@ function CoApplicantDealSection({
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
   dealId: string;
-  packageLines?: readonly PcPackageLine[];
-  activePackageLine?: PcPackageLine | null;
+  packageLines?: readonly string[];
+  activePackageLine?: string | null;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
   const initialOn = useMemo(() => isCoApplicantEnabled(values), [values]);
@@ -167,6 +175,7 @@ export function DealDetailsPanel({
   healthOptions = [],
   packageLines = [],
   activePackageLine = null,
+  activeProduct = null,
   lineSettings,
 }: {
   dealId: string;
@@ -180,12 +189,14 @@ export function DealDetailsPanel({
   lifeHealthOptions?: Array<{ slug?: string; label: string }>;
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
-  packageLines?: readonly PcPackageLine[];
-  activePackageLine?: PcPackageLine | null;
+  packageLines?: readonly string[];
+  activePackageLine?: string | null;
+  activeProduct?: DealProductId | null;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
-  const safeLayout = parseLayout(layout);
-  const fieldList = resolveLayoutFields(safeLayout, asList(fields));
+  const safeLayout = layoutForActiveProduct(parseLayout(layout), activeProduct);
+  const extra = activeProduct ? catalogFieldsForProducts([activeProduct]) : [];
+  const fieldList = resolveLayoutFields(safeLayout, [...asList(fields), ...extra]);
   const byKey = Object.fromEntries(fieldList.map((field) => [field.key, field]));
   const formId = "deal-details-save";
 
@@ -233,28 +244,58 @@ export function DealDetailsPanel({
                   />
                 );
               }
+              const shared = isSharedDealSection(section);
+              const productOnly = isProductDealSection(section);
+              const theme = activeProduct ? themeForProduct(activeProduct) : null;
               return (
                 <section
                   key={section.id}
                   className={
                     quoteReq
-                      ? "ff-card space-y-2 border border-[#9ec9e8] p-3"
-                      : "ff-card space-y-2 p-3"
+                      ? "ff-card space-y-2 overflow-hidden border border-[#9ec9e8] p-3"
+                      : cn(
+                          "ff-card space-y-2 overflow-hidden p-3",
+                          productOnly && theme && "border-2",
+                        )
                   }
                   data-ff-deal-section={section.id}
+                  data-ff-deal-section-kind={productOnly ? "product" : shared ? "shared" : "other"}
                   data-ff-insurance-quote-request={quoteReq ? "1" : undefined}
                   style={quoteReq ? INSURANCE_QUOTE_SECTION_STYLE : undefined}
                 >
+                  {productOnly && theme ? <div className={cn("-mx-3 -mt-3 mb-2 h-1", theme.stripe)} /> : null}
                   <div className="flex items-center justify-between gap-2">
                     <h3 className="text-xs font-medium text-navy">{section.label}</h3>
-                    {quoteReq ? (
-                      <span
-                        className="shrink-0 rounded bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#1d4e89]"
-                        data-ff-required-badge
-                      >
-                        Required
-                      </span>
-                    ) : null}
+                    <div className="flex items-center gap-1.5">
+                      {shared ? (
+                        <span
+                          className="shrink-0 rounded-full bg-[var(--ff-check-bg)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-navy"
+                          data-ff-shared-once=""
+                        >
+                          Asked once
+                        </span>
+                      ) : null}
+                      {productOnly && activeProduct ? (
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                            theme?.wash,
+                            theme?.ink,
+                          )}
+                          data-ff-product-only=""
+                        >
+                          {dealProductDef(activeProduct).group} only
+                        </span>
+                      ) : null}
+                      {quoteReq ? (
+                        <span
+                          className="shrink-0 rounded bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#1d4e89]"
+                          data-ff-required-badge
+                        >
+                          Required
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                   {asList(section.fieldKeys).map((key) => {
                     const field = byKey[key] ?? { key, label: key, type: "single_line" as const };

@@ -1,27 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { PackageLineCheckboxes } from "@/components/deals/package-line-checkboxes";
-import { normalizePackageLines, type PcPackageLine } from "@/lib/deals/package-lines";
+import { DealFlowRail } from "@/components/deals/deal-flow-rail";
+import { ProductPicker } from "@/components/deals/product-picker";
+import { normalizeDealProducts, type DealProductId } from "@/lib/deals/deal-products";
 
 export function NewDealCreateFields({
   initialLines,
   sourceDealId,
 }: {
-  initialLines: readonly PcPackageLine[];
+  initialLines: readonly string[];
   sourceDealId?: string | null;
 }) {
-  const [packageLines, setPackageLines] = useState<PcPackageLine[]>(() =>
-    normalizePackageLines(initialLines),
+  const [products, setProducts] = useState<DealProductId[]>(() =>
+    normalizeDealProducts(initialLines),
   );
 
   return (
     <div className="space-y-3" data-ff-new-deal-create-fields="">
       <input type="hidden" name="intent" value="new-shop" />
       {sourceDealId ? <input type="hidden" name="sourceDealId" value={sourceDealId} /> : null}
-      <PackageLineCheckboxes
-        selected={packageLines}
-        onChange={setPackageLines}
+      <DealFlowRail current="create" />
+      <ProductPicker
+        selected={products}
+        onChange={setProducts}
         idPrefix="new-deal-pkg"
       />
     </div>

@@ -34,10 +34,15 @@ export function isCrmOnlyLine(line: string): line is CrmOnlyLine {
 export const ACCOUNT_KINDS = ["personal", "commercial"] as const;
 export type AccountKind = (typeof ACCOUNT_KINDS)[number];
 
-export const COMMERCIAL_LINES = ["GL"] as const;
+export const COMMERCIAL_LINES = ["GL", "WC", "BOP", "CA"] as const;
 
 export function isCommercialLine(line: string): boolean {
-  return (COMMERCIAL_LINES as readonly string[]).includes(line);
+  const u = (line ?? "").trim().toUpperCase();
+  return (
+    (COMMERCIAL_LINES as readonly string[]).includes(u as (typeof COMMERCIAL_LINES)[number]) ||
+    u === "COMMERCIAL_AUTO" ||
+    u === "WORKERS_COMP"
+  );
 }
 
 export function defaultAccountKind(line: string): AccountKind {

@@ -67,8 +67,13 @@ describe("Deal Details tab", () => {
     expect(keys).not.toContain("year_built");
     expect(keys).not.toContain("roof_photo");
     expect(keys).not.toContain("notes");
-    expect(layout.columns[0].sections.map((section) => section.id)).toEqual(["contact", "applicant"]);
+    expect(layout.columns[0].sections.map((section) => section.id)).toEqual([
+      "contact",
+      "applicant",
+      "co_applicant",
+    ]);
     expect(layout.columns[1].sections.map((section) => section.id)).toEqual([
+      "details",
       "insured_address",
       "mailing_address",
     ]);

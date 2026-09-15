@@ -14,8 +14,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { PackageLineCheckboxes } from "@/components/deals/package-line-checkboxes";
-import { normalizePackageLines, type PcPackageLine } from "@/lib/deals/package-lines";
+import { DealFlowRail } from "@/components/deals/deal-flow-rail";
+import { ProductPicker } from "@/components/deals/product-picker";
+import { normalizeDealProducts, type DealProductId } from "@/lib/deals/deal-products";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +38,7 @@ export function AddNewDealDialog({
   const debounced = useDebouncedValue(query, 200);
   const [hits, setHits] = useState<CreateDealPickHit[]>([]);
   const [searching, setSearching] = useState(false);
-  const [packageLines, setPackageLines] = useState<PcPackageLine[]>(["home"]);
+  const [products, setProducts] = useState<DealProductId[]>(["homeowners"]);
 
   useEffect(() => {
     if (!open || step !== "search") return;
@@ -69,7 +70,7 @@ export function AddNewDealDialog({
     setQuery("");
     setHits([]);
     setSearching(false);
-    setPackageLines(["home"]);
+    setProducts(["homeowners"]);
   }
 
   function onOpenChange(next: boolean) {
@@ -85,12 +86,12 @@ export function AddNewDealDialog({
 
   function onScratch() {
     openCreateForm(
-      newDealCreateHref({ shopLines: normalizePackageLines(packageLines) }),
+      newDealCreateHref({ shopLines: normalizeDealProducts(products) }),
     );
   }
 
   function onPick(hit: CreateDealPickHit) {
-    const lines = normalizePackageLines(packageLines);
+    const lines = normalizeDealProducts(products);
     if (hit.kind === "deal") {
       openCreateForm(newDealCreateHref({ shopLines: lines, sourceDealId: hit.id }));
       return;
@@ -119,7 +120,7 @@ export function AddNewDealDialog({
 
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          className="sm:max-w-md"
+          className="sm:max-w-2xl"
           showCloseButton
           data-ff-add-new-deal-dialog=""
         >
@@ -129,15 +130,16 @@ export function AddNewDealDialog({
             </DialogTitle>
             <DialogDescription>
               {step === "choose"
-                ? "Pick Home / Auto / Flood for this shop, then start blank or copy an existing contact. Nothing is saved until Save Deal."
+                ? "Pick products across Personal, Commercial, Life, and Health. Then start blank or copy an existing contact. Nothing is saved until Save Deal."
                 : "Search by deal name or contact name. Picking one opens the create form with details copied — Save Deal creates the record."}
             </DialogDescription>
           </DialogHeader>
 
+          <DealFlowRail current="create" />
           <div data-ff-package-lines="">
-            <PackageLineCheckboxes
-              selected={packageLines}
-              onChange={setPackageLines}
+            <ProductPicker
+              selected={products}
+              onChange={setProducts}
               idPrefix="add-deal-pkg"
             />
           </div>

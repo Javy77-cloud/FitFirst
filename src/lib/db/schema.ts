@@ -665,6 +665,7 @@ export const deals = pgTable(
     primaryNamedInsured: text("primary_named_insured"),
     secondaryNamedInsured: text("secondary_named_insured"),
     shopLines: jsonb("shop_lines").$type<string[]>().notNull().default(["home"]),
+    shopProducts: jsonb("shop_products").$type<string[] | null>(),
     policySubType: text("policy_sub_type"),
     coverageAmount: integer("coverage_amount"),
     propertyOneliner: text("property_oneliner"),

@@ -12,7 +12,6 @@ import {
   isInsuranceTypeField,
 } from "@/components/custom-fields/insurance-cascade-control";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
-import type { PcPackageLine } from "@/lib/deals/package-lines";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
 import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
@@ -52,8 +51,8 @@ export function FieldControl({
   lifeHealthOptions?: Array<{ slug?: string; label: string }>;
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
-  packageLines?: readonly PcPackageLine[];
-  activePackageLine?: PcPackageLine | null;
+  packageLines?: readonly string[];
+  activePackageLine?: string | null;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   onMultiSelectChange?: (joined: string) => void;
 }) {
@@ -121,8 +120,8 @@ function TypedControl({
   lifeHealthOptions?: Array<{ slug?: string; label: string }>;
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
-  packageLines?: readonly PcPackageLine[];
-  activePackageLine?: PcPackageLine | null;
+  packageLines?: readonly string[];
+  activePackageLine?: string | null;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   onMultiSelectChange?: (joined: string) => void;
 }) {

@@ -65,11 +65,15 @@ export default async function NewDealPage({
           body: script.body,
         }))}
       />
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">
-          Same Deal layout as detail — fill what you know. Save Deal creates the record; Back leaves
-          no deal.
-        </p>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <h1 className="text-xl font-semibold text-navy">New shop</h1>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Cross-family on one deal — Personal, Commercial, Life, and Health together. Shared
+            identity once; each product keeps its own questions. Save Deal creates the record; Back
+            leaves no deal.
+          </p>
+        </div>
         <EditLayoutLink module="deals" />
       </div>
 

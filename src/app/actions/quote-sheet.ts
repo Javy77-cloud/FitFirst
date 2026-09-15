@@ -120,9 +120,8 @@ import {
 } from "@/lib/deals/deal-line";
 import {
   defaultFormForShopLine,
-  mergePackageShopLines,
-  normalizePackageLines,
-  primaryPackageLine,
+  mergeShopLinesKeepExisting,
+  packageCreateDraft,
 } from "@/lib/deals/package-lines";
 import { flashAction } from "@/lib/flash-action";
 import { isDocumentsSourceDoc, isQuoteFileDoc } from "@/lib/deals/quote-docs";
@@ -389,34 +388,43 @@ export async function addShopLine(formData: FormData) {
   redirect(withFlash(`/deals/${dealId}?tab=documents&line=${lineRaw}`, "deal-updated"));
 }
 
-/** Add/remove Home + Auto + Flood on one deal. New lines get a sheet; removed lines stay stored but hidden. */
+/** Add/remove products on one deal. New shop lines get a sheet; removed lines stay stored if they have data. */
 export async function setDealPackageLines(formData: FormData) {
   const dealId = str(formData, "dealId");
   const tab = str(formData, "tab");
   const currentLine = str(formData, "currentLine");
-  const nextPackage = normalizePackageLines(formData.getAll("shopLines").map((value) => String(value)));
+  const raw = [
+    ...formData.getAll("shopProducts").map((value) => String(value)),
+    ...formData.getAll("shopLines").map((value) => String(value)),
+  ];
+  const draft = packageCreateDraft(raw);
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) throw new Error("Deal not found");
-  const next = mergePackageShopLines(deal.shopLines, nextPackage);
-  const added = nextPackage.filter((line) => !(deal.shopLines ?? []).includes(line));
+  const next = mergeShopLinesKeepExisting(deal.shopLines, draft.shopLines);
+  const added = draft.shopLines.filter((line) => !(deal.shopLines ?? []).includes(line));
   for (const line of added) {
     await ensureQuoteSheet(dealId, line);
   }
-  const primary = primaryPackageLine(nextPackage);
-  const keepCurrent = nextPackage.includes(currentLine as (typeof nextPackage)[number]);
-  const active = keepCurrent ? currentLine : primary;
+  const keepCurrent = draft.shopLines.includes(currentLine as (typeof draft.shopLines)[number]);
+  const active = keepCurrent ? currentLine : draft.quotingLine;
   await db
     .update(deals)
     .set({
       shopLines: next,
+      shopProducts: draft.products,
       quotingLine: active || deal.quotingLine,
+      quotingForm: draft.quotingForm,
+      lineOfBusiness: draft.lineOfBusiness,
+      accountKind: draft.accountKind,
+      bindTarget: draft.bindTarget,
       updatedAt: new Date(),
     })
     .where(eq(deals.id, dealId));
   revalidatePath(`/deals/${dealId}`);
   const query = new URLSearchParams();
   if (tab) query.set("tab", tab);
-  query.set("line", active || primary);
+  query.set("line", active || draft.quotingLine);
+  query.set("product", draft.products[0] ?? "");
   redirect(withFlash(`/deals/${dealId}?${query.toString()}`, "deal-updated"));
 }
 

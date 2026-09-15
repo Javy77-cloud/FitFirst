@@ -34,11 +34,13 @@ describe("package line selection", () => {
     expect(packageCreateDraft([]).lineOfBusiness).toBe("HO");
   });
 
-  it("keeps Home + Auto + Flood in chip order and ignores Life/Commercial", () => {
+  it("keeps catalog order and includes Life / Commercial shop lines", () => {
     expect(normalizePackageLines(["flood", "life", "auto", "home", "bop"])).toEqual([
       "home",
       "auto",
       "flood",
+      "bop",
+      "life",
     ]);
     expect(primaryPackageLine(["flood", "auto"])).toBe("auto");
   });
@@ -63,7 +65,9 @@ describe("package sheet creation + switcher routing", () => {
   it("resolves visible chips from shopLines and falls back to a single LOB", () => {
     expect(resolveVisiblePackageLines({ shopLines: ["home", "auto"] })).toEqual(["home", "auto"]);
     expect(resolveVisiblePackageLines({ lineOfBusiness: "FLOOD" })).toEqual(["flood"]);
-    expect(resolveVisiblePackageLines({ lineOfBusiness: "LIFE", shopLines: ["life"] })).toEqual([]);
+    expect(resolveVisiblePackageLines({ lineOfBusiness: "LIFE", shopLines: ["life"] })).toEqual([
+      "life",
+    ]);
   });
 
   it("routes the active chip from ?line= and keeps the deal URL", () => {
@@ -147,11 +151,13 @@ describe("package sheet creation + switcher routing", () => {
 });
 
 describe("single-line deals stay backward compatible", () => {
-  it("does not invent a package switcher for Life / Health", () => {
-    expect(resolveVisiblePackageLines({ lineOfBusiness: "LIFE", quotingLine: "life" })).toEqual([]);
-    expect(resolveVisiblePackageLines({ shopLines: ["health"], lineOfBusiness: "HEALTH" })).toEqual(
-      [],
-    );
+  it("Life / Health resolve as their own shop lines (chips, not a PC-only switcher)", () => {
+    expect(resolveVisiblePackageLines({ lineOfBusiness: "LIFE", quotingLine: "life" })).toEqual([
+      "life",
+    ]);
+    expect(resolveVisiblePackageLines({ shopLines: ["health"], lineOfBusiness: "HEALTH" })).toEqual([
+      "health",
+    ]);
   });
 
   it("single HO shopLines still resolve as one Home line", () => {
@@ -270,14 +276,17 @@ describe("create + detail wiring", () => {
   it("Add New Deal collects package lines and Save persists them; detail switches on ?line=", () => {
     const dialog = readFileSync("src/components/deals/add-new-deal-dialog.tsx", "utf8");
     expect(dialog).toMatch(/data-ff-package-lines/);
-    expect(dialog).toMatch(/PackageLineCheckboxes/);
+    expect(dialog).toMatch(/ProductPicker/);
     expect(dialog).toMatch(/newDealCreateHref/);
-    expect(readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8")).toMatch(/shopLines/);
-    expect(readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8")).toMatch(/Home/);
-    expect(readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8")).toMatch(/Auto/);
-    expect(readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8")).toMatch(/Flood/);
-    expect(readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8")).not.toMatch(/Life/);
-    expect(readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8")).not.toMatch(/Health/);
+    const picker = readFileSync("src/components/deals/product-picker.tsx", "utf8");
+    const catalog = readFileSync("src/lib/deals/deal-products.ts", "utf8");
+    expect(picker).toMatch(/shopProducts/);
+    expect(picker).toMatch(/item\.label/);
+    expect(catalog).toMatch(/Home \(HO\)/);
+    expect(catalog).toMatch(/label: "Auto"/);
+    expect(catalog).toMatch(/label: "Flood"/);
+    expect(catalog).toMatch(/label: "Term Life"/);
+    expect(catalog).toMatch(/label: "Marketplace"/);
     const createPage = readFileSync("src/app/deals/new/page.tsx", "utf8");
     expect(createPage).toMatch(/NewDealCreateFields/);
     expect(createPage).toMatch(/createDeal/);
