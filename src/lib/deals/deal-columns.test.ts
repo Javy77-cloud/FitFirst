@@ -152,6 +152,47 @@ describe("pipeline table deal-field columns", () => {
     expect(dealStageView({ title: "x", pipelineStage: "closed_won", pipelineStageSlug: "closed_won", lineOfBusiness: "HO" }, boards).color).toBe("green");
     expect(stageColorFromNameOrSlug("ARCHIVE", "slate")).toBe("slate");
   });
+
+  it("gives Flood the same P&C stage picklist as HO3", () => {
+    const floodBoard = SEEDED_PIPELINES.find((board) => board.slug === "flood")!;
+    const mixed = [
+      ...boards,
+      {
+        id: "flood",
+        slug: "flood",
+        stages: floodBoard.stages.map((stage, index) => ({
+          slug: stage.slug,
+          name: stage.name,
+          color: defaultStageColor(index, stage.slug),
+        })),
+      },
+    ];
+    const heather = dealStageView(
+      {
+        title: "Heather / Flood",
+        pipelineStage: "gather",
+        pipelineStageSlug: "gather",
+        pipelineId: "flood",
+        lineOfBusiness: "FLOOD",
+      },
+      mixed,
+    );
+    const gloria = dealStageView(
+      {
+        title: "Gloria Martinez / HO3",
+        pipelineStage: "gather",
+        pipelineStageSlug: "gather",
+        pipelineId: "pc",
+        lineOfBusiness: "HO",
+      },
+      mixed,
+    );
+    expect(heather.pipelineSlug).toBe("p-c");
+    expect(gloria.pipelineSlug).toBe("p-c");
+    expect(heather.stages.map((stage) => stage.slug)).toEqual(gloria.stages.map((stage) => stage.slug));
+    expect(heather.stages.map((stage) => stage.slug)).toEqual(pc.stages.map((stage) => stage.slug));
+    expect(heather.name).toBe("Gather info");
+  });
 });
 
 describe("lead → deal field copy", () => {

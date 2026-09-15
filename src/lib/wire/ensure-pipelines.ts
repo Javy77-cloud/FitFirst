@@ -121,7 +121,25 @@ export async function ensureSeededPipelines() {
   }
 
   await splitArchiveOffWonLost(tenantId);
+  await reassignFloodBoardDealsToPc(tenantId);
   await ensureRenewalsPipeline();
+}
+
+/** Flood shops belong on the P&C board so they share the PC stage picklist. */
+async function reassignFloodBoardDealsToPc(tenantId: string) {
+  const [flood] = await db
+    .select()
+    .from(pipelines)
+    .where(and(eq(pipelines.tenantId, tenantId), eq(pipelines.slug, "flood")));
+  const [pc] = await db
+    .select()
+    .from(pipelines)
+    .where(and(eq(pipelines.tenantId, tenantId), eq(pipelines.slug, "p-c")));
+  if (!flood || !pc) return;
+  await db
+    .update(deals)
+    .set({ pipelineId: pc.id, updatedAt: new Date() })
+    .where(and(eq(deals.tenantId, tenantId), eq(deals.pipelineId, flood.id)));
 }
 
 async function splitArchiveOffWonLost(tenantId: string) {

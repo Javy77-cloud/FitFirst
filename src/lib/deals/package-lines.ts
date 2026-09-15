@@ -298,9 +298,32 @@ export function formatMailingLine(input: {
   return [street, locality, zip].filter(Boolean).join(" · ");
 }
 
+const STAGE_DISPLAY_NAMES: Record<string, string> = {
+  gather: "Gather info",
+  gather_info: "Gather info",
+  shopping: "Gather info",
+  quotes: "Meet / Quotes",
+  meet_quotes: "Meet / Quotes",
+  quoting: "Meet / Quotes",
+  review: "Review",
+  quote_sent: "Quote Sent",
+  bound: "Bound",
+  pending_inspection: "Pending Inspection",
+  closed_won: "Closed Won",
+  closed_lost: "Closed Lost",
+  lost: "Closed Lost",
+};
+
 export function humanizeDealStage(stage: string | null | undefined): string {
   const raw = (stage ?? "").trim();
   if (!raw) return "—";
+  const key = raw
+    .toLowerCase()
+    .replace(/[/·]+/g, " ")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+  if (STAGE_DISPLAY_NAMES[key]) return STAGE_DISPLAY_NAMES[key];
+  if (key === "gather" || key.startsWith("gather")) return "Gather info";
   return raw
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (ch) => ch.toUpperCase());

@@ -74,6 +74,34 @@ describe("Add New Deal defers insert until Save", () => {
     expect(dialog).not.toMatch(/createDealFromExistingPick/);
     expect(dialog).not.toMatch(/createDealFromSourceDeal/);
     expect(dialog).not.toMatch(/result\.href/);
+    expect(dialog).not.toMatch(/\.insert\(/);
+  });
+
+  it("desk Add Deal, contact Add Deal, and /deals/new entry do not insert", () => {
+    const desk = readFileSync("src/lib/desk/quick-actions.ts", "utf8");
+    const menu = readFileSync("src/lib/desk/create-menu.ts", "utf8");
+    const contact = readFileSync("src/components/contacts/contact-deal-rows.tsx", "utf8");
+    const page = readFileSync("src/app/deals/new/page.tsx", "utf8");
+    const seed = readFileSync("src/lib/deals/new-deal-seed.ts", "utf8");
+    const href = readFileSync("src/lib/deals/new-deal-href.ts", "utf8");
+    const scratch = readFileSync("src/app/actions/deal-create.ts", "utf8");
+    expect(desk).toMatch(/href: "\/deals\/new"/);
+    expect(menu).toMatch(/href: "\/deals\/new"/);
+    expect(contact).toMatch(/href=\{`\/deals\/new\?contactId=\$\{contactId\}`\}/);
+    expect(page).not.toMatch(/\.insert\(/);
+    expect(page).not.toMatch(/createDealFromScratch/);
+    expect(page).toMatch(/createDeal/);
+    expect(page).toMatch(/Save Deal/);
+    expect(seed).not.toMatch(/\.insert\(/);
+    expect(href).not.toMatch(/\.insert\(/);
+    expect(href).toMatch(/packageCreateDraft/);
+    const scratchFn = scratch.slice(
+      scratch.indexOf("export async function createDealFromScratch"),
+      scratch.indexOf("export async function createDealFromScratchAction"),
+    );
+    expect(scratchFn).toMatch(/newDealCreateHref/);
+    expect(scratchFn).not.toMatch(/\.insert\(/);
+    expect(scratchFn).not.toMatch(/New Shop/);
   });
 
   it("Save Deal on /deals/new creates the durable deal with package lines", () => {

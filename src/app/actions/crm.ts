@@ -82,7 +82,13 @@ import {
   emptyOnlyContactValues,
   hasCoApplicantIdentity,
 } from "@/lib/crm/contact-bind-transfer";
-import { convertFieldCopy, resolveConvertLine } from "@/lib/crm/convert";
+import {
+  convertActivityLineLabel,
+  convertActivityTitle,
+  convertFieldCopy,
+  pipelineSlugForLine,
+  resolveConvertLine,
+} from "@/lib/crm/convert";
 import { loadRecordValues, writeCarriedLeadValues } from "@/lib/custom-fields/store";
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
 import {
@@ -390,9 +396,18 @@ export async function convertLeadToDeal(
   const { cancelLeadFollowUps } = await import("@/lib/leads/apply-follow-up");
   await cancelLeadFollowUps(leadId).catch(() => null);
 
+  const convertLabel = convertActivityLineLabel({
+    lineOfBusiness: dealLine,
+    quotingForm: copy.quotingForm,
+    policySubType: copy.policySubType,
+  });
   await writeDeskComms({
     kind: "task",
-    title: `Lead converted · ${copy.title}`,
+    title: convertActivityTitle({
+      lineOfBusiness: dealLine,
+      quotingForm: copy.quotingForm,
+      policySubType: copy.policySubType,
+    }),
     notes: copy.notes,
     eventType: "created",
     status: "completed",
@@ -405,7 +420,7 @@ export async function convertLeadToDeal(
   await writeCrmSignalsSafe({
     kind: "lead_converted",
     title: `Shop opened · ${copy.title}`,
-    body: `Lead ${lead.lastName}, ${lead.firstName} converted. Gather the sheet — do not bind Ana.`,
+    body: `Lead ${lead.lastName}, ${lead.firstName} converted · ${convertLabel}. Gather the sheet.`,
     entityType: "deal",
     entityId: deal.id,
     userId: lead.ownerId ?? actor.id ?? null,
@@ -576,7 +591,7 @@ export async function createDeal(formData: FormData) {
     : Array.from(
         new Set([...sheetsToPrepare(quotingForm), ...shopLinesFromForm(formData, line)]),
       );
-  const pipelineSlug = line === "HEALTH" ? "health" : line === "LIFE" ? "life" : line === "FLOOD" ? "flood" : "p-c";
+  const pipelineSlug = pipelineSlugForLine(line);
   const [pipeline] = await db.select().from(pipelines).where(eq(pipelines.slug, pipelineSlug));
   const namedFromLayout = str(formData, "field_named_insured");
   const primaryNamedInsured =
@@ -743,7 +758,7 @@ export async function createDealFromDecDrop(formData: FormData) {
     })
     .returning();
 
-  const pipelineSlug = line === "HEALTH" ? "health" : line === "LIFE" ? "life" : line === "FLOOD" ? "flood" : "p-c";
+  const pipelineSlug = pipelineSlugForLine(line);
   const [pipeline] = await db.select().from(pipelines).where(eq(pipelines.slug, pipelineSlug));
   const [deal] = await db
     .insert(deals)

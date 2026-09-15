@@ -200,3 +200,59 @@ export function formatHeaderAddress(parts: HeaderAddressParts | null | undefined
   if (!parts) return "";
   return formatMailingLine(parts);
 }
+
+function phoneDigits(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+/** Last 10 digits so +1 (786) 555-0100 matches 786-555-0100. */
+export function normalizePhoneDigits(value: string | null | undefined): string {
+  const digits = phoneDigits(String(value ?? ""));
+  return digits.length > 10 ? digits.slice(-10) : digits;
+}
+
+/** One row when primary and secondary normalize to the same number. */
+export function uniqueDisplayPhones(
+  phones: readonly (string | null | undefined)[],
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of phones) {
+    const text = String(raw ?? "").trim();
+    if (!text) continue;
+    const key = normalizePhoneDigits(text);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(text);
+  }
+  return out;
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/** Header DOB is always MM/DD/YYYY. */
+export function formatHeaderDob(value: Date | string | null | undefined): string {
+  if (value == null || value === "") return "—";
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[2]}/${iso[3]}/${iso[1]}`;
+    const mdy = trimmed.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);
+    if (mdy) return `${pad2(Number(mdy[1]))}/${pad2(Number(mdy[2]))}/${mdy[3]}`;
+    const parsed = new Date(trimmed);
+    if (Number.isNaN(parsed.getTime())) return "—";
+    return `${pad2(parsed.getUTCMonth() + 1)}/${pad2(parsed.getUTCDate())}/${parsed.getUTCFullYear()}`;
+  }
+  if (Number.isNaN(value.getTime())) return "—";
+  if (
+    value.getUTCHours() === 0 &&
+    value.getUTCMinutes() === 0 &&
+    value.getUTCSeconds() === 0 &&
+    value.getUTCMilliseconds() === 0
+  ) {
+    return `${pad2(value.getUTCMonth() + 1)}/${pad2(value.getUTCDate())}/${value.getUTCFullYear()}`;
+  }
+  return `${pad2(value.getMonth() + 1)}/${pad2(value.getDate())}/${value.getFullYear()}`;
+}

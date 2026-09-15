@@ -20,6 +20,7 @@ export function DealStageSelect({
   stages,
   toastOnSave = false,
   dealTitle,
+  className,
 }: {
   dealId: string;
   pipelineSlug: string;
@@ -27,6 +28,7 @@ export function DealStageSelect({
   stages: DealStageOption[];
   toastOnSave?: boolean;
   dealTitle?: string;
+  className?: string;
 }) {
   const [value, setValue] = useState(stageSlug);
   const [pending, startTransition] = useTransition();
@@ -44,9 +46,11 @@ export function DealStageSelect({
         data-ff-deal-stage
         data-stage-color={currentColor}
         className={cn(
-          "h-7 max-w-[10.5rem] rounded-sm border px-1.5 text-[10px] font-semibold uppercase tracking-wide",
+          "h-7 max-w-[12rem] rounded-sm border px-1.5 text-[10px] font-semibold tracking-wide",
           statusColorClass(currentColor),
+          className,
         )}
+        title={current?.name ?? value}
         value={value}
         disabled={pending || options.length === 0}
         onChange={(event) => {

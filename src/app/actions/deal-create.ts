@@ -12,6 +12,7 @@ import { blankSheetWithDefaults } from "@/lib/quote-sheet/catalog";
 import { loadRecordValues, writeRecordValues } from "@/lib/custom-fields/store";
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
 import { formatDealTitle } from "@/lib/deals/deal-title";
+import { newDealCreateHref } from "@/lib/deals/new-deal-href";
 import {
   copyDealDetailValues,
   titleForCopiedDeal,
@@ -77,52 +78,18 @@ function revalidateDeal(dealId: string) {
 }
 
 /**
- * Immediate insert used by scripts / older callers.
- * Add New Deal in the desk routes to `/deals/new` and persists only on Save Deal.
+ * Add New Deal / scratch navigation — never inserts a deals row.
+ * Opens `/deals/new`; Save Deal (`createDeal`) is the only insert.
  */
 export async function createDealFromScratch(
   formData?: FormData,
 ): Promise<{ ok: true; id: string; href: string } | { ok: false; message: string }> {
-  const actor = await getActor();
   const draft = packageCreateDraft(packageLinesFromForm(formData));
-  const title = formatDealTitle({
-    firstName: "New",
-    lastName: "Shop",
-    line: draft.lineOfBusiness,
-    quotingForm: draft.quotingForm,
-  });
-  const [deal] = await db
-    .insert(deals)
-    .values({
-      tenantId: DEFAULT_TENANT_ID,
-      title,
-      pipelineStage: "shopping",
-      pipelineStageSlug: "gather",
-      lineOfBusiness: draft.lineOfBusiness,
-      quotingLine: draft.quotingLine,
-      quotingForm: draft.quotingForm,
-      policySubType: draft.quotingForm,
-      state: "FL",
-      ownerId: actor.id || null,
-      source: "manual",
-      shopLines: draft.shopLines,
-      accountKind: "personal",
-      bindTarget: "contact",
-    })
-    .returning();
-
-  await db.insert(risks).values({
-    tenantId: DEFAULT_TENANT_ID,
-    dealId: deal.id,
-    riskType: draft.riskType,
-    state: "FL",
-  });
-  await insertBlankSheets(deal.id, draft.shopLines);
-  await persistDealWorkTab(deal.id, "details").catch(() => null);
-
-  revalidateDeal(deal.id);
-  const href = `/deals/${deal.id}?line=${draft.quotingLine}`;
-  return { ok: true, id: deal.id, href };
+  return {
+    ok: true,
+    id: "",
+    href: newDealCreateHref({ shopLines: draft.shopLines }),
+  };
 }
 
 /** Form/action wrapper that redirects after scratch create. */

@@ -5,7 +5,8 @@ export function pipelineSlugForLine(line: string): string {
   const u = line.trim().toUpperCase();
   if (u === "HEALTH") return "health";
   if (u === "LIFE") return "life";
-  if (u === "FLOOD" || u === "NFIP") return "flood";
+  // Flood is a P&C product — same board / stage set as Home and Auto.
+  if (u === "FLOOD" || u === "NFIP") return "p-c";
   return "p-c";
 }
 
