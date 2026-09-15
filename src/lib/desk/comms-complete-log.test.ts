@@ -27,21 +27,31 @@ describe("quick-comm open does not insert activity_logs", () => {
   });
 
   it("opens Call / SMS / Email without logging, and logs only on send or outcome", () => {
-    const openers = [
-      "src/components/desk/record-quick-actions.tsx",
-      "src/components/deals/deal-quick-actions.tsx",
-      "src/components/policy/policy-quick-actions.tsx",
+    const openOnly = [
       "src/components/deal-row-comms.tsx",
       "src/components/desk/contact-action-buttons.tsx",
       "src/components/click-to-call.tsx",
     ];
-    for (const file of openers) {
+    for (const file of openOnly) {
       const text = source(file);
       expect(text, file).not.toMatch(/logDeskActivity/);
       expect(text, file).not.toMatch(/sendDeskSms/);
       expect(text, file).not.toMatch(/sendDeskEmail/);
       expect(text, file).not.toMatch(/writeDeskComms/);
       expect(text, file).not.toMatch(/logLeadQueueContact/);
+    }
+
+    const mixed = [
+      "src/components/desk/record-quick-actions.tsx",
+      "src/components/deals/deal-quick-actions.tsx",
+      "src/components/policy/policy-quick-actions.tsx",
+    ];
+    for (const file of mixed) {
+      const text = source(file);
+      expect(text, file).toMatch(/window\.location\.href = href/);
+      expect(text, file).not.toMatch(/await logDeskActivity\(form\);\s*if \(href/);
+      expect(text, file).not.toMatch(/await sendDeskSms\(form\)/);
+      expect(text, file).not.toMatch(/await sendDeskEmail\(form\)/);
     }
 
     const quick = source("src/components/comms/quick-comms-board.tsx");
