@@ -206,7 +206,10 @@ describe("bind contract", () => {
 
   it("binds commercial GL to a business account with one active policy per line", () => {
     expect(isCommercialLine("GL")).toBe(true);
+    expect(isCommercialLine("WC")).toBe(true);
+    expect(isCommercialLine("BOP")).toBe(true);
     expect(defaultAccountKind("GL")).toBe("commercial");
+    expect(defaultAccountKind("WC")).toBe("commercial");
     expect(defaultAccountKind("HO")).toBe("personal");
     expect(nextActivePolicyCount({ currentActive: 0, replacingSameLine: false })).toBe(1);
     expect(nextActivePolicyCount({ currentActive: 2, replacingSameLine: true })).toBe(2);
@@ -254,5 +257,20 @@ describe("bind contract", () => {
     expect(renewal.nextActivePolicyCount).toBe(1);
     expect(renewal.contactDraft.policyCount).toBe(2);
     expect(renewal.contactDraft.activePolicyCount).toBe(1);
+  });
+
+  it("packages GL + Workers' Comp + BOP as one Business and one policy per unbound line", () => {
+    expect(
+      lobsToBindForDeal({
+        shopLines: ["general_liability", "workers_comp", "bop"],
+        lineOfBusiness: "GL",
+      }),
+    ).toEqual(["GL", "WC", "BOP"]);
+    expect(unboundPolicyLines(["GL", "WC"], [{ lineOfBusiness: "GL" }])).toEqual(["WC"]);
+    const bindAction = readFileSync("src/app/actions/crm.ts", "utf8");
+    expect(bindAction).toMatch(/lobsToBindForDeal/);
+    expect(bindAction).toMatch(/personName/);
+    expect(bindAction).toMatch(/commercialDraft/);
+    expect(defaultAccountKind("BOP")).toBe("commercial");
   });
 });

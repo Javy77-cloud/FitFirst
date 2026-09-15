@@ -5,7 +5,7 @@ import { saveDealFieldValues, uploadDealFieldImage } from "@/app/actions/custom-
 import { FieldControl } from "@/components/custom-fields/field-control";
 import { Button } from "@/components/ui/button";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
-import type { PcPackageLine } from "@/lib/deals/package-lines";
+import type { PackageLine } from "@/lib/deals/package-lines";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { parseLayout, type CustomFieldDef, type FieldLayout } from "@/lib/custom-fields/types";
@@ -53,8 +53,8 @@ function CoApplicantDealSection({
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
   dealId: string;
-  packageLines?: readonly PcPackageLine[];
-  activePackageLine?: PcPackageLine | null;
+  packageLines?: readonly PackageLine[];
+  activePackageLine?: PackageLine | null;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
   const initialOn = useMemo(() => isCoApplicantEnabled(values), [values]);
@@ -180,8 +180,8 @@ export function DealDetailsPanel({
   lifeHealthOptions?: Array<{ slug?: string; label: string }>;
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
-  packageLines?: readonly PcPackageLine[];
-  activePackageLine?: PcPackageLine | null;
+  packageLines?: readonly PackageLine[];
+  activePackageLine?: PackageLine | null;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
   const safeLayout = parseLayout(layout);

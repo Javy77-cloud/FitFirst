@@ -115,6 +115,27 @@ describe("insurance cascade", () => {
     });
   });
 
+  it("commercial package keeps Type=PC Category=Commercial and Form per GL/WC/BOP line", () => {
+    expect(categoryForPackageLine("general_liability")).toBe("commercial");
+    expect(categoryForPackageLine("workers_comp")).toBe("commercial");
+    expect(categoryForPackageLine("bop")).toBe("commercial");
+    expect(cascadeFromPackageLine({ line: "general_liability", quotingForm: "GL" })).toMatchObject({
+      typeId: "pc",
+      categoryId: "commercial",
+      subtypeId: "GL",
+    });
+    expect(cascadeFromPackageLine({ line: "workers_comp", quotingForm: "WC" })).toMatchObject({
+      typeId: "pc",
+      categoryId: "commercial",
+      subtypeId: "WC",
+    });
+    expect(cascadeFromPackageLine({ line: "bop" })).toMatchObject({
+      typeId: "pc",
+      categoryId: "commercial",
+      subtypeId: "BOP",
+    });
+  });
+
   it("cascadeFromDeal defaults HO3 under Type=PC Category=Home", () => {
     expect(cascadeFromDeal({ family: "pc", quotingForm: "HO3" })).toMatchObject({
       typeId: "pc",

@@ -14,8 +14,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PackageFamilyToggle } from "@/components/deals/package-family-toggle";
 import { PackageLineCheckboxes } from "@/components/deals/package-line-checkboxes";
-import { normalizePackageLines, type PcPackageLine } from "@/lib/deals/package-lines";
+import {
+  normalizeSelectedPackageLines,
+  type PackageFamily,
+  type PackageLine,
+} from "@/lib/deals/package-lines";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +42,8 @@ export function AddNewDealDialog({
   const debounced = useDebouncedValue(query, 200);
   const [hits, setHits] = useState<CreateDealPickHit[]>([]);
   const [searching, setSearching] = useState(false);
-  const [packageLines, setPackageLines] = useState<PcPackageLine[]>(["home"]);
+  const [packageFamily, setPackageFamily] = useState<PackageFamily>("personal");
+  const [packageLines, setPackageLines] = useState<PackageLine[]>(["home"]);
 
   useEffect(() => {
     if (!open || step !== "search") return;
@@ -69,6 +75,7 @@ export function AddNewDealDialog({
     setQuery("");
     setHits([]);
     setSearching(false);
+    setPackageFamily("personal");
     setPackageLines(["home"]);
   }
 
@@ -85,12 +92,12 @@ export function AddNewDealDialog({
 
   function onScratch() {
     openCreateForm(
-      newDealCreateHref({ shopLines: normalizePackageLines(packageLines) }),
+      newDealCreateHref({ shopLines: normalizeSelectedPackageLines(packageLines) }),
     );
   }
 
   function onPick(hit: CreateDealPickHit) {
-    const lines = normalizePackageLines(packageLines);
+    const lines = normalizeSelectedPackageLines(packageLines);
     if (hit.kind === "deal") {
       openCreateForm(newDealCreateHref({ shopLines: lines, sourceDealId: hit.id }));
       return;
@@ -129,16 +136,26 @@ export function AddNewDealDialog({
             </DialogTitle>
             <DialogDescription>
               {step === "choose"
-                ? "Pick Home / Auto / Flood for this shop, then start blank or copy an existing contact. Nothing is saved until Save Deal."
+                ? packageFamily === "commercial"
+                  ? "Pick GL / Workers' Comp / BOP for this shop, then start blank or copy an existing contact. Nothing is saved until Save Deal."
+                  : "Pick Home / Auto / Flood for this shop, then start blank or copy an existing contact. Nothing is saved until Save Deal."
                 : "Search by deal name or contact name. Picking one opens the create form with details copied — Save Deal creates the record."}
             </DialogDescription>
           </DialogHeader>
 
-          <div data-ff-package-lines="">
+          <div className="space-y-3" data-ff-package-lines="">
+            <PackageFamilyToggle
+              family={packageFamily}
+              onChange={(next) => {
+                setPackageFamily(next);
+                setPackageLines(next === "commercial" ? ["general_liability"] : ["home"]);
+              }}
+            />
             <PackageLineCheckboxes
               selected={packageLines}
               onChange={setPackageLines}
               idPrefix="add-deal-pkg"
+              family={packageFamily}
             />
           </div>
 

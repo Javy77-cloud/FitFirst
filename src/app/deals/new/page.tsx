@@ -86,7 +86,14 @@ export default async function NewDealPage({
           initialLines={query.shopLines}
           sourceDealId={seed.sourceDealId}
         />
-        <RecordLayoutFields module="deals" layout={layout} fields={fields} values={values} />
+        <RecordLayoutFields
+          module="deals"
+          layout={layout}
+          fields={fields}
+          values={values}
+          packageLines={query.explicitShopLines ? query.shopLines : []}
+          activePackageLine={query.explicitShopLines ? query.shopLines[0] ?? null : null}
+        />
 
         <div className="flex items-center justify-end gap-3 pt-1" data-ff-deal-actions="">
           <Link href="/deals" className="text-sm text-primary hover:underline">

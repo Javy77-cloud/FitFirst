@@ -1,8 +1,8 @@
 import Link from "next/link";
 import {
-  PC_PACKAGE_LINE_LABELS,
+  PACKAGE_LINE_LABELS,
   dealLineSwitcherHref,
-  type PcPackageLine,
+  type PackageLine,
 } from "@/lib/deals/package-lines";
 import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 
@@ -13,8 +13,8 @@ export function DealLineSwitcher({
   tab,
 }: {
   dealId: string;
-  lines: readonly PcPackageLine[];
-  active: PcPackageLine;
+  lines: readonly PackageLine[];
+  active: PackageLine;
   tab?: string | null;
 }) {
   if (!lines.length) return null;
@@ -36,7 +36,7 @@ export function DealLineSwitcher({
             data-active={selected ? "true" : "false"}
             aria-current={selected ? "page" : undefined}
           >
-            {PC_PACKAGE_LINE_LABELS[line]}
+            {PACKAGE_LINE_LABELS[line]}
           </Link>
         );
       })}

@@ -1,6 +1,11 @@
 import { QUOTING_FORMS, type QuotingFormId } from "@/lib/domain";
 import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
-import { isPcPackageLine, type PcPackageLine } from "@/lib/deals/package-lines";
+import {
+  defaultFormForPackageLine,
+  isCommercialPackageLine,
+  isPcPackageLine,
+  type PackageLine,
+} from "@/lib/deals/package-lines";
 
 /** Pipeline family for Deal Details cascade (not the board slug alone). */
 export type PipelineFamily = "pc" | "life" | "health";
@@ -251,14 +256,15 @@ export function cascadeFromDeal(input: {
 }
 
 /** Package deals keep Type=PC and store multiple shop lines; Form stays per-line. */
-export function categoryForPackageLine(line: PcPackageLine): Exclude<InsuranceCategoryId, "life" | "health"> {
+export function categoryForPackageLine(line: PackageLine): Exclude<InsuranceCategoryId, "life" | "health"> {
+  if (isCommercialPackageLine(line)) return "commercial";
   if (line === "auto") return "auto";
   if (line === "flood") return "flood";
   return "home";
 }
 
 export function cascadeFromPackageLine(input: {
-  line: PcPackageLine;
+  line: PackageLine;
   quotingForm?: string | null;
 }): {
   typeId: InsuranceTypeId;
@@ -269,8 +275,13 @@ export function cascadeFromPackageLine(input: {
   const categoryId = categoryForPackageLine(input.line);
   return cascadeFromDeal({
     family: "pc",
-    quotingForm: input.quotingForm,
-    categoryValue: isPcPackageLine(input.line) && input.line !== "home" ? input.line : categoryId,
+    quotingForm: input.quotingForm || defaultFormForPackageLine(input.line),
+    categoryValue:
+      isCommercialPackageLine(input.line)
+        ? "commercial"
+        : isPcPackageLine(input.line) && input.line !== "home"
+          ? input.line
+          : categoryId,
   });
 }
 

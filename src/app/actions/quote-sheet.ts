@@ -121,7 +121,7 @@ import {
 import {
   defaultFormForShopLine,
   mergePackageShopLines,
-  normalizePackageLines,
+  normalizeSelectedPackageLines,
   primaryPackageLine,
 } from "@/lib/deals/package-lines";
 import { flashAction } from "@/lib/flash-action";
@@ -394,7 +394,9 @@ export async function setDealPackageLines(formData: FormData) {
   const dealId = str(formData, "dealId");
   const tab = str(formData, "tab");
   const currentLine = str(formData, "currentLine");
-  const nextPackage = normalizePackageLines(formData.getAll("shopLines").map((value) => String(value)));
+  const nextPackage = normalizeSelectedPackageLines(
+    formData.getAll("shopLines").map((value) => String(value)),
+  );
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) throw new Error("Deal not found");
   const next = mergePackageShopLines(deal.shopLines, nextPackage);

@@ -39,6 +39,9 @@ function shopLinesFor(row: { shopLines?: string[] | null; lineOfBusiness?: strin
   if (lob === "FLOOD") return ["flood"];
   if (lob === "LIFE") return ["life"];
   if (lob === "HEALTH") return ["health"];
+  if (lob === "GL") return ["general_liability"];
+  if (lob === "WC") return ["workers_comp"];
+  if (lob === "BOP") return ["bop"];
   return ["home"];
 }
 
@@ -175,7 +178,7 @@ async function createCopiedDeal(
       pipelineStageSlug: "gather",
       pipelineId: row.pipelineId,
       lineOfBusiness,
-      bindTarget: row.bindTarget,
+      bindTarget: draft?.bindTarget ?? row.bindTarget,
       state: row.state,
       notes: row.notes,
       primaryNamedInsured: row.primaryNamedInsured,
@@ -184,7 +187,7 @@ async function createCopiedDeal(
       policySubType: draft?.quotingForm ?? row.policySubType,
       propertyOneliner: row.propertyOneliner,
       currentCarrier: row.currentCarrier,
-      accountKind: row.accountKind,
+      accountKind: draft?.accountKind ?? row.accountKind,
       ownerId: row.ownerId || actor.id || null,
       source: row.source ?? "manual",
       quotingForm,
@@ -336,8 +339,8 @@ export async function createDealFromExistingPick(
       ownerId: contact.ownerId || actor.id || null,
       source: contact.source ?? "manual",
       shopLines: draft.shopLines,
-      accountKind: "personal",
-      bindTarget: "contact",
+      accountKind: draft.accountKind,
+      bindTarget: draft.bindTarget,
       primaryNamedInsured: [contact.firstName, contact.lastName].filter(Boolean).join(" ").trim() || null,
       notes: contact.notes,
     })
