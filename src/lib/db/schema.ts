@@ -1517,6 +1517,10 @@ export const quotes = pgTable(
     quoteRunId: uuid("quote_run_id"),
     /** home / auto / flood — line chip filter. */
     shopLine: text("shop_line"),
+    /** Agent Saved the bind-recheck disclosure (premium / coverage / deductible). */
+    bindRecheckAckedAt: timestamp("bind_recheck_acked_at", { withTimezone: true }),
+    /** Terms fingerprint at Save — ack is invalid if premium / coverage / deductible / run change. */
+    bindRecheckAckFingerprint: text("bind_recheck_ack_fingerprint"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

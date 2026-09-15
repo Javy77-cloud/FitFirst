@@ -4,6 +4,7 @@ import { Fragment, useMemo, useState, useTransition } from "react";
 import {
   acceptQuoteFloorAndRecheckAction,
   recheckQuotesAction,
+  saveBindRecheckAckAction,
   saveQuoteAgentRatingAction,
 } from "@/app/actions/quotes";
 import { QuoteNotePad } from "@/components/deal/quote-note-pad";
@@ -18,7 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { BIND_GATE_COPY, bindGateReady } from "@/lib/deals/bind-gate";
+import {
+  BIND_GATE_COPY,
+  bindGateReady,
+  bindRecheckTermsFromQuote,
+  canBindAfterRecheckAck,
+  quoteBindRecheckAcked,
+} from "@/lib/deals/bind-gate";
 import { formatMoney } from "@/lib/domain";
 import type { Carrier, Quote, QuoteNote } from "@/lib/db/schema";
 import {
@@ -44,6 +51,24 @@ import {
 import { AlertTriangle, ChevronDown, ChevronRight, EyeOff, RefreshCw, Star } from "lucide-react";
 
 type Row = { quote: Quote; carrier: Carrier; premium: Quote["premium"] };
+
+function quoteRecheckAcked(quote: Quote | null | undefined): boolean {
+  if (!quote) return false;
+  return quoteBindRecheckAcked({
+    ackedAt: quote.bindRecheckAckedAt,
+    fingerprint: quote.bindRecheckAckFingerprint,
+    terms: bindRecheckTermsFromQuote(quote),
+  });
+}
+
+function quoteCanBind(quote: Quote, bindable: boolean): boolean {
+  return canBindAfterRecheckAck({
+    bindable,
+    ackedAt: quote.bindRecheckAckedAt,
+    fingerprint: quote.bindRecheckAckFingerprint,
+    terms: bindRecheckTermsFromQuote(quote),
+  });
+}
 
 function carrierOpenHref(quote: Quote, carrier: Carrier): string | null {
   const raw =
@@ -147,9 +172,11 @@ function BindRecheckAlertDialog({
   dealId: string;
   requestedCoverageA?: number | null;
 }) {
+  const alreadyAcked = quoteRecheckAcked(quote);
   const [checks, setChecks] = useState({ premium: false, coverages: false, deductibles: false });
   const [acceptFloor, setAcceptFloor] = useState(false);
   const [reQuotePending, startReQuote] = useTransition();
+  const [savePending, startSave] = useTransition();
   const checklistKey = `${quote?.id ?? "none"}:${open ? "open" : "closed"}`;
 
   const minCovANotMet = useMemo(() => {
@@ -169,7 +196,7 @@ function BindRecheckAlertDialog({
     setAcceptFloor(false);
   }
 
-  const verifyReady = bindGateReady(checks);
+  const verifyReady = alreadyAcked || bindGateReady(checks);
   const showFloorOverride = minCovANotMet != null;
   const canReQuote = showFloorOverride && acceptFloor && verifyReady;
   const floorLabel =
@@ -183,6 +210,21 @@ function BindRecheckAlertDialog({
     data.set("acceptedCoverageA", String(minCovANotMet));
     startReQuote(async () => {
       await acceptQuoteFloorAndRecheckAction(data);
+      resetLocal();
+      onOpenChange(false);
+    });
+  }
+
+  function onSave() {
+    if (!quote || alreadyAcked || !bindGateReady(checks)) return;
+    const data = new FormData();
+    data.set("dealId", dealId);
+    data.set("quoteId", quote.id);
+    data.set("premium", checks.premium ? "1" : "0");
+    data.set("coverages", checks.coverages ? "1" : "0");
+    data.set("deductibles", checks.deductibles ? "1" : "0");
+    startSave(async () => {
+      await saveBindRecheckAckAction(data);
       resetLocal();
       onOpenChange(false);
     });
@@ -203,7 +245,14 @@ function BindRecheckAlertDialog({
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-navy">
-            <span className="inline-flex size-8 items-center justify-center rounded-full bg-fit-flag/20 text-fit-flag">
+            <span
+              className={cn(
+                "inline-flex size-8 items-center justify-center rounded-full",
+                alreadyAcked
+                  ? "bg-fit-green-bg text-fit-green"
+                  : "bg-fit-flag/20 text-fit-flag",
+              )}
+            >
               <AlertTriangle className="size-5" />
             </span>
             {BIND_GATE_COPY.title}
@@ -242,7 +291,8 @@ function BindRecheckAlertDialog({
             <label key={key} className="flex items-start gap-2 text-sm text-navy">
               <input
                 type="checkbox"
-                checked={checks[key]}
+                checked={alreadyAcked || checks[key]}
+                disabled={alreadyAcked}
                 onChange={(event) =>
                   setChecks((current) => ({ ...current, [key]: event.target.checked }))
                 }
@@ -252,7 +302,11 @@ function BindRecheckAlertDialog({
               <span>{label}</span>
             </label>
           ))}
-          {!verifyReady ? (
+          {alreadyAcked ? (
+            <p className="text-xs text-fit-green" data-ff-quote-bind-alert-acked="">
+              {BIND_GATE_COPY.ackedHint}
+            </p>
+          ) : !verifyReady ? (
             <p className="text-xs text-fit-flag" data-ff-quote-bind-alert-blocked="">
               {BIND_GATE_COPY.blocked}
             </p>
@@ -281,31 +335,34 @@ function BindRecheckAlertDialog({
             </p>
           </div>
         ) : null}
-        <DialogFooter>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              resetLocal();
-              onOpenChange(false);
-            }}
-          >
-            Close
-          </Button>
-          {showFloorOverride ? (
-            <Button
-              type="button"
-              size="sm"
-              disabled={!canReQuote || reQuotePending}
-              title={BIND_GATE_COPY.reQuoteTitle}
-              onClick={onReQuote}
-              data-ff-quote-bind-alert-requote=""
-            >
-              {BIND_GATE_COPY.reQuote}
-            </Button>
-          ) : null}
-        </DialogFooter>
+        {alreadyAcked && !showFloorOverride ? null : (
+          <DialogFooter>
+            {alreadyAcked ? null : (
+              <Button
+                type="button"
+                size="sm"
+                disabled={!bindGateReady(checks) || savePending}
+                title={BIND_GATE_COPY.saveTitle}
+                onClick={onSave}
+                data-ff-quote-bind-alert-save=""
+              >
+                {BIND_GATE_COPY.save}
+              </Button>
+            )}
+            {showFloorOverride ? (
+              <Button
+                type="button"
+                size="sm"
+                disabled={!canReQuote || reQuotePending}
+                title={BIND_GATE_COPY.reQuoteTitle}
+                onClick={onReQuote}
+                data-ff-quote-bind-alert-requote=""
+              >
+                {BIND_GATE_COPY.reQuote}
+              </Button>
+            ) : null}
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -622,8 +679,10 @@ export function QuotesResultsTable({
                 <div className="space-y-2">
                   {visibleRows.map(({ quote, carrier }) => {
                     const outcome = outcomeFor(quote, carrier.id);
-                    const canBind =
+                    const quoteBindable =
                       outcome === "bindable" || quote.nextStep === "can_bind" || quote.bindable;
+                    const recheckAcked = quoteRecheckAcked(quote);
+                    const canBind = quoteCanBind(quote, Boolean(quoteBindable));
                     const openHref = carrierOpenHref(quote, carrier);
                     const detailsDefaultOpen = false;
                     const detailsOpen =
@@ -837,9 +896,19 @@ export function QuotesResultsTable({
                                   type="button"
                                   aria-label={`Bind recheck checklist for ${carrier.name}`}
                                   data-ff-quote-bind-alert={quote.id}
+                                  data-ff-quote-bind-alert-state={recheckAcked ? "acked" : "open"}
                                   onClick={() => setAlertQuoteId(quote.id)}
-                                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-fit-flag/55 bg-fit-flag/15 text-fit-flag shadow-sm transition-all duration-150 hover:scale-105 hover:border-fit-flag hover:bg-fit-flag hover:text-white hover:shadow-md"
-                                  title="Re-check this quote before bind"
+                                  className={cn(
+                                    "inline-flex size-6 shrink-0 items-center justify-center rounded-md border shadow-sm transition-all duration-150 hover:scale-105 hover:shadow-md",
+                                    recheckAcked
+                                      ? "border-fit-green/55 bg-fit-green-bg text-fit-green hover:border-fit-green hover:bg-fit-green hover:text-white"
+                                      : "border-fit-flag/55 bg-fit-flag/15 text-fit-flag hover:border-fit-flag hover:bg-fit-flag hover:text-white",
+                                  )}
+                                  title={
+                                    recheckAcked
+                                      ? BIND_GATE_COPY.ackedHint
+                                      : "Re-check this quote before bind"
+                                  }
                                 >
                                   <AlertTriangle className="size-3" strokeWidth={2.25} />
                                 </button>
@@ -855,13 +924,23 @@ export function QuotesResultsTable({
                                 size="xs"
                                 disabled={!canBind}
                                 data-ff-quote-bind={quote.id}
+                                data-ff-quote-bind-gated={recheckAcked ? "ready" : "blocked"}
                                 data-ff-no-hover=""
                                 className={cn(
                                   "!bg-[#002868] !text-white !border-[#002868]",
                                   "hover:!bg-[#BF0A30] hover:!text-white hover:!border-[#BF0A30]",
                                   "disabled:!bg-[#002868] disabled:!text-white disabled:!border-[#002868] disabled:opacity-55",
                                 )}
-                                title={canBind ? "Bind (wire later)" : "Bind only when Bindable"}
+                                title={
+                                  !quoteBindable
+                                    ? "Bind only when Bindable"
+                                    : !recheckAcked
+                                      ? BIND_GATE_COPY.bindBlockedUntilSave
+                                      : "Bind (wire later)"
+                                }
+                                onClick={() => {
+                                  if (!recheckAcked) setAlertQuoteId(quote.id);
+                                }}
                               >
                                 Bind
                               </Button>

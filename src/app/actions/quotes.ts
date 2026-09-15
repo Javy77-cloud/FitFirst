@@ -41,13 +41,24 @@ import {
   manualCarrierIdsFromLogs,
 } from "@/lib/deals/manual-markets";
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
-import { loadDealRiskFingerprint, persistDealShopFlow } from "@/lib/deals/shop-flow-persist";
+import {
+  clearBindRecheckAcks,
+  loadDealRiskFingerprint,
+  persistDealShopFlow,
+} from "@/lib/deals/shop-flow-persist";
 import {
   nextShopFlowAfterQuoteRun,
   parseShopFlow,
   quoteMatchesShopLine,
 } from "@/lib/deals/shop-flow";
 import { flashAction } from "@/lib/flash-action";
+import {
+  BIND_RECHECK_CLEAR_PATCH,
+  bindGateReady,
+  bindRecheckTermsFingerprint,
+  bindRecheckTermsFromQuote,
+  type BindGateChecks,
+} from "@/lib/deals/bind-gate";
 import { snapshotFromRisk } from "@/lib/appetite/gate/snapshot";
 import { runAndPersistQuoteGate } from "@/lib/appetite/gate/store";
 
@@ -118,7 +129,7 @@ async function persistShopFlowAfterQuoteRequest(
       const prevId = currentRun || randomUUID();
       await db
         .update(quotes)
-        .set({ quoteRunId: prevId, shopLine: line })
+        .set({ quoteRunId: prevId, shopLine: line, ...BIND_RECHECK_CLEAR_PATCH })
         .where(inArray(quotes.id, toArchive.map((quote) => quote.id)));
     }
     runId = randomUUID();
@@ -568,6 +579,7 @@ export async function recheckQuotesAction(formData: FormData) {
   if (ids.length === 0) throw new Error("Mark at least one quote to recheck.");
 
   const { count: n } = await queueRecheckNotesForQuotes(dealId, ids);
+  await clearBindRecheckAcks(dealId, ids);
 
   revalidatePath(`/deals/${dealId}`);
   flashAction(
@@ -595,7 +607,7 @@ export async function acceptQuoteFloorAndRecheckAction(formData: FormData) {
 
   await db
     .update(quotes)
-    .set({ coverageA: floor })
+    .set({ coverageA: floor, ...BIND_RECHECK_CLEAR_PATCH })
     .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId), eq(quotes.tenantId, DEFAULT_TENANT_ID)));
 
   const session = await currentDeskSession();
@@ -612,4 +624,32 @@ export async function acceptQuoteFloorAndRecheckAction(formData: FormData) {
 
   revalidatePath(`/deals/${dealId}`);
   flashAction(dealQuotesPath(dealId), "Re-quote queued");
+}
+
+function bindRecheckChecksFromForm(formData: FormData): BindGateChecks {
+  return {
+    premium: formData.get("premium") === "1" || formData.get("premium") === "true",
+    coverages: formData.get("coverages") === "1" || formData.get("coverages") === "true",
+    deductibles: formData.get("deductibles") === "1" || formData.get("deductibles") === "true",
+  };
+}
+
+/** Persist the bind-recheck disclosure Save for one quote. Blocks Bind until this lands. */
+export async function saveBindRecheckAckAction(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const quoteId = String(formData.get("quoteId") ?? "").trim();
+  if (!dealId || !quoteId) throw new Error("Deal and quote are required.");
+  if (!bindGateReady(bindRecheckChecksFromForm(formData))) {
+    throw new Error("Confirm premium, coverages, and deductibles before saving.");
+  }
+  const row = await requireQuoteForDeal(dealId, quoteId);
+  await db
+    .update(quotes)
+    .set({
+      bindRecheckAckedAt: new Date(),
+      bindRecheckAckFingerprint: bindRecheckTermsFingerprint(bindRecheckTermsFromQuote(row)),
+    })
+    .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId), eq(quotes.tenantId, DEFAULT_TENANT_ID)));
+  revalidatePath(`/deals/${dealId}`);
+  flashAction(dealQuotesPath(dealId), "Recheck saved");
 }

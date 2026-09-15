@@ -137,24 +137,15 @@ export function mergeVisibleColumns(
   );
   // Never replace the whole blob with sitewide defaults when custom keys were
   // filtered out (that wiped Priority / Pipeline / Selling Agency prefs).
-  // Empty / all-unknown prefs → locked shell only; growth appends defaultOn:true next.
+  // Empty / all-unknown prefs → locked shell only.
   const base = insertMissingLockedInCatalogOrder(visible, locked, catalogOrder);
+  // Saved prefs are authoritative. Do not re-add defaultOn columns the agent hid —
+  // that made Deals / Contacts / Policies / Carriers toggles snap back on.
+  // Locked (pick / select) still insert. Empty / all-unknown → locked shell, else defaults.
   const seeded = base.length ? base : defaults;
-  // layout/catalog growth — defaultOn columns must appear even when older prefs omit them.
-  // APPEND only — never prepend / never rewrite existing user order.
-  const present = new Set(seeded);
-  const missingDefaultOn = columns
-    .filter(
-      (column) =>
-        (column.locked || column.defaultOn === true) &&
-        allowed.has(column.id) &&
-        !present.has(column.id),
-    )
-    .map((column) => column.id);
-  const withGrowth = missingDefaultOn.length ? [...seeded, ...missingDefaultOn] : seeded;
   const normalized = isDealsListColumns(columns)
-    ? normalizeDealsVisibleColumns(withGrowth)
-    : withGrowth;
+    ? normalizeDealsVisibleColumns(seeded)
+    : seeded;
   return pinPickColumnFirst(normalized);
 }
 
@@ -513,7 +504,7 @@ export const LEADS_LIST_COLUMNS: ListColumn[] = leadsListColumnsFromLayout();
 
 const CONTACTS_SYSTEM_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
-  { id: "name", label: "Name", locked: true },
+  { id: "name", label: "Name" },
   { id: "phone", label: "Phone" },
   { id: "email", label: "Email" },
   { id: "status", label: "Client Status" },
@@ -613,7 +604,7 @@ export function dealsListColumnsFromFields(
 ): ListColumn[] {
   return fromDeskColumns(dealsColumnsFromFields(fields, layout), {
     pick: true,
-    lock: ["title", "stage", "tags"],
+    // Only the checkbox column is locked — agents must be able to hide Deal / Stage / Tags.
   });
 }
 
@@ -624,7 +615,7 @@ export const DEALS_LIST_COLUMNS: ListColumn[] = dealsListColumnsFromFields(
 
 const ACCOUNTS_SYSTEM_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
-  { id: "business", label: "Business Name", locked: true },
+  { id: "business", label: "Business Name" },
   { id: "status", label: "Status" },
   { id: "industry", label: "Industry" },
   { id: "source", label: "Source" },
@@ -683,14 +674,14 @@ export const ACCOUNTS_LIST_COLUMNS: ListColumn[] = accountsListColumnsFromLayout
 
 export const POLICIES_LIST_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
-  { id: "policy", label: "Policy", locked: true },
+  { id: "policy", label: "Policy" },
   { id: "status", label: "Status" },
   { id: "party", label: "Party" },
   { id: "carrier", label: "Carrier" },
   { id: "owner", label: "Assigned", defaultOn: false },
   { id: "premium", label: "Premium" },
   { id: "expires", label: "Expires" },
-  { id: "esign", label: "E-sign", locked: true },
+  { id: "esign", label: "E-sign" },
   { id: "tags", label: "Tags" },
 ];
 
@@ -708,7 +699,7 @@ export const RENEWALS_LIST_COLUMNS: ListColumn[] = [
 
 export const CARRIERS_LIST_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
-  { id: "carrier", label: "Carrier Name", locked: true },
+  { id: "carrier", label: "Carrier Name" },
   { id: "label", label: "Label", defaultOn: false },
   { id: "status", label: "Status" },
   { id: "lines", label: "Written Lines" },

@@ -197,6 +197,68 @@ describe("line-scoped quotes", () => {
       ),
     ).toBe(true);
   });
+
+  it("does not treat Progressive / Geico as Auto, and overrides a home stamp from log or notes", () => {
+    expect(inferShopLineFromQuoteNotes("Progressive HO3 · Floor only · Cov A $250,400")).toBe(
+      "home",
+    );
+    expect(inferShopLineFromQuoteNotes("Geico quoted — portal hold")).toBe(null);
+    expect(inferShopLineFromQuoteNotes("PA Progressive rated $700 · VIN captured")).toBe("auto");
+    expect(
+      resolveQuoteShopLine({
+        shopLine: "home",
+        quoteAttemptLogId: "log-auto",
+        notes: null,
+        logs,
+      }),
+    ).toBe("auto");
+    expect(
+      resolveQuoteShopLine({
+        shopLine: "home",
+        quoteAttemptLogId: null,
+        notes: "Flood National General — NFIP provisional",
+        logs: [],
+      }),
+    ).toBe("flood");
+    expect(
+      quoteMatchesShopLine(
+        {
+          shopLine: "home",
+          quoteAttemptLogId: "log-flood",
+          notes: "Flood National General — NFIP provisional",
+          logs,
+        },
+        "home",
+        { multiLine: true, isPrimaryLine: true },
+      ),
+    ).toBe(false);
+    expect(
+      quoteMatchesShopLine(
+        {
+          shopLine: "home",
+          quoteAttemptLogId: "log-flood",
+          notes: "Flood National General — NFIP provisional",
+          logs,
+        },
+        "flood",
+        { multiLine: true },
+      ),
+    ).toBe(true);
+    expect(
+      quoteMatchesShopLine(
+        { shopLine: "auto", quoteAttemptLogId: "log-auto", notes: "PA Progressive", logs },
+        "auto",
+        { multiLine: true },
+      ),
+    ).toBe(true);
+    expect(
+      quoteMatchesShopLine(
+        { shopLine: "auto", quoteAttemptLogId: "log-auto", notes: "PA Progressive", logs },
+        "home",
+        { multiLine: true, isPrimaryLine: true },
+      ),
+    ).toBe(false);
+  });
 });
 
 describe("previous quotes stay, current run is primary", () => {
@@ -260,6 +322,9 @@ describe("deal page + action wiring", () => {
     expect(readFileSync("src/app/actions/documents.ts", "utf8")).toMatch(
       /markShopFlowStaleAfterRiskChange/,
     );
+    expect(readFileSync("src/lib/deals/shop-flow-persist.ts", "utf8")).toMatch(
+      /clearBindRecheckAcks\(dealId\)/,
+    );
   });
 });
 
@@ -298,6 +363,8 @@ describe("Quotes panel line + previous chrome", () => {
       createdAt: new Date("2026-09-01T12:00:00Z"),
       quoteRunId: null,
       shopLine: "home",
+      bindRecheckAckedAt: null,
+      bindRecheckAckFingerprint: null,
       ...partial,
     } as Quote;
   }

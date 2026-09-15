@@ -1,7 +1,8 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { deals, documents, quoteAttemptLogs, quoteSheets, quotes } from "@/lib/db/schema";
+import { BIND_RECHECK_CLEAR_PATCH } from "@/lib/deals/bind-gate";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 import {
   parseShopFlow,
@@ -9,6 +10,20 @@ import {
   staleShopFlow,
   type DealShopFlowState,
 } from "@/lib/deals/shop-flow";
+
+/** Drop bind-recheck Saves so Bind is gated again after terms / risk change. */
+export async function clearBindRecheckAcks(dealId: string, quoteIds?: string[]) {
+  if (!dealId) return;
+  const scoped =
+    quoteIds && quoteIds.length > 0
+      ? and(
+          eq(quotes.tenantId, DEFAULT_TENANT_ID),
+          eq(quotes.dealId, dealId),
+          inArray(quotes.id, quoteIds),
+        )
+      : and(eq(quotes.tenantId, DEFAULT_TENANT_ID), eq(quotes.dealId, dealId));
+  await db.update(quotes).set(BIND_RECHECK_CLEAR_PATCH).where(scoped);
+}
 
 export async function loadDealRiskFingerprint(dealId: string): Promise<string> {
   const [sheets, docs] = await Promise.all([
@@ -54,6 +69,7 @@ export async function markShopFlowStaleAfterRiskChange(dealId: string) {
   if (alreadyTracking) {
     if (saved.marketsFingerprint === "" && saved.quotesFingerprint === "") return;
     await persistDealShopFlow(dealId, staleShopFlow(saved));
+    await clearBindRecheckAcks(dealId);
     return;
   }
   const [quoted] = await db
@@ -72,4 +88,5 @@ export async function markShopFlowStaleAfterRiskChange(dealId: string) {
         .limit(1);
   if (!quoted && !shopped) return;
   await persistDealShopFlow(dealId, staleShopFlow(saved));
+  await clearBindRecheckAcks(dealId);
 }

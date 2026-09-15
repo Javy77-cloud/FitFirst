@@ -46,6 +46,7 @@ import {
   type MergeDealRow,
   type MergeRichness,
 } from "../src/lib/deals/merge-multi-product-deals";
+import { shopLineToPersist } from "../src/lib/deals/shop-flow";
 
 const DRY_RUN = process.env.DRY_RUN === "1" || process.argv.includes("--dry-run");
 
@@ -105,6 +106,27 @@ async function remountDealId(donorId: string, survivorId: string, survivorRiskId
     await db.update(quoteAttemptLogs).set({ riskId: survivorRiskId }).where(eq(quoteAttemptLogs.dealId, survivorId));
     await db.update(drivers).set({ riskId: survivorRiskId }).where(eq(drivers.dealId, survivorId));
     await db.update(vehicles).set({ riskId: survivorRiskId }).where(eq(vehicles.dealId, survivorId));
+  }
+  await tagDealQuoteShopLines(survivorId);
+}
+
+async function tagDealQuoteShopLines(dealId: string) {
+  const [quoteRows, logs] = await Promise.all([
+    db.select().from(quotes).where(eq(quotes.dealId, dealId)),
+    db
+      .select({ id: quoteAttemptLogs.id, lineOfBusiness: quoteAttemptLogs.lineOfBusiness })
+      .from(quoteAttemptLogs)
+      .where(eq(quoteAttemptLogs.dealId, dealId)),
+  ]);
+  for (const quote of quoteRows) {
+    const next = shopLineToPersist({
+      shopLine: quote.shopLine,
+      quoteAttemptLogId: quote.quoteAttemptLogId,
+      notes: quote.notes,
+      logs,
+    });
+    if (!next || next === quote.shopLine) continue;
+    await db.update(quotes).set({ shopLine: next }).where(eq(quotes.id, quote.id));
   }
 }
 
@@ -259,6 +281,7 @@ async function applyTarget(target: (typeof BOOK_MERGE_TARGETS)[number]) {
           updatedAt: new Date(),
         })
         .where(eq(deals.id, plan.survivorId));
+      await tagDealQuoteShopLines(plan.survivorId);
     }
     return { key: target.key, status: "already" as const, ...plan };
   }
