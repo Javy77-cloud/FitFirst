@@ -3,11 +3,12 @@
 import { Fragment, useMemo, useState, useTransition } from "react";
 import {
   acceptQuoteFloorAndRecheckAction,
-  addQuoteNoteAction,
   recheckQuotesAction,
   saveQuoteAgentRatingAction,
-  saveQuoteAgentStatusAction,
 } from "@/app/actions/quotes";
+import { QuoteNotePad } from "@/components/deal/quote-note-pad";
+import { isBoundQuote } from "@/lib/deals/status-stamp";
+import { quoteRowReason } from "@/lib/quotes/row-reason";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,20 +22,13 @@ import { BIND_GATE_COPY, bindGateReady } from "@/lib/deals/bind-gate";
 import { formatMoney } from "@/lib/domain";
 import type { Carrier, Quote, QuoteNote } from "@/lib/db/schema";
 import {
-  AGENT_STATUS_LABELS,
-  AGENT_STATUSES,
   bindRequirementChips,
   minCoverageANotMetAmount,
   quoteNeedsBindRecheckAlert,
   groupQuotesBySection,
-  normalizeAgentStatus,
   normalizeRiskOutcome,
-  REASON_FOR_NO,
-  REASON_FOR_NO_LABELS,
   riskOutcomeLabel,
   riskOutcomePillClass,
-  type AgentStatus,
-  type ReasonForNo,
   type RiskOutcome,
 } from "@/lib/quotes/outcomes";
 import { asList } from "@/lib/safe-list";
@@ -58,18 +52,6 @@ function carrierOpenHref(quote: Quote, carrier: Carrier): string | null {
     carrier.portalUrl?.trim() ||
     "";
   return raw || null;
-}
-
-function formatNoteWhen(iso: string | Date): string {
-  const d = typeof iso === "string" ? new Date(iso) : iso;
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 function premiumNumber(value: Quote["premium"]): number | null {
@@ -335,18 +317,22 @@ export function QuotesResultsTable({
   formId: _formId,
   confirmLogs: _confirmLogs,
   resultByCarrier,
+  whyByCarrier = {},
   notesByQuote = {},
   requestedCoverageA = null,
   quoteFilesByQuoteId = {},
+  boundQuoteId = null,
 }: {
   dealId: string;
   rows: Row[];
   formId: string;
   confirmLogs: { carrierId: string; why?: string | null }[];
   resultByCarrier: Record<string, string | undefined>;
+  whyByCarrier?: Record<string, string | null | undefined>;
   notesByQuote?: Record<string, QuoteNote[]>;
   requestedCoverageA?: number | null;
   quoteFilesByQuoteId?: Record<string, { carrier: QuoteFileRow[]; agency: QuoteFileRow[] }>;
+  boundQuoteId?: string | null;
 }) {
   const list = asList(rows);
   const [recheckMarked, setRecheckMarked] = useState<string[]>([]);
@@ -354,7 +340,6 @@ export function QuotesResultsTable({
   const [hidesApplied, setHidesApplied] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [declinedOpen, setDeclinedOpen] = useState(false);
-  const [pendingDead, setPendingDead] = useState<Record<string, boolean>>({});
   const [alertQuoteId, setAlertQuoteId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [premiumFloors, setPremiumFloors] = useState<Record<string, number>>({});
@@ -474,38 +459,6 @@ export function QuotesResultsTable({
     if (resultByCarrier[carrierId] === "declined") return "declined";
     return normalizeRiskOutcome(quote.riskOutcome) ?? (quote.bindable ? "bindable" : "conditional");
   }
-
-  function onStatusChange(quoteId: string, next: AgentStatus, reasonForNo?: ReasonForNo) {
-    if (next === "dead" && !reasonForNo) {
-      setPendingDead((current) => ({ ...current, [quoteId]: true }));
-      setExpanded((current) => ({ ...current, [quoteId]: true }));
-      return;
-    }
-    const data = new FormData();
-    data.set("dealId", dealId);
-    data.set("quoteId", quoteId);
-    data.set("agentStatus", next);
-    if (reasonForNo) data.set("reasonForNo", reasonForNo);
-    startTransition(async () => {
-      await saveQuoteAgentStatusAction(data);
-      setPendingDead((current) => {
-        const copy = { ...current };
-        delete copy[quoteId];
-        return copy;
-      });
-    });
-  }
-
-  function onAddNote(quoteId: string, form: HTMLFormElement) {
-    const data = new FormData(form);
-    data.set("dealId", dealId);
-    data.set("quoteId", quoteId);
-    startTransition(async () => {
-      await addQuoteNoteAction(data);
-      form.reset();
-    });
-  }
-
 
   return (
     <div className="space-y-3" data-ff-quotes-recheck-desk="" data-ff-quotes-by-outcome="">
@@ -673,20 +626,34 @@ export function QuotesResultsTable({
                     const detailsDefaultOpen = false;
                     const detailsOpen =
                       quote.id in expanded ? Boolean(expanded[quote.id]) : detailsDefaultOpen;
-                    const reqChips = bindRequirementChips({
+                    const rowReason = quoteRowReason({
                       notes: quote.notes,
-                      gaps: quote.coverageGaps,
+                      riskOutcome: outcome,
+                      coverageGaps: quote.coverageGaps,
                       bindRequirements: quote.bindRequirements,
                       coverageA: quote.coverageA,
                       hurricaneDeductible: quote.hurricaneDeductible,
                       requestedCoverageA,
+                      logWhy: whyByCarrier[carrier.id],
                     });
-                    const agentStatus = normalizeAgentStatus(quote.agentStatus);
+                    const reqChips = rowReason.chips.length
+                      ? rowReason.chips
+                      : bindRequirementChips({
+                          notes: quote.notes,
+                          gaps: quote.coverageGaps,
+                          bindRequirements: quote.bindRequirements,
+                          coverageA: quote.coverageA,
+                          hurricaneDeductible: quote.hurricaneDeductible,
+                          requestedCoverageA,
+                        });
                     const thread = notesByQuote[quote.id] ?? [];
-                    const needsReason = pendingDead[quote.id] || agentStatus === "dead";
+                    const bound = isBoundQuote({
+                      quoteId: quote.id,
+                      agentStatus: quote.agentStatus,
+                      boundQuoteId,
+                    });
                     const isRecheckMarked = recheckMarked.includes(quote.id);
                     const isHideMarked = effectiveHideMarked.includes(quote.id);
-                    // Recheck alert: Bindable, or notes with concrete follow-up (e.g. AI 4pt+photos) — not every Conditional.
                     const showAlert = quoteNeedsBindRecheckAlert({
                       riskOutcome: outcome,
                       nextStep: quote.nextStep,
@@ -700,15 +667,19 @@ export function QuotesResultsTable({
                         <article
                           data-ff-quote-row={quote.id}
                           data-ff-quote-outcome={outcome}
+                          data-ff-quote-bound={bound ? "1" : "0"}
                           data-ff-quote-recheck-marked={isRecheckMarked ? "1" : "0"}
                           data-ff-quote-hide-marked={isHideMarked ? "1" : "0"}
                           className={cn(
-                            "rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md",
-                            isRecheckMarked && "ring-1 ring-primary/35",
-                            isHideMarked && !isRecheckMarked && "ring-1 ring-muted-foreground/25",
+                            "rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md",
+                            bound
+                              ? "border-fit-flag/70 bg-[color-mix(in_srgb,var(--ff-red-bg)_55%,var(--ff-card))] ring-2 ring-fit-flag/35"
+                              : "border-border",
+                            isRecheckMarked && !bound && "ring-1 ring-primary/35",
+                            isHideMarked && !isRecheckMarked && !bound && "ring-1 ring-muted-foreground/25",
                           )}
                         >
-                          <div className="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:flex-nowrap">
+                          <div className="flex flex-wrap items-start gap-2 px-3 py-2.5">
                             {section.key === "bindable" || section.key === "conditional" ? (
                               <label
                                 className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center"
@@ -738,23 +709,51 @@ export function QuotesResultsTable({
                                 />
                               </label>
                             ) : null}
-                            <span
-                              data-ff-quote-status-pill={outcome}
-                              className={cn(
-                                "inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold tracking-wide",
-                                riskOutcomePillClass(outcome),
-                              )}
-                            >
-                              {riskOutcomeLabel(outcome)}
-                            </span>
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                {bound ? (
+                                  <span
+                                    data-ff-quote-bound-badge=""
+                                    className="inline-flex shrink-0 items-center rounded-sm border-2 border-fit-flag px-1.5 py-0.5 text-[10px] font-extrabold tracking-[0.12em] text-fit-flag"
+                                  >
+                                    BOUND
+                                  </span>
+                                ) : (
+                                  <span
+                                    data-ff-quote-status-pill={outcome}
+                                    className={cn(
+                                      "inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold tracking-wide",
+                                      riskOutcomePillClass(outcome),
+                                    )}
+                                  >
+                                    {riskOutcomeLabel(outcome)}
+                                  </span>
+                                )}
+                                <span className="truncate text-sm font-semibold text-navy">
+                                  {carrier.name}
+                                </span>
+                                <span className="inline-flex items-center gap-1 text-sm font-semibold tabular-nums text-navy">
+                                  {formatMoney(quote.premium)}
+                                </span>
+                              </div>
+                              {outcome !== "bindable" || !rowReason.provided || rowReason.chips.length ? (
+                                <p
+                                  className={cn(
+                                    "text-[12px] leading-snug",
+                                    rowReason.provided ? "text-navy" : "text-fit-flag",
+                                  )}
+                                  data-ff-quote-row-reason={quote.id}
+                                  data-ff-quote-row-reason-provided={rowReason.provided ? "1" : "0"}
+                                >
+                                  {rowReason.label}
+                                  {rowReason.detail ? (
+                                    <span className="text-muted-foreground"> · {rowReason.detail}</span>
+                                  ) : null}
+                                </p>
+                              ) : null}
+                            </div>
 
-                            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
-                              <span className="truncate text-sm font-semibold text-navy">
-                                {carrier.name}
-                              </span>
-                              <span className="inline-flex items-center gap-1 text-sm font-semibold tabular-nums text-navy">
-                                {formatMoney(quote.premium)}
-                              </span>
+                            <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                               <button
                                 type="button"
                                 aria-label={
@@ -822,44 +821,31 @@ export function QuotesResultsTable({
                               >
                                 {detailsOpen ? "Hide details" : "Details"}
                               </Button>
-                            </div>
-
-                            {showAlert ? (
-                              <button
-                                type="button"
-                                aria-label={`Bind recheck checklist for ${carrier.name}`}
-                                data-ff-quote-bind-alert={quote.id}
-                                onClick={() => setAlertQuoteId(quote.id)}
-                                className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-fit-flag/55 bg-fit-flag/15 text-fit-flag shadow-sm transition-all duration-150 hover:scale-105 hover:border-fit-flag hover:bg-fit-flag hover:text-white hover:shadow-md"
-                                title="Re-check this quote before bind"
-                              >
-                                <AlertTriangle className="size-3" strokeWidth={2.25} />
-                              </button>
-                            ) : null}
-                            <StarRating
-                              dealId={dealId}
-                              quoteId={quote.id}
-                              value={quote.agentRating}
-                              disabled={pending}
-                            />
-                            <select
-                              className="h-7 max-w-[9.5rem] rounded-md border border-border bg-background px-1.5 text-[11px] text-navy"
-                              value={agentStatus}
-                              disabled={pending}
-                              data-ff-quote-agent-status={quote.id}
-                              aria-label="Quote status"
-                              onChange={(event) =>
-                                onStatusChange(quote.id, event.target.value as AgentStatus)
-                              }
-                            >
-                              {AGENT_STATUSES.map((status) => (
-                                <option key={status} value={status}>
-                                  {AGENT_STATUS_LABELS[status]}
-                                </option>
-                              ))}
-                            </select>
-
-                            <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                              <QuoteNotePad
+                                dealId={dealId}
+                                quoteId={quote.id}
+                                carrierName={carrier.name}
+                                notes={thread}
+                                disabled={pending}
+                              />
+                              {showAlert ? (
+                                <button
+                                  type="button"
+                                  aria-label={`Bind recheck checklist for ${carrier.name}`}
+                                  data-ff-quote-bind-alert={quote.id}
+                                  onClick={() => setAlertQuoteId(quote.id)}
+                                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-fit-flag/55 bg-fit-flag/15 text-fit-flag shadow-sm transition-all duration-150 hover:scale-105 hover:border-fit-flag hover:bg-fit-flag hover:text-white hover:shadow-md"
+                                  title="Re-check this quote before bind"
+                                >
+                                  <AlertTriangle className="size-3" strokeWidth={2.25} />
+                                </button>
+                              ) : null}
+                              <StarRating
+                                dealId={dealId}
+                                quoteId={quote.id}
+                                value={quote.agentRating}
+                                disabled={pending}
+                              />
                               <Button
                                 type="button"
                                 size="xs"
@@ -918,7 +904,7 @@ export function QuotesResultsTable({
                             >
                               <div>
                                 <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                  Bind requirements
+                                  Why / bind requirements
                                 </div>
                                 {reqChips.length ? (
                                   <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -933,91 +919,14 @@ export function QuotesResultsTable({
                                     ))}
                                   </div>
                                 ) : (
-                                  <p className="mt-1 text-sm text-muted-foreground">
-                                    No bind requirements called out.
+                                  <p
+                                    className="mt-1 text-sm text-navy"
+                                    data-ff-quote-details-reason=""
+                                  >
+                                    {rowReason.label}
+                                    {rowReason.detail ? ` — ${rowReason.detail}` : ""}
                                   </p>
                                 )}
-                              </div>
-
-                              {needsReason ? (
-                                <div data-ff-quote-reason-for-no={quote.id}>
-                                  <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                    Reason for no
-                                  </div>
-                                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                                    {REASON_FOR_NO.map((code) => (
-                                      <button
-                                        key={code}
-                                        type="button"
-                                        disabled={pending}
-                                        data-ff-reason-for-no={code}
-                                        className={cn(
-                                          "rounded-full border px-2.5 py-0.5 text-[11px] font-medium shadow-sm transition-colors",
-                                          quote.reasonForNo === code
-                                            ? "border-fit-red/45 bg-fit-red-bg text-fit-red"
-                                            : "border-border bg-card text-navy hover:bg-muted",
-                                        )}
-                                        onClick={() => onStatusChange(quote.id, "dead", code)}
-                                      >
-                                        {REASON_FOR_NO_LABELS[code]}
-                                      </button>
-                                    ))}
-                                  </div>
-                                  {pendingDead[quote.id] && !quote.reasonForNo ? (
-                                    <p className="mt-1 text-[11px] text-fit-flag">
-                                      Pick a reason to mark this quote dead.
-                                    </p>
-                                  ) : null}
-                                </div>
-                              ) : null}
-
-                              <div data-ff-quote-notes={quote.id}>
-                                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                  Notes
-                                </div>
-                                <ul className="mt-1.5 space-y-1.5">
-                                  {thread.length === 0 ? (
-                                    <li className="text-sm text-muted-foreground">No notes yet.</li>
-                                  ) : (
-                                    thread.map((note) => (
-                                      <li
-                                        key={note.id}
-                                        className="rounded-lg border border-border/70 bg-muted/20 px-2.5 py-1.5"
-                                        data-ff-quote-note={note.id}
-                                      >
-                                        <div className="text-[10px] text-muted-foreground">
-                                          {formatNoteWhen(note.createdAt)}
-                                          {note.createdBy ? ` · ${note.createdBy}` : ""}
-                                        </div>
-                                        <p className="mt-0.5 whitespace-pre-wrap text-sm text-navy">
-                                          {note.body}
-                                        </p>
-                                      </li>
-                                    ))
-                                  )}
-                                </ul>
-                                <form
-                                  className="mt-2 flex flex-wrap items-end gap-2"
-                                  onSubmit={(event) => {
-                                    event.preventDefault();
-                                    onAddNote(quote.id, event.currentTarget);
-                                  }}
-                                >
-                                  <label className="min-w-[12rem] flex-1">
-                                    <span className="sr-only">Add note</span>
-                                    <input
-                                      name="body"
-                                      required
-                                      maxLength={4000}
-                                      placeholder="Add a note…"
-                                      className="h-8 w-full rounded-md border border-border bg-background px-2 text-sm"
-                                      data-ff-quote-note-input={quote.id}
-                                    />
-                                  </label>
-                                  <Button type="submit" size="xs" disabled={pending}>
-                                    Add note
-                                  </Button>
-                                </form>
                               </div>
                             </div>
                           ) : null}

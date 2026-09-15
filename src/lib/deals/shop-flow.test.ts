@@ -246,6 +246,10 @@ describe("deal page + action wiring", () => {
     expect(page).toMatch(/currentQuoteRunId=\{shopFlow\.quoteRuns/);
     expect(page).toMatch(/multiLine=\{packageLines\.length > 1\}/);
     expect(page).toMatch(/shopLine: row\.quote\.shopLine/);
+    expect(page).toMatch(/packageQuotesComplete/);
+    expect(page).toMatch(/lineQuoteCompleteness/);
+    expect(page).toMatch(/quoteGaps=/);
+    expect(page).toMatch(/DealStatusStamp/);
     expect(page).not.toMatch(/packageLines\.length > 1\s*\? quotes\.filter/);
   });
 

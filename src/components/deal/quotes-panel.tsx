@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { isQuoteFileDoc } from "@/lib/deals/quote-docs";
 import { sortQuotesByRatingThenPremium } from "@/lib/deals/quote-sort";
+import type { LineQuoteCompleteness } from "@/lib/deals/quote-completeness";
 import { groupQuotesByRun, quoteMatchesShopLine, shopLineLabel } from "@/lib/deals/shop-flow";
 import { isShopLine, type ShopLine } from "@/lib/domain";
 import type { Carrier, Document, DocumentVersion, Quote, QuoteAttemptLog, QuoteNote } from "@/lib/db/schema";
@@ -52,6 +53,24 @@ function toQuoteFileRow(doc: Document, versions: DocumentVersion[]): QuoteFileRo
     uploadedByName: version?.uploadedByName ?? null,
     createdAt: version?.createdAt ?? doc.createdAt,
   };
+}
+
+function MissingQuotesBanner({ completeness }: { completeness: LineQuoteCompleteness | null }) {
+  if (!completeness || completeness.complete) return null;
+  return (
+    <div
+      className="flex flex-wrap items-start gap-2 rounded-lg border border-fit-flag/40 bg-fit-flag/10 px-3 py-2"
+      data-ff-quotes-missing-warning=""
+      data-ff-quotes-missing-line={completeness.line}
+    >
+      <span className="rounded-full bg-fit-flag px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+        Missing quotes
+      </span>
+      <p className="min-w-0 flex-1 text-sm text-navy" data-ff-quotes-missing-summary="">
+        {completeness.summary}
+      </p>
+    </div>
+  );
 }
 
 function PreviousQuotesBlock({
@@ -98,6 +117,8 @@ export function QuotesPanel({
   shopLine,
   currentQuoteRunId = null,
   multiLine = false,
+  completeness = null,
+  boundQuoteId = null,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -115,6 +136,8 @@ export function QuotesPanel({
   shopLine?: string;
   currentQuoteRunId?: string | null;
   multiLine?: boolean;
+  completeness?: LineQuoteCompleteness | null;
+  boundQuoteId?: string | null;
 }) {
   const activeLine: ShopLine | null = isShopLine(shopLine) ? shopLine : null;
   const lineLogs = logs.map((row) => row.log);
@@ -139,6 +162,14 @@ export function QuotesPanel({
       agentRating: row.quote.agentRating,
     })),
   );
+  if (boundQuoteId) {
+    sorted.sort((a, b) => {
+      if (a.quote.id === boundQuoteId) return -1;
+      if (b.quote.id === boundQuoteId) return 1;
+      return 0;
+    });
+  }
+  const whyByCarrier = Object.fromEntries(logs.map((row) => [row.log.carrierId, row.log.why]));
   const resultByCarrier = Object.fromEntries(logs.map((row) => [row.log.carrierId, row.log.result]));
   const notesByQuote: Record<string, QuoteNote[]> = {};
   for (const note of quoteNotes) {
@@ -174,6 +205,7 @@ export function QuotesPanel({
       >
         <div className="ff-card space-y-3 p-4">
           <h3 className="text-sm font-semibold text-navy">Quotes</h3>
+          <MissingQuotesBanner completeness={completeness} />
           <p className="text-sm text-muted-foreground" data-ff-quotes-empty-stats="">
             0 quote rows · build carriers on Markets first
           </p>
@@ -204,6 +236,7 @@ export function QuotesPanel({
 
   return (
     <div className="space-y-4" data-ff-deal-quotes="" data-ff-quotes-line={activeLine ?? ""}>
+      <MissingQuotesBanner completeness={completeness} />
       {grouped.current.length ? (
         <section className="ff-card overflow-hidden" data-ff-quotes-current="">
           <QuotesResultsTable
@@ -212,9 +245,11 @@ export function QuotesPanel({
             formId={formId}
             confirmLogs={confirmLogs}
             resultByCarrier={resultByCarrier}
+            whyByCarrier={whyByCarrier}
             notesByQuote={notesByQuote}
             requestedCoverageA={requestedCoverageA}
             quoteFilesByQuoteId={quoteFilesByQuoteId}
+            boundQuoteId={boundQuoteId}
           />
         </section>
       ) : (
@@ -235,9 +270,11 @@ export function QuotesPanel({
             formId={formId}
             confirmLogs={confirmLogs}
             resultByCarrier={resultByCarrier}
+            whyByCarrier={whyByCarrier}
             notesByQuote={notesByQuote}
             requestedCoverageA={requestedCoverageA}
             quoteFilesByQuoteId={quoteFilesByQuoteId}
+            boundQuoteId={boundQuoteId}
           />
         </PreviousQuotesBlock>
       ))}
