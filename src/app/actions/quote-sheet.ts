@@ -127,6 +127,8 @@ import { flashAction } from "@/lib/flash-action";
 import { isDocumentsSourceDoc, isQuoteFileDoc } from "@/lib/deals/quote-docs";
 import { withFlash } from "@/lib/flash";
 import { dealTitleForRecords } from "@/lib/deals/deal-title";
+import { markShopFlowStaleAfterRiskChange } from "@/lib/deals/shop-flow-persist";
+import { sheetValuesFingerprint } from "@/lib/deals/shop-flow";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -197,6 +199,9 @@ export async function persistQuoteSheetValues(
     .where(eq(quoteSheets.id, sheet.id));
   await syncRiskFromSheet(dealId, values, "save");
   await syncHeaderFromSheet(dealId, values, "save");
+  if (sheetValuesFingerprint(sheet.values) !== sheetValuesFingerprint(values)) {
+    await markShopFlowStaleAfterRiskChange(dealId);
+  }
   return values;
 }
 
@@ -1014,10 +1019,14 @@ export type FillDealCounts = { filledKeys: string[]; skippedKeys: string[] };
 export async function runFillDealSheets(dealId: string, primary: ShopLine): Promise<FillDealCounts> {
   const primaryCounts = await runFillQuoteSheet(dealId, primary);
   const other = await fillOtherShopLines(dealId, primary);
-  return {
+  const counts = {
     filledKeys: [...primaryCounts.filledKeys, ...other.filledKeys],
     skippedKeys: [...primaryCounts.skippedKeys, ...other.skippedKeys],
   };
+  if (counts.filledKeys.length) {
+    await markShopFlowStaleAfterRiskChange(dealId);
+  }
+  return counts;
 }
 
 async function fillOtherShopLines(dealId: string, already: ShopLine): Promise<FillDealCounts> {

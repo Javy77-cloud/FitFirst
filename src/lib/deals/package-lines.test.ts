@@ -237,6 +237,27 @@ describe("multi-line bind path", () => {
     expect(logBelongsToLine("AUTO", "AUTO", false)).toBe(true);
     expect(logBelongsToLine("AUTO", "HO", true)).toBe(false);
     expect(logBelongsToLine(null, "HO", true)).toBe(true);
+    expect(
+      quoteBelongsToLine({
+        quoteAttemptLogId: null,
+        notes: "Flood National General — NFIP provisional",
+        logs: [],
+        lob: "FLOOD",
+        isPrimaryLine: false,
+        multiLine: true,
+      }),
+    ).toBe(true);
+    expect(
+      quoteBelongsToLine({
+        quoteAttemptLogId: null,
+        shopLine: "auto",
+        notes: "PA Progressive",
+        logs: [],
+        lob: "HO",
+        isPrimaryLine: true,
+        multiLine: true,
+      }),
+    ).toBe(false);
   });
 
   it("resolves shop line + LOB for market requests without changing single-line defaults", () => {

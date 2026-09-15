@@ -1,11 +1,12 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { and, eq, inArray } from "drizzle-orm";
 import { matchCarrier, rankFits, riskFromRecord } from "@/lib/appetite/match";
 import { toAppetiteInput } from "@/lib/appetite/rule-input";
 import { portalFor } from "@/lib/appetite/portals";
-import { appointmentLine, DEFAULT_TENANT_ID, type PriorAttempt, type ShopLine } from "@/lib/domain";
+import { appointmentLine, DEFAULT_TENANT_ID, type PriorAttempt } from "@/lib/domain";
 import { resolveShopLineAndLob } from "@/lib/deals/package-lines";
 import { db } from "@/lib/db";
 import { appointedByCarrierLine } from "@/lib/db/queries";
@@ -40,6 +41,12 @@ import {
   manualCarrierIdsFromLogs,
 } from "@/lib/deals/manual-markets";
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
+import { loadDealRiskFingerprint, persistDealShopFlow } from "@/lib/deals/shop-flow-persist";
+import {
+  nextShopFlowAfterQuoteRun,
+  parseShopFlow,
+  quoteMatchesShopLine,
+} from "@/lib/deals/shop-flow";
 import { flashAction } from "@/lib/flash-action";
 import { snapshotFromRisk } from "@/lib/appetite/gate/snapshot";
 import { runAndPersistQuoteGate } from "@/lib/appetite/gate/store";
@@ -75,6 +82,73 @@ export async function requestStretchQuotesAction(formData: FormData) {
 
 export async function shopInAppetite(dealId: string) {
   return shopDealQuotes(dealId, "appetite");
+}
+
+async function persistShopFlowAfterQuoteRequest(
+  dealId: string,
+  line: ReturnType<typeof resolveShopLineAndLob>["line"],
+  opts: { archiveCurrent: boolean; logs: { id: string; lineOfBusiness?: string | null }[] },
+) {
+  const fingerprint = await loadDealRiskFingerprint(dealId);
+  const [deal] = await db.select({ shopFlow: deals.shopFlow }).from(deals).where(eq(deals.id, dealId));
+  const saved = parseShopFlow(deal?.shopFlow);
+  const existing = await db.select().from(quotes).where(eq(quotes.dealId, dealId));
+  const onLine = existing.filter((quote) =>
+    quoteMatchesShopLine(
+      {
+        shopLine: quote.shopLine,
+        quoteAttemptLogId: quote.quoteAttemptLogId,
+        notes: quote.notes,
+        logs: opts.logs,
+      },
+      line,
+      { multiLine: true },
+    ),
+  );
+  const currentRun = saved.quoteRuns?.[line] ?? null;
+  const isRequote =
+    opts.archiveCurrent &&
+    (saved.quotesFingerprint === "" ||
+      (saved.quotesFingerprint != null && saved.quotesFingerprint !== fingerprint));
+  let runId = currentRun || randomUUID();
+
+  if (isRequote) {
+    const toArchive = onLine.filter((quote) => !quote.quoteRunId || quote.quoteRunId === currentRun);
+    if (toArchive.length) {
+      const prevId = currentRun || randomUUID();
+      await db
+        .update(quotes)
+        .set({ quoteRunId: prevId, shopLine: line })
+        .where(inArray(quotes.id, toArchive.map((quote) => quote.id)));
+    }
+    runId = randomUUID();
+  } else if (onLine.some((quote) => !quote.quoteRunId || !quote.shopLine)) {
+    await db
+      .update(quotes)
+      .set({ quoteRunId: runId, shopLine: line })
+      .where(
+        inArray(
+          quotes.id,
+          onLine.filter((quote) => !quote.quoteRunId || !quote.shopLine).map((quote) => quote.id),
+        ),
+      );
+  }
+
+  await persistDealShopFlow(
+    dealId,
+    nextShopFlowAfterQuoteRun({ saved, line, fingerprint, newRunId: runId }),
+  );
+}
+
+async function archiveLineQuotesForNewRun(input: {
+  dealId: string;
+  line: ReturnType<typeof resolveShopLineAndLob>["line"];
+  logs: { id: string; lineOfBusiness?: string | null }[];
+}) {
+  await persistShopFlowAfterQuoteRequest(input.dealId, input.line, {
+    archiveCurrent: true,
+    logs: input.logs,
+  });
 }
 
 export async function shopDealQuotes(
@@ -161,7 +235,11 @@ export async function shopDealQuotes(
   if (pass === "appetite") {
     for (const match of matches.filter((row) => row.band === "green")) shopIds.add(match.carrierId);
     for (const id of manualIds) shopIds.add(id);
-    await db.delete(quotes).where(eq(quotes.dealId, dealId));
+    await archiveLineQuotesForNewRun({
+      dealId,
+      line: resolved.line,
+      logs: dealLogs,
+    });
   } else {
     const existing = await db.select().from(quotes).where(eq(quotes.dealId, dealId));
     const already = new Set(existing.map((row) => row.carrierId));
@@ -208,6 +286,13 @@ export async function shopDealQuotes(
       snapMilesToCoast: risk.milesToCoast,
       snapCoverageA: risk.coverageA,
       ...shopAutoSnap,
+    });
+  }
+
+  if (pass === "stretch") {
+    await persistShopFlowAfterQuoteRequest(dealId, resolved.line, {
+      archiveCurrent: false,
+      logs: dealLogs,
     });
   }
 

@@ -848,6 +848,13 @@
       "when": 1789074000000,
       "tag": "0120_deal_shop_products",
       "breakpoints": true
+    },
+    {
+      "idx": 121,
+      "version": "7",
+      "when": 1789075000000,
+      "tag": "0121_deal_shop_flow",
+      "breakpoints": true
     }
   ]
 }

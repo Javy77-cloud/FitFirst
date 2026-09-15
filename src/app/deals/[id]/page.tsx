@@ -22,6 +22,7 @@ import { listEnabledScriptsFor } from "@/lib/db/developer-hub-queries";
 import {
   AGENT_DEAL_TAB_LABELS,
   AGENT_DEAL_TABS,
+  hasMeaningfulDealFieldValues,
   parseAgentDealTab,
   resolveDealResumeTab,
 } from "@/lib/deals/tabs";
@@ -52,8 +53,20 @@ import {
 } from "@/lib/deals/deal-products";
 import { productSectionComplete, productSectionProgress } from "@/lib/deals/product-layout";
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
+import { DealStatusStamp } from "@/components/deal/deal-status-stamp";
+import {
+  lineQuoteCompleteness,
+  packageQuotesComplete,
+} from "@/lib/deals/quote-completeness";
+import { pickBoundQuoteId, resolveDealStampStage } from "@/lib/deals/status-stamp";
 import { DealPackageLinesForm } from "@/components/deal/deal-package-lines-form";
 import { DealFlowRail } from "@/components/deals/deal-flow-rail";
+import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
+import {
+  parseShopFlow,
+  resolveShopFlowCompletion,
+  riskFingerprint,
+} from "@/lib/deals/shop-flow";
 import { DealPackageShell } from "@/components/deal/deal-package-shell";
 import { DealHeaderStage } from "@/components/deals/deal-header-stage";
 import { relabelConvertActivityTitle } from "@/lib/crm/convert";
@@ -228,17 +241,17 @@ export default async function DealPage({
     packageLines.length > 1
       ? logs.filter((row) => logBelongsToLine(row.log.lineOfBusiness, activeLob, isPrimaryPackageLine))
       : logs;
-  const lineQuotes =
-    packageLines.length > 1
-      ? quotes.filter((row) =>
-          quoteBelongsToLine({
-            quoteAttemptLogId: row.quote.quoteAttemptLogId,
-            logs: logs.map((item) => item.log),
-            lob: activeLob,
-            isPrimaryLine: isPrimaryPackageLine,
-          }),
-        )
-      : quotes;
+  const lineQuotes = quotes.filter((row) =>
+    quoteBelongsToLine({
+      quoteAttemptLogId: row.quote.quoteAttemptLogId,
+      shopLine: row.quote.shopLine,
+      notes: row.quote.notes,
+      logs: logs.map((item) => item.log),
+      lob: activeLob,
+      isPrimaryLine: isPrimaryPackageLine,
+      multiLine: packageLines.length > 1,
+    }),
+  );
   const dealLogs = lineLogs.map((row) => row.log);
   const excludedMarketIds = new Set(excludedCarrierIdsFromLogs(dealLogs));
   const shopMarketsAction = hasShopMarketAction(
@@ -282,6 +295,51 @@ export default async function DealPage({
         ),
         hasNonStubQuotes: lineQuotes.some((row) => row.quote.stub === false),
       });
+  const currentFingerprint = riskFingerprint({
+    sheets,
+    docs: docs.filter((doc) => isDocumentsSourceDoc(doc)),
+  });
+  const shopFlow = parseShopFlow(deal.shopFlow);
+  const packageShopLines = [
+    ...new Set(
+      dealProducts.length
+        ? dealProducts.map((id) => dealProductDef(id).shopLine)
+        : packageLines.length
+          ? packageLines
+          : [sheetLine],
+    ),
+  ];
+  const quoteCompletenessByLine = Object.fromEntries(
+    packageShopLines.map((line) => [
+      line,
+      lineQuoteCompleteness({
+        line,
+        logs: logs.map((row) => row.log),
+        quotes: quotes.map((row) => row.quote),
+        carriers: carrierRows.map((row) => ({ id: row.carrier.id, name: row.carrier.name })),
+      }),
+    ]),
+  );
+  const quotesPackageComplete = packageQuotesComplete(packageShopLines, quoteCompletenessByLine);
+  const flowCompletion = resolveShopFlowCompletion({
+    detailsComplete:
+      hasMeaningfulDealFieldValues(dealValues) ||
+      dealProducts.some((id) => productSectionComplete(id, dealValues)) ||
+      sheets.some((row) => sheetHasUserData(row.values)),
+    documentsComplete:
+      Boolean(health && sheetHasUserData(activeSheet.values)) ||
+      sheets.some((row) => sheetHasUserData(row.values)),
+    hasMarkets: shopMarketsAction || agentMarketsAction,
+    hasQuotes: quotesPackageComplete,
+    currentFingerprint,
+    saved: shopFlow,
+  });
+  const stampStage = resolveDealStampStage(stageView.slug, deal.pipelineStage, deal.boundAt);
+  const boundQuoteId = pickBoundQuoteId({
+    dealBound: Boolean(deal.boundAt) || stampStage === "bound",
+    quotes: lineQuotes.map((row) => row.quote),
+  });
+  const activeQuoteCompleteness = quoteCompletenessByLine[sheetLine] ?? null;
   const manualIds = manualCarrierIdsFromLogs(dealLogs).filter((id) => !excludedMarketIds.has(id));
   const carrierOptions = carrierRows.map((row) => ({
     id: row.carrier.id,
@@ -343,7 +401,8 @@ export default async function DealPage({
       {!risk ? (
         <p className="text-base text-muted-foreground">This deal is missing a risk row.</p>
       ) : (
-        <div className="w-full" data-ff-deal-flush-tabs data-ff-deal-topband>
+        <div className="relative w-full" data-ff-deal-flush-tabs data-ff-deal-topband>
+        <DealStatusStamp stage={stampStage} />
         <SectionTabs
           defaultValue="details"
           active={activeTab}
@@ -391,6 +450,7 @@ export default async function DealPage({
                   <div className="mt-3">
                     <DealFlowRail
                       current={activeTab}
+                      completed={flowCompletion.completed}
                       activeLabel={dealProductDef(activeProduct).label}
                       productComplete={
                         productSectionComplete(activeProduct, dealValues) ||
@@ -415,6 +475,21 @@ export default async function DealPage({
                     products={dealProducts}
                     active={activeProduct}
                     tab={activeTab}
+                    quoteGaps={Object.fromEntries(
+                      dealProducts.map((id) => {
+                        const gap = quoteCompletenessByLine[dealProductDef(id).shopLine];
+                        return [
+                          id,
+                          gap
+                            ? {
+                                complete: gap.complete,
+                                shopped: gap.shopped,
+                                summary: gap.summary,
+                              }
+                            : { complete: false, shopped: false, summary: "Missing quotes" },
+                        ];
+                      }),
+                    )}
                     complete={Object.fromEntries(
                       dealProducts.map((id) => [
                         id,
@@ -563,6 +638,10 @@ export default async function DealPage({
                         quoteResultsNote={deal.quoteResultsNote}
                         formId={lineQuotingForm?.id ?? lineForm ?? masterFormLabel}
                         shopLine={sheetLine}
+                        currentQuoteRunId={shopFlow.quoteRuns?.[sheetLine] ?? null}
+                        multiLine={packageLines.length > 1}
+                        completeness={activeQuoteCompleteness}
+                        boundQuoteId={boundQuoteId}
                         confirmLogs={allQuoteLogs.map((row) => ({
                           carrierId: row.log.carrierId,
                           why: row.log.why,

@@ -49,6 +49,8 @@ describe("master sheet save / reload", () => {
     expect(quoting).toMatch(/persistQuoteSheetValues/);
     expect(quoting).toMatch(/submittedSheetValues/);
     expect(quotes).toMatch(/applySavedSheetToDeal/);
+    expect(quotes).not.toMatch(/await db\.delete\(quotes\)\.where\(eq\(quotes\.dealId/);
+    expect(quotes).toMatch(/archiveLineQuotesForNewRun/);
   });
 
   it("Save sheet leaves a notice=sheet-saved flash that a toast layer can hook", () => {
