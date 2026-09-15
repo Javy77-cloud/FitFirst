@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { FieldLayout } from "@/lib/custom-fields/types";
 import { DEAL_PRODUCTS } from "./deal-products";
 import {
   SHARED_DEAL_SECTION_IDS,
@@ -28,7 +29,7 @@ const SHARED_LAYOUT = {
       ],
     },
   ],
-};
+} as FieldLayout;
 
 describe("deal details shared body + product overlay", () => {
   it("keeps identity/phones/DOB/addresses once and hides other product sections", () => {

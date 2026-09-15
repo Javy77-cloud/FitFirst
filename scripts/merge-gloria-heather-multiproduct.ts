@@ -198,7 +198,7 @@ async function applyTarget(target: (typeof BOOK_MERGE_TARGETS)[number]) {
   const matched = all.filter(
     (deal) =>
       dealMatchesPerson(deal, target.query) ||
-      target.hintIds.includes(deal.id as (typeof target.hintIds)[number]),
+      (target.hintIds as readonly string[]).includes(deal.id),
   );
   if (!matched.length) {
     console.log(`[${target.key}] no deals matched "${target.query}" — skip`);

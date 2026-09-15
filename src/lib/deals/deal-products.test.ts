@@ -50,7 +50,7 @@ describe("deal product picker catalog", () => {
     expect(shopLinesFromProducts(["homeowners", "landlord"])).toEqual(["home"]);
     expect(shopLinesFromProducts(["homeowners", "auto", "flood"])).toEqual(["home", "auto", "flood"]);
     expect(shopLinesFromProducts(["life_term", "health_marketplace"])).toEqual(["life", "health"]);
-    expect(shopLinesFromProducts(["gl", "homeowners"])).toEqual(["home", "gl"]);
+    expect(shopLinesFromProducts(["gl", "homeowners"])).toEqual(["home", "general_liability"]);
   });
 
   it("reads shopProducts (or shopLines aliases) from FormData-like objects", () => {
