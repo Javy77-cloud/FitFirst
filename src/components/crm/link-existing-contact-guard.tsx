@@ -27,6 +27,7 @@ export function LinkExistingContactGuard({
   children,
   className,
   action,
+  defaultContactId,
   "data-ff": dataFf,
 }: {
   module: ModuleKind;
@@ -34,6 +35,7 @@ export function LinkExistingContactGuard({
   children: ReactNode;
   className?: string;
   action: (formData: FormData) => void | Promise<void>;
+  defaultContactId?: string;
   "data-ff"?: string;
 }) {
   const router = useRouter();
@@ -151,7 +153,7 @@ export function LinkExistingContactGuard({
         onSubmit={onSubmit}
       >
         {module !== "contacts" ? (
-          <input type="hidden" name="contactId" defaultValue="" />
+          <input type="hidden" name="contactId" defaultValue={defaultContactId ?? ""} />
         ) : null}
         {children}
       </form>

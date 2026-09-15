@@ -264,17 +264,24 @@ describe("shared shell helpers", () => {
 });
 
 describe("create + detail wiring", () => {
-  it("Add New Deal posts package lines and the deal page switches on ?line=", () => {
+  it("Add New Deal collects package lines and Save persists them; detail switches on ?line=", () => {
     const dialog = readFileSync("src/components/deals/add-new-deal-dialog.tsx", "utf8");
     expect(dialog).toMatch(/data-ff-package-lines/);
     expect(dialog).toMatch(/PackageLineCheckboxes/);
+    expect(dialog).toMatch(/newDealCreateHref/);
     expect(readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8")).toMatch(/shopLines/);
     expect(readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8")).toMatch(/Home/);
     expect(readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8")).toMatch(/Auto/);
     expect(readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8")).toMatch(/Flood/);
-    const create = readFileSync("src/app/actions/deal-create.ts", "utf8");
-    expect(create).toMatch(/packageCreateDraft/);
-    expect(create).toMatch(/insertBlankSheets/);
+    const createPage = readFileSync("src/app/deals/new/page.tsx", "utf8");
+    expect(createPage).toMatch(/NewDealCreateFields/);
+    expect(createPage).toMatch(/createDeal/);
+    const save = readFileSync("src/app/actions/crm.ts", "utf8");
+    expect(save).toMatch(/packageDraftForNewDealSave/);
+    expect(save).toMatch(/insertSheetsForDeal\(deal\.id, shopLines\)/);
+    const copy = readFileSync("src/app/actions/deal-create.ts", "utf8");
+    expect(copy).toMatch(/packageCreateDraft/);
+    expect(copy).toMatch(/insertBlankSheets/);
     const page = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
     expect(page).toMatch(/data-ff-deal-line-switcher|DealLineSwitcher/);
     expect(page).toMatch(/DealPackageShell/);
