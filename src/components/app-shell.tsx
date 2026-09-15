@@ -1,19 +1,19 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
+import { PendingLink } from "@/components/desk/pending-link";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { DeskHeader } from "@/components/desk-header";
 import { DeskSidebar } from "@/components/desk-sidebar";
 import { flattenResolvedNav, resolveNavLayout } from "@/lib/desk/nav-layout";
 import { getStoredNavLayout } from "@/lib/db/nav-prefs";
+import { loadHeaderNotificationState } from "@/lib/db/header-alerts";
 import { SupportLauncher } from "@/components/support/help-center";
 import { SupportProvider } from "@/components/support/support-context";
-import { currentDeskSession, getActor } from "@/lib/auth/session";
+import { currentDeskSession, getActor, type DeskSession } from "@/lib/auth/session";
 import type { Actor } from "@/lib/auth/rbac";
-import { toHeaderAlert } from "@/lib/desk/header-alerts";
 import type { HeaderRecordContext } from "@/lib/desk/header-record";
-import { listUsers, listAlerts } from "@/lib/db/queries";
-import { releaseDueLeadFollowUps } from "@/lib/leads/apply-follow-up";
+import { listUsers } from "@/lib/db/queries";
+import { scheduleDueLeadFollowUpRelease } from "@/lib/leads/schedule-follow-up-release";
 
 export async function AppShell({
   children,
@@ -42,66 +42,56 @@ export async function AppShell({
   /** Prefills the global Call / SMS / Email / Task composers next to profile. */
   recordContext?: HeaderRecordContext | null;
 }) {
-  await releaseDueLeadFollowUps().catch(() => null);
-  const [session, actor, userRows, alertRows] = await Promise.all([
-    currentDeskSession(),
-    getActor(),
-    listUsers(),
-    listAlerts(),
-  ]);
-  const navLayout = await getStoredNavLayout(session.userId, { isAdmin: session.isAdmin });
-  const mobileNav = flattenResolvedNav(resolveNavLayout(navLayout, { isAdmin: session.isAdmin }));
+  scheduleDueLeadFollowUpRelease();
+  const [session, actor] = await Promise.all([currentDeskSession(), getActor()]);
   if (session.signedIn && session.mfaStatus === "challenge") redirect("/login/mfa");
   if (session.signedIn && session.mfaStatus === "pending" && !allowMfaPending) {
     redirect("/enroll-mfa");
   }
-  const unread = alertRows.filter((row) => !row.readAt).length;
-  const headerAlerts = alertRows.map(toHeaderAlert);
-  const users: Actor[] = userRows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    email: row.email ?? "",
-    role: row.role === "agent" ? "agent" : "admin",
-  }));
 
   return (
     <SupportProvider>
       <div className="flex min-h-screen bg-background">
-        <Suspense fallback={<aside className="hidden w-60 shrink-0 bg-sidebar md:block" />}>
-          <DeskSidebar
-            unread={unread}
-            actor={actor}
-            signedIn={session.signedIn}
-            isAdmin={session.isAdmin}
-            initialLayout={navLayout}
-          />
+        <Suspense fallback={<aside className="hidden w-60 shrink-0 bg-sidebar md:block" aria-hidden />}>
+          <AppShellSidebar session={session} actor={actor} />
         </Suspense>
         <div className="flex min-w-0 flex-1 flex-col">
-          <nav className="ff-no-print flex gap-3 overflow-x-auto border-b border-border bg-card px-3 py-2 text-xs md:hidden">
-            {mobileNav.map((item) => (
-              <Link key={`${item.id}-${item.href}`} href={item.href} className="whitespace-nowrap text-primary">
-
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <DeskHeader
-            title={title}
-            eyebrow={eyebrow}
-            actions={utilityChrome ? undefined : actions ?? columns}
-            unread={unread}
-            alerts={headerAlerts}
-            actor={actor}
-            users={users}
-            signedIn={session.signedIn}
-            canSwitchRole={session.canSwitchRole}
-            impersonatorName={session.impersonatorName}
-            isImpersonating={session.isImpersonating}
-            utilityChrome={utilityChrome}
-            showBrand={showBrand}
-            hideHeaderTitle={hideHeaderTitle}
-            recordContext={recordContext}
-          />
+          <Suspense fallback={null}>
+            <AppShellMobileNav session={session} />
+          </Suspense>
+          <Suspense
+            fallback={
+              <DeskHeader
+                title={title}
+                eyebrow={eyebrow}
+                actions={utilityChrome ? undefined : actions ?? columns}
+                unread={0}
+                alerts={[]}
+                actor={actor}
+                users={[]}
+                signedIn={session.signedIn}
+                canSwitchRole={session.canSwitchRole}
+                impersonatorName={session.impersonatorName}
+                isImpersonating={session.isImpersonating}
+                utilityChrome={utilityChrome}
+                showBrand={showBrand}
+                hideHeaderTitle={hideHeaderTitle}
+                recordContext={recordContext}
+              />
+            }
+          >
+            <AppShellHeader
+              session={session}
+              actor={actor}
+              title={title}
+              eyebrow={eyebrow}
+              actions={utilityChrome ? undefined : actions ?? columns}
+              utilityChrome={utilityChrome}
+              showBrand={showBrand}
+              hideHeaderTitle={hideHeaderTitle}
+              recordContext={recordContext}
+            />
+          </Suspense>
           <main className="flex-1 px-2 py-5">{children}</main>
         </div>
         <Suspense fallback={null}>
@@ -109,5 +99,90 @@ export async function AppShell({
         </Suspense>
       </div>
     </SupportProvider>
+  );
+}
+
+async function AppShellSidebar({
+  session,
+  actor,
+}: {
+  session: DeskSession;
+  actor: Actor;
+}) {
+  const [navLayout, header] = await Promise.all([
+    getStoredNavLayout(session.userId, { isAdmin: session.isAdmin }),
+    loadHeaderNotificationState(),
+  ]);
+  return (
+    <DeskSidebar
+      unread={header.unread}
+      actor={actor}
+      signedIn={session.signedIn}
+      isAdmin={session.isAdmin}
+      initialLayout={navLayout}
+    />
+  );
+}
+
+async function AppShellMobileNav({ session }: { session: DeskSession }) {
+  const navLayout = await getStoredNavLayout(session.userId, { isAdmin: session.isAdmin });
+  const mobileNav = flattenResolvedNav(resolveNavLayout(navLayout, { isAdmin: session.isAdmin }));
+  return (
+    <nav className="ff-no-print flex gap-3 overflow-x-auto border-b border-border bg-card px-3 py-2 text-xs md:hidden">
+      {mobileNav.map((item) => (
+        <PendingLink key={`${item.id}-${item.href}`} href={item.href} className="whitespace-nowrap text-primary">
+          {item.label}
+        </PendingLink>
+      ))}
+    </nav>
+  );
+}
+
+async function AppShellHeader({
+  session,
+  actor,
+  title,
+  eyebrow,
+  actions,
+  utilityChrome,
+  showBrand,
+  hideHeaderTitle,
+  recordContext,
+}: {
+  session: DeskSession;
+  actor: Actor;
+  title: string;
+  eyebrow?: string;
+  actions?: ReactNode;
+  utilityChrome: boolean;
+  showBrand: boolean;
+  hideHeaderTitle: boolean;
+  recordContext?: HeaderRecordContext | null;
+}) {
+  const [userRows, header] = await Promise.all([listUsers(), loadHeaderNotificationState()]);
+  const users: Actor[] = userRows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    email: row.email ?? "",
+    role: row.role === "agent" ? "agent" : "admin",
+  }));
+  return (
+    <DeskHeader
+      title={title}
+      eyebrow={eyebrow}
+      actions={actions}
+      unread={header.unread}
+      alerts={header.alerts}
+      actor={actor}
+      users={users}
+      signedIn={session.signedIn}
+      canSwitchRole={session.canSwitchRole}
+      impersonatorName={session.impersonatorName}
+      isImpersonating={session.isImpersonating}
+      utilityChrome={utilityChrome}
+      showBrand={showBrand}
+      hideHeaderTitle={hideHeaderTitle}
+      recordContext={recordContext}
+    />
   );
 }

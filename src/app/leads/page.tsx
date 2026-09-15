@@ -15,7 +15,7 @@ import { sourceFilterOptions, sourceLabel } from "@/lib/crm/sources";
 import { firstParam, pickFilterParams, uniqueOptions } from "@/lib/saved-filters";
 import { haystack } from "@/lib/search/live-query";
 import { listFollowUpTemplates, listLeadFollowUps } from "@/lib/db/lead-follow-up-queries";
-import { releaseDueLeadFollowUps } from "@/lib/leads/apply-follow-up";
+import { scheduleDueLeadFollowUpRelease } from "@/lib/leads/schedule-follow-up-release";
 import { followUpTemplateChipName, pickTemplateForLead } from "@/lib/leads/follow-up-templates";
 import { resetLeadsWithoutLoggedContact } from "@/lib/leads/reset-untouched";
 import {
@@ -59,7 +59,7 @@ export default async function LeadsPage({
   const q = firstParam(params.q) ?? "";
   const saved = firstParam(params.saved) === "1";
   await resetLeadsWithoutLoggedContact().catch(() => null);
-  await releaseDueLeadFollowUps().catch(() => null);
+  scheduleDueLeadFollowUpRelease();
   const [all, loadedTemplates, tagCatalog, leadLayout, leadFields, motivation] = await Promise.all([
     listLeads(),
     listFollowUpTemplates().catch(() => []),

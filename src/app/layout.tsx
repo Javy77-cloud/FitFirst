@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import Script from "next/script";
 import { Suspense } from "react";
 import { ActionToastHost } from "@/components/desk/action-toast";
 import { AppNotificationHost } from "@/components/desk/app-notification-host";
+import { NavigationProgress } from "@/components/desk/navigation-progress";
 import { SheetBoot } from "@/components/sheet/sheet-boot";
 import { TitleTipHost } from "@/components/desk/title-tip-host";
+import { SESSION_COOKIES } from "@/lib/auth/cookies";
+import { preloadDeskShell } from "@/lib/desk/shell-preload";
 import "./globals.css";
 
 const plex = IBM_Plex_Sans({
@@ -28,13 +32,20 @@ export const metadata: Metadata = {
     "Lead to deal shopping, one Quote Sheet per line, Super-Copy for the rater, and filter-first carrier ranking.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const jar = await cookies();
+  if (jar.get(SESSION_COOKIES.actorId)?.value) {
+    preloadDeskShell();
+  }
   return (
     <html lang="en" className={`${plex.variable} ${plexMono.variable} h-full`}>
       <body className="min-h-full">
         {children}
         <Suspense fallback={null}>
           <ActionToastHost />
+        </Suspense>
+        <Suspense fallback={null}>
+          <NavigationProgress />
         </Suspense>
         <AppNotificationHost />
         <SheetBoot />
