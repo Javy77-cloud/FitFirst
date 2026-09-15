@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { and, eq, or } from "drizzle-orm";
 import { isAdmin, type Actor } from "@/lib/auth/rbac";
 import { capabilitiesFor, type DeskCapabilities } from "@/lib/auth/access";
@@ -157,7 +158,7 @@ function sessionFromUser(
   };
 }
 
-export async function currentDeskSession(): Promise<DeskSession> {
+export const currentDeskSession = cache(async function currentDeskSession(): Promise<DeskSession> {
   try {
     const jar = await cookies();
     const userId = jar.get(SESSION_COOKIES.actorId)?.value ?? null;
@@ -181,7 +182,7 @@ export async function currentDeskSession(): Promise<DeskSession> {
   } catch {
     return guestSession();
   }
-}
+});
 
 export async function pendingMfaUser(): Promise<User | null> {
   try {
@@ -205,7 +206,7 @@ export function scopeOwnerId(session: DeskSession): string | null {
   return sessionSeesAgencyBook(session) ? null : session.userId;
 }
 
-export async function getActor(): Promise<Actor> {
+export const getActor = cache(async function getActor(): Promise<Actor> {
   const session = await currentDeskSession();
   if (session.user) {
     return {
@@ -222,6 +223,6 @@ export async function getActor(): Promise<Actor> {
     email: "",
     role: "agent",
   };
-}
+});
 
 export { isAdmin, normalizeAccessStatus };

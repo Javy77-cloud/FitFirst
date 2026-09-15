@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PendingLink } from "@/components/desk/pending-link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronDown, Eye, EyeOff, PanelLeftClose, PanelLeftOpen, Settings2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -311,7 +312,7 @@ export function DeskSidebar({
             dragging ? "pointer-events-none opacity-40" : "",
           )}
         >
-          <Link
+          <PendingLink
             href={row.link.href}
             title={row.link.label}
             draggable={false}
@@ -334,7 +335,7 @@ export function DeskSidebar({
                 ) : null}
               </span>
             )}
-          </Link>
+          </PendingLink>
           {customizing && !narrow && row.hidable ? (
             <button
               type="button"
@@ -396,7 +397,7 @@ export function DeskSidebar({
                       childDragging ? "pointer-events-none opacity-40" : "",
                     )}
                   >
-                    <Link
+                    <PendingLink
                       href={item.href}
                       title={item.label}
                       draggable={false}
@@ -415,7 +416,7 @@ export function DeskSidebar({
                           {unread}
                         </span>
                       ) : null}
-                    </Link>
+                    </PendingLink>
                   </div>
                   {nestedKids.length > 0 ? (
                     <div
@@ -449,7 +450,7 @@ export function DeskSidebar({
                                 nestedDragging ? "pointer-events-none opacity-40" : "",
                               )}
                             >
-                              <Link
+                              <PendingLink
                                 href={child.href}
                                 title={child.label}
                                 draggable={false}
@@ -463,7 +464,7 @@ export function DeskSidebar({
                               >
                                 <NestedIcon className="size-3.5 shrink-0 opacity-80" />
                                 <span className="flex-1 truncate">{child.label}</span>
-                              </Link>
+                              </PendingLink>
                             </div>
                           </div>
                         );

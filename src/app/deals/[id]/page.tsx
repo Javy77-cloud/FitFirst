@@ -119,7 +119,7 @@ export default async function DealPage({
     sheets,
     jobs,
   } = workspace;
-  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow, pipelines] =
+  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow, pipelines, context, agencyRow] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
       listEnabledScriptsFor("deals", "edit"),
@@ -139,17 +139,23 @@ export default async function DealPage({
       ensureSeededPipelines()
         .catch(() => null)
         .then(() => listPipelines().catch(() => [])),
+      loadRecordContext({
+        dealId: deal.id,
+        leadId: deal.leadId,
+        contactId: deal.contactId,
+        accountId: deal.accountId,
+      }),
+      db
+        .select()
+        .from(agencySettings)
+        .where(eq(agencySettings.tenantId, DEFAULT_TENANT_ID))
+        .limit(1)
+        .then((rows) => rows[0] ?? null),
     ]);
   const stageView = dealStageView(deal, pipelines);
   const dealLayout = dealLayoutBundle?.layout ?? null;
   const dealFields = dealLayoutBundle?.fields ?? [];
   const dealValues = dealLayoutBundle?.stored ?? {};
-  const context = await loadRecordContext({
-    dealId: deal.id,
-    leadId: deal.leadId,
-    contactId: deal.contactId,
-    accountId: deal.accountId,
-  });
   const isAna = deal.id === DEAL_ID;
   const partyName =
     deal.primaryNamedInsured ??
@@ -162,11 +168,6 @@ export default async function DealPage({
     account,
   });
   const clientAddress = homeAddressFromRecords({ risk, lead, contact });
-  const [agencyRow] = await db
-    .select()
-    .from(agencySettings)
-    .where(eq(agencySettings.tenantId, DEFAULT_TENANT_ID))
-    .limit(1);
   const officeAddress = officeMeetingAddress({
     agencyName: agencyRow?.agencyName,
     officeAddress: agencyRow?.officeAddress,

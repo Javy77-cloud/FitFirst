@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
@@ -10,16 +11,24 @@ import {
 import { db } from "./index";
 import { agentUiPrefs } from "./schema";
 
-export async function getStoredNavLayout(
-  userId: string | null | undefined,
-  options: NavLayoutOptions = {},
+const readStoredNavLayout = cache(async function readStoredNavLayout(
+  userId: string,
+  isAdmin: boolean,
 ): Promise<StoredNavLayout> {
+  const options: NavLayoutOptions = { isAdmin };
   if (!userId) return defaultStoredNavLayout(options);
   const [row] = await db
     .select({ navLayout: agentUiPrefs.navLayout })
     .from(agentUiPrefs)
     .where(and(eq(agentUiPrefs.tenantId, DEFAULT_TENANT_ID), eq(agentUiPrefs.actorKey, navActorKey(userId))));
   return normalizeNavLayout(row?.navLayout ?? null, options);
+});
+
+export async function getStoredNavLayout(
+  userId: string | null | undefined,
+  options: NavLayoutOptions = {},
+): Promise<StoredNavLayout> {
+  return readStoredNavLayout(userId ?? "", options.isAdmin !== false);
 }
 
 export async function upsertStoredNavLayout(

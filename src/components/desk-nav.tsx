@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { PendingLink } from "@/components/desk/pending-link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
@@ -71,7 +71,7 @@ export function DeskNav({ variant }: { variant: "sidebar" | "mobile" }) {
         {DESK_NAV_ITEMS.map((item) => {
           const active = navItemIsActive(pathname, item.href);
           return (
-            <Link
+            <PendingLink
               key={`${item.href}-${item.label}`}
               href={item.href}
               aria-current={active ? "page" : undefined}
@@ -81,7 +81,7 @@ export function DeskNav({ variant }: { variant: "sidebar" | "mobile" }) {
               )}
             >
               {item.label}
-            </Link>
+            </PendingLink>
           );
         })}
       </>
@@ -94,7 +94,7 @@ export function DeskNav({ variant }: { variant: "sidebar" | "mobile" }) {
         const Icon = NAV_ICONS[item.label];
         const active = navItemIsActive(pathname, item.href);
         return (
-          <Link
+          <PendingLink
             key={`${item.href}-${item.label}`}
             href={item.href}
             aria-current={active ? "page" : undefined}
@@ -107,7 +107,7 @@ export function DeskNav({ variant }: { variant: "sidebar" | "mobile" }) {
           >
             <Icon className="size-3.5 opacity-80" />
             <span className="flex-1">{item.label}</span>
-          </Link>
+          </PendingLink>
         );
       })}
     </>

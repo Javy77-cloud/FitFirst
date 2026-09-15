@@ -1,6 +1,24 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+function FormSubmitButton({ label }: { label: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button
+      type="submit"
+      className="ff-primary-action"
+      disabled={pending}
+      aria-busy={pending}
+      data-pending={pending ? "1" : undefined}
+    >
+      {label}
+    </Button>
+  );
+}
 
 export function FormPrimaryActions({
   submitLabel,
@@ -16,9 +34,7 @@ export function FormPrimaryActions({
   return (
     <div className={cn("ff-form-actions", className)} data-ff-form-actions>
       {featured}
-      <Button type="submit" className="ff-primary-action">
-        {submitLabel}
-      </Button>
+      <FormSubmitButton label={submitLabel} />
       {secondary ? <div className="ff-form-secondary">{secondary}</div> : null}
     </div>
   );

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
+import { Suspense } from "react";
+import { PendingTabList } from "@/components/desk/pending-tab-list";
 import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 import { cn } from "@/lib/utils";
 
@@ -58,33 +59,25 @@ export function SectionTabs({
     return `?${query.toString()}`;
   }
 
+  const pendingTabs = tabs.map((tab) => ({
+    id: tab.id,
+    label: tab.label,
+    href: tab.href ?? hrefFor(tab.id),
+  }));
+  const tabFallback = (
+    <div role="tablist" className={FF_CHIP_TAB_GROUP}>
+      {pendingTabs.map((tab) => (
+        <span key={tab.id} className={chipTabClass(tab.id === current?.id)}>
+          {tab.label}
+        </span>
+      ))}
+    </div>
+  );
   const tabList = (
     <div className="flex flex-wrap items-center justify-between gap-2" data-ff-deal-tab-row="">
-      <div role="tablist" className={FF_CHIP_TAB_GROUP}>
-        {tabs.map((tab) => {
-          const selected = tab.id === current.id;
-          const className = chipTabClass(selected);
-          if (tab.href) {
-            return (
-              <Link key={tab.id} href={tab.href} role="tab" aria-selected={selected} className={className}>
-                {tab.label}
-              </Link>
-            );
-          }
-          return (
-            <Link
-              key={tab.id}
-              href={hrefFor(tab.id)}
-              scroll={false}
-              role="tab"
-              aria-selected={selected}
-              className={className}
-            >
-              {tab.label}
-            </Link>
-          );
-        })}
-      </div>
+      <Suspense fallback={tabFallback}>
+        <PendingTabList currentId={current?.id ?? defaultValue} tabs={pendingTabs} />
+      </Suspense>
       {toolbar}
     </div>
   );

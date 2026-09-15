@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { and, asc, desc, eq, exists, gte, inArray, isNull, lte, ne, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { alias, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { canSeeOwned } from "@/lib/auth/rbac";
@@ -183,22 +184,23 @@ export async function listActivityTimeline(filter: {
     filter.dealId ? eq(clientHistory.dealId, filter.dealId) : undefined,
   ].filter((clause): clause is SQL => Boolean(clause));
 
-  const logs = logClauses.length
-    ? await db
-        .select({ log: activityLogs, activity: activities })
-        .from(activityLogs)
-        .innerJoin(activities, eq(activityLogs.activityId, activities.id))
-        .where(and(eq(activityLogs.tenantId, tenant()), or(...logClauses)))
-        .orderBy(desc(activityLogs.occurredAt))
-    : [];
-
-  const history = historyClauses.length
-    ? await db
-        .select()
-        .from(clientHistory)
-        .where(and(eq(clientHistory.tenantId, tenant()), or(...historyClauses)))
-        .orderBy(desc(clientHistory.occurredAt))
-    : [];
+  const [logs, history] = await Promise.all([
+    logClauses.length
+      ? db
+          .select({ log: activityLogs, activity: activities })
+          .from(activityLogs)
+          .innerJoin(activities, eq(activityLogs.activityId, activities.id))
+          .where(and(eq(activityLogs.tenantId, tenant()), or(...logClauses)))
+          .orderBy(desc(activityLogs.occurredAt))
+      : Promise.resolve([]),
+    historyClauses.length
+      ? db
+          .select()
+          .from(clientHistory)
+          .where(and(eq(clientHistory.tenantId, tenant()), or(...historyClauses)))
+          .orderBy(desc(clientHistory.occurredAt))
+      : Promise.resolve([]),
+  ]);
 
   const items: TimelineItem[] = [
     ...logs.map(({ log, activity }) => ({
@@ -250,6 +252,12 @@ export async function listActivityTimeline(filter: {
   return items;
 }
 
+export function commsFromTimeline(items: TimelineItem[]): TimelineItem[] {
+  return items.filter((item) =>
+    ["email", "sms", "call", "meeting", "task"].includes(item.kind.toLowerCase()),
+  );
+}
+
 export async function listCommsForRecord(filter: {
   contactId?: string | null;
   accountId?: string | null;
@@ -257,10 +265,7 @@ export async function listCommsForRecord(filter: {
   dealId?: string | null;
   leadId?: string | null;
 }): Promise<TimelineItem[]> {
-  const all = await listActivityTimeline(filter);
-  return all.filter((item) =>
-    ["email", "sms", "call", "meeting", "task"].includes(item.kind.toLowerCase()),
-  );
+  return commsFromTimeline(await listActivityTimeline(filter));
 }
 
 export function serializeActivity(row: typeof activities.$inferSelect) {
@@ -540,7 +545,7 @@ function canViewOwned(session: DeskSession, ownerId: string | null | undefined):
   return ownerId === session.userId;
 }
 
-export async function listUsers() {
+export const listUsers = cache(async function listUsers() {
   return db
     .select({
       id: users.id,
@@ -551,7 +556,7 @@ export async function listUsers() {
     .from(users)
     .where(eq(users.tenantId, tenant()))
     .orderBy(asc(users.name));
-}
+});
 
 export async function getAgencySettings() {
   const [row] = await db
@@ -2182,7 +2187,7 @@ export async function listFillLearningForLookup() {
     .orderBy(desc(fillLearningLogs.loggedAt));
 }
 
-export async function listAlerts(unreadOnly = false) {
+export const listAlerts = cache(async function listAlerts(unreadOnly = false) {
   const session = await currentDeskSession();
   const visible = alertVisibleWhere(session, tenant());
   /** Future createdAt = scheduled in-app reminder (not due yet). Hide until fire time. */
@@ -2191,7 +2196,7 @@ export async function listAlerts(unreadOnly = false) {
     ? and(visible, due, isNull(alerts.readAt))
     : and(visible, due);
   return db.select().from(alerts).where(where).orderBy(desc(alerts.createdAt));
-}
+});
 
 export async function listReviewQueue() {
   return listReviewTasks();
@@ -2257,46 +2262,102 @@ export async function getDealWorkspace(dealId: string) {
   const session = await currentDeskSession();
   if (!sessionSeesAgencyBook(session) && session.userId && deal.ownerId !== session.userId) return null;
 
-  const [risk] = await db
-    .select()
-    .from(risks)
-    .where(and(eq(risks.tenantId, tenant()), eq(risks.dealId, dealId)));
+  const [
+    riskRows,
+    docs,
+    dealQuotes,
+    logs,
+    leadRows,
+    contactRows,
+    accountRows,
+    sheets,
+    jobs,
+    fillFeedback,
+    boundPolicies,
+    timeline,
+  ] = await Promise.all([
+    db
+      .select()
+      .from(risks)
+      .where(and(eq(risks.tenantId, tenant()), eq(risks.dealId, dealId))),
+    db
+      .select()
+      .from(documents)
+      .where(
+        and(
+          eq(documents.tenantId, tenant()),
+          eq(documents.dealId, dealId),
+          ne(documents.status, "hidden"),
+        ),
+      )
+      .orderBy(desc(documents.createdAt)),
+    db
+      .select({
+        quote: quotes,
+        carrier: carriers,
+      })
+      .from(quotes)
+      .innerJoin(carriers, eq(quotes.carrierId, carriers.id))
+      .where(and(eq(quotes.tenantId, tenant()), eq(quotes.dealId, dealId)))
+      .orderBy(asc(quotes.premium)),
+    db
+      .select({
+        log: quoteAttemptLogs,
+        carrier: carriers,
+      })
+      .from(quoteAttemptLogs)
+      .innerJoin(carriers, eq(quoteAttemptLogs.carrierId, carriers.id))
+      .where(and(eq(quoteAttemptLogs.tenantId, tenant()), eq(quoteAttemptLogs.dealId, dealId)))
+      .orderBy(desc(quoteAttemptLogs.attemptedAt)),
+    deal.leadId ? db.select().from(leads).where(eq(leads.id, deal.leadId)) : Promise.resolve([]),
+    deal.contactId ? db.select().from(contacts).where(eq(contacts.id, deal.contactId)) : Promise.resolve([]),
+    deal.accountId ? db.select().from(accounts).where(eq(accounts.id, deal.accountId)) : Promise.resolve([]),
+    db
+      .select()
+      .from(quoteSheets)
+      .where(and(eq(quoteSheets.tenantId, tenant()), eq(quoteSheets.dealId, dealId))),
+    db
+      .select()
+      .from(extractionJobs)
+      .where(and(eq(extractionJobs.tenantId, tenant()), eq(extractionJobs.dealId, dealId)))
+      .orderBy(desc(extractionJobs.createdAt))
+      .limit(20),
+    db
+      .select()
+      .from(fillFeedbackLogs)
+      .where(and(eq(fillFeedbackLogs.tenantId, tenant()), eq(fillFeedbackLogs.dealId, dealId)))
+      .orderBy(desc(fillFeedbackLogs.createdAt))
+      .limit(20),
+    db
+      .select()
+      .from(policies)
+      .where(and(eq(policies.tenantId, tenant()), eq(policies.dealId, dealId))),
+    listActivityTimeline({ dealId }),
+  ]);
 
-  const docs = await db
-    .select()
-    .from(documents)
-    .where(
-      and(
-        eq(documents.tenantId, tenant()),
-        eq(documents.dealId, dealId),
-        ne(documents.status, "hidden"),
-      ),
-    )
-    .orderBy(desc(documents.createdAt));
-  const fileVersions = await listDocumentVersionsForIds(docs.map((doc) => doc.id));
+  const risk = riskRows[0];
+  const lead = leadRows[0];
+  const contact = contactRows[0];
+  const account = accountRows[0] ?? null;
+  const quoteSheet = sheets[0];
 
-  const fields = risk
-    ? await db
-        .select()
-        .from(extractedFields)
-        .where(and(eq(extractedFields.tenantId, tenant()), eq(extractedFields.riskId, risk.id)))
-        .orderBy(desc(extractedFields.createdAt))
-    : [];
+  const partyFilters = [
+    contact?.id ? eq(policies.contactId, contact.id) : undefined,
+    account?.id ? eq(policies.accountId, account.id) : undefined,
+  ].filter((clause): clause is SQL => Boolean(clause));
 
-  const dealQuotes = await db
-    .select({
-      quote: quotes,
-      carrier: carriers,
-    })
-    .from(quotes)
-    .innerJoin(carriers, eq(quotes.carrierId, carriers.id))
-    .where(and(eq(quotes.tenantId, tenant()), eq(quotes.dealId, dealId)))
-    .orderBy(asc(quotes.premium));
-
-  const quoteNoteRows =
+  const [fileVersions, fields, quoteNoteRows, partyPolicies] = await Promise.all([
+    listDocumentVersionsForIds(docs.map((doc) => doc.id)),
+    risk
+      ? db
+          .select()
+          .from(extractedFields)
+          .where(and(eq(extractedFields.tenantId, tenant()), eq(extractedFields.riskId, risk.id)))
+          .orderBy(desc(extractedFields.createdAt))
+      : Promise.resolve([]),
     dealQuotes.length === 0
-      ? []
-      : await db
+      ? Promise.resolve([])
+      : db
           .select()
           .from(quoteNotes)
           .where(
@@ -2308,60 +2369,14 @@ export async function getDealWorkspace(dealId: string) {
               ),
             ),
           )
-          .orderBy(asc(quoteNotes.createdAt));
-
-  const logs = await db
-    .select({
-      log: quoteAttemptLogs,
-      carrier: carriers,
-    })
-    .from(quoteAttemptLogs)
-    .innerJoin(carriers, eq(quoteAttemptLogs.carrierId, carriers.id))
-    .where(and(eq(quoteAttemptLogs.tenantId, tenant()), eq(quoteAttemptLogs.dealId, dealId)))
-    .orderBy(desc(quoteAttemptLogs.attemptedAt));
-
-  const [lead] = deal.leadId
-    ? await db.select().from(leads).where(eq(leads.id, deal.leadId))
-    : [];
-  const [contact] = deal.contactId
-    ? await db.select().from(contacts).where(eq(contacts.id, deal.contactId))
-    : [];
-  const [account] = deal.accountId
-    ? await db.select().from(accounts).where(eq(accounts.id, deal.accountId))
-    : [];
-  const sheets = await db
-    .select()
-    .from(quoteSheets)
-    .where(and(eq(quoteSheets.tenantId, tenant()), eq(quoteSheets.dealId, dealId)));
-  const quoteSheet = sheets[0];
-  const jobs = await db
-    .select()
-    .from(extractionJobs)
-    .where(and(eq(extractionJobs.tenantId, tenant()), eq(extractionJobs.dealId, dealId)))
-    .orderBy(desc(extractionJobs.createdAt))
-    .limit(20);
-  const fillFeedback = await db
-    .select()
-    .from(fillFeedbackLogs)
-    .where(and(eq(fillFeedbackLogs.tenantId, tenant()), eq(fillFeedbackLogs.dealId, dealId)))
-    .orderBy(desc(fillFeedbackLogs.createdAt))
-    .limit(20);
-  const boundPolicies = await db
-    .select()
-    .from(policies)
-    .where(and(eq(policies.tenantId, tenant()), eq(policies.dealId, dealId)));
-
-  const partyFilters = [
-    contact?.id ? eq(policies.contactId, contact.id) : undefined,
-    account?.id ? eq(policies.accountId, account.id) : undefined,
-  ].filter((clause): clause is SQL => Boolean(clause));
-  const partyPolicies =
+          .orderBy(asc(quoteNotes.createdAt)),
     partyFilters.length > 0
-      ? await db
+      ? db
           .select()
           .from(policies)
           .where(and(eq(policies.tenantId, tenant()), or(...partyFilters)))
-      : [];
+      : Promise.resolve([]),
+  ]);
 
   return {
     deal,
@@ -2374,15 +2389,15 @@ export async function getDealWorkspace(dealId: string) {
     logs,
     lead,
     contact,
-    account: account ?? null,
+    account,
     quoteSheet: quoteSheet ?? null,
     sheets,
     jobs,
     fillFeedback,
     boundPolicies,
     partyPolicies,
-    timeline: await listActivityTimeline({ dealId }),
-    comms: await listCommsForRecord({ dealId }),
+    timeline,
+    comms: commsFromTimeline(timeline),
   };
 }
 
@@ -2437,22 +2452,23 @@ export async function dashboardStats() {
     .where(eq(tenants.id, tenant()));
 
   const dealScope = ownerWhere(session, deals.ownerId);
-  const recentDeals = await db
-    .select()
-    .from(deals)
-    .where(and(eq(deals.tenantId, tenant()), dealScope))
-    .orderBy(desc(deals.updatedAt))
-    .limit(8);
-
-  const tasks = await listReviewQueue();
-  const unread = await listAlerts(true);
   const policyScope = ownerWhere(session, policies.ownerId);
-  const expiring = await db
-    .select()
-    .from(policies)
-    .where(and(eq(policies.tenantId, tenant()), policyScope))
-    .orderBy(asc(policies.expirationDate))
-    .limit(8);
+  const [recentDeals, tasks, unread, expiring] = await Promise.all([
+    db
+      .select()
+      .from(deals)
+      .where(and(eq(deals.tenantId, tenant()), dealScope))
+      .orderBy(desc(deals.updatedAt))
+      .limit(8),
+    listReviewQueue(),
+    listAlerts(true),
+    db
+      .select()
+      .from(policies)
+      .where(and(eq(policies.tenantId, tenant()), policyScope))
+      .orderBy(asc(policies.expirationDate))
+      .limit(8),
+  ]);
 
   return { stats: row, recentDeals, tasks, unread, expiring };
 }
