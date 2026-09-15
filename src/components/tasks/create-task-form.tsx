@@ -52,6 +52,7 @@ export type CreateTaskFormDefaults = {
   leadId?: string | null;
   taskType?: DeskTaskType;
   dueDate?: string;
+  dueTime?: string;
   assigneeId?: string;
   returnTo?: string;
 };
@@ -147,6 +148,7 @@ export function CreateTaskForm({
       d.setDate(d.getDate() + 1);
       return d.toISOString().slice(0, 10);
     })();
+  const defaultDueTime = defaults?.dueTime ?? "";
 
   useEffect(() => {
     if (currentUserId) setSessionUserId(currentUserId);
@@ -194,18 +196,35 @@ export function CreateTaskForm({
 
     if (key === "due_date") {
       return (
-        <div key={key} data-ff-task-layout-field={key}>
-          <Label htmlFor="ff-task-due" className="text-xs">
-            {field.label || "Due date"}
-          </Label>
-          <Input
-            id="ff-task-due"
-            name="dueDate"
-            type="date"
-            required
-            className="mt-1 h-8"
-            defaultValue={defaultDue}
-          />
+        <div key={key} data-ff-task-layout-field={key} className="space-y-2">
+          <div>
+            <Label htmlFor="ff-task-due" className="text-xs">
+              {field.label || "Due date"}
+            </Label>
+            <Input
+              id="ff-task-due"
+              name="dueDate"
+              type="date"
+              required
+              className="mt-1 h-8"
+              defaultValue={defaultDue}
+            />
+          </div>
+          <div>
+            <Label htmlFor="ff-task-due-time" className="text-xs">
+              Due time
+            </Label>
+            <Input
+              id="ff-task-due-time"
+              name="dueTime"
+              type="time"
+              className="mt-1 h-8"
+              defaultValue={defaultDueTime}
+            />
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              America/New_York. Blank time = 11:59 PM Eastern.
+            </p>
+          </div>
         </div>
       );
     }

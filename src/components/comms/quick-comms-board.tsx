@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { telHref } from "@/lib/desk/contact-actions";
-import { ACTIVITY_KIND_LABEL, ACTIVITY_KINDS, formatDay, type ActivityKind } from "@/lib/domain";
+import { ACTIVITY_KIND_LABEL, ACTIVITY_KINDS, type ActivityKind } from "@/lib/domain";
+import { formatTaskDueAt } from "@/lib/tasks/due-at";
 import type { SerializedActivity } from "@/lib/db/queries";
 import { type MeetingType } from "@/lib/meetings/types";
 
@@ -725,7 +726,7 @@ export function QuickCommsBoard({
                 </span>
                 <span className="text-[11px] uppercase text-muted-foreground">{item.status}</span>
                 {item.dueAt ? (
-                  <span className="text-base text-muted-foreground">{formatDay(item.dueAt)}</span>
+                  <span className="text-base text-muted-foreground">{formatTaskDueAt(item.dueAt)}</span>
                 ) : null}
               </div>
               <p className="mt-1 font-medium">{item.title}</p>

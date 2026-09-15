@@ -4,7 +4,8 @@ import { CompleteTaskForm } from "@/components/crm/complete-task-form";
 import { ExpirationBadge } from "@/components/crm/expiration-badge";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { accountDisplayName } from "@/lib/crm/bind";
-import { daysUntil, formatIsoDate, taskKindLabel } from "@/lib/crm/display";
+import { daysUntil, taskKindLabel } from "@/lib/crm/display";
+import { formatTaskDueAt } from "@/lib/tasks/due-at";
 import { listPolicies, listReviewQueue } from "@/lib/db/queries";
 import { REVIEWS_EXPIRING_COLUMNS } from "@/lib/list-columns";
 
@@ -37,7 +38,7 @@ export default async function ReviewsPage() {
                   <div>
                     <div className="text-sm font-medium">{task.title}</div>
                     <div className="text-[11px] text-muted-foreground">
-                      {taskKindLabel(task.kind)} · due {formatIsoDate(task.dueDate)}
+                      {taskKindLabel(task.kind)} · due {formatTaskDueAt(task.dueDate)}
                       {task.contactId ? (
                         <>
                           {" · "}

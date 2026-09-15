@@ -20,7 +20,7 @@ import {
 import { loadTaskLinkedNames } from "@/lib/tasks/linked-names";
 import { DESK_TASK_TYPE_LABELS, taskDueBucket } from "@/lib/tasks/task-types";
 import { TasksGroupBySelect } from "@/components/tasks/group-by-select";
-import { formatDay } from "@/lib/domain";
+import { formatTaskDueAt } from "@/lib/tasks/due-at";
 import { listFieldDefs, loadLayoutForModule, loadRecordValuesForIds } from "@/lib/custom-fields/store";
 import { defaultFieldsForModule, defaultLayoutForModule } from "@/lib/custom-fields/modules";
 import {
@@ -295,7 +295,7 @@ export default async function TasksPage({
                       ),
                       recordType: recordTypeLabel(task.recordType),
                       taskType: taskTypeLabel(task.kind),
-                      due: formatDay(task.due),
+                      due: formatTaskDueAt(task.due),
                       status: task.status,
                       tags: (
                         <AssignRecordTags

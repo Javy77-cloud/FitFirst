@@ -12,6 +12,7 @@ import { db } from "@/lib/db";
 import { alerts, reviewTasks } from "@/lib/db/schema";
 import { flashAction } from "@/lib/flash-action";
 import { isSnoozeDelayUnit, snoozeDueAt } from "@/lib/leads/follow-up-templates";
+import { taskDueFromForm, taskReminderFireAt } from "@/lib/tasks/due-at";
 import {
   composeDeskTaskTitle,
   isDeskTaskType,
@@ -117,8 +118,7 @@ export async function createDeskTask(formData: FormData) {
   const assigneeRaw = String(formData.get("assigneeId") ?? "").trim();
   const assigneeId = isDeskUuid(assigneeRaw) ? assigneeRaw : session.userId;
 
-  const dueRaw = String(formData.get("dueDate") ?? "").trim();
-  const dueDate = dueRaw ? new Date(`${dueRaw}T16:00:00.000Z`) : new Date();
+  const dueDate = taskDueFromForm(formData);
 
   // Ensure FK columns match picked record type when only recordId was set.
   let contact = contactId;
@@ -183,14 +183,23 @@ export async function createDeskTask(formData: FormData) {
         ...custom,
         title,
         kind,
-        dueDate: dueRaw,
-        due_date: dueRaw,
+        dueDate: dueDate.toISOString(),
+        due_date: dueDate.toISOString(),
         assigneeId: assigneeId ?? "",
         assignee: assigneeId ?? "",
         status: statusFromField || custom.status || initialStatus,
       },
       defs,
     );
+  }
+
+  if (row) {
+    await scheduleDeskTaskReminder({
+      taskId: row.id,
+      title,
+      dueDate,
+      userId: assigneeId ?? session.userId,
+    });
   }
 
   await emitDeskEvent("task.due", {
@@ -222,8 +231,7 @@ export async function createReviewTask(formData: FormData) {
   const dealId = isDeskUuid(dealRaw) ? dealRaw : null;
   const policyId = isDeskUuid(policyRaw) ? policyRaw : null;
   const kind = String(formData.get("kind") ?? "30_day").trim() || "30_day";
-  const dueRaw = String(formData.get("dueDate") ?? "").trim();
-  const dueDate = dueRaw ? new Date(`${dueRaw}T16:00:00.000Z`) : new Date();
+  const dueDate = taskDueFromForm(formData);
   if (!title) return;
   const [row] = await db
     .insert(reviewTasks)
@@ -240,6 +248,48 @@ export async function createReviewTask(formData: FormData) {
     .returning();
   revalidatePath("/tasks");
   if (row) flashAction(`/tasks/${row.id}`, "task-saved");
+}
+
+/** In-app popup fires at `dueDate` (`createdAt` is the notify instant). */
+async function scheduleDeskTaskReminder(input: {
+  taskId: string;
+  title: string;
+  dueDate: Date;
+  userId?: string | null;
+}) {
+  const fireAt = taskReminderFireAt(input.dueDate);
+  const [existing] = await db
+    .select({ id: alerts.id })
+    .from(alerts)
+    .where(
+      and(
+        eq(alerts.tenantId, DEFAULT_TENANT_ID),
+        eq(alerts.kind, "task_reminder"),
+        eq(alerts.entityType, "review_task"),
+        eq(alerts.entityId, input.taskId),
+        isNull(alerts.readAt),
+      ),
+    )
+    .limit(1);
+  if (existing) {
+    await db
+      .update(alerts)
+      .set({ title: input.title, createdAt: fireAt })
+      .where(eq(alerts.id, existing.id));
+    return;
+  }
+  await db.insert(alerts).values({
+    tenantId: DEFAULT_TENANT_ID,
+    kind: "task_reminder",
+    title: input.title,
+    body: `In-app task reminder (at due time). Nothing emailed.`,
+    severity: "info",
+    entityType: "review_task",
+    entityId: input.taskId,
+    userId: input.userId ?? null,
+    recipientUserId: input.userId ?? null,
+    createdAt: fireAt,
+  });
 }
 
 function revalidateTasks(task?: { contactId?: string | null; policyId?: string | null; dealId?: string | null }) {
@@ -262,8 +312,7 @@ function alertStr(form: FormData, key: string) {
 export async function createTask(formData: FormData) {
   const title = alertStr(formData, "title") || "Follow-up";
   const kind = alertStr(formData, "kind") || "task";
-  const dueRaw = alertStr(formData, "dueDate");
-  const dueDate = dueRaw ? new Date(`${dueRaw}T16:00:00.000Z`) : new Date();
+  const dueDate = taskDueFromForm(formData);
   const dealId = alertStr(formData, "dealId") || null;
   const contactId = alertStr(formData, "contactId") || null;
   const policyId = alertStr(formData, "policyId") || null;
@@ -287,8 +336,7 @@ export async function updateTask(formData: FormData) {
   const title = alertStr(formData, "title") || "Follow-up";
   const kind = alertStr(formData, "kind") || "task";
   const status = alertStr(formData, "status") || "open";
-  const dueRaw = alertStr(formData, "dueDate");
-  const dueDate = dueRaw ? new Date(`${dueRaw}T16:00:00.000Z`) : new Date();
+  const dueDate = taskDueFromForm(formData);
 
   const [task] = await db.select().from(reviewTasks).where(eq(reviewTasks.id, id));
   await db
@@ -301,6 +349,14 @@ export async function updateTask(formData: FormData) {
       completedAt: status === "done" ? (task?.completedAt ?? new Date()) : null,
     })
     .where(eq(reviewTasks.id, id));
+  if (id) {
+    await scheduleDeskTaskReminder({
+      taskId: id,
+      title,
+      dueDate,
+      userId: task?.assigneeId,
+    });
+  }
   revalidateTasks(task);
   flashAction("/tasks", "task-saved");
 }
@@ -316,17 +372,22 @@ export async function updateReviewTask(formData: FormData) {
   const id = String(formData.get("taskId") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
   const status = String(formData.get("status") ?? "").trim();
-  const dueRaw = String(formData.get("dueDate") ?? "").trim();
+  const dueDate = String(formData.get("dueDate") ?? "").trim()
+    ? taskDueFromForm(formData)
+    : null;
   if (!id || !title) return;
   await db
     .update(reviewTasks)
     .set({
       title,
       status: status || "open",
-      ...(dueRaw ? { dueDate: new Date(`${dueRaw}T16:00:00.000Z`) } : {}),
+      ...(dueDate ? { dueDate } : {}),
       completedAt: status === "done" || status === "completed" ? new Date() : null,
     })
     .where(eq(reviewTasks.id, id));
+  if (dueDate) {
+    await scheduleDeskTaskReminder({ taskId: id, title, dueDate });
+  }
   revalidatePath("/tasks");
   revalidatePath(`/tasks/${id}`);
   flashAction(`/tasks/${id}`, "changes-saved");
