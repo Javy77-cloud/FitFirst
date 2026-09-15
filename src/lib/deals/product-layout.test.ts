@@ -9,6 +9,7 @@ import {
   productLayoutFields,
   productSectionComplete,
   productSectionId,
+  productSectionProgress,
 } from "./product-layout";
 
 const SHARED_LAYOUT = {
@@ -77,5 +78,7 @@ describe("deal details shared body + product overlay", () => {
     expect(productSectionComplete("auto", { vin: "" })).toBe(false);
     expect(productSectionComplete("renters", { coverage_c: "25000" })).toBe(true);
     expect(catalogFieldsForProducts([...DEAL_PRODUCTS]).length).toBeGreaterThan(10);
+    expect(productSectionProgress("auto", { vin: "1" }).filled).toBe(1);
+    expect(productSectionProgress("auto", { vin: "1" }).complete).toBe(false);
   });
 });

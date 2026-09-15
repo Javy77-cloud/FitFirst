@@ -44,14 +44,16 @@ import {
   sheetHasUserData,
 } from "@/lib/deals/package-lines";
 import {
+  dealProductDef,
   familyForProducts,
   resolveActiveDealProduct,
   resolveVisibleDealProducts,
   sheetLineForProduct,
 } from "@/lib/deals/deal-products";
-import { productSectionComplete } from "@/lib/deals/product-layout";
+import { productSectionComplete, productSectionProgress } from "@/lib/deals/product-layout";
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
 import { DealPackageLinesForm } from "@/components/deal/deal-package-lines-form";
+import { DealFlowRail } from "@/components/deals/deal-flow-rail";
 import { DealPackageShell } from "@/components/deal/deal-package-shell";
 import { DealHeaderStage } from "@/components/deals/deal-header-stage";
 import { relabelConvertActivityTitle } from "@/lib/crm/convert";
@@ -385,6 +387,22 @@ export default async function DealPage({
               />
               {dealProducts.length ? (
                 <>
+                  <div className="mt-3">
+                    <DealFlowRail
+                      current={activeTab}
+                      activeLabel={dealProductDef(activeProduct).label}
+                      productComplete={
+                        productSectionComplete(activeProduct, dealValues) ||
+                        Boolean(
+                          sheets.find((row) => row.line === sheetLineForProduct(activeProduct)) &&
+                            sheetHasUserData(
+                              sheets.find((row) => row.line === sheetLineForProduct(activeProduct))!
+                                .values,
+                            ),
+                        )
+                      }
+                    />
+                  </div>
                   <DealPackageLinesForm
                     dealId={deal.id}
                     selected={dealProducts}
@@ -406,6 +424,17 @@ export default async function DealPage({
                               )
                             : false),
                       ]),
+                    )}
+                    progress={Object.fromEntries(
+                      dealProducts.map((id) => {
+                        const sheet = sheets.find((row) => row.line === sheetLineForProduct(id));
+                        const fromFields = productSectionProgress(id, dealValues);
+                        const fromSheet = sheet && sheetHasUserData(sheet.values);
+                        return [
+                          id,
+                          fromSheet ? { ...fromFields, complete: true, pct: 100 } : fromFields,
+                        ];
+                      }),
                     )}
                   />
                 </>

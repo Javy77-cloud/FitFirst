@@ -150,9 +150,13 @@ describe("create + detail wiring", () => {
 
     const page = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
     expect(page).toMatch(/DealLineSwitcher/);
+    expect(page).toMatch(/DealFlowRail/);
     expect(page).toMatch(/layoutForActiveProduct|activeProduct/);
     expect(page).toMatch(/productSectionComplete/);
     expect(page).not.toMatch(/DealLineSelector/);
+    expect(readFileSync("src/lib/deals/product-ui.ts", "utf8")).toMatch(
+      /id: "create"[\s\S]*id: "details"[\s\S]*id: "documents"[\s\S]*id: "markets"[\s\S]*id: "quotes"/,
+    );
 
     const save = readFileSync("src/app/actions/crm.ts", "utf8");
     expect(save).toMatch(/shopProducts/);

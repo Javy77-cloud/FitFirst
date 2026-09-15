@@ -244,15 +244,29 @@ export function productCompletionKeys(product: DealProductId): string[] {
   return productLayoutFields(product).map((row) => row.key);
 }
 
+export function productSectionProgress(
+  product: DealProductId,
+  values: Record<string, string | null | undefined>,
+): { filled: number; total: number; need: number; complete: boolean; pct: number } {
+  const keys = productCompletionKeys(product);
+  const filled = keys.filter((key) => String(values[key] ?? "").trim()).length;
+  const need = keys.length >= 3 ? 2 : 1;
+  const total = keys.length || 1;
+  return {
+    filled,
+    total,
+    need,
+    complete: filled >= need,
+    pct: Math.min(100, Math.round((filled / total) * 100)),
+  };
+}
+
 /** Reasonable “filled enough” — 2+ product keys, or 1 if the catalog is tiny. */
 export function productSectionComplete(
   product: DealProductId,
   values: Record<string, string | null | undefined>,
 ): boolean {
-  const keys = productCompletionKeys(product);
-  const filled = keys.filter((key) => String(values[key] ?? "").trim()).length;
-  const need = keys.length >= 3 ? 2 : 1;
-  return filled >= need;
+  return productSectionProgress(product, values).complete;
 }
 
 export function catalogFieldsForProducts(products: readonly DealProductId[]): CustomFieldDef[] {

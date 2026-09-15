@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { DealFlowRail } from "@/components/deals/deal-flow-rail";
 import { ProductPicker } from "@/components/deals/product-picker";
 import { normalizeDealProducts, type DealProductId } from "@/lib/deals/deal-products";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -119,7 +120,7 @@ export function AddNewDealDialog({
 
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          className="sm:max-w-md"
+          className="sm:max-w-2xl"
           showCloseButton
           data-ff-add-new-deal-dialog=""
         >
@@ -134,6 +135,7 @@ export function AddNewDealDialog({
             </DialogDescription>
           </DialogHeader>
 
+          <DealFlowRail current="create" />
           <div data-ff-package-lines="">
             <ProductPicker
               selected={products}
