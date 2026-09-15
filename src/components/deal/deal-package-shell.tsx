@@ -70,7 +70,11 @@ export function DealPackageShell({
       data-ff-header-cols="name-stage,phones-owner,dob-activity,insured-mailing"
     >
       {columns.map((col, colIndex) => (
-        <div key={col.map((row) => row.key).join("-")} className="min-w-0 space-y-1" data-ff-header-col={colIndex + 1}>
+        <div
+          key={col.map((row) => row.key).join("-")}
+          className={colIndex === 0 ? "min-w-0 space-y-1 overflow-visible" : "min-w-0 space-y-1"}
+          data-ff-header-col={colIndex + 1}
+        >
           {col.map((row) => (
             <div key={row.key} className="min-w-0">
               <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">

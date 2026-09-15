@@ -293,7 +293,7 @@ describe("DealPackageShell address display", () => {
     expect(page).toMatch(/phones=\{/);
     expect(page).toMatch(/dob=\{/);
     expect(page).toMatch(/owner=\{ownerRow\?\.name\}/);
-    expect(page).toMatch(/DealStageSelect/);
+    expect(page).toMatch(/DealHeaderStage/);
     expect(page).toMatch(/stageControl=/);
     expect(page).toMatch(/uniqueDisplayPhones/);
   });

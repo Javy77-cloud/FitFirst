@@ -102,13 +102,17 @@ describe("deal UX punch list", () => {
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/relabelConvertActivityTitle/);
   });
 
-  it("shows Gather info and click-to-edit Stage on the deal header", () => {
+  it("shows Gather info and a header stage chip + strip, not a bare select", () => {
     expect(humanizeDealStage("gather")).toBe("Gather info");
     expect(PC_SHOPPING_STAGES[0]).toEqual({ slug: "gather", name: "Gather info" });
     const page = source("src/app/deals/[id]/page.tsx");
-    expect(page).toMatch(/DealStageSelect/);
+    expect(page).toMatch(/DealHeaderStage/);
     expect(page).toMatch(/stageControl=/);
+    expect(page).not.toMatch(/DealStageSelect/);
     expect(source("src/components/deal/deal-package-shell.tsx")).toMatch(/stageControl/);
+    expect(source("src/components/deals/deal-header-stage.tsx")).not.toMatch(/<select/);
+    expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(/data-ff-header-stage-chip/);
+    expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(/Advance to/);
   });
 
   it("gives Flood the same PC stages as Home; Life includes Meet / Quotes", () => {

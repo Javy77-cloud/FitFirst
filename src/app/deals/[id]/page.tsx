@@ -45,7 +45,7 @@ import {
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
 import { DealPackageLinesForm } from "@/components/deal/deal-package-lines-form";
 import { DealPackageShell } from "@/components/deal/deal-package-shell";
-import { DealStageSelect } from "@/components/deals/deal-stage-select";
+import { DealHeaderStage } from "@/components/deals/deal-header-stage";
 import { relabelConvertActivityTitle } from "@/lib/crm/convert";
 import { dealStageView } from "@/lib/deals/deal-columns";
 import { uniqueDisplayPhones } from "@/lib/deals/header-addresses";
@@ -346,14 +346,13 @@ export default async function DealPage({
                   }) ?? (comms.length ? `${comms.length} activities` : null)
                 }
                 stageControl={
-                  <DealStageSelect
+                  <DealHeaderStage
                     dealId={deal.id}
                     pipelineSlug={stageView.pipelineSlug}
                     stageSlug={stageView.slug}
                     stages={stageView.stages}
                     dealTitle={deal.title}
                     toastOnSave
-                    className="max-w-full"
                   />
                 }
               />
