@@ -6,6 +6,7 @@ import { FieldControl } from "@/components/custom-fields/field-control";
 import { Button } from "@/components/ui/button";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
 import type { PcPackageLine } from "@/lib/deals/package-lines";
+import type { DeskLineSettings } from "@/lib/desk/line-settings";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { parseLayout, type CustomFieldDef, type FieldLayout } from "@/lib/custom-fields/types";
 import {
@@ -36,6 +37,7 @@ function CoApplicantDealSection({
   dealId,
   packageLines = [],
   activePackageLine = null,
+  lineSettings,
 }: {
   sectionLabel: string;
   quoteReq: boolean;
@@ -53,6 +55,7 @@ function CoApplicantDealSection({
   dealId: string;
   packageLines?: readonly PcPackageLine[];
   activePackageLine?: PcPackageLine | null;
+  lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
   const initialOn = useMemo(() => isCoApplicantEnabled(values), [values]);
   const [enabled, setEnabled] = useState(initialOn);
@@ -126,6 +129,7 @@ function CoApplicantDealSection({
                 healthOptions={healthOptions}
                 packageLines={packageLines}
                 activePackageLine={activePackageLine}
+                lineSettings={lineSettings}
               />
               {field.type === "image" ? (
                 <form action={uploadDealFieldImage} className="flex items-center gap-2">
@@ -163,6 +167,7 @@ export function DealDetailsPanel({
   healthOptions = [],
   packageLines = [],
   activePackageLine = null,
+  lineSettings,
 }: {
   dealId: string;
   line: string;
@@ -177,6 +182,7 @@ export function DealDetailsPanel({
   healthOptions?: Array<{ slug?: string; label: string }>;
   packageLines?: readonly PcPackageLine[];
   activePackageLine?: PcPackageLine | null;
+  lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
   const safeLayout = parseLayout(layout);
   const fieldList = resolveLayoutFields(safeLayout, asList(fields));
@@ -223,6 +229,7 @@ export function DealDetailsPanel({
                     dealId={dealId}
                     packageLines={packageLines}
                     activePackageLine={activePackageLine}
+                    lineSettings={lineSettings}
                   />
                 );
               }
@@ -283,6 +290,7 @@ export function DealDetailsPanel({
                           healthOptions={healthOptions}
                           packageLines={packageLines}
                           activePackageLine={activePackageLine}
+                          lineSettings={lineSettings}
                         />
                         {field.type === "image" ? (
                           <form action={uploadDealFieldImage} className="flex items-center gap-2">

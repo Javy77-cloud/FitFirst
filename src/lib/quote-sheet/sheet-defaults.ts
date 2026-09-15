@@ -1139,6 +1139,9 @@ export function applyMasterSheetDefaults(
     ["collision_deductible", normalizeAutoDollarLimit],
     ["building_deductible", normalizeAutoDollarLimit],
     ["contents_deductible", normalizeAutoDollarLimit],
+    ["product_type", normalizeLifeProductType],
+    ["plan_type", normalizeHealthPlanType],
+    ["tobacco_status", normalizeTobaccoStatus],
   ];
   for (const [key, normalize] of selectNormalizers) {
     const cell = values[key];
@@ -1184,13 +1187,16 @@ export function floodEffectiveDateDefault(opts?: {
 
 /** Line-scoped empty defaults (Flood coverage / construction starters). */
 export function emptyDefaultsForLine(line: string | null | undefined): Record<string, string> {
-  if (String(line ?? "").trim().toLowerCase() === "flood") {
+  const key = String(line ?? "").trim().toLowerCase();
+  if (key === "flood") {
     const under = FLOOD_SHEET_EMPTY_DEFAULTS.under_construction;
     return {
       ...FLOOD_SHEET_EMPTY_DEFAULTS,
       ...floodEffectiveDateDefault({ underConstruction: under }),
     };
   }
+  if (key === "life") return { product_type: "Term Life" };
+  if (key === "health") return { plan_type: "Marketplace" };
   return {};
 }
 
@@ -1293,3 +1299,209 @@ export const BOP_CONSTRUCTION_OPTIONS = [
   "Modified fire resistive",
   "Fire resistive",
 ] as const;
+
+/** Life product types — same labels as Settings → Lines Life subfilters. */
+export const LIFE_PRODUCT_TYPE_OPTIONS = [
+  "Term Life",
+  "Whole Life",
+  "IUL",
+  "Final Expense",
+  "Other",
+] as const;
+
+/** Common personal-life term lengths (not carrier-specific). */
+export const LIFE_TERM_YEARS_OPTIONS = ["10", "15", "20", "25", "30", "35", "40"] as const;
+
+export const LIFE_PREMIUM_MODE_OPTIONS = [
+  "Monthly",
+  "Quarterly",
+  "Semi-annual",
+  "Annual",
+] as const;
+
+export const LIFE_PURPOSE_OPTIONS = [
+  "Income replacement",
+  "Mortgage / debt",
+  "Estate / inheritance",
+  "Final expense",
+  "Business / key person",
+  "Other",
+] as const;
+
+export const LIFE_HEIGHT_FT_OPTIONS = ["4", "5", "6", "7"] as const;
+export const LIFE_HEIGHT_IN_OPTIONS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"] as const;
+
+/** Industry personal-life tobacco / nicotine status (not a carrier table). */
+export const TOBACCO_STATUS_OPTIONS = ["Never", "Former", "Current"] as const;
+
+export const NICOTINE_TYPE_OPTIONS = [
+  "None",
+  "Cigarettes",
+  "Cigars",
+  "Pipe",
+  "Chewing / dip",
+  "Vape / e-cigarette",
+  "Patch / gum / lozenge",
+  "Other",
+] as const;
+
+export const LAST_NICOTINE_USE_OPTIONS = [
+  "Never",
+  "Within 12 months",
+  "1–2 years",
+  "2–3 years",
+  "3+ years",
+] as const;
+
+/** Preferred / standard / table — generic PL life classes, not a carrier UW grid. */
+export const LIFE_HEALTH_CLASS_OPTIONS = [
+  "Preferred Plus",
+  "Preferred",
+  "Standard Plus",
+  "Standard",
+  "Table rated",
+  "Uninsurable / decline",
+  "Unknown",
+] as const;
+
+export const RESIDENCY_STATUS_OPTIONS = [
+  "U.S. citizen",
+  "Permanent resident",
+  "Other",
+] as const;
+
+export const BENEFICIARY_SHARE_OPTIONS = [
+  "100% primary",
+  "Split (see notes)",
+  "Other",
+] as const;
+
+/** Health plan family — same labels as Settings → Lines Health subfilters. */
+export const HEALTH_PLAN_TYPE_OPTIONS = [
+  "Marketplace",
+  "Medicare Advantage",
+  "Medicare A&B",
+  "Supplemental",
+  "Other",
+] as const;
+
+/** Network type already used on Health deal-details custom fields. */
+export const HEALTH_NETWORK_TYPE_OPTIONS = ["PPO", "HMO", "EPO", "HDHP"] as const;
+
+export const HEALTH_METAL_LEVEL_OPTIONS = [
+  "Bronze",
+  "Silver",
+  "Gold",
+  "Platinum",
+  "Catastrophic",
+  "Not applicable",
+] as const;
+
+export const HOUSEHOLD_SIZE_OPTIONS = ["1", "2", "3", "4", "5", "6", "7", "8+"] as const;
+
+export const TAX_FILING_STATUS_OPTIONS = [
+  "Single",
+  "Married filing jointly",
+  "Married filing separately",
+  "Head of household",
+  "Other",
+] as const;
+
+/** Generic household income bands for Marketplace quoting prep (not FPL tables). */
+export const HOUSEHOLD_INCOME_BAND_OPTIONS = [
+  "Under $20,000",
+  "$20,000 – $29,999",
+  "$30,000 – $39,999",
+  "$40,000 – $49,999",
+  "$50,000 – $74,999",
+  "$75,000 – $99,999",
+  "$100,000 – $149,999",
+  "$150,000+",
+  "Unknown / not provided",
+] as const;
+
+export const HEALTH_EFFECTIVE_DATE_TYPE_OPTIONS = [
+  "Open enrollment (OEP)",
+  "Special enrollment (SEP)",
+  "Medicare AEP",
+  "New to Medicare",
+  "Newborn / new dependent",
+  "Loss of coverage",
+  "Other",
+] as const;
+
+export const HEALTH_SEP_REASON_OPTIONS = [
+  "None / open enrollment",
+  "Lost other coverage",
+  "Moved",
+  "Marriage / divorce",
+  "Birth or adoption",
+  "Income / household change",
+  "Other qualifying event",
+] as const;
+
+export const MEDICARE_PARTS_OPTIONS = [
+  "None",
+  "Part A only",
+  "Part B only",
+  "Parts A & B",
+] as const;
+
+export function normalizePicklistOption(
+  raw: string | null | undefined,
+  options: readonly string[],
+): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase();
+  return options.find((opt) => opt.toLowerCase() === lower) ?? "";
+}
+
+export function normalizeTobaccoStatus(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase().replace(/[_-]+/g, " ");
+  const hit = normalizePicklistOption(text, TOBACCO_STATUS_OPTIONS);
+  if (hit) return hit;
+  if (lower === "no" || lower.includes("never") || lower.includes("non smoker") || lower.includes("nonsmoker")) {
+    return "Never";
+  }
+  if (lower.includes("former") || lower.includes("quit") || lower.includes("ex smoker")) return "Former";
+  if (lower === "yes" || lower === "smoker" || lower.includes("current")) return "Current";
+  return "";
+}
+
+export function normalizeLifeProductType(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const hit = normalizePicklistOption(text, LIFE_PRODUCT_TYPE_OPTIONS);
+  if (hit) return hit;
+  const lower = text.toLowerCase();
+  if (lower.includes("final")) return "Final Expense";
+  if (lower.includes("whole")) return "Whole Life";
+  if (lower === "iul" || lower.includes("indexed") || lower.includes("universal")) return "IUL";
+  if (lower.includes("term")) return "Term Life";
+  if (lower === "other") return "Other";
+  return "";
+}
+
+export function normalizeHealthPlanType(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const hit = normalizePicklistOption(text, HEALTH_PLAN_TYPE_OPTIONS);
+  if (hit) return hit;
+  const lower = text.toLowerCase();
+  if (lower.includes("advantage") || lower === "mapd" || lower === "ma") return "Medicare Advantage";
+  if (
+    lower.includes("a&b") ||
+    lower.includes("a and b") ||
+    lower.includes("original medicare") ||
+    lower.includes("medicare a")
+  ) {
+    return "Medicare A&B";
+  }
+  if (lower.includes("supplement") || lower.includes("medigap")) return "Supplemental";
+  if (lower.includes("marketplace") || lower === "aca" || lower.includes("exchange")) return "Marketplace";
+  if (lower === "other") return "Other";
+  return "";
+}

@@ -272,6 +272,8 @@ describe("create + detail wiring", () => {
     expect(readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8")).toMatch(/Home/);
     expect(readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8")).toMatch(/Auto/);
     expect(readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8")).toMatch(/Flood/);
+    expect(readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8")).not.toMatch(/Life/);
+    expect(readFileSync("src/components/deals/package-line-checkboxes.tsx", "utf8")).not.toMatch(/Health/);
     const create = readFileSync("src/app/actions/deal-create.ts", "utf8");
     expect(create).toMatch(/packageCreateDraft/);
     expect(create).toMatch(/insertBlankSheets/);

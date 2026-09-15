@@ -13,6 +13,7 @@ import {
 } from "@/components/custom-fields/insurance-cascade-control";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
 import type { PcPackageLine } from "@/lib/deals/package-lines";
+import type { DeskLineSettings } from "@/lib/desk/line-settings";
 import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { addressFillForKey, isStreetAddressField } from "@/lib/address/keys";
@@ -36,6 +37,7 @@ export function FieldControl({
   healthOptions = [],
   packageLines = [],
   activePackageLine = null,
+  lineSettings,
   onMultiSelectChange,
 }: {
   field: CustomFieldDef;
@@ -52,6 +54,7 @@ export function FieldControl({
   healthOptions?: Array<{ slug?: string; label: string }>;
   packageLines?: readonly PcPackageLine[];
   activePackageLine?: PcPackageLine | null;
+  lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   onMultiSelectChange?: (joined: string) => void;
 }) {
   const resolved = resolvedFieldValue(field, value);
@@ -77,6 +80,7 @@ export function FieldControl({
         healthOptions={healthOptions}
         packageLines={packageLines}
         activePackageLine={activePackageLine}
+        lineSettings={lineSettings}
         onMultiSelectChange={onMultiSelectChange}
       />
     </div>
@@ -100,6 +104,7 @@ function TypedControl({
   healthOptions = [],
   packageLines = [],
   activePackageLine = null,
+  lineSettings,
   onMultiSelectChange,
 }: {
   field: CustomFieldDef;
@@ -118,6 +123,7 @@ function TypedControl({
   healthOptions?: Array<{ slug?: string; label: string }>;
   packageLines?: readonly PcPackageLine[];
   activePackageLine?: PcPackageLine | null;
+  lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   onMultiSelectChange?: (joined: string) => void;
 }) {
   // 3-level cascade: Type → Category → Form. Type field owns the UI;
@@ -142,6 +148,7 @@ function TypedControl({
         disabled={disabled}
         packageLines={packageLines}
         activePackageLine={activePackageLine}
+        lineSettings={lineSettings}
       />
     );
   }
@@ -177,6 +184,7 @@ function TypedControl({
         disabled={disabled}
         packageLines={packageLines}
         activePackageLine={activePackageLine}
+        lineSettings={lineSettings}
       />
     );
   }

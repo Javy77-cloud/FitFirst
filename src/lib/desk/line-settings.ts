@@ -195,3 +195,41 @@ export function deskNavExtras(settings: Pick<DeskLineSettings, "writeLife" | "wr
   if (settings.writeHealth) extras.push({ href: "/deals?pipeline=health", label: "Health" });
   return extras;
 }
+
+/** Cascade Type / commission book rows keyed life | health. */
+export function visibleInsuranceTypes<T extends { id: string }>(
+  types: readonly T[],
+  settings?: Pick<DeskLineSettings, "writeLife" | "writeHealth"> | null,
+): T[] {
+  if (!settings) return [...types];
+  return types.filter((row) => {
+    if (row.id === "life") return settings.writeLife;
+    if (row.id === "health") return settings.writeHealth;
+    return true;
+  });
+}
+
+export function visibleCommissionBooks<T extends { value: string }>(
+  books: readonly T[],
+  settings?: Pick<DeskLineSettings, "writeLife" | "writeHealth"> | null,
+): T[] {
+  if (!settings) return [...books];
+  return books.filter((row) => {
+    if (row.value === "life") return settings.writeLife;
+    if (row.value === "health") return settings.writeHealth;
+    return true;
+  });
+}
+
+/** Keep an existing Life/Health deal writable; do not switch onto a hidden book. */
+export function allowLifeHealthFamily(
+  nextFamily: string,
+  existingFamily: string,
+  settings: Pick<DeskLineSettings, "writeLife" | "writeHealth">,
+): string {
+  if (nextFamily === "life" && !settings.writeLife && existingFamily !== "life") return existingFamily || "pc";
+  if (nextFamily === "health" && !settings.writeHealth && existingFamily !== "health") {
+    return existingFamily || "pc";
+  }
+  return nextFamily;
+}
