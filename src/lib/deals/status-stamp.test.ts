@@ -56,6 +56,21 @@ describe("deal status stamp", () => {
         ],
       }),
     ).toBe("a");
+    expect(
+      pickBoundQuoteId({
+        dealBound: true,
+        quotes: [
+          { id: "stub", bindable: true, agentStatus: "new", stub: true },
+          { id: "live", bindable: true, agentStatus: "new", stub: false },
+        ],
+      }),
+    ).toBe("live");
+    expect(
+      pickBoundQuoteId({
+        dealBound: true,
+        quotes: [{ id: "stub", bindable: true, agentStatus: "new", stub: true }],
+      }),
+    ).toBeNull();
     expect(isBoundQuote({ quoteId: "a", agentStatus: "bound" })).toBe(true);
     expect(isBoundQuote({ quoteId: "a", boundQuoteId: "a" })).toBe(true);
     expect(isBoundQuote({ quoteId: "a", boundQuoteId: "b" })).toBe(false);

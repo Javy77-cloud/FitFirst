@@ -51,10 +51,17 @@ export function isBoundQuote(input: {
 
 export function pickBoundQuoteId(input: {
   dealBound?: boolean;
-  quotes: readonly { id: string; bindable?: boolean | null; agentStatus?: string | null }[];
+  quotes: readonly {
+    id: string;
+    bindable?: boolean | null;
+    agentStatus?: string | null;
+    stub?: boolean | null;
+  }[];
 }): string | null {
-  const marked = input.quotes.find((row) => (row.agentStatus ?? "").toLowerCase() === "bound");
+  const live = input.quotes.filter((row) => row.stub !== true);
+  const marked = live.find((row) => (row.agentStatus ?? "").toLowerCase() === "bound");
   if (marked) return marked.id;
   if (!input.dealBound) return null;
-  return input.quotes.find((row) => row.bindable)?.id ?? input.quotes[0]?.id ?? null;
+  // Only pin a live quote. Stub rows are hidden on Quotes and must not fake BOUND.
+  return live.find((row) => row.bindable)?.id ?? live[0]?.id ?? null;
 }
