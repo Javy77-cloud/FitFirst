@@ -96,10 +96,6 @@ export function lineQuoteCompleteness(input: {
       { multiLine: true },
     );
   });
-  const shopped =
-    lineLogs.some((log) => isExplicitMarketActionText(log.why)) ||
-    lineQuotes.some((quote) => isExplicitMarketActionText(quote.notes));
-  const shopLogs = lineLogs.filter((log) => isExplicitMarketActionText(log.why));
   const lineQuotes = input.quotes.filter(
     (quote) =>
       !quote.stub &&
@@ -114,6 +110,11 @@ export function lineQuoteCompleteness(input: {
         { multiLine: true, isPrimaryLine: false },
       ),
   );
+
+  const shopped =
+    lineLogs.some((log) => isExplicitMarketActionText(log.why)) ||
+    lineQuotes.some((quote) => isExplicitMarketActionText(quote.notes));
+  const shopLogs = lineLogs.filter((log) => isExplicitMarketActionText(log.why));
 
   if (!shopped) {
     if (lineQuotes.length > 0) {

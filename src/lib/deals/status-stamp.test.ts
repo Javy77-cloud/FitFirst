@@ -15,6 +15,7 @@ describe("deal status stamp", () => {
     expect(resolveDealStampStage("Quote Sent")).toBe("quote_sent");
     expect(resolveDealStampStage("pending_inspection")).toBe("pending_inspection");
     expect(resolveDealStampStage("bound")).toBe("bound");
+    expect(resolveDealStampStage("closed_won")).toBe("bound");
     expect(resolveDealStampStage(null, null, "2026-09-15T12:00:00.000Z")).toBe("bound");
     expect(resolveDealStampStage("shopping")).toBeNull();
     expect(resolveDealStampStage("review")).toBeNull();

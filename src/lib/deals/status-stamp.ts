@@ -12,6 +12,9 @@ const SLUG_ALIASES: Record<string, DealStampStage> = {
   quotesent: "quote_sent",
   quote_sent_to_client: "quote_sent",
   bound: "bound",
+  closed_won: "bound",
+  closedwon: "bound",
+  won: "bound",
   pending_inspection: "pending_inspection",
   pendinginspection: "pending_inspection",
 };
