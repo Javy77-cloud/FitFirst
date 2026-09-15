@@ -170,6 +170,9 @@ export function QuotesPanel({
     });
   }
   const whyByCarrier = Object.fromEntries(logs.map((row) => [row.log.carrierId, row.log.why]));
+  const lostReasonByCarrier = Object.fromEntries(
+    logs.map((row) => [row.log.carrierId, row.log.lostReason]),
+  );
   const resultByCarrier = Object.fromEntries(logs.map((row) => [row.log.carrierId, row.log.result]));
   const notesByQuote: Record<string, QuoteNote[]> = {};
   for (const note of quoteNotes) {
@@ -246,6 +249,7 @@ export function QuotesPanel({
             confirmLogs={confirmLogs}
             resultByCarrier={resultByCarrier}
             whyByCarrier={whyByCarrier}
+            lostReasonByCarrier={lostReasonByCarrier}
             notesByQuote={notesByQuote}
             requestedCoverageA={requestedCoverageA}
             quoteFilesByQuoteId={quoteFilesByQuoteId}
@@ -271,6 +275,7 @@ export function QuotesPanel({
             confirmLogs={confirmLogs}
             resultByCarrier={resultByCarrier}
             whyByCarrier={whyByCarrier}
+            lostReasonByCarrier={lostReasonByCarrier}
             notesByQuote={notesByQuote}
             requestedCoverageA={requestedCoverageA}
             quoteFilesByQuoteId={quoteFilesByQuoteId}

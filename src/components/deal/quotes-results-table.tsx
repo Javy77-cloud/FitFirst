@@ -318,6 +318,7 @@ export function QuotesResultsTable({
   confirmLogs: _confirmLogs,
   resultByCarrier,
   whyByCarrier = {},
+  lostReasonByCarrier = {},
   notesByQuote = {},
   requestedCoverageA = null,
   quoteFilesByQuoteId = {},
@@ -329,6 +330,7 @@ export function QuotesResultsTable({
   confirmLogs: { carrierId: string; why?: string | null }[];
   resultByCarrier: Record<string, string | undefined>;
   whyByCarrier?: Record<string, string | null | undefined>;
+  lostReasonByCarrier?: Record<string, string | null | undefined>;
   notesByQuote?: Record<string, QuoteNote[]>;
   requestedCoverageA?: number | null;
   quoteFilesByQuoteId?: Record<string, { carrier: QuoteFileRow[]; agency: QuoteFileRow[] }>;
@@ -635,6 +637,8 @@ export function QuotesResultsTable({
                       hurricaneDeductible: quote.hurricaneDeductible,
                       requestedCoverageA,
                       logWhy: whyByCarrier[carrier.id],
+                      lostReason: quote.lostReason ?? lostReasonByCarrier[carrier.id],
+                      reasonForNo: quote.reasonForNo,
                     });
                     const reqChips = rowReason.chips.length
                       ? rowReason.chips

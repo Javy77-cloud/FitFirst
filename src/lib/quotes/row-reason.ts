@@ -1,5 +1,11 @@
 import {
+  LOST_BUSINESS_REASON_LABELS,
+  isLostBusinessReason,
+} from "@/lib/domain";
+import {
+  REASON_FOR_NO_LABELS,
   bindRequirementChips,
+  isReasonForNo,
   normalizeRiskOutcome,
   shortReasonLabel,
 } from "@/lib/quotes/outcomes";
@@ -12,6 +18,15 @@ export type QuoteRowReason = {
 };
 
 const GENERIC = /needs follow-up|^—$|ready to bind|re-check this quote before bind/i;
+
+function labelStoredReason(value: string | null | undefined): string | null {
+  const raw = (value ?? "").trim();
+  if (!raw) return null;
+  if (isLostBusinessReason(raw)) return LOST_BUSINESS_REASON_LABELS[raw];
+  if (isReasonForNo(raw)) return REASON_FOR_NO_LABELS[raw];
+  if (GENERIC.test(raw)) return null;
+  return raw.replace(/[_-]+/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
 
 function concreteReasonFromBlob(blob: string): string | null {
   const text = blob.trim();
@@ -44,7 +59,10 @@ export function quoteRowReason(input: {
   hurricaneDeductible?: string | null;
   requestedCoverageA?: number | null;
   logWhy?: string | null;
+  lostReason?: string | null;
+  reasonForNo?: string | null;
 }): QuoteRowReason {
+  const storedReason = labelStoredReason(input.lostReason) ?? labelStoredReason(input.reasonForNo);
   const reasonBlob = [input.notes, input.logWhy].filter(Boolean).join(" · ");
   const chips = bindRequirementChips({
     notes: reasonBlob || input.notes,
@@ -68,6 +86,9 @@ export function quoteRowReason(input: {
       chips,
       provided: true,
     };
+  }
+  if (storedReason) {
+    return { label: storedReason, detail: fromBlob && fromBlob !== storedReason ? fromBlob : null, chips, provided: true };
   }
   if (fromBlob) {
     return { label: fromBlob, detail: short && !GENERIC.test(short) ? short : null, chips, provided: true };

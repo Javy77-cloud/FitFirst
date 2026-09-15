@@ -71,6 +71,15 @@ describe("quote row reasons", () => {
     ).toBe("Underwriting hold");
   });
 
+  it("surfaces stored lostReason / reasonForNo codes as real labels", () => {
+    expect(
+      quoteRowReason({ riskOutcome: "declined", lostReason: "uw_roof" }).label,
+    ).toBe("Underwriting — roof");
+    expect(
+      quoteRowReason({ riskOutcome: "declined", reasonForNo: "too_expensive" }).label,
+    ).toBe("Too expensive");
+  });
+
   it("falls back to an honest empty state — never a fake generic", () => {
     const reason = quoteRowReason({ riskOutcome: "conditional" });
     expect(reason.provided).toBe(false);
