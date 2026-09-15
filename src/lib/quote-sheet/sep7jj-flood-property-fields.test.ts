@@ -37,6 +37,7 @@ describe("sep7jj Flood master sheet property fields + FZM", () => {
     }
     expect(fields.find((f) => f.key === "city")?.group).toBe("Property");
     expect(fields.find((f) => f.key === "bfe")?.group).toBe("Foundation / elevation");
+    expect(fields.find((f) => f.key === "flood_zone")?.input).toBe("select");
   });
 
   it("addressFromSheet falls back to property_address when address1 blank", () => {

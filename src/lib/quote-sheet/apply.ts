@@ -11,13 +11,17 @@ import {
 } from "./records-check";
 import { isSheetFormMetaKey, submittedSheetValues } from "./save-values";
 import {
+  normalizeAutoDollarLimit,
+  normalizeAutoSplitLimit,
   normalizeBuildingCode,
   normalizeClaims5yr,
   normalizeDistanceToHydrant,
   normalizeDistanceToStation,
+  normalizeFloodOccupancyUse,
   normalizeFloodZone,
   normalizeGender,
   normalizeInsuranceScoreRange,
+  normalizeLicenseStatus,
   normalizeMonthsOccupied,
   normalizeOccupancy,
   normalizeOpeningProtection,
@@ -202,6 +206,21 @@ export function applyExtractedToSheet(
     if (key === "wind_speed") nextValue = normalizeWindSpeed(nextValue);
     if (key === "stories") nextValue = normalizeStories(nextValue);
     if (key === "flood_zone") nextValue = normalizeFloodZone(nextValue);
+    if (key === "occupancy_use") nextValue = normalizeFloodOccupancyUse(nextValue);
+    if (key === "driver_1_status" || (key.startsWith("driver_") && key.endsWith("_status"))) {
+      nextValue = normalizeLicenseStatus(nextValue);
+    }
+    if (key === "liability_bi" || key === "um_uim") nextValue = normalizeAutoSplitLimit(nextValue);
+    if (
+      key === "liability_pd" ||
+      key === "pip" ||
+      key === "comp_deductible" ||
+      key === "collision_deductible" ||
+      key === "building_deductible" ||
+      key === "contents_deductible"
+    ) {
+      nextValue = normalizeAutoDollarLimit(nextValue);
+    }
     if (key === "protection_class") nextValue = normalizeProtectionClass(nextValue);
     if (key === "building_code") nextValue = normalizeBuildingCode(nextValue);
     if (key === "roof_covering") nextValue = normalizeRoofCovering(nextValue);

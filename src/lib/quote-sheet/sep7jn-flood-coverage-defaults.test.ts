@@ -86,6 +86,9 @@ describe("sep7jn Flood coverage defaults + paired Coverages layout", () => {
     expect(coverages).toContain("coverage_a");
     expect(fields.find((f) => f.key === "building_limit")?.label).toBe("Building coverage");
     expect(fields.find((f) => f.key === "contents_limit")?.label).toBe("Contents coverage");
+    expect(fields.find((f) => f.key === "building_deductible")?.input).toBe("select");
+    expect(fields.find((f) => f.key === "contents_deductible")?.input).toBe("select");
+    expect(fields.find((f) => f.key === "building_deductible")?.options).toContain("1000");
     expect(fields.find((f) => f.key === "has_nfip")?.group).toBe("Current policy");
     expect(fields.find((f) => f.key === "has_nfip")?.options).toEqual([...YES_NO_OPTIONS]);
 
