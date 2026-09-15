@@ -11,12 +11,14 @@ import {
   groupQuotesByRun,
   inferShopLineFromQuoteNotes,
   nextShopFlowAfterQuoteRun,
+  notesLookLikeFloodProduct,
   parseShopFlow,
   quoteMatchesShopLine,
   resolveQuoteShopLine,
   resolveShopFlowCompletion,
   riskFingerprint,
   sheetValuesFingerprint,
+  shopLineToPersist,
   staleShopFlow,
 } from "./shop-flow";
 
@@ -258,6 +260,60 @@ describe("line-scoped quotes", () => {
         { multiLine: true, isPrimaryLine: true },
       ),
     ).toBe(false);
+  });
+
+  it("does not tag HO3 with-flood / without-flood package notes as flood", () => {
+    const edison =
+      "Floor only HO3 Edison · $5,133 without flood ($6,200 with flood) · Cov A $310,000";
+    const peninsula =
+      "Floor only HO3 Florida Peninsula · without flood (package with flood) · Cov A forced $250,400";
+    expect(inferShopLineFromQuoteNotes(edison)).toBe("home");
+    expect(inferShopLineFromQuoteNotes(peninsula)).toBe("home");
+    expect(notesLookLikeFloodProduct(edison)).toBe(false);
+    expect(inferShopLineFromQuoteNotes("Flood NFIP (Wright WYO) — floor $489")).toBe("flood");
+    expect(inferShopLineFromQuoteNotes("Flood Flow — Quoted #CFBKXE $912.19")).toBe("flood");
+    expect(inferShopLineFromQuoteNotes("Couldn’t finish quote because wrong Beyond Floods account")).toBe(
+      "flood",
+    );
+    expect(
+      shopLineToPersist({
+        shopLine: "home",
+        quoteAttemptLogId: null,
+        notes: edison,
+        logs: [],
+      }),
+    ).toBe("home");
+    expect(
+      quoteMatchesShopLine(
+        { shopLine: "home", quoteAttemptLogId: null, notes: edison, logs: [] },
+        "flood",
+        { multiLine: true, isPrimaryLine: false },
+      ),
+    ).toBe(false);
+    expect(
+      quoteMatchesShopLine(
+        { shopLine: "home", quoteAttemptLogId: null, notes: edison, logs: [] },
+        "home",
+        { multiLine: true, isPrimaryLine: true },
+      ),
+    ).toBe(true);
+    expect(
+      shopLineToPersist({
+        shopLine: "home",
+        quoteAttemptLogId: null,
+        notes: "Flood NFIP (Wright WYO) — floor $489",
+        logs: [],
+      }),
+    ).toBe("flood");
+  });
+
+  it("0122 notes backfill uses flood product cues, not a bare flood word", () => {
+    const sql = readFileSync("drizzle/0122_bind_recheck_and_quote_lines.sql", "utf8");
+    expect(sql).not.toContain("~* '\\y(flood|nfip)\\y'");
+    expect(sql).toMatch(/beyond\[\[:space:\]\]\+floods/);
+    expect(sql).toContain("\\ynfip\\y");
+    expect(sql).toMatch(/with flood/);
+    expect(sql).toMatch(/without flood/);
   });
 });
 

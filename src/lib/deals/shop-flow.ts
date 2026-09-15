@@ -90,13 +90,29 @@ export function fingerprintsMatch(
   return saved === current;
 }
 
+/**
+ * Flood *product* cues — NFIP, Beyond Floods, Flood Flow, notes that start with
+ * "Flood", flood form, excess flood. Package-premium wording on an HO3 /
+ * homeowners note ("with flood" / "without flood") is not a flood quote.
+ */
+const FLOOD_PRODUCT_NOTE =
+  /\bnfip\b|beyond\s+floods|flood\s+flow|flow\s+flood|^\s*flood\b|\bflood\s+form\b|\bform\s+flood\b|excess\s+flood/;
+const HOME_FORM_NOTE = /\bho[34658]\b|\bhomeowners\b|\bdp[13]\b|\bdwelling\b|\bmho\b|\bmdp\b/;
+const INCIDENTAL_FLOOD_COMPARE = /\b(?:with|without)\s+flood\b/;
+
+export function notesLookLikeFloodProduct(notes: string | null | undefined): boolean {
+  return FLOOD_PRODUCT_NOTE.test((notes ?? "").toLowerCase());
+}
+
 export function inferShopLineFromQuoteNotes(notes: string | null | undefined): ShopLine | null {
   const blob = (notes ?? "").toLowerCase();
   if (!blob.trim()) return null;
   // Line tokens first — never treat multi-line carrier names (Progressive, Geico) as Auto.
-  if (/\bflood\b|\bnfip\b|excess flood/.test(blob)) return "flood";
+  if (FLOOD_PRODUCT_NOTE.test(blob)) return "flood";
   if (/\bworkers(?:\s+|-)?comp|\bwc\b/.test(blob)) return "workers_comp";
-  if (/\bgeneral liability|\bgl\b/.test(blob) && !/\bflood\b/.test(blob)) return "general_liability";
+  if (/\bgeneral liability|\bgl\b/.test(blob) && !FLOOD_PRODUCT_NOTE.test(blob)) {
+    return "general_liability";
+  }
   if (/\bbop\b|businessowners/.test(blob)) return "bop";
   if (/\bumbrella\b/.test(blob)) return "umbrella";
   if (/\b(rec(?:reational)?(?:\s+|\/)?rv|watercraft|\bboat\b)\b/.test(blob)) return "rec_rv";
@@ -109,9 +125,9 @@ export function inferShopLineFromQuoteNotes(notes: string | null | undefined): S
   ) {
     return "auto";
   }
-  if (/\bho[34658]\b|\bhomeowners\b|\bdp[13]\b|\bdwelling\b|\bmho\b|\bmdp\b/.test(blob)) {
-    return "home";
-  }
+  if (HOME_FORM_NOTE.test(blob)) return "home";
+  // Leftover standalone "flood" (not HO3 package-premium "with/without flood").
+  if (/\bflood\b/.test(blob) && !INCIDENTAL_FLOOD_COMPARE.test(blob)) return "flood";
   return null;
 }
 
