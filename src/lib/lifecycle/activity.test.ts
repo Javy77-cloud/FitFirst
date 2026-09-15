@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { activityLogBody, assertRelatedRecord, hasRelatedRecord } from "./activity";
+import {
+  activityLogBody,
+  assertRelatedRecord,
+  hasRelatedRecord,
+  shouldWriteCommsActivityLog,
+} from "./activity";
 
 describe("activity related-record FKs", () => {
   it("rejects an orphan task with no contact, policy, or business", () => {
@@ -34,5 +39,49 @@ describe("activity related-record FKs", () => {
         outcome: "connected",
       }),
     ).toBe("Call logged: Bind confirmation · 3 min · connected");
+  });
+});
+
+describe("comms activity log gate", () => {
+  it("does not insert a log when call / SMS / email is only opened", () => {
+    expect(shouldWriteCommsActivityLog({ kind: "call", eventType: "logged", status: "completed" })).toBe(
+      false,
+    );
+    expect(shouldWriteCommsActivityLog({ kind: "call", eventType: "opened" })).toBe(false);
+    expect(shouldWriteCommsActivityLog({ kind: "sms", eventType: "logged", status: "completed" })).toBe(
+      false,
+    );
+    expect(shouldWriteCommsActivityLog({ kind: "sms", eventType: "draft" })).toBe(false);
+    expect(shouldWriteCommsActivityLog({ kind: "email", eventType: "logged", status: "completed" })).toBe(
+      false,
+    );
+    expect(shouldWriteCommsActivityLog({ kind: "email", eventType: "opened" })).toBe(false);
+    expect(shouldWriteCommsActivityLog({ kind: "call", eventType: "logged", status: "cancelled" })).toBe(
+      false,
+    );
+  });
+
+  it("inserts a log when the call has an outcome or SMS / email is sent", () => {
+    expect(
+      shouldWriteCommsActivityLog({
+        kind: "call",
+        eventType: "logged",
+        status: "completed",
+        outcome: "connected",
+      }),
+    ).toBe(true);
+    expect(
+      shouldWriteCommsActivityLog({
+        kind: "call",
+        eventType: "completed",
+        outcome: "voicemail",
+      }),
+    ).toBe(true);
+    expect(shouldWriteCommsActivityLog({ kind: "sms", eventType: "queued" })).toBe(true);
+    expect(shouldWriteCommsActivityLog({ kind: "sms", eventType: "sent" })).toBe(true);
+    expect(shouldWriteCommsActivityLog({ kind: "email", eventType: "queued" })).toBe(true);
+    expect(shouldWriteCommsActivityLog({ kind: "email", eventType: "sent" })).toBe(true);
+    expect(shouldWriteCommsActivityLog({ kind: "email", eventType: "received" })).toBe(true);
+    expect(shouldWriteCommsActivityLog({ kind: "task", eventType: "created" })).toBe(true);
   });
 });

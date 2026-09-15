@@ -3,7 +3,12 @@ import { db } from "@/lib/db";
 import { activities, activityLogs, emailSendJobs } from "@/lib/db/schema";
 import { writeEoAuditSafe } from "@/lib/eo-audit/write";
 import { eoActionFromCommsKind } from "@/lib/eo-audit/types";
-import { activityLogBody, hasCommsRecord, type RelatedRecordIds } from "@/lib/lifecycle/activity";
+import {
+  activityLogBody,
+  hasCommsRecord,
+  shouldWriteCommsActivityLog,
+  type RelatedRecordIds,
+} from "@/lib/lifecycle/activity";
 import {
   commsThreadKey,
   defaultCommsDirection,
@@ -67,6 +72,18 @@ export async function writeDeskComms(input: WriteCommsInput) {
     outcome: input.outcome,
   });
   const logBody = fullBody ? `${stamp}\n\n${fullBody}` : stamp;
+
+  if (
+    (kind === "call" || kind === "email" || kind === "sms") &&
+    !shouldWriteCommsActivityLog({
+      kind,
+      eventType,
+      status,
+      outcome: input.outcome,
+    })
+  ) {
+    return { activity: null, threadKey, direction, eventType };
+  }
 
   const [activity] = await db
     .insert(activities)

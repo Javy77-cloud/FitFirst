@@ -73,6 +73,7 @@ export async function sendDeskEmail(formData: FormData) {
     logEmailJob: false,
     ...ids,
   });
+  if (!written.activity) return;
   const { job, decision } = await enqueueOutboundJob({
     channel: "email",
     toAddress,
@@ -156,6 +157,7 @@ export async function sendDeskSms(formData: FormData) {
     logEmailJob: false,
     ...ids,
   });
+  if (!written.activity) return;
   const { job, decision } = await enqueueOutboundJob({
     channel: "sms",
     toAddress,

@@ -39,6 +39,45 @@ export function defaultActivityTitle(kind: string): string {
   return "Task";
 }
 
+/**
+ * Timeline / activity_logs for call, SMS, and email only after the action
+ * finishes. Opening a composer, a draft, or a cancel is not a log.
+ */
+export function shouldWriteCommsActivityLog(input: {
+  kind: string;
+  eventType?: string | null;
+  status?: string | null;
+  outcome?: string | null;
+}): boolean {
+  const kind = input.kind;
+  if (kind !== "call" && kind !== "email" && kind !== "sms") return true;
+
+  const eventType = (input.eventType ?? "").trim();
+  const status = (input.status ?? "").trim();
+  const outcome = (input.outcome ?? "").trim();
+
+  if (
+    eventType === "opened" ||
+    eventType === "draft" ||
+    eventType === "cancelled" ||
+    eventType === "canceled"
+  ) {
+    return false;
+  }
+  if (status === "cancelled" || status === "canceled") return false;
+
+  if (kind === "call") {
+    return (eventType === "completed" || eventType === "logged") && Boolean(outcome);
+  }
+
+  return (
+    eventType === "sent" ||
+    eventType === "received" ||
+    eventType === "queued" ||
+    eventType === "completed"
+  );
+}
+
 export function activityLogBody(
   kind: string,
   eventType: string,
