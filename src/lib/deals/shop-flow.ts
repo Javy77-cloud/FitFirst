@@ -93,6 +93,7 @@ export function fingerprintsMatch(
 export function inferShopLineFromQuoteNotes(notes: string | null | undefined): ShopLine | null {
   const blob = (notes ?? "").toLowerCase();
   if (!blob.trim()) return null;
+  // Line tokens first — never treat multi-line carrier names (Progressive, Geico) as Auto.
   if (/\bflood\b|\bnfip\b|excess flood/.test(blob)) return "flood";
   if (/\bworkers(?:\s+|-)?comp|\bwc\b/.test(blob)) return "workers_comp";
   if (/\bgeneral liability|\bgl\b/.test(blob) && !/\bflood\b/.test(blob)) return "general_liability";
@@ -104,9 +105,7 @@ export function inferShopLineFromQuoteNotes(notes: string | null | undefined): S
     return "life";
   }
   if (
-    /\b(auto|vin|geico|progressive|dairyland|nationwide auto|personal auto|\bpa\b|motorcycle)\b/.test(
-      blob,
-    )
+    /\b(auto|vin|nationwide auto|personal auto|\bpa\b|motorcycle|form\s+pa)\b/.test(blob)
   ) {
     return "auto";
   }
@@ -128,13 +127,28 @@ export function resolveQuoteShopLine(input: {
   notes?: string | null;
   logs?: readonly { id: string; lineOfBusiness?: string | null }[] | null;
 }): ShopLine | null {
-  if (isShopLine(input.shopLine)) return input.shopLine;
+  const fromShop = isShopLine(input.shopLine) ? input.shopLine : null;
   const log = input.quoteAttemptLogId
     ? (input.logs ?? []).find((row) => row.id === input.quoteAttemptLogId)
     : null;
   const fromLog = shopLineFromLob(log?.lineOfBusiness);
+  const fromNotes = inferShopLineFromQuoteNotes(input.notes);
+  // Merged multi-line books often stamp shop_line=home. Prefer log / notes when they disagree.
+  if (fromShop && fromLog && fromShop !== fromLog && fromShop === "home") return fromLog;
+  if (fromShop && fromNotes && fromShop !== fromNotes && fromShop === "home") return fromNotes;
+  if (fromShop) return fromShop;
   if (fromLog) return fromLog;
-  return inferShopLineFromQuoteNotes(input.notes);
+  return fromNotes;
+}
+
+/** Persist the line chip tag so historical rows stop spilling across Home / Auto / Flood. */
+export function shopLineToPersist(input: {
+  shopLine?: string | null;
+  quoteAttemptLogId?: string | null;
+  notes?: string | null;
+  logs?: readonly { id: string; lineOfBusiness?: string | null }[] | null;
+}): ShopLine | null {
+  return resolveQuoteShopLine(input);
 }
 
 export function quoteMatchesShopLine(

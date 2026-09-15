@@ -128,5 +128,7 @@ describe("Gloria / Heather multi-product book merge", () => {
     expect(script).toMatch(/Heather Camirand/);
     expect(script).toMatch(/archivedAt/);
     expect(script).toMatch(/shopProducts/);
+    expect(script).toMatch(/tagDealQuoteShopLines/);
+    expect(script).toMatch(/shopLineToPersist/);
   });
 });

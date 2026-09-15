@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BindPath } from "@/components/deal/bind-path";
-import { BIND_GATE_COPY, bindGateReady } from "@/lib/deals/bind-gate";
+import { BIND_GATE_COPY, bindGateReady, quoteBindRecheckAcked } from "@/lib/deals/bind-gate";
 import type { BindPathTarget } from "@/lib/crm/bind-path";
 import { formatMoney } from "@/lib/domain";
 
@@ -29,10 +29,12 @@ export function BindConfirmGate({
     coverageA: number | null;
     aopDeductible: string | null;
     hurricaneDeductible: string | null;
+    bindRecheckAckedAt?: Date | string | null;
   } | null;
 }) {
   const [checks, setChecks] = useState({ premium: false, coverages: false, deductibles: false });
-  const ready = bindGateReady(checks);
+  const persisted = quoteBindRecheckAcked(quote?.bindRecheckAckedAt);
+  const ready = persisted || bindGateReady(checks);
 
   if (isAna || bound) {
     return (

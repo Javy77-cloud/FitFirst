@@ -291,8 +291,5 @@ export function parseColumns(tableKey: string, raw: string | null | undefined): 
       return allowed.has(s);
     });
   const next = picked.length ? picked : defaultColumns(tableKey);
-  if (tableKey === "policies" && !next.includes("esign")) {
-    next.push("esign");
-  }
   return tableKey === "deals" ? normalizeDealsVisibleColumns(next) : next;
 }

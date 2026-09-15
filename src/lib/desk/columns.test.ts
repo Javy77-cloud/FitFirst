@@ -69,6 +69,6 @@ describe("table column pickers", () => {
     expect(parseColumns("deals", "title,stage,phone")).toEqual(["title", "stage", "phone"]);
     expect(parseColumns("deals", "title,stage,phone,assigned")).toEqual(["title", "stage", "phone", "assigned"]);
     expect(parseColumns("deals", "title,stage,esign,comms")).toEqual(["title", "stage"]);
-    expect(parseColumns("policies", "number,status")).toContain("esign");
+    expect(parseColumns("policies", "number,status")).toEqual(["number", "status"]);
   });
 });

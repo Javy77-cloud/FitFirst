@@ -48,6 +48,11 @@ import {
   quoteMatchesShopLine,
 } from "@/lib/deals/shop-flow";
 import { flashAction } from "@/lib/flash-action";
+import {
+  bindGateReady,
+  clearBindRecheckReasonOk,
+  type BindGateChecks,
+} from "@/lib/deals/bind-gate";
 import { snapshotFromRisk } from "@/lib/appetite/gate/snapshot";
 import { runAndPersistQuoteGate } from "@/lib/appetite/gate/store";
 
@@ -612,4 +617,60 @@ export async function acceptQuoteFloorAndRecheckAction(formData: FormData) {
 
   revalidatePath(`/deals/${dealId}`);
   flashAction(dealQuotesPath(dealId), "Re-quote queued");
+}
+
+function bindRecheckChecksFromForm(formData: FormData): BindGateChecks {
+  return {
+    premium: formData.get("premium") === "1" || formData.get("premium") === "true",
+    coverages: formData.get("coverages") === "1" || formData.get("coverages") === "true",
+    deductibles: formData.get("deductibles") === "1" || formData.get("deductibles") === "true",
+  };
+}
+
+/** Persist the bind-recheck disclosure Save for one quote. Blocks Bind until this lands. */
+export async function saveBindRecheckAckAction(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const quoteId = String(formData.get("quoteId") ?? "").trim();
+  if (!dealId || !quoteId) throw new Error("Deal and quote are required.");
+  if (!bindGateReady(bindRecheckChecksFromForm(formData))) {
+    throw new Error("Confirm premium, coverages, and deductibles before saving.");
+  }
+  await requireQuoteForDeal(dealId, quoteId);
+  await db
+    .update(quotes)
+    .set({
+      bindRecheckAckedAt: new Date(),
+      bindRecheckClearedReason: null,
+    })
+    .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId), eq(quotes.tenantId, DEFAULT_TENANT_ID)));
+  revalidatePath(`/deals/${dealId}`);
+  flashAction(dealQuotesPath(dealId), "Recheck saved");
+}
+
+/** Clear a saved bind-recheck acknowledgment — reason required (liability trail). */
+export async function clearBindRecheckAckAction(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const quoteId = String(formData.get("quoteId") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!dealId || !quoteId) throw new Error("Deal and quote are required.");
+  if (!clearBindRecheckReasonOk(reason)) {
+    throw new Error("A reason is required to uncheck this disclosure.");
+  }
+  await requireQuoteForDeal(dealId, quoteId);
+  await db
+    .update(quotes)
+    .set({
+      bindRecheckAckedAt: null,
+      bindRecheckClearedReason: reason,
+    })
+    .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId), eq(quotes.tenantId, DEFAULT_TENANT_ID)));
+  const session = await currentDeskSession();
+  await db.insert(quoteNotes).values({
+    tenantId: DEFAULT_TENANT_ID,
+    quoteId,
+    body: `Bind recheck acknowledgment cleared: ${reason}`,
+    createdBy: session.name?.trim() || session.email || "agent",
+  });
+  revalidatePath(`/deals/${dealId}`);
+  flashAction(dealQuotesPath(dealId), "Recheck cleared");
 }

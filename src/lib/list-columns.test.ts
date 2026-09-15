@@ -74,17 +74,15 @@ describe("list column visibility", () => {
     expect(defaultVisibleIds(cols)).toEqual(["pick", "title"]);
   });
 
-  it("keeps Deal title locked and builds columns from deal layout fields, not E-sign or Comms", () => {
+  it("keeps only the pick column locked so Deal / Stage / Tags can be hidden", () => {
     expect(DEALS_LIST_COLUMNS[0]).toMatchObject({ id: "pick", locked: true });
-    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.locked).toBe(true);
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.locked).toBeFalsy();
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.liveSearch).toBeFalsy();
-    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "stage")?.locked).toBe(true);
-    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "tags")?.locked).toBe(true);
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "stage")?.locked).toBeFalsy();
+    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "tags")?.locked).toBeFalsy();
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "contact")).toBeUndefined();
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "esign")).toBeUndefined();
     expect(DEALS_LIST_COLUMNS.find((column) => column.id === "comms")).toBeUndefined();
-    // Core locked shells stay locked (layout extras like value/premium may appear).
-    expect(DEALS_LIST_COLUMNS.find((column) => column.id === "title")?.locked).toBe(true);
     expect(defaultVisibleIds(DEALS_LIST_COLUMNS)).toEqual(
       expect.arrayContaining(["pick", "title", "stage", "tags"]),
     );
@@ -127,7 +125,7 @@ describe("list column visibility", () => {
     expect(mergeVisibleColumns(COLUMNS, [])).toEqual(["name"]);
   });
 
-  it("appends missing defaultOn:true catalog columns without restoring defaultOn:false", () => {
+  it("does not re-add defaultOn columns the agent hid — only locked pick/select", () => {
     const catalog: ListColumn[] = [
       { id: "pick", label: "", locked: true },
       { id: "task", label: "Task", locked: true },
@@ -138,9 +136,10 @@ describe("list column visibility", () => {
       { id: "notes", label: "Notes", defaultOn: false },
     ];
     const merged = mergeVisibleColumns(catalog, ["pick", "task", "due", "status"]);
-    expect(merged).toEqual(["pick", "task", "due", "status", "priority", "tags"]);
+    expect(merged).toEqual(["pick", "task", "due", "status"]);
+    expect(merged).not.toContain("priority");
+    expect(merged).not.toContain("tags");
     expect(merged).not.toContain("notes");
-    // Optional off columns stay toggles only — never forced back on.
     expect(mergeVisibleColumns(catalog, ["pick", "task", "priority", "tags"])).toEqual([
       "pick",
       "task",
@@ -152,20 +151,39 @@ describe("list column visibility", () => {
   it("keeps deals custom order when unknown keys drop — never resets to sitewide defaults", () => {
     const catalog: ListColumn[] = [
       { id: "pick", label: "", locked: true },
-      { id: "title", label: "Deal", locked: true },
-      { id: "stage", label: "Stage", locked: true },
+      { id: "title", label: "Deal" },
+      { id: "stage", label: "Stage" },
       { id: "line", label: "Line", defaultOn: true },
       { id: "source", label: "Source", defaultOn: true },
-      { id: "tags", label: "Tags", locked: true },
+      { id: "tags", label: "Tags" },
       { id: "assigned", label: "Assigned", defaultOn: true },
     ];
     // Saved prefs include custom picklist keys not in this catalog snapshot.
     const stored = ["pick", "title", "picklist_8mus", "stage", "picklist_5n3i", "tags"];
     const merged = mergeVisibleColumns(catalog, stored);
-    expect(merged.slice(0, 4)).toEqual(["pick", "title", "stage", "tags"]);
-    // Growth appends — does not rewrite to defaultVisibleIds catalog order.
-    expect(merged).toEqual(["pick", "title", "stage", "tags", "line", "source", "assigned"]);
+    expect(merged).toEqual(["pick", "title", "stage", "tags"]);
+    expect(merged).not.toContain("line");
+    expect(merged).not.toContain("source");
+    expect(merged).not.toContain("assigned");
     expect(merged).not.toEqual(defaultVisibleIds(catalog));
+  });
+
+  it("lets Deals and Contacts hide default-on columns and keeps them hidden after merge", () => {
+    const dealsVisible = defaultVisibleIds(DEALS_LIST_COLUMNS);
+    const afterStage = toggleColumnVisibility(DEALS_LIST_COLUMNS, dealsVisible, "stage");
+    expect(afterStage).not.toContain("stage");
+    expect(afterStage).toContain("pick");
+    expect(mergeVisibleColumns(DEALS_LIST_COLUMNS, afterStage)).not.toContain("stage");
+    expect(mergeVisibleColumns(DEALS_LIST_COLUMNS, afterStage)).toEqual(afterStage);
+
+    const contactsVisible = defaultVisibleIds(CONTACTS_LIST_COLUMNS);
+    const afterLifetime = toggleColumnVisibility(CONTACTS_LIST_COLUMNS, contactsVisible, "lifetime");
+    expect(afterLifetime).not.toContain("lifetime");
+    expect(mergeVisibleColumns(CONTACTS_LIST_COLUMNS, afterLifetime)).not.toContain("lifetime");
+    expect(CONTACTS_LIST_COLUMNS.find((column) => column.id === "name")?.locked).toBeFalsy();
+    const afterName = toggleColumnVisibility(CONTACTS_LIST_COLUMNS, afterLifetime, "name");
+    expect(afterName).not.toContain("name");
+    expect(mergeVisibleColumns(CONTACTS_LIST_COLUMNS, afterName)).not.toContain("name");
   });
 
   it("preserves unknown ids in sanitizeStoredColumnIds for later catalog restore", () => {
@@ -233,9 +251,7 @@ describe("list column visibility", () => {
     expect(afterLifetime).toContain("name");
     expect(afterLifetime).not.toContain("lifetime");
     expect(mergeVisibleColumns(CONTACTS_LIST_COLUMNS, ["status", "gone"])[0]).toBe("pick");
-    expect(mergeVisibleColumns(CONTACTS_LIST_COLUMNS, ["status", "gone"])).toEqual(
-      expect.arrayContaining(["pick", "name", "status"]),
-    );
+    expect(mergeVisibleColumns(CONTACTS_LIST_COLUMNS, ["status", "gone"])).toEqual(["pick", "status"]);
   });
 
   it("gives empty locked columns a menu label so Base UI can name the checkbox", () => {
@@ -324,6 +340,18 @@ describe("list column visibility", () => {
     expect(listColumnHeaderText(source)).toBe("Source");
     expect(listColumnHeaderText(source)).not.toContain("Referral");
     expect(listColumnHeaderText(source)).not.toMatch(/ASC|DESC/i);
+  });
+});
+
+describe("column prefs persist hide/show", () => {
+  it("desk prefs save the agent's column set without refusing deals hides", () => {
+    const prefs = readFileSync("src/app/actions/desk-prefs.ts", "utf8");
+    expect(prefs).not.toMatch(/Refuse deals strips/);
+    expect(prefs).not.toMatch(/picked\.length < rawIds\.length && tableKey === "deals"/);
+    expect(prefs).toMatch(/upsertListColumnPrefs/);
+    expect(readFileSync("src/components/lists/column-table.tsx", "utf8")).toMatch(
+      /toggleColumnVisibility\(columns, visible, id\)/,
+    );
   });
 });
 

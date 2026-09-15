@@ -855,6 +855,13 @@
       "when": 1789075000000,
       "tag": "0121_deal_shop_flow",
       "breakpoints": true
+    },
+    {
+      "idx": 122,
+      "version": "7",
+      "when": 1789500000000,
+      "tag": "0122_bind_recheck_and_quote_lines",
+      "breakpoints": true
     }
   ]
 }

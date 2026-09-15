@@ -258,6 +258,50 @@ describe("multi-line bind path", () => {
         multiLine: true,
       }),
     ).toBe(false);
+    expect(
+      quoteBelongsToLine({
+        shopLine: "home",
+        quoteAttemptLogId: "log-auto",
+        notes: "PA Progressive rated $700 · VIN captured",
+        logs: [{ id: "log-auto", lineOfBusiness: "AUTO" }],
+        lob: "HO",
+        isPrimaryLine: true,
+        multiLine: true,
+      }),
+    ).toBe(false);
+    expect(
+      quoteBelongsToLine({
+        shopLine: "home",
+        quoteAttemptLogId: "log-auto",
+        notes: "PA Progressive rated $700 · VIN captured",
+        logs: [{ id: "log-auto", lineOfBusiness: "AUTO" }],
+        lob: "AUTO",
+        isPrimaryLine: false,
+        multiLine: true,
+      }),
+    ).toBe(true);
+    expect(
+      quoteBelongsToLine({
+        shopLine: "home",
+        quoteAttemptLogId: "log-flood",
+        notes: "Flood National General — NFIP provisional",
+        logs: [{ id: "log-flood", lineOfBusiness: "FLOOD" }],
+        lob: "HO",
+        isPrimaryLine: true,
+        multiLine: true,
+      }),
+    ).toBe(false);
+    expect(
+      quoteBelongsToLine({
+        shopLine: "home",
+        quoteAttemptLogId: "log-flood",
+        notes: "Flood National General — NFIP provisional",
+        logs: [{ id: "log-flood", lineOfBusiness: "FLOOD" }],
+        lob: "FLOOD",
+        isPrimaryLine: false,
+        multiLine: true,
+      }),
+    ).toBe(true);
   });
 
   it("resolves shop line + LOB for market requests without changing single-line defaults", () => {
