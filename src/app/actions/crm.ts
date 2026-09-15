@@ -20,7 +20,7 @@ import { persistFile } from "@/app/actions/documents";
 import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { flashAction } from "@/lib/flash-action";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
-import { BindBlockedError } from "@/lib/crm/bind";
+import { BindBlockedError, isCommercialLine } from "@/lib/crm/bind";
 import { sheetProductForQuotingForm } from "@/lib/deals/deal-line";
 import {
   defaultFormForShopLine,
@@ -28,6 +28,7 @@ import {
   pickQuoteForLine,
   unboundPolicyLines,
 } from "@/lib/deals/package-lines";
+import { hasCommercialProduct, inferDealProducts } from "@/lib/deals/deal-products";
 import {
   forceNewShopOnSave,
   packageDraftForNewDealSave,
@@ -591,7 +592,8 @@ export async function createDeal(formData: FormData) {
     : Array.from(
         new Set([...sheetsToPrepare(quotingForm), ...shopLinesFromForm(formData, line)]),
       );
-  const pipelineSlug = pipelineSlugForLine(line);
+  const shopProducts = packageDraft?.products ?? [];
+  const pipelineSlug = packageDraft?.pipelineSlug ?? pipelineSlugForLine(line);
   const [pipeline] = await db.select().from(pipelines).where(eq(pipelines.slug, pipelineSlug));
   const namedFromLayout = str(formData, "field_named_insured");
   const primaryNamedInsured =
@@ -625,11 +627,16 @@ export async function createDeal(formData: FormData) {
       policySubType,
       state: state || sourceDeal?.state || "FL",
       ownerId: actor.id,
-      accountKind: pickedAccount && !pickedContact ? "commercial" : "personal",
-      bindTarget: pickedAccount && !pickedContact ? "account" : "contact",
+      accountKind:
+        packageDraft?.accountKind ??
+        (pickedAccount && !pickedContact ? "commercial" : "personal"),
+      bindTarget:
+        packageDraft?.bindTarget ??
+        (pickedAccount && !pickedContact ? "account" : "contact"),
       primaryNamedInsured,
       notes: str(formData, "notes") || str(formData, "field_notes") || sourceDeal?.notes || null,
       shopLines,
+      shopProducts: shopProducts.length ? shopProducts : null,
       tags: sourceDeal?.tags ?? [],
       propertyOneliner: sourceDeal?.propertyOneliner ?? null,
       currentCarrier: sourceDeal?.currentCarrier ?? null,
@@ -1319,7 +1326,19 @@ export async function bindDeal(formData: FormData) {
     ? await db.select().from(leads).where(eq(leads.id, deal.leadId))
     : [];
 
-  const bindTarget = str(formData, "bindTarget") || deal.bindTarget || "contact";
+  const dealProducts = inferDealProducts({
+    shopProducts: deal.shopProducts,
+    shopLines: deal.shopLines,
+    lineOfBusiness: deal.lineOfBusiness,
+    quotingLine: deal.quotingLine,
+    quotingForm: deal.quotingForm,
+    policySubType: deal.policySubType,
+  });
+  const commercialMix = hasCommercialProduct(dealProducts);
+  const bindTarget =
+    str(formData, "bindTarget") ||
+    deal.bindTarget ||
+    (commercialMix && dealProducts.every((id) => hasCommercialProduct([id])) ? "account" : "contact");
   let contactId = deal.contactId;
   let accountId = deal.accountId;
   const allSheets = await db.select().from(quoteSheets).where(eq(quoteSheets.dealId, dealId));
@@ -1388,7 +1407,8 @@ export async function bindDeal(formData: FormData) {
       const matched = await findMatchingContact(lead);
       if (matched) contactId = matched.id;
     }
-  } else if (!contactId) {
+  }
+  if (!contactId) {
     const identity = {
       firstName: lead?.firstName ?? "Bound",
       lastName: lead?.lastName ?? "Client",
@@ -1421,8 +1441,7 @@ export async function bindDeal(formData: FormData) {
     }
   }
 
-  // Contact bind only — Business/Accounts owns account empty-only separately.
-  if (contactId && bindTarget !== "account") {
+  if (contactId) {
     await applyEmptyOnlyContactBind({
       contactId,
       dealId,
@@ -1432,6 +1451,50 @@ export async function bindDeal(formData: FormData) {
       dealSource: deal.source,
       risk,
     });
+  }
+
+  if (commercialMix && !accountId) {
+    const identity = {
+      name:
+        str(formData, "businessName") ||
+        `${lead?.lastName ?? deal.primaryNamedInsured ?? "Bound"} ${deal.lineOfBusiness}`.trim(),
+      ein: str(formData, "ein") || null,
+    };
+    const copied = accountFieldsFromSheet(sheetValues, {
+      ...identity,
+      email: lead?.email,
+      phone: lead?.phone,
+      mailingAddress: risk?.address1 || lead?.mailingAddress,
+      city: risk?.city || lead?.city,
+      state: risk?.state || lead?.state || "FL",
+      zip: risk?.zip || lead?.zip,
+    });
+    const existing = await findMatchingAccount(identity);
+    if (existing) {
+      accountId = existing.id;
+    } else {
+      const [account] = await db
+        .insert(accounts)
+        .values({
+          tenantId: DEFAULT_TENANT_ID,
+          name: copied.name,
+          ...writeEin(copied.ein),
+          email: copied.email,
+          phone: copied.phone,
+          mailingAddress: copied.mailingAddress,
+          city: copied.city,
+          state: copied.state,
+          zip: copied.zip,
+          employeeCount: copied.employeeCount,
+          annualSales: copied.annualSales,
+          payrollW2: copied.payrollW2,
+          payroll1099: copied.payroll1099,
+          payrollTotal: copied.payrollTotal,
+          tenureStart: new Date(),
+        })
+        .returning();
+      accountId = account.id;
+    }
   }
 
   if (contactId && accountId) {
@@ -1451,6 +1514,7 @@ export async function bindDeal(formData: FormData) {
 
   const existingPolicies = await db.select().from(policies).where(eq(policies.dealId, dealId));
   const wantedLobs = lobsToBindForDeal({
+    shopProducts: deal.shopProducts,
     shopLines: deal.shopLines,
     lineOfBusiness: deal.lineOfBusiness,
   });
@@ -1483,8 +1547,8 @@ export async function bindDeal(formData: FormData) {
       .insert(policies)
       .values({
         tenantId: DEFAULT_TENANT_ID,
-        contactId: bindTarget === "account" ? null : contactId,
-        accountId: bindTarget === "account" ? accountId : null,
+        contactId,
+        accountId: isCommercialLine(lob) || commercialMix ? accountId : null,
         dealId,
         riskId: risk?.id,
         carrierId: copiedQuote?.carrierId ?? null,

@@ -8,8 +8,18 @@ import {
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import { quotingFormForProduct } from "@/lib/deals/deal-line";
 import { defaultProductForLine } from "@/lib/quote-sheet/products";
+import {
+  inferDealProducts,
+  normalizeDealProducts,
+  productCreateDraft,
+  productsFromForm as productsFromFormRaw,
+  productsFromFormOrUndefined as productsFromFormOrUndefinedRaw,
+  shopLinesFromProducts,
+  uniqueLobsToBind,
+  type DealProductId,
+} from "@/lib/deals/deal-products";
 
-/** Personal PC package lines that can share one deal. */
+/** @deprecated Prefer DealProductId — kept for Home/Auto/Flood chip aliases. */
 export const PC_PACKAGE_LINES = ["home", "auto", "flood"] as const;
 export type PcPackageLine = (typeof PC_PACKAGE_LINES)[number];
 
@@ -25,55 +35,38 @@ export function isPcPackageLine(value: string | null | undefined): value is PcPa
   return Boolean(value && PACKAGE_SET.has(value));
 }
 
-/** Default Home when nothing is checked. Order is Home → Auto → Flood. */
-export function normalizePackageLines(selected: readonly string[] | null | undefined): PcPackageLine[] {
-  const picked = new Set<PcPackageLine>();
-  for (const raw of selected ?? []) {
-    const value = String(raw ?? "").trim().toLowerCase();
-    if (isPcPackageLine(value)) picked.add(value);
-  }
-  const ordered = PC_PACKAGE_LINES.filter((line) => picked.has(line));
-  return ordered.length ? ordered : ["home"];
+/** Shop lines derived from the product picker (Home/Auto/Flood aliases still work). */
+export function normalizePackageLines(selected: readonly string[] | null | undefined): ShopLine[] {
+  return shopLinesFromProducts(normalizeDealProducts(selected));
 }
 
 export function packageLinesFromForm(
   form?: { getAll?: (name: string) => unknown[]; get?: (name: string) => unknown } | null,
-): PcPackageLine[] {
-  if (!form) return ["home"];
-  const many = typeof form.getAll === "function" ? form.getAll("shopLines") : [];
-  const raw = (many ?? []).map((value) => String(value ?? "").trim()).filter(Boolean);
-  if (!raw.length && typeof form.get === "function") {
-    const single = String(form.get("shopLines") ?? "").trim();
-    if (single) raw.push(...single.split(","));
-  }
-  if (!raw.length) return ["home"];
-  return normalizePackageLines(raw);
+): ShopLine[] {
+  return shopLinesFromProducts(productsFromFormRaw(form));
 }
 
 export function packageLinesFromFormOrUndefined(
   form?: { getAll?: (name: string) => unknown[]; get?: (name: string) => unknown } | null,
-): PcPackageLine[] | undefined {
-  if (!form) return undefined;
-  const many = typeof form.getAll === "function" ? form.getAll("shopLines") : [];
-  const raw = (many ?? []).map((value) => String(value ?? "").trim()).filter(Boolean);
-  if (!raw.length && typeof form.get === "function") {
-    const single = String(form.get("shopLines") ?? "").trim();
-    if (single) raw.push(...single.split(","));
-  }
-  if (!raw.length) return undefined;
-  return normalizePackageLines(raw);
+): ShopLine[] | undefined {
+  const products = productsFromFormOrUndefinedRaw(form);
+  return products ? shopLinesFromProducts(products) : undefined;
 }
 
-export function primaryPackageLine(lines: readonly PcPackageLine[]): PcPackageLine {
+export function primaryPackageLine(lines: readonly string[]): ShopLine {
   return normalizePackageLines(lines)[0] ?? "home";
 }
 
-export function lobForPackageLine(line: PcPackageLine): LineOfBusiness {
-  return SHOP_LINE_TO_LOB[line];
+export function lobForPackageLine(line: string): LineOfBusiness {
+  if (isShopLine(line)) return SHOP_LINE_TO_LOB[line];
+  return SHOP_LINE_TO_LOB[shopLinesFromProducts(normalizeDealProducts([line]))[0] ?? "home"];
 }
 
-export function defaultFormForPackageLine(line: PcPackageLine): string {
-  return quotingFormForProduct(defaultProductForLine(line)) ?? (line === "auto" ? "PA" : line === "flood" ? "FLOOD" : "HO3");
+export function defaultFormForPackageLine(line: PcPackageLine | ShopLine): string {
+  if (isPcPackageLine(line)) {
+    return quotingFormForProduct(defaultProductForLine(line)) ?? (line === "auto" ? "PA" : line === "flood" ? "FLOOD" : "HO3");
+  }
+  return quotingFormForProduct(defaultProductForLine(line)) ?? "HO3";
 }
 
 export function defaultFormForShopLine(line: ShopLine): string | undefined {
@@ -81,36 +74,43 @@ export function defaultFormForShopLine(line: ShopLine): string | undefined {
   return quotingFormForProduct(defaultProductForLine(line));
 }
 
-/** Visible Home/Auto/Flood chips. Life/Health/Commercial-only deals stay single-line. */
+/** Visible shop lines for sheets / markets. Products (incl. Life/Health/Commercial) are chips. */
 export function resolveVisiblePackageLines(input: {
+  shopProducts?: string[] | null;
   shopLines?: string[] | null;
   lineOfBusiness?: string | null;
   quotingLine?: string | null;
-}): PcPackageLine[] {
-  const fromShop = (input.shopLines ?? []).filter(isPcPackageLine);
-  if (fromShop.length) return normalizePackageLines(fromShop);
-  const fromQuoting = isPcPackageLine(input.quotingLine) ? input.quotingLine : null;
-  if (fromQuoting) return [fromQuoting];
-  const fromLob = LOB_TO_SHOP_LINE[(input.lineOfBusiness ?? "").toUpperCase()];
-  if (isPcPackageLine(fromLob)) return [fromLob];
-  return [];
+  quotingForm?: string | null;
+  policySubType?: string | null;
+}): ShopLine[] {
+  return shopLinesFromProducts(
+    inferDealProducts({
+      shopProducts: input.shopProducts,
+      shopLines: input.shopLines,
+      lineOfBusiness: input.lineOfBusiness,
+      quotingLine: input.quotingLine,
+      quotingForm: input.quotingForm,
+      policySubType: input.policySubType,
+    }),
+  );
 }
 
 export function resolveActivePackageLine(input: {
   lineParam?: string | null;
-  packageLines: readonly PcPackageLine[];
+  packageLines: readonly string[];
   quotingLine?: string | null;
   lineOfBusiness?: string | null;
-}): PcPackageLine | null {
-  const lines = normalizePackageLines(input.packageLines.length ? input.packageLines : ["home"]);
-  if (!input.packageLines.length) return null;
+}): ShopLine | null {
+  const lines = input.packageLines.filter(isShopLine);
+  const ordered = lines.length ? lines : normalizePackageLines(["home"]);
+  if (!input.packageLines.length) return ordered[0] ?? null;
   const param = (input.lineParam ?? "").trim().toLowerCase();
-  if (isPcPackageLine(param) && lines.includes(param)) return param;
+  if (isShopLine(param) && ordered.includes(param)) return param;
   const quoting = (input.quotingLine ?? "").trim().toLowerCase();
-  if (isPcPackageLine(quoting) && lines.includes(quoting)) return quoting;
+  if (isShopLine(quoting) && ordered.includes(quoting)) return quoting;
   const fromLob = LOB_TO_SHOP_LINE[(input.lineOfBusiness ?? "").toUpperCase()];
-  if (isPcPackageLine(fromLob) && lines.includes(fromLob)) return fromLob;
-  return lines[0] ?? null;
+  if (fromLob && ordered.includes(fromLob)) return fromLob;
+  return ordered[0] ?? null;
 }
 
 export function dealLineSwitcherHref(input: {
@@ -158,30 +158,40 @@ export function sheetHasUserData(values: Record<string, QuoteSheetFieldValue> | 
 
 /** Hide unchecked lines from the switcher; keep the sheet if it has data. */
 export function visibleSwitcherLines(input: {
+  shopProducts?: string[] | null;
   shopLines?: string[] | null;
   lineOfBusiness?: string | null;
   quotingLine?: string | null;
-}): PcPackageLine[] {
+  quotingForm?: string | null;
+  policySubType?: string | null;
+}): ShopLine[] {
   return resolveVisiblePackageLines(input);
 }
 
 export function packageCreateDraft(lines: readonly string[] | null | undefined): {
-  shopLines: PcPackageLine[];
-  primary: PcPackageLine;
+  shopLines: ShopLine[];
+  products: DealProductId[];
+  primary: ShopLine;
   lineOfBusiness: LineOfBusiness;
-  quotingLine: PcPackageLine;
+  quotingLine: ShopLine;
   quotingForm: string;
   riskType: "property" | "auto";
+  accountKind: "personal" | "commercial";
+  bindTarget: "contact" | "account";
+  pipelineSlug: string;
 } {
-  const shopLines = normalizePackageLines(lines);
-  const primary = primaryPackageLine(shopLines);
+  const draft = productCreateDraft(lines);
   return {
-    shopLines,
-    primary,
-    lineOfBusiness: lobForPackageLine(primary),
-    quotingLine: primary,
-    quotingForm: defaultFormForPackageLine(primary),
-    riskType: primary === "auto" && shopLines.length === 1 ? "auto" : "property",
+    shopLines: draft.shopLines,
+    products: draft.products,
+    primary: draft.quotingLine,
+    lineOfBusiness: draft.lineOfBusiness,
+    quotingLine: draft.quotingLine,
+    quotingForm: draft.quotingForm,
+    riskType: draft.riskType,
+    accountKind: draft.accountKind,
+    bindTarget: draft.bindTarget,
+    pipelineSlug: draft.pipelineSlug,
   };
 }
 
@@ -231,13 +241,11 @@ export function resolveShopLineAndLob(input: {
 }
 
 export function lobsToBindForDeal(input: {
+  shopProducts?: string[] | null;
   shopLines?: string[] | null;
   lineOfBusiness?: string | null;
 }): string[] {
-  const pkg = (input.shopLines ?? []).filter(isPcPackageLine);
-  if (pkg.length > 1) return normalizePackageLines(pkg).map(lobForPackageLine);
-  const lob = (input.lineOfBusiness ?? "HO").toUpperCase();
-  return [lob || "HO"];
+  return uniqueLobsToBind(input);
 }
 
 export function unboundPolicyLines(

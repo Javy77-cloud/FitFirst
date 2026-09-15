@@ -5,7 +5,8 @@ import { saveDealFieldValues, uploadDealFieldImage } from "@/app/actions/custom-
 import { FieldControl } from "@/components/custom-fields/field-control";
 import { Button } from "@/components/ui/button";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
-import type { PcPackageLine } from "@/lib/deals/package-lines";
+import type { DealProductId } from "@/lib/deals/deal-products";
+import { catalogFieldsForProducts, layoutForActiveProduct } from "@/lib/deals/product-layout";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { parseLayout, type CustomFieldDef, type FieldLayout } from "@/lib/custom-fields/types";
@@ -53,8 +54,8 @@ function CoApplicantDealSection({
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
   dealId: string;
-  packageLines?: readonly PcPackageLine[];
-  activePackageLine?: PcPackageLine | null;
+  packageLines?: readonly string[];
+  activePackageLine?: string | null;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
   const initialOn = useMemo(() => isCoApplicantEnabled(values), [values]);
@@ -167,6 +168,7 @@ export function DealDetailsPanel({
   healthOptions = [],
   packageLines = [],
   activePackageLine = null,
+  activeProduct = null,
   lineSettings,
 }: {
   dealId: string;
@@ -180,12 +182,14 @@ export function DealDetailsPanel({
   lifeHealthOptions?: Array<{ slug?: string; label: string }>;
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
-  packageLines?: readonly PcPackageLine[];
-  activePackageLine?: PcPackageLine | null;
+  packageLines?: readonly string[];
+  activePackageLine?: string | null;
+  activeProduct?: DealProductId | null;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
-  const safeLayout = parseLayout(layout);
-  const fieldList = resolveLayoutFields(safeLayout, asList(fields));
+  const safeLayout = layoutForActiveProduct(parseLayout(layout), activeProduct);
+  const extra = activeProduct ? catalogFieldsForProducts([activeProduct]) : [];
+  const fieldList = resolveLayoutFields(safeLayout, [...asList(fields), ...extra]);
   const byKey = Object.fromEntries(fieldList.map((field) => [field.key, field]));
   const formId = "deal-details-save";
 

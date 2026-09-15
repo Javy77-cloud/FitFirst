@@ -1,13 +1,13 @@
 import { isUuid } from "@/lib/ids";
+import { packageCreateDraft } from "@/lib/deals/package-lines";
 import {
-  normalizePackageLines,
-  packageCreateDraft,
-  packageLinesFromFormOrUndefined,
-  type PcPackageLine,
-} from "@/lib/deals/package-lines";
+  normalizeDealProducts,
+  productsFromFormOrUndefined,
+  type DealProductId,
+} from "@/lib/deals/deal-products";
 
 export type NewDealCreateQuery = {
-  shopLines: PcPackageLine[];
+  shopLines: DealProductId[];
   contactId: string | null;
   sourceDealId: string | null;
 };
@@ -50,8 +50,9 @@ export function newDealCreateHref(input: {
   sourceDealId?: string | null;
 }): string {
   const params = new URLSearchParams();
-  for (const line of normalizePackageLines(input.shopLines)) {
-    params.append("shopLines", line);
+  for (const product of normalizeDealProducts(input.shopLines)) {
+    params.append("shopLines", product);
+    params.append("shopProducts", product);
   }
   if (uuidOrNull(input.contactId ?? "")) params.set("contactId", input.contactId as string);
   if (uuidOrNull(input.sourceDealId ?? "")) params.set("sourceDealId", input.sourceDealId as string);
@@ -62,8 +63,10 @@ export function newDealCreateHref(input: {
 export function parseNewDealSearchParams(
   params: Record<string, string | string[] | undefined> | URLSearchParams,
 ): NewDealCreateQuery {
+  const fromProducts = paramList(params, "shopProducts");
+  const fromLines = paramList(params, "shopLines");
   return {
-    shopLines: normalizePackageLines(paramList(params, "shopLines")),
+    shopLines: normalizeDealProducts(fromProducts.length ? fromProducts : fromLines),
     contactId: uuidOrNull(paramOne(params, "contactId")),
     sourceDealId: uuidOrNull(paramOne(params, "sourceDealId")),
   };
@@ -86,13 +89,13 @@ export function forceNewShopOnSave(form?: Searchish | null): boolean {
   return isUuid(contactId) || isUuid(sourceDealId);
 }
 
-/** Package checkboxes collected on the create form — persist these on Save. */
-export function shopLinesForNewDealSave(form?: Searchish | null): PcPackageLine[] | undefined {
-  const lines = packageLinesFromFormOrUndefined(form);
-  return lines?.length ? packageCreateDraft(lines).shopLines : undefined;
+/** Product picker collected on the create form — persist these on Save. */
+export function shopLinesForNewDealSave(form?: Searchish | null): DealProductId[] | undefined {
+  const products = productsFromFormOrUndefined(form);
+  return products?.length ? products : undefined;
 }
 
 export function packageDraftForNewDealSave(form?: Searchish | null) {
-  const lines = shopLinesForNewDealSave(form);
-  return lines ? packageCreateDraft(lines) : null;
+  const products = shopLinesForNewDealSave(form);
+  return products ? packageCreateDraft(products) : null;
 }

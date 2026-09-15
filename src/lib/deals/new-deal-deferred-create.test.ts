@@ -29,9 +29,11 @@ function formFrom(entries: Record<string, string | string[]>) {
 
 describe("Add New Deal defers insert until Save", () => {
   it("builds /deals/new query params instead of allocating a deal id", () => {
-    expect(newDealCreateHref({ shopLines: ["home"] })).toBe("/deals/new?shopLines=home");
+    expect(newDealCreateHref({ shopLines: ["home"] })).toBe(
+      "/deals/new?shopLines=homeowners&shopProducts=homeowners",
+    );
     expect(newDealCreateHref({ shopLines: ["flood", "auto", "home"] })).toBe(
-      "/deals/new?shopLines=home&shopLines=auto&shopLines=flood",
+      "/deals/new?shopLines=homeowners&shopProducts=homeowners&shopLines=auto&shopProducts=auto&shopLines=flood&shopProducts=flood",
     );
     expect(
       newDealCreateHref({
@@ -40,9 +42,11 @@ describe("Add New Deal defers insert until Save", () => {
         sourceDealId: DEAL_ID,
       }),
     ).toBe(
-      `/deals/new?shopLines=auto&contactId=${CONTACT_ID}&sourceDealId=${DEAL_ID}`,
+      `/deals/new?shopLines=auto&shopProducts=auto&contactId=${CONTACT_ID}&sourceDealId=${DEAL_ID}`,
     );
-    expect(newDealCreateHref({ contactId: "not-a-uuid" })).toBe("/deals/new?shopLines=home");
+    expect(newDealCreateHref({ contactId: "not-a-uuid" })).toBe(
+      "/deals/new?shopLines=homeowners&shopProducts=homeowners",
+    );
   });
 
   it("parses create-form query params including repeated shopLines", () => {
@@ -58,7 +62,7 @@ describe("Add New Deal defers insert until Save", () => {
       sourceDealId: DEAL_ID,
     });
     expect(parseNewDealSearchParams({ shopLines: "home,auto" })).toEqual({
-      shopLines: ["home", "auto"],
+      shopLines: ["homeowners", "auto"],
       contactId: null,
       sourceDealId: null,
     });
@@ -69,7 +73,7 @@ describe("Add New Deal defers insert until Save", () => {
     expect(dialog).toMatch(/newDealCreateHref/);
     expect(dialog).toMatch(/router\.push\(href\)/);
     expect(dialog).toMatch(/searchDealsForCreate/);
-    expect(dialog).toMatch(/PackageLineCheckboxes/);
+    expect(dialog).toMatch(/ProductPicker/);
     expect(dialog).not.toMatch(/createDealFromScratch/);
     expect(dialog).not.toMatch(/createDealFromExistingPick/);
     expect(dialog).not.toMatch(/createDealFromSourceDeal/);
@@ -117,7 +121,7 @@ describe("Add New Deal defers insert until Save", () => {
     expect(fields).toMatch(/intent/);
     expect(fields).toMatch(/new-shop/);
     expect(fields).toMatch(/sourceDealId/);
-    expect(fields).toMatch(/PackageLineCheckboxes/);
+    expect(fields).toMatch(/ProductPicker/);
     const save = readFileSync("src/app/actions/crm.ts", "utf8");
     expect(save).toMatch(/export async function createDeal/);
     expect(save).toMatch(/packageDraftForNewDealSave/);
@@ -134,9 +138,10 @@ describe("Add New Deal defers insert until Save", () => {
       contactId: CONTACT_ID,
     });
     expect(forceNewShopOnSave(form)).toBe(true);
-    expect(shopLinesForNewDealSave(form)).toEqual(["home", "auto", "flood"]);
+    expect(shopLinesForNewDealSave(form)).toEqual(["homeowners", "auto", "flood"]);
     expect(packageDraftForNewDealSave(form)).toMatchObject({
       shopLines: ["home", "auto", "flood"],
+      products: ["homeowners", "auto", "flood"],
       quotingLine: "home",
       quotingForm: "HO3",
       lineOfBusiness: "HO",

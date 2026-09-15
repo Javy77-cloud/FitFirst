@@ -2,6 +2,8 @@ import type { LineOfBusiness } from "@/lib/domain";
 import type { CustomFieldDef, FieldLayout, LayoutSection } from "./types";
 import { APPLICANT_CRM_FIELDS, applicantLayoutSection } from "./applicant-fields";
 import { CO_APPLICANT_CRM_FIELDS, coApplicantLayoutSection } from "./co-applicant-fields";
+import { catalogFieldsForProducts } from "@/lib/deals/product-layout";
+import { DEAL_PRODUCTS } from "@/lib/deals/deal-products";
 
 function section(id: string, label: string, fieldKeys: string[]): LayoutSection {
   return { id, label, fieldKeys };
@@ -58,6 +60,7 @@ export const CORE_FIELDS: CustomFieldDef[] = [
   },
   ...APPLICANT_CRM_FIELDS,
   ...CO_APPLICANT_CRM_FIELDS,
+  ...catalogFieldsForProducts([...DEAL_PRODUCTS]),
 ];
 
 const LOB_FIELDS: Record<string, CustomFieldDef[]> = {
