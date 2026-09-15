@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  createDealFromExistingPick,
-  createDealFromScratch,
-  searchDealsForCreate,
-} from "@/app/actions/deal-create";
+import { searchDealsForCreate } from "@/app/actions/deal-create";
 import type { CreateDealPickHit } from "@/lib/deals/create-from-source";
+import { newDealCreateHref } from "@/lib/deals/new-deal-href";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,8 +33,6 @@ export function AddNewDealDialog({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("choose");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const debounced = useDebouncedValue(query, 200);
   const [hits, setHits] = useState<CreateDealPickHit[]>([]);
@@ -71,8 +66,6 @@ export function AddNewDealDialog({
 
   function reset() {
     setStep("choose");
-    setBusy(false);
-    setError(null);
     setQuery("");
     setHits([]);
     setSearching(false);
@@ -84,50 +77,31 @@ export function AddNewDealDialog({
     if (!next) reset();
   }
 
-  async function onScratch() {
-    setBusy(true);
-    setError(null);
-    try {
-      const fd = new FormData();
-      for (const line of normalizePackageLines(packageLines)) fd.append("shopLines", line);
-      const result = await createDealFromScratch(fd);
-      if (!result.ok) {
-        setError("message" in result ? result.message : "Could not create deal.");
-        return;
-      }
-      setOpen(false);
-      reset();
-      router.refresh();
-      router.push(result.href);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create deal.");
-    } finally {
-      setBusy(false);
-    }
+  function openCreateForm(href: string) {
+    setOpen(false);
+    reset();
+    router.push(href);
   }
 
-  async function onPick(hit: CreateDealPickHit) {
-    setBusy(true);
-    setError(null);
-    try {
-      const fd = new FormData();
-      fd.set("kind", hit.kind);
-      fd.set("id", hit.id);
-      for (const line of normalizePackageLines(packageLines)) fd.append("shopLines", line);
-      const result = await createDealFromExistingPick(fd);
-      if (!result.ok || !result.href) {
-        setError(result.message || "Could not create deal.");
-        return;
-      }
-      setOpen(false);
-      reset();
-      router.refresh();
-      router.push(result.href);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create deal.");
-    } finally {
-      setBusy(false);
+  function onScratch() {
+    openCreateForm(
+      newDealCreateHref({ shopLines: normalizePackageLines(packageLines) }),
+    );
+  }
+
+  function onPick(hit: CreateDealPickHit) {
+    const lines = normalizePackageLines(packageLines);
+    if (hit.kind === "deal") {
+      openCreateForm(newDealCreateHref({ shopLines: lines, sourceDealId: hit.id }));
+      return;
     }
+    openCreateForm(
+      newDealCreateHref({
+        shopLines: lines,
+        contactId: hit.id,
+        sourceDealId: hit.sourceDealId,
+      }),
+    );
   }
 
   return (
@@ -155,8 +129,8 @@ export function AddNewDealDialog({
             </DialogTitle>
             <DialogDescription>
               {step === "choose"
-                ? "Pick Home / Auto / Flood for this shop, then start blank or copy an existing contact."
-                : "Search by deal name or contact name. Picking one creates a new deal with details copied."}
+                ? "Pick Home / Auto / Flood for this shop, then start blank or copy an existing contact. Nothing is saved until Save Deal."
+                : "Search by deal name or contact name. Picking one opens the create form with details copied — Save Deal creates the record."}
             </DialogDescription>
           </DialogHeader>
 
@@ -164,7 +138,6 @@ export function AddNewDealDialog({
             <PackageLineCheckboxes
               selected={packageLines}
               onChange={setPackageLines}
-              disabled={busy}
               idPrefix="add-deal-pkg"
             />
           </div>
@@ -175,11 +148,9 @@ export function AddNewDealDialog({
                 type="button"
                 variant="outline"
                 className="h-auto justify-start whitespace-normal px-3 py-3 text-left"
-                disabled={busy}
                 data-ff-add-deal-existing=""
                 onClick={() => {
                   setStep("search");
-                  setError(null);
                 }}
               >
                 Create A New Deal For Existing Contact / Deal
@@ -188,9 +159,8 @@ export function AddNewDealDialog({
                 type="button"
                 variant="outline"
                 className="h-auto justify-start whitespace-normal px-3 py-3 text-left"
-                disabled={busy}
                 data-ff-add-deal-scratch=""
-                onClick={() => void onScratch()}
+                onClick={onScratch}
               >
                 Create A New Deal From Scratch
               </Button>
@@ -203,7 +173,6 @@ export function AddNewDealDialog({
                 autoComplete="off"
                 placeholder="Deal name or contact name…"
                 value={query}
-                disabled={busy}
                 onChange={(event) => setQuery(event.target.value)}
                 data-ff-add-deal-search-input=""
               />
@@ -226,9 +195,8 @@ export function AddNewDealDialog({
                     <li key={`${hit.kind}-${hit.id}`}>
                       <button
                         type="button"
-                        disabled={busy}
-                        onClick={() => void onPick(hit)}
-                        className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50"
+                        onClick={() => onPick(hit)}
+                        className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left text-sm hover:bg-muted"
                       >
                         <span className="font-medium text-foreground">{hit.title}</span>
                         <span className="text-xs text-muted-foreground">{hit.subtitle}</span>
@@ -241,20 +209,16 @@ export function AddNewDealDialog({
                 type="button"
                 variant="ghost"
                 size="sm"
-                disabled={busy}
                 onClick={() => {
                   setStep("choose");
                   setQuery("");
                   setHits([]);
-                  setError(null);
                 }}
               >
                 Back
               </Button>
             </div>
           )}
-
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
         </DialogContent>
       </Dialog>
     </>

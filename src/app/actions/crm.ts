@@ -21,11 +21,17 @@ import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { flashAction } from "@/lib/flash-action";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 import { BindBlockedError } from "@/lib/crm/bind";
+import { sheetProductForQuotingForm } from "@/lib/deals/deal-line";
 import {
+  defaultFormForShopLine,
   lobsToBindForDeal,
   pickQuoteForLine,
   unboundPolicyLines,
 } from "@/lib/deals/package-lines";
+import {
+  forceNewShopOnSave,
+  packageDraftForNewDealSave,
+} from "@/lib/deals/new-deal-href";
 import { assertAnaUnbound } from "@/lib/crm/bind-path";
 import { formatPersonName } from "@/lib/crm/display";
 import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
@@ -59,7 +65,7 @@ import {
   reviewTasks,
   risks,
 } from "@/lib/db/schema";
-import { emptySheetValues } from "@/lib/quote-sheet/catalog";
+import { blankSheetWithDefaults } from "@/lib/quote-sheet/catalog";
 import { activityLogBody } from "@/lib/lifecycle/activity";
 import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
 import { leadValuesFromForm } from "@/lib/crm/lead-fields";
@@ -428,9 +434,26 @@ export async function createDealFromLead(formData: FormData) {
 
 export async function createDeal(formData: FormData) {
   const actor = await getActor();
-  const contactId = isUuid(str(formData, "contactId")) ? str(formData, "contactId") : "";
-  const accountId = isUuid(str(formData, "accountId")) ? str(formData, "accountId") : "";
+  const sourceDealId = isUuid(str(formData, "sourceDealId")) ? str(formData, "sourceDealId") : "";
+  const [sourceDeal] = sourceDealId
+    ? await db
+        .select()
+        .from(deals)
+        .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.id, sourceDealId)))
+    : [];
+  const contactId = isUuid(str(formData, "contactId"))
+    ? str(formData, "contactId")
+    : sourceDeal?.contactId && isUuid(sourceDeal.contactId)
+      ? sourceDeal.contactId
+      : "";
+  const accountId = isUuid(str(formData, "accountId"))
+    ? str(formData, "accountId")
+    : sourceDeal?.accountId && isUuid(sourceDeal.accountId)
+      ? sourceDeal.accountId
+      : "";
   const dealName = str(formData, "dealName");
+  const forceNewShop = forceNewShopOnSave(formData);
+  const packageDraft = packageDraftForNewDealSave(formData);
   const [pickedContact] = contactId
     ? await db.select().from(contacts).where(eq(contacts.id, contactId))
     : [];
@@ -503,7 +526,7 @@ export async function createDeal(formData: FormData) {
     zip,
     source,
   });
-  if (lead.convertedDealId) {
+  if (lead.convertedDealId && !forceNewShop) {
     revalidatePath("/deals");
     flashAction(`/deals/${lead.convertedDealId}?saved=1`, "deal-saved");
   }
@@ -515,6 +538,7 @@ export async function createDeal(formData: FormData) {
     str(formData, "field_insurance_type") ||
     str(formData, "policySubType") ||
     str(formData, "line") ||
+    packageDraft?.quotingForm ||
     "HO3";
   const pickedRaw = dealCreateFieldsFromPick(formRaw);
   const { loadDeskLineSettings } = await import("@/lib/db/line-settings");
@@ -523,7 +547,10 @@ export async function createDeal(formData: FormData) {
   const picked = isHiddenLine(pickedRaw.lineOfBusiness, createSettings)
     ? dealCreateFieldsFromPick("HO3")
     : pickedRaw;
-  const line = picked.lineOfBusiness;
+  const line =
+    packageDraft && !str(formData, "line") && !str(formData, "field_insurance_subtype")
+      ? packageDraft.lineOfBusiness
+      : picked.lineOfBusiness;
   const policySubType =
     line === "LIFE"
       ? str(formData, "lifeSubType") || str(formData, "policySubType") || picked.policySubType
@@ -531,12 +558,24 @@ export async function createDeal(formData: FormData) {
         ? str(formData, "healthSubType") || str(formData, "policySubType") || picked.policySubType
         : picked.policySubType;
   const quotingForm =
-    line === "LIFE" || line === "HEALTH" ? policySubType || picked.quotingForm : picked.quotingForm;
+    line === "LIFE" || line === "HEALTH"
+      ? policySubType || picked.quotingForm
+      : packageDraft && !str(formData, "field_insurance_subtype") && !str(formData, "quotingForm")
+        ? packageDraft.quotingForm
+        : picked.quotingForm;
   const quotingLine =
-    line === "LIFE" ? "life" : line === "HEALTH" ? "health" : picked.quotingLine;
-  const shopLines = Array.from(
-    new Set([...sheetsToPrepare(quotingForm), ...shopLinesFromForm(formData, line)]),
-  );
+    line === "LIFE"
+      ? "life"
+      : line === "HEALTH"
+        ? "health"
+        : packageDraft && !str(formData, "field_insurance_subtype") && !str(formData, "quotingForm")
+          ? packageDraft.quotingLine
+          : picked.quotingLine;
+  const shopLines = packageDraft
+    ? [...packageDraft.shopLines]
+    : Array.from(
+        new Set([...sheetsToPrepare(quotingForm), ...shopLinesFromForm(formData, line)]),
+      );
   const pipelineSlug = line === "HEALTH" ? "health" : line === "LIFE" ? "life" : line === "FLOOD" ? "flood" : "p-c";
   const [pipeline] = await db.select().from(pipelines).where(eq(pipelines.slug, pipelineSlug));
   const namedFromLayout = str(formData, "field_named_insured");
@@ -550,9 +589,9 @@ export async function createDeal(formData: FormData) {
     .insert(deals)
     .values({
       tenantId: DEFAULT_TENANT_ID,
-      leadId: lead.id,
-      contactId: pickedContact?.id ?? null,
-      accountId: pickedAccount?.id ?? null,
+      leadId: sourceDeal?.leadId || lead.id,
+      contactId: pickedContact?.id ?? sourceDeal?.contactId ?? null,
+      accountId: pickedAccount?.id ?? sourceDeal?.accountId ?? null,
       title: formatDealTitle({
         firstName,
         lastName: pickedAccount && !pickedContact ? "" : lastName,
@@ -562,47 +601,83 @@ export async function createDeal(formData: FormData) {
         policySubType,
       }),
       pipelineStage: "shopping",
-      pipelineId: pipeline?.id ?? null,
+      pipelineId: sourceDeal?.pipelineId ?? pipeline?.id ?? null,
       pipelineStageSlug: "gather",
       lineOfBusiness: line,
       quotingForm,
       quotingLine,
       source: lead.source ?? source,
       policySubType,
-      state: state || "FL",
+      state: state || sourceDeal?.state || "FL",
       ownerId: actor.id,
       accountKind: pickedAccount && !pickedContact ? "commercial" : "personal",
       bindTarget: pickedAccount && !pickedContact ? "account" : "contact",
       primaryNamedInsured,
-      notes: str(formData, "notes") || str(formData, "field_notes") || null,
+      notes: str(formData, "notes") || str(formData, "field_notes") || sourceDeal?.notes || null,
+      shopLines,
+      tags: sourceDeal?.tags ?? [],
+      propertyOneliner: sourceDeal?.propertyOneliner ?? null,
+      currentCarrier: sourceDeal?.currentCarrier ?? null,
+      coverageAmount: sourceDeal?.coverageAmount ?? null,
     })
     .returning();
 
-  await db
-    .update(leads)
-    .set({ status: "converted", convertedDealId: deal.id, updatedAt: new Date() })
-    .where(eq(leads.id, lead.id));
+  if (!lead.convertedDealId) {
+    await db
+      .update(leads)
+      .set({ status: "converted", convertedDealId: deal.id, updatedAt: new Date() })
+      .where(eq(leads.id, lead.id));
 
-  const { cancelLeadFollowUps } = await import("@/lib/leads/apply-follow-up");
-  await cancelLeadFollowUps(lead.id).catch(() => null);
+    const { cancelLeadFollowUps } = await import("@/lib/leads/apply-follow-up");
+    await cancelLeadFollowUps(lead.id).catch(() => null);
+  }
 
   const fromLead = leadOntoRisk(lead, deal.state);
+  const [sourceRisk] = sourceDealId
+    ? await db.select().from(risks).where(eq(risks.dealId, sourceDealId)).then((rows) => rows.slice(0, 1))
+    : [];
   await db.insert(risks).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
-    riskType: deal.lineOfBusiness === "AUTO" ? "auto" : "property",
-    address1: mailingAddress || fromLead.address1,
-    city: city || fromLead.city,
-    county: str(formData, "county") || str(formData, "field_county") || null,
-    state: state || fromLead.state,
-    zip: zip || fromLead.zip,
+    contactId: sourceRisk?.contactId ?? pickedContact?.id ?? null,
+    riskType:
+      packageDraft?.riskType ??
+      (deal.lineOfBusiness === "AUTO" ? "auto" : sourceRisk?.riskType ?? "property"),
+    address1: mailingAddress || sourceRisk?.address1 || fromLead.address1,
+    city: city || sourceRisk?.city || fromLead.city,
+    county: str(formData, "county") || str(formData, "field_county") || sourceRisk?.county || null,
+    state: state || sourceRisk?.state || fromLead.state,
+    zip: zip || sourceRisk?.zip || fromLead.zip,
+    yearBuilt: sourceRisk?.yearBuilt ?? null,
+    construction: sourceRisk?.construction ?? null,
+    occupancy: sourceRisk?.occupancy ?? null,
+    stories: sourceRisk?.stories ?? null,
+    squareFeet: sourceRisk?.squareFeet ?? null,
+    coverageA: sourceRisk?.coverageA ?? null,
+    roofYear: sourceRisk?.roofYear ?? null,
+    roofCovering: sourceRisk?.roofCovering ?? null,
+    openingProtection: sourceRisk?.openingProtection ?? null,
+    pool: sourceRisk?.pool ?? null,
+    protectionClass: sourceRisk?.protectionClass ?? null,
+    milesToCoast: sourceRisk?.milesToCoast ?? null,
+    mobileHome: sourceRisk?.mobileHome ?? null,
+    replacementCostEstimate: sourceRisk?.replacementCostEstimate ?? null,
+    vin: sourceRisk?.vin ?? null,
+    vehicleYear: sourceRisk?.vehicleYear ?? null,
+    vehicleMake: sourceRisk?.vehicleMake ?? null,
+    vehicleModel: sourceRisk?.vehicleModel ?? null,
+    vehicleUsage: sourceRisk?.vehicleUsage ?? null,
+    garagingZip: sourceRisk?.garagingZip ?? null,
   });
 
   await db.insert(quoteSheets).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
     line: quotingLine,
-    values: fillSheetFromLead(lead) as typeof quoteSheets.$inferInsert.values,
+    values: {
+      ...seededSheetValues(quotingLine),
+      ...(fillSheetFromLead(lead) as typeof quoteSheets.$inferInsert.values),
+    },
   });
   await insertSheetsForDeal(deal.id, shopLines);
 
@@ -634,7 +709,7 @@ export async function createDeal(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/deals");
   revalidatePath(`/deals/${deal.id}`);
-  flashAction(`/deals/${deal.id}?saved=1`, "deal-saved");
+  flashAction(`/deals/${deal.id}?saved=1&line=${quotingLine}`, "deal-saved");
 }
 
 export async function createDealFromDecDrop(formData: FormData) {
@@ -1614,6 +1689,19 @@ export async function archiveDeal(formData: FormData) {
   if (deal.contactId) revalidatePath(`/contacts/${deal.contactId}`);
 }
 
+function seededSheetValues(line: ShopLine) {
+  const values = blankSheetWithDefaults(line);
+  const form = defaultFormForShopLine(line);
+  if (form) {
+    values.quoting_form = { value: form, status: "confirmed", source: "agent" };
+    const product = sheetProductForQuotingForm(form);
+    if (product) {
+      values.sheet_product = { value: product, status: "confirmed", source: "agent" };
+    }
+  }
+  return values;
+}
+
 function shopLinesFromLine(primaryLine: string): ShopLine[] {
   const fromLob = LOB_TO_SHOP_LINE[primaryLine];
   return fromLob ? [fromLob] : ["home"];
@@ -1648,7 +1736,7 @@ async function insertSheetsForDeal(dealId: string, lines: ShopLine[]) {
       tenantId: DEFAULT_TENANT_ID,
       dealId,
       line,
-      values: emptySheetValues(line),
+      values: seededSheetValues(line),
     })),
   );
 }

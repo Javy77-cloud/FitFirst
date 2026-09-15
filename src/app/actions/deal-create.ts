@@ -76,7 +76,10 @@ function revalidateDeal(dealId: string) {
   }
 }
 
-/** Blank Deal from scratch → Deal Details (ff_work_tab=details). */
+/**
+ * Immediate insert used by scripts / older callers.
+ * Add New Deal in the desk routes to `/deals/new` and persists only on Save Deal.
+ */
 export async function createDealFromScratch(
   formData?: FormData,
 ): Promise<{ ok: true; id: string; href: string } | { ok: false; message: string }> {
