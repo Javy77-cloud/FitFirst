@@ -159,6 +159,13 @@ export function fillSheetFromDealDetails(
   put("entity_type", firstFilled(stored.entity_type));
 
   // Quoting form lives on the insurance cascade — do not copy onto the master sheet.
+  // Life/Health product + plan family are sheet interviewing fields aligned to that subtype.
+  if (Object.prototype.hasOwnProperty.call(values, "product_type")) {
+    put("product_type", firstFilled(stored.product_type, input.policySubType, input.quotingForm));
+  }
+  if (Object.prototype.hasOwnProperty.call(values, "plan_type")) {
+    put("plan_type", firstFilled(stored.plan_type, input.policySubType, input.quotingForm));
+  }
   put("lease_term", firstFilled(stored.lease_term));
   put("tenant_name", firstFilled(stored.tenant_name));
   put("landlord_liability", firstFilled(stored.landlord_liability));

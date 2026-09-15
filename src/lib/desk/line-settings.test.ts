@@ -10,10 +10,13 @@ import {
   isHiddenLine,
   matchesSubfilter,
   slugifySubfilter,
+  visibleCommissionBooks,
+  visibleInsuranceTypes,
   visibleLines,
   visiblePipelineBoards,
   visiblePolicyBooks,
   visibleShopLines,
+  allowLifeHealthFamily,
 } from "./line-settings";
 
 const hiddenBoth = { writeLife: false, writeHealth: false, showSellingAgency: false };
@@ -61,6 +64,20 @@ describe("LOB hide toggles", () => {
     expect(deskNavExtras(hiddenBoth)).toEqual([]);
     expect(isHiddenLine("LIFE", hiddenBoth)).toBe(true);
     expect(isHiddenLine("HEALTH", hiddenBoth)).toBe(true);
+    expect(
+      visibleInsuranceTypes(
+        [{ id: "pc" }, { id: "life" }, { id: "health" }],
+        hiddenBoth,
+      ).map((row) => row.id),
+    ).toEqual(["pc"]);
+    expect(
+      visibleCommissionBooks(
+        [{ value: "pc" }, { value: "life" }, { value: "health" }],
+        hiddenBoth,
+      ).map((row) => row.value),
+    ).toEqual(["pc"]);
+    expect(allowLifeHealthFamily("life", "pc", hiddenBoth)).toBe("pc");
+    expect(allowLifeHealthFamily("life", "life", hiddenBoth)).toBe("life");
   });
 
   it("can hide one book and keep the other", () => {

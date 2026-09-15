@@ -54,7 +54,12 @@ export async function createPipelineDeal(formData: FormData) {
     (pickedContact ? formatPersonName(pickedContact) : "") ||
     pickedAccount?.name ||
     "";
-  const pipelineSlug = str(formData, "pipelineSlug") || "p-c";
+  const { loadDeskLineSettings } = await import("@/lib/db/line-settings");
+  const { fallbackPipelineSlug } = await import("@/lib/desk/line-settings");
+  const pipelineSlug = fallbackPipelineSlug(
+    str(formData, "pipelineSlug") || "p-c",
+    await loadDeskLineSettings(),
+  );
   const stageSlug = str(formData, "stageSlug") || "gather";
   const existingDealId = isUuid(str(formData, "existingDealId")) ? str(formData, "existingDealId") : "";
   if (existingDealId) {

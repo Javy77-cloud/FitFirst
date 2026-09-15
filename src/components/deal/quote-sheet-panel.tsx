@@ -19,6 +19,7 @@ import {
   FILL_FROM_DOCS_LABEL,
   SEND_FIELD_SHEET_HINT,
 } from "@/lib/quote-sheet/toolbar";
+import { visibleShopLines, type DeskLineSettings } from "@/lib/desk/line-settings";
 import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,7 @@ export function QuoteSheetPanel({
   sourceDocCount = 0,
   carriers = [],
   docs = [],
+  lineSettings,
 }: {
   dealId: string;
   dealTitle: string;
@@ -44,9 +46,13 @@ export function QuoteSheetPanel({
   sourceDocCount?: number;
   carriers?: { id: string; name: string }[];
   docs?: Document[];
+  lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
   const tabs = shopLineTabs(shopLines, line);
-  const addable = SHOP_LINES.filter((item) => !tabs.includes(item));
+  const addable = visibleShopLines(
+    SHOP_LINES.filter((item) => !tabs.includes(item)),
+    lineSettings ?? { writeLife: true, writeHealth: true },
+  );
   const contactName = contact ? `${contact.firstName} ${contact.lastName}` : null;
   const copyText = buildCopySheetText({
     line,

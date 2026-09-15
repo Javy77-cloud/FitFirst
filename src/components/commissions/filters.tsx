@@ -7,20 +7,24 @@ import {
   COMMISSION_PERIODS,
   subfiltersFor,
 } from "@/lib/commissions/filters";
+import { visibleCommissionBooks, type DeskLineSettings } from "@/lib/desk/line-settings";
 
 export function CommissionFilters({
   family,
   sub,
   range,
   status,
+  lineSettings,
 }: {
   family?: string;
   sub?: string;
   range?: string;
   status?: string;
+  lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
   const [book, setBook] = useState(family ?? "");
   const options = subfiltersFor(book);
+  const books = visibleCommissionBooks(COMMISSION_BOOKS, lineSettings);
 
   return (
     <form method="get" className="mb-4 flex flex-wrap items-end gap-2 text-sm">
@@ -34,7 +38,7 @@ export function CommissionFilters({
           className="mt-1 h-8 min-w-32 rounded-md border border-input bg-card px-2 text-sm"
         >
           <option value="">All types</option>
-          {COMMISSION_BOOKS.map((row) => (
+          {books.map((row) => (
             <option key={row.value} value={row.value}>
               {row.label}
             </option>

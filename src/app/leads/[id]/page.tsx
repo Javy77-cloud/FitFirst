@@ -195,6 +195,7 @@ export default async function LeadDetailPage({
             )}
             lifeOptions={(deskLineSettings?.lifeOptions?.length ? deskLineSettings.lifeOptions : DEFAULT_LIFE_SUBFILTERS)}
             healthOptions={(deskLineSettings?.healthOptions?.length ? deskLineSettings.healthOptions : DEFAULT_HEALTH_SUBFILTERS)}
+            lineSettings={deskLineSettings}
           />
         </LeadDetailWorkspace>
       </RecordSection>

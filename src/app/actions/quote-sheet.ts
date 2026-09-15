@@ -371,6 +371,12 @@ export async function addShopLine(formData: FormData) {
   const dealId = str(formData, "dealId");
   const lineRaw = str(formData, "line");
   if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+  const { loadDeskLineSettings } = await import("@/lib/db/line-settings");
+  const { visibleShopLines } = await import("@/lib/desk/line-settings");
+  const settings = await loadDeskLineSettings();
+  if (!visibleShopLines([lineRaw], settings).includes(lineRaw)) {
+    throw new Error("That line is turned off in Settings → Lines.");
+  }
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) throw new Error("Deal not found");
   const next = Array.from(new Set([...(deal.shopLines ?? []), lineRaw]));

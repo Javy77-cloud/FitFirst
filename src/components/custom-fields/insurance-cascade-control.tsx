@@ -10,7 +10,12 @@ import {
   type PipelineFamily,
 } from "@/lib/deals/insurance-cascade";
 import type { PcPackageLine } from "@/lib/deals/package-lines";
-import { DEFAULT_HEALTH_SUBFILTERS, DEFAULT_LIFE_SUBFILTERS } from "@/lib/desk/line-settings";
+import {
+  DEFAULT_HEALTH_SUBFILTERS,
+  DEFAULT_LIFE_SUBFILTERS,
+  visibleInsuranceTypes,
+  type DeskLineSettings,
+} from "@/lib/desk/line-settings";
 
 function typeIdFromLabel(raw: string | null | undefined): InsuranceTypeId | "" {
   const v = (raw ?? "").trim().toLowerCase();
@@ -41,6 +46,7 @@ export function InsuranceCascadeControl({
   disabled,
   packageLines = [],
   activePackageLine = null,
+  lineSettings,
 }: {
   /** Hidden input name for parent Insurance Type (PC / Life / Health). */
   typeName?: string;
@@ -65,6 +71,7 @@ export function InsuranceCascadeControl({
   disabled?: boolean;
   packageLines?: readonly PcPackageLine[];
   activePackageLine?: PcPackageLine | null;
+  lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
   const lifeOpts = lifeOptions.length
     ? lifeOptions
@@ -100,7 +107,11 @@ export function InsuranceCascadeControl({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const types = INSURANCE_TYPE_OPTIONS;
+  const types = visibleInsuranceTypes(INSURANCE_TYPE_OPTIONS, lineSettings);
+  const typeChoices =
+    initial.typeId && !types.some((row) => row.id === initial.typeId)
+      ? [...types, ...INSURANCE_TYPE_OPTIONS.filter((row) => row.id === initial.typeId)]
+      : types;
   const [typeId, setTypeId] = useState<InsuranceTypeId | "">(initial.typeId);
 
   function optsFor(next: InsuranceTypeId | "") {
@@ -147,7 +158,7 @@ export function InsuranceCascadeControl({
     : undefined;
   const selected = subtypeId ? subtypes.find((s) => s.id === subtypeId) : undefined;
   const storedSubtype = selected?.label ?? selected?.id ?? "";
-  const storedType = typeId ? (types.find((t) => t.id === typeId)?.label ?? "") : "";
+  const storedType = typeId ? (typeChoices.find((t) => t.id === typeId)?.label ?? "") : "";
   const storedCategory = selectedCat?.label ?? "";
 
   return (
@@ -179,7 +190,7 @@ export function InsuranceCascadeControl({
           aria-label="Pipeline"
         >
           <option value="">None</option>
-          {types.map((type) => (
+          {typeChoices.map((type) => (
             <option key={type.id} value={type.id}>
               {type.label}
             </option>
