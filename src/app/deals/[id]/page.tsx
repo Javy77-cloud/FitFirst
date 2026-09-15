@@ -99,6 +99,7 @@ import { ACTION_FLASH, ACTION_FLASH_MESSAGE, isActionFlash } from "@/lib/desk/ac
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { agencySettings, users } from "@/lib/db/schema";
+import { carriersForDealLine } from "@/lib/deals/carriers-for-line";
 import { DEFAULT_TENANT_ID, SHOP_LINE_TO_LOB, formatMoney } from "@/lib/domain";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
 
@@ -382,11 +383,14 @@ export default async function DealPage({
     }));
   const activeQuoteCompleteness = quoteCompletenessByLine[sheetLine] ?? null;
   const manualIds = manualCarrierIdsFromLogs(dealLogs).filter((id) => !excludedMarketIds.has(id));
-  const carrierOptions = carrierRows.map((row) => ({
-    id: row.carrier.id,
-    name: row.carrier.name,
-    writtenLines: row.carrier.writtenLines,
-  }));
+  const carrierOptions = carriersForDealLine(
+    carrierRows.map((row) => ({
+      id: row.carrier.id,
+      name: row.carrier.name,
+      writtenLines: row.carrier.writtenLines,
+    })),
+    activeLob,
+  );
   return (
     <AppShell
       title="Deals"

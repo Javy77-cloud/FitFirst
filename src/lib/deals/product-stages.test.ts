@@ -128,6 +128,7 @@ describe("per-product stages", () => {
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(
       /evaluateDealMarkets\(risk, activeSheet\.values, activeLob\)/,
     );
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/carriersForDealLine/);
     expect(source("src/lib/appetite/evaluate-deal.ts")).toMatch(/dealLineOverride/);
   });
 

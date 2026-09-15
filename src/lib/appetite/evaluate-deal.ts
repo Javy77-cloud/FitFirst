@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import {
   appointmentLine,
   DEFAULT_TENANT_ID,
+  writesDealLine,
   type AppetiteRuleInput,
   type PriorAttempt,
 } from "@/lib/domain";
@@ -134,5 +135,9 @@ export async function evaluateDealShopFits(
     }).matches;
   }
 
-  return rankFits(inputs.map((rule) => matchCarrier(riskFromRecord(risk), rule, prior))) as ShopFit[];
+  return rankFits(
+    inputs
+      .filter((rule) => writesDealLine(rule.writtenLines ?? [], dealLine))
+      .map((rule) => matchCarrier(riskFromRecord(risk), rule, prior)),
+  ) as ShopFit[];
 }
