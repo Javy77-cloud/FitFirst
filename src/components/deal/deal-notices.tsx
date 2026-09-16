@@ -69,6 +69,7 @@ export function DealNotices({
   family = "pc",
   picklistId,
   placement = "header",
+  defaultOpen = false,
 }: {
   dealId: string;
   dealName?: string | null;
@@ -86,6 +87,7 @@ export function DealNotices({
   family?: "pc" | "life" | "health";
   picklistId?: string | null;
   placement?: "header" | "overlay";
+  defaultOpen?: boolean;
 }) {
   const options = mergeNoticeTypeOptions(noticeTypes?.length ? noticeTypes : SEED_NOTICE_TYPE_OPTIONS, noticeType);
   const active = isActiveNotice(noticeType);
@@ -95,7 +97,7 @@ export function DealNotices({
     ? isRenderableNoticeStamp(noticeType) && Boolean(stampLabel)
     : Boolean(active && stampLabel);
   const [selected, setSelected] = useState(noticeType && active ? parseKeep(noticeType) : "none");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [taskOpen, setTaskOpen] = useState(false);
   const [typesOpen, setTypesOpen] = useState(false);
   const [typesMode, setTypesMode] = useState<"create" | "manage">("create");

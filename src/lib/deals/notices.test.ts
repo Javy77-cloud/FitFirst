@@ -236,4 +236,24 @@ describe("deal notices", () => {
     );
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/open && showStamp/);
   });
+
+  it("enables Complete with empty notes and mounts the create-notice reminder form", () => {
+    const stampOpen = renderToString(
+      createElement(DealNotices, {
+        dealId: "deal-1",
+        product: "homeowners",
+        noticeType: "inspection_before_bind",
+        placement: "header",
+        defaultOpen: true,
+      }),
+    );
+    expect(stampOpen).toMatch(/data-ff-notice-popover/);
+    expect(stampOpen).toMatch(/data-ff-notice-complete=""/);
+    expect(stampOpen).toMatch(/What happened \(optional\)/);
+    expect(stampOpen).not.toMatch(/data-ff-notice-complete=""[^>]*\bdisabled=/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/persistNoticeTypesFromTaskForm/);
+    expect(source("src/components/tasks/create-task-form.tsx")).toMatch(/name="noticeTypeLabels"/);
+    expect(source("src/components/crm/complete-task-form.tsx")).toMatch(/placeholder="Optional"/);
+    expect(source("src/components/crm/complete-task-form.tsx")).not.toMatch(/minLength=\{2\}/);
+  });
 });
