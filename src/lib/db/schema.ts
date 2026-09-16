@@ -700,12 +700,11 @@ export const deals = pgTable(
       marketsFingerprint?: string | null;
       quotesFingerprint?: string | null;
       quoteRuns?: Partial<Record<string, string>>;
-      productStages?: Record<
-        string,
-        { stage?: string; selectedQuoteIds?: string[]; lostReason?: string | null }
+      productStages?: Partial<
+        Record<string, { stage?: string; selectedQuoteIds?: string[]; lostReason?: string | null }>
       >;
-      lineFingerprints?: Record<string, { markets?: string | null; quotes?: string | null }>;
-      requestScopes?: Record<string, string[]>;
+      lineFingerprints?: Partial<Record<string, { markets?: string | null; quotes?: string | null }>>;
+      requestScopes?: Partial<Record<string, string[]>>;
     } | null>(),
     ...timestamps,
   },

@@ -9,12 +9,10 @@ import { deals } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
   inferDealProducts,
-  isDealProductId,
   parseDealProduct,
   type DealProductId,
 } from "@/lib/deals/deal-products";
 import {
-  isLateProductStage,
   isProductLostReason,
   lateStageNeedsQuoteSelection,
   parseProductStages,
@@ -173,9 +171,3 @@ export async function markDealProductLost(formData: FormData) {
   });
   flashAction(`/deals/${dealId}?product=${product}`, "Product marked lost");
 }
-
-export function isKnownDealProduct(value: string | null | undefined): value is DealProductId {
-  return isDealProductId(value);
-}
-
-export { isLateProductStage };

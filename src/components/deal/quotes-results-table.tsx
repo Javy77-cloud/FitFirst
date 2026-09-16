@@ -51,7 +51,7 @@ import {
 import { toggleDealProductQuote } from "@/app/actions/product-stage";
 import { AlertTriangle, ChevronDown, ChevronRight, EyeOff, RefreshCw, Star } from "lucide-react";
 
-type Row = { quote: Quote; carrier: Carrier; premium: Quote["premium"] };
+type Row = { quote: Quote; carrier: Carrier; premium?: Quote["premium"] };
 
 function quoteRecheckAcked(quote: Quote | null | undefined): boolean {
   if (!quote) return false;
