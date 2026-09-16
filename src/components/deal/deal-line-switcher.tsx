@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { DealPackageLinesForm } from "@/components/deal/deal-package-lines-form";
 import {
   dealProductDef,
   dealProductSwitcherHref,
   type DealProductId,
 } from "@/lib/deals/deal-products";
+import { productChipLabel, productReadyFromQuotes } from "@/lib/deals/product-stages";
 import { themeForProduct } from "@/lib/deals/product-ui";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +22,11 @@ export type DealProductQuoteGap = {
   summary: string;
 };
 
+export type DealProductStageChip = {
+  stage?: string | null;
+  lostReason?: string | null;
+};
+
 export function DealLineSwitcher({
   dealId,
   products,
@@ -28,6 +35,8 @@ export function DealLineSwitcher({
   complete = {},
   progress = {},
   quoteGaps = {},
+  stages = {},
+  formLabels = {},
 }: {
   dealId: string;
   products: readonly DealProductId[];
@@ -36,25 +45,27 @@ export function DealLineSwitcher({
   complete?: Partial<Record<DealProductId, boolean>>;
   progress?: Partial<Record<DealProductId, DealProductChipProgress>>;
   quoteGaps?: Partial<Record<DealProductId, DealProductQuoteGap>>;
+  stages?: Partial<Record<DealProductId, DealProductStageChip>>;
+  formLabels?: Partial<Record<DealProductId, string>>;
 }) {
   if (!products.length) return null;
-  const doneCount = products.filter((id) => complete[id] || progress[id]?.complete).length;
+  const doneCount = products.filter((id) =>
+    productReadyFromQuotes({ complete: quoteGaps[id]?.complete ?? complete[id] }),
+  ).length;
   return (
-    <div className="mt-2 space-y-1.5" data-ff-deal-product-chip-row="">
+    <div className="mt-1.5 space-y-1" data-ff-deal-product-chip-row="">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-navy">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           Products
-          <span className="ml-1.5 font-semibold normal-case tracking-normal text-muted-foreground">
+          <span className="ml-1.5 font-medium normal-case tracking-normal" data-ff-product-ready-count="">
             {`${doneCount}/${products.length} ready`}
           </span>
         </p>
-        <p className="text-[11px] text-muted-foreground">
-          Active chip shows that product’s questions only
-        </p>
+        <DealPackageLinesForm dealId={dealId} selected={products} tab={tab} />
       </div>
       <nav
         aria-label="Deal products"
-        className="flex flex-wrap items-stretch gap-1.5"
+        className="flex flex-wrap items-stretch gap-1"
         data-ff-deal-line-switcher=""
         data-ff-deal-product-chips=""
       >
@@ -63,25 +74,32 @@ export function DealLineSwitcher({
           const stat = progress[product];
           const gap = quoteGaps[product];
           const quotesMissing = Boolean(gap && !gap.complete);
-          const done = Boolean(complete[product] || stat?.complete) && !quotesMissing;
+          const done =
+            productReadyFromQuotes({ complete: gap?.complete ?? complete[product] }) &&
+            !quotesMissing;
           const pct = quotesMissing ? 0 : done ? 100 : (stat?.pct ?? 0);
           const theme = themeForProduct(product);
           const def = dealProductDef(product);
+          const label = productChipLabel({ product, quotingForm: formLabels[product] });
+          const stage = stages[product]?.stage;
           return (
             <Link
               key={product}
               href={dealProductSwitcherHref({ dealId, product, tab })}
               scroll={false}
               className={cn(
-                "relative min-w-[7.5rem] overflow-hidden rounded-md border-2 px-2.5 py-1.5 text-xs font-semibold transition-colors",
-                selected ? theme.chipOn : theme.chip,
-                quotesMissing && "border-fit-flag/70",
+                "relative min-w-[4.5rem] overflow-hidden rounded border px-2 py-1 text-[11px] font-medium transition-colors",
+                selected
+                  ? "border-border bg-muted/70 text-navy"
+                  : "border-transparent bg-transparent text-muted-foreground hover:bg-muted/40",
+                quotesMissing && "border-fit-flag/50",
               )}
               data-ff-deal-line-chip={def.shopLine}
               data-ff-deal-product-chip={product}
               data-ff-product-complete={done ? "1" : "0"}
               data-ff-product-quotes-complete={gap ? (gap.complete ? "1" : "0") : undefined}
               data-ff-product-missing-quotes={quotesMissing ? "1" : "0"}
+              data-ff-product-stage={stage ?? ""}
               title={quotesMissing ? gap?.summary : undefined}
               data-active={selected ? "true" : "false"}
               aria-current={selected ? "page" : undefined}
@@ -89,36 +107,32 @@ export function DealLineSwitcher({
               <span className="flex items-center gap-1">
                 {quotesMissing ? (
                   <span
-                    className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-fit-flag text-[9px] text-white"
-                    aria-label="Missing quotes"
+                    className="inline-flex size-2.5 items-center justify-center rounded-full bg-fit-flag text-[8px] text-white"
+                    aria-label="Incomplete quotes"
+                    data-ff-product-missing-quotes-chip=""
+                    title={gap?.summary ?? "Missing quotes"}
                   >
                     !
                   </span>
                 ) : done ? (
                   <span
-                    className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--ff-green)] text-[9px] text-white"
-                    aria-label="Section complete"
+                    className="inline-flex size-2.5 items-center justify-center rounded-full bg-[var(--ff-green)] text-[8px] text-white"
+                    aria-label="Quotes complete"
                   >
                     ✓
                   </span>
                 ) : (
-                  <span
-                    className={cn("inline-block h-1.5 w-1.5 rounded-full", theme.bar)}
-                    aria-hidden
-                  />
+                  <span className={cn("inline-block size-1 rounded-full", theme.bar)} aria-hidden />
                 )}
-                {def.label}
-                {quotesMissing ? (
-                  <span
-                    className="rounded-full bg-fit-flag/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-fit-flag"
-                    data-ff-product-missing-quotes-chip=""
-                  >
-                    Missing quotes
+                {label}
+                {stage && stage !== "gather" ? (
+                  <span className="text-[9px] font-normal text-muted-foreground">
+                    {stage.replaceAll("_", " ")}
                   </span>
                 ) : null}
               </span>
               <span
-                className={cn("absolute inset-x-0 bottom-0 h-1", selected ? "bg-white/50" : "bg-black/10")}
+                className={cn("absolute inset-x-0 bottom-0 h-0.5", selected ? "bg-navy/30" : "bg-black/5")}
                 aria-hidden
               >
                 <span className={cn("block h-full", theme.bar)} style={{ width: `${pct}%` }} />

@@ -300,6 +300,7 @@ function dealRowCells({
             dealId: deal.id,
             pipelineSlug: stage.pipelineSlug,
             stageSlug: stage.slug,
+            view: mode,
           })}
         >
           <StagePill stage={stage.name} color={stage.color} />
@@ -463,6 +464,7 @@ function sheetCell({
     field,
     pipelineSlug,
     stageSlug,
+    view: mode,
     contactId,
     accountId,
     leadId,

@@ -200,7 +200,7 @@ export async function persistQuoteSheetValues(
   await syncRiskFromSheet(dealId, values, "save");
   await syncHeaderFromSheet(dealId, values, "save");
   if (sheetValuesFingerprint(sheet.values) !== sheetValuesFingerprint(values)) {
-    await markShopFlowStaleAfterRiskChange(dealId);
+    await markShopFlowStaleAfterRiskChange(dealId, line);
   }
   return values;
 }
@@ -1023,8 +1023,8 @@ export async function runFillDealSheets(dealId: string, primary: ShopLine): Prom
     filledKeys: [...primaryCounts.filledKeys, ...other.filledKeys],
     skippedKeys: [...primaryCounts.skippedKeys, ...other.skippedKeys],
   };
-  if (counts.filledKeys.length) {
-    await markShopFlowStaleAfterRiskChange(dealId);
+  if (primaryCounts.filledKeys.length) {
+    await markShopFlowStaleAfterRiskChange(dealId, primary);
   }
   return counts;
 }
@@ -1038,6 +1038,9 @@ async function fillOtherShopLines(dealId: string, already: ShopLine): Promise<Fi
       const counts = await runFillQuoteSheet(dealId, line);
       filledKeys.push(...counts.filledKeys);
       skippedKeys.push(...counts.skippedKeys);
+      if (counts.filledKeys.length) {
+        await markShopFlowStaleAfterRiskChange(dealId, line);
+      }
     }
   }
   return { filledKeys, skippedKeys };

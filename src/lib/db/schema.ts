@@ -700,6 +700,11 @@ export const deals = pgTable(
       marketsFingerprint?: string | null;
       quotesFingerprint?: string | null;
       quoteRuns?: Partial<Record<string, string>>;
+      productStages?: Partial<
+        Record<string, { stage?: string; selectedQuoteIds?: string[]; lostReason?: string | null }>
+      >;
+      lineFingerprints?: Partial<Record<string, { markets?: string | null; quotes?: string | null }>>;
+      requestScopes?: Partial<Record<string, string[]>>;
     } | null>(),
     ...timestamps,
   },
@@ -2064,6 +2069,7 @@ export const commsOutboundJobs = pgTable(
     holdReason: text("hold_reason"),
     vendor: text("vendor"),
     scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
+    attachmentIds: jsonb("attachment_ids").$type<string[]>().notNull().default([]),
     ...timestamps,
   },
   (t) => [index("comms_outbound_tenant_idx").on(t.tenantId, t.status, t.channel)],

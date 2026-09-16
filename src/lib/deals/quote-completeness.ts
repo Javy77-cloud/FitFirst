@@ -1,5 +1,6 @@
 import { EXCLUDE_MARKET_MARKER, isExplicitMarketActionText } from "@/lib/deals/manual-markets";
-import { quoteMatchesShopLine } from "@/lib/deals/shop-flow";
+import { dealProductDef, type DealProductId } from "@/lib/deals/deal-products";
+import { quoteMatchesDealProduct, quoteMatchesShopLine } from "@/lib/deals/shop-flow";
 import { SHOP_LINE_TO_LOB, isShopLine, type ShopLine } from "@/lib/domain";
 
 export const MISSING_QUOTE_REASONS = [
@@ -183,6 +184,74 @@ export function lineQuoteCompleteness(input: {
     retrieved,
     missing,
     summary,
+  };
+}
+
+/** Gloria HO3 vs DP3 share the home shop line — ready is per product, not the sheet. */
+export function productQuoteCompleteness(input: {
+  product: DealProductId;
+  logs: readonly {
+    id: string;
+    carrierId: string;
+    lineOfBusiness?: string | null;
+    result?: string | null;
+    why?: string | null;
+    attemptedAt?: Date | string | null;
+  }[];
+  quotes: readonly {
+    carrierId: string;
+    stub?: boolean | null;
+    shopLine?: string | null;
+    quoteAttemptLogId?: string | null;
+    notes?: string | null;
+  }[];
+  carriers?: readonly { id: string; name: string }[];
+  multiLine?: boolean;
+}): LineQuoteCompleteness {
+  const line = dealProductDef(input.product).shopLine;
+  const productQuotes = input.quotes.filter(
+    (quote) =>
+      !quote.stub &&
+      quoteMatchesDealProduct(
+        {
+          shopLine: quote.shopLine,
+          quoteAttemptLogId: quote.quoteAttemptLogId,
+          notes: quote.notes,
+          logs: input.logs,
+        },
+        input.product,
+        { multiLine: input.multiLine ?? true, isPrimaryLine: false },
+      ),
+  );
+  if (productQuotes.length === 0) {
+    return {
+      line,
+      shopped: false,
+      complete: false,
+      expected: 0,
+      retrieved: 0,
+      missing: [
+        {
+          carrierName: "This product",
+          reason: "not_shopped",
+          why: "No quotes on this product yet",
+        },
+      ],
+      summary: "Missing quotes",
+    };
+  }
+  return {
+    ...lineQuoteCompleteness({
+      line,
+      logs: input.logs,
+      quotes: productQuotes,
+      carriers: input.carriers,
+    }),
+    complete: true,
+    shopped: true,
+    retrieved: productQuotes.length,
+    missing: [],
+    summary: `${productQuotes.length} quote${productQuotes.length === 1 ? "" : "s"} in`,
   };
 }
 

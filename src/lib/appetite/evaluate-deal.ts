@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import {
   appointmentLine,
   DEFAULT_TENANT_ID,
+  writesDealLine,
   type AppetiteRuleInput,
   type PriorAttempt,
 } from "@/lib/domain";
@@ -22,15 +23,23 @@ import { hasMarketLookupInput, sheetHasMarketFacts } from "@/lib/deals/manual-ma
 type SheetValues = Record<string, { value?: string | null } | null> | null;
 
 /** Markets matcher (legacy appetite_rules). Portal skip-decline lives in shopDealQuotes + quote-gate. */
-export async function evaluateDealMarkets(risk: Risk, sheetValues?: SheetValues): Promise<CarrierMatch[]> {
+export async function evaluateDealMarkets(
+  risk: Risk,
+  sheetValues?: SheetValues,
+  dealLine?: string | null,
+): Promise<CarrierMatch[]> {
   if (sheetValues !== undefined && !sheetHasMarketFacts(sheetValues)) {
     return [];
   }
-  const fits = await evaluateDealShopFits(risk, sheetValues);
+  const fits = await evaluateDealShopFits(risk, sheetValues, dealLine);
   return fits;
 }
 
-export async function evaluateDealShopFits(risk: Risk, sheetValues?: SheetValues): Promise<ShopFit[]> {
+export async function evaluateDealShopFits(
+  risk: Risk,
+  sheetValues?: SheetValues,
+  dealLineOverride?: string | null,
+): Promise<ShopFit[]> {
   const rules = await db
     .select({ rule: appetiteRules, carrier: carriers })
     .from(appetiteRules)
@@ -65,8 +74,18 @@ export async function evaluateDealShopFits(risk: Risk, sheetValues?: SheetValues
       snapCoverageA: log.snapCoverageA,
     }));
 
-  const dealLine = appointmentLine(risk.riskType === "auto" ? "AUTO" : "HO");
-  const loaded = sheets.find((row) => row.line === (risk.riskType === "auto" ? "auto" : "home")) ?? sheets[0];
+  const dealLine = appointmentLine(
+    (dealLineOverride ?? (risk.riskType === "auto" ? "AUTO" : "HO")).toUpperCase(),
+  );
+  const wantedSheet =
+    dealLineOverride === "AUTO" || dealLineOverride === "auto"
+      ? "auto"
+      : dealLineOverride === "FLOOD" || dealLineOverride === "flood"
+        ? "flood"
+        : risk.riskType === "auto"
+          ? "auto"
+          : "home";
+  const loaded = sheets.find((row) => row.line === wantedSheet) ?? sheets[0];
   const sheet = sheetValues !== undefined ? sheetValues : (loaded?.values ?? null);
   if (!hasMarketLookupInput(risk, sheet) || !sheetHasMarketFacts(sheet)) {
     return [];
@@ -116,5 +135,9 @@ export async function evaluateDealShopFits(risk: Risk, sheetValues?: SheetValues
     }).matches;
   }
 
-  return rankFits(inputs.map((rule) => matchCarrier(riskFromRecord(risk), rule, prior))) as ShopFit[];
+  return rankFits(
+    inputs
+      .filter((rule) => writesDealLine(rule.writtenLines ?? [], dealLine))
+      .map((rule) => matchCarrier(riskFromRecord(risk), rule, prior)),
+  ) as ShopFit[];
 }

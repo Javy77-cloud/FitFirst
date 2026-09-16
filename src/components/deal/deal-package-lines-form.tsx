@@ -20,13 +20,13 @@ export function DealPackageLinesForm({
   const [open, setOpen] = useState(false);
 
   return (
-    <form action={setDealPackageLines} className="mt-2" data-ff-deal-package-edit="">
+    <form action={setDealPackageLines} className="m-0" data-ff-deal-package-edit="">
       <input type="hidden" name="dealId" value={dealId} />
       <input type="hidden" name="currentLine" value={activeLine ?? ""} />
       <input type="hidden" name="tab" value={tab ?? ""} />
       <button
         type="button"
-        className="text-[11px] font-semibold text-navy underline-offset-2 hover:underline"
+        className="text-[10px] font-medium text-muted-foreground underline-offset-2 hover:underline hover:text-navy"
         data-ff-deal-package-toggle=""
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}

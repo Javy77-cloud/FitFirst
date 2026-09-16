@@ -78,17 +78,17 @@ export default async function DealsPage({
     ownerId: columnFilter.assigned,
   };
   const boardSlug = pipeline || "p-c";
-  const selectedPipeline = pipeline || (isPipelineSheetView(view) ? undefined : "p-c");
+  const selectedPipeline = pipeline || undefined;
   const [boardData, listRows, userRows, lineSettings, desk, tagCatalog, pageFilterPrefs] = await Promise.all([
     getPipelineBoard(boardSlug, {
       lifeSub: filter.lifeSub,
       healthSub: filter.healthSub,
-      pcSub: pipeline === "p-c" || !pipeline ? filter.pcSub : undefined,
+      pcSub: pipeline === "p-c" ? filter.pcSub : undefined,
       stage: isPipelineSheetView(view) && pipeline ? stage : undefined,
     }),
     filter.attention === "bound_pending"
       ? listBoundPendingDeals()
-      : isPipelineSheetView(view) && !pipeline
+      : !pipeline
         ? listDeals(filter)
         : Promise.resolve(null),
     listUsers(),
@@ -103,7 +103,7 @@ export default async function DealsPage({
   const agents = userRows.map((user) => ({ id: user.id, name: user.name }));
   const board = boardData?.board ?? null;
   const rawTableRows =
-    filter.attention === "bound_pending" || (isPipelineSheetView(view) && !pipeline)
+    filter.attention === "bound_pending" || !pipeline
       ? (listRows ?? [])
       : isPipelineSheetView(view) && boardData
         ? boardData.cards
@@ -111,9 +111,11 @@ export default async function DealsPage({
   const tableRows = rawTableRows.filter((row) =>
     matchesDealPipelineColumnFilters(row.deal, columnFilter),
   );
-  const boardCards = (boardData?.cards ?? []).filter((row) =>
-    matchesDealPipelineColumnFilters(row.deal, columnFilter),
-  );
+  const boardCards = (
+    !pipeline && listRows
+      ? listRows
+      : (boardData?.cards ?? [])
+  ).filter((row) => matchesDealPipelineColumnFilters(row.deal, columnFilter));
   const presented = boardCards.map(presentPipelineCard);
   const optionDeals = [
     ...boardCards.map((row) => row.deal),
@@ -172,10 +174,10 @@ export default async function DealsPage({
         </p>
       ) : null}
 
-      <div className="mb-3" data-ff-pipeline-book-toggle-wrap="">
+      <div className="mb-4" data-ff-pipeline-book-toggle-wrap="">
         <PipelineBookModeToggle
           mode="new"
-          newHref="/deals?view=board"
+          newHref="/deals?view=list"
           renewalsHref="/renewals"
         />
       </div>
@@ -183,6 +185,7 @@ export default async function DealsPage({
       <DealWorkspaceBar
         boards={boards.map((item) => ({ slug: item.slug, name: item.name }))}
         pipeline={selectedPipeline}
+        boardWhenNoPipeline={null}
         view={view}
         defaultView={savedDefaultView}
         stage={stage}
@@ -219,13 +222,20 @@ export default async function DealsPage({
       <div className="deal-activity-list-spacer" data-ff-activity-list-spacer="" aria-hidden />
 
       <div className="deal-list-below-activity" data-ff-deal-list-below-activity>
+        <div
+          className="mb-3 rounded-xl border border-border/80 bg-card/80 px-3 py-2 shadow-sm"
+          data-ff-pipeline-filter-chrome=""
+        >
         <PipelineFilterPopover
           moduleId="deals-pipeline"
           fields={pipelineFilterFields}
-          searchPlaceholder="Contains deal, insured, phone…"
+          searchPlaceholder="Find a deal, insured, or phone…"
           preserveParams={DEAL_PIPELINE_PRESERVE_PARAMS}
           canConfigure={session.isAdmin}
+          searchClassName="min-w-48"
+          searchInputClassName="h-9 w-64 rounded-lg border-border bg-background"
         />
+        </div>
         {isPipelineSheetView(view) ? (
           <>
             {pipeline ||
@@ -253,7 +263,7 @@ export default async function DealsPage({
         ) : board ? (
           <>
             <div
-              className="mb-3 flex items-center justify-end"
+              className="mb-3 flex items-center"
               data-ff-deals-board-actions=""
             >
               <AddNewDealDialog />

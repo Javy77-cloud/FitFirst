@@ -48,9 +48,10 @@ import {
   sortByPremiumAsc,
   toggleCompareSelection,
 } from "@/lib/quotes/compare-selection";
+import { toggleDealProductQuote } from "@/app/actions/product-stage";
 import { AlertTriangle, ChevronDown, ChevronRight, EyeOff, RefreshCw, Star } from "lucide-react";
 
-type Row = { quote: Quote; carrier: Carrier; premium: Quote["premium"] };
+type Row = { quote: Quote; carrier: Carrier; premium?: Quote["premium"] };
 
 function quoteRecheckAcked(quote: Quote | null | undefined): boolean {
   if (!quote) return false;
@@ -380,6 +381,10 @@ export function QuotesResultsTable({
   requestedCoverageA = null,
   quoteFilesByQuoteId = {},
   boundQuoteId = null,
+  selectedQuoteIds = [],
+  product = null,
+  sheetStale = false,
+  priorByQuoteId = {},
 }: {
   dealId: string;
   rows: Row[];
@@ -392,6 +397,10 @@ export function QuotesResultsTable({
   requestedCoverageA?: number | null;
   quoteFilesByQuoteId?: Record<string, { carrier: QuoteFileRow[]; agency: QuoteFileRow[] }>;
   boundQuoteId?: string | null;
+  selectedQuoteIds?: string[];
+  product?: string | null;
+  sheetStale?: boolean;
+  priorByQuoteId?: Record<string, { quote: Quote; carrier: Carrier; label: string | null }>;
 }) {
   const list = asList(rows);
   const [recheckMarked, setRecheckMarked] = useState<string[]>([]);
@@ -626,6 +635,14 @@ export function QuotesResultsTable({
         )}
       </div>
 
+      {sheetStale ? (
+        <p
+          className="mx-3 mt-3 rounded-md border border-fit-flag/40 bg-fit-flag/10 px-3 py-2 text-[12px] text-navy"
+          data-ff-quotes-sheet-stale=""
+        >
+          Sheet changed — re-quote marked carriers. Bind Save turns red until you Save the recheck.
+        </p>
+      ) : null}
       <div className="space-y-4 px-3 pb-3">
         {sections.map((section) => {
           const visibleRows =
@@ -710,11 +727,14 @@ export function QuotesResultsTable({
                           requestedCoverageA,
                         });
                     const thread = notesByQuote[quote.id] ?? [];
+                    const selected = selectedQuoteIds.includes(quote.id);
                     const bound = isBoundQuote({
                       quoteId: quote.id,
                       agentStatus: quote.agentStatus,
                       boundQuoteId,
                     });
+                    const highlighted = selected || bound;
+                    const prior = priorByQuoteId[quote.id];
                     const isRecheckMarked = recheckMarked.includes(quote.id);
                     const isHideMarked = effectiveHideMarked.includes(quote.id);
                     const showAlert = quoteNeedsBindRecheckAlert({
@@ -730,16 +750,17 @@ export function QuotesResultsTable({
                         <article
                           data-ff-quote-row={quote.id}
                           data-ff-quote-outcome={outcome}
-                          data-ff-quote-bound={bound ? "1" : "0"}
+                          data-ff-quote-bound={highlighted ? "1" : "0"}
+                          data-ff-quote-selected={selected ? "1" : "0"}
                           data-ff-quote-recheck-marked={isRecheckMarked ? "1" : "0"}
                           data-ff-quote-hide-marked={isHideMarked ? "1" : "0"}
                           className={cn(
                             "rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md",
-                            bound
+                            highlighted
                               ? "border-fit-flag/70 bg-[color-mix(in_srgb,var(--ff-red-bg)_55%,var(--ff-card))] ring-2 ring-fit-flag/35"
                               : "border-border",
-                            isRecheckMarked && !bound && "ring-1 ring-primary/35",
-                            isHideMarked && !isRecheckMarked && !bound && "ring-1 ring-muted-foreground/25",
+                            isRecheckMarked && !highlighted && "ring-1 ring-primary/35",
+                            isHideMarked && !isRecheckMarked && !highlighted && "ring-1 ring-muted-foreground/25",
                           )}
                         >
                           <div className="flex flex-wrap items-start gap-2 px-3 py-2.5">
@@ -795,11 +816,26 @@ export function QuotesResultsTable({
                                 <span className="truncate text-sm font-semibold text-navy">
                                   {carrier.name}
                                 </span>
-                                <span className="inline-flex items-center gap-1 text-sm font-semibold tabular-nums text-navy">
+                                <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-navy">
                                   {formatMoney(quote.premium)}
+                                  <StarRating
+                                    dealId={dealId}
+                                    quoteId={quote.id}
+                                    value={quote.agentRating}
+                                    disabled={pending}
+                                  />
                                 </span>
                               </div>
-                              {outcome !== "bindable" || !rowReason.provided || rowReason.chips.length ? (
+                              {prior ? (
+                                <p
+                                  className="text-[11px] text-muted-foreground"
+                                  data-ff-quote-prior={quote.id}
+                                >
+                                  {prior.label ?? "Prior"} · {formatMoney(prior.quote.premium)}
+                                </p>
+                              ) : null}
+                              {!detailsOpen &&
+                              (outcome !== "bindable" || !rowReason.provided || rowReason.chips.length) ? (
                                 <p
                                   className={cn(
                                     "text-[12px] leading-snug",
@@ -891,6 +927,41 @@ export function QuotesResultsTable({
                                 notes={thread}
                                 disabled={pending}
                               />
+                              {product ? (
+                                <button
+                                  type="button"
+                                  aria-label={
+                                    selected
+                                      ? `Unselect ${carrier.name} quote`
+                                      : `Select ${carrier.name} quote`
+                                  }
+                                  aria-pressed={selected}
+                                  data-ff-quote-select={quote.id}
+                                  disabled={pending}
+                                  onClick={() => {
+                                    const data = new FormData();
+                                    data.set("dealId", dealId);
+                                    data.set("product", product);
+                                    data.set("quoteId", quote.id);
+                                    startTransition(async () => {
+                                      await toggleDealProductQuote(data);
+                                    });
+                                  }}
+                                  className={cn(
+                                    "inline-flex h-6 items-center rounded-md border px-1.5 text-[10px] font-semibold tracking-wide",
+                                    selected
+                                      ? "border-fit-flag/60 bg-fit-flag/15 text-fit-flag"
+                                      : "border-border text-muted-foreground hover:border-navy/40 hover:text-navy",
+                                  )}
+                                  title={
+                                    selected
+                                      ? "Selected for Quote sent / Bound"
+                                      : "Mark this quote before Quote sent or Bound"
+                                  }
+                                >
+                                  {selected ? "Selected" : "Select"}
+                                </button>
+                              ) : null}
                               {showAlert ? (
                                 <button
                                   type="button"
@@ -913,12 +984,6 @@ export function QuotesResultsTable({
                                   <AlertTriangle className="size-3" strokeWidth={2.25} />
                                 </button>
                               ) : null}
-                              <StarRating
-                                dealId={dealId}
-                                quoteId={quote.id}
-                                value={quote.agentRating}
-                                disabled={pending}
-                              />
                               <Button
                                 type="button"
                                 size="xs"

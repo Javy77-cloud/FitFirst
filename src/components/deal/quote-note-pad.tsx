@@ -16,6 +16,8 @@ import {
   SPEECH_NOTE_LANGS,
   SPEECH_NOTE_LANG_LABELS,
   appendSpeechTranscript,
+  collectFinalSpeechTranscript,
+  prepareSpeechMicrophone,
   speechRecognitionCtor,
   type SpeechNoteLang,
 } from "@/lib/quotes/speech-note";
@@ -67,23 +69,36 @@ export function QuoteNotePad({
     setListening(null);
   }
 
-  function startSpeech(lang: SpeechNoteLang) {
+  async function startSpeech(lang: SpeechNoteLang) {
     const Ctor = speechRecognitionCtor();
     if (!Ctor) {
       setSpeechHint("Voice typing isn’t available in this browser.");
       return;
     }
     stopSpeech();
+    try {
+      await prepareSpeechMicrophone();
+    } catch {
+      setSpeechHint("Allow the microphone for this site, then try again.");
+      return;
+    }
     const rec = new Ctor();
     rec.lang = lang;
-    rec.interimResults = false;
-    rec.continuous = false;
+    rec.interimResults = true;
+    rec.continuous = true;
+    if (rec.maxAlternatives != null) rec.maxAlternatives = 1;
     rec.onresult = (event) => {
-      const chunk = event.results?.[0]?.[0]?.transcript ?? "";
+      const chunk = collectFinalSpeechTranscript(event.results, event.resultIndex ?? 0);
+      if (!chunk) return;
       setBody((current) => appendSpeechTranscript(current, chunk));
     };
-    rec.onerror = () => {
-      setSpeechHint("Mic didn’t catch that — type the note instead.");
+    rec.onerror = (event) => {
+      const err = event?.error ?? "";
+      setSpeechHint(
+        err === "not-allowed" || err === "service-not-allowed"
+          ? "Allow the microphone for this site, then try again."
+          : "Mic didn’t catch that — type the note instead.",
+      );
       setListening(null);
       recRef.current = null;
     };
@@ -94,7 +109,13 @@ export function QuoteNotePad({
     recRef.current = rec;
     setSpeechHint(null);
     setListening(lang);
-    rec.start();
+    try {
+      rec.start();
+    } catch {
+      setSpeechHint("Mic didn’t start — type the note instead.");
+      setListening(null);
+      recRef.current = null;
+    }
   }
 
   function onSave() {

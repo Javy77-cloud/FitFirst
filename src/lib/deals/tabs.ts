@@ -103,14 +103,14 @@ export type DealResumeSignals = {
  * agent checks visual review and hits Confirm & request quotes.
  */
 export function resolveDealResumeTab(ctx: DealResumeSignals): AgentDealTab {
+  const quotesReady = Boolean(ctx.quotesRequested) || Boolean(ctx.hasNonStubQuotes);
+  if (quotesReady) return "quotes";
+
   const persisted = persistedDealWorkTab(ctx.recordValues);
   if (persisted) return persisted;
 
   const detailsDone = hasMeaningfulDealFieldValues(ctx.recordValues);
   if (!detailsDone) return "details";
-
-  const quotesReady = Boolean(ctx.quotesRequested) || Boolean(ctx.hasNonStubQuotes);
-  if (quotesReady) return "quotes";
 
   if (Boolean(ctx.quotingUnlocked)) return "markets";
 

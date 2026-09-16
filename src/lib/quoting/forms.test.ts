@@ -10,6 +10,7 @@ import {
   quotingFormById,
   quotingFormLabel,
   quotingUnlockedForDeal,
+  quotingUnlockedForLine,
   sheetsToPrepare,
 } from "./forms";
 
@@ -119,6 +120,18 @@ describe("quoting forms", () => {
     );
     expect(quotingUnlockedForDeal({ quotingUnlocked: true, pipelineStage: "shopping" })).toBe(true);
     expect(quotingUnlockedForDeal({ quotingUnlocked: false, pipelineStage: "bound" })).toBe(true);
+    expect(
+      quotingUnlockedForLine({
+        deal: { quotingUnlocked: true, pipelineStage: "shopping" },
+        sheet: { quotingUnlocked: false },
+      }),
+    ).toBe(false);
+    expect(
+      quotingUnlockedForLine({
+        deal: { quotingUnlocked: false, pipelineStage: "shopping" },
+        sheet: { quotingUnlocked: true },
+      }),
+    ).toBe(true);
   });
 });
 

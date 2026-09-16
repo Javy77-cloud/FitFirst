@@ -46,10 +46,11 @@ describe("sep7bg deal page four fixes", () => {
     expect(source("src/components/deal/master-sheet-compare.tsx")).toMatch(/overflow-visible/);
   });
 
-  it("BG3 — deal right rail is exactly 320px", () => {
+  it("BG3 — deal right rail is locked on section-tabs, not a 300px leftover", () => {
     const page = source("src/app/deals/[id]/page.tsx");
-    expect(page).toMatch(/data-ff-deal-right-rail/);
-    expect(page).toMatch(/w-\[320px\] min-w-\[320px\] max-w-\[320px\] shrink-0 overflow-x-hidden/);
+    const tabs = source("src/components/section-tabs.tsx");
+    expect(tabs).toMatch(/data-ff-deal-right-rail/);
+    expect(tabs).toMatch(/data-ff-deal-rail-lock="420"/);
     expect(page).not.toMatch(/lg:w-\[300px\]/);
     expect(page).not.toMatch(/max-w-\[300px\]/);
   });
@@ -85,7 +86,7 @@ describe("sep7bg deal page four fixes", () => {
     expect(quotes).toMatch(/data-ff-deal-quotes-empty/);
     expect(quotes).toMatch(/data-ff-quotes-empty/);
     expect(quotes).toMatch(/Go to Markets/);
-    expect(quotes).toMatch(/LoadHomeShopListButton/);
+    expect(quotes).toMatch(/LoadShopListButton/);
     expect(quotes).toMatch(/ManualCarrierAdd/);
     expect(quotes).not.toMatch(/Quotes land here after Markets sends them back/);
     expect(quotes).not.toMatch(/border-dashed/);

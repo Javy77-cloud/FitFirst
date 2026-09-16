@@ -5,7 +5,11 @@ import { describe, expect, it } from "vitest";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import type { Carrier, Quote } from "@/lib/db/schema";
 import { quoteRowReason } from "./row-reason";
-import { SPEECH_NOTE_LANGS, appendSpeechTranscript } from "./speech-note";
+import {
+  SPEECH_NOTE_LANGS,
+  appendSpeechTranscript,
+  collectFinalSpeechTranscript,
+} from "./speech-note";
 
 function quote(partial: Partial<Quote> & Pick<Quote, "id">): Quote {
   return {
@@ -96,6 +100,16 @@ describe("quote notepad + speech", () => {
       "needs 4-point and wind mit",
     );
     expect(SPEECH_NOTE_LANGS).toEqual(["en-US", "es-US"]);
+    expect(
+      collectFinalSpeechTranscript(
+        [
+          { isFinal: false, 0: { transcript: "hold" } },
+          { isFinal: true, 0: { transcript: "needs four point" } },
+        ],
+        0,
+      ),
+    ).toBe("needs four point");
+    expect(collectFinalSpeechTranscript([{ 0: { transcript: "ok" } }], 0)).toBe("ok");
   });
 
   it("wires notepad + save (no per-quote stage ladder) and marks the bound row", () => {

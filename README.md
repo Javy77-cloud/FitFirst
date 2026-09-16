@@ -4,6 +4,17 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
+## Neon migration (`0124_comms_email_attachments`)
+
+Adds `comms_outbound_jobs.attachment_ids` (jsonb, default `[]`) so deal email compose can persist selected quote PDFs (uploaded or carrier file) on the outbound job. Product stages, selected quotes, line fingerprints, and request scopes live in existing `deals.shop_flow` jsonb — no extra table.
+
+```bash
+npm run db:migrate
+# skip db:seed on the live Zoho book
+```
+
+`shop_flow` keys used by this PR: `productStages`, `lineFingerprints`, `requestScopes`. A master-sheet save on one line stales Markets+Quotes for that line, clears approve / request-quotes, and writes a `sheet_invalidated` CRM signal.
+
 ## Mac test now (`cursor/live-ff-tip-sep7az`)
 
 Desk tip consolidator: **sep7ce** Fill from property records + **sep7cd** synonym dictionary, on top of List/Grid, docs trash, picklist unique names, FedEx vault.

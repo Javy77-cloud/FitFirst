@@ -140,6 +140,14 @@ describe("resolveDealResumeTab", () => {
         quotesRequested: true,
       }),
     ).toBe("quotes");
+    expect(
+      resolveDealResumeTab({
+        recordValues: { [DEAL_WORK_TAB_KEY]: "markets", named_insured: "Elena" },
+        quotingUnlocked: true,
+        quotesRequested: true,
+        hasNonStubQuotes: true,
+      }),
+    ).toBe("quotes");
   });
 
   it("wires persistDealWorkTab on convert and each stage advance", () => {

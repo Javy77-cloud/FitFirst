@@ -69,6 +69,17 @@ export function quotingUnlockedForDeal(deal: {
   return deal.pipelineStage === "bound" || deal.pipelineStage === "closed_won";
 }
 
+/** Line-scoped unlock — a Home sheet save must not keep Flood request-quotes live. */
+export function quotingUnlockedForLine(input: {
+  deal?: { quotingUnlocked?: boolean | null; pipelineStage?: string | null } | null;
+  sheet?: { quotingUnlocked?: boolean | null; approvedAt?: Date | string | null } | null;
+}): boolean {
+  if (input.sheet?.quotingUnlocked) return true;
+  if (input.sheet && input.sheet.quotingUnlocked === false) return false;
+  if (input.deal) return quotingUnlockedForDeal(input.deal);
+  return false;
+}
+
 const LEGACY_INSURANCE_TYPE_TO_FORM: Record<string, QuotingFormId> = {
   Home: "HO3",
   Homeowners: "HO3",

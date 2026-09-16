@@ -40,9 +40,21 @@ describe("pipeline list / grid sheet", () => {
         dealId: "d1",
         pipelineSlug: "p-c",
         stageSlug: "quote_sent",
+        view: "list",
       }),
     ).toEqual({
-      href: "/deals?pipeline=p-c&view=board&stage=quote_sent",
+      href: "/deals?pipeline=p-c&view=list&stage=quote_sent",
+      kind: "stage",
+    });
+    expect(
+      pipelineListNav({
+        columnId: "stage",
+        dealId: "d1",
+        stageSlug: "quote_sent",
+        view: "list",
+      }),
+    ).toEqual({
+      href: "/deals?view=list&stage=quote_sent",
       kind: "stage",
     });
     expect(

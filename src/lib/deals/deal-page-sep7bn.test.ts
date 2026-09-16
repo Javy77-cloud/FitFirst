@@ -29,7 +29,7 @@ describe("sep7bn Markets start from scratch on every deal", () => {
   it("BN1 — page load never auto-evaluates leftover sheet / logs / quotes", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/hasShopMarketAction|hasExplicitMarketAction/);
-    expect(page).toMatch(/evaluateDealMarkets\(risk, activeSheet\.values\)/);
+    expect(page).toMatch(/evaluateDealMarkets\(risk, activeSheet\.values/);
     expect(page).toMatch(/shopMarketsAction \|\| shopListIds/);
     expect(page).not.toMatch(/sheetReady \? await evaluateDealMarkets/);
     expect(page).not.toMatch(/const matches = risk \? await evaluateDealMarkets\(risk\)/);
@@ -131,7 +131,7 @@ describe("sep7bn Markets start from scratch on every deal", () => {
     const emptyBranch = panel.slice(emptyStart, emptyEnd);
     expect(emptyBranch).toMatch(/data-ff-markets-empty/);
     expect(emptyBranch).toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
-    expect(emptyBranch).toMatch(/LoadHomeShopListButton/);
+    expect(emptyBranch).toMatch(/LoadShopListButton/);
     expect(emptyBranch).toMatch(/ManualCarrierAdd/);
     expect(emptyBranch).not.toMatch(/In appetite/);
     expect(emptyBranch).not.toMatch(/MarketTable/);

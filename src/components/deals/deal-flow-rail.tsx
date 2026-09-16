@@ -56,9 +56,11 @@ export function DealFlowRail({
           );
         })}
       </ol>
-      <p className="text-[13px] font-medium text-navy" data-ff-deal-flow-next="">
-        {hint}
-      </p>
+      {hint ? (
+        <p className="text-[13px] font-medium text-navy" data-ff-deal-flow-next="">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }

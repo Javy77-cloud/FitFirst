@@ -74,6 +74,10 @@ export async function sendDeskEmail(formData: FormData) {
     ...ids,
   });
   if (!written.activity) return;
+  const attachmentIds = formData
+    .getAll("attachDoc")
+    .map((value) => String(value ?? "").trim())
+    .filter(Boolean);
   const { job, decision } = await enqueueOutboundJob({
     channel: "email",
     toAddress,
@@ -81,6 +85,7 @@ export async function sendDeskEmail(formData: FormData) {
     subject: subject || "Email",
     body,
     activityId: written.activity.id,
+    attachmentIds,
     ...ids,
     ...optOuts,
   });
@@ -96,6 +101,28 @@ export async function sendDeskEmail(formData: FormData) {
     accountId: ids.accountId,
     dealId: ids.dealId,
     policyId: ids.policyId,
+  });
+  revalidate(ids);
+  revalidatePath("/settings/outbound");
+}
+
+/** Persist selected quote PDFs on a reminder without queueing a send. */
+export async function persistDealEmailAttachments(formData: FormData) {
+  const ids = related(formData);
+  const attachmentIds = formData
+    .getAll("attachDoc")
+    .map((value) => String(value ?? "").trim())
+    .filter(Boolean);
+  if (!attachmentIds.length) return;
+  await enqueueOutboundJob({
+    channel: "email",
+    toAddress: str(formData, "toAddress") || str(formData, "email"),
+    fromAddress: str(formData, "fromAddress") || "desk@agency.local",
+    subject: str(formData, "subject") || "Email reminder",
+    body: str(formData, "body") || str(formData, "notes"),
+    attachmentIds,
+    draft: true,
+    ...ids,
   });
   revalidate(ids);
   revalidatePath("/settings/outbound");

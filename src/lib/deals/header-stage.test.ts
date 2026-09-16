@@ -43,6 +43,6 @@ describe("header stage chip + strip", () => {
     expect(header).toMatch(/uppercase=\{false\}/);
     expect(header).toMatch(/whitespace-nowrap/);
     expect(header).not.toMatch(/<select/);
-    expect(header).toMatch(/moveDealToStage/);
+    expect(header).toMatch(/setDealProductStage/);
   });
 });

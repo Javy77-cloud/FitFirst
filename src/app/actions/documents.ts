@@ -56,7 +56,7 @@ import {
   MISSING_GEMINI_KEY_MESSAGE,
 } from "@/lib/extraction/gemini";
 import { inferMimeFromName } from "@/lib/files/urls";
-import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
+import { isDocumentsSourceDoc, shopLineFromSourceDoc } from "@/lib/deals/quote-docs";
 import { markShopFlowStaleAfterRiskChange } from "@/lib/deals/shop-flow-persist";
 import {
   CLEAN_DEC_FILENAME,
@@ -148,7 +148,7 @@ export async function persistFile(input: {
     .returning();
   if (doc) await recordInitialDocumentVersion(doc);
   if (doc?.dealId && isDocumentsSourceDoc(doc)) {
-    await markShopFlowStaleAfterRiskChange(doc.dealId);
+    await markShopFlowStaleAfterRiskChange(doc.dealId, shopLineFromSourceDoc(doc));
   }
   return doc;
 }

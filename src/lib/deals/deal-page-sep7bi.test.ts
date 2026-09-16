@@ -40,22 +40,21 @@ describe("sep7bi builder rail Markets Quotes", () => {
 
   it("BI3 — deal right rail is forced to 320px and Sheet health cannot be 28rem", () => {
     const page = source("src/app/deals/[id]/page.tsx");
+    const tabs = source("src/components/section-tabs.tsx");
     const health = source("src/components/deal/sheet-health-toggle.tsx");
     const css = source("src/app/globals.css");
-    expect(page).toMatch(/data-ff-deal-right-rail/);
-    expect(page).toMatch(/w-\[320px\] min-w-\[320px\] max-w-\[320px\] shrink-0 overflow-x-hidden/);
+    expect(tabs).toMatch(/data-ff-deal-right-rail/);
+    expect(tabs).toMatch(/data-ff-deal-rail-lock="420"/);
     expect(page).not.toMatch(/lg:w-\[320px\]/);
     expect(page).not.toMatch(/lg:w-\[72%\]/);
-    expect(page).toMatch(/min-w-0 flex-1 space-y-1/);
     expect(health).toMatch(/w-full min-w-0 max-w-full/);
     expect(health).not.toMatch(/28rem/);
     expect(health).not.toMatch(/16rem/);
     expect(health).not.toMatch(/min-w-\[16rem\]/);
     expect(health).not.toMatch(/sm:w-\[28rem\]/);
     expect(css).toMatch(/\[data-ff-deal-right-rail\]/);
-    expect(css).toMatch(/width: 320px !important;/);
-    expect(css).toMatch(/min-width: 320px !important;/);
-    expect(css).toMatch(/max-width: 320px !important;/);
+    expect(css).toMatch(/width: 420px !important;/);
+    expect(css).toMatch(/max-width: 420px !important;/);
   });
 
   it("BI4 — empty master sheet ignores leftover matches, logs, and risk-row appetite", () => {
@@ -100,7 +99,7 @@ describe("sep7bi builder rail Markets Quotes", () => {
     expect(filled).not.toMatch(/Request Quotes/);
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/hasShopMarketAction|hasExplicitMarketAction/);
-    expect(page).toMatch(/evaluateDealMarkets\(risk, activeSheet\.values\)/);
+    expect(page).toMatch(/evaluateDealMarkets\(risk, activeSheet\.values/);
     expect(page).toMatch(/shopMarketsAction \|\| shopListIds/);
     expect(page).not.toMatch(/const matches = risk \? await evaluateDealMarkets\(risk\)/);
     expect(page).not.toMatch(/sheetReady \? await evaluateDealMarkets/);

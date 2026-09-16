@@ -113,6 +113,7 @@ export function pipelineListNav(input: {
   field?: CustomFieldDef | null;
   pipelineSlug?: string | null;
   stageSlug?: string | null;
+  view?: PipelineViewId | null;
   contactId?: string | null;
   accountId?: string | null;
   leadId?: string | null;
@@ -128,10 +129,11 @@ export function pipelineListNav(input: {
   }
 
   if (input.columnId === "stage") {
+    const view = input.view ?? "list";
     return {
       href: dealsHref({
-        pipeline: input.pipelineSlug || "p-c",
-        view: "board",
+        pipeline: input.pipelineSlug || undefined,
+        view,
         stage: input.stageSlug || undefined,
       }),
       kind: "stage",
