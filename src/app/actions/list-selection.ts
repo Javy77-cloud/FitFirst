@@ -37,6 +37,7 @@ import {
 } from "@/lib/lists/selection-actions";
 import { matchReasons, pairKey } from "@/lib/merge/normalize";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
+import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-deal-write";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -166,8 +167,14 @@ export async function duplicateSelectedRecord(formData: FormData): Promise<{
         contactId: row.contactId,
         accountId: row.accountId,
         title: row.title.endsWith("(copy)") ? row.title : `${row.title} (copy)`,
-        pipelineStage: "shopping",
-        pipelineStageSlug: "gather",
+        ...NEW_DEAL_PIPELINE_STAGE,
+        shopFlow: seedNewDealShopFlow({
+          shopLines: shopLines.length ? shopLines : ["home"],
+          lineOfBusiness: row.lineOfBusiness,
+          quotingLine: row.quotingLine,
+          quotingForm: row.quotingForm,
+          policySubType: row.policySubType,
+        }),
         pipelineId: row.pipelineId,
         lineOfBusiness: row.lineOfBusiness,
         bindTarget: row.bindTarget,

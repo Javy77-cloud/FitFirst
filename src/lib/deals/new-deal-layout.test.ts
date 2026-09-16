@@ -35,5 +35,7 @@ describe("New Deal uses the live Deal Edit Layout", () => {
     const actions = readFileSync("src/app/actions/crm.ts", "utf8");
     expect(actions).toMatch(/packageDraftForNewDealSave/);
     expect(actions).toMatch(/forceNewShopOnSave/);
+    expect(actions).toMatch(/seedNewDealShopFlow/);
+    expect(actions).toMatch(/NEW_DEAL_PIPELINE_STAGE/);
   });
 });

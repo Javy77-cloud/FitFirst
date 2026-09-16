@@ -15,7 +15,8 @@ import { isUuid } from "@/lib/ids";
 import { matchDealLookup } from "@/lib/deals/lookup";
 import { listDealLookup } from "@/lib/db/queries";
 import { flashAction } from "@/lib/flash-action";
-import { dealStageForPipeline } from "@/lib/wire/pipeline";
+import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-deal-write";
+import { dealStageForPipeline, resolveStageMove } from "@/lib/wire/pipeline";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -60,7 +61,7 @@ export async function createPipelineDeal(formData: FormData) {
     str(formData, "pipelineSlug") || "p-c",
     await loadDeskLineSettings(),
   );
-  const stageSlug = str(formData, "stageSlug") || "gather";
+  const stageSlug = str(formData, "stageSlug") || NEW_DEAL_PIPELINE_STAGE.pipelineStageSlug;
   const existingDealId = isUuid(str(formData, "existingDealId")) ? str(formData, "existingDealId") : "";
   if (existingDealId) {
     revalidatePath("/deals");
@@ -116,8 +117,13 @@ export async function createPipelineDeal(formData: FormData) {
     quotingForm: quotingForm ?? null,
     quotingLine: quotingLine ?? null,
     policySubType,
-    pipelineStage: dealStageForPipeline(stageSlug),
-    pipelineStageSlug: stageSlug,
+    ...resolveStageMove(stageSlug),
+    shopFlow: seedNewDealShopFlow({
+      lineOfBusiness,
+      quotingLine,
+      quotingForm,
+      policySubType,
+    }),
     pipelineId: pipeline?.id,
     archivedAt: archived ? new Date() : null,
     state: pickedContact?.state || pickedAccount?.state || "FL",

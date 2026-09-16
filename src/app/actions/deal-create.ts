@@ -25,6 +25,7 @@ import {
   packageLinesFromForm,
   packageLinesFromFormOrUndefined,
 } from "@/lib/deals/package-lines";
+import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-deal-write";
 import { matchesQuery } from "@/lib/wire/search";
 
 function str(form: FormData, key: string) {
@@ -171,8 +172,14 @@ async function createCopiedDeal(
       contactId: row.contactId,
       accountId: row.accountId,
       title,
-      pipelineStage: "shopping",
-      pipelineStageSlug: "gather",
+      ...NEW_DEAL_PIPELINE_STAGE,
+      shopFlow: seedNewDealShopFlow({
+        shopLines,
+        lineOfBusiness,
+        quotingLine,
+        quotingForm,
+        policySubType: draft?.quotingForm ?? row.policySubType,
+      }),
       pipelineId: row.pipelineId,
       lineOfBusiness,
       bindTarget: row.bindTarget,
@@ -326,8 +333,15 @@ export async function createDealFromExistingPick(
       contactId: contact.id,
       accountId: contact.accountId,
       title,
-      pipelineStage: "shopping",
-      pipelineStageSlug: "gather",
+      ...NEW_DEAL_PIPELINE_STAGE,
+      shopFlow: seedNewDealShopFlow({
+        shopProducts: draft.products,
+        shopLines: draft.shopLines,
+        lineOfBusiness: draft.lineOfBusiness,
+        quotingLine: draft.quotingLine,
+        quotingForm: draft.quotingForm,
+        policySubType: draft.quotingForm,
+      }),
       lineOfBusiness: draft.lineOfBusiness,
       quotingLine: draft.quotingLine,
       quotingForm: draft.quotingForm,

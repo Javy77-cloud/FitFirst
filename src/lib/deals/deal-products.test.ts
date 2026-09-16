@@ -216,7 +216,10 @@ describe("create + detail wiring", () => {
     const save = readFileSync("src/app/actions/crm.ts", "utf8");
     expect(save).toMatch(/shopProducts/);
     expect(save).toMatch(/packageDraftForNewDealSave/);
+    expect(save).toMatch(/seedNewDealShopFlow/);
+    expect(save).toMatch(/NEW_DEAL_PIPELINE_STAGE/);
     expect(save).toMatch(/insertSheetsForDeal\(deal\.id, shopLines\)/);
     expect(save).toMatch(/hasCommercialProduct/);
+    expect(save).not.toMatch(/pipelineStageSlug:\s*"gather"/);
   });
 });

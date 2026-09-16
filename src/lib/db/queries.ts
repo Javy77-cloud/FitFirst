@@ -2275,7 +2275,7 @@ export async function getDealWorkspace(dealId: string) {
 
   const { restoreDealSourceDocuments } = await import("@/lib/documents/restore-deal-docs");
   await restoreDealSourceDocuments(dealId).catch(() => null);
-  const { lifeHealthShopRepair } = await import("@/lib/deals/deal-products");
+  const { inferDealProducts, lifeHealthShopRepair } = await import("@/lib/deals/deal-products");
   const shopRepair = lifeHealthShopRepair(deal);
   if (shopRepair) {
     await db
@@ -2288,6 +2288,31 @@ export async function getDealWorkspace(dealId: string) {
       .catch(() => null);
     deal.shopLines = shopRepair.shopLines;
     deal.shopProducts = shopRepair.shopProducts;
+  }
+  const {
+    leftoverCreateStageNeedsRepair,
+    mergeShopFlowProductStages,
+    shopFlowNeedsProductStageSeed,
+  } = await import("@/lib/deals/new-deal-write");
+  const visibleProducts = inferDealProducts(deal);
+  const stagePatch = leftoverCreateStageNeedsRepair(deal);
+  const needsFlow = shopFlowNeedsProductStageSeed(deal.shopFlow, visibleProducts);
+  if (stagePatch || needsFlow) {
+    const nextFlow = mergeShopFlowProductStages(deal.shopFlow, visibleProducts);
+    await db
+      .update(deals)
+      .set({
+        ...(stagePatch ?? {}),
+        ...(needsFlow ? { shopFlow: nextFlow } : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(deals.id, deal.id))
+      .catch(() => null);
+    if (stagePatch) {
+      deal.pipelineStage = stagePatch.pipelineStage;
+      deal.pipelineStageSlug = stagePatch.pipelineStageSlug;
+    }
+    if (needsFlow) deal.shopFlow = nextFlow;
   }
   const {
     isHeatherCamirandDeal,

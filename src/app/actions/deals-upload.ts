@@ -14,7 +14,7 @@ import { db } from "@/lib/db";
 import { listDealLookup } from "@/lib/db/queries";
 import { contacts, deals, pipelines } from "@/lib/db/schema";
 import { isUuid } from "@/lib/ids";
-import { dealStageForPipeline } from "@/lib/wire/pipeline";
+import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-deal-write";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -60,8 +60,8 @@ export async function createDealFromUploadSearch(formData: FormData) {
       tenantId: DEFAULT_TENANT_ID,
       title,
       lineOfBusiness: "HO",
-      pipelineStage: dealStageForPipeline("gather"),
-      pipelineStageSlug: "gather",
+      ...NEW_DEAL_PIPELINE_STAGE,
+      shopFlow: seedNewDealShopFlow({ shopLines: ["home"], lineOfBusiness: "HO" }),
       pipelineId: pipeline?.id,
       state: pickedContact?.state || "FL",
       ownerId: session.userId,

@@ -34,6 +34,7 @@ import {
   forceNewShopOnSave,
   packageDraftForNewDealSave,
 } from "@/lib/deals/new-deal-href";
+import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-deal-write";
 import { assertAnaUnbound } from "@/lib/crm/bind-path";
 import { formatPersonName } from "@/lib/crm/display";
 import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
@@ -334,9 +335,15 @@ export async function convertLeadToDeal(
       title: copy.title,
       notes: copy.notes,
       shopLines,
-      pipelineStage: "shopping",
+      ...NEW_DEAL_PIPELINE_STAGE,
+      shopFlow: seedNewDealShopFlow({
+        shopLines,
+        lineOfBusiness: dealLine,
+        quotingForm: copy.quotingForm,
+        quotingLine: copy.quotingLine,
+        policySubType: copy.policySubType,
+      }),
       pipelineId: pipeline?.id ?? null,
-      pipelineStageSlug: "gather",
       lineOfBusiness: dealLine,
       state: copy.dealState,
       primaryNamedInsured: copy.primaryNamedInsured,
@@ -618,9 +625,16 @@ export async function createDeal(formData: FormData) {
         quotingForm,
         policySubType,
       }),
-      pipelineStage: "shopping",
+      ...NEW_DEAL_PIPELINE_STAGE,
+      shopFlow: seedNewDealShopFlow({
+        shopProducts: shopProducts.length ? shopProducts : null,
+        shopLines,
+        lineOfBusiness: line,
+        quotingLine,
+        quotingForm,
+        policySubType,
+      }),
       pipelineId: sourceDeal?.pipelineId ?? pipeline?.id ?? null,
-      pipelineStageSlug: "gather",
       lineOfBusiness: line,
       quotingForm,
       quotingLine,
@@ -775,9 +789,12 @@ export async function createDealFromDecDrop(formData: FormData) {
       leadId: lead.id,
       ownerId: lead.ownerId,
       title: formatDealTitle({ firstName, lastName, line }),
-      pipelineStage: "shopping",
+      ...NEW_DEAL_PIPELINE_STAGE,
+      shopFlow: seedNewDealShopFlow({
+        shopLines: shopLinesFromLine(line),
+        lineOfBusiness: line,
+      }),
       pipelineId: pipeline?.id ?? null,
-      pipelineStageSlug: "gather",
       shopLines: shopLinesFromLine(line),
       lineOfBusiness: line,
       source: "dec_drop",

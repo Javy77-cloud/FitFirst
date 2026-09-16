@@ -81,13 +81,16 @@ import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 import {
   hydrateCopiedLineFingerprints,
   lineRiskFingerprint,
-  parseShopFlow,
   quoteMatchesDealProduct,
   requestScopeForLine,
   resolveShopFlowCompletion,
   sheetNeedsRecheckCue,
   STALE_SHOP_FINGERPRINT,
 } from "@/lib/deals/shop-flow";
+import {
+  mergeShopFlowProductStages,
+  normalizeDealPageStageSlug,
+} from "@/lib/deals/new-deal-write";
 import { DealPackageShell } from "@/components/deal/deal-package-shell";
 import { DealHeaderStage } from "@/components/deals/deal-header-stage";
 import { relabelConvertActivityTitle } from "@/lib/crm/convert";
@@ -199,7 +202,14 @@ export default async function DealPage({
         .then((rows) => rows[0] ?? null),
       listFieldPicklists().catch(() => []),
     ]);
-  const stageView = dealStageView(deal, pipelines);
+  const stageView = dealStageView(
+    {
+      ...deal,
+      pipelineStage: normalizeDealPageStageSlug(deal.pipelineStageSlug || deal.pipelineStage),
+      pipelineStageSlug: normalizeDealPageStageSlug(deal.pipelineStageSlug || deal.pipelineStage),
+    },
+    pipelines,
+  );
   const dealLayout = dealLayoutBundle?.layout ?? null;
   const dealFields = dealLayoutBundle?.fields ?? [];
   const dealValues = dealLayoutBundle?.stored ?? {};
@@ -277,7 +287,7 @@ export default async function DealPage({
       ? logs.filter((row) => logBelongsToLine(row.log.lineOfBusiness, activeLob, isPrimaryPackageLine))
       : logs;
   const allQuoteLogsForMatch = logs.map((item) => item.log);
-  const shopFlow = parseShopFlow(deal.shopFlow);
+  const shopFlow = mergeShopFlowProductStages(deal.shopFlow, dealProducts);
   const lineQuotes = quotes.filter((row) =>
     quoteMatchesDealProduct(
       {
