@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AddNewDealDialog } from "@/components/deals/add-new-deal-dialog";
 import { DealQuickActions } from "@/components/deals/deal-quick-actions";
+import { DealListProductNotes } from "@/components/deals/deal-list-product-notes";
 import { DealProductStageChips } from "@/components/deals/deal-product-stage-chips";
 import { DealStageSelect } from "@/components/deals/deal-stage-select";
 import { DealStaleBadge } from "@/components/deals/deal-stale-badge";
@@ -32,7 +33,12 @@ import {
   type PipelineSheetMode,
 } from "@/lib/deals/pipeline-sheet";
 import { isDealStale, nextDealActionAt } from "@/lib/deals/pipeline-desk";
-import { attachListProductStageHrefs, listProductStageChips } from "@/lib/deals/product-stages";
+import {
+  attachListProductStageHrefs,
+  isDealListNotesColumn,
+  listProductNotes,
+  listProductStageChips,
+} from "@/lib/deals/product-stages";
 import { productSectionComplete } from "@/lib/deals/product-layout";
 import { formatDay } from "@/lib/domain";
 import type { DeskUserOption } from "@/lib/deals/transfer";
@@ -160,6 +166,15 @@ export async function DealsTable({
                 rawChips.map((chip) => [chip.product, productSectionComplete(chip.product, stored)]),
               ),
             });
+            const productNotes = listProductNotes({
+              shopProducts: deal.shopProducts,
+              shopLines: deal.shopLines,
+              lineOfBusiness: deal.lineOfBusiness,
+              quotingForm: deal.quotingForm,
+              policySubType: deal.policySubType,
+              shopFlow: deal.shopFlow,
+              fallbackNote: stored.notes || stored.new_field || deal.notes,
+            });
             const displayTitle = visibleDealTitle(deal);
             const nextDue =
               nextByDeal.get(deal.id) ??
@@ -183,6 +198,7 @@ export async function DealsTable({
               address,
               stage,
               productChips,
+              productNotes,
               contactId: contact?.id ?? deal.contactId,
               accountId: account?.id ?? deal.accountId,
               leadId: deal.leadId,
@@ -205,6 +221,7 @@ export async function DealsTable({
                   lineOfBusiness: deal.lineOfBusiness,
                 }),
                 productChips.map((chip) => `${chip.label} ${chip.stageLabel}`).join(" "),
+                productNotes.map((row) => row.note).join(" "),
                 stage.name,
                 deal.state,
                 deal.propertyOneliner,
@@ -237,6 +254,7 @@ function dealRowCells({
   address,
   stage,
   productChips,
+  productNotes,
   contactId,
   accountId,
   leadId,
@@ -257,6 +275,7 @@ function dealRowCells({
   address: string;
   stage: ReturnType<typeof dealStageView>;
   productChips: ReturnType<typeof listProductStageChips>;
+  productNotes: ReturnType<typeof listProductNotes>;
   contactId: string | null | undefined;
   accountId: string | null | undefined;
   leadId: string | null | undefined;
@@ -388,22 +407,30 @@ function dealRowCells({
     if (cells[field.key] != null) continue;
     const raw = dealFieldRawValue(field, deal, stored);
     sort[field.key] = sheetAttr(raw);
-    cells[field.key] = sheetCell({
-      mode,
-      dealId: deal.id,
-      columnId: field.key,
-      display: formatDealFieldCell(field, raw) || "—",
-      raw,
-      label: field.label,
-      field,
-      contactId,
-      accountId,
-      leadId,
-      ownerId: deal.ownerId,
-      carriers,
-      userRecords,
-      listColorMaps,
-    });
+    cells[field.key] = isDealListNotesColumn(field.key, field)
+      ? (
+          <DealListProductNotes
+            dealId={deal.id}
+            columnId={field.key}
+            notes={productNotes}
+          />
+        )
+      : sheetCell({
+          mode,
+          dealId: deal.id,
+          columnId: field.key,
+          display: formatDealFieldCell(field, raw) || "—",
+          raw,
+          label: field.label,
+          field,
+          contactId,
+          accountId,
+          leadId,
+          ownerId: deal.ownerId,
+          carriers,
+          userRecords,
+          listColorMaps,
+        });
   }
 
   return { sort, cells };

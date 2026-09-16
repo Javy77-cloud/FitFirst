@@ -20,7 +20,13 @@ import {
   renewalStagesForPipeline,
 } from "@/lib/renewal/board-filter";
 import { visiblePipelineBoards } from "@/lib/desk/line-settings";
-import { isPipelineSheetView, parseRenewalsView, renewalsHref, SEEDED_PIPELINES } from "@/lib/wire/pipeline";
+import {
+  isPipelineSheetView,
+  parseRenewalsView,
+  pipelineBookToggleHrefs,
+  renewalsHref,
+  SEEDED_PIPELINES,
+} from "@/lib/wire/pipeline";
 import { RENEWALS_VIEW_COOKIE } from "@/lib/wire/pipeline-view-cookies";
 import { PipelineFilterPopover } from "@/components/filters/pipeline-filter-popover";
 import { loadPageFilterPrefs } from "@/lib/page-filters/store";
@@ -97,11 +103,7 @@ export async function RenewalsDesk({
     <div className="space-y-3" data-ff-renewals-workspace="" data-ff-renewals-desk="">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="mb-0" data-ff-pipeline-book-toggle-wrap="">
-          <PipelineBookModeToggle
-            mode="renewals"
-            newHref="/deals?view=board"
-            renewalsHref="/renewals"
-          />
+          <PipelineBookModeToggle mode="renewals" {...pipelineBookToggleHrefs(view)} />
         </div>
         <p className="text-sm text-muted-foreground">
           <Link href="/renewals/queue" className="text-primary hover:underline">

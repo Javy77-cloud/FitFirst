@@ -710,6 +710,12 @@ export const deals = pgTable(
             policyId?: string | null;
             mintStatus?: "creating" | "unpublished" | "published" | null;
             issuedDone?: boolean;
+            noticeType?: string;
+            inspectionStatus?: string;
+            noticeTaskId?: string | null;
+            noticeNote?: string | null;
+            noticeNotes?: { body: string; at: string; agent?: string | null }[];
+            listNote?: string | null;
           }
         >
       >;

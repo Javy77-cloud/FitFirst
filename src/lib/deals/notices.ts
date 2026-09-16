@@ -86,6 +86,22 @@ export function isActiveNotice(value: unknown): boolean {
   return parseNoticeType(value) !== "none";
 }
 
+/** Old Inspection dropdown leftovers — not a real Set notice. */
+const LEGACY_MINI_NOTICE = new Set(["inspection", "pending_inspection"]);
+
+export function isLegacyMiniNotice(value: unknown): boolean {
+  if (typeof value !== "string") return !value;
+  const trimmed = value.trim();
+  if (!trimmed) return true;
+  return LEGACY_MINI_NOTICE.has(noticeTypeSlug(trimmed));
+}
+
+/** Compact chip beside the stage — hide empty / leftover Inspection crumbs. */
+export function isRenderableNoticeStamp(value: unknown): boolean {
+  if (!isActiveNotice(value) || isLegacyMiniNotice(value)) return false;
+  return Boolean(noticeStampPhrase(value));
+}
+
 function humanizeNoticeSlug(slug: string): string {
   const words = slug.replace(/_/g, " ").trim();
   if (!words) return "Notice";

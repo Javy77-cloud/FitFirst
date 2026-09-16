@@ -37,6 +37,9 @@ import {
   isProductLostReason,
   lateStageNeedsQuoteSelection,
   liveSelectedQuoteIds,
+  appendNoticeNoteLog,
+  joinProductListNotes,
+  listProductNotes,
   parseProductStages,
   productStageFor,
   setProductStage,
@@ -340,7 +343,13 @@ function revalidateNotice(dealId: string, taskId?: string | null) {
 async function persistProductNotice(
   dealId: string,
   product: DealProductId,
-  patch: { noticeType?: string; noticeTaskId?: string | null; noticeNote?: string | null },
+  patch: {
+    noticeType?: string;
+    noticeTaskId?: string | null;
+    noticeNote?: string | null;
+    noticeNotes?: ReturnType<typeof appendNoticeNoteLog>;
+    listNote?: string | null;
+  },
 ) {
   const deal = await loadDeal(dealId);
   if (!deal) throw new Error("Deal not found.");
@@ -352,6 +361,8 @@ async function persistProductNotice(
       : {}),
     ...(patch.noticeTaskId !== undefined ? { noticeTaskId: patch.noticeTaskId } : {}),
     ...(patch.noticeNote !== undefined ? { noticeNote: patch.noticeNote } : {}),
+    ...(patch.noticeNotes !== undefined ? { noticeNotes: patch.noticeNotes } : {}),
+    ...(patch.listNote !== undefined ? { listNote: patch.listNote } : {}),
   });
   await persistDealShopFlow(dealId, { ...saved, productStages: next });
   return deal;
@@ -486,15 +497,68 @@ export async function setDealProductInspection(formData: FormData) {
   revalidatePath(`/deals/${dealId}`);
 }
 
-/** Speak/type working note on the notice — same pad as bindable carrier notes. */
+/** Speak/type complete-notes — appends the notice log and fills Complete notes. */
 export async function saveDealNoticeNote(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "").trim();
   const product = parseDealProduct(String(formData.get("product") ?? ""));
   const notes = String(formData.get("notes") ?? "");
   if (!dealId || !product) throw new Error("Deal and product are required.");
-  await persistProductNotice(dealId, product, { noticeNote: notes.trim() || null });
+  const session = await currentDeskSession();
+  const deal = await loadDeal(dealId);
+  if (!deal) throw new Error("Deal not found.");
+  const saved = parseShopFlow(deal.shopFlow);
+  const stages = parseProductStages(saved.productStages);
+  const current = productStageFor(stages, product, deal.pipelineStageSlug ?? deal.pipelineStage);
+  const text = notes.trim();
+  await persistProductNotice(dealId, product, {
+    noticeNote: text || null,
+    noticeNotes: appendNoticeNoteLog(current.noticeNotes, {
+      body: text,
+      agent: session.name || null,
+    }),
+  });
   revalidateNotice(dealId);
   flashStay(formData, noticeReturnTo(formData, dealId, product), "Notice note saved");
+}
+
+/** Per-product notes on the deals list (right-hand Notes column). */
+export async function saveDealProductListNote(input: {
+  dealId: string;
+  product: string;
+  note: string;
+  columnId?: string | null;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const dealId = input.dealId.trim();
+  const product = parseDealProduct(input.product);
+  if (!dealId || !product) return { ok: false, error: "Deal and product are required." };
+  const deal = await loadDeal(dealId);
+  if (!deal) return { ok: false, error: "Deal not found." };
+  const saved = parseShopFlow(deal.shopFlow);
+  const stages = parseProductStages(saved.productStages);
+  const next = setProductStage(stages, product, { listNote: input.note.trim() || null });
+  await persistDealShopFlow(dealId, { ...saved, productStages: next });
+  const columnId = (input.columnId ?? "").trim();
+  if (columnId === "notes" || columnId === "new_field") {
+    const { writeRecordValues } = await import("@/lib/custom-fields/store");
+    const joined = joinProductListNotes(
+      listProductNotes({
+        shopProducts: deal.shopProducts,
+        shopLines: deal.shopLines,
+        lineOfBusiness: deal.lineOfBusiness,
+        quotingForm: deal.quotingForm,
+        policySubType: deal.policySubType,
+        shopFlow: { ...saved, productStages: next },
+        fallbackNote: deal.notes,
+      }),
+    );
+    if (columnId === "notes") {
+      await db.update(deals).set({ notes: joined, updatedAt: new Date() }).where(eq(deals.id, dealId));
+    }
+    await writeRecordValues(dealId, { [columnId]: joined }).catch(() => null);
+  }
+  revalidatePath("/deals");
+  revalidatePath(`/deals/${dealId}`);
+  return { ok: true };
 }
 
 function noticeFamilyFromForm(value: string): "pc" | "life" | "health" {

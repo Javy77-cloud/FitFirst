@@ -120,8 +120,18 @@ export type DealProductStageState = {
   noticeType?: NoticeType;
   noticeTaskId?: string | null;
   escrowNote?: string | null;
-  /** Working speak/type note on the notice — not the complete-log body. */
+  /** Latest working / complete-notes draft — not the only history. */
   noticeNote?: string | null;
+  /** Logged notice notes (speak/type + complete). Notepad badge/log reads this. */
+  noticeNotes?: NoticeNoteLogEntry[];
+  /** Per-product pipeline-list notes (right-hand Notes column). */
+  listNote?: string | null;
+};
+
+export type NoticeNoteLogEntry = {
+  body: string;
+  at: string;
+  agent?: string | null;
 };
 
 export type DealProductStages = Partial<Record<string, DealProductStageState>>;
@@ -232,6 +242,9 @@ export function parseProductStages(raw: unknown): DealProductStages {
       noticeType?: unknown;
       noticeTaskId?: unknown;
       escrowNote?: unknown;
+      noticeNote?: unknown;
+      noticeNotes?: unknown;
+      listNote?: unknown;
     };
     const rawStage = typeof row.stage === "string" ? normalizeStageSlug(row.stage) : "";
     const selectedQuoteIds = Array.isArray(row.selectedQuoteIds)
@@ -253,6 +266,9 @@ export function parseProductStages(raw: unknown): DealProductStages {
       typeof row.escrowNote === "string" && row.escrowNote.trim() ? row.escrowNote.trim() : null;
     const noticeNote =
       typeof row.noticeNote === "string" && row.noticeNote.trim() ? row.noticeNote.trim() : null;
+    const noticeNotes = parseNoticeNoteLog(row.noticeNotes);
+    const listNote =
+      typeof row.listNote === "string" && row.listNote.trim() ? row.listNote.trim() : null;
     if (
       !rawStage &&
       !selectedQuoteIds.length &&
@@ -263,13 +279,16 @@ export function parseProductStages(raw: unknown): DealProductStages {
       inspectionStatus === "none" &&
       !noticeTaskId &&
       !escrowNote &&
-      !noticeNote
+      !noticeNote &&
+      !noticeNotes.length &&
+      !listNote
     ) {
       continue;
     }
     const stage = canonicalizeProductStage(rawStage || "gathering");
+    const explicitNotice = "noticeType" in row || "inspectionStatus" in row;
     const noticeType =
-      inspectionStatus === "none" && rawStage === "pending_inspection"
+      inspectionStatus === "none" && rawStage === "pending_inspection" && !explicitNotice
         ? "inspection_before_bind"
         : inspectionStatus;
     out[key] = {
@@ -284,6 +303,8 @@ export function parseProductStages(raw: unknown): DealProductStages {
       noticeTaskId,
       escrowNote,
       noticeNote,
+      noticeNotes,
+      listNote,
     };
   }
   return out;
@@ -318,6 +339,8 @@ export function productStageFor(
       noticeTaskId: stored.noticeTaskId ?? null,
       escrowNote: stored.escrowNote ?? null,
       noticeNote: stored.noticeNote ?? null,
+      noticeNotes: stored.noticeNotes ?? [],
+      listNote: stored.listNote ?? null,
     };
   }
   const selectedQuoteIds: string[] = [];
@@ -335,6 +358,8 @@ export function productStageFor(
     noticeTaskId: null,
     escrowNote: null,
     noticeNote: null,
+    noticeNotes: [],
+    listNote: null,
   };
 }
 
@@ -363,6 +388,8 @@ export function setProductStage(
     noticeTaskId: patch.noticeTaskId === undefined ? current.noticeTaskId ?? null : patch.noticeTaskId,
     escrowNote: patch.escrowNote === undefined ? current.escrowNote ?? null : patch.escrowNote,
     noticeNote: patch.noticeNote === undefined ? current.noticeNote ?? null : patch.noticeNote,
+    noticeNotes: patch.noticeNotes === undefined ? current.noticeNotes ?? [] : patch.noticeNotes,
+    listNote: patch.listNote === undefined ? current.listNote ?? null : patch.listNote,
   };
   if (normalizeStageSlug(next.stage) !== "closed_lost") {
     next.lostReason = next.lostReason ?? null;
@@ -590,6 +617,132 @@ export function attachListProductStageHrefs(
 function productStagesFromShopFlow(shopFlow: unknown): DealProductStages {
   if (!shopFlow || typeof shopFlow !== "object" || Array.isArray(shopFlow)) return {};
   return parseProductStages((shopFlow as { productStages?: unknown }).productStages);
+}
+
+export function parseNoticeNoteLog(raw: unknown): NoticeNoteLogEntry[] {
+  if (!Array.isArray(raw)) return [];
+  const out: NoticeNoteLogEntry[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const row = item as { body?: unknown; at?: unknown; agent?: unknown };
+    const body = typeof row.body === "string" ? row.body.trim() : "";
+    if (!body) continue;
+    const at = typeof row.at === "string" && row.at.trim() ? row.at.trim() : "";
+    const agent = typeof row.agent === "string" && row.agent.trim() ? row.agent.trim() : null;
+    out.push({ body, at, agent });
+  }
+  return out;
+}
+
+/** Badge / log — stored log, or the leftover single noticeNote. */
+export function noticeNoteLog(
+  state: Pick<DealProductStageState, "noticeNote" | "noticeNotes"> | null | undefined,
+): NoticeNoteLogEntry[] {
+  const logged = parseNoticeNoteLog(state?.noticeNotes);
+  if (logged.length) return logged;
+  const leftover = (state?.noticeNote ?? "").trim();
+  if (!leftover) return [];
+  return [{ body: leftover, at: "", agent: null }];
+}
+
+export function appendNoticeNoteLog(
+  current: readonly NoticeNoteLogEntry[] | null | undefined,
+  input: { body: string; at?: string; agent?: string | null },
+): NoticeNoteLogEntry[] {
+  const body = input.body.trim();
+  if (!body) return [...(current ?? [])];
+  const last = current?.[current.length - 1];
+  if (last && last.body === body) return [...(current ?? [])];
+  return [
+    ...(current ?? []),
+    {
+      body,
+      at: input.at?.trim() || new Date().toISOString(),
+      agent: input.agent?.trim() || null,
+    },
+  ];
+}
+
+export type ListProductNote = {
+  product: DealProductId;
+  label: string;
+  note: string;
+};
+
+export function isDealListNotesColumn(
+  columnId: string,
+  field?: { type?: string; label?: string } | null,
+): boolean {
+  if (columnId === "notes") return true;
+  if (field?.type === "multi_line" && /notes/i.test(field.label ?? "")) return true;
+  return columnId === "new_field" && (!field || /notes/i.test(field.label ?? "Notes"));
+}
+
+/** One list-notes field per product — 2 products → 2 sections, 3 → 3. */
+export function listProductNotes(input: {
+  shopProducts?: string[] | null;
+  shopLines?: string[] | null;
+  lineOfBusiness?: string | null;
+  quotingForm?: string | null;
+  policySubType?: string | null;
+  shopFlow?: unknown;
+  fallbackNote?: string | null;
+}): ListProductNote[] {
+  const chips = listProductStageChips(input);
+  const stages = productStagesFromShopFlow(input.shopFlow);
+  const fallback = (input.fallbackNote ?? "").trim();
+  return chips.map((chip, index) => {
+    const stored = (stages[chip.product]?.listNote ?? "").trim();
+    return {
+      product: chip.product,
+      label: chip.label,
+      note: stored || (index === 0 ? fallback : ""),
+    };
+  });
+}
+
+export function joinProductListNotes(notes: readonly ListProductNote[]): string {
+  const filled = notes.filter((row) => row.note.trim());
+  if (!filled.length) return "";
+  if (notes.length <= 1) return filled[0]?.note.trim() ?? "";
+  return notes
+    .map((row) => {
+      const body = row.note.trim();
+      return body ? `${row.label}: ${body}` : "";
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+export function isHeatherCamirandDeal(deal: {
+  title?: string | null;
+  primaryNamedInsured?: string | null;
+}): boolean {
+  const blob = `${deal.title ?? ""} ${deal.primaryNamedInsured ?? ""}`.toLowerCase();
+  if (/\bcameron\b/.test(blob)) return false;
+  return /\bheather\b/.test(blob) && /\bcamirand\b/.test(blob);
+}
+
+const CAMIRAND_CLEAR_NOTICE_PRODUCTS = new Set(["homeowners", "auto"]);
+
+/** Heather Camirand — drop leftover HO3 / Auto mini notices. Keep Flood. */
+export function stripStaleCamirandProductNotices(stages: DealProductStages): DealProductStages {
+  let changed = false;
+  const next: DealProductStages = { ...stages };
+  for (const product of CAMIRAND_CLEAR_NOTICE_PRODUCTS) {
+    const current = next[product];
+    if (!current) continue;
+    const notice = parseNoticeType(current.noticeType ?? current.inspectionStatus);
+    if (notice === "none" && !current.noticeTaskId) continue;
+    next[product] = {
+      ...current,
+      inspectionStatus: "none",
+      noticeType: "none",
+      noticeTaskId: null,
+    };
+    changed = true;
+  }
+  return changed ? next : stages;
 }
 
 /** Always show a stage word on list/board chips, including Gathering. */
