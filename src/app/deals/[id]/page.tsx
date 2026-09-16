@@ -11,11 +11,17 @@ import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
 import { ClientScriptRunner } from "@/components/developer-hub/client-script-runner";
 import {
   getDealWorkspace,
+  getReviewTask,
   listCarriers,
   listPipelines,
   listQuoteLogs,
   listRecordActivities,
 } from "@/lib/db/queries";
+import { listFieldPicklists } from "@/lib/custom-fields/picklist-store";
+import { STARTER_PICKLIST_DEAL_NOTICES } from "@/lib/custom-fields/starter-picklists";
+import { noticeTypesFromPicklist } from "@/lib/deals/notices";
+import { DealNotices } from "@/components/deal/deal-notices";
+import { taskDueInputParts } from "@/lib/tasks/due-at";
 import { ensureSeededPipelines } from "@/lib/wire/ensure-pipelines";
 import { listEnabledScriptsFor } from "@/lib/db/developer-hub-queries";
 import {
@@ -151,7 +157,7 @@ export default async function DealPage({
     jobs,
     boundPolicies,
   } = workspace;
-  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow, pipelines, context, agencyRow] =
+  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow, pipelines, context, agencyRow, noticePicklists] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
       listEnabledScriptsFor("deals", "edit"),
@@ -183,6 +189,7 @@ export default async function DealPage({
         .where(eq(agencySettings.tenantId, DEFAULT_TENANT_ID))
         .limit(1)
         .then((rows) => rows[0] ?? null),
+      listFieldPicklists().catch(() => []),
     ]);
   const stageView = dealStageView(deal, pipelines);
   const dealLayout = dealLayoutBundle?.layout ?? null;
@@ -392,6 +399,13 @@ export default async function DealPage({
     activeProduct,
     stageView.slug ?? deal.pipelineStage,
   );
+  const dealNoticeTypes = noticeTypesFromPicklist(
+    noticePicklists.find((list) => list.name === STARTER_PICKLIST_DEAL_NOTICES)?.options,
+  );
+  const noticeTask = activeProductState.noticeTaskId
+    ? await getReviewTask(activeProductState.noticeTaskId)
+    : null;
+  const noticeDue = taskDueInputParts(noticeTask?.dueDate);
   const liveQuoteIds = lineQuotes
     .filter((row) => row.quote.stub !== true)
     .map((row) => row.quote.id);
@@ -656,6 +670,19 @@ export default async function DealPage({
                       }),
                     )}
                   />
+                  <div className="mt-1.5" data-ff-deal-header-notices="">
+                    <DealNotices
+                      dealId={deal.id}
+                      product={activeProduct}
+                      stage={activeProductState.stage}
+                      noticeType={activeProductState.noticeType ?? activeProductState.inspectionStatus}
+                      noticeTypes={dealNoticeTypes}
+                      taskDueDate={noticeDue.date || null}
+                      taskDueTime={noticeDue.time || null}
+                      returnTo={`/deals/${deal.id}?tab=${activeTab}&product=${activeProduct}`}
+                      variant="header"
+                    />
+                  </div>
                 </>
               ) : null}
             </div>
@@ -831,6 +858,11 @@ export default async function DealPage({
                         })()}
                         autoIssue={issue === "1"}
                         inspectionStatus={activeProductState.inspectionStatus}
+                        noticeType={activeProductState.noticeType ?? activeProductState.inspectionStatus}
+                        noticeTypes={dealNoticeTypes}
+                        noticeTaskDueDate={noticeDue.date || null}
+                        noticeTaskDueTime={noticeDue.time || null}
+                        noticeReturnTo={`/deals/${deal.id}?tab=quotes&product=${activeProduct}`}
                       />
                     )}
                   </div>

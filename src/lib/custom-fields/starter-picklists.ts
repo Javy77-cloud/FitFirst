@@ -28,6 +28,7 @@ export const STARTER_PICKLIST_EDUCATION = "Education Level";
 export const STARTER_PICKLIST_EMPLOYMENT = "Employment Status";
 export const STARTER_PICKLIST_CONTACT_METHOD = "Preferred Contact Method";
 export const STARTER_PICKLIST_CONTACT_TIME = "Preferred Contact Time";
+export const STARTER_PICKLIST_DEAL_NOTICES = "Deal notices";
 export const STARTER_PICKLIST_NAMES = [
   STARTER_PICKLIST_US_STATES,
   STARTER_PICKLIST_LINES,
@@ -43,6 +44,7 @@ export const STARTER_PICKLIST_NAMES = [
   STARTER_PICKLIST_EMPLOYMENT,
   STARTER_PICKLIST_CONTACT_METHOD,
   STARTER_PICKLIST_CONTACT_TIME,
+  STARTER_PICKLIST_DEAL_NOTICES,
 ] as const;
 
 /** 50 states + DC. Code first so a State field can store FL. */
@@ -173,6 +175,10 @@ export const STARTER_FIELD_PICKLISTS: StarterFieldPicklist[] = [
   { name: STARTER_PICKLIST_EMPLOYMENT, options: [...CONTACT_EMPLOYMENT_OPTIONS] },
   { name: STARTER_PICKLIST_CONTACT_METHOD, options: [...CONTACT_METHOD_OPTIONS] },
   { name: STARTER_PICKLIST_CONTACT_TIME, options: [...CONTACT_TIME_OPTIONS] },
+  {
+    name: STARTER_PICKLIST_DEAL_NOTICES,
+    options: ["Inspection before bind", "Check mortgagee payment"],
+  },
 ];
 
 export function starterPicklistByName(name: string): StarterFieldPicklist | undefined {

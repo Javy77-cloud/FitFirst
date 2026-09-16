@@ -5,9 +5,10 @@ import { and, eq } from "drizzle-orm";
 import { moveDealToStage } from "@/app/actions/pipeline";
 import { currentDeskSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { deals, quoteAttemptLogs, quotes } from "@/lib/db/schema";
+import { deals, quoteAttemptLogs, quotes, reviewTasks } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
+  dealProductDef,
   inferDealProducts,
   parseDealProduct,
   splitHomeProducts,
@@ -15,8 +16,14 @@ import {
 } from "@/lib/deals/deal-products";
 import { sheetLineForProduct } from "@/lib/deals/deal-products";
 import {
+  noticeCompleteLogBody,
+  noticeTaskKind,
+  noticeTaskTitle,
+  noticeTypeLabel,
+  parseNoticeType,
+} from "@/lib/deals/notices";
+import {
   canonicalizeProductStage,
-  isInspectionStatus,
   isProductLostReason,
   lateStageNeedsQuoteSelection,
   liveSelectedQuoteIds,
@@ -25,12 +32,14 @@ import {
   setProductStage,
   shouldAutoAdvanceStage,
 } from "@/lib/deals/product-stages";
+import { writeDeskComms } from "@/lib/desk/write-comms";
 import { issuePolicyFromDeclaration } from "@/app/actions/policy-mint";
 import { isPolicyIssuedStage, quotesOnlyStageBlocked } from "@/lib/policy/mint-gate";
 import { parseShopFlow, quoteMatchesDealProduct } from "@/lib/deals/shop-flow";
 import { persistDealShopFlow } from "@/lib/deals/shop-flow-persist";
-import { flashAction } from "@/lib/flash-action";
+import { flashAction, flashStay } from "@/lib/flash-action";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
+import { taskDueFromForm } from "@/lib/tasks/due-at";
 
 async function loadDeal(dealId: string) {
   const [deal] = await db
@@ -306,18 +315,222 @@ export async function autoAdvanceDealProductStage(input: {
   });
 }
 
-export async function setDealProductInspection(formData: FormData) {
-  const dealId = String(formData.get("dealId") ?? "").trim();
-  const product = parseDealProduct(String(formData.get("product") ?? ""));
-  const status = String(formData.get("inspectionStatus") ?? "").trim();
-  if (!dealId || !product || !isInspectionStatus(status)) {
-    throw new Error("Deal, product, and inspection status are required.");
-  }
+function noticeReturnTo(formData: FormData, dealId: string, product: DealProductId) {
+  return `/deals/${dealId}?tab=quotes&product=${product}`;
+}
+
+function revalidateNotice(dealId: string, taskId?: string | null) {
+  revalidatePath(`/deals/${dealId}`);
+  revalidatePath("/deals");
+  revalidatePath("/tasks");
+  if (taskId) revalidatePath(`/tasks/${taskId}`);
+}
+
+async function persistProductNotice(
+  dealId: string,
+  product: DealProductId,
+  patch: { noticeType?: string; noticeTaskId?: string | null },
+) {
   const deal = await loadDeal(dealId);
   if (!deal) throw new Error("Deal not found.");
   const saved = parseShopFlow(deal.shopFlow);
   const stages = parseProductStages(saved.productStages);
-  const next = setProductStage(stages, product, { inspectionStatus: status });
+  const next = setProductStage(stages, product, {
+    inspectionStatus: patch.noticeType,
+    noticeType: patch.noticeType,
+    noticeTaskId: patch.noticeTaskId,
+  });
   await persistDealShopFlow(dealId, { ...saved, productStages: next });
+  return deal;
+}
+
+async function upsertNoticeTask(input: {
+  taskId?: string | null;
+  dealId: string;
+  contactId?: string | null;
+  product: DealProductId;
+  noticeType: string;
+  note?: string | null;
+  dueDate: Date;
+  assigneeId?: string | null;
+}) {
+  const title = noticeTaskTitle({
+    noticeType: input.noticeType,
+    productLabel: dealProductDef(input.product).label,
+    note: input.note,
+  });
+  const kind = noticeTaskKind(input.noticeType);
+  if (input.taskId) {
+    const [existing] = await db
+      .select({ id: reviewTasks.id })
+      .from(reviewTasks)
+      .where(and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), eq(reviewTasks.id, input.taskId)))
+      .limit(1);
+    if (existing) {
+      await db
+        .update(reviewTasks)
+        .set({
+          title,
+          kind,
+          dueDate: input.dueDate,
+          status: "open",
+          completedAt: null,
+          dealId: input.dealId,
+          contactId: input.contactId ?? null,
+        })
+        .where(eq(reviewTasks.id, existing.id));
+      return existing.id;
+    }
+  }
+  const [row] = await db
+    .insert(reviewTasks)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      title,
+      kind,
+      dueDate: input.dueDate,
+      status: "open",
+      dealId: input.dealId,
+      contactId: input.contactId ?? null,
+      assigneeId: input.assigneeId ?? null,
+    })
+    .returning({ id: reviewTasks.id });
+  return row?.id ?? null;
+}
+
+/** Set or change a product notice. Optional review task (default on). Never clears on Bound. */
+export async function setDealProductNotice(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const noticeType = parseNoticeType(
+    formData.get("noticeType") ?? formData.get("inspectionStatus"),
+  );
+  if (!dealId || !product) throw new Error("Deal and product are required.");
+  if (noticeType === "none") {
+    throw new Error("Pick a notice type, or complete the notice to clear it.");
+  }
+  const session = await currentDeskSession();
+  const deal = await loadDeal(dealId);
+  if (!deal) throw new Error("Deal not found.");
+  const saved = parseShopFlow(deal.shopFlow);
+  const stages = parseProductStages(saved.productStages);
+  const current = productStageFor(stages, product, deal.pipelineStageSlug ?? deal.pipelineStage);
+  const createTask = String(formData.get("createTask") ?? "1") === "1";
+  const note = String(formData.get("note") ?? formData.get("titleNotes") ?? "").trim();
+  let noticeTaskId = current.noticeTaskId ?? null;
+  if (createTask) {
+    noticeTaskId = await upsertNoticeTask({
+      taskId: noticeTaskId,
+      dealId,
+      contactId: deal.contactId,
+      product,
+      noticeType,
+      note,
+      dueDate: taskDueFromForm(formData),
+      assigneeId: session.userId,
+    });
+  }
+  await persistDealShopFlow(dealId, {
+    ...saved,
+    productStages: setProductStage(stages, product, {
+      inspectionStatus: noticeType,
+      noticeType,
+      noticeTaskId,
+    }),
+  });
+  revalidateNotice(dealId, noticeTaskId);
+  flashStay(formData, noticeReturnTo(formData, dealId, product), "Notice set");
+}
+
+export async function snoozeDealProductNotice(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  if (!dealId || !product) throw new Error("Deal and product are required.");
+  const session = await currentDeskSession();
+  const deal = await loadDeal(dealId);
+  if (!deal) throw new Error("Deal not found.");
+  const saved = parseShopFlow(deal.shopFlow);
+  const stages = parseProductStages(saved.productStages);
+  const current = productStageFor(stages, product, deal.pipelineStageSlug ?? deal.pipelineStage);
+  const noticeType = parseNoticeType(current.noticeType ?? current.inspectionStatus);
+  if (noticeType === "none") throw new Error("No active notice to snooze.");
+  const noticeTaskId = await upsertNoticeTask({
+    taskId: current.noticeTaskId,
+    dealId,
+    contactId: deal.contactId,
+    product,
+    noticeType,
+    dueDate: taskDueFromForm(formData),
+    assigneeId: session.userId,
+  });
+  await persistDealShopFlow(dealId, {
+    ...saved,
+    productStages: setProductStage(stages, product, { noticeTaskId }),
+  });
+  revalidateNotice(dealId, noticeTaskId);
+  flashStay(formData, noticeReturnTo(formData, dealId, product), "Notice snoozed");
+}
+
+export async function completeDealProductNotice(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const notes = String(formData.get("notes") ?? "").trim();
+  if (!dealId || !product) throw new Error("Deal and product are required.");
+  if (notes.length < 2) throw new Error("Add a short note to complete the notice.");
+  const session = await currentDeskSession();
+  const deal = await loadDeal(dealId);
+  if (!deal) throw new Error("Deal not found.");
+  const saved = parseShopFlow(deal.shopFlow);
+  const stages = parseProductStages(saved.productStages);
+  const current = productStageFor(stages, product, deal.pipelineStageSlug ?? deal.pipelineStage);
+  const noticeType = parseNoticeType(current.noticeType ?? current.inspectionStatus);
+  if (noticeType === "none") throw new Error("No active notice to complete.");
+  const occurredAt = new Date();
+  await writeDeskComms({
+    kind: "note",
+    title: `Notice completed · ${noticeTypeLabel(noticeType)}`,
+    body: noticeCompleteLogBody({
+      agent: session.name || "Agent",
+      noticeType,
+      notes,
+    }),
+    status: "completed",
+    eventType: "completed",
+    occurredAt,
+    dealId,
+    contactId: deal.contactId,
+    accountId: deal.accountId,
+    leadId: deal.leadId,
+    assignee: session.name || null,
+    actorId: session.userId,
+    actorName: session.name || null,
+  });
+  if (current.noticeTaskId) {
+    await db
+      .update(reviewTasks)
+      .set({ status: "done", completedAt: occurredAt })
+      .where(
+        and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), eq(reviewTasks.id, current.noticeTaskId)),
+      );
+  }
+  await persistDealShopFlow(dealId, {
+    ...saved,
+    productStages: setProductStage(stages, product, {
+      inspectionStatus: "none",
+      noticeType: "none",
+      noticeTaskId: null,
+    }),
+  });
+  revalidateNotice(dealId, current.noticeTaskId);
+  flashStay(formData, noticeReturnTo(formData, dealId, product), "Notice completed");
+}
+
+/** Leftover Inspection dropdown — maps old slugs, does not create a task. */
+export async function setDealProductInspection(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const status = parseNoticeType(formData.get("inspectionStatus") ?? formData.get("noticeType"));
+  if (!dealId || !product) throw new Error("Deal, product, and notice type are required.");
+  await persistProductNotice(dealId, product, { noticeType: status });
   revalidatePath(`/deals/${dealId}`);
 }

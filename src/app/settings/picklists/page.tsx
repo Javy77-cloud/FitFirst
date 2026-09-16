@@ -26,9 +26,11 @@ export default async function FieldPicklistsPage() {
       <p className="mb-4 text-sm text-muted-foreground">
         Global option lists for picklist and multi-select fields. Create a list once, then reuse it
         on any field on any line of business. Each value can have a color from the full desk palette
-        and one Default. Values sort A–Z on save. Starter lists — US states, lines of business, and
-        common carriers — are ready for <span className="font-medium text-navy">Use a global list</span>{" "}
-        on the field builder. These are not the policy book lists under Lines / Global lists.
+        and one Default. Values sort A–Z on save. Starter lists — US states, lines of business,
+        common carriers, and Deal notices — are ready for{" "}
+        <span className="font-medium text-navy">Use a global list</span> on the field builder.
+        Deal notices powers the deal header / Quotes notice chip. These are not the policy book
+        lists under Lines / Global lists.
       </p>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Link href="/settings/field-builder" className="text-sm text-primary hover:underline">

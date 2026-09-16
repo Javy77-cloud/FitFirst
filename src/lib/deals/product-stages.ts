@@ -6,6 +6,12 @@ import {
   type DealProductId,
 } from "@/lib/deals/deal-products";
 import { humanizeDealStage } from "@/lib/deals/package-lines";
+import {
+  parseNoticeType,
+  SEED_NOTICE_LABELS,
+  SEED_NOTICE_TYPES,
+  type NoticeType,
+} from "@/lib/deals/notices";
 import { resolveDealStampStage, type DealStampStage } from "@/lib/deals/status-stamp";
 
 /** Locked per-product pipeline — product chip owns this, tabs are workspaces. */
@@ -45,13 +51,16 @@ export const PRODUCT_STAGE_ALIASES: Record<string, string> = {
   lost: "closed_lost",
 };
 
-export const INSPECTION_STATUSES = ["none", "before_bind", "carrier_post_bind"] as const;
-export type InspectionStatus = (typeof INSPECTION_STATUSES)[number];
+/** @deprecated Use SEED_NOTICE_TYPES — leftover Inspection dropdown. */
+export const INSPECTION_STATUSES = SEED_NOTICE_TYPES;
+export type InspectionStatus = NoticeType;
 
-export const INSPECTION_STATUS_LABELS: Record<InspectionStatus, string> = {
-  none: "No inspection",
-  before_bind: "Inspection before bind",
-  carrier_post_bind: "Carrier post-bind inspection",
+export const INSPECTION_STATUS_LABELS: Record<string, string> = {
+  none: SEED_NOTICE_LABELS.none,
+  before_bind: SEED_NOTICE_LABELS.inspection_before_bind,
+  inspection_before_bind: SEED_NOTICE_LABELS.inspection_before_bind,
+  carrier_post_bind: SEED_NOTICE_LABELS.check_mortgagee_payment,
+  check_mortgagee_payment: SEED_NOTICE_LABELS.check_mortgagee_payment,
 };
 
 /** Stages that stamp the product and must name the quote(s) first. */
@@ -102,7 +111,10 @@ export type DealProductStageState = {
   lostReason?: string | null;
   policyId?: string | null;
   mintStatus?: DealProductMintStatus | null;
+  /** Notice type slug. JSON key stays `inspectionStatus` for leftover rows. */
   inspectionStatus?: InspectionStatus;
+  noticeType?: NoticeType;
+  noticeTaskId?: string | null;
   escrowNote?: string | null;
 };
 
@@ -110,7 +122,6 @@ export type DealProductStages = Partial<Record<string, DealProductStageState>>;
 
 const LATE_SET = new Set<string>(LATE_PRODUCT_STAGES);
 const BOARD_NOOP_SET = new Set<string>(BOARD_NOOP_STAGES);
-const INSPECTION_SET = new Set<string>(INSPECTION_STATUSES);
 
 export function normalizeStageSlug(stage?: string | null): string {
   return (stage ?? "")
@@ -129,12 +140,11 @@ export function canonicalizeProductStage(stage?: string | null): string {
 }
 
 export function isInspectionStatus(value: string | null | undefined): value is InspectionStatus {
-  return Boolean(value && INSPECTION_SET.has(value));
+  return Boolean(value && parseNoticeType(value));
 }
 
 export function parseInspectionStatus(value: unknown): InspectionStatus {
-  if (typeof value === "string" && isInspectionStatus(value)) return value;
-  return "none";
+  return parseNoticeType(value);
 }
 
 export function isLateProductStage(stage?: string | null): stage is LateProductStage {
@@ -177,6 +187,8 @@ export function parseProductStages(raw: unknown): DealProductStages {
       policyId?: unknown;
       mintStatus?: unknown;
       inspectionStatus?: unknown;
+      noticeType?: unknown;
+      noticeTaskId?: unknown;
       escrowNote?: unknown;
     };
     const rawStage = typeof row.stage === "string" ? normalizeStageSlug(row.stage) : "";
@@ -191,7 +203,9 @@ export function parseProductStages(raw: unknown): DealProductStages {
       row.mintStatus === "creating" || row.mintStatus === "unpublished" || row.mintStatus === "published"
         ? row.mintStatus
         : null;
-    const inspectionStatus = parseInspectionStatus(row.inspectionStatus);
+    const inspectionStatus = parseInspectionStatus(row.noticeType ?? row.inspectionStatus);
+    const noticeTaskId =
+      typeof row.noticeTaskId === "string" && row.noticeTaskId.trim() ? row.noticeTaskId.trim() : null;
     const escrowNote =
       typeof row.escrowNote === "string" && row.escrowNote.trim() ? row.escrowNote.trim() : null;
     if (
@@ -201,21 +215,25 @@ export function parseProductStages(raw: unknown): DealProductStages {
       !policyId &&
       !mintStatus &&
       inspectionStatus === "none" &&
+      !noticeTaskId &&
       !escrowNote
     ) {
       continue;
     }
     const stage = canonicalizeProductStage(rawStage || "gathering");
+    const noticeType =
+      inspectionStatus === "none" && rawStage === "pending_inspection"
+        ? "inspection_before_bind"
+        : inspectionStatus;
     out[key] = {
       stage,
       selectedQuoteIds,
       lostReason,
       policyId,
       mintStatus,
-      inspectionStatus:
-        inspectionStatus === "none" && rawStage === "pending_inspection"
-          ? "before_bind"
-          : inspectionStatus,
+      inspectionStatus: noticeType,
+      noticeType,
+      noticeTaskId,
       escrowNote,
     };
   }
@@ -238,24 +256,31 @@ export function productStageFor(
   const stored = stages?.[product];
   if (stored) {
     const selectedQuoteIds = stored.selectedQuoteIds ?? [];
+    const noticeType = stored.noticeType ?? stored.inspectionStatus ?? "none";
     return {
       stage: stageWithoutLeftoverQuoteSent(stored.stage || fallbackStage || "gathering", selectedQuoteIds),
       selectedQuoteIds,
       lostReason: stored.lostReason ?? null,
       policyId: stored.policyId ?? null,
       mintStatus: stored.mintStatus ?? null,
-      inspectionStatus: stored.inspectionStatus ?? "none",
+      inspectionStatus: noticeType,
+      noticeType,
+      noticeTaskId: stored.noticeTaskId ?? null,
       escrowNote: stored.escrowNote ?? null,
     };
   }
   const selectedQuoteIds: string[] = [];
+  const leftoverNotice =
+    normalizeStageSlug(fallbackStage) === "pending_inspection" ? "inspection_before_bind" : "none";
   return {
     stage: stageWithoutLeftoverQuoteSent(fallbackStage || "gathering", selectedQuoteIds),
     selectedQuoteIds,
     lostReason: null,
     policyId: null,
     mintStatus: null,
-    inspectionStatus: normalizeStageSlug(fallbackStage) === "pending_inspection" ? "before_bind" : "none",
+    inspectionStatus: leftoverNotice,
+    noticeType: leftoverNotice,
+    noticeTaskId: null,
     escrowNote: null,
   };
 }
@@ -274,9 +299,14 @@ export function setProductStage(
     policyId: patch.policyId === undefined ? current.policyId : patch.policyId,
     mintStatus: patch.mintStatus === undefined ? current.mintStatus : patch.mintStatus,
     inspectionStatus:
-      patch.inspectionStatus === undefined
-        ? current.inspectionStatus ?? "none"
-        : parseInspectionStatus(patch.inspectionStatus),
+      patch.noticeType === undefined && patch.inspectionStatus === undefined
+        ? current.noticeType ?? current.inspectionStatus ?? "none"
+        : parseInspectionStatus(patch.noticeType ?? patch.inspectionStatus),
+    noticeType:
+      patch.noticeType === undefined && patch.inspectionStatus === undefined
+        ? current.noticeType ?? current.inspectionStatus ?? "none"
+        : parseInspectionStatus(patch.noticeType ?? patch.inspectionStatus),
+    noticeTaskId: patch.noticeTaskId === undefined ? current.noticeTaskId ?? null : patch.noticeTaskId,
     escrowNote: patch.escrowNote === undefined ? current.escrowNote ?? null : patch.escrowNote,
   };
   if (normalizeStageSlug(next.stage) !== "closed_lost") {

@@ -80,8 +80,10 @@ describe("per-product stages", () => {
     expect(canonicalizeProductStage("gather")).toBe("gathering");
     expect(canonicalizeProductStage("quotes")).toBe("markets");
     expect(canonicalizeProductStage("pending_inspection")).toBe("bound");
-    expect(parseInspectionStatus("before_bind")).toBe("before_bind");
-    expect(parseInspectionStatus("nope")).toBe("none");
+    expect(parseInspectionStatus("before_bind")).toBe("inspection_before_bind");
+    expect(parseInspectionStatus("carrier_post_bind")).toBe("check_mortgagee_payment");
+    expect(parseInspectionStatus("")).toBe("none");
+    expect(parseInspectionStatus(null)).toBe("none");
     expect(isBoardNoopStage("quote_sent")).toBe(true);
     expect(isBoardNoopStage("policy_issued")).toBe(true);
     expect(lateStageNeedsQuoteSelection({ stage: "policy_issued", selectedQuoteIds: ["q1"] })).toBe(
@@ -95,7 +97,8 @@ describe("per-product stages", () => {
       homeowners: { stage: "pending_inspection", selectedQuoteIds: ["q1"] },
     });
     expect(leftover.homeowners?.stage).toBe("bound");
-    expect(leftover.homeowners?.inspectionStatus).toBe("before_bind");
+    expect(leftover.homeowners?.inspectionStatus).toBe("inspection_before_bind");
+    expect(leftover.homeowners?.noticeType).toBe("inspection_before_bind");
   });
 
   it("keeps Gloria Homeowners Quote sent off Landlord", () => {
@@ -405,5 +408,41 @@ describe("per-product stages", () => {
     expect(source("src/lib/quotes/speech-note.ts")).toMatch(/collectFinalSpeechTranscript/);
     expect(source("src/components/deal/quote-note-pad.tsx")).toMatch(/prepareSpeechMicrophone/);
     expect(source("src/components/deal/quotes-results-table.tsx")).toMatch(/data-ff-quote-select/);
+  });
+
+  it("keeps Notices as a flag through Bound / Policy issued and shows a chip", () => {
+    const bound = setProductStage(
+      { homeowners: { stage: "quote_review", selectedQuoteIds: ["q1"], inspectionStatus: "inspection_before_bind" } },
+      "homeowners",
+      { stage: "bound", selectedQuoteIds: ["q1"] },
+    );
+    expect(bound.homeowners?.inspectionStatus).toBe("inspection_before_bind");
+    expect(bound.homeowners?.noticeType).toBe("inspection_before_bind");
+    const issued = setProductStage(bound, "homeowners", { stage: "policy_issued", selectedQuoteIds: ["q1"] });
+    expect(issued.homeowners?.inspectionStatus).toBe("inspection_before_bind");
+    expect(
+      parseProductStages({
+        homeowners: { stage: "bound", selectedQuoteIds: ["q1"], inspectionStatus: "carrier_post_bind" },
+      }).homeowners,
+    ).toMatchObject({
+      stage: "bound",
+      inspectionStatus: "check_mortgagee_payment",
+      noticeType: "check_mortgagee_payment",
+    });
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/setDealProductNotice/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/completeDealProductNotice/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/writeDeskComms/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/noticeCompleteLogBody/);
+    expect(source("src/app/actions/product-stage.ts")).not.toMatch(
+      /stageSlug === "bound"[\s\S]{0,200}noticeType: "none"/,
+    );
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/Notices/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/data-ff-deal-notice-chip/);
+    expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(/>Inspection</);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/data-ff-deal-header-notices/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/DealNotices/);
+    expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_DEAL_NOTICES/);
+    expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/Inspection before bind/);
+    expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/Check mortgagee payment/);
   });
 });

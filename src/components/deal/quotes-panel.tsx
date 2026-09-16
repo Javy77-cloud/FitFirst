@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { QuotesBindableSignal } from "@/components/deal/quotes-bindable-signal";
-import { QuotesStageFlags } from "@/components/deal/quotes-stage-flags";
+import { DealNotices } from "@/components/deal/deal-notices";
+import type { NoticeTypeOption } from "@/lib/deals/notices";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import type { QuoteFileRow } from "@/components/deal/quote-file-actions";
 import { LoadShopListButton } from "@/components/deal/load-shop-list-button";
@@ -81,7 +82,11 @@ function QuotesWarningStrip({
   dealId,
   product,
   productStage,
-  inspectionStatus,
+  noticeType,
+  noticeTypes,
+  noticeTaskDueDate,
+  noticeTaskDueTime,
+  noticeReturnTo,
   quotes,
   sheetStale,
   completeness,
@@ -89,7 +94,11 @@ function QuotesWarningStrip({
   dealId: string;
   product?: string | null;
   productStage?: string | null;
-  inspectionStatus?: "none" | "before_bind" | "carrier_post_bind" | null;
+  noticeType?: string | null;
+  noticeTypes?: readonly NoticeTypeOption[];
+  noticeTaskDueDate?: string | null;
+  noticeTaskDueTime?: string | null;
+  noticeReturnTo?: string | null;
   quotes: Quote[];
   sheetStale?: boolean;
   completeness: LineQuoteCompleteness | null;
@@ -99,11 +108,16 @@ function QuotesWarningStrip({
       className="flex flex-wrap items-center gap-2"
       data-ff-quotes-warning-strip=""
     >
-      <QuotesStageFlags
+      <DealNotices
         dealId={dealId}
         product={product}
         stage={productStage}
-        inspectionStatus={inspectionStatus}
+        noticeType={noticeType}
+        noticeTypes={noticeTypes}
+        taskDueDate={noticeTaskDueDate}
+        taskDueTime={noticeTaskDueTime}
+        returnTo={noticeReturnTo}
+        variant="quotes"
       />
       <QuotesBindableSignal quotes={quotes} />
       {sheetStale ? (
@@ -149,6 +163,11 @@ export function QuotesPanel({
   issuedPolicy = null,
   autoIssue = false,
   inspectionStatus = "none",
+  noticeType,
+  noticeTypes,
+  noticeTaskDueDate,
+  noticeTaskDueTime,
+  noticeReturnTo,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -181,7 +200,12 @@ export function QuotesPanel({
   mintStatus?: string | null;
   issuedPolicy?: IssuedPolicyChip | null;
   autoIssue?: boolean;
-  inspectionStatus?: "none" | "before_bind" | "carrier_post_bind" | null;
+  inspectionStatus?: string | null;
+  noticeType?: string | null;
+  noticeTypes?: readonly NoticeTypeOption[];
+  noticeTaskDueDate?: string | null;
+  noticeTaskDueTime?: string | null;
+  noticeReturnTo?: string | null;
 }) {
   const activeLine: ShopLine | null = isShopLine(shopLine) ? shopLine : null;
   const lineLogs = logs.map((row) => row.log);
@@ -279,7 +303,11 @@ export function QuotesPanel({
             dealId={dealId}
             product={product}
             productStage={productStage}
-            inspectionStatus={inspectionStatus}
+            noticeType={noticeType ?? inspectionStatus}
+            noticeTypes={noticeTypes}
+            noticeTaskDueDate={noticeTaskDueDate}
+            noticeTaskDueTime={noticeTaskDueTime}
+            noticeReturnTo={noticeReturnTo}
             quotes={sorted.map((row) => row.quote)}
             sheetStale={sheetStale}
             completeness={completeness}
@@ -318,7 +346,11 @@ export function QuotesPanel({
         dealId={dealId}
         product={product}
         productStage={productStage}
-        inspectionStatus={inspectionStatus}
+        noticeType={noticeType ?? inspectionStatus}
+        noticeTypes={noticeTypes}
+        noticeTaskDueDate={noticeTaskDueDate}
+        noticeTaskDueTime={noticeTaskDueTime}
+        noticeReturnTo={noticeReturnTo}
         quotes={sorted.map((row) => row.quote)}
         sheetStale={sheetStale}
         completeness={completeness}

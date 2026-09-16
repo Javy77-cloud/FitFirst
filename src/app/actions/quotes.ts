@@ -521,7 +521,7 @@ async function syncDealPipelineFromQuoteStatus(
         stage: stageSlug,
         selectedQuoteIds: [...selected],
         ...(agentStatus === "waiting_on_inspection"
-          ? { inspectionStatus: "before_bind" as const }
+          ? { inspectionStatus: "inspection_before_bind" as const, noticeType: "inspection_before_bind" as const }
           : {}),
       }),
     });
