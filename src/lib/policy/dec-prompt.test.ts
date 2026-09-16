@@ -4,6 +4,8 @@ import {
   activeShoppingProducts,
   allProductsClosedForDealWon,
   coerceDeclarationDocType,
+  CREATE_POLICY_BUSY_COPY,
+  CREATE_POLICY_BUSY_TITLE,
   createPolicyPromptCopy,
   declarationRetagPatch,
   isDeclarationDocType,
@@ -64,6 +66,8 @@ describe("declaration create-policy prompt", () => {
     expect(createPolicyPromptCopy("Florida Peninsula")).toBe(
       "Declaration received from Florida Peninsula. Create the policy now?",
     );
+    expect(CREATE_POLICY_BUSY_TITLE).toBe("Creating policy…");
+    expect(CREATE_POLICY_BUSY_COPY).toMatch(/declaration/);
     expect(parsePendingDecPrompt({ documentId: "d1", carrierName: "Citizens" })?.documentId).toBe("d1");
   });
 });
@@ -170,6 +174,21 @@ describe("rosa retag + 72h admin notify stub", () => {
     );
     expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(/Create policy/);
     expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(/Not now/);
+    expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(
+      /data-ff-create-policy-busy/,
+    );
+    expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(
+      /CREATE_POLICY_BUSY_TITLE/,
+    );
+    expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(
+      /setCreating\(true\)/,
+    );
+    expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(
+      /if \(!next && !creating\) closeWithoutMint/,
+    );
+    expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(
+      /if \(!result\.ok\) \{\s*const toast = mintFailureToast\(result\.reason\);\s*flashAction\(toast\.key, toast\.kind\);\s*return;/,
+    );
     expect(source("src/app/api/v1/deals/[id]/declaration/route.ts")).toMatch(/receiveCarrierDeclaration/);
     expect(source("src/components/deal/issue-policy-from-dec.tsx")).toMatch(
       /Issue policy from declaration/,
