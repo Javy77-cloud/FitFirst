@@ -62,10 +62,16 @@ function ensureDobOnContact(sections: LayoutSection[]): LayoutSection[] {
   return sections.map((section) => {
     if (section.id !== "contact" && !/^contact$/i.test(section.label.trim())) return section;
     const keys = [...section.fieldKeys];
+    if (!keys.includes("entity_type")) keys.unshift("entity_type");
     if (!keys.includes("date_of_birth")) {
       const phone = keys.indexOf("phone");
       if (phone >= 0) keys.splice(phone + 1, 0, "date_of_birth");
       else keys.push("date_of_birth");
+    }
+    if (!keys.includes("epolicy")) {
+      const email = keys.indexOf("email");
+      if (email >= 0) keys.splice(email + 1, 0, "epolicy");
+      else keys.push("epolicy");
     }
     // DOB belongs on Contact, not Applicant
     return { ...section, fieldKeys: keys.filter((k) => k !== "applicant_gender") };
@@ -197,8 +203,10 @@ export function migrateLeadLayout(layout: FieldLayout): FieldLayout {
     return {
       columns: layout.columns.map((col, colIdx) => {
         let sections = ensureApplicantKeysPresent(
-          ensureLeadQualityTemperature(
-            col.sections.map(stripKeys).filter((s) => s.fieldKeys.length > 0),
+          ensureDobOnContact(
+            ensureLeadQualityTemperature(
+              col.sections.map(stripKeys).filter((s) => s.fieldKeys.length > 0),
+            ),
           ),
         );
         // Put Insurance Type / subtype on the right column when present; else first column.

@@ -13,7 +13,12 @@ describe("sep7js Insured Address + Mailing Address sections", () => {
     expect(insured?.fieldKeys).toEqual(expect.arrayContaining(["mailing_address"]));
     expect(insured?.fieldKeys).not.toContain("contact_mailing_address");
     expect(mailing?.label).toBe("Mailing Address");
-    expect(mailing?.fieldKeys).toEqual(["contact_mailing_address"]);
+    expect(mailing?.fieldKeys).toEqual([
+      "contact_mailing_address",
+      "contact_mailing_city",
+      "contact_mailing_state",
+      "contact_mailing_zip",
+    ]);
     expect(needsAddressSectionSplit(layout)).toBe(false);
   });
 
@@ -23,7 +28,14 @@ describe("sep7js Insured Address + Mailing Address sections", () => {
     expect(sections.find((s) => s.id === "insured_address")?.fieldKeys).toEqual(
       expect.arrayContaining(["mailing_address"]),
     );
-    expect(sections.find((s) => s.id === "mailing_address")?.fieldKeys).toEqual(["contact_mailing_address"]);
+    expect(sections.find((s) => s.id === "mailing_address")?.fieldKeys).toEqual([
+      "contact_mailing_address",
+      "contact_mailing_unit",
+      "contact_mailing_city",
+      "contact_mailing_state",
+      "contact_mailing_zip",
+      "contact_mailing_county",
+    ]);
   });
 
   it("splits a legacy combined Address section", () => {

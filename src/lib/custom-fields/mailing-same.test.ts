@@ -1,0 +1,38 @@
+import { describe, expect, it } from "vitest";
+import {
+  isMailingSameAsInsured,
+  isNoLivedAtAddress5Years,
+  mailingAddressHasValue,
+  normalizeMailingSameFlag,
+} from "./mailing-same";
+
+describe("mailing same as insured", () => {
+  it("defaults to same when mailing is blank", () => {
+    expect(isMailingSameAsInsured({})).toBe(true);
+    expect(isMailingSameAsInsured({ contact_mailing_address: "  " })).toBe(true);
+    expect(mailingAddressHasValue({})).toBe(false);
+  });
+
+  it("defaults to not-same when a mailing field is filled and flag is unset", () => {
+    expect(isMailingSameAsInsured({ contact_mailing_city: "Miami" })).toBe(false);
+    expect(mailingAddressHasValue({ contact_mailing_zip: "33101" })).toBe(true);
+  });
+
+  it("lets the explicit checkbox win", () => {
+    expect(
+      isMailingSameAsInsured({
+        mailing_same_as_insured: "true",
+        contact_mailing_address: "9 Pine",
+      }),
+    ).toBe(true);
+    expect(isMailingSameAsInsured({ mailing_same_as_insured: "false" })).toBe(false);
+    expect(normalizeMailingSameFlag("no")).toBe("false");
+    expect(normalizeMailingSameFlag("yes")).toBe("true");
+  });
+
+  it("shows previous address only when lived-here is No", () => {
+    expect(isNoLivedAtAddress5Years("No")).toBe(true);
+    expect(isNoLivedAtAddress5Years({ lived_at_address_5_years: "Yes" })).toBe(false);
+    expect(isNoLivedAtAddress5Years({})).toBe(false);
+  });
+});

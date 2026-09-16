@@ -139,9 +139,11 @@ export const LEAD_TO_DEAL_FIELD_KEYS: Array<{ key: string; systemKey: string }> 
 /** Custom-field keys that copy Lead → Deal by the same field key (no native column). */
 export const LEAD_TO_DEAL_CUSTOM_KEYS = [
   "contact_mailing_address",
+  "contact_mailing_unit",
   "contact_mailing_city",
   "contact_mailing_state",
   "contact_mailing_zip",
+  "contact_mailing_county",
   "pipeline",
   "insurance_type",
   "insurance_category",
@@ -158,6 +160,9 @@ export const LEAD_TO_DEAL_CUSTOM_KEYS = [
   "co_applicant_occupation",
   "co_applicant_employment",
   "co_applicant_education_level",
+  "co_applicant_middle_name",
+  "co_applicant_industry",
+  "co_applicant_military_discount",
 ] as const;
 
 export function dealValuesFromLead(

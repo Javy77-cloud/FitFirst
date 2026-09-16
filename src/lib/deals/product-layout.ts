@@ -8,7 +8,15 @@ import {
 } from "@/lib/quote-sheet/sheet-defaults";
 import { dealProductDef, type DealProductId } from "./deal-products";
 
-/** Shared Deal Details sections — always visible, once. */
+/**
+ * One Deal Details page per deal — not a full personal layout per product.
+ * Shared identity (contact / applicant / co-applicant / addresses) is asked once
+ * and reused by Home, Auto, Flood, and later Life/Health.
+ *
+ * Product-only catalogs live below (Home property, Auto vehicle, Flood zone, …)
+ * and must not repeat applicant/contact keys. This PR does not overlay those
+ * catalogs on Details; they stay for chip completion and the sheet follow-up.
+ */
 export const SHARED_DEAL_SECTION_IDS = [
   "contact",
   "applicant",
@@ -282,28 +290,22 @@ export function catalogFieldsForProducts(products: readonly DealProductId[]): Cu
   return out;
 }
 
-/** Shared columns from the saved layout + active product section only. */
+/**
+ * Live Deal Details = shared identity only (same body for every product chip).
+ * Do not append product_* sections here — that would re-ask risk questions on Details.
+ */
 export function layoutForActiveProduct(
   layout: FieldLayout,
-  product: DealProductId | null,
+  _product: DealProductId | null,
 ): FieldLayout {
   const left = layout.columns[0] ?? { id: "left", sections: [] };
   const right = layout.columns[1] ?? { id: "right", sections: [] };
   const sharedLeft = left.sections.filter(isSharedDealSection);
   const sharedRight = right.sections.filter(isSharedDealSection);
-  if (!product) {
-    return {
-      columns: [
-        { ...left, sections: sharedLeft },
-        { ...right, sections: sharedRight },
-      ],
-    };
-  }
-  const productSection = productLayoutSection(product);
   return {
     columns: [
       { ...left, sections: sharedLeft },
-      { ...right, sections: [...sharedRight, productSection] },
+      { ...right, sections: sharedRight },
     ],
   };
 }

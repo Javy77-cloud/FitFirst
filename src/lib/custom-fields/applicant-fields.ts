@@ -7,9 +7,22 @@ import {
   MARITAL_STATUS_OPTIONS,
   OCCUPATION_OPTIONS,
 } from "@/lib/quote-sheet/applicant-core";
+import { INDUSTRY_OPTIONS } from "./industry-occupation";
+
+export const YES_NO_OPTIONS = ["Yes", "No"] as const;
+
+export const CREDIT_PERMISSION_OPTIONS = ["Yes", "No", "Only if required"] as const;
+
+export const ASSUMED_CREDIT_RATING_OPTIONS = [
+  "Poor",
+  "Below average",
+  "Average",
+  "Very good",
+  "Excellent",
+] as const;
 
 /** Shared Lead/Deal applicant picklists — options from quote-sheet applicant_core only. */
-export const APPLICANT_CRM_FIELDS: CustomFieldDef[] = [
+export const APPLICANT_CORE_CRM_FIELDS: CustomFieldDef[] = [
   {
     key: "applicant_gender",
     label: "Gender",
@@ -48,14 +61,57 @@ export const APPLICANT_CRM_FIELDS: CustomFieldDef[] = [
   },
 ];
 
-/** Layout order: Gender → Occupation → Employment → Marital → Education → Entity type. DOB stays on Contact. */
+/** Deal Details personal extras — industry cascade, military, credit, paperless. */
+export const APPLICANT_PERSONAL_FIELDS: CustomFieldDef[] = [
+  {
+    key: "applicant_industry",
+    label: "Industry",
+    type: "picklist",
+    options: [...INDUSTRY_OPTIONS],
+  },
+  {
+    key: "military_discount",
+    label: "Military discount",
+    type: "checkbox",
+  },
+  {
+    key: "credit_permission",
+    label: "Credit permission",
+    type: "picklist",
+    options: [...CREDIT_PERMISSION_OPTIONS],
+  },
+  {
+    key: "assumed_credit_rating",
+    label: "Assumed credit rating",
+    type: "picklist",
+    options: [...ASSUMED_CREDIT_RATING_OPTIONS],
+  },
+  {
+    key: "epolicy",
+    label: "ePolicy (paperless)",
+    type: "checkbox",
+  },
+];
+
+export const APPLICANT_CRM_FIELDS: CustomFieldDef[] = [
+  ...APPLICANT_CORE_CRM_FIELDS,
+  ...APPLICANT_PERSONAL_FIELDS,
+];
+
+/**
+ * Applicant stack on Deal/Lead (entity type lives on Contact / main info).
+ * Gender → marital → industry → occupation → credit/military → employment → education.
+ */
 export const APPLICANT_SECTION_FIELD_KEYS = [
   "applicant_gender",
-  "applicant_occupation",
-  "applicant_employment",
   "applicant_marital_status",
+  "applicant_industry",
+  "applicant_occupation",
+  "military_discount",
+  "credit_permission",
+  "assumed_credit_rating",
+  "applicant_employment",
   "applicant_education_level",
-  "entity_type",
 ] as const;
 
 export const APPLICANT_CUSTOM_KEYS = [
@@ -65,6 +121,22 @@ export const APPLICANT_CUSTOM_KEYS = [
   "applicant_marital_status",
   "applicant_education_level",
   "entity_type",
+  "applicant_industry",
+  "military_discount",
+  "credit_permission",
+  "assumed_credit_rating",
+  "epolicy",
+] as const;
+
+export const CONTACT_IDENTITY_FIELD_KEYS = [
+  "entity_type",
+  "first_name",
+  "middle_name",
+  "last_name",
+  "date_of_birth",
+  "phone",
+  "email",
+  "epolicy",
 ] as const;
 
 export function applicantLayoutSection(): LayoutSection {

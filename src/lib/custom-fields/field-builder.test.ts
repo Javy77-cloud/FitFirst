@@ -111,7 +111,7 @@ describe("deal field builder", () => {
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/saveDealFieldLayout/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/upsertFieldDef/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(
-      /flashAction\("\/settings\/field-builder", "layout-saved"\)/,
+      /flashAction\(fieldBuilderHref\(module, line\), "layout-saved"\)/,
     );
   });
 
@@ -334,9 +334,10 @@ describe("deal field builder", () => {
         name: "field_plan_type",
       }),
     );
-    expect(multi.match(/type="checkbox"/g)?.length).toBe(2);
+    // Menu is a closed portal on SSR — option checkboxes are not in the markup.
+    expect(multi).toMatch(/data-ff-multi-select="plan_type"/);
+    expect(multi).toMatch(/data-ff-multi-option-count="2"/);
     expect(multi).toContain('value="PPO"');
-    expect(multi).toContain('value="HMO"');
     expect(multi.match(/value="PPO"/g)?.length).toBe(1);
   });
 
@@ -404,12 +405,12 @@ describe("deal field builder", () => {
     expect(home.columns[0].sections.map((section) => section.label)).toEqual([
       "Contact",
       "Applicant",
-      "Co-applicant",
+      "Insured Address",
     ]);
     expect(home.columns[1].sections.map((section) => section.label)).toEqual([
-      "Details",
-      "Insured Address",
+      "Co-applicant",
       "Mailing Address",
+      "Details",
     ]);
     expect(homeKeys).toEqual(expect.arrayContaining(["insurance_type", "insurance_category", "insurance_subtype"]));
   });
@@ -454,12 +455,15 @@ describe("deal field builder", () => {
     expect(drop.beforeKey).toBe("b");
     const cloned = insertFieldAfter(start, "first_name", "first_name_copy");
     expect(cloned.columns[0].sections[0].fieldKeys).toEqual([
+      "entity_type",
       "first_name",
       "first_name_copy",
+      "middle_name",
       "last_name",
-      "email",
-      "phone",
       "date_of_birth",
+      "phone",
+      "email",
+      "epolicy",
     ]);
   });
 

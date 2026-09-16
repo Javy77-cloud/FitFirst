@@ -51,11 +51,14 @@ describe("migrateLeadLayout", () => {
     const applicant = clean.columns[0].sections.find((s) => s.id === "applicant");
     expect(applicant?.fieldKeys).toEqual([
       "applicant_gender",
-      "applicant_occupation",
-      "applicant_employment",
       "applicant_marital_status",
+      "applicant_industry",
+      "applicant_occupation",
+      "military_discount",
+      "credit_permission",
+      "assumed_credit_rating",
+      "applicant_employment",
       "applicant_education_level",
-      "entity_type",
     ]);
   });
 
@@ -104,8 +107,11 @@ describe("migrateLeadLayout", () => {
     expect(keys).toContain("insurance_category");
     expect(keys).toContain("temperature");
     expect(keys).toContain("entity_type");
+    expect(next.columns[0].sections.find((s) => s.id === "contact")?.fieldKeys).toEqual(
+      expect.arrayContaining(["entity_type"]),
+    );
     expect(next.columns[0].sections.find((s) => s.id === "applicant")?.fieldKeys).toEqual(
-      expect.arrayContaining(["applicant_gender", "applicant_occupation", "entity_type"]),
+      expect.arrayContaining(["applicant_gender", "applicant_occupation", "applicant_industry"]),
     );
   });
 

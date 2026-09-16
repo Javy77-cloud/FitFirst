@@ -1,9 +1,15 @@
 import type { LineOfBusiness } from "@/lib/domain";
 import type { CustomFieldDef, FieldLayout, LayoutSection } from "./types";
-import { APPLICANT_CRM_FIELDS, applicantLayoutSection } from "./applicant-fields";
+import {
+  APPLICANT_CRM_FIELDS,
+  CONTACT_IDENTITY_FIELD_KEYS,
+  YES_NO_OPTIONS,
+  applicantLayoutSection,
+} from "./applicant-fields";
 import { CO_APPLICANT_CRM_FIELDS, coApplicantLayoutSection } from "./co-applicant-fields";
 import { catalogFieldsForProducts } from "@/lib/deals/product-layout";
 import { DEAL_PRODUCTS } from "@/lib/deals/deal-products";
+import { LIVED_AT_ADDRESS_5_YEARS_KEY } from "./mailing-same";
 
 function section(id: string, label: string, fieldKeys: string[]): LayoutSection {
   return { id, label, fieldKeys };
@@ -18,12 +24,26 @@ export const CORE_FIELDS: CustomFieldDef[] = [
   { key: "date_of_birth", label: "Date of birth", type: "dob", systemKey: "dateOfBirth" },
   { key: "mailing_address", label: "Insured Address", type: "address", systemKey: "mailingAddress" },
   { key: "contact_mailing_address", label: "Mailing Address", type: "address" },
+  { key: "contact_mailing_unit", label: "Unit number", type: "single_line" },
   { key: "contact_mailing_city", label: "City", type: "single_line" },
   { key: "contact_mailing_state", label: "State", type: "single_line" },
   { key: "contact_mailing_zip", label: "ZIP", type: "single_line" },
+  { key: "contact_mailing_county", label: "County", type: "single_line" },
+  { key: "mailing_unit", label: "Unit number", type: "single_line" },
   { key: "city", label: "City", type: "single_line", systemKey: "city" },
   { key: "state", label: "State", type: "single_line", systemKey: "state" },
   { key: "zip", label: "ZIP", type: "single_line", systemKey: "zip" },
+  { key: "county", label: "County", type: "single_line" },
+  {
+    key: LIVED_AT_ADDRESS_5_YEARS_KEY,
+    label: "Lived at this address more than 5 years?",
+    type: "picklist",
+    options: [...YES_NO_OPTIONS],
+  },
+  { key: "previous_address", label: "Previous address", type: "address" },
+  { key: "previous_city", label: "Previous city", type: "single_line" },
+  { key: "previous_state", label: "Previous state", type: "single_line" },
+  { key: "previous_zip", label: "Previous ZIP", type: "single_line" },
   { key: "notes", label: "Notes", type: "multi_line", systemKey: "notes" },
   { key: "named_insured", label: "Named insured", type: "single_line", systemKey: "primaryNamedInsured" },
   {
@@ -152,19 +172,33 @@ export const STRIPPED_DEAL_SECTION_IDS = [
 function essentialSections(): { left: LayoutSection[]; right: LayoutSection[] } {
   return {
     left: [
-      section("contact", "Contact", [...ESSENTIAL_CONTACT_KEYS, "date_of_birth"]),
+      section("contact", "Contact", [...CONTACT_IDENTITY_FIELD_KEYS]),
       applicantLayoutSection(),
-      coApplicantLayoutSection(),
+      section("insured_address", "Insured Address", [
+        "mailing_address",
+        "mailing_unit",
+        "city",
+        "state",
+        "zip",
+        "county",
+        LIVED_AT_ADDRESS_5_YEARS_KEY,
+        "previous_address",
+        "previous_city",
+        "previous_state",
+        "previous_zip",
+      ]),
     ],
     right: [
-      section("details", "Details", ["pipeline", "insurance_type", "insurance_category", "insurance_subtype"]),
-      section("insured_address", "Insured Address", ["mailing_address", "city", "state", "zip"]),
+      coApplicantLayoutSection(),
       section("mailing_address", "Mailing Address", [
         "contact_mailing_address",
+        "contact_mailing_unit",
         "contact_mailing_city",
         "contact_mailing_state",
         "contact_mailing_zip",
+        "contact_mailing_county",
       ]),
+      section("details", "Details", ["pipeline", "insurance_type", "insurance_category", "insurance_subtype"]),
     ],
   };
 }

@@ -297,7 +297,7 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
   if (module === "leads") {
     return twoCol(
       [
-        section("contact", "Contact", ["first_name", "middle_name", "last_name", "email", "phone", "date_of_birth"]),
+        section("contact", "Contact", ["entity_type", "first_name", "middle_name", "last_name", "email", "phone", "date_of_birth", "epolicy"]),
         applicantLayoutSection(),
         section("insured_address", "Insured Address", ["mailing_address", "city", "state", "zip"]),
         section("mailing_address", "Mailing Address", ["contact_mailing_address", "contact_mailing_city", "contact_mailing_state", "contact_mailing_zip"]),

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { defaultFieldsForModule, defaultLayoutForModule } from "./modules";
 import { CORE_FIELDS, defaultLayoutForLine } from "./defaults";
 import {
+  APPLICANT_CORE_CRM_FIELDS,
   APPLICANT_CRM_FIELDS,
   APPLICANT_CUSTOM_KEYS,
   APPLICANT_SECTION_FIELD_KEYS,
@@ -37,23 +38,26 @@ describe("sep7jt Lead rail + shared applicant fields", () => {
   it("reuses applicant_core picklist options on Lead and Deal — never free-text duplicates", () => {
     const leadByKey = Object.fromEntries(defaultFieldsForModule("leads").map((f) => [f.key, f]));
     const dealByKey = Object.fromEntries(CORE_FIELDS.map((f) => [f.key, f]));
-    for (const field of APPLICANT_CRM_FIELDS) {
+    for (const field of APPLICANT_CORE_CRM_FIELDS) {
       expect(leadByKey[field.key]?.type).toBe("picklist");
       expect(dealByKey[field.key]?.type).toBe("picklist");
       expect(leadByKey[field.key]?.options).toEqual(field.options);
       expect(dealByKey[field.key]?.options).toEqual(field.options);
       expect(leadByKey[field.key]?.label).toBe(field.label);
     }
+    expect(APPLICANT_CRM_FIELDS.some((field) => field.key === "applicant_industry")).toBe(true);
     expect(leadByKey.applicant_gender?.options).toEqual([...GENDER_OPTIONS]);
     expect(leadByKey.applicant_marital_status?.options).toEqual([...MARITAL_STATUS_OPTIONS]);
     expect(leadByKey.applicant_employment?.options).toEqual([...EMPLOYMENT_STATUS_OPTIONS]);
     expect(leadByKey.applicant_occupation?.options).toEqual([...OCCUPATION_OPTIONS]);
     expect(leadByKey.applicant_education_level?.options).toEqual([...EDUCATION_LEVEL_OPTIONS]);
     expect(leadByKey.entity_type?.options).toEqual([...ENTITY_TYPE_OPTIONS]);
-    // Javy: Gender → Occupation → Employment stacked
-    const keys = APPLICANT_CRM_FIELDS.map((f) => f.key);
-    expect(keys.indexOf("applicant_occupation")).toBe(keys.indexOf("applicant_gender") + 1);
-    expect(keys.indexOf("applicant_employment")).toBe(keys.indexOf("applicant_occupation") + 1);
+    expect(APPLICANT_SECTION_FIELD_KEYS.indexOf("applicant_industry")).toBe(
+      APPLICANT_SECTION_FIELD_KEYS.indexOf("applicant_marital_status") + 1,
+    );
+    expect(APPLICANT_SECTION_FIELD_KEYS.indexOf("applicant_occupation")).toBe(
+      APPLICANT_SECTION_FIELD_KEYS.indexOf("applicant_industry") + 1,
+    );
   });
 
   it("puts Applicant section after Contact on Lead and Deal essential layouts", () => {
@@ -71,10 +75,11 @@ describe("sep7jt Lead rail + shared applicant fields", () => {
     expect(lead.columns[0].sections.find((s) => s.id === "applicant")?.fieldKeys).not.toContain(
       "date_of_birth",
     );
-    expect(lead.columns[0].sections.find((s) => s.id === "applicant")?.fieldKeys).toContain(
+    expect(lead.columns[0].sections.find((s) => s.id === "contact")?.fieldKeys).toContain(
       "entity_type",
     );
-    expect(APPLICANT_SECTION_FIELD_KEYS).toContain("entity_type");
+    expect(APPLICANT_SECTION_FIELD_KEYS).not.toContain("entity_type");
+    expect(APPLICANT_SECTION_FIELD_KEYS).toContain("applicant_industry");
 
     const deal = defaultLayoutForLine("HO");
     expect(deal.columns[0].sections.map((s) => s.id)).toEqual(
