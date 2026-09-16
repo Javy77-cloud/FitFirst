@@ -2264,6 +2264,20 @@ export async function getDealWorkspace(dealId: string) {
 
   const { restoreDealSourceDocuments } = await import("@/lib/documents/restore-deal-docs");
   await restoreDealSourceDocuments(dealId).catch(() => null);
+  const { lifeHealthShopRepair } = await import("@/lib/deals/deal-products");
+  const shopRepair = lifeHealthShopRepair(deal);
+  if (shopRepair) {
+    await db
+      .update(deals)
+      .set({
+        shopLines: shopRepair.shopLines,
+        shopProducts: shopRepair.shopProducts,
+      })
+      .where(eq(deals.id, deal.id))
+      .catch(() => null);
+    deal.shopLines = shopRepair.shopLines;
+    deal.shopProducts = shopRepair.shopProducts;
+  }
 
   const [
     riskRows,

@@ -18,7 +18,7 @@ import {
   riskAddress,
   type DealListFilter,
 } from "@/lib/crm/lists";
-import { dealSearchHaystack } from "@/lib/deals/deal-title";
+import { dealSearchHaystack, visibleDealTitle } from "@/lib/deals/deal-title";
 import { listProductStageChips } from "@/lib/deals/product-stages";
 import { haystack } from "@/lib/search/live-query";
 import { formatMoney } from "@/lib/domain";
@@ -145,7 +145,7 @@ export function DealListTable({
                   >
                     <td data-col="deal" data-sheet-col="deal">
                       <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
-                        {deal.title}
+                        {visibleDealTitle(deal)}
                       </Link>
                     </td>
                     <td data-col="actions" data-sheet-col="actions">

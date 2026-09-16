@@ -18,8 +18,7 @@ import {
   listRecordActivities,
 } from "@/lib/db/queries";
 import { listFieldPicklists } from "@/lib/custom-fields/picklist-store";
-import { STARTER_PICKLIST_DEAL_NOTICES } from "@/lib/custom-fields/starter-picklists";
-import { noticeTypesFromPicklist } from "@/lib/deals/notices";
+import { noticeTypesForFamily } from "@/lib/deals/notices";
 import { DealNotices } from "@/components/deal/deal-notices";
 import { taskDueInputParts } from "@/lib/tasks/due-at";
 import { ensureSeededPipelines } from "@/lib/wire/ensure-pipelines";
@@ -399,9 +398,7 @@ export default async function DealPage({
     activeProduct,
     stageView.slug ?? deal.pipelineStage,
   );
-  const dealNoticeTypes = noticeTypesFromPicklist(
-    noticePicklists.find((list) => list.name === STARTER_PICKLIST_DEAL_NOTICES)?.options,
-  );
+  const dealNoticeTypes = noticeTypesForFamily(noticePicklists, familyForProducts(dealProducts));
   const noticeTask = activeProductState.noticeTaskId
     ? await getReviewTask(activeProductState.noticeTaskId)
     : null;

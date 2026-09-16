@@ -52,6 +52,16 @@ export const DEAL_NOTICE_PICKLIST_OPTIONS = [
   SEED_NOTICE_LABELS.check_mortgagee_payment,
 ] as const;
 
+export const NOTICE_FAMILY_PICKLIST_NAMES = {
+  pc: ["Deal notices · P&C", "Deal notices"],
+  life: ["Deal notices · Life"],
+  health: ["Deal notices · Health"],
+} as const;
+
+export function noticePicklistNamesForFamily(family: "pc" | "life" | "health"): readonly string[] {
+  return NOTICE_FAMILY_PICKLIST_NAMES[family];
+}
+
 export function noticeTypeSlug(value: string): string {
   return value
     .trim()
@@ -100,14 +110,15 @@ function optionLabel(option: string | PicklistOption): string {
   return String(option.value ?? "").trim();
 }
 
-/** Picklist values become types. Missing/empty list falls back to seed types. */
+/** Picklist values become types. Empty Life/Health lists stay None-only (no PC fallback). */
 export function noticeTypesFromPicklist(
   options?: readonly (string | PicklistOption)[] | null,
+  fallback: readonly string[] = DEAL_NOTICE_PICKLIST_OPTIONS,
 ): NoticeTypeOption[] {
   const labels = (options ?? [])
     .map(optionLabel)
     .filter((label) => label && parseNoticeType(label) !== "none");
-  const source = labels.length ? labels : [...DEAL_NOTICE_PICKLIST_OPTIONS];
+  const source = labels.length ? labels : [...fallback];
   const seen = new Set<string>(["none"]);
   const next: NoticeTypeOption[] = [{ value: "none", label: SEED_NOTICE_LABELS.none }];
   for (const label of source) {
@@ -117,6 +128,15 @@ export function noticeTypesFromPicklist(
     next.push({ value, label });
   }
   return next;
+}
+
+export function noticeTypesForFamily(
+  lists: readonly { name: string; options?: readonly (string | PicklistOption)[] | null }[],
+  family: "pc" | "life" | "health",
+): NoticeTypeOption[] {
+  const names = noticePicklistNamesForFamily(family).map((name) => name.toLowerCase());
+  const list = lists.find((row) => names.includes(row.name.trim().toLowerCase()));
+  return noticeTypesFromPicklist(list?.options, family === "pc" ? DEAL_NOTICE_PICKLIST_OPTIONS : []);
 }
 
 export function mergeNoticeTypeOptions(

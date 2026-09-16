@@ -1,5 +1,6 @@
 import { insuredContactName, insuredHref } from "@/lib/crm/lists";
 import type { PipelineCardRow } from "@/lib/db/queries";
+import { visibleDealTitle } from "@/lib/deals/deal-title";
 import { listProductStageChips, type ListProductStageChip } from "@/lib/deals/product-stages";
 import { homeAddressFromRecords } from "@/lib/meetings/types";
 
@@ -39,7 +40,7 @@ export function presentPipelineCard(row: PipelineCardRow): PipelineCardView {
   const { deal, contact, lead, risk } = row;
   return {
     id: deal.id,
-    title: deal.title,
+    title: visibleDealTitle(deal),
     pipelineStage: deal.pipelineStage,
     pipelineStageSlug: deal.pipelineStageSlug,
     lineOfBusiness: deal.lineOfBusiness,

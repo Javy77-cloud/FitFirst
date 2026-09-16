@@ -371,6 +371,8 @@ export function isSelectedQuote(
   return (selectedQuoteIds ?? []).includes(quoteId);
 }
 
+const PC_FORM_LEFTOVER = /^(ho[1-8]?|mho|dp[13]|pa|flood|homeowners|landlord)$/i;
+
 /** Use the sheet form only when it belongs to this product (HO3 ≠ DP3 on a shared home sheet). */
 export function sheetFormForProduct(
   product: DealProductId,
@@ -378,6 +380,10 @@ export function sheetFormForProduct(
 ): string | null {
   const form = (sheetForm ?? "").trim();
   if (!form) return null;
+  const group = dealProductDef(product).group;
+  if (group === "life" || group === "health") {
+    return PC_FORM_LEFTOVER.test(form) ? null : form;
+  }
   if (product === "homeowners") return /^ho|^mho/i.test(form) ? form : null;
   if (product === "landlord") return /^dp/i.test(form) ? form : null;
   if (product === "renters") return /^ho4$/i.test(form) ? form : null;
@@ -395,6 +401,9 @@ export function productChipLabel(input: {
   const def = dealProductDef(input.product);
   const raw = (input.sheetForm || input.quotingForm || "").trim();
   const scoped = sheetFormForProduct(input.product, raw);
+  if (def.group === "life" || def.group === "health") {
+    return scoped || def.label;
+  }
   const form = (scoped || def.quotingForm || "").trim();
   if (input.product === "homeowners") {
     if (/^ho[3568]$/i.test(form) || /^mho$/i.test(form)) return form.toUpperCase();

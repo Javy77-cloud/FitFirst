@@ -114,6 +114,16 @@ describe("per-product stages", () => {
     expect(productChipLabel({ product: "landlord", quotingForm: "HO3" })).toBe("DP3");
     expect(productChipLabel({ product: "homeowners", quotingForm: "DP3" })).toBe("HO3");
     expect(productChipLabel({ product: "homeowners" })).toBe("HO3");
+    expect(productChipLabel({ product: "life_term", quotingForm: "HO3" })).toBe("Term Life");
+    expect(productChipLabel({ product: "life_term", quotingForm: "Term Life" })).toBe("Term Life");
+    expect(
+      listProductStageChips({
+        shopLines: ["home"],
+        lineOfBusiness: "LIFE",
+        quotingLine: "life",
+        quotingForm: "Term Life",
+      }).map((chip) => chip.label),
+    ).toEqual(["Term Life"]);
     expect(productChipLabel({ product: "landlord" })).toBe("DP3");
     expect(productChipLabel({ product: "auto", quotingForm: "PA" })).toBe("Auto");
     expect(productChipLabel({ product: "auto" })).toBe("Auto");
@@ -465,7 +475,10 @@ describe("per-product stages", () => {
     expect(findProductNoticeForTask({ homeowners: { stage: "bound", selectedQuoteIds: ["q1"] } }, "task-1")).toBeNull();
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/data-ff-deal-header-notices/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/DealNotices/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/noticeTypesForFamily/);
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_DEAL_NOTICES/);
+    expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_DEAL_NOTICES_LIFE/);
+    expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_DEAL_NOTICES_HEALTH/);
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/Inspection before bind/);
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/Check mortgagee payment/);
   });

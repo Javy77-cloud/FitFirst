@@ -37,7 +37,7 @@ import { formatDay } from "@/lib/domain";
 import type { DeskUserOption } from "@/lib/deals/transfer";
 import type { DealListRow } from "@/lib/db/queries";
 import { listCarriers, listPipelines } from "@/lib/db/queries";
-import { dealSearchHaystack } from "@/lib/deals/deal-title";
+import { dealSearchHaystack, visibleDealTitle } from "@/lib/deals/deal-title";
 import { haystack } from "@/lib/search/live-query";
 import { sheetAttr } from "@/lib/desk/sheet-attr";
 import { AssignRecordTags } from "@/components/tags/assign-record-tags";
@@ -152,6 +152,7 @@ export async function DealsTable({
             const address = dealRecordAddress(deal, stored);
             const stage = dealStageView(deal, boards);
             const productChips = listProductStageChips(deal);
+            const displayTitle = visibleDealTitle(deal);
             const nextDue =
               nextByDeal.get(deal.id) ??
               nextDealActionAt({ updatedAt: deal.updatedAt })?.toISOString() ??
@@ -164,7 +165,7 @@ export async function DealsTable({
               nextDueAt: nextDue,
             });
             const { sort, cells } = dealRowCells({
-              deal,
+              deal: { ...deal, title: displayTitle },
               stored,
               fields,
               users,

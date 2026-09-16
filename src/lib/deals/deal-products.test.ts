@@ -6,6 +6,7 @@ import {
   familyForProducts,
   hasCommercialProduct,
   inferDealProducts,
+  lifeHealthShopRepair,
   normalizeDealProducts,
   pipelineSlugForProducts,
   productCreateDraft,
@@ -125,6 +126,41 @@ describe("chips + inference", () => {
     expect(
       inferDealProducts({ shopLines: ["home", "auto", "flood"], quotingForm: "HO3" }),
     ).toEqual(["homeowners", "auto", "flood"]);
+  });
+
+  it("does not inherit HO3 from leftover home shop_lines on Life/Health deals", () => {
+    expect(
+      inferDealProducts({
+        shopLines: ["home"],
+        shopProducts: [],
+        lineOfBusiness: "LIFE",
+        quotingLine: "life",
+        quotingForm: "Term Life",
+      }),
+    ).toEqual(["life_term"]);
+    expect(
+      inferDealProducts({
+        shopLines: ["home"],
+        lineOfBusiness: "LIFE",
+        quotingLine: "life",
+      }),
+    ).toEqual(["life_term"]);
+    expect(
+      inferDealProducts({
+        shopProducts: ["homeowners"],
+        shopLines: ["home"],
+        lineOfBusiness: "HEALTH",
+        quotingLine: "health",
+      }),
+    ).toEqual(["health_marketplace"]);
+    const repair = lifeHealthShopRepair({
+      shopLines: ["home"],
+      shopProducts: [],
+      lineOfBusiness: "LIFE",
+      quotingLine: "life",
+      quotingForm: "Term Life",
+    });
+    expect(repair).toEqual({ shopLines: ["life"], shopProducts: ["life_term"] });
   });
 });
 

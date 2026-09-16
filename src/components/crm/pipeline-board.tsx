@@ -10,6 +10,7 @@ import { LINE_LABELS } from "@/lib/crm/bind";
 import { insuredContactName, insuredHref, matchesDealFilters, type DealListFilter } from "@/lib/crm/lists";
 import { homeAddressFromRecords } from "@/lib/meetings/types";
 import { formatMoney } from "@/lib/domain";
+import { visibleDealTitle } from "@/lib/deals/deal-title";
 import { listProductStageChips } from "@/lib/deals/product-stages";
 import type { DealListRow } from "@/lib/db/queries";
 import type { PipelineStageRow } from "@/lib/db/schema";
@@ -111,7 +112,7 @@ export function PipelineBoard({
                           href={`/deals/${deal.id}`}
                           className="text-sm font-medium text-primary hover:underline"
                         >
-                          {deal.title}
+                          {visibleDealTitle(deal)}
                         </Link>
                         <div className="mt-1 text-[11px] text-navy">
                           <InsuredLink href={href} name={insured} />

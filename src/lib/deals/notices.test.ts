@@ -11,6 +11,7 @@ import {
   isNoticeTaskTitle,
   noticeTaskKind,
   noticeTaskTitle,
+  noticeTypesForFamily,
   noticeTypesFromPicklist,
   parseNoticeType,
   SEED_NOTICE_LABELS,
@@ -79,6 +80,18 @@ describe("deal notices", () => {
     expect(isNoticeTaskTitle("Notice · Check mortgagee payment")).toBe(true);
     expect(isNoticeTaskTitle("Work reminder — Call lender")).toBe(false);
     expect(SEED_NOTICE_TYPE_OPTIONS[0]).toEqual({ value: "none", label: SEED_NOTICE_LABELS.none });
+    expect(
+      noticeTypesForFamily(
+        [{ name: "Deal notices · Life", options: ["Paramed exam"] }],
+        "life",
+      ).map((row) => row.value),
+    ).toEqual(["none", "paramed_exam"]);
+    expect(noticeTypesForFamily([], "health").map((row) => row.value)).toEqual(["none"]);
+    expect(noticeTypesForFamily([], "pc").map((row) => row.value)).toEqual([
+      "none",
+      "inspection_before_bind",
+      "check_mortgagee_payment",
+    ]);
   });
 
   it("renders an obvious notice chip and a Notices control, not Inspection", () => {
