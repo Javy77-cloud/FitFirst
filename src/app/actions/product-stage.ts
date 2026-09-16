@@ -50,6 +50,7 @@ import { issuePolicyFromDeclaration } from "@/app/actions/policy-mint";
 import { isPolicyIssuedStage, quotesOnlyStageBlocked } from "@/lib/policy/mint-gate";
 import { parseShopFlow, quoteMatchesDealProduct } from "@/lib/deals/shop-flow";
 import { persistDealShopFlow } from "@/lib/deals/shop-flow-persist";
+import { maybeArchiveDealWhenAllProductsTerminal } from "@/lib/deals/archive-when-terminal";
 import { flashAction, flashStay } from "@/lib/flash-action";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
 
@@ -176,6 +177,7 @@ export async function setDealProductStage(input: {
       surface: input.surface ?? "quotes",
     });
     if (!minted.ok) return minted;
+    await maybeArchiveDealWhenAllProductsTerminal(dealId);
     revalidatePath(`/deals/${dealId}`);
     revalidatePath("/deals");
     return { ok: true as const, policyId: minted.policyId };
@@ -207,6 +209,8 @@ export async function setDealProductStage(input: {
       createTask: false,
     });
   }
+
+  await maybeArchiveDealWhenAllProductsTerminal(dealId);
 
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/deals");

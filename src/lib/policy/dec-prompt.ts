@@ -1,7 +1,10 @@
 import { canonicalizeProductStage, type DealProductStageState, type DealProductStages } from "@/lib/deals/product-stages";
 import type { DealProductId } from "@/lib/deals/deal-products";
 
-/** Rosa Castellanos forcing case — dec uploaded as an agency quote file. */
+/**
+ * Rosa Castellanos forcing case — dec uploaded as an agency quote file.
+ * Rosa's deal was archived by hand; new last-product publishes auto-archive.
+ */
 export const ROSA_DEC_DEAL_ID = "5d4a4c04-a477-4691-8cc7-32d5ccf70351";
 export const ROSA_DEC_DOCUMENT_ID = "cbd6719e-4d8e-4ed8-820e-0b3f1c07aa5f";
 export const ROSA_DEC_FILENAME = "Rosa Castellanos Florida Peninsula HO3 Dec Page.pdf";
