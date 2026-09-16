@@ -116,6 +116,10 @@ export function createPolicyPromptCopy(carrierName?: string | null): string {
   return `Declaration received from ${carrier}. Create the policy now?`;
 }
 
+/** In-modal hold while Gemini reads the dec (~10s). Warm, obvious WaitHold. */
+export const CREATE_POLICY_BUSY_TITLE = "Creating your policy — we’re on it…";
+export const CREATE_POLICY_BUSY_COPY = "Reading the declaration and building the draft…";
+
 export function isProductIssuedDone(state?: DealProductStageState | null): boolean {
   if (!state) return false;
   if (state.issuedDone) return true;

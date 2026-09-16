@@ -46,6 +46,7 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(button).toMatch(/router\.refresh\(\)/);
     expect(button).not.toMatch(/withFlash/);
     expect(button).toMatch(/MASTER_FILL_BUSY_COPY/);
+    expect(button).toMatch(/WaitHold/);
 
     const html = renderToString(
       createElement(MasterSheetCompare, {
