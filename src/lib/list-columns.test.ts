@@ -126,6 +126,11 @@ describe("list column visibility", () => {
     expect(notes?.defaultWidth).toBe(DEAL_NOTES_COLUMN_WIDTH);
     expect(DEAL_NOTES_COLUMN_WIDTH).toBe(160);
     expect(readFileSync("src/components/lists/column-table.tsx", "utf8")).toMatch(/ff-col-resize/);
+    expect(readFileSync("src/components/lists/column-table.tsx", "utf8")).toMatch(/data-ff-col-resize/);
+    expect(readFileSync("src/components/lists/column-table.tsx", "utf8")).toMatch(
+      /document\.addEventListener\("pointermove"/,
+    );
+    expect(readFileSync("src/app/globals.css", "utf8")).toMatch(/\.ff-col-resize \{[\s\S]*width: 16px;/);
   });
 
   it("pins pick as the first visible column even when saved mid-row", () => {
