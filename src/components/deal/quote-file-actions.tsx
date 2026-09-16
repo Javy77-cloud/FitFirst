@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { uploadAgencyQuoteFileAction } from "@/app/actions/quote-files";
+import { retagDocumentAsDeclarationAction } from "@/app/actions/declaration";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -102,9 +103,13 @@ function IconBadgeButton({
 function FileList({
   files,
   empty,
+  dealId,
+  carrierName,
 }: {
   files: QuoteFileRow[];
   empty: ReactNode;
+  dealId: string;
+  carrierName?: string | null;
 }) {
   if (files.length === 0) return <>{empty}</>;
   return (
@@ -134,6 +139,18 @@ function FileList({
             <a href={fileDownloadHref(file.id)} className="text-xs text-primary hover:underline">
               Download
             </a>
+            <form action={retagDocumentAsDeclarationAction}>
+              <input type="hidden" name="documentId" value={file.id} />
+              <input type="hidden" name="dealId" value={dealId} />
+              {carrierName ? <input type="hidden" name="carrierName" value={carrierName} /> : null}
+              <button
+                type="submit"
+                className="text-xs text-primary hover:underline"
+                data-ff-retag-as-declaration={file.id}
+              >
+                Use as declaration
+              </button>
+            </form>
           </div>
         </li>
       ))}
@@ -228,6 +245,8 @@ export function QuoteFileActions({
             </DialogDescription>
           </DialogHeader>
           <FileList
+            dealId={dealId}
+            carrierName={carrierName}
             files={carrierFiles}
             empty={
               <p className="text-sm text-muted-foreground" data-ff-quote-carrier-files-empty="">
@@ -311,6 +330,8 @@ export function QuoteFileActions({
                 Stored
               </h4>
               <FileList
+                dealId={dealId}
+                carrierName={carrierName}
                 files={agencyFiles}
                 empty={
                   <p className="text-sm text-muted-foreground" data-ff-quote-agency-files-empty="">

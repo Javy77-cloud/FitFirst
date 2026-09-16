@@ -1,3 +1,5 @@
+import { isDeclarationDocType } from "@/lib/policy/dec-prompt";
+
 /** Docs uploaded from Quotes (agency/carrier quote files) — not master-sheet source docs. */
 
 export type QuoteDocLike = {
@@ -8,6 +10,7 @@ export type QuoteDocLike = {
 
 /** True for Quote-tab uploads (slot quote_file, agency/carrier quote types, or quote: tags). */
 export function isQuoteFileDoc(doc: QuoteDocLike): boolean {
+  if (isDeclarationDocType(doc.docType) && (doc.slot === "source_doc" || !doc.slot)) return false;
   if (doc.slot === "quote_file") return true;
   if (doc.docType === "carrier_quote" || doc.docType === "agency_quote") return true;
   const tags = doc.tags ?? [];

@@ -101,6 +101,7 @@ export const FLASH_COPY = {
   "policy-minted": "Policy created — confirm the declaration",
   "policy-published": "Policy published",
   "need-quote": "Pick a live quote first",
+  "declaration-received": "Declaration received",
 } as const;
 
 export type FlashKey = keyof typeof FLASH_COPY;

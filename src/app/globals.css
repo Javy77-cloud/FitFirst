@@ -1156,6 +1156,12 @@ a[data-ff-carrier-portal-status="connected"]:hover {
 [data-ff-deal-status-stamp="bound"] .ff-deal-status-stamp-ink {
   color: #bf0a30;
 }
+[data-ff-deal-status-stamp="done"] .ff-deal-status-stamp-ink {
+  color: #0f7a3a;
+}
+[data-ff-deal-status-stamp="closed_won"] .ff-deal-status-stamp-ink {
+  color: #0f7a3a;
+}
 [data-ff-deal-status-stamp="pending_inspection"] .ff-deal-status-stamp-ink {
   color: #8a6500;
 }

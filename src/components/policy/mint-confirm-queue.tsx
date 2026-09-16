@@ -102,11 +102,22 @@ export function MintConfirmQueue({
         <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           {current.label}
         </span>
+        {current.flagged ? (
+          <span
+            className="ml-2 rounded-sm bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900"
+            data-ff-mint-field-flagged={current.key}
+          >
+            Flagged
+          </span>
+        ) : null}
         <input
           value={value}
           onChange={(event) => setValue(event.target.value)}
-          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-navy"
+          className={`h-10 w-full rounded-md border bg-background px-3 text-sm text-navy ${
+            current.flagged ? "border-amber-500 ring-2 ring-amber-200" : "border-input"
+          }`}
           data-ff-mint-confirm-input={current.key}
+          data-ff-mint-flagged={current.flagged ? "1" : "0"}
         />
       </label>
       <div className="flex flex-wrap gap-2">

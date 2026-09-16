@@ -97,6 +97,15 @@ describe("policy issued mint gate", () => {
     expect(
       isDeclarationPdf({ id: "q", docType: "agency_quote", filename: "quote.pdf", mimeType: "application/pdf" }),
     ).toBe(false);
+    expect(
+      isDeclarationPdf({
+        id: "rosa",
+        docType: "dec",
+        slot: "source_doc",
+        filename: "Rosa Castellanos Florida Peninsula HO3 Dec Page.pdf",
+        mimeType: "application/pdf",
+      }),
+    ).toBe(true);
     expect(findDealDeclaration([{ id: "q", docType: "quote_pdf", filename: "quote.pdf" }])).toBeNull();
     expect(
       findDealDeclaration([

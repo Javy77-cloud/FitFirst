@@ -34,6 +34,7 @@ import { PolicyClaimsTab } from "@/components/policy/tabs/claims-tab";
 import { PolicyAgencyTab } from "@/components/policy/tabs/agency-tab";
 import { parseAgentPolicyTab, policyTabsForViewer } from "@/lib/policy/tabs";
 import { parseMintPayload, policyNeedsMintConfirm } from "@/lib/policy/mint-gate";
+import { notifyAdminUnpublishedMint } from "@/app/actions/policy-mint";
 import { FromDealStrip } from "@/components/policy/from-deal-strip";
 import { MintConfirmQueue } from "@/components/policy/mint-confirm-queue";
 import { db } from "@/lib/db";
@@ -196,6 +197,10 @@ export default async function PolicyDetailPage({
     };
   });
 
+  if (policyNeedsMintConfirm(policy)) {
+    await notifyAdminUnpublishedMint(policy.id).catch(() => null);
+  }
+
   return (
     <AppShell title="Policies">
       <div className="mb-3 space-y-1" data-ff-policy-header-bar="">
@@ -267,10 +272,19 @@ export default async function PolicyDetailPage({
       ) : null}
 
       {policyNeedsMintConfirm(policy) ? (
-        <MintConfirmQueue
-          policyId={policy.id}
-          fields={parseMintPayload(policy.mintPayload)?.fields ?? []}
-        />
+        <>
+          <p
+            className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+            data-ff-mint-unpublished-banner=""
+          >
+            Unpublished until the confirm queue is cleared. Flagged fields stay marked until you
+            confirm them.
+          </p>
+          <MintConfirmQueue
+            policyId={policy.id}
+            fields={parseMintPayload(policy.mintPayload)?.fields ?? []}
+          />
+        </>
       ) : (
 
       <PolicyDetailWorkspace

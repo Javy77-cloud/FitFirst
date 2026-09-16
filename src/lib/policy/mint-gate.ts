@@ -59,6 +59,8 @@ export type MintPayload = {
   decDocumentId?: string | null;
   decFilename?: string | null;
   product?: string | null;
+  mintedAt?: string | null;
+  adminNotifiedAt?: string | null;
 };
 
 export const MINT_CONFIRM_FIELDS = [
@@ -111,6 +113,7 @@ export function isDeclarationPdf(doc: DeclarationLike): boolean {
   if (!looksPdf) return false;
   return (
     type === "dec" ||
+    type === "declaration" ||
     type === "policy_dec" ||
     type === "current_policy" ||
     /\bdec(laration)?s?\b/.test(name) ||
@@ -392,6 +395,8 @@ export function parseMintPayload(raw: unknown): MintPayload | null {
     decDocumentId: row.decDocumentId ?? null,
     decFilename: row.decFilename ?? null,
     product: row.product ?? null,
+    mintedAt: typeof row.mintedAt === "string" ? row.mintedAt : null,
+    adminNotifiedAt: typeof row.adminNotifiedAt === "string" ? row.adminNotifiedAt : null,
   };
 }
 

@@ -33,6 +33,7 @@ export type DealProductStageChip = {
   selectedQuoteIds?: readonly string[] | null;
   policyId?: string | null;
   mintStatus?: string | null;
+  issuedDone?: boolean | null;
 };
 
 export function DealLineSwitcher({
@@ -81,7 +82,8 @@ export function DealLineSwitcher({
           });
           const stage = stages[product]?.stage;
           const bound = productChipBound(stage);
-          const done = bound;
+          const issuedDone = Boolean(stages[product]?.issuedDone);
+          const done = bound || issuedDone;
           const pct = quotesMissing ? 0 : bound ? 100 : quotesIn ? 70 : (stat?.pct ?? 0);
           const theme = themeForProduct(product);
           const def = dealProductDef(product);
@@ -89,6 +91,7 @@ export function DealLineSwitcher({
           const stageLabel = productChipStageLabelForState({
             stage,
             selectedQuoteIds: stages[product]?.selectedQuoteIds,
+            issuedDone,
           });
           return (
             <Link
@@ -108,6 +111,7 @@ export function DealLineSwitcher({
               data-ff-product-quotes-complete={gap ? (gap.complete ? "1" : "0") : undefined}
               data-ff-product-missing-quotes={quotesMissing ? "1" : "0"}
               data-ff-product-stage={stage ?? ""}
+              data-ff-product-issued-done={issuedDone ? "1" : "0"}
               title={quotesMissing ? gap?.summary : undefined}
               data-active={selected ? "true" : "false"}
               aria-current={selected ? "page" : undefined}
@@ -144,7 +148,17 @@ export function DealLineSwitcher({
                     {stages[product]?.mintStatus === "creating" ? "Creating…" : stageLabel}
                   </span>
                 ) : null}
-                {stages[product]?.policyId ? (
+                {issuedDone ? (
+                  <span
+                    className={cn(
+                      "rounded-sm border border-current px-1 text-[9px] font-extrabold uppercase tracking-wider",
+                      selected ? "text-white" : "text-emerald-800",
+                    )}
+                    data-ff-product-done-stamp=""
+                  >
+                    Done
+                  </span>
+                ) : stages[product]?.policyId ? (
                   <span
                     className={cn(
                       "text-[9px] font-medium underline-offset-2",
