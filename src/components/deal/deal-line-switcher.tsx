@@ -112,6 +112,7 @@ export function DealLineSwitcher({
               data-ff-product-missing-quotes={quotesMissing ? "1" : "0"}
               data-ff-product-stage={stage ?? ""}
               data-ff-product-issued-done={issuedDone ? "1" : "0"}
+              data-ff-shopping-active={issuedDone ? "0" : "1"}
               title={quotesMissing ? gap?.summary : undefined}
               data-active={selected ? "true" : "false"}
               aria-current={selected ? "page" : undefined}

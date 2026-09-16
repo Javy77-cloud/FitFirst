@@ -555,5 +555,7 @@ describe("per-product stages", () => {
     expect(withAuto.auto?.issuedDone).toBeFalsy();
     expect(productStampStage(published.homeowners, null, null, ["q-ho3"])).toBe("done");
     expect(productChipStageLabelForState({ stage: "closed_won", issuedDone: true })).toBe("Done");
+    expect(source("src/components/deal/deal-line-switcher.tsx")).toMatch(/data-ff-product-done-stamp/);
+    expect(source("src/components/deal/deal-line-switcher.tsx")).toMatch(/data-ff-shopping-active/);
   });
 });
