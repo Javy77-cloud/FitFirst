@@ -104,6 +104,9 @@ export const FLASH_COPY = {
   "property-records-no-blanks": "Property records matched, but no blank fields to fill.",
   "policy-minted": "Policy created — confirm the declaration",
   "policy-published": "Policy published",
+  "mint-policy-missing": "This policy is missing. Refresh and try again.",
+  "mint-confirm-invalid": "That mint request was invalid. Refresh and try again.",
+  "need-confirm": "Confirm remaining declaration fields before publishing.",
   "need-quote": "Pick a live quote first",
   "declaration-received": "Declaration received",
 } as const;
