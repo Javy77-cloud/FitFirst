@@ -86,7 +86,7 @@ describe("resolveDealResumeTab", () => {
     ).toBe("markets");
   });
 
-  it("lands on quotes after a shop request or non-stub quotes", () => {
+  it("lands on quotes after a shop request, non-stub quotes, or last work on Quotes", () => {
     expect(
       resolveDealResumeTab({
         recordValues: { named_insured: "Elena" },
@@ -99,6 +99,14 @@ describe("resolveDealResumeTab", () => {
         recordValues: { named_insured: "Elena" },
         sheetFilled: true,
         hasNonStubQuotes: true,
+      }),
+    ).toBe("quotes");
+    expect(
+      resolveDealResumeTab({
+        recordValues: { [DEAL_WORK_TAB_KEY]: "quotes", named_insured: "Elena" },
+        quotingUnlocked: true,
+        quotesRequested: false,
+        hasNonStubQuotes: false,
       }),
     ).toBe("quotes");
   });
@@ -123,9 +131,17 @@ describe("resolveDealResumeTab", () => {
     expect(
       resolveDealResumeTab({
         recordValues: { [DEAL_WORK_TAB_KEY]: "documents", named_insured: "Elena" },
-        quotingUnlocked: true,
+        quotingUnlocked: false,
       }),
     ).toBe("documents");
+    expect(
+      resolveDealResumeTab({
+        recordValues: { [DEAL_WORK_TAB_KEY]: "documents", named_insured: "Elena" },
+        quotingUnlocked: true,
+        quotesRequested: false,
+        hasNonStubQuotes: false,
+      }),
+    ).toBe("markets");
     expect(
       resolveDealResumeTab({
         recordValues: { [DEAL_WORK_TAB_KEY]: "markets", named_insured: "Elena" },
@@ -157,6 +173,42 @@ describe("resolveDealResumeTab", () => {
     expect(src("src/app/actions/custom-fields.ts")).toMatch(/persistDealWorkTab\(dealId, "documents"\)/);
     expect(src("src/app/actions/quoting.ts")).toMatch(/persistDealWorkTab\(dealId, "markets"\)/);
     expect(src("src/app/actions/quotes.ts")).toMatch(/persistDealWorkTab\(dealId, "quotes"\)/);
+    expect(src("src/app/deals/[id]/page.tsx")).toMatch(/tabSize="deal"/);
+    expect(src("src/lib/ui/chip-tabs.ts")).toMatch(/export function dealTabClass/);
+  });
+
+  it("reopens on the tab still needed — Quotes when finished, never first/last arbitrarily", () => {
+    expect(
+      resolveDealResumeTab({
+        recordValues: { named_insured: "Elena" },
+        quotingUnlocked: true,
+        quotesRequested: false,
+        hasNonStubQuotes: false,
+      }),
+    ).toBe("markets");
+    expect(
+      resolveDealResumeTab({
+        recordValues: { [DEAL_WORK_TAB_KEY]: "quotes", named_insured: "Elena" },
+        quotingUnlocked: true,
+        quotesRequested: false,
+        hasNonStubQuotes: false,
+      }),
+    ).toBe("quotes");
+    expect(
+      resolveDealResumeTab({
+        recordValues: { [DEAL_WORK_TAB_KEY]: "details", named_insured: "Elena" },
+        quotingUnlocked: false,
+        quotesRequested: false,
+        hasNonStubQuotes: true,
+      }),
+    ).toBe("quotes");
+    expect(
+      resolveDealResumeTab({
+        recordValues: { named_insured: "Elena" },
+        quotingUnlocked: false,
+        sheetFilled: true,
+      }),
+    ).toBe("documents");
   });
 
   it("never moves an in-progress deal backward", () => {

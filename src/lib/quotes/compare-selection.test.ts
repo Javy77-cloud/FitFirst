@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
-  canAddToCompare,
+  compareExceedsMax,
   QUOTE_COMPARE_MAX,
   sortByPremiumAsc,
   toggleCompareSelection,
 } from "./compare-selection";
 
 describe("quote compare selection", () => {
-  it("caps at three and toggles off", () => {
+  it("lets the agent pick more than 3; Compare alone enforces the cap", () => {
     expect(toggleCompareSelection([], "a")).toEqual(["a"]);
-    expect(toggleCompareSelection(["a", "b", "c"], "d")).toEqual(["a", "b", "c"]);
+    expect(toggleCompareSelection(["a", "b", "c"], "d")).toEqual(["a", "b", "c", "d"]);
     expect(toggleCompareSelection(["a", "b", "c"], "b")).toEqual(["a", "c"]);
-    expect(canAddToCompare(["a", "b", "c"], "d")).toBe(false);
-    expect(canAddToCompare(["a", "b", "c"], "a")).toBe(true);
+    expect(compareExceedsMax(3)).toBe(false);
+    expect(compareExceedsMax(4)).toBe(true);
     expect(QUOTE_COMPARE_MAX).toBe(3);
   });
 

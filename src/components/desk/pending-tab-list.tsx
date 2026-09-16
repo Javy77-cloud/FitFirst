@@ -4,7 +4,7 @@ import { useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { PendingLink } from "@/components/desk/pending-link";
 import { currentDeskPath } from "@/lib/desk/interaction-pending";
-import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
+import { chipTabClass, dealTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 import { cn } from "@/lib/utils";
 
 export type PendingTab = {
@@ -16,10 +16,12 @@ export type PendingTab = {
 export function PendingTabList({
   tabs,
   currentId,
+  size = "default",
   "aria-label": ariaLabel,
 }: {
   tabs: PendingTab[];
   currentId: string;
+  size?: "default" | "deal";
   "aria-label"?: string;
 }) {
   const pathname = usePathname() ?? "";
@@ -43,7 +45,7 @@ export function PendingTabList({
             prefetch
             role="tab"
             aria-selected={selected}
-            className={cn(chipTabClass(selected))}
+            className={cn(size === "deal" ? dealTabClass(selected) : chipTabClass(selected))}
             onClick={() => setOptimistic({ from: navKey, id: tab.id })}
           >
             {tab.label}

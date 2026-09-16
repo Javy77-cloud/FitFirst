@@ -37,7 +37,6 @@ import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line"
 import { resolveDealHeaderAddresses } from "@/lib/deals/header-addresses";
 import {
   logBelongsToLine,
-  quoteBelongsToLine,
   quotingFormFromSheet,
   resolveActivePackageLine,
   resolveLineQuotingForm,
@@ -50,6 +49,7 @@ import {
   resolveActiveDealProduct,
   resolveVisibleDealProducts,
   sheetLineForProduct,
+  splitHomeProducts,
 } from "@/lib/deals/deal-products";
 import { productSectionComplete, productSectionProgress } from "@/lib/deals/product-layout";
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
@@ -61,6 +61,7 @@ import {
 } from "@/lib/deals/quote-completeness";
 import { pickBoundQuoteId } from "@/lib/deals/status-stamp";
 import {
+  displayProductStage,
   parseProductStages,
   productStageFor,
   productStampStage,
@@ -70,6 +71,7 @@ import { DealFlowRail } from "@/components/deals/deal-flow-rail";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 import {
   parseShopFlow,
+  quoteMatchesDealProduct,
   requestScopeForLine,
   resolveShopFlowCompletion,
   riskFingerprint,
@@ -213,6 +215,7 @@ export default async function DealPage({
     quotingForm: deal.quotingForm,
     policySubType: deal.policySubType,
   });
+  const splitHome = splitHomeProducts(dealProducts);
   const activeProduct = resolveActiveDealProduct({
     productParam: product,
     lineParam,
@@ -251,16 +254,22 @@ export default async function DealPage({
     packageLines.length > 1
       ? logs.filter((row) => logBelongsToLine(row.log.lineOfBusiness, activeLob, isPrimaryPackageLine))
       : logs;
+  const allQuoteLogsForMatch = logs.map((item) => item.log);
   const lineQuotes = quotes.filter((row) =>
-    quoteBelongsToLine({
-      quoteAttemptLogId: row.quote.quoteAttemptLogId,
-      shopLine: row.quote.shopLine,
-      notes: row.quote.notes,
-      logs: logs.map((item) => item.log),
-      lob: activeLob,
-      isPrimaryLine: isPrimaryPackageLine,
-      multiLine: packageLines.length > 1,
-    }),
+    quoteMatchesDealProduct(
+      {
+        shopLine: row.quote.shopLine,
+        quoteAttemptLogId: row.quote.quoteAttemptLogId,
+        notes: row.quote.notes,
+        logs: allQuoteLogsForMatch,
+      },
+      activeProduct,
+      {
+        multiLine: dealProducts.length > 1,
+        isPrimaryLine: dealProducts[0] === activeProduct,
+        splitHomeProducts: splitHome,
+      },
+    ),
   );
   const dealLogs = lineLogs.map((row) => row.log);
   const excludedMarketIds = new Set(excludedCarrierIdsFromLogs(dealLogs));
@@ -341,6 +350,7 @@ export default async function DealPage({
         quotes: quotes.map((row) => row.quote),
         carriers: carrierRows.map((row) => ({ id: row.carrier.id, name: row.carrier.name })),
         multiLine: dealProducts.length > 1,
+        splitHomeProducts: splitHome,
       }),
     ]),
   );
@@ -456,6 +466,7 @@ export default async function DealPage({
           active={activeTab}
           extraQuery={{ line: sheetLine, product: activeProduct }}
           panelClassName="mt-0"
+          tabSize="deal"
           toolbar={activeTab === "details" ? <EditLayoutLink module="deals" line={activeLob} /> : null}
           heading={
             <div className="min-w-0">
@@ -486,7 +497,11 @@ export default async function DealPage({
                   <DealHeaderStage
                     dealId={deal.id}
                     pipelineSlug={stageView.pipelineSlug}
-                    stageSlug={activeProductState.stage || stageView.slug}
+                    stageSlug={displayProductStage({
+                      stage: activeProductState.stage,
+                      selectedQuoteIds: activeProductState.selectedQuoteIds,
+                      fallback: stageView.slug,
+                    })}
                     stages={stageView.stages}
                     dealTitle={deal.title}
                     toastOnSave
@@ -543,7 +558,14 @@ export default async function DealPage({
                           id,
                           stageView.slug ?? deal.pipelineStage,
                         );
-                        return [id, { stage: state.stage, lostReason: state.lostReason }];
+                        return [
+                          id,
+                          {
+                            stage: state.stage,
+                            lostReason: state.lostReason,
+                            selectedQuoteIds: state.selectedQuoteIds,
+                          },
+                        ];
                       }),
                     )}
                     formLabels={Object.fromEntries(
@@ -706,7 +728,7 @@ export default async function DealPage({
                       <QuotesPanel
                         dealId={deal.id}
                         quotes={lineQuotes}
-                        logs={lineLogs}
+                        logs={logs}
                         quoteNotes={quoteNotes}
                         quoteResultsNote={deal.quoteResultsNote}
                         formId={lineQuotingForm?.id ?? lineForm ?? masterFormLabel}
@@ -729,6 +751,7 @@ export default async function DealPage({
                         product={activeProduct}
                         selectedQuoteIds={activeProductState.selectedQuoteIds}
                         sheetStale={sheetStale}
+                        splitHomeProducts={splitHome}
                       />
                     )}
                   </div>

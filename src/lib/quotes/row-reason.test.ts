@@ -160,8 +160,16 @@ describe("quote notepad + speech", () => {
     expect(html).toMatch(/data-ff-quote-bound="1"/);
     expect(html).toMatch(/data-ff-quote-bound-badge=""/);
     expect(html).toContain("BOUND");
-    expect(html).toMatch(/data-ff-quote-row-reason="cond-1"/);
-    expect(html).toMatch(/Four-point inspection required/);
+    expect(html).not.toMatch(/data-ff-quote-row-reason=/);
+    expect(html).not.toMatch(/Four-point inspection required/);
+    expect(html).toMatch(/data-ff-quote-status-pill/);
+    expect(html).toContain("Details");
+    expect(readFileSync("src/components/deal/quotes-results-table.tsx", "utf8")).toMatch(
+      /Why \/ bind requirements/,
+    );
+    expect(readFileSync("src/components/deal/quotes-results-table.tsx", "utf8")).not.toMatch(
+      /data-ff-quote-row-reason=\{quote\.id\}/,
+    );
     const notepad = readFileSync("src/components/deal/quote-note-pad.tsx", "utf8");
     expect(notepad).toMatch(/addQuoteNoteAction/);
     expect(notepad).toMatch(/data-ff-quote-note-save/);
@@ -171,5 +179,13 @@ describe("quote notepad + speech", () => {
     expect(readFileSync("src/components/deal/quotes-results-table.tsx", "utf8")).not.toMatch(
       /AGENT_STATUSES/,
     );
+    const table = readFileSync("src/components/deal/quotes-results-table.tsx", "utf8");
+    expect(table).not.toMatch(/Refresh marks recheck/);
+    expect(table).not.toMatch(/eye marks hide/);
+    expect(table).not.toMatch(/disabled=\{\s*!compareSelected\.includes/);
+    expect(table).toMatch(/compareExceedsMax/);
+    expect(table).toMatch(/data-ff-quotes-collapse-all-details/);
+    expect(table).toMatch(/setDeclinedOpen\(false\)/);
+    expect(table).toMatch(/disabled=\{list\.length === 0\}/);
   });
 });

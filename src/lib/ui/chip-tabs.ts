@@ -8,6 +8,9 @@ export const FF_CHIP_TAB_GROUP = "inline-flex flex-wrap items-center gap-1.5";
 const BASE =
   "ff-chip-tab rounded-sm border px-2.5 py-1 text-xs font-medium transition-colors";
 
+const DEAL =
+  "ff-chip-tab rounded-sm border px-3 py-1.5 text-sm font-semibold transition-colors";
+
 const ON =
   "bg-primary text-primary-foreground border-primary";
 
@@ -16,4 +19,9 @@ const OFF =
 
 export function chipTabClass(selected: boolean, extra?: string) {
   return cn(BASE, selected ? ON : OFF, extra);
+}
+
+/** Details / Documents / Markets / Quotes — slightly larger than page chrome chips. */
+export function dealTabClass(selected: boolean, extra?: string) {
+  return cn(DEAL, selected ? ON : OFF, extra);
 }

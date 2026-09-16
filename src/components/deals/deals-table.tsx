@@ -27,6 +27,7 @@ import {
   nativePicklistOptions,
   pipelineGridControl,
   pipelineListNav,
+  type ListStageFilterBook,
   type NamedRecord,
   type PipelineSheetMode,
 } from "@/lib/deals/pipeline-sheet";
@@ -79,6 +80,7 @@ export async function DealsTable({
   searchModuleId = "deals-pipeline",
   nextByDeal = new Map(),
   mode = "list",
+  listFilter = {},
 }: {
   rows: DealsSheetRow[];
   users: Map<string, string>;
@@ -87,6 +89,8 @@ export async function DealsTable({
   searchModuleId?: string;
   nextByDeal?: Map<string, string>;
   mode?: PipelineSheetMode;
+  /** Current All / book chips. Stage click must not replace these with the deal's board. */
+  listFilter?: ListStageFilterBook;
 }) {
   const [tagCatalog, fields, layout, valueMap, pipelines, carrierRows, listColorMaps] = await Promise.all([
     listModuleTags("deals").catch(() => []),
@@ -176,6 +180,7 @@ export async function DealsTable({
               carriers,
               userRecords,
               listColorMaps,
+              listFilter,
             });
             return {
               key: deal.id,
@@ -228,6 +233,7 @@ function dealRowCells({
   carriers,
   userRecords,
   listColorMaps,
+  listFilter,
 }: {
   deal: DealsSheetRow["deal"];
   stored: Record<string, string>;
@@ -247,6 +253,7 @@ function dealRowCells({
   carriers: NamedRecord[];
   userRecords: NamedRecord[];
   listColorMaps: DealListColorMaps;
+  listFilter: ListStageFilterBook;
 }) {
   const sort: Record<string, string> = {
     pick: "",
@@ -298,7 +305,11 @@ function dealRowCells({
           nav={pipelineListNav({
             columnId: "stage",
             dealId: deal.id,
-            pipelineSlug: stage.pipelineSlug,
+            filterPipeline: listFilter.pipeline,
+            family: listFilter.family,
+            pcSub: listFilter.pcSub,
+            lifeSub: listFilter.lifeSub,
+            healthSub: listFilter.healthSub,
             stageSlug: stage.slug,
             view: mode,
           })}

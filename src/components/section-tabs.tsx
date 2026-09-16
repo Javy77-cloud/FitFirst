@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { PendingTabList } from "@/components/desk/pending-tab-list";
-import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
+import { chipTabClass, dealTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 import { cn } from "@/lib/utils";
 
 export type SectionTab = {
@@ -31,6 +31,7 @@ export function SectionTabs({
   sidePanel,
   heading,
   corner,
+  tabSize = "default",
 }: {
   tabs: SectionTab[];
   defaultValue: string;
@@ -45,6 +46,7 @@ export function SectionTabs({
   heading?: ReactNode;
   /** Quotes-pulled chip — always top-right, never under tabs. */
   corner?: ReactNode;
+  tabSize?: "default" | "deal";
 }) {
   const current = tabs.find((tab) => tab.id === active) ?? tabs.find((tab) => tab.id === defaultValue) ?? tabs[0];
 
@@ -67,7 +69,7 @@ export function SectionTabs({
   const tabFallback = (
     <div role="tablist" className={FF_CHIP_TAB_GROUP}>
       {pendingTabs.map((tab) => (
-        <span key={tab.id} className={chipTabClass(tab.id === current?.id)}>
+        <span key={tab.id} className={(tabSize === "deal" ? dealTabClass : chipTabClass)(tab.id === current?.id)}>
           {tab.label}
         </span>
       ))}
@@ -76,7 +78,11 @@ export function SectionTabs({
   const tabList = (
     <div className="flex flex-wrap items-center justify-between gap-2" data-ff-deal-tab-row="">
       <Suspense fallback={tabFallback}>
-        <PendingTabList currentId={current?.id ?? defaultValue} tabs={pendingTabs} />
+        <PendingTabList
+          currentId={current?.id ?? defaultValue}
+          tabs={pendingTabs}
+          size={tabSize}
+        />
       </Suspense>
       {toolbar}
     </div>

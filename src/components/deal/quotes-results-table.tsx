@@ -43,7 +43,9 @@ import { cn } from "@/lib/utils";
 import { QuoteFileActions, type QuoteFileRow } from "@/components/deal/quote-file-actions";
 import { QuoteCompareDialog, type QuoteCompareColumn } from "@/components/deal/quote-compare-dialog";
 import {
-  canAddToCompare,
+  compareExceedsMax,
+  QUOTE_COMPARE_MAX,
+  QUOTE_COMPARE_OVER_MAX,
   QUOTE_COMPARE_TIP,
   sortByPremiumAsc,
   toggleCompareSelection,
@@ -570,11 +572,14 @@ export function QuotesResultsTable({
             type="button"
             size="sm"
             variant="outline"
-            disabled={!anyDetailsOpen}
-            onClick={() => setExpanded({})}
+            disabled={list.length === 0}
+            onClick={() => {
+              setExpanded({});
+              setDeclinedOpen(false);
+            }}
             data-ff-quotes-collapse-all-details=""
             className="gap-1.5 border-primary/35 bg-primary/5 text-navy hover:bg-primary/10"
-            title="Collapse All Open Details"
+            title="Collapse open Details and declined groups"
           >
             Collapse All
           </Button>
@@ -584,11 +589,18 @@ export function QuotesResultsTable({
             size="sm"
             variant="outline"
             disabled={compareCount === 0}
-            onClick={() => setCompareOpen(true)}
+            onClick={() => {
+              if (compareExceedsMax(compareCount)) return;
+              setCompareOpen(true);
+            }}
             data-ff-quotes-compare=""
             data-ff-quotes-compare-count={compareCount}
             className="gap-1.5 border-primary/35 bg-primary/5 text-navy hover:bg-primary/10"
-            title={QUOTE_COMPARE_TIP}
+            title={
+              compareExceedsMax(compareCount)
+                ? QUOTE_COMPARE_OVER_MAX
+                : QUOTE_COMPARE_TIP
+            }
           >
             {compareCount > 0 ? `Compare (${compareCount})` : "Compare"}
           </Button>
@@ -623,16 +635,12 @@ export function QuotesResultsTable({
             </Button>
           ) : null}
         </div>
-
-        {anyRecheck ? (
-          <p className="text-[11px] text-muted-foreground" data-ff-quotes-recheck-hint="">
-            Only marked carriers will be rechecked.
+        {compareExceedsMax(compareCount) ? (
+          <p className="text-[11px] font-medium text-fit-flag" data-ff-quotes-compare-hint="">
+            Compare supports {QUOTE_COMPARE_MAX} quotes — uncheck {compareCount - QUOTE_COMPARE_MAX}{" "}
+            to continue.
           </p>
-        ) : (
-          <p className="text-[11px] text-muted-foreground" data-ff-quotes-recheck-hint="">
-            Refresh marks recheck · eye marks hide (session).
-          </p>
-        )}
+        ) : null}
       </div>
 
       {sheetStale ? (
@@ -763,7 +771,7 @@ export function QuotesResultsTable({
                             isHideMarked && !isRecheckMarked && !highlighted && "ring-1 ring-muted-foreground/25",
                           )}
                         >
-                          <div className="flex flex-wrap items-start gap-2 px-3 py-2.5">
+                          <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
                             {section.key === "bindable" || section.key === "conditional" ? (
                               <label
                                 className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center"
@@ -771,19 +779,13 @@ export function QuotesResultsTable({
                                 title={
                                   compareSelected.includes(quote.id)
                                     ? "Remove From Compare"
-                                    : canAddToCompare(compareSelected, quote.id)
-                                      ? "Add To Compare (Max 3)"
-                                      : "Maximum 3 Quotes"
+                                    : "Add To Compare"
                                 }
                               >
                                 <input
                                   type="checkbox"
                                   className="size-4 accent-[var(--ff-navy,#002868)]"
                                   checked={compareSelected.includes(quote.id)}
-                                  disabled={
-                                    !compareSelected.includes(quote.id) &&
-                                    !canAddToCompare(compareSelected, quote.id)
-                                  }
                                   onChange={() =>
                                     setCompareSelected((current) =>
                                       toggleCompareSelection(current, quote.id),
@@ -793,8 +795,8 @@ export function QuotesResultsTable({
                                 />
                               </label>
                             ) : null}
-                            <div className="min-w-0 flex-1 space-y-1">
-                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                                 {bound ? (
                                   <span
                                     data-ff-quote-bound-badge=""
@@ -813,43 +815,29 @@ export function QuotesResultsTable({
                                     {riskOutcomeLabel(outcome)}
                                   </span>
                                 )}
-                                <span className="truncate text-sm font-semibold text-navy">
+                                <span className="truncate text-[15px] font-bold tracking-tight text-navy">
                                   {carrier.name}
                                 </span>
-                                <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-navy">
-                                  {formatMoney(quote.premium)}
-                                  <StarRating
-                                    dealId={dealId}
-                                    quoteId={quote.id}
-                                    value={quote.agentRating}
-                                    disabled={pending}
-                                  />
-                                </span>
                               </div>
-                              {prior ? (
-                                <p
-                                  className="text-[11px] text-muted-foreground"
-                                  data-ff-quote-prior={quote.id}
-                                >
-                                  {prior.label ?? "Prior"} · {formatMoney(prior.quote.premium)}
-                                </p>
-                              ) : null}
-                              {!detailsOpen &&
-                              (outcome !== "bindable" || !rowReason.provided || rowReason.chips.length) ? (
-                                <p
-                                  className={cn(
-                                    "text-[12px] leading-snug",
-                                    rowReason.provided ? "text-navy" : "text-fit-flag",
-                                  )}
-                                  data-ff-quote-row-reason={quote.id}
-                                  data-ff-quote-row-reason-provided={rowReason.provided ? "1" : "0"}
-                                >
-                                  {rowReason.label}
-                                  {rowReason.detail ? (
-                                    <span className="text-muted-foreground"> · {rowReason.detail}</span>
-                                  ) : null}
-                                </p>
-                              ) : null}
+                              <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                                <span className="text-base font-bold tabular-nums text-navy">
+                                  {formatMoney(quote.premium)}
+                                </span>
+                                <StarRating
+                                  dealId={dealId}
+                                  quoteId={quote.id}
+                                  value={quote.agentRating}
+                                  disabled={pending}
+                                />
+                                {prior ? (
+                                  <p
+                                    className="text-[11px] text-muted-foreground"
+                                    data-ff-quote-prior={quote.id}
+                                  >
+                                    {prior.label ?? "Prior"} · {formatMoney(prior.quote.premium)}
+                                  </p>
+                                ) : null}
+                              </div>
                             </div>
 
                             <div className="flex shrink-0 flex-wrap items-center gap-1.5">

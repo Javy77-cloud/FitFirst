@@ -116,7 +116,10 @@ export function fingerprintsMatch(
   saved: string | null | undefined,
   current: string,
 ): boolean {
-  if (saved == null) return true;
+  // No saved fingerprint means Markets/Quotes have not been requested yet.
+  // A null match used to be treated as live, so opening Quotes after a shop-list
+  // load marked Markets complete without a carrier request.
+  if (saved == null) return false;
   if (saved === STALE_SHOP_FINGERPRINT) return false;
   return saved === current;
 }
@@ -169,7 +172,9 @@ export function inferShopLineFromQuoteNotes(notes: string | null | undefined): S
     return "life";
   }
   if (
-    /\b(auto|vin|nationwide auto|personal auto|\bpa\b|motorcycle|form\s+pa)\b/.test(blob)
+    /\b(auto|vin|nationwide auto|personal auto|\bpa\b|motorcycle|form\s*[:\s-]*pa|pa\s+form|bi\/pd|comp\/coll|um\/uim)\b/.test(
+      blob,
+    )
   ) {
     return "auto";
   }
@@ -223,7 +228,7 @@ export function quoteMatchesDealProduct(
     logs?: readonly { id: string; lineOfBusiness?: string | null }[] | null;
   },
   product: string,
-  opts?: { multiLine?: boolean; isPrimaryLine?: boolean },
+  opts?: { multiLine?: boolean; isPrimaryLine?: boolean; splitHomeProducts?: boolean },
 ): boolean {
   const wanted = parseDealProduct(product);
   if (!wanted) return quoteMatchesShopLine(input, "home", opts);
@@ -233,8 +238,17 @@ export function quoteMatchesDealProduct(
   }
   const fromNotes = inferHomeProductFromQuoteNotes(input.notes);
   if (fromNotes) return fromNotes === wanted;
-  if (opts?.multiLine && (wanted === "homeowners" || wanted === "landlord" || wanted === "renters")) {
+  // Gloria HO3+DP3: untagged home quotes must not spill onto both chips.
+  // Heather HO3+Auto+Flood: HO3 is the only home chip — home-line and untagged
+  // (not auto/flood) quotes stay on HO3 even when shop_line was never persisted.
+  const splitHome = opts?.splitHomeProducts ?? false;
+  if (splitHome && (wanted === "homeowners" || wanted === "landlord" || wanted === "renters")) {
     return false;
+  }
+  if (!splitHome && (wanted === "homeowners" || wanted === "landlord" || wanted === "renters")) {
+    const resolved = resolveQuoteShopLine(input);
+    if (resolved && resolved !== "home") return false;
+    return true;
   }
   return quoteMatchesShopLine(input, "home", opts);
 }

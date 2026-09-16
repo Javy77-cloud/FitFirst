@@ -4,6 +4,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { DealFlowRail } from "@/components/deals/deal-flow-rail";
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
+import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { ProductPicker } from "@/components/deals/product-picker";
 import { DEAL_SHOP_FLOW, nextStepCopy, themeForProduct } from "./product-ui";
 import { productSectionProgress } from "./product-layout";
@@ -46,12 +47,36 @@ describe("deal shop flow + product chrome", () => {
         tab: "details",
         complete: { homeowners: true, auto: false },
         progress: { auto: { filled: 1, total: 4, pct: 25, complete: false } },
+        stages: { homeowners: { stage: "bound" }, auto: { stage: "quotes" } },
       }),
     );
     expect(html).toMatch(/data-ff-deal-product-chip="auto"/);
     expect(html).toMatch(/data-ff-product-complete="1"/);
     expect(html).toMatch(/1<!-- -->\/<!-- -->2<!-- --> ready|1\/2 ready/);
-    expect(html).toMatch(/width:\s*25%/);
+    expect(html).toContain("Auto");
+    expect(html).toMatch(/data-active="true"/);
+    expect(html).toMatch(/bg-navy/);
+    expect(html).toMatch(/data-ff-product-stage-label/);
+    expect(html).toContain("Quotes");
+    expect(html).not.toContain(">PA<");
+    expect(html).not.toContain("review");
+    expect(html).toMatch(/data-ff-deal-package-toggle/);
+    expect(html).toContain("Add / change products");
+    expect(html).toMatch(/border-navy\/40 bg-white text-navy/);
+    expect(readFileSync("src/components/deal/deal-package-lines-form.tsx", "utf8")).not.toMatch(
+      /hover:underline/,
+    );
+    const gloriaStale = renderToString(
+      createElement(DealLineSwitcher, {
+        dealId: "deal-gloria",
+        products: ["homeowners", "landlord"],
+        active: "homeowners",
+        tab: "quotes",
+        stages: { homeowners: { stage: "quote_sent", selectedQuoteIds: [] } },
+      }),
+    );
+    expect(gloriaStale).toContain("Quotes");
+    expect(gloriaStale).not.toContain("Quote sent");
   });
 
   it("picker is grouped tiles, not a wall of unlabeled checkboxes", () => {
@@ -72,5 +97,28 @@ describe("deal shop flow + product chrome", () => {
     expect(readFileSync("src/components/deals/new-deal-create-fields.tsx", "utf8")).toMatch(
       /DealFlowRail/,
     );
+  });
+
+  it("renders breadcrumbs as clickable chips, not muted slash text", () => {
+    const html = renderToString(
+      createElement(DeskPageTrail, {
+        showBack: false,
+        crumbs: [
+          { href: "/deals", label: "Deals" },
+          { label: "Deal" },
+        ],
+      }),
+    );
+    expect(html).toMatch(/data-ff-desk-crumbs/);
+    expect(html).toMatch(/data-ff-desk-crumb="link"/);
+    expect(html).toMatch(/data-ff-desk-crumb="current"/);
+    expect(html).toContain("Deals");
+    expect(html).toContain("Deal");
+    expect(html).toContain("›");
+    expect(html).not.toMatch(/>\/</);
+    expect(html).toMatch(/border-navy bg-navy text-white/);
+    const trail = readFileSync("src/components/desk/desk-page-trail.tsx", "utf8");
+    expect(trail).toMatch(/data-ff-desk-crumb="link"/);
+    expect(trail).toMatch(/backVariant = "outline"/);
   });
 });

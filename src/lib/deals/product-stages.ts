@@ -4,6 +4,7 @@ import {
   parseDealProduct,
   type DealProductId,
 } from "@/lib/deals/deal-products";
+import { humanizeDealStage } from "@/lib/deals/package-lines";
 import { resolveDealStampStage, type DealStampStage } from "@/lib/deals/status-stamp";
 
 /** Stages that stamp the product and must name the quote(s) first. */
@@ -163,7 +164,7 @@ export function sheetFormForProduct(
   return form;
 }
 
-/** HO3 / DP3 / PA when the form is known — not generic Home / Landlord. */
+/** HO3 / DP3 / Auto / Flood — never cryptic PA / FLOT. */
 export function productChipLabel(input: {
   product: DealProductId;
   quotingForm?: string | null;
@@ -180,9 +181,62 @@ export function productChipLabel(input: {
     return form && !/landlord/i.test(form) ? form : "DP3";
   }
   if (input.product === "renters") return /^ho4$/i.test(form) ? "HO4" : form || "HO4";
-  if (input.product === "auto") return /^pa$/i.test(form) ? "PA" : form || "Auto";
+  if (input.product === "auto") {
+    if (!form || /^pa$/i.test(form) || /^auto$/i.test(form) || /personal\s*auto/i.test(form)) {
+      return "Auto";
+    }
+    return form;
+  }
   if (input.product === "flood") return "Flood";
   return form || def.label;
+}
+
+const CHIP_STAGE_LABELS: Record<string, string> = {
+  gather: "Gather info",
+  gather_info: "Gather info",
+  shopping: "Gather info",
+  quotes: "Quotes",
+  meet_quotes: "Quotes",
+  quoting: "Quotes",
+  review: "Quotes",
+  markets: "Markets",
+  quote_sent: "Quote sent",
+  bound: "Bound",
+  pending_inspection: "Inspection",
+  closed_won: "Bound",
+  closed_lost: "Lost",
+  lost: "Lost",
+};
+
+/** Chip stage — real shopping step, not a vague Review slug. */
+export function productChipStageLabel(stage?: string | null): string | null {
+  const key = normalizeStageSlug(stage);
+  if (!key || key === "gather" || key === "gather_info" || key === "shopping") return null;
+  return CHIP_STAGE_LABELS[key] ?? humanizeDealStage(key);
+}
+
+/** Hide leftover Quote sent / Bound chip text when no quote is selected. */
+export function productChipStageLabelForState(input: {
+  stage?: string | null;
+  selectedQuoteIds?: readonly string[] | null;
+}): string | null {
+  if (lateStageNeedsQuoteSelection(input)) return productChipStageLabel("quotes");
+  return productChipStageLabel(input.stage);
+}
+
+/** Header / chip stage to show — leftover Quote sent without a pick falls back to Quotes. */
+export function displayProductStage(input: {
+  stage?: string | null;
+  selectedQuoteIds?: readonly string[] | null;
+  fallback?: string | null;
+}): string {
+  if (lateStageNeedsQuoteSelection(input)) return "quotes";
+  return normalizeStageSlug(input.stage) || normalizeStageSlug(input.fallback) || "gather";
+}
+
+export function productChipBound(stage?: string | null): boolean {
+  const key = normalizeStageSlug(stage);
+  return key === "bound" || key === "closed_won";
 }
 
 export function productStampStage(
@@ -190,7 +244,14 @@ export function productStampStage(
   fallbackStage?: string | null,
   boundAt?: Date | string | null,
 ): DealStampStage | null {
-  return resolveDealStampStage(productState?.stage ?? fallbackStage, fallbackStage, boundAt);
+  const selected = productState?.selectedQuoteIds ?? [];
+  const candidate = productState?.stage ?? fallbackStage;
+  // Stale Quote sent / Bound leftovers (Gloria pre-redesign) must not stamp
+  // without a named quote. Do not invent a stage — just hide the stamp.
+  if (isLateProductStage(candidate) && selected.length === 0 && !boundAt) {
+    return null;
+  }
+  return resolveDealStampStage(candidate, fallbackStage, boundAt);
 }
 
 /**

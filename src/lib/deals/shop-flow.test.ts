@@ -110,7 +110,7 @@ describe("shop-flow fingerprint + sticky completion", () => {
     });
     expect(fingerprintsMatch(quoted, withDoc)).toBe(false);
     expect(fingerprintsMatch(STALE_SHOP_FINGERPRINT, quoted)).toBe(false);
-    expect(fingerprintsMatch(null, quoted)).toBe(true);
+    expect(fingerprintsMatch(null, quoted)).toBe(false);
     const stale = resolveShopFlowCompletion({
       detailsComplete: true,
       documentsComplete: true,
@@ -130,6 +130,38 @@ describe("shop-flow fingerprint + sticky completion", () => {
       docs: [{ id: "q1", filename: "carrier.pdf", slot: "quote_file", tags: ["source:carrier"] }],
     });
     expect(withQuotePdf).toBe(base);
+  });
+
+  it("does not mark Markets complete from a tab click or shop-list load alone", () => {
+    const fp = riskFingerprint({ sheets: [homeSheet], docs: [] });
+    const afterTab = resolveShopFlowCompletion({
+      detailsComplete: true,
+      documentsComplete: true,
+      hasMarkets: true,
+      hasQuotes: false,
+      currentFingerprint: fp,
+      saved: {},
+    });
+    expect(afterTab.isComplete("markets")).toBe(false);
+    expect(afterTab.isComplete("quotes")).toBe(false);
+    expect(afterTab.completed).toEqual(["create", "details", "documents"]);
+
+    const afterRequest = resolveShopFlowCompletion({
+      detailsComplete: true,
+      documentsComplete: true,
+      hasMarkets: true,
+      hasQuotes: true,
+      currentFingerprint: fp,
+      saved: nextShopFlowAfterQuoteRun({
+        saved: {},
+        line: "home",
+        fingerprint: fp,
+        newRunId: "run-req",
+        requestCarrierIds: ["citizens"],
+      }),
+    });
+    expect(afterRequest.isComplete("markets")).toBe(true);
+    expect(afterRequest.isComplete("quotes")).toBe(true);
   });
 
   it("treats blank vs filled sheet values as a material change", () => {
@@ -211,6 +243,7 @@ describe("line-scoped quotes", () => {
     );
     expect(inferShopLineFromQuoteNotes("Geico quoted — portal hold")).toBe(null);
     expect(inferShopLineFromQuoteNotes("PA Progressive rated $700 · VIN captured")).toBe("auto");
+    expect(inferShopLineFromQuoteNotes("Form PA rated $700")).toBe("auto");
     expect(
       resolveQuoteShopLine({
         shopLine: "home",
@@ -401,9 +434,44 @@ describe("prior under carrier + line-scoped stale", () => {
       quoteMatchesDealProduct(
         { shopLine: "home", notes: "HO3 bindable", logs: [] },
         "homeowners",
-        { multiLine: true },
+        { multiLine: true, splitHomeProducts: true },
       ),
     ).toBe(true);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "", logs: [] },
+        "homeowners",
+        { multiLine: true, splitHomeProducts: true },
+      ),
+    ).toBe(false);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "", logs: [] },
+        "homeowners",
+        { multiLine: true, splitHomeProducts: false },
+      ),
+    ).toBe(true);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: null, notes: "Rated $1840", logs: [] },
+        "homeowners",
+        { multiLine: true, splitHomeProducts: false },
+      ),
+    ).toBe(true);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "Form PA rated $700", logs: [] },
+        "auto",
+        { multiLine: true, splitHomeProducts: false },
+      ),
+    ).toBe(true);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "Form PA rated $700", logs: [] },
+        "homeowners",
+        { multiLine: true, splitHomeProducts: false },
+      ),
+    ).toBe(false);
   });
 });
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { setDealPackageLines } from "@/app/actions/quote-sheet";
 import { ProductPicker } from "@/components/deals/product-picker";
 import { normalizeDealProducts, type DealProductId } from "@/lib/deals/deal-products";
+import { cn } from "@/lib/utils";
 
 export function DealPackageLinesForm({
   dealId,
@@ -26,7 +27,12 @@ export function DealPackageLinesForm({
       <input type="hidden" name="tab" value={tab ?? ""} />
       <button
         type="button"
-        className="text-[10px] font-medium text-muted-foreground underline-offset-2 hover:underline hover:text-navy"
+        className={cn(
+          "inline-flex items-center rounded-md border px-2.5 py-1 text-[11px] font-semibold shadow-sm",
+          open
+            ? "border-navy bg-navy text-white"
+            : "border-navy/40 bg-white text-navy hover:bg-navy/5",
+        )}
         data-ff-deal-package-toggle=""
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}

@@ -5,7 +5,7 @@ import { clearDealMarketsAction, removeSelectedMarketsAction } from "@/app/actio
 import { FitBadge } from "@/components/fit-badge";
 import { Button } from "@/components/ui/button";
 import type { CarrierMatch } from "@/lib/appetite/match";
-import { appetiteNote, appointmentLabel, marketWhy } from "@/lib/appetite/present";
+import { appointmentLabel } from "@/lib/appetite/present";
 import { confirmHardDelete } from "@/lib/desk/confirm-hard-delete";
 import { asList } from "@/lib/safe-list";
 
@@ -115,9 +115,7 @@ export function MarketsSelectTable({
           <tr>
             <th>Carrier</th>
             <th>Appointment</th>
-            <th>Fit</th>
-            <th>Score</th>
-            <th>Why</th>
+            <th>Appetite</th>
             <th className="w-12 text-center">
               <MarketCheckbox
                 checked={allOn}
@@ -137,21 +135,14 @@ export function MarketsSelectTable({
                     manual
                   </span>
                 ) : null}
-                {appetiteNote(row) ? (
-                  <div className="text-helper text-muted-foreground" data-ff-market-appetite-note="">
-                    {appetiteNote(row)}
-                  </div>
-                ) : null}
-                {row.learnedDecline ? (
-                  <div className="text-helper text-fit-red">Learned from decline log</div>
-                ) : null}
               </td>
               <td>{appointmentLabel(row)}</td>
               <td>
-                <FitBadge band={row.band} />
+                <div className="flex items-center gap-2" data-ff-market-appetite="">
+                  <FitBadge band={row.band} />
+                  <span className="tabular-nums text-sm text-muted-foreground">{row.fitScore}</span>
+                </div>
               </td>
-              <td>{row.fitScore}</td>
-              <td className="text-xs">{marketWhy(row)}</td>
               <td className="text-center">
                 <MarketCheckbox
                   checked={selected.includes(row.carrierId)}

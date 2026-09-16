@@ -94,25 +94,22 @@ export type DealResumeSignals = {
  * Next unfinished Deal tab when the URL has no explicit `?tab=`.
  * Manual `?tab=` clicks still win via parseAgentDealTab on the page.
  *
- * Persisted `ff_work_tab` is the source of truth once convert / a stage
- * completion wrote it — so a convert that already copied lead fields still
- * lands on Details, and reopen stays on Markets until quotes are requested.
- *
- * Without a persisted tab (older deals), infer from sheet / shop signals.
- * Fill master sheet must NOT jump to Markets — stay on Documents until the
- * agent checks visual review and hits Confirm & request quotes.
+ * Reopen lands on the tab still needed for the next stage — never first/last
+ * arbitrarily. Finished flow or last work on Quotes always reopens Quotes.
+ * Confirm (quoting unlocked) without a quote request lands Markets.
+ * Convert stays on Details via persisted `ff_work_tab` until they advance.
  */
 export function resolveDealResumeTab(ctx: DealResumeSignals): AgentDealTab {
   const quotesReady = Boolean(ctx.quotesRequested) || Boolean(ctx.hasNonStubQuotes);
-  if (quotesReady) return "quotes";
-
   const persisted = persistedDealWorkTab(ctx.recordValues);
+  if (quotesReady || persisted === "quotes") return "quotes";
+
+  if (Boolean(ctx.quotingUnlocked)) return "markets";
+
   if (persisted) return persisted;
 
   const detailsDone = hasMeaningfulDealFieldValues(ctx.recordValues);
   if (!detailsDone) return "details";
-
-  if (Boolean(ctx.quotingUnlocked)) return "markets";
 
   return "documents";
 }

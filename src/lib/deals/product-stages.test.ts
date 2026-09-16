@@ -10,7 +10,12 @@ import { pickBoundQuoteId } from "./status-stamp";
 import {
   lateStageNeedsQuoteSelection,
   parseProductStages,
+  productChipBound,
   productChipLabel,
+  productChipStageLabel,
+  productChipStageLabelForState,
+  displayProductStage,
+  productStampStage,
   sheetFormForProduct,
   productReadyFromQuotes,
   productStageFor,
@@ -73,6 +78,10 @@ describe("per-product stages", () => {
     expect(productChipLabel({ product: "landlord", quotingForm: "DP3" })).toBe("DP3");
     expect(productChipLabel({ product: "homeowners" })).toBe("HO3");
     expect(productChipLabel({ product: "landlord" })).toBe("DP3");
+    expect(productChipLabel({ product: "auto", quotingForm: "PA" })).toBe("Auto");
+    expect(productChipLabel({ product: "auto" })).toBe("Auto");
+    expect(productChipLabel({ product: "flood", quotingForm: "FLOT" })).toBe("Flood");
+    expect(productChipLabel({ product: "flood" })).toBe("Flood");
     expect(sheetFormForProduct("homeowners", "HO5")).toBe("HO5");
     expect(sheetFormForProduct("landlord", "HO3")).toBeNull();
     expect(sheetFormForProduct("landlord", "DP3")).toBe("DP3");
@@ -201,7 +210,31 @@ describe("per-product stages", () => {
   it("keeps the stamp off position:sticky and list stage on list", () => {
     const css = source("src/app/globals.css");
     expect(css).toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: absolute;/);
+    expect(css).toMatch(/\.ff-deal-status-stamp \{[\s\S]*top: 10\.5rem;/);
     expect(css).not.toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: sticky;/);
+    expect(productChipStageLabel("review")).toBe("Quotes");
+    expect(productChipStageLabel("quote_sent")).toBe("Quote sent");
+    expect(productChipStageLabel("gather")).toBeNull();
+    expect(
+      productChipStageLabelForState({ stage: "quote_sent", selectedQuoteIds: [] }),
+    ).toBe("Quotes");
+    expect(
+      productChipStageLabelForState({ stage: "quote_sent", selectedQuoteIds: ["q1"] }),
+    ).toBe("Quote sent");
+    expect(
+      displayProductStage({ stage: "quote_sent", selectedQuoteIds: [], fallback: "quote_sent" }),
+    ).toBe("quotes");
+    expect(
+      displayProductStage({ stage: "quote_sent", selectedQuoteIds: ["q1"], fallback: "gather" }),
+    ).toBe("quote_sent");
+    expect(productChipBound("bound")).toBe(true);
+    expect(productChipBound("review")).toBe(false);
+    expect(
+      productStampStage({ stage: "quote_sent", selectedQuoteIds: [], lostReason: null }),
+    ).toBeNull();
+    expect(
+      productStampStage({ stage: "quote_sent", selectedQuoteIds: ["q1"], lostReason: null }),
+    ).toBe("quote_sent");
     expect(source("src/lib/deals/pipeline-sheet.ts")).toMatch(/const view = input\.view \?\? "list"/);
     expect(source("src/lib/deals/pipeline-sheet.ts")).not.toMatch(/view: "board"/);
     expect(source("src/app/deals/page.tsx")).toMatch(/boardWhenNoPipeline=\{null\}/);

@@ -13,8 +13,9 @@ describe("sep7fw Documents Confirm → Markets; Markets Approve → Quotes", () 
   it("FW1 — Documents Confirm lands Markets; Markets Approve & request lands Quotes", () => {
     const quoting = source("src/app/actions/quoting.ts");
     expect(quoting).toMatch(
-      /redirect\(withFlash\(`\/deals\/\$\{dealId\}\?tab=markets&line=\$\{line\}`, "quotes-requested"\)\)/,
+      /redirect\(withFlash\(`\/deals\/\$\{dealId\}\?tab=markets&line=\$\{line\}`, "Sheet approved"\)\)/,
     );
+    expect(quoting).not.toMatch(/shopDealQuotes/);
     expect(quoting).not.toMatch(
       /redirect\(withFlash\(`\/deals\/\$\{dealId\}\?tab=quotes&line=\$\{line\}`, "quotes-requested"\)\)/,
     );
@@ -25,6 +26,13 @@ describe("sep7fw Documents Confirm → Markets; Markets Approve → Quotes", () 
     expect(quotes).not.toMatch(
       /flashAction\(`\/deals\/\$\{dealId\}\?tab=markets`, "quotes-requested"\)/,
     );
+    const gate = source("src/components/deal/sheet-approve-gate.tsx");
+    expect(gate).toMatch(/action=\{approveMasterSheet\}/);
+    expect(gate).toMatch(/useFormStatus/);
+    expect(gate).not.toMatch(/event\.preventDefault\(\);\s*const gateForm/);
+    expect(gate).not.toMatch(/await approveMasterSheet/);
+    expect(gate).not.toMatch(/Requesting quotes/);
+    expect(gate).not.toMatch(/requestQuotes/);
   });
 
   it("FW2 — empty Markets shows 0 counters + Load list + Add carriers", () => {

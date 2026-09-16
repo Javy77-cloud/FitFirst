@@ -5,7 +5,12 @@ import {
   dealProductSwitcherHref,
   type DealProductId,
 } from "@/lib/deals/deal-products";
-import { productChipLabel, productReadyFromQuotes } from "@/lib/deals/product-stages";
+import {
+  productChipBound,
+  productChipLabel,
+  productChipStageLabelForState,
+  productReadyFromQuotes,
+} from "@/lib/deals/product-stages";
 import { themeForProduct } from "@/lib/deals/product-ui";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +30,7 @@ export type DealProductQuoteGap = {
 export type DealProductStageChip = {
   stage?: string | null;
   lostReason?: string | null;
+  selectedQuoteIds?: readonly string[] | null;
 };
 
 export function DealLineSwitcher({
@@ -49,9 +55,7 @@ export function DealLineSwitcher({
   formLabels?: Partial<Record<DealProductId, string>>;
 }) {
   if (!products.length) return null;
-  const doneCount = products.filter((id) =>
-    productReadyFromQuotes({ complete: quoteGaps[id]?.complete ?? complete[id] }),
-  ).length;
+  const doneCount = products.filter((id) => productChipBound(stages[id]?.stage)).length;
   return (
     <div className="mt-1.5 space-y-1" data-ff-deal-product-chip-row="">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -74,25 +78,31 @@ export function DealLineSwitcher({
           const stat = progress[product];
           const gap = quoteGaps[product];
           const quotesMissing = Boolean(gap && !gap.complete);
-          const done =
-            productReadyFromQuotes({ complete: gap?.complete ?? complete[product] }) &&
-            !quotesMissing;
-          const pct = quotesMissing ? 0 : done ? 100 : (stat?.pct ?? 0);
+          const quotesIn = productReadyFromQuotes({
+            complete: gap?.complete ?? complete[product],
+          });
+          const stage = stages[product]?.stage;
+          const bound = productChipBound(stage);
+          const done = bound;
+          const pct = quotesMissing ? 0 : bound ? 100 : quotesIn ? 70 : (stat?.pct ?? 0);
           const theme = themeForProduct(product);
           const def = dealProductDef(product);
           const label = productChipLabel({ product, quotingForm: formLabels[product] });
-          const stage = stages[product]?.stage;
+          const stageLabel = productChipStageLabelForState({
+            stage,
+            selectedQuoteIds: stages[product]?.selectedQuoteIds,
+          });
           return (
             <Link
               key={product}
               href={dealProductSwitcherHref({ dealId, product, tab })}
               scroll={false}
               className={cn(
-                "relative min-w-[4.5rem] overflow-hidden rounded border px-2 py-1 text-[11px] font-medium transition-colors",
+                "relative min-w-[4.5rem] overflow-hidden rounded border px-2 py-1 text-[11px] font-semibold transition-colors",
                 selected
-                  ? "border-border bg-muted/70 text-navy"
+                  ? cn(theme.chipOn, "shadow-sm ring-2 ring-navy/25")
                   : "border-transparent bg-transparent text-muted-foreground hover:bg-muted/40",
-                quotesMissing && "border-fit-flag/50",
+                quotesMissing && !selected && "border-fit-flag/50",
               )}
               data-ff-deal-line-chip={def.shopLine}
               data-ff-deal-product-chip={product}
@@ -117,7 +127,7 @@ export function DealLineSwitcher({
                 ) : done ? (
                   <span
                     className="inline-flex size-2.5 items-center justify-center rounded-full bg-[var(--ff-green)] text-[8px] text-white"
-                    aria-label="Quotes complete"
+                    aria-label="Bound"
                   >
                     ✓
                   </span>
@@ -125,9 +135,15 @@ export function DealLineSwitcher({
                   <span className={cn("inline-block size-1 rounded-full", theme.bar)} aria-hidden />
                 )}
                 {label}
-                {stage && stage !== "gather" ? (
-                  <span className="text-[9px] font-normal text-muted-foreground">
-                    {stage.replaceAll("_", " ")}
+                {stageLabel ? (
+                  <span
+                    className={cn(
+                      "text-[9px] font-medium",
+                      selected ? "text-white/85" : "text-muted-foreground",
+                    )}
+                    data-ff-product-stage-label=""
+                  >
+                    {stageLabel}
                   </span>
                 ) : null}
               </span>
