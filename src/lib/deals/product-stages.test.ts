@@ -430,6 +430,8 @@ describe("per-product stages", () => {
     expect(source("src/components/deals/deal-product-stage-chips.tsx")).toMatch(
       /data-ff-list-product-stage-href/,
     );
+    expect(source("src/components/deals/deal-product-stage-chips.tsx")).toMatch(/"use client"/);
+    expect(source("src/components/deals/deal-product-stage-chips.tsx")).toMatch(/stopPropagation/);
     expect(workspaceTabForProductStage("quote_review")).toBe("quotes");
     expect(workspaceTabForProductStage("quote_sent")).toBe("quotes");
     expect(workspaceTabForProductStage("bound")).toBe("quotes");
