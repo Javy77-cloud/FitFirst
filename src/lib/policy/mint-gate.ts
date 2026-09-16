@@ -119,6 +119,47 @@ export const MINT_CONFIRM_FIELDS = [
 
 const SOLD_KEYS = new Set(["premium", "coverage_a", "hurricane_deductible", "aop_deductible"]);
 
+/** Risk / premises keys — never Insured/mailing when both exist and differ. */
+export const MINT_PROPERTY_ADDRESS_ALIASES = [
+  "property_address",
+  "location_description",
+  "property_information",
+  "insured_property",
+  "residence_premises",
+  "location",
+  "address",
+  "address1",
+  "applicant_address",
+] as const;
+
+/** Where they live — last-resort only for the Location / property confirm field. */
+export const MINT_MAILING_ADDRESS_ALIASES = ["mailing_address", "contact_mailing_address"] as const;
+
+export const MINT_NO_MORTGAGE = "No mortgage";
+export const MINT_PAYMENT_MORTGAGEE = "billed through mortgagee";
+export const MINT_PAYMENT_DIRECT = "client direct payment";
+
+const HO_MINT_PRODUCTS = new Set(["homeowners", "homeowner", "home", "ho", "ho3", "landlord", "renters"]);
+
+/** Homeowners-family mint — annual / next-due / mortgagee defaults. Not Auto or Flood. */
+export function isHomeownersMintProduct(product?: string | null): boolean {
+  const p = (product ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return HO_MINT_PRODUCTS.has(p);
+}
+
+export function isNoMortgageValue(raw?: string | null): boolean {
+  const value = (raw ?? "").trim();
+  if (!value) return true;
+  return /^(n\/?a|none|no|no mortgagee?|no additional interest|not applicable|-|—)$/i.test(value);
+}
+
+export function mortgageePresent(raw?: string | null): boolean {
+  const value = (raw ?? "").trim();
+  if (!value) return false;
+  if (isNoMortgageValue(value)) return false;
+  return normalizeMintValue("mortgagee", value) !== MINT_NO_MORTGAGE;
+}
+
 /** Gemini / sheet keys that fill a mint confirm field. */
 export const MINT_FIELD_ALIASES: Record<string, string[]> = {
   policy_number: [
@@ -161,18 +202,18 @@ export const MINT_FIELD_ALIASES: Record<string, string[]> = {
   insurance_type: ["insurance_type", "insurance_family"],
   hurricane_deductible: ["hurricane_deductible"],
   aop_deductible: ["aop_deductible"],
-  mailing_address: [
-    "mailing_address",
-    "property_address",
-    "address",
-    "address1",
-    "applicant_address",
-  ],
+  mailing_address: [...MINT_PROPERTY_ADDRESS_ALIASES, ...MINT_MAILING_ADDRESS_ALIASES],
   selling_agency: ["selling_agency"],
-  renewal_date: ["renewal_date"],
+  renewal_date: [
+    "renewal_date",
+    "expiration_date",
+    "exp_date",
+    "policy_expiration_date",
+    "policy_period_end",
+  ],
   producer: ["producer"],
-  roof_year: ["roof_year", "roof_age"],
-  mortgagee: ["mortgagee", "mortgagee_name"],
+  roof_year: ["roof_year", "roof_age", "year_roof"],
+  mortgagee: ["mortgagee", "mortgagee_name", "additional_interest"],
   billing_frequency: ["billing_frequency", "premium_frequency", "premium_mode"],
   next_due: ["next_due", "next_payment_due"],
   payment_method: ["payment_method", "pay_plan"],
@@ -277,11 +318,18 @@ export function normalizeMintValue(key: string, raw: string | number | null | un
   }
   if (key === "billing_frequency") {
     const low = value.toLowerCase();
+    if (/\bsemi|6\s*month/.test(low)) return "semiannual";
     if (/\bmonth/.test(low)) return "monthly";
     if (/\bquarter/.test(low)) return "quarterly";
-    if (/\bsemi|6\s*month/.test(low)) return "semiannual";
     if (/\bescrow|mortgagee/.test(low)) return "escrow";
     if (/\bannual|year/.test(low)) return "annual";
+    return value;
+  }
+  if (key === "mortgagee" && isNoMortgageValue(value)) return MINT_NO_MORTGAGE;
+  if (key === "payment_method") {
+    const low = value.toLowerCase();
+    if (/\bescrow|mortgagee|impound|bill(ed)?\s*through/.test(low)) return MINT_PAYMENT_MORTGAGEE;
+    if (/\bdirect|insured\s*pay|client/.test(low)) return MINT_PAYMENT_DIRECT;
     return value;
   }
   if (key.endsWith("_date") || key === "next_due") {
@@ -331,16 +379,18 @@ export type MintGeminiRow = {
 };
 
 function geminiCell(rows: readonly MintGeminiRow[], ...keys: string[]) {
-  const wanted = new Set(keys.map(normalizeMintFieldKey));
-  for (const row of rows) {
-    if (!wanted.has(normalizeMintFieldKey(row.fieldKey))) continue;
-    const value = normalizeMintValue(keys[0] ?? row.fieldKey, row.normalizedValue || row.rawValue);
-    if (!value) continue;
-    return {
-      value,
-      confidence: Number(row.confidence ?? 0),
-      flagged: Boolean(row.flagged),
-    };
+  for (const key of keys) {
+    const wanted = normalizeMintFieldKey(key);
+    for (const row of rows) {
+      if (normalizeMintFieldKey(row.fieldKey) !== wanted) continue;
+      const value = normalizeMintValue(keys[0] ?? row.fieldKey, row.normalizedValue || row.rawValue);
+      if (!value) continue;
+      return {
+        value,
+        confidence: Number(row.confidence ?? 0),
+        flagged: Boolean(row.flagged),
+      };
+    }
   }
   return null;
 }
@@ -413,6 +463,144 @@ function identityCell(identity: MintIdentity | null | undefined, key: string): s
   return "";
 }
 
+function pickMintPremises(input: {
+  gemini: readonly MintGeminiRow[];
+  sheet?: Record<string, { value?: string | null } | undefined> | null;
+  identity?: MintIdentity | null;
+  threshold: number;
+}): {
+  value: string;
+  source: MintFieldSource;
+  geminiValue: string;
+  sheetValue: string;
+  confidence: number;
+  flagged: boolean;
+} {
+  const gemProp = geminiCell(input.gemini, ...MINT_PROPERTY_ADDRESS_ALIASES);
+  const gemMail = geminiCell(input.gemini, ...MINT_MAILING_ADDRESS_ALIASES);
+  const sheetProp =
+    sheetCell(input.sheet, ...MINT_PROPERTY_ADDRESS_ALIASES) ||
+    normalizeMintValue("mailing_address", input.identity?.propertyAddress);
+  const sheetMail =
+    sheetCell(input.sheet, ...MINT_MAILING_ADDRESS_ALIASES) ||
+    normalizeMintValue("mailing_address", input.identity?.mailingAddress);
+
+  if (gemProp?.value && gemProp.confidence >= input.threshold) {
+    return {
+      value: gemProp.value,
+      source: "gemini",
+      geminiValue: gemProp.value,
+      sheetValue: sheetProp || sheetMail,
+      confidence: gemProp.confidence,
+      flagged: Boolean(gemProp.flagged) || valuesMismatch("mailing_address", gemProp.value, sheetProp),
+    };
+  }
+  // Deal/sheet property beats Gemini mailing (Rosa: Cypress Point over SW 85th).
+  if (sheetProp) {
+    return {
+      value: sheetProp,
+      source: "sheet",
+      geminiValue: gemProp?.value ?? "",
+      sheetValue: sheetProp,
+      confidence: gemProp?.value ? gemProp.confidence : 1,
+      flagged: Boolean(gemProp?.flagged) || valuesMismatch("mailing_address", gemProp?.value, sheetProp),
+    };
+  }
+  if (gemProp?.value) {
+    return {
+      value: gemProp.value,
+      source: "gemini",
+      geminiValue: gemProp.value,
+      sheetValue: sheetMail,
+      confidence: gemProp.confidence,
+      flagged: true,
+    };
+  }
+  if (gemMail?.value && gemMail.confidence >= input.threshold) {
+    return {
+      value: gemMail.value,
+      source: "gemini",
+      geminiValue: gemMail.value,
+      sheetValue: sheetMail,
+      confidence: gemMail.confidence,
+      flagged: Boolean(gemMail.flagged) || valuesMismatch("mailing_address", gemMail.value, sheetMail),
+    };
+  }
+  if (sheetMail) {
+    return {
+      value: sheetMail,
+      source: "sheet",
+      geminiValue: gemMail?.value ?? "",
+      sheetValue: sheetMail,
+      confidence: gemMail?.value ? gemMail.confidence : 1,
+      flagged: Boolean(gemMail?.flagged) || valuesMismatch("mailing_address", gemMail?.value, sheetMail),
+    };
+  }
+  if (gemMail?.value) {
+    return {
+      value: gemMail.value,
+      source: "gemini",
+      geminiValue: gemMail.value,
+      sheetValue: "",
+      confidence: gemMail.confidence,
+      flagged: true,
+    };
+  }
+  return { value: "", source: "deal", geminiValue: "", sheetValue: "", confidence: 0, flagged: false };
+}
+
+function fillDeskDefault(field: MintField, value: string): MintField {
+  return {
+    ...field,
+    value,
+    source: field.geminiValue ? field.source : "deal",
+    confidence: field.confidence || 1,
+    flagged: false,
+    confirmed: true,
+    sheetValue: field.sheetValue || value,
+  };
+}
+
+/** Renewal = expiration on every line. HO-only: annual, next due, No mortgage, payment branch. */
+export function applyMintDeskDefaults(
+  fields: readonly MintField[],
+  product?: string | null,
+): MintField[] {
+  const expiration =
+    fields.find((row) => row.key === "expiration_date")?.value?.trim() ||
+    fields.find((row) => row.key === "renewal_date")?.value?.trim() ||
+    "";
+  const ho = isHomeownersMintProduct(product);
+  const mortgageeValue = fields.find((row) => row.key === "mortgagee")?.value ?? "";
+  const resolvedMortgagee = ho && !mortgageeValue ? MINT_NO_MORTGAGE : mortgageeValue;
+  const billingValue = fields.find((row) => row.key === "billing_frequency")?.value ?? "";
+  const resolvedBilling = ho && !billingValue ? "annual" : billingValue;
+  const annualHo = ho && normalizeMintValue("billing_frequency", resolvedBilling) === "annual";
+
+  return fields.map((field) => {
+    if (field.key === "renewal_date" && !field.value && expiration) {
+      return fillDeskDefault(field, expiration);
+    }
+    if (!ho) return field;
+    if (field.key === "mortgagee" && !field.value) {
+      return fillDeskDefault(field, MINT_NO_MORTGAGE);
+    }
+    if (field.key === "billing_frequency" && !field.value) {
+      return fillDeskDefault(field, "annual");
+    }
+    if (field.key === "next_due" && !field.value && annualHo && expiration) {
+      return fillDeskDefault(field, expiration);
+    }
+    if (field.key === "payment_method" && !field.value) {
+      return fillDeskDefault(
+        field,
+        mortgageePresent(resolvedMortgagee) ? MINT_PAYMENT_MORTGAGEE : MINT_PAYMENT_DIRECT,
+      );
+    }
+    return field;
+  });
+}
+
 export function buildMintFields(input: {
   gemini?: readonly {
     fieldKey: string;
@@ -429,6 +617,7 @@ export function buildMintFields(input: {
     aopDeductible?: string | null;
   } | null;
   identity?: MintIdentity | null;
+  product?: string | null;
   threshold?: number;
 }): MintField[] {
   const threshold = input.threshold ?? CONFIDENCE_THRESHOLD;
@@ -443,18 +632,42 @@ export function buildMintFields(input: {
     aop_deductible: normalizeMintValue("aop_deductible", input.sold?.aopDeductible),
   };
 
-  return MINT_CONFIRM_FIELDS.map((def) => {
+  const fields = MINT_CONFIRM_FIELDS.map((def) => {
     const aliases = MINT_FIELD_ALIASES[def.key] ?? [def.key];
-    const gem = geminiCell(gemini, ...aliases);
-    const fromSheet = sheetCell(input.sheet, ...aliases);
     const soldValue = SOLD_KEYS.has(def.key)
       ? sold[def.key as keyof typeof sold] || ""
       : "";
+    const premiumKey = def.key === "premium";
+
+    if (def.key === "mailing_address") {
+      const picked = pickMintPremises({
+        gemini,
+        sheet: input.sheet,
+        identity: input.identity,
+        threshold,
+      });
+      const missingRequired = false;
+      const flagged = Boolean(picked.flagged || missingRequired);
+      return {
+        key: def.key,
+        label: def.label,
+        value: picked.value,
+        confidence: picked.confidence,
+        source: picked.source,
+        flagged,
+        confirmed: !flagged && Boolean(picked.value),
+        soldValue: soldValue || null,
+        sheetValue: picked.sheetValue || null,
+        geminiValue: picked.geminiValue || null,
+      };
+    }
+
+    const gem = geminiCell(gemini, ...aliases);
+    const fromSheet = sheetCell(input.sheet, ...aliases);
     const sheetValue = fromSheet || identityCell(input.identity, def.key);
     const geminiValue = gem?.value ?? "";
     const geminiConfidence = gem?.confidence ?? 0;
     const lowGemini = Boolean(geminiValue) && geminiConfidence < threshold;
-    const premiumKey = def.key === "premium";
 
     // Issued policy: declaration (Gemini) wins. Deal/sheet next.
     // Sold quote is never booked for premium — hint only (soldValue).
@@ -493,6 +706,8 @@ export function buildMintFields(input: {
       geminiValue: geminiValue || null,
     };
   });
+
+  return applyMintDeskDefaults(fields, input.product);
 }
 
 /** Value the confirm card should offer — Gemini/deal, never a stub that overwrote the dec. */

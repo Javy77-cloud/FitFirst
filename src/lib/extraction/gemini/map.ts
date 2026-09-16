@@ -5,7 +5,11 @@ import { GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, type GeminiExt
 /** Gemini JSON key → one or more sheet / extract field keys. */
 export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   applicant_name: ["applicant_name"],
-  property_address: ["address", "address1", "applicant_address", "property_address", "mailing_address"],
+  property_address: ["address", "address1", "applicant_address", "property_address"],
+  location_description: ["property_address", "address", "address1", "location_description"],
+  property_information: ["property_address", "address", "address1", "property_information"],
+  insured_property: ["property_address", "address", "address1", "insured_property"],
+  residence_premises: ["property_address", "address", "address1", "residence_premises"],
   year_built: ["year_built"],
   stories: ["stories"],
   phone: ["phone"],
@@ -21,7 +25,7 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   opening_protection: ["opening_protection"],
   building_code: ["building_code"],
   design_wind_speed: ["wind_speed", "design_wind_speed"],
-  mailing_address: ["mailing_address"],
+  mailing_address: ["mailing_address", "contact_mailing_address"],
   months_occupied: ["months_occupied"],
   occupancy: ["occupancy"],
   usage: ["usage"],
@@ -364,7 +368,14 @@ export function mapGeminiJsonToFields(
       });
     }
 
-    if (geminiKey === "property_address" || geminiKey === "mailing_address") {
+    if (
+      geminiKey === "property_address" ||
+      geminiKey === "location_description" ||
+      geminiKey === "property_information" ||
+      geminiKey === "insured_property" ||
+      geminiKey === "residence_premises" ||
+      geminiKey === "mailing_address"
+    ) {
       const parts = parseAddressParts(payload.value);
       if (parts.city && !seen.has("city") && above) {
         seen.add("city");

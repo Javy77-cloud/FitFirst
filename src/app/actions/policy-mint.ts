@@ -431,6 +431,7 @@ export async function issuePolicyFromDeclaration(input: {
   const fields = buildMintFields({
     gemini: geminiRows,
     sheet: sheetValues,
+    product,
     sold: {
       premium: quote.premium,
       coverageA: quote.coverageA,
