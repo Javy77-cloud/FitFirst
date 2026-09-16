@@ -19,11 +19,15 @@ export const LINES = [
 export type LineOfBusiness = (typeof LINES)[number];
 
 export const DEAL_STAGES = [
+  "gathering",
+  "markets",
+  "quote_review",
   "shopping",
   "quoting",
   "comparing",
   "quote_sent",
   "bound",
+  "policy_issued",
   "pending_inspection",
   "closed_won",
   "lost",

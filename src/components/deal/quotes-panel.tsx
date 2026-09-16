@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { QuotesBindableSignal } from "@/components/deal/quotes-bindable-signal";
+import { QuotesStageFlags } from "@/components/deal/quotes-stage-flags";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import type { QuoteFileRow } from "@/components/deal/quote-file-actions";
 import { LoadShopListButton } from "@/components/deal/load-shop-list-button";
@@ -103,6 +105,7 @@ export function QuotesPanel({
   mintStatus = null,
   issuedPolicy = null,
   autoIssue = false,
+  inspectionStatus = "none",
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -135,6 +138,7 @@ export function QuotesPanel({
   mintStatus?: string | null;
   issuedPolicy?: IssuedPolicyChip | null;
   autoIssue?: boolean;
+  inspectionStatus?: "none" | "before_bind" | "carrier_post_bind" | null;
 }) {
   const activeLine: ShopLine | null = isShopLine(shopLine) ? shopLine : null;
   const lineLogs = logs.map((row) => row.log);
@@ -228,6 +232,12 @@ export function QuotesPanel({
       >
         <div className="ff-card space-y-3 p-4">
           <h3 className="text-sm font-semibold text-navy">Quotes</h3>
+          <QuotesStageFlags
+            dealId={dealId}
+            product={product}
+            stage={productStage}
+            inspectionStatus={inspectionStatus}
+          />
           <MissingQuotesBanner completeness={completeness} />
           <p className="text-sm text-muted-foreground" data-ff-quotes-empty-stats="">
             0 quote rows · build carriers on Markets first
@@ -259,6 +269,13 @@ export function QuotesPanel({
 
   return (
     <div className="space-y-4" data-ff-deal-quotes="" data-ff-quotes-line={activeLine ?? ""}>
+      <QuotesBindableSignal quotes={sorted.map((row) => row.quote)} />
+      <QuotesStageFlags
+        dealId={dealId}
+        product={product}
+        stage={productStage}
+        inspectionStatus={inspectionStatus}
+      />
       <MissingQuotesBanner completeness={completeness} />
       {product ? (
         <div className="flex flex-wrap items-center justify-between gap-2">

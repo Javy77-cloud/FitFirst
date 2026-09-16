@@ -319,12 +319,12 @@ describe("DealPackageShell address display", () => {
     expect(html.indexOf("DOB")).toBeLessThan(html.indexOf("Activity"));
     expect(html.indexOf("Activity")).toBeLessThan(html.indexOf(INSURED_ADDRESS_LABEL));
     expect(html.indexOf(INSURED_ADDRESS_LABEL)).toBeLessThan(html.indexOf(MAILING_ADDRESS_LABEL));
-    expect(html.indexOf("Gloria Martinez")).toBeLessThan(html.indexOf("Gather info"));
-    expect(html.indexOf("Gather info")).toBeLessThan(html.indexOf("786-555-0100"));
+    expect(html.indexOf("Gloria Martinez")).toBeLessThan(html.indexOf("Gathering"));
+    expect(html.indexOf("Gathering")).toBeLessThan(html.indexOf("786-555-0100"));
     expect(html.indexOf("01/02/1980")).toBeLessThan(html.indexOf(INSURED_ADDRESS_LABEL));
     // Mailing lives in col 4 under insured — never under name.
     expect(html.indexOf("Gloria Martinez")).toBeLessThan(html.indexOf(MAILING_ADDRESS_LABEL));
-    expect(html.indexOf("Gather info")).toBeLessThan(html.indexOf(MAILING_ADDRESS_LABEL));
+    expect(html.indexOf("Gathering")).toBeLessThan(html.indexOf(MAILING_ADDRESS_LABEL));
   });
 
   it("shows one phone when primary and secondary normalize to the same digits", () => {

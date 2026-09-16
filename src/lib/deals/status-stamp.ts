@@ -1,11 +1,11 @@
-export const DEAL_STAMP_STAGES = ["quote_sent", "bound", "policy_issued", "pending_inspection"] as const;
+export const DEAL_STAMP_STAGES = ["quote_sent", "bound", "policy_issued", "closed_won"] as const;
 export type DealStampStage = (typeof DEAL_STAMP_STAGES)[number];
 
 export const DEAL_STAMP_LABELS: Record<DealStampStage, string> = {
   quote_sent: "QUOTE SENT",
   bound: "BOUND",
   policy_issued: "POLICY ISSUED",
-  pending_inspection: "PENDING INSPECTION",
+  closed_won: "CLOSED WON",
 };
 
 const SLUG_ALIASES: Record<string, DealStampStage> = {
@@ -14,11 +14,12 @@ const SLUG_ALIASES: Record<string, DealStampStage> = {
   quote_sent_to_client: "quote_sent",
   bound: "bound",
   policy_issued: "policy_issued",
-  closed_won: "bound",
-  closedwon: "bound",
-  won: "bound",
-  pending_inspection: "pending_inspection",
-  pendinginspection: "pending_inspection",
+  policyissued: "policy_issued",
+  closed_won: "closed_won",
+  closedwon: "closed_won",
+  won: "closed_won",
+  pending_inspection: "bound",
+  pendinginspection: "bound",
 };
 
 export function resolveDealStampStage(

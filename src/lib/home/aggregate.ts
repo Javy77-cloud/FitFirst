@@ -34,7 +34,7 @@ export const OPEN_QUOTE_STAGES = new Set([
   "negotiation",
 ]);
 export const QUOTE_SENT_STAGES = new Set(["quote_sent", "quotesent", "quote sent"]);
-export const WON_STAGES = new Set(["bound", "closed_won", "won", "closed won"]);
+export const WON_STAGES = new Set(["bound", "policy_issued", "closed_won", "won", "closed won"]);
 export const LOST_STAGES = new Set(["lost", "closed_lost"]);
 
 export type HomePolicy = {

@@ -1,6 +1,5 @@
 "use server";
 
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -31,7 +30,8 @@ import {
 import { mergeLearningHints } from "@/lib/fill-learning/lookup";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import { applyLoggedCorrections } from "@/lib/fill-feedback/prefer";
-import { persistDealFile, uploadRoot } from "@/lib/documents/store";
+import { persistDealFile } from "@/lib/documents/store";
+import { readStoredFile } from "@/lib/files/object-store";
 import {
   coerceRiskValue,
   fieldKeyToRiskColumn,
@@ -132,7 +132,8 @@ import { flashAction } from "@/lib/flash-action";
 import { isDocumentsSourceDoc, isQuoteFileDoc } from "@/lib/deals/quote-docs";
 import { withFlash } from "@/lib/flash";
 import { dealTitleForRecords } from "@/lib/deals/deal-title";
-import { persistSheetRecheckCue } from "@/lib/deals/shop-flow-persist";
+import { markShopFlowStaleAfterRiskChange, persistSheetRecheckCue } from "@/lib/deals/shop-flow-persist";
+import { filledKeysAreRatingCritical, ratingCriticalChanged } from "@/lib/deals/rating-critical";
 import { sheetValuesFingerprint } from "@/lib/deals/shop-flow";
 
 function str(form: FormData, key: string) {
@@ -205,8 +206,11 @@ export async function persistQuoteSheetValues(
   await syncRiskFromSheet(dealId, values, "save");
   await syncHeaderFromSheet(dealId, values, "save");
   if (sheetValuesFingerprint(sheet.values) !== sheetValuesFingerprint(values)) {
-    // Keep Markets complete — agent Rechecks quotes instead of re-walking stages.
+    // Keep Markets complete — cue Quotes Recheck; clear unlock only if rating-critical.
     await persistSheetRecheckCue(dealId, line);
+    await markShopFlowStaleAfterRiskChange(dealId, line, {
+      ratingCritical: ratingCriticalChanged(sheet.values, values),
+    });
   }
   return values;
 }
@@ -1034,6 +1038,9 @@ export async function runFillDealSheets(dealId: string, primary: ShopLine): Prom
   };
   if (primaryCounts.filledKeys.length) {
     await persistSheetRecheckCue(dealId, primary);
+    await markShopFlowStaleAfterRiskChange(dealId, primary, {
+      ratingCritical: filledKeysAreRatingCritical(primaryCounts.filledKeys),
+    });
   }
   return counts;
 }
@@ -1049,6 +1056,9 @@ async function fillOtherShopLines(dealId: string, already: ShopLine): Promise<Fi
       skippedKeys.push(...counts.skippedKeys);
       if (counts.filledKeys.length) {
         await persistSheetRecheckCue(dealId, line);
+        await markShopFlowStaleAfterRiskChange(dealId, line, {
+          ratingCritical: filledKeysAreRatingCritical(counts.filledKeys),
+        });
       }
     }
   }
@@ -1318,11 +1328,8 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
   for (const doc of docs) {
     if (isQuoteAttachment(doc.docType, doc.filename) || isQuoteFileDoc(doc)) continue;
     const startedAt = new Date();
-    const abs = path.join(uploadRoot, doc.storagePath);
-    let buffer: Buffer;
-    try {
-      buffer = await readFile(abs);
-    } catch {
+    const buffer = await readStoredFile(doc.storagePath);
+    if (!buffer) {
       await db.insert(extractionJobs).values({
         tenantId: DEFAULT_TENANT_ID,
         dealId,

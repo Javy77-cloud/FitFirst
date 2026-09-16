@@ -8,9 +8,11 @@ import { db } from "@/lib/db";
 import { alerts, deals, pipelines } from "@/lib/db/schema";
 import {
   archiveCancelsEmailJobs,
+  canonicalizePipelineSlug,
   dealStageForPipeline,
   isArchiveStage,
 } from "@/lib/wire/pipeline";
+import { isBoardNoopStage } from "@/lib/deals/product-stages";
 import { shouldCreateStageTask, writeCrmSignalsSafe } from "@/lib/crm/signals";
 import {
   DEAL_ARCHIVE_REMINDER_KIND,
@@ -36,9 +38,21 @@ export async function moveDealToStage(input: {
   dealId: string;
   pipelineSlug: string;
   stageSlug: string;
+  /** Quotes / auto-advance may set late stages. Board and list cannot. */
+  allowLate?: boolean;
 }) {
   const { dealId, pipelineSlug, stageSlug } = input;
   if (!dealId || !stageSlug) return;
+  const canonical = canonicalizePipelineSlug(stageSlug) || stageSlug;
+  if (
+    !input.allowLate &&
+    isBoardNoopStage(canonical) &&
+    !isArchiveStage(canonical) &&
+    pipelineSlug !== "won-lost" &&
+    pipelineSlug !== "archive"
+  ) {
+    return;
+  }
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) return;
 
@@ -53,8 +67,8 @@ export async function moveDealToStage(input: {
     archivedAt?: Date | null;
     updatedAt: Date;
   } = {
-    pipelineStageSlug: stageSlug,
-    pipelineStage: dealStageForPipeline(stageSlug),
+    pipelineStageSlug: canonical,
+    pipelineStage: dealStageForPipeline(canonical),
     updatedAt: now,
   };
 

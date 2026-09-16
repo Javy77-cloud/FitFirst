@@ -120,9 +120,68 @@ export async function ensureSeededPipelines() {
     }
   }
 
+  await remapRetiredShoppingStages(tenantId);
   await splitArchiveOffWonLost(tenantId);
   await reassignFloodBoardDealsToPc(tenantId);
   await ensureRenewalsPipeline();
+}
+
+const RETIRED_SHOPPING_SLUGS = new Set([
+  "gather",
+  "quotes",
+  "review",
+  "pending_inspection",
+]);
+
+const RETIRED_DEAL_SLUGS: Record<string, string> = {
+  gather: "gathering",
+  gather_info: "gathering",
+  shopping: "gathering",
+  quotes: "markets",
+  meet_quotes: "markets",
+  quoting: "markets",
+  review: "quote_review",
+  comparing: "quote_review",
+  pending_inspection: "bound",
+};
+
+/** Align live desks to the locked stage list without a Neon migration. */
+async function remapRetiredShoppingStages(tenantId: string) {
+  for (const [from, to] of Object.entries(RETIRED_DEAL_SLUGS)) {
+    await db
+      .update(deals)
+      .set({
+        pipelineStageSlug: to,
+        pipelineStage: to === "closed_lost" ? "lost" : to,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(deals.tenantId, tenantId), eq(deals.pipelineStageSlug, from)));
+    await db
+      .update(deals)
+      .set({
+        pipelineStage: to === "closed_lost" ? "lost" : to,
+        pipelineStageSlug: to,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(deals.tenantId, tenantId), eq(deals.pipelineStage, from)));
+  }
+
+  const boards = await db.select().from(pipelines).where(eq(pipelines.tenantId, tenantId));
+  for (const board of boards) {
+    if (board.kind !== "shopping" || !board.seeded) continue;
+    const seed = SEEDED_PIPELINES.find((row) => row.slug === board.slug);
+    if (!seed) continue;
+    const keep = new Set(seed.stages.map((stage) => stage.slug));
+    const stages = await db
+      .select()
+      .from(pipelineStages)
+      .where(and(eq(pipelineStages.tenantId, tenantId), eq(pipelineStages.pipelineId, board.id)));
+    for (const stage of stages) {
+      if (stage.seeded && RETIRED_SHOPPING_SLUGS.has(stage.slug) && !keep.has(stage.slug)) {
+        await db.delete(pipelineStages).where(eq(pipelineStages.id, stage.id));
+      }
+    }
+  }
 }
 
 /** Flood shops belong on the P&C board so they share the PC stage picklist. */

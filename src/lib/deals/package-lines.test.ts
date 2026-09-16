@@ -352,11 +352,12 @@ describe("shared shell helpers", () => {
         zip: "32909",
       }),
     ).toBe("12 Oak St · Palm Bay, FL · 32909");
-    expect(humanizeDealStage("quote_sent")).toBe("Quote Sent");
+    expect(humanizeDealStage("quote_sent")).toBe("Quote sent");
+    expect(humanizeDealStage("gather")).toBe("Gathering");
+    expect(humanizeDealStage("Gather")).toBe("Gathering");
+    expect(humanizeDealStage("Gather Info")).toBe("Gathering");
+    expect(humanizeDealStage("review")).toBe("Quote review");
     expect(humanizeDealStage("policy_issued")).toBe("Policy issued");
-    expect(humanizeDealStage("gather")).toBe("Gather info");
-    expect(humanizeDealStage("Gather")).toBe("Gather info");
-    expect(humanizeDealStage("Gather Info")).toBe("Gather info");
   });
 });
 

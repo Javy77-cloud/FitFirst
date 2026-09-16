@@ -47,7 +47,10 @@ describe("deal shop flow + product chrome", () => {
         tab: "details",
         complete: { homeowners: true, auto: false },
         progress: { auto: { filled: 1, total: 4, pct: 25, complete: false } },
-        stages: { homeowners: { stage: "bound" }, auto: { stage: "quotes" } },
+        stages: {
+          homeowners: { stage: "bound", selectedQuoteIds: ["q-ho3"] },
+          auto: { stage: "markets" },
+        },
       }),
     );
     expect(html).toMatch(/data-ff-deal-product-chip="auto"/);
@@ -58,9 +61,10 @@ describe("deal shop flow + product chrome", () => {
     expect(html).toMatch(/data-active="true"/);
     expect(html).toMatch(/bg-navy/);
     expect(html).toMatch(/data-ff-product-stage-label/);
-    expect(html).toContain("Quotes");
+    expect(html).toContain("Markets");
+    expect(html).toContain("Bound");
     expect(html).not.toContain(">PA<");
-    expect(html).not.toContain("review");
+    expect(html).not.toContain(">Review<");
     expect(html).toMatch(/data-ff-deal-package-toggle/);
     expect(html).toContain("Add / change products");
     expect(html).toMatch(/border-navy\/40 bg-white text-navy/);
@@ -76,7 +80,7 @@ describe("deal shop flow + product chrome", () => {
         stages: { homeowners: { stage: "quote_sent", selectedQuoteIds: [] } },
       }),
     );
-    expect(gloriaStale).toContain("Quotes");
+    expect(gloriaStale).toContain("Quote review");
     expect(gloriaStale).not.toContain("Quote sent");
   });
 

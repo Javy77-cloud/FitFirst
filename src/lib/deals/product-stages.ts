@@ -7,15 +7,69 @@ import {
 import { humanizeDealStage } from "@/lib/deals/package-lines";
 import { resolveDealStampStage, type DealStampStage } from "@/lib/deals/status-stamp";
 
+/** Locked per-product pipeline — product chip owns this, tabs are workspaces. */
+export const PRODUCT_STAGE_ORDER = [
+  "gathering",
+  "markets",
+  "quote_review",
+  "quote_sent",
+  "bound",
+  "policy_issued",
+  "closed_won",
+] as const;
+export type ProductStageSlug = (typeof PRODUCT_STAGE_ORDER)[number] | "closed_lost";
+
+export const PRODUCT_STAGE_LABELS: Record<string, string> = {
+  gathering: "Gathering",
+  markets: "Markets",
+  quote_review: "Quote review",
+  quote_sent: "Quote sent",
+  bound: "Bound",
+  policy_issued: "Policy issued",
+  closed_won: "Closed won",
+  closed_lost: "Closed lost",
+};
+
+/** Old slugs still in Neon / shop_flow JSON. */
+export const PRODUCT_STAGE_ALIASES: Record<string, string> = {
+  gather: "gathering",
+  gather_info: "gathering",
+  shopping: "gathering",
+  quotes: "markets",
+  meet_quotes: "markets",
+  quoting: "markets",
+  review: "quote_review",
+  comparing: "quote_review",
+  pending_inspection: "bound",
+  lost: "closed_lost",
+};
+
+export const INSPECTION_STATUSES = ["none", "before_bind", "carrier_post_bind"] as const;
+export type InspectionStatus = (typeof INSPECTION_STATUSES)[number];
+
+export const INSPECTION_STATUS_LABELS: Record<InspectionStatus, string> = {
+  none: "No inspection",
+  before_bind: "Inspection before bind",
+  carrier_post_bind: "Carrier post-bind inspection",
+};
+
 /** Stages that stamp the product and must name the quote(s) first. */
 export const LATE_PRODUCT_STAGES = [
   "quote_sent",
   "bound",
   "policy_issued",
-  "pending_inspection",
   "closed_won",
 ] as const;
 export type LateProductStage = (typeof LATE_PRODUCT_STAGES)[number];
+
+/** Board / list cannot move into these — late changes only from Quotes. */
+export const BOARD_NOOP_STAGES = [
+  "quote_sent",
+  "bound",
+  "policy_issued",
+  "closed_won",
+  "closed_lost",
+] as const;
 
 /** Captain closed-lost reasons — product-level, not a carrier decline. */
 export const PRODUCT_LOST_REASONS = [
@@ -47,16 +101,15 @@ export type DealProductStageState = {
   lostReason?: string | null;
   policyId?: string | null;
   mintStatus?: DealProductMintStatus | null;
+  inspectionStatus?: InspectionStatus;
+  escrowNote?: string | null;
 };
 
 export type DealProductStages = Partial<Record<string, DealProductStageState>>;
 
 const LATE_SET = new Set<string>(LATE_PRODUCT_STAGES);
-
-export function isLateProductStage(stage?: string | null): stage is LateProductStage {
-  const key = normalizeStageSlug(stage);
-  return Boolean(key && LATE_SET.has(key));
-}
+const BOARD_NOOP_SET = new Set<string>(BOARD_NOOP_STAGES);
+const INSPECTION_SET = new Set<string>(INSPECTION_STATUSES);
 
 export function normalizeStageSlug(stage?: string | null): string {
   return (stage ?? "")
@@ -65,6 +118,44 @@ export function normalizeStageSlug(stage?: string | null): string {
     .replace(/[/·]+/g, " ")
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_|_$/g, "");
+}
+
+/** Read old `review` as `quote_review`, `gather` as `gathering`, etc. */
+export function canonicalizeProductStage(stage?: string | null): string {
+  const key = normalizeStageSlug(stage);
+  if (!key) return "gathering";
+  return PRODUCT_STAGE_ALIASES[key] ?? key;
+}
+
+export function isInspectionStatus(value: string | null | undefined): value is InspectionStatus {
+  return Boolean(value && INSPECTION_SET.has(value));
+}
+
+export function parseInspectionStatus(value: unknown): InspectionStatus {
+  return isInspectionStatus(typeof value === "string" ? value : "") ? value : "none";
+}
+
+export function isLateProductStage(stage?: string | null): stage is LateProductStage {
+  return LATE_SET.has(canonicalizeProductStage(stage));
+}
+
+export function isBoardNoopStage(stage?: string | null): boolean {
+  return BOARD_NOOP_SET.has(canonicalizeProductStage(stage));
+}
+
+export function productStageRank(stage?: string | null): number {
+  const key = canonicalizeProductStage(stage);
+  if (key === "closed_lost") return 99;
+  const idx = (PRODUCT_STAGE_ORDER as readonly string[]).indexOf(key);
+  return idx < 0 ? 0 : idx;
+}
+
+/** Auto-advance only moves forward. Never pull Quote sent back to Markets. */
+export function shouldAutoAdvanceStage(current?: string | null, next?: string | null): boolean {
+  const from = canonicalizeProductStage(current);
+  const to = canonicalizeProductStage(next);
+  if (from === "closed_lost" || from === "closed_won") return false;
+  return productStageRank(to) > productStageRank(from);
 }
 
 export function isProductLostReason(value: string | null | undefined): value is ProductLostReason {
@@ -83,6 +174,8 @@ export function parseProductStages(raw: unknown): DealProductStages {
       lostReason?: unknown;
       policyId?: unknown;
       mintStatus?: unknown;
+      inspectionStatus?: unknown;
+      escrowNote?: unknown;
     };
     const rawStage = typeof row.stage === "string" ? normalizeStageSlug(row.stage) : "";
     const selectedQuoteIds = Array.isArray(row.selectedQuoteIds)
@@ -96,18 +189,43 @@ export function parseProductStages(raw: unknown): DealProductStages {
       row.mintStatus === "creating" || row.mintStatus === "unpublished" || row.mintStatus === "published"
         ? row.mintStatus
         : null;
-    if (!rawStage && !selectedQuoteIds.length && !lostReason && !policyId && !mintStatus) continue;
-    // Gloria leftover Quote sent / Bound with no pick is junk — persist as Quotes.
-    const stage =
-      isLateProductStage(rawStage) && selectedQuoteIds.length === 0 ? "quotes" : rawStage || "gather";
-    out[key] = { stage, selectedQuoteIds, lostReason, policyId, mintStatus };
+    const inspectionStatus = parseInspectionStatus(row.inspectionStatus);
+    const escrowNote =
+      typeof row.escrowNote === "string" && row.escrowNote.trim() ? row.escrowNote.trim() : null;
+    if (
+      !rawStage &&
+      !selectedQuoteIds.length &&
+      !lostReason &&
+      !policyId &&
+      !mintStatus &&
+      inspectionStatus === "none" &&
+      !escrowNote
+    ) {
+      continue;
+    }
+    const stage = canonicalizeProductStage(rawStage || "gathering");
+    out[key] = {
+      stage,
+      selectedQuoteIds,
+      lostReason,
+      policyId,
+      mintStatus,
+      inspectionStatus:
+        inspectionStatus === "none" && rawStage === "pending_inspection"
+          ? "before_bind"
+          : inspectionStatus,
+      escrowNote,
+    };
   }
   return out;
 }
 
 function stageWithoutLeftoverQuoteSent(stage: string, selectedQuoteIds: readonly string[]): string {
-  if (isLateProductStage(stage) && selectedQuoteIds.filter(Boolean).length === 0) return "quotes";
-  return stage || "gather";
+  const canonical = canonicalizeProductStage(stage);
+  if (isLateProductStage(canonical) && selectedQuoteIds.filter(Boolean).length === 0) {
+    return "quote_review";
+  }
+  return canonical;
 }
 
 export function productStageFor(
@@ -119,23 +237,24 @@ export function productStageFor(
   if (stored) {
     const selectedQuoteIds = stored.selectedQuoteIds ?? [];
     return {
-      stage: stageWithoutLeftoverQuoteSent(
-        stored.stage || normalizeStageSlug(fallbackStage) || "gather",
-        selectedQuoteIds,
-      ),
+      stage: stageWithoutLeftoverQuoteSent(stored.stage || fallbackStage || "gathering", selectedQuoteIds),
       selectedQuoteIds,
       lostReason: stored.lostReason ?? null,
       policyId: stored.policyId ?? null,
       mintStatus: stored.mintStatus ?? null,
+      inspectionStatus: stored.inspectionStatus ?? "none",
+      escrowNote: stored.escrowNote ?? null,
     };
   }
   const selectedQuoteIds: string[] = [];
   return {
-    stage: stageWithoutLeftoverQuoteSent(normalizeStageSlug(fallbackStage) || "gather", selectedQuoteIds),
+    stage: stageWithoutLeftoverQuoteSent(fallbackStage || "gathering", selectedQuoteIds),
     selectedQuoteIds,
     lostReason: null,
     policyId: null,
     mintStatus: null,
+    inspectionStatus: normalizeStageSlug(fallbackStage) === "pending_inspection" ? "before_bind" : "none",
+    escrowNote: null,
   };
 }
 
@@ -146,19 +265,23 @@ export function setProductStage(
 ): DealProductStages {
   const current = productStageFor(stages, product);
   const next: DealProductStageState = {
-    stage: patch.stage != null ? normalizeStageSlug(patch.stage) || current.stage : current.stage,
+    stage:
+      patch.stage != null ? canonicalizeProductStage(patch.stage) || current.stage : current.stage,
     selectedQuoteIds: patch.selectedQuoteIds ?? current.selectedQuoteIds,
-    lostReason:
-      patch.lostReason === undefined ? current.lostReason : patch.lostReason,
+    lostReason: patch.lostReason === undefined ? current.lostReason : patch.lostReason,
     policyId: patch.policyId === undefined ? current.policyId : patch.policyId,
     mintStatus: patch.mintStatus === undefined ? current.mintStatus : patch.mintStatus,
+    inspectionStatus:
+      patch.inspectionStatus === undefined
+        ? current.inspectionStatus ?? "none"
+        : parseInspectionStatus(patch.inspectionStatus),
+    escrowNote: patch.escrowNote === undefined ? current.escrowNote ?? null : patch.escrowNote,
   };
   if (normalizeStageSlug(next.stage) !== "closed_lost") {
     next.lostReason = next.lostReason ?? null;
   }
-  // Never persist Quote sent / Bound / Inspection / Closed won with an empty pick.
   if (isLateProductStage(next.stage) && next.selectedQuoteIds.filter(Boolean).length === 0) {
-    next.stage = "quotes";
+    next.stage = "quote_review";
   }
   return { ...stages, [product]: next };
 }
@@ -245,28 +368,22 @@ export function productChipLabel(input: {
 }
 
 const CHIP_STAGE_LABELS: Record<string, string> = {
-  gather: "Gather info",
-  gather_info: "Gather info",
-  shopping: "Gather info",
-  quotes: "Quotes",
-  meet_quotes: "Quotes",
-  quoting: "Quotes",
-  review: "Quotes",
+  gathering: "Gathering",
   markets: "Markets",
+  quote_review: "Quote review",
   quote_sent: "Quote sent",
   bound: "Bound",
   policy_issued: "Policy issued",
-  pending_inspection: "Inspection",
-  closed_won: "Bound",
-  closed_lost: "Lost",
-  lost: "Lost",
+  closed_won: "Closed won",
+  closed_lost: "Closed lost",
+  pending_inspection: "Bound",
 };
 
 /** Chip stage — real shopping step, not a vague Review slug. */
 export function productChipStageLabel(stage?: string | null): string | null {
-  const key = normalizeStageSlug(stage);
-  if (!key || key === "gather" || key === "gather_info" || key === "shopping") return null;
-  return CHIP_STAGE_LABELS[key] ?? humanizeDealStage(key);
+  const key = canonicalizeProductStage(stage);
+  if (!key || key === "gathering") return null;
+  return CHIP_STAGE_LABELS[key] ?? PRODUCT_STAGE_LABELS[key] ?? humanizeDealStage(key);
 }
 
 /** Hide leftover Quote sent / Bound chip text when no quote is selected. */
@@ -275,24 +392,24 @@ export function productChipStageLabelForState(input: {
   selectedQuoteIds?: readonly string[] | null;
   liveQuoteIds?: readonly string[] | null;
 }): string | null {
-  if (lateStageNeedsQuoteSelection(input)) return productChipStageLabel("quotes");
+  if (lateStageNeedsQuoteSelection(input)) return productChipStageLabel("quote_review");
   return productChipStageLabel(input.stage);
 }
 
-/** Header / chip stage to show — leftover Quote sent without a pick falls back to Quotes. */
+/** Header / chip stage to show — leftover Quote sent without a pick falls back to Quote review. */
 export function displayProductStage(input: {
   stage?: string | null;
   selectedQuoteIds?: readonly string[] | null;
   fallback?: string | null;
   liveQuoteIds?: readonly string[] | null;
 }): string {
-  if (lateStageNeedsQuoteSelection(input)) return "quotes";
-  return normalizeStageSlug(input.stage) || normalizeStageSlug(input.fallback) || "gather";
+  if (lateStageNeedsQuoteSelection(input)) return "quote_review";
+  return canonicalizeProductStage(input.stage || input.fallback);
 }
 
 export function productChipBound(stage?: string | null): boolean {
-  const key = normalizeStageSlug(stage);
-  return key === "bound" || key === "closed_won" || key === "policy_issued";
+  const key = canonicalizeProductStage(stage);
+  return key === "bound" || key === "policy_issued" || key === "closed_won";
 }
 
 /** Selected carrier row — same words as the stamp / header stage. */
@@ -306,7 +423,7 @@ export const SELECTED_QUOTE_STAGE_LABELS: Record<string, string> = {
 
 export function selectedQuoteRowLabel(stage?: string | null): string | null {
   const key = normalizeStageSlug(stage);
-  return SELECTED_QUOTE_STAGE_LABELS[key] ?? null;
+  return SELECTED_QUOTE_STAGE_LABELS[key] ?? SELECTED_QUOTE_STAGE_LABELS[canonicalizeProductStage(stage)] ?? null;
 }
 
 export function productStampStage(

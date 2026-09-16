@@ -89,7 +89,7 @@ const SYSTEM_DISPLAY_ONLY_IDS = new Set([
   // Policy expires is writable via expirationDate — keep out of this set.
 ]);
 
-const MANUAL_BIND_STAGES = new Set(["bound", "closed_won"]);
+const MANUAL_BIND_STAGES = new Set(["bound", "policy_issued", "closed_won"]);
 
 export function isManualBindStage(value: string): boolean {
   return MANUAL_BIND_STAGES.has(value);

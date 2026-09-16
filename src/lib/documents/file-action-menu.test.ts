@@ -12,7 +12,7 @@ const FILE_LIST_SURFACES = [
   { file: "src/components/deal/source-file-row.tsx", label: "Deal Documents rows" },
   { file: "src/components/leads/lead-line-documents.tsx", label: "Lead line files" },
   { file: "src/components/policy/policy-file-attach.tsx", label: "Policy attachments" },
-  { file: "src/app/policies/[id]/page.tsx", label: "Policy issued files" },
+  { file: "src/components/policy/tabs/documents-table.tsx", label: "Policy issued files" },
   { file: "src/components/documents/file-list.tsx", label: "Documents library" },
   { file: "src/components/ops/document-manager.tsx", label: "Ops file tiles" },
   { file: "src/components/ops/entity-upload.tsx", label: "Entity document table" },
@@ -53,7 +53,7 @@ describe("standard file action menu", () => {
     expect(text).toMatch(/<Download \/>\s*Download/);
     expect(text).toMatch(/<Replace \/>\s*Replace/);
     expect(text).toMatch(/<Trash2 \/>\s*Delete/);
-    expect(text).toMatch(/fileViewHref/);
+    expect(text).toMatch(/filePreviewHref/);
     expect(text).toMatch(/target="_blank"/);
     expect(text).toMatch(/fileDownloadHref/);
     expect(text).toMatch(/replaceDocument/);
@@ -77,11 +77,11 @@ describe("standard file action menu", () => {
 
     const form = source("src/components/desk/hard-delete-form.tsx");
     expect(form).toMatch(/onClickCapture/);
-    expect(form).toMatch(/if \(!confirmHardDelete\(subject\)\)/);
+    expect(form).toMatch(/confirm && !confirmHardDelete\(subject\)/);
     expect(form).toMatch(/preventDefault/);
     expect(form).toMatch(/stopPropagation/);
     expect(form).not.toMatch(/onSubmit/);
-    expect(form.match(/if \(!confirmHardDelete\(subject\)\)/g)).toHaveLength(1);
+    expect(form.match(/confirm && !confirmHardDelete\(subject\)/g)).toHaveLength(1);
   });
 
   it("is the file menu on deal Documents rows and other stored-file lists", () => {

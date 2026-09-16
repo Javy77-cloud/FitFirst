@@ -1,6 +1,5 @@
 "use server";
 
-import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
@@ -58,6 +57,7 @@ import {
 import { inferMimeFromName } from "@/lib/files/urls";
 import { isDocumentsSourceDoc, shopLineFromSourceDoc } from "@/lib/deals/quote-docs";
 import { markShopFlowStaleAfterRiskChange } from "@/lib/deals/shop-flow-persist";
+import { deleteStoredFile, readStoredFile, writeStoredFile } from "@/lib/files/object-store";
 import {
   CLEAN_DEC_FILENAME,
   CLEAN_DEC_TEXT,
@@ -66,8 +66,6 @@ import {
   MESSY_WIND_MIT_FILENAME,
   MESSY_WIND_MIT_TEXT,
 } from "@/lib/fixtures/sample-docs";
-
-const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
 function optionalId(form: FormData, key: string): string | null {
   const value = String(form.get(key) ?? "").trim();
@@ -118,10 +116,12 @@ export async function persistFile(input: {
   const id = randomUUID();
   const folder =
     input.folderId ?? input.dealId ?? input.policyId ?? input.contactId ?? input.leadId ?? "library";
-  const storagePath = path.join(DEFAULT_TENANT_ID, folder, `${id}-${input.filename}`);
-  const abs = path.join(uploadRoot, storagePath);
-  await mkdir(path.dirname(abs), { recursive: true });
-  await writeFile(abs, input.buffer);
+  const relPath = path.posix.join(DEFAULT_TENANT_ID, folder, `${id}-${input.filename}`);
+  const storagePath = await writeStoredFile(
+    relPath,
+    input.buffer,
+    inferMimeFromName(input.filename, input.mimeType),
+  );
 
   const [doc] = await db
     .insert(documents)
@@ -527,12 +527,8 @@ async function fillDealSheetIfReady(dealId: string, lineHint: string) {
 async function runExtraction(documentId: string, dealId: string) {
   const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
   if (!doc) throw new Error("Document not found");
-  const abs = path.join(uploadRoot, doc.storagePath);
-  const { readFile } = await import("node:fs/promises");
-  let buffer: Buffer;
-  try {
-    buffer = await readFile(abs);
-  } catch {
+  const buffer = await readStoredFile(doc.storagePath);
+  if (!buffer) {
     await db
       .update(documents)
       .set({ status: "failed" })
@@ -701,11 +697,7 @@ export async function acceptExtractedField(formData: FormData) {
 }
 
 async function unlinkStoredPath(storagePath: string) {
-  try {
-    await unlink(path.join(uploadRoot, storagePath));
-  } catch {
-    // Missing file on disk is still a successful row delete.
-  }
+  await deleteStoredFile(storagePath);
 }
 
 /** Double-confirmed in the UI. Hard-deletes shopping/library files. Hides issued policy files. */

@@ -49,18 +49,17 @@ export const PIPELINE_FIELDS: PipelineFieldDef[] = [
 
 /** Agency P&C board — Home / Auto / Flood / other PC lines share this set. */
 export const PC_SHOPPING_STAGES: { slug: string; name: string }[] = [
-  { slug: "gather", name: "Gather info" },
-  { slug: "quotes", name: "Meet / Quotes" },
-  { slug: "review", name: "Review" },
-  { slug: "quote_sent", name: "Quote Sent" },
+  { slug: "gathering", name: "Gathering" },
+  { slug: "markets", name: "Markets" },
+  { slug: "quote_review", name: "Quote review" },
+  { slug: "quote_sent", name: "Quote sent" },
   { slug: "bound", name: "Bound" },
   { slug: "policy_issued", name: "Policy issued" },
-  { slug: "pending_inspection", name: "Pending Inspection" },
-  { slug: "closed_won", name: "Closed Won" },
-  { slug: "closed_lost", name: "Closed Lost" },
+  { slug: "closed_won", name: "Closed won" },
+  { slug: "closed_lost", name: "Closed lost" },
 ];
 
-/** Life includes Meet / Quotes; Health keeps the same quotes-style stages. */
+/** Life / Health share the locked P&C shopping stages. */
 export const LIFE_HEALTH_STAGES: { slug: string; name: string }[] = [...PC_SHOPPING_STAGES];
 
 /**
@@ -232,28 +231,45 @@ export function nextMorning(from: Date) {
 }
 
 export function dealStageForPipeline(slug: string) {
-  if (slug === "closed_won") return "closed_won";
-  if (slug === "bound") return "bound";
-  if (slug === "policy_issued") return "policy_issued";
-  if (slug === "pending_inspection") return "pending_inspection";
-  if (slug === "closed_lost") return "lost";
-  if (slug === "archive") return "archive";
-  if (slug === "quote_sent") return "quote_sent";
-  if (slug === "quotes" || slug === "review") return "quoting";
-  if (slug === "shopping") return "shopping";
-  return "shopping";
+  const key = canonicalizePipelineSlug(slug);
+  if (key === "closed_won") return "closed_won";
+  if (key === "bound") return "bound";
+  if (key === "policy_issued") return "policy_issued";
+  if (key === "closed_lost") return "lost";
+  if (key === "archive") return "archive";
+  if (key === "quote_sent") return "quote_sent";
+  if (key === "quote_review") return "quote_review";
+  if (key === "markets") return "markets";
+  if (key === "gathering") return "gathering";
+  return key || "gathering";
+}
+
+const PIPELINE_SLUG_ALIASES: Record<string, string> = {
+  gather: "gathering",
+  gather_info: "gathering",
+  shopping: "gathering",
+  quotes: "markets",
+  meet_quotes: "markets",
+  quoting: "markets",
+  review: "quote_review",
+  comparing: "quote_review",
+  pending_inspection: "bound",
+  lost: "closed_lost",
+};
+
+export function canonicalizePipelineSlug(stage?: string | null): string {
+  const key = (stage ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[/·]+/g, " ")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+  return PIPELINE_SLUG_ALIASES[key] ?? key;
 }
 
 /** Legacy `pipeline_stage` names → board slugs so both move paths stay in sync. */
 export function pipelineSlugForDealStage(stage: string) {
-  if (stage === "shopping") return "gather";
-  if (stage === "quoting") return "quotes";
-  // Bound is its own board stage — do not collapse to closed_won.
-  if (stage === "bound") return "bound";
-  if (stage === "policy_issued") return "policy_issued";
-  if (stage === "pending_inspection") return "pending_inspection";
-  if (stage === "lost") return "closed_lost";
-  return stage;
+  return canonicalizePipelineSlug(stage) || stage;
 }
 
 export function resolveStageMove(input: string): {
@@ -279,12 +295,15 @@ export function isKnownStageToken(value: string) {
     "lost",
     "archive",
     "gather",
+    "gathering",
     "quotes",
+    "markets",
     "review",
+    "quote_review",
     "closed_won",
     "closed_lost",
   ]);
-  return known.has(value);
+  return known.has(value) || known.has(canonicalizePipelineSlug(value));
 }
 
 export function dealMatchesStage(
@@ -297,32 +316,27 @@ export function dealMatchesStage(
 ) {
   if (stageSlug === "archive") return isArchivedDeal(deal);
   if (isArchivedDeal(deal)) return false;
-  const key = dealStageKey(deal);
-  if (stageSlug === "closed_won") {
+  const wanted = canonicalizePipelineSlug(stageSlug);
+  const key = canonicalizePipelineSlug(dealStageKey(deal));
+  if (wanted === "closed_won") {
     // Prefer board slug when set so Elena (slug closed_won, legacy stage bound) stays on Closed Won.
     if (deal.pipelineStageSlug) {
       return deal.pipelineStageSlug === "closed_won" || deal.pipelineStageSlug === "won";
     }
     return deal.pipelineStage === "closed_won" || deal.pipelineStage === "won";
   }
-  if (stageSlug === "closed_lost") return isClosedLostStage(key) || isClosedLostStage(deal.pipelineStage);
-  if (stageSlug === "quote_sent") return key === "quote_sent" || deal.pipelineStage === "quote_sent";
-  if (stageSlug === "bound") {
-    if (deal.pipelineStageSlug) return deal.pipelineStageSlug === "bound";
-    return deal.pipelineStage === "bound";
+  if (wanted === "closed_lost") return isClosedLostStage(key) || isClosedLostStage(deal.pipelineStage);
+  if (wanted === "quote_sent") return key === "quote_sent";
+  if (wanted === "bound") {
+    return key === "bound";
   }
-  if (stageSlug === "policy_issued") {
-    if (deal.pipelineStageSlug) return deal.pipelineStageSlug === "policy_issued";
-    return deal.pipelineStage === "policy_issued";
+  if (wanted === "policy_issued") return key === "policy_issued";
+  if (wanted === "quote_review") return key === "quote_review";
+  if (wanted === "markets") return key === "markets";
+  if (wanted === "gathering") {
+    return key === "gathering";
   }
-  if (stageSlug === "pending_inspection") {
-    if (deal.pipelineStageSlug) return deal.pipelineStageSlug === "pending_inspection";
-    return key === "pending_inspection" || deal.pipelineStage === "pending_inspection";
-  }
-  if (stageSlug === "gather") {
-    return key === "gather" || key === "shopping" || deal.pipelineStage === "shopping";
-  }
-  return key === stageSlug;
+  return key === wanted;
 }
 
 export function dealMatchesBoard(

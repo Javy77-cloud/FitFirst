@@ -325,20 +325,23 @@ export function formatMailingLine(input: {
 }
 
 const STAGE_DISPLAY_NAMES: Record<string, string> = {
-  gather: "Gather info",
-  gather_info: "Gather info",
-  shopping: "Gather info",
-  quotes: "Meet / Quotes",
-  meet_quotes: "Meet / Quotes",
-  quoting: "Meet / Quotes",
-  review: "Review",
-  quote_sent: "Quote Sent",
+  gather: "Gathering",
+  gather_info: "Gathering",
+  gathering: "Gathering",
+  shopping: "Gathering",
+  quotes: "Markets",
+  meet_quotes: "Markets",
+  quoting: "Markets",
+  markets: "Markets",
+  review: "Quote review",
+  quote_review: "Quote review",
+  quote_sent: "Quote sent",
   bound: "Bound",
   policy_issued: "Policy issued",
-  pending_inspection: "Pending Inspection",
-  closed_won: "Closed Won",
-  closed_lost: "Closed Lost",
-  lost: "Closed Lost",
+  pending_inspection: "Bound",
+  closed_won: "Closed won",
+  closed_lost: "Closed lost",
+  lost: "Closed lost",
 };
 
 export function humanizeDealStage(stage: string | null | undefined): string {
@@ -350,7 +353,7 @@ export function humanizeDealStage(stage: string | null | undefined): string {
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_|_$/g, "");
   if (STAGE_DISPLAY_NAMES[key]) return STAGE_DISPLAY_NAMES[key];
-  if (key === "gather" || key.startsWith("gather")) return "Gather info";
+  if (key === "gather" || key.startsWith("gather")) return "Gathering";
   return raw
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (ch) => ch.toUpperCase());

@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { deleteUploadedFileSubject, uploadedFileDeleteMode } from "@/lib/documents/delete-file";
 import { FILE_ACTION_ACCEPT } from "@/lib/documents/file-action-menu";
-import { fileDownloadHref, fileViewHref } from "@/lib/files/urls";
+import { fileDownloadHref, filePreviewHref } from "@/lib/files/urls";
 import { cn } from "@/lib/utils";
 
 export type FileActionMenuProps = {
@@ -55,7 +55,7 @@ export function FileActionMenu({
   const replaceFormRef = useRef<HTMLFormElement>(null);
   const deleteBtnRef = useRef<HTMLButtonElement>(null);
   const [gone, setGone] = useState(false);
-  const viewHref = fileViewHref(documentId);
+  const viewHref = filePreviewHref(documentId);
   const downloadHref = fileDownloadHref(documentId);
   const mode = uploadedFileDeleteMode({ slot, docType });
   const subject = deleteUploadedFileSubject(filename, mode);

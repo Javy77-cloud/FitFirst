@@ -188,7 +188,8 @@ describe("request quotes landing + leftover Quote sent gate", () => {
     const gate = source("src/components/deal/sheet-approve-gate.tsx");
     expect(save).toMatch(/persistSheetRecheckCue\(dealId, line\)/);
     expect(save).toMatch(/hash: SHEET_CONFIRM_HASH/);
-    expect(save).not.toMatch(/markShopFlowStaleAfterRiskChange/);
+    expect(save).toMatch(/markShopFlowStaleAfterRiskChange/);
+    expect(save).toMatch(/ratingCritical/);
     expect(sheet).toMatch(/data.set\("flash", "0"\)/);
     expect(sheet).toMatch(/scrollIntoView/);
     expect(sheet).toMatch(/#\$\{SHEET_CONFIRM_HASH\}/);

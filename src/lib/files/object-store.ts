@@ -1,0 +1,145 @@
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
+
+function uploadRoot(): string {
+  return process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
+}
+
+export function isRemoteStoragePath(storagePath: string): boolean {
+  return /^(https?:\/\/|blob:)/i.test(storagePath.trim());
+}
+
+export function blobStoreReady(): boolean {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
+}
+
+function localAbs(storagePath: string): string | null {
+  const abs = path.resolve(/*turbopackIgnore: true*/ uploadRoot(), storagePath);
+  const root = path.resolve(/*turbopackIgnore: true*/ uploadRoot());
+  if (abs !== root && !abs.startsWith(root + path.sep)) return null;
+  return abs;
+}
+
+function posixKey(relPath: string): string {
+  return relPath.replace(/\\/g, "/").replace(/^\/+/, "");
+}
+
+async function streamToBuffer(stream: ReadableStream<Uint8Array> | NodeJS.ReadableStream): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  if (Symbol.asyncIterator in stream) {
+    for await (const chunk of stream as AsyncIterable<Uint8Array | Buffer | string>) {
+      chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks);
+  }
+  const reader = (stream as ReadableStream<Uint8Array>).getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value) chunks.push(Buffer.from(value));
+  }
+  return Buffer.concat(chunks);
+}
+
+async function readRemoteUrl(url: string): Promise<Buffer | null> {
+  try {
+    const { get } = await import("@vercel/blob");
+    const result = await get(url, { access: "private" });
+    const stream = result?.stream;
+    if (stream) return streamToBuffer(stream);
+  } catch {
+    /* public URL or older SDK */
+  }
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return Buffer.from(await res.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
+async function readBlobByPrefix(relPath: string): Promise<Buffer | null> {
+  if (!blobStoreReady()) return null;
+  try {
+    const { list } = await import("@vercel/blob");
+    const key = posixKey(relPath);
+    const listed = await list({ prefix: key, limit: 8 });
+    const hit =
+      listed.blobs.find((row) => row.pathname === key) ??
+      listed.blobs.find((row) => row.pathname.endsWith(path.posix.basename(key))) ??
+      listed.blobs[0];
+    if (!hit?.url) return null;
+    return readRemoteUrl(hit.url);
+  } catch {
+    return null;
+  }
+}
+
+/** Persist bytes. Returns a blob URL when Blob is configured, else a local relative path. */
+export async function writeStoredFile(
+  relPath: string,
+  buffer: Buffer,
+  contentType?: string,
+): Promise<string> {
+  const key = posixKey(relPath);
+  if (blobStoreReady()) {
+    const { put } = await import("@vercel/blob");
+    const blob = await put(key, buffer, {
+      access: "private",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType: contentType || "application/octet-stream",
+    });
+    return blob.url;
+  }
+  const abs = localAbs(key);
+  if (!abs) throw new Error("Invalid storage path");
+  await mkdir(path.dirname(abs), { recursive: true });
+  await writeFile(abs, buffer);
+  return key;
+}
+
+/**
+ * Read stored bytes. Tries remote URL, then Vercel Blob by pathname, then local disk.
+ * Returns null when the file is gone — callers must not invent a name-only PDF.
+ */
+export async function readStoredFile(storagePath: string): Promise<Buffer | null> {
+  const raw = (storagePath ?? "").trim();
+  if (!raw) return null;
+  if (isRemoteStoragePath(raw)) {
+    const remote = await readRemoteUrl(raw);
+    if (remote) return remote;
+    return null;
+  }
+  const fromBlob = await readBlobByPrefix(raw);
+  if (fromBlob) return fromBlob;
+  const abs = localAbs(raw);
+  if (!abs) return null;
+  try {
+    return await readFile(/*turbopackIgnore: true*/ abs);
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteStoredFile(storagePath: string): Promise<void> {
+  const raw = (storagePath ?? "").trim();
+  if (!raw) return;
+  if (isRemoteStoragePath(raw) || blobStoreReady()) {
+    try {
+      const { del } = await import("@vercel/blob");
+      await del(raw);
+    } catch {
+      /* already gone or local-only */
+    }
+  }
+  if (isRemoteStoragePath(raw)) return;
+  const abs = localAbs(raw);
+  if (!abs) return;
+  try {
+    await unlink(abs);
+  } catch {
+    /* missing on disk is fine */
+  }
+}

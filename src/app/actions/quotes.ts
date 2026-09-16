@@ -56,6 +56,7 @@ import {
 } from "@/lib/deals/shop-flow";
 import { parseDealProduct } from "@/lib/deals/deal-products";
 import { parseProductStages, setProductStage } from "@/lib/deals/product-stages";
+import { autoAdvanceDealProductStage } from "@/app/actions/product-stage";
 import { flashAction } from "@/lib/flash-action";
 import { quotesRequestedHref } from "@/lib/flash";
 import { isRedirectError } from "@/lib/lifecycle/shop";
@@ -179,6 +180,11 @@ async function persistShopFlowAfterQuoteRequest(
       requestCarrierIds: opts.requestCarrierIds,
     }),
   );
+  await autoAdvanceDealProductStage({
+    dealId,
+    stageSlug: "quote_review",
+    line,
+  }).catch(() => null);
 }
 
 async function archiveLineQuotesForNewRun(input: {
@@ -514,6 +520,9 @@ async function syncDealPipelineFromQuoteStatus(
       productStages: setProductStage(stages, product, {
         stage: stageSlug,
         selectedQuoteIds: [...selected],
+        ...(agentStatus === "waiting_on_inspection"
+          ? { inspectionStatus: "before_bind" as const }
+          : {}),
       }),
     });
     const multi = Array.isArray((deal as { shopProducts?: string[] | null }).shopProducts)
@@ -529,7 +538,7 @@ async function syncDealPipelineFromQuoteStatus(
       .where(and(eq(pipelines.tenantId, DEFAULT_TENANT_ID), eq(pipelines.id, deal.pipelineId)));
     if (board?.slug) pipelineSlug = board.slug;
   }
-  await moveDealToStage({ dealId, pipelineSlug, stageSlug });
+  await moveDealToStage({ dealId, pipelineSlug, stageSlug, allowLate: true });
 }
 
 export async function saveQuoteAgentStatusAction(formData: FormData) {

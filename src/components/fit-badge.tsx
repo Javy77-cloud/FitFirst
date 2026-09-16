@@ -26,13 +26,18 @@ export function FitBadge({ band, className }: { band: FitBand; className?: strin
 }
 
 const STAGE_LABEL: Record<string, string> = {
-  shopping: "Shopping",
-  quoting: "Quoting",
-  comparing: "Comparing",
-  quote_sent: "Quote Sent",
+  gathering: "Gathering",
+  markets: "Markets",
+  quote_review: "Quote review",
+  shopping: "Gathering",
+  quoting: "Markets",
+  comparing: "Quote review",
+  quote_sent: "Quote sent",
   bound: "Bound",
-  closed_won: "Closed Won",
-  lost: "Lost",
+  policy_issued: "Policy issued",
+  closed_won: "Closed won",
+  closed_lost: "Closed lost",
+  lost: "Closed lost",
 };
 
 export function StagePill({

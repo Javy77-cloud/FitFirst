@@ -64,10 +64,10 @@ describe("deal UX punch list", () => {
     );
     expect(html).toMatch(/data-ff-header-col="1"/);
     expect(html).toMatch(/data-ff-header-col="4"/);
-    expect(html.indexOf("Gloria Martinez")).toBeLessThan(html.indexOf("Gather info"));
-    expect(html.indexOf("Gather info")).toBeLessThan(html.indexOf("786-555-0100"));
+    expect(html.indexOf("Gloria Martinez")).toBeLessThan(html.indexOf("Gathering"));
+    expect(html.indexOf("Gathering")).toBeLessThan(html.indexOf("786-555-0100"));
     expect(html.indexOf("Insured address")).toBeLessThan(html.indexOf("Mailing address"));
-    expect(html.indexOf("Gather info")).toBeLessThan(html.indexOf("Mailing address"));
+    expect(html.indexOf("Gathering")).toBeLessThan(html.indexOf("Mailing address"));
     expect(formatHeaderDob("1980-01-02")).toBe("01/02/1980");
     expect(html).toContain("01/02/1980");
   });
@@ -102,9 +102,9 @@ describe("deal UX punch list", () => {
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/relabelConvertActivityTitle/);
   });
 
-  it("shows Gather info and a header stage chip + strip, not a bare select", () => {
-    expect(humanizeDealStage("gather")).toBe("Gather info");
-    expect(PC_SHOPPING_STAGES[0]).toEqual({ slug: "gather", name: "Gather info" });
+  it("shows Gathering and a header stage chip + strip, not a bare select", () => {
+    expect(humanizeDealStage("gather")).toBe("Gathering");
+    expect(PC_SHOPPING_STAGES[0]).toEqual({ slug: "gathering", name: "Gathering" });
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/DealHeaderStage/);
     expect(page).toMatch(/stageControl=/);
@@ -115,7 +115,7 @@ describe("deal UX punch list", () => {
     expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(/Advance to/);
   });
 
-  it("gives Flood the same PC stages as Home; Life includes Meet / Quotes", () => {
+  it("gives Flood the same PC stages as Home; Life uses the locked shopping list", () => {
     expect(pipelineSlugForLine("FLOOD")).toBe("p-c");
     expect(shopPipelineSlugForLine("FLOOD")).toBe("p-c");
     expect(SEEDED_PIPELINES.find((board) => board.slug === "flood")?.stages).toEqual(
@@ -125,7 +125,7 @@ describe("deal UX punch list", () => {
       PC_SHOPPING_STAGES,
     );
     expect(LIFE_HEALTH_STAGES.map((stage) => stage.slug)).toEqual(
-      expect.arrayContaining(["gather", "quotes", "review", "quote_sent"]),
+      expect.arrayContaining(["gathering", "markets", "quote_review", "quote_sent", "policy_issued"]),
     );
     const boards = [
       {
@@ -139,7 +139,7 @@ describe("deal UX punch list", () => {
       {
         id: "flood",
         slug: "flood",
-        stages: [{ slug: "gather", name: "Gather info", color: "blue" }],
+        stages: [{ slug: "gathering", name: "Gathering", color: "blue" }],
       },
     ];
     const flood = dealStageView(

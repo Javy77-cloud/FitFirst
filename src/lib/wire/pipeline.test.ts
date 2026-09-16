@@ -45,35 +45,32 @@ describe("pipeline switcher", () => {
     expect(SEEDED_PIPELINES.some((board) => /won-lost\s*\/\s*archive/i.test(board.name))).toBe(false);
   });
 
-  it("inserts Bound and Pending Inspection between Quote Sent and Closed Won", () => {
+  it("uses the locked gathering → markets → quote_review → late stages list", () => {
     expect(SEEDED_PIPELINES.find((board) => board.slug === "p-c")?.stages.map((s) => s.slug)).toEqual([
-      "gather",
-      "quotes",
-      "review",
+      "gathering",
+      "markets",
+      "quote_review",
       "quote_sent",
       "bound",
       "policy_issued",
-      "pending_inspection",
       "closed_won",
       "closed_lost",
     ]);
-    expect(PC_SHOPPING_STAGES.find((stage) => stage.slug === "gather")?.name).toBe("Gather info");
+    expect(PC_SHOPPING_STAGES.find((stage) => stage.slug === "gathering")?.name).toBe("Gathering");
     expect(SEEDED_PIPELINES.find((board) => board.slug === "p-c")?.stages).toEqual(PC_SHOPPING_STAGES);
     expect(SEEDED_PIPELINES.find((board) => board.slug === "flood")?.stages).toEqual(PC_SHOPPING_STAGES);
     expect(SEEDED_PIPELINES.find((board) => board.slug === "life")?.stages).toEqual(LIFE_HEALTH_STAGES);
-    expect(LIFE_HEALTH_STAGES.map((stage) => stage.slug)).toContain("quotes");
+    expect(LIFE_HEALTH_STAGES.map((stage) => stage.slug)).toContain("markets");
     for (const slug of ["health", "life", "flood"] as const) {
       const stages = SEEDED_PIPELINES.find((board) => board.slug === slug)?.stages.map((s) => s.slug) ?? [];
       const qs = stages.indexOf("quote_sent");
       const bound = stages.indexOf("bound");
       const issued = stages.indexOf("policy_issued");
-      const pending = stages.indexOf("pending_inspection");
       const won = stages.indexOf("closed_won");
       expect(qs).toBeGreaterThanOrEqual(0);
       expect(bound).toBe(qs + 1);
       expect(issued).toBe(bound + 1);
-      expect(pending).toBe(issued + 1);
-      expect(won).toBe(pending + 1);
+      expect(won).toBe(issued + 1);
     }
   });
 
@@ -105,7 +102,7 @@ describe("deal placement", () => {
     expect(dealMatchesBoard(ana, wonLost)).toBe(false);
     expect(dealMatchesBoard(ana, archive)).toBe(false);
     expect(dealMatchesStage(ana, "quote_sent")).toBe(true);
-    expect(dealMatchesStage({ ...ana, pipelineStage: "shopping", pipelineStageSlug: "shopping" }, "gather")).toBe(
+    expect(dealMatchesStage({ ...ana, pipelineStage: "shopping", pipelineStageSlug: "shopping" }, "gathering")).toBe(
       true,
     );
   });
@@ -125,7 +122,7 @@ describe("deal placement", () => {
     expect(dealMatchesStage(elena, "closed_lost")).toBe(false);
   });
 
-  it("matches Bound and Pending Inspection by board slug", () => {
+  it("matches Bound and remaps leftover Pending Inspection onto Bound", () => {
     const boundDeal = {
       pipelineId: "pc",
       pipelineStage: "bound",
@@ -140,8 +137,8 @@ describe("deal placement", () => {
     };
     expect(dealMatchesStage(boundDeal, "bound")).toBe(true);
     expect(dealMatchesStage(boundDeal, "closed_won")).toBe(false);
-    expect(dealMatchesStage(pendingDeal, "pending_inspection")).toBe(true);
-    expect(dealMatchesStage(pendingDeal, "bound")).toBe(false);
+    expect(dealMatchesStage(pendingDeal, "bound")).toBe(true);
+    expect(dealMatchesStage(pendingDeal, "policy_issued")).toBe(false);
   });
 
   it("parks archived deals only on Archive", () => {
@@ -160,13 +157,21 @@ describe("deal placement", () => {
 
 describe("stage move sync", () => {
   it("writes both legacy stage and board slug", () => {
-    expect(resolveStageMove("shopping")).toEqual({ pipelineStage: "shopping", pipelineStageSlug: "gather" });
-    expect(resolveStageMove("quotes")).toEqual({ pipelineStage: "quoting", pipelineStageSlug: "quotes" });
+    expect(resolveStageMove("shopping")).toEqual({ pipelineStage: "gathering", pipelineStageSlug: "gathering" });
+    expect(resolveStageMove("quotes")).toEqual({ pipelineStage: "markets", pipelineStageSlug: "markets" });
+    expect(resolveStageMove("review")).toEqual({
+      pipelineStage: "quote_review",
+      pipelineStageSlug: "quote_review",
+    });
     expect(resolveStageMove("quote_sent")).toEqual({ pipelineStage: "quote_sent", pipelineStageSlug: "quote_sent" });
     expect(resolveStageMove("bound")).toEqual({ pipelineStage: "bound", pipelineStageSlug: "bound" });
     expect(resolveStageMove("pending_inspection")).toEqual({
-      pipelineStage: "pending_inspection",
-      pipelineStageSlug: "pending_inspection",
+      pipelineStage: "bound",
+      pipelineStageSlug: "bound",
+    });
+    expect(resolveStageMove("policy_issued")).toEqual({
+      pipelineStage: "policy_issued",
+      pipelineStageSlug: "policy_issued",
     });
     expect(resolveStageMove("closed_won")).toEqual({ pipelineStage: "closed_won", pipelineStageSlug: "closed_won" });
     expect(resolveStageMove("closed_lost")).toEqual({ pipelineStage: "lost", pipelineStageSlug: "closed_lost" });
@@ -208,18 +213,18 @@ describe("pipeline views", () => {
   it("summarizes stage counts for the funnel and click-through", () => {
     const rows = pipelineFunnelRows(
       [
-        { slug: "gather", name: "Gather info", color: "blue" },
+        { slug: "gathering", name: "Gathering", color: "blue" },
         { slug: "quote_sent", name: "Quote Sent", color: "violet" },
         { slug: "closed_won", name: "Closed Won", color: "green" },
       ],
       [
-        { pipelineStage: "shopping", pipelineStageSlug: "gather", archivedAt: null },
+        { pipelineStage: "gathering", pipelineStageSlug: "gathering", archivedAt: null },
         { pipelineStage: "quote_sent", pipelineStageSlug: "quote_sent", archivedAt: null },
         { pipelineStage: "quote_sent", pipelineStageSlug: "quote_sent", archivedAt: null },
       ],
     );
     expect(rows.map((row) => ({ slug: row.slug, count: row.count }))).toEqual([
-      { slug: "gather", count: 1 },
+      { slug: "gathering", count: 1 },
       { slug: "quote_sent", count: 2 },
       { slug: "closed_won", count: 0 },
     ]);

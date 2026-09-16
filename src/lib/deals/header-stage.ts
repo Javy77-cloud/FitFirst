@@ -1,4 +1,5 @@
 import { humanizeDealStage } from "@/lib/deals/package-lines";
+import { canonicalizeProductStage } from "@/lib/deals/product-stages";
 
 export type HeaderStageOption = {
   slug: string;
@@ -8,13 +9,12 @@ export type HeaderStageOption = {
 
 /** Happy-path order on the agency PC / Life / Health boards. */
 export const STAGE_ADVANCE_ORDER = [
-  "gather",
-  "quotes",
-  "review",
+  "gathering",
+  "markets",
+  "quote_review",
   "quote_sent",
   "bound",
   "policy_issued",
-  "pending_inspection",
   "closed_won",
 ] as const;
 
@@ -29,18 +29,18 @@ export function nextAdvanceStage(
   currentSlug: string | null | undefined,
   stages: readonly HeaderStageOption[],
 ): HeaderStageOption | null {
-  const current = (currentSlug ?? "").trim();
+  const current = canonicalizeProductStage(currentSlug);
   if (!current || !stages.length) return null;
   const happyIdx = (STAGE_ADVANCE_ORDER as readonly string[]).indexOf(current);
   if (happyIdx >= 0) {
     for (let i = happyIdx + 1; i < STAGE_ADVANCE_ORDER.length; i++) {
       const slug = STAGE_ADVANCE_ORDER[i];
-      const hit = stages.find((stage) => stage.slug === slug);
+      const hit = stages.find((stage) => canonicalizeProductStage(stage.slug) === slug);
       if (hit) return hit;
     }
     return null;
   }
-  const idx = stages.findIndex((stage) => stage.slug === current);
+  const idx = stages.findIndex((stage) => canonicalizeProductStage(stage.slug) === current);
   if (idx < 0) return stages[0] ?? null;
   return stages.slice(idx + 1).find((stage) => stage.slug !== "closed_lost") ?? null;
 }
