@@ -174,10 +174,6 @@ function essentialSections(): { left: LayoutSection[]; right: LayoutSection[] } 
     left: [
       section("contact", "Contact", [...CONTACT_IDENTITY_FIELD_KEYS]),
       applicantLayoutSection(),
-      coApplicantLayoutSection(),
-    ],
-    right: [
-      section("details", "Details", ["pipeline", "insurance_type", "insurance_category", "insurance_subtype"]),
       section("insured_address", "Insured Address", [
         "mailing_address",
         "mailing_unit",
@@ -191,6 +187,9 @@ function essentialSections(): { left: LayoutSection[]; right: LayoutSection[] } 
         "previous_state",
         "previous_zip",
       ]),
+    ],
+    right: [
+      coApplicantLayoutSection(),
       section("mailing_address", "Mailing Address", [
         "contact_mailing_address",
         "contact_mailing_unit",
@@ -199,6 +198,7 @@ function essentialSections(): { left: LayoutSection[]; right: LayoutSection[] } 
         "contact_mailing_zip",
         "contact_mailing_county",
       ]),
+      section("details", "Details", ["pipeline", "insurance_type", "insurance_category", "insurance_subtype"]),
     ],
   };
 }

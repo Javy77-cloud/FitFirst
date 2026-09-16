@@ -23,6 +23,7 @@ import {
   isIndustryCascadeParent,
   occupationsForIndustry,
 } from "@/lib/custom-fields/industry-occupation";
+import { isDuplicateDealDetailsField } from "@/lib/custom-fields/deal-details-dedupe";
 import {
   MAILING_SAME_AS_INSURED_KEY,
   isMailingAddressFieldKey,
@@ -256,6 +257,11 @@ export function DealDetailsPanel({
   const byKey = Object.fromEntries(fieldList.map((field) => [field.key, field]));
   const formId = "deal-details-save";
   const [liveValues, setLiveValues] = useState(values);
+  const layoutKeySet = useMemo(
+    () => new Set(asList(safeLayout.columns).flatMap((column) => asList(column.sections).flatMap((section) => asList(section.fieldKeys)))),
+    [safeLayout],
+  );
+  const seenFieldKeys = new Set<string>();
 
   function patchValue(key: string, next: string) {
     setLiveValues((prev) => {
@@ -284,7 +290,11 @@ export function DealDetailsPanel({
           <div key={column.id} className="min-w-0 space-y-3" data-ff-deal-details-col={column.id}>
             {asList(column.sections).map((section) => {
               const quoteReq = isInsuranceQuoteRequestSection(section);
-              const sectionKeys = asList(section.fieldKeys);
+              const sectionKeys = asList(section.fieldKeys).filter((key) => {
+                if (isDuplicateDealDetailsField(key, layoutKeySet, seenFieldKeys)) return false;
+                seenFieldKeys.add(key);
+                return true;
+              });
               const isCoAppSection =
                 section.id === CO_APPLICANT_SECTION_ID ||
                 sectionKeys.includes("co_applicant_first_name");
@@ -357,10 +367,10 @@ export function DealDetailsPanel({
                       }
                     />
                   ) : null}
-                  {asList(section.fieldKeys).map((key) => {
+                  {sectionKeys.map((key) => {
                     const field = byKey[key] ?? { key, label: key, type: "single_line" as const };
                     const layoutHasType =
-                      asList(section.fieldKeys).includes("insurance_type") ||
+                      sectionKeys.includes("insurance_type") ||
                       fieldList.some((f) => f.key === "insurance_type");
                     if (
                       layoutHasType &&

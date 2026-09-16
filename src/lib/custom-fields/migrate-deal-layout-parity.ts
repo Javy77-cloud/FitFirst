@@ -159,6 +159,64 @@ function needsExistingCoApplicantKeys(layout: FieldLayout): boolean {
   return false;
 }
 
+function isDetailsSection(section: { id: string; label: string }): boolean {
+  return section.id === "details" || /^details$/i.test(section.label.trim());
+}
+
+function isMailingSection(section: { id: string; label: string }): boolean {
+  return section.id === "mailing_address" || /^mailing address$/i.test(section.label.trim());
+}
+
+function takeSection(
+  sections: LayoutSection[],
+  match: (section: LayoutSection) => boolean,
+): LayoutSection | null {
+  const index = sections.findIndex(match);
+  if (index < 0) return null;
+  return sections.splice(index, 1)[0] ?? null;
+}
+
+/**
+ * Applicant (with contact) on the left, co-applicant on the right.
+ * Insured / mailing sit as a lower address band. Does not create a co-applicant section.
+ */
+export function needsPersonalColumnSplit(layout: FieldLayout): boolean {
+  const left = layout.columns[0]?.sections ?? [];
+  const right = layout.columns[1]?.sections ?? [];
+  const coAppOnLeft = left.some(isCoApplicantSection);
+  const applicantOnLeft = left.some(isApplicantSection);
+  const insuredOnRight = right.some(isInsuredSection);
+  return coAppOnLeft || (applicantOnLeft && insuredOnRight);
+}
+
+export function ensurePersonalColumnSplit(layout: FieldLayout): FieldLayout {
+  if (!needsPersonalColumnSplit(layout)) return layout;
+  const left = [...(layout.columns[0]?.sections ?? [])];
+  const right = [...(layout.columns[1]?.sections ?? [])];
+  const contact = takeSection(left, isContactSection) ?? takeSection(right, isContactSection);
+  const applicant = takeSection(left, isApplicantSection) ?? takeSection(right, isApplicantSection);
+  const coApp = takeSection(left, isCoApplicantSection) ?? takeSection(right, isCoApplicantSection);
+  const insured = takeSection(left, isInsuredSection) ?? takeSection(right, isInsuredSection);
+  const mailing = takeSection(left, isMailingSection) ?? takeSection(right, isMailingSection);
+  const details = takeSection(left, isDetailsSection) ?? takeSection(right, isDetailsSection);
+  return {
+    columns: [
+      {
+        ...(layout.columns[0] ?? { id: "left", sections: [] }),
+        sections: [contact, applicant, ...left, insured].filter((section): section is LayoutSection =>
+          Boolean(section),
+        ),
+      },
+      {
+        ...(layout.columns[1] ?? { id: "right", sections: [] }),
+        sections: [coApp, mailing, ...right, details].filter((section): section is LayoutSection =>
+          Boolean(section),
+        ),
+      },
+    ],
+  };
+}
+
 /**
  * Deal layout parity is mailing address shape + Insurance Type / Category / Form on Details.
  * Do NOT re-seed Co-applicant (or any section) on load/save — agency edits must stick
@@ -255,15 +313,18 @@ export function needsDealLayoutParity(layout: FieldLayout): boolean {
     needsDealApplicantKeys(layout) ||
     needsDealContactIdentity(layout) ||
     needsDealInsuredExtras(layout) ||
-    needsExistingCoApplicantKeys(layout)
+    needsExistingCoApplicantKeys(layout) ||
+    needsPersonalColumnSplit(layout)
   );
 }
 
 export function migrateDealLayoutParity(layout: FieldLayout): FieldLayout {
-  return ensureExistingCoApplicantKeys(
-    ensureDealInsuredExtras(
-      ensureDealContactIdentity(
-        ensureDealApplicantKeys(ensureDealInsuranceFields(ensureMailingAddressParity(layout))),
+  return ensurePersonalColumnSplit(
+    ensureExistingCoApplicantKeys(
+      ensureDealInsuredExtras(
+        ensureDealContactIdentity(
+          ensureDealApplicantKeys(ensureDealInsuranceFields(ensureMailingAddressParity(layout))),
+        ),
       ),
     ),
   );

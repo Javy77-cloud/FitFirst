@@ -25,6 +25,16 @@ describe("Deal Details personal / identity layout", () => {
     expect(keys).toContain("middle_name");
     expect(keys).toContain("applicant_industry");
     expect(keys).toContain("epolicy");
+    expect(layout.columns[0].sections.map((s) => s.id)).toEqual([
+      "contact",
+      "applicant",
+      "insured_address",
+    ]);
+    expect(layout.columns[1].sections.map((s) => s.id)).toEqual([
+      "co_applicant",
+      "mailing_address",
+      "details",
+    ]);
     expect(layout.columns[0].sections.find((s) => s.id === "contact")?.fieldKeys[0]).toBe(
       "entity_type",
     );
@@ -60,6 +70,39 @@ describe("Deal Details personal / identity layout", () => {
     expect(html).toMatch(/data-ff-deal-field="mailing_address"/);
     expect(html).not.toMatch(/data-ff-deal-section-kind="product"/);
     expect(html).toMatch(/data-ff-deal-details-save/);
+  });
+
+  it("does not render a second marital-status field when applicant marital exists", () => {
+    const html = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-1",
+        line: "HO",
+        layout: {
+          columns: [
+            {
+              id: "left",
+              sections: [
+                {
+                  id: "contact",
+                  label: "Contact",
+                  fieldKeys: ["first_name", "marital_status"],
+                },
+                {
+                  id: "applicant",
+                  label: "Applicant",
+                  fieldKeys: ["applicant_marital_status"],
+                },
+              ],
+            },
+            { id: "right", sections: [] },
+          ],
+        },
+        fields: [],
+        values: {},
+      }),
+    );
+    expect(html).toMatch(/data-ff-deal-field="applicant_marital_status"/);
+    expect(html).not.toMatch(/data-ff-deal-field="marital_status"/);
   });
 
   it("shows previous address only when lived-here is No", () => {

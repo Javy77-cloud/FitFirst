@@ -89,8 +89,8 @@ describe("sep7bt field builder drag across sections", () => {
       "email",
       "epolicy",
     ]);
-    expect(moved.columns[1].sections.find((section) => section.id === "insured_address")?.fieldKeys).toEqual(
-      start.columns[1].sections.find((section) => section.id === "insured_address")?.fieldKeys,
+    expect(moved.columns[0].sections.find((section) => section.id === "insured_address")?.fieldKeys).toEqual(
+      start.columns[0].sections.find((section) => section.id === "insured_address")?.fieldKeys,
     );
   });
 
@@ -106,7 +106,17 @@ describe("sep7bt field builder drag across sections", () => {
 
     const start = defaultLayoutForLine("HO");
     const crossed = applyResolvedFieldDrop(start, "email", "right", 310, [
-      { ...address, id: "insured_address" },
+      {
+        id: "mailing_address",
+        top: 220,
+        height: 200,
+        fields: [
+          { key: "contact_mailing_address", top: 260, height: 32 },
+          { key: "contact_mailing_city", top: 300, height: 32 },
+          { key: "contact_mailing_state", top: 340, height: 32 },
+          { key: "contact_mailing_zip", top: 380, height: 32 },
+        ],
+      },
     ]);
     expect(crossed.columns[0].sections[0].fieldKeys).toEqual([
       "entity_type",
@@ -117,13 +127,12 @@ describe("sep7bt field builder drag across sections", () => {
       "phone",
       "epolicy",
     ]);
-    const insured = crossed.columns[1].sections.find((section) => section.id === "insured_address");
-    expect(insured?.fieldKeys.slice(0, 5)).toEqual([
-      "mailing_address",
-      "mailing_unit",
+    const mailing = crossed.columns[1].sections.find((section) => section.id === "mailing_address");
+    expect(mailing?.fieldKeys.slice(0, 4)).toEqual([
+      "contact_mailing_address",
+      "contact_mailing_unit",
       "email",
-      "city",
-      "state",
+      "contact_mailing_city",
     ]);
 
     const self = moveField(start, "email", {
@@ -135,7 +144,7 @@ describe("sep7bt field builder drag across sections", () => {
 
     const saved = JSON.parse(JSON.stringify(crossed)) as typeof crossed;
     expect(
-      saved.columns[1].sections.find((section) => section.id === "insured_address")?.fieldKeys,
+      saved.columns[1].sections.find((section) => section.id === "mailing_address")?.fieldKeys,
     ).toContain("email");
   });
 

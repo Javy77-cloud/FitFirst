@@ -405,12 +405,12 @@ describe("deal field builder", () => {
     expect(home.columns[0].sections.map((section) => section.label)).toEqual([
       "Contact",
       "Applicant",
-      "Co-applicant",
+      "Insured Address",
     ]);
     expect(home.columns[1].sections.map((section) => section.label)).toEqual([
-      "Details",
-      "Insured Address",
+      "Co-applicant",
       "Mailing Address",
+      "Details",
     ]);
     expect(homeKeys).toEqual(expect.arrayContaining(["insurance_type", "insurance_category", "insurance_subtype"]));
   });

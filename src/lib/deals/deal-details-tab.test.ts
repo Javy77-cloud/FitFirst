@@ -76,12 +76,12 @@ describe("Deal Details tab", () => {
     expect(layout.columns[0].sections.map((section) => section.id)).toEqual([
       "contact",
       "applicant",
-      "co_applicant",
+      "insured_address",
     ]);
     expect(layout.columns[1].sections.map((section) => section.id)).toEqual([
-      "details",
-      "insured_address",
+      "co_applicant",
       "mailing_address",
+      "details",
     ]);
   });
 
