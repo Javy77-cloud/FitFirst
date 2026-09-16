@@ -19,7 +19,7 @@ import {
   type DealListFilter,
 } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
-import { isPipelineSheetView, parsePipelineView } from "@/lib/wire/pipeline";
+import { EDITABLE_DEAL_PIPELINE_SLUGS, isPipelineSheetView, parsePipelineView } from "@/lib/wire/pipeline";
 import { presentPipelineCard } from "@/lib/wire/pipeline-cards";
 import { listModuleTags } from "@/app/actions/record-tags";
 import { readDefaultPipelineView } from "@/app/actions/pipeline-view-prefs";
@@ -209,6 +209,23 @@ export default async function DealsPage({
               }))
             : []
         }
+        stageBoards={(boardData?.boards ?? [])
+          .filter((item) =>
+            (EDITABLE_DEAL_PIPELINE_SLUGS as readonly string[]).includes(item.slug),
+          )
+          .map((item) => ({
+            id: item.id,
+            slug: item.slug,
+            name: item.name,
+            stages: item.stages.map((stageRow) => ({
+              id: stageRow.id,
+              slug: stageRow.slug,
+              name: stageRow.name,
+              sortOrder: stageRow.sortOrder,
+              color: stageRow.color,
+              seeded: stageRow.seeded,
+            })),
+          }))}
       />
 
       {desk.queueType ? <DealWorkQueuePanel type={desk.queueType} items={desk.queueItems} /> : null}

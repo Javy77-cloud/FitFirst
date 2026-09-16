@@ -12,6 +12,7 @@ import {
   displayProductStage,
   findProductNoticeForTask,
   isBoardNoopStage,
+  isQuotesOnlyBoardStage,
   lateStageNeedsQuoteSelection,
   listProductStageChips,
   listProductStageLabel,
@@ -92,6 +93,18 @@ describe("per-product stages", () => {
     );
     expect(productChipStageLabel("policy_issued")).toBe("Policy issued");
     expect(isBoardNoopStage("markets")).toBe(false);
+    const customBoard = [
+      { slug: "gathering", sortOrder: 0 },
+      { slug: "needs_photos", sortOrder: 1 },
+      { slug: "markets", sortOrder: 2 },
+      { slug: "quote_review", sortOrder: 3 },
+      { slug: "quote_sent", sortOrder: 4 },
+      { slug: "uw_hold", sortOrder: 5 },
+    ];
+    expect(isQuotesOnlyBoardStage("needs_photos", customBoard)).toBe(false);
+    expect(isQuotesOnlyBoardStage("uw_hold", customBoard)).toBe(true);
+    expect(isQuotesOnlyBoardStage("quote_sent", customBoard)).toBe(true);
+    expect(isQuotesOnlyBoardStage("markets", customBoard)).toBe(false);
     expect(shouldAutoAdvanceStage("gathering", "markets")).toBe(true);
     expect(shouldAutoAdvanceStage("quote_sent", "markets")).toBe(false);
     const leftover = parseProductStages({
@@ -184,8 +197,9 @@ describe("per-product stages", () => {
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/liveQuoteIds/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/preScoped/);
     expect(source("src/app/actions/pipeline.ts")).toMatch(/allowLate/);
-    expect(source("src/app/actions/pipeline.ts")).toMatch(/isBoardNoopStage/);
-    expect(source("src/components/pipeline/kanban.tsx")).toMatch(/isBoardNoopStage/);
+    expect(source("src/app/actions/pipeline.ts")).toMatch(/isQuotesOnlyBoardStage/);
+    expect(source("src/components/pipeline/kanban.tsx")).toMatch(/isQuotesOnlyBoardStage/);
+    expect(source("src/components/deals/deal-stage-select.tsx")).toMatch(/isQuotesOnlyBoardStage/);
     expect(source("src/components/deal/quotes-panel.tsx")).toMatch(/QuotesBindableSignal/);
     expect(source("src/components/deal/quotes-panel.tsx")).toMatch(/data-ff-quotes-warning-strip/);
     expect(source("src/components/deal/quotes-panel.tsx")).toMatch(/data-ff-quotes-sheet-stale/);

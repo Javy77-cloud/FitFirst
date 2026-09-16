@@ -69,6 +69,7 @@ function boardsFromPipelines(pipelines: Awaited<ReturnType<typeof listPipelines>
       slug: stage.slug,
       name: stage.name,
       color: stage.color,
+      sortOrder: stage.sortOrder,
     })),
   }));
 }

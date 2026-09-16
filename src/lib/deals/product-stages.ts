@@ -155,6 +155,41 @@ export function isBoardNoopStage(stage?: string | null): boolean {
   return BOARD_NOOP_SET.has(canonicalizeProductStage(stage));
 }
 
+/** Gathering / Markets / Quote review — list and board may move here (including rewind). */
+export const EARLY_BOARD_STAGES = ["gathering", "markets", "quote_review"] as const;
+const EARLY_BOARD_SET = new Set<string>(EARLY_BOARD_STAGES);
+
+export function isEarlyBoardStage(stage?: string | null): boolean {
+  return EARLY_BOARD_SET.has(canonicalizeProductStage(stage));
+}
+
+/**
+ * Late / forward stages belong on Quotes, not the deals list or board.
+ * Seeded late slugs always qualify. Custom stages at or after Quote sent
+ * (or after Quote review when Quote sent is missing) do too.
+ */
+export function isQuotesOnlyBoardStage(
+  stage?: string | null,
+  boardStages?: ReadonlyArray<{ slug: string; sortOrder?: number }>,
+): boolean {
+  const key = canonicalizeProductStage(stage);
+  if (!key) return false;
+  if (isBoardNoopStage(key)) return true;
+  if (isEarlyBoardStage(key)) return false;
+  if (!boardStages?.length) return false;
+  const ranked = boardStages.map((row, index) => ({
+    key: canonicalizeProductStage(row.slug),
+    order: typeof row.sortOrder === "number" ? row.sortOrder : index,
+  }));
+  const target = ranked.find((row) => row.key === key);
+  if (!target) return false;
+  const quoteSent = ranked.find((row) => row.key === "quote_sent");
+  if (quoteSent) return target.order >= quoteSent.order;
+  const quoteReview = ranked.find((row) => row.key === "quote_review");
+  if (quoteReview) return target.order > quoteReview.order;
+  return true;
+}
+
 export function productStageRank(stage?: string | null): number {
   const key = canonicalizeProductStage(stage);
   if (key === "closed_lost") return 99;

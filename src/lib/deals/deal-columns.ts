@@ -100,6 +100,7 @@ export type DealStageOption = {
   slug: string;
   name: string;
   color?: string | null;
+  sortOrder?: number;
 };
 
 export type DealPipelineBoard = {

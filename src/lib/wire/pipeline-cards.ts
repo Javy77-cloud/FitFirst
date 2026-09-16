@@ -79,6 +79,13 @@ export type PipelineStageView = {
   seeded: boolean;
 };
 
+export type PipelineStageBoard = {
+  id: string;
+  slug: string;
+  name: string;
+  stages: PipelineStageView[];
+};
+
 export type PipelineBoardView = {
   id: string;
   slug: string;

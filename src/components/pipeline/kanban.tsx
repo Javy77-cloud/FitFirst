@@ -9,7 +9,7 @@ import { PipelineDealCard } from "@/components/pipeline/deal-card";
 import { StagePill } from "@/components/fit-badge";
 import { cn } from "@/lib/utils";
 import { isClosedOutcomeStage } from "@/lib/deals/archive-reminder";
-import { isBoardNoopStage } from "@/lib/deals/product-stages";
+import { isQuotesOnlyBoardStage } from "@/lib/deals/product-stages";
 import { collapsedStorageKey, dealMatchesStage, parseCollapsedStages } from "@/lib/wire/pipeline";
 import type { DeskUserOption } from "@/lib/deals/transfer";
 import type { TagCatalogRow } from "@/components/tags/assign-record-tags";
@@ -61,7 +61,13 @@ export function PipelineKanban({
     setOverSlug(null);
     const dealId = event.dataTransfer.getData("text/fitfirst-deal");
     if (!dealId || stageSlug === "_unstaged") return;
-    if (isBoardNoopStage(stageSlug) && board.slug !== "won-lost" && board.slug !== "archive") return;
+    if (
+      isQuotesOnlyBoardStage(stageSlug, board.stages) &&
+      board.slug !== "won-lost" &&
+      board.slug !== "archive"
+    ) {
+      return;
+    }
     const card = cards.find((row) => row.id === dealId);
     startTransition(async () => {
       await moveDealToStage({ dealId, pipelineSlug: board.slug, stageSlug });
@@ -89,7 +95,11 @@ export function PipelineKanban({
           <section
             key={stage.id}
             onDragOver={(event) => {
-              if (isBoardNoopStage(stage.slug) && board.slug !== "won-lost" && board.slug !== "archive") {
+              if (
+                isQuotesOnlyBoardStage(stage.slug, board.stages) &&
+                board.slug !== "won-lost" &&
+                board.slug !== "archive"
+              ) {
                 return;
               }
               event.preventDefault();
@@ -125,7 +135,7 @@ export function PipelineKanban({
               <div data-pipe-cards className="min-h-40 space-y-2 p-2">
                 {column.length === 0 ? (
                   <p className="px-1 py-8 text-center text-xs text-muted-foreground">
-                    {isBoardNoopStage(stage.slug) && board.slug !== "won-lost"
+                    {isQuotesOnlyBoardStage(stage.slug, board.stages) && board.slug !== "won-lost"
                       ? "Open a deal — late stages change from Quotes"
                       : "Drop a deal here"}
                   </p>

@@ -5,14 +5,14 @@ import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { alerts, deals, pipelines } from "@/lib/db/schema";
+import { alerts, deals, pipelineStages, pipelines } from "@/lib/db/schema";
 import {
   archiveCancelsEmailJobs,
   canonicalizePipelineSlug,
   dealStageForPipeline,
   isArchiveStage,
 } from "@/lib/wire/pipeline";
-import { isBoardNoopStage } from "@/lib/deals/product-stages";
+import { isQuotesOnlyBoardStage } from "@/lib/deals/product-stages";
 import { shouldCreateStageTask, writeCrmSignalsSafe } from "@/lib/crm/signals";
 import {
   DEAL_ARCHIVE_REMINDER_KIND,
@@ -44,19 +44,25 @@ export async function moveDealToStage(input: {
   const { dealId, pipelineSlug, stageSlug } = input;
   if (!dealId || !stageSlug) return;
   const canonical = canonicalizePipelineSlug(stageSlug) || stageSlug;
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  if (!deal) return;
+
+  const target = await pipelineBySlug(pipelineSlug);
+  const boardStages = target
+    ? await db
+        .select({ slug: pipelineStages.slug, sortOrder: pipelineStages.sortOrder })
+        .from(pipelineStages)
+        .where(eq(pipelineStages.pipelineId, target.id))
+    : [];
   if (
     !input.allowLate &&
-    isBoardNoopStage(canonical) &&
+    isQuotesOnlyBoardStage(canonical, boardStages) &&
     !isArchiveStage(canonical) &&
     pipelineSlug !== "won-lost" &&
     pipelineSlug !== "archive"
   ) {
     return;
   }
-  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
-  if (!deal) return;
-
-  const target = await pipelineBySlug(pipelineSlug);
   const archiveBoard = await pipelineBySlug("archive");
   const now = new Date();
 
