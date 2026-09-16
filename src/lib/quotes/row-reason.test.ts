@@ -179,5 +179,12 @@ describe("quote notepad + speech", () => {
     expect(readFileSync("src/components/deal/quotes-results-table.tsx", "utf8")).not.toMatch(
       /AGENT_STATUSES/,
     );
+    const table = readFileSync("src/components/deal/quotes-results-table.tsx", "utf8");
+    expect(table).not.toMatch(/Refresh marks recheck/);
+    expect(table).not.toMatch(/eye marks hide/);
+    expect(table).not.toMatch(/disabled=\{\s*!compareSelected\.includes/);
+    expect(table).toMatch(/compareExceedsMax/);
+    expect(table).toMatch(/data-ff-quotes-collapse-all-details/);
+    expect(table).toMatch(/setDeclinedOpen\(false\)/);
   });
 });

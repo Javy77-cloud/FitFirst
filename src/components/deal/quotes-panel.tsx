@@ -129,7 +129,7 @@ export function QuotesPanel({
       notes: row.quote.notes,
       logs: lineLogs,
     };
-    if (product && (product === "homeowners" || product === "landlord" || product === "renters")) {
+    if (product) {
       return quoteMatchesDealProduct(input, product, {
         multiLine,
         isPrimaryLine: !multiLine,

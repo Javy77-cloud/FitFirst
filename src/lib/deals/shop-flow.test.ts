@@ -243,6 +243,7 @@ describe("line-scoped quotes", () => {
     );
     expect(inferShopLineFromQuoteNotes("Geico quoted — portal hold")).toBe(null);
     expect(inferShopLineFromQuoteNotes("PA Progressive rated $700 · VIN captured")).toBe("auto");
+    expect(inferShopLineFromQuoteNotes("Form PA rated $700")).toBe("auto");
     expect(
       resolveQuoteShopLine({
         shopLine: "home",
@@ -450,6 +451,27 @@ describe("prior under carrier + line-scoped stale", () => {
         { multiLine: true, splitHomeProducts: false },
       ),
     ).toBe(true);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: null, notes: "Rated $1840", logs: [] },
+        "homeowners",
+        { multiLine: true, splitHomeProducts: false },
+      ),
+    ).toBe(true);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "Form PA rated $700", logs: [] },
+        "auto",
+        { multiLine: true, splitHomeProducts: false },
+      ),
+    ).toBe(true);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "Form PA rated $700", logs: [] },
+        "homeowners",
+        { multiLine: true, splitHomeProducts: false },
+      ),
+    ).toBe(false);
   });
 });
 

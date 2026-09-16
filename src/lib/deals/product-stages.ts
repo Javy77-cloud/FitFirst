@@ -182,7 +182,9 @@ export function productChipLabel(input: {
   }
   if (input.product === "renters") return /^ho4$/i.test(form) ? "HO4" : form || "HO4";
   if (input.product === "auto") {
-    if (!form || /^pa$/i.test(form) || /^auto$/i.test(form)) return "Auto";
+    if (!form || /^pa$/i.test(form) || /^auto$/i.test(form) || /personal\s*auto/i.test(form)) {
+      return "Auto";
+    }
     return form;
   }
   if (input.product === "flood") return "Flood";
@@ -211,6 +213,15 @@ export function productChipStageLabel(stage?: string | null): string | null {
   const key = normalizeStageSlug(stage);
   if (!key || key === "gather" || key === "gather_info" || key === "shopping") return null;
   return CHIP_STAGE_LABELS[key] ?? humanizeDealStage(key);
+}
+
+/** Hide leftover Quote sent / Bound chip text when no quote is selected. */
+export function productChipStageLabelForState(input: {
+  stage?: string | null;
+  selectedQuoteIds?: readonly string[] | null;
+}): string | null {
+  if (lateStageNeedsQuoteSelection(input)) return productChipStageLabel("quotes");
+  return productChipStageLabel(input.stage);
 }
 
 export function productChipBound(stage?: string | null): boolean {

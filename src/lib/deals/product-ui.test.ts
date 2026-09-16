@@ -66,6 +66,17 @@ describe("deal shop flow + product chrome", () => {
     expect(readFileSync("src/components/deal/deal-package-lines-form.tsx", "utf8")).not.toMatch(
       /hover:underline/,
     );
+    const gloriaStale = renderToString(
+      createElement(DealLineSwitcher, {
+        dealId: "deal-gloria",
+        products: ["homeowners", "landlord"],
+        active: "homeowners",
+        tab: "quotes",
+        stages: { homeowners: { stage: "quote_sent", selectedQuoteIds: [] } },
+      }),
+    );
+    expect(gloriaStale).toContain("Quotes");
+    expect(gloriaStale).not.toContain("Quote sent");
   });
 
   it("picker is grouped tiles, not a wall of unlabeled checkboxes", () => {

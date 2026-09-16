@@ -37,7 +37,6 @@ import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line"
 import { resolveDealHeaderAddresses } from "@/lib/deals/header-addresses";
 import {
   logBelongsToLine,
-  quoteBelongsToLine,
   quotingFormFromSheet,
   resolveActivePackageLine,
   resolveLineQuotingForm,
@@ -71,6 +70,7 @@ import { DealFlowRail } from "@/components/deals/deal-flow-rail";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 import {
   parseShopFlow,
+  quoteMatchesDealProduct,
   requestScopeForLine,
   resolveShopFlowCompletion,
   riskFingerprint,
@@ -253,16 +253,22 @@ export default async function DealPage({
     packageLines.length > 1
       ? logs.filter((row) => logBelongsToLine(row.log.lineOfBusiness, activeLob, isPrimaryPackageLine))
       : logs;
+  const allQuoteLogsForMatch = logs.map((item) => item.log);
   const lineQuotes = quotes.filter((row) =>
-    quoteBelongsToLine({
-      quoteAttemptLogId: row.quote.quoteAttemptLogId,
-      shopLine: row.quote.shopLine,
-      notes: row.quote.notes,
-      logs: logs.map((item) => item.log),
-      lob: activeLob,
-      isPrimaryLine: isPrimaryPackageLine,
-      multiLine: packageLines.length > 1,
-    }),
+    quoteMatchesDealProduct(
+      {
+        shopLine: row.quote.shopLine,
+        quoteAttemptLogId: row.quote.quoteAttemptLogId,
+        notes: row.quote.notes,
+        logs: allQuoteLogsForMatch,
+      },
+      activeProduct,
+      {
+        multiLine: dealProducts.length > 1,
+        isPrimaryLine: dealProducts[0] === activeProduct,
+        splitHomeProducts: splitHome,
+      },
+    ),
   );
   const dealLogs = lineLogs.map((row) => row.log);
   const excludedMarketIds = new Set(excludedCarrierIdsFromLogs(dealLogs));
@@ -547,7 +553,14 @@ export default async function DealPage({
                           id,
                           stageView.slug ?? deal.pipelineStage,
                         );
-                        return [id, { stage: state.stage, lostReason: state.lostReason }];
+                        return [
+                          id,
+                          {
+                            stage: state.stage,
+                            lostReason: state.lostReason,
+                            selectedQuoteIds: state.selectedQuoteIds,
+                          },
+                        ];
                       }),
                     )}
                     formLabels={Object.fromEntries(
@@ -710,7 +723,7 @@ export default async function DealPage({
                       <QuotesPanel
                         dealId={deal.id}
                         quotes={lineQuotes}
-                        logs={lineLogs}
+                        logs={logs}
                         quoteNotes={quoteNotes}
                         quoteResultsNote={deal.quoteResultsNote}
                         formId={lineQuotingForm?.id ?? lineForm ?? masterFormLabel}

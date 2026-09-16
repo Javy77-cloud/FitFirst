@@ -172,7 +172,9 @@ export function inferShopLineFromQuoteNotes(notes: string | null | undefined): S
     return "life";
   }
   if (
-    /\b(auto|vin|nationwide auto|personal auto|\bpa\b|motorcycle|form\s+pa)\b/.test(blob)
+    /\b(auto|vin|nationwide auto|personal auto|\bpa\b|motorcycle|form\s*[:\s-]*pa|pa\s+form|bi\/pd|comp\/coll|um\/uim)\b/.test(
+      blob,
+    )
   ) {
     return "auto";
   }
@@ -237,10 +239,16 @@ export function quoteMatchesDealProduct(
   const fromNotes = inferHomeProductFromQuoteNotes(input.notes);
   if (fromNotes) return fromNotes === wanted;
   // Gloria HO3+DP3: untagged home quotes must not spill onto both chips.
-  // Heather HO3+Auto+Flood: HO3 is the only home chip — show home-line quotes.
+  // Heather HO3+Auto+Flood: HO3 is the only home chip — home-line and untagged
+  // (not auto/flood) quotes stay on HO3 even when shop_line was never persisted.
   const splitHome = opts?.splitHomeProducts ?? false;
   if (splitHome && (wanted === "homeowners" || wanted === "landlord" || wanted === "renters")) {
     return false;
+  }
+  if (!splitHome && (wanted === "homeowners" || wanted === "landlord" || wanted === "renters")) {
+    const resolved = resolveQuoteShopLine(input);
+    if (resolved && resolved !== "home") return false;
+    return true;
   }
   return quoteMatchesShopLine(input, "home", opts);
 }

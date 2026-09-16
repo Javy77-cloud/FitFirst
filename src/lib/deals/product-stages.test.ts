@@ -13,6 +13,7 @@ import {
   productChipBound,
   productChipLabel,
   productChipStageLabel,
+  productChipStageLabelForState,
   productStampStage,
   sheetFormForProduct,
   productReadyFromQuotes,
@@ -213,6 +214,12 @@ describe("per-product stages", () => {
     expect(productChipStageLabel("review")).toBe("Quotes");
     expect(productChipStageLabel("quote_sent")).toBe("Quote sent");
     expect(productChipStageLabel("gather")).toBeNull();
+    expect(
+      productChipStageLabelForState({ stage: "quote_sent", selectedQuoteIds: [] }),
+    ).toBe("Quotes");
+    expect(
+      productChipStageLabelForState({ stage: "quote_sent", selectedQuoteIds: ["q1"] }),
+    ).toBe("Quote sent");
     expect(productChipBound("bound")).toBe(true);
     expect(productChipBound("review")).toBe(false);
     expect(

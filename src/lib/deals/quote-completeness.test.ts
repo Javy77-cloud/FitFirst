@@ -141,6 +141,22 @@ describe("quote completeness", () => {
     });
     expect(heather.complete).toBe(true);
     expect(heather.summary).toMatch(/1 quote/);
+    const heatherUntagged = productQuoteCompleteness({
+      product: "homeowners",
+      multiLine: true,
+      splitHomeProducts: false,
+      logs: [],
+      quotes: [{ carrierId: "citizens", stub: false, shopLine: null, notes: "Rated $1840" }],
+    });
+    expect(heatherUntagged.complete).toBe(true);
+    const heatherAuto = productQuoteCompleteness({
+      product: "auto",
+      multiLine: true,
+      splitHomeProducts: false,
+      logs: [],
+      quotes: [{ carrierId: "progressive", stub: false, shopLine: "home", notes: "Form PA rated $700" }],
+    });
+    expect(heatherAuto.complete).toBe(true);
     const gloriaDp3 = productQuoteCompleteness({
       product: "landlord",
       multiLine: true,

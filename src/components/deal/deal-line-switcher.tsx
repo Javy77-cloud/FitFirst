@@ -8,7 +8,7 @@ import {
 import {
   productChipBound,
   productChipLabel,
-  productChipStageLabel,
+  productChipStageLabelForState,
   productReadyFromQuotes,
 } from "@/lib/deals/product-stages";
 import { themeForProduct } from "@/lib/deals/product-ui";
@@ -30,6 +30,7 @@ export type DealProductQuoteGap = {
 export type DealProductStageChip = {
   stage?: string | null;
   lostReason?: string | null;
+  selectedQuoteIds?: readonly string[] | null;
 };
 
 export function DealLineSwitcher({
@@ -87,7 +88,10 @@ export function DealLineSwitcher({
           const theme = themeForProduct(product);
           const def = dealProductDef(product);
           const label = productChipLabel({ product, quotingForm: formLabels[product] });
-          const stageLabel = productChipStageLabel(stage);
+          const stageLabel = productChipStageLabelForState({
+            stage,
+            selectedQuoteIds: stages[product]?.selectedQuoteIds,
+          });
           return (
             <Link
               key={product}

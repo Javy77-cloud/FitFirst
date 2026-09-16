@@ -1,22 +1,20 @@
-/** Session compare picks on Quotes Bindable / Conditional rows (max 3). */
+/** Session compare picks on Quotes Bindable / Conditional rows. */
 
 export const QUOTE_COMPARE_MAX = 3;
 
 export const QUOTE_COMPARE_TIP = "Compare Up To 3 Quotes Side By Side.";
 
-/** Toggle a quote id into the compare set — never exceeds max. */
-export function toggleCompareSelection(
-  current: string[],
-  id: string,
-  max = QUOTE_COMPARE_MAX,
-): string[] {
+export const QUOTE_COMPARE_OVER_MAX =
+  "Compare supports 3 quotes. Uncheck extras, then Compare.";
+
+/** Toggle a quote id into the selection set — no cap (recheck / hide / compare picks). */
+export function toggleCompareSelection(current: string[], id: string): string[] {
   if (current.includes(id)) return current.filter((item) => item !== id);
-  if (current.length >= max) return current;
   return [...current, id];
 }
 
-export function canAddToCompare(current: string[], id: string, max = QUOTE_COMPARE_MAX): boolean {
-  return current.includes(id) || current.length < max;
+export function compareExceedsMax(count: number, max = QUOTE_COMPARE_MAX): boolean {
+  return count > max;
 }
 
 export function premiumSortValue(premium: string | number | null | undefined): number {
