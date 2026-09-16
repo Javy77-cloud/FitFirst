@@ -33,6 +33,7 @@ import { splitInsuredMailingAddressSections, needsAddressSectionSplit } from "./
 import { migrateDealLayoutParity, needsDealLayoutParity } from "./migrate-deal-layout-parity";
 import { migrateLeadLayout, needsLeadLayoutMigration } from "./migrate-lead-layout";
 import { APPLICANT_CUSTOM_KEYS } from "./applicant-fields";
+import { canonicalizeIdentityField, identityTypeNeedsRepair } from "./identity-field";
 import { defaultFieldPermissions, parseFieldPermissions, parseLayout } from "./types";
 import { listFieldPicklists } from "./picklist-store";
 import { occupationPicklistId } from "@/lib/contacts/occupation-picklist";
@@ -54,7 +55,7 @@ export function toFieldDef(row: DeskCustomField): CustomFieldDef {
   const rich = sanitizeRichPicklistOptions(row.options ?? []);
   const isPick =
     row.type === "picklist" || row.type === "multi_select" || Boolean(row.picklistId);
-  return {
+  return canonicalizeIdentityField({
     key: row.key,
     label: row.label,
     type: row.type as CustomFieldDef["type"],
@@ -67,7 +68,7 @@ export function toFieldDef(row: DeskCustomField): CustomFieldDef {
     defaultValue: row.defaultValue ?? null,
     picklistId: row.picklistId ?? null,
     permissions: parseFieldPermissions(row.permissions),
-  };
+  });
 }
 
 async function insertMissingFields(module: FieldLayoutModule, fields: CustomFieldDef[]) {
@@ -259,6 +260,7 @@ async function ensureLeadCatalogUpgrades() {
       await upsertFieldDef(field, "leads");
     }
   }
+  await repairStoredIdentityFieldTypes("leads");
 }
 
 async function ensureDealCoreLabelUpgrades() {
@@ -287,8 +289,20 @@ async function ensureDealCoreLabelUpgrades() {
       await upsertFieldDef(field, "deals");
     }
   }
+  await repairStoredIdentityFieldTypes("deals");
 }
 
+
+async function repairStoredIdentityFieldTypes(module: FieldLayoutModule) {
+  const existing = await db
+    .select()
+    .from(deskCustomFields)
+    .where(and(eq(deskCustomFields.tenantId, DEFAULT_TENANT_ID), eq(deskCustomFields.module, module)));
+  for (const row of existing) {
+    if (!identityTypeNeedsRepair(row.key, row.type, row.label)) continue;
+    await upsertFieldDef(toFieldDef(row), module);
+  }
+}
 
 const OCCUPATION_FIELD_KEYS_BY_MODULE: Partial<Record<FieldLayoutModule, string[]>> = {
   contacts: ["occupation"],
@@ -367,6 +381,7 @@ async function ensureContactCatalogUpgrades() {
       await upsertFieldDef(field, "contacts");
     }
   }
+  await repairStoredIdentityFieldTypes("contacts");
   await ensureContactDetailPicklistBindings();
 }
 

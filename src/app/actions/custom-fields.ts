@@ -41,6 +41,7 @@ import {
   removeFieldOccurrence,
   layoutContainsFieldKey,
 } from "@/lib/custom-fields/layout";
+import { canonicalizeIdentityField } from "@/lib/custom-fields/identity-field";
 import {
   allLayoutFieldKeys,
   isCustomFieldType,
@@ -117,7 +118,7 @@ export async function saveDealFieldLayout(formData: FormData) {
         for (const field of incoming) {
           if (!field?.key || !field.label || !isCustomFieldType(String(field.type))) continue;
           await upsertFieldDef(
-            {
+            canonicalizeIdentityField({
               key: field.key,
               label: field.label,
               type: field.type,
@@ -130,7 +131,7 @@ export async function saveDealFieldLayout(formData: FormData) {
               defaultValue: field.defaultValue ?? null,
               picklistId: field.picklistId ?? null,
               permissions: field.permissions,
-            },
+            }),
             module,
           );
         }
