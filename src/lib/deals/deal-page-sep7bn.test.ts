@@ -29,14 +29,13 @@ describe("sep7bn Markets start from scratch on every deal", () => {
   it("BN1 — page load never auto-evaluates leftover sheet / logs / quotes", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/hasShopMarketAction|hasExplicitMarketAction/);
-    expect(page).toMatch(
-      /shopMarketsAction && risk \? await evaluateDealMarkets\(risk, activeSheet\.values\)/,
-    );
+    expect(page).toMatch(/evaluateDealMarkets\(risk, activeSheet\.values\)/);
+    expect(page).toMatch(/shopMarketsAction \|\| shopListIds/);
     expect(page).not.toMatch(/sheetReady \? await evaluateDealMarkets/);
     expect(page).not.toMatch(/const matches = risk \? await evaluateDealMarkets\(risk\)/);
     expect(page).not.toMatch(/explicitLookup=\{sheetReady && logs\.length > 0\}/);
     expect(page).toMatch(/explicitLookup=\{shopMarketsAction\}/);
-    expect(page).toMatch(/matches=\{shopMarketsAction \? matches : \[\]\}/);
+    expect(page).toMatch(/matches=\{shopMarketsAction \? matches : listedMatches\}/);
     expect(page).not.toMatch(/localStorage/);
     expect(page).not.toMatch(/sessionStorage/);
     expect(hasExplicitMarketAction([{ why: "roof age" }], [{ notes: "Stub quote." }])).toBe(false);

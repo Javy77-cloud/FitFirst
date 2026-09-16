@@ -39,6 +39,7 @@ import {
   MANUAL_MARKET_MARKER,
   excludedCarrierIdsFromLogs,
   manualCarrierIdsFromLogs,
+  shopListCarrierIdsFromLogs,
 } from "@/lib/deals/manual-markets";
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
 import {
@@ -239,13 +240,20 @@ export async function shopDealQuotes(
 
   const dealLogs = logs.filter((log) => log.dealId === dealId);
   const manualIds = new Set(manualCarrierIdsFromLogs(dealLogs));
+  const shopListIds = new Set(shopListCarrierIdsFromLogs(dealLogs));
   const excludedIds = new Set(excludedCarrierIdsFromLogs(dealLogs));
   const byId = new Map(matches.map((match) => [match.carrierId, match]));
 
   const shopIds = new Set<string>();
   if (pass === "appetite") {
     for (const match of matches.filter((row) => row.band === "green")) shopIds.add(match.carrierId);
-    for (const id of manualIds) shopIds.add(id);
+    for (const id of manualIds) {
+      if (shopListIds.has(id)) {
+        const listed = byId.get(id);
+        if (listed && listed.band !== "green") continue;
+      }
+      shopIds.add(id);
+    }
     await archiveLineQuotesForNewRun({
       dealId,
       line: resolved.line,

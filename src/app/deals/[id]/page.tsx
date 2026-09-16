@@ -77,6 +77,7 @@ import {
   hasShopMarketAction,
   manualCarrierIdsFromLogs,
   sheetHasMarketFacts,
+  shopListCarrierIdsFromLogs,
 } from "@/lib/deals/manual-markets";
 import { loadDealMotivationStats } from "@/lib/deals/motivation-data";
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
@@ -258,9 +259,11 @@ export default async function DealPage({
     dealLogs,
     lineQuotes.map((row) => row.quote),
   );
-  const rawMatches =
-    shopMarketsAction && risk ? await evaluateDealMarkets(risk, activeSheet.values) : [];
+  const shopListIds = shopListCarrierIdsFromLogs(dealLogs).filter((id) => !excludedMarketIds.has(id));
+  const evalMarkets = Boolean(risk && (shopMarketsAction || shopListIds.length > 0));
+  const rawMatches = evalMarkets ? await evaluateDealMarkets(risk, activeSheet.values) : [];
   const matches = rawMatches.filter((row) => !excludedMarketIds.has(row.carrierId));
+  const listedMatches = matches.filter((row) => shopListIds.includes(row.carrierId));
   const agentMarketsAction = shopMarketsAction || manualCarrierIdsFromLogs(dealLogs).some((id) => !excludedMarketIds.has(id));
   const selectedProduct = resolveDealProduct({
     productParam: product,
@@ -620,9 +623,10 @@ export default async function DealPage({
                       <MarketsPanel
                         key={agentMarketsAction ? `markets-${activeSheet.id}` : "markets-empty"}
                         dealId={deal.id}
-                        matches={shopMarketsAction ? matches : []}
+                        matches={shopMarketsAction ? matches : listedMatches}
                         unlocked={unlocked}
                         manualIds={manualIds}
+                        shopListIds={shopListIds}
                         explicitLookup={shopMarketsAction}
                         sheetHasValues={agentMarketsAction}
                         carriers={carrierOptions}

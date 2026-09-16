@@ -102,6 +102,7 @@ export async function evaluateDealShopFits(risk: Risk, sheetValues?: SheetValues
       dontWriteNotes: carrier.dontWriteNotes,
       writtenLines: carrier.writtenLines,
       appointed: appointment ? appointment.appointed : true,
+      appetiteNotes: rule.notes?.trim() || carrier.appetiteNotes || null,
     };
   });
 

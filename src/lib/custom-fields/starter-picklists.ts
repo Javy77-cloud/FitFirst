@@ -132,6 +132,7 @@ export const COMMON_CARRIER_OPTIONS: string[] = [
   "Tailrow",
   "Tower Hill",
   "Travelers",
+  "Trident Reciprocal Exchange",
   "TypTap",
   "Universal",
   "USAA",

@@ -4,6 +4,7 @@ import {
   APPETITE_BAND_COPY,
   appetiteAction,
   appetiteActionLabel,
+  appetiteNote,
   appointmentLabel,
   dontWriteNote,
   isAppointedMatch,
@@ -62,5 +63,20 @@ describe("appetite presentation (no matcher change)", () => {
     expect(dontWriteNote(row)).toBe("No coastal frame HO3");
     expect(marketWhy(row)).toContain("Roof age");
     expect(marketWhy(row)).not.toBe("No coastal frame HO3");
+  });
+
+  it("surfaces published appetite notes when the risk clears structured limits", () => {
+    const row = match({
+      reasons: [
+        { code: "portal_open", message: "Portal open", severity: "pass" },
+        {
+          code: "appetite_note",
+          message: "FL HO-3 via QuoteRUSH. Minimum Coverage A $300,000.",
+          severity: "pass",
+        },
+      ],
+    });
+    expect(appetiteNote(row)).toMatch(/\$300,000/);
+    expect(marketWhy(row)).toMatch(/QuoteRUSH/);
   });
 });

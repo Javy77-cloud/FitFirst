@@ -455,6 +455,15 @@ export const PORTAL_DEMO_CARRIER_IDS = {
   americanTraditions: "33333333-3333-4333-8333-333333333331",
   peoplesTrust: "33333333-3333-4333-8333-333333333332",
 } as const;
+
+/**
+ * Trident Reciprocal Exchange — default FL HO-3 shop market.
+ * QuoteRUSH bulletin: min Coverage A $300,000 (was $400k).
+ * Seed/migration upsert by name aliases so an existing desk row is reused.
+ */
+export const TRIDENT_CARRIER_ID = "33333333-3333-4333-8333-333333333340";
+export const TRIDENT_CARRIER_NAME = "Trident Reciprocal Exchange";
+export const TRIDENT_MIN_COV_A = 300_000;
 export const HALE_CONTACT_ID = "22222222-2222-4222-8222-222222222241";
 export const HALE_DEAL_ID = "22222222-2222-4222-8222-222222222242";
 export const HALE_RISK_ID = "22222222-2222-4222-8222-222222222243";

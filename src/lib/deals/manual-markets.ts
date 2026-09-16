@@ -11,10 +11,29 @@ export const EXPLICIT_MARKET_ACTION_MARKER = "[ff-markets]";
 /** Agent removed this carrier from deal Markets — do not shop it. */
 export const EXCLUDE_MARKET_MARKER = "[ff-markets-exclude]";
 
+/** Loaded from a curated shop list (Home/Auto/Flood). Respects structured appetite. */
+export const SHOP_LIST_MARKET_MARKER = "[ff-shop-list]";
+
 export type MarketBucket = "appetite" | "stretch" | "skip";
 
 export function isManualMarketWhy(why: string | null | undefined): boolean {
   return (why ?? "").includes(MANUAL_MARKET_MARKER);
+}
+
+export function isShopListMarketWhy(why: string | null | undefined): boolean {
+  return (why ?? "").includes(SHOP_LIST_MARKET_MARKER);
+}
+
+export function shopListCarrierIdsFromLogs(
+  logs: { carrierId: string; why?: string | null }[],
+): string[] {
+  const ids = new Set<string>();
+  for (const log of logs) {
+    if (isShopListMarketWhy(log.why) && isExplicitMarketActionText(log.why)) {
+      ids.add(log.carrierId);
+    }
+  }
+  return [...ids];
 }
 
 export function isExplicitMarketActionText(value: string | null | undefined): boolean {
@@ -73,8 +92,14 @@ export function excludedCarrierIdsFromLogs(
   return [...ids];
 }
 
-export function bucketForMatch(band: "green" | "yellow" | "red", manual: boolean): MarketBucket {
-  if (manual || band === "green") return "appetite";
+export function bucketForMatch(
+  band: "green" | "yellow" | "red",
+  manual: boolean,
+  /** Shop-list rows use structured appetite instead of a manual override. */
+  respectAppetite = false,
+): MarketBucket {
+  if (manual && !respectAppetite) return "appetite";
+  if (band === "green") return "appetite";
   if (band === "yellow") return "stretch";
   return "skip";
 }

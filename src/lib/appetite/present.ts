@@ -38,6 +38,10 @@ export function dontWriteNote(match: Pick<CarrierMatch, "reasons">): string | nu
   return match.reasons.find((reason) => reason.code === "dont_write")?.message ?? null;
 }
 
+export function appetiteNote(match: Pick<CarrierMatch, "reasons">): string | null {
+  return match.reasons.find((reason) => reason.code === "appetite_note")?.message ?? null;
+}
+
 export function failReasons(reasons: MatchReason[]): MatchReason[] {
   return reasons.filter((reason) => reason.severity === "fail");
 }
@@ -47,9 +51,9 @@ export function stretchReasons(reasons: MatchReason[]): MatchReason[] {
 }
 
 export function marketWhy(match: CarrierMatch): string {
-  const note = dontWriteNote(match);
+  const note = appetiteNote(match) || dontWriteNote(match);
   const blockers = match.reasons
-    .filter((reason) => reason.severity !== "pass" && reason.code !== "dont_write")
+    .filter((reason) => reason.severity !== "pass" && reason.code !== "dont_write" && reason.code !== "appetite_note")
     .map((reason) => reason.message);
   if (blockers.length) return blockers.join(" · ");
   if (note) return note;
