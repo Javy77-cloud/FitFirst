@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { TRIDENT_CARRIER_ID, TRIDENT_CARRIER_NAME } from "@/lib/fixtures/ids";
 import {
@@ -37,5 +38,13 @@ describe("Javy Home shop list", () => {
     expect(HOME_SHOP_NAME_ALIASES[TRIDENT_CARRIER_ID]).toEqual(
       expect.arrayContaining(["trident reciprocal exchange", "trident reciprocal", "trident"]),
     );
+  });
+
+  it("keeps the shop-list UUID in sync with the Neon seed migration", () => {
+    const sql = readFileSync("drizzle/0123_trident_reciprocal_ho.sql", "utf8");
+    expect(sql).toContain(TRIDENT_CARRIER_ID);
+    expect(sql).toContain("min_cov_a:300000");
+    expect(sql).toMatch(/npm run appetite:import/);
+    expect(JAVY_HOME_SHOP_CARRIER_IDS).toContain(TRIDENT_CARRIER_ID);
   });
 });

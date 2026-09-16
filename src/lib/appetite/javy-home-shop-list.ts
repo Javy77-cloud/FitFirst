@@ -1,7 +1,15 @@
 import { TRIDENT_HO_APPETITE } from "@/lib/appetite/published-appetite";
 import { TRIDENT_CARRIER_ID } from "@/lib/fixtures/ids";
 
-/** Javy's curated Home shop list (from Rosa Markets 2026-09-08). One-click load until appetite is trained. */
+/**
+ * Javy's curated Home shop list (from Rosa Markets 2026-09-08).
+ * IDs are live Neon `carriers.id` values (same mix as the rest of this list:
+ * imported UUIDs plus 3333… seed IDs that exist on the desk after migrate).
+ *
+ * Trident: `TRIDENT_CARRIER_ID` is the UUID `drizzle/0123_trident_reciprocal_ho.sql`
+ * and `seedTridentReciprocal()` write to Neon. If a Trident / Trident Reciprocal
+ * row already exists under another id, `resolveHomeShopCarrierIds` uses that live id.
+ */
 export const JAVY_HOME_SHOP_CARRIER_IDS = [
   "33333333-3333-4333-8333-333333333309", // American Integrity
   "e66c7eef-e6a2-44e5-8255-9fe15b11803d", // American Traditions
