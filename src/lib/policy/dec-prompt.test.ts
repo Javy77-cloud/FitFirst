@@ -72,7 +72,12 @@ describe("publish wins only the minted product line", () => {
   it("marks one line issued-done and leaves sibling products shopping", () => {
     const afterHo3 = markProductIssuedDone(
       {
-        homeowners: { stage: "policy_issued", selectedQuoteIds: ["q-ho3"], mintStatus: "unpublished" },
+        homeowners: {
+          stage: "policy_issued",
+          selectedQuoteIds: ["q-ho3"],
+          mintStatus: "unpublished",
+          noticeNote: "Mortgagee check",
+        },
         auto: { stage: "bound", selectedQuoteIds: ["q-auto"] },
       },
       "homeowners",
@@ -84,6 +89,7 @@ describe("publish wins only the minted product line", () => {
       mintStatus: "published",
       policyId: "p-ho3",
       selectedQuoteIds: ["q-ho3"],
+      noticeNote: "Mortgagee check",
     });
     expect(afterHo3.auto).toMatchObject({ stage: "bound", selectedQuoteIds: ["q-auto"] });
     expect(isProductIssuedDone(afterHo3.homeowners)).toBe(true);
@@ -174,5 +180,8 @@ describe("rosa retag + 72h admin notify stub", () => {
     expect(source("src/app/actions/documents.ts")).toMatch(/lastDeclaration/);
     expect(source("src/app/actions/declaration.ts")).toMatch(/forcePrompt: true/);
     expect(source("src/app/actions/declaration.ts")).toMatch(/ensureRosaDeclarationRetag/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/ff-deal-stamp-row/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/CreatePolicyFromDecModal/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/placement="overlay"/);
   });
 });
