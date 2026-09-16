@@ -154,7 +154,21 @@ describe("Deal Details tab", () => {
     expect(save).toMatch(/export async function saveDealFieldValues/);
     expect(save).toMatch(/customValuesFromForm\(formData, defsOnDetails\)/);
     expect(save).toMatch(/allLayoutFieldKeys\(layout\)/);
+    expect(save).toMatch(/formData.has\(`field_\$\{field\.key\}`\)/);
     expect(save).toMatch(/picklist_8mus/);
+    expect(save).toMatch(/dealDetailsSavedHref/);
+    expect(save).toMatch(/"deal-details-saved"/);
+    expect(save).toMatch(/persistDealWorkTab\(dealId, "details"\)/);
+    const panel = source("src/components/custom-fields/deal-details-panel.tsx");
+    expect(panel).toMatch(/data-ff-deal-details-form/);
+    expect(panel).toMatch(/data-ff-deal-details-save/);
+    expect(panel).toMatch(/<form action=\{saveDealFieldValues\}/);
+    expect(panel.indexOf("<form action={saveDealFieldValues}")).toBeLessThan(
+      panel.indexOf('data-ff-deal-details-layout="two-col"'),
+    );
+    expect(panel.indexOf('data-ff-deal-details-layout="two-col"')).toBeLessThan(
+      panel.indexOf("data-ff-deal-details-save"),
+    );
     expect(save).not.toMatch(
       /const value = formData\.has\(`field_\$\{field\.key\}`\) \? String\(formData\.get\(`field_\$\{field\.key\}`\) \?\? ""\) : ""/,
     );

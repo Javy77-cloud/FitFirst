@@ -3,6 +3,7 @@ import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { CompleteTaskForm } from "@/components/crm/complete-task-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { isNoticeTaskTitle } from "@/lib/deals/notices";
 import { taskDueInputParts } from "@/lib/tasks/due-at";
 
 const KINDS = ["task", "call", "sms", "email", "30_day", "60_day", "90_day", "expiration"] as const;
@@ -74,7 +75,9 @@ export function TaskRowEditor({
           Delete
         </Button>
       </HardDeleteForm>
-      {task.status === "open" ? <CompleteTaskForm taskId={task.id} /> : null}
+      {task.status === "open" ? (
+        <CompleteTaskForm taskId={task.id} noticeOffer={isNoticeTaskTitle(task.title)} />
+      ) : null}
     </div>
   );
 }

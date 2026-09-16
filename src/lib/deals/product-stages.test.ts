@@ -10,8 +10,12 @@ import { pickBoundQuoteId } from "./status-stamp";
 import {
   canonicalizeProductStage,
   displayProductStage,
+  findProductNoticeForTask,
   isBoardNoopStage,
+  isQuotesOnlyBoardStage,
   lateStageNeedsQuoteSelection,
+  listProductStageChips,
+  listProductStageLabel,
   parseInspectionStatus,
   parseProductStages,
   productChipBound,
@@ -78,8 +82,10 @@ describe("per-product stages", () => {
     expect(canonicalizeProductStage("gather")).toBe("gathering");
     expect(canonicalizeProductStage("quotes")).toBe("markets");
     expect(canonicalizeProductStage("pending_inspection")).toBe("bound");
-    expect(parseInspectionStatus("before_bind")).toBe("before_bind");
-    expect(parseInspectionStatus("nope")).toBe("none");
+    expect(parseInspectionStatus("before_bind")).toBe("inspection_before_bind");
+    expect(parseInspectionStatus("carrier_post_bind")).toBe("check_mortgagee_payment");
+    expect(parseInspectionStatus("")).toBe("none");
+    expect(parseInspectionStatus(null)).toBe("none");
     expect(isBoardNoopStage("quote_sent")).toBe(true);
     expect(isBoardNoopStage("policy_issued")).toBe(true);
     expect(lateStageNeedsQuoteSelection({ stage: "policy_issued", selectedQuoteIds: ["q1"] })).toBe(
@@ -87,13 +93,26 @@ describe("per-product stages", () => {
     );
     expect(productChipStageLabel("policy_issued")).toBe("Policy issued");
     expect(isBoardNoopStage("markets")).toBe(false);
+    const customBoard = [
+      { slug: "gathering", sortOrder: 0 },
+      { slug: "needs_photos", sortOrder: 1 },
+      { slug: "markets", sortOrder: 2 },
+      { slug: "quote_review", sortOrder: 3 },
+      { slug: "quote_sent", sortOrder: 4 },
+      { slug: "uw_hold", sortOrder: 5 },
+    ];
+    expect(isQuotesOnlyBoardStage("needs_photos", customBoard)).toBe(false);
+    expect(isQuotesOnlyBoardStage("uw_hold", customBoard)).toBe(true);
+    expect(isQuotesOnlyBoardStage("quote_sent", customBoard)).toBe(true);
+    expect(isQuotesOnlyBoardStage("markets", customBoard)).toBe(false);
     expect(shouldAutoAdvanceStage("gathering", "markets")).toBe(true);
     expect(shouldAutoAdvanceStage("quote_sent", "markets")).toBe(false);
     const leftover = parseProductStages({
       homeowners: { stage: "pending_inspection", selectedQuoteIds: ["q1"] },
     });
     expect(leftover.homeowners?.stage).toBe("bound");
-    expect(leftover.homeowners?.inspectionStatus).toBe("before_bind");
+    expect(leftover.homeowners?.inspectionStatus).toBe("inspection_before_bind");
+    expect(leftover.homeowners?.noticeType).toBe("inspection_before_bind");
   });
 
   it("keeps Gloria Homeowners Quote sent off Landlord", () => {
@@ -108,6 +127,16 @@ describe("per-product stages", () => {
     expect(productChipLabel({ product: "landlord", quotingForm: "HO3" })).toBe("DP3");
     expect(productChipLabel({ product: "homeowners", quotingForm: "DP3" })).toBe("HO3");
     expect(productChipLabel({ product: "homeowners" })).toBe("HO3");
+    expect(productChipLabel({ product: "life_term", quotingForm: "HO3" })).toBe("Term Life");
+    expect(productChipLabel({ product: "life_term", quotingForm: "Term Life" })).toBe("Term Life");
+    expect(
+      listProductStageChips({
+        shopLines: ["home"],
+        lineOfBusiness: "LIFE",
+        quotingLine: "life",
+        quotingForm: "Term Life",
+      }).map((chip) => chip.label),
+    ).toEqual(["Term Life"]);
     expect(productChipLabel({ product: "landlord" })).toBe("DP3");
     expect(productChipLabel({ product: "auto", quotingForm: "PA" })).toBe("Auto");
     expect(productChipLabel({ product: "auto" })).toBe("Auto");
@@ -168,9 +197,19 @@ describe("per-product stages", () => {
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/liveQuoteIds/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/preScoped/);
     expect(source("src/app/actions/pipeline.ts")).toMatch(/allowLate/);
-    expect(source("src/app/actions/pipeline.ts")).toMatch(/isBoardNoopStage/);
-    expect(source("src/components/pipeline/kanban.tsx")).toMatch(/isBoardNoopStage/);
+    expect(source("src/app/actions/pipeline.ts")).toMatch(/isQuotesOnlyBoardStage/);
+    expect(source("src/components/pipeline/kanban.tsx")).toMatch(/isQuotesOnlyBoardStage/);
+    expect(source("src/components/deals/deal-stage-select.tsx")).toMatch(/isQuotesOnlyBoardStage/);
     expect(source("src/components/deal/quotes-panel.tsx")).toMatch(/QuotesBindableSignal/);
+    expect(source("src/components/deal/quotes-panel.tsx")).toMatch(/data-ff-quotes-warning-strip/);
+    expect(source("src/components/deal/quotes-panel.tsx")).toMatch(/data-ff-quotes-sheet-stale/);
+    expect(source("src/components/deal/quotes-results-table.tsx")).not.toMatch(
+      /data-ff-quotes-sheet-stale/,
+    );
+    expect(source("src/components/deal/quotes-bindable-signal.tsx")).toMatch(/rounded-full/);
+    expect(source("src/components/deal/quotes-bindable-signal.tsx")).not.toMatch(
+      /rounded-md border px-3 py-2 text-sm/,
+    );
     expect(source("src/lib/files/serve-document.ts")).toMatch(/missingFileResponse/);
     expect(source("src/lib/files/serve-document.ts")).toMatch(/readStoredFile/);
   });
@@ -340,6 +379,52 @@ describe("per-product stages", () => {
     expect(source("src/app/deals/page.tsx")).toMatch(/newHref="\/deals\?view=list"/);
   });
 
+  it("shows one list/board stage chip per product, not a single deal stage", () => {
+    const gloria = listProductStageChips({
+      shopProducts: ["homeowners", "landlord"],
+      quotingForm: "HO3",
+      pipelineStage: "quote_sent",
+      shopFlow: {
+        productStages: {
+          homeowners: { stage: "quote_sent", selectedQuoteIds: ["q1"] },
+          landlord: { stage: "quote_review", selectedQuoteIds: [] },
+        },
+      },
+    });
+    expect(gloria.map((chip) => `${chip.label}:${chip.stageLabel}`)).toEqual([
+      "HO3:Quote sent",
+      "DP3:Quote review",
+    ]);
+    const heather = listProductStageChips({
+      shopProducts: ["homeowners", "auto", "flood"],
+      quotingForm: "HO3",
+      pipelineStage: "quote_sent",
+      shopFlow: {
+        productStages: {
+          homeowners: { stage: "quote_review", selectedQuoteIds: [] },
+          auto: { stage: "markets", selectedQuoteIds: [] },
+          flood: { stage: "gathering", selectedQuoteIds: [] },
+        },
+      },
+    });
+    expect(heather).toHaveLength(3);
+    expect(heather.map((chip) => chip.label)).toEqual(["HO3", "Auto", "Flood"]);
+    expect(
+      listProductStageChips({
+        shopProducts: ["homeowners", "landlord", "auto", "flood", "umbrella"],
+        pipelineStage: "markets",
+      }),
+    ).toHaveLength(5);
+    expect(listProductStageLabel("gathering")).toBe("Gathering");
+    expect(source("src/components/deals/deals-table.tsx")).toMatch(/DealProductStageChips/);
+    expect(source("src/components/deals/deals-table.tsx")).toMatch(/listProductStageChips\(deal\)/);
+    expect(source("src/components/pipeline/deal-card.tsx")).toMatch(/DealProductStageChips/);
+    expect(source("src/components/pipeline/table-view.tsx")).toMatch(/DealProductStageChips/);
+    expect(source("src/components/deals/deal-product-stage-chips.tsx")).toMatch(
+      /data-ff-list-product-stage-chip/,
+    );
+  });
+
   it("wires choose-quote, lost reasons, attach ids, and speech finals", () => {
     expect(PRODUCT_LOST_REASON_LABELS.current_coverage_better).toBe("Current coverage better");
     expect(PRODUCT_LOST_REASON_LABELS.no_better_offer).toBe("No better offer");
@@ -348,5 +433,67 @@ describe("per-product stages", () => {
     expect(source("src/lib/quotes/speech-note.ts")).toMatch(/collectFinalSpeechTranscript/);
     expect(source("src/components/deal/quote-note-pad.tsx")).toMatch(/prepareSpeechMicrophone/);
     expect(source("src/components/deal/quotes-results-table.tsx")).toMatch(/data-ff-quote-select/);
+  });
+
+  it("keeps Notices as a flag through Bound / Policy issued and shows a chip", () => {
+    const bound = setProductStage(
+      { homeowners: { stage: "quote_review", selectedQuoteIds: ["q1"], inspectionStatus: "inspection_before_bind" } },
+      "homeowners",
+      { stage: "bound", selectedQuoteIds: ["q1"] },
+    );
+    expect(bound.homeowners?.inspectionStatus).toBe("inspection_before_bind");
+    expect(bound.homeowners?.noticeType).toBe("inspection_before_bind");
+    const issued = setProductStage(bound, "homeowners", { stage: "policy_issued", selectedQuoteIds: ["q1"] });
+    expect(issued.homeowners?.inspectionStatus).toBe("inspection_before_bind");
+    expect(
+      parseProductStages({
+        homeowners: { stage: "bound", selectedQuoteIds: ["q1"], inspectionStatus: "carrier_post_bind" },
+      }).homeowners,
+    ).toMatchObject({
+      stage: "bound",
+      inspectionStatus: "check_mortgagee_payment",
+      noticeType: "check_mortgagee_payment",
+    });
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/setDealProductNotice/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/completeDealProductNotice/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/linkDealProductNoticeTask/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/completeLinkedDealNoticeForTask/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/writeDeskComms/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/noticeCompleteLogBody/);
+    expect(source("src/app/actions/product-stage.ts")).not.toMatch(/upsertNoticeTask/);
+    expect(source("src/app/actions/product-stage.ts")).not.toMatch(/snoozeDealProductNotice/);
+    expect(source("src/app/actions/product-stage.ts")).not.toMatch(
+      /stageSlug === "bound"[\s\S]{0,200}noticeType: "none"/,
+    );
+    expect(source("src/app/actions/alerts.ts")).toMatch(/linkDealProductNoticeTask/);
+    expect(source("src/app/actions/alerts.ts")).toMatch(/completeLinkedDealNoticeForTask/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/Notices/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/CreateTaskDialog/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/noticeTaskTitle/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/data-ff-deal-notice-chip/);
+    expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(/snoozeDealProductNotice/);
+    expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(/>Inspection</);
+    expect(
+      findProductNoticeForTask(
+        {
+          homeowners: {
+            stage: "quote_review",
+            selectedQuoteIds: [],
+            noticeType: "check_mortgagee_payment",
+            noticeTaskId: "task-1",
+          },
+        },
+        "task-1",
+      ),
+    ).toEqual({ product: "homeowners", noticeType: "check_mortgagee_payment" });
+    expect(findProductNoticeForTask({ homeowners: { stage: "bound", selectedQuoteIds: ["q1"] } }, "task-1")).toBeNull();
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/data-ff-deal-header-notices/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/DealNotices/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/noticeTypesForFamily/);
+    expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_DEAL_NOTICES/);
+    expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_DEAL_NOTICES_LIFE/);
+    expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_DEAL_NOTICES_HEALTH/);
+    expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/Inspection before bind/);
+    expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/Check mortgagee payment/);
   });
 });

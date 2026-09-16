@@ -521,7 +521,7 @@ async function syncDealPipelineFromQuoteStatus(
         stage: stageSlug,
         selectedQuoteIds: [...selected],
         ...(agentStatus === "waiting_on_inspection"
-          ? { inspectionStatus: "before_bind" as const }
+          ? { inspectionStatus: "inspection_before_bind" as const, noticeType: "inspection_before_bind" as const }
           : {}),
       }),
     });
@@ -652,7 +652,7 @@ async function queueRecheckNotesForQuotes(dealId: string, ids: string[]) {
       ),
     );
 
-  if (rows.length === 0) throw new Error("No matching quotes to recheck.");
+  if (rows.length === 0) throw new Error("No matching quotes to re-quote.");
 
   const session = await currentDeskSession();
   const createdBy = session.name?.trim() || session.email || "agent";
@@ -660,7 +660,7 @@ async function queueRecheckNotesForQuotes(dealId: string, ids: string[]) {
     await db.insert(quoteNotes).values({
       tenantId: DEFAULT_TENANT_ID,
       quoteId: row.quote.id,
-      body: `Recheck queued for ${row.carrier.name}.`,
+      body: `Re-quote queued for ${row.carrier.name}.`,
       createdBy,
     });
   }
@@ -675,7 +675,7 @@ export async function recheckQuotesAction(formData: FormData) {
     .map((value) => String(value).trim())
     .filter(Boolean);
   if (!dealId) throw new Error("Deal is missing.");
-  if (ids.length === 0) throw new Error("Mark at least one quote to recheck.");
+  if (ids.length === 0) throw new Error("Select at least one quote to re-quote.");
 
   const { count: n } = await queueRecheckNotesForQuotes(dealId, ids);
   await clearBindRecheckAcks(dealId, ids);
@@ -683,7 +683,7 @@ export async function recheckQuotesAction(formData: FormData) {
   revalidatePath(`/deals/${dealId}`);
   flashAction(
     dealQuotesPath(dealId),
-    n === 1 ? "Recheck queued for 1 carrier" : `Recheck queued for ${n} carriers`,
+    n === 1 ? "Re-quote queued for 1 carrier" : `Re-quote queued for ${n} carriers`,
   );
 }
 

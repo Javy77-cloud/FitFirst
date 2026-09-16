@@ -13,6 +13,12 @@ import { selectedQuoteRowLabel } from "@/lib/deals/product-stages";
 import { quoteRowReason } from "@/lib/quotes/row-reason";
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -387,7 +393,6 @@ export function QuotesResultsTable({
   selectedQuoteIds = [],
   product = null,
   productStage = null,
-  sheetStale = false,
   priorByQuoteId = {},
 }: {
   dealId: string;
@@ -404,11 +409,9 @@ export function QuotesResultsTable({
   selectedQuoteIds?: string[];
   product?: string | null;
   productStage?: string | null;
-  sheetStale?: boolean;
   priorByQuoteId?: Record<string, { quote: Quote; carrier: Carrier; label: string | null }>;
 }) {
   const list = asList(rows);
-  const [recheckMarked, setRecheckMarked] = useState<string[]>([]);
   const [hideMarked, setHideMarked] = useState<string[]>([]);
   const [hidesApplied, setHidesApplied] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -439,8 +442,6 @@ export function QuotesResultsTable({
     }));
   }, [list, compareSelected, quoteFilesByQuoteId]);
   const compareCount = compareSelected.length;
-  const recheckCount = recheckMarked.length;
-  const anyRecheck = recheckCount > 0;
 
   const alertRow = useMemo(
     () => list.find((row) => row.quote.id === alertQuoteId) ?? null,
@@ -463,15 +464,8 @@ export function QuotesResultsTable({
   }, [hideMarked, list, premiumFloors]);
 
   const hideCount = effectiveHideMarked.length;
-  const anyHide = hideCount > 0;
   const hidesEffectivelyApplied = hidesApplied && hideCount > 0;
   const anyDetailsOpen = Object.values(expanded).some(Boolean);
-
-  function toggleRecheckMark(id: string) {
-    setRecheckMarked((current) =>
-      current.includes(id) ? current.filter((x) => x !== id) : [...current, id],
-    );
-  }
 
   function toggleHideMark(id: string) {
     setHideMarked((current) => {
@@ -500,16 +494,13 @@ export function QuotesResultsTable({
     });
   }
 
-  function onRecheck() {
-    if (recheckMarked.length === 0) return;
-    const ids = [...recheckMarked];
+  function queueRequote(ids: string[]) {
+    if (ids.length === 0) return;
     const data = new FormData();
     data.set("dealId", dealId);
     for (const id of ids) data.append("quoteId", id);
     startTransition(async () => {
       await recheckQuotesAction(data);
-      setRecheckMarked([]);
-      // Recheck clears hide marks for those quote ids (tip: recheck clears marks → unhide).
       setHideMarked((current) => current.filter((id) => !ids.includes(id)));
       setPremiumFloors((floors) => {
         const next = { ...floors };
@@ -519,8 +510,25 @@ export function QuotesResultsTable({
     });
   }
 
-  function onHideMarked() {
-    if (effectiveHideMarked.length === 0) return;
+  function hideSelected(ids: string[]) {
+    if (ids.length === 0) return;
+    setHideMarked((current) => {
+      const next = [...current];
+      for (const id of ids) {
+        if (!next.includes(id)) next.push(id);
+      }
+      return next;
+    });
+    setPremiumFloors((floors) => {
+      const next = { ...floors };
+      for (const id of ids) {
+        if (id in next) continue;
+        const row = list.find((r) => r.quote.id === id);
+        const n = row ? premiumNumber(row.quote.premium) : null;
+        if (n != null) next[id] = n;
+      }
+      return next;
+    });
     setHidesApplied(true);
   }
 
@@ -540,40 +548,6 @@ export function QuotesResultsTable({
           <Button
             type="button"
             size="sm"
-            variant={anyRecheck ? "default" : "outline"}
-            disabled={!anyRecheck || pending}
-            onClick={onRecheck}
-            data-ff-quotes-recheck=""
-            data-ff-quotes-recheck-count={recheckCount}
-            className={cn(
-              "gap-1.5",
-              anyRecheck && "border-primary bg-primary text-primary-foreground shadow-sm",
-            )}
-            title={
-              anyRecheck
-                ? `Re-run ${recheckCount} marked quote${recheckCount === 1 ? "" : "s"}`
-                : "Mark quotes with the refresh icon to recheck"
-            }
-          >
-            <span
-              className={cn(
-                "inline-flex size-5 items-center justify-center rounded-md",
-                anyRecheck ? "bg-primary-foreground/15" : "bg-muted/60",
-              )}
-              data-ff-quotes-recheck-icon={anyRecheck ? "lit" : "muted"}
-              aria-hidden
-            >
-              <RecheckMarkIcon
-                lit={anyRecheck}
-                className={anyRecheck ? "text-primary-foreground" : undefined}
-              />
-            </span>
-            {pending ? "Queuing…" : anyRecheck ? `Recheck (${recheckCount})` : "Recheck"}
-          </Button>
-
-          <Button
-            type="button"
-            size="sm"
             variant="outline"
             disabled={list.length === 0}
             onClick={() => {
@@ -587,26 +561,55 @@ export function QuotesResultsTable({
             Collapse All
           </Button>
 
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={compareCount === 0}
-            onClick={() => {
-              if (compareExceedsMax(compareCount)) return;
-              setCompareOpen(true);
-            }}
-            data-ff-quotes-compare=""
-            data-ff-quotes-compare-count={compareCount}
-            className="gap-1.5 border-primary/35 bg-primary/5 text-navy hover:bg-primary/10"
-            title={
-              compareExceedsMax(compareCount)
-                ? QUOTE_COMPARE_OVER_MAX
-                : QUOTE_COMPARE_TIP
-            }
-          >
-            {compareCount > 0 ? `Compare (${compareCount})` : "Compare"}
-          </Button>
+          {compareCount > 0 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="gap-1 border-primary/35 bg-primary/5 text-navy hover:bg-primary/10"
+                    data-ff-quotes-selection-actions=""
+                  />
+                }
+              >
+                Actions
+                <ChevronDown className="size-3 opacity-80" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" data-ff-quotes-selection-menu="">
+                <DropdownMenuItem
+                  disabled={pending}
+                  onClick={() => queueRequote(compareSelected)}
+                  data-ff-quotes-recheck=""
+                  data-ff-quotes-recheck-count={compareCount}
+                >
+                  {pending ? "Queuing…" : `Re-quote selected (${compareCount})`}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={compareExceedsMax(compareCount)}
+                  onClick={() => {
+                    if (compareExceedsMax(compareCount)) return;
+                    setCompareOpen(true);
+                  }}
+                  data-ff-quotes-compare=""
+                  data-ff-quotes-compare-count={compareCount}
+                  title={
+                    compareExceedsMax(compareCount) ? QUOTE_COMPARE_OVER_MAX : QUOTE_COMPARE_TIP
+                  }
+                >
+                  Compare ({compareCount})
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => hideSelected(compareSelected)}
+                  data-ff-quotes-hide-marked=""
+                  data-ff-quotes-hide-count={compareCount}
+                >
+                  Hide selected ({compareCount})
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
 
           {hidesEffectivelyApplied ? (
             <Button
@@ -622,20 +625,6 @@ export function QuotesResultsTable({
               <EyeOff className="size-3.5 text-muted-foreground" />
               Show Hidden ({hideCount})
             </Button>
-          ) : anyHide ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={onHideMarked}
-              data-ff-quotes-hide-marked=""
-              data-ff-quotes-hide-count={hideCount}
-              className="gap-1.5 border-border text-navy hover:bg-muted/60"
-              title={`Hide ${hideCount} marked quote${hideCount === 1 ? "" : "s"} (session only)`}
-            >
-              <EyeOff className="size-3.5 text-muted-foreground" />
-              Hide Marked ({hideCount})
-            </Button>
           ) : null}
         </div>
         {compareExceedsMax(compareCount) ? (
@@ -646,14 +635,6 @@ export function QuotesResultsTable({
         ) : null}
       </div>
 
-      {sheetStale ? (
-        <p
-          className="mx-3 mt-3 rounded-md border border-fit-flag/40 bg-fit-flag/10 px-3 py-2 text-[12px] text-navy"
-          data-ff-quotes-sheet-stale=""
-        >
-          Sheet changed — re-quote marked carriers. Bind Save turns red until you Save the recheck.
-        </p>
-      ) : null}
       <div className="space-y-4 px-3 pb-3">
         {sections.map((section) => {
           const visibleRows =
@@ -750,7 +731,6 @@ export function QuotesResultsTable({
                     const rowStageLabel =
                       stageLabel ?? (bound ? "Bound" : null);
                     const prior = priorByQuoteId[quote.id];
-                    const isRecheckMarked = recheckMarked.includes(quote.id);
                     const isHideMarked = effectiveHideMarked.includes(quote.id);
                     const showAlert = quoteNeedsBindRecheckAlert({
                       riskOutcome: outcome,
@@ -767,15 +747,13 @@ export function QuotesResultsTable({
                           data-ff-quote-outcome={outcome}
                           data-ff-quote-bound={highlighted ? "1" : "0"}
                           data-ff-quote-selected={selected ? "1" : "0"}
-                          data-ff-quote-recheck-marked={isRecheckMarked ? "1" : "0"}
                           data-ff-quote-hide-marked={isHideMarked ? "1" : "0"}
                           className={cn(
                             "rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md",
                             highlighted
                               ? "border-fit-flag/70 bg-[color-mix(in_srgb,var(--ff-red-bg)_55%,var(--ff-card))] ring-2 ring-fit-flag/35"
                               : "border-border",
-                            isRecheckMarked && !highlighted && "ring-1 ring-primary/35",
-                            isHideMarked && !isRecheckMarked && !highlighted && "ring-1 ring-muted-foreground/25",
+                            isHideMarked && !highlighted && "ring-1 ring-muted-foreground/25",
                           )}
                         >
                           <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
@@ -858,51 +836,35 @@ export function QuotesResultsTable({
                             <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                               <button
                                 type="button"
-                                aria-label={
-                                  isRecheckMarked
-                                    ? `Unmark ${carrier.name} for recheck`
-                                    : `Mark ${carrier.name} for recheck`
-                                }
-                                aria-pressed={isRecheckMarked}
+                                aria-label={`Re-quote ${carrier.name}`}
                                 data-ff-quote-recheck-mark={quote.id}
-                                data-ff-quote-recheck-mark-state={isRecheckMarked ? "lit" : "muted"}
-                                onClick={() => toggleRecheckMark(quote.id)}
-                                className={cn(
-                                  "inline-flex size-6 shrink-0 items-center justify-center rounded-md border transition-all duration-150",
-                                  isRecheckMarked
-                                    ? "border-primary/45 bg-primary/10 text-primary shadow-sm hover:bg-primary/20"
-                                    : "border-transparent text-muted-foreground/40 hover:border-border hover:bg-muted hover:text-navy hover:shadow-sm hover:scale-105",
-                                )}
-                                title={
-                                  isRecheckMarked
-                                    ? "Marked For Recheck — Click To Unmark"
-                                    : "Mark For Recheck"
-                                }
+                                data-ff-quote-requote={quote.id}
+                                disabled={pending}
+                                onClick={() => queueRequote([quote.id])}
+                                className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-transparent text-muted-foreground/40 transition-all duration-150 hover:border-border hover:bg-muted hover:text-navy hover:shadow-sm hover:scale-105 disabled:opacity-50"
+                                title="Re-quote"
                               >
-                                <RecheckMarkIcon lit={isRecheckMarked} />
+                                <RecheckMarkIcon lit={false} />
                               </button>
                               <button
                                 type="button"
                                 aria-label={
-                                  isHideMarked
-                                    ? `Unmark ${carrier.name} to hide`
-                                    : `Mark ${carrier.name} to hide`
+                                  isHideMarked ? `Unhide ${carrier.name}` : `Hide ${carrier.name}`
                                 }
                                 aria-pressed={isHideMarked}
                                 data-ff-quote-hide-mark={quote.id}
                                 data-ff-quote-hide-mark-state={isHideMarked ? "lit" : "muted"}
-                                onClick={() => toggleHideMark(quote.id)}
+                                onClick={() => {
+                                  if (isHideMarked) toggleHideMark(quote.id);
+                                  else hideSelected([quote.id]);
+                                }}
                                 className={cn(
                                   "inline-flex size-6 shrink-0 items-center justify-center rounded-md border transition-all duration-150",
                                   isHideMarked
                                     ? "border-muted-foreground/40 bg-muted/70 text-navy shadow-sm hover:bg-muted"
                                     : "border-transparent text-muted-foreground/40 hover:border-border hover:bg-muted hover:text-navy hover:shadow-sm hover:scale-105",
                                 )}
-                                title={
-                                  isHideMarked
-                                    ? "Marked To Hide — Click To Unmark"
-                                    : "Mark To Hide (Session)"
-                                }
+                                title={isHideMarked ? "Unhide" : "Hide"}
                               >
                                 <EyeOff
                                   className={cn(

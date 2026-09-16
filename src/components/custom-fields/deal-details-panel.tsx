@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { saveDealFieldValues, uploadDealFieldImage } from "@/app/actions/custom-fields";
 import { FieldControl } from "@/components/custom-fields/field-control";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
 import { dealProductDef, type DealProductId } from "@/lib/deals/deal-products";
 import {
@@ -27,6 +27,33 @@ import {
   isCoApplicantEnabled,
 } from "@/lib/custom-fields/co-applicant-fields";
 import { asList } from "@/lib/safe-list";
+
+/** Image upload must not be a nested <form> inside Deal Details save. */
+function DealFieldImageUpload({ dealId, fieldKey }: { dealId: string; fieldKey: string }) {
+  const [pending, start] = useTransition();
+  return (
+    <div className="flex items-center gap-2" data-ff-deal-field-image="">
+      <input
+        type="file"
+        accept="image/*"
+        className="text-xs"
+        disabled={pending}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (!file) return;
+          const body = new FormData();
+          body.set("dealId", dealId);
+          body.set("key", fieldKey);
+          body.set("file", file);
+          start(async () => {
+            await uploadDealFieldImage(body);
+          });
+        }}
+      />
+      {pending ? <span className="text-xs text-muted-foreground">Uploading…</span> : null}
+    </div>
+  );
+}
 
 function CoApplicantDealSection({
   sectionLabel,
@@ -139,16 +166,7 @@ function CoApplicantDealSection({
                 activePackageLine={activePackageLine}
                 lineSettings={lineSettings}
               />
-              {field.type === "image" ? (
-                <form action={uploadDealFieldImage} className="flex items-center gap-2">
-                  <input type="hidden" name="dealId" value={dealId} />
-                  <input type="hidden" name="key" value={key} />
-                  <input type="file" name="file" accept="image/*" className="text-xs" />
-                  <Button type="submit" size="xs" variant="outline">
-                    Upload
-                  </Button>
-                </form>
-              ) : null}
+              {field.type === "image" ? <DealFieldImageUpload dealId={dealId} fieldKey={key} /> : null}
             </div>
           );
         })
@@ -202,12 +220,11 @@ export function DealDetailsPanel({
 
   return (
     <div data-ff-deal-details data-ff-pipeline-family={pipelineFamily}>
-      <form action={saveDealFieldValues} id={formId}>
+      <form action={saveDealFieldValues} id={formId} data-ff-deal-details-form="">
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="line" value={line} />
         <input type="hidden" name="pipelineFamily" value={pipelineFamily} />
         {activePackageLine ? <input type="hidden" name="activePackageLine" value={activePackageLine} /> : null}
-      </form>
       <div
         className="grid grid-cols-2 gap-4 max-[699px]:grid-cols-1"
         data-ff-deal-details-layout="two-col"
@@ -334,14 +351,7 @@ export function DealDetailsPanel({
                           lineSettings={lineSettings}
                         />
                         {field.type === "image" ? (
-                          <form action={uploadDealFieldImage} className="flex items-center gap-2">
-                            <input type="hidden" name="dealId" value={dealId} />
-                            <input type="hidden" name="key" value={key} />
-                            <input type="file" name="file" accept="image/*" className="text-xs" />
-                            <Button type="submit" size="xs" variant="outline">
-                              Upload
-                            </Button>
-                          </form>
+                          <DealFieldImageUpload dealId={dealId} fieldKey={key} />
                         ) : null}
                       </div>
                     );
@@ -353,10 +363,11 @@ export function DealDetailsPanel({
         ))}
       </div>
       <div className="mt-3 flex justify-end">
-        <Button type="submit" form={formId}>
+        <button type="submit" className={buttonVariants()} data-ff-deal-details-save="">
           Save deal details
-        </Button>
+        </button>
       </div>
+      </form>
     </div>
   );
 }

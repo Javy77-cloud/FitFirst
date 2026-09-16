@@ -25,6 +25,31 @@ import { SHEET_GROUP_HEADER_STYLE, sheetGroupHeaderClass } from "@/lib/quote-she
 
 const MASTER_SHEET_FORM_ID = "ff-master-sheet-save";
 
+/** Heather Save is the sheet Save — pull files from the sibling Upload form. */
+function appendSourceDocUploads(data: FormData) {
+  if (typeof document === "undefined") return;
+  const upload = document.querySelector("[data-ff-source-docs-upload]");
+  if (!(upload instanceof HTMLFormElement)) return;
+  const extra = new FormData(upload);
+  let files = 0;
+  for (const [key, value] of extra.entries()) {
+    if (typeof value === "string") {
+      if (
+        (key === "rowCount" || key === "riskId" || key.startsWith("docType")) &&
+        !data.has(key)
+      ) {
+        data.set(key, value);
+      }
+      continue;
+    }
+    data.append(key, value);
+    files += 1;
+  }
+  if (files > 0 && extra.get("rowCount") && !data.get("rowCount")) {
+    data.set("rowCount", String(extra.get("rowCount")));
+  }
+}
+
 export function MasterSheetWorkspace({
   dealId,
   line,
@@ -60,6 +85,7 @@ export function MasterSheetWorkspace({
     const el = document.getElementById(MASTER_SHEET_FORM_ID);
     if (!(el instanceof HTMLFormElement)) throw new Error("Master sheet form is missing.");
     const data = new FormData(el);
+    appendSourceDocUploads(data);
     // Stay on Confirm — a redirect remounts the deal page at the top.
     data.set("flash", "0");
     await saveQuoteSheet(data);
@@ -142,7 +168,9 @@ export function MasterSheetCompare({
       await persistSheet();
       return;
     }
-    await saveQuoteSheet(new FormData(event.currentTarget));
+    const data = new FormData(event.currentTarget);
+    appendSourceDocUploads(data);
+    await saveQuoteSheet(data);
   }
 
   return (

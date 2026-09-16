@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { accounts, contacts, deals, leads } from "@/lib/db/schema";
+import { lifeHealthShopRepair } from "./deal-products";
 import { dealTitleForRecords } from "./deal-title";
 
 let retitlePromise: Promise<number> | null = null;
@@ -23,6 +24,14 @@ export async function retitleExistingDeals(): Promise<number> {
 
   let changed = 0;
   for (const row of rows) {
+    const shopRepair = lifeHealthShopRepair({
+      shopProducts: row.deal.shopProducts,
+      shopLines: row.deal.shopLines,
+      lineOfBusiness: row.deal.lineOfBusiness,
+      quotingLine: row.deal.quotingLine,
+      quotingForm: row.deal.quotingForm,
+      policySubType: row.deal.policySubType,
+    });
     const next = dealTitleForRecords({
       lineOfBusiness: row.deal.lineOfBusiness,
       primaryNamedInsured: row.deal.primaryNamedInsured,
@@ -33,10 +42,16 @@ export async function retitleExistingDeals(): Promise<number> {
       quotingForm: row.deal.quotingForm,
       policySubType: row.deal.policySubType,
     });
-    if (!next || next === row.deal.title) continue;
+    if ((!next || next === row.deal.title) && !shopRepair) continue;
     await db
       .update(deals)
-      .set({ title: next, updatedAt: row.deal.updatedAt ?? new Date() })
+      .set({
+        ...(next && next !== row.deal.title ? { title: next } : {}),
+        ...(shopRepair
+          ? { shopLines: shopRepair.shopLines, shopProducts: shopRepair.shopProducts }
+          : {}),
+        updatedAt: row.deal.updatedAt ?? new Date(),
+      })
       .where(eq(deals.id, row.deal.id));
     changed += 1;
   }

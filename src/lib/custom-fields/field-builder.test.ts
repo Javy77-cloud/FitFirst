@@ -33,6 +33,7 @@ import {
   STARTER_PICKLIST_LEAD_CADENCE,
   STARTER_PICKLIST_LINES,
   STARTER_PICKLIST_OCCUPATIONS,
+  STARTER_PICKLIST_DEAL_NOTICES,
   STARTER_PICKLIST_US_STATES,
   US_STATE_OPTIONS,
   missingStarterPicklistNames,
@@ -232,13 +233,16 @@ describe("deal field builder", () => {
       "Georgia",
     ]);
     expect(MAX_PICKLIST_OPTIONS).toBeGreaterThanOrEqual(US_STATE_OPTIONS.length);
-    expect(STARTER_FIELD_PICKLISTS.map((list) => list.name)).toEqual([
-      STARTER_PICKLIST_US_STATES,
-      STARTER_PICKLIST_LINES,
-      STARTER_PICKLIST_CARRIERS,
-      STARTER_PICKLIST_LEAD_CADENCE,
-      STARTER_PICKLIST_OCCUPATIONS,
-    ]);
+    expect(STARTER_FIELD_PICKLISTS.map((list) => list.name)).toEqual(
+      expect.arrayContaining([
+        STARTER_PICKLIST_US_STATES,
+        STARTER_PICKLIST_LINES,
+        STARTER_PICKLIST_CARRIERS,
+        STARTER_PICKLIST_LEAD_CADENCE,
+        STARTER_PICKLIST_OCCUPATIONS,
+        STARTER_PICKLIST_DEAL_NOTICES,
+      ]),
+    );
     expect(US_STATE_OPTIONS).toHaveLength(51);
     expect(US_STATE_OPTIONS).toContain("FL — Florida");
     expect(LINE_OF_BUSINESS_OPTIONS).toEqual(expect.arrayContaining(["Homeowners", "Auto", "Flood", "Workers Comp"]));
@@ -249,14 +253,9 @@ describe("deal field builder", () => {
     );
     expect(missingStarterPicklistNames([])).toEqual([...STARTER_FIELD_PICKLISTS.map((list) => list.name)]);
     expect(
-      missingStarterPicklistNames([
-        "US states",
-        "Lines of business",
-        "Common carriers",
-        "Lead cadence",
-        "Occupations",
-      ]),
+      missingStarterPicklistNames(STARTER_FIELD_PICKLISTS.map((list) => list.name)),
     ).toEqual([]);
+    expect(missingStarterPicklistNames(["US states"])).toContain(STARTER_PICKLIST_DEAL_NOTICES);
     expect(formatCurrencyDisplay("321000")).toBe("321,000.00");
     expect(parseNumericInput("$321,000.00")).toBe("321000");
   });

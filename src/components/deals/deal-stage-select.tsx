@@ -6,7 +6,7 @@ import { ClosedDealArchivePopup } from "@/components/deals/closed-deal-archive-p
 import type { DealStageOption } from "@/lib/deals/deal-columns";
 import { isClosedOutcomeStage } from "@/lib/deals/archive-reminder";
 import { humanizeDealStage } from "@/lib/deals/package-lines";
-import { isBoardNoopStage } from "@/lib/deals/product-stages";
+import { isQuotesOnlyBoardStage } from "@/lib/deals/product-stages";
 import { stageColorFromNameOrSlug, statusColorClass } from "@/lib/desk/status-colors";
 import { canonicalizePipelineSlug } from "@/lib/wire/pipeline";
 import { flashAction } from "@/lib/flash-client";
@@ -59,7 +59,11 @@ export function DealStageSelect({
         onChange={(event) => {
           const next = event.target.value;
           const prev = value;
-          if (isBoardNoopStage(next) && pipelineSlug !== "won-lost" && pipelineSlug !== "archive") {
+          if (
+            isQuotesOnlyBoardStage(next, options) &&
+            pipelineSlug !== "won-lost" &&
+            pipelineSlug !== "archive"
+          ) {
             event.target.value = prev;
             return;
           }
@@ -82,7 +86,9 @@ export function DealStageSelect({
         {options.map((stage) => {
           const color = colorForStage(stage);
           const lateLocked =
-            isBoardNoopStage(stage.slug) && pipelineSlug !== "won-lost" && pipelineSlug !== "archive";
+            isQuotesOnlyBoardStage(stage.slug, options) &&
+            pipelineSlug !== "won-lost" &&
+            pipelineSlug !== "archive";
           return (
             <option
               key={stage.slug}

@@ -270,13 +270,17 @@ export async function saveDealFieldValues(formData: FormData) {
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) throw new Error("Deal details could not be saved.");
   const defs = await listDealFieldDefs();
-  // Details is a partial form: only persist fields on the Deal Details layout.
-  // List-only catalog fields (Priority picklist_8mus, Selling Agency, Pipeline, …)
-  // must not be wiped to "" when the agent edits name/address/etc.
+  // Details is a partial form: persist fields the form actually posted (and
+  // unchecked layout checkboxes). List-only catalog fields (Priority
+  // picklist_8mus, Selling Agency, Pipeline, …) must not be wiped to "" when
+  // they were never on this form.
   const line = str(formData, "line") || deal.lineOfBusiness || "HO";
   const layout = await loadLayoutForModule("deals", line);
   const layoutKeys = new Set(allLayoutFieldKeys(layout));
-  const defsOnDetails = defs.filter((field) => layoutKeys.has(field.key));
+  const defsOnDetails = defs.filter((field) => {
+    if (formData.has(`field_${field.key}`)) return true;
+    return field.type === "checkbox" && layoutKeys.has(field.key);
+  });
   const custom = {
     ...customValuesFromForm(formData, defsOnDetails),
   };
@@ -308,7 +312,7 @@ export async function saveDealFieldValues(formData: FormData) {
   if (Object.keys(system).length) {
     await applySystemDealValues(dealId, system);
   }
-  await persistDealWorkTab(dealId, "documents").catch(() => null);
+  await persistDealWorkTab(dealId, "details").catch(() => null);
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/deals");
   revalidatePath("/pipeline");

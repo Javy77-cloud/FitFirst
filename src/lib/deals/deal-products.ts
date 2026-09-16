@@ -502,6 +502,52 @@ export function productCreateDraft(
   };
 }
 
+export function productMatchesFamily(
+  product: DealProductId,
+  family: "pc" | "life" | "health",
+): boolean {
+  const group = dealProductDef(product).group;
+  if (family === "life") return group === "life";
+  if (family === "health") return group === "health";
+  return group === "personal" || group === "commercial";
+}
+
+/**
+ * Life/Health LOB or quoting_line wins over leftover HO3 / home shop_lines.
+ * Tyler-style rows: title Term Life, shop_lines still ["home"].
+ */
+export function dealFamilyFromHints(input: {
+  shopProducts?: string[] | null;
+  shopLines?: string[] | null;
+  lineOfBusiness?: string | null;
+  quotingLine?: string | null;
+  quotingForm?: string | null;
+  policySubType?: string | null;
+}): "pc" | "life" | "health" {
+  const lob = (input.lineOfBusiness ?? "").trim().toUpperCase();
+  const quoting = (input.quotingLine ?? "").trim().toLowerCase();
+  if (lob === "LIFE" || quoting === "life") return "life";
+  if (lob === "HEALTH" || quoting === "health") return "health";
+  const formProduct = parseDealProduct(input.quotingForm) ?? parseDealProduct(input.policySubType);
+  if (formProduct) {
+    const group = dealProductDef(formProduct).group;
+    if (group === "life") return "life";
+    if (group === "health") return "health";
+  }
+  return "pc";
+}
+
+function defaultProductForFamily(family: "life" | "health"): DealProductId {
+  return family === "life" ? "life_term" : "health_marketplace";
+}
+
+function onlyStaleHomeProducts(products: readonly DealProductId[]): boolean {
+  return (
+    products.length > 0 &&
+    products.every((id) => dealProductDef(id).shopLine === "home")
+  );
+}
+
 /** Infer chips from stored shop_lines + quoting form when shop_products is empty. */
 export function inferDealProducts(input: {
   shopProducts?: string[] | null;
@@ -511,13 +557,29 @@ export function inferDealProducts(input: {
   quotingForm?: string | null;
   policySubType?: string | null;
 }): DealProductId[] {
-  const stored = (input.shopProducts ?? []).map(parseDealProduct).filter((id): id is DealProductId => Boolean(id));
-  if (stored.length) return normalizeDealProducts(stored);
+  const family = dealFamilyFromHints(input);
+  const stored = (input.shopProducts ?? [])
+    .map(parseDealProduct)
+    .filter((id): id is DealProductId => Boolean(id));
+  if (stored.length) {
+    const staleHomeOnLifeHealth =
+      (family === "life" || family === "health") && onlyStaleHomeProducts(stored);
+    if (!staleHomeOnLifeHealth) return normalizeDealProducts(stored);
+  }
+
+  const formProduct = parseDealProduct(input.quotingForm) ?? parseDealProduct(input.policySubType);
+  if (family === "life" || family === "health") {
+    if (formProduct && productMatchesFamily(formProduct, family)) return [formProduct];
+    const fromQuoting = parseDealProduct(input.quotingLine);
+    if (fromQuoting && productMatchesFamily(fromQuoting, family)) return [fromQuoting];
+    const fromLob = parseDealProduct(LOB_TO_SHOP_LINE[(input.lineOfBusiness ?? "").toUpperCase()] ?? "");
+    if (fromLob && productMatchesFamily(fromLob, family)) return [fromLob];
+    return [defaultProductForFamily(family)];
+  }
 
   const fromShop = (input.shopLines ?? [])
     .map((value) => parseDealProduct(value))
     .filter((id): id is DealProductId => Boolean(id));
-  const formProduct = parseDealProduct(input.quotingForm) ?? parseDealProduct(input.policySubType);
   if (fromShop.length) {
     if (formProduct && dealProductDef(fromShop[0]!).shopLine === dealProductDef(formProduct).shopLine) {
       fromShop[0] = formProduct;
@@ -531,6 +593,28 @@ export function inferDealProducts(input: {
   const fromLobProduct = parseDealProduct(fromLob);
   if (fromLobProduct) return [fromLobProduct];
   return ["homeowners"];
+}
+
+/** Persist patch when Life/Health still carries leftover home shop_lines. */
+export function lifeHealthShopRepair(input: {
+  shopProducts?: string[] | null;
+  shopLines?: string[] | null;
+  lineOfBusiness?: string | null;
+  quotingLine?: string | null;
+  quotingForm?: string | null;
+  policySubType?: string | null;
+}): { shopLines: ShopLine[]; shopProducts: DealProductId[] } | null {
+  const family = dealFamilyFromHints(input);
+  if (family !== "life" && family !== "health") return null;
+  const shopProducts = inferDealProducts(input);
+  const shopLines = shopLinesFromProducts(shopProducts);
+  const currentLines = (input.shopLines ?? []).map((line) => String(line).trim().toLowerCase());
+  const currentProducts = (input.shopProducts ?? []).map((row) => String(row).trim()).filter(Boolean);
+  const staleHome = currentLines.includes("home") && !shopLines.includes("home");
+  const missingFamilyLine = !currentLines.includes(family);
+  const missingProducts = currentProducts.length === 0;
+  if (!staleHome && !missingFamilyLine && !missingProducts) return null;
+  return { shopLines, shopProducts };
 }
 
 export function resolveVisibleDealProducts(input: {

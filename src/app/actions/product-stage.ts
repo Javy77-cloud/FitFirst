@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { moveDealToStage } from "@/app/actions/pipeline";
 import { currentDeskSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { deals, quoteAttemptLogs, quotes } from "@/lib/db/schema";
+import { deals, quoteAttemptLogs, quotes, reviewTasks } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
   inferDealProducts,
@@ -15,8 +15,13 @@ import {
 } from "@/lib/deals/deal-products";
 import { sheetLineForProduct } from "@/lib/deals/deal-products";
 import {
+  noticeCompleteLogBody,
+  noticeTypeLabel,
+  parseNoticeType,
+} from "@/lib/deals/notices";
+import {
   canonicalizeProductStage,
-  isInspectionStatus,
+  findProductNoticeForTask,
   isProductLostReason,
   lateStageNeedsQuoteSelection,
   liveSelectedQuoteIds,
@@ -25,11 +30,12 @@ import {
   setProductStage,
   shouldAutoAdvanceStage,
 } from "@/lib/deals/product-stages";
+import { writeDeskComms } from "@/lib/desk/write-comms";
 import { issuePolicyFromDeclaration } from "@/app/actions/policy-mint";
 import { isPolicyIssuedStage, quotesOnlyStageBlocked } from "@/lib/policy/mint-gate";
 import { parseShopFlow, quoteMatchesDealProduct } from "@/lib/deals/shop-flow";
 import { persistDealShopFlow } from "@/lib/deals/shop-flow-persist";
-import { flashAction } from "@/lib/flash-action";
+import { flashAction, flashStay } from "@/lib/flash-action";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
 
 async function loadDeal(dealId: string) {
@@ -306,18 +312,159 @@ export async function autoAdvanceDealProductStage(input: {
   });
 }
 
-export async function setDealProductInspection(formData: FormData) {
-  const dealId = String(formData.get("dealId") ?? "").trim();
-  const product = parseDealProduct(String(formData.get("product") ?? ""));
-  const status = String(formData.get("inspectionStatus") ?? "").trim();
-  if (!dealId || !product || !isInspectionStatus(status)) {
-    throw new Error("Deal, product, and inspection status are required.");
-  }
+function noticeReturnTo(formData: FormData, dealId: string, product: DealProductId) {
+  return `/deals/${dealId}?tab=quotes&product=${product}`;
+}
+
+function revalidateNotice(dealId: string, taskId?: string | null) {
+  revalidatePath(`/deals/${dealId}`);
+  revalidatePath("/deals");
+  revalidatePath("/tasks");
+  if (taskId) revalidatePath(`/tasks/${taskId}`);
+}
+
+async function persistProductNotice(
+  dealId: string,
+  product: DealProductId,
+  patch: { noticeType?: string; noticeTaskId?: string | null },
+) {
   const deal = await loadDeal(dealId);
   if (!deal) throw new Error("Deal not found.");
   const saved = parseShopFlow(deal.shopFlow);
   const stages = parseProductStages(saved.productStages);
-  const next = setProductStage(stages, product, { inspectionStatus: status });
+  const next = setProductStage(stages, product, {
+    inspectionStatus: patch.noticeType,
+    noticeType: patch.noticeType,
+    noticeTaskId: patch.noticeTaskId,
+  });
   await persistDealShopFlow(dealId, { ...saved, productStages: next });
+  return deal;
+}
+
+/** Persist the visible notice and link the desk task created by createDeskTask. */
+export async function linkDealProductNoticeTask(input: {
+  dealId: string;
+  product: string;
+  noticeType: string;
+  taskId: string;
+}) {
+  const product = parseDealProduct(input.product);
+  const noticeType = parseNoticeType(input.noticeType);
+  const taskId = input.taskId.trim();
+  if (!input.dealId || !product || noticeType === "none" || !taskId) return;
+  await persistProductNotice(input.dealId, product, { noticeType, noticeTaskId: taskId });
+  revalidateNotice(input.dealId, taskId);
+}
+
+/** Set or change a product notice chip. Reminder is createDeskTask — never a second engine. */
+export async function setDealProductNotice(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const noticeType = parseNoticeType(
+    formData.get("noticeType") ?? formData.get("inspectionStatus"),
+  );
+  if (!dealId || !product) throw new Error("Deal and product are required.");
+  if (noticeType === "none") {
+    throw new Error("Pick a notice type, or complete the notice to clear it.");
+  }
+  const taskId = String(formData.get("noticeTaskId") ?? formData.get("taskId") ?? "").trim();
+  await persistProductNotice(dealId, product, {
+    noticeType,
+    noticeTaskId: taskId || undefined,
+  });
+  revalidateNotice(dealId, taskId || null);
+  flashStay(formData, noticeReturnTo(formData, dealId, product), "Notice set");
+}
+
+async function clearProductNoticeOnDeal(input: {
+  dealId: string;
+  product: DealProductId;
+  notes: string;
+}) {
+  if (input.notes.length < 2) throw new Error("Add a short note to complete the notice.");
+  const session = await currentDeskSession();
+  const deal = await loadDeal(input.dealId);
+  if (!deal) throw new Error("Deal not found.");
+  const saved = parseShopFlow(deal.shopFlow);
+  const stages = parseProductStages(saved.productStages);
+  const current = productStageFor(stages, input.product, deal.pipelineStageSlug ?? deal.pipelineStage);
+  const noticeType = parseNoticeType(current.noticeType ?? current.inspectionStatus);
+  if (noticeType === "none") throw new Error("No active notice to complete.");
+  const occurredAt = new Date();
+  await writeDeskComms({
+    kind: "note",
+    title: `Notice completed · ${noticeTypeLabel(noticeType)}`,
+    body: noticeCompleteLogBody({
+      agent: session.name || "Agent",
+      noticeType,
+      notes: input.notes,
+    }),
+    status: "completed",
+    eventType: "completed",
+    occurredAt,
+    dealId: input.dealId,
+    contactId: deal.contactId,
+    accountId: deal.accountId,
+    leadId: deal.leadId,
+    assignee: session.name || null,
+    actorId: session.userId,
+    actorName: session.name || null,
+  });
+  if (current.noticeTaskId) {
+    await db
+      .update(reviewTasks)
+      .set({ status: "done", completedAt: occurredAt })
+      .where(
+        and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), eq(reviewTasks.id, current.noticeTaskId)),
+      );
+  }
+  await persistDealShopFlow(input.dealId, {
+    ...saved,
+    productStages: setProductStage(stages, input.product, {
+      inspectionStatus: "none",
+      noticeType: "none",
+      noticeTaskId: null,
+    }),
+  });
+  revalidateNotice(input.dealId, current.noticeTaskId);
+}
+
+export async function completeDealProductNotice(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const notes = String(formData.get("notes") ?? "").trim();
+  if (!dealId || !product) throw new Error("Deal and product are required.");
+  await clearProductNoticeOnDeal({ dealId, product, notes });
+  flashStay(formData, noticeReturnTo(formData, dealId, product), "Notice completed");
+}
+
+/** Completing a linked notice task can also clear the chip + activity log. Never automatic. */
+export async function completeLinkedDealNoticeForTask(taskId: string, notes: string) {
+  const id = taskId.trim();
+  if (!id || notes.trim().length < 2) return { cleared: false as const };
+  const [task] = await db
+    .select({ id: reviewTasks.id, dealId: reviewTasks.dealId })
+    .from(reviewTasks)
+    .where(and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), eq(reviewTasks.id, id)))
+    .limit(1);
+  if (!task?.dealId) return { cleared: false as const };
+  const deal = await loadDeal(task.dealId);
+  if (!deal) return { cleared: false as const };
+  const stages = parseProductStages(parseShopFlow(deal.shopFlow).productStages);
+  const found = findProductNoticeForTask(stages, id);
+  if (!found) return { cleared: false as const };
+  const product = parseDealProduct(found.product);
+  if (!product) return { cleared: false as const };
+  await clearProductNoticeOnDeal({ dealId: task.dealId, product, notes: notes.trim() });
+  return { cleared: true as const };
+}
+
+/** Leftover Inspection dropdown — maps old slugs, does not create a task. */
+export async function setDealProductInspection(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const status = parseNoticeType(formData.get("inspectionStatus") ?? formData.get("noticeType"));
+  if (!dealId || !product) throw new Error("Deal, product, and notice type are required.");
+  await persistProductNotice(dealId, product, { noticeType: status });
   revalidatePath(`/deals/${dealId}`);
 }

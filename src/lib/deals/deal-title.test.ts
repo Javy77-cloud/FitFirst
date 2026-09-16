@@ -9,6 +9,7 @@ import {
   dealSearchHaystack,
   dealTitleForActiveProduct,
   dealTitleFromPerson,
+  visibleDealTitle,
   dealTitleFormWord,
   dealTitleLobWord,
   formatDealTitle,
@@ -59,6 +60,33 @@ describe("BH1 — deal titles are First Last / Lob", () => {
         quotingForm: "HO3",
       }),
     ).toBe("Gloria Martinez / DP3");
+    expect(
+      dealTitleForActiveProduct({
+        title: "Tyler Bhattel / Term Life",
+        product: "life_term",
+        quotingForm: "HO3",
+      }),
+    ).toBe("Tyler Bhattel / Term Life");
+    expect(
+      visibleDealTitle({
+        title: "Tyler Bhattel / Term Life",
+        shopLines: ["home"],
+        shopProducts: [],
+        lineOfBusiness: "LIFE",
+        quotingLine: "life",
+        quotingForm: "Term Life",
+      }),
+    ).toBe("Tyler Bhattel / Term Life");
+    expect(
+      visibleDealTitle({
+        title: "Tyler Barthel / HO3",
+        shopLines: ["home"],
+        lineOfBusiness: "LIFE",
+        quotingLine: "life",
+      }),
+    ).toBe("Tyler Barthel / Term Life");
+    expect(dealTitleLobWord("LIFE", "HO3")).toBe("Life");
+    expect(dealTitleFormWord("HO3", "life")).toBeNull();
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/dealTitleForActiveProduct/);
     expect(source("src/lib/crm/convert.ts")).toMatch(/formatDealTitle|dealTitleFromPerson/);
     expect(source("src/lib/crm/convert.ts")).not.toMatch(/\$\{lead\.lastName\} · \$\{line\} shop/);

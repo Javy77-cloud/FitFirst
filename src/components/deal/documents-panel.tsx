@@ -86,7 +86,7 @@ export function DocumentsPanel({
             </ul>
           ) : null}
 
-          <SourceDocsUpload dealId={dealId} riskId={riskId} />
+          <SourceDocsUpload dealId={dealId} riskId={riskId} line={sheetLine} />
         </section>
       </div>
 

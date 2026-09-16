@@ -5,6 +5,7 @@ import { DealQuickActions } from "@/components/deals/deal-quick-actions";
 import { DealRowActions } from "@/components/crm/deal-row-actions";
 import { InsuredLink } from "@/components/crm/insured-link";
 import { LinkedValue } from "@/components/crm/linked-value";
+import { DealProductStageChips } from "@/components/deals/deal-product-stage-chips";
 import { StagePill } from "@/components/fit-badge";
 import { ColumnTable } from "@/components/lists/column-table";
 import { LINE_LABELS } from "@/lib/crm/bind";
@@ -109,12 +110,15 @@ export function PipelineTableView({
             city: deal.city ?? "—",
             coverageA: deal.coverageA != null ? formatMoney(deal.coverageA) : "—",
             carrier: deal.carrier ?? "—",
-            stage: (
-              <StagePill
-                stage={labels.get(deal.pipelineStageSlug ?? "") ?? deal.pipelineStage}
-                color={colors.get(deal.pipelineStageSlug ?? "") ?? colors.get(deal.pipelineStage)}
-              />
-            ),
+            stage:
+              deal.productStageChips.length > 0 ? (
+                <DealProductStageChips chips={deal.productStageChips} />
+              ) : (
+                <StagePill
+                  stage={labels.get(deal.pipelineStageSlug ?? "") ?? deal.pipelineStage}
+                  color={colors.get(deal.pipelineStageSlug ?? "") ?? colors.get(deal.pipelineStage)}
+                />
+              ),
             updated: deal.updatedAt ? formatIsoDate(new Date(deal.updatedAt)) : "—",
             bound: deal.boundAt ? formatIsoDate(new Date(deal.boundAt)) : "Unbound",
             tags: (

@@ -15,9 +15,9 @@ export function QuotesBindableSignal({
   const signal = quotesBindableSignal(quotes);
   if (signal.tone === "empty") return null;
   return (
-    <p
+    <span
       className={cn(
-        "rounded-md border px-3 py-2 text-sm font-semibold",
+        "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold",
         signal.tone === "green" && "border-fit-green/40 bg-fit-green-bg text-fit-green",
         signal.tone === "amber" && "border-fit-yellow/40 bg-fit-yellow-bg text-fit-yellow",
         signal.tone === "red" && "border-fit-flag/40 bg-fit-red-bg text-fit-flag",
@@ -26,6 +26,6 @@ export function QuotesBindableSignal({
       data-ff-quotes-bindable-count={signal.bindableCount}
     >
       {signal.label}
-    </p>
+    </span>
   );
 }

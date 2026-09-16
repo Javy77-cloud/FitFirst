@@ -1,8 +1,18 @@
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
 function uploadRoot(): string {
   return process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
+}
+
+function uploadRoots(): string[] {
+  const roots = [
+    process.env.UPLOAD_DIR,
+    path.join(process.cwd(), "uploads"),
+    path.join(os.tmpdir(), "fitfirst-uploads"),
+  ].filter((root): root is string => Boolean(root && root.trim()));
+  return [...new Set(roots.map((root) => path.resolve(root)))];
 }
 
 export function isRemoteStoragePath(storagePath: string): boolean {
@@ -76,6 +86,23 @@ async function readBlobByPrefix(relPath: string): Promise<Buffer | null> {
   }
 }
 
+async function writeLocalFile(relPath: string, buffer: Buffer): Promise<string> {
+  const key = posixKey(relPath);
+  let lastError: unknown = null;
+  for (const root of uploadRoots()) {
+    const abs = path.resolve(root, key);
+    if (abs === root || !abs.startsWith(root + path.sep)) continue;
+    try {
+      await mkdir(path.dirname(abs), { recursive: true });
+      await writeFile(abs, buffer);
+      return key;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Could not store file bytes");
+}
+
 /** Persist bytes. Returns a blob URL when Blob is configured, else a local relative path. */
 export async function writeStoredFile(
   relPath: string,
@@ -84,20 +111,20 @@ export async function writeStoredFile(
 ): Promise<string> {
   const key = posixKey(relPath);
   if (blobStoreReady()) {
-    const { put } = await import("@vercel/blob");
-    const blob = await put(key, buffer, {
-      access: "private",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      contentType: contentType || "application/octet-stream",
-    });
-    return blob.url;
+    try {
+      const { put } = await import("@vercel/blob");
+      const blob = await put(key, buffer, {
+        access: "private",
+        addRandomSuffix: false,
+        allowOverwrite: true,
+        contentType: contentType || "application/octet-stream",
+      });
+      if (blob?.url) return blob.url;
+    } catch {
+      /* Preview/serverless without a writable Blob store still needs a Neon row. */
+    }
   }
-  const abs = localAbs(key);
-  if (!abs) throw new Error("Invalid storage path");
-  await mkdir(path.dirname(abs), { recursive: true });
-  await writeFile(abs, buffer);
-  return key;
+  return writeLocalFile(key, buffer);
 }
 
 /**

@@ -86,15 +86,15 @@ describe("flash helper", () => {
     expect(stripFlash("/deals/abc?flash=sheet-saved")).toBe("/deals/abc");
   });
 
-  it("lands Save Deal Details on the documents tab and keeps line/product", () => {
-    expect(dealDetailsSavedHref("abc")).toBe("/deals/abc?tab=documents");
-    expect(dealDetailsSavedHref("abc", { line: "HO" })).toBe("/deals/abc?tab=documents&line=HO");
+  it("lands Save Deal Details on the details tab and keeps line/product", () => {
+    expect(dealDetailsSavedHref("abc")).toBe("/deals/abc?tab=details");
+    expect(dealDetailsSavedHref("abc", { line: "HO" })).toBe("/deals/abc?tab=details&line=HO");
     expect(dealDetailsSavedHref("abc", { line: "HO", product: "HO3" })).toBe(
-      "/deals/abc?tab=documents&line=HO&product=HO3",
+      "/deals/abc?tab=details&line=HO&product=HO3",
     );
-    expect(dealDetailsSavedHref("abc", { line: "  ", product: null })).toBe("/deals/abc?tab=documents");
+    expect(dealDetailsSavedHref("abc", { line: "  ", product: null })).toBe("/deals/abc?tab=details");
     expect(withFlash(dealDetailsSavedHref("d1", { line: "home" }), "deal-details-saved")).toBe(
-      "/deals/d1?tab=documents&line=home&flash=deal-details-saved",
+      "/deals/d1?tab=details&line=home&flash=deal-details-saved",
     );
     expect(quotesRequestedHref("abc")).toBe("/deals/abc?tab=quotes");
     expect(quotesRequestedHref("abc", { line: "home", product: "homeowners" })).toBe(

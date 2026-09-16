@@ -1,10 +1,17 @@
 import {
   dealProductDef,
+  inferDealProducts,
   isDealProductId,
   parseDealProduct,
   type DealProductId,
 } from "@/lib/deals/deal-products";
 import { humanizeDealStage } from "@/lib/deals/package-lines";
+import {
+  parseNoticeType,
+  SEED_NOTICE_LABELS,
+  SEED_NOTICE_TYPES,
+  type NoticeType,
+} from "@/lib/deals/notices";
 import { resolveDealStampStage, type DealStampStage } from "@/lib/deals/status-stamp";
 
 /** Locked per-product pipeline — product chip owns this, tabs are workspaces. */
@@ -44,13 +51,16 @@ export const PRODUCT_STAGE_ALIASES: Record<string, string> = {
   lost: "closed_lost",
 };
 
-export const INSPECTION_STATUSES = ["none", "before_bind", "carrier_post_bind"] as const;
-export type InspectionStatus = (typeof INSPECTION_STATUSES)[number];
+/** @deprecated Use SEED_NOTICE_TYPES — leftover Inspection dropdown. */
+export const INSPECTION_STATUSES = SEED_NOTICE_TYPES;
+export type InspectionStatus = NoticeType;
 
-export const INSPECTION_STATUS_LABELS: Record<InspectionStatus, string> = {
-  none: "No inspection",
-  before_bind: "Inspection before bind",
-  carrier_post_bind: "Carrier post-bind inspection",
+export const INSPECTION_STATUS_LABELS: Record<string, string> = {
+  none: SEED_NOTICE_LABELS.none,
+  before_bind: SEED_NOTICE_LABELS.inspection_before_bind,
+  inspection_before_bind: SEED_NOTICE_LABELS.inspection_before_bind,
+  carrier_post_bind: SEED_NOTICE_LABELS.check_mortgagee_payment,
+  check_mortgagee_payment: SEED_NOTICE_LABELS.check_mortgagee_payment,
 };
 
 /** Stages that stamp the product and must name the quote(s) first. */
@@ -101,7 +111,10 @@ export type DealProductStageState = {
   lostReason?: string | null;
   policyId?: string | null;
   mintStatus?: DealProductMintStatus | null;
+  /** Notice type slug. JSON key stays `inspectionStatus` for leftover rows. */
   inspectionStatus?: InspectionStatus;
+  noticeType?: NoticeType;
+  noticeTaskId?: string | null;
   escrowNote?: string | null;
 };
 
@@ -109,7 +122,6 @@ export type DealProductStages = Partial<Record<string, DealProductStageState>>;
 
 const LATE_SET = new Set<string>(LATE_PRODUCT_STAGES);
 const BOARD_NOOP_SET = new Set<string>(BOARD_NOOP_STAGES);
-const INSPECTION_SET = new Set<string>(INSPECTION_STATUSES);
 
 export function normalizeStageSlug(stage?: string | null): string {
   return (stage ?? "")
@@ -128,12 +140,11 @@ export function canonicalizeProductStage(stage?: string | null): string {
 }
 
 export function isInspectionStatus(value: string | null | undefined): value is InspectionStatus {
-  return Boolean(value && INSPECTION_SET.has(value));
+  return Boolean(value && parseNoticeType(value));
 }
 
 export function parseInspectionStatus(value: unknown): InspectionStatus {
-  if (typeof value === "string" && isInspectionStatus(value)) return value;
-  return "none";
+  return parseNoticeType(value);
 }
 
 export function isLateProductStage(stage?: string | null): stage is LateProductStage {
@@ -142,6 +153,41 @@ export function isLateProductStage(stage?: string | null): stage is LateProductS
 
 export function isBoardNoopStage(stage?: string | null): boolean {
   return BOARD_NOOP_SET.has(canonicalizeProductStage(stage));
+}
+
+/** Gathering / Markets / Quote review — list and board may move here (including rewind). */
+export const EARLY_BOARD_STAGES = ["gathering", "markets", "quote_review"] as const;
+const EARLY_BOARD_SET = new Set<string>(EARLY_BOARD_STAGES);
+
+export function isEarlyBoardStage(stage?: string | null): boolean {
+  return EARLY_BOARD_SET.has(canonicalizeProductStage(stage));
+}
+
+/**
+ * Late / forward stages belong on Quotes, not the deals list or board.
+ * Seeded late slugs always qualify. Custom stages at or after Quote sent
+ * (or after Quote review when Quote sent is missing) do too.
+ */
+export function isQuotesOnlyBoardStage(
+  stage?: string | null,
+  boardStages?: ReadonlyArray<{ slug: string; sortOrder?: number }>,
+): boolean {
+  const key = canonicalizeProductStage(stage);
+  if (!key) return false;
+  if (isBoardNoopStage(key)) return true;
+  if (isEarlyBoardStage(key)) return false;
+  if (!boardStages?.length) return false;
+  const ranked = boardStages.map((row, index) => ({
+    key: canonicalizeProductStage(row.slug),
+    order: typeof row.sortOrder === "number" ? row.sortOrder : index,
+  }));
+  const target = ranked.find((row) => row.key === key);
+  if (!target) return false;
+  const quoteSent = ranked.find((row) => row.key === "quote_sent");
+  if (quoteSent) return target.order >= quoteSent.order;
+  const quoteReview = ranked.find((row) => row.key === "quote_review");
+  if (quoteReview) return target.order > quoteReview.order;
+  return true;
 }
 
 export function productStageRank(stage?: string | null): number {
@@ -176,6 +222,8 @@ export function parseProductStages(raw: unknown): DealProductStages {
       policyId?: unknown;
       mintStatus?: unknown;
       inspectionStatus?: unknown;
+      noticeType?: unknown;
+      noticeTaskId?: unknown;
       escrowNote?: unknown;
     };
     const rawStage = typeof row.stage === "string" ? normalizeStageSlug(row.stage) : "";
@@ -190,7 +238,9 @@ export function parseProductStages(raw: unknown): DealProductStages {
       row.mintStatus === "creating" || row.mintStatus === "unpublished" || row.mintStatus === "published"
         ? row.mintStatus
         : null;
-    const inspectionStatus = parseInspectionStatus(row.inspectionStatus);
+    const inspectionStatus = parseInspectionStatus(row.noticeType ?? row.inspectionStatus);
+    const noticeTaskId =
+      typeof row.noticeTaskId === "string" && row.noticeTaskId.trim() ? row.noticeTaskId.trim() : null;
     const escrowNote =
       typeof row.escrowNote === "string" && row.escrowNote.trim() ? row.escrowNote.trim() : null;
     if (
@@ -200,21 +250,25 @@ export function parseProductStages(raw: unknown): DealProductStages {
       !policyId &&
       !mintStatus &&
       inspectionStatus === "none" &&
+      !noticeTaskId &&
       !escrowNote
     ) {
       continue;
     }
     const stage = canonicalizeProductStage(rawStage || "gathering");
+    const noticeType =
+      inspectionStatus === "none" && rawStage === "pending_inspection"
+        ? "inspection_before_bind"
+        : inspectionStatus;
     out[key] = {
       stage,
       selectedQuoteIds,
       lostReason,
       policyId,
       mintStatus,
-      inspectionStatus:
-        inspectionStatus === "none" && rawStage === "pending_inspection"
-          ? "before_bind"
-          : inspectionStatus,
+      inspectionStatus: noticeType,
+      noticeType,
+      noticeTaskId,
       escrowNote,
     };
   }
@@ -237,24 +291,31 @@ export function productStageFor(
   const stored = stages?.[product];
   if (stored) {
     const selectedQuoteIds = stored.selectedQuoteIds ?? [];
+    const noticeType = stored.noticeType ?? stored.inspectionStatus ?? "none";
     return {
       stage: stageWithoutLeftoverQuoteSent(stored.stage || fallbackStage || "gathering", selectedQuoteIds),
       selectedQuoteIds,
       lostReason: stored.lostReason ?? null,
       policyId: stored.policyId ?? null,
       mintStatus: stored.mintStatus ?? null,
-      inspectionStatus: stored.inspectionStatus ?? "none",
+      inspectionStatus: noticeType,
+      noticeType,
+      noticeTaskId: stored.noticeTaskId ?? null,
       escrowNote: stored.escrowNote ?? null,
     };
   }
   const selectedQuoteIds: string[] = [];
+  const leftoverNotice =
+    normalizeStageSlug(fallbackStage) === "pending_inspection" ? "inspection_before_bind" : "none";
   return {
     stage: stageWithoutLeftoverQuoteSent(fallbackStage || "gathering", selectedQuoteIds),
     selectedQuoteIds,
     lostReason: null,
     policyId: null,
     mintStatus: null,
-    inspectionStatus: normalizeStageSlug(fallbackStage) === "pending_inspection" ? "before_bind" : "none",
+    inspectionStatus: leftoverNotice,
+    noticeType: leftoverNotice,
+    noticeTaskId: null,
     escrowNote: null,
   };
 }
@@ -273,9 +334,14 @@ export function setProductStage(
     policyId: patch.policyId === undefined ? current.policyId : patch.policyId,
     mintStatus: patch.mintStatus === undefined ? current.mintStatus : patch.mintStatus,
     inspectionStatus:
-      patch.inspectionStatus === undefined
-        ? current.inspectionStatus ?? "none"
-        : parseInspectionStatus(patch.inspectionStatus),
+      patch.noticeType === undefined && patch.inspectionStatus === undefined
+        ? current.noticeType ?? current.inspectionStatus ?? "none"
+        : parseInspectionStatus(patch.noticeType ?? patch.inspectionStatus),
+    noticeType:
+      patch.noticeType === undefined && patch.inspectionStatus === undefined
+        ? current.noticeType ?? current.inspectionStatus ?? "none"
+        : parseInspectionStatus(patch.noticeType ?? patch.inspectionStatus),
+    noticeTaskId: patch.noticeTaskId === undefined ? current.noticeTaskId ?? null : patch.noticeTaskId,
     escrowNote: patch.escrowNote === undefined ? current.escrowNote ?? null : patch.escrowNote,
   };
   if (normalizeStageSlug(next.stage) !== "closed_lost") {
@@ -285,6 +351,22 @@ export function setProductStage(
     next.stage = "quote_review";
   }
   return { ...stages, [product]: next };
+}
+
+/** Product whose visible notice is linked to this desk task. */
+export function findProductNoticeForTask(
+  stages: DealProductStages | null | undefined,
+  taskId: string | null | undefined,
+): { product: string; noticeType: NoticeType } | null {
+  const id = (taskId ?? "").trim();
+  if (!id) return null;
+  for (const [product, state] of Object.entries(stages ?? {})) {
+    if (state?.noticeTaskId !== id) continue;
+    const noticeType = parseNoticeType(state.noticeType ?? state.inspectionStatus);
+    if (noticeType === "none") continue;
+    return { product, noticeType };
+  }
+  return null;
 }
 
 export function liveSelectedQuoteIds(
@@ -324,6 +406,8 @@ export function isSelectedQuote(
   return (selectedQuoteIds ?? []).includes(quoteId);
 }
 
+const PC_FORM_LEFTOVER = /^(ho[1-8]?|mho|dp[13]|pa|flood|homeowners|landlord)$/i;
+
 /** Use the sheet form only when it belongs to this product (HO3 ≠ DP3 on a shared home sheet). */
 export function sheetFormForProduct(
   product: DealProductId,
@@ -331,6 +415,10 @@ export function sheetFormForProduct(
 ): string | null {
   const form = (sheetForm ?? "").trim();
   if (!form) return null;
+  const group = dealProductDef(product).group;
+  if (group === "life" || group === "health") {
+    return PC_FORM_LEFTOVER.test(form) ? null : form;
+  }
   if (product === "homeowners") return /^ho|^mho/i.test(form) ? form : null;
   if (product === "landlord") return /^dp/i.test(form) ? form : null;
   if (product === "renters") return /^ho4$/i.test(form) ? form : null;
@@ -348,6 +436,9 @@ export function productChipLabel(input: {
   const def = dealProductDef(input.product);
   const raw = (input.sheetForm || input.quotingForm || "").trim();
   const scoped = sheetFormForProduct(input.product, raw);
+  if (def.group === "life" || def.group === "health") {
+    return scoped || def.label;
+  }
   const form = (scoped || def.quotingForm || "").trim();
   if (input.product === "homeowners") {
     if (/^ho[3568]$/i.test(form) || /^mho$/i.test(form)) return form.toUpperCase();
@@ -411,6 +502,53 @@ export function displayProductStage(input: {
 export function productChipBound(stage?: string | null): boolean {
   const key = canonicalizeProductStage(stage);
   return key === "bound" || key === "policy_issued" || key === "closed_won";
+}
+
+export type ListProductStageChip = {
+  product: DealProductId;
+  label: string;
+  stage: string;
+  stageLabel: string;
+};
+
+function productStagesFromShopFlow(shopFlow: unknown): DealProductStages {
+  if (!shopFlow || typeof shopFlow !== "object" || Array.isArray(shopFlow)) return {};
+  return parseProductStages((shopFlow as { productStages?: unknown }).productStages);
+}
+
+/** Always show a stage word on list/board chips, including Gathering. */
+export function listProductStageLabel(stage?: string | null): string {
+  const key = canonicalizeProductStage(stage);
+  return CHIP_STAGE_LABELS[key] ?? PRODUCT_STAGE_LABELS[key] ?? humanizeDealStage(key) ?? "Gathering";
+}
+
+/** One chip per product (HO3 / DP3 / Auto / Flood…) with that product’s stage. */
+export function listProductStageChips(input: {
+  shopProducts?: string[] | null;
+  shopLines?: string[] | null;
+  lineOfBusiness?: string | null;
+  quotingLine?: string | null;
+  quotingForm?: string | null;
+  policySubType?: string | null;
+  shopFlow?: unknown;
+  pipelineStage?: string | null;
+}): ListProductStageChip[] {
+  const products = inferDealProducts(input);
+  const stages = productStagesFromShopFlow(input.shopFlow);
+  return products.map((product) => {
+    const state = productStageFor(stages, product, input.pipelineStage);
+    const stage = displayProductStage({
+      stage: state.stage,
+      selectedQuoteIds: state.selectedQuoteIds,
+      fallback: input.pipelineStage,
+    });
+    return {
+      product,
+      label: productChipLabel({ product, quotingForm: input.quotingForm }),
+      stage,
+      stageLabel: listProductStageLabel(stage),
+    };
+  });
 }
 
 /** Selected carrier row — same words as the stamp / header stage. */

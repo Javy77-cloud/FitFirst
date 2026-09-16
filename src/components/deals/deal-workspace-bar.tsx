@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
 import { PipelineViewDefaultStar } from "@/components/deals/pipeline-view-default-star";
 import { PipelineViewsMenu } from "@/components/deals/pipeline-views-menu";
-import type { PipelineStageView } from "@/lib/wire/pipeline-cards";
+import type { PipelineStageBoard, PipelineStageView } from "@/lib/wire/pipeline-cards";
 import {
   dealsHref,
   isPipelineSheetView,
@@ -52,6 +52,7 @@ export function DealWorkspaceBar({
   settings,
   stagePipelineId = null,
   stageRows = [],
+  stageBoards = [],
   canEditStages = false,
   hrefBuilder = dealsHref,
   cookieKey = PIPELINE_VIEW_COOKIE,
@@ -72,6 +73,8 @@ export function DealWorkspaceBar({
   /** Active board for Edit stages (⋯ menu). */
   stagePipelineId?: string | null;
   stageRows?: PipelineStageView[];
+  /** P&C / Life / Health boards so Edit stages works from All and every tab. */
+  stageBoards?: PipelineStageBoard[];
   canEditStages?: boolean;
   hrefBuilder?: (opts?: PipelineDeskHrefOpts) => string;
   cookieKey?: PipelineViewCookie;
@@ -104,27 +107,59 @@ export function DealWorkspaceBar({
   return (
     <div className="deal-workspace-bar mb-1 space-y-2" data-testid="deal-workspace-bar">
       {/* Chip row: gap-x-4 / gap-x-5 retired; live class is gap-x-6. */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-        <div className={FF_CHIP_TAB_GROUP} data-testid="deal-line-filters">
-          <Link href={hrefBuilder({ ...extras, pipeline: null, pcSub: null, lifeSub: null, healthSub: null })} className={chipClass(!pipeline)} data-active={!pipeline ? "true" : "false"}>
-            All
-          </Link>
-          {left.map((item) => (
-            <Link
-              key={item.slug}
-              href={hrefBuilder({
-                ...extras,
-                pipeline: item.slug,
-                family: null,
-                lifeSub: item.slug === "life" ? lifeSub : null,
-                healthSub: item.slug === "health" ? healthSub : null,
-                pcSub: item.slug === "p-c" ? pcSub : null,
-              })}
-              className={chipClass(item.slug === pipeline)} data-active={item.slug === pipeline ? "true" : "false"}
-            >
-              {pipelineTabLabel(item)}
+      <div className="flex flex-wrap items-start gap-x-6 gap-y-2 text-sm">
+        <div className="min-w-0 space-y-1.5">
+          <div className={FF_CHIP_TAB_GROUP} data-testid="deal-line-filters">
+            <Link href={hrefBuilder({ ...extras, pipeline: null, pcSub: null, lifeSub: null, healthSub: null })} className={chipClass(!pipeline)} data-active={!pipeline ? "true" : "false"}>
+              All
             </Link>
-          ))}
+            {left.map((item) => (
+              <Link
+                key={item.slug}
+                href={hrefBuilder({
+                  ...extras,
+                  pipeline: item.slug,
+                  family: null,
+                  lifeSub: item.slug === "life" ? lifeSub : null,
+                  healthSub: item.slug === "health" ? healthSub : null,
+                  pcSub: item.slug === "p-c" ? pcSub : null,
+                })}
+                className={chipClass(item.slug === pipeline)} data-active={item.slug === pipeline ? "true" : "false"}
+              >
+                {pipelineTabLabel(item)}
+              </Link>
+            ))}
+          </div>
+          {right.length > 0 ? (
+            <div
+              className="flex items-center justify-start gap-3 text-[11px] text-muted-foreground"
+              data-testid="deal-closed-filters"
+              data-ff-deal-closed-quiet=""
+              data-ff-closed-under-strip=""
+            >
+              {right.map((item) => (
+                <Link
+                  key={item.slug}
+                  href={hrefBuilder({
+                    ...extras,
+                    pipeline: item.slug,
+                    family: null,
+                    lifeSub: null,
+                    healthSub: null,
+                    pcSub: null,
+                  })}
+                  className={
+                    item.slug === pipeline
+                      ? "font-semibold text-navy underline-offset-2"
+                      : "hover:text-navy hover:underline"
+                  }
+                  data-active={item.slug === pipeline ? "true" : "false"}
+                >
+                  {pipelineTabLabel(item)}
+                </Link>
+              ))}
+            </div>
+          ) : null}
         </div>
         <span className={`ml-auto ${FF_CHIP_TAB_GROUP}`} data-testid="deal-pipeline-views" aria-label="List Grid Board Funnel">
           {VIEWS.map(([id, label]) => (
@@ -146,38 +181,10 @@ export function DealWorkspaceBar({
           <PipelineViewsMenu
             pipelineId={stagePipelineId}
             stages={stageRows}
+            stageBoards={stageBoards}
             canEditStages={canEditStages}
           />
         </span>
-        {right.length > 0 ? (
-          <div
-            className="flex items-center gap-2 text-[11px] text-muted-foreground"
-            data-testid="deal-closed-filters"
-            data-ff-deal-closed-quiet=""
-          >
-            {right.map((item) => (
-              <Link
-                key={item.slug}
-                href={hrefBuilder({
-                  ...extras,
-                  pipeline: item.slug,
-                  family: null,
-                  lifeSub: null,
-                  healthSub: null,
-                  pcSub: null,
-                })}
-                className={
-                  item.slug === pipeline
-                    ? "font-semibold text-navy underline-offset-2"
-                    : "hover:text-navy hover:underline"
-                }
-                data-active={item.slug === pipeline ? "true" : "false"}
-              >
-                {pipelineTabLabel(item)}
-              </Link>
-            ))}
-          </div>
-        ) : null}
       </div>
       {subtypeChips.length > 0 ? (
         <div className={FF_CHIP_TAB_GROUP} aria-label="Subtype">

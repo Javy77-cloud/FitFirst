@@ -1,5 +1,9 @@
 import { LOB_TO_SHOP_LINE, QUOTING_FORMS, SHOP_LINE_LABELS } from "@/lib/domain";
-import type { DealProductId } from "@/lib/deals/deal-products";
+import {
+  dealFamilyFromHints,
+  inferDealProducts,
+  type DealProductId,
+} from "@/lib/deals/deal-products";
 import { productChipLabel } from "@/lib/deals/product-stages";
 import { isQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
 import { matchesContains } from "@/lib/search/live-query";
@@ -28,10 +32,18 @@ const NON_FORM_TITLE_WORDS = /^(homeowners|landlord|renters|home)$/i;
  * Deepest cascade pick label for titles — HO3, DP3, Auto, Term Life, etc.
  * Does not map Life→HO3 (legacy coerce) and skips generic sheet products.
  */
-export function dealTitleFormWord(raw: string | null | undefined): string | null {
+const PC_TITLE_FORM_LEFTOVER = /^(HO[1-8]|DP[13]|PA|FLOOD|Homeowners|Landlord|HO)$/i;
+
+export function dealTitleFormWord(
+  raw: string | null | undefined,
+  family?: "pc" | "life" | "health" | null,
+): string | null {
   const value = (raw ?? "").trim();
   if (!value) return null;
   if (NON_FORM_TITLE_WORDS.test(value)) return null;
+  if ((family === "life" || family === "health") && PC_TITLE_FORM_LEFTOVER.test(value)) {
+    return null;
+  }
   if (isQuotingFormId(value)) {
     return quotingFormById(value)?.label ?? value;
   }
@@ -50,7 +62,11 @@ export function dealTitleLobWord(
   line: string | null | undefined,
   formOrSubtype?: string | null,
 ): string {
-  const fromForm = dealTitleFormWord(formOrSubtype);
+  const family = dealFamilyFromHints({
+    lineOfBusiness: line,
+    quotingForm: formOrSubtype,
+  });
+  const fromForm = dealTitleFormWord(formOrSubtype, family);
   if (fromForm) return fromForm;
   const code = (line ?? "").trim().toUpperCase();
   if (DEAL_TITLE_LOB_WORDS[code]) return DEAL_TITLE_LOB_WORDS[code]!;
@@ -215,13 +231,39 @@ export function dealTitleForActiveProduct(input: {
   return joinDealTitleParts(name, suffix);
 }
 
+/** List + header title: Life/Health never inherit leftover / HO3 from stale shop_lines. */
+export function visibleDealTitle(deal: {
+  title?: string | null;
+  shopProducts?: string[] | null;
+  shopLines?: string[] | null;
+  lineOfBusiness?: string | null;
+  quotingLine?: string | null;
+  quotingForm?: string | null;
+  policySubType?: string | null;
+}): string {
+  const products = inferDealProducts(deal);
+  const product = products[0] ?? "homeowners";
+  return dealTitleForActiveProduct({
+    title: deal.title,
+    product,
+    quotingForm: deal.quotingForm ?? deal.policySubType,
+  });
+}
+
 /** First Last / {form} — e.g. Gloria Martinez / DP3. One slash. Form label beats generic Homeowners. */
 export function formatDealTitle(input: DealTitleInput): string {
   const person = resolveDealPerson(input);
   const name = formatDealPersonName(person.firstName, person.lastName) || person.accountName;
+  const family = dealFamilyFromHints({
+    lineOfBusiness: input.line,
+    quotingForm: input.quotingForm,
+    policySubType: input.policySubType,
+  });
   const formHint =
-    dealTitleFormWord(input.quotingForm) ?? dealTitleFormWord(input.policySubType) ?? null;
-  const lob = formHint ?? dealTitleLobWord(input.line);
+    dealTitleFormWord(input.quotingForm, family) ??
+    dealTitleFormWord(input.policySubType, family) ??
+    null;
+  const lob = formHint ?? dealTitleLobWord(input.line, input.quotingForm ?? input.policySubType);
   if (!name) return lob;
   if (name.toLowerCase() === lob.toLowerCase()) return name;
   const suffix = `${TITLE_PART_SEP}${lob}`.toLowerCase();

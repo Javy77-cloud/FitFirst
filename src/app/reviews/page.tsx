@@ -6,6 +6,7 @@ import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { accountDisplayName } from "@/lib/crm/bind";
 import { daysUntil, taskKindLabel } from "@/lib/crm/display";
 import { formatTaskDueAt } from "@/lib/tasks/due-at";
+import { isNoticeTaskTitle } from "@/lib/deals/notices";
 import { listPolicies, listReviewQueue } from "@/lib/db/queries";
 import { REVIEWS_EXPIRING_COLUMNS } from "@/lib/list-columns";
 
@@ -57,7 +58,7 @@ export default async function ReviewsPage() {
                       ) : null}
                     </div>
                   </div>
-                  <CompleteTaskForm taskId={task.id} />
+                  <CompleteTaskForm taskId={task.id} noticeOffer={isNoticeTaskTitle(task.title)} />
                 </li>
               ))}
             </ul>

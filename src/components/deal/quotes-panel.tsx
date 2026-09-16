@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { QuotesBindableSignal } from "@/components/deal/quotes-bindable-signal";
-import { QuotesStageFlags } from "@/components/deal/quotes-stage-flags";
+import { DealNotices } from "@/components/deal/deal-notices";
+import type { NoticeTypeOption } from "@/lib/deals/notices";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import type { QuoteFileRow } from "@/components/deal/quote-file-actions";
 import { LoadShopListButton } from "@/components/deal/load-shop-list-button";
@@ -66,14 +67,78 @@ function toQuoteFileRow(doc: Document, versions: DocumentVersion[]): QuoteFileRo
 function MissingQuotesBanner({ completeness }: { completeness: LineQuoteCompleteness | null }) {
   if (!completeness || completeness.complete) return null;
   return (
-    <p
-      className="text-[11px] text-fit-flag"
+    <span
+      className="inline-flex items-center rounded-full border border-fit-flag/35 bg-fit-flag/10 px-2 py-0.5 text-[11px] font-medium text-fit-flag"
       data-ff-quotes-missing-warning=""
       data-ff-quotes-missing-line={completeness.line}
       data-ff-quotes-missing-summary=""
     >
       {completeness.summary}
-    </p>
+    </span>
+  );
+}
+
+function QuotesWarningStrip({
+  dealId,
+  product,
+  productStage,
+  noticeType,
+  noticeTypes,
+  noticeTaskId,
+  noticeDealName,
+  noticeContactId,
+  noticeTaskDueDate,
+  noticeTaskDueTime,
+  noticeReturnTo,
+  quotes,
+  sheetStale,
+  completeness,
+}: {
+  dealId: string;
+  product?: string | null;
+  productStage?: string | null;
+  noticeType?: string | null;
+  noticeTypes?: readonly NoticeTypeOption[];
+  noticeTaskId?: string | null;
+  noticeDealName?: string | null;
+  noticeContactId?: string | null;
+  noticeTaskDueDate?: string | null;
+  noticeTaskDueTime?: string | null;
+  noticeReturnTo?: string | null;
+  quotes: Quote[];
+  sheetStale?: boolean;
+  completeness: LineQuoteCompleteness | null;
+}) {
+  return (
+    <div
+      className="flex flex-wrap items-center gap-2"
+      data-ff-quotes-warning-strip=""
+    >
+      <DealNotices
+        dealId={dealId}
+        product={product}
+        stage={productStage}
+        noticeType={noticeType}
+        noticeTypes={noticeTypes}
+        noticeTaskId={noticeTaskId}
+        dealName={noticeDealName}
+        contactId={noticeContactId}
+        taskDueDate={noticeTaskDueDate}
+        taskDueTime={noticeTaskDueTime}
+        returnTo={noticeReturnTo}
+        variant="quotes"
+      />
+      <QuotesBindableSignal quotes={quotes} />
+      {sheetStale ? (
+        <span
+          className="inline-flex items-center rounded-full border border-fit-flag/40 bg-fit-flag/10 px-2 py-0.5 text-[11px] font-medium text-navy"
+          data-ff-quotes-sheet-stale=""
+        >
+          Sheet changed — recheck carriers
+        </span>
+      ) : null}
+      <MissingQuotesBanner completeness={completeness} />
+    </div>
   );
 }
 
@@ -107,6 +172,14 @@ export function QuotesPanel({
   issuedPolicy = null,
   autoIssue = false,
   inspectionStatus = "none",
+  noticeType,
+  noticeTypes,
+  noticeTaskId,
+  noticeDealName,
+  noticeContactId,
+  noticeTaskDueDate,
+  noticeTaskDueTime,
+  noticeReturnTo,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -139,7 +212,15 @@ export function QuotesPanel({
   mintStatus?: string | null;
   issuedPolicy?: IssuedPolicyChip | null;
   autoIssue?: boolean;
-  inspectionStatus?: "none" | "before_bind" | "carrier_post_bind" | null;
+  inspectionStatus?: string | null;
+  noticeType?: string | null;
+  noticeTypes?: readonly NoticeTypeOption[];
+  noticeTaskId?: string | null;
+  noticeDealName?: string | null;
+  noticeContactId?: string | null;
+  noticeTaskDueDate?: string | null;
+  noticeTaskDueTime?: string | null;
+  noticeReturnTo?: string | null;
 }) {
   const activeLine: ShopLine | null = isShopLine(shopLine) ? shopLine : null;
   const lineLogs = logs.map((row) => row.log);
@@ -233,13 +314,22 @@ export function QuotesPanel({
       >
         <div className="ff-card space-y-3 p-4">
           <h3 className="text-sm font-semibold text-navy">Quotes</h3>
-          <QuotesStageFlags
+          <QuotesWarningStrip
             dealId={dealId}
             product={product}
-            stage={productStage}
-            inspectionStatus={inspectionStatus}
+            productStage={productStage}
+            noticeType={noticeType ?? inspectionStatus}
+            noticeTypes={noticeTypes}
+            noticeTaskId={noticeTaskId}
+            noticeDealName={noticeDealName}
+            noticeContactId={noticeContactId}
+            noticeTaskDueDate={noticeTaskDueDate}
+            noticeTaskDueTime={noticeTaskDueTime}
+            noticeReturnTo={noticeReturnTo}
+            quotes={sorted.map((row) => row.quote)}
+            sheetStale={sheetStale}
+            completeness={completeness}
           />
-          <MissingQuotesBanner completeness={completeness} />
           <p className="text-sm text-muted-foreground" data-ff-quotes-empty-stats="">
             0 quote rows · build carriers on Markets first
           </p>
@@ -270,14 +360,22 @@ export function QuotesPanel({
 
   return (
     <div className="space-y-4" data-ff-deal-quotes="" data-ff-quotes-line={activeLine ?? ""}>
-      <QuotesBindableSignal quotes={sorted.map((row) => row.quote)} />
-      <QuotesStageFlags
+      <QuotesWarningStrip
         dealId={dealId}
         product={product}
-        stage={productStage}
-        inspectionStatus={inspectionStatus}
+        productStage={productStage}
+        noticeType={noticeType ?? inspectionStatus}
+        noticeTypes={noticeTypes}
+        noticeTaskId={noticeTaskId}
+        noticeDealName={noticeDealName}
+        noticeContactId={noticeContactId}
+        noticeTaskDueDate={noticeTaskDueDate}
+        noticeTaskDueTime={noticeTaskDueTime}
+        noticeReturnTo={noticeReturnTo}
+        quotes={sorted.map((row) => row.quote)}
+        sheetStale={sheetStale}
+        completeness={completeness}
       />
-      <MissingQuotesBanner completeness={completeness} />
       {product &&
       (isBoundReadyForIssue(productStage) || mintStatus || issuedPolicy || autoIssue) ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -309,7 +407,6 @@ export function QuotesPanel({
             selectedQuoteIds={selectedQuoteIds}
             product={product}
             productStage={productStage}
-            sheetStale={sheetStale}
             priorByQuoteId={priorByQuoteId}
           />
         </section>

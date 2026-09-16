@@ -12,13 +12,28 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useClientMounted } from "@/hooks/use-client-mounted";
-import type { PipelineStageView } from "@/lib/wire/pipeline-cards";
+import type { PipelineStageBoard, PipelineStageView } from "@/lib/wire/pipeline-cards";
+import { pipelineTabLabel } from "@/lib/wire/pipeline";
 import { cn } from "@/lib/utils";
 
 const triggerClass = cn(
   "inline-flex size-7 items-center justify-center rounded-md border border-border bg-card text-navy",
   "hover:bg-muted",
 );
+
+function boardsFromProps(
+  pipelineId?: string | null,
+  stages?: PipelineStageView[],
+  stageBoards?: PipelineStageBoard[],
+): PipelineStageBoard[] {
+  if (stageBoards && stageBoards.length > 0) {
+    return stageBoards.filter((board) => Boolean(board.id));
+  }
+  if (pipelineId) {
+    return [{ id: pipelineId, slug: "", name: "", stages: stages ?? [] }];
+  }
+  return [];
+}
 
 /**
  * ⋯ beside List/Grid/Board/Funnel — same on every view.
@@ -27,10 +42,12 @@ const triggerClass = cn(
 export function PipelineViewsMenu({
   pipelineId,
   stages,
+  stageBoards,
   canEditStages = false,
 }: {
   pipelineId?: string | null;
   stages?: PipelineStageView[];
+  stageBoards?: PipelineStageBoard[];
   canEditStages?: boolean;
 }) {
   const mounted = useClientMounted();
@@ -39,6 +56,9 @@ export function PipelineViewsMenu({
   const [panel, setPanel] = useState<{ top: number; right: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const boards = boardsFromProps(pipelineId, stages, stageBoards);
+  const canStages = Boolean(canEditStages && boards.length > 0);
+  const [activeId, setActiveId] = useState(pipelineId || boards[0]?.id || "");
 
   useEffect(() => {
     if (!open) return;
@@ -71,7 +91,8 @@ export function PipelineViewsMenu({
     );
   }
 
-  const canStages = Boolean(canEditStages && pipelineId && stages && stages.length > 0);
+  const active = boards.find((board) => board.id === activeId) ?? boards[0] ?? null;
+  const showBoardPicker = boards.length > 1;
 
   return (
     <>
@@ -108,6 +129,11 @@ export function PipelineViewsMenu({
                 )}
                 onClick={() => {
                   if (!canStages) return;
+                  if (pipelineId && boards.some((board) => board.id === pipelineId)) {
+                    setActiveId(pipelineId);
+                  } else if (boards[0]?.id) {
+                    setActiveId(boards[0].id);
+                  }
                   setOpen(false);
                   setStagesOpen(true);
                 }}
@@ -124,11 +150,43 @@ export function PipelineViewsMenu({
           <DialogHeader>
             <DialogTitle>Edit stages</DialogTitle>
             <DialogDescription>
-              Rename, recolor, reorder, or remove stages for this pipeline board.
+              Rename, recolor, reorder, or add stages for this pipeline. Late and forward
+              moves still happen only from the deal Quotes workspace.
             </DialogDescription>
           </DialogHeader>
-          {canStages && pipelineId && stages ? (
-            <PipelineStageEditor pipelineId={pipelineId} stages={stages} bare />
+          {canStages && active ? (
+            <div className="space-y-3" data-ff-edit-stages-boards="">
+              {showBoardPicker ? (
+                <div
+                  className="flex flex-wrap gap-1.5"
+                  role="tablist"
+                  aria-label="Pipeline to edit"
+                  data-ff-edit-stages-family=""
+                >
+                  {boards.map((board) => {
+                    const on = board.id === active.id;
+                    return (
+                      <button
+                        key={board.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={on}
+                        className={cn(
+                          "rounded-md border px-2 py-1 text-xs",
+                          on
+                            ? "border-navy bg-navy text-white"
+                            : "border-border bg-card text-navy hover:bg-muted",
+                        )}
+                        onClick={() => setActiveId(board.id)}
+                      >
+                        {pipelineTabLabel(board)}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+              <PipelineStageEditor pipelineId={active.id} stages={active.stages} bare />
+            </div>
           ) : null}
         </DialogContent>
       </Dialog>

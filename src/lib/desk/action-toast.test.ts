@@ -39,12 +39,12 @@ describe("site-wide action confirmation toast", () => {
     const values = source("src/app/actions/custom-fields.ts");
     expect(values).toMatch(/dealDetailsSavedHref\(dealId/);
     expect(values).toMatch(/"deal-details-saved"/);
-    expect(values).toMatch(/flashAction\("\/settings\/field-builder", "layout-saved"\)/);
-    expect(values).toMatch(/line: form\?\.shopLine \|\| str\(formData, "line"\)/);
+    expect(values).toMatch(/flashAction\(fieldBuilderHref\(module, line\), "layout-saved"\)/);
+    expect(values).toMatch(/str\(formData, "line"\)/);
     expect(values).toMatch(/product: product \|\| str\(formData, "product"\)/);
     expect(values).toMatch(/throw new Error\("Deal details could not be saved\."\)/);
     const layoutAt = values.indexOf("await saveLayoutForEveryLine(layout)");
-    const flashAt = values.indexOf('flashAction("/settings/field-builder", "layout-saved")');
+    const flashAt = values.indexOf('flashAction(fieldBuilderHref(module, line), "layout-saved")');
     expect(layoutAt).toBeGreaterThan(-1);
     expect(flashAt).toBeGreaterThan(layoutAt);
 
@@ -171,7 +171,7 @@ describe("site-wide action confirmation toast", () => {
     expect(flash).toMatch(/sessionStorage/);
     expect(flash).toMatch(/export function persistFlash/);
     expect(flash).toMatch(/export function readPersistedFlash/);
-    expect(flash).toMatch(/tab: "documents"/);
+    expect(flash).toMatch(/tab: "details"/);
     expect(flash).toMatch(/Deal details saved/);
   });
 });

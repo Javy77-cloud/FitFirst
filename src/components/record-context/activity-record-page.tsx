@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { completeDeskActivity, updateDeskActivity } from "@/app/actions/activities-desk";
 import { updateReviewTask } from "@/app/actions/alerts";
+import { CompleteTaskForm } from "@/components/crm/complete-task-form";
 import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { AppShell } from "@/components/app-shell";
 import { RecordDetailLayout } from "@/components/record-context/record-detail-layout";
@@ -11,6 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StagePill } from "@/components/fit-badge";
 import { ACTIVITY_KIND_LABEL, formatDay, type ActivityKind } from "@/lib/domain";
+import { isNoticeTaskTitle } from "@/lib/deals/notices";
+import { findProductNoticeForTask, parseProductStages } from "@/lib/deals/product-stages";
+import { parseShopFlow } from "@/lib/deals/shop-flow";
 import { getActivityRecord, getReviewTaskRecord, loadRecordContext } from "@/lib/record-context";
 import { formatTaskDueAt, taskDueInputParts } from "@/lib/tasks/due-at";
 
@@ -180,6 +184,10 @@ export async function ActivityRecordPage({
   if (!review) notFound();
   const { task, contact, deal, policy, account } = review;
   const dueParts = taskDueInputParts(task.dueDate);
+  const noticeOnDeal = deal
+    ? findProductNoticeForTask(parseProductStages(parseShopFlow(deal.shopFlow).productStages), task.id)
+    : null;
+  const noticeOffer = Boolean(noticeOnDeal) || isNoticeTaskTitle(task.title);
   const context = await loadRecordContext({
     contactId: task.contactId,
     dealId: task.dealId,
@@ -226,6 +234,11 @@ export async function ActivityRecordPage({
             <p className="mt-4 text-base text-muted-foreground">
               Desk 30/60/90 review item. Activity logs on Contact and Policy stay on those records.
             </p>
+            {task.status === "open" ? (
+              <div className="mt-4" data-ff-task-complete="">
+                <CompleteTaskForm taskId={task.id} noticeOffer={noticeOffer} />
+              </div>
+            ) : null}
             <form action={updateReviewTask} className="mt-4 space-y-2 border-t border-border pt-3">
               <input type="hidden" name="taskId" value={task.id} />
               <h3 className="text-sm font-semibold text-navy">Edit</h3>

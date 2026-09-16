@@ -133,6 +133,7 @@ import { isDocumentsSourceDoc, isQuoteFileDoc } from "@/lib/deals/quote-docs";
 import { withFlash } from "@/lib/flash";
 import { dealTitleForRecords } from "@/lib/deals/deal-title";
 import { markShopFlowStaleAfterRiskChange, persistSheetRecheckCue } from "@/lib/deals/shop-flow-persist";
+import { restoreDealSourceDocuments } from "@/lib/documents/restore-deal-docs";
 import { filledKeysAreRatingCritical, ratingCriticalChanged } from "@/lib/deals/rating-critical";
 import { sheetValuesFingerprint } from "@/lib/deals/shop-flow";
 
@@ -212,6 +213,8 @@ export async function persistQuoteSheetValues(
       ratingCritical: ratingCriticalChanged(sheet.values, values),
     });
   }
+  // Sheet save / confirm / stale cue must never unlink or hide source docs.
+  await restoreDealSourceDocuments(dealId).catch(() => null);
   return values;
 }
 
@@ -229,6 +232,7 @@ export async function applySavedSheetToDeal(dealId: string, line: ShopLine) {
   if (!sheet) return null;
   await syncRiskFromSheet(dealId, sheet.values, "save");
   await syncHeaderFromSheet(dealId, sheet.values, "save");
+  await restoreDealSourceDocuments(dealId).catch(() => null);
   return sheet.values;
 }
 
@@ -239,6 +243,8 @@ export async function saveQuoteSheet(formData: FormData) {
   const submitted = submittedSheetValues(formData);
   const product = str(formData, "sheet_product");
   if (product) submitted.sheet_product = product;
+  const { persistDealSourceUploads } = await import("@/app/actions/documents");
+  await persistDealSourceUploads(formData);
   await persistQuoteSheetValues(dealId, lineRaw, submitted, str(formData, "formId"));
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/quotes/fill-feedback");

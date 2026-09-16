@@ -6,6 +6,7 @@ import { DealFilters } from "@/components/crm/deal-filters";
 import { DealRowActions } from "@/components/crm/deal-row-actions";
 import { InsuredLink } from "@/components/crm/insured-link";
 import { LinkedValue } from "@/components/crm/linked-value";
+import { DealProductStageChips } from "@/components/deals/deal-product-stage-chips";
 import { StagePill } from "@/components/fit-badge";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { formatIsoDate } from "@/lib/crm/display";
@@ -17,7 +18,8 @@ import {
   riskAddress,
   type DealListFilter,
 } from "@/lib/crm/lists";
-import { dealSearchHaystack } from "@/lib/deals/deal-title";
+import { dealSearchHaystack, visibleDealTitle } from "@/lib/deals/deal-title";
+import { listProductStageChips } from "@/lib/deals/product-stages";
 import { haystack } from "@/lib/search/live-query";
 import { formatMoney } from "@/lib/domain";
 import type { DealListRow } from "@/lib/db/queries";
@@ -143,7 +145,7 @@ export function DealListTable({
                   >
                     <td data-col="deal" data-sheet-col="deal">
                       <Link href={`/deals/${deal.id}`} className="font-medium text-primary hover:underline">
-                        {deal.title}
+                        {visibleDealTitle(deal)}
                       </Link>
                     </td>
                     <td data-col="actions" data-sheet-col="actions">
@@ -169,10 +171,17 @@ export function DealListTable({
                       <LinkedValue value={riskAddress(risk)} />
                     </td>
                     <td data-col="stage" data-sheet-col="stage">
-                      <StagePill
-                        stage={labels.get(deal.pipelineStage) ?? deal.pipelineStage}
-                        color={colors.get(deal.pipelineStage)}
-                      />
+                      {(() => {
+                        const chips = listProductStageChips(deal);
+                        return chips.length > 0 ? (
+                          <DealProductStageChips chips={chips} />
+                        ) : (
+                          <StagePill
+                            stage={labels.get(deal.pipelineStage) ?? deal.pipelineStage}
+                            color={colors.get(deal.pipelineStage)}
+                          />
+                        );
+                      })()}
                     </td>
                     <td data-col="line" data-sheet-col="line">
                       {LINE_LABELS[deal.lineOfBusiness as keyof typeof LINE_LABELS] ??

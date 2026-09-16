@@ -56,6 +56,8 @@ import {
 } from "@/lib/extraction/gemini";
 import { inferMimeFromName } from "@/lib/files/urls";
 import { isDocumentsSourceDoc, shopLineFromSourceDoc } from "@/lib/deals/quote-docs";
+import { dealSourceSlotForUpload } from "@/lib/documents/restore-deal-docs";
+import { collectUploadedFiles, isUploadedFile } from "@/lib/documents/uploaded-file";
 import { markShopFlowStaleAfterRiskChange } from "@/lib/deals/shop-flow-persist";
 import { deleteStoredFile, readStoredFile, writeStoredFile } from "@/lib/files/object-store";
 import {
@@ -123,55 +125,56 @@ export async function persistFile(input: {
     inferMimeFromName(input.filename, input.mimeType),
   );
 
-  const [doc] = await db
-    .insert(documents)
-    .values({
-      id,
-      tenantId: DEFAULT_TENANT_ID,
-      riskId: input.riskId || null,
-      dealId: input.dealId || null,
-      leadId: input.leadId || null,
-      contactId: input.contactId || null,
-      policyId: input.policyId || null,
-      filename: input.filename,
-      mimeType: inferMimeFromName(input.filename, input.mimeType),
-      storagePath,
-      docType: input.docType,
-      slot: input.slot ?? "source_doc",
-      status: "uploaded",
-      tags: input.tags ?? [],
-      folderId: input.folderId || null,
-      library: input.library === "forms" ? "forms" : "shared",
-      fillable: Boolean(input.fillable),
-      formTemplateId: input.formTemplateId || null,
-    })
-    .returning();
-  if (doc) await recordInitialDocumentVersion(doc);
-  if (doc?.dealId && isDocumentsSourceDoc(doc)) {
-    await markShopFlowStaleAfterRiskChange(doc.dealId, shopLineFromSourceDoc(doc));
+  const values = {
+    id,
+    tenantId: DEFAULT_TENANT_ID,
+    riskId: input.riskId || null,
+    dealId: input.dealId || null,
+    leadId: input.leadId || null,
+    contactId: input.contactId || null,
+    policyId: input.policyId || null,
+    filename: input.filename,
+    mimeType: inferMimeFromName(input.filename, input.mimeType),
+    storagePath,
+    docType: input.docType,
+    slot: input.slot ?? "source_doc",
+    status: "uploaded" as const,
+    tags: input.tags ?? [],
+    folderId: input.folderId || null,
+    library: input.library === "forms" ? "forms" : "shared",
+    fillable: Boolean(input.fillable),
+    formTemplateId: input.formTemplateId || null,
+  };
+  let doc: (typeof documents.$inferSelect) | undefined;
+  try {
+    [doc] = await db.insert(documents).values(values).returning();
+  } catch {
+    // Optional FKs (stale risk/contact) must not drop the deal row + storage_path.
+    if (!values.dealId) throw new Error("Could not save the file to this deal.");
+    [doc] = await db
+      .insert(documents)
+      .values({
+        ...values,
+        riskId: null,
+        contactId: null,
+        policyId: null,
+        folderId: null,
+      })
+      .returning();
+  }
+  if (!doc) throw new Error("Could not save the file to this deal.");
+  await recordInitialDocumentVersion(doc).catch(() => null);
+  if (doc.dealId && isDocumentsSourceDoc(doc)) {
+    await markShopFlowStaleAfterRiskChange(doc.dealId, shopLineFromSourceDoc(doc)).catch(() => null);
   }
   return doc;
 }
 
-export async function extractDocument(documentId: string, dealId: string) {
-  await runExtraction(documentId, dealId);
-}
-
-function revalidateDocumentPaths(doc: {
-  dealId: string | null;
-  leadId?: string | null;
-  contactId: string | null;
-  policyId: string | null;
-}) {
-  revalidatePath("/documents");
-  revalidatePath("/esign");
-  if (doc.dealId) revalidatePath(`/deals/${doc.dealId}`);
-  if (doc.leadId) revalidatePath(`/leads/${doc.leadId}`);
-  if (doc.contactId) revalidatePath(`/contacts/${doc.contactId}`);
-  if (doc.policyId) revalidatePath(`/policies/${doc.policyId}`);
-}
-
-export async function uploadDocument(formData: FormData) {
+/** Attach worksheet files to a deal. Used by Upload Save and Heather's sheet Save. */
+export async function persistDealSourceUploads(formData: FormData): Promise<{
+  count: number;
+  last: Awaited<ReturnType<typeof persistFile>> | null;
+}> {
   let dealId = optionalId(formData, "dealId");
   let riskId = optionalId(formData, "riskId");
   let contactId = optionalId(formData, "contactId");
@@ -198,69 +201,81 @@ export async function uploadDocument(formData: FormData) {
       contactId = contactId ?? policy.contactId ?? null;
     }
   }
+  const uploads = await collectUploadedFiles(formData);
+  if (uploads.length === 0) return { count: 0, last: null };
+  if (!dealId && !contactId && !policyId && !folderId && !formData.get("library")) {
+    return { count: 0, last: null };
+  }
   const library = String(formData.get("library") ?? "").trim() === "forms" ? "forms" : "shared";
   const fillable = String(formData.get("fillable") ?? "") === "on" || String(formData.get("fillable") ?? "") === "true";
-  const rowCount = Number(formData.get("rowCount") ?? 0);
-  const typedRows: Array<{ docType: string; files: File[] }> = [];
-  if (Number.isFinite(rowCount) && rowCount > 0) {
-    for (let i = 0; i < rowCount; i += 1) {
-      const files = formData
-        .getAll(`files_${i}`)
-        .concat(formData.getAll(`file_${i}`))
-        .filter((item): item is File => item instanceof File && item.size > 0);
-      typedRows.push({
-        docType: String(formData.get(`docType_${i}`) ?? formData.get("docType") ?? "").trim(),
-        files,
-      });
-    }
-  } else {
-    typedRows.push({
-      docType: String(formData.get("docType") ?? "").trim(),
-      files: formData
-        .getAll("files")
-        .concat(formData.getAll("file"))
-        .filter((item): item is File => item instanceof File && item.size > 0),
-    });
-  }
-  const files = typedRows.flatMap((row) => row.files);
-  if (files.length === 0) {
-    throw new Error("Choose a file to upload.");
-  }
-  if (!dealId && !contactId && !policyId && !folderId && !formData.get("library")) {
-    throw new Error("Choose a folder or attach the file to a contact, deal, or policy.");
-  }
   const resolvedFolder = await resolveFolderId({ folderId, dealId, contactId });
   let last = null as Awaited<ReturnType<typeof persistFile>> | null;
-  for (const row of typedRows) {
-    for (const file of row.files) {
-      const rawType = row.docType;
-      const docType = rawType && rawType !== "auto"
+  let count = 0;
+  for (const upload of uploads) {
+    const rawType = String(
+      formData.get(`docType_${upload.index}`) ?? formData.get("docType") ?? "",
+    ).trim();
+    const docType =
+      rawType && rawType !== "auto"
         ? coerceDealUploadDocType(rawType)
         : coerceDealUploadDocType(
-            dealId ? inferDocType(file.name, rawType) : inferFromName(file.name, library),
+            dealId ? inferDocType(upload.filename, rawType) : inferFromName(upload.filename, library),
           );
-      const slot = String(formData.get("slot") ?? "") || (resolvedFolder ? "library_file" : slotForDocType(docType));
-      const doc = await persistFile({
-        dealId,
-        riskId,
-        contactId,
-        policyId,
-        folderId: resolvedFolder,
-        library,
-        fillable: fillable || library === "forms",
-        filename: file.name,
-        mimeType: file.type || "application/octet-stream",
-        buffer: Buffer.from(await file.arrayBuffer()),
-        docType,
-        slot,
-        tags: parseTags(formData.get("tags")),
-      });
-      // Gemini source docs: Fill master sheet extracts once — avoid a second API hit that 503s.
-      if (doc.riskId && !(doc.slot === "source_doc" && docTypeUsesGemini(doc.docType))) {
-        await runExtraction(doc.id, doc.dealId ?? "");
-      }
-      last = doc;
+    const slot = dealSourceSlotForUpload({
+      dealId,
+      requestedSlot: String(formData.get("slot") ?? ""),
+      docType,
+      hasFolder: Boolean(resolvedFolder),
+    });
+    const lineRaw = String(formData.get("line") ?? "").trim();
+    const lineTags = dealId && isShopLine(lineRaw) ? [lineTag(lineRaw)] : [];
+    const doc = await persistFile({
+      dealId,
+      riskId,
+      contactId,
+      policyId,
+      folderId: resolvedFolder,
+      library,
+      fillable: fillable || library === "forms",
+      filename: upload.filename,
+      mimeType: upload.file.type || "application/octet-stream",
+      buffer: upload.bytes,
+      docType,
+      slot,
+      tags: [...parseTags(formData.get("tags")), ...lineTags],
+    });
+    if (doc?.riskId && !(doc.slot === "source_doc" && docTypeUsesGemini(doc.docType))) {
+      await runExtraction(doc.id, doc.dealId ?? "").catch(() => null);
     }
+    if (!doc) continue;
+    last = doc;
+    count += 1;
+  }
+  return { count, last };
+}
+
+export async function extractDocument(documentId: string, dealId: string) {
+  await runExtraction(documentId, dealId);
+}
+
+function revalidateDocumentPaths(doc: {
+  dealId: string | null;
+  leadId?: string | null;
+  contactId: string | null;
+  policyId: string | null;
+}) {
+  revalidatePath("/documents");
+  revalidatePath("/esign");
+  if (doc.dealId) revalidatePath(`/deals/${doc.dealId}`);
+  if (doc.leadId) revalidatePath(`/leads/${doc.leadId}`);
+  if (doc.contactId) revalidatePath(`/contacts/${doc.contactId}`);
+  if (doc.policyId) revalidatePath(`/policies/${doc.policyId}`);
+}
+
+export async function uploadDocument(formData: FormData) {
+  const { count, last } = await persistDealSourceUploads(formData);
+  if (count === 0 || !last) {
+    throw new Error("Choose a file to upload.");
   }
   if (last) revalidateDocumentPaths(last);
   const afterAction = String(formData.get("after") ?? "");
@@ -275,7 +290,9 @@ export async function uploadDocument(formData: FormData) {
     redirect(withFlash(`/deals/${last.dealId}?tab=${tab}&notice=filled&line=${line}`, "sheet-filled"));
   }
   if (formData.get("library")) {
-    redirect(withFlash(libraryHref({ library, folderId: resolvedFolder, notice: "uploaded" }), "document-uploaded"));
+    const library = String(formData.get("library") ?? "").trim() === "forms" ? "forms" : "shared";
+    const folderId = optionalId(formData, "folderId");
+    redirect(withFlash(libraryHref({ library, folderId, notice: "uploaded" }), "document-uploaded"));
   }
   if (last?.dealId) {
     // Persist only; Fill master sheet button owns runFillDealSheets; Markets only after Confirm & request quotes.
@@ -291,7 +308,7 @@ function filesFromSlots(formData: FormData): File[] {
   const rowCount = Number(formData.get("rowCount") ?? 0);
   const collected: File[] = [];
   const push = (item: FormDataEntryValue) => {
-    if (item instanceof File && item.size > 0) collected.push(item);
+    if (isUploadedFile(item)) collected.push(item);
   };
   if (Number.isFinite(rowCount) && rowCount > 0) {
     for (let i = 0; i < rowCount; i += 1) {
@@ -400,43 +417,30 @@ export async function uploadDealDocuments(formData: FormData) {
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, match.id));
   const folderId = await resolveFolderId({ folderId: null, dealId: match.id, contactId: null });
 
-  const rowCount = Math.max(
-    Number(formData.get("rowCount") ?? 0),
-    formData.getAll("docType").length,
-  );
+  const uploads = await collectUploadedFiles(formData);
   let stored = 0;
 
-  for (let i = 0; i < Math.max(rowCount, 1); i += 1) {
+  for (const upload of uploads) {
     const docType = coerceDealUploadDocType(
-      String(formData.get(`docType_${i}`) ?? formData.getAll("docType")[i] ?? "other"),
+      String(formData.get(`docType_${upload.index}`) ?? formData.getAll("docType")[upload.index] ?? "other"),
     );
     const slot = slotForDocType(docType);
-    const files = formData
-      .getAll(`files_${i}`)
-      .concat(i === 0 ? formData.getAll("files") : [])
-      .filter((item): item is File => item instanceof File && item.size > 0);
-    for (const file of files) {
-      const doc = await persistFile({
-        dealId: match.id,
-        riskId: risk?.id ?? null,
-        contactId: risk?.contactId ?? null,
-        policyId: null,
-        folderId,
-        filename: file.name,
-        mimeType: file.type || "application/octet-stream",
-        buffer: Buffer.from(await file.arrayBuffer()),
-        docType,
-        slot,
-      });
-      if (
-        doc.riskId &&
-        slot === "source_doc" &&
-        !docTypeUsesGemini(doc.docType)
-      ) {
-        await runExtraction(doc.id, match.id);
-      }
-      stored += 1;
+    const doc = await persistFile({
+      dealId: match.id,
+      riskId: risk?.id ?? null,
+      contactId: risk?.contactId ?? null,
+      policyId: null,
+      folderId,
+      filename: upload.filename,
+      mimeType: upload.file.type || "application/octet-stream",
+      buffer: upload.bytes,
+      docType,
+      slot,
+    });
+    if (doc.riskId && slot === "source_doc" && !docTypeUsesGemini(doc.docType)) {
+      await runExtraction(doc.id, match.id).catch(() => null);
     }
+    stored += 1;
   }
 
   if (stored === 0) {

@@ -73,11 +73,8 @@ export async function ensureSeededPipelines() {
       .select()
       .from(pipelineStages)
       .where(and(eq(pipelineStages.tenantId, tenantId), eq(pipelineStages.pipelineId, current.id)));
-    const stagesBySlug = new Map(stages.map((stage) => [stage.slug, stage]));
-    for (const [sortOrder, stage] of seed.stages.entries()) {
-      const existingStage = stagesBySlug.get(stage.slug);
-      const color = defaultStageColor(sortOrder, stage.slug);
-      if (!existingStage) {
+    if (stages.length === 0) {
+      for (const [sortOrder, stage] of seed.stages.entries()) {
         await db
           .insert(pipelineStages)
           .values({
@@ -86,37 +83,28 @@ export async function ensureSeededPipelines() {
             name: stage.name,
             slug: stage.slug,
             sortOrder,
-            color,
+            color: defaultStageColor(sortOrder, stage.slug),
             seeded: seed.seeded,
           })
-          .onConflictDoUpdate({
-            target: [pipelineStages.tenantId, pipelineStages.pipelineId, pipelineStages.slug],
-            set: {
-              name: stage.name,
-              sortOrder,
-              color,
-              seeded: seed.seeded,
-            },
-          });
-        continue;
+          .onConflictDoNothing();
       }
-      // Live desk: re-align name/sortOrder (and color if empty) so new seed stages
-      // land in order and Closed Won shifts right without a wipe.
-      const colorEmpty = !existingStage.color;
-      if (
-        existingStage.name !== stage.name ||
-        existingStage.sortOrder !== sortOrder ||
-        colorEmpty
-      ) {
-        await db
-          .update(pipelineStages)
-          .set({
-            name: stage.name,
-            sortOrder,
-            ...(colorEmpty ? { color } : {}),
-          })
-          .where(eq(pipelineStages.id, existingStage.id));
-      }
+      continue;
+    }
+    // Live desk: keep admin labels, colors, order, and added stages. Do not
+    // rewrite names/sortOrder on every /deals load — that made Edit stages
+    // look broken (rename/add never stuck).
+    for (const existingStage of stages) {
+      if (existingStage.color) continue;
+      const seedIndex = seed.stages.findIndex((row) => row.slug === existingStage.slug);
+      await db
+        .update(pipelineStages)
+        .set({
+          color: defaultStageColor(
+            seedIndex >= 0 ? seedIndex : existingStage.sortOrder,
+            existingStage.slug,
+          ),
+        })
+        .where(eq(pipelineStages.id, existingStage.id));
     }
   }
 
