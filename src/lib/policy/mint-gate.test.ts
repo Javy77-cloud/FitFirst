@@ -14,8 +14,13 @@ import {
   mintConfirmQueue,
   mintFieldPolicyPatch,
   mintNeedsConfirm,
+  mintExtractUseful,
+  mintLooksThin,
+  mintPayloadAfterReread,
+  mintPayloadLooksFrozen,
   mintProposedValue,
   parseMintPayload,
+  policyCanRereadMint,
   policyForProduct,
   policyMintUnpublished,
   policyNeedsMintConfirm,
@@ -237,6 +242,19 @@ describe("unpublished confirm guard", () => {
     expect(fields.find((row) => row.key === "form")?.value).toBe("HO3");
   });
 
+  it("fills Coverage A from deal Details when the dec omitted dwelling", () => {
+    const fields = buildMintFields({
+      sold: { premium: "2463", coverageA: 250000 },
+      identity: {
+        coverageA: 412000,
+        propertyAddress: "412 Harbor Isle Dr, Melbourne, FL 32901",
+      },
+    });
+    expect(fields.find((row) => row.key === "coverage_a")?.value).toBe("412000");
+    expect(fields.find((row) => row.key === "coverage_a")?.source).toBe("sheet");
+    expect(fields.find((row) => row.key === "mailing_address")?.value).toContain("Harbor Isle");
+  });
+
   it("blocks publish until the confirm queue is empty", () => {
     const draft = buildMintFields({
       sold: { premium: "1000" },
@@ -276,5 +294,95 @@ describe("unpublished confirm guard", () => {
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/mintFieldPolicyPatch/);
     expect(source("src/lib/extraction/gemini/prompt.ts")).toMatch(/selling_agency/);
     expect(source("src/lib/policy/change-log.ts")).toMatch(/Policy created/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/rereadMintedDeclaration/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/readStoredFile/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/force: true/);
+    expect(source("src/app/actions/policy-mint.ts")).not.toMatch(/force: remint/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/mintIdentityFromRecords/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/mintExtractUseful/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/declaration-reread/);
+    expect(source("src/app/policies/[id]/page.tsx")).toMatch(/mintedAt/);
+    expect(source("src/app/policies/[id]/page.tsx")).toMatch(/mintLooksThin/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/mintLooksThin/);
+    expect(source("src/components/policy/from-deal-strip.tsx")).toMatch(/RereadDeclarationButton/);
+    expect(source("src/components/policy/reread-declaration-button.tsx")).toMatch(/Re-read declaration/);
+    expect(source("src/components/deal/issue-policy-from-dec.tsx")).toMatch(/RereadDeclarationButton/);
+    expect(source("src/components/policy/mint-confirm-queue.tsx")).toMatch(/revision/);
+    expect(source("src/lib/flash.ts")).toMatch(/declaration-reread/);
+  });
+
+  it("rebuilds a frozen published mint so the confirm queue loads the new dec premium", () => {
+    const stale = {
+      status: "published" as const,
+      soldBasis: { quoteId: "q-stub", premium: "2463" },
+      fields: [
+        {
+          key: "premium",
+          label: "Premium",
+          value: "2463",
+          confidence: 1,
+          source: "quote" as const,
+          flagged: false,
+          confirmed: true,
+          soldValue: "2463",
+          sheetValue: null,
+          geminiValue: null,
+        },
+      ],
+    };
+    expect(policyCanRereadMint({ mintPayload: stale, sourceDocumentId: "dec-1" })).toBe(true);
+    expect(policyCanRereadMint({ status: "unpublished", mintPayload: null })).toBe(true);
+    expect(mintLooksThin(null)).toBe(true);
+    expect(mintLooksThin(stale)).toBe(true);
+    expect(mintExtractUseful([])).toBe(false);
+    expect(
+      mintExtractUseful([{ fieldKey: "current_premium", normalizedValue: "3383", rawValue: "3383" }]),
+    ).toBe(true);
+    expect(mintPayloadLooksFrozen(stale)).toBe(true);
+    expect(
+      mintPayloadLooksFrozen({
+        ...stale,
+        fields: [
+          {
+            ...stale.fields[0]!,
+            value: "",
+            confirmed: true,
+            source: "deal",
+          },
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      policyNeedsMintConfirm({
+        status: "active",
+        publishedAt: new Date(),
+        mintPayload: stale,
+      }),
+    ).toBe(false);
+
+    const fields = buildMintFields({
+      sold: { premium: "2463" },
+      gemini: [{ fieldKey: "current_premium", normalizedValue: "3383", confidence: 0.95 }],
+    });
+    const next = mintPayloadAfterReread({
+      soldBasis: stale.soldBasis,
+      fields,
+      decDocumentId: "dec-1",
+      product: "homeowners",
+      mintedAt: "2026-09-16T16:40:00.000Z",
+    });
+    expect(next.status).toBe("unpublished");
+    expect(next.fields.find((row) => row.key === "premium")?.value).toBe("3383");
+    expect(next.fields.find((row) => row.key === "premium")?.geminiValue).toBe("3383");
+    expect(next.fields.find((row) => row.key === "premium")?.confirmed).toBe(false);
+    expect(policyMintUnpublished({ status: "unpublished", publishedAt: null, mintPayload: next })).toBe(
+      true,
+    );
+    expect(policyNeedsMintConfirm({ status: "unpublished", publishedAt: null, mintPayload: next })).toBe(
+      true,
+    );
+    expect(mintProposedValue(next.fields.find((row) => row.key === "premium")!)).toBe("3383");
+    expect(mintPayloadLooksFrozen(next)).toBe(false);
+    expect(mintLooksThin(next)).toBe(false);
   });
 });

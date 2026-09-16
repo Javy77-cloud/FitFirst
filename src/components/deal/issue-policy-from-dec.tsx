@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { issuePolicyFromDeclaration, uploadDeclarationAndMint } from "@/app/actions/policy-mint";
+import { RereadDeclarationButton } from "@/components/policy/reread-declaration-button";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -105,15 +106,18 @@ export function IssuePolicyFromDec({
 
   if (issued?.id) {
     return (
-      <a
-        href={`/policies/${issued.id}`}
-        className="inline-flex items-center gap-2 rounded-full border border-emerald-700/30 bg-emerald-50 px-3 py-1 text-[12px] font-semibold text-emerald-900 hover:bg-emerald-100"
-        data-ff-issued-policy-chip={issued.id}
-      >
-        <span className="size-1.5 rounded-full bg-emerald-600" aria-hidden />
-        {issued.published ? "Policy" : "Confirm policy"}
-        {issued.policyNumber ? <span className="font-medium">· {issued.policyNumber}</span> : null}
-      </a>
+      <div className="flex flex-wrap items-center gap-2">
+        <a
+          href={`/policies/${issued.id}`}
+          className="inline-flex items-center gap-2 rounded-full border border-emerald-700/30 bg-emerald-50 px-3 py-1 text-[12px] font-semibold text-emerald-900 hover:bg-emerald-100"
+          data-ff-issued-policy-chip={issued.id}
+        >
+          <span className="size-1.5 rounded-full bg-emerald-600" aria-hidden />
+          {issued.published ? "Policy" : "Confirm policy"}
+          {issued.policyNumber ? <span className="font-medium">· {issued.policyNumber}</span> : null}
+        </a>
+        <RereadDeclarationButton policyId={issued.id} compact />
+      </div>
     );
   }
 

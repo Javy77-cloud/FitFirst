@@ -293,6 +293,7 @@ export type MintIdentity = {
   billingFrequency?: string | null;
   nextDue?: string | null;
   paymentMethod?: string | null;
+  coverageA?: string | number | null;
 };
 
 function identityCell(identity: MintIdentity | null | undefined, key: string): string {
@@ -314,6 +315,7 @@ function identityCell(identity: MintIdentity | null | undefined, key: string): s
   if (key === "billing_frequency") return normalizeMintValue(key, identity.billingFrequency);
   if (key === "next_due") return normalizeMintValue(key, identity.nextDue);
   if (key === "payment_method") return normalizeMintValue(key, identity.paymentMethod);
+  if (key === "coverage_a") return normalizeMintValue(key, identity.coverageA);
   return "";
 }
 
@@ -541,6 +543,80 @@ export function policyNeedsMintConfirm(policy: {
 }): boolean {
   if (!policyMintUnpublished(policy)) return false;
   return mintNeedsConfirm(parseMintPayload(policy.mintPayload));
+}
+
+/** Unpublished or already-minted book — agent can force a fresh Gemini pass on the linked dec. */
+export function policyCanRereadMint(policy: {
+  mintPayload?: unknown;
+  sourceDocumentId?: string | null;
+  sourceProduct?: string | null;
+  status?: string | null;
+}): boolean {
+  if (parseMintPayload(policy.mintPayload)) return true;
+  if (policy.sourceDocumentId || policy.sourceProduct) return true;
+  return (policy.status ?? "").toLowerCase() === "unpublished";
+}
+
+/** Cached extract is only a fallback when it actually has dec fields. */
+export function mintExtractUseful(
+  rows: readonly {
+    fieldKey: string;
+    normalizedValue?: string | null;
+    rawValue?: string | null;
+  }[],
+): boolean {
+  const useful = new Set([
+    "premium",
+    "current_premium",
+    "policy_number",
+    "coverage_a",
+    "named_insured",
+  ]);
+  return rows.some(
+    (row) => useful.has(row.fieldKey) && String(row.normalizedValue || row.rawValue || "").trim(),
+  );
+}
+
+/** Published mint that never got a Gemini pass — empty confirmed boxes or stub premium. */
+export function mintPayloadLooksFrozen(payload: MintPayload | null | undefined): boolean {
+  if (!payload) return false;
+  const confirmedEmpty = payload.fields.some(
+    (field) =>
+      field.confirmed &&
+      !String(field.value ?? "").trim() &&
+      !field.geminiValue &&
+      !field.sheetValue,
+  );
+  if (confirmedEmpty) return true;
+  const premium = payload.fields.find((field) => field.key === "premium");
+  return Boolean(premium && premium.source === "quote" && !premium.geminiValue);
+}
+
+/** Null, stub-only, or no Gemini values — wipe and fully re-extract instead of patching. */
+export function mintLooksThin(payload: MintPayload | null | undefined): boolean {
+  if (!payload) return true;
+  if (mintPayloadLooksFrozen(payload)) return true;
+  return !payload.fields.some((field) => String(field.geminiValue ?? "").trim());
+}
+
+export function mintPayloadAfterReread(input: {
+  soldBasis: MintSoldBasis;
+  fields: MintField[];
+  decDocumentId?: string | null;
+  decFilename?: string | null;
+  product?: string | null;
+  mintedAt?: string;
+}): MintPayload {
+  return {
+    status: "unpublished",
+    soldBasis: input.soldBasis,
+    fields: input.fields,
+    decDocumentId: input.decDocumentId ?? null,
+    decFilename: input.decFilename ?? null,
+    product: input.product ?? null,
+    mintedAt: input.mintedAt ?? new Date().toISOString(),
+    adminNotifiedAt: null,
+  };
 }
 
 export function policyForProduct<

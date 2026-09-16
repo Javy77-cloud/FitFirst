@@ -100,7 +100,9 @@ export const FLASH_COPY = {
   "property-records-no-blanks": "Property records matched, but no blank fields to fill.",
   "policy-minted": "Policy created — confirm the declaration",
   "policy-published": "Policy published",
+  "declaration-reread": "Declaration re-read — confirm the proposed values",
   "need-quote": "Pick a live quote first",
+  "need-dec": "Need the declaration PDF to re-read",
   "declaration-received": "Declaration received",
 } as const;
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { confirmMintedPolicyField, publishMintedPolicy } from "@/app/actions/policy-mint";
 import { Button } from "@/components/ui/button";
+import { RereadDeclarationButton } from "@/components/policy/reread-declaration-button";
 import type { MintField } from "@/lib/policy/mint-gate";
 import { mintConfirmQueue, mintProposedValue } from "@/lib/policy/mint-gate";
 import { flashAction } from "@/lib/flash-client";
@@ -24,6 +25,18 @@ export function MintConfirmQueue({
   const [editing, setEditing] = useState(!proposed);
   const [pending, startTransition] = useTransition();
   const done = queue.length === 0;
+  const revision = fields
+    .map((row) => `${row.key}:${row.value}:${row.confirmed}:${row.geminiValue ?? ""}`)
+    .join("|");
+
+  useEffect(() => {
+    const next = mintConfirmQueue(fields);
+    const row = next[0];
+    const nextProposed = row ? mintProposedValue(row) : "";
+    setIndex(0);
+    setValue(nextProposed);
+    setEditing(!nextProposed);
+  }, [revision, fields]);
 
   function show(nextIndex: number, nextFields = queue) {
     const row = nextFields[nextIndex] ?? nextFields[0];
@@ -63,6 +76,7 @@ export function MintConfirmQueue({
       <section className="ff-card mx-auto max-w-lg space-y-3 p-5" data-ff-mint-confirm-empty="">
         <h2 className="text-lg font-semibold text-navy">Declaration looks right</h2>
         <p className="text-sm text-muted-foreground">Every flagged field is confirmed. Publish to open the book record.</p>
+        <RereadDeclarationButton policyId={policyId} />
         <Button
           type="button"
           data-ff-publish-minted-policy=""
@@ -180,6 +194,7 @@ export function MintConfirmQueue({
             Save edit
           </Button>
         ) : null}
+        <RereadDeclarationButton policyId={policyId} />
         {current.soldValue && current.soldValue !== proposed ? (
           <Button
             type="button"

@@ -60,6 +60,7 @@ import { productSectionComplete, productSectionProgress } from "@/lib/deals/prod
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
 import { DealStatusStamp } from "@/components/deal/deal-status-stamp";
 import { CreatePolicyFromDecModal } from "@/components/deal/create-policy-from-dec-modal";
+import { mintLooksThin, parseMintPayload } from "@/lib/policy/mint-gate";
 import { ensureRosaDeclarationRetag } from "@/app/actions/declaration";
 import { ROSA_DEC_DEAL_ID } from "@/lib/policy/dec-prompt";
 import {
@@ -893,6 +894,9 @@ export default async function DealPage({
                             boundPolicies.find((row) => row.id === activeProductState.policyId) ??
                             boundPolicies.find((row) => row.sourceProduct === activeProduct);
                           if (!linked) return null;
+                          if (mintLooksThin(parseMintPayload(linked.mintPayload)) && !linked.publishedAt) {
+                            return null;
+                          }
                           return {
                             id: linked.id,
                             policyNumber: linked.policyNumber,

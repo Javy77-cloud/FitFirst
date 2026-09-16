@@ -59,6 +59,9 @@ describe("flash helper", () => {
     expect(FLASH_COPY["meeting-saved"]).toBe("Meeting saved");
     expect(FLASH_COPY["outcome-saved"]).toBe("Outcome saved");
     expect(FLASH_COPY["consent-saved"]).toBe("Consent saved");
+    expect(FLASH_COPY["declaration-reread"]).toBe("Declaration re-read — confirm the proposed values");
+    expect(FLASH_COPY["need-dec"]).toBe("Need the declaration PDF to re-read");
+    expect(FLASH_COPY["policy-minted"]).toBe("Policy created — confirm the declaration");
   });
 
   it("accepts a short raw phrase and ignores blanks", () => {

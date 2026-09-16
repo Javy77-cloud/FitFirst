@@ -33,7 +33,13 @@ import { PolicyActivityTab } from "@/components/policy/tabs/activity-tab";
 import { PolicyClaimsTab } from "@/components/policy/tabs/claims-tab";
 import { PolicyAgencyTab } from "@/components/policy/tabs/agency-tab";
 import { parseAgentPolicyTab, policyTabsForViewer } from "@/lib/policy/tabs";
-import { parseMintPayload, policyNeedsMintConfirm } from "@/lib/policy/mint-gate";
+import {
+  mintLooksThin,
+  parseMintPayload,
+  policyCanRereadMint,
+  policyNeedsMintConfirm,
+} from "@/lib/policy/mint-gate";
+import { RereadDeclarationButton } from "@/components/policy/reread-declaration-button";
 import { notifyAdminUnpublishedMint } from "@/app/actions/policy-mint";
 import { FromDealStrip } from "@/components/policy/from-deal-strip";
 import { MintConfirmQueue } from "@/components/policy/mint-confirm-queue";
@@ -261,13 +267,29 @@ export default async function PolicyDetailPage({
       <PolicyOutcomeBanner filed={filed} error={error} policy={policy} />
 
       {policy.mintPayload || policy.sourceProduct || policy.sourceDocumentId ? (
-        <div className="mb-3">
+        <div className="mb-3 space-y-2">
           <FromDealStrip
             dealId={deal?.id ?? policy.dealId}
             dealTitle={deal?.title}
             decFilename={parseMintPayload(policy.mintPayload)?.decFilename}
             reconciled={Boolean(policy.sourceDocumentId || parseMintPayload(policy.mintPayload)?.decDocumentId)}
+            policyId={policy.id}
+            canReread={policyCanRereadMint(policy)}
           />
+          {policyCanRereadMint(policy) &&
+          mintLooksThin(parseMintPayload(policy.mintPayload)) &&
+          !policyNeedsMintConfirm(policy) ? (
+            <div
+              className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+              data-ff-mint-frozen-banner=""
+            >
+              <p>
+                This mint has no Gemini values. Re-read the declaration to run a full extract
+                and merge deal Details — declaration premium wins over the sold stub.
+              </p>
+              <RereadDeclarationButton policyId={policy.id} />
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -281,6 +303,7 @@ export default async function PolicyDetailPage({
             confirm them.
           </p>
           <MintConfirmQueue
+            key={parseMintPayload(policy.mintPayload)?.mintedAt ?? policy.id}
             policyId={policy.id}
             fields={parseMintPayload(policy.mintPayload)?.fields ?? []}
           />

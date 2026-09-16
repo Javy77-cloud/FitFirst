@@ -1,15 +1,20 @@
 import Link from "next/link";
+import { RereadDeclarationButton } from "@/components/policy/reread-declaration-button";
 
 export function FromDealStrip({
   dealId,
   dealTitle,
   decFilename,
   reconciled,
+  policyId,
+  canReread,
 }: {
   dealId?: string | null;
   dealTitle?: string | null;
   decFilename?: string | null;
   reconciled?: boolean;
+  policyId?: string | null;
+  canReread?: boolean;
 }) {
   if (!dealId) return null;
   return (
@@ -30,6 +35,7 @@ export function FromDealStrip({
       {decFilename ? (
         <span className="truncate text-muted-foreground">{decFilename}</span>
       ) : null}
+      {canReread && policyId ? <RereadDeclarationButton policyId={policyId} /> : null}
     </div>
   );
 }

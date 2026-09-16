@@ -1,13 +1,13 @@
 "use server";
 
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { persistFile } from "@/app/actions/documents";
 import { findMatchingContact } from "@/app/actions/crm";
 import { findOrCreateLocationFromAddress } from "@/app/actions/locations";
 import { currentDeskSession } from "@/lib/auth/session";
+import { readStoredFile } from "@/lib/files/object-store";
 import { db } from "@/lib/db";
 import {
   alerts,
@@ -49,23 +49,27 @@ import {
 import { extractWithGeminiPdf } from "@/lib/extraction/gemini";
 import { loadGeminiApiKey } from "@/lib/extraction/gemini/key";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
+import { withFlash } from "@/lib/flash";
 import {
   buildMintFields,
   canPublishMint,
   confirmMintField,
   evaluateMintGate,
   findDealDeclaration,
+  mintExtractUseful,
   mintFieldPolicyPatch,
+  mintLooksThin,
+  mintPayloadAfterReread,
   parseMintPayload,
+  policyCanRereadMint,
   policyForProduct,
   policyMintUnpublished,
   type MintField,
+  type MintIdentity,
   type MintPayload,
 } from "@/lib/policy/mint-gate";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 import { contactFieldsFromSheet } from "@/lib/wire/match-party";
-
-const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
 function dateOrFallback(raw: string | null | undefined, fallback: Date) {
   if (!raw) return fallback;
@@ -193,6 +197,7 @@ async function markMintStatus(
     policyId?: string | null;
     mintStatus?: "creating" | "unpublished" | "published" | null;
     selectedQuoteIds?: string[];
+    issuedDone?: boolean;
   },
 ) {
   const deal = await loadDeal(dealId);
@@ -203,28 +208,73 @@ async function markMintStatus(
   await persistDealShopFlow(dealId, { ...saved, productStages: next });
 }
 
-async function loadGeminiRows(docId: string, storagePath: string, mimeType: string, filename: string) {
+function mapExtractedRows(
+  rows: readonly {
+    fieldKey: string;
+    normalizedValue?: string | null;
+    rawValue?: string | null;
+    confidence?: number | string | null;
+    flagged?: boolean | null;
+  }[],
+) {
+  return rows.map((row) => ({
+    fieldKey: row.fieldKey,
+    normalizedValue: row.normalizedValue,
+    rawValue: row.rawValue,
+    confidence: Number(row.confidence ?? 0),
+    flagged: row.flagged,
+  }));
+}
+
+async function persistMintExtractedFields(
+  documentId: string,
+  riskId: string | null,
+  rows: readonly {
+    fieldKey: string;
+    normalizedValue?: string | null;
+    rawValue?: string | null;
+    confidence: number;
+    flagged: boolean;
+  }[],
+) {
+  await db.delete(extractedFields).where(eq(extractedFields.documentId, documentId));
+  if (!rows.length) return;
+  await db.insert(extractedFields).values(
+    rows.map((field) => ({
+      tenantId: DEFAULT_TENANT_ID,
+      documentId,
+      riskId,
+      fieldKey: field.fieldKey,
+      rawValue: field.rawValue || field.normalizedValue || "",
+      normalizedValue: field.normalizedValue || field.rawValue || "",
+      confidence: field.confidence.toFixed(3),
+      flagged: field.flagged,
+      appliedToRisk: false,
+    })),
+  );
+}
+
+async function loadGeminiRows(
+  docId: string,
+  storagePath: string,
+  mimeType: string,
+  filename: string,
+  opts?: { force?: boolean; riskId?: string | null },
+) {
   const existing = await db
     .select()
     .from(extractedFields)
     .where(and(eq(extractedFields.tenantId, DEFAULT_TENANT_ID), eq(extractedFields.documentId, docId)));
-  if (existing.length) {
-    return existing.map((row) => ({
-      fieldKey: row.fieldKey,
-      normalizedValue: row.normalizedValue,
-      rawValue: row.rawValue,
-      confidence: Number(row.confidence ?? 0),
-      flagged: row.flagged,
-    }));
+  const cached = mapExtractedRows(existing);
+  const cacheOk = mintExtractUseful(cached);
+  if (!opts?.force && cacheOk) {
+    return cached;
   }
 
   const key = await loadGeminiApiKey();
-  if (!key) return [];
-  let buffer: Buffer;
-  try {
-    buffer = await readFile(path.join(uploadRoot, storagePath));
-  } catch {
-    return [];
+  const buffer = key ? await readStoredFile(storagePath) : null;
+  if (!key || !buffer) {
+    return cacheOk ? cached : [];
   }
   try {
     const gemini = await extractWithGeminiPdf(buffer, "dec", {
@@ -232,17 +282,79 @@ async function loadGeminiRows(docId: string, storagePath: string, mimeType: stri
       mimeType,
       filename,
     });
-    if (!gemini.ok) return [];
-    return gemini.result.fields.map((field) => ({
+    if (!gemini.ok) return cacheOk ? cached : [];
+    const rows = gemini.result.fields.map((field) => ({
       fieldKey: field.fieldKey,
       normalizedValue: field.normalizedValue,
       rawValue: field.rawValue,
       confidence: field.confidence,
       flagged: field.flagged,
     }));
+    if (!rows.length) return cacheOk ? cached : [];
+    await persistMintExtractedFields(docId, opts?.riskId ?? null, rows);
+    return rows;
   } catch {
-    return [];
+    return cacheOk ? cached : [];
   }
+}
+
+function mintIdentityFromRecords(input: {
+  deal?: typeof deals.$inferSelect | null;
+  risk?: {
+    address1?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+    roofYear?: number | null;
+    coverageA?: number | string | null;
+  } | null;
+  sheet: Record<string, { value?: string | null } | undefined>;
+  ownerName?: string | null;
+  sessionName?: string | null;
+  fallback?: {
+    sellingAgency?: string | null;
+    producer?: string | null;
+    insuranceType?: string | null;
+    formType?: string | null;
+    premisesAddress?: string | null;
+    billingFrequency?: string | null;
+  };
+}): MintIdentity {
+  const propertyLine = [
+    input.risk?.address1,
+    [input.risk?.city, input.risk?.state, input.risk?.zip].filter(Boolean).join(", "),
+  ]
+    .filter(Boolean)
+    .join(", ");
+  return {
+    namedInsured: input.deal?.primaryNamedInsured ?? null,
+    mailingAddress: input.risk?.address1 ?? input.fallback?.premisesAddress ?? null,
+    propertyAddress:
+      input.deal?.propertyOneliner || propertyLine || input.fallback?.premisesAddress || null,
+    sellingAgency: sheetValue(input.sheet, "selling_agency") || input.fallback?.sellingAgency || null,
+    producer: input.ownerName || input.sessionName || input.fallback?.producer || null,
+    insuranceType:
+      insuranceFamilyFromPolicy({
+        lineOfBusiness: input.deal?.lineOfBusiness,
+        policySubType: input.deal?.policySubType,
+      }) ||
+      input.fallback?.insuranceType ||
+      null,
+    form: input.deal?.quotingForm || input.deal?.policySubType || input.fallback?.formType || null,
+    roofYear: input.risk?.roofYear ?? (sheetValue(input.sheet, "roof_year", "roof_age") || null),
+    mortgagee: sheetValue(input.sheet, "mortgagee_name", "mortgagee") || null,
+    billingFrequency:
+      sheetValue(input.sheet, "billing_frequency", "premium_frequency", "premium_mode") ||
+      input.fallback?.billingFrequency ||
+      null,
+    paymentMethod: sheetValue(input.sheet, "payment_method", "pay_plan") || null,
+    renewalDate: sheetValue(input.sheet, "renewal_date") || null,
+    nextDue: sheetValue(input.sheet, "next_due", "next_payment_due") || null,
+    coverageA:
+      input.deal?.coverageAmount ??
+      input.risk?.coverageA ??
+      (sheetValue(input.sheet, "coverage_a", "dwelling") || null),
+  };
 }
 
 async function ensureDealContact(deal: typeof deals.$inferSelect) {
@@ -348,7 +460,9 @@ export async function issuePolicyFromDeclaration(input: {
   const existingIsBook =
     existing &&
     !policyMintUnpublished(existing) &&
-    existing.status !== "unpublished";
+    existing.status !== "unpublished" &&
+    !policyCanRereadMint(existing) &&
+    !mintLooksThin(parseMintPayload(existing.mintPayload));
   if (existingIsBook) {
     await db
       .update(documents)
@@ -381,6 +495,7 @@ export async function issuePolicyFromDeclaration(input: {
         decRow.storagePath,
         decRow.mimeType ?? "application/pdf",
         decRow.filename,
+        { force: true, riskId: riskRows[0]?.id ?? decRow.riskId },
       )
     : [];
   const risk = riskRows[0];
@@ -389,12 +504,6 @@ export async function issuePolicyFromDeclaration(input: {
     ? await db.select({ name: users.name }).from(users).where(eq(users.id, deal.ownerId))
     : [];
   const session = await currentDeskSession();
-  const propertyLine = [
-    risk?.address1,
-    [risk?.city, risk?.state, risk?.zip].filter(Boolean).join(", "),
-  ]
-    .filter(Boolean)
-    .join(", ");
   const fields = buildMintFields({
     gemini: geminiRows,
     sheet: sheetValues,
@@ -404,22 +513,13 @@ export async function issuePolicyFromDeclaration(input: {
       hurricaneDeductible: quote.hurricaneDeductible,
       aopDeductible: quote.aopDeductible,
     },
-    identity: {
-      namedInsured: deal.primaryNamedInsured,
-      mailingAddress: risk?.address1 ?? null,
-      propertyAddress: deal.propertyOneliner || propertyLine || null,
-      sellingAgency: sheetValue(sheetValues, "selling_agency"),
-      producer: owner?.name || session.name || null,
-      insuranceType: insuranceFamilyFromPolicy({
-        lineOfBusiness: deal.lineOfBusiness,
-        policySubType: deal.policySubType,
-      }),
-      form: deal.quotingForm || deal.policySubType || null,
-      roofYear: risk?.roofYear ?? null,
-      mortgagee: sheetValue(sheetValues, "mortgagee_name", "mortgagee"),
-      billingFrequency: sheetValue(sheetValues, "billing_frequency", "premium_frequency", "premium_mode"),
-      paymentMethod: sheetValue(sheetValues, "payment_method", "pay_plan"),
-    },
+    identity: mintIdentityFromRecords({
+      deal,
+      risk,
+      sheet: sheetValues,
+      ownerName: owner?.name,
+      sessionName: session.name,
+    }),
   });
 
   const contactId = await ensureDealContact(deal);
@@ -525,6 +625,7 @@ export async function issuePolicyFromDeclaration(input: {
     policyId,
     mintStatus: "unpublished",
     selectedQuoteIds,
+    issuedDone: false,
   });
 
   if (!deal.boundAt) {
@@ -750,4 +851,195 @@ export async function notifyAdminUnpublishedMint(policyId: string, now = new Dat
       .where(eq(policies.id, policyId));
   }
   return { ok: true as const, notified: true };
+}
+
+export async function rereadMintedDeclaration(formData: FormData) {
+  const policyId = String(formData.get("policyId") ?? "").trim();
+  if (!policyId) return { ok: false as const, reason: "invalid" as const };
+  const [policy] = await db
+    .select()
+    .from(policies)
+    .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
+  if (!policy || !policyCanRereadMint(policy)) {
+    return { ok: false as const, reason: "missing" as const };
+  }
+
+  const prev = parseMintPayload(policy.mintPayload);
+  const deal = policy.dealId ? await loadDeal(policy.dealId) : null;
+  const [docs, quoteRows, sheetRows, riskRows] = await Promise.all([
+    policy.dealId
+      ? db
+          .select()
+          .from(documents)
+          .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, policy.dealId)))
+      : policy.sourceDocumentId
+        ? db
+            .select()
+            .from(documents)
+            .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.id, policy.sourceDocumentId)))
+        : Promise.resolve([]),
+    policy.dealId
+      ? db
+          .select()
+          .from(quotes)
+          .where(and(eq(quotes.tenantId, DEFAULT_TENANT_ID), eq(quotes.dealId, policy.dealId)))
+      : Promise.resolve([]),
+    policy.dealId
+      ? db.select().from(quoteSheets).where(eq(quoteSheets.dealId, policy.dealId))
+      : Promise.resolve([]),
+    policy.dealId
+      ? db.select().from(risks).where(eq(risks.dealId, policy.dealId))
+      : Promise.resolve([]),
+  ]);
+
+  const decId = prev?.decDocumentId || policy.sourceDocumentId || "";
+  const dec =
+    docs.find((row) => row.id === decId) ??
+    findDealDeclaration(docs) ??
+    (decId
+      ? (
+          await db
+            .select()
+            .from(documents)
+            .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.id, decId)))
+        )[0]
+      : null);
+  if (!dec?.storagePath) return { ok: false as const, reason: "need_dec" as const };
+
+  const quote =
+    quoteRows.find((row) => row.id === (prev?.soldBasis.quoteId || policy.sourceQuoteId)) ??
+    quoteRows[0];
+  const product = parseDealProduct(prev?.product || policy.sourceProduct) ?? null;
+  const def = product ? dealProductDef(product) : null;
+  const sheet =
+    (def && sheetRows.find((row) => row.line === def.shopLine)) ??
+    sheetRows.find((row) => row.line === "home") ??
+    sheetRows[0];
+  const risk = riskRows[0];
+  const sheetValues = (sheet?.values ?? {}) as Record<string, { value?: string | null } | undefined>;
+  const [owner] = deal?.ownerId
+    ? await db.select({ name: users.name }).from(users).where(eq(users.id, deal.ownerId))
+    : [];
+  const session = await currentDeskSession();
+
+  const geminiRows = await loadGeminiRows(
+    dec.id,
+    dec.storagePath,
+    dec.mimeType ?? "application/pdf",
+    dec.filename ?? "declaration.pdf",
+    { force: true, riskId: risk?.id ?? null },
+  );
+
+  const fields = buildMintFields({
+    gemini: geminiRows,
+    sheet: sheetValues,
+    sold: {
+      premium: quote?.premium ?? prev?.soldBasis.premium,
+      coverageA: quote?.coverageA ?? prev?.soldBasis.coverageA,
+      hurricaneDeductible: quote?.hurricaneDeductible ?? prev?.soldBasis.hurricaneDeductible,
+      aopDeductible: quote?.aopDeductible ?? prev?.soldBasis.aopDeductible,
+    },
+    identity: mintIdentityFromRecords({
+      deal,
+      risk,
+      sheet: sheetValues,
+      ownerName: owner?.name,
+      sessionName: session.name,
+      fallback: {
+        sellingAgency: policy.sellingAgency,
+        producer: policy.producer,
+        insuranceType: policy.insuranceType,
+        formType: policy.formType,
+        premisesAddress: policy.premisesAddress,
+        billingFrequency: policy.billingFrequency,
+      },
+    }),
+  });
+
+  const booked = mintFieldPolicyPatch(fields);
+  const payload = mintPayloadAfterReread({
+    soldBasis: {
+      quoteId: quote?.id || prev?.soldBasis.quoteId || policy.sourceQuoteId || "",
+      carrierId: quote?.carrierId ?? prev?.soldBasis.carrierId ?? policy.carrierId,
+      premium: quote?.premium ?? prev?.soldBasis.premium ?? null,
+      coverageA: quote?.coverageA ?? prev?.soldBasis.coverageA ?? null,
+      hurricaneDeductible: quote?.hurricaneDeductible ?? prev?.soldBasis.hurricaneDeductible ?? null,
+      aopDeductible: quote?.aopDeductible ?? prev?.soldBasis.aopDeductible ?? null,
+    },
+    fields,
+    decDocumentId: dec.id,
+    decFilename: dec.filename,
+    product: product ?? prev?.product ?? policy.sourceProduct,
+  });
+  const premium = booked.premium || quote?.premium || policy.premium || null;
+  const coverageA = booked.coverageA || quote?.coverageA || policy.coverageA || null;
+
+  await db
+    .update(policies)
+    .set({
+      status: "unpublished",
+      publishedAt: null,
+      premium,
+      coverageA,
+      formType: booked.formType || policy.formType,
+      insuranceType: booked.insuranceType || policy.insuranceType,
+      sellingAgency: booked.sellingAgency || policy.sellingAgency,
+      producer: booked.producer || policy.producer,
+      billingFrequency: booked.billingFrequency || policy.billingFrequency,
+      renewalDate: booked.renewalDate
+        ? dateOrFallback(booked.renewalDate, policy.renewalDate ?? policy.expirationDate)
+        : policy.renewalDate,
+      premisesAddress: booked.premisesAddress || policy.premisesAddress,
+      sourceDocumentId: dec.id,
+      mintPayload: payload,
+      updatedAt: new Date(),
+    })
+    .where(eq(policies.id, policyId));
+
+  await applyMintBookExtras({
+    policyId,
+    contactId: policy.contactId,
+    accountId: policy.accountId,
+    riskId: policy.riskId ?? risk?.id ?? null,
+    fields,
+    premium,
+  });
+
+  if (deal && product) {
+    await markMintStatus(deal.id, product, {
+      stage: "policy_issued",
+      policyId,
+      mintStatus: "unpublished",
+      issuedDone: false,
+    });
+  }
+
+  await db
+    .update(reviewTasks)
+    .set({ status: "open", completedAt: null })
+    .where(
+      and(
+        eq(reviewTasks.tenantId, DEFAULT_TENANT_ID),
+        eq(reviewTasks.policyId, policyId),
+        eq(reviewTasks.kind, MINT_CONFIRM_TASK_KIND),
+      ),
+    )
+    .catch(() => null);
+  await writeCrmSignalsSafe({
+    kind: "stage_moved",
+    title: `Re-read declaration · ${policy.policyNumber}`,
+    body: `${session.name || "Agent"} re-read the declaration. Confirm the proposed values before publish.`,
+    entityType: "policy",
+    entityId: policyId,
+    dealId: policy.dealId,
+    policyId,
+    taskKind: MINT_CONFIRM_TASK_KIND,
+    dueInDays: 0,
+    createTask: true,
+  });
+
+  revalidatePath(`/policies/${policyId}`);
+  revalidatePath("/policies");
+  if (policy.dealId) revalidatePath(`/deals/${policy.dealId}`);
+  redirect(withFlash(`/policies/${policyId}`, "declaration-reread"));
 }
