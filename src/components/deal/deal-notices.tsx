@@ -115,7 +115,8 @@ export function DealNotices({
       const target = event.target;
       if (!(target instanceof Node)) return;
       if (rootRef.current?.contains(target)) return;
-      if (target instanceof Element && target.closest(NOTICE_LAYER_SEL)) return;
+      const el = target instanceof Element ? target : target.parentElement;
+      if (el?.closest(NOTICE_LAYER_SEL)) return;
       setOpen(false);
     }
     function onKey(event: KeyboardEvent) {
@@ -133,6 +134,19 @@ export function DealNotices({
     if (nextType === "none") return;
     setPendingType(nextType);
     setTaskOpen(true);
+  }
+
+  /** Open after this click finishes so the new dialog overlay does not eat it. */
+  function openTypesEditor() {
+    setOpen(false);
+    window.setTimeout(() => setTypesOpen(true), 0);
+  }
+
+  function openReminderFromMenu() {
+    const next = active ? parseKeep(noticeType ?? selected) : selected;
+    if (next === "none") return;
+    setOpen(false);
+    window.setTimeout(() => openNoticeTask(next), 0);
   }
 
   return (
@@ -237,16 +251,11 @@ export function DealNotices({
                 <DropdownMenuItem
                   data-ff-notice-set-reminder=""
                   disabled={selected === "none" && !active}
-                  onPointerDown={() => openNoticeTask(active ? parseKeep(noticeType ?? selected) : selected)}
-                  onClick={() => openNoticeTask(active ? parseKeep(noticeType ?? selected) : selected)}
+                  onClick={openReminderFromMenu}
                 >
                   Set reminder
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  data-ff-notice-edit-types=""
-                  onPointerDown={() => setTypesOpen(true)}
-                  onClick={() => setTypesOpen(true)}
-                >
+                <DropdownMenuItem data-ff-notice-edit-types="" onClick={openTypesEditor}>
                   Edit types
                 </DropdownMenuItem>
               </DropdownMenuContent>
