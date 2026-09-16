@@ -33,8 +33,9 @@ function MultilineNotesCell({
       aria-label={ariaLabel}
       data-ff-pipe-edit={columnId}
       data-ff-notes-expanded={expanded ? "1" : "0"}
+      style={{ width: "100%" }}
       className={cn(
-        "w-full min-w-[8rem] rounded-sm border border-border bg-background px-1.5 text-xs text-navy resize-none",
+        "box-border w-full min-w-0 rounded-sm border border-border bg-background px-1.5 text-xs text-navy resize-none",
         expanded
           ? "min-h-[2.75rem] py-1 whitespace-pre-wrap"
           : "h-7 min-h-7 overflow-hidden whitespace-nowrap text-ellipsis py-1 leading-tight",
