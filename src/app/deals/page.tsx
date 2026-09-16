@@ -19,7 +19,12 @@ import {
   type DealListFilter,
 } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
-import { EDITABLE_DEAL_PIPELINE_SLUGS, isPipelineSheetView, parsePipelineView } from "@/lib/wire/pipeline";
+import {
+  EDITABLE_DEAL_PIPELINE_SLUGS,
+  isPipelineSheetView,
+  parsePipelineView,
+  pipelineBookToggleHrefs,
+} from "@/lib/wire/pipeline";
 import { presentPipelineCard } from "@/lib/wire/pipeline-cards";
 import { listModuleTags } from "@/app/actions/record-tags";
 import { readDefaultPipelineView } from "@/app/actions/pipeline-view-prefs";
@@ -175,11 +180,7 @@ export default async function DealsPage({
       ) : null}
 
       <div className="mb-4" data-ff-pipeline-book-toggle-wrap="">
-        <PipelineBookModeToggle
-          mode="new"
-          newHref="/deals?view=list"
-          renewalsHref="/renewals"
-        />
+        <PipelineBookModeToggle mode="new" {...pipelineBookToggleHrefs(view)} />
       </div>
 
       <DealWorkspaceBar

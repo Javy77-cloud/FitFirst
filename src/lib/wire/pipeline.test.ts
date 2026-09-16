@@ -13,6 +13,7 @@ import {
   dealsHref,
   renewalsHref,
   parseRenewalsView,
+  pipelineBookToggleHrefs,
   pipelineHref,
   pipelinePageTitle,
   pipelineTabLabel,
@@ -247,5 +248,21 @@ describe("renewals href / default view", () => {
     expect(renewalsHref({ pipeline: "won-lost", view: "funnel" })).toBe(
       "/renewals?pipeline=won-lost&view=funnel",
     );
+    expect(pipelineBookToggleHrefs("list")).toEqual({
+      newHref: "/deals?view=list",
+      renewalsHref: "/renewals?view=list",
+    });
+    expect(pipelineBookToggleHrefs("grid")).toEqual({
+      newHref: "/deals?view=grid",
+      renewalsHref: "/renewals?view=grid",
+    });
+    expect(pipelineBookToggleHrefs("board")).toEqual({
+      newHref: "/deals?view=board",
+      renewalsHref: "/renewals?view=board",
+    });
+    expect(pipelineBookToggleHrefs("funnel")).toEqual({
+      newHref: "/deals?view=funnel",
+      renewalsHref: "/renewals?view=funnel",
+    });
   });
 });

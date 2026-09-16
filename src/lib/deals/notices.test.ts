@@ -7,6 +7,8 @@ import {
   DEAL_NOTICE_PICKLIST_OPTIONS,
   isActiveNotice,
   mergeNoticeTypeOptions,
+  isLegacyMiniNotice,
+  isRenderableNoticeStamp,
   noticeChipLabel,
   noticeCompleteLogBody,
   isNoticeTaskTitle,
@@ -43,6 +45,12 @@ describe("deal notices", () => {
     expect(noticeStampPhrase("check_mortgagee_payment")).toBe("Notice · Check mortgagee");
     expect(noticeStampPhrase("roof_photos_needed")).toBe("Notice · Roof Photos Needed");
     expect(noticeStampPhrase("none")).toBeNull();
+    expect(isLegacyMiniNotice("inspection")).toBe(true);
+    expect(isLegacyMiniNotice("")).toBe(true);
+    expect(isLegacyMiniNotice("inspection_before_bind")).toBe(false);
+    expect(isRenderableNoticeStamp("inspection")).toBe(false);
+    expect(isRenderableNoticeStamp("check_mortgagee_payment")).toBe(true);
+    expect(isRenderableNoticeStamp("none")).toBe(false);
     expect(
       noticePicklistForFamily(
         [{ id: "pl-1", name: "Deal notices · P&C", options: ["Inspection before bind"] }],
@@ -176,7 +184,11 @@ describe("deal notices", () => {
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(
       /setTimeout\(\(\) => setTypesOpen\(true\), 0\)/,
     );
-    expect(source("src/components/deal/notice-note-pad.tsx")).toMatch(/prepareSpeechMicrophone/);
+    expect(source("src/components/deal/notice-note-pad.tsx")).toMatch(/data-ff-notice-note-count/);
+    expect(source("src/components/deal/notice-note-pad.tsx")).toMatch(/Notice note log/);
+    expect(source("src/components/deal/notice-note-pad.tsx")).not.toMatch(/prepareSpeechMicrophone/);
+    expect(source("src/components/deal/speech-note-dialog.tsx")).toMatch(/prepareSpeechMicrophone/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/SpeechNoteDialog/);
     expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/saveDealNoticeTypes/);
   });
 });

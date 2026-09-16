@@ -211,5 +211,10 @@ describe("pipeline list / grid sheet", () => {
     const table = source("src/components/deals/deals-table.tsx");
     expect(table).toMatch(/control === "multiline"/);
     expect(table).toMatch(/mode === "grid" \|\| control === "multiline"/);
+    expect(table).toMatch(/DealListProductNotes/);
+    expect(source("src/components/deals/deal-list-product-notes.tsx")).toMatch(/saveDealProductListNote/);
+    expect(source("src/components/deals/deal-list-product-notes.tsx")).toMatch(
+      /data-ff-deal-list-product-notes/,
+    );
   });
 });

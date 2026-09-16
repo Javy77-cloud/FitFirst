@@ -176,6 +176,20 @@ export function renewalsHref(opts: PipelineDeskHrefOpts = {}) {
   return pipelineDeskHref("/renewals", opts);
 }
 
+/** New ↔ Renewals keeps list/grid/board/funnel instead of each book's default. */
+export function pipelineBookToggleHrefs(view?: string | null): {
+  newHref: string;
+  renewalsHref: string;
+} {
+  const raw = view === "table" ? "list" : view;
+  const id: PipelineViewId =
+    raw === "board" || raw === "funnel" || raw === "grid" || raw === "list" ? raw : "list";
+  return {
+    newHref: dealsHref({ view: id }),
+    renewalsHref: renewalsHref({ view: id }),
+  };
+}
+
 export function pipelineHref(slug: string, view?: string, stage?: string) {
   return dealsHref({ pipeline: slug, view, stage });
 }

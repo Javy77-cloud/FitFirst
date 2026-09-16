@@ -33,6 +33,12 @@ import {
   workspaceTabForProductStage,
   listProductStageHref,
   attachListProductStageHrefs,
+  isDealListNotesColumn,
+  isHeatherCamirandDeal,
+  joinProductListNotes,
+  listProductNotes,
+  noticeNoteLog,
+  stripStaleCamirandProductNotices,
 } from "./product-stages";
 import { markProductIssuedDone } from "@/lib/policy/dec-prompt";
 
@@ -117,6 +123,10 @@ describe("per-product stages", () => {
     expect(leftover.homeowners?.stage).toBe("bound");
     expect(leftover.homeowners?.inspectionStatus).toBe("inspection_before_bind");
     expect(leftover.homeowners?.noticeType).toBe("inspection_before_bind");
+    const cleared = parseProductStages({
+      homeowners: { stage: "pending_inspection", selectedQuoteIds: ["q1"], noticeType: "none" },
+    });
+    expect(cleared.homeowners?.noticeType).toBe("none");
   });
 
   it("keeps Gloria Homeowners Quote sent off Landlord", () => {
@@ -381,7 +391,14 @@ describe("per-product stages", () => {
     expect(source("src/lib/deals/pipeline-sheet.ts")).toMatch(/const view = input\.view \?\? "list"/);
     expect(source("src/lib/deals/pipeline-sheet.ts")).not.toMatch(/view: "board"/);
     expect(source("src/app/deals/page.tsx")).toMatch(/boardWhenNoPipeline=\{null\}/);
-    expect(source("src/app/deals/page.tsx")).toMatch(/newHref="\/deals\?view=list"/);
+    expect(source("src/app/deals/page.tsx")).toMatch(/pipelineBookToggleHrefs\(view\)/);
+    expect(source("src/components/renewals/renewals-desk.tsx")).toMatch(
+      /pipelineBookToggleHrefs\(view\)/,
+    );
+    expect(source("src/app/deals/page.tsx")).not.toMatch(/newHref="\/deals\?view=list"/);
+    expect(source("src/components/renewals/renewals-desk.tsx")).not.toMatch(
+      /newHref="\/deals\?view=board"/,
+    );
   });
 
   it("shows one list/board stage chip per product, not a single deal stage", () => {
@@ -453,9 +470,60 @@ describe("per-product stages", () => {
       "/deals/heather-1?tab=details&line=flood&product=flood",
     ]);
     expect(source("src/components/deals/deals-table.tsx")).toMatch(/attachListProductStageHrefs/);
+    expect(source("src/components/deals/deals-table.tsx")).toMatch(/DealListProductNotes/);
+    expect(source("src/components/deals/deals-table.tsx")).toMatch(/listProductNotes/);
     expect(source("src/components/deals/deals-table.tsx")).not.toMatch(
       /columnId: "stage"[\s\S]{0,80}filterPipeline/,
     );
+    const heatherNotes = listProductNotes({
+      shopProducts: ["homeowners", "auto", "flood"],
+      quotingForm: "HO3",
+      shopFlow: {
+        productStages: {
+          homeowners: { stage: "quote_review", selectedQuoteIds: [], listNote: "HO3 binder" },
+          auto: { stage: "markets", selectedQuoteIds: [], listNote: "VIN pending" },
+        },
+      },
+      fallbackNote: "old deal note",
+    });
+    expect(heatherNotes.map((row) => `${row.label}:${row.note}`)).toEqual([
+      "HO3:HO3 binder",
+      "Auto:VIN pending",
+      "Flood:",
+    ]);
+    expect(
+      listProductNotes({
+        shopProducts: ["homeowners", "landlord"],
+        quotingForm: "HO3",
+        fallbackNote: "shared",
+      }).map((row) => `${row.label}:${row.note}`),
+    ).toEqual(["HO3:shared", "DP3:"]);
+    expect(isDealListNotesColumn("new_field", { type: "multi_line", label: "Notes" })).toBe(true);
+    expect(isDealListNotesColumn("notes")).toBe(true);
+    expect(joinProductListNotes(heatherNotes)).toBe("HO3: HO3 binder\nAuto: VIN pending");
+  });
+
+  it("strips Heather Camirand HO3/Auto leftover notices and keeps Flood", () => {
+    expect(isHeatherCamirandDeal({ title: "Heather Camirand / HO3", primaryNamedInsured: "Heather Camirand" })).toBe(
+      true,
+    );
+    expect(isHeatherCamirandDeal({ title: "Heather Cameron / HO3" })).toBe(false);
+    const cleaned = stripStaleCamirandProductNotices({
+      homeowners: { stage: "quote_review", selectedQuoteIds: [], noticeType: "inspection_before_bind" },
+      auto: { stage: "markets", selectedQuoteIds: [], inspectionStatus: "inspection" },
+      flood: { stage: "gathering", selectedQuoteIds: [], noticeType: "check_mortgagee_payment" },
+    });
+    expect(cleaned.homeowners?.noticeType).toBe("none");
+    expect(cleaned.auto?.noticeType).toBe("none");
+    expect(cleaned.flood?.noticeType).toBe("check_mortgagee_payment");
+    expect(noticeNoteLog({ noticeNote: "Call lender", noticeNotes: [] })).toEqual([
+      { body: "Call lender", at: "", agent: null },
+    ]);
+    expect(source("src/lib/db/queries.ts")).toMatch(/stripStaleCamirandProductNotices/);
+    expect(source("src/app/globals.css")).toMatch(/ff-deal-stamp-stack/);
+    expect(source("src/app/globals.css")).toMatch(/ff-notice-stamp-ink-hit/);
+    expect(source("src/app/globals.css")).toMatch(/rotate\(-24deg\)/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/ff-deal-stamp-stack/);
   });
 
   it("wires choose-quote, lost reasons, attach ids, and speech finals", () => {
@@ -505,6 +573,8 @@ describe("per-product stages", () => {
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/data-ff-deal-notice-chip/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/data-ff-notice-popover/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/NoticeNotePad/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/SpeechNoteDialog/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/data-ff-notice-complete-composer/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/NoticeTypesEditor/);
     expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(/snoozeDealProductNotice/);
     expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(/>Inspection</);

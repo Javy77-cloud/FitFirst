@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { completeDealProductNotice, setDealProductNotice } from "@/app/actions/product-stage";
+import { completeDealProductNotice, saveDealNoticeNote, setDealProductNotice } from "@/app/actions/product-stage";
 import { NoticeNotePad } from "@/components/deal/notice-note-pad";
 import { NoticeTypesEditor } from "@/components/deal/notice-types-editor";
+import { SpeechNoteDialog } from "@/components/deal/speech-note-dialog";
 import { CreateTaskDialog } from "@/components/tasks/create-task-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,10 +14,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { dealProductDef, parseDealProduct } from "@/lib/deals/deal-products";
 import {
   isActiveNotice,
+  isRenderableNoticeStamp,
   mergeNoticeTypeOptions,
   noticeStampPhrase,
   noticeTaskKind,
@@ -25,6 +26,7 @@ import {
   SEED_NOTICE_TYPE_OPTIONS,
   type NoticeTypeOption,
 } from "@/lib/deals/notices";
+import type { NoticeNoteLogEntry } from "@/lib/deals/product-stages";
 import { isDeskTaskType } from "@/lib/tasks/task-types";
 import { cn } from "@/lib/utils";
 import { MoreHorizontal } from "lucide-react";
@@ -60,6 +62,7 @@ export function DealNotices({
   noticeTypes,
   noticeTaskId,
   noticeNote,
+  noticeNotes,
   taskDueDate,
   taskDueTime,
   returnTo,
@@ -76,6 +79,7 @@ export function DealNotices({
   noticeTypes?: readonly NoticeTypeOption[];
   noticeTaskId?: string | null;
   noticeNote?: string | null;
+  noticeNotes?: readonly NoticeNoteLogEntry[];
   taskDueDate?: string | null;
   taskDueTime?: string | null;
   returnTo?: string | null;
@@ -86,10 +90,15 @@ export function DealNotices({
   const options = mergeNoticeTypeOptions(noticeTypes?.length ? noticeTypes : SEED_NOTICE_TYPE_OPTIONS, noticeType);
   const active = isActiveNotice(noticeType);
   const stampLabel = noticeStampPhrase(noticeType, options);
+  const compact = placement === "header";
+  const showStamp = compact
+    ? isRenderableNoticeStamp(noticeType) && Boolean(stampLabel)
+    : Boolean(active && stampLabel);
   const [selected, setSelected] = useState(noticeType && active ? parseKeep(noticeType) : "none");
   const [open, setOpen] = useState(false);
   const [taskOpen, setTaskOpen] = useState(false);
   const [typesOpen, setTypesOpen] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(false);
   const [pendingType, setPendingType] = useState(selected);
   const rootRef = useRef<HTMLDivElement>(null);
   const productValue = product ?? "homeowners";
@@ -103,7 +112,6 @@ export function DealNotices({
     productLabel,
     options,
   });
-  const compact = placement === "header";
 
   useEffect(() => {
     setSelected(noticeType && active ? parseKeep(noticeType) : "none");
@@ -156,7 +164,7 @@ export function DealNotices({
       data-ff-deal-notices={placement}
       data-ff-notice-type={noticeType ?? "none"}
     >
-      {active && stampLabel ? (
+      {showStamp ? (
         <button
           type="button"
           aria-expanded={open}
@@ -232,6 +240,7 @@ export function DealNotices({
               product={productValue}
               noticeLabel={noticeTypeLabel(selected !== "none" ? selected : noticeType, options)}
               note={noticeNote}
+              notes={noticeNotes}
               returnTo={returnTo}
             />
             <DropdownMenu>
@@ -267,25 +276,50 @@ export function DealNotices({
               <input type="hidden" name="dealId" value={dealId} />
               <input type="hidden" name="product" value={productValue} />
               {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+              <input type="hidden" name="notes" value={noticeNote ?? ""} />
               <label className="min-w-0 flex-1 text-[11px] text-muted-foreground">
                 Complete notes
-                <Input
-                  name="notes"
-                  required
-                  minLength={2}
-                  defaultValue={noticeNote ?? ""}
-                  placeholder="What happened"
-                  className="mt-0.5 h-7 text-xs"
+                <button
+                  type="button"
                   data-ff-notice-complete-notes=""
-                />
+                  data-ff-notice-complete-composer=""
+                  onClick={() => setComposerOpen(true)}
+                  className="mt-0.5 flex h-7 w-full items-center rounded-md border border-border bg-background px-2 text-left text-xs font-normal text-navy"
+                >
+                  <span className={noticeNote?.trim() ? "truncate" : "text-muted-foreground"}>
+                    {noticeNote?.trim() || "What happened"}
+                  </span>
+                </button>
               </label>
-              <Button type="submit" size="xs" data-ff-notice-complete="">
+              <Button
+                type="submit"
+                size="xs"
+                disabled={(noticeNote ?? "").trim().length < 2}
+                data-ff-notice-complete=""
+              >
                 Complete
               </Button>
             </form>
           ) : null}
         </div>
       ) : null}
+
+      <SpeechNoteDialog
+        open={composerOpen}
+        onOpenChange={setComposerOpen}
+        title="Complete notes"
+        description={`${noticeTypeLabel(selected !== "none" ? selected : noticeType, options)} — speak or type. Same pad as bindable carrier notes.`}
+        initialValue={noticeNote ?? ""}
+        testId="notice-complete"
+        onSave={async (text) => {
+          const data = new FormData();
+          data.set("dealId", dealId);
+          data.set("product", productValue);
+          data.set("notes", text);
+          if (returnTo) data.set("returnTo", returnTo);
+          await saveDealNoticeNote(data);
+        }}
+      />
 
       <NoticeTypesEditor
         open={typesOpen}
@@ -337,6 +371,8 @@ const NOTICE_LAYER_SEL = [
   "[data-slot='dialog-overlay']",
   "[data-ff-notice-edit-types-dialog]",
   "[data-ff-create-task-dialog]",
+  "[data-ff-speech-note-dialog]",
+  "[data-ff-notice-notepad-dialog]",
 ].join(",");
 
 /** Quotes-only leftover name — same Notices control. */
@@ -351,6 +387,7 @@ export function QuotesStageFlags(props: {
   noticeTypes?: readonly NoticeTypeOption[];
   noticeTaskId?: string | null;
   noticeNote?: string | null;
+  noticeNotes?: readonly NoticeNoteLogEntry[];
   taskDueDate?: string | null;
   taskDueTime?: string | null;
   returnTo?: string | null;
@@ -368,6 +405,7 @@ export function QuotesStageFlags(props: {
       noticeTypes={props.noticeTypes}
       noticeTaskId={props.noticeTaskId}
       noticeNote={props.noticeNote}
+      noticeNotes={props.noticeNotes}
       taskDueDate={props.taskDueDate}
       taskDueTime={props.taskDueTime}
       returnTo={props.returnTo}

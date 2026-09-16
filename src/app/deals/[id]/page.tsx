@@ -71,11 +71,13 @@ import {
 import { pickBoundQuoteId } from "@/lib/deals/status-stamp";
 import {
   displayProductStage,
+  isHeatherCamirandDeal,
   parseProductStages,
   productChipBound,
   productStageFor,
   productStampStage,
   sheetFormForProduct,
+  stripStaleCamirandProductNotices,
 } from "@/lib/deals/product-stages";
 import { DealFlowRail } from "@/components/deals/deal-flow-rail";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
@@ -402,7 +404,9 @@ export default async function DealPage({
     saved: shopFlowLive,
     line: sheetLine,
   });
-  const productStages = parseProductStages(shopFlow.productStages);
+  const productStages = isHeatherCamirandDeal(deal)
+    ? stripStaleCamirandProductNotices(parseProductStages(shopFlow.productStages))
+    : parseProductStages(shopFlow.productStages);
   const activeProductState = productStageFor(
     productStages,
     activeProduct,
@@ -426,6 +430,7 @@ export default async function DealPage({
     noticeTypes: dealNoticeTypes,
     noticeTaskId: activeProductState.noticeTaskId,
     noticeNote: activeProductState.noticeNote,
+    noticeNotes: activeProductState.noticeNotes,
     taskDueDate: noticeDue.date || null,
     taskDueTime: noticeDue.time || null,
     returnTo: noticeReturnTo,
@@ -542,8 +547,10 @@ export default async function DealPage({
       ) : (
         <div className="relative w-full" data-ff-deal-flush-tabs data-ff-deal-topband>
         <div className="ff-deal-stamp-row" data-ff-deal-stamps="">
-          <DealStatusStamp stage={stampStage} />
-          {stampStage ? <DealNotices {...noticeProps} placement="overlay" /> : null}
+          <div className="ff-deal-stamp-stack">
+            <DealStatusStamp stage={stampStage} />
+            {stampStage ? <DealNotices {...noticeProps} placement="overlay" /> : null}
+          </div>
         </div>
         {(() => {
           const pending = shopFlow.pendingDecPrompt;

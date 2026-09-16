@@ -14,6 +14,7 @@ describe("Renewals desk chrome", () => {
     expect(desk).toMatch(/TodayActivityStrip/);
     expect(desk).toMatch(/DealWorkQueuePanel/);
     expect(desk).toMatch(/PipelineBookModeToggle/);
+    expect(desk).toMatch(/pipelineBookToggleHrefs\(view\)/);
     expect(desk).toMatch(/cookieKey=\{RENEWALS_VIEW_COOKIE\}/);
     expect(desk).toMatch(/hrefBuilder=\{renewalsHref\}/);
     expect(desk).toMatch(/boardWhenNoPipeline=\{null\}/);

@@ -2278,6 +2278,26 @@ export async function getDealWorkspace(dealId: string) {
     deal.shopLines = shopRepair.shopLines;
     deal.shopProducts = shopRepair.shopProducts;
   }
+  const {
+    isHeatherCamirandDeal,
+    parseProductStages,
+    stripStaleCamirandProductNotices,
+  } = await import("@/lib/deals/product-stages");
+  const { parseShopFlow } = await import("@/lib/deals/shop-flow");
+  if (isHeatherCamirandDeal(deal)) {
+    const saved = parseShopFlow(deal.shopFlow);
+    const stages = parseProductStages(saved.productStages);
+    const cleaned = stripStaleCamirandProductNotices(stages);
+    if (cleaned !== stages) {
+      const nextFlow = { ...saved, productStages: cleaned };
+      await db
+        .update(deals)
+        .set({ shopFlow: nextFlow, updatedAt: new Date() })
+        .where(eq(deals.id, deal.id))
+        .catch(() => null);
+      deal.shopFlow = nextFlow;
+    }
+  }
 
   const [
     riskRows,
