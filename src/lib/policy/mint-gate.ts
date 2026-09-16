@@ -69,14 +69,57 @@ export const MINT_CONFIRM_FIELDS = [
   { key: "effective_date", label: "Effective" },
   { key: "expiration_date", label: "Expiration" },
   { key: "premium", label: "Premium" },
-  { key: "coverage_a", label: "Coverage A" },
+  { key: "coverage_a", label: "Coverage A / dwelling" },
   { key: "form", label: "Form" },
+  { key: "insurance_type", label: "Insurance type" },
   { key: "hurricane_deductible", label: "Hurricane deductible" },
   { key: "aop_deductible", label: "AOP deductible" },
-  { key: "mailing_address", label: "Mailing / premises" },
+  { key: "mailing_address", label: "Location / property" },
+  { key: "selling_agency", label: "Selling agency" },
+  { key: "renewal_date", label: "Renewal date" },
+  { key: "producer", label: "Producer" },
+  { key: "roof_year", label: "Roof age" },
+  { key: "mortgagee", label: "Mortgagee" },
+  { key: "billing_frequency", label: "Billing frequency" },
+  { key: "next_due", label: "Next due" },
+  { key: "payment_method", label: "Payment method" },
 ] as const;
 
 const SOLD_KEYS = new Set(["premium", "coverage_a", "hurricane_deductible", "aop_deductible"]);
+
+/** Gemini / sheet keys that fill a mint confirm field. */
+export const MINT_FIELD_ALIASES: Record<string, string[]> = {
+  policy_number: ["policy_number"],
+  named_insured: [
+    "named_insured",
+    "current_policy_name_insured",
+    "current_policy_named_insured",
+    "applicant_name",
+  ],
+  effective_date: ["effective_date"],
+  expiration_date: ["expiration_date"],
+  premium: ["premium", "current_premium"],
+  coverage_a: ["coverage_a", "dwelling"],
+  form: ["form", "policy_form", "quoting_form"],
+  insurance_type: ["insurance_type", "insurance_family"],
+  hurricane_deductible: ["hurricane_deductible"],
+  aop_deductible: ["aop_deductible"],
+  mailing_address: [
+    "mailing_address",
+    "property_address",
+    "address",
+    "address1",
+    "applicant_address",
+  ],
+  selling_agency: ["selling_agency"],
+  renewal_date: ["renewal_date"],
+  producer: ["producer"],
+  roof_year: ["roof_year", "roof_age"],
+  mortgagee: ["mortgagee", "mortgagee_name"],
+  billing_frequency: ["billing_frequency", "premium_frequency", "premium_mode"],
+  next_due: ["next_due", "next_payment_due"],
+  payment_method: ["payment_method", "pay_plan"],
+};
 
 const BOUND_READY = new Set(["bound", "closed_won", "pending_inspection", "policy_issued"]);
 
@@ -175,7 +218,16 @@ export function normalizeMintValue(key: string, raw: string | number | null | un
     const n = Number(value.replace(/[$,]/g, ""));
     return Number.isFinite(n) ? String(Math.round(n * 100) / 100) : value;
   }
-  if (key.endsWith("_date")) {
+  if (key === "billing_frequency") {
+    const low = value.toLowerCase();
+    if (/\bmonth/.test(low)) return "monthly";
+    if (/\bquarter/.test(low)) return "quarterly";
+    if (/\bsemi|6\s*month/.test(low)) return "semiannual";
+    if (/\bescrow|mortgagee/.test(low)) return "escrow";
+    if (/\bannual|year/.test(low)) return "annual";
+    return value;
+  }
+  if (key.endsWith("_date") || key === "next_due") {
     const iso = value.match(/^(\d{4}-\d{2}-\d{2})/);
     if (iso) return iso[1]!;
     const parsed = new Date(value);
@@ -227,6 +279,44 @@ function geminiCell(
   return null;
 }
 
+export type MintIdentity = {
+  namedInsured?: string | null;
+  mailingAddress?: string | null;
+  propertyAddress?: string | null;
+  sellingAgency?: string | null;
+  producer?: string | null;
+  insuranceType?: string | null;
+  form?: string | null;
+  renewalDate?: string | null;
+  roofYear?: string | number | null;
+  mortgagee?: string | null;
+  billingFrequency?: string | null;
+  nextDue?: string | null;
+  paymentMethod?: string | null;
+};
+
+function identityCell(identity: MintIdentity | null | undefined, key: string): string {
+  if (!identity) return "";
+  if (key === "named_insured") return normalizeMintValue(key, identity.namedInsured);
+  if (key === "mailing_address") {
+    return (
+      normalizeMintValue(key, identity.propertyAddress) ||
+      normalizeMintValue(key, identity.mailingAddress)
+    );
+  }
+  if (key === "selling_agency") return normalizeMintValue(key, identity.sellingAgency);
+  if (key === "producer") return normalizeMintValue(key, identity.producer);
+  if (key === "insurance_type") return normalizeMintValue(key, identity.insuranceType);
+  if (key === "form") return normalizeMintValue(key, identity.form);
+  if (key === "renewal_date") return normalizeMintValue(key, identity.renewalDate);
+  if (key === "roof_year") return normalizeMintValue(key, identity.roofYear);
+  if (key === "mortgagee") return normalizeMintValue(key, identity.mortgagee);
+  if (key === "billing_frequency") return normalizeMintValue(key, identity.billingFrequency);
+  if (key === "next_due") return normalizeMintValue(key, identity.nextDue);
+  if (key === "payment_method") return normalizeMintValue(key, identity.paymentMethod);
+  return "";
+}
+
 export function buildMintFields(input: {
   gemini?: readonly {
     fieldKey: string;
@@ -242,7 +332,7 @@ export function buildMintFields(input: {
     hurricaneDeductible?: string | null;
     aopDeductible?: string | null;
   } | null;
-  identity?: { namedInsured?: string | null; mailingAddress?: string | null } | null;
+  identity?: MintIdentity | null;
   threshold?: number;
 }): MintField[] {
   const threshold = input.threshold ?? CONFIDENCE_THRESHOLD;
@@ -256,44 +346,23 @@ export function buildMintFields(input: {
     ),
     aop_deductible: normalizeMintValue("aop_deductible", input.sold?.aopDeductible),
   };
-  const identityNamed = (input.identity?.namedInsured ?? "").trim();
-  const identityMailing = (input.identity?.mailingAddress ?? "").trim();
 
   return MINT_CONFIRM_FIELDS.map((def) => {
-    const gem = geminiCell(
-      gemini,
-      def.key,
-      def.key === "named_insured" ? "current_policy_name_insured" : "",
-      def.key === "named_insured" ? "applicant_name" : "",
-      def.key === "mailing_address" ? "address" : "",
-      def.key === "mailing_address" ? "address1" : "",
-      def.key === "mailing_address" ? "property_address" : "",
-    );
-    const fromSheet = sheetCell(
-      input.sheet,
-      def.key,
-      def.key === "named_insured" ? "applicant_name" : "",
-      def.key === "named_insured" ? "current_policy_named_insured" : "",
-      def.key === "mailing_address" ? "address1" : "",
-      def.key === "mailing_address" ? "address" : "",
-    );
+    const aliases = MINT_FIELD_ALIASES[def.key] ?? [def.key];
+    const gem = geminiCell(gemini, ...aliases);
+    const fromSheet = sheetCell(input.sheet, ...aliases);
     const soldValue = SOLD_KEYS.has(def.key)
       ? sold[def.key as keyof typeof sold] || ""
       : "";
-    const sheetValue =
-      fromSheet ||
-      (def.key === "named_insured" ? identityNamed : "") ||
-      (def.key === "mailing_address" ? identityMailing : "");
+    const sheetValue = fromSheet || identityCell(input.identity, def.key);
     const geminiValue = gem?.value ?? "";
     const geminiConfidence = gem?.confidence ?? 0;
     const lowGemini = Boolean(geminiValue) && geminiConfidence < threshold;
 
+    // Issued policy: declaration (Gemini) wins. Deal/sheet next. Sold stub is fallback/hint only.
     let value = "";
     let source: MintFieldSource = "deal";
-    if (SOLD_KEYS.has(def.key) && soldValue) {
-      value = soldValue;
-      source = "quote";
-    } else if (geminiValue && !lowGemini) {
+    if (geminiValue && !lowGemini) {
       value = geminiValue;
       source = "gemini";
     } else if (sheetValue) {
@@ -302,6 +371,9 @@ export function buildMintFields(input: {
     } else if (geminiValue) {
       value = geminiValue;
       source = "gemini";
+    } else if (SOLD_KEYS.has(def.key) && soldValue) {
+      value = soldValue;
+      source = "quote";
     }
 
     const mismatch =
@@ -323,6 +395,57 @@ export function buildMintFields(input: {
       geminiValue: geminiValue || null,
     };
   });
+}
+
+/** Value the confirm card should offer — Gemini/deal, never a stub that overwrote the dec. */
+export function mintProposedValue(field: Pick<MintField, "key" | "value" | "geminiValue" | "sheetValue" | "soldValue">): string {
+  const gemini = normalizeMintValue(field.key, field.geminiValue);
+  const sheet = normalizeMintValue(field.key, field.sheetValue);
+  const current = normalizeMintValue(field.key, field.value);
+  const sold = normalizeMintValue(field.key, field.soldValue);
+  if (gemini) return gemini;
+  if (sheet) return sheet;
+  if (current && current !== sold) return current;
+  return current;
+}
+
+export function mintFieldPolicyPatch(fields: readonly MintField[]): {
+  policyNumber?: string;
+  premium?: string | null;
+  coverageA?: number | null;
+  formType?: string | null;
+  insuranceType?: string | null;
+  premisesAddress?: string | null;
+  sellingAgency?: string | null;
+  producer?: string | null;
+  billingFrequency?: string | null;
+  renewalDate?: string | null;
+  roofYear?: number | null;
+  mortgagee?: string | null;
+  nextDue?: string | null;
+  paymentMethod?: string | null;
+} {
+  const get = (key: string) => fields.find((row) => row.key === key)?.value?.trim() || "";
+  const coverageARaw = get("coverage_a");
+  const coverageA = coverageARaw ? Number(coverageARaw.replace(/[$,]/g, "")) : NaN;
+  const roofRaw = get("roof_year");
+  const roofYear = roofRaw ? Number(roofRaw.replace(/[^\d]/g, "").slice(0, 4)) : NaN;
+  return {
+    policyNumber: get("policy_number") || undefined,
+    premium: get("premium") || null,
+    coverageA: Number.isFinite(coverageA) ? coverageA : null,
+    formType: get("form") || null,
+    insuranceType: get("insurance_type") || null,
+    premisesAddress: get("mailing_address") || null,
+    sellingAgency: get("selling_agency") || null,
+    producer: get("producer") || null,
+    billingFrequency: get("billing_frequency") || null,
+    renewalDate: get("renewal_date") || null,
+    roofYear: Number.isFinite(roofYear) && roofYear > 1900 ? roofYear : null,
+    mortgagee: get("mortgagee") || null,
+    nextDue: get("next_due") || null,
+    paymentMethod: get("payment_method") || null,
+  };
 }
 
 export function mintConfirmQueue(fields: readonly MintField[]): MintField[] {

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { persistFile } from "@/app/actions/documents";
 import { findMatchingContact } from "@/app/actions/crm";
+import { findOrCreateLocationFromAddress } from "@/app/actions/locations";
 import { currentDeskSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import {
@@ -16,12 +17,17 @@ import {
   extractedFields,
   leads,
   policies,
+  policyAdditionalInterests,
+  policyInstallments,
   quoteSheets,
   quotes,
   reviewTasks,
   risks,
+  users,
 } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { parseAddressParts } from "@/lib/extraction/gemini/map";
+import { insuranceFamilyFromPolicy } from "@/lib/desk/policy-family";
 import { dealProductDef, inferDealProducts, parseDealProduct, type DealProductId } from "@/lib/deals/deal-products";
 import {
   parseProductStages,
@@ -49,6 +55,7 @@ import {
   confirmMintField,
   evaluateMintGate,
   findDealDeclaration,
+  mintFieldPolicyPatch,
   parseMintPayload,
   policyForProduct,
   policyMintUnpublished,
@@ -68,6 +75,106 @@ function dateOrFallback(raw: string | null | undefined, fallback: Date) {
 
 function fieldValue(fields: MintField[], key: string) {
   return fields.find((row) => row.key === key)?.value?.trim() || "";
+}
+
+function sheetValue(
+  sheet: Record<string, { value?: string | null } | undefined> | null | undefined,
+  ...keys: string[]
+) {
+  if (!sheet) return "";
+  for (const key of keys) {
+    const hit = String(sheet[key]?.value ?? "").trim();
+    if (hit) return hit;
+  }
+  return "";
+}
+
+async function applyMintBookExtras(input: {
+  policyId: string;
+  contactId: string | null;
+  accountId: string | null;
+  riskId: string | null;
+  fields: MintField[];
+  premium?: string | null;
+}) {
+  const patch = mintFieldPolicyPatch(input.fields);
+  const address = patch.premisesAddress || "";
+  const parts = address ? parseAddressParts(address) : { street: "" };
+  if (input.contactId || input.accountId) {
+    const loc = await findOrCreateLocationFromAddress({
+      contactId: input.contactId,
+      accountId: input.accountId,
+      street: parts.street || address,
+      city: parts.city,
+      state: parts.state,
+      zip: parts.zip,
+    });
+    if (loc) {
+      await db
+        .update(policies)
+        .set({
+          locationId: loc.id,
+          premisesAddress: loc.street || loc.address1 || address || null,
+          premisesCity: loc.city ?? parts.city ?? null,
+          premisesState: loc.state ?? parts.state ?? null,
+          premisesZip: loc.zip ?? parts.zip ?? null,
+          updatedAt: new Date(),
+        })
+        .where(eq(policies.id, input.policyId));
+    }
+  }
+
+  if (patch.roofYear && input.riskId) {
+    await db
+      .update(risks)
+      .set({ roofYear: patch.roofYear, updatedAt: new Date() })
+      .where(eq(risks.id, input.riskId));
+  }
+
+  if (patch.mortgagee) {
+    const existing = await db
+      .select({ id: policyAdditionalInterests.id })
+      .from(policyAdditionalInterests)
+      .where(
+        and(
+          eq(policyAdditionalInterests.tenantId, DEFAULT_TENANT_ID),
+          eq(policyAdditionalInterests.policyId, input.policyId),
+          eq(policyAdditionalInterests.kind, "mortgagee"),
+        ),
+      );
+    if (!existing.length) {
+      await db.insert(policyAdditionalInterests).values({
+        tenantId: DEFAULT_TENANT_ID,
+        policyId: input.policyId,
+        kind: "mortgagee",
+        name: patch.mortgagee,
+      });
+    }
+  }
+
+  if (patch.nextDue) {
+    const due = dateOrFallback(patch.nextDue, new Date());
+    const existingDue = await db
+      .select({ id: policyInstallments.id })
+      .from(policyInstallments)
+      .where(
+        and(
+          eq(policyInstallments.tenantId, DEFAULT_TENANT_ID),
+          eq(policyInstallments.policyId, input.policyId),
+        ),
+      );
+    if (!existingDue.length) {
+      await db.insert(policyInstallments).values({
+        tenantId: DEFAULT_TENANT_ID,
+        policyId: input.policyId,
+        billType: "agency_bill",
+        status: "scheduled",
+        amount: patch.premium || input.premium || "0",
+        dueOn: due,
+        notes: patch.paymentMethod ? `Payment method: ${patch.paymentMethod}` : "From declaration",
+      });
+    }
+  }
 }
 
 async function loadDeal(dealId: string) {
@@ -277,9 +384,20 @@ export async function issuePolicyFromDeclaration(input: {
       )
     : [];
   const risk = riskRows[0];
+  const sheetValues = (sheet?.values ?? {}) as Record<string, { value?: string | null } | undefined>;
+  const [owner] = deal.ownerId
+    ? await db.select({ name: users.name }).from(users).where(eq(users.id, deal.ownerId))
+    : [];
+  const session = await currentDeskSession();
+  const propertyLine = [
+    risk?.address1,
+    [risk?.city, risk?.state, risk?.zip].filter(Boolean).join(", "),
+  ]
+    .filter(Boolean)
+    .join(", ");
   const fields = buildMintFields({
     gemini: geminiRows,
-    sheet: sheet?.values ?? {},
+    sheet: sheetValues,
     sold: {
       premium: quote.premium,
       coverageA: quote.coverageA,
@@ -289,19 +407,31 @@ export async function issuePolicyFromDeclaration(input: {
     identity: {
       namedInsured: deal.primaryNamedInsured,
       mailingAddress: risk?.address1 ?? null,
+      propertyAddress: deal.propertyOneliner || propertyLine || null,
+      sellingAgency: sheetValue(sheetValues, "selling_agency"),
+      producer: owner?.name || session.name || null,
+      insuranceType: insuranceFamilyFromPolicy({
+        lineOfBusiness: deal.lineOfBusiness,
+        policySubType: deal.policySubType,
+      }),
+      form: deal.quotingForm || deal.policySubType || null,
+      roofYear: risk?.roofYear ?? null,
+      mortgagee: sheetValue(sheetValues, "mortgagee_name", "mortgagee"),
+      billingFrequency: sheetValue(sheetValues, "billing_frequency", "premium_frequency", "premium_mode"),
+      paymentMethod: sheetValue(sheetValues, "payment_method", "pay_plan"),
     },
   });
 
   const contactId = await ensureDealContact(deal);
+  const booked = mintFieldPolicyPatch(fields);
   const effective = dateOrFallback(fieldValue(fields, "effective_date"), new Date());
   const expiration = dateOrFallback(
     fieldValue(fields, "expiration_date"),
     new Date(effective.getTime() + 365 * 24 * 60 * 60 * 1000),
   );
-  const premium = fieldValue(fields, "premium") || quote.premium || null;
-  const coverageA = Number(fieldValue(fields, "coverage_a") || quote.coverageA || risk?.coverageA || 0) || null;
-  const policyNumber =
-    fieldValue(fields, "policy_number") || `FF-MINT-${Date.now().toString().slice(-8)}`;
+  const premium = booked.premium || quote.premium || null;
+  const coverageA = booked.coverageA || quote.coverageA || risk?.coverageA || null;
+  const policyNumber = booked.policyNumber || `FF-MINT-${Date.now().toString().slice(-8)}`;
   const payload: MintPayload = {
     status: "unpublished",
     soldBasis: {
@@ -319,7 +449,6 @@ export async function issuePolicyFromDeclaration(input: {
     mintedAt: new Date().toISOString(),
   };
 
-  const session = await currentDeskSession();
   const values = {
     contactId,
     accountId: deal.accountId,
@@ -333,12 +462,21 @@ export async function issuePolicyFromDeclaration(input: {
     expirationDate: expiration,
     premium,
     coverageA,
-    formType: fieldValue(fields, "form") || def.quotingForm,
+    formType: booked.formType || def.quotingForm,
     policySubType: def.quotingForm,
-    premisesAddress: fieldValue(fields, "mailing_address") || risk?.address1 || null,
+    insuranceType: booked.insuranceType || insuranceFamilyFromPolicy({
+      lineOfBusiness: def.lob,
+      policySubType: def.quotingForm,
+    }),
+    sellingAgency: booked.sellingAgency,
+    producer: booked.producer,
+    billingFrequency: booked.billingFrequency,
+    renewalDate: booked.renewalDate ? dateOrFallback(booked.renewalDate, expiration) : null,
+    premisesAddress: booked.premisesAddress || risk?.address1 || null,
     premisesCity: risk?.city ?? null,
     premisesState: risk?.state ?? null,
     premisesZip: risk?.zip ?? null,
+    ownerId: deal.ownerId ?? null,
     sourceQuoteId: quote.id,
     sourceDocumentId: gate.dec.id,
     sourceProduct: product,
@@ -367,6 +505,15 @@ export async function issuePolicyFromDeclaration(input: {
       actor: { id: session.userId || null, name: session.name || "Desk" },
     });
   }
+
+  await applyMintBookExtras({
+    policyId,
+    contactId,
+    accountId: deal.accountId,
+    riskId: risk?.id ?? null,
+    fields,
+    premium,
+  });
 
   await db
     .update(documents)
@@ -473,6 +620,7 @@ export async function confirmMintedPolicyField(formData: FormData) {
   if (!payload) return { ok: false as const, reason: "invalid" as const };
   const fields = confirmMintField(payload.fields, key, value);
   const next: MintPayload = { ...payload, fields };
+  const booked = mintFieldPolicyPatch(fields);
   const patch: Record<string, unknown> = {
     mintPayload: next,
     updatedAt: new Date(),
@@ -483,8 +631,21 @@ export async function confirmMintedPolicyField(formData: FormData) {
   if (key === "effective_date" && value) patch.effectiveDate = dateOrFallback(value, policy.effectiveDate);
   if (key === "expiration_date" && value) patch.expirationDate = dateOrFallback(value, policy.expirationDate);
   if (key === "form" && value) patch.formType = value;
+  if (key === "insurance_type" && value) patch.insuranceType = value;
   if (key === "mailing_address" && value) patch.premisesAddress = value;
+  if (key === "selling_agency" && value) patch.sellingAgency = value;
+  if (key === "producer" && value) patch.producer = value;
+  if (key === "billing_frequency" && value) patch.billingFrequency = value;
+  if (key === "renewal_date" && value) patch.renewalDate = dateOrFallback(value, policy.renewalDate ?? policy.expirationDate);
   await db.update(policies).set(patch).where(eq(policies.id, policyId));
+  await applyMintBookExtras({
+    policyId,
+    contactId: policy.contactId,
+    accountId: policy.accountId,
+    riskId: policy.riskId,
+    fields,
+    premium: booked.premium || policy.premium,
+  });
   revalidatePath(`/policies/${policyId}`);
   return { ok: true as const, remaining: fields.filter((row) => !row.confirmed).length };
 }

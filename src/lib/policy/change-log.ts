@@ -135,6 +135,7 @@ export function sourceLabel(source: string): string {
   if (source === "cancellation") return "Cancellation";
   if (source === "non_renewal") return "Non-renewal";
   if (source === "bind") return "Bind";
+  if (source === "mint") return "Policy created";
   if (source === "seed") return "Seeded";
   return source.replaceAll("_", " ");
 }

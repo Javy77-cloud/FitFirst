@@ -12,7 +12,9 @@ import {
   isDeclarationPdf,
   isPolicyIssuedStage,
   mintConfirmQueue,
+  mintFieldPolicyPatch,
   mintNeedsConfirm,
+  mintProposedValue,
   parseMintPayload,
   policyForProduct,
   policyMintUnpublished,
@@ -151,7 +153,7 @@ describe("unpublished confirm guard", () => {
       ],
     });
     const queue = mintConfirmQueue(fields);
-    expect(fields.find((row) => row.key === "premium")?.value).toBe("1840");
+    expect(fields.find((row) => row.key === "premium")?.value).toBe("2100");
     expect(fields.find((row) => row.key === "premium")?.soldValue).toBe("1840");
     expect(queue.map((row) => row.key)).toEqual(
       expect.arrayContaining(["premium", "named_insured"]),
@@ -161,6 +163,78 @@ describe("unpublished confirm guard", () => {
     expect(mintNeedsConfirm({ status: "unpublished", soldBasis: { quoteId: "q1" }, fields })).toBe(
       true,
     );
+  });
+
+  it("uses declaration premium over a bound stub quote", () => {
+    const fields = buildMintFields({
+      sold: { premium: "2463", coverageA: 250000 },
+      gemini: [
+        { fieldKey: "current_premium", normalizedValue: "3383", confidence: 0.94, flagged: false },
+        { fieldKey: "coverage_a", normalizedValue: "275000", confidence: 0.92, flagged: false },
+      ],
+    });
+    const premium = fields.find((row) => row.key === "premium");
+    const dwelling = fields.find((row) => row.key === "coverage_a");
+    expect(premium?.value).toBe("3383");
+    expect(premium?.source).toBe("gemini");
+    expect(premium?.soldValue).toBe("2463");
+    expect(premium?.flagged).toBe(true);
+    expect(dwelling?.value).toBe("275000");
+    expect(mintFieldPolicyPatch(fields).premium).toBe("3383");
+  });
+
+  it("Looks right accepts the Gemini/deal proposed value, not a blank or stub overwrite", () => {
+    const stale = {
+      key: "premium",
+      label: "Premium",
+      value: "2463",
+      confidence: 0.94,
+      source: "quote" as const,
+      flagged: true,
+      confirmed: false,
+      soldValue: "2463",
+      sheetValue: null,
+      geminiValue: "3383",
+    };
+    expect(mintProposedValue(stale)).toBe("3383");
+    const accepted = confirmMintField([stale], "premium", mintProposedValue(stale));
+    expect(accepted[0]?.value).toBe("3383");
+    expect(accepted[0]?.confirmed).toBe(true);
+    expect(accepted[0]?.flagged).toBe(false);
+
+    const emptyExtract = {
+      ...stale,
+      value: "",
+      geminiValue: null,
+      sheetValue: null,
+      soldValue: null,
+    };
+    expect(mintProposedValue(emptyExtract)).toBe("");
+  });
+
+  it("copies deal/sheet extras when the dec omitted them", () => {
+    const fields = buildMintFields({
+      sheet: {
+        mortgagee_name: { value: "First Community Bank ISAOA" },
+        roof_year: { value: "2018" },
+      },
+      identity: {
+        propertyAddress: "412 Harbor Isle Dr, Melbourne, FL 32901",
+        producer: "Javy Rivera",
+        sellingAgency: "afa",
+        insuranceType: "P&C",
+        form: "HO3",
+        billingFrequency: "annual",
+        renewalDate: "2027-09-01",
+      },
+    });
+    expect(fields.find((row) => row.key === "mailing_address")?.value).toContain("Harbor Isle");
+    expect(fields.find((row) => row.key === "producer")?.value).toBe("Javy Rivera");
+    expect(fields.find((row) => row.key === "selling_agency")?.value).toBe("afa");
+    expect(fields.find((row) => row.key === "mortgagee")?.value).toContain("First Community");
+    expect(fields.find((row) => row.key === "roof_year")?.value).toBe("2018");
+    expect(fields.find((row) => row.key === "billing_frequency")?.value).toBe("annual");
+    expect(fields.find((row) => row.key === "form")?.value).toBe("HO3");
   });
 
   it("blocks publish until the confirm queue is empty", () => {
@@ -196,5 +270,11 @@ describe("unpublished confirm guard", () => {
     expect(source("src/app/policies/[id]/page.tsx")).toMatch(/MintConfirmQueue/);
     expect(source("src/app/policies/new/page.tsx")).not.toMatch(/blank policy/i);
     expect(source("src/lib/desk/create-menu.ts")).not.toMatch(/\/policies\/new/);
+    expect(source("src/components/policy/mint-confirm-queue.tsx")).toMatch(/Looks right/);
+    expect(source("src/components/policy/mint-confirm-queue.tsx")).toMatch(/mintProposedValue/);
+    expect(source("src/components/policy/mint-confirm-queue.tsx")).toMatch(/data-ff-mint-proposed/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/mintFieldPolicyPatch/);
+    expect(source("src/lib/extraction/gemini/prompt.ts")).toMatch(/selling_agency/);
+    expect(source("src/lib/policy/change-log.ts")).toMatch(/Policy created/);
   });
 });
