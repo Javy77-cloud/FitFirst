@@ -11,7 +11,6 @@ import {
   SERVICE_TIMELINE_EVENTS,
   SERVICING_TASK_KINDS,
   servicingDocKeyFromTaskKind,
-  servicingTaskKind,
 } from "@/lib/domain-ams";
 import { isUuid } from "@/lib/ids";
 import { isSuspenseDocKey, pendingSuspenseKeys } from "./suspense";
@@ -67,7 +66,7 @@ import {
   type ServicingTask,
 } from "./checklist";
 import { ensureCurrentPolicyTerm } from "./ensure-term";
-import { packetTaskTitle, packetTasksByKey, type PacketTask } from "./packet-tasks";
+import { packetTasksByKey, type PacketTask } from "./packet-tasks";
 import {
   bucketRenewalRows,
   buildRenewalRow,
@@ -230,22 +229,8 @@ export async function ensureServicingSuspense(policyId: string) {
       status: row.status,
     })),
   );
-  if (pending.length === 0) return [];
-  const due = new Date();
-  due.setUTCDate(due.getUTCDate() + 7);
-  await db.insert(reviewTasks).values(
-    pending.map((key) => ({
-      tenantId: tenant(),
-      policyId,
-      contactId: policy.contactId,
-      accountId: policy.accountId,
-      dealId: policy.dealId,
-      kind: servicingTaskKind(key),
-      title: packetTaskTitle(key, policy.policyNumber),
-      dueDate: due,
-      status: "open" as const,
-    })),
-  );
+  // Missing dec / ID cards / AOR stay on the servicing checklist. Do not
+  // silently open Tasks — agents create packet tasks on purpose.
   return pending;
 }
 

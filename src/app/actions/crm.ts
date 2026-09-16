@@ -858,7 +858,7 @@ export async function updateDealStage(formData: FormData) {
     dealId,
     contactId: deal.contactId,
     accountId: deal.accountId,
-    createTask: resolved.pipelineStageSlug === "quote_sent" || resolved.pipelineStageSlug === "closed_lost",
+    createTask: false,
   });
   revalidateCrm([`/deals/${dealId}`]);
 }

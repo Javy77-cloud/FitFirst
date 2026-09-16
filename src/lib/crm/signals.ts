@@ -1,6 +1,7 @@
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts, reviewTasks } from "@/lib/db/schema";
+import { writeDeskComms } from "@/lib/desk/write-comms";
 
 export type CrmSignalKind =
   | "lead_converted"
@@ -51,19 +52,14 @@ export function crmSignalDefaults(kind: CrmSignalKind): {
   return { taskKind: "comms_queue", dueInDays: 0, createTask: false, severity: "info" };
 }
 
-export function shouldCreateStageTask(stageSlug: string) {
-  const key = stageSlug.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_");
-  return (
-    key === "quote_sent" ||
-    key === "closed_lost" ||
-    key === "quote_review" ||
-    key === "review"
-  );
+/** Stage / pipeline events must never auto-spawn Tasks. Log them instead. */
+export function shouldCreateStageTask(_stageSlug: string) {
+  return false;
 }
 
 export async function writeCrmSignals(input: CrmSignalInput) {
   const defaults = crmSignalDefaults(input.kind);
-  const createTask = input.createTask ?? defaults.createTask;
+  const createTask = input.kind === "stage_moved" ? false : (input.createTask ?? defaults.createTask);
   const due = new Date();
   due.setUTCDate(due.getUTCDate() + (input.dueInDays ?? defaults.dueInDays));
 
@@ -81,6 +77,21 @@ export async function writeCrmSignals(input: CrmSignalInput) {
       recipientUserId: input.userId ?? null,
     })
     .returning();
+
+  if (input.kind === "stage_moved") {
+    await writeDeskComms({
+      kind: "note",
+      title: input.title,
+      body: input.body,
+      status: "completed",
+      eventType: "stage_moved",
+      dealId: input.dealId,
+      contactId: input.contactId,
+      accountId: input.accountId,
+      policyId: input.policyId,
+      logEmailJob: false,
+    }).catch(() => null);
+  }
 
   let task: typeof reviewTasks.$inferSelect | null = null;
   if (createTask) {

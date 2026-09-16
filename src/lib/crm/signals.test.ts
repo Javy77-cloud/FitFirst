@@ -14,13 +14,16 @@ describe("CRM action signals", () => {
     expect(crmSignalDefaults("meeting_scheduled").createTask).toBe(true);
   });
 
-  it("creates a stage task only on quote-sent, quote review, or closed-lost", () => {
+  it("never auto-creates a task on stage moves, including quote sent / review", () => {
+    expect(crmSignalDefaults("stage_moved").createTask).toBe(false);
     expect(shouldCreateStageTask("gather")).toBe(false);
     expect(shouldCreateStageTask("markets")).toBe(false);
     expect(shouldCreateStageTask("quotes")).toBe(false);
-    expect(shouldCreateStageTask("quote_sent")).toBe(true);
-    expect(shouldCreateStageTask("closed_lost")).toBe(true);
-    expect(shouldCreateStageTask("quote_review")).toBe(true);
-    expect(shouldCreateStageTask("review")).toBe(true);
+    expect(shouldCreateStageTask("quote_sent")).toBe(false);
+    expect(shouldCreateStageTask("closed_lost")).toBe(false);
+    expect(shouldCreateStageTask("quote_review")).toBe(false);
+    expect(shouldCreateStageTask("review")).toBe(false);
+    expect(shouldCreateStageTask("policy_issued")).toBe(false);
+    expect(shouldCreateStageTask("policy_created")).toBe(false);
   });
 });

@@ -592,7 +592,7 @@ export async function issuePolicyFromDeclaration(input: {
     policyId,
     taskKind: MINT_CONFIRM_TASK_KIND,
     dueInDays: 0,
-    createTask: true,
+    createTask: false,
   });
   await ensureWorkItem(policyId).catch(() => null);
   await clearCreatePolicyPrompt(dealId).catch(() => null);
