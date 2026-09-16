@@ -98,8 +98,20 @@ export function DealHeaderStage({
     };
   }, [open]);
 
+  function livePicked(ids: string[] = picked) {
+    const live = new Set(quoteChoices.map((quote) => quote.id));
+    return ids.filter((id) => live.has(id));
+  }
+
   function commit(next: string, quoteIds = picked) {
     if (!next || next === value || pending) return;
+    const validIds = livePicked(quoteIds);
+    if (lateStageNeedsQuoteSelection({ stage: next, selectedQuoteIds: validIds, liveQuoteIds: [...quoteChoices.map((q) => q.id)] })) {
+      setPendingStage(next);
+      setPickOpen(true);
+      setOpen(false);
+      return;
+    }
     const prev = value;
     setValue(next);
     setOpen(false);
@@ -109,7 +121,7 @@ export function DealHeaderStage({
         product: product || "homeowners",
         stageSlug: next,
         pipelineSlug,
-        selectedQuoteIds: quoteIds,
+        selectedQuoteIds: validIds,
       });
       if (!result.ok) {
         setValue(prev);
@@ -136,13 +148,19 @@ export function DealHeaderStage({
       setOpen(false);
       return;
     }
-    if (lateStageNeedsQuoteSelection({ stage: next, selectedQuoteIds: picked })) {
+    if (
+      lateStageNeedsQuoteSelection({
+        stage: next,
+        selectedQuoteIds: livePicked(),
+        liveQuoteIds: quoteChoices.map((quote) => quote.id),
+      })
+    ) {
       setPendingStage(next);
       setPickOpen(true);
       setOpen(false);
       return;
     }
-    commit(next, picked);
+    commit(next, livePicked());
   }
 
   return (

@@ -68,7 +68,9 @@ export async function setDealProductStage(input: {
   const saved = parseShopFlow(deal.shopFlow);
   const stages = parseProductStages(saved.productStages);
   const current = productStageFor(stages, product, deal.pipelineStageSlug ?? deal.pipelineStage);
-  const selectedQuoteIds = input.selectedQuoteIds ?? current.selectedQuoteIds;
+  const selectedQuoteIds = (input.selectedQuoteIds ?? current.selectedQuoteIds)
+    .map((id) => String(id ?? "").trim())
+    .filter(Boolean);
   if (lateStageNeedsQuoteSelection({ stage: stageSlug, selectedQuoteIds })) {
     return { ok: false as const, reason: "need_quote" };
   }

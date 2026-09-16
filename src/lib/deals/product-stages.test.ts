@@ -90,6 +90,14 @@ describe("per-product stages", () => {
   it("blocks late stages until a quote is selected — never auto-binds cheapest", () => {
     expect(lateStageNeedsQuoteSelection({ stage: "quote_sent", selectedQuoteIds: [] })).toBe(true);
     expect(lateStageNeedsQuoteSelection({ stage: "bound", selectedQuoteIds: ["q1"] })).toBe(false);
+    expect(
+      lateStageNeedsQuoteSelection({
+        stage: "quote_sent",
+        selectedQuoteIds: ["gone"],
+        liveQuoteIds: [],
+      }),
+    ).toBe(true);
+    expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(/livePicked/);
     expect(lateStageNeedsQuoteSelection({ stage: "pending_inspection", selectedQuoteIds: [] })).toBe(
       true,
     );
@@ -195,10 +203,13 @@ describe("per-product stages", () => {
 
   it("invalidates Markets+Quotes on sheet save and writes an audit kind", () => {
     expect(source("src/app/actions/quote-sheet.ts")).toMatch(
-      /markShopFlowStaleAfterRiskChange\(dealId, line\)/,
+      /persistSheetRecheckCue\(dealId, line\)/,
     );
     expect(source("src/app/actions/quote-sheet.ts")).toMatch(
-      /markShopFlowStaleAfterRiskChange\(dealId, primary\)/,
+      /persistSheetRecheckCue\(dealId, primary\)/,
+    );
+    expect(source("src/app/actions/quote-sheet.ts")).not.toMatch(
+      /markShopFlowStaleAfterRiskChange\(dealId, line\)/,
     );
     expect(source("src/app/actions/documents.ts")).toMatch(/shopLineFromSourceDoc/);
     expect(source("src/app/actions/comms.ts")).toMatch(/persistDealEmailAttachments/);

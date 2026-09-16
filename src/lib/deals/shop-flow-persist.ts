@@ -6,6 +6,7 @@ import { BIND_RECHECK_CLEAR_PATCH } from "@/lib/deals/bind-gate";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
 import {
+  nextShopFlowAfterSheetEdit,
   parseShopFlow,
   quoteMatchesShopLine,
   riskFingerprint,
@@ -140,6 +141,17 @@ async function logSheetInvalidation(dealId: string, line?: string | null) {
     createTask: false,
     severity: "info",
   });
+}
+
+/** Sheet save/fill: keep Markets complete; cue Quotes to Recheck. */
+export async function persistSheetRecheckCue(dealId: string, line: string) {
+  if (!dealId || !line) return;
+  const [deal] = await db
+    .select({ shopFlow: deals.shopFlow })
+    .from(deals)
+    .where(and(eq(deals.id, dealId), eq(deals.tenantId, DEFAULT_TENANT_ID)));
+  if (!deal) return;
+  await persistDealShopFlow(dealId, nextShopFlowAfterSheetEdit({ saved: deal.shopFlow, line }));
 }
 
 /** After a material sheet / source-doc change: Markets + Quotes must be re-run. */

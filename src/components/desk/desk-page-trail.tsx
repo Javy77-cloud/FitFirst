@@ -7,8 +7,10 @@ export type DeskTrailCrumb = {
   label: string;
 };
 
-const crumbBase =
-  "inline-flex max-w-[14rem] items-center truncate rounded-md border px-2.5 py-1 text-xs font-semibold";
+const crumbLink =
+  "inline-flex max-w-[16rem] items-center truncate text-xs font-medium text-navy underline decoration-navy/30 underline-offset-2 hover:decoration-navy";
+const crumbCurrent =
+  "inline-flex max-w-[16rem] items-center truncate text-xs font-medium text-muted-foreground";
 
 /** Optional history Back + breadcrumb crumbs. Last crumb is the current page (not a link). */
 export function DeskPageTrail({
@@ -51,26 +53,16 @@ export function DeskPageTrail({
             return (
               <span key={`${crumb.label}-${index}`} className="inline-flex items-center gap-1">
                 {index > 0 ? (
-                  <span className="px-0.5 text-xs font-semibold text-navy/50" aria-hidden>
-                    ›
+                  <span className="px-0.5 text-xs text-muted-foreground" aria-hidden>
+                    /
                   </span>
                 ) : null}
                 {isLast || !crumb.href ? (
-                  <span
-                    className={cn(crumbBase, "border-navy bg-navy text-white")}
-                    data-ff-desk-crumb="current"
-                  >
+                  <span className={crumbCurrent} data-ff-desk-crumb="current">
                     {crumb.label}
                   </span>
                 ) : (
-                  <Link
-                    href={crumb.href}
-                    className={cn(
-                      crumbBase,
-                      "border-navy/35 bg-white text-navy hover:bg-navy/5",
-                    )}
-                    data-ff-desk-crumb="link"
-                  >
+                  <Link href={crumb.href} className={crumbLink} data-ff-desk-crumb="link">
                     {crumb.label}
                   </Link>
                 )}

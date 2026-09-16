@@ -114,11 +114,12 @@ describe("deal shop flow + product chrome", () => {
     expect(html).toMatch(/data-ff-desk-crumb="current"/);
     expect(html).toContain("Deals");
     expect(html).toContain("Deal");
-    expect(html).toContain("›");
-    expect(html).not.toMatch(/>\/</);
-    expect(html).toMatch(/border-navy bg-navy text-white/);
+    expect(html).toContain("/");
+    expect(html).not.toMatch(/border-navy bg-navy text-white/);
+    expect(html).toMatch(/underline/);
     const trail = readFileSync("src/components/desk/desk-page-trail.tsx", "utf8");
     expect(trail).toMatch(/data-ff-desk-crumb="link"/);
     expect(trail).toMatch(/backVariant = "outline"/);
+    expect(trail).not.toMatch(/border-navy bg-navy text-white/);
   });
 });

@@ -75,11 +75,26 @@ describe("request quotes landing + leftover Quote sent gate", () => {
     expect(
       parseProductStages({ homeowners: { stage: "quote_sent", selectedQuoteIds: [] } }).homeowners,
     ).toMatchObject({ stage: "quotes", selectedQuoteIds: [] });
+    expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(/livePicked/);
     expect(source("src/lib/deals/shop-flow-persist.ts")).toMatch(
       /shopFlow: parseShopFlow\(shopFlow\)/,
     );
     expect(
       productStampStage({ stage: "quote_sent", selectedQuoteIds: ["q1"], lostReason: null }),
     ).toBe("quote_sent");
+  });
+
+  it("sheet save stays at Confirm and does not uncheck Markets", () => {
+    const save = source("src/app/actions/quote-sheet.ts");
+    expect(save).toMatch(/persistSheetRecheckCue\(dealId, line\)/);
+    expect(save).toMatch(/hash: SHEET_CONFIRM_HASH/);
+    expect(save).not.toMatch(/markShopFlowStaleAfterRiskChange\(dealId, line\)/);
+    expect(source("src/components/deal/sheet-approve-gate.tsx")).toMatch(/id=\{SHEET_CONFIRM_HASH\}/);
+    expect(source("src/lib/desk/action-flash.ts")).toMatch(/SHEET_CONFIRM_HASH = "ff-sheet-confirm"/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/sheetNeedsRecheckCue\(shopFlow, sheetLine\)/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/dealTitleForActiveProduct/);
+    expect(source("src/components/desk/desk-page-trail.tsx")).not.toMatch(
+      /border-navy bg-navy text-white/,
+    );
   });
 });

@@ -129,9 +129,15 @@ export function setProductStage(
 export function lateStageNeedsQuoteSelection(input: {
   stage?: string | null;
   selectedQuoteIds?: readonly string[] | null;
+  liveQuoteIds?: readonly string[] | null;
 }): boolean {
   if (!isLateProductStage(input.stage)) return false;
-  return (input.selectedQuoteIds ?? []).filter(Boolean).length === 0;
+  const selected = (input.selectedQuoteIds ?? []).map((id) => String(id ?? "").trim()).filter(Boolean);
+  if (selected.length === 0) return true;
+  const live = (input.liveQuoteIds ?? []).map((id) => String(id ?? "").trim()).filter(Boolean);
+  if (live.length === 0 && input.liveQuoteIds != null) return true;
+  if (live.length === 0) return false;
+  return !selected.some((id) => live.includes(id));
 }
 
 export function selectedQuoteHighlightId(input: {

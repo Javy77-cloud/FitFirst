@@ -7,6 +7,7 @@ import { normalizeDealsVisibleColumns, TABLE_COLUMNS } from "@/lib/desk/columns"
 import { matchesDealFilters } from "@/lib/crm/lists";
 import {
   dealSearchHaystack,
+  dealTitleForActiveProduct,
   dealTitleFromPerson,
   dealTitleFormWord,
   dealTitleLobWord,
@@ -38,6 +39,20 @@ describe("BH1 — deal titles are First Last / Lob", () => {
     expect(dealTitleLobWord("HO")).toBe("Homeowners");
     expect(dealTitleLobWord("FLOOD")).toBe("Flood");
     expect(dealTitleLobWord("AUTO")).toBe("Auto");
+    expect(dealTitleForActiveProduct({ title: "Heather Camirand / HO3", product: "auto" })).toBe(
+      "Heather Camirand / Auto",
+    );
+    expect(dealTitleForActiveProduct({ title: "Heather Camirand / HO3", product: "flood" })).toBe(
+      "Heather Camirand / Flood",
+    );
+    expect(
+      dealTitleForActiveProduct({
+        title: "Gloria Martinez / HO3",
+        product: "landlord",
+        quotingForm: "DP3",
+      }),
+    ).toBe("Gloria Martinez / DP3");
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/dealTitleForActiveProduct/);
     expect(source("src/lib/crm/convert.ts")).toMatch(/formatDealTitle|dealTitleFromPerson/);
     expect(source("src/lib/crm/convert.ts")).not.toMatch(/\$\{lead\.lastName\} · \$\{line\} shop/);
   });

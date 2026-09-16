@@ -20,6 +20,8 @@ export type DealShopFlowState = {
   lineFingerprints?: Partial<Record<string, { markets?: string | null; quotes?: string | null }>>;
   /** Carriers requested on the current run, keyed by shop line. */
   requestScopes?: Partial<Record<string, string[]>>;
+  /** Sheet edited — Quotes may show a recheck cue. Markets stay complete. */
+  sheetRecheckLines?: Partial<Record<string, boolean>>;
 };
 
 /** Empty string means “was complete, now stale — re-run Markets/Quotes”. */
@@ -65,6 +67,12 @@ export function parseShopFlow(raw: unknown): DealShopFlowState {
       requestScopes[line] = ids.map((id) => String(id ?? "").trim()).filter(Boolean);
     }
   }
+  const sheetRecheckLines: Partial<Record<string, boolean>> = {};
+  if (row.sheetRecheckLines && typeof row.sheetRecheckLines === "object") {
+    for (const [line, on] of Object.entries(row.sheetRecheckLines)) {
+      if (on) sheetRecheckLines[line] = true;
+    }
+  }
   return {
     marketsFingerprint:
       typeof row.marketsFingerprint === "string" ? row.marketsFingerprint : null,
@@ -73,6 +81,7 @@ export function parseShopFlow(raw: unknown): DealShopFlowState {
     productStages: parseProductStages(row.productStages),
     lineFingerprints,
     requestScopes,
+    sheetRecheckLines,
   };
 }
 
@@ -433,7 +442,30 @@ export function nextShopFlowAfterQuoteRun(input: {
       ...saved.requestScopes,
       [input.line]: [...(input.requestCarrierIds ?? [])],
     },
+    sheetRecheckLines: {
+      ...saved.sheetRecheckLines,
+      [input.line]: false,
+    },
   };
+}
+
+/** Sheet edit cue only — never clears Markets/Quotes fingerprints or unlock. */
+export function nextShopFlowAfterSheetEdit(input: {
+  saved?: DealShopFlowState | null;
+  line: string;
+}): DealShopFlowState {
+  const saved = parseShopFlow(input.saved);
+  return {
+    ...saved,
+    sheetRecheckLines: { ...saved.sheetRecheckLines, [input.line]: true },
+  };
+}
+
+export function sheetNeedsRecheckCue(
+  saved: DealShopFlowState | null | undefined,
+  line: string,
+): boolean {
+  return Boolean(parseShopFlow(saved).sheetRecheckLines?.[line]);
 }
 
 export function nextShopFlowAfterMarkets(input: {

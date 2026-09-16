@@ -14,6 +14,8 @@ import {
   inferHomeProductFromQuoteNotes,
   inferShopLineFromQuoteNotes,
   nextShopFlowAfterQuoteRun,
+  nextShopFlowAfterSheetEdit,
+  sheetNeedsRecheckCue,
   requestScopeForLine,
   notesLookLikeFloodProduct,
   parseShopFlow,
@@ -388,6 +390,21 @@ describe("prior under carrier + line-scoped stale", () => {
       quotes: STALE_SHOP_FINGERPRINT,
     });
     expect(next.lineFingerprints?.auto).toEqual({ markets: "a", quotes: "a" });
+    const cued = nextShopFlowAfterSheetEdit({ saved: next, line: "home" });
+    expect(sheetNeedsRecheckCue(cued, "home")).toBe(true);
+    expect(cued.lineFingerprints?.home).toEqual(next.lineFingerprints?.home);
+    expect(cued.lineFingerprints?.auto).toEqual({ markets: "a", quotes: "a" });
+    expect(
+      resolveShopFlowCompletion({
+        detailsComplete: true,
+        documentsComplete: true,
+        hasMarkets: true,
+        hasQuotes: true,
+        currentFingerprint: "a",
+        saved: cued,
+        line: "auto",
+      }).isComplete("markets"),
+    ).toBe(true);
     const scoped = nextShopFlowAfterQuoteRun({
       saved: {},
       line: "home",
@@ -549,6 +566,9 @@ describe("deal page + action wiring", () => {
 
   it("sheet save, fill, and source-doc upload invalidate Markets/Quotes", () => {
     expect(readFileSync("src/app/actions/quote-sheet.ts", "utf8")).toMatch(
+      /persistSheetRecheckCue/,
+    );
+    expect(readFileSync("src/app/actions/quote-sheet.ts", "utf8")).not.toMatch(
       /markShopFlowStaleAfterRiskChange/,
     );
     expect(readFileSync("src/app/actions/documents.ts", "utf8")).toMatch(

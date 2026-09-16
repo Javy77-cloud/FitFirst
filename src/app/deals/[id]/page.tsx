@@ -75,6 +75,7 @@ import {
   requestScopeForLine,
   resolveShopFlowCompletion,
   riskFingerprint,
+  sheetNeedsRecheckCue,
   STALE_SHOP_FINGERPRINT,
 } from "@/lib/deals/shop-flow";
 import { DealPackageShell } from "@/components/deal/deal-package-shell";
@@ -82,6 +83,7 @@ import { DealHeaderStage } from "@/components/deals/deal-header-stage";
 import { relabelConvertActivityTitle } from "@/lib/crm/convert";
 import { dealStageView } from "@/lib/deals/deal-columns";
 import { uniqueDisplayPhones } from "@/lib/deals/header-addresses";
+import { dealTitleForActiveProduct } from "@/lib/deals/deal-title";
 import {
   excludedCarrierIdsFromLogs,
   hasShopMarketAction,
@@ -385,8 +387,15 @@ export default async function DealPage({
     quotes: lineQuotes.map((row) => row.quote),
   });
   const sheetStale =
+    sheetNeedsRecheckCue(shopFlow, sheetLine) ||
     shopFlow.lineFingerprints?.[sheetLine]?.quotes === STALE_SHOP_FINGERPRINT ||
     shopFlow.quotesFingerprint === STALE_SHOP_FINGERPRINT;
+  const visibleDealTitle = dealTitleForActiveProduct({
+    title: deal.title,
+    product: activeProduct,
+    quotingForm: lineForm,
+    sheetForm: sheetFormForProduct(activeProduct, lineForm),
+  });
   const quoteChoices = lineQuotes
     .filter((row) => row.quote.stub !== true)
     .map((row) => ({
@@ -471,7 +480,7 @@ export default async function DealPage({
           heading={
             <div className="min-w-0">
               <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
-                {deal.title}
+                {visibleDealTitle}
               </h1>
               <DealPackageShell
                 name={partyName}
@@ -503,7 +512,7 @@ export default async function DealPage({
                       fallback: stageView.slug,
                     })}
                     stages={stageView.stages}
-                    dealTitle={deal.title}
+                    dealTitle={visibleDealTitle}
                     toastOnSave
                     product={activeProduct}
                     selectedQuoteIds={activeProductState.selectedQuoteIds}

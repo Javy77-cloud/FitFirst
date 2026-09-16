@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { approveMasterSheet } from "@/app/actions/quoting";
+import { SHEET_CONFIRM_HASH } from "@/lib/desk/action-flash";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -53,7 +54,11 @@ export function SheetApproveGate({
 
   if (unlocked) {
     return (
-      <div className="space-y-2 rounded-md border border-fit-green/30 bg-fit-green-bg px-3 py-3" data-ff-sheet-approve>
+      <div
+        id={SHEET_CONFIRM_HASH}
+        className="space-y-2 scroll-mt-24 rounded-md border border-fit-green/30 bg-fit-green-bg px-3 py-3"
+        data-ff-sheet-approve
+      >
         <p className="text-xs text-fit-green">
           Master sheet approved{approvedBy ? ` by ${approvedBy}` : ""}. Select carriers on Markets,
           then request quotes.
@@ -81,7 +86,8 @@ export function SheetApproveGate({
         setError(null);
         mergeSheetFieldsIntoForm(event.currentTarget);
       }}
-      className="rounded-md border border-fit-yellow/40 bg-fit-yellow-bg/40 p-3"
+      id={SHEET_CONFIRM_HASH}
+      className="scroll-mt-24 rounded-md border border-fit-yellow/40 bg-fit-yellow-bg/40 p-3"
       data-ff-sheet-approve
     >
       <input type="hidden" name="dealId" value={dealId} />
