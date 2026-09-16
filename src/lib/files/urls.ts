@@ -87,6 +87,15 @@ export function resolveFileMime(input: {
   return inferMimeFromName(input.filename, input.storedMime);
 }
 
+/** Leftover serve-document stubs stored the filename as the file body. */
+export function isFilenameOnlyStub(filename: string, bytes: Uint8Array | Buffer): boolean {
+  if (looksLikePdf(bytes) || looksLikeImageBuffer(bytes)) return false;
+  const text = Buffer.from(bytes).toString("utf8").replace(/^\uFEFF/, "").trim();
+  if (!text) return true;
+  const base = filename.split(/[/\\]/).pop() ?? filename;
+  return text === filename || text === base;
+}
+
 export function shouldWrapAsPdf(input: {
   filename: string;
   storedMime?: string | null;

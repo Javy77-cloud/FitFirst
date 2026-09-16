@@ -132,7 +132,8 @@ export function isInspectionStatus(value: string | null | undefined): value is I
 }
 
 export function parseInspectionStatus(value: unknown): InspectionStatus {
-  return isInspectionStatus(typeof value === "string" ? value : "") ? value : "none";
+  if (typeof value === "string" && isInspectionStatus(value)) return value;
+  return "none";
 }
 
 export function isLateProductStage(stage?: string | null): stage is LateProductStage {

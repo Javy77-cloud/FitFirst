@@ -6,6 +6,7 @@ import { documents, documentVersions, type Document, type DocumentVersion } from
 import { readStoredFile } from "@/lib/files/object-store";
 import {
   contentDisposition,
+  isFilenameOnlyStub,
   resolveFileMime,
   shouldWrapAsPdf,
 } from "./urls";
@@ -48,9 +49,10 @@ export async function loadDocumentBytes(doc: Document): Promise<{
 } | null> {
   let buffer = await readStoredFile(doc.storagePath);
 
-  if (!buffer) {
+  if (!buffer || isFilenameOnlyStub(doc.filename, buffer)) {
     return null;
-  } else if (shouldWrapAsPdf(docWithBytes(doc, buffer))) {
+  }
+  if (shouldWrapAsPdf(docWithBytes(doc, buffer))) {
     buffer = await wrapTextAsPdf(doc.filename, buffer.toString("utf8"));
   }
 

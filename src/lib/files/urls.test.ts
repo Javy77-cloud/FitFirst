@@ -1,4 +1,9 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+
+function source(file: string) {
+  return readFileSync(file, "utf8");
+}
 import {
   contentDisposition,
   fileDownloadHref,
@@ -7,6 +12,7 @@ import {
   fileViewHref,
   inferMimeFromName,
   isProposalAttachment,
+  isFilenameOnlyStub,
   looksLikePdf,
   resolveFileMime,
   shouldWrapAsPdf,
@@ -61,6 +67,14 @@ describe("file URLs", () => {
         slot: "proposal",
       }),
     ).toBe("application/pdf");
+  });
+
+  it("treats filename-only leftover stubs as missing, not a preview PDF", () => {
+    expect(isFilenameOnlyStub("dec.pdf", Buffer.from("dec.pdf"))).toBe(true);
+    expect(isFilenameOnlyStub("dec.pdf", Buffer.from(""))).toBe(true);
+    expect(isFilenameOnlyStub("dec.pdf", Buffer.from("%PDF-1.4 bytes"))).toBe(false);
+    expect(source("src/app/files/[id]/page.tsx")).toMatch(/data-ff-file-missing/);
+    expect(source("src/lib/files/serve-document.ts")).toMatch(/isFilenameOnlyStub/);
   });
 
   it("builds inline and attachment Content-Disposition", () => {

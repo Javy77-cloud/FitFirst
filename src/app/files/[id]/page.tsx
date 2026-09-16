@@ -7,8 +7,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { currentDeskSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { contacts, deals } from "@/lib/db/schema";
-import { getDeskDocument } from "@/lib/files/serve-document";
-import { fileViewHref, resolveFileMime } from "@/lib/files/urls";
+import { getDeskDocument, loadDocumentBytes } from "@/lib/files/serve-document";
+import { fileViewHref } from "@/lib/files/urls";
 import { eq } from "drizzle-orm";
 import { cn } from "@/lib/utils";
 
@@ -35,20 +35,10 @@ export default async function FilePreviewPage({
       ? await db.select().from(contacts).where(eq(contacts.id, deal.contactId))
       : [];
 
-  const mime = resolveFileMime({
-    filename: doc.filename,
-    storedMime: doc.mimeType,
-    docType: doc.docType,
-    slot: doc.slot,
-  });
+  const file = await loadDocumentBytes(doc);
+  const mime = file?.mimeType ?? doc.mimeType ?? "";
   const href = fileViewHref(doc.id);
-  const isPdf =
-    mime.includes("pdf") ||
-    doc.docType === "quote_pdf" ||
-    doc.slot === "quote_pdf" ||
-    doc.docType === "proposal_pdf" ||
-    doc.docType === "proposal" ||
-    doc.slot === "proposal";
+  const isPdf = mime.includes("pdf");
   const isImage = mime.startsWith("image/");
   const backHref = doc.dealId ? `/deals/${doc.dealId}?tab=documents` : "/documents";
 
@@ -77,7 +67,18 @@ export default async function FilePreviewPage({
         />
       </div>
       <section className="overflow-hidden rounded-lg border border-border bg-card">
-        {isPdf ? (
+        {file == null ? (
+          <div className="space-y-2 px-6 py-16 text-center" data-ff-file-missing="">
+            <p className="text-sm font-semibold text-navy">{doc.filename} is not in storage.</p>
+            <p className="text-sm text-muted-foreground">
+              Local disk uploads do not survive Vercel deploys. Re-upload the file. Existing blob URLs
+              are retried automatically.
+            </p>
+            <Link href={backHref} className={cn(buttonVariants({ size: "sm" }), "mt-2 inline-flex")}>
+              Back to Documents
+            </Link>
+          </div>
+        ) : isPdf ? (
           <iframe title={doc.filename} src={href} className="h-[78vh] w-full bg-white" />
         ) : isImage ? (
           // eslint-disable-next-line @next/next/no-img-element

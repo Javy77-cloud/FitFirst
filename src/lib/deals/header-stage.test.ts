@@ -25,6 +25,7 @@ describe("header stage chip + strip", () => {
     expect(nextAdvanceStage("quotes", PC_SHOPPING_STAGES)?.slug).toBe("quote_review");
     expect(nextAdvanceStage("quote_sent", PC_SHOPPING_STAGES)?.slug).toBe("bound");
     expect(nextAdvanceStage("bound", PC_SHOPPING_STAGES)?.slug).toBe("policy_issued");
+    expect(nextAdvanceStage("policy_issued", PC_SHOPPING_STAGES)?.slug).toBe("closed_won");
     expect(nextAdvanceStage("closed_won", PC_SHOPPING_STAGES)).toBeNull();
     expect(PC_SHOPPING_STAGES.map((stage) => stage.slug)).toEqual(
       expect.arrayContaining(["gathering", "markets", "quote_review", "quote_sent", "bound", "policy_issued"]),

@@ -82,6 +82,10 @@ describe("per-product stages", () => {
     expect(parseInspectionStatus("nope")).toBe("none");
     expect(isBoardNoopStage("quote_sent")).toBe(true);
     expect(isBoardNoopStage("policy_issued")).toBe(true);
+    expect(lateStageNeedsQuoteSelection({ stage: "policy_issued", selectedQuoteIds: ["q1"] })).toBe(
+      false,
+    );
+    expect(productChipStageLabel("policy_issued")).toBe("Policy issued");
     expect(isBoardNoopStage("markets")).toBe(false);
     expect(shouldAutoAdvanceStage("gathering", "markets")).toBe(true);
     expect(shouldAutoAdvanceStage("quote_sent", "markets")).toBe(false);
