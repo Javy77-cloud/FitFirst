@@ -20,6 +20,18 @@ describe("gemini map key mapping", () => {
     ]);
     expect(sheetKeysForGeminiKey("current_premium")).toEqual(["current_premium", "premium"]);
     expect(sheetKeysForGeminiKey("premium")).toEqual(["premium", "current_premium"]);
+    expect(sheetKeysForGeminiKey("policy_no")).toEqual(["policy_number", "policy_no"]);
+    expect(sheetKeysForGeminiKey("Policy No.")).toEqual(["policy_number", "policy_no"]);
+    expect(sheetKeysForGeminiKey("total_premium")).toEqual([
+      "premium",
+      "current_premium",
+      "total_premium",
+    ]);
+    expect(sheetKeysForGeminiKey("Annual Premium")).toEqual([
+      "premium",
+      "current_premium",
+      "annual_premium",
+    ]);
     expect(sheetKeysForGeminiKey("selling_agency")).toEqual(["selling_agency"]);
     expect(sheetKeysForGeminiKey("renewal_date")).toEqual(["renewal_date"]);
     expect(sheetKeysForGeminiKey("producer")).toEqual(["producer"]);
@@ -202,6 +214,23 @@ describe("normalizeOirLetterCode", () => {
     expect(byKey.wind_mit_form.normalizedValue).toBe("OIR-B1-1802");
     expect(byKey.wind_mit_date.normalizedValue).toBe("03/12/2024");
     expect(byKey.roof_year.normalizedValue).toBe("2016");
+  });
+});
+
+describe("florida peninsula dec aliases", () => {
+  it("maps Policy No / total premium labels onto mint sheet keys", () => {
+    const result = mapGeminiJsonToFields(
+      {
+        "Policy No.": { value: "HO3 0140119 05 26", confidence: 0.95 },
+        "Total Premium": { value: "3383", confidence: 0.94 },
+        "Eff date": { value: "09/01/2026", confidence: 0.9 },
+      },
+      "dec",
+    );
+    const byKey = Object.fromEntries(result.fields.map((f) => [f.fieldKey, f]));
+    expect(byKey.policy_number.normalizedValue).toBe("HO3 0140119 05 26");
+    expect(byKey.premium.normalizedValue).toBe("3383");
+    expect(byKey.effective_date.normalizedValue).toBe("09/01/2026");
   });
 });
 

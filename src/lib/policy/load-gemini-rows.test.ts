@@ -143,6 +143,20 @@ describe("loadGeminiRows document store", () => {
             confidence: 0.9,
             flagged: false,
           },
+          {
+            fieldKey: "premium",
+            normalizedValue: "3383",
+            rawValue: "3383",
+            confidence: 0.9,
+            flagged: false,
+          },
+          {
+            fieldKey: "effective_date",
+            normalizedValue: "2026-09-01",
+            rawValue: "2026-09-01",
+            confidence: 0.9,
+            flagged: false,
+          },
         ],
       },
     );
@@ -151,9 +165,69 @@ describe("loadGeminiRows document store", () => {
       cached: true,
       rows: [
         expect.objectContaining({ fieldKey: "policy_number", normalizedValue: "HO-cached" }),
+        expect.objectContaining({ fieldKey: "premium", normalizedValue: "3383" }),
+        expect.objectContaining({ fieldKey: "effective_date", normalizedValue: "2026-09-01" }),
       ],
     });
     expect(readStoredFile).not.toHaveBeenCalled();
+  });
+
+  it("does not treat a partial cache as a successful extract", async () => {
+    const readStoredFile = vi.fn(async () => Buffer.from("%PDF-1.4"));
+    const extractWithGeminiPdf = extractOk([
+      { fieldKey: "policy_number", normalizedValue: "HO3 0140119 05 26" },
+      { fieldKey: "premium", normalizedValue: "3383" },
+      { fieldKey: "effective_date", normalizedValue: "2026-09-01" },
+    ]);
+    const result = await loadGeminiRows(
+      { docId: "doc-1", storagePath: ROSA_BLOB_KEY },
+      {
+        readStoredFile,
+        loadCachedRows: async () => [
+          {
+            fieldKey: "named_insured",
+            normalizedValue: "Rosa Castellanos",
+            rawValue: "Rosa Castellanos",
+            confidence: 0.9,
+            flagged: false,
+          },
+        ],
+        loadGeminiApiKey: async () => "test-key",
+        extractWithGeminiPdf,
+      },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.cached).toBe(false);
+    expect(extractWithGeminiPdf).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns need_gemini without calling extract when the key is missing", async () => {
+    const extractWithGeminiPdf = vi.fn();
+    const persistRows = vi.fn();
+    const log = vi.fn();
+    const result = await loadGeminiRows(
+      { docId: "doc-1", storagePath: ROSA_BLOB_KEY },
+      {
+        readStoredFile: async () => Buffer.from("%PDF-1.4"),
+        loadGeminiApiKey: async () => "",
+        extractWithGeminiPdf,
+        persistRows,
+        log,
+      },
+    );
+    expect(result).toEqual({
+      ok: false,
+      reason: "need_gemini",
+      message: MISSING_GEMINI_KEY_MESSAGE,
+    });
+    expect(extractWithGeminiPdf).not.toHaveBeenCalled();
+    expect(persistRows).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith(
+      "dec extract: GEMINI_API_KEY is not configured — refusing extract",
+      expect.objectContaining({ reason: "need_gemini" }),
+    );
+    expect(mintFailureToast("need_gemini")).toEqual({ key: "gemini-needs-key", kind: "error" });
   });
 
   it("re-extracts when force is set even if cache exists", async () => {
@@ -208,6 +282,10 @@ describe("readDecPdfBytes + mint failure toast", () => {
     expect(source("src/app/actions/declaration-prompt.ts")).not.toMatch(/readFile\(path\.join\(uploadRoot/);
     expect(source("src/components/deal/issue-policy-from-dec.tsx")).toMatch(/mintFailureToast/);
     expect(source("src/components/deal/issue-policy-from-dec.tsx")).toMatch(/Re-read declaration/);
+    expect(source("src/components/deal/issue-policy-from-dec.tsx")).toMatch(/mint\(undefined, true\)/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/evaluateMintExtract/);
+    expect(source("src/app/actions/policy-mint.ts")).not.toMatch(/FF-MINT/);
     expect(source("src/lib/policy/mint-gate.ts")).toMatch(/need_dec_file/);
+    expect(source("src/lib/policy/mint-gate.ts")).toMatch(/need_dec_fields/);
   });
 });

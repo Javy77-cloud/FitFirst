@@ -18,7 +18,11 @@ export type MintGateReason =
   | "creating"
   | "need_dec_file"
   | "need_gemini"
-  | "extract_failed";
+  | "extract_failed"
+  | "need_dec_fields";
+
+export const NEED_DEC_FIELDS_MESSAGE =
+  "Declaration extract did not return a policy number and premium. No unpublished policy was created.";
 
 export function mintFailureToast(reason: string): { key: string; kind: "error" | "success" } {
   switch (reason) {
@@ -30,6 +34,8 @@ export function mintFailureToast(reason: string): { key: string; kind: "error" |
       return { key: "need-dec-file", kind: "error" };
     case "extract_failed":
       return { key: "dec-extract-failed", kind: "error" };
+    case "need_dec_fields":
+      return { key: "need-dec-fields", kind: "error" };
     case "need_dec":
       return { key: "need-dec", kind: "error" };
     default:
@@ -109,16 +115,41 @@ const SOLD_KEYS = new Set(["premium", "coverage_a", "hurricane_deductible", "aop
 
 /** Gemini / sheet keys that fill a mint confirm field. */
 export const MINT_FIELD_ALIASES: Record<string, string[]> = {
-  policy_number: ["policy_number"],
+  policy_number: [
+    "policy_number",
+    "policy_no",
+    "policy_num",
+    "pol_number",
+    "pol_no",
+    "pol_num",
+    "policy_id",
+    "policy_number_id",
+  ],
   named_insured: [
     "named_insured",
     "current_policy_name_insured",
     "current_policy_named_insured",
     "applicant_name",
   ],
-  effective_date: ["effective_date"],
-  expiration_date: ["expiration_date"],
-  premium: ["premium", "current_premium"],
+  effective_date: [
+    "effective_date",
+    "eff_date",
+    "policy_effective_date",
+    "inception_date",
+    "policy_period_start",
+  ],
+  expiration_date: ["expiration_date", "exp_date", "policy_expiration_date", "policy_period_end"],
+  premium: [
+    "premium",
+    "current_premium",
+    "total_premium",
+    "annual_premium",
+    "total_annual_premium",
+    "policy_premium",
+    "written_premium",
+    "term_premium",
+    "yearly_premium",
+  ],
   coverage_a: ["coverage_a", "dwelling"],
   form: ["form", "policy_form", "quoting_form"],
   insurance_type: ["insurance_type", "insurance_family"],
@@ -275,20 +306,29 @@ function sheetCell(
   return "";
 }
 
-function geminiCell(
-  rows: readonly {
-    fieldKey: string;
-    normalizedValue?: string | null;
-    rawValue?: string | null;
-    confidence?: number | null;
-    flagged?: boolean | null;
-  }[],
-  ...keys: string[]
-) {
-  for (const key of keys) {
-    const row = rows.find((item) => item.fieldKey === key);
-    if (!row) continue;
-    const value = normalizeMintValue(key, row.normalizedValue || row.rawValue);
+export function normalizeMintFieldKey(key: string): string {
+  return key
+    .trim()
+    .toLowerCase()
+    .replace(/[%$#]+/g, "")
+    .replace(/[\s\-./]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+export type MintGeminiRow = {
+  fieldKey: string;
+  normalizedValue?: string | null;
+  rawValue?: string | null;
+  confidence?: number | null;
+  flagged?: boolean | null;
+};
+
+function geminiCell(rows: readonly MintGeminiRow[], ...keys: string[]) {
+  const wanted = new Set(keys.map(normalizeMintFieldKey));
+  for (const row of rows) {
+    if (!wanted.has(normalizeMintFieldKey(row.fieldKey))) continue;
+    const value = normalizeMintValue(keys[0] ?? row.fieldKey, row.normalizedValue || row.rawValue);
     if (!value) continue;
     return {
       value,
@@ -297,6 +337,36 @@ function geminiCell(
     };
   }
   return null;
+}
+
+/** Gemini value for a mint confirm key, including Florida Peninsula aliases. */
+export function mintGeminiValue(rows: readonly MintGeminiRow[] | undefined, key: string): string {
+  const aliases = MINT_FIELD_ALIASES[key] ?? [key];
+  return geminiCell(rows ?? [], ...aliases)?.value ?? "";
+}
+
+export type MintExtractGateOk = {
+  ok: true;
+  policyNumber: string;
+  premium: string;
+  effectiveDate: string;
+};
+
+export type MintExtractGateErr = {
+  ok: false;
+  reason: "need_dec_fields";
+  message: string;
+};
+
+/** Hard gate: refuse hollow mint unless Gemini produced policy number + premium. */
+export function evaluateMintExtract(rows: readonly MintGeminiRow[] | undefined): MintExtractGateOk | MintExtractGateErr {
+  const policyNumber = mintGeminiValue(rows, "policy_number");
+  const premium = mintGeminiValue(rows, "premium");
+  const effectiveDate = mintGeminiValue(rows, "effective_date");
+  if (!policyNumber || !premium || !effectiveDate) {
+    return { ok: false, reason: "need_dec_fields", message: NEED_DEC_FIELDS_MESSAGE };
+  }
+  return { ok: true, policyNumber, premium, effectiveDate };
 }
 
 export type MintIdentity = {
@@ -378,20 +448,22 @@ export function buildMintFields(input: {
     const geminiValue = gem?.value ?? "";
     const geminiConfidence = gem?.confidence ?? 0;
     const lowGemini = Boolean(geminiValue) && geminiConfidence < threshold;
+    const premiumKey = def.key === "premium";
 
-    // Issued policy: declaration (Gemini) wins. Deal/sheet next. Sold stub is fallback/hint only.
+    // Issued policy: declaration (Gemini) wins. Deal/sheet next.
+    // Sold quote is never booked for premium — hint only (soldValue).
     let value = "";
     let source: MintFieldSource = "deal";
     if (geminiValue && !lowGemini) {
       value = geminiValue;
       source = "gemini";
-    } else if (sheetValue) {
+    } else if (sheetValue && !premiumKey) {
       value = sheetValue;
       source = "sheet";
     } else if (geminiValue) {
       value = geminiValue;
       source = "gemini";
-    } else if (SOLD_KEYS.has(def.key) && soldValue) {
+    } else if (!premiumKey && SOLD_KEYS.has(def.key) && soldValue) {
       value = soldValue;
       source = "quote";
     }
@@ -400,7 +472,7 @@ export function buildMintFields(input: {
       valuesMismatch(def.key, geminiValue, soldValue) ||
       valuesMismatch(def.key, geminiValue, sheetValue);
     const missingRequired =
-      (def.key === "policy_number" || def.key === "effective_date") && !value;
+      (def.key === "policy_number" || def.key === "effective_date" || premiumKey) && !geminiValue;
     const flagged = Boolean(lowGemini || mismatch || missingRequired || gem?.flagged);
     return {
       key: def.key,
@@ -409,7 +481,7 @@ export function buildMintFields(input: {
       confidence: geminiValue ? geminiConfidence : value ? 1 : 0,
       source,
       flagged,
-      confirmed: !flagged && Boolean(value),
+      confirmed: !flagged && Boolean(value) && (!premiumKey || Boolean(geminiValue)),
       soldValue: soldValue || null,
       sheetValue: sheetValue || null,
       geminiValue: geminiValue || null,

@@ -21,6 +21,8 @@ import {
   policyNeedsMintConfirm,
   quotesOnlyStageBlocked,
   mintFailureToast,
+  evaluateMintExtract,
+  mintGeminiValue,
 } from "./mint-gate";
 
 function source(file: string) {
@@ -166,6 +168,71 @@ describe("unpublished confirm guard", () => {
     );
   });
 
+  it("blocks hollow mint when Gemini is empty or missing policy number / premium", () => {
+    expect(evaluateMintExtract([]).ok).toBe(false);
+    expect(evaluateMintExtract([])).toMatchObject({ ok: false, reason: "need_dec_fields" });
+    expect(
+      evaluateMintExtract([
+        {
+          fieldKey: "named_insured",
+          normalizedValue: "Rosa Castellanos",
+          rawValue: "Rosa Castellanos",
+          confidence: 0.9,
+          flagged: false,
+        },
+      ]).ok,
+    ).toBe(false);
+    expect(
+      evaluateMintExtract([
+        {
+          fieldKey: "policy_number",
+          normalizedValue: "HO3 0140119 05 26",
+          rawValue: null,
+          confidence: 0.94,
+          flagged: false,
+        },
+      ]).ok,
+    ).toBe(false);
+
+    const fields = buildMintFields({
+      sold: { premium: "2463", coverageA: 250000 },
+      gemini: [
+        { fieldKey: "named_insured", normalizedValue: "Rosa Castellanos", confidence: 0.9, flagged: false },
+      ],
+    });
+    const premium = fields.find((row) => row.key === "premium");
+    expect(premium?.value).toBe("");
+    expect(premium?.source).not.toBe("quote");
+    expect(premium?.confirmed).toBe(false);
+    expect(premium?.soldValue).toBe("2463");
+    expect(premium?.geminiValue).toBeNull();
+    expect(mintFieldPolicyPatch(fields).premium).toBeNull();
+    expect(mintFailureToast("need_dec_fields")).toEqual({ key: "need-dec-fields", kind: "error" });
+  });
+
+  it("maps Florida Peninsula aliases onto mint policy number and premium", () => {
+    const rows = [
+      { fieldKey: "policy_no", normalizedValue: "HO3 0140119 05 26", rawValue: null, confidence: 0.95, flagged: false },
+      { fieldKey: "total_premium", normalizedValue: "3383", rawValue: null, confidence: 0.94, flagged: false },
+      { fieldKey: "eff_date", normalizedValue: "2026-09-01", rawValue: null, confidence: 0.9, flagged: false },
+    ];
+    expect(mintGeminiValue(rows, "policy_number")).toBe("HO3 0140119 05 26");
+    expect(mintGeminiValue(rows, "premium")).toBe("3383");
+    expect(evaluateMintExtract(rows)).toMatchObject({
+      ok: true,
+      policyNumber: "HO3 0140119 05 26",
+      premium: "3383",
+      effectiveDate: "2026-09-01",
+    });
+    const fields = buildMintFields({
+      sold: { premium: "2463" },
+      gemini: rows,
+    });
+    expect(fields.find((row) => row.key === "premium")?.value).toBe("3383");
+    expect(fields.find((row) => row.key === "premium")?.source).toBe("gemini");
+    expect(fields.find((row) => row.key === "policy_number")?.geminiValue).toBe("HO3 0140119 05 26");
+  });
+
   it("uses declaration premium over a bound stub quote", () => {
     const fields = buildMintFields({
       sold: { premium: "2463", coverageA: 250000 },
@@ -278,11 +345,22 @@ describe("unpublished confirm guard", () => {
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/loadGeminiRows/);
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/readStoredFile/);
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/if \(!extracted\.ok\)/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/evaluateMintExtract/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/if \(!extractGate\.ok\)/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(
+      /force: Boolean\(input\.force\) \|\| remintUnpublished/,
+    );
+    expect(source("src/app/actions/policy-mint.ts")).not.toMatch(/FF-MINT/);
+    expect(source("src/app/actions/policy-mint.ts")).not.toMatch(/booked\.premium \|\| quote\.premium/);
     expect(source("src/lib/policy/load-gemini-rows.ts")).toMatch(/need_dec_file/);
     expect(source("src/app/actions/policy-mint.ts")).not.toMatch(/readFile\(path\.join\(uploadRoot/);
     expect(source("src/lib/extraction/gemini/prompt.ts")).toMatch(/selling_agency/);
     expect(source("src/lib/policy/change-log.ts")).toMatch(/Policy created/);
+    expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(/mintFailureToast/);
+    expect(source("src/components/deal/issue-policy-from-dec.tsx")).toMatch(/mint\(undefined, true\)/);
+    expect(source("src/lib/flash.ts")).toMatch(/need-dec-fields/);
     expect(mintFailureToast("need_dec_file")).toEqual({ key: "need-dec-file", kind: "error" });
     expect(mintFailureToast("need_gemini")).toEqual({ key: "gemini-needs-key", kind: "error" });
+    expect(mintFailureToast("need_dec_fields")).toEqual({ key: "need-dec-fields", kind: "error" });
   });
 });

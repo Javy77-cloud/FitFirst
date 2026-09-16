@@ -1,4 +1,5 @@
 import { MISSING_GEMINI_KEY_MESSAGE } from "@/lib/extraction/gemini/key";
+import { evaluateMintExtract } from "@/lib/policy/mint-gate";
 
 export const DEC_FILE_MISSING_MESSAGE =
   "Could not read the declaration PDF from storage. Re-upload the file — local disk uploads do not survive Vercel deploys.";
@@ -122,7 +123,8 @@ export async function loadGeminiRows(
 
   if (!input.force && deps.loadCachedRows) {
     const cached = await deps.loadCachedRows(input.docId);
-    if (cached.some(hasExtractedValue)) {
+    // Partial/empty cache must not skip Gemini — that is how hollow mints get result.ok.
+    if (evaluateMintExtract(cached).ok) {
       return { ok: true, rows: cached, cached: true };
     }
   }
@@ -134,7 +136,10 @@ export async function loadGeminiRows(
 
   const key = ((await deps.loadGeminiApiKey?.()) ?? "").trim();
   if (!key) {
-    log("dec extract: missing Gemini API key", { documentId: input.docId });
+    log("dec extract: GEMINI_API_KEY is not configured — refusing extract", {
+      documentId: input.docId,
+      reason: "need_gemini",
+    });
     return { ok: false, reason: "need_gemini", message: MISSING_GEMINI_KEY_MESSAGE };
   }
 

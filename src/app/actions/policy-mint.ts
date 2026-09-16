@@ -53,6 +53,7 @@ import {
   buildMintFields,
   canPublishMint,
   confirmMintField,
+  evaluateMintExtract,
   evaluateMintGate,
   mintFieldPolicyPatch,
   parseMintPayload,
@@ -305,6 +306,7 @@ export async function issuePolicyFromDeclaration(input: {
   selectedQuoteIds?: string[];
   surface?: "quotes" | "header" | "chip";
   documentId?: string;
+  force?: boolean;
 }) {
   const dealId = input.dealId.trim();
   const product = parseDealProduct(input.product);
@@ -396,11 +398,22 @@ export async function issuePolicyFromDeclaration(input: {
     storagePath: decRow?.storagePath ?? gate.dec.storagePath,
     mimeType: decRow?.mimeType ?? "application/pdf",
     filename: decRow?.filename ?? gate.dec.filename,
-    force: remintUnpublished,
+    force: Boolean(input.force) || remintUnpublished,
   });
   if (!extracted.ok) {
     await markMintStatus(dealId, product, { mintStatus: previousMint, selectedQuoteIds });
     return extracted;
+  }
+  const extractGate = evaluateMintExtract(extracted.rows);
+  if (!extractGate.ok) {
+    console.error("dec extract: refusing hollow mint — Gemini missing required fields", {
+      documentId: gate.dec.id,
+      dealId,
+      reason: extractGate.reason,
+      fieldKeys: extracted.rows.map((row) => row.fieldKey),
+    });
+    await markMintStatus(dealId, product, { mintStatus: previousMint, selectedQuoteIds });
+    return extractGate;
   }
   const geminiRows = extracted.rows;
   const risk = riskRows[0];
@@ -444,14 +457,14 @@ export async function issuePolicyFromDeclaration(input: {
 
   const contactId = await ensureDealContact(deal);
   const booked = mintFieldPolicyPatch(fields);
-  const effective = dateOrFallback(fieldValue(fields, "effective_date"), new Date());
+  const effective = dateOrFallback(extractGate.effectiveDate || fieldValue(fields, "effective_date"), new Date());
   const expiration = dateOrFallback(
     fieldValue(fields, "expiration_date"),
     new Date(effective.getTime() + 365 * 24 * 60 * 60 * 1000),
   );
-  const premium = booked.premium || quote.premium || null;
+  const premium = extractGate.premium;
   const coverageA = booked.coverageA || quote.coverageA || risk?.coverageA || null;
-  const policyNumber = booked.policyNumber || `FF-MINT-${Date.now().toString().slice(-8)}`;
+  const policyNumber = extractGate.policyNumber;
   const payload: MintPayload = {
     status: "unpublished",
     soldBasis: {
