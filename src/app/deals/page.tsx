@@ -258,6 +258,13 @@ export default async function DealsPage({
               initialQuery={q}
               nextByDeal={desk.nextByDeal}
               mode={view}
+              listFilter={{
+                pipeline: selectedPipeline,
+                family: filter.family,
+                pcSub: filter.pcSub,
+                lifeSub: filter.lifeSub,
+                healthSub: filter.healthSub,
+              }}
             />
           </>
         ) : board ? (

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   isPipelineGridEditable,
+  listStageFilterHref,
   matchNamedRecord,
   nativePicklistOptions,
   pipelineGridControl,
@@ -43,7 +44,7 @@ describe("pipeline list / grid sheet", () => {
         view: "list",
       }),
     ).toEqual({
-      href: "/deals?pipeline=p-c&view=list&stage=quote_sent",
+      href: "/deals?view=list&stage=quote_sent",
       kind: "stage",
     });
     expect(
@@ -94,6 +95,64 @@ describe("pipeline list / grid sheet", () => {
       }),
     ).toEqual({ href: "/contacts/ct1", kind: "contact" });
     expect(matchNamedRecord("citizens", [{ id: "c1", name: "Citizens" }])?.id).toBe("c1");
+  });
+
+  it("sets stage filter only and never forces the book chip to P&C", () => {
+    expect(listStageFilterHref({ stageSlug: "gather", view: "list" })).toBe(
+      "/deals?view=list&stage=gather",
+    );
+    expect(
+      pipelineListNav({
+        columnId: "stage",
+        dealId: "life-deal",
+        pipelineSlug: "p-c",
+        stageSlug: "gather",
+        view: "list",
+      }),
+    ).toEqual({
+      href: "/deals?view=list&stage=gather",
+      kind: "stage",
+    });
+    expect(
+      pipelineListNav({
+        columnId: "stage",
+        dealId: "life-deal",
+        pipelineSlug: "life",
+        stageSlug: "gather",
+        view: "list",
+      })?.href,
+    ).toBe("/deals?view=list&stage=gather");
+    expect(
+      pipelineListNav({
+        columnId: "stage",
+        dealId: "life-deal",
+        pipelineSlug: "p-c",
+        filterPipeline: "life",
+        stageSlug: "gather",
+        view: "list",
+      }),
+    ).toEqual({
+      href: "/deals?pipeline=life&view=list&stage=gather",
+      kind: "stage",
+    });
+    expect(
+      pipelineListNav({
+        columnId: "stage",
+        dealId: "d1",
+        filterPipeline: "p-c",
+        pcSub: "home",
+        stageSlug: "gather",
+        view: "list",
+      })?.href,
+    ).toBe("/deals?pipeline=p-c&view=list&stage=gather&pcSub=home");
+    const table = source("src/components/deals/deals-table.tsx");
+    expect(table).toMatch(/filterPipeline: listFilter\.pipeline/);
+    expect(table).not.toMatch(/pipelineSlug: stage\.pipelineSlug,\s*\n\s*stageSlug/);
+    expect(source("src/app/deals/page.tsx")).toMatch(/listFilter=\{\{/);
+    expect(source("src/lib/deals/pipeline-sheet.ts")).toMatch(/listStageFilterHref/);
+    expect(source("src/lib/deals/pipeline-sheet.ts")).not.toMatch(
+      /pipeline: input\.pipelineSlug \|\| undefined/,
+    );
   });
 
   it("keeps system columns read-only in Grid and maps field types to controls", () => {

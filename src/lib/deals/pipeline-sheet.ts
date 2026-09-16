@@ -106,14 +106,49 @@ export function nativePicklistOptions(
   return [];
 }
 
+/** Workspace book chips already on the list — never the clicked deal's board. */
+export type ListStageFilterBook = {
+  pipeline?: string | null;
+  family?: string | null;
+  pcSub?: string | null;
+  lifeSub?: string | null;
+  healthSub?: string | null;
+};
+
+/**
+ * List/grid stage click: set stage only. Keep All, or the book the agent already
+ * had. Do not infer P&C / Life / Health from the deal row.
+ */
+export function listStageFilterHref(input: ListStageFilterBook & {
+  stageSlug?: string | null;
+  view?: PipelineViewId | string | null;
+}): string {
+  return dealsHref({
+    view: input.view ?? "list",
+    stage: input.stageSlug || undefined,
+    pipeline: input.pipeline || undefined,
+    family: input.family || undefined,
+    pcSub: input.pcSub || undefined,
+    lifeSub: input.lifeSub || undefined,
+    healthSub: input.healthSub || undefined,
+  });
+}
+
 export function pipelineListNav(input: {
   columnId: string;
   dealId: string;
   raw?: string | null;
   field?: CustomFieldDef | null;
+  /** Deal's board — used when moving a stage, not for list stage-filter hrefs. */
   pipelineSlug?: string | null;
   stageSlug?: string | null;
   view?: PipelineViewId | null;
+  /** Current All / P&C / Life / Health chip. Stage click must not invent one. */
+  filterPipeline?: string | null;
+  family?: string | null;
+  pcSub?: string | null;
+  lifeSub?: string | null;
+  healthSub?: string | null;
   contactId?: string | null;
   accountId?: string | null;
   leadId?: string | null;
@@ -131,10 +166,14 @@ export function pipelineListNav(input: {
   if (input.columnId === "stage") {
     const view = input.view ?? "list";
     return {
-      href: dealsHref({
-        pipeline: input.pipelineSlug || undefined,
+      href: listStageFilterHref({
+        stageSlug: input.stageSlug,
         view,
-        stage: input.stageSlug || undefined,
+        pipeline: input.filterPipeline,
+        family: input.family,
+        pcSub: input.pcSub,
+        lifeSub: input.lifeSub,
+        healthSub: input.healthSub,
       }),
       kind: "stage",
     };

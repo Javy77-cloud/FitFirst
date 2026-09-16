@@ -130,9 +130,59 @@ describe("manual markets", () => {
       }),
     );
     expect(html).toMatch(/Skip/);
-    expect(html).toMatch(/below min 300000/);
-    expect(html).toMatch(/data-ff-market-appetite-note/);
-    expect(html).toMatch(/QuoteRUSH/);
+    expect(html).toMatch(/Trident Reciprocal Exchange/);
+    expect(html).toMatch(/data-ff-market-appetite/);
+    expect(html).not.toMatch(/below min 300000/);
+    expect(html).not.toMatch(/data-ff-market-appetite-note/);
+    expect(html).not.toMatch(/QuoteRUSH/);
+  });
+
+  it("does not restate sheet details or quote-style whys on Markets rows", () => {
+    const html = renderToString(
+      createElement(MarketsPanel, {
+        dealId: "deal-gloria-ho3",
+        matches: [
+          {
+            carrierId: "citizens",
+            carrierName: "Citizens",
+            band: "yellow",
+            fitScore: 62,
+            reasons: [
+              { code: "year_built", message: "Year built 1984", severity: "stretch" },
+              { code: "roof_covering", message: "Clay tile roof", severity: "stretch" },
+              {
+                code: "appetite_note",
+                message: "Roof age 37y · clay tile · year built 1984",
+                severity: "pass",
+              },
+            ],
+            learnedDecline: false,
+            shoppable: true,
+          },
+        ],
+        explicitLookup: true,
+        sheetHasValues: true,
+        carriers: [{ id: "citizens", name: "Citizens", writtenLines: ["HO"] }],
+      }),
+    );
+    expect(html).toMatch(/Citizens/);
+    expect(html).toMatch(/Appointed/);
+    expect(html).toMatch(/data-ff-market-appetite/);
+    expect(html).toMatch(/>62</);
+    expect(html).not.toMatch(/>Why</);
+    expect(html).not.toMatch(/Year built 1984/);
+    expect(html).not.toMatch(/Clay tile/);
+    expect(html).not.toMatch(/clay tile/);
+    expect(html).not.toMatch(/Roof age/);
+    expect(html).not.toMatch(/data-ff-market-appetite-note/);
+    expect(html).not.toMatch(/Clears structured appetite/);
+    const table = readFileSync("src/components/deal/markets-select-table.tsx", "utf8");
+    expect(table).not.toMatch(/marketWhy/);
+    expect(table).not.toMatch(/appetiteNote/);
+    expect(table).not.toMatch(/<th>Why<\/th>/);
+    const quotes = readFileSync("src/components/deal/quotes-results-table.tsx", "utf8");
+    expect(quotes).toMatch(/quoteRowReason/);
+    expect(quotes).toMatch(/Why \/ bind requirements/);
   });
 
   it("renders empty Markets with zero counters + load/add when no matches", () => {
