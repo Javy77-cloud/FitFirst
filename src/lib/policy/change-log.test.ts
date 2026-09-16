@@ -72,6 +72,8 @@ describe("policy change history", () => {
     expect(groups[0]?.fields).toHaveLength(2);
     expect(groups[1]?.source).toBe("bind");
     expect(sourceLabel("bind")).toBe("Bind");
+    expect(sourceLabel("mint")).toBe("Policy created");
+    expect(sourceLabel("mint")).not.toMatch(/mint|meant/i);
   });
 
   it("does not log form defaults that were already shown as blanks", () => {

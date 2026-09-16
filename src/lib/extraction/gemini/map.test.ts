@@ -7,7 +7,7 @@ import {
   parseAddressParts,
   sheetKeysForGeminiKey,
 } from "./map";
-import { geminiKeysForShopLine } from "./prompt";
+import { GEMINI_EXTRACT_JSON_KEYS, geminiKeysForShopLine } from "./prompt";
 
 describe("gemini map key mapping", () => {
   it("maps Gemini JSON keys onto sheet field keys", () => {
@@ -15,7 +15,33 @@ describe("gemini map key mapping", () => {
       "address",
       "address1",
       "applicant_address",
+      "property_address",
+      "mailing_address",
     ]);
+    expect(sheetKeysForGeminiKey("current_premium")).toEqual(["current_premium", "premium"]);
+    expect(sheetKeysForGeminiKey("premium")).toEqual(["premium", "current_premium"]);
+    expect(sheetKeysForGeminiKey("selling_agency")).toEqual(["selling_agency"]);
+    expect(sheetKeysForGeminiKey("renewal_date")).toEqual(["renewal_date"]);
+    expect(sheetKeysForGeminiKey("producer")).toEqual(["producer"]);
+    expect(sheetKeysForGeminiKey("mortgagee")).toEqual(["mortgagee", "mortgagee_name"]);
+    expect(sheetKeysForGeminiKey("billing_frequency")).toEqual([
+      "billing_frequency",
+      "premium_frequency",
+    ]);
+    expect(GEMINI_EXTRACT_JSON_KEYS).toEqual(
+      expect.arrayContaining([
+        "premium",
+        "current_premium",
+        "selling_agency",
+        "renewal_date",
+        "producer",
+        "insurance_type",
+        "roof_age",
+        "billing_frequency",
+        "next_due",
+        "payment_method",
+      ]),
+    );
     expect(sheetKeysForGeminiKey("license_number")).toEqual([
       "license_or_certificate_number",
     ]);

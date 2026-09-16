@@ -365,7 +365,12 @@ export default async function PolicyDetailPage({
         {activeTab === "billing" ? (
           <PolicyBillingTab
             policyId={policy.id}
-            policy={policy}
+            policy={{
+              ...policy,
+              paymentMethod:
+                parseMintPayload(policy.mintPayload)?.fields.find((row) => row.key === "payment_method")
+                  ?.value ?? null,
+            }}
             installments={installments.map(({ installment }) => installment)}
             showCommission={viewer.commissionBreakdown.read}
           />

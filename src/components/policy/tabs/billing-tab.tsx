@@ -50,6 +50,7 @@ export function PolicyBillingTab({
     downPayment?: string | null;
     financeCharge?: string | null;
     financeAgreementNumber?: string | null;
+    paymentMethod?: string | null;
   };
   installments: InstallmentRow[];
   showCommission?: boolean;
@@ -108,7 +109,7 @@ export function PolicyBillingTab({
           </div>
           <div>
             <dt className="text-helper text-muted-foreground">Payment method</dt>
-            <dd className="font-medium text-navy">—</dd>
+            <dd className="font-medium text-navy">{policy.paymentMethod?.trim() || "—"}</dd>
           </div>
           <div>
             <dt className="text-helper text-muted-foreground">Down payment</dt>
