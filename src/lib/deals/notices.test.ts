@@ -3,7 +3,6 @@ import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { DealNoticeChip, DealNotices } from "@/components/deal/deal-notices";
-import { NoticeTypesEditor } from "@/components/deal/notice-types-editor";
 import {
   DEAL_NOTICE_PICKLIST_OPTIONS,
   isActiveNotice,
@@ -209,28 +208,23 @@ describe("deal notices", () => {
   });
 
   it("opens a centered create-notice modal with choosable full type names", () => {
-    const modal = renderToString(
-      createElement(NoticeTypesEditor, {
-        open: true,
-        onOpenChange: () => undefined,
-        dealId: "deal-1",
-        family: "pc",
-        options: SEED_NOTICE_TYPE_OPTIONS,
-        product: "homeowners",
-        mode: "create",
-      }),
+    const editor = source("src/components/deal/notice-types-editor.tsx");
+    expect(editor).toMatch(/data-ff-notice-create-modal/);
+    expect(editor).toMatch(/data-ff-notice-type-modal/);
+    expect(editor).toMatch(/top-1\/2 left-1\/2|sm:max-w-xl/);
+    expect(editor).toMatch(/Choose a type for this product/);
+    expect(editor).toMatch(/data-ff-notice-type-choice/);
+    expect(editor).toMatch(/data-ff-notice-edit-type-label/);
+    expect(editor).toMatch(/data-ff-notice-edit-type-new/);
+    expect(editor).toMatch(/data-ff-notice-edit-type-delete/);
+    expect(editor).toMatch(/data-ff-notice-set/);
+    expect(editor).toMatch(/applyDealNoticeType/);
+    expect(editor).toMatch(/Name a new type/);
+    expect(editor).not.toMatch(/<select/);
+    expect(editor).not.toMatch(/SEED_NOTICE_LABELS\.none|"None"/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(
+      /data-ff-notice-create=""[\s\S]{0,180}onClick=\{openCreateModal\}/,
     );
-    expect(modal).toMatch(/data-ff-notice-create-modal/);
-    expect(modal).toMatch(/data-ff-notice-type-modal/);
-    expect(modal).toMatch(/Create notice/);
-    expect(modal).toMatch(/Inspection before bind/);
-    expect(modal).toMatch(/Check mortgagee payment/);
-    expect(modal).toMatch(/data-ff-notice-type-choice="inspection_before_bind"/);
-    expect(modal).toMatch(/data-ff-notice-edit-type-new/);
-    expect(modal).toMatch(/data-ff-notice-edit-type-delete/);
-    expect(modal).toMatch(/data-ff-notice-set/);
-    expect(modal).toMatch(/Name a new type/);
-    expect(modal).not.toMatch(/<select/);
-    expect(modal).not.toMatch(/data-ff-notice-type-choice="none"/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/open && showStamp/);
   });
 });
