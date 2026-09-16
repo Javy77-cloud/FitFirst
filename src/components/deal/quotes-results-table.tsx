@@ -572,7 +572,7 @@ export function QuotesResultsTable({
             type="button"
             size="sm"
             variant="outline"
-            disabled={!anyDetailsOpen && !declinedOpen}
+            disabled={list.length === 0}
             onClick={() => {
               setExpanded({});
               setDeclinedOpen(false);

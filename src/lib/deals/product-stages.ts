@@ -224,6 +224,16 @@ export function productChipStageLabelForState(input: {
   return productChipStageLabel(input.stage);
 }
 
+/** Header / chip stage to show — leftover Quote sent without a pick falls back to Quotes. */
+export function displayProductStage(input: {
+  stage?: string | null;
+  selectedQuoteIds?: readonly string[] | null;
+  fallback?: string | null;
+}): string {
+  if (lateStageNeedsQuoteSelection(input)) return "quotes";
+  return normalizeStageSlug(input.stage) || normalizeStageSlug(input.fallback) || "gather";
+}
+
 export function productChipBound(stage?: string | null): boolean {
   const key = normalizeStageSlug(stage);
   return key === "bound" || key === "closed_won";

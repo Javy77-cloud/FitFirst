@@ -61,6 +61,7 @@ import {
 } from "@/lib/deals/quote-completeness";
 import { pickBoundQuoteId } from "@/lib/deals/status-stamp";
 import {
+  displayProductStage,
   parseProductStages,
   productStageFor,
   productStampStage,
@@ -496,7 +497,11 @@ export default async function DealPage({
                   <DealHeaderStage
                     dealId={deal.id}
                     pipelineSlug={stageView.pipelineSlug}
-                    stageSlug={activeProductState.stage || stageView.slug}
+                    stageSlug={displayProductStage({
+                      stage: activeProductState.stage,
+                      selectedQuoteIds: activeProductState.selectedQuoteIds,
+                      fallback: stageView.slug,
+                    })}
                     stages={stageView.stages}
                     dealTitle={deal.title}
                     toastOnSave

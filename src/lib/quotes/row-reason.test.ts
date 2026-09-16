@@ -186,5 +186,6 @@ describe("quote notepad + speech", () => {
     expect(table).toMatch(/compareExceedsMax/);
     expect(table).toMatch(/data-ff-quotes-collapse-all-details/);
     expect(table).toMatch(/setDeclinedOpen\(false\)/);
+    expect(table).toMatch(/disabled=\{list\.length === 0\}/);
   });
 });
