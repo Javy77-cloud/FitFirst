@@ -140,6 +140,7 @@ export function slotForDocType(docType: string): DocSlot {
 
 export function coerceDealUploadDocType(value: string): DocType {
   const raw = value.trim().toLowerCase();
+  if (raw === "declaration" || raw === "declarations" || raw === "dec_page") return "dec";
   if ((DOC_TYPES as readonly string[]).includes(raw)) return raw as DocType;
   return "other";
 }

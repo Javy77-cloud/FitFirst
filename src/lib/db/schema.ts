@@ -709,11 +709,18 @@ export const deals = pgTable(
             lostReason?: string | null;
             policyId?: string | null;
             mintStatus?: "creating" | "unpublished" | "published" | null;
+            issuedDone?: boolean;
           }
         >
       >;
       lineFingerprints?: Partial<Record<string, { markets?: string | null; quotes?: string | null }>>;
       requestScopes?: Partial<Record<string, string[]>>;
+      pendingDecPrompt?: {
+        documentId: string;
+        carrierName: string;
+        product?: string | null;
+        createdAt: string;
+      } | null;
     } | null>(),
     ...timestamps,
   },
@@ -1045,6 +1052,8 @@ export const policies = pgTable(
       decDocumentId?: string | null;
       decFilename?: string | null;
       product?: string | null;
+      mintedAt?: string | null;
+      adminNotifiedAt?: string | null;
     } | null>(),
     ...timestamps,
   },

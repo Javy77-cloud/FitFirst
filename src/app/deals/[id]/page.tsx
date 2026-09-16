@@ -59,6 +59,9 @@ import {
 import { productSectionComplete, productSectionProgress } from "@/lib/deals/product-layout";
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
 import { DealStatusStamp } from "@/components/deal/deal-status-stamp";
+import { CreatePolicyFromDecModal } from "@/components/deal/create-policy-from-dec-modal";
+import { ensureRosaDeclarationRetag } from "@/app/actions/declaration";
+import { ROSA_DEC_DEAL_ID } from "@/lib/policy/dec-prompt";
 import {
   lineQuoteCompleteness,
   packageQuotesComplete,
@@ -133,11 +136,18 @@ export default async function DealPage({
     product?: string;
     fromPolicy?: string;
     issue?: string;
+    createPolicy?: string;
+    doc?: string;
+    carrier?: string;
   }>;
 }) {
   const { id } = await params;
-  const { tab, field, line: lineParam, product, notice, fromPolicy, issue } = await searchParams;
+  const { tab, field, line: lineParam, product, notice, fromPolicy, issue, createPolicy, doc, carrier } =
+    await searchParams;
   const focusField = parseSheetFieldParam(field);
+  if (id === ROSA_DEC_DEAL_ID) {
+    await ensureRosaDeclarationRetag().catch(() => null);
+  }
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
   const {
@@ -535,6 +545,23 @@ export default async function DealPage({
           <DealStatusStamp stage={stampStage} />
           {stampStage ? <DealNotices {...noticeProps} placement="overlay" /> : null}
         </div>
+        {(() => {
+          const pending = shopFlow.pendingDecPrompt;
+          const promptDoc = doc?.trim() || pending?.documentId;
+          const showPrompt = Boolean(
+            promptDoc && (createPolicy === "1" || pending?.documentId),
+          );
+          if (!showPrompt || !promptDoc) return null;
+          return (
+            <CreatePolicyFromDecModal
+              dealId={deal.id}
+              product={pending?.product || activeProduct}
+              documentId={promptDoc}
+              carrierName={carrier?.trim() || pending?.carrierName}
+              selectedQuoteIds={activeProductState.selectedQuoteIds}
+            />
+          );
+        })()}
         <SectionTabs
           defaultValue="details"
           active={activeTab}
@@ -650,6 +677,7 @@ export default async function DealPage({
                             selectedQuoteIds: state.selectedQuoteIds,
                             policyId: state.policyId,
                             mintStatus: state.mintStatus,
+                            issuedDone: state.issuedDone,
                           },
                         ];
                       }),

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { extractExisting } from "@/app/actions/documents";
+import { retagDocumentAsDeclarationAction } from "@/app/actions/declaration";
+import { isDeclarationDocType } from "@/lib/policy/dec-prompt";
 import { FileActionMenu } from "@/components/documents/file-action-menu";
 import { Button } from "@/components/ui/button";
 import { worksheetDocTypeLabel } from "@/lib/deals/source-doc-types";
@@ -49,6 +51,15 @@ export function SourceFileRow({
           ) : null}
         </span>
       </FileActionMenu>
+      {!isDeclarationDocType(doc.docType) ? (
+        <form action={retagDocumentAsDeclarationAction}>
+          <input type="hidden" name="documentId" value={doc.id} />
+          <input type="hidden" name="dealId" value={dealId} />
+          <Button type="submit" variant="ghost" size="xs" data-ff-retag-as-declaration="">
+            Use as declaration
+          </Button>
+        </form>
+      ) : null}
       {doc.slot === "source_doc" ? (
         <form action={extractExisting}>
           <input type="hidden" name="documentId" value={doc.id} />

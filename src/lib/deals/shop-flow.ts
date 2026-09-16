@@ -7,6 +7,7 @@ import {
   parseProductStages,
   type DealProductStages,
 } from "@/lib/deals/product-stages";
+import { parsePendingDecPrompt, type PendingDecPrompt } from "@/lib/policy/dec-prompt";
 
 /** Persisted on deals.shop_flow — last shopped risk snapshot + per-line quote runs. */
 export type DealShopFlowState = {
@@ -22,6 +23,8 @@ export type DealShopFlowState = {
   requestScopes?: Partial<Record<string, string[]>>;
   /** Sheet edited — Quotes may show a recheck cue. Markets stay complete. */
   sheetRecheckLines?: Partial<Record<string, boolean>>;
+  /** Create-policy modal after a Declaration upload or carrier API — never auto-mint. */
+  pendingDecPrompt?: PendingDecPrompt | null;
 };
 
 /** Empty string means “was complete, now stale — re-run Markets/Quotes”. */
@@ -82,6 +85,7 @@ export function parseShopFlow(raw: unknown): DealShopFlowState {
     lineFingerprints,
     requestScopes,
     sheetRecheckLines,
+    pendingDecPrompt: parsePendingDecPrompt(row.pendingDecPrompt),
   };
 }
 

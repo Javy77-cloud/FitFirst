@@ -12,6 +12,9 @@ import { flashAction } from "@/lib/flash-action";
 import { formTag, leadDocFormById, lineTag } from "@/lib/leads/line-documents";
 import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
 import { coerceDealUploadDocType, matchDealLookup, slotForDocType } from "@/lib/deals/lookup";
+import { maybeQueueCreatePolicyPrompt, resolveDeclarationCarrierName } from "@/app/actions/declaration-prompt";
+import { isDeclarationDocType } from "@/lib/policy/dec-prompt";
+import { parseDealProduct } from "@/lib/deals/deal-products";
 import { db } from "@/lib/db";
 import { listDealLookup } from "@/lib/db/queries";
 import {
@@ -174,6 +177,7 @@ export async function persistFile(input: {
 export async function persistDealSourceUploads(formData: FormData): Promise<{
   count: number;
   last: Awaited<ReturnType<typeof persistFile>> | null;
+  createPolicyPrompt?: { documentId: string; carrierName: string; product?: string | null } | null;
 }> {
   let dealId = optionalId(formData, "dealId");
   let riskId = optionalId(formData, "riskId");
@@ -202,14 +206,15 @@ export async function persistDealSourceUploads(formData: FormData): Promise<{
     }
   }
   const uploads = await collectUploadedFiles(formData);
-  if (uploads.length === 0) return { count: 0, last: null };
+  if (uploads.length === 0) return { count: 0, last: null, createPolicyPrompt: null };
   if (!dealId && !contactId && !policyId && !folderId && !formData.get("library")) {
-    return { count: 0, last: null };
+    return { count: 0, last: null, createPolicyPrompt: null };
   }
   const library = String(formData.get("library") ?? "").trim() === "forms" ? "forms" : "shared";
   const fillable = String(formData.get("fillable") ?? "") === "on" || String(formData.get("fillable") ?? "") === "true";
   const resolvedFolder = await resolveFolderId({ folderId, dealId, contactId });
   let last = null as Awaited<ReturnType<typeof persistFile>> | null;
+  let lastDeclaration = null as Awaited<ReturnType<typeof persistFile>> | null;
   let count = 0;
   for (const upload of uploads) {
     const rawType = String(
@@ -249,9 +254,31 @@ export async function persistDealSourceUploads(formData: FormData): Promise<{
     }
     if (!doc) continue;
     last = doc;
+    if (isDeclarationDocType(doc.docType)) lastDeclaration = doc;
     count += 1;
   }
-  return { count, last };
+  let createPolicyPrompt = null as
+    | { documentId: string; carrierName: string; product?: string | null }
+    | null;
+  if (dealId && lastDeclaration && isDeclarationDocType(lastDeclaration.docType)) {
+    const product =
+      parseDealProduct(String(formData.get("product") ?? "")) ??
+      parseDealProduct(String(formData.get("line") ?? ""));
+    const carrierName =
+      String(formData.get("carrierName") ?? "").trim() ||
+      (await resolveDeclarationCarrierName(dealId, product));
+    createPolicyPrompt = await maybeQueueCreatePolicyPrompt({
+      dealId,
+      docType: lastDeclaration.docType,
+      documentId: lastDeclaration.id,
+      storagePath: lastDeclaration.storagePath,
+      mimeType: lastDeclaration.mimeType,
+      filename: lastDeclaration.filename,
+      carrierName,
+      product,
+    });
+  }
+  return { count, last, createPolicyPrompt };
 }
 
 export async function extractDocument(documentId: string, dealId: string) {
@@ -273,7 +300,7 @@ function revalidateDocumentPaths(doc: {
 }
 
 export async function uploadDocument(formData: FormData) {
-  const { count, last } = await persistDealSourceUploads(formData);
+  const { count, last, createPolicyPrompt } = await persistDealSourceUploads(formData);
   if (count === 0 || !last) {
     throw new Error("Choose a file to upload.");
   }
@@ -295,8 +322,21 @@ export async function uploadDocument(formData: FormData) {
     redirect(withFlash(libraryHref({ library, folderId, notice: "uploaded" }), "document-uploaded"));
   }
   if (last?.dealId) {
-    // Persist only; Fill master sheet button owns runFillDealSheets; Markets only after Confirm & request quotes.
     const line = String(formData.get("line") ?? "").trim();
+    const product = String(formData.get("product") ?? "").trim();
+    if (createPolicyPrompt) {
+      const query = new URLSearchParams({
+        tab: "quotes",
+        createPolicy: "1",
+        doc: createPolicyPrompt.documentId,
+        carrier: createPolicyPrompt.carrierName,
+      });
+      if (line) query.set("line", line);
+      if (product || createPolicyPrompt.product) {
+        query.set("product", product || createPolicyPrompt.product || "");
+      }
+      flashAction(`/deals/${last.dealId}?${query.toString()}`, "declaration-received");
+    }
     const href = line
       ? `/deals/${last.dealId}?tab=documents&line=${line}`
       : `/deals/${last.dealId}?tab=documents`;

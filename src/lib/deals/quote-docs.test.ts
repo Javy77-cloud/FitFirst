@@ -37,6 +37,20 @@ describe("quote docs vs documents source docs", () => {
     }
     expect(isDocumentsSourceDoc({ slot: "quote_pdf", docType: "other", tags: [] })).toBe(false);
     expect(isDocumentsSourceDoc({ slot: "policy_file", docType: "other", tags: [] })).toBe(false);
+    expect(
+      isQuoteFileDoc({
+        slot: "source_doc",
+        docType: "dec",
+        tags: ["quote:q1", "source:agency", "dec", "mint"],
+      }),
+    ).toBe(false);
+    expect(
+      isDocumentsSourceDoc({
+        slot: "source_doc",
+        docType: "dec",
+        tags: ["quote:q1", "source:agency", "dec", "mint"],
+      }),
+    ).toBe(true);
     expect(shopLineFromSourceDoc({ slot: "source_doc", docType: "dec", tags: ["line:home"] })).toBe(
       "home",
     );

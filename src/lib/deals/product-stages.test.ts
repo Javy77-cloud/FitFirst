@@ -34,6 +34,7 @@ import {
   listProductStageHref,
   attachListProductStageHrefs,
 } from "./product-stages";
+import { markProductIssuedDone } from "@/lib/policy/dec-prompt";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -534,5 +535,27 @@ describe("per-product stages", () => {
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_DEAL_NOTICES_HEALTH/);
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/Inspection before bind/);
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/Check mortgagee payment/);
+  });
+
+  it("persists issued-done on one product without closing siblings", () => {
+    const minted = setProductStage(
+      { homeowners: { stage: "bound", selectedQuoteIds: ["q-ho3"] } },
+      "homeowners",
+      { stage: "policy_issued", selectedQuoteIds: ["q-ho3"], mintStatus: "unpublished" },
+    );
+    expect(minted.homeowners?.issuedDone).toBeFalsy();
+    const published = markProductIssuedDone(minted, "homeowners", { policyId: "p1" });
+    expect(parseProductStages(published).homeowners).toMatchObject({
+      stage: "closed_won",
+      issuedDone: true,
+      mintStatus: "published",
+    });
+    const withAuto = setProductStage(published, "auto", { stage: "bound", selectedQuoteIds: ["q-auto"] });
+    expect(withAuto.auto?.stage).toBe("bound");
+    expect(withAuto.auto?.issuedDone).toBeFalsy();
+    expect(productStampStage(published.homeowners, null, null, ["q-ho3"])).toBe("done");
+    expect(productChipStageLabelForState({ stage: "closed_won", issuedDone: true })).toBe("Done");
+    expect(source("src/components/deal/deal-line-switcher.tsx")).toMatch(/data-ff-product-done-stamp/);
+    expect(source("src/components/deal/deal-line-switcher.tsx")).toMatch(/data-ff-shopping-active/);
   });
 });

@@ -17,6 +17,10 @@ describe("deal status stamp", () => {
     expect(resolveDealStampStage("bound")).toBe("bound");
     expect(resolveDealStampStage("policy_issued")).toBe("policy_issued");
     expect(resolveDealStampStage("closed_won")).toBe("closed_won");
+    expect(resolveDealStampStage("done")).toBe("done");
+    const done = renderToString(createElement(DealStatusStamp, { stage: "done" }));
+    expect(done).toMatch(/data-ff-deal-status-stamp="done"/);
+    expect(done).toContain("DONE");
     expect(resolveDealStampStage(null, null, "2026-09-15T12:00:00.000Z")).toBe("bound");
     expect(resolveDealStampStage("shopping")).toBeNull();
     expect(resolveDealStampStage("review")).toBeNull();

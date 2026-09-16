@@ -113,6 +113,8 @@ export type DealProductStageState = {
   lostReason?: string | null;
   policyId?: string | null;
   mintStatus?: DealProductMintStatus | null;
+  /** Published confirm queue — this line is issued-done, not still shopping. */
+  issuedDone?: boolean;
   /** Notice type slug. JSON key stays `inspectionStatus` for leftover rows. */
   inspectionStatus?: InspectionStatus;
   noticeType?: NoticeType;
@@ -225,6 +227,7 @@ export function parseProductStages(raw: unknown): DealProductStages {
       lostReason?: unknown;
       policyId?: unknown;
       mintStatus?: unknown;
+      issuedDone?: unknown;
       inspectionStatus?: unknown;
       noticeType?: unknown;
       noticeTaskId?: unknown;
@@ -242,6 +245,7 @@ export function parseProductStages(raw: unknown): DealProductStages {
       row.mintStatus === "creating" || row.mintStatus === "unpublished" || row.mintStatus === "published"
         ? row.mintStatus
         : null;
+    const issuedDone = row.issuedDone === true;
     const inspectionStatus = parseInspectionStatus(row.noticeType ?? row.inspectionStatus);
     const noticeTaskId =
       typeof row.noticeTaskId === "string" && row.noticeTaskId.trim() ? row.noticeTaskId.trim() : null;
@@ -255,6 +259,7 @@ export function parseProductStages(raw: unknown): DealProductStages {
       !lostReason &&
       !policyId &&
       !mintStatus &&
+      !issuedDone &&
       inspectionStatus === "none" &&
       !noticeTaskId &&
       !escrowNote &&
@@ -273,6 +278,7 @@ export function parseProductStages(raw: unknown): DealProductStages {
       lostReason,
       policyId,
       mintStatus,
+      issuedDone,
       inspectionStatus: noticeType,
       noticeType,
       noticeTaskId,
@@ -306,6 +312,7 @@ export function productStageFor(
       lostReason: stored.lostReason ?? null,
       policyId: stored.policyId ?? null,
       mintStatus: stored.mintStatus ?? null,
+      issuedDone: Boolean(stored.issuedDone),
       inspectionStatus: noticeType,
       noticeType,
       noticeTaskId: stored.noticeTaskId ?? null,
@@ -322,6 +329,7 @@ export function productStageFor(
     lostReason: null,
     policyId: null,
     mintStatus: null,
+    issuedDone: false,
     inspectionStatus: leftoverNotice,
     noticeType: leftoverNotice,
     noticeTaskId: null,
@@ -343,6 +351,7 @@ export function setProductStage(
     lostReason: patch.lostReason === undefined ? current.lostReason : patch.lostReason,
     policyId: patch.policyId === undefined ? current.policyId : patch.policyId,
     mintStatus: patch.mintStatus === undefined ? current.mintStatus : patch.mintStatus,
+    issuedDone: patch.issuedDone === undefined ? Boolean(current.issuedDone) : Boolean(patch.issuedDone),
     inspectionStatus:
       patch.noticeType === undefined && patch.inspectionStatus === undefined
         ? current.noticeType ?? current.inspectionStatus ?? "none"
@@ -480,6 +489,7 @@ const CHIP_STAGE_LABELS: Record<string, string> = {
   closed_won: "Closed won",
   closed_lost: "Closed lost",
   pending_inspection: "Bound",
+  done: "Done",
 };
 
 /** Chip stage — real shopping step, not a vague Review slug. */
@@ -494,7 +504,9 @@ export function productChipStageLabelForState(input: {
   stage?: string | null;
   selectedQuoteIds?: readonly string[] | null;
   liveQuoteIds?: readonly string[] | null;
+  issuedDone?: boolean | null;
 }): string | null {
+  if (input.issuedDone) return productChipStageLabel("done");
   if (lateStageNeedsQuoteSelection(input)) return productChipStageLabel("quote_review");
   return productChipStageLabel(input.stage);
 }
@@ -622,6 +634,7 @@ export const SELECTED_QUOTE_STAGE_LABELS: Record<string, string> = {
   policy_issued: "Policy issued",
   pending_inspection: "Pending inspection",
   closed_won: "Closed won",
+  done: "Done",
 };
 
 export function selectedQuoteRowLabel(stage?: string | null): string | null {
@@ -639,6 +652,7 @@ export function productStampStage(
   // Never stamp Quote sent / Bound / Inspection without a live selected quote
   // on this product — leftover deal Quote sent or boundAt is not enough.
   if (selected.length === 0) return null;
+  if (productState?.issuedDone) return "done";
   const candidate = productState?.stage ?? fallbackStage;
   if (!isLateProductStage(candidate) && !boundAt) return null;
   return resolveDealStampStage(candidate, null, boundAt);

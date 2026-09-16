@@ -9,6 +9,7 @@ import { findMatchingContact } from "@/app/actions/crm";
 import { currentDeskSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import {
+  alerts,
   contacts,
   deals,
   documents,
@@ -17,10 +18,11 @@ import {
   policies,
   quoteSheets,
   quotes,
+  reviewTasks,
   risks,
 } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
-import { dealProductDef, parseDealProduct, type DealProductId } from "@/lib/deals/deal-products";
+import { dealProductDef, inferDealProducts, parseDealProduct, type DealProductId } from "@/lib/deals/deal-products";
 import {
   parseProductStages,
   productStageFor,
@@ -28,6 +30,16 @@ import {
 } from "@/lib/deals/product-stages";
 import { parseShopFlow } from "@/lib/deals/shop-flow";
 import { persistDealShopFlow } from "@/lib/deals/shop-flow-persist";
+import { moveDealToStage } from "@/app/actions/pipeline";
+import { clearCreatePolicyPrompt } from "@/app/actions/declaration-prompt";
+import { ensureWorkItem } from "@/lib/work-queue/service";
+import {
+  allProductsClosedForDealWon,
+  markProductIssuedDone,
+  mintAdminNotifyDue,
+  MINT_ADMIN_NOTIFY_KIND,
+  MINT_CONFIRM_TASK_KIND,
+} from "@/lib/policy/dec-prompt";
 import { extractWithGeminiPdf } from "@/lib/extraction/gemini";
 import { loadGeminiApiKey } from "@/lib/extraction/gemini/key";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
@@ -304,6 +316,7 @@ export async function issuePolicyFromDeclaration(input: {
     decDocumentId: gate.dec.id,
     decFilename: gate.dec.filename,
     product,
+    mintedAt: new Date().toISOString(),
   };
 
   const session = await currentDeskSession();
@@ -390,14 +403,18 @@ export async function issuePolicyFromDeclaration(input: {
 
   await writeCrmSignalsSafe({
     kind: "stage_moved",
-    title: `Policy minted · ${def.label} · ${deal.title}`,
+    title: `Confirm declaration · ${def.label} · ${deal.title}`,
     body: `${session.name || "Agent"} issued ${def.label} from the declaration. Confirm low-confidence fields before publish.`,
     entityType: "policy",
     entityId: policyId,
     dealId,
     policyId,
-    createTask: false,
+    taskKind: MINT_CONFIRM_TASK_KIND,
+    dueInDays: 0,
+    createTask: true,
   });
+  await ensureWorkItem(policyId).catch(() => null);
+  await clearCreatePolicyPrompt(dealId).catch(() => null);
 
   revalidatePath(`/deals/${dealId}`);
   revalidatePath(`/policies/${policyId}`);
@@ -495,15 +512,81 @@ export async function publishMintedPolicy(formData: FormData) {
   if (policy.dealId && policy.sourceProduct) {
     const product = parseDealProduct(policy.sourceProduct);
     if (product) {
-      await markMintStatus(policy.dealId, product, {
-        stage: "policy_issued",
-        policyId,
-        mintStatus: "published",
-      });
+      const deal = await loadDeal(policy.dealId);
+      if (deal) {
+        const saved = parseShopFlow(deal.shopFlow);
+        const nextStages = markProductIssuedDone(saved.productStages, product, { policyId });
+        await persistDealShopFlow(policy.dealId, { ...saved, productStages: nextStages });
+        const products = inferDealProducts({
+          shopProducts: deal.shopProducts,
+          shopLines: deal.shopLines,
+          lineOfBusiness: deal.lineOfBusiness,
+          quotingLine: deal.quotingLine,
+          quotingForm: deal.quotingForm,
+          policySubType: deal.policySubType,
+        });
+        if (allProductsClosedForDealWon(products, nextStages)) {
+          await moveDealToStage({
+            dealId: policy.dealId,
+            pipelineSlug: "won-lost",
+            stageSlug: "closed_won",
+            allowLate: true,
+          });
+        }
+      } else {
+        await markMintStatus(policy.dealId, product, {
+          stage: "closed_won",
+          policyId,
+          mintStatus: "published",
+        });
+      }
     }
   }
+  await db
+    .update(reviewTasks)
+    .set({ status: "done", completedAt: new Date() })
+    .where(
+      and(
+        eq(reviewTasks.tenantId, DEFAULT_TENANT_ID),
+        eq(reviewTasks.policyId, policyId),
+        eq(reviewTasks.kind, MINT_CONFIRM_TASK_KIND),
+      ),
+    )
+    .catch(() => null);
   revalidatePath(`/policies/${policyId}`);
   revalidatePath("/policies");
   if (policy.dealId) revalidatePath(`/deals/${policy.dealId}`);
   return { ok: true as const };
+}
+
+/** Stub hook — Admin ping only after 72h still unpublished. */
+export async function notifyAdminUnpublishedMint(policyId: string, now = new Date()) {
+  const [policy] = await db
+    .select()
+    .from(policies)
+    .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
+  if (!policy) return { ok: false as const, notified: false };
+  const payload = parseMintPayload(policy.mintPayload);
+  if (!mintAdminNotifyDue({ status: payload?.status ?? policy.status, mintedAt: payload?.mintedAt, adminNotifiedAt: payload?.adminNotifiedAt, now })) {
+    return { ok: true as const, notified: false };
+  }
+  await db.insert(alerts).values({
+    tenantId: DEFAULT_TENANT_ID,
+    kind: MINT_ADMIN_NOTIFY_KIND,
+    title: `Unpublished mint · ${policy.policyNumber}`,
+    body: "Policy is still unpublished 72 hours after declaration mint. Agent confirm queue is outstanding.",
+    severity: "warning",
+    entityType: "policy",
+    entityId: policyId,
+  });
+  if (payload) {
+    await db
+      .update(policies)
+      .set({
+        mintPayload: { ...payload, adminNotifiedAt: now.toISOString() },
+        updatedAt: now,
+      })
+      .where(eq(policies.id, policyId));
+  }
+  return { ok: true as const, notified: true };
 }
