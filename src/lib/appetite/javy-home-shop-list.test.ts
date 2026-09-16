@@ -47,4 +47,18 @@ describe("Javy Home shop list", () => {
     expect(sql).toMatch(/npm run appetite:import/);
     expect(JAVY_HOME_SHOP_CARRIER_IDS).toContain(TRIDENT_CARRIER_ID);
   });
+
+  it("enriches Trident via 0125 without a new carrier UUID", () => {
+    const sql = readFileSync("drizzle/0125_trident_reciprocal_qrg.sql", "utf8");
+    expect(sql).toContain(TRIDENT_CARRIER_ID);
+    expect(sql).toContain("trident_reciprocal");
+    expect(sql).toContain("min_cov_a:300000");
+    expect(sql).toContain("max_cov_a:5000000");
+    expect(sql).toContain("max_dwelling_age:40");
+    expect(sql).toContain("min_miles_to_coast:0.5");
+    expect(sql).toContain("pc:10");
+    expect(sql).toContain("QRG Version 06122026");
+    expect(sql).toMatch(/ON CONFLICT \(tenant_id, carrier_id\) DO UPDATE/);
+    expect(sql).not.toMatch(/0123_trident|0124_comms/);
+  });
 });

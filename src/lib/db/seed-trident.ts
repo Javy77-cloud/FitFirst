@@ -5,7 +5,13 @@ import { TRIDENT_SLUG } from "@/lib/appetite/gate/fl-ho-order";
 import { APPETITE_FL_SPECIALTY_CSV, parseAppetiteCsv } from "@/lib/appetite/gate/parse";
 import { upsertAppetiteCarriers } from "@/lib/appetite/gate/store";
 import { TRIDENT_HO_APPETITE } from "@/lib/appetite/published-appetite";
-import { TENANT_ID, TRIDENT_CARRIER_ID, TRIDENT_CARRIER_NAME, TRIDENT_MIN_COV_A } from "../fixtures/ids";
+import {
+  TENANT_ID,
+  TRIDENT_CARRIER_ID,
+  TRIDENT_CARRIER_NAME,
+  TRIDENT_MAX_COV_A,
+  TRIDENT_MIN_COV_A,
+} from "../fixtures/ids";
 import { db } from "./index";
 import { appetiteRules, carrierAppetite, carriers } from "./schema";
 
@@ -40,8 +46,8 @@ export async function seedTridentReciprocal() {
     writtenLines: [...written],
     portalStatus: "open" as const,
     portalLogin: TRIDENT_HO_APPETITE.placement,
-    website: "https://www.tridentreciprocal.com",
-    carrierInfo: "Trident Reciprocal Exchange. FL HO-3 through QuoteRUSH.",
+    website: TRIDENT_HO_APPETITE.website,
+    carrierInfo: "Trident Reciprocal Exchange. FL HO-3 through QuoteRUSH. NOW COVERING WIND DRIVEN RAIN.",
     territory: "Florida",
     preferredSubmission: "portal",
     bindingAuthority: "limited",
@@ -49,13 +55,13 @@ export async function seedTridentReciprocal() {
     appetiteRows: [
       {
         id: TRIDENT_APPETITE_ROW_ID,
-        dateRequested: "2026-06-17",
+        dateRequested: "2026-06-12",
         lob: TRIDENT_HO_APPETITE.line,
-        roofAge: "",
-        waterHeater: "",
-        hvac: "",
-        electrical: "",
-        claimsHistory: "",
+        roofAge: "Shingle 15 / Tile 20 / Metal 30; flat over living ineligible",
+        waterHeater: "15 yrs & newer if inside living; no age if garage/outside",
+        hvac: "HVAC maintenance contract discount",
+        electrical: "No Challenger, Sylvania, Zinsco, or single-strand aluminum; multi-strand Al UW review",
+        claimsHistory: "<=2 non-hurricane claims in last 5 years; each <=$5k",
         acceptDecline: "accept" as const,
         notes: TRIDENT_APPETITE_NOTE,
       },
@@ -90,6 +96,13 @@ export async function seedTridentReciprocal() {
 
   const ruleValues = {
     minCovA: TRIDENT_HO_APPETITE.minCovA ?? TRIDENT_MIN_COV_A,
+    maxCovA: TRIDENT_HO_APPETITE.maxCovA ?? TRIDENT_MAX_COV_A,
+    minYearBuilt: TRIDENT_HO_APPETITE.minYearBuilt,
+    maxRoofAge: TRIDENT_HO_APPETITE.maxRoofAge,
+    allowedRoofCoverings: TRIDENT_HO_APPETITE.allowedRoofCoverings,
+    coastalAllowed: true,
+    minMilesToCoast: TRIDENT_HO_APPETITE.minMilesToCoast,
+    mobileAllowed: TRIDENT_HO_APPETITE.mobileAllowed,
     notes: TRIDENT_APPETITE_NOTE,
     updatedAt: new Date(),
   };
@@ -100,8 +113,6 @@ export async function seedTridentReciprocal() {
       tenantId: TENANT_ID,
       carrierId: id,
       lineOfBusiness: "HO",
-      coastalAllowed: true,
-      mobileAllowed: false,
       requiresOpeningProtection: false,
       requireReplacementCost: false,
       ...ruleValues,

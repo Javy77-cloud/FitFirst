@@ -41,7 +41,7 @@ function lineAllowed(carrier: AppetiteCarrier, snap: MasterRiskSnapshot): { ok: 
   const offeredOk = lineMatchesOffered(snap.line, carrier.linesOffered) || occupancyOk;
   if (!offeredOk) return { ok: false, rule: "line_not_offered" };
 
-  const notOfferedHit = firstMatchingToken(carrier.linesNotOffered, snap);
+    const notOfferedHit = firstMatchingToken(carrier.linesNotOffered, snap);
   if (notOfferedHit) return { ok: false, rule: notOfferedHit };
   if (carrier.linesNotOffered.some((token) => lineMatchesOffered(snap.line, [token]) && !occupancyOk)) {
     const exact = carrier.linesNotOffered.find((token) => lineMatchesOffered(snap.line, [token]));
@@ -98,6 +98,7 @@ export function runQuoteGate(
   const flOrder = resolveFlHoOrder(options.flHoOrder);
   const stateRules = options.stateRules ?? [];
   const appointedByCarrier = options.appointedByCarrier ?? null;
+  const asOfYear = options.asOfYear ?? new Date().getFullYear();
   const rateable = carriers.filter((c) => c.rateable);
   const collector = collectorPath(snapshot);
   const nonstandardAuto = !collector && dirtyAutoRisk(snapshot);
@@ -179,7 +180,7 @@ export function runQuoteGate(
       continue;
     }
 
-    const hard = firstMatchingToken(carrier.hardDeclines, snapshot);
+    const hard = firstMatchingToken(carrier.hardDeclines, snapshot, asOfYear);
     if (hard) {
       decisions.push({
         carrierId: carrier.carrierId,
@@ -209,8 +210,8 @@ export function runQuoteGate(
       continue;
     }
 
-    const preferredHit = anyTokenHits(carrier.preferredSignals, snapshot);
-    const cautionHit = anyTokenHits(carrier.softCautions, snapshot);
+    const preferredHit = anyTokenHits(carrier.preferredSignals, snapshot, asOfYear);
+    const cautionHit = anyTokenHits(carrier.softCautions, snapshot, asOfYear);
     const maybe = appointmentGated || (cautionHit && !preferredHit);
     decisions.push({
       carrierId: carrier.carrierId,
@@ -219,9 +220,9 @@ export function runQuoteGate(
       matchingRule: appointmentGated
         ? "appointment_gated"
         : preferredHit
-          ? firstMatchingToken(carrier.preferredSignals, snapshot)
+          ? firstMatchingToken(carrier.preferredSignals, snapshot, asOfYear)
           : cautionHit
-            ? firstMatchingToken(carrier.softCautions, snapshot)
+            ? firstMatchingToken(carrier.softCautions, snapshot, asOfYear)
             : null,
       rank: 0,
       preferredHit,
