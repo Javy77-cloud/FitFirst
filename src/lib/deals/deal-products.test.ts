@@ -162,6 +162,25 @@ describe("chips + inference", () => {
     });
     expect(repair).toEqual({ shopLines: ["life"], shopProducts: ["life_term"] });
   });
+
+  it("repairs Tyler Bhattel Neon: LIFE + quoting_line=life + leftover shop_lines home", () => {
+    // deal 9e9c9347-64ae-4c77-a76d-13a6a999df25
+    const tyler = {
+      title: "Tyler Bhattel / Term Life",
+      shopLines: ["home"],
+      shopProducts: [] as string[],
+      lineOfBusiness: "LIFE",
+      quotingLine: "life",
+    };
+    expect(inferDealProducts(tyler)).toEqual(["life_term"]);
+    expect(lifeHealthShopRepair(tyler)).toEqual({
+      shopLines: ["life"],
+      shopProducts: ["life_term"],
+    });
+    expect(readFileSync("src/lib/deals/retitle.ts", "utf8")).toMatch(/lifeHealthShopRepair/);
+    expect(readFileSync("src/lib/db/queries.ts", "utf8")).toMatch(/lifeHealthShopRepair\(deal\)/);
+    expect(readFileSync("src/lib/deals/deal-title.ts", "utf8")).toMatch(/visibleDealTitle/);
+  });
 });
 
 describe("create + detail wiring", () => {
