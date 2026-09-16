@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/quotes";
 import { QuoteNotePad } from "@/components/deal/quote-note-pad";
 import { isBoundQuote } from "@/lib/deals/status-stamp";
+import { selectedQuoteRowLabel } from "@/lib/deals/product-stages";
 import { quoteRowReason } from "@/lib/quotes/row-reason";
 import { Button } from "@/components/ui/button";
 import {
@@ -385,6 +386,7 @@ export function QuotesResultsTable({
   boundQuoteId = null,
   selectedQuoteIds = [],
   product = null,
+  productStage = null,
   sheetStale = false,
   priorByQuoteId = {},
 }: {
@@ -401,6 +403,7 @@ export function QuotesResultsTable({
   boundQuoteId?: string | null;
   selectedQuoteIds?: string[];
   product?: string | null;
+  productStage?: string | null;
   sheetStale?: boolean;
   priorByQuoteId?: Record<string, { quote: Quote; carrier: Carrier; label: string | null }>;
 }) {
@@ -742,6 +745,10 @@ export function QuotesResultsTable({
                       boundQuoteId,
                     });
                     const highlighted = selected || bound;
+                    const stageLabel =
+                      selected || bound ? selectedQuoteRowLabel(productStage) : null;
+                    const rowStageLabel =
+                      stageLabel ?? (bound ? "Bound" : null);
                     const prior = priorByQuoteId[quote.id];
                     const isRecheckMarked = recheckMarked.includes(quote.id);
                     const isHideMarked = effectiveHideMarked.includes(quote.id);
@@ -797,12 +804,20 @@ export function QuotesResultsTable({
                             ) : null}
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                {bound ? (
+                                {rowStageLabel ? (
                                   <span
-                                    data-ff-quote-bound-badge=""
-                                    className="inline-flex shrink-0 items-center rounded-sm border-2 border-fit-flag px-1.5 py-0.5 text-[10px] font-extrabold tracking-[0.12em] text-fit-flag"
+                                    data-ff-quote-bound-badge={rowStageLabel === "Bound" ? "" : undefined}
+                                    data-ff-quote-stage-badge={rowStageLabel}
+                                    className={cn(
+                                      "inline-flex shrink-0 items-center rounded-sm border-2 px-1.5 py-0.5 text-[10px] font-extrabold tracking-[0.08em]",
+                                      rowStageLabel === "Quote sent"
+                                        ? "border-[#1b4f8a] text-[#1b4f8a]"
+                                        : rowStageLabel === "Pending inspection"
+                                          ? "border-[#8a6500] text-[#8a6500]"
+                                          : "border-fit-flag text-fit-flag",
+                                    )}
                                   >
-                                    BOUND
+                                    {rowStageLabel === "Bound" ? "BOUND" : rowStageLabel}
                                   </span>
                                 ) : (
                                   <span

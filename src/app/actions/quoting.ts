@@ -21,6 +21,7 @@ import { autoSnapshotFieldsForDeal } from "@/lib/appetite/auto-premium-capture";
 import { lineLearningSnapshotFieldsForDeal } from "@/lib/appetite/line-learning-capture";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
+import { persistSheetConfirmClear } from "@/lib/deals/shop-flow-persist";
 import { withFlash } from "@/lib/flash";
 import { persistQuoteSheetValues, runFillDealSheets } from "@/app/actions/quote-sheet";
 import { submittedSheetValues } from "@/lib/quote-sheet/apply";
@@ -111,6 +112,7 @@ export async function approveMasterSheet(formData: FormData) {
   if (dealId === DEAL_ID && (deal.pipelineStage === "bound" || deal.pipelineStage === "closed_won")) {
     throw new Error("Ana stays shopping. Do not bind this shop.");
   }
+  const subsequent = Boolean(deal.quotingUnlocked || deal.sheetApprovedAt);
 
   const session = await currentDeskSession();
   const now = new Date();
@@ -153,8 +155,17 @@ export async function approveMasterSheet(formData: FormData) {
       .where(eq(quoteSheets.id, sheet.id));
   }
 
-  // Confirm unlocks Markets only. Quotes are requested after the agent
-  // selects carriers on Markets — shopping here raced the redirect (React #441).
+  await persistSheetConfirmClear(dealId, line).catch(() => null);
+
+  // First confirm opens Markets. Later visual approves return to Quotes so
+  // Markets stays complete and the agent Rechecks from the quote list.
+  if (subsequent) {
+    const product = str(formData, "product");
+    const productQuery = product ? `&product=${encodeURIComponent(product)}` : "";
+    await persistDealWorkTab(dealId, "quotes").catch(() => null);
+    revalidatePath(`/deals/${dealId}`);
+    redirect(withFlash(`/deals/${dealId}?tab=quotes&line=${line}${productQuery}`, "Sheet approved"));
+  }
   await persistDealWorkTab(dealId, "markets").catch(() => null);
   revalidatePath(`/deals/${dealId}`);
   redirect(withFlash(`/deals/${dealId}?tab=markets&line=${line}`, "Sheet approved"));

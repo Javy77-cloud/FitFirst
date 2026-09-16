@@ -92,6 +92,7 @@ export function QuotesPanel({
   completeness = null,
   boundQuoteId = null,
   product = null,
+  productStage = null,
   selectedQuoteIds = [],
   sheetStale = false,
   splitHomeProducts = false,
@@ -118,6 +119,7 @@ export function QuotesPanel({
   completeness?: LineQuoteCompleteness | null;
   boundQuoteId?: string | null;
   product?: string | null;
+  productStage?: string | null;
   selectedQuoteIds?: string[];
   sheetStale?: boolean;
   /** Gloria HO3+DP3 only — Heather HO3+Auto+Flood must not hide HO3 quotes. */
@@ -159,10 +161,11 @@ export function QuotesPanel({
       agentRating: row.quote.agentRating,
     })),
   );
-  if (boundQuoteId) {
+  const pinId = boundQuoteId || selectedQuoteIds[0] || null;
+  if (pinId) {
     sorted.sort((a, b) => {
-      if (a.quote.id === boundQuoteId) return -1;
-      if (b.quote.id === boundQuoteId) return 1;
+      if (a.quote.id === pinId) return -1;
+      if (b.quote.id === pinId) return 1;
       return 0;
     });
   }
@@ -266,6 +269,7 @@ export function QuotesPanel({
             boundQuoteId={boundQuoteId}
             selectedQuoteIds={selectedQuoteIds}
             product={product}
+            productStage={productStage}
             sheetStale={sheetStale}
             priorByQuoteId={priorByQuoteId}
           />

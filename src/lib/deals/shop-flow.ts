@@ -546,6 +546,18 @@ export function sheetNeedsRecheckCue(
   return Boolean(parseShopFlow(saved).sheetRecheckLines?.[line]);
 }
 
+/** Visual confirm after a later sheet edit — drop the Recheck cue, keep Markets. */
+export function nextShopFlowAfterSheetConfirm(input: {
+  saved?: DealShopFlowState | null;
+  line: string;
+}): DealShopFlowState {
+  const saved = parseShopFlow(input.saved);
+  return {
+    ...saved,
+    sheetRecheckLines: { ...saved.sheetRecheckLines, [input.line]: false },
+  };
+}
+
 export function nextShopFlowAfterMarkets(input: {
   saved?: DealShopFlowState | null;
   fingerprint: string;

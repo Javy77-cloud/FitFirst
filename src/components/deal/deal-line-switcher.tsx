@@ -55,15 +55,11 @@ export function DealLineSwitcher({
   formLabels?: Partial<Record<DealProductId, string>>;
 }) {
   if (!products.length) return null;
-  const doneCount = products.filter((id) => productChipBound(stages[id]?.stage)).length;
   return (
     <div className="mt-1.5 space-y-1" data-ff-deal-product-chip-row="">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           Products
-          <span className="ml-1.5 font-medium normal-case tracking-normal" data-ff-product-ready-count="">
-            {`${doneCount}/${products.length} ready`}
-          </span>
         </p>
         <DealPackageLinesForm dealId={dealId} selected={products} tab={tab} />
       </div>

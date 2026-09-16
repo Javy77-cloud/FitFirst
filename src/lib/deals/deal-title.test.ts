@@ -52,6 +52,13 @@ describe("BH1 — deal titles are First Last / Lob", () => {
         quotingForm: "DP3",
       }),
     ).toBe("Gloria Martinez / DP3");
+    expect(
+      dealTitleForActiveProduct({
+        title: "Gloria Martinez / HO3",
+        product: "landlord",
+        quotingForm: "HO3",
+      }),
+    ).toBe("Gloria Martinez / DP3");
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/dealTitleForActiveProduct/);
     expect(source("src/lib/crm/convert.ts")).toMatch(/formatDealTitle|dealTitleFromPerson/);
     expect(source("src/lib/crm/convert.ts")).not.toMatch(/\$\{lead\.lastName\} · \$\{line\} shop/);

@@ -20,6 +20,7 @@ import {
   productReadyFromQuotes,
   productStageFor,
   PRODUCT_LOST_REASON_LABELS,
+  selectedQuoteRowLabel,
   setProductStage,
 } from "./product-stages";
 
@@ -77,6 +78,8 @@ describe("per-product stages", () => {
     expect(parseProductStages(next).landlord).toBeUndefined();
     expect(productChipLabel({ product: "homeowners", quotingForm: "HO3" })).toBe("HO3");
     expect(productChipLabel({ product: "landlord", quotingForm: "DP3" })).toBe("DP3");
+    expect(productChipLabel({ product: "landlord", quotingForm: "HO3" })).toBe("DP3");
+    expect(productChipLabel({ product: "homeowners", quotingForm: "DP3" })).toBe("HO3");
     expect(productChipLabel({ product: "homeowners" })).toBe("HO3");
     expect(productChipLabel({ product: "landlord" })).toBe("DP3");
     expect(productChipLabel({ product: "auto", quotingForm: "PA" })).toBe("Auto");
@@ -236,7 +239,7 @@ describe("per-product stages", () => {
   it("keeps the stamp off position:sticky and list stage on list", () => {
     const css = source("src/app/globals.css");
     expect(css).toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: absolute;/);
-    expect(css).toMatch(/\.ff-deal-status-stamp \{[\s\S]*top: 10\.5rem;/);
+    expect(css).toMatch(/\.ff-deal-status-stamp \{[\s\S]*top: 13\.5rem;/);
     expect(css).not.toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: sticky;/);
     expect(productChipStageLabel("review")).toBe("Quotes");
     expect(productChipStageLabel("quote_sent")).toBe("Quote sent");
@@ -255,6 +258,9 @@ describe("per-product stages", () => {
     ).toBe("quote_sent");
     expect(productChipBound("bound")).toBe(true);
     expect(productChipBound("review")).toBe(false);
+    expect(selectedQuoteRowLabel("quote_sent")).toBe("Quote sent");
+    expect(selectedQuoteRowLabel("pending_inspection")).toBe("Pending inspection");
+    expect(selectedQuoteRowLabel("closed_won")).toBe("Closed won");
     expect(
       productStampStage({ stage: "quote_sent", selectedQuoteIds: [], lostReason: null }),
     ).toBeNull();
