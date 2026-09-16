@@ -109,6 +109,16 @@ describe("request quotes landing + leftover Quote sent gate", () => {
     expect(
       productStampStage({ stage: "quote_sent", selectedQuoteIds: ["q1"], lostReason: null }),
     ).toBe("quote_sent");
+    expect(
+      productStampStage(
+        { stage: "quote_sent", selectedQuoteIds: ["leftover"], lostReason: null },
+        "quote_sent",
+        null,
+        [],
+      ),
+    ).toBeNull();
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/liveQuoteIds/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/liveQuoteIdsForProduct/);
   });
 
   it("matches Neon Gloria/Heather live shape: rows visible, deal Quote sent does not stamp", () => {

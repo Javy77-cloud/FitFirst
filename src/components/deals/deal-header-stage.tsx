@@ -281,12 +281,14 @@ export function DealHeaderStage({
             <Button
               type="button"
               size="sm"
-              disabled={!picked.length || !pendingStage}
+              disabled={!livePicked().length || !pendingStage}
               data-ff-choose-quote-confirm=""
               onClick={() => {
                 if (!pendingStage) return;
+                const ids = livePicked();
+                if (!ids.length) return;
                 setPickOpen(false);
-                commit(pendingStage, picked);
+                commit(pendingStage, ids);
               }}
             >
               Use selected

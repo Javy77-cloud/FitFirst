@@ -133,7 +133,21 @@ export function setProductStage(
   if (normalizeStageSlug(next.stage) !== "closed_lost") {
     next.lostReason = next.lostReason ?? null;
   }
+  // Never persist Quote sent / Bound / Inspection / Closed won with an empty pick.
+  if (isLateProductStage(next.stage) && next.selectedQuoteIds.filter(Boolean).length === 0) {
+    next.stage = "quotes";
+  }
   return { ...stages, [product]: next };
+}
+
+export function liveSelectedQuoteIds(
+  selectedQuoteIds?: readonly string[] | null,
+  liveQuoteIds?: readonly string[] | null,
+): string[] {
+  const selected = (selectedQuoteIds ?? []).map((id) => String(id ?? "").trim()).filter(Boolean);
+  if (liveQuoteIds == null) return selected;
+  const live = new Set((liveQuoteIds ?? []).map((id) => String(id ?? "").trim()).filter(Boolean));
+  return selected.filter((id) => live.has(id));
 }
 
 export function lateStageNeedsQuoteSelection(input: {
@@ -142,12 +156,7 @@ export function lateStageNeedsQuoteSelection(input: {
   liveQuoteIds?: readonly string[] | null;
 }): boolean {
   if (!isLateProductStage(input.stage)) return false;
-  const selected = (input.selectedQuoteIds ?? []).map((id) => String(id ?? "").trim()).filter(Boolean);
-  if (selected.length === 0) return true;
-  const live = (input.liveQuoteIds ?? []).map((id) => String(id ?? "").trim()).filter(Boolean);
-  if (live.length === 0 && input.liveQuoteIds != null) return true;
-  if (live.length === 0) return false;
-  return !selected.some((id) => live.includes(id));
+  return liveSelectedQuoteIds(input.selectedQuoteIds, input.liveQuoteIds).length === 0;
 }
 
 export function selectedQuoteHighlightId(input: {
@@ -238,6 +247,7 @@ export function productChipStageLabel(stage?: string | null): string | null {
 export function productChipStageLabelForState(input: {
   stage?: string | null;
   selectedQuoteIds?: readonly string[] | null;
+  liveQuoteIds?: readonly string[] | null;
 }): string | null {
   if (lateStageNeedsQuoteSelection(input)) return productChipStageLabel("quotes");
   return productChipStageLabel(input.stage);
@@ -248,6 +258,7 @@ export function displayProductStage(input: {
   stage?: string | null;
   selectedQuoteIds?: readonly string[] | null;
   fallback?: string | null;
+  liveQuoteIds?: readonly string[] | null;
 }): string {
   if (lateStageNeedsQuoteSelection(input)) return "quotes";
   return normalizeStageSlug(input.stage) || normalizeStageSlug(input.fallback) || "gather";
@@ -262,11 +273,12 @@ export function productStampStage(
   productState: DealProductStageState | null | undefined,
   fallbackStage?: string | null,
   boundAt?: Date | string | null,
+  liveQuoteIds?: readonly string[] | null,
 ): DealStampStage | null {
-  const selected = (productState?.selectedQuoteIds ?? []).filter(Boolean);
-  // Never inherit deal-level leftover Quote sent (Gloria Review + empty pick).
-  // Stamp only when this product actually named a quote — or the deal is bound.
-  if (selected.length === 0 && !boundAt) return null;
+  const selected = liveSelectedQuoteIds(productState?.selectedQuoteIds, liveQuoteIds);
+  // Never stamp Quote sent / Bound / Inspection without a live selected quote
+  // on this product — leftover deal Quote sent or boundAt is not enough.
+  if (selected.length === 0) return null;
   const candidate = productState?.stage ?? fallbackStage;
   if (!isLateProductStage(candidate) && !boundAt) return null;
   return resolveDealStampStage(candidate, null, boundAt);

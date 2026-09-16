@@ -98,6 +98,15 @@ describe("per-product stages", () => {
         liveQuoteIds: [],
       }),
     ).toBe(true);
+    expect(
+      lateStageNeedsQuoteSelection({
+        stage: "quote_sent",
+        selectedQuoteIds: ["q1"],
+        liveQuoteIds: ["q1"],
+      }),
+    ).toBe(false);
+    expect(setProductStage({}, "homeowners", { stage: "quote_sent", selectedQuoteIds: [] }).homeowners)
+      .toMatchObject({ stage: "quotes", selectedQuoteIds: [] });
     expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(/livePicked/);
     expect(lateStageNeedsQuoteSelection({ stage: "pending_inspection", selectedQuoteIds: [] })).toBe(
       true,
@@ -121,7 +130,12 @@ describe("per-product stages", () => {
       }),
     ).toBe("other");
     expect(source("src/app/actions/product-stage.ts")).toMatch(/need_quote/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/liveQuoteIdsForProduct/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/liveSelectedQuoteIds/);
     expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(/data-ff-choose-quote-dialog/);
+    expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(/disabled=\{\!livePicked\(\)\.length/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/liveQuoteIds/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/preScoped/);
   });
 
   it("counts ready from product quotes, not a shared home sheet", () => {
@@ -250,6 +264,22 @@ describe("per-product stages", () => {
     expect(
       productStampStage({ stage: "review", selectedQuoteIds: [], lostReason: null }, "quote_sent"),
     ).toBeNull();
+    expect(
+      productStampStage(
+        { stage: "quote_sent", selectedQuoteIds: ["stale"], lostReason: null },
+        "quote_sent",
+        new Date("2026-09-01"),
+        [],
+      ),
+    ).toBeNull();
+    expect(
+      displayProductStage({
+        stage: "quote_sent",
+        selectedQuoteIds: ["stale"],
+        fallback: "quote_sent",
+        liveQuoteIds: [],
+      }),
+    ).toBe("quotes");
     expect(
       parseProductStages({ homeowners: { stage: "quote_sent", selectedQuoteIds: [] } }).homeowners
         ?.stage,

@@ -645,7 +645,9 @@ describe("deal page + action wiring", () => {
     const page = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
     expect(page).toMatch(/completed=\{flowCompletion\.completed\}/);
     expect(page).toMatch(/currentQuoteRunId=\{shopFlow\.quoteRuns/);
-    expect(page).toMatch(/multiLine=\{packageLines\.length > 1\}/);
+    expect(page).toMatch(/multiLine=\{dealProducts\.length > 1\}/);
+    expect(page).toMatch(/isPrimaryLine=\{dealProducts\[0\] === activeProduct\}/);
+    expect(page).toMatch(/preScoped/);
     expect(page).toMatch(/shopLine: row\.quote\.shopLine/);
     expect(page).toMatch(/packageQuotesComplete/);
     expect(page).toMatch(/lineQuoteCompleteness/);

@@ -388,10 +388,14 @@ export default async function DealPage({
     activeProduct,
     stageView.slug ?? deal.pipelineStage,
   );
+  const liveQuoteIds = lineQuotes
+    .filter((row) => row.quote.stub !== true)
+    .map((row) => row.quote.id);
   const stampStage = productStampStage(
     activeProductState,
     stageView.slug ?? deal.pipelineStage,
     deal.boundAt,
+    liveQuoteIds,
   );
   const boundQuoteId = pickBoundQuoteId({
     selectedQuoteIds: activeProductState.selectedQuoteIds,
@@ -508,6 +512,7 @@ export default async function DealPage({
                   stage: activeProductState.stage,
                   selectedQuoteIds: activeProductState.selectedQuoteIds,
                   fallback: stageView.slug,
+                  liveQuoteIds,
                 })}
                 owner={ownerRow?.name}
                 activity={
@@ -525,6 +530,7 @@ export default async function DealPage({
                       stage: activeProductState.stage,
                       selectedQuoteIds: activeProductState.selectedQuoteIds,
                       fallback: stageView.slug,
+                      liveQuoteIds,
                     })}
                     stages={stageView.stages}
                     dealTitle={visibleDealTitle}
@@ -759,7 +765,8 @@ export default async function DealPage({
                         formId={lineQuotingForm?.id ?? lineForm ?? masterFormLabel}
                         shopLine={sheetLine}
                         currentQuoteRunId={shopFlow.quoteRuns?.[sheetLine] ?? null}
-                        multiLine={packageLines.length > 1}
+                        multiLine={dealProducts.length > 1}
+                        isPrimaryLine={dealProducts[0] === activeProduct}
                         completeness={
                           quoteCompletenessByProduct[activeProduct] ?? activeQuoteCompleteness
                         }
@@ -778,6 +785,7 @@ export default async function DealPage({
                         sheetStale={sheetStale}
                         splitHomeProducts={splitHome}
                         quoteRuns={shopFlow.quoteRuns}
+                        preScoped
                       />
                     )}
                   </div>
