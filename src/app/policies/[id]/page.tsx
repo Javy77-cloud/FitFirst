@@ -111,6 +111,7 @@ export default async function PolicyDetailPage({
     terms,
     location,
     risk,
+    quoteSheet,
     fileVersions,
   } = workspace;
   const error = typeof query.error === "string" ? query.error : undefined;
@@ -329,6 +330,24 @@ export default async function PolicyDetailPage({
             account={account}
             deal={deal}
             locationLabel={location?.label ?? location?.address1 ?? location?.street ?? null}
+            mailing={
+              contact
+                ? {
+                    address: contact.mailingAddress,
+                    city: contact.city,
+                    state: contact.state,
+                    zip: contact.zip,
+                  }
+                : account
+                  ? {
+                      address: account.mailingAddress,
+                      city: account.city,
+                      state: account.state,
+                      zip: account.zip,
+                    }
+                  : null
+            }
+            sheet={(quoteSheet?.values ?? null) as Record<string, { value?: string | null } | undefined> | null}
             vehicles={vehicles}
             isAuto={isAuto}
             terms={terms}

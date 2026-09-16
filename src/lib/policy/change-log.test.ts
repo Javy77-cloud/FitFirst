@@ -104,7 +104,7 @@ describe("policy change history", () => {
     expect(diffPolicyFields(shown, saved)).toEqual([
       {
         fieldKey: "premisesAddress",
-        fieldLabel: "Premises street",
+        fieldLabel: "Insured location",
         beforeValue: "412 Harbor Isle Dr",
         afterValue: "412 Harbor Isle Drive",
       },

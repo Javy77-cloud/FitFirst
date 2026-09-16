@@ -368,6 +368,22 @@ describe("unpublished confirm guard", () => {
     expect(fields.find((row) => row.key === "selling_agency")?.value).toBe("afa");
     expect(fields.find((row) => row.key === "mortgagee")?.value).toContain("First Community");
     expect(fields.find((row) => row.key === "roof_year")?.value).toBe("2018");
+    const booked = mintFieldPolicyPatch(fields);
+    expect(booked.premisesAddress).toBe("412 Harbor Isle Dr");
+    expect(booked.premisesCity).toBe("Melbourne");
+    expect(booked.premisesState).toBe("FL");
+    expect(booked.premisesZip).toBe("32901");
+    expect(booked.premisesAddress).not.toMatch(/Melbourne/);
+
+    const rosa = mintFieldPolicyPatch(
+      buildMintFields({
+        identity: { propertyAddress: "15280 Tropic Ct, Fort Myers, FL 33967" },
+      }),
+    );
+    expect(rosa.premisesAddress).toBe("15280 Tropic Ct");
+    expect(rosa.premisesCity).toBe("Fort Myers");
+    expect(rosa.premisesState).toBe("FL");
+    expect(rosa.premisesZip).toBe("33967");
     expect(fields.find((row) => row.key === "billing_frequency")?.value).toBe("annual");
     expect(fields.find((row) => row.key === "form")?.value).toBe("HO3");
   });
@@ -419,6 +435,14 @@ describe("unpublished confirm guard", () => {
       /if \(!result\.ok\) return;/,
     );
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/mintFieldPolicyPatch/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/streetOnlyPremises/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/year_built/);
+    expect(source("src/app/actions/policy-mint.ts")).not.toMatch(/propertyLine/);
+    expect(source("src/components/policy/tabs/overview-tab.tsx")).toMatch(/resolveDwellingFacts/);
+    expect(source("src/components/policy/policy-information.tsx")).toMatch(/Insured location/);
+    expect(source("src/lib/desk/policy-information.ts")).toMatch(/Insured location/);
+    expect(source("src/lib/policy/mint-gate.ts")).toMatch(/label: "Effective date"/);
+    expect(source("src/lib/policy/mint-gate.ts")).toMatch(/key: "mailing_address"/);
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/loadGeminiRows/);
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/readStoredFile/);
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/if \(!extracted\.ok\)/);

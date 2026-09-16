@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { formatDay } from "@/lib/domain";
 import { isInForceStatus } from "@/lib/policy/status";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
+import { resolveDwellingFacts } from "@/lib/policy/dwelling-facts";
 
 export function PolicyOverviewTab({
   policy,
@@ -20,6 +21,8 @@ export function PolicyOverviewTab({
   account,
   deal,
   locationLabel,
+  mailing,
+  sheet,
   vehicles,
   isAuto,
   terms,
@@ -73,6 +76,13 @@ export function PolicyOverviewTab({
   } | null;
   deal?: { id: string; title: string } | null;
   locationLabel?: string | null;
+  mailing?: {
+    address?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+  } | null;
+  sheet?: Record<string, { value?: string | null } | undefined> | null;
   vehicles: Parameters<typeof VehiclesList>[0]["vehicles"];
   isAuto: boolean;
   terms: Parameters<typeof TermHistoryPanel>[0]["terms"];
@@ -100,6 +110,7 @@ export function PolicyOverviewTab({
       row.kind === "additional_interest" ||
       row.kind === "certificate_holder",
   ).length;
+  const dwelling = resolveDwellingFacts({ risk, sheet });
 
   return (
     <div className="space-y-4" data-ff-policy-tab="overview">
@@ -110,6 +121,7 @@ export function PolicyOverviewTab({
         contact={contact}
         account={account}
         locationLabel={locationLabel}
+        mailing={mailing}
         readOnly={readOnly}
         showCommission={showCommission}
       />
@@ -163,9 +175,9 @@ export function PolicyOverviewTab({
           premisesCity: policy.premisesCity,
           premisesState: policy.premisesState,
           premisesZip: policy.premisesZip,
-          roofYear: risk?.roofYear,
-          yearBuilt: risk?.yearBuilt,
-          construction: risk?.construction,
+          roofYear: dwelling.roofYear,
+          yearBuilt: dwelling.yearBuilt,
+          construction: dwelling.construction,
           vehicleCount: vehicles?.length ?? 0,
           account,
           mortgageeCount,
