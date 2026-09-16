@@ -199,11 +199,26 @@ export function shopLineFromLob(lob: string | null | undefined): ShopLine | null
   return LOB_TO_SHOP_LINE[raw] ?? null;
 }
 
+export function shopLineFromQuoteRun(
+  quoteRunId?: string | null,
+  quoteRuns?: Partial<Record<string, string>> | null,
+): ShopLine | null {
+  const id = (quoteRunId ?? "").trim();
+  if (!id || !quoteRuns) return null;
+  const matches: ShopLine[] = [];
+  for (const [line, runId] of Object.entries(quoteRuns)) {
+    if ((runId ?? "").trim() === id && isShopLine(line)) matches.push(line);
+  }
+  return matches.length === 1 ? matches[0]! : null;
+}
+
 export function resolveQuoteShopLine(input: {
   shopLine?: string | null;
   quoteAttemptLogId?: string | null;
   notes?: string | null;
   logs?: readonly { id: string; lineOfBusiness?: string | null }[] | null;
+  quoteRunId?: string | null;
+  quoteRuns?: Partial<Record<string, string>> | null;
 }): ShopLine | null {
   const fromShop = isShopLine(input.shopLine) ? input.shopLine : null;
   const log = input.quoteAttemptLogId
@@ -211,12 +226,15 @@ export function resolveQuoteShopLine(input: {
     : null;
   const fromLog = shopLineFromLob(log?.lineOfBusiness);
   const fromNotes = inferShopLineFromQuoteNotes(input.notes);
-  // Merged multi-line books often stamp shop_line=home. Prefer log / notes when they disagree.
+  const fromRun = shopLineFromQuoteRun(input.quoteRunId, input.quoteRuns);
+  // Merged multi-line books often stamp shop_line=home. Prefer log / notes / run map.
   if (fromShop && fromLog && fromShop !== fromLog && fromShop === "home") return fromLog;
   if (fromShop && fromNotes && fromShop !== fromNotes && fromShop === "home") return fromNotes;
+  if (fromShop && fromRun && fromShop !== fromRun && fromShop === "home") return fromRun;
   if (fromShop) return fromShop;
   if (fromLog) return fromLog;
-  return fromNotes;
+  if (fromNotes) return fromNotes;
+  return fromRun;
 }
 
 /** Persist the line chip tag so historical rows stop spilling across Home / Auto / Flood. */
@@ -235,6 +253,8 @@ export function quoteMatchesDealProduct(
     quoteAttemptLogId?: string | null;
     notes?: string | null;
     logs?: readonly { id: string; lineOfBusiness?: string | null }[] | null;
+    quoteRunId?: string | null;
+    quoteRuns?: Partial<Record<string, string>> | null;
   },
   product: string,
   opts?: { multiLine?: boolean; isPrimaryLine?: boolean; splitHomeProducts?: boolean },
@@ -271,6 +291,8 @@ export function quoteMatchesShopLine(
     quoteAttemptLogId?: string | null;
     notes?: string | null;
     logs?: readonly { id: string; lineOfBusiness?: string | null }[] | null;
+    quoteRunId?: string | null;
+    quoteRuns?: Partial<Record<string, string>> | null;
   },
   wanted: ShopLine,
   opts?: { multiLine?: boolean; isPrimaryLine?: boolean },

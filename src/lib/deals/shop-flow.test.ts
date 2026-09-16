@@ -259,6 +259,16 @@ describe("line-scoped quotes", () => {
       resolveQuoteShopLine({
         shopLine: "home",
         quoteAttemptLogId: null,
+        notes: "Rated $700",
+        logs: [],
+        quoteRunId: "run-auto",
+        quoteRuns: { home: "run-home", auto: "run-auto", flood: "run-flood" },
+      }),
+    ).toBe("auto");
+    expect(
+      resolveQuoteShopLine({
+        shopLine: "home",
+        quoteAttemptLogId: null,
         notes: "Flood National General — NFIP provisional",
         logs: [],
       }),

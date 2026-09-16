@@ -95,6 +95,7 @@ export function QuotesPanel({
   selectedQuoteIds = [],
   sheetStale = false,
   splitHomeProducts = false,
+  quoteRuns = null,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -119,6 +120,7 @@ export function QuotesPanel({
   sheetStale?: boolean;
   /** Gloria HO3+DP3 only — Heather HO3+Auto+Flood must not hide HO3 quotes. */
   splitHomeProducts?: boolean;
+  quoteRuns?: Partial<Record<string, string>> | null;
 }) {
   const activeLine: ShopLine | null = isShopLine(shopLine) ? shopLine : null;
   const lineLogs = logs.map((row) => row.log);
@@ -128,6 +130,8 @@ export function QuotesPanel({
       quoteAttemptLogId: row.quote.quoteAttemptLogId,
       notes: row.quote.notes,
       logs: lineLogs,
+      quoteRunId: row.quote.quoteRunId,
+      quoteRuns,
     };
     if (product) {
       return quoteMatchesDealProduct(input, product, {

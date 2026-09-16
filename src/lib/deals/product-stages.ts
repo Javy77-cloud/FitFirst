@@ -88,6 +88,11 @@ export function parseProductStages(raw: unknown): DealProductStages {
   return out;
 }
 
+function stageWithoutLeftoverQuoteSent(stage: string, selectedQuoteIds: readonly string[]): string {
+  if (isLateProductStage(stage) && selectedQuoteIds.filter(Boolean).length === 0) return "quotes";
+  return stage || "gather";
+}
+
 export function productStageFor(
   stages: DealProductStages | null | undefined,
   product: DealProductId,
@@ -95,15 +100,20 @@ export function productStageFor(
 ): DealProductStageState {
   const stored = stages?.[product];
   if (stored) {
+    const selectedQuoteIds = stored.selectedQuoteIds ?? [];
     return {
-      stage: stored.stage || normalizeStageSlug(fallbackStage) || "gather",
-      selectedQuoteIds: stored.selectedQuoteIds ?? [],
+      stage: stageWithoutLeftoverQuoteSent(
+        stored.stage || normalizeStageSlug(fallbackStage) || "gather",
+        selectedQuoteIds,
+      ),
+      selectedQuoteIds,
       lostReason: stored.lostReason ?? null,
     };
   }
+  const selectedQuoteIds: string[] = [];
   return {
-    stage: normalizeStageSlug(fallbackStage) || "gather",
-    selectedQuoteIds: [],
+    stage: stageWithoutLeftoverQuoteSent(normalizeStageSlug(fallbackStage) || "gather", selectedQuoteIds),
+    selectedQuoteIds,
     lostReason: null,
   };
 }

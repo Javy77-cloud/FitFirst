@@ -7,9 +7,15 @@ import { quotesRequestedHref, withFlash } from "@/lib/flash";
 import {
   parseProductStages,
   productChipStageLabelForState,
+  productStageFor,
   productStampStage,
 } from "@/lib/deals/product-stages";
-import { groupQuotesByRun, quoteMatchesDealProduct, quoteRunIdAfterRequest } from "@/lib/deals/shop-flow";
+import {
+  groupQuotesByRun,
+  quoteMatchesDealProduct,
+  quoteRunIdAfterRequest,
+  resolveQuoteShopLine,
+} from "@/lib/deals/shop-flow";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -103,6 +109,67 @@ describe("request quotes landing + leftover Quote sent gate", () => {
     expect(
       productStampStage({ stage: "quote_sent", selectedQuoteIds: ["q1"], lostReason: null }),
     ).toBe("quote_sent");
+  });
+
+  it("matches Neon Gloria/Heather live shape: rows visible, deal Quote sent does not stamp", () => {
+    const gloriaStages = parseProductStages({
+      homeowners: { stage: "review", selectedQuoteIds: [] },
+      landlord: { stage: "review", selectedQuoteIds: [] },
+    });
+    expect(productStageFor(gloriaStages, "homeowners", "quote_sent")).toMatchObject({
+      stage: "review",
+      selectedQuoteIds: [],
+    });
+    expect(
+      productStampStage(productStageFor(gloriaStages, "homeowners", "quote_sent"), "quote_sent"),
+    ).toBeNull();
+    const gloriaRows = Array.from({ length: 19 }, (_, index) => ({
+      id: `g-${index}`,
+      runId: "run-home-live",
+      createdAt: new Date(`2026-09-01T12:${String(index).padStart(2, "0")}:00Z`),
+    }));
+    const gloriaGrouped = groupQuotesByRun(
+      gloriaRows,
+      (row) => ({ runId: row.runId, createdAt: row.createdAt }),
+      "run-home-after-request",
+    );
+    expect(gloriaGrouped.current).toHaveLength(19);
+
+    const heatherRuns = { home: "run-home", auto: "run-auto", flood: "run-flood" };
+    expect(
+      resolveQuoteShopLine({
+        shopLine: "home",
+        notes: "Rated $700",
+        quoteRunId: "run-auto",
+        quoteRuns: heatherRuns,
+      }),
+    ).toBe("auto");
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "Rated $700", quoteRunId: "run-auto", quoteRuns: heatherRuns },
+        "auto",
+        { multiLine: true, splitHomeProducts: false },
+      ),
+    ).toBe(true);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "Rated $1840", quoteRunId: "run-home", quoteRuns: heatherRuns },
+        "homeowners",
+        { multiLine: true, splitHomeProducts: false },
+      ),
+    ).toBe(true);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "NFIP provisional", quoteRunId: "run-flood", quoteRuns: heatherRuns },
+        "flood",
+        { multiLine: true, splitHomeProducts: false },
+      ),
+    ).toBe(true);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/quoteRuns: shopFlow\.quoteRuns/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/quoteRuns=\{shopFlow\.quoteRuns\}/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(
+      /stage=\{displayProductStage\(/,
+    );
   });
 
   it("sheet save stays at Confirm and does not uncheck Markets", () => {

@@ -257,6 +257,7 @@ export default async function DealPage({
       ? logs.filter((row) => logBelongsToLine(row.log.lineOfBusiness, activeLob, isPrimaryPackageLine))
       : logs;
   const allQuoteLogsForMatch = logs.map((item) => item.log);
+  const shopFlow = parseShopFlow(deal.shopFlow);
   const lineQuotes = quotes.filter((row) =>
     quoteMatchesDealProduct(
       {
@@ -264,6 +265,8 @@ export default async function DealPage({
         quoteAttemptLogId: row.quote.quoteAttemptLogId,
         notes: row.quote.notes,
         logs: allQuoteLogsForMatch,
+        quoteRunId: row.quote.quoteRunId,
+        quoteRuns: shopFlow.quoteRuns,
       },
       activeProduct,
       {
@@ -322,7 +325,6 @@ export default async function DealPage({
     sheets,
     docs: docs.filter((doc) => isDocumentsSourceDoc(doc)),
   });
-  const shopFlow = parseShopFlow(deal.shopFlow);
   const packageShopLines = [
     ...new Set(
       dealProducts.length
@@ -353,6 +355,7 @@ export default async function DealPage({
         carriers: carrierRows.map((row) => ({ id: row.carrier.id, name: row.carrier.name })),
         multiLine: dealProducts.length > 1,
         splitHomeProducts: splitHome,
+        quoteRuns: shopFlow.quoteRuns,
       }),
     ]),
   );
@@ -493,7 +496,11 @@ export default async function DealPage({
                 dob={dealValues.date_of_birth || contact?.dateOfBirth || lead?.dateOfBirth}
                 insuredAddress={headerAddresses.insured}
                 mailingAddress={headerAddresses.mailing}
-                stage={stageView.name}
+                stage={displayProductStage({
+                  stage: activeProductState.stage,
+                  selectedQuoteIds: activeProductState.selectedQuoteIds,
+                  fallback: stageView.slug,
+                })}
                 owner={ownerRow?.name}
                 activity={
                   relabelConvertActivityTitle(comms[0]?.title ?? null, {
@@ -762,6 +769,7 @@ export default async function DealPage({
                         selectedQuoteIds={activeProductState.selectedQuoteIds}
                         sheetStale={sheetStale}
                         splitHomeProducts={splitHome}
+                        quoteRuns={shopFlow.quoteRuns}
                       />
                     )}
                   </div>

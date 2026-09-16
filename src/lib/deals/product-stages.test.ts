@@ -72,6 +72,7 @@ describe("per-product stages", () => {
     const next = setProductStage({}, "homeowners", { stage: "quote_sent", selectedQuoteIds: ["q-ho3"] });
     expect(productStageFor(next, "homeowners").stage).toBe("quote_sent");
     expect(productStageFor(next, "landlord").stage).toBe("gather");
+    expect(productStageFor({}, "homeowners", "quote_sent").stage).toBe("quotes");
     expect(productStageFor(next, "landlord").selectedQuoteIds).toEqual([]);
     expect(parseProductStages(next).landlord).toBeUndefined();
     expect(productChipLabel({ product: "homeowners", quotingForm: "HO3" })).toBe("HO3");
