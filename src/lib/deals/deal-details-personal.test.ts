@@ -72,6 +72,34 @@ describe("Deal Details personal / identity layout", () => {
     expect(html).toMatch(/data-ff-deal-details-save/);
   });
 
+  it("renders one two-column personal form with no doubled identity fields", () => {
+    const html = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-1",
+        line: "HO",
+        layout: defaultLayoutForLine("HO"),
+        fields: [],
+        values: {},
+      }),
+    );
+    expect(html).toMatch(/data-ff-deal-details-col="left"/);
+    expect(html).toMatch(/data-ff-deal-details-col="right"/);
+    expect(html).toMatch(/data-ff-deal-section="contact"/);
+    expect(html).toMatch(/data-ff-deal-section="applicant"/);
+    expect(html).toMatch(/data-ff-deal-section="co_applicant"/);
+    expect(html).toMatch(/data-ff-deal-section="insured_address"/);
+    expect(html).toMatch(/data-ff-deal-section="mailing_address"/);
+    expect(html).not.toMatch(/data-ff-deal-section="details"/);
+    expect(html).toMatch(/data-ff-co-applicant-switch/);
+    expect(html.match(/data-ff-deal-field="applicant_marital_status"/g)?.length).toBe(1);
+    expect(html.match(/data-ff-deal-field="applicant_gender"/g)?.length).toBe(1);
+    expect(html.match(/data-ff-deal-field="mailing_address"/g)?.length).toBe(1);
+    expect(html).not.toMatch(/data-ff-deal-field="marital_status"/);
+    expect(html).not.toMatch(/data-ff-deal-field="year_built"/);
+    expect(html).not.toMatch(/data-ff-deal-field="vin"/);
+    expect(html).not.toMatch(/data-ff-deal-field="flood_zone"/);
+  });
+
   it("does not render a second marital-status field when applicant marital exists", () => {
     const html = renderToStaticMarkup(
       createElement(DealDetailsPanel, {
