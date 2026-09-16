@@ -66,7 +66,7 @@ describe("Deal Details tab", () => {
         ...APPLICANT_SECTION_FIELD_KEYS,
       ]),
     );
-    expect(keys).not.toContain("middle_name");
+    expect(keys).toContain("middle_name");
     expect(CORE_FIELDS.find((field) => field.key === "middle_name")?.type).toBe("single_line");
     expect(CORE_FIELDS.find((field) => field.key === "email")?.type).toBe("email");
     expect(keys).toContain("date_of_birth");

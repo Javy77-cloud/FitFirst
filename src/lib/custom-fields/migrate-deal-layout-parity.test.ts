@@ -11,9 +11,11 @@ describe("deal layout parity", () => {
     const mailing = layout.columns[1].sections.find((s) => s.id === "mailing_address");
     expect(mailing?.fieldKeys).toEqual([
       "contact_mailing_address",
+      "contact_mailing_unit",
       "contact_mailing_city",
       "contact_mailing_state",
       "contact_mailing_zip",
+      "contact_mailing_county",
     ]);
     expect(needsMailingAddressParity(layout)).toBe(false);
     expect(needsDealLayoutParity(layout)).toBe(false);
@@ -51,7 +53,10 @@ describe("deal layout parity", () => {
     expect(next.columns[0].sections.map((s) => s.id)).toEqual(["contact", "applicant"]);
     expect(next.columns[0].sections.some((s) => s.id === "co_applicant")).toBe(false);
     expect(next.columns[0].sections.find((s) => s.id === "applicant")?.fieldKeys).toEqual(
-      expect.arrayContaining(["applicant_gender", "entity_type"]),
+      expect.arrayContaining(["applicant_gender", "applicant_industry"]),
+    );
+    expect(next.columns[0].sections.find((s) => s.id === "contact")?.fieldKeys).toEqual(
+      expect.arrayContaining(["entity_type", "middle_name"]),
     );
     const mailing = next.columns[1].sections.find((s) => s.id === "mailing_address");
     expect(mailing?.fieldKeys).toEqual(
@@ -93,7 +98,7 @@ describe("deal layout parity", () => {
         },
       ],
     };
-    expect(needsDealLayoutParity(layout)).toBe(false);
+    expect(needsDealLayoutParity(layout)).toBe(true);
     const next = migrateDealLayoutParity(layout);
     expect(next.columns[0].sections.some((s) => /co.?applicant/i.test(s.id + s.label))).toBe(false);
   });

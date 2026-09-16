@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import type { CustomFieldDef } from "@/lib/custom-fields/types";
 import { evaluateFormula, formatFormulaValue } from "@/lib/custom-fields/formula";
 import { formatCurrencyDisplay, parseNumericInput } from "@/lib/custom-fields/format";
@@ -25,6 +25,23 @@ import {
 import { formatPhoneStandard } from "@/lib/phone/format";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  isIndustryCascadeParent,
+  occupationIndustryParentKey,
+  occupationsForIndustry,
+} from "@/lib/custom-fields/industry-occupation";
+
+function uniqueOptionsPreserveOrder(options: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const option of options) {
+    const value = option.trim();
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    out.push(value);
+  }
+  return out;
+}
 
 export function FieldControl({
   field,
@@ -43,6 +60,7 @@ export function FieldControl({
   activePackageLine = null,
   lineSettings,
   onMultiSelectChange,
+  onValueChange,
 }: {
   field: CustomFieldDef;
   value: string;
@@ -60,11 +78,20 @@ export function FieldControl({
   activePackageLine?: string | null;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   onMultiSelectChange?: (joined: string) => void;
+  onValueChange?: (value: string) => void;
 }) {
   const identityField = canonicalizeIdentityField(field);
   const resolved = resolvedFieldValue(identityField, value);
   const required = Boolean(identityField.required);
-  const options = sanitizePicklistOptions(identityField.options ?? []);
+  const industryParent = occupationIndustryParentKey(identityField.key);
+  const cascadeOptions = industryParent
+    ? occupationsForIndustry(values[industryParent])
+    : null;
+  const preserveOrder = Boolean(industryParent) || isIndustryCascadeParent(identityField.key);
+  const rawOptions = cascadeOptions ?? identityField.options ?? [];
+  const options = preserveOrder
+    ? uniqueOptionsPreserveOrder(rawOptions)
+    : sanitizePicklistOptions(rawOptions);
 
   return (
     <div data-ff-control-type={identityField.type} data-ff-control-key={identityField.key}>
@@ -87,6 +114,7 @@ export function FieldControl({
         activePackageLine={activePackageLine}
         lineSettings={lineSettings}
         onMultiSelectChange={onMultiSelectChange}
+        onValueChange={onValueChange}
       />
     </div>
   );
@@ -111,6 +139,7 @@ function TypedControl({
   activePackageLine = null,
   lineSettings,
   onMultiSelectChange,
+  onValueChange,
 }: {
   field: CustomFieldDef;
   value: string;
@@ -130,6 +159,7 @@ function TypedControl({
   activePackageLine?: string | null;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   onMultiSelectChange?: (joined: string) => void;
+  onValueChange?: (value: string) => void;
 }) {
   // 3-level cascade: Type → Category → Form. Type field owns the UI;
   // category + subtype siblings are skipped so we do not render three cascades.
@@ -218,13 +248,20 @@ function TypedControl({
     );
   }
   if (field.type === "checkbox") {
+    const checked = value === "true" || value === "on";
     return (
       <label className="mt-1 flex items-center gap-2 text-sm">
         <input
           id={name}
           type="checkbox"
           name={name}
-          defaultChecked={value === "true" || value === "on"}
+          {...(onValueChange
+            ? {
+                checked,
+                onChange: (event: ChangeEvent<HTMLInputElement>) =>
+                  onValueChange(event.target.checked ? "true" : ""),
+              }
+            : { defaultChecked: checked })}
           disabled={disabled}
           required={required}
           form={form}
@@ -235,11 +272,21 @@ function TypedControl({
     );
   }
   if (field.type === "picklist") {
+    const pickOptions =
+      value && !options.includes(value) ? [...options, value] : options;
+    const industryFirst =
+      Boolean(occupationIndustryParentKey(field.key)) && options.length === 0;
     return (
       <select
         id={name}
         name={name}
-        defaultValue={value}
+        {...(onValueChange
+          ? {
+              value,
+              onChange: (event: ChangeEvent<HTMLSelectElement>) =>
+                onValueChange(event.target.value),
+            }
+          : { defaultValue: value })}
         disabled={disabled}
         required={required}
         form={form}
@@ -247,8 +294,12 @@ function TypedControl({
         className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm"
         data-ff-picklist={field.key}
       >
-        <option value="">None</option>
-        {options.map((option, index) => (
+        {industryFirst ? (
+          <option value="">Select industry first</option>
+        ) : (
+          <option value="">Select</option>
+        )}
+        {pickOptions.map((option, index) => (
           <option key={`${field.key}:${index}:${option}`} value={option}>
             {option}
           </option>

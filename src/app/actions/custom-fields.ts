@@ -31,6 +31,10 @@ import {
   HAS_CO_APPLICANT_KEY,
   normalizeHasCoApplicantFlag,
 } from "@/lib/custom-fields/co-applicant-fields";
+import {
+  MAILING_SAME_AS_INSURED_KEY,
+  normalizeMailingSameFlag,
+} from "@/lib/custom-fields/mailing-same";
 import { applyModuleSystemValues } from "@/lib/custom-fields/record-system";
 import {
   addFieldToSection,
@@ -289,6 +293,11 @@ export async function saveDealFieldValues(formData: FormData) {
   if (formData.has(`field_${HAS_CO_APPLICANT_KEY}`)) {
     custom[HAS_CO_APPLICANT_KEY] = normalizeHasCoApplicantFlag(
       formData.get(`field_${HAS_CO_APPLICANT_KEY}`),
+    );
+  }
+  if (formData.has(`field_${MAILING_SAME_AS_INSURED_KEY}`)) {
+    custom[MAILING_SAME_AS_INSURED_KEY] = normalizeMailingSameFlag(
+      formData.get(`field_${MAILING_SAME_AS_INSURED_KEY}`),
     );
   }
   Object.assign(

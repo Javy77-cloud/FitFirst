@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { CONTACT_IDENTITY_FIELD_KEYS } from "./applicant-fields";
 import { defaultLayoutForLine } from "./defaults";
 import {
   applyResolvedFieldDrop,
@@ -78,8 +79,19 @@ describe("sep7bt field builder drag across sections", () => {
     });
     const start = defaultLayoutForLine("HO");
     const moved = applyResolvedFieldDrop(start, "phone", "left", 50, [contact, address]);
-    expect(moved.columns[0].sections[0].fieldKeys).toEqual(["phone", "first_name", "last_name", "email"]);
-    expect(moved.columns[1].sections[0].fieldKeys).toEqual(["mailing_address", "city", "state", "zip"]);
+    expect(moved.columns[0].sections[0].fieldKeys).toEqual([
+      "entity_type",
+      "phone",
+      "first_name",
+      "middle_name",
+      "last_name",
+      "date_of_birth",
+      "email",
+      "epolicy",
+    ]);
+    expect(moved.columns[1].sections.find((section) => section.id === "insured_address")?.fieldKeys).toEqual(
+      start.columns[1].sections.find((section) => section.id === "insured_address")?.fieldKeys,
+    );
   });
 
   it("moves a field into another section or column and keeps drop-on-self a no-op", () => {
@@ -94,15 +106,24 @@ describe("sep7bt field builder drag across sections", () => {
 
     const start = defaultLayoutForLine("HO");
     const crossed = applyResolvedFieldDrop(start, "email", "right", 310, [
-      { ...address, id: "address" },
+      { ...address, id: "insured_address" },
     ]);
-    expect(crossed.columns[0].sections[0].fieldKeys).toEqual(["first_name", "last_name", "phone"]);
-    expect(crossed.columns[1].sections[0].fieldKeys).toEqual([
+    expect(crossed.columns[0].sections[0].fieldKeys).toEqual([
+      "entity_type",
+      "first_name",
+      "middle_name",
+      "last_name",
+      "date_of_birth",
+      "phone",
+      "epolicy",
+    ]);
+    const insured = crossed.columns[1].sections.find((section) => section.id === "insured_address");
+    expect(insured?.fieldKeys.slice(0, 5)).toEqual([
       "mailing_address",
+      "mailing_unit",
       "email",
       "city",
       "state",
-      "zip",
     ]);
 
     const self = moveField(start, "email", {
@@ -110,10 +131,12 @@ describe("sep7bt field builder drag across sections", () => {
       sectionId: "contact",
       beforeKey: "email",
     });
-    expect(self.columns[0].sections[0].fieldKeys).toEqual(["first_name", "last_name", "email", "phone"]);
+    expect(self.columns[0].sections[0].fieldKeys).toEqual([...CONTACT_IDENTITY_FIELD_KEYS]);
 
     const saved = JSON.parse(JSON.stringify(crossed)) as typeof crossed;
-    expect(saved.columns[1].sections[0].fieldKeys).toContain("email");
+    expect(
+      saved.columns[1].sections.find((section) => section.id === "insured_address")?.fieldKeys,
+    ).toContain("email");
   });
 
   it("reads the column under the pointer while skipping the dragged row", () => {

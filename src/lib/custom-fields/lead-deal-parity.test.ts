@@ -70,14 +70,17 @@ describe("Lead ↔ Deal layout parity", () => {
       "mailing_address",
       "details",
     ]);
-    expect(migrated.columns[0].sections.find((s) => s.id === "applicant")?.fieldKeys).toEqual([
-      "applicant_gender",
-      "applicant_occupation",
-      "applicant_employment",
-      "applicant_education_level",
-      "applicant_marital_status",
+    expect(migrated.columns[0].sections.find((s) => s.id === "applicant")?.fieldKeys).toEqual(
+      expect.arrayContaining([
+        "applicant_gender",
+        "applicant_occupation",
+        "applicant_industry",
+        "applicant_marital_status",
+      ]),
+    );
+    expect(migrated.columns[0].sections.find((s) => s.id === "applicant")?.fieldKeys).not.toContain(
       "entity_type",
-    ]);
+    );
   });
 
   it("copies same-key lead custom fields onto the deal on convert", () => {

@@ -49,15 +49,18 @@ describe("deal details shared body + product overlay", () => {
     expect(home.columns[1].sections.map((section) => section.id)).toEqual([
       "insured_address",
       "mailing_address",
-      productSectionId("homeowners"),
     ]);
+    expect(home.columns[1].sections.some((section) => section.id === productSectionId("homeowners"))).toBe(
+      false,
+    );
     expect(home.columns[1].sections.some((section) => section.fieldKeys.includes("year_built"))).toBe(
-      true,
+      false,
     );
 
     const life = layoutForActiveProduct(SHARED_LAYOUT, "life_term");
     const lifeKeys = life.columns.flatMap((col) => col.sections.flatMap((section) => section.fieldKeys));
-    expect(lifeKeys).toEqual(expect.arrayContaining(["first_name", "face_amount"]));
+    expect(lifeKeys).toEqual(expect.arrayContaining(["first_name"]));
+    expect(lifeKeys).not.toContain("face_amount");
     expect(lifeKeys).not.toContain("year_built");
     expect(lifeKeys).not.toContain("coverage_a");
   });

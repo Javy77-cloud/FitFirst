@@ -282,28 +282,22 @@ export function catalogFieldsForProducts(products: readonly DealProductId[]): Cu
   return out;
 }
 
-/** Shared columns from the saved layout + active product section only. */
+/**
+ * Deal Details is personal / identity only (once per deal).
+ * Home / Auto / Flood product modules belong on the master sheet — do not overlay them here.
+ */
 export function layoutForActiveProduct(
   layout: FieldLayout,
-  product: DealProductId | null,
+  _product: DealProductId | null,
 ): FieldLayout {
   const left = layout.columns[0] ?? { id: "left", sections: [] };
   const right = layout.columns[1] ?? { id: "right", sections: [] };
   const sharedLeft = left.sections.filter(isSharedDealSection);
   const sharedRight = right.sections.filter(isSharedDealSection);
-  if (!product) {
-    return {
-      columns: [
-        { ...left, sections: sharedLeft },
-        { ...right, sections: sharedRight },
-      ],
-    };
-  }
-  const productSection = productLayoutSection(product);
   return {
     columns: [
       { ...left, sections: sharedLeft },
-      { ...right, sections: [...sharedRight, productSection] },
+      { ...right, sections: sharedRight },
     ],
   };
 }

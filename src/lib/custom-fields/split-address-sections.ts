@@ -1,11 +1,13 @@
 import type { FieldLayout, LayoutSection } from "./types";
 
-const INSURED_KEYS = new Set(["mailing_address", "city", "state", "zip"]);
+const INSURED_KEYS = new Set(["mailing_address", "mailing_unit", "city", "state", "zip", "county"]);
 const MAILING_KEYS = new Set([
   "contact_mailing_address",
+  "contact_mailing_unit",
   "contact_mailing_city",
   "contact_mailing_state",
   "contact_mailing_zip",
+  "contact_mailing_county",
 ]);
 
 function sectionHasBoth(section: LayoutSection): boolean {
@@ -75,7 +77,9 @@ export function needsMailingAddressParity(layout: FieldLayout): boolean {
         keys.has("contact_mailing_address") &&
         (!keys.has("contact_mailing_city") ||
           !keys.has("contact_mailing_state") ||
-          !keys.has("contact_mailing_zip"))
+          !keys.has("contact_mailing_zip") ||
+          !keys.has("contact_mailing_unit") ||
+          !keys.has("contact_mailing_county"))
       ) {
         return true;
       }
@@ -86,9 +90,11 @@ export function needsMailingAddressParity(layout: FieldLayout): boolean {
 
 const MAILING_PARITY_KEYS = [
   "contact_mailing_address",
+  "contact_mailing_unit",
   "contact_mailing_city",
   "contact_mailing_state",
   "contact_mailing_zip",
+  "contact_mailing_county",
 ] as const;
 
 export function ensureMailingAddressParity(layout: FieldLayout): FieldLayout {

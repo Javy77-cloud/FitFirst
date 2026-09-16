@@ -206,6 +206,7 @@ export function MultiSelectField({
       className="relative mt-1"
       data-ff-multi-select={fieldKey}
       data-ff-multi-searchable={searchable ? "1" : "0"}
+      data-ff-multi-option-count={options.length}
       data-ff-multi-count={selected.length}
     >
       {/* Form-linked values — RecordLayoutFields uses the form= attribute. */}
