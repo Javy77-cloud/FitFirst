@@ -23,7 +23,7 @@ import {
   normalizeOccupancy,
   normalizeUsage,
 } from "@/lib/quote-sheet/sheet-defaults";
-import { MASTER_FILL_BUSY_COPY } from "@/lib/quote-sheet/master-fill";
+import { MASTER_FILL_BUSY_COPY, MASTER_FILL_BUSY_TITLE } from "@/lib/quote-sheet/master-fill";
 import { sheetKeysForGeminiKey, mapGeminiJsonToFields } from "@/lib/extraction/gemini/map";
 import { GEMINI_EXTRACT_JSON_KEYS } from "@/lib/extraction/gemini/prompt";
 import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
@@ -41,6 +41,9 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     expect(button).toMatch(/router\.refresh\(\)/);
     expect(button).toMatch(/data-ff-master-fill-busy/);
     expect(button).toMatch(/MASTER_FILL_BUSY_COPY/);
+    expect(button).toMatch(/WaitHold/);
+    expect(button).toMatch(/MASTER_FILL_BUSY_TITLE/);
+    expect(MASTER_FILL_BUSY_TITLE).toMatch(/we’re on it|we're on it/);
     expect(MASTER_FILL_BUSY_COPY).toMatch(/20 seconds/);
     expect(button).toMatch(/Deal → Property → Docs/);
   });

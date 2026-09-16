@@ -22,8 +22,9 @@ export const MASTER_FILL_REVIEW_NUDGE =
   "Review CHECK fields and Confirm when ready";
 
 /** Shown under the step list while Fill is in flight (~20s). */
+export const MASTER_FILL_BUSY_TITLE = "Filling the sheet — we’re on it…";
 export const MASTER_FILL_BUSY_COPY =
-  "Hold on — give us about 20 seconds to get this ready for you.";
+  "Skimming deal, docs, and property notes — about 20 seconds.";
 
 export type MasterFillStepId = "deal" | "property" | "docs" | "vin";
 

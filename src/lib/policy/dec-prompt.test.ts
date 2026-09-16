@@ -69,7 +69,7 @@ describe("declaration create-policy prompt", () => {
     expect(createPolicyPromptCopy("Florida Peninsula")).toBe(
       "Declaration received from Florida Peninsula. Create the policy now?",
     );
-    expect(CREATE_POLICY_BUSY_TITLE).toBe("Creating policy…");
+    expect(CREATE_POLICY_BUSY_TITLE).toMatch(/we’re on it|we're on it/);
     expect(CREATE_POLICY_BUSY_COPY).toMatch(/declaration/);
     expect(parsePendingDecPrompt({ documentId: "d1", carrierName: "Citizens" })?.documentId).toBe("d1");
   });
@@ -186,6 +186,10 @@ describe("rosa retag + 72h admin notify stub", () => {
     expect(source("src/components/deal/create-policy-busy-panel.tsx")).toMatch(
       /CREATE_POLICY_BUSY_TITLE/,
     );
+    expect(source("src/components/deal/create-policy-busy-panel.tsx")).toMatch(/WaitHold/);
+    expect(source("src/components/desk/wait-hold.tsx")).toMatch(/data-ff-wait-hold-spinner/);
+    expect(source("src/components/desk/wait-hold.tsx")).toMatch(/ff-wait-hold-bar/);
+    expect(source("src/components/desk/wait-hold.tsx")).toMatch(/animate-spin/);
     expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(
       /setCreating\(true\)/,
     );
@@ -197,9 +201,12 @@ describe("rosa retag + 72h admin notify stub", () => {
     );
     const busy = renderToString(createElement(CreatePolicyBusyPanel));
     expect(busy).toContain('data-ff-create-policy-busy=""');
+    expect(busy).toContain('data-ff-wait-hold-spinner=""');
+    expect(busy).toContain('data-ff-wait-hold-bar=""');
     expect(busy).toContain(CREATE_POLICY_BUSY_TITLE);
     expect(busy).toContain(CREATE_POLICY_BUSY_COPY);
     expect(busy).toContain("role=\"progressbar\"");
+    expect(busy).toMatch(/animate-spin/);
     expect(source("src/app/api/v1/deals/[id]/declaration/route.ts")).toMatch(/receiveCarrierDeclaration/);
     expect(source("src/components/deal/issue-policy-from-dec.tsx")).toMatch(
       /Issue policy from declaration/,

@@ -11,11 +11,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { WaitHold } from "@/components/desk/wait-hold";
 import { flashAction } from "@/lib/flash-client";
 import { toastForFillCounts } from "@/lib/quote-sheet/fill-toast";
 import {
   FILL_MASTER_SHEET_LABEL,
   MASTER_FILL_BUSY_COPY,
+  MASTER_FILL_BUSY_TITLE,
   MASTER_FILL_REVIEW_NUDGE,
   MASTER_FILL_STEP_DEAL,
   masterFillDoneSummary,
@@ -117,18 +119,11 @@ export function MasterSheetFillButton({
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">{line === "auto" ? "Deal → Docs → VIN (NHTSA). Empty cells only." : "Deal → Property → Docs. Empty cells only."}</p>
               {busy ? (
-                <div
-                  className="flex items-center gap-2.5"
+                <WaitHold
+                  title={MASTER_FILL_BUSY_TITLE}
+                  message={MASTER_FILL_BUSY_COPY}
                   data-ff-master-fill-busy=""
-                  aria-live="polite"
-                >
-                  <span className="inline-flex items-center gap-1" aria-hidden="true">
-                    <span className="size-1.5 rounded-full bg-muted-foreground/70 animate-bounce [animation-duration:0.9s] [animation-delay:-0.3s]" />
-                    <span className="size-1.5 rounded-full bg-muted-foreground/70 animate-bounce [animation-duration:0.9s] [animation-delay:-0.15s]" />
-                    <span className="size-1.5 rounded-full bg-muted-foreground/70 animate-bounce [animation-duration:0.9s]" />
-                  </span>
-                  <p className="text-xs text-muted-foreground">{MASTER_FILL_BUSY_COPY}</p>
-                </div>
+                />
               ) : null}
             </div>
           )}
