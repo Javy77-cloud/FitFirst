@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { listProductStageLabel, type ListProductStageChip } from "@/lib/deals/product-stages";
 import { cn } from "@/lib/utils";
