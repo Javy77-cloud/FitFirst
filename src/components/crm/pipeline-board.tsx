@@ -11,7 +11,7 @@ import { insuredContactName, insuredHref, matchesDealFilters, type DealListFilte
 import { homeAddressFromRecords } from "@/lib/meetings/types";
 import { formatMoney } from "@/lib/domain";
 import { visibleDealTitle } from "@/lib/deals/deal-title";
-import { listProductStageChips } from "@/lib/deals/product-stages";
+import { attachListProductStageHrefs, listProductStageChips } from "@/lib/deals/product-stages";
 import type { DealListRow } from "@/lib/db/queries";
 import type { PipelineStageRow } from "@/lib/db/schema";
 
@@ -124,7 +124,11 @@ export function PipelineBoard({
                           {row?.risk?.coverageA != null ? ` · ${formatMoney(row.risk.coverageA)}` : ""}
                         </div>
                         <div className="mt-1">
-                          <DealProductStageChips chips={listProductStageChips(deal)} />
+                          <DealProductStageChips
+                            chips={attachListProductStageHrefs(listProductStageChips(deal), {
+                              dealId: deal.id,
+                            })}
+                          />
                         </div>
                         <div className="mt-1 space-y-0.5 text-[11px]">
                           <LinkedValue value={phone} kind="tel" />

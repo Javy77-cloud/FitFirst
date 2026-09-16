@@ -76,12 +76,12 @@ export function DealPackageShell({
           data-ff-header-col={colIndex + 1}
         >
           {col.map((row) => (
-            <div key={row.key} className="min-w-0">
+            <div key={row.key} className={row.key === "stage" ? "min-w-0 overflow-visible" : "min-w-0"}>
               <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {row.label}
               </dt>
               <dd
-                className="min-w-0 text-navy"
+                className={row.key === "stage" ? "min-w-0 overflow-visible text-navy" : "min-w-0 text-navy"}
                 title={row.value}
                 data-ff-header-address={row.key === "insured" || row.key === "mailing" ? row.key : undefined}
                 data-ff-header-dob={row.key === "dob" ? "" : undefined}

@@ -105,6 +105,42 @@ export function noticeChipLabel(value: unknown, options?: readonly NoticeTypeOpt
   return `Notice · ${noticeTypeLabel(value, options)}`;
 }
 
+/** Stamp beside Bound / Policy issued — shorter seed words, custom types as-is. */
+const NOTICE_STAMP_SHORT: Record<string, string> = {
+  inspection_before_bind: "Inspection",
+  check_mortgagee_payment: "Check mortgagee",
+};
+
+export function noticeStampPhrase(
+  value: unknown,
+  options?: readonly NoticeTypeOption[],
+): string | null {
+  if (!isActiveNotice(value)) return null;
+  const type = parseNoticeType(value);
+  const short = NOTICE_STAMP_SHORT[type];
+  return `Notice · ${short ?? noticeTypeLabel(type, options)}`;
+}
+
+export function noticePicklistForFamily(
+  lists: readonly { id?: string; name: string; options?: readonly (string | PicklistOption)[] | null }[],
+  family: "pc" | "life" | "health",
+): { id: string; name: string; options: readonly (string | PicklistOption)[] } | null {
+  const names = noticePicklistNamesForFamily(family).map((name) => name.toLowerCase());
+  for (const name of names) {
+    const list = lists.find((row) => row.name.trim().toLowerCase() === name);
+    if (list?.id) {
+      return { id: list.id, name: list.name, options: list.options ?? [] };
+    }
+  }
+  return null;
+}
+
+export function noticeFamilyLabel(family: "pc" | "life" | "health"): string {
+  if (family === "life") return "Life";
+  if (family === "health") return "Health";
+  return "P&C";
+}
+
 function optionLabel(option: string | PicklistOption): string {
   if (typeof option === "string") return option.trim();
   return String(option.value ?? "").trim();

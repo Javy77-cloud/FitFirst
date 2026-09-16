@@ -1,25 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { completeDealProductNotice } from "@/app/actions/product-stage";
+import { completeDealProductNotice, setDealProductNotice } from "@/app/actions/product-stage";
+import { NoticeNotePad } from "@/components/deal/notice-note-pad";
+import { NoticeTypesEditor } from "@/components/deal/notice-types-editor";
 import { CreateTaskDialog } from "@/components/tasks/create-task-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { dealProductDef, parseDealProduct } from "@/lib/deals/deal-products";
 import {
   isActiveNotice,
   mergeNoticeTypeOptions,
-  noticeChipLabel,
+  noticeStampPhrase,
   noticeTaskKind,
   noticeTaskTitle,
   noticeTypeLabel,
   SEED_NOTICE_TYPE_OPTIONS,
   type NoticeTypeOption,
 } from "@/lib/deals/notices";
-import { canonicalizeProductStage } from "@/lib/deals/product-stages";
 import { isDeskTaskType } from "@/lib/tasks/task-types";
 import { cn } from "@/lib/utils";
+import { MoreHorizontal } from "lucide-react";
 
 export function DealNoticeChip({
   noticeType,
@@ -30,14 +38,11 @@ export function DealNoticeChip({
   noticeTypes?: readonly NoticeTypeOption[];
   className?: string;
 }) {
-  const label = noticeChipLabel(noticeType, noticeTypes);
+  const label = noticeStampPhrase(noticeType, noticeTypes);
   if (!label) return null;
   return (
     <span
-      className={cn(
-        "inline-flex items-center rounded-full border border-fit-yellow/50 bg-fit-yellow-bg px-2 py-0.5 text-[11px] font-semibold text-fit-yellow",
-        className,
-      )}
+      className={cn("ff-deal-status-stamp-ink ff-deal-notice-stamp-ink", className)}
       data-ff-deal-notice-chip=""
       data-ff-notice-type={noticeType ?? ""}
     >
@@ -51,14 +56,16 @@ export function DealNotices({
   dealName,
   contactId,
   product,
-  stage,
   noticeType = "none",
   noticeTypes,
   noticeTaskId,
+  noticeNote,
   taskDueDate,
   taskDueTime,
   returnTo,
-  variant = "quotes",
+  family = "pc",
+  picklistId,
+  placement = "header",
 }: {
   dealId: string;
   dealName?: string | null;
@@ -68,18 +75,23 @@ export function DealNotices({
   noticeType?: string | null;
   noticeTypes?: readonly NoticeTypeOption[];
   noticeTaskId?: string | null;
+  noticeNote?: string | null;
   taskDueDate?: string | null;
   taskDueTime?: string | null;
   returnTo?: string | null;
-  variant?: "quotes" | "header";
+  family?: "pc" | "life" | "health";
+  picklistId?: string | null;
+  placement?: "header" | "overlay";
 }) {
   const options = mergeNoticeTypeOptions(noticeTypes?.length ? noticeTypes : SEED_NOTICE_TYPE_OPTIONS, noticeType);
   const active = isActiveNotice(noticeType);
+  const stampLabel = noticeStampPhrase(noticeType, options);
   const [selected, setSelected] = useState(noticeType && active ? parseKeep(noticeType) : "none");
-  const [completeOpen, setCompleteOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [taskOpen, setTaskOpen] = useState(false);
+  const [typesOpen, setTypesOpen] = useState(false);
   const [pendingType, setPendingType] = useState(selected);
-  const canonical = canonicalizeProductStage(stage);
+  const rootRef = useRef<HTMLDivElement>(null);
   const productValue = product ?? "homeowners";
   const productId = parseDealProduct(productValue);
   const productLabel = productId ? dealProductDef(productId).label : undefined;
@@ -91,8 +103,27 @@ export function DealNotices({
     productLabel,
     options,
   });
+  const compact = placement === "header";
 
-  if (variant === "header" && !active) return null;
+  useEffect(() => {
+    setSelected(noticeType && active ? parseKeep(noticeType) : "none");
+  }, [noticeType, active]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   function openNoticeTask(nextType = selected) {
     if (nextType === "none") return;
@@ -102,80 +133,131 @@ export function DealNotices({
 
   return (
     <div
-      className={cn(
-        "flex w-fit max-w-full flex-wrap items-center gap-2",
-        variant === "quotes" && "rounded-md border border-border/70 px-2 py-1.5",
-      )}
-      data-ff-deal-notices={variant}
-      data-ff-quotes-stage-flags={variant === "quotes" ? "" : undefined}
+      className={cn("relative pointer-events-auto", compact ? "inline-flex" : undefined)}
+      ref={rootRef}
+      data-ff-deal-notices={placement}
       data-ff-notice-type={noticeType ?? "none"}
     >
-      <DealNoticeChip noticeType={noticeType} noticeTypes={options} />
-      {variant === "quotes" ? (
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Notices
-            <select
-              name="noticeType"
-              value={selected}
-              onChange={(event) => setSelected(event.currentTarget.value)}
-              className="ml-2 h-7 rounded-md border border-border bg-background px-2 text-xs font-medium normal-case tracking-normal text-navy"
-              data-ff-notice-status=""
-            >
-              {options.map((option) => (
-                <option key={option.value} value={option.value} disabled={active && option.value === "none"}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          {showSet ? (
-            <Button
-              type="button"
-              size="xs"
-              onClick={() => openNoticeTask(selected)}
-              data-ff-notice-set=""
-            >
-              Set
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-
-      {active ? (
-        <div className="flex flex-wrap items-end gap-1.5">
-          {noticeTaskId ? (
-            <Link
-              href={`/tasks/${noticeTaskId}`}
-              className="text-[11px] font-medium text-primary hover:underline"
-              data-ff-notice-task-link=""
-            >
-              Reminder
-            </Link>
-          ) : (
-            <Button
-              type="button"
-              size="xs"
-              variant="outline"
-              onClick={() => openNoticeTask(parseKeep(noticeType ?? selected))}
-              data-ff-notice-set-reminder=""
-            >
-              Reminder
-            </Button>
+      {active && stampLabel ? (
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-haspopup="dialog"
+          aria-label={`${stampLabel}. Open notice.`}
+          data-ff-deal-notice-chip=""
+          data-ff-notice-stamp=""
+          onClick={() => setOpen((value) => !value)}
+          className={cn(
+            compact ? "ff-deal-notice-compact" : "ff-deal-notice-stamp",
+            "rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy/30",
           )}
-          {completeOpen || variant === "quotes" ? (
-            <form action={completeDealProductNotice} className="flex flex-wrap items-end gap-1.5">
+        >
+          <span
+            className={cn(
+              "ff-deal-status-stamp-ink",
+              compact ? "ff-deal-notice-compact-ink" : "ff-deal-notice-stamp-ink",
+            )}
+          >
+            {stampLabel}
+          </span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-haspopup="dialog"
+          data-ff-notice-add=""
+          onClick={() => setOpen((value) => !value)}
+          className="ff-deal-notice-add"
+        >
+          + Notice
+        </button>
+      )}
+
+      {open ? (
+        <div
+          className="absolute left-0 top-full z-30 mt-1 w-[min(20rem,calc(100vw-2rem))] rounded-md border border-border bg-card p-2.5 shadow-md"
+          data-ff-notice-popover=""
+          role="dialog"
+          aria-label="Notice"
+        >
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="min-w-0 flex-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Notice type
+              <select
+                name="noticeType"
+                value={selected}
+                onChange={(event) => setSelected(event.currentTarget.value)}
+                className="mt-0.5 h-7 w-full rounded-md border border-border bg-background px-2 text-xs font-medium normal-case tracking-normal text-navy"
+                data-ff-notice-status=""
+              >
+                {options.map((option) => (
+                  <option key={option.value} value={option.value} disabled={active && option.value === "none"}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {showSet ? (
+              <form action={setDealProductNotice}>
+                <input type="hidden" name="dealId" value={dealId} />
+                <input type="hidden" name="product" value={productValue} />
+                <input type="hidden" name="noticeType" value={selected} />
+                {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+                <Button type="submit" size="xs" data-ff-notice-set="">
+                  Set
+                </Button>
+              </form>
+            ) : null}
+            <NoticeNotePad
+              dealId={dealId}
+              product={productValue}
+              noticeLabel={noticeTypeLabel(selected !== "none" ? selected : noticeType, options)}
+              note={noticeNote}
+              returnTo={returnTo}
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="inline-flex size-7 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted hover:text-navy"
+                data-ff-notice-more=""
+                aria-label="Notice menu"
+              >
+                <MoreHorizontal className="size-3.5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-40">
+                {noticeTaskId ? (
+                  <DropdownMenuItem render={<Link href={`/tasks/${noticeTaskId}`} />} data-ff-notice-task-link="">
+                    Open reminder
+                  </DropdownMenuItem>
+                ) : null}
+                <DropdownMenuItem
+                  data-ff-notice-set-reminder=""
+                  disabled={selected === "none" && !active}
+                  onClick={() => openNoticeTask(active ? parseKeep(noticeType ?? selected) : selected)}
+                >
+                  Set reminder
+                </DropdownMenuItem>
+                <DropdownMenuItem data-ff-notice-edit-types="" onClick={() => setTypesOpen(true)}>
+                  Edit types
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {active ? (
+            <form action={completeDealProductNotice} className="mt-2 flex flex-wrap items-end gap-1.5">
               <input type="hidden" name="dealId" value={dealId} />
               <input type="hidden" name="product" value={productValue} />
               {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-              <label className="text-[11px] text-muted-foreground">
+              <label className="min-w-0 flex-1 text-[11px] text-muted-foreground">
                 Complete notes
                 <Input
                   name="notes"
                   required
                   minLength={2}
+                  defaultValue={noticeNote ?? ""}
                   placeholder="What happened"
-                  className="mt-0.5 h-7 w-44 text-xs"
+                  className="mt-0.5 h-7 text-xs"
                   data-ff-notice-complete-notes=""
                 />
               </label>
@@ -183,34 +265,19 @@ export function DealNotices({
                 Complete
               </Button>
             </form>
-          ) : (
-            <Button
-              type="button"
-              size="xs"
-              variant="outline"
-              onClick={() => setCompleteOpen(true)}
-              data-ff-notice-complete-open=""
-            >
-              Complete
-            </Button>
-          )}
+          ) : null}
         </div>
       ) : null}
 
-      {variant === "quotes" ? (
-        <Link
-          href="/settings/picklists"
-          className="text-[11px] text-primary hover:underline"
-          data-ff-notice-edit-types=""
-        >
-          Edit types
-        </Link>
-      ) : null}
-      {variant === "quotes" && canonical === "policy_issued" ? (
-        <p className="text-[11px] text-muted-foreground" data-ff-policy-escrow-stub="">
-          Mortgage / escrow is not a pipeline stage. Track it on the issued policy.
-        </p>
-      ) : null}
+      <NoticeTypesEditor
+        open={typesOpen}
+        onOpenChange={setTypesOpen}
+        dealId={dealId}
+        family={family}
+        picklistId={picklistId}
+        options={options}
+        returnTo={returnTo}
+      />
 
       {taskOpen ? (
         <CreateTaskDialog
@@ -256,9 +323,12 @@ export function QuotesStageFlags(props: {
   noticeType?: string | null;
   noticeTypes?: readonly NoticeTypeOption[];
   noticeTaskId?: string | null;
+  noticeNote?: string | null;
   taskDueDate?: string | null;
   taskDueTime?: string | null;
   returnTo?: string | null;
+  family?: "pc" | "life" | "health";
+  picklistId?: string | null;
 }) {
   return (
     <DealNotices
@@ -270,10 +340,13 @@ export function QuotesStageFlags(props: {
       noticeType={props.noticeType ?? props.inspectionStatus}
       noticeTypes={props.noticeTypes}
       noticeTaskId={props.noticeTaskId}
+      noticeNote={props.noticeNote}
       taskDueDate={props.taskDueDate}
       taskDueTime={props.taskDueTime}
       returnTo={props.returnTo}
-      variant="quotes"
+      family={props.family}
+      picklistId={props.picklistId}
+      placement="header"
     />
   );
 }

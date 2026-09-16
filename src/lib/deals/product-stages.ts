@@ -1,5 +1,6 @@
 import {
   dealProductDef,
+  dealProductSwitcherHref,
   inferDealProducts,
   isDealProductId,
   parseDealProduct,
@@ -13,6 +14,7 @@ import {
   type NoticeType,
 } from "@/lib/deals/notices";
 import { resolveDealStampStage, type DealStampStage } from "@/lib/deals/status-stamp";
+import type { AgentDealTab } from "@/lib/deals/tabs";
 
 /** Locked per-product pipeline — product chip owns this, tabs are workspaces. */
 export const PRODUCT_STAGE_ORDER = [
@@ -116,6 +118,8 @@ export type DealProductStageState = {
   noticeType?: NoticeType;
   noticeTaskId?: string | null;
   escrowNote?: string | null;
+  /** Working speak/type note on the notice — not the complete-log body. */
+  noticeNote?: string | null;
 };
 
 export type DealProductStages = Partial<Record<string, DealProductStageState>>;
@@ -243,6 +247,8 @@ export function parseProductStages(raw: unknown): DealProductStages {
       typeof row.noticeTaskId === "string" && row.noticeTaskId.trim() ? row.noticeTaskId.trim() : null;
     const escrowNote =
       typeof row.escrowNote === "string" && row.escrowNote.trim() ? row.escrowNote.trim() : null;
+    const noticeNote =
+      typeof row.noticeNote === "string" && row.noticeNote.trim() ? row.noticeNote.trim() : null;
     if (
       !rawStage &&
       !selectedQuoteIds.length &&
@@ -251,7 +257,8 @@ export function parseProductStages(raw: unknown): DealProductStages {
       !mintStatus &&
       inspectionStatus === "none" &&
       !noticeTaskId &&
-      !escrowNote
+      !escrowNote &&
+      !noticeNote
     ) {
       continue;
     }
@@ -270,6 +277,7 @@ export function parseProductStages(raw: unknown): DealProductStages {
       noticeType,
       noticeTaskId,
       escrowNote,
+      noticeNote,
     };
   }
   return out;
@@ -302,6 +310,7 @@ export function productStageFor(
       noticeType,
       noticeTaskId: stored.noticeTaskId ?? null,
       escrowNote: stored.escrowNote ?? null,
+      noticeNote: stored.noticeNote ?? null,
     };
   }
   const selectedQuoteIds: string[] = [];
@@ -317,6 +326,7 @@ export function productStageFor(
     noticeType: leftoverNotice,
     noticeTaskId: null,
     escrowNote: null,
+    noticeNote: null,
   };
 }
 
@@ -343,6 +353,7 @@ export function setProductStage(
         : parseInspectionStatus(patch.noticeType ?? patch.inspectionStatus),
     noticeTaskId: patch.noticeTaskId === undefined ? current.noticeTaskId ?? null : patch.noticeTaskId,
     escrowNote: patch.escrowNote === undefined ? current.escrowNote ?? null : patch.escrowNote,
+    noticeNote: patch.noticeNote === undefined ? current.noticeNote ?? null : patch.noticeNote,
   };
   if (normalizeStageSlug(next.stage) !== "closed_lost") {
     next.lostReason = next.lostReason ?? null;
@@ -509,7 +520,60 @@ export type ListProductStageChip = {
   label: string;
   stage: string;
   stageLabel: string;
+  /** Deal + product + workspace tab this product still needs. Not a list filter. */
+  href?: string;
 };
+
+const QUOTES_WORKSPACE_STAGES = new Set([
+  "quote_review",
+  "quote_sent",
+  "bound",
+  "policy_issued",
+  "closed_won",
+  "closed_lost",
+]);
+
+/** List chip click — open that product on the tab it still needs. */
+export function workspaceTabForProductStage(
+  stage?: string | null,
+  detailsComplete?: boolean,
+): AgentDealTab {
+  const key = canonicalizeProductStage(stage);
+  if (QUOTES_WORKSPACE_STAGES.has(key)) return "quotes";
+  if (key === "markets") return "markets";
+  return detailsComplete ? "documents" : "details";
+}
+
+export function listProductStageHref(input: {
+  dealId: string;
+  product: DealProductId;
+  stage?: string | null;
+  detailsComplete?: boolean;
+}): string {
+  return dealProductSwitcherHref({
+    dealId: input.dealId,
+    product: input.product,
+    tab: workspaceTabForProductStage(input.stage, input.detailsComplete),
+  });
+}
+
+export function attachListProductStageHrefs(
+  chips: readonly ListProductStageChip[],
+  input: {
+    dealId: string;
+    detailsCompleteByProduct?: Partial<Record<string, boolean>>;
+  },
+): ListProductStageChip[] {
+  return chips.map((chip) => ({
+    ...chip,
+    href: listProductStageHref({
+      dealId: input.dealId,
+      product: chip.product,
+      stage: chip.stage,
+      detailsComplete: input.detailsCompleteByProduct?.[chip.product],
+    }),
+  }));
+}
 
 function productStagesFromShopFlow(shopFlow: unknown): DealProductStages {
   if (!shopFlow || typeof shopFlow !== "object" || Array.isArray(shopFlow)) return {};

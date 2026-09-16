@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -11,12 +12,18 @@ import {
   isNoticeTaskTitle,
   noticeTaskKind,
   noticeTaskTitle,
+  noticePicklistForFamily,
+  noticeStampPhrase,
   noticeTypesForFamily,
   noticeTypesFromPicklist,
   parseNoticeType,
   SEED_NOTICE_LABELS,
   SEED_NOTICE_TYPE_OPTIONS,
 } from "./notices";
+
+function source(file: string) {
+  return readFileSync(file, "utf8");
+}
 
 describe("deal notices", () => {
   it("maps leftover inspection slugs and keeps custom types", () => {
@@ -32,6 +39,16 @@ describe("deal notices", () => {
     expect(noticeChipLabel("none")).toBeNull();
     expect(noticeChipLabel("inspection_before_bind")).toBe("Notice · Inspection before bind");
     expect(noticeChipLabel("check_mortgagee_payment")).toBe("Notice · Check mortgagee payment");
+    expect(noticeStampPhrase("inspection_before_bind")).toBe("Notice · Inspection");
+    expect(noticeStampPhrase("check_mortgagee_payment")).toBe("Notice · Check mortgagee");
+    expect(noticeStampPhrase("roof_photos_needed")).toBe("Notice · Roof Photos Needed");
+    expect(noticeStampPhrase("none")).toBeNull();
+    expect(
+      noticePicklistForFamily(
+        [{ id: "pl-1", name: "Deal notices · P&C", options: ["Inspection before bind"] }],
+        "pc",
+      )?.id,
+    ).toBe("pl-1");
     expect(DEAL_NOTICE_PICKLIST_OPTIONS).toEqual([
       "Inspection before bind",
       "Check mortgagee payment",
@@ -99,7 +116,7 @@ describe("deal notices", () => {
       createElement(DealNoticeChip, { noticeType: "inspection_before_bind" }),
     );
     expect(chip).toMatch(/data-ff-deal-notice-chip/);
-    expect(chip).toMatch(/Notice · Inspection before bind/);
+    expect(chip).toMatch(/Notice · Inspection/);
     expect(renderToString(createElement(DealNoticeChip, { noticeType: "none" }))).toBe("");
 
     const header = renderToString(
@@ -107,47 +124,53 @@ describe("deal notices", () => {
         dealId: "deal-1",
         product: "homeowners",
         noticeType: "check_mortgagee_payment",
-        variant: "header",
+        placement: "header",
       }),
     );
     expect(header).toMatch(/data-ff-deal-notice-chip/);
-    expect(header).toMatch(/Notice · Check mortgagee payment/);
-    expect(header).toMatch(/data-ff-notice-set-reminder/);
-    expect(header).toMatch(/data-ff-notice-complete-open/);
+    expect(header).toMatch(/data-ff-notice-stamp/);
+    expect(header).toMatch(/Notice · Check mortgagee/);
+    expect(header).not.toMatch(/data-ff-notice-popover/);
     expect(header).not.toMatch(/data-ff-notice-snooze/);
     expect(header).not.toMatch(/>Inspection</);
+    expect(header).not.toMatch(/\/settings\/picklists/);
 
-    const quotes = renderToString(
+    const empty = renderToString(
       createElement(DealNotices, {
         dealId: "deal-1",
         product: "homeowners",
         noticeType: "none",
-        variant: "quotes",
+        placement: "header",
       }),
     );
-    expect(quotes).toMatch(/>Notices</);
-    expect(quotes).toMatch(/data-ff-notice-status/);
-    expect(quotes).toMatch(/Edit types/);
-    expect(quotes).not.toMatch(/data-ff-notice-set/);
-    expect(quotes).not.toMatch(/name="dueDate"/);
-    expect(quotes).not.toMatch(/data-ff-notice-create-task/);
-    expect(quotes).not.toMatch(/data-ff-notice-snooze/);
-    expect(quotes).not.toMatch(/>Inspection</);
-    expect(quotes).not.toMatch(/data-ff-inspection-status/);
+    expect(empty).toMatch(/\+ Notice/);
+    expect(empty).toMatch(/data-ff-notice-add/);
+    expect(empty).not.toMatch(/data-ff-notice-status/);
+    expect(empty).not.toMatch(/Edit types/);
+    expect(empty).not.toMatch(/\/settings\/picklists/);
+    expect(empty).not.toMatch(/data-ff-notice-set/);
+    expect(empty).not.toMatch(/name="dueDate"/);
+    expect(empty).not.toMatch(/data-ff-notice-snooze/);
+    expect(empty).not.toMatch(/>Inspection</);
+    expect(empty).not.toMatch(/data-ff-inspection-status/);
 
-    const quotesActive = renderToString(
+    const overlayActive = renderToString(
       createElement(DealNotices, {
         dealId: "deal-1",
         product: "homeowners",
         noticeType: "inspection_before_bind",
         noticeTaskId: "task-1",
-        variant: "quotes",
+        placement: "overlay",
       }),
     );
-    expect(quotesActive).toMatch(/data-ff-notice-set/);
-    expect(quotesActive).toMatch(/data-ff-notice-task-link/);
-    expect(quotesActive).toMatch(/data-ff-notice-complete/);
-    expect(quotesActive).not.toMatch(/name="dueDate"/);
-    expect(quotesActive).not.toMatch(/data-ff-notice-snooze/);
+    expect(overlayActive).toMatch(/data-ff-notice-stamp/);
+    expect(overlayActive).toMatch(/Notice · Inspection/);
+    expect(overlayActive).not.toMatch(/data-ff-notice-set/);
+    expect(overlayActive).not.toMatch(/name="dueDate"/);
+    expect(overlayActive).not.toMatch(/data-ff-notice-snooze/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/data-ff-notice-popover/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/NoticeTypesEditor/);
+    expect(source("src/components/deal/notice-note-pad.tsx")).toMatch(/prepareSpeechMicrophone/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/saveDealNoticeTypes/);
   });
 });

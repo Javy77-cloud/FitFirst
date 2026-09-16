@@ -1,7 +1,5 @@
 import Link from "next/link";
 import { QuotesBindableSignal } from "@/components/deal/quotes-bindable-signal";
-import { DealNotices } from "@/components/deal/deal-notices";
-import type { NoticeTypeOption } from "@/lib/deals/notices";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import type { QuoteFileRow } from "@/components/deal/quote-file-actions";
 import { LoadShopListButton } from "@/components/deal/load-shop-list-button";
@@ -79,32 +77,10 @@ function MissingQuotesBanner({ completeness }: { completeness: LineQuoteComplete
 }
 
 function QuotesWarningStrip({
-  dealId,
-  product,
-  productStage,
-  noticeType,
-  noticeTypes,
-  noticeTaskId,
-  noticeDealName,
-  noticeContactId,
-  noticeTaskDueDate,
-  noticeTaskDueTime,
-  noticeReturnTo,
   quotes,
   sheetStale,
   completeness,
 }: {
-  dealId: string;
-  product?: string | null;
-  productStage?: string | null;
-  noticeType?: string | null;
-  noticeTypes?: readonly NoticeTypeOption[];
-  noticeTaskId?: string | null;
-  noticeDealName?: string | null;
-  noticeContactId?: string | null;
-  noticeTaskDueDate?: string | null;
-  noticeTaskDueTime?: string | null;
-  noticeReturnTo?: string | null;
   quotes: Quote[];
   sheetStale?: boolean;
   completeness: LineQuoteCompleteness | null;
@@ -114,20 +90,6 @@ function QuotesWarningStrip({
       className="flex flex-wrap items-center gap-2"
       data-ff-quotes-warning-strip=""
     >
-      <DealNotices
-        dealId={dealId}
-        product={product}
-        stage={productStage}
-        noticeType={noticeType}
-        noticeTypes={noticeTypes}
-        noticeTaskId={noticeTaskId}
-        dealName={noticeDealName}
-        contactId={noticeContactId}
-        taskDueDate={noticeTaskDueDate}
-        taskDueTime={noticeTaskDueTime}
-        returnTo={noticeReturnTo}
-        variant="quotes"
-      />
       <QuotesBindableSignal quotes={quotes} />
       {sheetStale ? (
         <span
@@ -171,15 +133,6 @@ export function QuotesPanel({
   mintStatus = null,
   issuedPolicy = null,
   autoIssue = false,
-  inspectionStatus = "none",
-  noticeType,
-  noticeTypes,
-  noticeTaskId,
-  noticeDealName,
-  noticeContactId,
-  noticeTaskDueDate,
-  noticeTaskDueTime,
-  noticeReturnTo,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -212,15 +165,6 @@ export function QuotesPanel({
   mintStatus?: string | null;
   issuedPolicy?: IssuedPolicyChip | null;
   autoIssue?: boolean;
-  inspectionStatus?: string | null;
-  noticeType?: string | null;
-  noticeTypes?: readonly NoticeTypeOption[];
-  noticeTaskId?: string | null;
-  noticeDealName?: string | null;
-  noticeContactId?: string | null;
-  noticeTaskDueDate?: string | null;
-  noticeTaskDueTime?: string | null;
-  noticeReturnTo?: string | null;
 }) {
   const activeLine: ShopLine | null = isShopLine(shopLine) ? shopLine : null;
   const lineLogs = logs.map((row) => row.log);
@@ -315,17 +259,6 @@ export function QuotesPanel({
         <div className="ff-card space-y-3 p-4">
           <h3 className="text-sm font-semibold text-navy">Quotes</h3>
           <QuotesWarningStrip
-            dealId={dealId}
-            product={product}
-            productStage={productStage}
-            noticeType={noticeType ?? inspectionStatus}
-            noticeTypes={noticeTypes}
-            noticeTaskId={noticeTaskId}
-            noticeDealName={noticeDealName}
-            noticeContactId={noticeContactId}
-            noticeTaskDueDate={noticeTaskDueDate}
-            noticeTaskDueTime={noticeTaskDueTime}
-            noticeReturnTo={noticeReturnTo}
             quotes={sorted.map((row) => row.quote)}
             sheetStale={sheetStale}
             completeness={completeness}
@@ -361,17 +294,6 @@ export function QuotesPanel({
   return (
     <div className="space-y-4" data-ff-deal-quotes="" data-ff-quotes-line={activeLine ?? ""}>
       <QuotesWarningStrip
-        dealId={dealId}
-        product={product}
-        productStage={productStage}
-        noticeType={noticeType ?? inspectionStatus}
-        noticeTypes={noticeTypes}
-        noticeTaskId={noticeTaskId}
-        noticeDealName={noticeDealName}
-        noticeContactId={noticeContactId}
-        noticeTaskDueDate={noticeTaskDueDate}
-        noticeTaskDueTime={noticeTaskDueTime}
-        noticeReturnTo={noticeReturnTo}
         quotes={sorted.map((row) => row.quote)}
         sheetStale={sheetStale}
         completeness={completeness}

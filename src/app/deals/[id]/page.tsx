@@ -18,7 +18,7 @@ import {
   listRecordActivities,
 } from "@/lib/db/queries";
 import { listFieldPicklists } from "@/lib/custom-fields/picklist-store";
-import { noticeTypesForFamily } from "@/lib/deals/notices";
+import { noticePicklistForFamily, noticeTypesForFamily } from "@/lib/deals/notices";
 import { DealNotices } from "@/components/deal/deal-notices";
 import { taskDueInputParts } from "@/lib/tasks/due-at";
 import { ensureSeededPipelines } from "@/lib/wire/ensure-pipelines";
@@ -398,11 +398,30 @@ export default async function DealPage({
     activeProduct,
     stageView.slug ?? deal.pipelineStage,
   );
-  const dealNoticeTypes = noticeTypesForFamily(noticePicklists, familyForProducts(dealProducts));
+  const noticeFamily = familyForProducts(dealProducts);
+  const dealNoticeTypes = noticeTypesForFamily(noticePicklists, noticeFamily);
+  const dealNoticePicklist = noticePicklistForFamily(noticePicklists, noticeFamily);
   const noticeTask = activeProductState.noticeTaskId
     ? await getReviewTask(activeProductState.noticeTaskId)
     : null;
   const noticeDue = taskDueInputParts(noticeTask?.dueDate);
+  const noticeReturnTo = `/deals/${deal.id}?tab=${activeTab}&product=${activeProduct}`;
+  const noticeProps = {
+    dealId: deal.id,
+    dealName: deal.title,
+    contactId: deal.contactId,
+    product: activeProduct,
+    stage: activeProductState.stage,
+    noticeType: activeProductState.noticeType ?? activeProductState.inspectionStatus,
+    noticeTypes: dealNoticeTypes,
+    noticeTaskId: activeProductState.noticeTaskId,
+    noticeNote: activeProductState.noticeNote,
+    taskDueDate: noticeDue.date || null,
+    taskDueTime: noticeDue.time || null,
+    returnTo: noticeReturnTo,
+    family: noticeFamily,
+    picklistId: dealNoticePicklist?.id ?? null,
+  };
   const liveQuoteIds = lineQuotes
     .filter((row) => row.quote.stub !== true)
     .map((row) => row.quote.id);
@@ -512,7 +531,10 @@ export default async function DealPage({
         <p className="text-base text-muted-foreground">This deal is missing a risk row.</p>
       ) : (
         <div className="relative w-full" data-ff-deal-flush-tabs data-ff-deal-topband>
-        <DealStatusStamp stage={stampStage} />
+        <div className="ff-deal-stamp-row" data-ff-deal-stamps="">
+          <DealStatusStamp stage={stampStage} />
+          {stampStage ? <DealNotices {...noticeProps} placement="overlay" /> : null}
+        </div>
         <SectionTabs
           defaultValue="details"
           active={activeTab}
@@ -551,23 +573,26 @@ export default async function DealPage({
                   }) ?? (comms.length ? `${comms.length} activities` : null)
                 }
                 stageControl={
-                  <DealHeaderStage
-                    dealId={deal.id}
-                    pipelineSlug={stageView.pipelineSlug}
-                    stageSlug={displayProductStage({
-                      stage: activeProductState.stage,
-                      selectedQuoteIds: activeProductState.selectedQuoteIds,
-                      fallback: stageView.slug,
-                      liveQuoteIds,
-                    })}
-                    stages={stageView.stages}
-                    dealTitle={visibleDealTitle}
-                    toastOnSave
-                    product={activeProduct}
-                    selectedQuoteIds={activeProductState.selectedQuoteIds}
-                    quoteChoices={quoteChoices}
-                    workspaceTab={activeTab}
-                  />
+                  <div className="flex flex-wrap items-center gap-1.5" data-ff-deal-stage-notice="">
+                    <DealHeaderStage
+                      dealId={deal.id}
+                      pipelineSlug={stageView.pipelineSlug}
+                      stageSlug={displayProductStage({
+                        stage: activeProductState.stage,
+                        selectedQuoteIds: activeProductState.selectedQuoteIds,
+                        fallback: stageView.slug,
+                        liveQuoteIds,
+                      })}
+                      stages={stageView.stages}
+                      dealTitle={visibleDealTitle}
+                      toastOnSave
+                      product={activeProduct}
+                      selectedQuoteIds={activeProductState.selectedQuoteIds}
+                      quoteChoices={quoteChoices}
+                      workspaceTab={activeTab}
+                    />
+                    {!stampStage ? <DealNotices {...noticeProps} placement="header" /> : null}
+                  </div>
                 }
               />
               {dealProducts.length ? (
@@ -667,22 +692,6 @@ export default async function DealPage({
                       }),
                     )}
                   />
-                  <div className="mt-1.5" data-ff-deal-header-notices="">
-                    <DealNotices
-                      dealId={deal.id}
-                      dealName={deal.title}
-                      contactId={deal.contactId}
-                      product={activeProduct}
-                      stage={activeProductState.stage}
-                      noticeType={activeProductState.noticeType ?? activeProductState.inspectionStatus}
-                      noticeTypes={dealNoticeTypes}
-                      noticeTaskId={activeProductState.noticeTaskId}
-                      taskDueDate={noticeDue.date || null}
-                      taskDueTime={noticeDue.time || null}
-                      returnTo={`/deals/${deal.id}?tab=${activeTab}&product=${activeProduct}`}
-                      variant="header"
-                    />
-                  </div>
                 </>
               ) : null}
             </div>
@@ -857,15 +866,6 @@ export default async function DealPage({
                           };
                         })()}
                         autoIssue={issue === "1"}
-                        inspectionStatus={activeProductState.inspectionStatus}
-                        noticeType={activeProductState.noticeType ?? activeProductState.inspectionStatus}
-                        noticeTypes={dealNoticeTypes}
-                        noticeTaskId={activeProductState.noticeTaskId}
-                        noticeDealName={deal.title}
-                        noticeContactId={deal.contactId}
-                        noticeTaskDueDate={noticeDue.date || null}
-                        noticeTaskDueTime={noticeDue.time || null}
-                        noticeReturnTo={`/deals/${deal.id}?tab=quotes&product=${activeProduct}`}
                       />
                     )}
                   </div>
