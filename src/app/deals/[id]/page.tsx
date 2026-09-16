@@ -38,6 +38,7 @@ import { resolveDealHeaderAddresses } from "@/lib/deals/header-addresses";
 import {
   logBelongsToLine,
   quoteBelongsToLine,
+  quotingFormFromSheet,
   resolveActivePackageLine,
   resolveLineQuotingForm,
   resolveVisiblePackageLines,
@@ -63,11 +64,13 @@ import {
   parseProductStages,
   productStageFor,
   productStampStage,
+  sheetFormForProduct,
 } from "@/lib/deals/product-stages";
 import { DealFlowRail } from "@/components/deals/deal-flow-rail";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 import {
   parseShopFlow,
+  requestScopeForLine,
   resolveShopFlowCompletion,
   riskFingerprint,
   STALE_SHOP_FINGERPRINT,
@@ -500,6 +503,7 @@ export default async function DealPage({
                       current={activeTab}
                       completed={flowCompletion.completed}
                       activeLabel={dealProductDef(activeProduct).label}
+                      nextHint={activeTab === "quotes" ? "" : undefined}
                       productComplete={
                         productSectionComplete(activeProduct, dealValues) ||
                         Boolean(
@@ -543,7 +547,23 @@ export default async function DealPage({
                       }),
                     )}
                     formLabels={Object.fromEntries(
-                      dealProducts.map((id) => [id, dealProductDef(id).quotingForm]),
+                      dealProducts.map((id) => {
+                        const line = sheetLineForProduct(id);
+                        const sheet = sheets.find((row) => row.line === line);
+                        const fromSheet =
+                          quotingFormFromSheet(sheet?.values) ??
+                          resolveLineQuotingForm({
+                            sheetValues: sheet?.values,
+                            sheetLine: line ?? sheetLine,
+                            dealQuotingForm: deal.quotingForm,
+                            dealQuotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
+                            dealLineOfBusiness: deal.lineOfBusiness,
+                          });
+                        return [
+                          id,
+                          sheetFormForProduct(id, fromSheet) ?? dealProductDef(id).quotingForm,
+                        ];
+                      }),
                     )}
                     complete={Object.fromEntries(
                       dealProducts.map((id) => [
@@ -680,6 +700,7 @@ export default async function DealPage({
                         carriers={carrierOptions}
                         dealLine={activeLob}
                         shopLine={sheetLine}
+                        lastRequestCarrierIds={requestScopeForLine(shopFlow, sheetLine)}
                       />
                     ) : (
                       <QuotesPanel

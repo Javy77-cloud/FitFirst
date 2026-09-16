@@ -148,6 +148,21 @@ export function isSelectedQuote(
   return (selectedQuoteIds ?? []).includes(quoteId);
 }
 
+/** Use the sheet form only when it belongs to this product (HO3 ≠ DP3 on a shared home sheet). */
+export function sheetFormForProduct(
+  product: DealProductId,
+  sheetForm?: string | null,
+): string | null {
+  const form = (sheetForm ?? "").trim();
+  if (!form) return null;
+  if (product === "homeowners") return /^ho|^mho/i.test(form) ? form : null;
+  if (product === "landlord") return /^dp/i.test(form) ? form : null;
+  if (product === "renters") return /^ho4$/i.test(form) ? form : null;
+  if (product === "auto" || product === "motorcycle") return /auto|pa|moto/i.test(form) ? form : null;
+  if (product === "flood") return /flood/i.test(form) ? form : null;
+  return form;
+}
+
 /** HO3 / DP3 / PA when the form is known — not generic Home / Landlord. */
 export function productChipLabel(input: {
   product: DealProductId;

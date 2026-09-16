@@ -478,6 +478,14 @@ export function attachPriorUnderCarrier<T>(
   });
 }
 
+/** Carriers last requested on this line — pre-check them after a sheet re-approve. */
+export function requestScopeForLine(
+  saved: DealShopFlowState | null | undefined,
+  line: string,
+): string[] {
+  return (parseShopFlow(saved).requestScopes?.[line] ?? []).map((id) => id.trim()).filter(Boolean);
+}
+
 export function shopLineLabel(line: ShopLine): string {
   return (
     {

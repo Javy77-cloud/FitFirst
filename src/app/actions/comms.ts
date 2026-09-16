@@ -106,6 +106,28 @@ export async function sendDeskEmail(formData: FormData) {
   revalidatePath("/settings/outbound");
 }
 
+/** Persist selected quote PDFs on a reminder without queueing a send. */
+export async function persistDealEmailAttachments(formData: FormData) {
+  const ids = related(formData);
+  const attachmentIds = formData
+    .getAll("attachDoc")
+    .map((value) => String(value ?? "").trim())
+    .filter(Boolean);
+  if (!attachmentIds.length) return;
+  await enqueueOutboundJob({
+    channel: "email",
+    toAddress: str(formData, "toAddress") || str(formData, "email"),
+    fromAddress: str(formData, "fromAddress") || "desk@agency.local",
+    subject: str(formData, "subject") || "Email reminder",
+    body: str(formData, "body") || str(formData, "notes"),
+    attachmentIds,
+    draft: true,
+    ...ids,
+  });
+  revalidate(ids);
+  revalidatePath("/settings/outbound");
+}
+
 /** Log an inbound email on the same thread (connector stub, not a mailbox product). */
 export async function logInboundEmail(formData: FormData) {
   const ids = related(formData);

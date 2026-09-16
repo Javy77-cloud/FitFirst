@@ -23,6 +23,7 @@ export function MarketsPanel({
   carriers = [],
   dealLine = "HO",
   shopLine,
+  lastRequestCarrierIds = [],
 }: {
   dealId: string;
   matches: CarrierMatch[];
@@ -35,8 +36,11 @@ export function MarketsPanel({
   carriers?: { id: string; name: string; writtenLines?: string[] | null }[];
   dealLine?: string;
   shopLine?: string;
+  lastRequestCarrierIds?: string[];
 }) {
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(() =>
+    lastRequestCarrierIds.map((id) => id.trim()).filter(Boolean),
+  );
   const manual = new Set(asList(manualIds));
   const shopList = new Set(asList(shopListIds));
   const matchList = asList(matches);

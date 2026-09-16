@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { isDocumentsSourceDoc, isQuoteFileDoc } from "./quote-docs";
+import { isDocumentsSourceDoc, isQuoteFileDoc, shopLineFromSourceDoc } from "./quote-docs";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -37,6 +37,12 @@ describe("quote docs vs documents source docs", () => {
     }
     expect(isDocumentsSourceDoc({ slot: "quote_pdf", docType: "other", tags: [] })).toBe(false);
     expect(isDocumentsSourceDoc({ slot: "policy_file", docType: "other", tags: [] })).toBe(false);
+    expect(shopLineFromSourceDoc({ slot: "source_doc", docType: "dec", tags: ["line:home"] })).toBe(
+      "home",
+    );
+    expect(shopLineFromSourceDoc({ slot: "source_doc", docType: "auto_id_card", tags: [] })).toBe(
+      "auto",
+    );
   });
 
   it("Documents panel filters with isDocumentsSourceDoc; Quotes keeps isQuoteFileDoc", () => {

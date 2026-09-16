@@ -11,6 +11,7 @@ import {
   lateStageNeedsQuoteSelection,
   parseProductStages,
   productChipLabel,
+  sheetFormForProduct,
   productReadyFromQuotes,
   productStageFor,
   PRODUCT_LOST_REASON_LABELS,
@@ -72,6 +73,9 @@ describe("per-product stages", () => {
     expect(productChipLabel({ product: "landlord", quotingForm: "DP3" })).toBe("DP3");
     expect(productChipLabel({ product: "homeowners" })).toBe("HO3");
     expect(productChipLabel({ product: "landlord" })).toBe("DP3");
+    expect(sheetFormForProduct("homeowners", "HO5")).toBe("HO5");
+    expect(sheetFormForProduct("landlord", "HO3")).toBeNull();
+    expect(sheetFormForProduct("landlord", "DP3")).toBe("DP3");
   });
 
   it("blocks late stages until a quote is selected — never auto-binds cheapest", () => {
@@ -129,6 +133,7 @@ describe("per-product stages", () => {
       /evaluateDealMarkets\(risk, activeSheet\.values, activeLob\)/,
     );
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/carriersForDealLine/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/lastRequestCarrierIds/);
     expect(source("src/lib/appetite/evaluate-deal.ts")).toMatch(/dealLineOverride/);
   });
 
@@ -183,6 +188,11 @@ describe("per-product stages", () => {
     expect(source("src/app/actions/quote-sheet.ts")).toMatch(
       /markShopFlowStaleAfterRiskChange\(dealId, line\)/,
     );
+    expect(source("src/app/actions/quote-sheet.ts")).toMatch(
+      /markShopFlowStaleAfterRiskChange\(dealId, primary\)/,
+    );
+    expect(source("src/app/actions/documents.ts")).toMatch(/shopLineFromSourceDoc/);
+    expect(source("src/app/actions/comms.ts")).toMatch(/persistDealEmailAttachments/);
     expect(source("src/lib/deals/shop-flow-persist.ts")).toMatch(/sheet_invalidated/);
     expect(source("src/lib/deals/shop-flow-persist.ts")).toMatch(/staleShopFlowForLine/);
     expect(source("src/lib/crm/signals.ts")).toMatch(/sheet_invalidated/);

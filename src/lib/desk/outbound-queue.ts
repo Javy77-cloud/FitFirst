@@ -51,15 +51,18 @@ export type EnqueueOutboundInput = {
   emailOptOut?: boolean | null;
   smsOptOut?: boolean | null;
   attachmentIds?: string[] | null;
+  draft?: boolean;
 };
 
 export async function enqueueOutboundJob(input: EnqueueOutboundInput) {
-  const decision = decideOutboundStatus({
-    channel: input.channel,
-    toAddress: input.toAddress,
-    emailOptOut: input.emailOptOut,
-    smsOptOut: input.smsOptOut,
-  });
+  const decision = input.draft
+    ? { status: "draft" as OutboundStatus, holdReason: null }
+    : decideOutboundStatus({
+        channel: input.channel,
+        toAddress: input.toAddress,
+        emailOptOut: input.emailOptOut,
+        smsOptOut: input.smsOptOut,
+      });
   const now = new Date();
   const [job] = await db
     .insert(commsOutboundJobs)

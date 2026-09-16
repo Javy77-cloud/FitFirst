@@ -20,3 +20,27 @@ export function isDocumentsSourceDoc(doc: QuoteDocLike): boolean {
   if (doc.slot === "quote_pdf" || doc.slot === "policy_file") return false;
   return !isQuoteFileDoc(doc);
 }
+
+/** Infer shop line from a source-doc tag/slot so a Home upload does not stale Auto. */
+export function shopLineFromSourceDoc(doc: QuoteDocLike): string | null {
+  for (const tag of doc.tags ?? []) {
+    const raw = tag.startsWith("line:") ? tag.slice("line:".length) : tag;
+    const key = raw.trim().toLowerCase();
+    if (
+      key === "home" ||
+      key === "auto" ||
+      key === "flood" ||
+      key === "rec_rv" ||
+      key === "umbrella" ||
+      key === "life" ||
+      key === "health"
+    ) {
+      return key;
+    }
+  }
+  const blob = `${doc.slot ?? ""} ${doc.docType ?? ""}`.toLowerCase();
+  if (/flood/.test(blob)) return "flood";
+  if (/auto|vin|id.?card/.test(blob)) return "auto";
+  if (/home|ho3|dec|wind.?mit|4.?point|four.?point/.test(blob)) return "home";
+  return null;
+}

@@ -3,7 +3,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { completeDeskActivity, logDeskActivity } from "@/app/actions/activities-desk";
 import { touchCarrierLastContacted } from "@/app/actions/carriers-ops";
-import { sendDeskEmail, sendDeskSms } from "@/app/actions/comms";
+import { persistDealEmailAttachments, sendDeskEmail, sendDeskSms } from "@/app/actions/comms";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -205,6 +205,7 @@ export function QuickCommsBoard({
         formData.set("direction", "outbound");
         stampRelated(formData);
         await logDeskActivity(formData);
+        if (attach.length) await persistDealEmailAttachments(formData);
         await afterCarrierComms("Email Reminder");
         return;
       }

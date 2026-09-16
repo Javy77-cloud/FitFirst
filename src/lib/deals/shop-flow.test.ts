@@ -13,6 +13,7 @@ import {
   inferHomeProductFromQuoteNotes,
   inferShopLineFromQuoteNotes,
   nextShopFlowAfterQuoteRun,
+  requestScopeForLine,
   notesLookLikeFloodProduct,
   parseShopFlow,
   quoteMatchesDealProduct,
@@ -353,6 +354,15 @@ describe("prior under carrier + line-scoped stale", () => {
       quotes: STALE_SHOP_FINGERPRINT,
     });
     expect(next.lineFingerprints?.auto).toEqual({ markets: "a", quotes: "a" });
+    const scoped = nextShopFlowAfterQuoteRun({
+      saved: {},
+      line: "home",
+      fingerprint: "fp",
+      newRunId: "run-9",
+      requestCarrierIds: ["citizens", "universal"],
+    });
+    expect(requestScopeForLine(scoped, "home")).toEqual(["citizens", "universal"]);
+    expect(requestScopeForLine(scoped, "auto")).toEqual([]);
     expect(
       resolveShopFlowCompletion({
         detailsComplete: true,
