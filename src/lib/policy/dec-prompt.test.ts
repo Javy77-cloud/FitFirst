@@ -176,6 +176,8 @@ describe("rosa retag + 72h admin notify stub", () => {
     );
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/markProductIssuedDone/);
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/ensureWorkItem/);
+    expect(source("src/app/actions/declaration-prompt.ts")).toMatch(/readDecPdfBytes/);
+    expect(source("src/app/actions/declaration-prompt.ts")).toMatch(/readStoredFile/);
     expect(source("src/app/actions/policy-mint.ts")).not.toMatch(/issuedDone: true[\s\S]{0,80}unpublished/);
     expect(source("src/app/actions/documents.ts")).toMatch(/lastDeclaration/);
     expect(source("src/app/actions/declaration.ts")).toMatch(/forcePrompt: true/);

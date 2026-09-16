@@ -25,6 +25,7 @@ import {
 } from "@/lib/deals/product-stages";
 import { stageColorFromNameOrSlug } from "@/lib/desk/status-colors";
 import { flashAction } from "@/lib/flash-client";
+import { mintFailureToast } from "@/lib/policy/mint-gate";
 import { cn } from "@/lib/utils";
 
 function colorForStage(stage: DealStageOption) {
@@ -140,6 +141,13 @@ export function DealHeaderStage({
           router.push(
             `/deals/${dealId}?tab=quotes&product=${product || "homeowners"}${next === "policy_issued" || result.reason === "need_dec" ? "&issue=1" : ""}`,
           );
+        } else if (
+          result.reason === "need_dec_file" ||
+          result.reason === "need_gemini" ||
+          result.reason === "extract_failed"
+        ) {
+          const toast = mintFailureToast(result.reason);
+          flashAction(toast.key, toast.kind);
         }
         return;
       }
