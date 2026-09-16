@@ -174,10 +174,16 @@ describe("request quotes landing + leftover Quote sent gate", () => {
 
   it("sheet save stays at Confirm and does not uncheck Markets", () => {
     const save = source("src/app/actions/quote-sheet.ts");
+    const sheet = source("src/components/deal/master-sheet-compare.tsx");
+    const gate = source("src/components/deal/sheet-approve-gate.tsx");
     expect(save).toMatch(/persistSheetRecheckCue\(dealId, line\)/);
     expect(save).toMatch(/hash: SHEET_CONFIRM_HASH/);
     expect(save).not.toMatch(/markShopFlowStaleAfterRiskChange\(dealId, line\)/);
-    expect(source("src/components/deal/sheet-approve-gate.tsx")).toMatch(/id=\{SHEET_CONFIRM_HASH\}/);
+    expect(sheet).toMatch(/data.set\("flash", "0"\)/);
+    expect(sheet).toMatch(/scrollIntoView/);
+    expect(sheet).toMatch(/#\$\{SHEET_CONFIRM_HASH\}/);
+    expect(gate).toMatch(/id=\{SHEET_CONFIRM_HASH\}/);
+    expect(gate).toMatch(/scrollIntoView/);
     expect(source("src/lib/desk/action-flash.ts")).toMatch(/SHEET_CONFIRM_HASH = "ff-sheet-confirm"/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/sheetNeedsRecheckCue\(shopFlow, sheetLine\)/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/dealTitleForActiveProduct/);

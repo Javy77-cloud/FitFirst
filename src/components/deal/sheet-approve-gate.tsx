@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { approveMasterSheet } from "@/app/actions/quoting";
@@ -51,6 +51,21 @@ export function SheetApproveGate({
 }) {
   const [reviewed, setReviewed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash.replace(/^#/, "");
+    const query = new URLSearchParams(window.location.search);
+    const landedOnConfirm =
+      hash === SHEET_CONFIRM_HASH ||
+      query.get("notice") === "sheet-saved" ||
+      query.get("flash") === "sheet-saved";
+    if (!landedOnConfirm) return;
+    document.getElementById(SHEET_CONFIRM_HASH)?.scrollIntoView({
+      behavior: "auto",
+      block: "center",
+    });
+  }, []);
 
   if (unlocked) {
     return (
