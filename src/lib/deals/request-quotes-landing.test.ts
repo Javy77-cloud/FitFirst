@@ -9,7 +9,7 @@ import {
   productChipStageLabelForState,
   productStampStage,
 } from "@/lib/deals/product-stages";
-import { groupQuotesByRun, quoteRunIdAfterRequest } from "@/lib/deals/shop-flow";
+import { groupQuotesByRun, quoteMatchesDealProduct, quoteRunIdAfterRequest } from "@/lib/deals/shop-flow";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -53,6 +53,27 @@ describe("request quotes landing + leftover Quote sent gate", () => {
     );
     expect(grouped.current.map((row) => row.id)).toEqual(["ho3", "dp3"]);
     expect(grouped.previous).toEqual([]);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "Rated $1840", logs: [] },
+        "homeowners",
+        { multiLine: true, splitHomeProducts: true },
+      ),
+    ).toBe(true);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "Rated $1840", logs: [] },
+        "landlord",
+        { multiLine: true, splitHomeProducts: true },
+      ),
+    ).toBe(false);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "DP3 landlord dwelling", logs: [] },
+        "landlord",
+        { multiLine: true, splitHomeProducts: true },
+      ),
+    ).toBe(true);
   });
 
   it("hides Gloria leftover Quote sent stamp when Review has no selected quote", () => {

@@ -157,6 +157,14 @@ describe("quote completeness", () => {
       quotes: [{ carrierId: "progressive", stub: false, shopLine: "home", notes: "Form PA rated $700" }],
     });
     expect(heatherAuto.complete).toBe(true);
+    const gloriaHo3Untagged = productQuoteCompleteness({
+      product: "homeowners",
+      multiLine: true,
+      splitHomeProducts: true,
+      logs: [],
+      quotes: [{ carrierId: "citizens", stub: false, shopLine: "home", notes: "Rated $1840" }],
+    });
+    expect(gloriaHo3Untagged.complete).toBe(true);
     const gloriaDp3 = productQuoteCompleteness({
       product: "landlord",
       multiLine: true,

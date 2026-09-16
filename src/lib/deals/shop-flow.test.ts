@@ -461,6 +461,13 @@ describe("prior under carrier + line-scoped stale", () => {
         "homeowners",
         { multiLine: true, splitHomeProducts: true },
       ),
+    ).toBe(true);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "", logs: [] },
+        "landlord",
+        { multiLine: true, splitHomeProducts: true },
+      ),
     ).toBe(false);
     expect(
       quoteMatchesDealProduct(

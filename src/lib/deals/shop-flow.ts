@@ -247,12 +247,15 @@ export function quoteMatchesDealProduct(
   }
   const fromNotes = inferHomeProductFromQuoteNotes(input.notes);
   if (fromNotes) return fromNotes === wanted;
-  // Gloria HO3+DP3: untagged home quotes must not spill onto both chips.
+  // Gloria HO3+DP3: tagged rows stay on their chip. Untagged live home quotes
+  // used to vanish from both (empty HO3 and DP3). Keep them on HO3 only.
   // Heather HO3+Auto+Flood: HO3 is the only home chip — home-line and untagged
   // (not auto/flood) quotes stay on HO3 even when shop_line was never persisted.
   const splitHome = opts?.splitHomeProducts ?? false;
   if (splitHome && (wanted === "homeowners" || wanted === "landlord" || wanted === "renters")) {
-    return false;
+    const resolved = resolveQuoteShopLine(input);
+    if (resolved && resolved !== "home") return false;
+    return wanted === "homeowners";
   }
   if (!splitHome && (wanted === "homeowners" || wanted === "landlord" || wanted === "renters")) {
     const resolved = resolveQuoteShopLine(input);
