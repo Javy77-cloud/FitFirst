@@ -94,6 +94,7 @@ describe("per-product stages", () => {
   it("blocks late stages until a quote is selected — never auto-binds cheapest", () => {
     expect(lateStageNeedsQuoteSelection({ stage: "quote_sent", selectedQuoteIds: [] })).toBe(true);
     expect(lateStageNeedsQuoteSelection({ stage: "bound", selectedQuoteIds: ["q1"] })).toBe(false);
+    expect(lateStageNeedsQuoteSelection({ stage: "policy_issued", selectedQuoteIds: [] })).toBe(true);
     expect(
       lateStageNeedsQuoteSelection({
         stage: "quote_sent",
@@ -243,6 +244,7 @@ describe("per-product stages", () => {
     expect(css).not.toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: sticky;/);
     expect(productChipStageLabel("review")).toBe("Quotes");
     expect(productChipStageLabel("quote_sent")).toBe("Quote sent");
+    expect(productChipStageLabel("policy_issued")).toBe("Policy issued");
     expect(productChipStageLabel("gather")).toBeNull();
     expect(
       productChipStageLabelForState({ stage: "quote_sent", selectedQuoteIds: [] }),

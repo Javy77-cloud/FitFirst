@@ -127,10 +127,11 @@ export default async function DealPage({
     line?: string;
     product?: string;
     fromPolicy?: string;
+    issue?: string;
   }>;
 }) {
   const { id } = await params;
-  const { tab, field, line: lineParam, product, notice, fromPolicy } = await searchParams;
+  const { tab, field, line: lineParam, product, notice, fromPolicy, issue } = await searchParams;
   const focusField = parseSheetFieldParam(field);
   const workspace = await getDealWorkspace(id);
   if (!workspace) notFound();
@@ -148,6 +149,7 @@ export default async function DealPage({
     account,
     sheets,
     jobs,
+    boundPolicies,
   } = workspace;
   const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow, pipelines, context, agencyRow] =
     await Promise.all([
@@ -553,6 +555,7 @@ export default async function DealPage({
                     product={activeProduct}
                     selectedQuoteIds={activeProductState.selectedQuoteIds}
                     quoteChoices={quoteChoices}
+                    tab={activeTab}
                   />
                 }
               />
@@ -609,6 +612,8 @@ export default async function DealPage({
                             stage: state.stage,
                             lostReason: state.lostReason,
                             selectedQuoteIds: state.selectedQuoteIds,
+                            policyId: state.policyId,
+                            mintStatus: state.mintStatus,
                           },
                         ];
                       }),
@@ -811,6 +816,20 @@ export default async function DealPage({
                         splitHomeProducts={splitHome}
                         quoteRuns={shopFlow.quoteRuns}
                         preScoped
+                        mintStatus={activeProductState.mintStatus}
+                        issuedPolicy={(() => {
+                          const linked =
+                            boundPolicies.find((row) => row.id === activeProductState.policyId) ??
+                            boundPolicies.find((row) => row.sourceProduct === activeProduct);
+                          if (!linked) return null;
+                          return {
+                            id: linked.id,
+                            policyNumber: linked.policyNumber,
+                            mintStatus: activeProductState.mintStatus,
+                            published: Boolean(linked.publishedAt),
+                          };
+                        })()}
+                        autoIssue={issue === "1"}
                       />
                     )}
                   </div>

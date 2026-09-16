@@ -31,6 +31,8 @@ export type DealProductStageChip = {
   stage?: string | null;
   lostReason?: string | null;
   selectedQuoteIds?: readonly string[] | null;
+  policyId?: string | null;
+  mintStatus?: string | null;
 };
 
 export function DealLineSwitcher({
@@ -139,7 +141,18 @@ export function DealLineSwitcher({
                     )}
                     data-ff-product-stage-label=""
                   >
-                    {stageLabel}
+                    {stages[product]?.mintStatus === "creating" ? "Creating…" : stageLabel}
+                  </span>
+                ) : null}
+                {stages[product]?.policyId ? (
+                  <span
+                    className={cn(
+                      "text-[9px] font-medium underline-offset-2",
+                      selected ? "text-white/85" : "text-navy",
+                    )}
+                    data-ff-product-policy-chip={stages[product]?.policyId}
+                  >
+                    Policy
                   </span>
                 ) : null}
               </span>

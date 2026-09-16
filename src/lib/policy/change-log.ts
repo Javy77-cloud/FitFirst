@@ -4,6 +4,7 @@ export type PolicyChangeSource =
   | "cancellation"
   | "non_renewal"
   | "bind"
+  | "mint"
   | "seed";
 
 export type PolicyFieldChange = {
