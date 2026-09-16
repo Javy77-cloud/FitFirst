@@ -45,17 +45,20 @@ import {
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
 import {
   clearBindRecheckAcks,
-  loadDealRiskFingerprint,
+  loadLineRiskFingerprint,
   persistDealShopFlow,
 } from "@/lib/deals/shop-flow-persist";
 import {
   nextShopFlowAfterQuoteRun,
   parseShopFlow,
   quoteMatchesShopLine,
+  quoteRunIdAfterRequest,
 } from "@/lib/deals/shop-flow";
 import { parseDealProduct } from "@/lib/deals/deal-products";
 import { parseProductStages, setProductStage } from "@/lib/deals/product-stages";
 import { flashAction } from "@/lib/flash-action";
+import { quotesRequestedHref } from "@/lib/flash";
+import { isRedirectError } from "@/lib/lifecycle/shop";
 import {
   BIND_RECHECK_CLEAR_PATCH,
   bindGateReady,
@@ -77,22 +80,40 @@ function selectedCarrierIdsFromForm(formData: FormData): string[] {
     .filter(Boolean);
 }
 
+async function finishRequestQuotes(
+  dealId: string,
+  extras: { line?: string; product?: string },
+) {
+  await persistDealWorkTab(dealId, "quotes").catch(() => null);
+  flashAction(quotesRequestedHref(dealId, extras), "quotes-requested");
+}
+
 export async function requestAppetiteQuotesAction(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "");
   const selectedIds = selectedCarrierIdsFromForm(formData);
   const line = String(formData.get("line") ?? "").trim();
-  await shopDealQuotes(dealId, "appetite", selectedIds.length ? selectedIds : undefined, line || undefined);
-  await persistDealWorkTab(dealId, "quotes").catch(() => null);
-  flashAction(`/deals/${dealId}?tab=quotes${line ? `&line=${line}` : ""}`, "quotes-requested");
+  const product = String(formData.get("product") ?? "").trim();
+  try {
+    await shopDealQuotes(dealId, "appetite", selectedIds.length ? selectedIds : undefined, line || undefined);
+  } catch (error) {
+    if (isRedirectError(error)) throw error;
+    console.error("requestAppetiteQuotesAction failed", error);
+  }
+  await finishRequestQuotes(dealId, { line, product });
 }
 
 export async function requestStretchQuotesAction(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "");
   const selectedIds = selectedCarrierIdsFromForm(formData);
   const line = String(formData.get("line") ?? "").trim();
-  await shopDealQuotes(dealId, "stretch", selectedIds.length ? selectedIds : undefined, line || undefined);
-  await persistDealWorkTab(dealId, "quotes").catch(() => null);
-  flashAction(`/deals/${dealId}?tab=quotes${line ? `&line=${line}` : ""}`, "quotes-requested");
+  const product = String(formData.get("product") ?? "").trim();
+  try {
+    await shopDealQuotes(dealId, "stretch", selectedIds.length ? selectedIds : undefined, line || undefined);
+  } catch (error) {
+    if (isRedirectError(error)) throw error;
+    console.error("requestStretchQuotesAction failed", error);
+  }
+  await finishRequestQuotes(dealId, { line, product });
 }
 
 export async function shopInAppetite(dealId: string) {
@@ -103,12 +124,11 @@ async function persistShopFlowAfterQuoteRequest(
   dealId: string,
   line: ReturnType<typeof resolveShopLineAndLob>["line"],
   opts: {
-    archiveCurrent: boolean;
     logs: { id: string; lineOfBusiness?: string | null }[];
     requestCarrierIds?: string[];
   },
 ) {
-  const fingerprint = await loadDealRiskFingerprint(dealId);
+  const fingerprint = await loadLineRiskFingerprint(dealId, line);
   const [deal] = await db.select({ shopFlow: deals.shopFlow }).from(deals).where(eq(deals.id, dealId));
   const saved = parseShopFlow(deal?.shopFlow);
   const existing = await db.select().from(quotes).where(eq(quotes.dealId, dealId));
@@ -125,32 +145,28 @@ async function persistShopFlowAfterQuoteRequest(
     ),
   );
   const currentRun = saved.quoteRuns?.[line] ?? null;
-  const isRequote =
-    opts.archiveCurrent &&
-    (saved.quotesFingerprint === "" ||
-      (saved.quotesFingerprint != null && saved.quotesFingerprint !== fingerprint));
-  let runId = currentRun || randomUUID();
+  const runId =
+    quoteRunIdAfterRequest({
+      savedRunId: currentRun,
+      existingRunIds: onLine.map((quote) => quote.quoteRunId),
+    }) || randomUUID();
 
-  if (isRequote) {
-    const toArchive = onLine.filter((quote) => !quote.quoteRunId || quote.quoteRunId === currentRun);
-    if (toArchive.length) {
-      const prevId = currentRun || randomUUID();
-      await db
-        .update(quotes)
-        .set({ quoteRunId: prevId, shopLine: line, ...BIND_RECHECK_CLEAR_PATCH })
-        .where(inArray(quotes.id, toArchive.map((quote) => quote.id)));
-    }
-    runId = randomUUID();
-  } else if (onLine.some((quote) => !quote.quoteRunId || !quote.shopLine)) {
+  // Do not archive or restamp live premiums. Request-quotes writes logs +
+  // fingerprints only — Fill/portal create new rows later. Overwriting
+  // shopLine hid Heather Auto/Flood; a new empty run hid Gloria HO3/DP3.
+  const missingRun = onLine.filter((quote) => !quote.quoteRunId);
+  if (missingRun.length) {
     await db
       .update(quotes)
-      .set({ quoteRunId: runId, shopLine: line })
-      .where(
-        inArray(
-          quotes.id,
-          onLine.filter((quote) => !quote.quoteRunId || !quote.shopLine).map((quote) => quote.id),
-        ),
-      );
+      .set({ quoteRunId: runId })
+      .where(inArray(quotes.id, missingRun.map((quote) => quote.id)));
+  }
+  const missingLine = onLine.filter((quote) => !quote.shopLine);
+  if (missingLine.length) {
+    await db
+      .update(quotes)
+      .set({ shopLine: line })
+      .where(inArray(quotes.id, missingLine.map((quote) => quote.id)));
   }
 
   await persistDealShopFlow(
@@ -172,7 +188,6 @@ async function archiveLineQuotesForNewRun(input: {
   requestCarrierIds?: string[];
 }) {
   await persistShopFlowAfterQuoteRequest(input.dealId, input.line, {
-    archiveCurrent: true,
     logs: input.logs,
     requestCarrierIds: input.requestCarrierIds,
   });
@@ -339,12 +354,15 @@ export async function shopDealQuotes(
 
   if (pass === "stretch") {
     await persistShopFlowAfterQuoteRequest(dealId, resolved.line, {
-      archiveCurrent: false,
       logs: dealLogs,
     });
   }
 
-  await attachFinalizedQuotePdfs(dealId);
+  try {
+    await attachFinalizedQuotePdfs(dealId);
+  } catch (error) {
+    console.error("attachFinalizedQuotePdfs failed after request quotes", error);
+  }
 
   revalidatePath(`/deals/${dealId}`);
   return matches;

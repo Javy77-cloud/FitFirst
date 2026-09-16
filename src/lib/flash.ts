@@ -166,6 +166,19 @@ export function dealDetailsSavedHref(
   return `/deals/${dealId}?${query.toString()}`;
 }
 
+/** Markets Request quotes must land on Quotes for that product — never a bare /deals/:id. */
+export function quotesRequestedHref(
+  dealId: string,
+  extras?: { line?: string | null; product?: string | null },
+): string {
+  const query = new URLSearchParams({ tab: "quotes" });
+  const line = extras?.line?.trim();
+  const product = extras?.product?.trim();
+  if (line) query.set("line", line);
+  if (product) query.set("product", product);
+  return `/deals/${dealId}?${query.toString()}`;
+}
+
 const FLASH_ORIGIN = "https://fitfirst.local";
 
 function splitHash(href: string) {

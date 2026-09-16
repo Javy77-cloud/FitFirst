@@ -1,11 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
 import { MasterSheetFillButton } from "@/components/deal/master-sheet-fill-button";
 import { MasterSheetAddressLinks } from "@/components/deal/master-sheet-address-links";
 import { MilesToCoastButton } from "@/components/deal/miles-to-coast-button";
 import { sourceTag } from "@/lib/quote-sheet/apply";
 import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
+import { ACTION_FLASH_MESSAGE, SHEET_CONFIRM_HASH } from "@/lib/desk/action-flash";
+import { flashAction } from "@/lib/flash-client";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,12 +48,24 @@ export function MasterSheetWorkspace({
   approvedBy?: string | null;
   hasCoApplicantFlag?: string | null;
 }) {
+  const router = useRouter();
+
   async function persistSheet(opts?: { flash?: boolean }) {
     const el = document.getElementById(MASTER_SHEET_FORM_ID);
     if (!(el instanceof HTMLFormElement)) throw new Error("Master sheet form is missing.");
     const data = new FormData(el);
-    if (opts?.flash === false) data.set("flash", "0");
+    // Stay on Confirm — a redirect remounts the deal page at the top.
+    data.set("flash", "0");
     await saveQuoteSheet(data);
+    if (opts?.flash === false) return;
+    flashAction(ACTION_FLASH_MESSAGE["sheet-saved"]);
+    router.refresh();
+    requestAnimationFrame(() => {
+      document.getElementById(SHEET_CONFIRM_HASH)?.scrollIntoView({
+        behavior: "auto",
+        block: "center",
+      });
+    });
   }
 
   return (
@@ -150,7 +165,11 @@ export function MasterSheetCompare({
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="line" value={line} />
         <input type="hidden" name="sheet_product" value={product} />
-        <input type="hidden" name="returnTo" value={`/deals/${dealId}?tab=documents&line=${line}`} />
+        <input
+          type="hidden"
+          name="returnTo"
+          value={`/deals/${dealId}?tab=documents&line=${line}#${SHEET_CONFIRM_HASH}`}
+        />
         <div data-ff-master-sheet-scroll="" className="overflow-visible">
           {groups.map((group) =>
             group.group === "Applicant" ? (

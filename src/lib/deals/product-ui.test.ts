@@ -99,7 +99,7 @@ describe("deal shop flow + product chrome", () => {
     );
   });
 
-  it("renders breadcrumbs as clickable chips, not muted slash text", () => {
+  it("renders breadcrumbs as a text trail, not navy action chips", () => {
     const html = renderToString(
       createElement(DeskPageTrail, {
         showBack: false,
@@ -114,11 +114,12 @@ describe("deal shop flow + product chrome", () => {
     expect(html).toMatch(/data-ff-desk-crumb="current"/);
     expect(html).toContain("Deals");
     expect(html).toContain("Deal");
-    expect(html).toContain("›");
-    expect(html).not.toMatch(/>\/</);
-    expect(html).toMatch(/border-navy bg-navy text-white/);
+    expect(html).toContain("/");
+    expect(html).not.toMatch(/border-navy bg-navy text-white/);
+    expect(html).toMatch(/underline/);
     const trail = readFileSync("src/components/desk/desk-page-trail.tsx", "utf8");
     expect(trail).toMatch(/data-ff-desk-crumb="link"/);
-    expect(trail).toMatch(/backVariant = "outline"/);
+    expect(trail).toMatch(/backVariant = "link"/);
+    expect(trail).not.toMatch(/border-navy bg-navy text-white/);
   });
 });

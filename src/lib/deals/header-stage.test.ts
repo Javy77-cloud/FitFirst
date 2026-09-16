@@ -44,5 +44,8 @@ describe("header stage chip + strip", () => {
     expect(header).toMatch(/whitespace-nowrap/);
     expect(header).not.toMatch(/<select/);
     expect(header).toMatch(/setDealProductStage/);
+    expect(header).toMatch(/livePicked/);
+    expect(header).toMatch(/disabled=\{\!livePicked\(\)\.length/);
+    expect(page).toMatch(/liveQuoteIds/);
   });
 });

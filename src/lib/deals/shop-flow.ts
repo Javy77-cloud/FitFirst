@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { LOB_TO_SHOP_LINE, SHOP_LINE_TO_LOB, isShopLine, type ShopLine } from "@/lib/domain";
-import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
+import { isDocumentsSourceDoc, shopLineFromSourceDoc } from "@/lib/deals/quote-docs";
 import type { DealFlowStepId } from "@/lib/deals/product-ui";
 import { dealProductDef, parseDealProduct } from "@/lib/deals/deal-products";
 import {
@@ -20,6 +20,8 @@ export type DealShopFlowState = {
   lineFingerprints?: Partial<Record<string, { markets?: string | null; quotes?: string | null }>>;
   /** Carriers requested on the current run, keyed by shop line. */
   requestScopes?: Partial<Record<string, string[]>>;
+  /** Sheet edited — Quotes may show a recheck cue. Markets stay complete. */
+  sheetRecheckLines?: Partial<Record<string, boolean>>;
 };
 
 /** Empty string means “was complete, now stale — re-run Markets/Quotes”. */
@@ -65,6 +67,12 @@ export function parseShopFlow(raw: unknown): DealShopFlowState {
       requestScopes[line] = ids.map((id) => String(id ?? "").trim()).filter(Boolean);
     }
   }
+  const sheetRecheckLines: Partial<Record<string, boolean>> = {};
+  if (row.sheetRecheckLines && typeof row.sheetRecheckLines === "object") {
+    for (const [line, on] of Object.entries(row.sheetRecheckLines)) {
+      if (on) sheetRecheckLines[line] = true;
+    }
+  }
   return {
     marketsFingerprint:
       typeof row.marketsFingerprint === "string" ? row.marketsFingerprint : null,
@@ -73,6 +81,7 @@ export function parseShopFlow(raw: unknown): DealShopFlowState {
     productStages: parseProductStages(row.productStages),
     lineFingerprints,
     requestScopes,
+    sheetRecheckLines,
   };
 }
 
@@ -112,6 +121,51 @@ export function riskFingerprint(input: {
   return createHash("sha256").update(payload).digest("hex");
 }
 
+/** Fingerprint one shop line so a Flood sheet edit does not uncheck Auto / HO3. */
+export function lineRiskFingerprint(input: {
+  line: string;
+  sheets?: readonly SheetFingerprintInput[] | null;
+  docs?: readonly DocFingerprintInput[] | null;
+}): string {
+  const sheets = (input.sheets ?? []).filter((sheet) => sheet.line === input.line);
+  const docs = (input.docs ?? []).filter((doc) => shopLineFromSourceDoc(doc) === input.line);
+  return riskFingerprint({ sheets, docs });
+}
+
+/**
+ * Older shops copied the deal-wide hash into every line slot. Rewrite those
+ * copies to the live per-line hash so sibling products stay complete. Leave
+ * explicit STALE fingerprints alone (the line that just changed).
+ */
+export function hydrateCopiedLineFingerprints(input: {
+  saved?: DealShopFlowState | null;
+  sheets?: readonly SheetFingerprintInput[] | null;
+  docs?: readonly DocFingerprintInput[] | null;
+}): DealShopFlowState {
+  const saved = parseShopFlow(input.saved);
+  const dealWide = saved.marketsFingerprint;
+  const lineFingerprints = { ...saved.lineFingerprints };
+  const lines = new Set<string>([
+    ...Object.keys(lineFingerprints),
+    ...(input.sheets ?? []).map((sheet) => sheet.line).filter(Boolean),
+  ]);
+  for (const line of lines) {
+    const existing = lineFingerprints[line];
+    if (existing?.markets === STALE_SHOP_FINGERPRINT) continue;
+    const copied =
+      !existing?.markets ||
+      (dealWide != null && dealWide !== "" && existing.markets === dealWide);
+    if (!copied) continue;
+    const current = lineRiskFingerprint({
+      line,
+      sheets: input.sheets,
+      docs: input.docs,
+    });
+    lineFingerprints[line] = { markets: current, quotes: current };
+  }
+  return { ...saved, lineFingerprints };
+}
+
 export function fingerprintsMatch(
   saved: string | null | undefined,
   current: string,
@@ -122,6 +176,12 @@ export function fingerprintsMatch(
   if (saved == null) return false;
   if (saved === STALE_SHOP_FINGERPRINT) return false;
   return saved === current;
+}
+
+/** Requested and not explicitly stale — sheet edits do not uncheck Markets/Quotes. */
+export function shopStepStillComplete(saved?: string | null): boolean {
+  if (saved == null) return false;
+  return saved !== STALE_SHOP_FINGERPRINT;
 }
 
 /**
@@ -190,11 +250,26 @@ export function shopLineFromLob(lob: string | null | undefined): ShopLine | null
   return LOB_TO_SHOP_LINE[raw] ?? null;
 }
 
+export function shopLineFromQuoteRun(
+  quoteRunId?: string | null,
+  quoteRuns?: Partial<Record<string, string>> | null,
+): ShopLine | null {
+  const id = (quoteRunId ?? "").trim();
+  if (!id || !quoteRuns) return null;
+  const matches: ShopLine[] = [];
+  for (const [line, runId] of Object.entries(quoteRuns)) {
+    if ((runId ?? "").trim() === id && isShopLine(line)) matches.push(line);
+  }
+  return matches.length === 1 ? matches[0]! : null;
+}
+
 export function resolveQuoteShopLine(input: {
   shopLine?: string | null;
   quoteAttemptLogId?: string | null;
   notes?: string | null;
   logs?: readonly { id: string; lineOfBusiness?: string | null }[] | null;
+  quoteRunId?: string | null;
+  quoteRuns?: Partial<Record<string, string>> | null;
 }): ShopLine | null {
   const fromShop = isShopLine(input.shopLine) ? input.shopLine : null;
   const log = input.quoteAttemptLogId
@@ -202,12 +277,15 @@ export function resolveQuoteShopLine(input: {
     : null;
   const fromLog = shopLineFromLob(log?.lineOfBusiness);
   const fromNotes = inferShopLineFromQuoteNotes(input.notes);
-  // Merged multi-line books often stamp shop_line=home. Prefer log / notes when they disagree.
+  const fromRun = shopLineFromQuoteRun(input.quoteRunId, input.quoteRuns);
+  // Merged multi-line books often stamp shop_line=home. Prefer log / notes / run map.
   if (fromShop && fromLog && fromShop !== fromLog && fromShop === "home") return fromLog;
   if (fromShop && fromNotes && fromShop !== fromNotes && fromShop === "home") return fromNotes;
+  if (fromShop && fromRun && fromShop !== fromRun && fromShop === "home") return fromRun;
   if (fromShop) return fromShop;
   if (fromLog) return fromLog;
-  return fromNotes;
+  if (fromNotes) return fromNotes;
+  return fromRun;
 }
 
 /** Persist the line chip tag so historical rows stop spilling across Home / Auto / Flood. */
@@ -226,6 +304,8 @@ export function quoteMatchesDealProduct(
     quoteAttemptLogId?: string | null;
     notes?: string | null;
     logs?: readonly { id: string; lineOfBusiness?: string | null }[] | null;
+    quoteRunId?: string | null;
+    quoteRuns?: Partial<Record<string, string>> | null;
   },
   product: string,
   opts?: { multiLine?: boolean; isPrimaryLine?: boolean; splitHomeProducts?: boolean },
@@ -238,12 +318,15 @@ export function quoteMatchesDealProduct(
   }
   const fromNotes = inferHomeProductFromQuoteNotes(input.notes);
   if (fromNotes) return fromNotes === wanted;
-  // Gloria HO3+DP3: untagged home quotes must not spill onto both chips.
+  // Gloria HO3+DP3: tagged rows stay on their chip. Untagged live home quotes
+  // used to vanish from both (empty HO3 and DP3). Keep them on HO3 only.
   // Heather HO3+Auto+Flood: HO3 is the only home chip — home-line and untagged
   // (not auto/flood) quotes stay on HO3 even when shop_line was never persisted.
   const splitHome = opts?.splitHomeProducts ?? false;
   if (splitHome && (wanted === "homeowners" || wanted === "landlord" || wanted === "renters")) {
-    return false;
+    const resolved = resolveQuoteShopLine(input);
+    if (resolved && resolved !== "home") return false;
+    return wanted === "homeowners";
   }
   if (!splitHome && (wanted === "homeowners" || wanted === "landlord" || wanted === "renters")) {
     const resolved = resolveQuoteShopLine(input);
@@ -259,6 +342,8 @@ export function quoteMatchesShopLine(
     quoteAttemptLogId?: string | null;
     notes?: string | null;
     logs?: readonly { id: string; lineOfBusiness?: string | null }[] | null;
+    quoteRunId?: string | null;
+    quoteRuns?: Partial<Record<string, string>> | null;
   },
   wanted: ShopLine,
   opts?: { multiLine?: boolean; isPrimaryLine?: boolean },
@@ -288,8 +373,10 @@ export function resolveShopFlowCompletion(input: {
   const lineFp = input.line ? saved.lineFingerprints?.[input.line] : null;
   const marketsSaved = lineFp?.markets ?? saved.marketsFingerprint;
   const quotesSaved = lineFp?.quotes ?? saved.quotesFingerprint;
-  const marketsLive = input.hasMarkets && fingerprintsMatch(marketsSaved, input.currentFingerprint);
-  const quotesLive = input.hasQuotes && fingerprintsMatch(quotesSaved, input.currentFingerprint);
+  // Sheet field edits must not uncheck Markets/Quotes. Only an explicit stale
+  // sentinel (or never-requested null) drops the check. Recheck lives on Quotes.
+  const marketsLive = input.hasMarkets && shopStepStillComplete(marketsSaved);
+  const quotesLive = input.hasQuotes && shopStepStillComplete(quotesSaved);
   const completed: DealFlowStepId[] = ["create"];
   if (input.detailsComplete) completed.push("details");
   if (input.documentsComplete) completed.push("documents");
@@ -380,7 +467,36 @@ export function groupQuotesByRun<T>(
     }))
     .sort((a, b) => b.quotedAt.getTime() - a.quotedAt.getTime());
 
+  // Request-quotes mints a run id without creating premium rows. If nothing
+  // matches the saved current run, keep the newest existing quotes visible.
+  if (current.length === 0 && rows.length > 0) {
+    if (previous.length) {
+      const newest = previous[0]!;
+      return { current: newest.rows, previous: previous.slice(1) };
+    }
+    return { current: rows.slice(), previous: [] };
+  }
+
   return { current, previous };
+}
+
+/**
+ * Request quotes does not insert premium rows. Reuse an existing run so
+ * live quotes stay on the current set instead of being archived/hidden.
+ */
+export function quoteRunIdAfterRequest(input: {
+  savedRunId?: string | null;
+  existingRunIds?: readonly (string | null | undefined)[];
+}): string {
+  const saved = (input.savedRunId ?? "").trim();
+  const existing = [
+    ...new Set(
+      (input.existingRunIds ?? []).map((id) => String(id ?? "").trim()).filter(Boolean),
+    ),
+  ];
+  if (saved && existing.includes(saved)) return saved;
+  if (existing[0]) return existing[0]!;
+  return saved;
 }
 
 export function nextShopFlowAfterQuoteRun(input: {
@@ -404,7 +520,30 @@ export function nextShopFlowAfterQuoteRun(input: {
       ...saved.requestScopes,
       [input.line]: [...(input.requestCarrierIds ?? [])],
     },
+    sheetRecheckLines: {
+      ...saved.sheetRecheckLines,
+      [input.line]: false,
+    },
   };
+}
+
+/** Sheet edit cue only — never clears Markets/Quotes fingerprints or unlock. */
+export function nextShopFlowAfterSheetEdit(input: {
+  saved?: DealShopFlowState | null;
+  line: string;
+}): DealShopFlowState {
+  const saved = parseShopFlow(input.saved);
+  return {
+    ...saved,
+    sheetRecheckLines: { ...saved.sheetRecheckLines, [input.line]: true },
+  };
+}
+
+export function sheetNeedsRecheckCue(
+  saved: DealShopFlowState | null | undefined,
+  line: string,
+): boolean {
+  return Boolean(parseShopFlow(saved).sheetRecheckLines?.[line]);
 }
 
 export function nextShopFlowAfterMarkets(input: {

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { approveMasterSheet } from "@/app/actions/quoting";
+import { SHEET_CONFIRM_HASH } from "@/lib/desk/action-flash";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -51,9 +52,28 @@ export function SheetApproveGate({
   const [reviewed, setReviewed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash.replace(/^#/, "");
+    const query = new URLSearchParams(window.location.search);
+    const landedOnConfirm =
+      hash === SHEET_CONFIRM_HASH ||
+      query.get("notice") === "sheet-saved" ||
+      query.get("flash") === "sheet-saved";
+    if (!landedOnConfirm) return;
+    document.getElementById(SHEET_CONFIRM_HASH)?.scrollIntoView({
+      behavior: "auto",
+      block: "center",
+    });
+  }, []);
+
   if (unlocked) {
     return (
-      <div className="space-y-2 rounded-md border border-fit-green/30 bg-fit-green-bg px-3 py-3" data-ff-sheet-approve>
+      <div
+        id={SHEET_CONFIRM_HASH}
+        className="space-y-2 scroll-mt-24 rounded-md border border-fit-green/30 bg-fit-green-bg px-3 py-3"
+        data-ff-sheet-approve
+      >
         <p className="text-xs text-fit-green">
           Master sheet approved{approvedBy ? ` by ${approvedBy}` : ""}. Select carriers on Markets,
           then request quotes.
@@ -81,7 +101,8 @@ export function SheetApproveGate({
         setError(null);
         mergeSheetFieldsIntoForm(event.currentTarget);
       }}
-      className="rounded-md border border-fit-yellow/40 bg-fit-yellow-bg/40 p-3"
+      id={SHEET_CONFIRM_HASH}
+      className="scroll-mt-24 rounded-md border border-fit-yellow/40 bg-fit-yellow-bg/40 p-3"
       data-ff-sheet-approve
     >
       <input type="hidden" name="dealId" value={dealId} />

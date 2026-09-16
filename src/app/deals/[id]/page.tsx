@@ -70,11 +70,13 @@ import {
 import { DealFlowRail } from "@/components/deals/deal-flow-rail";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 import {
+  hydrateCopiedLineFingerprints,
+  lineRiskFingerprint,
   parseShopFlow,
   quoteMatchesDealProduct,
   requestScopeForLine,
   resolveShopFlowCompletion,
-  riskFingerprint,
+  sheetNeedsRecheckCue,
   STALE_SHOP_FINGERPRINT,
 } from "@/lib/deals/shop-flow";
 import { DealPackageShell } from "@/components/deal/deal-package-shell";
@@ -82,6 +84,7 @@ import { DealHeaderStage } from "@/components/deals/deal-header-stage";
 import { relabelConvertActivityTitle } from "@/lib/crm/convert";
 import { dealStageView } from "@/lib/deals/deal-columns";
 import { uniqueDisplayPhones } from "@/lib/deals/header-addresses";
+import { dealTitleForActiveProduct } from "@/lib/deals/deal-title";
 import {
   excludedCarrierIdsFromLogs,
   hasShopMarketAction,
@@ -255,6 +258,7 @@ export default async function DealPage({
       ? logs.filter((row) => logBelongsToLine(row.log.lineOfBusiness, activeLob, isPrimaryPackageLine))
       : logs;
   const allQuoteLogsForMatch = logs.map((item) => item.log);
+  const shopFlow = parseShopFlow(deal.shopFlow);
   const lineQuotes = quotes.filter((row) =>
     quoteMatchesDealProduct(
       {
@@ -262,6 +266,8 @@ export default async function DealPage({
         quoteAttemptLogId: row.quote.quoteAttemptLogId,
         notes: row.quote.notes,
         logs: allQuoteLogsForMatch,
+        quoteRunId: row.quote.quoteRunId,
+        quoteRuns: shopFlow.quoteRuns,
       },
       activeProduct,
       {
@@ -316,11 +322,17 @@ export default async function DealPage({
         ),
         hasNonStubQuotes: lineQuotes.some((row) => row.quote.stub === false),
       });
-  const currentFingerprint = riskFingerprint({
+  const sourceDocs = docs.filter((doc) => isDocumentsSourceDoc(doc));
+  const shopFlowLive = hydrateCopiedLineFingerprints({
+    saved: shopFlow,
     sheets,
-    docs: docs.filter((doc) => isDocumentsSourceDoc(doc)),
+    docs: sourceDocs,
   });
-  const shopFlow = parseShopFlow(deal.shopFlow);
+  const currentFingerprint = lineRiskFingerprint({
+    line: sheetLine,
+    sheets,
+    docs: sourceDocs,
+  });
   const packageShopLines = [
     ...new Set(
       dealProducts.length
@@ -351,6 +363,7 @@ export default async function DealPage({
         carriers: carrierRows.map((row) => ({ id: row.carrier.id, name: row.carrier.name })),
         multiLine: dealProducts.length > 1,
         splitHomeProducts: splitHome,
+        quoteRuns: shopFlow.quoteRuns,
       }),
     ]),
   );
@@ -366,7 +379,7 @@ export default async function DealPage({
     hasMarkets: shopMarketsAction || agentMarketsAction,
     hasQuotes: quotesPackageComplete,
     currentFingerprint,
-    saved: shopFlow,
+    saved: shopFlowLive,
     line: sheetLine,
   });
   const productStages = parseProductStages(shopFlow.productStages);
@@ -375,18 +388,29 @@ export default async function DealPage({
     activeProduct,
     stageView.slug ?? deal.pipelineStage,
   );
+  const liveQuoteIds = lineQuotes
+    .filter((row) => row.quote.stub !== true)
+    .map((row) => row.quote.id);
   const stampStage = productStampStage(
     activeProductState,
     stageView.slug ?? deal.pipelineStage,
     deal.boundAt,
+    liveQuoteIds,
   );
   const boundQuoteId = pickBoundQuoteId({
     selectedQuoteIds: activeProductState.selectedQuoteIds,
     quotes: lineQuotes.map((row) => row.quote),
   });
   const sheetStale =
+    sheetNeedsRecheckCue(shopFlow, sheetLine) ||
     shopFlow.lineFingerprints?.[sheetLine]?.quotes === STALE_SHOP_FINGERPRINT ||
     shopFlow.quotesFingerprint === STALE_SHOP_FINGERPRINT;
+  const visibleDealTitle = dealTitleForActiveProduct({
+    title: deal.title,
+    product: activeProduct,
+    quotingForm: lineForm,
+    sheetForm: sheetFormForProduct(activeProduct, lineForm),
+  });
   const quoteChoices = lineQuotes
     .filter((row) => row.quote.stub !== true)
     .map((row) => ({
@@ -471,7 +495,7 @@ export default async function DealPage({
           heading={
             <div className="min-w-0">
               <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
-                {deal.title}
+                {visibleDealTitle}
               </h1>
               <DealPackageShell
                 name={partyName}
@@ -484,7 +508,12 @@ export default async function DealPage({
                 dob={dealValues.date_of_birth || contact?.dateOfBirth || lead?.dateOfBirth}
                 insuredAddress={headerAddresses.insured}
                 mailingAddress={headerAddresses.mailing}
-                stage={stageView.name}
+                stage={displayProductStage({
+                  stage: activeProductState.stage,
+                  selectedQuoteIds: activeProductState.selectedQuoteIds,
+                  fallback: stageView.slug,
+                  liveQuoteIds,
+                })}
                 owner={ownerRow?.name}
                 activity={
                   relabelConvertActivityTitle(comms[0]?.title ?? null, {
@@ -501,9 +530,10 @@ export default async function DealPage({
                       stage: activeProductState.stage,
                       selectedQuoteIds: activeProductState.selectedQuoteIds,
                       fallback: stageView.slug,
+                      liveQuoteIds,
                     })}
                     stages={stageView.stages}
-                    dealTitle={deal.title}
+                    dealTitle={visibleDealTitle}
                     toastOnSave
                     product={activeProduct}
                     selectedQuoteIds={activeProductState.selectedQuoteIds}
@@ -722,6 +752,7 @@ export default async function DealPage({
                         carriers={carrierOptions}
                         dealLine={activeLob}
                         shopLine={sheetLine}
+                        product={activeProduct}
                         lastRequestCarrierIds={requestScopeForLine(shopFlow, sheetLine)}
                       />
                     ) : (
@@ -734,7 +765,8 @@ export default async function DealPage({
                         formId={lineQuotingForm?.id ?? lineForm ?? masterFormLabel}
                         shopLine={sheetLine}
                         currentQuoteRunId={shopFlow.quoteRuns?.[sheetLine] ?? null}
-                        multiLine={packageLines.length > 1}
+                        multiLine={dealProducts.length > 1}
+                        isPrimaryLine={dealProducts[0] === activeProduct}
                         completeness={
                           quoteCompletenessByProduct[activeProduct] ?? activeQuoteCompleteness
                         }
@@ -752,6 +784,8 @@ export default async function DealPage({
                         selectedQuoteIds={activeProductState.selectedQuoteIds}
                         sheetStale={sheetStale}
                         splitHomeProducts={splitHome}
+                        quoteRuns={shopFlow.quoteRuns}
+                        preScoped
                       />
                     )}
                   </div>

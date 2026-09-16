@@ -9,10 +9,16 @@ import {
   STALE_SHOP_FINGERPRINT,
   attachPriorUnderCarrier,
   fingerprintsMatch,
+  hydrateCopiedLineFingerprints,
+  lineRiskFingerprint,
   groupQuotesByRun,
+  quoteRunIdAfterRequest,
   inferHomeProductFromQuoteNotes,
   inferShopLineFromQuoteNotes,
   nextShopFlowAfterQuoteRun,
+  nextShopFlowAfterSheetEdit,
+  sheetNeedsRecheckCue,
+  shopStepStillComplete,
   requestScopeForLine,
   notesLookLikeFloodProduct,
   parseShopFlow,
@@ -75,13 +81,16 @@ describe("shop-flow fingerprint + sticky completion", () => {
     expect(html).not.toMatch(/data-ff-deal-flow-step="quotes"[^>]*data-ff-deal-flow-done="true"/);
   });
 
-  it("invalidates Markets + Quotes when the master sheet fingerprint changes", () => {
+  it("keeps Markets + Quotes complete when the master sheet fingerprint changes", () => {
     const quoted = riskFingerprint({ sheets: [homeSheet], docs: [] });
     const edited = riskFingerprint({
       sheets: [{ ...homeSheet, values: { ...homeSheet.values, coverage_a: { value: "350000" } } }],
       docs: [],
     });
     expect(quoted).not.toBe(edited);
+    expect(shopStepStillComplete(quoted)).toBe(true);
+    expect(shopStepStillComplete(null)).toBe(false);
+    expect(shopStepStillComplete(STALE_SHOP_FINGERPRINT)).toBe(false);
     const afterEdit = resolveShopFlowCompletion({
       detailsComplete: true,
       documentsComplete: true,
@@ -90,10 +99,28 @@ describe("shop-flow fingerprint + sticky completion", () => {
       currentFingerprint: edited,
       saved: { marketsFingerprint: quoted, quotesFingerprint: quoted },
     });
-    expect(afterEdit.completed).toEqual(["create", "details", "documents"]);
-    expect(afterEdit.isComplete("markets")).toBe(false);
-    expect(afterEdit.isComplete("quotes")).toBe(false);
+    expect(afterEdit.completed).toEqual(["create", "details", "documents", "markets", "quotes"]);
+    expect(afterEdit.isComplete("markets")).toBe(true);
+    expect(afterEdit.isComplete("quotes")).toBe(true);
     expect(afterEdit.isComplete("documents")).toBe(true);
+    const cued = nextShopFlowAfterSheetEdit({
+      saved: { marketsFingerprint: quoted, quotesFingerprint: quoted },
+      line: "home",
+    });
+    expect(sheetNeedsRecheckCue(cued, "home")).toBe(true);
+    expect(sheetNeedsRecheckCue(cued, "auto")).toBe(false);
+    expect(cued.marketsFingerprint).toBe(quoted);
+    expect(cued.quotesFingerprint).toBe(quoted);
+    expect(
+      resolveShopFlowCompletion({
+        detailsComplete: true,
+        documentsComplete: true,
+        hasMarkets: true,
+        hasQuotes: true,
+        currentFingerprint: edited,
+        saved: cued,
+      }).isComplete("markets"),
+    ).toBe(true);
   });
 
   it("invalidates on a source-doc add and on the stale sentinel", () => {
@@ -256,6 +283,16 @@ describe("line-scoped quotes", () => {
       resolveQuoteShopLine({
         shopLine: "home",
         quoteAttemptLogId: null,
+        notes: "Rated $700",
+        logs: [],
+        quoteRunId: "run-auto",
+        quoteRuns: { home: "run-home", auto: "run-auto", flood: "run-flood" },
+      }),
+    ).toBe("auto");
+    expect(
+      resolveQuoteShopLine({
+        shopLine: "home",
+        quoteAttemptLogId: null,
         notes: "Flood National General — NFIP provisional",
         logs: [],
       }),
@@ -387,6 +424,21 @@ describe("prior under carrier + line-scoped stale", () => {
       quotes: STALE_SHOP_FINGERPRINT,
     });
     expect(next.lineFingerprints?.auto).toEqual({ markets: "a", quotes: "a" });
+    const cued = nextShopFlowAfterSheetEdit({ saved: next, line: "home" });
+    expect(sheetNeedsRecheckCue(cued, "home")).toBe(true);
+    expect(cued.lineFingerprints?.home).toEqual(next.lineFingerprints?.home);
+    expect(cued.lineFingerprints?.auto).toEqual({ markets: "a", quotes: "a" });
+    expect(
+      resolveShopFlowCompletion({
+        detailsComplete: true,
+        documentsComplete: true,
+        hasMarkets: true,
+        hasQuotes: true,
+        currentFingerprint: "a",
+        saved: cued,
+        line: "auto",
+      }).isComplete("markets"),
+    ).toBe(true);
     const scoped = nextShopFlowAfterQuoteRun({
       saved: {},
       line: "home",
@@ -418,6 +470,55 @@ describe("prior under carrier + line-scoped stale", () => {
         line: "auto",
       }).isComplete("quotes"),
     ).toBe(true);
+    const floodSheet = { line: "flood", values: { flood_zone: { value: "AE" } } };
+    const autoSheet = { line: "auto", values: { vin: { value: "1" } } };
+    const copied = {
+      marketsFingerprint: "deal-wide",
+      lineFingerprints: {
+        flood: { markets: "deal-wide", quotes: "deal-wide" },
+        auto: { markets: "deal-wide", quotes: "deal-wide" },
+      },
+    };
+    const staleFlood = staleShopFlowForLine(copied, "flood");
+    const hydrated = hydrateCopiedLineFingerprints({
+      saved: staleFlood,
+      sheets: [floodSheet, autoSheet],
+      docs: [],
+    });
+    expect(hydrated.lineFingerprints?.flood?.markets).toBe(STALE_SHOP_FINGERPRINT);
+    expect(hydrated.lineFingerprints?.auto?.markets).toBe(
+      lineRiskFingerprint({ line: "auto", sheets: [floodSheet, autoSheet], docs: [] }),
+    );
+    expect(
+      resolveShopFlowCompletion({
+        detailsComplete: true,
+        documentsComplete: true,
+        hasMarkets: true,
+        hasQuotes: true,
+        currentFingerprint: lineRiskFingerprint({
+          line: "auto",
+          sheets: [floodSheet, autoSheet],
+          docs: [],
+        }),
+        saved: hydrated,
+        line: "auto",
+      }).isComplete("markets"),
+    ).toBe(true);
+    expect(
+      resolveShopFlowCompletion({
+        detailsComplete: true,
+        documentsComplete: true,
+        hasMarkets: true,
+        hasQuotes: true,
+        currentFingerprint: lineRiskFingerprint({
+          line: "flood",
+          sheets: [floodSheet, autoSheet],
+          docs: [],
+        }),
+        saved: hydrated,
+        line: "flood",
+      }).isComplete("markets"),
+    ).toBe(false);
   });
 
   it("splits HO3 vs DP3 on the shared home shop line", () => {
@@ -441,6 +542,13 @@ describe("prior under carrier + line-scoped stale", () => {
       quoteMatchesDealProduct(
         { shopLine: "home", notes: "", logs: [] },
         "homeowners",
+        { multiLine: true, splitHomeProducts: true },
+      ),
+    ).toBe(true);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "", logs: [] },
+        "landlord",
         { multiLine: true, splitHomeProducts: true },
       ),
     ).toBe(false);
@@ -502,6 +610,23 @@ describe("previous quotes stay, current run is primary", () => {
     expect(grouped.previous).toEqual([]);
   });
 
+  it("keeps existing quotes visible when request-quotes minted an empty current run", () => {
+    const grouped = groupQuotesByRun(
+      [
+        { id: "old-a", runId: "run-1", createdAt: new Date("2026-09-01T12:00:00Z") },
+        { id: "old-b", runId: "run-1", createdAt: new Date("2026-09-01T12:05:00Z") },
+      ],
+      (row) => ({ runId: row.runId, createdAt: row.createdAt }),
+      "run-empty-new",
+    );
+    expect(grouped.current.map((row) => row.id)).toEqual(["old-a", "old-b"]);
+    expect(grouped.previous).toEqual([]);
+    expect(quoteRunIdAfterRequest({ savedRunId: null, existingRunIds: ["run-1"] })).toBe("run-1");
+    expect(quoteRunIdAfterRequest({ savedRunId: "run-1", existingRunIds: ["run-1"] })).toBe("run-1");
+    expect(quoteRunIdAfterRequest({ savedRunId: "fresh", existingRunIds: ["run-1"] })).toBe("run-1");
+    expect(quoteRunIdAfterRequest({ savedRunId: "fresh", existingRunIds: [] })).toBe("fresh");
+  });
+
   it("records a new per-line run id without dropping prior flow keys", () => {
     const next = nextShopFlowAfterQuoteRun({
       saved: { quoteRuns: { home: "old-home" }, marketsFingerprint: "abc" },
@@ -520,7 +645,9 @@ describe("deal page + action wiring", () => {
     const page = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
     expect(page).toMatch(/completed=\{flowCompletion\.completed\}/);
     expect(page).toMatch(/currentQuoteRunId=\{shopFlow\.quoteRuns/);
-    expect(page).toMatch(/multiLine=\{packageLines\.length > 1\}/);
+    expect(page).toMatch(/multiLine=\{dealProducts\.length > 1\}/);
+    expect(page).toMatch(/isPrimaryLine=\{dealProducts\[0\] === activeProduct\}/);
+    expect(page).toMatch(/preScoped/);
     expect(page).toMatch(/shopLine: row\.quote\.shopLine/);
     expect(page).toMatch(/packageQuotesComplete/);
     expect(page).toMatch(/lineQuoteCompleteness/);
@@ -529,8 +656,11 @@ describe("deal page + action wiring", () => {
     expect(page).not.toMatch(/packageLines\.length > 1\s*\? quotes\.filter/);
   });
 
-  it("sheet save, fill, and source-doc upload invalidate Markets/Quotes", () => {
+  it("sheet save cues Recheck; source-doc upload still invalidates Markets/Quotes", () => {
     expect(readFileSync("src/app/actions/quote-sheet.ts", "utf8")).toMatch(
+      /persistSheetRecheckCue/,
+    );
+    expect(readFileSync("src/app/actions/quote-sheet.ts", "utf8")).not.toMatch(
       /markShopFlowStaleAfterRiskChange/,
     );
     expect(readFileSync("src/app/actions/documents.ts", "utf8")).toMatch(
@@ -627,5 +757,23 @@ describe("Quotes panel line + previous chrome", () => {
     expect(html).toMatch(/Prior ·/);
     expect(html).not.toMatch(/data-ff-quotes-previous=/);
     expect(html).not.toMatch(/Previous quotes ·/);
+  });
+
+  it("still paints live quote rows when the saved run id matches nothing", () => {
+    const html = renderToString(
+      createElement(QuotesPanel, {
+        dealId: "deal-1",
+        shopLine: "home",
+        product: "homeowners",
+        formId: "HO3",
+        quotes: [{ quote: quote({ id: "live-ho3", quoteRunId: "run-1", shopLine: "home" }), carrier }],
+        logs: [],
+        currentQuoteRunId: "run-empty-after-request",
+        multiLine: true,
+      }),
+    );
+    expect(html).toMatch(/data-ff-quote-row="live-ho3"/);
+    expect(html).not.toMatch(/data-ff-quotes-current-empty/);
+    expect(html).not.toMatch(/data-ff-quotes-empty/);
   });
 });

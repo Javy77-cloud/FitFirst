@@ -204,10 +204,12 @@ export function productQuoteCompleteness(input: {
     shopLine?: string | null;
     quoteAttemptLogId?: string | null;
     notes?: string | null;
+    quoteRunId?: string | null;
   }[];
   carriers?: readonly { id: string; name: string }[];
   multiLine?: boolean;
   splitHomeProducts?: boolean;
+  quoteRuns?: Partial<Record<string, string>> | null;
 }): LineQuoteCompleteness {
   const line = dealProductDef(input.product).shopLine;
   const productQuotes = input.quotes.filter(
@@ -219,6 +221,8 @@ export function productQuoteCompleteness(input: {
           quoteAttemptLogId: quote.quoteAttemptLogId,
           notes: quote.notes,
           logs: input.logs,
+          quoteRunId: quote.quoteRunId,
+          quoteRuns: input.quoteRuns,
         },
         input.product,
         {

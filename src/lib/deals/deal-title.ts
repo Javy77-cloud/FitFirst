@@ -1,4 +1,6 @@
 import { LOB_TO_SHOP_LINE, QUOTING_FORMS, SHOP_LINE_LABELS } from "@/lib/domain";
+import type { DealProductId } from "@/lib/deals/deal-products";
+import { productChipLabel } from "@/lib/deals/product-stages";
 import { isQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
 import { matchesContains } from "@/lib/search/live-query";
 
@@ -194,6 +196,23 @@ export function formatDealPersonName(
     .map((part) => (part ?? "").trim())
     .filter(Boolean)
     .join(" ");
+}
+
+/** Header title follows the active product chip — Heather / Auto, not stuck on / HO3. */
+export function dealTitleForActiveProduct(input: {
+  title?: string | null;
+  product: DealProductId;
+  quotingForm?: string | null;
+  sheetForm?: string | null;
+}): string {
+  const name = stripDealTitleLob(input.title);
+  const suffix = productChipLabel({
+    product: input.product,
+    quotingForm: input.quotingForm,
+    sheetForm: input.sheetForm,
+  });
+  if (!name) return suffix;
+  return joinDealTitleParts(name, suffix);
 }
 
 /** First Last / {form} — e.g. Gloria Martinez / DP3. One slash. Form label beats generic Homeowners. */

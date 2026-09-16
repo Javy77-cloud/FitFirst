@@ -5,21 +5,23 @@ import { and, eq } from "drizzle-orm";
 import { moveDealToStage } from "@/app/actions/pipeline";
 import { currentDeskSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { deals } from "@/lib/db/schema";
+import { deals, quoteAttemptLogs, quotes } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
   inferDealProducts,
   parseDealProduct,
+  splitHomeProducts,
   type DealProductId,
 } from "@/lib/deals/deal-products";
 import {
   isProductLostReason,
   lateStageNeedsQuoteSelection,
+  liveSelectedQuoteIds,
   parseProductStages,
   productStageFor,
   setProductStage,
 } from "@/lib/deals/product-stages";
-import { parseShopFlow } from "@/lib/deals/shop-flow";
+import { parseShopFlow, quoteMatchesDealProduct } from "@/lib/deals/shop-flow";
 import { persistDealShopFlow } from "@/lib/deals/shop-flow-persist";
 import { flashAction } from "@/lib/flash-action";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
@@ -50,6 +52,61 @@ function productsOnDeal(deal: {
   });
 }
 
+async function liveQuoteIdsForProduct(
+  dealId: string,
+  product: DealProductId,
+  deal: {
+    shopFlow?: unknown;
+    shopProducts?: string[] | null;
+    shopLines?: string[] | null;
+    lineOfBusiness?: string | null;
+    quotingLine?: string | null;
+    quotingForm?: string | null;
+    policySubType?: string | null;
+  },
+): Promise<string[]> {
+  const [quoteRows, logRows] = await Promise.all([
+    db
+      .select({
+        id: quotes.id,
+        shopLine: quotes.shopLine,
+        notes: quotes.notes,
+        quoteAttemptLogId: quotes.quoteAttemptLogId,
+        quoteRunId: quotes.quoteRunId,
+        stub: quotes.stub,
+      })
+      .from(quotes)
+      .where(and(eq(quotes.tenantId, DEFAULT_TENANT_ID), eq(quotes.dealId, dealId))),
+    db
+      .select({ id: quoteAttemptLogs.id, lineOfBusiness: quoteAttemptLogs.lineOfBusiness })
+      .from(quoteAttemptLogs)
+      .where(and(eq(quoteAttemptLogs.tenantId, DEFAULT_TENANT_ID), eq(quoteAttemptLogs.dealId, dealId))),
+  ]);
+  const products = productsOnDeal(deal);
+  const shopFlow = parseShopFlow(deal.shopFlow);
+  return quoteRows
+    .filter((row) => row.stub !== true)
+    .filter((row) =>
+      quoteMatchesDealProduct(
+        {
+          shopLine: row.shopLine,
+          notes: row.notes,
+          quoteAttemptLogId: row.quoteAttemptLogId,
+          quoteRunId: row.quoteRunId,
+          quoteRuns: shopFlow.quoteRuns,
+          logs: logRows,
+        },
+        product,
+        {
+          multiLine: products.length > 1,
+          isPrimaryLine: products[0] === product,
+          splitHomeProducts: splitHomeProducts(products),
+        },
+      ),
+    )
+    .map((row) => row.id);
+}
+
 export async function setDealProductStage(input: {
   dealId: string;
   product: string;
@@ -68,8 +125,12 @@ export async function setDealProductStage(input: {
   const saved = parseShopFlow(deal.shopFlow);
   const stages = parseProductStages(saved.productStages);
   const current = productStageFor(stages, product, deal.pipelineStageSlug ?? deal.pipelineStage);
-  const selectedQuoteIds = input.selectedQuoteIds ?? current.selectedQuoteIds;
-  if (lateStageNeedsQuoteSelection({ stage: stageSlug, selectedQuoteIds })) {
+  const liveQuoteIds = await liveQuoteIdsForProduct(dealId, product, deal);
+  const selectedQuoteIds = liveSelectedQuoteIds(
+    input.selectedQuoteIds ?? current.selectedQuoteIds,
+    liveQuoteIds,
+  );
+  if (lateStageNeedsQuoteSelection({ stage: stageSlug, selectedQuoteIds, liveQuoteIds })) {
     return { ok: false as const, reason: "need_quote" };
   }
   if (stageSlug === "closed_lost" && input.lostReason && !isProductLostReason(input.lostReason)) {

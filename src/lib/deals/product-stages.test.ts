@@ -72,6 +72,7 @@ describe("per-product stages", () => {
     const next = setProductStage({}, "homeowners", { stage: "quote_sent", selectedQuoteIds: ["q-ho3"] });
     expect(productStageFor(next, "homeowners").stage).toBe("quote_sent");
     expect(productStageFor(next, "landlord").stage).toBe("gather");
+    expect(productStageFor({}, "homeowners", "quote_sent").stage).toBe("quotes");
     expect(productStageFor(next, "landlord").selectedQuoteIds).toEqual([]);
     expect(parseProductStages(next).landlord).toBeUndefined();
     expect(productChipLabel({ product: "homeowners", quotingForm: "HO3" })).toBe("HO3");
@@ -90,6 +91,23 @@ describe("per-product stages", () => {
   it("blocks late stages until a quote is selected — never auto-binds cheapest", () => {
     expect(lateStageNeedsQuoteSelection({ stage: "quote_sent", selectedQuoteIds: [] })).toBe(true);
     expect(lateStageNeedsQuoteSelection({ stage: "bound", selectedQuoteIds: ["q1"] })).toBe(false);
+    expect(
+      lateStageNeedsQuoteSelection({
+        stage: "quote_sent",
+        selectedQuoteIds: ["gone"],
+        liveQuoteIds: [],
+      }),
+    ).toBe(true);
+    expect(
+      lateStageNeedsQuoteSelection({
+        stage: "quote_sent",
+        selectedQuoteIds: ["q1"],
+        liveQuoteIds: ["q1"],
+      }),
+    ).toBe(false);
+    expect(setProductStage({}, "homeowners", { stage: "quote_sent", selectedQuoteIds: [] }).homeowners)
+      .toMatchObject({ stage: "quotes", selectedQuoteIds: [] });
+    expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(/livePicked/);
     expect(lateStageNeedsQuoteSelection({ stage: "pending_inspection", selectedQuoteIds: [] })).toBe(
       true,
     );
@@ -112,7 +130,12 @@ describe("per-product stages", () => {
       }),
     ).toBe("other");
     expect(source("src/app/actions/product-stage.ts")).toMatch(/need_quote/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/liveQuoteIdsForProduct/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/liveSelectedQuoteIds/);
     expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(/data-ff-choose-quote-dialog/);
+    expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(/disabled=\{\!livePicked\(\)\.length/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/liveQuoteIds/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/preScoped/);
   });
 
   it("counts ready from product quotes, not a shared home sheet", () => {
@@ -193,12 +216,15 @@ describe("per-product stages", () => {
     expect(html).not.toMatch(/data-ff-quotes-previous=/);
   });
 
-  it("invalidates Markets+Quotes on sheet save and writes an audit kind", () => {
+  it("cues Quotes Recheck on sheet save without unchecking Markets", () => {
     expect(source("src/app/actions/quote-sheet.ts")).toMatch(
-      /markShopFlowStaleAfterRiskChange\(dealId, line\)/,
+      /persistSheetRecheckCue\(dealId, line\)/,
     );
     expect(source("src/app/actions/quote-sheet.ts")).toMatch(
-      /markShopFlowStaleAfterRiskChange\(dealId, primary\)/,
+      /persistSheetRecheckCue\(dealId, primary\)/,
+    );
+    expect(source("src/app/actions/quote-sheet.ts")).not.toMatch(
+      /markShopFlowStaleAfterRiskChange/,
     );
     expect(source("src/app/actions/documents.ts")).toMatch(/shopLineFromSourceDoc/);
     expect(source("src/app/actions/comms.ts")).toMatch(/persistDealEmailAttachments/);
@@ -234,6 +260,34 @@ describe("per-product stages", () => {
     ).toBeNull();
     expect(
       productStampStage({ stage: "quote_sent", selectedQuoteIds: ["q1"], lostReason: null }),
+    ).toBe("quote_sent");
+    expect(
+      productStampStage({ stage: "review", selectedQuoteIds: [], lostReason: null }, "quote_sent"),
+    ).toBeNull();
+    expect(
+      productStampStage(
+        { stage: "quote_sent", selectedQuoteIds: ["stale"], lostReason: null },
+        "quote_sent",
+        new Date("2026-09-01"),
+        [],
+      ),
+    ).toBeNull();
+    expect(
+      displayProductStage({
+        stage: "quote_sent",
+        selectedQuoteIds: ["stale"],
+        fallback: "quote_sent",
+        liveQuoteIds: [],
+      }),
+    ).toBe("quotes");
+    expect(
+      parseProductStages({ homeowners: { stage: "quote_sent", selectedQuoteIds: [] } }).homeowners
+        ?.stage,
+    ).toBe("quotes");
+    expect(
+      parseProductStages({
+        homeowners: { stage: "quote_sent", selectedQuoteIds: ["q-ho3"] },
+      }).homeowners?.stage,
     ).toBe("quote_sent");
     expect(source("src/lib/deals/pipeline-sheet.ts")).toMatch(/const view = input\.view \?\? "list"/);
     expect(source("src/lib/deals/pipeline-sheet.ts")).not.toMatch(/view: "board"/);

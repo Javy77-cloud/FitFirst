@@ -23,6 +23,7 @@ export function MarketsPanel({
   carriers = [],
   dealLine = "HO",
   shopLine,
+  product,
   lastRequestCarrierIds = [],
 }: {
   dealId: string;
@@ -36,6 +37,7 @@ export function MarketsPanel({
   carriers?: { id: string; name: string; writtenLines?: string[] | null }[];
   dealLine?: string;
   shopLine?: string;
+  product?: string;
   lastRequestCarrierIds?: string[];
 }) {
   const [selected, setSelected] = useState<string[]>(() =>
@@ -147,6 +149,7 @@ export function MarketsPanel({
       <form action={requestAppetiteQuotesAction}>
         <input type="hidden" name="dealId" value={dealId} />
         {shopLine ? <input type="hidden" name="line" value={shopLine} /> : null}
+        {product ? <input type="hidden" name="product" value={product} /> : null}
         {shopCarrierIds.map((id) => (
           <input key={`appetite-${id}`} type="hidden" name="carrierId" value={id} />
         ))}
@@ -211,6 +214,7 @@ export function MarketsPanel({
         <form action={requestStretchQuotesAction} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="dealId" value={dealId} />
           {shopLine ? <input type="hidden" name="line" value={shopLine} /> : null}
+          {product ? <input type="hidden" name="product" value={product} /> : null}
           {shopCarrierIds.map((id) => (
             <input key={`stretch-${id}`} type="hidden" name="carrierId" value={id} />
           ))}

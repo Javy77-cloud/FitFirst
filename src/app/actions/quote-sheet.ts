@@ -69,7 +69,12 @@ import {
   submittedSheetValues,
   fieldIsBlank,
 } from "@/lib/quote-sheet/apply";
-import { ACTION_FLASH, ACTION_FLASH_MESSAGE, dealActionFlashHref } from "@/lib/desk/action-flash";
+import {
+  ACTION_FLASH,
+  ACTION_FLASH_MESSAGE,
+  SHEET_CONFIRM_HASH,
+  dealActionFlashHref,
+} from "@/lib/desk/action-flash";
 import { isSheetProduct, type SheetProduct } from "@/lib/quote-sheet/products";
 import { blankSheetWithDefaults, emptySheetValues, extractKeyToSheetKey } from "@/lib/quote-sheet/catalog";
 import { applyMasterSheetDefaults, emptyDefaultsForLine } from "@/lib/quote-sheet/sheet-defaults";
@@ -127,7 +132,7 @@ import { flashAction } from "@/lib/flash-action";
 import { isDocumentsSourceDoc, isQuoteFileDoc } from "@/lib/deals/quote-docs";
 import { withFlash } from "@/lib/flash";
 import { dealTitleForRecords } from "@/lib/deals/deal-title";
-import { markShopFlowStaleAfterRiskChange } from "@/lib/deals/shop-flow-persist";
+import { persistSheetRecheckCue } from "@/lib/deals/shop-flow-persist";
 import { sheetValuesFingerprint } from "@/lib/deals/shop-flow";
 
 function str(form: FormData, key: string) {
@@ -200,7 +205,8 @@ export async function persistQuoteSheetValues(
   await syncRiskFromSheet(dealId, values, "save");
   await syncHeaderFromSheet(dealId, values, "save");
   if (sheetValuesFingerprint(sheet.values) !== sheetValuesFingerprint(values)) {
-    await markShopFlowStaleAfterRiskChange(dealId, line);
+    // Keep Markets complete — agent Rechecks quotes instead of re-walking stages.
+    await persistSheetRecheckCue(dealId, line);
   }
   return values;
 }
@@ -239,15 +245,18 @@ export async function saveQuoteSheet(formData: FormData) {
   };
   if (str(formData, "flash") === "0") return flash;
   const returnTo = str(formData, "returnTo");
-  const dest =
-    returnTo ||
-    dealActionFlashHref({
-      dealId,
-      tab: "documents",
-      line: lineRaw,
-      product: product || undefined,
-      notice: ACTION_FLASH.sheetSaved,
-    });
+  const dest = returnTo
+    ? returnTo.includes("#")
+      ? returnTo
+      : `${returnTo}#${SHEET_CONFIRM_HASH}`
+    : dealActionFlashHref({
+        dealId,
+        tab: "documents",
+        line: lineRaw,
+        product: product || undefined,
+        notice: ACTION_FLASH.sheetSaved,
+        hash: SHEET_CONFIRM_HASH,
+      });
   flashAction(dest, "sheet-saved");
 }
 
@@ -1024,7 +1033,7 @@ export async function runFillDealSheets(dealId: string, primary: ShopLine): Prom
     skippedKeys: [...primaryCounts.skippedKeys, ...other.skippedKeys],
   };
   if (primaryCounts.filledKeys.length) {
-    await markShopFlowStaleAfterRiskChange(dealId, primary);
+    await persistSheetRecheckCue(dealId, primary);
   }
   return counts;
 }
@@ -1039,7 +1048,7 @@ async function fillOtherShopLines(dealId: string, already: ShopLine): Promise<Fi
       filledKeys.push(...counts.filledKeys);
       skippedKeys.push(...counts.skippedKeys);
       if (counts.filledKeys.length) {
-        await markShopFlowStaleAfterRiskChange(dealId, line);
+        await persistSheetRecheckCue(dealId, line);
       }
     }
   }

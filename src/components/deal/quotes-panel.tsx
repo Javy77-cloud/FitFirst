@@ -95,6 +95,9 @@ export function QuotesPanel({
   selectedQuoteIds = [],
   sheetStale = false,
   splitHomeProducts = false,
+  quoteRuns = null,
+  isPrimaryLine,
+  preScoped = false,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -119,26 +122,35 @@ export function QuotesPanel({
   sheetStale?: boolean;
   /** Gloria HO3+DP3 only — Heather HO3+Auto+Flood must not hide HO3 quotes. */
   splitHomeProducts?: boolean;
+  quoteRuns?: Partial<Record<string, string>> | null;
+  isPrimaryLine?: boolean;
+  /** Page already filtered `quotes` to this product — do not drop them again. */
+  preScoped?: boolean;
 }) {
   const activeLine: ShopLine | null = isShopLine(shopLine) ? shopLine : null;
   const lineLogs = logs.map((row) => row.log);
-  const scoped = quotes.filter((row) => {
-    const input = {
-      shopLine: row.quote.shopLine,
-      quoteAttemptLogId: row.quote.quoteAttemptLogId,
-      notes: row.quote.notes,
-      logs: lineLogs,
-    };
-    if (product) {
-      return quoteMatchesDealProduct(input, product, {
-        multiLine,
-        isPrimaryLine: !multiLine,
-        splitHomeProducts,
+  const primary = isPrimaryLine ?? !multiLine;
+  const scoped = preScoped
+    ? quotes
+    : quotes.filter((row) => {
+        const input = {
+          shopLine: row.quote.shopLine,
+          quoteAttemptLogId: row.quote.quoteAttemptLogId,
+          notes: row.quote.notes,
+          logs: lineLogs,
+          quoteRunId: row.quote.quoteRunId,
+          quoteRuns,
+        };
+        if (product) {
+          return quoteMatchesDealProduct(input, product, {
+            multiLine,
+            isPrimaryLine: primary,
+            splitHomeProducts,
+          });
+        }
+        if (!activeLine) return true;
+        return quoteMatchesShopLine(input, activeLine, { multiLine, isPrimaryLine: primary });
       });
-    }
-    if (!activeLine) return true;
-    return quoteMatchesShopLine(input, activeLine, { multiLine, isPrimaryLine: !multiLine });
-  });
   const liveQuotes = scoped.filter((row) => !row.quote.stub);
   const sorted = sortQuotesByRatingThenPremium(
     liveQuotes.map((row) => ({
