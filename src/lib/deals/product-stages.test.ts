@@ -577,6 +577,10 @@ describe("per-product stages", () => {
     expect(source("src/app/actions/product-stage.ts")).toMatch(/setDealProductNotice/);
     expect(source("src/app/actions/product-stage.ts")).toMatch(/completeDealProductNotice/);
     expect(source("src/app/actions/product-stage.ts")).toMatch(/linkDealProductNoticeTask/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/persistNoticeTypesFromTaskForm/);
+    expect(source("src/app/actions/product-stage.ts")).not.toMatch(
+      /Add a short note to complete the notice/,
+    );
     expect(source("src/app/actions/product-stage.ts")).toMatch(/completeLinkedDealNoticeForTask/);
     expect(source("src/app/actions/product-stage.ts")).toMatch(/writeDeskComms/);
     expect(source("src/app/actions/product-stage.ts")).toMatch(/noticeCompleteLogBody/);
@@ -586,7 +590,11 @@ describe("per-product stages", () => {
       /stageSlug === "bound"[\s\S]{0,200}noticeType: "none"/,
     );
     expect(source("src/app/actions/alerts.ts")).toMatch(/linkDealProductNoticeTask/);
+    expect(source("src/app/actions/alerts.ts")).toMatch(/persistNoticeTypesFromTaskForm/);
     expect(source("src/app/actions/alerts.ts")).toMatch(/completeLinkedDealNoticeForTask/);
+    expect(source("src/app/actions/alerts.ts")).not.toMatch(
+      /Add a short note to clear the notice/,
+    );
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/CreateTaskDialog/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/noticeTaskTitle/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/data-ff-deal-notice-chip/);
@@ -594,6 +602,10 @@ describe("per-product stages", () => {
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/NoticeNotePad/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/SpeechNoteDialog/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/data-ff-notice-complete-composer/);
+    expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(
+      /disabled=\{\(noticeNote \?\? ""\)\.trim\(\)\.length < 2\}/,
+    );
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/CreateTaskForm/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/NoticeTypesEditor/);
     expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(/snoozeDealProductNotice/);
     expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(/>Inspection</);

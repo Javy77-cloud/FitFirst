@@ -69,6 +69,7 @@ export function DealNotices({
   family = "pc",
   picklistId,
   placement = "header",
+  defaultOpen = false,
 }: {
   dealId: string;
   dealName?: string | null;
@@ -86,6 +87,7 @@ export function DealNotices({
   family?: "pc" | "life" | "health";
   picklistId?: string | null;
   placement?: "header" | "overlay";
+  defaultOpen?: boolean;
 }) {
   const options = mergeNoticeTypeOptions(noticeTypes?.length ? noticeTypes : SEED_NOTICE_TYPE_OPTIONS, noticeType);
   const active = isActiveNotice(noticeType);
@@ -95,7 +97,7 @@ export function DealNotices({
     ? isRenderableNoticeStamp(noticeType) && Boolean(stampLabel)
     : Boolean(active && stampLabel);
   const [selected, setSelected] = useState(noticeType && active ? parseKeep(noticeType) : "none");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [taskOpen, setTaskOpen] = useState(false);
   const [typesOpen, setTypesOpen] = useState(false);
   const [typesMode, setTypesMode] = useState<"create" | "manage">("create");
@@ -276,14 +278,13 @@ export function DealNotices({
                   className="mt-0.5 flex h-7 w-full items-center rounded-md border border-border bg-background px-2 text-left text-xs font-normal text-navy"
                 >
                   <span className={noticeNote?.trim() ? "truncate" : "text-muted-foreground"}>
-                    {noticeNote?.trim() || "What happened"}
+                    {noticeNote?.trim() || "What happened (optional)"}
                   </span>
                 </button>
               </label>
               <Button
                 type="submit"
                 size="xs"
-                disabled={(noticeNote ?? "").trim().length < 2}
                 data-ff-notice-complete=""
               >
                 Complete
@@ -314,12 +315,16 @@ export function DealNotices({
         open={typesOpen}
         onOpenChange={setTypesOpen}
         dealId={dealId}
+        dealName={dealName}
+        contactId={contactId}
         family={family}
         picklistId={picklistId}
         options={options}
         returnTo={returnTo}
         product={productValue}
         currentType={noticeType}
+        taskDueDate={taskDueDate}
+        taskDueTime={taskDueTime}
         mode={typesMode}
       />
 

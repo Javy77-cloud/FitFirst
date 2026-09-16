@@ -408,7 +408,6 @@ async function clearProductNoticeOnDeal(input: {
   product: DealProductId;
   notes: string;
 }) {
-  if (input.notes.length < 2) throw new Error("Add a short note to complete the notice.");
   const session = await currentDeskSession();
   const deal = await loadDeal(input.dealId);
   if (!deal) throw new Error("Deal not found.");
@@ -469,7 +468,7 @@ export async function completeDealProductNotice(formData: FormData) {
 /** Completing a linked notice task can also clear the chip + activity log. Never automatic. */
 export async function completeLinkedDealNoticeForTask(taskId: string, notes: string) {
   const id = taskId.trim();
-  if (!id || notes.trim().length < 2) return { cleared: false as const };
+  if (!id) return { cleared: false as const };
   const [task] = await db
     .select({ id: reviewTasks.id, dealId: reviewTasks.dealId })
     .from(reviewTasks)
@@ -573,10 +572,28 @@ const NOTICE_FAMILY_CREATE_NAME = {
 } as const;
 
 function noticeTypeLabelsFromForm(formData: FormData): string[] {
-  return formData
+  const fromOptions = formData
     .getAll("options")
     .map((item) => String(item).trim())
     .filter(Boolean);
+  if (fromOptions.length) return fromOptions;
+  return formData
+    .getAll("noticeTypeLabels")
+    .map((item) => String(item).trim())
+    .filter(Boolean);
+}
+
+/** Persist add/rename/delete types when a notice reminder is saved on first create. */
+export async function persistNoticeTypesFromTaskForm(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const labels = noticeTypeLabelsFromForm(formData);
+  if (!dealId || labels.length === 0) return;
+  await persistNoticeTypeLabels({
+    dealId,
+    family: noticeFamilyFromForm(String(formData.get("noticeFamily") ?? formData.get("family") ?? "pc")),
+    picklistId: String(formData.get("noticePicklistId") ?? formData.get("picklistId") ?? "").trim(),
+    labels,
+  });
 }
 
 /** Family-scoped picklist write from the deal — never bounce to Settings. */

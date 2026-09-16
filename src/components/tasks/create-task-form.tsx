@@ -59,6 +59,10 @@ export type CreateTaskFormDefaults = {
   fixedTitle?: string;
   noticeType?: string;
   noticeProduct?: string;
+  /** Family type labels to persist when this notice task is the first create. */
+  noticeTypeLabels?: readonly string[];
+  noticeFamily?: "pc" | "life" | "health";
+  noticePicklistId?: string | null;
 };
 
 function ensureTaskFieldOptions(fields: readonly CustomFieldDef[]): CustomFieldDef[] {
@@ -305,6 +309,13 @@ export function CreateTaskForm({
       {defaults?.noticeProduct ? (
         <input type="hidden" name="noticeProduct" value={defaults.noticeProduct} />
       ) : null}
+      {defaults?.noticeFamily ? <input type="hidden" name="noticeFamily" value={defaults.noticeFamily} /> : null}
+      {defaults?.noticePicklistId ? (
+        <input type="hidden" name="noticePicklistId" value={defaults.noticePicklistId} />
+      ) : null}
+      {defaults?.noticeTypeLabels?.map((label) => (
+        <input key={label} type="hidden" name="noticeTypeLabels" value={label} />
+      ))}
 
       {/* HARD LOCK order: Record type → Linked → Task type → Title (title right under type). */}
       {!lockRecord ? (

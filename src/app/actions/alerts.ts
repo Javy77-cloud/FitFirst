@@ -27,6 +27,7 @@ import { parseDealProduct } from "@/lib/deals/deal-products";
 import {
   completeLinkedDealNoticeForTask,
   linkDealProductNoticeTask,
+  persistNoticeTypesFromTaskForm,
 } from "@/app/actions/product-stage";
 
 function revalidateNotificationSurfaces() {
@@ -86,7 +87,6 @@ export async function completeTask(formData: FormData) {
   const clearNotice = String(formData.get("clearNotice") ?? "") === "1";
   const noticeNotes = String(formData.get("noticeNotes") ?? formData.get("notes") ?? "").trim();
   if (id && clearNotice) {
-    if (noticeNotes.length < 2) throw new Error("Add a short note to clear the notice.");
     await completeLinkedDealNoticeForTask(id, noticeNotes);
   }
   revalidatePath("/");
@@ -216,6 +216,7 @@ export async function createDeskTask(formData: FormData) {
     const noticeType = parseNoticeType(formData.get("noticeType"));
     const noticeProduct = parseDealProduct(String(formData.get("noticeProduct") ?? ""));
     if (deal && noticeProduct && isActiveNotice(noticeType)) {
+      await persistNoticeTypesFromTaskForm(formData);
       await linkDealProductNoticeTask({
         dealId: deal,
         product: noticeProduct,

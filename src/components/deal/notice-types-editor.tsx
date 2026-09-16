@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { applyDealNoticeType, saveDealNoticeTypes } from "@/app/actions/product-stage";
+import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,30 +13,47 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { isActiveNotice, noticeFamilyLabel, parseNoticeType, type NoticeTypeOption } from "@/lib/deals/notices";
+import { dealProductDef, parseDealProduct } from "@/lib/deals/deal-products";
+import {
+  isActiveNotice,
+  noticeFamilyLabel,
+  noticeTaskKind,
+  noticeTaskTitle,
+  parseNoticeType,
+  type NoticeTypeOption,
+} from "@/lib/deals/notices";
+import { isDeskTaskType } from "@/lib/tasks/task-types";
 import { cn } from "@/lib/utils";
 
 export function NoticeTypesEditor({
   open,
   onOpenChange,
   dealId,
+  dealName,
+  contactId,
   family,
   picklistId,
   options,
   returnTo,
   product,
   currentType,
+  taskDueDate,
+  taskDueTime,
   mode = "manage",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   dealId: string;
+  dealName?: string | null;
+  contactId?: string | null;
   family: "pc" | "life" | "health";
   picklistId?: string | null;
   options: readonly NoticeTypeOption[];
   returnTo?: string | null;
   product?: string | null;
   currentType?: string | null;
+  taskDueDate?: string | null;
+  taskDueTime?: string | null;
   mode?: "create" | "manage";
 }) {
   const [rows, setRows] = useState(() => labelsFromOptions(options));
@@ -48,7 +66,19 @@ export function NoticeTypesEditor({
   const draftLabel = draft.trim();
   const selectedLabel = selectedIndex >= 0 ? rows[selectedIndex]?.trim() ?? "" : "";
   const applyLabel = draftLabel || selectedLabel;
-  const canApply = Boolean(applyLabel) && parseNoticeType(applyLabel) !== "none";
+  const applyType = parseNoticeType(applyLabel);
+  const canApply = Boolean(applyLabel) && applyType !== "none";
+  const productId = parseDealProduct(productValue);
+  const productLabel = productId ? dealProductDef(productId).label : undefined;
+  const reminderKind = noticeTaskKind(applyType);
+  const reminderTaskType = isDeskTaskType(reminderKind) ? reminderKind : "work_reminder";
+  const reminderTitle = noticeTaskTitle({
+    noticeType: applyType,
+    productLabel,
+    options: canApply
+      ? [{ value: applyType, label: applyLabel }, ...options.filter((row) => row.value !== applyType)]
+      : options,
+  });
 
   function resetFromProps() {
     const next = labelsFromOptions(options);
@@ -117,7 +147,7 @@ export function NoticeTypesEditor({
       }}
     >
       <DialogContent
-        className="overflow-visible sm:max-w-xl"
+        className="max-h-[min(42rem,calc(100vh-2rem))] overflow-y-auto overflow-x-visible sm:max-w-xl"
         data-ff-notice-edit-types-dialog=""
         data-ff-notice-create-modal=""
         data-ff-notice-type-modal=""
@@ -136,7 +166,10 @@ export function NoticeTypesEditor({
             Notice types
           </p>
           <ul
-            className="max-h-72 space-y-2 overflow-y-auto overflow-x-visible pr-0.5"
+            className={cn(
+              "space-y-2 overflow-y-auto overflow-x-visible pr-0.5",
+              creating ? "max-h-40" : "max-h-72",
+            )}
             data-ff-notice-edit-types-list=""
             role="radiogroup"
             aria-label="Notice type"
@@ -239,6 +272,49 @@ export function NoticeTypesEditor({
               Set notice uses a named new type right away, or the type you selected above.
             </p>
           </div>
+
+          {creating ? (
+            <div className="space-y-1.5" data-ff-notice-create-reminder="">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Reminder
+              </p>
+              {open && canApply ? (
+                <div
+                  className="rounded-md border border-border p-3"
+                  data-ff-notice-create-reminder-form=""
+                >
+                  <CreateTaskForm
+                    key={applyType}
+                    compact
+                    lockRecord
+                    submitLabel="Set reminder"
+                    defaults={{
+                      recordType: "deal",
+                      recordId: dealId,
+                      recordName: dealName ?? "This deal",
+                      dealId,
+                      contactId,
+                      taskType: reminderTaskType,
+                      fixedTitle: reminderTitle,
+                      noticeType: applyType,
+                      noticeProduct: productValue,
+                      noticeTypeLabels: labelsForSave(),
+                      noticeFamily: family,
+                      noticePicklistId: picklistId,
+                      dueDate: taskDueDate ?? undefined,
+                      dueTime: taskDueTime ?? undefined,
+                      returnTo: returnTo ?? `/deals/${dealId}?tab=quotes&product=${productValue}`,
+                    }}
+                  />
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Choose or name a type, then set a reminder with the same desk task form used after
+                  the stamp — day, time, assignee, and snooze. Optional.
+                </p>
+              )}
+            </div>
+          ) : null}
         </div>
 
         <DialogFooter>
