@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { createPolicyPromptCopy } from "@/lib/policy/dec-prompt";
+import { mintFailureToast } from "@/lib/policy/mint-gate";
 import { flashAction } from "@/lib/flash-client";
 
 export function CreatePolicyFromDecModal({
@@ -55,7 +56,8 @@ export function CreatePolicyFromDecModal({
         documentId,
       });
       if (!result.ok) {
-        flashAction(result.reason === "need_quote" ? "need-quote" : "deal-updated");
+        const toast = mintFailureToast(result.reason);
+        flashAction(toast.key, toast.kind);
         setOpen(false);
         return;
       }

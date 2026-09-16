@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ChooseFileButton } from "@/components/choose-file-button";
-import { isBoundReadyForIssue } from "@/lib/policy/mint-gate";
+import { isBoundReadyForIssue, mintFailureToast } from "@/lib/policy/mint-gate";
 import { flashAction } from "@/lib/flash-client";
 
 export type IssuedPolicyChip = {
@@ -72,7 +72,8 @@ export function IssuePolicyFromDec({
           setOpen(true);
           return;
         }
-        flashAction(result.reason === "need_quote" ? "need-quote" : "deal-updated");
+        const toast = mintFailureToast(result.reason);
+        flashAction(toast.key, toast.kind);
         return;
       }
       setOpen(false);
@@ -95,26 +96,14 @@ export function IssuePolicyFromDec({
       if (!result.ok) {
         setCreating(false);
         if (result.reason === "need_dec") setOpen(true);
+        const toast = mintFailureToast(result.reason);
+        flashAction(toast.key, toast.kind);
         return;
       }
       flashAction("policy-minted");
       router.push(`/policies/${result.policyId}`);
       router.refresh();
     });
-  }
-
-  if (issued?.id) {
-    return (
-      <a
-        href={`/policies/${issued.id}`}
-        className="inline-flex items-center gap-2 rounded-full border border-emerald-700/30 bg-emerald-50 px-3 py-1 text-[12px] font-semibold text-emerald-900 hover:bg-emerald-100"
-        data-ff-issued-policy-chip={issued.id}
-      >
-        <span className="size-1.5 rounded-full bg-emerald-600" aria-hidden />
-        {issued.published ? "Policy" : "Confirm policy"}
-        {issued.policyNumber ? <span className="font-medium">· {issued.policyNumber}</span> : null}
-      </a>
-    );
   }
 
   if (creating || pending) {
@@ -126,6 +115,45 @@ export function IssuePolicyFromDec({
         <span className="size-1.5 animate-pulse rounded-full bg-navy" aria-hidden />
         Creating policy…
       </p>
+    );
+  }
+
+  if (issued?.id && issued.published) {
+    return (
+      <a
+        href={`/policies/${issued.id}`}
+        className="inline-flex items-center gap-2 rounded-full border border-emerald-700/30 bg-emerald-50 px-3 py-1 text-[12px] font-semibold text-emerald-900 hover:bg-emerald-100"
+        data-ff-issued-policy-chip={issued.id}
+      >
+        <span className="size-1.5 rounded-full bg-emerald-600" aria-hidden />
+        Policy
+        {issued.policyNumber ? <span className="font-medium">· {issued.policyNumber}</span> : null}
+      </a>
+    );
+  }
+
+  if (issued?.id) {
+    return (
+      <div className="flex flex-wrap items-center gap-2" data-ff-issue-policy="">
+        <a
+          href={`/policies/${issued.id}`}
+          className="inline-flex items-center gap-2 rounded-full border border-emerald-700/30 bg-emerald-50 px-3 py-1 text-[12px] font-semibold text-emerald-900 hover:bg-emerald-100"
+          data-ff-issued-policy-chip={issued.id}
+        >
+          <span className="size-1.5 rounded-full bg-emerald-600" aria-hidden />
+          Confirm policy
+          {issued.policyNumber ? <span className="font-medium">· {issued.policyNumber}</span> : null}
+        </a>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          data-ff-reread-declaration=""
+          onClick={() => mint()}
+        >
+          Re-read declaration
+        </Button>
+      </div>
     );
   }
 

@@ -1,7 +1,5 @@
 "use server";
 
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { persistFile } from "@/app/actions/documents";
@@ -48,13 +46,14 @@ import {
 } from "@/lib/policy/dec-prompt";
 import { extractWithGeminiPdf } from "@/lib/extraction/gemini";
 import { loadGeminiApiKey } from "@/lib/extraction/gemini/key";
+import { readStoredFile } from "@/lib/files/object-store";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
+import { loadGeminiRows, type GeminiMintRow } from "@/lib/policy/load-gemini-rows";
 import {
   buildMintFields,
   canPublishMint,
   confirmMintField,
   evaluateMintGate,
-  findDealDeclaration,
   mintFieldPolicyPatch,
   parseMintPayload,
   policyForProduct,
@@ -64,8 +63,6 @@ import {
 } from "@/lib/policy/mint-gate";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 import { contactFieldsFromSheet } from "@/lib/wire/match-party";
-
-const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
 function dateOrFallback(raw: string | null | undefined, fallback: Date) {
   if (!raw) return fallback;
@@ -203,46 +200,60 @@ async function markMintStatus(
   await persistDealShopFlow(dealId, { ...saved, productStages: next });
 }
 
-async function loadGeminiRows(docId: string, storagePath: string, mimeType: string, filename: string) {
+async function loadCachedGeminiRows(docId: string): Promise<GeminiMintRow[]> {
   const existing = await db
     .select()
     .from(extractedFields)
     .where(and(eq(extractedFields.tenantId, DEFAULT_TENANT_ID), eq(extractedFields.documentId, docId)));
-  if (existing.length) {
-    return existing.map((row) => ({
-      fieldKey: row.fieldKey,
-      normalizedValue: row.normalizedValue,
-      rawValue: row.rawValue,
-      confidence: Number(row.confidence ?? 0),
-      flagged: row.flagged,
-    }));
-  }
+  return existing.map((row) => ({
+    fieldKey: row.fieldKey,
+    normalizedValue: row.normalizedValue,
+    rawValue: row.rawValue,
+    confidence: Number(row.confidence ?? 0),
+    flagged: row.flagged,
+  }));
+}
 
-  const key = await loadGeminiApiKey();
-  if (!key) return [];
-  let buffer: Buffer;
-  try {
-    buffer = await readFile(path.join(uploadRoot, storagePath));
-  } catch {
-    return [];
-  }
-  try {
-    const gemini = await extractWithGeminiPdf(buffer, "dec", {
-      apiKey: key,
-      mimeType,
-      filename,
-    });
-    if (!gemini.ok) return [];
-    return gemini.result.fields.map((field) => ({
+async function persistMintExtractRows(docId: string, rows: GeminiMintRow[]) {
+  const [doc] = await db
+    .select({ riskId: documents.riskId })
+    .from(documents)
+    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.id, docId)));
+  await db
+    .delete(extractedFields)
+    .where(and(eq(extractedFields.tenantId, DEFAULT_TENANT_ID), eq(extractedFields.documentId, docId)));
+  for (const field of rows) {
+    const normalized = field.normalizedValue?.trim() || "";
+    const raw = field.rawValue?.trim() || normalized;
+    if (!normalized && !raw) continue;
+    await db.insert(extractedFields).values({
+      tenantId: DEFAULT_TENANT_ID,
+      documentId: docId,
+      riskId: doc?.riskId ?? null,
       fieldKey: field.fieldKey,
-      normalizedValue: field.normalizedValue,
-      rawValue: field.rawValue,
-      confidence: field.confidence,
+      rawValue: raw,
+      normalizedValue: normalized || raw,
+      confidence: field.confidence.toFixed(3),
       flagged: field.flagged,
-    }));
-  } catch {
-    return [];
+      appliedToRisk: false,
+    });
   }
+}
+
+async function loadMintGeminiRows(input: {
+  docId: string;
+  storagePath?: string | null;
+  mimeType?: string | null;
+  filename?: string | null;
+  force?: boolean;
+}) {
+  return loadGeminiRows(input, {
+    readStoredFile,
+    loadCachedRows: loadCachedGeminiRows,
+    loadGeminiApiKey,
+    extractWithGeminiPdf,
+    persistRows: persistMintExtractRows,
+  });
 }
 
 async function ensureDealContact(deal: typeof deals.$inferSelect) {
@@ -363,6 +374,11 @@ export async function issuePolicyFromDeclaration(input: {
     return { ok: true as const, policyId: existing.id, alreadyPublished: true };
   }
 
+  const previousMint =
+    current.mintStatus === "unpublished" || current.mintStatus === "published"
+      ? current.mintStatus
+      : null;
+  const remintUnpublished = Boolean(existing && policyMintUnpublished(existing));
   await markMintStatus(dealId, product, {
     mintStatus: "creating",
     selectedQuoteIds,
@@ -375,14 +391,18 @@ export async function issuePolicyFromDeclaration(input: {
     sheetRows.find((row) => row.line === "home") ??
     sheetRows[0];
   const decRow = docs.find((row) => row.id === gate.dec.id);
-  const geminiRows = decRow?.storagePath
-    ? await loadGeminiRows(
-        decRow.id,
-        decRow.storagePath,
-        decRow.mimeType ?? "application/pdf",
-        decRow.filename,
-      )
-    : [];
+  const extracted = await loadMintGeminiRows({
+    docId: gate.dec.id,
+    storagePath: decRow?.storagePath ?? gate.dec.storagePath,
+    mimeType: decRow?.mimeType ?? "application/pdf",
+    filename: decRow?.filename ?? gate.dec.filename,
+    force: remintUnpublished,
+  });
+  if (!extracted.ok) {
+    await markMintStatus(dealId, product, { mintStatus: previousMint, selectedQuoteIds });
+    return extracted;
+  }
+  const geminiRows = extracted.rows;
   const risk = riskRows[0];
   const sheetValues = (sheet?.values ?? {}) as Record<string, { value?: string | null } | undefined>;
   const [owner] = deal.ownerId
@@ -569,7 +589,7 @@ export async function issuePolicyFromDeclaration(input: {
   revalidatePath("/deals");
   return { ok: true as const, policyId };
   } catch (error) {
-    await markMintStatus(dealId, product, { mintStatus: null, selectedQuoteIds });
+    await markMintStatus(dealId, product, { mintStatus: previousMint, selectedQuoteIds });
     throw error;
   }
 }

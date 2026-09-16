@@ -20,6 +20,7 @@ import {
   policyMintUnpublished,
   policyNeedsMintConfirm,
   quotesOnlyStageBlocked,
+  mintFailureToast,
 } from "./mint-gate";
 
 function source(file: string) {
@@ -274,7 +275,13 @@ describe("unpublished confirm guard", () => {
     expect(source("src/components/policy/mint-confirm-queue.tsx")).toMatch(/mintProposedValue/);
     expect(source("src/components/policy/mint-confirm-queue.tsx")).toMatch(/data-ff-mint-proposed/);
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/mintFieldPolicyPatch/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/loadGeminiRows/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/readStoredFile/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/need_dec_file/);
+    expect(source("src/app/actions/policy-mint.ts")).not.toMatch(/readFile\(path\.join\(uploadRoot/);
     expect(source("src/lib/extraction/gemini/prompt.ts")).toMatch(/selling_agency/);
     expect(source("src/lib/policy/change-log.ts")).toMatch(/Policy created/);
+    expect(mintFailureToast("need_dec_file")).toEqual({ key: "need-dec-file", kind: "error" });
+    expect(mintFailureToast("need_gemini")).toEqual({ key: "gemini-needs-key", kind: "error" });
   });
 });

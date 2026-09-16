@@ -15,7 +15,27 @@ export type MintGateReason =
   | "need_bound"
   | "need_dec"
   | "quotes_only"
-  | "creating";
+  | "creating"
+  | "need_dec_file"
+  | "need_gemini"
+  | "extract_failed";
+
+export function mintFailureToast(reason: string): { key: string; kind: "error" | "success" } {
+  switch (reason) {
+    case "need_quote":
+      return { key: "need-quote", kind: "error" };
+    case "need_gemini":
+      return { key: "gemini-needs-key", kind: "error" };
+    case "need_dec_file":
+      return { key: "need-dec-file", kind: "error" };
+    case "extract_failed":
+      return { key: "dec-extract-failed", kind: "error" };
+    case "need_dec":
+      return { key: "need-dec", kind: "error" };
+    default:
+      return { key: "deal-updated", kind: "success" };
+  }
+}
 
 export type DeclarationLike = {
   id: string;

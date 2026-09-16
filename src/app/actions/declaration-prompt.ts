@@ -1,7 +1,5 @@
 "use server";
 
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { carriers, deals, extractedFields, quotes } from "@/lib/db/schema";
@@ -12,6 +10,7 @@ import { parseShopFlow } from "@/lib/deals/shop-flow";
 import { persistDealShopFlow } from "@/lib/deals/shop-flow-persist";
 import { extractWithGeminiPdf } from "@/lib/extraction/gemini";
 import { loadGeminiApiKey } from "@/lib/extraction/gemini/key";
+import { readStoredFile } from "@/lib/files/object-store";
 import {
   documentKindFromGeminiJson,
   looksLikeDeclarationFromGemini,
@@ -19,8 +18,7 @@ import {
   type PendingDecPrompt,
 } from "@/lib/policy/dec-prompt";
 import { parseGeminiResponseText } from "@/lib/extraction/gemini/client";
-
-const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
+import { readDecPdfBytes } from "@/lib/policy/load-gemini-rows";
 
 export async function queueCreatePolicyPrompt(input: {
   dealId: string;
@@ -117,15 +115,14 @@ export async function classifyDeclarationLook(input: {
     });
   }
   const key = await loadGeminiApiKey();
-  if (!key || !input.storagePath) return "unknown";
-  let buffer: Buffer;
-  try {
-    buffer = await readFile(path.join(uploadRoot, input.storagePath));
-  } catch {
+  if (!key) {
+    console.error("dec classify: missing Gemini API key", { documentId: input.documentId });
     return "unknown";
   }
+  const bytes = await readDecPdfBytes(input.storagePath, readStoredFile);
+  if (!bytes.ok) return "unknown";
   try {
-    const gemini = await extractWithGeminiPdf(buffer, "dec", {
+    const gemini = await extractWithGeminiPdf(bytes.buffer, "dec", {
       apiKey: key,
       mimeType: input.mimeType ?? "application/pdf",
       filename: input.filename ?? "declaration.pdf",
@@ -138,7 +135,9 @@ export async function classifyDeclarationLook(input: {
       notes: gemini.result.qualityNotes,
       rawText: gemini.rawText,
     });
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    console.error("dec classify: Gemini threw", { documentId: input.documentId, message });
     return "unknown";
   }
 }
