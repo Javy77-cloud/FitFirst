@@ -576,12 +576,12 @@ export default async function DealPage({
           toolbar={activeTab === "details" ? <EditLayoutLink module="deals" line={activeLob} /> : null}
           heading={
             <div className="min-w-0">
-              <div className="flex min-w-0 items-start gap-3">
-                <h1 className="min-w-0 flex-1 text-xl font-semibold text-navy" data-ff-deal-title>
+              <div className="min-w-0">
+                <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
                   {visibleDealTitle}
                 </h1>
                 {!noticeStampVisible ? (
-                  <div className="shrink-0 pt-0.5" data-ff-deal-create-notice="">
+                  <div className="mt-1.5" data-ff-deal-create-notice="">
                     <DealNotices {...noticeProps} placement="header" />
                   </div>
                 ) : null}
@@ -890,6 +890,11 @@ export default async function DealPage({
                           };
                         })()}
                         autoIssue={issue === "1"}
+                        noticeAction={
+                          !noticeStampVisible ? (
+                            <DealNotices {...noticeProps} placement="header" />
+                          ) : null
+                        }
                       />
                     )}
                   </div>

@@ -504,10 +504,12 @@ describe("per-product stages", () => {
     expect(source("src/components/deals/deal-list-product-notes.tsx")).toMatch(
       /data-ff-deal-list-product-note-label/,
     );
-    expect(source("src/components/deals/deal-list-product-notes.tsx")).toMatch(
+    expect(source("src/components/deals/deal-list-product-notes.tsx")).toMatch(/sr-only/);
+    expect(source("src/components/deals/deal-list-product-notes.tsx")).not.toMatch(
       /flex min-w-0 items-center gap-1/,
     );
     expect(source("src/lib/list-columns.ts")).toMatch(/DEAL_NOTES_COLUMN_WIDTH = 160/);
+    expect(source("src/lib/list-columns.ts")).toMatch(/NOTES_MAX_COLUMN_WIDTH = 4800/);
   });
 
   it("strips Heather Camirand HO3/Auto leftover notices and keeps Flood", () => {
@@ -532,8 +534,12 @@ describe("per-product stages", () => {
     expect(source("src/app/globals.css")).toMatch(/rotate\(-24deg\)/);
     expect(source("src/app/globals.css")).toMatch(/right: -8\.6rem;/);
     expect(source("src/app/globals.css")).toMatch(/bottom: -2\.05rem;/);
+    expect(source("src/app/globals.css")).toMatch(/left: calc\(\(100% - 420px - 1\.25rem\) \/ 2\)/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/ff-deal-stamp-stack/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/data-ff-deal-create-notice/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/noticeAction=/);
+    expect(source("src/components/deal/quotes-panel.tsx")).toMatch(/noticeAction/);
+    expect(source("src/components/deal/quotes-results-table.tsx")).toMatch(/data-ff-quotes-create-notice/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/complete: flowCompletion\.isComplete\(id\)/);
     expect(source("src/app/deals/[id]/page.tsx")).not.toMatch(/DealFlowRail/);
     expect(source("src/components/desk/pending-tab-list.tsx")).toMatch(/data-ff-tab-complete/);

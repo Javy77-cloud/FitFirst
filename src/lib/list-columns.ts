@@ -36,6 +36,8 @@ export const MIN_COLUMN_WIDTH = 56;
 /** Checkbox column can sit narrower than labeled columns. */
 export const MIN_PICK_COLUMN_WIDTH = 32;
 export const MAX_COLUMN_WIDTH = 720;
+/** Deal Notes may stretch as far as the agent drags — no 720 cap. */
+export const NOTES_MAX_COLUMN_WIDTH = 4800;
 export const DEFAULT_COLUMN_WIDTH = 148;
 export const DEFAULT_PICK_COLUMN_WIDTH = 32;
 /** Compact starting width — drag the Notes header to widen or narrow. */
@@ -155,10 +157,15 @@ export function isPickColumn(columnId: string): boolean {
   return columnId === "pick";
 }
 
+export function isNotesListColumnId(columnId?: string): boolean {
+  return columnId === "notes" || columnId === "new_field";
+}
+
 export function clampColumnWidth(px: number, columnId?: string): number {
   if (!Number.isFinite(px)) return DEFAULT_COLUMN_WIDTH;
   const min = isPickColumn(columnId ?? "") ? MIN_PICK_COLUMN_WIDTH : MIN_COLUMN_WIDTH;
-  return Math.min(MAX_COLUMN_WIDTH, Math.max(min, Math.round(px)));
+  const max = isNotesListColumnId(columnId) ? NOTES_MAX_COLUMN_WIDTH : MAX_COLUMN_WIDTH;
+  return Math.min(max, Math.max(min, Math.round(px)));
 }
 
 export function defaultColumnWidth(column: ListColumn): number {
