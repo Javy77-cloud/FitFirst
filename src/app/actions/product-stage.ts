@@ -572,30 +572,55 @@ const NOTICE_FAMILY_CREATE_NAME = {
   health: STARTER_PICKLIST_DEAL_NOTICES_HEALTH,
 } as const;
 
+function noticeTypeLabelsFromForm(formData: FormData): string[] {
+  return formData
+    .getAll("options")
+    .map((item) => String(item).trim())
+    .filter(Boolean);
+}
+
+/** Family-scoped picklist write from the deal — never bounce to Settings. */
+async function persistNoticeTypeLabels(input: {
+  dealId: string;
+  family: "pc" | "life" | "health";
+  picklistId?: string;
+  labels: string[];
+}) {
+  const lists = await listFieldPicklists();
+  let list = input.picklistId ? await getFieldPicklist(input.picklistId) : null;
+  if (!list) {
+    const names = noticePicklistNamesForFamily(input.family).map((name) => name.toLowerCase());
+    list = lists.find((row) => names.includes(row.name.trim().toLowerCase())) ?? null;
+  }
+  if (!list) {
+    await createFieldPicklist(NOTICE_FAMILY_CREATE_NAME[input.family], input.labels);
+  } else {
+    await updateFieldPicklist(list.id, { options: input.labels });
+  }
+  revalidatePath(`/deals/${input.dealId}`);
+  revalidatePath("/deals");
+  revalidatePath("/settings/picklists");
+}
+
 /** In-deal add / rename / delete — never bounce to Settings picklists. */
 export async function saveDealNoticeTypes(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "").trim();
   const family = noticeFamilyFromForm(String(formData.get("family") ?? "pc"));
   const picklistId = String(formData.get("picklistId") ?? "").trim();
-  const labels = formData
-    .getAll("options")
-    .map((item) => String(item).trim())
-    .filter(Boolean);
+  const labels = noticeTypeLabelsFromForm(formData);
   if (!dealId) throw new Error("Deal is required.");
-  const lists = await listFieldPicklists();
-  let list = picklistId ? await getFieldPicklist(picklistId) : null;
-  if (!list) {
-    const names = noticePicklistNamesForFamily(family).map((name) => name.toLowerCase());
-    list = lists.find((row) => names.includes(row.name.trim().toLowerCase())) ?? null;
-  }
-  if (!list) {
-    await createFieldPicklist(NOTICE_FAMILY_CREATE_NAME[family], labels);
-  } else {
-    await updateFieldPicklist(list.id, { options: labels });
-  }
-  revalidatePath(`/deals/${dealId}`);
-  revalidatePath("/deals");
-  revalidatePath("/settings/picklists");
+  await persistNoticeTypeLabels({ dealId, family, picklistId, labels });
   const product = parseDealProduct(String(formData.get("product") ?? "")) ?? "homeowners";
   flashStay(formData, noticeReturnTo(formData, dealId, product), "Notice types saved");
+}
+
+/** Save family types (including a brand-new name) and set that type on the product. */
+export async function applyDealNoticeType(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const family = noticeFamilyFromForm(String(formData.get("family") ?? "pc"));
+  const picklistId = String(formData.get("picklistId") ?? "").trim();
+  const labels = noticeTypeLabelsFromForm(formData);
+  if (!dealId) throw new Error("Deal is required.");
+  await persistNoticeTypeLabels({ dealId, family, picklistId, labels });
+  await setDealProductNotice(formData);
 }

@@ -156,6 +156,7 @@ describe("deal notices", () => {
     expect(empty).toMatch(/data-ff-notice-create/);
     expect(empty).toMatch(/ff-deal-notice-create/);
     expect(empty).not.toMatch(/data-ff-notice-status/);
+    expect(empty).not.toMatch(/data-ff-notice-popover/);
     expect(empty).not.toMatch(/Edit types/);
     expect(empty).not.toMatch(/\/settings\/picklists/);
     expect(empty).not.toMatch(/data-ff-notice-set/);
@@ -182,15 +183,48 @@ describe("deal notices", () => {
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/NoticeTypesEditor/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/NOTICE_LAYER_SEL/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/dropdown-menu-content/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/function openCreateModal/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/function openTypesEditor/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(
       /setTimeout\(\(\) => setTypesOpen\(true\), 0\)/,
     );
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/onClick=\{openCreateModal\}/);
+    expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(/<select/);
     expect(source("src/components/deal/notice-note-pad.tsx")).toMatch(/data-ff-notice-note-count/);
     expect(source("src/components/deal/notice-note-pad.tsx")).toMatch(/Notice note log/);
     expect(source("src/components/deal/notice-note-pad.tsx")).not.toMatch(/prepareSpeechMicrophone/);
     expect(source("src/components/deal/speech-note-dialog.tsx")).toMatch(/prepareSpeechMicrophone/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/SpeechNoteDialog/);
     expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/saveDealNoticeTypes/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/applyDealNoticeType/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/data-ff-notice-create-modal/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/sm:max-w-xl/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/Name a new type/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/data-ff-notice-edit-type-delete/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/data-ff-notice-set/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).not.toMatch(/<select/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/applyDealNoticeType/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/persistNoticeTypeLabels/);
+  });
+
+  it("opens a centered create-notice modal with choosable full type names", () => {
+    const editor = source("src/components/deal/notice-types-editor.tsx");
+    expect(editor).toMatch(/data-ff-notice-create-modal/);
+    expect(editor).toMatch(/data-ff-notice-type-modal/);
+    expect(editor).toMatch(/top-1\/2 left-1\/2|sm:max-w-xl/);
+    expect(editor).toMatch(/Choose a type for this product/);
+    expect(editor).toMatch(/data-ff-notice-type-choice/);
+    expect(editor).toMatch(/data-ff-notice-edit-type-label/);
+    expect(editor).toMatch(/data-ff-notice-edit-type-new/);
+    expect(editor).toMatch(/data-ff-notice-edit-type-delete/);
+    expect(editor).toMatch(/data-ff-notice-set/);
+    expect(editor).toMatch(/applyDealNoticeType/);
+    expect(editor).toMatch(/Name a new type/);
+    expect(editor).not.toMatch(/<select/);
+    expect(editor).not.toMatch(/SEED_NOTICE_LABELS\.none|"None"/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(
+      /data-ff-notice-create=""[\s\S]{0,180}onClick=\{openCreateModal\}/,
+    );
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/open && showStamp/);
   });
 });

@@ -618,6 +618,7 @@ describe("per-product stages", () => {
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/DealNotices/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/noticeTypesForFamily/);
     expect(source("src/app/actions/product-stage.ts")).toMatch(/saveDealNoticeTypes/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/applyDealNoticeType/);
     expect(source("src/app/actions/product-stage.ts")).toMatch(/saveDealNoticeNote/);
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_DEAL_NOTICES/);
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_DEAL_NOTICES_LIFE/);

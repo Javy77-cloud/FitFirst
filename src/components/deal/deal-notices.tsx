@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { completeDealProductNotice, saveDealNoticeNote, setDealProductNotice } from "@/app/actions/product-stage";
+import { completeDealProductNotice, saveDealNoticeNote } from "@/app/actions/product-stage";
 import { NoticeNotePad } from "@/components/deal/notice-note-pad";
 import { NoticeTypesEditor } from "@/components/deal/notice-types-editor";
 import { SpeechNoteDialog } from "@/components/deal/speech-note-dialog";
@@ -98,13 +98,13 @@ export function DealNotices({
   const [open, setOpen] = useState(false);
   const [taskOpen, setTaskOpen] = useState(false);
   const [typesOpen, setTypesOpen] = useState(false);
+  const [typesMode, setTypesMode] = useState<"create" | "manage">("create");
   const [composerOpen, setComposerOpen] = useState(false);
   const [pendingType, setPendingType] = useState(selected);
   const rootRef = useRef<HTMLDivElement>(null);
   const productValue = product ?? "homeowners";
   const productId = parseDealProduct(productValue);
   const productLabel = productId ? dealProductDef(productId).label : undefined;
-  const showSet = selected !== "none";
   const kind = noticeTaskKind(pendingType);
   const taskType = isDeskTaskType(kind) ? kind : "work_reminder";
   const fixedTitle = noticeTaskTitle({
@@ -144,9 +144,15 @@ export function DealNotices({
     setTaskOpen(true);
   }
 
+  function openCreateModal() {
+    setTypesMode("create");
+    setTypesOpen(true);
+  }
+
   /** Open after this click finishes so the new dialog overlay does not eat it. */
   function openTypesEditor() {
     setOpen(false);
+    setTypesMode("manage");
     window.setTimeout(() => setTypesOpen(true), 0);
   }
 
@@ -192,53 +198,32 @@ export function DealNotices({
           type="button"
           size="sm"
           variant="default"
-          aria-expanded={open}
+          aria-expanded={typesOpen}
           aria-haspopup="dialog"
           aria-label="Create notice"
           data-ff-notice-add=""
           data-ff-notice-create=""
-          onClick={() => setOpen((value) => !value)}
+          onClick={openCreateModal}
           className="ff-deal-notice-create pointer-events-auto"
         >
           Create notice
         </Button>
       )}
 
-      {open ? (
+      {open && showStamp ? (
         <div
-          className="absolute left-0 top-full z-30 mt-1 w-[min(20rem,calc(100vw-2rem))] rounded-md border border-border bg-card p-2.5 shadow-md"
+          className="absolute left-0 top-full z-30 mt-1 w-[min(22rem,calc(100vw-2rem))] rounded-md border border-border bg-card p-2.5 shadow-md"
           data-ff-notice-popover=""
           role="dialog"
           aria-label="Notice"
         >
           <div className="flex flex-wrap items-end gap-2">
-            <label className="min-w-0 flex-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Notice type
-              <select
-                name="noticeType"
-                value={selected}
-                onChange={(event) => setSelected(event.currentTarget.value)}
-                className="mt-0.5 h-7 w-full rounded-md border border-border bg-background px-2 text-xs font-medium normal-case tracking-normal text-navy"
-                data-ff-notice-status=""
-              >
-                {options.map((option) => (
-                  <option key={option.value} value={option.value} disabled={active && option.value === "none"}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {showSet ? (
-              <form action={setDealProductNotice}>
-                <input type="hidden" name="dealId" value={dealId} />
-                <input type="hidden" name="product" value={productValue} />
-                <input type="hidden" name="noticeType" value={selected} />
-                {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-                <Button type="submit" size="xs" data-ff-notice-set="">
-                  Set
-                </Button>
-              </form>
-            ) : null}
+            <p
+              className="min-w-0 flex-1 text-sm font-medium leading-snug text-navy"
+              data-ff-notice-type-name=""
+            >
+              {noticeTypeLabel(selected !== "none" ? selected : noticeType, options)}
+            </p>
             <NoticeNotePad
               dealId={dealId}
               product={productValue}
@@ -269,7 +254,7 @@ export function DealNotices({
                   Set reminder
                 </DropdownMenuItem>
                 <DropdownMenuItem data-ff-notice-edit-types="" onClick={openTypesEditor}>
-                  Edit types
+                  Change type
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -333,6 +318,9 @@ export function DealNotices({
         picklistId={picklistId}
         options={options}
         returnTo={returnTo}
+        product={productValue}
+        currentType={noticeType}
+        mode={typesMode}
       />
 
       {taskOpen ? (
@@ -374,6 +362,8 @@ const NOTICE_LAYER_SEL = [
   "[data-slot='dialog-content']",
   "[data-slot='dialog-overlay']",
   "[data-ff-notice-edit-types-dialog]",
+  "[data-ff-notice-create-modal]",
+  "[data-ff-notice-type-modal]",
   "[data-ff-create-task-dialog]",
   "[data-ff-speech-note-dialog]",
   "[data-ff-notice-notepad-dialog]",
