@@ -23,8 +23,7 @@ export function CompleteTaskForm({
             Notice notes
             <Input
               name="noticeNotes"
-              minLength={2}
-              placeholder="Required to clear"
+              placeholder="Optional"
               className="mt-0.5 h-7 w-44 text-xs"
               data-ff-notice-complete-notes=""
             />

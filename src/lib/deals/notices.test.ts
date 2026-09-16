@@ -195,6 +195,10 @@ describe("deal notices", () => {
     expect(source("src/components/deal/notice-note-pad.tsx")).not.toMatch(/prepareSpeechMicrophone/);
     expect(source("src/components/deal/speech-note-dialog.tsx")).toMatch(/prepareSpeechMicrophone/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/SpeechNoteDialog/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/data-ff-notice-complete=""/);
+    expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(
+      /disabled=\{\(noticeNote \?\? ""\)\.trim\(\)\.length < 2\}/,
+    );
     expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/saveDealNoticeTypes/);
     expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/applyDealNoticeType/);
     expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/data-ff-notice-create-modal/);
@@ -220,6 +224,11 @@ describe("deal notices", () => {
     expect(editor).toMatch(/data-ff-notice-set/);
     expect(editor).toMatch(/applyDealNoticeType/);
     expect(editor).toMatch(/Name a new type/);
+    expect(editor).toMatch(/data-ff-notice-create-reminder/);
+    expect(editor).toMatch(/CreateTaskForm/);
+    expect(editor).toMatch(/open && canApply/);
+    expect(editor).toMatch(/submitLabel="Set reminder"/);
+    expect(editor).toMatch(/noticeTypeLabels: labelsForSave\(\)/);
     expect(editor).not.toMatch(/<select/);
     expect(editor).not.toMatch(/SEED_NOTICE_LABELS\.none|"None"/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(
