@@ -98,7 +98,7 @@ describe("deal shop flow + product chrome", () => {
     expect(html).toContain("Term Life");
     const picker = readFileSync("src/components/deals/product-picker.tsx", "utf8");
     expect(picker).toMatch(/sr-only/);
-    expect(readFileSync("src/app/deals/[id]/page.tsx", "utf8")).toMatch(/DealFlowRail/);
+    expect(readFileSync("src/app/deals/[id]/page.tsx", "utf8")).not.toMatch(/DealFlowRail/);
     expect(readFileSync("src/components/deals/new-deal-create-fields.tsx", "utf8")).toMatch(
       /DealFlowRail/,
     );

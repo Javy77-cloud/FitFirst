@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   CONTACTS_LIST_COLUMNS,
   DEALS_LIST_COLUMNS,
+  DEAL_NOTES_COLUMN_WIDTH,
+  dealsListColumnsFromFields,
   LEADS_LIST_COLUMNS,
   TASKS_LIST_COLUMNS,
   tasksListColumnsFromLayout,
@@ -35,6 +37,8 @@ import {
   toggleColumnVisibility,
   type ListColumn,
 } from "./list-columns";
+import { CORE_FIELDS } from "@/lib/custom-fields/defaults";
+import type { FieldLayout } from "@/lib/custom-fields/types";
 
 const COLUMNS: ListColumn[] = [
   { id: "name", label: "Name", locked: true },
@@ -104,6 +108,24 @@ describe("list column visibility", () => {
     expect(allColumnIds(DEALS_LIST_COLUMNS)).toEqual(
       expect.arrayContaining(["pick", "title", "stage", "phone", "tags"]),
     );
+  });
+
+  it("starts deal Notes compact so the column can be resized", () => {
+    const withNotes: FieldLayout = {
+      columns: [
+        {
+          id: "left",
+          sections: [{ id: "notes", label: "Notes", fieldKeys: ["notes"] }],
+        },
+        { id: "right", sections: [] },
+      ],
+    };
+    const notes = dealsListColumnsFromFields(CORE_FIELDS, withNotes).find(
+      (column) => column.id === "notes",
+    );
+    expect(notes?.defaultWidth).toBe(DEAL_NOTES_COLUMN_WIDTH);
+    expect(DEAL_NOTES_COLUMN_WIDTH).toBe(160);
+    expect(readFileSync("src/components/lists/column-table.tsx", "utf8")).toMatch(/ff-col-resize/);
   });
 
   it("pins pick as the first visible column even when saved mid-row", () => {

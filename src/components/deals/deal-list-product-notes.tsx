@@ -12,14 +12,12 @@ function ProductNoteField({
   product,
   label,
   value,
-  showLabel,
 }: {
   dealId: string;
   columnId: string;
   product: string;
   label: string;
   value: string;
-  showLabel: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [draft, setDraft] = useState(value);
@@ -48,20 +46,22 @@ function ProductNoteField({
   }
 
   return (
-    <label className="block min-w-[8rem]" data-ff-deal-list-product-note={product}>
-      {showLabel ? (
-        <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {label}
-        </span>
-      ) : (
-        <span className="sr-only">{label} notes</span>
-      )}
+    <label
+      className="flex min-w-0 items-center gap-1"
+      data-ff-deal-list-product-note={product}
+    >
+      <span
+        className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+        data-ff-deal-list-product-note-label=""
+      >
+        {label}
+      </span>
       <textarea
         aria-label={`${label} notes`}
         data-ff-pipe-edit={columnId}
         data-ff-notes-expanded={expanded ? "1" : "0"}
         className={cn(
-          "w-full min-w-[8rem] rounded-sm border border-border bg-background px-1.5 text-xs text-navy resize-none",
+          "min-w-0 flex-1 rounded-sm border border-border bg-background px-1.5 text-xs text-navy resize-none",
           expanded
             ? "min-h-[2.75rem] py-1 whitespace-pre-wrap"
             : "h-7 min-h-7 overflow-hidden whitespace-nowrap text-ellipsis py-1 leading-tight",
@@ -97,10 +97,9 @@ export function DealListProductNotes({
   notes: readonly ListProductNote[];
 }) {
   if (!notes.length) return null;
-  const showLabel = notes.length > 1;
   return (
     <div
-      className={cn("min-w-[8rem]", showLabel ? "space-y-1" : undefined)}
+      className="min-w-0 space-y-1"
       data-ff-deal-list-product-notes=""
       data-ff-deal-list-product-note-count={notes.length}
     >
@@ -112,7 +111,6 @@ export function DealListProductNotes({
           product={row.product}
           label={row.label}
           value={row.note}
-          showLabel={showLabel}
         />
       ))}
     </div>

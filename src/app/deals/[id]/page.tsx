@@ -18,7 +18,7 @@ import {
   listRecordActivities,
 } from "@/lib/db/queries";
 import { listFieldPicklists } from "@/lib/custom-fields/picklist-store";
-import { noticePicklistForFamily, noticeTypesForFamily } from "@/lib/deals/notices";
+import { isRenderableNoticeStamp, noticePicklistForFamily, noticeTypesForFamily } from "@/lib/deals/notices";
 import { DealNotices } from "@/components/deal/deal-notices";
 import { taskDueInputParts } from "@/lib/tasks/due-at";
 import { ensureSeededPipelines } from "@/lib/wire/ensure-pipelines";
@@ -64,9 +64,7 @@ import { ensureRosaDeclarationRetag } from "@/app/actions/declaration";
 import { ROSA_DEC_DEAL_ID } from "@/lib/policy/dec-prompt";
 import {
   lineQuoteCompleteness,
-  packageQuotesComplete,
   productQuoteCompleteness,
-  quotesTabMark,
 } from "@/lib/deals/quote-completeness";
 import { pickBoundQuoteId } from "@/lib/deals/status-stamp";
 import {
@@ -79,7 +77,6 @@ import {
   sheetFormForProduct,
   stripStaleCamirandProductNotices,
 } from "@/lib/deals/product-stages";
-import { DealFlowRail } from "@/components/deals/deal-flow-rail";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 import {
   hydrateCopiedLineFingerprints,
@@ -389,17 +386,21 @@ export default async function DealPage({
       }),
     ]),
   );
-  const quotesPackageComplete = packageQuotesComplete(packageShopLines, quoteCompletenessByLine);
   const flowCompletion = resolveShopFlowCompletion({
     detailsComplete:
       hasMeaningfulDealFieldValues(dealValues) ||
       dealProducts.some((id) => productSectionComplete(id, dealValues)) ||
       sheets.some((row) => sheetHasUserData(row.values)),
-    documentsComplete:
+    documentsComplete: Boolean(unlocked) && (
       Boolean(health && sheetHasUserData(activeSheet.values)) ||
-      sheets.some((row) => sheetHasUserData(row.values)),
+      sheets.some((row) => sheetHasUserData(row.values))
+    ),
     hasMarkets: shopMarketsAction || agentMarketsAction,
-    hasQuotes: quotesPackageComplete,
+    hasQuotes: Boolean(
+      quoteCompletenessByProduct[activeProduct]?.shopped ||
+        quoteCompletenessByProduct[activeProduct]?.complete ||
+        lineQuotes.some((row) => row.quote.stub !== true),
+    ),
     currentFingerprint,
     saved: shopFlowLive,
     line: sheetLine,
@@ -459,12 +460,7 @@ export default async function DealPage({
   const needsVisualReapprove = !unlocked && Boolean(deal.sheetApprovedAt || deal.sheetApprovedBy);
   const hasRequestedQuotes =
     shopMarketsAction || lineQuotes.some((row) => row.quote.stub !== true);
-  const quotesMark = quotesTabMark({
-    quotes: lineQuotes.map((row) => row.quote),
-    requested:
-      Boolean(quoteCompletenessByProduct[activeProduct]?.shopped) ||
-      lineQuotes.some((row) => row.quote.stub !== true),
-  });
+  const noticeStampVisible = isRenderableNoticeStamp(noticeProps.noticeType);
   const titleForm =
     sheetFormForProduct(activeProduct, lineForm) ?? dealProductDef(activeProduct).quotingForm;
   const visibleDealTitle = dealTitleForActiveProduct({
@@ -549,7 +545,9 @@ export default async function DealPage({
         <div className="ff-deal-stamp-row" data-ff-deal-stamps="">
           <div className="ff-deal-stamp-stack">
             <DealStatusStamp stage={stampStage} />
-            {stampStage ? <DealNotices {...noticeProps} placement="overlay" /> : null}
+            {stampStage && noticeStampVisible ? (
+              <DealNotices {...noticeProps} placement="overlay" />
+            ) : null}
           </div>
         </div>
         {(() => {
@@ -578,9 +576,16 @@ export default async function DealPage({
           toolbar={activeTab === "details" ? <EditLayoutLink module="deals" line={activeLob} /> : null}
           heading={
             <div className="min-w-0">
-              <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
-                {visibleDealTitle}
-              </h1>
+              <div className="flex min-w-0 items-start gap-3">
+                <h1 className="min-w-0 flex-1 text-xl font-semibold text-navy" data-ff-deal-title>
+                  {visibleDealTitle}
+                </h1>
+                {!noticeStampVisible ? (
+                  <div className="shrink-0 pt-0.5" data-ff-deal-create-notice="">
+                    <DealNotices {...noticeProps} placement="header" />
+                  </div>
+                ) : null}
+              </div>
               <DealPackageShell
                 name={partyName}
                 phones={uniqueDisplayPhones([
@@ -625,30 +630,14 @@ export default async function DealPage({
                       quoteChoices={quoteChoices}
                       workspaceTab={activeTab}
                     />
-                    {!stampStage ? <DealNotices {...noticeProps} placement="header" /> : null}
+                    {!stampStage && noticeStampVisible ? (
+                      <DealNotices {...noticeProps} placement="header" />
+                    ) : null}
                   </div>
                 }
               />
               {dealProducts.length ? (
                 <>
-                  <div className="mt-3">
-                    <DealFlowRail
-                      current={activeTab}
-                      completed={flowCompletion.completed}
-                      activeLabel={dealProductDef(activeProduct).label}
-                      nextHint={activeTab === "quotes" ? "" : undefined}
-                      productComplete={
-                        productSectionComplete(activeProduct, dealValues) ||
-                        Boolean(
-                          sheets.find((row) => row.line === sheetLineForProduct(activeProduct)) &&
-                            sheetHasUserData(
-                              sheets.find((row) => row.line === sheetLineForProduct(activeProduct))!
-                                .values,
-                            ),
-                        )
-                      }
-                    />
-                  </div>
                   <DealLineSwitcher
                     dealId={deal.id}
                     products={dealProducts}
@@ -793,7 +782,7 @@ export default async function DealPage({
           tabs={AGENT_DEAL_TABS.map((id) => ({
             id,
             label: AGENT_DEAL_TAB_LABELS[id],
-            mark: id === "quotes" ? quotesMark : undefined,
+            complete: flowCompletion.isComplete(id),
             content: (
                   <div>
                     {id === "details" ? (

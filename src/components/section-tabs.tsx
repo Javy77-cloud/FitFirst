@@ -10,6 +10,7 @@ export type SectionTab = {
   content: React.ReactNode;
   href?: string;
   mark?: PendingTabMark | null;
+  complete?: boolean;
 };
 
 /**
@@ -67,12 +68,25 @@ export function SectionTabs({
     label: tab.label,
     href: tab.href ?? hrefFor(tab.id),
     mark: tab.mark,
+    complete: tab.complete,
   }));
   const tabFallback = (
     <div role="tablist" className={FF_CHIP_TAB_GROUP}>
       {pendingTabs.map((tab) => (
-        <span key={tab.id} className={(tabSize === "deal" ? dealTabClass : chipTabClass)(tab.id === current?.id)}>
+        <span
+          key={tab.id}
+          className={(tabSize === "deal" ? dealTabClass : chipTabClass)(tab.id === current?.id)}
+          data-ff-tab-complete={tab.complete ? "true" : "false"}
+        >
           {tab.label}
+          {tab.complete ? (
+            <span
+              className="pointer-events-none absolute right-0 bottom-0 inline-flex size-3 translate-x-1/4 translate-y-1/4 items-center justify-center rounded-full text-[8px] font-bold leading-none"
+              data-ff-tab-complete=""
+            >
+              ✓
+            </span>
+          ) : null}
         </span>
       ))}
     </div>

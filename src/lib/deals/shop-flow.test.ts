@@ -643,13 +643,14 @@ describe("previous quotes stay, current run is primary", () => {
 describe("deal page + action wiring", () => {
   it("deal page uses sticky completion and always line-filters quotes", () => {
     const page = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
-    expect(page).toMatch(/completed=\{flowCompletion\.completed\}/);
+    expect(page).toMatch(/complete: flowCompletion\.isComplete\(id\)/);
+    expect(page).not.toMatch(/DealFlowRail/);
     expect(page).toMatch(/currentQuoteRunId=\{shopFlow\.quoteRuns/);
     expect(page).toMatch(/multiLine=\{dealProducts\.length > 1\}/);
     expect(page).toMatch(/isPrimaryLine=\{dealProducts\[0\] === activeProduct\}/);
     expect(page).toMatch(/preScoped/);
     expect(page).toMatch(/shopLine: row\.quote\.shopLine/);
-    expect(page).toMatch(/packageQuotesComplete/);
+    expect(page).not.toMatch(/packageQuotesComplete/);
     expect(page).toMatch(/lineQuoteCompleteness/);
     expect(page).toMatch(/quoteGaps=/);
     expect(page).toMatch(/DealStatusStamp/);

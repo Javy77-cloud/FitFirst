@@ -116,8 +116,8 @@ describe("Javy live follow-ups after PR #28", () => {
     ).toBe("none_bindable");
     expect(quotesTabMark({ quotes: [], requested: true })).toBe("none_bindable");
     expect(quotesTabMark({ quotes: [], requested: false })).toBeNull();
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/quotesTabMark/);
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/mark: id === "quotes" \? quotesMark/);
+    expect(source("src/app/deals/[id]/page.tsx")).not.toMatch(/quotesTabMark/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/complete: flowCompletion\.isComplete\(id\)/);
     expect(source("src/components/desk/pending-tab-list.tsx")).toMatch(
       /data-ff-quotes-tab-mark="bindable"/,
     );

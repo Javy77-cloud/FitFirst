@@ -192,11 +192,13 @@ export function DealNotices({
           type="button"
           aria-expanded={open}
           aria-haspopup="dialog"
+          aria-label="Create notice"
           data-ff-notice-add=""
+          data-ff-notice-create=""
           onClick={() => setOpen((value) => !value)}
           className="ff-deal-notice-add"
         >
-          + Notice
+          Create notice
         </button>
       )}
 
