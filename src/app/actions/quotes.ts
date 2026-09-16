@@ -48,6 +48,7 @@ import {
   loadLineRiskFingerprint,
   persistDealShopFlow,
 } from "@/lib/deals/shop-flow-persist";
+import { maybeArchiveDealWhenAllProductsTerminal } from "@/lib/deals/archive-when-terminal";
 import {
   nextShopFlowAfterQuoteRun,
   parseShopFlow,
@@ -528,7 +529,10 @@ async function syncDealPipelineFromQuoteStatus(
     const multi = Array.isArray((deal as { shopProducts?: string[] | null }).shopProducts)
       ? ((deal as { shopProducts: string[] }).shopProducts.length > 1)
       : Array.isArray(deal.shopLines) && deal.shopLines.length > 1;
-    if (multi) return;
+    if (multi) {
+      await maybeArchiveDealWhenAllProductsTerminal(dealId);
+      return;
+    }
   }
   let pipelineSlug = "p-c";
   if (deal.pipelineId) {
@@ -539,6 +543,7 @@ async function syncDealPipelineFromQuoteStatus(
     if (board?.slug) pipelineSlug = board.slug;
   }
   await moveDealToStage({ dealId, pipelineSlug, stageSlug, allowLate: true });
+  await maybeArchiveDealWhenAllProductsTerminal(dealId);
 }
 
 export async function saveQuoteAgentStatusAction(formData: FormData) {

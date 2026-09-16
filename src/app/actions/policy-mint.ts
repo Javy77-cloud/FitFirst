@@ -35,6 +35,7 @@ import {
 } from "@/lib/deals/product-stages";
 import { parseShopFlow } from "@/lib/deals/shop-flow";
 import { persistDealShopFlow } from "@/lib/deals/shop-flow-persist";
+import { maybeArchiveDealWhenAllProductsTerminal } from "@/lib/deals/archive-when-terminal";
 import { moveDealToStage } from "@/app/actions/pipeline";
 import { clearCreatePolicyPrompt } from "@/app/actions/declaration-prompt";
 import { ensureWorkItem } from "@/lib/work-queue/service";
@@ -435,6 +436,7 @@ export async function issuePolicyFromDeclaration(input: {
       mintStatus: "published",
       selectedQuoteIds,
     });
+    await maybeArchiveDealWhenAllProductsTerminal(dealId);
     return { ok: true as const, policyId: existing.id, alreadyPublished: true };
   }
 
@@ -680,6 +682,7 @@ export async function issuePolicyFromDeclaration(input: {
   });
   await ensureWorkItem(policyId).catch(() => null);
   await clearCreatePolicyPrompt(dealId).catch(() => null);
+  await maybeArchiveDealWhenAllProductsTerminal(dealId);
 
   revalidatePath(`/deals/${dealId}`);
   revalidatePath(`/policies/${policyId}`);
@@ -831,12 +834,14 @@ export async function publishMintedPolicy(formData: FormData) {
             allowLate: true,
           });
         }
+        await maybeArchiveDealWhenAllProductsTerminal(policy.dealId);
       } else {
         await markMintStatus(policy.dealId, product, {
           stage: "closed_won",
           policyId,
           mintStatus: "published",
         });
+        await maybeArchiveDealWhenAllProductsTerminal(policy.dealId);
       }
     }
   }
