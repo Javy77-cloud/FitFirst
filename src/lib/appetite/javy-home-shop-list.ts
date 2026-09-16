@@ -1,3 +1,5 @@
+import { TRIDENT_CARRIER_ID } from "@/lib/fixtures/ids";
+
 /** Javy's curated Home shop list (from Rosa Markets 2026-09-08). One-click load until appetite is trained. */
 export const JAVY_HOME_SHOP_CARRIER_IDS = [
   "33333333-3333-4333-8333-333333333309", // American Integrity
@@ -12,6 +14,7 @@ export const JAVY_HOME_SHOP_CARRIER_IDS = [
   "67d52980-9167-4d94-8017-23509ded489a", // People's Trust
   "1a0bfaf1-9888-45b3-84ea-2425eff3d3c2", // Southern Oak
   "a11e04a4-7fa6-43fe-8db5-f2d1afae4c85", // Tower Hill
+  TRIDENT_CARRIER_ID, // Trident Reciprocal Exchange
   "0c3ec003-aa2d-44b0-89d2-8d85021d942e", // TypTap
   "76ccf3a7-68c2-436b-8642-554cf96391c2", // Universal P&C
   "33333333-3333-4333-8333-333333333310", // VAVE / Lloyd's
@@ -19,3 +22,55 @@ export const JAVY_HOME_SHOP_CARRIER_IDS = [
 ] as const;
 
 export const JAVY_HOME_SHOP_LABEL = "Load my Home list";
+
+export const JAVY_HOME_SHOP_NAMES = [
+  "American Integrity",
+  "American Traditions",
+  "Amwins",
+  "Edison",
+  "Florida Peninsula",
+  "Homeowners Choice",
+  "Monarch",
+  "Ovation",
+  "Patriot Select",
+  "People's Trust",
+  "Southern Oak",
+  "Tower Hill",
+  "Trident Reciprocal Exchange",
+  "TypTap",
+  "Universal P&C",
+  "VAVE / Lloyd's",
+  "VYRD",
+] as const;
+
+/** Name fallback when a shop-list UUID is missing (existing Trident under an alias, etc.). */
+export const HOME_SHOP_NAME_ALIASES: Partial<Record<string, string[]>> = {
+  [TRIDENT_CARRIER_ID]: ["trident reciprocal exchange", "trident reciprocal", "trident"],
+};
+
+/** Resolve desk carrier rows to the Home shop list. Prefers seeded UUIDs; falls back to aliases. Skips missing. */
+export function resolveHomeShopCarrierIds<T extends { id: string; name: string }>(
+  rows: T[],
+): string[] {
+  const used = new Set<string>();
+  const out: string[] = [];
+  for (const id of JAVY_HOME_SHOP_CARRIER_IDS) {
+    if (rows.some((row) => row.id === id) && !used.has(id)) {
+      used.add(id);
+      out.push(id);
+      continue;
+    }
+    const aliases = HOME_SHOP_NAME_ALIASES[id];
+    if (!aliases) continue;
+    const hit = rows.find((row) => {
+      if (used.has(row.id)) return false;
+      const name = row.name.toLowerCase();
+      return aliases.some((label) => name.includes(label));
+    });
+    if (hit) {
+      used.add(hit.id);
+      out.push(hit.id);
+    }
+  }
+  return out;
+}

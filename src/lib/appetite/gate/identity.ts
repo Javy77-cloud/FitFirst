@@ -24,6 +24,7 @@ export const SLUG_NAME_ALIASES: Record<string, string[]> = {
   heritage: ["heritage property", "heritage"],
   security_first: ["security first"],
   peoples_trust: ["people's trust", "peoples trust"],
+  trident_reciprocal: ["trident reciprocal exchange", "trident reciprocal", "trident"],
   typtap: ["typtap"],
   olympus: ["olympus insurance", "olympus"],
   monarch: ["monarch national", "monarch"],

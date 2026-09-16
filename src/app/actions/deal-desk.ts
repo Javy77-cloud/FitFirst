@@ -19,7 +19,7 @@ import {
 import { autoSnapshotFieldsForDeal } from "@/lib/appetite/auto-premium-capture";
 import { isUuid } from "@/lib/ids";
 import { EXCLUDE_MARKET_MARKER, EXPLICIT_MARKET_ACTION_MARKER, MANUAL_MARKET_MARKER, isExplicitMarketActionText, manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
-import { JAVY_HOME_SHOP_CARRIER_IDS } from "@/lib/appetite/javy-home-shop-list";
+import { resolveHomeShopCarrierIds } from "@/lib/appetite/javy-home-shop-list";
 import { JAVY_AUTO_SHOP_CARRIER_IDS } from "@/lib/appetite/javy-auto-shop-list";
 import { matchFloodShopCarriers } from "@/lib/appetite/javy-flood-shop-list";
 import { confirmWhy, type QuoteConfirmKind } from "@/lib/deals/quote-confirm";
@@ -251,10 +251,16 @@ export async function loadJavyHomeShopListAction(formData: FormData) {
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
   if (!deal || !risk) throw new Error("Deal or master risk is missing.");
 
+  const deskCarriers = await db
+    .select({ id: carriers.id, name: carriers.name })
+    .from(carriers)
+    .where(eq(carriers.tenantId, DEFAULT_TENANT_ID));
+  const homeCarrierIds = resolveHomeShopCarrierIds(deskCarriers);
+
   const existingLogs = await db.select().from(quoteAttemptLogs).where(eq(quoteAttemptLogs.dealId, dealId));
   const already = new Set(manualCarrierIdsFromLogs(existingLogs));
   let added = 0;
-  for (const carrierId of JAVY_HOME_SHOP_CARRIER_IDS) {
+  for (const carrierId of homeCarrierIds) {
     if (already.has(carrierId)) continue;
     await db.insert(quoteAttemptLogs).values({
       tenantId: DEFAULT_TENANT_ID,

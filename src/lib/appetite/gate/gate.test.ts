@@ -316,6 +316,11 @@ describe("universal_pc ≠ uicna identity", () => {
     expect(slugFromCarrierName("Universal")).toBeNull();
     expect(slugFromCarrierName("Citizens Property Insurance")).toBe(CITIZENS_SLUG);
     expect(slugFromCarrierName("Citizens")).toBe(CITIZENS_SLUG);
+    expect(slugFromCarrierName("Trident Reciprocal Exchange")).toBe("trident_reciprocal");
+    expect(slugFromCarrierName("Trident Reciprocal")).toBe("trident_reciprocal");
+    expect(slugFromCarrierName("Trident")).toBe("trident_reciprocal");
+    expect(DEFAULT_FL_HO_ORDER).toContain("trident_reciprocal");
+    expect(new Set(DEFAULT_FL_HO_ORDER).size).toBe(DEFAULT_FL_HO_ORDER.length);
   });
 
   it("does not merge the two Universals when parsing the committed CSV", () => {
@@ -324,7 +329,13 @@ describe("universal_pc ≠ uicna identity", () => {
     expect(slugs.filter((s) => s === UNIVERSAL_PC_SLUG)).toHaveLength(1);
     expect(slugs.filter((s) => s === UICNA_SLUG)).toHaveLength(1);
     expect(new Set(slugs).size).toBe(catalog.length);
-    expect(catalog).toHaveLength(28);
+    expect(catalog).toHaveLength(29);
+    const trident = catalog.find((c) => c.carrierId === "trident_reciprocal");
+    expect(trident?.legalName).toBe("Trident Reciprocal Exchange");
+    expect(trident?.notesForAgent).toMatch(/\$300,000/);
+    expect(trident?.flHoOrder).toBe(DEFAULT_FL_HO_ORDER.indexOf("trident_reciprocal"));
+    expect(trident?.linesOffered).toContain("HO3");
+    expect(trident?.statesAvailable).toContain("FL");
     expect(catalog.every((c) => c.rateable)).toBe(true);
   });
 });

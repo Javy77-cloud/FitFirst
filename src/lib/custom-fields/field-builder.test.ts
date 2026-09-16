@@ -244,7 +244,9 @@ describe("deal field builder", () => {
     expect(LINE_OF_BUSINESS_OPTIONS).toEqual(expect.arrayContaining(["Homeowners", "Auto", "Flood", "Workers Comp"]));
     expect(LINE_OF_BUSINESS_OPTIONS).not.toContain("Home");
     expect(LINE_OF_BUSINESS_OPTIONS).not.toContain("Workers' Comp");
-    expect(COMMON_CARRIER_OPTIONS).toEqual(expect.arrayContaining(["Tailrow", "Progressive", "Citizens"]));
+    expect(COMMON_CARRIER_OPTIONS).toEqual(
+      expect.arrayContaining(["Tailrow", "Progressive", "Citizens", "Trident Reciprocal Exchange"]),
+    );
     expect(missingStarterPicklistNames([])).toEqual([...STARTER_FIELD_PICKLISTS.map((list) => list.name)]);
     expect(
       missingStarterPicklistNames([
