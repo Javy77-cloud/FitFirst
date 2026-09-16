@@ -305,6 +305,8 @@ describe("list column visibility", () => {
     expect(clampColumnWidth(10)).toBe(56);
     expect(clampColumnWidth(10, "pick")).toBe(MIN_PICK_COLUMN_WIDTH);
     expect(clampColumnWidth(900)).toBe(720);
+    expect(clampColumnWidth(900, "notes")).toBe(900);
+    expect(clampColumnWidth(5000, "new_field")).toBe(4800);
     expect(defaultColumnWidth({ id: "pick", label: "" })).toBe(DEFAULT_PICK_COLUMN_WIDTH);
     expect(defaultColumnWidth({ id: "pick", label: "", defaultWidth: 48 })).toBe(48);
     expect(defaultColumnWidth({ id: "name", label: "Name" })).toBe(260);

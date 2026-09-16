@@ -414,7 +414,9 @@
 }
 .ff-list-table {
   table-layout: fixed;
-  /* Width comes from summed col widths so resize grows scroll, not neighbors. */
+  /* Inline summed width must win over .ff-table { width: 100% } so Notes can stretch. */
+  width: max-content;
+  max-width: none;
 }
 /* Tip sep7gh: pull checkbox flush to deal/lead name (pad + right-align). */
 .ff-list-table [data-sheet-col="pick"] {
@@ -452,6 +454,10 @@
   align-items: center;
   min-width: 0;
   line-height: 1.5;
+}
+.ff-list-table [data-sheet-col="notes"],
+.ff-list-table [data-sheet-col="new_field"] {
+  max-width: none;
 }
 .ff-list-th {
   position: relative;
@@ -1104,7 +1110,8 @@ a[data-ff-carrier-portal-status="connected"]:hover {
 .ff-deal-stamp-row {
   position: absolute;
   top: 13.5rem;
-  left: 50%;
+  /* Sit over the white content column (left of the 420px rail), not page-center. */
+  left: calc((100% - 420px - 1.25rem) / 2);
   z-index: 8;
   display: flex;
   width: max-content;
@@ -1115,6 +1122,11 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   overflow: visible;
   pointer-events: none;
   transform: translateX(-50%);
+}
+@media (max-width: 900px) {
+  .ff-deal-stamp-row {
+    left: 42%;
+  }
 }
 .ff-deal-status-stamp {
   display: flex;
@@ -1183,11 +1195,9 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   z-index: 2;
   pointer-events: auto;
 }
-.ff-deal-stamp-stack .ff-deal-notice-add {
-  position: absolute;
-  right: -0.15rem;
-  bottom: -1.15rem;
-  z-index: 2;
+.ff-deal-stamp-stack .ff-deal-notice-add,
+.ff-deal-stamp-stack .ff-deal-notice-create {
+  position: static;
 }
 .ff-deal-notice-stamp {
   pointer-events: auto;
@@ -1236,6 +1246,10 @@ a[data-ff-carrier-portal-status="connected"]:hover {
 .ff-deal-notice-add:hover {
   background: color-mix(in srgb, var(--ff-navy) 6%, #fff);
   border-color: color-mix(in srgb, var(--ff-navy) 40%, transparent);
+}
+.ff-deal-notice-create {
+  pointer-events: auto;
+  z-index: 2;
 }
 .ff-deal-notice-compact {
   pointer-events: auto;

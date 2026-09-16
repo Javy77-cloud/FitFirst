@@ -46,22 +46,16 @@ function ProductNoteField({
   }
 
   return (
-    <label
-      className="flex min-w-0 items-center gap-1"
-      data-ff-deal-list-product-note={product}
-    >
-      <span
-        className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
-        data-ff-deal-list-product-note-label=""
-      >
-        {label}
+    <label className="block min-w-0" data-ff-deal-list-product-note={product}>
+      <span className="sr-only" data-ff-deal-list-product-note-label="">
+        {label} notes
       </span>
       <textarea
         aria-label={`${label} notes`}
         data-ff-pipe-edit={columnId}
         data-ff-notes-expanded={expanded ? "1" : "0"}
         className={cn(
-          "min-w-0 flex-1 rounded-sm border border-border bg-background px-1.5 text-xs text-navy resize-none",
+          "w-full min-w-0 rounded-sm border border-border bg-background px-1.5 text-xs text-navy resize-none",
           expanded
             ? "min-h-[2.75rem] py-1 whitespace-pre-wrap"
             : "h-7 min-h-7 overflow-hidden whitespace-nowrap text-ellipsis py-1 leading-tight",

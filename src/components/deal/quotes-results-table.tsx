@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState, useTransition } from "react";
+import { Fragment, useMemo, useState, useTransition, type ReactNode } from "react";
 import {
   acceptQuoteFloorAndRecheckAction,
   recheckQuotesAction,
@@ -394,6 +394,7 @@ export function QuotesResultsTable({
   product = null,
   productStage = null,
   priorByQuoteId = {},
+  toolbarEnd = null,
 }: {
   dealId: string;
   rows: Row[];
@@ -410,6 +411,7 @@ export function QuotesResultsTable({
   product?: string | null;
   productStage?: string | null;
   priorByQuoteId?: Record<string, { quote: Quote; carrier: Carrier; label: string | null }>;
+  toolbarEnd?: ReactNode;
 }) {
   const list = asList(rows);
   const [hideMarked, setHideMarked] = useState<string[]>([]);
@@ -627,6 +629,11 @@ export function QuotesResultsTable({
             </Button>
           ) : null}
         </div>
+        {toolbarEnd ? (
+          <div className="ml-auto shrink-0" data-ff-quotes-create-notice="">
+            {toolbarEnd}
+          </div>
+        ) : null}
         {compareExceedsMax(compareCount) ? (
           <p className="text-[11px] font-medium text-fit-flag" data-ff-quotes-compare-hint="">
             Compare supports {QUOTE_COMPARE_MAX} quotes — uncheck {compareCount - QUOTE_COMPARE_MAX}{" "}

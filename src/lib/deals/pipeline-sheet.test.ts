@@ -216,5 +216,9 @@ describe("pipeline list / grid sheet", () => {
     expect(source("src/components/deals/deal-list-product-notes.tsx")).toMatch(
       /data-ff-deal-list-product-notes/,
     );
+    expect(source("src/components/deals/deal-list-product-notes.tsx")).toMatch(/sr-only/);
+    expect(source("src/components/deals/deal-list-product-notes.tsx")).not.toMatch(
+      /uppercase tracking-wide text-muted-foreground/,
+    );
   });
 });
