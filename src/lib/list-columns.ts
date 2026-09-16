@@ -38,6 +38,8 @@ export const MIN_PICK_COLUMN_WIDTH = 32;
 export const MAX_COLUMN_WIDTH = 720;
 export const DEFAULT_COLUMN_WIDTH = 148;
 export const DEFAULT_PICK_COLUMN_WIDTH = 32;
+/** Compact starting width — drag the Notes header to widen or narrow. */
+export const DEAL_NOTES_COLUMN_WIDTH = 160;
 
 export function columnStorageKey(moduleId: string): string {
   return `${COLUMN_STORAGE_PREFIX}:${moduleId}`;
@@ -598,6 +600,11 @@ export function contactsListColumnsFromLayout(
 
 export const CONTACTS_LIST_COLUMNS: ListColumn[] = contactsListColumnsFromLayout();
 
+function isDealsNotesListColumn(column: ListColumn): boolean {
+  if (column.id === "notes" || column.id === "new_field") return true;
+  return /notes/i.test(column.label);
+}
+
 export function dealsListColumnsFromFields(
   fields: readonly CustomFieldDef[],
   layout?: FieldLayout | null,
@@ -605,7 +612,11 @@ export function dealsListColumnsFromFields(
   return fromDeskColumns(dealsColumnsFromFields(fields, layout), {
     pick: true,
     // Only the checkbox column is locked — agents must be able to hide Deal / Stage / Tags.
-  });
+  }).map((column) =>
+    isDealsNotesListColumn(column)
+      ? { ...column, defaultWidth: column.defaultWidth ?? DEAL_NOTES_COLUMN_WIDTH }
+      : column,
+  );
 }
 
 export const DEALS_LIST_COLUMNS: ListColumn[] = dealsListColumnsFromFields(

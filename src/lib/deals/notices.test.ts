@@ -151,8 +151,9 @@ describe("deal notices", () => {
         placement: "header",
       }),
     );
-    expect(empty).toMatch(/\+ Notice/);
+    expect(empty).toMatch(/Create notice/);
     expect(empty).toMatch(/data-ff-notice-add/);
+    expect(empty).toMatch(/data-ff-notice-create/);
     expect(empty).not.toMatch(/data-ff-notice-status/);
     expect(empty).not.toMatch(/Edit types/);
     expect(empty).not.toMatch(/\/settings\/picklists/);

@@ -205,7 +205,7 @@ describe("create + detail wiring", () => {
 
     const page = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
     expect(page).toMatch(/DealLineSwitcher/);
-    expect(page).toMatch(/DealFlowRail/);
+    expect(page).not.toMatch(/DealFlowRail/);
     expect(page).toMatch(/layoutForActiveProduct|activeProduct/);
     expect(page).toMatch(/productSectionComplete/);
     expect(page).not.toMatch(/DealLineSelector/);

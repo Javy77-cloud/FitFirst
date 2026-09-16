@@ -501,6 +501,13 @@ describe("per-product stages", () => {
     expect(isDealListNotesColumn("new_field", { type: "multi_line", label: "Notes" })).toBe(true);
     expect(isDealListNotesColumn("notes")).toBe(true);
     expect(joinProductListNotes(heatherNotes)).toBe("HO3: HO3 binder\nAuto: VIN pending");
+    expect(source("src/components/deals/deal-list-product-notes.tsx")).toMatch(
+      /data-ff-deal-list-product-note-label/,
+    );
+    expect(source("src/components/deals/deal-list-product-notes.tsx")).toMatch(
+      /flex min-w-0 items-center gap-1/,
+    );
+    expect(source("src/lib/list-columns.ts")).toMatch(/DEAL_NOTES_COLUMN_WIDTH = 160/);
   });
 
   it("strips Heather Camirand HO3/Auto leftover notices and keeps Flood", () => {
@@ -523,7 +530,13 @@ describe("per-product stages", () => {
     expect(source("src/app/globals.css")).toMatch(/ff-deal-stamp-stack/);
     expect(source("src/app/globals.css")).toMatch(/ff-notice-stamp-ink-hit/);
     expect(source("src/app/globals.css")).toMatch(/rotate\(-24deg\)/);
+    expect(source("src/app/globals.css")).toMatch(/right: -8\.6rem;/);
+    expect(source("src/app/globals.css")).toMatch(/bottom: -2\.05rem;/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/ff-deal-stamp-stack/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/data-ff-deal-create-notice/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/complete: flowCompletion\.isComplete\(id\)/);
+    expect(source("src/app/deals/[id]/page.tsx")).not.toMatch(/DealFlowRail/);
+    expect(source("src/components/desk/pending-tab-list.tsx")).toMatch(/data-ff-tab-complete/);
   });
 
   it("wires choose-quote, lost reasons, attach ids, and speech finals", () => {

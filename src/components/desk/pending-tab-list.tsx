@@ -14,6 +14,8 @@ export type PendingTab = {
   label: string;
   href: string;
   mark?: PendingTabMark | null;
+  /** Prep workspace is actually complete — not merely visited. */
+  complete?: boolean;
 };
 
 export function PendingTabList({
@@ -49,6 +51,7 @@ export function PendingTabList({
             role="tab"
             aria-selected={selected}
             className={cn(size === "deal" ? dealTabClass(selected) : chipTabClass(selected))}
+            data-ff-tab-complete={tab.complete ? "true" : "false"}
             onClick={() => setOptimistic({ from: navKey, id: tab.id })}
           >
             <span className="inline-flex items-center gap-1">
@@ -71,6 +74,15 @@ export function PendingTabList({
                 </span>
               ) : null}
             </span>
+            {tab.complete ? (
+              <span
+                className="pointer-events-none absolute right-0 bottom-0 inline-flex size-3 translate-x-1/4 translate-y-1/4 items-center justify-center rounded-full text-[8px] font-bold leading-none"
+                aria-label={`${tab.label} complete`}
+                data-ff-tab-complete=""
+              >
+                ✓
+              </span>
+            ) : null}
           </PendingLink>
         );
       })}

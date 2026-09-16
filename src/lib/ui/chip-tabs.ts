@@ -9,7 +9,7 @@ const BASE =
   "ff-chip-tab rounded-sm border px-2.5 py-1 text-xs font-medium transition-colors";
 
 const DEAL =
-  "ff-chip-tab rounded-sm border px-3 py-1.5 text-sm font-semibold transition-colors";
+  "ff-chip-tab relative rounded-sm border px-3 py-1.5 text-sm font-semibold transition-colors";
 
 const ON =
   "bg-primary text-primary-foreground border-primary";
