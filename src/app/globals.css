@@ -452,12 +452,51 @@
 .ff-list-table tbody td > .ff-list-cell {
   display: flex;
   align-items: center;
+  width: 100%;
   min-width: 0;
   line-height: 1.5;
 }
 .ff-list-table [data-sheet-col="notes"],
-.ff-list-table [data-sheet-col="new_field"] {
+.ff-list-table [data-sheet-col="new_field"],
+.ff-list-table [data-ff-notes-col="1"] {
   max-width: none;
+}
+/* Notes field must track the cell: flex item otherwise shrink-wraps to textarea cols. */
+.ff-list-table tbody td[data-sheet-col="notes"] > .ff-list-cell,
+.ff-list-table tbody td[data-sheet-col="new_field"] > .ff-list-cell,
+.ff-list-table tbody td[data-ff-notes-col="1"] > .ff-list-cell,
+.ff-list-table tbody td:has([data-ff-deal-list-product-notes]) > .ff-list-cell,
+.ff-list-table .ff-list-cell-notes {
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+.ff-list-table tbody td[data-sheet-col="notes"] > .ff-list-cell > *,
+.ff-list-table tbody td[data-sheet-col="new_field"] > .ff-list-cell > *,
+.ff-list-table tbody td[data-ff-notes-col="1"] > .ff-list-cell > *,
+.ff-list-table tbody td:has([data-ff-deal-list-product-notes]) > .ff-list-cell > *,
+.ff-list-table .ff-list-cell-notes > * {
+  width: 100%;
+  min-width: 0;
+}
+.ff-list-table [data-ff-deal-list-product-notes],
+.ff-list-table [data-ff-deal-list-product-note] {
+  width: 100%;
+  min-width: 0;
+}
+.ff-list-table [data-ff-deal-list-product-note] textarea,
+.ff-list-table [data-ff-notes-expanded],
+.ff-list-table tbody td[data-sheet-col="notes"] textarea,
+.ff-list-table tbody td[data-sheet-col="notes"] input,
+.ff-list-table tbody td[data-sheet-col="new_field"] textarea,
+.ff-list-table tbody td[data-sheet-col="new_field"] input,
+.ff-list-table tbody td[data-ff-notes-col="1"] textarea,
+.ff-list-table tbody td[data-ff-notes-col="1"] input {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  box-sizing: border-box;
 }
 .ff-list-th {
   position: relative;

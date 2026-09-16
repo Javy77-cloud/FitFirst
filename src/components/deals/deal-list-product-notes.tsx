@@ -46,7 +46,7 @@ function ProductNoteField({
   }
 
   return (
-    <label className="block min-w-0" data-ff-deal-list-product-note={product}>
+    <label className="block w-full min-w-0" data-ff-deal-list-product-note={product}>
       <span className="sr-only" data-ff-deal-list-product-note-label="">
         {label} notes
       </span>
@@ -54,8 +54,9 @@ function ProductNoteField({
         aria-label={`${label} notes`}
         data-ff-pipe-edit={columnId}
         data-ff-notes-expanded={expanded ? "1" : "0"}
+        style={{ width: "100%" }}
         className={cn(
-          "w-full min-w-0 rounded-sm border border-border bg-background px-1.5 text-xs text-navy resize-none",
+          "box-border w-full min-w-0 rounded-sm border border-border bg-background px-1.5 text-xs text-navy resize-none",
           expanded
             ? "min-h-[2.75rem] py-1 whitespace-pre-wrap"
             : "h-7 min-h-7 overflow-hidden whitespace-nowrap text-ellipsis py-1 leading-tight",
@@ -93,7 +94,7 @@ export function DealListProductNotes({
   if (!notes.length) return null;
   return (
     <div
-      className="min-w-0 space-y-1"
+      className="flex w-full min-w-0 flex-col gap-1"
       data-ff-deal-list-product-notes=""
       data-ff-deal-list-product-note-count={notes.length}
     >

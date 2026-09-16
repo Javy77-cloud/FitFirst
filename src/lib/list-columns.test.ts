@@ -131,6 +131,15 @@ describe("list column visibility", () => {
       /document\.addEventListener\("pointermove"/,
     );
     expect(readFileSync("src/app/globals.css", "utf8")).toMatch(/\.ff-col-resize \{[\s\S]*width: 16px;/);
+    const table = readFileSync("src/components/lists/column-table.tsx", "utf8");
+    expect(table).toMatch(/isNotesListColumnId/);
+    expect(table).toMatch(/style=\{\{ width, minWidth: 0 \}\}/);
+    expect(table).toMatch(/ff-list-cell-notes/);
+    expect(table).toMatch(/data-ff-notes-col/);
+    const css = readFileSync("src/app/globals.css", "utf8");
+    expect(css).toMatch(/align-items: stretch/);
+    expect(css).toMatch(/\[data-ff-deal-list-product-note\] textarea/);
+    expect(css).toMatch(/\.ff-list-cell-notes > \*/);
   });
 
   it("pins pick as the first visible column even when saved mid-row", () => {

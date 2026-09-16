@@ -508,6 +508,12 @@ describe("per-product stages", () => {
     expect(source("src/components/deals/deal-list-product-notes.tsx")).not.toMatch(
       /flex min-w-0 items-center gap-1/,
     );
+    const notesUi = source("src/components/deals/deal-list-product-notes.tsx");
+    expect(notesUi).toMatch(/className="flex w-full min-w-0 flex-col gap-1"/);
+    expect(notesUi).toMatch(/className="block w-full min-w-0"/);
+    expect(notesUi).toMatch(/style=\{\{ width: "100%" \}\}/);
+    expect(notesUi).toMatch(/box-border w-full min-w-0/);
+    expect(notesUi).not.toMatch(/min-w-\[8rem\]|min-w-\[6rem\]|max-w-\[|w-44|w-56|w-64/);
     expect(source("src/lib/list-columns.ts")).toMatch(/DEAL_NOTES_COLUMN_WIDTH = 160/);
     expect(source("src/lib/list-columns.ts")).toMatch(/NOTES_MAX_COLUMN_WIDTH = 4800/);
   });

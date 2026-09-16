@@ -205,6 +205,9 @@ describe("pipeline list / grid sheet", () => {
     expect(cell).toMatch(/onFocus=\{\(\) => setExpanded\(true\)\}/);
     expect(cell).toMatch(/rows=\{expanded \? 2 : 1\}/);
     expect(cell).toMatch(/min-h-\[2\.75rem\]/);
+    expect(cell).toMatch(/box-border w-full min-w-0/);
+    expect(cell).toMatch(/style=\{\{ width: "100%" \}\}/);
+    expect(cell).not.toMatch(/min-w-\[8rem\]/);
     expect(cell).toMatch(/whitespace-nowrap/);
     expect(cell).toMatch(/text-ellipsis/);
     expect(cell).not.toMatch(/rows=\{expanded \? 4 : 1\}/);

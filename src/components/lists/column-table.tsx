@@ -25,6 +25,7 @@ import {
   defaultVisibleIds,
   isListColumnSortable,
   isLiveSearchColumn,
+  isNotesListColumnId,
   isValueFilterColumn,
   listColumnHeaderText,
   listSortForColumn,
@@ -439,16 +440,24 @@ export function ColumnTable({
                 className={isSelected ? "ff-row-selected" : undefined}
                 data-ff-row-selected={isSelected ? "true" : undefined}
               >
-                {shown.map((column) => (
+                {shown.map((column) => {
+                  const width = appliedWidths[column.id] ?? defaultColumnWidth(column);
+                  const notesCol = isNotesListColumnId(column.id) || /notes/i.test(column.label);
+                  return (
                   <td
                     key={column.id}
                     data-sheet-col={column.id}
+                    data-ff-notes-col={notesCol ? "1" : undefined}
                     data-sort={sheetAttr(rowSortValue(row, column.id))}
+                    style={{ width, minWidth: 0 }}
                     {...sheetCellProps(moduleId, rowSortValue(row, column.id))}
                   >
-                    <div className="ff-list-cell">{row.cells[column.id]}</div>
+                    <div className={cn("ff-list-cell min-w-0 w-full", notesCol && "ff-list-cell-notes")}>
+                      {row.cells[column.id]}
+                    </div>
                   </td>
-                ))}
+                  );
+                })}
               </tr>
               );
             })
