@@ -7,7 +7,12 @@ import {
   parseAddressParts,
   sheetKeysForGeminiKey,
 } from "./map";
-import { GEMINI_EXTRACT_JSON_KEYS, geminiKeysForShopLine } from "./prompt";
+import {
+  GEMINI_EXTRACT_JSON_KEYS,
+  buildGeminiSystemPrompt,
+  buildGeminiUserPrompt,
+  geminiKeysForShopLine,
+} from "./prompt";
 
 describe("gemini map key mapping", () => {
   it("maps Gemini JSON keys onto sheet field keys", () => {
@@ -16,7 +21,17 @@ describe("gemini map key mapping", () => {
       "address1",
       "applicant_address",
       "property_address",
+    ]);
+    expect(sheetKeysForGeminiKey("property_address")).not.toContain("mailing_address");
+    expect(sheetKeysForGeminiKey("location_description")).toEqual([
+      "property_address",
+      "address",
+      "address1",
+      "location_description",
+    ]);
+    expect(sheetKeysForGeminiKey("mailing_address")).toEqual([
       "mailing_address",
+      "contact_mailing_address",
     ]);
     expect(sheetKeysForGeminiKey("current_premium")).toEqual(["current_premium", "premium"]);
     expect(sheetKeysForGeminiKey("premium")).toEqual(["premium", "current_premium"]);
@@ -52,6 +67,10 @@ describe("gemini map key mapping", () => {
         "billing_frequency",
         "next_due",
         "payment_method",
+        "location_description",
+        "property_information",
+        "insured_property",
+        "residence_premises",
       ]),
     );
     expect(sheetKeysForGeminiKey("license_number")).toEqual([
@@ -217,6 +236,30 @@ describe("normalizeOirLetterCode", () => {
   });
 });
 
+describe("mailing vs property keys stay distinct", () => {
+  it("does not copy the risk address onto mailing_address", () => {
+    const result = mapGeminiJsonToFields(
+      {
+        property_address: {
+          value: "18025 Cypress Point Rd, Fort Myers, FL 33912",
+          confidence: 0.94,
+        },
+        mailing_address: { value: "8561 SW 85th St Ave", confidence: 0.93 },
+        location_description: {
+          value: "18025 Cypress Point Rd, Fort Myers, FL 33912",
+          confidence: 0.92,
+        },
+      },
+      "dec",
+    );
+    const byKey = Object.fromEntries(result.fields.map((f) => [f.fieldKey, f]));
+    expect(byKey.address1.normalizedValue).toMatch(/Cypress Point/);
+    expect(byKey.property_address.normalizedValue).toMatch(/Cypress Point/);
+    expect(byKey.mailing_address.normalizedValue).toBe("8561 SW 85th St Ave");
+    expect(byKey.contact_mailing_address.normalizedValue).toBe("8561 SW 85th St Ave");
+  });
+});
+
 describe("florida peninsula dec aliases", () => {
   it("maps Policy No / total premium labels onto mint sheet keys", () => {
     const result = mapGeminiJsonToFields(
@@ -231,6 +274,23 @@ describe("florida peninsula dec aliases", () => {
     expect(byKey.policy_number.normalizedValue).toBe("HO3 0140119 05 26");
     expect(byKey.premium.normalizedValue).toBe("3383");
     expect(byKey.effective_date.normalizedValue).toBe("09/01/2026");
+  });
+});
+
+describe("rosa desk training extract prompts", () => {
+  it("teaches distinct mailing vs property keys and HO mint defaults", () => {
+    const system = buildGeminiSystemPrompt("dec", "home");
+    const user = buildGeminiUserPrompt("dec", "home");
+    const auto = buildGeminiUserPrompt("dec", "auto");
+    expect(system).toMatch(/location_description/);
+    expect(system).toMatch(/NEVER copy Insured \/ mailing address/);
+    expect(system).toMatch(/renewal_date = policy expiration date/);
+    expect(system).toMatch(/No mortgage/);
+    expect(system).toMatch(/client direct payment/);
+    expect(system).toMatch(/never invent/);
+    expect(user).toMatch(/18025 Cypress Point Rd/);
+    expect(user).toMatch(/do not force annual on auto/);
+    expect(auto).toMatch(/Do not treat this as homeowners/);
   });
 });
 

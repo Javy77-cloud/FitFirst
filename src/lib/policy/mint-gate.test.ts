@@ -26,6 +26,11 @@ import {
   adoptMintFields,
   applyConfirmedMintFields,
   normalizeMintValue,
+  MINT_FIELD_ALIASES,
+  MINT_NO_MORTGAGE,
+  MINT_PAYMENT_DIRECT,
+  MINT_PAYMENT_MORTGAGEE,
+  isHomeownersMintProduct,
 } from "./mint-gate";
 
 function source(file: string) {
@@ -432,6 +437,11 @@ describe("unpublished confirm guard", () => {
     expect(source("src/lib/policy/load-gemini-rows.ts")).toMatch(/need_dec_file/);
     expect(source("src/app/actions/policy-mint.ts")).not.toMatch(/readFile\(path\.join\(uploadRoot/);
     expect(source("src/lib/extraction/gemini/prompt.ts")).toMatch(/selling_agency/);
+    expect(source("src/lib/extraction/gemini/prompt.ts")).toMatch(/location_description/);
+    expect(source("src/lib/extraction/gemini/prompt.ts")).toMatch(/NEVER copy Insured \/ mailing/);
+    expect(source("src/lib/extraction/gemini/prompt.ts")).toMatch(/renewal_date = policy expiration/);
+    expect(source("src/lib/extraction/gemini/prompt.ts")).toMatch(/No mortgage/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/buildMintFields\(\{[\s\S]*?product,/);
     expect(source("src/lib/policy/change-log.ts")).toMatch(/Policy created/);
     expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(/mintFailureToast/);
     expect(source("src/components/deal/issue-policy-from-dec.tsx")).toMatch(/mint\(undefined, true\)/);
@@ -439,5 +449,131 @@ describe("unpublished confirm guard", () => {
     expect(mintFailureToast("need_dec_file")).toEqual({ key: "need-dec-file", kind: "error" });
     expect(mintFailureToast("need_gemini")).toEqual({ key: "gemini-needs-key", kind: "error" });
     expect(mintFailureToast("need_dec_fields")).toEqual({ key: "need-dec-fields", kind: "error" });
+  });
+});
+
+describe("rosa desk training mint proposals", () => {
+  it("prefers property / location-description over mailing when they differ", () => {
+    expect(MINT_FIELD_ALIASES.mailing_address[0]).toBe("property_address");
+    expect(MINT_FIELD_ALIASES.mailing_address.indexOf("property_address")).toBeLessThan(
+      MINT_FIELD_ALIASES.mailing_address.indexOf("mailing_address"),
+    );
+
+    const rows = [
+      { fieldKey: "mailing_address", normalizedValue: "8561 SW 85th St Ave", confidence: 0.94, flagged: false },
+      {
+        fieldKey: "location_description",
+        normalizedValue: "18025 Cypress Point Rd, Fort Myers, FL 33912",
+        confidence: 0.93,
+        flagged: false,
+      },
+    ];
+    expect(mintGeminiValue(rows, "mailing_address")).toMatch(/Cypress Point/);
+
+    const fields = buildMintFields({
+      product: "homeowners",
+      gemini: rows,
+      sheet: {
+        mailing_address: { value: "8561 SW 85th St Ave" },
+        address1: { value: "18025 Cypress Point Rd" },
+      },
+      identity: {
+        mailingAddress: "8561 SW 85th St Ave",
+        propertyAddress: "18025 Cypress Point Rd, Fort Myers, FL 33912",
+      },
+    });
+    expect(fields.find((row) => row.key === "mailing_address")?.value).toMatch(/Cypress Point/);
+  });
+
+  it("prefers deal/sheet property over Gemini mailing (Rosa)", () => {
+    const fields = buildMintFields({
+      product: "homeowners",
+      gemini: [
+        {
+          fieldKey: "mailing_address",
+          normalizedValue: "8561 SW 85th St Ave",
+          confidence: 0.95,
+          flagged: false,
+        },
+      ],
+      identity: { propertyAddress: "18025 Cypress Point Rd, Fort Myers, FL 33912" },
+    });
+    const location = fields.find((row) => row.key === "mailing_address");
+    expect(location?.value).toMatch(/Cypress Point/);
+    expect(location?.value).not.toMatch(/8561/);
+    expect(location?.source).toBe("sheet");
+  });
+
+  it("sets HO renewal and next due from expiration, billing annual", () => {
+    const fields = buildMintFields({
+      product: "homeowners",
+      gemini: [
+        { fieldKey: "expiration_date", normalizedValue: "2027-09-01", confidence: 0.94, flagged: false },
+        { fieldKey: "effective_date", normalizedValue: "2026-09-01", confidence: 0.94, flagged: false },
+        { fieldKey: "policy_number", normalizedValue: "HO3 0140119 05 26", confidence: 0.95, flagged: false },
+        { fieldKey: "premium", normalizedValue: "3383", confidence: 0.94, flagged: false },
+      ],
+    });
+    expect(fields.find((row) => row.key === "renewal_date")?.value).toBe("2027-09-01");
+    expect(fields.find((row) => row.key === "billing_frequency")?.value).toBe("annual");
+    expect(fields.find((row) => row.key === "next_due")?.value).toBe("2027-09-01");
+  });
+
+  it("proposes No mortgage and client direct when HO mortgagee is blank", () => {
+    const fields = buildMintFields({ product: "homeowners" });
+    expect(fields.find((row) => row.key === "mortgagee")?.value).toBe(MINT_NO_MORTGAGE);
+    expect(fields.find((row) => row.key === "payment_method")?.value).toBe(MINT_PAYMENT_DIRECT);
+    expect(normalizeMintValue("mortgagee", "None")).toBe(MINT_NO_MORTGAGE);
+  });
+
+  it("branches payment method to escrow when a mortgagee is present", () => {
+    const fields = buildMintFields({
+      product: "homeowners",
+      gemini: [
+        {
+          fieldKey: "mortgagee",
+          normalizedValue: "First Community Bank ISAOA",
+          confidence: 0.92,
+          flagged: false,
+        },
+      ],
+    });
+    expect(fields.find((row) => row.key === "mortgagee")?.value).toContain("First Community");
+    expect(fields.find((row) => row.key === "payment_method")?.value).toBe(MINT_PAYMENT_MORTGAGEE);
+    expect(normalizeMintValue("payment_method", "escrow / mortgagee billed")).toBe(MINT_PAYMENT_MORTGAGEE);
+  });
+
+  it("fills roof age from the sheet and leaves it empty when the sheet lacks it", () => {
+    const withRoof = buildMintFields({
+      product: "homeowners",
+      sheet: { roof_year: { value: "2018" } },
+    });
+    expect(withRoof.find((row) => row.key === "roof_year")?.value).toBe("2018");
+
+    const withoutRoof = buildMintFields({ product: "homeowners" });
+    expect(withoutRoof.find((row) => row.key === "roof_year")?.value).toBe("");
+  });
+
+  it("does not force HO annual or No mortgage onto Auto or Flood", () => {
+    expect(isHomeownersMintProduct("auto")).toBe(false);
+    expect(isHomeownersMintProduct("flood")).toBe(false);
+    expect(isHomeownersMintProduct("homeowners")).toBe(true);
+
+    const auto = buildMintFields({
+      product: "auto",
+      gemini: [
+        { fieldKey: "expiration_date", normalizedValue: "2027-03-01", confidence: 0.9, flagged: false },
+        { fieldKey: "billing_frequency", normalizedValue: "6 months", confidence: 0.9, flagged: false },
+      ],
+    });
+    expect(auto.find((row) => row.key === "billing_frequency")?.value).toBe("semiannual");
+    expect(auto.find((row) => row.key === "mortgagee")?.value).toBe("");
+    expect(auto.find((row) => row.key === "payment_method")?.value).toBe("");
+    expect(auto.find((row) => row.key === "next_due")?.value).toBe("");
+    expect(auto.find((row) => row.key === "renewal_date")?.value).toBe("2027-03-01");
+
+    const flood = buildMintFields({ product: "flood" });
+    expect(flood.find((row) => row.key === "billing_frequency")?.value).toBe("");
+    expect(flood.find((row) => row.key === "mortgagee")?.value).toBe("");
   });
 });
