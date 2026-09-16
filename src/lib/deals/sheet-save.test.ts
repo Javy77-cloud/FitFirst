@@ -44,7 +44,9 @@ describe("master sheet save / reload", () => {
     expect(gate).toMatch(/persistSheet/);
     expect(gate).toMatch(/ff-master-sheet-save/);
     expect(action).toMatch(/persistQuoteSheetValues/);
+    expect(action).toMatch(/persistDealSourceUploads/);
     expect(action).toMatch(/submittedSheetValues/);
+    expect(source("src/components/deal/master-sheet-compare.tsx")).toMatch(/appendSourceDocUploads/);
     expect(action).toMatch(/applySavedSheetToDeal/);
     expect(quoting).toMatch(/persistQuoteSheetValues/);
     expect(quoting).toMatch(/submittedSheetValues/);

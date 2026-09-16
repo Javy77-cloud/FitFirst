@@ -243,6 +243,8 @@ export async function saveQuoteSheet(formData: FormData) {
   const submitted = submittedSheetValues(formData);
   const product = str(formData, "sheet_product");
   if (product) submitted.sheet_product = product;
+  const { persistDealSourceUploads } = await import("@/app/actions/documents");
+  await persistDealSourceUploads(formData);
   await persistQuoteSheetValues(dealId, lineRaw, submitted, str(formData, "formId"));
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/quotes/fill-feedback");

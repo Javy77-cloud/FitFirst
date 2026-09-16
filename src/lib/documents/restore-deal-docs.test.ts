@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { dealSourceSlotForUpload } from "./restore-deal-docs";
-import { isUploadedFile } from "./uploaded-file";
+import { collectUploadedFiles, isUploadedFile } from "./uploaded-file";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -43,15 +43,36 @@ describe("deal source document persist", () => {
     };
     expect(isUploadedFile(like as unknown as File)).toBe(true);
     expect(isUploadedFile("dec.pdf")).toBe(false);
+    expect(isUploadedFile({ name: "dec.pdf", arrayBuffer: async () => new ArrayBuffer(8) } as unknown as File)).toBe(
+      true,
+    );
+  });
+
+  it("collects files_0 parts by reading bytes, not instanceof File", async () => {
+    const form = new FormData();
+    form.set("dealId", "5ed997ba-21b5-4a70-bdf8-c78810cc79b1");
+    form.set("docType_0", "dec");
+    form.append(
+      "files_0",
+      new File([Uint8Array.from([37, 80, 68, 70])], "heather-dec.pdf", { type: "application/pdf" }),
+    );
+    const collected = await collectUploadedFiles(form);
+    expect(collected).toHaveLength(1);
+    expect(collected[0]?.filename).toBe("heather-dec.pdf");
+    expect(collected[0]?.index).toBe(0);
+    expect(collected[0]?.bytes.length).toBe(4);
   });
 
   it("upload + sheet save restore docs and never wipe on save", () => {
     const upload = source("src/app/actions/documents.ts");
     expect(upload).toMatch(/dealSourceSlotForUpload/);
-    expect(upload).toMatch(/isUploadedFile/);
+    expect(upload).toMatch(/persistDealSourceUploads/);
+    expect(upload).toMatch(/collectUploadedFiles/);
+    expect(upload).toMatch(/Could not save the file to this deal/);
     expect(upload).not.toMatch(/resolvedFolder \? "library_file"/);
     expect(source("src/app/actions/quote-sheet.ts")).toMatch(/restoreDealSourceDocuments\(dealId\)/);
     expect(source("src/app/actions/quote-sheet.ts")).not.toMatch(/delete\(documents\)/);
+    expect(source("src/lib/files/object-store.ts")).toMatch(/fitfirst-uploads/);
     expect(source("src/lib/db/queries.ts")).toMatch(/restoreDealSourceDocuments\(dealId\)/);
     expect(source("src/lib/documents/restore-deal-docs.ts")).toMatch(/status === "hidden"/);
     expect(source("src/lib/documents/restore-deal-docs.ts")).toMatch(/isNull\(documents\.dealId\)/);
