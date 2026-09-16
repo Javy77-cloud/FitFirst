@@ -201,7 +201,8 @@ describe("readDecPdfBytes + mint failure toast", () => {
   it("wires mint and dec-prompt through the shared document store", () => {
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/loadGeminiRows/);
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/readStoredFile/);
-    expect(source("src/app/actions/policy-mint.ts")).toMatch(/need_dec_file/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/if \(!extracted\.ok\)/);
+    expect(source("src/lib/policy/load-gemini-rows.ts")).toMatch(/need_dec_file/);
     expect(source("src/app/actions/policy-mint.ts")).not.toMatch(/readFile\(path\.join\(uploadRoot/);
     expect(source("src/app/actions/declaration-prompt.ts")).toMatch(/readDecPdfBytes|readStoredFile/);
     expect(source("src/app/actions/declaration-prompt.ts")).not.toMatch(/readFile\(path\.join\(uploadRoot/);

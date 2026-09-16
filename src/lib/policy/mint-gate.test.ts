@@ -277,7 +277,8 @@ describe("unpublished confirm guard", () => {
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/mintFieldPolicyPatch/);
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/loadGeminiRows/);
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/readStoredFile/);
-    expect(source("src/app/actions/policy-mint.ts")).toMatch(/need_dec_file/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/if \(!extracted\.ok\)/);
+    expect(source("src/lib/policy/load-gemini-rows.ts")).toMatch(/need_dec_file/);
     expect(source("src/app/actions/policy-mint.ts")).not.toMatch(/readFile\(path\.join\(uploadRoot/);
     expect(source("src/lib/extraction/gemini/prompt.ts")).toMatch(/selling_agency/);
     expect(source("src/lib/policy/change-log.ts")).toMatch(/Policy created/);
