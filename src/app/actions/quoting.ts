@@ -22,7 +22,6 @@ import { lineLearningSnapshotFieldsForDeal } from "@/lib/appetite/line-learning-
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
 import { withFlash } from "@/lib/flash";
-import { shopDealQuotes } from "@/app/actions/quotes";
 import { persistQuoteSheetValues, runFillDealSheets } from "@/app/actions/quote-sheet";
 import { submittedSheetValues } from "@/lib/quote-sheet/apply";
 import {
@@ -154,15 +153,11 @@ export async function approveMasterSheet(formData: FormData) {
       .where(eq(quoteSheets.id, sheet.id));
   }
 
-  if (str(formData, "requestQuotes") === "yes") {
-    await shopDealQuotes(dealId, "appetite", undefined, line);
-    await persistDealWorkTab(dealId, "markets").catch(() => null);
-    revalidatePath(`/deals/${dealId}`);
-    redirect(withFlash(`/deals/${dealId}?tab=markets&line=${line}`, "quotes-requested"));
-  }
-
+  // Confirm unlocks Markets only. Quotes are requested after the agent
+  // selects carriers on Markets — shopping here raced the redirect (React #441).
+  await persistDealWorkTab(dealId, "markets").catch(() => null);
   revalidatePath(`/deals/${dealId}`);
-  redirect(withFlash(`/deals/${dealId}?tab=documents&line=${line}&handoff=1`, "Sheet approved"));
+  redirect(withFlash(`/deals/${dealId}?tab=markets&line=${line}`, "Sheet approved"));
 }
 
 export async function logAppetiteResult(formData: FormData) {

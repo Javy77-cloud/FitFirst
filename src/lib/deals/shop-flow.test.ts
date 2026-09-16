@@ -110,7 +110,7 @@ describe("shop-flow fingerprint + sticky completion", () => {
     });
     expect(fingerprintsMatch(quoted, withDoc)).toBe(false);
     expect(fingerprintsMatch(STALE_SHOP_FINGERPRINT, quoted)).toBe(false);
-    expect(fingerprintsMatch(null, quoted)).toBe(true);
+    expect(fingerprintsMatch(null, quoted)).toBe(false);
     const stale = resolveShopFlowCompletion({
       detailsComplete: true,
       documentsComplete: true,
@@ -130,6 +130,38 @@ describe("shop-flow fingerprint + sticky completion", () => {
       docs: [{ id: "q1", filename: "carrier.pdf", slot: "quote_file", tags: ["source:carrier"] }],
     });
     expect(withQuotePdf).toBe(base);
+  });
+
+  it("does not mark Markets complete from a tab click or shop-list load alone", () => {
+    const fp = riskFingerprint({ sheets: [homeSheet], docs: [] });
+    const afterTab = resolveShopFlowCompletion({
+      detailsComplete: true,
+      documentsComplete: true,
+      hasMarkets: true,
+      hasQuotes: false,
+      currentFingerprint: fp,
+      saved: {},
+    });
+    expect(afterTab.isComplete("markets")).toBe(false);
+    expect(afterTab.isComplete("quotes")).toBe(false);
+    expect(afterTab.completed).toEqual(["create", "details", "documents"]);
+
+    const afterRequest = resolveShopFlowCompletion({
+      detailsComplete: true,
+      documentsComplete: true,
+      hasMarkets: true,
+      hasQuotes: true,
+      currentFingerprint: fp,
+      saved: nextShopFlowAfterQuoteRun({
+        saved: {},
+        line: "home",
+        fingerprint: fp,
+        newRunId: "run-req",
+        requestCarrierIds: ["citizens"],
+      }),
+    });
+    expect(afterRequest.isComplete("markets")).toBe(true);
+    expect(afterRequest.isComplete("quotes")).toBe(true);
   });
 
   it("treats blank vs filled sheet values as a material change", () => {

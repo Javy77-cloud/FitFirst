@@ -116,7 +116,10 @@ export function fingerprintsMatch(
   saved: string | null | undefined,
   current: string,
 ): boolean {
-  if (saved == null) return true;
+  // No saved fingerprint means Markets/Quotes have not been requested yet.
+  // A null match used to be treated as live, so opening Quotes after a shop-list
+  // load marked Markets complete without a carrier request.
+  if (saved == null) return false;
   if (saved === STALE_SHOP_FINGERPRINT) return false;
   return saved === current;
 }

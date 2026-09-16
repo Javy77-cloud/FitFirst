@@ -1,16 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import { requestAppetiteQuotesAction } from "@/app/actions/quotes";
+import { useFormStatus } from "react-dom";
+import Link from "next/link";
 import { approveMasterSheet } from "@/app/actions/quoting";
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-function mergeSheetFields(data: FormData) {
+function mergeSheetFieldsIntoForm(form: HTMLFormElement) {
   const sheetForm = document.getElementById("ff-master-sheet-save");
   if (!(sheetForm instanceof HTMLFormElement)) return;
+  const existing = new Set(
+    [...form.querySelectorAll("[name]")].map((el) => (el as HTMLInputElement).name),
+  );
   for (const [key, value] of new FormData(sheetForm).entries()) {
-    if (!data.has(key)) data.set(key, String(value));
+    if (existing.has(key)) continue;
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = key;
+    input.value = String(value);
+    form.appendChild(input);
+    existing.add(key);
   }
+}
+
+function ConfirmSubmitButton({ reviewed }: { reviewed: boolean }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" size="sm" disabled={!reviewed || pending}>
+      {pending ? "Confirming…" : "Confirm"}
+    </Button>
+  );
 }
 
 export function SheetApproveGate({
@@ -19,7 +40,6 @@ export function SheetApproveGate({
   formLabel,
   unlocked,
   approvedBy,
-  persistSheet,
 }: {
   dealId: string;
   line: string;
@@ -30,71 +50,48 @@ export function SheetApproveGate({
 }) {
   const [reviewed, setReviewed] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
 
   if (unlocked) {
     return (
       <div className="space-y-2 rounded-md border border-fit-green/30 bg-fit-green-bg px-3 py-3" data-ff-sheet-approve>
         <p className="text-xs text-fit-green">
-          Master sheet approved{approvedBy ? ` by ${approvedBy}` : ""}. Request quotes from every
-          in-appetite carrier.
+          Master sheet approved{approvedBy ? ` by ${approvedBy}` : ""}. Select carriers on Markets,
+          then request quotes.
         </p>
-        <form
-          action={requestAppetiteQuotesAction}
-          onSubmit={async (event) => {
-            event.preventDefault();
-            const gateForm = event.currentTarget;
-            const data = new FormData(gateForm);
-            if (persistSheet) await persistSheet();
-            mergeSheetFields(data);
-            await requestAppetiteQuotesAction(data);
-          }}
+        <Link
+          href={`/deals/${dealId}?tab=markets&line=${line}`}
+          className={cn(buttonVariants({ size: "sm" }))}
+          data-ff-sheet-go-markets=""
         >
-          <input type="hidden" name="dealId" value={dealId} />
-          <input type="hidden" name="line" value={line} />
-          <Button type="submit" size="sm">
-            Confirm & request quotes
-          </Button>
-        </form>
+          Go to Markets
+        </Link>
       </div>
     );
   }
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const gateForm = event.currentTarget;
-    setError(null);
-    if (!reviewed) {
-      setError("Check that you visually reviewed this sheet first.");
-      return;
-    }
-    setPending(true);
-    try {
-      const data = new FormData(gateForm);
-      if (persistSheet) await persistSheet();
-      mergeSheetFields(data);
-      data.set("reviewed", "yes");
-      data.set("sure", "yes");
-      data.set("requestQuotes", "yes");
-      await approveMasterSheet(data);
-    } catch (err) {
-      setPending(false);
-      setError(err instanceof Error ? err.message : "Could not confirm the sheet or request quotes.");
-    }
-  }
-
   return (
     <form
-      onSubmit={onSubmit}
+      action={approveMasterSheet}
+      onSubmit={(event) => {
+        if (!reviewed) {
+          event.preventDefault();
+          setError("Check that you visually reviewed this sheet first.");
+          return;
+        }
+        setError(null);
+        mergeSheetFieldsIntoForm(event.currentTarget);
+      }}
       className="rounded-md border border-fit-yellow/40 bg-fit-yellow-bg/40 p-3"
       data-ff-sheet-approve
     >
       <input type="hidden" name="dealId" value={dealId} />
       <input type="hidden" name="line" value={line} />
+      <input type="hidden" name="reviewed" value={reviewed ? "yes" : ""} />
+      <input type="hidden" name="sure" value={reviewed ? "yes" : ""} />
       <p className="text-sm font-semibold text-navy">Confirm this sheet</p>
       <p className="mt-1 text-helper text-muted-foreground">
-        Glance the {formLabel} master sheet. One click confirms it and requests quotes from every
-        in-appetite carrier.
+        Glance the {formLabel} master sheet. Confirm opens Markets so you can select carriers and
+        request quotes.
       </p>
       <label className="mt-3 flex items-start gap-2 text-sm">
         <input
@@ -106,9 +103,7 @@ export function SheetApproveGate({
         <span>I Visually Reviewed This Master Sheet.</span>
       </label>
       <div className="mt-3">
-        <Button type="submit" size="sm" disabled={!reviewed || pending}>
-          {pending ? "Requesting quotes…" : "Confirm & Request Quotes"}
-        </Button>
+        <ConfirmSubmitButton reviewed={reviewed} />
       </div>
       {error ? <p className="mt-2 text-xs text-fit-flag">{error}</p> : null}
     </form>

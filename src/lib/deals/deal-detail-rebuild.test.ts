@@ -115,12 +115,14 @@ describe("deal detail final rebuild", () => {
     expect(source("src/components/deal/master-sheet-compare.tsx")).toMatch(/SheetApproveGate/);
     expect(source("src/components/deal/master-sheet-compare.tsx")).toMatch(/persistSheet/);
     const gate = source("src/components/deal/sheet-approve-gate.tsx");
-    expect(gate).toMatch(/I visually reviewed this master sheet\./);
-    expect(gate).toMatch(/Confirm & Request Quotes/);
-    expect(gate).not.toMatch(/: "Confirm sheet"/);
+    expect(gate).toMatch(/I visually reviewed this master sheet\./i);
+    expect(gate).toMatch(/\{pending \? "Confirming…" : "Confirm"\}/);
+    expect(gate).not.toMatch(/Confirm & Request Quotes/);
     expect(gate).not.toMatch(/Approve & Request Quotes/);
     expect(gate).toMatch(/disabled=\{!reviewed \|\| pending\}/);
-    expect(gate).toMatch(/requestQuotes/);
+    expect(gate).toMatch(/action=\{approveMasterSheet\}/);
+    expect(gate).not.toMatch(/requestQuotes/);
+    expect(gate).not.toMatch(/catch \(/);
     expect(docs).toMatch(/FileActionMenu/);
     expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("<DocumentsPanel"));
     expect(docs.indexOf("<SourceFileRow")).toBeLessThan(docs.indexOf("<SourceDocsUpload"));

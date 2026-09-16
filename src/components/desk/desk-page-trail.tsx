@@ -7,13 +7,16 @@ export type DeskTrailCrumb = {
   label: string;
 };
 
+const crumbBase =
+  "inline-flex max-w-[14rem] items-center truncate rounded-md border px-2.5 py-1 text-xs font-semibold";
+
 /** Optional history Back + breadcrumb crumbs. Last crumb is the current page (not a link). */
 export function DeskPageTrail({
   crumbs = [],
   showBack = true,
   backLabel = "Back",
   fallbackHref,
-  backVariant = "link",
+  backVariant = "outline",
   className,
 }: {
   crumbs?: DeskTrailCrumb[];
@@ -27,7 +30,7 @@ export function DeskPageTrail({
 
   return (
     <div
-      className={cn("mb-3 flex flex-wrap items-center gap-x-3 gap-y-1", className)}
+      className={cn("mb-3 flex flex-wrap items-center gap-x-2 gap-y-1", className)}
       data-ff-desk-trail=""
     >
       {showBack ? (
@@ -39,20 +42,34 @@ export function DeskPageTrail({
       ) : null}
       {crumbs.length > 0 ? (
         <nav
-          className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground"
+          className="flex flex-wrap items-center gap-1"
           aria-label="Breadcrumb"
+          data-ff-desk-crumbs=""
         >
           {crumbs.map((crumb, index) => {
             const isLast = index === crumbs.length - 1;
             return (
-              <span key={`${crumb.label}-${index}`} className="inline-flex items-center gap-1.5">
-                {index > 0 ? <span aria-hidden>/</span> : null}
+              <span key={`${crumb.label}-${index}`} className="inline-flex items-center gap-1">
+                {index > 0 ? (
+                  <span className="px-0.5 text-xs font-semibold text-navy/50" aria-hidden>
+                    ›
+                  </span>
+                ) : null}
                 {isLast || !crumb.href ? (
-                  <span className="truncate text-navy">{crumb.label}</span>
+                  <span
+                    className={cn(crumbBase, "border-navy bg-navy text-white")}
+                    data-ff-desk-crumb="current"
+                  >
+                    {crumb.label}
+                  </span>
                 ) : (
                   <Link
                     href={crumb.href}
-                    className="font-medium text-[#002868] hover:underline"
+                    className={cn(
+                      crumbBase,
+                      "border-navy/35 bg-white text-navy hover:bg-navy/5",
+                    )}
+                    data-ff-desk-crumb="link"
                   >
                     {crumb.label}
                   </Link>
