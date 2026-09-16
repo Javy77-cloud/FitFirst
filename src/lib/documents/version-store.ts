@@ -1,15 +1,13 @@
-import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { documentVersions, documents, type Document } from "@/lib/db/schema";
+import { writeStoredFile } from "@/lib/files/object-store";
 import { inferMimeFromName } from "@/lib/files/urls";
 import { deskActor } from "@/lib/policy/record-changes";
 import { nextVersionNumber } from "./versions";
-
-const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
 export async function listVersionsForDocument(documentId: string) {
   return db
@@ -69,10 +67,11 @@ export async function replaceDocumentFile(input: {
   );
   const id = randomUUID();
   const folder = doc.dealId ?? doc.policyId ?? doc.contactId ?? "library";
-  const storagePath = path.join(DEFAULT_TENANT_ID, folder, `${id}-${input.filename}`);
-  const abs = path.join(uploadRoot, storagePath);
-  await mkdir(path.dirname(abs), { recursive: true });
-  await writeFile(abs, input.buffer);
+  const storagePath = await writeStoredFile(
+    path.posix.join(DEFAULT_TENANT_ID, folder, `${id}-${input.filename}`),
+    input.buffer,
+    inferMimeFromName(input.filename, input.mimeType),
+  );
 
   const mimeType = inferMimeFromName(input.filename, input.mimeType);
   const actor = await deskActor();

@@ -595,13 +595,18 @@ export function staleShopFlow(saved?: DealShopFlowState | null): DealShopFlowSta
 export function staleShopFlowForLine(
   saved: DealShopFlowState | null | undefined,
   line: string,
+  opts?: { quotesOnly?: boolean },
 ): DealShopFlowState {
   const current = parseShopFlow(saved);
+  const prev = current.lineFingerprints?.[line];
   return {
     ...current,
     lineFingerprints: {
       ...current.lineFingerprints,
-      [line]: { markets: STALE_SHOP_FINGERPRINT, quotes: STALE_SHOP_FINGERPRINT },
+      [line]: {
+        markets: opts?.quotesOnly ? prev?.markets ?? current.marketsFingerprint : STALE_SHOP_FINGERPRINT,
+        quotes: STALE_SHOP_FINGERPRINT,
+      },
     },
   };
 }

@@ -14,9 +14,10 @@ import {
   type FieldLayout,
 } from "@/lib/custom-fields/types";
 import type { ColumnDef } from "@/lib/desk/columns";
+import { humanizeDealStage } from "@/lib/deals/package-lines";
 import { formatMoney } from "@/lib/domain";
 import { stageColorFromNameOrSlug } from "@/lib/desk/status-colors";
-import { pipelineSlugForDealStage } from "@/lib/wire/pipeline";
+import { canonicalizePipelineSlug, pipelineSlugForDealStage } from "@/lib/wire/pipeline";
 
 /** Columns that are not deal fields — never offer them on the pipeline table. */
 export const DEAD_DEAL_COLUMN_IDS = ["esign", "comms", "contact"] as const;
@@ -272,7 +273,7 @@ export function resolveDealPipeline(
 }
 
 export function dealStageSlug(deal: DealColumnDeal): string {
-  return deal.pipelineStageSlug || pipelineSlugForDealStage(deal.pipelineStage);
+  return canonicalizePipelineSlug(deal.pipelineStageSlug || pipelineSlugForDealStage(deal.pipelineStage));
 }
 
 export function dealStageView(
@@ -288,10 +289,10 @@ export function dealStageView(
   const board = resolveDealPipeline(deal, boards);
   const slug = dealStageSlug(deal);
   const stages = board?.stages ?? [];
-  const match = stages.find((stage) => stage.slug === slug);
-  const name = match?.name ?? slug.replaceAll("_", " ");
+  const match = stages.find((stage) => canonicalizePipelineSlug(stage.slug) === slug);
+  const name = match?.name ?? humanizeDealStage(slug);
   return {
-    slug,
+    slug: match?.slug ?? slug,
     name,
     color: stageColorFromNameOrSlug(name, match?.color),
     pipelineSlug: board?.slug ?? "p-c",

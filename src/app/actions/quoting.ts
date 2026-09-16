@@ -22,6 +22,7 @@ import { lineLearningSnapshotFieldsForDeal } from "@/lib/appetite/line-learning-
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
 import { persistSheetConfirmClear } from "@/lib/deals/shop-flow-persist";
+import { autoAdvanceDealProductStage } from "@/app/actions/product-stage";
 import { withFlash } from "@/lib/flash";
 import { persistQuoteSheetValues, runFillDealSheets } from "@/app/actions/quote-sheet";
 import { submittedSheetValues } from "@/lib/quote-sheet/apply";
@@ -143,6 +144,7 @@ export async function approveMasterSheet(formData: FormData) {
         eq(quoteSheets.line, line),
       ),
     );
+  const reapprove = Boolean(deal.sheetApprovedAt || sheet?.approvedAt);
   if (sheet) {
     await db
       .update(quoteSheets)
@@ -157,16 +159,26 @@ export async function approveMasterSheet(formData: FormData) {
 
   await persistSheetConfirmClear(dealId, line).catch(() => null);
 
-  // First confirm opens Markets. Later visual approves return to Quotes so
-  // Markets stays complete and the agent Rechecks from the quote list.
-  if (subsequent) {
+  // First confirm → Markets. Later / rating-critical re-approve → Quotes.
+  const laterConfirm = subsequent || reapprove;
+  if (laterConfirm) {
     const product = str(formData, "product");
     const productQuery = product ? `&product=${encodeURIComponent(product)}` : "";
     await persistDealWorkTab(dealId, "quotes").catch(() => null);
     revalidatePath(`/deals/${dealId}`);
-    redirect(withFlash(`/deals/${dealId}?tab=quotes&line=${line}${productQuery}`, "Sheet approved"));
+    redirect(
+      withFlash(
+        `/deals/${dealId}?tab=quotes&line=${line}${productQuery}`,
+        reapprove ? "Sheet re-approved" : "Sheet approved",
+      ),
+    );
   }
   await persistDealWorkTab(dealId, "markets").catch(() => null);
+  await autoAdvanceDealProductStage({
+    dealId,
+    stageSlug: "markets",
+    line,
+  }).catch(() => null);
   revalidatePath(`/deals/${dealId}`);
   redirect(withFlash(`/deals/${dealId}?tab=markets&line=${line}`, "Sheet approved"));
 }

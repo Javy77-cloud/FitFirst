@@ -111,8 +111,8 @@ describe("pipeline table deal-field columns", () => {
       },
       boards,
     );
-    expect(quoting.name).toBe("Meet / Quotes");
-    expect(quoting.slug).toBe("quotes");
+    expect(quoting.name).toBe("Markets");
+    expect(quoting.slug).toBe("markets");
     expect(quoting.stages.map((stage) => stage.slug)).toEqual(pc.stages.map((stage) => stage.slug));
     expect(quoting.name).not.toBe("Quoting");
     expect(source("src/components/deals/deals-table.tsx")).toMatch(/DealStageSelect/);
@@ -191,7 +191,7 @@ describe("pipeline table deal-field columns", () => {
     expect(gloria.pipelineSlug).toBe("p-c");
     expect(heather.stages.map((stage) => stage.slug)).toEqual(gloria.stages.map((stage) => stage.slug));
     expect(heather.stages.map((stage) => stage.slug)).toEqual(pc.stages.map((stage) => stage.slug));
-    expect(heather.name).toBe("Gather info");
+    expect(heather.name).toBe("Gathering");
   });
 });
 

@@ -59,6 +59,7 @@ export function SheetApproveGate({
   const [error, setError] = useState<string | null>(null);
   const showForm = !unlocked || needsReapprove;
   const subsequent = Boolean(unlocked || needsReapprove);
+  const reapprove = Boolean(approvedBy) && !unlocked;
   const approvedHref = hasRequestedQuotes
     ? `/deals/${dealId}?tab=quotes&line=${line}${product ? `&product=${product}` : ""}`
     : `/deals/${dealId}?tab=markets&line=${line}${product ? `&product=${product}` : ""}`;
@@ -88,19 +89,42 @@ export function SheetApproveGate({
         data-ff-sheet-approve-state="approved"
       >
         <p className="text-xs text-fit-green">
-          Master sheet approved{approvedBy ? ` by ${approvedBy}` : ""}.{" "}
+          Master sheet approved{approvedBy ? ` by ${approvedBy}` : ""}. Later saves skip this gate
+          unless rating-critical fields change.{" "}
           {hasRequestedQuotes
             ? "Recheck quotes on the Quotes tab."
             : "Select carriers on Markets, then request quotes."}
         </p>
-        <Link
-          href={approvedHref}
-          className={cn(buttonVariants({ size: "sm" }))}
-          data-ff-sheet-go-markets={hasRequestedQuotes ? undefined : ""}
-          data-ff-sheet-go-quotes={hasRequestedQuotes ? "" : undefined}
-        >
-          {approvedLabel}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={
+              hasRequestedQuotes
+                ? `/deals/${dealId}?tab=markets&line=${line}${product ? `&product=${product}` : ""}`
+                : approvedHref
+            }
+            className={cn(buttonVariants({ size: "sm", variant: hasRequestedQuotes ? "outline" : "default" }))}
+            data-ff-sheet-go-markets=""
+          >
+            Go to Markets
+          </Link>
+          {hasRequestedQuotes ? (
+            <Link
+              href={approvedHref}
+              className={cn(buttonVariants({ size: "sm" }))}
+              data-ff-sheet-go-quotes=""
+            >
+              {approvedLabel}
+            </Link>
+          ) : (
+            <Link
+              href={`/deals/${dealId}?tab=quotes&line=${line}${product ? `&product=${product}` : ""}`}
+              className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+              data-ff-sheet-go-quotes=""
+            >
+              Go to Quotes
+            </Link>
+          )}
+        </div>
       </div>
     );
   }
@@ -120,16 +144,21 @@ export function SheetApproveGate({
       id={SHEET_CONFIRM_HASH}
       className="scroll-mt-24 rounded-md border border-fit-yellow/40 bg-fit-yellow-bg/40 p-3"
       data-ff-sheet-approve
-      data-ff-sheet-approve-state={needsReapprove ? "reapprove" : "first"}
+      data-ff-sheet-approve-state={needsReapprove || reapprove ? "reapprove" : "first"}
+      data-ff-sheet-reapprove={reapprove ? "1" : "0"}
     >
       <input type="hidden" name="dealId" value={dealId} />
       <input type="hidden" name="line" value={line} />
       {product ? <input type="hidden" name="product" value={product} /> : null}
       <input type="hidden" name="reviewed" value={reviewed ? "yes" : ""} />
       <input type="hidden" name="sure" value={reviewed ? "yes" : ""} />
-      <p className="text-sm font-semibold text-navy">Confirm this sheet</p>
+      <p className="text-sm font-semibold text-navy">
+        {reapprove ? "Re-confirm rating-critical changes" : "Confirm this sheet"}
+      </p>
       <p className="mt-1 text-helper text-muted-foreground">
-        {subsequent
+        {reapprove
+          ? `Coverage A, year built, roof, claims, or another rating field changed on the ${formLabel} sheet. Confirm again, then continue to Quotes. Markets stay as last shopped.`
+          : subsequent
           ? `Glance the ${formLabel} master sheet. Confirm opens Quotes so you can recheck.`
           : `Glance the ${formLabel} master sheet. Confirm opens Markets so you can select carriers and request quotes.`}
       </p>

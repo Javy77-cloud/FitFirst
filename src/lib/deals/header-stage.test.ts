@@ -9,23 +9,26 @@ function source(file: string) {
 }
 
 describe("header stage chip + strip", () => {
-  it("prints Gather info on the chip, not truncated Gather", () => {
-    expect(stageChipLabel("gather")).toBe("Gather info");
-    expect(stageChipLabel({ slug: "gather", name: "Gather" })).toBe("Gather info");
-    expect(stageChipLabel({ slug: "gather", name: "Gather Info" })).toBe("Gather info");
-    expect(humanizeDealStage("gather")).toBe("Gather info");
-    expect(stageChipLabel({ slug: "quotes", name: "Meet / Quotes" })).toBe("Meet / Quotes");
+  it("prints Gathering on the chip, not truncated Gather", () => {
+    expect(stageChipLabel("gather")).toBe("Gathering");
+    expect(stageChipLabel({ slug: "gather", name: "Gather" })).toBe("Gathering");
+    expect(stageChipLabel({ slug: "gather", name: "Gather Info" })).toBe("Gathering");
+    expect(humanizeDealStage("gather")).toBe("Gathering");
+    expect(stageChipLabel({ slug: "quotes", name: "Meet / Quotes" })).toBe("Markets");
+    expect(stageChipLabel("quote_review")).toBe("Quote review");
+    expect(stageChipLabel("policy_issued")).toBe("Policy issued");
   });
 
   it("advances along the happy path and still allows any board stage", () => {
-    expect(STAGE_ADVANCE_ORDER[0]).toBe("gather");
-    expect(nextAdvanceStage("gather", PC_SHOPPING_STAGES)?.slug).toBe("quotes");
-    expect(nextAdvanceStage("quotes", PC_SHOPPING_STAGES)?.slug).toBe("review");
+    expect(STAGE_ADVANCE_ORDER[0]).toBe("gathering");
+    expect(nextAdvanceStage("gather", PC_SHOPPING_STAGES)?.slug).toBe("markets");
+    expect(nextAdvanceStage("quotes", PC_SHOPPING_STAGES)?.slug).toBe("quote_review");
     expect(nextAdvanceStage("quote_sent", PC_SHOPPING_STAGES)?.slug).toBe("bound");
     expect(nextAdvanceStage("bound", PC_SHOPPING_STAGES)?.slug).toBe("policy_issued");
+    expect(nextAdvanceStage("policy_issued", PC_SHOPPING_STAGES)?.slug).toBe("closed_won");
     expect(nextAdvanceStage("closed_won", PC_SHOPPING_STAGES)).toBeNull();
     expect(PC_SHOPPING_STAGES.map((stage) => stage.slug)).toEqual(
-      expect.arrayContaining(["gather", "quotes", "review", "quote_sent", "bound", "policy_issued"]),
+      expect.arrayContaining(["gathering", "markets", "quote_review", "quote_sent", "bound", "policy_issued"]),
     );
   });
 

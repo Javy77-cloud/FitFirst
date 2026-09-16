@@ -20,10 +20,14 @@ describe("stage colors", () => {
 
   it("assigns a calm default per known slug and otherwise by order", () => {
     expect(defaultStageColor(0, "gather")).toBe("blue");
+    expect(defaultStageColor(0, "gathering")).toBe("blue");
     expect(defaultStageColor(1, "quotes")).toBe("teal");
+    expect(defaultStageColor(1, "markets")).toBe("teal");
     expect(defaultStageColor(2, "review")).toBe("amber");
+    expect(defaultStageColor(2, "quote_review")).toBe("amber");
     expect(defaultStageColor(3, "quote_sent")).toBe("violet");
     expect(defaultStageColor(4, "bound")).toBe("orange");
+    expect(defaultStageColor(5, "policy_issued")).toBe("emerald");
     expect(defaultStageColor(5, "pending_inspection")).toBe("amber");
     expect(defaultStageColor(6, "closed_won")).toBe("green");
     expect(defaultStageColor(7, "closed_lost")).toBe("rose");

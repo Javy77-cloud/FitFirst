@@ -8,20 +8,24 @@ import { writesDealLine } from "@/lib/domain";
 import { productQuoteCompleteness } from "./quote-completeness";
 import { pickBoundQuoteId } from "./status-stamp";
 import {
+  canonicalizeProductStage,
+  displayProductStage,
+  isBoardNoopStage,
   lateStageNeedsQuoteSelection,
+  parseInspectionStatus,
   parseProductStages,
   productChipBound,
   productChipLabel,
   productChipStageLabel,
   productChipStageLabelForState,
-  displayProductStage,
   productStampStage,
-  sheetFormForProduct,
   productReadyFromQuotes,
   productStageFor,
   PRODUCT_LOST_REASON_LABELS,
   selectedQuoteRowLabel,
   setProductStage,
+  sheetFormForProduct,
+  shouldAutoAdvanceStage,
 } from "./product-stages";
 
 function source(file: string) {
@@ -69,11 +73,34 @@ function quote(partial: Partial<Quote> & Pick<Quote, "id">): Quote {
 }
 
 describe("per-product stages", () => {
+  it("canonicalizes leftover slugs and treats inspection as a flag", () => {
+    expect(canonicalizeProductStage("review")).toBe("quote_review");
+    expect(canonicalizeProductStage("gather")).toBe("gathering");
+    expect(canonicalizeProductStage("quotes")).toBe("markets");
+    expect(canonicalizeProductStage("pending_inspection")).toBe("bound");
+    expect(parseInspectionStatus("before_bind")).toBe("before_bind");
+    expect(parseInspectionStatus("nope")).toBe("none");
+    expect(isBoardNoopStage("quote_sent")).toBe(true);
+    expect(isBoardNoopStage("policy_issued")).toBe(true);
+    expect(lateStageNeedsQuoteSelection({ stage: "policy_issued", selectedQuoteIds: ["q1"] })).toBe(
+      false,
+    );
+    expect(productChipStageLabel("policy_issued")).toBe("Policy issued");
+    expect(isBoardNoopStage("markets")).toBe(false);
+    expect(shouldAutoAdvanceStage("gathering", "markets")).toBe(true);
+    expect(shouldAutoAdvanceStage("quote_sent", "markets")).toBe(false);
+    const leftover = parseProductStages({
+      homeowners: { stage: "pending_inspection", selectedQuoteIds: ["q1"] },
+    });
+    expect(leftover.homeowners?.stage).toBe("bound");
+    expect(leftover.homeowners?.inspectionStatus).toBe("before_bind");
+  });
+
   it("keeps Gloria Homeowners Quote sent off Landlord", () => {
     const next = setProductStage({}, "homeowners", { stage: "quote_sent", selectedQuoteIds: ["q-ho3"] });
     expect(productStageFor(next, "homeowners").stage).toBe("quote_sent");
-    expect(productStageFor(next, "landlord").stage).toBe("gather");
-    expect(productStageFor({}, "homeowners", "quote_sent").stage).toBe("quotes");
+    expect(productStageFor(next, "landlord").stage).toBe("gathering");
+    expect(productStageFor({}, "homeowners", "quote_sent").stage).toBe("quote_review");
     expect(productStageFor(next, "landlord").selectedQuoteIds).toEqual([]);
     expect(parseProductStages(next).landlord).toBeUndefined();
     expect(productChipLabel({ product: "homeowners", quotingForm: "HO3" })).toBe("HO3");
@@ -110,7 +137,7 @@ describe("per-product stages", () => {
       }),
     ).toBe(false);
     expect(setProductStage({}, "homeowners", { stage: "quote_sent", selectedQuoteIds: [] }).homeowners)
-      .toMatchObject({ stage: "quotes", selectedQuoteIds: [] });
+      .toMatchObject({ stage: "quote_review", selectedQuoteIds: [] });
     expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(/livePicked/);
     expect(lateStageNeedsQuoteSelection({ stage: "pending_inspection", selectedQuoteIds: [] })).toBe(
       true,
@@ -140,6 +167,12 @@ describe("per-product stages", () => {
     expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(/disabled=\{\!livePicked\(\)\.length/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/liveQuoteIds/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/preScoped/);
+    expect(source("src/app/actions/pipeline.ts")).toMatch(/allowLate/);
+    expect(source("src/app/actions/pipeline.ts")).toMatch(/isBoardNoopStage/);
+    expect(source("src/components/pipeline/kanban.tsx")).toMatch(/isBoardNoopStage/);
+    expect(source("src/components/deal/quotes-panel.tsx")).toMatch(/QuotesBindableSignal/);
+    expect(source("src/lib/files/serve-document.ts")).toMatch(/missingFileResponse/);
+    expect(source("src/lib/files/serve-document.ts")).toMatch(/readStoredFile/);
   });
 
   it("counts ready from product quotes, not a shared home sheet", () => {
@@ -220,16 +253,18 @@ describe("per-product stages", () => {
     expect(html).not.toMatch(/data-ff-quotes-previous=/);
   });
 
-  it("cues Quotes Recheck on sheet save without unchecking Markets", () => {
+  it("cues Quotes Recheck on sheet save and clears unlock only when rating-critical", () => {
     expect(source("src/app/actions/quote-sheet.ts")).toMatch(
       /persistSheetRecheckCue\(dealId, line\)/,
     );
     expect(source("src/app/actions/quote-sheet.ts")).toMatch(
       /persistSheetRecheckCue\(dealId, primary\)/,
     );
-    expect(source("src/app/actions/quote-sheet.ts")).not.toMatch(
-      /markShopFlowStaleAfterRiskChange/,
+    expect(source("src/app/actions/quote-sheet.ts")).toMatch(
+      /markShopFlowStaleAfterRiskChange\(dealId, line/,
     );
+    expect(source("src/app/actions/quote-sheet.ts")).toMatch(/ratingCritical/);
+    expect(source("src/lib/deals/shop-flow-persist.ts")).toMatch(/quotesOnly/);
     expect(source("src/app/actions/documents.ts")).toMatch(/shopLineFromSourceDoc/);
     expect(source("src/app/actions/comms.ts")).toMatch(/persistDealEmailAttachments/);
     expect(source("src/lib/deals/shop-flow-persist.ts")).toMatch(/sheet_invalidated/);
@@ -242,19 +277,21 @@ describe("per-product stages", () => {
     expect(css).toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: absolute;/);
     expect(css).toMatch(/\.ff-deal-status-stamp \{[\s\S]*top: 13\.5rem;/);
     expect(css).not.toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: sticky;/);
-    expect(productChipStageLabel("review")).toBe("Quotes");
+    expect(productChipStageLabel("review")).toBe("Quote review");
+    expect(productChipStageLabel("quote_review")).toBe("Quote review");
     expect(productChipStageLabel("quote_sent")).toBe("Quote sent");
     expect(productChipStageLabel("policy_issued")).toBe("Policy issued");
     expect(productChipStageLabel("gather")).toBeNull();
+    expect(productChipStageLabel("gathering")).toBeNull();
     expect(
       productChipStageLabelForState({ stage: "quote_sent", selectedQuoteIds: [] }),
-    ).toBe("Quotes");
+    ).toBe("Quote review");
     expect(
       productChipStageLabelForState({ stage: "quote_sent", selectedQuoteIds: ["q1"] }),
     ).toBe("Quote sent");
     expect(
       displayProductStage({ stage: "quote_sent", selectedQuoteIds: [], fallback: "quote_sent" }),
-    ).toBe("quotes");
+    ).toBe("quote_review");
     expect(
       displayProductStage({ stage: "quote_sent", selectedQuoteIds: ["q1"], fallback: "gather" }),
     ).toBe("quote_sent");
@@ -287,11 +324,11 @@ describe("per-product stages", () => {
         fallback: "quote_sent",
         liveQuoteIds: [],
       }),
-    ).toBe("quotes");
+    ).toBe("quote_review");
     expect(
       parseProductStages({ homeowners: { stage: "quote_sent", selectedQuoteIds: [] } }).homeowners
         ?.stage,
-    ).toBe("quotes");
+    ).toBe("quote_sent");
     expect(
       parseProductStages({
         homeowners: { stage: "quote_sent", selectedQuoteIds: ["q-ho3"] },

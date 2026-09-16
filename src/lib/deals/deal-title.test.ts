@@ -177,17 +177,17 @@ describe("BH5 — pipeline / deals table has no Contact column", () => {
 describe("BH6 — stages, filters, and other columns stay", () => {
   it("does not change pipeline stages or remaining deal columns", () => {
     expect(SEEDED_PIPELINES.find((board) => board.slug === "p-c")?.stages.map((s) => s.slug)).toEqual([
-      "gather",
-      "quotes",
-      "review",
+      "gathering",
+      "markets",
+      "quote_review",
       "quote_sent",
       "bound",
-      "pending_inspection",
+      "policy_issued",
       "closed_won",
       "closed_lost",
     ]);
     expect(DEAL_STAGES).toEqual(
-      expect.arrayContaining(["shopping", "quoting", "bound", "pending_inspection", "closed_won"]),
+      expect.arrayContaining(["gathering", "markets", "quote_review", "bound", "policy_issued", "closed_won"]),
     );
     const keys = (TABLE_COLUMNS.deals ?? []).map((column) => column.key);
     expect(keys).toEqual(

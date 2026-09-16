@@ -1,9 +1,9 @@
-import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
+import { writeStoredFile } from "@/lib/files/object-store";
 import { recordInitialDocumentVersion } from "./version-store";
 
 export const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
@@ -18,10 +18,11 @@ export async function persistDealFile(input: {
   docType: string;
 }) {
   const id = input.id ?? randomUUID();
-  const storagePath = path.join(DEFAULT_TENANT_ID, input.dealId, `${id}-${input.filename}`);
-  const abs = path.join(uploadRoot, storagePath);
-  await mkdir(path.dirname(abs), { recursive: true });
-  await writeFile(abs, input.buffer);
+  const storagePath = await writeStoredFile(
+    path.posix.join(DEFAULT_TENANT_ID, input.dealId, `${id}-${input.filename}`),
+    input.buffer,
+    input.mimeType,
+  );
 
   const [doc] = await db
     .insert(documents)

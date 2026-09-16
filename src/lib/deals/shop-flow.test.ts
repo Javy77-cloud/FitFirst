@@ -660,9 +660,10 @@ describe("deal page + action wiring", () => {
     expect(readFileSync("src/app/actions/quote-sheet.ts", "utf8")).toMatch(
       /persistSheetRecheckCue/,
     );
-    expect(readFileSync("src/app/actions/quote-sheet.ts", "utf8")).not.toMatch(
+    expect(readFileSync("src/app/actions/quote-sheet.ts", "utf8")).toMatch(
       /markShopFlowStaleAfterRiskChange/,
     );
+    expect(readFileSync("src/app/actions/quote-sheet.ts", "utf8")).toMatch(/ratingCritical/);
     expect(readFileSync("src/app/actions/documents.ts", "utf8")).toMatch(
       /markShopFlowStaleAfterRiskChange/,
     );

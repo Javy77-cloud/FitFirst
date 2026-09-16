@@ -13,13 +13,17 @@ import {
   splitHomeProducts,
   type DealProductId,
 } from "@/lib/deals/deal-products";
+import { sheetLineForProduct } from "@/lib/deals/deal-products";
 import {
+  canonicalizeProductStage,
+  isInspectionStatus,
   isProductLostReason,
   lateStageNeedsQuoteSelection,
   liveSelectedQuoteIds,
   parseProductStages,
   productStageFor,
   setProductStage,
+  shouldAutoAdvanceStage,
 } from "@/lib/deals/product-stages";
 import { issuePolicyFromDeclaration } from "@/app/actions/policy-mint";
 import { isPolicyIssuedStage, quotesOnlyStageBlocked } from "@/lib/policy/mint-gate";
@@ -120,7 +124,7 @@ export async function setDealProductStage(input: {
 }) {
   const dealId = input.dealId.trim();
   const product = parseDealProduct(input.product);
-  const stageSlug = input.stageSlug.trim();
+  const stageSlug = canonicalizeProductStage(input.stageSlug);
   if (!dealId || !product || !stageSlug) return { ok: false as const, reason: "invalid" };
   const deal = await loadDeal(dealId);
   if (!deal) return { ok: false as const, reason: "missing" };
@@ -169,6 +173,7 @@ export async function setDealProductStage(input: {
       dealId,
       pipelineSlug: input.pipelineSlug,
       stageSlug,
+      allowLate: true,
     });
   } else {
     await writeCrmSignalsSafe({
@@ -250,4 +255,69 @@ export async function markDealProductLost(formData: FormData) {
     createTask: false,
   });
   flashAction(`/deals/${dealId}?product=${product}`, "Product marked lost");
+}
+
+function productForLine(
+  deal: {
+    shopProducts?: string[] | null;
+    shopLines?: string[] | null;
+    lineOfBusiness?: string | null;
+    quotingLine?: string | null;
+    quotingForm?: string | null;
+    policySubType?: string | null;
+  },
+  line?: string | null,
+): DealProductId | null {
+  const products = productsOnDeal(deal);
+  if (line) {
+    const match = products.find((id) => sheetLineForProduct(id) === line);
+    if (match) return match;
+    const fromLine = parseDealProduct(line);
+    if (fromLine) return fromLine;
+  }
+  return products[0] ?? parseDealProduct(deal.quotingForm ?? deal.quotingLine ?? "") ?? "homeowners";
+}
+
+/** First confirm → Markets; request quotes → Quote review. Never moves backward. */
+export async function autoAdvanceDealProductStage(input: {
+  dealId: string;
+  stageSlug: string;
+  line?: string | null;
+  product?: string | null;
+  pipelineSlug?: string;
+}) {
+  const deal = await loadDeal(input.dealId);
+  if (!deal) return { ok: false as const, reason: "missing" };
+  const product =
+    parseDealProduct(input.product ?? "") ?? productForLine(deal, input.line);
+  if (!product) return { ok: false as const, reason: "invalid" };
+  const saved = parseShopFlow(deal.shopFlow);
+  const stages = parseProductStages(saved.productStages);
+  const current = productStageFor(stages, product, deal.pipelineStageSlug ?? deal.pipelineStage);
+  if (!shouldAutoAdvanceStage(current.stage, input.stageSlug)) {
+    return { ok: true as const, skipped: true as const };
+  }
+  return setDealProductStage({
+    dealId: input.dealId,
+    product,
+    stageSlug: input.stageSlug,
+    pipelineSlug: input.pipelineSlug ?? "p-c",
+    selectedQuoteIds: current.selectedQuoteIds,
+  });
+}
+
+export async function setDealProductInspection(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const status = String(formData.get("inspectionStatus") ?? "").trim();
+  if (!dealId || !product || !isInspectionStatus(status)) {
+    throw new Error("Deal, product, and inspection status are required.");
+  }
+  const deal = await loadDeal(dealId);
+  if (!deal) throw new Error("Deal not found.");
+  const saved = parseShopFlow(deal.shopFlow);
+  const stages = parseProductStages(saved.productStages);
+  const next = setProductStage(stages, product, { inspectionStatus: status });
+  await persistDealShopFlow(dealId, { ...saved, productStages: next });
+  revalidatePath(`/deals/${dealId}`);
 }

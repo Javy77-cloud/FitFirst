@@ -10,12 +10,13 @@ import {
 } from "./status-stamp";
 
 describe("deal status stamp", () => {
-  it("resolves quote_sent, bound, and pending_inspection only", () => {
+  it("resolves quote_sent, bound, policy_issued, and closed_won", () => {
     expect(resolveDealStampStage("quote_sent")).toBe("quote_sent");
     expect(resolveDealStampStage("Quote Sent")).toBe("quote_sent");
-    expect(resolveDealStampStage("pending_inspection")).toBe("pending_inspection");
+    expect(resolveDealStampStage("pending_inspection")).toBe("bound");
     expect(resolveDealStampStage("bound")).toBe("bound");
-    expect(resolveDealStampStage("closed_won")).toBe("bound");
+    expect(resolveDealStampStage("policy_issued")).toBe("policy_issued");
+    expect(resolveDealStampStage("closed_won")).toBe("closed_won");
     expect(resolveDealStampStage(null, null, "2026-09-15T12:00:00.000Z")).toBe("bound");
     expect(resolveDealStampStage("shopping")).toBeNull();
     expect(resolveDealStampStage("review")).toBeNull();
@@ -26,11 +27,11 @@ describe("deal status stamp", () => {
     expect(bound).toMatch(/data-ff-deal-status-stamp="bound"/);
     expect(bound).toContain("BOUND");
     expect(bound).toContain("ff-deal-status-stamp");
-    const pending = renderToString(
-      createElement(DealStatusStamp, { stage: "pending_inspection" }),
+    const issued = renderToString(
+      createElement(DealStatusStamp, { stage: "policy_issued" }),
     );
-    expect(pending).toMatch(/data-ff-deal-status-stamp="pending_inspection"/);
-    expect(pending).toContain("PENDING INSPECTION");
+    expect(issued).toMatch(/data-ff-deal-status-stamp="policy_issued"/);
+    expect(issued).toContain("POLICY ISSUED");
     expect(renderToString(createElement(DealStatusStamp, { stage: null }))).toBe("");
     const css = readFileSync("src/app/globals.css", "utf8");
     expect(css).toMatch(/ff-stamp-ink-hit/);

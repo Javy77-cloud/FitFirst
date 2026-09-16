@@ -14,6 +14,7 @@ import {
   riskFingerprint,
   staleShopFlow,
   staleShopFlowForLine,
+  STALE_SHOP_FINGERPRINT,
   type DealShopFlowState,
 } from "@/lib/deals/shop-flow";
 import { isShopLine } from "@/lib/domain";
@@ -75,7 +76,7 @@ async function clearLineQuotingUnlock(dealId: string, line?: string | null) {
   if (line) {
     await db
       .update(quoteSheets)
-      .set({ quotingUnlocked: false, approvedAt: null, approvedBy: null, updatedAt: now })
+      .set({ quotingUnlocked: false, updatedAt: now })
       .where(
         and(
           eq(quoteSheets.tenantId, DEFAULT_TENANT_ID),
@@ -86,7 +87,7 @@ async function clearLineQuotingUnlock(dealId: string, line?: string | null) {
   } else {
     await db
       .update(quoteSheets)
-      .set({ quotingUnlocked: false, approvedAt: null, approvedBy: null, updatedAt: now })
+      .set({ quotingUnlocked: false, updatedAt: now })
       .where(and(eq(quoteSheets.tenantId, DEFAULT_TENANT_ID), eq(quoteSheets.dealId, dealId)));
   }
   const remaining = await db
@@ -98,7 +99,6 @@ async function clearLineQuotingUnlock(dealId: string, line?: string | null) {
     .update(deals)
     .set({
       quotingUnlocked: anyUnlocked,
-      ...(anyUnlocked ? {} : { sheetApprovedAt: null, sheetApprovedBy: null }),
       updatedAt: now,
     })
     .where(and(eq(deals.id, dealId), eq(deals.tenantId, DEFAULT_TENANT_ID)));
@@ -174,8 +174,12 @@ export async function persistSheetConfirmClear(dealId: string, line: string) {
   await persistDealShopFlow(dealId, nextShopFlowAfterSheetConfirm({ saved: deal.shopFlow, line }));
 }
 
-/** After a material sheet / source-doc change: Markets + Quotes must be re-run. */
-export async function markShopFlowStaleAfterRiskChange(dealId: string, line?: string | null) {
+/** After a material sheet / source-doc change: Quotes must be re-run. Markets stay checked. */
+export async function markShopFlowStaleAfterRiskChange(
+  dealId: string,
+  line?: string | null,
+  opts?: { ratingCritical?: boolean },
+) {
   if (!dealId) return;
   const [deal] = await db
     .select({ shopFlow: deals.shopFlow })
@@ -188,9 +192,21 @@ export async function markShopFlowStaleAfterRiskChange(dealId: string, line?: st
     saved.marketsFingerprint != null ||
     saved.quotesFingerprint != null ||
     Object.keys(saved.lineFingerprints ?? {}).length > 0;
+  const ratingCritical = Boolean(opts?.ratingCritical);
 
   const applyStale = async () => {
-    const next = scopedLine ? staleShopFlowForLine(saved, scopedLine) : staleShopFlow(saved);
+    const next = scopedLine
+      ? staleShopFlowForLine(saved, scopedLine, { quotesOnly: true })
+      : {
+          ...staleShopFlow(saved),
+          marketsFingerprint: saved.marketsFingerprint,
+          lineFingerprints: Object.fromEntries(
+            Object.entries(saved.lineFingerprints ?? {}).map(([key, fp]) => [
+              key,
+              { markets: fp?.markets, quotes: STALE_SHOP_FINGERPRINT },
+            ]),
+          ),
+        };
     await persistDealShopFlow(dealId, next);
     if (scopedLine) {
       const ids = await quoteIdsOnLine(dealId, scopedLine);
@@ -198,17 +214,19 @@ export async function markShopFlowStaleAfterRiskChange(dealId: string, line?: st
     } else {
       await clearBindRecheckAcks(dealId);
     }
-    await clearLineQuotingUnlock(dealId, scopedLine);
-    await logSheetInvalidation(dealId, scopedLine);
+    if (ratingCritical) {
+      await clearLineQuotingUnlock(dealId, scopedLine);
+      await logSheetInvalidation(dealId, scopedLine);
+    }
   };
 
   if (alreadyTracking) {
     const lineFp = scopedLine ? saved.lineFingerprints?.[scopedLine] : null;
     const alreadyStale = scopedLine
-      ? lineFp?.markets === "" && lineFp?.quotes === ""
-      : saved.marketsFingerprint === "" && saved.quotesFingerprint === "";
+      ? lineFp?.quotes === ""
+      : saved.quotesFingerprint === "";
     if (alreadyStale) {
-      await clearLineQuotingUnlock(dealId, scopedLine);
+      if (ratingCritical) await clearLineQuotingUnlock(dealId, scopedLine);
       return;
     }
     await applyStale();

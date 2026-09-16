@@ -52,7 +52,13 @@ export function crmSignalDefaults(kind: CrmSignalKind): {
 }
 
 export function shouldCreateStageTask(stageSlug: string) {
-  return stageSlug === "quote_sent" || stageSlug === "closed_lost" || stageSlug === "quotes" || stageSlug === "review";
+  const key = stageSlug.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_");
+  return (
+    key === "quote_sent" ||
+    key === "closed_lost" ||
+    key === "quote_review" ||
+    key === "review"
+  );
 }
 
 export async function writeCrmSignals(input: CrmSignalInput) {

@@ -69,7 +69,7 @@ export function pipelineSlugForAgentStatus(status: AgentStatus): string | null {
     case "bound":
       return "bound";
     case "waiting_on_inspection":
-      return "pending_inspection";
+      return "bound";
     case "won":
       return "closed_won";
     case "dead":

@@ -18,6 +18,7 @@ import type { DealStageOption } from "@/lib/deals/deal-columns";
 import { isClosedOutcomeStage } from "@/lib/deals/archive-reminder";
 import { nextAdvanceStage, stageChipLabel } from "@/lib/deals/header-stage";
 import {
+  isLateProductStage,
   lateStageNeedsQuoteSelection,
   PRODUCT_LOST_REASON_LABELS,
   PRODUCT_LOST_REASONS,
@@ -46,7 +47,7 @@ export function DealHeaderStage({
   product,
   selectedQuoteIds = [],
   quoteChoices = [],
-  tab = null,
+  workspaceTab = "details",
 }: {
   dealId: string;
   pipelineSlug: string;
@@ -57,7 +58,8 @@ export function DealHeaderStage({
   product?: string | null;
   selectedQuoteIds?: string[];
   quoteChoices?: HeaderQuoteChoice[];
-  tab?: string | null;
+  /** Late stages (Quote sent / Bound / Policy issued / closed) only from Quotes. */
+  workspaceTab?: string;
 }) {
   const [value, setValue] = useState(stageSlug);
   const [open, setOpen] = useState(false);
@@ -70,7 +72,7 @@ export function DealHeaderStage({
   const [lostReason, setLostReason] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const surface = tab === "quotes" ? "quotes" : "header";
+  const surface = workspaceTab === "quotes" ? "quotes" : "header";
   const options = stages.some((stage) => stage.slug === value)
     ? stages
     : [{ slug: value, name: stageChipLabel(value), color: null }, ...stages];
@@ -156,7 +158,15 @@ export function DealHeaderStage({
 
   function pick(next: string) {
     if (!next || next === value || pending) return;
+    if (isLateProductStage(next) && workspaceTab !== "quotes") {
+      setOpen(false);
+      return;
+    }
     if (next === "closed_lost") {
+      if (workspaceTab !== "quotes") {
+        setOpen(false);
+        return;
+      }
       setPendingStage(next);
       setLostOpen(true);
       setOpen(false);
@@ -225,6 +235,9 @@ export function DealHeaderStage({
               const color = colorForStage(stage);
               const label = stageChipLabel(stage);
               const selected = stage.slug === value;
+              const lateLocked =
+                workspaceTab !== "quotes" &&
+                (isLateProductStage(stage.slug) || stage.slug === "closed_lost");
               return (
                 <button
                   key={stage.slug}
@@ -233,8 +246,12 @@ export function DealHeaderStage({
                   aria-selected={selected}
                   data-ff-header-stage-option={stage.slug}
                   data-stage-color={color}
-                  disabled={pending}
-                  title={label}
+                  disabled={pending || lateLocked}
+                  title={
+                    lateLocked
+                      ? `${label} — change this from Quotes after selecting a live quote`
+                      : label
+                  }
                   onClick={() => pick(stage.slug)}
                   className={cn(
                     "rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy/30 disabled:opacity-60",
@@ -260,7 +277,7 @@ export function DealHeaderStage({
           <DialogHeader>
             <DialogTitle>Choose quote first</DialogTitle>
             <DialogDescription>
-              Quote sent, Bound, Policy issued, Pending inspection, and Closed won need an explicit quote on this product.
+              Quote sent, Bound, Policy issued, and Closed won need a live selected quote on this product. Use Quotes to change late stages.
             </DialogDescription>
           </DialogHeader>
           <ul className="max-h-56 space-y-1.5 overflow-auto">

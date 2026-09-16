@@ -5,7 +5,10 @@ import { moveDealToStage } from "@/app/actions/pipeline";
 import { ClosedDealArchivePopup } from "@/components/deals/closed-deal-archive-popup";
 import type { DealStageOption } from "@/lib/deals/deal-columns";
 import { isClosedOutcomeStage } from "@/lib/deals/archive-reminder";
+import { humanizeDealStage } from "@/lib/deals/package-lines";
+import { isBoardNoopStage } from "@/lib/deals/product-stages";
 import { stageColorFromNameOrSlug, statusColorClass } from "@/lib/desk/status-colors";
+import { canonicalizePipelineSlug } from "@/lib/wire/pipeline";
 import { flashAction } from "@/lib/flash-client";
 import { cn } from "@/lib/utils";
 
@@ -30,13 +33,13 @@ export function DealStageSelect({
   dealTitle?: string;
   className?: string;
 }) {
-  const [value, setValue] = useState(stageSlug);
+  const [value, setValue] = useState(canonicalizePipelineSlug(stageSlug) || stageSlug);
   const [pending, startTransition] = useTransition();
   const [archiveOpen, setArchiveOpen] = useState(false);
-  const options = stages.some((stage) => stage.slug === value)
+  const options = stages.some((stage) => canonicalizePipelineSlug(stage.slug) === value)
     ? stages
-    : [{ slug: value, name: value.replaceAll("_", " ") }, ...stages];
-  const current = options.find((stage) => stage.slug === value) ?? options[0];
+    : [{ slug: value, name: humanizeDealStage(value) }, ...stages];
+  const current = options.find((stage) => canonicalizePipelineSlug(stage.slug) === value) ?? options[0];
   const currentColor = current ? colorForStage(current) : stageColorFromNameOrSlug(value);
 
   return (
@@ -56,6 +59,10 @@ export function DealStageSelect({
         onChange={(event) => {
           const next = event.target.value;
           const prev = value;
+          if (isBoardNoopStage(next) && pipelineSlug !== "won-lost" && pipelineSlug !== "archive") {
+            event.target.value = prev;
+            return;
+          }
           setValue(next);
           startTransition(async () => {
             await moveDealToStage({
@@ -74,10 +81,13 @@ export function DealStageSelect({
       >
         {options.map((stage) => {
           const color = colorForStage(stage);
+          const lateLocked =
+            isBoardNoopStage(stage.slug) && pipelineSlug !== "won-lost" && pipelineSlug !== "archive";
           return (
             <option
               key={stage.slug}
               value={stage.slug}
+              disabled={lateLocked && canonicalizePipelineSlug(stage.slug) !== value}
               data-stage-color={color}
               className={statusColorClass(color)}
             >

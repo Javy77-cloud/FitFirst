@@ -411,7 +411,7 @@ export default async function DealPage({
     sheetNeedsRecheckCue(shopFlow, sheetLine) ||
     shopFlow.lineFingerprints?.[sheetLine]?.quotes === STALE_SHOP_FINGERPRINT ||
     shopFlow.quotesFingerprint === STALE_SHOP_FINGERPRINT;
-  const needsVisualReapprove = unlocked && sheetNeedsRecheckCue(shopFlow, sheetLine);
+  const needsVisualReapprove = !unlocked && Boolean(deal.sheetApprovedAt || deal.sheetApprovedBy);
   const hasRequestedQuotes =
     shopMarketsAction || lineQuotes.some((row) => row.quote.stub !== true);
   const quotesMark = quotesTabMark({
@@ -555,7 +555,7 @@ export default async function DealPage({
                     product={activeProduct}
                     selectedQuoteIds={activeProductState.selectedQuoteIds}
                     quoteChoices={quoteChoices}
-                    tab={activeTab}
+                    workspaceTab={activeTab}
                   />
                 }
               />
@@ -830,6 +830,7 @@ export default async function DealPage({
                           };
                         })()}
                         autoIssue={issue === "1"}
+                        inspectionStatus={activeProductState.inspectionStatus}
                       />
                     )}
                   </div>

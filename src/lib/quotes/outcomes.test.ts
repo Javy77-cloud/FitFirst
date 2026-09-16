@@ -207,7 +207,7 @@ describe("quote outcomes", () => {
     expect(pipelineSlugForAgentStatus("sent_to_client")).toBe("quote_sent");
     expect(pipelineSlugForAgentStatus("client_reviewing")).toBe("quote_sent");
     expect(pipelineSlugForAgentStatus("bound")).toBe("bound");
-    expect(pipelineSlugForAgentStatus("waiting_on_inspection")).toBe("pending_inspection");
+    expect(pipelineSlugForAgentStatus("waiting_on_inspection")).toBe("bound");
     expect(pipelineSlugForAgentStatus("won")).toBe("closed_won");
     expect(pipelineSlugForAgentStatus("dead")).toBe("closed_lost");
   });
