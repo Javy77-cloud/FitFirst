@@ -179,6 +179,7 @@ describe("unpublished confirm guard", () => {
     expect(source("src/app/actions/product-stage.ts")).toMatch(/isPolicyIssuedStage/);
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/evaluateMintGate/);
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/unpublished/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/existingIsBook/);
     expect(source("src/components/deal/issue-policy-from-dec.tsx")).toMatch(
       /Issue policy from declaration/,
     );

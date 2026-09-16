@@ -226,7 +226,15 @@ export async function issuePolicyFromDeclaration(input: {
 
   const def = dealProductDef(product);
   const existing = policyForProduct(dealPolicies, product, def.lob);
-  if (existing && !policyMintUnpublished(existing) && existing.publishedAt) {
+  const existingIsBook =
+    existing &&
+    !policyMintUnpublished(existing) &&
+    existing.status !== "unpublished";
+  if (existingIsBook) {
+    await db
+      .update(documents)
+      .set({ policyId: existing.id, dealId })
+      .where(eq(documents.id, gate.dec.id));
     await markMintStatus(dealId, product, {
       stage: "policy_issued",
       policyId: existing.id,
