@@ -1382,6 +1382,16 @@ export async function getPolicyWorkspace(id: string) {
         .from(locations)
         .where(and(eq(locations.tenantId, tenant()), eq(locations.id, row.policy.locationId)))
     : [];
+  const sheetRows = row.policy.dealId
+    ? await db
+        .select()
+        .from(quoteSheets)
+        .where(and(eq(quoteSheets.tenantId, tenant()), eq(quoteSheets.dealId, row.policy.dealId)))
+    : [];
+  const quoteSheet =
+    sheetRows.find((row) => row.line === "home") ??
+    sheetRows[0] ??
+    null;
   const [terms, compareLogs, vehicleRows, work] = await Promise.all([
     db
       .select()
@@ -1402,6 +1412,7 @@ export async function getPolicyWorkspace(id: string) {
     ...row,
     risk: risk ?? null,
     location: location ?? null,
+    quoteSheet,
     files,
     filingAttachments,
     fileVersions,

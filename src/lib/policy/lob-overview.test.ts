@@ -22,11 +22,16 @@ describe("LOB overview templates", () => {
       policyId: "p1",
       lineOfBusiness: "HO3",
       coverageA: 321000,
+      yearBuilt: 1992,
       roofYear: 2018,
       mortgageeCount: 0,
     });
     expect(sections.map((s) => s.id)).toEqual(["dwelling", "roof", "mortgagee"]);
     expect(sections.find((s) => s.id === "mortgagee")?.pointer?.href).toContain("tab=coverage");
+    const dwelling = sections.find((s) => s.id === "dwelling")?.fields ?? [];
+    expect(dwelling.map((f) => f.key)).toEqual(["coverageA", "yearBuilt", "construction"]);
+    expect(dwelling.find((f) => f.key === "yearBuilt")?.value).toBe("1992");
+    expect(dwelling.some((f) => f.key === "premises")).toBe(false);
     const roof = sections.find((s) => s.id === "roof")?.fields.find((f) => f.key === "roofAge");
     expect(roof?.empty).toBe(false);
   });

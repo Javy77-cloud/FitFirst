@@ -20,6 +20,7 @@ import { persistFile } from "@/app/actions/documents";
 import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { flashAction } from "@/lib/flash-action";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
+import { streetOnlyPremises } from "@/lib/policy/premises";
 import { BindBlockedError, isCommercialLine } from "@/lib/crm/bind";
 import { sheetProductForQuotingForm } from "@/lib/deals/deal-line";
 import {
@@ -1561,7 +1562,11 @@ export async function bindDeal(formData: FormData) {
         expirationDate: expiration,
         premium: premiumRaw,
         coverageA: risk?.coverageA ?? copiedQuote?.coverageA ?? null,
-        premisesAddress: risk?.address1 || lead?.mailingAddress || null,
+        premisesAddress: streetOnlyPremises(risk?.address1 || lead?.mailingAddress, {
+          city: risk?.city || lead?.city,
+          state: risk?.state || lead?.state,
+          zip: risk?.zip || lead?.zip,
+        }) || null,
         premisesCity: risk?.city || lead?.city || null,
         premisesState: risk?.state || lead?.state || null,
         premisesZip: risk?.zip || lead?.zip || null,

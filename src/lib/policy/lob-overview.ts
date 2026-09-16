@@ -124,12 +124,6 @@ export type LobOverviewInput = {
 
 export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSection[] {
   const family = resolveLobOverviewFamily(input);
-  const premises = [
-    input.premisesAddress,
-    [input.premisesCity, input.premisesState, input.premisesZip].filter(Boolean).join(", "),
-  ]
-    .filter(Boolean)
-    .join(", ");
   const covA = input.coverageA != null ? formatMoney(input.coverageA) : null;
   const face = input.faceAmount != null && input.faceAmount !== "" ? formatMoney(input.faceAmount) : null;
   const roofAge =
@@ -165,13 +159,11 @@ export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSe
           field("coverageA", "Coverage A / dwelling", covA, {
             hint: "Coverage A not keyed on this policy yet.",
           }),
-          field("premises", "Premises", premises || null, {
-            hint: "Premises address not on file.",
-          }),
           field(
             "yearBuilt",
             "Year built",
             input.yearBuilt != null ? String(input.yearBuilt) : null,
+            { hint: "Year built not on the risk or master sheet yet." },
           ),
           field("construction", "Construction", input.construction),
         ],

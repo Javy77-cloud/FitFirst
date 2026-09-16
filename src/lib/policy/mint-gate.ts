@@ -4,6 +4,7 @@ import {
   lateStageNeedsQuoteSelection,
   normalizeStageSlug,
 } from "@/lib/deals/product-stages";
+import { splitPremisesAddress } from "@/lib/policy/premises";
 
 export const POLICY_ISSUED_STAGE = "policy_issued";
 
@@ -98,15 +99,15 @@ export type MintPayload = {
 export const MINT_CONFIRM_FIELDS = [
   { key: "policy_number", label: "Policy number" },
   { key: "named_insured", label: "Named insured" },
-  { key: "effective_date", label: "Effective" },
-  { key: "expiration_date", label: "Expiration" },
+  { key: "effective_date", label: "Effective date" },
+  { key: "expiration_date", label: "Expiration date" },
   { key: "premium", label: "Premium" },
   { key: "coverage_a", label: "Coverage A / dwelling" },
   { key: "form", label: "Form" },
   { key: "insurance_type", label: "Insurance type" },
   { key: "hurricane_deductible", label: "Hurricane deductible" },
   { key: "aop_deductible", label: "AOP deductible" },
-  { key: "mailing_address", label: "Location / property" },
+  { key: "mailing_address", label: "Insured location" },
   { key: "selling_agency", label: "Selling agency" },
   { key: "renewal_date", label: "Renewal date" },
   { key: "producer", label: "Producer" },
@@ -729,6 +730,9 @@ export function mintFieldPolicyPatch(fields: readonly MintField[]): {
   formType?: string | null;
   insuranceType?: string | null;
   premisesAddress?: string | null;
+  premisesCity?: string | null;
+  premisesState?: string | null;
+  premisesZip?: string | null;
   sellingAgency?: string | null;
   producer?: string | null;
   billingFrequency?: string | null;
@@ -743,13 +747,17 @@ export function mintFieldPolicyPatch(fields: readonly MintField[]): {
   const coverageA = coverageARaw ? Number(coverageARaw.replace(/[$,]/g, "")) : NaN;
   const roofRaw = get("roof_year");
   const roofYear = roofRaw ? Number(roofRaw.replace(/[^\d]/g, "").slice(0, 4)) : NaN;
+  const premises = splitPremisesAddress(get("mailing_address"));
   return {
     policyNumber: get("policy_number") || undefined,
     premium: get("premium") || null,
     coverageA: Number.isFinite(coverageA) ? coverageA : null,
     formType: get("form") || null,
     insuranceType: get("insurance_type") || null,
-    premisesAddress: get("mailing_address") || null,
+    premisesAddress: premises.street || null,
+    premisesCity: premises.city,
+    premisesState: premises.state,
+    premisesZip: premises.zip,
     sellingAgency: get("selling_agency") || null,
     producer: get("producer") || null,
     billingFrequency: get("billing_frequency") || null,

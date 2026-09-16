@@ -24,8 +24,9 @@ import {
   users,
 } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
-import { parseAddressParts } from "@/lib/extraction/gemini/map";
 import { insuranceFamilyFromPolicy } from "@/lib/desk/policy-family";
+import { parsePropertyYear } from "@/lib/policy/dwelling-facts";
+import { splitPremisesAddress, streetOnlyPremises } from "@/lib/policy/premises";
 import { dealProductDef, inferDealProducts, parseDealProduct, type DealProductId } from "@/lib/deals/deal-products";
 import {
   parseProductStages,
@@ -91,42 +92,103 @@ async function applyMintBookExtras(input: {
   policyId: string;
   contactId: string | null;
   accountId: string | null;
+  dealId?: string | null;
   riskId: string | null;
   fields: MintField[];
   premium?: string | null;
+  yearBuilt?: number | null;
+  roofYear?: number | null;
+  construction?: string | null;
+  knownCity?: string | null;
+  knownState?: string | null;
+  knownZip?: string | null;
 }) {
   const patch = mintFieldPolicyPatch(input.fields);
-  const address = patch.premisesAddress || "";
-  const parts = address ? parseAddressParts(address) : { street: "" };
-  if (input.contactId || input.accountId) {
+  const parts = splitPremisesAddress(patch.premisesAddress, {
+    city: patch.premisesCity || input.knownCity,
+    state: patch.premisesState || input.knownState,
+    zip: patch.premisesZip || input.knownZip,
+  });
+  const street = parts.street || null;
+  const city = parts.city || input.knownCity || null;
+  const state = parts.state || input.knownState || null;
+  const zip = parts.zip || input.knownZip || null;
+
+  let locationId: string | null = null;
+  if ((input.contactId || input.accountId) && street && city && zip) {
     const loc = await findOrCreateLocationFromAddress({
       contactId: input.contactId,
       accountId: input.accountId,
-      street: parts.street || address,
-      city: parts.city,
-      state: parts.state,
-      zip: parts.zip,
+      street,
+      city,
+      state,
+      zip,
     });
-    if (loc) {
-      await db
-        .update(policies)
-        .set({
-          locationId: loc.id,
-          premisesAddress: loc.street || loc.address1 || address || null,
-          premisesCity: loc.city ?? parts.city ?? null,
-          premisesState: loc.state ?? parts.state ?? null,
-          premisesZip: loc.zip ?? parts.zip ?? null,
-          updatedAt: new Date(),
-        })
-        .where(eq(policies.id, input.policyId));
-    }
+    locationId = loc?.id ?? null;
   }
 
-  if (patch.roofYear && input.riskId) {
-    await db
-      .update(risks)
-      .set({ roofYear: patch.roofYear, updatedAt: new Date() })
-      .where(eq(risks.id, input.riskId));
+  await db
+    .update(policies)
+    .set({
+      ...(locationId ? { locationId } : {}),
+      premisesAddress: street,
+      premisesCity: city,
+      premisesState: state,
+      premisesZip: zip,
+      updatedAt: new Date(),
+    })
+    .where(eq(policies.id, input.policyId));
+
+  const roofYear = input.roofYear ?? patch.roofYear;
+  const yearBuilt = input.yearBuilt ?? null;
+  const riskPatch: {
+    roofYear?: number | null;
+    yearBuilt?: number | null;
+    construction?: string | null;
+    address1?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+    updatedAt: Date;
+  } = { updatedAt: new Date() };
+  if (roofYear) riskPatch.roofYear = roofYear;
+  if (yearBuilt) riskPatch.yearBuilt = yearBuilt;
+  if (input.construction) riskPatch.construction = input.construction;
+  if (street) riskPatch.address1 = street;
+  if (city) riskPatch.city = city;
+  if (state) riskPatch.state = state;
+  if (zip) riskPatch.zip = zip;
+
+  const hasDwelling =
+    riskPatch.roofYear != null ||
+    riskPatch.yearBuilt != null ||
+    Boolean(riskPatch.construction) ||
+    Boolean(street);
+
+  if (input.riskId && hasDwelling) {
+    await db.update(risks).set(riskPatch).where(eq(risks.id, input.riskId));
+  } else if (!input.riskId && input.dealId && hasDwelling) {
+    const [created] = await db
+      .insert(risks)
+      .values({
+        tenantId: DEFAULT_TENANT_ID,
+        dealId: input.dealId,
+        contactId: input.contactId,
+        address1: street,
+        city,
+        state,
+        zip,
+        yearBuilt: yearBuilt ?? null,
+        roofYear: roofYear ?? null,
+        construction: input.construction ?? null,
+      })
+      .returning({ id: risks.id });
+    if (created) {
+      await db
+        .update(policies)
+        .set({ riskId: created.id, updatedAt: new Date() })
+        .where(eq(policies.id, input.policyId));
+    }
   }
 
   if (patch.mortgagee) {
@@ -422,12 +484,22 @@ export async function issuePolicyFromDeclaration(input: {
     ? await db.select({ name: users.name }).from(users).where(eq(users.id, deal.ownerId))
     : [];
   const session = await currentDeskSession();
-  const propertyLine = [
-    risk?.address1,
-    [risk?.city, risk?.state, risk?.zip].filter(Boolean).join(", "),
-  ]
-    .filter(Boolean)
-    .join(", ");
+  const propertyStreet = streetOnlyPremises(risk?.address1 || deal.propertyOneliner, {
+    city: risk?.city,
+    state: risk?.state,
+    zip: risk?.zip,
+  });
+  const yearBuilt =
+    parsePropertyYear(sheetValue(sheetValues, "year_built", "yearBuilt", "yr_built")) ??
+    parsePropertyYear(geminiRows.find((row) => /year_built|yr_built/i.test(row.fieldKey))?.normalizedValue) ??
+    risk?.yearBuilt ??
+    null;
+  const roofYear =
+    parsePropertyYear(sheetValue(sheetValues, "roof_year", "roofYear", "roof_age", "year_roof")) ??
+    risk?.roofYear ??
+    null;
+  const construction =
+    sheetValue(sheetValues, "construction", "construction_type") || risk?.construction || null;
   const fields = buildMintFields({
     gemini: geminiRows,
     sheet: sheetValues,
@@ -440,8 +512,8 @@ export async function issuePolicyFromDeclaration(input: {
     },
     identity: {
       namedInsured: deal.primaryNamedInsured,
-      mailingAddress: risk?.address1 ?? null,
-      propertyAddress: deal.propertyOneliner || propertyLine || null,
+      mailingAddress: propertyStreet || risk?.address1 || null,
+      propertyAddress: propertyStreet || null,
       sellingAgency: sheetValue(sheetValues, "selling_agency"),
       producer: owner?.name || session.name || null,
       insuranceType: insuranceFamilyFromPolicy({
@@ -449,7 +521,7 @@ export async function issuePolicyFromDeclaration(input: {
         policySubType: deal.policySubType,
       }),
       form: deal.quotingForm || deal.policySubType || null,
-      roofYear: risk?.roofYear ?? null,
+      roofYear: roofYear ?? risk?.roofYear ?? null,
       mortgagee: sheetValue(sheetValues, "mortgagee_name", "mortgagee"),
       billingFrequency: sheetValue(sheetValues, "billing_frequency", "premium_frequency", "premium_mode"),
       paymentMethod: sheetValue(sheetValues, "payment_method", "pay_plan"),
@@ -506,10 +578,15 @@ export async function issuePolicyFromDeclaration(input: {
     producer: booked.producer,
     billingFrequency: booked.billingFrequency,
     renewalDate: booked.renewalDate ? dateOrFallback(booked.renewalDate, expiration) : null,
-    premisesAddress: booked.premisesAddress || risk?.address1 || null,
-    premisesCity: risk?.city ?? null,
-    premisesState: risk?.state ?? null,
-    premisesZip: risk?.zip ?? null,
+    premisesAddress:
+      streetOnlyPremises(booked.premisesAddress || risk?.address1, {
+        city: booked.premisesCity || risk?.city,
+        state: booked.premisesState || risk?.state,
+        zip: booked.premisesZip || risk?.zip,
+      }) || null,
+    premisesCity: booked.premisesCity || risk?.city || null,
+    premisesState: booked.premisesState || risk?.state || null,
+    premisesZip: booked.premisesZip || risk?.zip || null,
     ownerId: deal.ownerId ?? null,
     sourceQuoteId: quote.id,
     sourceDocumentId: gate.dec.id,
@@ -544,9 +621,16 @@ export async function issuePolicyFromDeclaration(input: {
     policyId,
     contactId,
     accountId: deal.accountId,
+    dealId,
     riskId: risk?.id ?? null,
     fields,
     premium,
+    yearBuilt,
+    roofYear: booked.roofYear ?? roofYear,
+    construction,
+    knownCity: booked.premisesCity || risk?.city,
+    knownState: booked.premisesState || risk?.state,
+    knownZip: booked.premisesZip || risk?.zip,
   });
 
   await db
@@ -667,7 +751,17 @@ export async function confirmMintedPolicyField(formData: FormData) {
   if (key === "expiration_date" && stored) patch.expirationDate = dateOrFallback(stored, policy.expirationDate);
   if (key === "form" && stored) patch.formType = stored;
   if (key === "insurance_type" && stored) patch.insuranceType = stored;
-  if (key === "mailing_address" && stored) patch.premisesAddress = stored;
+  if (key === "mailing_address" && stored) {
+    const parts = splitPremisesAddress(stored, {
+      city: policy.premisesCity,
+      state: policy.premisesState,
+      zip: policy.premisesZip,
+    });
+    patch.premisesAddress = parts.street || null;
+    if (parts.city) patch.premisesCity = parts.city;
+    if (parts.state) patch.premisesState = parts.state;
+    if (parts.zip) patch.premisesZip = parts.zip;
+  }
   if (key === "selling_agency" && stored) patch.sellingAgency = stored;
   if (key === "producer" && stored) patch.producer = stored;
   if (key === "billing_frequency" && stored) patch.billingFrequency = stored;
@@ -677,9 +771,13 @@ export async function confirmMintedPolicyField(formData: FormData) {
     policyId,
     contactId: policy.contactId,
     accountId: policy.accountId,
+    dealId: policy.dealId,
     riskId: policy.riskId,
     fields,
     premium: booked.premium || policy.premium,
+    knownCity: booked.premisesCity || policy.premisesCity,
+    knownState: booked.premisesState || policy.premisesState,
+    knownZip: booked.premisesZip || policy.premisesZip,
   });
   revalidatePath(`/policies/${policyId}`);
   return {

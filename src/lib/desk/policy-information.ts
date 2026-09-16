@@ -5,6 +5,8 @@ import {
   sellingAgencyLabel,
 } from "@/lib/domain";
 import { partyLabel } from "@/lib/desk/policy-name";
+import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
+import { formatPremisesDisplay, premisesLinesEqual } from "@/lib/policy/premises";
 
 export type PolicyInfoField = {
   key: string;
@@ -60,13 +62,41 @@ function titleCase(value: string): string {
 }
 
 function premisesLine(policy: PolicyInfoSource): string | null {
-  const street = policy.premisesAddress?.trim();
-  const cityLine = [policy.premisesCity, policy.premisesState, policy.premisesZip]
-    .map((part) => part?.trim())
-    .filter(Boolean)
-    .join(", ");
-  if (!street && !cityLine) return null;
-  return [street, cityLine].filter(Boolean).join(", ");
+  return formatPremisesDisplay({
+    address: policy.premisesAddress,
+    city: policy.premisesCity,
+    state: policy.premisesState,
+    zip: policy.premisesZip,
+  });
+}
+
+export function mailingAddressLine(input: {
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+} | null | undefined): string | null {
+  if (!input) return null;
+  return formatPremisesDisplay({
+    address: input.address,
+    city: input.city,
+    state: input.state,
+    zip: input.zip,
+  });
+}
+
+/** Location field is mailing when distinct from insured location — never a second premises. */
+export function distinctMailingLabel(input: {
+  premises?: string | null;
+  mailing?: string | null;
+  locationLabel?: string | null;
+}): string | null {
+  const premises = input.premises?.trim() || null;
+  const mailing = input.mailing?.trim() || null;
+  if (mailing && !premisesLinesEqual(mailing, premises)) return mailing;
+  const location = input.locationLabel?.trim() || null;
+  if (location && !premisesLinesEqual(location, premises)) return location;
+  return null;
 }
 
 function coverageLimitsLine(limits: Record<string, string> | null | undefined): string | null {
@@ -97,8 +127,15 @@ export function policyInformationFields(input: {
   contact?: { id: string; firstName: string; lastName: string } | null;
   account?: { id: string; name: string } | null;
   locationLabel?: string | null;
+  mailing?: {
+    address?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+  } | null;
 }): PolicyInfoField[] {
   const { policy } = input;
+  const homePc = resolveLobOverviewFamily(policy) === "homeowners";
   const fields: PolicyInfoField[] = [];
   const lineProduct = [policy.lineOfBusiness, policy.policyType || policy.formType]
     .map((part) => part?.trim())
@@ -128,19 +165,25 @@ export function policyInformationFields(input: {
   push(fields, "status", "Status", policy.status, undefined, { always: true });
   push(fields, "carrier", "Carrier", input.carrierName ?? "Carrier TBD", undefined, { always: true });
   push(fields, "line", "Line / product", lineProduct || policy.lineOfBusiness, undefined, { always: true });
-  push(fields, "subType", "Subtype", policy.policySubType);
+  push(fields, "subType", homePc ? "Form" : "Subtype", policy.policySubType);
   push(fields, "insuranceType", "Insurance type", policy.insuranceType);
-  push(fields, "effective", "Effective", formatDay(policy.effectiveDate), undefined, { always: true });
-  push(fields, "expiration", "Expiration", formatDay(policy.expirationDate), undefined, { always: true });
-  push(fields, "renewal", "Renewal", formatDay(policy.renewalDate));
+  push(fields, "effective", "Effective date", formatDay(policy.effectiveDate), undefined, { always: true });
+  push(fields, "expiration", "Expiration date", formatDay(policy.expirationDate), undefined, { always: true });
+  push(fields, "renewal", "Renewal date", formatDay(policy.renewalDate));
   push(fields, "premium", "Premium", formatMoney(policy.premium), undefined, { always: true });
   push(fields, "billing", "Billing", billing ? titleCase(billing) : null);
   push(fields, "coverageA", "Coverage A", policy.coverageA != null ? formatMoney(policy.coverageA) : null);
   push(fields, "limits", "Key limits", coverageLimitsLine(policy.coverageLimits));
   push(fields, "faceAmount", "Face amount", policy.faceAmount != null ? formatMoney(policy.faceAmount) : null);
   push(fields, "insured", "Insured", insured || null, insuredHref, { always: true });
-  push(fields, "premises", "Premises", premisesLine(policy));
-  push(fields, "location", "Location", input.locationLabel);
+  const insuredLocation = premisesLine(policy);
+  push(fields, "premises", homePc ? "Insured location" : "Premises", insuredLocation);
+  const mailing = distinctMailingLabel({
+    premises: insuredLocation,
+    mailing: mailingAddressLine(input.mailing),
+    locationLabel: input.locationLabel,
+  });
+  push(fields, "location", "Mailing address", mailing);
   push(fields, "commission", "Commission", commission);
   push(fields, "sellingAgency", "Selling agency", sellingAgencyLabel(policy.sellingAgency));
   push(fields, "written", "Written", formatDay(written));

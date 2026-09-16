@@ -25,6 +25,7 @@ import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 import { flashAction } from "@/lib/flash-action";
 import { isPolicySensitiveInlineKey, sensitiveFieldConfirmCopy } from "@/lib/policy/sensitive-fields";
 import { getAllowPolicyLabelOverride } from "@/lib/policy/auto-label-prefs";
+import { splitPremisesAddress, streetOnlyPremises } from "@/lib/policy/premises";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -89,7 +90,14 @@ export async function updatePolicyRecord(formData: FormData) {
     commission4Pct: commission4 || null,
     producer: str(formData, "producer") || null,
     formType: str(formData, "formType") || policyType || existing.formType,
-    premisesAddress: str(formData, "premisesAddress") || existing.premisesAddress,
+    premisesAddress: streetOnlyPremises(
+      str(formData, "premisesAddress") || existing.premisesAddress,
+      {
+        city: str(formData, "premisesCity") || existing.premisesCity,
+        state: str(formData, "premisesState") || existing.premisesState,
+        zip: str(formData, "premisesZip") || existing.premisesZip,
+      },
+    ) || existing.premisesAddress,
     premisesCity: str(formData, "premisesCity") || existing.premisesCity,
     premisesState: str(formData, "premisesState") || existing.premisesState,
     premisesZip: str(formData, "premisesZip") || existing.premisesZip,
@@ -383,6 +391,18 @@ export async function updatePolicyField(input: {
         patch = { [fieldKey]: d };
       }
     }
+  } else if (fieldKey === "premisesAddress") {
+    const parts = splitPremisesAddress(raw, {
+      city: existing.premisesCity,
+      state: existing.premisesState,
+      zip: existing.premisesZip,
+    });
+    patch = {
+      premisesAddress: parts.street || null,
+      premisesCity: parts.city || existing.premisesCity,
+      premisesState: parts.state || existing.premisesState,
+      premisesZip: parts.zip || existing.premisesZip,
+    };
   } else {
     patch = { [fieldKey]: raw || null };
   }

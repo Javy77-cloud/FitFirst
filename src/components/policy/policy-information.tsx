@@ -8,6 +8,9 @@ import {
 import { RecordLink } from "@/components/record-links";
 import { POLICY_STATUSES } from "@/lib/policy/status";
 import { partyLabel } from "@/lib/desk/policy-name";
+import { distinctMailingLabel, mailingAddressLine } from "@/lib/desk/policy-information";
+import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
+import { formatPremisesDisplay, streetOnlyPremises } from "@/lib/policy/premises";
 
 export function PolicyInformationCard({
   policy,
@@ -16,6 +19,7 @@ export function PolicyInformationCard({
   contact,
   account,
   locationLabel,
+  mailing,
   readOnly = false,
   showCommission = true,
 }: {
@@ -47,6 +51,12 @@ export function PolicyInformationCard({
   contact?: { id: string; firstName: string; lastName: string } | null;
   account?: { id: string; name: string } | null;
   locationLabel?: string | null;
+  mailing?: {
+    address?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+  } | null;
   /** Agents: Overview is fully read-only. Admins can edit (sensitive fields confirm). */
   readOnly?: boolean;
   showCommission?: boolean;
@@ -58,10 +68,23 @@ export function PolicyInformationCard({
       ? `/accounts/${account.id}`
       : undefined;
   const billing = policy.billingFrequency || policy.premiumFrequency || "";
-  const premises = [policy.premisesAddress, policy.premisesCity, policy.premisesState, policy.premisesZip]
-    .map((p) => (typeof p === "string" ? p.trim() : ""))
-    .filter(Boolean)
-    .join(", ");
+  const homePc = resolveLobOverviewFamily(policy) === "homeowners";
+  const insuredLocation = formatPremisesDisplay({
+    address: policy.premisesAddress,
+    city: policy.premisesCity,
+    state: policy.premisesState,
+    zip: policy.premisesZip,
+  });
+  const streetOnly = streetOnlyPremises(policy.premisesAddress, {
+    city: policy.premisesCity,
+    state: policy.premisesState,
+    zip: policy.premisesZip,
+  });
+  const mailingShown = distinctMailingLabel({
+    premises: insuredLocation,
+    mailing: mailingAddressLine(mailing),
+    locationLabel,
+  });
 
   return (
     <section id="policy-information" className="ff-card mb-4 p-4" data-ff-policy-information="">
@@ -103,7 +126,7 @@ export function PolicyInformationCard({
         <PolicyInlineText
           policyId={policy.id}
           fieldKey="policySubType"
-          label="Subtype"
+          label={homePc ? "Form" : "Subtype"}
           value={policy.policySubType ?? ""}
           readOnly={readOnly}
         />
@@ -117,21 +140,21 @@ export function PolicyInformationCard({
         <PolicyInlineDate
           policyId={policy.id}
           fieldKey="effectiveDate"
-          label="Effective"
+          label="Effective date"
           value={policy.effectiveDate}
           readOnly={readOnly}
         />
         <PolicyInlineDate
           policyId={policy.id}
           fieldKey="expirationDate"
-          label="Expiration"
+          label="Expiration date"
           value={policy.expirationDate}
           readOnly={readOnly}
         />
         <PolicyInlineDate
           policyId={policy.id}
           fieldKey="renewalDate"
-          label="Renewal"
+          label="Renewal date"
           value={policy.renewalDate}
           readOnly={readOnly}
           allowEmpty
@@ -163,14 +186,18 @@ export function PolicyInformationCard({
         <PolicyInlineText
           policyId={policy.id}
           fieldKey="premisesAddress"
-          label="Premises"
-          value={premises || policy.premisesAddress || ""}
+          label={homePc ? "Insured location" : "Premises"}
+          value={insuredLocation || streetOnly}
           readOnly={readOnly}
         />
-        <div>
-          <dt className="text-helper text-muted-foreground">Location</dt>
-          <dd className="font-medium text-navy">{locationLabel?.trim() || "—"}</dd>
-        </div>
+        {mailingShown ? (
+          <div>
+            <dt className="text-helper text-muted-foreground">Mailing address</dt>
+            <dd className="font-medium text-navy" data-ff-mailing-address="">
+              {mailingShown}
+            </dd>
+          </div>
+        ) : null}
         {showCommission ? (
           <div data-ff-policy-inline="commission4Pct-locked">
             <dt className="text-helper text-muted-foreground">Commission %</dt>
