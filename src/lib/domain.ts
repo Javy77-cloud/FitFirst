@@ -488,6 +488,8 @@ export type AppetiteRuleInput = {
   dontWriteNotes: string | null;
   writtenLines: string[];
   appointed?: boolean | null;
+  /** Agent-facing published appetite (min Cov A, placement). Shown on Markets Why. */
+  appetiteNotes?: string | null;
 };
 
 export type PriorAttempt = {

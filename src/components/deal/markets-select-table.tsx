@@ -5,7 +5,7 @@ import { clearDealMarketsAction, removeSelectedMarketsAction } from "@/app/actio
 import { FitBadge } from "@/components/fit-badge";
 import { Button } from "@/components/ui/button";
 import type { CarrierMatch } from "@/lib/appetite/match";
-import { appointmentLabel } from "@/lib/appetite/present";
+import { appetiteNote, appointmentLabel, marketWhy } from "@/lib/appetite/present";
 import { confirmHardDelete } from "@/lib/desk/confirm-hard-delete";
 import { asList } from "@/lib/safe-list";
 
@@ -137,6 +137,11 @@ export function MarketsSelectTable({
                     manual
                   </span>
                 ) : null}
+                {appetiteNote(row) ? (
+                  <div className="text-helper text-muted-foreground" data-ff-market-appetite-note="">
+                    {appetiteNote(row)}
+                  </div>
+                ) : null}
                 {row.learnedDecline ? (
                   <div className="text-helper text-fit-red">Learned from decline log</div>
                 ) : null}
@@ -146,12 +151,7 @@ export function MarketsSelectTable({
                 <FitBadge band={row.band} />
               </td>
               <td>{row.fitScore}</td>
-              <td className="text-xs">
-                {asList(row.reasons)
-                  .filter((r) => r.severity !== "pass")
-                  .map((r) => r.message)
-                  .join(" · ") || "Clears structured appetite."}
-              </td>
+              <td className="text-xs">{marketWhy(row)}</td>
               <td className="text-center">
                 <MarketCheckbox
                   checked={selected.includes(row.carrierId)}

@@ -1,3 +1,4 @@
+import { parseMinCovAToken } from "@/lib/appetite/published-appetite";
 import type { MasterRiskSnapshot } from "./types";
 
 export const OLDER_ROOF_YEARS = 15;
@@ -144,8 +145,13 @@ export function tokenHits(token: string, snap: MasterRiskSnapshot): boolean {
     case "new_homeowners":
     case "ca_new_homeowners":
       return isHomeownersLine(snap.line) && (token === "new_homeowners" || normState(snap.state) === "CA");
-    default:
+    default: {
+      const minCovA = parseMinCovAToken(token);
+      if (minCovA != null) {
+        return snap.coverageA != null && snap.coverageA < minCovA;
+      }
       return false;
+    }
   }
 }
 

@@ -100,7 +100,8 @@ describe("sep7bi builder rail Markets Quotes", () => {
     expect(filled).not.toMatch(/Request Quotes/);
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/hasShopMarketAction|hasExplicitMarketAction/);
-    expect(page).toMatch(/shopMarketsAction && risk \? await evaluateDealMarkets\(risk, activeSheet\.values\)/);
+    expect(page).toMatch(/evaluateDealMarkets\(risk, activeSheet\.values\)/);
+    expect(page).toMatch(/shopMarketsAction \|\| shopListIds/);
     expect(page).not.toMatch(/const matches = risk \? await evaluateDealMarkets\(risk\)/);
     expect(page).not.toMatch(/sheetReady \? await evaluateDealMarkets/);
     expect(page).toMatch(/sheetHasValues=\{agentMarketsAction\}/);

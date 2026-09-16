@@ -323,6 +323,14 @@ export function matchCarrier(
     });
   }
 
+  if (rule.appetiteNotes?.trim()) {
+    reasons.push({
+      code: "appetite_note",
+      message: rule.appetiteNotes.trim(),
+      severity: "pass",
+    });
+  }
+
   const hasFail = reasons.some((r) => r.severity === "fail");
   const hasStretch = reasons.some((r) => r.severity === "stretch");
   const band: FitBand = hasFail ? "red" : hasStretch ? "yellow" : "green";

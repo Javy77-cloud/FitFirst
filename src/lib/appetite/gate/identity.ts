@@ -1,3 +1,4 @@
+import { TRIDENT_HO_APPETITE } from "@/lib/appetite/published-appetite";
 import { UICNA_SLUG, UNIVERSAL_PC_SLUG } from "./fl-ho-order";
 
 /**
@@ -24,7 +25,7 @@ export const SLUG_NAME_ALIASES: Record<string, string[]> = {
   heritage: ["heritage property", "heritage"],
   security_first: ["security first"],
   peoples_trust: ["people's trust", "peoples trust"],
-  trident_reciprocal: ["trident reciprocal exchange", "trident reciprocal", "trident"],
+  trident_reciprocal: TRIDENT_HO_APPETITE.aliases,
   typtap: ["typtap"],
   olympus: ["olympus insurance", "olympus"],
   monarch: ["monarch national", "monarch"],

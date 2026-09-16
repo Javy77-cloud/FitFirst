@@ -17,6 +17,7 @@ export function MarketsPanel({
   matches,
   unlocked = false,
   manualIds = [],
+  shopListIds = [],
   explicitLookup = false,
   sheetHasValues = false,
   carriers = [],
@@ -27,6 +28,8 @@ export function MarketsPanel({
   matches: CarrierMatch[];
   unlocked?: boolean;
   manualIds?: string[];
+  /** Curated Home/Auto/Flood list — overlay structured appetite instead of forcing In appetite. */
+  shopListIds?: string[];
   explicitLookup?: boolean;
   sheetHasValues?: boolean;
   carriers?: { id: string; name: string; writtenLines?: string[] | null }[];
@@ -35,6 +38,7 @@ export function MarketsPanel({
 }) {
   const [selected, setSelected] = useState<string[]>([]);
   const manual = new Set(asList(manualIds));
+  const shopList = new Set(asList(shopListIds));
   const matchList = asList(matches);
   const listedIds = matchList.map((row) => row.carrierId);
   const extraManual = asList(carriers)
@@ -51,9 +55,31 @@ export function MarketsPanel({
       }),
     );
   const rows = [...matchList, ...extraManual];
-  const appetite = rows.filter((row) => bucketForMatch(row.band, manual.has(row.carrierId)) === "appetite");
-  const stretch = rows.filter((row) => bucketForMatch(row.band, manual.has(row.carrierId)) === "stretch");
-  const skip = rows.filter((row) => bucketForMatch(row.band, manual.has(row.carrierId)) === "skip");
+  const matchedIds = new Set(matchList.map((row) => row.carrierId));
+  const appetite = rows.filter(
+    (row) =>
+      bucketForMatch(
+        row.band,
+        manual.has(row.carrierId),
+        shopList.has(row.carrierId) && matchedIds.has(row.carrierId),
+      ) === "appetite",
+  );
+  const stretch = rows.filter(
+    (row) =>
+      bucketForMatch(
+        row.band,
+        manual.has(row.carrierId),
+        shopList.has(row.carrierId) && matchedIds.has(row.carrierId),
+      ) === "stretch",
+  );
+  const skip = rows.filter(
+    (row) =>
+      bucketForMatch(
+        row.band,
+        manual.has(row.carrierId),
+        shopList.has(row.carrierId) && matchedIds.has(row.carrierId),
+      ) === "skip",
+  );
   const appointed = rows.filter((row) => isAppointedMatch(row)).length;
   const displayMatches = explicitLookup || manual.size > 0 ? matchList : [];
   const hasData = hasMarketLookupData(

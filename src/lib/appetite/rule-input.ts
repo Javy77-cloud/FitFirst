@@ -2,7 +2,7 @@ import type { AppetiteRuleInput } from "@/lib/domain";
 import type { AppetiteRule, Carrier } from "@/lib/db/schema";
 
 export function toAppetiteInput(
-  carrier: Pick<Carrier, "id" | "name" | "portalStatus" | "dontWriteNotes" | "writtenLines">,
+  carrier: Pick<Carrier, "id" | "name" | "portalStatus" | "dontWriteNotes" | "writtenLines" | "appetiteNotes">,
   rule: AppetiteRule,
   appointed?: boolean | null,
 ): AppetiteRuleInput {
@@ -32,5 +32,6 @@ export function toAppetiteInput(
     dontWriteNotes: carrier.dontWriteNotes,
     writtenLines: carrier.writtenLines,
     appointed: appointed ?? null,
+    appetiteNotes: rule.notes?.trim() || carrier.appetiteNotes || null,
   };
 }

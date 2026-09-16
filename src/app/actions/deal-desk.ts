@@ -18,7 +18,7 @@ import {
 } from "@/lib/db/schema";
 import { autoSnapshotFieldsForDeal } from "@/lib/appetite/auto-premium-capture";
 import { isUuid } from "@/lib/ids";
-import { EXCLUDE_MARKET_MARKER, EXPLICIT_MARKET_ACTION_MARKER, MANUAL_MARKET_MARKER, isExplicitMarketActionText, manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
+import { EXCLUDE_MARKET_MARKER, EXPLICIT_MARKET_ACTION_MARKER, MANUAL_MARKET_MARKER, SHOP_LIST_MARKET_MARKER, isExplicitMarketActionText, manualCarrierIdsFromLogs } from "@/lib/deals/manual-markets";
 import { resolveHomeShopCarrierIds } from "@/lib/appetite/javy-home-shop-list";
 import { JAVY_AUTO_SHOP_CARRIER_IDS } from "@/lib/appetite/javy-auto-shop-list";
 import { matchFloodShopCarriers } from "@/lib/appetite/javy-flood-shop-list";
@@ -270,7 +270,7 @@ export async function loadJavyHomeShopListAction(formData: FormData) {
       lineOfBusiness: deal.lineOfBusiness || "HO",
       result: "maybe",
       bindable: false,
-      why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} Loaded from Javy Home shop list.`,
+      why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} ${SHOP_LIST_MARKET_MARKER} Loaded from Javy Home shop list.`,
       snapYearBuilt: risk.yearBuilt,
       snapRoofYear: risk.roofYear,
       snapRoofCovering: risk.roofCovering,
@@ -317,7 +317,7 @@ export async function loadJavyAutoShopListAction(formData: FormData) {
       lineOfBusiness: deal.lineOfBusiness || "AUTO",
       result: "maybe",
       bindable: false,
-      why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} Loaded from Javy Auto shop list.`,
+      why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} ${SHOP_LIST_MARKET_MARKER} Loaded from Javy Auto shop list.`,
       snapYearBuilt: risk.yearBuilt,
       snapRoofYear: risk.roofYear,
       snapRoofCovering: risk.roofCovering,
@@ -369,7 +369,7 @@ export async function loadJavyFloodShopListAction(formData: FormData) {
       lineOfBusiness: deal.lineOfBusiness || "FLOOD",
       result: "maybe",
       bindable: false,
-      why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} Loaded from Javy Flood shop list.`,
+      why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} ${SHOP_LIST_MARKET_MARKER} Loaded from Javy Flood shop list.`,
       snapYearBuilt: risk.yearBuilt,
       snapRoofYear: risk.roofYear,
       snapRoofCovering: risk.roofCovering,

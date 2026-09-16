@@ -1,3 +1,4 @@
+import { TRIDENT_HO_APPETITE } from "@/lib/appetite/published-appetite";
 import { TRIDENT_CARRIER_ID } from "@/lib/fixtures/ids";
 
 /** Javy's curated Home shop list (from Rosa Markets 2026-09-08). One-click load until appetite is trained. */
@@ -45,7 +46,7 @@ export const JAVY_HOME_SHOP_NAMES = [
 
 /** Name fallback when a shop-list UUID is missing (existing Trident under an alias, etc.). */
 export const HOME_SHOP_NAME_ALIASES: Partial<Record<string, string[]>> = {
-  [TRIDENT_CARRIER_ID]: ["trident reciprocal exchange", "trident reciprocal", "trident"],
+  [TRIDENT_CARRIER_ID]: TRIDENT_HO_APPETITE.aliases,
 };
 
 /** Resolve desk carrier rows to the Home shop list. Prefers seeded UUIDs; falls back to aliases. Skips missing. */

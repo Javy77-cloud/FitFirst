@@ -4,12 +4,13 @@ import { and, eq, or, sql } from "drizzle-orm";
 import { TRIDENT_SLUG } from "@/lib/appetite/gate/fl-ho-order";
 import { APPETITE_FL_SPECIALTY_CSV, parseAppetiteCsv } from "@/lib/appetite/gate/parse";
 import { upsertAppetiteCarriers } from "@/lib/appetite/gate/store";
+import { TRIDENT_HO_APPETITE } from "@/lib/appetite/published-appetite";
 import { TENANT_ID, TRIDENT_CARRIER_ID, TRIDENT_CARRIER_NAME, TRIDENT_MIN_COV_A } from "../fixtures/ids";
 import { db } from "./index";
 import { appetiteRules, carrierAppetite, carriers } from "./schema";
 
-const TRIDENT_APPETITE_NOTE =
-  "FL HO-3 via QuoteRUSH. Minimum Coverage A $300,000 (was $400k).";
+const TRIDENT_APPETITE_NOTE = TRIDENT_HO_APPETITE.notesForAgent;
+const TRIDENT_APPETITE_ROW_ID = "trident-ho3-min-cova-2026";
 
 function isTridentName(name: string | null | undefined): boolean {
   const n = (name ?? "").trim().toLowerCase();
@@ -38,13 +39,27 @@ export async function seedTridentReciprocal() {
     name: byName && byName.name.trim() && !isAliasOnly(byName.name) ? byName.name : TRIDENT_CARRIER_NAME,
     writtenLines: [...written],
     portalStatus: "open" as const,
-    portalLogin: "QuoteRUSH",
+    portalLogin: TRIDENT_HO_APPETITE.placement,
     website: "https://www.tridentreciprocal.com",
     carrierInfo: "Trident Reciprocal Exchange. FL HO-3 through QuoteRUSH.",
     territory: "Florida",
     preferredSubmission: "portal",
     bindingAuthority: "limited",
     appetiteNotes: TRIDENT_APPETITE_NOTE,
+    appetiteRows: [
+      {
+        id: TRIDENT_APPETITE_ROW_ID,
+        dateRequested: "2026-06-17",
+        lob: TRIDENT_HO_APPETITE.line,
+        roofAge: "",
+        waterHeater: "",
+        hvac: "",
+        electrical: "",
+        claimsHistory: "",
+        acceptDecline: "accept" as const,
+        notes: TRIDENT_APPETITE_NOTE,
+      },
+    ],
     fixtureTag: "trident-ho3-2026-09",
     active: true,
     updatedAt: new Date(),
@@ -74,7 +89,7 @@ export async function seedTridentReciprocal() {
     .limit(1);
 
   const ruleValues = {
-    minCovA: TRIDENT_MIN_COV_A,
+    minCovA: TRIDENT_HO_APPETITE.minCovA ?? TRIDENT_MIN_COV_A,
     notes: TRIDENT_APPETITE_NOTE,
     updatedAt: new Date(),
   };

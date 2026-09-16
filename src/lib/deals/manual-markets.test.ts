@@ -6,6 +6,7 @@ import { MarketsPanel } from "@/components/deal/markets-panel";
 import {
   EXPLICIT_MARKET_ACTION_MARKER,
   MANUAL_MARKET_MARKER,
+  SHOP_LIST_MARKET_MARKER,
   bucketForMatch,
   hasExplicitMarketAction,
   hasMarketLookupData,
@@ -14,6 +15,7 @@ import {
   marketBucketLabel,
   riskHasMarketFacts,
   sheetHasMarketFacts,
+  shopListCarrierIdsFromLogs,
 } from "./manual-markets";
 
 describe("manual markets", () => {
@@ -21,6 +23,8 @@ describe("manual markets", () => {
     expect(bucketForMatch("red", true)).toBe("appetite");
     expect(bucketForMatch("yellow", false)).toBe("stretch");
     expect(bucketForMatch("green", false)).toBe("appetite");
+    expect(bucketForMatch("red", true, true)).toBe("skip");
+    expect(bucketForMatch("yellow", true, true)).toBe("stretch");
     expect(marketBucketLabel("appetite")).toBe("In appetite");
     expect(
       manualCarrierIdsFromLogs([
@@ -29,6 +33,15 @@ describe("manual markets", () => {
         { carrierId: "c3", why: `${MANUAL_MARKET_MARKER} leftover seed` },
       ]),
     ).toEqual(["c1"]);
+    expect(
+      shopListCarrierIdsFromLogs([
+        {
+          carrierId: "trident",
+          why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} ${SHOP_LIST_MARKET_MARKER} Loaded from Javy Home shop list.`,
+        },
+        { carrierId: "c1", why: `${MANUAL_MARKET_MARKER} ${EXPLICIT_MARKET_ACTION_MARKER} override` },
+      ]),
+    ).toEqual(["trident"]);
   });
 
   it("treats Markets as empty until a lookup or manual carrier exists", () => {
@@ -85,6 +98,41 @@ describe("manual markets", () => {
     );
     expect(hasMarketLookupInput({ coverageA: 321000 }, null)).toBe(false);
     expect(hasMarketLookupInput({ coverageA: 321000 }, { coverage_a: { value: "321000" } })).toBe(true);
+  });
+
+  it("soft-filters a shop-list row when structured appetite says skip", () => {
+    const html = renderToString(
+      createElement(MarketsPanel, {
+        dealId: "deal-trident",
+        matches: [
+          {
+            carrierId: "trident",
+            carrierName: "Trident Reciprocal Exchange",
+            band: "red",
+            fitScore: 20,
+            reasons: [
+              { code: "min_cov_a", message: "Cov A 250000 below min 300000", severity: "fail" },
+              {
+                code: "appetite_note",
+                message: "FL HO-3 via QuoteRUSH. Minimum Coverage A $300,000.",
+                severity: "pass",
+              },
+            ],
+            learnedDecline: false,
+            shoppable: false,
+          },
+        ],
+        manualIds: ["trident"],
+        shopListIds: ["trident"],
+        explicitLookup: false,
+        sheetHasValues: true,
+        carriers: [{ id: "trident", name: "Trident Reciprocal Exchange", writtenLines: ["HO"] }],
+      }),
+    );
+    expect(html).toMatch(/Skip/);
+    expect(html).toMatch(/below min 300000/);
+    expect(html).toMatch(/data-ff-market-appetite-note/);
+    expect(html).toMatch(/QuoteRUSH/);
   });
 
   it("renders empty Markets with zero counters + load/add when no matches", () => {

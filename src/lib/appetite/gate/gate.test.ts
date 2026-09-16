@@ -333,9 +333,18 @@ describe("universal_pc ≠ uicna identity", () => {
     const trident = catalog.find((c) => c.carrierId === "trident_reciprocal");
     expect(trident?.legalName).toBe("Trident Reciprocal Exchange");
     expect(trident?.notesForAgent).toMatch(/\$300,000/);
+    expect(trident?.notesForAgent).toMatch(/re-shop/i);
+    expect(trident?.hardDeclines).toContain("min_cov_a:300000");
     expect(trident?.flHoOrder).toBe(DEFAULT_FL_HO_ORDER.indexOf("trident_reciprocal"));
     expect(trident?.linesOffered).toContain("HO3");
     expect(trident?.statesAvailable).toContain("FL");
+    const lowCov = runQuoteGate(flHo3({ coverageA: 250000 }), catalog);
+    expect(lowCov.decisions.find((d) => d.carrierId === "trident_reciprocal")?.status).toBe("Skip-Decline");
+    expect(lowCov.decisions.find((d) => d.carrierId === "trident_reciprocal")?.matchingRule).toBe(
+      "min_cov_a:300000",
+    );
+    const okCov = runQuoteGate(flHo3({ coverageA: 310000 }), catalog);
+    expect(okCov.decisions.find((d) => d.carrierId === "trident_reciprocal")?.status).toBe("Quote");
     expect(catalog.every((c) => c.rateable)).toBe(true);
   });
 });

@@ -8,7 +8,7 @@ DECLARE
   tenant uuid := '11111111-1111-4111-8111-111111111111';
   seeded_id uuid := '33333333-3333-4333-8333-333333333340';
   existing_id uuid;
-  note text := 'FL HO-3 via QuoteRUSH. Minimum Coverage A $300,000 (was $400k).';
+  note text := 'FL HO-3 via QuoteRUSH. Minimum Coverage A $300,000 (was $400k; effective immediately). Broader Florida HO placement — re-shop risks previously below $400k.';
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM tenants WHERE id = tenant) THEN
     RETURN;
@@ -34,7 +34,7 @@ BEGIN
     INSERT INTO carriers (
       id, tenant_id, name, written_lines, portal_status, portal_login, website,
       carrier_info, territory, preferred_submission, binding_authority,
-      appetite_notes, fixture_tag, active, created_at, updated_at
+      appetite_notes, appetite_rows, fixture_tag, active, created_at, updated_at
     ) VALUES (
       seeded_id,
       tenant,
@@ -48,6 +48,7 @@ BEGIN
       'portal',
       'limited',
       note,
+      '[{"id":"trident-ho3-min-cova-2026","dateRequested":"2026-06-17","lob":"HO3","roofAge":"","waterHeater":"","hvac":"","electrical":"","claimsHistory":"","acceptDecline":"accept","notes":"FL HO-3 via QuoteRUSH. Minimum Coverage A $300,000 (was $400k; effective immediately). Broader Florida HO placement — re-shop risks previously below $400k."}]'::jsonb,
       'trident-ho3-2026-09',
       true,
       now(),
@@ -75,6 +76,10 @@ BEGIN
         WHEN coalesce(appetite_notes, '') = '' THEN note
         WHEN appetite_notes ILIKE '%300,000%' OR appetite_notes ILIKE '%$300k%' THEN appetite_notes
         ELSE appetite_notes || E'\n' || note
+      END,
+      appetite_rows = CASE
+        WHEN appetite_rows @> '[{"id":"trident-ho3-min-cova-2026"}]'::jsonb THEN appetite_rows
+        ELSE coalesce(appetite_rows, '[]'::jsonb) || '[{"id":"trident-ho3-min-cova-2026","dateRequested":"2026-06-17","lob":"HO3","roofAge":"","waterHeater":"","hvac":"","electrical":"","claimsHistory":"","acceptDecline":"accept","notes":"FL HO-3 via QuoteRUSH. Minimum Coverage A $300,000 (was $400k; effective immediately). Broader Florida HO placement — re-shop risks previously below $400k."}]'::jsonb
       END,
       active = true,
       updated_at = now()
@@ -125,7 +130,7 @@ BEGIN
       'QuoteRUSH',
       NULL,
       true,
-      '["state!=FL","mobile_home"]'::jsonb,
+      '["state!=FL","mobile_home","min_cov_a:300000"]'::jsonb,
       '["older_roof"]'::jsonb,
       '["fl_single_family","quoterush"]'::jsonb,
       'open',
