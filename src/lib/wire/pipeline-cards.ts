@@ -1,5 +1,6 @@
 import { insuredContactName, insuredHref } from "@/lib/crm/lists";
 import type { PipelineCardRow } from "@/lib/db/queries";
+import { listProductStageChips, type ListProductStageChip } from "@/lib/deals/product-stages";
 import { homeAddressFromRecords } from "@/lib/meetings/types";
 
 export type PipelineCardView = {
@@ -25,6 +26,7 @@ export type PipelineCardView = {
   boundAt: string | null;
   archivedAt: string | null;
   tags: string[];
+  productStageChips: ListProductStageChip[];
 };
 
 function iso(value: Date | string | null | undefined) {
@@ -63,6 +65,7 @@ export function presentPipelineCard(row: PipelineCardRow): PipelineCardView {
     boundAt: iso(deal.boundAt),
     archivedAt: iso(deal.archivedAt),
     tags: Array.isArray(deal.tags) ? deal.tags : [],
+    productStageChips: listProductStageChips(deal),
   };
 }
 

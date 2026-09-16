@@ -2262,6 +2262,9 @@ export async function getDealWorkspace(dealId: string) {
   const session = await currentDeskSession();
   if (!sessionSeesAgencyBook(session) && session.userId && deal.ownerId !== session.userId) return null;
 
+  const { restoreDealSourceDocuments } = await import("@/lib/documents/restore-deal-docs");
+  await restoreDealSourceDocuments(dealId).catch(() => null);
+
   const [
     riskRows,
     docs,

@@ -6,6 +6,7 @@ import { DealRowActions } from "@/components/crm/deal-row-actions";
 import { InsuredLink } from "@/components/crm/insured-link";
 import { LinkedValue } from "@/components/crm/linked-value";
 import { FieldSlot } from "@/components/pipeline/field-picker";
+import { DealProductStageChips } from "@/components/deals/deal-product-stage-chips";
 import { StagePill } from "@/components/fit-badge";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { formatIsoDate } from "@/lib/crm/display";
@@ -66,7 +67,11 @@ export function PipelineDealCard({
         {deal.carrier ?? "—"}
       </FieldSlot>
       <FieldSlot id="stage" className="mt-1">
-        <StagePill stage={stageName ?? deal.pipelineStage} color={stageColor} />
+        {deal.productStageChips.length > 0 ? (
+          <DealProductStageChips chips={deal.productStageChips} />
+        ) : (
+          <StagePill stage={stageName ?? deal.pipelineStage} color={stageColor} />
+        )}
       </FieldSlot>
       <FieldSlot id="address" className="mt-1 text-[11px]">
         <LinkedValue value={deal.address} />

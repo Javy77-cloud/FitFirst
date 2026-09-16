@@ -12,6 +12,8 @@ import {
   displayProductStage,
   isBoardNoopStage,
   lateStageNeedsQuoteSelection,
+  listProductStageChips,
+  listProductStageLabel,
   parseInspectionStatus,
   parseProductStages,
   productChipBound,
@@ -171,6 +173,15 @@ describe("per-product stages", () => {
     expect(source("src/app/actions/pipeline.ts")).toMatch(/isBoardNoopStage/);
     expect(source("src/components/pipeline/kanban.tsx")).toMatch(/isBoardNoopStage/);
     expect(source("src/components/deal/quotes-panel.tsx")).toMatch(/QuotesBindableSignal/);
+    expect(source("src/components/deal/quotes-panel.tsx")).toMatch(/data-ff-quotes-warning-strip/);
+    expect(source("src/components/deal/quotes-panel.tsx")).toMatch(/data-ff-quotes-sheet-stale/);
+    expect(source("src/components/deal/quotes-results-table.tsx")).not.toMatch(
+      /data-ff-quotes-sheet-stale/,
+    );
+    expect(source("src/components/deal/quotes-bindable-signal.tsx")).toMatch(/rounded-full/);
+    expect(source("src/components/deal/quotes-bindable-signal.tsx")).not.toMatch(
+      /rounded-md border px-3 py-2 text-sm/,
+    );
     expect(source("src/lib/files/serve-document.ts")).toMatch(/missingFileResponse/);
     expect(source("src/lib/files/serve-document.ts")).toMatch(/readStoredFile/);
   });
@@ -338,6 +349,52 @@ describe("per-product stages", () => {
     expect(source("src/lib/deals/pipeline-sheet.ts")).not.toMatch(/view: "board"/);
     expect(source("src/app/deals/page.tsx")).toMatch(/boardWhenNoPipeline=\{null\}/);
     expect(source("src/app/deals/page.tsx")).toMatch(/newHref="\/deals\?view=list"/);
+  });
+
+  it("shows one list/board stage chip per product, not a single deal stage", () => {
+    const gloria = listProductStageChips({
+      shopProducts: ["homeowners", "landlord"],
+      quotingForm: "HO3",
+      pipelineStage: "quote_sent",
+      shopFlow: {
+        productStages: {
+          homeowners: { stage: "quote_sent", selectedQuoteIds: ["q1"] },
+          landlord: { stage: "quote_review", selectedQuoteIds: [] },
+        },
+      },
+    });
+    expect(gloria.map((chip) => `${chip.label}:${chip.stageLabel}`)).toEqual([
+      "HO3:Quote sent",
+      "DP3:Quote review",
+    ]);
+    const heather = listProductStageChips({
+      shopProducts: ["homeowners", "auto", "flood"],
+      quotingForm: "HO3",
+      pipelineStage: "quote_sent",
+      shopFlow: {
+        productStages: {
+          homeowners: { stage: "quote_review", selectedQuoteIds: [] },
+          auto: { stage: "markets", selectedQuoteIds: [] },
+          flood: { stage: "gathering", selectedQuoteIds: [] },
+        },
+      },
+    });
+    expect(heather).toHaveLength(3);
+    expect(heather.map((chip) => chip.label)).toEqual(["HO3", "Auto", "Flood"]);
+    expect(
+      listProductStageChips({
+        shopProducts: ["homeowners", "landlord", "auto", "flood", "umbrella"],
+        pipelineStage: "markets",
+      }),
+    ).toHaveLength(5);
+    expect(listProductStageLabel("gathering")).toBe("Gathering");
+    expect(source("src/components/deals/deals-table.tsx")).toMatch(/DealProductStageChips/);
+    expect(source("src/components/deals/deals-table.tsx")).toMatch(/listProductStageChips\(deal\)/);
+    expect(source("src/components/pipeline/deal-card.tsx")).toMatch(/DealProductStageChips/);
+    expect(source("src/components/pipeline/table-view.tsx")).toMatch(/DealProductStageChips/);
+    expect(source("src/components/deals/deal-product-stage-chips.tsx")).toMatch(
+      /data-ff-list-product-stage-chip/,
+    );
   });
 
   it("wires choose-quote, lost reasons, attach ids, and speech finals", () => {

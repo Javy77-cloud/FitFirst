@@ -1,5 +1,6 @@
 import {
   dealProductDef,
+  inferDealProducts,
   isDealProductId,
   parseDealProduct,
   type DealProductId,
@@ -411,6 +412,53 @@ export function displayProductStage(input: {
 export function productChipBound(stage?: string | null): boolean {
   const key = canonicalizeProductStage(stage);
   return key === "bound" || key === "policy_issued" || key === "closed_won";
+}
+
+export type ListProductStageChip = {
+  product: DealProductId;
+  label: string;
+  stage: string;
+  stageLabel: string;
+};
+
+function productStagesFromShopFlow(shopFlow: unknown): DealProductStages {
+  if (!shopFlow || typeof shopFlow !== "object" || Array.isArray(shopFlow)) return {};
+  return parseProductStages((shopFlow as { productStages?: unknown }).productStages);
+}
+
+/** Always show a stage word on list/board chips, including Gathering. */
+export function listProductStageLabel(stage?: string | null): string {
+  const key = canonicalizeProductStage(stage);
+  return CHIP_STAGE_LABELS[key] ?? PRODUCT_STAGE_LABELS[key] ?? humanizeDealStage(key) ?? "Gathering";
+}
+
+/** One chip per product (HO3 / DP3 / Auto / Flood…) with that product’s stage. */
+export function listProductStageChips(input: {
+  shopProducts?: string[] | null;
+  shopLines?: string[] | null;
+  lineOfBusiness?: string | null;
+  quotingLine?: string | null;
+  quotingForm?: string | null;
+  policySubType?: string | null;
+  shopFlow?: unknown;
+  pipelineStage?: string | null;
+}): ListProductStageChip[] {
+  const products = inferDealProducts(input);
+  const stages = productStagesFromShopFlow(input.shopFlow);
+  return products.map((product) => {
+    const state = productStageFor(stages, product, input.pipelineStage);
+    const stage = displayProductStage({
+      stage: state.stage,
+      selectedQuoteIds: state.selectedQuoteIds,
+      fallback: input.pipelineStage,
+    });
+    return {
+      product,
+      label: productChipLabel({ product, quotingForm: input.quotingForm }),
+      stage,
+      stageLabel: listProductStageLabel(stage),
+    };
+  });
 }
 
 /** Selected carrier row — same words as the stamp / header stage. */

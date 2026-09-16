@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { AddNewDealDialog } from "@/components/deals/add-new-deal-dialog";
 import { DealQuickActions } from "@/components/deals/deal-quick-actions";
+import { DealProductStageChips } from "@/components/deals/deal-product-stage-chips";
 import { DealStageSelect } from "@/components/deals/deal-stage-select";
 import { DealStaleBadge } from "@/components/deals/deal-stale-badge";
 import { PipelineGridCell } from "@/components/deals/pipeline-grid-cell";
 import { PipelineListValue } from "@/components/deals/pipeline-list-value";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
-import { StagePill } from "@/components/fit-badge";
 import { StatusBadge } from "@/components/status-badge";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { listDealFieldDefs, loadLayoutForModule, loadRecordValuesForIds } from "@/lib/custom-fields/store";
@@ -32,6 +32,7 @@ import {
   type PipelineSheetMode,
 } from "@/lib/deals/pipeline-sheet";
 import { isDealStale, nextDealActionAt } from "@/lib/deals/pipeline-desk";
+import { listProductStageChips } from "@/lib/deals/product-stages";
 import { formatDay } from "@/lib/domain";
 import type { DeskUserOption } from "@/lib/deals/transfer";
 import type { DealListRow } from "@/lib/db/queries";
@@ -150,6 +151,7 @@ export async function DealsTable({
             const email = dealRecordEmail(stored);
             const address = dealRecordAddress(deal, stored);
             const stage = dealStageView(deal, boards);
+            const productChips = listProductStageChips(deal);
             const nextDue =
               nextByDeal.get(deal.id) ??
               nextDealActionAt({ updatedAt: deal.updatedAt })?.toISOString() ??
@@ -171,6 +173,7 @@ export async function DealsTable({
               email,
               address,
               stage,
+              productChips,
               contactId: contact?.id ?? deal.contactId,
               accountId: account?.id ?? deal.accountId,
               leadId: deal.leadId,
@@ -193,6 +196,7 @@ export async function DealsTable({
                   primaryNamedInsured: deal.primaryNamedInsured,
                   lineOfBusiness: deal.lineOfBusiness,
                 }),
+                productChips.map((chip) => `${chip.label} ${chip.stageLabel}`).join(" "),
                 stage.name,
                 deal.state,
                 deal.propertyOneliner,
@@ -224,6 +228,7 @@ function dealRowCells({
   email,
   address,
   stage,
+  productChips,
   contactId,
   accountId,
   leadId,
@@ -244,6 +249,7 @@ function dealRowCells({
   email: string;
   address: string;
   stage: ReturnType<typeof dealStageView>;
+  productChips: ReturnType<typeof listProductStageChips>;
   contactId: string | null | undefined;
   accountId: string | null | undefined;
   leadId: string | null | undefined;
@@ -258,7 +264,9 @@ function dealRowCells({
   const sort: Record<string, string> = {
     pick: "",
     title: sheetAttr(deal.title),
-    stage: sheetAttr(stage.name),
+    stage: sheetAttr(
+      productChips.map((chip) => `${chip.label} ${chip.stageLabel}`).join(", ") || stage.name,
+    ),
     line: sheetAttr(deal.lineOfBusiness),
     subType: sheetAttr(deal.policySubType),
     shopLines: sheetAttr((deal.shopLines ?? []).join(", ")),
@@ -292,30 +300,21 @@ function dealRowCells({
     ),
     stage:
       mode === "grid" ? (
-        <DealStageSelect
-          dealId={deal.id}
-          dealTitle={deal.title}
-          pipelineSlug={stage.pipelineSlug}
-          stageSlug={stage.slug}
-          stages={stage.stages}
-          toastOnSave
-        />
+        <div className="space-y-1" data-ff-deal-list-stage="">
+          <DealProductStageChips chips={productChips} />
+          <DealStageSelect
+            dealId={deal.id}
+            dealTitle={deal.title}
+            pipelineSlug={stage.pipelineSlug}
+            stageSlug={stage.slug}
+            stages={stage.stages}
+            toastOnSave
+          />
+        </div>
       ) : (
-        <PipelineListValue
-          nav={pipelineListNav({
-            columnId: "stage",
-            dealId: deal.id,
-            filterPipeline: listFilter.pipeline,
-            family: listFilter.family,
-            pcSub: listFilter.pcSub,
-            lifeSub: listFilter.lifeSub,
-            healthSub: listFilter.healthSub,
-            stageSlug: stage.slug,
-            view: mode,
-          })}
-        >
-          <StagePill stage={stage.name} color={stage.color} />
-        </PipelineListValue>
+        <div data-ff-deal-list-stage="">
+          <DealProductStageChips chips={productChips} />
+        </div>
       ),
     line: sheetCell({
       mode,

@@ -22,7 +22,7 @@ export function QuotesStageFlags({
   const canonical = canonicalizeProductStage(stage);
   return (
     <div
-      className="flex flex-wrap items-center gap-3 rounded-md border border-border/70 px-3 py-2"
+      className="flex w-fit flex-wrap items-center gap-3 rounded-md border border-border/70 px-2 py-1.5"
       data-ff-quotes-stage-flags=""
     >
       <form action={setDealProductInspection} className="flex flex-wrap items-center gap-2">

@@ -50,6 +50,9 @@ describe("master sheet save / reload", () => {
     expect(quoting).toMatch(/submittedSheetValues/);
     expect(quotes).toMatch(/applySavedSheetToDeal/);
     expect(quotes).not.toMatch(/await db\.delete\(quotes\)\.where\(eq\(quotes\.dealId/);
+    expect(action).toMatch(/restoreDealSourceDocuments\(dealId\)/);
+    expect(action).not.toMatch(/delete\(documents\)/);
+    expect(action).not.toMatch(/dealId:\s*null/);
     expect(quotes).toMatch(/archiveLineQuotesForNewRun/);
   });
 

@@ -56,6 +56,8 @@ import {
 } from "@/lib/extraction/gemini";
 import { inferMimeFromName } from "@/lib/files/urls";
 import { isDocumentsSourceDoc, shopLineFromSourceDoc } from "@/lib/deals/quote-docs";
+import { dealSourceSlotForUpload } from "@/lib/documents/restore-deal-docs";
+import { isUploadedFile } from "@/lib/documents/uploaded-file";
 import { markShopFlowStaleAfterRiskChange } from "@/lib/deals/shop-flow-persist";
 import { deleteStoredFile, readStoredFile, writeStoredFile } from "@/lib/files/object-store";
 import {
@@ -207,7 +209,7 @@ export async function uploadDocument(formData: FormData) {
       const files = formData
         .getAll(`files_${i}`)
         .concat(formData.getAll(`file_${i}`))
-        .filter((item): item is File => item instanceof File && item.size > 0);
+        .filter(isUploadedFile);
       typedRows.push({
         docType: String(formData.get(`docType_${i}`) ?? formData.get("docType") ?? "").trim(),
         files,
@@ -216,10 +218,7 @@ export async function uploadDocument(formData: FormData) {
   } else {
     typedRows.push({
       docType: String(formData.get("docType") ?? "").trim(),
-      files: formData
-        .getAll("files")
-        .concat(formData.getAll("file"))
-        .filter((item): item is File => item instanceof File && item.size > 0),
+      files: formData.getAll("files").concat(formData.getAll("file")).filter(isUploadedFile),
     });
   }
   const files = typedRows.flatMap((row) => row.files);
@@ -239,7 +238,15 @@ export async function uploadDocument(formData: FormData) {
         : coerceDealUploadDocType(
             dealId ? inferDocType(file.name, rawType) : inferFromName(file.name, library),
           );
-      const slot = String(formData.get("slot") ?? "") || (resolvedFolder ? "library_file" : slotForDocType(docType));
+      const slot = dealSourceSlotForUpload({
+        dealId,
+        requestedSlot: String(formData.get("slot") ?? ""),
+        docType,
+        hasFolder: Boolean(resolvedFolder),
+      });
+      const lineRaw = String(formData.get("line") ?? "").trim();
+      const lineTags =
+        dealId && isShopLine(lineRaw) ? [lineTag(lineRaw)] : [];
       const doc = await persistFile({
         dealId,
         riskId,
@@ -253,7 +260,7 @@ export async function uploadDocument(formData: FormData) {
         buffer: Buffer.from(await file.arrayBuffer()),
         docType,
         slot,
-        tags: parseTags(formData.get("tags")),
+        tags: [...parseTags(formData.get("tags")), ...lineTags],
       });
       // Gemini source docs: Fill master sheet extracts once — avoid a second API hit that 503s.
       if (doc.riskId && !(doc.slot === "source_doc" && docTypeUsesGemini(doc.docType))) {
@@ -291,7 +298,7 @@ function filesFromSlots(formData: FormData): File[] {
   const rowCount = Number(formData.get("rowCount") ?? 0);
   const collected: File[] = [];
   const push = (item: FormDataEntryValue) => {
-    if (item instanceof File && item.size > 0) collected.push(item);
+    if (isUploadedFile(item)) collected.push(item);
   };
   if (Number.isFinite(rowCount) && rowCount > 0) {
     for (let i = 0; i < rowCount; i += 1) {
@@ -414,7 +421,7 @@ export async function uploadDealDocuments(formData: FormData) {
     const files = formData
       .getAll(`files_${i}`)
       .concat(i === 0 ? formData.getAll("files") : [])
-      .filter((item): item is File => item instanceof File && item.size > 0);
+      .filter(isUploadedFile);
     for (const file of files) {
       const doc = await persistFile({
         dealId: match.id,

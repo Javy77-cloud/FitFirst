@@ -387,7 +387,6 @@ export function QuotesResultsTable({
   selectedQuoteIds = [],
   product = null,
   productStage = null,
-  sheetStale = false,
   priorByQuoteId = {},
 }: {
   dealId: string;
@@ -404,7 +403,6 @@ export function QuotesResultsTable({
   selectedQuoteIds?: string[];
   product?: string | null;
   productStage?: string | null;
-  sheetStale?: boolean;
   priorByQuoteId?: Record<string, { quote: Quote; carrier: Carrier; label: string | null }>;
 }) {
   const list = asList(rows);
@@ -646,14 +644,6 @@ export function QuotesResultsTable({
         ) : null}
       </div>
 
-      {sheetStale ? (
-        <p
-          className="mx-3 mt-3 rounded-md border border-fit-flag/40 bg-fit-flag/10 px-3 py-2 text-[12px] text-navy"
-          data-ff-quotes-sheet-stale=""
-        >
-          Sheet changed — re-quote marked carriers. Bind Save turns red until you Save the recheck.
-        </p>
-      ) : null}
       <div className="space-y-4 px-3 pb-3">
         {sections.map((section) => {
           const visibleRows =

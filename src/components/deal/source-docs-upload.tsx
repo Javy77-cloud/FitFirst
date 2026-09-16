@@ -19,9 +19,11 @@ function emptyRow(id: number): Row {
 export function SourceDocsUpload({
   dealId,
   riskId,
+  line,
 }: {
   dealId: string;
   riskId: string;
+  line?: string | null;
 }) {
   const [rows, setRows] = useState<Row[]>([emptyRow(0)]);
   const [nextId, setNextId] = useState(1);
@@ -45,6 +47,7 @@ export function SourceDocsUpload({
     <form action={uploadDocument} className="mb-3 space-y-2" data-ff-source-docs-upload>
       <input type="hidden" name="dealId" value={dealId} />
       <input type="hidden" name="riskId" value={riskId} />
+      {line ? <input type="hidden" name="line" value={line} /> : null}
       <input type="hidden" name="rowCount" value={rows.length} />
       <p className="text-helper text-muted-foreground" data-ff-source-doc-type-hint="">
         Set the type to match the page — Date inspected only fills from a <span className="font-medium text-navy">4-point</span> (not Declaration).
