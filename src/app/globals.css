@@ -461,20 +461,34 @@
 }
 .ff-list-th {
   position: relative;
+  overflow: visible;
 }
 .ff-col-resize {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 8px;
+  width: 16px;
   cursor: col-resize;
-  z-index: 2;
+  z-index: 8;
+  touch-action: none;
+  pointer-events: auto;
 }
 .ff-col-resize-left {
-  left: -4px;
+  left: -8px;
 }
 .ff-col-resize-right {
-  right: -4px;
+  right: -8px;
+}
+.ff-col-resize::after {
+  content: "";
+  position: absolute;
+  top: 22%;
+  bottom: 22%;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--ff-navy) 32%, transparent);
+  pointer-events: none;
 }
 .ff-col-resize:hover,
 body[data-ff-col-resize] .ff-col-resize {

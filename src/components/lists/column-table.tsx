@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type PointerEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { fetchListColumnLayout, saveListColumnPrefs } from "@/app/actions/desk-prefs";
 import { ColumnsMenu } from "@/components/lists/columns-menu";
@@ -590,29 +590,35 @@ function ResizeHandle({
   currentWidth: number;
   onWidth: (id: string, px: number, commit: boolean) => void;
 }) {
-  const drag = useRef<{ startX: number; startW: number } | null>(null);
-
   function onPointerDown(event: PointerEvent<HTMLSpanElement>) {
     event.preventDefault();
     event.stopPropagation();
-    drag.current = { startX: event.clientX, startW: currentWidth };
-    event.currentTarget.setPointerCapture(event.pointerId);
+    const startX = event.clientX;
+    const startW = currentWidth;
+    const pointerId = event.pointerId;
     document.body.dataset.ffColResize = "1";
-  }
+    try {
+      event.currentTarget.setPointerCapture(pointerId);
+    } catch {
+      /* capture is optional — document listeners still drive the drag */
+    }
 
-  function onPointerMove(event: PointerEvent<HTMLSpanElement>) {
-    if (!drag.current) return;
-    const delta = event.clientX - drag.current.startX;
-    onWidth(columnId, drag.current.startW + delta, false);
-  }
-
-  function onPointerUp(event: PointerEvent<HTMLSpanElement>) {
-    if (!drag.current) return;
-    const delta = event.clientX - drag.current.startX;
-    onWidth(columnId, drag.current.startW + delta, true);
-    drag.current = null;
-    event.currentTarget.releasePointerCapture(event.pointerId);
-    delete document.body.dataset.ffColResize;
+    function widthFrom(clientX: number, commit: boolean) {
+      onWidth(columnId, startW + (clientX - startX), commit);
+    }
+    function onMove(moveEvent: globalThis.PointerEvent) {
+      widthFrom(moveEvent.clientX, false);
+    }
+    function onUp(upEvent: globalThis.PointerEvent) {
+      widthFrom(upEvent.clientX, true);
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      document.removeEventListener("pointercancel", onUp);
+      delete document.body.dataset.ffColResize;
+    }
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
   }
 
   return (
@@ -621,10 +627,8 @@ function ResizeHandle({
       aria-orientation="vertical"
       aria-label={`Resize ${columnId} column`}
       data-resize-edge={edge}
+      data-ff-col-resize={columnId}
       onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
       className={cn("ff-col-resize", edge === "left" ? "ff-col-resize-left" : "ff-col-resize-right")}
     />
   );
