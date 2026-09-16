@@ -73,6 +73,7 @@ export const FLASH_COPY = {
   "need-dec": "Upload the issued declaration PDF first.",
   "need-dec-file": "Could not read the declaration PDF from storage. Re-upload the file.",
   "dec-extract-failed": "Could not extract the declaration. Re-upload the PDF and try again.",
+  "need-dec-fields": "Declaration is missing policy number or premium. No hollow policy was created.",
   "property-records-no-address": "Add a property address on the quote sheet first.",
   "property-records-not-found": "No parcel matched that address.",
   "property-records-error": "GetParcelData did not return fields. Empty cells were left alone.",

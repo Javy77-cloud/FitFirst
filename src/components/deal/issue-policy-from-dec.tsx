@@ -56,7 +56,7 @@ export function IssuePolicyFromDec({
     if (autoOpen && bound && hasQuote && !issued?.id) setOpen(true);
   }, [autoOpen, bound, hasQuote, issued?.id]);
 
-  function mint(documentId?: string) {
+  function mint(documentId?: string, force = false) {
     setCreating(true);
     startTransition(async () => {
       const result = await issuePolicyFromDeclaration({
@@ -65,6 +65,7 @@ export function IssuePolicyFromDec({
         selectedQuoteIds,
         surface: "quotes",
         documentId,
+        force,
       });
       if (!result.ok) {
         setCreating(false);
@@ -149,7 +150,7 @@ export function IssuePolicyFromDec({
           size="sm"
           variant="outline"
           data-ff-reread-declaration=""
-          onClick={() => mint()}
+          onClick={() => mint(undefined, true)}
         >
           Re-read declaration
         </Button>

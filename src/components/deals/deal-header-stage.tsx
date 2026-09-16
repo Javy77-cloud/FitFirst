@@ -144,7 +144,8 @@ export function DealHeaderStage({
         } else if (
           result.reason === "need_dec_file" ||
           result.reason === "need_gemini" ||
-          result.reason === "extract_failed"
+          result.reason === "extract_failed" ||
+          result.reason === "need_dec_fields"
         ) {
           const toast = mintFailureToast(result.reason);
           flashAction(toast.key, toast.kind);

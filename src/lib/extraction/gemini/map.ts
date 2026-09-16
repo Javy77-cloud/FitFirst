@@ -35,8 +35,25 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   wind_hail_deductible: ["wind_hail_deductible"],
   current_policy_name_insured: ["named_insured", "current_policy_named_insured"],
   policy_number: ["policy_number"],
+  policy_no: ["policy_number", "policy_no"],
+  policy_num: ["policy_number", "policy_num"],
+  pol_number: ["policy_number", "pol_number"],
+  pol_no: ["policy_number", "pol_no"],
+  pol_num: ["policy_number", "pol_num"],
+  policy_id: ["policy_number", "policy_id"],
   current_premium: ["current_premium", "premium"],
   premium: ["premium", "current_premium"],
+  total_premium: ["premium", "current_premium", "total_premium"],
+  annual_premium: ["premium", "current_premium", "annual_premium"],
+  total_annual_premium: ["premium", "current_premium", "total_annual_premium"],
+  policy_premium: ["premium", "current_premium", "policy_premium"],
+  written_premium: ["premium", "current_premium", "written_premium"],
+  term_premium: ["premium", "current_premium", "term_premium"],
+  yearly_premium: ["premium", "current_premium", "yearly_premium"],
+  eff_date: ["effective_date", "eff_date"],
+  policy_effective_date: ["effective_date", "policy_effective_date"],
+  inception_date: ["effective_date", "inception_date"],
+  policy_period_start: ["effective_date", "policy_period_start"],
   selling_agency: ["selling_agency"],
   renewal_date: ["renewal_date"],
   producer: ["producer"],
@@ -47,6 +64,9 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   payment_method: ["payment_method"],
   effective_date: ["effective_date"],
   expiration_date: ["expiration_date"],
+  exp_date: ["expiration_date", "exp_date"],
+  policy_expiration_date: ["expiration_date", "policy_expiration_date"],
+  policy_period_end: ["expiration_date", "policy_period_end"],
   loan_number: ["loan_number"],
   city: ["city"],
   state: ["state"],
@@ -152,8 +172,19 @@ export type GeminiFieldPayload = {
 
 export type GeminiExtractJson = Partial<Record<GeminiExtractKey | string, GeminiFieldPayload | string | number | null>>;
 
+export function normalizeGeminiJsonKey(key: string): string {
+  return key
+    .trim()
+    .toLowerCase()
+    .replace(/[%$#]+/g, "")
+    .replace(/[\s\-./]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
 export function sheetKeysForGeminiKey(geminiKey: string): string[] {
-  return GEMINI_KEY_TO_SHEET[geminiKey] ?? [];
+  const normalized = normalizeGeminiJsonKey(geminiKey);
+  return GEMINI_KEY_TO_SHEET[normalized] ?? GEMINI_KEY_TO_SHEET[geminiKey] ?? [];
 }
 
 function clampConfidence(n: number): number {
@@ -300,7 +331,8 @@ export function mapGeminiJsonToFields(
     };
   }
 
-  for (const [geminiKey, raw] of Object.entries(json)) {
+  for (const [rawKey, raw] of Object.entries(json)) {
+    const geminiKey = normalizeGeminiJsonKey(rawKey);
     const payload = asPayload(raw);
     if (!payload) continue;
     const sheetKeys = sheetKeysForGeminiKey(geminiKey);
