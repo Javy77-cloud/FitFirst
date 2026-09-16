@@ -1,5 +1,8 @@
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { CreatePolicyBusyPanel } from "@/components/deal/create-policy-busy-panel";
 import {
   activeShoppingProducts,
   allProductsClosedForDealWon,
@@ -175,9 +178,12 @@ describe("rosa retag + 72h admin notify stub", () => {
     expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(/Create policy/);
     expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(/Not now/);
     expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(
+      /CreatePolicyBusyPanel/,
+    );
+    expect(source("src/components/deal/create-policy-busy-panel.tsx")).toMatch(
       /data-ff-create-policy-busy/,
     );
-    expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(
+    expect(source("src/components/deal/create-policy-busy-panel.tsx")).toMatch(
       /CREATE_POLICY_BUSY_TITLE/,
     );
     expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(
@@ -189,6 +195,11 @@ describe("rosa retag + 72h admin notify stub", () => {
     expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(
       /if \(!result\.ok\) \{\s*const toast = mintFailureToast\(result\.reason\);\s*flashAction\(toast\.key, toast\.kind\);\s*return;/,
     );
+    const busy = renderToString(createElement(CreatePolicyBusyPanel));
+    expect(busy).toContain('data-ff-create-policy-busy=""');
+    expect(busy).toContain(CREATE_POLICY_BUSY_TITLE);
+    expect(busy).toContain(CREATE_POLICY_BUSY_COPY);
+    expect(busy).toContain("role=\"progressbar\"");
     expect(source("src/app/api/v1/deals/[id]/declaration/route.ts")).toMatch(/receiveCarrierDeclaration/);
     expect(source("src/components/deal/issue-policy-from-dec.tsx")).toMatch(
       /Issue policy from declaration/,
