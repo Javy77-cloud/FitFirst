@@ -207,6 +207,7 @@ export function productQuoteCompleteness(input: {
   }[];
   carriers?: readonly { id: string; name: string }[];
   multiLine?: boolean;
+  splitHomeProducts?: boolean;
 }): LineQuoteCompleteness {
   const line = dealProductDef(input.product).shopLine;
   const productQuotes = input.quotes.filter(
@@ -220,7 +221,11 @@ export function productQuoteCompleteness(input: {
           logs: input.logs,
         },
         input.product,
-        { multiLine: input.multiLine ?? true, isPrimaryLine: false },
+        {
+          multiLine: input.multiLine ?? true,
+          isPrimaryLine: false,
+          splitHomeProducts: input.splitHomeProducts ?? false,
+        },
       ),
   );
   if (productQuotes.length === 0) {

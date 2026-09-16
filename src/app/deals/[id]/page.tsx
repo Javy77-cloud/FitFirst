@@ -50,6 +50,7 @@ import {
   resolveActiveDealProduct,
   resolveVisibleDealProducts,
   sheetLineForProduct,
+  splitHomeProducts,
 } from "@/lib/deals/deal-products";
 import { productSectionComplete, productSectionProgress } from "@/lib/deals/product-layout";
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
@@ -213,6 +214,7 @@ export default async function DealPage({
     quotingForm: deal.quotingForm,
     policySubType: deal.policySubType,
   });
+  const splitHome = splitHomeProducts(dealProducts);
   const activeProduct = resolveActiveDealProduct({
     productParam: product,
     lineParam,
@@ -341,6 +343,7 @@ export default async function DealPage({
         quotes: quotes.map((row) => row.quote),
         carriers: carrierRows.map((row) => ({ id: row.carrier.id, name: row.carrier.name })),
         multiLine: dealProducts.length > 1,
+        splitHomeProducts: splitHome,
       }),
     ]),
   );
@@ -456,6 +459,7 @@ export default async function DealPage({
           active={activeTab}
           extraQuery={{ line: sheetLine, product: activeProduct }}
           panelClassName="mt-0"
+          tabSize="deal"
           toolbar={activeTab === "details" ? <EditLayoutLink module="deals" line={activeLob} /> : null}
           heading={
             <div className="min-w-0">
@@ -729,6 +733,7 @@ export default async function DealPage({
                         product={activeProduct}
                         selectedQuoteIds={activeProductState.selectedQuoteIds}
                         sheetStale={sheetStale}
+                        splitHomeProducts={splitHome}
                       />
                     )}
                   </div>

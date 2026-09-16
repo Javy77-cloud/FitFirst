@@ -834,22 +834,6 @@ export function QuotesResultsTable({
                                   {prior.label ?? "Prior"} · {formatMoney(prior.quote.premium)}
                                 </p>
                               ) : null}
-                              {!detailsOpen &&
-                              (outcome !== "bindable" || !rowReason.provided || rowReason.chips.length) ? (
-                                <p
-                                  className={cn(
-                                    "text-[12px] leading-snug",
-                                    rowReason.provided ? "text-navy" : "text-fit-flag",
-                                  )}
-                                  data-ff-quote-row-reason={quote.id}
-                                  data-ff-quote-row-reason-provided={rowReason.provided ? "1" : "0"}
-                                >
-                                  {rowReason.label}
-                                  {rowReason.detail ? (
-                                    <span className="text-muted-foreground"> · {rowReason.detail}</span>
-                                  ) : null}
-                                </p>
-                              ) : null}
                             </div>
 
                             <div className="flex shrink-0 flex-wrap items-center gap-1.5">

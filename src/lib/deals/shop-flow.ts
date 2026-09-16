@@ -223,7 +223,7 @@ export function quoteMatchesDealProduct(
     logs?: readonly { id: string; lineOfBusiness?: string | null }[] | null;
   },
   product: string,
-  opts?: { multiLine?: boolean; isPrimaryLine?: boolean },
+  opts?: { multiLine?: boolean; isPrimaryLine?: boolean; splitHomeProducts?: boolean },
 ): boolean {
   const wanted = parseDealProduct(product);
   if (!wanted) return quoteMatchesShopLine(input, "home", opts);
@@ -233,7 +233,10 @@ export function quoteMatchesDealProduct(
   }
   const fromNotes = inferHomeProductFromQuoteNotes(input.notes);
   if (fromNotes) return fromNotes === wanted;
-  if (opts?.multiLine && (wanted === "homeowners" || wanted === "landlord" || wanted === "renters")) {
+  // Gloria HO3+DP3: untagged home quotes must not spill onto both chips.
+  // Heather HO3+Auto+Flood: HO3 is the only home chip — show home-line quotes.
+  const splitHome = opts?.splitHomeProducts ?? false;
+  if (splitHome && (wanted === "homeowners" || wanted === "landlord" || wanted === "renters")) {
     return false;
   }
   return quoteMatchesShopLine(input, "home", opts);

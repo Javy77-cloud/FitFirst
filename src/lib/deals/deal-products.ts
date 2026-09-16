@@ -428,6 +428,14 @@ export function shopLinesFromProducts(products: readonly DealProductId[]): ShopL
   return lines.length ? lines : ["home"];
 }
 
+export function countHomeProducts(products: readonly string[] | null | undefined): number {
+  return normalizeDealProducts(products).filter((id) => dealProductDef(id).shopLine === "home").length;
+}
+
+export function splitHomeProducts(products: readonly string[] | null | undefined): boolean {
+  return countHomeProducts(products) > 1;
+}
+
 export function lobsFromProducts(products: readonly DealProductId[]): string[] {
   const lobs: string[] = [];
   for (const id of normalizeDealProducts(products)) {

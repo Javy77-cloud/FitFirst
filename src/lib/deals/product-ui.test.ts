@@ -46,12 +46,19 @@ describe("deal shop flow + product chrome", () => {
         tab: "details",
         complete: { homeowners: true, auto: false },
         progress: { auto: { filled: 1, total: 4, pct: 25, complete: false } },
+        stages: { homeowners: { stage: "bound" }, auto: { stage: "quotes" } },
       }),
     );
     expect(html).toMatch(/data-ff-deal-product-chip="auto"/);
     expect(html).toMatch(/data-ff-product-complete="1"/);
     expect(html).toMatch(/1<!-- -->\/<!-- -->2<!-- --> ready|1\/2 ready/);
-    expect(html).toMatch(/width:\s*25%/);
+    expect(html).toContain("Auto");
+    expect(html).toMatch(/data-active="true"/);
+    expect(html).toMatch(/bg-navy/);
+    expect(html).toMatch(/data-ff-product-stage-label/);
+    expect(html).toContain("Quotes");
+    expect(html).not.toContain(">PA<");
+    expect(html).not.toContain("review");
   });
 
   it("picker is grouped tiles, not a wall of unlabeled checkboxes", () => {

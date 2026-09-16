@@ -401,7 +401,21 @@ describe("prior under carrier + line-scoped stale", () => {
       quoteMatchesDealProduct(
         { shopLine: "home", notes: "HO3 bindable", logs: [] },
         "homeowners",
-        { multiLine: true },
+        { multiLine: true, splitHomeProducts: true },
+      ),
+    ).toBe(true);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "", logs: [] },
+        "homeowners",
+        { multiLine: true, splitHomeProducts: true },
+      ),
+    ).toBe(false);
+    expect(
+      quoteMatchesDealProduct(
+        { shopLine: "home", notes: "", logs: [] },
+        "homeowners",
+        { multiLine: true, splitHomeProducts: false },
       ),
     ).toBe(true);
   });

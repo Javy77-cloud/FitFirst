@@ -9,6 +9,7 @@ import {
   classifyShopGap,
   lineQuoteCompleteness,
   packageQuotesComplete,
+  productQuoteCompleteness,
 } from "./quote-completeness";
 
 const MARK = EXPLICIT_MARKET_ACTION_MARKER;
@@ -128,6 +129,26 @@ describe("quote completeness", () => {
     expect(auto.summary).toMatch(/Missing quotes/);
     expect(packageQuotesComplete(["home", "auto"], { home, auto })).toBe(false);
     expect(packageQuotesComplete(["home"], { home, auto })).toBe(true);
+  });
+
+  it("counts Heather HO3 quotes on a multi-line book without requiring HO3 in the note", () => {
+    const heather = productQuoteCompleteness({
+      product: "homeowners",
+      multiLine: true,
+      splitHomeProducts: false,
+      logs: [],
+      quotes: [{ carrierId: "citizens", stub: false, shopLine: "home", notes: "Rated $1840" }],
+    });
+    expect(heather.complete).toBe(true);
+    expect(heather.summary).toMatch(/1 quote/);
+    const gloriaDp3 = productQuoteCompleteness({
+      product: "landlord",
+      multiLine: true,
+      splitHomeProducts: true,
+      logs: [],
+      quotes: [{ carrierId: "citizens", stub: false, shopLine: "home", notes: "Rated $1840" }],
+    });
+    expect(gloriaDp3.complete).toBe(false);
   });
 
   it("renders a per-product Missing quotes chip instead of a green check", () => {
