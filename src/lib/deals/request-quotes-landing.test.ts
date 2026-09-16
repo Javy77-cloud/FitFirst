@@ -98,10 +98,10 @@ describe("request quotes landing + leftover Quote sent gate", () => {
     ).toBe("");
     expect(
       productChipStageLabelForState({ stage: "quote_sent", selectedQuoteIds: [] }),
-    ).toBe("Quotes");
+    ).toBe("Quote review");
     expect(
       parseProductStages({ homeowners: { stage: "quote_sent", selectedQuoteIds: [] } }).homeowners,
-    ).toMatchObject({ stage: "quotes", selectedQuoteIds: [] });
+    ).toMatchObject({ stage: "quote_sent", selectedQuoteIds: [] });
     expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(/livePicked/);
     expect(source("src/lib/deals/shop-flow-persist.ts")).toMatch(
       /shopFlow: parseShopFlow\(shopFlow\)/,
@@ -127,7 +127,7 @@ describe("request quotes landing + leftover Quote sent gate", () => {
       landlord: { stage: "review", selectedQuoteIds: [] },
     });
     expect(productStageFor(gloriaStages, "homeowners", "quote_sent")).toMatchObject({
-      stage: "review",
+      stage: "quote_review",
       selectedQuoteIds: [],
     });
     expect(

@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { IssuePolicyFromDec, type IssuedPolicyChip } from "@/components/deal/issue-policy-from-dec";
 import { isQuoteFileDoc } from "@/lib/deals/quote-docs";
+import { isBoundReadyForIssue } from "@/lib/policy/mint-gate";
 import { sortQuotesByRatingThenPremium } from "@/lib/deals/quote-sort";
 import type { LineQuoteCompleteness } from "@/lib/deals/quote-completeness";
 import {
@@ -277,7 +278,8 @@ export function QuotesPanel({
         inspectionStatus={inspectionStatus}
       />
       <MissingQuotesBanner completeness={completeness} />
-      {product ? (
+      {product &&
+      (isBoundReadyForIssue(productStage) || mintStatus || issuedPolicy || autoIssue) ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <IssuePolicyFromDec
             dealId={dealId}

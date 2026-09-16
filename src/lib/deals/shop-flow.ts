@@ -601,8 +601,6 @@ export function staleShopFlowForLine(
   const prev = current.lineFingerprints?.[line];
   return {
     ...current,
-    quotesFingerprint: STALE_SHOP_FINGERPRINT,
-    ...(opts?.quotesOnly ? {} : { marketsFingerprint: STALE_SHOP_FINGERPRINT }),
     lineFingerprints: {
       ...current.lineFingerprints,
       [line]: {
