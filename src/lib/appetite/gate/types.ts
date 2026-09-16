@@ -67,8 +67,10 @@ export type MasterRiskSnapshot = {
   isInland: boolean | null;
   isPreferredAutoProfile: boolean | null;
   dirtyMvr: boolean | null;
-  /** Dwelling Coverage A. Used by parameterized `min_cov_a:N` tokens. */
+  /** Dwelling Coverage A. Used by parameterized `min_cov_a:N` / `max_cov_a:N` tokens. */
   coverageA: number | null;
+  /** ISO protection class. Used by parameterized `pc:N` tokens. */
+  protectionClass: string | null;
   dealId?: string | null;
   riskId?: string | null;
   masterId?: string | null;

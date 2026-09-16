@@ -3,12 +3,24 @@ import { matchCarrier } from "./match";
 import type { AppetiteRuleInput, RiskSnapshot } from "@/lib/domain";
 import {
   TRIDENT_HO_APPETITE,
+  TRIDENT_HO_NOTES,
+  TRIDENT_QRG_AS_OF_YEAR,
+  TRIDENT_QRG_VERSION,
+  maxCovAToken,
+  maxDwellingAgeToken,
   minCovAToken,
+  minMilesToCoastToken,
+  parseMaxCovAToken,
+  parseMaxDwellingAgeToken,
   parseMinCovAToken,
+  parseMinMilesToCoastToken,
+  parseProtectionClassToken,
+  parseProtectionClassValue,
+  protectionClassToken,
   publishedHoBySlug,
 } from "./published-appetite";
 
-function hoRisk(coverageA: number): RiskSnapshot {
+function hoRisk(partial: Partial<RiskSnapshot> & Pick<RiskSnapshot, "coverageA">): RiskSnapshot {
   return {
     yearBuilt: 2015,
     roofYear: 2018,
@@ -22,10 +34,10 @@ function hoRisk(coverageA: number): RiskSnapshot {
     milesToCoast: 12,
     city: "Tampa",
     county: "Hillsborough",
-    coverageA,
     mobileHome: false,
     replacementCostEstimate: null,
     state: "FL",
+    ...partial,
   };
 }
 
@@ -35,14 +47,14 @@ function publishedRule(partial: Partial<AppetiteRuleInput> = {}): AppetiteRuleIn
     carrierName: TRIDENT_HO_APPETITE.legalName,
     lineOfBusiness: "HO",
     minCovA: TRIDENT_HO_APPETITE.minCovA,
-    maxCovA: null,
-    minYearBuilt: null,
-    maxRoofAge: null,
-    allowedRoofCoverings: null,
+    maxCovA: TRIDENT_HO_APPETITE.maxCovA,
+    minYearBuilt: TRIDENT_HO_APPETITE.minYearBuilt,
+    maxRoofAge: TRIDENT_HO_APPETITE.maxRoofAge,
+    allowedRoofCoverings: TRIDENT_HO_APPETITE.allowedRoofCoverings,
     coastalAllowed: true,
-    minMilesToCoast: null,
+    minMilesToCoast: TRIDENT_HO_APPETITE.minMilesToCoast,
     maxMilesToCoast: null,
-    mobileAllowed: false,
+    mobileAllowed: TRIDENT_HO_APPETITE.mobileAllowed,
     requiresOpeningProtection: false,
     maxStories: null,
     allowedConstruction: null,
@@ -66,18 +78,70 @@ describe("published HO appetite", () => {
     expect(minCovAToken(300_000)).toBe("min_cov_a:300000");
     expect(parseMinCovAToken("min_cov_a:300000")).toBe(300_000);
 
-    const skip = matchCarrier(hoRisk(250_000), publishedRule(), []);
+    const skip = matchCarrier(hoRisk({ coverageA: 250_000 }), publishedRule(), []);
     expect(skip.band).toBe("red");
     expect(skip.shoppable).toBe(false);
     expect(skip.reasons.some((r) => r.code === "min_cov_a" && r.severity === "fail")).toBe(true);
 
-    const stretch = matchCarrier(hoRisk(280_000), publishedRule(), []);
+    const stretch = matchCarrier(hoRisk({ coverageA: 280_000 }), publishedRule(), []);
     expect(stretch.band).toBe("yellow");
     expect(stretch.reasons.some((r) => r.code === "min_cov_a" && r.severity === "stretch")).toBe(true);
 
-    const ok = matchCarrier(hoRisk(310_000), publishedRule(), []);
+    const ok = matchCarrier(hoRisk({ coverageA: 310_000 }), publishedRule(), []);
     expect(ok.band).toBe("green");
     expect(ok.reasons.some((r) => r.code === "appetite_note")).toBe(true);
     expect(ok.reasons.find((r) => r.code === "appetite_note")?.message).toMatch(/re-shop/i);
+    expect(ok.reasons.find((r) => r.code === "appetite_note")?.message).toMatch(/WIND DRIVEN RAIN/);
+  });
+
+  it("encodes the QRG 06122026 Markets fields (max Cov A, age, coast, roof)", () => {
+    expect(TRIDENT_QRG_VERSION).toBe("06122026");
+    expect(TRIDENT_HO_APPETITE.maxCovA).toBe(5_000_000);
+    expect(TRIDENT_HO_APPETITE.maxDwellingAgeYears).toBe(40);
+    expect(TRIDENT_HO_APPETITE.minYearBuilt).toBe(TRIDENT_QRG_AS_OF_YEAR - 40);
+    expect(TRIDENT_HO_APPETITE.minMilesToCoast).toBe(0.5);
+    expect(TRIDENT_HO_APPETITE.maxRoofAge).toBe(15);
+    expect(TRIDENT_HO_APPETITE.allowedRoofCoverings).toEqual(["shingle", "tile", "metal"]);
+    expect(TRIDENT_HO_APPETITE.notesForAgent).toBe(TRIDENT_HO_NOTES);
+    expect(TRIDENT_HO_APPETITE.hardDeclines).toEqual([
+      "state!=FL",
+      "mobile_home",
+      "min_cov_a:300000",
+      "max_cov_a:5000000",
+      "max_dwelling_age:40",
+      "min_miles_to_coast:0.5",
+      "pc:10",
+    ]);
+
+    const overMax = matchCarrier(hoRisk({ coverageA: 5_100_000 }), publishedRule(), []);
+    expect(overMax.reasons.some((r) => r.code === "max_cov_a" && r.severity === "fail")).toBe(true);
+
+    const oldHome = matchCarrier(hoRisk({ coverageA: 310_000, yearBuilt: 1980 }), publishedRule(), []);
+    expect(oldHome.reasons.some((r) => r.code === "year_built" && r.severity === "fail")).toBe(true);
+
+    const closeCoast = matchCarrier(hoRisk({ coverageA: 310_000, milesToCoast: 0.25 }), publishedRule(), []);
+    expect(closeCoast.reasons.some((r) => r.code === "min_miles_coast" && r.severity === "fail")).toBe(true);
+
+    const oldRoof = matchCarrier(hoRisk({ coverageA: 310_000, roofYear: 2005 }), publishedRule(), [], 2026);
+    expect(oldRoof.reasons.some((r) => r.code === "roof_age")).toBe(true);
+
+    const flat = matchCarrier(hoRisk({ coverageA: 310_000, roofCovering: "flat" }), publishedRule(), []);
+    expect(flat.reasons.some((r) => r.code === "roof_covering" && r.severity === "fail")).toBe(true);
+  });
+
+  it("parses parameterized gate tokens with the existing name:value convention", () => {
+    expect(maxCovAToken(5_000_000)).toBe("max_cov_a:5000000");
+    expect(parseMaxCovAToken("max_cov_a:5000000")).toBe(5_000_000);
+    expect(maxDwellingAgeToken(40)).toBe("max_dwelling_age:40");
+    expect(parseMaxDwellingAgeToken("max_dwelling_age:40")).toBe(40);
+    expect(minMilesToCoastToken(0.5)).toBe("min_miles_to_coast:0.5");
+    expect(parseMinMilesToCoastToken("min_miles_to_coast:0.5")).toBe(0.5);
+    expect(protectionClassToken(10)).toBe("pc:10");
+    expect(parseProtectionClassToken("pc:10")).toBe(10);
+    expect(parseProtectionClassToken("pc:9")).toBe(9);
+    expect(parseProtectionClassValue("PC10")).toBe(10);
+    expect(parseProtectionClassValue("9")).toBe(9);
+    expect(parseProtectionClassValue(null)).toBeNull();
+    expect(parseMinCovAToken("older_roof")).toBeNull();
   });
 });

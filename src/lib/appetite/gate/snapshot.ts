@@ -35,6 +35,7 @@ export function emptySnapshot(partial?: Partial<MasterRiskSnapshot>): MasterRisk
     isPreferredAutoProfile: partial?.isPreferredAutoProfile ?? null,
     dirtyMvr: partial?.dirtyMvr ?? null,
     coverageA: partial?.coverageA ?? null,
+    protectionClass: partial?.protectionClass ?? null,
     dealId: partial?.dealId ?? null,
     riskId: partial?.riskId ?? null,
     masterId: partial?.masterId ?? null,
@@ -104,6 +105,7 @@ export type RiskLike = {
   milesToCoast?: number | null;
   mobileHome?: boolean | null;
   coverageA?: number | null;
+  protectionClass?: string | null;
 };
 
 export type DealLike = {
@@ -176,6 +178,7 @@ export function snapshotFromRisk(input: {
     isStandardPreferredNewConstruction: null,
     isInland: null,
     coverageA: sheetNumber(values, "coverage_a") ?? input.risk.coverageA ?? null,
+    protectionClass: sheetValue(values, "protection_class") ?? input.risk.protectionClass ?? null,
     dealId: input.deal?.id ?? input.risk.dealId ?? null,
     riskId: input.risk.id ?? null,
     masterId: input.masterId ?? null,

@@ -5,8 +5,16 @@ import { appointedBySlugFromRows, gateWrittenLine, NOT_APPOINTED_RULE } from "./
 import { CITIZENS_SLUG, DEFAULT_FL_HO_ORDER, UICNA_SLUG, UNIVERSAL_PC_SLUG } from "./fl-ho-order";
 import { runQuoteGate } from "./gate";
 import { slugFromCarrierName } from "./identity";
+import {
+  TRIDENT_HO_APPETITE,
+  maxCovAToken,
+  maxDwellingAgeToken,
+  minCovAToken,
+  minMilesToCoastToken,
+  protectionClassToken,
+} from "@/lib/appetite/published-appetite";
 import { APPETITE_CSV_RELATIVE_PATH, parseAppetiteCsv } from "./parse";
-import { emptySnapshot } from "./snapshot";
+import { emptySnapshot, snapshotFromRisk } from "./snapshot";
 import { expandStatesAvailable, SE_STATES, US_50_STATES } from "./states";
 import { REQUIRED_HARD_DECLINE_TOKENS, tokenHits } from "./tokens";
 import type { AppetiteCarrier, MasterRiskSnapshot } from "./types";
@@ -159,6 +167,22 @@ describe("hard_decline evaluation", () => {
     expect(tokenHits("no_new_dp3", flHo3())).toBe(false);
     expect(tokenHits("new_homeowners", flHo3({ state: "CA" }))).toBe(true);
     expect(tokenHits("new_homeowners", emptySnapshot({ state: "CA", line: "PAP" }))).toBe(false);
+  });
+
+  it("parses parameterized QRG tokens against snapshot fields already on the gate", () => {
+    expect(tokenHits(minCovAToken(300_000), flHo3({ coverageA: 250_000 }))).toBe(true);
+    expect(tokenHits(minCovAToken(300_000), flHo3({ coverageA: 310_000 }))).toBe(false);
+    expect(tokenHits(maxCovAToken(5_000_000), flHo3({ coverageA: 5_100_000 }))).toBe(true);
+    expect(tokenHits(maxCovAToken(5_000_000), flHo3({ coverageA: 4_900_000 }))).toBe(false);
+    expect(tokenHits(maxDwellingAgeToken(40), flHo3({ yearBuilt: 1985 }), 2026)).toBe(true);
+    expect(tokenHits(maxDwellingAgeToken(40), flHo3({ yearBuilt: 1986 }), 2026)).toBe(false);
+    expect(tokenHits(maxDwellingAgeToken(40), flHo3({ yearBuilt: null }), 2026)).toBe(false);
+    expect(tokenHits(minMilesToCoastToken(0.5), flHo3({ milesToCoast: 0.25 }))).toBe(true);
+    expect(tokenHits(minMilesToCoastToken(0.5), flHo3({ milesToCoast: 0.5 }))).toBe(false);
+    expect(tokenHits(protectionClassToken(10), flHo3({ protectionClass: "PC10" }))).toBe(true);
+    expect(tokenHits(protectionClassToken(10), flHo3({ protectionClass: "9" }))).toBe(false);
+    expect(tokenHits(protectionClassToken(9), flHo3({ protectionClass: "9" }))).toBe(true);
+    expect(tokenHits("pc:10", flHo3({ protectionClass: null }))).toBe(false);
   });
 
   it("Skip-Decline logs the matching hard_decline token", () => {
@@ -332,9 +356,14 @@ describe("universal_pc ≠ uicna identity", () => {
     expect(catalog).toHaveLength(29);
     const trident = catalog.find((c) => c.carrierId === "trident_reciprocal");
     expect(trident?.legalName).toBe("Trident Reciprocal Exchange");
+    expect(trident?.notesForAgent).toBe(TRIDENT_HO_APPETITE.notesForAgent);
     expect(trident?.notesForAgent).toMatch(/\$300,000/);
     expect(trident?.notesForAgent).toMatch(/re-shop/i);
-    expect(trident?.hardDeclines).toContain("min_cov_a:300000");
+    expect(trident?.notesForAgent).toMatch(/WIND DRIVEN RAIN/);
+    expect(trident?.hardDeclines).toEqual(TRIDENT_HO_APPETITE.hardDeclines);
+    expect(trident?.softCautions).toEqual(TRIDENT_HO_APPETITE.softCautions);
+    expect(trident?.preferredSignals).toEqual(TRIDENT_HO_APPETITE.preferredSignals);
+    expect(trident?.csPhone).toBe(TRIDENT_HO_APPETITE.csPhone);
     expect(trident?.flHoOrder).toBe(DEFAULT_FL_HO_ORDER.indexOf("trident_reciprocal"));
     expect(trident?.linesOffered).toContain("HO3");
     expect(trident?.statesAvailable).toContain("FL");
@@ -343,9 +372,38 @@ describe("universal_pc ≠ uicna identity", () => {
     expect(lowCov.decisions.find((d) => d.carrierId === "trident_reciprocal")?.matchingRule).toBe(
       "min_cov_a:300000",
     );
+    const highCov = runQuoteGate(flHo3({ coverageA: 5_100_000 }), catalog);
+    expect(highCov.decisions.find((d) => d.carrierId === "trident_reciprocal")?.matchingRule).toBe(
+      "max_cov_a:5000000",
+    );
+    const oldHome = runQuoteGate(flHo3({ coverageA: 310000, yearBuilt: 1980 }), catalog, { asOfYear: 2026 });
+    expect(oldHome.decisions.find((d) => d.carrierId === "trident_reciprocal")?.matchingRule).toBe(
+      "max_dwelling_age:40",
+    );
+    const closeCoast = runQuoteGate(flHo3({ coverageA: 310000, milesToCoast: 0.25 }), catalog);
+    expect(closeCoast.decisions.find((d) => d.carrierId === "trident_reciprocal")?.matchingRule).toBe(
+      "min_miles_to_coast:0.5",
+    );
+    const pc10 = runQuoteGate(flHo3({ coverageA: 310000, protectionClass: "10" }), catalog);
+    expect(pc10.decisions.find((d) => d.carrierId === "trident_reciprocal")?.status).toBe("Skip-Decline");
+    expect(pc10.decisions.find((d) => d.carrierId === "trident_reciprocal")?.matchingRule).toBe("pc:10");
+    const pc9 = runQuoteGate(flHo3({ coverageA: 310000, protectionClass: "9" }), catalog);
+    expect(pc9.decisions.find((d) => d.carrierId === "trident_reciprocal")?.status).toBe("Maybe");
+    expect(pc9.decisions.find((d) => d.carrierId === "trident_reciprocal")?.matchingRule).toBe("pc:9");
     const okCov = runQuoteGate(flHo3({ coverageA: 310000 }), catalog);
     expect(okCov.decisions.find((d) => d.carrierId === "trident_reciprocal")?.status).toBe("Quote");
     expect(catalog.every((c) => c.rateable)).toBe(true);
+  });
+
+  it("wires protection class from the risk / master sheet into the gate snapshot", () => {
+    const snap = snapshotFromRisk({
+      risk: { protectionClass: "PC9", coverageA: 400000, yearBuilt: 2010, milesToCoast: 3 },
+      sheetValues: {
+        protection_class: { value: "10", status: "confirmed", source: "seed" },
+      },
+    });
+    expect(snap.protectionClass).toBe("10");
+    expect(tokenHits("pc:10", snap)).toBe(true);
   });
 });
 

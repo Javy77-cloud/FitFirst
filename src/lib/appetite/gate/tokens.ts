@@ -1,4 +1,11 @@
-import { parseMinCovAToken } from "@/lib/appetite/published-appetite";
+import {
+  parseMaxCovAToken,
+  parseMaxDwellingAgeToken,
+  parseMinCovAToken,
+  parseMinMilesToCoastToken,
+  parseProtectionClassToken,
+  parseProtectionClassValue,
+} from "@/lib/appetite/published-appetite";
 import type { MasterRiskSnapshot } from "./types";
 
 export const OLDER_ROOF_YEARS = 15;
@@ -66,8 +73,13 @@ function isAutoLine(line: string): boolean {
 /**
  * Evaluate one token against the snapshot.
  * Unknown tokens do not hit (soft notes like ian_heavy_county stay informational).
+ * Parameterized tokens reuse the `name:value` convention (`min_cov_a:N`).
  */
-export function tokenHits(token: string, snap: MasterRiskSnapshot): boolean {
+export function tokenHits(
+  token: string,
+  snap: MasterRiskSnapshot,
+  asOfYear = new Date().getFullYear(),
+): boolean {
   switch (token) {
     case "mobile_home":
       return snap.isMobile;
@@ -150,6 +162,24 @@ export function tokenHits(token: string, snap: MasterRiskSnapshot): boolean {
       if (minCovA != null) {
         return snap.coverageA != null && snap.coverageA < minCovA;
       }
+      const maxCovA = parseMaxCovAToken(token);
+      if (maxCovA != null) {
+        return snap.coverageA != null && snap.coverageA > maxCovA;
+      }
+      const maxAge = parseMaxDwellingAgeToken(token);
+      if (maxAge != null) {
+        if (snap.yearBuilt == null) return false;
+        return asOfYear - snap.yearBuilt > maxAge;
+      }
+      const minMiles = parseMinMilesToCoastToken(token);
+      if (minMiles != null) {
+        return snap.milesToCoast != null && snap.milesToCoast < minMiles;
+      }
+      const pc = parseProtectionClassToken(token);
+      if (pc != null) {
+        const snapPc = parseProtectionClassValue(snap.protectionClass);
+        return snapPc != null && snapPc === pc;
+      }
       return false;
     }
   }
@@ -175,15 +205,19 @@ function isHomeownersLine(line: string): boolean {
   );
 }
 
-export function firstMatchingToken(tokens: string[], snap: MasterRiskSnapshot): string | null {
+export function firstMatchingToken(
+  tokens: string[],
+  snap: MasterRiskSnapshot,
+  asOfYear?: number,
+): string | null {
   for (const token of tokens) {
-    if (tokenHits(token, snap)) return token;
+    if (tokenHits(token, snap, asOfYear)) return token;
   }
   return null;
 }
 
-export function anyTokenHits(tokens: string[], snap: MasterRiskSnapshot): boolean {
-  return firstMatchingToken(tokens, snap) != null;
+export function anyTokenHits(tokens: string[], snap: MasterRiskSnapshot, asOfYear?: number): boolean {
+  return firstMatchingToken(tokens, snap, asOfYear) != null;
 }
 
 export const REQUIRED_HARD_DECLINE_TOKENS = [
