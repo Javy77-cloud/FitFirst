@@ -127,8 +127,11 @@ describe("Add New Deal defers insert until Save", () => {
     expect(save).toMatch(/packageDraftForNewDealSave/);
     expect(save).toMatch(/forceNewShopOnSave/);
     expect(save).toMatch(/shopLines,/);
+    expect(save).toMatch(/seedNewDealShopFlow/);
+    expect(save).toMatch(/NEW_DEAL_PIPELINE_STAGE/);
     expect(save).toMatch(/insertSheetsForDeal\(deal\.id, shopLines\)/);
     expect(save).toMatch(/if \(lead\.convertedDealId && !forceNewShop\)/);
+    expect(save).not.toMatch(/pipelineStageSlug:\s*"gather"/);
   });
 
   it("Save uses checked package lines and does not reopen a converted deal", () => {
