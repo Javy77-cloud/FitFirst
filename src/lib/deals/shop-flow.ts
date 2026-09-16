@@ -380,7 +380,36 @@ export function groupQuotesByRun<T>(
     }))
     .sort((a, b) => b.quotedAt.getTime() - a.quotedAt.getTime());
 
+  // Request-quotes mints a run id without creating premium rows. If nothing
+  // matches the saved current run, keep the newest existing quotes visible.
+  if (current.length === 0 && rows.length > 0) {
+    if (previous.length) {
+      const newest = previous[0]!;
+      return { current: newest.rows, previous: previous.slice(1) };
+    }
+    return { current: rows.slice(), previous: [] };
+  }
+
   return { current, previous };
+}
+
+/**
+ * Request quotes does not insert premium rows. Reuse an existing run so
+ * live quotes stay on the current set instead of being archived/hidden.
+ */
+export function quoteRunIdAfterRequest(input: {
+  savedRunId?: string | null;
+  existingRunIds?: readonly (string | null | undefined)[];
+}): string {
+  const saved = (input.savedRunId ?? "").trim();
+  const existing = [
+    ...new Set(
+      (input.existingRunIds ?? []).map((id) => String(id ?? "").trim()).filter(Boolean),
+    ),
+  ];
+  if (saved && existing.includes(saved)) return saved;
+  if (existing[0]) return existing[0]!;
+  return saved;
 }
 
 export function nextShopFlowAfterQuoteRun(input: {

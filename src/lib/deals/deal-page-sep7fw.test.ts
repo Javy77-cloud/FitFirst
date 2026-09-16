@@ -20,9 +20,9 @@ describe("sep7fw Documents Confirm → Markets; Markets Approve → Quotes", () 
       /redirect\(withFlash\(`\/deals\/\$\{dealId\}\?tab=quotes&line=\$\{line\}`, "quotes-requested"\)\)/,
     );
     const quotes = source("src/app/actions/quotes.ts");
-    expect(quotes).toMatch(
-      /flashAction\(`\/deals\/\$\{dealId\}\?tab=quotes\$\{line \? `&line=\$\{line\}` : ""\}`, "quotes-requested"\)/,
-    );
+    expect(quotes).toMatch(/quotesRequestedHref\(dealId, extras\)/);
+    expect(quotes).toMatch(/flashAction\(quotesRequestedHref\(dealId, extras\), "quotes-requested"\)/);
+    expect(quotes).toMatch(/isRedirectError/);
     expect(quotes).not.toMatch(
       /flashAction\(`\/deals\/\$\{dealId\}\?tab=markets`, "quotes-requested"\)/,
     );

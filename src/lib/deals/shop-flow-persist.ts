@@ -56,7 +56,7 @@ export async function loadDealRiskFingerprint(dealId: string): Promise<string> {
 export async function persistDealShopFlow(dealId: string, shopFlow: DealShopFlowState) {
   await db
     .update(deals)
-    .set({ shopFlow, updatedAt: new Date() })
+    .set({ shopFlow: parseShopFlow(shopFlow), updatedAt: new Date() })
     .where(and(eq(deals.id, dealId), eq(deals.tenantId, DEFAULT_TENANT_ID)));
 }
 

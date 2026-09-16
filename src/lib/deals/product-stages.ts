@@ -73,14 +73,17 @@ export function parseProductStages(raw: unknown): DealProductStages {
     if (!isDealProductId(key) && !parseDealProduct(key)) continue;
     if (!value || typeof value !== "object" || Array.isArray(value)) continue;
     const row = value as { stage?: unknown; selectedQuoteIds?: unknown; lostReason?: unknown };
-    const stage = typeof row.stage === "string" ? normalizeStageSlug(row.stage) : "";
+    const rawStage = typeof row.stage === "string" ? normalizeStageSlug(row.stage) : "";
     const selectedQuoteIds = Array.isArray(row.selectedQuoteIds)
       ? row.selectedQuoteIds.map((id) => String(id ?? "").trim()).filter(Boolean)
       : [];
     const lostReason =
       typeof row.lostReason === "string" && row.lostReason.trim() ? row.lostReason.trim() : null;
-    if (!stage && !selectedQuoteIds.length && !lostReason) continue;
-    out[key] = { stage: stage || "gather", selectedQuoteIds, lostReason };
+    if (!rawStage && !selectedQuoteIds.length && !lostReason) continue;
+    // Gloria leftover Quote sent / Bound with no pick is junk — persist as Quotes.
+    const stage =
+      isLateProductStage(rawStage) && selectedQuoteIds.length === 0 ? "quotes" : rawStage || "gather";
+    out[key] = { stage, selectedQuoteIds, lostReason };
   }
   return out;
 }
@@ -244,14 +247,13 @@ export function productStampStage(
   fallbackStage?: string | null,
   boundAt?: Date | string | null,
 ): DealStampStage | null {
-  const selected = productState?.selectedQuoteIds ?? [];
+  const selected = (productState?.selectedQuoteIds ?? []).filter(Boolean);
+  // Never inherit deal-level leftover Quote sent (Gloria Review + empty pick).
+  // Stamp only when this product actually named a quote — or the deal is bound.
+  if (selected.length === 0 && !boundAt) return null;
   const candidate = productState?.stage ?? fallbackStage;
-  // Stale Quote sent / Bound leftovers (Gloria pre-redesign) must not stamp
-  // without a named quote. Do not invent a stage — just hide the stamp.
-  if (isLateProductStage(candidate) && selected.length === 0 && !boundAt) {
-    return null;
-  }
-  return resolveDealStampStage(candidate, fallbackStage, boundAt);
+  if (!isLateProductStage(candidate) && !boundAt) return null;
+  return resolveDealStampStage(candidate, null, boundAt);
 }
 
 /**

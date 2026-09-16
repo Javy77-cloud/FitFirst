@@ -722,6 +722,7 @@ export default async function DealPage({
                         carriers={carrierOptions}
                         dealLine={activeLob}
                         shopLine={sheetLine}
+                        product={activeProduct}
                         lastRequestCarrierIds={requestScopeForLine(shopFlow, sheetLine)}
                       />
                     ) : (

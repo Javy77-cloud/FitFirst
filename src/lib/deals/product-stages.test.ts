@@ -235,6 +235,18 @@ describe("per-product stages", () => {
     expect(
       productStampStage({ stage: "quote_sent", selectedQuoteIds: ["q1"], lostReason: null }),
     ).toBe("quote_sent");
+    expect(
+      productStampStage({ stage: "review", selectedQuoteIds: [], lostReason: null }, "quote_sent"),
+    ).toBeNull();
+    expect(
+      parseProductStages({ homeowners: { stage: "quote_sent", selectedQuoteIds: [] } }).homeowners
+        ?.stage,
+    ).toBe("quotes");
+    expect(
+      parseProductStages({
+        homeowners: { stage: "quote_sent", selectedQuoteIds: ["q-ho3"] },
+      }).homeowners?.stage,
+    ).toBe("quote_sent");
     expect(source("src/lib/deals/pipeline-sheet.ts")).toMatch(/const view = input\.view \?\? "list"/);
     expect(source("src/lib/deals/pipeline-sheet.ts")).not.toMatch(/view: "board"/);
     expect(source("src/app/deals/page.tsx")).toMatch(/boardWhenNoPipeline=\{null\}/);

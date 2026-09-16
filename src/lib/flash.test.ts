@@ -6,6 +6,7 @@ import {
   FLASH_STORAGE_KEY,
   clearPersistedFlash,
   dealDetailsSavedHref,
+  quotesRequestedHref,
   persistFlash,
   readPersistedFlash,
   resolveFlashMessage,
@@ -94,6 +95,13 @@ describe("flash helper", () => {
     expect(dealDetailsSavedHref("abc", { line: "  ", product: null })).toBe("/deals/abc?tab=documents");
     expect(withFlash(dealDetailsSavedHref("d1", { line: "home" }), "deal-details-saved")).toBe(
       "/deals/d1?tab=documents&line=home&flash=deal-details-saved",
+    );
+    expect(quotesRequestedHref("abc")).toBe("/deals/abc?tab=quotes");
+    expect(quotesRequestedHref("abc", { line: "home", product: "homeowners" })).toBe(
+      "/deals/abc?tab=quotes&line=home&product=homeowners",
+    );
+    expect(withFlash(quotesRequestedHref("d1", { line: "home" }), "quotes-requested")).toBe(
+      "/deals/d1?tab=quotes&line=home&flash=quotes-requested",
     );
   });
 

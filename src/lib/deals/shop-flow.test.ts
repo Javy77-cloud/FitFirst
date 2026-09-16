@@ -10,6 +10,7 @@ import {
   attachPriorUnderCarrier,
   fingerprintsMatch,
   groupQuotesByRun,
+  quoteRunIdAfterRequest,
   inferHomeProductFromQuoteNotes,
   inferShopLineFromQuoteNotes,
   nextShopFlowAfterQuoteRun,
@@ -502,6 +503,23 @@ describe("previous quotes stay, current run is primary", () => {
     expect(grouped.previous).toEqual([]);
   });
 
+  it("keeps existing quotes visible when request-quotes minted an empty current run", () => {
+    const grouped = groupQuotesByRun(
+      [
+        { id: "old-a", runId: "run-1", createdAt: new Date("2026-09-01T12:00:00Z") },
+        { id: "old-b", runId: "run-1", createdAt: new Date("2026-09-01T12:05:00Z") },
+      ],
+      (row) => ({ runId: row.runId, createdAt: row.createdAt }),
+      "run-empty-new",
+    );
+    expect(grouped.current.map((row) => row.id)).toEqual(["old-a", "old-b"]);
+    expect(grouped.previous).toEqual([]);
+    expect(quoteRunIdAfterRequest({ savedRunId: null, existingRunIds: ["run-1"] })).toBe("run-1");
+    expect(quoteRunIdAfterRequest({ savedRunId: "run-1", existingRunIds: ["run-1"] })).toBe("run-1");
+    expect(quoteRunIdAfterRequest({ savedRunId: "fresh", existingRunIds: ["run-1"] })).toBe("run-1");
+    expect(quoteRunIdAfterRequest({ savedRunId: "fresh", existingRunIds: [] })).toBe("fresh");
+  });
+
   it("records a new per-line run id without dropping prior flow keys", () => {
     const next = nextShopFlowAfterQuoteRun({
       saved: { quoteRuns: { home: "old-home" }, marketsFingerprint: "abc" },
@@ -627,5 +645,23 @@ describe("Quotes panel line + previous chrome", () => {
     expect(html).toMatch(/Prior ·/);
     expect(html).not.toMatch(/data-ff-quotes-previous=/);
     expect(html).not.toMatch(/Previous quotes ·/);
+  });
+
+  it("still paints live quote rows when the saved run id matches nothing", () => {
+    const html = renderToString(
+      createElement(QuotesPanel, {
+        dealId: "deal-1",
+        shopLine: "home",
+        product: "homeowners",
+        formId: "HO3",
+        quotes: [{ quote: quote({ id: "live-ho3", quoteRunId: "run-1", shopLine: "home" }), carrier }],
+        logs: [],
+        currentQuoteRunId: "run-empty-after-request",
+        multiLine: true,
+      }),
+    );
+    expect(html).toMatch(/data-ff-quote-row="live-ho3"/);
+    expect(html).not.toMatch(/data-ff-quotes-current-empty/);
+    expect(html).not.toMatch(/data-ff-quotes-empty/);
   });
 });
