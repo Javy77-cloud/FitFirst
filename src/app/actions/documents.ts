@@ -126,6 +126,7 @@ export async function persistFile(input: {
     relPath,
     input.buffer,
     inferMimeFromName(input.filename, input.mimeType),
+    { durable: Boolean(input.dealId) },
   );
 
   const values = {

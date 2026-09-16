@@ -19,8 +19,18 @@ export function isRemoteStoragePath(storagePath: string): boolean {
   return /^(https?:\/\/|blob:)/i.test(storagePath.trim());
 }
 
+/** Token auth or Vercel Blob OIDC (`BLOB_STORE_ID` + automatic `VERCEL_OIDC_TOKEN`). */
 export function blobStoreReady(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim() || process.env.BLOB_STORE_ID?.trim());
+}
+
+export const BLOB_NOT_CONFIGURED_MESSAGE =
+  "Vercel Blob is not configured. Set BLOB_READ_WRITE_TOKEN or BLOB_STORE_ID so deal documents are stored durably.";
+
+export const BLOB_PUT_FAILED_MESSAGE = "Could not store the document in Vercel Blob.";
+
+function requiresRemoteStorage(options?: { durable?: boolean }): boolean {
+  return Boolean(options?.durable || process.env.VERCEL);
 }
 
 function localAbs(storagePath: string): string | null {
@@ -103,13 +113,19 @@ async function writeLocalFile(relPath: string, buffer: Buffer): Promise<string> 
   throw lastError instanceof Error ? lastError : new Error("Could not store file bytes");
 }
 
-/** Persist bytes. Returns a blob URL when Blob is configured, else a local relative path. */
+/**
+ * Persist bytes. Returns a blob URL when Blob is configured.
+ * Deal documents (`durable`) and Vercel runtimes must not succeed with a local relative path —
+ * that path is not durable on serverless and agents would treat the PDF as stored.
+ */
 export async function writeStoredFile(
   relPath: string,
   buffer: Buffer,
   contentType?: string,
+  options?: { durable?: boolean },
 ): Promise<string> {
   const key = posixKey(relPath);
+  const requireRemote = requiresRemoteStorage(options);
   if (blobStoreReady()) {
     try {
       const { put } = await import("@vercel/blob");
@@ -120,9 +136,16 @@ export async function writeStoredFile(
         contentType: contentType || "application/octet-stream",
       });
       if (blob?.url) return blob.url;
-    } catch {
-      /* Preview/serverless without a writable Blob store still needs a Neon row. */
+    } catch (error) {
+      if (requireRemote) {
+        throw error instanceof Error ? error : new Error(BLOB_PUT_FAILED_MESSAGE);
+      }
     }
+    if (requireRemote) {
+      throw new Error(BLOB_PUT_FAILED_MESSAGE);
+    }
+  } else if (requireRemote) {
+    throw new Error(BLOB_NOT_CONFIGURED_MESSAGE);
   }
   return writeLocalFile(key, buffer);
 }
