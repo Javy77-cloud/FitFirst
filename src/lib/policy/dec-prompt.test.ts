@@ -160,7 +160,7 @@ describe("rosa retag + 72h admin notify stub", () => {
 
   it("wires the modal, carrier API, and Quotes backup path", () => {
     expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(
-      /Declaration received from/,
+      /createPolicyPromptCopy/,
     );
     expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(/Create policy/);
     expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(/Not now/);
