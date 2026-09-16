@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { LOB_TO_SHOP_LINE, SHOP_LINE_TO_LOB, isShopLine, type ShopLine } from "@/lib/domain";
-import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
+import { isDocumentsSourceDoc, shopLineFromSourceDoc } from "@/lib/deals/quote-docs";
 import type { DealFlowStepId } from "@/lib/deals/product-ui";
 import { dealProductDef, parseDealProduct } from "@/lib/deals/deal-products";
 import {
@@ -119,6 +119,51 @@ export function riskFingerprint(input: {
     .sort();
   const payload = `sheets:${sheetLines.join("||")}\ndocs:${docs.join("||")}`;
   return createHash("sha256").update(payload).digest("hex");
+}
+
+/** Fingerprint one shop line so a Flood sheet edit does not uncheck Auto / HO3. */
+export function lineRiskFingerprint(input: {
+  line: string;
+  sheets?: readonly SheetFingerprintInput[] | null;
+  docs?: readonly DocFingerprintInput[] | null;
+}): string {
+  const sheets = (input.sheets ?? []).filter((sheet) => sheet.line === input.line);
+  const docs = (input.docs ?? []).filter((doc) => shopLineFromSourceDoc(doc) === input.line);
+  return riskFingerprint({ sheets, docs });
+}
+
+/**
+ * Older shops copied the deal-wide hash into every line slot. Rewrite those
+ * copies to the live per-line hash so sibling products stay complete. Leave
+ * explicit STALE fingerprints alone (the line that just changed).
+ */
+export function hydrateCopiedLineFingerprints(input: {
+  saved?: DealShopFlowState | null;
+  sheets?: readonly SheetFingerprintInput[] | null;
+  docs?: readonly DocFingerprintInput[] | null;
+}): DealShopFlowState {
+  const saved = parseShopFlow(input.saved);
+  const dealWide = saved.marketsFingerprint;
+  const lineFingerprints = { ...saved.lineFingerprints };
+  const lines = new Set<string>([
+    ...Object.keys(lineFingerprints),
+    ...(input.sheets ?? []).map((sheet) => sheet.line).filter(Boolean),
+  ]);
+  for (const line of lines) {
+    const existing = lineFingerprints[line];
+    if (existing?.markets === STALE_SHOP_FINGERPRINT) continue;
+    const copied =
+      !existing?.markets ||
+      (dealWide != null && dealWide !== "" && existing.markets === dealWide);
+    if (!copied) continue;
+    const current = lineRiskFingerprint({
+      line,
+      sheets: input.sheets,
+      docs: input.docs,
+    });
+    lineFingerprints[line] = { markets: current, quotes: current };
+  }
+  return { ...saved, lineFingerprints };
 }
 
 export function fingerprintsMatch(

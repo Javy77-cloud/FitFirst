@@ -45,7 +45,7 @@ import {
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
 import {
   clearBindRecheckAcks,
-  loadDealRiskFingerprint,
+  loadLineRiskFingerprint,
   persistDealShopFlow,
 } from "@/lib/deals/shop-flow-persist";
 import {
@@ -128,7 +128,7 @@ async function persistShopFlowAfterQuoteRequest(
     requestCarrierIds?: string[];
   },
 ) {
-  const fingerprint = await loadDealRiskFingerprint(dealId);
+  const fingerprint = await loadLineRiskFingerprint(dealId, line);
   const [deal] = await db.select({ shopFlow: deals.shopFlow }).from(deals).where(eq(deals.id, dealId));
   const saved = parseShopFlow(deal?.shopFlow);
   const existing = await db.select().from(quotes).where(eq(quotes.dealId, dealId));

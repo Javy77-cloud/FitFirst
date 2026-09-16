@@ -6,6 +6,7 @@ import { BIND_RECHECK_CLEAR_PATCH } from "@/lib/deals/bind-gate";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
 import {
+  lineRiskFingerprint,
   nextShopFlowAfterSheetEdit,
   parseShopFlow,
   quoteMatchesShopLine,
@@ -30,7 +31,7 @@ export async function clearBindRecheckAcks(dealId: string, quoteIds?: string[]) 
   await db.update(quotes).set(BIND_RECHECK_CLEAR_PATCH).where(scoped);
 }
 
-export async function loadDealRiskFingerprint(dealId: string): Promise<string> {
+async function loadDealRiskInputs(dealId: string) {
   const [sheets, docs] = await Promise.all([
     db
       .select({ line: quoteSheets.line, values: quoteSheets.values })
@@ -48,10 +49,17 @@ export async function loadDealRiskFingerprint(dealId: string): Promise<string> {
       .from(documents)
       .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId))),
   ]);
-  return riskFingerprint({
-    sheets,
-    docs: docs.filter((doc) => isDocumentsSourceDoc(doc)),
-  });
+  return { sheets, docs: docs.filter((doc) => isDocumentsSourceDoc(doc)) };
+}
+
+export async function loadDealRiskFingerprint(dealId: string): Promise<string> {
+  const { sheets, docs } = await loadDealRiskInputs(dealId);
+  return riskFingerprint({ sheets, docs });
+}
+
+export async function loadLineRiskFingerprint(dealId: string, line: string): Promise<string> {
+  const { sheets, docs } = await loadDealRiskInputs(dealId);
+  return lineRiskFingerprint({ line, sheets, docs });
 }
 
 export async function persistDealShopFlow(dealId: string, shopFlow: DealShopFlowState) {

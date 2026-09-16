@@ -18,7 +18,7 @@ export function DeskPageTrail({
   showBack = true,
   backLabel = "Back",
   fallbackHref,
-  backVariant = "outline",
+  backVariant = "link",
   className,
 }: {
   crumbs?: DeskTrailCrumb[];

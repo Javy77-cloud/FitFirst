@@ -70,11 +70,12 @@ import {
 import { DealFlowRail } from "@/components/deals/deal-flow-rail";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 import {
+  hydrateCopiedLineFingerprints,
+  lineRiskFingerprint,
   parseShopFlow,
   quoteMatchesDealProduct,
   requestScopeForLine,
   resolveShopFlowCompletion,
-  riskFingerprint,
   sheetNeedsRecheckCue,
   STALE_SHOP_FINGERPRINT,
 } from "@/lib/deals/shop-flow";
@@ -321,9 +322,16 @@ export default async function DealPage({
         ),
         hasNonStubQuotes: lineQuotes.some((row) => row.quote.stub === false),
       });
-  const currentFingerprint = riskFingerprint({
+  const sourceDocs = docs.filter((doc) => isDocumentsSourceDoc(doc));
+  const shopFlowLive = hydrateCopiedLineFingerprints({
+    saved: shopFlow,
     sheets,
-    docs: docs.filter((doc) => isDocumentsSourceDoc(doc)),
+    docs: sourceDocs,
+  });
+  const currentFingerprint = lineRiskFingerprint({
+    line: sheetLine,
+    sheets,
+    docs: sourceDocs,
   });
   const packageShopLines = [
     ...new Set(
@@ -371,7 +379,7 @@ export default async function DealPage({
     hasMarkets: shopMarketsAction || agentMarketsAction,
     hasQuotes: quotesPackageComplete,
     currentFingerprint,
-    saved: shopFlow,
+    saved: shopFlowLive,
     line: sheetLine,
   });
   const productStages = parseProductStages(shopFlow.productStages);

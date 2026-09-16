@@ -176,16 +176,17 @@ describe("request quotes landing + leftover Quote sent gate", () => {
     const save = source("src/app/actions/quote-sheet.ts");
     const sheet = source("src/components/deal/master-sheet-compare.tsx");
     const gate = source("src/components/deal/sheet-approve-gate.tsx");
-    expect(save).toMatch(/persistSheetRecheckCue\(dealId, line\)/);
+    expect(save).toMatch(/markShopFlowStaleAfterRiskChange\(dealId, line\)/);
     expect(save).toMatch(/hash: SHEET_CONFIRM_HASH/);
-    expect(save).not.toMatch(/markShopFlowStaleAfterRiskChange\(dealId, line\)/);
+    expect(save).not.toMatch(/persistSheetRecheckCue\(dealId, line\)/);
     expect(sheet).toMatch(/data.set\("flash", "0"\)/);
     expect(sheet).toMatch(/scrollIntoView/);
     expect(sheet).toMatch(/#\$\{SHEET_CONFIRM_HASH\}/);
     expect(gate).toMatch(/id=\{SHEET_CONFIRM_HASH\}/);
     expect(gate).toMatch(/scrollIntoView/);
     expect(source("src/lib/desk/action-flash.ts")).toMatch(/SHEET_CONFIRM_HASH = "ff-sheet-confirm"/);
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/sheetNeedsRecheckCue\(shopFlow, sheetLine\)/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/lineRiskFingerprint/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/hydrateCopiedLineFingerprints/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/dealTitleForActiveProduct/);
     expect(source("src/components/desk/desk-page-trail.tsx")).not.toMatch(
       /border-navy bg-navy text-white/,

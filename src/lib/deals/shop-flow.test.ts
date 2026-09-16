@@ -9,6 +9,8 @@ import {
   STALE_SHOP_FINGERPRINT,
   attachPriorUnderCarrier,
   fingerprintsMatch,
+  hydrateCopiedLineFingerprints,
+  lineRiskFingerprint,
   groupQuotesByRun,
   quoteRunIdAfterRequest,
   inferHomeProductFromQuoteNotes,
@@ -446,6 +448,55 @@ describe("prior under carrier + line-scoped stale", () => {
         line: "auto",
       }).isComplete("quotes"),
     ).toBe(true);
+    const floodSheet = { line: "flood", values: { flood_zone: { value: "AE" } } };
+    const autoSheet = { line: "auto", values: { vin: { value: "1" } } };
+    const copied = {
+      marketsFingerprint: "deal-wide",
+      lineFingerprints: {
+        flood: { markets: "deal-wide", quotes: "deal-wide" },
+        auto: { markets: "deal-wide", quotes: "deal-wide" },
+      },
+    };
+    const staleFlood = staleShopFlowForLine(copied, "flood");
+    const hydrated = hydrateCopiedLineFingerprints({
+      saved: staleFlood,
+      sheets: [floodSheet, autoSheet],
+      docs: [],
+    });
+    expect(hydrated.lineFingerprints?.flood?.markets).toBe(STALE_SHOP_FINGERPRINT);
+    expect(hydrated.lineFingerprints?.auto?.markets).toBe(
+      lineRiskFingerprint({ line: "auto", sheets: [floodSheet, autoSheet], docs: [] }),
+    );
+    expect(
+      resolveShopFlowCompletion({
+        detailsComplete: true,
+        documentsComplete: true,
+        hasMarkets: true,
+        hasQuotes: true,
+        currentFingerprint: lineRiskFingerprint({
+          line: "auto",
+          sheets: [floodSheet, autoSheet],
+          docs: [],
+        }),
+        saved: hydrated,
+        line: "auto",
+      }).isComplete("markets"),
+    ).toBe(true);
+    expect(
+      resolveShopFlowCompletion({
+        detailsComplete: true,
+        documentsComplete: true,
+        hasMarkets: true,
+        hasQuotes: true,
+        currentFingerprint: lineRiskFingerprint({
+          line: "flood",
+          sheets: [floodSheet, autoSheet],
+          docs: [],
+        }),
+        saved: hydrated,
+        line: "flood",
+      }).isComplete("markets"),
+    ).toBe(false);
   });
 
   it("splits HO3 vs DP3 on the shared home shop line", () => {
@@ -583,10 +634,10 @@ describe("deal page + action wiring", () => {
 
   it("sheet save, fill, and source-doc upload invalidate Markets/Quotes", () => {
     expect(readFileSync("src/app/actions/quote-sheet.ts", "utf8")).toMatch(
-      /persistSheetRecheckCue/,
+      /markShopFlowStaleAfterRiskChange/,
     );
     expect(readFileSync("src/app/actions/quote-sheet.ts", "utf8")).not.toMatch(
-      /markShopFlowStaleAfterRiskChange/,
+      /persistSheetRecheckCue/,
     );
     expect(readFileSync("src/app/actions/documents.ts", "utf8")).toMatch(
       /markShopFlowStaleAfterRiskChange/,

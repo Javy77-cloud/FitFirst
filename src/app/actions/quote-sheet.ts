@@ -132,7 +132,7 @@ import { flashAction } from "@/lib/flash-action";
 import { isDocumentsSourceDoc, isQuoteFileDoc } from "@/lib/deals/quote-docs";
 import { withFlash } from "@/lib/flash";
 import { dealTitleForRecords } from "@/lib/deals/deal-title";
-import { persistSheetRecheckCue } from "@/lib/deals/shop-flow-persist";
+import { markShopFlowStaleAfterRiskChange } from "@/lib/deals/shop-flow-persist";
 import { sheetValuesFingerprint } from "@/lib/deals/shop-flow";
 
 function str(form: FormData, key: string) {
@@ -206,7 +206,7 @@ export async function persistQuoteSheetValues(
   await syncHeaderFromSheet(dealId, values, "save");
   if (sheetValuesFingerprint(sheet.values) !== sheetValuesFingerprint(values)) {
     // Keep Markets complete — agent Rechecks quotes instead of re-walking stages.
-    await persistSheetRecheckCue(dealId, line);
+    await markShopFlowStaleAfterRiskChange(dealId, line);
   }
   return values;
 }
@@ -1033,7 +1033,7 @@ export async function runFillDealSheets(dealId: string, primary: ShopLine): Prom
     skippedKeys: [...primaryCounts.skippedKeys, ...other.skippedKeys],
   };
   if (primaryCounts.filledKeys.length) {
-    await persistSheetRecheckCue(dealId, primary);
+    await markShopFlowStaleAfterRiskChange(dealId, primary);
   }
   return counts;
 }
@@ -1048,7 +1048,7 @@ async function fillOtherShopLines(dealId: string, already: ShopLine): Promise<Fi
       filledKeys.push(...counts.filledKeys);
       skippedKeys.push(...counts.skippedKeys);
       if (counts.filledKeys.length) {
-        await persistSheetRecheckCue(dealId, line);
+        await markShopFlowStaleAfterRiskChange(dealId, line);
       }
     }
   }
