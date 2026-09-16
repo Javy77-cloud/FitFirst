@@ -8,7 +8,15 @@ import {
 } from "@/lib/quote-sheet/sheet-defaults";
 import { dealProductDef, type DealProductId } from "./deal-products";
 
-/** Shared Deal Details sections — always visible, once. */
+/**
+ * One Deal Details page per deal — not a full personal layout per product.
+ * Shared identity (contact / applicant / co-applicant / addresses) is asked once
+ * and reused by Home, Auto, Flood, and later Life/Health.
+ *
+ * Product-only catalogs live below (Home property, Auto vehicle, Flood zone, …)
+ * and must not repeat applicant/contact keys. This PR does not overlay those
+ * catalogs on Details; they stay for chip completion and the sheet follow-up.
+ */
 export const SHARED_DEAL_SECTION_IDS = [
   "contact",
   "applicant",
@@ -283,8 +291,8 @@ export function catalogFieldsForProducts(products: readonly DealProductId[]): Cu
 }
 
 /**
- * Deal Details is personal / identity only (once per deal).
- * Home / Auto / Flood product modules belong on the master sheet — do not overlay them here.
+ * Live Deal Details = shared identity only (same body for every product chip).
+ * Do not append product_* sections here — that would re-ask risk questions on Details.
  */
 export function layoutForActiveProduct(
   layout: FieldLayout,
