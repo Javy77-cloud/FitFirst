@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { markDealProductLost, setDealProductStage } from "@/app/actions/product-stage";
 import { ClosedDealArchivePopup } from "@/components/deals/closed-deal-archive-popup";
 import { StatusBadge } from "@/components/status-badge";
@@ -45,6 +46,7 @@ export function DealHeaderStage({
   product,
   selectedQuoteIds = [],
   quoteChoices = [],
+  tab = null,
 }: {
   dealId: string;
   pipelineSlug: string;
@@ -55,6 +57,7 @@ export function DealHeaderStage({
   product?: string | null;
   selectedQuoteIds?: string[];
   quoteChoices?: HeaderQuoteChoice[];
+  tab?: string | null;
 }) {
   const [value, setValue] = useState(stageSlug);
   const [open, setOpen] = useState(false);
@@ -66,6 +69,8 @@ export function DealHeaderStage({
   const [picked, setPicked] = useState<string[]>(selectedQuoteIds);
   const [lostReason, setLostReason] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const surface = tab === "quotes" ? "quotes" : "header";
   const options = stages.some((stage) => stage.slug === value)
     ? stages
     : [{ slug: value, name: stageChipLabel(value), color: null }, ...stages];
@@ -122,13 +127,22 @@ export function DealHeaderStage({
         stageSlug: next,
         pipelineSlug,
         selectedQuoteIds: validIds,
+        surface,
       });
       if (!result.ok) {
         setValue(prev);
         if (result.reason === "need_quote") {
           setPendingStage(next);
           setPickOpen(true);
+        } else if (result.reason === "quotes_only" || result.reason === "need_dec") {
+          router.push(
+            `/deals/${dealId}?tab=quotes&product=${product || "homeowners"}${next === "policy_issued" || result.reason === "need_dec" ? "&issue=1" : ""}`,
+          );
         }
+        return;
+      }
+      if (next === "policy_issued" && "policyId" in result && result.policyId) {
+        router.push(`/policies/${result.policyId}`);
         return;
       }
       if (toastOnSave) flashAction("deal-updated");
@@ -246,7 +260,7 @@ export function DealHeaderStage({
           <DialogHeader>
             <DialogTitle>Choose quote first</DialogTitle>
             <DialogDescription>
-              Quote sent, Bound, Pending inspection, and Closed won need an explicit quote on this product.
+              Quote sent, Bound, Policy issued, Pending inspection, and Closed won need an explicit quote on this product.
             </DialogDescription>
           </DialogHeader>
           <ul className="max-h-56 space-y-1.5 overflow-auto">

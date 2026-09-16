@@ -13,6 +13,7 @@ export const STAGE_ADVANCE_ORDER = [
   "review",
   "quote_sent",
   "bound",
+  "policy_issued",
   "pending_inspection",
   "closed_won",
 ] as const;

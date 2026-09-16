@@ -57,6 +57,7 @@ const STAGE_COLOR_BY_SLUG: Record<string, StatusColorKey> = {
   comparing: "amber",
   quote_sent: "violet",
   bound: "orange",
+  policy_issued: "emerald",
   pending_inspection: "amber",
   closed_won: "green",
   closed_lost: "rose",
@@ -67,6 +68,7 @@ const STAGE_COLOR_BY_SLUG: Record<string, StatusColorKey> = {
 const POLICY_STATUS_COLOR: Record<string, StatusColorKey> = {
   active: "green",
   inactive: "slate",
+  unpublished: "slate",
   bound: "orange",
   pending: "amber",
   lapse: "rose",

@@ -334,6 +334,7 @@ const STAGE_DISPLAY_NAMES: Record<string, string> = {
   review: "Review",
   quote_sent: "Quote Sent",
   bound: "Bound",
+  policy_issued: "Policy issued",
   pending_inspection: "Pending Inspection",
   closed_won: "Closed Won",
   closed_lost: "Closed Lost",

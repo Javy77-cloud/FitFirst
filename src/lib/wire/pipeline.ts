@@ -54,6 +54,7 @@ export const PC_SHOPPING_STAGES: { slug: string; name: string }[] = [
   { slug: "review", name: "Review" },
   { slug: "quote_sent", name: "Quote Sent" },
   { slug: "bound", name: "Bound" },
+  { slug: "policy_issued", name: "Policy issued" },
   { slug: "pending_inspection", name: "Pending Inspection" },
   { slug: "closed_won", name: "Closed Won" },
   { slug: "closed_lost", name: "Closed Lost" },
@@ -233,6 +234,7 @@ export function nextMorning(from: Date) {
 export function dealStageForPipeline(slug: string) {
   if (slug === "closed_won") return "closed_won";
   if (slug === "bound") return "bound";
+  if (slug === "policy_issued") return "policy_issued";
   if (slug === "pending_inspection") return "pending_inspection";
   if (slug === "closed_lost") return "lost";
   if (slug === "archive") return "archive";
@@ -248,6 +250,7 @@ export function pipelineSlugForDealStage(stage: string) {
   if (stage === "quoting") return "quotes";
   // Bound is its own board stage — do not collapse to closed_won.
   if (stage === "bound") return "bound";
+  if (stage === "policy_issued") return "policy_issued";
   if (stage === "pending_inspection") return "pending_inspection";
   if (stage === "lost") return "closed_lost";
   return stage;
@@ -271,6 +274,7 @@ export function isKnownStageToken(value: string) {
     "quoting",
     "quote_sent",
     "bound",
+    "policy_issued",
     "pending_inspection",
     "lost",
     "archive",
@@ -306,6 +310,10 @@ export function dealMatchesStage(
   if (stageSlug === "bound") {
     if (deal.pipelineStageSlug) return deal.pipelineStageSlug === "bound";
     return deal.pipelineStage === "bound";
+  }
+  if (stageSlug === "policy_issued") {
+    if (deal.pipelineStageSlug) return deal.pipelineStageSlug === "policy_issued";
+    return deal.pipelineStage === "policy_issued";
   }
   if (stageSlug === "pending_inspection") {
     if (deal.pipelineStageSlug) return deal.pipelineStageSlug === "pending_inspection";

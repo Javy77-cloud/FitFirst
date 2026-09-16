@@ -24,6 +24,7 @@ describe("client status", () => {
   it("never treats a quote-only status as in-force", () => {
     expect(isInForcePolicyStatus("quote")).toBe(false);
     expect(isInForcePolicyStatus("quoted")).toBe(false);
+    expect(isInForcePolicyStatus("unpublished")).toBe(false);
   });
 });
 

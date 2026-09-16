@@ -21,6 +21,8 @@ import {
   productStageFor,
   setProductStage,
 } from "@/lib/deals/product-stages";
+import { issuePolicyFromDeclaration } from "@/app/actions/policy-mint";
+import { isPolicyIssuedStage, quotesOnlyStageBlocked } from "@/lib/policy/mint-gate";
 import { parseShopFlow, quoteMatchesDealProduct } from "@/lib/deals/shop-flow";
 import { persistDealShopFlow } from "@/lib/deals/shop-flow-persist";
 import { flashAction } from "@/lib/flash-action";
@@ -114,6 +116,7 @@ export async function setDealProductStage(input: {
   pipelineSlug: string;
   selectedQuoteIds?: string[];
   lostReason?: string | null;
+  surface?: "quotes" | "header" | "chip";
 }) {
   const dealId = input.dealId.trim();
   const product = parseDealProduct(input.product);
@@ -133,8 +136,24 @@ export async function setDealProductStage(input: {
   if (lateStageNeedsQuoteSelection({ stage: stageSlug, selectedQuoteIds, liveQuoteIds })) {
     return { ok: false as const, reason: "need_quote" };
   }
+  if (quotesOnlyStageBlocked(stageSlug, input.surface)) {
+    return { ok: false as const, reason: "quotes_only" };
+  }
   if (stageSlug === "closed_lost" && input.lostReason && !isProductLostReason(input.lostReason)) {
     return { ok: false as const, reason: "need_lost_reason" };
+  }
+  if (isPolicyIssuedStage(stageSlug)) {
+    const minted = await issuePolicyFromDeclaration({
+      dealId,
+      product,
+      pipelineSlug: input.pipelineSlug,
+      selectedQuoteIds,
+      surface: input.surface ?? "quotes",
+    });
+    if (!minted.ok) return minted;
+    revalidatePath(`/deals/${dealId}`);
+    revalidatePath("/deals");
+    return { ok: true as const, policyId: minted.policyId };
   }
 
   const nextStages = setProductStage(stages, product, {

@@ -213,6 +213,7 @@ export const SOURCE_DOC_TYPES = [
 export const POLICY_FILE_TYPES = ["policy_dec", "policy_complete", "policy_id"] as const;
 
 export const POLICY_STATUSES = [
+  "unpublished",
   "bound",
   "pending",
   "active",

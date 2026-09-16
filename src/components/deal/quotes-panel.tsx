@@ -5,6 +5,7 @@ import { LoadShopListButton } from "@/components/deal/load-shop-list-button";
 import { ManualCarrierAdd } from "@/components/deal/manual-carrier-add";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { IssuePolicyFromDec, type IssuedPolicyChip } from "@/components/deal/issue-policy-from-dec";
 import { isQuoteFileDoc } from "@/lib/deals/quote-docs";
 import { sortQuotesByRatingThenPremium } from "@/lib/deals/quote-sort";
 import type { LineQuoteCompleteness } from "@/lib/deals/quote-completeness";
@@ -99,6 +100,9 @@ export function QuotesPanel({
   quoteRuns = null,
   isPrimaryLine,
   preScoped = false,
+  mintStatus = null,
+  issuedPolicy = null,
+  autoIssue = false,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -128,6 +132,9 @@ export function QuotesPanel({
   isPrimaryLine?: boolean;
   /** Page already filtered `quotes` to this product — do not drop them again. */
   preScoped?: boolean;
+  mintStatus?: string | null;
+  issuedPolicy?: IssuedPolicyChip | null;
+  autoIssue?: boolean;
 }) {
   const activeLine: ShopLine | null = isShopLine(shopLine) ? shopLine : null;
   const lineLogs = logs.map((row) => row.log);
@@ -253,6 +260,19 @@ export function QuotesPanel({
   return (
     <div className="space-y-4" data-ff-deal-quotes="" data-ff-quotes-line={activeLine ?? ""}>
       <MissingQuotesBanner completeness={completeness} />
+      {product ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <IssuePolicyFromDec
+            dealId={dealId}
+            product={product}
+            stage={productStage}
+            selectedQuoteIds={selectedQuoteIds}
+            mintStatus={mintStatus}
+            issued={issuedPolicy}
+            autoOpen={autoIssue}
+          />
+        </div>
+      ) : null}
       {grouped.current.length ? (
         <section className="ff-card overflow-hidden" data-ff-quotes-current="">
           <QuotesResultsTable

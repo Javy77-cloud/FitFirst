@@ -52,6 +52,7 @@ describe("pipeline switcher", () => {
       "review",
       "quote_sent",
       "bound",
+      "policy_issued",
       "pending_inspection",
       "closed_won",
       "closed_lost",
@@ -65,11 +66,13 @@ describe("pipeline switcher", () => {
       const stages = SEEDED_PIPELINES.find((board) => board.slug === slug)?.stages.map((s) => s.slug) ?? [];
       const qs = stages.indexOf("quote_sent");
       const bound = stages.indexOf("bound");
+      const issued = stages.indexOf("policy_issued");
       const pending = stages.indexOf("pending_inspection");
       const won = stages.indexOf("closed_won");
       expect(qs).toBeGreaterThanOrEqual(0);
       expect(bound).toBe(qs + 1);
-      expect(pending).toBe(bound + 1);
+      expect(issued).toBe(bound + 1);
+      expect(pending).toBe(issued + 1);
       expect(won).toBe(pending + 1);
     }
   });

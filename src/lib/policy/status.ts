@@ -1,4 +1,5 @@
 export const POLICY_STATUSES = [
+  "unpublished",
   "bound",
   "active",
   "pending",
@@ -23,6 +24,7 @@ export const POLICY_CHANGE_KINDS = [
 export type PolicyChangeKind = (typeof POLICY_CHANGE_KINDS)[number];
 
 const STATUS_LABELS: Record<PolicyStatus, string> = {
+  unpublished: "Unpublished",
   bound: "Bound",
   active: "Active",
   pending: "Pending",

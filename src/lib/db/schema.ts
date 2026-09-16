@@ -701,7 +701,16 @@ export const deals = pgTable(
       quotesFingerprint?: string | null;
       quoteRuns?: Partial<Record<string, string>>;
       productStages?: Partial<
-        Record<string, { stage?: string; selectedQuoteIds?: string[]; lostReason?: string | null }>
+        Record<
+          string,
+          {
+            stage?: string;
+            selectedQuoteIds?: string[];
+            lostReason?: string | null;
+            policyId?: string | null;
+            mintStatus?: "creating" | "unpublished" | "published" | null;
+          }
+        >
       >;
       lineFingerprints?: Partial<Record<string, { markets?: string | null; quotes?: string | null }>>;
       requestScopes?: Partial<Record<string, string[]>>;
@@ -1006,6 +1015,37 @@ export const policies = pgTable(
     tags: jsonb("tags").$type<string[]>().notNull().default([]),
     /** Admin-only manual display name; empty = use agency auto-label template. */
     labelOverride: text("label_override"),
+    /** Null until the agent finishes the dec confirm queue. */
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    sourceQuoteId: uuid("source_quote_id"),
+    sourceDocumentId: uuid("source_document_id"),
+    sourceProduct: text("source_product"),
+    mintPayload: jsonb("mint_payload").$type<{
+      status?: "creating" | "unpublished" | "published";
+      soldBasis?: {
+        quoteId?: string;
+        carrierId?: string | null;
+        premium?: string | null;
+        coverageA?: number | null;
+        hurricaneDeductible?: string | null;
+        aopDeductible?: string | null;
+      };
+      fields?: Array<{
+        key: string;
+        label: string;
+        value: string;
+        confidence: number;
+        source: string;
+        flagged: boolean;
+        confirmed: boolean;
+        soldValue?: string | null;
+        sheetValue?: string | null;
+        geminiValue?: string | null;
+      }>;
+      decDocumentId?: string | null;
+      decFilename?: string | null;
+      product?: string | null;
+    } | null>(),
     ...timestamps,
   },
   (t) => [

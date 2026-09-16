@@ -33,6 +33,9 @@ import { PolicyActivityTab } from "@/components/policy/tabs/activity-tab";
 import { PolicyClaimsTab } from "@/components/policy/tabs/claims-tab";
 import { PolicyAgencyTab } from "@/components/policy/tabs/agency-tab";
 import { parseAgentPolicyTab, policyTabsForViewer } from "@/lib/policy/tabs";
+import { parseMintPayload, policyNeedsMintConfirm } from "@/lib/policy/mint-gate";
+import { FromDealStrip } from "@/components/policy/from-deal-strip";
+import { MintConfirmQueue } from "@/components/policy/mint-confirm-queue";
 import { db } from "@/lib/db";
 import { agencySettings } from "@/lib/db/schema";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
@@ -252,6 +255,24 @@ export default async function PolicyDetailPage({
 
       <PolicyOutcomeBanner filed={filed} error={error} policy={policy} />
 
+      {policy.mintPayload || policy.sourceProduct || policy.sourceDocumentId ? (
+        <div className="mb-3">
+          <FromDealStrip
+            dealId={deal?.id ?? policy.dealId}
+            dealTitle={deal?.title}
+            decFilename={parseMintPayload(policy.mintPayload)?.decFilename}
+            reconciled={Boolean(policy.sourceDocumentId || parseMintPayload(policy.mintPayload)?.decDocumentId)}
+          />
+        </div>
+      ) : null}
+
+      {policyNeedsMintConfirm(policy) ? (
+        <MintConfirmQueue
+          policyId={policy.id}
+          fields={parseMintPayload(policy.mintPayload)?.fields ?? []}
+        />
+      ) : (
+
       <PolicyDetailWorkspace
         nav={<PolicyTabsNav policyId={policy.id} active={activeTab} tabs={viewerTabs} />}
         rail={
@@ -401,6 +422,7 @@ export default async function PolicyDetailPage({
           />
         ) : null}
       </PolicyDetailWorkspace>
+      )}
     </AppShell>
   );
 }

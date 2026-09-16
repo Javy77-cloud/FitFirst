@@ -98,6 +98,9 @@ export const FLASH_COPY = {
   "permitstack-vault-saved": "PermitStack API key saved",
   "permitstack-vault-cleared": "PermitStack API key cleared",
   "property-records-no-blanks": "Property records matched, but no blank fields to fill.",
+  "policy-minted": "Policy created — confirm the declaration",
+  "policy-published": "Policy published",
+  "need-quote": "Pick a live quote first",
 } as const;
 
 export type FlashKey = keyof typeof FLASH_COPY;

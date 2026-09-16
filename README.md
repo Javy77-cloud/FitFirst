@@ -4,7 +4,22 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
-## Neon migration (`0124_comms_email_attachments`)
+## Neon migration (`0126_policy_mint_from_dec`)
+
+Adds unpublished policy mint columns and the **Policy issued** shopping stage (after Bound). Apply on the live Zoho book — do not `db:seed`.
+
+```bash
+npm run db:migrate
+# skip db:seed on the live Zoho book
+```
+
+Columns on `policies`: `published_at`, `source_quote_id`, `source_document_id`, `source_product`, `mint_payload` (Gemini + sold-basis confirm queue). `pipeline_stages` on P&C / Life / Health / Flood boards gain `policy_issued` (sort 5) and Bound stays sort 4.
+
+Morning path: Bound deal → Quotes → **Issue policy from declaration** (or advance to Policy issued) → upload/find dec PDF → unpublished policy → confirm queue → publish. One policy per bound product line. Manual upload only (no Zywave).
+
+`shop_flow.productStages[product]` also stores `policyId` + `mintStatus` (`creating` | `unpublished` | `published`) so the deal chip can link the issued record.
+
+## Previous Neon migration (`0124_comms_email_attachments`)
 
 Adds `comms_outbound_jobs.attachment_ids` (jsonb, default `[]`) so deal email compose can persist selected quote PDFs (uploaded or carrier file) on the outbound job. Product stages, selected quotes, line fingerprints, and request scopes live in existing `deals.shop_flow` jsonb — no extra table.
 
