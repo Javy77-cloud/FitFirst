@@ -32,7 +32,8 @@ import {
   type PipelineSheetMode,
 } from "@/lib/deals/pipeline-sheet";
 import { isDealStale, nextDealActionAt } from "@/lib/deals/pipeline-desk";
-import { listProductStageChips } from "@/lib/deals/product-stages";
+import { attachListProductStageHrefs, listProductStageChips } from "@/lib/deals/product-stages";
+import { productSectionComplete } from "@/lib/deals/product-layout";
 import { formatDay } from "@/lib/domain";
 import type { DeskUserOption } from "@/lib/deals/transfer";
 import type { DealListRow } from "@/lib/db/queries";
@@ -82,7 +83,7 @@ export async function DealsTable({
   searchModuleId = "deals-pipeline",
   nextByDeal = new Map(),
   mode = "list",
-  listFilter = {},
+  listFilter: _listFilter = {},
 }: {
   rows: DealsSheetRow[];
   users: Map<string, string>;
@@ -152,7 +153,13 @@ export async function DealsTable({
             const email = dealRecordEmail(stored);
             const address = dealRecordAddress(deal, stored);
             const stage = dealStageView(deal, boards);
-            const productChips = listProductStageChips(deal);
+            const rawChips = listProductStageChips(deal);
+            const productChips = attachListProductStageHrefs(rawChips, {
+              dealId: deal.id,
+              detailsCompleteByProduct: Object.fromEntries(
+                rawChips.map((chip) => [chip.product, productSectionComplete(chip.product, stored)]),
+              ),
+            });
             const displayTitle = visibleDealTitle(deal);
             const nextDue =
               nextByDeal.get(deal.id) ??
@@ -185,7 +192,6 @@ export async function DealsTable({
               carriers,
               userRecords,
               listColorMaps,
-              listFilter,
             });
             return {
               key: deal.id,
@@ -240,7 +246,6 @@ function dealRowCells({
   carriers,
   userRecords,
   listColorMaps,
-  listFilter,
 }: {
   deal: DealsSheetRow["deal"];
   stored: Record<string, string>;
@@ -261,7 +266,6 @@ function dealRowCells({
   carriers: NamedRecord[];
   userRecords: NamedRecord[];
   listColorMaps: DealListColorMaps;
-  listFilter: ListStageFilterBook;
 }) {
   const sort: Record<string, string> = {
     pick: "",
@@ -314,23 +318,9 @@ function dealRowCells({
           />
         </div>
       ) : (
-        <PipelineListValue
-          nav={pipelineListNav({
-            columnId: "stage",
-            dealId: deal.id,
-            filterPipeline: listFilter.pipeline,
-            family: listFilter.family,
-            pcSub: listFilter.pcSub,
-            lifeSub: listFilter.lifeSub,
-            healthSub: listFilter.healthSub,
-            stageSlug: stage.slug,
-            view: mode,
-          })}
-        >
-          <div data-ff-deal-list-stage="">
-            <DealProductStageChips chips={productChips} />
-          </div>
-        </PipelineListValue>
+        <div data-ff-deal-list-stage="">
+          <DealProductStageChips chips={productChips} />
+        </div>
       ),
     line: sheetCell({
       mode,

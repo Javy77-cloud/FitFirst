@@ -146,7 +146,8 @@ describe("pipeline list / grid sheet", () => {
       })?.href,
     ).toBe("/deals?pipeline=p-c&view=list&stage=gather&pcSub=home");
     const table = source("src/components/deals/deals-table.tsx");
-    expect(table).toMatch(/filterPipeline: listFilter\.pipeline/);
+    expect(table).toMatch(/attachListProductStageHrefs/);
+    expect(table).not.toMatch(/filterPipeline: listFilter\.pipeline/);
     expect(table).not.toMatch(/pipelineSlug: stage\.pipelineSlug,\s*\n\s*stageSlug/);
     expect(source("src/app/deals/page.tsx")).toMatch(/listFilter=\{\{/);
     expect(source("src/lib/deals/pipeline-sheet.ts")).toMatch(/listStageFilterHref/);

@@ -19,7 +19,7 @@ import {
   type DealListFilter,
 } from "@/lib/crm/lists";
 import { dealSearchHaystack, visibleDealTitle } from "@/lib/deals/deal-title";
-import { listProductStageChips } from "@/lib/deals/product-stages";
+import { attachListProductStageHrefs, listProductStageChips } from "@/lib/deals/product-stages";
 import { haystack } from "@/lib/search/live-query";
 import { formatMoney } from "@/lib/domain";
 import type { DealListRow } from "@/lib/db/queries";
@@ -172,7 +172,9 @@ export function DealListTable({
                     </td>
                     <td data-col="stage" data-sheet-col="stage">
                       {(() => {
-                        const chips = listProductStageChips(deal);
+                        const chips = attachListProductStageHrefs(listProductStageChips(deal), {
+                          dealId: deal.id,
+                        });
                         return chips.length > 0 ? (
                           <DealProductStageChips chips={chips} />
                         ) : (

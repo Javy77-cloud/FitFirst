@@ -444,6 +444,8 @@
   /* Tip sep7hi: equal top/bottom cell pad (title no longer adds py-0.5). */
   padding-top: 0.45rem;
   padding-bottom: 0.45rem;
+  /* Multi-product stage chips grow the row — center name / family / agency / pick. */
+  vertical-align: middle;
 }
 .ff-list-table tbody td > .ff-list-cell {
   display: flex;
@@ -1095,18 +1097,28 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   }
 }
 
-.ff-deal-status-stamp {
+.ff-deal-stamp-row {
   position: absolute;
   top: 13.5rem;
   left: 50%;
   z-index: 8;
   display: flex;
   width: max-content;
+  max-width: min(40rem, calc(100vw - 2rem));
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  overflow: visible;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+.ff-deal-status-stamp {
+  display: flex;
+  width: max-content;
   max-width: min(22rem, calc(100vw - 2rem));
   justify-content: center;
   overflow: visible;
   pointer-events: none;
-  transform: translateX(-50%);
 }
 
 .ff-deal-status-stamp-ink {
@@ -1146,6 +1158,47 @@ a[data-ff-carrier-portal-status="connected"]:hover {
 }
 [data-ff-deal-status-stamp="pending_inspection"] .ff-deal-status-stamp-ink {
   color: #8a6500;
+}
+.ff-deal-notice-stamp {
+  pointer-events: auto;
+}
+.ff-deal-notice-stamp-ink {
+  min-height: 3.15rem;
+  min-width: 10.5rem;
+  padding: 0.55rem 0.9rem;
+  border-width: 5px;
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+  color: #8a6500;
+  cursor: pointer;
+}
+.ff-deal-notice-add {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  padding: 0.15rem 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--ff-navy) 55%, transparent);
+  cursor: pointer;
+}
+.ff-deal-notice-add:hover {
+  color: var(--ff-navy);
+}
+.ff-deal-notice-compact {
+  pointer-events: auto;
+}
+.ff-deal-notice-compact-ink {
+  min-height: 1.65rem;
+  min-width: auto;
+  padding: 0.2rem 0.55rem;
+  border-width: 2px;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: #8a6500;
+  cursor: pointer;
 }
 
 @media (prefers-reduced-motion: reduce) {

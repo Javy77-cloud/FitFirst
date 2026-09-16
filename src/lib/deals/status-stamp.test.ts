@@ -37,7 +37,7 @@ describe("deal status stamp", () => {
     expect(css).toMatch(/ff-stamp-ink-hit/);
     expect(css).toMatch(/prefers-reduced-motion/);
     expect(css).toMatch(/pointer-events:\s*none/);
-    expect(css).toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: absolute;/);
+    expect(css).toMatch(/\.ff-deal-stamp-row \{[\s\S]*position: absolute;/);
     expect(css).not.toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: sticky;/);
   });
 

@@ -30,6 +30,9 @@ import {
   setProductStage,
   sheetFormForProduct,
   shouldAutoAdvanceStage,
+  workspaceTabForProductStage,
+  listProductStageHref,
+  attachListProductStageHrefs,
 } from "./product-stages";
 
 function source(file: string) {
@@ -313,9 +316,10 @@ describe("per-product stages", () => {
 
   it("keeps the stamp off position:sticky and list stage on list", () => {
     const css = source("src/app/globals.css");
-    expect(css).toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: absolute;/);
-    expect(css).toMatch(/\.ff-deal-status-stamp \{[\s\S]*top: 13\.5rem;/);
+    expect(css).toMatch(/\.ff-deal-stamp-row \{[\s\S]*position: absolute;/);
+    expect(css).toMatch(/\.ff-deal-stamp-row \{[\s\S]*top: 13\.5rem;/);
     expect(css).not.toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: sticky;/);
+    expect(css).toMatch(/\.ff-deal-notice-stamp/);
     expect(productChipStageLabel("review")).toBe("Quote review");
     expect(productChipStageLabel("quote_review")).toBe("Quote review");
     expect(productChipStageLabel("quote_sent")).toBe("Quote sent");
@@ -423,6 +427,32 @@ describe("per-product stages", () => {
     expect(source("src/components/deals/deal-product-stage-chips.tsx")).toMatch(
       /data-ff-list-product-stage-chip/,
     );
+    expect(source("src/components/deals/deal-product-stage-chips.tsx")).toMatch(
+      /data-ff-list-product-stage-href/,
+    );
+    expect(workspaceTabForProductStage("quote_review")).toBe("quotes");
+    expect(workspaceTabForProductStage("quote_sent")).toBe("quotes");
+    expect(workspaceTabForProductStage("bound")).toBe("quotes");
+    expect(workspaceTabForProductStage("policy_issued")).toBe("quotes");
+    expect(workspaceTabForProductStage("closed_won")).toBe("quotes");
+    expect(workspaceTabForProductStage("closed_lost")).toBe("quotes");
+    expect(workspaceTabForProductStage("markets")).toBe("markets");
+    expect(workspaceTabForProductStage("gathering")).toBe("details");
+    expect(workspaceTabForProductStage("gathering", true)).toBe("documents");
+    expect(listProductStageHref({ dealId: "d1", product: "auto", stage: "markets" })).toBe(
+      "/deals/d1?tab=markets&line=auto&product=auto",
+    );
+    expect(
+      attachListProductStageHrefs(heather, { dealId: "heather-1" }).map((chip) => chip.href),
+    ).toEqual([
+      "/deals/heather-1?tab=quotes&line=home&product=homeowners",
+      "/deals/heather-1?tab=markets&line=auto&product=auto",
+      "/deals/heather-1?tab=details&line=flood&product=flood",
+    ]);
+    expect(source("src/components/deals/deals-table.tsx")).toMatch(/attachListProductStageHrefs/);
+    expect(source("src/components/deals/deals-table.tsx")).not.toMatch(
+      /columnId: "stage"[\s\S]{0,80}filterPipeline/,
+    );
   });
 
   it("wires choose-quote, lost reasons, attach ids, and speech finals", () => {
@@ -467,12 +497,15 @@ describe("per-product stages", () => {
     );
     expect(source("src/app/actions/alerts.ts")).toMatch(/linkDealProductNoticeTask/);
     expect(source("src/app/actions/alerts.ts")).toMatch(/completeLinkedDealNoticeForTask/);
-    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/Notices/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/CreateTaskDialog/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/noticeTaskTitle/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/data-ff-deal-notice-chip/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/data-ff-notice-popover/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/NoticeNotePad/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/NoticeTypesEditor/);
     expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(/snoozeDealProductNotice/);
     expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(/>Inspection</);
+    expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(/\/settings\/picklists/);
     expect(
       findProductNoticeForTask(
         {
@@ -487,9 +520,13 @@ describe("per-product stages", () => {
       ),
     ).toEqual({ product: "homeowners", noticeType: "check_mortgagee_payment" });
     expect(findProductNoticeForTask({ homeowners: { stage: "bound", selectedQuoteIds: ["q1"] } }, "task-1")).toBeNull();
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/data-ff-deal-header-notices/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/data-ff-deal-stamps/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/data-ff-deal-stage-notice/);
+    expect(source("src/app/deals/[id]/page.tsx")).not.toMatch(/data-ff-deal-header-notices/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/DealNotices/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/noticeTypesForFamily/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/saveDealNoticeTypes/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/saveDealNoticeNote/);
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_DEAL_NOTICES/);
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_DEAL_NOTICES_LIFE/);
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_DEAL_NOTICES_HEALTH/);

@@ -16,9 +16,21 @@ import {
 import { sheetLineForProduct } from "@/lib/deals/deal-products";
 import {
   noticeCompleteLogBody,
+  noticePicklistNamesForFamily,
   noticeTypeLabel,
   parseNoticeType,
 } from "@/lib/deals/notices";
+import {
+  createFieldPicklist,
+  getFieldPicklist,
+  listFieldPicklists,
+  updateFieldPicklist,
+} from "@/lib/custom-fields/picklist-store";
+import {
+  STARTER_PICKLIST_DEAL_NOTICES_HEALTH,
+  STARTER_PICKLIST_DEAL_NOTICES_LIFE,
+  STARTER_PICKLIST_DEAL_NOTICES_PC,
+} from "@/lib/custom-fields/starter-picklists";
 import {
   canonicalizeProductStage,
   findProductNoticeForTask,
@@ -313,6 +325,8 @@ export async function autoAdvanceDealProductStage(input: {
 }
 
 function noticeReturnTo(formData: FormData, dealId: string, product: DealProductId) {
+  const fromForm = String(formData.get("returnTo") ?? "").trim();
+  if (fromForm.startsWith(`/deals/${dealId}`)) return fromForm;
   return `/deals/${dealId}?tab=quotes&product=${product}`;
 }
 
@@ -326,16 +340,18 @@ function revalidateNotice(dealId: string, taskId?: string | null) {
 async function persistProductNotice(
   dealId: string,
   product: DealProductId,
-  patch: { noticeType?: string; noticeTaskId?: string | null },
+  patch: { noticeType?: string; noticeTaskId?: string | null; noticeNote?: string | null },
 ) {
   const deal = await loadDeal(dealId);
   if (!deal) throw new Error("Deal not found.");
   const saved = parseShopFlow(deal.shopFlow);
   const stages = parseProductStages(saved.productStages);
   const next = setProductStage(stages, product, {
-    inspectionStatus: patch.noticeType,
-    noticeType: patch.noticeType,
-    noticeTaskId: patch.noticeTaskId,
+    ...(patch.noticeType !== undefined
+      ? { inspectionStatus: patch.noticeType, noticeType: patch.noticeType }
+      : {}),
+    ...(patch.noticeTaskId !== undefined ? { noticeTaskId: patch.noticeTaskId } : {}),
+    ...(patch.noticeNote !== undefined ? { noticeNote: patch.noticeNote } : {}),
   });
   await persistDealShopFlow(dealId, { ...saved, productStages: next });
   return deal;
@@ -424,6 +440,7 @@ async function clearProductNoticeOnDeal(input: {
       inspectionStatus: "none",
       noticeType: "none",
       noticeTaskId: null,
+      noticeNote: null,
     }),
   });
   revalidateNotice(input.dealId, current.noticeTaskId);
@@ -467,4 +484,54 @@ export async function setDealProductInspection(formData: FormData) {
   if (!dealId || !product) throw new Error("Deal, product, and notice type are required.");
   await persistProductNotice(dealId, product, { noticeType: status });
   revalidatePath(`/deals/${dealId}`);
+}
+
+/** Speak/type working note on the notice — same pad as bindable carrier notes. */
+export async function saveDealNoticeNote(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const notes = String(formData.get("notes") ?? "");
+  if (!dealId || !product) throw new Error("Deal and product are required.");
+  await persistProductNotice(dealId, product, { noticeNote: notes.trim() || null });
+  revalidateNotice(dealId);
+  flashStay(formData, noticeReturnTo(formData, dealId, product), "Notice note saved");
+}
+
+function noticeFamilyFromForm(value: string): "pc" | "life" | "health" {
+  if (value === "life" || value === "health") return value;
+  return "pc";
+}
+
+const NOTICE_FAMILY_CREATE_NAME = {
+  pc: STARTER_PICKLIST_DEAL_NOTICES_PC,
+  life: STARTER_PICKLIST_DEAL_NOTICES_LIFE,
+  health: STARTER_PICKLIST_DEAL_NOTICES_HEALTH,
+} as const;
+
+/** In-deal add / rename / delete — never bounce to Settings picklists. */
+export async function saveDealNoticeTypes(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const family = noticeFamilyFromForm(String(formData.get("family") ?? "pc"));
+  const picklistId = String(formData.get("picklistId") ?? "").trim();
+  const labels = formData
+    .getAll("options")
+    .map((item) => String(item).trim())
+    .filter(Boolean);
+  if (!dealId) throw new Error("Deal is required.");
+  const lists = await listFieldPicklists();
+  let list = picklistId ? await getFieldPicklist(picklistId) : null;
+  if (!list) {
+    const names = noticePicklistNamesForFamily(family).map((name) => name.toLowerCase());
+    list = lists.find((row) => names.includes(row.name.trim().toLowerCase())) ?? null;
+  }
+  if (!list) {
+    await createFieldPicklist(NOTICE_FAMILY_CREATE_NAME[family], labels);
+  } else {
+    await updateFieldPicklist(list.id, { options: labels });
+  }
+  revalidatePath(`/deals/${dealId}`);
+  revalidatePath("/deals");
+  revalidatePath("/settings/picklists");
+  const product = parseDealProduct(String(formData.get("product") ?? "")) ?? "homeowners";
+  flashStay(formData, noticeReturnTo(formData, dealId, product), "Notice types saved");
 }

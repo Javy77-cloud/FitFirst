@@ -218,8 +218,8 @@ describe("Javy live follow-ups after PR #28", () => {
 
   it("moves the status stamp down and leaves trail crumbs unchanged", () => {
     const css = source("src/app/globals.css");
-    expect(css).toMatch(/\.ff-deal-status-stamp \{[\s\S]*top: 13\.5rem;/);
-    expect(css).toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: absolute;/);
+    expect(css).toMatch(/\.ff-deal-stamp-row \{[\s\S]*top: 13\.5rem;/);
+    expect(css).toMatch(/\.ff-deal-stamp-row \{[\s\S]*position: absolute;/);
     expect(css).not.toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: sticky;/);
     const trail = source("src/components/desk/desk-page-trail.tsx");
     expect(trail).toMatch(/data-ff-desk-crumb="link"/);

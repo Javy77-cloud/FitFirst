@@ -1,7 +1,11 @@
 import { insuredContactName, insuredHref } from "@/lib/crm/lists";
 import type { PipelineCardRow } from "@/lib/db/queries";
 import { visibleDealTitle } from "@/lib/deals/deal-title";
-import { listProductStageChips, type ListProductStageChip } from "@/lib/deals/product-stages";
+import {
+  attachListProductStageHrefs,
+  listProductStageChips,
+  type ListProductStageChip,
+} from "@/lib/deals/product-stages";
 import { homeAddressFromRecords } from "@/lib/meetings/types";
 
 export type PipelineCardView = {
@@ -66,7 +70,9 @@ export function presentPipelineCard(row: PipelineCardRow): PipelineCardView {
     boundAt: iso(deal.boundAt),
     archivedAt: iso(deal.archivedAt),
     tags: Array.isArray(deal.tags) ? deal.tags : [],
-    productStageChips: listProductStageChips(deal),
+    productStageChips: attachListProductStageHrefs(listProductStageChips(deal), {
+      dealId: deal.id,
+    }),
   };
 }
 
