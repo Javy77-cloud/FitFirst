@@ -8,6 +8,7 @@ import {
   mergeNoticeTypeOptions,
   noticeChipLabel,
   noticeCompleteLogBody,
+  isNoticeTaskTitle,
   noticeTaskKind,
   noticeTaskTitle,
   noticeTypesFromPicklist,
@@ -75,6 +76,8 @@ describe("deal notices", () => {
     ).toBe("Notice · Check mortgagee payment · Homeowners — Call lender");
     expect(noticeTaskKind("inspection_before_bind")).toBe("inspection_scheduling");
     expect(noticeTaskKind("check_mortgagee_payment")).toBe("work_reminder");
+    expect(isNoticeTaskTitle("Notice · Check mortgagee payment")).toBe(true);
+    expect(isNoticeTaskTitle("Work reminder — Call lender")).toBe(false);
     expect(SEED_NOTICE_TYPE_OPTIONS[0]).toEqual({ value: "none", label: SEED_NOTICE_LABELS.none });
   });
 
@@ -96,8 +99,9 @@ describe("deal notices", () => {
     );
     expect(header).toMatch(/data-ff-deal-notice-chip/);
     expect(header).toMatch(/Notice · Check mortgagee payment/);
-    expect(header).toMatch(/data-ff-notice-snooze-details/);
+    expect(header).toMatch(/data-ff-notice-set-reminder/);
     expect(header).toMatch(/data-ff-notice-complete-open/);
+    expect(header).not.toMatch(/data-ff-notice-snooze/);
     expect(header).not.toMatch(/>Inspection</);
 
     const quotes = renderToString(
@@ -111,7 +115,26 @@ describe("deal notices", () => {
     expect(quotes).toMatch(/>Notices</);
     expect(quotes).toMatch(/data-ff-notice-status/);
     expect(quotes).toMatch(/Edit types/);
+    expect(quotes).not.toMatch(/data-ff-notice-set/);
+    expect(quotes).not.toMatch(/name="dueDate"/);
+    expect(quotes).not.toMatch(/data-ff-notice-create-task/);
+    expect(quotes).not.toMatch(/data-ff-notice-snooze/);
     expect(quotes).not.toMatch(/>Inspection</);
     expect(quotes).not.toMatch(/data-ff-inspection-status/);
+
+    const quotesActive = renderToString(
+      createElement(DealNotices, {
+        dealId: "deal-1",
+        product: "homeowners",
+        noticeType: "inspection_before_bind",
+        noticeTaskId: "task-1",
+        variant: "quotes",
+      }),
+    );
+    expect(quotesActive).toMatch(/data-ff-notice-set/);
+    expect(quotesActive).toMatch(/data-ff-notice-task-link/);
+    expect(quotesActive).toMatch(/data-ff-notice-complete/);
+    expect(quotesActive).not.toMatch(/name="dueDate"/);
+    expect(quotesActive).not.toMatch(/data-ff-notice-snooze/);
   });
 });

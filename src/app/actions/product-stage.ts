@@ -8,7 +8,6 @@ import { db } from "@/lib/db";
 import { deals, quoteAttemptLogs, quotes, reviewTasks } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
-  dealProductDef,
   inferDealProducts,
   parseDealProduct,
   splitHomeProducts,
@@ -17,13 +16,12 @@ import {
 import { sheetLineForProduct } from "@/lib/deals/deal-products";
 import {
   noticeCompleteLogBody,
-  noticeTaskKind,
-  noticeTaskTitle,
   noticeTypeLabel,
   parseNoticeType,
 } from "@/lib/deals/notices";
 import {
   canonicalizeProductStage,
+  findProductNoticeForTask,
   isProductLostReason,
   lateStageNeedsQuoteSelection,
   liveSelectedQuoteIds,
@@ -39,7 +37,6 @@ import { parseShopFlow, quoteMatchesDealProduct } from "@/lib/deals/shop-flow";
 import { persistDealShopFlow } from "@/lib/deals/shop-flow-persist";
 import { flashAction, flashStay } from "@/lib/flash-action";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
-import { taskDueFromForm } from "@/lib/tasks/due-at";
 
 async function loadDeal(dealId: string) {
   const [deal] = await db
@@ -344,61 +341,22 @@ async function persistProductNotice(
   return deal;
 }
 
-async function upsertNoticeTask(input: {
-  taskId?: string | null;
+/** Persist the visible notice and link the desk task created by createDeskTask. */
+export async function linkDealProductNoticeTask(input: {
   dealId: string;
-  contactId?: string | null;
-  product: DealProductId;
+  product: string;
   noticeType: string;
-  note?: string | null;
-  dueDate: Date;
-  assigneeId?: string | null;
+  taskId: string;
 }) {
-  const title = noticeTaskTitle({
-    noticeType: input.noticeType,
-    productLabel: dealProductDef(input.product).label,
-    note: input.note,
-  });
-  const kind = noticeTaskKind(input.noticeType);
-  if (input.taskId) {
-    const [existing] = await db
-      .select({ id: reviewTasks.id })
-      .from(reviewTasks)
-      .where(and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), eq(reviewTasks.id, input.taskId)))
-      .limit(1);
-    if (existing) {
-      await db
-        .update(reviewTasks)
-        .set({
-          title,
-          kind,
-          dueDate: input.dueDate,
-          status: "open",
-          completedAt: null,
-          dealId: input.dealId,
-          contactId: input.contactId ?? null,
-        })
-        .where(eq(reviewTasks.id, existing.id));
-      return existing.id;
-    }
-  }
-  const [row] = await db
-    .insert(reviewTasks)
-    .values({
-      tenantId: DEFAULT_TENANT_ID,
-      title,
-      kind,
-      dueDate: input.dueDate,
-      status: "open",
-      dealId: input.dealId,
-      contactId: input.contactId ?? null,
-      assigneeId: input.assigneeId ?? null,
-    })
-    .returning({ id: reviewTasks.id });
-  return row?.id ?? null;
+  const product = parseDealProduct(input.product);
+  const noticeType = parseNoticeType(input.noticeType);
+  const taskId = input.taskId.trim();
+  if (!input.dealId || !product || noticeType === "none" || !taskId) return;
+  await persistProductNotice(input.dealId, product, { noticeType, noticeTaskId: taskId });
+  revalidateNotice(input.dealId, taskId);
 }
 
-/** Set or change a product notice. Optional review task (default on). Never clears on Bound. */
+/** Set or change a product notice chip. Reminder is createDeskTask — never a second engine. */
 export async function setDealProductNotice(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "").trim();
   const product = parseDealProduct(String(formData.get("product") ?? ""));
@@ -409,80 +367,27 @@ export async function setDealProductNotice(formData: FormData) {
   if (noticeType === "none") {
     throw new Error("Pick a notice type, or complete the notice to clear it.");
   }
-  const session = await currentDeskSession();
-  const deal = await loadDeal(dealId);
-  if (!deal) throw new Error("Deal not found.");
-  const saved = parseShopFlow(deal.shopFlow);
-  const stages = parseProductStages(saved.productStages);
-  const current = productStageFor(stages, product, deal.pipelineStageSlug ?? deal.pipelineStage);
-  const createTask = String(formData.get("createTask") ?? "1") === "1";
-  const note = String(formData.get("note") ?? formData.get("titleNotes") ?? "").trim();
-  let noticeTaskId = current.noticeTaskId ?? null;
-  if (createTask) {
-    noticeTaskId = await upsertNoticeTask({
-      taskId: noticeTaskId,
-      dealId,
-      contactId: deal.contactId,
-      product,
-      noticeType,
-      note,
-      dueDate: taskDueFromForm(formData),
-      assigneeId: session.userId,
-    });
-  }
-  await persistDealShopFlow(dealId, {
-    ...saved,
-    productStages: setProductStage(stages, product, {
-      inspectionStatus: noticeType,
-      noticeType,
-      noticeTaskId,
-    }),
+  const taskId = String(formData.get("noticeTaskId") ?? formData.get("taskId") ?? "").trim();
+  await persistProductNotice(dealId, product, {
+    noticeType,
+    noticeTaskId: taskId || undefined,
   });
-  revalidateNotice(dealId, noticeTaskId);
+  revalidateNotice(dealId, taskId || null);
   flashStay(formData, noticeReturnTo(formData, dealId, product), "Notice set");
 }
 
-export async function snoozeDealProductNotice(formData: FormData) {
-  const dealId = String(formData.get("dealId") ?? "").trim();
-  const product = parseDealProduct(String(formData.get("product") ?? ""));
-  if (!dealId || !product) throw new Error("Deal and product are required.");
+async function clearProductNoticeOnDeal(input: {
+  dealId: string;
+  product: DealProductId;
+  notes: string;
+}) {
+  if (input.notes.length < 2) throw new Error("Add a short note to complete the notice.");
   const session = await currentDeskSession();
-  const deal = await loadDeal(dealId);
+  const deal = await loadDeal(input.dealId);
   if (!deal) throw new Error("Deal not found.");
   const saved = parseShopFlow(deal.shopFlow);
   const stages = parseProductStages(saved.productStages);
-  const current = productStageFor(stages, product, deal.pipelineStageSlug ?? deal.pipelineStage);
-  const noticeType = parseNoticeType(current.noticeType ?? current.inspectionStatus);
-  if (noticeType === "none") throw new Error("No active notice to snooze.");
-  const noticeTaskId = await upsertNoticeTask({
-    taskId: current.noticeTaskId,
-    dealId,
-    contactId: deal.contactId,
-    product,
-    noticeType,
-    dueDate: taskDueFromForm(formData),
-    assigneeId: session.userId,
-  });
-  await persistDealShopFlow(dealId, {
-    ...saved,
-    productStages: setProductStage(stages, product, { noticeTaskId }),
-  });
-  revalidateNotice(dealId, noticeTaskId);
-  flashStay(formData, noticeReturnTo(formData, dealId, product), "Notice snoozed");
-}
-
-export async function completeDealProductNotice(formData: FormData) {
-  const dealId = String(formData.get("dealId") ?? "").trim();
-  const product = parseDealProduct(String(formData.get("product") ?? ""));
-  const notes = String(formData.get("notes") ?? "").trim();
-  if (!dealId || !product) throw new Error("Deal and product are required.");
-  if (notes.length < 2) throw new Error("Add a short note to complete the notice.");
-  const session = await currentDeskSession();
-  const deal = await loadDeal(dealId);
-  if (!deal) throw new Error("Deal not found.");
-  const saved = parseShopFlow(deal.shopFlow);
-  const stages = parseProductStages(saved.productStages);
-  const current = productStageFor(stages, product, deal.pipelineStageSlug ?? deal.pipelineStage);
+  const current = productStageFor(stages, input.product, deal.pipelineStageSlug ?? deal.pipelineStage);
   const noticeType = parseNoticeType(current.noticeType ?? current.inspectionStatus);
   if (noticeType === "none") throw new Error("No active notice to complete.");
   const occurredAt = new Date();
@@ -492,12 +397,12 @@ export async function completeDealProductNotice(formData: FormData) {
     body: noticeCompleteLogBody({
       agent: session.name || "Agent",
       noticeType,
-      notes,
+      notes: input.notes,
     }),
     status: "completed",
     eventType: "completed",
     occurredAt,
-    dealId,
+    dealId: input.dealId,
     contactId: deal.contactId,
     accountId: deal.accountId,
     leadId: deal.leadId,
@@ -513,16 +418,45 @@ export async function completeDealProductNotice(formData: FormData) {
         and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), eq(reviewTasks.id, current.noticeTaskId)),
       );
   }
-  await persistDealShopFlow(dealId, {
+  await persistDealShopFlow(input.dealId, {
     ...saved,
-    productStages: setProductStage(stages, product, {
+    productStages: setProductStage(stages, input.product, {
       inspectionStatus: "none",
       noticeType: "none",
       noticeTaskId: null,
     }),
   });
-  revalidateNotice(dealId, current.noticeTaskId);
+  revalidateNotice(input.dealId, current.noticeTaskId);
+}
+
+export async function completeDealProductNotice(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const notes = String(formData.get("notes") ?? "").trim();
+  if (!dealId || !product) throw new Error("Deal and product are required.");
+  await clearProductNoticeOnDeal({ dealId, product, notes });
   flashStay(formData, noticeReturnTo(formData, dealId, product), "Notice completed");
+}
+
+/** Completing a linked notice task can also clear the chip + activity log. Never automatic. */
+export async function completeLinkedDealNoticeForTask(taskId: string, notes: string) {
+  const id = taskId.trim();
+  if (!id || notes.trim().length < 2) return { cleared: false as const };
+  const [task] = await db
+    .select({ id: reviewTasks.id, dealId: reviewTasks.dealId })
+    .from(reviewTasks)
+    .where(and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), eq(reviewTasks.id, id)))
+    .limit(1);
+  if (!task?.dealId) return { cleared: false as const };
+  const deal = await loadDeal(task.dealId);
+  if (!deal) return { cleared: false as const };
+  const stages = parseProductStages(parseShopFlow(deal.shopFlow).productStages);
+  const found = findProductNoticeForTask(stages, id);
+  if (!found) return { cleared: false as const };
+  const product = parseDealProduct(found.product);
+  if (!product) return { cleared: false as const };
+  await clearProductNoticeOnDeal({ dealId: task.dealId, product, notes: notes.trim() });
+  return { cleared: true as const };
 }
 
 /** Leftover Inspection dropdown — maps old slugs, does not create a task. */

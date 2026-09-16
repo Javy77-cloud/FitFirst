@@ -84,6 +84,9 @@ function QuotesWarningStrip({
   productStage,
   noticeType,
   noticeTypes,
+  noticeTaskId,
+  noticeDealName,
+  noticeContactId,
   noticeTaskDueDate,
   noticeTaskDueTime,
   noticeReturnTo,
@@ -96,6 +99,9 @@ function QuotesWarningStrip({
   productStage?: string | null;
   noticeType?: string | null;
   noticeTypes?: readonly NoticeTypeOption[];
+  noticeTaskId?: string | null;
+  noticeDealName?: string | null;
+  noticeContactId?: string | null;
   noticeTaskDueDate?: string | null;
   noticeTaskDueTime?: string | null;
   noticeReturnTo?: string | null;
@@ -114,6 +120,9 @@ function QuotesWarningStrip({
         stage={productStage}
         noticeType={noticeType}
         noticeTypes={noticeTypes}
+        noticeTaskId={noticeTaskId}
+        dealName={noticeDealName}
+        contactId={noticeContactId}
         taskDueDate={noticeTaskDueDate}
         taskDueTime={noticeTaskDueTime}
         returnTo={noticeReturnTo}
@@ -165,6 +174,9 @@ export function QuotesPanel({
   inspectionStatus = "none",
   noticeType,
   noticeTypes,
+  noticeTaskId,
+  noticeDealName,
+  noticeContactId,
   noticeTaskDueDate,
   noticeTaskDueTime,
   noticeReturnTo,
@@ -203,6 +215,9 @@ export function QuotesPanel({
   inspectionStatus?: string | null;
   noticeType?: string | null;
   noticeTypes?: readonly NoticeTypeOption[];
+  noticeTaskId?: string | null;
+  noticeDealName?: string | null;
+  noticeContactId?: string | null;
   noticeTaskDueDate?: string | null;
   noticeTaskDueTime?: string | null;
   noticeReturnTo?: string | null;
@@ -305,6 +320,9 @@ export function QuotesPanel({
             productStage={productStage}
             noticeType={noticeType ?? inspectionStatus}
             noticeTypes={noticeTypes}
+            noticeTaskId={noticeTaskId}
+            noticeDealName={noticeDealName}
+            noticeContactId={noticeContactId}
             noticeTaskDueDate={noticeTaskDueDate}
             noticeTaskDueTime={noticeTaskDueTime}
             noticeReturnTo={noticeReturnTo}
@@ -348,6 +366,9 @@ export function QuotesPanel({
         productStage={productStage}
         noticeType={noticeType ?? inspectionStatus}
         noticeTypes={noticeTypes}
+        noticeTaskId={noticeTaskId}
+        noticeDealName={noticeDealName}
+        noticeContactId={noticeContactId}
         noticeTaskDueDate={noticeTaskDueDate}
         noticeTaskDueTime={noticeTaskDueTime}
         noticeReturnTo={noticeReturnTo}

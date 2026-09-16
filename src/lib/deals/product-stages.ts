@@ -318,6 +318,22 @@ export function setProductStage(
   return { ...stages, [product]: next };
 }
 
+/** Product whose visible notice is linked to this desk task. */
+export function findProductNoticeForTask(
+  stages: DealProductStages | null | undefined,
+  taskId: string | null | undefined,
+): { product: string; noticeType: NoticeType } | null {
+  const id = (taskId ?? "").trim();
+  if (!id) return null;
+  for (const [product, state] of Object.entries(stages ?? {})) {
+    if (state?.noticeTaskId !== id) continue;
+    const noticeType = parseNoticeType(state.noticeType ?? state.inspectionStatus);
+    if (noticeType === "none") continue;
+    return { product, noticeType };
+  }
+  return null;
+}
+
 export function liveSelectedQuoteIds(
   selectedQuoteIds?: readonly string[] | null,
   liveQuoteIds?: readonly string[] | null,

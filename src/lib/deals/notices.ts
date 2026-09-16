@@ -163,3 +163,8 @@ export function noticeTaskKind(noticeType: unknown): string {
     ? "inspection_scheduling"
     : "work_reminder";
 }
+
+/** Desk task titles created for a notice — used to offer clear-on-complete. */
+export function isNoticeTaskTitle(title: unknown): boolean {
+  return typeof title === "string" && title.trim().startsWith("Notice ·");
+}

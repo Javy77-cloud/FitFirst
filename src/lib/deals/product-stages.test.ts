@@ -10,6 +10,7 @@ import { pickBoundQuoteId } from "./status-stamp";
 import {
   canonicalizeProductStage,
   displayProductStage,
+  findProductNoticeForTask,
   isBoardNoopStage,
   lateStageNeedsQuoteSelection,
   listProductStageChips,
@@ -431,14 +432,37 @@ describe("per-product stages", () => {
     });
     expect(source("src/app/actions/product-stage.ts")).toMatch(/setDealProductNotice/);
     expect(source("src/app/actions/product-stage.ts")).toMatch(/completeDealProductNotice/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/linkDealProductNoticeTask/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/completeLinkedDealNoticeForTask/);
     expect(source("src/app/actions/product-stage.ts")).toMatch(/writeDeskComms/);
     expect(source("src/app/actions/product-stage.ts")).toMatch(/noticeCompleteLogBody/);
+    expect(source("src/app/actions/product-stage.ts")).not.toMatch(/upsertNoticeTask/);
+    expect(source("src/app/actions/product-stage.ts")).not.toMatch(/snoozeDealProductNotice/);
     expect(source("src/app/actions/product-stage.ts")).not.toMatch(
       /stageSlug === "bound"[\s\S]{0,200}noticeType: "none"/,
     );
+    expect(source("src/app/actions/alerts.ts")).toMatch(/linkDealProductNoticeTask/);
+    expect(source("src/app/actions/alerts.ts")).toMatch(/completeLinkedDealNoticeForTask/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/Notices/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/CreateTaskDialog/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/noticeTaskTitle/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/data-ff-deal-notice-chip/);
+    expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(/snoozeDealProductNotice/);
     expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(/>Inspection</);
+    expect(
+      findProductNoticeForTask(
+        {
+          homeowners: {
+            stage: "quote_review",
+            selectedQuoteIds: [],
+            noticeType: "check_mortgagee_payment",
+            noticeTaskId: "task-1",
+          },
+        },
+        "task-1",
+      ),
+    ).toEqual({ product: "homeowners", noticeType: "check_mortgagee_payment" });
+    expect(findProductNoticeForTask({ homeowners: { stage: "bound", selectedQuoteIds: ["q1"] } }, "task-1")).toBeNull();
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/data-ff-deal-header-notices/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/DealNotices/);
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_DEAL_NOTICES/);

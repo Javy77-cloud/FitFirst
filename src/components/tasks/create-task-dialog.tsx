@@ -28,6 +28,10 @@ export function CreateTaskDialog({
   open: openProp,
   onOpenChange,
   defaultOpen = false,
+  lockRecord = false,
+  hideTrigger = false,
+  title = "New Task",
+  description = "Link a record, pick a task type, then fill layout fields including due date and assignee.",
 }: {
   defaults?: CreateTaskFormDefaults;
   users?: { id: string; name: string }[];
@@ -40,6 +44,10 @@ export function CreateTaskDialog({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   defaultOpen?: boolean;
+  lockRecord?: boolean;
+  hideTrigger?: boolean;
+  title?: string;
+  description?: string;
 }) {
   const router = useRouter();
   const controlled = openProp !== undefined;
@@ -65,28 +73,33 @@ export function CreateTaskDialog({
 
   return (
     <>
-      <Button
-        type="button"
-        size="sm"
-        className={cn(
-          "hover:!bg-fit-red hover:!text-white hover:!border-fit-red",
-          triggerClassName,
-        )}
-        data-ff-new-task=""
-        onClick={() => setOpen(true)}
-      >
-        {trigger}
-      </Button>
+      {hideTrigger ? null : (
+        <Button
+          type="button"
+          size="sm"
+          className={cn(
+            "hover:!bg-fit-red hover:!text-white hover:!border-fit-red",
+            triggerClassName,
+          )}
+          data-ff-new-task=""
+          onClick={() => setOpen(true)}
+        >
+          {trigger}
+        </Button>
+      )}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-xl" data-ff-create-task-dialog="">
+        <DialogContent
+          className="sm:max-w-xl"
+          data-ff-create-task-dialog=""
+          data-ff-notice-task-dialog={defaults?.noticeType ? "" : undefined}
+        >
           <DialogHeader>
-            <DialogTitle>New Task</DialogTitle>
-            <DialogDescription>
-              Link a record, pick a task type, then fill layout fields including due date and assignee.
-            </DialogDescription>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
           <CreateTaskForm
             compact
+            lockRecord={lockRecord}
             defaults={{
               ...formDefaults,
               assigneeId: formDefaults.assigneeId ?? currentUserId ?? undefined,

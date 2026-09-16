@@ -673,10 +673,13 @@ export default async function DealPage({
                   <div className="mt-1.5" data-ff-deal-header-notices="">
                     <DealNotices
                       dealId={deal.id}
+                      dealName={deal.title}
+                      contactId={deal.contactId}
                       product={activeProduct}
                       stage={activeProductState.stage}
                       noticeType={activeProductState.noticeType ?? activeProductState.inspectionStatus}
                       noticeTypes={dealNoticeTypes}
+                      noticeTaskId={activeProductState.noticeTaskId}
                       taskDueDate={noticeDue.date || null}
                       taskDueTime={noticeDue.time || null}
                       returnTo={`/deals/${deal.id}?tab=${activeTab}&product=${activeProduct}`}
@@ -860,6 +863,9 @@ export default async function DealPage({
                         inspectionStatus={activeProductState.inspectionStatus}
                         noticeType={activeProductState.noticeType ?? activeProductState.inspectionStatus}
                         noticeTypes={dealNoticeTypes}
+                        noticeTaskId={activeProductState.noticeTaskId}
+                        noticeDealName={deal.title}
+                        noticeContactId={deal.contactId}
                         noticeTaskDueDate={noticeDue.date || null}
                         noticeTaskDueTime={noticeDue.time || null}
                         noticeReturnTo={`/deals/${deal.id}?tab=quotes&product=${activeProduct}`}

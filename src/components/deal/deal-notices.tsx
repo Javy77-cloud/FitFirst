@@ -2,30 +2,24 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  completeDealProductNotice,
-  setDealProductNotice,
-  snoozeDealProductNotice,
-} from "@/app/actions/product-stage";
+import { completeDealProductNotice } from "@/app/actions/product-stage";
+import { CreateTaskDialog } from "@/components/tasks/create-task-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { dealProductDef, parseDealProduct } from "@/lib/deals/deal-products";
 import {
   isActiveNotice,
   mergeNoticeTypeOptions,
   noticeChipLabel,
+  noticeTaskKind,
+  noticeTaskTitle,
+  noticeTypeLabel,
   SEED_NOTICE_TYPE_OPTIONS,
   type NoticeTypeOption,
 } from "@/lib/deals/notices";
 import { canonicalizeProductStage } from "@/lib/deals/product-stages";
+import { isDeskTaskType } from "@/lib/tasks/task-types";
 import { cn } from "@/lib/utils";
-
-function defaultDueParts() {
-  const now = new Date();
-  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  const month = String(tomorrow.getMonth() + 1).padStart(2, "0");
-  const day = String(tomorrow.getDate()).padStart(2, "0");
-  return { date: `${tomorrow.getFullYear()}-${month}-${day}`, time: "17:00" };
-}
 
 export function DealNoticeChip({
   noticeType,
@@ -54,20 +48,26 @@ export function DealNoticeChip({
 
 export function DealNotices({
   dealId,
+  dealName,
+  contactId,
   product,
   stage,
   noticeType = "none",
   noticeTypes,
+  noticeTaskId,
   taskDueDate,
   taskDueTime,
   returnTo,
   variant = "quotes",
 }: {
   dealId: string;
+  dealName?: string | null;
+  contactId?: string | null;
   product?: string | null;
   stage?: string | null;
   noticeType?: string | null;
   noticeTypes?: readonly NoticeTypeOption[];
+  noticeTaskId?: string | null;
   taskDueDate?: string | null;
   taskDueTime?: string | null;
   returnTo?: string | null;
@@ -77,14 +77,28 @@ export function DealNotices({
   const active = isActiveNotice(noticeType);
   const [selected, setSelected] = useState(noticeType && active ? parseKeep(noticeType) : "none");
   const [completeOpen, setCompleteOpen] = useState(false);
-  const fallbackDue = defaultDueParts();
-  const dueDate = taskDueDate || fallbackDue.date;
-  const dueTime = taskDueTime || fallbackDue.time;
+  const [taskOpen, setTaskOpen] = useState(false);
+  const [pendingType, setPendingType] = useState(selected);
   const canonical = canonicalizeProductStage(stage);
   const productValue = product ?? "homeowners";
-  const showSetFields = selected !== "none";
+  const productId = parseDealProduct(productValue);
+  const productLabel = productId ? dealProductDef(productId).label : undefined;
+  const showSet = selected !== "none";
+  const kind = noticeTaskKind(pendingType);
+  const taskType = isDeskTaskType(kind) ? kind : "work_reminder";
+  const fixedTitle = noticeTaskTitle({
+    noticeType: pendingType,
+    productLabel,
+    options,
+  });
 
   if (variant === "header" && !active) return null;
+
+  function openNoticeTask(nextType = selected) {
+    if (nextType === "none") return;
+    setPendingType(nextType);
+    setTaskOpen(true);
+  }
 
   return (
     <div
@@ -98,10 +112,7 @@ export function DealNotices({
     >
       <DealNoticeChip noticeType={noticeType} noticeTypes={options} />
       {variant === "quotes" ? (
-        <form action={setDealProductNotice} className="flex flex-wrap items-end gap-2">
-          <input type="hidden" name="dealId" value={dealId} />
-          <input type="hidden" name="product" value={productValue} />
-          {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+        <div className="flex flex-wrap items-end gap-2">
           <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             Notices
             <select
@@ -118,100 +129,39 @@ export function DealNotices({
               ))}
             </select>
           </label>
-          {showSetFields ? (
-            <>
-              <label className="text-[11px] text-muted-foreground">
-                Due
-                <Input
-                  name="dueDate"
-                  type="date"
-                  required
-                  defaultValue={dueDate}
-                  className="mt-0.5 h-7 w-[9.5rem] text-xs"
-                />
-              </label>
-              <label className="text-[11px] text-muted-foreground">
-                Time
-                <Input
-                  name="dueTime"
-                  type="time"
-                  defaultValue={dueTime}
-                  className="mt-0.5 h-7 w-[7.5rem] text-xs"
-                />
-              </label>
-              <label className="text-[11px] text-muted-foreground">
-                Note
-                <Input
-                  name="note"
-                  placeholder="Optional"
-                  className="mt-0.5 h-7 w-36 text-xs"
-                />
-              </label>
-              <label className="flex items-center gap-1 pb-1 text-[11px] text-muted-foreground">
-                <input type="checkbox" name="createTask" value="1" defaultChecked data-ff-notice-create-task="" />
-                Review task
-              </label>
-              <Button type="submit" size="xs" data-ff-notice-set="">
-                Set
-              </Button>
-            </>
+          {showSet ? (
+            <Button
+              type="button"
+              size="xs"
+              onClick={() => openNoticeTask(selected)}
+              data-ff-notice-set=""
+            >
+              Set
+            </Button>
           ) : null}
-        </form>
+        </div>
       ) : null}
 
       {active ? (
         <div className="flex flex-wrap items-end gap-1.5">
-          {variant === "header" ? (
-            <details className="text-[11px] text-muted-foreground" data-ff-notice-snooze-details="">
-              <summary className="cursor-pointer select-none font-medium text-navy">Snooze</summary>
-              <form action={snoozeDealProductNotice} className="mt-1 flex flex-wrap items-end gap-1.5">
-                <input type="hidden" name="dealId" value={dealId} />
-                <input type="hidden" name="product" value={productValue} />
-                {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-                <Input
-                  name="dueDate"
-                  type="date"
-                  required
-                  defaultValue={dueDate}
-                  className="h-7 w-[9.5rem] text-xs"
-                  aria-label="Snooze date"
-                />
-                <Input
-                  name="dueTime"
-                  type="time"
-                  defaultValue={dueTime}
-                  className="h-7 w-[7.5rem] text-xs"
-                  aria-label="Snooze time"
-                />
-                <Button type="submit" size="xs" variant="outline" data-ff-notice-snooze="">
-                  Save
-                </Button>
-              </form>
-            </details>
+          {noticeTaskId ? (
+            <Link
+              href={`/tasks/${noticeTaskId}`}
+              className="text-[11px] font-medium text-primary hover:underline"
+              data-ff-notice-task-link=""
+            >
+              Reminder
+            </Link>
           ) : (
-            <form action={snoozeDealProductNotice} className="flex flex-wrap items-end gap-1.5">
-              <input type="hidden" name="dealId" value={dealId} />
-              <input type="hidden" name="product" value={productValue} />
-              {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-              <Input
-                name="dueDate"
-                type="date"
-                required
-                defaultValue={dueDate}
-                className="h-7 w-[9.5rem] text-xs"
-                aria-label="Snooze date"
-              />
-              <Input
-                name="dueTime"
-                type="time"
-                defaultValue={dueTime}
-                className="h-7 w-[7.5rem] text-xs"
-                aria-label="Snooze time"
-              />
-              <Button type="submit" size="xs" variant="outline" data-ff-notice-snooze="">
-                Snooze
-              </Button>
-            </form>
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={() => openNoticeTask(parseKeep(noticeType ?? selected))}
+              data-ff-notice-set-reminder=""
+            >
+              Reminder
+            </Button>
           )}
           {completeOpen || variant === "quotes" ? (
             <form action={completeDealProductNotice} className="flex flex-wrap items-end gap-1.5">
@@ -261,6 +211,32 @@ export function DealNotices({
           Mortgage / escrow is not a pipeline stage. Track it on the issued policy.
         </p>
       ) : null}
+
+      {taskOpen ? (
+        <CreateTaskDialog
+          key={pendingType}
+          open={taskOpen}
+          onOpenChange={setTaskOpen}
+          hideTrigger
+          lockRecord
+          title={`Notice · ${noticeTypeLabel(pendingType, options)}`}
+          description="Day, time, assignee, and snooze use the desk task reminder already on this record."
+          defaults={{
+            recordType: "deal",
+            recordId: dealId,
+            recordName: dealName ?? "This deal",
+            dealId,
+            contactId,
+            taskType,
+            fixedTitle,
+            noticeType: pendingType,
+            noticeProduct: productValue,
+            dueDate: taskDueDate ?? undefined,
+            dueTime: taskDueTime ?? undefined,
+            returnTo: returnTo ?? `/deals/${dealId}?tab=quotes&product=${productValue}`,
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -272,11 +248,14 @@ function parseKeep(value: string) {
 /** Quotes-only leftover name — same Notices control. */
 export function QuotesStageFlags(props: {
   dealId: string;
+  dealName?: string | null;
+  contactId?: string | null;
   product?: string | null;
   stage?: string | null;
   inspectionStatus?: string | null;
   noticeType?: string | null;
   noticeTypes?: readonly NoticeTypeOption[];
+  noticeTaskId?: string | null;
   taskDueDate?: string | null;
   taskDueTime?: string | null;
   returnTo?: string | null;
@@ -284,10 +263,13 @@ export function QuotesStageFlags(props: {
   return (
     <DealNotices
       dealId={props.dealId}
+      dealName={props.dealName}
+      contactId={props.contactId}
       product={props.product}
       stage={props.stage}
       noticeType={props.noticeType ?? props.inspectionStatus}
       noticeTypes={props.noticeTypes}
+      noticeTaskId={props.noticeTaskId}
       taskDueDate={props.taskDueDate}
       taskDueTime={props.taskDueTime}
       returnTo={props.returnTo}

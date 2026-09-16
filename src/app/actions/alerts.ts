@@ -22,6 +22,12 @@ import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
 import { applyModuleSystemValues } from "@/lib/custom-fields/record-system";
 import { listFieldDefs, writeRecordValues } from "@/lib/custom-fields/store";
 import { normalizeTags, parseTagsFromForm } from "@/lib/tags/module-tags";
+import { isActiveNotice, parseNoticeType } from "@/lib/deals/notices";
+import { parseDealProduct } from "@/lib/deals/deal-products";
+import {
+  completeLinkedDealNoticeForTask,
+  linkDealProductNoticeTask,
+} from "@/app/actions/product-stage";
 
 function revalidateNotificationSurfaces() {
   revalidatePath("/");
@@ -77,8 +83,15 @@ export async function completeTask(formData: FormData) {
     .update(reviewTasks)
     .set({ status: "done", completedAt: new Date() })
     .where(eq(reviewTasks.id, id));
+  const clearNotice = String(formData.get("clearNotice") ?? "") === "1";
+  const noticeNotes = String(formData.get("noticeNotes") ?? formData.get("notes") ?? "").trim();
+  if (id && clearNotice) {
+    if (noticeNotes.length < 2) throw new Error("Add a short note to clear the notice.");
+    await completeLinkedDealNoticeForTask(id, noticeNotes);
+  }
   revalidatePath("/");
   revalidatePath("/tasks");
+  revalidatePath("/deals");
   if (id) revalidatePath(`/tasks/${id}`);
 }
 
@@ -200,6 +213,16 @@ export async function createDeskTask(formData: FormData) {
       dueDate,
       userId: assigneeId ?? session.userId,
     });
+    const noticeType = parseNoticeType(formData.get("noticeType"));
+    const noticeProduct = parseDealProduct(String(formData.get("noticeProduct") ?? ""));
+    if (deal && noticeProduct && isActiveNotice(noticeType)) {
+      await linkDealProductNoticeTask({
+        dealId: deal,
+        product: noticeProduct,
+        noticeType,
+        taskId: row.id,
+      });
+    }
   }
 
   await emitDeskEvent("task.due", {

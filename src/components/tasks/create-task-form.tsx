@@ -55,6 +55,10 @@ export type CreateTaskFormDefaults = {
   dueTime?: string;
   assigneeId?: string;
   returnTo?: string;
+  /** When set, title is this notice label instead of the task-type label. */
+  fixedTitle?: string;
+  noticeType?: string;
+  noticeProduct?: string;
 };
 
 function ensureTaskFieldOptions(fields: readonly CustomFieldDef[]): CustomFieldDef[] {
@@ -138,8 +142,17 @@ export function CreateTaskForm({
   const [taskType, setTaskType] = useState<DeskTaskType>(defaults?.taskType ?? "work_reminder");
   const [notes, setNotes] = useState("");
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
-  const titleLeft = useMemo(() => deskTaskTypeTitle(taskType), [taskType]);
-  const composed = useMemo(() => composeDeskTaskTitle(taskType, notes), [taskType, notes]);
+  const titleLeft = useMemo(
+    () => defaults?.fixedTitle ?? deskTaskTypeTitle(taskType),
+    [defaults?.fixedTitle, taskType],
+  );
+  const composed = useMemo(() => {
+    if (defaults?.fixedTitle) {
+      const extra = notes.trim();
+      return extra ? `${defaults.fixedTitle} — ${extra}` : defaults.fixedTitle;
+    }
+    return composeDeskTaskTitle(taskType, notes);
+  }, [defaults?.fixedTitle, taskType, notes]);
 
   const defaultDue =
     defaults?.dueDate ??
@@ -288,6 +301,10 @@ export function CreateTaskForm({
       <input type="hidden" name="policyId" value={picked?.policyId ?? ""} />
       <input type="hidden" name="leadId" value={picked?.leadId ?? ""} />
       {defaults?.returnTo ? <input type="hidden" name="returnTo" value={defaults.returnTo} /> : null}
+      {defaults?.noticeType ? <input type="hidden" name="noticeType" value={defaults.noticeType} /> : null}
+      {defaults?.noticeProduct ? (
+        <input type="hidden" name="noticeProduct" value={defaults.noticeProduct} />
+      ) : null}
 
       {/* HARD LOCK order: Record type → Linked → Task type → Title (title right under type). */}
       {!lockRecord ? (
@@ -419,7 +436,9 @@ export function CreateTaskForm({
           />
         </div>
         <p className="mt-1 text-[11px] text-muted-foreground">
-          Fills from Task type. Add optional notes on the right.
+          {defaults?.fixedTitle
+            ? "Titled from the notice. Add optional notes on the right. Day, time, and snooze are this task reminder."
+            : "Fills from Task type. Add optional notes on the right."}
         </p>
       </div>
 
