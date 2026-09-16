@@ -18,6 +18,7 @@ import {
   nextShopFlowAfterQuoteRun,
   nextShopFlowAfterSheetEdit,
   sheetNeedsRecheckCue,
+  shopStepStillComplete,
   requestScopeForLine,
   notesLookLikeFloodProduct,
   parseShopFlow,
@@ -80,13 +81,16 @@ describe("shop-flow fingerprint + sticky completion", () => {
     expect(html).not.toMatch(/data-ff-deal-flow-step="quotes"[^>]*data-ff-deal-flow-done="true"/);
   });
 
-  it("invalidates Markets + Quotes when the master sheet fingerprint changes", () => {
+  it("keeps Markets + Quotes complete when the master sheet fingerprint changes", () => {
     const quoted = riskFingerprint({ sheets: [homeSheet], docs: [] });
     const edited = riskFingerprint({
       sheets: [{ ...homeSheet, values: { ...homeSheet.values, coverage_a: { value: "350000" } } }],
       docs: [],
     });
     expect(quoted).not.toBe(edited);
+    expect(shopStepStillComplete(quoted)).toBe(true);
+    expect(shopStepStillComplete(null)).toBe(false);
+    expect(shopStepStillComplete(STALE_SHOP_FINGERPRINT)).toBe(false);
     const afterEdit = resolveShopFlowCompletion({
       detailsComplete: true,
       documentsComplete: true,
@@ -95,10 +99,28 @@ describe("shop-flow fingerprint + sticky completion", () => {
       currentFingerprint: edited,
       saved: { marketsFingerprint: quoted, quotesFingerprint: quoted },
     });
-    expect(afterEdit.completed).toEqual(["create", "details", "documents"]);
-    expect(afterEdit.isComplete("markets")).toBe(false);
-    expect(afterEdit.isComplete("quotes")).toBe(false);
+    expect(afterEdit.completed).toEqual(["create", "details", "documents", "markets", "quotes"]);
+    expect(afterEdit.isComplete("markets")).toBe(true);
+    expect(afterEdit.isComplete("quotes")).toBe(true);
     expect(afterEdit.isComplete("documents")).toBe(true);
+    const cued = nextShopFlowAfterSheetEdit({
+      saved: { marketsFingerprint: quoted, quotesFingerprint: quoted },
+      line: "home",
+    });
+    expect(sheetNeedsRecheckCue(cued, "home")).toBe(true);
+    expect(sheetNeedsRecheckCue(cued, "auto")).toBe(false);
+    expect(cued.marketsFingerprint).toBe(quoted);
+    expect(cued.quotesFingerprint).toBe(quoted);
+    expect(
+      resolveShopFlowCompletion({
+        detailsComplete: true,
+        documentsComplete: true,
+        hasMarkets: true,
+        hasQuotes: true,
+        currentFingerprint: edited,
+        saved: cued,
+      }).isComplete("markets"),
+    ).toBe(true);
   });
 
   it("invalidates on a source-doc add and on the stale sentinel", () => {
@@ -632,12 +654,12 @@ describe("deal page + action wiring", () => {
     expect(page).not.toMatch(/packageLines\.length > 1\s*\? quotes\.filter/);
   });
 
-  it("sheet save, fill, and source-doc upload invalidate Markets/Quotes", () => {
+  it("sheet save cues Recheck; source-doc upload still invalidates Markets/Quotes", () => {
     expect(readFileSync("src/app/actions/quote-sheet.ts", "utf8")).toMatch(
-      /markShopFlowStaleAfterRiskChange/,
+      /persistSheetRecheckCue/,
     );
     expect(readFileSync("src/app/actions/quote-sheet.ts", "utf8")).not.toMatch(
-      /persistSheetRecheckCue/,
+      /markShopFlowStaleAfterRiskChange/,
     );
     expect(readFileSync("src/app/actions/documents.ts", "utf8")).toMatch(
       /markShopFlowStaleAfterRiskChange/,

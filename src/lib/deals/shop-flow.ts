@@ -178,6 +178,12 @@ export function fingerprintsMatch(
   return saved === current;
 }
 
+/** Requested and not explicitly stale — sheet edits do not uncheck Markets/Quotes. */
+export function shopStepStillComplete(saved?: string | null): boolean {
+  if (saved == null) return false;
+  return saved !== STALE_SHOP_FINGERPRINT;
+}
+
 /**
  * Flood *product* cues — NFIP, Beyond Floods, Flood Flow, notes that start with
  * "Flood", flood form, excess flood. Package-premium wording on an HO3 /
@@ -367,8 +373,10 @@ export function resolveShopFlowCompletion(input: {
   const lineFp = input.line ? saved.lineFingerprints?.[input.line] : null;
   const marketsSaved = lineFp?.markets ?? saved.marketsFingerprint;
   const quotesSaved = lineFp?.quotes ?? saved.quotesFingerprint;
-  const marketsLive = input.hasMarkets && fingerprintsMatch(marketsSaved, input.currentFingerprint);
-  const quotesLive = input.hasQuotes && fingerprintsMatch(quotesSaved, input.currentFingerprint);
+  // Sheet field edits must not uncheck Markets/Quotes. Only an explicit stale
+  // sentinel (or never-requested null) drops the check. Recheck lives on Quotes.
+  const marketsLive = input.hasMarkets && shopStepStillComplete(marketsSaved);
+  const quotesLive = input.hasQuotes && shopStepStillComplete(quotesSaved);
   const completed: DealFlowStepId[] = ["create"];
   if (input.detailsComplete) completed.push("details");
   if (input.documentsComplete) completed.push("documents");

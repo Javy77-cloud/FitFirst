@@ -202,15 +202,15 @@ describe("per-product stages", () => {
     expect(html).not.toMatch(/data-ff-quotes-previous=/);
   });
 
-  it("invalidates Markets+Quotes on sheet save and writes an audit kind", () => {
+  it("cues Quotes Recheck on sheet save without unchecking Markets", () => {
     expect(source("src/app/actions/quote-sheet.ts")).toMatch(
-      /markShopFlowStaleAfterRiskChange\(dealId, line\)/,
+      /persistSheetRecheckCue\(dealId, line\)/,
     );
     expect(source("src/app/actions/quote-sheet.ts")).toMatch(
-      /markShopFlowStaleAfterRiskChange\(dealId, primary\)/,
+      /persistSheetRecheckCue\(dealId, primary\)/,
     );
     expect(source("src/app/actions/quote-sheet.ts")).not.toMatch(
-      /persistSheetRecheckCue\(dealId, line\)/,
+      /markShopFlowStaleAfterRiskChange/,
     );
     expect(source("src/app/actions/documents.ts")).toMatch(/shopLineFromSourceDoc/);
     expect(source("src/app/actions/comms.ts")).toMatch(/persistDealEmailAttachments/);
