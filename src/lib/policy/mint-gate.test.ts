@@ -23,6 +23,9 @@ import {
   mintFailureToast,
   evaluateMintExtract,
   mintGeminiValue,
+  adoptMintFields,
+  applyConfirmedMintFields,
+  normalizeMintValue,
 } from "./mint-gate";
 
 function source(file: string) {
@@ -251,6 +254,70 @@ describe("unpublished confirm guard", () => {
     expect(mintFieldPolicyPatch(fields).premium).toBe("3383");
   });
 
+  it("Looks right confirms premium whether Gemini sent $3,383, 3383, or 3,383.00", () => {
+    const premium = {
+      key: "premium",
+      label: "Premium",
+      value: "2463",
+      confidence: 0.94,
+      source: "quote" as const,
+      flagged: true,
+      confirmed: false,
+      soldValue: "2463",
+      sheetValue: null,
+      geminiValue: "$3,383",
+    };
+    for (const raw of ["$3,383", "3383", "3,383.00"] as const) {
+      expect(normalizeMintValue("premium", raw)).toBe("3383");
+      const accepted = confirmMintField([premium], "premium", raw);
+      expect(accepted[0]?.value).toBe("3383");
+      expect(accepted[0]?.confirmed).toBe(true);
+      expect(accepted[0]?.flagged).toBe(false);
+    }
+    expect(mintProposedValue({ ...premium, geminiValue: "$3,383" })).toBe("3383");
+    expect(mintProposedValue({ ...premium, geminiValue: "3,383.00" })).toBe("3383");
+  });
+
+  it("advances from server-updated fields and ignores a stale refresh", () => {
+    const premium = {
+      key: "premium",
+      label: "Premium",
+      value: "3383",
+      confidence: 0.94,
+      source: "gemini" as const,
+      flagged: true,
+      confirmed: false,
+      soldValue: "2463",
+      sheetValue: null,
+      geminiValue: "3383",
+    };
+    const named = {
+      key: "named_insured",
+      label: "Named insured",
+      value: "Rosa",
+      confidence: 0.6,
+      source: "gemini" as const,
+      flagged: true,
+      confirmed: false,
+      soldValue: null,
+      sheetValue: null,
+      geminiValue: "Rosa",
+    };
+    const server = applyConfirmedMintFields([premium, named], "premium", "$3,383", [
+      { ...premium, value: "3383", confirmed: true, flagged: false, source: "agent" },
+      named,
+    ]);
+    expect(mintConfirmQueue(server).map((row) => row.key)).toEqual(["named_insured"]);
+    const localOnly = applyConfirmedMintFields([premium, named], "premium", "3,383.00");
+    expect(localOnly.find((row) => row.key === "premium")?.confirmed).toBe(true);
+    expect(mintConfirmQueue(localOnly).map((row) => row.key)).toEqual(["named_insured"]);
+    expect(adoptMintFields(localOnly, [premium, named]).find((row) => row.key === "premium")?.confirmed).toBe(
+      true,
+    );
+    expect(mintFailureToast("missing")).toEqual({ key: "mint-policy-missing", kind: "error" });
+    expect(mintFailureToast("invalid")).toEqual({ key: "mint-confirm-invalid", kind: "error" });
+  });
+
   it("Looks right accepts the Gemini/deal proposed value, not a blank or stub overwrite", () => {
     const stale = {
       key: "premium",
@@ -340,7 +407,17 @@ describe("unpublished confirm guard", () => {
     expect(source("src/lib/desk/create-menu.ts")).not.toMatch(/\/policies\/new/);
     expect(source("src/components/policy/mint-confirm-queue.tsx")).toMatch(/Looks right/);
     expect(source("src/components/policy/mint-confirm-queue.tsx")).toMatch(/mintProposedValue/);
+    expect(source("src/components/policy/mint-confirm-queue.tsx")).toMatch(/mintFailureToast/);
+    expect(source("src/components/policy/mint-confirm-queue.tsx")).toMatch(/applyConfirmedMintFields/);
+    expect(source("src/components/policy/mint-confirm-queue.tsx")).toMatch(/adoptMintFields/);
     expect(source("src/components/policy/mint-confirm-queue.tsx")).toMatch(/data-ff-mint-proposed/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(
+      /remaining: fields\.filter\(\(row\) => !row\.confirmed\)\.length,\s*fields,/,
+    );
+    expect(source("src/lib/flash.ts")).toMatch(/mint-policy-missing/);
+    expect(source("src/components/policy/mint-confirm-queue.tsx")).not.toMatch(
+      /if \(!result\.ok\) return;/,
+    );
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/mintFieldPolicyPatch/);
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/loadGeminiRows/);
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/readStoredFile/);

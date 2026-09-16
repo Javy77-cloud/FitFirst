@@ -1,11 +1,17 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { confirmMintedPolicyField, publishMintedPolicy } from "@/app/actions/policy-mint";
 import { Button } from "@/components/ui/button";
 import type { MintField } from "@/lib/policy/mint-gate";
-import { mintConfirmQueue, mintProposedValue } from "@/lib/policy/mint-gate";
+import {
+  adoptMintFields,
+  applyConfirmedMintFields,
+  mintConfirmQueue,
+  mintFailureToast,
+  mintProposedValue,
+} from "@/lib/policy/mint-gate";
 import { flashAction } from "@/lib/flash-client";
 
 export function MintConfirmQueue({
@@ -16,7 +22,8 @@ export function MintConfirmQueue({
   fields: MintField[];
 }) {
   const router = useRouter();
-  const queue = useMemo(() => mintConfirmQueue(fields), [fields]);
+  const [localFields, setLocalFields] = useState(fields);
+  const queue = useMemo(() => mintConfirmQueue(localFields), [localFields]);
   const [index, setIndex] = useState(0);
   const current = queue[index] ?? queue[0];
   const proposed = current ? mintProposedValue(current) : "";
@@ -25,12 +32,21 @@ export function MintConfirmQueue({
   const [pending, startTransition] = useTransition();
   const done = queue.length === 0;
 
+  useEffect(() => {
+    setLocalFields((prev) => adoptMintFields(prev, fields));
+  }, [fields]);
+
   function show(nextIndex: number, nextFields = queue) {
     const row = nextFields[nextIndex] ?? nextFields[0];
     const nextProposed = row ? mintProposedValue(row) : "";
     setIndex(Math.min(nextIndex, Math.max(0, nextFields.length - 1)));
     setValue(nextProposed);
     setEditing(!nextProposed);
+  }
+
+  function flashMintFailure(reason: string) {
+    const toast = mintFailureToast(reason);
+    flashAction(toast.key, toast.kind);
   }
 
   function confirm(nextValue: string) {
@@ -41,18 +57,30 @@ export function MintConfirmQueue({
     data.set("value", nextValue);
     startTransition(async () => {
       const result = await confirmMintedPolicyField(data);
-      if (!result.ok) return;
-      if (result.remaining === 0) {
+      if (!result.ok) {
+        flashMintFailure(result.reason);
+        return;
+      }
+      const nextFields = applyConfirmedMintFields(
+        localFields,
+        current.key,
+        nextValue,
+        result.fields,
+      );
+      setLocalFields(nextFields);
+      const remaining = mintConfirmQueue(nextFields);
+      if (result.remaining === 0 || remaining.length === 0) {
         const publish = new FormData();
         publish.set("policyId", policyId);
         const published = await publishMintedPolicy(publish);
         if (published.ok) {
           flashAction("policy-published");
           router.refresh();
+        } else {
+          flashMintFailure(published.reason);
         }
         return;
       }
-      const remaining = queue.filter((row) => row.key !== current.key);
       show(0, remaining);
       router.refresh();
     });
@@ -75,6 +103,8 @@ export function MintConfirmQueue({
               if (published.ok) {
                 flashAction("policy-published");
                 router.refresh();
+              } else {
+                flashMintFailure(published.reason);
               }
             });
           }}

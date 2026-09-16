@@ -652,24 +652,25 @@ export async function confirmMintedPolicyField(formData: FormData) {
   const payload = parseMintPayload(policy.mintPayload);
   if (!payload) return { ok: false as const, reason: "invalid" as const };
   const fields = confirmMintField(payload.fields, key, value);
+  const stored = fields.find((row) => row.key === key)?.value || value;
   const next: MintPayload = { ...payload, fields };
   const booked = mintFieldPolicyPatch(fields);
   const patch: Record<string, unknown> = {
     mintPayload: next,
     updatedAt: new Date(),
   };
-  if (key === "policy_number" && value) patch.policyNumber = value;
-  if (key === "premium" && value) patch.premium = value;
-  if (key === "coverage_a" && value) patch.coverageA = Number(value.replace(/[$,]/g, "")) || policy.coverageA;
-  if (key === "effective_date" && value) patch.effectiveDate = dateOrFallback(value, policy.effectiveDate);
-  if (key === "expiration_date" && value) patch.expirationDate = dateOrFallback(value, policy.expirationDate);
-  if (key === "form" && value) patch.formType = value;
-  if (key === "insurance_type" && value) patch.insuranceType = value;
-  if (key === "mailing_address" && value) patch.premisesAddress = value;
-  if (key === "selling_agency" && value) patch.sellingAgency = value;
-  if (key === "producer" && value) patch.producer = value;
-  if (key === "billing_frequency" && value) patch.billingFrequency = value;
-  if (key === "renewal_date" && value) patch.renewalDate = dateOrFallback(value, policy.renewalDate ?? policy.expirationDate);
+  if (key === "policy_number" && stored) patch.policyNumber = stored;
+  if (key === "premium" && stored) patch.premium = stored;
+  if (key === "coverage_a" && stored) patch.coverageA = Number(stored.replace(/[$,]/g, "")) || policy.coverageA;
+  if (key === "effective_date" && stored) patch.effectiveDate = dateOrFallback(stored, policy.effectiveDate);
+  if (key === "expiration_date" && stored) patch.expirationDate = dateOrFallback(stored, policy.expirationDate);
+  if (key === "form" && stored) patch.formType = stored;
+  if (key === "insurance_type" && stored) patch.insuranceType = stored;
+  if (key === "mailing_address" && stored) patch.premisesAddress = stored;
+  if (key === "selling_agency" && stored) patch.sellingAgency = stored;
+  if (key === "producer" && stored) patch.producer = stored;
+  if (key === "billing_frequency" && stored) patch.billingFrequency = stored;
+  if (key === "renewal_date" && stored) patch.renewalDate = dateOrFallback(stored, policy.renewalDate ?? policy.expirationDate);
   await db.update(policies).set(patch).where(eq(policies.id, policyId));
   await applyMintBookExtras({
     policyId,
@@ -680,7 +681,11 @@ export async function confirmMintedPolicyField(formData: FormData) {
     premium: booked.premium || policy.premium,
   });
   revalidatePath(`/policies/${policyId}`);
-  return { ok: true as const, remaining: fields.filter((row) => !row.confirmed).length };
+  return {
+    ok: true as const,
+    remaining: fields.filter((row) => !row.confirmed).length,
+    fields,
+  };
 }
 
 export async function publishMintedPolicy(formData: FormData) {

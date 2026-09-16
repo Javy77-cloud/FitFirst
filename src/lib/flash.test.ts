@@ -59,6 +59,11 @@ describe("flash helper", () => {
     expect(FLASH_COPY["meeting-saved"]).toBe("Meeting saved");
     expect(FLASH_COPY["outcome-saved"]).toBe("Outcome saved");
     expect(FLASH_COPY["consent-saved"]).toBe("Consent saved");
+    expect(FLASH_COPY["mint-policy-missing"]).toBe("This policy is missing. Refresh and try again.");
+    expect(FLASH_COPY["mint-confirm-invalid"]).toBe(
+      "That mint request was invalid. Refresh and try again.",
+    );
+    expect(FLASH_COPY["need-confirm"]).toBe("Confirm remaining declaration fields before publishing.");
   });
 
   it("accepts a short raw phrase and ignores blanks", () => {

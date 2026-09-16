@@ -38,6 +38,12 @@ export function mintFailureToast(reason: string): { key: string; kind: "error" |
       return { key: "need-dec-fields", kind: "error" };
     case "need_dec":
       return { key: "need-dec", kind: "error" };
+    case "missing":
+      return { key: "mint-policy-missing", kind: "error" };
+    case "invalid":
+      return { key: "mint-confirm-invalid", kind: "error" };
+    case "need_confirm":
+      return { key: "need-confirm", kind: "error" };
     default:
       return { key: "deal-updated", kind: "success" };
   }
@@ -559,17 +565,39 @@ export function confirmMintField(
   key: string,
   value: string,
 ): MintField[] {
-  return fields.map((field) =>
-    field.key === key
-      ? {
-          ...field,
-          value: normalizeMintValue(key, value) || field.value,
-          confirmed: true,
-          flagged: false,
-          source: "agent",
-        }
-      : field,
-  );
+  return fields.map((field) => {
+    if (field.key !== key) return field;
+    const normalized = normalizeMintValue(key, value);
+    return {
+      ...field,
+      value: normalized || field.value || value.trim(),
+      confirmed: true,
+      flagged: false,
+      source: "agent" as const,
+    };
+  });
+}
+
+/** Prefer the server field list after confirm; otherwise keep a local remaining filter. */
+export function applyConfirmedMintFields(
+  local: readonly MintField[],
+  key: string,
+  value: string,
+  serverFields?: readonly MintField[] | null,
+): MintField[] {
+  if (Array.isArray(serverFields)) return serverFields.slice();
+  return confirmMintField(local, key, value);
+}
+
+/** Ignore a stale refresh that would resurrect already-confirmed queue rows. */
+export function adoptMintFields(
+  local: readonly MintField[],
+  incoming: readonly MintField[],
+): MintField[] {
+  const localRemaining = mintConfirmQueue(local).length;
+  const incomingRemaining = mintConfirmQueue(incoming).length;
+  if (local.length > 0 && localRemaining < incomingRemaining) return local.slice();
+  return incoming.slice();
 }
 
 export function parseMintPayload(raw: unknown): MintPayload | null {
