@@ -25,6 +25,9 @@ export function DocumentsPanel({
   product,
   pendingFill = false,
   hasCoApplicantFlag,
+  needsReapprove = false,
+  hasRequestedQuotes = false,
+  productId,
 }: {
   dealId: string;
   riskId: string;
@@ -40,6 +43,9 @@ export function DocumentsPanel({
   product: SheetProduct;
   pendingFill?: boolean;
   hasCoApplicantFlag?: string | null;
+  needsReapprove?: boolean;
+  hasRequestedQuotes?: boolean;
+  productId?: string | null;
 }) {
   const sourceDocs = asList(docs).filter((d) => isDocumentsSourceDoc(d));
   const lineDocs = sourceDocs.filter((d) => docCardKeyFromTags(d.tags));
@@ -96,6 +102,9 @@ export function DocumentsPanel({
           unlocked={unlocked}
           approvedBy={approvedBy}
           hasCoApplicantFlag={hasCoApplicantFlag}
+          needsReapprove={needsReapprove}
+          hasRequestedQuotes={hasRequestedQuotes}
+          productId={productId}
         />
         {health ? (
           <p className="text-helper text-muted-foreground">

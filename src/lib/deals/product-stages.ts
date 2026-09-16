@@ -199,7 +199,9 @@ export function productChipLabel(input: {
   sheetForm?: string | null;
 }): string {
   const def = dealProductDef(input.product);
-  const form = (input.sheetForm || input.quotingForm || def.quotingForm || "").trim();
+  const raw = (input.sheetForm || input.quotingForm || "").trim();
+  const scoped = sheetFormForProduct(input.product, raw);
+  const form = (scoped || def.quotingForm || "").trim();
   if (input.product === "homeowners") {
     if (/^ho[3568]$/i.test(form) || /^mho$/i.test(form)) return form.toUpperCase();
     return form && form !== "Homeowners" ? form : "HO3";
@@ -267,6 +269,19 @@ export function displayProductStage(input: {
 export function productChipBound(stage?: string | null): boolean {
   const key = normalizeStageSlug(stage);
   return key === "bound" || key === "closed_won";
+}
+
+/** Selected carrier row — same words as the stamp / header stage. */
+export const SELECTED_QUOTE_STAGE_LABELS: Record<string, string> = {
+  quote_sent: "Quote sent",
+  bound: "Bound",
+  pending_inspection: "Pending inspection",
+  closed_won: "Closed won",
+};
+
+export function selectedQuoteRowLabel(stage?: string | null): string | null {
+  const key = normalizeStageSlug(stage);
+  return SELECTED_QUOTE_STAGE_LABELS[key] ?? null;
 }
 
 export function productStampStage(

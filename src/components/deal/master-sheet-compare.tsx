@@ -36,6 +36,9 @@ export function MasterSheetWorkspace({
   unlocked,
   approvedBy,
   hasCoApplicantFlag,
+  needsReapprove = false,
+  hasRequestedQuotes = false,
+  productId,
 }: {
   dealId: string;
   line: ShopLine;
@@ -47,6 +50,9 @@ export function MasterSheetWorkspace({
   unlocked: boolean;
   approvedBy?: string | null;
   hasCoApplicantFlag?: string | null;
+  needsReapprove?: boolean;
+  hasRequestedQuotes?: boolean;
+  productId?: string | null;
 }) {
   const router = useRouter();
 
@@ -84,10 +90,13 @@ export function MasterSheetWorkspace({
       <SheetApproveGate
         dealId={dealId}
         line={line}
+        product={productId}
         formLabel={formLabel}
         unlocked={unlocked}
         approvedBy={approvedBy}
         persistSheet={() => persistSheet({ flash: false })}
+        needsReapprove={needsReapprove}
+        hasRequestedQuotes={hasRequestedQuotes}
       />
     </>
   );

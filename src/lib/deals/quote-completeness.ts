@@ -275,3 +275,16 @@ export function packageQuotesComplete(
 export function shopLineForUnknown(value: string | null | undefined): ShopLine | null {
   return isShopLine(value) ? value : null;
 }
+
+/** Quotes tab: green if a bindable exists, red if shopped/quoted with none bindable. */
+export type QuotesTabMark = "bindable" | "none_bindable" | null;
+
+export function quotesTabMark(input: {
+  quotes?: readonly { bindable?: boolean | null; stub?: boolean | null }[] | null;
+  requested?: boolean | null;
+}): QuotesTabMark {
+  const live = (input.quotes ?? []).filter((row) => row.stub !== true);
+  if (live.some((row) => row.bindable === true)) return "bindable";
+  if (live.length > 0 || Boolean(input.requested)) return "none_bindable";
+  return null;
+}

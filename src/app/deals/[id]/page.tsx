@@ -58,11 +58,13 @@ import {
   lineQuoteCompleteness,
   packageQuotesComplete,
   productQuoteCompleteness,
+  quotesTabMark,
 } from "@/lib/deals/quote-completeness";
 import { pickBoundQuoteId } from "@/lib/deals/status-stamp";
 import {
   displayProductStage,
   parseProductStages,
+  productChipBound,
   productStageFor,
   productStampStage,
   sheetFormForProduct,
@@ -398,18 +400,31 @@ export default async function DealPage({
     liveQuoteIds,
   );
   const boundQuoteId = pickBoundQuoteId({
-    selectedQuoteIds: activeProductState.selectedQuoteIds,
+    selectedQuoteIds: productChipBound(activeProductState.stage)
+      ? activeProductState.selectedQuoteIds
+      : [],
     quotes: lineQuotes.map((row) => row.quote),
   });
   const sheetStale =
     sheetNeedsRecheckCue(shopFlow, sheetLine) ||
     shopFlow.lineFingerprints?.[sheetLine]?.quotes === STALE_SHOP_FINGERPRINT ||
     shopFlow.quotesFingerprint === STALE_SHOP_FINGERPRINT;
+  const needsVisualReapprove = unlocked && sheetNeedsRecheckCue(shopFlow, sheetLine);
+  const hasRequestedQuotes =
+    shopMarketsAction || lineQuotes.some((row) => row.quote.stub !== true);
+  const quotesMark = quotesTabMark({
+    quotes: lineQuotes.map((row) => row.quote),
+    requested:
+      Boolean(quoteCompletenessByProduct[activeProduct]?.shopped) ||
+      lineQuotes.some((row) => row.quote.stub !== true),
+  });
+  const titleForm =
+    sheetFormForProduct(activeProduct, lineForm) ?? dealProductDef(activeProduct).quotingForm;
   const visibleDealTitle = dealTitleForActiveProduct({
     title: deal.title,
     product: activeProduct,
-    quotingForm: lineForm,
-    sheetForm: sheetFormForProduct(activeProduct, lineForm),
+    quotingForm: titleForm,
+    sheetForm: titleForm,
   });
   const quoteChoices = lineQuotes
     .filter((row) => row.quote.stub !== true)
@@ -702,6 +717,7 @@ export default async function DealPage({
           tabs={AGENT_DEAL_TABS.map((id) => ({
             id,
             label: AGENT_DEAL_TAB_LABELS[id],
+            mark: id === "quotes" ? quotesMark : undefined,
             content: (
                   <div>
                     {id === "details" ? (
@@ -738,6 +754,9 @@ export default async function DealPage({
                         approvedBy={deal.sheetApprovedBy}
                         product={selectedProduct}
                         hasCoApplicantFlag={dealValues[HAS_CO_APPLICANT_KEY] ?? null}
+                        needsReapprove={needsVisualReapprove}
+                        hasRequestedQuotes={hasRequestedQuotes}
+                        productId={activeProduct}
                       />
                     ) : id === "markets" ? (
                       <MarketsPanel
@@ -771,6 +790,12 @@ export default async function DealPage({
                           quoteCompletenessByProduct[activeProduct] ?? activeQuoteCompleteness
                         }
                         boundQuoteId={boundQuoteId}
+                        productStage={displayProductStage({
+                          stage: activeProductState.stage,
+                          selectedQuoteIds: activeProductState.selectedQuoteIds,
+                          fallback: stageView.slug,
+                          liveQuoteIds,
+                        })}
                         confirmLogs={allQuoteLogs.map((row) => ({
                           carrierId: row.log.carrierId,
                           why: row.log.why,

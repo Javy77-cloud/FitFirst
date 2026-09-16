@@ -15,6 +15,10 @@ describe("sep7fw Documents Confirm → Markets; Markets Approve → Quotes", () 
     expect(quoting).toMatch(
       /redirect\(withFlash\(`\/deals\/\$\{dealId\}\?tab=markets&line=\$\{line\}`, "Sheet approved"\)\)/,
     );
+    expect(quoting).toMatch(/const subsequent = Boolean\(deal\.quotingUnlocked/);
+    expect(quoting).toMatch(
+      /redirect\(withFlash\(`\/deals\/\$\{dealId\}\?tab=quotes&line=\$\{line\}\$\{productQuery\}`, "Sheet approved"\)\)/,
+    );
     expect(quoting).not.toMatch(/shopDealQuotes/);
     expect(quoting).not.toMatch(
       /redirect\(withFlash\(`\/deals\/\$\{dealId\}\?tab=quotes&line=\$\{line\}`, "quotes-requested"\)\)/,

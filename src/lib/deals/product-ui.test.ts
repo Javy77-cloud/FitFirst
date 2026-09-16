@@ -52,7 +52,8 @@ describe("deal shop flow + product chrome", () => {
     );
     expect(html).toMatch(/data-ff-deal-product-chip="auto"/);
     expect(html).toMatch(/data-ff-product-complete="1"/);
-    expect(html).toMatch(/1<!-- -->\/<!-- -->2<!-- --> ready|1\/2 ready/);
+    expect(html).not.toMatch(/data-ff-product-ready-count/);
+    expect(html).not.toMatch(/\d+\s*\/\s*\d+\s*ready/);
     expect(html).toContain("Auto");
     expect(html).toMatch(/data-active="true"/);
     expect(html).toMatch(/bg-navy/);

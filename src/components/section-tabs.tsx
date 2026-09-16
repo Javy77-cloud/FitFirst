@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Suspense } from "react";
-import { PendingTabList } from "@/components/desk/pending-tab-list";
+import { PendingTabList, type PendingTabMark } from "@/components/desk/pending-tab-list";
 import { chipTabClass, dealTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 import { cn } from "@/lib/utils";
 
@@ -9,6 +9,7 @@ export type SectionTab = {
   label: string;
   content: React.ReactNode;
   href?: string;
+  mark?: PendingTabMark | null;
 };
 
 /**
@@ -65,6 +66,7 @@ export function SectionTabs({
     id: tab.id,
     label: tab.label,
     href: tab.href ?? hrefFor(tab.id),
+    mark: tab.mark,
   }));
   const tabFallback = (
     <div role="tablist" className={FF_CHIP_TAB_GROUP}>
