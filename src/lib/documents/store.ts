@@ -22,6 +22,7 @@ export async function persistDealFile(input: {
     path.posix.join(DEFAULT_TENANT_ID, input.dealId, `${id}-${input.filename}`),
     input.buffer,
     input.mimeType,
+    { durable: true },
   );
 
   const [doc] = await db

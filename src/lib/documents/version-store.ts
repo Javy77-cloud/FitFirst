@@ -71,6 +71,7 @@ export async function replaceDocumentFile(input: {
     path.posix.join(DEFAULT_TENANT_ID, folder, `${id}-${input.filename}`),
     input.buffer,
     inferMimeFromName(input.filename, input.mimeType),
+    { durable: Boolean(doc.dealId) },
   );
 
   const mimeType = inferMimeFromName(input.filename, input.mimeType);
