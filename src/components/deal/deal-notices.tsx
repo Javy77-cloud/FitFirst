@@ -160,30 +160,59 @@ export function DealNotices({
       ) : null}
 
       {active ? (
-        <>
-          <form action={snoozeDealProductNotice} className="flex flex-wrap items-end gap-1.5">
-            <input type="hidden" name="dealId" value={dealId} />
-            <input type="hidden" name="product" value={productValue} />
-            {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-            <Input
-              name="dueDate"
-              type="date"
-              required
-              defaultValue={dueDate}
-              className="h-7 w-[9.5rem] text-xs"
-              aria-label="Snooze date"
-            />
-            <Input
-              name="dueTime"
-              type="time"
-              defaultValue={dueTime}
-              className="h-7 w-[7.5rem] text-xs"
-              aria-label="Snooze time"
-            />
-            <Button type="submit" size="xs" variant="outline" data-ff-notice-snooze="">
-              Snooze
-            </Button>
-          </form>
+        <div className="flex flex-wrap items-end gap-1.5">
+          {variant === "header" ? (
+            <details className="text-[11px] text-muted-foreground" data-ff-notice-snooze-details="">
+              <summary className="cursor-pointer select-none font-medium text-navy">Snooze</summary>
+              <form action={snoozeDealProductNotice} className="mt-1 flex flex-wrap items-end gap-1.5">
+                <input type="hidden" name="dealId" value={dealId} />
+                <input type="hidden" name="product" value={productValue} />
+                {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+                <Input
+                  name="dueDate"
+                  type="date"
+                  required
+                  defaultValue={dueDate}
+                  className="h-7 w-[9.5rem] text-xs"
+                  aria-label="Snooze date"
+                />
+                <Input
+                  name="dueTime"
+                  type="time"
+                  defaultValue={dueTime}
+                  className="h-7 w-[7.5rem] text-xs"
+                  aria-label="Snooze time"
+                />
+                <Button type="submit" size="xs" variant="outline" data-ff-notice-snooze="">
+                  Save
+                </Button>
+              </form>
+            </details>
+          ) : (
+            <form action={snoozeDealProductNotice} className="flex flex-wrap items-end gap-1.5">
+              <input type="hidden" name="dealId" value={dealId} />
+              <input type="hidden" name="product" value={productValue} />
+              {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+              <Input
+                name="dueDate"
+                type="date"
+                required
+                defaultValue={dueDate}
+                className="h-7 w-[9.5rem] text-xs"
+                aria-label="Snooze date"
+              />
+              <Input
+                name="dueTime"
+                type="time"
+                defaultValue={dueTime}
+                className="h-7 w-[7.5rem] text-xs"
+                aria-label="Snooze time"
+              />
+              <Button type="submit" size="xs" variant="outline" data-ff-notice-snooze="">
+                Snooze
+              </Button>
+            </form>
+          )}
           {completeOpen || variant === "quotes" ? (
             <form action={completeDealProductNotice} className="flex flex-wrap items-end gap-1.5">
               <input type="hidden" name="dealId" value={dealId} />
@@ -215,7 +244,7 @@ export function DealNotices({
               Complete
             </Button>
           )}
-        </>
+        </div>
       ) : null}
 
       {variant === "quotes" ? (

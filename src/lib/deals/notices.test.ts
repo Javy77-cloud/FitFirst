@@ -96,7 +96,8 @@ describe("deal notices", () => {
     );
     expect(header).toMatch(/data-ff-deal-notice-chip/);
     expect(header).toMatch(/Notice · Check mortgagee payment/);
-    expect(header).toMatch(/data-ff-notice-snooze/);
+    expect(header).toMatch(/data-ff-notice-snooze-details/);
+    expect(header).toMatch(/data-ff-notice-complete-open/);
     expect(header).not.toMatch(/>Inspection</);
 
     const quotes = renderToString(
