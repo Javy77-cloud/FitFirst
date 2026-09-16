@@ -112,7 +112,11 @@ export function DealNotices({
   useEffect(() => {
     if (!open) return;
     function onDoc(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (rootRef.current?.contains(target)) return;
+      if (target instanceof Element && target.closest(NOTICE_LAYER_SEL)) return;
+      setOpen(false);
     }
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") setOpen(false);
@@ -233,11 +237,16 @@ export function DealNotices({
                 <DropdownMenuItem
                   data-ff-notice-set-reminder=""
                   disabled={selected === "none" && !active}
+                  onPointerDown={() => openNoticeTask(active ? parseKeep(noticeType ?? selected) : selected)}
                   onClick={() => openNoticeTask(active ? parseKeep(noticeType ?? selected) : selected)}
                 >
                   Set reminder
                 </DropdownMenuItem>
-                <DropdownMenuItem data-ff-notice-edit-types="" onClick={() => setTypesOpen(true)}>
+                <DropdownMenuItem
+                  data-ff-notice-edit-types=""
+                  onPointerDown={() => setTypesOpen(true)}
+                  onClick={() => setTypesOpen(true)}
+                >
                   Edit types
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -311,6 +320,15 @@ export function DealNotices({
 function parseKeep(value: string) {
   return value.trim() || "none";
 }
+
+/** Portaled ⋮ menu / dialogs sit outside the popover root — do not treat as dismiss. */
+const NOTICE_LAYER_SEL = [
+  "[data-slot='dropdown-menu-content']",
+  "[data-slot='dialog-content']",
+  "[data-slot='dialog-overlay']",
+  "[data-ff-notice-edit-types-dialog]",
+  "[data-ff-create-task-dialog]",
+].join(",");
 
 /** Quotes-only leftover name — same Notices control. */
 export function QuotesStageFlags(props: {

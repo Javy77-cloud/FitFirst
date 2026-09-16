@@ -170,6 +170,11 @@ describe("deal notices", () => {
     expect(overlayActive).not.toMatch(/data-ff-notice-snooze/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/data-ff-notice-popover/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/NoticeTypesEditor/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/NOTICE_LAYER_SEL/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/dropdown-menu-content/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(
+      /data-ff-notice-edit-types=""[\s\S]*onPointerDown=\{\(\) => setTypesOpen\(true\)\}/,
+    );
     expect(source("src/components/deal/notice-note-pad.tsx")).toMatch(/prepareSpeechMicrophone/);
     expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/saveDealNoticeTypes/);
   });
