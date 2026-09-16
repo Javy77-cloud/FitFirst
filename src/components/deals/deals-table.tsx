@@ -312,9 +312,23 @@ function dealRowCells({
           />
         </div>
       ) : (
-        <div data-ff-deal-list-stage="">
-          <DealProductStageChips chips={productChips} />
-        </div>
+        <PipelineListValue
+          nav={pipelineListNav({
+            columnId: "stage",
+            dealId: deal.id,
+            filterPipeline: listFilter.pipeline,
+            family: listFilter.family,
+            pcSub: listFilter.pcSub,
+            lifeSub: listFilter.lifeSub,
+            healthSub: listFilter.healthSub,
+            stageSlug: stage.slug,
+            view: mode,
+          })}
+        >
+          <div data-ff-deal-list-stage="">
+            <DealProductStageChips chips={productChips} />
+          </div>
+        </PipelineListValue>
       ),
     line: sheetCell({
       mode,
