@@ -17,6 +17,11 @@ import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { addressFillForKey, isStreetAddressField } from "@/lib/address/keys";
 import { MultiSelectField } from "@/components/custom-fields/multi-select-field";
+import {
+  canonicalizeIdentityField,
+  htmlAutoCompleteForField,
+  htmlInputTypeForField,
+} from "@/lib/custom-fields/identity-field";
 import { formatPhoneStandard } from "@/lib/phone/format";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,14 +61,15 @@ export function FieldControl({
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   onMultiSelectChange?: (joined: string) => void;
 }) {
-  const resolved = resolvedFieldValue(field, value);
-  const required = Boolean(field.required);
-  const options = sanitizePicklistOptions(field.options ?? []);
+  const identityField = canonicalizeIdentityField(field);
+  const resolved = resolvedFieldValue(identityField, value);
+  const required = Boolean(identityField.required);
+  const options = sanitizePicklistOptions(identityField.options ?? []);
 
   return (
-    <div data-ff-control-type={field.type} data-ff-control-key={field.key}>
+    <div data-ff-control-type={identityField.type} data-ff-control-key={identityField.key}>
       <TypedControl
-        field={field}
+        field={identityField}
         value={resolved}
         values={values}
         name={name}
@@ -200,6 +206,7 @@ function TypedControl({
   if (field.type === "multi_line") {
     return (
       <Textarea
+        id={name}
         name={name}
         defaultValue={value}
         disabled={disabled}
@@ -214,6 +221,7 @@ function TypedControl({
     return (
       <label className="mt-1 flex items-center gap-2 text-sm">
         <input
+          id={name}
           type="checkbox"
           name={name}
           defaultChecked={value === "true" || value === "on"}
@@ -229,6 +237,7 @@ function TypedControl({
   if (field.type === "picklist") {
     return (
       <select
+        id={name}
         name={name}
         defaultValue={value}
         disabled={disabled}
@@ -283,12 +292,23 @@ function TypedControl({
     );
   }
   if (field.type === "currency") {
-    return <CurrencyInput name={name} value={value} disabled={disabled} form={form} required={required} label={field.label} />;
+    return (
+      <CurrencyInput
+        id={name}
+        name={name}
+        value={value}
+        disabled={disabled}
+        form={form}
+        required={required}
+        label={field.label}
+      />
+    );
   }
   if (field.type === "percentage") {
     return (
       <div className="relative mt-1" data-ff-percent-input>
         <Input
+          id={name}
           name={name}
           type="number"
           step="0.01"
@@ -306,6 +326,7 @@ function TypedControl({
   if (field.type === "address" || isStreetAddressField(field.key, field.type)) {
     return (
       <AddressAutocomplete
+        id={name}
         name={name}
         defaultValue={value}
         disabled={disabled}
@@ -321,6 +342,7 @@ function TypedControl({
       <div className="relative mt-1" data-ff-lookup-input>
         <FieldTypeIcon type="lookup" className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
+          id={name}
           name={name}
           type="text"
           defaultValue={value}
@@ -338,6 +360,7 @@ function TypedControl({
   if (field.type === "phone") {
     return (
       <PhoneInput
+        id={name}
         name={name}
         value={value}
         disabled={disabled}
@@ -349,21 +372,14 @@ function TypedControl({
     );
   }
 
-  const inputType =
-    field.type === "email"
-      ? "email"
-      : field.type === "date" || field.type === "dob"
-        ? "date"
-        : field.type === "date_time"
-          ? "datetime-local"
-          : field.type === "number"
-            ? "number"
-            : "text";
+  const inputType = htmlInputTypeForField(field);
 
   return (
     <Input
+      id={name}
       name={name}
       type={inputType}
+      autoComplete={htmlAutoCompleteForField(field)}
       defaultValue={value}
       disabled={disabled}
       required={required}
@@ -376,6 +392,7 @@ function TypedControl({
 }
 
 function PhoneInput({
+  id,
   name,
   value,
   disabled,
@@ -384,6 +401,7 @@ function PhoneInput({
   label,
   fieldKey,
 }: {
+  id?: string;
   name: string;
   value: string;
   disabled?: boolean;
@@ -396,6 +414,7 @@ function PhoneInput({
 
   return (
     <Input
+      id={id}
       name={name}
       type="tel"
       inputMode="tel"
@@ -417,6 +436,7 @@ function PhoneInput({
 }
 
 function CurrencyInput({
+  id,
   name,
   value,
   disabled,
@@ -424,6 +444,7 @@ function CurrencyInput({
   required,
   label,
 }: {
+  id?: string;
   name: string;
   value: string;
   disabled?: boolean;
@@ -440,6 +461,7 @@ function CurrencyInput({
       <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
       <input type="hidden" name={name} value={numeric} form={form} />
       <Input
+        id={id}
         type="text"
         inputMode="decimal"
         value={text}

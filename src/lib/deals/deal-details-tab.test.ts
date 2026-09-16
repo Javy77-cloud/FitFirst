@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
 import {
+  CORE_FIELDS,
   ESSENTIAL_ADDRESS_KEYS,
   ESSENTIAL_CONTACT_KEYS,
   defaultLayoutForLine,
@@ -63,6 +67,8 @@ describe("Deal Details tab", () => {
       ]),
     );
     expect(keys).not.toContain("middle_name");
+    expect(CORE_FIELDS.find((field) => field.key === "middle_name")?.type).toBe("single_line");
+    expect(CORE_FIELDS.find((field) => field.key === "email")?.type).toBe("email");
     expect(keys).toContain("date_of_birth");
     expect(keys).not.toContain("year_built");
     expect(keys).not.toContain("roof_photo");
@@ -159,6 +165,7 @@ describe("Deal Details tab", () => {
     expect(save).toMatch(/dealDetailsSavedHref/);
     expect(save).toMatch(/"deal-details-saved"/);
     expect(save).toMatch(/persistDealWorkTab\(dealId, "details"\)/);
+    expect(save).toMatch(/canonicalizeIdentityField/);
     const panel = source("src/components/custom-fields/deal-details-panel.tsx");
     expect(panel).toMatch(/data-ff-deal-details-form/);
     expect(panel).toMatch(/data-ff-deal-details-save/);
@@ -190,6 +197,59 @@ describe("Deal Details tab", () => {
     expect(compareSheetValues("", "1")).toBeGreaterThan(0);
     expect(compareSheetValues("1", "")).toBeLessThan(0);
     expect(compareSheetValues("1", "2")).toBeLessThan(0);
+  });
+
+  it("renders personal name fields as text and email as type=email with matching label ids", () => {
+    const html = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "rosa-castellanos",
+        line: "HO",
+        layout: {
+          columns: [
+            {
+              id: "left",
+              sections: [
+                {
+                  id: "contact",
+                  label: "Contact",
+                  fieldKeys: ["first_name", "middle_name", "last_name", "email"],
+                },
+              ],
+            },
+            { id: "right", sections: [] },
+          ],
+        },
+        fields: [
+          { key: "first_name", label: "First name", type: "single_line" },
+          { key: "middle_name", label: "Middle name", type: "email" },
+          { key: "last_name", label: "Last name", type: "single_line" },
+          { key: "email", label: "Email", type: "single_line" },
+        ],
+        values: {
+          first_name: "Rosa",
+          middle_name: "Marie",
+          last_name: "Castellanos",
+          email: "rosa@example.com",
+        },
+      }),
+    );
+    expect(html).toMatch(/data-ff-deal-details-form/);
+    expect(html).toMatch(/<label[^>]*for="field_middle_name"[^>]*>Middle name<\/label>/);
+    expect(html).toMatch(/<label[^>]*for="field_email"[^>]*>Email<\/label>/);
+    const middle = html.match(/<input\b[^>]*\bid="field_middle_name"[^>]*>/)?.[0];
+    const email = html.match(/<input\b[^>]*\bid="field_email"[^>]*>/)?.[0];
+    expect(middle).toBeTruthy();
+    expect(email).toBeTruthy();
+    expect(middle).toContain('type="text"');
+    expect(middle).toContain('name="field_middle_name"');
+    expect(middle).toMatch(/autoComplete="additional-name"|autocomplete="additional-name"/);
+    expect(middle).not.toContain('type="email"');
+    expect(middle).not.toMatch(/inputmode="email"/i);
+    expect(email).toContain('type="email"');
+    expect(email).toContain('name="field_email"');
+    expect(email).toMatch(/autoComplete="email"|autocomplete="email"/);
+    expect(html).toMatch(/data-ff-deal-details-save/);
+    expect(html).toMatch(/Save deal details/);
   });
 
   it("leaves Documents, Markets, Quotes, and the deal rail wired on the deal page", () => {

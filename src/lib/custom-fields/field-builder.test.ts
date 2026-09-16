@@ -118,7 +118,7 @@ describe("deal field builder", () => {
   it("renders each field type as that type — not a text-box fake", () => {
     const control = source("src/components/custom-fields/field-control.tsx");
     const builder = source("src/components/custom-fields/field-builder.tsx");
-    expect(control).toMatch(/data-ff-control-type=\{field.type\}/);
+    expect(control).toMatch(/data-ff-control-type=\{identityField.type\}/);
     expect(control).toMatch(/data-ff-currency-input/);
     expect(control).toMatch(/\$/);
     expect(control).toMatch(/data-ff-percent-input/);
@@ -126,10 +126,12 @@ describe("deal field builder", () => {
     expect(control).toMatch(/type="checkbox"/);
     expect(control).toMatch(/data-ff-picklist/);
     expect(control).toMatch(/<select/);
-    expect(control).toMatch(/\? "email"/);
-    expect(control).toMatch(/\? "tel"/);
-    expect(control).toMatch(/\? "date"/);
-    expect(control).toMatch(/datetime-local/);
+    expect(control).toMatch(/htmlInputTypeForField/);
+    expect(control).toMatch(/type=\{inputType\}/);
+    expect(control).toMatch(/id=\{name\}/);
+    expect(control).toMatch(/type="tel"/);
+    expect(source("src/lib/custom-fields/identity-field.ts")).toMatch(/"date"/);
+    expect(source("src/lib/custom-fields/identity-field.ts")).toMatch(/datetime-local/);
     expect(control).toMatch(/data-ff-lookup-input/);
     expect(control).toMatch(/data-ff-image-control/);
     expect(control).toMatch(/Textarea/);
