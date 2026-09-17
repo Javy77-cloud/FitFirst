@@ -3,9 +3,16 @@
 import { useState } from "react";
 import { confirmQuoteSheetField } from "@/app/actions/quote-sheet";
 import { DecodeVinButton } from "@/components/deal/decode-vin-button";
+import {
+  RiskProfileFieldShell,
+  RiskProfileFieldsGrid,
+} from "@/components/deal/risk-profile-field-grid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { SectionDensity } from "@/lib/custom-fields/types";
 import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
+import type { QuoteFieldDef } from "@/lib/quote-sheet/applicant-core";
+import { DEFAULT_RISK_PROFILE_DENSITY } from "@/lib/quote-sheet/risk-profile-layout";
 import {
   canAddAnother,
   fieldsForUnit,
@@ -23,6 +30,7 @@ export function RepeatableUnitBlocks({
   extractedByKey,
   dealId,
   line,
+  density = DEFAULT_RISK_PROFILE_DENSITY,
 }: {
   kind: RepeatableKind;
   product?: string | null;
@@ -30,6 +38,7 @@ export function RepeatableUnitBlocks({
   extractedByKey: Map<string, ExtractedFieldRow>;
   dealId?: string;
   line?: ShopLine;
+  density?: SectionDensity;
 }) {
   const [count, setCount] = useState(() => visibleUnitCount(values, kind, product));
   const groupTitle =
@@ -54,45 +63,47 @@ export function RepeatableUnitBlocks({
       </div>
       {Array.from({ length: count }, (_, offset) => {
         const index = offset + 1;
+        const unitFields = fieldsForUnit(kind, index);
         return (
           <div key={`${kind}-${index}`} className="border-t border-border/60 first:border-t-0" data-ff-unit-block={`${kind}-${index}`}>
             <p className="px-3 py-1.5 text-xs font-semibold text-navy">
               {title} {index}
             </p>
-            <table className="ff-table">
-              <thead>
-                <tr>
-                  <th>Field</th>
-                  <th>Source</th>
-                  <th>Sheet</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fieldsForUnit(kind, index).map((field) => {
-                  const extracted = extractedByKey.get(field.key);
-                  const cell = values[field.key];
-                  const sourceText = extracted?.normalizedValue || extracted?.rawValue || "";
-                  return (
-                    <tr key={field.key} id={`sheet-field-${field.key}`}>
-                      <td className="align-top font-medium">{field.label}</td>
-                      <td className="align-top text-muted-foreground">{sourceText || "—"}</td>
-                      <td className="align-top">
-                        <BlockCell
-                          fieldKey={field.key}
-                          fieldSuffix={field.suffix}
-                          input={field.input}
-                          options={field.options}
-                          cell={cell}
-                          dealId={dealId}
-                          line={line}
-                          kind={kind}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <RiskProfileFieldsGrid
+              density={density}
+              fields={unitFields.map((field) => unitFieldAsQuote(field, groupTitle))}
+              renderField={(field) => {
+                const unit = unitFields.find((item) => item.key === field.key);
+                const extracted = extractedByKey.get(field.key);
+                const cell = values[field.key];
+                const sourceText = extracted?.normalizedValue || extracted?.rawValue || "";
+                return (
+                  <RiskProfileFieldShell
+                    fieldKey={field.key}
+                    label={field.label}
+                    field={field}
+                    footer={
+                      sourceText ? (
+                        <p className="text-[9px] leading-none text-muted-foreground" data-ff-sheet-source={field.key}>
+                          {sourceText}
+                        </p>
+                      ) : null
+                    }
+                  >
+                    <BlockCell
+                      fieldKey={field.key}
+                      fieldSuffix={unit?.suffix}
+                      input={field.input === "select" || field.input === "number" ? field.input : "text"}
+                      options={field.options}
+                      cell={cell}
+                      dealId={dealId}
+                      line={line}
+                      kind={kind}
+                    />
+                  </RiskProfileFieldShell>
+                );
+              }}
+            />
           </div>
         );
       })}
@@ -114,6 +125,19 @@ export function RepeatableUnitBlocks({
       ) : null}
     </div>
   );
+}
+
+function unitFieldAsQuote(
+  field: ReturnType<typeof fieldsForUnit>[number],
+  group: string,
+): QuoteFieldDef {
+  return {
+    key: field.key,
+    label: field.label,
+    group,
+    input: field.input === "select" || field.input === "number" ? field.input : "text",
+    options: field.options ? [...field.options] : undefined,
+  };
 }
 
 function BlockCell({
@@ -143,7 +167,12 @@ function BlockCell({
   return (
     <div className="flex flex-col gap-1">
       {input === "select" && options?.length ? (
-        <select name={fieldKey} defaultValue={cell?.value ?? ""} className={cn(className, "w-full rounded-md border border-input bg-background px-2")}>
+        <select
+          id={`ff-sheet-input-${fieldKey}`}
+          name={fieldKey}
+          defaultValue={cell?.value ?? ""}
+          className={cn(className, "w-full rounded-md border border-input bg-background px-2")}
+        >
           <option value="">None</option>
           {options.map((opt) => (
             <option key={opt} value={opt}>
@@ -153,6 +182,7 @@ function BlockCell({
         </select>
       ) : (
         <Input
+          id={`ff-sheet-input-${fieldKey}`}
           name={fieldKey}
           type={input === "number" ? "number" : "text"}
           defaultValue={cell?.value ?? ""}

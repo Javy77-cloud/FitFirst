@@ -7,6 +7,9 @@ describe("master sheet source column", () => {
     expect(sheet).toMatch(/data-ff-sheet-source/);
     expect(sheet).toMatch(/sourceTag/);
     expect(sheet).not.toMatch(/extracted\?\.normalizedValue \|\| extracted\?\.rawValue/);
-    expect(sheet).toMatch(/Confirm extracted/);
+    expect(sheet).toMatch(/Confirm/);
+    expect(readFileSync("src/components/deal/repeatable-unit-blocks.tsx", "utf8")).toMatch(
+      /Confirm extracted/,
+    );
   });
 });

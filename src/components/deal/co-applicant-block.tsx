@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  RiskProfileFieldShell,
+  RiskProfileFieldsGrid,
+} from "@/components/deal/risk-profile-field-grid";
 import { Input } from "@/components/ui/input";
+import type { SectionDensity } from "@/lib/custom-fields/types";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
+import { DEFAULT_RISK_PROFILE_DENSITY } from "@/lib/quote-sheet/risk-profile-layout";
 import { isCoApplicantExplicitlyOff } from "@/lib/custom-fields/co-applicant-fields";
 import {
   CO_APPLICANT_FIELDS,
@@ -18,11 +24,13 @@ export function CoApplicantBlock({
   values,
   maritalStatus,
   hasCoApplicantFlag,
+  density = DEFAULT_RISK_PROFILE_DENSITY,
 }: {
   values: Record<string, QuoteSheetFieldValue>;
   maritalStatus?: string;
   /** Raw Deal Details `has_co_applicant` value (true/false). Explicit Off collapses + skips required. */
   hasCoApplicantFlag?: string | null;
+  density?: SectionDensity;
 }) {
   const forcedOff = isCoApplicantExplicitlyOff(hasCoApplicantFlag);
   const savedMarried = coApplicantRequired(values, { hasCoApplicantFlag });
@@ -34,11 +42,14 @@ export function CoApplicantBlock({
   const open = !forcedOff && (required || manualOpen || seeded);
 
   useEffect(() => {
+    // Keep spouse fields open when Married (or explicit Off) changes after first paint.
+    /* eslint-disable react-hooks/set-state-in-effect -- pre-existing marital/forced-off sync */
     if (forcedOff) {
       setManualOpen(false);
       return;
     }
     if (required) setManualOpen(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [required, forcedOff]);
 
   return (
@@ -60,43 +71,34 @@ export function CoApplicantBlock({
           No co-applicant
         </p>
       ) : open ? (
-        <div
-          className="grid grid-cols-1 gap-x-4 gap-y-1 px-2 py-1.5 sm:grid-cols-2"
-          data-ff-co-applicant-fields=""
-        >
-          {CO_APPLICANT_FIELDS.map((field) => {
-            const cell = values[field.key];
-            let value = cell?.value ?? "";
-            if (field.key === "co_applicant_relationship_to_insured" && required && !value.trim()) {
-              value = "Spouse";
-            }
-            if (field.key === "co_applicant_marital_status" && required && !value.trim()) {
-              value = "Married";
-            }
-            const className = cn(
-              "h-7 w-full text-xs cursor-text",
-              cell?.status === "check" && "ff-field-check",
-              (!value.trim() || cell?.status === "missing") && "ff-field-missing",
-            );
-            const needStar =
-              required &&
-              ["co_applicant_name", "co_applicant_relationship_to_insured"].includes(field.key);
-            return (
-              <div
-                key={field.key}
-                id={`sheet-field-${field.key}`}
-                className="grid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)] items-center gap-x-2 gap-y-0.5 rounded-sm px-1 py-0.5 hover:bg-muted/40"
-                data-ff-sheet-row={field.key}
-              >
-                <label
-                  htmlFor={`ff-sheet-input-${field.key}`}
-                  className="truncate text-[11px] font-medium leading-tight text-navy"
-                  title={field.label}
+        <div data-ff-co-applicant-fields="">
+          <RiskProfileFieldsGrid
+            density={density}
+            fields={CO_APPLICANT_FIELDS}
+            renderField={(field) => {
+              const cell = values[field.key];
+              let value = cell?.value ?? "";
+              if (field.key === "co_applicant_relationship_to_insured" && required && !value.trim()) {
+                value = "Spouse";
+              }
+              if (field.key === "co_applicant_marital_status" && required && !value.trim()) {
+                value = "Married";
+              }
+              const className = cn(
+                "h-7 w-full text-xs cursor-text",
+                cell?.status === "check" && "ff-field-check",
+                (!value.trim() || cell?.status === "missing") && "ff-field-missing",
+              );
+              const needStar =
+                required &&
+                ["co_applicant_name", "co_applicant_relationship_to_insured"].includes(field.key);
+              return (
+                <RiskProfileFieldShell
+                  fieldKey={field.key}
+                  label={field.label}
+                  field={field}
+                  required={needStar}
                 >
-                  {field.label}
-                  {needStar ? " *" : ""}
-                </label>
-                <div className="min-w-0">
                   {field.options && field.options.length > 0 ? (
                     <select
                       id={`ff-sheet-input-${field.key}`}
@@ -131,10 +133,10 @@ export function CoApplicantBlock({
                       className={className}
                     />
                   )}
-                </div>
-              </div>
-            );
-          })}
+                </RiskProfileFieldShell>
+              );
+            }}
+          />
         </div>
       ) : (
         <button

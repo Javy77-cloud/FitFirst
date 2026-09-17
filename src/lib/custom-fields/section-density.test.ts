@@ -74,6 +74,9 @@ describe("section field packing", () => {
     );
     expect(isCompactLayoutField("military_discount", { type: "checkbox" })).toBe(true);
     expect(isCompactLayoutField("first_name")).toBe(false);
+    expect(isCompactLayoutField("year_built")).toBe(true);
+    expect(isCompactLayoutField("roof_year")).toBe(true);
+    expect(isCompactLayoutField("stories")).toBe(true);
     expect(layoutFieldKind("mailing_address", { type: "address" })).toBe("wide");
     expect(layoutFieldKind("notes", { type: "multi_line" })).toBe("wide");
     expect(layoutFieldKind("insurance_type")).toBe("wide");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
 import { MasterSheetFillButton } from "@/components/deal/master-sheet-fill-button";
@@ -23,10 +23,20 @@ import { RISK_PROFILE_LABEL, SAVE_RISK_PROFILE_LABEL } from "@/lib/quote-sheet/r
 import type { QuoteFieldDef } from "@/lib/quote-sheet/applicant-core";
 import { cascadeParentKeys, joinChipList, parseChipList } from "@/lib/quote-sheet/sheet-visibility";
 import type { ShopLine } from "@/lib/domain";
+import type { SectionDensity } from "@/lib/custom-fields/types";
 import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
 import { SHEET_GROUP_HEADER_STYLE, sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
 import { MultiSelectField } from "@/components/custom-fields/multi-select-field";
+import { SectionDensityControl } from "@/components/custom-fields/section-density-control";
+import {
+  RiskProfileFieldShell,
+  RiskProfileFieldsGrid,
+} from "@/components/deal/risk-profile-field-grid";
+import {
+  DEFAULT_RISK_PROFILE_DENSITY,
+  RISK_PROFILE_DENSITY_CONTROL_ID,
+} from "@/lib/quote-sheet/risk-profile-layout";
 
 function sheetValuesToLive(values: Record<string, QuoteSheetFieldValue>): Record<string, string> {
   return Object.fromEntries(
@@ -162,7 +172,8 @@ export function MasterSheetCompare({
 }) {
   const product = parseSheetProduct(productParam ?? values.sheet_product?.value, line);
   const catalog = asList(fieldsForLine(line, product));
-  const cascadeKeys = useMemo(() => new Set(cascadeParentKeys(catalog)), [catalog]);
+  const cascadeKeys = new Set(cascadeParentKeys(catalog));
+  const [density, setDensity] = useState<SectionDensity>(DEFAULT_RISK_PROFILE_DENSITY);
   const [liveValues, setLiveValues] = useState(() => sheetValuesToLive(values));
   const groups = asList(groupFields(line, product, liveValues));
   const extractedByKey = new Map(asList(fields).map((field) => [field.fieldKey, field]));
@@ -222,6 +233,11 @@ export function MasterSheetCompare({
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+            <SectionDensityControl
+              sectionId={RISK_PROFILE_DENSITY_CONTROL_ID}
+              density={density}
+              onChange={setDensity}
+            />
             <MasterSheetAddressLinks values={values} />
             <MasterSheetFillButton dealId={dealId} line={line} />
             <span className="sr-only" data-ff-master-source-docs={sourceDocCount} />
@@ -237,6 +253,7 @@ export function MasterSheetCompare({
         className="space-y-0"
         data-ff-master-sheet-form=""
         data-ff-risk-profile-form=""
+        data-ff-risk-profile-density={density}
       >
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="line" value={line} />
@@ -251,7 +268,12 @@ export function MasterSheetCompare({
             const useAutoRepeaters = line === "auto";
             if (group.group === "Applicant") {
               return (
-                <ApplicantHousehold key="applicant-household" values={values} hasCoApplicantFlag={hasCoApplicantFlag} />
+                <ApplicantHousehold
+                  key="applicant-household"
+                  values={values}
+                  hasCoApplicantFlag={hasCoApplicantFlag}
+                  density={density}
+                />
               );
             }
             if (group.group === "Co-applicant") return null;
@@ -265,6 +287,7 @@ export function MasterSheetCompare({
                   extractedByKey={extractedByKey}
                   dealId={dealId}
                   line={line}
+                  density={density}
                 />
               );
             }
@@ -276,6 +299,7 @@ export function MasterSheetCompare({
                   product={product}
                   values={values}
                   extractedByKey={extractedByKey}
+                  density={density}
                 />
               );
             }
@@ -287,6 +311,7 @@ export function MasterSheetCompare({
                   product={product}
                   values={values}
                   extractedByKey={extractedByKey}
+                  density={density}
                 />
               );
             }
@@ -300,6 +325,7 @@ export function MasterSheetCompare({
                 values={values}
                 liveValues={liveValues}
                 cascadeKeys={cascadeKeys}
+                density={density}
                 onLiveChange={(key, next) =>
                   setLiveValues((prev) => ({ ...prev, [key]: next }))
                 }
@@ -326,6 +352,7 @@ function SheetGroup({
   values,
   liveValues,
   cascadeKeys,
+  density,
   onLiveChange,
 }: {
   title: string;
@@ -335,11 +362,14 @@ function SheetGroup({
   values: Record<string, QuoteSheetFieldValue>;
   liveValues: Record<string, string>;
   cascadeKeys: Set<string>;
+  density: SectionDensity;
   onLiveChange: (key: string, next: string) => void;
   extractedByKey: Map<string, ExtractedFieldRow>;
 }) {
   const rows = asList(groupFields);
   const groupVisible = sheetGroupIsVisible(rows, liveValues);
+  const visibleFields = rows.filter((field) => groupVisible && sheetFieldIsVisible(field, liveValues));
+  const hiddenFields = rows.filter((field) => !groupVisible || !sheetFieldIsVisible(field, liveValues));
   return (
     <div
       className={groupVisible ? "border-b border-border/70 last:border-b-0" : undefined}
@@ -352,38 +382,46 @@ function SheetGroup({
           {title}
         </div>
       ) : null}
-      <div className={groupVisible ? "grid grid-cols-1 gap-x-4 gap-y-1 px-2 py-1.5 sm:grid-cols-2" : undefined}>
-        {rows.map((field) => {
-          const cell = values[field.key];
-          const visible = groupVisible && sheetFieldIsVisible(field, liveValues);
-          if (!visible) {
+      {hiddenFields.map((field) => (
+        <input
+          key={field.key}
+          type="hidden"
+          name={field.key}
+          value={liveValues[field.key] ?? values[field.key]?.value ?? ""}
+        />
+      ))}
+      {groupVisible ? (
+        <RiskProfileFieldsGrid
+          density={density}
+          fields={visibleFields}
+          renderField={(field) => {
+            const cell = values[field.key];
+            const filled = Boolean(cell?.value.trim() && cell.status !== "missing");
+            const sourceText = (cell ? sourceTag(cell) : null) || cell?.sourceLabel || "";
             return (
-              <input
-                key={field.key}
-                type="hidden"
-                name={field.key}
-                value={liveValues[field.key] ?? cell?.value ?? ""}
-              />
-            );
-          }
-          const filled = Boolean(cell?.value.trim() && cell.status !== "missing");
-          const sourceText = (cell ? sourceTag(cell) : null) || cell?.sourceLabel || "";
-          return (
-            <div
-              key={field.key}
-              id={`sheet-field-${field.key}`}
-              className="grid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)] items-center gap-x-2 gap-y-0.5 rounded-sm px-1 py-0.5 hover:bg-muted/40"
-              data-ff-sheet-row={field.key}
-              data-ff-sheet-cascade={field.showWhen ? field.showWhen.key : undefined}
-            >
-              <label
-                htmlFor={`ff-sheet-input-${field.key}`}
-                className="truncate text-[11px] font-medium leading-tight text-navy"
-                title={field.label}
+              <RiskProfileFieldShell
+                fieldKey={field.key}
+                label={field.label}
+                field={field}
+                cascadeKey={field.showWhen ? field.showWhen.key : undefined}
+                footer={
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0 text-[9px] leading-none text-muted-foreground">
+                    {sourceText ? <span data-ff-sheet-source={field.key}>{sourceText}</span> : null}
+                    {cell?.status && filled ? (
+                      <span
+                        className={cn(
+                          "uppercase",
+                          cell.status === "check" && "text-fit-check",
+                          cell.status === "missing" && "text-fit-yellow",
+                          cell.status === "confirmed" && "text-fit-green",
+                        )}
+                      >
+                        {cell.status}
+                      </span>
+                    ) : null}
+                  </div>
+                }
               >
-                {field.label}
-              </label>
-              <div className="min-w-0">
                 <SheetCell
                   dealId={dealId}
                   line={line}
@@ -399,26 +437,11 @@ function SheetGroup({
                       : undefined
                   }
                 />
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0 text-[9px] leading-none text-muted-foreground">
-                  {sourceText ? <span data-ff-sheet-source={field.key}>{sourceText}</span> : null}
-                  {cell?.status && filled ? (
-                    <span
-                      className={cn(
-                        "uppercase",
-                        cell.status === "check" && "text-fit-check",
-                        cell.status === "missing" && "text-fit-yellow",
-                        cell.status === "confirmed" && "text-fit-green",
-                      )}
-                    >
-                      {cell.status}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              </RiskProfileFieldShell>
+            );
+          }}
+        />
+      ) : null}
     </div>
   );
 }

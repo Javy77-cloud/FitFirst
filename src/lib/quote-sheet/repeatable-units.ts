@@ -114,8 +114,8 @@ export const VEHICLE_BLOCK_FIELDS: RepeatableField[] = [
     input: "select",
     options: YES_NO_OPTIONS,
   },
-  { suffix: "garaging_zip", label: "Garaging ZIP" },
   { suffix: "garaging_address", label: "Address" },
+  { suffix: "garaging_zip", label: "Garaging ZIP" },
 ];
 
 export const DRIVER_BLOCK_FIELDS: RepeatableField[] = [

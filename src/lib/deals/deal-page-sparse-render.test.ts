@@ -1,6 +1,11 @@
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: () => undefined, replace: () => undefined, push: () => undefined }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/deals/deal-1",
+}));
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
 import { FieldControl } from "@/components/custom-fields/field-control";
 import { MarketsPanel } from "@/components/deal/markets-panel";
