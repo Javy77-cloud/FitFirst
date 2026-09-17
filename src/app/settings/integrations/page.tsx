@@ -72,8 +72,8 @@ export default async function IntegrationsCatalogPage({
       </div>
       {notice === "connected" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          {provider ?? "Provider"} is a demo stub. Use the BYO Connect button on Gmail, calendars,
-          social, or DocuSign for real OAuth.
+          {provider ?? "Provider"} is a demo stub. Use Google Connect on Gmail / Calendar, or the
+          BYO Connect button on social or DocuSign, for real OAuth.
         </p>
       ) : null}
       {notice === "disconnected" ? (
