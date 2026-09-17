@@ -4,11 +4,63 @@ import { POLICY_SUB_TYPES } from "@/lib/commissions/zoho-fields";
 export const CONTACT_EDUCATION_OPTIONS = [
   "High School",
   "Some College",
+  "Associate's",
   "Bachelor's",
   "Master's",
   "Doctorate",
   "Other",
 ] as const;
+
+const EDUCATION_ASSOCIATE_ALIASES = new Set([
+  "associate's",
+  "associates",
+  "associate",
+  "associate degree",
+  "associate's degree",
+  "associates degree",
+]);
+
+const EDUCATION_BACHELOR_ALIASES = new Set([
+  "bachelor's",
+  "bachelors",
+  "bachelor",
+  "bachelor's degree",
+  "bachelor degree",
+  "bachelors degree",
+]);
+
+function educationOptionLabel(option: string | { value: string }): string {
+  return typeof option === "string" ? option : option.value;
+}
+
+/** True when the list already has an associate-level value (any common wording). */
+export function educationOptionsIncludeAssociate(
+  options: ReadonlyArray<string | { value: string }>,
+): boolean {
+  return options.some((option) =>
+    EDUCATION_ASSOCIATE_ALIASES.has(educationOptionLabel(option).trim().toLowerCase()),
+  );
+}
+
+/**
+ * Insert Associate's before Bachelor's when missing.
+ * Leaves custom agency values and order alone — never replaces the list.
+ */
+export function insertAssociatesEducationOption<T extends string | { value: string }>(
+  options: readonly T[],
+): T[] {
+  if (educationOptionsIncludeAssociate(options)) return options as T[];
+  const insert = (
+    options.some((option) => typeof option !== "string")
+      ? { value: "Associate's" }
+      : "Associate's"
+  ) as T;
+  const at = options.findIndex((option) =>
+    EDUCATION_BACHELOR_ALIASES.has(educationOptionLabel(option).trim().toLowerCase()),
+  );
+  if (at < 0) return [...options, insert];
+  return [...options.slice(0, at), insert, ...options.slice(at)];
+}
 
 export const CONTACT_MARITAL_OPTIONS = [
   "Single",
