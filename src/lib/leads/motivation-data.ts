@@ -2,10 +2,10 @@ import { and, eq, gte, isNotNull, lt, or, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { leads } from "@/lib/db/schema";
-import { addUtcDays, DESK_AS_OF, startOfUtcMonth } from "@/lib/home/as-of";
+import { addUtcDays, deskNow, startOfUtcMonth } from "@/lib/home/as-of";
 import { buildLeadMotivationStats, type LeadMotivationStat } from "./motivation";
 
-export async function loadLeadMotivationStats(asOf = DESK_AS_OF): Promise<LeadMotivationStat[]> {
+export async function loadLeadMotivationStats(asOf = deskNow()): Promise<LeadMotivationStat[]> {
   const todayStart = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), asOf.getUTCDate()));
   const monthStart = startOfUtcMonth(asOf);
 

@@ -17,7 +17,7 @@ import { isSuspenseDocKey, pendingSuspenseKeys } from "./suspense";
 import { rollupCertificateHolders } from "./certificate-holders";
 import { filterSuspenseBoard, sortSuspenseBoard, type SuspenseBoardRow } from "./suspense-board";
 import { ageSuspenseRow, filterSuspenseByAge } from "./suspense-aging";
-import { DESK_AS_OF } from "@/lib/home/as-of";
+import { deskNow } from "@/lib/home/as-of";
 import { db } from "@/lib/db";
 import {
   accounts,
@@ -588,7 +588,7 @@ export async function loadRenewalPipeline(windowDays = 60) {
   );
   const upcoming: RenewalPolicy[] = [];
   for (const { policy, contact, account, carrier } of rows) {
-    if (!isUpcomingRenewal(policy, windowDays, DESK_AS_OF)) continue;
+    if (!isUpcomingRenewal(policy, windowDays, deskNow())) continue;
     upcoming.push({
       id: policy.id,
       policyNumber: policy.policyNumber,
@@ -610,7 +610,7 @@ export async function loadRenewalPipeline(windowDays = 60) {
     : [];
   const queueByPolicy = new Map(queueRows.map((row) => [row.policyId, row]));
   const list = sortRenewalRows(
-    upcoming.map((row) => buildRenewalRow(row, DESK_AS_OF)).filter((row) => row != null),
+    upcoming.map((row) => buildRenewalRow(row, deskNow())).filter((row) => row != null),
   ).map((row) => ({
     ...row,
     hasFollowup: followupByPolicy.has(row.id),
@@ -747,7 +747,7 @@ export async function loadSuspenseBoard(docKey?: string, age?: string) {
     });
   }
   const aged = sortSuspenseBoard(filterSuspenseBoard(rows, docKey)).map((row) =>
-    ageSuspenseRow(row, DESK_AS_OF),
+    ageSuspenseRow(row, deskNow()),
   );
   return {
     docKey: docKey && isSuspenseDocKey(docKey) ? docKey : null,

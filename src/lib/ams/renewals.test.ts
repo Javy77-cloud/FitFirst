@@ -35,7 +35,7 @@ describe("renewal pipeline", () => {
       carrierName: "Heritage",
       currentPremium: "2184.00",
       proposedPremium: "2547.00",
-    });
+    }, DESK_AS_OF);
     expect(row?.daysUntil).toBe(28);
     expect(row?.delta).toBe(363);
     expect(row?.pct).toBeCloseTo(0.1662, 3);
@@ -51,7 +51,7 @@ describe("renewal pipeline", () => {
       premium: "2184.00",
       partyName: "Hale, Jordan",
       carrierName: "Heritage",
-    });
+    }, DESK_AS_OF);
     const nair = buildRenewalRow({
       id: "n",
       policyNumber: "PA-FL-22910",
@@ -61,7 +61,7 @@ describe("renewal pipeline", () => {
       premium: "1428.00",
       partyName: "Nair, Priya",
       carrierName: "QBE",
-    });
+    }, DESK_AS_OF);
     expect(hale && nair).toBeTruthy();
     if (!hale || !nair) return;
     expect(sortRenewalRows([nair, hale]).map((row) => row.policyNumber)).toEqual([
@@ -85,7 +85,7 @@ describe("renewal pipeline", () => {
       premium: "2184.00",
       partyName: "Hale, Jordan",
       carrierName: "Heritage",
-    });
+    }, DESK_AS_OF);
     const nair = buildRenewalRow({
       id: "n",
       policyNumber: "PA-FL-22910",
@@ -95,7 +95,7 @@ describe("renewal pipeline", () => {
       premium: "1428.00",
       partyName: "Nair, Priya",
       carrierName: "QBE",
-    });
+    }, DESK_AS_OF);
     expect(hale && nair).toBeTruthy();
     if (!hale || !nair) return;
     const buckets = bucketRenewalRows([hale, nair]);

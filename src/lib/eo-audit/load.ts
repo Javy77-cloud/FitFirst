@@ -11,7 +11,7 @@ import {
   eoAuditLogs,
   policies,
 } from "@/lib/db/schema";
-import { DESK_AS_OF } from "@/lib/home/as-of";
+import { deskNow } from "@/lib/home/as-of";
 import { partyLabel } from "@/lib/desk/policy-name";
 import { findEoGaps, type EoActivityStamp, type EoGapFlag } from "./gaps";
 import { eoActionFromCommsKind, type EoAuditAction } from "./types";
@@ -95,7 +95,7 @@ export async function listRecentEoAudit(limit = 80): Promise<EoTrailRow[]> {
   });
 }
 
-export async function loadEoGapFlags(asOf: Date = DESK_AS_OF): Promise<EoGapFlag[]> {
+export async function loadEoGapFlags(asOf: Date = deskNow()): Promise<EoGapFlag[]> {
   const [policyRows, dealRows, docRows, activityRows, logRows, auditRows, contactRows, accountRows] =
     await Promise.all([
       db.select().from(policies).where(eq(policies.tenantId, DEFAULT_TENANT_ID)),

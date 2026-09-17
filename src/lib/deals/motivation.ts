@@ -1,4 +1,6 @@
-/** Corner widget math from real desk counts only. */
+import { formatHonestPct } from "@/lib/metrics/honest-rate";
+
+/** Corner widget math from real desk counts only. Never invent a percent. */
 
 export type MotivationStat = {
   id: string;
@@ -10,8 +12,7 @@ export type MotivationStat = {
 };
 
 export function formatBindRate(bound: number, shopped: number): string {
-  if (shopped <= 0) return "—";
-  return `${Math.round((bound / shopped) * 100)}%`;
+  return formatHonestPct(bound, shopped);
 }
 
 export function buildMotivationStats(input: {
@@ -21,21 +22,25 @@ export function buildMotivationStats(input: {
   sparkQuotes: number[];
 }): MotivationStat[] {
   const spark = input.sparkQuotes.length > 0 ? input.sparkQuotes : [0, 0, 0, 0, 0, 0, 0];
+  const rateLabel = formatBindRate(input.boundThisMonth, input.shoppedThisMonth);
 
   return [
     {
       id: "quotes-today",
       label: "Quotes pulled today",
       valueLabel: String(input.quotesToday),
-      hint: "Desk count from quotes on this tenant.",
+      hint: "Quotes created today on this tenant.",
       sample: false,
       spark,
     },
     {
-      id: "bind-rate",
-      label: "Your bind rate this month",
-      valueLabel: formatBindRate(input.boundThisMonth, input.shoppedThisMonth),
-      hint: `${input.boundThisMonth} bound / ${input.shoppedThisMonth} shopped this month.`,
+      id: "bound-this-month",
+      label: "Bound this month",
+      valueLabel: String(input.boundThisMonth),
+      hint:
+        rateLabel === "—"
+          ? `${input.boundThisMonth} bound this month.`
+          : `${input.boundThisMonth} bound / ${input.shoppedThisMonth} shopped this month.`,
       sample: false,
       spark,
     },

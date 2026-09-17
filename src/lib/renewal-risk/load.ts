@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { accounts, activityLogs, contacts, policies, policyTerms } from "@/lib/db/schema";
-import { DESK_AS_OF } from "@/lib/home/as-of";
+import { deskNow } from "@/lib/home/as-of";
 import { parseMoney } from "@/lib/renewal/compare";
 import { isInForceStatus } from "@/lib/policy/status";
 import {
@@ -77,7 +77,7 @@ export function scoreHousehold(input: {
   lastContactDays: number | null;
   asOf?: Date;
 }): RenewalRiskScore {
-  const asOf = input.asOf ?? DESK_AS_OF;
+  const asOf = input.asOf ?? deskNow();
   return scoreRenewalRisk({
     daysToRenewal: nearestRenewalDays(input.policies, asOf),
     premiumChangePct: premiumChangeFor(input.policies, input.terms),
@@ -92,7 +92,7 @@ export async function loadRenewalRiskAccounts(opts?: {
   ownerId?: string | null;
   flaggedOnly?: boolean;
 }): Promise<RenewalRiskAccount[]> {
-  const asOf = opts?.asOf ?? DESK_AS_OF;
+  const asOf = opts?.asOf ?? deskNow();
   const [policyRows, contactRows, accountRows, termRows, logRows] = await Promise.all([
     db.select().from(policies).where(eq(policies.tenantId, DEFAULT_TENANT_ID)),
     db.select().from(contacts).where(eq(contacts.tenantId, DEFAULT_TENANT_ID)),

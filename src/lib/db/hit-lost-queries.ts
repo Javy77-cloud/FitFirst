@@ -44,10 +44,12 @@ export async function loadHitLostReport(): Promise<HitLostReport> {
   ]);
 
   return buildHitLostReport({
-    attempts: attemptRows.map((row) => ({
-      ...row,
-      premium: row.premium == null || row.premium === "" ? null : Number(row.premium),
-    })),
+    attempts: attemptRows
+      .filter((row): row is typeof row & { dealId: string } => Boolean(row.dealId))
+      .map((row) => ({
+        ...row,
+        premium: row.premium == null || row.premium === "" ? null : Number(row.premium),
+      })),
     quotes: quoteRows.map((row) => ({
       ...row,
       premium: row.premium == null || row.premium === "" ? null : Number(row.premium),

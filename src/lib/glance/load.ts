@@ -15,7 +15,7 @@ import {
   users,
 } from "@/lib/db/schema";
 import { partyLabel } from "@/lib/desk/policy-name";
-import { DESK_AS_OF } from "@/lib/home/as-of";
+import { deskNow } from "@/lib/home/as-of";
 import { filterOwned, rowsForTab, type GlanceRecord, type GlanceServiceItem } from "./filter";
 import { parseGlanceTab, type GlanceTab } from "./tabs";
 
@@ -225,7 +225,7 @@ export async function loadGlance(tabRaw?: string | null): Promise<{
     service,
     claims: glanceClaims,
     policies: glancePolicies,
-    asOf: DESK_AS_OF,
+    asOf: deskNow(),
   };
 
   const counts = {

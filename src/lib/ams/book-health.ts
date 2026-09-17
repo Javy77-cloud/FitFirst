@@ -7,7 +7,7 @@ import {
 } from "@/lib/domain-ams";
 import { missingServicingDocs, type ServicingFile } from "./checklist";
 import { daysUntilExpiration, expirationDay } from "./renewals";
-import { DESK_AS_OF } from "@/lib/home/as-of";
+import { deskNow } from "@/lib/home/as-of";
 
 export type BookPolicy = {
   id: string;
@@ -194,7 +194,7 @@ export function monolineGaps(policies: BookPolicy[]): MonolineGapRow[] {
 
 export function lapseRiskRows(
   policies: BookPolicy[],
-  asOf = DESK_AS_OF,
+  asOf = deskNow(),
 ): LapseRiskRow[] {
   const inForceByParty = new Map<string, BookPolicy[]>();
   for (const policy of policies) {

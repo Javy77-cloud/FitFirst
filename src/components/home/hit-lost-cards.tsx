@@ -21,13 +21,13 @@ export function HitLostCards({ report, embedded = false }: { report: HitLostRepo
         <Stat
           icon={Percent}
           label="Quote hit ratio"
-          value={`${report.quoteHitPct}%`}
+          value={report.quoteHitPct == null ? "—" : `${report.quoteHitPct}%`}
           hint={`${fmt(report.boundCount)} bound / ${fmt(report.quotedCount)} quoted`}
         />
         <Stat
           icon={Trophy}
           label="Shop hit ratio"
-          value={`${report.shopHitPct}%`}
+          value={report.shopHitPct == null ? "—" : `${report.shopHitPct}%`}
           hint={`${fmt(report.shopsBound)} shops bound / ${fmt(report.shopsQuoted)} shops quoted`}
         />
         <Stat
@@ -74,7 +74,7 @@ export function HitLostCards({ report, embedded = false }: { report: HitLostRepo
                     <td>{row.quoted}</td>
                     <td>{row.declined}</td>
                     <td>{row.bound}</td>
-                    <td>{row.quoted ? `${row.hitPct}%` : "—"}</td>
+                    <td>{row.hitPct == null ? "—" : `${row.hitPct}%`}</td>
                     <td>{row.avgQuotedPremium != null ? formatMoney(row.avgQuotedPremium) : "—"}</td>
                   </tr>
                 ))}

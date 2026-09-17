@@ -8,7 +8,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { sessionCanRevealPortal } from "@/lib/policy/agent-policy-access-prefs";
 import { isUuid } from "@/lib/ids";
 import { clientStatusFromCounts, isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
-import { addUtcDays, DESK_AS_OF, priorMonth, startOfUtcMonth, endOfUtcMonth } from "@/lib/home/as-of";
+import { addUtcDays, deskNow, priorMonth, startOfUtcMonth, endOfUtcMonth } from "@/lib/home/as-of";
 import {
   buildOwnerHome,
   filterByAssignee,
@@ -929,7 +929,7 @@ export async function listPolicies(filter: PolicyListFilter = {}) {
     .where(and(eq(policies.tenantId, tenant()), scope))
     .orderBy(asc(policies.expirationDate));
 
-  const asOf = DESK_AS_OF;
+  const asOf = deskNow();
   return rows.filter(({ policy }) => {
     const family = bookFamily(policy.lineOfBusiness);
     if (family === "life" && !lineOptions.writeLife) return false;
@@ -3080,7 +3080,7 @@ export async function ownerHomeDashboard(bookRaw?: string | null) {
   ]);
 
   const snapshot = buildOwnerHome({
-    asOf: DESK_AS_OF,
+    asOf: deskNow(),
     policies: scopedPolicies,
     deals: scopedDeals,
     tasks: homeTasks,
@@ -3093,7 +3093,7 @@ export async function ownerHomeDashboard(bookRaw?: string | null) {
 
   const showCompanyWidgets = Boolean(settingsRows[0]?.showCompanyWidgets);
   const agencySnap = buildOwnerHome({
-    asOf: DESK_AS_OF,
+    asOf: deskNow(),
     policies: homePolicies,
     deals: homeDeals,
     tasks: [],
@@ -3115,7 +3115,7 @@ export async function ownerHomeDashboard(bookRaw?: string | null) {
       metric: row.metric === "policy_count" ? "policy_count" : "premium",
       startsAt: row.startsAt,
       endsAt: row.endsAt,
-      standings: rankAgents(homePolicies, agents, DESK_AS_OF, "contest", {
+      standings: rankAgents(homePolicies, agents, deskNow(), "contest", {
         metric: row.metric === "policy_count" ? "policy_count" : "premium",
         startsAt: row.startsAt,
         endsAt: row.endsAt,

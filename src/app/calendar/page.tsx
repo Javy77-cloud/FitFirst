@@ -4,7 +4,7 @@ import { DeskCalendar } from "@/components/calendar/desk-calendar";
 import { listRelatedOptions } from "@/lib/db/activity-queries";
 import { listOfficeStubs, listTerritoryStubs } from "@/lib/db/office-queries";
 import { listCalendarActivities } from "@/lib/db/queries";
-import { DESK_AS_OF } from "@/lib/home/as-of";
+import { deskNow } from "@/lib/home/as-of";
 import { getCalendarAgencyPrefs } from "@/lib/ops/calendar-agency-prefs";
 import {
   parseCalendarView,
@@ -24,7 +24,7 @@ export default async function CalendarPage({
   const session = await requireSignedIn();
   const query = await searchParams;
   const view = parseCalendarView(typeof query.view === "string" ? query.view : undefined);
-  const fallback = DESK_AS_OF;
+  const fallback = deskNow();
   const anchor = parseDateParam(typeof query.date === "string" ? query.date : undefined, fallback);
   const kinds = parseKindsParam(query.kinds);
   const range = rangeForView(view, anchor);

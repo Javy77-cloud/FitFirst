@@ -1,5 +1,10 @@
-/** Desk clock for owner-home KPIs. Matches the Ana shop week so seed math is stable. */
+/** Frozen seed week for fixtures and tests. Never use this for live desk/admin KPIs. */
 export const DESK_AS_OF = new Date("2026-09-03T16:00:00.000Z");
+
+/** Live desk clock for owner-home KPIs, motivation tiles, and admin counters. */
+export function deskNow(): Date {
+  return new Date();
+}
 
 export function startOfUtcMonth(date: Date): Date {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1, 0, 0, 0, 0));

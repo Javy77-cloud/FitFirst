@@ -5,7 +5,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { accounts, carriers, clientHistory, commissions, contacts, policies, policyAutomations, reviewTasks } from "@/lib/db/schema";
-import { addUtcDays, DESK_AS_OF } from "@/lib/home/as-of";
+import { addUtcDays, deskNow } from "@/lib/home/as-of";
 import { inferLineFamily, isOepLine, previewCommission, type LineFamily } from "@/lib/desk/commission-line";
 import {
   commissionFamilyFromInsurance,
@@ -170,7 +170,7 @@ export async function syncPolicyDateAutomations(policyId: string) {
   const party = `${partyLabel(contact ?? null, account ?? null)}`.replace(/\s+/g, " ").trim();
   const policyType = policy.policySubType || policy.formType || policy.lineOfBusiness;
   const xDate = policy.expirationDate;
-  const asOf = DESK_AS_OF;
+  const asOf = deskNow();
   const family = inferLineFamily(policy.lineOfBusiness, policy.commissionFamily, policy.policySubType);
 
   const jobs: { kind: string; fireOn: Date; title: string; body: string }[] = [];

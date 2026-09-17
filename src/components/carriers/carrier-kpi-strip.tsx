@@ -6,7 +6,7 @@ import {
 } from "@/lib/carriers/metrics";
 
 function HitDonut({ bound, requested }: { bound: number; requested: number }) {
-  const rate = requested > 0 ? bound / requested : 0;
+  const rate = requested > 0 && bound >= 0 && bound <= requested ? bound / requested : 0;
   const r = 18;
   const circ = 2 * Math.PI * r;
   const filled = rate * circ;
@@ -25,7 +25,7 @@ function HitDonut({ bound, requested }: { bound: number; requested: number }) {
         transform="rotate(-90 24 24)"
       />
       <text x="24" y="26" textAnchor="middle" fontSize="9" fill="#002868" fontWeight="600">
-        {requested > 0 ? `${Math.round(rate * 100)}%` : "—"}
+        {requested > 0 && bound <= requested ? `${Math.round(rate * 100)}%` : "—"}
       </text>
     </svg>
   );

@@ -6,8 +6,16 @@ import type { ProducerScorecard } from "@/lib/scorecards/types";
 export function ScorecardStatGrid({ card }: { card: ProducerScorecard }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <Stat label="Conversion" value={formatPct(card.conversion)} hint={`${card.binds} binds / ${card.shops} shops · ${card.lost} lost`} />
-      <Stat label="Retention" value={formatPct(card.retention)} hint={`${card.inForce} in force · ${card.lapsed} lapsed`} />
+      <Stat
+        label="Conversion"
+        value={card.binds + card.shops + card.lost > 0 ? formatPct(card.conversion) : "—"}
+        hint={`${card.binds} binds / ${card.shops} shops · ${card.lost} lost`}
+      />
+      <Stat
+        label="Retention"
+        value={card.inForce + card.lapsed > 0 ? formatPct(card.retention) : "—"}
+        hint={`${card.inForce} in force · ${card.lapsed} lapsed`}
+      />
       <Stat label="Premium" value={formatMoney(card.premium)} hint="Active + Bound only. Quotes are not written." />
       <Stat label="Binds" value={String(card.binds)} hint={`Rank ${card.rank} · ${producerStatusLabel(card.status)}`} />
     </div>
@@ -68,13 +76,13 @@ export function ScorecardRankTable({
               </div>
             </td>
             <td>
-              {formatPct(row.conversion)}
+              {row.binds + row.shops + row.lost > 0 ? formatPct(row.conversion) : "—"}
               <div className="text-[11px] text-muted-foreground">
                 {row.binds} / {row.binds + row.shops + row.lost}
               </div>
             </td>
             <td>
-              {formatPct(row.retention)}
+              {row.inForce + row.lapsed > 0 ? formatPct(row.retention) : "—"}
               <div className="text-[11px] text-muted-foreground">
                 {row.inForce} in force
               </div>

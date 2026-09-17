@@ -1,4 +1,4 @@
-import { DESK_AS_OF } from "@/lib/home/as-of";
+import { deskNow } from "@/lib/home/as-of";
 
 const EXPIRING_DOC_TYPES = new Set([
   "policy_id",
@@ -17,7 +17,7 @@ export function isExpiringDocType(docType: string): boolean {
 
 export function daysUntilDocExpiry(
   expiresAt: Date | string | null | undefined,
-  asOf: Date = DESK_AS_OF,
+  asOf: Date = deskNow(),
 ): number | null {
   if (!expiresAt) return null;
   const exp = expiresAt instanceof Date ? expiresAt : new Date(expiresAt);
@@ -31,7 +31,7 @@ export function daysUntilDocExpiry(
 export function docExpiryWarning(
   docType: string,
   expiresAt: Date | string | null | undefined,
-  asOf: Date = DESK_AS_OF,
+  asOf: Date = deskNow(),
 ): { warn: boolean; days: number | null; label: string | null } {
   if (!isExpiringDocType(docType)) return { warn: false, days: null, label: null };
   const days = daysUntilDocExpiry(expiresAt, asOf);

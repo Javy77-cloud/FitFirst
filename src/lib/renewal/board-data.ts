@@ -9,7 +9,7 @@ import {
   renewalQueue,
 } from "@/lib/db/schema";
 import { isInForceStatus } from "@/lib/policy/status";
-import { DESK_AS_OF, addUtcDays } from "@/lib/home/as-of";
+import { addUtcDays, deskNow } from "@/lib/home/as-of";
 import {
   buildRenewalRow,
   daysUntilExpiration,
@@ -59,8 +59,8 @@ function partyName(
 
 /** Ensure in-force policies in the window have a renewals board row (upcoming). */
 export async function ensureRenewalsBoardRows(windowDays = 180) {
-  const horizon = addUtcDays(DESK_AS_OF, windowDays);
-  const floor = addUtcDays(DESK_AS_OF, -14);
+  const horizon = addUtcDays(deskNow(), windowDays);
+  const floor = addUtcDays(deskNow(), -14);
   const rows = await db
     .select({
       policy: policies,
@@ -109,8 +109,8 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
   const labelTemplate = await getAgencyPolicyLabelTemplate();
   const renewalsPipeline = await ensureRenewalsPipeline().catch(() => null);
 
-  const horizon = addUtcDays(DESK_AS_OF, windowDays);
-  const floor = addUtcDays(DESK_AS_OF, -14);
+  const horizon = addUtcDays(deskNow(), windowDays);
+  const floor = addUtcDays(deskNow(), -14);
 
   const queueRows = await db
     .select({
@@ -160,7 +160,7 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
     if (!exp) continue;
     // Keep lost/bound cards even outside window; filter others to window.
     const stage = normalizeRenewalQueueStage(row.queue.stage) ?? row.queue.stage ?? "upcoming";
-    const days = daysUntilExpiration(exp, DESK_AS_OF);
+    const days = daysUntilExpiration(exp, deskNow());
     if (stage !== "lost" && stage !== "bound" && stage !== "archive" && stage !== "archived") {
       if (exp.getTime() < floor.getTime() || exp.getTime() > horizon.getTime()) continue;
       if (!isInForceStatus(row.policy.status) && stage === "upcoming") continue;
@@ -176,7 +176,7 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
         partyName: partyName(row.contact, row.account),
         carrierName: row.carrier?.name ?? "Carrier TBD",
       },
-      DESK_AS_OF,
+      deskNow(),
     );
     if (!built) continue;
     const held =

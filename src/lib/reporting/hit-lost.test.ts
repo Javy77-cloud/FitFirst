@@ -6,7 +6,7 @@ describe("hitPct", () => {
   it("is bound ÷ quoted, rounded to one decimal", () => {
     expect(hitPct(1, 4)).toBe(25);
     expect(hitPct(1, 3)).toBe(33.3);
-    expect(hitPct(0, 0)).toBe(0);
+    expect(hitPct(0, 0)).toBeNull();
     expect(hitPct(8, 4)).toBe(100);
   });
 });
