@@ -41,5 +41,10 @@ describe("New Deal uses the live Deal Edit Layout", () => {
     expect(actions).toMatch(/forceNewShopOnSave/);
     expect(actions).toMatch(/seedNewDealShopFlow/);
     expect(actions).toMatch(/NEW_DEAL_PIPELINE_STAGE/);
+    expect(actions).toMatch(/persistNewDealLayoutValues/);
+    const createDealFn = actions.slice(actions.indexOf("export async function createDeal("));
+    expect(createDealFn.indexOf("persistNewDealLayoutValues")).toBeLessThan(
+      createDealFn.indexOf(".insert(risks)"),
+    );
   });
 });

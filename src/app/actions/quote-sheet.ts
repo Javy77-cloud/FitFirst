@@ -77,6 +77,10 @@ import {
 } from "@/lib/desk/action-flash";
 import { isSheetProduct, type SheetProduct } from "@/lib/quote-sheet/products";
 import { blankSheetWithDefaults, emptySheetValues, extractKeyToSheetKey } from "@/lib/quote-sheet/catalog";
+import {
+  coverageLinesValueForDeal,
+  isCommercialSheetLine,
+} from "@/lib/quote-sheet/commercial-risk-profile";
 import { applyMasterSheetDefaults, emptyDefaultsForLine } from "@/lib/quote-sheet/sheet-defaults";
 import { addressFromSheet, lookupPublicFacts } from "@/lib/public-records/lookup";
 import {
@@ -164,6 +168,22 @@ export async function ensureQuoteSheet(dealId: string, line: ShopLine) {
     const product = sheetProductForQuotingForm(form);
     if (product) {
       values.sheet_product = { value: product, status: "confirmed", source: "agent" };
+    }
+  }
+  if (isCommercialSheetLine(line)) {
+    const [deal] = await db
+      .select({ shopProducts: deals.shopProducts, quotingLine: deals.quotingLine })
+      .from(deals)
+      .where(eq(deals.id, dealId));
+    const coverage = coverageLinesValueForDeal({
+      line,
+      products: deal?.shopProducts,
+    });
+    if (coverage) {
+      values.coverage_lines = { value: coverage, status: "confirmed", source: "agent" };
+    }
+    if (!String(values.premises_same_as_business?.value ?? "").trim()) {
+      values.premises_same_as_business = { value: "Yes", status: "confirmed", source: "agent" };
     }
   }
   const [created] = await db

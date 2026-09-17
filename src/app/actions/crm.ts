@@ -74,6 +74,8 @@ import { blankSheetWithDefaults } from "@/lib/quote-sheet/catalog";
 import { activityLogBody } from "@/lib/lifecycle/activity";
 import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
 import { leadValuesFromForm } from "@/lib/crm/lead-fields";
+import { CORE_FIELDS } from "@/lib/custom-fields/defaults";
+import { BUSINESS_IDENTITY_FIELD_KEYS } from "@/lib/custom-fields/business-identity-fields";
 import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
 import { dealListCascadeSyncValues } from "@/lib/deals/insurance-cascade";
 import { applySystemDealValues } from "@/app/actions/custom-fields";
@@ -670,6 +672,8 @@ export async function createDeal(formData: FormData) {
     })
     .returning();
 
+  await persistNewDealLayoutValues(deal.id, formData, { quotingForm, policySubType });
+
   if (!lead.convertedDealId) {
     await db
       .update(leads)
@@ -731,31 +735,6 @@ export async function createDeal(formData: FormData) {
     },
   });
   await insertSheetsForDeal(deal.id, shopLines, shopProducts);
-
-  const defs = await listFieldDefs("deals").catch(() => []);
-  const custom = customValuesFromForm(formData, defs);
-  Object.assign(
-    custom,
-    dealListCascadeSyncValues({
-      insuranceType: custom.insurance_type,
-      insuranceSubtype: custom.insurance_subtype,
-      quotingForm,
-      policySubType,
-    }),
-  );
-  if (Object.keys(custom).length) {
-    await writeRecordValues(deal.id, custom, "deals");
-  }
-  const system: Record<string, string> = {};
-  for (const field of defs) {
-    if (!field.systemKey) continue;
-    if (custom[field.key] != null && custom[field.key] !== "") {
-      system[field.systemKey] = custom[field.key];
-    }
-  }
-  if (Object.keys(system).length) {
-    await applySystemDealValues(deal.id, system);
-  }
 
   revalidatePath("/");
   revalidatePath("/deals");
@@ -1803,6 +1782,45 @@ export async function archiveDeal(formData: FormData) {
   revalidatePath("/deals");
   revalidatePath(`/deals/${dealId}`);
   if (deal.contactId) revalidatePath(`/contacts/${deal.contactId}`);
+}
+
+/** Write Details fields before risk/sheet inserts so a later failure does not drop identity. */
+async function persistNewDealLayoutValues(
+  dealId: string,
+  formData: FormData,
+  line: { quotingForm: string; policySubType: string },
+) {
+  const defs = await listFieldDefs("deals").catch(() => []);
+  const catalog = defs.length ? defs : CORE_FIELDS;
+  const custom = customValuesFromForm(formData, catalog);
+  for (const key of BUSINESS_IDENTITY_FIELD_KEYS) {
+    const posted = str(formData, `field_${key}`);
+    if (posted && !String(custom[key] ?? "").trim()) custom[key] = posted;
+  }
+  const fein = str(formData, "field_ein") || str(formData, "field_fein");
+  if (fein && !String(custom.ein ?? "").trim()) custom.ein = fein;
+  Object.assign(
+    custom,
+    dealListCascadeSyncValues({
+      insuranceType: custom.insurance_type,
+      insuranceSubtype: custom.insurance_subtype,
+      quotingForm: line.quotingForm,
+      policySubType: line.policySubType,
+    }),
+  );
+  if (Object.keys(custom).length) {
+    await writeRecordValues(dealId, custom, "deals");
+  }
+  const system: Record<string, string> = {};
+  for (const field of catalog) {
+    if (!field.systemKey) continue;
+    if (custom[field.key] != null && custom[field.key] !== "") {
+      system[field.systemKey] = custom[field.key];
+    }
+  }
+  if (Object.keys(system).length) {
+    await applySystemDealValues(dealId, system);
+  }
 }
 
 function seededSheetValues(line: ShopLine, products: readonly string[] = []) {

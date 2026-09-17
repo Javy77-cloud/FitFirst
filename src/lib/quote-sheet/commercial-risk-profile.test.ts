@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { emptySheetValues, fieldsForLine, groupFields } from "./catalog";
 import { fillSheetFromDealDetails } from "./fill-from-deal";
@@ -73,6 +74,12 @@ describe("Commercial Risk Profile lean catalog", () => {
     const wcClaim = fieldsForLine("workers_comp").find((field) => field.key === "wc_claims_count");
     expect(fieldIsVisible(wcClaim!, { wc_prior_claims: "No" })).toBe(false);
     expect(fieldIsVisible(wcClaim!, { wc_prior_claims: "Yes" })).toBe(true);
+  });
+
+  it("ensureQuoteSheet seeds coverage chips from the deal's commercial products", () => {
+    const source = readFileSync("src/app/actions/quote-sheet.ts", "utf8");
+    expect(source).toMatch(/coverageLinesValueForDeal/);
+    expect(source).toMatch(/shopProducts/);
   });
 
   it("seeds coverage chips from commercial products when filling from Deal Details", () => {
