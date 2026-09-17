@@ -14,6 +14,7 @@ import {
 import { loadDealHealthSherpaEnrollment } from "@/lib/healthsherpa/sync";
 import { isUsingHealthSherpa } from "@/lib/healthsherpa/sheet";
 import { predictLifeAppetite } from "@/lib/life/appetite";
+import { resolveDealLifeProductType } from "@/lib/life/product-type";
 import { DealMotivation } from "@/components/deal/deal-motivation";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
@@ -529,6 +530,13 @@ export default async function DealPage({
     writtenLines: row.carrier.writtenLines,
   }));
   const lifeHealthLine = isLifeHealthShopLine(sheetLine);
+  const requestedLifeProductType = resolveDealLifeProductType({
+    productId: activeProduct,
+    quotingForm: titleForm || lineForm || deal.quotingForm,
+    policySubType: deal.policySubType,
+    lifeProductType: dealValues.life_product_type,
+    sheetProductType: activeSheet.values.product_type?.value ?? "",
+  });
   const lifeAppetite =
     sheetLine === "life"
       ? predictLifeAppetite({
@@ -540,6 +548,11 @@ export default async function DealPage({
           sex: activeSheet.values.applicant_gender?.value || dealValues.applicant_gender || "",
           dateOfBirth:
             dealValues.date_of_birth || contact?.dateOfBirth || lead?.dateOfBirth || "",
+          productType: requestedLifeProductType,
+          productId: activeProduct,
+          quotingForm: titleForm || lineForm || deal.quotingForm,
+          policySubType: deal.policySubType,
+          lifeProductType: dealValues.life_product_type,
         })
       : {
           selectedLabels: [],
@@ -557,6 +570,7 @@ export default async function DealPage({
           },
           ageYears: null,
           thin: true,
+          requestedProductType: requestedLifeProductType,
         };
   return (
     <AppShell
@@ -930,6 +944,7 @@ export default async function DealPage({
                             build={lifeAppetite.build}
                             ageYears={lifeAppetite.ageYears}
                             thin={lifeAppetite.thin}
+                            requestedProductType={lifeAppetite.requestedProductType}
                           />
                         ) : sheetLine === "health" ? (
                           <HealthMarketsEmpty

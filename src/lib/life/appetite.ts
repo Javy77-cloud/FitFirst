@@ -25,6 +25,14 @@ import {
   type LifeMatrixProduct,
   type LifeMatrixRule,
 } from "./appetite-types";
+import { filterLifeProductsByRequestedType, resolveDealLifeProductType } from "./product-type";
+
+export {
+  filterLifeProductsByRequestedType,
+  lifeCatalogProductTypes,
+  lifeProductMatchesRequestedType,
+  resolveDealLifeProductType,
+} from "./product-type";
 
 export const LIFE_UW_MATRIX_CSV = "data/appetite/fitfirst-life-uw-matrix.csv";
 export {
@@ -176,6 +184,11 @@ export function predictLifeAppetite(input: {
   sex?: string | null;
   dateOfBirth?: string | null;
   ageYears?: number | null;
+  productType?: string | null;
+  productId?: string | null;
+  quotingForm?: string | null;
+  policySubType?: string | null;
+  lifeProductType?: string | null;
   matrix?: { products: LifeMatrixProduct[]; rules: LifeMatrixRule[] };
   buildRules?: LifeBuildRule[];
 }): {
@@ -186,7 +199,15 @@ export function predictLifeAppetite(input: {
   build: LifeBuildSnapshot;
   ageYears: number | null;
   thin: boolean;
+  requestedProductType: string;
 } {
+  const requestedProductType = resolveDealLifeProductType({
+    productId: input.productId,
+    quotingForm: input.quotingForm,
+    policySubType: input.policySubType,
+    lifeProductType: input.lifeProductType,
+    sheetProductType: input.productType,
+  });
   const matrix = input.matrix ?? loadLifeUwMatrix();
   const buildRules = input.buildRules ?? loadLifeBuildTable();
   const build = applyLifeBuildSnapshot(
@@ -226,6 +247,7 @@ export function predictLifeAppetite(input: {
       build,
       ageYears,
       thin: true,
+      requestedProductType,
     };
   }
 
@@ -237,7 +259,8 @@ export function predictLifeAppetite(input: {
     rulesByProduct.set(key, list);
   }
 
-  const predictions = matrix.products.map((product) => {
+  const catalog = filterLifeProductsByRequestedType(matrix.products, requestedProductType);
+  const predictions = catalog.map((product) => {
     const productRules = rulesByProduct.get(`${product.carrierSlug}::${product.productSlug}`) ?? [];
     const condition = conditionPrediction(product, conditionKeys, productRules);
     const buildHit = lookupLifeBuild({
@@ -279,5 +302,6 @@ export function predictLifeAppetite(input: {
     build,
     ageYears,
     thin: false,
+    requestedProductType,
   };
 }

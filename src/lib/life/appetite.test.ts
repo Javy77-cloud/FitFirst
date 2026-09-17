@@ -173,6 +173,8 @@ describe("Life UW MATRIX appetite v1", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/LifeAppetiteHelper/);
     expect(page).toMatch(/predictLifeAppetite/);
+    expect(page).toMatch(/resolveDealLifeProductType/);
+    expect(page).toMatch(/productType: requestedLifeProductType/);
     expect(page).toMatch(/date_of_birth/);
     const marketsStart = page.indexOf('id === "markets"');
     expect(page.indexOf("<LifeAppetiteHelper", marketsStart)).toBeGreaterThan(marketsStart);
