@@ -37,7 +37,9 @@ describe("Mapbox typeahead + FedEx verify-only address UX", () => {
     expect(ui).toMatch(/Address suggested/);
     expect(ui).toMatch(/data-ff-address-compare/);
     expect(ui).toMatch(/data-ff-address-use-entered/);
-    expect(ui).toMatch(/data-ff-address-use-suggested/);
+    expect(ui).toMatch(/AddressUseSuggestedButton/);
+    expect(ui).toMatch(/addressSuggestedChoiceClassName/);
+    expect(ui).not.toMatch(/>\s*Use suggested\s*</);
     expect(ui).toMatch(/ADDRESS_VERIFY_UNMATCHED/);
     expect(ui).toMatch(/ADDRESS_VERIFY_UNREACHABLE/);
     expect(ui).toMatch(/ADDRESS_VERIFY_INCOMPLETE/);
