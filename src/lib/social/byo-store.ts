@@ -13,6 +13,7 @@ import {
   type OauthStatePayload,
 } from "./byo";
 import { isSocialPlatformId, type SocialPlatformId } from "./platforms";
+import { isPlatformHostedSocial, loadMetaApp, platformHostedConnectMissingCopy } from "./meta-app";
 
 function stateSecret(): string {
   return (
@@ -51,11 +52,14 @@ export async function loadSocialConnectionRow(provider: SocialPlatformId) {
 }
 
 export async function resolveSocialClientId(provider: SocialPlatformId): Promise<string | null> {
+  if (isPlatformHostedSocial(provider)) {
+    return (await loadMetaApp())?.appId ?? null;
+  }
   const row = await loadSocialConnectionRow(provider);
   const own = row?.clientId?.trim() || null;
   if (own) return own;
   const share = socialByoSpec(provider).shareCredentialsWith;
-  if (share) {
+  if (share && !isPlatformHostedSocial(share)) {
     const shared = await loadSocialConnectionRow(share);
     if (shared?.clientId?.trim()) return shared.clientId.trim();
   }
@@ -67,6 +71,9 @@ export async function resolveSocialClientId(provider: SocialPlatformId): Promise
 }
 
 export async function resolveSocialClientSecret(provider: SocialPlatformId): Promise<string | null> {
+  if (isPlatformHostedSocial(provider)) {
+    return (await loadMetaApp())?.appSecret ?? null;
+  }
   const row = await loadSocialConnectionRow(provider);
   if (row?.clientSecretEnc && row.clientSecretIv) {
     try {
@@ -76,7 +83,7 @@ export async function resolveSocialClientSecret(provider: SocialPlatformId): Pro
     }
   }
   const share = socialByoSpec(provider).shareCredentialsWith;
-  if (share) {
+  if (share && !isPlatformHostedSocial(share)) {
     const shared = await loadSocialConnectionRow(share);
     if (shared?.clientSecretEnc && shared.clientSecretIv) {
       try {
@@ -154,7 +161,7 @@ export async function prepareSocialAuthorize(input: {
   returnTo: string;
 }): Promise<
   | { ok: true; url: string; state: string }
-  | { ok: false; reason: "paid_wall" | "needs_credentials"; message: string }
+  | { ok: false; reason: "paid_wall" | "needs_credentials" | "not_configured"; message: string }
 > {
   const spec = socialByoSpec(input.provider);
   if (isPaidWallPlatform(input.provider)) {
@@ -163,6 +170,13 @@ export async function prepareSocialAuthorize(input: {
   const clientId = await resolveSocialClientId(input.provider);
   const clientSecret = await resolveSocialClientSecret(input.provider);
   if (!clientId || !clientSecret) {
+    if (isPlatformHostedSocial(input.provider)) {
+      return {
+        ok: false,
+        reason: "not_configured",
+        message: platformHostedConnectMissingCopy(input.provider),
+      };
+    }
     return {
       ok: false,
       reason: "needs_credentials",
@@ -189,7 +203,7 @@ export async function prepareSocialAuthorize(input: {
       category: "social",
       provider: input.provider,
       connected: false,
-      clientId,
+      clientId: isPlatformHostedSocial(input.provider) ? null : clientId,
       oauthState: state,
       notes: spec.worksWhen,
     });
@@ -278,6 +292,9 @@ export async function exchangeSocialOAuthCode(input: {
   const clientId = await resolveSocialClientId(input.provider);
   const clientSecret = await resolveSocialClientSecret(input.provider);
   if (!clientId || !clientSecret) {
+    if (isPlatformHostedSocial(input.provider)) {
+      return { ok: false, message: platformHostedConnectMissingCopy(input.provider) };
+    }
     return { ok: false, message: "Agency app credentials are missing. Paste them and try again." };
   }
 

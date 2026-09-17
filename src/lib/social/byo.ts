@@ -52,10 +52,10 @@ export const SOCIAL_BYO_SPECS: Record<SocialPlatformId, SocialByoSpec> = {
     authorizeUrl: `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth`,
     tokenUrl: `https://graph.facebook.com/${META_GRAPH_VERSION}/oauth/access_token`,
     worksWhen:
-      "Agency Meta app in development or live, with this desk’s redirect URI added under Facebook Login.",
+      "FitFirst’s Meta app is configured on this install (META_APP_ID / META_APP_SECRET or the site-developer vault). Admin clicks Connect — never pastes App ID or secret.",
     wallTitle: "Meta OAuth wall",
     wallBody:
-      "Meta will refuse the grant if the App ID is wrong, the redirect URI is missing, or a permission still needs App Review. FitFirst does not buy Ads or Marketing API and does not own a Meta app.",
+      "Meta will refuse the grant if the platform App ID is wrong, the redirect URI is missing, or a permission still needs App Review. FitFirst does not buy Ads or Marketing API.",
     stubbed: "Page inbox sync, lead-form pull, and ads wait on the vendor API.",
   },
   instagram: {
@@ -77,10 +77,10 @@ export const SOCIAL_BYO_SPECS: Record<SocialPlatformId, SocialByoSpec> = {
     tokenUrl: `https://graph.facebook.com/${META_GRAPH_VERSION}/oauth/access_token`,
     shareCredentialsWith: "facebook",
     worksWhen:
-      "Same Meta app as Facebook, Instagram product added, Business/Creator account linked to a Page.",
+      "Same FitFirst Meta app as Facebook. Instagram product added, Business/Creator account linked to a Page. Admin never pastes App ID or secret.",
     wallTitle: "Instagram OAuth wall",
     wallBody:
-      "Instagram Graph needs a Meta app plus a linked Professional account. FitFirst does not buy Instagram API or ads seats.",
+      "Instagram Graph needs the platform Meta app plus a linked Professional account. FitFirst does not buy Instagram API or ads seats.",
     stubbed: "DM / comment ingest waits on the vendor API. Nothing posts to Instagram.",
   },
   google_business_profile: {
@@ -157,6 +157,8 @@ export function isOauthByoPlatform(id: SocialPlatformId): boolean {
 export function isPaidWallPlatform(id: SocialPlatformId): boolean {
   return SOCIAL_BYO_SPECS[id].kind === "paid_wall";
 }
+
+export { isPlatformHostedSocial, platformHostedConnectMissingCopy } from "./meta-app";
 
 export function socialOauthRedirectUri(origin: string): string {
   const base = origin.replace(/\/$/, "");

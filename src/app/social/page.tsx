@@ -61,7 +61,7 @@ export default async function SocialPulsePage({
     >
       <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
         {session.isAdmin
-          ? "Connect the agency’s Meta, Google, or LinkedIn app. FitFirst does not buy those APIs or invent follower counts. Inquiries on a connected account become Leads. X stays a paid wall."
+          ? "Admin connects Facebook and Instagram with one click when FitFirst’s Meta app is configured. LinkedIn / GBP still use the agency developer app. FitFirst does not buy those APIs or invent follower counts. Inquiries on a connected account become Leads. X stays a paid wall."
           : "Inbound social inquiries become Leads. Admin connects accounts under Settings → Social / GBP. FitFirst does not invent follower counts."}
       </p>
       {notice === "gbp-locked" ? (

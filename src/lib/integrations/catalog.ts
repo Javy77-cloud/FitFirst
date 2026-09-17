@@ -32,7 +32,7 @@ export const INTEGRATION_CATEGORY_BLURB: Record<IntegrationCategory, string> = {
   calendar:
     "Desk calendar stays here. Google and Outlook Calendar pull external busy so FitFirst will not book over those slots.",
   social:
-    "Facebook, Instagram, X, LinkedIn, and Google Business Profile. Paste the agency’s developer app and try OAuth. FitFirst does not buy ads or API seats. Maps stay free public search links.",
+    "Facebook and Instagram are one-click OAuth on FitFirst’s Meta app. LinkedIn, X, and Google Business Profile still use the agency’s own developer app. FitFirst does not buy ads or API seats. Maps stay free public search links.",
   phone_sms: "Call log and SMS. Connect 8x8, Twilio, RingCentral, or Lightspeed Voice when the agency is ready.",
   esign: "In-desk signing on Deal or Policy. DocuSign sandbox OAuth is wired. Dropbox Sign stays a preference stub.",
   rater: "EZLynx and QuoteRush seats the agency already pays. Super-Copy stays copy-from-the-sheet — no rater API.",
@@ -181,7 +181,7 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     name: "Facebook",
     initials: "Fb",
     blurb: "Page inbox and lead forms. Inquiries land on Leads.",
-    byoNote: "Agency Facebook Page. Bring your own free Meta app. FitFirst does not buy ads.",
+    byoNote: "Agency Facebook Page. Admin clicks Connect — FitFirst hosts the Meta app. Never paste App ID or secret.",
     tone: "facebook",
   },
   {
@@ -190,7 +190,7 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     name: "Instagram",
     initials: "Ig",
     blurb: "DMs and comment asks for a quote. Same social → Lead path.",
-    byoNote: "Agency Instagram. Same Meta app as Facebook, or its own. Nothing posts from FitFirst.",
+    byoNote: "Agency Instagram. Same FitFirst Meta app as Facebook. Admin never pastes App ID or secret. Nothing posts.",
     tone: "instagram",
   },
   {
@@ -396,7 +396,7 @@ export const CONNECT_HUB_SECTIONS = [
   {
     id: "social",
     title: "Facebook, Instagram, GBP",
-    blurb: "BYO social apps. Try OAuth with the agency’s free developer credentials. GBP stays Admin-gated.",
+    blurb: "Facebook and Instagram are one-click on FitFirst’s Meta app. GBP stays Admin-gated.",
     providerIds: ["facebook", "instagram", "google_business_profile"] as const,
   },
   {

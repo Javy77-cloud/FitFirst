@@ -5,8 +5,10 @@ import {
   encodeOauthState,
   isOauthByoPlatform,
   isPaidWallPlatform,
+  isPlatformHostedSocial,
   MAPS_FREE_LINK_NOTE,
   META_GRAPH_VERSION,
+  platformHostedConnectMissingCopy,
   socialByoSpec,
   socialConnectStatus,
   socialConnectStatusLabel,
@@ -30,11 +32,11 @@ describe("social BYO connect", () => {
     expect(MAPS_FREE_LINK_NOTE).toMatch(/not a paid Maps Platform seat/i);
   });
 
-  it("builds a real Meta authorize URL from the agency App ID — no FitFirst key", () => {
+  it("builds a Meta authorize URL from the platform App ID (FitFirst-hosted, not agency paste)", () => {
     const spec = socialByoSpec("facebook");
     const url = new URL(
       buildAuthorizeUrl(spec, {
-        clientId: "agency-meta-app-123",
+        clientId: "fitfirst-meta-app-123",
         redirectUri: "http://127.0.0.1:43147/api/social/oauth/callback",
         state: "signed-state",
       }),
@@ -42,13 +44,17 @@ describe("social BYO connect", () => {
     expect(url.origin + url.pathname).toBe(
       `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth`,
     );
-    expect(url.searchParams.get("client_id")).toBe("agency-meta-app-123");
+    expect(url.searchParams.get("client_id")).toBe("fitfirst-meta-app-123");
     expect(url.searchParams.get("redirect_uri")).toBe(
       "http://127.0.0.1:43147/api/social/oauth/callback",
     );
     expect(url.searchParams.get("response_type")).toBe("code");
     expect(url.searchParams.get("scope")).toContain("pages_show_list");
-    expect(url.searchParams.get("client_id")).not.toMatch(/fitfirst/i);
+    expect(isPlatformHostedSocial("facebook")).toBe(true);
+    expect(isPlatformHostedSocial("instagram")).toBe(true);
+    expect(platformHostedConnectMissingCopy("facebook")).toMatch(/isn’t set up on this FitFirst install/);
+    expect(spec.worksWhen).toMatch(/never pastes App ID or secret/i);
+    expect(socialByoSpec("instagram").worksWhen).toMatch(/never pastes App ID or secret/i);
   });
 
   it("builds Google and LinkedIn authorize URLs for free developer apps", () => {

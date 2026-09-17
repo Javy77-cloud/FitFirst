@@ -32,8 +32,9 @@ export default async function SocialSettingsPage({
   return (
     <SettingsShell title="Social / GBP" current="social">
       <p className="mb-3 text-sm text-muted-foreground">
-        Bring-your-own social accounts. Paste the agency’s developer app (Meta, Google, LinkedIn)
-        and try OAuth. FitFirst does not subscribe to those APIs or buy ads. {MAPS_FREE_LINK_NOTE}
+        Facebook and Instagram are one-click Connect on FitFirst’s Meta app — Admin never pastes App
+        ID or secret. LinkedIn and GBP still paste the agency developer app. FitFirst does not
+        subscribe to those APIs or buy ads. {MAPS_FREE_LINK_NOTE}
       </p>
       {notice === "gbp-agents-on" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
@@ -79,6 +80,15 @@ export default async function SocialSettingsPage({
       {notice === "needs-credentials" ? (
         <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
           Paste the agency App ID / Client ID and secret first. FitFirst has no vendor keys to lend.
+        </p>
+      ) : null}
+      {notice === "not-configured" ? (
+        <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
+          {typeof query.provider === "string" && query.provider === "instagram"
+            ? "Instagram Connect isn’t set up on this FitFirst install"
+            : "Facebook Connect isn’t set up on this FitFirst install"}
+          . Site developers set META_APP_ID / META_APP_SECRET (or the API vault). Agency owners do
+          not paste Meta keys.
         </p>
       ) : null}
       {notice === "paid-wall" ? (

@@ -96,7 +96,8 @@ export function PulseTile({
         </>
       ) : showConnectionStatus ? (
         <p className="mt-2 text-xs text-muted-foreground">
-          Connect in Settings → Social. Paste the agency’s developer app.
+          Connect in Settings → Social. Facebook and Instagram are one-click; other networks still
+          use the agency developer app.
         </p>
       ) : null}
     </article>

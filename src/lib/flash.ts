@@ -119,6 +119,8 @@ export const FLASH_COPY = {
   "healthsherpa-aca-vault-cleared": "HealthSherpa Marketplace key cleared",
   "healthsherpa-inbound-vault-saved": "HealthSherpa inbound secret saved",
   "healthsherpa-inbound-vault-cleared": "HealthSherpa inbound secret cleared",
+  "meta-vault-saved": "Meta app credentials saved",
+  "meta-vault-cleared": "Meta app credentials cleared",
   "property-records-no-blanks": "Property records matched, but no blank fields to fill.",
   "policy-minted": "Policy created — confirm the declaration",
   "policy-published": "Policy published",

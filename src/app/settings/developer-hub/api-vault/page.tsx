@@ -11,13 +11,14 @@ import {
   loadHealthSherpaInboundPublicStatus,
   loadHealthSherpaMedicarePublicStatus,
 } from "@/lib/healthsherpa/vault";
+import { loadMetaPublicStatus } from "@/lib/social/meta-app";
 import { NHTSA_VPIC_SETTINGS_NOTE } from "@/lib/vin-decode";
 
 export const dynamic = "force-dynamic";
 
 export default async function DeveloperApiVaultPage() {
   const session = await requireAdminOrDeveloperPage();
-  const [fedex, getParcelData, permitStack, healthSherpaMedicare, healthSherpaAca, healthSherpaInbound] =
+  const [fedex, getParcelData, permitStack, healthSherpaMedicare, healthSherpaAca, healthSherpaInbound, meta] =
     await Promise.all([
       loadFedExPublicStatus(),
       loadGetParcelDataPublicStatus(),
@@ -25,6 +26,7 @@ export default async function DeveloperApiVaultPage() {
       loadHealthSherpaMedicarePublicStatus(),
       loadHealthSherpaAcaPublicStatus(),
       loadHealthSherpaInboundPublicStatus(),
+      loadMetaPublicStatus(),
     ]);
 
   return (
@@ -42,6 +44,7 @@ export default async function DeveloperApiVaultPage() {
         healthSherpaMedicare={healthSherpaMedicare}
         healthSherpaAca={healthSherpaAca}
         healthSherpaInbound={healthSherpaInbound}
+        meta={meta}
       />
       <p className="mt-4 max-w-3xl text-sm text-muted-foreground" data-ff-nhtsa-vpic-note="">
         {NHTSA_VPIC_SETTINGS_NOTE}
