@@ -31,6 +31,10 @@ import type { CustomFieldDef, FieldLayout } from "./types";
 import { AGENCY_LAYOUT_REVISION, allLayoutFieldKeys, withLayoutRevision } from "./types";
 import { splitInsuredMailingAddressSections, needsAddressSectionSplit } from "./split-address-sections";
 import { migrateDealLayoutParity, needsDealLayoutParity } from "./migrate-deal-layout-parity";
+import {
+  needsDealDetailsLandlordStrip,
+  stripDealDetailsLandlordFields,
+} from "./deal-details-landlord";
 import { migrateLeadLayout, needsLeadLayoutMigration } from "./migrate-lead-layout";
 import { APPLICANT_CUSTOM_KEYS } from "./applicant-fields";
 import { canonicalizeIdentityField, identityTypeNeedsRepair } from "./identity-field";
@@ -677,6 +681,23 @@ async function migrateDealParityLayouts(
   return migrated;
 }
 
+async function migrateDealLandlordStrip(
+  rows: { id: string; columns: unknown }[],
+  picked: FieldLayout,
+): Promise<FieldLayout> {
+  if (!needsDealDetailsLandlordStrip(picked)) return picked;
+  const stripped = stripDealDetailsLandlordFields(picked);
+  for (const row of rows) {
+    const parsed = parseLayout(row.columns);
+    if (!needsDealDetailsLandlordStrip(parsed)) continue;
+    await db
+      .update(deskFieldLayouts)
+      .set({ columns: stripDealDetailsLandlordFields(parsed), updatedAt: new Date() })
+      .where(eq(deskFieldLayouts.id, row.id));
+  }
+  return stripped;
+}
+
 export async function loadLayoutForLine(line: string): Promise<FieldLayout> {
   return loadLayoutForModule("deals", line);
 }
@@ -716,7 +737,8 @@ export async function loadLayoutForModule(module: FieldLayoutModule, line = "HO"
       if (module === "deals") {
         const dealLayout = await migratePackedDealLayouts(rows, picked);
         const withAddresses = await migrateAddressSections(module, rows, dealLayout);
-        return migrateDealParityLayouts(rows, withAddresses);
+        const withParity = await migrateDealParityLayouts(rows, withAddresses);
+        return migrateDealLandlordStrip(rows, withParity);
       }
       // Tip sep7hk: carriers sparse seed still gets full catalog in Edit Layout.
       // Tip sep7jr: leads/contacts/etc keep agency removals — do not resurrect deleted fields.

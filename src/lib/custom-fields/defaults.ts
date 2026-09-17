@@ -10,6 +10,7 @@ import { CO_APPLICANT_CRM_FIELDS, coApplicantLayoutSection } from "./co-applican
 import { catalogFieldsForProducts } from "@/lib/deals/product-layout";
 import { DEAL_PRODUCTS } from "@/lib/deals/deal-products";
 import { LIVED_AT_ADDRESS_5_YEARS_KEY } from "./mailing-same";
+import { isDealDetailsLandlordFieldKey } from "./deal-details-landlord";
 
 function section(id: string, label: string, fieldKeys: string[]): LayoutSection {
   return { id, label, fieldKeys };
@@ -80,7 +81,9 @@ export const CORE_FIELDS: CustomFieldDef[] = [
   },
   ...APPLICANT_CRM_FIELDS,
   ...CO_APPLICANT_CRM_FIELDS,
-  ...catalogFieldsForProducts([...DEAL_PRODUCTS]),
+  ...catalogFieldsForProducts([...DEAL_PRODUCTS]).filter(
+    (field) => !isDealDetailsLandlordFieldKey(field.key),
+  ),
 ];
 
 const LOB_FIELDS: Record<string, CustomFieldDef[]> = {
@@ -92,13 +95,6 @@ const LOB_FIELDS: Record<string, CustomFieldDef[]> = {
     { key: "stories", label: "Stories", type: "number" },
     { key: "roof_photo", label: "Roof photo", type: "image" },
     { key: "dwell_pct", label: "Other structures %", type: "formula", formula: "coverage_a * 0.1" },
-    { key: "lease_term", label: "Lease term", type: "single_line" },
-    { key: "tenant_name", label: "Tenant name", type: "single_line" },
-    { key: "landlord_liability", label: "Landlord liability", type: "currency" },
-    { key: "loss_of_rents", label: "Loss of rents", type: "currency" },
-    { key: "animals", label: "Animals on premises", type: "picklist", options: ["yes", "no"] },
-    { key: "primary_heat", label: "Primary heat", type: "single_line" },
-    { key: "business_on_premises", label: "Business on premises", type: "picklist", options: ["yes", "no"] },
   ],
   AUTO: [
     { key: "vin", label: "VIN", type: "single_line" },

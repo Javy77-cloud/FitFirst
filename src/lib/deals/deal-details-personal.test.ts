@@ -2,9 +2,13 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
-import { APPLICANT_SECTION_FIELD_KEYS } from "@/lib/custom-fields/applicant-fields";
-import { CONTACT_IDENTITY_FIELD_KEYS } from "@/lib/custom-fields/applicant-fields";
+import {
+  APPLICANT_CRM_FIELDS,
+  APPLICANT_SECTION_FIELD_KEYS,
+  CONTACT_IDENTITY_FIELD_KEYS,
+} from "@/lib/custom-fields/applicant-fields";
 import { defaultLayoutForLine } from "@/lib/custom-fields/defaults";
+import { DEAL_DETAILS_LANDLORD_FIELD_KEYS } from "@/lib/custom-fields/deal-details-landlord";
 import { occupationsForIndustry } from "@/lib/custom-fields/industry-occupation";
 import { allLayoutFieldKeys } from "@/lib/custom-fields/types";
 import { layoutForActiveProduct, productLayoutFields } from "./product-layout";
@@ -145,6 +149,18 @@ describe("Deal Details personal / identity layout", () => {
     );
     expect(hidden).not.toMatch(/data-ff-deal-field="previous_address"/);
 
+    const unanswered = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-1",
+        line: "HO",
+        layout: defaultLayoutForLine("HO"),
+        fields: [],
+        values: {},
+      }),
+    );
+    expect(unanswered).not.toMatch(/data-ff-deal-field="previous_address"/);
+    expect(unanswered).not.toMatch(/data-ff-deal-field="previous_city"/);
+
     const shown = renderToStaticMarkup(
       createElement(DealDetailsPanel, {
         dealId: "deal-1",
@@ -155,5 +171,84 @@ describe("Deal Details personal / identity layout", () => {
       }),
     );
     expect(shown).toMatch(/data-ff-deal-field="previous_address"/);
+    expect(shown).toMatch(/data-ff-deal-field="previous_city"/);
+  });
+
+  it("never renders landlord / rental fields even if a saved layout still lists them", () => {
+    const html = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-1",
+        line: "HO",
+        layout: {
+          columns: [
+            {
+              id: "left",
+              sections: [
+                {
+                  id: "insured_address",
+                  label: "Insured Address",
+                  fieldKeys: ["mailing_address", "primary_heat", "lease_term", "animals"],
+                },
+              ],
+            },
+            {
+              id: "right",
+              sections: [
+                {
+                  id: "landlord",
+                  label: "Landlord",
+                  fieldKeys: [...DEAL_DETAILS_LANDLORD_FIELD_KEYS],
+                },
+              ],
+            },
+          ],
+        },
+        fields: [],
+        values: {},
+      }),
+    );
+    expect(html).toMatch(/data-ff-deal-field="mailing_address"/);
+    expect(html).not.toMatch(/data-ff-deal-field="primary_heat"/);
+    expect(html).not.toMatch(/data-ff-deal-field="lease_term"/);
+    expect(html).not.toMatch(/data-ff-deal-field="tenant_name"/);
+    expect(html).not.toMatch(/data-ff-deal-section="landlord"/);
+  });
+
+  it("filters occupation options by selected industry", () => {
+    const html = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-1",
+        line: "HO",
+        layout: defaultLayoutForLine("HO"),
+        fields: [...APPLICANT_CRM_FIELDS],
+        values: { applicant_industry: "Retire" },
+      }),
+    );
+    expect(html).toMatch(/data-ff-picklist="applicant_occupation"/);
+    expect(html).toMatch(/<option value="Retire">Retire<\/option>/);
+    expect(html).not.toMatch(/Select industry first/);
+
+    const empty = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-1",
+        line: "HO",
+        layout: defaultLayoutForLine("HO"),
+        fields: [...APPLICANT_CRM_FIELDS],
+        values: {},
+      }),
+    );
+    expect(empty).toMatch(/Select industry first/);
+
+    const stub = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-1",
+        line: "HO",
+        layout: defaultLayoutForLine("HO"),
+        fields: [],
+        values: { applicant_industry: "Agriculture / Forestry / Fishing" },
+      }),
+    );
+    expect(stub).toMatch(/data-ff-picklist="applicant_occupation"/);
+    expect(stub).toMatch(/Farm Ranch Owner/);
   });
 });

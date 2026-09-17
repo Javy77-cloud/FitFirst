@@ -24,6 +24,7 @@ import {
   occupationsForIndustry,
 } from "@/lib/custom-fields/industry-occupation";
 import { isDuplicateDealDetailsField } from "@/lib/custom-fields/deal-details-dedupe";
+import { isDealDetailsLandlordFieldKey } from "@/lib/custom-fields/deal-details-landlord";
 import {
   MAILING_SAME_AS_INSURED_KEY,
   isMailingAddressFieldKey,
@@ -291,6 +292,7 @@ export function DealDetailsPanel({
             {asList(column.sections).map((section) => {
               const quoteReq = isInsuranceQuoteRequestSection(section);
               const sectionKeys = asList(section.fieldKeys).filter((key) => {
+                if (isDealDetailsLandlordFieldKey(key)) return false;
                 if (isDuplicateDealDetailsField(key, layoutKeySet, seenFieldKeys)) return false;
                 seenFieldKeys.add(key);
                 return true;
@@ -298,6 +300,7 @@ export function DealDetailsPanel({
               const isCoAppSection =
                 section.id === CO_APPLICANT_SECTION_ID ||
                 sectionKeys.includes("co_applicant_first_name");
+              if (!isCoAppSection && sectionKeys.length === 0) return null;
               if (isCoAppSection) {
                 return (
                   <CoApplicantDealSection
