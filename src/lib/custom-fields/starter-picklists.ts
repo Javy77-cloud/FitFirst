@@ -14,6 +14,7 @@ import {
 import { LEAD_SOURCES } from "@/lib/crm/sources";
 import { MARITAL_STATUS_OPTIONS } from "@/lib/quote-sheet/applicant-core";
 import { INDUSTRY_OPTIONS } from "./industry-occupation";
+import { LIFE_MEDICAL_CONDITION_OPTIONS } from "@/lib/life/conditions";
 
 export const STARTER_PICKLIST_US_STATES = "US states";
 export const STARTER_PICKLIST_LINES = "Lines of business";
@@ -34,6 +35,7 @@ export const STARTER_PICKLIST_DEAL_NOTICES = "Deal notices";
 export const STARTER_PICKLIST_DEAL_NOTICES_PC = "Deal notices · P&C";
 export const STARTER_PICKLIST_DEAL_NOTICES_LIFE = "Deal notices · Life";
 export const STARTER_PICKLIST_DEAL_NOTICES_HEALTH = "Deal notices · Health";
+export const STARTER_PICKLIST_LIFE_MEDICAL = "Life medical conditions";
 export const STARTER_PICKLIST_NAMES = [
   STARTER_PICKLIST_US_STATES,
   STARTER_PICKLIST_LINES,
@@ -54,6 +56,7 @@ export const STARTER_PICKLIST_NAMES = [
   STARTER_PICKLIST_DEAL_NOTICES_PC,
   STARTER_PICKLIST_DEAL_NOTICES_LIFE,
   STARTER_PICKLIST_DEAL_NOTICES_HEALTH,
+  STARTER_PICKLIST_LIFE_MEDICAL,
 ] as const;
 
 /** 50 states + DC. Code first so a State field can store FL. */
@@ -200,6 +203,10 @@ export const STARTER_FIELD_PICKLISTS: StarterFieldPicklist[] = [
   {
     name: STARTER_PICKLIST_DEAL_NOTICES_HEALTH,
     options: [],
+  },
+  {
+    name: STARTER_PICKLIST_LIFE_MEDICAL,
+    options: [...LIFE_MEDICAL_CONDITION_OPTIONS],
   },
 ];
 

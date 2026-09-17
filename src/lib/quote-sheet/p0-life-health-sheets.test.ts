@@ -71,6 +71,21 @@ describe("Life + Health Risk Profile depth", () => {
     expect(life.last_tobacco_date.showWhen?.values).toEqual(["Former", "Current"]);
     expect(life.medical_conditions.input).toBe("multiselect");
     expect(life.medical_conditions.options).toEqual([...LIFE_MEDICAL_CONDITION_OPTIONS]);
+    expect(life.medical_conditions.options).toEqual(
+      expect.arrayContaining([
+        "None",
+        "High blood pressure",
+        "Diabetes Type 2",
+        "Sleep apnea",
+        "Other",
+        "AIDS / HIV",
+        "Alzheimer’s",
+        "CPAP without oxygen",
+        "Wheelchair use",
+      ]),
+    );
+    expect(life.medical_conditions.options.length).toBeGreaterThan(40);
+    expect(life.medical_conditions.options.length).toBeLessThanOrEqual(80);
     expect(life.notes.group).toBe("Health");
     expect(life.existing_coverage.options).toEqual([...YES_NO_OPTIONS]);
     expect(life.existing_carrier.showWhen?.key).toBe("existing_coverage");

@@ -73,3 +73,18 @@ on `(risk_state, carrier_id)`, not a merged write path.
 
 Life/health nationals are out of scope (not in this pack). All seeded P&C
 nationals are `rateable=true`.
+
+## Life UW MATRIX (condition × product)
+
+| Pack | File | What it is |
+| --- | --- | --- |
+| Life MATRIX | `fitfirst-life-uw-matrix.csv` | Javy Life underwriting appetite by condition × product. Screenshot seed only. |
+
+This file is **not** imported into `carrier_appetite` (that table is P&C quote-gate). The Life Markets / Quotes helper reads the CSV directly.
+
+Columns: `carrier_slug`, `carrier_name`, `product_slug`, `product_name`, `condition_key`, `outcome`, `rule_text`, `age_min`, `age_max`, `coverage`, `source`.
+
+- `coverage=incomplete` catalog rows list MATRIX products with no cell rule yet.
+- `coverage=seeded` rows are the only production outcomes. v1 only seeds conditions that appear **uniform decline** across visible screenshot columns (AIDS/HIV, ALS, Alzheimer’s, Dementia, Cystic fibrosis).
+- Do **not** invent Accept / Graded / Preferred cells from screenshots. Unknown is the honest default.
+- Replace/expand this file when Javy uploads the spreadsheet — full MATRIX when spreadsheet provided.

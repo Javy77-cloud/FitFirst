@@ -25,6 +25,7 @@ import type { ShopLine } from "@/lib/domain";
 import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
 import { SHEET_GROUP_HEADER_STYLE, sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
+import { MultiSelectField } from "@/components/custom-fields/multi-select-field";
 
 const MASTER_SHEET_FORM_ID = "ff-master-sheet-save";
 
@@ -438,6 +439,21 @@ function SheetCell({
   return (
     <div className="flex flex-col gap-0.5">
       {input === "multiselect" && options && options.length > 0 ? (
+        line === "life" && fieldKey === "medical_conditions" ? (
+          <div data-ff-sheet-multiselect={fieldKey} className="min-w-0">
+            <input type="hidden" name={fieldKey} value="" />
+            <MultiSelectField
+              name={fieldKey}
+              options={options}
+              value={value}
+              disabled={locked}
+              form={MASTER_SHEET_FORM_ID}
+              searchable
+              label={fieldLabel}
+              fieldKey={fieldKey}
+            />
+          </div>
+        ) : (
         <fieldset
           data-ff-sheet-multiselect={fieldKey}
           className="grid gap-1 rounded-md border border-input bg-background px-2 py-1.5"
@@ -458,6 +474,7 @@ function SheetCell({
             </label>
           ))}
         </fieldset>
+        )
       ) : input === "textarea" ? (
         <Textarea
           id={`ff-sheet-input-${fieldKey}`}

@@ -5,6 +5,8 @@ import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
+import { LifeAppetiteHelper } from "@/components/deal/life-appetite-helper";
+import { predictLifeAppetite } from "@/lib/life/appetite";
 import { DealMotivation } from "@/components/deal/deal-motivation";
 import { SectionTabs } from "@/components/section-tabs";
 import { evaluateDealMarkets } from "@/lib/appetite/evaluate-deal";
@@ -496,6 +498,13 @@ export default async function DealPage({
     })),
     activeLob,
   );
+  const lifeAppetite =
+    sheetLine === "life"
+      ? predictLifeAppetite({
+          medicalConditions: activeSheet.values.medical_conditions?.value ?? "",
+          tobaccoStatus: activeSheet.values.tobacco_status?.value ?? "",
+        })
+      : { selectedLabels: [], conditionKeys: [], predictions: [], coverageNote: "" };
   return (
     <AppShell
       title="Deals"
@@ -834,6 +843,15 @@ export default async function DealPage({
                         productId={activeProduct}
                       />
                     ) : id === "markets" ? (
+                      <div className="space-y-3">
+                        {sheetLine === "life" ? (
+                          <LifeAppetiteHelper
+                            selectedLabels={lifeAppetite.selectedLabels}
+                            tobaccoStatus={activeSheet.values.tobacco_status?.value ?? null}
+                            predictions={lifeAppetite.predictions}
+                            coverageNote={lifeAppetite.coverageNote}
+                          />
+                        ) : null}
                       <MarketsPanel
                         key={agentMarketsAction ? `markets-${activeSheet.id}` : "markets-empty"}
                         dealId={deal.id}
@@ -849,7 +867,19 @@ export default async function DealPage({
                         product={activeProduct}
                         lastRequestCarrierIds={requestScopeForLine(shopFlow, sheetLine)}
                       />
+                      </div>
                     ) : (
+                      <>
+                        {sheetLine === "life" ? (
+                          <div className="mb-3">
+                            <LifeAppetiteHelper
+                              selectedLabels={lifeAppetite.selectedLabels}
+                              tobaccoStatus={activeSheet.values.tobacco_status?.value ?? null}
+                              predictions={lifeAppetite.predictions}
+                              coverageNote={lifeAppetite.coverageNote}
+                            />
+                          </div>
+                        ) : null}
                       <QuotesPanel
                         dealId={deal.id}
                         quotes={lineQuotes}
@@ -906,6 +936,7 @@ export default async function DealPage({
                           ) : null
                         }
                       />
+                      </>
                     )}
                   </div>
             ),

@@ -23,6 +23,8 @@ import {
 import { sheetGroupNeedsAttention, sheetGroupSummary } from "@/lib/quotes/collapse";
 import { sheetFieldDomId } from "@/lib/completeness/fix-href";
 import { cn } from "@/lib/utils";
+import { MultiSelectField } from "@/components/custom-fields/multi-select-field";
+import type { QuoteFieldDef } from "@/lib/quote-sheet/applicant-core";
 
 export function QuoteSheetForm({
   dealId,
@@ -146,7 +148,7 @@ export function QuoteSheetForm({
                 status: "missing" as const,
                 source: "blank" as const,
               };
-              const wide = field.input === "textarea";
+              const wide = field.input === "textarea" || field.input === "multiselect";
               return (
                 <div key={field.key} className={cn(wide && "sm:col-span-2 lg:col-span-3")}>
                   <SheetField
@@ -231,7 +233,7 @@ function SheetField({
   fieldKey: string;
   label: string;
   cell: QuoteSheetFieldValue;
-  input?: "text" | "number" | "textarea" | "select";
+  input?: QuoteFieldDef["input"];
   options?: string[];
   readOnly?: boolean;
   editing?: boolean;
@@ -296,7 +298,43 @@ function SheetField({
           ) : null}
         </div>
       </div>
-      {input === "textarea" ? (
+      {input === "multiselect" && options && options.length > 0 ? (
+        line === "life" && fieldKey === "medical_conditions" ? (
+          <div data-ff-sheet-multiselect={fieldKey}>
+            <input type="hidden" name={fieldKey} value="" />
+            <MultiSelectField
+              name={fieldKey}
+              options={options}
+              value={cell.value}
+              disabled={readOnly}
+              searchable
+              label={label}
+              fieldKey={fieldKey}
+            />
+          </div>
+        ) : (
+          <fieldset
+            data-ff-sheet-multiselect={fieldKey}
+            className="grid gap-1 rounded-md border border-input bg-background px-2 py-1.5"
+          >
+            <legend className="sr-only">{label}</legend>
+            <input type="hidden" name={fieldKey} value="" />
+            {options.map((opt) => (
+              <label key={opt} className="flex items-center gap-1.5 text-xs text-navy">
+                <input
+                  type="checkbox"
+                  name={fieldKey}
+                  value={opt}
+                  defaultChecked={cell.value.split(",").map((part) => part.trim()).includes(opt)}
+                  disabled={readOnly}
+                  className="size-3.5"
+                />
+                <span>{opt}</span>
+              </label>
+            ))}
+          </fieldset>
+        )
+      ) : input === "textarea" ? (
         <Textarea
           id={fieldKey}
           name={fieldKey}

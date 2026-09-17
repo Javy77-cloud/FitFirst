@@ -1328,24 +1328,11 @@ export const LIFE_PURPOSE_OPTIONS = [
   "Other",
 ] as const;
 
-export const LIFE_MEDICAL_CONDITION_OPTIONS = [
-  "None",
-  "High blood pressure",
-  "High cholesterol",
-  "Diabetes Type 1",
-  "Diabetes Type 2",
-  "Heart disease",
-  "Stroke",
-  "Cancer",
-  "Asthma",
-  "COPD",
-  "Kidney disease",
-  "Liver disease",
-  "Thyroid disorder",
-  "Mental health condition",
-  "Sleep apnea",
-  "Other",
-] as const;
+export {
+  LIFE_LEAN_MEDICAL_CONDITION_OPTIONS,
+  LIFE_MATRIX_MEDICAL_CONDITION_OPTIONS,
+  LIFE_MEDICAL_CONDITION_OPTIONS,
+} from "@/lib/life/conditions";
 
 export const TOBACCO_TYPE_OPTIONS = [
   "Cigarettes",
