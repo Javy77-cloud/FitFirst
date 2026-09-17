@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { AddNewDealDialog } from "@/components/deals/add-new-deal-dialog";
 import { DealQuickActions } from "@/components/deals/deal-quick-actions";
 import { DealListProductNotes } from "@/components/deals/deal-list-product-notes";
 import { DealProductStageChips } from "@/components/deals/deal-product-stage-chips";
@@ -120,12 +119,6 @@ export async function DealsTable({
 
   return (
     <section className="ff-card overflow-x-auto" data-ff-pipe-mode={mode}>
-      <div
-        className="flex items-center justify-end border-b border-border px-3 py-2"
-        data-ff-deals-list-actions=""
-      >
-        <AddNewDealDialog />
-      </div>
       <ModuleListActions
         module="deals"
         showMacrosLink={false}

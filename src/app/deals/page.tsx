@@ -244,15 +244,20 @@ export default async function DealsPage({
           className="mb-3 rounded-xl border border-border/80 bg-card/80 px-3 py-2 shadow-sm"
           data-ff-pipeline-filter-chrome=""
         >
-        <PipelineFilterPopover
-          moduleId="deals-pipeline"
-          fields={pipelineFilterFields}
-          searchPlaceholder="Find a deal, insured, or phone…"
-          preserveParams={DEAL_PIPELINE_PRESERVE_PARAMS}
-          canConfigure={session.isAdmin}
-          searchClassName="min-w-48"
-          searchInputClassName="h-9 w-64 rounded-lg border-border bg-background"
-        />
+          <div className="min-w-0 flex-1">
+            <PipelineFilterPopover
+              moduleId="deals-pipeline"
+              fields={pipelineFilterFields}
+              searchPlaceholder="Find a deal, insured, or phone…"
+              preserveParams={DEAL_PIPELINE_PRESERVE_PARAMS}
+              canConfigure={session.isAdmin}
+              searchClassName="min-w-48"
+              searchInputClassName="h-9 w-64 rounded-lg border-border bg-background"
+            />
+          </div>
+          <div className="shrink-0" data-ff-deals-list-actions="">
+            <AddNewDealDialog triggerSize="sm" />
+          </div>
         </div>
         {isPipelineSheetView(view) ? (
           <>
@@ -286,14 +291,7 @@ export default async function DealsPage({
             />
           </>
         ) : board ? (
-          <>
-            <div
-              className="mb-3 flex items-center"
-              data-ff-deals-board-actions=""
-            >
-              <AddNewDealDialog />
-            </div>
-            <PipelineWorkspace
+          <PipelineWorkspace
             agents={agents}
             initialQuery={q}
             searchModuleId="deals-pipeline"
@@ -317,8 +315,6 @@ export default async function DealsPage({
             stageFilter={stage}
             tagCatalog={tagCatalog}
           />
-          </>
-
         ) : (
           <p className="text-sm text-muted-foreground">
             No pipeline boards yet. Table still lists every deal on this book.

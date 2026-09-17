@@ -253,10 +253,11 @@ export function DeskCalendar({
   );
 
   return (
-    <div className="-mt-8 space-y-1">
+    <div className="space-y-1" data-ff-calendar-toolbar-wrap="">
       <nav
         aria-label="Calendar toolbar"
         className="grid gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-center"
+        data-ff-calendar-toolbar-offset=""
       >
         <div className="flex flex-wrap items-center gap-1" data-calendar-toolbar="view">
           {CALENDAR_VIEWS.map((v, index) => (

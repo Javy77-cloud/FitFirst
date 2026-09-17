@@ -40,7 +40,7 @@ export default async function CalendarPage({
 
   return (
     <AppShell title="Calendar">
-      <div className="-mt-6" data-ff-calendar-page="">
+      <div data-ff-calendar-page="">
       <DeskCalendar
         events={events}
         options={options}
