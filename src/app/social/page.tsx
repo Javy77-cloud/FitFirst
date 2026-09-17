@@ -38,9 +38,13 @@ export default async function SocialPulsePage({
     );
     return {
       ...inquiry,
-      routeLabel: ownerId
-        ? `${names.get(ownerId) ?? "Agent"}'s connected account`
-        : "Agency · Admin awards",
+      routeLabel: session.isAdmin
+        ? ownerId
+          ? `${names.get(ownerId) ?? "Agent"}'s connected account`
+          : "Agency · Admin awards"
+        : ownerId
+          ? names.get(ownerId) ?? "Assigned"
+          : "Agency award pool",
     };
   });
 
@@ -48,22 +52,24 @@ export default async function SocialPulsePage({
     <AppShell
       title="Social"
       actions={
-        <Link href="/settings/social" className={cn(buttonVariants({ variant: "outline" }))}>
-          {session.isAdmin ? "Social settings" : "View connections"}
-        </Link>
+        session.isAdmin ? (
+          <Link href="/settings/social" className={cn(buttonVariants({ variant: "outline" }))}>
+            Social settings
+          </Link>
+        ) : undefined
       }
     >
       <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
-        Connect the agency’s Meta, Google, or LinkedIn app. FitFirst does not buy those APIs or
-        invent follower counts. Inquiries on a connected account become Leads. X stays a paid
-        wall.
+        {session.isAdmin
+          ? "Connect the agency’s Meta, Google, or LinkedIn app. FitFirst does not buy those APIs or invent follower counts. Inquiries on a connected account become Leads. X stays a paid wall."
+          : "Inbound social inquiries become Leads. Admin connects accounts under Settings → Social / GBP. FitFirst does not invent follower counts."}
       </p>
       {notice === "gbp-locked" ? (
         <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
           Google Business Profile stays locked until Admin allows agents to monitor it.
         </p>
       ) : null}
-      {notice === "platform-disconnected" ? (
+      {session.isAdmin && notice === "platform-disconnected" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
           That platform is not connected. Ask Admin to connect it under Settings → Social.
         </p>
@@ -85,21 +91,22 @@ export default async function SocialPulsePage({
       ) : null}
       {pulse.gbpLocked ? (
         <p className="mb-3 rounded-md border border-border bg-secondary/60 px-3 py-2 text-sm">
-          GBP is locked on this desk. Admin must allow agents to monitor it in Settings → Social
-          after connecting the listing.
+          GBP is locked on this desk until Admin allows agents to monitor it.
         </p>
       ) : null}
 
-      <div className="grid gap-3 md:grid-cols-2">
-        {social.map((item) => (
-          <SocialByoCard
-            key={item.id}
-            item={item}
-            canEdit={session.isAdmin}
-            returnTo="/settings/social"
-          />
-        ))}
-      </div>
+      {session.isAdmin ? (
+        <div className="grid gap-3 md:grid-cols-2">
+          {social.map((item) => (
+            <SocialByoCard
+              key={item.id}
+              item={item}
+              canEdit
+              returnTo="/settings/social"
+            />
+          ))}
+        </div>
+      ) : null}
       {session.isAdmin ? (
         <div className="mt-4">
           <UnassignedOfferBoard offers={offers} agents={agents} />

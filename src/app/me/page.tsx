@@ -177,16 +177,6 @@ export default async function PersonalSettingsPage({
               </select>
             </section>
 
-            <section id="social" className="ff-card space-y-2 p-4">
-              <h2 className="text-sm font-semibold text-navy">Connected social accounts</h2>
-              <p className="text-sm text-muted-foreground">
-                Your pulse and BYO connects. Agency app credentials stay with Admin.
-              </p>
-              <Link href="/social" className="text-sm text-primary hover:underline">
-                Open Social
-              </Link>
-            </section>
-
             <Button type="submit" size="sm">
               Save personal settings
             </Button>

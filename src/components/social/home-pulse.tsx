@@ -10,10 +10,9 @@ export function HomeSocialPulse({ pulse }: { pulse: SocialPulseSnapshot }) {
         <div>
           <h3 className="text-sm font-semibold text-navy">Social pulse</h3>
           <p className="text-[11px] text-muted-foreground">
-            {pulse.connectedVisible === 0
-              ? "No connected stubs in view. Agency connects the accounts."
-              : `${pulse.connectedVisible} connected stub${pulse.connectedVisible === 1 ? "" : "s"} · demo numbers`}
-            {pulse.gbpLocked ? " · GBP locked until Admin allows monitoring" : ""}
+            {pulse.gbpLocked
+              ? "GBP locked until Admin allows monitoring"
+              : "Inbound social inquiries. Admin connects the accounts."}
           </p>
         </div>
         <Link
@@ -24,7 +23,7 @@ export function HomeSocialPulse({ pulse }: { pulse: SocialPulseSnapshot }) {
           <ArrowUpRight className="size-3" />
         </Link>
       </div>
-      <PulseCards cards={pulse.cards} compact />
+      <PulseCards cards={pulse.cards} compact showConnectionStatus={false} />
     </section>
   );
 }

@@ -18,6 +18,7 @@ export const ADMIN_ONLY_PATHS = [
   "/settings/import",
   "/settings/billing",
   "/settings/integrations",
+  "/settings/social",
   "/settings/carrier-download",
   "/logs/fill-learning",
   "/compliance",

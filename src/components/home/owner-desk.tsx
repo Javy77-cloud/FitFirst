@@ -69,6 +69,7 @@ const SOCIAL_TILE_IDS = [
 function socialTiles(
   pulse: SocialPulseSnapshot | null | undefined,
   visible: (id: HomeWidgetId) => boolean,
+  showConnectionStatus: boolean,
 ): Partial<Record<HomeWidgetId, ReactNode>> {
   const next: Partial<Record<HomeWidgetId, ReactNode>> = {};
   SOCIAL_TILE_IDS.forEach((id, index) => {
@@ -76,7 +77,15 @@ function socialTiles(
     const platform = SOCIAL_LAYOUT_TO_PLATFORM[id];
     const card = pulse?.cards.find((row) => row.id === platform);
     if (!card) return;
-    next[id] = <PulseTile card={card} index={index} framed={false} compact />;
+    next[id] = (
+      <PulseTile
+        card={card}
+        index={index}
+        framed={false}
+        compact
+        showConnectionStatus={showConnectionStatus}
+      />
+    );
   });
   return next;
 }
@@ -715,7 +724,7 @@ export function OwnerDesk({
                   ),
                 }
               : {}),
-            ...socialTiles(socialPulse, tile),
+            ...socialTiles(socialPulse, tile, isAdmin),
             ...(tile("recent-deals")
               ? {
                   "recent-deals": (
