@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isMailingAddressSection,
   isMailingSameAsInsured,
   isNoLivedAtAddress5Years,
   isPreviousAddressFieldKey,
@@ -44,4 +45,11 @@ describe("mailing same as insured", () => {
     expect(isPreviousAddressFieldKey("prior_address")).toBe(true);
     expect(isPreviousAddressFieldKey("priority")).toBe(false);
   });
+
+  it("recognizes mailing address sections", () => {
+    expect(isMailingAddressSection({ id: "mailing_address", label: "Mailing" })).toBe(true);
+    expect(isMailingAddressSection({ id: "other", label: "Mailing Address" })).toBe(true);
+    expect(isMailingAddressSection({ id: "insured_address", label: "Insured Address" })).toBe(false);
+  });
 });
+
