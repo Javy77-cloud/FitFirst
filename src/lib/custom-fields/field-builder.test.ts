@@ -114,7 +114,7 @@ describe("deal field builder", () => {
     expect(builder).toMatch(/Shown when lived here is No/);
     expect(builder).toMatch(/layoutWithoutDealDetailsLandlord/);
     expect(builder).toMatch(/isPreviousAddressFieldKey/);
-    expect(builder).toMatch(/occupationsForIndustry/);
+    expect(builder).toMatch(/occupationValueAfterIndustryChange/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/upsertFieldDef/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(
       /flashAction\(fieldBuilderHref\(module, line\), "layout-saved"\)/,

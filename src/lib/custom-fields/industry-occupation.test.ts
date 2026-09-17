@@ -5,6 +5,7 @@ import {
   isIndustryCascadeParent,
   isOccupationCascadeChild,
   occupationIndustryParentKey,
+  occupationValueAfterIndustryChange,
   occupationsForIndustry,
 } from "./industry-occupation";
 
@@ -18,17 +19,42 @@ describe("industry → occupation cascade", () => {
 
   it("locks Retire → Retire only", () => {
     expect(occupationsForIndustry(INDUSTRY_RETIRE)).toEqual(["Retire"]);
+    expect(occupationsForIndustry("Retired")).toEqual(["Retire"]);
   });
 
-  it("uses Javy agriculture + art lists and fills remaining industries", () => {
-    expect(occupationsForIndustry("Agriculture / Forestry / Fishing")).toEqual(
-      expect.arrayContaining(["Farm Ranch Owner", "Landscaper", "Logger", "Other"]),
+  it("uses Javy 2026-09-16 locked lists and aliases his section titles", () => {
+    expect(occupationsForIndustry("Agriculture / Forestry / Fishing")).toEqual([
+      "Farmworker",
+      "Rancher",
+      "Logger",
+      "Fisher",
+      "Agricultural Inspector",
+      "Forester",
+      "Greenhouse Manager",
+      "Animal Breeder",
+      "Logging Equipment Operator",
+      "Farm Equipment Operator",
+      "Aquaculture Technician",
+      "Crop Scout",
+      "Forest Conservation Worker",
+      "Agricultural Sales Rep",
+      "Irrigation Specialist",
+      "Other",
+    ]);
+    expect(occupationsForIndustry("Agriculture, Forestry, Fishing")).toEqual(
+      occupationsForIndustry("Agriculture / Forestry / Fishing"),
     );
     expect(occupationsForIndustry("Art / Design / Media")).toEqual(
-      expect.arrayContaining(["Actor", "Designer", "Journalist or Reporter", "Other"]),
+      expect.arrayContaining(["Graphic Designer", "UX/UI Designer", "Copywriter", "Other"]),
+    );
+    expect(occupationsForIndustry("Art, Design, Media")).toEqual(
+      occupationsForIndustry("Art / Design / Media"),
     );
     expect(occupationsForIndustry("Information Technology")).toEqual(
-      expect.arrayContaining(["Software Developer", "Help Desk", "Other"]),
+      expect.arrayContaining(["Software Developer", "Help Desk Technician", "Other"]),
+    );
+    expect(occupationsForIndustry("Insurance")).toEqual(
+      expect.arrayContaining(["Claims Adjuster", "Insurance Agent", "Actuary", "Other"]),
     );
     expect(occupationsForIndustry("Unemployed")).toEqual(["Unemployed"]);
     expect(occupationsForIndustry("Student")).toEqual(["Student"]);
@@ -36,11 +62,45 @@ describe("industry → occupation cascade", () => {
     expect(occupationsForIndustry("Agriculture/Forestry/Fishing")).toEqual(
       occupationsForIndustry("Agriculture / Forestry / Fishing"),
     );
+    expect(occupationsForIndustry("Other")).toEqual([
+      "Retired",
+      "Student",
+      "Homemaker",
+      "Unemployed",
+      "Self-Employed",
+      "Volunteer",
+      "Caregiver",
+      "Entrepreneur",
+      "Consultant",
+      "Freelancer",
+    ]);
     expect(occupationsForIndustry("Not a real industry")).toEqual(
-      expect.arrayContaining(["Retired", "Student", "Homemaker", "Other"]),
+      occupationsForIndustry("Other"),
     );
-    expect(occupationsForIndustry("Other")).toEqual(
-      expect.arrayContaining(["Retired", "Student", "Homemaker", "Other"]),
+  });
+
+  it("clears occupation when it is not on the new industry list", () => {
+    expect(occupationValueAfterIndustryChange("Retire", "Farmworker")).toBe("");
+    expect(occupationValueAfterIndustryChange("Agriculture / Forestry / Fishing", "Farmworker")).toBe(
+      "Farmworker",
+    );
+    expect(occupationValueAfterIndustryChange("Information Technology", "Farmworker")).toBe("");
+    expect(occupationValueAfterIndustryChange("Other", "Student")).toBe("Student");
+  });
+
+  it("keeps industries Javy did not paste on a short subset or status lock", () => {
+    expect(occupationsForIndustry("Business / Sales / Office")).toEqual(
+      expect.arrayContaining(["Sales Representative", "Office Manager", "Other"]),
+    );
+    expect(occupationsForIndustry("Home / Homemaker / Houseperson")).toEqual(
+      expect.arrayContaining(["Homemaker", "Houseperson"]),
+    );
+    expect(occupationsForIndustry("Disabled")).toEqual(["Disabled"]);
+    expect(occupationsForIndustry("Sports and Recreation")).toEqual(
+      expect.arrayContaining(["Coach", "Fitness Instructor", "Other"]),
+    );
+    expect(occupationsForIndustry("Travel / Transportation / Warehousing")).toEqual(
+      expect.arrayContaining(["Truck Driver", "Warehouse Worker", "Other"]),
     );
   });
 

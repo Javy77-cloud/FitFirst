@@ -80,7 +80,7 @@ import {
 } from "@/lib/custom-fields/mailing-same";
 import {
   isIndustryCascadeParent,
-  occupationsForIndustry,
+  occupationValueAfterIndustryChange,
 } from "@/lib/custom-fields/industry-occupation";
 
 function editorLayout(module: FieldLayoutModule, layout: FieldLayout): FieldLayout {
@@ -240,8 +240,7 @@ export function FieldBuilder({
       const updated: Record<string, string> = { ...prev, [key]: next };
       if (isIndustryCascadeParent(key)) {
         const child = key.replace(/_industry$/, "_occupation");
-        const allowed = occupationsForIndustry(next);
-        if (updated[child] && !allowed.includes(updated[child])) updated[child] = "";
+        updated[child] = occupationValueAfterIndustryChange(next, updated[child]);
       }
       return updated;
     });

@@ -250,7 +250,33 @@ describe("Deal Details personal / identity layout", () => {
       }),
     );
     expect(stub).toMatch(/data-ff-picklist="applicant_occupation"/);
-    expect(stub).toMatch(/Farm Ranch Owner/);
+    expect(stub).toMatch(/Farmworker/);
+    expect(stub).not.toMatch(/Farm Ranch Owner/);
+    expect(stub).not.toMatch(/Help Desk Technician/);
+
+    const itHtml = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-1",
+        line: "HO",
+        layout: defaultLayoutForLine("HO"),
+        fields: [...APPLICANT_CRM_FIELDS],
+        values: { applicant_industry: "Information Technology" },
+      }),
+    );
+    expect(itHtml).toMatch(/Help Desk Technician/);
+    expect(itHtml).not.toMatch(/Farmworker/);
+
+    const otherHtml = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-1",
+        line: "HO",
+        layout: defaultLayoutForLine("HO"),
+        fields: [...APPLICANT_CRM_FIELDS],
+        values: { applicant_industry: "Other" },
+      }),
+    );
+    expect(otherHtml).toMatch(/<option value="Retired">Retired<\/option>/);
+    expect(otherHtml).toMatch(/<option value="Freelancer">Freelancer<\/option>/);
 
     const coApp = renderToStaticMarkup(
       createElement(DealDetailsPanel, {

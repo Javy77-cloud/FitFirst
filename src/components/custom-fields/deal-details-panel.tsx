@@ -21,7 +21,7 @@ import {
 } from "@/lib/custom-fields/co-applicant-fields";
 import {
   isIndustryCascadeParent,
-  occupationsForIndustry,
+  occupationValueAfterIndustryChange,
 } from "@/lib/custom-fields/industry-occupation";
 import { isDuplicateDealDetailsField } from "@/lib/custom-fields/deal-details-dedupe";
 import { isDealDetailsLandlordFieldKey } from "@/lib/custom-fields/deal-details-landlord";
@@ -269,8 +269,7 @@ export function DealDetailsPanel({
       const updated: Record<string, string> = { ...prev, [key]: next };
       if (isIndustryCascadeParent(key)) {
         const child = key.replace(/_industry$/, "_occupation");
-        const allowed = occupationsForIndustry(next);
-        if (updated[child] && !allowed.includes(updated[child])) updated[child] = "";
+        updated[child] = occupationValueAfterIndustryChange(next, updated[child]);
       }
       return updated;
     });
