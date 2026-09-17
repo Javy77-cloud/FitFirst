@@ -77,13 +77,14 @@ describe("carrier missing-question tracker", () => {
   it("wires an Admin/Developer list with an honest empty state and no seed rows", () => {
     const page = source("src/app/developer/missing-questions/page.tsx");
     const settings = source("src/app/settings/developer-hub/missing-questions/page.tsx");
+    const panel = source("src/components/developer/missing-questions-panel.tsx");
     const hub = source("src/lib/developer-hub/hub.ts");
     const nav = source("src/lib/settings/nav.ts");
     const seed = source("src/lib/db/seed.ts");
     const sql = source("drizzle/0135_carrier_missing_questions.sql");
     expect(page).toMatch(/requireAdminOrDeveloperPage/);
-    expect(page).toMatch(/data-ff-missing-questions-empty/);
-    expect(page).toMatch(/Nothing logged yet/);
+    expect(panel).toMatch(/data-ff-missing-questions-empty/);
+    expect(panel).toMatch(/Nothing logged yet/);
     expect(settings).toMatch(/requireAdminOrDeveloperPage/);
     expect(hub).toMatch(/missing-questions/);
     expect(nav).toMatch(/\/settings\/developer-hub\/missing-questions/);
