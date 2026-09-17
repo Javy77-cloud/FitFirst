@@ -1,9 +1,10 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { deskCustomFields, globalLists } from "@/lib/db/schema";
+import { DEAL_SELLING_AGENCY_KEY } from "@/lib/deals/selling-agency";
 
-/** Deal layout "Selling Agency" options follow Global lists → Selling agencies. */
+/** List + Details Selling agency options follow Global lists → Selling agencies. */
 export async function syncDealSellingAgencyFromGlobalLists(tenantId = DEFAULT_TENANT_ID) {
   const rows = await db
     .select({ label: globalLists.label, color: globalLists.color })
@@ -29,6 +30,7 @@ export async function syncDealSellingAgencyFromGlobalLists(tenantId = DEFAULT_TE
     .set({
       picklistId: null,
       globalListKey: "selling_agency",
+      required: true,
       // Rich options are already stored for this field; schema typing lags as string[].
       options: options as unknown as string[],
       updatedAt: new Date(),
@@ -36,8 +38,8 @@ export async function syncDealSellingAgencyFromGlobalLists(tenantId = DEFAULT_TE
     .where(
       and(
         eq(deskCustomFields.tenantId, tenantId),
-        eq(deskCustomFields.module, "deals"),
-        eq(deskCustomFields.key, "picklist_yp0c"),
+        inArray(deskCustomFields.module, ["deals", "leads"]),
+        eq(deskCustomFields.key, DEAL_SELLING_AGENCY_KEY),
       ),
     );
 }

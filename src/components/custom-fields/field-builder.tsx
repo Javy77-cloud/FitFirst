@@ -80,6 +80,13 @@ import {
   type FieldPermissions,
 } from "@/lib/custom-fields/types";
 import {
+  canonicalizeSellingAgencyLayout,
+  DEAL_SELLING_AGENCY_FIELD,
+  DEAL_SELLING_AGENCY_KEY,
+  isSellingAgencyLabel,
+  sellingAgencyKeyForNewField,
+} from "@/lib/deals/selling-agency";
+import {
   isDealDetailsLandlordFieldKey,
   layoutWithoutDealDetailsLandlord,
 } from "@/lib/custom-fields/deal-details-landlord";
@@ -360,21 +367,21 @@ export function FieldBuilder({
 
   function placeNewField(type: CustomFieldType, columnId: string, sectionId?: string, beforeKey?: string) {
     const baseLabel = type === "dob" ? "Date of birth" : CUSTOM_FIELD_TYPE_LABELS[type];
-    let key = slugifyFieldKey(baseLabel);
-    if (fields.some((field) => field.key === key)) {
+    let key = sellingAgencyKeyForNewField({ label: baseLabel }) || slugifyFieldKey(baseLabel);
+    if (key !== DEAL_SELLING_AGENCY_KEY && fields.some((field) => field.key === key)) {
       key = `${key}_${Date.now().toString(36).slice(-4)}`;
     }
     const field: CustomFieldDef = {
       key,
       label: baseLabel,
-      type,
+      type: key === DEAL_SELLING_AGENCY_KEY ? "picklist" : type,
       options: type === "picklist" || type === "multi_select" ? ["", ""] : [],
       formula: type === "formula" ? "" : null,
       lookupModule: type === "lookup" ? "contacts" : null,
-      required: false,
+      required: key === DEAL_SELLING_AGENCY_KEY,
       defaultValue: "",
       picklistId: null,
-      globalListKey: null,
+      globalListKey: key === DEAL_SELLING_AGENCY_KEY ? "selling_agency" : null,
       permissions: defaultFieldPermissions(),
     };
     setFields((current) => [...current, field]);
@@ -472,9 +479,44 @@ export function FieldBuilder({
     setFields((current) => current.map((field) => (field.key === key ? { ...field, ...patch } : field)));
   }
 
+  function remapLayoutKey(from: string, to: string) {
+    setLayout((current) => {
+      const replaced = {
+        ...current,
+        columns: current.columns.map((column) => ({
+          ...column,
+          sections: column.sections.map((section) => ({
+            ...section,
+            fieldKeys: section.fieldKeys.map((item) => (item === from ? to : item)),
+          })),
+        })),
+      };
+      return canonicalizeSellingAgencyLayout(replaced, [
+        ...fields.map((field) => (field.key === from ? { ...field, key: to } : field)),
+        DEAL_SELLING_AGENCY_FIELD,
+      ]);
+    });
+  }
+
   function renameField(key: string, label: string) {
     const trimmed = label.trim();
     if (!trimmed) return;
+    if (isSellingAgencyLabel(trimmed) && key !== DEAL_SELLING_AGENCY_KEY) {
+      setFields((current) => {
+        const source = current.find((field) => field.key === key);
+        const without = current.filter((field) => field.key !== key && field.key !== DEAL_SELLING_AGENCY_KEY);
+        const canonical: CustomFieldDef = {
+          ...(source ?? DEAL_SELLING_AGENCY_FIELD),
+          ...DEAL_SELLING_AGENCY_FIELD,
+          options: source?.options?.length ? source.options : DEAL_SELLING_AGENCY_FIELD.options,
+          optionColors: source?.optionColors,
+        };
+        return [...without, canonical];
+      });
+      remapLayoutKey(key, DEAL_SELLING_AGENCY_KEY);
+      if (dialog?.key === key) setDialog({ kind: "properties", key: DEAL_SELLING_AGENCY_KEY });
+      return;
+    }
     patchField(key, { label: trimmed });
   }
 
@@ -789,7 +831,18 @@ export function FieldBuilder({
             if (patch.label) renameField(dialogField.key, patch.label);
             const { label: _label, ...rest } = patch;
             void _label;
-            if (Object.keys(rest).length) patchField(dialogField.key, rest);
+            const targetKey =
+              patch.label && isSellingAgencyLabel(patch.label)
+                ? DEAL_SELLING_AGENCY_KEY
+                : dialogField.key;
+            if (Object.keys(rest).length) {
+              patchField(targetKey, {
+                ...rest,
+                ...(targetKey === DEAL_SELLING_AGENCY_KEY
+                  ? { required: true, globalListKey: "selling_agency", type: "picklist" }
+                  : {}),
+              });
+            }
             setDialog(null);
           }}
         />

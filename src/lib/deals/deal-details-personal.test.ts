@@ -142,6 +142,7 @@ describe("Deal Details personal / identity layout", () => {
     expect(html).toMatch(/data-ff-cascade-category-value="Term Life"/);
     expect(html).toMatch(/data-ff-cascade-subtype-value="Term Life"/);
     expect(html).toMatch(/data-ff-required-field="pipeline"/);
+    expect(html).toMatch(/data-ff-required-field="selling-agency"/);
     expect(html).toMatch(/text-red-700/);
     expect(html).not.toMatch(/#e0f2fe/);
     expect(html).not.toMatch(/Policy type/);

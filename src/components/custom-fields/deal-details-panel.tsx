@@ -29,6 +29,12 @@ import {
   occupationValueAfterIndustryChange,
 } from "@/lib/custom-fields/industry-occupation";
 import { isDuplicateDealDetailsField } from "@/lib/custom-fields/deal-details-dedupe";
+import {
+  DEAL_SELLING_AGENCY_FIELD,
+  DEAL_SELLING_AGENCY_KEY,
+  defaultSellingAgencyValue,
+  isSellingAgencyFieldKey,
+} from "@/lib/deals/selling-agency";
 import { isDealDetailsLandlordFieldKey } from "@/lib/custom-fields/deal-details-landlord";
 import { MailingSameSwitch } from "@/components/custom-fields/mailing-same-switch";
 import {
@@ -81,6 +87,7 @@ function skipOwnedInsuranceField(
     (key === "pipeline" ||
       key === "insurance_category" ||
       key === "insurance_subtype" ||
+      isSellingAgencyFieldKey(key) ||
       field.systemKey === "quotingForm")
   );
 }
@@ -260,6 +267,56 @@ function DealDetailsField({
   );
 }
 
+function SellingAgencyStripField({
+  field,
+  value,
+  formId,
+  onValueChange,
+}: {
+  field: CustomFieldDef;
+  value: string;
+  formId: string;
+  onValueChange: (next: string) => void;
+}) {
+  const empty = !value.trim();
+  return (
+    <label
+      className="mt-3 block text-xs font-medium text-red-700"
+      data-ff-required-field="selling-agency"
+      htmlFor={`field_${DEAL_SELLING_AGENCY_KEY}`}
+    >
+      Selling agency{" "}
+      <span aria-hidden="true">*</span>
+      <select
+        id={`field_${DEAL_SELLING_AGENCY_KEY}`}
+        name={`field_${DEAL_SELLING_AGENCY_KEY}`}
+        form={formId}
+        required
+        aria-required
+        aria-invalid={empty || undefined}
+        aria-label="Selling agency"
+        value={value}
+        onChange={(event) => onValueChange(event.target.value)}
+        className={`mt-1 h-8 w-full rounded-md border bg-background px-2 text-sm text-navy ${
+          empty ? "border-red-600" : "border-border"
+        }`}
+        data-ff-picklist={DEAL_SELLING_AGENCY_KEY}
+        data-ff-selling-agency=""
+      >
+        <option value="">Select</option>
+        {(field.options ?? []).map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+        {value && !(field.options ?? []).includes(value) ? (
+          <option value={value}>{value}</option>
+        ) : null}
+      </select>
+    </label>
+  );
+}
+
 export function DealDetailsPanel({
   dealId,
   line,
@@ -309,17 +366,26 @@ export function DealDetailsPanel({
   });
   const fieldList = resolveLayoutFields(
     safeLayout,
-    commercial ? [...asList(fields), ...BUSINESS_IDENTITY_FIELDS] : asList(fields),
+    [
+      ...(commercial ? [...asList(fields), ...BUSINESS_IDENTITY_FIELDS] : asList(fields)),
+      ...(!asList(fields).some((field) => field.key === DEAL_SELLING_AGENCY_KEY)
+        ? [DEAL_SELLING_AGENCY_FIELD]
+        : []),
+    ],
   );
   const byKey = Object.fromEntries(fieldList.map((field) => [field.key, field]));
   const formId = "deal-details-save";
-  const [liveValues, setLiveValues] = useState(() =>
-    mergeCascadePrefill(values, {
+  const [liveValues, setLiveValues] = useState(() => {
+    const merged = mergeCascadePrefill(values, {
       shopProducts: dealProducts,
       quotingForm,
       policySubType,
-    }),
-  );
+    });
+    const selling =
+      merged[DEAL_SELLING_AGENCY_KEY] ||
+      defaultSellingAgencyValue((byKey[DEAL_SELLING_AGENCY_KEY] ?? DEAL_SELLING_AGENCY_FIELD).options);
+    return selling ? { ...merged, [DEAL_SELLING_AGENCY_KEY]: selling } : merged;
+  });
   const layoutKeySet = new Set(
     asList(safeLayout.columns).flatMap((column) =>
       asList(column.sections).flatMap((section) => asList(section.fieldKeys)),
@@ -371,7 +437,8 @@ export function DealDetailsPanel({
       >
         <LayoutSectionHeader title="Pipeline" />
         <p className="mb-2 text-center text-[11px] text-red-700" id="ff-pipeline-required-hint">
-          Required — these fields open the matching Risk Profile.
+          Required — Pipeline and Policy form open the matching Risk Profile. Selling agency is
+          required on create.
         </p>
         <InsuranceCascadeControl
           typeName="field_insurance_type"
@@ -392,6 +459,15 @@ export function DealDetailsPanel({
           activePackageLine={activePackageLine}
           lineSettings={lineSettings}
           variant="strip"
+        />
+        <SellingAgencyStripField
+          field={byKey[DEAL_SELLING_AGENCY_KEY] ?? DEAL_SELLING_AGENCY_FIELD}
+          value={
+            liveValues[DEAL_SELLING_AGENCY_KEY] ||
+            defaultSellingAgencyValue((byKey[DEAL_SELLING_AGENCY_KEY] ?? DEAL_SELLING_AGENCY_FIELD).options)
+          }
+          formId={formId}
+          onValueChange={(next) => patchValue(DEAL_SELLING_AGENCY_KEY, next)}
         />
       </section>
       <div

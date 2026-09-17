@@ -6,6 +6,10 @@ import {
   type CustomFieldDef,
   type FieldLayout,
 } from "./types";
+import {
+  canonicalizeSellingAgencyValues,
+  DEAL_SELLING_AGENCY_ALIAS_KEYS,
+} from "@/lib/deals/selling-agency";
 
 export type SavedLayoutRow = {
   lineOfBusiness: string;
@@ -134,7 +138,11 @@ export function customValuesFromForm(
         field.type === "phone" ? formatPhoneStandard(raw) || raw : raw;
     }
   }
-  return custom;
+  for (const alias of DEAL_SELLING_AGENCY_ALIAS_KEYS) {
+    if (custom[alias] != null || !form.has(`field_${alias}`)) continue;
+    custom[alias] = String(form.get(`field_${alias}`) ?? "");
+  }
+  return canonicalizeSellingAgencyValues(custom);
 }
 
 /** Append any catalog fields missing from the saved layout into a trailing "More fields" section. */

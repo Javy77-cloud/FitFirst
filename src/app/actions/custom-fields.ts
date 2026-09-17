@@ -59,6 +59,11 @@ import {
 } from "@/lib/custom-fields/types";
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
 import { dealListCascadeSyncValues, pipelineFamilyFromDeal } from "@/lib/deals/insurance-cascade";
+import {
+  canonicalizeSellingAgencyLayout,
+  DEAL_SELLING_AGENCY_FIELD,
+  sellingAgencyKeyForNewField,
+} from "@/lib/deals/selling-agency";
 import { allowLifeHealthFamily } from "@/lib/desk/line-settings";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { dealDetailsSavedHref } from "@/lib/flash";
@@ -122,15 +127,18 @@ export async function saveDealFieldLayout(formData: FormData) {
   const raw = str(formData, "layout");
   const layout = parseLayout(raw ? JSON.parse(raw) : {});
   const rawFields = str(formData, "fields");
+  let incomingFields: CustomFieldDef[] = [];
   if (rawFields) {
     try {
       const incoming = JSON.parse(rawFields) as CustomFieldDef[];
       if (Array.isArray(incoming)) {
+        incomingFields = incoming;
         for (const field of incoming) {
           if (!field?.key || !field.label || !isCustomFieldType(String(field.type))) continue;
+          const canonicalKey = sellingAgencyKeyForNewField(field) ?? field.key;
           await upsertFieldDef(
             canonicalizeIdentityField({
-              key: field.key,
+              key: canonicalKey,
               label: field.label,
               type: field.type,
               options: field.options ?? [],
@@ -138,10 +146,11 @@ export async function saveDealFieldLayout(formData: FormData) {
               formula: field.formula ?? null,
               lookupModule: field.lookupModule ?? null,
               systemKey: field.systemKey ?? null,
-              required: Boolean(field.required),
+              required: canonicalKey === DEAL_SELLING_AGENCY_FIELD.key ? true : Boolean(field.required),
               defaultValue: field.defaultValue ?? null,
               picklistId: field.picklistId ?? null,
-              globalListKey: field.globalListKey ?? null,
+              globalListKey: field.globalListKey ??
+                (canonicalKey === DEAL_SELLING_AGENCY_FIELD.key ? "selling_agency" : null),
               permissions: field.permissions,
             }),
             module,
@@ -152,12 +161,16 @@ export async function saveDealFieldLayout(formData: FormData) {
       /* keep layout save even if field payload is stale */
     }
   }
+  const remappedLayout =
+    module === "deals" || module === "leads"
+      ? canonicalizeSellingAgencyLayout(layout, incomingFields)
+      : layout;
   if (module === "deals") {
     // Deals only: one layout mirrored to every LOB line — never call this for leads/etc.
     // Landlord/rental keys stay off Details even if an older editor payload still has them.
-    await saveLayoutForEveryLine(layoutWithoutDealDetailsLandlord(layout));
+    await saveLayoutForEveryLine(layoutWithoutDealDetailsLandlord(remappedLayout));
   } else {
-    await saveLayoutForModule(module, layout);
+    await saveLayoutForModule(module, remappedLayout);
   }
   revalidateDealSurfaces(str(formData, "dealId") || undefined, line, module);
   if (module === "deals") {
@@ -207,18 +220,27 @@ export async function addDealLayoutField(formData: FormData) {
     .map((item) => item.trim())
     .filter(Boolean);
   const formula = str(formData, "formula") || null;
-  let key = str(formData, "key") || slugifyFieldKey(label);
+  let key =
+    sellingAgencyKeyForNewField({ key: str(formData, "key"), label }) ||
+    str(formData, "key") ||
+    slugifyFieldKey(label);
   const existing = await listDealFieldDefs();
-  if (existing.some((field) => field.key === key) && !str(formData, "key")) {
+  if (
+    key !== DEAL_SELLING_AGENCY_FIELD.key &&
+    existing.some((field) => field.key === key) &&
+    !str(formData, "key")
+  ) {
     key = `${key}_${Date.now().toString(36).slice(-4)}`;
   }
   const field: CustomFieldDef = {
     key,
     label,
-    type,
+    type: key === DEAL_SELLING_AGENCY_FIELD.key ? "picklist" : type,
     options,
     formula,
     lookupModule: str(formData, "lookupModule") || null,
+    required: key === DEAL_SELLING_AGENCY_FIELD.key ? true : undefined,
+    globalListKey: key === DEAL_SELLING_AGENCY_FIELD.key ? "selling_agency" : undefined,
   };
   await upsertFieldDef(field);
   if (sectionId) {

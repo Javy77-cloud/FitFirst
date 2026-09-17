@@ -115,6 +115,14 @@ const LEAD_FIELDS: CustomFieldDef[] = [
     required: true,
   },
   {
+    key: "picklist_yp0c",
+    label: "Selling agency",
+    type: "picklist",
+    options: [],
+    required: true,
+    globalListKey: "selling_agency",
+  },
+  {
     key: "insurance_type_desired",
     label: "Insurance desired",
     type: "picklist",
@@ -315,6 +323,7 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
           "insurance_type",
           "insurance_category",
           "insurance_subtype",
+          "picklist_yp0c",
           "preferred_language",
           "notes",
         ]),
