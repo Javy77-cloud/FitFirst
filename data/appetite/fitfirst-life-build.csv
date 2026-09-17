@@ -1,1 +1,64 @@
 carrier_slug,carrier_name,product_slug,product_name,sex,height_inches,weight_min,weight_max,bmi_min,bmi_max,band,outcome,rule_text,coverage,source
+americo,Americo,,,,56,80,188,,,in_range,accept,"Americo All products except for ADB: 56 in 80-188 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,,,,56,1,79,,,underweight,decline,"Americo All products except for ADB: 56 in below 80 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,,,,56,189,999,,,overweight,decline,"Americo All products except for ADB: 56 in above 188 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,56,74,178,,,in_range,accept,"Americo DI rider: 56 in 74-178 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,56,1,73,,,underweight,decline,"Americo DI rider: 56 in below 74 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,56,179,999,,,overweight,decline,"Americo DI rider: 56 in above 178 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,56,80,188,,,in_range,accept,"Americo ADB: 56 in 80-188 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,56,1,79,,,underweight,decline,"Americo ADB: 56 in below 80 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,56,189,999,,,overweight,decline,"Americo ADB: 56 in above 188 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,,,,57,82,195,,,in_range,accept,"Americo All products except for ADB: 57 in 82-195 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,,,,57,1,81,,,underweight,decline,"Americo All products except for ADB: 57 in below 82 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,,,,57,196,999,,,overweight,decline,"Americo All products except for ADB: 57 in above 195 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,57,77,184,,,in_range,accept,"Americo DI rider: 57 in 77-184 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,57,1,76,,,underweight,decline,"Americo DI rider: 57 in below 77 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,57,185,999,,,overweight,decline,"Americo DI rider: 57 in above 184 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,57,77,219,,,in_range,accept,"Americo ADB: 57 in 77-219 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,57,1,76,,,underweight,decline,"Americo ADB: 57 in below 77 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,57,220,999,,,overweight,decline,"Americo ADB: 57 in above 219 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,,,,58,85,202,,,in_range,accept,"Americo All products except for ADB: 58 in 85-202 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,,,,58,1,84,,,underweight,decline,"Americo All products except for ADB: 58 in below 85 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,,,,58,203,999,,,overweight,decline,"Americo All products except for ADB: 58 in above 202 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,58,79,191,,,in_range,accept,"Americo DI rider: 58 in 79-191 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,58,1,78,,,underweight,decline,"Americo DI rider: 58 in below 79 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,58,192,999,,,overweight,decline,"Americo DI rider: 58 in above 191 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,58,79,227,,,in_range,accept,"Americo ADB: 58 in 79-227 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,58,1,78,,,underweight,decline,"Americo ADB: 58 in below 79 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,58,228,999,,,overweight,decline,"Americo ADB: 58 in above 227 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,,,,59,88,209,,,in_range,accept,"Americo All products except for ADB: 59 in 88-209 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,,,,59,1,87,,,underweight,decline,"Americo All products except for ADB: 59 in below 88 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,,,,59,210,999,,,overweight,decline,"Americo All products except for ADB: 59 in above 209 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,59,82,198,,,in_range,accept,"Americo DI rider: 59 in 82-198 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,59,1,81,,,underweight,decline,"Americo DI rider: 59 in below 82 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,59,199,999,,,overweight,decline,"Americo DI rider: 59 in above 198 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,59,82,235,,,in_range,accept,"Americo ADB: 59 in 82-235 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,59,1,81,,,underweight,decline,"Americo ADB: 59 in below 82 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,59,236,999,,,overweight,decline,"Americo ADB: 59 in above 235 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,,,,60,91,216,,,in_range,accept,"Americo All products except for ADB: 60 in 91-216 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,,,,60,1,90,,,underweight,decline,"Americo All products except for ADB: 60 in below 91 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,,,,60,217,999,,,overweight,decline,"Americo All products except for ADB: 60 in above 216 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,60,85,204,,,in_range,accept,"Americo DI rider: 60 in 85-204 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,60,1,84,,,underweight,decline,"Americo DI rider: 60 in below 85 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,60,205,999,,,overweight,decline,"Americo DI rider: 60 in above 204 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,60,85,243,,,in_range,accept,"Americo ADB: 60 in 85-243 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,60,1,84,,,underweight,decline,"Americo ADB: 60 in below 85 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,60,244,999,,,overweight,decline,"Americo ADB: 60 in above 243 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,,,,61,95,223,,,in_range,accept,"Americo All products except for ADB: 61 in 95-223 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,,,,61,1,94,,,underweight,decline,"Americo All products except for ADB: 61 in below 95 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,,,,61,224,999,,,overweight,decline,"Americo All products except for ADB: 61 in above 223 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,61,88,211,,,in_range,accept,"Americo DI rider: 61 in 88-211 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,61,1,87,,,underweight,decline,"Americo DI rider: 61 in below 88 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,61,212,999,,,overweight,decline,"Americo DI rider: 61 in above 211 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,61,88,251,,,in_range,accept,"Americo ADB: 61 in 88-251 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,61,1,87,,,underweight,decline,"Americo ADB: 61 in below 88 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,61,252,999,,,overweight,decline,"Americo ADB: 61 in above 251 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,,,,62,97,231,,,in_range,accept,"Americo All products except for ADB: 62 in 97-231 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,,,,62,1,96,,,underweight,decline,"Americo All products except for ADB: 62 in below 97 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,,,,62,232,999,,,overweight,decline,"Americo All products except for ADB: 62 in above 231 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,62,91,218,,,in_range,accept,"Americo DI rider: 62 in 91-218 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,62,1,90,,,underweight,decline,"Americo DI rider: 62 in below 91 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,di_rider,DI rider,,62,219,999,,,overweight,decline,"Americo DI rider: 62 in above 218 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,62,91,259,,,in_range,accept,"Americo ADB: 62 in 91-259 lbs Accept.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,62,1,90,,,underweight,decline,"Americo ADB: 62 in below 91 lbs Decline.",seeded,live_sheet_build_sample
+americo,Americo,adb,ADB,,62,260,999,,,overweight,decline,"Americo ADB: 62 in above 259 lbs Decline.",seeded,live_sheet_build_sample

@@ -1,0 +1,130 @@
+Row	Column A label
+3	Carrier Websites
+4	Phone Number
+5	E Apps
+6	
+7	Miscellaneous Info
+8	
+9	Declines Reported?
+10	Docusign?
+11	Paramed Vendors
+12	Payments Accepted?
+13	Phone Interview Required
+14	Split W/Uncontracted Agent
+15	Telesales?
+16	Term Conversions
+17	
+18	Background Questions
+19	
+20	Alcohol/Drug Treatment
+21	Avocations
+22	Citizenship
+23	Criminal History (Felonies)
+24	Disability
+25	Driver License/DUI
+26	Family History
+27	Marijuana Use
+28	Military
+29	Occupation
+30	Tobacco
+31	
+32	Medical Conditions
+33	
+34	Activities of Daily Living
+35	AIDS
+36	AIDS Related Complex (ARC)
+37	ALS (Lou Gehrig's Disease)
+38	Alzheimers
+39	Amputation
+40	Anemia
+41	Aneurysm
+42	Angina
+43	Angioplasty
+44	Anxiety
+45	Arrhythmia
+46	Arthritis-Osteo
+47	Asthma
+48	Asthma-Steroid Inhaler
+49	Atrial Fibrillation (A-Fib)
+50	Autism
+51	Bipolar Disorder
+52	Blood Clots
+53	Brain Tumor- Non Cancerous
+54	Bronchitis-Chronic
+55	Cancer
+56	Cardiomyopathy
+57	Cerebral Palsy
+58	Circulatory Issues/ Surgeries
+59	Cirrhosis of Liver
+60	Crohns Disease
+61	Congestive Heart Failure
+62	COPD
+63	COVID-19
+64	CPAP w/No Oxygen
+65	CPAP w/Oxygen
+66	Cystic Fibrosis
+67	Defibrillator
+68	Depression
+69	Dementia
+70	Diabetes
+71	Diabetes-Gestational
+72	Diabetes-Gout
+73	Diabetes-Insulin
+74	Diabetic Neuropathy
+75	Diabetic Retinopathy
+76	Diabetes w/Smoking
+77	Gabapentin
+78	Down's Syndrome
+79	Diverticulitis
+80	Emphysema
+81	Endometriosis
+82	Epilepsy
+83	Erectile Dysfunction
+84	Fibromyalgia
+85	Gallbladder Disorder
+86	Gastric Bypass
+87	Gout
+88	Heart Attack/ Heart Disease
+89	Heart - Mitral Valve Insufficiency/ Prolapse
+90	Heart Surgeries (Bypass, etc)
+91	Hepatitis
+92	High Blood Pressure
+93	HIV
+94	HIV PREP
+95	Hospitalization
+96	Huntington's Disease
+97	Hypothyroidism
+98	Kidney Dialysis
+99	Kidney Disease-Chronic
+100	Kidney Failure
+101	Kidney Stones
+102	Liver Disease
+103	Liver-Fatty Liver Disease
+104	Lupus
+105	Migrane Headaches
+106	Multiple Sclerosis (MS)
+107	Muscular Dystrophy
+108	Organ Transplant
+109	Oxygen Use
+110	Pacemaker
+111	Pain-Chronic /Pain Pills
+112	Pancreatitis
+113	Paralysis
+114	Parkinson's
+115	Peripheral Vascular Disease
+116	PTSD
+117	Pulmonary Embolism
+118	Renal Failure
+119	Rheumatoid Arthritis
+120	Sarcoidosis
+121	Schizophrenia
+122	Seizures
+123	Scooter Use
+124	Sickle Cell Anemia
+125	Sleep Apnea
+126	Stent
+127	Stroke
+128	TIA
+129	Ulcerative Colitis
+130	Walker Use
+131	Wheelchair Use
