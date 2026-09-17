@@ -5,7 +5,7 @@ import {
   type ServicingCheckKey,
   type ServicingDocKey,
 } from "@/lib/domain-ams";
-import { DESK_AS_OF } from "@/lib/home/as-of";
+import { deskNow } from "@/lib/home/as-of";
 import { daysUntilExpiration, expirationDay } from "./renewals";
 import {
   CHECKLIST_CHECK_KEYS_BY_LOB,
@@ -254,7 +254,7 @@ export function buildServicingChecklist(input: {
   asOf?: Date;
   lineOfBusiness?: string | null;
 }): ServicingChecklist {
-  const asOf = input.asOf ?? DESK_AS_OF;
+  const asOf = input.asOf ?? deskNow();
   if (!input.lineOfBusiness) {
     return buildClassicChecklist({ ...input, asOf });
   }

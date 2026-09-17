@@ -1,13 +1,13 @@
-import { and, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lt, or, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { deals, quotes } from "@/lib/db/schema";
-import { addUtcDays, DESK_AS_OF, startOfUtcMonth } from "@/lib/home/as-of";
+import { addUtcDays, deskNow, startOfUtcMonth } from "@/lib/home/as-of";
 import { buildMotivationStats, type MotivationStat } from "./motivation";
 
 const SHOPPED_STAGES = ["quoting", "quoted", "bound", "closed_won"] as const;
 
-export async function loadDealMotivationStats(asOf = DESK_AS_OF): Promise<MotivationStat[]> {
+export async function loadDealMotivationStats(asOf = deskNow()): Promise<MotivationStat[]> {
   const todayStart = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), asOf.getUTCDate()));
   const monthStart = startOfUtcMonth(asOf);
 
@@ -22,8 +22,10 @@ export async function loadDealMotivationStats(asOf = DESK_AS_OF): Promise<Motiva
     .where(
       and(
         eq(deals.tenantId, DEFAULT_TENANT_ID),
-        gte(deals.updatedAt, monthStart),
-        inArray(deals.pipelineStage, [...SHOPPED_STAGES]),
+        or(
+          and(gte(deals.updatedAt, monthStart), inArray(deals.pipelineStage, [...SHOPPED_STAGES])),
+          gte(deals.boundAt, monthStart),
+        ),
       ),
     );
 

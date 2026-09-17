@@ -1,6 +1,6 @@
 import { isPcSubLine, type BookFamily } from "@/lib/desk/policy-line";
 import { insuranceFamilyFromPolicy } from "@/lib/desk/policy-family";
-import { DESK_AS_OF } from "@/lib/home/as-of";
+import { deskNow } from "@/lib/home/as-of";
 import type { CommissionRange } from "@/lib/domain";
 import { rangeWindow, type DateWindow } from "./windows";
 
@@ -235,7 +235,7 @@ export function commissionFilterDate(row: CommissionFilterRow, window: DateWindo
 export function matchesCommissionRange(
   row: CommissionFilterRow,
   range?: string,
-  now: Date = DESK_AS_OF,
+  now: Date = deskNow(),
 ): boolean {
   const key = (range && range !== "all" ? range : "all") as CommissionRange;
   const window = rangeWindow(key, now);
@@ -253,7 +253,7 @@ export function matchesCommissionRange(
 export function filterCommissionRows<T extends CommissionFilterRow>(
   rows: T[],
   filter: CommissionBookFilter,
-  now: Date = DESK_AS_OF,
+  now: Date = deskNow(),
 ): T[] {
   return rows.filter(
     (row) =>

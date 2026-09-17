@@ -1,5 +1,5 @@
 import { isInForceStatus } from "@/lib/policy/status";
-import { addUtcDays, DESK_AS_OF } from "@/lib/home/as-of";
+import { addUtcDays, deskNow } from "@/lib/home/as-of";
 import { parseMoney, premiumChange } from "@/lib/renewal/compare";
 
 export type RenewalPolicy = {
@@ -29,7 +29,7 @@ export function expirationDay(value: Date | string | null | undefined): Date | n
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function daysUntilExpiration(expiration: Date, asOf = DESK_AS_OF): number {
+export function daysUntilExpiration(expiration: Date, asOf = deskNow()): number {
   const start = Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), asOf.getUTCDate());
   const end = Date.UTC(
     expiration.getUTCFullYear(),
@@ -42,7 +42,7 @@ export function daysUntilExpiration(expiration: Date, asOf = DESK_AS_OF): number
 export function isUpcomingRenewal(
   policy: Pick<RenewalPolicy, "status" | "expirationDate">,
   windowDays = 60,
-  asOf = DESK_AS_OF,
+  asOf = deskNow(),
 ): boolean {
   if (!isInForceStatus(policy.status)) return false;
   const exp = expirationDay(policy.expirationDate);
@@ -51,13 +51,13 @@ export function isUpcomingRenewal(
   return days >= 0 && days <= windowDays;
 }
 
-export function upcomingHorizon(windowDays = 60, asOf = DESK_AS_OF): Date {
+export function upcomingHorizon(windowDays = 60, asOf = deskNow()): Date {
   return addUtcDays(asOf, windowDays);
 }
 
 export function buildRenewalRow(
   policy: RenewalPolicy,
-  asOf = DESK_AS_OF,
+  asOf = deskNow(),
 ): RenewalRow | null {
   const exp = expirationDay(policy.expirationDate);
   if (!exp) return null;

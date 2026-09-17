@@ -9,7 +9,7 @@ export type SocialPulseMetrics = {
   viewsTrend: number[];
 };
 
-/** Demo numbers only. Shown after the agency marks that stub connected. */
+/** Demo numbers only. Never wire these into live desk/admin tiles. */
 export const SOCIAL_PULSE_SEEDS: Record<SocialPlatformId, SocialPulseMetrics> = {
   facebook: {
     followers: 1840,

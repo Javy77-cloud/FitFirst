@@ -34,5 +34,6 @@ describe("dashboard presets", () => {
     expect(widgetsForPreset("my_production")).toContain("hit_lost");
     expect(isWidgetVisible("hit_lost", "my_production", [], { isAdmin: false })).toBe(false);
     expect(isWidgetVisible("hit_lost", "my_production", [], { isAdmin: true })).toBe(true);
+    expect(isWidgetVisible("ana", "my_production", [])).toBe(false);
   });
 });

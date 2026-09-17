@@ -41,7 +41,7 @@ export type CarrierPerfRow = {
   quoted: number;
   declined: number;
   bound: number;
-  hitPct: number;
+  hitPct: number | null;
   avgQuotedPremium: number | null;
 };
 
@@ -57,8 +57,8 @@ export type HitLostReport = {
   boundCount: number;
   shopsQuoted: number;
   shopsBound: number;
-  quoteHitPct: number;
-  shopHitPct: number;
+  quoteHitPct: number | null;
+  shopHitPct: number | null;
   carriers: CarrierPerfRow[];
   lostReasons: LostReasonRow[];
   uncodedLost: number;
@@ -78,8 +78,8 @@ export function isSkipResult(result: string | null | undefined): boolean {
   return result != null && SKIP.has(result);
 }
 
-export function hitPct(bound: number, quoted: number): number {
-  if (quoted <= 0) return 0;
+export function hitPct(bound: number, quoted: number): number | null {
+  if (quoted <= 0 || bound < 0) return null;
   const raw = Math.round((bound / quoted) * 1000) / 10;
   return Math.min(100, raw);
 }

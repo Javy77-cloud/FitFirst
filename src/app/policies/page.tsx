@@ -31,7 +31,7 @@ import { getAgencyPolicyLabelTemplate } from "@/lib/policy/auto-label-prefs";
 import { IN_FORCE_STATUSES, LAPSE_STATUSES } from "@/lib/home/aggregate";
 import {
   addUtcDays,
-  DESK_AS_OF,
+  deskNow,
   endOfUtcMonth,
   priorMonth,
   startOfUtcMonth,
@@ -87,7 +87,7 @@ function policyFilterValues(
   const written: string[] = [];
   const renewal: string[] = [];
   const attention: string[] = [];
-  const asOf = DESK_AS_OF;
+  const asOf = deskNow();
 
   if (LAPSE_STATUSES.has(status)) attention.push("lapse");
 

@@ -1,4 +1,4 @@
-import { DESK_AS_OF } from "@/lib/home/as-of";
+import { deskNow } from "@/lib/home/as-of";
 
 export type InstallmentDisplayStatus = "paid" | "due" | "overdue" | "scheduled" | "waived" | "cancelled";
 
@@ -8,7 +8,7 @@ export function installmentDisplayStatus(
     dueOn: Date | string;
     receivedAt?: Date | string | null;
   },
-  asOf: Date = DESK_AS_OF,
+  asOf: Date = deskNow(),
 ): InstallmentDisplayStatus {
   if (row.receivedAt || row.status === "received" || row.status === "paid") return "paid";
   if (row.status === "waived") return "waived";
@@ -69,7 +69,7 @@ export function earnedUnearnedPremium(input: {
   if (!eff || !exp || Number.isNaN(eff.getTime()) || Number.isNaN(exp.getTime())) {
     return { earned: null, unearned: null, pctEarned: null };
   }
-  const asOf = input.asOf ?? DESK_AS_OF;
+  const asOf = input.asOf ?? deskNow();
   const total = exp.getTime() - eff.getTime();
   if (total <= 0) return { earned: premium, unearned: 0, pctEarned: 1 };
   const elapsed = Math.min(Math.max(asOf.getTime() - eff.getTime(), 0), total);

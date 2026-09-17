@@ -13,7 +13,8 @@ export type CarrierKpiSnapshot = {
 };
 
 export function computeHitRate(requested: number, bound: number): number | null {
-  if (requested <= 0) return null;
+  if (requested <= 0 || bound < 0) return null;
+  if (bound > requested) return null;
   return bound / requested;
 }
 

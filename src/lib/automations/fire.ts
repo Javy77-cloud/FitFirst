@@ -3,7 +3,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { activities, activityLogs, alerts, automationRuns, guidedAutomations } from "@/lib/db/schema";
 import { activityLogBody, hasRelatedRecord, type RelatedRecordIds } from "@/lib/lifecycle/activity";
-import { DESK_AS_OF } from "@/lib/home/as-of";
+import { deskNow } from "@/lib/home/as-of";
 import { normalizeVisibility, planPlaybookFire, type PlannedPlaybookFire } from "./engine";
 import type { PlaybookVisibility } from "./types";
 
@@ -70,7 +70,7 @@ export async function firePlaybook(input: FirePlaybookInput): Promise<FirePlaybo
         title: planned.taskTitle,
         notes: `In-desk playbook · ${playbook.name}. Nothing emailed.`,
         status: "open",
-        dueAt: new Date(DESK_AS_OF.getTime() + 7 * 24 * 60 * 60 * 1000),
+        dueAt: new Date(deskNow().getTime() + 7 * 24 * 60 * 60 * 1000),
         startAt: firedAt,
         assignee: input.assigneeName,
         contactId: related.contactId ?? null,
