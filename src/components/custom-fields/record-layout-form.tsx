@@ -27,6 +27,7 @@ import {
 } from "@/lib/custom-fields/mailing-same";
 import { COVERAGE_CARRIER_FIELD_KEY } from "@/lib/coverage/declared-coverage";
 import type { CoverageLine } from "@/lib/coverage/gaps";
+import { isCompactLayoutField } from "@/lib/custom-fields/section-density";
 import { asList } from "@/lib/safe-list";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
@@ -243,6 +244,7 @@ export function RecordLayoutFields({
                         fieldKey={key}
                         label={field.label}
                         htmlFor={`field_${key}`}
+                        compact={isCompactLayoutField(key, field)}
                       >
                         {control}
                       </ContactDetailField>

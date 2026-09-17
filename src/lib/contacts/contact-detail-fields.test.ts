@@ -62,6 +62,7 @@ describe("contact detail field system", () => {
     expect(html).toMatch(/data-ff-contact-field="source"/);
     expect(html).toMatch(/data-ff-contact-coverage-record/);
     expect(html).toMatch(/data-ff-compact-row/);
+    expect(html).toMatch(/data-ff-contact-field-compact="1"/);
     expect(html).not.toMatch(/text-center text-lg font-semibold/);
   });
 

@@ -10,11 +10,14 @@ export function ContactDetailField({
   fieldKey,
   label,
   htmlFor,
+  compact = false,
   children,
 }: {
   fieldKey: string;
   label: string;
   htmlFor?: string;
+  /** City/state/zip and other short fields stack so the value keeps the column. */
+  compact?: boolean;
   children: ReactNode;
 }) {
   const nameValue = isContactNameField(fieldKey);
@@ -23,11 +26,22 @@ export function ContactDetailField({
       className="overflow-hidden rounded-md border border-border bg-[var(--ff-card)]"
       data-ff-record-field={fieldKey}
       data-ff-contact-field={fieldKey}
+      data-ff-contact-field-compact={compact ? "1" : undefined}
     >
-      <div className="grid grid-cols-[6.75rem_minmax(0,1fr)] items-stretch">
+      <div
+        className={
+          compact
+            ? "flex min-w-0 flex-col"
+            : "grid grid-cols-[6.75rem_minmax(0,1fr)] items-stretch"
+        }
+      >
         <label
           htmlFor={htmlFor}
-          className="flex items-center border-r border-border bg-[var(--ff-wash)] px-2 py-1 text-[10px] font-medium uppercase leading-tight tracking-[0.04em] text-muted-foreground"
+          className={
+            compact
+              ? "border-b border-border bg-[var(--ff-wash)] px-2 py-0.5 text-[10px] font-medium uppercase leading-tight tracking-[0.04em] text-muted-foreground"
+              : "flex items-center border-r border-border bg-[var(--ff-wash)] px-2 py-1 text-[10px] font-medium uppercase leading-tight tracking-[0.04em] text-muted-foreground"
+          }
         >
           {label}
         </label>
