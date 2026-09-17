@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { currentDeskSession } from "@/lib/auth/session";
-import { userIsSiteDeveloper } from "@/lib/developer/site-developer";
+import {
+  assertSiteDeveloperSession,
+  SignInRequiredError,
+} from "@/lib/developer/site-developer";
 import {
   ensurePartition,
   findFlHoPartitionId,
@@ -12,28 +15,25 @@ import { flashAction } from "@/lib/flash-action";
 
 const ENGINE_HREF = "/settings/developer/appetite-engine";
 
-class SiteDeveloperOnlyError extends Error {
-  constructor(message = "Site developer only.") {
-    super(message);
-    this.name = "SiteDeveloperOnlyError";
-  }
-}
-
 async function requireSiteDeveloper() {
   const session = await currentDeskSession();
-  if (!session.signedIn) throw new SiteDeveloperOnlyError();
-  if (!session.isSiteDeveloper && !userIsSiteDeveloper(session.user)) {
-    throw new SiteDeveloperOnlyError();
-  }
+  assertSiteDeveloperSession(session);
   return session;
+}
+
+function denyEngineMutate(error: unknown): never {
+  if (error instanceof SignInRequiredError) {
+    flashAction(ENGINE_HREF, "Sign in to continue.", "error");
+  }
+  flashAction(ENGINE_HREF, "Site developer only.", "error");
 }
 
 /** Developer Hub: ensure FL/HO partition + seed Standing rules. */
 export async function ensureFlHoPartitionAction() {
   try {
     await requireSiteDeveloper();
-  } catch {
-    flashAction(ENGINE_HREF, "Site developer only.", "error");
+  } catch (error) {
+    denyEngineMutate(error);
   }
   const partition = await ensurePartition("FL", "HO");
   revalidatePath(ENGINE_HREF);
@@ -47,8 +47,8 @@ export async function ensureFlHoPartitionAction() {
 export async function runFlHoShadowAccuracyAction() {
   try {
     await requireSiteDeveloper();
-  } catch {
-    flashAction(ENGINE_HREF, "Site developer only.", "error");
+  } catch (error) {
+    denyEngineMutate(error);
   }
 
   const partitionId = await findFlHoPartitionId();

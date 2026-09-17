@@ -1,8 +1,10 @@
 "use server";
 
-import { AdminOnlyError } from "@/lib/auth/guards";
 import { currentDeskSession } from "@/lib/auth/session";
-import { userIsSiteDeveloper } from "@/lib/developer/site-developer";
+import {
+  assertSiteDeveloperSession,
+  SignInRequiredError,
+} from "@/lib/developer/site-developer";
 import {
   clearFedExVault,
   clearGetParcelDataVault,
@@ -23,28 +25,25 @@ import { flashAction } from "@/lib/flash-action";
 
 const VAULT_HREF = "/settings/developer-hub/api-vault";
 
-class SiteDeveloperOnlyError extends Error {
-  constructor(message = "Site developer only.") {
-    super(message);
-    this.name = "SiteDeveloperOnlyError";
-  }
-}
-
 async function requireSiteDeveloper() {
   const session = await currentDeskSession();
-  if (!session.signedIn || !session.isAdmin) throw new AdminOnlyError();
-  if (!userIsSiteDeveloper(session.user) && !session.isSiteDeveloper) {
-    throw new SiteDeveloperOnlyError();
-  }
+  assertSiteDeveloperSession(session);
   return session;
+}
+
+function denyVaultMutate(error: unknown): never {
+  if (error instanceof SignInRequiredError) {
+    flashAction(VAULT_HREF, "Sign in to continue.", "error");
+  }
+  flashAction(VAULT_HREF, "Site developer only.", "error");
 }
 
 export async function saveFedExVaultAction(formData: FormData) {
   let session;
   try {
     session = await requireSiteDeveloper();
-  } catch {
-    flashAction(VAULT_HREF, "Site developer only.", "error");
+  } catch (error) {
+    denyVaultMutate(error);
   }
   const apiKey = String(formData.get("apiKey") ?? "");
   const apiSecret = String(formData.get("apiSecret") ?? "");
@@ -69,8 +68,8 @@ export async function clearFedExVaultAction() {
   let session;
   try {
     session = await requireSiteDeveloper();
-  } catch {
-    flashAction(VAULT_HREF, "Site developer only.", "error");
+  } catch (error) {
+    denyVaultMutate(error);
   }
   await clearFedExVault(session.userId);
   flashAction(VAULT_HREF, "fedex-vault-cleared");
@@ -80,8 +79,8 @@ export async function saveGetParcelDataVaultAction(formData: FormData) {
   let session;
   try {
     session = await requireSiteDeveloper();
-  } catch {
-    flashAction(VAULT_HREF, "Site developer only.", "error");
+  } catch (error) {
+    denyVaultMutate(error);
   }
   const apiKey = String(formData.get("apiKey") ?? "");
   try {
@@ -100,8 +99,8 @@ export async function clearGetParcelDataVaultAction() {
   let session;
   try {
     session = await requireSiteDeveloper();
-  } catch {
-    flashAction(VAULT_HREF, "Site developer only.", "error");
+  } catch (error) {
+    denyVaultMutate(error);
   }
   await clearGetParcelDataVault(session.userId);
   flashAction(VAULT_HREF, "getparceldata-vault-cleared");
@@ -111,8 +110,8 @@ export async function savePermitStackVaultAction(formData: FormData) {
   let session;
   try {
     session = await requireSiteDeveloper();
-  } catch {
-    flashAction(VAULT_HREF, "Site developer only.", "error");
+  } catch (error) {
+    denyVaultMutate(error);
   }
   const apiKey = String(formData.get("apiKey") ?? "");
   try {
@@ -131,8 +130,8 @@ export async function clearPermitStackVaultAction() {
   let session;
   try {
     session = await requireSiteDeveloper();
-  } catch {
-    flashAction(VAULT_HREF, "Site developer only.", "error");
+  } catch (error) {
+    denyVaultMutate(error);
   }
   await clearPermitStackVault(session.userId);
   flashAction(VAULT_HREF, "permitstack-vault-cleared");
@@ -142,8 +141,8 @@ export async function saveHealthSherpaMedicareVaultAction(formData: FormData) {
   let session;
   try {
     session = await requireSiteDeveloper();
-  } catch {
-    flashAction(VAULT_HREF, "Site developer only.", "error");
+  } catch (error) {
+    denyVaultMutate(error);
   }
   try {
     await saveHealthSherpaMedicareVault({
@@ -163,8 +162,8 @@ export async function clearHealthSherpaMedicareVaultAction() {
   let session;
   try {
     session = await requireSiteDeveloper();
-  } catch {
-    flashAction(VAULT_HREF, "Site developer only.", "error");
+  } catch (error) {
+    denyVaultMutate(error);
   }
   await clearHealthSherpaMedicareVault(session.userId);
   flashAction(VAULT_HREF, "healthsherpa-medicare-vault-cleared");
@@ -174,8 +173,8 @@ export async function saveHealthSherpaAcaVaultAction(formData: FormData) {
   let session;
   try {
     session = await requireSiteDeveloper();
-  } catch {
-    flashAction(VAULT_HREF, "Site developer only.", "error");
+  } catch (error) {
+    denyVaultMutate(error);
   }
   try {
     await saveHealthSherpaAcaVault({
@@ -193,8 +192,8 @@ export async function clearHealthSherpaAcaVaultAction() {
   let session;
   try {
     session = await requireSiteDeveloper();
-  } catch {
-    flashAction(VAULT_HREF, "Site developer only.", "error");
+  } catch (error) {
+    denyVaultMutate(error);
   }
   await clearHealthSherpaAcaVault(session.userId);
   flashAction(VAULT_HREF, "healthsherpa-aca-vault-cleared");
@@ -204,8 +203,8 @@ export async function saveHealthSherpaInboundVaultAction(formData: FormData) {
   let session;
   try {
     session = await requireSiteDeveloper();
-  } catch {
-    flashAction(VAULT_HREF, "Site developer only.", "error");
+  } catch (error) {
+    denyVaultMutate(error);
   }
   try {
     await saveHealthSherpaInboundVault({
@@ -223,8 +222,8 @@ export async function clearHealthSherpaInboundVaultAction() {
   let session;
   try {
     session = await requireSiteDeveloper();
-  } catch {
-    flashAction(VAULT_HREF, "Site developer only.", "error");
+  } catch (error) {
+    denyVaultMutate(error);
   }
   await clearHealthSherpaInboundVault(session.userId);
   flashAction(VAULT_HREF, "healthsherpa-inbound-vault-cleared");
