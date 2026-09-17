@@ -1,5 +1,10 @@
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { getIntegrationProvider } from "@/lib/integrations/catalog";
+import type { CatalogItem } from "@/lib/integrations/catalog-store";
+import { SocialByoCard } from "@/components/social/social-byo-card";
 import {
   envHasMetaApp,
   envMetaApp,
@@ -9,6 +14,28 @@ import {
   META_VAULT_PROVIDER,
   platformHostedConnectMissingCopy,
 } from "./meta-app";
+
+function catalogItem(
+  id: "facebook" | "instagram" | "linkedin",
+  overrides: Partial<CatalogItem> = {},
+): CatalogItem {
+  const provider = getIntegrationProvider(id);
+  return {
+    ...provider,
+    connected: false,
+    accountLabel: null,
+    lastConnectStatus: null,
+    ownerUserId: null,
+    clientId: null,
+    hasCredentials: false,
+    connectMode: null,
+    lastOauthError: null,
+    hasEnvCredentials: false,
+    hasRefreshToken: false,
+    tokenAccountEmail: null,
+    ...overrides,
+  };
+}
 
 function source(path: string) {
   return readFileSync(path, "utf8");
@@ -87,6 +114,44 @@ describe("platform-hosted Meta OAuth gate", () => {
     expect(store).toMatch(/loadMetaApp/);
     expect(store).toMatch(/not_configured/);
     expect(store).not.toMatch(/Paste the agency \$\{spec\.clientIdLabel\}[\s\S]{0,80}facebook/);
+  });
+
+  it("renders Admin Connect / empty state and never shows Meta App ID fields", () => {
+    const empty = renderToString(
+      createElement(SocialByoCard, { item: catalogItem("facebook"), canEdit: true }),
+    );
+    expect(empty).toContain("Facebook Connect isn’t set up on this FitFirst install");
+    expect(empty).toContain('data-meta-empty="1"');
+    expect(empty).not.toContain('name="clientId"');
+    expect(empty).not.toContain("Meta App ID");
+    expect(empty).not.toContain("Save credentials");
+
+    const ready = renderToString(
+      createElement(SocialByoCard, {
+        item: catalogItem("instagram", { hasEnvCredentials: true, hasCredentials: true }),
+        canEdit: true,
+      }),
+    );
+    expect(ready).toContain("Connect Instagram");
+    expect(ready).toContain("FitFirst hosts the Meta app");
+    expect(ready).not.toContain('name="clientId"');
+    expect(ready).not.toContain("Save credentials");
+
+    const agent = renderToString(
+      createElement(SocialByoCard, {
+        item: catalogItem("facebook", { hasEnvCredentials: true }),
+        canEdit: false,
+      }),
+    );
+    expect(agent).toContain("Agents never connect social");
+    expect(agent).not.toContain("Connect Facebook");
+
+    const linkedin = renderToString(
+      createElement(SocialByoCard, { item: catalogItem("linkedin"), canEdit: true }),
+    );
+    expect(linkedin).toContain("LinkedIn Client ID");
+    expect(linkedin).toMatch(/name=["']clientId["']/);
+    expect(linkedin).toContain("Save Credentials");
   });
 
   it("keeps Meta secrets on the server: env example + site-developer vault only", () => {
