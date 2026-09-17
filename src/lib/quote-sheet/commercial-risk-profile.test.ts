@@ -62,6 +62,8 @@ describe("Commercial Risk Profile lean catalog", () => {
     ]);
     expect(fieldsForLine("bop").find((field) => field.key === "own_rent")?.label).toBe("Owned or leased");
     expect(fieldsForLine("bop").find((field) => field.key === "central_alarm")?.label).toBe("Alarm");
+    expect(fieldsForLine("bop").find((field) => field.key === "central_alarm")?.options).toEqual(["yes", "no"]);
+    expect(fieldsForLine("bop").find((field) => field.key === "sprinkler")?.options).toEqual(["yes", "no"]);
     expect(fieldsForLine("bop").find((field) => field.key === "vehicle_usage")?.label).toBe("Primary use");
   });
 
