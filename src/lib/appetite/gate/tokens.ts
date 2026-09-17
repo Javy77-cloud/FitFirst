@@ -3,6 +3,7 @@ import {
   parseMaxDwellingAgeToken,
   parseMinCovAToken,
   parseMinMilesToCoastToken,
+  parseMinYearBuiltToken,
   parseProtectionClassToken,
   parseProtectionClassValue,
 } from "@/lib/appetite/published-appetite";
@@ -174,6 +175,10 @@ export function tokenHits(
       const minMiles = parseMinMilesToCoastToken(token);
       if (minMiles != null) {
         return snap.milesToCoast != null && snap.milesToCoast < minMiles;
+      }
+      const minYearBuilt = parseMinYearBuiltToken(token);
+      if (minYearBuilt != null) {
+        return snap.yearBuilt != null && snap.yearBuilt < minYearBuilt;
       }
       const pc = parseProtectionClassToken(token);
       if (pc != null) {

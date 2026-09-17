@@ -1,4 +1,4 @@
-import { TRIDENT_HO_APPETITE } from "@/lib/appetite/published-appetite";
+import { SOUTHERN_OAK_HO_APPETITE, TRIDENT_HO_APPETITE } from "@/lib/appetite/published-appetite";
 import { UICNA_SLUG, UNIVERSAL_PC_SLUG } from "./fl-ho-order";
 
 /**
@@ -21,7 +21,7 @@ export const SLUG_NAME_ALIASES: Record<string, string[]> = {
   frontline: ["frontline insurance", "frontline"],
   florida_peninsula: ["florida peninsula"],
   edison: ["edison insurance"],
-  southern_oak: ["southern oak"],
+  southern_oak: SOUTHERN_OAK_HO_APPETITE.aliases,
   heritage: ["heritage property", "heritage"],
   security_first: ["security first"],
   peoples_trust: ["people's trust", "peoples trust"],

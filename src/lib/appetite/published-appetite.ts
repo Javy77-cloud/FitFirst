@@ -27,6 +27,10 @@ export type PublishedHoAppetite = {
   softCautions: string[];
   preferredSignals: string[];
   notesForAgent: string;
+  /** DP-3 bind cap when the bulletin publishes a separate landlord TIV. */
+  dpMaxCovA?: number | null;
+  agentPortalUrl?: string | null;
+  bulletinDate?: string | null;
 };
 
 /** Trident Reciprocal Exchange HO-3 Quick Reference Guide. */
@@ -68,7 +72,50 @@ export const TRIDENT_HO_APPETITE: PublishedHoAppetite = {
   notesForAgent: TRIDENT_HO_NOTES,
 };
 
-export const PUBLISHED_HO_APPETITE: PublishedHoAppetite[] = [TRIDENT_HO_APPETITE];
+/** Southern Oak Premier HO/DP — Javy bulletin 2026-09-16 + QRGs. */
+export const SOUTHERN_OAK_BULLETIN_DATE = "2026-09-16";
+export const SOUTHERN_OAK_RATE_EFFECTIVE = "2026-07-15";
+export const SOUTHERN_OAK_PREMIER_QRG = "02-2026";
+export const SOUTHERN_OAK_DP3_QRG = "02-2026";
+export const SOUTHERN_OAK_HO4_QRG = "08-2018 / 2019-0326";
+export const SOUTHERN_OAK_WIND_QRG = "07-2022";
+export const SOUTHERN_OAK_MIN_YEAR_BUILT = 1950;
+export const SOUTHERN_OAK_MAX_TIV = 7_500_000;
+export const SOUTHERN_OAK_DP_MAX_COV_A = 1_000_000;
+export const SOUTHERN_OAK_FULL_WATER_COUNTIES = 52;
+export const SOUTHERN_OAK_AGENT_PORTAL = "https://soi.policyport.com";
+
+export const SOUTHERN_OAK_HO_NOTES =
+  "Javy bulletin 2026-09-16: Premier HO-3/HO-6 new rates effective 7/15/2026 (new and renewal — rates live). HO-3 TIV increased to $7.5 million. Age of home expanded to 1950 and newer. Full Water expanded in 52 counties (age of home 11-39). DP-3 Coverage A bind up to $1 million. Portal southernoak.com / soi.policyport.com. CS 1-877-900-3971. Underwriter contacts not yet provided. Premier QRG 02-2026: HO-3 Cov A min $75k (varies by county); listed max $2M with higher TIV per bulletin. HO-6 Cov A $35k-$150k. Roof in good condition; wood shingle, asbestos, elastomeric, Tesla/solar ineligible; 15yr+ roof UW review with 5+ years useful life. Electrical 150A min; no FPE, Zinsco/Sylvania, Challenger, Stab-Lok, fuses, knob-tube, aluminum, or cloth. Plumbing: no galvanized, polybutylene, or cast iron; PEX ineligible if installed before 2010. Water heater 15 years max. HVAC permanently installed. 4-point required on HO-3 over 30 years prior to bind. Risks over 40 years: Limited Water required; ACV/market value under 80% RCE ineligible. Full Water may be requested for ages 11-39 (52 counties per bulletin) with approved plumbing inspection. Loss history: one prior loss in last 5 years excluding Act of God; no liability losses; open claims ineligible. Owner-occupied; no business on premises. DP-3 QRG 02-2026: Cov A $70k-$1M (over $1M needs prior UW); PC10 only if 5 years or newer; not within 300 ft of commercial; 4-point over 30 years. HO-4 Golden Leaf QRG 08-2018 / 2019-0326: renters Cov C $10k-$150k; PC10 ineligible. Wind-Only QRG 07-2022: HW-2 Cov A $25k-$1M; wind-pool eligible area; roof 15+ needs Preferred Roof Cert. Flood endorsement available on all forms.";
+
+export const SOUTHERN_OAK_HO_APPETITE: PublishedHoAppetite = {
+  slug: "southern_oak",
+  legalName: "Southern Oak Insurance",
+  aliases: ["southern oak insurance", "southern oak"],
+  line: "HO3",
+  state: "FL",
+  minCovA: 75_000,
+  maxCovA: SOUTHERN_OAK_MAX_TIV,
+  maxDwellingAgeYears: null,
+  minYearBuilt: SOUTHERN_OAK_MIN_YEAR_BUILT,
+  minMilesToCoast: null,
+  maxRoofAge: 15,
+  allowedRoofCoverings: null,
+  mobileAllowed: false,
+  placement: "Southern Oak Agent Portal",
+  csPhone: "1-877-900-3971",
+  supportEmail: null,
+  website: "https://www.southernoak.com",
+  hardDeclines: ["mobile_home", "max_cov_a:7500000", "min_year_built:1950"],
+  softCautions: ["older_roof"],
+  preferredSignals: ["se_coastal_ho"],
+  notesForAgent: SOUTHERN_OAK_HO_NOTES,
+  dpMaxCovA: SOUTHERN_OAK_DP_MAX_COV_A,
+  agentPortalUrl: SOUTHERN_OAK_AGENT_PORTAL,
+  bulletinDate: SOUTHERN_OAK_BULLETIN_DATE,
+};
+
+export const PUBLISHED_HO_APPETITE: PublishedHoAppetite[] = [TRIDENT_HO_APPETITE, SOUTHERN_OAK_HO_APPETITE];
 
 export function publishedHoBySlug(slug: string): PublishedHoAppetite | undefined {
   return PUBLISHED_HO_APPETITE.find((row) => row.slug === slug);
@@ -88,6 +135,10 @@ export function maxDwellingAgeToken(years: number): string {
 
 export function minMilesToCoastToken(miles: number): string {
   return `min_miles_to_coast:${miles}`;
+}
+
+export function minYearBuiltToken(year: number): string {
+  return `min_year_built:${year}`;
 }
 
 export function protectionClassToken(pc: number): string {
@@ -115,6 +166,10 @@ export function parseMaxDwellingAgeToken(token: string): number | null {
 
 export function parseMinMilesToCoastToken(token: string): number | null {
   return parsePrefixedNumber(token, "min_miles_to_coast");
+}
+
+export function parseMinYearBuiltToken(token: string): number | null {
+  return parsePrefixedNumber(token, "min_year_built");
 }
 
 export function parseProtectionClassToken(token: string): number | null {

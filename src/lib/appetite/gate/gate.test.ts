@@ -2,10 +2,17 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { appointedBySlugFromRows, gateWrittenLine, NOT_APPOINTED_RULE } from "./appointments";
-import { CITIZENS_SLUG, DEFAULT_FL_HO_ORDER, UICNA_SLUG, UNIVERSAL_PC_SLUG } from "./fl-ho-order";
+import {
+  CITIZENS_SLUG,
+  DEFAULT_FL_HO_ORDER,
+  SOUTHERN_OAK_SLUG,
+  UICNA_SLUG,
+  UNIVERSAL_PC_SLUG,
+} from "./fl-ho-order";
 import { runQuoteGate } from "./gate";
 import { slugFromCarrierName } from "./identity";
 import {
+  SOUTHERN_OAK_HO_APPETITE,
   TRIDENT_HO_APPETITE,
   maxCovAToken,
   maxDwellingAgeToken,
@@ -343,7 +350,10 @@ describe("universal_pc ≠ uicna identity", () => {
     expect(slugFromCarrierName("Trident Reciprocal Exchange")).toBe("trident_reciprocal");
     expect(slugFromCarrierName("Trident Reciprocal")).toBe("trident_reciprocal");
     expect(slugFromCarrierName("Trident")).toBe("trident_reciprocal");
+    expect(slugFromCarrierName("Southern Oak")).toBe(SOUTHERN_OAK_SLUG);
+    expect(slugFromCarrierName("Southern Oak Insurance")).toBe(SOUTHERN_OAK_SLUG);
     expect(DEFAULT_FL_HO_ORDER).toContain("trident_reciprocal");
+    expect(DEFAULT_FL_HO_ORDER).toContain(SOUTHERN_OAK_SLUG);
     expect(new Set(DEFAULT_FL_HO_ORDER).size).toBe(DEFAULT_FL_HO_ORDER.length);
   });
 
@@ -393,6 +403,35 @@ describe("universal_pc ≠ uicna identity", () => {
     const okCov = runQuoteGate(flHo3({ coverageA: 310000 }), catalog);
     expect(okCov.decisions.find((d) => d.carrierId === "trident_reciprocal")?.status).toBe("Quote");
     expect(catalog.every((c) => c.rateable)).toBe(true);
+
+    const oak = catalog.find((c) => c.carrierId === SOUTHERN_OAK_SLUG);
+    expect(oak?.legalName).toBe(SOUTHERN_OAK_HO_APPETITE.legalName);
+    expect(oak?.notesForAgent).toBe(SOUTHERN_OAK_HO_APPETITE.notesForAgent);
+    expect(oak?.notesForAgent).toMatch(/7\/15\/2026/);
+    expect(oak?.notesForAgent).toMatch(/\$7\.5 million/);
+    expect(oak?.notesForAgent).toMatch(/1950 and newer/);
+    expect(oak?.notesForAgent).toMatch(/52 counties/);
+    expect(oak?.notesForAgent).toMatch(/\$1 million/);
+    expect(oak?.notesForAgent).toMatch(/QRG 02-2026/);
+    expect(oak?.hardDeclines).toEqual(SOUTHERN_OAK_HO_APPETITE.hardDeclines);
+    expect(oak?.softCautions).toEqual(SOUTHERN_OAK_HO_APPETITE.softCautions);
+    expect(oak?.preferredSignals).toEqual(SOUTHERN_OAK_HO_APPETITE.preferredSignals);
+    expect(oak?.csPhone).toBe(SOUTHERN_OAK_HO_APPETITE.csPhone);
+    expect(oak?.flHoOrder).toBe(DEFAULT_FL_HO_ORDER.indexOf(SOUTHERN_OAK_SLUG));
+    expect(oak?.linesOffered).toEqual(
+      expect.arrayContaining(["HO3", "HO6", "HO4", "DP3", "FLOOD", "WIND_ONLY"]),
+    );
+    const oakOld = runQuoteGate(flHo3({ coverageA: 300000, yearBuilt: 1949 }), catalog);
+    expect(oakOld.decisions.find((d) => d.carrierId === SOUTHERN_OAK_SLUG)?.status).toBe("Skip-Decline");
+    expect(oakOld.decisions.find((d) => d.carrierId === SOUTHERN_OAK_SLUG)?.matchingRule).toBe(
+      "min_year_built:1950",
+    );
+    const oakHigh = runQuoteGate(flHo3({ coverageA: 7_600_000, yearBuilt: 1990 }), catalog);
+    expect(oakHigh.decisions.find((d) => d.carrierId === SOUTHERN_OAK_SLUG)?.matchingRule).toBe(
+      "max_cov_a:7500000",
+    );
+    const oakOk = runQuoteGate(flHo3({ coverageA: 300000, yearBuilt: 1950 }), catalog);
+    expect(oakOk.decisions.find((d) => d.carrierId === SOUTHERN_OAK_SLUG)?.status).toBe("Quote");
   });
 
   it("wires protection class from the risk / master sheet into the gate snapshot", () => {
