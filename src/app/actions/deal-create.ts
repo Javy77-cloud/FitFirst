@@ -27,6 +27,7 @@ import {
   packageLinesFromFormOrUndefined,
 } from "@/lib/deals/package-lines";
 import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-deal-write";
+import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices";
 import { requireInsertedRisk, riskTypeForDeal } from "@/lib/deals/ensure-risk";
 import { matchesQuery } from "@/lib/wire/search";
 
@@ -255,6 +256,7 @@ async function createCopiedDeal(
   await persistDealWorkTab(deal.id, "documents").catch(() => null);
 
   revalidateDeal(deal.id);
+  scheduleContactCoverageNotices(row.contactId);
   return deal.id;
 }
 
@@ -406,6 +408,7 @@ export async function createDealFromExistingPick(
   await persistDealWorkTab(deal.id, "documents").catch(() => null);
 
   revalidateDeal(deal.id);
+  scheduleContactCoverageNotices(contact.id);
   return {
     ok: true,
     message: `Created deal for ${contact.firstName} ${contact.lastName}.`.trim(),

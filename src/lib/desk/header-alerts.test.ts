@@ -62,6 +62,40 @@ describe("toHeaderAlert", () => {
     expect(alert.href).toBe("/automations/playbooks");
   });
 
+  it("deep-links a coverage gap onto Contact Coverage with the related policy", () => {
+    const alert = toHeaderAlert({
+      id: "g1",
+      title: "Coverage gap · Homeowners, no flood",
+      body: "key:home-no-flood\nrelated:policy:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\n\nElena has homeowners and no flood.",
+      severity: "warning",
+      kind: "coverage_gap",
+      readAt: null,
+      entityType: "contact",
+      entityId: "c1",
+    });
+    expect(alert.href).toBe(
+      "/contacts/c1?section=coverage&focusPolicy=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa#coverage",
+    );
+    expect(alert.body).toBe("Elena has homeowners and no flood.");
+  });
+
+  it("deep-links an opportunity onto Contact Opportunities with the related deal", () => {
+    const alert = toHeaderAlert({
+      id: "o1",
+      title: "Opportunity · Flood deal still open",
+      body: "key:deal:bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb\nrelated:deal:bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb\n\nFlood shop is still open.",
+      severity: "info",
+      kind: "opportunity",
+      readAt: null,
+      entityType: "contact",
+      entityId: "c1",
+    });
+    expect(alert.href).toBe(
+      "/contacts/c1?section=opportunities&focusDeal=bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb#opportunities",
+    );
+    expect(alert.body).toBe("Flood shop is still open.");
+  });
+
   it("opens the specific lead for a follow-up ping", () => {
     const alert = toHeaderAlert({
       id: "a4",

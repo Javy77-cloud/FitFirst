@@ -108,7 +108,12 @@ describe("sep7bv equal-width chips + Edit Layout on every CRM module", () => {
     expect(defaultLayoutForModule("leads").columns[1].sections[0].fieldKeys).toEqual(
       expect.arrayContaining(["source", "notes", "status"]),
     );
-    expect(defaultLayoutForModule("contacts").columns[1].sections[0].id).toBe("details");
+    expect(defaultLayoutForModule("contacts").columns[1].sections.map((section) => section.id)).toEqual([
+      "prefs",
+      "coverage",
+      "opportunities",
+      "intake",
+    ]);
     expect(defaultLayoutForModule("policies").columns[0].sections[0].id).toBe("policy");
     expect(defaultLayoutForModule("businesses").columns[0].sections[0].id).toBe("business");
     expect(defaultLayoutForModule("carriers").columns[0].sections[0].id).toBe("identity");

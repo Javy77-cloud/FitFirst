@@ -53,7 +53,11 @@ import {
   ensureContactDetailPicklists,
 } from "@/lib/contacts/contact-detail-picklists";
 import { ensureBusinessDetailPicklists } from "@/lib/businesses/business-detail-picklists";
-import { contactCardLayout, CONTACT_MODULE_FIELDS } from "@/lib/contacts/contact-field-catalog";
+import {
+  contactCardLayout,
+  CONTACT_MODULE_FIELDS,
+  splitCoverageOpportunitiesLayout,
+} from "@/lib/contacts/contact-field-catalog";
 import {
   optionColorMap,
   resolveFieldOptions,
@@ -418,6 +422,11 @@ export async function ensureContactDetailLayout(): Promise<FieldLayout> {
   if (!picked) {
     await saveLayoutForModule("contacts", next);
     return next;
+  }
+  const migrated = splitCoverageOpportunitiesLayout(picked);
+  if (JSON.stringify(migrated.columns) !== JSON.stringify(picked.columns)) {
+    await saveLayoutForModule("contacts", migrated);
+    return migrated;
   }
   return picked;
 }

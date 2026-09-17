@@ -1,6 +1,8 @@
 export type ContactSectionId =
   | "at-a-glance"
   | "contact-details"
+  | "coverage"
+  | "opportunities"
   | "policies"
   | "deals"
   | "timeline"
@@ -19,6 +21,8 @@ export type ContactSectionDef = {
 export const CONTACT_SECTION_POOL: ContactSectionDef[] = [
   { id: "at-a-glance", label: "At a Glance" },
   { id: "contact-details", label: "Contact Details" },
+  { id: "coverage", label: "Coverage" },
+  { id: "opportunities", label: "Opportunities" },
   { id: "policies", label: "Policies" },
   { id: "deals", label: "Deals" },
   { id: "timeline", label: "Timeline" },
@@ -27,6 +31,20 @@ export const CONTACT_SECTION_POOL: ContactSectionDef[] = [
   { id: "meetings", label: "Meetings" },
   { id: "documents", label: "Documents" },
   { id: "notes", label: "Notes" },
+];
+
+/** Pre-Coverage/Opportunities chip default. Upgrade only this stock list. */
+export const LEGACY_CONTACT_SECTION_NAV_IDS: ContactSectionId[] = [
+  "at-a-glance",
+  "contact-details",
+  "policies",
+  "deals",
+  "timeline",
+  "emails",
+  "sms",
+  "meetings",
+  "documents",
+  "notes",
 ];
 
 /** @deprecated use CONTACT_SECTION_POOL — kept alias for older imports */
@@ -55,7 +73,15 @@ export function normalizeContactSectionNavIds(raw: unknown): ContactSectionId[] 
     out.push(item);
     if (out.length >= CONTACT_SECTION_NAV_MAX) break;
   }
+  if (out.length > 0 && sameSectionIds(out, LEGACY_CONTACT_SECTION_NAV_IDS)) {
+    return [...DEFAULT_CONTACT_SECTION_NAV_IDS];
+  }
   return out.length > 0 ? out : [...DEFAULT_CONTACT_SECTION_NAV_IDS];
+}
+
+function sameSectionIds(left: ContactSectionId[], right: ContactSectionId[]): boolean {
+  if (left.length !== right.length) return false;
+  return left.every((id, index) => id === right[index]);
 }
 
 export function contactSectionDefsForNav(selectedIds: ContactSectionId[]): ContactSectionDef[] {

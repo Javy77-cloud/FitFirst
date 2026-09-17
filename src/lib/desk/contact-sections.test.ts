@@ -20,6 +20,8 @@ describe("contact record sections", () => {
     expect(DEFAULT_CONTACT_SECTION_NAV_IDS).toEqual([
       "at-a-glance",
       "contact-details",
+      "coverage",
+      "opportunities",
       "policies",
       "deals",
       "timeline",
@@ -32,6 +34,8 @@ describe("contact record sections", () => {
     expect(CONTACT_SECTION_POOL.map((s) => s.id)).toEqual([
       "at-a-glance",
       "contact-details",
+      "coverage",
+      "opportunities",
       "policies",
       "deals",
       "timeline",
@@ -48,6 +52,20 @@ describe("contact record sections", () => {
       "policies",
       "notes",
     ]);
+    expect(
+      normalizeContactSectionNavIds([
+        "at-a-glance",
+        "contact-details",
+        "policies",
+        "deals",
+        "timeline",
+        "emails",
+        "sms",
+        "meetings",
+        "documents",
+        "notes",
+      ]),
+    ).toEqual(DEFAULT_CONTACT_SECTION_NAV_IDS);
   });
 
   it("role helper returns selected defs without Ask a teammate", () => {
