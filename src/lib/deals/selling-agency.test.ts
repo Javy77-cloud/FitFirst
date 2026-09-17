@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { defaultLayoutForLine } from "@/lib/custom-fields/defaults";
 import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
@@ -116,5 +117,17 @@ describe("deal selling agency canonical key", () => {
       first_name: "Rosa",
       picklist_yp0c: "AFA",
     });
+  });
+
+  it("requires Selling agency on Deal Details and create next to Pipeline / Policy form", () => {
+    const details = readFileSync("src/components/custom-fields/deal-details-panel.tsx", "utf8");
+    const create = readFileSync("src/app/actions/crm.ts", "utf8");
+    const builder = readFileSync("src/app/actions/custom-fields.ts", "utf8");
+    expect(details).toMatch(/data-ff-required-field="selling-agency"/);
+    expect(details).toMatch(/field_\$\{DEAL_SELLING_AGENCY_KEY\}/);
+    expect(create).toMatch(/DEAL_SELLING_AGENCY_KEY/);
+    expect(create).toMatch(/persistNewDealLayoutValues/);
+    expect(builder).toMatch(/sellingAgencyKeyForNewField/);
+    expect(builder).toMatch(/canonicalizeSellingAgencyLayout/);
   });
 });

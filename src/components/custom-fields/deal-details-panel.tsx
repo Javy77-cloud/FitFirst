@@ -437,7 +437,8 @@ export function DealDetailsPanel({
       >
         <LayoutSectionHeader title="Pipeline" />
         <p className="mb-2 text-center text-[11px] text-red-700" id="ff-pipeline-required-hint">
-          Required — these fields open the matching Risk Profile.
+          Required — Pipeline and Policy form open the matching Risk Profile. Selling agency is
+          required on create.
         </p>
         <InsuranceCascadeControl
           typeName="field_insurance_type"
