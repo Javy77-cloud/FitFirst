@@ -11,10 +11,21 @@ import { MasterSheetCompare } from "@/components/deal/master-sheet-compare";
 import { isCompactLayoutField } from "@/lib/custom-fields/section-density";
 import { emptySheetValues, fieldsForLine } from "./catalog";
 import {
+  COMMERCIAL_COVERAGE_KEY,
+  COMMERCIAL_COVERAGE_OPTIONS,
+} from "./commercial-risk-profile";
+import {
   DEFAULT_RISK_PROFILE_DENSITY,
-  RISK_PROFILE_DENSITY_CONTROL_ID,
+  RISK_PROFILE_DENSITIES,
+  RISK_PROFILE_LONG_TEXT_MAX,
+  RISK_PROFILE_SHORT_FIELD_MAX,
+  clampRiskProfileDensity,
+  defaultRiskProfileSectionDensity,
   isShortSheetValue,
   riskProfileDensityOf,
+  riskProfileSectionChoices,
+  riskProfileSectionDensityId,
+  riskProfileSectionMaxColumns,
   sheetFieldLayoutHint,
 } from "./risk-profile-layout";
 
@@ -29,20 +40,83 @@ const RISK_PROFILE_SURFACES = [
   "src/components/deal/repeatable-unit-blocks.tsx",
 ];
 
-describe("Risk Profile 3-col density + full labels", () => {
-  it("defaults to Deal Details-style 3 columns and keeps 1/2/3 control", () => {
+describe("Risk Profile per-section density + full labels", () => {
+  it("defaults short-field sections to 4–5 columns and keeps 1–5 per section", () => {
     expect(DEFAULT_RISK_PROFILE_DENSITY).toBe(3);
+    expect(RISK_PROFILE_DENSITIES).toEqual([1, 2, 3, 4, 5]);
+    expect(defaultRiskProfileSectionDensity("Property")).toBe(5);
+    expect(defaultRiskProfileSectionDensity("Dwelling")).toBe(5);
+    expect(defaultRiskProfileSectionDensity("Vehicles")).toBe(5);
+    expect(defaultRiskProfileSectionDensity("Applicant")).toBe(4);
+    expect(defaultRiskProfileSectionDensity("Coverages")).toBe(4);
+    expect(defaultRiskProfileSectionDensity("Location / premises")).toBe(5);
+    expect(defaultRiskProfileSectionDensity("Commercial Property")).toBe(5);
+    expect(defaultRiskProfileSectionDensity("Commercial Auto")).toBe(5);
+    expect(defaultRiskProfileSectionDensity("Current policy")).toBe(3);
     expect(riskProfileDensityOf(undefined)).toBe(3);
-    expect(riskProfileDensityOf(2)).toBe(2);
-    expect(riskProfileDensityOf("1")).toBe(1);
+    expect(riskProfileDensityOf(5)).toBe(5);
+    expect(riskProfileDensityOf("4")).toBe(4);
+    expect(riskProfileSectionDensityId("Property")).toBe("Property");
 
     const sheet = source("src/components/deal/master-sheet-compare.tsx");
-    expect(sheet).toMatch(/SectionDensityControl/);
-    expect(sheet).toMatch(/DEFAULT_RISK_PROFILE_DENSITY/);
-    expect(sheet).toMatch(/RISK_PROFILE_DENSITY_CONTROL_ID/);
-    expect(RISK_PROFILE_DENSITY_CONTROL_ID).toBe("risk-profile");
+    expect(sheet).toMatch(/RiskProfileSectionBar/);
+    expect(sheet).toMatch(/useRiskProfileSectionDensity/);
+    expect(sheet).toMatch(/data-ff-risk-profile-density="per-section"/);
+    expect(sheet).not.toMatch(/RISK_PROFILE_DENSITY_CONTROL_ID/);
     expect(sheet).not.toMatch(/sm:grid-cols-2/);
     expect(sheet).not.toMatch(/minmax\(0,7\.5rem\)/);
+    expect(source("src/components/deal/risk-profile-section-header.tsx")).toMatch(
+      /SectionDensityControl/,
+    );
+    expect(source("src/components/custom-fields/section-density-control.tsx")).toMatch(
+      /data-ff-section-density-control/,
+    );
+
+    expect(riskProfileSectionChoices(4)).toEqual([1, 2, 3, 4]);
+    expect(riskProfileSectionChoices(5)).toEqual([1, 2, 3, 4, 5]);
+    expect(clampRiskProfileDensity(5, 4)).toBe(4);
+    expect(riskProfileSectionMaxColumns("Property")).toBe(RISK_PROFILE_SHORT_FIELD_MAX);
+    expect(riskProfileSectionMaxColumns("Dwelling")).toBe(RISK_PROFILE_SHORT_FIELD_MAX);
+    expect(riskProfileSectionMaxColumns("Location / premises")).toBe(RISK_PROFILE_SHORT_FIELD_MAX);
+    expect(riskProfileSectionMaxColumns("Commercial Property")).toBe(RISK_PROFILE_SHORT_FIELD_MAX);
+    expect(riskProfileSectionMaxColumns("Applicant")).toBe(RISK_PROFILE_LONG_TEXT_MAX);
+    expect(riskProfileSectionMaxColumns("Coverages")).toBe(RISK_PROFILE_LONG_TEXT_MAX);
+    expect(
+      riskProfileSectionMaxColumns("Health", [
+        { key: "notes", label: "Health notes", group: "Health", input: "textarea" },
+        {
+          key: "medical_conditions",
+          label: "Medical conditions",
+          group: "Health",
+          input: "multiselect",
+        },
+      ]),
+    ).toBe(RISK_PROFILE_LONG_TEXT_MAX);
+    expect(
+      riskProfileSectionMaxColumns("Coverage", [
+        { key: "coverage_lines", label: "Coverage lines", group: "Coverage", input: "chips" },
+      ]),
+    ).toBe(RISK_PROFILE_LONG_TEXT_MAX);
+    expect(
+      riskProfileSectionMaxColumns("General Liability", [
+        { key: "products_services", label: "Products / services", group: "General Liability", input: "textarea" },
+        { key: "annual_sales", label: "Annual sales", group: "General Liability", input: "number" },
+        {
+          key: "premises_open_to_public",
+          label: "Premises open to public",
+          group: "General Liability",
+          input: "select",
+          options: ["Yes", "No"],
+        },
+        {
+          key: "liquor_liability",
+          label: "Liquor liability",
+          group: "General Liability",
+          input: "select",
+          options: ["Yes", "No"],
+        },
+      ]),
+    ).toBe(RISK_PROFILE_LONG_TEXT_MAX);
   });
 
   it("does not truncate labels on Home / Auto / Flood / Life / Health / Commercial surfaces", () => {
@@ -74,22 +148,28 @@ describe("Risk Profile 3-col density + full labels", () => {
     expect(html).toContain("Resided at risk address under 2 years?");
     expect(html).toContain("Roof deck attachment");
     expect(html).toContain("Wind mit inspector");
-    expect(html).toMatch(/data-ff-section-density="3"/);
-    expect(html).toMatch(/data-ff-section-density-control="risk-profile"/);
+    expect(html).toMatch(/data-ff-section-density="5"/);
+    expect(html).toMatch(/data-ff-section-density-control="Property"/);
+    expect(html).toMatch(/data-ff-section-density-control="Dwelling"/);
     expect(html).toMatch(/data-ff-density-choice="1"/);
-    expect(html).toMatch(/data-ff-density-choice="2"/);
-    expect(html).toMatch(/data-ff-density-choice="3"/);
-    expect(html).toMatch(/grid-cols-\[repeat\(3,minmax\(0,1fr\)\)\]/);
+    expect(html).toMatch(/data-ff-density-choice="4"/);
+    expect(html).toMatch(/data-ff-density-choice="5"/);
+    expect(html).toMatch(/grid-cols-\[repeat\(5,minmax\(0,1fr\)\)\]/);
+    expect(html).toMatch(/data-ff-compact-row/);
+    expect(html).not.toMatch(/data-ff-section-density-control="risk-profile"/);
     expect(html).not.toMatch(/Reside at risk address…/);
     expect(html).not.toMatch(/When Met inspector/);
   });
 
-  it("renders 3-col density on Auto, Flood, Life, Health, and Commercial", () => {
+  it("renders per-section density on Home, Auto, Flood, Life, Health, and Commercial", () => {
     const lines = [
+      ["home", "homeowners"],
       ["auto", "auto"],
       ["flood", "flood"],
       ["life", "life"],
       ["health", "health"],
+      ["workers_comp", "workers_comp"],
+      ["general_liability", "gl"],
       ["bop", "bop"],
     ] as const;
     for (const [line, product] of lines) {
@@ -102,10 +182,137 @@ describe("Risk Profile 3-col density + full labels", () => {
           product,
         }),
       );
-      expect(html, line).toMatch(/data-ff-section-density="3"/);
-      expect(html, line).toMatch(/data-ff-section-density-control="risk-profile"/);
-      expect(html, line).toMatch(/data-ff-risk-profile-density="3"/);
+      expect(html, line).toMatch(/data-ff-section-density-control=/);
+      expect(html, line).toMatch(/data-ff-density-choice="1"/);
+      expect(html, line).toMatch(/data-ff-density-choice="2"/);
+      expect(html, line).toMatch(/data-ff-density-choice="3"/);
+      expect(html, line).toMatch(/data-ff-density-choice="4"/);
+      expect(html, line).toMatch(/data-ff-risk-profile-density="per-section"/);
+      expect(html, line).not.toMatch(/data-ff-section-density-control="risk-profile"/);
     }
+
+    const shortFieldSheets = [
+      ["home", "homeowners", "Property"],
+      ["auto", "auto", "Vehicles"],
+      ["flood", "flood", "Property"],
+    ] as const;
+    for (const [line, product, section] of shortFieldSheets) {
+      const html = renderToString(
+        createElement(MasterSheetCompare, {
+          dealId: `deal-${line}-short`,
+          line,
+          fields: [],
+          values: emptySheetValues(line, product),
+          product,
+        }),
+      );
+      expect(html, line).toMatch(new RegExp(`data-ff-section-density-control="${section}"`));
+      expect(html, line).toMatch(/data-ff-density-choice="5"/);
+    }
+
+    const life = renderToString(
+      createElement(MasterSheetCompare, {
+        dealId: "deal-life-long",
+        line: "life",
+        fields: [],
+        values: emptySheetValues("life", "life"),
+        product: "life",
+      }),
+    );
+    expect(life).toMatch(/data-ff-section-density-control="Health"/);
+    const healthControl = life.slice(life.indexOf('data-ff-section-density-control="Health"'));
+    const healthChunk = healthControl.slice(0, healthControl.indexOf("</div>") + 6);
+    expect(healthChunk).toMatch(/data-ff-density-choice="4"/);
+    expect(healthChunk).not.toMatch(/data-ff-density-choice="5"/);
+    for (const section of ["Product", "Build &amp; tobacco", "Existing coverage", "Beneficiaries"]) {
+      expect(life).toMatch(new RegExp(`data-ff-section-density-control="${section}"`));
+    }
+
+    const health = renderToString(
+      createElement(MasterSheetCompare, {
+        dealId: "deal-health-retrofit",
+        line: "health",
+        fields: [],
+        values: emptySheetValues("health", "health"),
+        product: "health",
+      }),
+    );
+    expect(health).toMatch(/data-ff-section-density-control="Coverage"/);
+    expect(health).toMatch(/data-ff-section-density-control="Household"/);
+    const coverageControl = health.slice(health.indexOf('data-ff-section-density-control="Coverage"'));
+    const coverageChunk = coverageControl.slice(0, coverageControl.indexOf("</div>") + 6);
+    expect(coverageChunk).toMatch(/data-ff-density-choice="4"/);
+    expect(coverageChunk).not.toMatch(/data-ff-density-choice="5"/);
+  });
+
+  it("uses the shared MasterSheetCompare panel for Commercial WC / GL / BOP plus Property and Auto stubs", () => {
+    expect(source("src/components/deal/documents-panel.tsx")).toMatch(/MasterSheetWorkspace/);
+    expect(source("src/lib/quote-sheet/catalog.ts")).toMatch(/COMMERCIAL_RISK_PROFILE_FIELDS/);
+    for (const file of RISK_PROFILE_SURFACES) {
+      expect(source(file)).toMatch(/useRiskProfileSectionDensity/);
+      expect(source(file)).toMatch(/choices=\{choices\}/);
+    }
+
+    const values = {
+      ...emptySheetValues("bop", "bop"),
+      [COMMERCIAL_COVERAGE_KEY]: {
+        value: COMMERCIAL_COVERAGE_OPTIONS.join(","),
+        status: "confirmed" as const,
+        source: "agent" as const,
+      },
+    };
+    const html = renderToString(
+      createElement(MasterSheetCompare, {
+        dealId: "deal-commercial-stubs",
+        line: "bop",
+        fields: [],
+        values,
+        product: "bop",
+      }),
+    );
+    expect(html).toMatch(/data-ff-section-density-control="Location \/ premises"/);
+    expect(html).toMatch(/data-ff-section-density-control="Workers(?:'|&#x27;) Comp"/);
+    expect(html).toMatch(/data-ff-section-density-control="General Liability"/);
+    expect(html).toMatch(/data-ff-section-density-control="BOP"/);
+    expect(html).toMatch(/data-ff-section-density-control="Commercial Property"/);
+    expect(html).toMatch(/data-ff-section-density-control="Commercial Auto"/);
+    expect(html).toMatch(/data-ff-density-choice="5"/);
+    expect(html).toMatch(/grid-cols-\[repeat\(5,minmax\(0,1fr\)\)\]/);
+    const glControl = html.slice(html.indexOf('data-ff-section-density-control="General Liability"'));
+    const glChunk = glControl.slice(0, glControl.indexOf("</div>") + 6);
+    expect(glChunk).toMatch(/data-ff-density-choice="4"/);
+    expect(glChunk).not.toMatch(/data-ff-density-choice="5"/);
+
+    for (const [line, product] of [
+      ["workers_comp", "workers_comp"],
+      ["general_liability", "gl"],
+      ["bop", "bop"],
+    ] as const) {
+      const lineHtml = renderToString(
+        createElement(MasterSheetCompare, {
+          dealId: `deal-${line}-location`,
+          line,
+          fields: [],
+          values: emptySheetValues(line, product),
+          product,
+        }),
+      );
+      expect(lineHtml, line).toMatch(/data-ff-section-density-control="Location \/ premises"/);
+      expect(lineHtml, line).toMatch(/data-ff-density-choice="5"/);
+    }
+
+    const commercialAuto = renderToString(
+      createElement(MasterSheetCompare, {
+        dealId: "deal-commercial-auto",
+        line: "auto",
+        fields: [],
+        values: emptySheetValues("auto", "commercial_auto"),
+        product: "commercial_auto",
+      }),
+    );
+    expect(commercialAuto).toMatch(/data-ff-section-density-control="Commercial auto"/);
+    expect(commercialAuto).toMatch(/data-ff-section-density-control="Vehicles"/);
+    expect(commercialAuto).toMatch(/data-ff-density-choice="5"/);
   });
 
   it("reorders fill where city/state/zip, 4-point, wind mit, and garaging were clearly wrong", () => {

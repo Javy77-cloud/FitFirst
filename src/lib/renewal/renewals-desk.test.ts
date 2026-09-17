@@ -54,7 +54,7 @@ describe("Renewals desk chrome", () => {
     expect(source("src/components/coverage/gap-count-badge.tsx")).toMatch(/if \(count <= 0\) return null/);
   });
 
-  it("puts a compact coverage-gap strip on renewal policy and deal, not a wall", () => {
+  it("puts a compact coverage-gap strip on renewal policy, not on deal tabs", () => {
     const strip = source("src/components/coverage/renewal-gap-strip.tsx");
     const policy = source("src/app/policies/[id]/page.tsx");
     const deal = source("src/app/deals/[id]/page.tsx");
@@ -66,7 +66,9 @@ describe("Renewals desk chrome", () => {
     expect(strip).toMatch(/if \(findings\.length === 0\) return null/);
     expect(strip).not.toMatch(/sparkle/i);
     expect(policy).toMatch(/RenewalGapStrip/);
-    expect(deal).toMatch(/RenewalGapStrip/);
+    expect(deal).not.toMatch(/RenewalGapStrip/);
+    expect(deal).not.toMatch(/loadRenewalGapItems/);
+    expect(deal).not.toMatch(/GapPanel/);
   });
 
   it("keeps deals and renewals default-view cookies independent", () => {

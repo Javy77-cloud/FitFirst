@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { LayoutSectionFieldGrid } from "@/components/custom-fields/layout-section-field-grid";
-import type { SectionDensity } from "@/lib/custom-fields/types";
 import type { QuoteFieldDef } from "@/lib/quote-sheet/applicant-core";
+import type { RiskProfileDensity } from "@/lib/quote-sheet/risk-profile-layout";
 import {
   sheetFieldLayoutHint,
   shortSheetControlClass,
@@ -13,7 +13,7 @@ export function RiskProfileFieldsGrid({
   fields,
   renderField,
 }: {
-  density: SectionDensity;
+  density: RiskProfileDensity | number;
   fields: readonly QuoteFieldDef[];
   renderField: (field: QuoteFieldDef) => ReactNode;
 }) {

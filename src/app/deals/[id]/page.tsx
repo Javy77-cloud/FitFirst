@@ -69,10 +69,6 @@ import {
 } from "@/lib/deals/deal-products";
 import { productSectionComplete, productSectionProgress } from "@/lib/deals/product-layout";
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
-import { RenewalGapStrip } from "@/components/coverage/renewal-gap-strip";
-import { loadRenewalGapItems } from "@/lib/coverage/load-renewal-gaps";
-import { dealProductForCoverageLine } from "@/lib/coverage/renewal-gaps";
-import { classifyCoverageLine } from "@/lib/coverage/gaps";
 import { DealStatusStamp } from "@/components/deal/deal-status-stamp";
 import { CreatePolicyFromDecModal } from "@/components/deal/create-policy-from-dec-modal";
 import { ensureRosaDeclarationRetag } from "@/app/actions/declaration";
@@ -238,13 +234,6 @@ export default async function DealPage({
   const partyName =
     deal.primaryNamedInsured ??
     (contact ? `${contact.firstName} ${contact.lastName}` : lead ? `${lead.firstName} ${lead.lastName}` : deal.title);
-  const renewalGaps = await loadRenewalGapItems({
-    contactId: deal.contactId,
-    accountId: deal.accountId,
-    partyName,
-    isAna,
-  });
-  const currentProductId = dealProductForCoverageLine(classifyCoverageLine(deal.lineOfBusiness));
   const headerAddresses = resolveDealHeaderAddresses({
     stored: dealValues,
     risk,
@@ -803,17 +792,6 @@ export default async function DealPage({
                     )}
                   />
                 </>
-              ) : null}
-              {renewalGaps.length > 0 ? (
-                <div className="mt-2">
-                  <RenewalGapStrip
-                    findings={renewalGaps}
-                    dealId={deal.id}
-                    contactId={deal.contactId}
-                    accountId={deal.accountId}
-                    currentProductId={currentProductId}
-                  />
-                </div>
               ) : null}
             </div>
           }

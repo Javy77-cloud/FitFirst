@@ -1,18 +1,27 @@
 "use client";
 
-import { SECTION_DENSITIES, sectionDensityOf, type SectionDensity } from "@/lib/custom-fields/types";
+import { DEFAULT_SECTION_DENSITY, SECTION_DENSITIES, type SectionDensity } from "@/lib/custom-fields/types";
 import { cn } from "@/lib/utils";
 
-export function SectionDensityControl({
+export function SectionDensityControl<T extends number = SectionDensity>({
   sectionId,
   density,
   onChange,
+  choices = SECTION_DENSITIES as readonly T[],
+  tone = "default",
 }: {
   sectionId: string;
   density?: unknown;
-  onChange: (density: SectionDensity) => void;
+  onChange: (density: T) => void;
+  choices?: readonly T[];
+  tone?: "default" | "onDark";
 }) {
-  const current = sectionDensityOf({ density });
+  const numeric = typeof density === "number" ? density : Number(density);
+  const fallback = (
+    choices.includes(DEFAULT_SECTION_DENSITY as T) ? DEFAULT_SECTION_DENSITY : choices[0]
+  ) as T;
+  const current = choices.includes(numeric as T) ? (numeric as T) : fallback;
+  const onDark = tone === "onDark";
   return (
     <div
       className="flex items-center gap-1"
@@ -20,8 +29,15 @@ export function SectionDensityControl({
       role="group"
       aria-label="Section density"
     >
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Density</span>
-      {SECTION_DENSITIES.map((choice) => (
+      <span
+        className={cn(
+          "text-[10px] font-semibold uppercase tracking-wide",
+          onDark ? "text-white/70" : "text-muted-foreground",
+        )}
+      >
+        Density
+      </span>
+      {choices.map((choice) => (
         <button
           key={choice}
           type="button"
@@ -29,7 +45,13 @@ export function SectionDensityControl({
           data-ff-density-choice={choice}
           className={cn(
             "inline-flex size-6 items-center justify-center rounded text-[11px] font-semibold",
-            current === choice ? "bg-navy text-white" : "border border-border bg-background text-navy hover:bg-muted",
+            current === choice
+              ? onDark
+                ? "bg-white text-navy"
+                : "bg-navy text-white"
+              : onDark
+                ? "border border-white/40 bg-transparent text-white hover:bg-white/15"
+                : "border border-border bg-background text-navy hover:bg-muted",
           )}
           onClick={() => onChange(choice)}
         >

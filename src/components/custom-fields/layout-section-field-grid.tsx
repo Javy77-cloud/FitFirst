@@ -14,7 +14,7 @@ export function LayoutSectionFieldGrid({
   renderField,
   collapse = true,
 }: {
-  density?: SectionDensity | { density?: unknown };
+  density?: SectionDensity | number | { density?: unknown };
   keys: readonly string[];
   fieldOf?: (key: string) => LayoutFieldHint | undefined;
   renderField: (key: string) => ReactNode;

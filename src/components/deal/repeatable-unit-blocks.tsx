@@ -9,17 +9,19 @@ import {
 } from "@/components/deal/risk-profile-field-grid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { SectionDensity } from "@/lib/custom-fields/types";
 import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { QuoteFieldDef } from "@/lib/quote-sheet/applicant-core";
-import { DEFAULT_RISK_PROFILE_DENSITY } from "@/lib/quote-sheet/risk-profile-layout";
 import {
   canAddAnother,
   fieldsForUnit,
   visibleUnitCount,
   type RepeatableKind,
 } from "@/lib/quote-sheet/repeatable-units";
-import { SHEET_GROUP_HEADER_STYLE, sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
+import {
+  RiskProfileSectionBar,
+  useRiskProfileSectionDensity,
+} from "@/components/deal/risk-profile-section-header";
+import { riskProfileSectionMaxColumns } from "@/lib/quote-sheet/risk-profile-layout";
 import type { ShopLine } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +32,6 @@ export function RepeatableUnitBlocks({
   extractedByKey,
   dealId,
   line,
-  density = DEFAULT_RISK_PROFILE_DENSITY,
 }: {
   kind: RepeatableKind;
   product?: string | null;
@@ -38,7 +39,6 @@ export function RepeatableUnitBlocks({
   extractedByKey: Map<string, ExtractedFieldRow>;
   dealId?: string;
   line?: ShopLine;
-  density?: SectionDensity;
 }) {
   const [count, setCount] = useState(() => visibleUnitCount(values, kind, product));
   const groupTitle =
@@ -51,16 +51,22 @@ export function RepeatableUnitBlocks({
       : kind === "household"
         ? "+ Add household member"
         : "+ Add driver";
+  const sampleFields = fieldsForUnit(kind, 1).map((field) => unitFieldAsQuote(field, groupTitle));
+  const maxColumns = riskProfileSectionMaxColumns(groupTitle, sampleFields);
+  const { sectionId, density, setDensity, choices } = useRiskProfileSectionDensity(
+    groupTitle,
+    maxColumns,
+  );
 
   return (
     <div className="border-b border-border/70 last:border-b-0" data-ff-repeatable-units={kind}>
-      <div
-        className={sheetGroupHeaderClass(groupTitle)}
-        style={SHEET_GROUP_HEADER_STYLE}
-        data-ff-sheet-group-header={groupTitle}
-      >
-        {groupTitle}
-      </div>
+      <RiskProfileSectionBar
+        title={groupTitle}
+        sectionId={sectionId}
+        density={density}
+        onDensityChange={setDensity}
+        choices={choices}
+      />
       {Array.from({ length: count }, (_, offset) => {
         const index = offset + 1;
         const unitFields = fieldsForUnit(kind, index);
