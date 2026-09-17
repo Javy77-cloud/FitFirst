@@ -25,7 +25,7 @@ describe("Use this address suggested-accept control", () => {
   it("uses FitFirst terracotta, not primary navy, with an obvious hover shift", () => {
     const className = addressUseSuggestedButtonClassName();
     expect(className).toContain("ff-terracotta");
-    expect(className).toContain("hover:bg-[color-mix(in_srgb,var(--ff-terracotta)_86%,black)]");
+    expect(className).toContain("hover:bg-[color-mix(in_srgb,var(--ff-terracotta)_72%,black)]");
     expect(className).toContain("hover:shadow-md");
     expect(className).not.toContain("bg-primary");
     expect(className).not.toContain("text-navy");
