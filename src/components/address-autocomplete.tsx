@@ -14,6 +14,14 @@ import {
   type AddressVerifyPersistStatus,
 } from "@/lib/address/verify-state";
 import {
+  ADDRESS_VERIFY_NOT_CONFIGURED,
+  interpretAddressVerifyResponse,
+  shouldAttemptQuietVerify,
+  shouldSkipQuietVerifyForFingerprint,
+  type AddressVerifyAttemptReason,
+  type AddressVerifyChip,
+} from "@/lib/address/verify-run";
+import {
   addressIsComplete,
   formatAddressLine,
   type AddressFillMap,
@@ -24,7 +32,7 @@ import { cn } from "@/lib/utils";
 
 export type { AddressFillMap, ParsedAddress };
 
-type VerifyChip = "idle" | "checking" | "confirmed" | "updated" | "suggested" | "unmatched" | "not_verified";
+type VerifyChip = AddressVerifyChip;
 
 type NamedControl = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 
@@ -163,14 +171,14 @@ export function AddressAutocomplete({
     !skipVerify && (initialMeta?.status === "confirmed" || initialMeta?.status === "updated");
   const lastVerifySig = useRef(initialMeta?.fingerprint ?? "");
   const listActiveRef = useRef(false);
-  const runVerifyRef = useRef<(reason: "blur" | "confirm" | "save") => void>(() => {});
+  const runVerifyRef = useRef<(reason: AddressVerifyAttemptReason) => void>(() => {});
   const resolvedFill = qualifyAddressFill(fill ?? addressFillForKey(name), name);
   const [query, setQuery] = useState(defaultValue ?? "");
   const [open, setOpen] = useState(false);
   const [listActive, setListActive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [enabled, setEnabled] = useState(false);
-  const [verifyEnabled, setVerifyEnabled] = useState(false);
+  const [verifyEnabled, setVerifyEnabled] = useState<boolean | null>(null);
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [confirmed, setConfirmed] = useState(initialConfirmed);
   const [verifyStatus, setVerifyStatus] = useState<VerifyChip>(() =>
@@ -240,11 +248,16 @@ export function AddressAutocomplete({
   }, []);
 
   useEffect(() => {
-    const formEl = inputRef.current?.form;
-    if (!formEl || skipVerify || !verifyEnabled || readOnly || disabled) return;
+    if (skipVerify || readOnly || disabled) return;
     const watched = new Set(
       [name, resolvedFill.city, resolvedFill.state, resolvedFill.zip].filter(Boolean) as string[],
     );
+    const scope: EventTarget =
+      boxRef.current?.closest(
+        "[data-ff-deal-section], [data-ff-address-fieldset], [data-ff-record-section], form",
+      ) ??
+      inputRef.current?.form ??
+      document;
     function onFocusOut(event: FocusEvent) {
       const target = event.target as HTMLElement | null;
       const fieldName = target?.getAttribute("name");
@@ -256,13 +269,32 @@ export function AddressAutocomplete({
     function onSubmit() {
       runVerifyRef.current("save");
     }
-    formEl.addEventListener("focusout", onFocusOut);
-    formEl.addEventListener("submit", onSubmit);
+    scope.addEventListener("focusout", onFocusOut);
+    const formEl = inputRef.current?.form;
+    formEl?.addEventListener("submit", onSubmit);
     return () => {
-      formEl.removeEventListener("focusout", onFocusOut);
-      formEl.removeEventListener("submit", onSubmit);
+      scope.removeEventListener("focusout", onFocusOut);
+      formEl?.removeEventListener("submit", onSubmit);
     };
-  }, [disabled, name, readOnly, resolvedFill.city, resolvedFill.state, resolvedFill.zip, skipVerify, verifyEnabled]);
+  }, [disabled, name, readOnly, resolvedFill.city, resolvedFill.state, resolvedFill.zip, skipVerify]);
+
+  useEffect(() => {
+    if (skipVerify || readOnly || disabled || verifyEnabled !== true) return;
+    if (
+      verifyStatus === "confirmed" ||
+      verifyStatus === "updated" ||
+      verifyStatus === "checking" ||
+      verifyStatus === "suggested"
+    ) {
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      runVerifyRef.current("blur");
+    }, 0);
+    return () => window.clearTimeout(handle);
+    // Retry once after FedEx status is known on — blur/save before /status returned used to no-op.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when verify becomes enabled
+  }, [disabled, readOnly, skipVerify, verifyEnabled]);
 
   function hostForm(): HTMLFormElement | null {
     return (
@@ -275,14 +307,18 @@ export function AddressAutocomplete({
 
   function fillScope(): ParentNode | null {
     const section =
-      boxRef.current?.closest("[data-ff-deal-section], [data-ff-address-fieldset]") ??
-      inputRef.current?.closest("[data-ff-deal-section], [data-ff-address-fieldset]");
+      boxRef.current?.closest(
+        "[data-ff-deal-section], [data-ff-address-fieldset], [data-ff-record-section]",
+      ) ??
+      inputRef.current?.closest(
+        "[data-ff-deal-section], [data-ff-address-fieldset], [data-ff-record-section]",
+      );
     return section ?? hostForm() ?? (typeof document !== "undefined" ? document : null);
   }
 
   function readBlock(): ParsedAddress {
-    const formEl = hostForm();
-    const root: ParentNode | null = formEl ?? boxRef.current?.closest("[data-ff-address-fieldset]") ?? document;
+    const root: ParentNode | null =
+      fillScope() ?? hostForm() ?? (typeof document !== "undefined" ? document : null);
     const fromSiblings: ParsedAddress = {
       street: query.trim(),
       city: readNamed(root, resolvedFill.city),
@@ -308,15 +344,16 @@ export function AddressAutocomplete({
     setVerifyFingerprint(sig);
   }
 
-  async function runVerify(reason: "blur" | "confirm" | "save") {
-    if (skipVerify || !verifyEnabled || readOnly || disabled) return;
+  async function runVerify(reason: AddressVerifyAttemptReason) {
+    if (skipVerify || readOnly || disabled) return;
+    if (reason !== "button" && !shouldAttemptQuietVerify(verifyEnabled)) return;
     const address = readBlock();
     if (!addressIsComplete(address)) {
-      if (reason === "save" && query.trim()) setVerifyStatus("not_verified");
+      if (reason === "button" || (reason === "save" && query.trim())) setVerifyStatus("not_verified");
       return;
     }
     const sig = addressFingerprint(address);
-    if (sig === verifyFingerprint && (verifyStatus === "confirmed" || verifyStatus === "updated")) {
+    if (shouldSkipQuietVerifyForFingerprint(reason, sig, lastVerifySig.current, verifyStatus)) {
       return;
     }
     rememberFingerprint(sig);
@@ -332,19 +369,16 @@ export function AddressAutocomplete({
         enabled?: boolean;
         resolved?: ParsedAddress | null;
       };
-      if (data.enabled === false) {
-        setVerifyEnabled(false);
-        setVerifyStatus("not_verified");
-        return;
-      }
-      if (data.status === "verified") {
+      const interpreted = interpretAddressVerifyResponse(data, reason);
+      setVerifyEnabled(interpreted.verifyEnabled);
+      if (interpreted.chip === "confirmed") {
         setSuggested(null);
         setEntered(null);
         setVerifyStatus("confirmed");
         setConfirmed(true);
         return;
       }
-      if (data.status === "suggested" && data.resolved) {
+      if (interpreted.chip === "suggested" && data.resolved) {
         setEntered(address);
         setSuggested(data.resolved);
         setVerifyStatus("suggested");
@@ -353,7 +387,8 @@ export function AddressAutocomplete({
       }
       setSuggested(null);
       setEntered(null);
-      setVerifyStatus(data.status === "incomplete" ? "idle" : "not_verified");
+      setVerifyStatus(interpreted.chip === "suggested" ? "not_verified" : interpreted.chip);
+      if (interpreted.chip !== "confirmed") setConfirmed(false);
     } catch {
       rememberFingerprint("");
       setVerifyStatus("not_verified");
@@ -499,6 +534,20 @@ export function AddressAutocomplete({
       ) : null}
       {!skipVerify ? (
         <div className="mt-0.5 flex flex-wrap items-center gap-1.5" data-ff-address-toolbar>
+          {!readOnly && !disabled ? (
+            <button
+              type="button"
+              data-ff-address-verify
+              disabled={verifyStatus === "checking"}
+              className="text-[10px] font-medium text-navy underline-offset-2 hover:underline disabled:cursor-wait disabled:opacity-60"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                void runVerify("button");
+              }}
+            >
+              Verify address
+            </button>
+          ) : null}
           {verifyStatus === "checking" ? (
             <span className="text-[10px] text-muted-foreground" data-ff-address-verify-chip="checking">
               Checking address…
@@ -533,6 +582,14 @@ export function AddressAutocomplete({
           {verifyStatus === "not_verified" || verifyStatus === "unmatched" ? (
             <span className="text-[10px] text-muted-foreground" data-ff-address-verify-chip="not_verified">
               Not verified
+            </span>
+          ) : null}
+          {verifyStatus === "not_configured" ? (
+            <span
+              className="text-[10px] text-muted-foreground"
+              data-ff-address-verify-chip="not_configured"
+            >
+              {ADDRESS_VERIFY_NOT_CONFIGURED}
             </span>
           ) : null}
         </div>

@@ -28,7 +28,7 @@ describe("Mapbox typeahead + FedEx verify-only address UX", () => {
     expect(source("src/app/api/address/status/route.ts")).toMatch(/verifyEnabled/);
   });
 
-  it("auto-verifies with FedEx stamps and does not open suggestions on load", () => {
+  it("offers Verify address, keeps quiet FedEx stamps, and does not open suggestions on load", () => {
     const ui = source("src/components/address-autocomplete.tsx");
     expect(ui).toMatch(/Address confirmed/);
     expect(ui).toMatch(/Address updated/);
@@ -43,7 +43,9 @@ describe("Mapbox typeahead + FedEx verify-only address UX", () => {
     expect(ui).toMatch(/listActive/);
     expect(ui).toMatch(/setListActive\(true\)/);
     expect(ui).toMatch(/autoFocus=\{false\}/);
-    expect(ui).not.toMatch(/Verify address/);
+    expect(ui).toMatch(/Verify address/);
+    expect(ui).toMatch(/data-ff-address-verify/);
+    expect(ui).toMatch(/Verification isn’t set up/);
     expect(ui).not.toMatch(/Looking up FedEx/);
     expect(ui).not.toMatch(/fedex typeahead/i);
     expect(ui).not.toMatch(/setOpen\(Boolean\(data\.suggestions\?\.length\)\);/);

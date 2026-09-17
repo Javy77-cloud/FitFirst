@@ -95,3 +95,8 @@ export function isPreviousAddressFieldKey(key: string): boolean {
 export function isMailingAddressFieldKey(key: string): boolean {
   return (MAILING_ADDRESS_FIELD_KEYS as readonly string[]).includes(key);
 }
+
+export function isMailingAddressSection(section: { id?: string; label?: string } | null | undefined): boolean {
+  if (!section) return false;
+  return section.id === "mailing_address" || /^mailing address$/i.test(String(section.label ?? "").trim());
+}

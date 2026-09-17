@@ -74,6 +74,8 @@ describe("Deal Details personal / identity layout", () => {
     expect(html).toContain("Mailing address same as insured address");
     expect(html).not.toMatch(/data-ff-deal-field="contact_mailing_address"/);
     expect(html).toMatch(/data-ff-deal-field="mailing_address"/);
+    expect(html).toMatch(/Verify address/);
+    expect(html.match(/Verify address/g)?.length).toBe(1);
     expect(html).not.toMatch(/data-ff-deal-section-kind="product"/);
     expect(html).toMatch(/data-ff-deal-details-save/);
   });
@@ -192,6 +194,35 @@ describe("Deal Details personal / identity layout", () => {
       }),
     );
     expect(aliasHidden).not.toMatch(/data-ff-deal-field="previous_address"/);
+  });
+
+  it("hides mailing fields and Verify on shared create/lead when same-as-insured", () => {
+    const layout = defaultLayoutForLine("HO");
+    const same = renderToStaticMarkup(
+      createElement(RecordLayoutFields, {
+        module: "deals",
+        layout,
+        fields: [],
+        values: { mailing_same_as_insured: "true" },
+      }),
+    );
+    expect(same).toMatch(/data-ff-mailing-same-switch/);
+    expect(same).toContain("Mailing address same as insured address");
+    expect(same).not.toMatch(/data-ff-record-field="contact_mailing_address"/);
+    expect(same).toMatch(/data-ff-record-field="mailing_address"/);
+    expect(same).toMatch(/Verify address/);
+    expect(same.match(/Verify address/g)?.length).toBe(1);
+
+    const distinct = renderToStaticMarkup(
+      createElement(RecordLayoutFields, {
+        module: "deals",
+        layout,
+        fields: [],
+        values: { mailing_same_as_insured: "false" },
+      }),
+    );
+    expect(distinct).toMatch(/data-ff-record-field="contact_mailing_address"/);
+    expect(distinct.match(/Verify address/g)?.length).toBe(2);
   });
 
   it("hides previous address on shared create/lead layouts unless lived-here is No", () => {

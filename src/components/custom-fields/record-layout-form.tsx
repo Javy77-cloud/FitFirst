@@ -14,7 +14,12 @@ import {
   INSURANCE_QUOTE_SECTION_STYLE,
   isInsuranceQuoteRequestSection,
 } from "@/lib/custom-fields/insurance-quote-section";
+import { MailingSameSwitch } from "@/components/custom-fields/mailing-same-switch";
 import {
+  MAILING_SAME_AS_INSURED_KEY,
+  isMailingAddressFieldKey,
+  isMailingAddressSection,
+  isMailingSameAsInsured,
   isPreviousAddressFieldKey,
   shouldShowPreviousAddressFields,
 } from "@/lib/custom-fields/mailing-same";
@@ -56,7 +61,12 @@ export function RecordLayoutFields({
   // Dense / classic: empty right column → true one-column stack (narrow monitors).
   const activeColumns = layoutColumns.filter((column) => asList(column.sections).length > 0);
   const oneCol = activeColumns.length <= 1;
-  const [liveValues, setLiveValues] = useState(values);
+  const commercial = module === "businesses" || fieldList.some((field) => field.key === "business_name");
+  const [liveValues, setLiveValues] = useState(() => ({
+    ...values,
+    [MAILING_SAME_AS_INSURED_KEY]:
+      values[MAILING_SAME_AS_INSURED_KEY] || (isMailingSameAsInsured(values) ? "true" : "false"),
+  }));
 
   function patchValue(key: string, next: string) {
     setLiveValues((prev) => ({ ...prev, [key]: next }));
@@ -100,6 +110,14 @@ export function RecordLayoutFields({
                 title={section.label}
                 badge={quoteReq ? <LayoutRequiredBadge /> : null}
               />
+              {isMailingAddressSection(section) ? (
+                <MailingSameSwitch
+                  formId={form}
+                  same={isMailingSameAsInsured(liveValues)}
+                  commercial={commercial}
+                  onToggle={(next) => patchValue(MAILING_SAME_AS_INSURED_KEY, next ? "true" : "false")}
+                />
+              ) : null}
               <LayoutSectionFieldGrid
                 density={section}
                 keys={asList(section.fieldKeys).filter((key) => {
@@ -116,6 +134,9 @@ export function RecordLayoutFields({
                     return false;
                   }
                   if (isPreviousAddressFieldKey(key) && !shouldShowPreviousAddressFields(liveValues)) {
+                    return false;
+                  }
+                  if (isMailingAddressFieldKey(key) && isMailingSameAsInsured(liveValues)) {
                     return false;
                   }
                   return true;
