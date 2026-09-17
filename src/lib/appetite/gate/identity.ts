@@ -1,5 +1,11 @@
-import { SOUTHERN_OAK_HO_APPETITE, TRIDENT_HO_APPETITE } from "@/lib/appetite/published-appetite";
-import { UICNA_SLUG, UNIVERSAL_PC_SLUG } from "./fl-ho-order";
+import {
+  OLYMPUS_HO_APPETITE,
+  SOUTHERN_OAK_HO_APPETITE,
+  STAND_HO_APPETITE,
+  TRIDENT_HO_APPETITE,
+  UNIVERSAL_PC_HO_APPETITE,
+} from "@/lib/appetite/published-appetite";
+import { STAND_SLUG, UICNA_SLUG, UNIVERSAL_PC_SLUG } from "./fl-ho-order";
 
 /**
  * Slug identity helpers. universal_pc (Universal Property & Casualty of Florida)
@@ -13,7 +19,7 @@ export const SLUG_NAME_ALIASES: Record<string, string[]> = {
   slide: ["slide insurance", "slide"],
   american_integrity: ["american integrity"],
   foremost: ["foremost"],
-  universal_pc: ["universal property & casualty", "universal property and casualty", "universal p&c", "universal property"],
+  universal_pc: UNIVERSAL_PC_HO_APPETITE.aliases,
   kin: ["kin interinsurance", "kin "],
   hagerty: ["hagerty"],
   dairyland: ["dairyland"],
@@ -27,7 +33,8 @@ export const SLUG_NAME_ALIASES: Record<string, string[]> = {
   peoples_trust: ["people's trust", "peoples trust"],
   trident_reciprocal: TRIDENT_HO_APPETITE.aliases,
   typtap: ["typtap"],
-  olympus: ["olympus insurance", "olympus"],
+  olympus: OLYMPUS_HO_APPETITE.aliases,
+  stand: STAND_HO_APPETITE.aliases,
   monarch: ["monarch national", "monarch"],
   loggerhead: ["loggerhead"],
   florida_family: ["florida family"],
@@ -56,7 +63,6 @@ export const SLUG_NAME_ALIASES: Record<string, string[]> = {
   chubb: ["chubb"],
   hartford: ["the hartford", "hartford"],
   american_family: ["american family"],
-  citizens: ["citizens property", "citizens"],
 };
 
 export function assertDistinctUniversalSlugs(a: string, b: string): boolean {
@@ -67,6 +73,9 @@ export function assertDistinctUniversalSlugs(a: string, b: string): boolean {
 export function slugFromCarrierName(name: string): string | null {
   const n = name.trim().toLowerCase();
   if (!n) return null;
+
+  // Exact "Stand" only — do not let includes("stand") match Standard / outstanding.
+  if (n === "stand") return STAND_SLUG;
 
   // UICNA first so "Universal Insurance Company of North America" never maps to universal_pc.
   for (const label of SLUG_NAME_ALIASES[UICNA_SLUG] ?? []) {

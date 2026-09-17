@@ -6,6 +6,7 @@ import {
   CITIZENS_SLUG,
   DEFAULT_FL_HO_ORDER,
   SOUTHERN_OAK_SLUG,
+  STAND_SLUG,
   UICNA_SLUG,
   UNIVERSAL_PC_SLUG,
 } from "./fl-ho-order";
@@ -352,8 +353,12 @@ describe("universal_pc ≠ uicna identity", () => {
     expect(slugFromCarrierName("Trident")).toBe("trident_reciprocal");
     expect(slugFromCarrierName("Southern Oak")).toBe(SOUTHERN_OAK_SLUG);
     expect(slugFromCarrierName("Southern Oak Insurance")).toBe(SOUTHERN_OAK_SLUG);
+    expect(slugFromCarrierName("Stand")).toBe(STAND_SLUG);
+    expect(slugFromCarrierName("Stand Insurance")).toBe(STAND_SLUG);
+    expect(slugFromCarrierName("Standard")).not.toBe(STAND_SLUG);
     expect(DEFAULT_FL_HO_ORDER).toContain("trident_reciprocal");
     expect(DEFAULT_FL_HO_ORDER).toContain(SOUTHERN_OAK_SLUG);
+    expect(DEFAULT_FL_HO_ORDER).toContain(STAND_SLUG);
     expect(new Set(DEFAULT_FL_HO_ORDER).size).toBe(DEFAULT_FL_HO_ORDER.length);
   });
 
@@ -363,7 +368,7 @@ describe("universal_pc ≠ uicna identity", () => {
     expect(slugs.filter((s) => s === UNIVERSAL_PC_SLUG)).toHaveLength(1);
     expect(slugs.filter((s) => s === UICNA_SLUG)).toHaveLength(1);
     expect(new Set(slugs).size).toBe(catalog.length);
-    expect(catalog).toHaveLength(29);
+    expect(catalog).toHaveLength(30);
     const trident = catalog.find((c) => c.carrierId === "trident_reciprocal");
     expect(trident?.legalName).toBe("Trident Reciprocal Exchange");
     expect(trident?.notesForAgent).toBe(TRIDENT_HO_APPETITE.notesForAgent);

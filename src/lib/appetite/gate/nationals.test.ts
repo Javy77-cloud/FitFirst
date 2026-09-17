@@ -104,6 +104,9 @@ describe("nationals CSV pack", () => {
     }
     expect(nationals.find((c) => c.carrierId === "farmers")?.needsStateConfirm).toBe(true);
     expect(nationals.find((c) => c.carrierId === "nationwide")?.needsStateConfirm).toBe(true);
+    expect(nationals.find((c) => c.carrierId === "nationwide")?.linesOffered).toEqual(
+      expect.arrayContaining(["BOAT", "MCY", "RV"]),
+    );
     expect(nationals.find((c) => c.carrierId === "liberty_mutual")?.needsStateConfirm).toBe(true);
     expect(nationals.find((c) => c.carrierId === "farmers")?.statesAvailable).not.toContain("FL");
     expect(nationals.find((c) => c.carrierId === "american_family")?.statesAvailable).not.toContain("FL");
