@@ -41,6 +41,8 @@ import {
   type AddressSuggestion,
   type ParsedAddress,
 } from "@/lib/address/types";
+import { AddressUseSuggestedButton } from "@/components/address-use-suggested-button";
+import { addressSuggestedChoiceClassName } from "@/lib/address/use-suggested-button";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -698,19 +700,12 @@ export function AddressAutocomplete({
               Use entered
             </button>
           </div>
-          <div data-ff-address-suggested-choice>
+          <div data-ff-address-suggested-choice className={addressSuggestedChoiceClassName()}>
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               Address suggested
             </p>
             <p className="mt-0.5 text-[11px] text-navy">{formatAddressLine(suggested)}</p>
-            <button
-              type="button"
-              data-ff-address-use-suggested
-              className="mt-1 text-[10px] font-medium text-navy underline-offset-2 hover:underline"
-              onClick={applySuggestedAddress}
-            >
-              Use suggested
-            </button>
+            <AddressUseSuggestedButton onClick={applySuggestedAddress} />
           </div>
         </div>
       ) : null}
