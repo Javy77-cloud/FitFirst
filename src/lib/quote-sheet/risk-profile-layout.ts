@@ -43,11 +43,10 @@ export function riskProfileSectionMaxColumns(
   const key = title.trim();
   if (FIVE_COL_SECTIONS.test(key) || /^location/i.test(key)) return RISK_PROFILE_SHORT_FIELD_MAX;
   if (FOUR_COL_SECTIONS.test(key)) return RISK_PROFILE_LONG_TEXT_MAX;
-  const longCount = fields.filter((field) => isLongTextSheetField(field)).length;
+  const longFields = fields.filter((field) => isLongTextSheetField(field));
+  if (longFields.length > 0) return RISK_PROFILE_LONG_TEXT_MAX;
   const shortCount = fields.filter((field) => isShortSheetValue(field)).length;
-  if (fields.length > 0 && shortCount >= 3 && shortCount > longCount) {
-    return RISK_PROFILE_SHORT_FIELD_MAX;
-  }
+  if (fields.length > 0 && shortCount >= 3) return RISK_PROFILE_SHORT_FIELD_MAX;
   return RISK_PROFILE_LONG_TEXT_MAX;
 }
 

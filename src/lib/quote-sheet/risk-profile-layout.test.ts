@@ -97,6 +97,26 @@ describe("Risk Profile per-section density + full labels", () => {
         { key: "coverage_lines", label: "Coverage lines", group: "Coverage", input: "chips" },
       ]),
     ).toBe(RISK_PROFILE_LONG_TEXT_MAX);
+    expect(
+      riskProfileSectionMaxColumns("General Liability", [
+        { key: "products_services", label: "Products / services", group: "General Liability", input: "textarea" },
+        { key: "annual_sales", label: "Annual sales", group: "General Liability", input: "number" },
+        {
+          key: "premises_open_to_public",
+          label: "Premises open to public",
+          group: "General Liability",
+          input: "select",
+          options: ["Yes", "No"],
+        },
+        {
+          key: "liquor_liability",
+          label: "Liquor liability",
+          group: "General Liability",
+          input: "select",
+          options: ["Yes", "No"],
+        },
+      ]),
+    ).toBe(RISK_PROFILE_LONG_TEXT_MAX);
   });
 
   it("does not truncate labels on Home / Auto / Flood / Life / Health / Commercial surfaces", () => {
@@ -258,6 +278,41 @@ describe("Risk Profile per-section density + full labels", () => {
     expect(html).toMatch(/data-ff-section-density-control="Commercial Auto"/);
     expect(html).toMatch(/data-ff-density-choice="5"/);
     expect(html).toMatch(/grid-cols-\[repeat\(5,minmax\(0,1fr\)\)\]/);
+    const glControl = html.slice(html.indexOf('data-ff-section-density-control="General Liability"'));
+    const glChunk = glControl.slice(0, glControl.indexOf("</div>") + 6);
+    expect(glChunk).toMatch(/data-ff-density-choice="4"/);
+    expect(glChunk).not.toMatch(/data-ff-density-choice="5"/);
+
+    for (const [line, product] of [
+      ["workers_comp", "workers_comp"],
+      ["general_liability", "gl"],
+      ["bop", "bop"],
+    ] as const) {
+      const lineHtml = renderToString(
+        createElement(MasterSheetCompare, {
+          dealId: `deal-${line}-location`,
+          line,
+          fields: [],
+          values: emptySheetValues(line, product),
+          product,
+        }),
+      );
+      expect(lineHtml, line).toMatch(/data-ff-section-density-control="Location \/ premises"/);
+      expect(lineHtml, line).toMatch(/data-ff-density-choice="5"/);
+    }
+
+    const commercialAuto = renderToString(
+      createElement(MasterSheetCompare, {
+        dealId: "deal-commercial-auto",
+        line: "auto",
+        fields: [],
+        values: emptySheetValues("auto", "commercial_auto"),
+        product: "commercial_auto",
+      }),
+    );
+    expect(commercialAuto).toMatch(/data-ff-section-density-control="Commercial auto"/);
+    expect(commercialAuto).toMatch(/data-ff-section-density-control="Vehicles"/);
+    expect(commercialAuto).toMatch(/data-ff-density-choice="5"/);
   });
 
   it("reorders fill where city/state/zip, 4-point, wind mit, and garaging were clearly wrong", () => {
