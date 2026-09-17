@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  CONTACT_EDUCATION_OPTIONS,
   CONTACT_MODULE_FIELDS,
   contactCardLayout,
   splitCoverageOpportunitiesLayout,
@@ -8,7 +9,11 @@ import {
 import { defaultFieldsForModule, defaultLayoutForModule } from "@/lib/custom-fields/modules";
 import { CONTACTS_LIST_COLUMNS } from "@/lib/list-columns";
 import { OCCUPATION_PICKLIST_NAME } from "./occupation-picklist";
-import { STARTER_PICKLIST_OCCUPATIONS } from "@/lib/custom-fields/starter-picklists";
+import {
+  STARTER_FIELD_PICKLISTS,
+  STARTER_PICKLIST_OCCUPATIONS,
+  STARTER_PICKLIST_SEED_KEY,
+} from "@/lib/custom-fields/starter-picklists";
 import { buildPolicyCoApplicantLinks, policyCoApplicantLabel } from "./policy-co-applicants";
 
 describe("Contacts module v1 standards", () => {
@@ -90,6 +95,15 @@ describe("Contacts module v1 standards", () => {
     ]);
     const occupation = CONTACT_MODULE_FIELDS.find((f) => f.key === "occupation");
     expect(occupation?.type).toBe("picklist");
+    const education = CONTACT_MODULE_FIELDS.find((f) => f.key === "education_level");
+    expect(education?.options).toEqual([...CONTACT_EDUCATION_OPTIONS]);
+    expect(CONTACT_EDUCATION_OPTIONS.indexOf("Associate's")).toBeLessThan(
+      CONTACT_EDUCATION_OPTIONS.indexOf("Bachelor's"),
+    );
+    expect(
+      STARTER_FIELD_PICKLISTS.find((list) => list.seedKey === STARTER_PICKLIST_SEED_KEY.education)
+        ?.options,
+    ).toEqual([...CONTACT_EDUCATION_OPTIONS]);
     expect(CONTACT_MODULE_FIELDS.some((f) => f.key === "pc_notes")).toBe(true);
     const combined = {
       columns: [

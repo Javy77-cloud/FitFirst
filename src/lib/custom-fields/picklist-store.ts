@@ -7,8 +7,10 @@ import {
   type FieldPicklist,
   type PicklistOption,
 } from "./picklists";
+import { insertAssociatesEducationOption } from "@/lib/contacts/contact-field-catalog";
 import {
   STARTER_FIELD_PICKLISTS,
+  STARTER_PICKLIST_SEED_KEY,
   matchStarterList,
 } from "./starter-picklists";
 
@@ -78,6 +80,12 @@ export async function ensureDefaultFieldPicklists(): Promise<FieldPicklist[]> {
       if (!current.seedKey) patch.seedKey = starter.seedKey;
       if (current.active !== false && current.options.length === 0 && starter.options.length > 0) {
         patch.options = starter.options;
+      } else if (
+        current.active !== false &&
+        starter.seedKey === STARTER_PICKLIST_SEED_KEY.education
+      ) {
+        const next = insertAssociatesEducationOption(current.options);
+        if (next !== current.options) patch.options = next;
       }
       if (Object.keys(patch).length === 0) continue;
       const updated = await updateFieldPicklist(current.id, patch);
