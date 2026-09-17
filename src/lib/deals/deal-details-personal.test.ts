@@ -120,6 +120,31 @@ describe("Deal Details personal / identity layout", () => {
     expect(html).not.toMatch(/data-ff-deal-field="flood_zone"/);
   });
 
+  it("prefills Pipeline strip from Term Life product when stored cascade is empty", () => {
+    const html = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-tyler",
+        line: "LIFE",
+        layout: defaultLayoutForLine("HO"),
+        fields: [],
+        values: {},
+        pipelineFamily: "life",
+        quotingForm: "Term Life",
+        policySubType: "Term Life",
+        dealProducts: ["life_term"],
+        activeProduct: "life_term",
+      }),
+    );
+    expect(html).toMatch(/data-ff-pipeline-strip/);
+    expect(html).toMatch(/data-ff-cascade-type-value="Life"/);
+    expect(html).toMatch(/data-ff-cascade-category-value="Term Life"/);
+    expect(html).toMatch(/data-ff-cascade-subtype-value="Term Life"/);
+    expect(html).toMatch(/data-ff-required-field="pipeline"/);
+    expect(html).toMatch(/text-red-700/);
+    expect(html).not.toMatch(/#e0f2fe/);
+    expect(html).not.toMatch(/Policy type/);
+  });
+
   it("does not render a second marital-status field when applicant marital exists", () => {
     const html = renderToStaticMarkup(
       createElement(DealDetailsPanel, {

@@ -237,7 +237,7 @@ describe("deal list cascade sync", () => {
     expect(control).toMatch(/visibleInsuranceTypes/);
     expect(control).toMatch(/lineSettings/);
     const details = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
-    expect(details).toMatch(/lineSettings=\{deskLineSettings\}/);
+    expect(details).toMatch(/lineSettings=\{deskLineSettings/);
   });
 
   it("Details save + convert persist list keys; cascade parent reads Pipeline", () => {

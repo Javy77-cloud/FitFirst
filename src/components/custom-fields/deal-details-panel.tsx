@@ -7,7 +7,7 @@ import { InsuranceCascadeControl } from "@/components/custom-fields/insurance-ca
 import { LayoutSectionFieldGrid } from "@/components/custom-fields/layout-section-field-grid";
 import { LayoutSectionHeader } from "@/components/custom-fields/layout-section-header";
 import { buttonVariants } from "@/components/ui/button";
-import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
+import { mergeCascadePrefill, type PipelineFamily } from "@/lib/deals/insurance-cascade";
 import type { DealProductId } from "@/lib/deals/deal-products";
 import {
   isSharedDealSection,
@@ -348,10 +348,17 @@ export function DealDetailsPanel({
   );
   const byKey = Object.fromEntries(fieldList.map((field) => [field.key, field]));
   const formId = "deal-details-save";
-  const [liveValues, setLiveValues] = useState(values);
-  const layoutKeySet = useMemo(
-    () => new Set(asList(safeLayout.columns).flatMap((column) => asList(column.sections).flatMap((section) => asList(section.fieldKeys)))),
-    [safeLayout],
+  const [liveValues, setLiveValues] = useState(() =>
+    mergeCascadePrefill(values, {
+      shopProducts: dealProducts,
+      quotingForm,
+      policySubType,
+    }),
+  );
+  const layoutKeySet = new Set(
+    asList(safeLayout.columns).flatMap((column) =>
+      asList(column.sections).flatMap((section) => asList(section.fieldKeys)),
+    ),
   );
   const seenFieldKeys = new Set<string>();
 

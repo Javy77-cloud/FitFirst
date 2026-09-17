@@ -416,8 +416,8 @@ function categoryLabelForCascade(input: {
  * (or the active chip). Writes Details keys and standing list columns.
  */
 export function cascadeValuesFromDealHints(input: {
-  shopProducts?: string[] | null;
-  shopLines?: string[] | null;
+  shopProducts?: readonly string[] | null;
+  shopLines?: readonly string[] | null;
   lineOfBusiness?: string | null;
   quotingLine?: string | null;
   quotingForm?: string | null;

@@ -55,11 +55,13 @@ export function normalizePipelineStripSection(
   section?: { id?: string | null; label?: string | null; fieldKeys?: string[] | null } | null,
 ): LayoutSection {
   const keys = [...(section?.fieldKeys ?? [])];
-  const next = [...PIPELINE_STRIP_FIELD_KEYS];
+  const next: string[] = [...PIPELINE_STRIP_FIELD_KEYS];
+  const seen = new Set(next);
   for (const key of keys) {
-    if (key === "pipeline") continue;
-    if ((PIPELINE_STRIP_FIELD_KEYS as readonly string[]).includes(key) && !next.includes(key)) {
-      next.push(key as (typeof PIPELINE_STRIP_FIELD_KEYS)[number]);
+    if (key === "pipeline" || !key || seen.has(key)) continue;
+    if ((PIPELINE_STRIP_FIELD_KEYS as readonly string[]).includes(key)) {
+      next.push(key);
+      seen.add(key);
     }
   }
   return {
