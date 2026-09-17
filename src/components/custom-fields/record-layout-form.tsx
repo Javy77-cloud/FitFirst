@@ -62,7 +62,7 @@ export function RecordLayoutFields({
   const activeColumns = layoutColumns.filter((column) => asList(column.sections).length > 0);
   const oneCol = activeColumns.length <= 1;
   const commercial = module === "businesses" || fieldList.some((field) => field.key === "business_name");
-  const [liveValues, setLiveValues] = useState(() => ({
+  const [liveValues, setLiveValues] = useState<Record<string, string>>(() => ({
     ...values,
     [MAILING_SAME_AS_INSURED_KEY]:
       values[MAILING_SAME_AS_INSURED_KEY] || (isMailingSameAsInsured(values) ? "true" : "false"),

@@ -45,7 +45,8 @@ describe("Mapbox typeahead + FedEx verify-only address UX", () => {
     expect(ui).toMatch(/autoFocus=\{false\}/);
     expect(ui).toMatch(/Verify address/);
     expect(ui).toMatch(/data-ff-address-verify/);
-    expect(ui).toMatch(/Verification isn’t set up/);
+    expect(ui).toMatch(/ADDRESS_VERIFY_NOT_CONFIGURED/);
+    expect(source("src/lib/address/verify-run.ts")).toMatch(/Verification isn’t set up/);
     expect(ui).not.toMatch(/Looking up FedEx/);
     expect(ui).not.toMatch(/fedex typeahead/i);
     expect(ui).not.toMatch(/setOpen\(Boolean\(data\.suggestions\?\.length\)\);/);

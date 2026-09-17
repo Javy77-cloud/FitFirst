@@ -42,7 +42,7 @@ function cssName(name: string): string {
 
 function namedFromList(named: Element | RadioNodeList | null): NamedControl | null {
   if (named instanceof RadioNodeList) {
-    const first = named[0];
+    const first: Node | null = named.item(0);
     return first instanceof HTMLInputElement ||
       first instanceof HTMLTextAreaElement ||
       first instanceof HTMLSelectElement
@@ -258,7 +258,7 @@ export function AddressAutocomplete({
       ) ??
       inputRef.current?.form ??
       document;
-    function onFocusOut(event: FocusEvent) {
+    function onFocusOut(event: Event) {
       const target = event.target as HTMLElement | null;
       const fieldName = target?.getAttribute("name");
       if (!fieldName || !watched.has(fieldName)) return;
@@ -388,7 +388,7 @@ export function AddressAutocomplete({
       setSuggested(null);
       setEntered(null);
       setVerifyStatus(interpreted.chip === "suggested" ? "not_verified" : interpreted.chip);
-      if (interpreted.chip !== "confirmed") setConfirmed(false);
+      setConfirmed(false);
     } catch {
       rememberFingerprint("");
       setVerifyStatus("not_verified");
