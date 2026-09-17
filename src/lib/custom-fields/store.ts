@@ -28,7 +28,7 @@ import {
   resolveLayoutFields,
 } from "./resolve-layout";
 import type { CustomFieldDef, FieldLayout } from "./types";
-import { allLayoutFieldKeys } from "./types";
+import { AGENCY_LAYOUT_REVISION, allLayoutFieldKeys, withLayoutRevision } from "./types";
 import { splitInsuredMailingAddressSections, needsAddressSectionSplit } from "./split-address-sections";
 import { migrateDealLayoutParity, needsDealLayoutParity } from "./migrate-deal-layout-parity";
 import { migrateLeadLayout, needsLeadLayoutMigration } from "./migrate-lead-layout";
@@ -683,18 +683,19 @@ export async function loadLayoutForLine(line: string): Promise<FieldLayout> {
 
 export async function saveLayoutForLine(line: string, layout: FieldLayout) {
   const lob = (LINES as readonly string[]).includes(line) ? line : "HO";
+  const owned = withLayoutRevision(layout, AGENCY_LAYOUT_REVISION);
   await db
     .insert(deskFieldLayouts)
     .values({
       tenantId: DEFAULT_TENANT_ID,
       module: "deals",
       lineOfBusiness: lob,
-      columns: layout,
+      columns: owned,
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: [deskFieldLayouts.tenantId, deskFieldLayouts.module, deskFieldLayouts.lineOfBusiness],
-      set: { columns: layout, updatedAt: new Date() },
+      set: { columns: owned, updatedAt: new Date() },
     });
 }
 
@@ -719,6 +720,7 @@ export async function loadLayoutForModule(module: FieldLayoutModule, line = "HO"
       }
       // Tip sep7hk: carriers sparse seed still gets full catalog in Edit Layout.
       // Tip sep7jr: leads/contacts/etc keep agency removals — do not resurrect deleted fields.
+      // Deals: migrateDealLayoutParity is one-time for pre-personal layouts only.
       if (module === "carriers") {
         const catalog = await listFieldDefs(module);
         return ensureLayoutIncludesCatalogFields(picked, catalog);
@@ -760,18 +762,19 @@ export async function saveLayoutForModule(module: FieldLayoutModule, layout: Fie
     await saveLayoutForEveryLine(layout);
     return;
   }
+  const owned = withLayoutRevision(layout, AGENCY_LAYOUT_REVISION);
   await db
     .insert(deskFieldLayouts)
     .values({
       tenantId: DEFAULT_TENANT_ID,
       module,
       lineOfBusiness: MODULE_LAYOUT_LINE,
-      columns: layout,
+      columns: owned,
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: [deskFieldLayouts.tenantId, deskFieldLayouts.module, deskFieldLayouts.lineOfBusiness],
-      set: { columns: layout, updatedAt: new Date() },
+      set: { columns: owned, updatedAt: new Date() },
     });
 }
 

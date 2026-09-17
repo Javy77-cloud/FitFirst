@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { defaultLayoutForLine } from "./defaults";
-import { migrateDealLayoutParity, needsDealLayoutParity } from "./migrate-deal-layout-parity";
+import { removeFieldFromLayout } from "./layout";
+import {
+  isLegacyDealPersonalLayout,
+  migrateDealLayoutParity,
+  needsDealLayoutParity,
+} from "./migrate-deal-layout-parity";
 import { needsMailingAddressParity } from "./split-address-sections";
+import { AGENCY_LAYOUT_REVISION, parseLayout } from "./types";
 
 describe("deal layout parity", () => {
   it("defaults include co-applicant + mailing city/state/zip", () => {
@@ -212,6 +218,55 @@ describe("deal layout parity", () => {
     ]);
     expect(next.columns[1].sections.map((s) => s.id)[0]).toBe("co_applicant");
     expect(next.columns[1].sections.map((s) => s.id)).toContain("mailing_address");
+  });
+
+  it("does not re-seed a field the agency removed from an already-personal layout", () => {
+    const start = defaultLayoutForLine("HO");
+    expect(isLegacyDealPersonalLayout(start)).toBe(false);
+    const removed = removeFieldFromLayout(start, "applicant_education_level");
+    const withoutMiddle = removeFieldFromLayout(removed, "middle_name");
+    const withoutEpolicy = removeFieldFromLayout(withoutMiddle, "epolicy");
+    const withoutCounty = removeFieldFromLayout(withoutEpolicy, "county");
+    const withoutCoOcc = removeFieldFromLayout(withoutCounty, "co_applicant_occupation");
+    expect(needsDealLayoutParity(withoutCoOcc)).toBe(false);
+    const next = migrateDealLayoutParity(withoutCoOcc);
+    const keys = next.columns.flatMap((col) => col.sections.flatMap((section) => section.fieldKeys));
+    expect(keys).not.toContain("applicant_education_level");
+    expect(keys).not.toContain("middle_name");
+    expect(keys).not.toContain("epolicy");
+    expect(keys).not.toContain("county");
+    expect(keys).not.toContain("co_applicant_occupation");
+    expect(keys).toContain("applicant_gender");
+    expect(keys).toContain("first_name");
+  });
+
+  it("does not resurrect fields on an agency-owned layout even if every personal marker is gone", () => {
+    const owned = parseLayout({
+      revision: AGENCY_LAYOUT_REVISION,
+      columns: [
+        {
+          id: "left",
+          sections: [{ id: "contact", label: "Contact", fieldKeys: ["first_name", "last_name"] }],
+        },
+        {
+          id: "right",
+          sections: [
+            {
+              id: "mailing_address",
+              label: "Mailing Address",
+              fieldKeys: ["contact_mailing_address"],
+            },
+          ],
+        },
+      ],
+    });
+    expect(owned.revision).toBe(AGENCY_LAYOUT_REVISION);
+    expect(isLegacyDealPersonalLayout(owned)).toBe(false);
+    expect(needsDealLayoutParity(owned)).toBe(false);
+    const next = migrateDealLayoutParity(owned);
+    const keys = next.columns.flatMap((col) => col.sections.flatMap((section) => section.fieldKeys));
+    expect(keys).toEqual(["first_name", "last_name", "contact_mailing_address"]);
+    expect(next.columns[0].sections.find((s) => s.id === "applicant")).toBeUndefined();
   });
 
 });
