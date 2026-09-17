@@ -98,6 +98,7 @@ describe("Home / Auto / Flood Risk Profile vs Deal Details", () => {
   it("reuses extract aliases onto existing keys", () => {
     expect(extractKeyToSheetKey("home", "purchase_price")).toBe("sale_price");
     expect(extractKeyToSheetKey("home", "city_limits")).toBe("within_city_limits");
+    expect(extractKeyToSheetKey("home", "applicant_name")).toBe("named_insured");
     expect(extractKeyToSheetKey("auto", "aaa")).toBe("aaa_member");
     expect(extractKeyToSheetKey("auto", "passive_restraint")).toBe("passive_restraints");
   });

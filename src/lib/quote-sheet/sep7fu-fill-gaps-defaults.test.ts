@@ -43,7 +43,7 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     expect(button).toMatch(/MASTER_FILL_BUSY_COPY/);
     expect(button).toMatch(/WaitHold/);
     expect(button).toMatch(/MASTER_FILL_BUSY_TITLE/);
-    expect(MASTER_FILL_BUSY_TITLE).toMatch(/we’re on it|we're on it/);
+    expect(MASTER_FILL_BUSY_TITLE).toMatch(/Filling your Risk Profile/);
     expect(MASTER_FILL_BUSY_COPY).toMatch(/20 seconds/);
     expect(button).toMatch(/Deal → Property → Docs/);
   });

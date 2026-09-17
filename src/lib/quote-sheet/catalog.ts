@@ -1383,6 +1383,8 @@ const EXTRACT_ALIASES: Record<string, string> = {
   mortgagee_address: "mortgagee_address",
   secondary_named_insured: "secondary_named_insured",
   mortgagee: "mortgagee_name",
+  // Identity lives on Deal Details; owner/dec name reuses Current policy named insured.
+  applicant_name: "named_insured",
   purchase_price: "sale_price",
   city_limits: "within_city_limits",
   city_within_city_limits: "within_city_limits",
