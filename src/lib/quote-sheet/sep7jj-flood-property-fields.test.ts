@@ -28,10 +28,6 @@ describe("sep7jj Flood master sheet property fields + FZM", () => {
       "mobile_home",
       "coverage_a",
       "building_limit",
-      "applicant_gender",
-      "applicant_marital_status",
-      "applicant_occupation",
-      "entity_type",
     ]) {
       expect(keys.has(key), `missing ${key}`).toBe(true);
     }

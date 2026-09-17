@@ -140,20 +140,18 @@ describe("deal detail final rebuild", () => {
     expect(sheet).toMatch(/Save Risk Profile/);
   });
 
-  it("uses a rich HO sheet with shared applicant core and line scaffolds", () => {
+  it("uses a rich HO sheet with product scaffolds (identity stays on Deal Details)", () => {
     expect(homeFieldCount()).toBeGreaterThanOrEqual(90);
     const home = fieldsForLine("home", "homeowners").map((field) => field.key);
     expect(home).toEqual(expect.arrayContaining([
-      "applicant_name",
-      "applicant_phone",
-      "applicant_email",
-      "applicant_dob",
-      "entity_type",
       "construction",
       "wind_mit_form",
       "four_point_date",
       "coverage_a",
+      "new_purchase",
     ]));
+    expect(home).not.toContain("applicant_name");
+    expect(home).not.toContain("entity_type");
     expect(fieldsForLine("auto").map((field) => field.key)).toEqual(
       expect.arrayContaining(["vin", "driver_1_name", "driver_1_license"]),
     );

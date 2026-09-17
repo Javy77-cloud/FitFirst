@@ -29,7 +29,7 @@ describe("Fill from property records — empty-only apply", () => {
     expect(result.values.county.value).toBe("Hillsborough");
     expect(result.values.parcel_id.value).toBe("192829-5040-001000-0010");
     expect(result.values.assessed_value.value).toBe("412300");
-    expect(result.values.applicant_name.value).toBe("SMITH JOHN A");
+    expect(result.values.applicant_name).toBeUndefined();
     expect(result.values.named_insured.value).toBe("SMITH JOHN A");
     expect(result.values.year_built.source).toBe(PROPERTY_RECORDS_SOURCE);
     expect(result.values.year_built.sourceLabel).toBe(PROPERTY_RECORDS_LABEL);
@@ -45,7 +45,7 @@ describe("Fill from property records — empty-only apply", () => {
         "county",
         "parcel_id",
         "assessed_value",
-        "applicant_name",
+        "named_insured",
       ]),
     );
   });
@@ -66,7 +66,8 @@ describe("Fill from property records — empty-only apply", () => {
     expect(result.values.roof_covering.value).toBe("tile");
     expect(result.values.construction.value).toBe("frame");
     expect(result.values.applicant_name.value).toBe("Ana Dib");
-    expect(result.skippedKeys).toEqual(expect.arrayContaining(["year_built", "roof_covering", "construction", "applicant_name"]));
+    expect(result.skippedKeys).toEqual(expect.arrayContaining(["year_built", "roof_covering", "construction"]));
+    expect(result.filledKeys).not.toContain("applicant_name");
     expect(result.filledKeys).not.toContain("year_built");
     expect(result.filledKeys).toContain("parcel_id");
     expect(result.values.parcel_id.source).toBe(PROPERTY_RECORDS_SOURCE);
@@ -122,7 +123,7 @@ describe("Flood property fill — Home key aliases", () => {
     expect(result.values.stories).toBeUndefined();
     expect(result.values.roof_covering).toBeUndefined();
     expect(result.values.named_insured).toBeUndefined();
-    expect(result.values.applicant_name.value).toBe("SMITH JOHN A");
+    expect(result.values.applicant_name).toBeUndefined();
   });
 
   it("empty-only: keeps existing Flood construction_type", () => {

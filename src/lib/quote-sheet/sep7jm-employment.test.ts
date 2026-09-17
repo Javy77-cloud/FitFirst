@@ -5,14 +5,11 @@ import { MASTER_SHEET_EMPTY_DEFAULTS } from "./sheet-defaults";
 import { fieldsForUnit, isRepeatableSheetKey, type RepeatableKind } from "./repeatable-units";
 
 describe("Auto employment picklist (sep7jm / Progressive Employment)", () => {
-  it("fieldsForLine(auto) includes applicant_employment + driver_1_employment", () => {
+  it("fieldsForLine(auto) keeps driver employment and drops applicant identity", () => {
     const fields = fieldsForLine("auto");
     const byKey = Object.fromEntries(fields.map((f) => [f.key, f]));
 
-    expect(byKey.applicant_employment?.label).toBe("Employment");
-    expect(byKey.applicant_employment?.group).toBe("Applicant");
-    expect(byKey.applicant_employment?.input).toBe("select");
-    expect(byKey.applicant_employment?.options).toEqual([...EMPLOYMENT_STATUS_OPTIONS]);
+    expect(byKey.applicant_employment).toBeUndefined();
 
     expect(byKey.driver_1_employment?.label).toBe("Driver 1 employment");
     expect(byKey.driver_1_employment?.group).toBe("Drivers");
@@ -23,11 +20,10 @@ describe("Auto employment picklist (sep7jm / Progressive Employment)", () => {
   it("does not reuse applicant_occupation for Progressive Employment", () => {
     const fields = fieldsForLine("auto");
     const byKey = Object.fromEntries(fields.map((f) => [f.key, f]));
-    // Occupation stays (Allstate-style status+job mix); Employment is Progressive status-only.
-    expect(byKey.applicant_occupation).toBeDefined();
-    expect(byKey.applicant_occupation?.label).toBe("Occupation / job category");
-    expect(byKey.applicant_occupation?.options).toEqual([...OCCUPATION_OPTIONS]);
-    expect(byKey.applicant_employment?.key).toBe("applicant_employment");
+    // Applicant occupation lives on Deal Details; driver occupation stays Allstate-style.
+    expect(byKey.applicant_occupation).toBeUndefined();
+    expect(byKey.driver_1_occupation?.options).toEqual([...OCCUPATION_OPTIONS]);
+    expect(byKey.driver_1_employment?.key).toBe("driver_1_employment");
     expect(EMPLOYMENT_STATUS_OPTIONS).not.toEqual(OCCUPATION_OPTIONS);
   });
 
@@ -62,14 +58,15 @@ describe("Auto employment picklist (sep7jm / Progressive Employment)", () => {
     expect(isRepeatableSheetKey("driver_2_employment")).toBe(true);
   });
 
-  it("applicant_employment is on all LOBs via APPLICANT_CORE", () => {
+  it("applicant_employment stays off Home / Auto / Flood (Deal Details)", () => {
     for (const line of ["auto", "home", "flood"] as const) {
       const fields =
         line === "home" ? fieldsForLine("home", "homeowners") : fieldsForLine(line);
-      expect(fields.some((f) => f.key === "applicant_employment")).toBe(true);
+      expect(fields.some((f) => f.key === "applicant_employment")).toBe(false);
     }
     expect(fieldsForLine("home", "homeowners").some((f) => f.key === "driver_1_employment")).toBe(
       false,
     );
+    expect(fieldsForLine("rec_rv").some((f) => f.key === "applicant_employment")).toBe(true);
   });
 });

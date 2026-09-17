@@ -5,14 +5,11 @@ import { MASTER_SHEET_EMPTY_DEFAULTS } from "./sheet-defaults";
 import { fieldsForUnit, isRepeatableSheetKey, type RepeatableKind } from "./repeatable-units";
 
 describe("Auto education level picklist (sep7jk / Geico standing)", () => {
-  it("fieldsForLine(auto) includes applicant_education_level + driver_1_education_level", () => {
+  it("fieldsForLine(auto) keeps driver education and drops applicant identity", () => {
     const fields = fieldsForLine("auto");
     const byKey = Object.fromEntries(fields.map((f) => [f.key, f]));
 
-    expect(byKey.applicant_education_level?.label).toBe("Education level");
-    expect(byKey.applicant_education_level?.group).toBe("Applicant");
-    expect(byKey.applicant_education_level?.input).toBe("select");
-    expect(byKey.applicant_education_level?.options).toEqual([...EDUCATION_LEVEL_OPTIONS]);
+    expect(byKey.applicant_education_level).toBeUndefined();
 
     expect(byKey.driver_1_education_level?.label).toBe("Driver 1 education level");
     expect(byKey.driver_1_education_level?.group).toBe("Drivers");
@@ -49,14 +46,15 @@ describe("Auto education level picklist (sep7jk / Geico standing)", () => {
     expect(isRepeatableSheetKey("driver_2_education_level")).toBe(true);
   });
 
-  it("applicant_education_level is on all LOBs via APPLICANT_CORE", () => {
+  it("applicant_education_level stays off Home / Auto / Flood (Deal Details)", () => {
     for (const line of ["auto", "home", "flood"] as const) {
       const fields =
         line === "home" ? fieldsForLine("home", "homeowners") : fieldsForLine(line);
-      expect(fields.some((f) => f.key === "applicant_education_level")).toBe(true);
+      expect(fields.some((f) => f.key === "applicant_education_level")).toBe(false);
     }
     expect(fieldsForLine("home", "homeowners").some((f) => f.key === "driver_1_education_level")).toBe(
       false,
     );
+    expect(fieldsForLine("rec_rv").some((f) => f.key === "applicant_education_level")).toBe(true);
   });
 });

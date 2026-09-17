@@ -43,33 +43,16 @@ describe("fill master sheet from Deal Details (applicant + co-applicant)", () =>
       existing,
     );
 
-    expect(result.values.applicant_name.value).toBe("Heather Camirand");
-    expect(result.values.applicant_dob.value).toBe("9/14/1975");
-    expect(result.values.applicant_gender.value).toBe("Female");
-    expect(result.values.applicant_occupation.value).toBe("Professional");
-    expect(result.values.applicant_employment.value).toBe("Employed");
-    expect(result.values.applicant_marital_status.value).toBe("Married");
-    expect(result.values.applicant_education_level.value).toBe("Bachelor");
-    expect(result.values.entity_type.value).toBe("LLC");
-    expect(result.values.applicant_phone.value).toBe("2395550100");
-    expect(result.values.applicant_email.value).toBe("heather@example.com");
-
-    expect(result.values.co_applicant_name.value).toBe("Tom Camirand");
-    expect(result.values.co_applicant_dob.value).toBe("1/2/1974");
-    expect(result.values.co_applicant_relationship_to_insured.value).toBe("Spouse");
-    expect(result.values.co_applicant_gender.value).toBe("Male");
-    expect(result.values.co_applicant_marital_status.value).toBe("Married");
-    expect(result.values.co_applicant_occupation.value).toBe("Trades");
-    expect(result.values.co_applicant_employment.value).toBe("Self-employed");
-    expect(result.values.co_applicant_education_level.value).toBe("Associate");
-    expect(result.values.co_applicant_email.value).toBe("tom@example.com");
-    expect(result.values.co_applicant_phone.value).toBe("2395550101");
+    expect(result.values.applicant_name).toBeUndefined();
+    expect(result.values.applicant_dob).toBeUndefined();
+    expect(result.values.co_applicant_name).toBeUndefined();
+    expect(result.values.named_insured.value).toBe("Heather Camirand");
+    expect(result.values.secondary_named_insured.value).toBe("Tom Camirand");
 
     expect(result.values.address1.value).toBe("5181 Tallwood");
     expect(result.values.city.value).toBe("Naples");
     expect(result.values.mailing_address.value).toBe("PO Box 12");
-    expect(result.values.applicant_address.value).toBe("PO Box 12");
-    expect(result.values.applicant_dob.sourceLabel).toBe("deal details");
+    expect(result.values.applicant_address).toBeUndefined();
   });
 
   it("copies landlord layout keys from Deal Details and leaves form to the cascade", () => {

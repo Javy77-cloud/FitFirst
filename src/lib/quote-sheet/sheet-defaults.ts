@@ -309,6 +309,29 @@ export const INSURANCE_SCORE_RANGE_OPTIONS = [
   "Very Good",
 ] as const;
 
+/** FL HO screen-enclosure limit bands (lean quote — not a porch schedule). */
+export const SCREEN_ENCLOSURE_OPTIONS = [
+  "None",
+  "$5,000",
+  "$10,000",
+  "$25,000",
+  "$50,000",
+] as const;
+
+/** Auto AAA membership tenure (portal rating). */
+export const AAA_MEMBER_OPTIONS = [
+  "None",
+  "1–9 years",
+  "10+ years",
+] as const;
+
+/** Auto passive restraints (airbags / automatic belts). */
+export const PASSIVE_RESTRAINT_OPTIONS = [
+  "Yes",
+  "No",
+  "Unknown",
+] as const;
+
 /** QuoteRUSH Water Backup/Sump Overflow (2026-09-15). Dollar strings for Super-Copy. */
 export const WATER_BACKUP_OPTIONS = [
   "$2,000",

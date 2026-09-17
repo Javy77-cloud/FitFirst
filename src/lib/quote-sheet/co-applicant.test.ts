@@ -110,10 +110,11 @@ describe("applicant / co-applicant household", () => {
     ).toBe(false);
   });
 
-  it("is on Home and Auto", () => {
-    for (const line of ["home", "auto"] as const) {
-      expect(groupFields(line).some((g) => g.group === "Co-applicant")).toBe(true);
-      expect(fieldsForLine(line).some((f) => f.key === "applicant_marital_status")).toBe(true);
+  it("stays off Home / Auto / Flood Risk Profile (Deal Details owns identity)", () => {
+    for (const line of ["home", "auto", "flood"] as const) {
+      expect(groupFields(line).some((g) => g.group === "Co-applicant")).toBe(false);
+      expect(fieldsForLine(line).some((f) => f.key === "applicant_marital_status")).toBe(false);
     }
+    expect(groupFields("rec_rv").some((g) => g.group === "Co-applicant")).toBe(true);
   });
 });

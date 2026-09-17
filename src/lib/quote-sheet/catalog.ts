@@ -51,6 +51,9 @@ import {
   WATER_HEATER_LOCATION_OPTIONS,
   PRIMARY_PLUMBING_OPTIONS,
   USAGE_OPTIONS,
+  SCREEN_ENCLOSURE_OPTIONS,
+  AAA_MEMBER_OPTIONS,
+  PASSIVE_RESTRAINT_OPTIONS,
   AUTO_VEHICLE_USAGE_OPTIONS,
   AUTO_CURRENTLY_INSURED_OPTIONS,
   AUTO_ANNUAL_MILES_OPTIONS,
@@ -129,7 +132,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "assessed_value", label: "Assessed value", group: "Property", input: "number" },
   { key: "land_value", label: "Land value", group: "Property", input: "number" },
   { key: "improvement_value", label: "Improvement value", group: "Property", input: "number" },
-  { key: "sale_price", label: "Sale price", group: "Property", input: "number" },
+  { key: "sale_price", label: "Purchase price", group: "Property", input: "number" },
   { key: "assessment_year", label: "Assessment year", group: "Property", input: "number" },
   { key: "homestead", label: "Homestead", group: "Property" },
   { key: "zoning", label: "Zoning", group: "Property" },
@@ -137,6 +140,28 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "records_check", label: "Records check", group: "Property", input: "textarea" },
   { key: "subdivision", label: "Subdivision", group: "Property" },
   { key: "year_purchased", label: "Year purchased", group: "Property", input: "number" },
+  {
+    key: "new_purchase",
+    label: "New purchase?",
+    group: "Property",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+    products: [...HO_LL],
+  },
+  {
+    key: "purchase_date",
+    label: "Purchase date",
+    group: "Property",
+    products: [...HO_LL],
+    showWhen: { key: "new_purchase", values: ["yes"] },
+  },
+  {
+    key: "within_city_limits",
+    label: "City within city limits",
+    group: "Property",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+  },
   { key: "occupancy", label: "Occupancy", group: "Property", input: "select", options: [...OCCUPANCY_OPTIONS], extractKey: "occupancy" },
   { key: "usage", label: "Usage", group: "Property", input: "select", options: [...USAGE_OPTIONS], extractKey: "usage" },
   { key: "months_occupied", label: "Months occupied", group: "Property", input: "select", options: [...MONTHS_OCCUPIED_OPTIONS], extractKey: "months_occupied" },
@@ -214,7 +239,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "pool_fence", label: "Pool fence", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "trampoline", label: "Trampoline", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "animals", label: "Animals", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS] },
-  { key: "dog_breed", label: "Dog breed", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS] },
+  { key: "dog_breed", label: "Restricted / vicious breed?", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "business_on_premises", label: "Business on premises", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "mobile_home", label: "Mobile / manufactured", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS], extractKey: "mobile_home", products: [...HO_LL] },
   { key: "acres", label: "Acres", group: "Hazards", input: "number" },
@@ -252,6 +277,14 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
     extractKey: "hurricane_deductible",
   },
   { key: "aop_deductible", label: "AOP deductible", group: "Coverages", input: "select", options: [...AOP_DEDUCTIBLE_OPTIONS], extractKey: "aop_deductible" },
+  {
+    key: "screen_enclosure",
+    label: "Screen enclosure coverage",
+    group: "Coverages",
+    input: "select",
+    options: [...SCREEN_ENCLOSURE_OPTIONS],
+    products: [...HO_LL],
+  },
   {
     key: "wind_hail_deductible",
     label: "Wind / hail deductible",
@@ -417,6 +450,13 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
     group: "Vehicle",
     input: "select",
     options: [...YES_NO_OPTIONS],
+  },
+  {
+    key: "passive_restraints",
+    label: "Passive restraints (airbags)?",
+    group: "Vehicle",
+    input: "select",
+    options: [...PASSIVE_RESTRAINT_OPTIONS],
   },
   {
     key: "garaging_at_residence",
@@ -656,6 +696,13 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
     input: "select",
     options: [...AUTO_CURRENTLY_INSURED_OPTIONS],
   },
+  {
+    key: "aaa_member",
+    label: "AAA member",
+    group: "Current policy",
+    input: "select",
+    options: [...AAA_MEMBER_OPTIONS],
+  },
   { key: "notes", label: "Shop notes", group: "Notes", input: "textarea" },
 ];
 
@@ -779,7 +826,7 @@ export const FLOOD_FIELDS: QuoteFieldDef[] = [
     options: [...FLOOD_DEDUCTIBLE_OPTIONS],
   },
   { key: "loss_of_use", label: "Loss of use / ALE", group: "Coverages", input: "number" },
-  { key: "coverage_a", label: "Coverage A (dwelling alias)", group: "Coverages", input: "number", extractKey: "coverage_a" },
+  { key: "coverage_a", label: "Building coverage (Cov A)", group: "Coverages", input: "number", extractKey: "coverage_a" },
   { key: "purchased_within_last_year", label: "Building purchased within last year?", group: "Loss history", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "prior_owner_nfip_at_closing", label: "Prior owner had active NFIP at closing?", group: "Loss history", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "prior_flood_losses", label: "Any prior flood losses?", group: "Loss history", input: "select", options: [...YES_NO_OPTIONS] },
@@ -1260,8 +1307,13 @@ function dedupeFields(fields: QuoteFieldDef[]): QuoteFieldDef[] {
   return out;
 }
 
-/** Life / Health Risk Profile does not duplicate Deal Details identity (name / DOB / contact). */
-const LINES_WITHOUT_SHEET_IDENTITY = new Set<ShopLine>(["life", "health"]);
+/**
+ * Deal Details already owns personal identity (name / DOB / contact / co-applicant).
+ * Home / Auto / Flood / Life / Health / Commercial Risk Profiles do not re-ask those keys.
+ * Stored sheet JSON keeps any previously saved applicant_* values — Fill still updates them
+ * when they already exist on the row.
+ */
+const LINES_WITHOUT_SHEET_IDENTITY = new Set<ShopLine>(["life", "health", "home", "auto", "flood"]);
 
 export function fieldsForLine(line: ShopLine, product?: SheetProduct): QuoteFieldDef[] {
   const skipIdentity = LINES_WITHOUT_SHEET_IDENTITY.has(line) || isCommercialSheetLine(line);
@@ -1331,6 +1383,15 @@ const EXTRACT_ALIASES: Record<string, string> = {
   mortgagee_address: "mortgagee_address",
   secondary_named_insured: "secondary_named_insured",
   mortgagee: "mortgagee_name",
+  // Identity lives on Deal Details; owner/dec name reuses Current policy named insured.
+  applicant_name: "named_insured",
+  purchase_price: "sale_price",
+  city_limits: "within_city_limits",
+  city_within_city_limits: "within_city_limits",
+  aaa: "aaa_member",
+  aaa_membership: "aaa_member",
+  passive_restraint: "passive_restraints",
+  screen_enclosure_limit: "screen_enclosure",
 };
 
 /** Home-style property keys → Flood catalog keys (GetParcel / county PA emit Home names). */

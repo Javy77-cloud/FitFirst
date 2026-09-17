@@ -40,7 +40,7 @@ describe("super-copy packet", () => {
       contactName: "Ana Dib",
       contactDob: null,
     });
-    expect(text).toContain("FitFirst Home Quote Sheet");
+    expect(text).toContain("FitFirst Homeowners Quote Sheet");
     expect(text).toContain(SUPER_COPY_LABEL);
     expect(text).toContain("Property address: 1098 Adige Ct SE");
     expect(text).toContain("Coverage A (dwelling): 321000");
