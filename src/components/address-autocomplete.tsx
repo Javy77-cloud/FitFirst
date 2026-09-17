@@ -14,6 +14,7 @@ import {
   type AddressVerifyPersistStatus,
 } from "@/lib/address/verify-state";
 import {
+  ADDRESS_QUIET_VERIFY_DEFAULT,
   ADDRESS_VERIFY_NOT_CONFIGURED,
   interpretAddressVerifyResponse,
   shouldAttemptQuietVerify,
@@ -28,6 +29,7 @@ import {
   type AddressSuggestion,
   type ParsedAddress,
 } from "@/lib/address/types";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export type { AddressFillMap, ParsedAddress };
@@ -125,7 +127,9 @@ function persistStatus(chip: VerifyChip): AddressVerifyPersistStatus {
 
 /**
  * Shared address control. Mapbox typeahead when a token is configured.
- * FedEx is verification-only — never typeahead. Without Mapbox the field stays plain text.
+ * FedEx is verification-only and button-first — never typeahead, never silent.
+ * Without Mapbox the field stays plain text. Verify address stays visible even
+ * when FedEx is missing; a click must not look like success.
  */
 export function AddressAutocomplete({
   name,
@@ -144,6 +148,7 @@ export function AddressAutocomplete({
   onChange,
   verifyMeta,
   skipVerify = false,
+  quietVerify = ADDRESS_QUIET_VERIFY_DEFAULT,
 }: {
   name: string;
   id?: string;
@@ -161,6 +166,8 @@ export function AddressAutocomplete({
   onChange?: (value: string) => void;
   verifyMeta?: string | null;
   skipVerify?: boolean;
+  /** Soft opt-in. Default off — only Verify address POSTs FedEx. */
+  quietVerify?: boolean;
 }) {
   const reactId = useId();
   const inputId = id ?? `addr-${reactId}`;
@@ -248,7 +255,7 @@ export function AddressAutocomplete({
   }, []);
 
   useEffect(() => {
-    if (skipVerify || readOnly || disabled) return;
+    if (!quietVerify || skipVerify || readOnly || disabled) return;
     const watched = new Set(
       [name, resolvedFill.city, resolvedFill.state, resolvedFill.zip].filter(Boolean) as string[],
     );
@@ -276,10 +283,19 @@ export function AddressAutocomplete({
       scope.removeEventListener("focusout", onFocusOut);
       formEl?.removeEventListener("submit", onSubmit);
     };
-  }, [disabled, name, readOnly, resolvedFill.city, resolvedFill.state, resolvedFill.zip, skipVerify]);
+  }, [
+    disabled,
+    name,
+    quietVerify,
+    readOnly,
+    resolvedFill.city,
+    resolvedFill.state,
+    resolvedFill.zip,
+    skipVerify,
+  ]);
 
   useEffect(() => {
-    if (skipVerify || readOnly || disabled || verifyEnabled !== true) return;
+    if (!quietVerify || skipVerify || readOnly || disabled || verifyEnabled !== true) return;
     if (
       verifyStatus === "confirmed" ||
       verifyStatus === "updated" ||
@@ -292,9 +308,9 @@ export function AddressAutocomplete({
       runVerifyRef.current("blur");
     }, 0);
     return () => window.clearTimeout(handle);
-    // Retry once after FedEx status is known on — blur/save before /status returned used to no-op.
+    // Soft opt-in only: retry once after FedEx status is known on.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when verify becomes enabled
-  }, [disabled, readOnly, skipVerify, verifyEnabled]);
+  }, [disabled, quietVerify, readOnly, skipVerify, verifyEnabled]);
 
   function hostForm(): HTMLFormElement | null {
     return (
@@ -346,7 +362,7 @@ export function AddressAutocomplete({
 
   async function runVerify(reason: AddressVerifyAttemptReason) {
     if (skipVerify || readOnly || disabled) return;
-    if (reason !== "button" && !shouldAttemptQuietVerify(verifyEnabled)) return;
+    if (reason !== "button" && !shouldAttemptQuietVerify(verifyEnabled, quietVerify)) return;
     const address = readBlock();
     if (!addressIsComplete(address)) {
       if (reason === "button" || (reason === "save" && query.trim())) setVerifyStatus("not_verified");
@@ -421,6 +437,7 @@ export function AddressAutocomplete({
     setOpen(false);
     setSuggestions([]);
     applyAddress(item.address, item.label);
+    if (!quietVerify) return;
     window.setTimeout(() => {
       void runVerify("confirm");
     }, 0);
@@ -462,6 +479,7 @@ export function AddressAutocomplete({
       data-ff-address-autocomplete
       data-ff-address-enabled={enabled ? "1" : "0"}
       data-ff-address-verify-enabled={verifyEnabled && !skipVerify ? "1" : "0"}
+      data-ff-address-quiet-verify={quietVerify ? "1" : "0"}
       data-ff-address-fill-city={resolvedFill.city ?? ""}
       data-ff-address-fill-state={resolvedFill.state ?? ""}
       data-ff-address-fill-zip={resolvedFill.zip ?? ""}
@@ -502,6 +520,7 @@ export function AddressAutocomplete({
           if (suggestions.length) setOpen(true);
         }}
         onBlur={() => {
+          if (!quietVerify) return;
           window.setTimeout(() => {
             runVerifyRef.current("blur");
           }, 200);
@@ -533,13 +552,16 @@ export function AddressAutocomplete({
         <p className="mt-0.5 text-[10px] text-muted-foreground">Looking up addresses…</p>
       ) : null}
       {!skipVerify ? (
-        <div className="mt-0.5 flex flex-wrap items-center gap-1.5" data-ff-address-toolbar>
+        <div className="mt-1.5 space-y-1" data-ff-address-toolbar>
           {!readOnly && !disabled ? (
             <button
               type="button"
               data-ff-address-verify
               disabled={verifyStatus === "checking"}
-              className="text-[10px] font-medium text-navy underline-offset-2 hover:underline disabled:cursor-wait disabled:opacity-60"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "sm" }),
+                "border-navy/30 text-navy hover:border-navy/50 disabled:cursor-wait",
+              )}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
                 void runVerify("button");
@@ -548,49 +570,53 @@ export function AddressAutocomplete({
               Verify address
             </button>
           ) : null}
-          {verifyStatus === "checking" ? (
-            <span className="text-[10px] text-muted-foreground" data-ff-address-verify-chip="checking">
-              Checking address…
-            </span>
-          ) : null}
-          {verifyStatus === "confirmed" ? (
-            <span
-              className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-800"
-              data-ff-address-verify-chip="confirmed"
-              data-ff-address-stamp="confirmed"
-            >
-              Address confirmed
-            </span>
-          ) : null}
-          {verifyStatus === "updated" ? (
-            <span
-              className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-800"
-              data-ff-address-verify-chip="updated"
-              data-ff-address-stamp="updated"
-            >
-              Address updated
-            </span>
-          ) : null}
-          {verifyStatus === "suggested" ? (
-            <span
-              className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-900"
-              data-ff-address-verify-chip="suggested"
-            >
-              Address suggested
-            </span>
-          ) : null}
-          {verifyStatus === "not_verified" || verifyStatus === "unmatched" ? (
-            <span className="text-[10px] text-muted-foreground" data-ff-address-verify-chip="not_verified">
-              Not verified
-            </span>
-          ) : null}
-          {verifyStatus === "not_configured" ? (
-            <span
-              className="text-[10px] text-muted-foreground"
-              data-ff-address-verify-chip="not_configured"
-            >
-              {ADDRESS_VERIFY_NOT_CONFIGURED}
-            </span>
+          {verifyStatus !== "idle" ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {verifyStatus === "checking" ? (
+              <span className="text-[10px] text-muted-foreground" data-ff-address-verify-chip="checking">
+                Checking address…
+              </span>
+            ) : null}
+            {verifyStatus === "confirmed" ? (
+              <span
+                className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-800"
+                data-ff-address-verify-chip="confirmed"
+                data-ff-address-stamp="confirmed"
+              >
+                Address confirmed
+              </span>
+            ) : null}
+            {verifyStatus === "updated" ? (
+              <span
+                className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-800"
+                data-ff-address-verify-chip="updated"
+                data-ff-address-stamp="updated"
+              >
+                Address updated
+              </span>
+            ) : null}
+            {verifyStatus === "suggested" ? (
+              <span
+                className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-900"
+                data-ff-address-verify-chip="suggested"
+              >
+                Address suggested
+              </span>
+            ) : null}
+            {verifyStatus === "not_verified" || verifyStatus === "unmatched" ? (
+              <span className="text-[10px] text-muted-foreground" data-ff-address-verify-chip="not_verified">
+                Not verified
+              </span>
+            ) : null}
+            {verifyStatus === "not_configured" ? (
+              <span
+                className="text-[10px] text-muted-foreground"
+                data-ff-address-verify-chip="not_configured"
+              >
+                {ADDRESS_VERIFY_NOT_CONFIGURED}
+              </span>
+            ) : null}
+          </div>
           ) : null}
         </div>
       ) : null}
