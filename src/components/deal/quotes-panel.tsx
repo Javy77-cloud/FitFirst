@@ -133,6 +133,7 @@ export function QuotesPanel({
   mintStatus = null,
   issuedPolicy = null,
   autoIssue = false,
+  canLogGap = false,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -165,6 +166,7 @@ export function QuotesPanel({
   mintStatus?: string | null;
   issuedPolicy?: IssuedPolicyChip | null;
   autoIssue?: boolean;
+  canLogGap?: boolean;
 }) {
   const activeLine: ShopLine | null = isShopLine(shopLine) ? shopLine : null;
   const lineLogs = logs.map((row) => row.log);
@@ -332,6 +334,7 @@ export function QuotesPanel({
             product={product}
             productStage={productStage}
             priorByQuoteId={priorByQuoteId}
+            canLogGap={canLogGap}
           />
         </section>
       ) : (

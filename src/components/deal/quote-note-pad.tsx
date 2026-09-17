@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { promoteQuoteNeedToGapAction } from "@/app/actions/carrier-gaps";
 import { addQuoteNoteAction } from "@/app/actions/quotes";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,12 +43,16 @@ export function QuoteNotePad({
   carrierName,
   notes = [],
   disabled,
+  canLogGap = false,
+  productLine = "",
 }: {
   dealId: string;
   quoteId: string;
   carrierName: string;
   notes?: QuoteNote[];
   disabled?: boolean;
+  canLogGap?: boolean;
+  productLine?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [body, setBody] = useState("");
@@ -179,6 +184,24 @@ export function QuoteNotePad({
                     {note.createdBy ? ` · ${note.createdBy}` : ""}
                   </div>
                   <p className="mt-0.5 whitespace-pre-wrap text-sm text-navy">{note.body}</p>
+                  {canLogGap ? (
+                    <form action={promoteQuoteNeedToGapAction} className="mt-1">
+                      <input type="hidden" name="dealId" value={dealId} />
+                      <input type="hidden" name="quoteId" value={quoteId} />
+                      <input type="hidden" name="noteId" value={note.id} />
+                      <input type="hidden" name="note" value={note.body} />
+                      <input type="hidden" name="carrier" value={carrierName} />
+                      <input type="hidden" name="productLine" value={productLine} />
+                      <button
+                        type="submit"
+                        disabled={disabled || pending}
+                        data-ff-quote-note-log-gap={note.id}
+                        className="text-[11px] font-medium text-primary hover:underline disabled:opacity-50"
+                      >
+                        Log missing question
+                      </button>
+                    </form>
+                  ) : null}
                 </li>
               ))
             )}

@@ -8,6 +8,14 @@ export const DEV_HUB_SECTIONS = [
     badge: "Vault",
   },
   {
+    id: "missing-questions",
+    href: "/settings/developer-hub/missing-questions",
+    label: "Missing questions",
+    hint: "Carrier / quote-bot asks FitFirst has no field for. Mark added when Details or Risk Profile ships it.",
+    ownedHere: true,
+    badge: "Gaps",
+  },
+  {
     id: "functions",
     href: "/settings/developer-hub/functions",
     label: "Functions",

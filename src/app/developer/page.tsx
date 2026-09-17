@@ -47,6 +47,22 @@ export default async function DeveloperHubPage() {
         </div>
       </section>
 
+      <section className="mb-6" data-ff-developer-gaps="">
+        <h2 className="mb-2 text-sm font-semibold text-navy">Missing questions</h2>
+        <Link
+          href="/developer/missing-questions"
+          className="ff-card block p-4 hover:border-primary/40"
+          data-ff-developer-gaps-open=""
+        >
+          <div className="text-sm font-semibold text-navy">Carrier field gap list</div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            When a quote bot or carrier asks for data FitFirst has no field for, log it once. Mark
+            Added after Deal Details or Risk Profile ships the field. Starts empty — no example
+            carrier noise.
+          </p>
+        </Link>
+      </section>
+
       <section data-ff-developer-notes="">
         <h2 className="mb-2 text-sm font-semibold text-navy">Upcoming</h2>
         <div className="grid gap-3 sm:grid-cols-2">

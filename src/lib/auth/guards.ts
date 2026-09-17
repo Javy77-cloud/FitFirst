@@ -96,6 +96,16 @@ export async function requireAdminAction(message = "Admin only."): Promise<DeskS
   return session;
 }
 
+export async function requireAdminOrDeveloperAction(
+  message = "Admin or Developer only.",
+): Promise<DeskSession> {
+  const session = await currentDeskSession();
+  if (!session.signedIn || (!session.isAdmin && !session.isDeveloper)) {
+    throw new AdminOnlyError(message);
+  }
+  return session;
+}
+
 export async function requireSignedInAction(message = "Sign in to continue."): Promise<DeskSession> {
   const session = await currentDeskSession();
   if (!session.signedIn) throw new Error(message);
