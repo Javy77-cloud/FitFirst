@@ -100,6 +100,7 @@ import {
   policyChangeLogs,
   policyTerms,
   extractionJobs,
+  documentPipelineJobs,
   fillFeedbackLogs,
   quoteAttemptLogs,
   quoteSheets,
@@ -2436,7 +2437,7 @@ export async function getDealWorkspace(dealId: string) {
     account?.id ? eq(policies.accountId, account.id) : undefined,
   ].filter((clause): clause is SQL => Boolean(clause));
 
-  const [fileVersions, fields, quoteNoteRows, partyPolicies] = await Promise.all([
+  const [fileVersions, fields, quoteNoteRows, partyPolicies, letterJobs] = await Promise.all([
     listDocumentVersionsForIds(docs.map((doc) => doc.id)),
     risk
       ? db
@@ -2466,6 +2467,11 @@ export async function getDealWorkspace(dealId: string) {
           .from(policies)
           .where(and(eq(policies.tenantId, tenant()), or(...partyFilters)))
       : Promise.resolve([]),
+    db
+      .select()
+      .from(documentPipelineJobs)
+      .where(and(eq(documentPipelineJobs.tenantId, tenant()), eq(documentPipelineJobs.dealId, dealId)))
+      .orderBy(desc(documentPipelineJobs.createdAt)),
   ]);
 
   return {
@@ -2488,6 +2494,7 @@ export async function getDealWorkspace(dealId: string) {
     partyPolicies,
     timeline,
     comms: commsFromTimeline(timeline),
+    letterJobs,
   };
 }
 

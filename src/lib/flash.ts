@@ -118,6 +118,14 @@ export const FLASH_COPY = {
   "need-confirm": "Confirm remaining declaration fields before publishing.",
   "need-quote": "Pick a live quote first",
   "declaration-received": "Declaration received",
+  "letter-extracting": "Extracting letter fields",
+  "letter-needs-review": "Letter ready for review",
+  "letter-confirmed": "Letter fields confirmed",
+  "letter-filled": "Agency letter filled",
+  "letter-need-file": "Choose a source file for this letter job.",
+  "letter-extract-failed": "Could not extract letter fields. Review and type values, or re-upload.",
+  "letter-need-confirm": "Confirm extracted fields before fill or signature.",
+  "letter-send-later": "DocuSign sandbox is identity-only. Envelope send is not wired — never auto-sends.",
 } as const;
 
 export type FlashKey = keyof typeof FLASH_COPY;

@@ -1,6 +1,6 @@
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
 import type { ExtractedField, ExtractionResult, UnmappedExtractLabel } from "@/lib/extraction/extract";
-import { GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, type GeminiExtractKey } from "./prompt";
+import { GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, GEMINI_LETTER_EXTRACT_JSON_KEYS, type GeminiExtractKey } from "./prompt";
 
 /** Gemini JSON key → one or more sheet / extract field keys. */
 export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
@@ -103,6 +103,11 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   protection_class: ["protection_class"],
   number_of_families: ["number_of_families"],
   current_carrier: ["current_carrier"],
+  cancellation_date: ["cancellation_date"],
+  cancellation_reason: ["cancellation_reason"],
+  prior_agency: ["prior_agency"],
+  new_agency: ["new_agency"],
+  mailing: ["mailing", "mailing_address"],
   secondary_named_insured: ["secondary_named_insured"],
   mortgagee: ["mortgagee", "mortgagee_name"],
   mortgagee_address: ["mortgagee_address"],
@@ -341,7 +346,11 @@ export function mapGeminiJsonToFields(
     if (!payload) continue;
     const sheetKeys = sheetKeysForGeminiKey(geminiKey);
     if (sheetKeys.length === 0) {
-      const knownKeys = new Set<string>([...GEMINI_EXTRACT_JSON_KEYS, ...GEMINI_AUTO_EXTRACT_JSON_KEYS]);
+      const knownKeys = new Set<string>([
+        ...GEMINI_EXTRACT_JSON_KEYS,
+        ...GEMINI_AUTO_EXTRACT_JSON_KEYS,
+        ...GEMINI_LETTER_EXTRACT_JSON_KEYS,
+      ]);
       if (!knownKeys.has(geminiKey)) {
         unmappedLabels.push({ sourceLabel: geminiKey, rawValue: payload.value });
       }

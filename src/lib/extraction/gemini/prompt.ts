@@ -168,9 +168,40 @@ export const GEMINI_AUTO_EXTRACT_JSON_KEYS = [
   "currently_insured",
 ] as const;
 
+/** Agency cancellation / AOR letter jobs. Kept off the HO/Auto sheet lists. */
+export const GEMINI_LETTER_EXTRACT_JSON_KEYS = [
+  "named_insured",
+  "current_policy_name_insured",
+  "applicant_name",
+  "phone",
+  "email",
+  "mailing_address",
+  "policy_number",
+  "current_carrier",
+  "effective_date",
+  "expiration_date",
+  "cancellation_date",
+  "cancellation_reason",
+  "prior_agency",
+  "selling_agency",
+  "new_agency",
+] as const;
+
 export type GeminiExtractKey =
   | (typeof GEMINI_EXTRACT_JSON_KEYS)[number]
-  | (typeof GEMINI_AUTO_EXTRACT_JSON_KEYS)[number];
+  | (typeof GEMINI_AUTO_EXTRACT_JSON_KEYS)[number]
+  | (typeof GEMINI_LETTER_EXTRACT_JSON_KEYS)[number];
+
+export function isAgencyLetterGeminiDoc(docType?: string | null): boolean {
+  const t = (docType ?? "").trim().toLowerCase();
+  return (
+    t === "cancellation" ||
+    t === "aor" ||
+    t === "agency_letter" ||
+    t.includes("cancellation") ||
+    (t.includes("aor") && !t.includes("four"))
+  );
+}
 
 export function geminiKeysForShopLine(shopLine?: string | null): readonly string[] {
   const line = (shopLine ?? "").trim().toLowerCase();
@@ -180,10 +211,39 @@ export function geminiKeysForShopLine(shopLine?: string | null): readonly string
   return GEMINI_EXTRACT_JSON_KEYS;
 }
 
+export function geminiKeysForExtract(docType?: string | null, shopLine?: string | null): readonly string[] {
+  if (isAgencyLetterGeminiDoc(docType)) return GEMINI_LETTER_EXTRACT_JSON_KEYS;
+  return geminiKeysForShopLine(shopLine);
+}
+
 export function buildGeminiSystemPrompt(docType?: string | null, shopLine?: string | null): string {
   const kind = (docType ?? "").trim() || "insurance source document";
   const line = (shopLine ?? "").trim().toLowerCase();
-  const keys = geminiKeysForShopLine(shopLine);
+  const keys = geminiKeysForExtract(docType, shopLine);
+  if (isAgencyLetterGeminiDoc(docType)) {
+    return `You extract structured fields from Florida agency letters and source decs used to fill a Cancellation request or Agent of Record (AOR) pack.
+
+Document type hint: ${kind}
+
+Rules:
+- Return ONLY a single JSON object. No markdown fences, no commentary.
+- Keys MUST be exactly from this list (omit unknown keys or set value null):
+  ${keys.join(", ")}
+- Each present key maps to an object: { "value": string|null, "confidence": number }
+  where confidence is 0..1 (1 = clearly printed on the page).
+- Extract ONLY what is written on the page. Never invent.
+- If unknown or not present: value null and low confidence.
+- named_insured / current_policy_name_insured / applicant_name: primary named insured.
+- mailing_address: Insured / mailing address only.
+- policy_number: Policy No / Pol # / Policy # when printed.
+- current_carrier: writing company / carrier.
+- effective_date: policy effective / inception date.
+- cancellation_date / cancellation_reason: only when the page is a cancellation request or states a cancel date/reason.
+- prior_agency / selling_agency: the outgoing / current agency on an AOR or dec.
+- new_agency: the incoming agency on an AOR letter when printed.
+- Dates: keep as printed. Phone / email when printed.
+`;
+  }
   if (line === "auto" || line === "motorcycle" || line === "commercial_auto") {
     return `You extract structured fields from Florida personal Auto insurance documents
 (auto declaration page, ID card, declarations photos, related insured).
@@ -267,6 +327,12 @@ export function buildGeminiUserPrompt(docType?: string | null, shopLine?: string
   const kind = (docType ?? "").trim().toLowerCase();
   let focus =
     "Extract every listed key that is clearly printed or checked. Prefer a non-empty value when the form shows one.";
+  if (isAgencyLetterGeminiDoc(docType)) {
+    focus =
+      kind.includes("aor")
+        ? "This is an Agent of Record pack / AOR letter (or a dec used to fill one). MUST fill when present: named_insured, policy_number, current_carrier, effective_date, mailing_address, phone, email, prior_agency / selling_agency, new_agency. Do not invent a cancellation date."
+        : "This is a cancellation request (or a dec used to fill one). MUST fill when present: named_insured, policy_number, current_carrier, effective_date, mailing_address, phone, email, cancellation_date, cancellation_reason. Invent nothing.";
+  }
   if (kind === "wind_mit" || kind.includes("wind")) {
     focus =
       "This is a wind mitigation (OIR-B1-1802). MUST fill when present: applicant_name, property_address, wind_mit_inspector, license_number, inspection_company, roof_covering, roof_deck_attachment, roof_to_wall, roof_shape, swr, opening_protection, building_code, design_wind_speed (110/120/140 region), year_built, wind_mit_form, wind_mit_date, terrain, roof_year. OIR checkbox fields: LETTER CODES ONLY (A/B/C/…). wind_mit_form is typically OIR-B1-1802; wind_mit_date is the inspection/form date; terrain is Terrain Exposure Category (B/C/D); roof_year is the year roof covering installed when printed.";
