@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ADDRESS_QUIET_VERIFY_DEFAULT,
   ADDRESS_VERIFY_NOT_CONFIGURED,
   interpretAddressVerifyResponse,
   shouldAttemptQuietVerify,
@@ -7,10 +8,14 @@ import {
 } from "./verify-run";
 
 describe("FedEx verify attempt rules", () => {
-  it("lets quiet auto run when status is unknown or enabled", () => {
-    expect(shouldAttemptQuietVerify(null)).toBe(true);
-    expect(shouldAttemptQuietVerify(true)).toBe(true);
+  it("keeps quiet auto off by default — only the button runs FedEx", () => {
+    expect(ADDRESS_QUIET_VERIFY_DEFAULT).toBe(false);
+    expect(shouldAttemptQuietVerify(null)).toBe(false);
+    expect(shouldAttemptQuietVerify(true)).toBe(false);
     expect(shouldAttemptQuietVerify(false)).toBe(false);
+    expect(shouldAttemptQuietVerify(true, true)).toBe(true);
+    expect(shouldAttemptQuietVerify(null, true)).toBe(true);
+    expect(shouldAttemptQuietVerify(false, true)).toBe(false);
   });
 
   it("never skips a manual Verify click on the same fingerprint", () => {
@@ -22,7 +27,7 @@ describe("FedEx verify attempt rules", () => {
   });
 
   it("stamps confirmed / suggested, and is honest when FedEx is off", () => {
-    expect(interpretAddressVerifyResponse({ status: "verified", enabled: true }, "blur")).toEqual({
+    expect(interpretAddressVerifyResponse({ status: "verified", enabled: true }, "button")).toEqual({
       verifyEnabled: true,
       chip: "confirmed",
     });
@@ -34,9 +39,17 @@ describe("FedEx verify attempt rules", () => {
       verifyEnabled: false,
       chip: "not_configured",
     });
+    expect(interpretAddressVerifyResponse({ enabled: false }, "button")).toEqual({
+      verifyEnabled: false,
+      chip: "not_configured",
+    });
     expect(interpretAddressVerifyResponse({ enabled: false }, "blur")).toEqual({
       verifyEnabled: false,
       chip: "not_verified",
+    });
+    expect(interpretAddressVerifyResponse({ status: "error", enabled: false }, "button")).toEqual({
+      verifyEnabled: false,
+      chip: "not_configured",
     });
     expect(ADDRESS_VERIFY_NOT_CONFIGURED).toBe("Verification isn’t set up");
   });

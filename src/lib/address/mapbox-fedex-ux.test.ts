@@ -28,8 +28,9 @@ describe("Mapbox typeahead + FedEx verify-only address UX", () => {
     expect(source("src/app/api/address/status/route.ts")).toMatch(/verifyEnabled/);
   });
 
-  it("offers Verify address, keeps quiet FedEx stamps, and does not open suggestions on load", () => {
+  it("offers a visible Verify address button and keeps quiet FedEx off by default", () => {
     const ui = source("src/components/address-autocomplete.tsx");
+    const rules = source("src/lib/address/verify-run.ts");
     expect(ui).toMatch(/Address confirmed/);
     expect(ui).toMatch(/Address updated/);
     expect(ui).toMatch(/Address entered/);
@@ -45,8 +46,15 @@ describe("Mapbox typeahead + FedEx verify-only address UX", () => {
     expect(ui).toMatch(/autoFocus=\{false\}/);
     expect(ui).toMatch(/Verify address/);
     expect(ui).toMatch(/data-ff-address-verify/);
+    expect(ui).toMatch(/data-ff-address-quiet-verify/);
+    expect(ui).toMatch(/buttonVariants\(\{ variant: "outline", size: "sm" \}\)/);
+    expect(ui).toMatch(/quietVerify = ADDRESS_QUIET_VERIFY_DEFAULT/);
+    expect(ui).toMatch(/if \(!quietVerify\) return;/);
+    expect(ui).toMatch(/shouldAttemptQuietVerify\(verifyEnabled, quietVerify\)/);
+    expect(ui).not.toMatch(/text-\[10px\] font-medium text-navy underline-offset-2 hover:underline disabled:cursor-wait/);
     expect(ui).toMatch(/ADDRESS_VERIFY_NOT_CONFIGURED/);
-    expect(source("src/lib/address/verify-run.ts")).toMatch(/Verification isn’t set up/);
+    expect(rules).toMatch(/Verification isn’t set up/);
+    expect(rules).toMatch(/ADDRESS_QUIET_VERIFY_DEFAULT = false/);
     expect(ui).not.toMatch(/Looking up FedEx/);
     expect(ui).not.toMatch(/fedex typeahead/i);
     expect(ui).not.toMatch(/setOpen\(Boolean\(data\.suggestions\?\.length\)\);/);

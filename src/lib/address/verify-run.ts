@@ -15,9 +15,17 @@ export type AddressVerifyApiBody = {
   enabled?: boolean;
 };
 
-/** Quiet auto may run unless FedEx is known to be off. Manual click always POSTs. */
-export function shouldAttemptQuietVerify(verifyEnabled: boolean | null): boolean {
-  return verifyEnabled !== false;
+/**
+ * Quiet FedEx auto-verify is off unless a caller opts in.
+ * Javy’s primary path is the explicit Verify address button.
+ */
+export const ADDRESS_QUIET_VERIFY_DEFAULT = false;
+
+export function shouldAttemptQuietVerify(
+  verifyEnabled: boolean | null,
+  quietEnabled: boolean = ADDRESS_QUIET_VERIFY_DEFAULT,
+): boolean {
+  return quietEnabled === true && verifyEnabled !== false;
 }
 
 export function shouldSkipQuietVerifyForFingerprint(
