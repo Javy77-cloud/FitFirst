@@ -1,5 +1,6 @@
 import { parseFedExResolvePayload } from "./parse";
-import type { AddressSuggestion } from "@/lib/address/types";
+import { addressesMatch } from "@/lib/address/compare";
+import { addressIsComplete, type AddressSuggestion, type ParsedAddress } from "@/lib/address/types";
 
 export type FedExEnvironment = "sandbox" | "production";
 
@@ -104,4 +105,56 @@ export async function suggestFedExAddresses(
   });
   if (!res.ok) return [];
   return parseFedExResolvePayload(await res.json());
+}
+
+export type AddressVerifyStatus = "verified" | "suggested" | "unmatched";
+
+export type AddressVerifyResult = {
+  status: AddressVerifyStatus;
+  resolved: ParsedAddress | null;
+  suggestions: AddressSuggestion[];
+};
+
+export async function verifyFedExAddress(
+  address: ParsedAddress,
+  creds: FedExCredentials,
+  fetchImpl: FetchLike = fetch,
+): Promise<AddressVerifyResult> {
+  if (!fedexCredentialsReady(creds) || !addressIsComplete(address)) {
+    return { status: "unmatched", resolved: null, suggestions: [] };
+  }
+  const token = await fetchFedExAccessToken(creds, fetchImpl);
+  const today = new Date().toISOString().slice(0, 10);
+  const res = await fetchImpl(`${fedexBaseUrl(creds.environment)}/address/v1/addresses/resolve`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+      "x-locale": "en_US",
+    },
+    body: JSON.stringify({
+      inEffectAsOfTimestamp: today,
+      validateAddressControlParameters: { includeResolutionTokens: true },
+      addressesToValidate: [
+        {
+          address: {
+            streetLines: [address.street.trim()],
+            city: address.city.trim(),
+            stateOrProvinceCode: address.state.trim(),
+            postalCode: address.zip.trim(),
+            countryCode: address.country?.trim() || "US",
+          },
+        },
+      ],
+    }),
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) return { status: "unmatched", resolved: null, suggestions: [] };
+  const suggestions = parseFedExResolvePayload(await res.json());
+  const resolved = suggestions[0]?.address ?? null;
+  if (!resolved) return { status: "unmatched", resolved: null, suggestions: [] };
+  if (addressesMatch(address, resolved)) {
+    return { status: "verified", resolved, suggestions };
+  }
+  return { status: "suggested", resolved, suggestions };
 }
