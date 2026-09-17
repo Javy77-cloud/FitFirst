@@ -77,6 +77,7 @@ describe("settings IA cards", () => {
     expect(settingsGroupFor("macros")).toBe("automations-dev");
     expect(settingsGroupFor("developer")).toBe("automations-dev");
     expect(settingsGroupFor("developer-hub")).toBe("automations-dev");
+    expect(settingsGroupFor("missing-questions")).toBe("automations-dev");
     expect(settingsChildFor("dev-macros")).toBe("macros");
     expect(settingsChildFor("developer")).toBe("developer-hub");
     const hub = SETTINGS_NAV.find((group) => group.id === "automations-dev");

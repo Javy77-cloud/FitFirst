@@ -1612,6 +1612,32 @@ export const quoteNotes = pgTable(
   (t) => [index("quote_notes_quote_idx").on(t.tenantId, t.quoteId)],
 );
 
+/**
+ * Living list of carrier/quote-bot questions FitFirst has no field for.
+ * Log once; mark added after the field ships on Deal Details or Risk Profile.
+ * Empty by default — do not seed fake carrier rows.
+ */
+export const carrierMissingQuestions = pgTable(
+  "carrier_missing_questions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    productLine: text("product_line").notNull(),
+    carrier: text("carrier"),
+    suggestedSurface: text("suggested_surface").notNull().default("details"),
+    status: text("status").notNull().default("open"),
+    note: text("note").notNull(),
+    sourceQuoteNoteId: uuid("source_quote_note_id"),
+    createdBy: text("created_by"),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("carrier_missing_questions_tenant_status_idx").on(t.tenantId, t.status),
+    uniqueIndex("carrier_missing_questions_source_note_uidx").on(t.tenantId, t.sourceQuoteNoteId),
+  ],
+);
+
 export const extractionJobs = pgTable(
   "extraction_jobs",
   {
@@ -3178,6 +3204,7 @@ export type QuoteAttemptLog = typeof quoteAttemptLogs.$inferSelect;
 export type FillLearningLog = typeof fillLearningLogs.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 export type QuoteNote = typeof quoteNotes.$inferSelect;
+export type CarrierMissingQuestion = typeof carrierMissingQuestions.$inferSelect;
 export type QuoteSheet = typeof quoteSheets.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type DeskMessage = typeof deskMessages.$inferSelect;

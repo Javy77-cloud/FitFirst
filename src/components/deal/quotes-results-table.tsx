@@ -394,6 +394,7 @@ export function QuotesResultsTable({
   product = null,
   productStage = null,
   priorByQuoteId = {},
+  canLogGap = false,
 }: {
   dealId: string;
   rows: Row[];
@@ -410,6 +411,7 @@ export function QuotesResultsTable({
   product?: string | null;
   productStage?: string | null;
   priorByQuoteId?: Record<string, { quote: Quote; carrier: Carrier; label: string | null }>;
+  canLogGap?: boolean;
 }) {
   const list = asList(rows);
   const [hideMarked, setHideMarked] = useState<string[]>([]);
@@ -891,6 +893,8 @@ export function QuotesResultsTable({
                                 carrierName={carrier.name}
                                 notes={thread}
                                 disabled={pending}
+                                canLogGap={canLogGap}
+                                productLine={product ?? ""}
                               />
                               {product ? (
                                 <button

@@ -124,6 +124,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { agencySettings, users } from "@/lib/db/schema";
 import { carriersForDealLine } from "@/lib/deals/carriers-for-line";
+import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID, SHOP_LINE_TO_LOB, formatMoney } from "@/lib/domain";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
 
@@ -172,7 +173,7 @@ export default async function DealPage({
     jobs,
     boundPolicies,
   } = workspace;
-  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow, pipelines, context, agencyRow, noticePicklists] =
+  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow, pipelines, context, agencyRow, noticePicklists, session] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
       listEnabledScriptsFor("deals", "edit"),
@@ -205,6 +206,7 @@ export default async function DealPage({
         .limit(1)
         .then((rows) => rows[0] ?? null),
       listFieldPicklists().catch(() => []),
+      currentDeskSession(),
     ]);
   const stageView = dealStageView(
     {
@@ -918,6 +920,7 @@ export default async function DealPage({
                         quotes={lineQuotes}
                         logs={logs}
                         quoteNotes={quoteNotes}
+                        canLogGap={session.isAdmin || session.isDeveloper}
                         formId={lineQuotingForm?.id ?? lineForm ?? masterFormLabel}
                         shopLine={sheetLine}
                         docs={docs}
@@ -954,6 +957,7 @@ export default async function DealPage({
                         quotes={lineQuotes}
                         logs={logs}
                         quoteNotes={quoteNotes}
+                        canLogGap={session.isAdmin || session.isDeveloper}
                         quoteResultsNote={deal.quoteResultsNote}
                         formId={lineQuotingForm?.id ?? lineForm ?? masterFormLabel}
                         shopLine={sheetLine}

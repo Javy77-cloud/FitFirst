@@ -64,6 +64,7 @@ export const SETTINGS_NAV_IDS = [
   "dev-buttons",
   "dev-scripts",
   "dev-widgets",
+  "missing-questions",
 ] as const;
 
 export type SettingsNavId = (typeof SETTINGS_NAV_IDS)[number];
@@ -172,6 +173,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       { id: "functions", href: "/automations/functions", label: "Functions", hint: "Test + REST" },
       { id: "developer-hub", href: "/settings/developer-hub", label: "Developer Hub", hint: "API · webhooks · widgets" },
       { id: "api-vault", href: "/settings/developer-hub/api-vault", label: "API vault", hint: "FedEx · site developers" },
+      { id: "missing-questions", href: "/settings/developer-hub/missing-questions", label: "Missing questions", hint: "Carrier field gaps" },
     ],
   },
   {
@@ -239,6 +241,7 @@ const AUTOMATIONS_DEVELOPER_ALIASES = new Set<SettingsNavId>([
   "dev-widgets",
   "playbooks",
   "sequences",
+  "missing-questions",
 ]);
 
 const SETTINGS_CHILD_ALIASES: Partial<Record<SettingsNavId, SettingsNavId>> = {
@@ -322,6 +325,7 @@ export const SETTINGS_KNOWN_HREFS = [
   "/settings/developer-hub/custom-buttons",
   "/settings/developer-hub/client-scripts",
   "/settings/developer-hub/widgets",
+  "/settings/developer-hub/missing-questions",
   "/settings/profile",
   "/settings/security",
   "/compliance",

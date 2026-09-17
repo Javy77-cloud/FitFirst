@@ -19,6 +19,7 @@ describe("developer profile gates", () => {
   it("gates the Developer hub and API vault paths", () => {
     expect(isDeveloperOnlyPath("/developer")).toBe(true);
     expect(isDeveloperOnlyPath("/developer/notes")).toBe(true);
+    expect(isDeveloperOnlyPath("/developer/missing-questions")).toBe(true);
     expect(isDeveloperOnlyPath("/settings/developer-hub/api-vault")).toBe(true);
     expect(isDeveloperOnlyPath("/settings")).toBe(false);
     expect(isDeveloperOnlyPath("/admin")).toBe(false);
@@ -45,5 +46,7 @@ describe("developer profile gates", () => {
     expect(page).toMatch(/loadDeveloperUsageTiles/);
     expect(page).toMatch(/DEVELOPER_UPCOMING/);
     expect(page).toMatch(/NOT_COUNTED_YET/);
+    expect(page).toMatch(/\/developer\/missing-questions/);
+    expect(page).toMatch(/data-ff-developer-gaps/);
   });
 });

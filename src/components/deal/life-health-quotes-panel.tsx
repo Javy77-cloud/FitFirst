@@ -66,6 +66,7 @@ export function LifeHealthQuotesPanel({
   mintStatus = null,
   issuedPolicy = null,
   autoIssue = false,
+  canLogGap = false,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -84,6 +85,7 @@ export function LifeHealthQuotesPanel({
   mintStatus?: string | null;
   issuedPolicy?: IssuedPolicyChip | null;
   autoIssue?: boolean;
+  canLogGap?: boolean;
 }) {
   const liveQuotes = quotes.filter((row) => !row.quote.stub);
   const sorted = sortQuotesByRatingThenPremium(
@@ -256,6 +258,7 @@ export function LifeHealthQuotesPanel({
             selectedQuoteIds={selectedQuoteIds}
             product={product}
             productStage={productStage}
+            canLogGap={canLogGap}
           />
         </section>
       )}
