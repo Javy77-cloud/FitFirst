@@ -19,9 +19,13 @@ describe("New Deal uses the live Deal Edit Layout", () => {
   });
 
   it("places Add New Deal dialog on the deals list chrome", () => {
+    const page = readFileSync("src/app/deals/page.tsx", "utf8");
+    expect(page).toMatch(/AddNewDealDialog/);
+    expect(page).toMatch(/data-ff-deals-list-actions/);
+    expect(page).toMatch(/data-ff-pipeline-filter-chrome/);
     const table = readFileSync("src/components/deals/deals-table.tsx", "utf8");
-    expect(table).toMatch(/AddNewDealDialog/);
-    expect(table).toMatch(/data-ff-deals-list-actions/);
+    expect(table).not.toMatch(/AddNewDealDialog/);
+    expect(table).not.toMatch(/data-ff-deals-list-actions/);
     const dialog = readFileSync("src/components/deals/add-new-deal-dialog.tsx", "utf8");
     expect(dialog).toMatch(/data-ff-new-deal/);
     expect(dialog).toMatch(/Add New Deal/);
@@ -33,9 +37,9 @@ describe("New Deal uses the live Deal Edit Layout", () => {
     expect(dialog).toMatch(/ProductPicker/);
     expect(dialog).not.toMatch(/createDealFromScratch/);
     expect(dialog).not.toMatch(/createDealFromExistingPick/);
-    const page = readFileSync("src/app/deals/new/page.tsx", "utf8");
-    expect(page).toMatch(/NewDealFormBody/);
-    expect(page).toMatch(/createDeal/);
+    const newDealPage = readFileSync("src/app/deals/new/page.tsx", "utf8");
+    expect(newDealPage).toMatch(/NewDealFormBody/);
+    expect(newDealPage).toMatch(/createDeal/);
     const actions = readFileSync("src/app/actions/crm.ts", "utf8");
     expect(actions).toMatch(/packageDraftForNewDealSave/);
     expect(actions).toMatch(/forceNewShopOnSave/);

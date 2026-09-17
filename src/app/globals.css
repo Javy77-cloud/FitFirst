@@ -229,11 +229,12 @@
   overflow: visible;
   position: relative;
   z-index: 1;
-  /* Lift whole counters band ~2 lines (feel-pass: tighter page). */
-  margin-top: -2.5rem;
+  /* Lift counters + list ~4 lines total so more deal rows stay on screen.
+     Prior pass was -2.5rem (~2 lines); this pass adds another ~2 lines. */
+  margin-top: -5rem;
   margin-bottom: 0 !important;
-  /* ~1.5 lines between chips and the list (was 2.5rem / ~2+ lines). */
-  padding-bottom: 1.5rem !important;
+  /* Tight gap between chips and the find/filter banner. */
+  padding-bottom: 0.5rem !important;
   transform: none !important;
   pointer-events: none;
 }
@@ -243,6 +244,18 @@
 .deal-list-below-activity {
   margin-top: 0 !important;
   padding-top: 0 !important;
+}
+[data-ff-pipeline-filter-chrome] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+[data-ff-pipeline-filter-chrome] [data-ff-pipeline-filters] {
+  margin-bottom: 0;
+}
+[data-ff-pipeline-filter-chrome] [data-ff-deals-list-actions] {
+  margin-left: auto;
 }
 .deal-today-slot {
   flex: 1;
@@ -1139,6 +1152,16 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   background-color: #14532d !important;
   border-color: #14532d !important;
   color: #ffffff !important;
+}
+
+/* Calendar toolbar: previous -mt-6 + -mt-8 pulled Month/Week/Day + date + Today
+   into the header search banner. Combined lift is now ~1.25rem (cancels main
+   py-5) so that row sits ~1–1.5 lines lower and stays clear of the banner. */
+[data-ff-calendar-page] {
+  margin-top: -0.5rem;
+}
+[data-ff-calendar-toolbar-wrap] {
+  margin-top: -0.75rem;
 }
 
 /* Calendar week strip — keep red count badges from being clipped (Safari/button overflow). */

@@ -38,6 +38,9 @@ describe("Pipeline filter popover chrome", () => {
     expect(popover).toMatch(/onConfigure/);
     expect(popover).toMatch(/Configure filters/);
     expect(deals).toMatch(/canConfigure=\{session\.isAdmin\}/);
+    expect(deals).toMatch(/data-ff-pipeline-filter-chrome/);
+    expect(deals).toMatch(/data-ff-deals-list-actions/);
+    expect(deals).toMatch(/<AddNewDealDialog/);
     expect(deals).toMatch(/prefs: pageFilterPrefs/);
     expect(desk).toMatch(/canConfigure=\{canEditStages\}/);
     expect(desk).toMatch(/buildRenewalPipelineFilterFields\(cards, pageFilterPrefs\)/);

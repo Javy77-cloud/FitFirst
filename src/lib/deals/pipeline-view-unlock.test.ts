@@ -23,9 +23,10 @@ describe("Deals pipeline chrome unlock (activity lift must not steal clicks)", (
     expect(chrome).toMatch(/\.deal-upload-activity \{[\s\S]*pointer-events: none;/);
     expect(chrome).toMatch(/\.deal-today-slot \{[\s\S]*pointer-events: none;/);
     expect(chrome).toMatch(/\.deal-today-strip \{[\s\S]*pointer-events: auto;/);
-    expect(chrome).toMatch(/margin-top: -2\.5rem;/);
-    expect(chrome).toMatch(/padding-bottom: 1\.5rem !important;/);
+    expect(chrome).toMatch(/margin-top: -5rem;/);
+    expect(chrome).toMatch(/padding-bottom: 0\.5rem !important;/);
     // Page must not re-assert the lift via inline styles (that dropped unlock rules before).
+    expect(page).not.toMatch(/marginTop:\s*["']-5rem["']/);
     expect(page).not.toMatch(/marginTop:\s*["']-2\.5rem["']/);
   });
 });
