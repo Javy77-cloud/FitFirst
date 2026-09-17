@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { CONTACT_MODULE_FIELDS, contactCardLayout } from "./contact-field-catalog";
+import {
+  CONTACT_MODULE_FIELDS,
+  contactCardLayout,
+  splitCoverageOpportunitiesLayout,
+} from "./contact-field-catalog";
 import { defaultFieldsForModule, defaultLayoutForModule } from "@/lib/custom-fields/modules";
 import { CONTACTS_LIST_COLUMNS } from "@/lib/list-columns";
 import { OCCUPATION_PICKLIST_NAME } from "./occupation-picklist";
@@ -48,7 +52,9 @@ describe("Contacts module v1 standards", () => {
     expect(page).toMatch(/defaultTab="info"/);
     expect(page).not.toMatch(/defaultTab="conversations"/);
     expect(page).not.toMatch(/ff-contact-rail-meta/);
-    expect(page).toMatch(/data-ff-glance-comms="status"/);
+    expect(readFileSync("src/components/contacts/contact-at-a-glance-cards.tsx", "utf8")).toMatch(
+      /data-ff-glance-comms="status"/,
+    );
     expect(page).toMatch(/loadModuleLayoutBundle\("contacts"/);
     expect(page).toMatch(/buildPolicyCoApplicantLinks/);
     expect(page).toMatch(/coApplicantLinks/);
@@ -68,9 +74,49 @@ describe("Contacts module v1 standards", () => {
   it("wires full contact field catalog + occupation as picklist", () => {
     expect(defaultFieldsForModule("contacts")).toBe(CONTACT_MODULE_FIELDS);
     expect(defaultLayoutForModule("contacts")).toEqual(contactCardLayout());
+    const sections = contactCardLayout().columns.flatMap((column) => column.sections);
+    expect(sections.map((section) => section.id)).toEqual(
+      expect.arrayContaining(["coverage", "opportunities"]),
+    );
+    expect(sections.find((section) => section.label === "Coverage & Opportunities")).toBeUndefined();
+    expect(sections.find((section) => section.id === "coverage")?.fieldKeys).toEqual([
+      "existing_coverage_types",
+      "is_homeowner",
+      "is_business_owner",
+    ]);
+    expect(sections.find((section) => section.id === "opportunities")?.fieldKeys).toEqual([
+      "recent_life_events",
+      "cross_selling_opportunity",
+    ]);
     const occupation = CONTACT_MODULE_FIELDS.find((f) => f.key === "occupation");
     expect(occupation?.type).toBe("picklist");
     expect(CONTACT_MODULE_FIELDS.some((f) => f.key === "pc_notes")).toBe(true);
+    const combined = {
+      columns: [
+        { id: "left", sections: [] },
+        {
+          id: "right",
+          sections: [
+            {
+              id: "opportunities",
+              label: "Coverage & Opportunities",
+              fieldKeys: [
+                "recent_life_events",
+                "existing_coverage_types",
+                "cross_selling_opportunity",
+                "is_homeowner",
+                "is_business_owner",
+              ],
+            },
+          ],
+        },
+      ],
+    } as ReturnType<typeof contactCardLayout>;
+    const split = splitCoverageOpportunitiesLayout(combined);
+    expect(split.columns[1].sections.map((section) => section.id)).toEqual([
+      "coverage",
+      "opportunities",
+    ]);
   });
 
   it("list columns include phone email tags last activity", () => {
@@ -126,8 +172,13 @@ describe("Contacts module v1 standards", () => {
     expect(page).toMatch(/ContactDetailSections/);
     expect(readFileSync("src/components/contact-section-nav.tsx", "utf8")).toMatch(/onNavigate\?:/);
     expect(page).toMatch(/id="at-a-glance"/);
+    expect(page).toMatch(/id: "coverage"/);
+    expect(page).toMatch(/id: "opportunities"/);
     expect(page).toMatch(/id: "policies"/);
     expect(page).toMatch(/id: "deals"/);
+    expect(page).toMatch(/ContactCoveragePanel/);
+    expect(page).toMatch(/ContactOpportunitiesPanel/);
+    expect(page).toMatch(/scheduleContactCoverageNotices/);
     expect(page).toMatch(/id: "timeline"/);
     expect(page).toMatch(/id: "emails"/);
     expect(page).toMatch(/id: "sms"/);
@@ -140,6 +191,7 @@ describe("Contacts module v1 standards", () => {
     expect(page).toMatch(/id="contact-details"/);
     expect(accordion).toMatch(/id=\{section\.id\}/);
     expect(accordion).toMatch(/CONTACT_ACCORDION_IDS/);
+    expect(accordion).toMatch(/initialOpenId/);
     expect(accordion).toMatch(/onNavigate/);
     expect(collapse).toMatch(/ChevronDown/);
     expect(collapse).toMatch(/ChevronUp/);
@@ -168,5 +220,7 @@ describe("Contacts module v1 standards", () => {
     expect(nav).not.toMatch(/max-w-\[180px\]/);
     expect(sections).toMatch(/CONTACT_SECTION_NAV_MAX = 12/);
     expect(sections).toMatch(/DEFAULT_CONTACT_SECTION_NAV_IDS/);
+    expect(sections).toMatch(/id: "coverage"/);
+    expect(sections).toMatch(/id: "opportunities"/);
   });
 });

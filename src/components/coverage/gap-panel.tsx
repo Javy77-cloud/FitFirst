@@ -4,13 +4,16 @@ import { gapLineLabel, type CoverageGapReport } from "@/lib/coverage/gaps";
 export function GapPanel({
   report,
   href,
+  embedded = false,
 }: {
   report: CoverageGapReport;
   href?: string;
+  /** Sit inside Contact Coverage — do not start a second board. */
+  embedded?: boolean;
 }) {
   return (
-    <section className="ff-card overflow-hidden">
-      <div className="border-b border-border px-4 py-3">
+    <section className={embedded ? "space-y-2" : "ff-card overflow-hidden"} data-ff-gap-panel="">
+      <div className={embedded ? "" : "border-b border-border px-4 py-3"}>
         <h3 className="text-sm font-semibold text-navy">Coverage gaps</h3>
         <p className="mt-1 text-xs text-muted-foreground">
           Rule-based, from in-force policies only. {report.quotesDoNotCount}
@@ -23,11 +26,13 @@ export function GapPanel({
         ) : null}
       </div>
       {report.findings.length === 0 ? (
-        <p className="px-4 py-4 text-sm text-muted-foreground">{report.emptyReason}</p>
+        <p className={embedded ? "text-sm text-muted-foreground" : "px-4 py-4 text-sm text-muted-foreground"}>
+          {report.emptyReason}
+        </p>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul className={embedded ? "space-y-3" : "divide-y divide-border"}>
           {report.findings.map((finding) => (
-            <li key={finding.id} className="px-4 py-3">
+            <li key={finding.id} className={embedded ? "" : "px-4 py-3"}>
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="text-sm font-semibold text-navy">{finding.title}</p>
                 <span className="text-[11px] uppercase tracking-wide text-muted-foreground">

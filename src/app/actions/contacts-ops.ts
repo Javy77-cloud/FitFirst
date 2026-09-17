@@ -17,6 +17,7 @@ import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
 import { writeSsn } from "@/lib/pii/write";
 import { emitDeskEvent } from "@/lib/developer-hub/events";
 import { contactCardLayout, contactClassicLayout } from "@/lib/contacts/contact-field-catalog";
+import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices";
 import { layoutTemplateKind, type LayoutTemplateKind } from "@/lib/custom-fields/layout-template";
 import { fieldPreview } from "@/lib/merge/preview";
 
@@ -360,6 +361,9 @@ export async function updateContactField(input: {
   await emitDeskEvent("record.updated", { entityType: "contact", entityId: contactId });
   revalidatePath(`/contacts/${contactId}`);
   revalidatePath("/contacts");
+  if (customKey === "cross_selling_opportunity" || customKey === "existing_coverage_types") {
+    scheduleContactCoverageNotices(contactId);
+  }
   return { ok: true as const };
 }
 

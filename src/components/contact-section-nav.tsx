@@ -13,6 +13,7 @@ import {
   DEFAULT_CONTACT_SECTION_NAV_IDS,
   availableContactSectionDefs,
   contactSectionDefsForNav,
+  isContactSectionId,
   normalizeContactSectionNavIds,
   type ContactSectionId,
 } from "@/lib/desk/contact-sections";
@@ -57,6 +58,7 @@ export function ContactSectionNav({
   const sentinelRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const chipsRef = useRef<HTMLDivElement>(null);
+  const didHashJump = useRef(false);
 
   const sections = useMemo(
     () => contactSectionDefsForNav(selectedIds),
@@ -138,6 +140,20 @@ export function ContactSectionNav({
       });
     });
   }
+
+  useEffect(() => {
+    if (didHashJump.current) return;
+    const hash = window.location.hash.replace(/^#/, "");
+    if (!hash || !isContactSectionId(hash)) return;
+    didHashJump.current = true;
+    const target = document.getElementById(hash);
+    if (!target) return;
+    const offset = Math.max(navHeight, 56) + 8;
+    window.scrollTo({
+      top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset),
+      behavior: "smooth",
+    });
+  }, [sections, navHeight]);
 
   function openCustomize() {
     setError(null);

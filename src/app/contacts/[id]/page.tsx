@@ -28,12 +28,17 @@ import { ContactDealRows } from "@/components/contacts/contact-deal-rows";
 import { ContactTimelineSection } from "@/components/contacts/contact-timeline-section";
 import { ContactSectionBlock } from "@/components/contacts/contact-section-block";
 import { ContactAtAGlanceCards } from "@/components/contacts/contact-at-a-glance-cards";
+import { ContactCoveragePanel } from "@/components/contacts/contact-coverage-panel";
+import { ContactOpportunitiesPanel } from "@/components/contacts/contact-opportunities-panel";
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
+import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices";
+import { isAnaCoverageParty, isOpenDealStage } from "@/lib/coverage/notices";
+import { isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
 import { softEmailPhoneDups } from "@/lib/contacts/soft-dup";
 import { buildPolicyCoApplicantLinks } from "@/lib/contacts/policy-co-applicants";
 import { getAgencyContactSectionNav } from "@/lib/contacts/contact-section-nav-prefs";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
-import type { ContactSectionId } from "@/lib/desk/contact-sections";
+import { isContactSectionId, type ContactSectionId } from "@/lib/desk/contact-sections";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +56,9 @@ export default async function ContactDetailPage({
   const { id } = await params;
   const paramsIn = await searchParams;
   const fromPolicy = typeof paramsIn.fromPolicy === "string" ? paramsIn.fromPolicy : undefined;
+  const focusPolicy = typeof paramsIn.focusPolicy === "string" ? paramsIn.focusPolicy : undefined;
+  const focusDeal = typeof paramsIn.focusDeal === "string" ? paramsIn.focusDeal : undefined;
+  const sectionParam = typeof paramsIn.section === "string" ? paramsIn.section : undefined;
   const workspace = await getContactWorkspace(id);
   if (!workspace) notFound();
   const {
@@ -65,6 +73,12 @@ export default async function ContactDetailPage({
     timeline,
   } = workspace;
   const latestPolicyId = policies[0]?.policy.id ?? null;
+  const isAna = isAnaCoverageParty({
+    contactId: contact.id,
+    firstName: contact.firstName,
+    lastName: contact.lastName,
+  });
+  scheduleContactCoverageNotices(contact.id);
 
   const [tagExtra, contactLayout, book, comms, agencyRow, resolvedNavIds, contactDocs] =
     await Promise.all([
@@ -194,7 +208,11 @@ export default async function ContactDetailPage({
     pcNotes ? { id: "pc-notes", title: "P&C Notes", meta: pcNotes } : null,
   ].filter(Boolean) as { id: string; title: string; meta: string }[];
 
+  const inForceCount = policies.filter((row) => isInForcePolicyStatus(row.policy.status)).length;
+  const openDealCount = deals.filter((deal) => isOpenDealStage(deal.pipelineStage)).length;
   const sectionCounts: Partial<Record<ContactSectionId, number>> = {
+    coverage: inForceCount,
+    opportunities: isAna ? 0 : openDealCount,
     policies: policies.length,
     deals: deals.length,
     timeline: timeline.length,
@@ -325,6 +343,7 @@ export default async function ContactDetailPage({
         <ContactDetailSections
           selectedIds={resolvedNavIds}
           counts={sectionCounts}
+          initialOpenId={sectionParam && isContactSectionId(sectionParam) ? sectionParam : undefined}
           before={
             <div className="mb-3 space-y-3">
               <section
@@ -401,6 +420,62 @@ export default async function ContactDetailPage({
             </div>
           }
           sections={[
+            {
+              id: "coverage",
+              title: "Coverage",
+              badge: inForceCount || undefined,
+              "data-ff": "contact-coverage",
+              children: (
+                <ContactCoveragePanel
+                  partyName={partyName}
+                  isAna={isAna}
+                  quoteCount={deals.length}
+                  focusPolicyId={focusPolicy}
+                  policies={policies.map(({ policy, carrier }) => ({
+                    id: policy.id,
+                    status: policy.status,
+                    lineOfBusiness: policy.lineOfBusiness,
+                    policyNumber: policy.policyNumber,
+                    premium: policy.premium,
+                    renewalDate: policy.renewalDate,
+                    expirationDate: policy.expirationDate,
+                    carrierName: carrier?.name ?? null,
+                    policyType: policy.policyType,
+                  }))}
+                />
+              ),
+            },
+            {
+              id: "opportunities",
+              title: "Opportunities",
+              badge: (isAna ? 0 : openDealCount) || undefined,
+              "data-ff": "contact-opportunities",
+              children: (
+                <ContactOpportunitiesPanel
+                  contactId={contact.id}
+                  partyName={partyName}
+                  isAna={isAna}
+                  focusDealId={focusDeal}
+                  taggedCrossSell={
+                    typeof fieldValues.cross_selling_opportunity === "string"
+                      ? fieldValues.cross_selling_opportunity
+                      : null
+                  }
+                  policies={policies.map(({ policy }) => ({
+                    id: policy.id,
+                    status: policy.status,
+                    lineOfBusiness: policy.lineOfBusiness,
+                    policyNumber: policy.policyNumber,
+                  }))}
+                  deals={deals.map((deal) => ({
+                    id: deal.id,
+                    title: deal.title,
+                    pipelineStage: deal.pipelineStage,
+                    lineOfBusiness: deal.lineOfBusiness,
+                  }))}
+                />
+              ),
+            },
             {
               id: "policies",
               title: "Policies",

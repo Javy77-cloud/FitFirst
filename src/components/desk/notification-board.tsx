@@ -1,14 +1,14 @@
 "use client";
 
 import { NotificationChecklist } from "@/components/desk/notification-checklist";
+import { displayNoticeBody } from "@/lib/coverage/notices";
+import { alertRecordHref } from "@/lib/desk/header-alerts";
 import {
   NOTIFICATION_EMPTY_BOARD,
   NOTIFICATION_IN_APP_COPY,
-  followUpLeadHref,
   notificationHref,
   notificationWhen,
 } from "@/lib/desk/notifications";
-import { recordHref } from "@/lib/desk/record-href";
 
 export type BoardAlert = {
   id: string;
@@ -33,13 +33,10 @@ export function NotificationBoard({ rows }: { rows: BoardAlert[] }) {
           alerts={rows.map((alert) => ({
             id: alert.id,
             title: alert.title,
-            body: alert.body,
+            body: displayNoticeBody(alert.body),
             kind: alert.kind,
             read: Boolean(alert.readAt),
-            href: notificationHref(
-              recordHref(alert.entityType, alert.entityId) ??
-                (alert.kind === "lead_follow_up" ? followUpLeadHref(alert.entityId) : null),
-            ),
+            href: notificationHref(alertRecordHref(alert)),
             when: notificationWhen(alert.createdAt),
           }))}
         />

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { persistFile } from "@/app/actions/documents";
+import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices";
 import { db } from "@/lib/db";
 import { deals, quoteSheets, risks } from "@/lib/db/schema";
 import {
@@ -111,6 +112,7 @@ export async function saveModuleRecordValues(formData: FormData) {
   revalidatePath("/settings/field-builder");
   revalidatePath(fieldLayoutListHref(module));
   revalidatePath(href);
+  if (module === "contacts") scheduleContactCoverageNotices(recordId);
   flashAction(href, `${module === "businesses" ? "Business" : module.slice(0, 1).toUpperCase() + module.slice(1)} saved`);
 }
 

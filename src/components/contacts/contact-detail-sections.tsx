@@ -7,6 +7,8 @@ import type { ContactSectionId } from "@/lib/desk/contact-sections";
 
 /** Sections under Contact Details that participate in chip-driven accordion. */
 export const CONTACT_ACCORDION_IDS = [
+  "coverage",
+  "opportunities",
   "policies",
   "deals",
   "timeline",
@@ -25,6 +27,8 @@ function isAccordionId(id: ContactSectionId): id is ContactAccordionId {
 
 function emptyOpenMap(): Record<ContactAccordionId, boolean> {
   return {
+    coverage: false,
+    opportunities: false,
     policies: false,
     deals: false,
     timeline: false,
@@ -34,6 +38,12 @@ function emptyOpenMap(): Record<ContactAccordionId, boolean> {
     documents: false,
     notes: false,
   };
+}
+
+function openMapWith(id?: ContactSectionId | null): Record<ContactAccordionId, boolean> {
+  const next = emptyOpenMap();
+  if (id && isAccordionId(id)) next[id] = true;
+  return next;
 }
 
 export type AccordionSectionSlot = {
@@ -53,13 +63,18 @@ export function ContactDetailSections({
   counts,
   before,
   sections,
+  initialOpenId,
 }: {
   selectedIds: ContactSectionId[];
   counts?: ContactSectionCounts;
   before: ReactNode;
   sections: AccordionSectionSlot[];
+  /** From notification deep-link `?section=coverage|opportunities`. */
+  initialOpenId?: ContactSectionId | null;
 }) {
-  const [openMap, setOpenMap] = useState<Record<ContactAccordionId, boolean>>(emptyOpenMap);
+  const [openMap, setOpenMap] = useState<Record<ContactAccordionId, boolean>>(() =>
+    openMapWith(initialOpenId),
+  );
 
   const onNavigate = useCallback((id: ContactSectionId) => {
     if (!isAccordionId(id)) return;

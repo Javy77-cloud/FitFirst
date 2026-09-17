@@ -160,9 +160,79 @@ function twoCol(left: ReturnType<typeof section>[], right: ReturnType<typeof sec
   };
 }
 
+/** In-force book cues on Contact Details — not policy-limit fields. */
+export const CONTACT_COVERAGE_FIELD_KEYS = [
+  "existing_coverage_types",
+  "is_homeowner",
+  "is_business_owner",
+] as const;
+
+/** Cross-sell / life-event cues on Contact Details — not the Deals list. */
+export const CONTACT_OPPORTUNITY_FIELD_KEYS = [
+  "recent_life_events",
+  "cross_selling_opportunity",
+] as const;
+
+export function isCombinedCoverageOpportunitiesSection(section: {
+  id: string;
+  label: string;
+  fieldKeys: string[];
+}): boolean {
+  if (section.label.trim() === "Coverage & Opportunities") return true;
+  return (
+    section.id === "opportunities" &&
+    section.fieldKeys.includes("existing_coverage_types") &&
+    section.fieldKeys.includes("cross_selling_opportunity")
+  );
+}
+
+/** Split the old combined CRM section so Coverage and Opportunities stay on Contact. */
+export function splitCoverageOpportunitiesLayout(layout: FieldLayout): FieldLayout {
+  const splitColumn = (column: FieldLayout["columns"][number]) => ({
+    ...column,
+    sections: column.sections.flatMap((sec) => {
+      if (!isCombinedCoverageOpportunitiesSection(sec)) return [sec];
+      const coverageKeys = sec.fieldKeys.filter((key) =>
+        (CONTACT_COVERAGE_FIELD_KEYS as readonly string[]).includes(key),
+      );
+      const opportunityKeys = sec.fieldKeys.filter((key) =>
+        (CONTACT_OPPORTUNITY_FIELD_KEYS as readonly string[]).includes(key),
+      );
+      const leftover = sec.fieldKeys.filter(
+        (key) =>
+          !(CONTACT_COVERAGE_FIELD_KEYS as readonly string[]).includes(key) &&
+          !(CONTACT_OPPORTUNITY_FIELD_KEYS as readonly string[]).includes(key),
+      );
+      const next: typeof sec[] = [];
+      if (coverageKeys.length || leftover.length) {
+        next.push({
+          ...sec,
+          id: "coverage",
+          label: "Coverage",
+          fieldKeys: [...coverageKeys, ...leftover],
+        });
+      }
+      if (opportunityKeys.length) {
+        next.push({
+          id: "opportunities",
+          label: "Opportunities",
+          fieldKeys: opportunityKeys,
+          density: sec.density,
+        });
+      }
+      return next.length > 0 ? next : [sec];
+    }),
+  });
+  return {
+    ...layout,
+    columns: [splitColumn(layout.columns[0]), splitColumn(layout.columns[1])],
+  };
+}
+
 /**
  * Contact Details / Edit Layout default — two even columns.
- * Left: identity + address + marital. Right: prefs, life events, coverage, cross-sell, owners, lead source.
+ * Left: identity + address + marital. Right: prefs, Coverage, Opportunities, lead source.
+ * Coverage / Opportunities belong on Contact (household book + cross-sell), not Policy.
  */
 export function contactCardLayout(): FieldLayout {
   return twoCol(
@@ -187,13 +257,8 @@ export function contactCardLayout(): FieldLayout {
         "preferred_contact_method",
         "preferred_contact_time",
       ]),
-      section("opportunities", "Coverage & Opportunities", [
-        "recent_life_events",
-        "existing_coverage_types",
-        "cross_selling_opportunity",
-        "is_homeowner",
-        "is_business_owner",
-      ]),
+      section("coverage", "Coverage", [...CONTACT_COVERAGE_FIELD_KEYS]),
+      section("opportunities", "Opportunities", [...CONTACT_OPPORTUNITY_FIELD_KEYS]),
       section("intake", "Lead Source", ["source", "referral"]),
     ],
   );

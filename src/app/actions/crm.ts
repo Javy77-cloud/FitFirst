@@ -37,6 +37,7 @@ import {
 import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-deal-write";
 import { requireInsertedRisk } from "@/lib/deals/ensure-risk";
 import { assertAnaUnbound } from "@/lib/crm/bind-path";
+import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices";
 import { formatPersonName } from "@/lib/crm/display";
 import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
 import { splitTypedPartyName } from "@/lib/crm/party-typeahead";
@@ -752,6 +753,7 @@ export async function createDeal(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/deals");
   revalidatePath(`/deals/${deal.id}`);
+  scheduleContactCoverageNotices(deal.contactId);
   flashAction(`/deals/${deal.id}?saved=1&tab=details&line=${quotingLine}`, "deal-saved");
 }
 
@@ -886,6 +888,7 @@ export async function updateDealStage(formData: FormData) {
     createTask: false,
   });
   revalidateCrm([`/deals/${dealId}`]);
+  scheduleContactCoverageNotices(deal.contactId);
 }
 
 export async function createPipelineStage(formData: FormData) {
@@ -1762,6 +1765,7 @@ export async function bindDeal(formData: FormData) {
   revalidatePath("/contacts");
   revalidatePath("/accounts");
   revalidatePath(`/deals/${dealId}`);
+  scheduleContactCoverageNotices(contactId);
   redirect(`/policies/${policy.id}`);
 }
 

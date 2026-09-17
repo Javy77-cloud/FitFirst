@@ -23,6 +23,7 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { withHistoryDefaults } from "@/lib/policy/change-log";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
 import { flashAction } from "@/lib/flash-action";
+import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices";
 import { isPolicySensitiveInlineKey, sensitiveFieldConfirmCopy } from "@/lib/policy/sensitive-fields";
 import { getAllowPolicyLabelOverride } from "@/lib/policy/auto-label-prefs";
 import { splitPremisesAddress, streetOnlyPremises } from "@/lib/policy/premises";
@@ -151,6 +152,7 @@ export async function updatePolicyRecord(formData: FormData) {
   revalidatePath(`/policies/${id}`);
   revalidatePath("/policies");
   revalidatePath("/tasks");
+  scheduleContactCoverageNotices(existing.contactId);
   flashAction(`/policies/${id}`, "policy-saved");
 }
 
