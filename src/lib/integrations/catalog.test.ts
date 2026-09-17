@@ -47,9 +47,11 @@ describe("integrations catalog", () => {
       "phone_sms",
       "esign",
       "rater",
+      "health_enrollment",
       "campaigns",
       "video",
     ]);
+    expect(ids).toEqual(expect.arrayContaining(["healthsherpa_medicare", "healthsherpa_aca"]));
     expect(CONNECT_HUB_SECTIONS.map((section) => section.id)).toEqual([
       "inbox",
       "social",

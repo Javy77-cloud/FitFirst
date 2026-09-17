@@ -68,5 +68,13 @@ describe("developer API usage tiles", () => {
     expect(fl).toMatch(/noteDeveloperApiCall\("florida_property"\)/);
     expect(mapbox.indexOf("await fetchImpl")).toBeLessThan(mapbox.indexOf('noteDeveloperApiCall("mapbox")'));
     expect(gpd.indexOf("await fetchImpl")).toBeLessThan(gpd.indexOf('noteDeveloperApiCall("getparceldata")'));
+    const hsMedicare = readFileSync("src/lib/healthsherpa/client.ts", "utf8");
+    const hsAca = readFileSync("src/lib/healthsherpa/aca.ts", "utf8");
+    expect(hsMedicare).toMatch(/noteDeveloperApiCall\("healthsherpa_medicare"\)/);
+    expect(hsAca).toMatch(/noteDeveloperApiCall\("healthsherpa_aca"\)/);
+    expect(hsMedicare.indexOf("await fetchImpl")).toBeLessThan(
+      hsMedicare.indexOf('noteDeveloperApiCall("healthsherpa_medicare")'),
+    );
+    expect(hsAca.indexOf("await fetchImpl")).toBeLessThan(hsAca.indexOf('noteDeveloperApiCall("healthsherpa_aca")'));
   });
 });

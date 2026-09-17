@@ -6,17 +6,26 @@ import {
   loadGetParcelDataPublicStatus,
   loadPermitStackPublicStatus,
 } from "@/lib/developer/vault";
+import {
+  loadHealthSherpaAcaPublicStatus,
+  loadHealthSherpaInboundPublicStatus,
+  loadHealthSherpaMedicarePublicStatus,
+} from "@/lib/healthsherpa/vault";
 import { NHTSA_VPIC_SETTINGS_NOTE } from "@/lib/vin-decode";
 
 export const dynamic = "force-dynamic";
 
 export default async function DeveloperApiVaultPage() {
   const session = await requireAdminOrDeveloperPage();
-  const [fedex, getParcelData, permitStack] = await Promise.all([
-    loadFedExPublicStatus(),
-    loadGetParcelDataPublicStatus(),
-    loadPermitStackPublicStatus(),
-  ]);
+  const [fedex, getParcelData, permitStack, healthSherpaMedicare, healthSherpaAca, healthSherpaInbound] =
+    await Promise.all([
+      loadFedExPublicStatus(),
+      loadGetParcelDataPublicStatus(),
+      loadPermitStackPublicStatus(),
+      loadHealthSherpaMedicarePublicStatus(),
+      loadHealthSherpaAcaPublicStatus(),
+      loadHealthSherpaInboundPublicStatus(),
+    ]);
 
   return (
     <SettingsShell title="API vault" current="api-vault">
@@ -30,6 +39,9 @@ export default async function DeveloperApiVaultPage() {
         fedex={fedex}
         getParcelData={getParcelData}
         permitStack={permitStack}
+        healthSherpaMedicare={healthSherpaMedicare}
+        healthSherpaAca={healthSherpaAca}
+        healthSherpaInbound={healthSherpaInbound}
       />
       <p className="mt-4 max-w-3xl text-sm text-muted-foreground" data-ff-nhtsa-vpic-note="">
         {NHTSA_VPIC_SETTINGS_NOTE}

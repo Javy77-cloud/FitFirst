@@ -63,6 +63,7 @@ export const KEEP_TABLES = new Set([
   "developer_webhook_deliveries",
   "developer_inbound_hooks",
   "developer_inbound_payloads",
+  "healthsherpa_enrollments",
   "developer_connections",
   "desk_macros",
   "desk_macro_runs",

@@ -30,6 +30,7 @@ export function DocumentsPanel({
   needsReapprove = false,
   hasRequestedQuotes = false,
   productId,
+  healthSherpa,
 }: {
   dealId: string;
   riskId: string;
@@ -49,6 +50,10 @@ export function DocumentsPanel({
   needsReapprove?: boolean;
   hasRequestedQuotes?: boolean;
   productId?: string | null;
+  healthSherpa?: {
+    medicareReady: boolean;
+    acaReady: boolean;
+  };
 }) {
   const sourceDocs = asList(docs).filter(
     (d) =>
@@ -114,6 +119,7 @@ export function DocumentsPanel({
           needsReapprove={needsReapprove}
           hasRequestedQuotes={hasRequestedQuotes}
           productId={productId}
+          healthSherpa={healthSherpa}
         />
         {health ? (
           <p className="text-helper text-muted-foreground">

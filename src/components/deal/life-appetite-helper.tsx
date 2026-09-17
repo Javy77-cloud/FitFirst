@@ -130,12 +130,15 @@ export function LifeAppetiteHelper({
   );
 }
 
-export function HealthMarketsEmpty() {
+export function HealthMarketsEmpty({ usingHealthSherpa = false }: { usingHealthSherpa?: boolean }) {
   return (
     <section className="ff-card space-y-2 p-4" data-ff-health-markets="" data-ff-health-markets-empty="">
       <h3 className="text-sm font-semibold text-navy">Health Markets</h3>
       <p className="text-sm text-muted-foreground">
         Appetite only — no rate pull. There is no Health UW matrix loaded, so this tab stays empty.
+        {usingHealthSherpa
+          ? " Using HealthSherpa: quote in HealthSherpa, not this Markets tab. Dental / Vision / Short-term stay manual."
+          : null}
       </p>
     </section>
   );

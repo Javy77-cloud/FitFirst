@@ -20,6 +20,14 @@ import { RepeatableUnitBlocks } from "@/components/deal/repeatable-unit-blocks";
 import { fieldsForLine, groupFields, sheetFieldIsVisible, sheetGroupIsVisible } from "@/lib/quote-sheet/catalog";
 import { parseSheetProduct } from "@/lib/quote-sheet/products";
 import { RISK_PROFILE_LABEL, SAVE_RISK_PROFILE_LABEL } from "@/lib/quote-sheet/risk-profile-copy";
+import { HealthSherpaHandoff } from "@/components/deal/healthsherpa-handoff";
+import { HEALTHSHERPA_MANUAL_LINES_NOTE, HEALTHSHERPA_SKIP_REKEY } from "@/lib/healthsherpa/copy";
+import {
+  healthSherpaCollapsibleGroups,
+  healthSherpaProductForPlan,
+  isUsingHealthSherpa,
+  USING_HEALTHSHERPA_KEY,
+} from "@/lib/healthsherpa/sheet";
 import type { QuoteFieldDef } from "@/lib/quote-sheet/applicant-core";
 import { cascadeParentKeys, joinChipList, parseChipList } from "@/lib/quote-sheet/sheet-visibility";
 import type { ShopLine } from "@/lib/domain";
@@ -85,6 +93,7 @@ export function MasterSheetWorkspace({
   needsReapprove = false,
   hasRequestedQuotes = false,
   productId,
+  healthSherpa,
 }: {
   dealId: string;
   line: ShopLine;
@@ -99,6 +108,10 @@ export function MasterSheetWorkspace({
   needsReapprove?: boolean;
   hasRequestedQuotes?: boolean;
   productId?: string | null;
+  healthSherpa?: {
+    medicareReady: boolean;
+    acaReady: boolean;
+  };
 }) {
   const router = useRouter();
 
@@ -133,6 +146,7 @@ export function MasterSheetWorkspace({
         formId={MASTER_SHEET_FORM_ID}
         persistSheet={() => persistSheet()}
         hasCoApplicantFlag={hasCoApplicantFlag}
+        healthSherpa={healthSherpa}
       />
       <SheetApproveGate
         dealId={dealId}
@@ -159,6 +173,7 @@ export function MasterSheetCompare({
   formId = MASTER_SHEET_FORM_ID,
   persistSheet,
   hasCoApplicantFlag,
+  healthSherpa,
 }: {
   dealId: string;
   line: ShopLine;
@@ -169,6 +184,10 @@ export function MasterSheetCompare({
   formId?: string;
   persistSheet?: () => Promise<void>;
   hasCoApplicantFlag?: string | null;
+  healthSherpa?: {
+    medicareReady: boolean;
+    acaReady: boolean;
+  };
 }) {
   const product = parseSheetProduct(productParam ?? values.sheet_product?.value, line);
   const catalog = asList(fieldsForLine(line, product));
@@ -176,6 +195,8 @@ export function MasterSheetCompare({
   const [density, setDensity] = useState<SectionDensity>(DEFAULT_RISK_PROFILE_DENSITY);
   const [liveValues, setLiveValues] = useState(() => sheetValuesToLive(values));
   const groups = asList(groupFields(line, product, liveValues));
+  const usingHealthSherpa = line === "health" && isUsingHealthSherpa(liveValues[USING_HEALTHSHERPA_KEY]);
+  const healthPlanType = liveValues.plan_type ?? values.plan_type?.value ?? "";
   const extractedByKey = new Map(asList(fields).map((field) => [field.fieldKey, field]));
   const filled = catalog.filter((field) => {
     const cell = values[field.key];
@@ -231,6 +252,21 @@ export function MasterSheetCompare({
               Empty before extraction. Type a value or confirm what the source pulled.
               {filled === 0 ? " Fields start blank." : ` ${filled} filled.`}
             </p>
+            {line === "health" ? (
+              <label className="mt-2 inline-flex items-center gap-2 text-xs text-navy" data-ff-using-healthsherpa="">
+                <input
+                  type="checkbox"
+                  checked={usingHealthSherpa}
+                  onChange={(event) =>
+                    setLiveValues((prev) => ({
+                      ...prev,
+                      [USING_HEALTHSHERPA_KEY]: event.target.checked ? "yes" : "no",
+                    }))
+                  }
+                />
+                Using HealthSherpa
+              </label>
+            ) : null}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
             <SectionDensityControl
@@ -240,6 +276,15 @@ export function MasterSheetCompare({
             />
             <MasterSheetAddressLinks values={values} />
             <MasterSheetFillButton dealId={dealId} line={line} />
+            {line === "health" ? (
+              <HealthSherpaHandoff
+                dealId={dealId}
+                planType={healthPlanType}
+                usingHealthSherpa={usingHealthSherpa}
+                medicareReady={Boolean(healthSherpa?.medicareReady)}
+                acaReady={Boolean(healthSherpa?.acaReady)}
+              />
+            ) : null}
             <span className="sr-only" data-ff-master-source-docs={sourceDocCount} />
           </div>
         </div>
@@ -257,6 +302,9 @@ export function MasterSheetCompare({
       >
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="line" value={line} />
+        {line === "health" ? (
+          <input type="hidden" name={USING_HEALTHSHERPA_KEY} value={usingHealthSherpa ? "yes" : "no"} />
+        ) : null}
         <input type="hidden" name="sheet_product" value={product} />
         <input
           type="hidden"
@@ -330,6 +378,7 @@ export function MasterSheetCompare({
                   setLiveValues((prev) => ({ ...prev, [key]: next }))
                 }
                 extractedByKey={extractedByKey}
+                usingHealthSherpa={usingHealthSherpa}
               />
             );
           })}
@@ -354,6 +403,7 @@ function SheetGroup({
   cascadeKeys,
   density,
   onLiveChange,
+  usingHealthSherpa = false,
 }: {
   title: string;
   dealId: string;
@@ -365,11 +415,76 @@ function SheetGroup({
   density: SectionDensity;
   onLiveChange: (key: string, next: string) => void;
   extractedByKey: Map<string, ExtractedFieldRow>;
+  usingHealthSherpa?: boolean;
 }) {
-  const rows = asList(groupFields);
+  const rows = asList(groupFields).filter((field) => field.key !== USING_HEALTHSHERPA_KEY);
   const groupVisible = sheetGroupIsVisible(rows, liveValues);
   const visibleFields = rows.filter((field) => groupVisible && sheetFieldIsVisible(field, liveValues));
   const hiddenFields = rows.filter((field) => !groupVisible || !sheetFieldIsVisible(field, liveValues));
+  const collapsible = usingHealthSherpa && healthSherpaCollapsibleGroups(true).has(title);
+  const header = groupVisible ? (
+    <div className={sheetGroupHeaderClass(title)} style={SHEET_GROUP_HEADER_STYLE} data-ff-sheet-group-header={title}>
+      {title}
+      {collapsible ? (
+        <span className="ml-2 text-[10px] font-normal normal-case text-muted-foreground">
+          {HEALTHSHERPA_SKIP_REKEY}
+        </span>
+      ) : null}
+    </div>
+  ) : null;
+  const grid = groupVisible ? (
+    <RiskProfileFieldsGrid
+      density={density}
+      fields={visibleFields}
+      renderField={(field) => {
+        const cell = values[field.key];
+        const filled = Boolean(cell?.value.trim() && cell.status !== "missing");
+        const sourceText = (cell ? sourceTag(cell) : null) || cell?.sourceLabel || "";
+        return (
+          <RiskProfileFieldShell
+            fieldKey={field.key}
+            label={field.label}
+            field={field}
+            cascadeKey={field.showWhen ? field.showWhen.key : undefined}
+            footer={
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0 text-[9px] leading-none text-muted-foreground">
+                {sourceText ? <span data-ff-sheet-source={field.key}>{sourceText}</span> : null}
+                {cell?.status && filled ? (
+                  <span
+                    className={cn(
+                      "uppercase",
+                      cell.status === "check" && "text-fit-check",
+                      cell.status === "missing" && "text-fit-yellow",
+                      cell.status === "confirmed" && "text-fit-green",
+                    )}
+                  >
+                    {cell.status}
+                  </span>
+                ) : null}
+              </div>
+            }
+          >
+            <SheetCell
+              dealId={dealId}
+              line={line}
+              fieldKey={field.key}
+              fieldLabel={field.label}
+              input={field.input}
+              options={field.options}
+              cell={cell}
+              liveValue={liveValues[field.key] ?? cell?.value ?? ""}
+              onLiveChange={
+                cascadeKeys.has(field.key) || field.input === "chips"
+                  ? (next) => onLiveChange(field.key, next)
+                  : undefined
+              }
+            />
+          </RiskProfileFieldShell>
+        );
+      }}
+    />
+  ) : null;
+
   return (
     <div
       className={groupVisible ? "border-b border-border/70 last:border-b-0" : undefined}
@@ -377,11 +492,6 @@ function SheetGroup({
       data-ff-sheet-group-hidden={groupVisible ? undefined : "true"}
       hidden={!groupVisible}
     >
-      {groupVisible ? (
-        <div className={sheetGroupHeaderClass(title)} style={SHEET_GROUP_HEADER_STYLE} data-ff-sheet-group-header={title}>
-          {title}
-        </div>
-      ) : null}
       {hiddenFields.map((field) => (
         <input
           key={field.key}
@@ -390,58 +500,20 @@ function SheetGroup({
           value={liveValues[field.key] ?? values[field.key]?.value ?? ""}
         />
       ))}
-      {groupVisible ? (
-        <RiskProfileFieldsGrid
-          density={density}
-          fields={visibleFields}
-          renderField={(field) => {
-            const cell = values[field.key];
-            const filled = Boolean(cell?.value.trim() && cell.status !== "missing");
-            const sourceText = (cell ? sourceTag(cell) : null) || cell?.sourceLabel || "";
-            return (
-              <RiskProfileFieldShell
-                fieldKey={field.key}
-                label={field.label}
-                field={field}
-                cascadeKey={field.showWhen ? field.showWhen.key : undefined}
-                footer={
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0 text-[9px] leading-none text-muted-foreground">
-                    {sourceText ? <span data-ff-sheet-source={field.key}>{sourceText}</span> : null}
-                    {cell?.status && filled ? (
-                      <span
-                        className={cn(
-                          "uppercase",
-                          cell.status === "check" && "text-fit-check",
-                          cell.status === "missing" && "text-fit-yellow",
-                          cell.status === "confirmed" && "text-fit-green",
-                        )}
-                      >
-                        {cell.status}
-                      </span>
-                    ) : null}
-                  </div>
-                }
-              >
-                <SheetCell
-                  dealId={dealId}
-                  line={line}
-                  fieldKey={field.key}
-                  fieldLabel={field.label}
-                  input={field.input}
-                  options={field.options}
-                  cell={cell}
-                  liveValue={liveValues[field.key] ?? cell?.value ?? ""}
-                  onLiveChange={
-                    cascadeKeys.has(field.key) || field.input === "chips"
-                      ? (next) => onLiveChange(field.key, next)
-                      : undefined
-                  }
-                />
-              </RiskProfileFieldShell>
-            );
-          }}
-        />
-      ) : null}
+      {collapsible && groupVisible ? (
+        <details data-ff-healthsherpa-collapse={title}>
+          <summary className="cursor-pointer list-none">{header}</summary>
+          {healthSherpaProductForPlan(liveValues.plan_type) === "manual" ? (
+            <p className="px-3 py-1 text-[11px] text-muted-foreground">{HEALTHSHERPA_MANUAL_LINES_NOTE}</p>
+          ) : null}
+          {grid}
+        </details>
+      ) : (
+        <>
+          {header}
+          {grid}
+        </>
+      )}
     </div>
   );
 }

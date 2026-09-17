@@ -2104,7 +2104,7 @@ Top-right Home / shell **bell** (orange, next to Mail) opens a **scrollable** pa
 
 AMS desk: file endorsement / cancel / non-renew on the Policy with a clear outcome. Renewal compare shows dollar and percent premium change. Work queue lists flags, notes, assignee, and in-app pings (addressed to the assignee). Claims log is a three-column FNOL board. Commissions split pending (still owed) vs paid. Missing-data gauges link to the Quote Sheet cell.
 
-**Integrations** (`/settings/integrations`): same chrome as the catalog. Free BYO OAuth is live for Gmail, Yahoo Mail (identity), Google Calendar + Outlook Calendar (busy sync), Google Meet helper, Facebook / Instagram / LinkedIn / GBP, and DocuSign sandbox. Agency Admin controls. A solo Admin who also works the desk can connect personal Gmail. Copy is **Agency pays the vendor.** No Stripe, Twilio, Nylas, or HealthSherpa. GBP gate stays on Settings → Social. Linked from Settings.
+**Integrations** (`/settings/integrations`): same chrome as the catalog. Free BYO OAuth is live for Gmail, Yahoo Mail (identity), Google Calendar + Outlook Calendar (busy sync), Google Meet helper, Facebook / Instagram / LinkedIn / GBP, and DocuSign sandbox. Agency Admin controls. A solo Admin who also works the desk can connect personal Gmail. Copy is **Agency pays the vendor.** HealthSherpa Medicare is BYO (API vault + enrollment webhook) — FitFirst does not add a HealthSherpa fee. Marketplace / ACA stays scaffolded until partner credentials exist. No Stripe, Twilio, or Nylas. GBP gate stays on Settings → Social. Linked from Settings.
 
 ## Social BYO connect (this slice)
 

@@ -6,6 +6,8 @@ export const DEVELOPER_API_PROVIDERS = [
   "fedex",
   "getparceldata",
   "florida_property",
+  "healthsherpa_medicare",
+  "healthsherpa_aca",
 ] as const;
 
 export type DeveloperApiProvider = (typeof DEVELOPER_API_PROVIDERS)[number];
@@ -24,6 +26,8 @@ export const DEVELOPER_API_METERS: readonly DeveloperApiMeter[] = [
   { id: "fedex", label: "FedEx verify", instrumented: true },
   { id: "getparceldata", label: "GetParcelData", instrumented: true },
   { id: "florida_property", label: "FL property", instrumented: true },
+  { id: "healthsherpa_medicare", label: "HealthSherpa Medicare", instrumented: true },
+  { id: "healthsherpa_aca", label: "HealthSherpa Marketplace", instrumented: true },
   { id: "permitstack", label: "PermitStack", instrumented: false },
   { id: "vin_decode", label: "VIN decode (NHTSA)", instrumented: false },
 ];

@@ -1048,6 +1048,13 @@ function healthDependentFields(): QuoteFieldDef[] {
 /** Identity stays on Deal Details — Health Risk Profile is enrollment / quote track only. */
 export const HEALTH_FIELDS: QuoteFieldDef[] = [
   {
+    key: "using_healthsherpa",
+    label: "Using HealthSherpa",
+    group: "Coverage",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+  },
+  {
     key: "plan_type",
     label: "Coverage type",
     group: "Coverage",
@@ -1058,7 +1065,7 @@ export const HEALTH_FIELDS: QuoteFieldDef[] = [
   {
     key: "metal_level",
     label: "Metal level preference",
-    group: "Coverage",
+    group: "Marketplace",
     input: "select",
     options: [...HEALTH_METAL_LEVEL_OPTIONS],
     showWhen: MARKETPLACE_SHOW,

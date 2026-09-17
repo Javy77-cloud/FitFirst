@@ -7,6 +7,12 @@ import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import { LifeHealthQuotesPanel } from "@/components/deal/life-health-quotes-panel";
 import { HealthMarketsEmpty, LifeAppetiteHelper } from "@/components/deal/life-appetite-helper";
+import {
+  loadHealthSherpaAcaPublicStatus,
+  loadHealthSherpaMedicarePublicStatus,
+} from "@/lib/healthsherpa/vault";
+import { loadDealHealthSherpaEnrollment } from "@/lib/healthsherpa/sync";
+import { isUsingHealthSherpa } from "@/lib/healthsherpa/sheet";
 import { predictLifeAppetite } from "@/lib/life/appetite";
 import { DealMotivation } from "@/components/deal/deal-motivation";
 import { SectionTabs } from "@/components/section-tabs";
@@ -178,7 +184,7 @@ export default async function DealPage({
     letterJobs,
     boundPolicies,
   } = workspace;
-  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow, pipelines, context, agencyRow, noticePicklists, session] =
+  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow, pipelines, context, agencyRow, noticePicklists, session, hsMedicare, hsAca, hsEnrollment] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
       listEnabledScriptsFor("deals", "edit"),
@@ -212,6 +218,9 @@ export default async function DealPage({
         .then((rows) => rows[0] ?? null),
       listFieldPicklists().catch(() => []),
       currentDeskSession(),
+      loadHealthSherpaMedicarePublicStatus().catch(() => ({ configured: false })),
+      loadHealthSherpaAcaPublicStatus().catch(() => ({ configured: false })),
+      loadDealHealthSherpaEnrollment(deal.id),
     ]);
   const stageView = dealStageView(
     {
@@ -905,6 +914,10 @@ export default async function DealPage({
                         needsReapprove={needsVisualReapprove}
                         hasRequestedQuotes={hasRequestedQuotes}
                         productId={activeProduct}
+                        healthSherpa={{
+                          medicareReady: Boolean(hsMedicare.configured),
+                          acaReady: Boolean(hsAca.configured),
+                        }}
                       />
                     ) : id === "markets" ? (
                       <div className="space-y-3">
@@ -919,7 +932,9 @@ export default async function DealPage({
                             thin={lifeAppetite.thin}
                           />
                         ) : sheetLine === "health" ? (
-                          <HealthMarketsEmpty />
+                          <HealthMarketsEmpty
+                            usingHealthSherpa={isUsingHealthSherpa(activeSheet.values.using_healthsherpa?.value)}
+                          />
                         ) : (
                       <MarketsPanel
                         key={agentMarketsAction ? `markets-${activeSheet.id}` : "markets-empty"}
@@ -974,6 +989,16 @@ export default async function DealPage({
                           };
                         })()}
                         autoIssue={issue === "1"}
+                        healthSherpaEnrollment={
+                          sheetLine === "health" && hsEnrollment
+                            ? {
+                                confirmationNumber: hsEnrollment.confirmationNumber,
+                                event: hsEnrollment.event,
+                                product: hsEnrollment.product,
+                                policyId: hsEnrollment.policyId,
+                              }
+                            : null
+                        }
                       />
                     ) : (
                       <QuotesPanel
