@@ -5,21 +5,17 @@ import { mapboxAutocompleteEnabled } from "@/lib/mapbox/client";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const autocomplete = mapboxAutocompleteEnabled();
+  let verify = false;
   try {
-    const autocomplete = mapboxAutocompleteEnabled();
-    const verify = await fedexAddressEnabled();
-    return NextResponse.json({
-      enabled: autocomplete,
-      verifyEnabled: verify,
-      autocomplete: autocomplete ? "mapbox" : null,
-      verify: verify ? "fedex" : null,
-    });
+    verify = await fedexAddressEnabled();
   } catch {
-    return NextResponse.json({
-      enabled: false,
-      verifyEnabled: false,
-      autocomplete: null,
-      verify: null,
-    });
+    verify = false;
   }
+  return NextResponse.json({
+    enabled: autocomplete,
+    verifyEnabled: verify,
+    autocomplete: autocomplete ? "mapbox" : null,
+    verify: verify ? "fedex" : null,
+  });
 }

@@ -77,4 +77,33 @@ describe("address fill helpers", () => {
       contact_mailing_county: "Brevard",
     });
   });
+
+  it("patches renamed insured siblings from the live section keys", () => {
+    const address = {
+      street: "412 Harbor Isle Dr",
+      city: "Melbourne",
+      state: "FL",
+      zip: "32935",
+      county: "Brevard",
+      country: "US",
+    };
+    expect(
+      siblingPatchFromAddress(
+        addressFillNames("insured_street", "field_insured_street", [
+          "insured_street",
+          "insured_city",
+          "insured_state",
+          "insured_zip",
+        ]),
+        address,
+        "field_insured_street",
+      ),
+    ).toEqual({
+      insured_street: "412 Harbor Isle Dr",
+      insured_city: "Melbourne",
+      insured_state: "FL",
+      insured_zip: "32935",
+      county: "Brevard",
+    });
+  });
 });

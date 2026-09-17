@@ -105,6 +105,8 @@ describe("Admin vs Agent capabilities", () => {
     expect(isPublicPath("/ff-softphone.js")).toBe(true);
     expect(isPublicPath("/")).toBe(false);
     expect(isPublicPath("/settings")).toBe(false);
+    expect(isPublicPath("/api/address/status")).toBe(false);
+    expect(isPublicPath("/api/address/suggest")).toBe(false);
     expect(adminRedirectPath()).toContain("admin-only");
   });
 });

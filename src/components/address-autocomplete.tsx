@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { mergeParsedAddress } from "@/lib/address/fill";
-import { addressFillForKey, qualifyAddressFill } from "@/lib/address/keys";
+import { mergeParsedAddress, siblingKeysFromScope } from "@/lib/address/fill";
+import { addressFillForKey, addressFillNames, qualifyAddressFill } from "@/lib/address/keys";
 import { addressFingerprint, parseAddressLine } from "@/lib/address/compare";
 import {
   addressIsComplete,
@@ -109,6 +110,7 @@ function readNamed(root: ParentNode | null, name: string | undefined): string {
 export function AddressAutocomplete({
   name,
   id,
+  value,
   defaultValue,
   required,
   placeholder = "Start typing a street address",
@@ -124,6 +126,7 @@ export function AddressAutocomplete({
 }: {
   name: string;
   id?: string;
+  value?: string;
   defaultValue?: string | null;
   required?: boolean;
   placeholder?: string;
@@ -141,10 +144,13 @@ export function AddressAutocomplete({
   const inputId = id ?? `addr-${reactId}`;
   const inputRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const lastVerifySig = useRef("");
   const runVerifyRef = useRef<(reason: "button" | "blur" | "confirm") => void>(() => {});
+  const isControlled = value !== undefined;
   const resolvedFill = qualifyAddressFill(fill ?? addressFillForKey(name), name);
-  const [query, setQuery] = useState(defaultValue ?? "");
+  const [query, setQuery] = useState(value ?? defaultValue ?? "");
+  const [menuBox, setMenuBox] = useState<{ top: number; left: number; width: number } | null>(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [enabled, setEnabled] = useState(false);
@@ -155,17 +161,18 @@ export function AddressAutocomplete({
   const [suggested, setSuggested] = useState<ParsedAddress | null>(null);
 
   useEffect(() => {
+    if (isControlled) return;
     setQuery(defaultValue ?? "");
-  }, [defaultValue]);
+  }, [defaultValue, isControlled]);
 
   useEffect(() => {
     let cancelled = false;
-    void fetch("/api/address/status")
-      .then(
-        (res) =>
-          res.json() as Promise<{ enabled?: boolean; verifyEnabled?: boolean; autocomplete?: string | null }>,
-      )
-      .then((data) => {
+    void fetch("/api/address/status", { credentials: "same-origin" })
+      .then(async (res) => {
+        const data = (await res.json().catch(() => ({}))) as {
+          enabled?: boolean;
+          verifyEnabled?: boolean;
+        };
         if (cancelled) return;
         setEnabled(Boolean(data.enabled));
         setVerifyEnabled(Boolean(data.verifyEnabled));
@@ -193,8 +200,13 @@ export function AddressAutocomplete({
     const handle = window.setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/address/suggest?q=${encodeURIComponent(q)}`);
-        const data = (await res.json()) as { suggestions?: AddressSuggestion[]; enabled?: boolean };
+        const res = await fetch(`/api/address/suggest?q=${encodeURIComponent(q)}`, {
+          credentials: "same-origin",
+        });
+        const data = (await res.json().catch(() => ({}))) as {
+          suggestions?: AddressSuggestion[];
+          enabled?: boolean;
+        };
         setEnabled(data.enabled !== false);
         setSuggestions(data.suggestions ?? []);
         setOpen(Boolean(data.suggestions?.length));
@@ -209,11 +221,33 @@ export function AddressAutocomplete({
 
   useEffect(() => {
     function onDoc(ev: MouseEvent) {
-      if (!boxRef.current?.contains(ev.target as Node)) setOpen(false);
+      const target = ev.target as Node;
+      if (boxRef.current?.contains(target) || listRef.current?.contains(target)) return;
+      setOpen(false);
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
+
+  useEffect(() => {
+    if (!open || suggestions.length === 0) {
+      setMenuBox(null);
+      return;
+    }
+    function place() {
+      const el = inputRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setMenuBox({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    }
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open, suggestions.length, isControlled ? value : query]);
 
   useEffect(() => {
     const formEl = inputRef.current?.form;
@@ -249,15 +283,30 @@ export function AddressAutocomplete({
     return section ?? hostForm() ?? (typeof document !== "undefined" ? document : null);
   }
 
+  function activeFill(): AddressFillMap {
+    const discovered = addressFillNames(name, name, siblingKeysFromScope(fillScope()));
+    return {
+      city: discovered.city || resolvedFill.city,
+      state: discovered.state || resolvedFill.state,
+      zip: discovered.zip || resolvedFill.zip,
+      county: discovered.county || resolvedFill.county,
+    };
+  }
+
+  function streetText(): string {
+    return (isControlled ? (value ?? "") : query).trim();
+  }
+
   function readBlock(): ParsedAddress {
     const formEl = hostForm();
+    const fill = activeFill();
     const root: ParentNode | null = formEl ?? boxRef.current?.closest("[data-ff-address-fieldset]") ?? document;
     const fromSiblings: ParsedAddress = {
-      street: query.trim(),
-      city: readNamed(root, resolvedFill.city),
-      state: readNamed(root, resolvedFill.state),
-      zip: readNamed(root, resolvedFill.zip),
-      county: readNamed(root, resolvedFill.county),
+      street: streetText(),
+      city: readNamed(root, fill.city),
+      state: readNamed(root, fill.state),
+      zip: readNamed(root, fill.zip),
+      county: readNamed(root, fill.county),
       country: "US",
     };
     if (addressIsComplete(fromSiblings)) return fromSiblings;
@@ -327,14 +376,19 @@ export function AddressAutocomplete({
     const next = composeOnConfirm ? formatAddressLine({ ...merged, street }) || fallbackLabel : street;
     setQuery(next);
     setConfirmed(addressIsComplete(merged) || Boolean(street));
-    if (inputRef.current) inputRef.current.value = next;
-    const scope = fillScope();
-    writeSibling(scope, resolvedFill.city, merged.city);
-    writeSibling(scope, resolvedFill.state, merged.state);
-    writeSibling(scope, resolvedFill.zip, merged.zip);
-    writeSibling(scope, resolvedFill.county, merged.county);
+    if (inputRef.current && !isControlled) inputRef.current.value = next;
+    const fill = activeFill();
+    // React-owned Deal Details / builder: one liveValues patch. DOM writes race
+    // controlled city/state/ZIP and can wipe the pick on the next render.
     onConfirm?.(merged);
     onChange?.(next);
+    if (!onConfirm) {
+      const scope = fillScope();
+      writeSibling(scope, fill.city, merged.city);
+      writeSibling(scope, fill.state, merged.state);
+      writeSibling(scope, fill.zip, merged.zip);
+      writeSibling(scope, fill.county, merged.county);
+    }
   }
 
   function choose(item: AddressSuggestion) {
@@ -371,7 +425,7 @@ export function AddressAutocomplete({
         id={inputId}
         name={name}
         form={form}
-        value={query}
+        value={isControlled ? (value ?? "") : query}
         required={required}
         disabled={disabled}
         readOnly={readOnly}
@@ -399,26 +453,33 @@ export function AddressAutocomplete({
         }}
       />
       <input type="hidden" name={`${name}__confirmed`} form={form} value={confirmed ? "1" : ""} />
-      {open && suggestions.length > 0 ? (
-        <ul
-          role="listbox"
-          data-ff-address-suggestions
-          className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-md border border-border bg-card py-1 text-sm shadow-md"
-        >
-          {suggestions.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                className="w-full px-2.5 py-1.5 text-left text-navy hover:bg-muted"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => choose(item)}
-              >
-                {item.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      {open && suggestions.length > 0 && menuBox && typeof document !== "undefined"
+        ? createPortal(
+            <ul
+              ref={listRef}
+              role="listbox"
+              data-ff-address-suggestions
+              className="fixed z-[400] max-h-56 overflow-auto rounded-md border border-border bg-card py-1 text-sm shadow-md"
+              style={{ top: menuBox.top, left: menuBox.left, width: menuBox.width }}
+            >
+              {suggestions.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    className="w-full px-2.5 py-1.5 text-left text-navy hover:bg-muted"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      choose(item);
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                </li>
+              ))}
+            </ul>,
+            document.body,
+          )
+        : null}
       {loading ? <p className="mt-0.5 text-[10px] text-muted-foreground">Looking up addresses…</p> : null}
       <div className="mt-0.5 flex flex-wrap items-center gap-1.5" data-ff-address-toolbar>
         {verifyEnabled && !readOnly && !disabled ? (

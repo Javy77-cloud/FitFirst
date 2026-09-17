@@ -63,6 +63,7 @@ export function FieldControl({
   onMultiSelectChange,
   onValueChange,
   onAddressFill,
+  siblingKeys,
 }: {
   field: CustomFieldDef;
   value: string;
@@ -70,6 +71,7 @@ export function FieldControl({
   name: string;
   disabled?: boolean;
   form?: string;
+  siblingKeys?: readonly string[];
   pipelineFamily?: PipelineFamily;
   quotingForm?: string | null;
   policySubType?: string | null;
@@ -123,6 +125,7 @@ export function FieldControl({
         onMultiSelectChange={onMultiSelectChange}
         onValueChange={onValueChange}
         onAddressFill={onAddressFill}
+        siblingKeys={siblingKeys}
       />
     </div>
   );
@@ -149,6 +152,7 @@ function TypedControl({
   onMultiSelectChange,
   onValueChange,
   onAddressFill,
+  siblingKeys,
 }: {
   field: CustomFieldDef;
   value: string;
@@ -156,6 +160,7 @@ function TypedControl({
   name: string;
   disabled?: boolean;
   form?: string;
+  siblingKeys?: readonly string[];
   required: boolean;
   options: string[];
   pipelineFamily?: PipelineFamily;
@@ -385,11 +390,12 @@ function TypedControl({
     );
   }
   if (field.type === "address" || isStreetAddressField(field.key, field.type)) {
-    const fill = addressFillNames(field.key, name);
+    const fill = addressFillNames(field.key, name, siblingKeys);
     return (
       <AddressAutocomplete
         id={name}
         name={name}
+        value={onValueChange ? value : undefined}
         defaultValue={value}
         disabled={disabled}
         required={required}

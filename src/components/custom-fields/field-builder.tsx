@@ -250,6 +250,21 @@ export function FieldBuilder({
     });
   }
 
+  function patchPreviewValues(parts: Record<string, string>) {
+    setLiveValues((prev) => {
+      const updated: Record<string, string> = { ...prev };
+      for (const [key, next] of Object.entries(parts)) {
+        if (!key || !next) continue;
+        updated[key] = next;
+        if (isIndustryCascadeParent(key)) {
+          const child = key.replace(/_industry$/, "_occupation");
+          updated[child] = occupationValueAfterIndustryChange(next, updated[child]);
+        }
+      }
+      return updated;
+    });
+  }
+
   function onDragStart(payload: DragPayload, event: React.DragEvent) {
     event.stopPropagation();
     dragRef.current = payload;
@@ -742,6 +757,8 @@ export function FieldBuilder({
                               dragging={drag?.kind === "field" && drag.key === key}
                               values={liveValues}
                               onValueChange={(next) => patchPreviewValue(key, next)}
+                              onAddressFill={patchPreviewValues}
+                              siblingKeys={asList(section.fieldKeys)}
                               onDragStart={(event) => onDragStart({ kind: "field", key }, event)}
                               onPointerDown={(event) => beginPointerDrag({ kind: "field", key }, event)}
                               onDragOver={(event) => {
@@ -833,6 +850,8 @@ function BuilderFieldRow({
   dragging,
   values,
   onValueChange,
+  onAddressFill,
+  siblingKeys,
   onDragStart,
   onPointerDown,
   onDragOver,
@@ -848,6 +867,8 @@ function BuilderFieldRow({
   dragging?: boolean;
   values: Record<string, string>;
   onValueChange?: (value: string) => void;
+  onAddressFill?: (parts: Record<string, string>) => void;
+  siblingKeys?: readonly string[];
   onDragStart: (event: React.DragEvent) => void;
   onPointerDown: (event: React.PointerEvent) => void;
   onDragOver: (event: React.DragEvent) => void;
@@ -882,6 +903,8 @@ function BuilderFieldRow({
           values={values}
           name={`preview_${field.key}`}
           onValueChange={onValueChange}
+          onAddressFill={onAddressFill}
+          siblingKeys={siblingKeys}
         />
       </div>
     );

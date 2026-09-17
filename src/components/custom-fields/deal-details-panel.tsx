@@ -103,6 +103,7 @@ function CoApplicantDealSection({
   lineSettings,
   onValueChange,
   onValuesPatch,
+  siblingKeys,
 }: {
   sectionLabel: string;
   quoteReq: boolean;
@@ -124,6 +125,7 @@ function CoApplicantDealSection({
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   onValueChange?: (key: string, value: string) => void;
   onValuesPatch?: (parts: Record<string, string>) => void;
+  siblingKeys?: readonly string[];
 }) {
   const initialOn = useMemo(() => isCoApplicantEnabled(values), [values]);
   const [enabled, setEnabled] = useState(initialOn);
@@ -193,6 +195,7 @@ function CoApplicantDealSection({
               lineSettings={lineSettings}
               onValueChange={onValueChange}
               onValuesPatch={onValuesPatch}
+              siblingKeys={siblingKeys ?? visibleKeys}
             />
           )}
         />
@@ -218,6 +221,7 @@ function DealDetailsField({
   lineSettings,
   onValueChange,
   onValuesPatch,
+  siblingKeys,
 }: {
   fieldKey: string;
   field: CustomFieldDef;
@@ -235,6 +239,7 @@ function DealDetailsField({
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   onValueChange?: (key: string, value: string) => void;
   onValuesPatch?: (parts: Record<string, string>) => void;
+  siblingKeys?: readonly string[];
 }) {
   return (
     <div className="space-y-1" data-ff-deal-field={fieldKey}>
@@ -260,6 +265,7 @@ function DealDetailsField({
         lineSettings={lineSettings}
         onValueChange={(next) => onValueChange?.(fieldKey, next)}
         onAddressFill={(parts) => onValuesPatch?.(parts)}
+        siblingKeys={siblingKeys}
       />
       {field.type === "image" ? <DealFieldImageUpload dealId={dealId} fieldKey={fieldKey} /> : null}
     </div>
@@ -442,6 +448,7 @@ export function DealDetailsPanel({
                     lineSettings={lineSettings}
                     onValueChange={patchValue}
                     onValuesPatch={patchValues}
+                    siblingKeys={sectionKeys}
                   />
                 );
               }
@@ -505,6 +512,7 @@ export function DealDetailsPanel({
                         lineSettings={lineSettings}
                         onValueChange={patchValue}
                         onValuesPatch={patchValues}
+                        siblingKeys={sectionKeys}
                       />
                     )}
                   />

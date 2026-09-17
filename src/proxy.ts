@@ -50,6 +50,12 @@ export function proxy(request: NextRequest) {
   const role = request.cookies.get(SESSION_COOKIES.role)?.value ?? request.cookies.get(SESSION_COOKIES.actor)?.value;
   const mfa = request.cookies.get(SESSION_COOKIES.mfa)?.value;
   if (!userId) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: "unauthorized", enabled: false, verifyEnabled: false, suggestions: [] },
+        { status: 401 },
+      );
+    }
     const pending = request.cookies.get(SESSION_COOKIES.mfaPending)?.value;
     const dest = request.nextUrl.clone();
     if (pending) {

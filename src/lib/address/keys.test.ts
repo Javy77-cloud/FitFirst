@@ -59,6 +59,44 @@ describe("shared address keys", () => {
     });
   });
 
+  it("prefers section siblings so mailing does not write insured city/state/ZIP", () => {
+    const mixed = [
+      "mailing_address",
+      "city",
+      "state",
+      "zip",
+      "contact_mailing_address",
+      "contact_mailing_city",
+      "contact_mailing_state",
+      "contact_mailing_zip",
+    ];
+    expect(addressFillNames("mailing_address", "field_mailing_address", mixed)).toEqual({
+      city: "field_city",
+      state: "field_state",
+      zip: "field_zip",
+      county: "field_county",
+    });
+    expect(addressFillNames("contact_mailing_address", "field_contact_mailing_address", mixed)).toEqual({
+      city: "field_contact_mailing_city",
+      state: "field_contact_mailing_state",
+      zip: "field_contact_mailing_zip",
+      county: "field_contact_mailing_county",
+    });
+    expect(
+      addressFillNames("property_street", "field_property_street", [
+        "property_street",
+        "insured_city",
+        "insured_state",
+        "insured_zip",
+      ]),
+    ).toEqual({
+      city: "field_insured_city",
+      state: "field_insured_state",
+      zip: "field_insured_zip",
+      county: "field_county",
+    });
+  });
+
   it("formats a confirmed line the desk can write back", () => {
     expect(
       formatAddressLine({

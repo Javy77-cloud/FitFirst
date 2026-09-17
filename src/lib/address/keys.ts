@@ -73,7 +73,52 @@ export function addressFillForKey(key: string | null | undefined): AddressFillMa
   return FILL_BY_KEY[normalizeKey(key)] ?? { city: "city", state: "state", zip: "zip", county: "county" };
 }
 
-export function addressFillNames(key: string | null | undefined, controlName?: string): AddressFillMap {
-  const fill = addressFillForKey(key ?? controlName);
+/**
+ * Prefer city / state / ZIP / county keys that actually sit next to the street
+ * field (Deal Details section, quote-sheet row). Static FILL_BY_KEY is fallback.
+ */
+export function addressFillFromSiblingKeys(
+  streetKey: string | null | undefined,
+  siblingKeys: readonly string[] | null | undefined,
+): AddressFillMap {
+  const street = normalizeKey(streetKey);
+  const streetRaw = String(streetKey ?? "").replace(/^field_/i, "");
+  const prefix = streetRaw.replace(/_?(address|street|line1|address1)$/i, "");
+  const pick = (kind: "city" | "state" | "zip" | "county"): string | undefined => {
+    const rows = (siblingKeys ?? [])
+      .map((key) => String(key ?? "").replace(/^field_/i, ""))
+      .filter((raw) => raw && normalizeKey(raw) !== street);
+    const prefixed = prefix
+      ? rows.find((raw) => raw.toLowerCase() === `${prefix.toLowerCase()}_${kind}`)
+      : undefined;
+    if (prefixed) return prefixed;
+    const re = new RegExp(`(^|_)${kind}$`, "i");
+    return rows.find((raw) => re.test(raw));
+  };
+  return {
+    city: pick("city"),
+    state: pick("state"),
+    zip: pick("zip"),
+    county: pick("county"),
+  };
+}
+
+function firstFillPart(...parts: Array<string | undefined>): string | undefined {
+  return parts.find((part) => Boolean(part && String(part).trim()));
+}
+
+export function addressFillNames(
+  key: string | null | undefined,
+  controlName?: string,
+  siblingKeys?: readonly string[] | null,
+): AddressFillMap {
+  const fromSiblings = addressFillFromSiblingKeys(key ?? controlName, siblingKeys);
+  const fallback = addressFillForKey(key ?? controlName);
+  const fill: AddressFillMap = {
+    city: firstFillPart(fromSiblings.city, fallback.city),
+    state: firstFillPart(fromSiblings.state, fallback.state),
+    zip: firstFillPart(fromSiblings.zip, fallback.zip),
+    county: firstFillPart(fromSiblings.county, fallback.county),
+  };
   return qualifyAddressFill(fill, controlName ?? key ?? "");
 }

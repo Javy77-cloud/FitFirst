@@ -27,6 +27,22 @@ export function mergeParsedAddress(
   };
 }
 
+/** Layout keys from Deal Details `data-ff-deal-field` (or control key) nodes. */
+export function siblingKeysFromScope(scope: ParentNode | null | undefined): string[] {
+  if (!scope || typeof (scope as Element).querySelectorAll !== "function") return [];
+  const nodes = (scope as Element).querySelectorAll("[data-ff-deal-field], [data-ff-control-key]");
+  const keys: string[] = [];
+  const seen = new Set<string>();
+  nodes.forEach((node) => {
+    const key =
+      node.getAttribute("data-ff-deal-field") || node.getAttribute("data-ff-control-key") || "";
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    keys.push(key);
+  });
+  return keys;
+}
+
 /** Map a confirmed address onto layout keys (city / contact_mailing_city / …). */
 export function siblingPatchFromAddress(
   fill: AddressFillMap,

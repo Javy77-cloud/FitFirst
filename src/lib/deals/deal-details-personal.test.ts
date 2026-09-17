@@ -77,6 +77,26 @@ describe("Deal Details personal / identity layout", () => {
     expect(html).toMatch(/data-ff-deal-details-save/);
   });
 
+  it("wires Mapbox fill keys for insured city/state/ZIP and mailing contact_mailing_*", () => {
+    const html = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-1",
+        line: "HO",
+        layout: defaultLayoutForLine("HO"),
+        fields: [],
+        values: { mailing_same_as_insured: "false" },
+      }),
+    );
+    expect(html).toMatch(/data-ff-deal-field="mailing_address"/);
+    expect(html).toMatch(/data-ff-address-fill-city="field_city"/);
+    expect(html).toMatch(/data-ff-address-fill-state="field_state"/);
+    expect(html).toMatch(/data-ff-address-fill-zip="field_zip"/);
+    expect(html).toMatch(/data-ff-deal-field="contact_mailing_address"/);
+    expect(html).toMatch(/data-ff-address-fill-city="field_contact_mailing_city"/);
+    expect(html).toMatch(/data-ff-address-fill-state="field_contact_mailing_state"/);
+    expect(html).toMatch(/data-ff-address-fill-zip="field_contact_mailing_zip"/);
+  });
+
   it("renders one two-column personal form with no doubled identity fields", () => {
     const html = renderToStaticMarkup(
       createElement(DealDetailsPanel, {

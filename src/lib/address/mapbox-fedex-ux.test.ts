@@ -26,6 +26,9 @@ describe("Mapbox typeahead + FedEx verify-only address UX", () => {
     expect(source("src/app/api/address/status/route.ts")).toMatch(/mapboxAutocompleteEnabled/);
     expect(source("src/app/api/address/status/route.ts")).toMatch(/fedexAddressEnabled/);
     expect(source("src/app/api/address/status/route.ts")).toMatch(/verifyEnabled/);
+    expect(source("src/app/api/address/status/route.ts")).toMatch(/let verify = false/);
+    expect(source("src/proxy.ts")).toMatch(/pathname\.startsWith\("\/api\/"\)/);
+    expect(source("src/proxy.ts")).toMatch(/status: 401/);
   });
 
   it("shows Verify address + chips on the shared control without FedEx typeahead copy", () => {
@@ -51,17 +54,21 @@ describe("Mapbox typeahead + FedEx verify-only address UX", () => {
 
   it("applies a Mapbox pick onto insured and mailing field_* siblings via React state", () => {
     const control = source("src/components/custom-fields/field-control.tsx");
-    expect(control).toMatch(/addressFillNames\(field\.key, name\)/);
+    expect(control).toMatch(/addressFillNames\(field\.key, name, siblingKeys\)/);
     expect(control).toMatch(/siblingPatchFromAddress/);
     expect(control).toMatch(/onAddressFill/);
+    expect(control).toMatch(/value=\{onValueChange \? value : undefined\}/);
     expect(control).toMatch(/onChange=\{onValueChange\}/);
     const panel = source("src/components/custom-fields/deal-details-panel.tsx");
     expect(panel).toMatch(/onAddressFill=\{\(parts\) => onValuesPatch\?\.\(parts\)\}/);
+    expect(panel).toMatch(/siblingKeys=\{sectionKeys\}/);
     expect(panel).toMatch(/function patchValues/);
     const ui = source("src/components/address-autocomplete.tsx");
     expect(ui).toMatch(/mergeParsedAddress/);
     expect(ui).toMatch(/fillScope/);
-    expect(ui).toMatch(/setNativeValue/);
+    expect(ui).toMatch(/createPortal/);
+    expect(ui).toMatch(/if \(!onConfirm\)/);
+    expect(ui).toMatch(/choose\(item\)/);
     expect(ui).toMatch(/data-ff-address-fill-city/);
     expect(ui).not.toMatch(/form\.querySelector/);
   });
