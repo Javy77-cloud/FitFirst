@@ -23,6 +23,9 @@ export function sheetFieldLayoutHint(field: QuoteFieldDef | undefined): LayoutFi
   if (field.input === "textarea" || field.input === "multiselect" || field.input === "chips") {
     return { type: "multi_line" };
   }
+  if (/(^|_)address$/.test(field.key) || field.key.includes("address")) {
+    return { type: "address" };
+  }
   if (field.options && field.options.length > 0) {
     return { type: "picklist", options: field.options };
   }

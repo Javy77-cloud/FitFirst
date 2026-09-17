@@ -148,6 +148,8 @@ describe("Risk Profile 3-col density + full labels", () => {
     expect(isShortSheetValue(byKey.address1)).toBe(false);
     expect(isCompactLayoutField("zip", sheetFieldLayoutHint(byKey.zip))).toBe(true);
     expect(sheetFieldLayoutHint(byKey.notes).type).toBe("multi_line");
+    expect(sheetFieldLayoutHint(byKey.address1).type).toBe("address");
+    expect(sheetFieldLayoutHint(byKey.mailing_address).type).toBe("address");
     expect(sheetFieldLayoutHint(byKey.pool).type).toBe("picklist");
   });
 });
