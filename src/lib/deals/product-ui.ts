@@ -7,7 +7,7 @@ export type DealFlowStepId = "create" | AgentDealTab;
 export const DEAL_SHOP_FLOW = [
   { id: "create" as const, label: "Create", hint: "Pick products — nothing saves yet" },
   { id: "details" as const, label: "Details", hint: "Shared facts, then each product" },
-  { id: "documents" as const, label: "Documents", hint: "One sheet per product line" },
+  { id: "documents" as const, label: "Documents", hint: "One Risk Profile per product line" },
   { id: "markets" as const, label: "Markets", hint: "Shop the active product" },
   { id: "quotes" as const, label: "Quotes", hint: "Compare and bind" },
 ];

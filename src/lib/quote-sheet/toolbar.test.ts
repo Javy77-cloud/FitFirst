@@ -13,8 +13,8 @@ import {
 describe("quote sheet toolbar copy", () => {
   it("uses broker language, not Super-Copy / Forms jargon", () => {
     expect(FILL_FROM_DOCS_LABEL).toBe("Fill from source docs");
-    expect(COPY_SHEET_LABEL).toBe("Copy sheet");
-    expect(SEND_FIELD_SHEET_LABEL).toBe("Send field sheet");
+    expect(COPY_SHEET_LABEL).toBe("Copy Risk Profile");
+    expect(SEND_FIELD_SHEET_LABEL).toBe("Send Risk Profile");
     expect(COPY_SHEET_HINT.toLowerCase()).toContain("clipboard");
     expect(SEND_FIELD_SHEET_HINT.toLowerCase()).toContain("fill");
     expect(FILL_FROM_DOCS_LABEL.toLowerCase()).not.toContain("super");

@@ -29,7 +29,7 @@ export function bindPathCopy(target: BindPathTarget, lineLabel = "this line"): B
       target,
       headline: "Commercial · Business + Policy",
       button: "Bind Closed Won — Business + Policy",
-      whatHappens: `One click copies the master sheet onto a Business and writes one ${lineLabel} Policy. Quotes stay on the deal. You do not retype name, EIN, or address.`,
+      whatHappens: `One click copies the Risk Profile onto a Business and writes one ${lineLabel} Policy. Quotes stay on the deal. You do not retype name, EIN, or address.`,
       partyLabel: "Business",
       policyLabel: "Policy",
     };
@@ -38,7 +38,7 @@ export function bindPathCopy(target: BindPathTarget, lineLabel = "this line"): B
     target,
     headline: "Personal · Contact + Policy",
     button: "Bind Closed Won — Contact + Policy",
-    whatHappens: `One click copies the master sheet onto a Contact and writes one ${lineLabel} Policy. Quotes stay on the deal. You do not retype name, phone, or mailing.`,
+    whatHappens: `One click copies the Risk Profile onto a Contact and writes one ${lineLabel} Policy. Quotes stay on the deal. You do not retype name, phone, or mailing.`,
     partyLabel: "Contact",
     policyLabel: "Policy",
   };

@@ -25,7 +25,7 @@ function source(file: string) {
 }
 
 describe("sep7cs one-button master sheet Fill", () => {
-  it("shows Fill Master Sheet once and drops the separate Property/Docs chips", () => {
+  it("shows Fill Risk Profile once and drops the separate Property/Docs chips", () => {
     const sheet = source("src/components/deal/master-sheet-compare.tsx");
     expect(sheet).toMatch(/MasterSheetFillButton/);
     expect(sheet).not.toMatch(/Fill from property records/);
@@ -59,7 +59,7 @@ describe("sep7cs one-button master sheet Fill", () => {
     );
     expect(html).toContain(FILL_MASTER_SHEET_LABEL);
     expect(html).toContain('data-ff-fill-master-sheet=""');
-    expect(html.match(/Fill Master Sheet/g)?.length).toBe(1);
+    expect(html.match(/Fill Risk Profile/g)?.length).toBe(1);
     expect(html).not.toContain("Fill from property records");
     expect(html).not.toContain("Fill from source");
   });

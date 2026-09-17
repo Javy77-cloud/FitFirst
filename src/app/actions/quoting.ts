@@ -190,7 +190,7 @@ export async function logAppetiteResult(formData: FormData) {
   const deal = await loadDeal(dealId);
   if (!deal) throw new Error("Deal not found.");
   if (!quotingUnlockedForDeal(deal)) {
-    throw new Error("Approve the master sheet before logging quote results.");
+    throw new Error("Approve the Risk Profile before logging quote results.");
   }
   if (!carrierId) throw new Error("Pick a carrier.");
   if (!isAppetiteCaptureResult(result)) {

@@ -228,7 +228,7 @@ export async function shopDealQuotes(
       ),
     );
   if (!quotingUnlockedForLine({ deal, sheet: lineSheet })) {
-    throw new Error("Approve the master sheet before shopping markets.");
+    throw new Error("Approve the Risk Profile before shopping markets.");
   }
 
   const rules = await db

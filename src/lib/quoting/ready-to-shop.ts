@@ -63,7 +63,7 @@ export function readyToShopCue(input: {
     return {
       kind: "need_line",
       title: "Choose the quoting line",
-      body: "Pick HO3 (or the matching line) so Fill master sheet knows which worksheet to write.",
+      body: "Pick HO3 (or the matching line) so Fill Risk Profile knows which worksheet to write.",
       tone: "warn",
       fillStep,
     };
@@ -72,7 +72,7 @@ export function readyToShopCue(input: {
   if (!input.fillFinished) {
     return {
       kind: "need_fill",
-      title: "Fill the master sheet",
+      title: "Fill the Risk Profile",
       body: "Parse the source docs into yellow missing / blue CHECK cells. Blanks only — typed and Javy-tested values stay.",
       tone: "warn",
       fillStep,
@@ -82,7 +82,7 @@ export function readyToShopCue(input: {
   if (!input.unlocked) {
     return {
       kind: thin ? "need_glance" : "need_approve",
-      title: thin ? "Glance yellow / CHECK, then approve twice" : "Approve the master sheet",
+      title: thin ? "Glance yellow / CHECK, then approve twice" : "Approve the Risk Profile",
       body: thin
         ? `${input.health!.missing} missing · ${input.health!.check} CHECK. Confirm the blue values, then the two-step unlock. Send to Fill stays locked until both clicks.`
         : "Visual review + “are you sure?” unlock Copy sheet / Send to Fill / shop. Quotes still do not bind.",
@@ -104,7 +104,7 @@ export function readyToShopCue(input: {
   return {
     kind: "ready",
     title: "Ready to shop appointed markets",
-    body: "Master sheet is approved. Send to Fill reads this row. Quotes stay quotes until Closed Won bind.",
+    body: "Risk Profile is approved. Send to Fill reads this row. Quotes stay quotes until Closed Won bind.",
     tone: "go",
     fillStep,
   };

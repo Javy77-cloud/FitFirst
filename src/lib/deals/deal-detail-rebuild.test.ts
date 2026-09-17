@@ -115,7 +115,7 @@ describe("deal detail final rebuild", () => {
     expect(source("src/components/deal/master-sheet-compare.tsx")).toMatch(/SheetApproveGate/);
     expect(source("src/components/deal/master-sheet-compare.tsx")).toMatch(/persistSheet/);
     const gate = source("src/components/deal/sheet-approve-gate.tsx");
-    expect(gate).toMatch(/I visually reviewed this master sheet\./i);
+    expect(gate).toMatch(/I visually reviewed this Risk Profile\./i);
     expect(gate).toMatch(/\{pending \? "Confirming…" : "Confirm"\}/);
     expect(gate).not.toMatch(/Confirm & Request Quotes/);
     expect(gate).not.toMatch(/Approve & Request Quotes/);
@@ -137,7 +137,7 @@ describe("deal detail final rebuild", () => {
     expect(upload).not.toMatch(/Add another file/);
     expect(sheet).toMatch(/name=\{fieldKey\}/);
     expect(sheet).toMatch(/Confirm/);
-    expect(sheet).toMatch(/Save sheet/);
+    expect(sheet).toMatch(/Save Risk Profile/);
   });
 
   it("uses a rich HO sheet with shared applicant core and line scaffolds", () => {

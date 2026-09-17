@@ -58,7 +58,7 @@ describe("site-wide action confirmation toast", () => {
 
     const master = source("src/components/deal/master-sheet-compare.tsx");
     expect(master).toMatch(/action=\{saveQuoteSheet\}/);
-    expect(master).toMatch(/Save sheet/);
+    expect(master).toMatch(/Save Risk Profile/);
     expect(master).toMatch(/name="returnTo"/);
   });
 
