@@ -41,7 +41,7 @@ export function needsDealDetailsLandlordStrip(layout: FieldLayout): boolean {
 /** Remove landlord/rental keys and sections. Preserves agency revision — never re-seeds. */
 export function stripDealDetailsLandlordFields(layout: FieldLayout): FieldLayout {
   const next = parseLayout(layout);
-  return {
+  return parseLayout({
     ...next,
     columns: next.columns.map((column) => ({
       ...column,
@@ -52,7 +52,7 @@ export function stripDealDetailsLandlordFields(layout: FieldLayout): FieldLayout
           fieldKeys: section.fieldKeys.filter((key) => !isDealDetailsLandlordFieldKey(key)),
         })),
     })),
-  };
+  });
 }
 
 export function layoutWithoutDealDetailsLandlord(layout: FieldLayout): FieldLayout {

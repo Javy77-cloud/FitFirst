@@ -34,7 +34,9 @@ describe("sep7bi builder rail Markets Quotes", () => {
     expect(page).not.toMatch(/DEAL_LAYOUT_LINES/);
     expect(page).not.toMatch(/data-ff-builder-lobs/);
     expect(page).not.toMatch(/Homeowners/);
-    expect(page).toMatch(/Compact field-type chips sit beside Left and Right/);
+    expect(page).toMatch(/ModuleLayoutNav/);
+    expect(page).toMatch(/FieldBuilder/);
+    expect(page).not.toMatch(/Compact field-type chips sit beside Left and Right/);
     expect(source("src/components/custom-fields/field-builder.tsx")).not.toMatch(/data-ff-builder-lobs/);
   });
 

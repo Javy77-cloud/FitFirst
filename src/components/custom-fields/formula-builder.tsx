@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { LayoutHelpIcon } from "@/components/custom-fields/layout-help-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { evaluateFormula, formatFormulaValue } from "@/lib/custom-fields/formula";
@@ -60,10 +61,12 @@ export function FormulaBuilder({
           </Button>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">
-        Basic math and field names only — not a script.{" "}
-        {preview.ok ? `Preview ${formatFormulaValue(preview.value)}` : preview.error}
-      </p>
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <LayoutHelpIcon label="Formula help">
+          Basic math and field names only — not a script.
+        </LayoutHelpIcon>
+        <span>{preview.ok ? `Preview ${formatFormulaValue(preview.value)}` : preview.error}</span>
+      </div>
     </div>
   );
 }

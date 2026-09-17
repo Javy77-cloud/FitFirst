@@ -96,6 +96,13 @@ describe("Deal Details personal / identity layout", () => {
     expect(html).toMatch(/data-ff-deal-section="mailing_address"/);
     expect(html).not.toMatch(/data-ff-deal-section="details"/);
     expect(html).toMatch(/data-ff-co-applicant-switch/);
+    expect(html).toMatch(/data-ff-layout-section-header/);
+    expect(html).toMatch(/data-ff-section-field-grid/);
+    expect(html).toMatch(/data-ff-section-density="2"/);
+    expect(html).toMatch(/data-ff-compact-row/);
+    expect(html).not.toMatch(/Asked once/);
+    expect(html).not.toMatch(/data-ff-shared-once/);
+    expect(html).not.toMatch(/master sheet Fill/);
     expect(html.match(/data-ff-deal-field="applicant_marital_status"/g)?.length).toBe(1);
     expect(html.match(/data-ff-deal-field="applicant_gender"/g)?.length).toBe(1);
     expect(html.match(/data-ff-deal-field="mailing_address"/g)?.length).toBe(1);

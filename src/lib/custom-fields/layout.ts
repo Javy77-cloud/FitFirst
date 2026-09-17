@@ -3,8 +3,8 @@ import {
   STRIPPED_DEAL_SECTION_IDS,
   defaultLayoutForLine,
 } from "./defaults";
-import type { FieldLayout, LayoutSection } from "./types";
-import { emptyLayout, newSectionId, parseLayout } from "./types";
+import type { FieldLayout, LayoutSection, SectionDensity } from "./types";
+import { DEFAULT_SECTION_DENSITY, emptyLayout, newSectionId, parseLayout, parseSectionDensity } from "./types";
 
 export function cloneLayout(layout: FieldLayout): FieldLayout {
   return parseLayout(JSON.parse(JSON.stringify(layout)));
@@ -13,7 +13,23 @@ export function cloneLayout(layout: FieldLayout): FieldLayout {
 export function addSection(layout: FieldLayout, columnId: string, label = "New section"): FieldLayout {
   const next = cloneLayout(layout);
   const column = next.columns.find((col) => col.id === columnId) ?? next.columns[0];
-  column.sections.push({ id: newSectionId(), label, fieldKeys: [] });
+  column.sections.push({ id: newSectionId(), label, fieldKeys: [], density: DEFAULT_SECTION_DENSITY });
+  return next;
+}
+
+export function setSectionDensity(
+  layout: FieldLayout,
+  sectionId: string,
+  density: SectionDensity,
+): FieldLayout {
+  const next = cloneLayout(layout);
+  const parsed = parseSectionDensity(density);
+  if (!parsed) return next;
+  for (const column of next.columns) {
+    const section = column.sections.find((item) => item.id === sectionId);
+    if (!section) continue;
+    section.density = parsed;
+  }
   return next;
 }
 
@@ -45,6 +61,7 @@ export function duplicateSection(layout: FieldLayout, sectionId: string): FieldL
       id: newSectionId(),
       label: `${source.label.trim() || "Section"} (copy)`,
       fieldKeys: [...source.fieldKeys],
+      ...(source.density ? { density: source.density } : {}),
     };
     column.sections.splice(idx + 1, 0, copy);
     break;
@@ -134,7 +151,7 @@ export function moveField(
   let section: LayoutSection | undefined = column.sections.find((item) => item.id === target.sectionId);
   if (!section) {
     if (!column.sections.length) {
-      column.sections.push({ id: newSectionId(), label: "Details", fieldKeys: [] });
+      column.sections.push({ id: newSectionId(), label: "Details", fieldKeys: [], density: DEFAULT_SECTION_DENSITY });
     }
     section = column.sections[0];
   }

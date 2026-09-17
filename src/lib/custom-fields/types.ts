@@ -110,10 +110,29 @@ export function longestPaletteLabel(): string {
   );
 }
 
+/** Per-section field grid. Default is 2 — not page-level Left/Right columns. */
+export const SECTION_DENSITIES = [1, 2, 3] as const;
+export type SectionDensity = (typeof SECTION_DENSITIES)[number];
+export const DEFAULT_SECTION_DENSITY: SectionDensity = 2;
+
+export function parseSectionDensity(raw: unknown): SectionDensity | undefined {
+  if (raw === 1 || raw === 2 || raw === 3) return raw;
+  if (raw === "1") return 1;
+  if (raw === "2") return 2;
+  if (raw === "3") return 3;
+  return undefined;
+}
+
+export function sectionDensityOf(section: { density?: unknown }): SectionDensity {
+  return parseSectionDensity(section.density) ?? DEFAULT_SECTION_DENSITY;
+}
+
 export type LayoutSection = {
   id: string;
   label: string;
   fieldKeys: string[];
+  /** Field columns inside this section. Missing means 2. */
+  density?: SectionDensity;
 };
 
 export type LayoutColumn = {
@@ -175,11 +194,15 @@ function parseColumn(col: unknown, fallbackId: string): LayoutColumn {
   const sectionsRaw = Array.isArray(row.sections) ? row.sections : [];
   const sections = sectionsRaw
     .filter((section): section is Record<string, unknown> => Boolean(section) && typeof section === "object")
-    .map((section) => ({
-      id: typeof section.id === "string" ? section.id : newSectionId(),
-      label: typeof section.label === "string" ? section.label : "Section",
-      fieldKeys: Array.isArray(section.fieldKeys) ? section.fieldKeys.map((key) => String(key)) : [],
-    }));
+    .map((section) => {
+      const density = parseSectionDensity(section.density);
+      return {
+        id: typeof section.id === "string" ? section.id : newSectionId(),
+        label: typeof section.label === "string" ? section.label : "Section",
+        fieldKeys: Array.isArray(section.fieldKeys) ? section.fieldKeys.map((key) => String(key)) : [],
+        ...(density ? { density } : {}),
+      };
+    });
   return { id: typeof row.id === "string" ? row.id : fallbackId, sections };
 }
 

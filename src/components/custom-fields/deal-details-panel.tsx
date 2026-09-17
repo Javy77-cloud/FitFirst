@@ -3,13 +3,15 @@
 import { useMemo, useState, useTransition } from "react";
 import { saveDealFieldValues, uploadDealFieldImage } from "@/app/actions/custom-fields";
 import { FieldControl } from "@/components/custom-fields/field-control";
+import { LayoutSectionFieldGrid } from "@/components/custom-fields/layout-section-field-grid";
+import { LayoutRequiredBadge, LayoutSectionHeader } from "@/components/custom-fields/layout-section-header";
 import { buttonVariants } from "@/components/ui/button";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
 import type { DealProductId } from "@/lib/deals/deal-products";
 import { isSharedDealSection, layoutForActiveProduct } from "@/lib/deals/product-layout";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
-import { parseLayout, type CustomFieldDef, type FieldLayout } from "@/lib/custom-fields/types";
+import { parseLayout, sectionDensityOf, type CustomFieldDef, type FieldLayout } from "@/lib/custom-fields/types";
 import {
   INSURANCE_QUOTE_SECTION_STYLE,
   isInsuranceQuoteRequestSection,
@@ -61,9 +63,24 @@ function DealFieldImageUpload({ dealId, fieldKey }: { dealId: string; fieldKey: 
   );
 }
 
+function skipOwnedInsuranceField(
+  key: string,
+  field: CustomFieldDef,
+  sectionKeys: readonly string[],
+  fieldList: CustomFieldDef[],
+): boolean {
+  const layoutHasType =
+    sectionKeys.includes("insurance_type") || fieldList.some((item) => item.key === "insurance_type");
+  return (
+    layoutHasType &&
+    (key === "insurance_category" || key === "insurance_subtype" || field.systemKey === "quotingForm")
+  );
+}
+
 function CoApplicantDealSection({
   sectionLabel,
   quoteReq,
+  density,
   fieldKeys,
   byKey,
   values,
@@ -83,6 +100,7 @@ function CoApplicantDealSection({
 }: {
   sectionLabel: string;
   quoteReq: boolean;
+  density?: unknown;
   fieldKeys: string[];
   byKey: Record<string, CustomFieldDef>;
   values: Record<string, string>;
@@ -102,6 +120,11 @@ function CoApplicantDealSection({
 }) {
   const initialOn = useMemo(() => isCoApplicantEnabled(values), [values]);
   const [enabled, setEnabled] = useState(initialOn);
+  const visibleKeys = fieldKeys.filter((key) => {
+    if (key === HAS_CO_APPLICANT_KEY) return false;
+    const field = byKey[key] ?? { key, label: key, type: "single_line" as const };
+    return !skipOwnedInsuranceField(key, field, fieldKeys, fieldList);
+  });
 
   return (
     <section
@@ -115,22 +138,25 @@ function CoApplicantDealSection({
       data-ff-insurance-quote-request={quoteReq ? "1" : undefined}
       style={quoteReq ? INSURANCE_QUOTE_SECTION_STYLE : undefined}
     >
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-xs font-medium text-navy">{sectionLabel}</h3>
-        <label
-          className="flex cursor-pointer items-center gap-2 text-[11px] font-medium text-navy"
-          data-ff-co-applicant-switch=""
-        >
-          <input
-            type="checkbox"
-            className="h-3.5 w-3.5 accent-[#002868]"
-            checked={enabled}
-            onChange={(event) => setEnabled(event.target.checked)}
-            aria-label="Has co-applicant"
-          />
-          <span>{enabled ? "Has co-applicant" : "No co-applicant"}</span>
-        </label>
-      </div>
+      <LayoutSectionHeader
+        title={sectionLabel}
+        badge={quoteReq ? <LayoutRequiredBadge /> : null}
+        action={
+          <label
+            className="flex cursor-pointer items-center gap-2 text-[11px] font-medium text-navy"
+            data-ff-co-applicant-switch=""
+          >
+            <input
+              type="checkbox"
+              className="h-3.5 w-3.5 accent-[#002868]"
+              checked={enabled}
+              onChange={(event) => setEnabled(event.target.checked)}
+              aria-label="Has co-applicant"
+            />
+            <span>{enabled ? "Has co-applicant" : "No co-applicant"}</span>
+          </label>
+        }
+      />
       <input
         type="hidden"
         name={`field_${HAS_CO_APPLICANT_KEY}`}
@@ -138,53 +164,94 @@ function CoApplicantDealSection({
         value={enabled ? "true" : "false"}
       />
       {enabled ? (
-        fieldKeys.map((key) => {
-          if (key === HAS_CO_APPLICANT_KEY) return null;
-          const field = byKey[key] ?? { key, label: key, type: "single_line" as const };
-          const layoutHasType =
-            fieldKeys.includes("insurance_type") || fieldList.some((f) => f.key === "insurance_type");
-          if (
-            layoutHasType &&
-            (key === "insurance_category" ||
-              key === "insurance_subtype" ||
-              field.systemKey === "quotingForm")
-          ) {
-            return null;
-          }
-          return (
-            <div key={key} className="space-y-1" data-ff-deal-field={key}>
-              {key === "insurance_type" || field.label === "Insurance Type" ? null : (
-                <label className="text-xs font-medium text-navy" htmlFor={`field_${key}`}>
-                  {field.label}
-                </label>
-              )}
-                <FieldControl
-                field={field}
-                value={values[key] ?? ""}
-                values={values}
-                name={`field_${key}`}
-                form={formId}
-                pipelineFamily={pipelineFamily}
-                quotingForm={quotingForm}
-                policySubType={policySubType}
-                lifeHealthOptions={lifeHealthOptions}
-                lifeOptions={lifeOptions}
-                healthOptions={healthOptions}
-                packageLines={packageLines}
-                activePackageLine={activePackageLine}
-                lineSettings={lineSettings}
-                onValueChange={(next) => onValueChange?.(key, next)}
-              />
-              {field.type === "image" ? <DealFieldImageUpload dealId={dealId} fieldKey={key} /> : null}
-            </div>
-          );
-        })
-      ) : (
-        <p className="text-[11px] text-muted-foreground" data-ff-co-applicant-off-hint="">
-          Off — master sheet Fill will not look for or transfer co-applicant data.
-        </p>
-      )}
+        <LayoutSectionFieldGrid
+          density={sectionDensityOf({ density })}
+          keys={visibleKeys}
+          fieldOf={(key) => byKey[key]}
+          renderField={(key) => (
+            <DealDetailsField
+              fieldKey={key}
+              field={byKey[key] ?? { key, label: key, type: "single_line" as const }}
+              values={values}
+              formId={formId}
+              pipelineFamily={pipelineFamily}
+              quotingForm={quotingForm}
+              policySubType={policySubType}
+              lifeHealthOptions={lifeHealthOptions}
+              lifeOptions={lifeOptions}
+              healthOptions={healthOptions}
+              dealId={dealId}
+              packageLines={packageLines}
+              activePackageLine={activePackageLine}
+              lineSettings={lineSettings}
+              onValueChange={onValueChange}
+            />
+          )}
+        />
+      ) : null}
     </section>
+  );
+}
+
+function DealDetailsField({
+  fieldKey,
+  field,
+  values,
+  formId,
+  pipelineFamily,
+  quotingForm,
+  policySubType,
+  lifeHealthOptions,
+  lifeOptions,
+  healthOptions,
+  dealId,
+  packageLines = [],
+  activePackageLine = null,
+  lineSettings,
+  onValueChange,
+}: {
+  fieldKey: string;
+  field: CustomFieldDef;
+  values: Record<string, string>;
+  formId: string;
+  pipelineFamily: PipelineFamily;
+  quotingForm?: string | null;
+  policySubType?: string | null;
+  lifeHealthOptions?: Array<{ slug?: string; label: string }>;
+  lifeOptions?: Array<{ slug?: string; label: string }>;
+  healthOptions?: Array<{ slug?: string; label: string }>;
+  dealId: string;
+  packageLines?: readonly string[];
+  activePackageLine?: string | null;
+  lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
+  onValueChange?: (key: string, value: string) => void;
+}) {
+  return (
+    <div className="space-y-1" data-ff-deal-field={fieldKey}>
+      {fieldKey === "insurance_type" || field.label === "Insurance Type" ? null : (
+        <label className="text-xs font-medium text-navy" htmlFor={`field_${fieldKey}`}>
+          {field.label}
+        </label>
+      )}
+      <FieldControl
+        field={field}
+        value={values[fieldKey] ?? ""}
+        values={values}
+        name={`field_${fieldKey}`}
+        form={formId}
+        pipelineFamily={pipelineFamily}
+        quotingForm={quotingForm}
+        policySubType={policySubType}
+        lifeHealthOptions={lifeHealthOptions}
+        lifeOptions={lifeOptions}
+        healthOptions={healthOptions}
+        packageLines={packageLines}
+        activePackageLine={activePackageLine}
+        lineSettings={lineSettings}
+        onValueChange={(next) => onValueChange?.(fieldKey, next)}
+      />
+      {field.type === "image" ? <DealFieldImageUpload dealId={dealId} fieldKey={fieldKey} /> : null}
+    </div>
   );
 }
 
@@ -306,6 +373,7 @@ export function DealDetailsPanel({
                     key={section.id}
                     sectionLabel={section.label}
                     quoteReq={quoteReq}
+                    density={section.density}
                     fieldKeys={sectionKeys}
                     byKey={byKey}
                     values={liveValues}
@@ -339,27 +407,10 @@ export function DealDetailsPanel({
                   data-ff-insurance-quote-request={quoteReq ? "1" : undefined}
                   style={quoteReq ? INSURANCE_QUOTE_SECTION_STYLE : undefined}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-xs font-medium text-navy">{section.label}</h3>
-                    <div className="flex items-center gap-1.5">
-                      {shared ? (
-                        <span
-                          className="shrink-0 rounded-full bg-[var(--ff-check-bg)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-navy"
-                          data-ff-shared-once=""
-                        >
-                          Asked once
-                        </span>
-                      ) : null}
-                      {quoteReq ? (
-                        <span
-                          className="shrink-0 rounded bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#1d4e89]"
-                          data-ff-required-badge
-                        >
-                          Required
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
+                  <LayoutSectionHeader
+                    title={section.label}
+                    badge={quoteReq ? <LayoutRequiredBadge /> : null}
+                  />
                   {section.id === "mailing_address" || /^mailing address$/i.test(section.label) ? (
                     <MailingSameSwitch
                       formId={formId}
@@ -369,61 +420,40 @@ export function DealDetailsPanel({
                       }
                     />
                   ) : null}
-                  {sectionKeys.map((key) => {
-                    const field = byKey[key] ?? { key, label: key, type: "single_line" as const };
-                    const layoutHasType =
-                      sectionKeys.includes("insurance_type") ||
-                      fieldList.some((f) => f.key === "insurance_type");
-                    if (
-                      layoutHasType &&
-                      (key === "insurance_category" ||
-                        key === "insurance_subtype" ||
-                        field.systemKey === "quotingForm")
-                    ) {
-                      return null;
-                    }
-                    if (
-                      isPreviousAddressFieldKey(key) &&
-                      !isNoLivedAtAddress5Years(liveValues)
-                    ) {
-                      return null;
-                    }
-                    if (
-                      isMailingAddressFieldKey(key) &&
-                      isMailingSameAsInsured(liveValues)
-                    ) {
-                      return null;
-                    }
-                    return (
-                      <div key={key} className="space-y-1" data-ff-deal-field={key}>
-                        {key === "insurance_type" || field.label === "Insurance Type" ? null : (
-                          <label className="text-xs font-medium text-navy" htmlFor={`field_${key}`}>
-                            {field.label}
-                          </label>
-                        )}
-                        <FieldControl
-                          field={field}
-                          value={liveValues[key] ?? ""}
-                          values={liveValues}
-                          name={`field_${key}`}
-                          form={formId}
-                          pipelineFamily={pipelineFamily}
-                          quotingForm={quotingForm}
-                          policySubType={policySubType}
-                          lifeHealthOptions={lifeHealthOptions}
-                          lifeOptions={lifeOptions}
-                          healthOptions={healthOptions}
-                          packageLines={packageLines}
-                          activePackageLine={activePackageLine}
-                          lineSettings={lineSettings}
-                          onValueChange={(next) => patchValue(key, next)}
-                        />
-                        {field.type === "image" ? (
-                          <DealFieldImageUpload dealId={dealId} fieldKey={key} />
-                        ) : null}
-                      </div>
-                    );
-                  })}
+                  <LayoutSectionFieldGrid
+                    density={section}
+                    keys={sectionKeys.filter((key) => {
+                      const field = byKey[key] ?? { key, label: key, type: "single_line" as const };
+                      if (skipOwnedInsuranceField(key, field, sectionKeys, fieldList)) return false;
+                      if (isPreviousAddressFieldKey(key) && !isNoLivedAtAddress5Years(liveValues)) {
+                        return false;
+                      }
+                      if (isMailingAddressFieldKey(key) && isMailingSameAsInsured(liveValues)) {
+                        return false;
+                      }
+                      return true;
+                    })}
+                    fieldOf={(key) => byKey[key]}
+                    renderField={(key) => (
+                      <DealDetailsField
+                        fieldKey={key}
+                        field={byKey[key] ?? { key, label: key, type: "single_line" as const }}
+                        values={liveValues}
+                        formId={formId}
+                        pipelineFamily={pipelineFamily}
+                        quotingForm={quotingForm}
+                        policySubType={policySubType}
+                        lifeHealthOptions={lifeHealthOptions}
+                        lifeOptions={lifeOptions}
+                        healthOptions={healthOptions}
+                        dealId={dealId}
+                        packageLines={packageLines}
+                        activePackageLine={activePackageLine}
+                        lineSettings={lineSettings}
+                        onValueChange={patchValue}
+                      />
+                    )}
+                  />
                 </section>
               );
             })}
