@@ -79,7 +79,7 @@ nationals are `rateable=true`.
 | Pack | File | What it is |
 | --- | --- | --- |
 | Life MATRIX | `fitfirst-life-uw-matrix.csv` | Javy Life underwriting appetite by condition × product. Live-sheet seed (2026-09-17). |
-| Life contacts | `fitfirst-life-contacts.csv` | Carrier Rep Contact List + MATRIX Phone row overlay. |
+| Life contacts | `fitfirst-life-contacts.csv` | Carrier Rep Contact List + MATRIX Phone row overlay. Named reps fill marketing contacts; main phones stay. |
 | Life sheet drops | `life-sheet/` | Drop extracted tab CSVs here. |
 
 This file is **not** imported into `carrier_appetite` (that table is P&C quote-gate). The Life Markets / Quotes helper reads the CSV directly.
@@ -95,11 +95,11 @@ Columns: `carrier_slug`, `carrier_name`, `product_slug`, `product_name`, `condit
 
 | Pack | File | What it is |
 | --- | --- | --- |
-| Life build | `fitfirst-life-build.csv` | Javy MATRIX height/weight (or BMI-style) tabs, flattened. Header-only until those tabs land. |
+| Life build | `fitfirst-life-build.csv` | Javy MATRIX height/weight tabs, flattened. Americo 4'8"–5'2" sample seeded; other carriers Unknown. |
 
 Condition × product is **primary**. Height/weight is a **second** input: the predictor maps Risk Profile height + weight (and optional Deal Details sex) to a build/BMI band, then can adjust Accept / Graded / Decline **alongside** medical conditions.
 
-- Do **not** invent WHO or carrier build charts. The live CSV is header-only; `band` stays `unknown` and the helper shows “table pending.”
-- When rows land, lookup matches `height_inches` + `weight_min`/`weight_max` (classic chart) and/or `bmi_min`/`bmi_max` (BMI-style tab). Empty `carrier_slug` / `product_slug` applies to every MATRIX product; empty `sex` applies to both.
+- Do **not** invent WHO or missing carrier charts. Americo is a height/weight sample only; heights outside 4'8"–5'2" and carriers without a tab stay **Unknown**.
+- Lookup matches `height_inches` + `weight_min`/`weight_max` (classic chart) and/or `bmi_min`/`bmi_max` (BMI-style tab). Empty `product_slug` applies to that carrier’s MATRIX products; a product-specific column (`adb`, `di_rider`) wins when present. Empty `sex` applies to both.
 - Combine is worst-wins, with Unknown never upgrading to Accept: a green build row cannot mint a missing condition cell. Decline from either input wins. Graded/call-carrier from build can still surface when conditions are Unknown.
-- Flatten incoming sheet tabs into this file — full MATRIX when spreadsheet provided.
+- Drop more carrier tabs in `life-sheet/` using the Americo TSV shape (`Source`, `Height`, band columns) — full MATRIX when spreadsheet provided.

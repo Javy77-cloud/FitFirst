@@ -11,9 +11,24 @@ import {
   predictLifeAppetite,
   type LifeBuildRule,
 } from "./appetite";
-import { LIFE_LEAN_MEDICAL_CONDITION_OPTIONS, LIFE_MEDICAL_CONDITION_OPTIONS } from "./conditions";
+import {
+  LIFE_LEAN_MEDICAL_CONDITION_OPTIONS,
+  LIFE_MATRIX_COL_A_SKIP,
+  LIFE_MEDICAL_CONDITION_OPTIONS,
+  lifeConditionKeyFromLabel,
+  lifeConditionKeysFromSheet,
+} from "./conditions";
 import { matchLifeMatrixCarrier } from "./carriers";
-import { LIFE_BUILD_CSV, lifeBuildFromSheet, lifeBuildSummary, parseLifeBuildCsv } from "./build";
+import {
+  LIFE_BUILD_CSV,
+  LIFE_BUILD_PARTIAL_NOTE,
+  LIFE_BUILD_SAMPLE_TSV,
+  flattenLifeBuildChartSample,
+  lifeBuildFromSheet,
+  lifeBuildSummary,
+  parseLifeBuildCsv,
+  parseLifeHeightInches,
+} from "./build";
 import { LIFE_CONTACTS_CSV, LIFE_SHEET_TABS, parseLifeContactsCsv } from "./sheet";
 
 function source(file: string) {
@@ -37,8 +52,20 @@ describe("Life UW MATRIX appetite v1", () => {
         "Epilepsy",
         "Gastric bypass",
         "HIV",
+        "ALS",
+        "Multiple sclerosis",
       ]),
     );
+    expect(lifeConditionKeysFromSheet("ALS")).toEqual(
+      expect.arrayContaining(["als_lou_gehrigs_disease"]),
+    );
+    expect(lifeConditionKeysFromSheet("Multiple sclerosis")).toEqual(
+      expect.arrayContaining(["multiple_sclerosis_ms"]),
+    );
+    expect(lifeConditionKeyFromLabel("ALS (Lou Gehrig's Disease)")).toBe("als_lou_gehrigs_disease");
+    expect(lifeConditionKeyFromLabel("Migrane Headaches")).toBe("migraine_headaches");
+    expect(lifeConditionKeyFromLabel("Carrier Websites")).toBeNull();
+    expect(LIFE_MATRIX_COL_A_SKIP.has("Medical Conditions")).toBe(true);
     expect(new Set(LIFE_MEDICAL_CONDITION_OPTIONS).size).toBe(LIFE_MEDICAL_CONDITION_OPTIONS.length);
     expect(LIFE_MEDICAL_CONDITION_OPTIONS.length).toBeLessThanOrEqual(160);
   });
@@ -147,17 +174,18 @@ describe("Life UW MATRIX appetite v1", () => {
     expect(source("src/components/deal/master-sheet-compare.tsx")).toMatch(/searchable/);
   });
 
-  it("computes BMI from the Risk Profile but does not invent a build band", () => {
+  it("computes BMI from the Risk Profile and keeps heights off the Americo sample Unknown", () => {
     const liveBuild = parseLifeBuildCsv(readFileSync(LIFE_BUILD_CSV, "utf8"));
-    expect(liveBuild).toEqual([]);
+    expect(liveBuild.length).toBeGreaterThan(0);
+    expect(liveBuild.every((row) => row.carrierSlug === "americo")).toBe(true);
     expect(readFileSync(LIFE_BUILD_CSV, "utf8")).toMatch(/height_inches/);
+    expect(flattenLifeBuildChartSample(readFileSync(LIFE_BUILD_SAMPLE_TSV, "utf8"))).toHaveLength(liveBuild.length);
+    expect(parseLifeHeightInches("5'0\"")).toBe(60);
 
     const build = lifeBuildFromSheet({ heightFt: "5", heightIn: "10", weightLbs: "180" });
     expect(build.bmi).toBe(25.8);
     expect(build.band).toBe("unknown");
     expect(build.tablePending).toBe(true);
-    expect(build.note).toMatch(/full MATRIX when spreadsheet provided/i);
-    expect(lifeBuildSummary(build)).toBe("Build: BMI 25.8 (table pending)");
 
     const predicted = predictLifeAppetite({
       medicalConditions: "Asthma",
@@ -167,7 +195,8 @@ describe("Life UW MATRIX appetite v1", () => {
       matrix,
     });
     expect(predicted.build.bmi).toBe(25.8);
-    expect(predicted.build.tablePending).toBe(true);
+    expect(predicted.build.tablePending).toBe(false);
+    expect(predicted.build.note).toBe(LIFE_BUILD_PARTIAL_NOTE);
     expect(
       predicted.predictions.find((row) => row.carrierSlug === "amam" && row.productSlug === "express_term")?.outcome,
     ).toBe("unknown");
@@ -182,8 +211,68 @@ describe("Life UW MATRIX appetite v1", () => {
         build: predicted.build,
       }),
     );
-    expect(pendingHtml).toContain("Build: BMI 25.8 (table pending)");
+    expect(pendingHtml).toContain("Build: BMI 25.8 (partial build chart)");
+    expect(lifeBuildSummary(predicted.build)).toBe("Build: BMI 25.8 (partial build chart)");
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/applicant_gender/);
+  });
+
+  it("uses the Americo build sample for Accept/Decline and stays Unknown without a carrier chart", () => {
+    const inRange = predictLifeAppetite({
+      medicalConditions: "Asthma",
+      heightFt: "5",
+      heightIn: "0",
+      weightLbs: "100",
+      matrix,
+    });
+    const americoIn = inRange.predictions.filter((row) => row.carrierSlug === "americo");
+    expect(americoIn.length).toBeGreaterThan(0);
+    expect(americoIn.every((row) => row.buildOutcome === "accept")).toBe(true);
+    expect(americoIn.every((row) => row.buildBand === "in_range")).toBe(true);
+    expect(americoIn.every((row) => row.outcome === "unknown")).toBe(true);
+    expect(inRange.predictions.filter((row) => row.carrierSlug !== "americo").every((row) => row.buildOutcome === "unknown")).toBe(
+      true,
+    );
+
+    const heavy = predictLifeAppetite({
+      medicalConditions: "Asthma",
+      heightFt: "5",
+      heightIn: "0",
+      weightLbs: "300",
+      matrix,
+    });
+    expect(heavy.predictions.filter((row) => row.carrierSlug === "americo").every((row) => row.outcome === "decline")).toBe(
+      true,
+    );
+    expect(heavy.predictions.filter((row) => row.carrierSlug === "amam").every((row) => row.buildOutcome === "unknown")).toBe(
+      true,
+    );
+
+    const eagleAccept = predictLifeAppetite({
+      medicalConditions: "Disability",
+      heightFt: "5",
+      heightIn: "0",
+      weightLbs: "100",
+      matrix,
+    });
+    expect(
+      eagleAccept.predictions.find((row) => row.carrierSlug === "americo" && row.productSlug === "eagle_select")?.outcome,
+    ).toBe("accept");
+    expect(
+      eagleAccept.predictions.find((row) => row.carrierSlug === "americo" && row.productSlug === "hms_term_iul")?.outcome,
+    ).toBe("decline");
+
+    const als = predictLifeAppetite({
+      medicalConditions: "ALS",
+      tobaccoStatus: "Never",
+      matrix,
+    });
+    expect(als.conditionKeys).toEqual(expect.arrayContaining(["als_lou_gehrigs_disease"]));
+    expect(als.predictions.find((row) => row.carrierSlug === "amam" && row.productSlug === "express_term")?.outcome).toBe(
+      "decline",
+    );
+    expect(als.predictions.find((row) => row.carrierSlug === "corebridge" && row.productSlug === "giwl")?.outcome).toBe(
+      "accept",
+    );
   });
 
   it("lets a loaded build table adjust Graded/Decline without minting Accept", () => {
@@ -357,6 +446,9 @@ describe("Life UW MATRIX appetite v1", () => {
     expect(matchLifeMatrixCarrier("Mutual of Omaha")?.agentPhone).toBe("800-775-7896");
     expect(matchLifeMatrixCarrier("Foresters Financial")?.agentPortalUrl).toContain("myezbiz");
     expect(matchLifeMatrixCarrier("Legal & General America")?.name).toBe("Banner Life");
+    expect(matchLifeMatrixCarrier("American Amicable/Occidental")?.slug).toBe("amam");
+    expect(matchLifeMatrixCarrier("American General (AIG)")?.slug).toBe("corebridge");
+    expect(matchLifeMatrixCarrier("Fidelity&Guaranty")?.slug).toBe("fg");
     expect(matchLifeMatrixCarrier("Moody")).toBeNull();
     const contacts = parseLifeContactsCsv(readFileSync(LIFE_CONTACTS_CSV, "utf8"));
     expect(LIFE_SHEET_TABS).toHaveLength(18);
@@ -364,8 +456,41 @@ describe("Life UW MATRIX appetite v1", () => {
       expect.arrayContaining(["condition_product", "build_chart", "contacts"]),
     );
     expect(contacts.map((row) => row.carrierSlug)).toEqual(
-      expect.arrayContaining(["amam", "americo", "moo", "banner", "transamerica", "uhl"]),
+      expect.arrayContaining([
+        "amam",
+        "americo",
+        "moo",
+        "banner",
+        "transamerica",
+        "uhl",
+        "american_equity",
+        "assurity",
+        "athene",
+        "columbus_life",
+      ]),
     );
     expect(contacts.find((row) => row.carrierSlug === "moo")?.phone).toBe("800-775-7896");
+    expect(contacts.find((row) => row.carrierSlug === "amam")?.repName).toBe("Pete Mejia");
+    expect(contacts.find((row) => row.carrierSlug === "corebridge")?.repPhone).toBe("615-785-3828");
+    expect(contacts.find((row) => row.carrierSlug === "americo")?.phone).toBe("800-231-0801");
+  });
+
+  it("adds 0131 Life rep marketing fields without rewriting HO or prior Life migrations", () => {
+    const sql = readFileSync("drizzle/0131_life_rep_contacts_build.sql", "utf8");
+    expect(sql).toMatch(/Pete Mejia/);
+    expect(sql).toMatch(/Andrew Kostus/);
+    expect(sql).toMatch(/Trevor Keeble/);
+    expect(sql).toMatch(/Kelly Steinmetz/);
+    expect(sql).toMatch(/American Equity/);
+    expect(sql).toMatch(/marketing_contact_name/);
+    expect(sql).toMatch(/american amicable/);
+    expect(sql).toMatch(/american general/);
+    expect(sql).toMatch(/fidelity & guaranty/i);
+    expect(sql).not.toMatch(/phone\s*=\s*'/);
+    expect(sql).not.toMatch(/agent_phone\s*=\s*'/);
+    expect(sql).not.toMatch(/southern_oak|olympus|standinsurance|trident/i);
+    expect(sql).not.toMatch(/0128_life_matrix|0129_life_sheet|0130_javy/);
+    expect(source("data/appetite/fitfirst-life-uw-matrix.csv")).toMatch(/live_sheet_cell/);
+    expect(source("drizzle/meta/_journal.json")).toMatch(/0131_life_rep_contacts_build/);
   });
 });

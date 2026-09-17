@@ -120,7 +120,14 @@ export const LIFE_MATRIX_CARRIER_CONTACTS: LifeMatrixCarrierContact[] = [
   {
     slug: "fg",
     name: "Fidelity & Guaranty",
-    aliases: ["f&g", "fidelity & guarantee", "fidelity and guaranty", "fidelity & guaranty life", "fg life"],
+    aliases: [
+      "f&g",
+      "fidelity & guarantee",
+      "fidelity and guaranty",
+      "fidelity&guaranty",
+      "fidelity & guaranty life",
+      "fg life",
+    ],
     website: "https://www.fglife.com",
     phone: "800-445-6758",
     agentPhone: "800-445-6758",
@@ -132,7 +139,14 @@ export const LIFE_MATRIX_CARRIER_CONTACTS: LifeMatrixCarrierContact[] = [
   {
     slug: "corebridge",
     name: "Corebridge",
-    aliases: ["corebridge financial", "aig life"],
+    aliases: [
+      "corebridge financial",
+      "aig life",
+      "american general",
+      "american general (aig)",
+      "aig",
+      "aig-corebridge",
+    ],
     website: "https://www.corebridgefinancial.com",
     phone: "877-399-7747",
     agentPhone: "877-399-7747",
@@ -144,7 +158,15 @@ export const LIFE_MATRIX_CARRIER_CONTACTS: LifeMatrixCarrierContact[] = [
   {
     slug: "amam",
     name: "American Amicable",
-    aliases: ["amam", "am-am", "american memorial", "american-amicable", "occidental life"],
+    aliases: [
+      "amam",
+      "am-am",
+      "american memorial",
+      "american-amicable",
+      "american amicable/occidental",
+      "occidental life",
+      "occidental",
+    ],
     website: "https://www.americanamicable.com",
     phone: "800-736-7311",
     agentPhone: "800-736-7311",

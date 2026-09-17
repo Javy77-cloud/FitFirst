@@ -148,7 +148,8 @@ const LABEL_TO_KEY: Record<string, string> = {
   "AIDS / HIV": "aids_hiv",
   "AIDS related complex (ARC)": "aids_arc",
   "Alcohol / drug treatment": "alcohol_drug_treatment",
-  ALS: "als",
+  ALS: "als_lou_gehrigs_disease",
+  "ALS (Lou Gehrig's Disease)": "als_lou_gehrigs_disease",
   "Alzheimer’s": "alzheimers",
   Amputation: "amputation",
   Anemia: "anemia",
@@ -233,7 +234,8 @@ const LABEL_TO_KEY: Record<string, string> = {
   "Mental health condition": "mental_health",
   "Migraine headaches": "migraine_headaches",
   Military: "military",
-  "Multiple sclerosis": "multiple_sclerosis",
+  "Multiple sclerosis": "multiple_sclerosis_ms",
+  "Multiple Sclerosis (MS)": "multiple_sclerosis_ms",
   "Muscular dystrophy": "muscular_dystrophy",
   Occupation: "occupation",
   "Organ transplant": "organ_transplant",
@@ -264,17 +266,74 @@ const LABEL_TO_KEY: Record<string, string> = {
 /** Lean / combined labels also look up the live-sheet row keys. */
 const CONDITION_KEY_ALIASES: Record<string, readonly string[]> = {
   aids_hiv: ["aids", "hiv"],
+  als: ["als_lou_gehrigs_disease"],
   diabetes_type_1: ["diabetes"],
   diabetes_type_2: ["diabetes"],
   heart_disease: ["heart_attack_heart_disease"],
   kidney_disease: ["kidney_disease_chronic"],
+  multiple_sclerosis: ["multiple_sclerosis_ms"],
   thyroid_disorder: ["hypothyroidism"],
 };
 
+/**
+ * Exact MATRIX col A strings (2026-09-17 extract) that slug differently from
+ * the picklist labels. Headers / chrome are skipped by the caller.
+ */
+const MATRIX_COL_A_TO_KEY: Record<string, string> = {
+  "Activities of Daily Living": "adl_assistance",
+  "AIDS Related Complex (ARC)": "aids_arc",
+  "ALS (Lou Gehrig's Disease)": "als_lou_gehrigs_disease",
+  "Arthritis-Osteo": "arthritis_osteo",
+  "Asthma-Steroid Inhaler": "asthma_steroid_inhaler",
+  "Atrial Fibrillation (A-Fib)": "atrial_fibrillation",
+  "Bipolar Disorder": "bipolar",
+  "Brain Tumor- Non Cancerous": "brain_tumor_noncancerous",
+  "Bronchitis-Chronic": "bronchitis_chronic",
+  "Circulatory Issues/ Surgeries": "circulatory_surgeries",
+  "Cirrhosis of Liver": "cirrhosis",
+  "Crohns Disease": "crohns",
+  "Congestive Heart Failure": "chf",
+  "CPAP w/No Oxygen": "cpap_without_oxygen",
+  "CPAP w/Oxygen": "cpap_with_oxygen",
+  "Heart Attack/ Heart Disease": "heart_attack_heart_disease",
+  "Heart - Mitral Valve Insufficiency/ Prolapse": "heart_mitral_valve_insufficiency_prolapse",
+  "Heart Surgeries (Bypass, etc)": "heart_surgeries_bypass_etc",
+  "HIV PREP": "hiv_prep",
+  "Huntington's Disease": "huntingtons_disease",
+  "Kidney Disease-Chronic": "kidney_disease_chronic",
+  "Liver-Fatty Liver Disease": "liver_fatty_liver_disease",
+  "Migrane Headaches": "migraine_headaches",
+  "Multiple Sclerosis (MS)": "multiple_sclerosis_ms",
+  "Pain-Chronic /Pain Pills": "chronic_pain",
+  "Peripheral Vascular Disease": "pvd",
+  "Rheumatoid Arthritis": "arthritis_rheumatoid",
+  "Sickle Cell Anemia": "sickle_cell",
+  Tobacco: "tobacco",
+};
+
+/** Section chrome from MATRIX column A — not condition keys. */
+export const LIFE_MATRIX_COL_A_SKIP = new Set([
+  "Carrier Websites",
+  "Phone Number",
+  "E Apps",
+  "Miscellaneous Info",
+  "Declines Reported?",
+  "Docusign?",
+  "Paramed Vendors",
+  "Payments Accepted?",
+  "Phone Interview Required",
+  "Split W/Uncontracted Agent",
+  "Telesales?",
+  "Term Conversions",
+  "Background Questions",
+  "Medical Conditions",
+]);
+
 export function lifeConditionKeyFromLabel(label: string): string | null {
   const trimmed = label.trim();
-  if (!trimmed || SKIP_CONDITION_LABELS.has(trimmed)) return null;
+  if (!trimmed || SKIP_CONDITION_LABELS.has(trimmed) || LIFE_MATRIX_COL_A_SKIP.has(trimmed)) return null;
   if (LABEL_TO_KEY[trimmed]) return LABEL_TO_KEY[trimmed];
+  if (MATRIX_COL_A_TO_KEY[trimmed]) return MATRIX_COL_A_TO_KEY[trimmed];
   return trimmed
     .toLowerCase()
     .replace(/['’]/g, "")
