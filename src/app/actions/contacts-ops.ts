@@ -311,6 +311,7 @@ export async function createContactPopup(formData: FormData) {
   });
   revalidatePath("/contacts");
   revalidatePath(`/contacts/${row.id}`);
+  scheduleContactCoverageNotices(row.id);
   return { ok: true as const, id: row.id };
 }
 
@@ -361,9 +362,43 @@ export async function updateContactField(input: {
   await emitDeskEvent("record.updated", { entityType: "contact", entityId: contactId });
   revalidatePath(`/contacts/${contactId}`);
   revalidatePath("/contacts");
-  if (customKey === "cross_selling_opportunity" || customKey === "existing_coverage_types") {
+  if (
+    customKey === "cross_selling_opportunity" ||
+    customKey === "existing_coverage_types" ||
+    customKey === "coverage_carrier_of_record"
+  ) {
     scheduleContactCoverageNotices(contactId);
   }
+  return { ok: true as const };
+}
+
+/** Save Coverage types + us/other carrier-of-record together so gaps stay honest. */
+export async function updateContactCoverageRecord(input: {
+  contactId: string;
+  existingCoverageTypes: string;
+  carrierOfRecord: string;
+}) {
+  const contactId = String(input.contactId ?? "").trim();
+  if (!contactId) return { ok: false as const, error: "Missing contact." };
+
+  const [existing] = await db
+    .select({ id: contacts.id })
+    .from(contacts)
+    .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, contactId)));
+  if (!existing) return { ok: false as const, error: "Contact not found." };
+
+  await writeRecordValues(
+    contactId,
+    {
+      existing_coverage_types: String(input.existingCoverageTypes ?? ""),
+      coverage_carrier_of_record: String(input.carrierOfRecord ?? ""),
+    },
+    "contacts",
+  );
+  await emitDeskEvent("record.updated", { entityType: "contact", entityId: contactId });
+  revalidatePath(`/contacts/${contactId}`);
+  revalidatePath("/contacts");
+  scheduleContactCoverageNotices(contactId);
   return { ok: true as const };
 }
 

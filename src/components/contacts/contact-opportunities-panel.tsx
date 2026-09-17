@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { RecordLink } from "@/components/record-links";
+import type { DeclaredCoverageLine } from "@/lib/coverage/declared-coverage";
 import {
   analyzeCoverageGaps,
   gapLineLabel,
@@ -8,7 +9,7 @@ import {
 } from "@/lib/coverage/gaps";
 import {
   classifyOpportunityLine,
-  householdInForceLines,
+  householdCoveredLines,
   isOpenDealStage,
   type NoticeDealInput,
 } from "@/lib/coverage/notices";
@@ -62,6 +63,7 @@ export function ContactOpportunitiesPanel({
   deals,
   taggedCrossSell,
   focusDealId,
+  declaredCoverage,
 }: {
   contactId: string;
   partyName: string;
@@ -70,9 +72,10 @@ export function ContactOpportunitiesPanel({
   deals: OpportunityDealRow[];
   taggedCrossSell?: string | null;
   focusDealId?: string | null;
+  declaredCoverage?: DeclaredCoverageLine[];
 }) {
-  const report = analyzeCoverageGaps({ policies, partyName, isAna });
-  const inForceLines = householdInForceLines(policies);
+  const report = analyzeCoverageGaps({ policies, partyName, isAna, declaredCoverage });
+  const inForceLines = householdCoveredLines(policies, declaredCoverage);
   const openDeals = deals.filter((deal) => isOpenDealStage(deal.pipelineStage));
   const crossSellDeals = openDeals.filter((deal) => {
     const line = classifyOpportunityLine(deal.lineOfBusiness);
@@ -93,7 +96,11 @@ export function ContactOpportunitiesPanel({
     !crossSellDeals.some((deal) => classifyOpportunityLine(deal.lineOfBusiness) === taggedLine);
 
   const empty =
-    crossSellDeals.length === 0 && uniqueMissing.length === 0 && !showTagged && !isAna;
+    crossSellDeals.length === 0 &&
+    uniqueMissing.length === 0 &&
+    report.rewrites.length === 0 &&
+    !showTagged &&
+    !isAna;
 
   return (
     <div className="space-y-4" data-ff-contact-opportunities="">
@@ -121,7 +128,7 @@ export function ContactOpportunitiesPanel({
                 focused={focusDealId === deal.id}
                 href={`/deals/${deal.id}`}
                 title={deal.title || "Open deal"}
-                detail={`${displayStatusLabel(deal.pipelineStage)} · ${gapLineLabel(line)} — household has no in-force ${gapLineLabel(line)}.`}
+                detail={`${displayStatusLabel(deal.pipelineStage)} · ${gapLineLabel(line)} — household is not covered for ${gapLineLabel(line)}.`}
               />
             );
           })}
@@ -134,8 +141,20 @@ export function ContactOpportunitiesPanel({
               key={line}
               testId="opportunity-gap"
               title={`No open ${gapLineLabel(line)} deal`}
-              detail={`${partyName} is missing ${gapLineLabel(line)} on the in-force book. Start a shop from this contact — do not invent a deal here.`}
+              detail={`${partyName} is not covered for ${gapLineLabel(line)}. Start a shop from this contact — do not invent a deal here.`}
               href={`/deals/new?contactId=${contactId}`}
+            />
+          ))}
+        </ul>
+      ) : null}
+      {report.rewrites.length > 0 ? (
+        <ul className="space-y-2" data-ff-contact-opportunities-rewrites="">
+          {report.rewrites.map((row) => (
+            <CrossSellRow
+              key={row.line}
+              testId="opportunity-rewrite"
+              title={`${gapLineLabel(row.line)} with another carrier`}
+              detail={row.plainEnglish}
             />
           ))}
         </ul>
@@ -145,7 +164,7 @@ export function ContactOpportunitiesPanel({
           <CrossSellRow
             testId="opportunity-tagged"
             title={`${tagged} tagged for cross-sell`}
-            detail="Agent-set field on Contact Details. No in-force line and no open deal yet."
+            detail="Agent-set field on Contact Details. Not covered on the book and no open deal yet."
           />
         </ul>
       ) : null}

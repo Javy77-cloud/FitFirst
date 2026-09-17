@@ -4,6 +4,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts, contacts, deals, policies } from "@/lib/db/schema";
 import { loadRecordValues } from "@/lib/custom-fields/store";
+import { COVERAGE_CARRIER_FIELD_KEY, declaredCoverageFromFields } from "./declared-coverage";
 import {
   COVERAGE_NOTICE_KINDS,
   parseNoticeKey,
@@ -48,12 +49,17 @@ export async function loadContactNoticeInputs(contactId: string) {
 
   const tagged =
     typeof custom.cross_selling_opportunity === "string" ? custom.cross_selling_opportunity.trim() : "";
+  const declaredCoverage = declaredCoverageFromFields({
+    existingCoverageTypes: custom.existing_coverage_types,
+    carrierOfRecord: custom[COVERAGE_CARRIER_FIELD_KEY],
+  });
 
   return {
     contact,
     policies: policyRows,
     deals: dealRows,
     taggedCrossSell: tagged || null,
+    declaredCoverage,
     partyName: `${contact.firstName} ${contact.lastName}`.trim(),
   };
 }
@@ -72,6 +78,7 @@ export async function syncContactCoverageNotices(contactId: string): Promise<Pla
     policies: loaded.policies,
     deals: loaded.deals,
     taggedCrossSell: loaded.taggedCrossSell,
+    declaredCoverage: loaded.declaredCoverage,
   });
 
   const existing = await db

@@ -99,6 +99,7 @@ export function ClickToEditField({
   lifeOptions = [],
   healthOptions = [],
   lineSettings,
+  variant = "default",
 }: {
   field: CustomFieldDef;
   value: string;
@@ -113,6 +114,7 @@ export function ClickToEditField({
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
+  variant?: "default" | "contact";
 }) {
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(value);
@@ -185,7 +187,9 @@ export function ClickToEditField({
       <button
         type="button"
         className={cn(
-          "mt-1 flex min-h-8 w-full items-center rounded px-1.5 text-left text-sm hover:bg-muted",
+          variant === "contact"
+            ? "flex min-h-[1.75rem] w-full items-center rounded-sm px-1 text-left text-sm hover:bg-muted/60"
+            : "mt-1 flex min-h-8 w-full items-center rounded px-1.5 text-left text-sm hover:bg-muted",
           pending && "opacity-60",
           displayText(field, saved, values) === "—"
             ? "text-muted-foreground"

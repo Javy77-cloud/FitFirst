@@ -2,6 +2,7 @@ import Link from "next/link";
 import { GapPanel } from "@/components/coverage/gap-panel";
 import { PolicyStatusBadge } from "@/components/policy/policy-status-badge";
 import { RecordLink } from "@/components/record-links";
+import type { DeclaredCoverageLine } from "@/lib/coverage/declared-coverage";
 import {
   analyzeCoverageGaps,
   classifyCoverageLine,
@@ -26,18 +27,21 @@ export function ContactCoveragePanel({
   quoteCount,
   policies,
   focusPolicyId,
+  declaredCoverage,
 }: {
   partyName: string;
   isAna?: boolean;
   quoteCount?: number;
   policies: CoveragePolicyRow[];
   focusPolicyId?: string | null;
+  declaredCoverage?: DeclaredCoverageLine[];
 }) {
   const report = analyzeCoverageGaps({
     policies,
     partyName,
     isAna,
     quoteCount,
+    declaredCoverage,
   });
   const inForce = policies.filter((policy) => isInForcePolicyStatus(policy.status));
 

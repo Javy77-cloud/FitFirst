@@ -110,4 +110,40 @@ describe("coverage gap rules (in-force only)", () => {
     expect(report.inForceCount).toBe(2);
     expect(report.findings.map((f) => f.id)).toEqual(["home-no-flood", "no-umbrella"]);
   });
+
+  it("does not flag missing homeowners when HO is with another carrier (Rosa)", () => {
+    const report = analyzeCoverageGaps({
+      policies: [policy({ id: "pa", lineOfBusiness: "AUTO" })],
+      partyName: "Rosa Castellanos",
+      declaredCoverage: [{ line: "HO", carrierOfRecord: "other" }],
+    });
+    expect(report.findings.map((f) => f.id)).not.toContain("auto-no-home");
+    expect(report.findings.flatMap((f) => f.missing)).not.toContain("HO");
+    expect(report.coveredLines).toEqual(expect.arrayContaining(["AUTO", "HO"]));
+    expect(report.otherCarrierLines).toEqual(["HO"]);
+    expect(report.rewrites.map((row) => row.line)).toEqual(["HO"]);
+    expect(report.rewrites[0]?.plainEnglish).toMatch(/another carrier/);
+    expect(report.rewrites[0]?.plainEnglish).toMatch(/not a missing-homeowners/);
+  });
+
+  it("still flags missing homeowners when auto is in force and HO is not covered at all", () => {
+    const report = analyzeCoverageGaps({
+      policies: [policy({ id: "pa", lineOfBusiness: "AUTO" })],
+      partyName: "Rosa Castellanos",
+      declaredCoverage: [],
+    });
+    expect(report.findings.map((f) => f.id)).toContain("auto-no-home");
+    expect(report.findings.find((f) => f.id === "auto-no-home")?.missing).toEqual(["HO"]);
+    expect(report.otherCarrierLines).toEqual([]);
+  });
+
+  it("treats agency in-force HO as with us even if the contact mark says other", () => {
+    const report = analyzeCoverageGaps({
+      policies: [policy({ id: "ho", lineOfBusiness: "HO3" })],
+      partyName: "Elena Ruiz",
+      declaredCoverage: [{ line: "HO", carrierOfRecord: "other" }],
+    });
+    expect(report.otherCarrierLines).toEqual([]);
+    expect(report.findings.map((f) => f.id)).toEqual(["home-no-auto", "home-no-flood", "no-umbrella"]);
+  });
 });

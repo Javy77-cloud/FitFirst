@@ -15,6 +15,8 @@ import {
   isPipelineStripSection,
 } from "@/lib/custom-fields/insurance-quote-section";
 import { MailingSameSwitch } from "@/components/custom-fields/mailing-same-switch";
+import { ContactCoverageRecord } from "@/components/contacts/contact-coverage-record";
+import { ContactDetailField } from "@/components/contacts/contact-detail-field";
 import {
   MAILING_SAME_AS_INSURED_KEY,
   isMailingAddressFieldKey,
@@ -23,6 +25,8 @@ import {
   isPreviousAddressFieldKey,
   shouldShowPreviousAddressFields,
 } from "@/lib/custom-fields/mailing-same";
+import { COVERAGE_CARRIER_FIELD_KEY } from "@/lib/coverage/declared-coverage";
+import type { CoverageLine } from "@/lib/coverage/gaps";
 import { asList } from "@/lib/safe-list";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
@@ -45,6 +49,7 @@ export function RecordLayoutFields({
   lifeOptions = [],
   healthOptions = [],
   lineSettings,
+  inForceLines = [],
 }: {
   module: FieldLayoutModule;
   layout: FieldLayout;
@@ -58,6 +63,7 @@ export function RecordLayoutFields({
   lifeOptions?: Array<{ slug?: string; label: string }>;
   healthOptions?: Array<{ slug?: string; label: string }>;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
+  inForceLines?: CoverageLine[];
 }) {
   const safeLayout = parseLayout(layout);
   const fieldList = resolveLayoutFields(
@@ -73,6 +79,7 @@ export function RecordLayoutFields({
   const activeColumns = layoutColumns.filter((column) => asList(column.sections).length > 0);
   const oneCol = activeColumns.length <= 1;
   const commercial = module === "businesses" || fieldList.some((field) => field.key === "business_name");
+  const contactDesk = module === "contacts";
   const [liveValues, setLiveValues] = useState<Record<string, string>>(() => {
     const selling =
       values[DEAL_SELLING_AGENCY_KEY] ||
@@ -93,30 +100,46 @@ export function RecordLayoutFields({
     <div
       className={
         oneCol
-          ? "grid grid-cols-1 gap-4"
-          : "grid grid-cols-2 gap-4 max-[699px]:grid-cols-1"
+          ? "grid grid-cols-1 gap-3"
+          : contactDesk
+            ? "grid grid-cols-2 gap-3 max-[699px]:grid-cols-1"
+            : "grid grid-cols-2 gap-4 max-[699px]:grid-cols-1"
       }
       data-ff-record-layout={module}
       data-ff-record-layout-cols={oneCol ? "one-col" : "two-col"}
       data-ff-click-to-edit-layout={inline ? "1" : undefined}
     >
       {activeColumns.map((column) => (
-        <div key={column.id} className="min-w-0 space-y-3" data-ff-record-layout-col={column.id}>
+        <div
+          key={column.id}
+          className={contactDesk ? "min-w-0 space-y-2" : "min-w-0 space-y-3"}
+          data-ff-record-layout-col={column.id}
+        >
           {asList(column.sections).map((section) => {
             const pipelineStrip = isPipelineStripSection(section);
             return (
             <section
               key={section.id}
-              className="ff-card space-y-3 border border-border/60 px-5 py-4"
+              className={
+                contactDesk
+                  ? "space-y-2 rounded-lg border border-border/70 px-3 py-2.5"
+                  : "ff-card space-y-3 border border-border/60 px-5 py-4"
+              }
               data-ff-record-section={section.id}
               data-ff-pipeline-strip={pipelineStrip ? "1" : undefined}
-              style={{
-                background: "#f8fafc",
-                boxShadow: "0 1px 2px rgba(15, 39, 68, 0.06), 0 4px 12px rgba(15, 39, 68, 0.08)",
-              }}
+              data-ff-contact-section={contactDesk ? section.id : undefined}
+              style={
+                contactDesk
+                  ? { background: "var(--ff-card)", boxShadow: "var(--ff-shadow)" }
+                  : {
+                      background: "#f8fafc",
+                      boxShadow: "0 1px 2px rgba(15, 39, 68, 0.06), 0 4px 12px rgba(15, 39, 68, 0.08)",
+                    }
+              }
             >
               <LayoutSectionHeader
                 title={pipelineStrip ? PIPELINE_STRIP_LABEL : section.label}
+                tone={contactDesk ? "contact" : "default"}
               />
               {isMailingAddressSection(section) ? (
                 <MailingSameSwitch
@@ -151,6 +174,7 @@ export function RecordLayoutFields({
                   if (isMailingAddressFieldKey(key) && isMailingSameAsInsured(liveValues)) {
                     return false;
                   }
+                  if (key === COVERAGE_CARRIER_FIELD_KEY) return false;
                   return true;
                 })}
                 fieldOf={(key) => byKey[key]}
@@ -160,6 +184,70 @@ export function RecordLayoutFields({
                     label: key,
                     type: "single_line" as const,
                   };
+                  if (contactDesk && key === "existing_coverage_types") {
+                    return (
+                      <div className="col-span-full min-w-0" data-ff-record-field={key}>
+                        <ContactCoverageRecord
+                          existingTypes={liveValues.existing_coverage_types ?? ""}
+                          carrierMapRaw={liveValues[COVERAGE_CARRIER_FIELD_KEY] ?? ""}
+                          inForceLines={inForceLines}
+                          recordId={inline ? recordId : undefined}
+                          form={form}
+                        />
+                      </div>
+                    );
+                  }
+                  const selling = isSellingAgencyField(field);
+                  const controlField = selling
+                    ? { ...field, key: DEAL_SELLING_AGENCY_KEY, required: true, label: "Selling agency" }
+                    : field;
+                  const controlKey = selling ? DEAL_SELLING_AGENCY_KEY : key;
+                  const controlValue = selling
+                    ? liveValues[DEAL_SELLING_AGENCY_KEY] || defaultSellingAgencyValue(field.options)
+                    : liveValues[key] ?? "";
+                  const control =
+                    inline && recordId ? (
+                      <ClickToEditField
+                        field={controlField}
+                        value={controlValue}
+                        values={liveValues}
+                        name={`field_${controlKey}`}
+                        recordId={recordId}
+                        module={module}
+                        pipelineFamily={pipelineFamily}
+                        lifeOptions={lifeOptions}
+                        healthOptions={healthOptions}
+                        lineSettings={lineSettings}
+                        variant={contactDesk ? "contact" : "default"}
+                      />
+                    ) : (
+                      <FieldControl
+                        field={controlField}
+                        value={controlValue}
+                        values={liveValues}
+                        name={`field_${controlKey}`}
+                        form={form}
+                        pipelineFamily={pipelineFamily}
+                        lifeOptions={lifeOptions}
+                        healthOptions={healthOptions}
+                        lineSettings={lineSettings}
+                        onValueChange={(next) => patchValue(controlKey, next)}
+                        onAddressFill={(parts) =>
+                          setLiveValues((prev) => ({ ...prev, ...parts }))
+                        }
+                      />
+                    );
+                  if (contactDesk) {
+                    return (
+                      <ContactDetailField
+                        fieldKey={key}
+                        label={field.label}
+                        htmlFor={`field_${key}`}
+                      >
+                        {control}
+                      </ContactDetailField>
+                    );
+                  }
                   return (
                     <div className="space-y-1" data-ff-record-field={key}>
                       {key === "insurance_type" ? null : (
@@ -181,56 +269,7 @@ export function RecordLayoutFields({
                           ) : null}
                         </label>
                       )}
-                      {inline && recordId ? (
-                        <ClickToEditField
-                          field={
-                            isSellingAgencyField(field)
-                              ? { ...field, key: DEAL_SELLING_AGENCY_KEY, required: true, label: "Selling agency" }
-                              : field
-                          }
-                          value={
-                            isSellingAgencyField(field)
-                              ? liveValues[DEAL_SELLING_AGENCY_KEY] ||
-                                defaultSellingAgencyValue(field.options)
-                              : liveValues[key] ?? ""
-                          }
-                          values={liveValues}
-                          name={`field_${isSellingAgencyField(field) ? DEAL_SELLING_AGENCY_KEY : key}`}
-                          recordId={recordId}
-                          module={module}
-                          pipelineFamily={pipelineFamily}
-                          lifeOptions={lifeOptions}
-                          healthOptions={healthOptions}
-                          lineSettings={lineSettings}
-                        />
-                      ) : (
-                        <FieldControl
-                          field={
-                            isSellingAgencyField(field)
-                              ? { ...field, key: DEAL_SELLING_AGENCY_KEY, required: true, label: "Selling agency" }
-                              : field
-                          }
-                          value={
-                            isSellingAgencyField(field)
-                              ? liveValues[DEAL_SELLING_AGENCY_KEY] ||
-                                defaultSellingAgencyValue(field.options)
-                              : liveValues[key] ?? ""
-                          }
-                          values={liveValues}
-                          name={`field_${isSellingAgencyField(field) ? DEAL_SELLING_AGENCY_KEY : key}`}
-                          form={form}
-                          pipelineFamily={pipelineFamily}
-                          lifeOptions={lifeOptions}
-                          healthOptions={healthOptions}
-                          lineSettings={lineSettings}
-                          onValueChange={(next) =>
-                            patchValue(isSellingAgencyField(field) ? DEAL_SELLING_AGENCY_KEY : key, next)
-                          }
-                          onAddressFill={(parts) =>
-                            setLiveValues((prev) => ({ ...prev, ...parts }))
-                          }
-                        />
-                      )}
+                      {control}
                     </div>
                   );
                 }}
@@ -252,6 +291,7 @@ export function RecordLayoutForm({
   values,
   saveLabel = "Save",
   clickToEdit = false,
+  inForceLines = [],
 }: {
   module: FieldLayoutModule;
   recordId: string;
@@ -261,6 +301,7 @@ export function RecordLayoutForm({
   saveLabel?: string;
   /** When true, fields are plain text until clicked; blur saves. */
   clickToEdit?: boolean;
+  inForceLines?: CoverageLine[];
 }) {
   const formId = `ff-layout-save-${module}`;
   const inline = Boolean(clickToEdit);
@@ -284,6 +325,7 @@ export function RecordLayoutForm({
         form={inline ? undefined : formId}
         clickToEdit={inline}
         recordId={recordId}
+        inForceLines={inForceLines}
       />
       {!inline ? (
         <div className="flex justify-end">

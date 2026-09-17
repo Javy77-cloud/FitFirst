@@ -3,6 +3,11 @@ import { LOST_STAGES, WON_STAGES } from "@/lib/home/aggregate";
 import { OPEN_DEAL_STAGES } from "@/lib/home/kpis";
 import { isAnaLockedId, isAnaName } from "@/lib/merge/lock";
 import {
+  applyInForceCarrierLock,
+  classifyDeclaredCoverageType,
+  type DeclaredCoverageLine,
+} from "./declared-coverage";
+import {
   analyzeCoverageGaps,
   classifyCoverageLine,
   gapLineLabel,
@@ -60,29 +65,25 @@ export function isOpenDealStage(stage: string | null | undefined): boolean {
 
 /** Map picklist / deal labels onto gap lines (Home, Renters, Condo → HO). */
 export function classifyOpportunityLine(raw: string | null | undefined): CoverageLine {
-  const trimmed = String(raw ?? "").trim();
-  if (!trimmed) return "OTHER";
-  const upper = trimmed.toUpperCase();
-  if (
-    upper === "HOME" ||
-    upper === "RENTERS" ||
-    upper === "CONDO" ||
-    upper === "HOMEOWNERS" ||
-    upper === "DWELLING"
-  ) {
-    return "HO";
-  }
-  if (upper === "BUSINESS / COMMERCIAL" || upper === "BUSINESS" || upper === "COMMERCIAL") {
-    return "GL";
-  }
-  if (upper === "MOTORCYCLE") return "AUTO";
-  return classifyCoverageLine(trimmed);
+  return classifyDeclaredCoverageType(raw);
 }
 
 export function householdInForceLines(policies: GapPolicyInput[]): Set<CoverageLine> {
   const lines = new Set<CoverageLine>();
   for (const policy of inForceGapPolicies(policies)) {
     lines.add(classifyCoverageLine(policy.lineOfBusiness));
+  }
+  return lines;
+}
+
+/** In-force plus declared us/other — used so “missing” is not a false gap. */
+export function householdCoveredLines(
+  policies: GapPolicyInput[],
+  declared?: readonly DeclaredCoverageLine[] | null,
+): Set<CoverageLine> {
+  const lines = householdInForceLines(policies);
+  for (const row of applyInForceCarrierLock(declared ?? [], lines)) {
+    if (row.line !== "OTHER") lines.add(row.line);
   }
   return lines;
 }
@@ -184,6 +185,7 @@ export function planContactNotices(input: {
   deals: NoticeDealInput[];
   taggedCrossSell?: string | null;
   quoteCount?: number;
+  declaredCoverage?: DeclaredCoverageLine[];
 }): PlannedCoverageNotice[] {
   if (isAnaCoverageParty(input)) return [];
 
@@ -191,8 +193,9 @@ export function planContactNotices(input: {
     policies: input.policies,
     partyName: input.partyName,
     quoteCount: input.quoteCount,
+    declaredCoverage: input.declaredCoverage,
   });
-  const inForceLines = householdInForceLines(input.policies);
+  const inForceLines = householdCoveredLines(input.policies, input.declaredCoverage);
   const planned: PlannedCoverageNotice[] = [];
 
   for (const finding of report.findings) {

@@ -134,6 +134,19 @@ describe("contact coverage / opportunity notices", () => {
     ).toBe("/contacts/c1?section=coverage&focusPolicy=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa#coverage");
   });
 
+  it("does not plan a missing-homeowners notice when HO is with another carrier", () => {
+    const planned = planContactNotices({
+      contactId: "rosa",
+      partyName: "Rosa Castellanos",
+      policies: [policy({ id: "pa", lineOfBusiness: "AUTO" })],
+      deals: [],
+      taggedCrossSell: "Home",
+      declaredCoverage: [{ line: "HO", carrierOfRecord: "other" }],
+    });
+    expect(planned.some((row) => row.key === "auto-no-home")).toBe(false);
+    expect(planned.some((row) => row.key === "tagged:Home")).toBe(false);
+  });
+
   it("does not treat a quoted row as in-force coverage", () => {
     const planned = planContactNotices({
       contactId: "c1",

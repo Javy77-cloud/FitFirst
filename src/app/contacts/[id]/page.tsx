@@ -32,6 +32,8 @@ import { ContactCoveragePanel } from "@/components/contacts/contact-coverage-pan
 import { ContactOpportunitiesPanel } from "@/components/contacts/contact-opportunities-panel";
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
 import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices";
+import { COVERAGE_CARRIER_FIELD_KEY, declaredCoverageFromFields } from "@/lib/coverage/declared-coverage";
+import { classifyCoverageLine } from "@/lib/coverage/gaps";
 import { isAnaCoverageParty, isOpenDealStage } from "@/lib/coverage/notices";
 import { isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
 import { softEmailPhoneDups } from "@/lib/contacts/soft-dup";
@@ -208,7 +210,23 @@ export default async function ContactDetailPage({
     pcNotes ? { id: "pc-notes", title: "P&C Notes", meta: pcNotes } : null,
   ].filter(Boolean) as { id: string; title: string; meta: string }[];
 
-  const inForceCount = policies.filter((row) => isInForcePolicyStatus(row.policy.status)).length;
+  const inForcePolicies = policies.filter((row) => isInForcePolicyStatus(row.policy.status));
+  const inForceCount = inForcePolicies.length;
+  const inForceLines = [
+    ...new Set(
+      inForcePolicies
+        .map((row) => classifyCoverageLine(row.policy.lineOfBusiness))
+        .filter((line) => line !== "OTHER"),
+    ),
+  ];
+  const declaredCoverage = declaredCoverageFromFields({
+    existingCoverageTypes:
+      typeof fieldValues.existing_coverage_types === "string" ? fieldValues.existing_coverage_types : "",
+    carrierOfRecord:
+      typeof fieldValues[COVERAGE_CARRIER_FIELD_KEY] === "string"
+        ? fieldValues[COVERAGE_CARRIER_FIELD_KEY]
+        : "",
+  });
   const openDealCount = deals.filter((deal) => isOpenDealStage(deal.pipelineStage)).length;
   const sectionCounts: Partial<Record<ContactSectionId, number>> = {
     coverage: inForceCount,
@@ -393,7 +411,7 @@ export default async function ContactDetailPage({
 
               <section
                 id="contact-details"
-                className="ff-card space-y-3 p-3 scroll-mt-14"
+                className="ff-card space-y-2 p-2.5 scroll-mt-14"
                 data-ff-contact-details=""
                 data-ff-contact-inline-fields=""
               >
@@ -401,7 +419,7 @@ export default async function ContactDetailPage({
                   className="flex items-center justify-between gap-3"
                   data-ff-contact-details-header=""
                 >
-                  <h2 className="text-base font-semibold text-[#002868]">Contact Details</h2>
+                  <h2 className="text-sm font-semibold text-[#002868]">Contact Details</h2>
                   <div className="shrink-0" data-ff-contact-edit-layout="">
                     <EditLayoutLink module="contacts" />
                   </div>
@@ -414,6 +432,7 @@ export default async function ContactDetailPage({
                   values={fieldValues}
                   saveLabel="Save Contact"
                   clickToEdit
+                  inForceLines={inForceLines}
                 />
               </section>
               <RecordModuleMacros module="contacts" recordId={contact.id} />
@@ -431,6 +450,7 @@ export default async function ContactDetailPage({
                   isAna={isAna}
                   quoteCount={deals.length}
                   focusPolicyId={focusPolicy}
+                  declaredCoverage={declaredCoverage}
                   policies={policies.map(({ policy, carrier }) => ({
                     id: policy.id,
                     status: policy.status,
@@ -456,6 +476,7 @@ export default async function ContactDetailPage({
                   partyName={partyName}
                   isAna={isAna}
                   focusDealId={focusDeal}
+                  declaredCoverage={declaredCoverage}
                   taggedCrossSell={
                     typeof fieldValues.cross_selling_opportunity === "string"
                       ? fieldValues.cross_selling_opportunity
