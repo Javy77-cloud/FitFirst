@@ -3,8 +3,9 @@
 import { useMemo, useState, useTransition } from "react";
 import { saveDealFieldValues, uploadDealFieldImage } from "@/app/actions/custom-fields";
 import { FieldControl } from "@/components/custom-fields/field-control";
+import { InsuranceCascadeControl } from "@/components/custom-fields/insurance-cascade-control";
 import { LayoutSectionFieldGrid } from "@/components/custom-fields/layout-section-field-grid";
-import { LayoutRequiredBadge, LayoutSectionHeader } from "@/components/custom-fields/layout-section-header";
+import { LayoutSectionHeader } from "@/components/custom-fields/layout-section-header";
 import { buttonVariants } from "@/components/ui/button";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
 import type { DealProductId } from "@/lib/deals/deal-products";
@@ -17,10 +18,7 @@ import { BUSINESS_IDENTITY_FIELDS } from "@/lib/custom-fields/business-identity-
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { parseLayout, sectionDensityOf, type CustomFieldDef, type FieldLayout } from "@/lib/custom-fields/types";
-import {
-  INSURANCE_QUOTE_SECTION_STYLE,
-  isInsuranceQuoteRequestSection,
-} from "@/lib/custom-fields/insurance-quote-section";
+import { isPipelineStripSection } from "@/lib/custom-fields/insurance-quote-section";
 import {
   CO_APPLICANT_SECTION_ID,
   HAS_CO_APPLICANT_KEY,
@@ -78,13 +76,15 @@ function skipOwnedInsuranceField(
     sectionKeys.includes("insurance_type") || fieldList.some((item) => item.key === "insurance_type");
   return (
     layoutHasType &&
-    (key === "insurance_category" || key === "insurance_subtype" || field.systemKey === "quotingForm")
+    (key === "pipeline" ||
+      key === "insurance_category" ||
+      key === "insurance_subtype" ||
+      field.systemKey === "quotingForm")
   );
 }
 
 function CoApplicantDealSection({
   sectionLabel,
-  quoteReq,
   density,
   fieldKeys,
   byKey,
@@ -105,7 +105,6 @@ function CoApplicantDealSection({
   onValuesPatch,
 }: {
   sectionLabel: string;
-  quoteReq: boolean;
   density?: unknown;
   fieldKeys: string[];
   byKey: Record<string, CustomFieldDef>;
@@ -135,19 +134,12 @@ function CoApplicantDealSection({
 
   return (
     <section
-      className={
-        quoteReq
-          ? "ff-card space-y-2 border border-[#9ec9e8] p-3"
-          : "ff-card space-y-2 p-3"
-      }
+      className="ff-card space-y-2 p-3"
       data-ff-deal-section={CO_APPLICANT_SECTION_ID}
       data-ff-co-applicant-enabled={enabled ? "1" : "0"}
-      data-ff-insurance-quote-request={quoteReq ? "1" : undefined}
-      style={quoteReq ? INSURANCE_QUOTE_SECTION_STYLE : undefined}
     >
       <LayoutSectionHeader
         title={sectionLabel}
-        badge={quoteReq ? <LayoutRequiredBadge /> : null}
         action={
           <label
             className="flex cursor-pointer items-center gap-2 text-[11px] font-medium text-navy"
@@ -238,7 +230,7 @@ function DealDetailsField({
 }) {
   return (
     <div className="space-y-1" data-ff-deal-field={fieldKey}>
-      {fieldKey === "insurance_type" || field.label === "Insurance Type" ? null : (
+      {fieldKey === "insurance_type" ? null : (
         <label className="text-xs font-medium text-navy" htmlFor={`field_${fieldKey}`}>
           {field.label}
         </label>
@@ -400,6 +392,36 @@ export function DealDetailsPanel({
         <input type="hidden" name="line" value={line} />
         <input type="hidden" name="pipelineFamily" value={pipelineFamily} />
         {activePackageLine ? <input type="hidden" name="activePackageLine" value={activePackageLine} /> : null}
+      <section
+        className="mb-3 rounded-md border border-border/70 bg-background p-3"
+        data-ff-deal-section="pipeline"
+        data-ff-pipeline-strip=""
+      >
+        <LayoutSectionHeader title="Pipeline" />
+        <p className="mb-2 text-center text-[11px] text-red-700" id="ff-pipeline-required-hint">
+          Required — these fields open the matching Risk Profile.
+        </p>
+        <InsuranceCascadeControl
+          typeName="field_insurance_type"
+          categoryName="field_insurance_category"
+          subtypeName="field_insurance_subtype"
+          form={formId}
+          family={pipelineFamily}
+          typeValue={liveValues.insurance_type || ""}
+          categoryValue={liveValues.insurance_category || ""}
+          value={liveValues.insurance_subtype || policySubType || quotingForm || ""}
+          quotingForm={quotingForm}
+          policySubType={policySubType || liveValues.insurance_subtype || ""}
+          lifeOptions={lifeOptions}
+          healthOptions={healthOptions}
+          lifeHealthOptions={lifeHealthOptions}
+          required
+          packageLines={packageLines}
+          activePackageLine={activePackageLine}
+          lineSettings={lineSettings}
+          variant="strip"
+        />
+      </section>
       <div
         className="grid grid-cols-2 gap-4 max-[699px]:grid-cols-1"
         data-ff-deal-details-layout="two-col"
@@ -407,7 +429,7 @@ export function DealDetailsPanel({
         {asList(safeLayout.columns).map((column) => (
           <div key={column.id} className="min-w-0 space-y-3" data-ff-deal-details-col={column.id}>
             {asList(column.sections).map((section) => {
-              const quoteReq = isInsuranceQuoteRequestSection(section);
+              if (isPipelineStripSection(section)) return null;
               const sectionKeys = asList(section.fieldKeys).filter((key) => {
                 if (isDealDetailsLandlordFieldKey(key)) return false;
                 if (isDuplicateDealDetailsField(key, layoutKeySet, seenFieldKeys)) return false;
@@ -423,7 +445,6 @@ export function DealDetailsPanel({
                   <CoApplicantDealSection
                     key={section.id}
                     sectionLabel={section.label}
-                    quoteReq={quoteReq}
                     density={section.density}
                     fieldKeys={sectionKeys}
                     byKey={byKey}
@@ -449,19 +470,12 @@ export function DealDetailsPanel({
               return (
                 <section
                   key={section.id}
-                  className={
-                    quoteReq
-                      ? "ff-card space-y-2 overflow-hidden border border-[#9ec9e8] p-3"
-                      : "ff-card space-y-2 overflow-hidden p-3"
-                  }
+                  className="ff-card space-y-2 overflow-hidden p-3"
                   data-ff-deal-section={section.id}
                   data-ff-deal-section-kind={shared ? "shared" : "other"}
-                  data-ff-insurance-quote-request={quoteReq ? "1" : undefined}
-                  style={quoteReq ? INSURANCE_QUOTE_SECTION_STYLE : undefined}
                 >
                   <LayoutSectionHeader
                     title={section.label}
-                    badge={quoteReq ? <LayoutRequiredBadge /> : null}
                   />
                   {section.id === "mailing_address" || /^mailing address$/i.test(section.label) ? (
                     <MailingSameSwitch

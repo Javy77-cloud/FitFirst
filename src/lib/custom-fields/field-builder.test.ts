@@ -452,7 +452,7 @@ describe("deal field builder", () => {
     expect(home.columns[1].sections.map((section) => section.label)).toEqual([
       "Co-applicant",
       "Mailing Address",
-      "Details",
+      "Pipeline",
     ]);
     expect(homeKeys).toEqual(expect.arrayContaining(["insurance_type", "insurance_category", "insurance_subtype"]));
     expect(homeKeys).not.toContain("lease_term");

@@ -2,6 +2,7 @@ import { pipelineSlugForLine } from "@/lib/crm/convert";
 import {
   DEAL_LIST_PIPELINE_KEY,
   DEAL_LIST_SUBTYPE_KEY,
+  cascadeValuesFromDealHints,
   dealListCascadeSyncValues,
 } from "@/lib/deals/insurance-cascade";
 import { sourceLabel } from "@/lib/crm/sources";
@@ -67,7 +68,16 @@ const ALWAYS_LIST_NATIVE = new Set(
 );
 
 /** Catalog fields that should start visible — the rest stay in the picker. */
-const DEFAULT_ON_FIELD_KEYS = new Set(["state", "pipeline"]);
+const DEFAULT_ON_FIELD_KEYS = new Set(["state", "pipeline", "insurance_category", "insurance_subtype"]);
+
+function lockedDealListLabel(field: CustomFieldDef): string {
+  if (field.key === DEAL_LIST_PIPELINE_KEY || field.key === "pipeline" || field.key === "insurance_type") {
+    return "Pipeline";
+  }
+  if (field.key === "insurance_category") return "Insurance type";
+  if (field.key === DEAL_LIST_SUBTYPE_KEY || field.key === "insurance_subtype") return "Policy form";
+  return field.label;
+}
 
 export function layoutKeysForColumns(layout: FieldLayout | null | undefined): Set<string> {
   return new Set(allLayoutFieldKeys(layout ?? defaultLayoutForModule("deals")));
@@ -85,7 +95,9 @@ export const STANDING_DEAL_LIST_FIELD_KEYS = new Set([
   "picklist_5n3i", // Pipeline (legacy key still on Javy's column prefs)
   "picklist_yp0c", // Selling Agency
   "picklist_8mus", // Priority
-  "picklist", // Insurance subtype
+  "picklist", // Policy form (legacy Insurance subtype)
+  "insurance_category", // Insurance type
+  "insurance_subtype", // Policy form
   "new_field", // Notes (his list Notes column)
 ]);
 
@@ -93,7 +105,9 @@ export function isAlwaysOnDealListCatalogField(field: { key: string; label: stri
   if (STANDING_DEAL_LIST_FIELD_KEYS.has(field.key)) return true;
   const label = field.label.trim();
   if (field.key === "pipeline") return true;
-  return /^(pipeline|selling agency|priority|insurance subtype)$/i.test(label);
+  return /^(pipeline|selling agency|priority|insurance subtype|insurance type|policy form)$/i.test(
+    label,
+  );
 }
 
 export type DealStageOption = {
@@ -117,6 +131,7 @@ export type DealColumnDeal = {
   lineOfBusiness: string;
   policySubType?: string | null;
   quotingForm?: string | null;
+  shopProducts?: string[] | null;
   shopLines?: string[] | null;
   source?: string | null;
   state?: string | null;
@@ -166,11 +181,11 @@ export function dealsColumnsFromFields(
     seen.add(field.key);
     fromCatalog.push({
       key: field.key,
-      label: field.label,
+      label: lockedDealListLabel(field),
       defaultOn:
         alwaysOn ||
         DEFAULT_ON_FIELD_KEYS.has(field.key) ||
-        /^(pipeline|selling agency)$/i.test(field.label.trim()),
+        /^(pipeline|selling agency|insurance type|policy form)$/i.test(field.label.trim()),
     });
   }
   return [...natives, ...fromCatalog];
@@ -201,17 +216,40 @@ export function dealFieldRawValue(
 ): string {
   const storedValue = stored[field.key];
   if (storedValue != null && storedValue !== "") return storedValue;
-  const synced = dealListCascadeSyncValues({
+  const derived = cascadeValuesFromDealHints({
+    shopProducts: deal.shopProducts,
+    shopLines: deal.shopLines,
+    lineOfBusiness: deal.lineOfBusiness,
+    quotingForm: deal.quotingForm,
+    policySubType: deal.policySubType,
     insuranceType: stored.insurance_type,
+    insuranceCategory: stored.insurance_category,
     insuranceSubtype: stored.insurance_subtype,
+  });
+  const synced = dealListCascadeSyncValues({
+    insuranceType: stored.insurance_type || derived.insurance_type,
+    insuranceCategory: stored.insurance_category || derived.insurance_category,
+    insuranceSubtype: stored.insurance_subtype || derived.insurance_subtype,
     quotingForm: deal.quotingForm,
     policySubType: deal.policySubType,
   });
-  if (field.key === DEAL_LIST_PIPELINE_KEY) {
-    return synced[DEAL_LIST_PIPELINE_KEY] ?? nativeValueFromDeal(deal, field.systemKey);
+  if (field.key === DEAL_LIST_PIPELINE_KEY || field.key === "pipeline" || field.key === "insurance_type") {
+    return (
+      synced[DEAL_LIST_PIPELINE_KEY] ||
+      derived.pipeline ||
+      derived.insurance_type ||
+      nativeValueFromDeal(deal, field.systemKey)
+    );
   }
-  if (field.key === DEAL_LIST_SUBTYPE_KEY) {
-    return synced[DEAL_LIST_SUBTYPE_KEY] ?? nativeValueFromDeal(deal, field.systemKey);
+  if (field.key === "insurance_category") {
+    return derived.insurance_category || nativeValueFromDeal(deal, field.systemKey);
+  }
+  if (field.key === DEAL_LIST_SUBTYPE_KEY || field.key === "insurance_subtype") {
+    return (
+      synced[DEAL_LIST_SUBTYPE_KEY] ||
+      derived.insurance_subtype ||
+      nativeValueFromDeal(deal, field.systemKey)
+    );
   }
   return nativeValueFromDeal(deal, field.systemKey);
 }

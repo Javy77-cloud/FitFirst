@@ -95,21 +95,24 @@ const LEAD_FIELDS: CustomFieldDef[] = [
   },
   {
     key: "insurance_type",
-    label: "Insurance Type",
+    label: "Pipeline",
     type: "picklist",
     options: [...LEAD_INSURANCE_TYPE_OPTIONS],
+    required: true,
   },
   {
     key: "insurance_category",
-    label: "Insurance Category",
+    label: "Insurance type",
     type: "picklist",
     options: [...LEAD_INSURANCE_CATEGORY_OPTIONS],
+    required: true,
   },
   {
     key: "insurance_subtype",
-    label: "Insurance Form",
+    label: "Policy form",
     type: "picklist",
     options: [...LEAD_INSURANCE_SUBTYPE_OPTIONS],
+    required: true,
   },
   {
     key: "insurance_type_desired",

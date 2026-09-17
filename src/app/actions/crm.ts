@@ -79,7 +79,7 @@ import { BUSINESS_IDENTITY_FIELD_KEYS } from "@/lib/custom-fields/business-ident
 import { addressVerifyValuesFromForm } from "@/lib/address/verify-state";
 import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
 import { isRedirectError } from "@/lib/lifecycle/shop";
-import { dealListCascadeSyncValues } from "@/lib/deals/insurance-cascade";
+import { dealListCascadeSyncValues, mergeCascadePrefill } from "@/lib/deals/insurance-cascade";
 import { applySystemDealValues } from "@/app/actions/custom-fields";
 import { listFieldDefs, writeRecordValues } from "@/lib/custom-fields/store";
 import { normalizeLeadCadence } from "@/lib/leads/queue";
@@ -675,7 +675,12 @@ export async function createDeal(formData: FormData) {
     .returning();
 
   try {
-    await persistNewDealLayoutValues(deal.id, formData, { quotingForm, policySubType });
+    await persistNewDealLayoutValues(deal.id, formData, {
+      quotingForm,
+      policySubType,
+      products: shopProducts,
+      lineOfBusiness: line,
+    });
     await persistDealWorkTab(deal.id, "details").catch(() => null);
 
     if (!lead.convertedDealId) {
@@ -1796,14 +1801,27 @@ export async function archiveDeal(formData: FormData) {
 async function persistNewDealLayoutValues(
   dealId: string,
   formData: FormData,
-  line: { quotingForm: string; policySubType: string },
+  line: {
+    quotingForm: string;
+    policySubType: string;
+    products?: readonly string[] | null;
+    lineOfBusiness?: string | null;
+  },
 ) {
   const defs = await listFieldDefs("deals").catch(() => []);
   const catalog = defs.length ? defs : CORE_FIELDS;
-  const custom = {
-    ...customValuesFromForm(formData, catalog),
-    ...addressVerifyValuesFromForm(formData),
-  };
+  const custom = mergeCascadePrefill(
+    {
+      ...customValuesFromForm(formData, catalog),
+      ...addressVerifyValuesFromForm(formData),
+    },
+    {
+      shopProducts: line.products,
+      quotingForm: line.quotingForm,
+      policySubType: line.policySubType,
+      lineOfBusiness: line.lineOfBusiness,
+    },
+  );
   for (const key of BUSINESS_IDENTITY_FIELD_KEYS) {
     const posted = str(formData, `field_${key}`);
     if (posted && !String(custom[key] ?? "").trim()) custom[key] = posted;
@@ -1814,6 +1832,7 @@ async function persistNewDealLayoutValues(
     custom,
     dealListCascadeSyncValues({
       insuranceType: custom.insurance_type,
+      insuranceCategory: custom.insurance_category,
       insuranceSubtype: custom.insurance_subtype,
       quotingForm: line.quotingForm,
       policySubType: line.policySubType,

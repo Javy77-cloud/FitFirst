@@ -66,22 +66,25 @@ export const CORE_FIELDS: CustomFieldDef[] = [
   },
   {
     key: "insurance_type",
-    label: "Insurance Type",
+    label: "Pipeline",
     type: "picklist",
     options: ["PC", "Life", "Health"],
+    required: true,
   },
   {
     key: "insurance_category",
-    label: "Insurance Category",
+    label: "Insurance type",
     type: "picklist",
     options: [],
+    required: true,
   },
   {
     key: "insurance_subtype",
-    label: "Insurance Form",
+    label: "Policy form",
     type: "picklist",
     options: [],
     systemKey: "quotingForm",
+    required: true,
   },
   ...APPLICANT_CRM_FIELDS,
   ...CO_APPLICANT_CRM_FIELDS,
@@ -202,7 +205,7 @@ function essentialSections(): { left: LayoutSection[]; right: LayoutSection[] } 
         "contact_mailing_zip",
         "contact_mailing_county",
       ]),
-      section("details", "Details", ["pipeline", "insurance_type", "insurance_category", "insurance_subtype"]),
+      section("pipeline", "Pipeline", ["insurance_type", "insurance_category", "insurance_subtype"]),
     ],
   };
 }

@@ -328,11 +328,14 @@ describe("sep13 — deal title uses deepest cascade form label", () => {
     ).toBe("Tyler Bhattel / Term Life");
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/quotingForm: form\?\.id/);
     expect(source("src/components/custom-fields/deal-details-panel.tsx")).toMatch(
-      /isInsuranceQuoteRequestSection|data-ff-insurance-quote-request/,
+      /data-ff-pipeline-strip/,
     );
-    expect(source("src/components/custom-fields/deal-details-panel.tsx")).toMatch(/Required/);
-    expect(source("src/components/custom-fields/record-layout-form.tsx")).toMatch(
+    expect(source("src/components/custom-fields/insurance-cascade-control.tsx")).toMatch(/Policy form/);
+    expect(source("src/components/custom-fields/deal-details-panel.tsx")).not.toMatch(
       /data-ff-insurance-quote-request/,
+    );
+    expect(source("src/components/custom-fields/record-layout-form.tsx")).toMatch(
+      /data-ff-pipeline-strip/,
     );
   });
 });

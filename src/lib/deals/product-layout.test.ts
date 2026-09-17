@@ -54,8 +54,14 @@ describe("deal details shared body + product overlay", () => {
     const home = layoutForActiveProduct(SHARED_LAYOUT, "homeowners");
     expect(home.columns[0].sections.map((section) => section.id)).toEqual(["contact", "applicant"]);
     expect(home.columns[1].sections.map((section) => section.id)).toEqual([
+      "pipeline",
       "insured_address",
       "mailing_address",
+    ]);
+    expect(home.columns[1].sections[0]?.fieldKeys).toEqual([
+      "insurance_type",
+      "insurance_category",
+      "insurance_subtype",
     ]);
     expect(home.columns[1].sections.some((section) => section.id === productSectionId("homeowners"))).toBe(
       false,
@@ -153,7 +159,10 @@ describe("deal details shared body + product overlay", () => {
     } as FieldLayout;
     const live = layoutForActiveProduct(dirty, "landlord");
     const keys = allLayoutFieldKeys(live);
-    expect(keys).toEqual(["mailing_address"]);
+    expect(keys).toEqual(
+      expect.arrayContaining(["mailing_address", "insurance_type", "insurance_category", "insurance_subtype"]),
+    );
+    expect(keys).not.toContain("year_built");
     expect(keys).not.toContain("primary_heat");
     expect(keys).not.toContain("lease_term");
     expect(productLayoutFields("landlord").map((field) => field.key)).toEqual(

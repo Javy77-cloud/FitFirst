@@ -264,5 +264,22 @@ describe("list Pipeline / subtype columns fall back to Details cascade", () => {
     expect(dealFieldRawValue(subtypeField, deal, { insurance_subtype: "DP3", picklist: "" })).toBe("DP3");
     expect(dealFieldRawValue(pipelineField, deal, { picklist_5n3i: "Life" })).toBe("Life");
   });
+
+  it("fills Tyler Life term list columns from product / quoting form when Details keys are empty", () => {
+    const deal = {
+      title: "Tyler Barthel / Term Life",
+      pipelineStage: "gathering",
+      lineOfBusiness: "LIFE",
+      quotingForm: "Term Life",
+      policySubType: "Term Life",
+      shopProducts: ["life_term"],
+    };
+    const pipelineField = { key: "picklist_5n3i", label: "Pipeline", type: "picklist" as const };
+    const typeField = { key: "insurance_category", label: "Insurance type", type: "picklist" as const };
+    const formField = { key: "picklist", label: "Policy form", type: "picklist" as const };
+    expect(dealFieldRawValue(pipelineField, deal, {})).toBe("Life");
+    expect(dealFieldRawValue(typeField, deal, {})).toBe("Term Life");
+    expect(dealFieldRawValue(formField, deal, {})).toBe("Term Life");
+  });
 });
 
