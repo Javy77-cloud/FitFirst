@@ -406,9 +406,9 @@ export async function seedUsersAndBook() {
     .values({
       id: DEVELOPER_USER_ID,
       tenantId: TENANT_ID,
-      name: "Drew Hale",
-      email: "drew@fitfirst.local",
-      username: "drew",
+      name: "Natasha Logan",
+      email: "logan@fitfirst.local",
+      username: "logan",
       role: "developer",
       passwordHash: null,
       active: true,
@@ -430,9 +430,9 @@ export async function seedUsersAndBook() {
     .onConflictDoUpdate({
       target: users.id,
       set: {
-        name: "Drew Hale",
-        email: "drew@fitfirst.local",
-        username: "drew",
+        name: "Natasha Logan",
+        email: "logan@fitfirst.local",
+        username: "logan",
         role: "developer",
         active: true,
         accessStatus: "active",

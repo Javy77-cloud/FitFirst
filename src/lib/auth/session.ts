@@ -50,7 +50,7 @@ const DEMO_PASSWORDS: Record<string, string> = {
   "javy@fitfirst.local": "javy",
   "maya@fitfirst.local": "maya",
   "javier@fitfirst.local": "javier",
-  "drew@fitfirst.local": "drew",
+  "logan@fitfirst.local": "logan",
 };
 
 export const DEMO_USERS = {
@@ -72,9 +72,9 @@ export const DEMO_USERS = {
       "Same agency book as admin (Policies, Contacts, Deals). Agent chrome still applies via Agent Policy Access.",
   },
   developer: {
-    email: "drew@fitfirst.local",
-    password: "drew",
-    name: "Drew Hale",
+    email: "logan@fitfirst.local",
+    password: "logan",
+    name: "Natasha Logan",
     role: "developer" as const,
     label: "Developer",
     summary: "API usage meters and upcoming platform notes. Not Admin settings. Not a producer book.",

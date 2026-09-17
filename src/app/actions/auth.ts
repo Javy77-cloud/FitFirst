@@ -88,7 +88,7 @@ export async function loginDesk(formData: FormData) {
   if (who === "agent" || who === "maya") {
     await signInByLogin(DEMO_USERS.agent.email, password);
   }
-  if (who === "developer" || who === "drew") {
+  if (who === "developer" || who === "logan") {
     await signInByLogin(DEMO_USERS.developer.email, password);
   }
   const login = String(formData.get("email") ?? formData.get("username") ?? "").trim();
