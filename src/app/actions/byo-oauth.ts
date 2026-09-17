@@ -16,6 +16,11 @@ import { yahooMailboxPing } from "@/lib/integrations/yahoo-mail";
 import { pingDocuSignSandbox } from "@/lib/integrations/docusign-sandbox";
 import { syncGoogleBusy, syncOutlookBusy } from "@/lib/integrations/calendar-busy";
 import {
+  envHasOauthApp,
+  isPlatformHostedGoogleOauth,
+  startByoOauthCredentialNotice,
+} from "@/lib/integrations/oauth-env";
+import {
   BYO_OAUTH_COOKIE,
   byoOauthReturnPath,
   isByoOauthProviderId,
@@ -51,6 +56,9 @@ export async function saveByoOauthCredentials(formData: FormData) {
   const raw = String(formData.get("provider") ?? "");
   const dest = byoOauthReturnPath(String(formData.get("next") ?? ""));
   if (!isByoOauthProviderId(raw)) redirect(`${dest}?notice=unknown-provider`);
+  if (isPlatformHostedGoogleOauth(raw)) {
+    redirect(`${dest}?notice=google-connect-not-setup&provider=${raw}`);
+  }
   const clientId = String(formData.get("clientId") ?? "").trim();
   const clientSecret = String(formData.get("clientSecret") ?? "");
   const accountLabel = String(formData.get("accountLabel") ?? "").trim();
@@ -70,6 +78,9 @@ export async function startByoOauth(formData: FormData) {
   const raw = String(formData.get("provider") ?? "");
   const dest = byoOauthReturnPath(String(formData.get("next") ?? ""));
   if (!isByoOauthProviderId(raw)) redirect(`${dest}?notice=unknown-provider`);
+  if (isPlatformHostedGoogleOauth(raw) && !envHasOauthApp("google")) {
+    redirect(`${dest}?notice=${startByoOauthCredentialNotice(raw, null)}&provider=${raw}`);
+  }
   const origin = await deskPublicOrigin();
   const prepared = await prepareByoAuthorize({
     provider: raw,
@@ -78,7 +89,8 @@ export async function startByoOauth(formData: FormData) {
     userId: session.userId,
   });
   if (!prepared.ok) {
-    redirect(`${dest}?notice=needs-credentials&provider=${raw}`);
+    const notice = startByoOauthCredentialNotice(raw, null);
+    redirect(`${dest}?notice=${notice}&provider=${raw}`);
   }
   const jar = await cookies();
   jar.set(BYO_OAUTH_COOKIE, prepared.state, {

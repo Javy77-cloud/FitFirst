@@ -34,7 +34,7 @@ export async function tenantLooksSolo(tenantId = DEFAULT_TENANT_ID): Promise<boo
 
 export function gmailConnectCopy(soloDesk: boolean): string {
   if (soloDesk) {
-    return "Solo Admin + desk — this Gmail is your personal inbox. Agency Admin still owns the Google Cloud app.";
+    return "Solo Admin + desk — this Gmail is your personal inbox. Click Connect to approve Google. FitFirst owns the OAuth app.";
   }
-  return "Agency Admin connects the agency Gmail / Workspace inbox. Agents cannot start OAuth.";
+  return "Agency Admin connects the agency Gmail / Workspace inbox with one-click Google Connect. Agents cannot start OAuth.";
 }

@@ -19,7 +19,7 @@ import {
   type IntegrationProviderId,
   stubAccountLabel,
 } from "./catalog";
-import { envHasOauthApp } from "./oauth-env";
+import { envHasOauthApp, isPlatformHostedGoogleOauth } from "./oauth-env";
 import { byoOauthSpec, isByoOauthProviderId } from "./oauth-specs";
 
 export type CatalogItem = IntegrationProvider & {
@@ -121,14 +121,15 @@ export async function listCatalogItems(): Promise<CatalogItem[]> {
     const hasOwnSecret = Boolean(row?.clientSecretEnc && row?.clientSecretIv);
     const hasOwnClient = Boolean(row?.clientId?.trim());
     const envCreds = isByoOauthProviderId(provider.id) && envHasOauthApp(byoOauthSpec(provider.id).family);
+    const platformGoogle = isPlatformHostedGoogleOauth(provider.id);
     return {
       ...provider,
       connected,
       accountLabel: row?.accountLabel ?? (connected ? stubAccountLabel(provider.id) : null),
       lastConnectStatus: row?.lastConnectStatus ?? (connected ? "not_implemented" : null),
       ownerUserId: row?.ownerUserId ?? null,
-      clientId: row?.clientId ?? null,
-      hasCredentials: (hasOwnClient && hasOwnSecret) || envCreds,
+      clientId: platformGoogle ? null : (row?.clientId ?? null),
+      hasCredentials: platformGoogle ? envCreds : (hasOwnClient && hasOwnSecret) || envCreds,
       hasEnvCredentials: envCreds,
       hasRefreshToken: Boolean(row?.refreshTokenEnc && row?.refreshTokenIv),
       tokenAccountEmail: row?.tokenAccountEmail ?? null,

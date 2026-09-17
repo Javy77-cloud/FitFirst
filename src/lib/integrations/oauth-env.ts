@@ -1,4 +1,4 @@
-import type { ByoOauthFamily } from "./oauth-specs";
+import type { ByoOauthFamily, ByoOauthProviderId } from "./oauth-specs";
 import { docusignAuthBase } from "./oauth";
 
 export type EnvOauthApp = {
@@ -7,6 +7,18 @@ export type EnvOauthApp = {
   tenant?: string;
   authBase?: string;
 };
+
+export type ResolvedOauthApp = EnvOauthApp & {
+  source: "settings" | "env";
+};
+
+/** Gmail, Google Calendar, and Meet share FitFirst’s platform Google OAuth web client. */
+export const PLATFORM_GOOGLE_OAUTH_IDS = ["gmail", "google_calendar", "google_meet"] as const;
+
+export const GOOGLE_CONNECT_NOT_SETUP_NOTICE = "google-connect-not-setup";
+
+export const GOOGLE_CONNECT_NOT_SETUP_COPY =
+  "Google Connect isn’t set up on this FitFirst install. Ask the site developer to configure it on Vercel. Admin does not paste a Client ID or Client Secret.";
 
 function firstEnv(...keys: string[]): string {
   for (const key of keys) {
@@ -55,4 +67,59 @@ export function envOauthApp(family: ByoOauthFamily): EnvOauthApp | null {
 
 export function envHasOauthApp(family: ByoOauthFamily): boolean {
   return envOauthApp(family) !== null;
+}
+
+export function isPlatformHostedGoogleOauth(
+  provider: string,
+): provider is (typeof PLATFORM_GOOGLE_OAUTH_IDS)[number] {
+  return (PLATFORM_GOOGLE_OAUTH_IDS as readonly string[]).includes(provider);
+}
+
+/** Agency Admin never pastes Google Cloud client credentials. */
+export function showsByoCredentialPasteForm(provider: ByoOauthProviderId): boolean {
+  return !isPlatformHostedGoogleOauth(provider);
+}
+
+/**
+ * Platform Google env wins over any leftover Settings paste.
+ * Missing Google env does not fall back to pasted Client ID / Secret.
+ * Yahoo / Microsoft / DocuSign still prefer pasted BYO, then env.
+ */
+export function pickOauthClientApp(input: {
+  family: ByoOauthFamily;
+  settings: { clientId: string; clientSecret: string } | null;
+  env: EnvOauthApp | null;
+}): ResolvedOauthApp | null {
+  const env =
+    input.env?.clientId.trim() && input.env.clientSecret.trim() ? input.env : null;
+  const settings =
+    input.settings?.clientId.trim() && input.settings.clientSecret
+      ? { clientId: input.settings.clientId.trim(), clientSecret: input.settings.clientSecret }
+      : null;
+
+  if (input.family === "google") {
+    if (!env) return null;
+    return { ...env, source: "env" };
+  }
+  if (settings) {
+    return {
+      ...settings,
+      source: "settings",
+      tenant: env?.tenant,
+      authBase: env?.authBase,
+    };
+  }
+  if (!env) return null;
+  return { ...env, source: "env" };
+}
+
+export function startByoOauthCredentialNotice(
+  provider: ByoOauthProviderId,
+  resolved: { source: "settings" | "env" } | null,
+): typeof GOOGLE_CONNECT_NOT_SETUP_NOTICE | "needs-credentials" | null {
+  if (isPlatformHostedGoogleOauth(provider)) {
+    return resolved?.source === "env" ? null : GOOGLE_CONNECT_NOT_SETUP_NOTICE;
+  }
+  if (resolved) return null;
+  return "needs-credentials";
 }

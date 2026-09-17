@@ -54,11 +54,12 @@ export default async function IntegrationsCatalogPage({
   return (
     <SettingsShell title="Integrations" current="integrations">
       <p className="mb-3 text-sm text-muted-foreground">
-        Bring-your-own providers. {AGENCY_PAYS_VENDOR} Agency Admin controls OAuth. A solo Admin who
-        also works the desk can connect personal Gmail. Gmail, Yahoo Mail, Google / Outlook Calendar
-        (busy sync), Google Meet, social / GBP, and DocuSign sandbox open real vendor OAuth. Stripe,
-        Twilio and Nylas stay out of this wave. HealthSherpa Medicare is BYO in this
-        catalog (vault + webhook) — no FitFirst fee. {MAPS_FREE_LINK_NOTE}
+        Agency Admin controls OAuth. Gmail, Google Calendar, and Google Meet are one-click Google
+        Connect — FitFirst owns that OAuth app; Admin never pastes a Google Client ID. Yahoo Mail,
+        Outlook Calendar, social / GBP, and DocuSign sandbox stay bring-your-own vendor apps.{" "}
+        {AGENCY_PAYS_VENDOR} A solo Admin who also works the desk can connect personal Gmail. Stripe,
+        Twilio and Nylas stay out of this wave. HealthSherpa Medicare is BYO in this catalog (vault +
+        webhook) — no FitFirst fee. {MAPS_FREE_LINK_NOTE}
       </p>
       <div className="mb-4 rounded-md border border-dashed border-border bg-secondary/50 px-3 py-2 text-sm">
         <div className="font-medium text-navy">Bring your own · agency pays</div>
@@ -71,8 +72,8 @@ export default async function IntegrationsCatalogPage({
       </div>
       {notice === "connected" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          {provider ?? "Provider"} is a demo stub. Use the BYO Connect button on Gmail, calendars,
-          social, or DocuSign for real OAuth.
+          {provider ?? "Provider"} is a demo stub. Use Google Connect on Gmail / Calendar, or the
+          BYO Connect button on social or DocuSign, for real OAuth.
         </p>
       ) : null}
       {notice === "disconnected" ? (
@@ -89,7 +90,14 @@ export default async function IntegrationsCatalogPage({
       ) : null}
       {notice === "needs-credentials" ? (
         <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          Paste the agency App ID / Client ID and secret, or set the matching env vars first.
+          Paste the agency App ID / Client ID and secret, or set the matching env vars first. Gmail
+          and Google Calendar never take a pasted Google client — those use Google Connect.
+        </p>
+      ) : null}
+      {notice === "google-connect-not-setup" ? (
+        <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
+          Google Connect isn’t set up on this FitFirst install. Ask the site developer to configure
+          it on Vercel. Admin does not paste a Client ID or Client Secret.
         </p>
       ) : null}
       {notice === "paid-wall" ? (
@@ -107,8 +115,9 @@ export default async function IntegrationsCatalogPage({
       ) : null}
       {notice === "byo-connected" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
-          {provider ?? "Account"} connected with the agency’s app. Deep lead sync stays minimal;
-          connection status is real.
+          {provider === "gmail" || provider === "google_calendar" || provider === "google_meet"
+            ? `${provider === "gmail" ? "Gmail" : provider === "google_calendar" ? "Google Calendar" : "Google Meet"} connected. Tokens are stored for this agency.`
+            : `${provider ?? "Account"} connected with the agency’s app. Deep lead sync stays minimal; connection status is real.`}
         </p>
       ) : null}
       {notice === "gmail-need-to" ? (
