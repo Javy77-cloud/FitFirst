@@ -33,7 +33,7 @@ export function NewDealFormBody({
   const commercial = usesBusinessIdentityDetails({ products });
   const layout = commercial ? defaultCommercialDealLayout() : personalLayout;
   const layoutFields = useMemo(
-    () => (commercial ? [...BUSINESS_IDENTITY_FIELDS, ...fields] : fields),
+    () => (commercial ? [...fields, ...BUSINESS_IDENTITY_FIELDS] : fields),
     [commercial, fields],
   );
 

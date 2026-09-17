@@ -346,7 +346,7 @@ export function DealDetailsPanel({
   });
   const fieldList = resolveLayoutFields(
     safeLayout,
-    commercial ? [...BUSINESS_IDENTITY_FIELDS, ...asList(fields)] : asList(fields),
+    commercial ? [...asList(fields), ...BUSINESS_IDENTITY_FIELDS] : asList(fields),
   );
   const byKey = Object.fromEntries(fieldList.map((field) => [field.key, field]));
   const formId = "deal-details-save";

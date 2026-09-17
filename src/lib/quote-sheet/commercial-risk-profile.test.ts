@@ -26,6 +26,7 @@ describe("Commercial Risk Profile lean catalog", () => {
     ]);
     expect(wc.some((field) => field.key === "applicant_marital_status")).toBe(false);
     expect(wc.some((field) => field.key === "fein")).toBe(false);
+    expect(wc.some((field) => field.key === "ein")).toBe(false);
     expect(coverageLinesFromProducts(["gl", "bop", "workers_comp"])).toEqual([
       "Workers' Comp",
       "General Liability",

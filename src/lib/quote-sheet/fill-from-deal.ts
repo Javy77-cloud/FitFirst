@@ -169,14 +169,15 @@ export function fillSheetFromDealDetails(
   if (commercialSheet) {
     put("legal_name", firstFilled(stored.business_name, stored.legal_name, named));
     put("dba", firstFilled(stored.dba));
-    put("fein", firstFilled(stored.fein, stored.ein));
+    put("ein", firstFilled(stored.ein, stored.fein));
+    put("fein", firstFilled(stored.ein, stored.fein));
     put("naics", firstFilled(stored.naics));
     put("years_in_business", firstFilled(stored.years_in_business));
     put(
       "operations_description",
-      firstFilled(stored.business_description, stored.operations, stored.operations_description),
+      firstFilled(stored.operations, stored.business_description, stored.operations_description),
     );
-    put("annual_sales", firstFilled(stored.annual_revenue, stored.annual_sales));
+    put("annual_sales", firstFilled(stored.annual_sales, stored.annual_revenue));
     put("employees", firstFilled(stored.employee_count, stored.employees));
     put("payroll", firstFilled(stored.payroll));
     put(
