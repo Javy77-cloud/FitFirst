@@ -41,6 +41,7 @@ export type LifeAppetitePrediction = {
   outcome: LifeAppetiteOutcome;
   conditionOutcome: LifeAppetiteOutcome;
   buildOutcome: LifeAppetiteOutcome;
+  ageOutcome: LifeAppetiteOutcome;
   buildBand: string;
   ruleText: string;
   coverage: "seeded" | "unknown";
@@ -114,6 +115,59 @@ export function combineLifeConditionAndBuild(
   }
   if (buildOutcome === "unknown") return conditionOutcome;
   return worstLifeOutcome([conditionOutcome, buildOutcome]);
+}
+
+/** Age is a third input. Out of band declines. In-band never mints Accept. */
+export function combineLifeAppetiteInputs(
+  conditionOutcome: LifeAppetiteOutcome,
+  buildOutcome: LifeAppetiteOutcome,
+  ageOutcome: LifeAppetiteOutcome = "unknown",
+): LifeAppetiteOutcome {
+  return combineLifeConditionAndBuild(
+    combineLifeConditionAndBuild(conditionOutcome, buildOutcome),
+    ageOutcome,
+  );
+}
+
+export function parseLifeAgeBound(raw: string | null | undefined): number | null {
+  const n = Number(String(raw ?? "").trim());
+  return Number.isFinite(n) ? n : null;
+}
+
+export function lifeAgeBandOutcome(
+  ageYears: number | null | undefined,
+  ageMin: string,
+  ageMax: string,
+): LifeBuildHit {
+  if (ageYears == null || !Number.isFinite(ageYears)) {
+    return { band: "unknown", outcome: "unknown", ruleText: "" };
+  }
+  const min = parseLifeAgeBound(ageMin);
+  const max = parseLifeAgeBound(ageMax);
+  if (min == null && max == null) {
+    return { band: "unknown", outcome: "unknown", ruleText: "" };
+  }
+  if (min != null && ageYears < min) {
+    return {
+      band: "out_of_range",
+      outcome: "decline",
+      ruleText: `Age ${ageYears} is below product minimum ${min}.`,
+    };
+  }
+  if (max != null && ageYears > max) {
+    return {
+      band: "out_of_range",
+      outcome: "decline",
+      ruleText: `Age ${ageYears} is above product maximum ${max}.`,
+    };
+  }
+  const lo = min ?? "—";
+  const hi = max ?? "—";
+  return {
+    band: "in_range",
+    outcome: "unknown",
+    ruleText: `Age ${ageYears} is inside ${lo}–${hi}.`,
+  };
 }
 
 export function lifeOutcomeLabel(outcome: LifeAppetiteOutcome): string {

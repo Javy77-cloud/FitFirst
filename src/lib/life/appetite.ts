@@ -13,9 +13,11 @@ import {
   parseLifeConditionLabels,
   tobaccoConditionKey,
 } from "./conditions";
+import { ageFromDob } from "@/lib/appetite/auto-premium-learning";
 import {
   LIFE_UW_MATRIX_COVERAGE_NOTE,
-  combineLifeConditionAndBuild,
+  combineLifeAppetiteInputs,
+  lifeAgeBandOutcome,
   parseLifeAppetiteOutcome,
   worstLifeOutcome,
   type LifeAppetitePrediction,
@@ -28,8 +30,11 @@ export const LIFE_UW_MATRIX_CSV = "data/appetite/fitfirst-life-uw-matrix.csv";
 export {
   LIFE_APPETITE_OUTCOMES,
   LIFE_UW_MATRIX_COVERAGE_NOTE,
+  combineLifeAppetiteInputs,
   combineLifeConditionAndBuild,
+  lifeAgeBandOutcome,
   lifeOutcomeLabel,
+  parseLifeAgeBound,
   parseLifeAppetiteOutcome,
   worstLifeOutcome,
   type LifeAppetiteOutcome,
@@ -113,7 +118,7 @@ function conditionPrediction(
         ? hits.find((row) => row.outcome === "decline")?.ruleText ?? ""
         : conditionKeys.length === 0
           ? "Select Life conditions on the Risk Profile to predict MATRIX appetite."
-          : LIFE_UW_MATRIX_COVERAGE_NOTE;
+          : "";
     return {
       outcome,
       ruleText,
@@ -131,11 +136,35 @@ function conditionPrediction(
 function pickCombinedRuleText(
   condition: Pick<LifeAppetitePrediction, "outcome" | "ruleText">,
   build: { outcome: LifeAppetitePrediction["outcome"]; ruleText: string },
+  age: { outcome: LifeAppetitePrediction["outcome"]; ruleText: string },
   combined: LifeAppetitePrediction["outcome"],
 ): string {
+  if (combined === "decline") {
+    if (condition.outcome === "decline" && condition.ruleText) return condition.ruleText;
+    if (build.outcome === "decline" && build.ruleText) return build.ruleText;
+    if (age.outcome === "decline" && age.ruleText) return age.ruleText;
+  }
   if (combined === condition.outcome && condition.ruleText) return condition.ruleText;
   if (combined === build.outcome && build.ruleText) return build.ruleText;
-  return condition.ruleText || build.ruleText;
+  if (combined === age.outcome && age.ruleText) return age.ruleText;
+  return condition.ruleText || build.ruleText || age.ruleText;
+}
+
+export function lifeAppetiteHasScoreInputs(input: {
+  selectedLabels?: readonly string[] | null;
+  tobaccoStatus?: string | null;
+  ageYears?: number | null;
+  heightInches?: number | null;
+  weightLbs?: number | null;
+}): boolean {
+  if ((input.selectedLabels ?? []).some((label) => label.trim() && label.toLowerCase() !== "none")) {
+    return true;
+  }
+  if (tobaccoConditionKey(input.tobaccoStatus)) return true;
+  if (input.ageYears != null && Number.isFinite(input.ageYears)) return true;
+  if (input.heightInches != null && Number.isFinite(input.heightInches)) return true;
+  if (input.weightLbs != null && Number.isFinite(input.weightLbs)) return true;
+  return false;
 }
 
 export function predictLifeAppetite(input: {
@@ -145,6 +174,8 @@ export function predictLifeAppetite(input: {
   heightIn?: string | null;
   weightLbs?: string | null;
   sex?: string | null;
+  dateOfBirth?: string | null;
+  ageYears?: number | null;
   matrix?: { products: LifeMatrixProduct[]; rules: LifeMatrixRule[] };
   buildRules?: LifeBuildRule[];
 }): {
@@ -153,6 +184,8 @@ export function predictLifeAppetite(input: {
   predictions: LifeAppetitePrediction[];
   coverageNote: string;
   build: LifeBuildSnapshot;
+  ageYears: number | null;
+  thin: boolean;
 } {
   const matrix = input.matrix ?? loadLifeUwMatrix();
   const buildRules = input.buildRules ?? loadLifeBuildTable();
@@ -171,6 +204,30 @@ export function predictLifeAppetite(input: {
   const conditionKeys = lifeConditionKeysFromSheet(selectedLabels.join(", "));
   const tobacco = tobaccoConditionKey(input.tobaccoStatus);
   if (tobacco && !conditionKeys.includes(tobacco)) conditionKeys.push(tobacco);
+  const ageYears =
+    input.ageYears != null && Number.isFinite(input.ageYears)
+      ? input.ageYears
+      : ageFromDob(input.dateOfBirth);
+
+  const thin = !lifeAppetiteHasScoreInputs({
+    selectedLabels,
+    tobaccoStatus: input.tobaccoStatus,
+    ageYears,
+    heightInches: build.heightInches,
+    weightLbs: build.weightLbs,
+  });
+
+  if (thin) {
+    return {
+      selectedLabels,
+      conditionKeys,
+      predictions: [],
+      coverageNote: LIFE_UW_MATRIX_COVERAGE_NOTE,
+      build,
+      ageYears,
+      thin: true,
+    };
+  }
 
   const rulesByProduct = new Map<string, LifeMatrixRule[]>();
   for (const rule of matrix.rules) {
@@ -192,8 +249,12 @@ export function predictLifeAppetite(input: {
       productSlug: product.productSlug,
       rules: buildRules,
     });
-    const outcome = combineLifeConditionAndBuild(condition.outcome, buildHit.outcome);
-    const seeded = condition.coverage === "seeded" || buildHit.outcome !== "unknown";
+    const ageHit = lifeAgeBandOutcome(ageYears, product.ageMin, product.ageMax);
+    const outcome = combineLifeAppetiteInputs(condition.outcome, buildHit.outcome, ageHit.outcome);
+    const seeded =
+      condition.coverage === "seeded" ||
+      buildHit.outcome !== "unknown" ||
+      ageHit.outcome === "decline";
     const coverage = outcome === "unknown" || !seeded ? "unknown" : "seeded";
     return {
       carrierSlug: product.carrierSlug,
@@ -203,8 +264,9 @@ export function predictLifeAppetite(input: {
       outcome,
       conditionOutcome: condition.outcome,
       buildOutcome: buildHit.outcome,
+      ageOutcome: ageHit.outcome,
       buildBand: buildHit.band,
-      ruleText: pickCombinedRuleText(condition, buildHit, outcome),
+      ruleText: pickCombinedRuleText(condition, buildHit, ageHit, outcome),
       coverage,
     } satisfies LifeAppetitePrediction;
   });
@@ -215,5 +277,7 @@ export function predictLifeAppetite(input: {
     predictions,
     coverageNote: LIFE_UW_MATRIX_COVERAGE_NOTE,
     build,
+    ageYears,
+    thin: false,
   };
 }
