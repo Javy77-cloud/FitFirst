@@ -212,7 +212,7 @@ export default async function ContactDetailPage({
   const openDealCount = deals.filter((deal) => isOpenDealStage(deal.pipelineStage)).length;
   const sectionCounts: Partial<Record<ContactSectionId, number>> = {
     coverage: inForceCount,
-    opportunities: openDealCount,
+    opportunities: isAna ? 0 : openDealCount,
     policies: policies.length,
     deals: deals.length,
     timeline: timeline.length,
@@ -448,7 +448,7 @@ export default async function ContactDetailPage({
             {
               id: "opportunities",
               title: "Opportunities",
-              badge: openDealCount || undefined,
+              badge: (isAna ? 0 : openDealCount) || undefined,
               "data-ff": "contact-opportunities",
               children: (
                 <ContactOpportunitiesPanel
