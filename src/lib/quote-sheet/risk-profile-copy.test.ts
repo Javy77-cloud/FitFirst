@@ -1,6 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: () => undefined, replace: () => undefined, push: () => undefined }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/deals/deal-1",
+}));
 import { readFileSync } from "node:fs";
-import { fieldsForLine } from "./catalog";
+import { MasterSheetCompare } from "@/components/deal/master-sheet-compare";
+import { emptySheetValues, fieldsForLine } from "./catalog";
 import { submittedSheetValues } from "./save-values";
 import {
   CONFIRM_RISK_PROFILE_LABEL,
@@ -83,5 +91,56 @@ describe("Risk Profile agent-visible copy", () => {
     const submitted = submittedSheetValues(form);
     expect(submitted.dealId).toBeUndefined();
     expect(submitted.medical_conditions).toBe("Asthma, Sleep apnea");
+  });
+
+  it("renders the Life Risk Profile lean sections and hides identity / Whole Life term length", () => {
+    const html = renderToString(
+      createElement(MasterSheetCompare, {
+        dealId: "deal-life",
+        line: "life",
+        fields: [],
+        values: {
+          ...emptySheetValues("life"),
+          product_type: { value: "Term", status: "confirmed", source: "agent" },
+          tobacco_status: { value: "Never", status: "confirmed", source: "agent" },
+          existing_coverage: { value: "no", status: "confirmed", source: "agent" },
+        },
+        product: "life",
+      }),
+    );
+    expect(html).toContain("Risk Profile");
+    expect(html).toContain("Save Risk Profile");
+    expect(html).toContain("Fill Risk Profile");
+    expect(html).not.toMatch(/Master sheet/i);
+    expect(html).toContain("Product type");
+    expect(html).toContain("Term length");
+    expect(html).toContain("Premium budget");
+    expect(html).toContain("Build &amp; tobacco");
+    expect(html).toContain("Medical conditions");
+    expect(html).toContain("Has existing life coverage?");
+    expect(html).toContain("Primary name");
+    expect(html).not.toContain("Applicant name");
+    expect(html).not.toContain("Date of birth");
+    expect(html).toContain('data-ff-sheet-multiselect="medical_conditions"');
+
+    const whole = renderToString(
+      createElement(MasterSheetCompare, {
+        dealId: "deal-life",
+        line: "life",
+        fields: [],
+        values: {
+          ...emptySheetValues("life"),
+          product_type: { value: "Whole Life", status: "confirmed", source: "agent" },
+          tobacco_status: { value: "Current", status: "confirmed", source: "agent" },
+          existing_coverage: { value: "yes", status: "confirmed", source: "agent" },
+        },
+        product: "life",
+      }),
+    );
+    expect(whole).not.toContain("Term length");
+    expect(whole).toContain("Tobacco type");
+    expect(whole).toContain("Last tobacco date");
+    expect(whole).toContain("Current company");
+    expect(whole).toContain("Existing face amount");
   });
 });
