@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
+import { RecordLayoutFields } from "@/components/custom-fields/record-layout-form";
 import {
   APPLICANT_CRM_FIELDS,
   APPLICANT_SECTION_FIELD_KEYS,
@@ -180,6 +181,41 @@ describe("Deal Details personal / identity layout", () => {
     );
     expect(shown).toMatch(/data-ff-deal-field="previous_address"/);
     expect(shown).toMatch(/data-ff-deal-field="previous_city"/);
+
+    const aliasHidden = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-1",
+        line: "HO",
+        layout: defaultLayoutForLine("HO"),
+        fields: [],
+        values: { lived_here_5_years: "Yes", previous_address: "9 Pine" },
+      }),
+    );
+    expect(aliasHidden).not.toMatch(/data-ff-deal-field="previous_address"/);
+  });
+
+  it("hides previous address on shared create/lead layouts unless lived-here is No", () => {
+    const layout = defaultLayoutForLine("HO");
+    const hidden = renderToStaticMarkup(
+      createElement(RecordLayoutFields, {
+        module: "deals",
+        layout,
+        fields: [],
+        values: { lived_at_address_5_years: "Yes", previous_address: "1 Oak" },
+      }),
+    );
+    expect(hidden).not.toMatch(/data-ff-record-field="previous_address"/);
+    expect(hidden).not.toMatch(/data-ff-record-field="previous_city"/);
+
+    const shown = renderToStaticMarkup(
+      createElement(RecordLayoutFields, {
+        module: "deals",
+        layout,
+        fields: [],
+        values: { lived_at_address_5_years: "No" },
+      }),
+    );
+    expect(shown).toMatch(/data-ff-record-field="previous_address"/);
   });
 
   it("never renders landlord / rental fields even if a saved layout still lists them", () => {

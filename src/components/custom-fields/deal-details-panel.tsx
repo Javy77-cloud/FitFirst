@@ -36,8 +36,8 @@ import {
   MAILING_SAME_AS_INSURED_KEY,
   isMailingAddressFieldKey,
   isMailingSameAsInsured,
-  isNoLivedAtAddress5Years,
   isPreviousAddressFieldKey,
+  shouldShowPreviousAddressFields,
 } from "@/lib/custom-fields/mailing-same";
 import { asList } from "@/lib/safe-list";
 
@@ -478,7 +478,7 @@ export function DealDetailsPanel({
                     keys={sectionKeys.filter((key) => {
                       const field = byKey[key] ?? { key, label: key, type: "single_line" as const };
                       if (skipOwnedInsuranceField(key, field, sectionKeys, fieldList)) return false;
-                      if (isPreviousAddressFieldKey(key) && !isNoLivedAtAddress5Years(liveValues)) {
+                      if (isPreviousAddressFieldKey(key) && !shouldShowPreviousAddressFields(liveValues)) {
                         return false;
                       }
                       if (isMailingAddressFieldKey(key) && isMailingSameAsInsured(liveValues)) {

@@ -26,6 +26,7 @@ import {
   requireLayoutModule,
   type FieldLayoutModule,
 } from "@/lib/custom-fields/modules";
+import { addressVerifyValuesFromForm } from "@/lib/address/verify-state";
 import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
 import {
   HAS_CO_APPLICANT_KEY,
@@ -100,7 +101,10 @@ export async function saveModuleRecordValues(formData: FormData) {
     str(formData, "carrierId");
   if (!recordId) throw new Error("Record could not be saved.");
   const defs = await listFieldDefs(module);
-  const custom = customValuesFromForm(formData, defs);
+  const custom = {
+    ...customValuesFromForm(formData, defs),
+    ...addressVerifyValuesFromForm(formData),
+  };
   await writeRecordValues(recordId, custom, module);
   await applyModuleSystemValues(module, recordId, custom, defs);
   const href = `${fieldLayoutListHref(module)}/${recordId}`;
@@ -290,6 +294,7 @@ export async function saveDealFieldValues(formData: FormData) {
   });
   const custom = {
     ...customValuesFromForm(formData, defsOnDetails),
+    ...addressVerifyValuesFromForm(formData),
   };
   // Co-applicant switch is UI-owned (not a layout field row). Always persist when posted.
   if (formData.has(`field_${HAS_CO_APPLICANT_KEY}`)) {

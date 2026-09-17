@@ -79,8 +79,8 @@ import {
 } from "@/lib/custom-fields/deal-details-landlord";
 import {
   LIVED_AT_ADDRESS_5_YEARS_KEY,
-  isNoLivedAtAddress5Years,
   isPreviousAddressFieldKey,
+  shouldShowPreviousAddressFields,
 } from "@/lib/custom-fields/mailing-same";
 import {
   isIndustryCascadeParent,
@@ -718,7 +718,7 @@ export function FieldBuilder({
                         if (
                           preview &&
                           isPreviousAddressFieldKey(key) &&
-                          !isNoLivedAtAddress5Years(liveValues)
+                          !shouldShowPreviousAddressFields(liveValues)
                         ) {
                           return false;
                         }

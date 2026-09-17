@@ -101,7 +101,11 @@ describe("new deal write", () => {
     expect(source("src/app/actions/deal-create.ts")).not.toMatch(/pipelineStageSlug:\s*"gather"/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/mergeShopFlowProductStages/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/normalizeDealPageStageSlug/);
+    expect(createFn).toMatch(/tab=details/);
+    expect(createFn).toMatch(/persistDealWorkTab\(deal\.id, "details"\)/);
+    expect(createFn).toMatch(/isRedirectError/);
     expect(source("src/app/deals/[id]/error.tsx")).toMatch(/data-ff-deal-load-error/);
+    expect(source("src/app/deals/[id]/error.tsx")).toMatch(/min-h-screen bg-background/);
     expect(source("src/lib/db/queries.ts")).toMatch(/leftoverCreateStageNeedsRepair/);
     expect(source("src/lib/db/queries.ts")).toMatch(/ensureDealRisk/);
   });

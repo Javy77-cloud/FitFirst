@@ -76,7 +76,9 @@ import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
 import { leadValuesFromForm } from "@/lib/crm/lead-fields";
 import { CORE_FIELDS } from "@/lib/custom-fields/defaults";
 import { BUSINESS_IDENTITY_FIELD_KEYS } from "@/lib/custom-fields/business-identity-fields";
+import { addressVerifyValuesFromForm } from "@/lib/address/verify-state";
 import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
+import { isRedirectError } from "@/lib/lifecycle/shop";
 import { dealListCascadeSyncValues } from "@/lib/deals/insurance-cascade";
 import { applySystemDealValues } from "@/app/actions/custom-fields";
 import { listFieldDefs, writeRecordValues } from "@/lib/custom-fields/store";
@@ -672,74 +674,80 @@ export async function createDeal(formData: FormData) {
     })
     .returning();
 
-  await persistNewDealLayoutValues(deal.id, formData, { quotingForm, policySubType });
+  try {
+    await persistNewDealLayoutValues(deal.id, formData, { quotingForm, policySubType });
+    await persistDealWorkTab(deal.id, "details").catch(() => null);
 
-  if (!lead.convertedDealId) {
-    await db
-      .update(leads)
-      .set({ status: "converted", convertedDealId: deal.id, updatedAt: new Date() })
-      .where(eq(leads.id, lead.id));
+    if (!lead.convertedDealId) {
+      await db
+        .update(leads)
+        .set({ status: "converted", convertedDealId: deal.id, updatedAt: new Date() })
+        .where(eq(leads.id, lead.id));
 
-    const { cancelLeadFollowUps } = await import("@/lib/leads/apply-follow-up");
-    await cancelLeadFollowUps(lead.id).catch(() => null);
+      const { cancelLeadFollowUps } = await import("@/lib/leads/apply-follow-up");
+      await cancelLeadFollowUps(lead.id).catch(() => null);
+    }
+
+    const fromLead = leadOntoRisk(lead, deal.state);
+    const [sourceRisk] = sourceDealId
+      ? await db.select().from(risks).where(eq(risks.dealId, sourceDealId)).then((rows) => rows.slice(0, 1))
+      : [];
+    const [createdRisk] = await db.insert(risks).values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId: deal.id,
+      contactId: sourceRisk?.contactId ?? pickedContact?.id ?? null,
+      riskType:
+        packageDraft?.riskType ??
+        (deal.lineOfBusiness === "AUTO" || deal.quotingLine === "auto"
+          ? "auto"
+          : sourceRisk?.riskType ?? "property"),
+      address1: mailingAddress || sourceRisk?.address1 || fromLead.address1,
+      city: city || sourceRisk?.city || fromLead.city,
+      county: str(formData, "county") || str(formData, "field_county") || sourceRisk?.county || null,
+      state: state || sourceRisk?.state || fromLead.state,
+      zip: zip || sourceRisk?.zip || fromLead.zip,
+      yearBuilt: sourceRisk?.yearBuilt ?? null,
+      construction: sourceRisk?.construction ?? null,
+      occupancy: sourceRisk?.occupancy ?? null,
+      stories: sourceRisk?.stories ?? null,
+      squareFeet: sourceRisk?.squareFeet ?? null,
+      coverageA: sourceRisk?.coverageA ?? null,
+      roofYear: sourceRisk?.roofYear ?? null,
+      roofCovering: sourceRisk?.roofCovering ?? null,
+      openingProtection: sourceRisk?.openingProtection ?? null,
+      pool: sourceRisk?.pool ?? null,
+      protectionClass: sourceRisk?.protectionClass ?? null,
+      milesToCoast: sourceRisk?.milesToCoast ?? null,
+      mobileHome: sourceRisk?.mobileHome ?? false,
+      replacementCostEstimate: sourceRisk?.replacementCostEstimate ?? null,
+      vin: sourceRisk?.vin ?? null,
+      vehicleYear: sourceRisk?.vehicleYear ?? null,
+      vehicleMake: sourceRisk?.vehicleMake ?? null,
+      vehicleModel: sourceRisk?.vehicleModel ?? null,
+      vehicleUsage: sourceRisk?.vehicleUsage ?? null,
+      garagingZip: sourceRisk?.garagingZip ?? null,
+    }).returning();
+    requireInsertedRisk(createdRisk);
+
+    await db.insert(quoteSheets).values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId: deal.id,
+      line: quotingLine,
+      values: {
+        ...seededSheetValues(quotingLine, shopProducts),
+        ...(fillSheetFromLead(lead) as typeof quoteSheets.$inferInsert.values),
+      },
+    });
+    await insertSheetsForDeal(deal.id, shopLines, shopProducts);
+  } catch (error) {
+    if (isRedirectError(error)) throw error;
+    console.error(error);
   }
-
-  const fromLead = leadOntoRisk(lead, deal.state);
-  const [sourceRisk] = sourceDealId
-    ? await db.select().from(risks).where(eq(risks.dealId, sourceDealId)).then((rows) => rows.slice(0, 1))
-    : [];
-  const [createdRisk] = await db.insert(risks).values({
-    tenantId: DEFAULT_TENANT_ID,
-    dealId: deal.id,
-    contactId: sourceRisk?.contactId ?? pickedContact?.id ?? null,
-    riskType:
-      packageDraft?.riskType ??
-      (deal.lineOfBusiness === "AUTO" || deal.quotingLine === "auto"
-        ? "auto"
-        : sourceRisk?.riskType ?? "property"),
-    address1: mailingAddress || sourceRisk?.address1 || fromLead.address1,
-    city: city || sourceRisk?.city || fromLead.city,
-    county: str(formData, "county") || str(formData, "field_county") || sourceRisk?.county || null,
-    state: state || sourceRisk?.state || fromLead.state,
-    zip: zip || sourceRisk?.zip || fromLead.zip,
-    yearBuilt: sourceRisk?.yearBuilt ?? null,
-    construction: sourceRisk?.construction ?? null,
-    occupancy: sourceRisk?.occupancy ?? null,
-    stories: sourceRisk?.stories ?? null,
-    squareFeet: sourceRisk?.squareFeet ?? null,
-    coverageA: sourceRisk?.coverageA ?? null,
-    roofYear: sourceRisk?.roofYear ?? null,
-    roofCovering: sourceRisk?.roofCovering ?? null,
-    openingProtection: sourceRisk?.openingProtection ?? null,
-    pool: sourceRisk?.pool ?? null,
-    protectionClass: sourceRisk?.protectionClass ?? null,
-    milesToCoast: sourceRisk?.milesToCoast ?? null,
-    mobileHome: sourceRisk?.mobileHome ?? false,
-    replacementCostEstimate: sourceRisk?.replacementCostEstimate ?? null,
-    vin: sourceRisk?.vin ?? null,
-    vehicleYear: sourceRisk?.vehicleYear ?? null,
-    vehicleMake: sourceRisk?.vehicleMake ?? null,
-    vehicleModel: sourceRisk?.vehicleModel ?? null,
-    vehicleUsage: sourceRisk?.vehicleUsage ?? null,
-    garagingZip: sourceRisk?.garagingZip ?? null,
-  }).returning();
-  requireInsertedRisk(createdRisk);
-
-  await db.insert(quoteSheets).values({
-    tenantId: DEFAULT_TENANT_ID,
-    dealId: deal.id,
-    line: quotingLine,
-    values: {
-      ...seededSheetValues(quotingLine, shopProducts),
-      ...(fillSheetFromLead(lead) as typeof quoteSheets.$inferInsert.values),
-    },
-  });
-  await insertSheetsForDeal(deal.id, shopLines, shopProducts);
 
   revalidatePath("/");
   revalidatePath("/deals");
   revalidatePath(`/deals/${deal.id}`);
-  flashAction(`/deals/${deal.id}?saved=1&line=${quotingLine}`, "deal-saved");
+  flashAction(`/deals/${deal.id}?saved=1&tab=details&line=${quotingLine}`, "deal-saved");
 }
 
 export async function createDealFromDecDrop(formData: FormData) {
@@ -1792,7 +1800,10 @@ async function persistNewDealLayoutValues(
 ) {
   const defs = await listFieldDefs("deals").catch(() => []);
   const catalog = defs.length ? defs : CORE_FIELDS;
-  const custom = customValuesFromForm(formData, catalog);
+  const custom = {
+    ...customValuesFromForm(formData, catalog),
+    ...addressVerifyValuesFromForm(formData),
+  };
   for (const key of BUSINESS_IDENTITY_FIELD_KEYS) {
     const posted = str(formData, `field_${key}`);
     if (posted && !String(custom[key] ?? "").trim()) custom[key] = posted;

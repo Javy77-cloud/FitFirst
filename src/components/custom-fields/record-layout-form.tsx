@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { saveModuleRecordValues } from "@/app/actions/custom-fields";
 import { ClickToEditField } from "@/components/custom-fields/click-to-edit-field";
 import { FieldControl } from "@/components/custom-fields/field-control";
@@ -13,6 +14,10 @@ import {
   INSURANCE_QUOTE_SECTION_STYLE,
   isInsuranceQuoteRequestSection,
 } from "@/lib/custom-fields/insurance-quote-section";
+import {
+  isPreviousAddressFieldKey,
+  shouldShowPreviousAddressFields,
+} from "@/lib/custom-fields/mailing-same";
 import { asList } from "@/lib/safe-list";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
@@ -51,6 +56,11 @@ export function RecordLayoutFields({
   // Dense / classic: empty right column → true one-column stack (narrow monitors).
   const activeColumns = layoutColumns.filter((column) => asList(column.sections).length > 0);
   const oneCol = activeColumns.length <= 1;
+  const [liveValues, setLiveValues] = useState(values);
+
+  function patchValue(key: string, next: string) {
+    setLiveValues((prev) => ({ ...prev, [key]: next }));
+  }
 
   return (
     <div
@@ -97,12 +107,18 @@ export function RecordLayoutFields({
                   const layoutHasType =
                     asList(section.fieldKeys).includes("insurance_type") ||
                     fieldList.some((item) => item.key === "insurance_type");
-                  return !(
+                  if (
                     layoutHasType &&
                     (key === "insurance_category" ||
                       key === "insurance_subtype" ||
                       field.systemKey === "quotingForm")
-                  );
+                  ) {
+                    return false;
+                  }
+                  if (isPreviousAddressFieldKey(key) && !shouldShowPreviousAddressFields(liveValues)) {
+                    return false;
+                  }
+                  return true;
                 })}
                 fieldOf={(key) => byKey[key]}
                 renderField={(key) => {
@@ -121,8 +137,8 @@ export function RecordLayoutFields({
                       {inline && recordId ? (
                         <ClickToEditField
                           field={field}
-                          value={values[key] ?? ""}
-                          values={values}
+                          value={liveValues[key] ?? ""}
+                          values={liveValues}
                           name={`field_${key}`}
                           recordId={recordId}
                           module={module}
@@ -134,14 +150,18 @@ export function RecordLayoutFields({
                       ) : (
                         <FieldControl
                           field={field}
-                          value={values[key] ?? ""}
-                          values={values}
+                          value={liveValues[key] ?? ""}
+                          values={liveValues}
                           name={`field_${key}`}
                           form={form}
                           pipelineFamily={pipelineFamily}
                           lifeOptions={lifeOptions}
                           healthOptions={healthOptions}
                           lineSettings={lineSettings}
+                          onValueChange={(next) => patchValue(key, next)}
+                          onAddressFill={(parts) =>
+                            setLiveValues((prev) => ({ ...prev, ...parts }))
+                          }
                         />
                       )}
                     </div>

@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   isMailingSameAsInsured,
   isNoLivedAtAddress5Years,
+  isPreviousAddressFieldKey,
   mailingAddressHasValue,
   normalizeMailingSameFlag,
+  shouldShowPreviousAddressFields,
 } from "./mailing-same";
 
 describe("mailing same as insured", () => {
@@ -34,5 +36,12 @@ describe("mailing same as insured", () => {
     expect(isNoLivedAtAddress5Years("No")).toBe(true);
     expect(isNoLivedAtAddress5Years({ lived_at_address_5_years: "Yes" })).toBe(false);
     expect(isNoLivedAtAddress5Years({})).toBe(false);
+    expect(isNoLivedAtAddress5Years({ lived_here_5_years: "No" })).toBe(true);
+    expect(shouldShowPreviousAddressFields({ lived_at_address_5_years: "Yes" })).toBe(false);
+    expect(shouldShowPreviousAddressFields({})).toBe(false);
+    expect(shouldShowPreviousAddressFields({ lived_at_address_5_years: "No" })).toBe(true);
+    expect(isPreviousAddressFieldKey("previous_address")).toBe(true);
+    expect(isPreviousAddressFieldKey("prior_address")).toBe(true);
+    expect(isPreviousAddressFieldKey("priority")).toBe(false);
   });
 });
