@@ -911,6 +911,13 @@
       "when": 1790000000000,
       "tag": "0129_life_sheet_contacts",
       "breakpoints": true
+    },
+    {
+      "idx": 130,
+      "version": "7",
+      "when": 1790100000000,
+      "tag": "0130_javy_bulletins_20260916",
+      "breakpoints": true
     }
   ]
 }

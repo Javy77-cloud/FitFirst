@@ -115,7 +115,127 @@ export const SOUTHERN_OAK_HO_APPETITE: PublishedHoAppetite = {
   bulletinDate: SOUTHERN_OAK_BULLETIN_DATE,
 };
 
-export const PUBLISHED_HO_APPETITE: PublishedHoAppetite[] = [TRIDENT_HO_APPETITE, SOUTHERN_OAK_HO_APPETITE];
+/** STAND Florida — contacts bulletin 2026-09-16. FL HO only; no invented UW mins. */
+export const STAND_BULLETIN_DATE = "2026-09-16";
+export const STAND_MAIN_PHONE = "1-888-319-1332";
+export const STAND_CLAIMS_PHONE = "833-667-8263";
+export const STAND_CLAIMS_EMAIL = "Office@nexteraclaims.com";
+export const STAND_UW_EMAIL = "stand_uw@getstandfl.com";
+export const STAND_WEBSITE = "https://www.standinsurance.com";
+
+export const STAND_HO_NOTES =
+  "STAND Florida contacts (Javy bulletin 2026-09-16). Main 1-888-319-1332 (FNOL / underwriting / service). Claims: report 1-888-319-1332; existing claims Next Era 833-667-8263 (833-OnStand) / Office@nexteraclaims.com. Policy updates stand_uw@getstandfl.com; mitigations florida.mitigations@standinsurance.com; agency services agencyservices@getstandfl.com. Mail PO Box 459000, Sunrise, FL 33345. Fax 1-941-229-6121. CA misdirect warm-transfer 1-415-903-8091. Sales: Mike Killingsworth Head of Sales 863-370-8607 mike@standinsurance.com; Maggie Grignon Account Executive 415-223-0694 maggieg@standinsurance.com. Web standinsurance.com / getstandfl.com. Written lines HO (FL). No UW mins on this contacts sheet.";
+
+export const STAND_HO_APPETITE: PublishedHoAppetite = {
+  slug: "stand",
+  legalName: "Stand",
+  aliases: ["stand insurance", "getstandfl", "stand florida", "stand fl"],
+  line: "HO3",
+  state: "FL",
+  minCovA: null,
+  maxCovA: null,
+  maxDwellingAgeYears: null,
+  minYearBuilt: null,
+  minMilesToCoast: null,
+  maxRoofAge: null,
+  allowedRoofCoverings: null,
+  mobileAllowed: false,
+  placement: "STAND Florida",
+  csPhone: STAND_MAIN_PHONE,
+  supportEmail: "agencyservices@getstandfl.com",
+  website: STAND_WEBSITE,
+  hardDeclines: ["state!=FL", "mobile_home"],
+  softCautions: ["older_roof"],
+  preferredSignals: ["fl_single_family"],
+  notesForAgent: STAND_HO_NOTES,
+  bulletinDate: STAND_BULLETIN_DATE,
+};
+
+/** Universal Property & Casualty — FL Underwriting Binding Guidelines 05/26/2026. */
+export const UNIVERSAL_PC_BULLETIN_DATE = "2026-05-26";
+export const UNIVERSAL_PC_MIN_COV_A = 100_000;
+export const UNIVERSAL_PC_MAX_COV_A = 1_500_000;
+export const UNIVERSAL_PC_TRI_COUNTY_MIN_COV_A = 250_000;
+
+export const UNIVERSAL_PC_HO_NOTES =
+  "UPCIC FL Underwriting Binding Guidelines 05/26/2026. 100% RCV must be Cov A on all forms except HO4 and HO8 (HO8 may use 100% ACV when Optional RC Loss Settlement is not selected; properties over 100 years must be ACV). Check Atlas Bridge Check Form Availability for closed zips/territories. No backdated cancellations. Panhandle counties: Bay, Escambia, Okaloosa, Santa Rosa, Walton. HO3 Cov A X-Wind in Windpool / All Wind and Non-Windpool: Broward, Miami-Dade, Palm Beach built 1950+ $250,000-$1,000,000 / $250,000-$1,500,000 (1950-1975 must bind Water Damage Exclusion or Limited Water $10,000; full water available post-bind with acceptable 4-point). All other counties built 1950+ $100,000-$1,000,000 / $100,000-$1,500,000. HO8 all counties built 1900+ $100,000-$1,000,000 / $100,000-$1,500,000. DP1 Panhandle built 2002+ or Tri-County built 1976+ or other counties built 1900+: $100,000-$500,000 / $100,000-$750,000. DP2/DP3 Panhandle 2002+ or Tri-County 1976+ or other counties 1940+: $100,000-$500,000 / $100,000-$750,000. HO4 Cov C $20,000-$300,000 (Cov A N/A; built 1900+). HO6 Cov A $15,000-$1,000,000 (RCE required if A bound below $50k); owner Cov C $20,000-$500,000; tenant Cov C $6,000 min and max. Wind mit: OIR-B1-1802 only. Rev 01/12 acceptable if inspection before 4/1/2026; on/after 4/1/2026 use Rev 04/26. Opening Protection credit only with 1802 in the insured name. Hip roof credit via 4+ color photos confirming 100% hip or an 1802. Age: roof/HVAC/electrical updates within 30 years (not HO4). 4-point if older than 40 years (except HO4/HO6/HO8). No polybutylene or PEX except HO8 and DP1 (PEX ok if built or updated 2010+). ACV roof and/or water limitation may apply for roofs over 20 years. HVAC: no portable space heaters; operable A/C statewide; vented heat except listed south counties. Electrical: 100 amp min; no aluminum branch, cloth, knob-tube, or double-tap (Alumiconn/Copalum ok); no fuses; no FPE/Stab-Lok, Zinsco, Sylvania-Zinsco, Challenger-Zinsco. Ineligible: mobile/trailer, manufactured/modular, dome/unusual, EIFS, pre-existing damage, co-op condos (HO4 ok), commercial (excl home daycare), DIY, builder risk, historic, over sand (HO8 ok), farming/ag, Chinese drywall, over water, open foundation (HO8 and DP1 ok; HO3/DP2/DP3 ok if 2002+ or FEMA Diagram 6). PC 10 not acceptable except HO3 masonry/superior. Vacant/unoccupied and short-term rentals ineligible. Prior sinkhole ever ineligible. Edition 05/26/2026.";
+
+export const UNIVERSAL_PC_HO_APPETITE: PublishedHoAppetite = {
+  slug: "universal_pc",
+  legalName: "Universal Property & Casualty",
+  aliases: ["universal property & casualty", "universal property and casualty", "universal p&c", "universal property"],
+  line: "HO3",
+  state: "FL",
+  minCovA: UNIVERSAL_PC_MIN_COV_A,
+  maxCovA: UNIVERSAL_PC_MAX_COV_A,
+  maxDwellingAgeYears: null,
+  minYearBuilt: null,
+  minMilesToCoast: null,
+  maxRoofAge: null,
+  allowedRoofCoverings: null,
+  mobileAllowed: false,
+  placement: "Universal Property Agent Portal",
+  csPhone: "1-800-425-9113",
+  supportEmail: null,
+  website: "https://www.universalproperty.com",
+  hardDeclines: ["mobile_home", "manufactured", "min_cov_a:100000", "max_cov_a:1500000"],
+  softCautions: ["older_roof_no_cert"],
+  preferredSignals: ["habitational", "coastal_ho"],
+  notesForAgent: UNIVERSAL_PC_HO_NOTES,
+  bulletinDate: UNIVERSAL_PC_BULLETIN_DATE,
+};
+
+/** Nationwide Powersports (Boat + Motorcycle + RV) NPC-0577FL 02/22. */
+export const NATIONWIDE_POWERSPORTS_FORM = "NPC-0577FL (02/22)";
+export const NATIONWIDE_POWERSPORTS_PHONE = "1-877-877-7907";
+export const NATIONWIDE_POWERSPORTS_EMAIL = "specsvc@nationwide.com";
+
+export const NATIONWIDE_POWERSPORTS_NOTES =
+  "Nationwide Powersports (Boat + Motorcycle + RV) NPC-0577FL 02/22 FL. Boat: up to 35 feet, $200,000 value, 20 years old; up to 3 engines (500 hp on 1 / 1,000 hp on 2 / 1,050 hp on 3); top speed 60 mph; up to 9 vessels; high-performance not acceptable; trailers required. Includes Hurricane Haul-Out up to $1,000, fuel spill (up to PD limit), navigation up to 100 miles off US coast, salvage/wreckage removal, one limit for boat/trailer/motor, Vanishing Deductible up to $500. Valuation: Total Loss Replacement first 2 years original owner; Agreed Value boats 15 years old or less; ACV. Eligible boat types: bass, cabin cruiser, freshwater fishing, PWC, pontoon, runabout/deck, sailboat, saltwater fishing, ski/surf. Motorcycle: max insurable value $80,000; gas and electric; up to 9 vehicles on 1 policy; drivers ages 10+ on off-road. Includes guest passenger, collision safety apparel up to $2,000, custom parts/equipment up to $3,000 (comp optional up to $30,000), Vanishing Deductible up to $500. ACV or Agreed Value. Eligible: cruisers, touring, adventure/dual-purpose, sport, scooters/mopeds, autocycles/reverse trikes, custom/limited-edition, ATV/side-by-side, dirt bikes, snowmobiles, e-bikes, golf carts/utility, lawn/garden tractors, personal transporters, motorcycle trailers. RV: motorhomes up to $800,000; travel trailers up to $500,000; no length restrictions; full-timers available; up to 9 vehicles. Powersports Service Center 1-877-877-7907 specsvc@nationwide.com. Acceptability can differ by region/state — confirm Reference Connect. Appetite notes + specialty line tags only; not a boat rater.";
+
+export const NATIONWIDE_NOTES_FOR_AGENT =
+  `Multi-line. Listed states only (no invented 50; CA/FL HO not assumed). Confirm current HO footprint. FL HO: specialists outrank. Research-dated 2026-09. ${NATIONWIDE_POWERSPORTS_NOTES}`;
+
+/** Olympus FL HO — companion scan 06/15/2026 (QRG V0426 HTML was Salesforce login-wall). */
+export const OLYMPUS_UW_GUIDE_DATE = "2026-06-15";
+export const OLYMPUS_QRG_LABEL = "V0426";
+export const OLYMPUS_MAX_COV_A = 5_000_000;
+
+export const OLYMPUS_HO_NOTES =
+  "Olympus FL HO. Salesforce QRG Homeowners - Quick Reference Guide - V0426 Final.pdf is behind a login wall. Companion image-only PDF is Homeowners Multi-peril Florida Homeowners Program General Underwriting Guidelines version date June 15, 2026 (not labeled V0426 — confirm live QRG). Cov A minimum $500,000 rest of state / $1,000,000 tri-county; maximum $5,000,000; TIV maximum $8,000,000. Those Cov A floors are program text from the scan, not applied as a hard quote-gate min (QRG unconfirmed). Cov B 2% of dwelling default (0-20% blanket; scheduled up to 70%). Cov C 50% default (0-75%). Cov D 10%. Liability default $300,000 ($100k/$500k/$1M available). Med pay default $1,000 ($5k/$10k/$25k). AOP minimum $1,000; hurricane 2%/5% within 1,000 feet of coast. 1- or 2-family; seasonal/secondary/rentals eligible (rental liability premises-only). Ineligible occupancy: under construction/renovation, vacant/unoccupied, foreclosure/short-sale/as-is, home daycare, more than 2 customer visits per week, commercial/retail farming, more than 2 roomers. Roof online bind: architectural shingle 15 / clay-concrete-Spanish tile 25 / standing-seam metal 40; 3-tab, membrane, foam, wood shake not online-bindable; flat refer UW. Electrical: 200-amp required if built before 1995; no knob-and-tube, aluminum, Zinsco (GTE-Sylvania), FPE, Challenger, Pushmatic, Bulldog, or fuse boxes. Water heater: traditional inside/attic 15 years, outside/garage 20; tankless 20. Polybutylene ineligible in homes built prior to 1995 (water exclusion + $10,000 limited-water buyback). Water exclusion auto-attaches if home over 40 years or PB unless automatic shutoff present. Monroe County ineligible with wind (ex-wind eligible). Mobile/manufactured/modular/trailer ineligible. 7,500 sq ft or greater ineligible. Flood Zones A/V need separate flood. CS 1-800-711-9386.";
+
+export const OLYMPUS_HO_APPETITE: PublishedHoAppetite = {
+  slug: "olympus",
+  legalName: "Olympus Insurance Company",
+  aliases: ["olympus insurance", "olympus"],
+  line: "HO3",
+  state: "FL",
+  minCovA: null,
+  maxCovA: OLYMPUS_MAX_COV_A,
+  maxDwellingAgeYears: null,
+  minYearBuilt: null,
+  minMilesToCoast: null,
+  maxRoofAge: 15,
+  allowedRoofCoverings: ["architectural shingle", "tile", "metal"],
+  mobileAllowed: false,
+  placement: "Olympus Agent Portal",
+  csPhone: "1-800-711-9386",
+  supportEmail: null,
+  website: "https://www.olympusinsurance.com",
+  hardDeclines: ["state!=FL", "poor_construction", "mobile_home", "manufactured", "max_cov_a:5000000"],
+  softCautions: ["older_roof"],
+  preferredSignals: ["strong_construction", "mitigation_credits"],
+  notesForAgent: OLYMPUS_HO_NOTES,
+  bulletinDate: OLYMPUS_UW_GUIDE_DATE,
+};
+
+export const PUBLISHED_HO_APPETITE: PublishedHoAppetite[] = [
+  TRIDENT_HO_APPETITE,
+  SOUTHERN_OAK_HO_APPETITE,
+  STAND_HO_APPETITE,
+  UNIVERSAL_PC_HO_APPETITE,
+  OLYMPUS_HO_APPETITE,
+];
 
 export function publishedHoBySlug(slug: string): PublishedHoAppetite | undefined {
   return PUBLISHED_HO_APPETITE.find((row) => row.slug === slug);

@@ -35,7 +35,7 @@ export function appointmentLine(lineOfBusiness: string): string {
   ) {
     return "HO";
   }
-  if (raw === "PA" || raw === "PERSONAL_AUTO" || raw === "MOTORCYCLE") return "AUTO";
+  if (raw === "PA" || raw === "PERSONAL_AUTO" || raw === "MOTORCYCLE" || raw === "MCY") return "AUTO";
   if (raw === "CA" || raw === "COMMERCIAL_AUTO") return "AUTO";
   if (raw === "PU" || raw === "PUP") return "UMBRELLA";
   return raw;

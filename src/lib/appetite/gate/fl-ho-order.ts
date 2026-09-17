@@ -22,6 +22,7 @@ export const DEFAULT_FL_HO_ORDER = [
   "peoples_trust",
   "trident_reciprocal",
   "olympus",
+  "stand",
   "florida_family",
   "foremost",
   "tapco",
@@ -52,6 +53,9 @@ export const UNIVERSAL_PC_SLUG = "universal_pc";
 export const UICNA_SLUG = "uicna";
 export const TRIDENT_SLUG = "trident_reciprocal";
 export const SOUTHERN_OAK_SLUG = "southern_oak";
+export const STAND_SLUG = "stand";
+export const OLYMPUS_SLUG = "olympus";
+export const NATIONWIDE_SLUG = "nationwide";
 
 export function isAppointmentGated(carrierId: string): boolean {
   return (APPOINTMENT_GATED_SLUGS as readonly string[]).includes(carrierId);
