@@ -1,5 +1,8 @@
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { LifeAppetiteHelper } from "@/components/deal/life-appetite-helper";
 import {
   LIFE_UW_MATRIX_CSV,
   LIFE_UW_MATRIX_COVERAGE_NOTE,
@@ -60,6 +63,44 @@ describe("Life UW MATRIX appetite v1", () => {
       matrix,
     });
     expect(mixed.predictions.every((row) => row.outcome === "decline")).toBe(true);
+  });
+
+  it("renders Decline cards for AIDS and Unknown for Asthma-only", () => {
+    const declined = predictLifeAppetite({
+      medicalConditions: "AIDS / HIV",
+      tobaccoStatus: "Never",
+      matrix,
+    });
+    const declineHtml = renderToString(
+      createElement(LifeAppetiteHelper, {
+        selectedLabels: declined.selectedLabels,
+        tobaccoStatus: "Never",
+        predictions: declined.predictions,
+        coverageNote: declined.coverageNote,
+      }),
+    );
+    expect(declineHtml).toContain("data-ff-life-appetite");
+    expect(declineHtml).toContain("AIDS / HIV");
+    expect(declineHtml).toContain('data-ff-life-appetite-outcome="decline"');
+    expect(declineHtml).toContain("Full MATRIX when spreadsheet provided");
+
+    const unknown = predictLifeAppetite({
+      medicalConditions: "Asthma",
+      tobaccoStatus: "Current",
+      matrix,
+    });
+    const unknownHtml = renderToString(
+      createElement(LifeAppetiteHelper, {
+        selectedLabels: unknown.selectedLabels,
+        tobaccoStatus: "Current",
+        predictions: unknown.predictions,
+        coverageNote: unknown.coverageNote,
+      }),
+    );
+    expect(unknownHtml).toContain("Asthma");
+    expect(unknownHtml).toContain("Tobacco: Current");
+    expect(unknownHtml).toContain('data-ff-life-appetite-outcome="unknown"');
+    expect(unknownHtml).not.toContain('data-ff-life-appetite-outcome="accept"');
   });
 
   it("exposes the helper on Life Markets / Quotes and a shared picklist", () => {
