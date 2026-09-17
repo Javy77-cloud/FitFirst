@@ -8,7 +8,9 @@ import {
   compactRowClass,
   groupSectionFieldRows,
   isCompactLayoutField,
+  isStreetAddressFieldKey,
   layoutFieldKind,
+  propertyAddressRun,
   sectionFieldGridClass,
 } from "./section-density";
 import {
@@ -117,8 +119,34 @@ describe("section field packing", () => {
     expect(sectionFieldGridClass(3, { collapse: false })).toMatch(/repeat\(3,minmax\(0,1fr\)\)/);
     expect(sectionFieldGridClass(3, { collapse: false })).not.toMatch(/grid-cols-3/);
     expect(sectionFieldGridClass(3, { collapse: false })).not.toMatch(/max-\[699px\]/);
+    expect(sectionFieldGridClass(5, { collapse: false })).toMatch(/repeat\(5,minmax\(0,1fr\)\)/);
     expect(compactRowClass(3)).toMatch(/repeat\(3,minmax\(0,1fr\)\)/);
     expect(compactRowClass(3)).not.toMatch(/grid-cols-3/);
+    expect(compactRowClass(5)).toMatch(/repeat\(5,minmax\(0,1fr\)\)/);
+  });
+
+  it("packs property address + city + state + zip + county on one 5-col row", () => {
+    expect(isStreetAddressFieldKey("address1")).toBe(true);
+    expect(isStreetAddressFieldKey("mailing_address")).toBe(false);
+    expect(
+      propertyAddressRun(["address1", "city", "state", "zip", "county", "mailing_address"], 0, 5),
+    ).toEqual(["address1", "city", "state", "zip", "county"]);
+    expect(propertyAddressRun(["address1", "city", "state", "zip"], 0, 3)).toBeNull();
+
+    const rows = groupSectionFieldRows(
+      ["address1", "city", "state", "zip", "county", "mailing_address", "year_built", "stories", "beds"],
+      (key) => {
+        if (key === "address1" || key === "mailing_address") return { type: "address" };
+        return { type: "single_line" };
+      },
+      5,
+    );
+    expect(rows[0]).toEqual({
+      keys: ["address1", "city", "state", "zip", "county"],
+      kind: "compact",
+    });
+    expect(rows[1]).toEqual({ keys: ["mailing_address"], kind: "wide" });
+    expect(rows.slice(2).every((row) => row.keys.length === 1)).toBe(true);
   });
 });
 

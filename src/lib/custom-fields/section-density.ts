@@ -1,8 +1,4 @@
-import {
-  DEFAULT_SECTION_DENSITY,
-  type CustomFieldType,
-  type SectionDensity,
-} from "./types";
+import { DEFAULT_SECTION_DENSITY, type CustomFieldType } from "./types";
 
 export type LayoutFieldKind = "compact" | "wide" | "standard";
 
@@ -20,18 +16,23 @@ export type LayoutFieldHint = {
 const YES_NO = new Set(["yes", "no"]);
 
 export function sectionFieldGridClass(
-  density: SectionDensity,
+  density: number,
   opts?: { collapse?: boolean },
 ): string {
   const collapse = opts?.collapse === false ? "" : " max-[699px]:grid-cols-1";
-  if (density === 1) return "grid grid-cols-1 gap-x-3 gap-y-2";
-  if (density === 3) return `grid grid-cols-[repeat(3,minmax(0,1fr))] gap-x-3 gap-y-2${collapse}`;
-  return `grid grid-cols-2 gap-x-3 gap-y-2${collapse}`;
+  const cols = Number.isFinite(density) ? Math.min(5, Math.max(1, Math.round(density))) : 2;
+  if (cols === 1) return "grid grid-cols-1 gap-x-3 gap-y-2";
+  if (cols === 2) return `grid grid-cols-2 gap-x-3 gap-y-2${collapse}`;
+  return `grid grid-cols-[repeat(${cols},minmax(0,1fr))] gap-x-3 gap-y-2${collapse}`;
 }
 
 export function compactRowClass(count: number): string {
-  if (count >= 3) return "grid grid-cols-[repeat(3,minmax(0,1fr))] gap-x-3 gap-y-2 max-[699px]:grid-cols-2";
-  if (count === 2) return "grid grid-cols-2 gap-x-3 gap-y-2";
+  const cols = Math.min(5, Math.max(1, count));
+  if (cols >= 4) {
+    return `grid grid-cols-[repeat(${cols},minmax(0,1fr))] gap-x-3 gap-y-2 max-[699px]:grid-cols-2`;
+  }
+  if (cols === 3) return "grid grid-cols-[repeat(3,minmax(0,1fr))] gap-x-3 gap-y-2 max-[699px]:grid-cols-2";
+  if (cols === 2) return "grid grid-cols-2 gap-x-3 gap-y-2";
   return "grid grid-cols-1 gap-x-3 gap-y-2";
 }
 
@@ -47,11 +48,33 @@ export function isZipFieldKey(key: string): boolean {
   return /(^|_)zip$/.test(key.toLowerCase());
 }
 
+export function isCountyFieldKey(key: string): boolean {
+  return /(^|_)county$/.test(key.toLowerCase());
+}
+
+/** Street line that can sit with city/state/zip/county at 4–5 density. */
+export function isStreetAddressFieldKey(key: string): boolean {
+  const k = key.toLowerCase();
+  if (k.includes("mailing") || k.includes("legal") || k.includes("email") || k.includes("website")) {
+    return false;
+  }
+  return (
+    k === "address1" ||
+    k === "address" ||
+    /(^|_)(address1|street|garaging_address)$/.test(k)
+  );
+}
+
 export function isCompactLayoutField(key: string, field?: LayoutFieldHint): boolean {
   const k = key.toLowerCase();
   if (/(^|_)(city|state|zip|county|unit)$/.test(k)) return true;
   if (/(^|_)(date_of_birth|dob|gender|marital_status|marital)$/.test(k)) return true;
-  if (/(^|_)(year|stories|beds|baths|acres)$/.test(k) || /_year$/.test(k) || /^year_/.test(k)) {
+  if (
+    /(^|_)(year|stories|beds|baths|acres|units|footage)$/.test(k) ||
+    /_year$/.test(k) ||
+    /^year_/.test(k) ||
+    /square_feet/.test(k)
+  ) {
     return true;
   }
   if (field?.type === "dob" || field?.type === "checkbox") return true;
@@ -88,42 +111,91 @@ function cityStateZipRun(keys: string[], start: number): string[] | null {
   return null;
 }
 
+function isAddressPartKey(key: string): boolean {
+  return (
+    isCityFieldKey(key) ||
+    isStateFieldKey(key) ||
+    isZipFieldKey(key) ||
+    isCountyFieldKey(key)
+  );
+}
+
+/** Property address + city + state + zip + county on one row at 4–5 density. */
+export function propertyAddressRun(
+  keys: string[],
+  start: number,
+  density: number,
+): string[] | null {
+  if (density < 4) return null;
+  const first = keys[start];
+  if (!first || !isStreetAddressFieldKey(first)) return null;
+  const rest: string[] = [];
+  let i = start + 1;
+  while (i < keys.length && rest.length < density - 1) {
+    const next = keys[i]!;
+    if (!isAddressPartKey(next)) break;
+    rest.push(next);
+    i += 1;
+  }
+  if (rest.length < 3) return null;
+  return [first, ...rest];
+}
+
+function kindAtDensity(
+  key: string,
+  field: LayoutFieldHint | undefined,
+  density: number,
+): LayoutFieldKind {
+  const kind = layoutFieldKind(key, field);
+  if (density >= 4 && kind === "wide" && isStreetAddressFieldKey(key)) return "standard";
+  return kind;
+}
+
 export function groupSectionFieldRows(
   keys: readonly string[],
   fieldOf?: (key: string) => LayoutFieldHint | undefined,
-  _density: SectionDensity = DEFAULT_SECTION_DENSITY,
+  density: number = DEFAULT_SECTION_DENSITY,
 ): SectionFieldRow[] {
-  void _density;
+  const pack = Number.isFinite(density) ? Math.min(5, Math.max(1, Math.round(density))) : 2;
+  const flowInGrid = pack >= 4;
   const list = keys.filter((key) => key);
   const rows: SectionFieldRow[] = [];
   let i = 0;
   while (i < list.length) {
     const key = list[i]!;
     const field = fieldOf?.(key);
-    const kind = layoutFieldKind(key, field);
+    const addressRow = propertyAddressRun(list, i, pack);
+    if (addressRow) {
+      rows.push({ keys: addressRow, kind: "compact" });
+      i += addressRow.length;
+      continue;
+    }
+    const kind = kindAtDensity(key, field, pack);
     if (kind === "wide") {
       rows.push({ keys: [key], kind: "wide" });
       i += 1;
       continue;
     }
-    const trio = cityStateZipRun(list, i);
-    if (trio) {
-      rows.push({ keys: trio, kind: "compact" });
-      i += 3;
-      continue;
-    }
-    if (kind === "compact") {
-      const chunk = [key];
-      while (chunk.length < 3 && i + chunk.length < list.length) {
-        const nextKey = list[i + chunk.length]!;
-        if (cityStateZipRun(list, i + chunk.length)) break;
-        if (layoutFieldKind(nextKey, fieldOf?.(nextKey)) !== "compact") break;
-        chunk.push(nextKey);
-      }
-      if (chunk.length >= 2) {
-        rows.push({ keys: chunk, kind: "compact" });
-        i += chunk.length;
+    if (!flowInGrid) {
+      const trio = cityStateZipRun(list, i);
+      if (trio) {
+        rows.push({ keys: trio, kind: "compact" });
+        i += 3;
         continue;
+      }
+      if (kind === "compact") {
+        const chunk = [key];
+        while (chunk.length < pack && i + chunk.length < list.length) {
+          const nextKey = list[i + chunk.length]!;
+          if (cityStateZipRun(list, i + chunk.length)) break;
+          if (kindAtDensity(nextKey, fieldOf?.(nextKey), pack) !== "compact") break;
+          chunk.push(nextKey);
+        }
+        if (chunk.length >= 2) {
+          rows.push({ keys: chunk, kind: "compact" });
+          i += chunk.length;
+          continue;
+        }
       }
     }
     rows.push({ keys: [key], kind: kind === "compact" ? "compact" : "standard" });

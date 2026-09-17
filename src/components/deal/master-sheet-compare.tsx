@@ -31,20 +31,17 @@ import {
 import type { QuoteFieldDef } from "@/lib/quote-sheet/applicant-core";
 import { cascadeParentKeys, joinChipList, parseChipList } from "@/lib/quote-sheet/sheet-visibility";
 import type { ShopLine } from "@/lib/domain";
-import type { SectionDensity } from "@/lib/custom-fields/types";
 import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
-import { SHEET_GROUP_HEADER_STYLE, sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
 import { MultiSelectField } from "@/components/custom-fields/multi-select-field";
-import { SectionDensityControl } from "@/components/custom-fields/section-density-control";
 import {
   RiskProfileFieldShell,
   RiskProfileFieldsGrid,
 } from "@/components/deal/risk-profile-field-grid";
 import {
-  DEFAULT_RISK_PROFILE_DENSITY,
-  RISK_PROFILE_DENSITY_CONTROL_ID,
-} from "@/lib/quote-sheet/risk-profile-layout";
+  RiskProfileSectionBar,
+  useRiskProfileSectionDensity,
+} from "@/components/deal/risk-profile-section-header";
 
 function sheetValuesToLive(values: Record<string, QuoteSheetFieldValue>): Record<string, string> {
   return Object.fromEntries(
@@ -192,7 +189,6 @@ export function MasterSheetCompare({
   const product = parseSheetProduct(productParam ?? values.sheet_product?.value, line);
   const catalog = asList(fieldsForLine(line, product));
   const cascadeKeys = new Set(cascadeParentKeys(catalog));
-  const [density, setDensity] = useState<SectionDensity>(DEFAULT_RISK_PROFILE_DENSITY);
   const [liveValues, setLiveValues] = useState(() => sheetValuesToLive(values));
   const groups = asList(groupFields(line, product, liveValues));
   const usingHealthSherpa = line === "health" && isUsingHealthSherpa(liveValues[USING_HEALTHSHERPA_KEY]);
@@ -269,11 +265,6 @@ export function MasterSheetCompare({
             ) : null}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
-            <SectionDensityControl
-              sectionId={RISK_PROFILE_DENSITY_CONTROL_ID}
-              density={density}
-              onChange={setDensity}
-            />
             <MasterSheetAddressLinks values={values} />
             <MasterSheetFillButton dealId={dealId} line={line} />
             {line === "health" ? (
@@ -298,7 +289,7 @@ export function MasterSheetCompare({
         className="space-y-0"
         data-ff-master-sheet-form=""
         data-ff-risk-profile-form=""
-        data-ff-risk-profile-density={density}
+        data-ff-risk-profile-density="per-section"
       >
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="line" value={line} />
@@ -320,7 +311,6 @@ export function MasterSheetCompare({
                   key="applicant-household"
                   values={values}
                   hasCoApplicantFlag={hasCoApplicantFlag}
-                  density={density}
                 />
               );
             }
@@ -335,7 +325,6 @@ export function MasterSheetCompare({
                   extractedByKey={extractedByKey}
                   dealId={dealId}
                   line={line}
-                  density={density}
                 />
               );
             }
@@ -347,7 +336,6 @@ export function MasterSheetCompare({
                   product={product}
                   values={values}
                   extractedByKey={extractedByKey}
-                  density={density}
                 />
               );
             }
@@ -359,7 +347,6 @@ export function MasterSheetCompare({
                   product={product}
                   values={values}
                   extractedByKey={extractedByKey}
-                  density={density}
                 />
               );
             }
@@ -373,7 +360,6 @@ export function MasterSheetCompare({
                 values={values}
                 liveValues={liveValues}
                 cascadeKeys={cascadeKeys}
-                density={density}
                 onLiveChange={(key, next) =>
                   setLiveValues((prev) => ({ ...prev, [key]: next }))
                 }
@@ -401,7 +387,6 @@ function SheetGroup({
   values,
   liveValues,
   cascadeKeys,
-  density,
   onLiveChange,
   usingHealthSherpa = false,
 }: {
@@ -412,25 +397,30 @@ function SheetGroup({
   values: Record<string, QuoteSheetFieldValue>;
   liveValues: Record<string, string>;
   cascadeKeys: Set<string>;
-  density: SectionDensity;
   onLiveChange: (key: string, next: string) => void;
   extractedByKey: Map<string, ExtractedFieldRow>;
   usingHealthSherpa?: boolean;
 }) {
+  const { sectionId, density, setDensity } = useRiskProfileSectionDensity(title);
   const rows = asList(groupFields).filter((field) => field.key !== USING_HEALTHSHERPA_KEY);
   const groupVisible = sheetGroupIsVisible(rows, liveValues);
   const visibleFields = rows.filter((field) => groupVisible && sheetFieldIsVisible(field, liveValues));
   const hiddenFields = rows.filter((field) => !groupVisible || !sheetFieldIsVisible(field, liveValues));
   const collapsible = usingHealthSherpa && healthSherpaCollapsibleGroups(true).has(title);
   const header = groupVisible ? (
-    <div className={sheetGroupHeaderClass(title)} style={SHEET_GROUP_HEADER_STYLE} data-ff-sheet-group-header={title}>
-      {title}
-      {collapsible ? (
-        <span className="ml-2 text-[10px] font-normal normal-case text-muted-foreground">
-          {HEALTHSHERPA_SKIP_REKEY}
-        </span>
-      ) : null}
-    </div>
+    <RiskProfileSectionBar
+      title={title}
+      sectionId={sectionId}
+      density={density}
+      onDensityChange={setDensity}
+      extra={
+        collapsible ? (
+          <span className="ml-2 text-[10px] font-normal normal-case text-muted-foreground">
+            {HEALTHSHERPA_SKIP_REKEY}
+          </span>
+        ) : null
+      }
+    />
   ) : null;
   const grid = groupVisible ? (
     <RiskProfileFieldsGrid

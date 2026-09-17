@@ -1156,7 +1156,10 @@ button:enabled:not([data-ff-no-hover]):active {
   position: sticky;
   top: 0;
   z-index: 10;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   width: 100%;
   box-sizing: border-box;
   padding: 0.4rem 0.75rem;
@@ -1167,6 +1170,12 @@ button:enabled:not([data-ff-no-hover]):active {
   background: #002868 !important;
   color: #ffffff !important;
   border-bottom: 1px solid var(--ff-sidebar-line, #1a3d7a);
+}
+.ff-sheet-group-header [data-ff-section-density-control],
+.ff-sheet-group-header--emphasis [data-ff-section-density-control] {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
 }
 
 /* Portal Login Save — forced colors (Tailwind arbitrary bg can miss on new files) */

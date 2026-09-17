@@ -7,36 +7,35 @@ import {
   RiskProfileFieldsGrid,
 } from "@/components/deal/risk-profile-field-grid";
 import { Input } from "@/components/ui/input";
-import type { SectionDensity } from "@/lib/custom-fields/types";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import { APPLICANT_CORE_FIELDS } from "@/lib/quote-sheet/applicant-core";
-import { DEFAULT_RISK_PROFILE_DENSITY } from "@/lib/quote-sheet/risk-profile-layout";
-import { SHEET_GROUP_HEADER_STYLE, sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
+import {
+  RiskProfileSectionBar,
+  useRiskProfileSectionDensity,
+} from "@/components/deal/risk-profile-section-header";
 import { cn } from "@/lib/utils";
 
 /** Applicant + Co-applicant together so Married can require a spouse live. */
 export function ApplicantHousehold({
   values,
   hasCoApplicantFlag,
-  density = DEFAULT_RISK_PROFILE_DENSITY,
 }: {
   values: Record<string, QuoteSheetFieldValue>;
   hasCoApplicantFlag?: string | null;
-  density?: SectionDensity;
 }) {
   const [marital, setMarital] = useState(values.applicant_marital_status?.value ?? "");
   const applicantFields = useMemo(() => APPLICANT_CORE_FIELDS, []);
+  const { sectionId, density, setDensity } = useRiskProfileSectionDensity("Applicant");
 
   return (
     <>
       <div className="border-b border-border/70 last:border-b-0" data-ff-sheet-group="Applicant">
-        <div
-          className={sheetGroupHeaderClass("Applicant")}
-          style={SHEET_GROUP_HEADER_STYLE}
-          data-ff-sheet-group-header="Applicant"
-        >
-          Applicant
-        </div>
+        <RiskProfileSectionBar
+          title="Applicant"
+          sectionId={sectionId}
+          density={density}
+          onDensityChange={setDensity}
+        />
         <RiskProfileFieldsGrid
           density={density}
           fields={applicantFields}
@@ -98,7 +97,6 @@ export function ApplicantHousehold({
         values={values}
         maritalStatus={marital}
         hasCoApplicantFlag={hasCoApplicantFlag}
-        density={density}
       />
     </>
   );

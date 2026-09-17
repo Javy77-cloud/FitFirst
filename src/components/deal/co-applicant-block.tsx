@@ -6,9 +6,11 @@ import {
   RiskProfileFieldsGrid,
 } from "@/components/deal/risk-profile-field-grid";
 import { Input } from "@/components/ui/input";
-import type { SectionDensity } from "@/lib/custom-fields/types";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
-import { DEFAULT_RISK_PROFILE_DENSITY } from "@/lib/quote-sheet/risk-profile-layout";
+import {
+  RiskProfileSectionBar,
+  useRiskProfileSectionDensity,
+} from "@/components/deal/risk-profile-section-header";
 import { isCoApplicantExplicitlyOff } from "@/lib/custom-fields/co-applicant-fields";
 import {
   CO_APPLICANT_FIELDS,
@@ -16,7 +18,6 @@ import {
   coApplicantRequired,
   isMarriedStatus,
 } from "@/lib/quote-sheet/applicant-core";
-import { SHEET_GROUP_HEADER_STYLE, sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
 import { cn } from "@/lib/utils";
 
 /** Additive co-applicant — required when Married, unless Deal Details switch is Off. */
@@ -24,13 +25,11 @@ export function CoApplicantBlock({
   values,
   maritalStatus,
   hasCoApplicantFlag,
-  density = DEFAULT_RISK_PROFILE_DENSITY,
 }: {
   values: Record<string, QuoteSheetFieldValue>;
   maritalStatus?: string;
   /** Raw Deal Details `has_co_applicant` value (true/false). Explicit Off collapses + skips required. */
   hasCoApplicantFlag?: string | null;
-  density?: SectionDensity;
 }) {
   const forcedOff = isCoApplicantExplicitlyOff(hasCoApplicantFlag);
   const savedMarried = coApplicantRequired(values, { hasCoApplicantFlag });
@@ -40,6 +39,7 @@ export function CoApplicantBlock({
   const seeded = useMemo(() => coApplicantHasValue(values), [values]);
   const [manualOpen, setManualOpen] = useState(seeded && !forcedOff);
   const open = !forcedOff && (required || manualOpen || seeded);
+  const { sectionId, density, setDensity } = useRiskProfileSectionDensity("Co-applicant");
 
   useEffect(() => {
     // Keep spouse fields open when Married (or explicit Off) changes after first paint.
@@ -59,13 +59,19 @@ export function CoApplicantBlock({
       data-ff-co-applicant-required={required ? "1" : "0"}
       data-ff-co-applicant-off={forcedOff ? "1" : "0"}
     >
-      <div
-        className={sheetGroupHeaderClass("Co-applicant")}
-        style={SHEET_GROUP_HEADER_STYLE}
-        data-ff-sheet-group-header="Co-applicant"
-      >
-        Co-applicant{required ? " (required — spouse)" : ""}
-      </div>
+      <RiskProfileSectionBar
+        title="Co-applicant"
+        sectionId={sectionId}
+        density={density}
+        onDensityChange={setDensity}
+        extra={
+          required ? (
+            <span className="ml-2 text-[10px] font-normal normal-case text-white/80">
+              (required — spouse)
+            </span>
+          ) : null
+        }
+      />
       {forcedOff ? (
         <p className="px-3 py-2 text-sm text-muted-foreground" data-ff-co-applicant-off-hint="">
           No co-applicant

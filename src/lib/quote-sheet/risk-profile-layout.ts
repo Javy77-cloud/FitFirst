@@ -2,20 +2,66 @@ import {
   isCompactLayoutField,
   type LayoutFieldHint,
 } from "@/lib/custom-fields/section-density";
-import type { SectionDensity } from "@/lib/custom-fields/types";
 import type { QuoteFieldDef } from "./applicant-core";
 
-/** Risk Profile (Documents / former master sheet) defaults to Deal Details 3-col density. */
-export const DEFAULT_RISK_PROFILE_DENSITY: SectionDensity = 3;
+/** Per-section columns on Risk Profile. 4–5 is for short fields (address / dwelling). */
+export const RISK_PROFILE_DENSITIES = [1, 2, 3, 4, 5] as const;
+export type RiskProfileDensity = (typeof RISK_PROFILE_DENSITIES)[number];
 
-export const RISK_PROFILE_DENSITY_CONTROL_ID = "risk-profile";
+/** Fallback when a section has no short-field default. */
+export const DEFAULT_RISK_PROFILE_DENSITY: RiskProfileDensity = 3;
 
-export function riskProfileDensityOf(raw: unknown): SectionDensity {
-  if (raw === 1 || raw === 2 || raw === 3) return raw;
+export const RISK_PROFILE_DENSITY_STORAGE_KEY = "ff-risk-profile-section-density";
+
+const FIVE_COL_SECTIONS =
+  /^(property|dwelling|location|premises|building|structure|vehicles?|drivers?)$/i;
+const FOUR_COL_SECTIONS =
+  /^(applicant|co-applicant|protection|hazards|coverages?|coastal|flood|household)/i;
+
+export function defaultRiskProfileSectionDensity(title: string): RiskProfileDensity {
+  const key = title.trim();
+  if (FIVE_COL_SECTIONS.test(key)) return 5;
+  if (FOUR_COL_SECTIONS.test(key)) return 4;
+  return DEFAULT_RISK_PROFILE_DENSITY;
+}
+
+export function riskProfileDensityOf(raw: unknown): RiskProfileDensity {
+  if (raw === 1 || raw === 2 || raw === 3 || raw === 4 || raw === 5) return raw;
   if (raw === "1") return 1;
   if (raw === "2") return 2;
   if (raw === "3") return 3;
+  if (raw === "4") return 4;
+  if (raw === "5") return 5;
   return DEFAULT_RISK_PROFILE_DENSITY;
+}
+
+export function riskProfileSectionDensityId(title: string): string {
+  return title.trim() || "section";
+}
+
+export function readStoredRiskProfileDensity(sectionId: string): RiskProfileDensity | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const raw = window.sessionStorage.getItem(RISK_PROFILE_DENSITY_STORAGE_KEY);
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (!(sectionId in parsed)) return undefined;
+    return riskProfileDensityOf(parsed[sectionId]);
+  } catch {
+    return undefined;
+  }
+}
+
+export function writeStoredRiskProfileDensity(sectionId: string, density: RiskProfileDensity) {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.sessionStorage.getItem(RISK_PROFILE_DENSITY_STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+    parsed[sectionId] = density;
+    window.sessionStorage.setItem(RISK_PROFILE_DENSITY_STORAGE_KEY, JSON.stringify(parsed));
+  } catch {
+    /* ignore quota / private mode */
+  }
 }
 
 export function sheetFieldLayoutHint(field: QuoteFieldDef | undefined): LayoutFieldHint {

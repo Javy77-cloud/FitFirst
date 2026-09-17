@@ -12,9 +12,11 @@ import { isCompactLayoutField } from "@/lib/custom-fields/section-density";
 import { emptySheetValues, fieldsForLine } from "./catalog";
 import {
   DEFAULT_RISK_PROFILE_DENSITY,
-  RISK_PROFILE_DENSITY_CONTROL_ID,
+  RISK_PROFILE_DENSITIES,
+  defaultRiskProfileSectionDensity,
   isShortSheetValue,
   riskProfileDensityOf,
+  riskProfileSectionDensityId,
   sheetFieldLayoutHint,
 } from "./risk-profile-layout";
 
@@ -29,20 +31,34 @@ const RISK_PROFILE_SURFACES = [
   "src/components/deal/repeatable-unit-blocks.tsx",
 ];
 
-describe("Risk Profile 3-col density + full labels", () => {
-  it("defaults to Deal Details-style 3 columns and keeps 1/2/3 control", () => {
+describe("Risk Profile per-section density + full labels", () => {
+  it("defaults short-field sections to 4–5 columns and keeps 1–5 per section", () => {
     expect(DEFAULT_RISK_PROFILE_DENSITY).toBe(3);
+    expect(RISK_PROFILE_DENSITIES).toEqual([1, 2, 3, 4, 5]);
+    expect(defaultRiskProfileSectionDensity("Property")).toBe(5);
+    expect(defaultRiskProfileSectionDensity("Dwelling")).toBe(5);
+    expect(defaultRiskProfileSectionDensity("Vehicles")).toBe(5);
+    expect(defaultRiskProfileSectionDensity("Applicant")).toBe(4);
+    expect(defaultRiskProfileSectionDensity("Coverages")).toBe(4);
+    expect(defaultRiskProfileSectionDensity("Current policy")).toBe(3);
     expect(riskProfileDensityOf(undefined)).toBe(3);
-    expect(riskProfileDensityOf(2)).toBe(2);
-    expect(riskProfileDensityOf("1")).toBe(1);
+    expect(riskProfileDensityOf(5)).toBe(5);
+    expect(riskProfileDensityOf("4")).toBe(4);
+    expect(riskProfileSectionDensityId("Property")).toBe("Property");
 
     const sheet = source("src/components/deal/master-sheet-compare.tsx");
-    expect(sheet).toMatch(/SectionDensityControl/);
-    expect(sheet).toMatch(/DEFAULT_RISK_PROFILE_DENSITY/);
-    expect(sheet).toMatch(/RISK_PROFILE_DENSITY_CONTROL_ID/);
-    expect(RISK_PROFILE_DENSITY_CONTROL_ID).toBe("risk-profile");
+    expect(sheet).toMatch(/RiskProfileSectionBar/);
+    expect(sheet).toMatch(/useRiskProfileSectionDensity/);
+    expect(sheet).toMatch(/data-ff-risk-profile-density="per-section"/);
+    expect(sheet).not.toMatch(/RISK_PROFILE_DENSITY_CONTROL_ID/);
     expect(sheet).not.toMatch(/sm:grid-cols-2/);
     expect(sheet).not.toMatch(/minmax\(0,7\.5rem\)/);
+    expect(source("src/components/deal/risk-profile-section-header.tsx")).toMatch(
+      /SectionDensityControl/,
+    );
+    expect(source("src/components/custom-fields/section-density-control.tsx")).toMatch(
+      /data-ff-section-density-control/,
+    );
   });
 
   it("does not truncate labels on Home / Auto / Flood / Life / Health / Commercial surfaces", () => {
@@ -74,17 +90,20 @@ describe("Risk Profile 3-col density + full labels", () => {
     expect(html).toContain("Resided at risk address under 2 years?");
     expect(html).toContain("Roof deck attachment");
     expect(html).toContain("Wind mit inspector");
-    expect(html).toMatch(/data-ff-section-density="3"/);
-    expect(html).toMatch(/data-ff-section-density-control="risk-profile"/);
+    expect(html).toMatch(/data-ff-section-density="5"/);
+    expect(html).toMatch(/data-ff-section-density-control="Property"/);
+    expect(html).toMatch(/data-ff-section-density-control="Dwelling"/);
     expect(html).toMatch(/data-ff-density-choice="1"/);
-    expect(html).toMatch(/data-ff-density-choice="2"/);
-    expect(html).toMatch(/data-ff-density-choice="3"/);
-    expect(html).toMatch(/grid-cols-\[repeat\(3,minmax\(0,1fr\)\)\]/);
+    expect(html).toMatch(/data-ff-density-choice="4"/);
+    expect(html).toMatch(/data-ff-density-choice="5"/);
+    expect(html).toMatch(/grid-cols-\[repeat\(5,minmax\(0,1fr\)\)\]/);
+    expect(html).toMatch(/data-ff-compact-row/);
+    expect(html).not.toMatch(/data-ff-section-density-control="risk-profile"/);
     expect(html).not.toMatch(/Reside at risk address…/);
     expect(html).not.toMatch(/When Met inspector/);
   });
 
-  it("renders 3-col density on Auto, Flood, Life, Health, and Commercial", () => {
+  it("renders per-section density on Auto, Flood, Life, Health, and Commercial", () => {
     const lines = [
       ["auto", "auto"],
       ["flood", "flood"],
@@ -102,9 +121,10 @@ describe("Risk Profile 3-col density + full labels", () => {
           product,
         }),
       );
-      expect(html, line).toMatch(/data-ff-section-density="3"/);
-      expect(html, line).toMatch(/data-ff-section-density-control="risk-profile"/);
-      expect(html, line).toMatch(/data-ff-risk-profile-density="3"/);
+      expect(html, line).toMatch(/data-ff-section-density-control=/);
+      expect(html, line).toMatch(/data-ff-density-choice="5"/);
+      expect(html, line).toMatch(/data-ff-risk-profile-density="per-section"/);
+      expect(html, line).not.toMatch(/data-ff-section-density-control="risk-profile"/);
     }
   });
 
