@@ -7,6 +7,7 @@ import {
   RenewalCrossSellPanel,
   type EmailTemplateOption,
 } from "@/components/renewals/cross-sell-panel";
+import { GapCountBadge } from "@/components/coverage/gap-count-badge";
 import { PolicyQuickActions } from "@/components/policy/policy-quick-actions";
 
 export function RenewalBoardCardView({
@@ -59,6 +60,7 @@ export function RenewalBoardCardView({
           contactId={card.contactId}
           accountId={card.accountId}
         />
+        <GapCountBadge count={card.gapCount} href={`/policies/${card.policyId}`} />
       </div>
       <p className="mt-0.5 text-[11px] text-muted-foreground">
         Exp {formatDay(card.expirationDate)} · {daysLabel}

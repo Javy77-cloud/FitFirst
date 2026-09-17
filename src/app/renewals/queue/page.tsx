@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { RenewalQueueActions } from "@/components/ams/renewal-queue-actions";
+import { GapCountBadge } from "@/components/coverage/gap-count-badge";
 import { RecordLink } from "@/components/record-links";
 import { formatDay, formatMoney } from "@/lib/domain";
+import { loadRenewalGapCounts, renewalGapCountKey } from "@/lib/coverage/load-renewal-gaps";
 import {
   RENEWAL_QUEUE_DISCLAIMER,
   RENEWAL_QUEUE_STAGES,
@@ -20,6 +22,15 @@ export default async function RenewalQueuePage({
 }) {
   const params = await searchParams;
   const rows = await listRenewalQueue();
+  const gapCounts = await loadRenewalGapCounts(
+    rows.map(({ policy, contact, account }) => ({
+      contactId: contact?.id ?? policy.contactId,
+      accountId: account?.id ?? policy.accountId,
+      partyName: contact
+        ? `${contact.firstName} ${contact.lastName}`
+        : account?.name ?? policy.policyNumber,
+    })),
+  );
   const error = typeof params.error === "string" ? params.error : undefined;
   const notice = typeof params.notice === "string" ? params.notice : undefined;
 
@@ -70,10 +81,17 @@ export default async function RenewalQueuePage({
                   <p className="px-3 py-4 text-sm text-muted-foreground">Empty.</p>
                 ) : (
                   <ul className="divide-y divide-border">
-                    {cards.map(({ queue, policy, contact, account, carrier }) => (
+                    {cards.map(({ queue, policy, contact, account, carrier }) => {
+                      const gapKey = renewalGapCountKey({
+                        contactId: contact?.id ?? policy.contactId,
+                        accountId: account?.id ?? policy.accountId,
+                      });
+                      const gapCount = gapKey ? (gapCounts.get(gapKey) ?? 0) : 0;
+                      return (
                       <li key={queue.id} className="space-y-2 px-3 py-3">
-                        <div className="font-medium text-navy">
+                        <div className="flex flex-wrap items-center gap-1.5 font-medium text-navy">
                           <RecordLink href={`/policies/${policy.id}`}>{policy.policyNumber}</RecordLink>
+                          <GapCountBadge count={gapCount} href={`/policies/${policy.id}`} />
                         </div>
                         <p className="text-sm text-muted-foreground">
                           {contact
@@ -90,7 +108,8 @@ export default async function RenewalQueuePage({
                         ) : null}
                         <RenewalQueueActions queueId={queue.id} stage={queue.stage} />
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )}
               </section>

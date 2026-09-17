@@ -26,6 +26,14 @@ import { missingRenewalCrossSellLines, type CrossSellSuggestion } from "@/lib/re
 import { partyLabel } from "@/lib/desk/policy-name";
 import { buildPolicyLabel } from "@/lib/policy/auto-label";
 import { getAgencyPolicyLabelTemplate } from "@/lib/policy/auto-label-prefs";
+import { loadTenantDismissedGapRuleIds } from "@/lib/coverage/gap-dismissals";
+import { isAnaCoverageParty } from "@/lib/coverage/notices";
+import {
+  dismissedRuleIdsForHousehold,
+  householdGapCount,
+  indexHouseholdPolicies,
+  policiesForHousehold,
+} from "@/lib/coverage/renewal-gaps";
 
 export type RenewalBoardCard = {
   queueId: string;
@@ -48,6 +56,8 @@ export type RenewalBoardCard = {
   daysUntil: number;
   premium: string | null;
   crossSell: CrossSellSuggestion[];
+  /** Active household coverage gaps after dismissals. 0 stays hidden on the row. */
+  gapCount: number;
 };
 
 function partyName(
@@ -127,20 +137,22 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
     .leftJoin(carriers, eq(policies.carrierId, carriers.id))
     .where(eq(renewalQueue.tenantId, DEFAULT_TENANT_ID));
 
-  // Household lines for cross-sell (all in-force on contact/account).
-  const allInForce = await db
+  // Household lines for cross-sell + coverage-gap counts (in-force book only).
+  const allHousehold = await db
     .select({
+      id: policies.id,
       contactId: policies.contactId,
       accountId: policies.accountId,
       lineOfBusiness: policies.lineOfBusiness,
       status: policies.status,
+      policyNumber: policies.policyNumber,
     })
     .from(policies)
     .where(eq(policies.tenantId, DEFAULT_TENANT_ID));
 
   const linesByContact = new Map<string, string[]>();
   const linesByAccount = new Map<string, string[]>();
-  for (const row of allInForce) {
+  for (const row of allHousehold) {
     if (!isInForceStatus(row.status)) continue;
     if (row.contactId) {
       const list = linesByContact.get(row.contactId) ?? [];
@@ -153,6 +165,9 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
       linesByAccount.set(row.accountId, list);
     }
   }
+  const householdIndex = indexHouseholdPolicies(allHousehold);
+  const dismissedByParty = await loadTenantDismissedGapRuleIds();
+  const gapCountByHousehold = new Map<string, number>();
 
   const cards: RenewalBoardCard[] = [];
   for (const row of queueRows) {
@@ -198,6 +213,40 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
     });
     const displayName =
       row.policy.labelOverride?.trim() || autoLabel || row.policy.policyNumber;
+    const householdKey = row.contact?.id
+      ? `contact:${row.contact.id}`
+      : row.account?.id
+        ? `account:${row.account.id}`
+        : `policy:${row.policy.id}`;
+    let gapCount = gapCountByHousehold.get(householdKey);
+    if (gapCount == null) {
+      const householdPolicies = policiesForHousehold(householdIndex, {
+        contactId: row.contact?.id ?? row.policy.contactId,
+        accountId: row.account?.id ?? row.policy.accountId,
+        fallback: [
+          {
+            id: row.policy.id,
+            status: row.policy.status,
+            lineOfBusiness: row.policy.lineOfBusiness,
+            policyNumber: row.policy.policyNumber,
+          },
+        ],
+      });
+      gapCount = householdGapCount({
+        policies: householdPolicies,
+        partyName: ownerName,
+        dismissedRuleIds: dismissedRuleIdsForHousehold(dismissedByParty, {
+          contactId: row.contact?.id ?? row.policy.contactId,
+          accountId: row.account?.id ?? row.policy.accountId,
+        }),
+        isAna: isAnaCoverageParty({
+          contactId: row.contact?.id ?? row.policy.contactId,
+          firstName: row.contact?.firstName,
+          lastName: row.contact?.lastName,
+        }),
+      });
+      gapCountByHousehold.set(householdKey, gapCount);
+    }
     cards.push({
       queueId: row.queue.id,
       policyId: row.policy.id,
@@ -218,6 +267,7 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
       daysUntil: days,
       premium: built.currentPremium,
       crossSell: missingRenewalCrossSellLines(held),
+      gapCount,
     });
   }
 
