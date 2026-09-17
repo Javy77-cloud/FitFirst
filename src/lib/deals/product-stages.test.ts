@@ -649,9 +649,10 @@ describe("per-product stages", () => {
     expect(source("src/app/globals.css")).toMatch(/left: calc\(\(100% - 420px - 1\.25rem\) \/ 2\)/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/ff-deal-stamp-stack/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/data-ff-deal-create-notice/);
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/noticeAction=/);
-    expect(source("src/components/deal/quotes-panel.tsx")).toMatch(/noticeAction/);
-    expect(source("src/components/deal/quotes-results-table.tsx")).toMatch(/data-ff-quotes-create-notice/);
+    expect(source("src/app/deals/[id]/page.tsx")).not.toMatch(/noticeAction=/);
+    expect(source("src/components/deal/quotes-panel.tsx")).not.toMatch(/noticeAction/);
+    expect(source("src/components/deal/quotes-results-table.tsx")).not.toMatch(/data-ff-quotes-create-notice/);
+    expect(source("src/components/deal/life-health-quotes-panel.tsx")).not.toMatch(/Create notice/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/complete: flowCompletion\.isComplete\(id\)/);
     expect(source("src/app/deals/[id]/page.tsx")).not.toMatch(/DealFlowRail/);
     expect(source("src/components/desk/pending-tab-list.tsx")).toMatch(/data-ff-tab-complete/);

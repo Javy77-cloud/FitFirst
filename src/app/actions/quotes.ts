@@ -55,7 +55,14 @@ import {
   quoteMatchesShopLine,
   quoteRunIdAfterRequest,
 } from "@/lib/deals/shop-flow";
-import { parseDealProduct } from "@/lib/deals/deal-products";
+import { dealFamilyFromHints, isLifeHealthShopLine, parseDealProduct } from "@/lib/deals/deal-products";
+import {
+  lifeHealthQuoteCarriers,
+  parseLifeHealthFaceAmount,
+  parseLifeHealthPremium,
+  parseLifeHealthQuoteOutcome,
+} from "@/lib/life/quote-writer";
+import { syncQuoteOutcomes } from "@/lib/quotes/outcomes";
 import { parseProductStages, setProductStage } from "@/lib/deals/product-stages";
 import { autoAdvanceDealProductStage } from "@/app/actions/product-stage";
 import { flashAction } from "@/lib/flash-action";
@@ -756,4 +763,72 @@ export async function saveBindRecheckAckAction(formData: FormData) {
     .where(and(eq(quotes.id, quoteId), eq(quotes.dealId, dealId), eq(quotes.tenantId, DEFAULT_TENANT_ID)));
   revalidatePath(`/deals/${dealId}`);
   flashAction(dealQuotesPath(dealId), "Recheck saved");
+}
+
+/** Manual Life/Health quote-writer result — not a P&C rate pull. */
+export async function saveLifeHealthQuoteResultAction(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const carrierId = String(formData.get("carrierId") ?? "").trim();
+  const product = String(formData.get("product") ?? "").trim();
+  const shopLineRaw = String(formData.get("shopLine") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
+  if (!dealId) throw new Error("Deal is missing.");
+  if (!carrierId) throw new Error("Pick a carrier.");
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+  if (!deal || !risk) throw new Error("Deal or master risk is missing");
+  const family = dealFamilyFromHints({
+    shopProducts: (deal as { shopProducts?: string[] | null }).shopProducts,
+    shopLines: deal.shopLines,
+    lineOfBusiness: deal.lineOfBusiness,
+    quotingLine: deal.quotingLine,
+    quotingForm: deal.quotingForm,
+    policySubType: deal.policySubType,
+  });
+  if (family !== "life" && family !== "health") {
+    throw new Error("Quote writer is Life/Health only.");
+  }
+  const shopLine = isLifeHealthShopLine(shopLineRaw) ? shopLineRaw : family;
+  const dealLine = shopLine === "health" ? "HEALTH" : "LIFE";
+  const [carrier] = await db
+    .select()
+    .from(carriers)
+    .where(and(eq(carriers.id, carrierId), eq(carriers.tenantId, DEFAULT_TENANT_ID)));
+  if (!carrier) throw new Error("Carrier not found.");
+  const allowed = lifeHealthQuoteCarriers(
+    [{ id: carrier.id, name: carrier.name, writtenLines: carrier.writtenLines }],
+    dealLine,
+  );
+  if (!allowed.length) throw new Error("Carrier does not write this Life/Health line.");
+  const outcome = parseLifeHealthQuoteOutcome(String(formData.get("outcome") ?? ""));
+  const synced = syncQuoteOutcomes({ riskOutcome: outcome });
+  const premium = parseLifeHealthPremium(String(formData.get("premium") ?? ""));
+  const faceAmount = parseLifeHealthFaceAmount(String(formData.get("faceAmount") ?? ""));
+  const quoteRunId = randomUUID();
+  await db.insert(quotes).values({
+    tenantId: DEFAULT_TENANT_ID,
+    dealId,
+    riskId: risk.id,
+    carrierId: carrier.id,
+    premium,
+    coverageA: faceAmount,
+    notes: notes || null,
+    stub: false,
+    shopLine,
+    quoteRunId,
+    riskOutcome: synced.riskOutcome,
+    nextStep: synced.nextStep,
+    bindable: synced.bindable,
+    agentStatus: "new",
+  });
+  await persistDealWorkTab(dealId, "quotes").catch(() => null);
+  await autoAdvanceDealProductStage({
+    dealId,
+    stageSlug: "quote_review",
+    line: shopLine,
+    product: product || undefined,
+    pipelineSlug: family === "health" ? "health" : "life",
+  }).catch(() => null);
+  revalidatePath(`/deals/${dealId}`);
+  flashAction(`${dealQuotesPath(dealId)}${product ? `&product=${product}` : ""}`, "Quote result saved");
 }

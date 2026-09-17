@@ -678,6 +678,10 @@ export function sheetLineForProduct(product: DealProductId): ShopLine {
   return dealProductDef(product).shopLine;
 }
 
+export function isLifeHealthShopLine(line: string | null | undefined): line is "life" | "health" {
+  return line === "life" || line === "health";
+}
+
 export function quotingFormForDealProduct(product: DealProductId): string {
   return dealProductDef(product).quotingForm;
 }

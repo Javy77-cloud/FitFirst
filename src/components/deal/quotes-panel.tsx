@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { QuotesBindableSignal } from "@/components/deal/quotes-bindable-signal";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
@@ -134,7 +133,6 @@ export function QuotesPanel({
   mintStatus = null,
   issuedPolicy = null,
   autoIssue = false,
-  noticeAction = null,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -167,8 +165,6 @@ export function QuotesPanel({
   mintStatus?: string | null;
   issuedPolicy?: IssuedPolicyChip | null;
   autoIssue?: boolean;
-  /** Create notice — shown top-right when the active product has none. */
-  noticeAction?: ReactNode;
 }) {
   const activeLine: ShopLine | null = isShopLine(shopLine) ? shopLine : null;
   const lineLogs = logs.map((row) => row.log);
@@ -263,11 +259,6 @@ export function QuotesPanel({
         <div className="ff-card space-y-3 p-4">
           <div className="flex items-start justify-between gap-3">
             <h3 className="text-sm font-semibold text-navy">Quotes</h3>
-            {noticeAction ? (
-              <div className="shrink-0" data-ff-quotes-create-notice="">
-                {noticeAction}
-              </div>
-            ) : null}
           </div>
           <QuotesWarningStrip
             quotes={sorted.map((row) => row.quote)}
@@ -341,7 +332,6 @@ export function QuotesPanel({
             product={product}
             productStage={productStage}
             priorByQuoteId={priorByQuoteId}
-            toolbarEnd={noticeAction}
           />
         </section>
       ) : (
@@ -350,11 +340,6 @@ export function QuotesPanel({
             <h3 className="text-sm font-semibold text-navy">
               {lineLabel ? `Current ${lineLabel} quotes` : "Current quotes"}
             </h3>
-            {noticeAction ? (
-              <div className="shrink-0" data-ff-quotes-create-notice="">
-                {noticeAction}
-              </div>
-            ) : null}
           </div>
           <p className="text-sm text-muted-foreground">
             No current quotes yet. Prior premiums stay under each carrier after a re-request.

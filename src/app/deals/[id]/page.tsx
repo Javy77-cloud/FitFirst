@@ -5,7 +5,8 @@ import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
-import { LifeAppetiteHelper } from "@/components/deal/life-appetite-helper";
+import { LifeHealthQuotesPanel } from "@/components/deal/life-health-quotes-panel";
+import { HealthMarketsEmpty, LifeAppetiteHelper } from "@/components/deal/life-appetite-helper";
 import { predictLifeAppetite } from "@/lib/life/appetite";
 import { DealMotivation } from "@/components/deal/deal-motivation";
 import { SectionTabs } from "@/components/section-tabs";
@@ -55,6 +56,7 @@ import {
   familyForProducts,
   resolveActiveDealProduct,
   resolveVisibleDealProducts,
+  isLifeHealthShopLine,
   sheetLineForProduct,
   splitHomeProducts,
 } from "@/lib/deals/deal-products";
@@ -498,6 +500,12 @@ export default async function DealPage({
     })),
     activeLob,
   );
+  const allCarrierOptions = carrierRows.map((row) => ({
+    id: row.carrier.id,
+    name: row.carrier.name,
+    writtenLines: row.carrier.writtenLines,
+  }));
+  const lifeHealthLine = isLifeHealthShopLine(sheetLine);
   const lifeAppetite =
     sheetLine === "life"
       ? predictLifeAppetite({
@@ -507,6 +515,8 @@ export default async function DealPage({
           heightIn: activeSheet.values.height_in?.value ?? "",
           weightLbs: activeSheet.values.weight?.value ?? "",
           sex: activeSheet.values.applicant_gender?.value || dealValues.applicant_gender || "",
+          dateOfBirth:
+            dealValues.date_of_birth || contact?.dateOfBirth || lead?.dateOfBirth || "",
         })
       : {
           selectedLabels: [],
@@ -522,6 +532,8 @@ export default async function DealPage({
             tablePending: true,
             note: "",
           },
+          ageYears: null,
+          thin: true,
         };
   return (
     <AppShell
@@ -877,8 +889,12 @@ export default async function DealPage({
                             predictions={lifeAppetite.predictions}
                             coverageNote={lifeAppetite.coverageNote}
                             build={lifeAppetite.build}
+                            ageYears={lifeAppetite.ageYears}
+                            thin={lifeAppetite.thin}
                           />
-                        ) : null}
+                        ) : sheetLine === "health" ? (
+                          <HealthMarketsEmpty />
+                        ) : (
                       <MarketsPanel
                         key={agentMarketsAction ? `markets-${activeSheet.id}` : "markets-empty"}
                         dealId={deal.id}
@@ -894,20 +910,45 @@ export default async function DealPage({
                         product={activeProduct}
                         lastRequestCarrierIds={requestScopeForLine(shopFlow, sheetLine)}
                       />
+                        )}
                       </div>
+                    ) : lifeHealthLine ? (
+                      <LifeHealthQuotesPanel
+                        dealId={deal.id}
+                        quotes={lineQuotes}
+                        logs={logs}
+                        quoteNotes={quoteNotes}
+                        formId={lineQuotingForm?.id ?? lineForm ?? masterFormLabel}
+                        shopLine={sheetLine}
+                        docs={docs}
+                        fileVersions={fileVersions}
+                        carriers={allCarrierOptions}
+                        dealLine={activeLob}
+                        product={activeProduct}
+                        productStage={displayProductStage({
+                          stage: activeProductState.stage,
+                          selectedQuoteIds: activeProductState.selectedQuoteIds,
+                          fallback: stageView.slug,
+                          liveQuoteIds,
+                        })}
+                        boundQuoteId={boundQuoteId}
+                        selectedQuoteIds={activeProductState.selectedQuoteIds}
+                        mintStatus={activeProductState.mintStatus}
+                        issuedPolicy={(() => {
+                          const linked =
+                            boundPolicies.find((row) => row.id === activeProductState.policyId) ??
+                            boundPolicies.find((row) => row.sourceProduct === activeProduct);
+                          if (!linked) return null;
+                          return {
+                            id: linked.id,
+                            policyNumber: linked.policyNumber,
+                            mintStatus: activeProductState.mintStatus,
+                            published: Boolean(linked.publishedAt),
+                          };
+                        })()}
+                        autoIssue={issue === "1"}
+                      />
                     ) : (
-                      <>
-                        {sheetLine === "life" ? (
-                          <div className="mb-3">
-                            <LifeAppetiteHelper
-                              selectedLabels={lifeAppetite.selectedLabels}
-                              tobaccoStatus={activeSheet.values.tobacco_status?.value ?? null}
-                              predictions={lifeAppetite.predictions}
-                              coverageNote={lifeAppetite.coverageNote}
-                              build={lifeAppetite.build}
-                            />
-                          </div>
-                        ) : null}
                       <QuotesPanel
                         dealId={deal.id}
                         quotes={lineQuotes}
@@ -958,13 +999,7 @@ export default async function DealPage({
                           };
                         })()}
                         autoIssue={issue === "1"}
-                        noticeAction={
-                          !noticeStampVisible ? (
-                            <DealNotices {...noticeProps} placement="header" />
-                          ) : null
-                        }
                       />
-                      </>
                     )}
                   </div>
             ),

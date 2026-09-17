@@ -6,7 +6,10 @@ import { LifeAppetiteHelper } from "@/components/deal/life-appetite-helper";
 import {
   LIFE_UW_MATRIX_CSV,
   LIFE_UW_MATRIX_COVERAGE_NOTE,
+  combineLifeAppetiteInputs,
   combineLifeConditionAndBuild,
+  lifeAgeBandOutcome,
+  lifeAppetiteHasScoreInputs,
   parseLifeUwMatrixCsv,
   predictLifeAppetite,
   type LifeBuildRule,
@@ -166,9 +169,18 @@ describe("Life UW MATRIX appetite v1", () => {
     expect(amamExpress?.outcome).toBe("unknown");
   });
 
-  it("exposes the helper on Life Markets / Quotes and a shared picklist", () => {
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/LifeAppetiteHelper/);
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/predictLifeAppetite/);
+  it("exposes the helper on Life Markets only and a shared picklist", () => {
+    const page = source("src/app/deals/[id]/page.tsx");
+    expect(page).toMatch(/LifeAppetiteHelper/);
+    expect(page).toMatch(/predictLifeAppetite/);
+    expect(page).toMatch(/date_of_birth/);
+    const marketsStart = page.indexOf('id === "markets"');
+    expect(page.indexOf("<LifeAppetiteHelper", marketsStart)).toBeGreaterThan(marketsStart);
+    expect(page.indexOf("<LifeHealthQuotesPanel", marketsStart)).toBeGreaterThan(
+      page.indexOf("<LifeAppetiteHelper", marketsStart),
+    );
+    expect(page).toMatch(/<LifeHealthQuotesPanel/);
+    expect(page).not.toMatch(/noticeAction=/);
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_LIFE_MEDICAL/);
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/Life medical conditions/);
     expect(source("src/components/deal/master-sheet-compare.tsx")).toMatch(/searchable/);
@@ -492,5 +504,58 @@ describe("Life UW MATRIX appetite v1", () => {
     expect(sql).not.toMatch(/0128_life_matrix|0129_life_sheet|0130_javy/);
     expect(source("data/appetite/fitfirst-life-uw-matrix.csv")).toMatch(/live_sheet_cell/);
     expect(source("drizzle/meta/_journal.json")).toMatch(/0131_life_rep_contacts_build/);
+  });
+
+  it("scores age bands and stays honestly empty when data is thin", () => {
+    expect(lifeAppetiteHasScoreInputs({})).toBe(false);
+    expect(lifeAppetiteHasScoreInputs({ ageYears: 42 })).toBe(true);
+    expect(combineLifeAppetiteInputs("accept", "unknown", "decline")).toBe("decline");
+    expect(lifeAgeBandOutcome(17, "18", "75").outcome).toBe("decline");
+    expect(lifeAgeBandOutcome(40, "18", "75").outcome).toBe("unknown");
+
+    const thin = predictLifeAppetite({
+      medicalConditions: "",
+      tobaccoStatus: "Never",
+      matrix,
+    });
+    expect(thin.thin).toBe(true);
+    expect(thin.predictions).toEqual([]);
+    const thinHtml = renderToString(
+      createElement(LifeAppetiteHelper, {
+        selectedLabels: thin.selectedLabels,
+        predictions: thin.predictions,
+        coverageNote: thin.coverageNote,
+        thin: thin.thin,
+        ageYears: thin.ageYears,
+      }),
+    );
+    expect(thinHtml).toContain("data-ff-life-appetite-empty");
+    expect(thinHtml).toContain("no rate pull");
+    expect(thinHtml).not.toContain("data-ff-life-appetite-cards");
+
+    const aged = predictLifeAppetite({
+      medicalConditions: "",
+      tobaccoStatus: "Never",
+      dateOfBirth: "1950-01-01",
+      ageYears: 76,
+      matrix,
+    });
+    expect(aged.thin).toBe(false);
+    expect(aged.ageYears).toBe(76);
+    const sbli = aged.predictions.find((row) => row.carrierSlug === "sbli" && row.productSlug === "easytrack");
+    expect(sbli?.ageOutcome).toBe("decline");
+    expect(sbli?.outcome).toBe("decline");
+    expect(sbli?.ruleText).toMatch(/above product maximum/);
+    const agedHtml = renderToString(
+      createElement(LifeAppetiteHelper, {
+        selectedLabels: aged.selectedLabels,
+        predictions: aged.predictions,
+        coverageNote: aged.coverageNote,
+        thin: aged.thin,
+        ageYears: aged.ageYears,
+      }),
+    );
+    expect(agedHtml).toContain("Age: 76");
+    expect(agedHtml).toContain('data-ff-life-appetite-outcome="decline"');
   });
 });
