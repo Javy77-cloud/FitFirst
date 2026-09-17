@@ -42,6 +42,7 @@ import {
   RiskProfileSectionBar,
   useRiskProfileSectionDensity,
 } from "@/components/deal/risk-profile-section-header";
+import { riskProfileSectionMaxColumns } from "@/lib/quote-sheet/risk-profile-layout";
 
 function sheetValuesToLive(values: Record<string, QuoteSheetFieldValue>): Record<string, string> {
   return Object.fromEntries(
@@ -401,10 +402,11 @@ function SheetGroup({
   extractedByKey: Map<string, ExtractedFieldRow>;
   usingHealthSherpa?: boolean;
 }) {
-  const { sectionId, density, setDensity } = useRiskProfileSectionDensity(title);
   const rows = asList(groupFields).filter((field) => field.key !== USING_HEALTHSHERPA_KEY);
   const groupVisible = sheetGroupIsVisible(rows, liveValues);
   const visibleFields = rows.filter((field) => groupVisible && sheetFieldIsVisible(field, liveValues));
+  const maxColumns = riskProfileSectionMaxColumns(title, visibleFields);
+  const { sectionId, density, setDensity, choices } = useRiskProfileSectionDensity(title, maxColumns);
   const hiddenFields = rows.filter((field) => !groupVisible || !sheetFieldIsVisible(field, liveValues));
   const collapsible = usingHealthSherpa && healthSherpaCollapsibleGroups(true).has(title);
   const header = groupVisible ? (
@@ -413,6 +415,7 @@ function SheetGroup({
       sectionId={sectionId}
       density={density}
       onDensityChange={setDensity}
+      choices={choices}
       extra={
         collapsible ? (
           <span className="ml-2 text-[10px] font-normal normal-case text-muted-foreground">

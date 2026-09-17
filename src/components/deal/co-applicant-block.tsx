@@ -11,6 +11,7 @@ import {
   RiskProfileSectionBar,
   useRiskProfileSectionDensity,
 } from "@/components/deal/risk-profile-section-header";
+import { riskProfileSectionMaxColumns } from "@/lib/quote-sheet/risk-profile-layout";
 import { isCoApplicantExplicitlyOff } from "@/lib/custom-fields/co-applicant-fields";
 import {
   CO_APPLICANT_FIELDS,
@@ -39,7 +40,11 @@ export function CoApplicantBlock({
   const seeded = useMemo(() => coApplicantHasValue(values), [values]);
   const [manualOpen, setManualOpen] = useState(seeded && !forcedOff);
   const open = !forcedOff && (required || manualOpen || seeded);
-  const { sectionId, density, setDensity } = useRiskProfileSectionDensity("Co-applicant");
+  const maxColumns = riskProfileSectionMaxColumns("Co-applicant", CO_APPLICANT_FIELDS);
+  const { sectionId, density, setDensity, choices } = useRiskProfileSectionDensity(
+    "Co-applicant",
+    maxColumns,
+  );
 
   useEffect(() => {
     // Keep spouse fields open when Married (or explicit Off) changes after first paint.
@@ -64,6 +69,7 @@ export function CoApplicantBlock({
         sectionId={sectionId}
         density={density}
         onDensityChange={setDensity}
+        choices={choices}
         extra={
           required ? (
             <span className="ml-2 text-[10px] font-normal normal-case text-white/80">

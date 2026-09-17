@@ -13,6 +13,7 @@ import {
   RiskProfileSectionBar,
   useRiskProfileSectionDensity,
 } from "@/components/deal/risk-profile-section-header";
+import { riskProfileSectionMaxColumns } from "@/lib/quote-sheet/risk-profile-layout";
 import { cn } from "@/lib/utils";
 
 /** Applicant + Co-applicant together so Married can require a spouse live. */
@@ -25,7 +26,11 @@ export function ApplicantHousehold({
 }) {
   const [marital, setMarital] = useState(values.applicant_marital_status?.value ?? "");
   const applicantFields = useMemo(() => APPLICANT_CORE_FIELDS, []);
-  const { sectionId, density, setDensity } = useRiskProfileSectionDensity("Applicant");
+  const maxColumns = riskProfileSectionMaxColumns("Applicant", applicantFields);
+  const { sectionId, density, setDensity, choices } = useRiskProfileSectionDensity(
+    "Applicant",
+    maxColumns,
+  );
 
   return (
     <>
@@ -35,6 +40,7 @@ export function ApplicantHousehold({
           sectionId={sectionId}
           density={density}
           onDensityChange={setDensity}
+          choices={choices}
         />
         <RiskProfileFieldsGrid
           density={density}

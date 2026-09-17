@@ -21,6 +21,7 @@ import {
   RiskProfileSectionBar,
   useRiskProfileSectionDensity,
 } from "@/components/deal/risk-profile-section-header";
+import { riskProfileSectionMaxColumns } from "@/lib/quote-sheet/risk-profile-layout";
 import type { ShopLine } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 
@@ -50,7 +51,12 @@ export function RepeatableUnitBlocks({
       : kind === "household"
         ? "+ Add household member"
         : "+ Add driver";
-  const { sectionId, density, setDensity } = useRiskProfileSectionDensity(groupTitle);
+  const sampleFields = fieldsForUnit(kind, 1).map((field) => unitFieldAsQuote(field, groupTitle));
+  const maxColumns = riskProfileSectionMaxColumns(groupTitle, sampleFields);
+  const { sectionId, density, setDensity, choices } = useRiskProfileSectionDensity(
+    groupTitle,
+    maxColumns,
+  );
 
   return (
     <div className="border-b border-border/70 last:border-b-0" data-ff-repeatable-units={kind}>
@@ -59,6 +65,7 @@ export function RepeatableUnitBlocks({
         sectionId={sectionId}
         density={density}
         onDensityChange={setDensity}
+        choices={choices}
       />
       {Array.from({ length: count }, (_, offset) => {
         const index = offset + 1;

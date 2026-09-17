@@ -4,9 +4,11 @@ import {
 } from "@/lib/custom-fields/section-density";
 import type { QuoteFieldDef } from "./applicant-core";
 
-/** Per-section columns on Risk Profile. 4–5 is for short fields (address / dwelling). */
+/** Per-section columns on Risk Profile. Long-text sections cap at 4; short-field sections may use 5. */
 export const RISK_PROFILE_DENSITIES = [1, 2, 3, 4, 5] as const;
 export type RiskProfileDensity = (typeof RISK_PROFILE_DENSITIES)[number];
+export const RISK_PROFILE_LONG_TEXT_MAX: RiskProfileDensity = 4;
+export const RISK_PROFILE_SHORT_FIELD_MAX: RiskProfileDensity = 5;
 
 /** Fallback when a section has no short-field default. */
 export const DEFAULT_RISK_PROFILE_DENSITY: RiskProfileDensity = 3;
@@ -14,15 +16,50 @@ export const DEFAULT_RISK_PROFILE_DENSITY: RiskProfileDensity = 3;
 export const RISK_PROFILE_DENSITY_STORAGE_KEY = "ff-risk-profile-section-density";
 
 const FIVE_COL_SECTIONS =
-  /^(property|dwelling|location|premises|building|structure|vehicles?|drivers?)$/i;
+  /^(property|dwelling|location|premises|building|structure|vehicles?|drivers?|commercial property|commercial auto)$/i;
 const FOUR_COL_SECTIONS =
-  /^(applicant|co-applicant|protection|hazards|coverages?|coastal|flood|household)/i;
+  /^(applicant|co-applicant|protection|hazards|coverages?|coverage|coastal|flood|household|location \/ premises)/i;
 
 export function defaultRiskProfileSectionDensity(title: string): RiskProfileDensity {
   const key = title.trim();
-  if (FIVE_COL_SECTIONS.test(key)) return 5;
+  if (FIVE_COL_SECTIONS.test(key) || /^location/i.test(key)) return 5;
   if (FOUR_COL_SECTIONS.test(key)) return 4;
   return DEFAULT_RISK_PROFILE_DENSITY;
+}
+
+function isLongTextSheetField(field: QuoteFieldDef | undefined): boolean {
+  if (!field) return false;
+  if (field.input === "textarea" || field.input === "multiselect" || field.input === "chips") {
+    return true;
+  }
+  return /(notes|description|records_check|operations|narrative|legal)/i.test(field.key);
+}
+
+/** Short-field sections may use 5 columns; longer text is capped at 4. */
+export function riskProfileSectionMaxColumns(
+  title: string,
+  fields: readonly QuoteFieldDef[] = [],
+): RiskProfileDensity {
+  const key = title.trim();
+  if (FIVE_COL_SECTIONS.test(key) || /^location/i.test(key)) return RISK_PROFILE_SHORT_FIELD_MAX;
+  if (FOUR_COL_SECTIONS.test(key)) return RISK_PROFILE_LONG_TEXT_MAX;
+  const longCount = fields.filter((field) => isLongTextSheetField(field)).length;
+  const shortCount = fields.filter((field) => isShortSheetValue(field)).length;
+  if (fields.length > 0 && shortCount >= 3 && shortCount > longCount) {
+    return RISK_PROFILE_SHORT_FIELD_MAX;
+  }
+  return RISK_PROFILE_LONG_TEXT_MAX;
+}
+
+export function riskProfileSectionChoices(maxColumns: RiskProfileDensity): readonly RiskProfileDensity[] {
+  return RISK_PROFILE_DENSITIES.filter((choice) => choice <= maxColumns);
+}
+
+export function clampRiskProfileDensity(
+  density: RiskProfileDensity,
+  maxColumns: RiskProfileDensity,
+): RiskProfileDensity {
+  return density > maxColumns ? maxColumns : density;
 }
 
 export function riskProfileDensityOf(raw: unknown): RiskProfileDensity {
