@@ -55,11 +55,15 @@ export async function POST(request: Request) {
       });
     }
     const result = await verifyFedExAddress(address, creds);
-    return NextResponse.json({ ...result, enabled: true });
+    return NextResponse.json({
+      ...result,
+      enabled: result.errorKind === "not_configured" ? false : true,
+    });
   } catch {
     return NextResponse.json({
       status: "error",
-      enabled: false,
+      enabled: true,
+      errorKind: "transport",
       resolved: null,
       suggestions: [],
     });

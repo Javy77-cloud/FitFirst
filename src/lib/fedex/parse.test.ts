@@ -49,4 +49,27 @@ describe("FedEx address resolve parse", () => {
     expect(parseFedExResolvePayload({})).toEqual([]);
     expect(parsedAddressFromFedEx(undefined).street).toBe("");
   });
+
+  it("reads streetLinesToken and nested resolvedAddress from production-shaped payloads", () => {
+    expect(
+      parsedAddressFromFedEx({
+        streetLinesToken: ["412 Harbor Isle Dr"],
+        city: "Melbourne",
+        stateOrProvinceCode: "FL",
+        postalCode: "32935",
+        countryCode: "US",
+      }).street,
+    ).toBe("412 Harbor Isle Dr");
+    expect(
+      parsedAddressFromFedEx({
+        resolvedAddress: {
+          streetLines: ["88 Harbor Key Blvd"],
+          city: "Palm Bay",
+          stateOrProvinceCode: "FL",
+          postalCode: "32907",
+          countryCode: "US",
+        },
+      }),
+    ).toMatchObject({ street: "88 Harbor Key Blvd", city: "Palm Bay", zip: "32907" });
+  });
 });

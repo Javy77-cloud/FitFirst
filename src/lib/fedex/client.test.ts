@@ -139,4 +139,67 @@ describe("FedEx Address API client", () => {
     expect(suggested.resolved?.city).toBe("Melbourne");
     expect(sourceClient).toMatch(/verifyFedExAddress/);
   });
+
+  it("does not label OAuth or 5xx failures as an unmatched address", async () => {
+    const oauthFail = vi.fn(async () => jsonRes({ errors: [{ code: "UNAUTHORIZED" }] }, 401));
+    await expect(verifyFedExAddress({
+      street: "412 Harbor Isle Dr",
+      city: "Melbourne",
+      state: "FL",
+      zip: "32935",
+      county: "",
+      country: "US",
+    }, CREDS, oauthFail)).resolves.toMatchObject({ status: "error", errorKind: "auth" });
+
+    const transport = vi.fn(async (url: string) => {
+      if (String(url).includes("/oauth/token")) return jsonRes({ access_token: "tok-1", expires_in: 3600 });
+      return jsonRes({ errors: [{ code: "DOWN" }] }, 503);
+    });
+    await expect(verifyFedExAddress({
+      street: "412 Harbor Isle Dr",
+      city: "Melbourne",
+      state: "FL",
+      zip: "32935",
+      county: "",
+      country: "US",
+    }, CREDS, transport)).resolves.toMatchObject({ status: "error", errorKind: "transport" });
+  });
+
+  it("posts a structured US address after a Mapbox-style fill", async () => {
+    const bodies: string[] = [];
+    const fetchImpl = vi.fn(async (url: string, init?: { body?: string }) => {
+      if (String(url).includes("/oauth/token")) return jsonRes({ access_token: "tok-1", expires_in: 3600 });
+      bodies.push(String(init?.body ?? ""));
+      return jsonRes({
+        output: {
+          resolvedAddresses: [
+            {
+              streetLinesToken: ["412 Harbor Isle Dr"],
+              city: "Melbourne",
+              stateOrProvinceCode: "FL",
+              postalCode: "32935",
+              countryCode: "US",
+            },
+          ],
+        },
+      });
+    });
+    const result = await verifyFedExAddress(
+      {
+        street: "412 Harbor Isle Dr",
+        city: "Melbourne",
+        state: "FL",
+        zip: "32935",
+        county: "Brevard",
+        country: "US",
+      },
+      CREDS,
+      fetchImpl,
+    );
+    expect(result.status).toBe("verified");
+    expect(bodies[0]).toContain('"streetLines":["412 Harbor Isle Dr"]');
+    expect(bodies[0]).toContain('"countryCode":"US"');
+    expect(bodies[0]).toContain('"stateOrProvinceCode":"FL"');
+    expect(bodies[0]).not.toContain("includeResolutionTokens");
+  });
 });

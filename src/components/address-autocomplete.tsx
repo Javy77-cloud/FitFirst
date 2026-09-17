@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { mergeParsedAddress } from "@/lib/address/fill";
 import { addressFillForKey, qualifyAddressFill } from "@/lib/address/keys";
-import { addressFingerprint, parseAddressLine } from "@/lib/address/compare";
+import { addressFingerprint } from "@/lib/address/compare";
 import {
   ADDRESS_CONFIRMED_SUFFIX,
   ADDRESS_VERIFY_SUFFIX,
@@ -15,13 +15,25 @@ import {
 } from "@/lib/address/verify-state";
 import {
   ADDRESS_QUIET_VERIFY_DEFAULT,
+  ADDRESS_VERIFY_INCOMPLETE,
   ADDRESS_VERIFY_NOT_CONFIGURED,
+  ADDRESS_VERIFY_UNMATCHED,
+  ADDRESS_VERIFY_UNREACHABLE,
   interpretAddressVerifyResponse,
+  resolveAddressForVerify,
   shouldAttemptQuietVerify,
   shouldSkipQuietVerifyForFingerprint,
   type AddressVerifyAttemptReason,
   type AddressVerifyChip,
 } from "@/lib/address/verify-run";
+import {
+  ADDRESS_PICK_INTENT_SUPPRESS_MS,
+  shouldFetchAddressSuggestions,
+  shouldHonorStreetIntent,
+  shouldOpenSuggestList,
+  suggestListAfterPick,
+  suggestListOnStreetIntent,
+} from "@/lib/address/suggest-list";
 import {
   addressIsComplete,
   formatAddressLine,
@@ -177,7 +189,10 @@ export function AddressAutocomplete({
   const initialConfirmed =
     !skipVerify && (initialMeta?.status === "confirmed" || initialMeta?.status === "updated");
   const lastVerifySig = useRef(initialMeta?.fingerprint ?? "");
+  const lastFilledRef = useRef<ParsedAddress | null>(null);
   const listActiveRef = useRef(false);
+  const suggestGenRef = useRef(0);
+  const suppressStreetIntentUntil = useRef(0);
   const runVerifyRef = useRef<(reason: AddressVerifyAttemptReason) => void>(() => {});
   const resolvedFill = qualifyAddressFill(fill ?? addressFillForKey(name), name);
   const [query, setQuery] = useState(defaultValue ?? "");
@@ -222,25 +237,34 @@ export function AddressAutocomplete({
   }, []);
 
   useEffect(() => {
-    if (!enabled || readOnly || disabled || !listActive) {
+    if (
+      !shouldFetchAddressSuggestions({
+        enabled,
+        readOnly,
+        disabled,
+        listActive,
+        query,
+      })
+    ) {
       return;
     }
     const q = query.trim();
-    if (q.length < 3) {
-      return;
-    }
+    const gen = suggestGenRef.current;
     const handle = window.setTimeout(async () => {
       setLoading(true);
       try {
         const res = await fetch(`/api/address/suggest?q=${encodeURIComponent(q)}`);
         const data = (await res.json()) as { suggestions?: AddressSuggestion[]; enabled?: boolean };
+        if (gen !== suggestGenRef.current) return;
         setEnabled(data.enabled !== false);
-        setSuggestions(data.suggestions ?? []);
-        setOpen(Boolean(data.suggestions?.length) && listActiveRef.current);
+        const rows = data.suggestions ?? [];
+        setSuggestions(rows);
+        setOpen(shouldOpenSuggestList({ listActive: listActiveRef.current, suggestionCount: rows.length }));
       } catch {
+        if (gen !== suggestGenRef.current) return;
         setSuggestions([]);
       } finally {
-        setLoading(false);
+        if (gen === suggestGenRef.current) setLoading(false);
       }
     }, 280);
     return () => window.clearTimeout(handle);
@@ -335,24 +359,17 @@ export function AddressAutocomplete({
   function readBlock(): ParsedAddress {
     const root: ParentNode | null =
       fillScope() ?? hostForm() ?? (typeof document !== "undefined" ? document : null);
-    const fromSiblings: ParsedAddress = {
+    return resolveAddressForVerify({
       street: query.trim(),
-      city: readNamed(root, resolvedFill.city),
-      state: readNamed(root, resolvedFill.state),
-      zip: readNamed(root, resolvedFill.zip),
-      county: readNamed(root, resolvedFill.county),
-      country: "US",
-    };
-    if (addressIsComplete(fromSiblings)) return fromSiblings;
-    const parsed = parseAddressLine(query);
-    return {
-      street: fromSiblings.street || parsed.street,
-      city: fromSiblings.city || parsed.city,
-      state: fromSiblings.state || parsed.state,
-      zip: fromSiblings.zip || parsed.zip,
-      county: fromSiblings.county || parsed.county,
-      country: "US",
-    };
+      siblings: {
+        city: readNamed(root, resolvedFill.city),
+        state: readNamed(root, resolvedFill.state),
+        zip: readNamed(root, resolvedFill.zip),
+        county: readNamed(root, resolvedFill.county),
+        country: "US",
+      },
+      lastFilled: lastFilledRef.current,
+    });
   }
 
   function rememberFingerprint(sig: string) {
@@ -365,7 +382,7 @@ export function AddressAutocomplete({
     if (reason !== "button" && !shouldAttemptQuietVerify(verifyEnabled, quietVerify)) return;
     const address = readBlock();
     if (!addressIsComplete(address)) {
-      if (reason === "button" || (reason === "save" && query.trim())) setVerifyStatus("not_verified");
+      if (reason === "button" || (reason === "save" && query.trim())) setVerifyStatus("incomplete");
       return;
     }
     const sig = addressFingerprint(address);
@@ -383,6 +400,7 @@ export function AddressAutocomplete({
       const data = (await res.json()) as {
         status?: string;
         enabled?: boolean;
+        errorKind?: string;
         resolved?: ParsedAddress | null;
       };
       const interpreted = interpretAddressVerifyResponse(data, reason);
@@ -407,7 +425,7 @@ export function AddressAutocomplete({
       setConfirmed(false);
     } catch {
       rememberFingerprint("");
-      setVerifyStatus("not_verified");
+      setVerifyStatus(reason === "button" ? "unreachable" : "not_verified");
     }
   }
   useEffect(() => {
@@ -418,6 +436,7 @@ export function AddressAutocomplete({
 
   function applyAddress(address: ParsedAddress | null | undefined, fallbackLabel: string) {
     const merged = mergeParsedAddress(address, fallbackLabel);
+    lastFilledRef.current = merged;
     const street = merged.street || fallbackLabel.split(",")[0]?.trim() || fallbackLabel;
     const next = composeOnConfirm ? formatAddressLine({ ...merged, street }) || fallbackLabel : street;
     setQuery(next);
@@ -433,9 +452,26 @@ export function AddressAutocomplete({
     return merged;
   }
 
+  function closeSuggestList() {
+    const next = suggestListAfterPick();
+    suggestGenRef.current += 1;
+    suppressStreetIntentUntil.current = Date.now() + ADDRESS_PICK_INTENT_SUPPRESS_MS;
+    listActiveRef.current = next.listActive;
+    setListActive(next.listActive);
+    setOpen(next.open);
+    setSuggestions(next.suggestions);
+  }
+
+  function activateStreetIntent(suggestionCount: number) {
+    if (!shouldHonorStreetIntent(Date.now(), suppressStreetIntentUntil.current)) return;
+    const intent = suggestListOnStreetIntent(suggestionCount);
+    listActiveRef.current = intent.listActive;
+    setListActive(intent.listActive);
+    setOpen(intent.open);
+  }
+
   function choose(item: AddressSuggestion) {
-    setOpen(false);
-    setSuggestions([]);
+    closeSuggestList();
     applyAddress(item.address, item.label);
     if (!quietVerify) return;
     window.setTimeout(() => {
@@ -502,7 +538,13 @@ export function AddressAutocomplete({
         className={className}
         data-ff-address-confirmed={confirmed ? "true" : "false"}
         onChange={(e) => {
-          setListActive(true);
+          lastFilledRef.current = null;
+          suppressStreetIntentUntil.current = 0;
+          const intent = suggestListOnStreetIntent(
+            e.target.value.trim().length >= 3 ? suggestions.length : 0,
+          );
+          listActiveRef.current = intent.listActive;
+          setListActive(intent.listActive);
           setQuery(e.target.value);
           setConfirmed(false);
           setVerifyStatus("idle");
@@ -512,12 +554,16 @@ export function AddressAutocomplete({
           if (e.target.value.trim().length < 3) {
             setSuggestions([]);
             setOpen(false);
+          } else {
+            setOpen(intent.open);
           }
           onChange?.(e.target.value);
         }}
         onFocus={() => {
-          setListActive(true);
-          if (suggestions.length) setOpen(true);
+          activateStreetIntent(suggestions.length);
+        }}
+        onClick={() => {
+          activateStreetIntent(suggestions.length);
         }}
         onBlur={() => {
           if (!quietVerify) return;
@@ -605,7 +651,17 @@ export function AddressAutocomplete({
             ) : null}
             {verifyStatus === "not_verified" || verifyStatus === "unmatched" ? (
               <span className="text-[10px] text-muted-foreground" data-ff-address-verify-chip="not_verified">
-                Not verified
+                {ADDRESS_VERIFY_UNMATCHED}
+              </span>
+            ) : null}
+            {verifyStatus === "incomplete" ? (
+              <span className="text-[10px] text-muted-foreground" data-ff-address-verify-chip="incomplete">
+                {ADDRESS_VERIFY_INCOMPLETE}
+              </span>
+            ) : null}
+            {verifyStatus === "unreachable" ? (
+              <span className="text-[10px] text-muted-foreground" data-ff-address-verify-chip="unreachable">
+                {ADDRESS_VERIFY_UNREACHABLE}
               </span>
             ) : null}
             {verifyStatus === "not_configured" ? (
