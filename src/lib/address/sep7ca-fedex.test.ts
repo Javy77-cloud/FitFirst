@@ -72,8 +72,9 @@ describe("sep7ca FedEx address + developer vault", () => {
     expect(page).toMatch(/session\.isSiteDeveloper/);
     expect(page).toMatch(/loadFedExPublicStatus/);
     const action = source("src/app/actions/developer-vault.ts");
-    expect(action).toMatch(/userIsSiteDeveloper/);
+    expect(action).toMatch(/assertSiteDeveloperSession/);
     expect(action).toMatch(/saveFedExVault/);
+    expect(action).not.toMatch(/session\.isAdmin/);
     expect(action).not.toMatch(/console\.log/);
   });
 
