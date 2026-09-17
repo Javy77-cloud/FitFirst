@@ -3702,6 +3702,32 @@ export const renewalQueue = pgTable(
   ],
 );
 
+/** Agent dismissals for household coverage-gap rules. Do not re-nag after a reason is stored. */
+export const coverageGapDismissals = pgTable(
+  "coverage_gap_dismissals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    /** contact | account — household the finding belongs to. */
+    partyKind: text("party_kind").notNull(),
+    partyId: uuid("party_id").notNull(),
+    ruleId: text("rule_id").notNull(),
+    /** not_interested | already_elsewhere | not_eligible */
+    reason: text("reason").notNull(),
+    dismissedBy: uuid("dismissed_by"),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("coverage_gap_dismissals_party_rule_uidx").on(
+      t.tenantId,
+      t.partyKind,
+      t.partyId,
+      t.ruleId,
+    ),
+    index("coverage_gap_dismissals_party_idx").on(t.tenantId, t.partyKind, t.partyId),
+  ],
+);
+
 /** Inspection diary. Completing or waiving does not file an endorsement. */
 export const policyInspections = pgTable(
   "policy_inspections",

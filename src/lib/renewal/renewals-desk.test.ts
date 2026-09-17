@@ -39,6 +39,36 @@ describe("Renewals desk chrome", () => {
     expect(dealsPage).not.toMatch(/RenewalsWorkspace/);
   });
 
+  it("shows household coverage-gap badges on list, board, grid, and classic queue", () => {
+    const list = source("src/components/renewals/renewals-list.tsx");
+    const card = source("src/components/renewals/renewal-card.tsx");
+    const grid = source("src/components/renewals/renewals-table.tsx");
+    const queue = source("src/app/renewals/queue/page.tsx");
+    const deskData = source("src/lib/renewal/board-data.ts");
+    expect(list).toMatch(/GapCountBadge/);
+    expect(card).toMatch(/GapCountBadge/);
+    expect(grid).toMatch(/GapCountBadge/);
+    expect(queue).toMatch(/GapCountBadge/);
+    expect(deskData).toMatch(/gapCount/);
+    expect(deskData).toMatch(/analyzeCoverageGaps|householdGapCount/);
+    expect(source("src/components/coverage/gap-count-badge.tsx")).toMatch(/if \(count <= 0\) return null/);
+  });
+
+  it("puts a compact coverage-gap strip on renewal policy and deal, not a wall", () => {
+    const strip = source("src/components/coverage/renewal-gap-strip.tsx");
+    const policy = source("src/app/policies/[id]/page.tsx");
+    const deal = source("src/app/deals/[id]/page.tsx");
+    expect(strip).toMatch(/Add product to package/);
+    expect(strip).toMatch(/GAP_DISMISS_REASONS/);
+    expect(source("src/lib/coverage/renewal-gaps.ts")).toMatch(/not_interested/);
+    expect(source("src/lib/coverage/renewal-gaps.ts")).toMatch(/already_elsewhere/);
+    expect(source("src/lib/coverage/renewal-gaps.ts")).toMatch(/not_eligible/);
+    expect(strip).toMatch(/if \(findings\.length === 0\) return null/);
+    expect(strip).not.toMatch(/sparkle/i);
+    expect(policy).toMatch(/RenewalGapStrip/);
+    expect(deal).toMatch(/RenewalGapStrip/);
+  });
+
   it("keeps deals and renewals default-view cookies independent", () => {
     const cookieNames = source("src/lib/wire/pipeline-view-cookies.ts");
     const prefs = source("src/app/actions/pipeline-view-prefs.ts");

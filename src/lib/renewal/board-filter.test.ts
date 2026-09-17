@@ -23,6 +23,7 @@ function card(partial: Partial<RenewalBoardCard> & Pick<RenewalBoardCard, "stage
     daysUntil: 30,
     premium: null,
     crossSell: [],
+    gapCount: 0,
     policySubType: partial.policySubType ?? null,
     insuranceType: partial.insuranceType ?? null,
     commissionFamily: partial.commissionFamily ?? null,

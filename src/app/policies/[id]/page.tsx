@@ -36,6 +36,11 @@ import { parseAgentPolicyTab, policyTabsForViewer } from "@/lib/policy/tabs";
 import { parseMintPayload, policyNeedsMintConfirm } from "@/lib/policy/mint-gate";
 import { notifyAdminUnpublishedMint } from "@/app/actions/policy-mint";
 import { FromDealStrip } from "@/components/policy/from-deal-strip";
+import { RenewalGapStrip } from "@/components/coverage/renewal-gap-strip";
+import { classifyCoverageLine } from "@/lib/coverage/gaps";
+import { loadRenewalGapItems } from "@/lib/coverage/load-renewal-gaps";
+import { isAnaCoverageParty } from "@/lib/coverage/notices";
+import { dealProductForCoverageLine } from "@/lib/coverage/renewal-gaps";
 import { MintConfirmQueue } from "@/components/policy/mint-confirm-queue";
 import { db } from "@/lib/db";
 import { agencySettings } from "@/lib/db/schema";
@@ -178,6 +183,17 @@ export default async function PolicyDetailPage({
   });
   const labelOverride = policy.labelOverride?.trim() || null;
   const displayName = labelOverride || autoLabel;
+  const renewalGaps = await loadRenewalGapItems({
+    contactId: contact?.id ?? policy.contactId,
+    accountId: account?.id ?? policy.accountId,
+    partyName,
+    isAna: isAnaCoverageParty({
+      contactId: contact?.id ?? policy.contactId,
+      firstName: contact?.firstName,
+      lastName: contact?.lastName,
+    }),
+  });
+  const currentProductId = dealProductForCoverageLine(classifyCoverageLine(policy.lineOfBusiness));
 
   const versionCountByDoc = new Map<string, number>();
   for (const ver of fileVersions ?? []) {
@@ -268,6 +284,19 @@ export default async function PolicyDetailPage({
             dealTitle={deal?.title}
             decFilename={parseMintPayload(policy.mintPayload)?.decFilename}
             reconciled={Boolean(policy.sourceDocumentId || parseMintPayload(policy.mintPayload)?.decDocumentId)}
+          />
+        </div>
+      ) : null}
+
+      {renewalGaps.length > 0 ? (
+        <div className="mb-3">
+          <RenewalGapStrip
+            findings={renewalGaps}
+            policyId={policy.id}
+            dealId={deal?.id ?? policy.dealId}
+            contactId={contact?.id ?? policy.contactId}
+            accountId={account?.id ?? policy.accountId}
+            currentProductId={currentProductId}
           />
         </div>
       ) : null}
