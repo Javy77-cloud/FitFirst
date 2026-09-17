@@ -32,8 +32,10 @@ async function requireSiteDeveloper() {
 }
 
 function denyVaultMutate(error: unknown): never {
-  const message = error instanceof SignInRequiredError ? error.message : "Site developer only.";
-  flashAction(VAULT_HREF, message, "error");
+  if (error instanceof SignInRequiredError) {
+    flashAction(VAULT_HREF, "Sign in to continue.", "error");
+  }
+  flashAction(VAULT_HREF, "Site developer only.", "error");
 }
 
 export async function saveFedExVaultAction(formData: FormData) {

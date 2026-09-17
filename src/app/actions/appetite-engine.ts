@@ -22,8 +22,10 @@ async function requireSiteDeveloper() {
 }
 
 function denyEngineMutate(error: unknown): never {
-  const message = error instanceof SignInRequiredError ? error.message : "Site developer only.";
-  flashAction(ENGINE_HREF, message, "error");
+  if (error instanceof SignInRequiredError) {
+    flashAction(ENGINE_HREF, "Sign in to continue.", "error");
+  }
+  flashAction(ENGINE_HREF, "Site developer only.", "error");
 }
 
 /** Developer Hub: ensure FL/HO partition + seed Standing rules. */
