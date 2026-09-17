@@ -15,7 +15,8 @@ import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
 import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
-import { addressFillForKey, isStreetAddressField } from "@/lib/address/keys";
+import { siblingPatchFromAddress } from "@/lib/address/fill";
+import { addressFillNames, isStreetAddressField } from "@/lib/address/keys";
 import { MultiSelectField } from "@/components/custom-fields/multi-select-field";
 import {
   canonicalizeIdentityField,
@@ -61,6 +62,7 @@ export function FieldControl({
   lineSettings,
   onMultiSelectChange,
   onValueChange,
+  onAddressFill,
 }: {
   field: CustomFieldDef;
   value: string;
@@ -79,6 +81,7 @@ export function FieldControl({
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   onMultiSelectChange?: (joined: string) => void;
   onValueChange?: (value: string) => void;
+  onAddressFill?: (parts: Record<string, string>) => void;
 }) {
   const identityField = canonicalizeIdentityField(field);
   const industryParent = occupationIndustryParentKey(identityField.key);
@@ -119,6 +122,7 @@ export function FieldControl({
         lineSettings={lineSettings}
         onMultiSelectChange={onMultiSelectChange}
         onValueChange={onValueChange}
+        onAddressFill={onAddressFill}
       />
     </div>
   );
@@ -144,6 +148,7 @@ function TypedControl({
   lineSettings,
   onMultiSelectChange,
   onValueChange,
+  onAddressFill,
 }: {
   field: CustomFieldDef;
   value: string;
@@ -164,6 +169,7 @@ function TypedControl({
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   onMultiSelectChange?: (joined: string) => void;
   onValueChange?: (value: string) => void;
+  onAddressFill?: (parts: Record<string, string>) => void;
 }) {
   // 3-level cascade: Type → Category → Form. Type field owns the UI;
   // category + subtype siblings are skipped so we do not render three cascades.
@@ -379,6 +385,7 @@ function TypedControl({
     );
   }
   if (field.type === "address" || isStreetAddressField(field.key, field.type)) {
+    const fill = addressFillNames(field.key, name);
     return (
       <AddressAutocomplete
         id={name}
@@ -387,8 +394,12 @@ function TypedControl({
         disabled={disabled}
         required={required}
         form={form}
-        fill={addressFillForKey(field.key)}
+        fill={fill}
         className="mt-1 h-8"
+        onChange={onValueChange}
+        onConfirm={(address) => {
+          onAddressFill?.(siblingPatchFromAddress(fill, address, name));
+        }}
       />
     );
   }
@@ -435,13 +446,18 @@ function TypedControl({
       name={name}
       type={inputType}
       autoComplete={htmlAutoCompleteForField(field)}
-      defaultValue={value}
       disabled={disabled}
       required={required}
       form={form}
       aria-label={field.label}
       className="mt-1 h-8"
       data-ff-single-line={field.type === "single_line" ? field.key : undefined}
+      {...(onValueChange
+        ? {
+            value,
+            onChange: (event: ChangeEvent<HTMLInputElement>) => onValueChange(event.target.value),
+          }
+        : { defaultValue: value })}
     />
   );
 }

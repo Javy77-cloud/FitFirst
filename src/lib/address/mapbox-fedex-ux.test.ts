@@ -48,4 +48,21 @@ describe("Mapbox typeahead + FedEx verify-only address UX", () => {
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(/DealNotices|notice/);
     expect(source("src/lib/deals/product-stages.ts")).toMatch(/Per-product pipeline-list notes/);
   });
+
+  it("applies a Mapbox pick onto insured and mailing field_* siblings via React state", () => {
+    const control = source("src/components/custom-fields/field-control.tsx");
+    expect(control).toMatch(/addressFillNames\(field\.key, name\)/);
+    expect(control).toMatch(/siblingPatchFromAddress/);
+    expect(control).toMatch(/onAddressFill/);
+    expect(control).toMatch(/onChange=\{onValueChange\}/);
+    const panel = source("src/components/custom-fields/deal-details-panel.tsx");
+    expect(panel).toMatch(/onAddressFill=\{\(parts\) => onValuesPatch\?\.\(parts\)\}/);
+    expect(panel).toMatch(/function patchValues/);
+    const ui = source("src/components/address-autocomplete.tsx");
+    expect(ui).toMatch(/mergeParsedAddress/);
+    expect(ui).toMatch(/fillScope/);
+    expect(ui).toMatch(/setNativeValue/);
+    expect(ui).toMatch(/data-ff-address-fill-city/);
+    expect(ui).not.toMatch(/form\.querySelector/);
+  });
 });

@@ -60,4 +60,18 @@ describe("Mapbox geocode parse", () => {
     expect(parseMapboxSuggestPayload({})).toEqual([]);
     expect(parsedAddressFromMapbox(undefined).street).toBe("");
   });
+
+  it("fills city/state/ZIP from place_name when context is missing", () => {
+    const parsed = parsedAddressFromMapbox({
+      address: "412",
+      text: "Harbor Isle Dr",
+      place_name: "412 Harbor Isle Dr, Melbourne, Florida 32935, United States",
+    });
+    expect(parsed).toMatchObject({
+      street: "412 Harbor Isle Dr",
+      city: "Melbourne",
+      state: "FL",
+      zip: "32935",
+    });
+  });
 });
