@@ -1660,6 +1660,48 @@ export const extractionJobs = pgTable(
   (t) => [index("extraction_jobs_deal_idx").on(t.tenantId, t.dealId)],
 );
 
+/** Agency letter jobs: Cancellation / AOR pack. Gemini extract → agent confirm. Never auto-sends DocuSign. */
+export const documentPipelineJobs = pgTable(
+  "document_pipeline_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    dealId: uuid("deal_id")
+      .notNull()
+      .references(() => deals.id),
+    type: text("type").notNull(),
+    status: text("status").notNull(),
+    sourceDocumentIds: jsonb("source_document_ids").$type<string[]>().notNull().default([]),
+    extractPayload: jsonb("extract_payload")
+      .$type<{
+        fields: {
+          key: string;
+          label: string;
+          group: string;
+          extracted: string;
+          confidence: number;
+          source: string;
+        }[];
+        engine: string;
+        rawText?: string;
+      }>()
+      .notNull()
+      .default({ fields: [], engine: "gemini" }),
+    confirmedFields: jsonb("confirmed_fields").$type<Record<string, string>>().notNull().default({}),
+    filledDocumentId: uuid("filled_document_id"),
+    formFillId: uuid("form_fill_id"),
+    message: text("message"),
+    extractedAt: timestamp("extracted_at", { withTimezone: true }),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    filledAt: timestamp("filled_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("document_pipeline_jobs_deal_idx").on(t.tenantId, t.dealId, t.createdAt),
+    index("document_pipeline_jobs_type_idx").on(t.tenantId, t.dealId, t.type),
+  ],
+);
+
 /** Appetite-style correction log. Later fill prefers these over a repeated bad extract. Not ML. */
 export const fillFeedbackLogs = pgTable(
   "fill_feedback_logs",
@@ -3296,6 +3338,7 @@ export type SocialLeadOffer = typeof socialLeadOffers.$inferSelect;
 export type PiiRevealLog = typeof piiRevealLogs.$inferSelect;
 export type EoAuditLog = typeof eoAuditLogs.$inferSelect;
 export type ExtractionJob = typeof extractionJobs.$inferSelect;
+export type DocumentPipelineJob = typeof documentPipelineJobs.$inferSelect;
 export type FillFeedbackLog = typeof fillFeedbackLogs.$inferSelect;
 export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;
 export type GlobalListRow = typeof globalLists.$inferSelect;

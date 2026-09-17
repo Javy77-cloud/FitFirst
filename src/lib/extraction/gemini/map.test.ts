@@ -9,8 +9,10 @@ import {
 } from "./map";
 import {
   GEMINI_EXTRACT_JSON_KEYS,
+  GEMINI_LETTER_EXTRACT_JSON_KEYS,
   buildGeminiSystemPrompt,
   buildGeminiUserPrompt,
+  geminiKeysForExtract,
   geminiKeysForShopLine,
 } from "./prompt";
 
@@ -291,6 +293,30 @@ describe("rosa desk training extract prompts", () => {
     expect(user).toMatch(/18025 Cypress Point Rd/);
     expect(user).toMatch(/do not force annual on auto/);
     expect(auto).toMatch(/Do not treat this as homeowners/);
+  });
+});
+
+describe("agency letter gemini keys", () => {
+  it("asks cancellation / AOR jobs for letter fields without changing HO sheet keys", () => {
+    expect(GEMINI_LETTER_EXTRACT_JSON_KEYS).toEqual(
+      expect.arrayContaining([
+        "named_insured",
+        "policy_number",
+        "cancellation_date",
+        "prior_agency",
+        "new_agency",
+      ]),
+    );
+    expect(geminiKeysForExtract("cancellation")).toContain("cancellation_reason");
+    expect(geminiKeysForExtract("aor")).toContain("new_agency");
+    expect(geminiKeysForShopLine("home")).not.toContain("cancellation_reason");
+    expect(sheetKeysForGeminiKey("cancellation_date")).toEqual(["cancellation_date"]);
+    expect(sheetKeysForGeminiKey("prior_agency")).toEqual(["prior_agency"]);
+    const system = buildGeminiSystemPrompt("cancellation");
+    const user = buildGeminiUserPrompt("aor");
+    expect(system).toMatch(/Agent of Record/);
+    expect(system).toMatch(/cancellation_date/);
+    expect(user).toMatch(/new_agency/);
   });
 });
 

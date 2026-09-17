@@ -64,6 +64,9 @@ describe("flash helper", () => {
       "That mint request was invalid. Refresh and try again.",
     );
     expect(FLASH_COPY["need-confirm"]).toBe("Confirm remaining declaration fields before publishing.");
+    expect(FLASH_COPY["letter-extracting"]).toBe("Extracting letter fields");
+    expect(FLASH_COPY["letter-confirmed"]).toBe("Letter fields confirmed");
+    expect(FLASH_COPY["letter-send-later"]).toMatch(/never auto-sends/);
   });
 
   it("accepts a short raw phrase and ignores blanks", () => {

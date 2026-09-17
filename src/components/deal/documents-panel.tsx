@@ -1,10 +1,11 @@
+import { AgencyLettersRail, type AgencyLetterJobView } from "@/components/deal/agency-letters-rail";
 import { BackgroundFillRefresh } from "@/components/deal/background-fill-refresh";
 import { SourceDocsUpload } from "@/components/deal/source-docs-upload";
 import { MasterSheetWorkspace } from "@/components/deal/master-sheet-compare";
 import { SourceFileRow } from "@/components/deal/source-file-row";
 import { docCardKeyFromTags, groupDocsByLine } from "@/lib/leads/line-documents";
 import type { CompletenessReport } from "@/lib/completeness/report";
-import type { Document, ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
+import type { Document, DocumentPipelineJob, ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
 import type { SheetProduct } from "@/lib/quote-sheet/products";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
@@ -16,6 +17,7 @@ export function DocumentsPanel({
   docs,
   fields,
   jobs,
+  letterJobs,
   health,
   sheetLine,
   sheetValues,
@@ -34,6 +36,7 @@ export function DocumentsPanel({
   docs: Document[];
   fields: ExtractedFieldRow[];
   jobs?: unknown[];
+  letterJobs?: DocumentPipelineJob[] | AgencyLetterJobView[];
   health: CompletenessReport | null;
   sheetLine: ShopLine;
   sheetValues: Record<string, QuoteSheetFieldValue>;
@@ -47,7 +50,12 @@ export function DocumentsPanel({
   hasRequestedQuotes?: boolean;
   productId?: string | null;
 }) {
-  const sourceDocs = asList(docs).filter((d) => isDocumentsSourceDoc(d));
+  const sourceDocs = asList(docs).filter(
+    (d) =>
+      isDocumentsSourceDoc(d) &&
+      d.slot !== "filled_letter" &&
+      !(d.tags ?? []).includes("agency_letter"),
+  );
   const lineDocs = sourceDocs.filter((d) => docCardKeyFromTags(d.tags));
   const otherSourceDocs = sourceDocs.filter((d) => !docCardKeyFromTags(d.tags));
   const lineGroups = asList(groupDocsByLine(lineDocs));
@@ -55,6 +63,7 @@ export function DocumentsPanel({
   return (
     <div className="flex w-full flex-col space-y-4" data-ff-deal-docs data-ff-docs-zoom="100">
       <BackgroundFillRefresh dealId={dealId} jobs={(jobs as { engine?: string; status?: string; filledKeys?: string[]; skippedKeys?: string[]; message?: string | null }[]) ?? []} enabled={pendingFill} />
+      <AgencyLettersRail dealId={dealId} riskId={riskId} jobs={(letterJobs as AgencyLetterJobView[]) ?? []} />
       <div className="w-full min-w-0" data-ff-deal-upload>
         <section className="ff-card w-full p-3">
           <h3 className="mb-1 text-sm font-semibold text-navy">Upload</h3>

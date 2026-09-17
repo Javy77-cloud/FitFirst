@@ -12,7 +12,7 @@ export {
   readGeminiModel,
   resolveGeminiModel,
 } from "./key";
-export { buildGeminiSystemPrompt, buildGeminiUserPrompt, geminiKeysForShopLine, GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS } from "./prompt";
+export { buildGeminiSystemPrompt, buildGeminiUserPrompt, geminiKeysForShopLine, geminiKeysForExtract, isAgencyLetterGeminiDoc, GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, GEMINI_LETTER_EXTRACT_JSON_KEYS } from "./prompt";
 export {
   fillableGeminiFields,
   mapGeminiJsonToFields,
@@ -37,6 +37,9 @@ export function docTypeUsesGemini(docType?: string | null): boolean {
       "photo",
       "inspection",
       "report",
+      "cancellation",
+      "aor",
+      "agency_letter",
     ].includes(t)
   ) {
     return true;
