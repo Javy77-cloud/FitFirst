@@ -183,6 +183,79 @@
   box-shadow: var(--ff-shadow);
 }
 
+/* Settings list editors — cream paper, navy/terracotta rail, calm rows. */
+.ff-list-card {
+  position: relative;
+  background: var(--ff-card);
+  border: 1px solid var(--ff-border);
+  border-radius: 0.5rem;
+  box-shadow: var(--ff-shadow), 0 10px 28px rgb(12 35 64 / 5%);
+  overflow: hidden;
+}
+.ff-list-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--ff-navy) 0%, var(--ff-terracotta) 100%);
+}
+.ff-list-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem 1rem 1rem 1.2rem;
+}
+.ff-list-well {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.35rem;
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--ff-wash) 72%, transparent);
+}
+.ff-list-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--ff-border) 82%, transparent);
+  background: var(--ff-card);
+  transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+.ff-list-row:hover {
+  border-color: color-mix(in srgb, var(--ff-navy) 26%, var(--ff-border));
+}
+.ff-list-count {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ff-navy) 8%, transparent);
+  color: var(--ff-navy);
+  padding: 0.12rem 0.5rem;
+  font-size: var(--ff-type-caption);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.ff-list-collapse {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  border-radius: 999px;
+  border: 1px solid var(--ff-border);
+  background: var(--ff-card);
+  padding: 0.22rem 0.7rem;
+  font-size: var(--ff-type-caption);
+  font-weight: 600;
+  color: var(--ff-navy);
+}
+.ff-list-collapse:hover {
+  border-color: color-mix(in srgb, var(--ff-navy) 35%, var(--ff-border));
+  background: color-mix(in srgb, var(--ff-navy) 5%, var(--ff-card));
+}
+
 /* FitFirst layout section cards — soft tint + shadow (Javy 2026-09-12) */
 [data-ff-record-section] {
   background: #f8fafc !important;

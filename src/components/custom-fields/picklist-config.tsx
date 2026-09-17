@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { StatusColorSwatch } from "@/components/desk/status-color-select";
+import { CollapsibleListCard } from "@/components/settings/collapsible-list-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   bindingPatchFromOptionSet,
   groupedOptionSetChoices,
   optionSetValue,
+  resolveBoundOptionSet,
   OPTION_SET_CUSTOM,
   OPTION_SET_CUSTOM_CATEGORY,
   OPTION_SET_POLICY_CATEGORY,
@@ -38,9 +41,20 @@ export function PicklistConfig({
     groups.policy.find((choice) => choice.value === selected)?.label ??
     groups.custom.find((choice) => choice.value === selected)?.label ??
     "Bound list";
+  const boundSet = bound ? resolveBoundOptionSet(field, lists, globalLists) : null;
+  const previewRows =
+    boundSet?.options.map((option) => ({
+      value: option.value,
+      color: option.color ?? field.optionColors?.[option.value] ?? null,
+    })) ??
+    options.map((option) => ({
+      value: option,
+      color: field.optionColors?.[option] ?? null,
+    }));
 
   return (
-    <div className="space-y-2 rounded-md border border-primary/30 bg-background p-2" data-ff-picklist-config={field.key}>
+    <div className="ff-list-card space-y-2 p-0" data-ff-picklist-config={field.key}>
+      <div className="ff-list-card-body space-y-2">
       <p className="text-[11px] font-medium text-navy">
         {field.type === "multi_select" ? "Multi-select options" : "Picklist options"}
       </p>
@@ -84,22 +98,24 @@ export function PicklistConfig({
       </div>
       {bound ? (
         <div className="space-y-1" data-ff-option-set-preview>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-helper text-muted-foreground">
             {boundLabel}
-            {options.length ? ` · ${options.length} values` : ""} — colors and labels come from the list at
-            runtime.
+            {previewRows.length ? ` · ${previewRows.length}` : ""} — colors live on the Settings list.
           </p>
-          <ul className="max-h-28 overflow-y-auto rounded-md border border-border bg-muted/30 px-2 py-1 text-xs text-navy">
-            {options.length ? (
-              options.map((option, index) => (
-                <li key={`${index}:${option}`} className="truncate py-0.5">
-                  {option}
-                </li>
-              ))
-            ) : (
-              <li className="py-0.5 text-muted-foreground">No values yet. Add them on the Settings list.</li>
-            )}
-          </ul>
+          {previewRows.length ? (
+            <CollapsibleListCard
+              cardId={`field-preview-${field.key}`}
+              tone="inset"
+              items={previewRows.map((option, index) => (
+                <div key={`${index}:${option.value}`} className="ff-list-row" data-ff-option-preview={option.value}>
+                  <StatusColorSwatch color={option.color} showEmpty />
+                  <span className="truncate text-sm text-navy">{option.value}</span>
+                </div>
+              ))}
+            />
+          ) : (
+            <p className="text-helper text-muted-foreground">No values yet. Add them on the Settings list.</p>
+          )}
         </div>
       ) : (
         <div className="space-y-2">
@@ -118,7 +134,7 @@ export function PicklistConfig({
           <div className="max-h-40 space-y-1 overflow-y-auto pr-0.5" data-ff-option-rows>
             {options.map((option, index) => (
               // Index-only key: option text in the key remounts the input after every letter.
-              <div key={index} className="flex items-center gap-1">
+              <div key={index} className="ff-list-row">
                 <Input
                   value={option}
                   className="h-7"
@@ -158,6 +174,7 @@ export function PicklistConfig({
           </Button>
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import {
 } from "@/app/actions/line-settings";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
+import { CollapsibleListCard } from "@/components/settings/collapsible-list-card";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,49 +29,62 @@ function OptionList({
   canEdit: boolean;
 }) {
   return (
-    <section className="ff-card space-y-3 p-4">
-      <div>
-        <h2 className="text-sm font-semibold text-navy">{title}</h2>
-        <p className="mt-1 text-helper text-muted-foreground">{hint}</p>
-      </div>
-      {options.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No options. Add one below.</p>
-      ) : (
-        <ul className="divide-y divide-border rounded-md border border-border">
-          {options.map((option) => (
-            <li key={`${option.book}-${option.slug}-${option.id ?? option.label}`} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
-              <span className="text-navy">{option.label}</span>
-              {canEdit && option.id ? (
-                <HardDeleteForm action={deleteLineSubfilter} subject="this line option">
-                  <input type="hidden" name="id" value={option.id} />
-                  <FileDeleteIcon label={`Delete ${option.label}`} className="text-destructive" />
-                </HardDeleteForm>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
-      {canEdit ? (
-        <form action={addLineSubfilter} className="flex flex-wrap items-end gap-2">
-          <input type="hidden" name="book" value={book} />
-          <div className="min-w-48 flex-1">
-            <label className="text-helper text-muted-foreground" htmlFor={`${book}-label`}>
-              Add {book === "life" ? "Life" : "Health"} option
-            </label>
-            <Input
-              id={`${book}-label`}
-              name="label"
-              required
-              placeholder={book === "life" ? "Guaranteed Issue" : "Dental"}
-              className="mt-1 h-8"
-            />
+    <CollapsibleListCard
+      cardId={`line-${book}`}
+      header={
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-sm font-semibold tracking-tight text-navy">{title}</h2>
+            <span className="ff-list-count">{options.length}</span>
           </div>
-          <Button type="submit" size="sm" variant="outline">
-            Add
-          </Button>
-        </form>
-      ) : null}
-    </section>
+          <p className="text-helper text-muted-foreground">{hint}</p>
+        </div>
+      }
+      items={
+        options.length === 0
+          ? [
+              <p key="empty" className="px-1 py-1 text-sm text-muted-foreground">
+                No options. Add one below.
+              </p>,
+            ]
+          : options.map((option) => (
+              <div
+                key={`${option.book}-${option.slug}-${option.id ?? option.label}`}
+                className="ff-list-row justify-between"
+              >
+                <span className="font-medium text-navy">{option.label}</span>
+                {canEdit && option.id ? (
+                  <HardDeleteForm action={deleteLineSubfilter} subject="this line option">
+                    <input type="hidden" name="id" value={option.id} />
+                    <FileDeleteIcon label={`Delete ${option.label}`} className="text-destructive" />
+                  </HardDeleteForm>
+                ) : null}
+              </div>
+            ))
+      }
+      footer={
+        canEdit ? (
+          <form action={addLineSubfilter} className="ff-list-row">
+            <input type="hidden" name="book" value={book} />
+            <div className="min-w-48 flex-1">
+              <label className="text-helper text-muted-foreground" htmlFor={`${book}-label`}>
+                Add {book === "life" ? "Life" : "Health"} option
+              </label>
+              <Input
+                id={`${book}-label`}
+                name="label"
+                required
+                placeholder={book === "life" ? "Guaranteed Issue" : "Dental"}
+                className="mt-1 h-8"
+              />
+            </div>
+            <Button type="submit" size="sm" variant="outline">
+              Add
+            </Button>
+          </form>
+        ) : null
+      }
+    />
   );
 }
 
@@ -91,7 +105,8 @@ export default async function LinesSettingsPage() {
         </p>
       ) : null}
 
-      <form action={saveWrittenLines} className="ff-card mb-4 max-w-2xl space-y-3 p-4">
+      <form action={saveWrittenLines} className="ff-list-card mb-4 max-w-2xl">
+        <div className="ff-list-card-body space-y-3">
         <fieldset disabled={!session.isAdmin} className="space-y-3">
           <h2 className="text-sm font-semibold text-navy">Written lines</h2>
           <label className="flex items-start gap-2 text-sm">
@@ -140,6 +155,7 @@ export default async function LinesSettingsPage() {
             </Button>
           ) : null}
         </fieldset>
+        </div>
       </form>
 
       <div className="grid gap-4 lg:grid-cols-2">

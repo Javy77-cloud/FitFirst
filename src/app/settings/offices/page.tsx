@@ -2,6 +2,7 @@ import Link from "next/link";
 import { deleteOffice, saveOffice } from "@/app/actions/offices";
 import { AgentAssign } from "@/components/org/agent-assign";
 import { StatePicker } from "@/components/org/state-picker";
+import { SettingsEntityCard } from "@/components/settings/settings-entity-card";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
@@ -44,40 +45,32 @@ export default async function OfficesSettingsPage({
           {officeRows.map((office) => {
             const people = roster.filter((row) => row.officeIds.includes(office.id));
             return (
-              <li key={office.id} className="ff-card space-y-2 p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h2 className="text-sm font-semibold text-navy">{office.name}</h2>
-                    <p className="text-helper text-muted-foreground">
-                      {formatStateList(office.states)}
-                      {office.timezone ? ` · ${office.timezone}` : " · timezone not set"}
-                    </p>
-                  </div>
-                  <Link
-                    href={`/settings/offices?office=${office.id}`}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Edit
-                  </Link>
-                </div>
-                <p className="text-sm text-navy">{office.address || "No street address"}</p>
-                <p className="text-helper text-muted-foreground">
-                  {people.length === 0
-                    ? "No agents assigned."
-                    : people
-                        .map(
-                          (person) =>
-                            `${person.name}${person.primaryOfficeId === office.id ? " (primary)" : ""}`,
-                        )
-                        .join(" · ")}
-                </p>
+              <li key={office.id}>
+                <SettingsEntityCard
+                  title={office.name}
+                  meta={`${formatStateList(office.states)}${office.timezone ? ` · ${office.timezone}` : " · timezone not set"}`}
+                  href={`/settings/offices?office=${office.id}`}
+                >
+                  <p>{office.address || "No street address"}</p>
+                  <p className="text-helper text-muted-foreground">
+                    {people.length === 0
+                      ? "No agents assigned."
+                      : people
+                          .map(
+                            (person) =>
+                              `${person.name}${person.primaryOfficeId === office.id ? " (primary)" : ""}`,
+                          )
+                          .join(" · ")}
+                  </p>
+                </SettingsEntityCard>
               </li>
             );
           })}
         </ul>
       )}
 
-      <section className="ff-card mb-4 space-y-4 p-4">
+      <section className="ff-list-card mb-4">
+        <div className="ff-list-card-body space-y-4">
         <div>
           <h2 className="text-sm font-semibold text-navy">
             {editing ? `Edit ${editing.name}` : "Add office"}
@@ -166,9 +159,10 @@ export default async function OfficesSettingsPage({
             </button>
           </HardDeleteForm>
         ) : null}
+        </div>
       </section>
 
-      <section className="ff-card overflow-hidden">
+      <section className="ff-list-card overflow-hidden">
         <div className="border-b border-border px-4 py-2 text-sm font-semibold text-navy">
           Assignment roster
         </div>

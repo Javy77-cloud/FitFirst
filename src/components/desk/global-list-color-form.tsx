@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { updateGlobalListItemColor } from "@/app/actions/global-lists";
-import { StatusColorSelect } from "@/components/desk/status-color-select";
+import { LiveColorField } from "@/components/settings/list-option-row";
 
 /** Picking a color saves immediately — no separate Save click. */
 export function GlobalListColorForm({
@@ -26,7 +26,7 @@ export function GlobalListColorForm({
       }}
     >
       <input type="hidden" name="id" value={id} />
-      <StatusColorSelect
+      <LiveColorField
         defaultValue={color}
         aria-label={`Color for ${label}`}
         disabled={pending}
