@@ -31,6 +31,7 @@ export function CompanyMeetingForm({
   defaultStart,
   offices,
   territories,
+  meetHelper = false,
   onClose,
 }: {
   event: CalendarActivity | null;
@@ -39,6 +40,7 @@ export function CompanyMeetingForm({
   defaultStart: string;
   offices: InviteCatalogOption[];
   territories: InviteCatalogOption[];
+  meetHelper?: boolean;
   onClose: () => void;
 }) {
   const [meetingType, setMeetingType] = useState<CompanyEventType>(
@@ -173,6 +175,16 @@ export function CompanyMeetingForm({
                 defaultValue={event?.videoUrl ?? event?.meetingLocation ?? ""}
                 className="mt-1 h-8"
               />
+              {meetHelper ? (
+                <label className="mt-2 flex items-center gap-2 text-sm text-navy">
+                  <input type="checkbox" name="addGoogleMeet" value="1" className="size-4" />
+                  Add Google Meet link
+                </label>
+              ) : null}
+              <label className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                <input type="checkbox" name="ignoreBusy" value="1" className="size-4" />
+                Book over external busy
+              </label>
             </div>
             <div className="sm:col-span-2">
               <Label className="text-xs">Invite</Label>

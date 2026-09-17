@@ -17,3 +17,23 @@ describe("sep7ab Integrations 8x8 + Mac Continuity", () => {
     expect(toggle).toMatch(/8x8/);
   });
 });
+
+describe("BYO OAuth wave surfaces", () => {
+  it("wires Gmail, calendars, Meet, and DocuSign onto existing settings pages", () => {
+    const catalog = readFileSync("src/app/settings/integrations/page.tsx", "utf8");
+    expect(catalog).toMatch(/ByoOauthCard/);
+    expect(catalog).toMatch(/SocialByoCard/);
+    expect(catalog).toMatch(/personal Gmail/);
+    const email = readFileSync("src/app/settings/email/page.tsx", "utf8");
+    expect(email).toMatch(/ByoOauthCard/);
+    expect(email).toMatch(/returnTo="\/settings\/email"/);
+    const video = readFileSync("src/app/settings/video/page.tsx", "utf8");
+    expect(video).toMatch(/ByoOauthCard/);
+    const esign = readFileSync("src/app/settings/esign/page.tsx", "utf8");
+    expect(esign).toMatch(/ByoOauthCard/);
+    expect(esign).toMatch(/docusign/);
+    const calendar = readFileSync("src/app/calendar/page.tsx", "utf8");
+    expect(calendar).toMatch(/listBusyWindows/);
+    expect(calendar).toMatch(/meetHelperAvailable/);
+  });
+});

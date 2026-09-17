@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { disconnectEsignStub, saveEsignStub } from "@/app/actions/esign-settings";
 import { SettingsShell } from "@/components/settings/settings-shell";
+import { ByoOauthCard } from "@/components/settings/byo-oauth-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { currentDeskSession } from "@/lib/auth/session";
 import { getEsignSettings } from "@/lib/db/queries";
 import { ESIGN_SETTINGS_PROVIDER_LABEL, ESIGN_SETTINGS_PROVIDERS } from "@/lib/domain";
+import { listCatalogItems } from "@/lib/integrations/catalog-store";
 
 export const dynamic = "force-dynamic";
 
@@ -16,11 +18,13 @@ export default async function EsignSettingsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [session, settings, query] = await Promise.all([
+  const [session, settings, query, items] = await Promise.all([
     currentDeskSession(),
     getEsignSettings(),
     searchParams,
+    listCatalogItems(),
   ]);
+  const docusign = items.find((item) => item.id === "docusign");
   const notice = typeof query.notice === "string" ? query.notice : undefined;
   const provider = settings?.provider ?? "none";
 
@@ -33,9 +37,9 @@ export default async function EsignSettingsPage({
         </p>
       ) : (
         <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-          In-desk signing lives on Deal and Policy. DocuSign and Dropbox Sign are not wired —
-          FitFirst does not store vendor keys or send vendor envelopes. Pick a preferred provider
-          as a reminder. Signed apps still return on the Deal.
+          In-desk signing lives on Deal and Policy. DocuSign sandbox OAuth is wired below (free
+          developer account, account-d). Dropbox Sign stays a preference stub. Envelope send from a
+          Deal packet is later. Signed apps still return on the Deal.
         </p>
       )}
       {notice === "esign-stub" ? (
@@ -47,6 +51,12 @@ export default async function EsignSettingsPage({
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
           Provider marked disconnected. Signed apps stay on the Deal.
         </p>
+      ) : null}
+
+      {docusign ? (
+        <div className="mb-4 max-w-xl">
+          <ByoOauthCard item={docusign} canEdit={session.isAdmin} returnTo="/settings/esign" />
+        </div>
       ) : null}
 
       <form action={saveEsignStub} className="ff-card max-w-xl space-y-3 p-4">

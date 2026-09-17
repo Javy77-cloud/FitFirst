@@ -55,9 +55,15 @@ export async function resolveSocialClientId(provider: SocialPlatformId): Promise
   const own = row?.clientId?.trim() || null;
   if (own) return own;
   const share = socialByoSpec(provider).shareCredentialsWith;
-  if (!share) return null;
-  const shared = await loadSocialConnectionRow(share);
-  return shared?.clientId?.trim() || null;
+  if (share) {
+    const shared = await loadSocialConnectionRow(share);
+    if (shared?.clientId?.trim()) return shared.clientId.trim();
+  }
+  if (provider === "google_business_profile") {
+    const { envOauthApp } = await import("@/lib/integrations/oauth-env");
+    return envOauthApp("google")?.clientId ?? null;
+  }
+  return null;
 }
 
 export async function resolveSocialClientSecret(provider: SocialPlatformId): Promise<string | null> {
@@ -66,18 +72,23 @@ export async function resolveSocialClientSecret(provider: SocialPlatformId): Pro
     try {
       return decryptSecret(row.clientSecretEnc, row.clientSecretIv);
     } catch {
-      return null;
+      /* fall through */
     }
   }
   const share = socialByoSpec(provider).shareCredentialsWith;
-  if (!share) return null;
-  const shared = await loadSocialConnectionRow(share);
-  if (shared?.clientSecretEnc && shared.clientSecretIv) {
-    try {
-      return decryptSecret(shared.clientSecretEnc, shared.clientSecretIv);
-    } catch {
-      return null;
+  if (share) {
+    const shared = await loadSocialConnectionRow(share);
+    if (shared?.clientSecretEnc && shared.clientSecretIv) {
+      try {
+        return decryptSecret(shared.clientSecretEnc, shared.clientSecretIv);
+      } catch {
+        /* fall through */
+      }
     }
+  }
+  if (provider === "google_business_profile") {
+    const { envOauthApp } = await import("@/lib/integrations/oauth-env");
+    return envOauthApp("google")?.clientSecret ?? null;
   }
   return null;
 }

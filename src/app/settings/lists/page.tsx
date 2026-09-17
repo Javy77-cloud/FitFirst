@@ -43,8 +43,8 @@ export default async function GlobalListsPage() {
         <Link href="/settings/integrations" className="ff-card block p-4 hover:border-primary/40">
           <h2 className="text-sm font-semibold text-navy">Integrations catalog</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Google, Outlook, Zoho, social, SMS, e-sign, and EZLynx / QuoteRush. Demo Connect /
-            Disconnect. Agency pays the vendor.
+            Gmail, calendars, social, DocuSign sandbox, SMS, and EZLynx / QuoteRush. BYO OAuth
+            where it is free. Agency pays the vendor.
           </p>
         </Link>
       </div>

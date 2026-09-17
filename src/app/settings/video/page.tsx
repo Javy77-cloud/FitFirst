@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { IntegrationCard } from "@/components/settings/integration-card";
+import { ByoOauthCard } from "@/components/settings/byo-oauth-card";
 import { currentDeskSession } from "@/lib/auth/session";
 import { listCatalogItems } from "@/lib/integrations/catalog-store";
+import { isByoOauthProviderId } from "@/lib/integrations/oauth-specs";
 
 export const dynamic = "force-dynamic";
 
@@ -13,13 +15,22 @@ export default async function VideoSettingsPage() {
   return (
     <SettingsShell title="Video">
       <p className="mb-4 text-sm text-muted-foreground">
-        Meeting links on calendar events later. Zoom or Google Meet — the agency account, not a
-        FitFirst room. Connect is a stub. The desk calendar does not open a vendor.
+        Google Meet helper writes a Meet URL onto calendar events when Google Calendar or Meet is
+        connected. Zoom stays a stub. The agency account, not a FitFirst room.
       </p>
       <div className="grid gap-3 md:grid-cols-2">
-        {video.map((item) => (
-          <IntegrationCard key={item.id} item={item} canEdit={session.isAdmin} />
-        ))}
+        {video.map((item) =>
+          isByoOauthProviderId(item.id) ? (
+            <ByoOauthCard
+              key={item.id}
+              item={item}
+              canEdit={session.isAdmin}
+              returnTo="/settings/video"
+            />
+          ) : (
+            <IntegrationCard key={item.id} item={item} canEdit={session.isAdmin} />
+          ),
+        )}
       </div>
       <p className="mt-4 text-sm">
         <Link href="/calendar" className="text-primary hover:underline">
