@@ -182,7 +182,7 @@ export function NoticeTypesEditor({
               rows.map((label, index) => {
                 const selected = selectedIndex === index;
                 return (
-                  <li key={`${index}-${label}`}>
+                  <li key={index}>
                     <div
                       role="radio"
                       aria-checked={selected}

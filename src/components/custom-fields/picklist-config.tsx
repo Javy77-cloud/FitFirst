@@ -64,7 +64,8 @@ export function PicklistConfig({
       </div>
       <div className="space-y-1">
         {options.map((option, index) => (
-          <div key={`${index}-${option}`} className="flex items-center gap-1">
+          // Index-only key: option text in the key remounts the input after every letter.
+          <div key={index} className="flex items-center gap-1">
             <Input
               value={option}
               className="h-7"

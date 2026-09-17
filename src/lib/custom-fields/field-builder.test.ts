@@ -164,6 +164,11 @@ describe("deal field builder", () => {
     expect(config).toMatch(/data-ff-option-count/);
     expect(config).toMatch(/data-ff-global-list/);
     expect(config).toMatch(/data-ff-add-option/);
+    // Key by slot index only. Including the typed value remounts the input each keystroke.
+    expect(config).toMatch(/options\.map\(\(option, index\) => \(/);
+    expect(config).toMatch(/<div key=\{index\}/);
+    expect(config).not.toMatch(/key=\{`\$\{index\}-\$\{option\}`\}/);
+    expect(config).not.toMatch(/key=\{option\}/);
     expect(config).toMatch(/\/settings\/picklists/);
     expect(page).toMatch(/SettingsShell title="Picklists"/);
     expect(page).toMatch(/current="picklists"/);
