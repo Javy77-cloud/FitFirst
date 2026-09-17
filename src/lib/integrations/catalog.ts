@@ -25,15 +25,16 @@ export const INTEGRATION_CATEGORY_LABEL: Record<IntegrationCategory, string> = {
 };
 
 export const INTEGRATION_CATEGORY_BLURB: Record<IntegrationCategory, string> = {
-  email: "Agency inbox. Google, Outlook, or Zoho Mail — FitFirst does not host mail.",
-  calendar: "Desk calendar stays here. Connect Google, Outlook, or Zoho Calendar when the agency is ready.",
+  email: "Agency inbox. Gmail and Yahoo are BYO OAuth. Outlook / Zoho Mail stay unwired. FitFirst does not host mail.",
+  calendar:
+    "Desk calendar stays here. Google and Outlook Calendar pull external busy so FitFirst will not book over those slots.",
   social:
     "Facebook, Instagram, X, LinkedIn, and Google Business Profile. Paste the agency’s developer app and try OAuth. FitFirst does not buy ads or API seats. Maps stay free public search links.",
   phone_sms: "Call log and SMS. Connect 8x8, Twilio, RingCentral, or Lightspeed Voice when the agency is ready.",
-  esign: "In-desk signing on Deal or Policy. DocuSign / Dropbox Sign are not wired.",
+  esign: "In-desk signing on Deal or Policy. DocuSign sandbox OAuth is wired. Dropbox Sign stays a preference stub.",
   rater: "EZLynx and QuoteRush seats the agency already pays. Super-Copy stays copy-from-the-sheet — no rater API.",
   campaigns: "Bulk and drip later. Mailchimp, Constant Contact, or SendGrid — agency pays the vendor.",
-  video: "Meeting links on the calendar. Zoom or Google Meet — agency account.",
+  video: "Meeting links on the calendar. Google Meet helper is live when Calendar or Meet is connected. Zoom stays stub.",
 };
 
 export const INTEGRATION_PROVIDER_IDS = [
@@ -107,8 +108,8 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     category: "email",
     name: "Gmail / Google",
     initials: "Gm",
-    blurb: "Agency Google Workspace inbox for client mail.",
-    byoNote: "Agency pays Google Workspace. FitFirst does not host mail.",
+    blurb: "Agency or solo Gmail. Real OAuth — send and read enough to smoke-test from the desk.",
+    byoNote: "Agency pays Google Workspace, or a solo Admin connects personal Gmail. FitFirst does not host mail.",
     tone: "google",
   },
   {
@@ -134,8 +135,8 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     category: "email",
     name: "Yahoo Mail",
     initials: "Yh",
-    blurb: "Yahoo inbox for agencies that still send from there.",
-    byoNote: "Agency Yahoo account. IMAP/OAuth lands later.",
+    blurb: "Yahoo inbox. Free OpenID OAuth stores the connection. Mail REST/IMAP is Yahoo’s wall.",
+    byoNote: "Agency Yahoo account. OAuth + identity are real. IMAP send/read is not in this wave.",
     tone: "yahoo",
     optional: true,
   },
@@ -144,8 +145,8 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     category: "calendar",
     name: "Google Calendar",
     initials: "Gc",
-    blurb: "Two-way demo plug beside the desk month / week / day board.",
-    byoNote: "Agency Google account. OAuth does not open Google.",
+    blurb: "Pull Free/Busy onto the desk board so scheduling will not land on external busy.",
+    byoNote: "Agency Google account. Busy sync is live. Full two-way event push is later.",
     tone: "google",
   },
   {
@@ -153,8 +154,8 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     category: "calendar",
     name: "Outlook Calendar",
     initials: "Oc",
-    blurb: "Microsoft 365 calendar next to the in-desk board.",
-    byoNote: "Agency Microsoft 365. No live Graph sync.",
+    blurb: "Microsoft 365 calendar busy next to the in-desk board.",
+    byoNote: "Agency Microsoft 365. Graph Free/Busy is live. FitFirst does not buy a seat.",
     tone: "outlook",
   },
   {
@@ -259,8 +260,8 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     category: "esign",
     name: "DocuSign",
     initials: "Ds",
-    blurb: "Send a dec or application packet for signature.",
-    byoNote: "Agency DocuSign plan. Envelope send stays not_implemented.",
+    blurb: "Connect a free DocuSign developer sandbox. Envelope send from Deal stays later.",
+    byoNote: "Agency DocuSign sandbox. OAuth completes on account-d. Production keys are out of scope.",
     tone: "esign",
     adminGated: true,
   },
@@ -339,8 +340,8 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     category: "video",
     name: "Google Meet",
     initials: "Mt",
-    blurb: "Meet links beside Google Calendar on the desk board.",
-    byoNote: "Agency Google Workspace. Meet is not opened from FitFirst.",
+    blurb: "Mint a Meet link on calendar events when Google Calendar or Meet is connected.",
+    byoNote: "Agency Google Workspace. Meet helper writes the URL onto the desk event.",
     tone: "video",
     optional: true,
   },
@@ -350,11 +351,12 @@ export const CONNECT_HUB_SECTIONS = [
   {
     id: "inbox",
     title: "Google, Outlook, Zoho",
-    blurb: "Inbox and calendar the agency already pays for. No OAuth window opens.",
+    blurb: "Inbox and calendar the agency already pays for. Gmail, Yahoo, Google Calendar, and Outlook Calendar open real OAuth.",
     providerIds: [
       "gmail",
       "outlook",
       "zoho_mail",
+      "yahoo",
       "google_calendar",
       "outlook_calendar",
       "zoho_calendar",
@@ -375,7 +377,7 @@ export const CONNECT_HUB_SECTIONS = [
   {
     id: "esign",
     title: "E-sign",
-    blurb: "Signed apps return on the Deal. No envelope is sent from Settings.",
+    blurb: "DocuSign sandbox OAuth from Settings. Signed apps still return on the Deal. No production envelope is sent.",
     providerIds: ["docusign", "dropbox_sign"] as const,
   },
   {

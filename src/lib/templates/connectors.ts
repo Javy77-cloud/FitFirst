@@ -170,6 +170,54 @@ export async function markSendAccountDemoConnected(
   return getSendAccount(provider, tenantId);
 }
 
+export async function markSendAccountConnected(
+  provider: SendFromProvider,
+  accountEmail: string | null,
+  opts: { connected?: boolean; tenantId?: string } = {},
+): Promise<SendAccountView> {
+  const tenantId = opts.tenantId ?? DEFAULT_TENANT_ID;
+  const connected = opts.connected !== false;
+  const status = connected ? "connected" : "disconnected";
+  const inbox = await readInboxConnections(tenantId);
+  if (inbox) {
+    const match = inbox.find((row) => asProvider(row.provider) === provider);
+    if (match) {
+      await sql`
+        update email_connections
+        set status = ${status},
+            account_email = coalesce(${accountEmail}, account_email),
+            updated_at = now()
+        where id = ${match.id}
+      `;
+    }
+  }
+
+  const [existing] = await db
+    .select()
+    .from(emailSendAccounts)
+    .where(and(eq(emailSendAccounts.tenantId, tenantId), eq(emailSendAccounts.provider, provider)));
+
+  if (existing) {
+    await db
+      .update(emailSendAccounts)
+      .set({
+        status,
+        accountEmail: accountEmail ?? (connected ? existing.accountEmail : existing.accountEmail),
+        updatedAt: new Date(),
+      })
+      .where(eq(emailSendAccounts.id, existing.id));
+  } else if (connected) {
+    await db.insert(emailSendAccounts).values({
+      tenantId,
+      provider,
+      status,
+      accountEmail,
+    });
+  }
+
+  return getSendAccount(provider, tenantId);
+}
+
 export type ConnectorSendResult =
   | { ok: true; detail: string }
   | { ok: false; queued: true; detail: string }
@@ -184,6 +232,23 @@ export async function sendThroughConnectedInbox(input: {
   const account = await getSendAccount(input.provider);
   if (!account.connected) {
     return { ok: false, queued: true, detail: "connect email to send" };
+  }
+
+  if (account.provider === "google") {
+    try {
+      const { gmailIsReady, sendGmailMessage } = await import("@/lib/integrations/gmail");
+      if (await gmailIsReady()) {
+        const sent = await sendGmailMessage({
+          to: input.to,
+          subject: input.subject,
+          body: input.body,
+        });
+        return { ok: true, detail: `gmail:${sent.id}` };
+      }
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "Gmail send failed";
+      return { ok: false, queued: false, detail };
+    }
   }
 
   try {

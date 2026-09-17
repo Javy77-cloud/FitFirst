@@ -6,6 +6,7 @@ import { listOfficeStubs, listTerritoryStubs } from "@/lib/db/office-queries";
 import { listCalendarActivities } from "@/lib/db/queries";
 import { deskNow } from "@/lib/home/as-of";
 import { getCalendarAgencyPrefs } from "@/lib/ops/calendar-agency-prefs";
+import { listBusyWindows, meetHelperAvailable, serializeBusyBlock } from "@/lib/integrations/calendar-busy";
 import {
   parseCalendarView,
   parseDateParam,
@@ -28,14 +29,17 @@ export default async function CalendarPage({
   const anchor = parseDateParam(typeof query.date === "string" ? query.date : undefined, fallback);
   const kinds = parseKindsParam(query.kinds);
   const range = rangeForView(view, anchor);
-  const [rows, options, offices, territories, calendarPrefs] = await Promise.all([
+  const [rows, options, offices, territories, calendarPrefs, busyRows, meetHelper] = await Promise.all([
     listCalendarActivities(range.from, range.to),
     listRelatedOptions(),
     listOfficeStubs(),
     listTerritoryStubs(),
     getCalendarAgencyPrefs(),
+    listBusyWindows(range.from, range.to).catch(() => []),
+    meetHelperAvailable().catch(() => false),
   ]);
   const events = rows.map((row) => serializeCalendarActivity(row));
+  const busyBlocks = busyRows.map(serializeBusyBlock);
   const openEventId = typeof query.event === "string" ? query.event : null;
 
   return (
@@ -53,6 +57,8 @@ export default async function CalendarPage({
         openEventId={openEventId}
         markSundayNonWorking={calendarPrefs.calendarMarkSundayNonWorking}
         showUsFederalHolidays={calendarPrefs.calendarShowUsFederalHolidays}
+        busyBlocks={busyBlocks}
+        meetHelper={meetHelper}
       />
       </div>
     </AppShell>

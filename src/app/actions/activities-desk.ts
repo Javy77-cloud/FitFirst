@@ -86,8 +86,8 @@ export async function logDeskActivity(formData: FormData) {
 
   const meetingLocation = str(formData, "meetingLocation") || str(formData, "location") || null;
   const meetingType = str(formData, "meetingType") || null;
-  const videoProvider = str(formData, "videoProvider") || null;
-  const videoUrl = str(formData, "videoUrl") || null;
+  let videoProvider = str(formData, "videoProvider") || null;
+  let videoUrl = str(formData, "videoUrl") || null;
   const reminderMinutes = optionalInt(formData, "reminderMinutes");
   const notifyChannel = str(formData, "notifyChannel") || str(formData, "notify") || "popup";
   const createReminder = str(formData, "createReminder") === "1";
@@ -106,6 +106,18 @@ export async function logDeskActivity(formData: FormData) {
 
   const dueAt = when(formData, "dueAt");
   const startAt = when(formData, "startAt") ?? dueAt;
+  const endAt = when(formData, "endAt") ?? (startAt ? new Date(startAt.getTime() + 30 * 60 * 1000) : null);
+  const ignoreBusy = str(formData, "ignoreBusy") === "1";
+  if ((kind === "meeting" || kind === "call") && startAt && endAt && !ignoreBusy) {
+    const { busyConflictMessage, findBusyConflicts } = await import("@/lib/integrations/calendar-busy");
+    const conflicts = await findBusyConflicts(startAt, endAt);
+    if (conflicts.length) throw new Error(busyConflictMessage(conflicts));
+  }
+  if (kind === "meeting" && str(formData, "addGoogleMeet") === "1" && startAt && endAt) {
+    const { createGoogleMeetLink } = await import("@/lib/integrations/google-meet");
+    videoUrl = await createGoogleMeetLink({ title, startAt, endAt });
+    videoProvider = "meet";
+  }
   const writeLog = shouldWriteCommsActivityLog({ kind, eventType, status, outcome });
   const isScheduledComms =
     (kind === "call" || kind === "email" || kind === "sms") &&
@@ -125,7 +137,7 @@ export async function logDeskActivity(formData: FormData) {
       status,
       dueAt,
       startAt,
-      endAt: when(formData, "endAt"),
+      endAt,
       assignee: str(formData, "assignee") || null,
       outcome,
       durationSeconds,
@@ -309,6 +321,11 @@ export async function rescheduleDeskActivity(formData: FormData) {
       ? 30 * 60 * 1000
       : 15 * 60 * 1000;
   const endAt = when(formData, "endAt") ?? new Date(startAt.getTime() + durationMs);
+  if (str(formData, "ignoreBusy") !== "1") {
+    const { busyConflictMessage, findBusyConflicts } = await import("@/lib/integrations/calendar-busy");
+    const conflicts = await findBusyConflicts(startAt, endAt);
+    if (conflicts.length) return { error: busyConflictMessage(conflicts) };
+  }
   const dueAt =
     activity.kind === "task" || activity.kind === "sms" || activity.kind === "email"
       ? startAt

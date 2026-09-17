@@ -116,11 +116,25 @@ export async function createCompanyMeeting(formData: FormData) {
     includeUserId: session.userId,
   });
   const creatorId = session.userId ?? ADMIN_USER_ID;
-  const videoProvider = parsed.videoUrl?.includes("meet.google")
+  if (str(formData, "ignoreBusy") !== "1") {
+    const { busyConflictMessage, findBusyConflicts } = await import("@/lib/integrations/calendar-busy");
+    const conflicts = await findBusyConflicts(parsed.startAt, parsed.endAt);
+    if (conflicts.length) throw new Error(busyConflictMessage(conflicts));
+  }
+  let videoUrl = parsed.videoUrl;
+  if (!videoUrl && str(formData, "addGoogleMeet") === "1") {
+    const { createGoogleMeetLink } = await import("@/lib/integrations/google-meet");
+    videoUrl = await createGoogleMeetLink({
+      title: parsed.title,
+      startAt: parsed.startAt,
+      endAt: parsed.endAt,
+    });
+  }
+  const videoProvider = videoUrl?.includes("meet.google")
     ? "meet"
-    : parsed.videoUrl?.includes("zoom.us")
+    : videoUrl?.includes("zoom.us")
       ? "zoom"
-      : parsed.videoUrl
+      : videoUrl
         ? "byo"
         : null;
 
@@ -137,9 +151,9 @@ export async function createCompanyMeeting(formData: FormData) {
       dueAt: parsed.startAt,
       assignee: session.name || "Javy Rivera",
       meetingType: parsed.meetingType,
-      meetingLocation: parsed.videoUrl,
+      meetingLocation: videoUrl,
       videoProvider,
-      videoUrl: parsed.videoUrl,
+      videoUrl,
       inviteAudience: parsed.inviteAudience,
       inviteOfficeId: parsed.inviteOfficeId,
       inviteTerritoryId: parsed.inviteTerritoryId,
@@ -185,11 +199,25 @@ export async function updateCompanyMeeting(formData: FormData) {
     territoryOfficeLinks: catalog.territoryOfficeLinks,
     includeUserId: session.userId,
   });
-  const videoProvider = parsed.videoUrl?.includes("meet.google")
+  if (str(formData, "ignoreBusy") !== "1") {
+    const { busyConflictMessage, findBusyConflicts } = await import("@/lib/integrations/calendar-busy");
+    const conflicts = await findBusyConflicts(parsed.startAt, parsed.endAt);
+    if (conflicts.length) throw new Error(busyConflictMessage(conflicts));
+  }
+  let videoUrl = parsed.videoUrl;
+  if (!videoUrl && str(formData, "addGoogleMeet") === "1") {
+    const { createGoogleMeetLink } = await import("@/lib/integrations/google-meet");
+    videoUrl = await createGoogleMeetLink({
+      title: parsed.title,
+      startAt: parsed.startAt,
+      endAt: parsed.endAt,
+    });
+  }
+  const videoProvider = videoUrl?.includes("meet.google")
     ? "meet"
-    : parsed.videoUrl?.includes("zoom.us")
+    : videoUrl?.includes("zoom.us")
       ? "zoom"
-      : parsed.videoUrl
+      : videoUrl
         ? "byo"
         : existing.videoProvider;
 
@@ -202,9 +230,9 @@ export async function updateCompanyMeeting(formData: FormData) {
       endAt: parsed.endAt,
       dueAt: parsed.startAt,
       meetingType: parsed.meetingType,
-      meetingLocation: parsed.videoUrl,
+      meetingLocation: videoUrl,
       videoProvider,
-      videoUrl: parsed.videoUrl,
+      videoUrl,
       inviteAudience: parsed.inviteAudience,
       inviteOfficeId: parsed.inviteOfficeId,
       inviteTerritoryId: parsed.inviteTerritoryId,

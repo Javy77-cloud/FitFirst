@@ -28,6 +28,9 @@ function item(
     hasCredentials: false,
     connectMode: connected ? "demo" : null,
     lastOauthError: null,
+    hasEnvCredentials: false,
+    hasRefreshToken: false,
+    tokenAccountEmail: null,
   };
 }
 

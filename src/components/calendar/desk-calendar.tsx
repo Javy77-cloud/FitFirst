@@ -60,6 +60,7 @@ import {
   usFederalHolidaysInRange,
   type UsFederalHoliday,
 } from "@/lib/ops/us-federal-holidays";
+import type { SerializedBusyBlock } from "@/lib/integrations/calendar-busy";
 
 const KINDS = ["task", "meeting", "call", "email", "sms"] as const;
 const KIND_LABELS: Record<(typeof KINDS)[number], string> = {
@@ -95,6 +96,8 @@ export function DeskCalendar({
   openEventId = null,
   markSundayNonWorking = true,
   showUsFederalHolidays = true,
+  busyBlocks = [],
+  meetHelper = false,
 }: {
   events: CalendarEvent[];
   options: RelatedOptions;
@@ -107,6 +110,8 @@ export function DeskCalendar({
   openEventId?: string | null;
   markSundayNonWorking?: boolean;
   showUsFederalHolidays?: boolean;
+  busyBlocks?: SerializedBusyBlock[];
+  meetHelper?: boolean;
 }) {
   const router = useRouter();
   void initialKinds; // kinds URL param unused — UI shows all types
@@ -383,6 +388,7 @@ export function DeskCalendar({
           onEmpty={(day) => void placeOn(day)}
           markSundayNonWorking={markSundayNonWorking}
           holidays={federalHolidays}
+          busyBlocks={busyBlocks}
         />
       ) : (
         <TimeGrid
@@ -397,6 +403,7 @@ export function DeskCalendar({
           }}
           onSelect={openEvent}
           onEmpty={(day, hour) => void placeOn(day, hour)}
+          busyBlocks={busyBlocks}
         />
       )}
 
@@ -439,6 +446,7 @@ export function DeskCalendar({
           defaultStart={draftStart}
           offices={offices}
           territories={territories}
+          meetHelper={meetHelper}
           onClose={() => {
             setEditing(null);
             router.refresh();
@@ -450,6 +458,7 @@ export function DeskCalendar({
           options={options}
           defaultStart={draftStart}
           defaultKind={draftKind}
+          meetHelper={meetHelper}
           onClose={() => {
             setEditing(null);
             router.refresh();
@@ -588,6 +597,7 @@ function MonthGrid({
   onEmpty,
   markSundayNonWorking = true,
   holidays = [],
+  busyBlocks = [],
 }: {
   anchor: Date;
   rows: CalendarActivity[];
@@ -599,6 +609,7 @@ function MonthGrid({
   onEmpty: (day: Date) => void;
   markSundayNonWorking?: boolean;
   holidays?: UsFederalHoliday[];
+  busyBlocks?: SerializedBusyBlock[];
 }) {
   const cells = monthCells(anchor);
   return (
@@ -624,6 +635,14 @@ function MonthGrid({
       <div className="grid grid-cols-7">
         {cells.map((cell) => {
           const items = activitiesOnDay(rows, cell.date);
+          const dayBusy = busyBlocks.filter((block) => {
+            const start = new Date(block.startAt);
+            return (
+              start.getFullYear() === cell.date.getFullYear() &&
+              start.getMonth() === cell.date.getMonth() &&
+              start.getDate() === cell.date.getDate()
+            );
+          });
           const isSunday = cell.date.getDay() === 0;
           const sundayTint = markSundayNonWorking && isSunday;
           const holiday = holidayOnDay(holidays, cell.date);
@@ -699,6 +718,16 @@ function MonthGrid({
                 </div>
               ) : null}
               <div className="space-y-0.5">
+                {dayBusy.slice(0, 2).map((block) => (
+                  <div
+                    key={block.id}
+                    className="truncate rounded-sm bg-muted px-1 py-0.5 text-left text-[10px] font-medium text-muted-foreground"
+                    title={`${block.title} · ${block.provider}`}
+                    data-ff-calendar-busy={block.provider}
+                  >
+                    Busy
+                  </div>
+                ))}
                 {items.slice(0, 4).map((item) => (
                   <EventChip
                     key={item.id}
@@ -729,6 +758,7 @@ function TimeGrid({
   onDropSlot,
   onSelect,
   onEmpty,
+  busyBlocks = [],
 }: {
   days: Date[];
   rows: CalendarActivity[];
@@ -738,6 +768,7 @@ function TimeGrid({
   onDropSlot: (id: string, day: Date, hour: number) => void;
   onSelect: (event: CalendarEvent) => void;
   onEmpty: (day: Date, hour: number) => void;
+  busyBlocks?: SerializedBusyBlock[];
 }) {
   const singleDay = days.length === 1;
   const gridStart = HOURS[0];
@@ -806,6 +837,32 @@ function TimeGrid({
                   onDoubleClick={() => onEmpty(day, hour)}
                 />
               ))}
+              {busyBlocks
+                .filter((block) => {
+                  const start = new Date(block.startAt);
+                  return (
+                    start.getFullYear() === day.getFullYear() &&
+                    start.getMonth() === day.getMonth() &&
+                    start.getDate() === day.getDate()
+                  );
+                })
+                .map((block) => {
+                  const start = new Date(block.startAt);
+                  const end = new Date(block.endAt);
+                  const top =
+                    (start.getHours() - gridStart) * HOUR_H + (start.getMinutes() / 60) * HOUR_H;
+                  const minutes = Math.max(15, (end.getTime() - start.getTime()) / 60000);
+                  return (
+                    <div
+                      key={block.id}
+                      className="pointer-events-none absolute inset-x-1 z-[5] overflow-hidden rounded-sm bg-muted/80 px-1 py-0.5 text-left text-[10px] font-medium text-muted-foreground"
+                      style={{ top, height: Math.max((minutes / 60) * HOUR_H, 16) }}
+                      data-ff-calendar-busy={block.provider}
+                    >
+                      Busy
+                    </div>
+                  );
+                })}
               {dayItems.map((item) => {
                 const start = activityAnchor(item);
                 if (!start) return null;
@@ -891,15 +948,18 @@ function CalendarEditor({
   options,
   defaultStart,
   defaultKind = "task",
+  meetHelper = false,
   onClose,
 }: {
   event: CalendarEvent | null;
   options: RelatedOptions;
   defaultStart: string;
   defaultKind?: (typeof KINDS)[number];
+  meetHelper?: boolean;
   onClose: () => void;
 }) {
   const isNew = !event;
+  const [error, setError] = useState<string | null>(null);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-3 sm:items-center">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border border-border bg-card p-4 shadow-lg">
@@ -911,9 +971,14 @@ function CalendarEditor({
         </div>
         <form
           action={async (formData) => {
-            if (isNew) await logDeskActivity(formData);
-            else await updateDeskActivity(formData);
-            onClose();
+            setError(null);
+            try {
+              if (isNew) await logDeskActivity(formData);
+              else await updateDeskActivity(formData);
+              onClose();
+            } catch (err) {
+              setError(err instanceof Error ? err.message : "Could not save that event.");
+            }
           }}
           className="grid gap-2 sm:grid-cols-2"
         >
@@ -1001,6 +1066,17 @@ function CalendarEditor({
             <Label className="text-xs">Notes</Label>
             <Textarea name="notes" defaultValue={event?.notes ?? ""} className="mt-1 min-h-16" />
           </div>
+          {meetHelper && isNew ? (
+            <label className="sm:col-span-2 flex items-center gap-2 text-sm text-navy">
+              <input type="checkbox" name="addGoogleMeet" value="1" className="size-4" />
+              Add Google Meet link
+            </label>
+          ) : null}
+          <label className="sm:col-span-2 flex items-center gap-2 text-sm text-muted-foreground">
+            <input type="checkbox" name="ignoreBusy" value="1" className="size-4" />
+            Book over external busy
+          </label>
+          {error ? <p className="sm:col-span-2 text-sm text-destructive">{error}</p> : null}
           {event && videoHrefFromEvent(event) ? (
             <div className="sm:col-span-2">
               <a

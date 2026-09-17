@@ -29,7 +29,7 @@ const CHANNELS: {
     id: "email",
     href: "/settings/email",
     title: "Email",
-    body: "Google, Outlook, or Zoho Mail inbox. Templates and signatures stay under Brand / lists.",
+    body: "Gmail and Yahoo are BYO OAuth. Outlook / Zoho stay unwired. Templates stay under Brand / lists.",
     categories: ["email"],
   },
   {
@@ -50,7 +50,7 @@ const CHANNELS: {
     id: "video",
     href: "/settings/video",
     title: "Video",
-    body: "Zoom or Google Meet links later. Calendar stays in FitFirst.",
+    body: "Google Meet helper is on Calendar when Calendar or Meet is connected. Zoom stays stub.",
     categories: ["video"],
   },
 ];

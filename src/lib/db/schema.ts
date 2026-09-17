@@ -2918,11 +2918,38 @@ export const integrationConnections = pgTable(
     lastOauthError: text("last_oauth_error"),
     accessTokenEnc: text("access_token_enc"),
     accessTokenIv: text("access_token_iv"),
+    refreshTokenEnc: text("refresh_token_enc"),
+    refreshTokenIv: text("refresh_token_iv"),
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+    grantedScopes: text("granted_scopes"),
+    tokenAccountEmail: text("token_account_email"),
+    lastBusySyncAt: timestamp("last_busy_sync_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [
     index("integration_connections_tenant_idx").on(t.tenantId, t.category),
     uniqueIndex("integration_connections_pair_uidx").on(t.tenantId, t.category, t.provider),
+  ],
+);
+
+/** External Free/Busy pulled from Google / Outlook so desk scheduling skips occupied slots. */
+export const calendarBusyBlocks = pgTable(
+  "calendar_busy_blocks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    provider: text("provider").notNull(),
+    ownerUserId: uuid("owner_user_id"),
+    externalId: text("external_id").notNull(),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    title: text("title"),
+    syncedAt: timestamp("synced_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("calendar_busy_blocks_ext_uidx").on(t.tenantId, t.provider, t.externalId),
+    index("calendar_busy_blocks_when_idx").on(t.tenantId, t.startsAt, t.endsAt),
   ],
 );
 
@@ -3263,6 +3290,7 @@ export type TelephonySettings = typeof telephonySettings.$inferSelect;
 export type EsignSettings = typeof esignSettings.$inferSelect;
 export type SignatureEnvelope = typeof signatureEnvelopes.$inferSelect;
 export type IntegrationConnection = typeof integrationConnections.$inferSelect;
+export type CalendarBusyBlock = typeof calendarBusyBlocks.$inferSelect;
 export type LeadOfferRow = typeof leadOffers.$inferSelect;
 export type SocialLeadOffer = typeof socialLeadOffers.$inferSelect;
 export type PiiRevealLog = typeof piiRevealLogs.$inferSelect;
