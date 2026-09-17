@@ -12,7 +12,11 @@ import {
   isHealthSherpaManualPlan,
   isUsingHealthSherpa,
 } from "./sheet";
-import { HEALTHSHERPA_WEBHOOK_PATH } from "./copy";
+import { HEALTHSHERPA_ACA_NEEDS_PARTNER, HEALTHSHERPA_WEBHOOK_PATH } from "./copy";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: () => undefined, replace: () => undefined, push: () => undefined }),
+}));
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -135,7 +139,8 @@ describe("HealthSherpa Medicare + Marketplace", () => {
     expect(source("src/lib/integrations/catalog.ts")).toMatch(/healthsherpa_medicare/);
     expect(source("src/app/settings/integrations/page.tsx")).toMatch(/HealthSherpaCard/);
     expect(source("src/components/developer-hub/api-vault-panel.tsx")).toMatch(/healthsherpa_medicare/);
-    expect(source("src/lib/healthsherpa/aca.ts")).toMatch(/needs HealthSherpa partner credentials/);
+    expect(source("src/lib/healthsherpa/aca.ts")).toMatch(/HEALTHSHERPA_ACA_NEEDS_PARTNER/);
+    expect(HEALTHSHERPA_ACA_NEEDS_PARTNER).toMatch(/needs HealthSherpa partner credentials/);
     expect(HEALTHSHERPA_WEBHOOK_PATH).toBe("/api/integrations/healthsherpa/webhook");
     expect(source(".env.example")).toMatch(/HEALTHSHERPA_MEDICARE_API_KEY/);
   });
