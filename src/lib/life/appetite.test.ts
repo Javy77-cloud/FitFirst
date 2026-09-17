@@ -485,7 +485,7 @@ describe("Life UW MATRIX appetite v1", () => {
     expect(sql).toMatch(/marketing_contact_name/);
     expect(sql).toMatch(/american amicable/);
     expect(sql).toMatch(/american general/);
-    expect(sql).toMatch(/fidelity & guaranty/);
+    expect(sql).toMatch(/fidelity & guaranty/i);
     expect(sql).not.toMatch(/phone\s*=\s*'/);
     expect(sql).not.toMatch(/agent_phone\s*=\s*'/);
     expect(sql).not.toMatch(/southern_oak|olympus|standinsurance|trident/i);

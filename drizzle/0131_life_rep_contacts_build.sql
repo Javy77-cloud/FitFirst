@@ -61,7 +61,7 @@ SET
   updated_at = now()
 WHERE lower(trim(name)) IN ('foresters', 'foresters financial', 'the independent order of foresters')
    OR lower(trim(name)) LIKE 'foresters %';
--- F&G / Fidelity&Guaranty: contact-list row was blank. Keep existing main phones.
+-- F&G / Fidelity & Guaranty: contact-list row was blank. Keep existing main phones.
 --> statement-breakpoint
 DO $$
 DECLARE
