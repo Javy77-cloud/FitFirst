@@ -1,4 +1,8 @@
 import type { CustomFieldDef, FieldLayout, LayoutSection } from "@/lib/custom-fields/types";
+import {
+  defaultCommercialDealLayout,
+  isCommercialDealSection,
+} from "@/lib/custom-fields/business-identity-fields";
 import { isDealDetailsLandlordFieldKey } from "@/lib/custom-fields/deal-details-landlord";
 import {
   CONSTRUCTION_OPTIONS,
@@ -7,7 +11,7 @@ import {
   LIFE_PRODUCT_TYPE_OPTIONS,
   PRIMARY_HEAT_OPTIONS,
 } from "@/lib/quote-sheet/sheet-defaults";
-import { dealProductDef, type DealProductId } from "./deal-products";
+import { dealProductDef, parseDealProduct, type DealProductId } from "./deal-products";
 
 /**
  * One Deal Details page per deal — not a full personal layout per product.
@@ -36,8 +40,11 @@ export function isSharedDealSection(section: { id?: string; label?: string }): b
   if (/^contact$/.test(id) || /^contact$/.test(label)) return true;
   if (/^applicant$/.test(id) || /^applicant$/.test(label)) return true;
   if (id === "co_applicant" || /^co[- ]?applicant/.test(label)) return true;
-  if (id === "insured_address" || label.includes("insured address")) return true;
+  if (id === "insured_address" || label.includes("insured address") || label.includes("business address")) {
+    return true;
+  }
   if (id === "mailing_address" || label.includes("mailing address")) return true;
+  if (isCommercialDealSection(section)) return true;
   return false;
 }
 
@@ -289,6 +296,41 @@ export function catalogFieldsForProducts(products: readonly DealProductId[]): Cu
     }
   }
   return out;
+}
+
+/**
+ * Commercial-only deals (accountKind or Commercial family chips) use business identity.
+ * Mixed Personal+Commercial keeps the personal applicant layout.
+ */
+export function usesBusinessIdentityDetails(input: {
+  accountKind?: string | null;
+  products?: readonly string[] | null;
+  product?: DealProductId | string | null;
+}): boolean {
+  const products = (input.products ?? [])
+    .map((raw) => parseDealProduct(raw))
+    .filter((id): id is DealProductId => Boolean(id));
+  if (products.length) {
+    return products.every((id) => dealProductDef(id).group === "commercial");
+  }
+  if (String(input.accountKind ?? "").trim().toLowerCase() === "commercial") return true;
+  const active = parseDealProduct(input.product);
+  return Boolean(active && dealProductDef(active).group === "commercial");
+}
+
+/** Live Deal Details: commercial business identity, else shared personal applicant. */
+export function layoutForDealDetails(
+  layout: FieldLayout,
+  input: {
+    product?: DealProductId | string | null;
+    accountKind?: string | null;
+    products?: readonly string[] | null;
+  } = {},
+): FieldLayout {
+  if (usesBusinessIdentityDetails(input)) {
+    return defaultCommercialDealLayout();
+  }
+  return layoutForActiveProduct(layout, parseDealProduct(input.product));
 }
 
 /**

@@ -1197,6 +1197,11 @@ export function emptyDefaultsForLine(line: string | null | undefined): Record<st
   }
   if (key === "life") return { product_type: "Term" };
   if (key === "health") return { plan_type: "Marketplace" };
+  if (key === "workers_comp") return { coverage_lines: "Workers' Comp", premises_same_as_business: "Yes" };
+  if (key === "general_liability") {
+    return { coverage_lines: "General Liability", premises_same_as_business: "Yes" };
+  }
+  if (key === "bop") return { coverage_lines: "BOP", premises_same_as_business: "Yes" };
   return {};
 }
 

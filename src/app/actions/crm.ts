@@ -40,7 +40,8 @@ import { assertAnaUnbound } from "@/lib/crm/bind-path";
 import { formatPersonName } from "@/lib/crm/display";
 import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
 import { splitTypedPartyName } from "@/lib/crm/party-typeahead";
-import { formatDealTitle } from "@/lib/deals/deal-title";
+import { formatDealTitle, splitPersonName } from "@/lib/deals/deal-title";
+import { coverageLinesValueForDeal, isCommercialSheetLine } from "@/lib/quote-sheet/commercial-risk-profile";
 import { isUuid } from "@/lib/ids";
 import { defaultStageColor } from "@/lib/desk/status-colors";
 import { db } from "@/lib/db";
@@ -487,28 +488,35 @@ export async function createDeal(formData: FormData) {
     ? await db.select().from(accounts).where(eq(accounts.id, accountId))
     : [];
   const typed = splitTypedPartyName(dealName);
+  const businessName = str(formData, "field_business_name") || str(formData, "field_legal_name");
+  const ownerParts = splitPersonName(str(formData, "field_owner_name"));
   const firstName =
     str(formData, "firstName") ||
     str(formData, "field_first_name") ||
+    ownerParts.firstName ||
     pickedContact?.firstName ||
     typed.firstName ||
-    (pickedAccount ? "Shop" : "New");
+    (businessName || pickedAccount ? "" : "New");
   const lastName =
     str(formData, "lastName") ||
     str(formData, "field_last_name") ||
+    ownerParts.lastName ||
     pickedContact?.lastName ||
     typed.lastName ||
+    businessName ||
     pickedAccount?.name ||
     "Shop";
   const email =
     str(formData, "email") ||
     str(formData, "field_email") ||
+    str(formData, "field_owner_email") ||
     pickedContact?.email ||
     pickedAccount?.email ||
     null;
   const phone =
     str(formData, "phone") ||
     str(formData, "field_phone") ||
+    str(formData, "field_owner_phone") ||
     pickedContact?.phone ||
     pickedAccount?.phone ||
     null;
@@ -605,7 +613,7 @@ export async function createDeal(formData: FormData) {
   const shopProducts = packageDraft?.products ?? [];
   const pipelineSlug = packageDraft?.pipelineSlug ?? pipelineSlugForLine(line);
   const [pipeline] = await db.select().from(pipelines).where(eq(pipelines.slug, pipelineSlug));
-  const namedFromLayout = str(formData, "field_named_insured");
+  const namedFromLayout = str(formData, "field_named_insured") || businessName;
   const primaryNamedInsured =
     namedFromLayout ||
     (pickedContact ? formatPersonName(pickedContact) : null) ||
@@ -621,8 +629,9 @@ export async function createDeal(formData: FormData) {
       accountId: pickedAccount?.id ?? sourceDeal?.accountId ?? null,
       title: formatDealTitle({
         firstName,
-        lastName: pickedAccount && !pickedContact ? "" : lastName,
-        accountName: pickedAccount && !pickedContact ? pickedAccount.name : null,
+        lastName: pickedAccount && !pickedContact && !businessName ? "" : lastName,
+        accountName: businessName || (pickedAccount && !pickedContact ? pickedAccount.name : null),
+        primaryNamedInsured,
         line,
         quotingForm,
         policySubType,
@@ -717,11 +726,11 @@ export async function createDeal(formData: FormData) {
     dealId: deal.id,
     line: quotingLine,
     values: {
-      ...seededSheetValues(quotingLine),
+      ...seededSheetValues(quotingLine, shopProducts),
       ...(fillSheetFromLead(lead) as typeof quoteSheets.$inferInsert.values),
     },
   });
-  await insertSheetsForDeal(deal.id, shopLines);
+  await insertSheetsForDeal(deal.id, shopLines, shopProducts);
 
   const defs = await listFieldDefs("deals").catch(() => []);
   const custom = customValuesFromForm(formData, defs);
@@ -1796,7 +1805,7 @@ export async function archiveDeal(formData: FormData) {
   if (deal.contactId) revalidatePath(`/contacts/${deal.contactId}`);
 }
 
-function seededSheetValues(line: ShopLine) {
+function seededSheetValues(line: ShopLine, products: readonly string[] = []) {
   const values = blankSheetWithDefaults(line);
   const form = defaultFormForShopLine(line);
   if (form) {
@@ -1804,6 +1813,15 @@ function seededSheetValues(line: ShopLine) {
     const product = sheetProductForQuotingForm(form);
     if (product) {
       values.sheet_product = { value: product, status: "confirmed", source: "agent" };
+    }
+  }
+  if (isCommercialSheetLine(line)) {
+    const coverage = coverageLinesValueForDeal({ line, products });
+    if (coverage) {
+      values.coverage_lines = { value: coverage, status: "confirmed", source: "agent" };
+    }
+    if (!String(values.premises_same_as_business?.value ?? "").trim()) {
+      values.premises_same_as_business = { value: "Yes", status: "confirmed", source: "agent" };
     }
   }
   return values;
@@ -1829,7 +1847,11 @@ function shopLinesFromForm(formData: FormData, primaryLine: string): ShopLine[] 
   return Array.from(next);
 }
 
-async function insertSheetsForDeal(dealId: string, lines: ShopLine[]) {
+async function insertSheetsForDeal(
+  dealId: string,
+  lines: ShopLine[],
+  products: readonly string[] = [],
+) {
   if (lines.length === 0) return;
   const existing = await db
     .select({ line: quoteSheets.line })
@@ -1843,7 +1865,7 @@ async function insertSheetsForDeal(dealId: string, lines: ShopLine[]) {
       tenantId: DEFAULT_TENANT_ID,
       dealId,
       line,
-      values: seededSheetValues(line),
+      values: seededSheetValues(line, products),
     })),
   );
 }

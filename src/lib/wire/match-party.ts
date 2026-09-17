@@ -83,10 +83,13 @@ export function accountFieldsFromSheet(
     payrollTotal?: string | null;
   },
 ) {
-  const employees = sheetValue(values, "employee_count") ?? (fallback.employeeCount != null ? String(fallback.employeeCount) : null);
+  const employees =
+    sheetValue(values, "employee_count") ??
+    sheetValue(values, "employees") ??
+    (fallback.employeeCount != null ? String(fallback.employeeCount) : null);
   return {
     name: fallback.name,
-    ein: fallback.ein ?? sheetValue(values, "ein"),
+    ein: fallback.ein ?? sheetValue(values, "ein") ?? sheetValue(values, "fein"),
     email: fallback.email ?? null,
     phone: fallback.phone ?? null,
     mailingAddress: sheetValue(values, "address1") ?? fallback.mailingAddress ?? null,

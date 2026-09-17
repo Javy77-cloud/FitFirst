@@ -402,6 +402,7 @@ export async function applySystemDealValues(dealId: string, system: Record<strin
     firstName: firstName || undefined,
     lastName: lastName || undefined,
     primaryNamedInsured: named,
+    accountName: !firstName && !lastName ? named : undefined,
     existingTitle: existing.title,
     line: nextLine,
     quotingForm: form?.id ?? (rawSubtype || undefined),

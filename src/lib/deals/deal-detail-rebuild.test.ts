@@ -163,7 +163,8 @@ describe("deal detail final rebuild", () => {
     expect(sheet).toMatch(/kind="driver"/);
     expect(fieldsForLine("flood").map((field) => field.key)).toContain("flood_zone");
     expect(fieldsForLine("general_liability").map((field) => field.key)).toContain("class_code");
-    expect(fieldsForLine("workers_comp").map((field) => field.key)).toContain("payroll");
+    expect(fieldsForLine("workers_comp").map((field) => field.key)).toContain("coverage_lines");
+    expect(fieldsForLine("workers_comp").map((field) => field.key)).toContain("class_code");
     expect(productsForLine("home")).toEqual(["homeowners", "renters", "landlord"]);
     expect(defaultProductForLine("auto")).toBe("auto");
     expect(productsForLine("auto")).toEqual(["auto", "motorcycle", "commercial_auto"]);

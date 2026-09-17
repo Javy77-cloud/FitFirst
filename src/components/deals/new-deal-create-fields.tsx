@@ -8,13 +8,19 @@ import { normalizeDealProducts, type DealProductId } from "@/lib/deals/deal-prod
 export function NewDealCreateFields({
   initialLines,
   sourceDealId,
+  products: productsProp,
+  onProductsChange,
 }: {
   initialLines: readonly string[];
   sourceDealId?: string | null;
+  products?: DealProductId[];
+  onProductsChange?: (next: DealProductId[]) => void;
 }) {
-  const [products, setProducts] = useState<DealProductId[]>(() =>
+  const [internal, setInternal] = useState<DealProductId[]>(() =>
     normalizeDealProducts(initialLines),
   );
+  const products = productsProp ?? internal;
+  const setProducts = onProductsChange ?? setInternal;
 
   return (
     <div className="space-y-3" data-ff-new-deal-create-fields="">

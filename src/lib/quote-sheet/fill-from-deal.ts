@@ -4,6 +4,7 @@ import { fieldIsBlank } from "@/lib/quote-sheet/apply";
 import { isLockedSheetField } from "@/lib/lifecycle/quote-sheet";
 import { isCoApplicantEnabled } from "@/lib/custom-fields/co-applicant-fields";
 import { normalizeHealthPlanType, normalizeLifeProductType } from "@/lib/quote-sheet/sheet-defaults";
+import { coverageLinesValueForDeal } from "./commercial-risk-profile";
 
 export const DEAL_DETAILS_SOURCE_LABEL = "deal details";
 
@@ -54,6 +55,8 @@ export type DealSheetCopyInput = {
   } | null;
   contact?: DealSheetCopyParty | null;
   lead?: LeadCopyFields | null;
+  shopProducts?: readonly string[] | null;
+  quotingLine?: string | null;
 };
 
 export type DealSheetCopyResult = {
@@ -162,6 +165,32 @@ export function fillSheetFromDealDetails(
     firstFilled(stored.applicant_education_level, stored.education_level, stored.education),
   );
   put("entity_type", firstFilled(stored.entity_type));
+  const commercialSheet = Object.prototype.hasOwnProperty.call(values, "coverage_lines");
+  if (commercialSheet) {
+    put("legal_name", firstFilled(stored.business_name, stored.legal_name, named));
+    put("dba", firstFilled(stored.dba));
+    put("fein", firstFilled(stored.fein, stored.ein));
+    put("naics", firstFilled(stored.naics));
+    put("years_in_business", firstFilled(stored.years_in_business));
+    put(
+      "operations_description",
+      firstFilled(stored.business_description, stored.operations, stored.operations_description),
+    );
+    put("annual_sales", firstFilled(stored.annual_revenue, stored.annual_sales));
+    put("employees", firstFilled(stored.employee_count, stored.employees));
+    put("payroll", firstFilled(stored.payroll));
+    put(
+      "coverage_lines",
+      firstFilled(
+        stored.coverage_lines,
+        coverageLinesValueForDeal({
+          line: input.quotingLine,
+          products: input.shopProducts,
+        }),
+      ),
+    );
+    put("premises_same_as_business", firstFilled(stored.premises_same_as_business, "Yes"));
+  }
 
   // Quoting form lives on the insurance cascade — do not copy onto the master sheet.
   // Life/Health product + plan family are sheet interviewing fields aligned to that subtype.
@@ -265,6 +294,7 @@ export function fillSheetFromDealDetails(
   // Mailing / applicant address — contact_mailing_* preferred, else insured
   const mailStreet = firstFilled(
     stored.contact_mailing_address,
+    stored.mailing_address,
     contact?.mailingAddress,
     lead?.mailingAddress,
     insuredStreet,

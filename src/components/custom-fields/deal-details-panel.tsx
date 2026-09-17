@@ -8,7 +8,12 @@ import { LayoutRequiredBadge, LayoutSectionHeader } from "@/components/custom-fi
 import { buttonVariants } from "@/components/ui/button";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
 import type { DealProductId } from "@/lib/deals/deal-products";
-import { isSharedDealSection, layoutForActiveProduct } from "@/lib/deals/product-layout";
+import {
+  isSharedDealSection,
+  layoutForDealDetails,
+  usesBusinessIdentityDetails,
+} from "@/lib/deals/product-layout";
+import { BUSINESS_IDENTITY_FIELDS } from "@/lib/custom-fields/business-identity-fields";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { parseLayout, sectionDensityOf, type CustomFieldDef, type FieldLayout } from "@/lib/custom-fields/types";
@@ -259,11 +264,16 @@ function MailingSameSwitch({
   formId,
   same,
   onToggle,
+  commercial = false,
 }: {
   formId: string;
   same: boolean;
   onToggle: (next: boolean) => void;
+  commercial?: boolean;
 }) {
+  const label = commercial
+    ? "Mailing address same as business address"
+    : "Mailing address same as insured address";
   return (
     <label
       className="flex cursor-pointer items-center gap-2 text-[11px] font-medium text-navy"
@@ -274,9 +284,9 @@ function MailingSameSwitch({
         className="h-3.5 w-3.5 accent-[#002868]"
         checked={same}
         onChange={(event) => onToggle(event.target.checked)}
-        aria-label="Mailing address same as insured address"
+        aria-label={label}
       />
-      <span>Mailing address same as insured address</span>
+      <span>{label}</span>
       <input
         type="hidden"
         name={`field_${MAILING_SAME_AS_INSURED_KEY}`}
@@ -302,6 +312,8 @@ export function DealDetailsPanel({
   packageLines = [],
   activePackageLine = null,
   activeProduct = null,
+  accountKind = null,
+  dealProducts = [],
   lineSettings,
 }: {
   dealId: string;
@@ -318,10 +330,24 @@ export function DealDetailsPanel({
   packageLines?: readonly string[];
   activePackageLine?: string | null;
   activeProduct?: DealProductId | null;
+  accountKind?: string | null;
+  dealProducts?: readonly string[];
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
-  const safeLayout = layoutForActiveProduct(parseLayout(layout), activeProduct);
-  const fieldList = resolveLayoutFields(safeLayout, asList(fields));
+  const commercial = usesBusinessIdentityDetails({
+    accountKind,
+    products: dealProducts,
+    product: activeProduct,
+  });
+  const safeLayout = layoutForDealDetails(parseLayout(layout), {
+    product: activeProduct,
+    accountKind,
+    products: dealProducts,
+  });
+  const fieldList = resolveLayoutFields(
+    safeLayout,
+    commercial ? [...BUSINESS_IDENTITY_FIELDS, ...asList(fields)] : asList(fields),
+  );
   const byKey = Object.fromEntries(fieldList.map((field) => [field.key, field]));
   const formId = "deal-details-save";
   const [liveValues, setLiveValues] = useState(values);
@@ -343,7 +369,11 @@ export function DealDetailsPanel({
   }
 
   return (
-    <div data-ff-deal-details data-ff-pipeline-family={pipelineFamily}>
+    <div
+      data-ff-deal-details
+      data-ff-pipeline-family={pipelineFamily}
+      data-ff-deal-details-kind={commercial ? "commercial" : "personal"}
+    >
       <form action={saveDealFieldValues} id={formId} data-ff-deal-details-form="">
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="line" value={line} />
@@ -415,6 +445,7 @@ export function DealDetailsPanel({
                     <MailingSameSwitch
                       formId={formId}
                       same={isMailingSameAsInsured(liveValues)}
+                      commercial={commercial}
                       onToggle={(next) =>
                         patchValue(MAILING_SAME_AS_INSURED_KEY, next ? "true" : "false")
                       }

@@ -3,7 +3,6 @@ import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import {
   APPLICANT_CORE_FIELDS,
   CO_APPLICANT_FIELDS,
-  ENTITY_TYPE_OPTIONS,
   GENDER_OPTIONS,
   OCCUPATION_OPTIONS,
   EDUCATION_LEVEL_OPTIONS,
@@ -74,10 +73,6 @@ import {
   FLOOD_DEDUCTIBLE_OPTIONS,
   WIND_HAIL_DEDUCTIBLE_OPTIONS,
   YES_NO_OPTIONS,
-  BOP_CONSTRUCTION_OPTIONS,
-  GL_CLAIMS_BASIS_OPTIONS,
-  GL_AGGREGATE_LIMIT_OPTIONS,
-  GL_OCCURRENCE_LIMIT_OPTIONS,
   FLOOD_OCCUPANCY_OPTIONS,
   FLOOD_FOUNDATION_OPTIONS,
   LIFE_PRODUCT_TYPE_OPTIONS,
@@ -100,6 +95,9 @@ import {
   applyMasterSheetDefaults,
   emptyDefaultsForLine,
 } from "./sheet-defaults";
+import { COMMERCIAL_RISK_PROFILE_FIELDS, isCommercialSheetLine } from "./commercial-risk-profile";
+import { fieldIsVisible, visibleQuoteFields } from "./sheet-visibility";
+import type { SheetValueBag } from "./sheet-visibility";
 
 export type { QuoteFieldDef } from "./applicant-core";
 export {
@@ -1233,154 +1231,10 @@ export const HEALTH_FIELDS: QuoteFieldDef[] = [
   },
 ];
 
-export const WC_FIELDS: QuoteFieldDef[] = [
-  // ACORD 130–style template
-  { key: "legal_name", label: "Legal entity name", group: "Business" },
-  { key: "dba", label: "DBA", group: "Business" },
-  { key: "fein", label: "FEIN", group: "Business" },
-  { key: "entity_type", label: "Entity type", group: "Business", input: "select", options: [...ENTITY_TYPE_OPTIONS] },
-  { key: "years_in_business", label: "Years in business", group: "Business", input: "number" },
-  { key: "naics", label: "NAICS / SIC", group: "Business" },
-  { key: "operations_description", label: "Description of operations", group: "Business", input: "textarea" },
-  { key: "mailing_address", label: "Mailing address", group: "Business" },
-  { key: "locations", label: "Locations (city / state)", group: "Business", input: "textarea" },
-  { key: "states", label: "Governing state(s)", group: "Business" },
-  { key: "class_code", label: "Class code 1", group: "Payroll by class" },
-  { key: "class_description", label: "Class 1 description / duties", group: "Payroll by class" },
-  { key: "payroll", label: "Class 1 estimated annual payroll", group: "Payroll by class", input: "number" },
-  { key: "employees_ft", label: "Class 1 full-time employees", group: "Payroll by class", input: "number" },
-  { key: "employees_pt", label: "Class 1 part-time employees", group: "Payroll by class", input: "number" },
-  { key: "class_code_2", label: "Class code 2", group: "Payroll by class" },
-  { key: "class_description_2", label: "Class 2 description / duties", group: "Payroll by class" },
-  { key: "payroll_2", label: "Class 2 estimated annual payroll", group: "Payroll by class", input: "number" },
-  { key: "class_code_3", label: "Class code 3", group: "Payroll by class" },
-  { key: "class_description_3", label: "Class 3 description / duties", group: "Payroll by class" },
-  { key: "payroll_3", label: "Class 3 estimated annual payroll", group: "Payroll by class", input: "number" },
-  { key: "employees", label: "Total employees", group: "Risk", input: "number" },
-  { key: "officers_included", label: "Officers included", group: "Risk", input: "select", options: [...YES_NO_OPTIONS] },
-  { key: "owners_included", label: "Owners / partners included", group: "Risk", input: "select", options: [...YES_NO_OPTIONS] },
-  { key: "experience_mod", label: "Experience mod (EMOD)", group: "Risk" },
-  { key: "prior_carrier", label: "Prior WC carrier", group: "Current policy" },
-  { key: "policy_number", label: "Current policy number", group: "Current policy" },
-  { key: "expiration_date", label: "Expiration date", group: "Current policy" },
-  { key: "current_premium", label: "Current premium", group: "Current policy", input: "number" },
-  { key: "loss_history", label: "Loss history (3–5 yrs summary)", group: "Loss history", input: "textarea" },
-  { key: "notes", label: "Notes", group: "Notes", input: "textarea" },
-];
-
-export const GL_FIELDS: QuoteFieldDef[] = [
-  // ACORD 125/126–style template
-  { key: "legal_name", label: "Legal entity name", group: "Business" },
-  { key: "dba", label: "DBA", group: "Business" },
-  { key: "fein", label: "FEIN", group: "Business" },
-  { key: "entity_type", label: "Entity type", group: "Business", input: "select", options: [...ENTITY_TYPE_OPTIONS] },
-  { key: "years_in_business", label: "Years in business", group: "Business", input: "number" },
-  { key: "naics", label: "NAICS / SIC", group: "Business" },
-  { key: "operations_description", label: "Description of operations", group: "Business", input: "textarea" },
-  { key: "mailing_address", label: "Mailing / premises address", group: "Business" },
-  { key: "annual_sales", label: "Annual sales / receipts", group: "Exposures", input: "number" },
-  { key: "payroll", label: "Annual payroll", group: "Exposures", input: "number" },
-  { key: "employees", label: "Employees", group: "Exposures", input: "number" },
-  { key: "square_footage", label: "Occupied square footage", group: "Exposures", input: "number" },
-  { key: "class_code", label: "ISO class code 1", group: "Schedule of hazards" },
-  { key: "class_description", label: "Class 1 description", group: "Schedule of hazards" },
-  { key: "premium_basis", label: "Class 1 premium basis (sales / payroll / area)", group: "Schedule of hazards" },
-  { key: "exposure_amount", label: "Class 1 exposure amount", group: "Schedule of hazards", input: "number" },
-  { key: "class_code_2", label: "ISO class code 2", group: "Schedule of hazards" },
-  { key: "class_description_2", label: "Class 2 description", group: "Schedule of hazards" },
-  { key: "class_code_3", label: "ISO class code 3", group: "Schedule of hazards" },
-  {
-    key: "claims_basis",
-    label: "Claims basis",
-    group: "Coverages",
-    input: "select",
-    options: [...GL_CLAIMS_BASIS_OPTIONS],
-  },
-  {
-    key: "each_occurrence",
-    label: "Each occurrence",
-    group: "Coverages",
-    input: "select",
-    options: [...GL_OCCURRENCE_LIMIT_OPTIONS],
-  },
-  {
-    key: "general_aggregate",
-    label: "General aggregate",
-    group: "Coverages",
-    input: "select",
-    options: [...GL_AGGREGATE_LIMIT_OPTIONS],
-  },
-  { key: "products_aggregate", label: "Products / completed ops aggregate", group: "Coverages" },
-  { key: "personal_injury", label: "Personal & advertising injury", group: "Coverages" },
-  { key: "damage_to_rented", label: "Damage to rented premises", group: "Coverages" },
-  { key: "medical_expense", label: "Medical expense", group: "Coverages" },
-  { key: "deductible", label: "Deductible", group: "Coverages" },
-  { key: "subcontractors", label: "Uses subcontractors", group: "Contractors / products", input: "select", options: [...YES_NO_OPTIONS] },
-  { key: "pct_subbed", label: "% of work subcontracted", group: "Contractors / products", input: "number" },
-  { key: "products", label: "Manufactures / sells products", group: "Contractors / products", input: "select", options: [...YES_NO_OPTIONS] },
-  { key: "current_carrier", label: "Current carrier", group: "Current policy" },
-  { key: "policy_number", label: "Current policy number", group: "Current policy" },
-  { key: "expiration_date", label: "Expiration date", group: "Current policy" },
-  { key: "current_premium", label: "Current premium", group: "Current policy", input: "number" },
-  { key: "loss_history", label: "Loss history summary", group: "Loss history", input: "textarea" },
-  { key: "notes", label: "Notes", group: "Notes", input: "textarea" },
-];
-
-/** ACORD 160–style Businessowners (BOP) master sheet template. */
-export const BOP_FIELDS: QuoteFieldDef[] = [
-  { key: "legal_name", label: "Legal entity name", group: "Business" },
-  { key: "dba", label: "DBA", group: "Business" },
-  { key: "fein", label: "FEIN", group: "Business" },
-  { key: "entity_type", label: "Entity type", group: "Business", input: "select", options: [...ENTITY_TYPE_OPTIONS] },
-  { key: "years_in_business", label: "Years in business", group: "Business", input: "number" },
-  { key: "naics", label: "NAICS / SIC", group: "Business" },
-  { key: "operations_description", label: "Nature of business / operations", group: "Business", input: "textarea" },
-  { key: "mailing_address", label: "Business address", group: "Business" },
-  { key: "annual_sales", label: "Annual sales", group: "Exposures", input: "number" },
-  { key: "payroll", label: "Annual payroll", group: "Exposures", input: "number" },
-  { key: "employees", label: "Employees", group: "Exposures", input: "number" },
-  { key: "square_footage", label: "Building / occupied sq ft", group: "Property", input: "number" },
-  { key: "year_built", label: "Year built", group: "Property", input: "number" },
-  {
-    key: "construction_type",
-    label: "Construction type",
-    group: "Property",
-    input: "select",
-    options: [...BOP_CONSTRUCTION_OPTIONS],
-  },
-  { key: "protection_class", label: "Protection class", group: "Property" },
-  { key: "stories", label: "Stories", group: "Property", input: "number" },
-  { key: "occupancy", label: "Occupancy / use", group: "Property" },
-  { key: "building_limit", label: "Building limit", group: "Property coverages", input: "number" },
-  { key: "bpp_limit", label: "Business personal property (BPP)", group: "Property coverages", input: "number" },
-  { key: "business_income", label: "Business income / extra expense", group: "Property coverages" },
-  { key: "property_deductible", label: "Property deductible", group: "Property coverages" },
-  {
-    key: "each_occurrence",
-    label: "Liability each occurrence",
-    group: "Liability",
-    input: "select",
-    options: [...GL_OCCURRENCE_LIMIT_OPTIONS],
-  },
-  {
-    key: "general_aggregate",
-    label: "Liability aggregate",
-    group: "Liability",
-    input: "select",
-    options: [...GL_AGGREGATE_LIMIT_OPTIONS],
-  },
-  { key: "medical_expense", label: "Medical expense", group: "Liability" },
-  { key: "damage_to_rented", label: "Damage to rented premises", group: "Liability" },
-  { key: "hired_non_owned_auto", label: "Hired / non-owned auto", group: "Liability", input: "select", options: [...YES_NO_OPTIONS] },
-  { key: "class_code", label: "BOP / liability class code", group: "Classification" },
-  { key: "class_description", label: "Class description", group: "Classification" },
-  { key: "current_carrier", label: "Current carrier", group: "Current policy" },
-  { key: "policy_number", label: "Current policy number", group: "Current policy" },
-  { key: "expiration_date", label: "Expiration date", group: "Current policy" },
-  { key: "current_premium", label: "Current premium", group: "Current policy", input: "number" },
-  { key: "loss_history", label: "Loss history summary", group: "Loss history", input: "textarea" },
-  { key: "notes", label: "Notes", group: "Notes", input: "textarea" },
-];
+/** Lean Commercial Risk Profile (WC / GL / BOP share one catalog; BOP like Medicare). */
+export const WC_FIELDS: QuoteFieldDef[] = COMMERCIAL_RISK_PROFILE_FIELDS;
+export const GL_FIELDS: QuoteFieldDef[] = COMMERCIAL_RISK_PROFILE_FIELDS;
+export const BOP_FIELDS: QuoteFieldDef[] = COMMERCIAL_RISK_PROFILE_FIELDS;
 
 const CATALOG: Record<ShopLine, QuoteFieldDef[]> = {
   home: HOME_FIELDS,
@@ -1410,9 +1264,8 @@ function dedupeFields(fields: QuoteFieldDef[]): QuoteFieldDef[] {
 const LINES_WITHOUT_SHEET_IDENTITY = new Set<ShopLine>(["life", "health"]);
 
 export function fieldsForLine(line: ShopLine, product?: SheetProduct): QuoteFieldDef[] {
-  const identity = LINES_WITHOUT_SHEET_IDENTITY.has(line)
-    ? []
-    : [...APPLICANT_CORE_FIELDS, ...CO_APPLICANT_FIELDS];
+  const skipIdentity = LINES_WITHOUT_SHEET_IDENTITY.has(line) || isCommercialSheetLine(line);
+  const identity = skipIdentity ? [] : [...APPLICANT_CORE_FIELDS, ...CO_APPLICANT_FIELDS];
   const raw = dedupeFields([...identity, ...(CATALOG[line] ?? [])]);
   if (!product) return raw;
   return raw.filter((field) => !field.products || field.products.includes(product));
@@ -1422,9 +1275,7 @@ export function sheetFieldIsVisible(
   field: QuoteFieldDef,
   liveValues: Record<string, string | undefined | null>,
 ): boolean {
-  if (!field.showWhen) return true;
-  const current = String(liveValues[field.showWhen.key] ?? "").trim().toLowerCase();
-  return field.showWhen.values.some((value) => value.toLowerCase() === current);
+  return fieldIsVisible(field, liveValues);
 }
 
 /** Hide a section header when every field is cascaded off (Medicare, lived-5-years style). */
@@ -1515,9 +1366,13 @@ export function extractKeyToSheetKey(line: ShopLine, extractKey: string): string
 export function groupFields(
   line: ShopLine,
   product?: SheetProduct,
+  values?: SheetValueBag,
 ): { group: string; fields: QuoteFieldDef[] }[] {
+  const source = values
+    ? visibleQuoteFields(fieldsForLine(line, product), values)
+    : fieldsForLine(line, product);
   const groups: { group: string; fields: QuoteFieldDef[] }[] = [];
-  for (const field of fieldsForLine(line, product)) {
+  for (const field of source) {
     const existing = groups.find((g) => g.group === field.group);
     if (existing) existing.fields.push(field);
     else groups.push({ group: field.group, fields: [field] });

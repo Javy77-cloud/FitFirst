@@ -822,6 +822,8 @@ export async function runFillFromDealDetails(
       coverageAmount: deal.coverageAmount,
       quotingForm: deal.quotingForm,
       policySubType: deal.policySubType,
+      quotingLine: lineRaw,
+      shopProducts: deal.shopProducts,
       stored,
       risk: risk ?? null,
       contact: contact

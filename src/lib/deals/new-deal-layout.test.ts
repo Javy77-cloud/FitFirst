@@ -4,8 +4,12 @@ import { describe, expect, it } from "vitest";
 describe("New Deal uses the live Deal Edit Layout", () => {
   it("renders RecordLayoutFields and drops the old CreateDealForm card", () => {
     const page = readFileSync("src/app/deals/new/page.tsx", "utf8");
-    expect(page).toMatch(/RecordLayoutFields/);
+    expect(page).toMatch(/NewDealFormBody/);
     expect(page).toMatch(/LinkExistingContactGuard/);
+    const formBody = readFileSync("src/components/deals/new-deal-form-body.tsx", "utf8");
+    expect(formBody).toMatch(/usesBusinessIdentityDetails/);
+    expect(formBody).toMatch(/defaultCommercialDealLayout/);
+    expect(formBody).toMatch(/RecordLayoutFields/);
     expect(page).toMatch(/loadModuleLayoutBundle\("deals"/);
     expect(page).toMatch(/data-ff="new-deal-layout"/);
     expect(page).toMatch(/Save Deal/);
@@ -30,7 +34,7 @@ describe("New Deal uses the live Deal Edit Layout", () => {
     expect(dialog).not.toMatch(/createDealFromScratch/);
     expect(dialog).not.toMatch(/createDealFromExistingPick/);
     const page = readFileSync("src/app/deals/new/page.tsx", "utf8");
-    expect(page).toMatch(/NewDealCreateFields/);
+    expect(page).toMatch(/NewDealFormBody/);
     expect(page).toMatch(/createDeal/);
     const actions = readFileSync("src/app/actions/crm.ts", "utf8");
     expect(actions).toMatch(/packageDraftForNewDealSave/);
