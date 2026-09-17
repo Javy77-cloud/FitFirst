@@ -1,11 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { moveDealToStage } from "@/app/actions/pipeline";
 import { currentDeskSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { deals, quoteAttemptLogs, quotes, reviewTasks } from "@/lib/db/schema";
+import { alerts, deals, quoteAttemptLogs, quotes, reviewTasks } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
   inferDealProducts,
@@ -16,6 +16,7 @@ import {
 import { sheetLineForProduct } from "@/lib/deals/deal-products";
 import {
   noticeCompleteLogBody,
+  noticeDeleteLogBody,
   noticePicklistNamesForFamily,
   noticeTypeLabel,
   parseNoticeType,
@@ -458,6 +459,79 @@ async function clearProductNoticeOnDeal(input: {
     }),
   });
   revalidateNotice(input.dealId, current.noticeTaskId);
+}
+
+async function cancelLinkedNoticeTask(taskId: string | null | undefined) {
+  const id = (taskId ?? "").trim();
+  if (!id) return;
+  const now = new Date();
+  await db
+    .update(reviewTasks)
+    .set({ status: "cancelled", completedAt: now })
+    .where(
+      and(
+        eq(reviewTasks.tenantId, DEFAULT_TENANT_ID),
+        eq(reviewTasks.id, id),
+        eq(reviewTasks.status, "open"),
+      ),
+    );
+  await db
+    .update(alerts)
+    .set({ readAt: now })
+    .where(
+      and(
+        eq(alerts.tenantId, DEFAULT_TENANT_ID),
+        eq(alerts.kind, "task_reminder"),
+        eq(alerts.entityType, "review_task"),
+        eq(alerts.entityId, id),
+        isNull(alerts.readAt),
+      ),
+    );
+}
+
+/** Remove a junk / never-needed flag. Not Complete — no work-done log, cancel the reminder. */
+export async function deleteDealProductNotice(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  if (!dealId || !product) throw new Error("Deal and product are required.");
+  const session = await currentDeskSession();
+  const deal = await loadDeal(dealId);
+  if (!deal) throw new Error("Deal not found.");
+  const saved = parseShopFlow(deal.shopFlow);
+  const stages = parseProductStages(saved.productStages);
+  const current = productStageFor(stages, product, deal.pipelineStageSlug ?? deal.pipelineStage);
+  const noticeType = parseNoticeType(current.noticeType ?? current.inspectionStatus);
+  if (noticeType === "none") throw new Error("No active notice to delete.");
+  const occurredAt = new Date();
+  await writeDeskComms({
+    kind: "note",
+    title: `Notice deleted · ${noticeTypeLabel(noticeType)}`,
+    body: noticeDeleteLogBody({
+      agent: session.name || "Agent",
+      noticeType,
+    }),
+    status: "completed",
+    eventType: "logged",
+    occurredAt,
+    dealId,
+    contactId: deal.contactId,
+    accountId: deal.accountId,
+    leadId: deal.leadId,
+    assignee: session.name || null,
+    actorId: session.userId,
+    actorName: session.name || null,
+  });
+  await cancelLinkedNoticeTask(current.noticeTaskId);
+  await persistProductNotice(dealId, product, {
+    noticeType: "none",
+    noticeTaskId: null,
+    noticeNote: null,
+    noticeNotes: [],
+  });
+  revalidateNotice(dealId, current.noticeTaskId);
+  revalidatePath("/alerts");
+  revalidatePath("/");
+  flashStay(formData, noticeReturnTo(formData, dealId, product), "Notice deleted");
 }
 
 export async function completeDealProductNotice(formData: FormData) {

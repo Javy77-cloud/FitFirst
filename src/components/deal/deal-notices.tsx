@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { completeDealProductNotice, saveDealNoticeNote } from "@/app/actions/product-stage";
+import { completeDealProductNotice, deleteDealProductNotice, saveDealNoticeNote } from "@/app/actions/product-stage";
 import { NoticeNotePad } from "@/components/deal/notice-note-pad";
 import { NoticeTypesEditor } from "@/components/deal/notice-types-editor";
 import { SpeechNoteDialog } from "@/components/deal/speech-note-dialog";
@@ -12,10 +12,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { dealProductDef, parseDealProduct } from "@/lib/deals/deal-products";
 import {
+  confirmDeleteDealNotice,
   isActiveNotice,
   isRenderableNoticeStamp,
   mergeNoticeTypeOptions,
@@ -165,6 +167,18 @@ export function DealNotices({
     window.setTimeout(() => openNoticeTask(next), 0);
   }
 
+  function deleteNoticeFromMenu() {
+    if (!active) return;
+    const label = noticeTypeLabel(selected !== "none" ? selected : noticeType, options);
+    if (!confirmDeleteDealNotice(label)) return;
+    setOpen(false);
+    const data = new FormData();
+    data.set("dealId", dealId);
+    data.set("product", productValue);
+    if (returnTo) data.set("returnTo", returnTo);
+    void deleteDealProductNotice(data);
+  }
+
   return (
     <div
       className={cn("relative pointer-events-auto", compact ? "inline-flex" : undefined)}
@@ -258,6 +272,18 @@ export function DealNotices({
                 <DropdownMenuItem data-ff-notice-edit-types="" onClick={openTypesEditor}>
                   Change type
                 </DropdownMenuItem>
+                {active ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      data-ff-notice-delete=""
+                      onClick={deleteNoticeFromMenu}
+                    >
+                      Delete
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

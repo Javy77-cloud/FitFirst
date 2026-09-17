@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { applyDealNoticeType, saveDealNoticeTypes } from "@/app/actions/product-stage";
+import { applyDealNoticeType, deleteDealProductNotice, saveDealNoticeTypes } from "@/app/actions/product-stage";
 import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,10 +15,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { dealProductDef, parseDealProduct } from "@/lib/deals/deal-products";
 import {
+  confirmDeleteDealNotice,
   isActiveNotice,
   noticeFamilyLabel,
   noticeTaskKind,
   noticeTaskTitle,
+  noticeTypeLabel,
   parseNoticeType,
   type NoticeTypeOption,
 } from "@/lib/deals/notices";
@@ -68,6 +70,7 @@ export function NoticeTypesEditor({
   const applyLabel = draftLabel || selectedLabel;
   const applyType = parseNoticeType(applyLabel);
   const canApply = Boolean(applyLabel) && applyType !== "none";
+  const hasActiveNotice = isActiveNotice(currentType);
   const productId = parseDealProduct(productValue);
   const productLabel = productId ? dealProductDef(productId).label : undefined;
   const reminderKind = noticeTaskKind(applyType);
@@ -138,6 +141,19 @@ export function NoticeTypesEditor({
     });
   }
 
+  function onDeleteNotice() {
+    if (!hasActiveNotice) return;
+    if (!confirmDeleteDealNotice(noticeTypeLabel(currentType, options))) return;
+    const data = new FormData();
+    data.set("dealId", dealId);
+    data.set("product", productValue);
+    if (returnTo) data.set("returnTo", returnTo);
+    startTransition(async () => {
+      await deleteDealProductNotice(data);
+      onOpenChange(false);
+    });
+  }
+
   return (
     <Dialog
       open={open}
@@ -158,6 +174,9 @@ export function NoticeTypesEditor({
             {creating
               ? `Choose a type for this product, or name a new one. Rename or delete types you do not want. Stays on this ${familyLabel} deal — not an admin picklist.`
               : `Add, rename, or delete types for ${familyLabel} deals. Set one on this product when you are ready. Stays on this deal — no admin jump.`}
+            {hasActiveNotice
+              ? " Delete notice removes this product's flag as never needed — not the same as Complete."
+              : null}
           </DialogDescription>
         </DialogHeader>
 
@@ -313,6 +332,35 @@ export function NoticeTypesEditor({
                   the stamp — day, time, assignee, and snooze. Optional.
                 </p>
               )}
+            </div>
+          ) : null}
+
+          {hasActiveNotice ? (
+            <div
+              className="rounded-lg border border-border bg-muted/40 p-3"
+              data-ff-notice-delete-panel=""
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                This product
+              </p>
+              <p className="mt-1 text-sm font-medium text-navy" data-ff-notice-delete-type="">
+                {noticeTypeLabel(currentType, options)}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Delete removes this flag as if it was never needed. It does not mark the work
+                complete. Any linked reminder will be cancelled.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="destructive"
+                className="mt-2"
+                disabled={pending}
+                onClick={onDeleteNotice}
+                data-ff-notice-delete=""
+              >
+                {pending ? "Deleting…" : "Delete notice"}
+              </Button>
             </div>
           ) : null}
         </div>

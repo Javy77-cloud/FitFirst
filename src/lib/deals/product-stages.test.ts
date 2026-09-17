@@ -582,6 +582,8 @@ describe("per-product stages", () => {
     });
     expect(source("src/app/actions/product-stage.ts")).toMatch(/setDealProductNotice/);
     expect(source("src/app/actions/product-stage.ts")).toMatch(/completeDealProductNotice/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/deleteDealProductNotice/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/cancelLinkedNoticeTask/);
     expect(source("src/app/actions/product-stage.ts")).toMatch(/linkDealProductNoticeTask/);
     expect(source("src/app/actions/product-stage.ts")).toMatch(/persistNoticeTypesFromTaskForm/);
     expect(source("src/app/actions/product-stage.ts")).not.toMatch(
