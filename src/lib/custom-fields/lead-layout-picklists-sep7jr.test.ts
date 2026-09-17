@@ -50,8 +50,8 @@ describe("sep7jr Lead layout picklists + convert map", () => {
     expect(dealByKey.preferred_language?.type).toBe("picklist");
 
     const layoutKeys = allLayoutFieldKeys(defaultLayoutForModule("leads"));
-    expect(byKey.insurance_subtype?.label).toBe("Insurance Form");
-    expect(byKey.insurance_category?.label).toBe("Insurance Category");
+    expect(byKey.insurance_subtype?.label).toBe("Policy form");
+    expect(byKey.insurance_category?.label).toBe("Insurance type");
     expect(layoutKeys).toEqual(
       expect.arrayContaining([
         "mailing_address",

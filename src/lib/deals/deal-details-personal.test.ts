@@ -39,7 +39,7 @@ describe("Deal Details personal / identity layout", () => {
     expect(layout.columns[1].sections.map((s) => s.id)).toEqual([
       "co_applicant",
       "mailing_address",
-      "details",
+      "pipeline",
     ]);
     expect(layout.columns[0].sections.find((s) => s.id === "contact")?.fieldKeys[0]).toBe(
       "entity_type",
@@ -96,6 +96,13 @@ describe("Deal Details personal / identity layout", () => {
     expect(html).toMatch(/data-ff-deal-section="insured_address"/);
     expect(html).toMatch(/data-ff-deal-section="mailing_address"/);
     expect(html).not.toMatch(/data-ff-deal-section="details"/);
+    expect(html).toMatch(/data-ff-deal-section="pipeline"/);
+    expect(html).toMatch(/data-ff-pipeline-strip/);
+    expect(html).toMatch(/aria-label="Pipeline"/);
+    expect(html).toMatch(/aria-label="Insurance type"/);
+    expect(html).toMatch(/aria-label="Policy form"/);
+    expect(html).not.toMatch(/data-ff-insurance-quote-request/);
+    expect(html).not.toMatch(/#e0f2fe/);
     expect(html).toMatch(/data-ff-co-applicant-switch/);
     expect(html).toMatch(/data-ff-layout-section-header/);
     expect(html).toMatch(/data-ff-section-field-grid/);
@@ -111,6 +118,31 @@ describe("Deal Details personal / identity layout", () => {
     expect(html).not.toMatch(/data-ff-deal-field="year_built"/);
     expect(html).not.toMatch(/data-ff-deal-field="vin"/);
     expect(html).not.toMatch(/data-ff-deal-field="flood_zone"/);
+  });
+
+  it("prefills Pipeline strip from Term Life product when stored cascade is empty", () => {
+    const html = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-tyler",
+        line: "LIFE",
+        layout: defaultLayoutForLine("HO"),
+        fields: [],
+        values: {},
+        pipelineFamily: "life",
+        quotingForm: "Term Life",
+        policySubType: "Term Life",
+        dealProducts: ["life_term"],
+        activeProduct: "life_term",
+      }),
+    );
+    expect(html).toMatch(/data-ff-pipeline-strip/);
+    expect(html).toMatch(/data-ff-cascade-type-value="Life"/);
+    expect(html).toMatch(/data-ff-cascade-category-value="Term Life"/);
+    expect(html).toMatch(/data-ff-cascade-subtype-value="Term Life"/);
+    expect(html).toMatch(/data-ff-required-field="pipeline"/);
+    expect(html).toMatch(/text-red-700/);
+    expect(html).not.toMatch(/#e0f2fe/);
+    expect(html).not.toMatch(/Policy type/);
   });
 
   it("does not render a second marital-status field when applicant marital exists", () => {

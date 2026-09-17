@@ -191,7 +191,7 @@ function TypedControl({
         lifeOptions={lifeOptions}
         healthOptions={healthOptions}
         lifeHealthOptions={lifeHealthOptions}
-        required={required}
+        required
         disabled={disabled}
         packageLines={packageLines}
         activePackageLine={activePackageLine}
@@ -227,7 +227,7 @@ function TypedControl({
         lifeOptions={lifeOptions}
         healthOptions={healthOptions}
         lifeHealthOptions={lifeHealthOptions}
-        required={required}
+        required
         disabled={disabled}
         packageLines={packageLines}
         activePackageLine={activePackageLine}

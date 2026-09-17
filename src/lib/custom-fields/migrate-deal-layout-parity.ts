@@ -255,7 +255,12 @@ function ensureDetailsInsurance(sections: LayoutSection[]): LayoutSection[] {
   if (missing.length === 0) return sections;
 
   const detailsIdx = sections.findIndex(
-    (s) => s.id === "details" || /^details$/i.test(s.label.trim()),
+    (s) =>
+      s.id === "pipeline" ||
+      s.id === "details" ||
+      /^pipeline$/i.test(s.label.trim()) ||
+      /^details$/i.test(s.label.trim()) ||
+      /insurance quote request/i.test(s.label.trim()),
   );
   if (detailsIdx >= 0) {
     return sections.map((section, idx) => {
@@ -285,8 +290,8 @@ function ensureDetailsInsurance(sections: LayoutSection[]): LayoutSection[] {
   }
 
   const details: LayoutSection = {
-    id: "details",
-    label: "Details",
+    id: "pipeline",
+    label: "Pipeline",
     fieldKeys: [...DEAL_INSURANCE_LAYOUT_KEYS],
   };
   // Prefer right column caller; append before mailing/insured address when present.

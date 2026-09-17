@@ -85,6 +85,8 @@ describe("Commercial Deal Details business identity", () => {
       }),
     );
     expect(commercial).toMatch(/data-ff-deal-details-kind="commercial"/);
+    expect(commercial).toMatch(/data-ff-pipeline-strip/);
+    expect(commercial).toMatch(/aria-label="Policy form"/);
     expect(commercial).toMatch(/data-ff-deal-section="business"/);
     expect(commercial).toMatch(/data-ff-deal-section="owner"/);
     expect(commercial).toMatch(/data-ff-deal-field="business_name"/);

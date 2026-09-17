@@ -1,6 +1,13 @@
 import { QUOTING_FORMS, type QuotingFormId } from "@/lib/domain";
 import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
 import { isPcPackageLine, type PcPackageLine } from "@/lib/deals/package-lines";
+import {
+  dealProductDef,
+  familyForProducts,
+  inferDealProducts,
+  primaryDealProduct,
+  type DealProductId,
+} from "@/lib/deals/deal-products";
 
 /** Pipeline family for Deal Details cascade (not the board slug alone). */
 export type PipelineFamily = "pc" | "life" | "health";
@@ -362,16 +369,120 @@ export function subtypeListLabelFromForm(input: {
 /** Extra custom keys written on Details save / convert so list columns auto-fill. */
 export function dealListCascadeSyncValues(input: {
   insuranceType?: string | null;
+  insuranceCategory?: string | null;
   insuranceSubtype?: string | null;
   quotingForm?: string | null;
   policySubType?: string | null;
 }): Record<string, string> {
   const out: Record<string, string> = {};
   const pipeline = pipelineListLabelFromType(input.insuranceType);
-  if (pipeline) out[DEAL_LIST_PIPELINE_KEY] = pipeline;
+  if (pipeline) {
+    out[DEAL_LIST_PIPELINE_KEY] = pipeline;
+    out.pipeline = pipeline;
+  }
+  const category = (input.insuranceCategory ?? "").trim();
+  if (category) out.insurance_category = category;
   const subtype = subtypeListLabelFromForm(input);
-  if (subtype) out[DEAL_LIST_SUBTYPE_KEY] = subtype;
+  if (subtype) {
+    out[DEAL_LIST_SUBTYPE_KEY] = subtype;
+    out.insurance_subtype = subtype;
+  }
   return out;
+}
+
+function typeLabelForFamily(family: PipelineFamily): string {
+  if (family === "life") return "Life";
+  if (family === "health") return "Health";
+  return "PC";
+}
+
+function categoryLabelForCascade(input: {
+  family: PipelineFamily;
+  typeId: InsuranceTypeId;
+  categoryId: string;
+  product?: DealProductId | null;
+}): string {
+  if (input.family === "life" || input.family === "health") {
+    return input.product ? dealProductDef(input.product).label : input.categoryId;
+  }
+  return (
+    PC_CATEGORY_OPTIONS.find((row) => row.id === input.categoryId)?.label ??
+    input.categoryId
+  );
+}
+
+/**
+ * Pipeline + Insurance type + Policy form from the products picked at create
+ * (or the active chip). Writes Details keys and standing list columns.
+ */
+export function cascadeValuesFromDealHints(input: {
+  shopProducts?: readonly string[] | null;
+  shopLines?: readonly string[] | null;
+  lineOfBusiness?: string | null;
+  quotingLine?: string | null;
+  quotingForm?: string | null;
+  policySubType?: string | null;
+  insuranceType?: string | null;
+  insuranceCategory?: string | null;
+  insuranceSubtype?: string | null;
+}): Record<string, string> {
+  const products = inferDealProducts(input);
+  const primary = primaryDealProduct(products);
+  const def = dealProductDef(primary);
+  const family = familyForProducts(products);
+  const form = (input.quotingForm || input.policySubType || def.quotingForm || "").trim();
+  const cascade = cascadeFromDeal({
+    family,
+    quotingForm: form,
+    policySubType: input.policySubType || form,
+    categoryValue: input.insuranceCategory,
+    lifeHealthOptions:
+      family === "life" || family === "health" ? [{ label: def.label }] : [],
+  });
+  const typeLabel = (input.insuranceType ?? "").trim() || typeLabelForFamily(family);
+  const categoryLabel =
+    (input.insuranceCategory ?? "").trim() ||
+    categoryLabelForCascade({
+      family,
+      typeId: cascade.typeId,
+      categoryId: cascade.categoryId,
+      product: primary,
+    });
+  const subtypeLabel =
+    (input.insuranceSubtype ?? "").trim() || cascade.subtypeLabel || def.quotingForm;
+  const pipeline = pipelineListLabelFromType(typeLabel);
+  return {
+    pipeline,
+    insurance_type: typeLabel,
+    insurance_category: categoryLabel,
+    insurance_subtype: subtypeLabel,
+    ...dealListCascadeSyncValues({
+      insuranceType: typeLabel,
+      insuranceCategory: categoryLabel,
+      insuranceSubtype: subtypeLabel,
+      quotingForm: form,
+      policySubType: subtypeLabel,
+    }),
+  };
+}
+
+/** Fill blank cascade / list keys from product selection without wiping posted values. */
+export function mergeCascadePrefill(
+  values: Record<string, string>,
+  hints: Parameters<typeof cascadeValuesFromDealHints>[0],
+): Record<string, string> {
+  const prefill = cascadeValuesFromDealHints({
+    ...hints,
+    insuranceType: values.insurance_type || hints.insuranceType,
+    insuranceCategory: values.insurance_category || hints.insuranceCategory,
+    insuranceSubtype: values.insurance_subtype || hints.insuranceSubtype,
+  });
+  const next = { ...values };
+  for (const [key, value] of Object.entries(prefill)) {
+    if (!value) continue;
+    if (!String(next[key] ?? "").trim()) next[key] = value;
+  }
+  return next;
 }
 
 export function mergeDealListCascadeSync(
@@ -385,6 +496,7 @@ export function mergeDealListCascadeSync(
     ...values,
     ...dealListCascadeSyncValues({
       insuranceType: values.insurance_type,
+      insuranceCategory: values.insurance_category,
       insuranceSubtype: values.insurance_subtype,
       quotingForm: extra?.quotingForm,
       policySubType: extra?.policySubType ?? values.insurance_subtype,

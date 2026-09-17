@@ -119,24 +119,27 @@ async function ensureInsuranceSubtypeField() {
   const key = target?.key ?? "insurance_subtype";
   await upsertFieldDef({
     key,
-    label: "Insurance Form",
+    label: "Policy form",
     type: "picklist",
     options,
     systemKey: "quotingForm",
+    required: true,
   });
-  // Ensure Insurance Type exists / stays locked to PC / Life / Health.
+  // Pipeline family (PC / Life / Health) — cascade first select.
   await upsertFieldDef({
     key: "insurance_type",
-    label: "Insurance Type",
+    label: "Pipeline",
     type: "picklist",
     options: [...LEAD_INSURANCE_TYPE_OPTIONS],
+    required: true,
   });
-  // Middle cascade field — Home / Auto / … under Type=PC.
+  // Insurance type — Home / Auto / Term Life under Pipeline.
   await upsertFieldDef({
     key: "insurance_category",
-    label: "Insurance Category",
+    label: "Insurance type",
     type: "picklist",
     options: [...LEAD_INSURANCE_CATEGORY_OPTIONS],
+    required: true,
   });
 }
 
@@ -144,27 +147,30 @@ async function ensureLeadInsuranceTypeOptions() {
   await upsertFieldDef(
     {
       key: "insurance_type",
-      label: "Insurance Type",
+      label: "Pipeline",
       type: "picklist",
       options: [...LEAD_INSURANCE_TYPE_OPTIONS],
+      required: true,
     },
     "leads",
   );
   await upsertFieldDef(
     {
       key: "insurance_category",
-      label: "Insurance Category",
+      label: "Insurance type",
       type: "picklist",
       options: [...LEAD_INSURANCE_CATEGORY_OPTIONS],
+      required: true,
     },
     "leads",
   );
   await upsertFieldDef(
     {
       key: "insurance_subtype",
-      label: "Insurance Form",
+      label: "Policy form",
       type: "picklist",
       options: allPcSubtypeLabels(),
+      required: true,
     },
     "leads",
   );

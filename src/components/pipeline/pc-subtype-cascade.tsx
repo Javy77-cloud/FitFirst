@@ -24,7 +24,7 @@ export function PcSubtypeCascade({ defaultSubtypeId = "HO3" }: { defaultSubtypeI
   return (
     <div className="flex flex-wrap items-end gap-2" data-ff-pc-subtype-cascade data-ff-cascade-levels="3">
       <label className="text-xs">
-        Insurance Type
+        Pipeline
         <select
           className="mt-1 block h-8 rounded-md border border-input bg-card px-2 text-sm"
           value={typeId}
@@ -42,7 +42,7 @@ export function PcSubtypeCascade({ defaultSubtypeId = "HO3" }: { defaultSubtypeI
             const nextForms = formsForCategory(next, nextCat);
             setSubtypeId(nextForms[0]?.id ?? "");
           }}
-          aria-label="Insurance Type"
+          aria-label="Pipeline"
         >
           <option value="">None</option>
           {types.map((type) => (
@@ -53,7 +53,7 @@ export function PcSubtypeCascade({ defaultSubtypeId = "HO3" }: { defaultSubtypeI
         </select>
       </label>
       <label className="text-xs">
-        Insurance Category
+        Insurance type
         <select
           className="mt-1 block h-8 rounded-md border border-input bg-card px-2 text-sm"
           value={categoryId}
@@ -68,7 +68,7 @@ export function PcSubtypeCascade({ defaultSubtypeId = "HO3" }: { defaultSubtypeI
             const nextForms = formsForCategory(typeId, next);
             setSubtypeId(nextForms[0]?.id ?? "");
           }}
-          aria-label="Insurance Category"
+          aria-label="Insurance type"
         >
           <option value="">None</option>
           {categories.map((cat) => (
@@ -79,14 +79,14 @@ export function PcSubtypeCascade({ defaultSubtypeId = "HO3" }: { defaultSubtypeI
         </select>
       </label>
       <label className="text-xs">
-        Insurance Form
+        Policy form
         <select
           name="quotingForm"
           className="mt-1 block h-8 rounded-md border border-input bg-card px-2 text-sm"
           value={subtypeId}
           disabled={!typeId || !categoryId}
           onChange={(event) => setSubtypeId(event.target.value)}
-          aria-label="Insurance Form"
+          aria-label="Policy form"
         >
           <option value="">None</option>
           {subtypes.map((form) => (

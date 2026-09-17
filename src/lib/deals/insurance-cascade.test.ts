@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   cascadeFromDeal,
   cascadeFromPackageLine,
+  cascadeValuesFromDealHints,
   categoryForPackageLine,
   categoriesForType,
   categoryIdFromLabel,
@@ -11,6 +12,7 @@ import {
   dealListCascadeSyncValues,
   formsForCategory,
   insuranceTypesForFamily,
+  mergeCascadePrefill,
   mergeDealListCascadeSync,
   pipelineFamilyFromDeal,
   pipelineListLabelFromType,
@@ -153,6 +155,51 @@ describe("insurance cascade", () => {
   });
 });
 
+describe("product prefill for Pipeline strip", () => {
+  it("maps Home / Landlord / Term Life products onto Pipeline + Insurance type + Policy form", () => {
+    expect(cascadeValuesFromDealHints({ shopProducts: ["homeowners"] })).toMatchObject({
+      pipeline: "P&C",
+      insurance_type: "PC",
+      insurance_category: "Home",
+      insurance_subtype: "HO3",
+      picklist_5n3i: "P&C",
+      picklist: "HO3",
+    });
+    expect(cascadeValuesFromDealHints({ shopProducts: ["landlord"] })).toMatchObject({
+      insurance_type: "PC",
+      insurance_category: "Renter/Landlord",
+      insurance_subtype: "DP3",
+      picklist: "DP3",
+    });
+    expect(
+      cascadeValuesFromDealHints({
+        shopProducts: ["life_term"],
+        lineOfBusiness: "LIFE",
+        quotingForm: "Term Life",
+      }),
+    ).toMatchObject({
+      pipeline: "Life",
+      insurance_type: "Life",
+      insurance_category: "Term Life",
+      insurance_subtype: "Term Life",
+      picklist_5n3i: "Life",
+      picklist: "Term Life",
+    });
+  });
+
+  it("does not overwrite posted cascade values on create prefill", () => {
+    expect(
+      mergeCascadePrefill(
+        { insurance_type: "Life", first_name: "Tyler" },
+        { shopProducts: ["homeowners"] },
+      ),
+    ).toMatchObject({
+      first_name: "Tyler",
+      insurance_type: "Life",
+    });
+  });
+});
+
 describe("deal list cascade sync", () => {
   it("maps Type PC/Life/Health onto list Pipeline picklist_5n3i as P&C/Life/Health", () => {
     expect(pipelineListLabelFromType("PC")).toBe("P&C");
@@ -169,13 +216,13 @@ describe("deal list cascade sync", () => {
     expect(subtypeListLabelFromForm({ policySubType: "Term Life" })).toBe("Term Life");
   });
 
-  it("writes standing list keys only — picklist_5n3i + picklist", () => {
+  it("writes standing list keys — picklist_5n3i + picklist + Details cascade", () => {
     expect(
       dealListCascadeSyncValues({ insuranceType: "PC", insuranceSubtype: "HO3" }),
-    ).toEqual({ [DEAL_LIST_PIPELINE_KEY]: "P&C", [DEAL_LIST_SUBTYPE_KEY]: "HO3" });
+    ).toMatchObject({ [DEAL_LIST_PIPELINE_KEY]: "P&C", [DEAL_LIST_SUBTYPE_KEY]: "HO3", pipeline: "P&C" });
     expect(
       dealListCascadeSyncValues({ insuranceType: "Life", insuranceSubtype: "Term Life" }),
-    ).toEqual({ [DEAL_LIST_PIPELINE_KEY]: "Life", [DEAL_LIST_SUBTYPE_KEY]: "Term Life" });
+    ).toMatchObject({ [DEAL_LIST_PIPELINE_KEY]: "Life", [DEAL_LIST_SUBTYPE_KEY]: "Term Life" });
     expect(mergeDealListCascadeSync({ insurance_type: "PC", insurance_subtype: "DP3", first_name: "Gloria" })).toMatchObject({
       first_name: "Gloria",
       insurance_type: "PC",
@@ -190,7 +237,7 @@ describe("deal list cascade sync", () => {
     expect(control).toMatch(/visibleInsuranceTypes/);
     expect(control).toMatch(/lineSettings/);
     const details = readFileSync("src/app/deals/[id]/page.tsx", "utf8");
-    expect(details).toMatch(/lineSettings=\{deskLineSettings\}/);
+    expect(details).toMatch(/lineSettings=\{deskLineSettings/);
   });
 
   it("Details save + convert persist list keys; cascade parent reads Pipeline", () => {
@@ -199,8 +246,10 @@ describe("deal list cascade sync", () => {
     expect(readFileSync("src/lib/custom-fields/transfer.ts", "utf8")).toMatch(/mergeDealListCascadeSync/);
     const cascade = readFileSync("src/components/custom-fields/insurance-cascade-control.tsx", "utf8");
     expect(cascade).toMatch(/aria-label="Pipeline"/);
-    expect(cascade).toMatch(/\n        Pipeline\n/);
-    expect(cascade).not.toMatch(/aria-label="Insurance Type"/);
+    expect(cascade).toMatch(/aria-label="Insurance type"/);
+    expect(cascade).toMatch(/aria-label="Policy form"/);
+    expect(cascade).not.toMatch(/aria-label="Insurance Form"/);
+    expect(cascade).not.toMatch(/Policy type/);
   });
 });
 

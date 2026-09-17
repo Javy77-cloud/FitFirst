@@ -311,6 +311,7 @@ export async function saveDealFieldValues(formData: FormData) {
     custom,
     dealListCascadeSyncValues({
       insuranceType: custom.insurance_type,
+      insuranceCategory: custom.insurance_category,
       insuranceSubtype: custom.insurance_subtype,
     }),
   );

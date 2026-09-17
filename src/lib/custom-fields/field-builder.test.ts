@@ -416,8 +416,9 @@ describe("deal field builder", () => {
     expect(errors.some((line) => line.includes("same key") || line.includes("key, ``"))).toBe(false);
     expect(html).toMatch(/data-ff-deal-details/);
     expect(html).toMatch(/data-ff-picklist="construction"/);
-    expect(html.match(/<option/g)?.length).toBe(3);
-    expect(html).toMatch(/<option value=""[^>]*>Select<\/option>/);
+    const construction = html.match(/data-ff-picklist="construction"[\s\S]*?<\/select>/)?.[0] ?? "";
+    expect(construction.match(/<option/g)?.length).toBe(3);
+    expect(construction).toMatch(/<option value=""[^>]*>Select<\/option>/);
     expect(html.match(/value="Frame"/g)?.length).toBe(1);
     expect(html.match(/value="Masonry"/g)?.length).toBe(1);
   });
@@ -452,7 +453,7 @@ describe("deal field builder", () => {
     expect(home.columns[1].sections.map((section) => section.label)).toEqual([
       "Co-applicant",
       "Mailing Address",
-      "Details",
+      "Pipeline",
     ]);
     expect(homeKeys).toEqual(expect.arrayContaining(["insurance_type", "insurance_category", "insurance_subtype"]));
     expect(homeKeys).not.toContain("lease_term");

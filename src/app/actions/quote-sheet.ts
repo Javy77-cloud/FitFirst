@@ -104,7 +104,8 @@ import {
   orchestrateVinDecodeFill,
 } from "@/lib/vin-decode";
 import { fillSheetFromDealDetails } from "@/lib/quote-sheet/fill-from-deal";
-import { loadRecordValues } from "@/lib/custom-fields/store";
+import { loadRecordValues, writeRecordValues } from "@/lib/custom-fields/store";
+import { cascadeValuesFromDealHints } from "@/lib/deals/insurance-cascade";
 import {
   MASTER_FILL_SKIP_AUTO_PROPERTY,
   MASTER_FILL_SKIP_NEEDS_KEY,
@@ -464,6 +465,22 @@ export async function setDealPackageLines(formData: FormData) {
       updatedAt: new Date(),
     })
     .where(eq(deals.id, dealId));
+  const stored = await loadRecordValues(dealId, "deals").catch(() => ({} as Record<string, string>));
+  await writeRecordValues(
+    dealId,
+    {
+      ...stored,
+      ...cascadeValuesFromDealHints({
+        shopProducts: draft.products,
+        shopLines: draft.shopLines,
+        lineOfBusiness: draft.lineOfBusiness,
+        quotingLine: draft.quotingLine,
+        quotingForm: draft.quotingForm,
+        policySubType: draft.quotingForm,
+      }),
+    },
+    "deals",
+  ).catch(() => null);
   revalidatePath(`/deals/${dealId}`);
   const query = new URLSearchParams();
   if (tab) query.set("tab", tab);

@@ -5,14 +5,14 @@ import { saveModuleRecordValues } from "@/app/actions/custom-fields";
 import { ClickToEditField } from "@/components/custom-fields/click-to-edit-field";
 import { FieldControl } from "@/components/custom-fields/field-control";
 import { LayoutSectionFieldGrid } from "@/components/custom-fields/layout-section-field-grid";
-import { LayoutRequiredBadge, LayoutSectionHeader } from "@/components/custom-fields/layout-section-header";
+import { LayoutSectionHeader } from "@/components/custom-fields/layout-section-header";
 import { Button } from "@/components/ui/button";
 import type { FieldLayoutModule } from "@/lib/custom-fields/modules";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { parseLayout, type CustomFieldDef, type FieldLayout } from "@/lib/custom-fields/types";
 import {
-  INSURANCE_QUOTE_SECTION_STYLE,
-  isInsuranceQuoteRequestSection,
+  PIPELINE_STRIP_LABEL,
+  isPipelineStripSection,
 } from "@/lib/custom-fields/insurance-quote-section";
 import {
   isPreviousAddressFieldKey,
@@ -76,29 +76,20 @@ export function RecordLayoutFields({
       {activeColumns.map((column) => (
         <div key={column.id} className="min-w-0 space-y-3" data-ff-record-layout-col={column.id}>
           {asList(column.sections).map((section) => {
-            const quoteReq = isInsuranceQuoteRequestSection(section);
+            const pipelineStrip = isPipelineStripSection(section);
             return (
             <section
               key={section.id}
-              className={
-                quoteReq
-                  ? "ff-card space-y-3 border border-[#9ec9e8] px-5 py-4"
-                  : "ff-card space-y-3 border border-border/60 px-5 py-4"
-              }
+              className="ff-card space-y-3 border border-border/60 px-5 py-4"
               data-ff-record-section={section.id}
-              data-ff-insurance-quote-request={quoteReq ? "1" : undefined}
-              style={
-                quoteReq
-                  ? INSURANCE_QUOTE_SECTION_STYLE
-                  : {
-                      background: "#f8fafc",
-                      boxShadow: "0 1px 2px rgba(15, 39, 68, 0.06), 0 4px 12px rgba(15, 39, 68, 0.08)",
-                    }
-              }
+              data-ff-pipeline-strip={pipelineStrip ? "1" : undefined}
+              style={{
+                background: "#f8fafc",
+                boxShadow: "0 1px 2px rgba(15, 39, 68, 0.06), 0 4px 12px rgba(15, 39, 68, 0.08)",
+              }}
             >
               <LayoutSectionHeader
-                title={section.label}
-                badge={quoteReq ? <LayoutRequiredBadge /> : null}
+                title={pipelineStrip ? PIPELINE_STRIP_LABEL : section.label}
               />
               <LayoutSectionFieldGrid
                 density={section}
@@ -109,7 +100,8 @@ export function RecordLayoutFields({
                     fieldList.some((item) => item.key === "insurance_type");
                   if (
                     layoutHasType &&
-                    (key === "insurance_category" ||
+                    (key === "pipeline" ||
+                      key === "insurance_category" ||
                       key === "insurance_subtype" ||
                       field.systemKey === "quotingForm")
                   ) {
@@ -129,7 +121,7 @@ export function RecordLayoutFields({
                   };
                   return (
                     <div className="space-y-1" data-ff-record-field={key}>
-                      {key === "insurance_type" || field.label === "Insurance Type" ? null : (
+                      {key === "insurance_type" ? null : (
                         <label className="text-xs font-medium text-navy" htmlFor={`field_${key}`}>
                           {field.label}
                         </label>

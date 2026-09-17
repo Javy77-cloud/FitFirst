@@ -125,7 +125,8 @@ describe("deal layout parity", () => {
     expect(keys).toContain("insurance_type");
     expect(keys).toContain("insurance_category");
     expect(keys).toContain("insurance_subtype");
-    const details = layout.columns[1].sections.find((s) => s.id === "details");
+    const details = layout.columns[1].sections.find((s) => s.id === "pipeline" || s.id === "details");
+    expect(details?.label).toBe("Pipeline");
     expect(details?.fieldKeys).toEqual(
       expect.arrayContaining(["insurance_type", "insurance_category", "insurance_subtype"]),
     );

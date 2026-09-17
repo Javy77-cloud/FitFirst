@@ -66,7 +66,7 @@ export function QuotingLinePicker({
       >
         <input type="hidden" name="dealId" value={dealId} />
         <label className="text-xs">
-          Insurance Type
+          Pipeline
           <select
             value={typeId}
             onChange={(event) => {
@@ -95,7 +95,7 @@ export function QuotingLinePicker({
           </select>
         </label>
         <label className="text-xs">
-          Insurance Category
+          Insurance type
           <select
             value={categoryId}
             disabled={!typeId}
@@ -121,7 +121,7 @@ export function QuotingLinePicker({
           </select>
         </label>
         <label className="text-xs">
-          Insurance Form
+          Policy form
           <select
             name="quotingForm"
             required

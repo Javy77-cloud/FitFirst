@@ -517,8 +517,8 @@ export function productMatchesFamily(
  * Tyler-style rows: title Term Life, shop_lines still ["home"].
  */
 export function dealFamilyFromHints(input: {
-  shopProducts?: string[] | null;
-  shopLines?: string[] | null;
+  shopProducts?: readonly string[] | null;
+  shopLines?: readonly string[] | null;
   lineOfBusiness?: string | null;
   quotingLine?: string | null;
   quotingForm?: string | null;
@@ -550,8 +550,8 @@ function onlyStaleHomeProducts(products: readonly DealProductId[]): boolean {
 
 /** Infer chips from stored shop_lines + quoting form when shop_products is empty. */
 export function inferDealProducts(input: {
-  shopProducts?: string[] | null;
-  shopLines?: string[] | null;
+  shopProducts?: readonly string[] | null;
+  shopLines?: readonly string[] | null;
   lineOfBusiness?: string | null;
   quotingLine?: string | null;
   quotingForm?: string | null;

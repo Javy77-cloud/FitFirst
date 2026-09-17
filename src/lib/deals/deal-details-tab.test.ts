@@ -28,6 +28,7 @@ describe("Deal Details tab", () => {
     expect(parseAgentDealTab("")).toBe("details");
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/DealDetailsPanel/);
+    expect(page).toMatch(/key=\{`\$\{deal\.id\}:\$\{activeProduct\}:\$\{lineForm\}`\}/);
     expect(page).toMatch(/defaultValue="details"/);
     expect(page.indexOf('"details"')).toBeLessThan(page.indexOf('"documents"'));
   });
@@ -81,7 +82,7 @@ describe("Deal Details tab", () => {
     expect(layout.columns[1].sections.map((section) => section.id)).toEqual([
       "co_applicant",
       "mailing_address",
-      "details",
+      "pipeline",
     ]);
   });
 

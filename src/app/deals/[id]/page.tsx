@@ -824,6 +824,7 @@ export default async function DealPage({
                   <div>
                     {id === "details" ? (
                       <DealDetailsPanel
+                        key={`${deal.id}:${activeProduct}:${lineForm}`}
                         dealId={deal.id}
                         line={activeLob}
                         layout={dealLayout ?? defaultLayoutForModule("deals")}

@@ -10,6 +10,7 @@ import { db } from "@/lib/db";
 import { accounts, contacts, deals, quoteSheets, risks } from "@/lib/db/schema";
 import { blankSheetWithDefaults } from "@/lib/quote-sheet/catalog";
 import { loadRecordValues, writeRecordValues } from "@/lib/custom-fields/store";
+import { cascadeValuesFromDealHints, mergeCascadePrefill } from "@/lib/deals/insurance-cascade";
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
 import { formatDealTitle } from "@/lib/deals/deal-title";
 import { newDealCreateHref } from "@/lib/deals/new-deal-href";
@@ -240,7 +241,14 @@ async function createCopiedDeal(
 
   await insertBlankSheets(deal.id, shopLines);
 
-  const details = copyDealDetailValues(custom);
+  const details = mergeCascadePrefill(copyDealDetailValues(custom), {
+    shopProducts: draft?.products ?? shopLines,
+    shopLines,
+    lineOfBusiness,
+    quotingLine,
+    quotingForm,
+    policySubType: draft?.quotingForm ?? row.policySubType,
+  });
   if (Object.keys(details).length) {
     await writeRecordValues(deal.id, details, "deals");
   }
@@ -381,6 +389,17 @@ export async function createDealFromExistingPick(
   if (seeded.first_name || seeded.last_name) {
     seeded.named_insured = [seeded.first_name, seeded.last_name].filter(Boolean).join(" ");
   }
+  Object.assign(
+    seeded,
+    cascadeValuesFromDealHints({
+      shopProducts: draft.products,
+      shopLines: draft.shopLines,
+      lineOfBusiness: draft.lineOfBusiness,
+      quotingLine: draft.quotingLine,
+      quotingForm: draft.quotingForm,
+      policySubType: draft.quotingForm,
+    }),
+  );
   if (Object.keys(seeded).length) {
     await writeRecordValues(deal.id, seeded, "deals");
   }

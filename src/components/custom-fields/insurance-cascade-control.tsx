@@ -48,6 +48,7 @@ export function InsuranceCascadeControl({
   packageLines = [],
   activePackageLine = null,
   lineSettings,
+  variant = "stack",
 }: {
   /** Hidden input name for parent Insurance Type (PC / Life / Health). */
   typeName?: string;
@@ -73,6 +74,8 @@ export function InsuranceCascadeControl({
   packageLines?: readonly string[];
   activePackageLine?: string | null;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
+  /** Horizontal required strip on Deal Details; stacked elsewhere. */
+  variant?: "stack" | "strip";
 }) {
   const lifeOpts = lifeOptions.length
     ? lifeOptions
@@ -165,8 +168,26 @@ export function InsuranceCascadeControl({
   const storedType = typeId ? (typeChoices.find((t) => t.id === typeId)?.label ?? "") : "";
   const storedCategory = selectedCat?.label ?? "";
 
+  const mustFill = required !== false;
+  const typeEmpty = !typeId;
+  const categoryEmpty = !categoryId;
+  const formEmpty = !subtypeId;
+  const selectClass = (empty: boolean) =>
+    `mt-1 h-8 w-full rounded-md border bg-background px-2 text-sm text-navy ${
+      mustFill && empty ? "border-red-600" : "border-border"
+    }`;
+
   return (
-    <div className="mt-1 space-y-2" data-ff-insurance-cascade={family} data-ff-cascade-levels="3">
+    <div
+      className={
+        variant === "strip"
+          ? "grid grid-cols-3 gap-3 max-[699px]:grid-cols-1"
+          : "mt-1 space-y-2"
+      }
+      data-ff-insurance-cascade={family}
+      data-ff-cascade-levels="3"
+      data-ff-cascade-variant={variant}
+    >
       <input type="hidden" name={typeName} value={storedType} form={form} data-ff-cascade-type-value={storedType} />
       <input
         type="hidden"
@@ -182,14 +203,17 @@ export function InsuranceCascadeControl({
         form={form}
         data-ff-cascade-subtype-value={storedSubtype}
       />
-      <label className="block text-xs text-muted-foreground">
-        Pipeline
+      <label className="block text-xs font-medium text-red-700" data-ff-required-field="pipeline">
+        Pipeline{" "}
+        <span aria-hidden="true">*</span>
         <select
           value={typeId}
           disabled={disabled || packageMode}
-          required={required}
+          required={mustFill}
+          aria-required={mustFill || undefined}
+          aria-invalid={mustFill && typeEmpty ? true : undefined}
           onChange={(event) => onTypeChange(event.target.value as InsuranceTypeId | "")}
-          className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-navy"
+          className={selectClass(typeEmpty)}
           data-ff-insurance-type
           aria-label="Pipeline"
         >
@@ -201,8 +225,9 @@ export function InsuranceCascadeControl({
           ))}
         </select>
       </label>
-      <label className="block text-xs text-muted-foreground">
-        Insurance Category
+      <label className="block text-xs font-medium text-red-700" data-ff-required-field="insurance-type">
+        Insurance type{" "}
+        <span aria-hidden="true">*</span>
         <select
           value={selectedCat?.id ?? categoryId ?? ""}
           disabled={
@@ -210,11 +235,13 @@ export function InsuranceCascadeControl({
             !typeId ||
             (packageMode && Boolean(activePackageLine && activePackageLine !== "home"))
           }
-          required={required}
+          required={mustFill}
+          aria-required={mustFill || undefined}
+          aria-invalid={mustFill && categoryEmpty ? true : undefined}
           onChange={(event) => onCategoryChange(event.target.value)}
-          className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-navy"
+          className={selectClass(categoryEmpty)}
           data-ff-insurance-category
-          aria-label="Insurance Category"
+          aria-label="Insurance type"
         >
           <option value="">None</option>
           {categories.map((cat) => (
@@ -224,16 +251,19 @@ export function InsuranceCascadeControl({
           ))}
         </select>
       </label>
-      <label className="block text-xs text-muted-foreground">
-        Insurance Form
+      <label className="block text-xs font-medium text-red-700" data-ff-required-field="policy-form">
+        Policy form{" "}
+        <span aria-hidden="true">*</span>
         <select
           value={selected?.id ?? subtypeId ?? ""}
           disabled={disabled || !typeId || !categoryId}
-          required={required}
+          required={mustFill}
+          aria-required={mustFill || undefined}
+          aria-invalid={mustFill && formEmpty ? true : undefined}
           onChange={(event) => setSubtypeId(event.target.value)}
-          className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-navy"
+          className={selectClass(formEmpty)}
           data-ff-policy-subtype
-          aria-label="Insurance Form"
+          aria-label="Policy form"
         >
           <option value="">None</option>
           {subtypes.map((sub) => (
@@ -255,7 +285,7 @@ export function isInsuranceSubtypeField(field: {
   if (field.systemKey === "quotingForm") return true;
   if (field.key === "insurance_subtype") return true;
   const label = (field.label ?? "").trim().toLowerCase();
-  return label === "insurance subtype" || label === "insurance form";
+  return label === "insurance subtype" || label === "insurance form" || label === "policy form";
 }
 
 export function isInsuranceCategoryField(field: {
@@ -265,7 +295,7 @@ export function isInsuranceCategoryField(field: {
 }): boolean {
   if (field.key === "insurance_category") return true;
   const label = (field.label ?? "").trim().toLowerCase();
-  return label === "insurance category" || label === "insurance line";
+  return label === "insurance category" || label === "insurance line" || label === "insurance type";
 }
 
 export function isInsuranceTypeField(field: {
@@ -275,7 +305,8 @@ export function isInsuranceTypeField(field: {
 }): boolean {
   if (field.key === "insurance_type") return true;
   const label = (field.label ?? "").trim().toLowerCase();
-  return label === "insurance type";
+  // "Insurance type" is now the middle (category) label — do not match it here.
+  return label === "pipeline" && field.key !== "pipeline";
 }
 
 /** Parent / middle / child of the Insurance Type → Category → Form cascade. */

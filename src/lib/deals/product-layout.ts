@@ -5,6 +5,11 @@ import {
 } from "@/lib/custom-fields/business-identity-fields";
 import { isDealDetailsLandlordFieldKey } from "@/lib/custom-fields/deal-details-landlord";
 import {
+  isPipelineStripSection,
+  normalizePipelineStripSection,
+  pipelineStripSection,
+} from "@/lib/custom-fields/insurance-quote-section";
+import {
   CONSTRUCTION_OPTIONS,
   FLOOD_ZONE_OPTIONS,
   HEALTH_PLAN_TYPE_OPTIONS,
@@ -318,6 +323,30 @@ export function usesBusinessIdentityDetails(input: {
   return Boolean(active && dealProductDef(active).group === "commercial");
 }
 
+function withPipelineStrip(layout: FieldLayout): FieldLayout {
+  const found = layout.columns
+    .flatMap((column) => column.sections)
+    .find((section) => isPipelineStripSection(section));
+  const strip = normalizePipelineStripSection(found ?? pipelineStripSection());
+  const left = layout.columns[0] ?? { id: "left" as const, sections: [] };
+  const right = layout.columns[1] ?? { id: "right" as const, sections: [] };
+  return {
+    columns: [
+      {
+        ...left,
+        sections: left.sections.filter((section) => !isPipelineStripSection(section)),
+      },
+      {
+        ...right,
+        sections: [
+          strip,
+          ...right.sections.filter((section) => !isPipelineStripSection(section)),
+        ],
+      },
+    ],
+  };
+}
+
 /** Live Deal Details: commercial business identity, else shared personal applicant. */
 export function layoutForDealDetails(
   layout: FieldLayout,
@@ -328,13 +357,13 @@ export function layoutForDealDetails(
   } = {},
 ): FieldLayout {
   if (usesBusinessIdentityDetails(input)) {
-    return defaultCommercialDealLayout();
+    return withPipelineStrip(defaultCommercialDealLayout());
   }
   return layoutForActiveProduct(layout, parseDealProduct(input.product));
 }
 
 /**
- * Live Deal Details = shared identity only (same body for every product chip).
+ * Live Deal Details = shared identity + lean Pipeline strip.
  * Do not append product_* sections here — that would re-ask risk questions on Details.
  */
 export function layoutForActiveProduct(
@@ -344,15 +373,17 @@ export function layoutForActiveProduct(
   const left = layout.columns[0] ?? { id: "left", sections: [] };
   const right = layout.columns[1] ?? { id: "right", sections: [] };
   const sharedLeft = left.sections.filter(isSharedDealSection);
-  const sharedRight = right.sections.filter(isSharedDealSection);
+  const sharedRight = right.sections.filter(
+    (section) => isSharedDealSection(section) && !isPipelineStripSection(section),
+  );
   const dropLandlord = (section: LayoutSection): LayoutSection => ({
     ...section,
     fieldKeys: section.fieldKeys.filter((key) => !isDealDetailsLandlordFieldKey(key)),
   });
-  return {
+  return withPipelineStrip({
     columns: [
       { ...left, sections: sharedLeft.map(dropLandlord) },
       { ...right, sections: sharedRight.map(dropLandlord) },
     ],
-  };
+  });
 }
