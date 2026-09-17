@@ -51,6 +51,12 @@ describe("shared address keys", () => {
     });
     expect(isStreetAddressField("field_mailing_address")).toBe(true);
     expect(isStreetAddressField("applicant_address")).toBe(true);
+    expect(qualifyAddressFill(addressFillNames("mailing_address", "field_mailing_address"), "field_mailing_address")).toEqual({
+      city: "field_city",
+      state: "field_state",
+      zip: "field_zip",
+      county: "field_county",
+    });
   });
 
   it("formats a confirmed line the desk can write back", () => {

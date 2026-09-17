@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { mergeParsedAddress } from "@/lib/address/fill";
 import { addressFillForKey, qualifyAddressFill } from "@/lib/address/keys";
 import { addressFingerprint, parseAddressLine } from "@/lib/address/compare";
 import {
@@ -18,23 +19,87 @@ export type { AddressFillMap, ParsedAddress };
 
 type VerifyChip = "idle" | "checking" | "verified" | "suggested" | "unmatched" | "error";
 
-function writeSibling(form: HTMLFormElement | null, name: string | undefined, value: string) {
-  if (!form || !name) return;
-  const el = form.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${cssName(name)}"]`);
-  if (!el) return;
-  el.value = value;
-  el.dispatchEvent(new Event("input", { bubbles: true }));
-  el.dispatchEvent(new Event("change", { bubbles: true }));
-}
+type NamedControl = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 
 function cssName(name: string): string {
   return name.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
+function namedFromList(named: Element | RadioNodeList | null): NamedControl | null {
+  if (named instanceof RadioNodeList) {
+    const first = named[0];
+    return first instanceof HTMLInputElement ||
+      first instanceof HTMLTextAreaElement ||
+      first instanceof HTMLSelectElement
+      ? first
+      : null;
+  }
+  if (
+    named instanceof HTMLInputElement ||
+    named instanceof HTMLTextAreaElement ||
+    named instanceof HTMLSelectElement
+  ) {
+    return named;
+  }
+  return null;
+}
+
+function queryNamed(root: ParentNode | null, name: string): NamedControl | null {
+  if (!root) return null;
+  const el = root.querySelector(`[name="${cssName(name)}"], [id="${cssName(name)}"]`);
+  if (
+    el instanceof HTMLInputElement ||
+    el instanceof HTMLTextAreaElement ||
+    el instanceof HTMLSelectElement
+  ) {
+    return el;
+  }
+  return null;
+}
+
+function findNamedControl(scope: ParentNode | null, name: string | undefined): NamedControl | null {
+  if (!name) return null;
+  const fromScope = queryNamed(scope, name);
+  if (fromScope) return fromScope;
+  if (scope instanceof HTMLFormElement) {
+    const fromElements = namedFromList(scope.elements.namedItem(name));
+    if (fromElements) return fromElements;
+  }
+  if (typeof document === "undefined") return null;
+  const byId = document.getElementById(name);
+  if (
+    byId instanceof HTMLInputElement ||
+    byId instanceof HTMLTextAreaElement ||
+    byId instanceof HTMLSelectElement
+  ) {
+    return byId;
+  }
+  return queryNamed(document, name);
+}
+
+function setNativeValue(el: NamedControl, value: string) {
+  const proto =
+    el instanceof HTMLTextAreaElement
+      ? HTMLTextAreaElement.prototype
+      : el instanceof HTMLSelectElement
+        ? HTMLSelectElement.prototype
+        : HTMLInputElement.prototype;
+  const setter = Object.getOwnPropertyDescriptor(proto, "value")?.set;
+  if (setter) setter.call(el, value);
+  else el.value = value;
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  el.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function writeSibling(scope: ParentNode | null, name: string | undefined, value: string) {
+  if (!name) return;
+  const el = findNamedControl(scope, name);
+  if (!el) return;
+  setNativeValue(el, value);
+}
+
 function readNamed(root: ParentNode | null, name: string | undefined): string {
-  if (!root || !name) return "";
-  const el = root.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${cssName(name)}"]`);
-  return el?.value.trim() ?? "";
+  return findNamedControl(root, name)?.value.trim() ?? "";
 }
 
 /**
@@ -169,7 +234,19 @@ export function AddressAutocomplete({
   }, [disabled, name, readOnly, resolvedFill.city, resolvedFill.state, resolvedFill.zip, verifyEnabled]);
 
   function hostForm(): HTMLFormElement | null {
-    return inputRef.current?.form ?? inputRef.current?.closest("form") ?? null;
+    return (
+      inputRef.current?.form ??
+      inputRef.current?.closest("form") ??
+      boxRef.current?.closest("form") ??
+      null
+    );
+  }
+
+  function fillScope(): ParentNode | null {
+    const section =
+      boxRef.current?.closest("[data-ff-deal-section], [data-ff-address-fieldset]") ??
+      inputRef.current?.closest("[data-ff-deal-section], [data-ff-address-fieldset]");
+    return section ?? hostForm() ?? (typeof document !== "undefined" ? document : null);
   }
 
   function readBlock(): ParsedAddress {
@@ -244,18 +321,19 @@ export function AddressAutocomplete({
     void runVerify(reason);
   };
 
-  function applyAddress(address: ParsedAddress, fallbackLabel: string) {
-    const street = address.street || fallbackLabel.split(",")[0]?.trim() || fallbackLabel;
-    const next = composeOnConfirm ? formatAddressLine({ ...address, street }) || fallbackLabel : street;
+  function applyAddress(address: ParsedAddress | null | undefined, fallbackLabel: string) {
+    const merged = mergeParsedAddress(address, fallbackLabel);
+    const street = merged.street || fallbackLabel.split(",")[0]?.trim() || fallbackLabel;
+    const next = composeOnConfirm ? formatAddressLine({ ...merged, street }) || fallbackLabel : street;
     setQuery(next);
-    setConfirmed(addressIsComplete(address) || Boolean(street));
+    setConfirmed(addressIsComplete(merged) || Boolean(street));
     if (inputRef.current) inputRef.current.value = next;
-    const host = hostForm();
-    writeSibling(host, resolvedFill.city, address.city);
-    writeSibling(host, resolvedFill.state, address.state);
-    writeSibling(host, resolvedFill.zip, address.zip);
-    writeSibling(host, resolvedFill.county, address.county);
-    onConfirm?.(address);
+    const scope = fillScope();
+    writeSibling(scope, resolvedFill.city, merged.city);
+    writeSibling(scope, resolvedFill.state, merged.state);
+    writeSibling(scope, resolvedFill.zip, merged.zip);
+    writeSibling(scope, resolvedFill.county, merged.county);
+    onConfirm?.(merged);
     onChange?.(next);
   }
 
@@ -283,6 +361,10 @@ export function AddressAutocomplete({
       data-ff-address-autocomplete
       data-ff-address-enabled={enabled ? "1" : "0"}
       data-ff-address-verify-enabled={verifyEnabled ? "1" : "0"}
+      data-ff-address-fill-city={resolvedFill.city ?? ""}
+      data-ff-address-fill-state={resolvedFill.state ?? ""}
+      data-ff-address-fill-zip={resolvedFill.zip ?? ""}
+      data-ff-address-fill-county={resolvedFill.county ?? ""}
     >
       <Input
         ref={inputRef}

@@ -45,4 +45,15 @@ describe("address compare", () => {
       country: "US",
     });
   });
+
+  it("parses a Mapbox place_name with a full state name", () => {
+    expect(parseAddressLine("412 Harbor Isle Dr, Melbourne, Florida 32935, United States")).toEqual({
+      street: "412 Harbor Isle Dr",
+      city: "Melbourne",
+      state: "FL",
+      zip: "32935",
+      county: "",
+      country: "US",
+    });
+  });
 });

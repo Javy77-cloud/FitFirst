@@ -35,6 +35,67 @@ export function addressesMatch(a: ParsedAddress, b: ParsedAddress): boolean {
   return Boolean(left) && left === right;
 }
 
+/** Mapbox labels use "Florida 32935"; desk siblings need FL. */
+const US_STATE_BY_NAME: Record<string, string> = {
+  alabama: "AL",
+  alaska: "AK",
+  arizona: "AZ",
+  arkansas: "AR",
+  california: "CA",
+  colorado: "CO",
+  connecticut: "CT",
+  delaware: "DE",
+  florida: "FL",
+  georgia: "GA",
+  hawaii: "HI",
+  idaho: "ID",
+  illinois: "IL",
+  indiana: "IN",
+  iowa: "IA",
+  kansas: "KS",
+  kentucky: "KY",
+  louisiana: "LA",
+  maine: "ME",
+  maryland: "MD",
+  massachusetts: "MA",
+  michigan: "MI",
+  minnesota: "MN",
+  mississippi: "MS",
+  missouri: "MO",
+  montana: "MT",
+  nebraska: "NE",
+  nevada: "NV",
+  "new hampshire": "NH",
+  "new jersey": "NJ",
+  "new mexico": "NM",
+  "new york": "NY",
+  "north carolina": "NC",
+  "north dakota": "ND",
+  ohio: "OH",
+  oklahoma: "OK",
+  oregon: "OR",
+  pennsylvania: "PA",
+  "rhode island": "RI",
+  "south carolina": "SC",
+  "south dakota": "SD",
+  tennessee: "TN",
+  texas: "TX",
+  utah: "UT",
+  vermont: "VT",
+  virginia: "VA",
+  washington: "WA",
+  "west virginia": "WV",
+  wisconsin: "WI",
+  wyoming: "WY",
+  "district of columbia": "DC",
+};
+
+export function stateCodeFromLabel(value: string): string {
+  const trimmed = value.trim();
+  if (/^[A-Za-z]{2}$/.test(trimmed)) return trimmed.toUpperCase();
+  return US_STATE_BY_NAME[trimmed.toLowerCase()] ?? "";
+}
+
 /** Split "412 Harbor Isle Dr, Melbourne, FL 32935" when city/state/ZIP siblings are empty. */
 export function parseAddressLine(line: string): ParsedAddress {
   const raw = line.trim();
@@ -47,25 +108,28 @@ export function parseAddressLine(line: string): ParsedAddress {
   const street = parts[0] ?? raw;
   if (parts.length < 2) return { ...EMPTY_ADDRESS, street };
   const last = parts[parts.length - 1] ?? "";
-  const stateZip = last.match(/^([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+  const stateZip = last.match(/^(.+?)\s+(\d{5}(?:-\d{4})?)$/);
   if (stateZip) {
-    return {
-      street,
-      city: parts.slice(1, -1).join(", "),
-      state: stateZip[1].toUpperCase(),
-      zip: stateZip[2].slice(0, 5),
-      county: "",
-      country: "US",
-    };
+    const state = stateCodeFromLabel(stateZip[1]);
+    if (state) {
+      return {
+        street,
+        city: parts.slice(1, -1).join(", "),
+        state,
+        zip: stateZip[2].slice(0, 5),
+        county: "",
+        country: "US",
+      };
+    }
   }
   const zipOnly = last.match(/^(\d{5}(?:-\d{4})?)$/);
   if (zipOnly && parts.length >= 3) {
     const mid = parts[parts.length - 2] ?? "";
-    const stateOnly = mid.match(/^([A-Za-z]{2})$/);
+    const state = stateCodeFromLabel(mid);
     return {
       street,
-      city: stateOnly ? parts.slice(1, -2).join(", ") : parts.slice(1, -1).join(", "),
-      state: stateOnly ? stateOnly[1].toUpperCase() : "",
+      city: state ? parts.slice(1, -2).join(", ") : parts.slice(1, -1).join(", "),
+      state,
       zip: zipOnly[1].slice(0, 5),
       county: "",
       country: "US",

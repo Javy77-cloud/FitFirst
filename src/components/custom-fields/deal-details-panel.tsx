@@ -102,6 +102,7 @@ function CoApplicantDealSection({
   activePackageLine = null,
   lineSettings,
   onValueChange,
+  onValuesPatch,
 }: {
   sectionLabel: string;
   quoteReq: boolean;
@@ -122,6 +123,7 @@ function CoApplicantDealSection({
   activePackageLine?: string | null;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   onValueChange?: (key: string, value: string) => void;
+  onValuesPatch?: (parts: Record<string, string>) => void;
 }) {
   const initialOn = useMemo(() => isCoApplicantEnabled(values), [values]);
   const [enabled, setEnabled] = useState(initialOn);
@@ -190,6 +192,7 @@ function CoApplicantDealSection({
               activePackageLine={activePackageLine}
               lineSettings={lineSettings}
               onValueChange={onValueChange}
+              onValuesPatch={onValuesPatch}
             />
           )}
         />
@@ -214,6 +217,7 @@ function DealDetailsField({
   activePackageLine = null,
   lineSettings,
   onValueChange,
+  onValuesPatch,
 }: {
   fieldKey: string;
   field: CustomFieldDef;
@@ -230,6 +234,7 @@ function DealDetailsField({
   activePackageLine?: string | null;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   onValueChange?: (key: string, value: string) => void;
+  onValuesPatch?: (parts: Record<string, string>) => void;
 }) {
   return (
     <div className="space-y-1" data-ff-deal-field={fieldKey}>
@@ -254,6 +259,7 @@ function DealDetailsField({
         activePackageLine={activePackageLine}
         lineSettings={lineSettings}
         onValueChange={(next) => onValueChange?.(fieldKey, next)}
+        onAddressFill={(parts) => onValuesPatch?.(parts)}
       />
       {field.type === "image" ? <DealFieldImageUpload dealId={dealId} fieldKey={fieldKey} /> : null}
     </div>
@@ -368,6 +374,21 @@ export function DealDetailsPanel({
     });
   }
 
+  function patchValues(parts: Record<string, string>) {
+    setLiveValues((prev) => {
+      const updated: Record<string, string> = { ...prev };
+      for (const [key, next] of Object.entries(parts)) {
+        if (!key || !next) continue;
+        updated[key] = next;
+        if (isIndustryCascadeParent(key)) {
+          const child = key.replace(/_industry$/, "_occupation");
+          updated[child] = occupationValueAfterIndustryChange(next, updated[child]);
+        }
+      }
+      return updated;
+    });
+  }
+
   return (
     <div
       data-ff-deal-details
@@ -420,6 +441,7 @@ export function DealDetailsPanel({
                     activePackageLine={activePackageLine}
                     lineSettings={lineSettings}
                     onValueChange={patchValue}
+                    onValuesPatch={patchValues}
                   />
                 );
               }
@@ -482,6 +504,7 @@ export function DealDetailsPanel({
                         activePackageLine={activePackageLine}
                         lineSettings={lineSettings}
                         onValueChange={patchValue}
+                        onValuesPatch={patchValues}
                       />
                     )}
                   />

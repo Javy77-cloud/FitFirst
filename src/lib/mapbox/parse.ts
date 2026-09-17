@@ -1,3 +1,4 @@
+import { mergeParsedAddress } from "@/lib/address/fill";
 import { EMPTY_ADDRESS, formatAddressLine, type AddressSuggestion, type ParsedAddress } from "@/lib/address/types";
 
 type MapboxContext = {
@@ -75,7 +76,7 @@ export function parsedAddressFromMapbox(feature: MapboxFeature | null | undefine
     /\s+County$/i,
     "",
   );
-  return {
+  const parsed: ParsedAddress = {
     street,
     city,
     state,
@@ -83,6 +84,9 @@ export function parsedAddressFromMapbox(feature: MapboxFeature | null | undefine
     county,
     country: "US",
   };
+  if (parsed.city && parsed.state && parsed.zip) return parsed;
+  const label = asString(feature.place_name) || asString(feature.properties?.full_address);
+  return mergeParsedAddress(parsed, label);
 }
 
 export function parseMapboxSuggestPayload(payload: unknown): AddressSuggestion[] {
