@@ -1403,13 +1403,31 @@ export const BENEFICIARY_SHARE_OPTIONS = [
   "Other",
 ] as const;
 
-/** Health plan family — same labels as Settings → Lines Health subfilters. */
+/** Health coverage type — locked lean Risk Profile (Javy 2026-09-16). */
 export const HEALTH_PLAN_TYPE_OPTIONS = [
   "Marketplace",
+  "Medicare",
   "Medicare Advantage",
-  "Medicare A&B",
-  "Supplemental",
+  "Medicare Supplement",
+  "Dental",
+  "Vision",
+  "Short-term",
   "Other",
+] as const;
+
+/** Medicare block — same family as Medicare / MA / Medigap. */
+export const MEDICARE_COVERAGE_TYPES = [
+  "Medicare",
+  "Medicare Advantage",
+  "Medicare Supplement",
+] as const;
+
+/** Leftover desk / sheet labels that still open the Medicare block. */
+export const MEDICARE_COVERAGE_ALIASES = ["Medicare A&B", "Supplemental"] as const;
+
+export const MEDICARE_COVERAGE_SHOW_VALUES = [
+  ...MEDICARE_COVERAGE_TYPES,
+  ...MEDICARE_COVERAGE_ALIASES,
 ] as const;
 
 /** Network type already used on Health deal-details custom fields. */
@@ -1420,9 +1438,36 @@ export const HEALTH_METAL_LEVEL_OPTIONS = [
   "Silver",
   "Gold",
   "Platinum",
-  "Catastrophic",
-  "Not applicable",
 ] as const;
+
+export const HEALTH_COST_PREF_OPTIONS = ["Low", "Medium", "High"] as const;
+
+export const HEALTH_MEDICAL_CONDITION_OPTIONS = [
+  "None",
+  "Diabetes",
+  "High blood pressure",
+  "Heart disease",
+  "Asthma",
+  "COPD",
+  "Cancer",
+  "Kidney disease",
+  "Mental health condition",
+  "Arthritis",
+  "Thyroid disorder",
+  "Sleep apnea",
+  "Other",
+] as const;
+
+export const HEALTH_QLE_TYPE_OPTIONS = [
+  "Lost other coverage",
+  "Moved",
+  "Marriage / divorce",
+  "Birth or adoption",
+  "Income / household change",
+  "Other",
+] as const;
+
+export const HEALTH_DEPENDENT_SLOT_COUNT = 4;
 
 export const HOUSEHOLD_SIZE_OPTIONS = ["1", "2", "3", "4", "5", "6", "7", "8+"] as const;
 
@@ -1523,18 +1568,38 @@ export function normalizeHealthPlanType(raw: string | null | undefined): string 
   if (!text) return "";
   const hit = normalizePicklistOption(text, HEALTH_PLAN_TYPE_OPTIONS);
   if (hit) return hit;
-  const lower = text.toLowerCase();
+  const lower = text.toLowerCase().replace(/[_-]+/g, " ");
   if (lower.includes("advantage") || lower === "mapd" || lower === "ma") return "Medicare Advantage";
+  if (lower.includes("supplement") || lower.includes("medigap") || lower === "supplemental") {
+    return "Medicare Supplement";
+  }
   if (
     lower.includes("a&b") ||
     lower.includes("a and b") ||
     lower.includes("original medicare") ||
-    lower.includes("medicare a")
+    lower.includes("medicare a") ||
+    lower === "medicare"
   ) {
-    return "Medicare A&B";
+    return "Medicare";
   }
-  if (lower.includes("supplement") || lower.includes("medigap")) return "Supplemental";
+  if (lower.includes("dental")) return "Dental";
+  if (lower.includes("vision")) return "Vision";
+  if (lower.includes("short term") || lower.includes("short-term") || lower.includes("shortterm")) {
+    return "Short-term";
+  }
   if (lower.includes("marketplace") || lower === "aca" || lower.includes("exchange")) return "Marketplace";
   if (lower === "other") return "Other";
   return "";
+}
+
+export function isMedicareCoverageType(raw: string | null | undefined): boolean {
+  const normalized = normalizeHealthPlanType(raw) || (raw ?? "").trim();
+  return (MEDICARE_COVERAGE_SHOW_VALUES as readonly string[]).some(
+    (value) => value.toLowerCase() === normalized.toLowerCase(),
+  );
+}
+
+export function isMarketplaceCoverageType(raw: string | null | undefined): boolean {
+  const normalized = normalizeHealthPlanType(raw) || (raw ?? "").trim();
+  return /^marketplace$/i.test(normalized);
 }

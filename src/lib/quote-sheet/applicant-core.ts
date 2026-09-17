@@ -13,7 +13,7 @@ export type QuoteFieldDef = {
   options?: string[];
   extractKey?: string;
   products?: SheetProduct[];
-  /** Hide until another sheet cell matches one of these values (Life cascades). */
+  /** Hide until another sheet cell matches one of these values (Life / Health cascades). */
   showWhen?: QuoteFieldShowWhen;
 };
 

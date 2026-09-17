@@ -3,7 +3,7 @@ import { firstFilled, type LeadCopyFields } from "@/lib/desk/copy-once";
 import { fieldIsBlank } from "@/lib/quote-sheet/apply";
 import { isLockedSheetField } from "@/lib/lifecycle/quote-sheet";
 import { isCoApplicantEnabled } from "@/lib/custom-fields/co-applicant-fields";
-import { normalizeLifeProductType } from "@/lib/quote-sheet/sheet-defaults";
+import { normalizeHealthPlanType, normalizeLifeProductType } from "@/lib/quote-sheet/sheet-defaults";
 
 export const DEAL_DETAILS_SOURCE_LABEL = "deal details";
 
@@ -89,7 +89,7 @@ export function fillSheetFromDealDetails(
   const put = (key: string, raw?: string | null) => {
     const value = (raw ?? "").trim();
     if (!value) return;
-    // Life Risk Profile has no identity cells — do not invent applicant/contact keys.
+    // Life / Health Risk Profile has no identity cells — do not invent applicant/contact keys.
     if (Object.keys(existing).length > 0 && !Object.prototype.hasOwnProperty.call(existing, key)) {
       return;
     }
@@ -170,7 +170,8 @@ export function fillSheetFromDealDetails(
     put("product_type", normalizeLifeProductType(raw) || raw);
   }
   if (Object.prototype.hasOwnProperty.call(values, "plan_type")) {
-    put("plan_type", firstFilled(stored.plan_type, input.policySubType, input.quotingForm));
+    const raw = firstFilled(stored.plan_type, input.policySubType, input.quotingForm);
+    put("plan_type", normalizeHealthPlanType(raw) || raw);
   }
   put("lease_term", firstFilled(stored.lease_term));
   put("tenant_name", firstFilled(stored.tenant_name));
