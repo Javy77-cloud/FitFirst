@@ -258,6 +258,8 @@ describe("deal notices", () => {
     expect(editor).toMatch(/data-ff-notice-edit-type-label/);
     expect(editor).toMatch(/<li key=\{index\}/);
     expect(editor).not.toMatch(/key=\{`\$\{index\}-\$\{label\}`\}/);
+    expect(editor).toMatch(/ListOptionInput/);
+    expect(editor).toMatch(/onCommit=/);
     expect(editor).toMatch(/data-ff-notice-edit-type-new/);
     expect(editor).toMatch(/data-ff-notice-edit-type-delete/);
     expect(editor).toMatch(/data-ff-notice-set/);

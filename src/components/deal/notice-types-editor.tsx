@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ListOptionInput } from "@/components/settings/list-option-input";
 import { Input } from "@/components/ui/input";
 import { dealProductDef, parseDealProduct } from "@/lib/deals/deal-products";
 import {
@@ -251,14 +252,13 @@ export function NoticeTypesEditor({
                           selected ? "border-navy bg-navy" : "border-muted-foreground/40 bg-card",
                         )}
                       />
-                      <Input
-                        value={label}
+                      <ListOptionInput
+                        committedValue={label}
                         aria-label={`Rename notice type ${index + 1}`}
                         className="h-9 min-w-0 flex-1 text-sm"
                         data-ff-notice-edit-type-label=""
                         onClick={(event) => event.stopPropagation()}
-                        onChange={(event) => {
-                          const value = event.currentTarget.value;
+                        onCommit={(value) => {
                           setRows((current) => current.map((row, i) => (i === index ? value : row)));
                           setSelectedIndex(index);
                         }}

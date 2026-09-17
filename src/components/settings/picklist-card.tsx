@@ -10,12 +10,13 @@ import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
 import { ClearAllColorsForm } from "@/components/desk/clear-all-colors-form";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { CollapsibleListCard } from "@/components/settings/collapsible-list-card";
+import { ListOptionInput } from "@/components/settings/list-option-input";
 import { ListOptionRow } from "@/components/settings/list-option-row";
 import { StayOnSaveForm, useStayAction } from "@/components/settings/stay-on-save-form";
 import { Button } from "@/components/ui/button";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
-import { Input } from "@/components/ui/input";
 import type { FieldPicklist } from "@/lib/custom-fields/picklists";
+import { listOptionRowKey } from "@/lib/settings/list-editor";
 
 export function PicklistCard({ list }: { list: FieldPicklist }) {
   const saveFormId = `ff-picklist-save-${list.id}`;
@@ -25,36 +26,36 @@ export function PicklistCard({ list }: { list: FieldPicklist }) {
   const clearColors = useStayAction(clearFieldPicklistColors, "colors-cleared");
 
   const items = list.options.map((option, index) => (
-    <div key={`${list.id}-${index}-${option.value}-${option.color ?? "none"}`} data-ff-picklist-option={option.value}>
-    <ListOptionRow
-      defaultValue={option.color}
-      name="optionColors"
-      form={saveFormId}
-      colorAriaLabel={`Color for option ${index + 1}`}
-    >
-      <Input
+    <div key={listOptionRowKey(list.id, index)} data-ff-picklist-option={option.value}>
+      <ListOptionRow
+        defaultValue={option.color}
+        name="optionColors"
         form={saveFormId}
-        name="options"
-        defaultValue={option.value}
-        className="h-8 min-w-40 max-w-sm flex-1"
-        aria-label={`Option ${index + 1}`}
-      />
-      <label className="flex items-center gap-1 text-xs text-muted-foreground">
-        <input
+        colorAriaLabel={`Color for option ${index + 1}`}
+      >
+        <ListOptionInput
           form={saveFormId}
-          type="radio"
-          name="defaultIndex"
-          value={String(index)}
-          defaultChecked={defaultIndex === index}
+          name="options"
+          committedValue={option.value}
+          className="h-8 min-w-40 max-w-sm flex-1"
+          aria-label={`Option ${index + 1}`}
         />
-        Default
-      </label>
-      <HardDeleteForm action={removeOption} subject={`value ${option.value}`}>
-        <input type="hidden" name="id" value={list.id} />
-        <input type="hidden" name="value" value={option.value} />
-        <FileDeleteIcon label={`Delete ${option.value}`} />
-      </HardDeleteForm>
-    </ListOptionRow>
+        <label className="flex items-center gap-1 text-xs text-muted-foreground">
+          <input
+            form={saveFormId}
+            type="radio"
+            name="defaultIndex"
+            value={String(index)}
+            defaultChecked={defaultIndex === index}
+          />
+          Default
+        </label>
+        <HardDeleteForm action={removeOption} subject={`value ${option.value}`}>
+          <input type="hidden" name="id" value={list.id} />
+          <input type="hidden" name="value" value={option.value} />
+          <FileDeleteIcon label={`Delete ${option.value}`} />
+        </HardDeleteForm>
+      </ListOptionRow>
     </div>
   ));
 
@@ -72,7 +73,12 @@ export function PicklistCard({ list }: { list: FieldPicklist }) {
             </div>
             <StayOnSaveForm id={saveFormId} action={saveFieldPicklist} flash="pick-list-saved" className="space-y-2">
               <input type="hidden" name="id" value={list.id} />
-              <Input name="name" defaultValue={list.name} className="h-8 max-w-sm" aria-label="List name" />
+              <ListOptionInput
+                name="name"
+                committedValue={list.name}
+                className="h-8 max-w-sm"
+                aria-label="List name"
+              />
             </StayOnSaveForm>
           </div>
         }
@@ -96,25 +102,25 @@ export function PicklistCard({ list }: { list: FieldPicklist }) {
         footer={
           <div className="space-y-2">
             <div data-ff-picklist-option="new">
-            <ListOptionRow
-              defaultValue={null}
-              name="optionColors"
-              form={saveFormId}
-              colorAriaLabel={`Color for option ${list.options.length + 1}`}
-            >
-              <Input
+              <ListOptionRow
+                defaultValue={null}
+                name="optionColors"
                 form={saveFormId}
-                name="options"
-                defaultValue=""
-                placeholder="Add another value"
-                className="h-8 min-w-40 max-w-sm flex-1"
-                aria-label={`Option ${list.options.length + 1}`}
-              />
-              <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                <input form={saveFormId} type="radio" name="defaultIndex" value={String(list.options.length)} />
-                Default
-              </label>
-            </ListOptionRow>
+                colorAriaLabel={`Color for option ${list.options.length + 1}`}
+              >
+                <ListOptionInput
+                  form={saveFormId}
+                  name="options"
+                  committedValue=""
+                  placeholder="Add another value"
+                  className="h-8 min-w-40 max-w-sm flex-1"
+                  aria-label={`Option ${list.options.length + 1}`}
+                />
+                <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <input form={saveFormId} type="radio" name="defaultIndex" value={String(list.options.length)} />
+                  Default
+                </label>
+              </ListOptionRow>
             </div>
             <Button type="submit" size="xs" form={saveFormId}>
               Save list

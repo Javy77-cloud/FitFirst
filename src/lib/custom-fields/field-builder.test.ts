@@ -183,6 +183,9 @@ describe("deal field builder", () => {
     expect(config).toMatch(/<div key=\{index\}/);
     expect(config).not.toMatch(/key=\{`\$\{index\}-\$\{option\}`\}/);
     expect(config).not.toMatch(/key=\{option\}/);
+    expect(config).toMatch(/ListOptionInput/);
+    expect(config).toMatch(/onCommit=/);
+    expect(config).not.toMatch(/next\[index\] = event\.target\.value/);
     expect(config).toMatch(/\/settings\/picklists/);
     expect(page).toMatch(/SettingsShell title="Picklists"/);
     expect(page).toMatch(/current="picklists"/);

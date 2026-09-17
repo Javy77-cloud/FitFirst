@@ -2,12 +2,12 @@ import Link from "next/link";
 import { deleteOffice, saveOffice } from "@/app/actions/offices";
 import { AgentAssign } from "@/components/org/agent-assign";
 import { StatePicker } from "@/components/org/state-picker";
+import { ListOptionInput } from "@/components/settings/list-option-input";
 import { SettingsEntityCard } from "@/components/settings/settings-entity-card";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { listAgentRoster, listDeskAgents, listOffices } from "@/lib/org/queries";
@@ -86,11 +86,11 @@ export default async function OfficesSettingsPage({
               <Label htmlFor="office-name" className="text-xs">
                 Name
               </Label>
-              <Input
+              <ListOptionInput
                 id="office-name"
                 name="name"
                 required
-                defaultValue={editing?.name ?? ""}
+                committedValue={editing?.name ?? ""}
                 placeholder="Palm Bay"
                 className="mt-1 h-8"
               />

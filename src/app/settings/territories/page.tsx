@@ -2,11 +2,11 @@ import Link from "next/link";
 import { deleteTerritory, saveTerritory } from "@/app/actions/offices";
 import { AgentAssign } from "@/components/org/agent-assign";
 import { StatePicker } from "@/components/org/state-picker";
+import { ListOptionInput } from "@/components/settings/list-option-input";
 import { SettingsEntityCard } from "@/components/settings/settings-entity-card";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { requireAdminPage } from "@/lib/auth/guards";
@@ -91,11 +91,11 @@ export default async function TerritoriesSettingsPage({
               <Label htmlFor="territory-name" className="text-xs">
                 Name
               </Label>
-              <Input
+              <ListOptionInput
                 id="territory-name"
                 name="name"
                 required
-                defaultValue={editing?.name ?? ""}
+                committedValue={editing?.name ?? ""}
                 placeholder="Space Coast"
                 className="mt-1 h-8"
               />
@@ -104,10 +104,10 @@ export default async function TerritoriesSettingsPage({
               <Label htmlFor="territory-geo" className="text-xs">
                 Freeform geo label
               </Label>
-              <Input
+              <ListOptionInput
                 id="territory-geo"
                 name="geoLabel"
-                defaultValue={editing?.geoLabel ?? ""}
+                committedValue={editing?.geoLabel ?? ""}
                 placeholder="Palm Bay / Melbourne / Brevard"
                 className="mt-1 h-8"
               />
