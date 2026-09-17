@@ -3,7 +3,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { parseBookScope, type BookScope } from "./presets";
 import type { BookScopeKind } from "@/lib/org/book-scope";
 
-export type DeskRole = "owner" | "admin" | "agent";
+export type DeskRole = "owner" | "admin" | "agent" | "developer";
 
 export type OwnerHomeScope = {
   tenantId: string;
@@ -85,6 +85,7 @@ export async function currentOwnerHomeScope(bookScope?: BookScope): Promise<Owne
 export function normalizeRole(raw: string): DeskRole {
   const value = raw.trim().toLowerCase();
   if (value === "agent" || value === "producer") return "agent";
+  if (value === "developer") return "developer";
   if (value === "admin") return "admin";
   return "owner";
 }

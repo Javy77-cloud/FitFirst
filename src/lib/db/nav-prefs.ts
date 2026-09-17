@@ -14,8 +14,9 @@ import { agentUiPrefs } from "./schema";
 const readStoredNavLayout = cache(async function readStoredNavLayout(
   userId: string,
   isAdmin: boolean,
+  isDeveloper: boolean,
 ): Promise<StoredNavLayout> {
-  const options: NavLayoutOptions = { isAdmin };
+  const options: NavLayoutOptions = { isAdmin, isDeveloper };
   if (!userId) return defaultStoredNavLayout(options);
   const [row] = await db
     .select({ navLayout: agentUiPrefs.navLayout })
@@ -28,7 +29,7 @@ export async function getStoredNavLayout(
   userId: string | null | undefined,
   options: NavLayoutOptions = {},
 ): Promise<StoredNavLayout> {
-  return readStoredNavLayout(userId ?? "", options.isAdmin !== false);
+  return readStoredNavLayout(userId ?? "", options.isAdmin !== false, options.isDeveloper === true);
 }
 
 export async function upsertStoredNavLayout(

@@ -18,6 +18,8 @@ describe("desk nav chrome", () => {
     expect(hrefs).not.toContain("/get-started");
     expect(DESK_NAV_ITEMS.filter((item) => item.href === "/settings")).toHaveLength(1);
     expect(labels.filter((label) => label === "Automations")).toHaveLength(1);
+    expect(labels.filter((label) => label === "Developer")).toHaveLength(1);
+    expect(hrefs).toContain("/developer");
   });
 
   it("moves Alerts and Search out of the left nav into top chrome", () => {

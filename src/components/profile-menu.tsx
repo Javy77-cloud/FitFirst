@@ -52,7 +52,7 @@ export function ProfileMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        title={`${actor.name} · ${actor.role === "admin" ? "Admin" : "Agent"}`}
+        title={`${actor.name} · ${actor.profile === "developer" ? "Developer" : actor.role === "admin" ? "Admin" : "Agent"}`}
         className="inline-flex size-10 items-center justify-center rounded-full bg-[#1d4e89] text-sm font-semibold text-white hover:bg-[#163a68]"
       >
         <span aria-hidden>{initials(actor.name)}</span>
@@ -64,12 +64,14 @@ export function ProfileMenu({
             <div className="text-sm font-semibold text-navy">{actor.name}</div>
             <div className="text-xs font-normal text-muted-foreground">
               {isImpersonating
-                ? `Viewing as ${actor.role === "admin" ? "Admin" : "Agent"}`
-                : actor.role === "admin"
-                  ? "Admin · full desk"
-                  : actor.canSeeAgencyBook
-                    ? "Agent · agency book"
-                    : "Agent · own book"}
+                ? `Viewing as ${actor.profile === "developer" ? "Developer" : actor.role === "admin" ? "Admin" : "Agent"}`
+                : actor.profile === "developer"
+                  ? "Developer · API meters"
+                  : actor.role === "admin"
+                    ? "Admin · full desk"
+                    : actor.canSeeAgencyBook
+                      ? "Agent · agency book"
+                      : "Agent · own book"}
             </div>
           </DropdownMenuLabel>
         </DropdownMenuGroup>

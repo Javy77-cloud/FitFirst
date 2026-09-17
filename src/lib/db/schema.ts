@@ -4418,3 +4418,36 @@ export type LearningRawCorrection = typeof learningRawCorrections.$inferSelect;
 export type LearningPoolConsentRow = typeof learningPoolConsents.$inferSelect;
 export type LearningGlobalPoolRow = typeof learningGlobalPool.$inferSelect;
 export type LearningSeedLibraryRow = typeof learningSeedLibrary.$inferSelect;
+
+/** Developer hub — real vendor HTTP counts by UTC month. Never seed fake rows. */
+export const developerApiUsage = pgTable(
+  "developer_api_usage",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    provider: text("provider").notNull(),
+    month: text("month").notNull(),
+    callCount: integer("call_count").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("developer_api_usage_tenant_provider_month_uidx").on(t.tenantId, t.provider, t.month),
+    index("developer_api_usage_tenant_month_idx").on(t.tenantId, t.month),
+  ],
+);
+
+/** Optional display cap per provider. Null = no limit shown. */
+export const developerApiMeterSettings = pgTable(
+  "developer_api_meter_settings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    provider: text("provider").notNull(),
+    monthlyLimit: integer("monthly_limit"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("developer_api_meter_settings_tenant_provider_uidx").on(t.tenantId, t.provider)],
+);
+
+export type DeveloperApiUsage = typeof developerApiUsage.$inferSelect;
+export type DeveloperApiMeterSetting = typeof developerApiMeterSettings.$inferSelect;

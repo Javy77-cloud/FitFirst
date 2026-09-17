@@ -1,5 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { adminRedirectPath, isAdminOnlyPath, isPublicPath } from "@/lib/auth/access";
+import {
+  adminRedirectPath,
+  developerRedirectPath,
+  isAdminOnlyPath,
+  isDeveloperOnlyPath,
+  isPublicPath,
+} from "@/lib/auth/access";
 import { SESSION_COOKIES } from "@/lib/auth/cookies";
 import { isMfaChallengePath, isMfaSetupPath } from "@/lib/auth/mfa";
 import { isInvalidDeskRecordPath } from "@/lib/desk-id";
@@ -77,6 +83,7 @@ export function proxy(request: NextRequest) {
   }
 
   const isAdmin = role === "admin" || role === "owner";
+  const isDeveloper = role === "developer";
   const canModules = request.cookies.get(SESSION_COOKIES.modules)?.value !== "0";
   if (!isAdmin && !canModules && isModulePath(pathname)) {
     const dest = request.nextUrl.clone();
@@ -84,7 +91,15 @@ export function proxy(request: NextRequest) {
     dest.search = "?locked=modules";
     return NextResponse.redirect(dest);
   }
-  if (!isAdmin && isAdminOnlyPath(pathname)) {
+  if (isDeveloperOnlyPath(pathname)) {
+    if (!isDeveloper && !isAdmin) {
+      const dest = request.nextUrl.clone();
+      const [path, query] = developerRedirectPath().split("?");
+      dest.pathname = path ?? "/me";
+      dest.search = query ? `?${query}` : "";
+      return NextResponse.redirect(dest);
+    }
+  } else if (!isAdmin && isAdminOnlyPath(pathname)) {
     const dest = request.nextUrl.clone();
     const [path, query] = adminRedirectPath().split("?");
     dest.pathname = path ?? "/settings/my-desk";

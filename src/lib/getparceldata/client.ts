@@ -11,6 +11,7 @@ import {
   type GetParcelHit,
   type PropertyRecordsFact,
 } from "./map";
+import { noteDeveloperApiCall } from "@/lib/developer/usage";
 
 export type PropertyAddressQuery = {
   address1?: string | null;
@@ -91,6 +92,7 @@ export async function searchGetParcelDataRecords(
       },
       signal: AbortSignal.timeout(10000),
     });
+    noteDeveloperApiCall("getparceldata");
     if (res.status === 401) {
       return {
         status: "error",

@@ -1,4 +1,4 @@
-/** Admin vs Agent capability matrix. UI hide must match these gates. */
+/** Admin vs Agent vs Developer capability matrix. UI hide must match these gates. */
 
 export const ADMIN_ONLY_PATHS = [
   "/settings/agency",
@@ -31,13 +31,14 @@ const PERSONAL_SETTINGS_PATHS = [
   "/me",
 ] as const;
 
-export type AccessRole = "admin" | "agent" | "guest";
+export type AccessRole = "admin" | "agent" | "developer" | "guest";
 
 export type DeskCapabilities = {
   role: AccessRole;
   signedIn: boolean;
   seeAllBooks: boolean;
   seeAdminSettings: boolean;
+  seeDeveloperHub: boolean;
   askTeammate: boolean;
   connectAgencyIntegrations: boolean;
   editGlobalLists: boolean;
@@ -53,6 +54,7 @@ const GUEST: DeskCapabilities = {
   signedIn: false,
   seeAllBooks: false,
   seeAdminSettings: false,
+  seeDeveloperHub: false,
   askTeammate: false,
   connectAgencyIntegrations: false,
   editGlobalLists: false,
@@ -68,6 +70,7 @@ const ADMIN: DeskCapabilities = {
   signedIn: true,
   seeAllBooks: true,
   seeAdminSettings: true,
+  seeDeveloperHub: false,
   askTeammate: true,
   connectAgencyIntegrations: true,
   editGlobalLists: true,
@@ -83,6 +86,7 @@ const AGENT: DeskCapabilities = {
   signedIn: true,
   seeAllBooks: false,
   seeAdminSettings: false,
+  seeDeveloperHub: false,
   askTeammate: false,
   connectAgencyIntegrations: false,
   editGlobalLists: false,
@@ -93,10 +97,34 @@ const AGENT: DeskCapabilities = {
   pipelineOwnDeals: true,
 };
 
-export function capabilitiesFor(role: AccessRole | string | null | undefined): DeskCapabilities {
-  if (role === "admin" || role === "owner") return ADMIN;
-  if (role === "agent") return AGENT;
-  return GUEST;
+const DEVELOPER: DeskCapabilities = {
+  role: "developer",
+  signedIn: true,
+  seeAllBooks: true,
+  seeAdminSettings: false,
+  seeDeveloperHub: true,
+  askTeammate: false,
+  connectAgencyIntegrations: false,
+  editGlobalLists: false,
+  editAppetiteTools: false,
+  ownBookCrm: true,
+  sendClientComms: false,
+  calendarOwnItems: true,
+  pipelineOwnDeals: false,
+};
+
+export function capabilitiesFor(
+  role: AccessRole | string | null | undefined,
+  flags?: { isDeveloper?: boolean },
+): DeskCapabilities {
+  const isDeveloper = Boolean(flags?.isDeveloper || role === "developer");
+  let base: DeskCapabilities;
+  if (role === "admin" || role === "owner") base = ADMIN;
+  else if (role === "developer") base = DEVELOPER;
+  else if (role === "agent") base = AGENT;
+  else base = GUEST;
+  if (!isDeveloper) return base;
+  return { ...base, seeDeveloperHub: true };
 }
 
 export function isAdminOnlyPath(pathname: string): boolean {
@@ -128,3 +156,5 @@ export function isPublicPath(pathname: string): boolean {
 export function adminRedirectPath(): string {
   return "/me?error=admin-only";
 }
+
+export { DEVELOPER_PATHS, developerRedirectPath, isDeveloperOnlyPath } from "@/lib/developer/profile";

@@ -4,6 +4,7 @@ import {
   floridaPropertyKeyReady,
 } from "./key";
 import { factsFromFloridaParcel, pickFirstParcel, type PropertyRecordsFact } from "./map";
+import { noteDeveloperApiCall } from "@/lib/developer/usage";
 
 export type PropertyAddressQuery = {
   address1?: string | null;
@@ -80,6 +81,7 @@ export async function searchFloridaPropertyRecords(
       },
       signal: AbortSignal.timeout(8000),
     });
+    noteDeveloperApiCall("florida_property");
     if (res.status === 401) {
       return {
         status: "error",

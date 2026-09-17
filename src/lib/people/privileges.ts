@@ -5,9 +5,10 @@ export type AgentPrivilegeFlags = {
 
 export function defaultPrivilegesForRole(role: string): AgentPrivilegeFlags {
   const admin = role === "admin" || role === "owner";
+  const developer = role === "developer";
   return {
     canAccessModules: true,
-    canSeeAgencyWidgets: admin,
+    canSeeAgencyWidgets: admin || developer,
   };
 }
 

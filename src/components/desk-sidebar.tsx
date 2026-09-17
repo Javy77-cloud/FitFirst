@@ -78,20 +78,23 @@ export function DeskSidebar({
   actor,
   signedIn,
   isAdmin,
+  isDeveloper = false,
   initialLayout,
 }: {
   unread: number;
   actor: Actor;
   signedIn: boolean;
   isAdmin: boolean;
+  isDeveloper?: boolean;
   initialLayout?: StoredNavLayout | null;
 }) {
   const pathname = usePathname();
   const search = useSearchParams();
+  const navOpts = { isAdmin, isDeveloper };
   const [layout, setLayout] = useState<StoredNavLayout>(() =>
-    normalizeNavLayout(initialLayout ?? defaultStoredNavLayout({ isAdmin }), { isAdmin }),
+    normalizeNavLayout(initialLayout ?? defaultStoredNavLayout(navOpts), navOpts),
   );
-  const [openId, setOpenId] = useState(() => primaryIdForPath(pathname, layout, isAdmin));
+  const [openId, setOpenId] = useState(() => primaryIdForPath(pathname, layout, isAdmin, isDeveloper));
   const [rail, setRail] = useState<SidebarRail>("expanded");
   const [ready, setReady] = useState(false);
   const [customizing, setCustomizing] = useState(false);
@@ -109,16 +112,16 @@ export function DeskSidebar({
   const originRef = useRef({ x: 0, y: 0 });
   const layoutRef = useRef(layout);
   const narrow = rail === "narrow";
-  const allRows = resolveNavLayout(layout, { isAdmin });
+  const allRows = resolveNavLayout(layout, navOpts);
   const { main, utility } = splitNavSections(allRows);
-  const addableLinks = customizing && !narrow ? unusedCatalogLinks(layout, { isAdmin }) : [];
+  const addableLinks = customizing && !narrow ? unusedCatalogLinks(layout, navOpts) : [];
   layoutRef.current = layout;
 
   useEffect(() => {
     const prefs = readSidebarPrefs();
     setRail(prefs.rail);
     const cached = persistEnabled ? null : readCachedLayout();
-    const nextLayout = normalizeNavLayout(initialLayout ?? cached ?? defaultStoredNavLayout({ isAdmin }), { isAdmin });
+    const nextLayout = normalizeNavLayout(initialLayout ?? cached ?? defaultStoredNavLayout(navOpts), navOpts);
     setLayout(nextLayout);
     setOpenId(resolveOpenSection(pathname, prefs.openId));
     setReady(true);
@@ -128,9 +131,9 @@ export function DeskSidebar({
 
   useEffect(() => {
     if (!ready || customizing) return;
-    const routePrimary = primaryIdForPath(pathname, layout, isAdmin);
+    const routePrimary = primaryIdForPath(pathname, layout, isAdmin, isDeveloper);
     if (routePrimary) setOpenId(routePrimary);
-  }, [pathname, ready, layout, isAdmin, customizing]);
+  }, [pathname, ready, layout, isAdmin, isDeveloper, customizing]);
 
   useEffect(() => {
     if (!ready) return;
@@ -138,7 +141,7 @@ export function DeskSidebar({
   }, [openId, rail, ready]);
 
   function persist(next: StoredNavLayout) {
-    const normalized = normalizeNavLayout(next, { isAdmin });
+    const normalized = normalizeNavLayout(next, navOpts);
     setLayout(normalized);
     writeCachedLayout(normalized);
     setSaveError(null);
@@ -180,7 +183,7 @@ export function DeskSidebar({
       clearTimeout(persistTimer.current);
       persistTimer.current = null;
     }
-    const next = defaultStoredNavLayout({ isAdmin });
+    const next = defaultStoredNavLayout(navOpts);
     setLayout(next);
     writeCachedLayout(next);
     setSaveError(null);

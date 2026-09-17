@@ -1,6 +1,6 @@
 import { ApiVaultPanel } from "@/components/developer-hub/api-vault-panel";
 import { SettingsShell } from "@/components/settings/settings-shell";
-import { requireAdminPage } from "@/lib/auth/guards";
+import { requireAdminOrDeveloperPage } from "@/lib/auth/guards";
 import {
   loadFedExPublicStatus,
   loadGetParcelDataPublicStatus,
@@ -11,7 +11,7 @@ import { NHTSA_VPIC_SETTINGS_NOTE } from "@/lib/vin-decode";
 export const dynamic = "force-dynamic";
 
 export default async function DeveloperApiVaultPage() {
-  const session = await requireAdminPage();
+  const session = await requireAdminOrDeveloperPage();
   const [fedex, getParcelData, permitStack] = await Promise.all([
     loadFedExPublicStatus(),
     loadGetParcelDataPublicStatus(),

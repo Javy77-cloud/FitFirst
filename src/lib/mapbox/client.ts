@@ -1,5 +1,6 @@
 import { parseMapboxSuggestPayload } from "./parse";
 import type { AddressSuggestion } from "@/lib/address/types";
+import { noteDeveloperApiCall } from "@/lib/developer/usage";
 
 export type FetchLike = (
   input: string | URL,
@@ -40,6 +41,7 @@ export async function suggestMapboxAddresses(
   url.searchParams.set("country", "US");
   url.searchParams.set("limit", "6");
   const res = await fetchImpl(url.toString(), { signal: AbortSignal.timeout(8000) });
+  noteDeveloperApiCall("mapbox");
   if (!res.ok) return [];
   return parseMapboxSuggestPayload(await res.json());
 }

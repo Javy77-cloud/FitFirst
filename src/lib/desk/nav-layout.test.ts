@@ -32,6 +32,7 @@ import {
   showPrimary,
   splitNavSections,
   togglePrimaryHidden,
+  unusedCatalogLinks,
   visibleNavItems,
 } from "./nav-layout";
 
@@ -708,6 +709,7 @@ describe("catalog", () => {
     expect(ids).toContain("scorecards");
     expect(ids).toContain("glance");
     expect(ids).toContain("commissions");
+    expect(ids).toContain("developer");
     for (const id of [
       "book-health",
       "renewals",
@@ -724,5 +726,32 @@ describe("catalog", () => {
     ]) {
       expect(ids).toContain(id);
     }
+  });
+});
+
+describe("developer nav gate", () => {
+  it("shows Developer only for the developer profile, never for Agent or plain Admin", () => {
+    const admin = resolveNavLayout(null, { isAdmin: true, isDeveloper: false });
+    const agent = resolveNavLayout(null, { isAdmin: false, isDeveloper: false });
+    const developer = resolveNavLayout(null, { isAdmin: false, isDeveloper: true });
+    const both = resolveNavLayout(null, { isAdmin: true, isDeveloper: true });
+    expect(itemIds(admin)).not.toContain("developer");
+    expect(itemIds(agent)).not.toContain("developer");
+    expect(itemLabels(agent)).not.toContain("Developer");
+    expect(itemIds(developer)).toContain("developer");
+    expect(itemIds(developer)).not.toContain("admin");
+    expect(itemIds(developer)).not.toContain("settings");
+    expect(itemIds(both)).toContain("developer");
+    expect(itemIds(both)).toContain("admin");
+    const unusedAdmin = unusedCatalogLinks(defaultStoredNavLayout({ isAdmin: true }), {
+      isAdmin: true,
+      isDeveloper: false,
+    }).map((link) => link.id);
+    expect(unusedAdmin).not.toContain("developer");
+    const unusedDev = unusedCatalogLinks(defaultStoredNavLayout({ isAdmin: false }), {
+      isAdmin: false,
+      isDeveloper: true,
+    }).map((link) => link.id);
+    expect(unusedDev).toContain("developer");
   });
 });

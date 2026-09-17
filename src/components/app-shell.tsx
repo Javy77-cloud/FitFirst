@@ -110,7 +110,7 @@ async function AppShellSidebar({
   actor: Actor;
 }) {
   const [navLayout, header] = await Promise.all([
-    getStoredNavLayout(session.userId, { isAdmin: session.isAdmin }),
+    getStoredNavLayout(session.userId, { isAdmin: session.isAdmin, isDeveloper: session.isDeveloper }),
     loadHeaderNotificationState(),
   ]);
   return (
@@ -119,14 +119,20 @@ async function AppShellSidebar({
       actor={actor}
       signedIn={session.signedIn}
       isAdmin={session.isAdmin}
+      isDeveloper={session.isDeveloper}
       initialLayout={navLayout}
     />
   );
 }
 
 async function AppShellMobileNav({ session }: { session: DeskSession }) {
-  const navLayout = await getStoredNavLayout(session.userId, { isAdmin: session.isAdmin });
-  const mobileNav = flattenResolvedNav(resolveNavLayout(navLayout, { isAdmin: session.isAdmin }));
+  const navLayout = await getStoredNavLayout(session.userId, {
+    isAdmin: session.isAdmin,
+    isDeveloper: session.isDeveloper,
+  });
+  const mobileNav = flattenResolvedNav(
+    resolveNavLayout(navLayout, { isAdmin: session.isAdmin, isDeveloper: session.isDeveloper }),
+  );
   return (
     <nav className="ff-no-print flex gap-3 overflow-x-auto border-b border-border bg-card px-3 py-2 text-xs md:hidden">
       {mobileNav.map((item) => (
@@ -164,7 +170,8 @@ async function AppShellHeader({
     id: row.id,
     name: row.name,
     email: row.email ?? "",
-    role: row.role === "agent" ? "agent" : "admin",
+    role: row.role === "agent" || row.role === "developer" ? "agent" : "admin",
+    profile: row.role === "developer" ? "developer" : row.role === "admin" ? "admin" : "agent",
   }));
   return (
     <DeskHeader

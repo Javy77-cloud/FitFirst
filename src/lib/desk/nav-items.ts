@@ -33,4 +33,5 @@ export const DESK_NAV_ITEMS = [
   { href: "/reports", label: "Reports" },
   { href: "/settings", label: "Settings" },
   { href: "/admin", label: "Admin" },
+  { href: "/developer", label: "Developer" },
 ] as const;

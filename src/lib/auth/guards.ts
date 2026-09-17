@@ -1,6 +1,11 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { adminRedirectPath, capabilitiesFor, type DeskCapabilities } from "@/lib/auth/access";
+import {
+  adminRedirectPath,
+  capabilitiesFor,
+  developerRedirectPath,
+  type DeskCapabilities,
+} from "@/lib/auth/access";
 import { isMfaSetupPath } from "@/lib/auth/mfa";
 import { currentDeskSession, type DeskSession } from "@/lib/auth/session";
 
@@ -32,7 +37,8 @@ export class AdminOnlyError extends Error {
 
 export function sessionCapabilities(session: DeskSession): DeskCapabilities {
   if (!session.signedIn) return capabilitiesFor("guest");
-  return capabilitiesFor(session.isAdmin ? "admin" : "agent");
+  const role = session.role === "developer" ? "developer" : session.isAdmin ? "admin" : "agent";
+  return capabilitiesFor(role, { isDeveloper: session.isDeveloper });
 }
 
 export async function requireSignedIn(): Promise<DeskSession> {
@@ -68,6 +74,19 @@ export async function requireAdminPage(): Promise<DeskSession> {
 export async function requireSiteDeveloperPage(): Promise<DeskSession> {
   const session = await requireSignedIn();
   if (!session.isSiteDeveloper) redirect("/settings/developer");
+  return session;
+}
+
+/** Third profile: Developer role or site-developer flag. Separate from Admin settings. */
+export async function requireDeveloperPage(): Promise<DeskSession> {
+  const session = await requireSignedIn();
+  if (!session.isDeveloper) redirect(developerRedirectPath());
+  return session;
+}
+
+export async function requireAdminOrDeveloperPage(): Promise<DeskSession> {
+  const session = await requireSignedIn();
+  if (!session.isAdmin && !session.isDeveloper) redirect(adminRedirectPath());
   return session;
 }
 

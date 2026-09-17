@@ -939,6 +939,13 @@
       "when": 1790400000000,
       "tag": "0133_field_global_list_key",
       "breakpoints": true
+    },
+    {
+      "idx": 134,
+      "version": "7",
+      "when": 1790500000000,
+      "tag": "0134_developer_profile",
+      "breakpoints": true
     }
   ]
 }

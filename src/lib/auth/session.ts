@@ -32,6 +32,7 @@ export type DeskSession = {
   email: string | null;
   isAdmin: boolean;
   isAgent: boolean;
+  isDeveloper: boolean;
   isSiteDeveloper: boolean;
   signedIn: boolean;
   capabilities: DeskCapabilities;
@@ -49,6 +50,7 @@ const DEMO_PASSWORDS: Record<string, string> = {
   "javy@fitfirst.local": "javy",
   "maya@fitfirst.local": "maya",
   "javier@fitfirst.local": "javier",
+  "drew@fitfirst.local": "drew",
 };
 
 export const DEMO_USERS = {
@@ -68,6 +70,14 @@ export const DEMO_USERS = {
     label: "Agent",
     summary:
       "Same agency book as admin (Policies, Contacts, Deals). Agent chrome still applies via Agent Policy Access.",
+  },
+  developer: {
+    email: "drew@fitfirst.local",
+    password: "drew",
+    name: "Drew Hale",
+    role: "developer" as const,
+    label: "Developer",
+    summary: "API usage meters and upcoming platform notes. Not Admin settings. Not a producer book.",
   },
 } as const;
 
@@ -114,6 +124,7 @@ function guestSession(): DeskSession {
     email: null,
     isAdmin: false,
     isAgent: false,
+    isDeveloper: false,
     isSiteDeveloper: false,
     signedIn: false,
     capabilities: capabilitiesFor("guest"),
@@ -135,7 +146,10 @@ function sessionFromUser(
 ): DeskSession {
   const role = normalizeRole(user.role);
   const isAdminRole = role === "admin" || role === "owner";
+  const isSiteDeveloper = userIsSiteDeveloper(user);
+  const isDeveloper = role === "developer" || isSiteDeveloper;
   const impersonating = Boolean(impersonator && impersonator.id !== user.id);
+  const capRole = role === "developer" ? "developer" : isAdminRole ? "admin" : "agent";
   return {
     user,
     role,
@@ -144,9 +158,10 @@ function sessionFromUser(
     email: user.email,
     isAdmin: isAdminRole,
     isAgent: role === "agent",
-    isSiteDeveloper: userIsSiteDeveloper(user),
+    isDeveloper,
+    isSiteDeveloper,
     signedIn: true,
-    capabilities: capabilitiesFor(isAdminRole ? "admin" : "agent"),
+    capabilities: capabilitiesFor(capRole, { isDeveloper }),
     mfaStatus: resolveMfaStatus(user, mfaCookie),
     mfaEnrolled: Boolean(user.mfaEnrolled),
     mfaMethod: user.mfaMethod,
@@ -213,7 +228,8 @@ export const getActor = cache(async function getActor(): Promise<Actor> {
       id: session.user.id,
       name: session.user.name,
       email: session.user.email,
-      role: session.user.role === "agent" ? "agent" : "admin",
+      role: session.user.role === "agent" || session.user.role === "developer" ? "agent" : "admin",
+      profile: session.isDeveloper && !session.isAdmin ? "developer" : session.isAdmin ? "admin" : "agent",
       canSeeAgencyBook: Boolean(session.user?.canSeeAgencyWidgets),
     };
   }

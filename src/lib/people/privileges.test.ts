@@ -11,6 +11,10 @@ describe("agent privilege defaults", () => {
       canAccessModules: true,
       canSeeAgencyWidgets: false,
     });
+    expect(defaultPrivilegesForRole("developer")).toEqual({
+      canAccessModules: true,
+      canSeeAgencyWidgets: true,
+    });
   });
 
   it("treats CRM and pipeline as modules, not Home or My desk", () => {
