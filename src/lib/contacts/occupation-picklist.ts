@@ -5,9 +5,11 @@ import {
   updateFieldPicklist,
 } from "@/lib/custom-fields/picklist-store";
 import type { FieldPicklist } from "@/lib/custom-fields/picklists";
+import { STARTER_PICKLIST_SEED_KEY, matchStarterList } from "@/lib/custom-fields/starter-picklists";
 
 /** Global shared Settings → Picklists name. Used by Contacts, Deals, Leads. */
 export const OCCUPATION_PICKLIST_NAME = "Occupations";
+export const OCCUPATION_PICKLIST_SEED_KEY = STARTER_PICKLIST_SEED_KEY.occupations;
 
 export function isOccupationPicklistName(name: string): boolean {
   return name.trim().toLowerCase() === OCCUPATION_PICKLIST_NAME.toLowerCase();
@@ -23,7 +25,9 @@ export const OCCUPATION_PICKLIST_SEED = [...OCCUPATION_OPTIONS];
 export async function ensureOccupationPicklist(): Promise<FieldPicklist | null> {
   try {
     const lists = await listFieldPicklists();
-    const found = lists.find((list) => isOccupationPicklistName(list.name));
+    const found =
+      matchStarterList(lists, { name: OCCUPATION_PICKLIST_NAME, seedKey: OCCUPATION_PICKLIST_SEED_KEY }) ??
+      lists.find((list) => isOccupationPicklistName(list.name));
     if (found) {
       if (found.options.length === 0) {
         return (
@@ -32,7 +36,9 @@ export async function ensureOccupationPicklist(): Promise<FieldPicklist | null> 
       }
       return found;
     }
-    return await createFieldPicklist(OCCUPATION_PICKLIST_NAME, OCCUPATION_PICKLIST_SEED);
+    return await createFieldPicklist(OCCUPATION_PICKLIST_NAME, OCCUPATION_PICKLIST_SEED, {
+      seedKey: OCCUPATION_PICKLIST_SEED_KEY,
+    });
   } catch {
     return null;
   }

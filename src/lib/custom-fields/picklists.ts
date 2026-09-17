@@ -11,6 +11,8 @@ export type FieldPicklist = {
   id: string;
   name: string;
   options: PicklistOption[];
+  seedKey?: string | null;
+  active?: boolean;
 };
 
 /** High enough for US states + DC. Custom field lists stay this size. */
@@ -147,12 +149,14 @@ export function cloneFieldDef(field: CustomFieldDef, existingKeys: string[]): Cu
 
 export function parseFieldPicklist(raw: unknown): FieldPicklist | null {
   if (!raw || typeof raw !== "object") return null;
-  const row = raw as { id?: unknown; name?: unknown; options?: unknown };
+  const row = raw as { id?: unknown; name?: unknown; options?: unknown; seedKey?: unknown; active?: unknown };
   if (typeof row.id !== "string" || typeof row.name !== "string") return null;
   return {
     id: row.id,
     name: row.name.trim() || "Untitled list",
     options: sanitizeRichPicklistOptions(row.options),
+    seedKey: typeof row.seedKey === "string" && row.seedKey.trim() ? row.seedKey.trim() : null,
+    active: row.active !== false,
   };
 }
 

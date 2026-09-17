@@ -12,9 +12,9 @@ import {
   sanitizeRichPicklistOptions,
   type PicklistOption,
 } from "@/lib/custom-fields/picklists";
-import { flashAction } from "@/lib/flash-action";
 import { isRedirectError } from "@/lib/lifecycle/shop";
 import { STATUS_COLOR_KEYS } from "@/lib/desk/status-colors";
+import { listMutationError, listMutationOk, type ListMutationResult } from "@/lib/settings/list-editor";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -49,7 +49,13 @@ function revalidatePicklists() {
   revalidatePath("/deals");
 }
 
-export async function saveFieldPicklist(formData: FormData) {
+function fail(error: unknown, fallback: string): ListMutationResult {
+  if (isRedirectError(error)) throw error;
+  const message = error instanceof Error ? error.message : fallback;
+  return listMutationError(message);
+}
+
+export async function saveFieldPicklist(formData: FormData): Promise<ListMutationResult> {
   const id = str(formData, "id");
   const name = str(formData, "name") || "Untitled list";
   const options = optionsFrom(formData);
@@ -57,76 +63,66 @@ export async function saveFieldPicklist(formData: FormData) {
     if (id) await updateFieldPicklist(id, { name, options });
     else await createFieldPicklist(name, options);
     revalidatePicklists();
-    flashAction("/settings/picklists", "list-saved");
+    return listMutationOk("pick-list-saved");
   } catch (error) {
-    if (isRedirectError(error)) throw error;
-    const message = error instanceof Error ? error.message : "Could not save picklist.";
-    flashAction("/settings/picklists", message, "error");
+    return fail(error, "Could not save picklist.");
   }
 }
 
-export async function createEmptyFieldPicklist(formData: FormData) {
+export async function createEmptyFieldPicklist(formData: FormData): Promise<ListMutationResult> {
   const name = str(formData, "name") || "New picklist";
   try {
     await createFieldPicklist(name, []);
     revalidatePicklists();
+    return listMutationOk("pick-list-saved");
   } catch (error) {
-    if (isRedirectError(error)) throw error;
-    const message = error instanceof Error ? error.message : "Could not create picklist.";
-    flashAction("/settings/picklists", message, "error");
+    return fail(error, "Could not create picklist.");
   }
 }
 
-export async function deleteFieldPicklistAction(formData: FormData) {
+export async function deleteFieldPicklistAction(formData: FormData): Promise<ListMutationResult> {
   const id = str(formData, "id");
-  if (!id) return;
+  if (!id) return listMutationError("Picklist not found.");
   try {
     await deleteFieldPicklist(id);
     revalidatePicklists();
+    return listMutationOk("list-deleted");
   } catch (error) {
-    if (isRedirectError(error)) throw error;
-    const message = error instanceof Error ? error.message : "Could not delete picklist.";
-    flashAction("/settings/picklists", message, "error");
+    return fail(error, "Could not delete picklist.");
   }
 }
 
-export async function removeFieldPicklistOption(formData: FormData) {
+export async function removeFieldPicklistOption(formData: FormData): Promise<ListMutationResult> {
   const id = str(formData, "id");
   const value = str(formData, "value");
-  if (!id || !value) return;
+  if (!id || !value) return listMutationError("Picklist not found.");
   try {
     const existing = await getFieldPicklist(id);
     if (!existing) {
-      flashAction("/settings/picklists", "Picklist not found.", "error");
-      return;
+      return listMutationError("Picklist not found.");
     }
     const next = existing.options.filter((option) => option.value !== value);
     await updateFieldPicklist(id, { options: next });
     revalidatePicklists();
-    flashAction("/settings/picklists", "list-item-deleted");
+    return listMutationOk("list-item-deleted");
   } catch (error) {
-    if (isRedirectError(error)) throw error;
-    const message = error instanceof Error ? error.message : "Could not delete value.";
-    flashAction("/settings/picklists", message, "error");
+    return fail(error, "Could not delete value.");
   }
 }
 
-export async function clearFieldPicklistColors(formData: FormData) {
+export async function clearFieldPicklistColors(formData: FormData): Promise<ListMutationResult> {
   const id = str(formData, "id");
-  if (!id) return;
+  if (!id) return listMutationError("Picklist not found.");
   try {
     const existing = await getFieldPicklist(id);
     if (!existing) {
-      flashAction("/settings/picklists", "Picklist not found.", "error");
-      return;
+      return listMutationError("Picklist not found.");
     }
     const next = clearAllPicklistOptionColors(existing.options);
     await updateFieldPicklist(id, { options: next });
     revalidatePicklists();
-    flashAction("/settings/picklists", "colors-cleared");
+    return listMutationOk("colors-cleared");
   } catch (error) {
-    if (isRedirectError(error)) throw error;
-    const message = error instanceof Error ? error.message : "Could not clear colors.";
-    flashAction("/settings/picklists", message, "error");
+    return fail(error, "Could not clear colors.");
   }
 }

@@ -14,6 +14,7 @@ import {
   STARTER_PICKLIST_MARITAL_STATUS,
   STARTER_PICKLIST_POLICY_SUBTYPES,
   STARTER_PICKLIST_RECENT_LIFE_EVENTS,
+  matchStarterList,
   starterPicklistByName,
 } from "@/lib/custom-fields/starter-picklists";
 import { LEAD_SOURCES } from "@/lib/crm/sources";
@@ -75,27 +76,28 @@ const LEAD_SOURCE_ALIASES = ["Lead Source", "Source", "Business Source", "Lead S
 async function ensureNamedPicklist(name: string): Promise<FieldPicklist | null> {
   try {
     const lists = await listFieldPicklists();
-    const seed = starterPicklistByName(name)?.options ?? [];
+    const starter = starterPicklistByName(name);
+    const seed = starter?.options ?? [];
 
     if (name === STARTER_PICKLIST_LEAD_SOURCE) {
+      const bySeed = starter ? matchStarterList(lists, starter) : undefined;
       const aliases = lists.filter((list) =>
         LEAD_SOURCE_ALIASES.some((alias) => list.name.trim().toLowerCase() === alias.toLowerCase()),
       );
       const leadNamed = aliases.find((list) => list.name.trim().toLowerCase() === "lead source");
-      const preferred = leadNamed ?? aliases[0];
+      const preferred = bySeed ?? leadNamed ?? aliases[0];
       const merged = Array.from(
         new Set([
           ...seed,
           ...LEAD_SOURCES,
-          ...aliases.flatMap((list) => list.options),
+          ...aliases.flatMap((list) => list.options.map((option) => option.value)),
         ]),
       );
       if (preferred) {
-        const patch: { name?: string; options?: string[] } = {};
-        if (preferred.name.trim() !== STARTER_PICKLIST_LEAD_SOURCE && !leadNamed) {
-          patch.name = STARTER_PICKLIST_LEAD_SOURCE;
-        }
-        if (merged.length && merged.join("\0") !== preferred.options.join("\0")) {
+        const patch: { options?: string[]; seedKey?: string } = {};
+        // Keep a user rename. Only fill empty options / backfill seed key.
+        if (!preferred.seedKey && starter?.seedKey) patch.seedKey = starter.seedKey;
+        if (preferred.options.length === 0 && merged.length) {
           patch.options = merged;
         }
         if (Object.keys(patch).length) {
@@ -103,17 +105,21 @@ async function ensureNamedPicklist(name: string): Promise<FieldPicklist | null> 
         }
         return preferred;
       }
-      return await createFieldPicklist(STARTER_PICKLIST_LEAD_SOURCE, merged.length ? merged : [...LEAD_SOURCES]);
+      return await createFieldPicklist(STARTER_PICKLIST_LEAD_SOURCE, merged.length ? merged : [...LEAD_SOURCES], {
+        seedKey: starter?.seedKey,
+      });
     }
 
-    const found = lists.find((list) => list.name.trim().toLowerCase() === name.toLowerCase());
+    const found = starter
+      ? matchStarterList(lists, starter)
+      : lists.find((list) => list.name.trim().toLowerCase() === name.toLowerCase());
     if (found) {
       if (found.options.length === 0 && seed.length) {
-        return (await updateFieldPicklist(found.id, { options: seed })) ?? found;
+        return (await updateFieldPicklist(found.id, { options: seed, seedKey: found.seedKey ?? starter?.seedKey })) ?? found;
       }
       return found;
     }
-    return await createFieldPicklist(name, seed);
+    return await createFieldPicklist(name, seed, { seedKey: starter?.seedKey });
   } catch {
     return null;
   }

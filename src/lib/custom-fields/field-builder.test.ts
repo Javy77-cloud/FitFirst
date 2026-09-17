@@ -159,6 +159,7 @@ describe("deal field builder", () => {
     const builder = source("src/components/custom-fields/field-builder.tsx");
     const config = source("src/components/custom-fields/picklist-config.tsx");
     const page = source("src/app/settings/picklists/page.tsx");
+    const card = source("src/components/settings/picklist-card.tsx");
     expect(builder).toMatch(/PicklistConfig/);
     expect(builder).toMatch(/data-ff-edit-properties/);
     expect(builder).toMatch(/type === "picklist" \|\| type === "multi_select"/);
@@ -175,7 +176,8 @@ describe("deal field builder", () => {
     expect(page).toMatch(/SettingsShell title="Picklists"/);
     expect(page).toMatch(/current="picklists"/);
     expect(page).toMatch(/data-ff-new-picklist/);
-    expect(page).toMatch(/data-ff-picklist-name/);
+    expect(page).toMatch(/lg:grid-cols-2/);
+    expect(card).toMatch(/data-ff-picklist-name/);
     expect(page).toMatch(/US states/);
     expect(source("src/lib/settings/nav.ts")).toMatch(/"picklists"/);
     expect(source("src/lib/settings/nav.ts")).toMatch(/\/settings\/picklists/);
@@ -225,7 +227,7 @@ describe("deal field builder", () => {
     const icon = source("src/components/custom-fields/field-type-icon.tsx");
     expect(icon).toMatch(/data-ff-type-icon=\{type\}/);
     expect(source("src/components/custom-fields/field-builder.tsx")).toMatch(/FieldTypeIcon/);
-    expect(source("src/app/settings/picklists/page.tsx")).toMatch(/FieldTypeIcon/);
+    expect(source("src/components/settings/picklist-card.tsx")).toMatch(/FieldTypeIcon/);
     for (const type of PALETTE_ITEMS) {
       expect(icon).toMatch(new RegExp(`${type}:`));
     }

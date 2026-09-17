@@ -137,10 +137,26 @@ export function noticeStampPhrase(
   return `Notice · ${short ?? noticeTypeLabel(type, options)}`;
 }
 
+const NOTICE_FAMILY_SEED_KEYS = {
+  pc: ["deal_notices_pc", "deal_notices"],
+  life: ["deal_notices_life"],
+  health: ["deal_notices_health"],
+} as const;
+
 export function noticePicklistForFamily(
-  lists: readonly { id?: string; name: string; options?: readonly (string | PicklistOption)[] | null }[],
+  lists: readonly {
+    id?: string;
+    name: string;
+    seedKey?: string | null;
+    options?: readonly (string | PicklistOption)[] | null;
+  }[],
   family: "pc" | "life" | "health",
 ): { id: string; name: string; options: readonly (string | PicklistOption)[] } | null {
+  const seedKeys = new Set<string>(NOTICE_FAMILY_SEED_KEYS[family]);
+  const bySeed = lists.find((row) => row.seedKey && seedKeys.has(row.seedKey));
+  if (bySeed?.id) {
+    return { id: bySeed.id, name: bySeed.name, options: bySeed.options ?? [] };
+  }
   const names = noticePicklistNamesForFamily(family).map((name) => name.toLowerCase());
   for (const name of names) {
     const list = lists.find((row) => row.name.trim().toLowerCase() === name);

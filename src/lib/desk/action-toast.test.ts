@@ -90,9 +90,9 @@ describe("site-wide action confirmation toast", () => {
   });
 
   it("wires flashAction on desk Save paths after a successful persist", () => {
-    expect(source("src/app/actions/field-picklists.ts")).toMatch(
-      /flashAction\("\/settings\/picklists", "list-saved"\)/,
-    );
+    expect(source("src/app/actions/field-picklists.ts")).toMatch(/listMutationOk\("pick-list-saved"\)/);
+    expect(source("src/components/settings/stay-on-save-form.tsx")).toMatch(/flashAction\(/);
+    expect(source("src/components/settings/stay-on-save-form.tsx")).toMatch(/router\.refresh\(\)/);
     expect(source("src/app/actions/policy-record.ts")).toMatch(/flashAction\(`\/policies\/\$\{id\}`, "policy-saved"\)/);
     expect(source("src/app/actions/agency.ts")).toMatch(/flashAction\("\/settings", "brand-saved"\)/);
     expect(source("src/app/actions/agency.ts")).toMatch(/flashAction\("\/settings", "template-saved"\)/);

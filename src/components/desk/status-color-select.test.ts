@@ -22,8 +22,8 @@ describe("sep7jf StatusColorSelect None + clear all colors", () => {
   });
 
   it("wires None for all on Global lists and Picklists", () => {
-    const lists = readFileSync("src/app/settings/lists/page.tsx", "utf8");
-    const picklists = readFileSync("src/app/settings/picklists/page.tsx", "utf8");
+    const lists = readFileSync("src/components/settings/global-list-card.tsx", "utf8");
+    const picklists = readFileSync("src/components/settings/picklist-card.tsx", "utf8");
     expect(lists).toMatch(/None for all/);
     expect(lists).toMatch(/clearGlobalListColors/);
     expect(picklists).toMatch(/None for all/);

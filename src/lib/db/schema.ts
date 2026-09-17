@@ -375,11 +375,15 @@ export const deskFieldPicklists = pgTable(
     tenantId: tenantCol(),
     name: text("name").notNull(),
     options: jsonb("options").$type<unknown>().notNull().default([]),
+    /** Stable starter identity — display name can change without recreating the list. */
+    seedKey: text("seed_key"),
+    active: boolean("active").notNull().default(true),
     ...timestamps,
   },
   (t) => [
     index("desk_field_picklists_tenant_idx").on(t.tenantId),
     uniqueIndex("desk_field_picklists_uidx").on(t.tenantId, t.name),
+    uniqueIndex("desk_field_picklists_seed_uidx").on(t.tenantId, t.seedKey),
   ],
 );
 

@@ -1,22 +1,10 @@
 import Link from "next/link";
-import {
-  addGlobalListItem,
-  clearGlobalListColors,
-  deleteGlobalListItem,
-} from "@/app/actions/global-lists";
-import { ClearAllColorsForm } from "@/components/desk/clear-all-colors-form";
-import { GlobalListColorForm } from "@/components/desk/global-list-color-form";
-import { StatusColorSelect, StatusColorSwatch } from "@/components/desk/status-color-select";
-import { HardDeleteForm } from "@/components/desk/hard-delete-form";
-import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
+import { GlobalListCard } from "@/components/settings/global-list-card";
 import { SettingsShell } from "@/components/settings/settings-shell";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { currentDeskSession } from "@/lib/auth/session";
 import { loadGlobalLists } from "@/lib/db/global-lists";
 import { listCarriers } from "@/lib/db/queries";
-import { GLOBAL_LIST_KEYS, GLOBAL_LIST_LABEL, type GlobalListKey } from "@/lib/desk/global-lists";
-import { INSURANCE_FAMILIES } from "@/lib/desk/policy-family";
+import { GLOBAL_LIST_KEYS, GLOBAL_LIST_LABEL } from "@/lib/desk/global-lists";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +52,7 @@ export default async function GlobalListsPage() {
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Zoho-style picklists used on Policies: types, sub-types, terms, statuses, and file
         categories. Carriers stay on their own records — this hub lists them so you do not hunt.
-        No live Zoho.
+        No live Zoho. Admins can add, rename, color, delete values, or clear a whole list.
       </p>
 
       {!session.isAdmin ? (
@@ -91,7 +79,7 @@ export default async function GlobalListsPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {GLOBAL_LIST_KEYS.map((key) => (
-          <ListCard
+          <GlobalListCard
             key={key}
             listKey={key}
             title={GLOBAL_LIST_LABEL[key]}
@@ -102,88 +90,5 @@ export default async function GlobalListsPage() {
         ))}
       </div>
     </SettingsShell>
-  );
-}
-
-function ListCard({
-  listKey,
-  title,
-  rows,
-  canEdit,
-  familyPicker,
-}: {
-  listKey: GlobalListKey;
-  title: string;
-  rows: Awaited<ReturnType<typeof loadGlobalLists>>;
-  canEdit: boolean;
-  familyPicker: boolean;
-}) {
-  const sorted = [...rows].filter((row) => row.active).sort((a, b) => a.label.localeCompare(b.label));
-  return (
-    <section className="ff-card space-y-3 p-4" data-ff-global-list={listKey}>
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-semibold text-navy">{title}</h2>
-          <p className="text-helper text-muted-foreground">{sorted.length} values · A–Z · full color palette</p>
-        </div>
-        {canEdit && sorted.length > 0 ? (
-          <ClearAllColorsForm action={clearGlobalListColors} subject={title} className="shrink-0">
-            <input type="hidden" name="listKey" value={listKey} />
-            <Button type="submit" size="sm" variant="outline" data-ff-none-for-all="">
-              None for all
-            </Button>
-          </ClearAllColorsForm>
-        ) : null}
-      </div>
-      {sorted.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No values yet.</p>
-      ) : (
-        <ul className="max-h-72 divide-y divide-border overflow-y-auto rounded-md border border-border">
-          {sorted.map((row) => (
-            <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 text-sm">
-              <span className="flex min-w-0 items-center gap-2">
-                <StatusColorSwatch color={row.color} />
-                <span className="text-navy">{row.label}</span>
-                {row.family ? (
-                  <span className="text-helper text-muted-foreground">{row.family}</span>
-                ) : null}
-              </span>
-              {canEdit ? (
-                <span className="flex flex-wrap items-center gap-2">
-                  <GlobalListColorForm id={row.id} label={row.label} color={row.color} />
-                  <HardDeleteForm action={deleteGlobalListItem} subject="this list item">
-                    <input type="hidden" name="id" value={row.id} />
-                    <FileDeleteIcon label={`Delete ${row.label}`} className="text-destructive" />
-                  </HardDeleteForm>
-                </span>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
-      {canEdit ? (
-        <form action={addGlobalListItem} className="flex flex-wrap items-end gap-2">
-          <input type="hidden" name="listKey" value={listKey} />
-          {familyPicker ? (
-            <select name="family" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
-              <option value="">Any family</option>
-              {INSURANCE_FAMILIES.map((family) => (
-                <option key={family} value={family}>
-                  {family}
-                </option>
-              ))}
-            </select>
-          ) : null}
-          <Input name="label" required placeholder="Add a value" className="h-8 min-w-40 flex-1" />
-          <label className="text-xs text-muted-foreground">
-            Color
-            <StatusColorSelect className="mt-0.5 block" defaultValue={null} />
-          </label>
-          <Button type="submit" size="sm" variant="outline">
-            Add
-          </Button>
-        </form>
-      ) : null}
-    </section>
   );
 }
