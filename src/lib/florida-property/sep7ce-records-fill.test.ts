@@ -18,7 +18,8 @@ describe("sep7ce Fill from property records", () => {
   it("places the master Fill control above the sheet next to header actions", () => {
     const sheet = source("src/components/deal/master-sheet-compare.tsx");
     expect(sheet).toMatch(/MasterSheetFillButton/);
-    expect(sheet).toMatch(/Confirm extracted/);
+    expect(sheet).toMatch(/Confirm/);
+    expect(source("src/components/deal/repeatable-unit-blocks.tsx")).toMatch(/Confirm extracted/);
     expect(sheet.indexOf("MasterSheetFillButton")).toBeLessThan(sheet.indexOf("SAVE_RISK_PROFILE_LABEL"));
     const action = source("src/app/actions/quote-sheet.ts");
     expect(action).toMatch(/fillFromPropertyRecords/);

@@ -51,6 +51,9 @@ export function isCompactLayoutField(key: string, field?: LayoutFieldHint): bool
   const k = key.toLowerCase();
   if (/(^|_)(city|state|zip|county|unit)$/.test(k)) return true;
   if (/(^|_)(date_of_birth|dob|gender|marital_status|marital)$/.test(k)) return true;
+  if (/(^|_)(year|stories|beds|baths|acres)$/.test(k) || /_year$/.test(k) || /^year_/.test(k)) {
+    return true;
+  }
   if (field?.type === "dob" || field?.type === "checkbox") return true;
   const opts = (field?.options ?? []).map((option) => option.trim().toLowerCase()).filter(Boolean);
   if (field?.type === "picklist" && opts.length > 0 && opts.every((option) => YES_NO.has(option))) {
