@@ -10,6 +10,7 @@ import {
 } from "@/lib/businesses/entity-industry";
 import { LEAD_SOURCES } from "@/lib/crm/sources";
 import { upsertFieldDef } from "@/lib/custom-fields/store";
+import { matchStarterList, starterPicklistByName } from "@/lib/custom-fields/starter-picklists";
 
 export const BUSINESS_ENTITY_TYPE_PICKLIST = "Business Entity Type";
 export const BUSINESS_INDUSTRY_PICKLIST = "Business Industry";
@@ -43,14 +44,17 @@ export const BUSINESS_DETAIL_PICKLIST_BINDINGS = [
 async function ensureNamedPicklist(name: string, options: string[]): Promise<FieldPicklist | null> {
   try {
     const lists = await listFieldPicklists();
-    const found = lists.find((list) => list.name.trim().toLowerCase() === name.toLowerCase());
+    const starter = starterPicklistByName(name);
+    const found = starter
+      ? matchStarterList(lists, starter)
+      : lists.find((list) => list.name.trim().toLowerCase() === name.toLowerCase());
     if (found) {
       if (found.options.length === 0 && options.length) {
         return (await updateFieldPicklist(found.id, { options })) ?? found;
       }
       return found;
     }
-    return await createFieldPicklist(name, options);
+    return await createFieldPicklist(name, options, { seedKey: starter?.seedKey });
   } catch {
     return null;
   }

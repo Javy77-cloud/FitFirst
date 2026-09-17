@@ -20,9 +20,9 @@ describe("sep7hm picklist colors + A–Z + default", () => {
   it("wires the full status palette into Settings lists + picklists UI", () => {
     expect(STATUS_COLOR_KEYS.length).toBeGreaterThanOrEqual(16);
     const { readFileSync } = require("node:fs") as typeof import("node:fs");
-    expect(readFileSync("src/app/settings/lists/page.tsx", "utf8")).toMatch(/StatusColorSelect/);
-    expect(readFileSync("src/app/settings/picklists/page.tsx", "utf8")).toMatch(/optionColors/);
-    expect(readFileSync("src/app/settings/picklists/page.tsx", "utf8")).toMatch(/defaultIndex/);
+    expect(readFileSync("src/components/settings/global-list-card.tsx", "utf8")).toMatch(/StatusColorSelect/);
+    expect(readFileSync("src/components/settings/picklist-card.tsx", "utf8")).toMatch(/optionColors/);
+    expect(readFileSync("src/components/settings/picklist-card.tsx", "utf8")).toMatch(/defaultIndex/);
     expect(readFileSync("src/app/globals.css", "utf8")).toMatch(/margin-bottom: 3rem/);
   });
 });

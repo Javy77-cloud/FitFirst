@@ -7,26 +7,36 @@ import {
   type FieldPicklist,
   type PicklistOption,
 } from "./picklists";
-import { STARTER_FIELD_PICKLISTS } from "./starter-picklists";
+import {
+  STARTER_FIELD_PICKLISTS,
+  matchStarterList,
+} from "./starter-picklists";
 
 export function toPicklist(row: {
   id: string;
   name: string;
   options: unknown;
+  seedKey?: string | null;
+  active?: boolean | null;
 }): FieldPicklist {
   return {
     id: row.id,
     name: row.name,
     options: sanitizeRichPicklistOptions(row.options ?? []),
+    seedKey: row.seedKey ?? null,
+    active: row.active !== false,
   };
 }
 
-async function readFieldPicklists(): Promise<FieldPicklist[]> {
+async function readFieldPicklists(opts?: { includeInactive?: boolean }): Promise<FieldPicklist[]> {
   const rows = await db
     .select()
     .from(deskFieldPicklists)
     .where(eq(deskFieldPicklists.tenantId, DEFAULT_TENANT_ID));
-  return rows.map(toPicklist).sort((a, b) => a.name.localeCompare(b.name));
+  return rows
+    .filter((row) => opts?.includeInactive || row.active !== false)
+    .map(toPicklist)
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function isUniqueViolation(error: unknown): boolean {
@@ -42,7 +52,7 @@ function isUniqueViolation(error: unknown): boolean {
 /** "Foo", then "Foo 2", "Foo 3", … when the desired name is already taken for the tenant. */
 async function allocateUniquePicklistName(desired: string): Promise<string> {
   const base = desired.trim() || "Untitled list";
-  const existing = await readFieldPicklists();
+  const existing = await readFieldPicklists({ includeInactive: true });
   const taken = new Set(existing.map((list) => list.name.trim().toLowerCase()));
   if (!taken.has(base.toLowerCase())) return base;
   for (let n = 2; ; n++) {
@@ -51,24 +61,35 @@ async function allocateUniquePicklistName(desired: string): Promise<string> {
   }
 }
 
-/** Insert missing starter lists. Never overwrites a list that already has values. */
+/** Insert missing starter lists. Never overwrites a list that already has values or a renamed name. */
 export async function ensureDefaultFieldPicklists(): Promise<FieldPicklist[]> {
   try {
-    const existing = await readFieldPicklists();
-    const byName = new Map(existing.map((list) => [list.name.trim().toLowerCase(), list]));
+    const existing = await readFieldPicklists({ includeInactive: true });
+    const byId = new Map(existing.map((list) => [list.id, list]));
     for (const starter of STARTER_FIELD_PICKLISTS) {
-      const current = byName.get(starter.name.toLowerCase());
+      const current = matchStarterList(existing, starter);
       if (!current) {
-        const created = await createFieldPicklist(starter.name, starter.options);
-        byName.set(created.name.trim().toLowerCase(), created);
+        const created = await createFieldPicklist(starter.name, starter.options, { seedKey: starter.seedKey });
+        existing.push(created);
+        byId.set(created.id, created);
         continue;
       }
-      if (current.options.length === 0) {
-        const updated = await updateFieldPicklist(current.id, { options: starter.options });
-        if (updated) byName.set(updated.name.trim().toLowerCase(), updated);
+      const patch: { seedKey?: string; options?: Array<string | PicklistOption> } = {};
+      if (!current.seedKey) patch.seedKey = starter.seedKey;
+      if (current.active !== false && current.options.length === 0 && starter.options.length > 0) {
+        patch.options = starter.options;
+      }
+      if (Object.keys(patch).length === 0) continue;
+      const updated = await updateFieldPicklist(current.id, patch);
+      if (updated) {
+        const index = existing.findIndex((list) => list.id === current.id);
+        if (index >= 0) existing[index] = updated;
+        byId.set(updated.id, updated);
       }
     }
-    return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
+    return [...byId.values()]
+      .filter((list) => list.active !== false)
+      .sort((a, b) => a.name.localeCompare(b.name));
   } catch {
     return [];
   }
@@ -96,8 +117,13 @@ export async function getFieldPicklist(id: string): Promise<FieldPicklist | null
   }
 }
 
-export async function createFieldPicklist(name: string, options: Array<string | PicklistOption> = []): Promise<FieldPicklist> {
+export async function createFieldPicklist(
+  name: string,
+  options: Array<string | PicklistOption> = [],
+  meta?: { seedKey?: string | null },
+): Promise<FieldPicklist> {
   const uniqueName = await allocateUniquePicklistName(name.trim() || "Untitled list");
+  const seedKey = meta?.seedKey?.trim() || null;
   try {
     const [row] = await db
       .insert(deskFieldPicklists)
@@ -105,6 +131,8 @@ export async function createFieldPicklist(name: string, options: Array<string | 
         tenantId: DEFAULT_TENANT_ID,
         name: uniqueName,
         options: sanitizeRichPicklistOptions(options),
+        seedKey,
+        active: true,
       })
       .returning();
     return toPicklist(row);
@@ -116,7 +144,10 @@ export async function createFieldPicklist(name: string, options: Array<string | 
   }
 }
 
-export async function updateFieldPicklist(id: string, patch: { name?: string; options?: Array<string | PicklistOption> }) {
+export async function updateFieldPicklist(
+  id: string,
+  patch: { name?: string; options?: Array<string | PicklistOption>; seedKey?: string | null; active?: boolean },
+) {
   const [existing] = await db
     .select()
     .from(deskFieldPicklists)
@@ -125,7 +156,7 @@ export async function updateFieldPicklist(id: string, patch: { name?: string; op
 
   const nextName = patch.name !== undefined ? patch.name.trim() || existing.name : existing.name;
   if (nextName.toLowerCase() !== existing.name.trim().toLowerCase()) {
-    const siblings = await readFieldPicklists();
+    const siblings = await readFieldPicklists({ includeInactive: true });
     const clash = siblings.some(
       (list) => list.id !== id && list.name.trim().toLowerCase() === nextName.toLowerCase(),
     );
@@ -134,12 +165,16 @@ export async function updateFieldPicklist(id: string, patch: { name?: string; op
     }
   }
 
+  const nextSeedKey = patch.seedKey !== undefined ? patch.seedKey : existing.seedKey;
+
   try {
     const [row] = await db
       .update(deskFieldPicklists)
       .set({
         name: nextName,
         options: patch.options !== undefined ? sanitizeRichPicklistOptions(patch.options) : existing.options,
+        seedKey: nextSeedKey,
+        active: patch.active !== undefined ? patch.active : existing.active,
         updatedAt: new Date(),
       })
       .where(and(eq(deskFieldPicklists.tenantId, DEFAULT_TENANT_ID), eq(deskFieldPicklists.id, id)))
@@ -154,7 +189,9 @@ export async function updateFieldPicklist(id: string, patch: { name?: string; op
 }
 
 export async function deleteFieldPicklist(id: string) {
+  // Soft-delete so starter seed keys stay claimed and Deal field pickers keep their ids.
   await db
-    .delete(deskFieldPicklists)
+    .update(deskFieldPicklists)
+    .set({ active: false, updatedAt: new Date() })
     .where(and(eq(deskFieldPicklists.tenantId, DEFAULT_TENANT_ID), eq(deskFieldPicklists.id, id)));
 }

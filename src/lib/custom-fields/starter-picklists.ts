@@ -155,6 +155,7 @@ export const COMMON_CARRIER_OPTIONS: string[] = [
 ];
 
 export type StarterFieldPicklist = {
+  seedKey: string;
   name: string;
   options: string[];
 };
@@ -167,44 +168,73 @@ export const LEAD_CADENCE_PICKLIST_OPTIONS: string[] = [
   "Cold",
 ];
 
+export const STARTER_PICKLIST_SEED_KEY = {
+  usStates: "us_states",
+  lines: "lines_of_business",
+  carriers: "common_carriers",
+  leadCadence: "lead_cadence",
+  occupations: "occupations",
+  industries: "industries",
+  recentLifeEvents: "recent_life_events",
+  policySubtypes: "policy_subtypes",
+  crossSell: "cross_selling_opportunities",
+  leadSource: "lead_source",
+  maritalStatus: "marital_status",
+  education: "education_level",
+  employment: "employment_status",
+  contactMethod: "preferred_contact_method",
+  contactTime: "preferred_contact_time",
+  dealNotices: "deal_notices",
+  dealNoticesPc: "deal_notices_pc",
+  dealNoticesLife: "deal_notices_life",
+  dealNoticesHealth: "deal_notices_health",
+  lifeMedical: "life_medical_conditions",
+} as const;
+
 export const STARTER_FIELD_PICKLISTS: StarterFieldPicklist[] = [
-  { name: STARTER_PICKLIST_US_STATES, options: US_STATE_OPTIONS },
-  { name: STARTER_PICKLIST_LINES, options: LINE_OF_BUSINESS_OPTIONS },
-  { name: STARTER_PICKLIST_CARRIERS, options: COMMON_CARRIER_OPTIONS },
-  { name: STARTER_PICKLIST_LEAD_CADENCE, options: LEAD_CADENCE_PICKLIST_OPTIONS },
-  { name: STARTER_PICKLIST_OCCUPATIONS, options: [...OCCUPATION_OPTIONS] },
-  { name: STARTER_PICKLIST_INDUSTRIES, options: [...INDUSTRY_OPTIONS] },
-  { name: STARTER_PICKLIST_RECENT_LIFE_EVENTS, options: [...CONTACT_RECENT_LIFE_EVENT_OPTIONS] },
-  { name: STARTER_PICKLIST_POLICY_SUBTYPES, options: [...POLICY_SUB_TYPES] },
-  { name: STARTER_PICKLIST_CROSS_SELL, options: [...CONTACT_CROSS_SELL_OPTIONS] },
-  { name: STARTER_PICKLIST_LEAD_SOURCE, options: [...LEAD_SOURCES] },
+  { seedKey: STARTER_PICKLIST_SEED_KEY.usStates, name: STARTER_PICKLIST_US_STATES, options: US_STATE_OPTIONS },
+  { seedKey: STARTER_PICKLIST_SEED_KEY.lines, name: STARTER_PICKLIST_LINES, options: LINE_OF_BUSINESS_OPTIONS },
+  { seedKey: STARTER_PICKLIST_SEED_KEY.carriers, name: STARTER_PICKLIST_CARRIERS, options: COMMON_CARRIER_OPTIONS },
+  { seedKey: STARTER_PICKLIST_SEED_KEY.leadCadence, name: STARTER_PICKLIST_LEAD_CADENCE, options: LEAD_CADENCE_PICKLIST_OPTIONS },
+  { seedKey: STARTER_PICKLIST_SEED_KEY.occupations, name: STARTER_PICKLIST_OCCUPATIONS, options: [...OCCUPATION_OPTIONS] },
+  { seedKey: STARTER_PICKLIST_SEED_KEY.industries, name: STARTER_PICKLIST_INDUSTRIES, options: [...INDUSTRY_OPTIONS] },
+  { seedKey: STARTER_PICKLIST_SEED_KEY.recentLifeEvents, name: STARTER_PICKLIST_RECENT_LIFE_EVENTS, options: [...CONTACT_RECENT_LIFE_EVENT_OPTIONS] },
+  { seedKey: STARTER_PICKLIST_SEED_KEY.policySubtypes, name: STARTER_PICKLIST_POLICY_SUBTYPES, options: [...POLICY_SUB_TYPES] },
+  { seedKey: STARTER_PICKLIST_SEED_KEY.crossSell, name: STARTER_PICKLIST_CROSS_SELL, options: [...CONTACT_CROSS_SELL_OPTIONS] },
+  { seedKey: STARTER_PICKLIST_SEED_KEY.leadSource, name: STARTER_PICKLIST_LEAD_SOURCE, options: [...LEAD_SOURCES] },
   {
+    seedKey: STARTER_PICKLIST_SEED_KEY.maritalStatus,
     name: STARTER_PICKLIST_MARITAL_STATUS,
     options: Array.from(
       new Set([...MARITAL_STATUS_OPTIONS, ...CONTACT_MARITAL_OPTIONS]),
     ),
   },
-  { name: STARTER_PICKLIST_EDUCATION, options: [...CONTACT_EDUCATION_OPTIONS] },
-  { name: STARTER_PICKLIST_EMPLOYMENT, options: [...CONTACT_EMPLOYMENT_OPTIONS] },
-  { name: STARTER_PICKLIST_CONTACT_METHOD, options: [...CONTACT_METHOD_OPTIONS] },
-  { name: STARTER_PICKLIST_CONTACT_TIME, options: [...CONTACT_TIME_OPTIONS] },
+  { seedKey: STARTER_PICKLIST_SEED_KEY.education, name: STARTER_PICKLIST_EDUCATION, options: [...CONTACT_EDUCATION_OPTIONS] },
+  { seedKey: STARTER_PICKLIST_SEED_KEY.employment, name: STARTER_PICKLIST_EMPLOYMENT, options: [...CONTACT_EMPLOYMENT_OPTIONS] },
+  { seedKey: STARTER_PICKLIST_SEED_KEY.contactMethod, name: STARTER_PICKLIST_CONTACT_METHOD, options: [...CONTACT_METHOD_OPTIONS] },
+  { seedKey: STARTER_PICKLIST_SEED_KEY.contactTime, name: STARTER_PICKLIST_CONTACT_TIME, options: [...CONTACT_TIME_OPTIONS] },
   {
+    seedKey: STARTER_PICKLIST_SEED_KEY.dealNotices,
     name: STARTER_PICKLIST_DEAL_NOTICES,
     options: ["Inspection before bind", "Check mortgagee payment"],
   },
   {
+    seedKey: STARTER_PICKLIST_SEED_KEY.dealNoticesPc,
     name: STARTER_PICKLIST_DEAL_NOTICES_PC,
     options: ["Inspection before bind", "Check mortgagee payment"],
   },
   {
+    seedKey: STARTER_PICKLIST_SEED_KEY.dealNoticesLife,
     name: STARTER_PICKLIST_DEAL_NOTICES_LIFE,
     options: [],
   },
   {
+    seedKey: STARTER_PICKLIST_SEED_KEY.dealNoticesHealth,
     name: STARTER_PICKLIST_DEAL_NOTICES_HEALTH,
     options: [],
   },
   {
+    seedKey: STARTER_PICKLIST_SEED_KEY.lifeMedical,
     name: STARTER_PICKLIST_LIFE_MEDICAL,
     options: [...LIFE_MEDICAL_CONDITION_OPTIONS],
   },
@@ -214,7 +244,27 @@ export function starterPicklistByName(name: string): StarterFieldPicklist | unde
   return STARTER_FIELD_PICKLISTS.find((list) => list.name.toLowerCase() === name.trim().toLowerCase());
 }
 
+export function starterPicklistBySeedKey(seedKey: string | null | undefined): StarterFieldPicklist | undefined {
+  if (!seedKey) return undefined;
+  return STARTER_FIELD_PICKLISTS.find((list) => list.seedKey === seedKey);
+}
+
+export function matchStarterList<T extends { name: string; seedKey?: string | null }>(
+  lists: readonly T[],
+  starter: Pick<StarterFieldPicklist, "name" | "seedKey">,
+): T | undefined {
+  return (
+    lists.find((list) => list.seedKey && list.seedKey === starter.seedKey) ??
+    lists.find((list) => list.name.trim().toLowerCase() === starter.name.toLowerCase())
+  );
+}
+
+export function missingStarterPicklists(
+  existing: ReadonlyArray<{ name: string; seedKey?: string | null }>,
+): StarterFieldPicklist[] {
+  return STARTER_FIELD_PICKLISTS.filter((starter) => !matchStarterList(existing, starter));
+}
+
 export function missingStarterPicklistNames(existingNames: string[]): string[] {
-  const have = new Set(existingNames.map((name) => name.trim().toLowerCase()));
-  return STARTER_FIELD_PICKLISTS.filter((list) => !have.has(list.name.toLowerCase())).map((list) => list.name);
+  return missingStarterPicklists(existingNames.map((name) => ({ name }))).map((list) => list.name);
 }

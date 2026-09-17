@@ -17,7 +17,7 @@ import { sheetLineForProduct } from "@/lib/deals/deal-products";
 import {
   noticeCompleteLogBody,
   noticeDeleteLogBody,
-  noticePicklistNamesForFamily,
+  noticePicklistForFamily,
   noticeTypeLabel,
   parseNoticeType,
 } from "@/lib/deals/notices";
@@ -31,6 +31,7 @@ import {
   STARTER_PICKLIST_DEAL_NOTICES_HEALTH,
   STARTER_PICKLIST_DEAL_NOTICES_LIFE,
   STARTER_PICKLIST_DEAL_NOTICES_PC,
+  starterPicklistByName,
 } from "@/lib/custom-fields/starter-picklists";
 import {
   canonicalizeProductStage,
@@ -684,11 +685,13 @@ async function persistNoticeTypeLabels(input: {
   const lists = await listFieldPicklists();
   let list = input.picklistId ? await getFieldPicklist(input.picklistId) : null;
   if (!list) {
-    const names = noticePicklistNamesForFamily(input.family).map((name) => name.toLowerCase());
-    list = lists.find((row) => names.includes(row.name.trim().toLowerCase())) ?? null;
+    const matched = noticePicklistForFamily(lists, input.family);
+    list = matched ? lists.find((row) => row.id === matched.id) ?? null : null;
   }
   if (!list) {
-    await createFieldPicklist(NOTICE_FAMILY_CREATE_NAME[input.family], input.labels);
+    await createFieldPicklist(NOTICE_FAMILY_CREATE_NAME[input.family], input.labels, {
+      seedKey: starterPicklistByName(NOTICE_FAMILY_CREATE_NAME[input.family])?.seedKey,
+    });
   } else {
     await updateFieldPicklist(list.id, { options: input.labels });
   }
