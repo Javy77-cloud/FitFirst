@@ -52,6 +52,7 @@ describe("deal list option colors", () => {
       type: "picklist",
       options: ["AFA"],
       optionColors: { AFA: "teal" },
+      globalListKey: "selling_agency",
     };
     const pipeline: CustomFieldDef = {
       key: "picklist_5n3i",

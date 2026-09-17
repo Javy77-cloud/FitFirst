@@ -91,6 +91,8 @@ export type CustomFieldDef = {
   required?: boolean;
   defaultValue?: string | null;
   picklistId?: string | null;
+  /** Settings → Global lists key. Bind instead of picklistId for policy/desk lists. */
+  globalListKey?: string | null;
   permissions?: FieldPermissions;
 };
 

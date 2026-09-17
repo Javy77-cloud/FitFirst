@@ -2,6 +2,8 @@ import { FieldBuilder } from "@/components/custom-fields/field-builder";
 import { ModuleLayoutNav } from "@/components/custom-fields/module-layout-nav";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { listFieldPicklists } from "@/lib/custom-fields/picklist-store";
+import { globalListOptionSetsFromRows } from "@/lib/custom-fields/option-sets";
+import { loadGlobalLists } from "@/lib/db/global-lists";
 import {
   fieldLayoutModuleLabel,
   parseLayoutModule,
@@ -24,11 +26,13 @@ export default async function FieldBuilderPage({
   const module = parseLayoutModule(first(params.module));
   const line = first(params.line) || "HO";
   await ensureFieldsForModule(module, line).catch(() => null);
-  const [layout, fields, picklists] = await Promise.all([
+  const [layout, fields, picklists, globalRows] = await Promise.all([
     loadLayoutForModule(module, line),
     listFieldDefs(module),
     listFieldPicklists(),
+    loadGlobalLists().catch(() => []),
   ]);
+  const globalLists = globalListOptionSetsFromRows(globalRows);
   const label = fieldLayoutModuleLabel(module);
   const resolvedFields = resolveLayoutFields(layout, fields);
 
@@ -42,6 +46,7 @@ export default async function FieldBuilderPage({
         initialLayout={layout}
         fields={resolvedFields}
         picklists={picklists}
+        globalLists={globalLists}
       />
     </SettingsShell>
   );

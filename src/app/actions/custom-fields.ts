@@ -139,6 +139,7 @@ export async function saveDealFieldLayout(formData: FormData) {
               required: Boolean(field.required),
               defaultValue: field.defaultValue ?? null,
               picklistId: field.picklistId ?? null,
+              globalListKey: field.globalListKey ?? null,
               permissions: field.permissions,
             }),
             module,

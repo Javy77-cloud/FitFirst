@@ -54,7 +54,12 @@ import {
 } from "@/lib/custom-fields/layout";
 import { asList } from "@/lib/safe-list";
 import { humanizeFieldKey, resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
-import { cloneFieldDef, sanitizePicklistOptions, type FieldPicklist } from "@/lib/custom-fields/picklists";
+import {
+  cloneFieldDef,
+  sanitizePicklistOptions,
+  type FieldPicklist,
+  type GlobalListOptionSet,
+} from "@/lib/custom-fields/picklists";
 import {
   CUSTOM_FIELD_TYPE_LABELS,
   CUSTOM_FIELD_TYPES,
@@ -196,12 +201,14 @@ export function FieldBuilder({
   initialLayout,
   fields: initialFields,
   picklists = [],
+  globalLists = [],
 }: {
   line: string;
   module?: FieldLayoutModule;
   initialLayout: FieldLayout;
   fields: CustomFieldDef[];
   picklists?: FieldPicklist[];
+  globalLists?: GlobalListOptionSet[];
 }) {
   const moduleLabel = fieldLayoutModuleLabel(module);
   const [layout, setLayout] = useState(() => editorLayout(module, initialLayout));
@@ -366,6 +373,7 @@ export function FieldBuilder({
       required: false,
       defaultValue: "",
       picklistId: null,
+      globalListKey: null,
       permissions: defaultFieldPermissions(),
     };
     setFields((current) => [...current, field]);
@@ -780,6 +788,7 @@ export function FieldBuilder({
         <EditPropertiesDialog
           field={dialogField}
           picklists={picklists}
+          globalLists={globalLists}
           fields={fields}
           onClose={() => setDialog(null)}
           onSave={(patch) => {
@@ -1030,12 +1039,14 @@ function FieldRowMenu({
 function EditPropertiesDialog({
   field,
   picklists,
+  globalLists,
   fields,
   onClose,
   onSave,
 }: {
   field: CustomFieldDef;
   picklists: FieldPicklist[];
+  globalLists: GlobalListOptionSet[];
   fields: CustomFieldDef[];
   onClose: () => void;
   onSave: (patch: Partial<CustomFieldDef>) => void;
@@ -1049,12 +1060,16 @@ function EditPropertiesDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md" showCloseButton data-ff-edit-properties={field.key}>
-        <DialogHeader>
+      <DialogContent
+        className="flex max-h-[min(90vh,42rem)] flex-col overflow-hidden sm:max-w-md"
+        showCloseButton
+        data-ff-edit-properties={field.key}
+      >
+        <DialogHeader className="shrink-0">
           <DialogTitle>Edit properties</DialogTitle>
           <DialogDescription>Name, type, and lookup.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-0.5" data-ff-edit-properties-body>
           <div>
             <Label htmlFor={`prop-label-${field.key}`} className="text-xs">
               Field name
@@ -1130,7 +1145,9 @@ function EditPropertiesDialog({
               Default checked
             </label>
           ) : null}
-          {needsOptions ? <PicklistConfig field={draft} lists={picklists} onChange={patchDraft} /> : null}
+          {needsOptions ? (
+            <PicklistConfig field={draft} lists={picklists} globalLists={globalLists} onChange={patchDraft} />
+          ) : null}
           {draft.type === "formula" ? (
             <FormulaBuilder
               fields={fields}
@@ -1139,7 +1156,7 @@ function EditPropertiesDialog({
             />
           ) : null}
         </div>
-        <DialogFooter>
+        <DialogFooter className="shrink-0">
           <Button type="button" variant="outline" size="sm" onClick={onClose}>
             Cancel
           </Button>
