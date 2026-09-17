@@ -41,8 +41,8 @@ import {
   liveSelectedQuoteIds,
   appendNoticeNoteLog,
   joinProductListNotes,
-  listProductNotes,
   parseProductStages,
+  syncProductListNotes,
   productStageFor,
   setProductStage,
   shouldAutoAdvanceStage,
@@ -612,23 +612,22 @@ export async function saveDealProductListNote(input: {
   const deal = await loadDeal(dealId);
   if (!deal) return { ok: false, error: "Deal not found." };
   const saved = parseShopFlow(deal.shopFlow);
-  const stages = parseProductStages(saved.productStages);
-  const next = setProductStage(stages, product, { listNote: input.note.trim() || null });
-  await persistDealShopFlow(dealId, { ...saved, productStages: next });
+  const synced = syncProductListNotes({
+    shopProducts: deal.shopProducts,
+    shopLines: deal.shopLines,
+    lineOfBusiness: deal.lineOfBusiness,
+    quotingForm: deal.quotingForm,
+    policySubType: deal.policySubType,
+    shopFlow: saved,
+    fallbackNote: deal.notes,
+    product,
+    note: input.note,
+  });
+  await persistDealShopFlow(dealId, { ...saved, productStages: synced.productStages });
   const columnId = (input.columnId ?? "").trim();
   if (columnId === "notes" || columnId === "new_field") {
     const { writeRecordValues } = await import("@/lib/custom-fields/store");
-    const joined = joinProductListNotes(
-      listProductNotes({
-        shopProducts: deal.shopProducts,
-        shopLines: deal.shopLines,
-        lineOfBusiness: deal.lineOfBusiness,
-        quotingForm: deal.quotingForm,
-        policySubType: deal.policySubType,
-        shopFlow: { ...saved, productStages: next },
-        fallbackNote: deal.notes,
-      }),
-    );
+    const joined = joinProductListNotes(synced.notes);
     if (columnId === "notes") {
       await db.update(deals).set({ notes: joined, updatedAt: new Date() }).where(eq(deals.id, dealId));
     }

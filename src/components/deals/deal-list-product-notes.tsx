@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { saveDealProductListNote } from "@/app/actions/product-stage";
 import type { ListProductNote } from "@/lib/deals/product-stages";
 import { flashAction } from "@/lib/flash-client";
@@ -21,11 +21,12 @@ function ProductNoteField({
 }) {
   const [pending, startTransition] = useTransition();
   const [draft, setDraft] = useState(value);
+  const [savedValue, setSavedValue] = useState(value);
   const [expanded, setExpanded] = useState(false);
-
-  useEffect(() => {
+  if (value !== savedValue) {
+    setSavedValue(value);
     setDraft(value);
-  }, [value]);
+  }
 
   function persist() {
     if (draft === value) return;
@@ -100,7 +101,7 @@ export function DealListProductNotes({
     >
       {notes.map((row) => (
         <ProductNoteField
-          key={row.product}
+          key={`${dealId}:${row.product}`}
           dealId={dealId}
           columnId={columnId}
           product={row.product}

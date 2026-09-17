@@ -669,6 +669,8 @@ export type ListProductNote = {
   note: string;
 };
 
+type ProductNoteChip = Pick<ListProductNote, "product" | "label">;
+
 export function isDealListNotesColumn(
   columnId: string,
   field?: { type?: string; label?: string } | null,
@@ -676,6 +678,103 @@ export function isDealListNotesColumn(
   if (columnId === "notes") return true;
   if (field?.type === "multi_line" && /notes/i.test(field.label ?? "")) return true;
   return columnId === "new_field" && (!field || /notes/i.test(field.label ?? "Notes"));
+}
+
+function escapeNoteLabel(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function unwrapOwnProductLabel(note: string, label: string): string {
+  const prefix = new RegExp(`^${escapeNoteLabel(label)}:\\s*`, "i");
+  let out = note.trim();
+  while (out && prefix.test(out)) {
+    const next = out.replace(prefix, "").trim();
+    if (next === out) break;
+    out = next;
+  }
+  return out;
+}
+
+function productNoteLabelAliases(chip: ProductNoteChip): string[] {
+  const def = dealProductDef(chip.product);
+  return [chip.label, productChipLabel({ product: chip.product }), def.label, chip.product]
+    .map((label) => label.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Split a deal-level / first-row blob that was stored as joined
+ * `HO3: …\\nAuto: …` notes. Leaves a plain single note untouched.
+ */
+export function splitConcatenatedProductListNotes(
+  blob: string | null | undefined,
+  chips: readonly ProductNoteChip[],
+): Partial<Record<DealProductId, string>> | null {
+  const text = (blob ?? "").replace(/\r\n/g, "\n").trim();
+  if (!text || chips.length < 2) return null;
+
+  const aliases = new Map<string, DealProductId>();
+  for (const chip of chips) {
+    for (const label of productNoteLabelAliases(chip)) {
+      aliases.set(label.toLowerCase(), chip.product);
+    }
+  }
+  const labels = [...aliases.keys()].sort((a, b) => b.length - a.length);
+  if (labels.length < 2) return null;
+
+  const prefix = new RegExp(`^(${labels.map(escapeNoteLabel).join("|")}):\\s*`, "i");
+  const matched = new Set<DealProductId>();
+  const sections: { product: DealProductId | null; lines: string[] }[] = [];
+  let current: { product: DealProductId | null; lines: string[] } = { product: null, lines: [] };
+
+  for (const line of text.split("\n")) {
+    const match = line.match(prefix);
+    const product = match ? aliases.get(match[1].toLowerCase()) : undefined;
+    if (match && product) {
+      if (current.product != null || current.lines.length) sections.push(current);
+      current = { product, lines: [line.slice(match[0].length)] };
+      matched.add(product);
+      continue;
+    }
+    current.lines.push(line);
+  }
+  if (current.product != null || current.lines.length) sections.push(current);
+  if (matched.size < 2) return null;
+
+  const out: Partial<Record<DealProductId, string>> = {};
+  for (const section of sections) {
+    const body = section.lines.join("\n").trim();
+    if (!body) continue;
+    const product =
+      section.product ??
+      chips.find((chip) => !matched.has(chip.product))?.product ??
+      chips[0]?.product;
+    if (!product) continue;
+    const cleaned = unwrapOwnProductLabel(body, chips.find((chip) => chip.product === product)?.label ?? "");
+    out[product] = out[product] ? `${out[product]}\n${cleaned}` : cleaned;
+  }
+  return out;
+}
+
+function mergedSplitProductNotes(
+  chips: readonly ProductNoteChip[],
+  stages: DealProductStages,
+  fallback: string,
+): Partial<Record<DealProductId, string>> {
+  const merged: Partial<Record<DealProductId, string>> = {};
+  const sources = [
+    fallback,
+    ...chips.map((chip) => (stages[chip.product]?.listNote ?? "").trim()),
+  ];
+  for (const source of sources) {
+    const split = splitConcatenatedProductListNotes(source, chips);
+    if (!split) continue;
+    for (const chip of chips) {
+      const note = (split[chip.product] ?? "").trim();
+      if (note && !merged[chip.product]) merged[chip.product] = note;
+    }
+  }
+  return merged;
 }
 
 /** One list-notes field per product — 2 products → 2 sections, 3 → 3. */
@@ -691,14 +790,62 @@ export function listProductNotes(input: {
   const chips = listProductStageChips(input);
   const stages = productStagesFromShopFlow(input.shopFlow);
   const fallback = (input.fallbackNote ?? "").trim();
+  const splitNotes = mergedSplitProductNotes(chips, stages, fallback);
+  const fallbackIsConcat = Boolean(splitConcatenatedProductListNotes(fallback, chips));
   return chips.map((chip, index) => {
     const stored = (stages[chip.product]?.listNote ?? "").trim();
+    const storedIsConcat = Boolean(splitConcatenatedProductListNotes(stored, chips));
+    let note = "";
+    if (stored && !storedIsConcat) {
+      note = unwrapOwnProductLabel(stored, chip.label);
+    } else if (splitNotes[chip.product]) {
+      note = splitNotes[chip.product] ?? "";
+    } else if (index === 0 && !fallbackIsConcat) {
+      note = fallback;
+    }
     return {
       product: chip.product,
       label: chip.label,
-      note: stored || (index === 0 ? fallback : ""),
+      note,
     };
   });
+}
+
+/** Persist one product note and split any leftover concatenated blob onto the other lines. */
+export function syncProductListNotes(input: {
+  shopProducts?: string[] | null;
+  shopLines?: string[] | null;
+  lineOfBusiness?: string | null;
+  quotingForm?: string | null;
+  policySubType?: string | null;
+  shopFlow?: unknown;
+  fallbackNote?: string | null;
+  product: DealProductId;
+  note: string;
+}): { productStages: DealProductStages; notes: ListProductNote[] } {
+  const stages = productStagesFromShopFlow(input.shopFlow);
+  const next = setProductStage(stages, input.product, { listNote: input.note.trim() || null });
+  const notes = listProductNotes({
+    ...input,
+    shopFlow: { productStages: next },
+  });
+  let persisted = next;
+  for (const row of notes) {
+    const want = row.note.trim() || null;
+    const existing = persisted[row.product];
+    const current = (existing?.listNote ?? "").trim() || null;
+    if (current === want) continue;
+    if (!want && !existing) continue;
+    persisted = setProductStage(persisted, row.product, { listNote: want });
+  }
+  return {
+    productStages: persisted,
+    notes: listProductNotes({
+      ...input,
+      shopFlow: { productStages: persisted },
+      fallbackNote: null,
+    }),
+  };
 }
 
 export function joinProductListNotes(notes: readonly ListProductNote[]): string {
