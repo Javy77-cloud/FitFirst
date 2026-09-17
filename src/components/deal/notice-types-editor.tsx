@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { applyDealNoticeType, deleteDealProductNotice, saveDealNoticeTypes } from "@/app/actions/product-stage";
+import {
+  applyDealNoticeType,
+  completeDealProductNotice,
+  deleteDealProductNotice,
+  saveDealNoticeTypes,
+} from "@/app/actions/product-stage";
 import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +44,7 @@ export function NoticeTypesEditor({
   returnTo,
   product,
   currentType,
+  noticeNote,
   taskDueDate,
   taskDueTime,
   mode = "manage",
@@ -54,6 +60,7 @@ export function NoticeTypesEditor({
   returnTo?: string | null;
   product?: string | null;
   currentType?: string | null;
+  noticeNote?: string | null;
   taskDueDate?: string | null;
   taskDueTime?: string | null;
   mode?: "create" | "manage";
@@ -141,13 +148,28 @@ export function NoticeTypesEditor({
     });
   }
 
+  function fillNoticeForm(data: FormData) {
+    data.set("dealId", dealId);
+    data.set("product", productValue);
+    if (returnTo) data.set("returnTo", returnTo);
+  }
+
+  function onCompleteNotice() {
+    if (!hasActiveNotice) return;
+    const data = new FormData();
+    fillNoticeForm(data);
+    data.set("notes", noticeNote ?? "");
+    startTransition(async () => {
+      await completeDealProductNotice(data);
+      onOpenChange(false);
+    });
+  }
+
   function onDeleteNotice() {
     if (!hasActiveNotice) return;
     if (!confirmDeleteDealNotice(noticeTypeLabel(currentType, options))) return;
     const data = new FormData();
-    data.set("dealId", dealId);
-    data.set("product", productValue);
-    if (returnTo) data.set("returnTo", returnTo);
+    fillNoticeForm(data);
     startTransition(async () => {
       await deleteDealProductNotice(data);
       onOpenChange(false);
@@ -292,52 +314,51 @@ export function NoticeTypesEditor({
             </p>
           </div>
 
-          {creating ? (
-            <div className="space-y-1.5" data-ff-notice-create-reminder="">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Reminder
+          <div className="space-y-1.5" data-ff-notice-create-reminder="">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Reminder
+            </p>
+            {open && canApply ? (
+              <div
+                className="rounded-md border border-border p-3"
+                data-ff-notice-create-reminder-form=""
+              >
+                <CreateTaskForm
+                  key={applyType}
+                  compact
+                  lockRecord
+                  submitLabel="Set reminder"
+                  defaults={{
+                    recordType: "deal",
+                    recordId: dealId,
+                    recordName: dealName ?? "This deal",
+                    dealId,
+                    contactId,
+                    taskType: reminderTaskType,
+                    fixedTitle: reminderTitle,
+                    noticeType: applyType,
+                    noticeProduct: productValue,
+                    noticeTypeLabels: labelsForSave(),
+                    noticeFamily: family,
+                    noticePicklistId: picklistId,
+                    dueDate: taskDueDate ?? undefined,
+                    dueTime: taskDueTime ?? undefined,
+                    returnTo: returnTo ?? `/deals/${dealId}?tab=quotes&product=${productValue}`,
+                  }}
+                />
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Choose or name a type, then set a reminder with the same desk task form used after
+                the stamp — day, time, assignee, and snooze. Optional.
               </p>
-              {open && canApply ? (
-                <div
-                  className="rounded-md border border-border p-3"
-                  data-ff-notice-create-reminder-form=""
-                >
-                  <CreateTaskForm
-                    key={applyType}
-                    compact
-                    lockRecord
-                    submitLabel="Set reminder"
-                    defaults={{
-                      recordType: "deal",
-                      recordId: dealId,
-                      recordName: dealName ?? "This deal",
-                      dealId,
-                      contactId,
-                      taskType: reminderTaskType,
-                      fixedTitle: reminderTitle,
-                      noticeType: applyType,
-                      noticeProduct: productValue,
-                      noticeTypeLabels: labelsForSave(),
-                      noticeFamily: family,
-                      noticePicklistId: picklistId,
-                      dueDate: taskDueDate ?? undefined,
-                      dueTime: taskDueTime ?? undefined,
-                      returnTo: returnTo ?? `/deals/${dealId}?tab=quotes&product=${productValue}`,
-                    }}
-                  />
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  Choose or name a type, then set a reminder with the same desk task form used after
-                  the stamp — day, time, assignee, and snooze. Optional.
-                </p>
-              )}
-            </div>
-          ) : null}
+            )}
+          </div>
 
           {hasActiveNotice ? (
             <div
               className="rounded-lg border border-border bg-muted/40 p-3"
+              data-ff-notice-actions=""
               data-ff-notice-delete-panel=""
             >
               <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -347,20 +368,30 @@ export function NoticeTypesEditor({
                 {noticeTypeLabel(currentType, options)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Delete removes this flag as if it was never needed. It does not mark the work
-                complete. Any linked reminder will be cancelled.
+                Complete = you finished the work. Delete = this notice should not have been here.
+                Delete removes the flag as never needed and cancels any linked reminder.
               </p>
-              <Button
-                type="button"
-                size="sm"
-                variant="destructive"
-                className="mt-2"
-                disabled={pending}
-                onClick={onDeleteNotice}
-                data-ff-notice-delete=""
-              >
-                {pending ? "Deleting…" : "Delete notice"}
-              </Button>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={pending}
+                  onClick={onCompleteNotice}
+                  data-ff-notice-complete=""
+                >
+                  {pending ? "Saving…" : "Complete"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  disabled={pending}
+                  onClick={onDeleteNotice}
+                  data-ff-notice-delete=""
+                >
+                  {pending ? "Deleting…" : "Delete"}
+                </Button>
+              </div>
             </div>
           ) : null}
         </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { completeDealProductNotice, deleteDealProductNotice, saveDealNoticeNote } from "@/app/actions/product-stage";
+import { completeDealProductNotice, saveDealNoticeNote } from "@/app/actions/product-stage";
 import { NoticeNotePad } from "@/components/deal/notice-note-pad";
 import { NoticeTypesEditor } from "@/components/deal/notice-types-editor";
 import { SpeechNoteDialog } from "@/components/deal/speech-note-dialog";
@@ -12,12 +12,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { dealProductDef, parseDealProduct } from "@/lib/deals/deal-products";
 import {
-  confirmDeleteDealNotice,
   isActiveNotice,
   isRenderableNoticeStamp,
   mergeNoticeTypeOptions,
@@ -153,10 +151,10 @@ export function DealNotices({
     setTypesOpen(true);
   }
 
-  /** Open after this click finishes so the new dialog overlay does not eat it. */
+  /** Same Create notice popup as the empty-state button — edit, reminder, change type, complete, delete. */
   function openTypesEditor() {
     setOpen(false);
-    setTypesMode("manage");
+    setTypesMode("create");
     window.setTimeout(() => setTypesOpen(true), 0);
   }
 
@@ -165,18 +163,6 @@ export function DealNotices({
     if (next === "none") return;
     setOpen(false);
     window.setTimeout(() => openNoticeTask(next), 0);
-  }
-
-  function deleteNoticeFromMenu() {
-    if (!active) return;
-    const label = noticeTypeLabel(selected !== "none" ? selected : noticeType, options);
-    if (!confirmDeleteDealNotice(label)) return;
-    setOpen(false);
-    const data = new FormData();
-    data.set("dealId", dealId);
-    data.set("product", productValue);
-    if (returnTo) data.set("returnTo", returnTo);
-    void deleteDealProductNotice(data);
   }
 
   return (
@@ -272,18 +258,6 @@ export function DealNotices({
                 <DropdownMenuItem data-ff-notice-edit-types="" onClick={openTypesEditor}>
                   Change type
                 </DropdownMenuItem>
-                {active ? (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      variant="destructive"
-                      data-ff-notice-delete=""
-                      onClick={deleteNoticeFromMenu}
-                    >
-                      Delete
-                    </DropdownMenuItem>
-                  </>
-                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -349,6 +323,7 @@ export function DealNotices({
         returnTo={returnTo}
         product={productValue}
         currentType={noticeType}
+        noticeNote={noticeNote}
         taskDueDate={taskDueDate}
         taskDueTime={taskDueTime}
         mode={typesMode}
