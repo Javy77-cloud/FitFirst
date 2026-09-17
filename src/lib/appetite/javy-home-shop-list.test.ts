@@ -1,6 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { TRIDENT_CARRIER_ID, TRIDENT_CARRIER_NAME } from "@/lib/fixtures/ids";
+import {
+  SOUTHERN_OAK_CARRIER_ID,
+  SOUTHERN_OAK_CARRIER_NAME,
+  TRIDENT_CARRIER_ID,
+  TRIDENT_CARRIER_NAME,
+} from "@/lib/fixtures/ids";
 import {
   HOME_SHOP_NAME_ALIASES,
   JAVY_HOME_SHOP_CARRIER_IDS,
@@ -17,8 +22,15 @@ describe("Javy Home shop list", () => {
     expect(JAVY_HOME_SHOP_CARRIER_IDS).toHaveLength(JAVY_HOME_SHOP_NAMES.length);
     expect(JAVY_HOME_SHOP_LABEL).toBe("Load my Home list");
     expect(JAVY_HOME_SHOP_NAMES).toEqual(
-      expect.arrayContaining(["American Integrity", "Universal P&C", "Florida Peninsula", TRIDENT_CARRIER_NAME]),
+      expect.arrayContaining([
+        "American Integrity",
+        "Universal P&C",
+        "Florida Peninsula",
+        SOUTHERN_OAK_CARRIER_NAME,
+        TRIDENT_CARRIER_NAME,
+      ]),
     );
+    expect(JAVY_HOME_SHOP_CARRIER_IDS).toContain(SOUTHERN_OAK_CARRIER_ID);
   });
 
   it("resolveHomeShopCarrierIds prefers the seeded UUID and reuses an alias row", () => {
@@ -60,5 +72,31 @@ describe("Javy Home shop list", () => {
     expect(sql).toContain("QRG Version 06122026");
     expect(sql).toMatch(/ON CONFLICT \(tenant_id, carrier_id\) DO UPDATE/);
     expect(sql).not.toMatch(/0123_trident|0124_comms/);
+  });
+
+  it("keeps Southern Oak on the default HO list and enriches via 0127 without a new UUID", () => {
+    expect(JAVY_HOME_SHOP_NAMES).toContain(SOUTHERN_OAK_CARRIER_NAME);
+    expect(JAVY_HOME_SHOP_CARRIER_IDS).toContain(SOUTHERN_OAK_CARRIER_ID);
+    expect(HOME_SHOP_NAME_ALIASES[SOUTHERN_OAK_CARRIER_ID]).toEqual(
+      expect.arrayContaining(["southern oak insurance", "southern oak"]),
+    );
+
+    const aliasOnly = [{ id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", name: "Southern Oak Insurance" }];
+    expect(resolveHomeShopCarrierIds(aliasOnly)).toEqual(["bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"]);
+
+    const sql = readFileSync("drizzle/0127_southern_oak_qrg.sql", "utf8");
+    expect(sql).toContain(SOUTHERN_OAK_CARRIER_ID);
+    expect(sql).toContain("southern_oak");
+    expect(sql).toContain("max_cov_a:7500000");
+    expect(sql).toContain("min_year_built:1950");
+    expect(sql).toContain("7/15/2026");
+    expect(sql).toContain("$7.5 million");
+    expect(sql).toContain("52 counties");
+    expect(sql).toContain("$1 million");
+    expect(sql).toContain("https://www.southernoak.com");
+    expect(sql).toContain("soi.policyport.com");
+    expect(sql).toMatch(/ON CONFLICT \(tenant_id, carrier_id\) DO UPDATE/);
+    expect(sql).not.toMatch(/0123_trident|0125_trident|0126_policy/);
+    expect(sql).not.toMatch(/underwriter_name|underwriter_email|underwriter_phone/);
   });
 });

@@ -465,6 +465,16 @@ export const TRIDENT_CARRIER_ID = "33333333-3333-4333-8333-333333333340";
 export const TRIDENT_CARRIER_NAME = "Trident Reciprocal Exchange";
 export const TRIDENT_MIN_COV_A = 300_000;
 export const TRIDENT_MAX_COV_A = 5_000_000;
+
+/**
+ * Southern Oak — already on the live Neon desk (Javy Home shop list).
+ * Enrich in place; never insert a second Southern Oak name.
+ */
+export const SOUTHERN_OAK_CARRIER_ID = "1a0bfaf1-9888-45b3-84ea-2425eff3d3c2";
+export const SOUTHERN_OAK_CARRIER_NAME = "Southern Oak";
+export const SOUTHERN_OAK_MAX_TIV = 7_500_000;
+export const SOUTHERN_OAK_MIN_YEAR_BUILT = 1950;
+export const SOUTHERN_OAK_DP3_MAX_COV_A = 1_000_000;
 export const HALE_CONTACT_ID = "22222222-2222-4222-8222-222222222241";
 export const HALE_DEAL_ID = "22222222-2222-4222-8222-222222222242";
 export const HALE_RISK_ID = "22222222-2222-4222-8222-222222222243";

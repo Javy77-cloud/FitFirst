@@ -1,5 +1,5 @@
-import { TRIDENT_HO_APPETITE } from "@/lib/appetite/published-appetite";
-import { TRIDENT_CARRIER_ID } from "@/lib/fixtures/ids";
+import { SOUTHERN_OAK_HO_APPETITE, TRIDENT_HO_APPETITE } from "@/lib/appetite/published-appetite";
+import { SOUTHERN_OAK_CARRIER_ID, TRIDENT_CARRIER_ID } from "@/lib/fixtures/ids";
 
 /**
  * Javy's curated Home shop list (from Rosa Markets 2026-09-08).
@@ -9,6 +9,10 @@ import { TRIDENT_CARRIER_ID } from "@/lib/fixtures/ids";
  * Trident: `TRIDENT_CARRIER_ID` is the UUID `drizzle/0123_trident_reciprocal_ho.sql`
  * and `seedTridentReciprocal()` write to Neon. If a Trident / Trident Reciprocal
  * row already exists under another id, `resolveHomeShopCarrierIds` uses that live id.
+ *
+ * Southern Oak: `SOUTHERN_OAK_CARRIER_ID` is the live Neon desk UUID already on
+ * this list. `drizzle/0127_southern_oak_qrg.sql` and `seedSouthernOak()` enrich
+ * that row — they never insert a second Southern Oak name.
  */
 export const JAVY_HOME_SHOP_CARRIER_IDS = [
   "33333333-3333-4333-8333-333333333309", // American Integrity
@@ -21,7 +25,7 @@ export const JAVY_HOME_SHOP_CARRIER_IDS = [
   "e0165738-a0b3-4a9a-844c-3d3445691003", // Ovation
   "a68cfc6e-2660-4aa5-88c9-86ffbc4e38dc", // Patriot Select
   "67d52980-9167-4d94-8017-23509ded489a", // People's Trust
-  "1a0bfaf1-9888-45b3-84ea-2425eff3d3c2", // Southern Oak
+  SOUTHERN_OAK_CARRIER_ID, // Southern Oak (live Neon desk id — enrich in place)
   "a11e04a4-7fa6-43fe-8db5-f2d1afae4c85", // Tower Hill
   TRIDENT_CARRIER_ID, // Trident Reciprocal Exchange
   "0c3ec003-aa2d-44b0-89d2-8d85021d942e", // TypTap
@@ -55,6 +59,7 @@ export const JAVY_HOME_SHOP_NAMES = [
 /** Name fallback when a shop-list UUID is missing (existing Trident under an alias, etc.). */
 export const HOME_SHOP_NAME_ALIASES: Partial<Record<string, string[]>> = {
   [TRIDENT_CARRIER_ID]: TRIDENT_HO_APPETITE.aliases,
+  [SOUTHERN_OAK_CARRIER_ID]: SOUTHERN_OAK_HO_APPETITE.aliases,
 };
 
 /** Resolve desk carrier rows to the Home shop list. Prefers seeded UUIDs; falls back to aliases. Skips missing. */

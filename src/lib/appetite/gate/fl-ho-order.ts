@@ -51,6 +51,7 @@ export const HAGERTY_SLUG = "hagerty";
 export const UNIVERSAL_PC_SLUG = "universal_pc";
 export const UICNA_SLUG = "uicna";
 export const TRIDENT_SLUG = "trident_reciprocal";
+export const SOUTHERN_OAK_SLUG = "southern_oak";
 
 export function isAppointmentGated(carrierId: string): boolean {
   return (APPOINTMENT_GATED_SLUGS as readonly string[]).includes(carrierId);
