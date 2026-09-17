@@ -1,6 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID, SHOP_LINE_TO_LOB, type AccountKind, type ShopLine } from "@/lib/domain";
 import { formatDealTitle } from "@/lib/deals/deal-title";
+import { ensureDealRisk, requireInsertedRisk } from "@/lib/deals/ensure-risk";
 import { db } from "@/lib/db";
 import { deals, leads, policies, quoteSheets, risks } from "@/lib/db/schema";
 import { persistDealFile } from "@/lib/documents/store";
@@ -92,12 +93,16 @@ export async function ensureShoppingDealForLead(input: {
     })
     .returning();
 
-  await db.insert(risks).values({
-    tenantId: DEFAULT_TENANT_ID,
-    dealId: deal.id,
-    riskType: input.line === "auto" ? "auto" : "property",
-    state: "FL",
-  });
+  const [createdRisk] = await db
+    .insert(risks)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId: deal.id,
+      riskType: input.line === "auto" ? "auto" : "property",
+      state: "FL",
+    })
+    .returning();
+  requireInsertedRisk(createdRisk, "Ingest deal");
 
   await db.insert(quoteSheets).values(
     shopLines.map((line) => ({
@@ -121,8 +126,16 @@ export async function ensureShoppingDealForLead(input: {
 }
 
 export async function attachSourceDocs(dealId: string, files: IngestFile[]) {
-  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
-  if (!risk) throw new Error("Deal is missing a risk");
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  const healed = await ensureDealRisk({
+    dealId,
+    lineOfBusiness: deal?.lineOfBusiness,
+    quotingLine: deal?.quotingLine,
+    shopLines: deal?.shopLines,
+    state: deal?.state,
+    contactId: deal?.contactId,
+  });
+  const risk = healed.risk;
   const attached = [];
   for (const file of files) {
     attached.push(

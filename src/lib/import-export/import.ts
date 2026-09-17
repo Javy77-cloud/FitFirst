@@ -18,6 +18,7 @@ import {
 import { isUuid } from "@/lib/ids";
 import { newDeskToken, tokenExpiresAt, usernameFromEmail } from "@/lib/people/tokens";
 import { flagsForStatus } from "@/lib/people/status";
+import { ensureDealRisk } from "@/lib/deals/ensure-risk";
 import { ensureDeskAgentRow } from "@/lib/people/store";
 import {
   ANA_PROTECTED_MESSAGE,
@@ -629,13 +630,28 @@ async function applyDeal(item: PreviewRow, lookups: ImportLookups, actor: JobAct
   };
   if (existing) {
     await db.update(deals).set(payload).where(and(eq(deals.tenantId, tenant()), eq(deals.id, existing.id)));
+    await ensureDealRisk({
+      tenantId: tenant(),
+      dealId: existing.id,
+      lineOfBusiness: payload.lineOfBusiness,
+      state: payload.state,
+      contactId: payload.contactId,
+    });
     return;
   }
   const [created] = await db
     .insert(deals)
     .values({ tenantId: tenant(), ...payload })
     .returning();
-  if (created) lookups.deals.push(created);
+  if (!created) throw new Error("Deal import failed: could not insert a deal row.");
+  await ensureDealRisk({
+    tenantId: tenant(),
+    dealId: created.id,
+    lineOfBusiness: payload.lineOfBusiness,
+    state: payload.state,
+    contactId: payload.contactId,
+  });
+  lookups.deals.push(created);
 }
 
 async function applyPolicy(item: PreviewRow, lookups: ImportLookups, actor: JobActor) {

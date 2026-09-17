@@ -103,5 +103,6 @@ describe("new deal write", () => {
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/normalizeDealPageStageSlug/);
     expect(source("src/app/deals/[id]/error.tsx")).toMatch(/data-ff-deal-load-error/);
     expect(source("src/lib/db/queries.ts")).toMatch(/leftoverCreateStageNeedsRepair/);
+    expect(source("src/lib/db/queries.ts")).toMatch(/ensureDealRisk/);
   });
 });

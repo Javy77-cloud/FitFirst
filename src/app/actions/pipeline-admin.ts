@@ -15,6 +15,7 @@ import { isUuid } from "@/lib/ids";
 import { matchDealLookup } from "@/lib/deals/lookup";
 import { listDealLookup } from "@/lib/db/queries";
 import { flashAction } from "@/lib/flash-action";
+import { insertRequiredDealRisk } from "@/lib/deals/ensure-risk";
 import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-deal-write";
 import { dealStageForPipeline, resolveStageMove } from "@/lib/wire/pipeline";
 
@@ -110,31 +111,42 @@ export async function createPipelineDeal(formData: FormData) {
     quotingForm,
     policySubType,
   });
-  await db.insert(deals).values({
-    tenantId: DEFAULT_TENANT_ID,
-    title: namedTitle,
-    lineOfBusiness,
-    quotingForm: quotingForm ?? null,
-    quotingLine: quotingLine ?? null,
-    policySubType,
-    ...resolveStageMove(stageSlug),
-    shopFlow: seedNewDealShopFlow({
+  const [deal] = await db
+    .insert(deals)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      title: namedTitle,
       lineOfBusiness,
-      quotingLine,
-      quotingForm,
+      quotingForm: quotingForm ?? null,
+      quotingLine: quotingLine ?? null,
       policySubType,
-    }),
-    pipelineId: pipeline?.id,
-    archivedAt: archived ? new Date() : null,
-    state: pickedContact?.state || pickedAccount?.state || "FL",
-    ownerId: session.userId,
+      ...resolveStageMove(stageSlug),
+      shopFlow: seedNewDealShopFlow({
+        lineOfBusiness,
+        quotingLine,
+        quotingForm,
+        policySubType,
+      }),
+      pipelineId: pipeline?.id,
+      archivedAt: archived ? new Date() : null,
+      state: pickedContact?.state || pickedAccount?.state || "FL",
+      ownerId: session.userId,
+      contactId: pickedContact?.id ?? null,
+      accountId: pickedAccount?.id ?? null,
+      accountKind: pickedAccount && !pickedContact ? "commercial" : "personal",
+      bindTarget: pickedAccount && !pickedContact ? "account" : "contact",
+      primaryNamedInsured: pickedContact
+        ? formatPersonName(pickedContact)
+        : pickedAccount?.name ?? null,
+    })
+    .returning();
+  if (!deal) throw new Error("Deal create failed: could not insert a deal row.");
+  await insertRequiredDealRisk({
+    dealId: deal.id,
     contactId: pickedContact?.id ?? null,
-    accountId: pickedAccount?.id ?? null,
-    accountKind: pickedAccount && !pickedContact ? "commercial" : "personal",
-    bindTarget: pickedAccount && !pickedContact ? "account" : "contact",
-    primaryNamedInsured: pickedContact
-      ? formatPersonName(pickedContact)
-      : pickedAccount?.name ?? null,
+    lineOfBusiness,
+    quotingLine,
+    state: deal.state,
   });
   revalidatePath("/deals");
   revalidatePath("/renewals");
