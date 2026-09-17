@@ -18,8 +18,8 @@ export default async function FieldPicklistsPage() {
         Global option lists for picklist and multi-select fields. Create a list once, then reuse it
         on any field on any line of business. Each value can have a color from the full desk palette
         and one Default. Values sort A–Z on save. Starter lists — US states, lines of business,
-        common carriers, and Deal notices (P&amp;C / Life / Health) — are ready for{" "}
-        <span className="font-medium text-navy">Use a global list</span> on the field builder.
+        common carriers, and Deal notices (P&amp;C / Life / Health) — show under{" "}
+        <span className="font-medium text-navy">Custom</span> on the field builder option-set chooser.
         Each family has its own Deal notices list for the header / Quotes chip. These are not the
         policy book lists under Lines / Global lists.
       </p>

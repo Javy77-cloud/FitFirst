@@ -28,6 +28,7 @@ export async function syncDealSellingAgencyFromGlobalLists(tenantId = DEFAULT_TE
     .update(deskCustomFields)
     .set({
       picklistId: null,
+      globalListKey: "selling_agency",
       // Rich options are already stored for this field; schema typing lags as string[].
       options: options as unknown as string[],
       updatedAt: new Date(),

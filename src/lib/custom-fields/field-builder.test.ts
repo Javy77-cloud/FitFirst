@@ -166,7 +166,18 @@ describe("deal field builder", () => {
     expect(config).toMatch(/data-ff-picklist-config/);
     expect(config).toMatch(/data-ff-option-count/);
     expect(config).toMatch(/data-ff-global-list/);
+    expect(config).toMatch(/data-ff-option-set/);
+    expect(config).toMatch(/OPTION_SET_POLICY_CATEGORY/);
+    expect(config).toMatch(/OPTION_SET_CUSTOM_CATEGORY/);
+    expect(config).toMatch(/groupedOptionSetChoices/);
     expect(config).toMatch(/data-ff-add-option/);
+    expect(config).toMatch(/max-h-44/);
+    expect(config).toMatch(/overflow-y-auto/);
+    expect(builder).toMatch(/max-h-\[min\(90vh,42rem\)\]/);
+    expect(builder).toMatch(/data-ff-edit-properties-body/);
+    expect(builder).toMatch(/data-ff-save-properties/);
+    expect(source("src/app/settings/field-builder/page.tsx")).toMatch(/globalLists=\{globalLists\}/);
+    expect(source("src/app/settings/field-builder/page.tsx")).toMatch(/loadGlobalLists/);
     // Key by slot index only. Including the typed value remounts the input each keystroke.
     expect(config).toMatch(/options\.map\(\(option, index\) => \(/);
     expect(config).toMatch(/<div key=\{index\}/);
@@ -331,7 +342,7 @@ describe("deal field builder", () => {
     expect(control).toMatch(/<option value="">Select<\/option>/);
     expect(control).toMatch(/key=\{`\$\{field\.key\}:\$\{index\}:\$\{option\}`\}/);
     expect(control).not.toMatch(/key=\{option\}/);
-    expect(source("src/lib/custom-fields/store.ts")).toMatch(/resolveFieldOptions\(field, lists\)/);
+    expect(source("src/lib/custom-fields/store.ts")).toMatch(/resolveFieldOptions\(field, lists, globalLists\)/);
     expect(source("src/lib/custom-fields/store.ts")).not.toMatch(
       /field\.picklistId \? \{ \.\.\.field, options: resolveFieldOptions/,
     );

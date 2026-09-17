@@ -40,6 +40,13 @@ import { APPLICANT_CUSTOM_KEYS } from "./applicant-fields";
 import { canonicalizeIdentityField, identityTypeNeedsRepair } from "./identity-field";
 import { defaultFieldPermissions, parseFieldPermissions, parseLayout } from "./types";
 import { listFieldPicklists } from "./picklist-store";
+import { loadGlobalLists } from "@/lib/db/global-lists";
+import {
+  fieldUsesOptionSet,
+  globalListOptionSetsFromRows,
+  parseGlobalListKey,
+  persistedOptionSetBinding,
+} from "./option-sets";
 import { occupationPicklistId } from "@/lib/contacts/occupation-picklist";
 import {
   CONTACT_DETAIL_PICKLIST_BINDINGS,
@@ -58,7 +65,10 @@ import {
 export function toFieldDef(row: DeskCustomField): CustomFieldDef {
   const rich = sanitizeRichPicklistOptions(row.options ?? []);
   const isPick =
-    row.type === "picklist" || row.type === "multi_select" || Boolean(row.picklistId);
+    row.type === "picklist" ||
+    row.type === "multi_select" ||
+    Boolean(row.picklistId) ||
+    Boolean(row.globalListKey);
   return canonicalizeIdentityField({
     key: row.key,
     label: row.label,
@@ -71,6 +81,7 @@ export function toFieldDef(row: DeskCustomField): CustomFieldDef {
     required: Boolean(row.required),
     defaultValue: row.defaultValue ?? null,
     picklistId: row.picklistId ?? null,
+    globalListKey: parseGlobalListKey(row.globalListKey),
     permissions: parseFieldPermissions(row.permissions),
   });
 }
@@ -91,7 +102,7 @@ async function insertMissingFields(module: FieldLayoutModule, fields: CustomFiel
         systemKey: field.systemKey ?? null,
         required: field.required ?? false,
         defaultValue: field.defaultValue ?? null,
-        picklistId: field.picklistId ?? null,
+        ...persistedOptionSetBinding(field),
         permissions: field.permissions ?? defaultFieldPermissions(),
       })
       .onConflictDoNothing({
@@ -196,7 +207,7 @@ export async function ensureDealFieldCatalog() {
 }
 
 function persistFieldOptions(field: CustomFieldDef): unknown[] {
-  if (field.type === "picklist" || field.type === "multi_select" || field.picklistId) {
+  if (fieldUsesOptionSet(field)) {
     // Keep rich { value, color, isDefault } so list pills stay colored after layout saves.
     if (field.optionColors && Object.keys(field.optionColors).length > 0) {
       return sanitizeRichPicklistOptions(
@@ -213,15 +224,17 @@ function persistFieldOptions(field: CustomFieldDef): unknown[] {
 }
 
 async function applyPicklists(fields: CustomFieldDef[]): Promise<CustomFieldDef[]> {
-  const lists = await listFieldPicklists().catch(() => []);
+  const [lists, globalRows] = await Promise.all([
+    listFieldPicklists().catch(() => []),
+    loadGlobalLists().catch(() => []),
+  ]);
+  const globalLists = globalListOptionSetsFromRows(globalRows);
   return fields.map((field) => {
-    if (!(field.type === "picklist" || field.type === "multi_select" || field.picklistId)) {
-      return field;
-    }
-    const rich = resolveRichFieldOptions(field, lists);
+    if (!fieldUsesOptionSet(field)) return field;
+    const rich = resolveRichFieldOptions(field, lists, globalLists);
     return {
       ...field,
-      options: resolveFieldOptions(field, lists),
+      options: resolveFieldOptions(field, lists, globalLists),
       optionColors: optionColorMap(rich),
     };
   });
@@ -575,7 +588,7 @@ export async function upsertFieldDef(field: CustomFieldDef, module: FieldLayoutM
       systemKey: field.systemKey ?? null,
       required: field.required ?? false,
       defaultValue: field.defaultValue ?? null,
-      picklistId: field.picklistId ?? null,
+      ...persistedOptionSetBinding(field),
       permissions: field.permissions ?? defaultFieldPermissions(),
       updatedAt: new Date(),
     })
@@ -590,7 +603,7 @@ export async function upsertFieldDef(field: CustomFieldDef, module: FieldLayoutM
         systemKey: field.systemKey ?? null,
         required: field.required ?? false,
         defaultValue: field.defaultValue ?? null,
-        picklistId: field.picklistId ?? null,
+        ...persistedOptionSetBinding(field),
         permissions: field.permissions ?? defaultFieldPermissions(),
         updatedAt: new Date(),
       },

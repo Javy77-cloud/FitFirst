@@ -15,6 +15,12 @@ export type FieldPicklist = {
   active?: boolean;
 };
 
+export type GlobalListOptionSet = {
+  listKey: string;
+  name: string;
+  options: PicklistOption[];
+};
+
 /** High enough for US states + DC. Custom field lists stay this size. */
 export const MAX_PICKLIST_OPTIONS = 80;
 
@@ -72,7 +78,13 @@ export function resizePicklistOptions(options: string[], count: number): string[
 export function resolveRichFieldOptions(
   field: CustomFieldDef,
   lists: FieldPicklist[] = [],
+  globalLists: GlobalListOptionSet[] = [],
 ): PicklistOption[] {
+  const globalKey = field.globalListKey?.trim() || "";
+  if (globalKey) {
+    const set = globalLists.find((item) => item.listKey === globalKey);
+    if (set) return sanitizeRichPicklistOptions(set.options);
+  }
   if (field.picklistId) {
     const list = lists.find((item) => item.id === field.picklistId);
     if (list) return sanitizeRichPicklistOptions(list.options);
@@ -89,8 +101,12 @@ export function resolveRichFieldOptions(
   return sanitizeRichPicklistOptions(field.options ?? []);
 }
 
-export function resolveFieldOptions(field: CustomFieldDef, lists: FieldPicklist[] = []): string[] {
-  return resolveRichFieldOptions(field, lists).map((option) => option.value);
+export function resolveFieldOptions(
+  field: CustomFieldDef,
+  lists: FieldPicklist[] = [],
+  globalLists: GlobalListOptionSet[] = [],
+): string[] {
+  return resolveRichFieldOptions(field, lists, globalLists).map((option) => option.value);
 }
 
 export function optionColorMap(options: PicklistOption[]): Record<string, string | null> {
@@ -104,8 +120,15 @@ export function optionColorMap(options: PicklistOption[]): Record<string, string
 export function resolvePicklistDefault(
   field: CustomFieldDef,
   lists: FieldPicklist[] = [],
+  globalLists: GlobalListOptionSet[] = [],
 ): string {
   if (field.defaultValue) return field.defaultValue;
+  const globalKey = field.globalListKey?.trim() || "";
+  if (globalKey) {
+    const set = globalLists.find((item) => item.listKey === globalKey);
+    const fallback = set?.options.find((option) => option.isDefault)?.value;
+    if (fallback) return fallback;
+  }
   if (field.picklistId) {
     const list = lists.find((item) => item.id === field.picklistId);
     const fallback = list?.options.find((option) => option.isDefault)?.value;

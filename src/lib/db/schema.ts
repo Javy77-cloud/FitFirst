@@ -358,6 +358,8 @@ export const deskCustomFields = pgTable(
     required: boolean("required").notNull().default(false),
     defaultValue: text("default_value"),
     picklistId: uuid("picklist_id"),
+    /** Settings → Global lists key (policy_status, selling_agency, …). Mutually exclusive with picklistId. */
+    globalListKey: text("global_list_key"),
     permissions: jsonb("permissions").$type<{ admin?: string; agent?: string }>(),
     ...timestamps,
   },

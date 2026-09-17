@@ -93,7 +93,9 @@ function isPipelineField(field: CustomFieldDef | undefined): boolean {
 }
 
 function isSellingAgencyField(field: CustomFieldDef | undefined): boolean {
-  return Boolean(field && /^selling agency$/i.test(field.label.trim()));
+  return Boolean(
+    field && (field.globalListKey === "selling_agency" || /^selling agency$/i.test(field.label.trim())),
+  );
 }
 
 /**
