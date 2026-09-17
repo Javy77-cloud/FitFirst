@@ -44,6 +44,6 @@ describe("developer profile gates", () => {
     expect(page).toMatch(/requireDeveloperPage/);
     expect(page).toMatch(/loadDeveloperUsageTiles/);
     expect(page).toMatch(/DEVELOPER_UPCOMING/);
-    expect(page).toMatch(/not counted yet/);
+    expect(page).toMatch(/NOT_COUNTED_YET/);
   });
 });

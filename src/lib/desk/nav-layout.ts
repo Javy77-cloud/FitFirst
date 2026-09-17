@@ -659,7 +659,7 @@ export function togglePrimaryHidden(layout: StoredNavLayout, id: string): Stored
 
 export function unusedCatalogLinks(
   layout: StoredNavLayout,
-  options: { isAdmin?: boolean } = {},
+  options: NavLayoutOptions = {},
 ): NavLinkDef[] {
   const current = normalizeNavLayout(layout);
   const taken = allUsedIds(current.primaryOrder, current.submenus);
@@ -709,7 +709,7 @@ export function removeSubmenuLink(
 export function availableSubmenuLinks(
   layout: StoredNavLayout,
   primaryId: string,
-  options: { isAdmin?: boolean } = {},
+  options: NavLayoutOptions = {},
 ): NavLinkDef[] {
   const current = normalizeNavLayout(layout);
   const taken = allUsedIds(current.primaryOrder, current.submenus);
