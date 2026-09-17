@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { parseCsv } from "@/lib/import-export/csv";
+import { lifeBuildFromSheet, type LifeBuildSnapshot } from "./build";
 import {
   lifeConditionKeysFromSheet,
   parseLifeConditionLabels,
@@ -110,14 +111,23 @@ export function worstLifeOutcome(outcomes: LifeAppetiteOutcome[]): LifeAppetiteO
 export function predictLifeAppetite(input: {
   medicalConditions?: string | null;
   tobaccoStatus?: string | null;
+  heightFt?: string | null;
+  heightIn?: string | null;
+  weightLbs?: string | null;
   matrix?: { products: LifeMatrixProduct[]; rules: LifeMatrixRule[] };
 }): {
   selectedLabels: string[];
   conditionKeys: string[];
   predictions: LifeAppetitePrediction[];
   coverageNote: string;
+  build: LifeBuildSnapshot;
 } {
   const matrix = input.matrix ?? loadLifeUwMatrix();
+  const build = lifeBuildFromSheet({
+    heightFt: input.heightFt,
+    heightIn: input.heightIn,
+    weightLbs: input.weightLbs,
+  });
   const selectedLabels = parseLifeConditionLabels(input.medicalConditions).filter(
     (label) => label.toLowerCase() !== "none",
   );
@@ -179,5 +189,6 @@ export function predictLifeAppetite(input: {
     conditionKeys,
     predictions,
     coverageNote: LIFE_UW_MATRIX_COVERAGE_NOTE,
+    build,
   };
 }

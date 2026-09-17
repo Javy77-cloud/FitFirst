@@ -88,3 +88,4 @@ Columns: `carrier_slug`, `carrier_name`, `product_slug`, `product_name`, `condit
 - `coverage=seeded` rows are the only production outcomes. v1 only seeds conditions that appear **uniform decline** across visible screenshot columns (AIDS/HIV, ALS, Alzheimer’s, Dementia, Cystic fibrosis).
 - Do **not** invent Accept / Graded / Preferred cells from screenshots. Unknown is the honest default.
 - Replace/expand this file when Javy uploads the spreadsheet — full MATRIX when spreadsheet provided.
+- Height/weight (build/BMI) tabs are a **second** predictor input. The desk already reads Risk Profile height + weight and computes BMI, but `band` stays `unknown` until those MATRIX tables are imported. Optional future column: `build_band`.

@@ -503,8 +503,17 @@ export default async function DealPage({
       ? predictLifeAppetite({
           medicalConditions: activeSheet.values.medical_conditions?.value ?? "",
           tobaccoStatus: activeSheet.values.tobacco_status?.value ?? "",
+          heightFt: activeSheet.values.height_ft?.value ?? "",
+          heightIn: activeSheet.values.height_in?.value ?? "",
+          weightLbs: activeSheet.values.weight?.value ?? "",
         })
-      : { selectedLabels: [], conditionKeys: [], predictions: [], coverageNote: "" };
+      : {
+          selectedLabels: [],
+          conditionKeys: [],
+          predictions: [],
+          coverageNote: "",
+          build: { heightInches: null, weightLbs: null, bmi: null, band: "unknown" as const, note: "" },
+        };
   return (
     <AppShell
       title="Deals"
@@ -850,6 +859,7 @@ export default async function DealPage({
                             tobaccoStatus={activeSheet.values.tobacco_status?.value ?? null}
                             predictions={lifeAppetite.predictions}
                             coverageNote={lifeAppetite.coverageNote}
+                            build={lifeAppetite.build}
                           />
                         ) : null}
                       <MarketsPanel
@@ -877,6 +887,7 @@ export default async function DealPage({
                               tobaccoStatus={activeSheet.values.tobacco_status?.value ?? null}
                               predictions={lifeAppetite.predictions}
                               coverageNote={lifeAppetite.coverageNote}
+                              build={lifeAppetite.build}
                             />
                           </div>
                         ) : null}

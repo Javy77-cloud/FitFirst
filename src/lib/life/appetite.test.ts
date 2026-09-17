@@ -11,6 +11,7 @@ import {
 } from "./appetite";
 import { LIFE_LEAN_MEDICAL_CONDITION_OPTIONS, LIFE_MEDICAL_CONDITION_OPTIONS } from "./conditions";
 import { matchLifeMatrixCarrier } from "./carriers";
+import { lifeBuildFromSheet } from "./build";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -109,6 +110,22 @@ describe("Life UW MATRIX appetite v1", () => {
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/STARTER_PICKLIST_LIFE_MEDICAL/);
     expect(source("src/lib/custom-fields/starter-picklists.ts")).toMatch(/Life medical conditions/);
     expect(source("src/components/deal/master-sheet-compare.tsx")).toMatch(/searchable/);
+  });
+
+  it("computes BMI from the Risk Profile but does not invent a build band", () => {
+    const build = lifeBuildFromSheet({ heightFt: "5", heightIn: "10", weightLbs: "180" });
+    expect(build.bmi).toBe(25.8);
+    expect(build.band).toBe("unknown");
+    expect(build.note).toMatch(/full MATRIX when spreadsheet provided/i);
+    const predicted = predictLifeAppetite({
+      medicalConditions: "Asthma",
+      heightFt: "5",
+      heightIn: "10",
+      weightLbs: "180",
+      matrix,
+    });
+    expect(predicted.build.bmi).toBe(25.8);
+    expect(predicted.predictions.every((row) => row.outcome === "unknown")).toBe(true);
   });
 
   it("matches MATRIX Life carriers by public name without inventing contacts", () => {
