@@ -254,6 +254,27 @@ export function statusColorSelectValue(defaultValue?: string | null): string {
   return isStatusColorKey(raw) ? raw : "";
 }
 
+/** Token for live swatches / rows: a palette key or `"none"`. */
+export function liveColorKey(color: string | null | undefined): string {
+  return statusColorSelectValue(color) || "none";
+}
+
+/** Soft wash + inset rail so a picked color paints the row before Save. */
+export function liveColorRowStyle(color: string | null | undefined): {
+  backgroundColor: string;
+  borderColor: string;
+  boxShadow: string;
+} | undefined {
+  const key = statusColorSelectValue(color);
+  if (!isStatusColorKey(key)) return undefined;
+  const tone = STATUS_COLOR_STYLE[key];
+  return {
+    backgroundColor: tone.backgroundColor,
+    borderColor: tone.borderColor,
+    boxShadow: `inset 3px 0 0 ${tone.color}`,
+  };
+}
+
 export function defaultStageColor(
   sortOrder = 0,
   slug?: string | null,

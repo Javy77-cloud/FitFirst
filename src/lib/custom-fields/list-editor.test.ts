@@ -1,5 +1,8 @@
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { ListOptionRow } from "@/components/settings/list-option-row";
 import {
   matchStarterList,
   missingStarterPicklistNames,
@@ -68,9 +71,35 @@ describe("admin list editors", () => {
     expect(pickCard).toMatch(/aria-label="List name"/);
     expect(pickCard).toMatch(/optionColors/);
     expect(pickCard).toMatch(/CollapsibleListCard/);
+    expect(pickCard).toMatch(/ListOptionRow/);
+    expect(pickCard).toMatch(/defaultValue=\{option\.color\}/);
+    expect(globalCard).toMatch(/ListOptionRow/);
+    expect(source("src/components/settings/collapsible-list-card.tsx")).toMatch(/ff-list-card/);
+    expect(source("src/components/settings/list-option-row.tsx")).toMatch(/data-ff-live-color-row/);
+    expect(source("src/components/settings/list-option-row.tsx")).toMatch(/onColorChange/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-list-row/);
     expect(source("src/lib/flash.ts")).toMatch(/"pick-list-saved": "Pick list saved"/);
     expect(source("src/lib/flash.ts")).toMatch(/"global-list-saved": "Global list saved"/);
     expect(source("src/lib/custom-fields/picklist-store.ts")).toMatch(/seedKey/);
     expect(source("src/lib/custom-fields/picklist-store.ts")).toMatch(/active: false/);
+  });
+
+  it("renders a live color row from the saved key without making label inputs controlled", () => {
+    const html = renderToString(
+      createElement(
+        ListOptionRow,
+        { defaultValue: "teal", name: "optionColors" },
+        createElement("input", { defaultValue: "Open", "aria-label": "Option 1" }),
+      ),
+    );
+    expect(html).toContain('data-ff-live-color-row="teal"');
+    expect(html).toContain('data-ff-status-color-swatch="teal"');
+    expect(html).toContain('value="Open"');
+    expect(html).not.toContain("useEffect");
+    const row = source("src/components/settings/list-option-row.tsx");
+    expect(row).toMatch(/useState/);
+    expect(row).not.toMatch(/useEffect/);
+    expect(source("src/components/settings/picklist-card.tsx")).toMatch(/defaultValue=\{option\.value\}/);
+    expect(source("src/components/settings/global-list-card.tsx")).toMatch(/defaultValue=\{row\.label\}/);
   });
 });

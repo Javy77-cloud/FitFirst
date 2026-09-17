@@ -16,7 +16,8 @@ import { Input } from "@/components/ui/input";
 import { useClientMounted } from "@/hooks/use-client-mounted";
 import { flashAction } from "@/lib/flash-client";
 import { formatTagLabel, tagModuleLabel, type TagModule } from "@/lib/tags/module-tags";
-import { DEFAULT_TAG_PICKER_COLOR, tagChipStyle } from "@/lib/tags/tag-colors";
+import { TagRowColor } from "@/components/settings/tag-row-color";
+import { DEFAULT_TAG_PICKER_COLOR } from "@/lib/tags/tag-colors";
 
 export type TagCatalogRow = { name: string; color: string | null };
 
@@ -104,8 +105,14 @@ export function ManageTagsDialog({
                 className="h-8 w-40"
               />
             </div>
-            <label className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+            <label className="inline-flex items-center gap-2 text-[11px] text-muted-foreground">
               Color
+              <span
+                className="inline-block size-6 rounded-sm border border-border"
+                style={{ backgroundColor: draftColor }}
+                data-ff-tag-color-live={draftColor}
+                aria-hidden
+              />
               <input
                 type="color"
                 name="color"
@@ -128,15 +135,8 @@ export function ManageTagsDialog({
               {tags.map((tag) => (
                 <li
                   key={tag.name}
-                  className="flex flex-col gap-2 rounded-md border border-border p-2 sm:flex-row sm:flex-wrap sm:items-center"
+                  className="ff-list-row sm:flex-nowrap"
                 >
-                  <p
-                    className="min-w-24 rounded-sm px-1.5 py-0.5 text-sm font-medium text-navy"
-                    style={tagChipStyle(tag.color)}
-                    data-ff-tag-color={tag.color ?? ""}
-                  >
-                    {formatTagLabel(tag.name)}
-                  </p>
                   <form
                     action={async (formData) => {
                       await updateModuleTagColor(formData);
@@ -148,15 +148,14 @@ export function ManageTagsDialog({
                   >
                     <input type="hidden" name="module" value={module} />
                     <input type="hidden" name="name" value={tag.name} />
-                    <input
-                      type="color"
+                    <TagRowColor
                       name="color"
-                      defaultValue={tag.color ?? DEFAULT_TAG_PICKER_COLOR}
-                      className="h-8 w-8 cursor-pointer rounded border border-border bg-transparent p-0"
-                      aria-label={`Edit color for ${formatTagLabel(tag.name)}`}
+                      savedColor={tag.color}
+                      chipLabel={formatTagLabel(tag.name)}
+                      ariaLabel={`Edit color for ${formatTagLabel(tag.name)}`}
                     />
                     <Button type="submit" size="xs" variant="outline">
-                      Save Color
+                      Save color
                     </Button>
                   </form>
                   <form

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { deleteTerritory, saveTerritory } from "@/app/actions/offices";
 import { AgentAssign } from "@/components/org/agent-assign";
 import { StatePicker } from "@/components/org/state-picker";
+import { SettingsEntityCard } from "@/components/settings/settings-entity-card";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { Button } from "@/components/ui/button";
@@ -53,35 +54,27 @@ export default async function TerritoriesSettingsPage({
               .filter((name): name is string => Boolean(name));
             const people = roster.filter((row) => row.territoryIds.includes(territory.id));
             return (
-              <li key={territory.id} className="ff-card space-y-2 p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h2 className="text-sm font-semibold text-navy">{territory.name}</h2>
-                    <p className="text-helper text-muted-foreground">
-                      {territory.geoLabel || "No geo label"} · {formatStateList(territory.states)}
-                      {territory.counties.length ? ` · ${territory.counties.join(", ")}` : ""}
-                    </p>
-                  </div>
-                  <Link
-                    href={`/settings/territories?territory=${territory.id}`}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Edit
-                  </Link>
-                </div>
-                <p className="text-helper text-muted-foreground">
-                  Offices: {linked.join(", ") || "none linked"}
-                </p>
-                <p className="text-helper text-muted-foreground">
-                  Direct agents: {people.map((person) => person.name).join(" · ") || "none"}
-                </p>
+              <li key={territory.id}>
+                <SettingsEntityCard
+                  title={territory.name}
+                  meta={`${territory.geoLabel || "No geo label"} · ${formatStateList(territory.states)}${territory.counties.length ? ` · ${territory.counties.join(", ")}` : ""}`}
+                  href={`/settings/territories?territory=${territory.id}`}
+                >
+                  <p className="text-helper text-muted-foreground">
+                    Offices: {linked.join(", ") || "none linked"}
+                  </p>
+                  <p className="text-helper text-muted-foreground">
+                    Direct agents: {people.map((person) => person.name).join(" · ") || "none"}
+                  </p>
+                </SettingsEntityCard>
               </li>
             );
           })}
         </ul>
       )}
 
-      <section className="ff-card space-y-4 p-4">
+      <section className="ff-list-card">
+        <div className="ff-list-card-body space-y-4">
         <div>
           <h2 className="text-sm font-semibold text-navy">
             {editing ? `Edit ${editing.name}` : "Add territory"}
@@ -192,6 +185,7 @@ export default async function TerritoriesSettingsPage({
             </button>
           </HardDeleteForm>
         ) : null}
+        </div>
       </section>
     </SettingsShell>
   );

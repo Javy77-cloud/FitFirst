@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { clearAllPicklistOptionColors } from "@/lib/custom-fields/picklists";
-import { statusColorSelectValue } from "@/lib/desk/status-colors";
+import { liveColorKey, liveColorRowStyle, statusColorSelectValue } from "@/lib/desk/status-colors";
 
 describe("sep7jf StatusColorSelect None + clear all colors", () => {
   it("keeps null / empty / none as None — never coerces to slate", () => {
@@ -12,6 +12,22 @@ describe("sep7jf StatusColorSelect None + clear all colors", () => {
     expect(statusColorSelectValue("NONE")).toBe("");
     expect(statusColorSelectValue("teal")).toBe("teal");
     expect(statusColorSelectValue("slate")).toBe("slate");
+  });
+
+  it("paints a live row wash the moment a palette key is chosen", () => {
+    expect(liveColorKey(null)).toBe("none");
+    expect(liveColorKey("none")).toBe("none");
+    expect(liveColorKey("teal")).toBe("teal");
+    expect(liveColorRowStyle(null)).toBeUndefined();
+    expect(liveColorRowStyle("rose")).toMatchObject({
+      backgroundColor: "#fde8e6",
+      borderColor: "#e8b4af",
+    });
+    const source = readFileSync("src/components/desk/status-color-select.tsx", "utf8");
+    expect(source).toMatch(/onColorChange/);
+    expect(readFileSync("src/components/settings/list-option-row.tsx", "utf8")).toMatch(
+      /data-ff-live-color-row/,
+    );
   });
 
   it("puts None first in the shared StatusColorSelect markup", () => {

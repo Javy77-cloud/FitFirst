@@ -32,9 +32,9 @@ export default async function FieldPicklistsPage() {
       <StayOnSaveForm
         action={createEmptyFieldPicklist}
         flash="pick-list-saved"
-        className="mb-4 flex flex-wrap items-end gap-2"
+        className="ff-list-card mb-4"
       >
-        <div data-ff-new-picklist className="flex flex-wrap items-end gap-2">
+        <div data-ff-new-picklist className="ff-list-card-body flex flex-wrap items-end gap-2">
           <label className="text-xs text-muted-foreground">
             New list name
             <Input name="name" placeholder="e.g. US states" className="mt-0.5 h-8 w-56" />
