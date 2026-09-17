@@ -46,5 +46,6 @@ describe("New Deal uses the live Deal Edit Layout", () => {
     expect(createDealFn.indexOf("persistNewDealLayoutValues")).toBeLessThan(
       createDealFn.indexOf(".insert(risks)"),
     );
+    expect(createDealFn).toMatch(/mobileHome: sourceRisk\?\.mobileHome \?\? false/);
   });
 });

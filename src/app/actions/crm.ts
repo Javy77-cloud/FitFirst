@@ -714,7 +714,7 @@ export async function createDeal(formData: FormData) {
     pool: sourceRisk?.pool ?? null,
     protectionClass: sourceRisk?.protectionClass ?? null,
     milesToCoast: sourceRisk?.milesToCoast ?? null,
-    mobileHome: sourceRisk?.mobileHome ?? null,
+    mobileHome: sourceRisk?.mobileHome ?? false,
     replacementCostEstimate: sourceRisk?.replacementCostEstimate ?? null,
     vin: sourceRisk?.vin ?? null,
     vehicleYear: sourceRisk?.vehicleYear ?? null,
