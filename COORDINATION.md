@@ -1349,7 +1349,7 @@ Third desk profile, separate from Admin and Agent. Lean scaffold only — no BI,
 
 - Role `developer` + `seeDeveloperHub` capability. Site-developer flag (`users.is_site_developer` / `FF_SITE_DEVELOPER_EMAILS`) also opens the hub. Admin settings stay Admin-only.
 - Gated left-nav **Developer** → `/developer`. Agents and plain Admins never see it.
-- Login card: **drew@fitfirst.local** / **drew** (Drew Hale). Seed sets `is_site_developer`.
+- Login card: **logan@fitfirst.local** / **logan** (Natasha Logan). Seed sets `is_site_developer`.
 - API usage tiles increment only after real vendor HTTP: Mapbox suggest, Gemini extract, FedEx verify, GetParcelData, FL property. Month is UTC `YYYY-MM`. Optional cap via `developer_api_meter_settings` or `FF_API_LIMIT_<PROVIDER>`. Uninstrumented tiles (PermitStack, VIN decode) stay **not counted yet**.
 - Upcoming notes list: feature-request heat, error watch, revenue BI — later.
 - Migration `0134_developer_profile`. Ana fixture untouched.

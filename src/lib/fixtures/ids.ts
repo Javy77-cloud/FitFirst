@@ -255,7 +255,7 @@ export const AGENT_USER_ID = "44444444-4444-4444-8444-444444444402";
 export const GARCIA_AGENT_USER_ID = "44444444-4444-4444-8444-444444444403";
 /** Third profile: Developer (not Admin, not a producer). Off 401–403. */
 export const DEVELOPER_USER_ID = "44444444-4444-4444-8444-4444444444d1";
-export const DEVELOPER_NAME = "Drew Hale";
+export const DEVELOPER_NAME = "Natasha Logan";
 /** Stable hashed demo bearer for /api/v1 (plaintext `ff_demo_admin`). */
 export const DEMO_API_TOKEN_ID = "a0111111-a011-4111-8111-a01111111101";
 /** Frozen demo producer. Off ADMIN/AGENT 401–403 and Elena 441–461. */
