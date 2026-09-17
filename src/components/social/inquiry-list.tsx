@@ -8,8 +8,8 @@ export function InquiryList({ inquiries }: { inquiries: SocialPulseInquiry[] }) 
       <div className="ff-card p-4">
         <h3 className="text-sm font-semibold text-navy">Inbound inquiries</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          No connected stubs are returning demo inquiries. Connect Facebook, Instagram, X, LinkedIn,
-          or GBP in Settings → Social. GBP stays hidden from agents until Admin allows monitoring.
+          No inbound inquiries yet. Admin connects accounts under Settings → Social / GBP. GBP stays
+          locked for agents until Admin allows monitoring.
         </p>
       </div>
     );

@@ -42,6 +42,13 @@ describe("agent social connection visibility", () => {
     expect(pulse).toMatch(/canEdit/);
   });
 
+  it("does not list platforms or connected stubs on the inquiry empty state", () => {
+    const list = source("src/components/social/inquiry-list.tsx");
+    expect(list).not.toMatch(/No connected stubs/);
+    expect(list).not.toMatch(/Connect Facebook, Instagram/);
+    expect(list).toMatch(/No inbound inquiries yet/);
+  });
+
   it("hides connection badges on agent home social tiles", () => {
     const tiles = source("src/components/social/pulse-cards.tsx");
     expect(tiles).toMatch(/showConnectionStatus/);
