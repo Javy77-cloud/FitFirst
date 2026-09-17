@@ -2,6 +2,7 @@ import { EMPTY_ADDRESS, formatAddressLine, type AddressSuggestion, type ParsedAd
 
 type FedExResolved = {
   streetLines?: string[];
+  streetLinesToken?: string[];
   streetLinesAddress?: { streetLines?: string[] };
   city?: string;
   stateOrProvinceCode?: string;
@@ -9,6 +10,8 @@ type FedExResolved = {
   countryCode?: string;
   county?: string;
   classification?: string;
+  resolvedAddress?: FedExResolved;
+  address?: FedExResolved;
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -19,22 +22,39 @@ function asString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function linesFrom(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((line) => String(line ?? "").trim())
+    .filter((line) => line && !/^TOK-/i.test(line));
+}
+
 function streetFromResolved(row: FedExResolved): string {
   const lines =
-    (Array.isArray(row.streetLinesAddress?.streetLines) ? row.streetLinesAddress?.streetLines : null) ??
-    (Array.isArray(row.streetLines) ? row.streetLines : []);
-  return lines.map((line) => String(line ?? "").trim()).filter(Boolean).join(" ");
+    linesFrom(row.streetLinesAddress?.streetLines).length > 0
+      ? linesFrom(row.streetLinesAddress?.streetLines)
+      : linesFrom(row.streetLines).length > 0
+        ? linesFrom(row.streetLines)
+        : linesFrom(row.streetLinesToken);
+  return lines.join(" ");
 }
 
 export function parsedAddressFromFedEx(row: FedExResolved | null | undefined): ParsedAddress {
   if (!row) return { ...EMPTY_ADDRESS };
+  const nested = row.resolvedAddress ?? row.address;
+  const street = streetFromResolved(row) || (nested ? streetFromResolved(nested) : "");
+  const city = asString(row.city) || asString(nested?.city);
+  const state = asString(row.stateOrProvinceCode) || asString(nested?.stateOrProvinceCode);
+  const zip = asString(row.postalCode) || asString(nested?.postalCode);
+  const county = (asString(row.county) || asString(nested?.county)).replace(/\s+County$/i, "");
+  const country = asString(row.countryCode) || asString(nested?.countryCode) || "US";
   return {
-    street: streetFromResolved(row),
-    city: asString(row.city),
-    state: asString(row.stateOrProvinceCode),
-    zip: asString(row.postalCode),
-    county: asString(row.county).replace(/\s+County$/i, ""),
-    country: asString(row.countryCode) || "US",
+    street,
+    city,
+    state,
+    zip,
+    county,
+    country,
   };
 }
 

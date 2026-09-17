@@ -123,4 +123,32 @@ describe("address API routes", () => {
     await expect(res.json()).resolves.toMatchObject({ status: "incomplete", enabled: true });
     expect(verifyFedEx).not.toHaveBeenCalled();
   });
+
+  it("keeps transport/auth failures distinct from unmatched", async () => {
+    loadCreds.mockResolvedValue({ apiKey: "k", apiSecret: "s", environment: "production" });
+    verifyFedEx.mockResolvedValue({
+      status: "error",
+      resolved: null,
+      suggestions: [],
+      errorKind: "auth",
+    });
+    const res = await verifyPost(
+      new Request("http://local/api/address/verify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          street: "412 Harbor Isle Dr",
+          city: "Melbourne",
+          state: "FL",
+          zip: "32935",
+          country: "US",
+        }),
+      }),
+    );
+    await expect(res.json()).resolves.toMatchObject({
+      status: "error",
+      enabled: true,
+      errorKind: "auth",
+    });
+  });
 });

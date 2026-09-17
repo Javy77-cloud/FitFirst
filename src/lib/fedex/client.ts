@@ -1,4 +1,5 @@
 import { parseFedExResolvePayload } from "./parse";
+import { classifyFedExHttpStatus, fedexResolveRequestAddress } from "./request";
 import { addressesMatch } from "@/lib/address/compare";
 import { addressIsComplete, type AddressSuggestion, type ParsedAddress } from "@/lib/address/types";
 import { noteDeveloperApiCall } from "@/lib/developer/usage";
@@ -108,53 +109,75 @@ export async function suggestFedExAddresses(
   return parseFedExResolvePayload(await res.json());
 }
 
-export type AddressVerifyStatus = "verified" | "suggested" | "unmatched";
+export type AddressVerifyStatus = "verified" | "suggested" | "unmatched" | "error";
+
+export type AddressVerifyErrorKind = "auth" | "transport" | "not_configured";
 
 export type AddressVerifyResult = {
   status: AddressVerifyStatus;
   resolved: ParsedAddress | null;
   suggestions: AddressSuggestion[];
+  errorKind?: AddressVerifyErrorKind;
 };
+
+function verifyError(errorKind: AddressVerifyErrorKind): AddressVerifyResult {
+  return { status: "error", resolved: null, suggestions: [], errorKind };
+}
 
 export async function verifyFedExAddress(
   address: ParsedAddress,
   creds: FedExCredentials,
   fetchImpl: FetchLike = fetch,
 ): Promise<AddressVerifyResult> {
-  if (!fedexCredentialsReady(creds) || !addressIsComplete(address)) {
+  if (!fedexCredentialsReady(creds)) return verifyError("not_configured");
+  if (!addressIsComplete(address)) {
     return { status: "unmatched", resolved: null, suggestions: [] };
   }
-  const token = await fetchFedExAccessToken(creds, fetchImpl);
+  let token: string;
+  try {
+    token = await fetchFedExAccessToken(creds, fetchImpl);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("not configured")) return verifyError("not_configured");
+    if (message.includes("OAuth")) return verifyError("auth");
+    return verifyError("transport");
+  }
   const today = new Date().toISOString().slice(0, 10);
-  const res = await fetchImpl(`${fedexBaseUrl(creds.environment)}/address/v1/addresses/resolve`, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${token}`,
-      "content-type": "application/json",
-      "x-locale": "en_US",
-    },
-    body: JSON.stringify({
-      inEffectAsOfTimestamp: today,
-      validateAddressControlParameters: { includeResolutionTokens: true },
-      addressesToValidate: [
-        {
-          address: {
-            streetLines: [address.street.trim()],
-            city: address.city.trim(),
-            stateOrProvinceCode: address.state.trim(),
-            postalCode: address.zip.trim(),
-            countryCode: address.country?.trim() || "US",
+  let res: Awaited<ReturnType<FetchLike>>;
+  try {
+    res = await fetchImpl(`${fedexBaseUrl(creds.environment)}/address/v1/addresses/resolve`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+        "x-locale": "en_US",
+      },
+      body: JSON.stringify({
+        inEffectAsOfTimestamp: today,
+        addressesToValidate: [
+          {
+            address: fedexResolveRequestAddress(address),
           },
-        },
-      ],
-    }),
-    signal: AbortSignal.timeout(8000),
-  });
+        ],
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch {
+    return verifyError("transport");
+  }
   noteDeveloperApiCall("fedex");
-  if (!res.ok) return { status: "unmatched", resolved: null, suggestions: [] };
-  const suggestions = parseFedExResolvePayload(await res.json());
+  const kind = classifyFedExHttpStatus(res.status);
+  if (kind === "auth" || kind === "transport") return verifyError(kind);
+  if (kind === "unmatched") return { status: "unmatched", resolved: null, suggestions: [] };
+  let payload: unknown;
+  try {
+    payload = await res.json();
+  } catch {
+    return verifyError("transport");
+  }
+  const suggestions = parseFedExResolvePayload(payload);
   const resolved = suggestions[0]?.address ?? null;
-  if (!resolved) return { status: "unmatched", resolved: null, suggestions: [] };
+  if (!resolved || !resolved.street) return { status: "unmatched", resolved: null, suggestions: [] };
   if (addressesMatch(address, resolved)) {
     return { status: "verified", resolved, suggestions };
   }
