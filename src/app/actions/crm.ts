@@ -35,6 +35,7 @@ import {
   packageDraftForNewDealSave,
 } from "@/lib/deals/new-deal-href";
 import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-deal-write";
+import { requireInsertedRisk } from "@/lib/deals/ensure-risk";
 import { assertAnaUnbound } from "@/lib/crm/bind-path";
 import { formatPersonName } from "@/lib/crm/display";
 import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
@@ -355,7 +356,7 @@ export async function convertLeadToDeal(
     })
     .returning();
 
-  const [risk] = await db
+  const [riskRow] = await db
     .insert(risks)
     .values({
       tenantId: DEFAULT_TENANT_ID,
@@ -364,6 +365,7 @@ export async function convertLeadToDeal(
       ...copy.risk,
     })
     .returning();
+  const risk = requireInsertedRisk(riskRow, "Lead convert");
 
   await db.insert(quoteSheets).values({
     tenantId: DEFAULT_TENANT_ID,
@@ -673,13 +675,15 @@ export async function createDeal(formData: FormData) {
   const [sourceRisk] = sourceDealId
     ? await db.select().from(risks).where(eq(risks.dealId, sourceDealId)).then((rows) => rows.slice(0, 1))
     : [];
-  await db.insert(risks).values({
+  const [createdRisk] = await db.insert(risks).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId: deal.id,
     contactId: sourceRisk?.contactId ?? pickedContact?.id ?? null,
     riskType:
       packageDraft?.riskType ??
-      (deal.lineOfBusiness === "AUTO" ? "auto" : sourceRisk?.riskType ?? "property"),
+      (deal.lineOfBusiness === "AUTO" || deal.quotingLine === "auto"
+        ? "auto"
+        : sourceRisk?.riskType ?? "property"),
     address1: mailingAddress || sourceRisk?.address1 || fromLead.address1,
     city: city || sourceRisk?.city || fromLead.city,
     county: str(formData, "county") || str(formData, "field_county") || sourceRisk?.county || null,
@@ -705,7 +709,8 @@ export async function createDeal(formData: FormData) {
     vehicleModel: sourceRisk?.vehicleModel ?? null,
     vehicleUsage: sourceRisk?.vehicleUsage ?? null,
     garagingZip: sourceRisk?.garagingZip ?? null,
-  });
+  }).returning();
+  requireInsertedRisk(createdRisk);
 
   await db.insert(quoteSheets).values({
     tenantId: DEFAULT_TENANT_ID,
@@ -808,7 +813,7 @@ export async function createDealFromDecDrop(formData: FormData) {
     .set({ convertedDealId: deal.id, updatedAt: new Date() })
     .where(eq(leads.id, lead.id));
 
-  const [risk] = await db
+  const [riskRow] = await db
     .insert(risks)
     .values({
       tenantId: DEFAULT_TENANT_ID,
@@ -817,6 +822,7 @@ export async function createDealFromDecDrop(formData: FormData) {
       state: deal.state,
     })
     .returning();
+  const risk = requireInsertedRisk(riskRow, "Dec-drop deal");
 
   const buffer = Buffer.from(await file.arrayBuffer());
   await persistFile({

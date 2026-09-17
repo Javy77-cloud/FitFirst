@@ -37,6 +37,7 @@ import {
 } from "@/lib/lists/selection-actions";
 import { matchReasons, pairKey } from "@/lib/merge/normalize";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
+import { insertRequiredDealRisk } from "@/lib/deals/ensure-risk";
 import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-deal-write";
 
 function str(form: FormData, key: string) {
@@ -191,6 +192,15 @@ export async function duplicateSelectedRecord(formData: FormData): Promise<{
         source: row.source,
       })
       .returning();
+    if (!copy) throw new Error("Deal create failed: could not insert a deal row.");
+    await insertRequiredDealRisk({
+      dealId: copy.id,
+      contactId: row.contactId,
+      lineOfBusiness: row.lineOfBusiness,
+      quotingLine: row.quotingLine,
+      shopLines: copy.shopLines,
+      state: row.state,
+    });
     if (shopLines.length) {
       await db.insert(quoteSheets).values(
         shopLines.map((line: ShopLine) => ({

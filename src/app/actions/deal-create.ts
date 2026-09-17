@@ -26,6 +26,7 @@ import {
   packageLinesFromFormOrUndefined,
 } from "@/lib/deals/package-lines";
 import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-deal-write";
+import { requireInsertedRisk, riskTypeForDeal } from "@/lib/deals/ensure-risk";
 import { matchesQuery } from "@/lib/wire/search";
 
 function str(form: FormData, key: string) {
@@ -201,47 +202,41 @@ async function createCopiedDeal(
     })
     .returning();
 
-  if (risk) {
-    await db.insert(risks).values({
+  const [copiedRisk] = await db
+    .insert(risks)
+    .values({
       tenantId: DEFAULT_TENANT_ID,
       dealId: deal.id,
-      contactId: risk.contactId ?? row.contactId,
-      riskType: risk.riskType,
-      address1: risk.address1,
-      city: risk.city,
-      county: risk.county,
-      state: risk.state,
-      zip: risk.zip,
-      yearBuilt: risk.yearBuilt,
-      construction: risk.construction,
-      occupancy: risk.occupancy,
-      stories: risk.stories,
-      squareFeet: risk.squareFeet,
-      coverageA: risk.coverageA,
-      roofYear: risk.roofYear,
-      roofCovering: risk.roofCovering,
-      openingProtection: risk.openingProtection,
-      pool: risk.pool,
-      protectionClass: risk.protectionClass,
-      milesToCoast: risk.milesToCoast,
-      mobileHome: risk.mobileHome,
-      replacementCostEstimate: risk.replacementCostEstimate,
-      vin: risk.vin,
-      vehicleYear: risk.vehicleYear,
-      vehicleMake: risk.vehicleMake,
-      vehicleModel: risk.vehicleModel,
-      vehicleUsage: risk.vehicleUsage,
-      garagingZip: risk.garagingZip,
-    });
-  } else {
-    await db.insert(risks).values({
-      tenantId: DEFAULT_TENANT_ID,
-      dealId: deal.id,
-      contactId: row.contactId,
-      riskType: row.lineOfBusiness === "AUTO" ? "auto" : "property",
-      state: row.state || "FL",
-    });
-  }
+      contactId: risk?.contactId ?? row.contactId,
+      riskType: risk?.riskType ?? riskTypeForDeal(row),
+      address1: risk?.address1,
+      city: risk?.city,
+      county: risk?.county,
+      state: risk?.state || row.state || "FL",
+      zip: risk?.zip,
+      yearBuilt: risk?.yearBuilt,
+      construction: risk?.construction,
+      occupancy: risk?.occupancy,
+      stories: risk?.stories,
+      squareFeet: risk?.squareFeet,
+      coverageA: risk?.coverageA,
+      roofYear: risk?.roofYear,
+      roofCovering: risk?.roofCovering,
+      openingProtection: risk?.openingProtection,
+      pool: risk?.pool,
+      protectionClass: risk?.protectionClass,
+      milesToCoast: risk?.milesToCoast,
+      mobileHome: risk?.mobileHome,
+      replacementCostEstimate: risk?.replacementCostEstimate,
+      vin: risk?.vin,
+      vehicleYear: risk?.vehicleYear,
+      vehicleMake: risk?.vehicleMake,
+      vehicleModel: risk?.vehicleModel,
+      vehicleUsage: risk?.vehicleUsage,
+      garagingZip: risk?.garagingZip,
+    })
+    .returning();
+  requireInsertedRisk(copiedRisk, "Copied deal");
 
   await insertBlankSheets(deal.id, shopLines);
 
@@ -357,16 +352,20 @@ export async function createDealFromExistingPick(
     })
     .returning();
 
-  await db.insert(risks).values({
-    tenantId: DEFAULT_TENANT_ID,
-    dealId: deal.id,
-    contactId: contact.id,
-    riskType: draft.riskType,
-    address1: contact.mailingAddress,
-    city: contact.city,
-    state: contact.state || "FL",
-    zip: contact.zip,
-  });
+  const [contactRisk] = await db
+    .insert(risks)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId: deal.id,
+      contactId: contact.id,
+      riskType: draft.riskType,
+      address1: contact.mailingAddress,
+      city: contact.city,
+      state: contact.state || "FL",
+      zip: contact.zip,
+    })
+    .returning();
+  requireInsertedRisk(contactRisk, "Contact deal");
   await insertBlankSheets(deal.id, draft.shopLines);
 
   const seeded: Record<string, string> = {};

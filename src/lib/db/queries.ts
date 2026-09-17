@@ -2408,7 +2408,24 @@ export async function getDealWorkspace(dealId: string) {
     listActivityTimeline({ dealId }),
   ]);
 
-  const risk = riskRows[0];
+  let risk = riskRows[0];
+  if (!risk) {
+    try {
+      const { ensureDealRisk } = await import("@/lib/deals/ensure-risk");
+      const healed = await ensureDealRisk({
+        tenantId: deal.tenantId ?? tenant(),
+        dealId: deal.id,
+        lineOfBusiness: deal.lineOfBusiness,
+        quotingLine: deal.quotingLine,
+        shopLines: deal.shopLines,
+        state: deal.state,
+        contactId: deal.contactId,
+      });
+      risk = healed.risk;
+    } catch {
+      // Keep rendering; the deal page still has a last-resort missing-risk copy.
+    }
+  }
   const lead = leadRows[0];
   const contact = contactRows[0];
   const account = accountRows[0] ?? null;

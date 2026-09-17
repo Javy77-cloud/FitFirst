@@ -14,6 +14,7 @@ import { db } from "@/lib/db";
 import { listDealLookup } from "@/lib/db/queries";
 import { contacts, deals, pipelines } from "@/lib/db/schema";
 import { isUuid } from "@/lib/ids";
+import { insertRequiredDealRisk } from "@/lib/deals/ensure-risk";
 import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-deal-write";
 
 function str(form: FormData, key: string) {
@@ -71,6 +72,14 @@ export async function createDealFromUploadSearch(formData: FormData) {
       primaryNamedInsured: pickedContact ? formatPersonName(pickedContact) : dealName,
     })
     .returning();
+  if (!deal) throw new Error("Deal create failed: could not insert a deal row.");
+  await insertRequiredDealRisk({
+    dealId: deal.id,
+    contactId: pickedContact?.id ?? null,
+    lineOfBusiness: deal.lineOfBusiness,
+    shopLines: ["home"],
+    state: deal.state,
+  });
   revalidatePath("/deals");
   redirect(`/deals?notice=created&q=${encodeURIComponent(deal?.title || dealName)}`);
 }
