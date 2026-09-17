@@ -10,6 +10,9 @@ import {
 import { FieldControl } from "@/components/custom-fields/field-control";
 import { FieldTypeIcon } from "@/components/custom-fields/field-type-icon";
 import { FormulaBuilder } from "@/components/custom-fields/formula-builder";
+import { LayoutSectionFieldGrid } from "@/components/custom-fields/layout-section-field-grid";
+import { LayoutSectionHeader } from "@/components/custom-fields/layout-section-header";
+import { SectionDensityControl } from "@/components/custom-fields/section-density-control";
 import { PicklistConfig } from "@/components/custom-fields/picklist-config";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -45,6 +48,7 @@ import {
   columnIdFromHitStack,
   resolveFieldDrop,
   resolveSectionDrop,
+  setSectionDensity,
   type FieldDropSectionHit,
   type FieldDropTarget,
 } from "@/lib/custom-fields/layout";
@@ -162,7 +166,7 @@ function paintDropHint(hint: DropHint | null) {
   section.classList.add("ring-2", "ring-sky-400", "ring-offset-2", "ring-offset-background");
   const line = document.createElement("div");
   line.setAttribute("data-ff-drop-line", "");
-  line.className = "h-0.5 rounded-full bg-sky-500 shadow-[0_0_0_3px_rgba(14,165,233,0.2)]";
+  line.className = "col-span-full h-0.5 rounded-full bg-sky-500 shadow-[0_0_0_3px_rgba(14,165,233,0.2)]";
   if (hint.beforeKey) {
     const field = section.querySelector(`[data-ff-builder-field="${hint.beforeKey}"]`);
     if (field?.parentElement) field.parentElement.insertBefore(line, field);
@@ -515,8 +519,6 @@ export function FieldBuilder({
         <input type="hidden" name="fields" value={JSON.stringify(fields)} />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-muted-foreground">
-            Compact field types beside Left and Right. Drag any field between positions or into
-            another section — including in Preview.{" "}
             {module === "deals"
               ? "Save applies to every deal."
               : `Save applies to every ${moduleLabel.toLowerCase()} record.`}
@@ -631,7 +633,7 @@ export function FieldBuilder({
                   data-ff-drop-section={sectionActive || showSectionInsertLine ? "1" : undefined}
                 >
                   {preview ? (
-                    <h3 className="text-xs font-medium text-navy">{section.label}</h3>
+                    <LayoutSectionHeader title={section.label} />
                   ) : (
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -667,6 +669,13 @@ export function FieldBuilder({
                         />
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
+                        <SectionDensityControl
+                          sectionId={section.id}
+                          density={section.density}
+                          onChange={(density) =>
+                            setLayout((current) => setSectionDensity(current, section.id, density))
+                          }
+                        />
                         <Button
                           type="button"
                           size="xs"
@@ -701,47 +710,56 @@ export function FieldBuilder({
                     >
                       Drop a field here
                     </div>
-                  ) : null}
-                  {asList(section.fieldKeys).map((key, fieldIndex) => {
-                    if (module === "deals" && isDealDetailsLandlordFieldKey(key)) return null;
-                    if (
-                      preview &&
-                      isPreviousAddressFieldKey(key) &&
-                      !isNoLivedAtAddress5Years(liveValues)
-                    ) {
-                      return null;
-                    }
-                    const field = byKey[key] ?? {
-                      key,
-                      label: humanizeFieldKey(key),
-                      type: "single_line" as const,
-                    };
-                    const showLine = sectionActive && dropHint?.beforeKey === key;
-                    return (
-                      <div key={`${section.id}:${key}:${fieldIndex}`}>
-                        {showLine ? <DropLine /> : null}
-                        <BuilderFieldRow
-                          field={field}
-                          preview={preview}
-                          dragging={drag?.kind === "field" && drag.key === key}
-                          values={liveValues}
-                          onValueChange={(next) => patchPreviewValue(key, next)}
-                          onDragStart={(event) => onDragStart({ kind: "field", key }, event)}
-                          onPointerDown={(event) => beginPointerDrag({ kind: "field", key }, event)}
-                          onDragOver={(event) => {
-                            event.preventDefault();
-                            updateDropHint(column.id, event);
-                          }}
-                          onDrop={(event) => handleDrop(column.id, event)}
-                          onRequired={() => patchField(key, { required: !field.required })}
-                          onPermissions={() => setDialog({ kind: "permissions", key })}
-                          onProperties={() => setDialog({ kind: "properties", key })}
-                          onDuplicate={() => duplicateField(key)}
-                          onRemove={() => removeField(key, section.id)}
-                        />
-                      </div>
-                    );
-                  })}
+                  ) : (
+                    <LayoutSectionFieldGrid
+                      density={section}
+                      keys={asList(section.fieldKeys).filter((key) => {
+                        if (module === "deals" && isDealDetailsLandlordFieldKey(key)) return false;
+                        if (
+                          preview &&
+                          isPreviousAddressFieldKey(key) &&
+                          !isNoLivedAtAddress5Years(liveValues)
+                        ) {
+                          return false;
+                        }
+                        return true;
+                      })}
+                      fieldOf={(key) => byKey[key]}
+                      collapse={false}
+                      renderField={(key) => {
+                        const field = byKey[key] ?? {
+                          key,
+                          label: humanizeFieldKey(key),
+                          type: "single_line" as const,
+                        };
+                        const showLine = sectionActive && dropHint?.beforeKey === key;
+                        return (
+                          <div data-ff-builder-field-wrap={key}>
+                            {showLine ? <DropLine /> : null}
+                            <BuilderFieldRow
+                              field={field}
+                              preview={preview}
+                              dragging={drag?.kind === "field" && drag.key === key}
+                              values={liveValues}
+                              onValueChange={(next) => patchPreviewValue(key, next)}
+                              onDragStart={(event) => onDragStart({ kind: "field", key }, event)}
+                              onPointerDown={(event) => beginPointerDrag({ kind: "field", key }, event)}
+                              onDragOver={(event) => {
+                                event.preventDefault();
+                                updateDropHint(column.id, event);
+                              }}
+                              onDrop={(event) => handleDrop(column.id, event)}
+                              onRequired={() => patchField(key, { required: !field.required })}
+                              onPermissions={() => setDialog({ kind: "permissions", key })}
+                              onProperties={() => setDialog({ kind: "properties", key })}
+                              onDuplicate={() => duplicateField(key)}
+                              onRemove={() => removeField(key, section.id)}
+                            />
+                          </div>
+                        );
+                      }}
+                    />
+                  )}
                   {/* Field-drop append line stays inside the section; section-drop line is above slots. */}
                   {sectionActive && !dropHint?.beforeKey && asList(section.fieldKeys).length > 0 ? (
                     <DropLine />
@@ -792,7 +810,7 @@ export function FieldBuilder({
 function DropLine() {
   return (
     <div
-      className="h-0.5 rounded-full bg-sky-500 shadow-[0_0_0_3px_rgba(14,165,233,0.2)]"
+      className="col-span-full h-0.5 rounded-full bg-sky-500 shadow-[0_0_0_3px_rgba(14,165,233,0.2)]"
       data-ff-drop-line
       aria-hidden
     />
@@ -1034,7 +1052,7 @@ function EditPropertiesDialog({
       <DialogContent className="sm:max-w-md" showCloseButton data-ff-edit-properties={field.key}>
         <DialogHeader>
           <DialogTitle>Edit properties</DialogTitle>
-          <DialogDescription>Field name, type, and lookup module. Save returns to the closed row.</DialogDescription>
+          <DialogDescription>Name, type, and lookup.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>

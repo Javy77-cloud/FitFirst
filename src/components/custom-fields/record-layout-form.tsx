@@ -3,6 +3,8 @@
 import { saveModuleRecordValues } from "@/app/actions/custom-fields";
 import { ClickToEditField } from "@/components/custom-fields/click-to-edit-field";
 import { FieldControl } from "@/components/custom-fields/field-control";
+import { LayoutSectionFieldGrid } from "@/components/custom-fields/layout-section-field-grid";
+import { LayoutRequiredBadge, LayoutSectionHeader } from "@/components/custom-fields/layout-section-header";
 import { Button } from "@/components/ui/button";
 import type { FieldLayoutModule } from "@/lib/custom-fields/modules";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
@@ -84,71 +86,68 @@ export function RecordLayoutFields({
                     }
               }
             >
-              {/* Bigger than field labels; soft tint + shadow so the section reads as a card */}
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-base font-semibold leading-snug text-[#002868]">{section.label}</h3>
-                {quoteReq ? (
-                  <span
-                    className="shrink-0 rounded bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#1d4e89]"
-                    data-ff-required-badge
-                  >
-                    Required
-                  </span>
-                ) : null}
-              </div>
-              {asList(section.fieldKeys).map((key) => {
-                const field = byKey[key] ?? {
-                  key,
-                  label: key,
-                  type: "single_line" as const,
-                };
-                const layoutHasType =
-                  asList(section.fieldKeys).includes("insurance_type") ||
-                  fieldList.some((f) => f.key === "insurance_type");
-                if (
-                  layoutHasType &&
-                  (key === "insurance_category" ||
-                    key === "insurance_subtype" ||
-                    field.systemKey === "quotingForm")
-                ) {
-                  return null;
-                }
-                return (
-                  <div key={key} className="space-y-1" data-ff-record-field={key}>
-                    {key === "insurance_type" || field.label === "Insurance Type" ? null : (
-                    <label className="text-xs font-medium text-navy" htmlFor={`field_${key}`}>
-                      {field.label}
-                    </label>
-                    )}
-                    {inline && recordId ? (
-                      <ClickToEditField
-                        field={field}
-                        value={values[key] ?? ""}
-                        values={values}
-                        name={`field_${key}`}
-                        recordId={recordId}
-                        module={module}
-                        pipelineFamily={pipelineFamily}
-                        lifeOptions={lifeOptions}
-                        healthOptions={healthOptions}
-                        lineSettings={lineSettings}
-                      />
-                    ) : (
-                      <FieldControl
-                        field={field}
-                        value={values[key] ?? ""}
-                        values={values}
-                        name={`field_${key}`}
-                        form={form}
-                        pipelineFamily={pipelineFamily}
-                        lifeOptions={lifeOptions}
-                        healthOptions={healthOptions}
-                        lineSettings={lineSettings}
-                      />
-                    )}
-                  </div>
-                );
-              })}
+              <LayoutSectionHeader
+                title={section.label}
+                badge={quoteReq ? <LayoutRequiredBadge /> : null}
+              />
+              <LayoutSectionFieldGrid
+                density={section}
+                keys={asList(section.fieldKeys).filter((key) => {
+                  const field = byKey[key] ?? { key, label: key, type: "single_line" as const };
+                  const layoutHasType =
+                    asList(section.fieldKeys).includes("insurance_type") ||
+                    fieldList.some((item) => item.key === "insurance_type");
+                  return !(
+                    layoutHasType &&
+                    (key === "insurance_category" ||
+                      key === "insurance_subtype" ||
+                      field.systemKey === "quotingForm")
+                  );
+                })}
+                fieldOf={(key) => byKey[key]}
+                renderField={(key) => {
+                  const field = byKey[key] ?? {
+                    key,
+                    label: key,
+                    type: "single_line" as const,
+                  };
+                  return (
+                    <div className="space-y-1" data-ff-record-field={key}>
+                      {key === "insurance_type" || field.label === "Insurance Type" ? null : (
+                        <label className="text-xs font-medium text-navy" htmlFor={`field_${key}`}>
+                          {field.label}
+                        </label>
+                      )}
+                      {inline && recordId ? (
+                        <ClickToEditField
+                          field={field}
+                          value={values[key] ?? ""}
+                          values={values}
+                          name={`field_${key}`}
+                          recordId={recordId}
+                          module={module}
+                          pipelineFamily={pipelineFamily}
+                          lifeOptions={lifeOptions}
+                          healthOptions={healthOptions}
+                          lineSettings={lineSettings}
+                        />
+                      ) : (
+                        <FieldControl
+                          field={field}
+                          value={values[key] ?? ""}
+                          values={values}
+                          name={`field_${key}`}
+                          form={form}
+                          pipelineFamily={pipelineFamily}
+                          lifeOptions={lifeOptions}
+                          healthOptions={healthOptions}
+                          lineSettings={lineSettings}
+                        />
+                      )}
+                    </div>
+                  );
+                }}
+              />
             </section>
             );
           })}

@@ -31,6 +31,22 @@ describe("deal layout delete persists on Save", () => {
     expect(allLayoutFieldKeys(migrateDealLayoutParity(reloaded))).not.toContain(
       "applicant_education_level",
     );
+    const withDensity = {
+      ...saved,
+      columns: [
+        {
+          ...saved.columns[0],
+          sections: saved.columns[0].sections.map((section) =>
+            section.id === "applicant" ? { ...section, density: 3 as const } : section,
+          ),
+        },
+        saved.columns[1],
+      ],
+    };
+    const densityReload = parseLayout(JSON.parse(JSON.stringify(withLayoutRevision(withDensity, AGENCY_LAYOUT_REVISION))));
+    expect(densityReload.revision).toBe(AGENCY_LAYOUT_REVISION);
+    expect(densityReload.columns[0].sections.find((section) => section.id === "applicant")?.density).toBe(3);
+    expect(allLayoutFieldKeys(densityReload)).not.toContain("applicant_education_level");
   });
 
   it("does not treat an already-personal layout as legacy after one field is removed", () => {

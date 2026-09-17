@@ -73,7 +73,8 @@ describe("sep7bo field builder rows, palette, preview drag", () => {
     expect(builder).not.toMatch(/if \(!drag \|\| preview\) return/);
     expect(builder).not.toMatch(/draggable=\{!preview\}/);
     expect(builder).toMatch(/data-ff-preview-field/);
-    expect(builder).toMatch(/including in Preview/);
+    expect(builder).toMatch(/data-ff-preview-toggle/);
+    expect(builder).toMatch(/SectionDensityControl/);
     const drop = insertIndexFromClientY(40, [
       { key: "a", top: 0, height: 30 },
       { key: "b", top: 40, height: 30 },

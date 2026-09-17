@@ -90,6 +90,11 @@ describe("deal field builder", () => {
     expect(builder).toMatch(/insertIndexFromClientY/);
     expect(builder).toMatch(/Save applies to every deal/);
     expect(builder).not.toMatch(/every \{line\} deal/);
+    expect(builder).toMatch(/SectionDensityControl/);
+    expect(builder).toMatch(/setSectionDensity/);
+    expect(builder).toMatch(/LayoutSectionFieldGrid/);
+    expect(builder).not.toMatch(/including in Preview/);
+    expect(builder).not.toMatch(/Asked once/);
     expect(builder).toMatch(/data-ff-palette-type/);
     expect(builder).toMatch(/data-ff-palette-type=\{type\}/);
     expect(builder).toMatch(/kind: "new-section"/);

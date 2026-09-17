@@ -34,11 +34,6 @@ export default async function FieldBuilderPage({
 
   return (
     <SettingsShell title={`${label} field builder`} current="field-builder">
-      <p className="mb-4 text-sm text-muted-foreground">
-        One layout for every {label.toLowerCase()} record. Compact field-type chips sit beside Left and Right
-        on one row. Every field is a closed row until you open its menu. Save applies globally to this
-        module.
-      </p>
       <ModuleLayoutNav current={module} />
       <FieldBuilder
         key={`${module}:${line}:${layoutContentScore(layout)}`}

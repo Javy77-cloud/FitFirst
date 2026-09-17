@@ -49,7 +49,8 @@ describe("sep7bt field builder drag across sections", () => {
       expect(builder).toMatch(item);
     }
     expect(builder).toMatch(/data-ff-page-layout/);
-    expect(builder).toMatch(/including in Preview/);
+    expect(builder).toMatch(/SectionDensityControl/);
+    expect(builder).toMatch(/LayoutSectionFieldGrid/);
   });
 
   it("lets fields drag independently of sections and shows a drop target", () => {
