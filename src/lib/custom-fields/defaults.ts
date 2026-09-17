@@ -6,6 +6,10 @@ import {
   YES_NO_OPTIONS,
   applicantLayoutSection,
 } from "./applicant-fields";
+import {
+  BUSINESS_IDENTITY_FIELDS,
+  BUSINESS_IDENTITY_REUSED_CORE_KEYS,
+} from "./business-identity-fields";
 import { CO_APPLICANT_CRM_FIELDS, coApplicantLayoutSection } from "./co-applicant-fields";
 import { catalogFieldsForProducts } from "@/lib/deals/product-layout";
 import { DEAL_PRODUCTS } from "@/lib/deals/deal-products";
@@ -81,6 +85,10 @@ export const CORE_FIELDS: CustomFieldDef[] = [
   },
   ...APPLICANT_CRM_FIELDS,
   ...CO_APPLICANT_CRM_FIELDS,
+  ...BUSINESS_IDENTITY_FIELDS.filter(
+    (field) =>
+      !(BUSINESS_IDENTITY_REUSED_CORE_KEYS as readonly string[]).includes(field.key),
+  ),
   ...catalogFieldsForProducts([...DEAL_PRODUCTS]).filter(
     (field) => !isDealDetailsLandlordFieldKey(field.key),
   ),

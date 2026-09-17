@@ -2,9 +2,8 @@ import Link from "next/link";
 import { createDeal } from "@/app/actions/crm";
 import { AppShell } from "@/components/app-shell";
 import { LinkExistingContactGuard } from "@/components/crm/link-existing-contact-guard";
-import { RecordLayoutFields } from "@/components/custom-fields/record-layout-form";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
-import { NewDealCreateFields } from "@/components/deals/new-deal-create-fields";
+import { NewDealFormBody } from "@/components/deals/new-deal-form-body";
 import { Button } from "@/components/ui/button";
 import { ClientScriptRunner } from "@/components/developer-hub/client-script-runner";
 import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
@@ -86,11 +85,13 @@ export default async function NewDealPage({
         data-ff="new-deal-layout"
       >
         <input type="hidden" name="state" value="FL" />
-        <NewDealCreateFields
+        <NewDealFormBody
           initialLines={query.shopLines}
           sourceDealId={seed.sourceDealId}
+          personalLayout={layout}
+          fields={fields}
+          values={values}
         />
-        <RecordLayoutFields module="deals" layout={layout} fields={fields} values={values} />
 
         <div className="flex items-center justify-end gap-3 pt-1" data-ff-deal-actions="">
           <Link href="/deals" className="text-sm text-primary hover:underline">

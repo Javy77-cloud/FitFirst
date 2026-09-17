@@ -40,7 +40,8 @@ import { assertAnaUnbound } from "@/lib/crm/bind-path";
 import { formatPersonName } from "@/lib/crm/display";
 import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
 import { splitTypedPartyName } from "@/lib/crm/party-typeahead";
-import { formatDealTitle } from "@/lib/deals/deal-title";
+import { formatDealTitle, splitPersonName } from "@/lib/deals/deal-title";
+import { coverageLinesValueForDeal, isCommercialSheetLine } from "@/lib/quote-sheet/commercial-risk-profile";
 import { isUuid } from "@/lib/ids";
 import { defaultStageColor } from "@/lib/desk/status-colors";
 import { db } from "@/lib/db";
@@ -73,6 +74,8 @@ import { blankSheetWithDefaults } from "@/lib/quote-sheet/catalog";
 import { activityLogBody } from "@/lib/lifecycle/activity";
 import { isSameLead, type LeadIdentity } from "@/lib/lifecycle/lead-match";
 import { leadValuesFromForm } from "@/lib/crm/lead-fields";
+import { CORE_FIELDS } from "@/lib/custom-fields/defaults";
+import { BUSINESS_IDENTITY_FIELD_KEYS } from "@/lib/custom-fields/business-identity-fields";
 import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
 import { dealListCascadeSyncValues } from "@/lib/deals/insurance-cascade";
 import { applySystemDealValues } from "@/app/actions/custom-fields";
@@ -487,28 +490,35 @@ export async function createDeal(formData: FormData) {
     ? await db.select().from(accounts).where(eq(accounts.id, accountId))
     : [];
   const typed = splitTypedPartyName(dealName);
+  const businessName = str(formData, "field_business_name") || str(formData, "field_legal_name");
+  const ownerParts = splitPersonName(str(formData, "field_owner_name"));
   const firstName =
     str(formData, "firstName") ||
     str(formData, "field_first_name") ||
+    ownerParts.firstName ||
     pickedContact?.firstName ||
     typed.firstName ||
-    (pickedAccount ? "Shop" : "New");
+    (businessName || pickedAccount ? "" : "New");
   const lastName =
     str(formData, "lastName") ||
     str(formData, "field_last_name") ||
+    ownerParts.lastName ||
     pickedContact?.lastName ||
     typed.lastName ||
+    businessName ||
     pickedAccount?.name ||
     "Shop";
   const email =
     str(formData, "email") ||
     str(formData, "field_email") ||
+    str(formData, "field_owner_email") ||
     pickedContact?.email ||
     pickedAccount?.email ||
     null;
   const phone =
     str(formData, "phone") ||
     str(formData, "field_phone") ||
+    str(formData, "field_owner_phone") ||
     pickedContact?.phone ||
     pickedAccount?.phone ||
     null;
@@ -605,7 +615,7 @@ export async function createDeal(formData: FormData) {
   const shopProducts = packageDraft?.products ?? [];
   const pipelineSlug = packageDraft?.pipelineSlug ?? pipelineSlugForLine(line);
   const [pipeline] = await db.select().from(pipelines).where(eq(pipelines.slug, pipelineSlug));
-  const namedFromLayout = str(formData, "field_named_insured");
+  const namedFromLayout = str(formData, "field_named_insured") || businessName;
   const primaryNamedInsured =
     namedFromLayout ||
     (pickedContact ? formatPersonName(pickedContact) : null) ||
@@ -621,8 +631,9 @@ export async function createDeal(formData: FormData) {
       accountId: pickedAccount?.id ?? sourceDeal?.accountId ?? null,
       title: formatDealTitle({
         firstName,
-        lastName: pickedAccount && !pickedContact ? "" : lastName,
-        accountName: pickedAccount && !pickedContact ? pickedAccount.name : null,
+        lastName: pickedAccount && !pickedContact && !businessName ? "" : lastName,
+        accountName: businessName || (pickedAccount && !pickedContact ? pickedAccount.name : null),
+        primaryNamedInsured,
         line,
         quotingForm,
         policySubType,
@@ -660,6 +671,8 @@ export async function createDeal(formData: FormData) {
       coverageAmount: sourceDeal?.coverageAmount ?? null,
     })
     .returning();
+
+  await persistNewDealLayoutValues(deal.id, formData, { quotingForm, policySubType });
 
   if (!lead.convertedDealId) {
     await db
@@ -701,7 +714,7 @@ export async function createDeal(formData: FormData) {
     pool: sourceRisk?.pool ?? null,
     protectionClass: sourceRisk?.protectionClass ?? null,
     milesToCoast: sourceRisk?.milesToCoast ?? null,
-    mobileHome: sourceRisk?.mobileHome ?? null,
+    mobileHome: sourceRisk?.mobileHome ?? false,
     replacementCostEstimate: sourceRisk?.replacementCostEstimate ?? null,
     vin: sourceRisk?.vin ?? null,
     vehicleYear: sourceRisk?.vehicleYear ?? null,
@@ -717,36 +730,11 @@ export async function createDeal(formData: FormData) {
     dealId: deal.id,
     line: quotingLine,
     values: {
-      ...seededSheetValues(quotingLine),
+      ...seededSheetValues(quotingLine, shopProducts),
       ...(fillSheetFromLead(lead) as typeof quoteSheets.$inferInsert.values),
     },
   });
-  await insertSheetsForDeal(deal.id, shopLines);
-
-  const defs = await listFieldDefs("deals").catch(() => []);
-  const custom = customValuesFromForm(formData, defs);
-  Object.assign(
-    custom,
-    dealListCascadeSyncValues({
-      insuranceType: custom.insurance_type,
-      insuranceSubtype: custom.insurance_subtype,
-      quotingForm,
-      policySubType,
-    }),
-  );
-  if (Object.keys(custom).length) {
-    await writeRecordValues(deal.id, custom, "deals");
-  }
-  const system: Record<string, string> = {};
-  for (const field of defs) {
-    if (!field.systemKey) continue;
-    if (custom[field.key] != null && custom[field.key] !== "") {
-      system[field.systemKey] = custom[field.key];
-    }
-  }
-  if (Object.keys(system).length) {
-    await applySystemDealValues(deal.id, system);
-  }
+  await insertSheetsForDeal(deal.id, shopLines, shopProducts);
 
   revalidatePath("/");
   revalidatePath("/deals");
@@ -1796,7 +1784,46 @@ export async function archiveDeal(formData: FormData) {
   if (deal.contactId) revalidatePath(`/contacts/${deal.contactId}`);
 }
 
-function seededSheetValues(line: ShopLine) {
+/** Write Details fields before risk/sheet inserts so a later failure does not drop identity. */
+async function persistNewDealLayoutValues(
+  dealId: string,
+  formData: FormData,
+  line: { quotingForm: string; policySubType: string },
+) {
+  const defs = await listFieldDefs("deals").catch(() => []);
+  const catalog = defs.length ? defs : CORE_FIELDS;
+  const custom = customValuesFromForm(formData, catalog);
+  for (const key of BUSINESS_IDENTITY_FIELD_KEYS) {
+    const posted = str(formData, `field_${key}`);
+    if (posted && !String(custom[key] ?? "").trim()) custom[key] = posted;
+  }
+  const fein = str(formData, "field_ein") || str(formData, "field_fein");
+  if (fein && !String(custom.ein ?? "").trim()) custom.ein = fein;
+  Object.assign(
+    custom,
+    dealListCascadeSyncValues({
+      insuranceType: custom.insurance_type,
+      insuranceSubtype: custom.insurance_subtype,
+      quotingForm: line.quotingForm,
+      policySubType: line.policySubType,
+    }),
+  );
+  if (Object.keys(custom).length) {
+    await writeRecordValues(dealId, custom, "deals");
+  }
+  const system: Record<string, string> = {};
+  for (const field of catalog) {
+    if (!field.systemKey) continue;
+    if (custom[field.key] != null && custom[field.key] !== "") {
+      system[field.systemKey] = custom[field.key];
+    }
+  }
+  if (Object.keys(system).length) {
+    await applySystemDealValues(dealId, system);
+  }
+}
+
+function seededSheetValues(line: ShopLine, products: readonly string[] = []) {
   const values = blankSheetWithDefaults(line);
   const form = defaultFormForShopLine(line);
   if (form) {
@@ -1804,6 +1831,15 @@ function seededSheetValues(line: ShopLine) {
     const product = sheetProductForQuotingForm(form);
     if (product) {
       values.sheet_product = { value: product, status: "confirmed", source: "agent" };
+    }
+  }
+  if (isCommercialSheetLine(line)) {
+    const coverage = coverageLinesValueForDeal({ line, products });
+    if (coverage) {
+      values.coverage_lines = { value: coverage, status: "confirmed", source: "agent" };
+    }
+    if (!String(values.premises_same_as_business?.value ?? "").trim()) {
+      values.premises_same_as_business = { value: "Yes", status: "confirmed", source: "agent" };
     }
   }
   return values;
@@ -1829,7 +1865,11 @@ function shopLinesFromForm(formData: FormData, primaryLine: string): ShopLine[] 
   return Array.from(next);
 }
 
-async function insertSheetsForDeal(dealId: string, lines: ShopLine[]) {
+async function insertSheetsForDeal(
+  dealId: string,
+  lines: ShopLine[],
+  products: readonly string[] = [],
+) {
   if (lines.length === 0) return;
   const existing = await db
     .select({ line: quoteSheets.line })
@@ -1843,7 +1883,7 @@ async function insertSheetsForDeal(dealId: string, lines: ShopLine[]) {
       tenantId: DEFAULT_TENANT_ID,
       dealId,
       line,
-      values: seededSheetValues(line),
+      values: seededSheetValues(line, products),
     })),
   );
 }

@@ -55,7 +55,7 @@ export function QuoteSheetForm({
   const blankSheet = counts.confirmed === 0 && counts.check === 0;
   const [editing, setEditing] = useState(startEditing && !printable);
   const [formKey, setFormKey] = useState(0);
-  const groups = groupFields(line);
+  const groups = groupFields(line, undefined, sheet.values);
   const contactName = contact ? `${contact.firstName} ${contact.lastName}` : null;
   const locked = printable || !editing;
   const editLabel = editSheetLabel(blankSheet);

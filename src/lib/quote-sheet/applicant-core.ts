@@ -5,16 +5,25 @@ export type QuoteFieldShowWhen = {
   values: readonly string[];
 };
 
+/** Coverage-chip / BOP cascades — `includes` matches a comma-separated chip list. */
+export type QuoteFieldVisibleWhen = {
+  field: string;
+  equals?: string | readonly string[];
+  includes?: string;
+};
+
 export type QuoteFieldDef = {
   key: string;
   label: string;
   group: string;
-  input?: "text" | "number" | "textarea" | "select" | "multiselect";
+  input?: "text" | "number" | "textarea" | "select" | "multiselect" | "chips";
   options?: string[];
   extractKey?: string;
   products?: SheetProduct[];
   /** Hide until another sheet cell matches one of these values (Life / Health cascades). */
   showWhen?: QuoteFieldShowWhen;
+  /** Hide until another sheet cell matches (Commercial coverage chips / BOP). */
+  visibleWhen?: QuoteFieldVisibleWhen;
 };
 
 export const MARITAL_STATUS_OPTIONS = [

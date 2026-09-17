@@ -377,7 +377,7 @@ describe("create + detail wiring", () => {
     expect(catalog).toMatch(/label: "Term Life"/);
     expect(catalog).toMatch(/label: "Marketplace"/);
     const createPage = readFileSync("src/app/deals/new/page.tsx", "utf8");
-    expect(createPage).toMatch(/NewDealCreateFields/);
+    expect(createPage).toMatch(/NewDealFormBody/);
     expect(createPage).toMatch(/createDeal/);
     const save = readFileSync("src/app/actions/crm.ts", "utf8");
     expect(save).toMatch(/packageDraftForNewDealSave/);

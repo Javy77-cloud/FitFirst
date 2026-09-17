@@ -112,7 +112,7 @@ describe("Add New Deal defers insert until Save", () => {
     const page = readFileSync("src/app/deals/new/page.tsx", "utf8");
     expect(page).toMatch(/createDeal/);
     expect(page).toMatch(/Save Deal/);
-    expect(page).toMatch(/NewDealCreateFields/);
+    expect(page).toMatch(/NewDealFormBody/);
     expect(page).toMatch(/parseNewDealSearchParams/);
     expect(page).toMatch(/loadNewDealFormSeed/);
     expect(page).toMatch(/defaultContactId/);

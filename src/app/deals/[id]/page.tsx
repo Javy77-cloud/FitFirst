@@ -828,13 +828,20 @@ export default async function DealPage({
                         line={activeLob}
                         layout={dealLayout ?? defaultLayoutForModule("deals")}
                         fields={dealFields.length ? dealFields : resolveLayoutFields(dealLayout ?? defaultLayoutForModule("deals"), dealFields)}
-                        values={mergeDealSystemValues(deal, lead, dealValues, dealFields)}
+                        values={{
+                          ...mergeDealSystemValues(deal, lead, dealValues, dealFields),
+                          ...(deal.accountKind === "commercial" && !dealValues.business_name
+                            ? { business_name: deal.primaryNamedInsured ?? "" }
+                            : {}),
+                        }}
                         pipelineFamily={familyForProducts(dealProducts)}
                         quotingForm={lineForm}
                         policySubType={lineQuotingForm?.label ?? deal.policySubType}
                         packageLines={packageLines}
                         activePackageLine={activePackageLine}
                         activeProduct={activeProduct}
+                        accountKind={deal.accountKind}
+                        dealProducts={dealProducts}
                         lifeOptions={(deskLineSettings?.lifeOptions?.length ? deskLineSettings.lifeOptions : DEFAULT_LIFE_SUBFILTERS)}
                         healthOptions={(deskLineSettings?.healthOptions?.length ? deskLineSettings.healthOptions : DEFAULT_HEALTH_SUBFILTERS)}
                         lifeHealthOptions={(deskLineSettings?.lifeOptions?.length ? deskLineSettings.lifeOptions : DEFAULT_LIFE_SUBFILTERS)}

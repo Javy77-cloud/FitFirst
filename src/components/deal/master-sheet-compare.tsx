@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
 import { MasterSheetFillButton } from "@/components/deal/master-sheet-fill-button";
@@ -21,11 +21,18 @@ import { fieldsForLine, groupFields, sheetFieldIsVisible, sheetGroupIsVisible } 
 import { parseSheetProduct } from "@/lib/quote-sheet/products";
 import { RISK_PROFILE_LABEL, SAVE_RISK_PROFILE_LABEL } from "@/lib/quote-sheet/risk-profile-copy";
 import type { QuoteFieldDef } from "@/lib/quote-sheet/applicant-core";
+import { cascadeParentKeys, joinChipList, parseChipList } from "@/lib/quote-sheet/sheet-visibility";
 import type { ShopLine } from "@/lib/domain";
 import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
 import { SHEET_GROUP_HEADER_STYLE, sheetGroupHeaderClass } from "@/lib/quote-sheet/sheet-group-style";
 import { MultiSelectField } from "@/components/custom-fields/multi-select-field";
+
+function sheetValuesToLive(values: Record<string, QuoteSheetFieldValue>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(values).map(([key, cell]) => [key, cell?.value ?? ""]),
+  );
+}
 
 const MASTER_SHEET_FORM_ID = "ff-master-sheet-save";
 
@@ -155,11 +162,10 @@ export function MasterSheetCompare({
 }) {
   const product = parseSheetProduct(productParam ?? values.sheet_product?.value, line);
   const catalog = asList(fieldsForLine(line, product));
-  const groups = asList(groupFields(line, product));
+  const cascadeKeys = useMemo(() => new Set(cascadeParentKeys(catalog)), [catalog]);
+  const [liveValues, setLiveValues] = useState(() => sheetValuesToLive(values));
+  const groups = asList(groupFields(line, product, liveValues));
   const extractedByKey = new Map(asList(fields).map((field) => [field.fieldKey, field]));
-  const [liveValues, setLiveValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(catalog.map((field) => [field.key, values[field.key]?.value ?? ""])),
-  );
   const filled = catalog.filter((field) => {
     const cell = values[field.key];
     return Boolean(cell?.value.trim() && cell.status !== "missing");
@@ -207,7 +213,9 @@ export function MasterSheetCompare({
       <div className="border-b border-border px-3 py-2">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold text-navy">{RISK_PROFILE_LABEL}</h3>
+            <h3 className="text-sm font-semibold text-navy" data-ff-sheet-title="">
+              {RISK_PROFILE_LABEL}
+            </h3>
             <p className="text-helper text-muted-foreground">
               Empty before extraction. Type a value or confirm what the source pulled.
               {filled === 0 ? " Fields start blank." : ` ${filled} filled.`}
@@ -291,6 +299,10 @@ export function MasterSheetCompare({
                 groupFields={asList(group.fields)}
                 values={values}
                 liveValues={liveValues}
+                cascadeKeys={cascadeKeys}
+                onLiveChange={(key, next) =>
+                  setLiveValues((prev) => ({ ...prev, [key]: next }))
+                }
                 extractedByKey={extractedByKey}
               />
             );
@@ -313,6 +325,8 @@ function SheetGroup({
   groupFields,
   values,
   liveValues,
+  cascadeKeys,
+  onLiveChange,
 }: {
   title: string;
   dealId: string;
@@ -320,6 +334,8 @@ function SheetGroup({
   groupFields: ReturnType<typeof fieldsForLine>;
   values: Record<string, QuoteSheetFieldValue>;
   liveValues: Record<string, string>;
+  cascadeKeys: Set<string>;
+  onLiveChange: (key: string, next: string) => void;
   extractedByKey: Map<string, ExtractedFieldRow>;
 }) {
   const rows = asList(groupFields);
@@ -377,6 +393,11 @@ function SheetGroup({
                   options={field.options}
                   cell={cell}
                   liveValue={liveValues[field.key] ?? cell?.value ?? ""}
+                  onLiveChange={
+                    cascadeKeys.has(field.key) || field.input === "chips"
+                      ? (next) => onLiveChange(field.key, next)
+                      : undefined
+                  }
                 />
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0 text-[9px] leading-none text-muted-foreground">
                   {sourceText ? <span data-ff-sheet-source={field.key}>{sourceText}</span> : null}
@@ -418,6 +439,7 @@ function SheetCell({
   options,
   cell,
   liveValue,
+  onLiveChange,
 }: {
   dealId: string;
   line: ShopLine;
@@ -427,6 +449,7 @@ function SheetCell({
   options?: string[];
   cell?: QuoteSheetFieldValue;
   liveValue?: string;
+  onLiveChange?: (next: string) => void;
 }) {
   const locked = fieldKey === "coverage_a" && cell?.source === "javy";
   const className = cn(
@@ -436,9 +459,42 @@ function SheetCell({
   );
   const value = liveValue ?? cell?.value ?? "";
 
+  const chips = input === "chips" ? parseChipList(liveValue ?? value) : [];
+
   return (
     <div className="flex flex-col gap-0.5">
-      {input === "multiselect" && options && options.length > 0 ? (
+      {input === "chips" && options?.length ? (
+        <div className="flex flex-wrap gap-1.5" data-ff-sheet-chips={fieldKey}>
+          <input type="hidden" name={fieldKey} value={joinChipList(chips)} />
+          {options.map((opt) => {
+            const on = chips.some((item) => item.toLowerCase() === opt.toLowerCase());
+            return (
+              <label
+                key={opt}
+                className={cn(
+                  "cursor-pointer rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                  on
+                    ? "border-navy bg-navy text-white"
+                    : "border-navy/25 bg-background text-navy",
+                )}
+              >
+                <input
+                  type="checkbox"
+                  className="sr-only"
+                  checked={on}
+                  onChange={(event) => {
+                    const next = event.target.checked
+                      ? joinChipList([...chips, opt])
+                      : joinChipList(chips.filter((item) => item.toLowerCase() !== opt.toLowerCase()));
+                    onLiveChange?.(next);
+                  }}
+                />
+                {opt}
+              </label>
+            );
+          })}
+        </div>
+      ) : input === "multiselect" && options && options.length > 0 ? (
         line === "life" && fieldKey === "medical_conditions" ? (
           <div data-ff-sheet-multiselect={fieldKey} className="min-w-0">
             <input type="hidden" name={fieldKey} value="" />
@@ -489,10 +545,16 @@ function SheetCell({
         <select
           id={`ff-sheet-input-${fieldKey}`}
           name={fieldKey}
-          defaultValue={value}
+          defaultValue={onLiveChange ? undefined : value}
+          value={onLiveChange ? (liveValue ?? value) : undefined}
           disabled={locked}
           aria-label={fieldLabel}
           data-ff-sheet-picklist={fieldKey}
+          onChange={
+            onLiveChange
+              ? (event) => onLiveChange(event.target.value)
+              : undefined
+          }
           className={cn(
             "border-input bg-background rounded-md border px-2 shadow-xs outline-none",
             className,

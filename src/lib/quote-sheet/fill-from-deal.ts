@@ -4,6 +4,7 @@ import { fieldIsBlank } from "@/lib/quote-sheet/apply";
 import { isLockedSheetField } from "@/lib/lifecycle/quote-sheet";
 import { isCoApplicantEnabled } from "@/lib/custom-fields/co-applicant-fields";
 import { normalizeHealthPlanType, normalizeLifeProductType } from "@/lib/quote-sheet/sheet-defaults";
+import { coverageLinesValueForDeal } from "./commercial-risk-profile";
 
 export const DEAL_DETAILS_SOURCE_LABEL = "deal details";
 
@@ -54,6 +55,8 @@ export type DealSheetCopyInput = {
   } | null;
   contact?: DealSheetCopyParty | null;
   lead?: LeadCopyFields | null;
+  shopProducts?: readonly string[] | null;
+  quotingLine?: string | null;
 };
 
 export type DealSheetCopyResult = {
@@ -162,6 +165,30 @@ export function fillSheetFromDealDetails(
     firstFilled(stored.applicant_education_level, stored.education_level, stored.education),
   );
   put("entity_type", firstFilled(stored.entity_type));
+  const commercialSheet = Object.prototype.hasOwnProperty.call(values, "coverage_lines");
+  if (commercialSheet) {
+    // Identity stays on Deal Details (business_name / ein / operations). Risk Profile
+    // only copies existing sheet keys — annual_sales, employees, square_feet, construction.
+    put("annual_sales", firstFilled(stored.annual_sales, stored.annual_revenue, stored.sales));
+    put("employees", firstFilled(stored.employee_count, stored.employees));
+    put("square_feet", firstFilled(stored.square_feet, stored.square_footage, stored.sqft));
+    put("construction", firstFilled(stored.construction, stored.construction_type));
+    put("own_rent", firstFilled(stored.own_rent, stored.premises_owned));
+    put("central_alarm", firstFilled(stored.central_alarm, stored.alarm));
+    put("vehicle_usage", firstFilled(stored.vehicle_usage, stored.primary_use));
+    put("claims_5yr", firstFilled(stored.claims_5yr, stored.claims_last_5_years));
+    put(
+      "coverage_lines",
+      firstFilled(
+        stored.coverage_lines,
+        coverageLinesValueForDeal({
+          line: input.quotingLine,
+          products: input.shopProducts,
+        }),
+      ),
+    );
+    put("premises_same_as_business", firstFilled(stored.premises_same_as_business, "Yes"));
+  }
 
   // Quoting form lives on the insurance cascade — do not copy onto the master sheet.
   // Life/Health product + plan family are sheet interviewing fields aligned to that subtype.
@@ -265,6 +292,7 @@ export function fillSheetFromDealDetails(
   // Mailing / applicant address — contact_mailing_* preferred, else insured
   const mailStreet = firstFilled(
     stored.contact_mailing_address,
+    stored.mailing_address,
     contact?.mailingAddress,
     lead?.mailingAddress,
     insuredStreet,
