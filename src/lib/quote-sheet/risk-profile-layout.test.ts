@@ -232,7 +232,7 @@ describe("Risk Profile per-section density + full labels", () => {
       }),
     );
     expect(html).toMatch(/data-ff-section-density-control="Location \/ premises"/);
-    expect(html).toMatch(/data-ff-section-density-control="Workers' Comp"/);
+    expect(html).toMatch(/data-ff-section-density-control="Workers(?:'|&#x27;) Comp"/);
     expect(html).toMatch(/data-ff-section-density-control="General Liability"/);
     expect(html).toMatch(/data-ff-section-density-control="BOP"/);
     expect(html).toMatch(/data-ff-section-density-control="Commercial Property"/);
