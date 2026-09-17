@@ -2104,7 +2104,7 @@ Top-right Home / shell **bell** (orange, next to Mail) opens a **scrollable** pa
 
 AMS desk: file endorsement / cancel / non-renew on the Policy with a clear outcome. Renewal compare shows dollar and percent premium change. Work queue lists flags, notes, assignee, and in-app pings (addressed to the assignee). Claims log is a three-column FNOL board. Commissions split pending (still owed) vs paid. Missing-data gauges link to the Quote Sheet cell.
 
-**Integrations** (`/settings/integrations`): same chrome as the catalog. Free BYO OAuth is live for Gmail, Yahoo Mail (identity), Google Calendar + Outlook Calendar (busy sync), Google Meet helper, Facebook / Instagram / LinkedIn / GBP, and DocuSign sandbox. Agency Admin controls. A solo Admin who also works the desk can connect personal Gmail. Copy is **Agency pays the vendor.** HealthSherpa Medicare is BYO (API vault + enrollment webhook) — FitFirst does not add a HealthSherpa fee. Marketplace / ACA stays scaffolded until partner credentials exist. No Stripe, Twilio, or Nylas. GBP gate stays on Settings → Social. Linked from Settings.
+**Integrations** (`/settings/integrations`): same chrome as the catalog. Gmail, Google Calendar, and Google Meet use **one-click Google Connect** — FitFirst owns the Google Cloud OAuth web client (`GOOGLE_OAUTH_CLIENT_ID` / `SECRET` on the server). Agency Admin never pastes those values. Yahoo Mail (identity), Outlook Calendar (busy sync), Facebook / Instagram / LinkedIn / GBP, and DocuSign sandbox stay bring-your-own vendor apps. Agency Admin controls. A solo Admin who also works the desk can connect personal Gmail. HealthSherpa Medicare is BYO (API vault + enrollment webhook) — FitFirst does not add a HealthSherpa fee. Marketplace / ACA stays scaffolded until partner credentials exist. No Stripe, Twilio, or Nylas. GBP gate stays on Settings → Social. Linked from Settings.
 
 ## Social BYO connect (this slice)
 
@@ -2123,20 +2123,22 @@ Redirect URI to add on the agency app: `{desk origin}/api/social/oauth/callback`
 
 ## Free BYO OAuth wave (mail / calendar / Meet / DocuSign)
 
-Agency Admin pastes the vendor app on **Settings → Integrations** (or Email / Video / E-sign). Env vars are a local fallback — same client, no FitFirst-owned keys.
+**Gmail / Google Calendar / Google Meet** are platform-hosted one-click Google Connect. FitFirst owns the Google Cloud OAuth web client. Site developers set `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` on the server (Vercel). Agency Admin only clicks Connect and approves Google — never pastes a Client ID or Secret. If those env vars are missing, Admin sees that Google Connect is not set up on this install.
+
+Yahoo Mail, Outlook Calendar, and DocuSign sandbox stay bring-your-own: Agency Admin pastes the vendor app on **Settings → Integrations** (or Email / Video / E-sign). Env vars are a local fallback for those vendors.
 
 | Connector | What works | What is stubbed |
 | --- | --- | --- |
-| **Gmail** | Google Cloud web client. OAuth with `gmail.send` + `gmail.readonly`. Desk **Read latest** / **Send test**. Connected inbox send uses Gmail API. Solos (Admin+desk) connect personal Gmail. | Campaign blasts stay `would_send`. |
+| **Gmail** | One-click Google Connect. OAuth with `gmail.send` + `gmail.readonly`. Desk **Read latest** / **Send test**. Connected inbox send uses Gmail API. Solos (Admin+desk) connect personal Gmail. | Campaign blasts stay `would_send`. |
 | **Yahoo Mail** | Free Yahoo developer OpenID. Connection + identity ping. | Yahoo Mail REST is retired. IMAP/XOAUTH2 send-read is later. |
-| **Google Calendar** | Calendar API + Free/Busy. Busy blocks render on the desk calendar. Scheduling a meeting/call over busy throws unless forced. | Two-way event push. |
+| **Google Calendar** | Same platform Google Connect. Calendar API + Free/Busy. Busy blocks render on the desk calendar. Scheduling a meeting/call over busy throws unless forced. | Two-way event push. |
 | **Outlook Calendar** | Entra app (`tenant=common`). Graph `calendarView` busy pull. Same desk busy gate. | Two-way Outlook write. Yahoo Calendar has no free OAuth API — skipped. |
-| **Google Meet** | Checkbox **Add Google Meet link** on calendar / company meeting when Calendar or Meet is connected. Uses Calendar `conferenceData`. | Zoom. |
+| **Google Meet** | Same platform Google Connect. Checkbox **Add Google Meet link** on calendar / company meeting when Calendar or Meet is connected. Uses Calendar `conferenceData`. | Zoom. |
 | **DocuSign sandbox** | Integration Key on `account-d.docusign.com`. OAuth + userinfo ping. Preference row flips connected. | Production DocuSign. Envelope send from a Deal packet. Dropbox Sign. |
 
 Redirect URI for this wave: `{desk origin}/api/integrations/oauth/callback` (local: `http://127.0.0.1:43147/api/integrations/oauth/callback`).
 
-**Google Cloud:** APIs & Services → Credentials → OAuth client (Web). Enable Gmail API + Calendar API. Authorized redirect URIs: both `/api/integrations/oauth/callback` and `/api/social/oauth/callback` if GBP uses the same client. Scopes above. Env: `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET`.
+**Google Cloud (site developer, not Admin):** APIs & Services → Credentials → OAuth client (Web) owned by FitFirst. Enable Gmail API + Calendar API. Authorized redirect URI: `/api/integrations/oauth/callback`. Scopes above. Env only: `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET`. Never commit live secrets. Social / GBP still uses an agency-pasted client and `/api/social/oauth/callback`.
 
 **Microsoft Entra:** App registration, supported accounts = personal + work (`common`). Web redirect URI. Delegated Graph: `User.Read`, `Calendars.Read`, `Calendars.ReadWrite`, `offline_access`. Create a client secret. Env: `MICROSOFT_OAUTH_CLIENT_ID` / `MICROSOFT_OAUTH_CLIENT_SECRET` / `MICROSOFT_OAUTH_TENANT=common`.
 

@@ -13,6 +13,10 @@ import { AGENCY_PAYS_VENDOR } from "@/lib/integrations/catalog";
 import type { CatalogItem } from "@/lib/integrations/catalog-store";
 import { gmailConnectCopy } from "@/lib/integrations/connect-policy";
 import {
+  GOOGLE_CONNECT_NOT_SETUP_COPY,
+  showsByoCredentialPasteForm,
+} from "@/lib/integrations/oauth-env";
+import {
   byoOauthSpec,
   isByoOauthProviderId,
   type ByoOauthReturnPath,
@@ -32,8 +36,11 @@ export function ByoOauthCard({
 }) {
   if (!isByoOauthProviderId(item.id)) return null;
   const spec = byoOauthSpec(item.id);
+  const platformGoogle = !showsByoCredentialPasteForm(item.id);
+  const googleReady = !platformGoogle || item.hasEnvCredentials;
+  const connected = item.connected && item.connectMode === "byo";
   const status = socialConnectStatus({
-    connected: item.connected && item.connectMode === "byo",
+    connected,
     hasCredentials: item.hasCredentials,
     connectMode: item.connectMode,
     paidWall: false,
@@ -59,10 +66,12 @@ export function ByoOauthCard({
       id={item.id}
       className="flex flex-col rounded-md border border-border bg-card p-3"
       data-provider={item.id}
-      data-connected={item.connected && item.connectMode === "byo" ? "true" : "false"}
+      data-connected={connected ? "true" : "false"}
       data-connect-status={status}
       data-has-credentials={item.hasCredentials ? "true" : "false"}
-      data-oauth-byo="1"
+      data-oauth-byo={platformGoogle ? undefined : "1"}
+      data-google-one-click={platformGoogle ? "1" : undefined}
+      data-google-oauth-ready={platformGoogle ? (googleReady ? "true" : "false") : undefined}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-2.5">
@@ -85,22 +94,31 @@ export function ByoOauthCard({
           </div>
         </div>
         <ConnectionBadge
-          connected={item.connected && item.connectMode === "byo"}
+          connected={connected}
           label={socialConnectStatusLabel(status)}
         />
       </div>
 
-      <p className="mt-2 text-helper text-muted-foreground">{AGENCY_PAYS_VENDOR}</p>
+      {platformGoogle ? (
+        <p className="mt-2 text-helper text-muted-foreground">
+          One-click Google Connect. FitFirst owns the OAuth app — Admin never pastes a Client ID or
+          Client Secret.
+        </p>
+      ) : (
+        <p className="mt-2 text-helper text-muted-foreground">{AGENCY_PAYS_VENDOR}</p>
+      )}
       <p className="text-helper text-muted-foreground">{item.byoNote}</p>
-      <p className="mt-1 text-helper text-muted-foreground">{spec.worksWhen}</p>
-      {item.id === "gmail" ? (
+      {googleReady ? <p className="mt-1 text-helper text-muted-foreground">{spec.worksWhen}</p> : null}
+      {item.id === "gmail" && googleReady ? (
         <p className="mt-1 text-helper text-navy">{gmailConnectCopy(soloDesk)}</p>
       ) : null}
-      {item.hasEnvCredentials ? (
-        <p className="mt-1 text-helper text-navy">Using {spec.vendor} client from environment. Settings paste overrides it.</p>
+      {!platformGoogle && item.hasEnvCredentials ? (
+        <p className="mt-1 text-helper text-navy">
+          Using {spec.vendor} client from environment. Settings paste overrides it.
+        </p>
       ) : null}
-      {item.connected && item.connectMode === "byo" && item.accountLabel ? (
-        <p className="mt-1 text-xs text-navy">
+      {connected && item.accountLabel ? (
+        <p className="mt-1 text-xs text-navy" data-connected-account="">
           {item.accountLabel}
           {item.tokenAccountEmail ? ` · ${item.tokenAccountEmail}` : ""}
           {item.lastConnectStatus ? ` · ${item.lastConnectStatus}` : ""}
@@ -114,54 +132,72 @@ export function ByoOauthCard({
 
       {canEdit ? (
         <div className="mt-3 space-y-3">
-          <form action={saveByoOauthCredentials} className="space-y-2">
-            <input type="hidden" name="provider" value={item.id} />
-            <input type="hidden" name="next" value={returnTo} />
-            <div>
-              <Label className="text-xs">{spec.clientIdLabel}</Label>
-              <Input
-                name="clientId"
-                defaultValue={item.clientId ?? ""}
-                className="mt-1"
-                autoComplete="off"
-                placeholder={spec.developerAppName}
-              />
-            </div>
-            <div>
-              <Label className="text-xs">{spec.clientSecretLabel}</Label>
-              <Input
-                name="clientSecret"
-                type="password"
-                defaultValue={item.hasCredentials && !item.hasEnvCredentials ? "••••••••••••" : ""}
-                className="mt-1"
-                autoComplete="new-password"
-                placeholder={item.hasCredentials ? "Saved · leave to keep" : "Agency secret only"}
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button type="submit" size="sm" variant="outline">
-                Save credentials
-              </Button>
-              <a
-                href={spec.developerUrl}
-                target="_blank"
-                rel="noopener"
-                className="text-helper text-primary hover:underline"
-              >
-                Create free {spec.vendor} app
-              </a>
-            </div>
-          </form>
+          {platformGoogle && !googleReady && !connected ? (
+            <p
+              className="rounded-md border border-border bg-fit-flag-bg px-2.5 py-2 text-helper text-navy"
+              data-google-connect-empty="1"
+            >
+              {GOOGLE_CONNECT_NOT_SETUP_COPY}
+            </p>
+          ) : null}
+          {platformGoogle && !googleReady && connected ? (
+            <p className="text-helper text-muted-foreground">
+              Reconnect needs Google Connect on this FitFirst install. Disconnect still works.
+            </p>
+          ) : null}
 
-          <div className="flex flex-wrap items-center gap-2">
-            <form action={startByoOauth}>
+          {showsByoCredentialPasteForm(item.id) ? (
+            <form action={saveByoOauthCredentials} className="space-y-2">
               <input type="hidden" name="provider" value={item.id} />
               <input type="hidden" name="next" value={returnTo} />
-              <Button type="submit" size="sm">
-                {connectLabel}
-              </Button>
+              <div>
+                <Label className="text-xs">{spec.clientIdLabel}</Label>
+                <Input
+                  name="clientId"
+                  defaultValue={item.clientId ?? ""}
+                  className="mt-1"
+                  autoComplete="off"
+                  placeholder={spec.developerAppName}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">{spec.clientSecretLabel}</Label>
+                <Input
+                  name="clientSecret"
+                  type="password"
+                  defaultValue={item.hasCredentials && !item.hasEnvCredentials ? "••••••••••••" : ""}
+                  className="mt-1"
+                  autoComplete="new-password"
+                  placeholder={item.hasCredentials ? "Saved · leave to keep" : "Agency secret only"}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="submit" size="sm" variant="outline">
+                  Save credentials
+                </Button>
+                <a
+                  href={spec.developerUrl}
+                  target="_blank"
+                  rel="noopener"
+                  className="text-helper text-primary hover:underline"
+                >
+                  Create free {spec.vendor} app
+                </a>
+              </div>
             </form>
-            {item.hasCredentials && !item.hasEnvCredentials ? (
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-2">
+            {googleReady ? (
+              <form action={startByoOauth}>
+                <input type="hidden" name="provider" value={item.id} />
+                <input type="hidden" name="next" value={returnTo} />
+                <Button type="submit" size="sm">
+                  {connectLabel}
+                </Button>
+              </form>
+            ) : null}
+            {!platformGoogle && item.hasCredentials && !item.hasEnvCredentials ? (
               <form action={clearByoOauthCredentials}>
                 <input type="hidden" name="provider" value={item.id} />
                 <input type="hidden" name="next" value={returnTo} />
@@ -170,7 +206,7 @@ export function ByoOauthCard({
                 </Button>
               </form>
             ) : null}
-            {item.connected && item.connectMode === "byo" ? (
+            {connected ? (
               <form action={disconnectByoOauth}>
                 <input type="hidden" name="provider" value={item.id} />
                 <input type="hidden" name="next" value={returnTo} />
@@ -181,7 +217,7 @@ export function ByoOauthCard({
             ) : null}
           </div>
 
-          {item.connected && item.connectMode === "byo" ? (
+          {connected ? (
             <div className="flex flex-wrap items-end gap-2">
               {spec.smokeTests.includes("read") ? (
                 <form action={smokeTestByoProvider}>
@@ -235,11 +271,13 @@ export function ByoOauthCard({
               ) : null}
             </div>
           ) : null}
-          <p className="text-caption text-muted-foreground">{spec.stubbed}</p>
+          {googleReady ? <p className="text-caption text-muted-foreground">{spec.stubbed}</p> : null}
         </div>
       ) : (
         <p className="mt-3 text-helper text-muted-foreground">
-          Agency Admin pastes the {spec.vendor} app and starts OAuth. {AGENCY_PAYS_VENDOR}
+          {platformGoogle
+            ? "Agency Admin connects Google. Agents can see status only."
+            : `Agency Admin pastes the ${spec.vendor} app and starts OAuth. ${AGENCY_PAYS_VENDOR}`}
         </p>
       )}
     </article>

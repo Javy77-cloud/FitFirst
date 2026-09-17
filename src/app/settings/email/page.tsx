@@ -20,9 +20,10 @@ export default async function EmailSettingsPage() {
   return (
     <SettingsShell title="Email" current="email">
       <p className="mb-4 text-sm text-muted-foreground">
-        Gmail and Yahoo Mail are BYO OAuth. Agency Admin connects the agency inbox; a solo Admin who
-        also works the desk can connect personal Gmail. FitFirst does not host mail. Outlook / Zoho
-        stay unwired. Templates and signatures stay under Brand / lists.
+        Gmail is one-click Google Connect — Admin never pastes a Google Client ID. Yahoo Mail stays
+        BYO OAuth. Agency Admin connects the agency inbox; a solo Admin who also works the desk can
+        connect personal Gmail. FitFirst does not host mail. Outlook / Zoho stay unwired. Templates
+        and signatures stay under Brand / lists.
       </p>
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         <Link href="/settings/email-templates" className="text-primary hover:underline">

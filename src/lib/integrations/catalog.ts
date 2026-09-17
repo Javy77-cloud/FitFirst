@@ -27,7 +27,8 @@ export const INTEGRATION_CATEGORY_LABEL: Record<IntegrationCategory, string> = {
 };
 
 export const INTEGRATION_CATEGORY_BLURB: Record<IntegrationCategory, string> = {
-  email: "Agency inbox. Gmail and Yahoo are BYO OAuth. Outlook / Zoho Mail stay unwired. FitFirst does not host mail.",
+  email:
+    "Agency inbox. Gmail is one-click Google Connect (platform OAuth). Yahoo is BYO OAuth. Outlook / Zoho Mail stay unwired. FitFirst does not host mail.",
   calendar:
     "Desk calendar stays here. Google and Outlook Calendar pull external busy so FitFirst will not book over those slots.",
   social:

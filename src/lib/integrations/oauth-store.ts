@@ -3,7 +3,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { integrationConnections } from "@/lib/db/schema";
 import { decryptSecret, encryptSecret, isMaskedSecretInput } from "@/lib/secrets/vault";
-import { envHasOauthApp, envOauthApp } from "./oauth-env";
+import { envHasOauthApp, envOauthApp, pickOauthClientApp } from "./oauth-env";
 import {
   buildByoAuthorizeUrl,
   createPkcePair,
@@ -51,28 +51,27 @@ export async function resolveByoClientApp(provider: ByoOauthProviderId): Promise
   tenant?: string;
   authBase?: string;
 } | null> {
+  const spec = byoOauthSpec(provider);
+  let settings: { clientId: string; clientSecret: string } | null = null;
   for (const id of credentialCandidates(provider)) {
     const row = await loadByoConnection(id);
     if (row?.clientId?.trim() && row.clientSecretEnc && row.clientSecretIv) {
       try {
         const clientSecret = decryptSecret(row.clientSecretEnc, row.clientSecretIv);
         if (clientSecret) {
-          return {
-            clientId: row.clientId.trim(),
-            clientSecret,
-            source: "settings",
-            tenant: envOauthApp(byoOauthSpec(provider).family)?.tenant,
-            authBase: envOauthApp(byoOauthSpec(provider).family)?.authBase,
-          };
+          settings = { clientId: row.clientId.trim(), clientSecret };
+          break;
         }
       } catch {
         /* try next / env */
       }
     }
   }
-  const env = envOauthApp(byoOauthSpec(provider).family);
-  if (!env) return null;
-  return { ...env, source: "env" };
+  return pickOauthClientApp({
+    family: spec.family,
+    settings,
+    env: envOauthApp(spec.family),
+  });
 }
 
 export function hasEnvByoCredentials(provider: ByoOauthProviderId): boolean {
@@ -135,15 +134,18 @@ export async function prepareByoAuthorize(input: {
   userId?: string | null;
 }): Promise<
   | { ok: true; url: string; state: string }
-  | { ok: false; reason: "needs_credentials"; message: string }
+  | { ok: false; reason: "needs_credentials" | "google_not_setup"; message: string }
 > {
   const spec = byoOauthSpec(input.provider);
   const app = await resolveByoClientApp(input.provider);
   if (!app) {
+    const googleHosted = spec.family === "google";
     return {
       ok: false,
-      reason: "needs_credentials",
-      message: `Paste the agency ${spec.clientIdLabel} and ${spec.clientSecretLabel}, or set the ${spec.vendor} env vars. ${spec.worksWhen}`,
+      reason: googleHosted ? "google_not_setup" : "needs_credentials",
+      message: googleHosted
+        ? "Google Connect isn’t set up on this FitFirst install. Ask the site developer to configure the platform Google OAuth client on Vercel."
+        : `Paste the agency ${spec.clientIdLabel} and ${spec.clientSecretLabel}, or set the ${spec.vendor} env vars. ${spec.worksWhen}`,
     };
   }
   const pkce = spec.pkce ? createPkcePair() : null;

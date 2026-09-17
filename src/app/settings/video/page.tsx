@@ -15,8 +15,9 @@ export default async function VideoSettingsPage() {
   return (
     <SettingsShell title="Video">
       <p className="mb-4 text-sm text-muted-foreground">
-        Google Meet helper writes a Meet URL onto calendar events when Google Calendar or Meet is
-        connected. Zoom stays a stub. The agency account, not a FitFirst room.
+        Google Meet uses the same one-click Google Connect as Gmail and Calendar. The helper writes
+        a Meet URL onto calendar events when Google Calendar or Meet is connected. Zoom stays a
+        stub. The agency account, not a FitFirst room.
       </p>
       <div className="grid gap-3 md:grid-cols-2">
         {video.map((item) =>

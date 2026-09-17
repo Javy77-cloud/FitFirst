@@ -75,9 +75,9 @@ export const BYO_OAUTH_SPECS: Record<ByoOauthProviderId, ByoOauthSpec> = {
     extraParams: { ...GOOGLE_OFFLINE },
     pkce: true,
     worksWhen:
-      "Agency Google Cloud OAuth web client, Gmail API enabled, this desk’s redirect URI on the client. Solos can connect personal Gmail.",
+      "One-click Google Connect. FitFirst owns the OAuth web client. Admin approves Gmail on Google’s consent screen. Solos can connect personal Gmail.",
     wallBody:
-      "Google will refuse the grant if the Client ID is wrong, the redirect URI is missing, or Gmail API is off. FitFirst does not buy Workspace seats.",
+      "Google Connect fails if this FitFirst install is missing the platform Google OAuth client on the server, or Gmail API is off. Admin never pastes a Client ID. FitFirst does not buy Workspace seats.",
     stubbed: "Campaign blasts stay would_send. Desk compose can send through this mailbox.",
     smokeTests: ["read", "send"],
   },
@@ -124,9 +124,9 @@ export const BYO_OAUTH_SPECS: Record<ByoOauthProviderId, ByoOauthSpec> = {
     pkce: true,
     shareCredentialsWith: "gmail",
     worksWhen:
-      "Same Google Cloud OAuth client as Gmail (or its own). Calendar API enabled. Busy sync pulls Free/Busy so FitFirst will not book over external busy.",
+      "Same platform Google Connect as Gmail. Busy sync pulls Free/Busy so FitFirst will not book over external busy.",
     wallBody:
-      "Google Calendar OAuth fails if Calendar API is off or the redirect URI is missing. FitFirst does not buy Workspace.",
+      "Google Calendar Connect fails if this FitFirst install is missing the platform Google OAuth client, or Calendar API is off. Admin never pastes a Client ID. FitFirst does not buy Workspace.",
     stubbed: "Two-way event push is not in this wave. Busy pull + Meet helper are live.",
     smokeTests: ["busy", "meet"],
   },
@@ -171,9 +171,9 @@ export const BYO_OAUTH_SPECS: Record<ByoOauthProviderId, ByoOauthSpec> = {
     pkce: true,
     shareCredentialsWith: "gmail",
     worksWhen:
-      "Same Google Cloud client. Meet links are minted through Calendar conferenceData — connecting Google Calendar is enough, or connect Meet here.",
+      "Same platform Google Connect. Meet links are minted through Calendar conferenceData — connecting Google Calendar is enough, or connect Meet here.",
     wallBody:
-      "Meet helper needs Calendar events scope. FitFirst does not buy Workspace Meet.",
+      "Meet helper needs Calendar events scope on the platform Google client. Admin never pastes a Client ID. FitFirst does not buy Workspace Meet.",
     stubbed: "Zoom stays unwired. Meet helper writes the URL onto the desk event.",
     smokeTests: ["meet"],
   },

@@ -29,7 +29,7 @@ const CHANNELS: {
     id: "email",
     href: "/settings/email",
     title: "Email",
-    body: "Gmail and Yahoo are BYO OAuth. Outlook / Zoho stay unwired. Templates stay under Brand / lists.",
+    body: "Gmail is one-click Google Connect. Yahoo is BYO OAuth. Outlook / Zoho stay unwired. Templates stay under Brand / lists.",
     categories: ["email"],
   },
   {

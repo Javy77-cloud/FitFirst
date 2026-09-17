@@ -24,6 +24,9 @@ describe("BYO OAuth wave surfaces", () => {
     expect(catalog).toMatch(/ByoOauthCard/);
     expect(catalog).toMatch(/SocialByoCard/);
     expect(catalog).toMatch(/personal Gmail/);
+    expect(catalog).toMatch(/one-click Google Connect/);
+    expect(catalog).toMatch(/google-connect-not-setup/);
+    expect(catalog).not.toMatch(/Paste a Google Cloud client/);
     const email = readFileSync("src/app/settings/email/page.tsx", "utf8");
     expect(email).toMatch(/ByoOauthCard/);
     expect(email).toMatch(/returnTo="\/settings\/email"/);
