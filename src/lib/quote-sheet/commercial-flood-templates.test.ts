@@ -20,7 +20,7 @@ describe("Flood / WC / GL / BOP master sheet templates", () => {
     expect(fields.some((f) => f.key === "coverage_lines")).toBe(true);
     expect(fields.some((f) => f.key === "class_code")).toBe(true);
     expect(fields.some((f) => f.key === "owners_included")).toBe(true);
-    expect(fields.some((f) => f.key === "claims_last_5_years")).toBe(true);
+    expect(fields.some((f) => f.key === "claims_5yr")).toBe(true);
     const visible = groupFields("workers_comp", undefined, { coverage_lines: "Workers' Comp" });
     expect(visible.some((group) => group.group === "Workers' Comp")).toBe(true);
   });
@@ -39,7 +39,7 @@ describe("Flood / WC / GL / BOP master sheet templates", () => {
     const fields = fieldsForLine("bop", "bop");
     expect(fields.some((f) => f.key === "bpp_limit")).toBe(true);
     expect(fields.some((f) => f.key === "building_limit")).toBe(true);
-    expect(fields.find((f) => f.key === "construction_type")?.options).toEqual(
+    expect(fields.find((f) => f.key === "construction")?.options).toEqual(
       expect.arrayContaining(["Frame", "Masonry", "Steel", "Concrete"]),
     );
     const without = groupFields("bop", "bop", { coverage_lines: "General Liability" });

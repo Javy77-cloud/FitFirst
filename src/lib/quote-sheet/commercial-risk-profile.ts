@@ -2,12 +2,38 @@ import type { DealProductId } from "@/lib/deals/deal-products";
 import { parseDealProduct } from "@/lib/deals/deal-products";
 import type { ShopLine } from "@/lib/domain";
 import type { QuoteFieldDef } from "./applicant-core";
-import { PROTECTION_CLASS_OPTIONS } from "./sheet-defaults";
+import { CLAIMS_5YR_OPTIONS, PROTECTION_CLASS_OPTIONS } from "./sheet-defaults";
 
 /** Agent-facing name for commercial master sheets. */
 export const COMMERCIAL_RISK_PROFILE_LABEL = "Risk Profile";
 
 export const COMMERCIAL_COVERAGE_KEY = "coverage_lines";
+
+/**
+ * Existing home / deal / auto / business keys reused on the lean Risk Profile.
+ * Relabel in COMMERCIAL_RISK_PROFILE_FIELDS — do not mint square_footage / construction_type /
+ * premises_address / premises_owned / alarm / employees_ft / primary_use / claims_last_5_years.
+ */
+export const COMMERCIAL_RISK_PROFILE_REUSED_KEYS = [
+  "address1",
+  "own_rent",
+  "square_feet",
+  "year_built",
+  "construction",
+  "sprinkler",
+  "central_alarm",
+  "protection_class",
+  "class_code",
+  "employees",
+  "seasonal",
+  "annual_sales",
+  "current_carrier",
+  "building_limit",
+  "fleet_size",
+  "radius",
+  "vehicle_usage",
+  "claims_5yr",
+] as const;
 
 export const COMMERCIAL_COVERAGE_OPTIONS = [
   "Workers' Comp",
@@ -82,29 +108,37 @@ export const COMMERCIAL_RISK_PROFILE_FIELDS: QuoteFieldDef[] = [
 
   yn("premises_same_as_business", "Same as business address?", "Location / premises"),
   {
-    key: "premises_address",
+    key: "address1",
     label: "Premises address",
     group: "Location / premises",
+    extractKey: "address",
     visibleWhen: { field: "premises_same_as_business", equals: ["No", "no"] },
   },
   {
-    key: "premises_owned",
+    key: "own_rent",
     label: "Owned or leased",
     group: "Location / premises",
     input: "select",
     options: [...COMMERCIAL_OWNED_LEASED],
   },
-  { key: "square_footage", label: "Square footage", group: "Location / premises", input: "number" },
+  {
+    key: "square_feet",
+    label: "Square footage",
+    group: "Location / premises",
+    input: "number",
+    extractKey: "square_feet",
+  },
   { key: "year_built", label: "Year built", group: "Location / premises", input: "number" },
   {
-    key: "construction_type",
+    key: "construction",
     label: "Construction",
     group: "Location / premises",
     input: "select",
     options: [...COMMERCIAL_CONSTRUCTION_OPTIONS],
+    extractKey: "construction",
   },
   yn("sprinkler", "Sprinkler", "Location / premises"),
-  yn("alarm", "Alarm", "Location / premises"),
+  yn("central_alarm", "Alarm", "Location / premises"),
   {
     key: "protection_class",
     label: "Protection class",
@@ -138,22 +172,8 @@ export const COMMERCIAL_RISK_PROFILE_FIELDS: QuoteFieldDef[] = [
     visibleWhen: whenCoverage("Workers' Comp"),
   },
   {
-    key: "employees_ft",
-    label: "Full-time employees",
-    group: "Workers' Comp",
-    input: "number",
-    visibleWhen: whenCoverage("Workers' Comp"),
-  },
-  {
-    key: "employees_pt",
-    label: "Part-time employees",
-    group: "Workers' Comp",
-    input: "number",
-    visibleWhen: whenCoverage("Workers' Comp"),
-  },
-  {
-    key: "employees_seasonal",
-    label: "Seasonal employees",
+    key: "employees",
+    label: "Employees",
     group: "Workers' Comp",
     input: "number",
     visibleWhen: whenCoverage("Workers' Comp"),
@@ -333,7 +353,7 @@ export const COMMERCIAL_RISK_PROFILE_FIELDS: QuoteFieldDef[] = [
     visibleWhen: whenCoverage("Commercial Auto"),
   },
   {
-    key: "primary_use",
+    key: "vehicle_usage",
     label: "Primary use",
     group: "Commercial Auto",
     input: "select",
@@ -341,13 +361,19 @@ export const COMMERCIAL_RISK_PROFILE_FIELDS: QuoteFieldDef[] = [
     visibleWhen: whenCoverage("Commercial Auto"),
   },
 
-  yn("claims_last_5_years", "Claims in last 5 years", "Claims"),
+  {
+    key: "claims_5yr",
+    label: "Claims in last 5 years",
+    group: "Claims",
+    input: "select",
+    options: [...CLAIMS_5YR_OPTIONS],
+  },
   {
     key: "claims_details",
     label: "Claim details",
     group: "Claims",
     input: "textarea",
-    visibleWhen: whenYes("claims_last_5_years"),
+    visibleWhen: { field: "claims_5yr", equals: ["1", "2", "3", "4+"] },
   },
   yn("open_claims_lawsuits", "Open claims / lawsuits", "Claims"),
 ];

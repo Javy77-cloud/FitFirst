@@ -167,19 +167,16 @@ export function fillSheetFromDealDetails(
   put("entity_type", firstFilled(stored.entity_type));
   const commercialSheet = Object.prototype.hasOwnProperty.call(values, "coverage_lines");
   if (commercialSheet) {
-    put("legal_name", firstFilled(stored.business_name, stored.legal_name, named));
-    put("dba", firstFilled(stored.dba));
-    put("ein", firstFilled(stored.ein, stored.fein));
-    put("fein", firstFilled(stored.ein, stored.fein));
-    put("naics", firstFilled(stored.naics));
-    put("years_in_business", firstFilled(stored.years_in_business));
-    put(
-      "operations_description",
-      firstFilled(stored.operations, stored.business_description, stored.operations_description),
-    );
-    put("annual_sales", firstFilled(stored.annual_sales, stored.annual_revenue));
+    // Identity stays on Deal Details (business_name / ein / operations). Risk Profile
+    // only copies existing sheet keys — annual_sales, employees, square_feet, construction.
+    put("annual_sales", firstFilled(stored.annual_sales, stored.annual_revenue, stored.sales));
     put("employees", firstFilled(stored.employee_count, stored.employees));
-    put("payroll", firstFilled(stored.payroll));
+    put("square_feet", firstFilled(stored.square_feet, stored.square_footage, stored.sqft));
+    put("construction", firstFilled(stored.construction, stored.construction_type));
+    put("own_rent", firstFilled(stored.own_rent, stored.premises_owned));
+    put("central_alarm", firstFilled(stored.central_alarm, stored.alarm));
+    put("vehicle_usage", firstFilled(stored.vehicle_usage, stored.primary_use));
+    put("claims_5yr", firstFilled(stored.claims_5yr, stored.claims_last_5_years));
     put(
       "coverage_lines",
       firstFilled(
