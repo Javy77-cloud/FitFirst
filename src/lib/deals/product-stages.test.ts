@@ -37,6 +37,8 @@ import {
   isHeatherCamirandDeal,
   joinProductListNotes,
   listProductNotes,
+  splitConcatenatedProductListNotes,
+  syncProductListNotes,
   noticeNoteLog,
   stripStaleCamirandProductNotices,
 } from "./product-stages";
@@ -516,6 +518,110 @@ describe("per-product stages", () => {
     expect(notesUi).not.toMatch(/min-w-\[8rem\]|min-w-\[6rem\]|max-w-\[|w-44|w-56|w-64/);
     expect(source("src/lib/list-columns.ts")).toMatch(/DEAL_NOTES_COLUMN_WIDTH = 160/);
     expect(source("src/lib/list-columns.ts")).toMatch(/NOTES_MAX_COLUMN_WIDTH = 4800/);
+    expect(source("src/components/deals/deal-list-product-notes.tsx")).toMatch(
+      /key=\{`\$\{dealId\}:\$\{row\.product\}`\}/,
+    );
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/syncProductListNotes/);
+  });
+
+  it("keeps deals-list product notes independent and splits only concatenated leftovers", () => {
+    const chips = [
+      { product: "homeowners" as const, label: "HO3" },
+      { product: "auto" as const, label: "Auto" },
+      { product: "flood" as const, label: "Flood" },
+    ];
+    expect(
+      splitConcatenatedProductListNotes("HO3: roof inspect\nAuto: VIN pending\nFlood: NFIP hold", chips),
+    ).toEqual({
+      homeowners: "roof inspect",
+      auto: "VIN pending",
+      flood: "NFIP hold",
+    });
+    expect(splitConcatenatedProductListNotes("plain shared note", chips)).toBeNull();
+
+    const concatFallback = listProductNotes({
+      shopProducts: ["homeowners", "auto", "flood"],
+      quotingForm: "HO3",
+      fallbackNote: "HO3: roof inspect\nAuto: VIN pending\nFlood: NFIP hold",
+    });
+    expect(concatFallback.map((row) => `${row.label}:${row.note}`)).toEqual([
+      "HO3:roof inspect",
+      "Auto:VIN pending",
+      "Flood:NFIP hold",
+    ]);
+
+    const firstRowCombo = listProductNotes({
+      shopProducts: ["homeowners", "auto", "flood"],
+      quotingForm: "HO3",
+      shopFlow: {
+        productStages: {
+          homeowners: {
+            stage: "quote_review",
+            selectedQuoteIds: [],
+            listNote: "HO3: HO3: roof inspect\nAuto: VIN pending\nFlood: NFIP hold",
+          },
+        },
+      },
+      fallbackNote: "HO3: HO3: roof inspect\nAuto: VIN pending\nFlood: NFIP hold",
+    });
+    expect(firstRowCombo.map((row) => `${row.label}:${row.note}`)).toEqual([
+      "HO3:roof inspect",
+      "Auto:VIN pending",
+      "Flood:NFIP hold",
+    ]);
+
+    const typedAuto = syncProductListNotes({
+      shopProducts: ["homeowners", "auto", "flood"],
+      quotingForm: "HO3",
+      fallbackNote: "HO3: roof inspect\nAuto: VIN pending\nFlood: NFIP hold",
+      product: "auto",
+      note: "VIN locked",
+    });
+    expect(typedAuto.notes.map((row) => `${row.label}:${row.note}`)).toEqual([
+      "HO3:roof inspect",
+      "Auto:VIN locked",
+      "Flood:NFIP hold",
+    ]);
+    expect(typedAuto.productStages.homeowners?.listNote).toBe("roof inspect");
+    expect(typedAuto.productStages.auto?.listNote).toBe("VIN locked");
+    expect(typedAuto.productStages.flood?.listNote).toBe("NFIP hold");
+    expect(joinProductListNotes(typedAuto.notes)).toBe(
+      "HO3: roof inspect\nAuto: VIN locked\nFlood: NFIP hold",
+    );
+
+    const typedFlood = syncProductListNotes({
+      shopProducts: ["homeowners", "auto", "flood"],
+      quotingForm: "HO3",
+      shopFlow: { productStages: typedAuto.productStages },
+      fallbackNote: joinProductListNotes(typedAuto.notes),
+      product: "flood",
+      note: "NFIP quoted",
+    });
+    expect(typedFlood.notes.map((row) => `${row.label}:${row.note}`)).toEqual([
+      "HO3:roof inspect",
+      "Auto:VIN locked",
+      "Flood:NFIP quoted",
+    ]);
+    expect(typedFlood.notes[0]?.note).not.toMatch(/VIN locked|NFIP quoted/);
+
+    const independent = syncProductListNotes({
+      shopProducts: ["homeowners", "auto", "flood"],
+      quotingForm: "HO3",
+      shopFlow: {
+        productStages: {
+          homeowners: { stage: "quote_review", selectedQuoteIds: [], listNote: "HO3 binder" },
+          auto: { stage: "markets", selectedQuoteIds: [], listNote: "VIN pending" },
+        },
+      },
+      fallbackNote: "HO3: HO3 binder\nAuto: VIN pending",
+      product: "flood",
+      note: "call NFIP",
+    });
+    expect(independent.notes.map((row) => `${row.label}:${row.note}`)).toEqual([
+      "HO3:HO3 binder",
+      "Auto:VIN pending",
+      "Flood:call NFIP",
+    ]);
   });
 
   it("strips Heather Camirand HO3/Auto leftover notices and keeps Flood", () => {
