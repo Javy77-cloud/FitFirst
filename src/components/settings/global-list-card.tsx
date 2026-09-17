@@ -12,6 +12,7 @@ import { ClearAllColorsForm } from "@/components/desk/clear-all-colors-form";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { StatusColorSelect, StatusColorSwatch } from "@/components/desk/status-color-select";
 import { CollapsibleListCard } from "@/components/settings/collapsible-list-card";
+import { ListOptionInput } from "@/components/settings/list-option-input";
 import { ListOptionRow } from "@/components/settings/list-option-row";
 import { StayOnSaveForm, useStayAction } from "@/components/settings/stay-on-save-form";
 import { Button } from "@/components/ui/button";
@@ -59,54 +60,54 @@ export function GlobalListCard({
   const addItem = useStayAction(addGlobalListItem, "global-list-saved");
 
   const items = sorted.map((row) => (
-    <div key={`${row.id}-${row.color ?? "none"}`} data-ff-global-list-item={row.id}>
-    <ListOptionRow
-      defaultValue={row.color}
-      name="itemColors"
-      form={saveFormId}
-      colorAriaLabel={`Color for ${row.label}`}
-      hidePicker={!canEdit}
-    >
-      {canEdit ? (
-        <>
-          <input type="hidden" form={saveFormId} name="ids" value={row.id} />
-          <Input
-            form={saveFormId}
-            name="labels"
-            defaultValue={row.label}
-            className="h-8 min-w-40 max-w-sm flex-1"
-            aria-label={`Name for ${row.label}`}
-          />
-          {familyPicker ? (
-            <select
+    <div key={row.id} data-ff-global-list-item={row.id}>
+      <ListOptionRow
+        defaultValue={row.color}
+        name="itemColors"
+        form={saveFormId}
+        colorAriaLabel={`Color for ${row.label}`}
+        hidePicker={!canEdit}
+      >
+        {canEdit ? (
+          <>
+            <input type="hidden" form={saveFormId} name="ids" value={row.id} />
+            <ListOptionInput
               form={saveFormId}
-              name="families"
-              defaultValue={row.family ?? ""}
-              className="h-8 rounded-md border border-input bg-card px-2 text-xs"
-              aria-label={`Family for ${row.label}`}
-            >
-              <option value="">Any family</option>
-              {INSURANCE_FAMILIES.map((family) => (
-                <option key={family} value={family}>
-                  {family}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input type="hidden" form={saveFormId} name="families" value={row.family ?? ""} />
-          )}
-          <HardDeleteForm action={removeItem} subject="this list item">
-            <input type="hidden" name="id" value={row.id} />
-            <FileDeleteIcon label={`Delete ${row.label}`} className="text-destructive" />
-          </HardDeleteForm>
-        </>
-      ) : (
-        <>
-          <span className="min-w-0 flex-1 font-medium text-navy">{row.label}</span>
-          {row.family ? <span className="text-helper text-muted-foreground">{row.family}</span> : null}
-        </>
-      )}
-    </ListOptionRow>
+              name="labels"
+              committedValue={row.label}
+              className="h-8 min-w-40 max-w-sm flex-1"
+              aria-label={`Name for ${row.label}`}
+            />
+            {familyPicker ? (
+              <select
+                form={saveFormId}
+                name="families"
+                defaultValue={row.family ?? ""}
+                className="h-8 rounded-md border border-input bg-card px-2 text-xs"
+                aria-label={`Family for ${row.label}`}
+              >
+                <option value="">Any family</option>
+                {INSURANCE_FAMILIES.map((family) => (
+                  <option key={family} value={family}>
+                    {family}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input type="hidden" form={saveFormId} name="families" value={row.family ?? ""} />
+            )}
+            <HardDeleteForm action={removeItem} subject="this list item">
+              <input type="hidden" name="id" value={row.id} />
+              <FileDeleteIcon label={`Delete ${row.label}`} className="text-destructive" />
+            </HardDeleteForm>
+          </>
+        ) : (
+          <>
+            <span className="min-w-0 flex-1 font-medium text-navy">{row.label}</span>
+            {row.family ? <span className="text-helper text-muted-foreground">{row.family}</span> : null}
+          </>
+        )}
+      </ListOptionRow>
     </div>
   ));
 

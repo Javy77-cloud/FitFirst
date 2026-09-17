@@ -1,7 +1,8 @@
+import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { ListOptionInput } from "@/components/settings/list-option-input";
 import { ListOptionRow } from "@/components/settings/list-option-row";
 import {
   matchStarterList,
@@ -11,7 +12,14 @@ import {
   STARTER_PICKLIST_SEED_KEY,
   STARTER_PICKLIST_US_STATES,
 } from "./starter-picklists";
-import { LIST_PREVIEW_COUNT, listMutationOk, visibleListItems } from "@/lib/settings/list-editor";
+import {
+  LIST_OPTION_COMMIT_MS,
+  LIST_PREVIEW_COUNT,
+  listMutationOk,
+  listOptionNeedsCommit,
+  listOptionRowKey,
+  visibleListItems,
+} from "@/lib/settings/list-editor";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -84,7 +92,7 @@ describe("admin list editors", () => {
     expect(source("src/lib/custom-fields/picklist-store.ts")).toMatch(/active: false/);
   });
 
-  it("renders a live color row from the saved key without making label inputs controlled", () => {
+  it("renders a live color row from the saved key without lifting label keystrokes to the parent", () => {
     const html = renderToString(
       createElement(
         ListOptionRow,
@@ -99,7 +107,62 @@ describe("admin list editors", () => {
     const row = source("src/components/settings/list-option-row.tsx");
     expect(row).toMatch(/useState/);
     expect(row).not.toMatch(/useEffect/);
-    expect(source("src/components/settings/picklist-card.tsx")).toMatch(/defaultValue=\{option\.value\}/);
-    expect(source("src/components/settings/global-list-card.tsx")).toMatch(/defaultValue=\{row\.label\}/);
+    expect(source("src/components/settings/picklist-card.tsx")).toMatch(/committedValue=\{option\.value\}/);
+    expect(source("src/components/settings/global-list-card.tsx")).toMatch(/committedValue=\{row\.label\}/);
+    expect(source("src/components/settings/picklist-card.tsx")).toMatch(/ListOptionInput/);
+    expect(source("src/components/settings/global-list-card.tsx")).toMatch(/ListOptionInput/);
+  });
+
+  it("keeps option-row keys stable across keystrokes and commits only on blur", () => {
+    const typed = ["C", "Ca", "Cal", "Call", "Calls"];
+    const keys = typed.map(() => listOptionRowKey("deal-notices-life", 0));
+    expect(new Set(keys).size).toBe(1);
+    expect(listOptionRowKey("deal-notices-life", 0)).not.toContain("Call");
+    expect(typed.map((value) => `0-${value}`).filter((key, _, all) => all[0] !== key).length).toBeGreaterThan(0);
+    expect(listOptionNeedsCommit("Call", "Calls")).toBe(true);
+    expect(listOptionNeedsCommit("Calls", "Calls")).toBe(false);
+    expect(LIST_OPTION_COMMIT_MS).toBeGreaterThanOrEqual(300);
+
+    const input = source("src/components/settings/list-option-input.tsx");
+    expect(input).toMatch(/committedValue/);
+    expect(input).toMatch(/onCommit/);
+    expect(input).toMatch(/flushSync/);
+    expect(input).toMatch(/focusedRef/);
+    expect(input).not.toMatch(/onCommit\?\.\(next\)/);
+    expect(input).toMatch(/onBlur/);
+    expect(input).not.toMatch(/onChange=\{\(event\) => \{\s*onCommit/);
+
+    const pickCard = source("src/components/settings/picklist-card.tsx");
+    const globalCard = source("src/components/settings/global-list-card.tsx");
+    const config = source("src/components/custom-fields/picklist-config.tsx");
+    const builder = source("src/components/custom-fields/field-builder.tsx");
+    const notices = source("src/components/deal/notice-types-editor.tsx");
+    expect(pickCard).toMatch(/listOptionRowKey\(list\.id, index\)/);
+    expect(pickCard).not.toMatch(/key=\{`\$\{list\.id\}-\$\{index\}-\$\{option\.value\}/);
+    expect(pickCard).toMatch(/ListOptionInput/);
+    expect(pickCard).toMatch(/ListOptionRow/);
+    expect(globalCard).toMatch(/ListOptionInput/);
+    expect(globalCard).toMatch(/key=\{row\.id\}/);
+    expect(config).toMatch(/ListOptionInput/);
+    expect(config).toMatch(/onCommit=/);
+    expect(config).not.toMatch(/next\[index\] = event\.target\.value/);
+    expect(builder).toMatch(/ListOptionInput/);
+    expect(builder).toMatch(/data-ff-section-label/);
+    expect(notices).toMatch(/ListOptionInput/);
+    expect(source("src/app/settings/offices/page.tsx")).toMatch(/ListOptionInput/);
+    expect(source("src/app/settings/territories/page.tsx")).toMatch(/ListOptionInput/);
+    expect(source("src/components/settings/collapsible-list-card.tsx")).toMatch(/rowKey\(item, index\)/);
+    expect(source("src/components/settings/stay-on-save-form.tsx")).toMatch(/router\.refresh\(\)/);
+
+    for (const value of typed) {
+      const html = renderToString(
+        createElement(ListOptionInput, {
+          committedValue: value,
+          "aria-label": "Option 1",
+        }),
+      );
+      expect(html).toContain(`value="${value}"`);
+      expect(html).toContain("data-ff-list-option-input");
+    }
   });
 });

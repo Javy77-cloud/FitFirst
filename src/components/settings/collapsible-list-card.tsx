@@ -1,9 +1,14 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { isValidElement, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import { LIST_PREVIEW_COUNT } from "@/lib/settings/list-editor";
 import { cn } from "@/lib/utils";
+
+function rowKey(item: ReactNode, index: number): string | number {
+  if (isValidElement(item) && item.key != null) return item.key;
+  return index;
+}
 
 export function CollapsibleListCard({
   cardId,
@@ -46,7 +51,7 @@ export function CollapsibleListCard({
           {items.map((item, index) => {
             const collapsedAway = canCollapse && !expanded && index >= previewCount;
             return (
-              <div key={index} hidden={collapsedAway} className={collapsedAway ? "hidden" : undefined}>
+              <div key={rowKey(item, index)} hidden={collapsedAway} className={collapsedAway ? "hidden" : undefined}>
                 {item}
               </div>
             );

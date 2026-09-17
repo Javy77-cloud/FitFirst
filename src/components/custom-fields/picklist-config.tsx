@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { StatusColorSwatch } from "@/components/desk/status-color-select";
 import { CollapsibleListCard } from "@/components/settings/collapsible-list-card";
+import { ListOptionInput } from "@/components/settings/list-option-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -135,14 +136,14 @@ export function PicklistConfig({
             {options.map((option, index) => (
               // Index-only key: option text in the key remounts the input after every letter.
               <div key={index} className="ff-list-row">
-                <Input
-                  value={option}
+                <ListOptionInput
+                  committedValue={option}
                   className="h-7"
                   placeholder={`Option ${index + 1}`}
                   data-ff-option-row={index}
-                  onChange={(event) => {
+                  onCommit={(value) => {
                     const next = options.slice();
-                    next[index] = event.target.value;
+                    next[index] = value;
                     onChange({ options: next, picklistId: null, globalListKey: null });
                   }}
                 />

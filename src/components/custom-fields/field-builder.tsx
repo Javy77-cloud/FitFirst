@@ -14,6 +14,7 @@ import { LayoutSectionFieldGrid } from "@/components/custom-fields/layout-sectio
 import { LayoutSectionHeader } from "@/components/custom-fields/layout-section-header";
 import { SectionDensityControl } from "@/components/custom-fields/section-density-control";
 import { PicklistConfig } from "@/components/custom-fields/picklist-config";
+import { ListOptionInput } from "@/components/settings/list-option-input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -657,21 +658,14 @@ export function FieldBuilder({
                           <GripVertical className="size-3.5" />
                         </button>
                         <FieldTypeIcon type="section" />
-                        <Input
-                          value={section.label}
+                        <ListOptionInput
+                          committedValue={section.label}
                           aria-label="Section label"
                           className="h-8"
-                          onChange={(event) =>
+                          onCommit={(next) => {
                             setLayout((current) =>
-                              relabelSection(current, section.id, event.target.value, {
-                                allowEmpty: true,
-                              }),
-                            )
-                          }
-                          onBlur={(event) => {
-                            const next = event.target.value.trim();
-                            if (next) return;
-                            setLayout((current) => relabelSection(current, section.id, "Section"));
+                              relabelSection(current, section.id, next.trim() || "Section"),
+                            );
                           }}
                           data-ff-section-label={section.id}
                         />
@@ -1074,12 +1068,12 @@ function EditPropertiesDialog({
             <Label htmlFor={`prop-label-${field.key}`} className="text-xs">
               Field name
             </Label>
-            <Input
+            <ListOptionInput
               id={`prop-label-${field.key}`}
-              value={draft.label}
+              committedValue={draft.label}
               className="mt-1 h-8"
               data-ff-field-label-input={field.key}
-              onChange={(event) => patchDraft({ label: event.target.value })}
+              onCommit={(label) => patchDraft({ label })}
             />
           </div>
           <div>
