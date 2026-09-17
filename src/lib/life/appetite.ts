@@ -1,17 +1,25 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { parseCsv } from "@/lib/import-export/csv";
-import { lifeBuildFromSheet, type LifeBuildSnapshot } from "./build";
+import {
+  applyLifeBuildSnapshot,
+  lifeBuildFromSheet,
+  loadLifeBuildTable,
+  lookupLifeBuild,
+  type LifeBuildSnapshot,
+} from "./build";
 import {
   lifeConditionKeysFromSheet,
   parseLifeConditionLabels,
   tobaccoConditionKey,
 } from "./conditions";
 import {
-  LIFE_APPETITE_OUTCOMES,
   LIFE_UW_MATRIX_COVERAGE_NOTE,
-  type LifeAppetiteOutcome,
+  combineLifeConditionAndBuild,
+  parseLifeAppetiteOutcome,
+  worstLifeOutcome,
   type LifeAppetitePrediction,
+  type LifeBuildRule,
   type LifeMatrixProduct,
   type LifeMatrixRule,
 } from "./appetite-types";
@@ -20,32 +28,16 @@ export const LIFE_UW_MATRIX_CSV = "data/appetite/fitfirst-life-uw-matrix.csv";
 export {
   LIFE_APPETITE_OUTCOMES,
   LIFE_UW_MATRIX_COVERAGE_NOTE,
+  combineLifeConditionAndBuild,
   lifeOutcomeLabel,
+  parseLifeAppetiteOutcome,
+  worstLifeOutcome,
   type LifeAppetiteOutcome,
   type LifeAppetitePrediction,
+  type LifeBuildRule,
   type LifeMatrixProduct,
   type LifeMatrixRule,
 } from "./appetite-types";
-
-const OUTCOME_RANK: Record<LifeAppetiteOutcome, number> = {
-  decline: 70,
-  call_carrier: 60,
-  graded: 50,
-  standard: 40,
-  select: 30,
-  preferred: 20,
-  accept: 10,
-  unknown: 0,
-};
-
-function parseOutcome(raw: string): LifeAppetiteOutcome | null {
-  const key = raw.trim().toLowerCase().replace(/\s+/g, "_");
-  if (!key) return null;
-  if ((LIFE_APPETITE_OUTCOMES as readonly string[]).includes(key)) {
-    return key as LifeAppetiteOutcome;
-  }
-  return null;
-}
 
 function loadMatrixText(): string {
   return readFileSync(path.join(process.cwd(), LIFE_UW_MATRIX_CSV), "utf8");
@@ -77,7 +69,7 @@ export function parseLifeUwMatrixCsv(text: string): {
       });
     }
     const conditionKey = String(row.condition_key ?? "").trim();
-    const outcome = parseOutcome(String(row.outcome ?? ""));
+    const outcome = parseLifeAppetiteOutcome(String(row.outcome ?? ""));
     if (!conditionKey || !outcome || outcome === "unknown") continue;
     rules.push({
       carrierSlug,
@@ -100,12 +92,50 @@ export function loadLifeUwMatrix(): { products: LifeMatrixProduct[]; rules: Life
   return cached;
 }
 
-export function worstLifeOutcome(outcomes: LifeAppetiteOutcome[]): LifeAppetiteOutcome {
-  let worst: LifeAppetiteOutcome = "unknown";
-  for (const outcome of outcomes) {
-    if (OUTCOME_RANK[outcome] > OUTCOME_RANK[worst]) worst = outcome;
+function conditionPrediction(
+  product: LifeMatrixProduct,
+  conditionKeys: string[],
+  productRules: LifeMatrixRule[],
+): Pick<LifeAppetitePrediction, "outcome" | "ruleText" | "coverage"> {
+  const hits: LifeMatrixRule[] = [];
+  let missing = false;
+  for (const conditionKey of conditionKeys) {
+    const match = productRules.find((rule) => rule.conditionKey === conditionKey);
+    if (match) hits.push(match);
+    else missing = true;
   }
-  return worst;
+  if (conditionKeys.length === 0 || hits.length === 0 || missing) {
+    const known = hits.length ? worstLifeOutcome(hits.map((row) => row.outcome)) : "unknown";
+    // A known decline still wins; anything else stays Unknown so we do not fake green lights.
+    const outcome = known === "decline" ? "decline" : "unknown";
+    const ruleText =
+      outcome === "decline"
+        ? hits.find((row) => row.outcome === "decline")?.ruleText ?? ""
+        : conditionKeys.length === 0
+          ? "Select Life conditions on the Risk Profile to predict MATRIX appetite."
+          : LIFE_UW_MATRIX_COVERAGE_NOTE;
+    return {
+      outcome,
+      ruleText,
+      coverage: outcome === "decline" ? "seeded" : "unknown",
+    };
+  }
+  const outcome = worstLifeOutcome(hits.map((row) => row.outcome));
+  return {
+    outcome,
+    ruleText: hits.find((row) => row.outcome === outcome)?.ruleText ?? "",
+    coverage: "seeded",
+  };
+}
+
+function pickCombinedRuleText(
+  condition: Pick<LifeAppetitePrediction, "outcome" | "ruleText">,
+  build: { outcome: LifeAppetitePrediction["outcome"]; ruleText: string },
+  combined: LifeAppetitePrediction["outcome"],
+): string {
+  if (combined === condition.outcome && condition.ruleText) return condition.ruleText;
+  if (combined === build.outcome && build.ruleText) return build.ruleText;
+  return condition.ruleText || build.ruleText;
 }
 
 export function predictLifeAppetite(input: {
@@ -114,7 +144,9 @@ export function predictLifeAppetite(input: {
   heightFt?: string | null;
   heightIn?: string | null;
   weightLbs?: string | null;
+  sex?: string | null;
   matrix?: { products: LifeMatrixProduct[]; rules: LifeMatrixRule[] };
+  buildRules?: LifeBuildRule[];
 }): {
   selectedLabels: string[];
   conditionKeys: string[];
@@ -123,11 +155,16 @@ export function predictLifeAppetite(input: {
   build: LifeBuildSnapshot;
 } {
   const matrix = input.matrix ?? loadLifeUwMatrix();
-  const build = lifeBuildFromSheet({
-    heightFt: input.heightFt,
-    heightIn: input.heightIn,
-    weightLbs: input.weightLbs,
-  });
+  const buildRules = input.buildRules ?? loadLifeBuildTable();
+  const build = applyLifeBuildSnapshot(
+    lifeBuildFromSheet({
+      heightFt: input.heightFt,
+      heightIn: input.heightIn,
+      weightLbs: input.weightLbs,
+      sex: input.sex,
+    }),
+    buildRules,
+  );
   const selectedLabels = parseLifeConditionLabels(input.medicalConditions).filter(
     (label) => label.toLowerCase() !== "none",
   );
@@ -145,43 +182,31 @@ export function predictLifeAppetite(input: {
 
   const predictions = matrix.products.map((product) => {
     const productRules = rulesByProduct.get(`${product.carrierSlug}::${product.productSlug}`) ?? [];
-    const hits: LifeMatrixRule[] = [];
-    let missing = false;
-    for (const conditionKey of conditionKeys) {
-      const match = productRules.find((rule) => rule.conditionKey === conditionKey);
-      if (match) hits.push(match);
-      else missing = true;
-    }
-    if (conditionKeys.length === 0 || hits.length === 0 || missing) {
-      const known = hits.length ? worstLifeOutcome(hits.map((row) => row.outcome)) : "unknown";
-      // A known decline still wins; anything else stays Unknown so we do not fake green lights.
-      const outcome = known === "decline" ? "decline" : "unknown";
-      const ruleText =
-        outcome === "decline"
-          ? hits.find((row) => row.outcome === "decline")?.ruleText ?? ""
-          : conditionKeys.length === 0
-            ? "Select Life conditions on the Risk Profile to predict MATRIX appetite."
-            : LIFE_UW_MATRIX_COVERAGE_NOTE;
-      return {
-        carrierSlug: product.carrierSlug,
-        carrierName: product.carrierName,
-        productSlug: product.productSlug,
-        productName: product.productName,
-        outcome,
-        ruleText,
-        coverage: outcome === "decline" ? "seeded" : "unknown",
-      } satisfies LifeAppetitePrediction;
-    }
-    const outcome = worstLifeOutcome(hits.map((row) => row.outcome));
+    const condition = conditionPrediction(product, conditionKeys, productRules);
+    const buildHit = lookupLifeBuild({
+      heightInches: build.heightInches,
+      weightLbs: build.weightLbs,
+      bmi: build.bmi,
+      sex: build.sex,
+      carrierSlug: product.carrierSlug,
+      productSlug: product.productSlug,
+      rules: buildRules,
+    });
+    const outcome = combineLifeConditionAndBuild(condition.outcome, buildHit.outcome);
+    const seeded = condition.coverage === "seeded" || buildHit.outcome !== "unknown";
+    const coverage = outcome === "unknown" || !seeded ? "unknown" : "seeded";
     return {
       carrierSlug: product.carrierSlug,
       carrierName: product.carrierName,
       productSlug: product.productSlug,
       productName: product.productName,
       outcome,
-      ruleText: hits.find((row) => row.outcome === outcome)?.ruleText ?? "",
-      coverage: "seeded" as const,
-    };
+      conditionOutcome: condition.outcome,
+      buildOutcome: buildHit.outcome,
+      buildBand: buildHit.band,
+      ruleText: pickCombinedRuleText(condition, buildHit, outcome),
+      coverage,
+    } satisfies LifeAppetitePrediction;
   });
 
   return {

@@ -88,4 +88,16 @@ Columns: `carrier_slug`, `carrier_name`, `product_slug`, `product_name`, `condit
 - `coverage=seeded` rows are the only production outcomes. v1 only seeds conditions that appear **uniform decline** across visible screenshot columns (AIDS/HIV, ALS, Alzheimer’s, Dementia, Cystic fibrosis).
 - Do **not** invent Accept / Graded / Preferred cells from screenshots. Unknown is the honest default.
 - Replace/expand this file when Javy uploads the spreadsheet — full MATRIX when spreadsheet provided.
-- Height/weight (build/BMI) tabs are a **second** predictor input. The desk already reads Risk Profile height + weight and computes BMI, but `band` stays `unknown` until those MATRIX tables are imported. Optional future column: `build_band`.
+
+## Life build / BMI (height × weight) — second predictor input
+
+| Pack | File | What it is |
+| --- | --- | --- |
+| Life build | `fitfirst-life-build.csv` | Javy MATRIX height/weight (or BMI-style) tabs, flattened. Header-only until those tabs land. |
+
+Condition × product is **primary**. Height/weight is a **second** input: the predictor maps Risk Profile height + weight (and optional Deal Details sex) to a build/BMI band, then can adjust Accept / Graded / Decline **alongside** medical conditions.
+
+- Do **not** invent WHO or carrier build charts. The live CSV is header-only; `band` stays `unknown` and the helper shows “table pending.”
+- When rows land, lookup matches `height_inches` + `weight_min`/`weight_max` (classic chart) and/or `bmi_min`/`bmi_max` (BMI-style tab). Empty `carrier_slug` / `product_slug` applies to every MATRIX product; empty `sex` applies to both.
+- Combine is worst-wins, with Unknown never upgrading to Accept: a green build row cannot mint a missing condition cell. Decline from either input wins. Graded/call-carrier from build can still surface when conditions are Unknown.
+- Flatten incoming sheet tabs into this file — full MATRIX when spreadsheet provided.

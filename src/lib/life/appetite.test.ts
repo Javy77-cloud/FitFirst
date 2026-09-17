@@ -6,12 +6,14 @@ import { LifeAppetiteHelper } from "@/components/deal/life-appetite-helper";
 import {
   LIFE_UW_MATRIX_CSV,
   LIFE_UW_MATRIX_COVERAGE_NOTE,
+  combineLifeConditionAndBuild,
   parseLifeUwMatrixCsv,
   predictLifeAppetite,
+  type LifeBuildRule,
 } from "./appetite";
 import { LIFE_LEAN_MEDICAL_CONDITION_OPTIONS, LIFE_MEDICAL_CONDITION_OPTIONS } from "./conditions";
 import { matchLifeMatrixCarrier } from "./carriers";
-import { lifeBuildFromSheet } from "./build";
+import { LIFE_BUILD_CSV, lifeBuildFromSheet, lifeBuildSummary, parseLifeBuildCsv } from "./build";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -113,10 +115,17 @@ describe("Life UW MATRIX appetite v1", () => {
   });
 
   it("computes BMI from the Risk Profile but does not invent a build band", () => {
+    const liveBuild = parseLifeBuildCsv(readFileSync(LIFE_BUILD_CSV, "utf8"));
+    expect(liveBuild).toEqual([]);
+    expect(readFileSync(LIFE_BUILD_CSV, "utf8")).toMatch(/height_inches/);
+
     const build = lifeBuildFromSheet({ heightFt: "5", heightIn: "10", weightLbs: "180" });
     expect(build.bmi).toBe(25.8);
     expect(build.band).toBe("unknown");
+    expect(build.tablePending).toBe(true);
     expect(build.note).toMatch(/full MATRIX when spreadsheet provided/i);
+    expect(lifeBuildSummary(build)).toBe("Build: BMI 25.8 (table pending)");
+
     const predicted = predictLifeAppetite({
       medicalConditions: "Asthma",
       heightFt: "5",
@@ -125,7 +134,171 @@ describe("Life UW MATRIX appetite v1", () => {
       matrix,
     });
     expect(predicted.build.bmi).toBe(25.8);
+    expect(predicted.build.tablePending).toBe(true);
     expect(predicted.predictions.every((row) => row.outcome === "unknown")).toBe(true);
+    expect(predicted.predictions.every((row) => row.buildOutcome === "unknown")).toBe(true);
+
+    const pendingHtml = renderToString(
+      createElement(LifeAppetiteHelper, {
+        selectedLabels: predicted.selectedLabels,
+        tobaccoStatus: "Never",
+        predictions: predicted.predictions,
+        coverageNote: predicted.coverageNote,
+        build: predicted.build,
+      }),
+    );
+    expect(pendingHtml).toContain("Build: BMI 25.8 (table pending)");
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/applicant_gender/);
+  });
+
+  it("lets a loaded build table adjust Graded/Decline without minting Accept", () => {
+    expect(combineLifeConditionAndBuild("unknown", "accept")).toBe("unknown");
+    expect(combineLifeConditionAndBuild("unknown", "graded")).toBe("graded");
+    expect(combineLifeConditionAndBuild("unknown", "decline")).toBe("decline");
+    expect(combineLifeConditionAndBuild("accept", "graded")).toBe("graded");
+    expect(combineLifeConditionAndBuild("decline", "accept")).toBe("decline");
+    expect(combineLifeConditionAndBuild("accept", "unknown")).toBe("accept");
+
+    const heightWeightGraded: LifeBuildRule = {
+      carrierSlug: "",
+      carrierName: "",
+      productSlug: "",
+      productName: "",
+      sex: "",
+      heightInches: 70,
+      weightMin: 170,
+      weightMax: 190,
+      bmiMin: null,
+      bmiMax: null,
+      band: "standard",
+      outcome: "graded",
+      ruleText: "Test fixture: 5'10\" 170-190 graded. Not a carrier chart.",
+      coverage: "seeded",
+      source: "test_fixture",
+    };
+    const bmiDecline: LifeBuildRule = {
+      ...heightWeightGraded,
+      heightInches: null,
+      weightMin: null,
+      weightMax: null,
+      bmiMin: 40,
+      bmiMax: 80,
+      band: "decline",
+      outcome: "decline",
+      ruleText: "Test fixture: BMI 40+ decline. Not a carrier chart.",
+    };
+    const maleOnlyDecline: LifeBuildRule = {
+      ...heightWeightGraded,
+      sex: "male",
+      outcome: "decline",
+      band: "decline",
+      ruleText: "Test fixture: male 5'10\" 170-190 decline.",
+    };
+
+    const asthma = predictLifeAppetite({
+      medicalConditions: "Asthma",
+      heightFt: "5",
+      heightIn: "10",
+      weightLbs: "180",
+      matrix,
+      buildRules: [heightWeightGraded],
+    });
+    expect(asthma.build.tablePending).toBe(false);
+    expect(asthma.build.band).toBe("standard");
+    expect(asthma.predictions.every((row) => row.conditionOutcome === "unknown")).toBe(true);
+    expect(asthma.predictions.every((row) => row.buildOutcome === "graded")).toBe(true);
+    expect(asthma.predictions.every((row) => row.outcome === "graded")).toBe(true);
+    expect(asthma.predictions.every((row) => row.buildBand === "standard")).toBe(true);
+
+    const acceptDoesNotFill = predictLifeAppetite({
+      medicalConditions: "Asthma",
+      heightFt: "5",
+      heightIn: "10",
+      weightLbs: "180",
+      matrix,
+      buildRules: [{ ...heightWeightGraded, outcome: "accept", band: "preferred" }],
+    });
+    expect(acceptDoesNotFill.predictions.every((row) => row.buildOutcome === "accept")).toBe(true);
+    expect(acceptDoesNotFill.predictions.every((row) => row.outcome === "unknown")).toBe(true);
+
+    const aids = predictLifeAppetite({
+      medicalConditions: "AIDS / HIV",
+      heightFt: "5",
+      heightIn: "10",
+      weightLbs: "180",
+      matrix,
+      buildRules: [{ ...heightWeightGraded, outcome: "accept", band: "preferred" }],
+    });
+    expect(aids.predictions.every((row) => row.outcome === "decline")).toBe(true);
+
+    const heavy = predictLifeAppetite({
+      medicalConditions: "Asthma",
+      heightFt: "5",
+      heightIn: "10",
+      weightLbs: "320",
+      matrix,
+      buildRules: [bmiDecline],
+    });
+    expect(heavy.predictions.every((row) => row.outcome === "decline")).toBe(true);
+
+    const femaleSkipsMaleRule = predictLifeAppetite({
+      medicalConditions: "Asthma",
+      heightFt: "5",
+      heightIn: "10",
+      weightLbs: "180",
+      sex: "Female",
+      matrix,
+      buildRules: [maleOnlyDecline],
+    });
+    expect(femaleSkipsMaleRule.build.sex).toBe("female");
+    expect(femaleSkipsMaleRule.predictions.every((row) => row.buildOutcome === "unknown")).toBe(true);
+    expect(femaleSkipsMaleRule.predictions.every((row) => row.outcome === "unknown")).toBe(true);
+
+    const maleHits = predictLifeAppetite({
+      medicalConditions: "Asthma",
+      heightFt: "5",
+      heightIn: "10",
+      weightLbs: "180",
+      sex: "Male",
+      matrix,
+      buildRules: [maleOnlyDecline],
+    });
+    expect(maleHits.predictions.every((row) => row.outcome === "decline")).toBe(true);
+
+    const acceptMatrix = {
+      products: [
+        {
+          carrierSlug: "americo",
+          carrierName: "Americo",
+          productSlug: "fixture",
+          productName: "Fixture",
+          ageMin: "18",
+          ageMax: "75",
+        },
+      ],
+      rules: [
+        {
+          carrierSlug: "americo",
+          productSlug: "fixture",
+          conditionKey: "asthma",
+          outcome: "accept" as const,
+          ruleText: "Test fixture accept.",
+          coverage: "seeded",
+          source: "test_fixture",
+        },
+      ],
+    };
+    const worsened = predictLifeAppetite({
+      medicalConditions: "Asthma",
+      heightFt: "5",
+      heightIn: "10",
+      weightLbs: "180",
+      matrix: acceptMatrix,
+      buildRules: [heightWeightGraded],
+    });
+    expect(worsened.predictions).toHaveLength(1);
+    expect(worsened.predictions[0]?.conditionOutcome).toBe("accept");
+    expect(worsened.predictions[0]?.outcome).toBe("graded");
   });
 
   it("matches MATRIX Life carriers by public name without inventing contacts", () => {

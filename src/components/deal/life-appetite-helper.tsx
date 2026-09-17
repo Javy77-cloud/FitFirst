@@ -4,7 +4,7 @@ import {
   type LifeAppetiteOutcome,
   type LifeAppetitePrediction,
 } from "@/lib/life/appetite-types";
-import type { LifeBuildSnapshot } from "@/lib/life/build";
+import { lifeBuildSummary, type LifeBuildSnapshot } from "@/lib/life/build";
 import { cn } from "@/lib/utils";
 
 const OUTCOME_TONE: Record<LifeAppetiteOutcome, string> = {
@@ -32,6 +32,7 @@ export function LifeAppetiteHelper({
   build?: LifeBuildSnapshot | null;
 }) {
   const tobacco = String(tobaccoStatus ?? "").trim();
+  const buildLine = lifeBuildSummary(build);
   const counts = predictions.reduce(
     (acc, row) => {
       acc[row.outcome] += 1;
@@ -64,12 +65,12 @@ export function LifeAppetiteHelper({
           unknown
         </p>
       </div>
-      <p className="text-xs text-navy" data-ff-life-appetite-conditions="">
+      <p className="text-xs text-navy" data-ff-life-appetite-conditions="" data-ff-life-appetite-build={buildLine || undefined}>
         {selectedLabels.length
           ? `Conditions: ${selectedLabels.join(", ")}`
           : "No Life conditions selected on the Risk Profile."}
         {tobacco ? ` · Tobacco: ${tobacco}` : ""}
-        {build?.bmi ? ` · Build: BMI ${build.bmi} (table pending)` : ""}
+        {buildLine ? ` · ${buildLine}` : ""}
       </p>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" data-ff-life-appetite-cards="">
         {predictions.map((row) => (

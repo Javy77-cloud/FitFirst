@@ -506,13 +506,22 @@ export default async function DealPage({
           heightFt: activeSheet.values.height_ft?.value ?? "",
           heightIn: activeSheet.values.height_in?.value ?? "",
           weightLbs: activeSheet.values.weight?.value ?? "",
+          sex: activeSheet.values.applicant_gender?.value || dealValues.applicant_gender || "",
         })
       : {
           selectedLabels: [],
           conditionKeys: [],
           predictions: [],
           coverageNote: "",
-          build: { heightInches: null, weightLbs: null, bmi: null, band: "unknown" as const, note: "" },
+          build: {
+            heightInches: null,
+            weightLbs: null,
+            bmi: null,
+            sex: "" as const,
+            band: "unknown",
+            tablePending: true,
+            note: "",
+          },
         };
   return (
     <AppShell
