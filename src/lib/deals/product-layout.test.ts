@@ -125,4 +125,39 @@ describe("deal details shared body + product overlay", () => {
     expect(productSectionProgress("auto", { vin: "1" }).filled).toBe(1);
     expect(productSectionProgress("auto", { vin: "1" }).complete).toBe(false);
   });
+
+  it("drops landlord / rental keys from the live Deal Details body", () => {
+    const dirty = {
+      columns: [
+        {
+          id: "left",
+          sections: [
+            {
+              id: "insured_address",
+              label: "Insured Address",
+              fieldKeys: ["mailing_address", "primary_heat", "lease_term"],
+            },
+          ],
+        },
+        {
+          id: "right",
+          sections: [
+            {
+              id: "landlord",
+              label: "Landlord",
+              fieldKeys: ["tenant_name", "landlord_liability"],
+            },
+          ],
+        },
+      ],
+    } as FieldLayout;
+    const live = layoutForActiveProduct(dirty, "landlord");
+    const keys = allLayoutFieldKeys(live);
+    expect(keys).toEqual(["mailing_address"]);
+    expect(keys).not.toContain("primary_heat");
+    expect(keys).not.toContain("lease_term");
+    expect(productLayoutFields("landlord").map((field) => field.key)).toEqual(
+      expect.arrayContaining(["lease_term", "primary_heat"]),
+    );
+  });
 });

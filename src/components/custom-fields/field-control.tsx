@@ -81,22 +81,26 @@ export function FieldControl({
   onValueChange?: (value: string) => void;
 }) {
   const identityField = canonicalizeIdentityField(field);
-  const resolved = resolvedFieldValue(identityField, value);
-  const required = Boolean(identityField.required);
   const industryParent = occupationIndustryParentKey(identityField.key);
+  const cascadeField =
+    industryParent && identityField.type !== "picklist"
+      ? { ...identityField, type: "picklist" as const }
+      : identityField;
+  const resolved = resolvedFieldValue(cascadeField, value);
+  const required = Boolean(cascadeField.required);
   const cascadeOptions = industryParent
     ? occupationsForIndustry(values[industryParent])
     : null;
-  const preserveOrder = Boolean(industryParent) || isIndustryCascadeParent(identityField.key);
-  const rawOptions = cascadeOptions ?? identityField.options ?? [];
+  const preserveOrder = Boolean(industryParent) || isIndustryCascadeParent(cascadeField.key);
+  const rawOptions = cascadeOptions ?? cascadeField.options ?? [];
   const options = preserveOrder
     ? uniqueOptionsPreserveOrder(rawOptions)
     : sanitizePicklistOptions(rawOptions);
 
   return (
-    <div data-ff-control-type={identityField.type} data-ff-control-key={identityField.key}>
+    <div data-ff-control-type={cascadeField.type} data-ff-control-key={cascadeField.key}>
       <TypedControl
-        field={identityField}
+        field={cascadeField}
         value={resolved}
         values={values}
         name={name}

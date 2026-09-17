@@ -69,6 +69,24 @@ import {
   type FieldPermissionLevel,
   type FieldPermissions,
 } from "@/lib/custom-fields/types";
+import {
+  isDealDetailsLandlordFieldKey,
+  layoutWithoutDealDetailsLandlord,
+} from "@/lib/custom-fields/deal-details-landlord";
+import {
+  LIVED_AT_ADDRESS_5_YEARS_KEY,
+  isNoLivedAtAddress5Years,
+  isPreviousAddressFieldKey,
+} from "@/lib/custom-fields/mailing-same";
+import {
+  isIndustryCascadeParent,
+  occupationValueAfterIndustryChange,
+} from "@/lib/custom-fields/industry-occupation";
+
+function editorLayout(module: FieldLayoutModule, layout: FieldLayout): FieldLayout {
+  const parsed = parseLayout(layout);
+  return module === "deals" ? layoutWithoutDealDetailsLandlord(parsed) : parsed;
+}
 
 type DragPayload =
   | { kind: "field"; key: string }
@@ -182,8 +200,11 @@ export function FieldBuilder({
   picklists?: FieldPicklist[];
 }) {
   const moduleLabel = fieldLayoutModuleLabel(module);
-  const [layout, setLayout] = useState(() => parseLayout(initialLayout));
+  const [layout, setLayout] = useState(() => editorLayout(module, initialLayout));
   const [fields, setFields] = useState(() => asList(initialFields));
+  const [liveValues, setLiveValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(asList(initialFields).map((field) => [field.key, field.defaultValue ?? ""])),
+  );
   const [drag, setDrag] = useState<DragPayload | null>(null);
   const [dropHint, setDropHint] = useState<DropHint | null>(null);
   const [dialog, setDialog] = useState<FieldDialog>(null);
@@ -197,14 +218,33 @@ export function FieldBuilder({
   } | null>(null);
   const layoutSyncKey = `${module}:${line}:${JSON.stringify(initialLayout)}`;
   useEffect(() => {
-    const next = parseLayout(initialLayout);
+    const next = editorLayout(module, initialLayout);
     setLayout(next);
-    setFields(resolveLayoutFields(next, asList(initialFields)));
+    const nextFields = resolveLayoutFields(next, asList(initialFields));
+    setFields(nextFields);
+    setLiveValues((prev) => {
+      const updated = { ...prev };
+      for (const field of nextFields) {
+        if (updated[field.key] === undefined) updated[field.key] = field.defaultValue ?? "";
+      }
+      return updated;
+    });
     // Sync when Edit Layout opens a different module/line/saved layout.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by layoutSyncKey
   }, [layoutSyncKey]);
   const byKey = useMemo(() => Object.fromEntries(fields.map((field) => [field.key, field])), [fields]);
   const dialogField = dialog ? byKey[dialog.key] : undefined;
+
+  function patchPreviewValue(key: string, next: string) {
+    setLiveValues((prev) => {
+      const updated: Record<string, string> = { ...prev, [key]: next };
+      if (isIndustryCascadeParent(key)) {
+        const child = key.replace(/_industry$/, "_occupation");
+        updated[child] = occupationValueAfterIndustryChange(next, updated[child]);
+      }
+      return updated;
+    });
+  }
 
   function onDragStart(payload: DragPayload, event: React.DragEvent) {
     event.stopPropagation();
@@ -663,6 +703,14 @@ export function FieldBuilder({
                     </div>
                   ) : null}
                   {asList(section.fieldKeys).map((key, fieldIndex) => {
+                    if (module === "deals" && isDealDetailsLandlordFieldKey(key)) return null;
+                    if (
+                      preview &&
+                      isPreviousAddressFieldKey(key) &&
+                      !isNoLivedAtAddress5Years(liveValues)
+                    ) {
+                      return null;
+                    }
                     const field = byKey[key] ?? {
                       key,
                       label: humanizeFieldKey(key),
@@ -676,7 +724,8 @@ export function FieldBuilder({
                           field={field}
                           preview={preview}
                           dragging={drag?.kind === "field" && drag.key === key}
-                          values={Object.fromEntries(fields.map((item) => [item.key, item.defaultValue ?? ""]))}
+                          values={liveValues}
+                          onValueChange={(next) => patchPreviewValue(key, next)}
                           onDragStart={(event) => onDragStart({ kind: "field", key }, event)}
                           onPointerDown={(event) => beginPointerDrag({ kind: "field", key }, event)}
                           onDragOver={(event) => {
@@ -750,11 +799,22 @@ function DropLine() {
   );
 }
 
+function fieldVisibilityHint(fieldKey: string): string | null {
+  if (fieldKey === LIVED_AT_ADDRESS_5_YEARS_KEY) {
+    return "No reveals previous address";
+  }
+  if (isPreviousAddressFieldKey(fieldKey)) {
+    return "Shown when lived here is No";
+  }
+  return null;
+}
+
 function BuilderFieldRow({
   field,
   preview,
   dragging,
   values,
+  onValueChange,
   onDragStart,
   onPointerDown,
   onDragOver,
@@ -769,6 +829,7 @@ function BuilderFieldRow({
   preview: boolean;
   dragging?: boolean;
   values: Record<string, string>;
+  onValueChange?: (value: string) => void;
   onDragStart: (event: React.DragEvent) => void;
   onPointerDown: (event: React.PointerEvent) => void;
   onDragOver: (event: React.DragEvent) => void;
@@ -779,6 +840,7 @@ function BuilderFieldRow({
   onDuplicate: () => void;
   onRemove: () => void;
 }) {
+  const hint = fieldVisibilityHint(field.key);
   if (preview) {
     return (
       <div
@@ -796,7 +858,13 @@ function BuilderFieldRow({
           {field.label}
           {field.required ? <span className="text-destructive">*</span> : null}
         </label>
-        <FieldControl field={field} value={field.defaultValue ?? ""} values={values} name={`preview_${field.key}`} />
+        <FieldControl
+          field={field}
+          value={values[field.key] ?? field.defaultValue ?? ""}
+          values={values}
+          name={`preview_${field.key}`}
+          onValueChange={onValueChange}
+        />
       </div>
     );
   }
@@ -830,6 +898,14 @@ function BuilderFieldRow({
           {field.label}
         </span>
         {field.required ? <span className="text-destructive">*</span> : null}
+        {hint ? (
+          <span
+            className="truncate text-[10px] font-medium text-muted-foreground"
+            data-ff-field-visibility-hint={field.key}
+          >
+            {hint}
+          </span>
+        ) : null}
       </span>
       <div
         onPointerDown={(event) => event.stopPropagation()}

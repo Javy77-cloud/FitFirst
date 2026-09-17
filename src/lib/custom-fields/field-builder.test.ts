@@ -109,6 +109,12 @@ describe("deal field builder", () => {
     expect(source("src/app/settings/field-builder/page.tsx")).not.toMatch(/Homeowners/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/saveLayoutForEveryLine/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/saveDealFieldLayout/);
+    expect(source("src/app/actions/custom-fields.ts")).toMatch(/layoutWithoutDealDetailsLandlord/);
+    expect(builder).toMatch(/data-ff-field-visibility-hint/);
+    expect(builder).toMatch(/Shown when lived here is No/);
+    expect(builder).toMatch(/layoutWithoutDealDetailsLandlord/);
+    expect(builder).toMatch(/isPreviousAddressFieldKey/);
+    expect(builder).toMatch(/occupationValueAfterIndustryChange/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/upsertFieldDef/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(
       /flashAction\(fieldBuilderHref\(module, line\), "layout-saved"\)/,
@@ -118,7 +124,8 @@ describe("deal field builder", () => {
   it("renders each field type as that type — not a text-box fake", () => {
     const control = source("src/components/custom-fields/field-control.tsx");
     const builder = source("src/components/custom-fields/field-builder.tsx");
-    expect(control).toMatch(/data-ff-control-type=\{identityField.type\}/);
+    expect(control).toMatch(/data-ff-control-type=\{cascadeField.type\}/);
+    expect(control).toMatch(/occupationIndustryParentKey/);
     expect(control).toMatch(/data-ff-currency-input/);
     expect(control).toMatch(/\$/);
     expect(control).toMatch(/data-ff-percent-input/);
@@ -413,12 +420,16 @@ describe("deal field builder", () => {
       "Details",
     ]);
     expect(homeKeys).toEqual(expect.arrayContaining(["insurance_type", "insurance_category", "insurance_subtype"]));
+    expect(homeKeys).not.toContain("lease_term");
+    expect(homeKeys).not.toContain("primary_heat");
   });
 
   it("keeps LOB field catalogs so the builder can add them later", () => {
     expect(defaultFieldsForLine("HO").map((field) => field.key)).toEqual(
       expect.arrayContaining(["roof_year", "coverage_a", "roof_photo"]),
     );
+    expect(defaultFieldsForLine("HO").map((field) => field.key)).not.toContain("lease_term");
+    expect(defaultFieldsForLine("HO").map((field) => field.key)).not.toContain("primary_heat");
     expect(defaultFieldsForLine("GL").map((field) => field.key)).toEqual(
       expect.arrayContaining(["legal_name", "class_code", "occupancy"]),
     );

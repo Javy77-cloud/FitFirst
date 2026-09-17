@@ -1,4 +1,5 @@
 import type { CustomFieldDef, FieldLayout, LayoutSection } from "@/lib/custom-fields/types";
+import { isDealDetailsLandlordFieldKey } from "@/lib/custom-fields/deal-details-landlord";
 import {
   CONSTRUCTION_OPTIONS,
   FLOOD_ZONE_OPTIONS,
@@ -302,10 +303,14 @@ export function layoutForActiveProduct(
   const right = layout.columns[1] ?? { id: "right", sections: [] };
   const sharedLeft = left.sections.filter(isSharedDealSection);
   const sharedRight = right.sections.filter(isSharedDealSection);
+  const dropLandlord = (section: LayoutSection): LayoutSection => ({
+    ...section,
+    fieldKeys: section.fieldKeys.filter((key) => !isDealDetailsLandlordFieldKey(key)),
+  });
   return {
     columns: [
-      { ...left, sections: sharedLeft },
-      { ...right, sections: sharedRight },
+      { ...left, sections: sharedLeft.map(dropLandlord) },
+      { ...right, sections: sharedRight.map(dropLandlord) },
     ],
   };
 }

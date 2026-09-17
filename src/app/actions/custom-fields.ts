@@ -46,6 +46,7 @@ import {
   layoutContainsFieldKey,
 } from "@/lib/custom-fields/layout";
 import { canonicalizeIdentityField } from "@/lib/custom-fields/identity-field";
+import { layoutWithoutDealDetailsLandlord } from "@/lib/custom-fields/deal-details-landlord";
 import {
   allLayoutFieldKeys,
   isCustomFieldType,
@@ -146,7 +147,8 @@ export async function saveDealFieldLayout(formData: FormData) {
   }
   if (module === "deals") {
     // Deals only: one layout mirrored to every LOB line — never call this for leads/etc.
-    await saveLayoutForEveryLine(layout);
+    // Landlord/rental keys stay off Details even if an older editor payload still has them.
+    await saveLayoutForEveryLine(layoutWithoutDealDetailsLandlord(layout));
   } else {
     await saveLayoutForModule(module, layout);
   }

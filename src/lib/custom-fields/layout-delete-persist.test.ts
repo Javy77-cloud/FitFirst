@@ -57,6 +57,8 @@ describe("deal layout delete persists on Save", () => {
     const store = source("src/lib/custom-fields/store.ts");
     expect(store).toMatch(/withLayoutRevision\(layout, AGENCY_LAYOUT_REVISION\)/);
     expect(store).toMatch(/one-time for pre-personal layouts only/);
+    expect(store).toMatch(/migrateDealLandlordStrip/);
+    expect(store).toMatch(/stripDealDetailsLandlordFields/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/saveDealFieldLayout/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/saveLayoutForEveryLine/);
     expect(source("src/components/custom-fields/field-builder.tsx")).toMatch(
