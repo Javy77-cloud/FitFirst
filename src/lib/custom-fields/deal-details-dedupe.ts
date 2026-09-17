@@ -3,6 +3,8 @@
  * Prefer existing applicant_* / contact keys over contact-module aliases.
  */
 export const DEAL_DETAILS_ALIAS_CANONICAL: Record<string, string> = {
+  selling_agency: "picklist_yp0c",
+  sellingAgency: "picklist_yp0c",
   marital_status: "applicant_marital_status",
   gender: "applicant_gender",
   occupation: "applicant_occupation",

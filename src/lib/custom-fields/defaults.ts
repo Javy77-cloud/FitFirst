@@ -86,6 +86,14 @@ export const CORE_FIELDS: CustomFieldDef[] = [
     systemKey: "quotingForm",
     required: true,
   },
+  {
+    key: "picklist_yp0c",
+    label: "Selling agency",
+    type: "picklist",
+    options: [],
+    required: true,
+    globalListKey: "selling_agency",
+  },
   ...APPLICANT_CRM_FIELDS,
   ...CO_APPLICANT_CRM_FIELDS,
   ...BUSINESS_IDENTITY_FIELDS.filter(
@@ -205,7 +213,12 @@ function essentialSections(): { left: LayoutSection[]; right: LayoutSection[] } 
         "contact_mailing_zip",
         "contact_mailing_county",
       ]),
-      section("pipeline", "Pipeline", ["insurance_type", "insurance_category", "insurance_subtype"]),
+      section("pipeline", "Pipeline", [
+        "insurance_type",
+        "insurance_category",
+        "insurance_subtype",
+        "picklist_yp0c",
+      ]),
     ],
   };
 }

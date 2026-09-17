@@ -36,6 +36,15 @@ import {
   stripDealDetailsLandlordFields,
 } from "./deal-details-landlord";
 import { migrateLeadLayout, needsLeadLayoutMigration } from "./migrate-lead-layout";
+import { syncDealSellingAgencyFromGlobalLists } from "./sync-deal-selling-agency";
+import {
+  canonicalizeSellingAgencyLayout,
+  canonicalizeSellingAgencyValues,
+  DEAL_SELLING_AGENCY_FIELD,
+  DEAL_SELLING_AGENCY_KEY,
+  layoutsEqualForSellingAgency,
+  mergeSellingAgencyStoredValues,
+} from "@/lib/deals/selling-agency";
 import { APPLICANT_CUSTOM_KEYS } from "./applicant-fields";
 import { canonicalizeIdentityField, identityTypeNeedsRepair } from "./identity-field";
 import { defaultFieldPermissions, parseFieldPermissions, parseLayout } from "./types";
@@ -203,6 +212,7 @@ export async function ensureDealFieldCatalog() {
   }
   await ensureDealCoreLabelUpgrades();
   await ensureInsuranceSubtypeField();
+  await ensureSellingAgencyCatalogFields("deals");
   const rows = await db
     .select()
     .from(deskCustomFields)
@@ -338,6 +348,58 @@ const OCCUPATION_FIELD_KEYS_BY_MODULE: Partial<Record<FieldLayoutModule, string[
 };
 
 /** Bind CRM occupation fields to the shared Occupations global picklist. */
+async function ensureSellingAgencyCatalogFields(module: "deals" | "leads") {
+  const [row] = await db
+    .select()
+    .from(deskCustomFields)
+    .where(
+      and(
+        eq(deskCustomFields.tenantId, DEFAULT_TENANT_ID),
+        eq(deskCustomFields.module, module),
+        eq(deskCustomFields.key, DEAL_SELLING_AGENCY_KEY),
+      ),
+    );
+  if (!row) {
+    await insertMissingFields(module, [DEAL_SELLING_AGENCY_FIELD]);
+  } else if (
+    !row.required ||
+    row.globalListKey !== "selling_agency" ||
+    row.type !== "picklist"
+  ) {
+    await db
+      .update(deskCustomFields)
+      .set({
+        type: "picklist",
+        required: true,
+        picklistId: null,
+        globalListKey: "selling_agency",
+        updatedAt: new Date(),
+      })
+      .where(eq(deskCustomFields.id, row.id));
+  }
+  await syncDealSellingAgencyFromGlobalLists().catch(() => null);
+}
+
+async function persistCanonicalSellingAgencyLayout(
+  module: FieldLayoutModule,
+  rows: { id: string; columns: unknown }[],
+  picked: FieldLayout,
+  fields: ReadonlyArray<{ key: string; label?: string | null; globalListKey?: string | null }>,
+): Promise<FieldLayout> {
+  const next = canonicalizeSellingAgencyLayout(picked, fields);
+  if (layoutsEqualForSellingAgency(picked, next)) return picked;
+  for (const row of rows) {
+    const parsed = parseLayout(row.columns);
+    const remapped = canonicalizeSellingAgencyLayout(parsed, fields);
+    if (layoutsEqualForSellingAgency(parsed, remapped)) continue;
+    await db
+      .update(deskFieldLayouts)
+      .set({ columns: remapped, updatedAt: new Date() })
+      .where(eq(deskFieldLayouts.id, row.id));
+  }
+  return next;
+}
+
 async function ensureOccupationFieldBindings(module: FieldLayoutModule) {
   const keys = OCCUPATION_FIELD_KEYS_BY_MODULE[module];
   if (!keys?.length) return;
@@ -561,6 +623,7 @@ export async function ensureModuleFieldCatalog(module: FieldLayoutModule) {
   if (module === "leads") {
     await ensureLeadCatalogUpgrades();
     await ensureLeadInsuranceTypeOptions();
+    await ensureSellingAgencyCatalogFields("leads");
   }
   if (module === "contacts") await ensureContactCatalogUpgrades();
   if (module === "tasks") await ensureTaskCatalogUpgrades();
@@ -732,6 +795,7 @@ export async function loadLayoutForLine(line: string): Promise<FieldLayout> {
 
 export async function saveLayoutForLine(line: string, layout: FieldLayout) {
   const lob = (LINES as readonly string[]).includes(line) ? line : "HO";
+  layout = canonicalizeSellingAgencyLayout(layout);
   const owned = withLayoutRevision(layout, AGENCY_LAYOUT_REVISION);
   await db
     .insert(deskFieldLayouts)
@@ -766,7 +830,9 @@ export async function loadLayoutForModule(module: FieldLayoutModule, line = "HO"
         const dealLayout = await migratePackedDealLayouts(rows, picked);
         const withAddresses = await migrateAddressSections(module, rows, dealLayout);
         const withParity = await migrateDealParityLayouts(rows, withAddresses);
-        return migrateDealLandlordStrip(rows, withParity);
+        const stripped = await migrateDealLandlordStrip(rows, withParity);
+        const fields = await listFieldDefs("deals").catch(() => []);
+        return persistCanonicalSellingAgencyLayout("deals", rows, stripped, fields);
       }
       // Tip sep7hk: carriers sparse seed still gets full catalog in Edit Layout.
       // Tip sep7jr: leads/contacts/etc keep agency removals — do not resurrect deleted fields.
@@ -777,7 +843,9 @@ export async function loadLayoutForModule(module: FieldLayoutModule, line = "HO"
       }
       if (module === "leads") {
         const leadLayout = await migrateLeadLayouts(rows, picked);
-        return migrateAddressSections(module, rows, leadLayout);
+        const withAddresses = await migrateAddressSections(module, rows, leadLayout);
+        const fields = await listFieldDefs("leads").catch(() => []);
+        return persistCanonicalSellingAgencyLayout("leads", rows, withAddresses, fields);
       }
       if (module === "contacts") {
         return ensureContactDetailLayout();
@@ -812,6 +880,7 @@ export async function saveLayoutForModule(module: FieldLayoutModule, layout: Fie
     await saveLayoutForEveryLine(layout);
     return;
   }
+  if (module === "leads") layout = canonicalizeSellingAgencyLayout(layout);
   const owned = withLayoutRevision(layout, AGENCY_LAYOUT_REVISION);
   await db
     .insert(deskFieldLayouts)
@@ -866,6 +935,11 @@ export async function loadRecordValuesForIds(
       current[row.fieldKey] = row.value ?? "";
       out.set(row.recordId, current);
     }
+    if (module === "deals" || module === "leads") {
+      for (const [recordId, values] of out) {
+        out.set(recordId, mergeSellingAgencyStoredValues(values));
+      }
+    }
   } catch {
     return out;
   }
@@ -877,7 +951,9 @@ export async function writeRecordValues(
   values: Record<string, string>,
   module: FieldLayoutModule = "deals",
 ) {
-  for (const [fieldKey, value] of Object.entries(values)) {
+  const entries =
+    module === "deals" || module === "leads" ? canonicalizeSellingAgencyValues(values) : values;
+  for (const [fieldKey, value] of Object.entries(entries)) {
     await db
       .insert(deskCustomFieldValues)
       .values({

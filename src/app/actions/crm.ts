@@ -81,6 +81,10 @@ import { addressVerifyValuesFromForm } from "@/lib/address/verify-state";
 import { customValuesFromForm } from "@/lib/custom-fields/resolve-layout";
 import { isRedirectError } from "@/lib/lifecycle/shop";
 import { dealListCascadeSyncValues, mergeCascadePrefill } from "@/lib/deals/insurance-cascade";
+import {
+  DEAL_SELLING_AGENCY_KEY,
+  defaultSellingAgencyValue,
+} from "@/lib/deals/selling-agency";
 import { applySystemDealValues } from "@/app/actions/custom-fields";
 import { listFieldDefs, writeRecordValues } from "@/lib/custom-fields/store";
 import { normalizeLeadCadence } from "@/lib/leads/queue";
@@ -254,6 +258,12 @@ export async function createLead(formData: FormData) {
   const linkedContactId = isUuid(str(formData, "contactId")) ? str(formData, "contactId") : "";
   const defs = await listFieldDefs("leads").catch(() => []);
   const custom = customValuesFromForm(formData, defs);
+  if (!String(custom[DEAL_SELLING_AGENCY_KEY] ?? "").trim()) {
+    const agency = defaultSellingAgencyValue(
+      defs.find((field) => field.key === DEAL_SELLING_AGENCY_KEY)?.options,
+    );
+    if (agency) custom[DEAL_SELLING_AGENCY_KEY] = agency;
+  }
   delete custom.cadence;
   delete custom.status;
   delete custom.temperature;
@@ -1832,6 +1842,12 @@ async function persistNewDealLayoutValues(
   }
   const fein = str(formData, "field_ein") || str(formData, "field_fein");
   if (fein && !String(custom.ein ?? "").trim()) custom.ein = fein;
+  if (!String(custom[DEAL_SELLING_AGENCY_KEY] ?? "").trim()) {
+    const agency = defaultSellingAgencyValue(
+      catalog.find((field) => field.key === DEAL_SELLING_AGENCY_KEY)?.options,
+    );
+    if (agency) custom[DEAL_SELLING_AGENCY_KEY] = agency;
+  }
   Object.assign(
     custom,
     dealListCascadeSyncValues({

@@ -303,7 +303,9 @@ function TypedControl({
         required={required}
         form={form}
         aria-label={field.label}
-        className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm"
+        className={`mt-1 h-8 w-full rounded-md border bg-background px-2 text-sm ${
+          required && !value ? "border-red-600" : "border-border"
+        }`}
         data-ff-picklist={field.key}
       >
         {industryFirst ? (

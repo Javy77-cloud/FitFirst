@@ -62,6 +62,7 @@ describe("deal details shared body + product overlay", () => {
       "insurance_type",
       "insurance_category",
       "insurance_subtype",
+      "picklist_yp0c",
     ]);
     expect(home.columns[1].sections.some((section) => section.id === productSectionId("homeowners"))).toBe(
       false,

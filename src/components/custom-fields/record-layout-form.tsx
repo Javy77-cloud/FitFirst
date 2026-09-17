@@ -26,6 +26,12 @@ import {
 import { asList } from "@/lib/safe-list";
 import type { PipelineFamily } from "@/lib/deals/insurance-cascade";
 import type { DeskLineSettings } from "@/lib/desk/line-settings";
+import {
+  DEAL_SELLING_AGENCY_FIELD,
+  DEAL_SELLING_AGENCY_KEY,
+  defaultSellingAgencyValue,
+  isSellingAgencyField,
+} from "@/lib/deals/selling-agency";
 
 export function RecordLayoutFields({
   module,
@@ -54,7 +60,12 @@ export function RecordLayoutFields({
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
 }) {
   const safeLayout = parseLayout(layout);
-  const fieldList = resolveLayoutFields(safeLayout, asList(fields));
+  const fieldList = resolveLayoutFields(
+    safeLayout,
+    asList(fields).some((field) => field.key === DEAL_SELLING_AGENCY_KEY)
+      ? asList(fields)
+      : [...asList(fields), DEAL_SELLING_AGENCY_FIELD],
+  );
   const byKey = Object.fromEntries(fieldList.map((field) => [field.key, field]));
   const inline = Boolean(clickToEdit && recordId);
   const layoutColumns = asList(safeLayout.columns);
@@ -62,11 +73,17 @@ export function RecordLayoutFields({
   const activeColumns = layoutColumns.filter((column) => asList(column.sections).length > 0);
   const oneCol = activeColumns.length <= 1;
   const commercial = module === "businesses" || fieldList.some((field) => field.key === "business_name");
-  const [liveValues, setLiveValues] = useState<Record<string, string>>(() => ({
-    ...values,
-    [MAILING_SAME_AS_INSURED_KEY]:
-      values[MAILING_SAME_AS_INSURED_KEY] || (isMailingSameAsInsured(values) ? "true" : "false"),
-  }));
+  const [liveValues, setLiveValues] = useState<Record<string, string>>(() => {
+    const selling =
+      values[DEAL_SELLING_AGENCY_KEY] ||
+      defaultSellingAgencyValue(fieldList.find((field) => field.key === DEAL_SELLING_AGENCY_KEY)?.options);
+    return {
+      ...values,
+      [MAILING_SAME_AS_INSURED_KEY]:
+        values[MAILING_SAME_AS_INSURED_KEY] || (isMailingSameAsInsured(values) ? "true" : "false"),
+      ...(selling ? { [DEAL_SELLING_AGENCY_KEY]: selling } : {}),
+    };
+  });
 
   function patchValue(key: string, next: string) {
     setLiveValues((prev) => ({ ...prev, [key]: next }));
@@ -111,7 +128,10 @@ export function RecordLayoutFields({
               ) : null}
               <LayoutSectionFieldGrid
                 density={section}
-                keys={asList(section.fieldKeys).filter((key) => {
+                keys={asList(section.fieldKeys)
+                  .map((key) => (isSellingAgencyField({ key, label: byKey[key]?.label }) ? DEAL_SELLING_AGENCY_KEY : key))
+                  .filter((key, index, all) => all.indexOf(key) === index)
+                  .filter((key) => {
                   const field = byKey[key] ?? { key, label: key, type: "single_line" as const };
                   const layoutHasType =
                     asList(section.fieldKeys).includes("insurance_type") ||
@@ -143,16 +163,39 @@ export function RecordLayoutFields({
                   return (
                     <div className="space-y-1" data-ff-record-field={key}>
                       {key === "insurance_type" ? null : (
-                        <label className="text-xs font-medium text-navy" htmlFor={`field_${key}`}>
-                          {field.label}
+                        <label
+                          className={
+                            isSellingAgencyField(field)
+                              ? "text-xs font-medium text-red-700"
+                              : "text-xs font-medium text-navy"
+                          }
+                          htmlFor={`field_${isSellingAgencyField(field) ? DEAL_SELLING_AGENCY_KEY : key}`}
+                          data-ff-required-field={isSellingAgencyField(field) ? "selling-agency" : undefined}
+                        >
+                          {isSellingAgencyField(field) ? "Selling agency" : field.label}
+                          {isSellingAgencyField(field) ? (
+                            <>
+                              {" "}
+                              <span aria-hidden="true">*</span>
+                            </>
+                          ) : null}
                         </label>
                       )}
                       {inline && recordId ? (
                         <ClickToEditField
-                          field={field}
-                          value={liveValues[key] ?? ""}
+                          field={
+                            isSellingAgencyField(field)
+                              ? { ...field, key: DEAL_SELLING_AGENCY_KEY, required: true, label: "Selling agency" }
+                              : field
+                          }
+                          value={
+                            isSellingAgencyField(field)
+                              ? liveValues[DEAL_SELLING_AGENCY_KEY] ||
+                                defaultSellingAgencyValue(field.options)
+                              : liveValues[key] ?? ""
+                          }
                           values={liveValues}
-                          name={`field_${key}`}
+                          name={`field_${isSellingAgencyField(field) ? DEAL_SELLING_AGENCY_KEY : key}`}
                           recordId={recordId}
                           module={module}
                           pipelineFamily={pipelineFamily}
@@ -162,16 +205,27 @@ export function RecordLayoutFields({
                         />
                       ) : (
                         <FieldControl
-                          field={field}
-                          value={liveValues[key] ?? ""}
+                          field={
+                            isSellingAgencyField(field)
+                              ? { ...field, key: DEAL_SELLING_AGENCY_KEY, required: true, label: "Selling agency" }
+                              : field
+                          }
+                          value={
+                            isSellingAgencyField(field)
+                              ? liveValues[DEAL_SELLING_AGENCY_KEY] ||
+                                defaultSellingAgencyValue(field.options)
+                              : liveValues[key] ?? ""
+                          }
                           values={liveValues}
-                          name={`field_${key}`}
+                          name={`field_${isSellingAgencyField(field) ? DEAL_SELLING_AGENCY_KEY : key}`}
                           form={form}
                           pipelineFamily={pipelineFamily}
                           lifeOptions={lifeOptions}
                           healthOptions={healthOptions}
                           lineSettings={lineSettings}
-                          onValueChange={(next) => patchValue(key, next)}
+                          onValueChange={(next) =>
+                            patchValue(isSellingAgencyField(field) ? DEAL_SELLING_AGENCY_KEY : key, next)
+                          }
                           onAddressFill={(parts) =>
                             setLiveValues((prev) => ({ ...prev, ...parts }))
                           }

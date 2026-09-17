@@ -1,10 +1,17 @@
 import type { LayoutSection } from "@/lib/custom-fields/types";
+import { DEAL_SELLING_AGENCY_KEY } from "@/lib/deals/selling-agency";
 
 /** Cascade keys that decide which Risk Profile opens. */
-export const PIPELINE_STRIP_FIELD_KEYS = [
+export const PIPELINE_CASCADE_FIELD_KEYS = [
   "insurance_type",
   "insurance_category",
   "insurance_subtype",
+] as const;
+
+/** Required Pipeline strip: cascade + the older deals-list Selling agency column. */
+export const PIPELINE_STRIP_FIELD_KEYS = [
+  ...PIPELINE_CASCADE_FIELD_KEYS,
+  DEAL_SELLING_AGENCY_KEY,
 ] as const;
 
 export const PIPELINE_STRIP_SECTION_ID = "pipeline";
@@ -39,7 +46,7 @@ export function isPipelineStripSection(section: {
   if (id === PIPELINE_STRIP_SECTION_ID || /^pipeline$/i.test(label)) return true;
   if (isInsuranceQuoteRequestSection(section)) return true;
   const keys = section.fieldKeys ?? [];
-  return PIPELINE_STRIP_FIELD_KEYS.some((key) => keys.includes(key));
+  return PIPELINE_CASCADE_FIELD_KEYS.some((key) => keys.includes(key));
 }
 
 export function pipelineStripSection(): LayoutSection {

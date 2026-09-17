@@ -7,6 +7,9 @@ describe("Deal Details personal field dedupe", () => {
     expect(isDuplicateDealDetailsField("marital_status", keys, new Set())).toBe(true);
     expect(isDuplicateDealDetailsField("applicant_phone", keys, new Set())).toBe(true);
     expect(isDuplicateDealDetailsField("industry", keys, new Set())).toBe(true);
+    expect(isDuplicateDealDetailsField("selling_agency", new Set(["picklist_yp0c"]), new Set())).toBe(
+      true,
+    );
     expect(isDuplicateDealDetailsField("applicant_marital_status", keys, new Set())).toBe(false);
   });
 
