@@ -72,13 +72,16 @@ describe("Risk Profile agent-visible copy", () => {
     }
   });
 
-  it("keeps Home / Auto / Flood applicant + line catalogs", () => {
+  it("keeps Home / Auto / Flood product catalogs without Deal Details identity", () => {
     const home = fieldsForLine("home", "homeowners").map((field) => field.key);
     const auto = fieldsForLine("auto").map((field) => field.key);
     const flood = fieldsForLine("flood").map((field) => field.key);
-    expect(home).toEqual(expect.arrayContaining(["applicant_name", "coverage_a", "year_built"]));
-    expect(auto).toEqual(expect.arrayContaining(["applicant_name", "vin", "driver_1_name"]));
-    expect(flood).toEqual(expect.arrayContaining(["applicant_name", "flood_zone"]));
+    expect(home).toEqual(expect.arrayContaining(["coverage_a", "year_built", "new_purchase"]));
+    expect(home).not.toContain("applicant_name");
+    expect(auto).toEqual(expect.arrayContaining(["vin", "driver_1_name", "aaa_member"]));
+    expect(auto).not.toContain("applicant_name");
+    expect(flood).toEqual(expect.arrayContaining(["flood_zone"]));
+    expect(flood).not.toContain("applicant_name");
     expect(fieldsForLine("life").some((field) => field.key === "applicant_name")).toBe(false);
     expect(fieldsForLine("health").some((field) => field.key === "applicant_name")).toBe(false);
     expect(fieldsForLine("health").some((field) => field.key === "medicare_number")).toBe(true);

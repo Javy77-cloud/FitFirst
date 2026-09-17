@@ -54,9 +54,10 @@ describe("has_co_applicant switch", () => {
       },
       existing,
     );
-    expect(result.values.applicant_name.value).toBe("Heather Camirand");
-    expect(result.values.co_applicant_name?.value ?? "").toBe("");
-    expect(result.values.co_applicant_email?.value ?? "").toBe("");
+    expect(result.values.applicant_name).toBeUndefined();
+    expect(result.values.named_insured.value).toBe("Heather Camirand");
+    expect(result.values.co_applicant_name).toBeUndefined();
+    expect(result.values.co_applicant_email).toBeUndefined();
     expect(result.filledKeys).not.toContain("co_applicant_name");
   });
 
@@ -73,7 +74,8 @@ describe("has_co_applicant switch", () => {
       },
       existing,
     );
-    expect(result.values.co_applicant_name.value).toBe("Tom Camirand");
+    expect(result.values.co_applicant_name).toBeUndefined();
+    expect(result.values.secondary_named_insured.value).toBe("Tom Camirand");
   });
 
   it("bind identity respects Off switch", () => {

@@ -207,9 +207,17 @@ export function fillSheetFromDealDetails(
   put("animals", firstFilled(stored.animals));
   put("primary_heat", firstFilled(stored.primary_heat));
   put("business_on_premises", firstFilled(stored.business_on_premises));
-  put("insurance_score_range", firstFilled(stored.insurance_score_range));
+  put("insurance_score_range", firstFilled(stored.insurance_score_range, stored.assumed_credit_rating));
   put("months_occupied", firstFilled(stored.months_occupied));
   put("resided_under_2_years", firstFilled(stored.resided_under_2_years));
+  put("new_purchase", firstFilled(stored.new_purchase));
+  put("purchase_date", firstFilled(stored.purchase_date));
+  put("within_city_limits", firstFilled(stored.within_city_limits, stored.city_limits));
+  put("sale_price", firstFilled(stored.sale_price, stored.purchase_price));
+  put("screen_enclosure", firstFilled(stored.screen_enclosure));
+  put("aaa_member", firstFilled(stored.aaa_member, stored.aaa));
+  put("passive_restraints", firstFilled(stored.passive_restraints));
+  put("prior_address", firstFilled(stored.prior_address, stored.previous_address));
 
   put("applicant_phone", firstFilled(stored.phone, contact?.phone, lead?.phone));
   put("applicant_email", firstFilled(stored.email, contact?.email, lead?.email));

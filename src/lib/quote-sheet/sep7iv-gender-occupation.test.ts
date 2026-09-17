@@ -5,22 +5,21 @@ import { MASTER_SHEET_EMPTY_DEFAULTS, normalizeGender } from "./sheet-defaults";
 import { fieldsForUnit, isRepeatableSheetKey, type RepeatableKind } from "./repeatable-units";
 
 describe("Auto gender + occupation picklists (sep7iv)", () => {
-  it("applicant + driver_1 gender are Male/Female only", () => {
+  it("driver_1 gender is Male/Female only; applicant gender stays on Deal Details", () => {
     const fields = fieldsForLine("auto");
     const byKey = Object.fromEntries(fields.map((f) => [f.key, f]));
-    expect(byKey.applicant_gender?.options).toEqual(["Male", "Female"]);
+    expect(byKey.applicant_gender).toBeUndefined();
     expect(byKey.driver_1_gender?.options).toEqual(["Male", "Female"]);
     expect([...GENDER_OPTIONS]).toEqual(["Male", "Female"]);
     expect(normalizeGender("M")).toBe("Male");
     expect(normalizeGender("f")).toBe("Female");
   });
 
-  it("applicant + driver_1 occupation use portal-mapped FL/Allstate categories", () => {
+  it("driver_1 occupation uses portal-mapped FL/Allstate categories", () => {
     const fields = fieldsForLine("auto");
     const byKey = Object.fromEntries(fields.map((f) => [f.key, f]));
-    expect(byKey.applicant_occupation?.input).toBe("select");
+    expect(byKey.applicant_occupation).toBeUndefined();
     expect(byKey.driver_1_occupation?.input).toBe("select");
-    expect(byKey.applicant_occupation?.options).toEqual([...OCCUPATION_OPTIONS]);
     expect(byKey.driver_1_occupation?.options).toEqual([...OCCUPATION_OPTIONS]);
     expect(OCCUPATION_OPTIONS).toContain("Employed");
     expect(OCCUPATION_OPTIONS).toContain("Administrative");

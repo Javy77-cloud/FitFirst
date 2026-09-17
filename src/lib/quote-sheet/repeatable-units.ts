@@ -11,6 +11,7 @@ import {
   VEHICLE_OWNERSHIP_LENGTH_OPTIONS,
   COMMUTE_DAYS_WEEK_OPTIONS,
   VEHICLE_LIENHOLDER_OPTIONS,
+  PASSIVE_RESTRAINT_OPTIONS,
   GENDER_OPTIONS,
   OCCUPATION_OPTIONS,
   EDUCATION_LEVEL_OPTIONS,
@@ -107,6 +108,12 @@ export const VEHICLE_BLOCK_FIELDS: RepeatableField[] = [
     label: "Any non-factory / aftermarket parts?",
     input: "select",
     options: YES_NO_OPTIONS,
+  },
+  {
+    suffix: "passive_restraints",
+    label: "Passive restraints (airbags)?",
+    input: "select",
+    options: PASSIVE_RESTRAINT_OPTIONS,
   },
   {
     suffix: "garaging_at_residence",

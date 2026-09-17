@@ -48,9 +48,19 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     expect(button).toMatch(/Deal → Property → Docs/);
   });
 
-  it("copies applicant_dob from Deal Details date_of_birth (formatted)", () => {
+  it("copies applicant_dob from Deal Details date_of_birth only when the sheet already has that key", () => {
     expect(formatDobForSheet("1985-09-09")).toBe("9/9/1985");
+    const blank = emptySheetValues("home");
+    const skipped = fillSheetFromDealDetails(
+      {
+        stored: { date_of_birth: "1985-09-09" },
+      },
+      blank,
+    );
+    expect(skipped.values.applicant_dob).toBeUndefined();
+
     const existing = emptySheetValues("home");
+    existing.applicant_dob = { value: "", status: "missing", source: "blank" };
     const result = fillSheetFromDealDetails(
       {
         stored: { date_of_birth: "1985-09-09" },
@@ -75,13 +85,12 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
       },
       existing,
     );
-    expect(result.values.applicant_dob.value).toBe("9/14/1975");
+    expect(result.values.applicant_dob).toBeUndefined();
+    expect(result.values.co_applicant_dob).toBeUndefined();
     expect(result.values.driver_1_dob.value).toBe("9/14/1975");
     expect(result.values.driver_1_name.value).toBe("Heather Camirand");
-    expect(result.values.co_applicant_dob.value).toBe("1/2/1974");
-    expect(result.values.co_applicant_name.value).toBe("Tom Camirand");
     expect(result.filledKeys).toEqual(
-      expect.arrayContaining(["applicant_dob", "driver_1_dob", "driver_1_name", "co_applicant_dob", "co_applicant_name"]),
+      expect.arrayContaining(["driver_1_dob", "driver_1_name"]),
     );
   });
 
