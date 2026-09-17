@@ -11,6 +11,9 @@ import {
   isRenderableNoticeStamp,
   noticeChipLabel,
   noticeCompleteLogBody,
+  noticeDeleteConfirmMessage,
+  noticeDeleteLogBody,
+  confirmDeleteDealNotice,
   isNoticeTaskTitle,
   noticeTaskKind,
   noticeTaskTitle,
@@ -104,6 +107,25 @@ describe("deal notices", () => {
     expect(noticeTaskKind("check_mortgagee_payment")).toBe("work_reminder");
     expect(isNoticeTaskTitle("Notice · Check mortgagee payment")).toBe(true);
     expect(isNoticeTaskTitle("Work reminder — Call lender")).toBe(false);
+    expect(
+      noticeDeleteLogBody({
+        agent: "Javier Garcia",
+        noticeType: "inspection_before_bind",
+      }),
+    ).toBe(
+      [
+        "Agent: Javier Garcia",
+        "Notice: Inspection before bind (inspection_before_bind)",
+        "Removed as never needed (not completed).",
+      ].join("\n"),
+    );
+    expect(noticeDeleteConfirmMessage("Inspection before bind")).toMatch(/Delete Inspection before bind\?/);
+    expect(noticeDeleteConfirmMessage("Inspection before bind")).toMatch(/does not mark the work complete/);
+    expect(noticeDeleteConfirmMessage("Inspection before bind")).toMatch(
+      /Complete = you finished the work\. Delete = this notice should not have been here/,
+    );
+    expect(noticeDeleteConfirmMessage("Inspection before bind")).toMatch(/reminder task .* cancelled/);
+    expect(confirmDeleteDealNotice("Inspection before bind")).toBe(false);
     expect(SEED_NOTICE_TYPE_OPTIONS[0]).toEqual({ value: "none", label: SEED_NOTICE_LABELS.none });
     expect(
       noticeTypesForFamily(
@@ -209,6 +231,21 @@ describe("deal notices", () => {
     expect(source("src/components/deal/notice-types-editor.tsx")).not.toMatch(/<select/);
     expect(source("src/app/actions/product-stage.ts")).toMatch(/applyDealNoticeType/);
     expect(source("src/app/actions/product-stage.ts")).toMatch(/persistNoticeTypeLabels/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/deleteDealProductNotice/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/cancelLinkedNoticeTask/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/status: "cancelled"/);
+    expect(source("src/app/actions/product-stage.ts")).toMatch(/noticeNotes: \[\]/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/data-ff-notice-delete=""/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/data-ff-notice-delete-panel/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/data-ff-notice-actions/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/data-ff-notice-complete=""/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/completeDealProductNotice/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/deleteDealProductNotice/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/confirmDeleteDealNotice/);
+    expect(source("src/components/deal/notice-types-editor.tsx")).toMatch(/never needed/);
+    expect(source("src/components/deal/deal-notices.tsx")).toMatch(/setTypesMode\("create"\)/);
+    expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(/data-ff-notice-delete/);
+    expect(source("src/components/deal/deal-notices.tsx")).not.toMatch(/deleteDealProductNotice/);
   });
 
   it("opens a centered create-notice modal with choosable full type names", () => {
@@ -231,6 +268,14 @@ describe("deal notices", () => {
     expect(editor).toMatch(/open && canApply/);
     expect(editor).toMatch(/submitLabel="Set reminder"/);
     expect(editor).toMatch(/noticeTypeLabels: labelsForSave\(\)/);
+    expect(editor).toMatch(/data-ff-notice-delete=""/);
+    expect(editor).toMatch(/data-ff-notice-delete-panel/);
+    expect(editor).toMatch(/data-ff-notice-actions/);
+    expect(editor).toMatch(/data-ff-notice-complete=""/);
+    expect(editor).toMatch(/completeDealProductNotice/);
+    expect(editor).toMatch(/deleteDealProductNotice/);
+    expect(editor).toMatch(/hasActiveNotice/);
+    expect(editor).toMatch(/Complete = you finished the work/);
     expect(editor).not.toMatch(/<select/);
     expect(editor).not.toMatch(/SEED_NOTICE_LABELS\.none|"None"/);
     expect(source("src/components/deal/deal-notices.tsx")).toMatch(

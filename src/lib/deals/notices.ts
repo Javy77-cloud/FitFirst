@@ -230,6 +230,40 @@ export function noticeCompleteLogBody(input: {
   ].join("\n");
 }
 
+export function noticeDeleteLogBody(input: {
+  agent: string;
+  noticeType: unknown;
+  options?: readonly NoticeTypeOption[];
+}): string {
+  const type = parseNoticeType(input.noticeType);
+  const label = noticeTypeLabel(type, input.options);
+  return [
+    `Agent: ${input.agent.trim() || "Agent"}`,
+    `Notice: ${label} (${type})`,
+    "Removed as never needed (not completed).",
+  ].join("\n");
+}
+
+/** Confirm copy: Delete ≠ Complete. */
+export function noticeDeleteConfirmMessage(noticeLabel?: string): string {
+  const label = (noticeLabel ?? "").trim() || "this notice";
+  return [
+    `Delete ${label}?`,
+    "",
+    "Delete removes this flag as if it was never needed. It does not mark the work complete.",
+    "",
+    "Complete = you finished the work. Delete = this notice should not have been here.",
+    "",
+    "Any reminder task linked to this notice will be cancelled.",
+  ].join("\n");
+}
+
+export function confirmDeleteDealNotice(noticeLabel?: string): boolean {
+  const ask = typeof globalThis.confirm === "function" ? globalThis.confirm.bind(globalThis) : null;
+  if (!ask) return false;
+  return ask(noticeDeleteConfirmMessage(noticeLabel));
+}
+
 export function noticeTaskKind(noticeType: unknown): string {
   return parseNoticeType(noticeType) === "inspection_before_bind"
     ? "inspection_scheduling"

@@ -151,10 +151,10 @@ export function DealNotices({
     setTypesOpen(true);
   }
 
-  /** Open after this click finishes so the new dialog overlay does not eat it. */
+  /** Same Create notice popup as the empty-state button — edit, reminder, change type, complete, delete. */
   function openTypesEditor() {
     setOpen(false);
-    setTypesMode("manage");
+    setTypesMode("create");
     window.setTimeout(() => setTypesOpen(true), 0);
   }
 
@@ -323,6 +323,7 @@ export function DealNotices({
         returnTo={returnTo}
         product={productValue}
         currentType={noticeType}
+        noticeNote={noticeNote}
         taskDueDate={taskDueDate}
         taskDueTime={taskDueTime}
         mode={typesMode}
