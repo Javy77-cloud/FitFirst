@@ -180,4 +180,42 @@ describe("shared layout engine wiring", () => {
     expect(html).toMatch(/data-ff-compact-row/);
     expect(html).toMatch(/data-ff-record-field="city"/);
   });
+
+  it("honors a saved section density of 1 or 3 on the shared renderer", () => {
+    const layout = {
+      columns: [
+        {
+          id: "left" as const,
+          sections: [
+            {
+              id: "contact",
+              label: "Contact",
+              fieldKeys: ["first_name", "last_name"],
+              density: 3 as const,
+            },
+          ],
+        },
+        {
+          id: "right" as const,
+          sections: [{ id: "notes", label: "Notes", fieldKeys: ["notes"], density: 1 as const }],
+        },
+      ],
+    };
+    const html = renderToStaticMarkup(
+      createElement(RecordLayoutFields, {
+        module: "contacts",
+        layout,
+        fields: [
+          { key: "first_name", label: "First name", type: "single_line" },
+          { key: "last_name", label: "Last name", type: "single_line" },
+          { key: "notes", label: "Notes", type: "multi_line" },
+        ],
+        values: {},
+      }),
+    );
+    expect(html).toMatch(/data-ff-section-density="3"/);
+    expect(html).toMatch(/data-ff-section-density="1"/);
+    expect(html).toMatch(/grid-cols-\[repeat\(3,minmax\(0,1fr\)\)\]/);
+    expect(html).toMatch(/data-ff-record-section="notes"/);
+  });
 });
