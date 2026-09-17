@@ -86,7 +86,7 @@ describe("Commercial Risk Profile lean catalog", () => {
     ).toEqual([]);
     expect(
       visibleQuoteFields(medicare, { plan_type: "Medicare A&B" }).some(
-        (field) => field.key === "medicare_parts",
+        (field) => field.key === "medicare_number",
       ),
     ).toBe(true);
   });
