@@ -80,6 +80,7 @@ describe("Admin vs Agent capabilities", () => {
     expect(isAdminOnlyPath("/admin")).toBe(true);
     expect(isAdminOnlyPath("/settings/billing")).toBe(true);
     expect(isAdminOnlyPath("/settings/integrations")).toBe(true);
+    expect(isAdminOnlyPath("/settings/social")).toBe(true);
     expect(isAdminOnlyPath("/settings/my-desk")).toBe(false);
     expect(isAdminOnlyPath("/settings/security")).toBe(false);
     expect(isAdminOnlyPath("/settings/profile")).toBe(false);

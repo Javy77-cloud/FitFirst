@@ -11,7 +11,6 @@ const LINKS = [
   { href: "/me?section=templates", label: "Personal templates" },
   { href: "/me?section=notifications", label: "Notifications" },
   { href: "/me?section=timezone", label: "Timezone" },
-  { href: "/social", label: "Connected accounts" },
   { href: "/settings/my-desk", label: "Desk appearance" },
 ] as const;
 

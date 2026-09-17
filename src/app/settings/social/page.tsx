@@ -3,7 +3,7 @@ import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { SocialByoCard } from "@/components/social/social-byo-card";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
-import { currentDeskSession } from "@/lib/auth/session";
+import { requireAdminPage } from "@/lib/auth/guards";
 import { listCatalogByCategory } from "@/lib/integrations/catalog-store";
 import { listUsers } from "@/lib/db/queries";
 import { MAPS_FREE_LINK_NOTE, socialByoSpec } from "@/lib/social/byo";
@@ -17,8 +17,8 @@ export default async function SocialSettingsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [session, groups, allowAgentsMonitorGbp, query, users] = await Promise.all([
-    currentDeskSession(),
+  const [, groups, allowAgentsMonitorGbp, query, users] = await Promise.all([
+    requireAdminPage(),
     listCatalogByCategory(),
     loadGbpMonitorPolicy(),
     searchParams,
@@ -104,13 +104,6 @@ export default async function SocialSettingsPage({
           agency’s app. Inbox sync waits on the vendor API.
         </p>
       ) : null}
-      {!session.isAdmin ? (
-        <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          Connecting a vendor is Admin-only. GBP stays locked on the agent desk until Admin allows
-          monitoring.
-        </p>
-      ) : null}
-
       <section className="mb-5 ff-card space-y-3 p-4" data-gbp-gate="true">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
@@ -122,34 +115,26 @@ export default async function SocialSettingsPage({
           </div>
           <ConnectionBadge connected={Boolean(gbp?.connected)} />
         </div>
-        {session.isAdmin ? (
-          <form action={saveGbpAgentMonitor} className="flex flex-wrap items-center justify-between gap-3">
-            <label className="flex items-start gap-2 text-sm text-navy">
-              <input
-                type="checkbox"
-                name="allowAgentsMonitorGbp"
-                value="true"
-                defaultChecked={allowAgentsMonitorGbp}
-                className="mt-1"
-              />
-              <span>
-                Allow agents to monitor GBP
-                <span className="block text-helper text-muted-foreground">
-                  Until this is on, agents see a locked card and cannot open GBP inquiries as Leads.
-                </span>
+        <form action={saveGbpAgentMonitor} className="flex flex-wrap items-center justify-between gap-3">
+          <label className="flex items-start gap-2 text-sm text-navy">
+            <input
+              type="checkbox"
+              name="allowAgentsMonitorGbp"
+              value="true"
+              defaultChecked={allowAgentsMonitorGbp}
+              className="mt-1"
+            />
+            <span>
+              Allow agents to monitor GBP
+              <span className="block text-helper text-muted-foreground">
+                Until this is on, agents see a locked card and cannot open GBP inquiries as Leads.
               </span>
-            </label>
-            <Button type="submit" size="sm">
-              Save GBP gate
-            </Button>
-          </form>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            {allowAgentsMonitorGbp
-              ? "Admin has allowed agents to monitor GBP."
-              : "Waiting on Admin to allow agents to monitor GBP."}
-          </p>
-        )}
+            </span>
+          </label>
+          <Button type="submit" size="sm">
+            Save GBP gate
+          </Button>
+        </form>
       </section>
 
       <div className="grid gap-3 md:grid-cols-2">
@@ -157,7 +142,7 @@ export default async function SocialSettingsPage({
           <SocialByoCard
             key={item.id}
             item={item}
-            canEdit={session.isAdmin}
+            canEdit
             returnTo="/settings/social"
           />
         ))}
@@ -186,7 +171,7 @@ export default async function SocialSettingsPage({
                       : "Not connected"}
                   </p>
                 </div>
-                {session.isAdmin && item.connected ? (
+                {item.connected ? (
                   <form action={saveSocialAccountOwner} className="flex flex-wrap items-center gap-2">
                     <input type="hidden" name="provider" value={item.id} />
                     <select
