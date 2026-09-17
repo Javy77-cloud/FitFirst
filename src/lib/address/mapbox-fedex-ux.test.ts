@@ -69,6 +69,7 @@ describe("Mapbox typeahead + FedEx verify-only address UX", () => {
     expect(ui).toMatch(/createPortal/);
     expect(ui).toMatch(/if \(!onConfirm\)/);
     expect(ui).toMatch(/choose\(item\)/);
+    expect(ui).toMatch(/event\.key === "Enter"/);
     expect(ui).toMatch(/data-ff-address-fill-city/);
     expect(ui).not.toMatch(/form\.querySelector/);
   });

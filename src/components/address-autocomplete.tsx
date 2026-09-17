@@ -151,6 +151,7 @@ export function AddressAutocomplete({
   const resolvedFill = qualifyAddressFill(fill ?? addressFillForKey(name), name);
   const [query, setQuery] = useState(value ?? defaultValue ?? "");
   const [menuBox, setMenuBox] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [enabled, setEnabled] = useState(false);
@@ -209,6 +210,7 @@ export function AddressAutocomplete({
         };
         setEnabled(data.enabled !== false);
         setSuggestions(data.suggestions ?? []);
+        setActiveIndex(0);
         setOpen(Boolean(data.suggestions?.length));
       } catch {
         setSuggestions([]);
@@ -435,6 +437,10 @@ export function AddressAutocomplete({
         spellCheck={false}
         className={className}
         data-ff-address-confirmed={confirmed ? "true" : "false"}
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={open && suggestions.length > 0}
+        aria-controls={`${inputId}-suggestions`}
         onChange={(e) => {
           setQuery(e.target.value);
           setConfirmed(false);
@@ -445,6 +451,29 @@ export function AddressAutocomplete({
         }}
         onFocus={() => {
           if (suggestions.length) setOpen(true);
+        }}
+        onKeyDown={(event) => {
+          if (!open || suggestions.length === 0) return;
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            setActiveIndex((index) => Math.min(index + 1, suggestions.length - 1));
+            return;
+          }
+          if (event.key === "ArrowUp") {
+            event.preventDefault();
+            setActiveIndex((index) => Math.max(index - 1, 0));
+            return;
+          }
+          if (event.key === "Enter") {
+            event.preventDefault();
+            const item = suggestions[activeIndex] ?? suggestions[0];
+            if (item) choose(item);
+            return;
+          }
+          if (event.key === "Escape") {
+            event.preventDefault();
+            setOpen(false);
+          }
         }}
         onBlur={() => {
           window.setTimeout(() => {
@@ -457,16 +486,22 @@ export function AddressAutocomplete({
         ? createPortal(
             <ul
               ref={listRef}
+              id={`${inputId}-suggestions`}
               role="listbox"
               data-ff-address-suggestions
               className="fixed z-[400] max-h-56 overflow-auto rounded-md border border-border bg-card py-1 text-sm shadow-md"
               style={{ top: menuBox.top, left: menuBox.left, width: menuBox.width }}
             >
-              {suggestions.map((item) => (
+              {suggestions.map((item, index) => (
                 <li key={item.id}>
                   <button
                     type="button"
-                    className="w-full px-2.5 py-1.5 text-left text-navy hover:bg-muted"
+                    role="option"
+                    aria-selected={index === activeIndex}
+                    className={cn(
+                      "w-full px-2.5 py-1.5 text-left text-navy hover:bg-muted",
+                      index === activeIndex && "bg-muted",
+                    )}
                     onMouseDown={(event) => {
                       event.preventDefault();
                       choose(item);
