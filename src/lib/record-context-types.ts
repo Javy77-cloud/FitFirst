@@ -62,10 +62,10 @@ export function personKey(kind: "contact" | "lead" | "account", id: string): str
   return `${kind}:${id}`;
 }
 
-export const RAIL_ACTIVITY_KINDS = ["task", "meeting", "call"] as const;
+/** Same activity set as Quick Comms / contacts / deals: Tasks, Meetings, Calls, Emails, SMS. */
+export const RAIL_ACTIVITY_KINDS = ["task", "meeting", "call", "email", "sms"] as const;
 
 export function groupOpenActivities(items: RailOpenActivity[]): { kind: string; items: RailOpenActivity[] }[] {
-  const order = [...RAIL_ACTIVITY_KINDS, "email", "sms"];
   const buckets = new Map<string, RailOpenActivity[]>();
   for (const kind of RAIL_ACTIVITY_KINDS) buckets.set(kind, []);
   for (const item of items) {
@@ -73,7 +73,5 @@ export function groupOpenActivities(items: RailOpenActivity[]): { kind: string; 
     list.push(item);
     buckets.set(item.kind, list);
   }
-  return order
-    .filter((kind) => buckets.has(kind))
-    .map((kind) => ({ kind, items: buckets.get(kind) ?? [] }));
+  return RAIL_ACTIVITY_KINDS.map((kind) => ({ kind, items: buckets.get(kind) ?? [] }));
 }

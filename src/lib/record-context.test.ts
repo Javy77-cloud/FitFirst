@@ -13,18 +13,24 @@ describe("record context helpers", () => {
       { id: "1", kind: "call", title: "Dial", href: "/tasks/1", when: null },
       { id: "2", kind: "task", title: "Follow", href: "/tasks/2", when: null },
       { id: "3", kind: "meeting", title: "Review", href: "/meetings/3", when: null },
+      { id: "4", kind: "email", title: "Ping", href: "/tasks/4", when: null },
+      { id: "5", kind: "sms", title: "Text", href: "/tasks/5", when: null },
     ]);
-    expect(grouped.map((g) => g.kind)).toEqual(["task", "meeting", "call"]);
+    expect(grouped.map((g) => g.kind)).toEqual(["task", "meeting", "call", "email", "sms"]);
     expect(grouped.find((g) => g.kind === "task")?.items).toHaveLength(1);
     expect(grouped.find((g) => g.kind === "call")?.items).toHaveLength(1);
+    expect(grouped.find((g) => g.kind === "email")?.items).toHaveLength(1);
+    expect(grouped.find((g) => g.kind === "sms")?.items).toHaveLength(1);
   });
 
-  it("keeps task/meeting/call rows when the record has none open", () => {
+  it("keeps the full activity set when the record has none open", () => {
     const grouped = groupOpenActivities([]);
     expect(grouped.map((g) => [g.kind, g.items.length])).toEqual([
       ["task", 0],
       ["meeting", 0],
       ["call", 0],
+      ["email", 0],
+      ["sms", 0],
     ]);
   });
 

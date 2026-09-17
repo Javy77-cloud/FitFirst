@@ -30,6 +30,17 @@ describe("lead detail layout + per-line documents", () => {
     expect(desk).toMatch(/data-ff-lead-context-rail/);
     expect(desk).not.toMatch(/lg:grid-cols/);
     expect(page).toMatch(/RecordContextRail/);
+    expect(page).toMatch(/QuickCommsBoard/);
+    expect(page).toMatch(/listRecordActivities\(\{ leadId/);
+    expect(page).toMatch(/data-ff-lead-quick-comms/);
+    expect(page).toMatch(/data-ff-lead-activity/);
+    expect(page).toMatch(/ACTIVITY_KINDS/);
+    expect(page).toMatch(/task: "Tasks"/);
+    expect(page).toMatch(/meeting: "Meetings"/);
+    expect(page).toMatch(/call: "Calls"/);
+    expect(page).toMatch(/email: "Emails"/);
+    expect(page).toMatch(/sms: "SMS"/);
+    expect(page).toMatch(/ContactSectionBlock/);
     expect(page).toMatch(/loadRecordContext/);
     expect(page).toMatch(/leadId: lead\.id/);
     expect(page).toMatch(/RecordLayoutFields/);
@@ -122,6 +133,19 @@ describe("lead detail layout + per-line documents", () => {
     expect(quick).toMatch(/TaskComposer|Save task/);
     expect(quick).toMatch(/ActivityRecordPicker/);
     expect(quick).not.toMatch(/disabled=\{!/);
+  });
+
+  it("uses the shared 5-kind activity set and Quick Comms panel on lead detail", () => {
+    const page = source("src/app/leads/[id]/page.tsx");
+    const comms = source("src/components/comms/quick-comms-board.tsx");
+    const rail = source("src/lib/record-context-types.ts");
+    expect(page).toMatch(/QuickCommsBoard/);
+    expect(page).toMatch(/leadId=\{lead\.id\}/);
+    expect(page).toMatch(/id="activity"/);
+    expect(page).toMatch(/ACTIVITY_KINDS\.map/);
+    expect(comms).toMatch(/ACTIVITY_KINDS\.map/);
+    expect(rail).toMatch(/"task", "meeting", "call", "email", "sms"/);
+    expect(page).not.toMatch(/RecordComms/);
   });
 
   it("groups carried files by line on the deal and links back to the source lead", () => {
