@@ -2,7 +2,7 @@ import type { DealProductId } from "@/lib/deals/deal-products";
 import { parseDealProduct } from "@/lib/deals/deal-products";
 import type { ShopLine } from "@/lib/domain";
 import type { QuoteFieldDef } from "./applicant-core";
-import { CLAIMS_5YR_OPTIONS, PROTECTION_CLASS_OPTIONS } from "./sheet-defaults";
+import { CLAIMS_5YR_OPTIONS, PROTECTION_CLASS_OPTIONS, YES_NO_OPTIONS } from "./sheet-defaults";
 
 /** Agent-facing name for commercial master sheets. */
 export const COMMERCIAL_RISK_PROFILE_LABEL = "Risk Profile";
@@ -137,8 +137,20 @@ export const COMMERCIAL_RISK_PROFILE_FIELDS: QuoteFieldDef[] = [
     options: [...COMMERCIAL_CONSTRUCTION_OPTIONS],
     extractKey: "construction",
   },
-  yn("sprinkler", "Sprinkler", "Location / premises"),
-  yn("central_alarm", "Alarm", "Location / premises"),
+  {
+    key: "sprinkler",
+    label: "Sprinkler",
+    group: "Location / premises",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+  },
+  {
+    key: "central_alarm",
+    label: "Alarm",
+    group: "Location / premises",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+  },
   {
     key: "protection_class",
     label: "Protection class",
