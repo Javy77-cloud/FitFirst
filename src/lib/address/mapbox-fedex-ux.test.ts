@@ -28,16 +28,25 @@ describe("Mapbox typeahead + FedEx verify-only address UX", () => {
     expect(source("src/app/api/address/status/route.ts")).toMatch(/verifyEnabled/);
   });
 
-  it("shows Verify address + chips on the shared control without FedEx typeahead copy", () => {
+  it("auto-verifies with FedEx stamps and does not open suggestions on load", () => {
     const ui = source("src/components/address-autocomplete.tsx");
-    expect(ui).toMatch(/Verify address/);
-    expect(ui).toMatch(/data-ff-address-verify/);
-    expect(ui).toMatch(/Verified/);
-    expect(ui).toMatch(/Suggested correction/);
+    expect(ui).toMatch(/Address confirmed/);
+    expect(ui).toMatch(/Address updated/);
+    expect(ui).toMatch(/Address entered/);
+    expect(ui).toMatch(/Address suggested/);
+    expect(ui).toMatch(/data-ff-address-compare/);
+    expect(ui).toMatch(/data-ff-address-use-entered/);
+    expect(ui).toMatch(/data-ff-address-use-suggested/);
+    expect(ui).toMatch(/Not verified/);
     expect(ui).toMatch(/\/api\/address\/verify/);
     expect(ui).toMatch(/\/api\/address\/suggest/);
+    expect(ui).toMatch(/listActive/);
+    expect(ui).toMatch(/setListActive\(true\)/);
+    expect(ui).toMatch(/autoFocus=\{false\}/);
+    expect(ui).not.toMatch(/Verify address/);
     expect(ui).not.toMatch(/Looking up FedEx/);
     expect(ui).not.toMatch(/fedex typeahead/i);
+    expect(ui).not.toMatch(/setOpen\(Boolean\(data\.suggestions\?\.length\)\);/);
     expect(source("src/components/deal/quote-sheet-form.tsx")).toMatch(/property_address/);
     expect(source("src/components/deal/quote-sheet-form.tsx")).toMatch(/applicant_address/);
     expect(source("src/components/deal/quote-sheet-form.tsx")).toMatch(/ONE_LINE_SHEET_ADDRESS/);
@@ -64,5 +73,8 @@ describe("Mapbox typeahead + FedEx verify-only address UX", () => {
     expect(ui).toMatch(/setNativeValue/);
     expect(ui).toMatch(/data-ff-address-fill-city/);
     expect(ui).not.toMatch(/form\.querySelector/);
+    expect(control).toMatch(/verifyMetaForAddressKey/);
+    expect(control).toMatch(/skipVerify/);
+    expect(control).toMatch(/isMailingSameAsInsured/);
   });
 });

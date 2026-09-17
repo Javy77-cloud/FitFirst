@@ -159,6 +159,7 @@ describe("Deal Details tab", () => {
     // Must merge via customValuesFromForm scoped to Details layout — not loop all defs → "".
     expect(save).toMatch(/export async function saveDealFieldValues/);
     expect(save).toMatch(/customValuesFromForm\(formData, defsOnDetails\)/);
+    expect(save).toMatch(/addressVerifyValuesFromForm\(formData\)/);
     expect(save).toMatch(/allLayoutFieldKeys\(layout\)/);
     expect(save).toMatch(/formData.has\(`field_\$\{field\.key\}`\)/);
     expect(save).toMatch(/picklist_8mus/);
