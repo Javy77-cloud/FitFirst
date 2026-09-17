@@ -15,6 +15,9 @@ import {
 import { upsertAppetiteCarriers } from "@/lib/appetite/gate/store";
 import {
   NATIONWIDE_NOTES_FOR_AGENT,
+  OLYMPUS_COUNTY_MIN_COV_A,
+  OLYMPUS_DONT_WRITE,
+  OLYMPUS_EXCLUDED_COUNTIES,
   OLYMPUS_HO_APPETITE,
   STAND_HO_APPETITE,
   UNIVERSAL_PC_HO_APPETITE,
@@ -47,7 +50,13 @@ const NW_ROW_IDS = {
   moto: "nationwide-powersports-moto-2022-02",
   rv: "nationwide-powersports-rv-2022-02",
 } as const;
-const OLY_ROW_IDS = { ho: "olympus-fl-ho-uw-2026-06-15" } as const;
+const OLY_ROW_IDS = {
+  ho: "olympus-fl-ho-uw-2026-06-15",
+  occupancy: "olympus-fl-ho-occupancy-2026-06-15",
+  location: "olympus-fl-ho-location-2026-06-15",
+  construction: "olympus-fl-ho-construction-2026-06-15",
+  endorsements: "olympus-fl-ho-endorsements-2026-06-15",
+} as const;
 
 function mergeRows(existing: unknown, ours: AppetiteNoteRow[]): AppetiteNoteRow[] {
   const ids = new Set(ours.map((row) => row.id));
@@ -110,6 +119,8 @@ async function upsertHoRule(
     mobileAllowed: boolean;
     requireReplacementCost: boolean;
     countyMinCovA: Record<string, number> | null;
+    excludedCounties?: string[] | null;
+    rceFloorRatio?: number | null;
     notes: string;
   },
 ) {
@@ -133,6 +144,8 @@ async function upsertHoRule(
     mobileAllowed: values.mobileAllowed,
     requireReplacementCost: values.requireReplacementCost,
     countyMinCovA: values.countyMinCovA,
+    excludedCounties: values.excludedCounties ?? null,
+    rceFloorRatio: values.rceFloorRatio ?? null,
     notes: values.notes,
     updatedAt: new Date(),
   };
@@ -494,6 +507,58 @@ async function seedOlympus() {
       acceptDecline: "accept",
       notes: note,
     },
+    {
+      id: OLY_ROW_IDS.occupancy,
+      dateRequested: "2026-06-15",
+      lob: "HO3",
+      roofAge: "",
+      waterHeater: "",
+      hvac: "",
+      electrical: "",
+      claimsHistory: "Refer >1/3yr, >2/5yr, or any claim over $100k; pattern of frequency/severity/carelessness ineligible",
+      acceptDecline: "decline",
+      notes:
+        "Ineligible occupancy: vacant/unoccupied, under construction/renovation, foreclosure/short-sale/as-is, home daycare/assisted living, >2 customer visits/week, commercial/retail farming, >2 roomers. Seasonal/secondary/rentals ok (premises-only liability + surcharge). Refer 2+ non-domestic-partner named insureds, trusts/LLCs, high-profile occupations, cancel/non-renew last 3 years, or lapse.",
+    },
+    {
+      id: OLY_ROW_IDS.location,
+      dateRequested: "2026-06-15",
+      lob: "HO3",
+      roofAge: "",
+      waterHeater: "",
+      hvac: "",
+      electrical: "",
+      claimsHistory: "",
+      acceptDecline: "decline",
+      notes:
+        "Monroe with wind ineligible (ex-wind eligible). Flood Zones A/V ineligible unless separately flooded. Sinkhole density >30/sq mi ineligible; endorsement ineligible >3.54/sq mi; prior/current sinkhole not online-bindable. Wind within 1,000 ft of coast needs 5% hurricane deductible. Refer peak TIV, hydrant >1,000 ft, fire dept >5 miles, acreage >5. Over water, ferry/boat-only, or moratorium ineligible.",
+    },
+    {
+      id: OLY_ROW_IDS.construction,
+      dateRequested: "2026-06-15",
+      lob: "HO3",
+      roofAge: "Online bind: arch shingle 15 / tile 25 / standing-seam metal 40; 3-tab, membrane, foam, wood shake not online-bindable; flat refer",
+      waterHeater: "Traditional inside/attic 15; outside/garage 20; tankless 20",
+      hvac: "No wood stove as sole heat; underground fuel tanks ineligible",
+      electrical: "200-amp if built before 1995; no knob-tube, aluminum, Zinsco, FPE, Challenger, Pushmatic, Bulldog, fuses",
+      claimsHistory: "",
+      acceptDecline: "decline",
+      notes:
+        "Manufactured/modular/mobile/trailer ineligible. EIFS pre-2000 ineligible. Log/unique/obsolete construction generally ineligible. Stilts/piers/pilings pre-1995 refer. 7,500 sq ft+ ineligible. PB pre-1995 ineligible (water excl + $10k limited-water buyback). Unsecured pools ineligible.",
+    },
+    {
+      id: OLY_ROW_IDS.endorsements,
+      dateRequested: "2026-06-15",
+      lob: "HO3",
+      roofAge: "",
+      waterHeater: "",
+      hvac: "",
+      electrical: "",
+      claimsHistory: "",
+      acceptDecline: "accept",
+      notes:
+        "Water exclusion auto-attaches if home over 40 years or PB unless automatic shutoff. Pool liability needs 4-ft locked fence or screen; diving boards/slides ineligible. Animal liability not eligible with exotic or bite history. Payment: annual 100% before effective, or four-pay 25% at bind+14 days then months 2/5/8. Late pay 1 month past due. Reinstatement >30 days refer + Statement of No Known Losses.",
+    },
   ];
   const values = {
     name: current && isOlympusName(current.name) ? current.name : OLYMPUS_CARRIER_NAME,
@@ -503,12 +568,13 @@ async function seedOlympus() {
     website: current?.website?.trim() || OLYMPUS_HO_APPETITE.website,
     customerServicePhone: current?.customerServicePhone?.trim() || OLYMPUS_HO_APPETITE.csPhone,
     carrierInfo:
-      "Olympus Insurance Company. FL HO. QRG V0426 is Salesforce login-wall; companion UW guide 06/15/2026 ingested. Confirm live QRG.",
+      "Olympus Insurance Company. FL HO Multi-peril UW Guidelines / QRG June 15, 2026 (paired Salesforce V0426).",
     territory: "Florida",
     preferredSubmission: "portal",
     bindingAuthority: "limited",
     appetiteNotes: note,
     appetiteRows: mergeRows(current?.appetiteRows, rows),
+    dontWriteNotes: OLYMPUS_DONT_WRITE,
     fixtureTag: "olympus-ho-uw-2026-06",
     active: true,
     updatedAt: new Date(),
@@ -516,16 +582,18 @@ async function seedOlympus() {
   if (current) {
     await db.update(carriers).set(values).where(eq(carriers.id, id));
   } else {
-    await db.insert(carriers).values({ id, tenantId: TENANT_ID, dontWriteNotes: null, ...values });
+    await db.insert(carriers).values({ id, tenantId: TENANT_ID, ...values });
   }
   await upsertHoRule(id, {
-    minCovA: null,
+    minCovA: OLYMPUS_HO_APPETITE.minCovA,
     maxCovA: OLYMPUS_HO_APPETITE.maxCovA,
     minYearBuilt: null,
     maxRoofAge: OLYMPUS_HO_APPETITE.maxRoofAge,
     mobileAllowed: false,
-    requireReplacementCost: false,
-    countyMinCovA: null,
+    requireReplacementCost: true,
+    countyMinCovA: OLYMPUS_COUNTY_MIN_COV_A,
+    excludedCounties: [...OLYMPUS_EXCLUDED_COUNTIES],
+    rceFloorRatio: 1,
     notes: note,
   });
   await linkCatalog(OLYMPUS_SLUG, id, APPETITE_FL_SPECIALTY_CSV);

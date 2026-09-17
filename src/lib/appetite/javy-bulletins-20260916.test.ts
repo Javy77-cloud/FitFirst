@@ -22,8 +22,13 @@ import { emptySnapshot } from "./gate/snapshot";
 import {
   NATIONWIDE_NOTES_FOR_AGENT,
   NATIONWIDE_POWERSPORTS_NOTES,
+  OLYMPUS_COUNTY_MIN_COV_A,
+  OLYMPUS_DONT_WRITE,
+  OLYMPUS_EXCLUDED_COUNTIES,
   OLYMPUS_HO_APPETITE,
   OLYMPUS_HO_NOTES,
+  OLYMPUS_MIN_COV_A,
+  OLYMPUS_TRI_COUNTY_MIN_COV_A,
   STAND_HO_APPETITE,
   STAND_HO_NOTES,
   UNIVERSAL_PC_HO_APPETITE,
@@ -93,16 +98,33 @@ describe("Javy 2026-09-16 bulletins (Stand / UPCIC / Nationwide / Olympus)", () 
     expect(appointmentLine("MCY")).toBe("AUTO");
   });
 
-  it("enriches Olympus from the 06/15/2026 companion scan without a hard $500k min", () => {
+  it("enriches Olympus from the confirmed 06/15/2026 UW/QRG with a hard $500k ROS min", () => {
     expect(publishedHoBySlug("olympus")?.notesForAgent).toBe(OLYMPUS_HO_NOTES);
     expect(OLYMPUS_HO_APPETITE.maxCovA).toBe(5_000_000);
-    expect(OLYMPUS_HO_APPETITE.minCovA).toBeNull();
-    expect(OLYMPUS_HO_APPETITE.hardDeclines).not.toContain("min_cov_a:500000");
-    expect(OLYMPUS_HO_APPETITE.hardDeclines).toContain("max_cov_a:5000000");
+    expect(OLYMPUS_HO_APPETITE.minCovA).toBe(OLYMPUS_MIN_COV_A);
+    expect(OLYMPUS_HO_APPETITE.hardDeclines).toEqual([
+      "state!=FL",
+      "poor_construction",
+      "mobile_home",
+      "manufactured",
+      "vacant",
+      "min_cov_a:500000",
+      "max_cov_a:5000000",
+    ]);
+    expect(OLYMPUS_TRI_COUNTY_MIN_COV_A).toBe(1_000_000);
+    expect(OLYMPUS_COUNTY_MIN_COV_A).toEqual({
+      Broward: 1_000_000,
+      "Miami-Dade": 1_000_000,
+      "Palm Beach": 1_000_000,
+    });
+    expect([...OLYMPUS_EXCLUDED_COUNTIES]).toEqual(["Monroe"]);
     expect(OLYMPUS_HO_NOTES).toMatch(/V0426/);
     expect(OLYMPUS_HO_NOTES).toMatch(/June 15, 2026/);
     expect(OLYMPUS_HO_NOTES).toMatch(/\$500,000 rest of state/);
-    expect(OLYMPUS_HO_NOTES).toMatch(/not applied as a hard quote-gate min/);
+    expect(OLYMPUS_HO_NOTES).toMatch(/Quote-gate floors Cov A at \$500,000/);
+    expect(OLYMPUS_HO_NOTES).toMatch(/Statement of No Known Losses/);
+    expect(OLYMPUS_HO_NOTES).not.toMatch(/not applied as a hard quote-gate min/);
+    expect(OLYMPUS_DONT_WRITE).toMatch(/vacant\/unoccupied/);
     expect(slugFromCarrierName("Olympus")).toBe("olympus");
   });
 
@@ -127,7 +149,8 @@ describe("Javy 2026-09-16 bulletins (Stand / UPCIC / Nationwide / Olympus)", () 
     const oly = specialty.find((c) => c.carrierId === "olympus")!;
     expect(oly.notesForAgent).toBe(OLYMPUS_HO_NOTES);
     expect(oly.hardDeclines).toEqual(OLYMPUS_HO_APPETITE.hardDeclines);
-    expect(oly.hardDeclines).not.toContain("min_cov_a:500000");
+    expect(oly.hardDeclines).toContain("min_cov_a:500000");
+    expect(oly.hardDeclines).toContain("vacant");
 
     const oak = specialty.find((c) => c.carrierId === "southern_oak")!;
     expect(oak.notesForAgent).toMatch(/7\/15\/2026/);
@@ -139,7 +162,7 @@ describe("Javy 2026-09-16 bulletins (Stand / UPCIC / Nationwide / Olympus)", () 
     expect(nw.needsStateConfirm).toBe(true);
   });
 
-  it("quote-gates UPCIC Cov A and leaves Stand/Olympus open on a normal FL HO3", () => {
+  it("quote-gates UPCIC Cov A and Olympus $500k ROS; Stand stays open", () => {
     const catalog = loadCsv(APPETITE_FL_SPECIALTY_CSV);
     const snap = emptySnapshot({
       state: "FL",
@@ -155,7 +178,15 @@ describe("Javy 2026-09-16 bulletins (Stand / UPCIC / Nationwide / Olympus)", () 
     const result = runQuoteGate(snap, catalog);
     expect(result.decisions.find((d) => d.carrierId === "universal_pc")?.status).toBe("Quote");
     expect(result.decisions.find((d) => d.carrierId === "stand")?.status).toBe("Quote");
-    expect(result.decisions.find((d) => d.carrierId === "olympus")?.status).toBe("Quote");
+    expect(result.decisions.find((d) => d.carrierId === "olympus")?.status).toBe("Skip-Decline");
+    expect(result.decisions.find((d) => d.carrierId === "olympus")?.matchingRule).toBe("min_cov_a:500000");
+
+    const mid = runQuoteGate(emptySnapshot({ ...snap, coverageA: 550_000 }), catalog);
+    expect(mid.decisions.find((d) => d.carrierId === "olympus")?.status).toBe("Quote");
+
+    const vacant = runQuoteGate(emptySnapshot({ ...snap, coverageA: 550_000, isVacant: true }), catalog);
+    expect(vacant.decisions.find((d) => d.carrierId === "olympus")?.status).toBe("Skip-Decline");
+    expect(vacant.decisions.find((d) => d.carrierId === "olympus")?.matchingRule).toBe("vacant");
 
     const low = runQuoteGate(emptySnapshot({ ...snap, coverageA: 80_000 }), catalog);
     expect(low.decisions.find((d) => d.carrierId === "universal_pc")?.status).toBe("Skip-Decline");
@@ -179,7 +210,12 @@ describe("Javy 2026-09-16 bulletins (Stand / UPCIC / Nationwide / Olympus)", () 
     expect(sql).toContain("1-877-877-7907");
     expect(sql).toContain("V0426");
     expect(sql).toContain("June 15, 2026");
-    expect(sql).not.toContain("min_cov_a:500000");
+    expect(sql).toContain("min_cov_a:500000");
+    expect(sql).toContain('"vacant"');
+    expect(sql).toContain("olympus-fl-ho-occupancy-2026-06-15");
+    expect(sql).toContain('["Monroe"]');
+    expect(sql).toContain('"Broward":1000000');
+    expect(sql).toContain(OLYMPUS_DONT_WRITE);
     expect(sql).not.toContain("southern_oak");
     expect(sql).not.toContain(SOUTHERN_OAK_CARRIER_ID);
     expect(sql).not.toMatch(/UPDATE carriers[\s\S]*southern oak/i);

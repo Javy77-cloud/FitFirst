@@ -1,5 +1,5 @@
 -- Javy 2026-09-16 carrier bulletins: Stand (create if missing), Universal P&C,
--- Nationwide Powersports, Olympus HO companion UW guide.
+-- Nationwide Powersports, Olympus FL HO UW Guidelines / QRG June 15, 2026.
 -- Idempotent. Does not modify 0123-0129. Stand / Universal P&C / Nationwide / Olympus only.
 -- Captain applies this file on Neon after merge.
 --> statement-breakpoint
@@ -415,9 +415,10 @@ DECLARE
   tenant uuid := '11111111-1111-4111-8111-111111111111';
   seeded_id uuid := '33333333-3333-4333-8333-333333333342';
   existing_id uuid;
-  note text := $oly$Olympus FL HO. Salesforce QRG Homeowners - Quick Reference Guide - V0426 Final.pdf is behind a login wall. Companion image-only PDF is Homeowners Multi-peril Florida Homeowners Program General Underwriting Guidelines version date June 15, 2026 (not labeled V0426 — confirm live QRG). Cov A minimum $500,000 rest of state / $1,000,000 tri-county; maximum $5,000,000; TIV maximum $8,000,000. Those Cov A floors are program text from the scan, not applied as a hard quote-gate min (QRG unconfirmed). Cov B 2% of dwelling default (0-20% blanket; scheduled up to 70%). Cov C 50% default (0-75%). Cov D 10%. Liability default $300,000 ($100k/$500k/$1M available). Med pay default $1,000 ($5k/$10k/$25k). AOP minimum $1,000; hurricane 2%/5% within 1,000 feet of coast. 1- or 2-family; seasonal/secondary/rentals eligible (rental liability premises-only). Ineligible occupancy: under construction/renovation, vacant/unoccupied, foreclosure/short-sale/as-is, home daycare, more than 2 customer visits per week, commercial/retail farming, more than 2 roomers. Roof online bind: architectural shingle 15 / clay-concrete-Spanish tile 25 / standing-seam metal 40; 3-tab, membrane, foam, wood shake not online-bindable; flat refer UW. Electrical: 200-amp required if built before 1995; no knob-and-tube, aluminum, Zinsco (GTE-Sylvania), FPE, Challenger, Pushmatic, Bulldog, or fuse boxes. Water heater: traditional inside/attic 15 years, outside/garage 20; tankless 20. Polybutylene ineligible in homes built prior to 1995 (water exclusion + $10,000 limited-water buyback). Water exclusion auto-attaches if home over 40 years or PB unless automatic shutoff present. Monroe County ineligible with wind (ex-wind eligible). Mobile/manufactured/modular/trailer ineligible. 7,500 sq ft or greater ineligible. Flood Zones A/V need separate flood. CS 1-800-711-9386.$oly$;
+  note text := $oly$Olympus FL Homeowners Multi-peril General Underwriting Guidelines / QRG June 15, 2026 (image-only PDF; paired Salesforce Homeowners Quick Reference Guide V0426). Eligible limits: Cov A min $500,000 rest of state / $1,000,000 Tri-County; max $5,000,000; TIV max $8,000,000. Quote-gate floors Cov A at $500,000 statewide; Markets raises Broward / Miami-Dade / Palm Beach to $1,000,000. Cov B 2% of dwelling default (0-20% blanket; scheduled up to 70%). Cov C 50% default (0-75%). Cov D 10%. Cov E liability default $300,000 ($100k/$500k/$1M available). Cov F med pay default $1,000 ($5k/$10k/$25k). Insurance to value 100-125% RCE; 20% extended dwelling available (default none). Blanket personal property max $10,000 per item / $100,000 jewelry. AOP deductible min $1,000 ($2.5k/$5k/$10k/$25k/$50k); no special deductible less than AOP. Hurricane 2%/5% within 1,000 feet of coast (1%/3%/4%/10% available). Sinkhole deductible 10%. Occupancy: 1- or 2-family; seasonal/secondary/rentals eligible (rental liability premises-only + surcharge). Incidental business under 2 customer visits per week eligible. Ineligible occupancy: under construction/renovation, vacant/unoccupied, foreclosure/short-sale/as-is, home daycare or assisted living, more than 2 customer visits per week, commercial/retail farming, more than 2 roomers. Applicant: named insured must have insurable interest; refer 2+ non-domestic-partner named insureds, trusts/LLCs (questionnaire), high-profile occupations. Credit score reviewed at new business and at least every second renewal. Refer >1 loss in 3 years, >2 in 5 years, or any claim over $100,000; pattern of frequency/severity/carelessness ineligible; cancel/non-renew last 3 years or lapse refer. Ineligible: arson/fraud/felony, BK/judgments/foreclosure/repossession/liens last 5 years, first-party personal-lines lawsuit not prevailed/settled, distressed purchase, refuse inspection, or fail to provide UW info. Location: refer peak TIV concentration, hydrant >1,000 ft or fire dept >5 miles, acreage >5. Wind within 1,000 ft of coast requires min 5% hurricane deductible. Flood not in base policy; Flood Zones A/V ineligible unless separately flooded. Sinkhole density >30/sq mi ineligible; sinkhole endorsement ineligible if density >3.54/sq mi; prior/current sinkhole on premises not online-bindable. Monroe County ineligible with wind (ex-wind eligible). Over water, ferry/boat-only access, or moratorium ineligible. Construction: manufactured/modular/mobile/trailer ineligible; EIFS if built prior to 2000 ineligible; log homes and unique/obsolete/irreplaceable construction generally ineligible; stilts/piers/pilings prior to 1995 refer; 7,500 sq ft+ ineligible. All dwellings inspected. Roof online bind: architectural shingle 15 / clay-concrete-Spanish tile 25 / standing-seam metal 40; 3-tab, membrane, foam, wood shake not online-bindable; flat refer; 5+ years useful life inspection may substitute. Electrical: 200-amp if built before 1995; no knob-and-tube, aluminum, Zinsco (GTE-Sylvania), FPE, Challenger, Pushmatic, Bulldog, or fuse boxes. Plumbing: PB ineligible pre-1995 (water excl + $10,000 limited-water buyback); galvanized pre-1995 needs plumbing inspection. Water heater: traditional inside/attic 15, outside/garage 20; tankless 20. No wood stove as sole heat; underground fuel tanks ineligible. Unsecured pools ineligible; pool liability needs 4-ft locked fence or screen; diving boards/slides ineligible for pool liability. Pets: vicious/bite history, guard dogs, wolf hybrids, >3 dogs, zoo/exotic ineligible; animal liability not eligible with exotic or bite history. Water exclusion auto-attaches if home over 40 years or PB unless automatic shutoff. Payment: annual 100% before effective, or four-pay 25% at bind+14 days then months 2/5/8. Late pay accepted 1 month past due. Reinstatement >30 days refer; Statement of No Known Losses required. CS 1-800-711-9386.$oly$;
   qrg_row jsonb;
-  hard jsonb := '["state!=FL","poor_construction","mobile_home","manufactured","max_cov_a:5000000"]'::jsonb;
+  dont text := $olydw$Olympus 06/15/2026 ineligible: vacant/unoccupied, manufactured/modular/mobile/trailer, Monroe with wind, flood zones A/V without separate flood, sinkhole density >30/sq mi, 7,500+ sq ft, EIFS pre-2000, over water, ferry/boat-only access, moratorium, home daycare, wood stove as sole heat, underground fuel tanks, vicious pets/guard dogs/wolf hybrids/>3 dogs/exotics.$olydw$;
+  hard jsonb := '["state!=FL","poor_construction","mobile_home","manufactured","vacant","min_cov_a:500000","max_cov_a:5000000"]'::jsonb;
   soft jsonb := '["older_roof"]'::jsonb;
   pref jsonb := '["strong_construction","mitigation_credits"]'::jsonb;
 BEGIN
@@ -425,18 +426,68 @@ BEGIN
     RETURN;
   END IF;
 
-  qrg_row := jsonb_build_array(jsonb_build_object(
-    'id', 'olympus-fl-ho-uw-2026-06-15',
-    'dateRequested', '2026-06-15',
-    'lob', 'HO3',
-    'roofAge', 'Arch shingle 15 / tile 25 / standing-seam metal 40; 3-tab, membrane, foam, wood shake not online-bindable',
-    'waterHeater', 'Traditional inside/attic 15; outside/garage 20; tankless 20',
-    'hvac', 'No wood stove as sole heat; professionally installed supplemental wood-burning only',
-    'electrical', '200-amp if built before 1995; no knob-tube, aluminum, Zinsco, FPE, Challenger, Pushmatic, Bulldog, fuses',
-    'claimsHistory', 'Refer: >1 loss in 3 years, >2 in 5 years, or any claim over $100,000',
-    'acceptDecline', 'accept',
-    'notes', note
-  ));
+  qrg_row := jsonb_build_array(
+    jsonb_build_object(
+      'id', 'olympus-fl-ho-uw-2026-06-15',
+      'dateRequested', '2026-06-15',
+      'lob', 'HO3',
+      'roofAge', 'Arch shingle 15 / tile 25 / standing-seam metal 40; 3-tab, membrane, foam, wood shake not online-bindable',
+      'waterHeater', 'Traditional inside/attic 15; outside/garage 20; tankless 20',
+      'hvac', 'No wood stove as sole heat; professionally installed supplemental wood-burning only',
+      'electrical', '200-amp if built before 1995; no knob-tube, aluminum, Zinsco, FPE, Challenger, Pushmatic, Bulldog, fuses',
+      'claimsHistory', 'Refer: >1 loss in 3 years, >2 in 5 years, or any claim over $100,000',
+      'acceptDecline', 'accept',
+      'notes', note
+    ),
+    jsonb_build_object(
+      'id', 'olympus-fl-ho-occupancy-2026-06-15',
+      'dateRequested', '2026-06-15',
+      'lob', 'HO3',
+      'roofAge', '',
+      'waterHeater', '',
+      'hvac', '',
+      'electrical', '',
+      'claimsHistory', 'Refer >1/3yr, >2/5yr, or any claim over $100k; pattern of frequency/severity/carelessness ineligible',
+      'acceptDecline', 'decline',
+      'notes', 'Ineligible occupancy: vacant/unoccupied, under construction/renovation, foreclosure/short-sale/as-is, home daycare/assisted living, >2 customer visits/week, commercial/retail farming, >2 roomers. Seasonal/secondary/rentals ok (premises-only liability + surcharge). Refer 2+ non-domestic-partner named insureds, trusts/LLCs, high-profile occupations, cancel/non-renew last 3 years, or lapse.'
+    ),
+    jsonb_build_object(
+      'id', 'olympus-fl-ho-location-2026-06-15',
+      'dateRequested', '2026-06-15',
+      'lob', 'HO3',
+      'roofAge', '',
+      'waterHeater', '',
+      'hvac', '',
+      'electrical', '',
+      'claimsHistory', '',
+      'acceptDecline', 'decline',
+      'notes', 'Monroe with wind ineligible (ex-wind eligible). Flood Zones A/V ineligible unless separately flooded. Sinkhole density >30/sq mi ineligible; endorsement ineligible >3.54/sq mi; prior/current sinkhole not online-bindable. Wind within 1,000 ft of coast needs 5% hurricane deductible. Refer peak TIV, hydrant >1,000 ft, fire dept >5 miles, acreage >5. Over water, ferry/boat-only, or moratorium ineligible.'
+    ),
+    jsonb_build_object(
+      'id', 'olympus-fl-ho-construction-2026-06-15',
+      'dateRequested', '2026-06-15',
+      'lob', 'HO3',
+      'roofAge', 'Online bind: arch shingle 15 / tile 25 / standing-seam metal 40; 3-tab, membrane, foam, wood shake not online-bindable; flat refer',
+      'waterHeater', 'Traditional inside/attic 15; outside/garage 20; tankless 20',
+      'hvac', 'No wood stove as sole heat; underground fuel tanks ineligible',
+      'electrical', '200-amp if built before 1995; no knob-tube, aluminum, Zinsco, FPE, Challenger, Pushmatic, Bulldog, fuses',
+      'claimsHistory', '',
+      'acceptDecline', 'decline',
+      'notes', 'Manufactured/modular/mobile/trailer ineligible. EIFS pre-2000 ineligible. Log/unique/obsolete construction generally ineligible. Stilts/piers/pilings pre-1995 refer. 7,500 sq ft+ ineligible. PB pre-1995 ineligible (water excl + $10k limited-water buyback). Unsecured pools ineligible.'
+    ),
+    jsonb_build_object(
+      'id', 'olympus-fl-ho-endorsements-2026-06-15',
+      'dateRequested', '2026-06-15',
+      'lob', 'HO3',
+      'roofAge', '',
+      'waterHeater', '',
+      'hvac', '',
+      'electrical', '',
+      'claimsHistory', '',
+      'acceptDecline', 'accept',
+      'notes', 'Water exclusion auto-attaches if home over 40 years or PB unless automatic shutoff. Pool liability needs 4-ft locked fence or screen; diving boards/slides ineligible. Animal liability not eligible with exotic or bite history. Payment: annual 100% before effective, or four-pay 25% at bind+14 days then months 2/5/8. Late pay 1 month past due. Reinstatement >30 days refer + Statement of No Known Losses.'
+    )
+  );
 
   SELECT c.id INTO existing_id
   FROM carriers c
@@ -454,13 +505,13 @@ BEGIN
     INSERT INTO carriers (
       id, tenant_id, name, written_lines, portal_status, portal_login, website,
       customer_service_phone, carrier_info, territory, preferred_submission,
-      binding_authority, appetite_notes, appetite_rows, fixture_tag, active,
-      created_at, updated_at
+      binding_authority, appetite_notes, appetite_rows, dont_write_notes,
+      fixture_tag, active, created_at, updated_at
     ) VALUES (
       seeded_id, tenant, 'Olympus', '["HO"]'::jsonb, 'open', 'Olympus Agent Portal',
       'https://www.olympusinsurance.com', '1-800-711-9386',
-      'Olympus Insurance Company. FL HO. QRG V0426 is Salesforce login-wall; companion UW guide 06/15/2026 ingested. Confirm live QRG.',
-      'Florida', 'portal', 'limited', note, qrg_row, 'olympus-ho-uw-2026-06', true, now(), now()
+      'Olympus Insurance Company. FL HO Multi-peril UW Guidelines / QRG June 15, 2026 (paired Salesforce V0426).',
+      'Florida', 'portal', 'limited', note, qrg_row, dont, 'olympus-ho-uw-2026-06', true, now(), now()
     );
     existing_id := seeded_id;
   ELSE
@@ -475,14 +526,22 @@ BEGIN
       website = coalesce(nullif(website, ''), 'https://www.olympusinsurance.com'),
       customer_service_phone = coalesce(nullif(customer_service_phone, ''), '1-800-711-9386'),
       territory = coalesce(nullif(territory, ''), 'Florida'),
+      carrier_info = 'Olympus Insurance Company. FL HO Multi-peril UW Guidelines / QRG June 15, 2026 (paired Salesforce V0426).',
       appetite_notes = note,
+      dont_write_notes = dont,
       appetite_rows = (
         SELECT coalesce(jsonb_agg(elem ORDER BY ord), '[]'::jsonb)
         FROM (
           SELECT elem, ord
           FROM jsonb_array_elements(coalesce(appetite_rows, '[]'::jsonb))
             WITH ORDINALITY AS t(elem, ord)
-          WHERE elem->>'id' IS DISTINCT FROM 'olympus-fl-ho-uw-2026-06-15'
+          WHERE elem->>'id' NOT IN (
+            'olympus-fl-ho-uw-2026-06-15',
+            'olympus-fl-ho-occupancy-2026-06-15',
+            'olympus-fl-ho-location-2026-06-15',
+            'olympus-fl-ho-construction-2026-06-15',
+            'olympus-fl-ho-endorsements-2026-06-15'
+          )
         ) kept
       ) || qrg_row,
       active = true,
@@ -496,20 +555,29 @@ BEGIN
   ) THEN
     UPDATE appetite_rules
     SET
+      min_cov_a = 500000,
       max_cov_a = 5000000,
       max_roof_age = 15,
       coastal_allowed = true,
       mobile_allowed = false,
+      require_replacement_cost = true,
+      rce_floor_ratio = 1,
+      excluded_counties = '["Monroe"]'::jsonb,
+      county_min_cov_a = '{"Broward":1000000,"Miami-Dade":1000000,"Palm Beach":1000000}'::jsonb,
       notes = note,
       updated_at = now()
     WHERE tenant_id = tenant AND carrier_id = existing_id AND line_of_business = 'HO';
   ELSE
     INSERT INTO appetite_rules (
-      tenant_id, carrier_id, line_of_business, max_cov_a, max_roof_age,
+      tenant_id, carrier_id, line_of_business, min_cov_a, max_cov_a, max_roof_age,
       coastal_allowed, mobile_allowed, requires_opening_protection,
-      require_replacement_cost, notes, created_at, updated_at
+      require_replacement_cost, rce_floor_ratio, excluded_counties, county_min_cov_a,
+      notes, created_at, updated_at
     ) VALUES (
-      tenant, existing_id, 'HO', 5000000, 15, true, false, false, false, note, now(), now()
+      tenant, existing_id, 'HO', 500000, 5000000, 15, true, false, false, true, 1,
+      '["Monroe"]'::jsonb,
+      '{"Broward":1000000,"Miami-Dade":1000000,"Palm Beach":1000000}'::jsonb,
+      note, now(), now()
     );
   END IF;
 

@@ -196,13 +196,25 @@ export const NATIONWIDE_POWERSPORTS_NOTES =
 export const NATIONWIDE_NOTES_FOR_AGENT =
   `Multi-line. Listed states only (no invented 50; CA/FL HO not assumed). Confirm current HO footprint. FL HO: specialists outrank. Research-dated 2026-09. ${NATIONWIDE_POWERSPORTS_NOTES}`;
 
-/** Olympus FL HO — companion scan 06/15/2026 (QRG V0426 HTML was Salesforce login-wall). */
+/** Olympus FL HO Multi-peril UW Guidelines / QRG — June 15, 2026 (paired V0426 HTML). */
 export const OLYMPUS_UW_GUIDE_DATE = "2026-06-15";
 export const OLYMPUS_QRG_LABEL = "V0426";
+export const OLYMPUS_MIN_COV_A = 500_000;
+export const OLYMPUS_TRI_COUNTY_MIN_COV_A = 1_000_000;
 export const OLYMPUS_MAX_COV_A = 5_000_000;
+export const OLYMPUS_MAX_TIV = 8_000_000;
+export const OLYMPUS_TRI_COUNTY_COUNTIES = ["Broward", "Miami-Dade", "Palm Beach"] as const;
+export const OLYMPUS_COUNTY_MIN_COV_A: Record<string, number> = {
+  Broward: OLYMPUS_TRI_COUNTY_MIN_COV_A,
+  "Miami-Dade": OLYMPUS_TRI_COUNTY_MIN_COV_A,
+  "Palm Beach": OLYMPUS_TRI_COUNTY_MIN_COV_A,
+};
+export const OLYMPUS_EXCLUDED_COUNTIES = ["Monroe"] as const;
+export const OLYMPUS_DONT_WRITE =
+  "Olympus 06/15/2026 ineligible: vacant/unoccupied, manufactured/modular/mobile/trailer, Monroe with wind, flood zones A/V without separate flood, sinkhole density >30/sq mi, 7,500+ sq ft, EIFS pre-2000, over water, ferry/boat-only access, moratorium, home daycare, wood stove as sole heat, underground fuel tanks, vicious pets/guard dogs/wolf hybrids/>3 dogs/exotics.";
 
 export const OLYMPUS_HO_NOTES =
-  "Olympus FL HO. Salesforce QRG Homeowners - Quick Reference Guide - V0426 Final.pdf is behind a login wall. Companion image-only PDF is Homeowners Multi-peril Florida Homeowners Program General Underwriting Guidelines version date June 15, 2026 (not labeled V0426 — confirm live QRG). Cov A minimum $500,000 rest of state / $1,000,000 tri-county; maximum $5,000,000; TIV maximum $8,000,000. Those Cov A floors are program text from the scan, not applied as a hard quote-gate min (QRG unconfirmed). Cov B 2% of dwelling default (0-20% blanket; scheduled up to 70%). Cov C 50% default (0-75%). Cov D 10%. Liability default $300,000 ($100k/$500k/$1M available). Med pay default $1,000 ($5k/$10k/$25k). AOP minimum $1,000; hurricane 2%/5% within 1,000 feet of coast. 1- or 2-family; seasonal/secondary/rentals eligible (rental liability premises-only). Ineligible occupancy: under construction/renovation, vacant/unoccupied, foreclosure/short-sale/as-is, home daycare, more than 2 customer visits per week, commercial/retail farming, more than 2 roomers. Roof online bind: architectural shingle 15 / clay-concrete-Spanish tile 25 / standing-seam metal 40; 3-tab, membrane, foam, wood shake not online-bindable; flat refer UW. Electrical: 200-amp required if built before 1995; no knob-and-tube, aluminum, Zinsco (GTE-Sylvania), FPE, Challenger, Pushmatic, Bulldog, or fuse boxes. Water heater: traditional inside/attic 15 years, outside/garage 20; tankless 20. Polybutylene ineligible in homes built prior to 1995 (water exclusion + $10,000 limited-water buyback). Water exclusion auto-attaches if home over 40 years or PB unless automatic shutoff present. Monroe County ineligible with wind (ex-wind eligible). Mobile/manufactured/modular/trailer ineligible. 7,500 sq ft or greater ineligible. Flood Zones A/V need separate flood. CS 1-800-711-9386.";
+  "Olympus FL Homeowners Multi-peril General Underwriting Guidelines / QRG June 15, 2026 (image-only PDF; paired Salesforce Homeowners Quick Reference Guide V0426). Eligible limits: Cov A min $500,000 rest of state / $1,000,000 Tri-County; max $5,000,000; TIV max $8,000,000. Quote-gate floors Cov A at $500,000 statewide; Markets raises Broward / Miami-Dade / Palm Beach to $1,000,000. Cov B 2% of dwelling default (0-20% blanket; scheduled up to 70%). Cov C 50% default (0-75%). Cov D 10%. Cov E liability default $300,000 ($100k/$500k/$1M available). Cov F med pay default $1,000 ($5k/$10k/$25k). Insurance to value 100-125% RCE; 20% extended dwelling available (default none). Blanket personal property max $10,000 per item / $100,000 jewelry. AOP deductible min $1,000 ($2.5k/$5k/$10k/$25k/$50k); no special deductible less than AOP. Hurricane 2%/5% within 1,000 feet of coast (1%/3%/4%/10% available). Sinkhole deductible 10%. Occupancy: 1- or 2-family; seasonal/secondary/rentals eligible (rental liability premises-only + surcharge). Incidental business under 2 customer visits per week eligible. Ineligible occupancy: under construction/renovation, vacant/unoccupied, foreclosure/short-sale/as-is, home daycare or assisted living, more than 2 customer visits per week, commercial/retail farming, more than 2 roomers. Applicant: named insured must have insurable interest; refer 2+ non-domestic-partner named insureds, trusts/LLCs (questionnaire), high-profile occupations. Credit score reviewed at new business and at least every second renewal. Refer >1 loss in 3 years, >2 in 5 years, or any claim over $100,000; pattern of frequency/severity/carelessness ineligible; cancel/non-renew last 3 years or lapse refer. Ineligible: arson/fraud/felony, BK/judgments/foreclosure/repossession/liens last 5 years, first-party personal-lines lawsuit not prevailed/settled, distressed purchase, refuse inspection, or fail to provide UW info. Location: refer peak TIV concentration, hydrant >1,000 ft or fire dept >5 miles, acreage >5. Wind within 1,000 ft of coast requires min 5% hurricane deductible. Flood not in base policy; Flood Zones A/V ineligible unless separately flooded. Sinkhole density >30/sq mi ineligible; sinkhole endorsement ineligible if density >3.54/sq mi; prior/current sinkhole on premises not online-bindable. Monroe County ineligible with wind (ex-wind eligible). Over water, ferry/boat-only access, or moratorium ineligible. Construction: manufactured/modular/mobile/trailer ineligible; EIFS if built prior to 2000 ineligible; log homes and unique/obsolete/irreplaceable construction generally ineligible; stilts/piers/pilings prior to 1995 refer; 7,500 sq ft+ ineligible. All dwellings inspected. Roof online bind: architectural shingle 15 / clay-concrete-Spanish tile 25 / standing-seam metal 40; 3-tab, membrane, foam, wood shake not online-bindable; flat refer; 5+ years useful life inspection may substitute. Electrical: 200-amp if built before 1995; no knob-and-tube, aluminum, Zinsco (GTE-Sylvania), FPE, Challenger, Pushmatic, Bulldog, or fuse boxes. Plumbing: PB ineligible pre-1995 (water excl + $10,000 limited-water buyback); galvanized pre-1995 needs plumbing inspection. Water heater: traditional inside/attic 15, outside/garage 20; tankless 20. No wood stove as sole heat; underground fuel tanks ineligible. Unsecured pools ineligible; pool liability needs 4-ft locked fence or screen; diving boards/slides ineligible for pool liability. Pets: vicious/bite history, guard dogs, wolf hybrids, >3 dogs, zoo/exotic ineligible; animal liability not eligible with exotic or bite history. Water exclusion auto-attaches if home over 40 years or PB unless automatic shutoff. Payment: annual 100% before effective, or four-pay 25% at bind+14 days then months 2/5/8. Late pay accepted 1 month past due. Reinstatement >30 days refer; Statement of No Known Losses required. CS 1-800-711-9386.";
 
 export const OLYMPUS_HO_APPETITE: PublishedHoAppetite = {
   slug: "olympus",
@@ -210,7 +222,7 @@ export const OLYMPUS_HO_APPETITE: PublishedHoAppetite = {
   aliases: ["olympus insurance", "olympus"],
   line: "HO3",
   state: "FL",
-  minCovA: null,
+  minCovA: OLYMPUS_MIN_COV_A,
   maxCovA: OLYMPUS_MAX_COV_A,
   maxDwellingAgeYears: null,
   minYearBuilt: null,
@@ -222,7 +234,15 @@ export const OLYMPUS_HO_APPETITE: PublishedHoAppetite = {
   csPhone: "1-800-711-9386",
   supportEmail: null,
   website: "https://www.olympusinsurance.com",
-  hardDeclines: ["state!=FL", "poor_construction", "mobile_home", "manufactured", "max_cov_a:5000000"],
+  hardDeclines: [
+    "state!=FL",
+    "poor_construction",
+    "mobile_home",
+    "manufactured",
+    "vacant",
+    "min_cov_a:500000",
+    "max_cov_a:5000000",
+  ],
   softCautions: ["older_roof"],
   preferredSignals: ["strong_construction", "mitigation_credits"],
   notesForAgent: OLYMPUS_HO_NOTES,
