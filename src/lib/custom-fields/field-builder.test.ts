@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
 import { FieldControl } from "@/components/custom-fields/field-control";
+import { PicklistConfig } from "@/components/custom-fields/picklist-config";
 import {
   ESSENTIAL_ADDRESS_KEYS,
   ESSENTIAL_CONTACT_KEYS,
@@ -164,6 +165,11 @@ describe("deal field builder", () => {
     expect(config).toMatch(/data-ff-option-count/);
     expect(config).toMatch(/data-ff-global-list/);
     expect(config).toMatch(/data-ff-add-option/);
+    // Key by slot index only. Including the typed value remounts the input each keystroke.
+    expect(config).toMatch(/options\.map\(\(option, index\) => \(/);
+    expect(config).toMatch(/<div key=\{index\}/);
+    expect(config).not.toMatch(/key=\{`\$\{index\}-\$\{option\}`\}/);
+    expect(config).not.toMatch(/key=\{option\}/);
     expect(config).toMatch(/\/settings\/picklists/);
     expect(page).toMatch(/SettingsShell title="Picklists"/);
     expect(page).toMatch(/current="picklists"/);
@@ -175,6 +181,27 @@ describe("deal field builder", () => {
     expect(source("src/lib/custom-fields/picklist-store.ts")).toMatch(/ensureDefaultFieldPicklists/);
     expect(source("src/lib/custom-fields/picklist-store.ts")).toMatch(/STARTER_FIELD_PICKLISTS/);
     expect(source("src/app/settings/field-builder/page.tsx")).toMatch(/listFieldPicklists/);
+  });
+
+  it("keeps a multi-letter picklist option after each keystroke update", () => {
+    const typed = ["C", "Ca", "Cal", "Call", "Calls"];
+    for (const value of typed) {
+      const html = renderToString(
+        createElement(PicklistConfig, {
+          field: {
+            key: "preferred_method_of_communication",
+            label: "Preferred method of communication",
+            type: "picklist",
+            options: [value, ""],
+          },
+          lists: [],
+          onChange: () => {},
+        }),
+      );
+      expect(html).toContain('data-ff-option-row="0"');
+      expect(html).toContain(`value="${value}"`);
+      expect(html).toContain('data-ff-option-row="1"');
+    }
   });
 
   it("uses the same icon set on palette, canvas, and settings", () => {
