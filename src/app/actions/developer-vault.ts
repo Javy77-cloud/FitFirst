@@ -13,6 +13,7 @@ import {
   saveGetParcelDataVault,
   savePermitStackVault,
 } from "@/lib/developer/vault";
+import { clearMetaVault, saveMetaVault } from "@/lib/social/meta-app";
 import {
   clearHealthSherpaAcaVault,
   clearHealthSherpaInboundVault,
@@ -216,6 +217,37 @@ export async function saveHealthSherpaInboundVaultAction(formData: FormData) {
     flashAction(VAULT_HREF, message, "error");
   }
   flashAction(VAULT_HREF, "healthsherpa-inbound-vault-saved");
+}
+
+export async function saveMetaVaultAction(formData: FormData) {
+  let session;
+  try {
+    session = await requireSiteDeveloper();
+  } catch (error) {
+    denyVaultMutate(error);
+  }
+  try {
+    await saveMetaVault({
+      appId: String(formData.get("appId") ?? ""),
+      appSecret: String(formData.get("appSecret") ?? ""),
+      actorId: session.userId,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not save Meta app credentials.";
+    flashAction(VAULT_HREF, message, "error");
+  }
+  flashAction(VAULT_HREF, "meta-vault-saved");
+}
+
+export async function clearMetaVaultAction() {
+  let session;
+  try {
+    session = await requireSiteDeveloper();
+  } catch (error) {
+    denyVaultMutate(error);
+  }
+  await clearMetaVault(session.userId);
+  flashAction(VAULT_HREF, "meta-vault-cleared");
 }
 
 export async function clearHealthSherpaInboundVaultAction() {

@@ -3,7 +3,7 @@ import {
   saveSocialByoCredentials,
   startSocialByoOAuth,
 } from "@/app/actions/social";
-import { connectCatalogStub, disconnectCatalogStub } from "@/app/actions/integrations";
+import { disconnectCatalogStub } from "@/app/actions/integrations";
 import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,8 @@ import { AGENCY_PAYS_VENDOR } from "@/lib/integrations/catalog";
 import type { CatalogItem } from "@/lib/integrations/catalog-store";
 import {
   isPaidWallPlatform,
+  isPlatformHostedSocial,
+  platformHostedConnectMissingCopy,
   socialByoSpec,
   socialConnectStatus,
   socialConnectStatusLabel,
@@ -30,18 +32,24 @@ export function SocialByoCard({
   if (!isSocialPlatformId(item.id)) return null;
   const spec = socialByoSpec(item.id);
   const paidWall = isPaidWallPlatform(item.id);
+  const hosted = isPlatformHostedSocial(item.id);
+  const platformReady = hosted ? item.hasEnvCredentials : item.hasCredentials;
   const status = socialConnectStatus({
     connected: item.connected,
-    hasCredentials: item.hasCredentials,
+    hasCredentials: hosted ? false : item.hasCredentials,
     connectMode: item.connectMode,
     paidWall,
     lastOauthError: item.lastOauthError,
   });
+  const statusLabel =
+    hosted && item.connected && item.connectMode === "byo"
+      ? "Connected"
+      : socialConnectStatusLabel(status);
   const connectLabel =
     item.id === "facebook"
-      ? "Connect with Facebook"
+      ? "Connect Facebook"
       : item.id === "instagram"
-        ? "Connect with Instagram"
+        ? "Connect Instagram"
         : item.id === "google_business_profile"
           ? "Connect with Google"
           : item.id === "linkedin"
@@ -54,8 +62,10 @@ export function SocialByoCard({
       className="flex flex-col rounded-md border border-border bg-card p-3"
       data-provider={item.id}
       data-connected={item.connected ? "true" : "false"}
-      data-connect-status={status}
-      data-has-credentials={item.hasCredentials ? "true" : "false"}
+      data-connect-status={hosted && item.connected && item.connectMode === "byo" ? "connected" : status}
+      data-has-credentials={platformReady ? "true" : "false"}
+      data-platform-hosted={hosted ? "1" : undefined}
+      data-meta-configured={hosted ? (item.hasEnvCredentials ? "true" : "false") : undefined}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-2.5">
@@ -77,14 +87,16 @@ export function SocialByoCard({
             <p className="mt-0.5 text-helper text-muted-foreground">{item.blurb}</p>
           </div>
         </div>
-        <ConnectionBadge connected={item.connected} label={socialConnectStatusLabel(status)} />
+        <ConnectionBadge connected={item.connected && item.connectMode === "byo"} label={statusLabel} />
       </div>
 
-      <p className="mt-2 text-helper text-muted-foreground">{AGENCY_PAYS_VENDOR}</p>
-      <p className="text-helper text-muted-foreground">{item.byoNote}</p>
-      <p className="mt-1 text-helper text-muted-foreground">
-        {spec.kind === "oauth_byo" ? spec.worksWhen : spec.wallBody}
-      </p>
+      {hosted ? null : <p className="mt-2 text-helper text-muted-foreground">{AGENCY_PAYS_VENDOR}</p>}
+      <p className={`${hosted ? "mt-2" : ""} text-helper text-muted-foreground`}>{item.byoNote}</p>
+      {hosted ? null : (
+        <p className="mt-1 text-helper text-muted-foreground">
+          {spec.kind === "oauth_byo" ? spec.worksWhen : spec.wallBody}
+        </p>
+      )}
       {item.connected && item.accountLabel ? (
         <p className="mt-1 text-xs text-navy">
           {item.accountLabel}
@@ -102,7 +114,14 @@ export function SocialByoCard({
         </p>
       ) : null}
 
-      {canEdit ? (
+      {hosted ? (
+        <HostedMetaActions
+          item={item}
+          canEdit={canEdit}
+          returnTo={returnTo}
+          connectLabel={connectLabel}
+        />
+      ) : canEdit ? (
         <div className="mt-3 space-y-3">
           <form action={saveSocialByoCredentials} className="space-y-2">
             <input type="hidden" name="provider" value={item.id} />
@@ -153,23 +172,13 @@ export function SocialByoCard({
           </form>
 
           <div className="flex flex-wrap items-center gap-2">
-            {paidWall ? (
-              <form action={startSocialByoOAuth}>
-                <input type="hidden" name="provider" value={item.id} />
-                <input type="hidden" name="next" value={returnTo} />
-                <Button type="submit" size="sm">
-                  {connectLabel}
-                </Button>
-              </form>
-            ) : (
-              <form action={startSocialByoOAuth}>
-                <input type="hidden" name="provider" value={item.id} />
-                <input type="hidden" name="next" value={returnTo} />
-                <Button type="submit" size="sm">
-                  {connectLabel}
-                </Button>
-              </form>
-            )}
+            <form action={startSocialByoOAuth}>
+              <input type="hidden" name="provider" value={item.id} />
+              <input type="hidden" name="next" value={returnTo} />
+              <Button type="submit" size="sm">
+                {connectLabel}
+              </Button>
+            </form>
             {item.hasCredentials ? (
               <form action={clearSocialByoCredentials}>
                 <input type="hidden" name="provider" value={item.id} />
@@ -197,5 +206,63 @@ export function SocialByoCard({
         </p>
       )}
     </article>
+  );
+}
+
+function HostedMetaActions({
+  item,
+  canEdit,
+  returnTo,
+  connectLabel,
+}: {
+  item: CatalogItem;
+  canEdit: boolean;
+  returnTo: "/settings/social" | "/settings/integrations";
+  connectLabel: string;
+}) {
+  const missing = platformHostedConnectMissingCopy(item.id === "instagram" ? "instagram" : "facebook");
+  if (!canEdit) {
+    return (
+      <p className="mt-3 text-helper text-muted-foreground">
+        Only Admin can connect {item.name}. Agents never connect social.
+      </p>
+    );
+  }
+  if (!item.hasEnvCredentials) {
+    return (
+      <p
+        className="mt-3 rounded-md border border-dashed border-border bg-fit-flag-bg px-2.5 py-2 text-helper text-navy"
+        data-meta-empty="1"
+      >
+        {missing}. Ask a site developer to set the platform Meta app (env or API vault). Agency
+        owners do not paste App ID or secret here.
+      </p>
+    );
+  }
+  return (
+    <div className="mt-3 space-y-3">
+      <p className="text-helper text-navy">
+        FitFirst hosts the Meta app. Connect opens Meta’s consent screen. Tokens stay on the server.
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <form action={startSocialByoOAuth}>
+          <input type="hidden" name="provider" value={item.id} />
+          <input type="hidden" name="next" value={returnTo} />
+          <Button type="submit" size="sm">
+            {connectLabel}
+          </Button>
+        </form>
+        {item.connected ? (
+          <form action={disconnectCatalogStub}>
+            <input type="hidden" name="provider" value={item.id} />
+            <input type="hidden" name="next" value={returnTo} />
+            <Button type="submit" size="sm" variant="outline">
+              Disconnect
+            </Button>
+          </form>
+        ) : null}
+      </div>
+      <p className="text-caption text-muted-foreground">{socialByoSpec(item.id as "facebook" | "instagram").stubbed}</p>
+    </div>
   );
 }

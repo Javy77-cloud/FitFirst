@@ -20,7 +20,12 @@ import { loadGbpMonitorPolicy } from "@/lib/social/store";
 import { listCatalogItems } from "@/lib/integrations/catalog-store";
 import { isIntegrationProviderId } from "@/lib/integrations/catalog";
 import { cookies } from "next/headers";
-import { isPaidWallPlatform, SOCIAL_OAUTH_COOKIE, socialReturnPath } from "@/lib/social/byo";
+import {
+  isPaidWallPlatform,
+  isPlatformHostedSocial,
+  SOCIAL_OAUTH_COOKIE,
+  socialReturnPath,
+} from "@/lib/social/byo";
 import {
   clearSocialByoApp,
   prepareSocialAuthorize,
@@ -188,6 +193,9 @@ export async function saveSocialByoCredentials(formData: FormData) {
   if (!isSocialPlatformId(raw)) {
     redirect(`${dest}?notice=unknown-provider`);
   }
+  if (isPlatformHostedSocial(raw)) {
+    redirect(dest);
+  }
   const clientId = String(formData.get("clientId") ?? "").trim();
   const clientSecret = String(formData.get("clientSecret") ?? "");
   const accountLabel = String(formData.get("accountLabel") ?? "").trim();
@@ -221,7 +229,12 @@ export async function startSocialByoOAuth(formData: FormData) {
     returnTo: dest,
   });
   if (!prepared.ok) {
-    const notice = prepared.reason === "paid_wall" ? "paid-wall" : "needs-credentials";
+    const notice =
+      prepared.reason === "paid_wall"
+        ? "paid-wall"
+        : prepared.reason === "not_configured"
+          ? "not-configured"
+          : "needs-credentials";
     redirect(`${dest}?notice=${notice}&provider=${raw}`);
   }
   const jar = await cookies();
@@ -240,6 +253,9 @@ export async function clearSocialByoCredentials(formData: FormData) {
   const dest = socialReturnPath(String(formData.get("next") ?? ""));
   if (!isSocialPlatformId(raw)) {
     redirect(`${dest}?notice=unknown-provider`);
+  }
+  if (isPlatformHostedSocial(raw)) {
+    redirect(dest);
   }
   await clearSocialByoApp(raw);
   refreshSocial();

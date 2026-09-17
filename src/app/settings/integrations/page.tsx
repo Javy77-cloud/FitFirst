@@ -100,6 +100,14 @@ export default async function IntegrationsCatalogPage({
           it on Vercel. Admin does not paste a Client ID or Client Secret.
         </p>
       ) : null}
+      {notice === "not-configured" ? (
+        <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
+          {provider === "instagram"
+            ? "Instagram Connect isn’t set up on this FitFirst install"
+            : "Facebook Connect isn’t set up on this FitFirst install"}
+          . Site developers set the platform Meta app. Agency owners do not paste App ID or secret.
+        </p>
+      ) : null}
       {notice === "paid-wall" ? (
         <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
           {provider && isSocialPlatformId(provider)

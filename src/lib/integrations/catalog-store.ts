@@ -21,6 +21,7 @@ import {
 } from "./catalog";
 import { envHasOauthApp, isPlatformHostedGoogleOauth } from "./oauth-env";
 import { byoOauthSpec, isByoOauthProviderId } from "./oauth-specs";
+import { isPlatformHostedSocial, metaAppIsConfigured } from "@/lib/social/meta-app";
 
 export type CatalogItem = IntegrationProvider & {
   connected: boolean;
@@ -113,14 +114,18 @@ export async function listCatalogItems(): Promise<CatalogItem[]> {
     stored.map((row) => [`${row.category}:${row.provider}`, row] as const),
   );
   const byProviderOnly = new Map(stored.map((row) => [row.provider, row]));
+  const metaConfigured = await metaAppIsConfigured();
 
-  const items = INTEGRATION_PROVIDERS.map((provider) => {
+  return INTEGRATION_PROVIDERS.map((provider) => {
     const row =
       byProvider.get(`${provider.category}:${provider.id}`) ?? byProviderOnly.get(provider.id);
     const connected = Boolean(row?.connected) || legacyConnected(provider.id, flags);
+    const hosted = isPlatformHostedSocial(provider.id);
     const hasOwnSecret = Boolean(row?.clientSecretEnc && row?.clientSecretIv);
     const hasOwnClient = Boolean(row?.clientId?.trim());
-    const envCreds = isByoOauthProviderId(provider.id) && envHasOauthApp(byoOauthSpec(provider.id).family);
+    const envCreds = hosted
+      ? metaConfigured
+      : isByoOauthProviderId(provider.id) && envHasOauthApp(byoOauthSpec(provider.id).family);
     const platformGoogle = isPlatformHostedGoogleOauth(provider.id);
     return {
       ...provider,
@@ -128,23 +133,17 @@ export async function listCatalogItems(): Promise<CatalogItem[]> {
       accountLabel: row?.accountLabel ?? (connected ? stubAccountLabel(provider.id) : null),
       lastConnectStatus: row?.lastConnectStatus ?? (connected ? "not_implemented" : null),
       ownerUserId: row?.ownerUserId ?? null,
-      clientId: platformGoogle ? null : (row?.clientId ?? null),
-      hasCredentials: platformGoogle ? envCreds : (hasOwnClient && hasOwnSecret) || envCreds,
+      clientId: hosted || platformGoogle ? null : (row?.clientId ?? null),
+      hasCredentials: hosted
+        ? metaConfigured
+        : platformGoogle
+          ? envCreds
+          : (hasOwnClient && hasOwnSecret) || envCreds,
       hasEnvCredentials: envCreds,
       hasRefreshToken: Boolean(row?.refreshTokenEnc && row?.refreshTokenIv),
       tokenAccountEmail: row?.tokenAccountEmail ?? null,
       connectMode: row?.connectMode ?? (connected ? "demo" : null),
       lastOauthError: row?.lastOauthError ?? null,
-    };
-  });
-  const facebook = items.find((item) => item.id === "facebook");
-  return items.map((item) => {
-    if (item.id !== "instagram" || item.hasCredentials) return item;
-    if (!facebook?.hasCredentials) return item;
-    return {
-      ...item,
-      clientId: item.clientId ?? facebook.clientId,
-      hasCredentials: true,
     };
   });
 }

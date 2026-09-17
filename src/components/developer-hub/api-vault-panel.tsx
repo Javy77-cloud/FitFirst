@@ -7,12 +7,14 @@ import {
   clearHealthSherpaAcaVaultAction,
   clearHealthSherpaInboundVaultAction,
   clearHealthSherpaMedicareVaultAction,
+  clearMetaVaultAction,
   clearPermitStackVaultAction,
   saveFedExVaultAction,
   saveGetParcelDataVaultAction,
   saveHealthSherpaAcaVaultAction,
   saveHealthSherpaInboundVaultAction,
   saveHealthSherpaMedicareVaultAction,
+  saveMetaVaultAction,
   savePermitStackVaultAction,
 } from "@/app/actions/developer-vault";
 import { Button } from "@/components/ui/button";
@@ -353,6 +355,112 @@ function HealthSherpaMedicareVaultCard({
   );
 }
 
+function MetaVaultCard({ canEdit, meta }: { canEdit: boolean; meta: VaultPublicStatus }) {
+  const [unlocked, setUnlocked] = useState(false);
+
+  return (
+    <section
+      className="ff-card space-y-4 p-4"
+      data-ff-api-vault
+      data-ff-vault-provider="meta"
+      data-ff-vault-can-edit={canEdit ? "1" : "0"}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-navy">{meta.label}</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            FitFirst-owned Meta app for one-click Facebook and Instagram Connect. Agency Admin never
+            sees or pastes these keys. Env fallback:{" "}
+            <code className="text-[11px]">META_APP_ID</code> /{" "}
+            <code className="text-[11px]">META_APP_SECRET</code>.
+          </p>
+        </div>
+        <span
+          className="rounded-md bg-muted px-2 py-1 text-xs text-navy"
+          data-ff-vault-status={meta.configured ? "configured" : "empty"}
+        >
+          {meta.configured ? "Configured" : "Not configured"}
+        </span>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <Label className="text-xs">App ID</Label>
+          <Input
+            readOnly
+            value={meta.configured ? SECRET_MASK : ""}
+            placeholder="Not configured"
+            className="mt-1 h-8"
+            data-ff-vault-mask="appId"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">App Secret</Label>
+          <Input
+            readOnly
+            value={meta.configured ? SECRET_MASK : ""}
+            placeholder="Not configured"
+            className="mt-1 h-8"
+            data-ff-vault-mask="appSecret"
+          />
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {meta.source === "env" ? "Configured from server env (vault row empty). " : null}
+        Admins see this mask only — there is no reveal.
+      </p>
+
+      {canEdit ? (
+        unlocked ? (
+          <form action={saveMetaVaultAction} className="space-y-3 border-t border-border pt-3" data-ff-vault-unlock>
+            <p className="text-xs text-muted-foreground">
+              Vault unlocked. Enter new values to rotate. Previous secrets are never shown.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="meta-app-id" className="text-xs">
+                  New App ID
+                </Label>
+                <Input id="meta-app-id" name="appId" required autoComplete="off" className="mt-1 h-8" />
+              </div>
+              <div>
+                <Label htmlFor="meta-app-secret" className="text-xs">
+                  New App Secret
+                </Label>
+                <Input
+                  id="meta-app-secret"
+                  name="appSecret"
+                  type="password"
+                  required
+                  autoComplete="new-password"
+                  className="mt-1 h-8"
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" size="sm">
+                Save Meta app
+              </Button>
+              <Button type="submit" size="sm" variant="outline" formAction={clearMetaVaultAction}>
+                Clear
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setUnlocked(false)}>
+                Lock vault
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <Button type="button" size="sm" onClick={() => setUnlocked(true)} data-ff-vault-unlock-btn>
+            Unlock vault
+          </Button>
+        )
+      ) : (
+        <SiteDeveloperLockNote />
+      )}
+    </section>
+  );
+}
+
 export function ApiVaultPanel({
   canEdit,
   fedex,
@@ -361,6 +469,7 @@ export function ApiVaultPanel({
   healthSherpaMedicare,
   healthSherpaAca,
   healthSherpaInbound,
+  meta,
 }: {
   canEdit: boolean;
   fedex: VaultPublicStatus;
@@ -369,10 +478,12 @@ export function ApiVaultPanel({
   healthSherpaMedicare: VaultPublicStatus;
   healthSherpaAca: VaultPublicStatus;
   healthSherpaInbound: VaultPublicStatus;
+  meta: VaultPublicStatus;
 }) {
   return (
     <div className="space-y-4">
       <FedExVaultCard canEdit={canEdit} fedex={fedex} />
+      <MetaVaultCard canEdit={canEdit} meta={meta} />
       <SingleKeyVaultCard
         canEdit={canEdit}
         status={getParcelData}
