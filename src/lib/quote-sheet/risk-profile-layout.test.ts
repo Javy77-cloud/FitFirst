@@ -204,6 +204,25 @@ describe("Risk Profile per-section density + full labels", () => {
     const healthChunk = healthControl.slice(0, healthControl.indexOf("</div>") + 6);
     expect(healthChunk).toMatch(/data-ff-density-choice="4"/);
     expect(healthChunk).not.toMatch(/data-ff-density-choice="5"/);
+    for (const section of ["Product", "Build &amp; tobacco", "Existing coverage", "Beneficiaries"]) {
+      expect(life).toMatch(new RegExp(`data-ff-section-density-control="${section}"`));
+    }
+
+    const health = renderToString(
+      createElement(MasterSheetCompare, {
+        dealId: "deal-health-retrofit",
+        line: "health",
+        fields: [],
+        values: emptySheetValues("health", "health"),
+        product: "health",
+      }),
+    );
+    expect(health).toMatch(/data-ff-section-density-control="Coverage"/);
+    expect(health).toMatch(/data-ff-section-density-control="Household"/);
+    const coverageControl = health.slice(health.indexOf('data-ff-section-density-control="Coverage"'));
+    const coverageChunk = coverageControl.slice(0, coverageControl.indexOf("</div>") + 6);
+    expect(coverageChunk).toMatch(/data-ff-density-choice="4"/);
+    expect(coverageChunk).not.toMatch(/data-ff-density-choice="5"/);
   });
 
   it("uses the shared MasterSheetCompare panel for Commercial WC / GL / BOP plus Property and Auto stubs", () => {
