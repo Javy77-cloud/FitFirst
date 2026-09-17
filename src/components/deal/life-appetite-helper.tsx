@@ -26,6 +26,7 @@ export function LifeAppetiteHelper({
   build,
   ageYears = null,
   thin = false,
+  requestedProductType = "",
 }: {
   selectedLabels: string[];
   tobaccoStatus?: string | null;
@@ -34,10 +35,12 @@ export function LifeAppetiteHelper({
   build?: LifeBuildSnapshot | null;
   ageYears?: number | null;
   thin?: boolean;
+  requestedProductType?: string | null;
 }) {
   const tobacco = String(tobaccoStatus ?? "").trim();
   const buildLine = lifeBuildSummary(build);
   const ageLine = ageYears != null && Number.isFinite(ageYears) ? `Age: ${ageYears}` : "";
+  const requested = String(requestedProductType ?? "").trim();
   const empty = thin || predictions.length === 0;
   const counts = predictions.reduce(
     (acc, row) => {
@@ -62,12 +65,14 @@ export function LifeAppetiteHelper({
       data-ff-life-appetite=""
       data-ff-life-markets=""
       data-ff-life-appetite-thin={empty ? "true" : "false"}
+      data-ff-life-appetite-product-type={requested || undefined}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-navy">Life MATRIX appetite</h3>
           <p className="mt-1 text-xs text-muted-foreground" data-ff-life-appetite-note="">
             {coverageNote} Appetite only — no rate pull.
+            {requested ? ` Showing ${requested} products only.` : ""}
           </p>
         </div>
         {empty ? null : (
@@ -93,8 +98,11 @@ export function LifeAppetiteHelper({
       </p>
       {empty ? (
         <p className="text-sm text-muted-foreground" data-ff-life-appetite-empty="">
-          Need age, build, or conditions to score Life MATRIX appetite. This tab stays empty
-          instead of inventing In appetite.
+          {thin
+            ? "Need age, build, or conditions to score Life MATRIX appetite. This tab stays empty instead of inventing In appetite."
+            : requested
+              ? `No MATRIX products match ${requested}.`
+              : "Need age, build, or conditions to score Life MATRIX appetite. This tab stays empty instead of inventing In appetite."}
         </p>
       ) : (
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" data-ff-life-appetite-cards="">
