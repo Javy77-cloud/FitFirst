@@ -1,4 +1,8 @@
-/** QuoteRush-style Industry → Occupation cascade. Shared by Deal applicant and co-applicant. */
+/**
+ * Single shared Industry → Occupation cascade (QuoteRush).
+ * Used by Deal/Lead applicant, co-applicant, and later Auto drivers — do not
+ * duplicate picklists per person.
+ */
 
 export const INDUSTRY_OPTIONS = [
   "Agriculture / Forestry / Fishing",
@@ -255,17 +259,32 @@ const OCCUPATIONS_BY_INDUSTRY: Record<string, readonly string[]> = {
     "Warehouse Worker",
   ),
   Unemployed: ["Unemployed"],
-  Other: [OTHER],
+  Other: list(
+    "Retired",
+    "Student",
+    "Homemaker",
+    "Houseperson",
+    "Unemployed",
+    "Disabled",
+  ),
 };
+
+function normalizeIndustryKey(raw: string): string {
+  return raw.trim().replace(/\s*\/\s*/g, " / ").replace(/\s+/g, " ");
+}
 
 export const INDUSTRY_RETIRE = "Retire";
 
 export function occupationsForIndustry(industry: string | null | undefined): string[] {
-  const key = String(industry ?? "").trim();
+  const key = normalizeIndustryKey(String(industry ?? ""));
   if (!key) return [];
   if (key === INDUSTRY_RETIRE) return ["Retire"];
   const hit = OCCUPATIONS_BY_INDUSTRY[key];
-  return hit ? [...hit] : [OTHER];
+  if (hit) return [...hit];
+  const match = Object.entries(OCCUPATIONS_BY_INDUSTRY).find(
+    ([label]) => normalizeIndustryKey(label) === key,
+  );
+  return match ? [...match[1]] : [...OCCUPATIONS_BY_INDUSTRY.Other];
 }
 
 export function isIndustryOption(value: string | null | undefined): boolean {

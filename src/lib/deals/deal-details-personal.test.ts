@@ -7,6 +7,7 @@ import {
   APPLICANT_SECTION_FIELD_KEYS,
   CONTACT_IDENTITY_FIELD_KEYS,
 } from "@/lib/custom-fields/applicant-fields";
+import { CO_APPLICANT_CRM_FIELDS } from "@/lib/custom-fields/co-applicant-fields";
 import { defaultLayoutForLine } from "@/lib/custom-fields/defaults";
 import { DEAL_DETAILS_LANDLORD_FIELD_KEYS } from "@/lib/custom-fields/deal-details-landlord";
 import { occupationsForIndustry } from "@/lib/custom-fields/industry-occupation";
@@ -250,5 +251,20 @@ describe("Deal Details personal / identity layout", () => {
     );
     expect(stub).toMatch(/data-ff-picklist="applicant_occupation"/);
     expect(stub).toMatch(/Farm Ranch Owner/);
+
+    const coApp = renderToStaticMarkup(
+      createElement(DealDetailsPanel, {
+        dealId: "deal-1",
+        line: "HO",
+        layout: defaultLayoutForLine("HO"),
+        fields: [...APPLICANT_CRM_FIELDS, ...CO_APPLICANT_CRM_FIELDS],
+        values: {
+          has_co_applicant: "true",
+          co_applicant_industry: "Retire",
+        },
+      }),
+    );
+    expect(coApp).toMatch(/data-ff-picklist="co_applicant_occupation"/);
+    expect(coApp).toMatch(/<option value="Retire">Retire<\/option>/);
   });
 });

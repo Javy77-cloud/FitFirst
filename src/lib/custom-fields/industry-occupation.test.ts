@@ -33,7 +33,15 @@ describe("industry → occupation cascade", () => {
     expect(occupationsForIndustry("Unemployed")).toEqual(["Unemployed"]);
     expect(occupationsForIndustry("Student")).toEqual(["Student"]);
     expect(occupationsForIndustry("")).toEqual([]);
-    expect(occupationsForIndustry("Not a real industry")).toEqual(["Other"]);
+    expect(occupationsForIndustry("Agriculture/Forestry/Fishing")).toEqual(
+      occupationsForIndustry("Agriculture / Forestry / Fishing"),
+    );
+    expect(occupationsForIndustry("Not a real industry")).toEqual(
+      expect.arrayContaining(["Retired", "Student", "Homemaker", "Other"]),
+    );
+    expect(occupationsForIndustry("Other")).toEqual(
+      expect.arrayContaining(["Retired", "Student", "Homemaker", "Other"]),
+    );
   });
 
   it("maps applicant, co-applicant, and driver occupation keys to industry", () => {
