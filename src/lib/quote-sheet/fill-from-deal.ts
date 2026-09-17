@@ -3,6 +3,7 @@ import { firstFilled, type LeadCopyFields } from "@/lib/desk/copy-once";
 import { fieldIsBlank } from "@/lib/quote-sheet/apply";
 import { isLockedSheetField } from "@/lib/lifecycle/quote-sheet";
 import { isCoApplicantEnabled } from "@/lib/custom-fields/co-applicant-fields";
+import { normalizeLifeProductType } from "@/lib/quote-sheet/sheet-defaults";
 
 export const DEAL_DETAILS_SOURCE_LABEL = "deal details";
 
@@ -88,6 +89,10 @@ export function fillSheetFromDealDetails(
   const put = (key: string, raw?: string | null) => {
     const value = (raw ?? "").trim();
     if (!value) return;
+    // Life Risk Profile has no identity cells — do not invent applicant/contact keys.
+    if (Object.keys(existing).length > 0 && !Object.prototype.hasOwnProperty.call(existing, key)) {
+      return;
+    }
     const current = values[key];
     if (isLockedSheetField(current) || !fieldIsBlank(current)) {
       skippedKeys.push(key);
@@ -161,7 +166,8 @@ export function fillSheetFromDealDetails(
   // Quoting form lives on the insurance cascade — do not copy onto the master sheet.
   // Life/Health product + plan family are sheet interviewing fields aligned to that subtype.
   if (Object.prototype.hasOwnProperty.call(values, "product_type")) {
-    put("product_type", firstFilled(stored.product_type, input.policySubType, input.quotingForm));
+    const raw = firstFilled(stored.product_type, input.policySubType, input.quotingForm);
+    put("product_type", normalizeLifeProductType(raw) || raw);
   }
   if (Object.prototype.hasOwnProperty.call(values, "plan_type")) {
     put("plan_type", firstFilled(stored.plan_type, input.policySubType, input.quotingForm));

@@ -46,7 +46,7 @@ describe("flash helper", () => {
     expect(resolveFlashMessage("layout-saved")).toBe("Deal layout saved");
     expect(resolveFlashMessage("home-layout-saved")).toBe("Layout saved");
     expect(resolveFlashMessage("settings-saved")).toBe("Settings saved");
-    expect(resolveFlashMessage("sheet-saved")).toBe("Sheet saved");
+    expect(resolveFlashMessage("sheet-saved")).toBe("Risk Profile saved");
     expect(resolveFlashMessage("tag-added")).toBe("Tag added");
     expect(resolveFlashMessage("tag-created")).toBe("Tag created");
     expect(resolveFlashMessage("document-deleted")).toBe("Document deleted");

@@ -139,8 +139,8 @@ async function logSheetInvalidation(dealId: string, line?: string | null) {
   await writeCrmSignalsSafe({
     kind: "sheet_invalidated",
     title: line
-      ? `Master sheet saved · ${line} — Markets + Quotes need a re-run`
-      : "Master sheet saved — Markets + Quotes need a re-run",
+      ? `Risk Profile saved · ${line} — Markets + Quotes need a re-run`
+      : "Risk Profile saved — Markets + Quotes need a re-run",
     body: line
       ? `Sheet change on ${line} cleared approve and request-quotes for that line. Re-approve before shopping.`
       : "Sheet change cleared approve and request-quotes. Re-approve before shopping.",

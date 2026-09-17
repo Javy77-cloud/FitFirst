@@ -1195,7 +1195,7 @@ export function emptyDefaultsForLine(line: string | null | undefined): Record<st
       ...floodEffectiveDateDefault({ underConstruction: under }),
     };
   }
-  if (key === "life") return { product_type: "Term Life" };
+  if (key === "life") return { product_type: "Term" };
   if (key === "health") return { plan_type: "Marketplace" };
   return {};
 }
@@ -1300,31 +1300,58 @@ export const BOP_CONSTRUCTION_OPTIONS = [
   "Fire resistive",
 ] as const;
 
-/** Life product types — same labels as Settings → Lines Life subfilters. */
+/** Life product types — locked lean Risk Profile (Captain / Javy 2026-09-16). */
 export const LIFE_PRODUCT_TYPE_OPTIONS = [
-  "Term Life",
+  "Term",
   "Whole Life",
-  "IUL",
+  "Universal Life",
+  "Indexed Universal Life",
+  "Variable Universal Life",
   "Final Expense",
-  "Other",
 ] as const;
 
-/** Common personal-life term lengths (not carrier-specific). */
-export const LIFE_TERM_YEARS_OPTIONS = ["10", "15", "20", "25", "30", "35", "40"] as const;
+/** Term length — shown only when product type is Term. */
+export const LIFE_TERM_YEARS_OPTIONS = ["10", "15", "20", "30"] as const;
 
 export const LIFE_PREMIUM_MODE_OPTIONS = [
   "Monthly",
   "Quarterly",
-  "Semi-annual",
-  "Annual",
+  "Annually",
 ] as const;
 
 export const LIFE_PURPOSE_OPTIONS = [
   "Income replacement",
-  "Mortgage / debt",
-  "Estate / inheritance",
-  "Final expense",
-  "Business / key person",
+  "Estate planning",
+  "Final expenses",
+  "Business",
+  "Mortgage payoff",
+  "Other",
+] as const;
+
+export const LIFE_MEDICAL_CONDITION_OPTIONS = [
+  "None",
+  "High blood pressure",
+  "High cholesterol",
+  "Diabetes Type 1",
+  "Diabetes Type 2",
+  "Heart disease",
+  "Stroke",
+  "Cancer",
+  "Asthma",
+  "COPD",
+  "Kidney disease",
+  "Liver disease",
+  "Thyroid disorder",
+  "Mental health condition",
+  "Sleep apnea",
+  "Other",
+] as const;
+
+export const TOBACCO_TYPE_OPTIONS = [
+  "Cigarettes",
+  "Cigars",
+  "Chewing",
+  "Vape",
   "Other",
 ] as const;
 
@@ -1476,13 +1503,19 @@ export function normalizeLifeProductType(raw: string | null | undefined): string
   if (!text) return "";
   const hit = normalizePicklistOption(text, LIFE_PRODUCT_TYPE_OPTIONS);
   if (hit) return hit;
-  const lower = text.toLowerCase();
+  const lower = text.toLowerCase().replace(/[_-]+/g, " ");
   if (lower.includes("final")) return "Final Expense";
   if (lower.includes("whole")) return "Whole Life";
-  if (lower === "iul" || lower.includes("indexed") || lower.includes("universal")) return "IUL";
-  if (lower.includes("term")) return "Term Life";
-  if (lower === "other") return "Other";
+  if (lower === "iul" || lower.includes("indexed")) return "Indexed Universal Life";
+  if (lower === "vul" || lower.includes("variable")) return "Variable Universal Life";
+  if (lower === "ul" || lower.includes("universal")) return "Universal Life";
+  if (lower.includes("term")) return "Term";
   return "";
+}
+
+export function isLifeTermProduct(raw: string | null | undefined): boolean {
+  const normalized = normalizeLifeProductType(raw) || (raw ?? "").trim();
+  return /^term(\s*life)?$/i.test(normalized);
 }
 
 export function normalizeHealthPlanType(raw: string | null | undefined): string {

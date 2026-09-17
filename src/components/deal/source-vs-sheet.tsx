@@ -64,14 +64,14 @@ export function SourceVsSheet({
         )}
       </section>
       <section className="rounded-md border border-border p-3">
-        <h4 className="text-sm font-semibold text-navy">Master sheet cells</h4>
+        <h4 className="text-sm font-semibold text-navy">Risk Profile cells</h4>
         <p className="mt-1 text-helper text-muted-foreground">
           {filled.length} filled · yellow missing · blue CHECK. Uncertain stays CHECK — we do not
           invent Cov A from Zillow.
         </p>
         {filled.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">
-            Sheet blanks are still empty. Pick the line and Fill master sheet.
+            Risk Profile blanks are still empty. Pick the line and Fill Risk Profile.
           </p>
         ) : (
           <ul className="mt-3 max-h-56 space-y-1 overflow-auto text-xs">

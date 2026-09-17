@@ -109,7 +109,7 @@ export function DocumentsPanel({
         {health ? (
           <p className="text-helper text-muted-foreground">
             {health.confirmed} confirmed · {health.check} needs review · {health.missing} missing.
-            Confirm the sheet before quotes.
+            Confirm the Risk Profile before quotes.
           </p>
         ) : null}
       </div>

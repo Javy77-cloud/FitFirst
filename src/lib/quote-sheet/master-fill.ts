@@ -1,6 +1,8 @@
-/** One-button master sheet Fill — Home: Deal → Property → Docs; Auto: Deal → Docs → VIN. */
+/** One-button Risk Profile Fill — Home: Deal → Property → Docs; Auto: Deal → Docs → VIN. */
 
-export const FILL_MASTER_SHEET_LABEL = "Fill Master Sheet";
+import { FILL_RISK_PROFILE_LABEL, FILLING_RISK_PROFILE_TITLE } from "./risk-profile-copy";
+
+export const FILL_MASTER_SHEET_LABEL = FILL_RISK_PROFILE_LABEL;
 
 export const MASTER_FILL_STEP_DEAL = "Loading deal details…";
 export const MASTER_FILL_STEP_PROPERTY = "Loading property details…";
@@ -22,7 +24,7 @@ export const MASTER_FILL_REVIEW_NUDGE =
   "Review CHECK fields and Confirm when ready";
 
 /** Shown under the step list while Fill is in flight (~20s). */
-export const MASTER_FILL_BUSY_TITLE = "Filling the sheet — we’re on it…";
+export const MASTER_FILL_BUSY_TITLE = FILLING_RISK_PROFILE_TITLE;
 export const MASTER_FILL_BUSY_COPY =
   "Skimming deal, docs, and property notes — about 20 seconds.";
 

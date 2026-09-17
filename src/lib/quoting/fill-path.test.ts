@@ -9,12 +9,12 @@ import {
   fillPathStepIndex,
 } from "./fill-path";
 
-describe("master sheet → Fill path labels", () => {
+describe("Risk Profile → Fill path labels", () => {
   it("names the five steps in producer English", () => {
     expect(MASTER_TO_FILL_STEPS.map((step) => step.label)).toEqual([
       "Drop source docs",
       "Choose quoting line",
-      "Fill Master Sheet",
+      "Fill Risk Profile",
       "Glance yellow / CHECK",
       "Approve, then Send to Fill",
     ]);
@@ -22,11 +22,11 @@ describe("master sheet → Fill path labels", () => {
     expect(MASTER_TO_FILL_STEPS[2]?.hint).toMatch(/Yellow missing/);
   });
 
-  it("labels the handoff as master sheet → Fill, not PDF paste", () => {
-    expect(FILL_HANDOFF_TITLE).toBe("Send the approved master sheet to Fill");
+  it("labels the handoff as Risk Profile → Fill, not PDF paste", () => {
+    expect(FILL_HANDOFF_TITLE).toBe("Send the approved Risk Profile to Fill");
     expect(FILL_HANDOFF_HINT).toMatch(/never the raw PDFs/);
-    expect(COPY_SHEET_LABEL).toBe("Copy master sheet");
-    expect(SEND_TO_FILL_LABEL).toBe("Send master sheet to Fill");
+    expect(COPY_SHEET_LABEL).toBe("Copy Risk Profile");
+    expect(SEND_TO_FILL_LABEL).toBe("Send Risk Profile to Fill");
     expect(OPEN_FILL_LABEL).toBe("Open Fill window");
   });
 

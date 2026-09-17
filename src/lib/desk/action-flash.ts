@@ -3,11 +3,11 @@ export const ACTION_FLASH = {
   sheetSaved: "sheet-saved",
 } as const;
 
-/** Keep Save sheet at the Confirm gate — do not jump the page to the top. */
+/** Keep Save Risk Profile at the Confirm gate — do not jump the page to the top. */
 export const SHEET_CONFIRM_HASH = "ff-sheet-confirm";
 
 export const ACTION_FLASH_MESSAGE: Record<(typeof ACTION_FLASH)[keyof typeof ACTION_FLASH], string> = {
-  "sheet-saved": "Sheet saved.",
+  "sheet-saved": "Risk Profile saved.",
 };
 
 export function dealActionFlashHref(input: {

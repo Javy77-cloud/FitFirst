@@ -3,7 +3,7 @@ import { titleCaseLabel } from "./title-case";
 
 describe("titleCaseLabel", () => {
   it("title-cases meaningful words", () => {
-    expect(titleCaseLabel("Fill Master Sheet")).toBe("Fill Master Sheet");
+    expect(titleCaseLabel("Fill Risk Profile")).toBe("Fill Risk Profile");
     expect(titleCaseLabel("Request Quotes")).toBe("Request Quotes");
     expect(titleCaseLabel("Collapse All")).toBe("Collapse All");
     expect(titleCaseLabel("Confirm & Request Quotes")).toBe("Confirm & Request Quotes");

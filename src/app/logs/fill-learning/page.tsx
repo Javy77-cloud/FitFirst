@@ -34,7 +34,7 @@ export default async function FillLearningLogsPage() {
       <section className="ff-card overflow-x-auto">
         {rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">
-            No fill corrections yet. On a master sheet, use Mark mapping wrong to save one.
+            No fill corrections yet. On a Risk Profile, use Mark mapping wrong to save one.
           </p>
         ) : (
           <table className="ff-table">

@@ -27,8 +27,8 @@ export function QuoteHandoff({
   if (!unlocked) {
     return (
       <div className="rounded-md border border-dashed border-border px-3 py-2 text-helper text-muted-foreground">
-        Send to Fill stays locked until you approve the {formLabel} master sheet. No per-agent
-        bot. Copy master sheet / Send to Fill unlock after the two-step confirm.
+        Send to Fill stays locked until you approve the {formLabel} Risk Profile. No per-agent
+        bot. Copy Risk Profile / Send to Fill unlock after the two-step confirm.
       </div>
     );
   }
@@ -47,7 +47,7 @@ export function QuoteHandoff({
     try {
       const packet = await loadPacket("copy");
       await navigator.clipboard.writeText(JSON.stringify(packet, null, 2)).catch(() => undefined);
-      setNote("Copied the approved master sheet. Paste into the carrier portal — zero rekey.");
+      setNote("Copied the approved Risk Profile. Paste into the carrier portal — zero rekey.");
     } catch (err) {
       setNote(err instanceof Error ? err.message : "Copy failed.");
     }
@@ -59,7 +59,7 @@ export function QuoteHandoff({
       window.localStorage.setItem(FILL_STORAGE_KEY, JSON.stringify(sheet));
       window.postMessage({ source: FILL_MESSAGE_SOURCE, type: FILL_MESSAGE_TYPE, sheet }, "*");
       await navigator.clipboard.writeText(JSON.stringify(sheet, null, 2)).catch(() => undefined);
-      setNote("Sent the approved master sheet to Fill (clipboard + localStorage). Not a raw PDF.");
+      setNote("Sent the approved Risk Profile to Fill (clipboard + localStorage). Not a raw PDF.");
     } catch (err) {
       setNote(err instanceof Error ? err.message : "Send to Fill failed.");
     }
@@ -72,7 +72,7 @@ export function QuoteHandoff({
       window.postMessage({ source: FILL_MESSAGE_SOURCE, type: FILL_MESSAGE_TYPE, sheet }, "*");
       window.open("/fill-demo", "fitfirst-fill", "noopener,noreferrer,width=1100,height=800");
       setNote(
-        "Opened Fill. Chrome Fill reads this same approved master sheet if the add-on is installed.",
+        "Opened Fill. Chrome Fill reads this same approved Risk Profile if the add-on is installed.",
       );
     } catch (err) {
       setNote(err instanceof Error ? err.message : "Could not open Fill window.");

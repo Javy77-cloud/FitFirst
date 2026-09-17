@@ -86,12 +86,9 @@ import {
   LIFE_PURPOSE_OPTIONS,
   LIFE_HEIGHT_FT_OPTIONS,
   LIFE_HEIGHT_IN_OPTIONS,
+  LIFE_MEDICAL_CONDITION_OPTIONS,
   TOBACCO_STATUS_OPTIONS,
-  NICOTINE_TYPE_OPTIONS,
-  LAST_NICOTINE_USE_OPTIONS,
-  LIFE_HEALTH_CLASS_OPTIONS,
-  RESIDENCY_STATUS_OPTIONS,
-  BENEFICIARY_SHARE_OPTIONS,
+  TOBACCO_TYPE_OPTIONS,
   HEALTH_PLAN_TYPE_OPTIONS,
   HEALTH_NETWORK_TYPE_OPTIONS,
   HEALTH_METAL_LEVEL_OPTIONS,
@@ -821,6 +818,7 @@ export const UMBRELLA_FIELDS: QuoteFieldDef[] = [
   { key: "notes", label: "Notes", group: "Notes", input: "textarea" },
 ];
 
+/** Identity stays on Deal Details — Life Risk Profile is quote/track only. */
 export const LIFE_FIELDS: QuoteFieldDef[] = [
   {
     key: "product_type",
@@ -833,21 +831,23 @@ export const LIFE_FIELDS: QuoteFieldDef[] = [
   { key: "face_amount", label: "Face amount", group: "Product", input: "number", extractKey: "face_amount" },
   {
     key: "term_years",
-    label: "Term years",
+    label: "Term length",
     group: "Product",
     input: "select",
     options: [...LIFE_TERM_YEARS_OPTIONS],
+    showWhen: { key: "product_type", values: ["Term", "Term Life"] },
   },
+  { key: "premium_budget", label: "Premium budget", group: "Product", input: "number" },
   {
     key: "premium_mode",
-    label: "Premium mode",
+    label: "Payment mode",
     group: "Product",
     input: "select",
     options: [...LIFE_PREMIUM_MODE_OPTIONS],
   },
   {
     key: "purpose_of_insurance",
-    label: "Purpose of insurance",
+    label: "Purpose of coverage",
     group: "Product",
     input: "select",
     options: [...LIFE_PURPOSE_OPTIONS],
@@ -855,101 +855,108 @@ export const LIFE_FIELDS: QuoteFieldDef[] = [
   {
     key: "height_ft",
     label: "Height (feet)",
-    group: "Underwriting",
+    group: "Build & tobacco",
     input: "select",
     options: [...LIFE_HEIGHT_FT_OPTIONS],
   },
   {
     key: "height_in",
     label: "Height (inches)",
-    group: "Underwriting",
+    group: "Build & tobacco",
     input: "select",
     options: [...LIFE_HEIGHT_IN_OPTIONS],
   },
-  { key: "weight", label: "Weight (lbs)", group: "Underwriting", input: "number" },
+  { key: "weight", label: "Weight (lbs)", group: "Build & tobacco", input: "number" },
   {
     key: "tobacco_status",
-    label: "Tobacco / nicotine",
-    group: "Underwriting",
+    label: "Tobacco use",
+    group: "Build & tobacco",
     input: "select",
     options: [...TOBACCO_STATUS_OPTIONS],
     extractKey: "tobacco",
   },
   {
-    key: "nicotine_type",
-    label: "Nicotine type",
-    group: "Underwriting",
+    key: "tobacco_type",
+    label: "Tobacco type",
+    group: "Build & tobacco",
     input: "select",
-    options: [...NICOTINE_TYPE_OPTIONS],
+    options: [...TOBACCO_TYPE_OPTIONS],
+    showWhen: { key: "tobacco_status", values: ["Former", "Current"] },
   },
   {
-    key: "last_nicotine_use",
-    label: "Last nicotine use",
-    group: "Underwriting",
-    input: "select",
-    options: [...LAST_NICOTINE_USE_OPTIONS],
+    key: "last_tobacco_date",
+    label: "Last tobacco date",
+    group: "Build & tobacco",
+    showWhen: { key: "tobacco_status", values: ["Former", "Current"] },
   },
   {
-    key: "health_class",
-    label: "Health / rating class",
-    group: "Underwriting",
+    key: "medical_conditions",
+    label: "Medical conditions",
+    group: "Health",
+    input: "multiselect",
+    options: [...LIFE_MEDICAL_CONDITION_OPTIONS],
+  },
+  { key: "notes", label: "Health notes", group: "Health", input: "textarea" },
+  {
+    key: "existing_coverage",
+    label: "Has existing life coverage?",
+    group: "Existing coverage",
     input: "select",
-    options: [...LIFE_HEALTH_CLASS_OPTIONS],
+    options: [...YES_NO_OPTIONS],
   },
   {
-    key: "us_residency",
-    label: "Residency / citizenship",
-    group: "Underwriting",
-    input: "select",
-    options: [...RESIDENCY_STATUS_OPTIONS],
+    key: "existing_carrier",
+    label: "Current company",
+    group: "Existing coverage",
+    showWhen: { key: "existing_coverage", values: ["yes", "Yes"] },
   },
-  { key: "beneficiary_name", label: "Primary beneficiary", group: "Beneficiary", extractKey: "beneficiary" },
+  {
+    key: "existing_face_amount",
+    label: "Existing face amount",
+    group: "Existing coverage",
+    input: "number",
+    showWhen: { key: "existing_coverage", values: ["yes", "Yes"] },
+  },
+  {
+    key: "existing_coverage_type",
+    label: "Existing type",
+    group: "Existing coverage",
+    input: "select",
+    options: [...LIFE_PRODUCT_TYPE_OPTIONS],
+    showWhen: { key: "existing_coverage", values: ["yes", "Yes"] },
+  },
+  {
+    key: "replacement",
+    label: "Intent to replace?",
+    group: "Existing coverage",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+  },
+  {
+    key: "pending_applications",
+    label: "Pending applications elsewhere?",
+    group: "Existing coverage",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+  },
+  { key: "beneficiary_name", label: "Primary name", group: "Beneficiaries", extractKey: "beneficiary" },
   {
     key: "beneficiary_relationship",
-    label: "Beneficiary relationship",
-    group: "Beneficiary",
+    label: "Primary relationship",
+    group: "Beneficiaries",
     input: "select",
     options: [...RELATIONSHIP_TO_INSURED_OPTIONS],
   },
-  {
-    key: "beneficiary_share",
-    label: "Beneficiary share",
-    group: "Beneficiary",
-    input: "select",
-    options: [...BENEFICIARY_SHARE_OPTIONS],
-  },
-  { key: "contingent_beneficiary_name", label: "Contingent beneficiary", group: "Beneficiary" },
+  { key: "beneficiary_share", label: "Primary share (%)", group: "Beneficiaries", input: "number" },
+  { key: "contingent_beneficiary_name", label: "Contingent name", group: "Beneficiaries" },
   {
     key: "contingent_beneficiary_relationship",
     label: "Contingent relationship",
-    group: "Beneficiary",
+    group: "Beneficiaries",
     input: "select",
     options: [...RELATIONSHIP_TO_INSURED_OPTIONS],
   },
-  {
-    key: "existing_coverage",
-    label: "Existing life coverage?",
-    group: "Existing coverage",
-    input: "select",
-    options: [...YES_NO_OPTIONS],
-  },
-  { key: "existing_face_amount", label: "Existing face amount", group: "Existing coverage", input: "number" },
-  { key: "existing_carrier", label: "Existing carrier", group: "Existing coverage" },
-  {
-    key: "replacement",
-    label: "Replacing existing coverage?",
-    group: "Existing coverage",
-    input: "select",
-    options: [...YES_NO_OPTIONS],
-  },
-  { key: "physician_name", label: "Primary physician", group: "Medical" },
-  { key: "last_doctor_visit", label: "Last doctor visit", group: "Medical" },
-  { key: "medications", label: "Medications", group: "Medical", input: "textarea" },
-  { key: "medical_conditions", label: "Medical conditions / history", group: "Medical", input: "textarea" },
-  { key: "current_carrier", label: "Current carrier", group: "Current policy" },
-  { key: "current_premium", label: "Current premium", group: "Current policy", input: "number" },
-  { key: "expiration_date", label: "Expiration date", group: "Current policy" },
-  { key: "notes", label: "Life notes (CRM only — no rating)", group: "Notes", input: "textarea" },
+  { key: "contingent_beneficiary_share", label: "Contingent share (%)", group: "Beneficiaries", input: "number" },
 ];
 
 export const HEALTH_FIELDS: QuoteFieldDef[] = [
@@ -1225,10 +1232,25 @@ function dedupeFields(fields: QuoteFieldDef[]): QuoteFieldDef[] {
   return out;
 }
 
+/** Life Risk Profile does not duplicate Deal Details identity (name / DOB / contact). */
+const LINES_WITHOUT_SHEET_IDENTITY = new Set<ShopLine>(["life"]);
+
 export function fieldsForLine(line: ShopLine, product?: SheetProduct): QuoteFieldDef[] {
-  const raw = dedupeFields([...APPLICANT_CORE_FIELDS, ...CO_APPLICANT_FIELDS, ...(CATALOG[line] ?? [])]);
+  const identity = LINES_WITHOUT_SHEET_IDENTITY.has(line)
+    ? []
+    : [...APPLICANT_CORE_FIELDS, ...CO_APPLICANT_FIELDS];
+  const raw = dedupeFields([...identity, ...(CATALOG[line] ?? [])]);
   if (!product) return raw;
   return raw.filter((field) => !field.products || field.products.includes(product));
+}
+
+export function sheetFieldIsVisible(
+  field: QuoteFieldDef,
+  liveValues: Record<string, string | undefined | null>,
+): boolean {
+  if (!field.showWhen) return true;
+  const current = String(liveValues[field.showWhen.key] ?? "").trim().toLowerCase();
+  return field.showWhen.values.some((value) => value.toLowerCase() === current);
 }
 
 export function emptySheetValues(

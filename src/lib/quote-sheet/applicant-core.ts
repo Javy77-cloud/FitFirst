@@ -1,13 +1,20 @@
 import type { SheetProduct } from "./products";
 
+export type QuoteFieldShowWhen = {
+  key: string;
+  values: readonly string[];
+};
+
 export type QuoteFieldDef = {
   key: string;
   label: string;
   group: string;
-  input?: "text" | "number" | "textarea" | "select";
+  input?: "text" | "number" | "textarea" | "select" | "multiselect";
   options?: string[];
   extractKey?: string;
   products?: SheetProduct[];
+  /** Hide until another sheet cell matches one of these values (Life cascades). */
+  showWhen?: QuoteFieldShowWhen;
 };
 
 export const MARITAL_STATUS_OPTIONS = [

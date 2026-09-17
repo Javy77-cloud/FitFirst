@@ -80,7 +80,7 @@ export function MasterSheetFillButton({
       router.replace(`/deals/${dealId}?tab=documents&line=${line}`);
       router.refresh();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Master sheet fill failed";
+      const message = error instanceof Error ? error.message : "Risk Profile fill failed";
       setSummary(message);
       setDone(true);
       flashAction(message, "error");

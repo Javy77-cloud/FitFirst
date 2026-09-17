@@ -48,7 +48,7 @@ export function QuotingLinePicker({
       <h3 className="text-sm font-semibold text-navy">Choose the quoting line</h3>
       <p className="mt-1 text-helper text-muted-foreground">
         {sourceDocCount > 0
-          ? `${sourceDocCount} source doc${sourceDocCount === 1 ? "" : "s"} on this deal. Choose Type → Category → Form before Fill master sheet can run.`
+          ? `${sourceDocCount} source doc${sourceDocCount === 1 ? "" : "s"} on this deal. Choose Type → Category → Form before Fill Risk Profile can run.`
           : "Drop a dec, 4-point, or wind mit, then choose Type → Category → Form."}
       </p>
       {picked ? (
@@ -140,7 +140,7 @@ export function QuotingLinePicker({
           </select>
         </label>
         <Button type="submit" size="sm">
-          {picked ? "Update Line And Fill Master Sheet" : "Fill Master Sheet From Those Docs"}
+          {picked ? "Update Line And Fill Risk Profile" : "Fill Risk Profile From Those Docs"}
         </Button>
       </form>
     </section>

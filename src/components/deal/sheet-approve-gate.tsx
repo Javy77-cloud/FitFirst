@@ -89,7 +89,7 @@ export function SheetApproveGate({
         data-ff-sheet-approve-state="approved"
       >
         <p className="text-xs text-fit-green">
-          Master sheet approved{approvedBy ? ` by ${approvedBy}` : ""}. Later saves skip this gate
+          Risk Profile approved{approvedBy ? ` by ${approvedBy}` : ""}. Later saves skip this gate
           unless rating-critical fields change.{" "}
           {hasRequestedQuotes
             ? "Recheck quotes on the Quotes tab."
@@ -135,7 +135,7 @@ export function SheetApproveGate({
       onSubmit={(event) => {
         if (!reviewed) {
           event.preventDefault();
-          setError("Check that you visually reviewed this sheet first.");
+          setError("Check that you visually reviewed this Risk Profile first.");
           return;
         }
         setError(null);
@@ -153,14 +153,14 @@ export function SheetApproveGate({
       <input type="hidden" name="reviewed" value={reviewed ? "yes" : ""} />
       <input type="hidden" name="sure" value={reviewed ? "yes" : ""} />
       <p className="text-sm font-semibold text-navy">
-        {reapprove ? "Re-confirm rating-critical changes" : "Confirm this sheet"}
+        {reapprove ? "Re-confirm rating-critical changes" : "Confirm Risk Profile"}
       </p>
       <p className="mt-1 text-helper text-muted-foreground">
         {reapprove
-          ? `Coverage A, year built, roof, claims, or another rating field changed on the ${formLabel} sheet. Confirm again, then continue to Quotes. Markets stay as last shopped.`
+          ? `Coverage A, year built, roof, claims, or another rating field changed on the ${formLabel} Risk Profile. Confirm again, then continue to Quotes. Markets stay as last shopped.`
           : subsequent
-          ? `Glance the ${formLabel} master sheet. Confirm opens Quotes so you can recheck.`
-          : `Glance the ${formLabel} master sheet. Confirm opens Markets so you can select carriers and request quotes.`}
+          ? `Glance the ${formLabel} Risk Profile. Confirm opens Quotes so you can recheck.`
+          : `Glance the ${formLabel} Risk Profile. Confirm opens Markets so you can select carriers and request quotes.`}
       </p>
       <label className="mt-3 flex items-start gap-2 text-sm">
         <input
@@ -170,7 +170,7 @@ export function SheetApproveGate({
           className="mt-0.5"
           data-ff-sheet-visual-review=""
         />
-        <span>I Visually Reviewed This Master Sheet.</span>
+        <span>I visually reviewed this Risk Profile.</span>
       </label>
       <div className="mt-3">
         <ConfirmSubmitButton reviewed={reviewed} />

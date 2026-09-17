@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
 import { MasterSheetFillButton } from "@/components/deal/master-sheet-fill-button";
@@ -16,8 +17,10 @@ import { Textarea } from "@/components/ui/textarea";
 import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { ApplicantHousehold } from "@/components/deal/applicant-household";
 import { RepeatableUnitBlocks } from "@/components/deal/repeatable-unit-blocks";
-import { fieldsForLine, groupFields } from "@/lib/quote-sheet/catalog";
+import { fieldsForLine, groupFields, sheetFieldIsVisible } from "@/lib/quote-sheet/catalog";
 import { parseSheetProduct } from "@/lib/quote-sheet/products";
+import { RISK_PROFILE_LABEL, SAVE_RISK_PROFILE_LABEL } from "@/lib/quote-sheet/risk-profile-copy";
+import type { QuoteFieldDef } from "@/lib/quote-sheet/applicant-core";
 import type { ShopLine } from "@/lib/domain";
 import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
@@ -83,7 +86,7 @@ export function MasterSheetWorkspace({
 
   async function persistSheet(opts?: { flash?: boolean }) {
     const el = document.getElementById(MASTER_SHEET_FORM_ID);
-    if (!(el instanceof HTMLFormElement)) throw new Error("Master sheet form is missing.");
+    if (!(el instanceof HTMLFormElement)) throw new Error("Risk Profile form is missing.");
     const data = new FormData(el);
     appendSourceDocUploads(data);
     // Stay on Confirm — a redirect remounts the deal page at the top.
@@ -153,10 +156,35 @@ export function MasterSheetCompare({
   const catalog = asList(fieldsForLine(line, product));
   const groups = asList(groupFields(line, product));
   const extractedByKey = new Map(asList(fields).map((field) => [field.fieldKey, field]));
+  const [liveValues, setLiveValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(catalog.map((field) => [field.key, values[field.key]?.value ?? ""])),
+  );
   const filled = catalog.filter((field) => {
     const cell = values[field.key];
     return Boolean(cell?.value.trim() && cell.status !== "missing");
   }).length;
+
+  function onSheetFormChange(event: React.FormEvent<HTMLFormElement>) {
+    const target = event.target;
+    if (
+      !(
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLSelectElement ||
+        target instanceof HTMLTextAreaElement
+      )
+    ) {
+      return;
+    }
+    const name = target.name;
+    if (!name) return;
+    const data = new FormData(event.currentTarget);
+    const joined = data
+      .getAll(name)
+      .map((entry) => String(entry).trim())
+      .filter(Boolean)
+      .join(", ");
+    setLiveValues((prev) => ({ ...prev, [name]: joined }));
+  }
 
   async function onSave(event: React.FormEvent<HTMLFormElement>) {
     const submitter = (event.nativeEvent as SubmitEvent).submitter;
@@ -178,7 +206,7 @@ export function MasterSheetCompare({
       <div className="border-b border-border px-3 py-2">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold text-navy">Master sheet</h3>
+            <h3 className="text-sm font-semibold text-navy">{RISK_PROFILE_LABEL}</h3>
             <p className="text-helper text-muted-foreground">
               Empty before extraction. Type a value or confirm what the source pulled.
               {filled === 0 ? " Fields start blank." : ` ${filled} filled.`}
@@ -196,8 +224,10 @@ export function MasterSheetCompare({
         id={formId}
         action={saveQuoteSheet}
         onSubmit={onSave}
+        onChange={onSheetFormChange}
         className="space-y-0"
         data-ff-master-sheet-form=""
+        data-ff-risk-profile-form=""
       >
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="line" value={line} />
@@ -245,6 +275,7 @@ export function MasterSheetCompare({
                 line={line}
                 groupFields={asList(group.fields)}
                 values={values}
+                liveValues={liveValues}
                 extractedByKey={extractedByKey}
               />
             ),
@@ -252,7 +283,7 @@ export function MasterSheetCompare({
         </div>
         <div className="border-t border-border px-3 py-2">
           <button type="submit" className={buttonVariants({ size: "sm" })} data-ff-save-sheet="">
-            Save sheet
+            {SAVE_RISK_PROFILE_LABEL}
           </button>
         </div>
       </form>
@@ -266,12 +297,14 @@ function SheetGroup({
   line,
   groupFields,
   values,
+  liveValues,
 }: {
   title: string;
   dealId: string;
   line: ShopLine;
   groupFields: ReturnType<typeof fieldsForLine>;
   values: Record<string, QuoteSheetFieldValue>;
+  liveValues: Record<string, string>;
   extractedByKey: Map<string, ExtractedFieldRow>;
 }) {
   return (
@@ -282,6 +315,17 @@ function SheetGroup({
       <div className="grid grid-cols-1 gap-x-4 gap-y-1 px-2 py-1.5 sm:grid-cols-2">
         {asList(groupFields).map((field) => {
           const cell = values[field.key];
+          const visible = sheetFieldIsVisible(field, liveValues);
+          if (!visible) {
+            return (
+              <input
+                key={field.key}
+                type="hidden"
+                name={field.key}
+                value={liveValues[field.key] ?? cell?.value ?? ""}
+              />
+            );
+          }
           const filled = Boolean(cell?.value.trim() && cell.status !== "missing");
           const sourceText = (cell ? sourceTag(cell) : null) || cell?.sourceLabel || "";
           return (
@@ -290,6 +334,7 @@ function SheetGroup({
               id={`sheet-field-${field.key}`}
               className="grid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)] items-center gap-x-2 gap-y-0.5 rounded-sm px-1 py-0.5 hover:bg-muted/40"
               data-ff-sheet-row={field.key}
+              data-ff-sheet-cascade={field.showWhen ? field.showWhen.key : undefined}
             >
               <label
                 htmlFor={`ff-sheet-input-${field.key}`}
@@ -307,6 +352,7 @@ function SheetGroup({
                   input={field.input}
                   options={field.options}
                   cell={cell}
+                  liveValue={liveValues[field.key] ?? cell?.value ?? ""}
                 />
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0 text-[9px] leading-none text-muted-foreground">
                   {sourceText ? <span data-ff-sheet-source={field.key}>{sourceText}</span> : null}
@@ -332,6 +378,13 @@ function SheetGroup({
   );
 }
 
+function selectedMultiValues(raw: string): string[] {
+  return raw
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
 function SheetCell({
   dealId,
   line,
@@ -340,14 +393,16 @@ function SheetCell({
   input = "text",
   options,
   cell,
+  liveValue,
 }: {
   dealId: string;
   line: ShopLine;
   fieldKey: string;
   fieldLabel: string;
-  input?: "text" | "number" | "textarea" | "select";
+  input?: QuoteFieldDef["input"];
   options?: string[];
   cell?: QuoteSheetFieldValue;
+  liveValue?: string;
 }) {
   const locked = fieldKey === "coverage_a" && cell?.source === "javy";
   const className = cn(
@@ -355,11 +410,32 @@ function SheetCell({
     cell?.status === "check" && "ff-field-check",
     (!cell?.value.trim() || cell.status === "missing") && "ff-field-missing",
   );
-  const value = cell?.value ?? "";
+  const value = liveValue ?? cell?.value ?? "";
 
   return (
     <div className="flex flex-col gap-0.5">
-      {input === "textarea" ? (
+      {input === "multiselect" && options && options.length > 0 ? (
+        <fieldset
+          data-ff-sheet-multiselect={fieldKey}
+          className="grid gap-1 rounded-md border border-input bg-background px-2 py-1.5"
+        >
+          <legend className="sr-only">{fieldLabel}</legend>
+          <input type="hidden" name={fieldKey} value="" />
+          {options.map((opt) => (
+            <label key={opt} className="flex items-center gap-1.5 text-[11px] leading-tight text-navy">
+              <input
+                type="checkbox"
+                name={fieldKey}
+                value={opt}
+                defaultChecked={selectedMultiValues(value).includes(opt)}
+                disabled={locked}
+                className="size-3.5 accent-[var(--ff-navy,#1e293b)]"
+              />
+              <span>{opt}</span>
+            </label>
+          ))}
+        </fieldset>
+      ) : input === "textarea" ? (
         <Textarea
           id={`ff-sheet-input-${fieldKey}`}
           name={fieldKey}

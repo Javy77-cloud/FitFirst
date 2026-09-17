@@ -17,7 +17,7 @@ export function AppetiteCapture({
   if (!unlocked) {
     return (
       <p className="text-sm text-muted-foreground">
-        Approve the master sheet first. Then log quoted / declined / maybe from the carrier
+        Approve the Risk Profile first. Then log quoted / declined / maybe from the carrier
         portal paste.
       </p>
     );
