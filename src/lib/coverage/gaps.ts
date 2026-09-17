@@ -124,7 +124,7 @@ export function analyzeCoverageGaps(input: {
   partyName: string;
   isAna?: boolean;
   quoteCount?: number;
-  /** Contact Coverage marks — with us / another carrier. Counts as “has the line”. */
+  /** Contact Coverage marks — other-carrier only. In-force with us comes from policies. */
   declaredCoverage?: DeclaredCoverageLine[];
 }): CoverageGapReport {
   const inForce = inForceGapPolicies(input.policies);

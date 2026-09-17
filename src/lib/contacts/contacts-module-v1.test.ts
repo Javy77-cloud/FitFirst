@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   CONTACT_EDUCATION_OPTIONS,
+  CONTACT_EXTERNAL_COVERAGE_LABEL,
+  CONTACT_GENERATED_OPPORTUNITIES_LABEL,
   CONTACT_MODULE_FIELDS,
   contactCardLayout,
   rebalanceContactDetailLayout,
@@ -110,6 +112,15 @@ describe("Contacts module v1 standards", () => {
       "recent_life_events",
       "cross_selling_opportunity",
     ]);
+    expect(CONTACT_MODULE_FIELDS.find((field) => field.key === "existing_coverage_types")?.label).toBe(
+      CONTACT_EXTERNAL_COVERAGE_LABEL,
+    );
+    expect(CONTACT_MODULE_FIELDS.find((field) => field.key === "cross_selling_opportunity")).toEqual(
+      expect.objectContaining({
+        label: CONTACT_GENERATED_OPPORTUNITIES_LABEL,
+        type: "single_line",
+      }),
+    );
     const occupation = CONTACT_MODULE_FIELDS.find((f) => f.key === "occupation");
     expect(occupation?.type).toBe("picklist");
     const education = CONTACT_MODULE_FIELDS.find((f) => f.key === "education_level");

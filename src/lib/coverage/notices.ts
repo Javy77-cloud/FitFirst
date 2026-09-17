@@ -183,7 +183,6 @@ export function planContactNotices(input: {
   isAna?: boolean;
   policies: GapPolicyInput[];
   deals: NoticeDealInput[];
-  taggedCrossSell?: string | null;
   quoteCount?: number;
   declaredCoverage?: DeclaredCoverageLine[];
 }): PlannedCoverageNotice[] {
@@ -195,7 +194,6 @@ export function planContactNotices(input: {
     quoteCount: input.quoteCount,
     declaredCoverage: input.declaredCoverage,
   });
-  const inForceLines = householdCoveredLines(input.policies, input.declaredCoverage);
   const planned: PlannedCoverageNotice[] = [];
 
   for (const finding of report.findings) {
@@ -242,35 +240,6 @@ export function planContactNotices(input: {
           contactId: input.contactId,
           hash: "opportunities",
           dealId: deal.id,
-        }),
-        severity: "info",
-      });
-    }
-  }
-
-  const tagged = String(input.taggedCrossSell ?? "").trim();
-  if (tagged) {
-    const line = classifyOpportunityLine(tagged);
-    const alreadyInForce = inForceLines.has(line);
-    const openDeal = line === "OTHER" ? null : openDealForLine(input.deals, line);
-    if (!alreadyInForce && !openDeal && line !== "OTHER") {
-      const key = `tagged:${tagged}`;
-      planned.push({
-        kind: OPPORTUNITY_ALERT_KIND,
-        key,
-        title: `Opportunity · ${tagged} tagged for cross-sell`,
-        body: encodeNoticeBody({
-          key,
-          relatedType: null,
-          relatedId: null,
-          plain: `${input.partyName} is tagged for ${tagged}. No in-force ${gapLineLabel(line)} and no open deal for that line.`,
-        }),
-        contactId: input.contactId,
-        relatedType: null,
-        relatedId: null,
-        href: coverageNoticeHref({
-          contactId: input.contactId,
-          hash: "opportunities",
         }),
         severity: "info",
       });

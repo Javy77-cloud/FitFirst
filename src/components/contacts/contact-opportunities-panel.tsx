@@ -7,6 +7,7 @@ import {
   type CoverageLine,
   type GapPolicyInput,
 } from "@/lib/coverage/gaps";
+import { generateContactOpportunities } from "@/lib/coverage/opportunities";
 import {
   classifyOpportunityLine,
   householdCoveredLines,
@@ -61,7 +62,7 @@ export function ContactOpportunitiesPanel({
   isAna,
   policies,
   deals,
-  taggedCrossSell,
+  recentLifeEvents,
   focusDealId,
   declaredCoverage,
 }: {
@@ -70,7 +71,7 @@ export function ContactOpportunitiesPanel({
   isAna?: boolean;
   policies: GapPolicyInput[];
   deals: OpportunityDealRow[];
-  taggedCrossSell?: string | null;
+  recentLifeEvents?: string | null;
   focusDealId?: string | null;
   declaredCoverage?: DeclaredCoverageLine[];
 }) {
@@ -81,32 +82,28 @@ export function ContactOpportunitiesPanel({
     const line = classifyOpportunityLine(deal.lineOfBusiness);
     return line !== "OTHER" && !inForceLines.has(line);
   });
-  const missingWithoutDeal = report.findings.flatMap((finding) =>
-    finding.missing.filter(
-      (line) => !crossSellDeals.some((deal) => classifyOpportunityLine(deal.lineOfBusiness) === line),
-    ),
-  );
-  const uniqueMissing: CoverageLine[] = [...new Set(missingWithoutDeal)];
-  const tagged = String(taggedCrossSell ?? "").trim();
-  const taggedLine = tagged ? classifyOpportunityLine(tagged) : "OTHER";
-  const showTagged =
-    Boolean(tagged) &&
-    taggedLine !== "OTHER" &&
-    !inForceLines.has(taggedLine) &&
-    !crossSellDeals.some((deal) => classifyOpportunityLine(deal.lineOfBusiness) === taggedLine);
+  const generated = generateContactOpportunities({
+    policies,
+    declaredCoverage,
+    recentLifeEvents,
+    partyName,
+  });
+  const uniqueMissing: CoverageLine[] = generated
+    .map((row) => row.line)
+    .filter((line) => !crossSellDeals.some((deal) => classifyOpportunityLine(deal.lineOfBusiness) === line));
 
   const empty =
     crossSellDeals.length === 0 &&
     uniqueMissing.length === 0 &&
     report.rewrites.length === 0 &&
-    !showTagged &&
     !isAna;
 
   return (
     <div className="space-y-4" data-ff-contact-opportunities="">
       <p className="text-xs text-muted-foreground">
-        Open deals that fill a missing household line, plus tagged cross-sell. Closed / bound
-        shops stay on Deals. Renewals stay on the Renewals board — this is not a second queue.
+        Open deals that fill a missing household line, plus generated opportunities from in-force
+        policies, coverage with other carriers, and recent life events. Closed / bound shops stay on
+        Deals. Renewals stay on the Renewals board — this is not a second queue.
       </p>
       {isAna ? (
         <p className="text-sm text-muted-foreground" data-ff-contact-opportunities-ana="">
@@ -136,15 +133,22 @@ export function ContactOpportunitiesPanel({
       ) : null}
       {uniqueMissing.length > 0 ? (
         <ul className="space-y-2" data-ff-contact-opportunities-gaps="">
-          {uniqueMissing.map((line) => (
-            <CrossSellRow
-              key={line}
-              testId="opportunity-gap"
-              title={`No open ${gapLineLabel(line)} deal`}
-              detail={`${partyName} is not covered for ${gapLineLabel(line)}. Start a shop from this contact — do not invent a deal here.`}
-              href={`/deals/new?contactId=${contactId}`}
-            />
-          ))}
+          {uniqueMissing.map((line) => {
+            const generatedRow = generated.find((row) => row.line === line);
+            return (
+              <CrossSellRow
+                key={line}
+                testId="opportunity-gap"
+                title={gapLineLabel(line)}
+                detail={
+                  generatedRow?.reason === "life_event"
+                    ? generatedRow.detail
+                    : `${partyName} is not covered for ${gapLineLabel(line)}. Start a shop from this contact — do not invent a deal here.`
+                }
+                href={`/deals/new?contactId=${contactId}`}
+              />
+            );
+          })}
         </ul>
       ) : null}
       {report.rewrites.length > 0 ? (
@@ -159,20 +163,11 @@ export function ContactOpportunitiesPanel({
           ))}
         </ul>
       ) : null}
-      {showTagged ? (
-        <ul className="divide-y divide-border rounded-md border border-border" data-ff-contact-opportunities-tagged="">
-          <CrossSellRow
-            testId="opportunity-tagged"
-            title={`${tagged} tagged for cross-sell`}
-            detail="Agent-set field on Contact Details. Not covered on the book and no open deal yet."
-          />
-        </ul>
-      ) : null}
       {empty ? (
         <p className="text-sm text-muted-foreground" data-ff-contact-opportunities-empty="">
-          {report.inForceCount === 0
+          {report.inForceCount === 0 && report.coveredLines.length === 0
             ? `${partyName} has no in-force policy yet, so there is no household cross-sell to work.`
-            : `${partyName} has no open cross-sell deals for the lines this desk checks.`}
+            : `${partyName} has no open household gaps on the lines this desk checks.`}
         </p>
       ) : null}
       <p className="text-[11px] text-muted-foreground">

@@ -17,6 +17,7 @@ import {
 import { MailingSameSwitch } from "@/components/custom-fields/mailing-same-switch";
 import { ContactCoverageRecord } from "@/components/contacts/contact-coverage-record";
 import { ContactDetailField } from "@/components/contacts/contact-detail-field";
+import { ContactGeneratedOpportunities } from "@/components/contacts/contact-generated-opportunities";
 import {
   MAILING_SAME_AS_INSURED_KEY,
   isMailingAddressFieldKey,
@@ -194,6 +195,22 @@ export function RecordLayoutFields({
                           inForceLines={inForceLines}
                           recordId={inline ? recordId : undefined}
                           form={form}
+                          onChange={(next) => {
+                            patchValue("existing_coverage_types", next.existingTypes);
+                            patchValue(COVERAGE_CARRIER_FIELD_KEY, next.carrierMapRaw);
+                          }}
+                        />
+                      </div>
+                    );
+                  }
+                  if (contactDesk && key === "cross_selling_opportunity") {
+                    return (
+                      <div className="col-span-full min-w-0" data-ff-record-field={key}>
+                        <ContactGeneratedOpportunities
+                          existingTypes={liveValues.existing_coverage_types ?? ""}
+                          carrierMapRaw={liveValues[COVERAGE_CARRIER_FIELD_KEY] ?? ""}
+                          inForceLines={inForceLines}
+                          recentLifeEvents={liveValues.recent_life_events ?? ""}
                         />
                       </div>
                     );
@@ -220,6 +237,7 @@ export function RecordLayoutFields({
                         healthOptions={healthOptions}
                         lineSettings={lineSettings}
                         variant={contactDesk ? "contact" : "default"}
+                        onValueChange={(next) => patchValue(controlKey, next)}
                       />
                     ) : (
                       <FieldControl

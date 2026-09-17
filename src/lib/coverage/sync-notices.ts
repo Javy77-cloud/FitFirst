@@ -47,8 +47,6 @@ export async function loadContactNoticeInputs(contactId: string) {
     loadRecordValues(contactId, "contacts").catch(() => ({}) as Record<string, string>),
   ]);
 
-  const tagged =
-    typeof custom.cross_selling_opportunity === "string" ? custom.cross_selling_opportunity.trim() : "";
   const declaredCoverage = declaredCoverageFromFields({
     existingCoverageTypes: custom.existing_coverage_types,
     carrierOfRecord: custom[COVERAGE_CARRIER_FIELD_KEY],
@@ -58,7 +56,6 @@ export async function loadContactNoticeInputs(contactId: string) {
     contact,
     policies: policyRows,
     deals: dealRows,
-    taggedCrossSell: tagged || null,
     declaredCoverage,
     partyName: `${contact.firstName} ${contact.lastName}`.trim(),
   };
@@ -77,7 +74,6 @@ export async function syncContactCoverageNotices(contactId: string): Promise<Pla
     lastName: loaded.contact.lastName,
     policies: loaded.policies,
     deals: loaded.deals,
-    taggedCrossSell: loaded.taggedCrossSell,
     declaredCoverage: loaded.declaredCoverage,
   });
 

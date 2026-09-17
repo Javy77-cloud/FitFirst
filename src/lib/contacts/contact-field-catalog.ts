@@ -96,7 +96,13 @@ export const CONTACT_RECENT_LIFE_EVENT_OPTIONS = [
   "Other",
 ] as const;
 
-/** Starter options for Settings → Picklists → Cross-Selling Opportunities. */
+/** Label for existing_coverage_types — other carriers only, never this agency. */
+export const CONTACT_EXTERNAL_COVERAGE_LABEL = "Coverage with other carriers";
+
+/** Layout slot for the read-only generated Opportunities surface. */
+export const CONTACT_GENERATED_OPPORTUNITIES_LABEL = "Opportunities";
+
+/** Legacy labels kept for Settings → Picklists. Contact Details does not use this picklist. */
 export const CONTACT_CROSS_SELL_OPTIONS = [
   "Auto",
   "Home",
@@ -112,7 +118,7 @@ export const CONTACT_CROSS_SELL_OPTIONS = [
   "Other",
 ] as const;
 
-/** Existing coverage multi-select — same labels as Global Lists → Policy sub-types. */
+/** Other-carrier coverage multi-select — same labels as Global Lists → Policy sub-types. */
 export const CONTACT_EXISTING_COVERAGE_OPTIONS = [...POLICY_SUB_TYPES];
 
 /** Full Contact module field catalog — Edit Layout + bind transfer. */
@@ -177,19 +183,19 @@ export const CONTACT_MODULE_FIELDS: CustomFieldDef[] = [
   },
   {
     key: "existing_coverage_types",
-    label: "Existing Coverage Type",
+    label: CONTACT_EXTERNAL_COVERAGE_LABEL,
     type: "multi_select",
     options: [...CONTACT_EXISTING_COVERAGE_OPTIONS],
   },
   /**
-   * JSON map of CoverageLine → us | other. Not a layout field — Coverage section owns the UX.
+   * JSON map of CoverageLine → other. Not a layout field — Coverage section owns the UX.
+   * “With us” is in-force Policies only.
    */
   { key: "coverage_carrier_of_record", label: "Carrier of Record", type: "single_line" },
   {
     key: "cross_selling_opportunity",
-    label: "Cross-Selling Opportunity",
-    type: "picklist",
-    options: [...CONTACT_CROSS_SELL_OPTIONS],
+    label: CONTACT_GENERATED_OPPORTUNITIES_LABEL,
+    type: "single_line",
   },
   { key: "is_homeowner", label: "Homeowner", type: "checkbox" },
   { key: "is_business_owner", label: "Business Owner", type: "checkbox" },

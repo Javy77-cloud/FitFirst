@@ -477,9 +477,9 @@ export default async function ContactDetailPage({
                   isAna={isAna}
                   focusDealId={focusDeal}
                   declaredCoverage={declaredCoverage}
-                  taggedCrossSell={
-                    typeof fieldValues.cross_selling_opportunity === "string"
-                      ? fieldValues.cross_selling_opportunity
+                  recentLifeEvents={
+                    typeof fieldValues.recent_life_events === "string"
+                      ? fieldValues.recent_life_events
                       : null
                   }
                   policies={policies.map(({ policy }) => ({

@@ -12,7 +12,7 @@ export type DeclaredCoverageLine = {
   carrierOfRecord: CarrierOfRecord | null;
 };
 
-/** Lines agents mark on Contact → Coverage. In-force book still wins as “with us”. */
+/** Lines agents can mark as coverage with another carrier. In-force with us stays on Policies. */
 export const CONTACT_COVERAGE_MATRIX_LINES: CoverageLine[] = [
   "HO",
   "AUTO",
@@ -147,23 +147,28 @@ export function serializeCoverageCarrierMap(map: CoverageCarrierMap): string {
   return JSON.stringify(clean);
 }
 
+/**
+ * Contact Coverage field is other-carrier only.
+ * “With us” comes from in-force policies — never from this multi-select.
+ * Stale `us` marks in the map are ignored.
+ */
 export function declaredCoverageFromFields(input: {
   existingCoverageTypes?: string | null;
   carrierOfRecord?: string | null;
 }): DeclaredCoverageLine[] {
   const types = parseExistingCoverageTypes(input.existingCoverageTypes);
   const map = parseCoverageCarrierMap(input.carrierOfRecord);
-  const byLine = new Map<CoverageLine, CarrierOfRecord | null>();
+  const byLine = new Map<CoverageLine, CarrierOfRecord>();
   for (const type of types) {
     const line = classifyDeclaredCoverageType(type);
     if (line === "OTHER") continue;
-    byLine.set(line, map[line] ?? null);
+    byLine.set(line, "other");
   }
   for (const [line, cor] of Object.entries(map)) {
-    if (!cor) continue;
+    if (cor !== "other") continue;
     const typed = line as CoverageLine;
     if (typed === "OTHER") continue;
-    if (!byLine.has(typed)) byLine.set(typed, cor);
+    if (!byLine.has(typed)) byLine.set(typed, "other");
   }
   return [...byLine.entries()].map(([line, carrierOfRecord]) => ({ line, carrierOfRecord }));
 }
@@ -189,7 +194,8 @@ export function applyCoverageLineChoice(input: {
   const kept = input.existingTypes.filter((type) => classifyDeclaredCoverageType(type) !== input.line);
   const map = { ...input.carrierMap };
   delete map[input.line];
-  if (input.choice === "none") {
+  // With-us is Policies / in-force only — never persist it on this field.
+  if (input.choice === "none" || input.choice === "us") {
     return { existingTypes: [...kept], carrierMap: map };
   }
   const existingForLine = input.existingTypes.filter(
@@ -200,7 +206,7 @@ export function applyCoverageLineChoice(input: {
     : [DECLARED_LINE_LABEL[input.line] ?? input.line];
   return {
     existingTypes: [...kept, ...labels],
-    carrierMap: { ...map, [input.line]: input.choice },
+    carrierMap: { ...map, [input.line]: "other" },
   };
 }
 
@@ -214,7 +220,7 @@ export function coverageChoiceForLine(input: {
   }
   const row = input.declared.find((item) => item.line === input.line);
   if (!row) return "none";
-  if (row.carrierOfRecord === "us") return "us";
+  // Stale “us” on the field without an in-force policy is not coverage with us.
   if (row.carrierOfRecord === "other") return "other";
-  return "other";
+  return "none";
 }

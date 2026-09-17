@@ -31,17 +31,26 @@ describe("declared coverage / carrier-of-record", () => {
     expect(map.FLOOD).toBe("other");
   });
 
-  it("treats selected types without a carrier mark as present, not missing", () => {
+  it("treats every selected type as other-carrier coverage, never with us", () => {
     const rows = declaredCoverageFromFields({
       existingCoverageTypes: "HO3,Auto",
-      carrierOfRecord: JSON.stringify({ HO: "other" }),
+      carrierOfRecord: JSON.stringify({ HO: "us", AUTO: "other" }),
     });
     expect(rows).toEqual(
       expect.arrayContaining([
         { line: "HO", carrierOfRecord: "other" },
-        { line: "AUTO", carrierOfRecord: null },
+        { line: "AUTO", carrierOfRecord: "other" },
       ]),
     );
+    expect(rows.every((row) => row.carrierOfRecord === "other")).toBe(true);
+  });
+
+  it("ignores a stale us mark that is not on the other-carrier field", () => {
+    const rows = declaredCoverageFromFields({
+      existingCoverageTypes: "",
+      carrierOfRecord: JSON.stringify({ HO: "us" }),
+    });
+    expect(rows).toEqual([]);
   });
 
   it("locks in-force lines as with us", () => {
@@ -73,11 +82,22 @@ describe("declared coverage / carrier-of-record", () => {
       line: "HO",
       choice: "none",
       existingTypes: ["HO3", "Auto"],
-      carrierMap: { HO: "other", AUTO: "us" },
+      carrierMap: { HO: "other", AUTO: "other" },
     });
     expect(next.existingTypes).toEqual(["Auto"]);
     expect(next.carrierMap.HO).toBeUndefined();
-    expect(serializeCoverageCarrierMap(next.carrierMap)).toBe(JSON.stringify({ AUTO: "us" }));
+    expect(serializeCoverageCarrierMap(next.carrierMap)).toBe(JSON.stringify({ AUTO: "other" }));
+  });
+
+  it("does not persist with-us onto the other-carrier field", () => {
+    const next = applyCoverageLineChoice({
+      line: "HO",
+      choice: "us",
+      existingTypes: ["HO3", "Auto"],
+      carrierMap: { HO: "other", AUTO: "other" },
+    });
+    expect(next.existingTypes).toEqual(["Auto"]);
+    expect(next.carrierMap.HO).toBeUndefined();
   });
 
   it("prefers in-force over a stored other-carrier mark", () => {
@@ -88,5 +108,15 @@ describe("declared coverage / carrier-of-record", () => {
         inForceLines: ["HO"],
       }),
     ).toBe("us");
+  });
+
+  it("does not treat a stale us mark as with us when the line is not in force", () => {
+    expect(
+      coverageChoiceForLine({
+        line: "HO",
+        declared: [{ line: "HO", carrierOfRecord: "us" }],
+        inForceLines: [],
+      }),
+    ).toBe("none");
   });
 });

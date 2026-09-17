@@ -40,7 +40,6 @@ describe("contact coverage / opportunity notices", () => {
         lastName: "Dib",
         policies: [],
         deals: [{ id: "d1", title: "Dib HO3", pipelineStage: "quote_sent", lineOfBusiness: "HO" }],
-        taggedCrossSell: "Flood",
         quoteCount: 10,
       }),
     ).toEqual([]);
@@ -84,29 +83,15 @@ describe("contact coverage / opportunity notices", () => {
     expect(planned.some((row) => row.key.startsWith("deal:"))).toBe(false);
   });
 
-  it("fires a tagged cross-sell only when the line is missing and no open deal exists", () => {
-    const tagged = planContactNotices({
+  it("does not invent an opportunity from a leftover picklist value", () => {
+    const leftover = planContactNotices({
       contactId: "c1",
       partyName: "Ivy Soto",
       policies: [policy({ id: "pa", lineOfBusiness: "AUTO" })],
       deals: [],
-      taggedCrossSell: "Flood",
     });
-    expect(tagged.some((row) => row.key === "tagged:Flood")).toBe(true);
-
-    const covered = planContactNotices({
-      contactId: "c1",
-      partyName: "Full book",
-      policies: [
-        policy({ id: "ho", lineOfBusiness: "HO" }),
-        policy({ id: "fl", lineOfBusiness: "FLOOD" }),
-        policy({ id: "au", lineOfBusiness: "AUTO" }),
-        policy({ id: "um", lineOfBusiness: "UMBRELLA" }),
-      ],
-      deals: [],
-      taggedCrossSell: "Flood",
-    });
-    expect(covered.some((row) => row.key.startsWith("tagged:"))).toBe(false);
+    expect(leftover.some((row) => row.key.startsWith("tagged:"))).toBe(false);
+    expect(leftover.some((row) => row.kind === "opportunity")).toBe(false);
   });
 
   it("maps Home / Condo tags onto HO and encodes parseable notice bodies", () => {
@@ -140,7 +125,6 @@ describe("contact coverage / opportunity notices", () => {
       partyName: "Rosa Castellanos",
       policies: [policy({ id: "pa", lineOfBusiness: "AUTO" })],
       deals: [],
-      taggedCrossSell: "Home",
       declaredCoverage: [{ line: "HO", carrierOfRecord: "other" }],
     });
     expect(planned.some((row) => row.key === "auto-no-home")).toBe(false);

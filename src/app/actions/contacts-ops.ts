@@ -363,9 +363,9 @@ export async function updateContactField(input: {
   revalidatePath(`/contacts/${contactId}`);
   revalidatePath("/contacts");
   if (
-    customKey === "cross_selling_opportunity" ||
     customKey === "existing_coverage_types" ||
-    customKey === "coverage_carrier_of_record"
+    customKey === "coverage_carrier_of_record" ||
+    customKey === "recent_life_events"
   ) {
     scheduleContactCoverageNotices(contactId);
   }

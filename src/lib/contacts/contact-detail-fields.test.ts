@@ -42,15 +42,20 @@ describe("contact detail field system", () => {
           { key: "education_level", label: "Education Level", type: "picklist", options: [] },
           { key: "preferred_contact_method", label: "Preferred Contact Method", type: "picklist", options: [] },
           { key: "preferred_contact_time", label: "Preferred Contact Time", type: "picklist", options: [] },
-          { key: "existing_coverage_types", label: "Existing Coverage Type", type: "multi_select", options: [] },
+          { key: "existing_coverage_types", label: "Coverage with other carriers", type: "multi_select", options: [] },
           { key: "is_homeowner", label: "Homeowner", type: "checkbox" },
           { key: "is_business_owner", label: "Business Owner", type: "checkbox" },
           { key: "recent_life_events", label: "Recent Life Events", type: "multi_select", options: [] },
-          { key: "cross_selling_opportunity", label: "Cross-Selling Opportunity", type: "picklist", options: [] },
+          { key: "cross_selling_opportunity", label: "Opportunities", type: "single_line" },
           { key: "source", label: "Lead Source", type: "picklist", options: [] },
           { key: "referral", label: "Referred By", type: "single_line" },
         ],
-        values: { first_name: "Rosa", last_name: "Castellanos" },
+        values: {
+          first_name: "Rosa",
+          last_name: "Castellanos",
+          existing_coverage_types: "Auto",
+        },
+        inForceLines: ["HO"],
       }),
     );
     expect(html).toMatch(/data-ff-contact-section="identity"/);
@@ -61,12 +66,19 @@ describe("contact detail field system", () => {
     expect(html).toMatch(/data-ff-contact-field="first_name"/);
     expect(html).toMatch(/data-ff-contact-field="source"/);
     expect(html).toMatch(/data-ff-contact-coverage-record/);
+    expect(html).toMatch(/Coverage with other carriers/);
+    expect(html).toMatch(/data-ff-generated-opportunities/);
+    expect(html).toMatch(/data-ff-generated-opportunity="FLOOD"/);
+    expect(html).toMatch(/data-ff-generated-opportunity="UMBRELLA"/);
+    expect(html).not.toMatch(/data-ff-generated-opportunity="HO"/);
+    expect(html).not.toMatch(/data-ff-generated-opportunity="AUTO"/);
     expect(html).toMatch(/data-ff-compact-row/);
     expect(html).toMatch(/data-ff-contact-field-compact="1"/);
     expect(html).not.toMatch(/text-center text-lg font-semibold/);
+    expect(html).not.toMatch(/data-ff-click-to-edit="cross_selling_opportunity"/);
   });
 
-  it("shows with-us / another-carrier / not-covered for household lines", () => {
+  it("shows with-us as book status only; another-carrier is the writable field", () => {
     const html = renderToStaticMarkup(
       createElement(ContactCoverageRecord, {
         existingTypes: "HO3",
@@ -76,8 +88,10 @@ describe("contact detail field system", () => {
     );
     expect(html).toMatch(/data-ff-coverage-record-line="HO"/);
     expect(html).toMatch(/data-ff-coverage-record-line="AUTO"/);
+    expect(html).toMatch(/Coverage with other carriers/);
     expect(html).toMatch(/Another carrier/);
     expect(html).toMatch(/On the book/);
+    expect(html).toMatch(/not stored here/);
     expect(html).toMatch(/not a missing-line gap/);
   });
 });

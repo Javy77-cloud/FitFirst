@@ -100,6 +100,7 @@ export function ClickToEditField({
   healthOptions = [],
   lineSettings,
   variant = "default",
+  onValueChange,
 }: {
   field: CustomFieldDef;
   value: string;
@@ -115,6 +116,7 @@ export function ClickToEditField({
   healthOptions?: Array<{ slug?: string; label: string }>;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   variant?: "default" | "contact";
+  onValueChange?: (next: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(value);
@@ -163,6 +165,7 @@ export function ClickToEditField({
         return;
       }
       setSaved(normalizedNext);
+      onValueChange?.(normalizedNext);
       flashAction("Saved");
       setEditing(false);
     });
@@ -274,6 +277,7 @@ export function ClickToEditField({
           // Keep editing open while picking; persist each change so blur isn't required.
           const previous = saved;
           setSaved(joined);
+          onValueChange?.(joined);
           if (savingRef.current) return;
           savingRef.current = true;
           startTransition(async () => {
@@ -282,6 +286,7 @@ export function ClickToEditField({
             if (!result.ok) {
               flashAction(result.error ?? "Could Not Save", "error");
               setSaved(previous);
+              onValueChange?.(previous);
               return;
             }
             flashAction("Saved");

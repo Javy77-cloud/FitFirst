@@ -91,7 +91,7 @@ export function isWideLayoutField(key: string, field?: LayoutFieldHint): boolean
   }
   const k = key.toLowerCase();
   if (k === "insurance_type" || k === "pipeline" || field?.systemKey === "quotingForm") return true;
-  if (k === "existing_coverage_types") return true;
+  if (k === "existing_coverage_types" || k === "cross_selling_opportunity") return true;
   return false;
 }
 

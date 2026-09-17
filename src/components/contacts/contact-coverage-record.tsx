@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { updateContactCoverageRecord } from "@/app/actions/contacts-ops";
+import { CONTACT_EXTERNAL_COVERAGE_LABEL } from "@/lib/contacts/contact-field-catalog";
 import {
   applyCoverageLineChoice,
   applyInForceCarrierLock,
@@ -33,6 +34,7 @@ export function ContactCoverageRecord({
   typesName = "field_existing_coverage_types",
   recordName = "field_coverage_carrier_of_record",
   form,
+  onChange,
 }: {
   existingTypes: string;
   carrierMapRaw: string;
@@ -41,6 +43,7 @@ export function ContactCoverageRecord({
   typesName?: string;
   recordName?: string;
   form?: string;
+  onChange?: (next: { existingTypes: string; carrierMapRaw: string }) => void;
 }) {
   const [types, setTypes] = useState(existingTypes);
   const [record, setRecord] = useState(carrierMapRaw);
@@ -68,6 +71,7 @@ export function ContactCoverageRecord({
   function persist(nextTypes: string, nextRecord: string) {
     setTypes(nextTypes);
     setRecord(nextRecord);
+    onChange?.({ existingTypes: nextTypes, carrierMapRaw: nextRecord });
     if (!recordId) return;
     startTransition(async () => {
       const result = await updateContactCoverageRecord({
@@ -79,6 +83,7 @@ export function ContactCoverageRecord({
         flashAction(result.error ?? "Could Not Save", "error");
         setTypes(existingTypes);
         setRecord(carrierMapRaw);
+        onChange?.({ existingTypes, carrierMapRaw });
         return;
       }
       flashAction("Saved");
@@ -86,7 +91,8 @@ export function ContactCoverageRecord({
   }
 
   function onChoose(line: CoverageLine, choice: Choice) {
-    if (inForceLines.includes(line) && choice !== "us") return;
+    if (choice === "us") return;
+    if (inForceLines.includes(line)) return;
     const next = applyCoverageLineChoice({
       line,
       choice,
@@ -103,9 +109,13 @@ export function ContactCoverageRecord({
     >
       <input type="hidden" name={typesName} value={types} form={form} />
       <input type="hidden" name={recordName} value={record} form={form} />
+      <p className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
+        {CONTACT_EXTERNAL_COVERAGE_LABEL}
+      </p>
       <p className="text-[11px] text-muted-foreground">
-        Mark each line the household has. In-force policies stay <span className="font-medium">with us</span>.
-        Another carrier counts as covered — not a missing-line gap.
+        Mark lines the household has with another carrier. Policies in force with this agency stay
+        on Policies — they are not stored here. Another carrier counts as covered, not a missing-line
+        gap.
       </p>
       <ul className="overflow-hidden rounded-md border border-border" data-ff-coverage-record-list="">
         {lines.map((line) => {
@@ -125,7 +135,7 @@ export function ContactCoverageRecord({
               <div className="flex flex-wrap items-center gap-1 px-1.5 py-1">
                 {CHOICES.map((option) => {
                   const selected = choice === option.id;
-                  const disabled = locked && option.id !== "us";
+                  const disabled = option.id === "us" || locked;
                   return (
                     <button
                       key={option.id}
