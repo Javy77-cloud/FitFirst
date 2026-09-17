@@ -8,6 +8,7 @@ import {
 import { buildGeminiSystemPrompt, buildGeminiUserPrompt } from "./prompt";
 import { mapGeminiJsonToFields, type GeminiExtractJson } from "./map";
 import type { ExtractionResult } from "@/lib/extraction/extract";
+import { noteDeveloperApiCall } from "@/lib/developer/usage";
 
 const GENERATIVE_BASE = "https://generativelanguage.googleapis.com/v1beta";
 /** Default attempts for dec / 4pt. Wind mit PDFs are large and often 503 under load. */
@@ -245,6 +246,7 @@ export async function extractWithGeminiPdf(
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
+        noteDeveloperApiCall("gemini");
       } catch (error) {
         const message = error instanceof Error ? error.message : "gemini_network_error";
         if (attempt < maxAttempts) {

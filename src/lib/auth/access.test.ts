@@ -20,6 +20,7 @@ describe("Admin vs Agent capabilities", () => {
     expect(caps.sendClientComms).toBe(true);
     expect(caps.calendarOwnItems).toBe(true);
     expect(caps.pipelineOwnDeals).toBe(true);
+    expect(caps.seeDeveloperHub).toBe(false);
   });
 
   it("lets an Agent work their book but not Admin tools", () => {
@@ -35,6 +36,15 @@ describe("Admin vs Agent capabilities", () => {
     expect(caps.sendClientComms).toBe(true);
     expect(caps.calendarOwnItems).toBe(true);
     expect(caps.pipelineOwnDeals).toBe(true);
+    expect(caps.seeDeveloperHub).toBe(false);
+  });
+
+  it("gives Developer the hub without Admin settings", () => {
+    const caps = capabilitiesFor("developer");
+    expect(caps.role).toBe("developer");
+    expect(caps.seeDeveloperHub).toBe(true);
+    expect(caps.seeAdminSettings).toBe(false);
+    expect(caps.askTeammate).toBe(false);
   });
 
   it("treats owner as Admin and unsigned as guest", () => {

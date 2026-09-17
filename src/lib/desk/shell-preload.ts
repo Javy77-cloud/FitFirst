@@ -6,7 +6,10 @@ import { listUsers } from "@/lib/db/queries";
 /** Start shared desk chrome queries so page data and AppShell overlap. */
 export function preloadDeskShell() {
   void currentDeskSession().then((session) => {
-    void getStoredNavLayout(session.userId, { isAdmin: session.isAdmin });
+    void getStoredNavLayout(session.userId, {
+      isAdmin: session.isAdmin,
+      isDeveloper: session.isDeveloper,
+    });
   });
   void getActor();
   void listUsers();

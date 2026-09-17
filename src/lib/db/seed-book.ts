@@ -4,6 +4,7 @@ import {
   ADMIN_USER_ID,
   AGENCY_SETTINGS_ID,
   AGENT_USER_ID,
+  DEVELOPER_USER_ID,
   GARCIA_AGENT_USER_ID,
   FROZEN_AGENT_ALERT_ID,
   FROZEN_AGENT_MESSAGE_ID,
@@ -398,6 +399,57 @@ export async function seedUsersAndBook() {
     .onConflictDoUpdate({
       target: deskAgents.id,
       set: { displayName: "Javier Garcia", role: "agent", slug: "javier" },
+    });
+
+  await db
+    .insert(users)
+    .values({
+      id: DEVELOPER_USER_ID,
+      tenantId: TENANT_ID,
+      name: "Drew Hale",
+      email: "drew@fitfirst.local",
+      username: "drew",
+      role: "developer",
+      passwordHash: null,
+      active: true,
+      accessStatus: "active",
+      canAccessModules: true,
+      canSeeAgencyWidgets: true,
+      officeLabel: "Palm Bay HQ",
+      territoryLabel: "Brevard",
+      mustSetPassword: false,
+      mfaEnrolled: true,
+      mustEnrollMfa: false,
+      mfaMethod: "totp",
+      totpSecret: DEMO_JAVY_TOTP_SECRET,
+      mfaSecret: DEMO_JAVY_TOTP_SECRET,
+      mfaDemoBypass: true,
+      isSiteDeveloper: true,
+      meetingAddress: "Suite 114 · developer desk",
+    })
+    .onConflictDoUpdate({
+      target: users.id,
+      set: {
+        name: "Drew Hale",
+        email: "drew@fitfirst.local",
+        username: "drew",
+        role: "developer",
+        active: true,
+        accessStatus: "active",
+        canAccessModules: true,
+        canSeeAgencyWidgets: true,
+        officeLabel: "Palm Bay HQ",
+        territoryLabel: "Brevard",
+        mfaEnrolled: true,
+        mustEnrollMfa: false,
+        mfaMethod: "totp",
+        totpSecret: DEMO_JAVY_TOTP_SECRET,
+        mfaSecret: DEMO_JAVY_TOTP_SECRET,
+        mfaDemoBypass: true,
+        isSiteDeveloper: true,
+        meetingAddress: "Suite 114 · developer desk",
+        updatedAt: new Date(),
+      },
     });
 
   await db

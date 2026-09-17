@@ -15,12 +15,13 @@ export default async function LoginPage({
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6">
-      <div className="w-full max-w-3xl space-y-5">
+      <div className="w-full max-w-5xl space-y-5">
         <div className="text-center sm:text-left">
           <div className="text-caption uppercase tracking-wide text-muted-foreground">FitFirst desk</div>
           <h1 className="text-2xl font-semibold text-navy">Sign in</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Admin sees the whole book. Agent sees their own book. Role is enforced in middleware.
+            Admin sees the whole book. Agent sees their own book. Developer is a third profile
+            for API meters — not Admin settings.
           </p>
         </div>
 
@@ -57,7 +58,7 @@ export default async function LoginPage({
           </p>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
           <form action={loginDesk} className="ff-card flex flex-col gap-3 p-5">
             <input type="hidden" name="who" value="admin" />
             <div className="flex items-center justify-between gap-2">
@@ -119,14 +120,47 @@ export default async function LoginPage({
               Sign in as Agent
             </Button>
           </form>
+
+          <form action={loginDesk} className="ff-card flex flex-col gap-3 p-5">
+            <input type="hidden" name="who" value="developer" />
+            <div className="flex items-center justify-between gap-2">
+              <span className="rounded-md bg-secondary px-2 py-0.5 text-caption font-semibold uppercase tracking-wide text-navy">
+                Developer
+              </span>
+              <span className="text-helper text-muted-foreground">API meters</span>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-navy">{DEMO_USERS.developer.name}</h2>
+              <p className="text-sm text-muted-foreground">{DEMO_USERS.developer.email}</p>
+            </div>
+            <p className="text-sm text-navy/80">{DEMO_USERS.developer.summary}</p>
+            <ul className="list-disc space-y-1 pl-5 text-helper text-muted-foreground">
+              <li>Developer nav and hub only when this profile is signed in</li>
+              <li>Tiles count real Mapbox, Gemini, FedEx, and parcel HTTP</li>
+              <li>Uninstrumented vendors stay labeled not counted yet</li>
+            </ul>
+            <div>
+              <Label className="text-sm">Password</Label>
+              <Input
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+                className="mt-1"
+              />
+            </div>
+            <Button type="submit" className="mt-auto">
+              Sign in as Developer
+            </Button>
+          </form>
         </div>
 
         <form action={loginDesk} className="ff-card space-y-3 p-5">
           <div>
             <h2 className="text-sm font-semibold text-navy">Email or username</h2>
             <p className="text-helper text-muted-foreground">
-              Any desk login Admin created. After sign-in the rail shows Admin · all book or
-              Agent · own book.
+              Any desk login Admin created. After sign-in the rail shows Admin · all book,
+              Agent · own book, or Developer · API meters.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">

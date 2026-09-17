@@ -26,7 +26,11 @@ export async function establishSession(user: User, mfaStatus: MfaStatus) {
   jar.set(SESSION_COOKIES.name, user.name, SESSION_COOKIE_OPTS);
   jar.set(SESSION_COOKIES.mfa, mfaStatus, SESSION_COOKIE_OPTS);
   jar.set(SESSION_COOKIES.modules, user.canAccessModules === false ? "0" : "1", SESSION_COOKIE_OPTS);
-  jar.set(DESK_ROLE_COOKIE, role === "agent" ? "agent" : "admin", SESSION_COOKIE_OPTS);
+  jar.set(
+    DESK_ROLE_COOKIE,
+    role === "admin" || role === "owner" ? "admin" : "agent",
+    SESSION_COOKIE_OPTS,
+  );
   jar.set(DESK_AGENT_COOKIE, user.id, SESSION_COOKIE_OPTS);
   jar.delete(SESSION_COOKIES.impersonatorId);
   if (mfaStatus === "ok") jar.delete(SESSION_COOKIES.mfaPending);
@@ -83,6 +87,9 @@ export async function loginDesk(formData: FormData) {
   }
   if (who === "agent" || who === "maya") {
     await signInByLogin(DEMO_USERS.agent.email, password);
+  }
+  if (who === "developer" || who === "drew") {
+    await signInByLogin(DEMO_USERS.developer.email, password);
   }
   const login = String(formData.get("email") ?? formData.get("username") ?? "").trim();
   await signInByLogin(login, password);

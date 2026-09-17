@@ -1,10 +1,14 @@
 import type { UserRole } from "@/lib/domain";
 
+export type DeskProfile = "admin" | "agent" | "developer";
+
 export type Actor = {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  /** Chrome profile. Developer is not Admin and not a producer. */
+  profile?: DeskProfile;
   /** Agent flag: same client book as admin (canSeeAgencyWidgets). */
   canSeeAgencyBook?: boolean;
 };

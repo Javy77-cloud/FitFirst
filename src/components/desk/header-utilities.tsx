@@ -40,6 +40,7 @@ export type HeaderSession = {
   name: string;
   isAdmin: boolean;
   isAgent: boolean;
+  isDeveloper?: boolean;
   signedIn: boolean;
 };
 
@@ -58,6 +59,7 @@ function initials(name: string) {
 }
 
 function roleLabel(session: HeaderSession) {
+  if (session.isDeveloper && !session.isAdmin) return "Developer";
   if (session.isAdmin) return "Admin";
   if (session.isAgent) return "Agent";
   return "Guest";

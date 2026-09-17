@@ -1,6 +1,7 @@
 import { parseFedExResolvePayload } from "./parse";
 import { addressesMatch } from "@/lib/address/compare";
 import { addressIsComplete, type AddressSuggestion, type ParsedAddress } from "@/lib/address/types";
+import { noteDeveloperApiCall } from "@/lib/developer/usage";
 
 export type FedExEnvironment = "sandbox" | "production";
 
@@ -149,6 +150,7 @@ export async function verifyFedExAddress(
     }),
     signal: AbortSignal.timeout(8000),
   });
+  noteDeveloperApiCall("fedex");
   if (!res.ok) return { status: "unmatched", resolved: null, suggestions: [] };
   const suggestions = parseFedExResolvePayload(await res.json());
   const resolved = suggestions[0]?.address ?? null;

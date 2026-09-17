@@ -1,6 +1,7 @@
 import {
   getNavLink,
   isAdminOnlyNavId,
+  isDeveloperOnlyNavId,
   isPersonalSettingsPath,
   NAV_LINK_CATALOG,
   navLinkIsActive,
@@ -126,6 +127,7 @@ export type ResolvedNavItem = {
   hidable: boolean;
   defaultCollapsed: boolean;
   adminOnly: boolean;
+  developerOnly: boolean;
   link: NavLinkDef;
   submenu: ResolvedSubmenuItem[];
   isFolder: boolean;
@@ -152,7 +154,18 @@ function parsePersonal(raw: unknown): PersonalDeskPrefs | undefined {
   return Object.keys(personal).length ? personal : undefined;
 }
 
-export type NavLayoutOptions = { isAdmin?: boolean };
+export type NavLayoutOptions = { isAdmin?: boolean; isDeveloper?: boolean };
+
+export function navLinkVisible(
+  link: Pick<NavLinkDef, "adminOnly" | "developerOnly">,
+  options: NavLayoutOptions = {},
+): boolean {
+  const isAdmin = options.isAdmin !== false;
+  const isDeveloper = options.isDeveloper === true;
+  if (link.adminOnly && !isAdmin) return false;
+  if (link.developerOnly && !isDeveloper) return false;
+  return true;
+}
 
 export function defaultStoredNavLayout(options: NavLayoutOptions = {}): StoredNavLayout {
   const isAdmin = options.isAdmin !== false;
@@ -345,26 +358,34 @@ export function resolveNavLayout(
   options: NavLayoutOptions = {},
 ): ResolvedNavRow[] {
   const isAdmin = options.isAdmin !== false;
+  const isDeveloper = options.isDeveloper === true;
   // Honor saved Customize order for everyone. Agents still skip adminOnly links.
   // Default strip for agents comes from defaultStoredNavLayout({ isAdmin: false }).
-  const layout = normalizeNavLayout(stored, { isAdmin });
-  const primaryOrder = layout.primaryOrder;
+  const layout = normalizeNavLayout(stored, { isAdmin, isDeveloper });
+  let primaryOrder = layout.primaryOrder;
+  if (
+    isDeveloper &&
+    !primaryOrder.includes("developer") &&
+    !layout.hiddenPrimaryIds.includes("developer")
+  ) {
+    primaryOrder = [...primaryOrder, "developer"];
+  }
   return primaryOrder
     .map((id): ResolvedNavRow | null => {
       if (isDividerId(id)) return { kind: "divider", id: DIVIDER_ID };
       const link = getNavLink(id);
       if (!link) return null;
-      if (!isAdmin && link.adminOnly) return null;
+      if (!navLinkVisible(link, { isAdmin, isDeveloper })) return null;
       const submenu = (layout.submenus[id] ?? [])
         .map((itemId): ResolvedSubmenuItem | null => {
           const item = getNavLink(itemId);
           if (!item) return null;
-          if (!isAdmin && item.adminOnly) return null;
+          if (!navLinkVisible(item, { isAdmin, isDeveloper })) return null;
           const children = (layout.submenus[itemId] ?? [])
             .map((childId) => getNavLink(childId))
             .filter((child): child is NavLinkDef => {
               if (!child) return false;
-              return isAdmin || !child.adminOnly;
+              return navLinkVisible(child, { isAdmin, isDeveloper });
             });
           return { ...item, children };
         })
@@ -376,6 +397,7 @@ export function resolveNavLayout(
         hidable: isHidablePrimaryId(id),
         defaultCollapsed: isDefaultCollapsedId(id),
         adminOnly: Boolean(link.adminOnly),
+        developerOnly: Boolean(link.developerOnly),
         link,
         submenu,
         isFolder: submenu.length > 0,
@@ -642,11 +664,12 @@ export function unusedCatalogLinks(
   const current = normalizeNavLayout(layout);
   const taken = allUsedIds(current.primaryOrder, current.submenus);
   const isAdmin = options.isAdmin !== false;
+  const isDeveloper = options.isDeveloper === true;
   return NAV_LINK_CATALOG.filter((link) => {
     if (taken.has(link.id)) return false;
     // My Book is the Policies parent click — not a separate folder to re-add.
     if (link.id === "my-book") return false;
-    if (!isAdmin && link.adminOnly) return false;
+    if (!navLinkVisible(link, { isAdmin, isDeveloper })) return false;
     return true;
   });
 }
@@ -692,11 +715,12 @@ export function availableSubmenuLinks(
   const taken = allUsedIds(current.primaryOrder, current.submenus);
   taken.add(primaryId);
   const isAdmin = options.isAdmin !== false;
+  const isDeveloper = options.isDeveloper === true;
   return NAV_LINK_CATALOG.filter((link) => {
     if (taken.has(link.id)) return false;
     // My Book is the Policies parent click — not a separate folder to re-add.
     if (link.id === "my-book") return false;
-    if (!isAdmin && link.adminOnly) return false;
+    if (!navLinkVisible(link, { isAdmin, isDeveloper })) return false;
     return true;
   });
 }
@@ -718,9 +742,16 @@ export function flattenResolvedNav(rows: ResolvedNavRow[]): NavLinkDef[] {
 }
 
 /** Primary that owns this path (submenu first). Home exact-match and personal settings return "". */
-export function primaryIdForPath(pathname: string, layout?: StoredNavLayout | null, isAdmin = true): string {
+export function primaryIdForPath(
+  pathname: string,
+  layout?: StoredNavLayout | null,
+  isAdmin = true,
+  isDeveloper = false,
+): string {
   if (isPersonalSettingsPath(pathname)) return "";
-  const rows = resolveNavLayout(layout, { isAdmin }).filter((row): row is ResolvedNavItem => row.kind === "item");
+  const rows = resolveNavLayout(layout, { isAdmin, isDeveloper }).filter(
+    (row): row is ResolvedNavItem => row.kind === "item",
+  );
   const home = rows.find((row) => row.id === "home");
   if (home && navLinkIsActive(pathname, home.link)) return "";
   for (const row of rows) {
@@ -744,10 +775,14 @@ export function navActorKey(userId: string): string {
   return `user:${userId}`;
 }
 
-export function visibleForRole<T extends { adminOnly?: boolean; id?: string }>(
+export function visibleForRole<T extends { adminOnly?: boolean; developerOnly?: boolean; id?: string }>(
   items: T[],
   isAdmin: boolean,
+  isDeveloper = false,
 ): T[] {
-  if (isAdmin) return items;
-  return items.filter((item) => !item.adminOnly && !isAdminOnlyNavId(item.id ?? ""));
+  return items.filter((item) => {
+    if ((item.adminOnly || isAdminOnlyNavId(item.id ?? "")) && !isAdmin) return false;
+    if ((item.developerOnly || isDeveloperOnlyNavId(item.id ?? "")) && !isDeveloper) return false;
+    return true;
+  });
 }

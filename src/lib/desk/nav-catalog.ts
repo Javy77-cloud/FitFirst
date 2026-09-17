@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarDays,
   ClipboardList,
+  Code2,
   Contact,
   FileStack,
   FileWarning,
@@ -38,6 +39,8 @@ export type NavLinkDef = {
   exact?: boolean;
   /** Agency chrome, credentials, billing, people. Hidden from agents. */
   adminOnly?: boolean;
+  /** Third profile. Hidden unless session.isDeveloper. */
+  developerOnly?: boolean;
 };
 
 /** Every destination that can sit on the rail or inside a folder. Ids are stable for prefs. */
@@ -270,6 +273,14 @@ export const NAV_LINK_CATALOG: NavLinkDef[] = [
     match: "/settings/carrier-download",
     adminOnly: true,
   },
+  {
+    id: "developer",
+    href: "/developer",
+    label: "Developer",
+    icon: Code2,
+    match: "/developer",
+    developerOnly: true,
+  },
 ];
 
 export const NAV_LINK_BY_ID: Record<string, NavLinkDef> = Object.fromEntries(
@@ -282,6 +293,10 @@ export function getNavLink(id: string): NavLinkDef | undefined {
 
 export function isAdminOnlyNavId(id: string): boolean {
   return Boolean(getNavLink(id)?.adminOnly);
+}
+
+export function isDeveloperOnlyNavId(id: string): boolean {
+  return Boolean(getNavLink(id)?.developerOnly);
 }
 
 const PERSONAL_SETTINGS_PATHS = ["/me", "/settings/profile", "/settings/security", "/settings/my-desk"];

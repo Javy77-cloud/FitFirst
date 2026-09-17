@@ -54,6 +54,12 @@ export default async function PersonalSettingsPage({
               That page is agency Admin only. Your personal settings stay here.
             </p>
           ) : null}
+          {params.error === "developer-only" ? (
+            <p className="rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
+              That page is the Developer profile only. Sign in as Developer, or grant the site-developer
+              flag.
+            </p>
+          ) : null}
           {params.saved ? (
             <p className="rounded-md bg-fit-green-bg px-3 py-2 text-sm text-navy">Personal settings saved.</p>
           ) : null}
