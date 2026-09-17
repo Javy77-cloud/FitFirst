@@ -209,28 +209,28 @@ const PRODUCT_FIELDS: Record<DealProductId, { label: string; fields: CustomField
   health_marketplace: {
     label: "Marketplace",
     fields: [
-      field("plan_type", "Plan family", "picklist", { options: [...HEALTH_PLAN_TYPE_OPTIONS] }),
+      field("plan_type", "Coverage type", "picklist", { options: [...HEALTH_PLAN_TYPE_OPTIONS] }),
       field("dependents", "Dependents", "number"),
     ],
   },
   health_ma: {
     label: "Medicare Advantage",
     fields: [
-      field("plan_type", "Plan family", "picklist", { options: [...HEALTH_PLAN_TYPE_OPTIONS] }),
+      field("plan_type", "Coverage type", "picklist", { options: [...HEALTH_PLAN_TYPE_OPTIONS] }),
       field("dependents", "Dependents", "number"),
     ],
   },
   health_med_ab: {
     label: "Medicare A&B",
     fields: [
-      field("plan_type", "Plan family", "picklist", { options: [...HEALTH_PLAN_TYPE_OPTIONS] }),
+      field("plan_type", "Coverage type", "picklist", { options: [...HEALTH_PLAN_TYPE_OPTIONS] }),
       field("dependents", "Dependents", "number"),
     ],
   },
   health_supplemental: {
     label: "Supplemental",
     fields: [
-      field("plan_type", "Plan family", "picklist", { options: [...HEALTH_PLAN_TYPE_OPTIONS] }),
+      field("plan_type", "Coverage type", "picklist", { options: [...HEALTH_PLAN_TYPE_OPTIONS] }),
       field("dependents", "Dependents", "number"),
     ],
   },

@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { ApplicantHousehold } from "@/components/deal/applicant-household";
 import { RepeatableUnitBlocks } from "@/components/deal/repeatable-unit-blocks";
-import { fieldsForLine, groupFields, sheetFieldIsVisible } from "@/lib/quote-sheet/catalog";
+import { fieldsForLine, groupFields, sheetFieldIsVisible, sheetGroupIsVisible } from "@/lib/quote-sheet/catalog";
 import { parseSheetProduct } from "@/lib/quote-sheet/products";
 import { RISK_PROFILE_LABEL, SAVE_RISK_PROFILE_LABEL } from "@/lib/quote-sheet/risk-profile-copy";
 import type { QuoteFieldDef } from "@/lib/quote-sheet/applicant-core";
@@ -238,36 +238,50 @@ export function MasterSheetCompare({
           value={`/deals/${dealId}?tab=documents&line=${line}#${SHEET_CONFIRM_HASH}`}
         />
         <div data-ff-master-sheet-scroll="" className="overflow-visible">
-          {groups.map((group) =>
-            group.group === "Applicant" ? (
-              <ApplicantHousehold key="applicant-household" values={values} hasCoApplicantFlag={hasCoApplicantFlag} />
-            ) : group.group === "Co-applicant" ? null : group.group === "Vehicle" || group.group === "Vehicles" ? (
-              <RepeatableUnitBlocks
-                key={group.group}
-                kind="vehicle"
-                product={product}
-                values={values}
-                extractedByKey={extractedByKey}
-                dealId={dealId}
-                line={line}
-              />
-            ) : group.group === "Drivers" ? (
-              <RepeatableUnitBlocks
-                key={group.group}
-                kind="driver"
-                product={product}
-                values={values}
-                extractedByKey={extractedByKey}
-              />
-            ) : group.group === "Household" || group.group === "Household members" ? (
-              <RepeatableUnitBlocks
-                key={group.group}
-                kind="household"
-                product={product}
-                values={values}
-                extractedByKey={extractedByKey}
-              />
-            ) : (
+          {groups.map((group) => {
+            const useAutoRepeaters = line === "auto";
+            if (group.group === "Applicant") {
+              return (
+                <ApplicantHousehold key="applicant-household" values={values} hasCoApplicantFlag={hasCoApplicantFlag} />
+              );
+            }
+            if (group.group === "Co-applicant") return null;
+            if (useAutoRepeaters && (group.group === "Vehicle" || group.group === "Vehicles")) {
+              return (
+                <RepeatableUnitBlocks
+                  key={group.group}
+                  kind="vehicle"
+                  product={product}
+                  values={values}
+                  extractedByKey={extractedByKey}
+                  dealId={dealId}
+                  line={line}
+                />
+              );
+            }
+            if (useAutoRepeaters && group.group === "Drivers") {
+              return (
+                <RepeatableUnitBlocks
+                  key={group.group}
+                  kind="driver"
+                  product={product}
+                  values={values}
+                  extractedByKey={extractedByKey}
+                />
+              );
+            }
+            if (useAutoRepeaters && (group.group === "Household" || group.group === "Household members")) {
+              return (
+                <RepeatableUnitBlocks
+                  key={group.group}
+                  kind="household"
+                  product={product}
+                  values={values}
+                  extractedByKey={extractedByKey}
+                />
+              );
+            }
+            return (
               <SheetGroup
                 key={group.group}
                 title={group.group}
@@ -278,8 +292,8 @@ export function MasterSheetCompare({
                 liveValues={liveValues}
                 extractedByKey={extractedByKey}
               />
-            ),
-          )}
+            );
+          })}
         </div>
         <div className="border-t border-border px-3 py-2">
           <button type="submit" className={buttonVariants({ size: "sm" })} data-ff-save-sheet="">
@@ -307,15 +321,24 @@ function SheetGroup({
   liveValues: Record<string, string>;
   extractedByKey: Map<string, ExtractedFieldRow>;
 }) {
+  const rows = asList(groupFields);
+  const groupVisible = sheetGroupIsVisible(rows, liveValues);
   return (
-    <div className="border-b border-border/70 last:border-b-0" data-ff-sheet-group={title}>
-      <div className={sheetGroupHeaderClass(title)} style={SHEET_GROUP_HEADER_STYLE} data-ff-sheet-group-header={title}>
-        {title}
-      </div>
-      <div className="grid grid-cols-1 gap-x-4 gap-y-1 px-2 py-1.5 sm:grid-cols-2">
-        {asList(groupFields).map((field) => {
+    <div
+      className={groupVisible ? "border-b border-border/70 last:border-b-0" : undefined}
+      data-ff-sheet-group={title}
+      data-ff-sheet-group-hidden={groupVisible ? undefined : "true"}
+      hidden={!groupVisible}
+    >
+      {groupVisible ? (
+        <div className={sheetGroupHeaderClass(title)} style={SHEET_GROUP_HEADER_STYLE} data-ff-sheet-group-header={title}>
+          {title}
+        </div>
+      ) : null}
+      <div className={groupVisible ? "grid grid-cols-1 gap-x-4 gap-y-1 px-2 py-1.5 sm:grid-cols-2" : undefined}>
+        {rows.map((field) => {
           const cell = values[field.key];
-          const visible = sheetFieldIsVisible(field, liveValues);
+          const visible = groupVisible && sheetFieldIsVisible(field, liveValues);
           if (!visible) {
             return (
               <input

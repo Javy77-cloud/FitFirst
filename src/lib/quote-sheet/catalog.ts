@@ -90,14 +90,13 @@ import {
   TOBACCO_STATUS_OPTIONS,
   TOBACCO_TYPE_OPTIONS,
   HEALTH_PLAN_TYPE_OPTIONS,
-  HEALTH_NETWORK_TYPE_OPTIONS,
   HEALTH_METAL_LEVEL_OPTIONS,
+  HEALTH_COST_PREF_OPTIONS,
+  HEALTH_MEDICAL_CONDITION_OPTIONS,
+  HEALTH_QLE_TYPE_OPTIONS,
+  HEALTH_DEPENDENT_SLOT_COUNT,
   HOUSEHOLD_SIZE_OPTIONS,
-  TAX_FILING_STATUS_OPTIONS,
-  HOUSEHOLD_INCOME_BAND_OPTIONS,
-  HEALTH_EFFECTIVE_DATE_TYPE_OPTIONS,
-  HEALTH_SEP_REASON_OPTIONS,
-  MEDICARE_PARTS_OPTIONS,
+  MEDICARE_COVERAGE_SHOW_VALUES,
   applyMasterSheetDefaults,
   emptyDefaultsForLine,
 } from "./sheet-defaults";
@@ -959,30 +958,111 @@ export const LIFE_FIELDS: QuoteFieldDef[] = [
   { key: "contingent_beneficiary_share", label: "Contingent share (%)", group: "Beneficiaries", input: "number" },
 ];
 
+const SHOW_WHEN_YES = (key: string): { key: string; values: readonly string[] } => ({
+  key,
+  values: ["yes", "Yes"],
+});
+
+const MEDICARE_SHOW = {
+  key: "plan_type",
+  values: [...MEDICARE_COVERAGE_SHOW_VALUES],
+};
+
+const MARKETPLACE_SHOW = { key: "plan_type", values: ["Marketplace"] };
+const TOBACCO_USED_SHOW = { key: "tobacco_status", values: ["Former", "Current"] };
+
+function healthDependentFields(): QuoteFieldDef[] {
+  const fields: QuoteFieldDef[] = [];
+  for (let index = 1; index <= HEALTH_DEPENDENT_SLOT_COUNT; index += 1) {
+    fields.push(
+      {
+        key: `dependent_${index}_name`,
+        label: `Dependent ${index} name`,
+        group: "Household",
+        showWhen: SHOW_WHEN_YES("dependents_under_26"),
+      },
+      {
+        key: `dependent_${index}_dob`,
+        label: `Dependent ${index} DOB`,
+        group: "Household",
+        showWhen: SHOW_WHEN_YES("dependents_under_26"),
+      },
+      {
+        key: `dependent_${index}_student`,
+        label: `Dependent ${index} student?`,
+        group: "Household",
+        input: "select",
+        options: [...YES_NO_OPTIONS],
+        showWhen: SHOW_WHEN_YES("dependents_under_26"),
+      },
+    );
+  }
+  return fields;
+}
+
+/** Identity stays on Deal Details — Health Risk Profile is enrollment / quote track only. */
 export const HEALTH_FIELDS: QuoteFieldDef[] = [
   {
     key: "plan_type",
-    label: "Plan family",
-    group: "Plan",
+    label: "Coverage type",
+    group: "Coverage",
     input: "select",
     options: [...HEALTH_PLAN_TYPE_OPTIONS],
     extractKey: "plan_type",
   },
   {
-    key: "network_type",
-    label: "Network type",
-    group: "Plan",
-    input: "select",
-    options: [...HEALTH_NETWORK_TYPE_OPTIONS],
-  },
-  {
     key: "metal_level",
-    label: "Metal level",
-    group: "Plan",
+    label: "Metal level preference",
+    group: "Coverage",
     input: "select",
     options: [...HEALTH_METAL_LEVEL_OPTIONS],
+    showWhen: MARKETPLACE_SHOW,
   },
-  { key: "members", label: "Members on application", group: "Household", input: "number" },
+  {
+    key: "deductible_preference",
+    label: "Deductible preference",
+    group: "Coverage",
+    input: "select",
+    options: [...HEALTH_COST_PREF_OPTIONS],
+  },
+  {
+    key: "oop_max_preference",
+    label: "Out-of-pocket max preference",
+    group: "Coverage",
+    input: "select",
+    options: [...HEALTH_COST_PREF_OPTIONS],
+  },
+  { key: "medicare_number", label: "Medicare number", group: "Medicare", showWhen: MEDICARE_SHOW },
+  { key: "part_a_start", label: "Part A start date", group: "Medicare", showWhen: MEDICARE_SHOW },
+  { key: "part_b_start", label: "Part B start date", group: "Medicare", showWhen: MEDICARE_SHOW },
+  {
+    key: "current_ma_plan",
+    label: "Current Medicare Advantage plan",
+    group: "Medicare",
+    showWhen: MEDICARE_SHOW,
+  },
+  {
+    key: "current_medigap_letter",
+    label: "Current Medigap plan letter",
+    group: "Medicare",
+    showWhen: MEDICARE_SHOW,
+  },
+  {
+    key: "medicaid_eligibility",
+    label: "Medicaid eligibility",
+    group: "Medicare",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+    showWhen: MEDICARE_SHOW,
+  },
+  {
+    key: "lis_extra_help",
+    label: "LIS / Extra Help",
+    group: "Medicare",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+    showWhen: MEDICARE_SHOW,
+  },
   {
     key: "household_size",
     label: "Household size",
@@ -990,73 +1070,167 @@ export const HEALTH_FIELDS: QuoteFieldDef[] = [
     input: "select",
     options: [...HOUSEHOLD_SIZE_OPTIONS],
   },
-  { key: "dependents", label: "Dependents", group: "Household", input: "number" },
+  { key: "household_income", label: "Household income (annual)", group: "Household", input: "number" },
   {
-    key: "tax_filing_status",
-    label: "Tax filing status",
+    key: "expected_tax_credit",
+    label: "Expected tax credit eligibility",
     group: "Household",
     input: "select",
-    options: [...TAX_FILING_STATUS_OPTIONS],
+    options: [...YES_NO_OPTIONS],
   },
   {
-    key: "income_band",
-    label: "Household income band",
+    key: "spouse_on_application",
+    label: "Spouse on application",
     group: "Household",
     input: "select",
-    options: [...HOUSEHOLD_INCOME_BAND_OPTIONS],
+    options: [...YES_NO_OPTIONS],
   },
-  { key: "household_income", label: "Estimated household income", group: "Household", input: "number" },
+  {
+    key: "spouse_name",
+    label: "Spouse name",
+    group: "Household",
+    showWhen: SHOW_WHEN_YES("spouse_on_application"),
+  },
+  {
+    key: "spouse_dob",
+    label: "Spouse DOB",
+    group: "Household",
+    showWhen: SHOW_WHEN_YES("spouse_on_application"),
+  },
+  {
+    key: "dependents_under_26",
+    label: "Dependents under 26",
+    group: "Household",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+  },
+  ...healthDependentFields(),
+  {
+    key: "pregnancy",
+    label: "Pregnancy",
+    group: "Household",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+  },
+  {
+    key: "pregnancy_due_date",
+    label: "Pregnancy due date",
+    group: "Household",
+    showWhen: SHOW_WHEN_YES("pregnancy"),
+  },
   {
     key: "tobacco_status",
-    label: "Tobacco / nicotine",
-    group: "Eligibility",
+    label: "Tobacco use",
+    group: "Tobacco",
     input: "select",
     options: [...TOBACCO_STATUS_OPTIONS],
     extractKey: "tobacco",
   },
   {
-    key: "effective_date_type",
-    label: "Effective date type",
-    group: "Eligibility",
+    key: "tobacco_type",
+    label: "Tobacco type",
+    group: "Tobacco",
     input: "select",
-    options: [...HEALTH_EFFECTIVE_DATE_TYPE_OPTIONS],
-  },
-  { key: "effective_date", label: "Requested effective date", group: "Eligibility" },
-  {
-    key: "sep_reason",
-    label: "SEP / qualifying event",
-    group: "Eligibility",
-    input: "select",
-    options: [...HEALTH_SEP_REASON_OPTIONS],
+    options: [...TOBACCO_TYPE_OPTIONS],
+    showWhen: TOBACCO_USED_SHOW,
   },
   {
-    key: "medicare_parts",
-    label: "Medicare parts",
-    group: "Medicare",
-    input: "select",
-    options: [...MEDICARE_PARTS_OPTIONS],
+    key: "last_tobacco_date",
+    label: "Last tobacco date",
+    group: "Tobacco",
+    showWhen: TOBACCO_USED_SHOW,
   },
   {
-    key: "medicaid_or_extra_help",
-    label: "Medicaid / Extra Help?",
-    group: "Medicare",
+    key: "medical_conditions",
+    label: "Medical conditions",
+    group: "Health",
+    input: "multiselect",
+    options: [...HEALTH_MEDICAL_CONDITION_OPTIONS],
+  },
+  { key: "notes", label: "Health notes", group: "Health", input: "textarea" },
+  {
+    key: "employer_plan",
+    label: "Current employer plan",
+    group: "Employer / QLE",
     input: "select",
     options: [...YES_NO_OPTIONS],
   },
-  { key: "preferred_doctors", label: "Preferred doctors / specialists", group: "Network", input: "textarea" },
-  { key: "preferred_network", label: "Preferred network / hospital", group: "Network" },
-  { key: "prescriptions", label: "Prescriptions", group: "Network", input: "textarea" },
   {
-    key: "current_coverage",
-    label: "Currently covered?",
-    group: "Current policy",
+    key: "employer_plan_name",
+    label: "Employer plan name",
+    group: "Employer / QLE",
+    showWhen: SHOW_WHEN_YES("employer_plan"),
+  },
+  {
+    key: "employer_plan_premium",
+    label: "Employer monthly premium",
+    group: "Employer / QLE",
+    input: "number",
+    showWhen: SHOW_WHEN_YES("employer_plan"),
+  },
+  {
+    key: "cobra_eligibility",
+    label: "COBRA eligibility",
+    group: "Employer / QLE",
     input: "select",
     options: [...YES_NO_OPTIONS],
   },
-  { key: "current_carrier", label: "Current carrier", group: "Current policy" },
-  { key: "current_premium", label: "Current premium", group: "Current policy", input: "number" },
-  { key: "expiration_date", label: "Expiration date", group: "Current policy" },
-  { key: "notes", label: "Health notes (CRM only — no rating)", group: "Notes", input: "textarea" },
+  {
+    key: "qualifying_life_event",
+    label: "Qualifying life event",
+    group: "Employer / QLE",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+  },
+  {
+    key: "qle_type",
+    label: "QLE type",
+    group: "Employer / QLE",
+    input: "select",
+    options: [...HEALTH_QLE_TYPE_OPTIONS],
+    showWhen: SHOW_WHEN_YES("qualifying_life_event"),
+  },
+  {
+    key: "qle_date",
+    label: "QLE date",
+    group: "Employer / QLE",
+    showWhen: SHOW_WHEN_YES("qualifying_life_event"),
+  },
+  {
+    key: "existing_coverage",
+    label: "Has current health coverage?",
+    group: "Existing coverage",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+  },
+  {
+    key: "existing_carrier",
+    label: "Current carrier",
+    group: "Existing coverage",
+    showWhen: SHOW_WHEN_YES("existing_coverage"),
+  },
+  {
+    key: "existing_plan_type",
+    label: "Current plan type",
+    group: "Existing coverage",
+    input: "select",
+    options: [...HEALTH_PLAN_TYPE_OPTIONS],
+    showWhen: SHOW_WHEN_YES("existing_coverage"),
+  },
+  {
+    key: "replacement",
+    label: "Intent to replace?",
+    group: "Existing coverage",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+  },
+  {
+    key: "pending_applications",
+    label: "Pending applications?",
+    group: "Existing coverage",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+  },
 ];
 
 export const WC_FIELDS: QuoteFieldDef[] = [
@@ -1232,8 +1406,8 @@ function dedupeFields(fields: QuoteFieldDef[]): QuoteFieldDef[] {
   return out;
 }
 
-/** Life Risk Profile does not duplicate Deal Details identity (name / DOB / contact). */
-const LINES_WITHOUT_SHEET_IDENTITY = new Set<ShopLine>(["life"]);
+/** Life / Health Risk Profile does not duplicate Deal Details identity (name / DOB / contact). */
+const LINES_WITHOUT_SHEET_IDENTITY = new Set<ShopLine>(["life", "health"]);
 
 export function fieldsForLine(line: ShopLine, product?: SheetProduct): QuoteFieldDef[] {
   const identity = LINES_WITHOUT_SHEET_IDENTITY.has(line)
@@ -1251,6 +1425,14 @@ export function sheetFieldIsVisible(
   if (!field.showWhen) return true;
   const current = String(liveValues[field.showWhen.key] ?? "").trim().toLowerCase();
   return field.showWhen.values.some((value) => value.toLowerCase() === current);
+}
+
+/** Hide a section header when every field is cascaded off (Medicare, lived-5-years style). */
+export function sheetGroupIsVisible(
+  fields: readonly QuoteFieldDef[],
+  liveValues: Record<string, string | undefined | null>,
+): boolean {
+  return fields.some((field) => sheetFieldIsVisible(field, liveValues));
 }
 
 export function emptySheetValues(

@@ -80,6 +80,8 @@ describe("Risk Profile agent-visible copy", () => {
     expect(auto).toEqual(expect.arrayContaining(["applicant_name", "vin", "driver_1_name"]));
     expect(flood).toEqual(expect.arrayContaining(["applicant_name", "flood_zone"]));
     expect(fieldsForLine("life").some((field) => field.key === "applicant_name")).toBe(false);
+    expect(fieldsForLine("health").some((field) => field.key === "applicant_name")).toBe(false);
+    expect(fieldsForLine("health").some((field) => field.key === "medicare_number")).toBe(true);
   });
 
   it("joins multi-select checkbox values on save", () => {
@@ -142,5 +144,97 @@ describe("Risk Profile agent-visible copy", () => {
     expect(whole).toContain("Last tobacco date");
     expect(whole).toContain("Current company");
     expect(whole).toContain("Existing face amount");
+  });
+
+  it("renders the Health Risk Profile lean sections and hides Medicare off Marketplace", () => {
+    const marketplace = renderToString(
+      createElement(MasterSheetCompare, {
+        dealId: "deal-health",
+        line: "health",
+        fields: [],
+        values: {
+          ...emptySheetValues("health"),
+          plan_type: { value: "Marketplace", status: "confirmed", source: "agent" },
+          tobacco_status: { value: "Never", status: "confirmed", source: "agent" },
+          spouse_on_application: { value: "no", status: "confirmed", source: "agent" },
+          dependents_under_26: { value: "no", status: "confirmed", source: "agent" },
+          pregnancy: { value: "no", status: "confirmed", source: "agent" },
+          employer_plan: { value: "no", status: "confirmed", source: "agent" },
+          qualifying_life_event: { value: "no", status: "confirmed", source: "agent" },
+          existing_coverage: { value: "no", status: "confirmed", source: "agent" },
+        },
+        product: "health",
+      }),
+    );
+    expect(marketplace).toContain("Risk Profile");
+    expect(marketplace).toContain("Coverage type");
+    expect(marketplace).toContain("Metal level preference");
+    expect(marketplace).toContain("Deductible preference");
+    expect(marketplace).toContain("Household size");
+    expect(marketplace).toContain("Tobacco use");
+    expect(marketplace).toContain("Medical conditions");
+    expect(marketplace).toContain("Current employer plan");
+    expect(marketplace).toContain("Has current health coverage?");
+    expect(marketplace).not.toContain("Applicant name");
+    expect(marketplace).not.toContain("Medicare number");
+    expect(marketplace).not.toContain("Part A start date");
+    expect(marketplace).not.toContain('data-ff-sheet-group-header="Medicare"');
+    expect(marketplace).not.toContain("Spouse name");
+    expect(marketplace).not.toContain("Dependent 1 name");
+    expect(marketplace).not.toContain("Pregnancy due date");
+    expect(marketplace).not.toContain("Employer plan name");
+    expect(marketplace).not.toContain("QLE type");
+    expect(marketplace).not.toContain("Current carrier");
+    expect(marketplace).not.toContain("Tobacco type");
+    expect(marketplace).toContain('data-ff-sheet-multiselect="medical_conditions"');
+
+    const medicare = renderToString(
+      createElement(MasterSheetCompare, {
+        dealId: "deal-health",
+        line: "health",
+        fields: [],
+        values: {
+          ...emptySheetValues("health"),
+          plan_type: { value: "Medicare Advantage", status: "confirmed", source: "agent" },
+          tobacco_status: { value: "Former", status: "confirmed", source: "agent" },
+          spouse_on_application: { value: "yes", status: "confirmed", source: "agent" },
+          dependents_under_26: { value: "yes", status: "confirmed", source: "agent" },
+          pregnancy: { value: "yes", status: "confirmed", source: "agent" },
+          employer_plan: { value: "yes", status: "confirmed", source: "agent" },
+          qualifying_life_event: { value: "yes", status: "confirmed", source: "agent" },
+          existing_coverage: { value: "yes", status: "confirmed", source: "agent" },
+        },
+        product: "health",
+      }),
+    );
+    expect(medicare).toContain("Medicare number");
+    expect(medicare).toContain("Part A start date");
+    expect(medicare).toContain("LIS / Extra Help");
+    expect(medicare).toContain('data-ff-sheet-group-header="Medicare"');
+    expect(medicare).not.toContain("Metal level preference");
+    expect(medicare).toContain("Tobacco type");
+    expect(medicare).toContain("Last tobacco date");
+    expect(medicare).toContain("Spouse name");
+    expect(medicare).toContain("Dependent 1 name");
+    expect(medicare).toContain("Pregnancy due date");
+    expect(medicare).toContain("Employer plan name");
+    expect(medicare).toContain("QLE type");
+    expect(medicare).toContain("Current carrier");
+
+    const dental = renderToString(
+      createElement(MasterSheetCompare, {
+        dealId: "deal-health",
+        line: "health",
+        fields: [],
+        values: {
+          ...emptySheetValues("health"),
+          plan_type: { value: "Dental", status: "confirmed", source: "agent" },
+        },
+        product: "health",
+      }),
+    );
+    expect(dental).not.toContain("Medicare number");
+    expect(dental).not.toContain("Metal level preference");
+    expect(dental).not.toContain('data-ff-sheet-group-header="Medicare"');
   });
 });
