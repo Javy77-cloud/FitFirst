@@ -3,8 +3,10 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { addressFillForKey } from "@/lib/address/keys";
+import { addressFillForKey, qualifyAddressFill } from "@/lib/address/keys";
+import { addressFingerprint, parseAddressLine } from "@/lib/address/compare";
 import {
+  addressIsComplete,
   formatAddressLine,
   type AddressFillMap,
   type AddressSuggestion,
@@ -14,18 +16,30 @@ import { cn } from "@/lib/utils";
 
 export type { AddressFillMap, ParsedAddress };
 
+type VerifyChip = "idle" | "checking" | "verified" | "suggested" | "unmatched" | "error";
+
 function writeSibling(form: HTMLFormElement | null, name: string | undefined, value: string) {
   if (!form || !name) return;
-  const el = form.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${name}"]`);
+  const el = form.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${cssName(name)}"]`);
   if (!el) return;
   el.value = value;
   el.dispatchEvent(new Event("input", { bubbles: true }));
   el.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+function cssName(name: string): string {
+  return name.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function readNamed(root: ParentNode | null, name: string | undefined): string {
+  if (!root || !name) return "";
+  const el = root.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${cssName(name)}"]`);
+  return el?.value.trim() ?? "";
+}
+
 /**
- * Shared address control. With a configured FedEx vault/env key: typeahead + confirm.
- * Without a key: a plain text input — no fake copy that pretends FedEx is live.
+ * Shared address control. Mapbox typeahead when a token is configured.
+ * FedEx is verification-only — never typeahead. Without Mapbox the field stays plain text.
  */
 export function AddressAutocomplete({
   name,
@@ -62,13 +76,18 @@ export function AddressAutocomplete({
   const inputId = id ?? `addr-${reactId}`;
   const inputRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
-  const map = fill ?? addressFillForKey(name);
+  const lastVerifySig = useRef("");
+  const runVerifyRef = useRef<(reason: "button" | "blur" | "confirm") => void>(() => {});
+  const resolvedFill = qualifyAddressFill(fill ?? addressFillForKey(name), name);
   const [query, setQuery] = useState(defaultValue ?? "");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [enabled, setEnabled] = useState(false);
+  const [verifyEnabled, setVerifyEnabled] = useState(false);
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [confirmed, setConfirmed] = useState(false);
+  const [verifyStatus, setVerifyStatus] = useState<VerifyChip>("idle");
+  const [suggested, setSuggested] = useState<ParsedAddress | null>(null);
 
   useEffect(() => {
     setQuery(defaultValue ?? "");
@@ -77,12 +96,19 @@ export function AddressAutocomplete({
   useEffect(() => {
     let cancelled = false;
     void fetch("/api/address/status")
-      .then((res) => res.json() as Promise<{ enabled?: boolean }>)
+      .then(
+        (res) =>
+          res.json() as Promise<{ enabled?: boolean; verifyEnabled?: boolean; autocomplete?: string | null }>,
+      )
       .then((data) => {
-        if (!cancelled) setEnabled(Boolean(data.enabled));
+        if (cancelled) return;
+        setEnabled(Boolean(data.enabled));
+        setVerifyEnabled(Boolean(data.verifyEnabled));
       })
       .catch(() => {
-        if (!cancelled) setEnabled(false);
+        if (cancelled) return;
+        setEnabled(false);
+        setVerifyEnabled(false);
       });
     return () => {
       cancelled = true;
@@ -124,17 +150,111 @@ export function AddressAutocomplete({
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
+  useEffect(() => {
+    const formEl = inputRef.current?.form;
+    if (!formEl || !verifyEnabled || readOnly || disabled) return;
+    const watched = new Set(
+      [name, resolvedFill.city, resolvedFill.state, resolvedFill.zip].filter(Boolean) as string[],
+    );
+    function onFocusOut(event: FocusEvent) {
+      const target = event.target as HTMLElement | null;
+      const fieldName = target?.getAttribute("name");
+      if (!fieldName || !watched.has(fieldName)) return;
+      window.setTimeout(() => {
+        runVerifyRef.current("blur");
+      }, 200);
+    }
+    formEl.addEventListener("focusout", onFocusOut);
+    return () => formEl.removeEventListener("focusout", onFocusOut);
+  }, [disabled, name, readOnly, resolvedFill.city, resolvedFill.state, resolvedFill.zip, verifyEnabled]);
+
+  function hostForm(): HTMLFormElement | null {
+    return inputRef.current?.form ?? inputRef.current?.closest("form") ?? null;
+  }
+
+  function readBlock(): ParsedAddress {
+    const formEl = hostForm();
+    const root: ParentNode | null = formEl ?? boxRef.current?.closest("[data-ff-address-fieldset]") ?? document;
+    const fromSiblings: ParsedAddress = {
+      street: query.trim(),
+      city: readNamed(root, resolvedFill.city),
+      state: readNamed(root, resolvedFill.state),
+      zip: readNamed(root, resolvedFill.zip),
+      county: readNamed(root, resolvedFill.county),
+      country: "US",
+    };
+    if (addressIsComplete(fromSiblings)) return fromSiblings;
+    const parsed = parseAddressLine(query);
+    return {
+      street: fromSiblings.street || parsed.street,
+      city: fromSiblings.city || parsed.city,
+      state: fromSiblings.state || parsed.state,
+      zip: fromSiblings.zip || parsed.zip,
+      county: fromSiblings.county || parsed.county,
+      country: "US",
+    };
+  }
+
+  async function runVerify(reason: "button" | "blur" | "confirm") {
+    if (!verifyEnabled || readOnly || disabled) return;
+    const address = readBlock();
+    if (!addressIsComplete(address)) {
+      if (reason === "button") setVerifyStatus("unmatched");
+      return;
+    }
+    const sig = addressFingerprint(address);
+    if (reason !== "button" && lastVerifySig.current === sig) return;
+    lastVerifySig.current = sig;
+    setVerifyStatus("checking");
+    try {
+      const res = await fetch("/api/address/verify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(address),
+      });
+      const data = (await res.json()) as {
+        status?: string;
+        enabled?: boolean;
+        resolved?: ParsedAddress | null;
+      };
+      if (data.enabled === false) {
+        setVerifyEnabled(false);
+        setVerifyStatus("idle");
+        return;
+      }
+      if (data.status === "verified") {
+        setSuggested(null);
+        setVerifyStatus("verified");
+        setConfirmed(true);
+        return;
+      }
+      if (data.status === "suggested" && data.resolved) {
+        setSuggested(data.resolved);
+        setVerifyStatus("suggested");
+        return;
+      }
+      setSuggested(null);
+      setVerifyStatus(data.status === "incomplete" ? "idle" : "unmatched");
+    } catch {
+      lastVerifySig.current = "";
+      setVerifyStatus("error");
+    }
+  }
+  runVerifyRef.current = (reason) => {
+    void runVerify(reason);
+  };
+
   function applyAddress(address: ParsedAddress, fallbackLabel: string) {
     const street = address.street || fallbackLabel.split(",")[0]?.trim() || fallbackLabel;
     const next = composeOnConfirm ? formatAddressLine({ ...address, street }) || fallbackLabel : street;
     setQuery(next);
-    setConfirmed(addressIsFilled(address));
+    setConfirmed(addressIsComplete(address) || Boolean(street));
     if (inputRef.current) inputRef.current.value = next;
-    const host = inputRef.current?.form ?? null;
-    writeSibling(host, map.city, address.city);
-    writeSibling(host, map.state, address.state);
-    writeSibling(host, map.zip, address.zip);
-    writeSibling(host, map.county, address.county);
+    const host = hostForm();
+    writeSibling(host, resolvedFill.city, address.city);
+    writeSibling(host, resolvedFill.state, address.state);
+    writeSibling(host, resolvedFill.zip, address.zip);
+    writeSibling(host, resolvedFill.county, address.county);
     onConfirm?.(address);
     onChange?.(next);
   }
@@ -143,10 +263,27 @@ export function AddressAutocomplete({
     setOpen(false);
     setSuggestions([]);
     applyAddress(item.address, item.label);
+    window.setTimeout(() => {
+      void runVerify("confirm");
+    }, 0);
+  }
+
+  function applySuggestion() {
+    if (!suggested) return;
+    applyAddress(suggested, formatAddressLine(suggested));
+    setVerifyStatus("verified");
+    setSuggested(null);
+    lastVerifySig.current = addressFingerprint(suggested);
   }
 
   return (
-    <div ref={boxRef} className="relative" data-ff-address-autocomplete data-ff-address-enabled={enabled ? "1" : "0"}>
+    <div
+      ref={boxRef}
+      className="relative"
+      data-ff-address-autocomplete
+      data-ff-address-enabled={enabled ? "1" : "0"}
+      data-ff-address-verify-enabled={verifyEnabled ? "1" : "0"}
+    >
       <Input
         ref={inputRef}
         id={inputId}
@@ -165,10 +302,18 @@ export function AddressAutocomplete({
         onChange={(e) => {
           setQuery(e.target.value);
           setConfirmed(false);
+          setVerifyStatus("idle");
+          setSuggested(null);
+          lastVerifySig.current = "";
           onChange?.(e.target.value);
         }}
         onFocus={() => {
           if (suggestions.length) setOpen(true);
+        }}
+        onBlur={() => {
+          window.setTimeout(() => {
+            runVerifyRef.current("blur");
+          }, 200);
         }}
       />
       <input type="hidden" name={`${name}__confirmed`} form={form} value={confirmed ? "1" : ""} />
@@ -183,6 +328,7 @@ export function AddressAutocomplete({
               <button
                 type="button"
                 className="w-full px-2.5 py-1.5 text-left text-navy hover:bg-muted"
+                onMouseDown={(event) => event.preventDefault()}
                 onClick={() => choose(item)}
               >
                 {item.label}
@@ -192,17 +338,72 @@ export function AddressAutocomplete({
         </ul>
       ) : null}
       {loading ? <p className="mt-0.5 text-[10px] text-muted-foreground">Looking up addresses…</p> : null}
-      {!loading && confirmed ? (
-        <p className="mt-0.5 text-[10px] text-muted-foreground" data-ff-address-confirmed-label>
-          Address confirmed
-        </p>
+      <div className="mt-0.5 flex flex-wrap items-center gap-1.5" data-ff-address-toolbar>
+        {verifyEnabled && !readOnly && !disabled ? (
+          <button
+            type="button"
+            data-ff-address-verify
+            className="text-[10px] font-medium text-navy underline-offset-2 hover:underline"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              void runVerify("button");
+            }}
+          >
+            Verify address
+          </button>
+        ) : null}
+        {verifyStatus === "checking" ? (
+          <span className="text-[10px] text-muted-foreground" data-ff-address-verify-chip="checking">
+            Checking…
+          </span>
+        ) : null}
+        {verifyStatus === "verified" ? (
+          <span
+            className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-800"
+            data-ff-address-verify-chip="verified"
+          >
+            Verified
+          </span>
+        ) : null}
+        {verifyStatus === "suggested" ? (
+          <span
+            className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-900"
+            data-ff-address-verify-chip="suggested"
+          >
+            Suggested correction
+          </span>
+        ) : null}
+        {verifyStatus === "unmatched" ? (
+          <span className="text-[10px] text-muted-foreground" data-ff-address-verify-chip="unmatched">
+            Could not verify
+          </span>
+        ) : null}
+        {verifyStatus === "error" ? (
+          <span className="text-[10px] text-muted-foreground" data-ff-address-verify-chip="error">
+            Verify failed
+          </span>
+        ) : null}
+        {!loading && confirmed && verifyStatus === "idle" ? (
+          <p className="text-[10px] text-muted-foreground" data-ff-address-confirmed-label>
+            Address confirmed
+          </p>
+        ) : null}
+      </div>
+      {verifyStatus === "suggested" && suggested ? (
+        <div className="mt-0.5" data-ff-address-suggested>
+          <p className="text-[10px] text-muted-foreground">{formatAddressLine(suggested)}</p>
+          <button
+            type="button"
+            data-ff-address-use-suggested
+            className="text-[10px] font-medium text-navy underline-offset-2 hover:underline"
+            onClick={applySuggestion}
+          >
+            Use suggested address
+          </button>
+        </div>
       ) : null}
     </div>
   );
-}
-
-function addressIsFilled(address: ParsedAddress): boolean {
-  return Boolean(address.street && (address.city || address.zip));
 }
 
 /** @deprecated Use AddressAutocomplete. Same control — kept so existing imports keep compiling. */

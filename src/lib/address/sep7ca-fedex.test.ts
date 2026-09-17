@@ -34,15 +34,16 @@ describe("sep7ca FedEx address + developer vault", () => {
     expect(source("src/lib/custom-fields/types.ts")).toMatch(/"address"/);
   });
 
-  it("keeps address fields as plain input when the key is missing — no stub theater", () => {
+  it("keeps address fields as plain input when Mapbox is missing — no stub theater", () => {
     const ui = source("src/components/address-autocomplete.tsx");
     expect(ui).toMatch(/\/api\/address\/status/);
     expect(ui).toMatch(/\/api\/address\/suggest/);
+    expect(ui).toMatch(/\/api\/address\/verify/);
     expect(ui).not.toMatch(/GOOGLE_MAPS_API_KEY/);
     expect(ui).not.toMatch(/Add FedEx/);
     expect(ui).not.toMatch(/Add a FedEx key/);
     expect(source("src/app/api/address/status/route.ts")).toMatch(/enabled/);
-    expect(source("src/app/api/address/suggest/route.ts")).toMatch(/loadFedExCredentials/);
+    expect(source("src/app/api/address/status/route.ts")).toMatch(/verifyEnabled/);
     expect(source("src/app/api/address/suggest/route.ts")).not.toMatch(/stub:\s*true/);
     expect(source("src/app/api/address/suggest/route.ts")).toMatch(/enabled:\s*false/);
   });
@@ -53,9 +54,10 @@ describe("sep7ca FedEx address + developer vault", () => {
     expect(client).toMatch(/\/address\/v1\/addresses\/resolve/);
     expect(client).toMatch(/fedexCredentialsReady/);
     expect(client).not.toMatch(/console\.log/);
-    const suggest = source("src/app/api/address/suggest/route.ts");
-    expect(suggest).toMatch(/suggestFedExAddresses/);
-    expect(suggest).toMatch(/if \(!creds\)/);
+    const verify = source("src/app/api/address/verify/route.ts");
+    expect(verify).toMatch(/verifyFedExAddress/);
+    expect(verify).toMatch(/loadFedExCredentials/);
+    expect(verify).toMatch(/if \(!creds\)/);
   });
 
   it("masks the vault for admins and unlocks only for site developers", () => {

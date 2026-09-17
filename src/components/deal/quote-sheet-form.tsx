@@ -373,6 +373,7 @@ function SheetField({
           name={fieldKey}
           defaultValue={cell.value}
           readOnly={readOnly}
+          composeOnConfirm={ONE_LINE_SHEET_ADDRESS.has(fieldKey)}
           fill={sheetAddressFill(fieldKey) ?? undefined}
           className={cn("h-8", toneClass(tone), editing && "ring-1 ring-primary/30")}
         />
@@ -391,6 +392,13 @@ function SheetField({
   );
 }
 
+const ONE_LINE_SHEET_ADDRESS = new Set([
+  "property_address",
+  "applicant_address",
+  "prior_address",
+  "mortgagee_address",
+]);
+
 function sheetAddressFill(fieldKey: string): AddressFillMap | null {
   if (fieldKey === "address1") {
     return { city: "city", state: "state", zip: "zip", county: "county" };
@@ -400,6 +408,9 @@ function sheetAddressFill(fieldKey: string): AddressFillMap | null {
   }
   if (fieldKey === "garaging_address") {
     return { zip: "garaging_zip" };
+  }
+  if (ONE_LINE_SHEET_ADDRESS.has(fieldKey)) {
+    return { city: "city", state: "state", zip: "zip", county: "county" };
   }
   return null;
 }

@@ -8,6 +8,7 @@ import {
   fetchFedExAccessToken,
   resetFedExTokenCache,
   suggestFedExAddresses,
+  verifyFedExAddress,
   type FedExCredentials,
 } from "./client";
 
@@ -86,5 +87,56 @@ describe("FedEx Address API client", () => {
       [],
     );
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("verifies a complete address and reports a suggested correction", async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (String(url).includes("/oauth/token")) {
+        return jsonRes({ access_token: "tok-1", expires_in: 3600 });
+      }
+      return jsonRes({
+        output: {
+          resolvedAddresses: [
+            {
+              streetLines: ["412 Harbor Isle Dr"],
+              city: "Melbourne",
+              stateOrProvinceCode: "FL",
+              postalCode: "32935",
+              countryCode: "US",
+            },
+          ],
+        },
+      });
+    });
+    const result = await verifyFedExAddress(
+      {
+        street: "412 Harbor Isle Drive",
+        city: "Melbourne",
+        state: "FL",
+        zip: "32935",
+        county: "",
+        country: "US",
+      },
+      CREDS,
+      fetchImpl,
+    );
+    expect(result.status).toBe("verified");
+    expect(result.resolved?.zip).toBe("32935");
+
+    const suggested = await verifyFedExAddress(
+      {
+        street: "412 Harbor Isle Dr",
+        city: "Melborne",
+        state: "FL",
+        zip: "32935",
+        county: "",
+        country: "US",
+      },
+      CREDS,
+      fetchImpl,
+    );
+    expect(suggested.status).toBe("suggested");
+    expect(suggested.resolved?.city).toBe("Melbourne");
+    expect(sourceClient).toMatch(/verifyFedExAddress/);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addressFillForKey, isStreetAddressField } from "./keys";
+import { addressFillForKey, addressFillNames, isStreetAddressField, qualifyAddressFill } from "./keys";
 import { formatAddressLine } from "./types";
 
 describe("shared address keys", () => {
@@ -23,6 +23,34 @@ describe("shared address keys", () => {
       zip: "premisesZip",
     });
     expect(addressFillForKey("garaging_address")).toEqual({ zip: "garaging_zip" });
+    expect(addressFillForKey("field_mailing_address")).toEqual({
+      city: "city",
+      state: "state",
+      zip: "zip",
+      county: "county",
+    });
+    expect(addressFillForKey("previous_address")).toEqual({
+      city: "previous_city",
+      state: "previous_state",
+      zip: "previous_zip",
+    });
+  });
+
+  it("qualifies deal-details field_ sibling names so Mapbox can fill city/state/ZIP", () => {
+    expect(qualifyAddressFill(addressFillForKey("mailing_address"), "field_mailing_address")).toEqual({
+      city: "field_city",
+      state: "field_state",
+      zip: "field_zip",
+      county: "field_county",
+    });
+    expect(addressFillNames("contact_mailing_address", "field_contact_mailing_address")).toEqual({
+      city: "field_contact_mailing_city",
+      state: "field_contact_mailing_state",
+      zip: "field_contact_mailing_zip",
+      county: "field_contact_mailing_county",
+    });
+    expect(isStreetAddressField("field_mailing_address")).toBe(true);
+    expect(isStreetAddressField("applicant_address")).toBe(true);
   });
 
   it("formats a confirmed line the desk can write back", () => {
