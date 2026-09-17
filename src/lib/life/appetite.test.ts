@@ -14,6 +14,7 @@ import {
 import { LIFE_LEAN_MEDICAL_CONDITION_OPTIONS, LIFE_MEDICAL_CONDITION_OPTIONS } from "./conditions";
 import { matchLifeMatrixCarrier } from "./carriers";
 import { LIFE_BUILD_CSV, lifeBuildFromSheet, lifeBuildSummary, parseLifeBuildCsv } from "./build";
+import { LIFE_CONTACTS_CSV, LIFE_SHEET_TABS, parseLifeContactsCsv } from "./sheet";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -27,45 +28,74 @@ describe("Life UW MATRIX appetite v1", () => {
       [...LIFE_LEAN_MEDICAL_CONDITION_OPTIONS],
     );
     expect(LIFE_MEDICAL_CONDITION_OPTIONS).toEqual(
-      expect.arrayContaining(["Diabetes Type 1", "AIDS / HIV", "Dementia", "Cystic fibrosis", "Walker use"]),
+      expect.arrayContaining([
+        "Diabetes Type 1",
+        "AIDS / HIV",
+        "Dementia",
+        "Cystic fibrosis",
+        "Walker use",
+        "Epilepsy",
+        "Gastric bypass",
+        "HIV",
+      ]),
     );
     expect(new Set(LIFE_MEDICAL_CONDITION_OPTIONS).size).toBe(LIFE_MEDICAL_CONDITION_OPTIONS.length);
-    expect(LIFE_MEDICAL_CONDITION_OPTIONS.length).toBeLessThanOrEqual(80);
+    expect(LIFE_MEDICAL_CONDITION_OPTIONS.length).toBeLessThanOrEqual(160);
   });
 
-  it("loads MATRIX products from the CSV without inventing accept cells", () => {
+  it("loads MATRIX products from the live sheet without inventing mixed-cell outcomes", () => {
     expect(matrix.products.length).toBeGreaterThanOrEqual(20);
     expect(matrix.products.map((row) => row.carrierSlug)).toEqual(
-      expect.arrayContaining(["americo", "moo", "foresters", "transamerica", "sbli", "banner"]),
+      expect.arrayContaining(["americo", "moo", "foresters", "transamerica", "sbli", "banner", "corebridge"]),
     );
-    expect(matrix.rules.every((row) => row.outcome === "decline")).toBe(true);
-    expect(matrix.rules.every((row) => row.source === "screenshot_row_uniform")).toBe(true);
-    expect(readFileSync(LIFE_UW_MATRIX_CSV, "utf8")).toMatch(/full MATRIX when spreadsheet provided|incomplete/);
+    expect(matrix.products.some((row) => row.carrierSlug === "corebridge" && row.productSlug === "simplynow")).toBe(
+      true,
+    );
+    expect(matrix.products.some((row) => row.carrierSlug === "americo" && row.productSlug === "simplynow")).toBe(
+      false,
+    );
+    expect(matrix.rules.every((row) => row.source === "live_sheet_cell")).toBe(true);
+    const outcomes = new Set(matrix.rules.map((row) => row.outcome));
+    expect(outcomes.has("decline")).toBe(true);
+    expect(outcomes.has("accept")).toBe(true);
+    expect(outcomes.has("graded")).toBe(true);
+    expect(outcomes.has("preferred")).toBe(true);
+    expect(readFileSync(LIFE_UW_MATRIX_CSV, "utf8")).toMatch(/full MATRIX when spreadsheet extract is complete|incomplete/);
   });
 
-  it("predicts Decline only for seeded uniform-row conditions", () => {
+  it("predicts live-sheet cells: AIDS is not uniform, mixed Asthma stays Unknown", () => {
     const declined = predictLifeAppetite({
       medicalConditions: "AIDS / HIV",
       tobaccoStatus: "Never",
       matrix,
     });
-    expect(declined.conditionKeys).toEqual(["aids_hiv"]);
-    expect(declined.predictions.every((row) => row.outcome === "decline")).toBe(true);
+    expect(declined.conditionKeys).toEqual(expect.arrayContaining(["aids_hiv", "aids", "hiv"]));
+    const byProduct = Object.fromEntries(
+      declined.predictions.map((row) => [`${row.carrierSlug}:${row.productSlug}`, row.outcome]),
+    );
+    expect(byProduct["amam:express_term"]).toBe("decline");
+    expect(byProduct["royal_neighbors:ensured_legacy"]).toBe("graded");
+    expect(byProduct["corebridge:giwl"]).toBe("accept");
 
-    const unknown = predictLifeAppetite({
+    const asthmaSleep = predictLifeAppetite({
       medicalConditions: "Asthma, Sleep apnea",
       tobaccoStatus: "Current",
       matrix,
     });
-    expect(unknown.predictions.every((row) => row.outcome === "unknown")).toBe(true);
-    expect(unknown.coverageNote).toBe(LIFE_UW_MATRIX_COVERAGE_NOTE);
+    const amamAsthma = asthmaSleep.predictions.find(
+      (row) => row.carrierSlug === "amam" && row.productSlug === "express_term",
+    );
+    expect(amamAsthma?.outcome).toBe("unknown");
+    expect(asthmaSleep.coverageNote).toBe(LIFE_UW_MATRIX_COVERAGE_NOTE);
 
     const mixed = predictLifeAppetite({
       medicalConditions: "AIDS / HIV, Asthma",
       tobaccoStatus: "Never",
       matrix,
     });
-    expect(mixed.predictions.every((row) => row.outcome === "decline")).toBe(true);
+    expect(mixed.predictions.find((row) => row.carrierSlug === "amam" && row.productSlug === "express_term")?.outcome).toBe(
+      "decline",
+    );
   });
 
   it("renders Decline cards for AIDS and Unknown for Asthma-only", () => {
@@ -103,7 +133,10 @@ describe("Life UW MATRIX appetite v1", () => {
     expect(unknownHtml).toContain("Asthma");
     expect(unknownHtml).toContain("Tobacco: Current");
     expect(unknownHtml).toContain('data-ff-life-appetite-outcome="unknown"');
-    expect(unknownHtml).not.toContain('data-ff-life-appetite-outcome="accept"');
+    const amamExpress = unknown.predictions.find(
+      (row) => row.carrierSlug === "amam" && row.productSlug === "express_term",
+    );
+    expect(amamExpress?.outcome).toBe("unknown");
   });
 
   it("exposes the helper on Life Markets / Quotes and a shared picklist", () => {
@@ -135,7 +168,9 @@ describe("Life UW MATRIX appetite v1", () => {
     });
     expect(predicted.build.bmi).toBe(25.8);
     expect(predicted.build.tablePending).toBe(true);
-    expect(predicted.predictions.every((row) => row.outcome === "unknown")).toBe(true);
+    expect(
+      predicted.predictions.find((row) => row.carrierSlug === "amam" && row.productSlug === "express_term")?.outcome,
+    ).toBe("unknown");
     expect(predicted.predictions.every((row) => row.buildOutcome === "unknown")).toBe(true);
 
     const pendingHtml = renderToString(
@@ -205,9 +240,13 @@ describe("Life UW MATRIX appetite v1", () => {
     });
     expect(asthma.build.tablePending).toBe(false);
     expect(asthma.build.band).toBe("standard");
-    expect(asthma.predictions.every((row) => row.conditionOutcome === "unknown")).toBe(true);
+    const amamUnknown = asthma.predictions.find(
+      (row) => row.carrierSlug === "amam" && row.productSlug === "express_term",
+    );
+    expect(amamUnknown?.conditionOutcome).toBe("unknown");
+    expect(amamUnknown?.buildOutcome).toBe("graded");
+    expect(amamUnknown?.outcome).toBe("graded");
     expect(asthma.predictions.every((row) => row.buildOutcome === "graded")).toBe(true);
-    expect(asthma.predictions.every((row) => row.outcome === "graded")).toBe(true);
     expect(asthma.predictions.every((row) => row.buildBand === "standard")).toBe(true);
 
     const acceptDoesNotFill = predictLifeAppetite({
@@ -219,7 +258,11 @@ describe("Life UW MATRIX appetite v1", () => {
       buildRules: [{ ...heightWeightGraded, outcome: "accept", band: "preferred" }],
     });
     expect(acceptDoesNotFill.predictions.every((row) => row.buildOutcome === "accept")).toBe(true);
-    expect(acceptDoesNotFill.predictions.every((row) => row.outcome === "unknown")).toBe(true);
+    expect(
+      acceptDoesNotFill.predictions
+        .filter((row) => row.conditionOutcome === "unknown")
+        .every((row) => row.outcome === "unknown"),
+    ).toBe(true);
 
     const aids = predictLifeAppetite({
       medicalConditions: "AIDS / HIV",
@@ -229,7 +272,12 @@ describe("Life UW MATRIX appetite v1", () => {
       matrix,
       buildRules: [{ ...heightWeightGraded, outcome: "accept", band: "preferred" }],
     });
-    expect(aids.predictions.every((row) => row.outcome === "decline")).toBe(true);
+    expect(
+      aids.predictions.find((row) => row.carrierSlug === "amam" && row.productSlug === "express_term")?.outcome,
+    ).toBe("decline");
+    expect(
+      aids.predictions.find((row) => row.carrierSlug === "corebridge" && row.productSlug === "giwl")?.outcome,
+    ).toBe("accept");
 
     const heavy = predictLifeAppetite({
       medicalConditions: "Asthma",
@@ -252,7 +300,10 @@ describe("Life UW MATRIX appetite v1", () => {
     });
     expect(femaleSkipsMaleRule.build.sex).toBe("female");
     expect(femaleSkipsMaleRule.predictions.every((row) => row.buildOutcome === "unknown")).toBe(true);
-    expect(femaleSkipsMaleRule.predictions.every((row) => row.outcome === "unknown")).toBe(true);
+    expect(
+      femaleSkipsMaleRule.predictions.find((row) => row.carrierSlug === "amam" && row.productSlug === "express_term")
+        ?.outcome,
+    ).toBe("unknown");
 
     const maleHits = predictLifeAppetite({
       medicalConditions: "Asthma",
@@ -303,9 +354,18 @@ describe("Life UW MATRIX appetite v1", () => {
 
   it("matches MATRIX Life carriers by public name without inventing contacts", () => {
     expect(matchLifeMatrixCarrier("Americo Life")?.website).toBe("https://www.americo.com");
-    expect(matchLifeMatrixCarrier("Mutual of Omaha")?.agentPhone).toBe("800-693-6083");
+    expect(matchLifeMatrixCarrier("Mutual of Omaha")?.agentPhone).toBe("800-775-7896");
     expect(matchLifeMatrixCarrier("Foresters Financial")?.agentPortalUrl).toContain("myezbiz");
     expect(matchLifeMatrixCarrier("Legal & General America")?.name).toBe("Banner Life");
     expect(matchLifeMatrixCarrier("Moody")).toBeNull();
+    const contacts = parseLifeContactsCsv(readFileSync(LIFE_CONTACTS_CSV, "utf8"));
+    expect(LIFE_SHEET_TABS).toHaveLength(18);
+    expect(LIFE_SHEET_TABS.map((tab) => tab.role)).toEqual(
+      expect.arrayContaining(["condition_product", "build_chart", "contacts"]),
+    );
+    expect(contacts.map((row) => row.carrierSlug)).toEqual(
+      expect.arrayContaining(["amam", "americo", "moo", "banner", "transamerica", "uhl"]),
+    );
+    expect(contacts.find((row) => row.carrierSlug === "moo")?.phone).toBe("800-775-7896");
   });
 });

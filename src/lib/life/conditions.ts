@@ -19,12 +19,16 @@ export const LIFE_LEAN_MEDICAL_CONDITION_OPTIONS = [
 ] as const;
 
 /**
- * MATRIX row vocabulary from Javy screenshots + notes (2026-09-16).
- * Labels only — no implied UW outcome.
+ * MATRIX row vocabulary from Javy live sheet col A (2026-09-17) plus earlier
+ * screenshot labels. Labels only — no implied UW outcome.
  */
 export const LIFE_MATRIX_MEDICAL_CONDITION_OPTIONS = [
+  "Activities of daily living",
   "ADL assistance",
+  "AIDS",
   "AIDS / HIV",
+  "AIDS related complex (ARC)",
+  "Alcohol / drug treatment",
   "ALS",
   "Alzheimer’s",
   "Amputation",
@@ -36,8 +40,10 @@ export const LIFE_MATRIX_MEDICAL_CONDITION_OPTIONS = [
   "Arrhythmia",
   "Arthritis (osteo)",
   "Arthritis (rheumatoid)",
+  "Asthma — steroid inhaler",
   "Atrial fibrillation",
   "Autism",
+  "Avocations",
   "Bipolar",
   "Blood clots",
   "Brain tumor (non-cancerous)",
@@ -47,15 +53,56 @@ export const LIFE_MATRIX_MEDICAL_CONDITION_OPTIONS = [
   "Chronic pain / pain pills",
   "Circulatory issues / surgeries",
   "Cirrhosis",
+  "Citizenship",
   "Congestive heart failure (CHF)",
   "COVID-19",
   "CPAP with oxygen",
   "CPAP without oxygen",
+  "Criminal history (felonies)",
   "Crohn’s",
   "Cystic fibrosis",
   "Defibrillator",
   "Dementia",
   "Depression",
+  "Diabetes",
+  "Diabetes — gestational",
+  "Diabetes — gout",
+  "Diabetes — insulin",
+  "Diabetes with smoking",
+  "Diabetic neuropathy",
+  "Diabetic retinopathy",
+  "Disability",
+  "Diverticulitis",
+  "Down’s syndrome",
+  "Driver license / DUI",
+  "Emphysema",
+  "Endometriosis",
+  "Epilepsy",
+  "Erectile dysfunction",
+  "Family history",
+  "Fibromyalgia",
+  "Gabapentin",
+  "Gallbladder disorder",
+  "Gastric bypass",
+  "Gout",
+  "Heart attack / heart disease",
+  "Heart — mitral valve",
+  "Heart surgeries (bypass)",
+  "Hepatitis",
+  "HIV",
+  "HIV PrEP",
+  "Hospitalization",
+  "Huntington’s",
+  "Hypothyroidism",
+  "Kidney dialysis",
+  "Kidney disease — chronic",
+  "Kidney failure",
+  "Kidney stones",
+  "Liver — fatty",
+  "Lupus",
+  "Marijuana use",
+  "Migraine headaches",
+  "Military",
   "Multiple sclerosis",
   "Muscular dystrophy",
   "Occupation",
@@ -95,8 +142,12 @@ export type LifeMedicalConditionLabel = (typeof LIFE_MEDICAL_CONDITION_OPTIONS)[
 const SKIP_CONDITION_LABELS = new Set(["None", "Other"]);
 
 const LABEL_TO_KEY: Record<string, string> = {
+  "Activities of daily living": "adl_assistance",
   "ADL assistance": "adl_assistance",
+  AIDS: "aids",
   "AIDS / HIV": "aids_hiv",
+  "AIDS related complex (ARC)": "aids_arc",
+  "Alcohol / drug treatment": "alcohol_drug_treatment",
   ALS: "als",
   "Alzheimer’s": "alzheimers",
   Amputation: "amputation",
@@ -109,8 +160,10 @@ const LABEL_TO_KEY: Record<string, string> = {
   "Arthritis (osteo)": "arthritis_osteo",
   "Arthritis (rheumatoid)": "arthritis_rheumatoid",
   Asthma: "asthma",
+  "Asthma — steroid inhaler": "asthma_steroid_inhaler",
   "Atrial fibrillation": "atrial_fibrillation",
   Autism: "autism",
+  Avocations: "avocations",
   Bipolar: "bipolar",
   "Blood clots": "blood_clots",
   "Brain tumor (non-cancerous)": "brain_tumor_noncancerous",
@@ -121,24 +174,65 @@ const LABEL_TO_KEY: Record<string, string> = {
   "Chronic pain / pain pills": "chronic_pain",
   "Circulatory issues / surgeries": "circulatory_surgeries",
   Cirrhosis: "cirrhosis",
+  Citizenship: "citizenship",
   COPD: "copd",
   "Congestive heart failure (CHF)": "chf",
   "COVID-19": "covid_19",
   "CPAP with oxygen": "cpap_with_oxygen",
   "CPAP without oxygen": "cpap_without_oxygen",
+  "Criminal history (felonies)": "criminal_history_felonies",
   "Crohn’s": "crohns",
   "Cystic fibrosis": "cystic_fibrosis",
   Defibrillator: "defibrillator",
   Dementia: "dementia",
   Depression: "depression",
+  Diabetes: "diabetes",
+  "Diabetes — gestational": "diabetes_gestational",
+  "Diabetes — gout": "diabetes_gout",
+  "Diabetes — insulin": "diabetes_insulin",
   "Diabetes Type 1": "diabetes_type_1",
   "Diabetes Type 2": "diabetes_type_2",
+  "Diabetes with smoking": "diabetes_w_smoking",
+  "Diabetic neuropathy": "diabetic_neuropathy",
+  "Diabetic retinopathy": "diabetic_retinopathy",
+  Disability: "disability",
+  Diverticulitis: "diverticulitis",
+  "Down’s syndrome": "downs_syndrome",
+  "Driver license / DUI": "driver_license_dui",
+  Emphysema: "emphysema",
+  Endometriosis: "endometriosis",
+  Epilepsy: "epilepsy",
+  "Erectile dysfunction": "erectile_dysfunction",
+  "Family history": "family_history",
+  Fibromyalgia: "fibromyalgia",
+  Gabapentin: "gabapentin",
+  "Gallbladder disorder": "gallbladder_disorder",
+  "Gastric bypass": "gastric_bypass",
+  Gout: "gout",
+  "Heart attack / heart disease": "heart_attack_heart_disease",
   "Heart disease": "heart_disease",
+  "Heart — mitral valve": "heart_mitral_valve_insufficiency_prolapse",
+  "Heart surgeries (bypass)": "heart_surgeries_bypass_etc",
+  Hepatitis: "hepatitis",
   "High blood pressure": "high_blood_pressure",
   "High cholesterol": "high_cholesterol",
+  HIV: "hiv",
+  "HIV PrEP": "hiv_prep",
+  Hospitalization: "hospitalization",
+  "Huntington’s": "huntingtons_disease",
+  Hypothyroidism: "hypothyroidism",
+  "Kidney dialysis": "kidney_dialysis",
   "Kidney disease": "kidney_disease",
+  "Kidney disease — chronic": "kidney_disease_chronic",
+  "Kidney failure": "kidney_failure",
+  "Kidney stones": "kidney_stones",
   "Liver disease": "liver_disease",
+  "Liver — fatty": "liver_fatty_liver_disease",
+  Lupus: "lupus",
+  "Marijuana use": "marijuana_use",
   "Mental health condition": "mental_health",
+  "Migraine headaches": "migraine_headaches",
+  Military: "military",
   "Multiple sclerosis": "multiple_sclerosis",
   "Muscular dystrophy": "muscular_dystrophy",
   Occupation: "occupation",
@@ -167,6 +261,16 @@ const LABEL_TO_KEY: Record<string, string> = {
   "Wheelchair use": "wheelchair_use",
 };
 
+/** Lean / combined labels also look up the live-sheet row keys. */
+const CONDITION_KEY_ALIASES: Record<string, readonly string[]> = {
+  aids_hiv: ["aids", "hiv"],
+  diabetes_type_1: ["diabetes"],
+  diabetes_type_2: ["diabetes"],
+  heart_disease: ["heart_attack_heart_disease"],
+  kidney_disease: ["kidney_disease_chronic"],
+  thyroid_disorder: ["hypothyroidism"],
+};
+
 export function lifeConditionKeyFromLabel(label: string): string | null {
   const trimmed = label.trim();
   if (!trimmed || SKIP_CONDITION_LABELS.has(trimmed)) return null;
@@ -188,11 +292,16 @@ export function parseLifeConditionLabels(raw: string | null | undefined): string
 export function lifeConditionKeysFromSheet(raw: string | null | undefined): string[] {
   const keys: string[] = [];
   const seen = new Set<string>();
-  for (const label of parseLifeConditionLabels(raw)) {
-    const key = lifeConditionKeyFromLabel(label);
-    if (!key || seen.has(key)) continue;
+  const add = (key: string) => {
+    if (!key || seen.has(key)) return;
     seen.add(key);
     keys.push(key);
+  };
+  for (const label of parseLifeConditionLabels(raw)) {
+    const key = lifeConditionKeyFromLabel(label);
+    if (!key) continue;
+    add(key);
+    for (const alias of CONDITION_KEY_ALIASES[key] ?? []) add(alias);
   }
   return keys;
 }

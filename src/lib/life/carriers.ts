@@ -1,3 +1,5 @@
+import { loadLifeContacts, overlayLifeCarrierContact } from "./sheet";
+
 export type LifeMatrixCarrierContact = {
   slug: string;
   name: string;
@@ -32,12 +34,12 @@ export const LIFE_MATRIX_CARRIER_CONTACTS: LifeMatrixCarrierContact[] = [
     name: "Mutual of Omaha",
     aliases: ["moo", "united of omaha", "mutual of omaha insurance"],
     website: "https://www.mutualofomaha.com",
-    phone: "800-693-6083",
-    agentPhone: "800-693-6083",
+    phone: "800-775-7896",
+    agentPhone: "800-775-7896",
     portalUrl: "https://producer.mutualofomaha.com",
-    agentPortalUrl: "https://producer.mutualofomaha.com",
+    agentPortalUrl: "http://www.mutualofomaha.com/broker",
     carrierInfo:
-      "Mutual of Omaha producer portal producer.mutualofomaha.com. Sales support 800-693-6083. MATRIX Life appetite: data/appetite/fitfirst-life-uw-matrix.csv (partial screenshot seed — full MATRIX when spreadsheet provided).",
+      "Mutual of Omaha Life desk 800-775-7896 (Javy Carrier Rep Contact List / MATRIX). Producer portal producer.mutualofomaha.com. MATRIX Life appetite: data/appetite/fitfirst-life-uw-matrix.csv — full MATRIX when spreadsheet provided.",
   },
   {
     slug: "foresters",
@@ -56,12 +58,12 @@ export const LIFE_MATRIX_CARRIER_CONTACTS: LifeMatrixCarrierContact[] = [
     name: "Transamerica",
     aliases: ["transamerica life", "transamerica life insurance"],
     website: "https://www.transamerica.com",
-    phone: "877-234-4848",
-    agentPhone: "877-234-4848",
+    phone: "877-454-4768",
+    agentPhone: "877-454-4768",
     portalUrl: "https://www.agentnetinfo.com",
     agentPortalUrl: "https://www.agentnetinfo.com",
     carrierInfo:
-      "Transamerica AgentNet agentnetinfo.com. Life / Final Expense desk 877-234-4848. MATRIX Life appetite: data/appetite/fitfirst-life-uw-matrix.csv (partial screenshot seed — full MATRIX when spreadsheet provided).",
+      "Transamerica AgentNet agentnetinfo.com. MATRIX product phone 877-454-4768. MATRIX Life appetite: data/appetite/fitfirst-life-uw-matrix.csv — full MATRIX when spreadsheet provided.",
   },
   {
     slug: "sbli",
@@ -84,12 +86,12 @@ export const LIFE_MATRIX_CARRIER_CONTACTS: LifeMatrixCarrierContact[] = [
     name: "Banner Life",
     aliases: ["banner", "lga", "legal & general america", "legal and general america"],
     website: "https://www.lgamerica.com",
-    phone: "800-839-5960",
-    agentPhone: "800-839-5960",
+    phone: "833-520-2131",
+    agentPhone: "833-520-2131",
     portalUrl: "https://www.lgamerica.com",
     agentPortalUrl: "https://www.lgamerica.com",
     carrierInfo:
-      "Banner Life / LGA (Legal & General America). AppAssist 800-839-5960. Advisor site lgamerica.com. MATRIX Life appetite: data/appetite/fitfirst-life-uw-matrix.csv (partial screenshot seed — full MATRIX when spreadsheet provided).",
+      "Banner Life / LGA. MATRIX product phone 833-520-2131. Rep Audrey Anders aanders@lgamerica.com. MATRIX Life appetite: data/appetite/fitfirst-life-uw-matrix.csv — full MATRIX when spreadsheet provided.",
   },
   {
     slug: "nlg",
@@ -108,12 +110,12 @@ export const LIFE_MATRIX_CARRIER_CONTACTS: LifeMatrixCarrierContact[] = [
     name: "Royal Neighbors",
     aliases: ["royal neighbors of america", "rna"],
     website: "https://www.royalneighbors.org",
-    phone: "800-627-4762",
-    agentPhone: "800-627-4762",
+    phone: "800-770-4561",
+    agentPhone: "800-770-4561",
     portalUrl: "https://agent.royalneighbors.org",
     agentPortalUrl: "https://agent.royalneighbors.org",
     carrierInfo:
-      "Royal Neighbors agent portal agent.royalneighbors.org. Sales support 800-627-4762 option 1 then 5. MATRIX Life appetite: data/appetite/fitfirst-life-uw-matrix.csv (partial screenshot seed — full MATRIX when spreadsheet provided).",
+      "Royal Neighbors agent portal agent.royalneighbors.org. MATRIX phone 800-770-4561. MATRIX Life appetite: data/appetite/fitfirst-life-uw-matrix.csv — full MATRIX when spreadsheet provided.",
   },
   {
     slug: "fg",
@@ -132,12 +134,12 @@ export const LIFE_MATRIX_CARRIER_CONTACTS: LifeMatrixCarrierContact[] = [
     name: "Corebridge",
     aliases: ["corebridge financial", "aig life"],
     website: "https://www.corebridgefinancial.com",
-    phone: "800-280-2011",
-    agentPhone: "800-280-2011",
+    phone: "877-399-7747",
+    agentPhone: "877-399-7747",
     portalUrl: "https://www.corebridgefinancial.com/Connext",
     agentPortalUrl: "https://www.corebridgefinancial.com/Connext",
     carrierInfo:
-      "Corebridge Connext portal corebridgefinancial.com/Connext. Connext support 800-280-2011 option 1. MATRIX Life appetite: data/appetite/fitfirst-life-uw-matrix.csv (partial screenshot seed — full MATRIX when spreadsheet provided).",
+      "Corebridge Connext portal corebridgefinancial.com/Connext. MATRIX product phone 877-399-7747. AIG eStation 800-247-8837. MATRIX Life appetite: data/appetite/fitfirst-life-uw-matrix.csv — full MATRIX when spreadsheet provided.",
   },
   {
     slug: "amam",
@@ -146,8 +148,8 @@ export const LIFE_MATRIX_CARRIER_CONTACTS: LifeMatrixCarrierContact[] = [
     website: "https://www.americanamicable.com",
     phone: "800-736-7311",
     agentPhone: "800-736-7311",
-    portalUrl: "https://www.americanamicable.com",
-    agentPortalUrl: "https://www.americanamicable.com",
+    portalUrl: "https://www.americanamicable.com/v3/agentLogin.php",
+    agentPortalUrl: "https://www.americanamicable.com/v3/agentLogin.php",
     carrierInfo:
       "MATRIX column AMAM — American Amicable / Occidental family (Term Made Simple, Express Term). Agent line 800-736-7311. MATRIX Life appetite: data/appetite/fitfirst-life-uw-matrix.csv (partial screenshot seed — full MATRIX when spreadsheet provided).",
   },
@@ -191,4 +193,11 @@ export function matchLifeMatrixCarrier(
     }
   }
   return null;
+}
+
+export function resolveLifeMatrixCarrier(name: string): LifeMatrixCarrierContact | null {
+  const matched = matchLifeMatrixCarrier(name);
+  if (!matched) return null;
+  const row = loadLifeContacts().find((contact) => contact.carrierSlug === matched.slug);
+  return overlayLifeCarrierContact(matched, row);
 }

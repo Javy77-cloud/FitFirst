@@ -85,7 +85,7 @@ describe("Life + Health Risk Profile depth", () => {
       ]),
     );
     expect(life.medical_conditions.options.length).toBeGreaterThan(40);
-    expect(life.medical_conditions.options.length).toBeLessThanOrEqual(80);
+    expect(life.medical_conditions.options.length).toBeLessThanOrEqual(160);
     expect(life.notes.group).toBe("Health");
     expect(life.existing_coverage.options).toEqual([...YES_NO_OPTIONS]);
     expect(life.existing_carrier.showWhen?.key).toBe("existing_coverage");

@@ -78,16 +78,18 @@ nationals are `rateable=true`.
 
 | Pack | File | What it is |
 | --- | --- | --- |
-| Life MATRIX | `fitfirst-life-uw-matrix.csv` | Javy Life underwriting appetite by condition × product. Screenshot seed only. |
+| Life MATRIX | `fitfirst-life-uw-matrix.csv` | Javy Life underwriting appetite by condition × product. Live-sheet seed (2026-09-17). |
+| Life contacts | `fitfirst-life-contacts.csv` | Carrier Rep Contact List + MATRIX Phone row overlay. |
+| Life sheet drops | `life-sheet/` | Drop extracted tab CSVs here. |
 
 This file is **not** imported into `carrier_appetite` (that table is P&C quote-gate). The Life Markets / Quotes helper reads the CSV directly.
 
 Columns: `carrier_slug`, `carrier_name`, `product_slug`, `product_name`, `condition_key`, `outcome`, `rule_text`, `age_min`, `age_max`, `coverage`, `source`.
 
-- `coverage=incomplete` catalog rows list MATRIX products with no cell rule yet.
-- `coverage=seeded` rows are the only production outcomes. v1 only seeds conditions that appear **uniform decline** across visible screenshot columns (AIDS/HIV, ALS, Alzheimer’s, Dementia, Cystic fibrosis).
-- Do **not** invent Accept / Graded / Preferred cells from screenshots. Unknown is the honest default.
-- Replace/expand this file when Javy uploads the spreadsheet — full MATRIX when spreadsheet provided.
+- `coverage=incomplete` catalog rows list MATRIX products.
+- `coverage=seeded` + `source=live_sheet_cell` are **clear single-token** cells only (ACCEPT / DECLINE / GRADED / PREFERRED / SELECT / STANDARD / CALL CARRIER, plus GIWL/EIWL/SIWL as Accept). Mixed rule text stays Unknown.
+- Cystic fibrosis is **not** uniform decline (Royal Neighbors Preferred, some Accept). AIDS is Decline on most products, Graded at Royal Neighbors, GIWL Accept at Corebridge.
+- Drop the next extract in `life-sheet/` — full MATRIX when spreadsheet provided.
 
 ## Life build / BMI (height × weight) — second predictor input
 

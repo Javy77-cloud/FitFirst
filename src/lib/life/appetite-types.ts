@@ -1,5 +1,5 @@
 export const LIFE_UW_MATRIX_COVERAGE_NOTE =
-  "Partial MATRIX seed from Javy screenshots (2026-09-16). Full MATRIX when spreadsheet provided.";
+  "Partial MATRIX seed from Javy live sheet (2026-09-17). Clear Accept/Decline/Graded cells only. Full MATRIX when spreadsheet provided.";
 
 export const LIFE_APPETITE_OUTCOMES = [
   "accept",
