@@ -35,11 +35,11 @@ describe("lead detail layout + per-line documents", () => {
     expect(page).toMatch(/data-ff-lead-quick-comms/);
     expect(page).toMatch(/data-ff-lead-activity/);
     expect(page).toMatch(/ACTIVITY_KINDS/);
-    expect(page).toMatch(/title="Tasks"/);
-    expect(page).toMatch(/title="Meetings"/);
-    expect(page).toMatch(/title="Calls"/);
-    expect(page).toMatch(/title="SMS"/);
-    expect(page).toMatch(/title="Emails"/);
+    expect(page).toMatch(/task: "Tasks"/);
+    expect(page).toMatch(/meeting: "Meetings"/);
+    expect(page).toMatch(/call: "Calls"/);
+    expect(page).toMatch(/email: "Emails"/);
+    expect(page).toMatch(/sms: "SMS"/);
     expect(page).toMatch(/ContactSectionBlock/);
     expect(page).toMatch(/loadRecordContext/);
     expect(page).toMatch(/leadId: lead\.id/);
