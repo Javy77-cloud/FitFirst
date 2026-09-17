@@ -11,6 +11,14 @@ import {
   saveGetParcelDataVault,
   savePermitStackVault,
 } from "@/lib/developer/vault";
+import {
+  clearHealthSherpaAcaVault,
+  clearHealthSherpaInboundVault,
+  clearHealthSherpaMedicareVault,
+  saveHealthSherpaAcaVault,
+  saveHealthSherpaInboundVault,
+  saveHealthSherpaMedicareVault,
+} from "@/lib/healthsherpa/vault";
 import { flashAction } from "@/lib/flash-action";
 
 const VAULT_HREF = "/settings/developer-hub/api-vault";
@@ -128,4 +136,96 @@ export async function clearPermitStackVaultAction() {
   }
   await clearPermitStackVault(session.userId);
   flashAction(VAULT_HREF, "permitstack-vault-cleared");
+}
+
+export async function saveHealthSherpaMedicareVaultAction(formData: FormData) {
+  let session;
+  try {
+    session = await requireSiteDeveloper();
+  } catch {
+    flashAction(VAULT_HREF, "Site developer only.", "error");
+  }
+  try {
+    await saveHealthSherpaMedicareVault({
+      apiKey: String(formData.get("apiKey") ?? ""),
+      agentEmail: String(formData.get("agentEmail") ?? ""),
+      environment: String(formData.get("environment") ?? "sandbox") === "production" ? "production" : "sandbox",
+      actorId: session.userId,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not save HealthSherpa Medicare key.";
+    flashAction(VAULT_HREF, message, "error");
+  }
+  flashAction(VAULT_HREF, "healthsherpa-medicare-vault-saved");
+}
+
+export async function clearHealthSherpaMedicareVaultAction() {
+  let session;
+  try {
+    session = await requireSiteDeveloper();
+  } catch {
+    flashAction(VAULT_HREF, "Site developer only.", "error");
+  }
+  await clearHealthSherpaMedicareVault(session.userId);
+  flashAction(VAULT_HREF, "healthsherpa-medicare-vault-cleared");
+}
+
+export async function saveHealthSherpaAcaVaultAction(formData: FormData) {
+  let session;
+  try {
+    session = await requireSiteDeveloper();
+  } catch {
+    flashAction(VAULT_HREF, "Site developer only.", "error");
+  }
+  try {
+    await saveHealthSherpaAcaVault({
+      apiKey: String(formData.get("apiKey") ?? ""),
+      actorId: session.userId,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not save HealthSherpa Marketplace key.";
+    flashAction(VAULT_HREF, message, "error");
+  }
+  flashAction(VAULT_HREF, "healthsherpa-aca-vault-saved");
+}
+
+export async function clearHealthSherpaAcaVaultAction() {
+  let session;
+  try {
+    session = await requireSiteDeveloper();
+  } catch {
+    flashAction(VAULT_HREF, "Site developer only.", "error");
+  }
+  await clearHealthSherpaAcaVault(session.userId);
+  flashAction(VAULT_HREF, "healthsherpa-aca-vault-cleared");
+}
+
+export async function saveHealthSherpaInboundVaultAction(formData: FormData) {
+  let session;
+  try {
+    session = await requireSiteDeveloper();
+  } catch {
+    flashAction(VAULT_HREF, "Site developer only.", "error");
+  }
+  try {
+    await saveHealthSherpaInboundVault({
+      apiKey: String(formData.get("apiKey") ?? ""),
+      actorId: session.userId,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not save HealthSherpa inbound secret.";
+    flashAction(VAULT_HREF, message, "error");
+  }
+  flashAction(VAULT_HREF, "healthsherpa-inbound-vault-saved");
+}
+
+export async function clearHealthSherpaInboundVaultAction() {
+  let session;
+  try {
+    session = await requireSiteDeveloper();
+  } catch {
+    flashAction(VAULT_HREF, "Site developer only.", "error");
+  }
+  await clearHealthSherpaInboundVault(session.userId);
+  flashAction(VAULT_HREF, "healthsherpa-inbound-vault-cleared");
 }

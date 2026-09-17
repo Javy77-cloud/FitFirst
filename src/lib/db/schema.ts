@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -4575,3 +4576,32 @@ export const developerApiMeterSettings = pgTable(
 
 export type DeveloperApiUsage = typeof developerApiUsage.$inferSelect;
 export type DeveloperApiMeterSetting = typeof developerApiMeterSettings.$inferSelect;
+
+/** HealthSherpa enrollment webhook → FitFirst contact / policy / deal links. */
+export const healthsherpaEnrollments = pgTable(
+  "healthsherpa_enrollments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    product: text("product").notNull(),
+    event: text("event").notNull(),
+    hsContactId: text("hs_contact_id"),
+    hsApplicationId: text("hs_application_id"),
+    hsExternalId: text("hs_external_id"),
+    confirmationNumber: text("confirmation_number"),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    dealId: uuid("deal_id").references(() => deals.id),
+    policyId: uuid("policy_id").references(() => policies.id),
+    payload: jsonb("payload").$type<Record<string, unknown> | null>(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("healthsherpa_enrollments_app_uidx")
+      .on(t.tenantId, t.hsApplicationId)
+      .where(sql`${t.hsApplicationId} is not null`),
+    index("healthsherpa_enrollments_contact_idx").on(t.tenantId, t.contactId),
+    index("healthsherpa_enrollments_deal_idx").on(t.tenantId, t.dealId),
+  ],
+);
+
+export type HealthSherpaEnrollment = typeof healthsherpaEnrollments.$inferSelect;

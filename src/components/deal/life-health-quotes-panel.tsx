@@ -67,6 +67,7 @@ export function LifeHealthQuotesPanel({
   issuedPolicy = null,
   autoIssue = false,
   canLogGap = false,
+  healthSherpaEnrollment = null,
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -86,6 +87,12 @@ export function LifeHealthQuotesPanel({
   issuedPolicy?: IssuedPolicyChip | null;
   autoIssue?: boolean;
   canLogGap?: boolean;
+  healthSherpaEnrollment?: {
+    confirmationNumber: string | null;
+    event: string;
+    product: string;
+    policyId: string | null;
+  } | null;
 }) {
   const liveQuotes = quotes.filter((row) => !row.quote.stub);
   const sorted = sortQuotesByRatingThenPremium(
@@ -131,6 +138,22 @@ export function LifeHealthQuotesPanel({
 
   return (
     <div className="space-y-4" data-ff-life-health-quotes="" data-ff-quotes-line={shopLine}>
+      {shopLine === "health" && healthSherpaEnrollment ? (
+        <section className="ff-card space-y-1 p-4" data-ff-healthsherpa-quote-status="">
+          <h3 className="text-sm font-semibold text-navy">HealthSherpa enrollment</h3>
+          <p className="text-xs text-muted-foreground">
+            {healthSherpaEnrollment.event === "enrollment_submitted"
+              ? "Enrollment submitted"
+              : healthSherpaEnrollment.event}{" "}
+            · {healthSherpaEnrollment.product}
+            {healthSherpaEnrollment.confirmationNumber
+              ? ` · ${healthSherpaEnrollment.confirmationNumber}`
+              : ""}
+            {healthSherpaEnrollment.policyId ? " · unpublished policy on file" : ""}. Manual
+            enrollments may not fire the webhook.
+          </p>
+        </section>
+      ) : null}
       <section className="ff-card space-y-3 p-4" data-ff-life-health-quote-writer="">
         <div>
           <h3 className="text-sm font-semibold text-navy">{familyLabel} quote writer</h3>

@@ -1,5 +1,6 @@
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { IntegrationCard } from "@/components/settings/integration-card";
+import { HealthSherpaCard } from "@/components/settings/healthsherpa-card";
 import { ByoOauthCard } from "@/components/settings/byo-oauth-card";
 import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { SocialByoCard } from "@/components/social/social-byo-card";
@@ -16,6 +17,11 @@ import { MAPS_FREE_LINK_NOTE, socialByoSpec } from "@/lib/social/byo";
 import { isSocialPlatformId } from "@/lib/social/platforms";
 import { MacContinuityToggle } from "@/components/settings/mac-continuity-toggle";
 import { getAgencySettings } from "@/lib/db/queries";
+import {
+  loadHealthSherpaAcaPublicStatus,
+  loadHealthSherpaInboundPublicStatus,
+  loadHealthSherpaMedicarePublicStatus,
+} from "@/lib/healthsherpa/vault";
 
 export const dynamic = "force-dynamic";
 
@@ -24,12 +30,15 @@ export default async function IntegrationsCatalogPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [session, groups, query, agency, soloDesk] = await Promise.all([
+  const [session, groups, query, agency, soloDesk, hsMedicare, hsAca, hsInbound] = await Promise.all([
     currentDeskSession(),
     listCatalogByCategory(),
     searchParams,
     getAgencySettings(),
     tenantLooksSolo(),
+    loadHealthSherpaMedicarePublicStatus(),
+    loadHealthSherpaAcaPublicStatus(),
+    loadHealthSherpaInboundPublicStatus(),
   ]);
   const notice = typeof query.notice === "string" ? query.notice : undefined;
   const provider = typeof query.provider === "string" ? query.provider : undefined;
@@ -48,7 +57,8 @@ export default async function IntegrationsCatalogPage({
         Bring-your-own providers. {AGENCY_PAYS_VENDOR} Agency Admin controls OAuth. A solo Admin who
         also works the desk can connect personal Gmail. Gmail, Yahoo Mail, Google / Outlook Calendar
         (busy sync), Google Meet, social / GBP, and DocuSign sandbox open real vendor OAuth. Stripe,
-        Twilio, Nylas, and HealthSherpa stay out of this wave. {MAPS_FREE_LINK_NOTE}
+        Twilio and Nylas stay out of this wave. HealthSherpa Medicare is BYO in this
+        catalog (vault + webhook) — no FitFirst fee. {MAPS_FREE_LINK_NOTE}
       </p>
       <div className="mb-4 rounded-md border border-dashed border-border bg-secondary/50 px-3 py-2 text-sm">
         <div className="font-medium text-navy">Bring your own · agency pays</div>
@@ -149,6 +159,17 @@ export default async function IntegrationsCatalogPage({
                       item={item}
                       canEdit={session.isAdmin}
                       returnTo="/settings/integrations"
+                    />
+                  );
+                }
+                if (item.id === "healthsherpa_medicare" || item.id === "healthsherpa_aca") {
+                  return (
+                    <HealthSherpaCard
+                      key={item.id}
+                      item={item}
+                      medicare={hsMedicare}
+                      aca={hsAca}
+                      inbound={hsInbound}
                     />
                   );
                 }

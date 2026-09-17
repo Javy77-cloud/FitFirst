@@ -7,6 +7,7 @@ export const INTEGRATION_CATEGORIES = [
   "phone_sms",
   "esign",
   "rater",
+  "health_enrollment",
   "campaigns",
   "video",
 ] as const;
@@ -20,6 +21,7 @@ export const INTEGRATION_CATEGORY_LABEL: Record<IntegrationCategory, string> = {
   phone_sms: "Phone / SMS",
   esign: "E-sign",
   rater: "Rater",
+  health_enrollment: "Health enrollment",
   campaigns: "Campaigns",
   video: "Video",
 };
@@ -33,6 +35,8 @@ export const INTEGRATION_CATEGORY_BLURB: Record<IntegrationCategory, string> = {
   phone_sms: "Call log and SMS. Connect 8x8, Twilio, RingCentral, or Lightspeed Voice when the agency is ready.",
   esign: "In-desk signing on Deal or Policy. DocuSign sandbox OAuth is wired. Dropbox Sign stays a preference stub.",
   rater: "EZLynx and QuoteRush seats the agency already pays. Super-Copy stays copy-from-the-sheet — no rater API.",
+  health_enrollment:
+    "HealthSherpa Medicare is BYO: store the partner key in the API vault, sync contacts, and ingest enrollment webhooks. Marketplace / ACA stays scaffolded until partner credentials exist. FitFirst does not add a HealthSherpa fee.",
   campaigns: "Bulk and drip later. Mailchimp, Constant Contact, or SendGrid — agency pays the vendor.",
   video: "Meeting links on the calendar. Google Meet helper is live when Calendar or Meet is connected. Zoom stays stub.",
 };
@@ -63,6 +67,8 @@ export const INTEGRATION_PROVIDER_IDS = [
   "sendgrid",
   "zoom",
   "google_meet",
+  "healthsherpa_medicare",
+  "healthsherpa_aca",
 ] as const;
 
 export type IntegrationProviderId = (typeof INTEGRATION_PROVIDER_IDS)[number];
@@ -80,6 +86,7 @@ export type IntegrationTone =
   | "sms"
   | "esign"
   | "rater"
+  | "health"
   | "campaign"
   | "video";
 
@@ -345,6 +352,29 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     tone: "video",
     optional: true,
   },
+  {
+    id: "healthsherpa_medicare",
+    category: "health_enrollment",
+    name: "HealthSherpa Medicare",
+    initials: "HS",
+    blurb: "CRM contact sync, quote redirect, and enrollment webhooks. Agency HealthSherpa seat — no FitFirst fee.",
+    byoNote:
+      "Agency pays HealthSherpa (or uses a partner seat). Medicare API key lives in Developer Hub → API vault. Manual enrollments may not fire the webhook.",
+    tone: "health",
+    adminGated: true,
+  },
+  {
+    id: "healthsherpa_aca",
+    category: "health_enrollment",
+    name: "HealthSherpa Marketplace / ACA",
+    initials: "HA",
+    blurb: "QuoteConnect / enrollment handoff. Scaffolded until HealthSherpa partner credentials exist.",
+    byoNote:
+      "Agency pays HealthSherpa for Marketplace / ICHRA partner access. FitFirst does not quote ACA inside the desk.",
+    tone: "health",
+    adminGated: true,
+    optional: true,
+  },
 ];
 
 export const CONNECT_HUB_SECTIONS = [
@@ -466,6 +496,10 @@ export function stubAccountLabel(id: IntegrationProviderId): string {
       return "FitFirst Insurance · LinkedIn stub";
     case "google_business_profile":
       return "FitFirst Insurance · Palm Bay GBP stub";
+    case "healthsherpa_medicare":
+      return "Agency HealthSherpa Medicare";
+    case "healthsherpa_aca":
+      return "Agency HealthSherpa Marketplace";
   }
 }
 

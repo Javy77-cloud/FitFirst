@@ -133,8 +133,11 @@ describe("Life + Health Risk Profile depth", () => {
     expect(health.applicant_email).toBeUndefined();
     expect(health.co_applicant_name).toBeUndefined();
     expect(Object.keys(health).some((key) => /ssn|social|citizenship|preferred_doctor|prescription|alcohol|drug/i.test(key))).toBe(false);
+    expect(health.using_healthsherpa).toMatchObject({ input: "select", label: "Using HealthSherpa" });
+    expect(health.using_healthsherpa.options).toEqual([...YES_NO_OPTIONS]);
     expect(health.plan_type).toMatchObject({ input: "select", label: "Coverage type" });
     expect(health.plan_type.options).toEqual([...HEALTH_PLAN_TYPE_OPTIONS]);
+    expect(health.metal_level.group).toBe("Marketplace");
     expect(health.metal_level.options).toEqual([...HEALTH_METAL_LEVEL_OPTIONS]);
     expect(health.metal_level.showWhen).toEqual({ key: "plan_type", values: ["Marketplace"] });
     expect(health.deductible_preference.options).toEqual([...HEALTH_COST_PREF_OPTIONS]);
