@@ -157,6 +157,8 @@ describe("document pipeline wiring", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     expect(panel).toMatch(/AgencyLettersRail/);
     expect(panel).toMatch(/letterJobs/);
+    expect(panel).toMatch(/agency_letter/);
+    expect(panel).toMatch(/filled_letter/);
     expect(panel).not.toMatch(/grid-cols-/);
     expect(page).toMatch(/letterJobs=\{letterJobs\}/);
     const types = source("src/lib/document-pipeline/types.ts");

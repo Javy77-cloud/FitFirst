@@ -2471,7 +2471,8 @@ export async function getDealWorkspace(dealId: string) {
       .select()
       .from(documentPipelineJobs)
       .where(and(eq(documentPipelineJobs.tenantId, tenant()), eq(documentPipelineJobs.dealId, dealId)))
-      .orderBy(desc(documentPipelineJobs.createdAt)),
+      .orderBy(desc(documentPipelineJobs.createdAt))
+      .catch(() => []),
   ]);
 
   return {

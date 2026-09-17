@@ -50,7 +50,12 @@ export function DocumentsPanel({
   hasRequestedQuotes?: boolean;
   productId?: string | null;
 }) {
-  const sourceDocs = asList(docs).filter((d) => isDocumentsSourceDoc(d));
+  const sourceDocs = asList(docs).filter(
+    (d) =>
+      isDocumentsSourceDoc(d) &&
+      d.slot !== "filled_letter" &&
+      !(d.tags ?? []).includes("agency_letter"),
+  );
   const lineDocs = sourceDocs.filter((d) => docCardKeyFromTags(d.tags));
   const otherSourceDocs = sourceDocs.filter((d) => !docCardKeyFromTags(d.tags));
   const lineGroups = asList(groupDocsByLine(lineDocs));
