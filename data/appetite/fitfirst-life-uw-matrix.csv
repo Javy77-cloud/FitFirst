@@ -1,0 +1,1309 @@
+carrier_slug,carrier_name,product_slug,product_name,condition_key,outcome,rule_text,age_min,age_max,coverage,source
+amam,American Amicable,express_term,Express Term,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,18,75,incomplete,catalog
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,20,75,incomplete,catalog
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,50,85,incomplete,catalog
+amam,American Amicable,qsfp_wl,QSFP WL,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,50,85,incomplete,catalog
+amam,American Amicable,term_made_simple,Term Made Simple,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,20,75,incomplete,catalog
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,20,75,incomplete,catalog
+americo,Americo,eagle_select,Eagle Select WL,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,40,85,incomplete,catalog
+corebridge,Corebridge,giwl,GIWL,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,50,80,incomplete,catalog
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,50,80,incomplete,catalog
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,0,65,incomplete,catalog
+fg,Fidelity & Guaranty,quantum,Quantum IUL,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,0,60,incomplete,catalog
+foresters,Foresters,strong_foundation,Strong Foundation Term,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,18,80,incomplete,catalog
+foresters,Foresters,smart_ul,Smart UL/IUL,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,18,80,incomplete,catalog
+foresters,Foresters,plan_right,Plan Right WL,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,50,85,incomplete,catalog
+banner,Banner Life,qlt_term_plus,QLT Term Plus,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,,,incomplete,catalog
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,18,89,incomplete,catalog
+moo,Mutual of Omaha,term_life_express,Term Life Express,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,18,75,incomplete,catalog
+moo,Mutual of Omaha,living_promise,Living Promise WL,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,45,85,incomplete,catalog
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,18,85,incomplete,catalog
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,,,incomplete,catalog
+sbli,SBLI,easytrack,EasyTrack Digital Term,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,18,60,incomplete,catalog
+transamerica,Transamerica,final_expense_express,Final Expense Express,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,,,incomplete,catalog
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,0,85,incomplete,catalog
+uhl,United Home Life,term,Simple Term,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,20,60,incomplete,catalog
+uhl,United Home Life,whole_life,Whole Life,,,Product listed on Javy live MATRIX (2026-09-17). Mixed cells stay Unknown — full MATRIX when spreadsheet extract is complete.,20,80,incomplete,catalog
+sbli,SBLI,easytrack,EasyTrack Digital Term,alcohol_drug_treatment,decline,DECLINE,18,60,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,citizenship,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,criminal_history_felonies,accept,ACCEPT,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,criminal_history_felonies,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,disability,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,disability,accept,ACCEPT,50,85,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,disability,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,disability,accept,ACCEPT,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,disability,accept,ACCEPT,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,disability,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,disability,accept,ACCEPT,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,disability,accept,ACCEPT,,,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,driver_license_dui,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,driver_license_dui,accept,ACCEPT,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,military,accept,ACCEPT,45,85,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,military,select,SELECT,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,military,accept,ACCEPT,0,85,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,occupation,accept,ACCEPT,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,occupation,accept,ACCEPT,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,occupation,select,SELECT,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,occupation,accept,ACCEPT,0,85,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,adl_assistance,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,adl_assistance,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,adl_assistance,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,adl_assistance,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,adl_assistance,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,adl_assistance,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,adl_assistance,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,adl_assistance,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,adl_assistance,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,adl_assistance,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,adl_assistance,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,adl_assistance,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,adl_assistance,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,adl_assistance,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,adl_assistance,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,adl_assistance,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,adl_assistance,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,adl_assistance,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,adl_assistance,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,adl_assistance,graded,GRADED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,adl_assistance,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,adl_assistance,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,adl_assistance,decline,DECLINE,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,adl_assistance,decline,DECLINE,20,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,aids,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,aids_hiv,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,aids,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,aids_hiv,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,aids,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,aids_hiv,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,aids,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,aids_hiv,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,aids,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,aids_hiv,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,aids,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,aids_hiv,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,aids,decline,DECLINE,40,85,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,aids_hiv,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,aids,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,aids_hiv,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,aids,decline,DECLINE,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,aids_hiv,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,aids,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,aids_hiv,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,aids,decline,DECLINE,0,60,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,aids_hiv,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,aids,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,aids_hiv,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,aids,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,aids_hiv,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,aids,decline,DECLINE,50,85,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,aids_hiv,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,aids,decline,DECLINE,,,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,aids_hiv,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,aids,decline,DECLINE,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,aids_hiv,decline,DECLINE,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,aids,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,aids_hiv,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,aids,decline,DECLINE,45,85,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,aids_hiv,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,aids,decline,DECLINE,18,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,aids_hiv,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,aids,graded,GRADED,,,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,aids_hiv,graded,GRADED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,aids,decline,DECLINE,18,60,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,aids_hiv,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,aids,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,aids_hiv,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,aids,decline,DECLINE,0,85,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,aids_hiv,decline,DECLINE,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,aids,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,aids_hiv,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,aids,decline,DECLINE,20,80,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,aids_hiv,decline,DECLINE,20,80,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,aids_arc,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,aids_arc,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,aids_arc,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,aids_arc,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,aids_arc,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,aids_arc,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,aids_arc,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,aids_arc,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,aids_arc,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,aids_arc,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,aids_arc,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,aids_arc,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,aids_arc,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,aids_arc,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,aids_arc,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,aids_arc,decline,DECLINE,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,aids_arc,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,aids_arc,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,aids_arc,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,aids_arc,graded,GRADED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,aids_arc,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,aids_arc,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,aids_arc,decline,DECLINE,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,aids_arc,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,aids_arc,decline,DECLINE,20,80,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,als_lou_gehrigs_disease,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,als_lou_gehrigs_disease,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,als_lou_gehrigs_disease,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,als_lou_gehrigs_disease,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,als_lou_gehrigs_disease,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,als_lou_gehrigs_disease,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,als_lou_gehrigs_disease,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,als_lou_gehrigs_disease,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,als_lou_gehrigs_disease,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,als_lou_gehrigs_disease,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,als_lou_gehrigs_disease,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,als_lou_gehrigs_disease,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,als_lou_gehrigs_disease,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,als_lou_gehrigs_disease,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,als_lou_gehrigs_disease,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,als_lou_gehrigs_disease,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,als_lou_gehrigs_disease,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,als_lou_gehrigs_disease,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,als_lou_gehrigs_disease,graded,GRADED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,als_lou_gehrigs_disease,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,als_lou_gehrigs_disease,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,als_lou_gehrigs_disease,decline,DECLINE,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,als_lou_gehrigs_disease,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,als_lou_gehrigs_disease,decline,DECLINE,20,80,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,alzheimers,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,alzheimers,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,alzheimers,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,alzheimers,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,alzheimers,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,alzheimers,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,alzheimers,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,alzheimers,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,alzheimers,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,alzheimers,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,alzheimers,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,alzheimers,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,alzheimers,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,alzheimers,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,alzheimers,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,alzheimers,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,alzheimers,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,alzheimers,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,alzheimers,graded,GRADED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,alzheimers,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,alzheimers,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,alzheimers,decline,DECLINE,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,alzheimers,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,alzheimers,decline,DECLINE,20,80,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,amputation,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,amputation,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,amputation,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,amputation,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,amputation,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,amputation,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,amputation,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,amputation,accept,GIWL,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,amputation,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,amputation,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,amputation,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,amputation,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,amputation,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,amputation,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,amputation,decline,DECLINE,18,75,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,amputation,decline,DECLINE,18,60,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,anemia,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,anemia,accept,ACCEPT,50,85,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,anemia,accept,ACCEPT,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,anemia,accept,ACCEPT,50,80,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,anemia,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,anemia,accept,ACCEPT,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,anemia,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,anemia,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,anemia,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,anemia,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,anemia,accept,EIWL,20,80,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,aneurysm,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,aneurysm,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,aneurysm,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,aneurysm,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,aneurysm,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,aneurysm,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,aneurysm,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,aneurysm,decline,DECLINE,18,80,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,aneurysm,decline,DECLINE,18,75,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,aneurysm,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,aneurysm,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,angina,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,angina,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,angina,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,angina,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,angina,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,angina,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,angina,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,angina,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,angina,decline,DECLINE,18,75,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,angina,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,angina,preferred,PREFERRED,0,85,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,angioplasty,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,angioplasty,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,angioplasty,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,angioplasty,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,angioplasty,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,angioplasty,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,angioplasty,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,angioplasty,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,angioplasty,decline,DECLINE,18,75,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,angioplasty,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,angioplasty,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,anxiety,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,anxiety,accept,ACCEPT,50,85,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,anxiety,accept,ACCEPT,18,89,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,anxiety,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,anxiety,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,arrhythmia,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,arrhythmia,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,arrhythmia,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,arrhythmia,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,arrhythmia,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,arrhythmia,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,arrhythmia,decline,DECLINE,18,75,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,arrhythmia,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,arrhythmia,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,arrhythmia,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,arrhythmia,accept,EIWL,20,80,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,arthritis_osteo,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,arthritis_osteo,accept,ACCEPT,50,85,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,arthritis_osteo,accept,ACCEPT,40,85,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,arthritis_osteo,accept,ACCEPT,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,arthritis_osteo,accept,ACCEPT,18,80,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,arthritis_osteo,accept,ACCEPT,18,89,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,arthritis_osteo,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,arthritis_osteo,accept,ACCEPT,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,arthritis_osteo,select,SELECT,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,asthma,accept,ACCEPT,18,89,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,asthma,standard,STANDARD,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,asthma,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,asthma_steroid_inhaler,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,asthma_steroid_inhaler,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,asthma_steroid_inhaler,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,asthma_steroid_inhaler,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,asthma_steroid_inhaler,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,asthma_steroid_inhaler,decline,DECLINE,0,60,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,asthma_steroid_inhaler,decline,DECLINE,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,asthma_steroid_inhaler,decline,DECLINE,18,75,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,asthma_steroid_inhaler,standard,STANDARD,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,asthma_steroid_inhaler,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,atrial_fibrillation,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,atrial_fibrillation,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,atrial_fibrillation,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,atrial_fibrillation,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,atrial_fibrillation,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,atrial_fibrillation,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,atrial_fibrillation,decline,DECLINE,18,80,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,atrial_fibrillation,decline,DECLINE,18,75,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,atrial_fibrillation,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,atrial_fibrillation,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,autism,decline,DECLINE,50,85,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,autism,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,autism,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,autism,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,autism,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,autism,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,autism,decline,DECLINE,18,75,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,autism,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,autism,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,autism,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,bipolar,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,bipolar,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,bipolar,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,bipolar,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,bipolar,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,bipolar,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,bipolar,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,bipolar,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,bipolar,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,bipolar,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,bipolar,decline,DECLINE,18,75,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,bipolar,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,bipolar,select,SELECT,,,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,blood_clots,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,blood_clots,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,blood_clots,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,blood_clots,decline,DECLINE,18,80,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,blood_clots,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,blood_clots,decline,DECLINE,18,60,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,brain_tumor_noncancerous,decline,DECLINE,40,85,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,brain_tumor_noncancerous,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,brain_tumor_noncancerous,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,brain_tumor_noncancerous,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,brain_tumor_noncancerous,decline,DECLINE,,,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,brain_tumor_noncancerous,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,brain_tumor_noncancerous,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,brain_tumor_noncancerous,select,SELECT,,,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,bronchitis_chronic,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,bronchitis_chronic,decline,DECLINE,40,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,bronchitis_chronic,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,bronchitis_chronic,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,bronchitis_chronic,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,bronchitis_chronic,graded,GRADED,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,bronchitis_chronic,standard,STANDARD,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,bronchitis_chronic,select,SELECT,,,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,cancer,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,cardiomyopathy,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,cardiomyopathy,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,cardiomyopathy,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,cardiomyopathy,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,cardiomyopathy,decline,DECLINE,40,85,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,cardiomyopathy,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,cardiomyopathy,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,cardiomyopathy,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,cardiomyopathy,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,cardiomyopathy,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,cardiomyopathy,decline,DECLINE,18,75,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,cardiomyopathy,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,cardiomyopathy,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,cerebral_palsy,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,cerebral_palsy,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,cerebral_palsy,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,cerebral_palsy,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,cerebral_palsy,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,cerebral_palsy,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,cerebral_palsy,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,cerebral_palsy,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,cerebral_palsy,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,cerebral_palsy,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,cerebral_palsy,decline,DECLINE,18,75,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,cerebral_palsy,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,cerebral_palsy,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,cerebral_palsy,decline,DECLINE,0,85,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,circulatory_surgeries,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,circulatory_surgeries,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,circulatory_surgeries,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,circulatory_surgeries,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,circulatory_surgeries,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,circulatory_surgeries,decline,DECLINE,18,75,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,circulatory_surgeries,select,SELECT,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,circulatory_surgeries,decline,DECLINE,0,85,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,cirrhosis,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,cirrhosis,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,cirrhosis,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,cirrhosis,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,cirrhosis,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,cirrhosis,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,cirrhosis,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,cirrhosis,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,cirrhosis,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,cirrhosis,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,cirrhosis,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,cirrhosis,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,cirrhosis,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,cirrhosis,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,cirrhosis,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,cirrhosis,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,cirrhosis,graded,GRADED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,cirrhosis,graded,GRADED,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,cirrhosis,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,cirrhosis,accept,EIWL,20,80,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,crohns,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,crohns,accept,ACCEPT,50,85,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,crohns,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,crohns,accept,ACCEPT,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,crohns,accept,ACCEPT,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,crohns,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,crohns,decline,DECLINE,0,60,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,crohns,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,crohns,decline,DECLINE,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,crohns,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,crohns,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,crohns,accept,ACCEPT,20,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,chf,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,chf,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,chf,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,chf,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,chf,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,chf,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,chf,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,chf,accept,GIWL,50,80,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,chf,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,chf,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,chf,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,chf,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,chf,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,chf,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,chf,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,chf,graded,GRADED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,chf,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,chf,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,chf,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,chf,accept,EIWL,20,80,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,copd,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,copd,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,copd,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,copd,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,copd,decline,DECLINE,40,85,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,copd,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,copd,decline,DECLINE,0,60,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,copd,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,copd,graded,GRADED,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,copd,standard,STANDARD,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,copd,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,copd,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,copd,decline,DECLINE,20,60,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,covid_19,accept,ACCEPT,18,89,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,covid_19,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,covid_19,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,cpap_without_oxygen,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,cpap_without_oxygen,accept,ACCEPT,50,85,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,cpap_without_oxygen,accept,ACCEPT,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,cpap_without_oxygen,accept,ACCEPT,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,cpap_without_oxygen,accept,ACCEPT,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,cpap_without_oxygen,accept,ACCEPT,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,cpap_without_oxygen,accept,ACCEPT,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,cpap_without_oxygen,accept,ACCEPT,18,80,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,cpap_without_oxygen,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,cpap_without_oxygen,accept,ACCEPT,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,cpap_without_oxygen,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,cpap_without_oxygen,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,cpap_without_oxygen,accept,ACCEPT,20,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,cpap_with_oxygen,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,cpap_with_oxygen,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,cpap_with_oxygen,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,cpap_with_oxygen,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,cpap_with_oxygen,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,cpap_with_oxygen,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,cpap_with_oxygen,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,cpap_with_oxygen,accept,GIWL,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,cpap_with_oxygen,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,cpap_with_oxygen,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,cpap_with_oxygen,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,cpap_with_oxygen,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,cpap_with_oxygen,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,cpap_with_oxygen,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,cpap_with_oxygen,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,cpap_with_oxygen,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,cpap_with_oxygen,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,cpap_with_oxygen,graded,GRADED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,cpap_with_oxygen,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,cpap_with_oxygen,graded,GRADED,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,cpap_with_oxygen,standard,STANDARD,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,cpap_with_oxygen,decline,DECLINE,20,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,cystic_fibrosis,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,cystic_fibrosis,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,cystic_fibrosis,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,cystic_fibrosis,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,cystic_fibrosis,decline,DECLINE,40,85,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,cystic_fibrosis,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,cystic_fibrosis,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,cystic_fibrosis,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,cystic_fibrosis,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,cystic_fibrosis,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,cystic_fibrosis,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,cystic_fibrosis,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,cystic_fibrosis,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,cystic_fibrosis,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,cystic_fibrosis,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,cystic_fibrosis,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,cystic_fibrosis,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,cystic_fibrosis,decline,DECLINE,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,cystic_fibrosis,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,cystic_fibrosis,accept,EIWL,20,80,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,defibrillator,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,defibrillator,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,defibrillator,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,defibrillator,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,defibrillator,decline,DECLINE,40,85,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,defibrillator,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,defibrillator,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,defibrillator,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,defibrillator,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,defibrillator,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,defibrillator,decline,DECLINE,18,75,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,defibrillator,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,defibrillator,graded,GRADED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,defibrillator,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,defibrillator,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,depression,accept,ACCEPT,18,89,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,depression,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,depression,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,dementia,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,dementia,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,dementia,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,dementia,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,dementia,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,dementia,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,dementia,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,dementia,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,dementia,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,dementia,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,dementia,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,dementia,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,dementia,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,dementia,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,dementia,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,dementia,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,dementia,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,dementia,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,dementia,decline,DECLINE,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,dementia,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,dementia,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,dementia,decline,DECLINE,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,dementia,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,dementia,decline,DECLINE,20,80,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,diabetes,accept,ACCEPT,40,85,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,diabetes,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,diabetes,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,diabetes,select,SELECT,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,diabetes_gestational,accept,ACCEPT,18,89,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,diabetes_gestational,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,diabetes_gestational,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,diabetes_gout,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,diabetes_gout,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,diabetes_gout,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,diabetes_gout,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,diabetes_gout,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,diabetes_gout,accept,ACCEPT,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,diabetes_gout,accept,ACCEPT,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,diabetes_gout,accept,ACCEPT,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,diabetes_gout,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,diabetes_gout,accept,ACCEPT,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,diabetes_gout,accept,ACCEPT,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,diabetes_gout,accept,ACCEPT,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,diabetes_gout,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,diabetes_gout,decline,DECLINE,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,diabetes_gout,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,diabetes_gout,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,diabetes_gout,accept,ACCEPT,20,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,diabetes_insulin,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,diabetes_insulin,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,diabetes_insulin,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,diabetes_insulin,decline,DECLINE,20,75,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,diabetes_insulin,decline,DECLINE,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,diabetes_insulin,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,diabetes_insulin,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,diabetic_neuropathy,decline,DECLINE,50,85,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,diabetic_neuropathy,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,diabetic_neuropathy,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,diabetic_neuropathy,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,diabetic_neuropathy,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,diabetic_neuropathy,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,diabetic_neuropathy,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,diabetic_neuropathy,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,diabetic_neuropathy,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,diabetic_neuropathy,decline,DECLINE,18,75,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,diabetic_neuropathy,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,diabetic_neuropathy,decline,DECLINE,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,diabetic_neuropathy,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,diabetic_neuropathy,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,diabetic_neuropathy,decline,DECLINE,20,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,diabetic_retinopathy,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,diabetic_retinopathy,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,diabetic_retinopathy,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,diabetic_retinopathy,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,diabetic_retinopathy,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,diabetic_retinopathy,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,diabetic_retinopathy,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,diabetic_retinopathy,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,diabetic_retinopathy,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,diabetic_retinopathy,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,diabetic_retinopathy,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,diabetic_retinopathy,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,diabetic_retinopathy,decline,DECLINE,18,75,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,diabetic_retinopathy,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,diabetic_retinopathy,decline,DECLINE,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,diabetic_retinopathy,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,diabetic_retinopathy,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,diabetic_retinopathy,decline,DECLINE,20,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,diabetes_w_smoking,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,diabetes_w_smoking,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,diabetes_w_smoking,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,diabetes_w_smoking,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,diabetes_w_smoking,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,diabetes_w_smoking,accept,ACCEPT,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,diabetes_w_smoking,accept,ACCEPT,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,diabetes_w_smoking,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,diabetes_w_smoking,accept,ACCEPT,0,60,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,diabetes_w_smoking,accept,ACCEPT,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,diabetes_w_smoking,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,diabetes_w_smoking,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,diabetes_w_smoking,accept,ACCEPT,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,diabetes_w_smoking,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,diabetes_w_smoking,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,diabetes_w_smoking,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,diabetes_w_smoking,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,diabetes_w_smoking,accept,ACCEPT,20,60,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,gabapentin,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,gabapentin,accept,ACCEPT,18,89,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,gabapentin,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,downs_syndrome,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,downs_syndrome,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,downs_syndrome,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,downs_syndrome,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,downs_syndrome,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,downs_syndrome,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,downs_syndrome,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,downs_syndrome,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,downs_syndrome,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,downs_syndrome,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,downs_syndrome,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,downs_syndrome,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,downs_syndrome,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,downs_syndrome,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,downs_syndrome,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,downs_syndrome,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,downs_syndrome,decline,DECLINE,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,downs_syndrome,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,downs_syndrome,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,downs_syndrome,decline,DECLINE,0,85,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,diverticulitis,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,diverticulitis,accept,ACCEPT,50,85,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,diverticulitis,accept,ACCEPT,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,diverticulitis,accept,ACCEPT,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,diverticulitis,accept,ACCEPT,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,diverticulitis,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,diverticulitis,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,diverticulitis,accept,ACCEPT,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,diverticulitis,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,diverticulitis,accept,ACCEPT,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,diverticulitis,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,emphysema,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,emphysema,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,emphysema,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,emphysema,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,emphysema,decline,DECLINE,40,85,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,emphysema,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,emphysema,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,emphysema,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,emphysema,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,emphysema,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,emphysema,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,emphysema,graded,GRADED,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,emphysema,standard,STANDARD,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,emphysema,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,emphysema,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,emphysema,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,emphysema,decline,DECLINE,20,80,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,endometriosis,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,endometriosis,accept,ACCEPT,50,85,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,endometriosis,accept,ACCEPT,18,89,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,endometriosis,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,endometriosis,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,endometriosis,accept,ACCEPT,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,endometriosis,accept,ACCEPT,20,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,epilepsy,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,epilepsy,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,epilepsy,decline,DECLINE,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,epilepsy,standard,STANDARD,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,epilepsy,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,erectile_dysfunction,accept,ACCEPT,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,erectile_dysfunction,accept,ACCEPT,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,erectile_dysfunction,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,erectile_dysfunction,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,erectile_dysfunction,accept,ACCEPT,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,erectile_dysfunction,accept,ACCEPT,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,erectile_dysfunction,accept,ACCEPT,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,erectile_dysfunction,accept,ACCEPT,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,erectile_dysfunction,accept,ACCEPT,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,erectile_dysfunction,accept,ACCEPT,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,erectile_dysfunction,accept,ACCEPT,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,erectile_dysfunction,accept,ACCEPT,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,erectile_dysfunction,accept,ACCEPT,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,erectile_dysfunction,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,erectile_dysfunction,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,erectile_dysfunction,accept,ACCEPT,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,erectile_dysfunction,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,erectile_dysfunction,accept,ACCEPT,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,erectile_dysfunction,select,SELECT,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,erectile_dysfunction,preferred,PREFERRED,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,erectile_dysfunction,accept,ACCEPT,20,60,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,fibromyalgia,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,fibromyalgia,accept,ACCEPT,50,85,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,fibromyalgia,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,fibromyalgia,accept,ACCEPT,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,fibromyalgia,accept,ACCEPT,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,fibromyalgia,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,fibromyalgia,accept,ACCEPT,0,60,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,fibromyalgia,accept,ACCEPT,18,89,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,fibromyalgia,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,fibromyalgia,accept,ACCEPT,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,fibromyalgia,select,SELECT,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,fibromyalgia,preferred,PREFERRED,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,fibromyalgia,accept,ACCEPT,20,60,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,gallbladder_disorder,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,gallbladder_disorder,accept,ACCEPT,50,85,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,gallbladder_disorder,accept,ACCEPT,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,gallbladder_disorder,accept,ACCEPT,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,gallbladder_disorder,accept,ACCEPT,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,gallbladder_disorder,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,gallbladder_disorder,accept,ACCEPT,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,gallbladder_disorder,accept,ACCEPT,18,89,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,gallbladder_disorder,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,gallbladder_disorder,accept,ACCEPT,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,gallbladder_disorder,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,gastric_bypass,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,gastric_bypass,accept,ACCEPT,50,85,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,gastric_bypass,accept,ACCEPT,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,gastric_bypass,accept,ACCEPT,50,80,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,gastric_bypass,accept,ACCEPT,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,gastric_bypass,accept,ACCEPT,18,80,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,gastric_bypass,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,gastric_bypass,accept,ACCEPT,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,gastric_bypass,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,gastric_bypass,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,gastric_bypass,accept,ACCEPT,20,60,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,gout,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,gout,accept,ACCEPT,50,85,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,gout,accept,ACCEPT,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,gout,accept,ACCEPT,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,gout,accept,ACCEPT,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,gout,accept,ACCEPT,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,gout,accept,ACCEPT,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,gout,accept,ACCEPT,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,gout,accept,ACCEPT,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,gout,accept,ACCEPT,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,gout,accept,ACCEPT,18,89,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,gout,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,gout,accept,ACCEPT,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,gout,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,gout,accept,ACCEPT,20,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,heart_attack_heart_disease,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,heart_attack_heart_disease,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,heart_attack_heart_disease,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,heart_attack_heart_disease,decline,DECLINE,20,75,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,heart_attack_heart_disease,accept,GIWL,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,heart_attack_heart_disease,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,heart_attack_heart_disease,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,heart_attack_heart_disease,decline,DECLINE,18,80,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,heart_attack_heart_disease,decline,DECLINE,18,75,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,heart_attack_heart_disease,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,heart_attack_heart_disease,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,heart_mitral_valve_insufficiency_prolapse,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,heart_mitral_valve_insufficiency_prolapse,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,heart_mitral_valve_insufficiency_prolapse,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,heart_mitral_valve_insufficiency_prolapse,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,heart_mitral_valve_insufficiency_prolapse,decline,DECLINE,50,85,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,heart_mitral_valve_insufficiency_prolapse,decline,DECLINE,18,75,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,heart_mitral_valve_insufficiency_prolapse,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,heart_mitral_valve_insufficiency_prolapse,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,heart_mitral_valve_insufficiency_prolapse,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,heart_mitral_valve_insufficiency_prolapse,accept,EIWL,20,80,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,heart_surgeries_bypass_etc,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,heart_surgeries_bypass_etc,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,heart_surgeries_bypass_etc,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,heart_surgeries_bypass_etc,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,heart_surgeries_bypass_etc,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,heart_surgeries_bypass_etc,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,heart_surgeries_bypass_etc,decline,DECLINE,18,80,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,heart_surgeries_bypass_etc,decline,DECLINE,18,75,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,heart_surgeries_bypass_etc,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,heart_surgeries_bypass_etc,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,hepatitis,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,hepatitis,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,hepatitis,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,hepatitis,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,hepatitis,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,hepatitis,decline,DECLINE,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,hepatitis,decline,DECLINE,18,75,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,hepatitis,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,hepatitis,accept,EIWL,20,80,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,high_blood_pressure,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,high_blood_pressure,accept,ACCEPT,50,85,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,high_blood_pressure,accept,ACCEPT,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,high_blood_pressure,accept,ACCEPT,50,80,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,high_blood_pressure,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,high_blood_pressure,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,hiv,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,hiv,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,hiv,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,hiv,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,hiv,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,hiv,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,hiv,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,hiv,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,hiv,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,hiv,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,hiv,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,hiv,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,hiv,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,hiv,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,hiv,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,hiv,decline,DECLINE,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,hiv,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,hiv,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,hiv,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,hiv,graded,GRADED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,hiv,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,hiv,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,hiv,decline,DECLINE,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,hiv,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,hiv,decline,DECLINE,20,80,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,hiv_prep,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,hiv_prep,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,hiv_prep,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,hiv_prep,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,hiv_prep,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,hiv_prep,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,hiv_prep,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,hiv_prep,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,hiv_prep,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,hiv_prep,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,hiv_prep,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,hiv_prep,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,hiv_prep,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,hiv_prep,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,hiv_prep,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,hiv_prep,decline,DECLINE,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,hiv_prep,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,hiv_prep,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,hiv_prep,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,hiv_prep,graded,GRADED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,hiv_prep,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,hiv_prep,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,hiv_prep,decline,DECLINE,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,hiv_prep,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,hiv_prep,decline,DECLINE,20,80,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,hospitalization,accept,GIWL,50,80,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,huntingtons_disease,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,huntingtons_disease,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,huntingtons_disease,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,huntingtons_disease,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,huntingtons_disease,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,huntingtons_disease,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,huntingtons_disease,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,huntingtons_disease,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,huntingtons_disease,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,huntingtons_disease,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,huntingtons_disease,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,huntingtons_disease,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,huntingtons_disease,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,huntingtons_disease,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,huntingtons_disease,decline,DECLINE,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,huntingtons_disease,decline,DECLINE,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,huntingtons_disease,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,huntingtons_disease,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,huntingtons_disease,decline,DECLINE,0,85,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,hypothyroidism,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,hypothyroidism,accept,ACCEPT,50,85,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,hypothyroidism,accept,ACCEPT,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,hypothyroidism,accept,ACCEPT,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,hypothyroidism,accept,ACCEPT,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,hypothyroidism,accept,ACCEPT,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,hypothyroidism,accept,ACCEPT,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,hypothyroidism,accept,ACCEPT,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,hypothyroidism,accept,ACCEPT,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,hypothyroidism,accept,ACCEPT,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,hypothyroidism,accept,ACCEPT,18,89,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,hypothyroidism,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,hypothyroidism,accept,ACCEPT,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,hypothyroidism,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,hypothyroidism,accept,ACCEPT,20,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,kidney_dialysis,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,kidney_dialysis,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,kidney_dialysis,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,kidney_dialysis,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,kidney_dialysis,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,kidney_dialysis,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,kidney_dialysis,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,kidney_dialysis,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,kidney_dialysis,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,kidney_dialysis,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,kidney_dialysis,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,kidney_dialysis,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,kidney_dialysis,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,kidney_dialysis,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,kidney_dialysis,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,kidney_dialysis,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,kidney_dialysis,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,kidney_dialysis,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,kidney_dialysis,graded,GRADED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,kidney_dialysis,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,kidney_dialysis,decline,DECLINE,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,kidney_dialysis,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,kidney_dialysis,decline,DECLINE,20,80,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,kidney_disease_chronic,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,kidney_disease_chronic,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,kidney_disease_chronic,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,kidney_disease_chronic,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,kidney_disease_chronic,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,kidney_disease_chronic,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,kidney_disease_chronic,accept,GIWL,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,kidney_disease_chronic,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,kidney_disease_chronic,decline,DECLINE,0,60,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,kidney_disease_chronic,decline,DECLINE,18,75,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,kidney_disease_chronic,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,kidney_disease_chronic,graded,GRADED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,kidney_disease_chronic,decline,DECLINE,18,60,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,kidney_disease_chronic,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,kidney_disease_chronic,accept,EIWL,20,80,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,kidney_failure,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,kidney_failure,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,kidney_failure,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,kidney_failure,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,kidney_failure,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,kidney_failure,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,kidney_failure,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,kidney_failure,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,kidney_failure,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,kidney_failure,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,kidney_failure,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,kidney_failure,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,kidney_failure,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,kidney_failure,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,kidney_failure,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,kidney_failure,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,kidney_failure,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,kidney_failure,graded,GRADED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,kidney_failure,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,kidney_failure,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,kidney_failure,decline,DECLINE,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,kidney_failure,accept,GIWL,20,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,kidney_stones,accept,ACCEPT,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,kidney_stones,accept,ACCEPT,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,kidney_stones,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,kidney_stones,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,kidney_stones,accept,ACCEPT,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,kidney_stones,accept,ACCEPT,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,kidney_stones,accept,ACCEPT,40,85,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,kidney_stones,accept,ACCEPT,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,kidney_stones,accept,ACCEPT,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,kidney_stones,accept,ACCEPT,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,kidney_stones,accept,ACCEPT,18,80,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,kidney_stones,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,kidney_stones,accept,ACCEPT,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,kidney_stones,accept,ACCEPT,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,kidney_stones,accept,ACCEPT,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,kidney_stones,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,kidney_stones,accept,ACCEPT,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,kidney_stones,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,kidney_stones,accept,ACCEPT,20,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,liver_disease,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,liver_disease,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,liver_disease,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,liver_disease,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,liver_disease,decline,DECLINE,40,85,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,liver_disease,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,liver_disease,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,liver_disease,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,liver_disease,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,liver_disease,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,liver_disease,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,liver_disease,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,liver_disease,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,liver_disease,decline,DECLINE,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,liver_disease,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,liver_disease,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,liver_disease,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,liver_disease,decline,DECLINE,20,80,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,liver_fatty_liver_disease,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,liver_fatty_liver_disease,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,liver_fatty_liver_disease,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,liver_fatty_liver_disease,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,liver_fatty_liver_disease,decline,DECLINE,40,85,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,liver_fatty_liver_disease,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,liver_fatty_liver_disease,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,liver_fatty_liver_disease,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,liver_fatty_liver_disease,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,liver_fatty_liver_disease,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,liver_fatty_liver_disease,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,liver_fatty_liver_disease,accept,ACCEPT,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,liver_fatty_liver_disease,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,liver_fatty_liver_disease,decline,DECLINE,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,liver_fatty_liver_disease,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,liver_fatty_liver_disease,accept,EIWL,20,80,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,lupus,decline,DECLINE,20,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,lupus,accept,ACCEPT,18,89,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,migraine_headaches,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,migraine_headaches,accept,ACCEPT,50,85,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,migraine_headaches,accept,ACCEPT,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,migraine_headaches,accept,ACCEPT,18,80,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,migraine_headaches,accept,ACCEPT,18,89,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,migraine_headaches,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,migraine_headaches,accept,ACCEPT,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,migraine_headaches,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,migraine_headaches,accept,ACCEPT,20,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,multiple_sclerosis_ms,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,multiple_sclerosis_ms,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,multiple_sclerosis_ms,graded,GRADED,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,multiple_sclerosis_ms,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,multiple_sclerosis_ms,decline,DECLINE,20,75,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,multiple_sclerosis_ms,graded,GRADED,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,multiple_sclerosis_ms,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,multiple_sclerosis_ms,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,multiple_sclerosis_ms,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,multiple_sclerosis_ms,decline,DECLINE,18,80,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,multiple_sclerosis_ms,decline,DECLINE,18,75,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,multiple_sclerosis_ms,standard,STANDARD,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,multiple_sclerosis_ms,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,multiple_sclerosis_ms,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,multiple_sclerosis_ms,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,multiple_sclerosis_ms,accept,EIWL,20,80,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,muscular_dystrophy,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,muscular_dystrophy,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,muscular_dystrophy,graded,GRADED,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,muscular_dystrophy,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,muscular_dystrophy,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,muscular_dystrophy,decline,DECLINE,40,85,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,muscular_dystrophy,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,muscular_dystrophy,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,muscular_dystrophy,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,muscular_dystrophy,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,muscular_dystrophy,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,muscular_dystrophy,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,muscular_dystrophy,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,muscular_dystrophy,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,muscular_dystrophy,decline,DECLINE,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,muscular_dystrophy,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,muscular_dystrophy,graded,GRADED,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,organ_transplant,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,organ_transplant,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,organ_transplant,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,organ_transplant,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,organ_transplant,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,organ_transplant,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,organ_transplant,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,organ_transplant,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,organ_transplant,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,organ_transplant,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,organ_transplant,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,organ_transplant,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,organ_transplant,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,organ_transplant,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,organ_transplant,decline,DECLINE,,,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,organ_transplant,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,organ_transplant,graded,GRADED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,organ_transplant,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,organ_transplant,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,organ_transplant,decline,DECLINE,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,organ_transplant,decline,DECLINE,20,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,oxygen_use,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,oxygen_use,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,oxygen_use,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,oxygen_use,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,oxygen_use,decline,DECLINE,20,75,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,oxygen_use,accept,GIWL,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,oxygen_use,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,oxygen_use,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,oxygen_use,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,oxygen_use,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,oxygen_use,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,oxygen_use,decline,DECLINE,18,75,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,oxygen_use,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,oxygen_use,graded,GRADED,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,oxygen_use,decline,DECLINE,20,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,pacemaker,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,pacemaker,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,pacemaker,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,pacemaker,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,pacemaker,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,pacemaker,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,pacemaker,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,pacemaker,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,pacemaker,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,pacemaker,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,pacemaker,decline,DECLINE,45,85,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,pacemaker,decline,DECLINE,18,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,chronic_pain,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,chronic_pain,decline,DECLINE,18,80,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,chronic_pain,accept,ACCEPT,18,89,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,pancreatitis,decline,DECLINE,20,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,pancreatitis,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,pancreatitis,decline,DECLINE,18,75,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,pancreatitis,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,pancreatitis,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,paralysis,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,paralysis,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,paralysis,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,paralysis,decline,DECLINE,20,75,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,paralysis,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,paralysis,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,paralysis,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,paralysis,decline,DECLINE,0,60,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,paralysis,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,paralysis,decline,DECLINE,18,75,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,paralysis,decline,DECLINE,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,paralysis,decline,DECLINE,18,60,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,paralysis,decline,DECLINE,20,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,parkinsons,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,parkinsons,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,parkinsons,graded,GRADED,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,parkinsons,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,parkinsons,decline,DECLINE,20,75,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,parkinsons,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,parkinsons,graded,GRADED,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,parkinsons,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,parkinsons,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,parkinsons,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,parkinsons,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,parkinsons,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,parkinsons,decline,DECLINE,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,parkinsons,decline,DECLINE,18,75,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,parkinsons,standard,STANDARD,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,parkinsons,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,parkinsons,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,parkinsons,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,parkinsons,accept,EIWL,20,80,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,pvd,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,pvd,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,pvd,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,pvd,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,pvd,decline,DECLINE,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,pvd,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,pvd,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,pvd,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,pvd,decline,DECLINE,18,75,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,pvd,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,pvd,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,ptsd,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,ptsd,accept,ACCEPT,50,85,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,ptsd,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,ptsd,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,ptsd,decline,DECLINE,0,60,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,ptsd,accept,ACCEPT,18,89,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,ptsd,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,ptsd,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,pulmonary_embolism,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,pulmonary_embolism,accept,ACCEPT,50,85,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,pulmonary_embolism,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,pulmonary_embolism,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,pulmonary_embolism,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,pulmonary_embolism,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,pulmonary_embolism,decline,DECLINE,50,85,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,pulmonary_embolism,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,pulmonary_embolism,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,renal_failure,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,renal_failure,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,renal_failure,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,renal_failure,decline,DECLINE,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,renal_failure,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,renal_failure,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,renal_failure,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,giwl,GIWL,renal_failure,accept,GIWL,50,80,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,renal_failure,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,renal_failure,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,renal_failure,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,renal_failure,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,renal_failure,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,renal_failure,decline,DECLINE,50,85,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,renal_failure,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,renal_failure,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,renal_failure,decline,DECLINE,45,85,seeded,live_sheet_cell
+nlg,National Life Group,term_eiul,Term / EIUL / Group Term,renal_failure,decline,DECLINE,18,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,renal_failure,graded,GRADED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,renal_failure,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,renal_failure,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,renal_failure,decline,DECLINE,0,85,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,renal_failure,decline,DECLINE,20,60,seeded,live_sheet_cell
+uhl,United Home Life,whole_life,Whole Life,renal_failure,decline,DECLINE,20,80,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,arthritis_rheumatoid,accept,ACCEPT,50,85,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,arthritis_rheumatoid,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,arthritis_rheumatoid,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,arthritis_rheumatoid,decline,DECLINE,0,60,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,arthritis_rheumatoid,accept,ACCEPT,18,89,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,arthritis_rheumatoid,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,sarcoidosis,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,sarcoidosis,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,sarcoidosis,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,sarcoidosis,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,sarcoidosis,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,sarcoidosis,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,sarcoidosis,decline,DECLINE,40,85,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,sarcoidosis,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,sarcoidosis,decline,DECLINE,0,60,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,sarcoidosis,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,sarcoidosis,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,sarcoidosis,decline,DECLINE,18,75,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,sarcoidosis,standard,STANDARD,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,sarcoidosis,decline,DECLINE,18,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,schizophrenia,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,schizophrenia,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,schizophrenia,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,schizophrenia,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,schizophrenia,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,schizophrenia,decline,DECLINE,40,85,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,schizophrenia,decline,DECLINE,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,schizophrenia,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,schizophrenia,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,schizophrenia,decline,DECLINE,18,80,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,schizophrenia,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,schizophrenia,decline,DECLINE,18,75,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,schizophrenia,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,schizophrenia,select,SELECT,,,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,seizures,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,seizures,standard,STANDARD,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,seizures,select,SELECT,,,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,scooter_use,decline,DECLINE,20,75,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,scooter_use,decline,DECLINE,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,scooter_use,decline,DECLINE,18,60,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,sickle_cell,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,sickle_cell,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,sickle_cell,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,sickle_cell,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,sickle_cell,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,sickle_cell,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,eagle_select,Eagle Select WL,sickle_cell,decline,DECLINE,40,85,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,sickle_cell,decline,DECLINE,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,sickle_cell,decline,DECLINE,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,sickle_cell,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,sickle_cell,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,sickle_cell,decline,DECLINE,50,85,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,sickle_cell,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,sickle_cell,decline,DECLINE,18,75,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,sickle_cell,decline,DECLINE,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,sickle_cell,decline,DECLINE,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,sickle_cell,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,sickle_cell,decline,DECLINE,,,seeded,live_sheet_cell
+transamerica,Transamerica,immediate_solutions,Immediate Solutions WL,sickle_cell,decline,DECLINE,0,85,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,sleep_apnea,accept,ACCEPT,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,sleep_apnea,accept,ACCEPT,20,75,seeded,live_sheet_cell
+amam,American Amicable,dignity_solutions,Dignity Solutions WL,sleep_apnea,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,qsfp_wl,QSFP WL,sleep_apnea,accept,ACCEPT,50,85,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,sleep_apnea,accept,ACCEPT,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,sleep_apnea,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,sleep_apnea,accept,ACCEPT,18,89,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,sleep_apnea,preferred,PREFERRED,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,stent,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,stent,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,stent,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,stent,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,stent,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,stent,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,stent,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,stent,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,stent,decline,DECLINE,18,75,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,stent,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,stent,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,stroke,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,stroke,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,stroke,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,stroke,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,stroke,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,stroke,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,stroke,decline,DECLINE,18,80,seeded,live_sheet_cell
+banner,Banner Life,qlt_term_plus,QLT Term Plus,stroke,decline,DECLINE,,,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,stroke,decline,DECLINE,18,75,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,stroke,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,stroke,select,SELECT,,,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,tia,decline,DECLINE,20,75,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,tia,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,tia,decline,DECLINE,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,tia,decline,DECLINE,18,80,seeded,live_sheet_cell
+moo,Mutual of Omaha,term_life_express,Term Life Express,tia,decline,DECLINE,18,75,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,tia,select,SELECT,,,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,ulcerative_colitis,decline,DECLINE,20,75,seeded,live_sheet_cell
+corebridge,Corebridge,simplynow,SimplyNow Legacy/Max SIWL,ulcerative_colitis,accept,ACCEPT,50,80,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,pathsetter,Pathsetter IUL,ulcerative_colitis,call_carrier,CALL CARRIER,0,65,seeded,live_sheet_cell
+fg,Fidelity & Guaranty,quantum,Quantum IUL,ulcerative_colitis,decline,DECLINE,0,60,seeded,live_sheet_cell
+foresters,Foresters,strong_foundation,Strong Foundation Term,ulcerative_colitis,accept,ACCEPT,18,80,seeded,live_sheet_cell
+foresters,Foresters,smart_ul,Smart UL/IUL,ulcerative_colitis,accept,ACCEPT,18,80,seeded,live_sheet_cell
+moo,Mutual of Omaha,critical_advantage,Critical Advantage,ulcerative_colitis,accept,ACCEPT,18,89,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,ulcerative_colitis,decline,DECLINE,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,ulcerative_colitis,preferred,PREFERRED,,,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,ulcerative_colitis,select,SELECT,,,seeded,live_sheet_cell
+uhl,United Home Life,term,Simple Term,ulcerative_colitis,accept,ACCEPT,20,60,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,walker_use,decline,DECLINE,20,75,seeded,live_sheet_cell
+foresters,Foresters,plan_right,Plan Right WL,walker_use,decline,DECLINE,50,85,seeded,live_sheet_cell
+moo,Mutual of Omaha,living_promise,Living Promise WL,walker_use,accept,ACCEPT,45,85,seeded,live_sheet_cell
+royal_neighbors,Royal Neighbors,ensured_legacy,Ensured Legacy Final Expense,walker_use,preferred,PREFERRED,,,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,walker_use,decline,DECLINE,18,60,seeded,live_sheet_cell
+transamerica,Transamerica,final_expense_express,Final Expense Express,walker_use,select,SELECT,,,seeded,live_sheet_cell
+amam,American Amicable,express_term,Express Term,wheelchair_use,decline,DECLINE,18,75,seeded,live_sheet_cell
+amam,American Amicable,home_certainty,Home Certainty Term & Express UL/IUL,wheelchair_use,decline,DECLINE,20,75,seeded,live_sheet_cell
+amam,American Amicable,term_made_simple,Term Made Simple,wheelchair_use,decline,DECLINE,20,75,seeded,live_sheet_cell
+americo,Americo,hms_term_iul,HMS 100/125/CBO Term / IUL,wheelchair_use,decline,DECLINE,20,75,seeded,live_sheet_cell
+sbli,SBLI,easytrack,EasyTrack Digital Term,wheelchair_use,decline,DECLINE,18,60,seeded,live_sheet_cell

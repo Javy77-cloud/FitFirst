@@ -73,3 +73,33 @@ on `(risk_state, carrier_id)`, not a merged write path.
 
 Life/health nationals are out of scope (not in this pack). All seeded P&C
 nationals are `rateable=true`.
+
+## Life UW MATRIX (condition × product)
+
+| Pack | File | What it is |
+| --- | --- | --- |
+| Life MATRIX | `fitfirst-life-uw-matrix.csv` | Javy Life underwriting appetite by condition × product. Live-sheet seed (2026-09-17). |
+| Life contacts | `fitfirst-life-contacts.csv` | Carrier Rep Contact List + MATRIX Phone row overlay. |
+| Life sheet drops | `life-sheet/` | Drop extracted tab CSVs here. |
+
+This file is **not** imported into `carrier_appetite` (that table is P&C quote-gate). The Life Markets / Quotes helper reads the CSV directly.
+
+Columns: `carrier_slug`, `carrier_name`, `product_slug`, `product_name`, `condition_key`, `outcome`, `rule_text`, `age_min`, `age_max`, `coverage`, `source`.
+
+- `coverage=incomplete` catalog rows list MATRIX products.
+- `coverage=seeded` + `source=live_sheet_cell` are **clear single-token** cells only (ACCEPT / DECLINE / GRADED / PREFERRED / SELECT / STANDARD / CALL CARRIER, plus GIWL/EIWL/SIWL as Accept). Mixed rule text stays Unknown.
+- Cystic fibrosis is **not** uniform decline (Royal Neighbors Preferred, some Accept). AIDS is Decline on most products, Graded at Royal Neighbors, GIWL Accept at Corebridge.
+- Drop the next extract in `life-sheet/` — full MATRIX when spreadsheet provided.
+
+## Life build / BMI (height × weight) — second predictor input
+
+| Pack | File | What it is |
+| --- | --- | --- |
+| Life build | `fitfirst-life-build.csv` | Javy MATRIX height/weight (or BMI-style) tabs, flattened. Header-only until those tabs land. |
+
+Condition × product is **primary**. Height/weight is a **second** input: the predictor maps Risk Profile height + weight (and optional Deal Details sex) to a build/BMI band, then can adjust Accept / Graded / Decline **alongside** medical conditions.
+
+- Do **not** invent WHO or carrier build charts. The live CSV is header-only; `band` stays `unknown` and the helper shows “table pending.”
+- When rows land, lookup matches `height_inches` + `weight_min`/`weight_max` (classic chart) and/or `bmi_min`/`bmi_max` (BMI-style tab). Empty `carrier_slug` / `product_slug` applies to every MATRIX product; empty `sex` applies to both.
+- Combine is worst-wins, with Unknown never upgrading to Accept: a green build row cannot mint a missing condition cell. Decline from either input wins. Graded/call-carrier from build can still surface when conditions are Unknown.
+- Flatten incoming sheet tabs into this file — full MATRIX when spreadsheet provided.

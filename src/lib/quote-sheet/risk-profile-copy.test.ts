@@ -124,6 +124,8 @@ describe("Risk Profile agent-visible copy", () => {
     expect(html).not.toContain("Applicant name");
     expect(html).not.toContain("Date of birth");
     expect(html).toContain('data-ff-sheet-multiselect="medical_conditions"');
+    expect(html).toMatch(/data-ff-multi-select="medical_conditions"/);
+    expect(html).toMatch(/data-ff-multi-searchable="1"/);
 
     const whole = renderToString(
       createElement(MasterSheetCompare, {
