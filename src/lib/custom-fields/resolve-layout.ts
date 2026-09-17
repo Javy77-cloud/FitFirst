@@ -49,12 +49,13 @@ export function pickSavedModuleLayout(
   for (const row of parsed) row.score = layoutContentScore(row.layout);
   const withFields = parsed.filter((row) => row.score > 0);
   if (withFields.length === 0) return null;
+  // Newest non-empty wins. Do not prefer a fuller sibling — that resurrects deleted fields.
   withFields.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
+    if (b.updatedAtMs !== a.updatedAtMs) return b.updatedAtMs - a.updatedAtMs;
     const aPref = a.lineOfBusiness === preferred ? 1 : 0;
     const bPref = b.lineOfBusiness === preferred ? 1 : 0;
     if (bPref !== aPref) return bPref - aPref;
-    return b.updatedAtMs - a.updatedAtMs;
+    return 0;
   });
   return withFields[0]?.layout ?? null;
 }

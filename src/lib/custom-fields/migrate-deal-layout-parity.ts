@@ -1,4 +1,8 @@
-import type { FieldLayout, LayoutSection } from "./types";
+import {
+  PERSONAL_LAYOUT_REVISION,
+  type FieldLayout,
+  type LayoutSection,
+} from "./types";
 import { APPLICANT_SECTION_FIELD_KEYS } from "./applicant-fields";
 import { CO_APPLICANT_SECTION_FIELD_KEYS } from "./co-applicant-fields";
 import {
@@ -218,12 +222,26 @@ export function ensurePersonalColumnSplit(layout: FieldLayout): FieldLayout {
 }
 
 /**
- * Deal layout parity is mailing address shape + Insurance Type / Category / Form on Details.
- * Do NOT re-seed Co-applicant (or any section) on load/save — agency edits must stick
- * (Javy: keep some / delete some / none). Co-applicant remains in defaultLayoutForLine for new installs.
+ * Keys that only exist on the PR #59 personal Deal Details stack. Presence of any
+ * means this layout already migrated (or the agency kept some of that stack).
  */
+export const PERSONAL_LAYOUT_MARKERS = [
+  "applicant_industry",
+  "epolicy",
+  "military_discount",
+  "mailing_unit",
+  "lived_at_address_5_years",
+] as const;
+
 export function allDealLayoutKeys(layout: FieldLayout): string[] {
   return layout.columns.flatMap((col) => col.sections.flatMap((s) => s.fieldKeys));
+}
+
+/** Agency Save stamps revision. Personal-v1 markers mean the one-time migrate already ran. */
+export function isLegacyDealPersonalLayout(layout: FieldLayout): boolean {
+  if (layout.revision) return false;
+  const keys = new Set(allDealLayoutKeys(layout));
+  return !PERSONAL_LAYOUT_MARKERS.some((key) => keys.has(key));
 }
 
 export function needsDealInsuranceFields(layout: FieldLayout): boolean {
@@ -306,7 +324,13 @@ export function ensureDealInsuranceFields(layout: FieldLayout): FieldLayout {
   return next;
 }
 
+/**
+ * One-time migrate for pre-personal layouts only.
+ * Do NOT re-seed deleted fields on load/save — agency edits must stick
+ * (Javy: keep some / delete some / none). defaultLayoutForLine still seeds new installs.
+ */
 export function needsDealLayoutParity(layout: FieldLayout): boolean {
+  if (!isLegacyDealPersonalLayout(layout)) return false;
   return (
     needsMailingAddressParity(layout) ||
     needsDealInsuranceFields(layout) ||
@@ -319,7 +343,10 @@ export function needsDealLayoutParity(layout: FieldLayout): boolean {
 }
 
 export function migrateDealLayoutParity(layout: FieldLayout): FieldLayout {
-  return ensurePersonalColumnSplit(
+  if (!isLegacyDealPersonalLayout(layout)) {
+    return layout.revision ? layout : { ...layout, revision: PERSONAL_LAYOUT_REVISION };
+  }
+  const next = ensurePersonalColumnSplit(
     ensureExistingCoApplicantKeys(
       ensureDealInsuredExtras(
         ensureDealContactIdentity(
@@ -328,4 +355,5 @@ export function migrateDealLayoutParity(layout: FieldLayout): FieldLayout {
       ),
     ),
   );
+  return { ...next, revision: layout.revision ?? PERSONAL_LAYOUT_REVISION };
 }

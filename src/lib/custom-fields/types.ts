@@ -123,7 +123,24 @@ export type LayoutColumn = {
 
 export type FieldLayout = {
   columns: [LayoutColumn, LayoutColumn];
+  /** Present after an agency Save or a one-time migrate. Missing keys are then intentional. */
+  revision?: string;
 };
+
+export const AGENCY_LAYOUT_REVISION = "agency";
+export const PERSONAL_LAYOUT_REVISION = "personal-v1";
+
+function layoutRevisionOf(raw: unknown): string | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const value = (raw as { revision?: unknown }).revision;
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+/** Mark a layout as agency-owned so load/save must not re-seed catalog fields. */
+export function withLayoutRevision(layout: FieldLayout, revision: string): FieldLayout {
+  const next = parseLayout(layout);
+  return { ...next, revision };
+}
 
 export function isCustomFieldType(value: string): value is CustomFieldType {
   return (CUSTOM_FIELD_TYPES as readonly string[]).includes(value);
@@ -190,8 +207,10 @@ export function parseLayout(raw: unknown): FieldLayout {
   }
   const columns = columnsFromUnknown(value);
   if (!columns) return fallback;
+  const revision = layoutRevisionOf(value);
   return {
     columns: [parseColumn(columns[0], "left"), parseColumn(columns[1], "right")],
+    ...(revision ? { revision } : {}),
   };
 }
 

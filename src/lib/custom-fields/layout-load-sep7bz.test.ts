@@ -42,6 +42,29 @@ describe("sep7bz open existing layout + live form matches builder", () => {
     );
   });
 
+  it("prefers a newer smaller layout over an older fuller sibling", () => {
+    const fuller = parseLayout(dealLayout);
+    const smaller = {
+      columns: [
+        {
+          id: "left",
+          sections: [{ id: "contact", label: "Contact", fieldKeys: ["first_name"] }],
+        },
+        { id: "right", sections: [{ id: "details", label: "Details", fieldKeys: ["pipeline"] }] },
+      ],
+    };
+    const picked = pickSavedModuleLayout(
+      [
+        { lineOfBusiness: "AUTO", columns: fuller, updatedAt: new Date("2026-01-01") },
+        { lineOfBusiness: "HO", columns: smaller, updatedAt: new Date("2026-09-17") },
+      ],
+      "deals",
+      "HO",
+    );
+    expect(picked?.columns[0].sections[0].fieldKeys).toEqual(["first_name"]);
+    expect(picked?.columns[1].sections[0].fieldKeys).toEqual(["pipeline"]);
+  });
+
   it("hydrates missing catalog rows so saved field keys still render", () => {
     const fields = resolveLayoutFields(leadLayout, []);
     expect(fields.map((field) => field.key)).toEqual(
