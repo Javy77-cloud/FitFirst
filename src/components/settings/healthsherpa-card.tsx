@@ -5,9 +5,11 @@ import {
   HEALTHSHERPA_ACA_BLURB,
   HEALTHSHERPA_ACA_DOCS_URL,
   HEALTHSHERPA_DOCS_URL,
+  HEALTHSHERPA_EXTERNAL_ID_STAMP,
   HEALTHSHERPA_INBOUND_BLURB,
   HEALTHSHERPA_MEDICARE_BLURB,
   HEALTHSHERPA_NO_FF_FEE,
+  HEALTHSHERPA_REVIEW_PATH,
   HEALTHSHERPA_WEBHOOK_PATH,
 } from "@/lib/healthsherpa/copy";
 import type { VaultPublicStatus } from "@/lib/developer/vault-public";
@@ -71,6 +73,9 @@ export function HealthSherpaCard({
       </div>
       <p className="mt-2 text-helper text-muted-foreground">{HEALTHSHERPA_NO_FF_FEE}</p>
       <p className="text-helper text-muted-foreground">{blurb}</p>
+      <p className="mt-2 text-helper text-muted-foreground" data-ff-healthsherpa-external-id="">
+        {HEALTHSHERPA_EXTERNAL_ID_STAMP}
+      </p>
       <p className="mt-2 text-helper text-muted-foreground" data-ff-healthsherpa-webhook="">
         {HEALTHSHERPA_INBOUND_BLURB} Destination{" "}
         <code className="text-[11px]">{HEALTHSHERPA_WEBHOOK_PATH}</code>
@@ -98,6 +103,9 @@ export function HealthSherpaCard({
       <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm">
         <Link href="/settings/developer-hub/api-vault" className="font-medium text-primary hover:underline">
           API vault
+        </Link>
+        <Link href={HEALTHSHERPA_REVIEW_PATH} className="text-muted-foreground hover:underline">
+          Inbound review
         </Link>
         <a href={docs} target="_blank" rel="noreferrer" className="text-muted-foreground hover:underline">
           HealthSherpa docs

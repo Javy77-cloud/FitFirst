@@ -11,5 +11,8 @@ export function recordHref(entityType?: string | null, entityId?: string | null)
   if (entityType === "activity") return `/calendar?event=${entityId}`;
   if (entityType === "document") return `/files/${entityId}`;
   if (entityType === "automation" || entityType === "playbook") return "/automations/playbooks";
+  if (entityType === "healthsherpa_enrollment") {
+    return `/contacts/healthsherpa-review?enrollment=${entityId}`;
+  }
   return null;
 }

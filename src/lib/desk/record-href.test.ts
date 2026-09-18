@@ -13,6 +13,9 @@ describe("recordHref", () => {
     expect(recordHref("carrier", id)).toBe(`/carriers/${id}`);
     expect(recordHref("activity", id)).toBe(`/calendar?event=${id}`);
     expect(recordHref("document", id)).toBe(`/files/${id}`);
+    expect(recordHref("healthsherpa_enrollment", id)).toBe(
+      `/contacts/healthsherpa-review?enrollment=${id}`,
+    );
     expect(recordHref("commission", id)).toBeNull();
     expect(recordHref("policy", null)).toBeNull();
   });

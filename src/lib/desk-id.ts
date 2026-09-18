@@ -5,7 +5,17 @@ export function isDeskUuid(value: string | null | undefined): value is string {
   return Boolean(value && DESK_UUID_RE.test(value));
 }
 
-const RESERVED_RECORD_SEGMENTS = new Set(["new", "compare", "calculator", "agents", "diary", "holders", "queue", "logs"]);
+const RESERVED_RECORD_SEGMENTS = new Set([
+  "new",
+  "compare",
+  "calculator",
+  "agents",
+  "diary",
+  "holders",
+  "queue",
+  "logs",
+  "healthsherpa-review",
+]);
 
 const RECORD_ID_PATTERNS = [
   /^\/(?:leads|deals|contacts|policies|tasks|claims|accounts|businesses|merge|meetings|carriers|campaigns|files|scorecards)\/([^/]+)/,

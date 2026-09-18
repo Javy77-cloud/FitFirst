@@ -289,7 +289,8 @@ function HealthSherpaMedicareVaultCard({
           <p className="mt-1 text-xs text-muted-foreground">
             Outbound Medicare Partner API key FitFirst sends to HealthSherpa. This is not the inbound
             webhook secret HealthSherpa posts to FitFirst. v1 uses X-API-Key; agent email is required on
-            each contact sync.
+            each contact sync. Sync to HealthSherpa from FitFirst stamps contact.external_id so later
+            enrollments hit the same contact.
           </p>
         </div>
         <span
