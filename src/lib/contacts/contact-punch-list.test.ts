@@ -1,8 +1,14 @@
 import { readFileSync } from "node:fs";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { renderToString } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: () => undefined, replace: () => undefined, push: () => undefined }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/deals/deal-1",
+}));
 import { MasterSheetCompare } from "@/components/deal/master-sheet-compare";
+import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -21,12 +27,12 @@ describe("contact punch list wiring", () => {
   });
 
   it("puts Property use on Deal Details and Risk Profile Property groups", () => {
-    const html = renderToStaticMarkup(
+    const html = renderToString(
       createElement(MasterSheetCompare, {
         dealId: "deal-1",
         line: "home",
         fields: [],
-        values: {},
+        values: emptySheetValues("home", "homeowners"),
         product: "homeowners",
         insuredPropertyKind: "Rental / secondary",
       }),
