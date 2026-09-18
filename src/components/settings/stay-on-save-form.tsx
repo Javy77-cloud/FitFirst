@@ -1,8 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useRef, type ReactNode } from "react";
 import { flashAction } from "@/lib/flash-client";
+import { persistFlashScroll } from "@/lib/flash-scroll";
 import {
   collectNamedFormControls,
   namedFormControlEntriesToFormData,
@@ -62,6 +63,7 @@ export function StayOnSaveForm({
   children: ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const formRef = useRef<HTMLFormElement>(null);
   return (
     <form
@@ -69,6 +71,10 @@ export function StayOnSaveForm({
       ref={formRef}
       className={className}
       action={async (submitted) => {
+        persistFlashScroll({
+          pathname,
+          anchor: formRef.current?.closest("[id]")?.id ?? formRef.current?.id ?? null,
+        });
         const payload = formRef.current ? readListFormData(formRef.current) : submitted;
         const result = await action(payload);
         flashAction(result?.message ?? flash, result?.kind ?? "success");
@@ -85,7 +91,9 @@ export function useStayAction(
   fallback = "list-saved",
 ) {
   const router = useRouter();
+  const pathname = usePathname();
   return async (formData: FormData) => {
+    persistFlashScroll({ pathname });
     const result = await action(formData);
     flashAction(result?.message ?? fallback, result?.kind ?? "success");
     router.refresh();

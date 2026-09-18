@@ -8,7 +8,7 @@ import { slugifySubfilter } from "@/lib/desk/line-settings";
 import { db } from "@/lib/db";
 import { agencySettings, lineSubfilterOptions } from "@/lib/db/schema";
 import { ensureDefaultLineSubfilters } from "@/lib/db/line-settings";
-import { flashAction } from "@/lib/flash-action";
+import { flashSettings } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -59,7 +59,7 @@ export async function saveWrittenLines(formData: FormData) {
     });
   }
   refresh();
-  flashAction("/settings/lines", "line-settings-saved");
+  await flashSettings("/settings/lines", "line-settings-saved");
 }
 
 export async function addLineSubfilter(formData: FormData) {

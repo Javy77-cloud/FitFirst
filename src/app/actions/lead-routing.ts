@@ -10,7 +10,7 @@ import { leadRoutingRules } from "@/lib/db/schema";
 import { isUuid } from "@/lib/ids";
 import { applyLeadRouting } from "@/lib/leads/apply-routing";
 import { parseRoutingLine } from "@/lib/leads/auto-route";
-import { flashAction } from "@/lib/flash-action";
+import { flashSettings } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -55,7 +55,7 @@ export async function saveLeadRoutingRule(formData: FormData) {
     });
   }
   refreshRouting();
-  flashAction("/settings/routing", "rule-saved");
+  await flashSettings("/settings/routing", "rule-saved");
 }
 
 export async function deleteLeadRoutingRule(formData: FormData) {

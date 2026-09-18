@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import { AppShell } from "@/components/app-shell";
 import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { SettingsNav } from "@/components/settings/settings-nav";
+import { SettingsScrollPreserve } from "@/components/settings/settings-scroll-preserve";
 import type { SettingsNavId } from "@/lib/settings/nav";
 
 export function SettingsShell({
@@ -33,7 +35,9 @@ export function SettingsShell({
               ]}
             />
           ) : null}
-          {children}
+          <Suspense fallback={children}>
+            <SettingsScrollPreserve>{children}</SettingsScrollPreserve>
+          </Suspense>
         </div>
       </div>
     </AppShell>

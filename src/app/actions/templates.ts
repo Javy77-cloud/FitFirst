@@ -17,7 +17,7 @@ import { emailTemplates, emailTriggers } from "@/lib/db/schema";
 import { getDeskActor, isAdminActor } from "@/lib/brand/desk-role";
 import { markSendAccountDemoConnected } from "@/lib/templates/connectors";
 import { processDueEmailJobs } from "@/lib/templates/send";
-import { flashAction } from "@/lib/flash-action";
+import { flashSettings } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -82,7 +82,8 @@ export async function saveEmailTemplate(formData: FormData) {
       .set(values)
       .where(and(eq(emailTemplates.tenantId, DEFAULT_TENANT_ID), eq(emailTemplates.id, id)));
     refreshTemplates(id);
-    flashAction(`/settings/email-templates/${id}`, "template-saved");
+    await flashSettings(`/settings/email-templates/${id}`, "template-saved");
+    return;
   }
 
   const [row] = await db
@@ -94,7 +95,7 @@ export async function saveEmailTemplate(formData: FormData) {
     })
     .returning();
   refreshTemplates(row?.id);
-  flashAction(`/settings/email-templates/${row.id}`, "template-saved");
+  await flashSettings(`/settings/email-templates/${row.id}`, "template-saved");
 }
 
 export async function duplicateEmailTemplate(formData: FormData) {
@@ -142,7 +143,7 @@ export async function saveEmailTrigger(formData: FormData) {
     })
     .where(and(eq(emailTriggers.tenantId, DEFAULT_TENANT_ID), eq(emailTriggers.id, id)));
   refreshTemplates();
-  flashAction("/settings/email-triggers", "trigger-saved");
+  await flashSettings("/settings/email-triggers", "trigger-saved");
 }
 
 export async function connectDemoInbox(formData: FormData) {

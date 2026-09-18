@@ -1,11 +1,14 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  FLASH_COOKIE,
   FLASH_COPY,
   FLASH_KIND_PARAM,
   FLASH_PARAM,
   FLASH_STORAGE_KEY,
   clearPersistedFlash,
+  decodeFlashCookie,
   dealDetailsSavedHref,
+  encodeFlashCookie,
   quotesRequestedHref,
   persistFlash,
   readPersistedFlash,
@@ -127,6 +130,19 @@ describe("flash helper", () => {
     expect(readPersistedFlash()).toEqual({ message: "Sheet saved", kind: "success" });
     clearPersistedFlash();
     expect(readPersistedFlash()).toBeNull();
+  });
+
+  it("encodes a same-page flash cookie without a redirect query", () => {
+    expect(FLASH_COOKIE).toBe("ff-action-flash");
+    expect(encodeFlashCookie("esign-saved")).toBe("esign-saved|success");
+    expect(decodeFlashCookie("esign-saved|success")).toEqual({
+      message: "E-sign preference saved",
+      kind: "success",
+    });
+    expect(decodeFlashCookie(encodeFlashCookie("credentials-saved"))).toEqual({
+      message: "Credentials saved",
+      kind: "success",
+    });
   });
 });
 

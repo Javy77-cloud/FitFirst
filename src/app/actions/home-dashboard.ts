@@ -30,7 +30,7 @@ import {
   upsertNamedHomeLayout,
 } from "@/lib/home/custom-layouts";
 import { mergeHomeLayout, type NamedHomeLayout } from "@/lib/home/layout";
-import { flashAction } from "@/lib/flash-action";
+import { flashAction, flashSettings } from "@/lib/flash-action";
 
 function refreshHome() {
   revalidatePath("/");
@@ -166,7 +166,7 @@ export async function saveShowCompanyWidgets(formData: FormData) {
     .set({ showCompanyWidgets: on, updatedAt: new Date() })
     .where(eq(agencySettings.tenantId, DEFAULT_TENANT_ID));
   refreshHome();
-  flashAction("/settings/agency", "widgets-saved");
+  await flashSettings("/settings/agency", "widgets-saved");
 }
 
 export async function postContest(formData: FormData) {

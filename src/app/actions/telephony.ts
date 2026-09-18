@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 import { telephonySettings } from "@/lib/db/schema";
 import { currentDeskSession } from "@/lib/auth/session";
 import { connectTelephonyProvider } from "@/lib/integrations/telephony";
-import { flashAction } from "@/lib/flash-action";
+import { flashSettings } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -72,7 +72,7 @@ export async function saveTelephonyStub(formData: FormData) {
   revalidatePath("/settings");
   revalidatePath("/settings/phone");
   revalidatePath("/phone");
-  flashAction("/settings/phone", "phone-saved");
+  await flashSettings("/settings/phone", "phone-saved");
 }
 
 export async function disconnectTelephonyStub() {

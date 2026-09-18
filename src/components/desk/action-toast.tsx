@@ -8,12 +8,21 @@ import {
   FLASH_EVENT,
   FLASH_KIND_PARAM,
   FLASH_PARAM,
+  clearFlashCookie,
   clearPersistedFlash,
   persistFlash,
+  readFlashCookie,
   readPersistedFlash,
   resolveFlashMessage,
   type FlashKind,
 } from "@/lib/flash";
+import {
+  flashScrollAnchorFromSubmit,
+  lockFlashScroll,
+  persistFlashScroll,
+  readFlashScroll,
+  shouldRestoreFlashScroll,
+} from "@/lib/flash-scroll";
 import { cn } from "@/lib/utils";
 
 type ToastState = {
@@ -63,9 +72,16 @@ export function ActionToastHost() {
   const router = useRouter();
   const [toast, setToast] = useState<ToastState | null>(null);
 
+  function restoreSamePageScroll() {
+    const saved = readFlashScroll();
+    if (!shouldRestoreFlashScroll(saved, pathname) || !saved) return;
+    lockFlashScroll(saved);
+  }
+
   function showToast(message: string, kind: FlashKind) {
     persistFlash({ message, kind });
     setToast({ id: Date.now(), message, kind });
+    restoreSamePageScroll();
   }
 
   function dismissToast() {
@@ -73,12 +89,29 @@ export function ActionToastHost() {
     setToast(null);
   }
 
+  useEffect(() => {
+    function onSubmit(event: Event) {
+      persistFlashScroll({
+        pathname,
+        anchor: flashScrollAnchorFromSubmit(event.target),
+      });
+    }
+    document.addEventListener("submit", onSubmit, true);
+    return () => document.removeEventListener("submit", onSubmit, true);
+  }, [pathname]);
+
   // Restore after Suspense remount / replace — query may already be stripped.
   useEffect(() => {
     const stored = readPersistedFlash();
-    if (!stored) return;
-    setToast({ id: Date.now(), message: stored.message, kind: stored.kind });
-  }, []);
+    if (stored) setToast({ id: Date.now(), message: stored.message, kind: stored.kind });
+    const cookie = readFlashCookie();
+    if (cookie) {
+      persistFlash(cookie);
+      setToast({ id: Date.now(), message: cookie.message, kind: cookie.kind });
+      clearFlashCookie();
+      restoreSamePageScroll();
+    }
+  }, [pathname]);
 
   useEffect(() => {
     const message = resolveFlashMessage(searchParams.get(FLASH_PARAM));
@@ -93,9 +126,11 @@ export function ActionToastHost() {
         next.delete(FLASH_PARAM);
         next.delete(FLASH_KIND_PARAM);
         const qs = next.toString();
-        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+        const hash = typeof window !== "undefined" ? window.location.hash : "";
+        router.replace(qs ? `${pathname}?${qs}${hash}` : `${pathname}${hash}`, { scroll: false });
         // Strip must not restore a stale RSC payload (deleted docs reappearing).
         router.refresh();
+        restoreSamePageScroll();
       });
     });
     return () => {
