@@ -2,7 +2,9 @@ import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { CollapsibleListCard } from "@/components/settings/collapsible-list-card";
 import { ListOptionInput } from "@/components/settings/list-option-input";
+import { ListOptionPersist } from "@/components/settings/list-option-persist";
 import { ListOptionRow } from "@/components/settings/list-option-row";
 import {
   matchStarterList,
@@ -15,9 +17,14 @@ import {
 import {
   LIST_OPTION_COMMIT_MS,
   LIST_PREVIEW_COUNT,
+  collapsedGlobalListPersistFields,
+  collapsedPicklistPersistFields,
   listMutationOk,
+  listOptionIdentitiesDuringTyping,
   listOptionNeedsCommit,
   listOptionRowKey,
+  listOptionTypingRemounts,
+  listSaveValues,
   visibleListItems,
 } from "@/lib/settings/list-editor";
 
@@ -36,15 +43,60 @@ describe("admin list editors", () => {
     expect(missingStarterPicklistNames(["US states"])).toContain("Deal notices");
   });
 
-  it("keeps a compact 4-item preview and still exposes hidden rows for save", () => {
+  it("keeps a compact 4-item preview and persists collapsed rows as hidden fields", () => {
     expect(LIST_PREVIEW_COUNT).toBe(4);
     expect(visibleListItems(["a", "b", "c", "d", "e"], false)).toEqual(["a", "b", "c", "d"]);
     expect(visibleListItems(["a", "b", "c", "d", "e"], true)).toHaveLength(5);
     const card = source("src/components/settings/collapsible-list-card.tsx");
-    expect(card).toMatch(/hidden=\{collapsedAway\}/);
+    expect(card).toMatch(/if \(collapsedAway\) return null/);
+    expect(card).toMatch(/collapsedPersist/);
+    expect(card).toMatch(/data-ff-list-collapsed-persist/);
     expect(card).toMatch(/Show first \$\{previewCount\}/);
     expect(card).toMatch(/data-ff-list-collapse/);
+    expect(card).not.toMatch(/hidden=\{collapsedAway\}/);
     expect(card).not.toMatch(/zero-height|h-0|max-h-0/);
+    expect(source("src/components/settings/picklist-card.tsx")).toMatch(/collapsedPicklistPersistFields/);
+    expect(source("src/components/settings/global-list-card.tsx")).toMatch(/collapsedGlobalListPersistFields/);
+    const persist = collapsedPicklistPersistFields(
+      [
+        { value: "A" },
+        { value: "B" },
+        { value: "C" },
+        { value: "D" },
+        { value: "Paramed exam", color: "teal" },
+        { value: "APS", color: null },
+      ],
+      5,
+    );
+    expect(persist).toEqual([
+      { name: "options", value: "Paramed exam" },
+      { name: "optionColors", value: "teal" },
+      { name: "options", value: "APS" },
+      { name: "optionColors", value: "" },
+      { name: "defaultIndex", value: "5" },
+    ]);
+    expect(
+      collapsedGlobalListPersistFields([
+        { id: "1", label: "One" },
+        { id: "2", label: "Two" },
+        { id: "3", label: "Three" },
+        { id: "4", label: "Four" },
+        { id: "5", label: "Five", color: "rose", family: "life" },
+      ]),
+    ).toEqual([
+      { name: "ids", value: "5" },
+      { name: "labels", value: "Five" },
+      { name: "itemColors", value: "rose" },
+      { name: "families", value: "life" },
+    ]);
+    expect(listSaveValues(["A", "B", "C", "D"], ["Paramed exam", "APS"], [""])).toEqual([
+      "A",
+      "B",
+      "C",
+      "D",
+      "Paramed exam",
+      "APS",
+    ]);
   });
 
   it("saves picklist and global list names without a scroll-to-top redirect", () => {
@@ -115,8 +167,10 @@ describe("admin list editors", () => {
 
   it("keeps option-row keys stable across keystrokes and commits only on blur", () => {
     const typed = ["C", "Ca", "Cal", "Call", "Calls"];
-    const keys = typed.map(() => listOptionRowKey("deal-notices-life", 0));
+    const keys = listOptionIdentitiesDuringTyping("deal-notices-life", 0, typed);
     expect(new Set(keys).size).toBe(1);
+    expect(listOptionTypingRemounts("deal-notices-life", 0, typed)).toBe(false);
+    expect(new Set(typed.map((value) => `${0}-${value}`)).size).toBe(typed.length);
     expect(listOptionRowKey("deal-notices-life", 0)).not.toContain("Call");
     expect(typed.map((value) => `0-${value}`).filter((key, _, all) => all[0] !== key).length).toBeGreaterThan(0);
     expect(listOptionNeedsCommit("Call", "Calls")).toBe(true);
@@ -128,6 +182,11 @@ describe("admin list editors", () => {
     expect(input).toMatch(/onCommit/);
     expect(input).toMatch(/flushSync/);
     expect(input).toMatch(/focusedRef/);
+    expect(input).toMatch(/defaultValue=\{committedValue\}/);
+    expect(input).not.toMatch(/useState/);
+    expect(input).not.toMatch(/setDraft/);
+    expect(input).not.toMatch(/value=\{draft\}/);
+    expect(input).not.toMatch(/onChange=\{/);
     expect(input).not.toMatch(/onCommit\?\.\(next\)/);
     expect(input).toMatch(/onBlur/);
     expect(input).not.toMatch(/onChange=\{\(event\) => \{\s*onCommit/);
@@ -164,5 +223,34 @@ describe("admin list editors", () => {
       expect(html).toContain(`value="${value}"`);
       expect(html).toContain("data-ff-list-option-input");
     }
+
+    const lifeNotices = ["Inspection", "Paramed exam", "APS", "Labs", "Carrier call", "UW hold"];
+    const preview = renderToString(
+      createElement(CollapsibleListCard, {
+        cardId: "deal-notices-life",
+        items: lifeNotices.map((label, index) =>
+          createElement(ListOptionInput, {
+            key: listOptionRowKey("deal-notices-life", index),
+            committedValue: label,
+            "aria-label": `Option ${index + 1}`,
+          }),
+        ),
+        collapsedPersist: createElement(ListOptionPersist, {
+          fields: collapsedPicklistPersistFields(
+            lifeNotices.map((value) => ({ value })),
+          ),
+        }),
+      }),
+    );
+    expect(preview).toContain('aria-label="Option 1"');
+    expect(preview).toContain('aria-label="Option 4"');
+    expect(preview).toContain('value="Inspection"');
+    expect(preview).not.toContain('aria-label="Option 5"');
+    expect(preview).not.toContain('aria-label="Option 6"');
+    expect(preview).toContain("data-ff-list-collapsed-persist");
+    expect(preview).toContain('data-ff-list-option-persist="options"');
+    expect(preview).toContain('value="Carrier call"');
+    expect(preview).toContain('value="UW hold"');
+    expect(preview.match(/data-ff-list-option-input/g)?.length).toBe(4);
   });
 });

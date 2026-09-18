@@ -15,6 +15,7 @@ export function CollapsibleListCard({
   header,
   actions,
   items,
+  collapsedPersist,
   footer,
   previewCount = LIST_PREVIEW_COUNT,
   tone = "card",
@@ -23,6 +24,8 @@ export function CollapsibleListCard({
   header?: ReactNode;
   actions?: ReactNode;
   items: ReactNode[];
+  /** Hidden form fields for unmounted rows so Save still sees the full list. */
+  collapsedPersist?: ReactNode;
   footer?: ReactNode;
   previewCount?: number;
   tone?: "card" | "inset";
@@ -50,12 +53,18 @@ export function CollapsibleListCard({
         >
           {items.map((item, index) => {
             const collapsedAway = canCollapse && !expanded && index >= previewCount;
+            if (collapsedAway) return null;
             return (
-              <div key={rowKey(item, index)} hidden={collapsedAway} className={collapsedAway ? "hidden" : undefined}>
+              <div key={rowKey(item, index)}>
                 {item}
               </div>
             );
           })}
+          {canCollapse && !expanded && collapsedPersist ? (
+            <div hidden className="hidden" data-ff-list-collapsed-persist="">
+              {collapsedPersist}
+            </div>
+          ) : null}
         </div>
         {canCollapse ? (
           <button
