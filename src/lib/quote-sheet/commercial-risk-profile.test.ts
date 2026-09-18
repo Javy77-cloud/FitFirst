@@ -1,5 +1,13 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: () => undefined, replace: () => undefined, push: () => undefined }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/deals/deal-1",
+}));
+import { MasterSheetCompare } from "@/components/deal/master-sheet-compare";
 import { applyExtractedToSheet } from "./apply";
 import { emptySheetValues, extractKeyToSheetKey, fieldsForLine, groupFields } from "./catalog";
 import { fillSheetFromDealDetails } from "./fill-from-deal";
@@ -240,5 +248,34 @@ describe("Commercial Risk Profile lean catalog", () => {
     expect(aliased.values.employee_count.value).toBe("4");
     expect(aliased.values.annual_sales.value).toBe("120000");
     expect(aliased.values.business_name.value).toBe("Dockside LLC");
+  });
+
+  it("renders shared Business + conditional line sections on the commercial Risk Profile", () => {
+    const values = emptySheetValues("general_liability");
+    values.coverage_lines = {
+      value: "Workers' Comp,General Liability",
+      status: "check",
+      source: "agent",
+    };
+    const html = renderToString(
+      createElement(MasterSheetCompare, {
+        dealId: "deal-gl-wc",
+        line: "general_liability",
+        fields: [],
+        values,
+        product: "gl",
+      }),
+    );
+    expect(html).toMatch(/data-ff-sheet-group="Business"/);
+    expect(html).toMatch(/data-ff-sheet-group="Location \/ premises"/);
+    expect(html).toMatch(/data-ff-sheet-group="Workers(?:'|&#x27;) Comp"/);
+    expect(html).toMatch(/data-ff-sheet-group="General Liability"/);
+    expect(html).not.toMatch(/data-ff-sheet-group="BOP"/);
+    expect(html).toContain("FEIN");
+    expect(html).toContain("Number of employees");
+    expect(html).toContain("Full-time employees");
+    expect(html).toContain("Products / services");
+    expect(html).not.toContain("Marital status");
+    expect(html).not.toContain("Owner first name");
   });
 });
