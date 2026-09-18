@@ -38,6 +38,7 @@ describe("sep7jf StatusColorSelect None + clear all colors", () => {
     expect(source).toMatch(/data-ff-status-color-palette-trigger/);
     expect(source).toMatch(/data-ff-status-color-palette=/);
     expect(source).toMatch(/Full color palette/);
+    expect(source).toMatch(/DropdownMenuGroup/);
     expect(source).toMatch(/\{selected \|\| "Color"\}/);
   });
 

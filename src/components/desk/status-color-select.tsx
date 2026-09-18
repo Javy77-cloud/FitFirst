@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
@@ -92,7 +93,9 @@ export function StatusColorSelect({
           className="w-56 p-2"
           data-ff-status-color-palette=""
         >
-          <DropdownMenuLabel>Full color palette</DropdownMenuLabel>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Full color palette</DropdownMenuLabel>
+          </DropdownMenuGroup>
           <DropdownMenuItem
             onClick={() => apply("")}
             data-ff-status-color-palette-none=""
