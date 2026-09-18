@@ -24,9 +24,8 @@ function jobDidWork(job: JobLite): boolean {
 }
 
 /**
- * After delete (refill) or explicit Upload-and-fill (notice=filled), Fill may run in after().
- * Documents Save does not auto-Fill — only the Fill master sheet button / fill-sheet path does.
- * Poll router.refresh while watching; toast when a done job shows filled/skipped work.
+ * Only explicit Upload-and-fill (notice=filled) or pendingFill watches Fill.
+ * Plain Documents Save files / delete must not start or display a background fill job.
  */
 export function BackgroundFillRefresh({
   dealId,
@@ -39,11 +38,7 @@ export function BackgroundFillRefresh({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const flash = searchParams.get("flash");
-  const watchFromFlash =
-    flash === "document-deleted" ||
-    flash === "document-replaced" ||
-    searchParams.get("notice") === "filled";
+  const watchFromFlash = searchParams.get("notice") === "filled";
   const [watching, setWatching] = useState(enabled || watchFromFlash);
   const baselineDone = useRef(0);
   const toasted = useRef(false);

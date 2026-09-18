@@ -66,8 +66,8 @@ describe("upload surfaces offer delete + one confirm", () => {
     expect(action).toMatch(/delete\(extractedFields\)/);
     expect(action).toMatch(/clearExtractedSheetCells/);
     expect(action).toMatch(/unlinkStoredPath/);
-    // Refill must not block redirect / list refresh (await Fill left stale rows until last doc).
-    expect(action).toMatch(/after\(\(\) => fillDealSheetIfReady/);
+    const deleteBody = action.slice(action.indexOf("export async function deleteUploadedFile"));
+    expect(deleteBody).not.toMatch(/fillDealSheetIfReady/);
     expect(action).not.toMatch(/await fillDealSheetIfReady\(doc\.dealId/);
   });
 

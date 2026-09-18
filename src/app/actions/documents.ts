@@ -177,12 +177,16 @@ export async function persistFile(input: {
 }
 
 /** Attach worksheet files to a deal. Used by Upload Save and Heather's sheet Save. */
-export async function persistDealSourceUploads(formData: FormData): Promise<{
+export async function persistDealSourceUploads(
+  formData: FormData,
+  options?: { persistOnly?: boolean },
+): Promise<{
   count: number;
   last: Awaited<ReturnType<typeof persistFile>> | null;
   attempted: number;
   createPolicyPrompt?: { documentId: string; carrierName: string; product?: string | null } | null;
 }> {
+  const persistOnly = Boolean(options?.persistOnly);
   let dealId = optionalId(formData, "dealId");
   let riskId = optionalId(formData, "riskId");
   let contactId = optionalId(formData, "contactId");
@@ -259,7 +263,11 @@ export async function persistDealSourceUploads(formData: FormData): Promise<{
       console.error("[persistDealSourceUploads]", error);
       continue;
     }
-    if (doc?.riskId && !(doc.slot === "source_doc" && docTypeUsesGemini(doc.docType))) {
+    if (
+      !persistOnly &&
+      doc?.riskId &&
+      !(doc.slot === "source_doc" && docTypeUsesGemini(doc.docType))
+    ) {
       await runExtraction(doc.id, doc.dealId ?? "").catch(() => null);
     }
     if (!doc) continue;
@@ -270,7 +278,7 @@ export async function persistDealSourceUploads(formData: FormData): Promise<{
   let createPolicyPrompt = null as
     | { documentId: string; carrierName: string; product?: string | null }
     | null;
-  if (dealId && lastDeclaration && isDeclarationDocType(lastDeclaration.docType)) {
+  if (!persistOnly && dealId && lastDeclaration && isDeclarationDocType(lastDeclaration.docType)) {
     const product =
       parseDealProduct(String(formData.get("product") ?? "")) ??
       parseDealProduct(String(formData.get("line") ?? ""));
@@ -308,7 +316,7 @@ export async function saveDealDocuments(formData: FormData): Promise<DealDocumen
     return { ok: false, count: 0, reason: "documents-save-failed" };
   }
   try {
-    const { count, last, attempted } = await persistDealSourceUploads(formData);
+    const { count, last, attempted } = await persistDealSourceUploads(formData, { persistOnly: true });
     if (count === 0 || !last) {
       return {
         ok: false,
@@ -815,8 +823,6 @@ export async function deleteUploadedFile(formData: FormData) {
     return;
   }
 
-  let refillDealId: string | null = null;
-  let refillLine = "";
   try {
     const versions = await db
       .select()
@@ -895,12 +901,6 @@ export async function deleteUploadedFile(formData: FormData) {
           })
           .where(eq(quoteSheets.id, sheet.id));
       }
-      if (hasSource) {
-        // Do not await Fill here — it blocked redirect so the Documents list stayed stale
-        // until the last source doc was removed (no Fill) or a hard refresh.
-        refillDealId = doc.dealId;
-        refillLine = String(formData.get("line") ?? "");
-      }
     }
   } catch (error) {
     console.error("[deleteUploadedFile]", error);
@@ -913,11 +913,6 @@ export async function deleteUploadedFile(formData: FormData) {
   }
 
   revalidateDocumentPaths(doc);
-  if (refillDealId) {
-    const dealId = refillDealId;
-    const line = refillLine;
-    after(() => fillDealSheetIfReady(dealId, line));
-  }
   const returnTo = String(formData.get("returnTo") ?? "").trim();
   if (returnTo) {
     redirect(withFlash(returnTo, "document-deleted"));

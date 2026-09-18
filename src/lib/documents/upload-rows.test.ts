@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   appendUploadRowFiles,
   applyPickedFilesToRows,
+  buildDealDocumentRowForm,
   emptyUploadRow,
+  filesToSave,
   uploadRowsHaveFiles,
   uploadRowsTotalBytes,
 } from "./upload-rows";
@@ -76,5 +78,32 @@ describe("applyPickedFilesToRows", () => {
     expect(uploadRowsHaveFiles([{ file: a }, { file: null }])).toBe(true);
     expect(uploadRowsHaveFiles([{ file: null }])).toBe(false);
     expect(uploadRowsTotalBytes([{ file: a }, { file: b }])).toBe(a.size + b.size);
+  });
+
+  it("builds one clean FormData per photo so Save files does not pack files_N together", () => {
+    const photos = [file("roof.jpg"), file("siding.jpg"), file("garage.jpg")];
+    const rows = applyPickedFilesToRows([emptyUploadRow(0, "photo")], 0, photos);
+    const pending = filesToSave(rows);
+    expect(pending).toHaveLength(3);
+    expect(pending.map((row) => row.file.name)).toEqual(["roof.jpg", "siding.jpg", "garage.jpg"]);
+    const forms = pending.map((row) =>
+      buildDealDocumentRowForm({
+        dealId: "deal-1",
+        riskId: "risk-1",
+        line: "auto",
+        docType: row.docType,
+        file: row.file,
+      }),
+    );
+    expect(forms).toHaveLength(3);
+    for (const [index, form] of forms.entries()) {
+      expect(form.get("dealId")).toBe("deal-1");
+      expect(form.get("riskId")).toBe("risk-1");
+      expect(form.get("line")).toBe("auto");
+      expect(form.get("rowCount")).toBe("1");
+      expect(form.get("docType_0")).toBe("photo");
+      expect((form.get("files_0") as File).name).toBe(photos[index]!.name);
+      expect(form.get("files_1")).toBeNull();
+    }
   });
 });

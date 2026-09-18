@@ -44,11 +44,12 @@ describe("sep7ft Documents Save does not auto-Fill", () => {
     expect(sampleBody).toMatch(/"documents-saved"/);
     expect(sampleBody).not.toMatch(/notice=filled/);
 
-    // Explicit extract / delete refill / fill helper stay.
+    // Explicit extract / Fill button stay. Delete and Save files must not start Fill.
     expect(action).toMatch(/export async function extractExisting/);
     expect(action).toMatch(/await fillDealSheetIfReady\(dealId/);
+    expect(action).toMatch(/persistDealSourceUploads\(formData, \{ persistOnly: true \}\)/);
     const deleteBody = action.slice(action.indexOf("export async function deleteUploadedFile"));
-    expect(deleteBody).toMatch(/after\(\(\) => fillDealSheetIfReady/);
+    expect(deleteBody).not.toMatch(/fillDealSheetIfReady/);
 
     const button = source("src/components/deal/master-sheet-fill-button.tsx");
     expect(button).not.toMatch(/tab=markets/);
@@ -61,7 +62,8 @@ describe("sep7ft Documents Save does not auto-Fill", () => {
     const refresh = source("src/components/deal/background-fill-refresh.tsx");
     expect(refresh).not.toMatch(/flash === "document-uploaded"/);
     expect(refresh).not.toMatch(/flash === "documents-saved"/);
-    expect(refresh).toMatch(/flash === "document-deleted"/);
+    expect(refresh).not.toMatch(/flash === "document-deleted"/);
+    expect(refresh).not.toMatch(/flash === "document-replaced"/);
     expect(refresh).toMatch(/notice"\) === "filled"/);
   });
 });
