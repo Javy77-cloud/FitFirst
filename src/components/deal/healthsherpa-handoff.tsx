@@ -7,6 +7,7 @@ import {
   HEALTHSHERPA_ACA_LOGIN_URL,
   HEALTHSHERPA_ACA_NEEDS_PARTNER,
   HEALTHSHERPA_ACA_READY,
+  HEALTHSHERPA_EXTERNAL_ID_STAMP,
   HEALTHSHERPA_KEYS_MISSING,
   HEALTHSHERPA_LOGIN_URL,
   HEALTHSHERPA_MANUAL_LINES_NOTE,
@@ -93,7 +94,7 @@ export function HealthSherpaHandoff({
                 : HEALTHSHERPA_ACA_NEEDS_PARTNER
               : !medicareReady
                 ? HEALTHSHERPA_KEYS_MISSING
-                : "Syncs the contact, then opens the HealthSherpa quote page.")}
+                : HEALTHSHERPA_EXTERNAL_ID_STAMP)}
       </p>
     </div>
   );

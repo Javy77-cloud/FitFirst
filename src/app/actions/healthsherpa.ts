@@ -1,6 +1,8 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { currentDeskSession } from "@/lib/auth/session";
+import { flashAction } from "@/lib/flash-action";
 import {
   emptyMedicareBulkTally,
   hideMedicareBulkOneshot,
@@ -9,6 +11,8 @@ import {
   type MedicareBulkOneshotState,
   type MedicareBulkRunResult,
 } from "@/lib/healthsherpa/bulk-medicare";
+import { HEALTHSHERPA_REVIEW_PATH } from "@/lib/healthsherpa/copy";
+import { resolveHealthSherpaEnrollment } from "@/lib/healthsherpa/review";
 import { syncDealToHealthSherpa } from "@/lib/healthsherpa/sync";
 
 function bulkAuthDenied(message: string): MedicareBulkRunResult {
@@ -59,4 +63,45 @@ export async function restoreMedicareBulkSyncAction(): Promise<MedicareBulkOnesh
   const gate = await requireMedicareBulkActor();
   if (!gate.ok) return { hidden: true, lastRunAt: null, lastRun: null };
   return restoreMedicareBulkOneshot();
+}
+
+export async function linkHealthSherpaEnrollmentAction(formData: FormData) {
+  const session = await currentDeskSession();
+  if (!session.signedIn) {
+    flashAction(HEALTHSHERPA_REVIEW_PATH, "Sign in to review HealthSherpa enrollments.", "error");
+  }
+  const result = await resolveHealthSherpaEnrollment({
+    enrollmentId: String(formData.get("enrollmentId") ?? ""),
+    action: "link",
+    contactId: String(formData.get("contactId") ?? ""),
+  });
+  revalidatePath(HEALTHSHERPA_REVIEW_PATH);
+  revalidatePath("/contacts");
+  revalidatePath("/notifications");
+  revalidatePath("/developer/healthsherpa");
+  if (!result.ok) {
+    flashAction(HEALTHSHERPA_REVIEW_PATH, result.message, "error");
+  }
+  revalidatePath(`/contacts/${result.contactId}`);
+  flashAction(HEALTHSHERPA_REVIEW_PATH, "Enrollment linked to the existing contact.");
+}
+
+export async function createHealthSherpaContactAction(formData: FormData) {
+  const session = await currentDeskSession();
+  if (!session.signedIn) {
+    flashAction(HEALTHSHERPA_REVIEW_PATH, "Sign in to review HealthSherpa enrollments.", "error");
+  }
+  const result = await resolveHealthSherpaEnrollment({
+    enrollmentId: String(formData.get("enrollmentId") ?? ""),
+    action: "create",
+  });
+  revalidatePath(HEALTHSHERPA_REVIEW_PATH);
+  revalidatePath("/contacts");
+  revalidatePath("/notifications");
+  revalidatePath("/developer/healthsherpa");
+  if (!result.ok) {
+    flashAction(HEALTHSHERPA_REVIEW_PATH, result.message, "error");
+  }
+  revalidatePath(`/contacts/${result.contactId}`);
+  flashAction(HEALTHSHERPA_REVIEW_PATH, "New contact created and unpublished policy attached.");
 }

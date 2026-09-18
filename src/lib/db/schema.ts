@@ -4592,6 +4592,12 @@ export const healthsherpaEnrollments = pgTable(
     contactId: uuid("contact_id").references(() => contacts.id),
     dealId: uuid("deal_id").references(() => deals.id),
     policyId: uuid("policy_id").references(() => policies.id),
+    /** linked | needs_review | unmatched */
+    matchStatus: text("match_status").notNull().default("linked"),
+    /** hs_source_id | fitfirst_id | email | phone | name | none */
+    matchReason: text("match_reason"),
+    candidateContactId: uuid("candidate_contact_id").references(() => contacts.id),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
     payload: jsonb("payload").$type<Record<string, unknown> | null>(),
     ...timestamps,
   },
@@ -4601,6 +4607,7 @@ export const healthsherpaEnrollments = pgTable(
       .where(sql`${t.hsApplicationId} is not null`),
     index("healthsherpa_enrollments_contact_idx").on(t.tenantId, t.contactId),
     index("healthsherpa_enrollments_deal_idx").on(t.tenantId, t.dealId),
+    index("healthsherpa_enrollments_match_idx").on(t.tenantId, t.matchStatus),
   ],
 );
 

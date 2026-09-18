@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { SavedToast } from "@/components/desk/saved-toast";
 import { ClientStatusPill, RecordLink } from "@/components/record-links";
@@ -32,6 +33,8 @@ import { AssignRecordTags } from "@/components/tags/assign-record-tags";
 import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
 import { AddContactDialog } from "@/components/contacts/add-contact-dialog";
+import { countHealthSherpaReviewEnrollments } from "@/lib/healthsherpa/review";
+import { HEALTHSHERPA_REVIEW_PATH } from "@/lib/healthsherpa/copy";
 
 export const dynamic = "force-dynamic";
 
@@ -48,12 +51,13 @@ export default async function ContactsPage({
   const dateFormat = normalizeDateDisplayFormat(personalLayout?.personal?.dateFormat);
   const q = firstParam(params.q) ?? "";
   const saved = firstParam(params.saved) === "1";
-  const [all, tagCatalog, contactLayout, contactFields, pageFilters] = await Promise.all([
+  const [all, tagCatalog, contactLayout, contactFields, pageFilters, hsReviewCount] = await Promise.all([
     listContacts(),
     listModuleTags("contacts").catch(() => []),
     loadLayoutForModule("contacts").catch(() => null),
     listFieldDefs("contacts").catch(() => []),
     loadPageFilterPrefs("contacts"),
+    countHealthSherpaReviewEnrollments().catch(() => 0),
   ]);
   const visibleFilters = mergeLiveOptions(enabledPageFilters(pageFilters), {
     source: all.map((contact) => contact.source),
@@ -100,6 +104,15 @@ export default async function ContactsPage({
         Clients on the book. Bind / Closed Won creates or links a Contact (empty-only field copy).
         New Contact uses a popup — full layout is one click away.
       </p>
+      {hsReviewCount > 0 ? (
+        <p className="mb-3 text-sm text-muted-foreground" data-ff-healthsherpa-review-banner="">
+          <Link href={HEALTHSHERPA_REVIEW_PATH} className="font-medium text-primary hover:underline">
+            {hsReviewCount} HealthSherpa enrollment{hsReviewCount === 1 ? "" : "s"} need review
+          </Link>
+          {" — "}
+          inbound name-only or unmatched people are not created automatically.
+        </p>
+      ) : null}
       <PipelineFilterPopover
         moduleId="contacts"
         fields={filterFieldsFromPageFilters(visibleFilters)}
