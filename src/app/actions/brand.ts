@@ -25,7 +25,7 @@ import { DESK_ROLE_COOKIE, getDeskActor, isAdminActor } from "@/lib/brand/desk-r
 import { db } from "@/lib/db";
 import { agencyBrand, agentUiPrefs, emailSignatures } from "@/lib/db/schema";
 import { AGENCY_BRAND_ID, AGENT_PREF_IDS } from "@/lib/fixtures/ids";
-import { flashAction } from "@/lib/flash-action";
+import { flashSettings } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -113,7 +113,7 @@ export async function saveAgencyBrand(formData: FormData) {
     });
   }
   refreshBrand();
-  flashAction("/settings/agency", "brand-saved");
+  await flashSettings("/settings/agency", "brand-saved");
 }
 
 export async function uploadAgencyLogo(formData: FormData) {
@@ -198,7 +198,7 @@ export async function saveEmailSignature(formData: FormData) {
     });
   }
   refreshBrand();
-  flashAction("/settings/email-signatures", "signature-saved");
+  await flashSettings("/settings/email-signatures", "signature-saved");
 }
 
 export async function saveMyDeskPrefs(formData: FormData) {
@@ -228,7 +228,7 @@ export async function saveMyDeskPrefs(formData: FormData) {
     });
   }
   refreshBrand();
-  flashAction("/settings/my-desk", "desk-saved");
+  await flashSettings("/settings/my-desk", "desk-saved");
 }
 
 /**

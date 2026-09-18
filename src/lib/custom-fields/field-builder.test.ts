@@ -124,7 +124,7 @@ describe("deal field builder", () => {
     expect(builder).toMatch(/occupationValueAfterIndustryChange/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(/upsertFieldDef/);
     expect(source("src/app/actions/custom-fields.ts")).toMatch(
-      /flashAction\(fieldBuilderHref\(module, line\), "layout-saved"\)/,
+      /flashSettings\(fieldBuilderHref\(module, line\), "layout-saved"\)/,
     );
   });
 

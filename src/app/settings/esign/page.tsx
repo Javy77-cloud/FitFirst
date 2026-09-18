@@ -52,6 +52,21 @@ export default async function EsignSettingsPage({
           Provider marked disconnected. Signed apps stay on the Deal.
         </p>
       ) : null}
+      {notice === "credentials-saved" ? (
+        <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
+          DocuSign app credentials saved. Click Connect DocuSign sandbox to finish OAuth.
+        </p>
+      ) : null}
+      {notice === "needs-credentials" ? (
+        <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
+          Paste the DocuSign Integration Key and Secret Key, then Save credentials.
+        </p>
+      ) : null}
+      {notice === "credentials-cleared" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
+          DocuSign app keys cleared. Signed apps stay on the Deal.
+        </p>
+      ) : null}
 
       {docusign ? (
         <div className="mb-4 max-w-xl">

@@ -8,7 +8,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { agencySettings, integrationConnections } from "@/lib/db/schema";
 import { AGENCY_SETTINGS_ID } from "@/lib/fixtures/ids";
-import { flashAction } from "@/lib/flash-action";
+import { flashAction, flashSettings } from "@/lib/flash-action";
 import { connectionOwnerFor, ingestSocialLead } from "@/lib/leads/offers";
 import {
   canUseSocialPlatform,
@@ -70,7 +70,7 @@ export async function saveGbpAgentMonitor(formData: FormData) {
   refreshSocial();
   const next = String(formData.get("next") ?? "");
   const dest = next === "/settings/integrations" ? "/settings/integrations" : "/settings/social";
-  flashAction(dest, "settings-saved");
+  await flashSettings(dest, "settings-saved");
 }
 
 export async function openSocialInquiryAsLead(formData: FormData) {
@@ -183,7 +183,7 @@ export async function saveSocialAccountOwner(formData: FormData) {
       .where(eq(integrationConnections.id, row.id));
   }
   refreshSocial();
-  flashAction("/settings/social", "owner-saved");
+  await flashSettings("/settings/social", "owner-saved");
 }
 
 export async function saveSocialByoCredentials(formData: FormData) {
@@ -209,7 +209,7 @@ export async function saveSocialByoCredentials(formData: FormData) {
     accountLabel: accountLabel || null,
   });
   refreshSocial();
-  flashAction(dest, "credentials-saved");
+  await flashSettings(dest, "credentials-saved");
 }
 
 export async function startSocialByoOAuth(formData: FormData) {
