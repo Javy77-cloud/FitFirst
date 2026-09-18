@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { decryptSecret, encryptSecret, isMaskedSecretInput } from "@/lib/secrets/vault";
+import { decryptSecretTryingKeys, encryptSecret, isMaskedSecretInput } from "@/lib/secrets/vault";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { developerApiVault } from "@/lib/db/schema";
@@ -21,6 +21,19 @@ export type HealthSherpaMedicareCredentials = {
   environment: HealthSherpaEnvironment;
 };
 
+export type HealthSherpaAcaCredentials = {
+  apiKey: string;
+  agentId: string | null;
+  environment: HealthSherpaEnvironment;
+};
+
+export type HealthSherpaInboundVaultState = {
+  hasRow: boolean;
+  readable: boolean;
+  envFallback: boolean;
+  acceptedCount: number;
+};
+
 function normalizeEnvironment(value: string | null | undefined): HealthSherpaEnvironment {
   return value === "production" ? "production" : "sandbox";
 }
@@ -33,10 +46,44 @@ async function loadVaultRow(provider: string) {
       .where(and(eq(developerApiVault.tenantId, DEFAULT_TENANT_ID), eq(developerApiVault.provider, provider)))
       .limit(1);
     return row ?? null;
+  } catch (error) {
+    console.error(
+      "healthsherpa vault load failed",
+      provider,
+      error instanceof Error ? error.message : "error",
+    );
+    return null;
+  }
+}
+
+async function loadVaultRowsByProvider(provider: string) {
+  try {
+    return await db.select().from(developerApiVault).where(eq(developerApiVault.provider, provider));
+  } catch (error) {
+    console.error(
+      "healthsherpa vault list failed",
+      provider,
+      error instanceof Error ? error.message : "error",
+    );
+    return [];
+  }
+}
+
+function decryptVaultKey(enc: string | null | undefined, iv: string | null | undefined): string | null {
+  if (!enc || !iv) return null;
+  try {
+    const key = decryptSecretTryingKeys(enc, iv).trim();
+    return key || null;
   } catch {
     return null;
   }
 }
+
+const WEBHOOK_SECRET_PROVIDERS = [
+  HEALTHSHERPA_INBOUND_VAULT_PROVIDER,
+  HEALTHSHERPA_MEDICARE_VAULT_PROVIDER,
+  HEALTHSHERPA_ACA_VAULT_PROVIDER,
+] as const;
 
 function envMedicare(): HealthSherpaMedicareCredentials | null {
   const apiKey = process.env.HEALTHSHERPA_MEDICARE_API_KEY?.trim() || "";
@@ -58,48 +105,77 @@ function envInboundKey(): string | null {
 
 export async function loadHealthSherpaMedicareCredentials(): Promise<HealthSherpaMedicareCredentials | null> {
   const row = await loadVaultRow(HEALTHSHERPA_MEDICARE_VAULT_PROVIDER);
-  if (row?.configured && row.apiKeyEnc && row.apiKeyIv) {
-    try {
-      const creds: HealthSherpaMedicareCredentials = {
-        apiKey: decryptSecret(row.apiKeyEnc, row.apiKeyIv).trim(),
-        agentEmail:
-          row.accountNumberEnc && row.accountNumberIv
-            ? decryptSecret(row.accountNumberEnc, row.accountNumberIv).trim() || null
-            : null,
-        environment: normalizeEnvironment(row.environment),
-      };
-      if (creds.apiKey) return creds;
-    } catch {
-      /* fall through */
-    }
+  const apiKey = decryptVaultKey(row?.apiKeyEnc, row?.apiKeyIv);
+  if (apiKey) {
+    return {
+      apiKey,
+      agentEmail: decryptVaultKey(row?.accountNumberEnc, row?.accountNumberIv),
+      environment: normalizeEnvironment(row?.environment),
+    };
   }
   return envMedicare();
 }
 
-export async function loadHealthSherpaAcaKey(): Promise<string | null> {
+export async function loadHealthSherpaAcaCredentials(): Promise<HealthSherpaAcaCredentials | null> {
   const row = await loadVaultRow(HEALTHSHERPA_ACA_VAULT_PROVIDER);
-  if (row?.configured && row.apiKeyEnc && row.apiKeyIv) {
-    try {
-      const key = decryptSecret(row.apiKeyEnc, row.apiKeyIv).trim();
-      if (key) return key;
-    } catch {
-      /* fall through */
-    }
+  const apiKey = decryptVaultKey(row?.apiKeyEnc, row?.apiKeyIv);
+  if (apiKey) {
+    return {
+      apiKey,
+      agentId: decryptVaultKey(row?.accountNumberEnc, row?.accountNumberIv),
+      environment: normalizeEnvironment(row?.environment ?? process.env.HEALTHSHERPA_ACA_ENV),
+    };
   }
-  return envAcaKey();
+  const envKey = envAcaKey();
+  if (!envKey) return null;
+  return {
+    apiKey: envKey,
+    agentId: process.env.HEALTHSHERPA_ACA_AGENT_ID?.trim() || null,
+    environment: normalizeEnvironment(process.env.HEALTHSHERPA_ACA_ENV),
+  };
+}
+
+export async function loadHealthSherpaAcaKey(): Promise<string | null> {
+  const creds = await loadHealthSherpaAcaCredentials();
+  return creds?.apiKey ?? null;
 }
 
 export async function loadHealthSherpaInboundKey(): Promise<string | null> {
-  const row = await loadVaultRow(HEALTHSHERPA_INBOUND_VAULT_PROVIDER);
-  if (row?.configured && row.apiKeyEnc && row.apiKeyIv) {
-    try {
-      const key = decryptSecret(row.apiKeyEnc, row.apiKeyIv).trim();
-      if (key) return key;
-    } catch {
-      /* fall through */
+  const secrets = await loadHealthSherpaWebhookSecrets();
+  return secrets[0] ?? null;
+}
+
+function pushUniqueSecret(out: string[], value: string | null | undefined) {
+  const key = value?.trim();
+  if (key && !out.includes(key)) out.push(key);
+}
+
+/** Inbound vault first, then Medicare / ACA partner keys and env fallbacks. Never log the values. */
+export async function loadHealthSherpaWebhookSecrets(): Promise<string[]> {
+  const secrets: string[] = [];
+  for (const provider of WEBHOOK_SECRET_PROVIDERS) {
+    const rows = await loadVaultRowsByProvider(provider);
+    for (const row of rows) {
+      pushUniqueSecret(secrets, decryptVaultKey(row.apiKeyEnc, row.apiKeyIv));
     }
   }
-  return envInboundKey();
+  pushUniqueSecret(secrets, envInboundKey());
+  pushUniqueSecret(secrets, envMedicare()?.apiKey);
+  pushUniqueSecret(secrets, envAcaKey());
+  return secrets;
+}
+
+export async function describeHealthSherpaInboundVault(): Promise<HealthSherpaInboundVaultState> {
+  const inboundRows = await loadVaultRowsByProvider(HEALTHSHERPA_INBOUND_VAULT_PROVIDER);
+  const hasRow = inboundRows.some((row) => Boolean(row.apiKeyEnc && row.apiKeyIv));
+  const readable = inboundRows.some((row) => Boolean(decryptVaultKey(row.apiKeyEnc, row.apiKeyIv)));
+  const accepted = await loadHealthSherpaWebhookSecrets();
+  return {
+    hasRow,
+    readable,
+    envFallback: Boolean(envInboundKey()),
+    acceptedCount: accepted.length,
+  };
 }
 
 export async function loadHealthSherpaMedicarePublicStatus(): Promise<VaultPublicStatus> {
@@ -138,6 +214,7 @@ export async function loadHealthSherpaAcaPublicStatus(): Promise<VaultPublicStat
     return publicVaultStatus({
       configured: true,
       source: "vault",
+      environment: normalizeEnvironment(row.environment),
       provider: HEALTHSHERPA_ACA_VAULT_PROVIDER,
       label: HEALTHSHERPA_ACA_VAULT_LABEL,
     });
@@ -146,6 +223,7 @@ export async function loadHealthSherpaAcaPublicStatus(): Promise<VaultPublicStat
     return publicVaultStatus({
       configured: true,
       source: "env",
+      environment: normalizeEnvironment(process.env.HEALTHSHERPA_ACA_ENV),
       provider: HEALTHSHERPA_ACA_VAULT_PROVIDER,
       label: HEALTHSHERPA_ACA_VAULT_LABEL,
     });
@@ -153,6 +231,7 @@ export async function loadHealthSherpaAcaPublicStatus(): Promise<VaultPublicStat
   return publicVaultStatus({
     configured: false,
     source: "none",
+    environment: normalizeEnvironment(row?.environment ?? process.env.HEALTHSHERPA_ACA_ENV),
     provider: HEALTHSHERPA_ACA_VAULT_PROVIDER,
     label: HEALTHSHERPA_ACA_VAULT_LABEL,
   });
@@ -296,12 +375,16 @@ export async function clearHealthSherpaMedicareVault(actorId: string | null): Pr
 
 export async function saveHealthSherpaAcaVault(input: {
   apiKey: string;
+  agentId?: string | null;
+  environment?: HealthSherpaEnvironment;
   actorId: string | null;
 }): Promise<VaultPublicStatus> {
   return saveSingleKey({
     provider: HEALTHSHERPA_ACA_VAULT_PROVIDER,
     label: HEALTHSHERPA_ACA_VAULT_LABEL,
     apiKey: input.apiKey,
+    agentEmail: input.agentId,
+    environment: input.environment ?? "sandbox",
     actorId: input.actorId,
   });
 }

@@ -1,7 +1,95 @@
 import { timingSafeEqual } from "node:crypto";
-import { parseApiKeyHeader } from "@/lib/developer-hub/keys";
 import { verifyOrgApiKey } from "@/lib/developer-hub/store";
-import { loadHealthSherpaInboundKey } from "./vault";
+import { describeHealthSherpaInboundVault, loadHealthSherpaWebhookSecrets } from "./vault";
+
+const NAMED_HEADER_KEYS = [
+  "x-api-key",
+  "x-apikey",
+  "api-key",
+  "apikey",
+  "x-fitfirst-key",
+  "x-webhook-secret",
+  "x-healthsherpa-key",
+] as const;
+
+const QUERY_KEYS = ["x-api-key", "api_key", "apiKey", "apikey", "key"] as const;
+
+export type HealthSherpaAuthReason =
+  | "missing_credential"
+  | "not_configured"
+  | "vault_unreadable"
+  | "mismatch";
+
+export type HealthSherpaAuthResult =
+  | { ok: true }
+  | {
+      ok: false;
+      reason: HealthSherpaAuthReason;
+      message: string;
+    };
+
+function normalizePresented(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  let value = raw.trim();
+  if (
+    (value.startsWith('"') && value.endsWith('"') && value.length >= 2) ||
+    (value.startsWith("'") && value.endsWith("'") && value.length >= 2)
+  ) {
+    value = value.slice(1, -1).trim();
+  }
+  return value || null;
+}
+
+function pushUnique(out: string[], value: string | null) {
+  if (value && !out.includes(value)) out.push(value);
+}
+
+function decodeBasicParts(encoded: string): string[] {
+  try {
+    const decoded = Buffer.from(encoded, "base64").toString("utf8");
+    const colon = decoded.indexOf(":");
+    const user = colon >= 0 ? decoded.slice(0, colon) : decoded;
+    const pass = colon >= 0 ? decoded.slice(colon + 1) : "";
+    return [decoded, user, pass].map((part) => part.trim()).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/** Every API-key shape HealthSherpa (Medicare UI + ACA onboarding) is known to send. */
+export function collectPresentedHealthSherpaSecrets(request: Request): string[] {
+  const presented: string[] = [];
+  for (const name of NAMED_HEADER_KEYS) {
+    pushUnique(presented, normalizePresented(request.headers.get(name)));
+  }
+
+  const authorization = request.headers.get("authorization");
+  if (authorization) {
+    const trimmed = authorization.trim();
+    const scheme = /^(Bearer|Api-?Key|Token|Key)\s+(\S+)/i.exec(trimmed);
+    const basic = /^Basic\s+(\S+)/i.exec(trimmed);
+    if (scheme?.[2]) {
+      pushUnique(presented, normalizePresented(scheme[2]));
+    } else if (basic?.[1]) {
+      for (const part of decodeBasicParts(basic[1])) {
+        pushUnique(presented, normalizePresented(part));
+      }
+    } else {
+      pushUnique(presented, normalizePresented(trimmed));
+    }
+  }
+
+  try {
+    const url = new URL(request.url);
+    for (const key of QUERY_KEYS) {
+      pushUnique(presented, normalizePresented(url.searchParams.get(key)));
+    }
+  } catch {
+    /* ignore */
+  }
+
+  return presented;
+}
 
 function secretsEqual(left: string, right: string): boolean {
   const a = Buffer.from(left);
@@ -10,16 +98,65 @@ function secretsEqual(left: string, right: string): boolean {
   return timingSafeEqual(a, b);
 }
 
-/** X-API-Key (or Bearer / X-FitFirst-Key) against the inbound vault secret or an org API key. */
-export async function authorizeHealthSherpaWebhook(request: Request): Promise<boolean> {
-  const presented = parseApiKeyHeader(request);
-  if (!presented) return false;
-  const inbound = await loadHealthSherpaInboundKey();
-  if (inbound && secretsEqual(presented, inbound)) return true;
-  try {
-    const org = await verifyOrgApiKey(presented);
-    return Boolean(org);
-  } catch {
-    return false;
+function matchesAny(presented: string[], accepted: string[]): boolean {
+  for (const candidate of presented) {
+    for (const secret of accepted) {
+      if (secretsEqual(candidate, secret)) return true;
+    }
   }
+  return false;
+}
+
+function failure(
+  reason: HealthSherpaAuthReason,
+  message: string,
+): Extract<HealthSherpaAuthResult, { ok: false }> {
+  return { ok: false, reason, message };
+}
+
+/**
+ * Authorize HealthSherpa inbound webhooks.
+ * Accepts X-API-Key (documented), api-key, Bearer / Api-Key / Token / raw Authorization, Basic, or query.
+ * Compares against the inbound vault secret first, then Medicare / ACA vault keys and env fallbacks.
+ */
+export async function authorizeHealthSherpaWebhook(request: Request): Promise<HealthSherpaAuthResult> {
+  const presented = collectPresentedHealthSherpaSecrets(request);
+  const accepted = await loadHealthSherpaWebhookSecrets();
+  if (presented.length && accepted.length && matchesAny(presented, accepted)) {
+    return { ok: true };
+  }
+
+  if (presented.length) {
+    for (const candidate of presented) {
+      try {
+        if (await verifyOrgApiKey(candidate)) return { ok: true };
+      } catch {
+        /* org key table is optional */
+      }
+    }
+  }
+
+  const vault = await describeHealthSherpaInboundVault();
+  if (!presented.length) {
+    return failure(
+      "missing_credential",
+      "No API key was sent. HealthSherpa should use Authentication = API Key (X-API-Key). Bearer, api-key, and Authorization are also accepted.",
+    );
+  }
+  if (vault.hasRow && !vault.readable && !vault.envFallback && accepted.length === 0) {
+    return failure(
+      "vault_unreadable",
+      "Inbound webhook secret is stored but could not be decrypted. Re-save it in Developer Hub → API vault.",
+    );
+  }
+  if (accepted.length === 0) {
+    return failure(
+      "not_configured",
+      "No HealthSherpa inbound secret is readable. Save the inbound webhook secret in Developer Hub → API vault (or HEALTHSHERPA_WEBHOOK_API_KEY).",
+    );
+  }
+  return failure(
+    "mismatch",
+    "API key did not match the HealthSherpa inbound vault secret (or Medicare / ACA partner key / org API key).",
+  );
 }

@@ -355,6 +355,105 @@ function HealthSherpaMedicareVaultCard({
   );
 }
 
+function HealthSherpaAcaVaultCard({
+  canEdit,
+  status,
+}: {
+  canEdit: boolean;
+  status: VaultPublicStatus;
+}) {
+  const [unlocked, setUnlocked] = useState(false);
+  return (
+    <section
+      className="ff-card space-y-4 p-4"
+      data-ff-api-vault
+      data-ff-vault-provider="healthsherpa_aca"
+      data-ff-vault-can-edit={canEdit ? "1" : "0"}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-navy">{status.label}</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Agency BYO ICHRA / QuoteConnect partner key. Same HealthSherpa integration as Medicare.
+            FitFirst does not quote ACA inside the desk — Sync opens Marketplace and can call QuoteConnect.
+          </p>
+        </div>
+        <span
+          className="rounded-md bg-muted px-2 py-1 text-xs text-navy"
+          data-ff-vault-status={status.configured ? "configured" : "empty"}
+        >
+          {status.configured ? "Configured" : "Not configured"}
+        </span>
+      </div>
+      <div className="max-w-md">
+        <Label className="text-xs">API key</Label>
+        <Input
+          readOnly
+          value={status.configured ? SECRET_MASK : ""}
+          placeholder="Not configured"
+          className="mt-1 h-8"
+          data-ff-vault-mask="apiKey"
+        />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Environment: {status.environment}
+        {status.source === "env" ? " · configured from server env (vault row empty)" : null}.
+      </p>
+      {canEdit ? (
+        unlocked ? (
+          <form action={saveHealthSherpaAcaVaultAction} className="space-y-3 border-t border-border pt-3" data-ff-vault-unlock>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="hs-aca-key" className="text-xs">
+                  New partner key
+                </Label>
+                <Input id="hs-aca-key" name="apiKey" type="password" required autoComplete="new-password" className="mt-1 h-8" />
+              </div>
+              <div>
+                <Label htmlFor="hs-aca-agent" className="text-xs">
+                  Agent id (optional)
+                </Label>
+                <Input id="hs-aca-agent" name="agentId" autoComplete="off" className="mt-1 h-8" />
+              </div>
+              <div>
+                <Label htmlFor="hs-aca-env" className="text-xs">
+                  Environment
+                </Label>
+                <select
+                  id="hs-aca-env"
+                  name="environment"
+                  defaultValue={status.environment}
+                  className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+                >
+                  <option value="sandbox">Staging (api.ichra-staging.healthsherpa.com)</option>
+                  <option value="production">Production (api.ichra.healthsherpa.com)</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" size="sm">
+                Save HealthSherpa Marketplace
+              </Button>
+              <Button type="submit" size="sm" variant="outline" formAction={clearHealthSherpaAcaVaultAction}>
+                Clear
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setUnlocked(false)}>
+                Lock vault
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <Button type="button" size="sm" onClick={() => setUnlocked(true)} data-ff-vault-unlock-btn>
+            Unlock vault
+          </Button>
+        )
+      ) : (
+        <SiteDeveloperLockNote />
+      )}
+    </section>
+  );
+}
+
 function MetaVaultCard({ canEdit, meta }: { canEdit: boolean; meta: VaultPublicStatus }) {
   const [unlocked, setUnlocked] = useState(false);
 
@@ -507,23 +606,13 @@ export function ApiVaultPanel({
         clearAction={clearPermitStackVaultAction}
       />
       <HealthSherpaMedicareVaultCard canEdit={canEdit} status={healthSherpaMedicare} />
-      <SingleKeyVaultCard
-        canEdit={canEdit}
-        status={healthSherpaAca}
-        provider="healthsherpa_aca"
-        envVar="HEALTHSHERPA_ACA_API_KEY"
-        blurb="Agency BYO Marketplace / ICHRA partner key. QuoteConnect stays scaffolded until HealthSherpa onboards the agency. FitFirst does not quote ACA inside the desk."
-        inputId="healthsherpa-aca-api-key"
-        saveLabel="Save HealthSherpa Marketplace key"
-        saveAction={saveHealthSherpaAcaVaultAction}
-        clearAction={clearHealthSherpaAcaVaultAction}
-      />
+      <HealthSherpaAcaVaultCard canEdit={canEdit} status={healthSherpaAca} />
       <SingleKeyVaultCard
         canEdit={canEdit}
         status={healthSherpaInbound}
         provider="healthsherpa_inbound"
         envVar="HEALTHSHERPA_WEBHOOK_API_KEY"
-        blurb="Secret HealthSherpa sends as X-API-Key on POST /api/integrations/healthsherpa/webhook. Manual enrollments may not fire."
+        blurb="Shared Medicare + Marketplace inbound secret. HealthSherpa Authentication = API Key (X-API-Key; Bearer and api-key also accepted) on POST /api/integrations/healthsherpa/webhook. Manual enrollments may not fire."
         inputId="healthsherpa-inbound-api-key"
         saveLabel="Save inbound webhook secret"
         saveAction={saveHealthSherpaInboundVaultAction}

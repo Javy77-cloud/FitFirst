@@ -180,6 +180,8 @@ export async function saveHealthSherpaAcaVaultAction(formData: FormData) {
   try {
     await saveHealthSherpaAcaVault({
       apiKey: String(formData.get("apiKey") ?? ""),
+      agentId: String(formData.get("agentId") ?? ""),
+      environment: String(formData.get("environment") ?? "sandbox") === "production" ? "production" : "sandbox",
       actorId: session.userId,
     });
   } catch (error) {

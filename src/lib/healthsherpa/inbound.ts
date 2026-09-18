@@ -15,6 +15,7 @@ import { mailingLine, parseHealthSherpaPayload, type HealthSherpaParsedPayload }
 export type HealthSherpaInboundResult = {
   accepted: boolean;
   reason: string;
+  product?: HealthSherpaParsedPayload["product"];
   contactId?: string;
   dealId?: string | null;
   policyId?: string | null;
@@ -29,6 +30,11 @@ function addYear(date: Date): Date {
 
 function parseDate(raw: string | null): Date | null {
   if (!raw) return null;
+  const us = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(raw.trim());
+  if (us) {
+    const parsed = new Date(Date.UTC(Number(us[3]), Number(us[1]) - 1, Number(us[2])));
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
   const d = new Date(raw);
   return Number.isNaN(d.getTime()) ? null : d;
 }
@@ -337,8 +343,8 @@ export async function ingestHealthSherpaWebhook(payload: unknown): Promise<Healt
     kind: "signal",
     title:
       parsed.event === "policy_status"
-        ? `HealthSherpa policy update · ${parsed.confirmationNumber ?? parsed.applicationId ?? "enrollment"}`
-        : `HealthSherpa enrollment submitted · ${parsed.confirmationNumber ?? parsed.planName ?? "application"}`,
+        ? `HealthSherpa ${parsed.product === "marketplace" ? "Marketplace" : "Medicare"} policy update · ${parsed.confirmationNumber ?? parsed.applicationId ?? "enrollment"}`
+        : `HealthSherpa ${parsed.product === "marketplace" ? "Marketplace" : "Medicare"} enrollment submitted · ${parsed.confirmationNumber ?? parsed.planName ?? "application"}`,
     body: `${parsed.contact.firstName} ${parsed.contact.lastName} · ${parsed.carrierName ?? "HealthSherpa"} ${parsed.planName ?? parsed.policySubType ?? ""}`.trim(),
     severity: "info",
     entityType: dealId ? "deal" : "contact",
@@ -348,6 +354,7 @@ export async function ingestHealthSherpaWebhook(payload: unknown): Promise<Healt
   return {
     accepted: true,
     reason: "Enrollment stored as an unpublished Health policy.",
+    product: parsed.product,
     contactId,
     dealId,
     policyId,

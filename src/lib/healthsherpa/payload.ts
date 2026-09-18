@@ -74,6 +74,15 @@ function cents(value: unknown): number | null {
   return null;
 }
 
+function dollarsToCents(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return Math.round(value * 100);
+  if (typeof value === "string" && value.trim()) {
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.round(n * 100) : null;
+  }
+  return null;
+}
+
 function medicarePlanLabel(planType: string | null): string {
   const key = (planType ?? "").toLowerCase();
   if (key === "mapd" || key === "ma") return "Medicare Advantage";
@@ -129,8 +138,87 @@ function readContact(raw: Record<string, unknown> | null): HealthSherpaContactFi
   };
 }
 
+function firstMember(root: Record<string, unknown>): Record<string, unknown> | null {
+  const members = root.members;
+  if (Array.isArray(members) && members.length) {
+    return asRecord(members[0]);
+  }
+  const policies = root.policies;
+  if (Array.isArray(policies) && policies.length) {
+    const policy = asRecord(policies[0]);
+    const nested = policy && Array.isArray(policy.members) ? asRecord(policy.members[0]) : null;
+    if (nested) return nested;
+  }
+  return null;
+}
+
+function firstPolicy(root: Record<string, unknown>): Record<string, unknown> | null {
+  if (Array.isArray(root.policies) && root.policies.length) {
+    return asRecord(root.policies[0]);
+  }
+  return asRecord(root.policy);
+}
+
+function parseOfficialAcaPayload(root: Record<string, unknown>): HealthSherpaParsedPayload | null {
+  const eventType = text(root.event_type) ?? text(root.event) ?? text(root.policy_status);
+  const applicationId = text(root.application_id) ?? text(root.applicationId);
+  const member = firstMember(root);
+  const policy = firstPolicy(root);
+  const looksAca = Boolean(
+    text(root.event_type) ||
+      text(root.policy_status) ||
+      applicationId ||
+      member ||
+      (Array.isArray(root.policies) && root.policies.length) ||
+      root.transaction_id != null,
+  );
+  if (!looksAca) return null;
+
+  const contactRaw =
+    member ??
+    asRecord(root.contact) ??
+    asRecord(root.applicant) ??
+    asRecord(asRecord(root.household)?.primary);
+  const first = text(contactRaw?.first_name) ?? text(contactRaw?.firstName);
+  const last = text(contactRaw?.last_name) ?? text(contactRaw?.lastName);
+  if (!first || !last) return null;
+
+  const event: HealthSherpaEvent =
+    eventType && /policy|sync|effectuat|cancelled|terminated/i.test(eventType)
+      ? "policy_status"
+      : "enrollment_submitted";
+  const agent = asRecord(policy?.agent_of_record);
+  const premium =
+    dollarsToCents(policy?.gross_premium) ??
+    dollarsToCents(policy?.premium) ??
+    dollarsToCents(root.gross_premium);
+
+  return {
+    product: "marketplace",
+    event,
+    applicationId,
+    confirmationNumber:
+      text(policy?.policy_id) ??
+      text(root.transaction_id) ??
+      text(policy?.confirmation_number),
+    carrierName: text(policy?.issuer_name) ?? text(root.issuer_hios_id) ?? text(agent?.email),
+    planName: text(policy?.plan_name) ?? text(policy?.plan_hios_id),
+    planType: text(policy?.plan_type) ?? text(root.policy_status) ?? "Marketplace",
+    policySubType: "Marketplace",
+    effectiveDate: text(policy?.effective_date) ?? text(root.event_timestamp),
+    premiumCents: premium,
+    state: text(policy?.state) ?? text(contactRaw?.state),
+    zip: text(policy?.zip) ?? text(contactRaw?.zip),
+    contact: readContact({
+      ...contactRaw,
+      external_id: text(contactRaw?.external_id) ?? text(root.external_id),
+      date_of_birth: text(contactRaw?.date_of_birth) ?? text(contactRaw?.birth_date),
+    }),
+  };
+}
+
 /**
- * Parse a HealthSherpa Medicare submission or a loosely shaped ACA webhook.
+ * Parse a HealthSherpa Medicare submission or a Marketplace / ACA webhook.
  * Returns null when the body is not an enrollment event (empty / ping / unknown).
  */
 export function parseHealthSherpaPayload(input: unknown): HealthSherpaParsedPayload | null {
@@ -157,6 +245,9 @@ export function parseHealthSherpaPayload(input: unknown): HealthSherpaParsedPayl
       contact,
     };
   }
+
+  const officialAca = parseOfficialAcaPayload(root);
+  if (officialAca) return officialAca;
 
   const application =
     asRecord(root.application) ??
