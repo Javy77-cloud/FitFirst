@@ -45,10 +45,11 @@ describe("quick-comm open does not insert activity_logs", () => {
       "src/components/desk/record-quick-actions.tsx",
       "src/components/deals/deal-quick-actions.tsx",
       "src/components/policy/policy-quick-actions.tsx",
+      "src/components/desk/record-activity-menu.tsx",
     ];
     for (const file of mixed) {
       const text = source(file);
-      expect(text, file).toMatch(/window\.location\.href = href/);
+      expect(text, file).toMatch(/launchQuickCommsAction|RecordActivityMenu/);
       expect(text, file).not.toMatch(/await logDeskActivity\(form\);\s*if \(href/);
       expect(text, file).not.toMatch(/await sendDeskSms\(form\)/);
       expect(text, file).not.toMatch(/await sendDeskEmail\(form\)/);

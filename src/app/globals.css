@@ -791,6 +791,12 @@ body[data-ff-col-resize] {
   background: var(--ff-action-email);
   color: #ffffff;
 }
+
+/* One width for Call / SMS / Email / Task / Meeting — sized to the longest label, "Meeting". */
+.ff-record-activity-action {
+  box-sizing: border-box;
+  width: 4.65rem;
+}
 .ff-cal-company {
   background: var(--ff-flag);
   color: #ffffff;
