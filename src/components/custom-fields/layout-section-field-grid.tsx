@@ -1,8 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import {
   clampSectionColumns,
-  compactRowClass,
-  compactRowVars,
   groupSectionFieldRows,
   sectionFieldGridClass,
   sectionFieldGridVars,
@@ -35,37 +33,13 @@ export function LayoutSectionFieldGrid({
       data-ff-section-density={columns}
       data-ff-collapse={collapseOnNarrow ? "1" : undefined}
     >
-      {rows.map((row, index) => {
-        if (row.kind === "wide") {
-          const key = row.keys[0]!;
-          return (
-            <div key={key} className="col-span-full min-w-0">
-              {renderField(key)}
-            </div>
-          );
-        }
-        if (row.kind === "compact" && row.keys.length > 1) {
-          return (
-            <div
-              key={`compact:${row.keys.join(":")}:${index}`}
-              className={`col-span-full min-w-0 ${compactRowClass(columns)}`}
-              style={compactRowVars(columns) as CSSProperties}
-              data-ff-compact-row=""
-              data-ff-compact-cols={columns}
-            >
-              {row.keys.map((key) => (
-                <div key={key} className="min-w-0">
-                  {renderField(key)}
-                </div>
-              ))}
-            </div>
-          );
-        }
-        return row.keys.map((key) => (
-          <div key={key} className="min-w-0">
+      {rows.map((row) => {
+        const key = row.keys[0]!;
+        return (
+          <div key={key} className={row.kind === "wide" ? "col-span-full min-w-0" : "min-w-0"}>
             {renderField(key)}
           </div>
-        ));
+        );
       })}
     </div>
   );

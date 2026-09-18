@@ -1,5 +1,6 @@
 import {
   isCompactLayoutField,
+  isTrueAddressFieldKey,
   type LayoutFieldHint,
 } from "@/lib/custom-fields/section-density";
 import type { QuoteFieldDef } from "./applicant-core";
@@ -105,7 +106,7 @@ export function sheetFieldLayoutHint(field: QuoteFieldDef | undefined): LayoutFi
   if (field.input === "textarea" || field.input === "multiselect" || field.input === "chips") {
     return { type: "multi_line" };
   }
-  if (/(^|_)address$/.test(field.key) || field.key.includes("address")) {
+  if (isTrueAddressFieldKey(field.key)) {
     return { type: "address" };
   }
   if (field.options && field.options.length > 0) {
