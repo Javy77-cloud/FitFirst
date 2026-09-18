@@ -70,7 +70,7 @@ export const ENTITY_PACKS: EntityPack[] = [
   },
   {
     key: "businesses",
-    label: "Businesses",
+    label: "Accounts",
     group: "crm",
     hint: "Commercial accounts — not Contacts. Match on email, then name.",
     match: "email or name",

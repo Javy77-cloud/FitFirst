@@ -228,7 +228,7 @@ function ConfigureDialog({
 }) {
   const title = titleCaseLabel(
     module === "businesses"
-      ? "Businesses"
+      ? "Accounts"
       : module === "deals-pipeline"
         ? "Deals Pipeline"
         : module === "renewals-pipeline"

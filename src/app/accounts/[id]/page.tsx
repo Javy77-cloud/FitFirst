@@ -180,7 +180,7 @@ export default async function AccountDetailPage({
 
   return (
     <AppShell
-      title="Businesses"
+      title="Accounts"
       recordContext={{
         accountId: account.id,
         contactId: contacts[0]?.id,
@@ -194,11 +194,11 @@ export default async function AccountDetailPage({
         backLabel={fromPolicy ? "Back to policy" : "Back"}
         fallbackHref={fromPolicy ? `/policies/${fromPolicy}` : "/accounts"}
         crumbs={[
-          { href: "/accounts", label: "Business" },
+          { href: "/accounts", label: "Accounts" },
           ...(fromPolicy
             ? [{ href: `/policies/${fromPolicy}`, label: "Policy" }]
             : []),
-          { label: "Business" },
+          { label: "Account" },
         ]}
       />
       <div className="mb-3 space-y-1" data-ff-business-header-bar="">

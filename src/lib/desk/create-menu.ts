@@ -22,7 +22,7 @@ export const CREATE_MENU: CreateMenuGroup[] = [
     items: [
       { id: "lead", label: "Lead", href: "/leads/new" },
       { id: "contact", label: "Contact", href: "/contacts/new" },
-      { id: "business", label: "Business", href: "/accounts/new" },
+      { id: "business", label: "Account", href: "/accounts/new" },
     ],
   },
   {

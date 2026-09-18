@@ -95,11 +95,11 @@ export default async function AccountsPage({
     einLookup: row.einLookup,
   }));
   return (
-    <AppShell title="Businesses">
-      <SavedToast show={saved} message="Business saved." listHref="/accounts" />
+    <AppShell title="Accounts">
+      <SavedToast show={saved} message="Account saved." listHref="/accounts" />
       <p className="mb-3 text-base text-muted-foreground">
-        Commercial bind creates a Business (Account). Personal HO stays on a Contact. The same
-        person can be linked here without moving their personal policies. New Business uses a popup.
+        Commercial bind creates an Account. Contacts stay people. The same person can be linked
+        here without moving their personal policies. New Account uses a popup.
       </p>
       <PipelineFilterPopover
         moduleId="businesses"

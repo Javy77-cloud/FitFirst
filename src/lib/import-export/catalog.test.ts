@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ENTITY_PACKS, canImport, packFor, templateCsv } from "./catalog";
 
 describe("import-export catalog", () => {
-  it("covers the portable CRM/AMS pack and labels Contacts vs Businesses", () => {
+  it("covers the portable CRM/AMS pack and labels Contacts vs Accounts", () => {
     const keys = ENTITY_PACKS.map((pack) => pack.key);
     expect(keys).toEqual(
       expect.arrayContaining([
@@ -24,7 +24,7 @@ describe("import-export catalog", () => {
       ]),
     );
     expect(packFor("contacts")?.label).toBe("Contacts");
-    expect(packFor("businesses")?.label).toBe("Businesses");
+    expect(packFor("businesses")?.label).toBe("Accounts");
     expect(packFor("contacts")?.hint).toMatch(/not businesses/i);
     expect(packFor("businesses")?.hint).toMatch(/not Contacts/i);
   });

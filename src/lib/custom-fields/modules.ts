@@ -39,7 +39,7 @@ export const FIELD_LAYOUT_MODULE_LABEL: Record<FieldLayoutModule, string> = {
   deals: "Deals",
   policies: "Policies",
   contacts: "Contacts",
-  businesses: "Business",
+  businesses: "Accounts",
   carriers: "Carriers",
   tasks: "Tasks",
 };

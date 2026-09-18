@@ -16,7 +16,7 @@ export function PartyTypeahead({
   name = "dealName",
   label = "Deal name",
   required = false,
-  placeholder = "Name, email, or phone — Contacts and Businesses",
+  placeholder = "Name, email, or phone — Contacts and Accounts",
   titleName,
   defaultQuery = "",
   onPick,
@@ -107,7 +107,7 @@ export function PartyTypeahead({
         </ul>
       ) : (
         <p className="text-helper text-muted-foreground">
-          Type to pull Contacts and Businesses. Contains match on name, email, or phone.
+          Type to pull Contacts and Accounts. Contains match on name, email, or phone.
         </p>
       )}
       {picked ? (

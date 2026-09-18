@@ -5,7 +5,7 @@ export const DESK_NAV_ITEMS = [
   { href: "/leads", label: "Leads" },
   { href: "/deals", label: "Deals" },
   { href: "/contacts", label: "Contacts" },
-  { href: "/accounts", label: "Businesses" },
+  { href: "/accounts", label: "Accounts" },
   { href: "/policies", label: "Policies" },
   { href: "/book-health", label: "Book health" },
   { href: "/renewals", label: "Renewals" },

@@ -37,7 +37,7 @@ describe("sep7bv equal-width chips + Edit Layout on every CRM module", () => {
     expect(chipClass?.[0]).not.toMatch(/w-1\/2/);
   });
 
-  it("exposes Edit Layout for Leads, Deals, Policies, Contacts, Business, and Carriers", () => {
+  it("exposes Edit Layout for Leads, Deals, Policies, Contacts, Accounts, and Carriers", () => {
     expect([...FIELD_LAYOUT_MODULES]).toEqual([
       "leads",
       "deals",
@@ -52,7 +52,7 @@ describe("sep7bv equal-width chips + Edit Layout on every CRM module", () => {
       deals: "Deals",
       policies: "Policies",
       contacts: "Contacts",
-      businesses: "Business",
+      businesses: "Accounts",
       carriers: "Carriers",
       tasks: "Tasks",
     });

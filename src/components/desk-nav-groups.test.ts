@@ -56,12 +56,12 @@ describe("primary desk nav", () => {
     ]);
     expect(NAV_GROUPS.some((group) => group.label === "People")).toBe(false);
     expect(NAV_GROUPS.some((group) => group.id === "work")).toBe(false);
-    expect(NAV_GROUPS.find((group) => group.id === "business")?.label).toBe("Business");
+    expect(NAV_GROUPS.find((group) => group.id === "business")?.label).toBe("Accounts");
   });
 
-  it("keeps Contacts and Business as their own primaries", () => {
+  it("keeps Contacts and Accounts as their own primaries", () => {
     expect(NAV_GROUPS.find((group) => group.id === "contacts")?.label).toBe("Contacts");
-    expect(NAV_GROUPS.find((group) => group.id === "business")?.label).toBe("Business");
+    expect(NAV_GROUPS.find((group) => group.id === "business")?.label).toBe("Accounts");
   });
 
   it("keeps one search surface — top bar only, not the sidebar", () => {
