@@ -15,7 +15,8 @@ import {
   readRenderedColumnCount,
   sectionFieldGridClass,
 } from "@/lib/custom-fields/section-density";
-import { emptySheetValues, fieldsForLine } from "./catalog";
+import { AUTO_FIELDS, emptySheetValues, fieldsForLine } from "./catalog";
+import { fieldsForUnit } from "./repeatable-units";
 import {
   COMMERCIAL_COVERAGE_KEY,
   COMMERCIAL_COVERAGE_OPTIONS,
@@ -495,5 +496,75 @@ describe("Risk Profile per-section density + full labels", () => {
     expect(driverHtml).not.toMatch(/col-span-full/);
     expect(driverHtml.indexOf('data-ff-cell="name"')).toBeLessThan(driverHtml.indexOf('data-ff-cell="dob"'));
     expect(driverHtml.indexOf('data-ff-cell="dob"')).toBeLessThan(driverHtml.indexOf('data-ff-cell="gender"'));
+  });
+
+  it("packs live Auto catalog Residence and repeatable Driver/Vehicle units at density 5", () => {
+    const residence = AUTO_FIELDS.filter((field) => field.group === "Residence");
+    expect(residence.map((field) => field.key)).toEqual([
+      "own_rent",
+      "years_at_address",
+      "address_same_6_months",
+      "prior_address",
+    ]);
+    const residenceHtml = renderToString(
+      createElement(RiskProfileFieldsGrid, {
+        density: 5,
+        fields: residence,
+        renderField: (field) => createElement("span", { "data-ff-cell": field.key }, field.label),
+      }),
+    );
+    expect(readRenderedColumnCount(residenceHtml)).toBe(5);
+    expect(residenceHtml).toMatch(/grid-cols-5/);
+    expect(residenceHtml).not.toMatch(/data-ff-compact-row/);
+    expect(residenceHtml).not.toMatch(/col-span-full/);
+
+    const driverFields = fieldsForUnit("driver", 1).map((field) => ({
+      key: field.key,
+      label: field.label,
+      group: "Drivers",
+      input: field.input,
+      options: field.options ? [...field.options] : undefined,
+    }));
+    expect(driverFields.map((field) => field.key).slice(0, 3)).toEqual([
+      "driver_1_name",
+      "driver_1_dob",
+      "driver_1_gender",
+    ]);
+    const driverHtml = renderToString(
+      createElement(RiskProfileFieldsGrid, {
+        density: 5,
+        fields: driverFields,
+        renderField: (field) => createElement("span", { "data-ff-cell": field.key }, field.label),
+      }),
+    );
+    expect(readRenderedColumnCount(driverHtml)).toBe(5);
+    expect(driverHtml).not.toMatch(/data-ff-compact-row/);
+    expect(driverHtml).not.toMatch(/col-span-full/);
+    expect(driverHtml.indexOf('data-ff-cell="driver_1_name"')).toBeLessThan(
+      driverHtml.indexOf('data-ff-cell="driver_1_dob"'),
+    );
+    expect(driverHtml.indexOf('data-ff-cell="driver_1_dob"')).toBeLessThan(
+      driverHtml.indexOf('data-ff-cell="driver_1_gender"'),
+    );
+
+    const vehicleFields = fieldsForUnit("vehicle", 1).map((field) => ({
+      key: field.key,
+      label: field.label,
+      group: "Vehicles",
+      input: field.input,
+      options: field.options ? [...field.options] : undefined,
+    }));
+    const vehicleHtml = renderToString(
+      createElement(RiskProfileFieldsGrid, {
+        density: 5,
+        fields: vehicleFields,
+        renderField: (field) => createElement("span", { "data-ff-cell": field.key }, field.label),
+      }),
+    );
+    expect(readRenderedColumnCount(vehicleHtml)).toBe(5);
+    expect(vehicleHtml).not.toMatch(/data-ff-compact-row/);
+    expect(vehicleHtml).toMatch(/data-ff-cell="vin"/);
+    expect(vehicleHtml).toMatch(/data-ff-cell="vehicle_year"/);
+    expect(vehicleHtml).toMatch(/<div class="min-w-0"><span data-ff-cell="garaging_address"/);
   });
 });
