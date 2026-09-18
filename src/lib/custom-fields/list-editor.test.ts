@@ -107,6 +107,7 @@ describe("admin list editors", () => {
     expect(source("src/app/actions/global-lists.ts")).toMatch(/export async function deleteGlobalList/);
     expect(source("src/app/actions/global-lists.ts")).toMatch(/export async function updateGlobalListItem/);
     expect(source("src/components/settings/stay-on-save-form.tsx")).toMatch(/router\.refresh\(\)/);
+    expect(source("src/components/settings/stay-on-save-form.tsx")).toMatch(/new FormData\(formRef\.current\)/);
     expect(source("src/app/actions/field-picklists.ts")).not.toMatch(/from "@\/lib\/flash-action"/);
     expect(source("src/app/actions/global-lists.ts")).not.toMatch(/from "@\/lib\/flash-action"/);
     expect(listMutationOk("pick-list-saved")).toEqual({

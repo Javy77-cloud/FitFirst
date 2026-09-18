@@ -51,25 +51,15 @@ export function StatusColorSelect({
 
   return (
     <span className="inline-flex shrink-0 items-center" data-ff-status-color-picker="">
-      <select
+      <input
         id={id}
+        type="hidden"
         form={form}
         name={name}
         value={selected}
-        aria-hidden
-        tabIndex={-1}
         disabled={disabled}
-        className="sr-only"
         data-ff-status-color-select=""
-        onChange={(event) => apply(event.currentTarget.value)}
-      >
-        <option value="">None</option>
-        {STATUS_COLOR_KEYS.map((key) => (
-          <option key={key} value={key}>
-            {key}
-          </option>
-        ))}
-      </select>
+      />
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger
           type="button"
