@@ -16,6 +16,7 @@ import {
 } from "./sheet";
 import { HEALTHSHERPA_ACA_NEEDS_PARTNER, HEALTHSHERPA_WEBHOOK_PATH } from "./copy";
 import { encryptSecret, decryptSecretTryingKeys, LOCAL_SECRETS_KEY_HEX } from "@/lib/secrets/vault";
+import { inboundWebhookPrefixMatch, normalizeHealthSherpaSecret } from "./vault";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: () => undefined, replace: () => undefined, push: () => undefined }),
@@ -25,16 +26,30 @@ vi.mock("@/lib/developer-hub/store", () => ({
   verifyOrgApiKey: vi.fn(async () => null),
 }));
 
+const vaultMocks = vi.hoisted(() => ({
+  secrets: ["inbound-secret"] as string[],
+  inbound: {
+    secret: "inbound-secret" as string | null,
+    source: "vault" as const,
+    hasRow: true,
+    readable: true,
+    envFallback: false,
+  },
+}));
+
 vi.mock("./vault", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./vault")>();
   return {
     ...actual,
-    loadHealthSherpaWebhookSecrets: vi.fn(async () => ["inbound-secret"]),
+    loadHealthSherpaWebhookSecrets: vi.fn(async () => vaultMocks.secrets),
+    loadNormalizedInboundWebhookSecret: vi.fn(async () => ({ ...vaultMocks.inbound })),
     describeHealthSherpaInboundVault: vi.fn(async () => ({
-      hasRow: true,
-      readable: true,
-      envFallback: false,
-      acceptedCount: 1,
+      hasRow: vaultMocks.inbound.hasRow,
+      readable: vaultMocks.inbound.readable,
+      envFallback: vaultMocks.inbound.envFallback,
+      acceptedCount: vaultMocks.secrets.length,
+      inboundConfigured: Boolean(vaultMocks.inbound.secret),
+      inboundSource: vaultMocks.inbound.source,
     })),
     loadHealthSherpaAcaCredentials: vi.fn(async () => ({
       apiKey: "aca_test",
@@ -43,6 +58,17 @@ vi.mock("./vault", async (importOriginal) => {
     })),
   };
 });
+
+function resetVaultMocks() {
+  vaultMocks.secrets = ["inbound-secret"];
+  vaultMocks.inbound = {
+    secret: "inbound-secret",
+    source: "vault",
+    hasRow: true,
+    readable: true,
+    envFallback: false,
+  };
+}
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -165,6 +191,11 @@ describe("HealthSherpa Medicare + Marketplace", () => {
     expect(source("src/lib/integrations/catalog.ts")).toMatch(/healthsherpa_medicare/);
     expect(source("src/app/settings/integrations/page.tsx")).toMatch(/HealthSherpaCard/);
     expect(source("src/components/developer-hub/api-vault-panel.tsx")).toMatch(/healthsherpa_medicare/);
+    expect(source("src/components/developer-hub/api-vault-panel.tsx")).toMatch(/inboundWebhookSecret/);
+    expect(source("src/components/developer-hub/api-vault-panel.tsx")).toMatch(/not the inbound\s+webhook secret/);
+    expect(source("src/components/developer-hub/api-vault-panel.tsx")).toMatch(/Do not\s+paste the Medicare Partner API key/);
+    expect(source("src/app/api/integrations/healthsherpa/webhook/route.ts")).toMatch(/inboundConfigured/);
+    expect(source("src/app/api/integrations/healthsherpa/webhook/route.ts")).toMatch(/prefixMatch/);
     expect(source("src/lib/healthsherpa/aca.ts")).toMatch(/HEALTHSHERPA_ACA_NEEDS_PARTNER/);
     expect(HEALTHSHERPA_ACA_NEEDS_PARTNER).toMatch(/needs HealthSherpa partner credentials/);
     expect(HEALTHSHERPA_WEBHOOK_PATH).toBe("/api/integrations/healthsherpa/webhook");
@@ -230,7 +261,89 @@ describe("HealthSherpa Medicare + Marketplace", () => {
       }),
     );
     expect(denied.ok).toBe(false);
-    if (!denied.ok) expect(denied.reason).toBe("mismatch");
+    if (!denied.ok) {
+      expect(denied.reason).toBe("mismatch");
+      expect(denied.inboundConfigured).toBe(true);
+      expect(denied.inboundSource).toBe("vault");
+      expect(denied.presentedLength).toBe(4);
+      expect(denied.acceptedCount).toBe(1);
+      expect(denied.prefixMatch).toBe(false);
+    }
+  });
+
+  it("normalizes quoted, BOM, and header-prefixed inbound secrets without leaking values", () => {
+    expect(normalizeHealthSherpaSecret('"quoted-inbound"')).toBe("quoted-inbound");
+    expect(normalizeHealthSherpaSecret("\uFEFFX-API-Key: inbound-secret")).toBe("inbound-secret");
+    expect(normalizeHealthSherpaSecret("Bearer inbound-secret")).toBe("inbound-secret");
+    expect(normalizeHealthSherpaSecret("****************")).toBeNull();
+    expect(normalizeHealthSherpaSecret("")).toBeNull();
+    expect(inboundWebhookPrefixMatch(["inbound-secret"], "inbound-secret")).toBe(true);
+    expect(inboundWebhookPrefixMatch(["other-key"], "inbound-secret")).toBe(false);
+  });
+
+  it("authorizes a quoted X-API-Key against the inbound secret", async () => {
+    resetVaultMocks();
+    const result = await authorizeHealthSherpaWebhook(
+      new Request("https://example.test/api/integrations/healthsherpa/webhook", {
+        method: "POST",
+        headers: { "X-API-Key": '"inbound-secret"' },
+      }),
+    );
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("returns vault_unreadable when inbound ciphertext is stored but unreadable, even if Medicare keys are accepted", async () => {
+    vaultMocks.secrets = ["medicare-partner-key"];
+    vaultMocks.inbound = {
+      secret: null,
+      source: "none",
+      hasRow: true,
+      readable: false,
+      envFallback: false,
+    };
+    const denied = await authorizeHealthSherpaWebhook(
+      new Request("https://example.test/api/integrations/healthsherpa/webhook", {
+        method: "POST",
+        headers: { "X-API-Key": "inbound-from-healthsherpa" },
+      }),
+    );
+    expect(denied.ok).toBe(false);
+    if (!denied.ok) {
+      expect(denied.reason).toBe("vault_unreadable");
+      expect(denied.inboundConfigured).toBe(false);
+      expect(denied.inboundSource).toBe("none");
+      expect(denied.acceptedCount).toBe(1);
+      expect(denied.presentedLength).toBe("inbound-from-healthsherpa".length);
+      expect(denied.prefixMatch).toBe(false);
+      expect(JSON.stringify(denied)).not.toMatch(/medicare-partner-key|inbound-from-healthsherpa/);
+    }
+    resetVaultMocks();
+  });
+
+  it("returns mismatch diagnostics when inbound is empty and only a Medicare partner key is accepted", async () => {
+    vaultMocks.secrets = ["medicare-partner-key"];
+    vaultMocks.inbound = {
+      secret: null,
+      source: "none",
+      hasRow: false,
+      readable: false,
+      envFallback: false,
+    };
+    const denied = await authorizeHealthSherpaWebhook(
+      new Request("https://example.test/api/integrations/healthsherpa/webhook", {
+        method: "POST",
+        headers: { "X-API-Key": "inbound-from-healthsherpa" },
+      }),
+    );
+    expect(denied.ok).toBe(false);
+    if (!denied.ok) {
+      expect(denied.reason).toBe("mismatch");
+      expect(denied.inboundConfigured).toBe(false);
+      expect(denied.inboundSource).toBe("none");
+      expect(denied.acceptedCount).toBe(1);
+      expect(denied.prefixMatch).toBe(false);
+    }
+    resetVaultMocks();
   });
 
   it("parses official Marketplace submission and policy-status webhooks", () => {

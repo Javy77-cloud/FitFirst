@@ -211,7 +211,7 @@ export async function saveHealthSherpaInboundVaultAction(formData: FormData) {
   }
   try {
     await saveHealthSherpaInboundVault({
-      apiKey: String(formData.get("apiKey") ?? ""),
+      apiKey: String(formData.get("inboundWebhookSecret") ?? formData.get("apiKey") ?? ""),
       actorId: session.userId,
     });
   } catch (error) {

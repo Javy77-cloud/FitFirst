@@ -11,7 +11,7 @@ export const HEALTHSHERPA_ACA_BLURB =
   "Marketplace / ACA uses the same HealthSherpa integration as Medicare. Paste the ICHRA / QuoteConnect partner key to enable Marketplace handoff and QuoteConnect. Enrollment webhooks share POST /api/integrations/healthsherpa/webhook. FitFirst does not quote ACA inside this desk.";
 
 export const HEALTHSHERPA_INBOUND_BLURB =
-  "Medicare and Marketplace share this URL. HealthSherpa Authentication = API Key — they send X-API-Key (Bearer / api-key also accepted). Paste the same inbound vault secret. Manual enrollments may not fire this webhook.";
+  "Medicare and Marketplace share this URL. HealthSherpa Authentication = API Key — they send X-API-Key (Bearer / api-key also accepted). Paste the inbound webhook secret (not the Medicare Partner API key) in Developer Hub → API vault. Manual enrollments may not fire this webhook.";
 
 export const HEALTHSHERPA_MANUAL_LINES_NOTE =
   "Dental, Vision, and Short-term stay manual. They are not a HealthSherpa enrollment path.";

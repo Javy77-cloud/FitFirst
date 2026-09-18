@@ -23,6 +23,11 @@ export async function POST(request: Request) {
         error: "unauthorized",
         reason: authorized.reason,
         message: authorized.message,
+        inboundConfigured: authorized.inboundConfigured,
+        inboundSource: authorized.inboundSource,
+        presentedLength: authorized.presentedLength,
+        acceptedCount: authorized.acceptedCount,
+        prefixMatch: authorized.prefixMatch,
       },
       { status: 401, headers: cors },
     );

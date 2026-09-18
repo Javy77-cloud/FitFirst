@@ -62,7 +62,14 @@ export function HealthSherpaCard({
       <p className="mt-2 text-helper text-muted-foreground" data-ff-healthsherpa-webhook="">
         {HEALTHSHERPA_INBOUND_BLURB} Destination{" "}
         <code className="text-[11px]">{HEALTHSHERPA_WEBHOOK_PATH}</code>
-        {inbound.configured ? " · inbound secret stored" : " · inbound secret not configured"}.
+        {inbound.unreadable
+          ? " · inbound vault unreadable — re-save the webhook secret"
+          : inbound.configured
+            ? inbound.source === "env"
+              ? " · inbound secret from server env"
+              : " · inbound secret stored in vault"
+            : " · inbound secret not configured"}
+        .
       </p>
       {!isMedicare ? (
         <p className="text-helper text-muted-foreground">
