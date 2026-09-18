@@ -4,12 +4,14 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { LayoutSectionFieldGrid } from "@/components/custom-fields/layout-section-field-grid";
 import { RecordLayoutFields } from "@/components/custom-fields/record-layout-form";
+import { SectionDensityControl } from "@/components/custom-fields/section-density-control";
 import { addSection, duplicateSection, setSectionDensity } from "./layout";
 import {
   compactRowClass,
   groupSectionFieldRows,
   isCompactLayoutField,
   isStreetAddressFieldKey,
+  isTrueAddressFieldKey,
   layoutFieldKind,
   propertyAddressRun,
   readRenderedColumnCount,
@@ -19,6 +21,7 @@ import {
 } from "./section-density";
 import {
   DEFAULT_SECTION_DENSITY,
+  SECTION_DENSITIES,
   parseLayout,
   parseSectionDensity,
   sectionDensityOf,
@@ -27,19 +30,23 @@ import {
 } from "./types";
 
 describe("section density schema", () => {
-  it("defaults missing density to 2 and persists 1/2/3 through parse + revision", () => {
+  it("defaults missing density to 2 and persists 1–5 through parse + revision", () => {
     expect(DEFAULT_SECTION_DENSITY).toBe(2);
+    expect(SECTION_DENSITIES).toEqual([1, 2, 3, 4, 5]);
     expect(parseSectionDensity(undefined)).toBeUndefined();
     expect(parseSectionDensity("3")).toBe(3);
+    expect(parseSectionDensity(4)).toBe(4);
+    expect(parseSectionDensity("5")).toBe(5);
     expect(parseSectionDensity(9)).toBeUndefined();
     expect(sectionDensityOf({})).toBe(2);
     expect(sectionDensityOf({ density: 1 })).toBe(1);
+    expect(sectionDensityOf({ density: 5 })).toBe(5);
 
     const saved = parseLayout({
       columns: [
         {
           id: "left",
-          sections: [{ id: "contact", label: "Contact", fieldKeys: ["first_name"], density: 3 }],
+          sections: [{ id: "contact", label: "Contact", fieldKeys: ["first_name"], density: 4 }],
         },
         { id: "right", sections: [{ id: "notes", label: "Notes", fieldKeys: ["notes"] }] },
       ],
@@ -47,7 +54,7 @@ describe("section density schema", () => {
     const stamped = withLayoutRevision(saved, AGENCY_LAYOUT_REVISION);
     const reloaded = parseLayout(JSON.parse(JSON.stringify(stamped)));
     expect(reloaded.revision).toBe(AGENCY_LAYOUT_REVISION);
-    expect(reloaded.columns[0].sections[0]?.density).toBe(3);
+    expect(reloaded.columns[0].sections[0]?.density).toBe(4);
     expect(reloaded.columns[1].sections[0]?.density).toBeUndefined();
     expect(sectionDensityOf(reloaded.columns[1].sections[0]!)).toBe(2);
     expect(allKeys(reloaded)).toEqual(["first_name", "notes"]);
@@ -66,6 +73,21 @@ describe("section density schema", () => {
     expect(copy.columns[0].sections.map((section) => section.density)).toEqual([3, 3]);
     const added = addSection(copy, "right", "Extra");
     expect(added.columns[1].sections.at(-1)?.density).toBe(2);
+    expect(setSectionDensity(start, "contact", 5).columns[0].sections[0]?.density).toBe(5);
+
+    const control = renderToStaticMarkup(
+      createElement(SectionDensityControl, {
+        sectionId: "contact",
+        density: 4,
+        onChange: () => undefined,
+      }),
+    );
+    expect(control).toMatch(/data-ff-density-choice="1"/);
+    expect(control).toMatch(/data-ff-density-choice="2"/);
+    expect(control).toMatch(/data-ff-density-choice="3"/);
+    expect(control).toMatch(/data-ff-density-choice="4"/);
+    expect(control).toMatch(/data-ff-density-choice="5"/);
+    expect(control).toMatch(/aria-pressed="true"[^>]*data-ff-density-choice="4"|data-ff-density-choice="4"[^>]*aria-pressed="true"/);
   });
 });
 
@@ -83,7 +105,14 @@ describe("section field packing", () => {
     expect(isCompactLayoutField("year_built")).toBe(true);
     expect(isCompactLayoutField("roof_year")).toBe(true);
     expect(isCompactLayoutField("stories")).toBe(true);
+    expect(isTrueAddressFieldKey("address1")).toBe(true);
+    expect(isTrueAddressFieldKey("mailing_address")).toBe(true);
+    expect(isTrueAddressFieldKey("garaging_address")).toBe(true);
+    expect(isTrueAddressFieldKey("prior_address")).toBe(false);
+    expect(isTrueAddressFieldKey("years_at_address")).toBe(false);
+    expect(isTrueAddressFieldKey("address_same_6_months")).toBe(false);
     expect(layoutFieldKind("mailing_address", { type: "address" })).toBe("wide");
+    expect(layoutFieldKind("prior_address")).toBe("standard");
     expect(layoutFieldKind("notes", { type: "multi_line" })).toBe("wide");
     expect(layoutFieldKind("insurance_type")).toBe("wide");
     expect(layoutFieldKind("email")).toBe("wide");
@@ -111,12 +140,16 @@ describe("section field packing", () => {
     expect(rows).toEqual([
       { keys: ["mailing_address"], kind: "wide" },
       { keys: ["mailing_unit"], kind: "compact" },
-      { keys: ["city", "state", "zip"], kind: "compact" },
+      { keys: ["city"], kind: "compact" },
+      { keys: ["state"], kind: "compact" },
+      { keys: ["zip"], kind: "compact" },
       { keys: ["county"], kind: "compact" },
       { keys: ["first_name"], kind: "standard" },
-      { keys: ["applicant_gender", "applicant_marital_status"], kind: "compact" },
+      { keys: ["applicant_gender"], kind: "compact" },
+      { keys: ["applicant_marital_status"], kind: "compact" },
       { keys: ["notes"], kind: "wide" },
     ]);
+    expect(rows.every((row) => row.keys.length === 1)).toBe(true);
   });
 
   it("uses standard grid-cols-1 through grid-cols-5 class names", () => {
@@ -156,20 +189,32 @@ describe("section field packing", () => {
     ).toEqual(["address1", "city", "state", "zip", "county"]);
     expect(propertyAddressRun(["address1", "city", "state", "zip"], 0, 3)).toBeNull();
 
-    const rows = groupSectionFieldRows(
-      ["address1", "city", "state", "zip", "county", "mailing_address", "year_built", "stories", "beds"],
-      (key) => {
-        if (key === "address1" || key === "mailing_address") return { type: "address" };
-        return { type: "single_line" };
-      },
-      5,
+    const keys = ["address1", "city", "state", "zip", "county", "mailing_address", "year_built", "stories", "beds"];
+    const fieldOf = (key: string) => {
+      if (key === "address1" || key === "mailing_address") return { type: "address" as const };
+      return { type: "single_line" as const };
+    };
+    const rows = groupSectionFieldRows(keys, fieldOf, 5);
+    expect(rows.map((row) => row.keys)).toEqual(keys.map((key) => [key]));
+    expect(rows[0]).toEqual({ keys: ["address1"], kind: "standard" });
+    expect(rows[5]).toEqual({ keys: ["mailing_address"], kind: "wide" });
+    expect(rows.slice(6).map((row) => row.kind)).toEqual(["compact", "compact", "compact"]);
+
+    const html = renderToStaticMarkup(
+      createElement(LayoutSectionFieldGrid, {
+        density: 5,
+        keys,
+        fieldOf,
+        renderField: (key) => createElement("span", { "data-ff-cell": key }, key),
+        collapse: false,
+      }),
     );
-    expect(rows[0]).toEqual({
-      keys: ["address1", "city", "state", "zip", "county"],
-      kind: "compact",
-    });
-    expect(rows[1]).toEqual({ keys: ["mailing_address"], kind: "wide" });
-    expect(rows[2]).toEqual({ keys: ["year_built", "stories", "beds"], kind: "compact" });
+    expect(readRenderedColumnCount(html)).toBe(5);
+    expect(html).toMatch(/grid-cols-5/);
+    expect(html).not.toMatch(/data-ff-compact-row/);
+    expect(html).toMatch(/<div class="min-w-0"><span data-ff-cell="address1"/);
+    expect(html).not.toMatch(/<div class="col-span-full min-w-0"><span data-ff-cell="address1"/);
+    expect(html).toMatch(/<div class="col-span-full min-w-0"><span data-ff-cell="mailing_address"/);
   });
 
   it("changes grid column classes and styles from 3 to 4 to 5 on a short-field section", () => {
@@ -213,14 +258,14 @@ describe("section field packing", () => {
     expect(html5).toMatch(/grid-template-columns:repeat\(5/);
     expect(html3).not.toEqual(html4);
     expect(html4).not.toEqual(html5);
+    expect(html4).not.toMatch(/data-ff-compact-row/);
+    expect(html5).not.toMatch(/data-ff-compact-row/);
+    expect(html4).not.toMatch(/col-span-full/);
+    expect(html5).not.toMatch(/col-span-full/);
 
-    expect(groupSectionFieldRows(keys, fieldOf, 4)[0]?.keys).toEqual([
-      "year_built",
-      "stories",
-      "beds",
-      "baths",
-    ]);
-    expect(groupSectionFieldRows(keys, fieldOf, 5)[0]?.keys).toEqual(keys);
+    expect(groupSectionFieldRows(keys, fieldOf, 4).map((row) => row.keys[0])).toEqual(keys);
+    expect(groupSectionFieldRows(keys, fieldOf, 5).map((row) => row.keys[0])).toEqual(keys);
+    expect(groupSectionFieldRows(keys, fieldOf, 4).every((row) => row.keys.length === 1)).toBe(true);
   });
 
   it("fails if selecting 4 yields anything other than 4 columns (same for 5)", () => {
@@ -242,9 +287,75 @@ describe("section field packing", () => {
       expect(html).toMatch(new RegExp(`grid-template-columns:repeat\\(${density}`));
       expect(html).not.toMatch(/data-ff-section-density="3"/);
       expect(html).not.toMatch(/grid-cols-3/);
+      expect(html).not.toMatch(/data-ff-compact-row/);
+      expect(html).not.toMatch(/col-span-full/);
       const packed = groupSectionFieldRows(keys, fieldOf, density);
-      expect(packed[0]?.keys.length, `short-field pack at ${density}`).toBe(density);
+      expect(packed.every((row) => row.keys.length === 1), `one cell each at ${density}`).toBe(true);
+      expect(packed.map((row) => row.keys[0])).toEqual(keys);
     }
+  });
+
+  it("packs Residence-like four keys into one CSS row at density 4", () => {
+    const keys = ["own_rent", "years_at_address", "address_same_6_months", "prior_address"];
+    const fieldOf = (key: string) => {
+      if (key === "own_rent") return { type: "picklist" as const, options: ["Own", "Rent"] };
+      if (key === "address_same_6_months") return { type: "picklist" as const, options: ["Yes", "No"] };
+      return { type: "single_line" as const };
+    };
+    const packed = groupSectionFieldRows(keys, fieldOf, 4);
+    expect(packed.map((row) => row.keys)).toEqual(keys.map((key) => [key]));
+    expect(packed.every((row) => row.kind !== "wide")).toBe(true);
+
+    const html = renderToStaticMarkup(
+      createElement(LayoutSectionFieldGrid, {
+        density: 4,
+        keys,
+        fieldOf,
+        renderField: (key) => createElement("span", { "data-ff-cell": key }, key),
+        collapse: false,
+      }),
+    );
+    expect(readRenderedColumnCount(html)).toBe(4);
+    expect(html).toMatch(/grid-cols-4/);
+    expect(html).not.toMatch(/data-ff-compact-row/);
+    expect(html).not.toMatch(/col-span-full/);
+    for (const key of keys) {
+      expect(html).toMatch(new RegExp(`data-ff-cell="${key}"`));
+    }
+  });
+
+  it("does not isolate Drivers name then nest DOB+gender on a full-width row", () => {
+    const keys = ["name", "dob", "gender", "occupation", "license"];
+    const fieldOf = (key: string) => {
+      if (key === "gender") return { type: "picklist" as const, options: ["Male", "Female"] };
+      if (key === "dob") return { type: "dob" as const };
+      return { type: "single_line" as const };
+    };
+    const packed = groupSectionFieldRows(keys, fieldOf, 5);
+    expect(packed.map((row) => row.keys)).toEqual(keys.map((key) => [key]));
+    expect(packed.find((row) => row.keys.includes("name"))?.kind).toBe("standard");
+    expect(packed.find((row) => row.keys.includes("dob"))?.kind).toBe("compact");
+    expect(packed.find((row) => row.keys.includes("gender"))?.kind).toBe("compact");
+
+    const html = renderToStaticMarkup(
+      createElement(LayoutSectionFieldGrid, {
+        density: 5,
+        keys,
+        fieldOf,
+        renderField: (key) => createElement("span", { "data-ff-cell": key }, key),
+        collapse: false,
+      }),
+    );
+    expect(readRenderedColumnCount(html)).toBe(5);
+    expect(html).toMatch(/grid-cols-5/);
+    expect(html).not.toMatch(/data-ff-compact-row/);
+    expect(html).not.toMatch(/col-span-full/);
+    const nameAt = html.indexOf('data-ff-cell="name"');
+    const dobAt = html.indexOf('data-ff-cell="dob"');
+    const genderAt = html.indexOf('data-ff-cell="gender"');
+    expect(nameAt).toBeGreaterThan(-1);
+    expect(dobAt).toBeGreaterThan(nameAt);
+    expect(genderAt).toBeGreaterThan(dobAt);
   });
 });
 
@@ -306,7 +417,7 @@ describe("shared layout engine wiring", () => {
     expect(html).toMatch(/data-ff-layout-section-header/);
     expect(html).toMatch(/text-center text-lg font-semibold/);
     expect(html).toMatch(/data-ff-section-density="2"/);
-    expect(html).toMatch(/data-ff-compact-row/);
+    expect(html).not.toMatch(/data-ff-compact-row/);
     expect(html).toMatch(/data-ff-record-field="city"/);
   });
 
