@@ -8,6 +8,8 @@ import { parseHealthSherpaPayload } from "./payload";
 import { healthSherpaMedicareRequest } from "./client";
 import { authorizeHealthSherpaWebhook, collectPresentedHealthSherpaSecrets } from "./auth";
 import { healthSherpaAcaQuote } from "./aca";
+import { publicHealthSherpaIngestError } from "./errors";
+import { fitFirstMatchId } from "./match-id";
 import {
   healthSherpaCollapsibleGroups,
   healthSherpaProductForPlan,
@@ -107,6 +109,84 @@ const MEDICARE_SAMPLE = {
   },
 };
 
+/** docs.medicare.healthsherpa.com/webhooks/event-types/submission Example Payload */
+const HEALTHSHERPA_DOCS_SUBMISSION_SAMPLE = {
+  medicare_application: {
+    id: "ccf19b98-375f-4467-87f4-a47c977359ee",
+    carrier_name: "Devoted Health",
+    cms_plan_id: "H1290-001-000",
+    confirmation_number: "A92946987696546M",
+    created_at: "2026-01-21T19:54:21.186Z",
+    effective_date: "2026-02-01",
+    fips_code: "12086",
+    plan_name: "DEVOTED CORE 001 FL (HMO)",
+    plan_sub_type: "hmo",
+    plan_type: "mapd",
+    plan_year: 2026,
+    send_to_beneficiary: false,
+    sep: "NEW",
+    signature: "voice_signature",
+    state: "FL",
+    submitted_at: "2026-01-21T19:56:43.302Z",
+    submitting_agent_first_name: "Heath",
+    submitting_agent_last_name: "Sherpa",
+    submitting_agent_npn: "1234567890",
+    total_premium_cents: 5000,
+    updated_at: "2026-01-21T19:56:52.627Z",
+    zip_code: "33101",
+  },
+  medicare_application_riders: [
+    {
+      plan_name: "Dental Plus",
+      premium_cents: 2500,
+      created_at: "2026-01-21T19:54:21.186Z",
+      updated_at: "2026-01-21T19:54:21.186Z",
+    },
+  ],
+  contact: {
+    id: "8b420678-2c58-4f56-9c0b-9ccb605e5e85",
+    external_id: "CRM789012",
+    first_name: "Test",
+    middle_name: "Person",
+    last_name: "Enrollment",
+    suffix: "Jr.",
+    birth_date: "1960-09-09",
+    sex: "male",
+    status: "enrolled",
+    email: "test.enrollment@example.com",
+    phone_number: "3055551234",
+    medicaid_number: null,
+    medicare_number: "1EG4TE5MK73",
+    needs_extra_help: false,
+    medicaid_eligible: false,
+    part_a_effective_date: "2020-07-01",
+    part_b_effective_date: "2020-07-01",
+    contact_drugs_attributes: [
+      {
+        frequency: 30,
+        dosage_id: "dosage-cx-001",
+        ndc: "00093-7150-01",
+        metric_quantity: null,
+        name: "Lisinopril",
+        drug_type_id: 2,
+      },
+    ],
+    contact_pharmacies_attributes: [
+      { name: "CVS Pharmacy #1234", mode: "retail", npi: "1234567890", primary: true },
+    ],
+    contact_providers_attributes: [
+      {
+        first_name: "Sarah",
+        last_name: "Johnson",
+        specialties: ["Internal Medicine"],
+        contact_provider_addresses_attributes: [
+          { street: "789 Medical Center Dr", city: "Miami", state: "FL", zip_code: "33101" },
+        ],
+      },
+    ],
+  },
+};
+
 describe("HealthSherpa Medicare + Marketplace", () => {
   it("parses the Medicare enrollment submission payload", () => {
     const parsed = parseHealthSherpaPayload(MEDICARE_SAMPLE);
@@ -123,6 +203,74 @@ describe("HealthSherpa Medicare + Marketplace", () => {
     expect(parsed?.contact.medicareNumber).toBe("1EG4TE5MK73");
     expect(parseHealthSherpaPayload({})).toBeNull();
     expect(parseHealthSherpaPayload({ ping: true })).toBeNull();
+  });
+
+  it("parses the official Medicare Test/sample SubmissionPayload without throwing", () => {
+    expect(() => parseHealthSherpaPayload(HEALTHSHERPA_DOCS_SUBMISSION_SAMPLE)).not.toThrow();
+    const parsed = parseHealthSherpaPayload(HEALTHSHERPA_DOCS_SUBMISSION_SAMPLE);
+    expect(parsed).toMatchObject({
+      product: "medicare",
+      applicationId: "ccf19b98-375f-4467-87f4-a47c977359ee",
+      confirmationNumber: "A92946987696546M",
+      premiumCents: 5000,
+    });
+    expect(parsed?.contact.externalId).toBe("CRM789012");
+    expect(parsed?.contact.firstName).toBe("Test");
+    expect(fitFirstMatchId(parsed?.contact.externalId)).toBeNull();
+    expect(fitFirstMatchId("8b420678-2c58-4f56-9c0b-9ccb605e5e85")).toBe(
+      "8b420678-2c58-4f56-9c0b-9ccb605e5e85",
+    );
+  });
+
+  it("accepts HealthSherpa sample envelopes that previously could throw or miss parse", () => {
+    const camel = {
+      medicareApplication: {
+        id: "app-camel",
+        carrierName: "Humana",
+        confirmationNumber: "CONF1",
+        planType: "pdp",
+        planName: "Humana PDP",
+        totalPremiumCents: "1999",
+        zipCode: "33101",
+      },
+      contact: { firstName: "Pat", lastName: "Lee", external_id: "CRM789012" },
+    };
+    expect(parseHealthSherpaPayload(camel)?.applicationId).toBe("app-camel");
+    expect(parseHealthSherpaPayload(camel)?.premiumCents).toBe(1999);
+    expect(parseHealthSherpaPayload({ data: HEALTHSHERPA_DOCS_SUBMISSION_SAMPLE })?.contact.externalId).toBe(
+      "CRM789012",
+    );
+    expect(parseHealthSherpaPayload({ payload: HEALTHSHERPA_DOCS_SUBMISSION_SAMPLE })?.planType).toBe("mapd");
+    expect(parseHealthSherpaPayload(JSON.stringify(HEALTHSHERPA_DOCS_SUBMISSION_SAMPLE))?.carrierName).toBe(
+      "Devoted Health",
+    );
+    expect(
+      parseHealthSherpaPayload({ text: JSON.stringify(HEALTHSHERPA_DOCS_SUBMISSION_SAMPLE) })?.contact.lastName,
+    ).toBe("Enrollment");
+    expect(
+      parseHealthSherpaPayload([HEALTHSHERPA_DOCS_SUBMISSION_SAMPLE])?.confirmationNumber,
+    ).toBe("A92946987696546M");
+    const limited = parseHealthSherpaPayload({
+      medicare_application: { plan_type: "med_supp", carrier_name: "Aetna" },
+      contact: { id: "9b420678-2c58-4f56-9c0b-9ccb605e5e85", first_name: "Indy", last_name: "Agent" },
+    });
+    expect(limited?.policySubType).toBe("Medicare Supplement");
+    expect(limited?.contact.firstName).toBe("Indy");
+    expect(parseHealthSherpaPayload({ medicare_application: { premium: {} }, contact: { first_name: "A", last_name: "B" } })?.premiumCents).toBeNull();
+  });
+
+  it("maps ingest failures to a public reason without leaking stacks or secrets", () => {
+    const uuidFail = publicHealthSherpaIngestError({
+      code: "22P02",
+      message: 'invalid input syntax for type uuid: "CRM789012" postgres://user:hunter2@db/ff',
+    });
+    expect(uuidFail.status).toBe(422);
+    expect(uuidFail.reason).toMatch(/external_id/);
+    expect(JSON.stringify(uuidFail)).not.toMatch(/hunter2|CRM789012|postgres:\/\//);
+    const boom = publicHealthSherpaIngestError(new Error("stack with inbound-secret"));
+    expect(boom.status).toBe(500);
+    expect(boom.reason).toBe("HealthSherpa webhook ingest failed.");
+    expect(JSON.stringify(boom)).not.toMatch(/inbound-secret|stack/);
   });
 
   it("accepts a loosely shaped Marketplace webhook and keeps Dental/Vision manual", () => {
@@ -196,6 +344,9 @@ describe("HealthSherpa Medicare + Marketplace", () => {
     expect(source("src/components/developer-hub/api-vault-panel.tsx")).toMatch(/Do not\s+paste the Medicare Partner API key/);
     expect(source("src/app/api/integrations/healthsherpa/webhook/route.ts")).toMatch(/inboundConfigured/);
     expect(source("src/app/api/integrations/healthsherpa/webhook/route.ts")).toMatch(/prefixMatch/);
+    expect(source("src/app/api/integrations/healthsherpa/webhook/route.ts")).toMatch(/publicHealthSherpaIngestError/);
+    expect(source("src/app/api/integrations/healthsherpa/webhook/route.ts")).toMatch(/try \{/);
+    expect(source("src/lib/healthsherpa/inbound.ts")).toMatch(/fitFirstMatchId/);
     expect(source("src/lib/healthsherpa/aca.ts")).toMatch(/HEALTHSHERPA_ACA_NEEDS_PARTNER/);
     expect(HEALTHSHERPA_ACA_NEEDS_PARTNER).toMatch(/needs HealthSherpa partner credentials/);
     expect(HEALTHSHERPA_WEBHOOK_PATH).toBe("/api/integrations/healthsherpa/webhook");

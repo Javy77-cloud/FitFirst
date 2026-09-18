@@ -44,14 +44,96 @@ export type HealthSherpaParsedPayload = {
   contact: HealthSherpaContactFields;
 };
 
+const ENVELOPE_KEYS = [
+  "data",
+  "payload",
+  "body",
+  "submission",
+  "event",
+  "webhook",
+  "attributes",
+  "result",
+  "text",
+] as const;
+
+function parseJsonIfString(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (!trimmed || (trimmed[0] !== "{" && trimmed[0] !== "[")) return value;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return value;
+  }
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+  const parsed = parseJsonIfString(value);
+  if (Array.isArray(parsed) && parsed.length) {
+    const first = parseJsonIfString(parsed[0]);
+    return first && typeof first === "object" && !Array.isArray(first)
+      ? (first as Record<string, unknown>)
+      : null;
+  }
+  return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+    ? (parsed as Record<string, unknown>)
     : null;
+}
+
+function hasMedicareApplication(root: Record<string, unknown>): boolean {
+  return Boolean(
+    asRecord(root.medicare_application) ||
+      asRecord(root.medicareApplication) ||
+      asRecord(root.medicare_enrollment),
+  );
+}
+
+function hasNamedContact(root: Record<string, unknown>): boolean {
+  const contact =
+    asRecord(root.contact) ?? asRecord(root.Contact) ?? asRecord(root.applicant);
+  if (!contact) return false;
+  return Boolean(
+    text(contact.first_name) ??
+      text(contact.firstName) ??
+      text(contact.last_name) ??
+      text(contact.lastName),
+  );
+}
+
+function unwrapRoot(input: unknown): Record<string, unknown> | null {
+  const root = asRecord(input);
+  if (!root) return null;
+  if (
+    hasMedicareApplication(root) ||
+    hasNamedContact(root) ||
+    root.event_type != null ||
+    root.members != null ||
+    root.policies != null ||
+    root.application != null ||
+    root.enrollment != null
+  ) {
+    return root;
+  }
+  for (const key of ENVELOPE_KEYS) {
+    const nested = asRecord(root[key]);
+    if (
+      nested &&
+      (hasMedicareApplication(nested) ||
+        hasNamedContact(nested) ||
+        nested.event_type != null ||
+        nested.members != null ||
+        nested.policies != null ||
+        nested.application != null)
+    ) {
+      return { ...root, ...nested };
+    }
+  }
+  return root;
 }
 
 function text(value: unknown): string | null {
   if (value == null) return null;
+  if (typeof value === "object") return null;
   const out = String(value).trim();
   return out || null;
 }
@@ -68,7 +150,7 @@ function boolish(value: unknown): boolean | null {
 function cents(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return Math.round(value);
   if (typeof value === "string" && value.trim()) {
-    const n = Number(value);
+    const n = Number(value.replace(/[$,]/g, ""));
     return Number.isFinite(n) ? Math.round(n) : null;
   }
   return null;
@@ -77,10 +159,14 @@ function cents(value: unknown): number | null {
 function dollarsToCents(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return Math.round(value * 100);
   if (typeof value === "string" && value.trim()) {
-    const n = Number(value);
+    const n = Number(value.replace(/[$,]/g, ""));
     return Number.isFinite(n) ? Math.round(n * 100) : null;
   }
   return null;
+}
+
+function finiteCents(value: number | null): number | null {
+  return value != null && Number.isFinite(value) ? value : null;
 }
 
 function medicarePlanLabel(planType: string | null): string {
@@ -111,9 +197,15 @@ function readContact(raw: Record<string, unknown> | null): HealthSherpaContactFi
     email: text(row.email),
     phone:
       text(row.phone_number) ??
+      text(row.phoneNumber) ??
       text(row.phone) ??
       text(row.primary_phone),
-    dateOfBirth: text(row.birth_date) ?? text(row.date_of_birth) ?? text(row.dob),
+    dateOfBirth:
+      text(row.birth_date) ??
+      text(row.birthDate) ??
+      text(row.date_of_birth) ??
+      text(row.dateOfBirth) ??
+      text(row.dob),
     sex: text(row.sex),
     street:
       text(row.primary_address_street) ??
@@ -130,11 +222,20 @@ function readContact(raw: Record<string, unknown> | null): HealthSherpaContactFi
     mailingCity: text(row.mailing_address_city),
     mailingState: text(row.mailing_address_state),
     mailingZip: text(row.mailing_address_zip_code),
-    medicareNumber: text(row.medicare_number),
-    partAStart: text(row.part_a_effective_date) ?? text(row.medicare_part_a_effective_date),
-    partBStart: text(row.part_b_effective_date) ?? text(row.medicare_part_b_effective_date),
-    medicaidEligible: boolish(row.medicaid_eligible),
-    extraHelp: boolish(row.needs_extra_help) ?? boolish(row.extra_help),
+    medicareNumber: text(row.medicare_number) ?? text(row.medicareNumber),
+    partAStart:
+      text(row.part_a_effective_date) ??
+      text(row.partAEffectiveDate) ??
+      text(row.medicare_part_a_effective_date),
+    partBStart:
+      text(row.part_b_effective_date) ??
+      text(row.partBEffectiveDate) ??
+      text(row.medicare_part_b_effective_date),
+    medicaidEligible: boolish(row.medicaid_eligible) ?? boolish(row.medicaidEligible),
+    extraHelp:
+      boolish(row.needs_extra_help) ??
+      boolish(row.needsExtraHelp) ??
+      boolish(row.extra_help),
   };
 }
 
@@ -217,31 +318,65 @@ function parseOfficialAcaPayload(root: Record<string, unknown>): HealthSherpaPar
   };
 }
 
+function readMedicareApplication(root: Record<string, unknown>): Record<string, unknown> | null {
+  return (
+    asRecord(root.medicare_application) ??
+    asRecord(root.medicareApplication) ??
+    asRecord(root.medicare_enrollment)
+  );
+}
+
+function readMedicareContact(
+  root: Record<string, unknown>,
+  medicareApp: Record<string, unknown> | null,
+): HealthSherpaContactFields {
+  return readContact(
+    asRecord(root.contact) ??
+      asRecord(root.Contact) ??
+      asRecord(root.applicant) ??
+      asRecord(medicareApp?.contact) ??
+      asRecord(medicareApp?.applicant),
+  );
+}
+
+function medicarePremiumCents(app: Record<string, unknown>): number | null {
+  return finiteCents(
+    cents(app.total_premium_cents) ??
+      cents(app.totalPremiumCents) ??
+      cents(app.premium_cents) ??
+      dollarsToCents(app.total_premium) ??
+      dollarsToCents(app.premium),
+  );
+}
+
 /**
  * Parse a HealthSherpa Medicare submission or a Marketplace / ACA webhook.
+ * Accepts the docs.medicare.healthsherpa.com SubmissionPayload, Test/sample
+ * envelopes, camelCase aliases, and JSON-string bodies.
  * Returns null when the body is not an enrollment event (empty / ping / unknown).
  */
 export function parseHealthSherpaPayload(input: unknown): HealthSherpaParsedPayload | null {
-  const root = asRecord(input);
+  const root = unwrapRoot(input);
   if (!root) return null;
 
-  const medicareApp = asRecord(root.medicare_application);
+  const medicareApp = readMedicareApplication(root);
   if (medicareApp) {
-    const contact = readContact(asRecord(root.contact));
-    const planType = text(medicareApp.plan_type);
+    const contact = readMedicareContact(root, medicareApp);
+    const planType = text(medicareApp.plan_type) ?? text(medicareApp.planType);
     return {
       product: "medicare",
       event: "enrollment_submitted",
-      applicationId: text(medicareApp.id),
-      confirmationNumber: text(medicareApp.confirmation_number),
-      carrierName: text(medicareApp.carrier_name),
-      planName: text(medicareApp.plan_name),
+      applicationId: text(medicareApp.id) ?? text(medicareApp.application_id),
+      confirmationNumber:
+        text(medicareApp.confirmation_number) ?? text(medicareApp.confirmationNumber),
+      carrierName: text(medicareApp.carrier_name) ?? text(medicareApp.carrierName),
+      planName: text(medicareApp.plan_name) ?? text(medicareApp.planName),
       planType,
       policySubType: medicarePlanLabel(planType),
-      effectiveDate: text(medicareApp.effective_date),
-      premiumCents: cents(medicareApp.total_premium_cents),
+      effectiveDate: text(medicareApp.effective_date) ?? text(medicareApp.effectiveDate),
+      premiumCents: medicarePremiumCents(medicareApp),
       state: text(medicareApp.state) ?? contact.state,
-      zip: text(medicareApp.zip_code) ?? contact.zip,
+      zip: text(medicareApp.zip_code) ?? text(medicareApp.zipCode) ?? contact.zip,
       contact,
     };
   }
@@ -292,9 +427,11 @@ export function parseHealthSherpaPayload(input: unknown): HealthSherpaParsedPayl
     planType: planHint,
     policySubType: product === "marketplace" ? "Marketplace" : medicarePlanLabel(planHint),
     effectiveDate: text(application?.effective_date) ?? text(application?.coverage_start),
-    premiumCents:
+    premiumCents: finiteCents(
       cents(application?.total_premium_cents) ??
-      (application?.premium != null ? Math.round(Number(application.premium) * 100) : null),
+        cents(application?.totalPremiumCents) ??
+        dollarsToCents(application?.premium),
+    ),
     state: text(application?.state) ?? text(contactRaw?.state),
     zip: text(application?.zip) ?? text(contactRaw?.zip),
     contact: readContact(contactRaw),

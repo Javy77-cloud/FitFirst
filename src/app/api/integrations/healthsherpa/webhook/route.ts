@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { authorizeHealthSherpaWebhook } from "@/lib/healthsherpa/auth";
+import { logHealthSherpaIngestError, publicHealthSherpaIngestError } from "@/lib/healthsherpa/errors";
 import { ingestHealthSherpaWebhook } from "@/lib/healthsherpa/inbound";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,16 @@ const cors = {
 
 export function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: cors });
+}
+
+async function readWebhookBody(request: Request): Promise<unknown> {
+  const raw = await request.text();
+  if (!raw.trim()) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return { text: raw };
+  }
 }
 
 export async function POST(request: Request) {
@@ -34,31 +45,43 @@ export async function POST(request: Request) {
   }
 
   let payload: unknown = {};
-  const contentType = request.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) {
-    try {
-      payload = await request.json();
-    } catch {
-      payload = {};
-    }
-  } else {
-    const text = await request.text();
-    payload = text ? { text } : {};
+  try {
+    payload = await readWebhookBody(request);
+  } catch {
+    payload = {};
   }
 
-  const result = await ingestHealthSherpaWebhook(payload);
-  return NextResponse.json(
-    {
-      ok: result.accepted,
-      reason: result.reason,
-      contactId: result.contactId ?? null,
-      dealId: result.dealId ?? null,
-      policyId: result.policyId ?? null,
-      enrollmentId: result.enrollmentId ?? null,
-      product: result.product ?? null,
-      note: "Manual enrollments in HealthSherpa may not fire this webhook.",
-    },
-    // ACA onboarding asks for HTTP 200; Medicare accepts any 2xx.
-    { status: result.accepted ? 200 : 422, headers: cors },
-  );
+  try {
+    const result = await ingestHealthSherpaWebhook(payload);
+    return NextResponse.json(
+      {
+        ok: result.accepted,
+        reason: result.reason,
+        contactId: result.contactId ?? null,
+        dealId: result.dealId ?? null,
+        policyId: result.policyId ?? null,
+        enrollmentId: result.enrollmentId ?? null,
+        product: result.product ?? null,
+        note: "Manual enrollments in HealthSherpa may not fire this webhook.",
+      },
+      // ACA onboarding asks for HTTP 200; Medicare accepts any 2xx.
+      { status: result.accepted ? 200 : 422, headers: cors },
+    );
+  } catch (error) {
+    logHealthSherpaIngestError(error);
+    const failure = publicHealthSherpaIngestError(error);
+    return NextResponse.json(
+      {
+        ok: false,
+        reason: failure.reason,
+        contactId: null,
+        dealId: null,
+        policyId: null,
+        enrollmentId: null,
+        product: null,
+        note: "Manual enrollments in HealthSherpa may not fire this webhook.",
+      },
+      { status: failure.status, headers: cors },
+    );
+  }
 }
