@@ -133,6 +133,7 @@ import { agencySettings, users } from "@/lib/db/schema";
 import { carriersForDealLine } from "@/lib/deals/carriers-for-line";
 import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID, SHOP_LINE_TO_LOB, formatMoney } from "@/lib/domain";
+import { parseQuickCommsKind } from "@/lib/desk/quick-comms-open";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
 
 export const dynamic = "force-dynamic";
@@ -153,10 +154,11 @@ export default async function DealPage({
     createPolicy?: string;
     doc?: string;
     carrier?: string;
+    qc?: string;
   }>;
 }) {
   const { id } = await params;
-  const { tab, field, line: lineParam, product, notice, fromPolicy, issue, createPolicy, doc, carrier } =
+  const { tab, field, line: lineParam, product, notice, fromPolicy, issue, createPolicy, doc, carrier, qc } =
     await searchParams;
   const focusField = parseSheetFieldParam(field);
   if (id === ROSA_DEC_DEAL_ID) {
@@ -826,6 +828,7 @@ export default async function DealPage({
                   contactEmail={contact?.email ?? lead?.email}
                   officeAddress={officeAddress}
                   clientAddress={clientAddress}
+                  initialKind={parseQuickCommsKind(qc)}
                   quoteFiles={docs
                     .filter(
                       (doc) =>

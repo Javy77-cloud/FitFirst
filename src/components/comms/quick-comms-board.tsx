@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { completeDeskActivity, logDeskActivity } from "@/app/actions/activities-desk";
 import { touchCarrierLastContacted } from "@/app/actions/carriers-ops";
 import { persistDealEmailAttachments, sendDeskEmail, sendDeskSms } from "@/app/actions/comms";
@@ -9,6 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { telHref } from "@/lib/desk/contact-actions";
+import {
+  QUICK_COMMS_EVENT,
+  RECORD_ACTIVITY_ACTION_WIDTH_CLASS,
+  isQuickCommsKind,
+  type QuickCommsTarget,
+} from "@/lib/desk/quick-comms-open";
 import { ACTIVITY_KIND_LABEL, ACTIVITY_KINDS, type ActivityKind } from "@/lib/domain";
 import { formatTaskDueAt } from "@/lib/tasks/due-at";
 import type { SerializedActivity } from "@/lib/db/queries";
@@ -99,6 +105,7 @@ export function QuickCommsBoard({
   quoteFiles = [],
   officeAddress = null,
   clientAddress = null,
+  initialKind = null,
 }: {
   items: SerializedActivity[];
   dealId?: string | null;
@@ -116,8 +123,10 @@ export function QuickCommsBoard({
   officeAddress?: string | null;
   /** Client / property address from deal risk or contact */
   clientAddress?: string | null;
+  /** Open this action when mounted (from ?qc= or a row quick action). */
+  initialKind?: ActivityKind | null;
 }) {
-  const [kind, setKind] = useState<ActivityKind>("task");
+  const [kind, setKind] = useState<ActivityKind>(initialKind ?? "task");
   const [meetingType, setMeetingType] = useState<MeetingType>("in_office");
   const [callMode, setCallMode] = useState<"now" | "schedule">("now");
   const [emailMode, setEmailMode] = useState<"remind" | "schedule">("remind");
@@ -129,6 +138,25 @@ export function QuickCommsBoard({
   const toLine = contextLine([contactName, contactPhone, contactEmail]);
   const dial = telHref(contactPhone);
   const firstName = party.split(" ")[0] || party;
+
+  useEffect(() => {
+    if (initialKind) setKind(initialKind);
+  }, [initialKind]);
+
+  useEffect(() => {
+    function onOpen(event: Event) {
+      const detail = (event as CustomEvent<QuickCommsTarget>).detail;
+      if (!detail || !isQuickCommsKind(detail.kind)) return;
+      if (detail.dealId && dealId && detail.dealId !== dealId) return;
+      if (detail.leadId && leadId && detail.leadId !== leadId) return;
+      if (detail.contactId && contactId && detail.contactId !== contactId) return;
+      if (detail.accountId && accountId && detail.accountId !== accountId) return;
+      if (detail.policyId && policyId && detail.policyId !== policyId) return;
+      setKind(detail.kind);
+    }
+    window.addEventListener(QUICK_COMMS_EVENT, onOpen);
+    return () => window.removeEventListener(QUICK_COMMS_EVENT, onOpen);
+  }, [dealId, leadId, contactId, accountId, policyId]);
 
   const meetingLocationValue =
     meetingType === "in_office"
@@ -295,7 +323,15 @@ export function QuickCommsBoard({
   }
 
   return (
-    <section className="ff-card min-w-0 w-full max-w-full p-4" data-ff-quick-comms-board="">
+    <section
+      className="ff-card min-w-0 w-full max-w-full p-4"
+      data-ff-quick-comms-board=""
+      data-ff-quick-comms-deal={dealId ?? undefined}
+      data-ff-quick-comms-lead={leadId ?? undefined}
+      data-ff-quick-comms-contact={contactId ?? undefined}
+      data-ff-quick-comms-account={accountId ?? undefined}
+      data-ff-quick-comms-policy={policyId ?? undefined}
+    >
       <h2 className="text-base font-semibold text-navy">Quick Communications</h2>
       <p className="mt-1 text-base text-muted-foreground">
         {carrierId
@@ -310,7 +346,8 @@ export function QuickCommsBoard({
             type="button"
             onClick={() => setKind(value)}
             className={cn(
-              "h-8 shrink-0 rounded-md px-2.5 text-xs font-medium whitespace-nowrap",
+              "inline-flex h-8 shrink-0 items-center justify-center rounded-md px-0 text-xs font-medium whitespace-nowrap",
+              RECORD_ACTIVITY_ACTION_WIDTH_CLASS,
               kind === value ? KIND_TONE[value] : "border border-border bg-card text-muted-foreground",
             )}
           >

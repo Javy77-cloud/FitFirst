@@ -1,5 +1,6 @@
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
 import type { SerializedActivity } from "@/lib/db/queries";
+import type { ActivityKind } from "@/lib/domain";
 
 export function LeadQuickComms({
   items,
@@ -10,6 +11,7 @@ export function LeadQuickComms({
   contactEmail,
   officeAddress,
   clientAddress,
+  initialKind = null,
 }: {
   items: SerializedActivity[];
   leadId: string;
@@ -19,6 +21,7 @@ export function LeadQuickComms({
   contactEmail?: string | null;
   officeAddress?: string | null;
   clientAddress?: string | null;
+  initialKind?: ActivityKind | null;
 }) {
   return (
     <div className="min-w-0 w-full max-w-full" data-ff-lead-quick-comms="">
@@ -31,6 +34,7 @@ export function LeadQuickComms({
         contactEmail={contactEmail}
         officeAddress={officeAddress}
         clientAddress={clientAddress}
+        initialKind={initialKind}
       />
     </div>
   );

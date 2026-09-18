@@ -78,9 +78,10 @@ describe("lead activity set + Quick Comms surfaces", () => {
     expect(queue).toMatch(/data-ff-leads-list-rail/);
     expect(queue).toMatch(/listRecordActivities\(\{ leadId: railLead\.id \}/);
 
-    expect(menu).toMatch(/LEAD_ACTIVITY_MENU_ITEMS/);
-    expect(menu).toMatch(/data-testid="lead-activity-menu"/);
+    expect(menu).toMatch(/RecordActivityMenu/);
+    expect(menu).toMatch(/lead-activity-menu/);
     expect(menu).toMatch(/data-ff-lead-activity-option/);
-    expect(menu).toMatch(/\/leads\/\$\{leadId\}#\$\{action\.kind\}/);
+    expect(menu).not.toMatch(/\/leads\/\$\{leadId\}#\$\{action\.kind\}/);
+    expect(menu).not.toMatch(/\/logs/);
   });
 });
