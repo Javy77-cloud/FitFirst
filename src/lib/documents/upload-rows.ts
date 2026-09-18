@@ -48,3 +48,25 @@ export function applyPickedFilesToRows(
     ...extras,
   ];
 }
+
+/** Stamp React-held files onto FormData so Create does not depend on DataTransfer input.files. */
+export function appendUploadRowFiles(
+  form: FormData,
+  rows: readonly Pick<UploadDocRow, "file">[],
+): FormData {
+  rows.forEach((row, index) => {
+    form.delete(`files_${index}`);
+    form.delete(`file_${index}`);
+    if (row.file) form.set(`files_${index}`, row.file);
+  });
+  form.set("rowCount", String(rows.length));
+  return form;
+}
+
+export function uploadRowsHaveFiles(rows: readonly Pick<UploadDocRow, "file">[]): boolean {
+  return rows.some((row) => Boolean(row.file));
+}
+
+export function uploadRowsTotalBytes(rows: readonly Pick<UploadDocRow, "file">[]): number {
+  return rows.reduce((sum, row) => sum + (row.file?.size ?? 0), 0);
+}

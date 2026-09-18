@@ -7,6 +7,7 @@ import { isDeclarationDocType } from "@/lib/policy/dec-prompt";
 import { FileActionMenu } from "@/components/documents/file-action-menu";
 import { Button } from "@/components/ui/button";
 import { worksheetDocTypeLabel } from "@/lib/deals/source-doc-types";
+import { sourceDocDisplayName, sourceDocExtensionLabel } from "@/lib/documents/deal-docs-save";
 import { isImageDoc } from "@/lib/leads/line-documents";
 import { fileViewHref } from "@/lib/files/urls";
 import type { Document } from "@/lib/db/schema";
@@ -22,28 +23,36 @@ export function SourceFileRow({
 }) {
   const [gone, setGone] = useState(false);
   if (gone) return null;
+  const filename = sourceDocDisplayName(doc.filename);
+  const photo = (() => {
+    try {
+      return isImageDoc({ filename, mimeType: doc.mimeType });
+    } catch {
+      return false;
+    }
+  })();
 
   return (
     <li className="deal-doc-row flex w-full items-center gap-2 rounded-md border border-border/70 px-2 py-1.5">
       <FileActionMenu
         documentId={doc.id}
-        filename={doc.filename}
+        filename={filename}
         slot={doc.slot}
         docType={doc.docType}
         dealId={dealId}
         className="min-w-0 flex-1"
         onDeleted={() => setGone(true)}
       >
-        {isImageDoc(doc) ? (
+        {photo ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={fileViewHref(doc.id)} alt="" className="h-8 w-8 shrink-0 rounded object-cover" />
         ) : (
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-secondary text-[10px] font-semibold uppercase text-muted-foreground">
-            {doc.filename.split(".").pop()?.slice(0, 4) || "file"}
+            {sourceDocExtensionLabel(filename)}
           </span>
         )}
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-navy">
-          {doc.filename}
+          {filename}
           {showType ? (
             <span className="ml-2 text-[11px] uppercase text-muted-foreground">
               {worksheetDocTypeLabel(doc.docType, true)}

@@ -94,7 +94,7 @@ describe("standard file action menu", () => {
     expect(docs).toMatch(/SourceFileRow/);
     const row = source("src/components/deal/source-file-row.tsx");
     expect(row).toMatch(/data-ff-file-action-menu|FileActionMenu/);
-    expect(row.indexOf("<FileActionMenu")).toBeLessThan(row.indexOf("{doc.filename}"));
+    expect(row.indexOf("<FileActionMenu")).toBeLessThan(row.indexOf("{filename}"));
     expect(row).toMatch(/onDeleted/);
   });
 });

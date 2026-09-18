@@ -127,7 +127,8 @@ describe("deal detail final rebuild", () => {
     expect(page.indexOf("<SectionTabs")).toBeLessThan(page.indexOf("<DocumentsPanel"));
     expect(docs.indexOf("<SourceFileRow")).toBeLessThan(docs.indexOf("<SourceDocsUpload"));
     expect(docs).toMatch(/deal-doc-row flex w-full/);
-    expect(upload).toMatch(/Create/);
+    expect(upload).toMatch(/Save files/);
+    expect(upload).not.toMatch(/>\s*Create\s*</);
     expect(upload).toMatch(/\+ Add another document/);
     expect(upload).toMatch(/deal-doc-filename/);
     expect(upload).toMatch(/FileDeleteIcon/);

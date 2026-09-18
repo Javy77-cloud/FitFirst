@@ -16,7 +16,7 @@ describe("sep7ft Documents Save does not auto-Fill", () => {
     expect(leadStart).toBeGreaterThan(uploadStart);
     const uploadBody = action.slice(uploadStart, leadStart);
     expect(uploadBody).toMatch(/afterAction === "fill-sheet"/);
-    expect(uploadBody).toMatch(/flashAction\(href, "documents-saved"\)/);
+    expect(uploadBody).toMatch(/flashAction\(dealDocumentsTabHref\(last\.dealId, line\), "documents-saved"\)/);
     expect(uploadBody).not.toMatch(/notice=filled`, "document-uploaded"/);
     // Silent auto-fill on every source_doc upload is gone; only gated fill-sheet remains.
     expect(uploadBody.match(/after\(\(\) => fillDealSheetIfReady/g)?.length ?? 0).toBe(1);

@@ -160,8 +160,9 @@ describe("document pipeline wiring", () => {
     expect(panel).not.toMatch(/Agency letters/);
     expect(page).not.toMatch(/letterJobs/);
     expect(queries).not.toMatch(/letterJobs/);
-    expect(panel).toMatch(/agency_letter/);
-    expect(panel).toMatch(/filled_letter/);
+    const sourceList = source("src/lib/documents/deal-docs-save.ts");
+    expect(sourceList).toMatch(/agency_letter/);
+    expect(sourceList).toMatch(/filled_letter/);
     expect(panel).not.toMatch(/grid-cols-/);
     const types = source("src/lib/document-pipeline/types.ts");
     expect(types).toMatch(/Cancellation pack/);
