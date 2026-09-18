@@ -166,7 +166,7 @@ function BlockCell({
   kind?: RepeatableKind;
 }) {
   const className = cn(
-    "h-8 text-sm",
+    "h-8 w-full min-w-0 text-sm",
     cell?.status === "check" && "ff-field-check",
     (!cell?.value.trim() || cell.status === "missing") && "ff-field-missing",
   );

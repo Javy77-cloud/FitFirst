@@ -97,7 +97,7 @@ export function CoApplicantBlock({
                 value = "Married";
               }
               const className = cn(
-                "h-7 w-full text-xs cursor-text",
+                "h-7 w-full min-w-0 text-xs cursor-text",
                 cell?.status === "check" && "ff-field-check",
                 (!value.trim() || cell?.status === "missing") && "ff-field-missing",
               );

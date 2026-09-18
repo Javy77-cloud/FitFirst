@@ -1,8 +1,11 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
+  clampSectionColumns,
   compactRowClass,
+  compactRowVars,
   groupSectionFieldRows,
   sectionFieldGridClass,
+  sectionFieldGridVars,
   type LayoutFieldHint,
 } from "@/lib/custom-fields/section-density";
 import { DEFAULT_SECTION_DENSITY, sectionDensityOf, type SectionDensity } from "@/lib/custom-fields/types";
@@ -20,13 +23,17 @@ export function LayoutSectionFieldGrid({
   renderField: (key: string) => ReactNode;
   collapse?: boolean;
 }) {
-  const columns = typeof density === "number" ? density : sectionDensityOf(density);
+  const raw = typeof density === "number" ? density : sectionDensityOf(density);
+  const columns = clampSectionColumns(raw);
   const rows = groupSectionFieldRows(keys, fieldOf, columns);
+  const collapseOnNarrow = collapse && columns > 1;
   return (
     <div
       className={sectionFieldGridClass(columns, { collapse })}
+      style={sectionFieldGridVars(columns) as CSSProperties}
       data-ff-section-field-grid=""
       data-ff-section-density={columns}
+      data-ff-collapse={collapseOnNarrow ? "1" : undefined}
     >
       {rows.map((row, index) => {
         if (row.kind === "wide") {
@@ -42,7 +49,9 @@ export function LayoutSectionFieldGrid({
             <div
               key={`compact:${row.keys.join(":")}:${index}`}
               className={`col-span-full min-w-0 ${compactRowClass(row.keys.length)}`}
+              style={compactRowVars(row.keys.length) as CSSProperties}
               data-ff-compact-row=""
+              data-ff-compact-cols={row.keys.length}
             >
               {row.keys.map((key) => (
                 <div key={key} className="min-w-0">

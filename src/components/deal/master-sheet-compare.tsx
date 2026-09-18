@@ -572,7 +572,7 @@ function SheetCell({
 }) {
   const locked = fieldKey === "coverage_a" && cell?.source === "javy";
   const className = cn(
-    "h-7 w-full text-xs cursor-text",
+    "h-7 w-full min-w-0 text-xs cursor-text",
     cell?.status === "check" && "ff-field-check",
     (!cell?.value.trim() || cell.status === "missing") && "ff-field-missing",
   );
@@ -675,7 +675,7 @@ function SheetCell({
               : undefined
           }
           className={cn(
-            "border-input bg-background rounded-md border px-2 shadow-xs outline-none",
+            "border-input bg-background min-w-0 w-full rounded-md border px-2 shadow-xs outline-none",
             className,
             locked && "opacity-70",
           )}

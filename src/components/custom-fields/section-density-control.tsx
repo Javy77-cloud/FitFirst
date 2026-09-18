@@ -9,12 +9,15 @@ export function SectionDensityControl<T extends number = SectionDensity>({
   onChange,
   choices = SECTION_DENSITIES as readonly T[],
   tone = "default",
+  label = "Density",
 }: {
   sectionId: string;
   density?: unknown;
   onChange: (density: T) => void;
   choices?: readonly T[];
   tone?: "default" | "onDark";
+  /** Visible control name. Risk Profile uses "Columns" so 1–5 matches the grid. */
+  label?: string;
 }) {
   const numeric = typeof density === "number" ? density : Number(density);
   const fallback = (
@@ -27,7 +30,7 @@ export function SectionDensityControl<T extends number = SectionDensity>({
       className="flex items-center gap-1"
       data-ff-section-density-control={sectionId}
       role="group"
-      aria-label="Section density"
+      aria-label={`${label} — fields per row`}
     >
       <span
         className={cn(
@@ -35,7 +38,7 @@ export function SectionDensityControl<T extends number = SectionDensity>({
           onDark ? "text-white/70" : "text-muted-foreground",
         )}
       >
-        Density
+        {label}
       </span>
       {choices.map((choice) => (
         <button
