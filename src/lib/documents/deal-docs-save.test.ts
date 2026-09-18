@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { SourceFileRow } from "@/components/deal/source-file-row";
 import {
   dealDocumentsTabHref,
+  isHiddenAgencyLetterDoc,
   listWorksheetSourceDocs,
   sourceDocDisplayName,
   sourceDocExtensionLabel,
@@ -29,17 +30,24 @@ describe("deal Documents save must not open error.tsx", () => {
     expect(source("src/lib/flash-action.ts")).toMatch(/redirect\(withFlash\(href, message, kind\)\)/);
   });
 
-  it("submits Create from row.file state so extra multi-pick slots are not raced", () => {
+  it("submits Save files from row.file state and does not treat redirect() as failure", () => {
     const form = source("src/components/deal/source-docs-upload.tsx");
+    const action = source("src/app/actions/documents.ts");
     expect(form).toMatch(/onSubmit=\{submitFromRows\}/);
     expect(form).toMatch(/appendUploadRowFiles\(new FormData\(event\.currentTarget\), rows\)/);
     expect(form).toMatch(/uploadRowsHaveFiles\(rows\)/);
+    expect(form).toMatch(/await saveDealDocuments\(formData\)/);
     expect(form).toMatch(/flashAction\("choose-file", "error"\)/);
     expect(form).toMatch(/flashAction\("documents-too-large", "error"\)/);
-    expect(form).toMatch(/flashAction\("documents-save-failed", "error"\)/);
-    expect(form).toMatch(/if \(isRedirectError\(error\)\) throw error/);
+    expect(form).toMatch(/flashAction\("documents-saved"\)/);
+    expect(form).toMatch(/flashAction\(result\.reason \?\? "documents-save-failed", "error"\)/);
+    expect(form).not.toMatch(/isRedirectError/);
+    expect(form).not.toMatch(/uploadDocument/);
     expect(form).toMatch(/assignedFile=\{row\.file\}/);
     expect(form).toMatch(/multiple/);
+    expect(form).toMatch(/router\.refresh\(\)/);
+    expect(action).toMatch(/export async function saveDealDocuments/);
+    expect(action).toMatch(/return \{ ok: true, count \}/);
     expect(source("src/components/choose-file-button.tsx")).toMatch(/Safari \/ non-gesture/);
   });
 
@@ -63,9 +71,15 @@ describe("deal Documents save must not open error.tsx", () => {
       { id: "3", slot: "quote_file", docType: "agency_quote", filename: "q.pdf", tags: [] },
       { id: "4", slot: "filled_letter", docType: "other", filename: "letter.pdf", tags: [] },
       { id: "5", slot: "source_doc", docType: "photo", filename: "yard.jpg", tags: ["agency_letter"] },
+      { id: "6", slot: "source_doc", docType: "cancellation", filename: "dec.pdf", tags: [] },
+      { id: "7", slot: "source_doc", docType: "aor", filename: "letter.pdf", tags: [] },
+      { id: "8", slot: "source_doc", docType: "other", filename: "Cancellation-pack-filled.pdf", tags: [] },
+      { id: "9", slot: "source_doc", docType: "other", filename: "AOR-pack-filled.pdf", tags: '["agency_letter","aor"]' },
       null as unknown as { slot: string },
     ]);
     expect(listed.sourceDocs.map((row) => (row as { id: string }).id)).toEqual(["1", "2"]);
+    expect(isHiddenAgencyLetterDoc({ slot: "source_doc", docType: "cancellation", filename: "x.pdf" })).toBe(true);
+    expect(isHiddenAgencyLetterDoc({ slot: "source_doc", docType: "photo", filename: "roof.jpg" })).toBe(false);
     expect(listed.lineDocs).toHaveLength(1);
     expect(listed.otherSourceDocs).toHaveLength(1);
     expect(listWorksheetSourceDocs(undefined).sourceDocs).toEqual([]);

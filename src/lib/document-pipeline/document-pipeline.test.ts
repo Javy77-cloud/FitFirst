@@ -163,6 +163,9 @@ describe("document pipeline wiring", () => {
     const sourceList = source("src/lib/documents/deal-docs-save.ts");
     expect(sourceList).toMatch(/agency_letter/);
     expect(sourceList).toMatch(/filled_letter/);
+    expect(sourceList).toMatch(/isAgencyLetterDocType/);
+    expect(sourceList).toMatch(/isHiddenAgencyLetterDoc/);
+    expect(sourceList).toMatch(/cancellation\[- _\]\?pack/);
     expect(panel).not.toMatch(/grid-cols-/);
     const types = source("src/lib/document-pipeline/types.ts");
     expect(types).toMatch(/Cancellation pack/);
