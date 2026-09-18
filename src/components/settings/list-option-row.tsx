@@ -17,6 +17,7 @@ export function ListOptionRow({
   children,
   className,
   hidePicker = false,
+  onColorChange,
 }: {
   defaultValue?: string | null;
   name?: string;
@@ -25,6 +26,7 @@ export function ListOptionRow({
   children: ReactNode;
   className?: string;
   hidePicker?: boolean;
+  onColorChange?: (color: string | null) => void;
 }) {
   const [color, setColor] = useState<string | null>(() => {
     const next = liveColorKey(defaultValue);
@@ -46,7 +48,10 @@ export function ListOptionRow({
           name={name}
           defaultValue={defaultValue}
           aria-label={colorAriaLabel}
-          onColorChange={setColor}
+          onColorChange={(next) => {
+            setColor(next);
+            onColorChange?.(next);
+          }}
         />
       )}
       {children}

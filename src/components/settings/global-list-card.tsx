@@ -6,6 +6,7 @@ import {
   deleteGlobalList,
   deleteGlobalListItem,
   saveGlobalList,
+  updateGlobalListItemColor,
 } from "@/app/actions/global-lists";
 import { ClearAllColorsForm } from "@/components/desk/clear-all-colors-form";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
@@ -46,10 +47,20 @@ export function GlobalListCard({
     <div key={row.id} data-ff-global-list-item={row.id}>
       <ListOptionRow
         defaultValue={row.color}
-        name="itemColors"
+        name=""
         form={saveFormId}
         colorAriaLabel={`Color for ${row.label}`}
         hidePicker={!canEdit}
+        onColorChange={
+          canEdit
+            ? (color) => {
+                const data = new FormData();
+                data.set("id", row.id);
+                data.set("color", color ?? "");
+                void updateGlobalListItemColor(data);
+              }
+            : undefined
+        }
       >
         {canEdit ? (
           <>

@@ -53,16 +53,18 @@ export function StatusColorSelect({
 
   return (
     <span className="inline-flex shrink-0 items-center" data-ff-status-color-picker="">
-      <input
-        id={id}
-        ref={inputRef}
-        type="hidden"
-        form={form}
-        name={name}
-        defaultValue={selected}
-        disabled={disabled}
-        data-ff-status-color-select=""
-      />
+      {name ? (
+        <input
+          id={id}
+          ref={inputRef}
+          type="hidden"
+          form={form}
+          name={name}
+          defaultValue={selected}
+          disabled={disabled}
+          data-ff-status-color-select=""
+        />
+      ) : null}
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger
           type="button"

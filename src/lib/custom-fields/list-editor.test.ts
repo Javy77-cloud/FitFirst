@@ -121,6 +121,7 @@ describe("admin list editors", () => {
     expect(source("src/app/actions/field-picklists.ts")).not.toMatch(/flashAction\("\/settings\/picklists"/);
     expect(source("src/app/actions/global-lists.ts")).toMatch(/listMutationOk\("global-list-saved"\)/);
     expect(source("src/app/actions/global-lists.ts")).toMatch(/export async function saveGlobalList/);
+    expect(source("src/app/actions/global-lists.ts")).toMatch(/colorsAligned/);
     expect(source("src/app/actions/global-lists.ts")).toMatch(/export async function deleteGlobalList/);
     expect(source("src/app/actions/global-lists.ts")).toMatch(/export async function updateGlobalListItem/);
     expect(source("src/components/settings/stay-on-save-form.tsx")).toMatch(/router\.refresh\(\)/);
@@ -143,7 +144,8 @@ describe("admin list editors", () => {
     expect(listsPage).toMatch(/lg:grid-cols-2/);
     expect(pickPage).toMatch(/lg:grid-cols-2/);
     expect(globalCard).toMatch(/name="labels"/);
-    expect(globalCard).toMatch(/name="itemColors"/);
+    expect(globalCard).toMatch(/updateGlobalListItemColor/);
+    expect(globalCard).toMatch(/name=""/);
     expect(globalCard).toMatch(/deleteGlobalList/);
     expect(globalCard).toMatch(/deleteGlobalListItem/);
     expect(globalCard).toMatch(/Add a value/);
