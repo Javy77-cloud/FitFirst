@@ -25,6 +25,7 @@ import {
   htmlAutoCompleteForField,
   htmlInputTypeForField,
 } from "@/lib/custom-fields/identity-field";
+import { formatDobMdy, parseDobToIso } from "@/lib/contacts/dob-sync";
 import { formatPhoneStandard } from "@/lib/phone/format";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -445,25 +446,29 @@ function TypedControl({
   }
 
   const inputType = htmlInputTypeForField(field);
+  const dobDisplay = field.type === "dob" ? (parseDobToIso(value) ? formatDobMdy(value) : value) : value;
 
   return (
     <Input
       id={name}
       name={name}
       type={inputType}
+      inputMode={field.type === "dob" ? "numeric" : undefined}
+      placeholder={field.type === "dob" ? "MM/DD/YYYY" : undefined}
       autoComplete={htmlAutoCompleteForField(field)}
       disabled={disabled}
       required={required}
       form={form}
       aria-label={field.label}
-      className="mt-1 h-8"
+      className="mt-1 h-8 min-w-0"
       data-ff-single-line={field.type === "single_line" ? field.key : undefined}
+      data-ff-dob={field.type === "dob" ? field.key : undefined}
       {...(onValueChange
         ? {
-            value,
+            value: field.type === "dob" ? dobDisplay : value,
             onChange: (event: ChangeEvent<HTMLInputElement>) => onValueChange(event.target.value),
           }
-        : { defaultValue: value })}
+        : { defaultValue: field.type === "dob" ? dobDisplay : value })}
     />
   );
 }

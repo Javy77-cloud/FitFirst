@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { persistFile } from "@/app/actions/documents";
 import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices";
 import { db } from "@/lib/db";
-import { deals, quoteSheets, risks } from "@/lib/db/schema";
+import { contacts, deals, quoteSheets, risks } from "@/lib/db/schema";
 import {
   deleteFieldDef,
   ensureFieldsForLine,
@@ -74,6 +74,13 @@ import { isPcPackageLine, mergeShopLinesKeepExisting } from "@/lib/deals/package
 import { formatDealPersonName, formatDealTitle } from "@/lib/deals/deal-title";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
+import { parseDobToIso } from "@/lib/contacts/dob-sync";
+import {
+  defaultInsuredPropertyKind,
+  INSURED_PROPERTY_KIND_KEY,
+  insuredPropertyKindLabel,
+  parseInsuredPropertyKind,
+} from "@/lib/deals/insured-property-kind";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -349,12 +356,20 @@ export async function saveDealFieldValues(formData: FormData) {
   }
   const pipelineFamily = str(formData, "pipelineFamily");
   if (pipelineFamily) system.pipelineFamily = pipelineFamily;
+  if (!custom[INSURED_PROPERTY_KIND_KEY]) {
+    const inferred = defaultInsuredPropertyKind({
+      product: custom.insurance_subtype || deal.quotingForm || deal.lineOfBusiness,
+      quotingForm: custom.insurance_subtype || deal.quotingForm,
+    });
+    if (inferred) custom[INSURED_PROPERTY_KIND_KEY] = insuredPropertyKindLabel(inferred);
+  }
   if (Object.keys(custom).length) {
     await writeRecordValues(dealId, custom);
   }
   if (Object.keys(system).length) {
     await applySystemDealValues(dealId, system);
   }
+  await syncDealDobOntoBlankContact(dealId, custom.date_of_birth || custom.applicant_dob);
   await persistDealWorkTab(dealId, "details").catch(() => null);
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/deals");
@@ -381,6 +396,38 @@ export async function saveDealFieldValues(formData: FormData) {
     }),
     "deal-details-saved",
   );
+}
+
+async function syncDealDobOntoBlankContact(dealId: string, rawDob?: string) {
+  const iso = parseDobToIso(rawDob);
+  if (!iso) return;
+  const [deal] = await db
+    .select({ contactId: deals.contactId })
+    .from(deals)
+    .where(eq(deals.id, dealId));
+  if (!deal?.contactId) return;
+  const [contact] = await db
+    .select({ dateOfBirth: contacts.dateOfBirth })
+    .from(contacts)
+    .where(eq(contacts.id, deal.contactId));
+  if (!contact || parseDobToIso(contact.dateOfBirth)) return;
+  await db
+    .update(contacts)
+    .set({ dateOfBirth: iso, updatedAt: new Date() })
+    .where(eq(contacts.id, deal.contactId));
+  await writeRecordValues(deal.contactId, { date_of_birth: iso }, "contacts");
+  revalidatePath(`/contacts/${deal.contactId}`);
+}
+
+export async function saveDealInsuredPropertyKind(input: { dealId: string; value: string }) {
+  const dealId = String(input.dealId ?? "").trim();
+  const kind = parseInsuredPropertyKind(input.value);
+  if (!dealId || !kind) return { ok: false as const, error: "Pick Primary residence or Rental / secondary." };
+  const [deal] = await db.select({ id: deals.id }).from(deals).where(eq(deals.id, dealId));
+  if (!deal) return { ok: false as const, error: "Deal not found." };
+  await writeRecordValues(dealId, { [INSURED_PROPERTY_KIND_KEY]: insuredPropertyKindLabel(kind) });
+  revalidatePath(`/deals/${dealId}`);
+  return { ok: true as const, value: insuredPropertyKindLabel(kind) };
 }
 
 export async function applySystemDealValues(dealId: string, system: Record<string, string>) {

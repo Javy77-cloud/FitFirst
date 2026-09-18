@@ -4,10 +4,16 @@ import { revalidatePath } from "next/cache";
 import { and, eq, or, ne, isNull } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { accounts, contactAccounts, contactCoapplicants, contacts } from "@/lib/db/schema";
+import { accounts, contactAccounts, contactCoapplicants, contacts, deals, risks } from "@/lib/db/schema";
 import { executeMerge } from "@/lib/merge/execute";
 import { MergeLockError } from "@/lib/merge/lock";
-import { listFieldDefs, saveLayoutForModule, writeRecordValues, loadLayoutForModule } from "@/lib/custom-fields/store";
+import {
+  listFieldDefs,
+  loadRecordValues,
+  saveLayoutForModule,
+  writeRecordValues,
+  loadLayoutForModule,
+} from "@/lib/custom-fields/store";
 import { applyModuleSystemValues } from "@/lib/custom-fields/record-system";
 import {
   customFieldKeyFor,
@@ -20,6 +26,13 @@ import { contactCardLayout, contactClassicLayout } from "@/lib/contacts/contact-
 import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices";
 import { layoutTemplateKind, type LayoutTemplateKind } from "@/lib/custom-fields/layout-template";
 import { fieldPreview } from "@/lib/merge/preview";
+import { parseDobToIso } from "@/lib/contacts/dob-sync";
+import {
+  contactDobHealPatch,
+  secondaryPropertyAddressCue,
+  type LinkedDealDobSource,
+  type SecondaryAddressCue,
+} from "@/lib/contacts/heal-contact-from-deals";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -336,27 +349,35 @@ export async function updateContactField(input: {
 
   const customKey = customFieldKeyFor(fieldKey);
   const column = systemColumnForFieldKey(fieldKey);
+  const stored =
+    customKey === "date_of_birth" || column === "dateOfBirth"
+      ? parseDobToIso(value) ?? value
+      : value;
 
   // Required identity fields never blank.
   if (column === "firstName" || column === "lastName") {
-    if (!value) return { ok: false as const, error: "Name is required." };
+    if (!stored) return { ok: false as const, error: "Name is required." };
   }
 
   const defs = await listFieldDefs("contacts");
-  const patch = { [customKey]: value };
+  const patch = { [customKey]: stored };
   await writeRecordValues(contactId, patch, "contacts");
 
   if (column) {
     const nextValue =
       column === "firstName" || column === "lastName"
-        ? value
-        : value || null;
+        ? stored
+        : stored || null;
     await db
       .update(contacts)
       .set({ [column]: nextValue, updatedAt: new Date() } as never)
       .where(eq(contacts.id, contactId));
   } else {
     await applyModuleSystemValues("contacts", contactId, patch, defs);
+  }
+
+  if ((customKey === "date_of_birth" || column === "dateOfBirth") && stored) {
+    await syncContactDobOntoBlankDeals(contactId, stored);
   }
 
   await emitDeskEvent("record.updated", { entityType: "contact", entityId: contactId });
@@ -370,6 +391,96 @@ export async function updateContactField(input: {
     scheduleContactCoverageNotices(contactId);
   }
   return { ok: true as const };
+}
+
+async function linkedDealDobSources(contactId: string): Promise<LinkedDealDobSource[]> {
+  const related = await db
+    .select({
+      id: deals.id,
+      quotingForm: deals.quotingForm,
+      lineOfBusiness: deals.lineOfBusiness,
+    })
+    .from(deals)
+    .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.contactId, contactId)));
+  const out: LinkedDealDobSource[] = [];
+  for (const deal of related) {
+    const values = await loadRecordValues(deal.id, "deals").catch(() => ({} as Record<string, string>));
+    const [risk] = await db
+      .select({ address1: risks.address1 })
+      .from(risks)
+      .where(eq(risks.dealId, deal.id))
+      .limit(1);
+    out.push({
+      dealId: deal.id,
+      values,
+      quotingForm: deal.quotingForm,
+      product: deal.quotingForm ?? deal.lineOfBusiness,
+      insuredAddress: risk?.address1 ?? values.mailing_address ?? "",
+    });
+  }
+  return out;
+}
+
+async function syncContactDobOntoBlankDeals(contactId: string, isoDob: string) {
+  const sources = await linkedDealDobSources(contactId);
+  for (const deal of sources) {
+    if (parseDobToIso(deal.values.date_of_birth) || parseDobToIso(deal.values.applicant_dob)) continue;
+    await writeRecordValues(deal.dealId, { date_of_birth: isoDob }, "deals");
+    revalidatePath(`/deals/${deal.dealId}`);
+  }
+}
+
+/** Copy-on-open: fill blank Contact DOB from a linked deal. Never overwrites a set DOB. */
+export async function healContactDobFromLinkedDeals(contactId: string) {
+  const prepared = await prepareContactDealHeal(contactId);
+  return {
+    ok: prepared.ok,
+    healed: prepared.healed,
+    dateOfBirth: prepared.dateOfBirth,
+  };
+}
+
+export async function loadLinkedDealAddressCues(contactId: string): Promise<LinkedDealDobSource[]> {
+  return linkedDealDobSources(contactId);
+}
+
+/** Empty-only DOB heal + optional cue when Contact home matches a rental/secondary location. */
+export async function prepareContactDealHeal(contactId: string): Promise<{
+  ok: boolean;
+  healed: boolean;
+  dateOfBirth: string | null;
+  cue: SecondaryAddressCue | null;
+}> {
+  const id = String(contactId ?? "").trim();
+  if (!id) return { ok: false, healed: false, dateOfBirth: null, cue: null };
+  const [existing] = await db
+    .select({
+      id: contacts.id,
+      dateOfBirth: contacts.dateOfBirth,
+      mailingAddress: contacts.mailingAddress,
+    })
+    .from(contacts)
+    .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, id)));
+  if (!existing) return { ok: false, healed: false, dateOfBirth: null, cue: null };
+  const custom = await loadRecordValues(id, "contacts").catch(() => ({} as Record<string, string>));
+  const sources = await linkedDealDobSources(id);
+  const patch = contactDobHealPatch(existing.dateOfBirth ?? custom.date_of_birth, sources);
+  let dateOfBirth = existing.dateOfBirth ?? custom.date_of_birth ?? null;
+  let healed = false;
+  if (patch) {
+    await db
+      .update(contacts)
+      .set({ dateOfBirth: patch.date_of_birth, updatedAt: new Date() })
+      .where(eq(contacts.id, id));
+    await writeRecordValues(id, patch, "contacts");
+    dateOfBirth = patch.date_of_birth;
+    healed = true;
+  }
+  const cue = secondaryPropertyAddressCue({
+    contactAddress: existing.mailingAddress ?? custom.mailing_address,
+    deals: sources,
+  });
+  return { ok: true, healed, dateOfBirth, cue };
 }
 
 /** Save Coverage types + us/other carrier-of-record together so gaps stay honest. */

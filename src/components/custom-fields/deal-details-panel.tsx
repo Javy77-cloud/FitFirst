@@ -46,6 +46,8 @@ import {
   shouldShowPreviousAddressFields,
 } from "@/lib/custom-fields/mailing-same";
 import { asList } from "@/lib/safe-list";
+import { InsuredPropertyKindControl } from "@/components/deal/insured-property-kind-control";
+import { INSURED_PROPERTY_KIND_KEY } from "@/lib/deals/insured-property-kind";
 
 /** Image upload must not be a nested <form> inside Deal Details save. */
 function DealFieldImageUpload({ dealId, fieldKey }: { dealId: string; fieldKey: string }) {
@@ -237,6 +239,21 @@ function DealDetailsField({
   onValueChange?: (key: string, value: string) => void;
   onValuesPatch?: (parts: Record<string, string>) => void;
 }) {
+  if (fieldKey === INSURED_PROPERTY_KIND_KEY) {
+    return (
+      <div className="space-y-1" data-ff-deal-field={fieldKey}>
+        <InsuredPropertyKindControl
+          dealId={dealId}
+          value={values[fieldKey]}
+          product={policySubType || quotingForm}
+          quotingForm={quotingForm}
+          sheetUsage={values.usage}
+          occupancy={values.occupancy}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-1" data-ff-deal-field={fieldKey}>
       {fieldKey === "insurance_type" ? null : (

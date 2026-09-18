@@ -15,6 +15,7 @@ import { catalogFieldsForProducts } from "@/lib/deals/product-layout";
 import { DEAL_PRODUCTS } from "@/lib/deals/deal-products";
 import { LIVED_AT_ADDRESS_5_YEARS_KEY } from "./mailing-same";
 import { isDealDetailsLandlordFieldKey } from "./deal-details-landlord";
+import { INSURED_PROPERTY_KIND_FIELD, INSURED_PROPERTY_KIND_KEY } from "@/lib/deals/insured-property-kind";
 
 function section(id: string, label: string, fieldKeys: string[]): LayoutSection {
   return { id, label, fieldKeys };
@@ -28,6 +29,7 @@ export const CORE_FIELDS: CustomFieldDef[] = [
   { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
   { key: "date_of_birth", label: "Date of birth", type: "dob", systemKey: "dateOfBirth" },
   { key: "mailing_address", label: "Insured Address", type: "address", systemKey: "mailingAddress" },
+  INSURED_PROPERTY_KIND_FIELD,
   { key: "contact_mailing_address", label: "Mailing Address", type: "address" },
   { key: "contact_mailing_unit", label: "Unit number", type: "single_line" },
   { key: "contact_mailing_city", label: "City", type: "single_line" },
@@ -191,6 +193,7 @@ function essentialSections(): { left: LayoutSection[]; right: LayoutSection[] } 
       applicantLayoutSection(),
       section("insured_address", "Insured Address", [
         "mailing_address",
+        INSURED_PROPERTY_KIND_KEY,
         "mailing_unit",
         "city",
         "state",

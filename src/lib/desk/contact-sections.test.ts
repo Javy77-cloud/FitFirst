@@ -1,14 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { clientStatusFromCounts } from "@/lib/lifecycle/client-status";
 import {
+  CONTACT_COMMUNICATIONS_CHIP_ID,
   CONTACT_SECTION_NAV_MAX,
   CONTACT_SECTION_POOL,
   DEFAULT_CONTACT_SECTION_NAV_IDS,
+  addCommunicationsToNav,
   canAskTeammateOnContact,
+  communicationCountSum,
+  contactCustomizeDefs,
+  contactNavChips,
   contactSectionDefsForNav,
   contactSectionsForRole,
   normalizeContactSectionNavIds,
   relatedIdsFromEntity,
+  removeCommunicationsFromNav,
 } from "./contact-sections";
 
 describe("contact record sections", () => {
@@ -93,6 +99,41 @@ describe("contact record sections", () => {
       dealId: null,
       leadId: null,
     });
+  });
+
+  it("collapses Emails, SMS, and Meetings into one Communications chip", () => {
+    const chips = contactNavChips(DEFAULT_CONTACT_SECTION_NAV_IDS);
+    expect(chips.filter((chip) => chip.kind === "section").map((chip) => chip.id)).toEqual([
+      "at-a-glance",
+      "contact-details",
+      "coverage",
+      "opportunities",
+      "policies",
+      "deals",
+      "timeline",
+      "documents",
+      "notes",
+    ]);
+    const comms = chips.find((chip) => chip.kind === "communications");
+    expect(comms).toMatchObject({
+      kind: "communications",
+      id: CONTACT_COMMUNICATIONS_CHIP_ID,
+      label: "Communications",
+    });
+    expect(comms && comms.kind === "communications" ? comms.children.map((c) => c.id) : []).toEqual([
+      "emails",
+      "sms",
+      "meetings",
+    ]);
+    expect(communicationCountSum({ emails: 2, sms: 1, meetings: 0, deals: 9 })).toBe(3);
+    expect(contactCustomizeDefs(DEFAULT_CONTACT_SECTION_NAV_IDS).selected.map((row) => row.id)).toContain(
+      CONTACT_COMMUNICATIONS_CHIP_ID,
+    );
+    expect(contactCustomizeDefs(["policies"]).available.map((row) => row.id)).toContain(
+      CONTACT_COMMUNICATIONS_CHIP_ID,
+    );
+    expect(addCommunicationsToNav(["policies"])).toEqual(["policies", "emails", "sms", "meetings"]);
+    expect(removeCommunicationsFromNav(DEFAULT_CONTACT_SECTION_NAV_IDS)).not.toContain("emails");
   });
 
   it("keeps Ana-style 0-policy contacts as Not a client", () => {

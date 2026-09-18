@@ -82,6 +82,8 @@ describe("section field packing", () => {
     expect(layoutFieldKind("mailing_address", { type: "address" })).toBe("wide");
     expect(layoutFieldKind("notes", { type: "multi_line" })).toBe("wide");
     expect(layoutFieldKind("insurance_type")).toBe("wide");
+    expect(layoutFieldKind("email")).toBe("wide");
+    expect(layoutFieldKind("co_applicant_email")).toBe("wide");
 
     const rows = groupSectionFieldRows(
       [

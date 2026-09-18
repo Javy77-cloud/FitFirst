@@ -10,6 +10,7 @@ import { evaluateFormula, formatFormulaValue } from "@/lib/custom-fields/formula
 import { resolvedFieldValue } from "@/lib/custom-fields/picklists";
 import type { CustomFieldDef } from "@/lib/custom-fields/types";
 import { formatPhoneStandard } from "@/lib/phone/format";
+import { formatDobMdy, parseDobToIso } from "@/lib/contacts/dob-sync";
 import { formatDisplayDate } from "@/lib/dates/display-format";
 import { flashAction } from "@/lib/flash-client";
 import { cn } from "@/lib/utils";
@@ -44,7 +45,10 @@ function displayText(field: CustomFieldDef, raw: string, values: Record<string, 
     const formatted = formatPhoneStandard(value) || value.trim();
     return formatted || "—";
   }
-  if (field.type === "date" || field.type === "dob") {
+  if (field.type === "dob") {
+    return formatDobMdy(value);
+  }
+  if (field.type === "date") {
     return formatDisplayDate(value);
   }
   if (field.type === "multi_select") {
@@ -148,7 +152,12 @@ export function ClickToEditField({
     if (savingRef.current) return;
     const root = rootRef.current;
     const next = nextRaw !== undefined ? nextRaw : root ? readControlValue(root, field, name) : saved;
-    const normalizedNext = field.type === "phone" ? formatPhoneStandard(next) || next : next;
+    const normalizedNext =
+      field.type === "phone"
+        ? formatPhoneStandard(next) || next
+        : field.type === "dob"
+          ? parseDobToIso(next) || next.trim()
+          : next;
     const normalizedSaved =
       field.type === "phone" ? formatPhoneStandard(saved) || saved : saved;
     if (normalizedNext.trim() === normalizedSaved.trim()) {
