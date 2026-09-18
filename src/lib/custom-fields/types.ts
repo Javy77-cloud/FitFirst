@@ -113,15 +113,17 @@ export function longestPaletteLabel(): string {
 }
 
 /** Per-section field grid. Default is 2 — not page-level Left/Right columns. */
-export const SECTION_DENSITIES = [1, 2, 3] as const;
+export const SECTION_DENSITIES = [1, 2, 3, 4, 5] as const;
 export type SectionDensity = (typeof SECTION_DENSITIES)[number];
 export const DEFAULT_SECTION_DENSITY: SectionDensity = 2;
 
 export function parseSectionDensity(raw: unknown): SectionDensity | undefined {
-  if (raw === 1 || raw === 2 || raw === 3) return raw;
+  if (raw === 1 || raw === 2 || raw === 3 || raw === 4 || raw === 5) return raw;
   if (raw === "1") return 1;
   if (raw === "2") return 2;
   if (raw === "3") return 3;
+  if (raw === "4") return 4;
+  if (raw === "5") return 5;
   return undefined;
 }
 

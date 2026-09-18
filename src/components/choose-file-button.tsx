@@ -41,9 +41,13 @@ export function ChooseFileButton({
   const [fileName, setFileName] = useState("");
 
   function assignSingle(input: HTMLInputElement, file: File) {
-    const transfer = new DataTransfer();
-    transfer.items.add(file);
-    input.files = transfer.files;
+    try {
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      input.files = transfer.files;
+    } catch {
+      // Safari / non-gesture: React state is the submit source of truth.
+    }
   }
 
   function applyPicked(list: FileList | File[] | null | undefined) {

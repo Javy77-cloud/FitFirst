@@ -9,7 +9,17 @@ import {
   DEAL_WORKSHEET_SOURCE_DOC_TYPES,
   SOURCE_DOC_ACCEPT,
 } from "@/lib/deals/source-doc-types";
-import { applyPickedFilesToRows, emptyUploadRow, type UploadDocRow } from "@/lib/documents/upload-rows";
+import { DEAL_DOCUMENTS_BODY_LIMIT_BYTES } from "@/lib/documents/deal-docs-save";
+import { flashAction } from "@/lib/flash-client";
+import { isRedirectError } from "@/lib/lifecycle/shop";
+import {
+  appendUploadRowFiles,
+  applyPickedFilesToRows,
+  emptyUploadRow,
+  uploadRowsHaveFiles,
+  uploadRowsTotalBytes,
+  type UploadDocRow,
+} from "@/lib/documents/upload-rows";
 
 export function SourceDocsUpload({
   dealId,
@@ -41,8 +51,32 @@ export function SourceDocsUpload({
     });
   }
 
+  async function submitFromRows(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!uploadRowsHaveFiles(rows)) {
+      flashAction("choose-file", "error");
+      return;
+    }
+    if (uploadRowsTotalBytes(rows) > DEAL_DOCUMENTS_BODY_LIMIT_BYTES) {
+      flashAction("documents-too-large", "error");
+      return;
+    }
+    const formData = appendUploadRowFiles(new FormData(event.currentTarget), rows);
+    try {
+      await uploadDocument(formData);
+    } catch (error) {
+      if (isRedirectError(error)) throw error;
+      flashAction("documents-save-failed", "error");
+    }
+  }
+
   return (
-    <form action={uploadDocument} className="mb-3 space-y-2" data-ff-source-docs-upload>
+    <form
+      action={uploadDocument}
+      onSubmit={submitFromRows}
+      className="mb-3 space-y-2"
+      data-ff-source-docs-upload
+    >
       <input type="hidden" name="dealId" value={dealId} />
       <input type="hidden" name="riskId" value={riskId} />
       {line ? <input type="hidden" name="line" value={line} /> : null}

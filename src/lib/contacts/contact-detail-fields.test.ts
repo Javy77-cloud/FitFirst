@@ -91,7 +91,7 @@ describe("contact detail field system", () => {
     expect(html).toMatch(/data-ff-generated-opportunity="UMBRELLA"/);
     expect(html).not.toMatch(/data-ff-generated-opportunity="HO"/);
     expect(html).not.toMatch(/data-ff-generated-opportunity="AUTO"/);
-    expect(html).toMatch(/data-ff-compact-row/);
+    expect(html).not.toMatch(/data-ff-compact-row/);
     expect(html).toMatch(/data-ff-contact-field-compact="1"/);
     expect(html).not.toMatch(/text-center text-lg font-semibold/);
     expect(html).not.toMatch(/data-ff-click-to-edit="cross_selling_opportunity"/);

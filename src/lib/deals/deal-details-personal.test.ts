@@ -109,7 +109,7 @@ describe("Deal Details personal / identity layout", () => {
     expect(html).toMatch(/data-ff-layout-section-header/);
     expect(html).toMatch(/data-ff-section-field-grid/);
     expect(html).toMatch(/data-ff-section-density="2"/);
-    expect(html).toMatch(/data-ff-compact-row/);
+    expect(html).not.toMatch(/data-ff-compact-row/);
     expect(html).not.toMatch(/Asked once/);
     expect(html).not.toMatch(/data-ff-shared-once/);
     expect(html).not.toMatch(/master sheet Fill/);
