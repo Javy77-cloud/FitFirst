@@ -11,12 +11,13 @@ import { ClearAllColorsForm } from "@/components/desk/clear-all-colors-form";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { CollapsibleListCard } from "@/components/settings/collapsible-list-card";
 import { ListOptionInput } from "@/components/settings/list-option-input";
+import { ListOptionPersist } from "@/components/settings/list-option-persist";
 import { ListOptionRow } from "@/components/settings/list-option-row";
 import { StayOnSaveForm, useStayAction } from "@/components/settings/stay-on-save-form";
 import { Button } from "@/components/ui/button";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import type { FieldPicklist } from "@/lib/custom-fields/picklists";
-import { listOptionRowKey } from "@/lib/settings/list-editor";
+import { collapsedPicklistPersistFields, listOptionRowKey } from "@/lib/settings/list-editor";
 
 export function PicklistCard({ list }: { list: FieldPicklist }) {
   const saveFormId = `ff-picklist-save-${list.id}`;
@@ -99,6 +100,9 @@ export function PicklistCard({ list }: { list: FieldPicklist }) {
           </>
         }
         items={items}
+        collapsedPersist={
+          <ListOptionPersist form={saveFormId} fields={collapsedPicklistPersistFields(list.options, defaultIndex)} />
+        }
         footer={
           <div className="space-y-2">
             <div data-ff-picklist-option="new">

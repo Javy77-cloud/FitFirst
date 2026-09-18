@@ -13,6 +13,7 @@ import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { StatusColorSelect, StatusColorSwatch } from "@/components/desk/status-color-select";
 import { CollapsibleListCard } from "@/components/settings/collapsible-list-card";
 import { ListOptionInput } from "@/components/settings/list-option-input";
+import { ListOptionPersist } from "@/components/settings/list-option-persist";
 import { ListOptionRow } from "@/components/settings/list-option-row";
 import { StayOnSaveForm, useStayAction } from "@/components/settings/stay-on-save-form";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import type { GlobalListRow } from "@/lib/db/schema";
 import type { GlobalListKey } from "@/lib/desk/global-lists";
 import { liveColorKey, statusColorClass } from "@/lib/desk/status-colors";
 import { INSURANCE_FAMILIES } from "@/lib/desk/policy-family";
+import { collapsedGlobalListPersistFields } from "@/lib/settings/list-editor";
 import { cn } from "@/lib/utils";
 
 function AddValueColor() {
@@ -150,6 +152,9 @@ export function GlobalListCard({
                   No values yet.
                 </p>,
               ]
+        }
+        collapsedPersist={
+          canEdit ? <ListOptionPersist form={saveFormId} fields={collapsedGlobalListPersistFields(sorted)} /> : null
         }
         footer={
           canEdit ? (
