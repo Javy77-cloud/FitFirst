@@ -60,7 +60,8 @@ export default async function GlobalListsPage() {
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Zoho-style picklists used on Policies: types, sub-types, terms, statuses, and file
         categories. Carriers stay on their own records — this hub lists them so you do not hunt.
-        No live Zoho. Admins can add, rename, color, delete values, or clear a whole list.
+        No live Zoho. Admins can add, rename, color (click Color for the full palette), delete
+        values, or clear a whole list.
       </p>
 
       {!session.isAdmin ? (

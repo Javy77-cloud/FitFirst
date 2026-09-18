@@ -124,7 +124,7 @@ describe("admin list editors", () => {
     expect(listsPage).toMatch(/lg:grid-cols-2/);
     expect(pickPage).toMatch(/lg:grid-cols-2/);
     expect(globalCard).toMatch(/name="labels"/);
-    expect(globalCard).toMatch(/StatusColorSelect/);
+    expect(globalCard).toMatch(/name="itemColors"/);
     expect(globalCard).toMatch(/deleteGlobalList/);
     expect(globalCard).toMatch(/deleteGlobalListItem/);
     expect(globalCard).toMatch(/Add a value/);
@@ -134,9 +134,14 @@ describe("admin list editors", () => {
     expect(pickCard).toMatch(/ListOptionRow/);
     expect(pickCard).toMatch(/defaultValue=\{option\.color\}/);
     expect(globalCard).toMatch(/ListOptionRow/);
+    expect(globalCard).toMatch(/click Color for the full palette/);
+    expect(globalCard).toMatch(/colorAriaLabel="Color for new value"/);
+    expect(globalCard).not.toMatch(/function AddValueColor/);
+    expect(pickCard).toMatch(/click Color/);
     expect(source("src/components/settings/collapsible-list-card.tsx")).toMatch(/ff-list-card/);
     expect(source("src/components/settings/list-option-row.tsx")).toMatch(/data-ff-live-color-row/);
     expect(source("src/components/settings/list-option-row.tsx")).toMatch(/onColorChange/);
+    expect(source("src/components/desk/status-color-select.tsx")).toMatch(/data-ff-status-color-palette-trigger/);
     expect(source("src/app/globals.css")).toMatch(/\.ff-list-row/);
     expect(source("src/lib/flash.ts")).toMatch(/"pick-list-saved": "Pick list saved"/);
     expect(source("src/lib/flash.ts")).toMatch(/"global-list-saved": "Global list saved"/);
@@ -154,6 +159,7 @@ describe("admin list editors", () => {
     );
     expect(html).toContain('data-ff-live-color-row="teal"');
     expect(html).toContain('data-ff-status-color-swatch="teal"');
+    expect(html).toContain("data-ff-status-color-palette-trigger");
     expect(html).toContain('value="Open"');
     expect(html).not.toContain("useEffect");
     const row = source("src/components/settings/list-option-row.tsx");

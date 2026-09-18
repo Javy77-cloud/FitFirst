@@ -2,12 +2,12 @@
 
 import { useState, type ReactNode } from "react";
 import { StatusColorSelect, StatusColorSwatch } from "@/components/desk/status-color-select";
-import { liveColorKey, liveColorRowStyle, statusColorClass } from "@/lib/desk/status-colors";
+import { liveColorKey, liveColorRowStyle } from "@/lib/desk/status-colors";
 import { cn } from "@/lib/utils";
 
 /**
- * One list value: uncontrolled label inputs stay instant; only color is local
- * so the swatch and row wash update the moment a palette key is picked.
+ * One list value: uncontrolled label inputs stay instant; the Color control
+ * opens the shared palette and paints the swatch + row wash before Save.
  */
 export function ListOptionRow({
   defaultValue = null,
@@ -38,23 +38,23 @@ export function ListOptionRow({
       style={liveColorRowStyle(color)}
       data-ff-live-color-row={token}
     >
-      <StatusColorSwatch color={color} showEmpty />
-      {children}
-      {hidePicker ? null : (
+      {hidePicker ? (
+        <StatusColorSwatch color={color} showEmpty />
+      ) : (
         <StatusColorSelect
           form={form}
           name={name}
           defaultValue={defaultValue}
           aria-label={colorAriaLabel}
           onColorChange={setColor}
-          className={cn(token !== "none" && statusColorClass(token))}
         />
       )}
+      {children}
     </div>
   );
 }
 
-/** Swatch + select only — for add-value footers that already have their own row. */
+/** Shared Color control for add-value footers that already have their own row. */
 export function LiveColorField({
   defaultValue = null,
   name = "color",
@@ -77,8 +77,7 @@ export function LiveColorField({
   const token = liveColorKey(color);
 
   return (
-    <span className={cn("inline-flex items-center gap-2", className)} data-ff-live-color={token}>
-      <StatusColorSwatch color={color} showEmpty />
+    <span className={cn("inline-flex items-center", className)} data-ff-live-color={token}>
       <StatusColorSelect
         form={form}
         name={name}
@@ -86,7 +85,6 @@ export function LiveColorField({
         aria-label={ariaLabel}
         disabled={disabled}
         onColorChange={setColor}
-        className={cn(token !== "none" && statusColorClass(token))}
       />
     </span>
   );

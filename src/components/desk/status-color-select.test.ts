@@ -35,6 +35,10 @@ describe("sep7jf StatusColorSelect None + clear all colors", () => {
     expect(source).toMatch(/<option value="">None<\/option>/);
     expect(source).toMatch(/statusColorSelectValue/);
     expect(source).not.toMatch(/defaultValue = "slate"/);
+    expect(source).toMatch(/data-ff-status-color-palette-trigger/);
+    expect(source).toMatch(/data-ff-status-color-palette=/);
+    expect(source).toMatch(/Full color palette/);
+    expect(source).toMatch(/\{selected \|\| "Color"\}/);
   });
 
   it("wires None for all on Global lists and Picklists", () => {
