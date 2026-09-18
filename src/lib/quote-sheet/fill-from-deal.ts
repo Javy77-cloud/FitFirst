@@ -3,12 +3,31 @@ import { firstFilled, type LeadCopyFields } from "@/lib/desk/copy-once";
 import { fieldIsBlank } from "@/lib/quote-sheet/apply";
 import { isLockedSheetField } from "@/lib/lifecycle/quote-sheet";
 import { isCoApplicantEnabled } from "@/lib/custom-fields/co-applicant-fields";
-import { normalizeHealthPlanType, normalizeLifeProductType } from "@/lib/quote-sheet/sheet-defaults";
+import {
+  EDUCATION_LEVEL_OPTIONS,
+  EMPLOYMENT_STATUS_OPTIONS,
+  MARITAL_STATUS_OPTIONS,
+  OCCUPATION_OPTIONS,
+} from "@/lib/quote-sheet/applicant-core";
+import {
+  AUTO_DRIVER_RELATIONSHIP_OPTIONS,
+  LICENSE_STATUS_OPTIONS,
+  normalizeGender,
+  normalizeHealthPlanType,
+  normalizeLicenseStatus,
+  normalizeLifeProductType,
+  normalizePicklistOption,
+} from "@/lib/quote-sheet/sheet-defaults";
 import {
   COMMERCIAL_SHARED_DEAL_DETAIL_KEYS,
   coverageLinesValueForDeal,
   storedValueForCommercialDealKey,
 } from "./commercial-risk-profile";
+import {
+  DRIVER_BLOCK_FIELDS,
+  PERSONAL_DRIVER_CAP,
+  unitHasValue,
+} from "./repeatable-units";
 
 export const DEAL_DETAILS_SOURCE_LABEL = "deal details";
 
@@ -74,6 +93,178 @@ function personName(parts: Array<string | null | undefined>): string {
     .map((part) => (part ?? "").trim())
     .filter(Boolean)
     .join(" ");
+}
+
+const DRIVER_SEED_SUFFIXES = [
+  "name",
+  "dob",
+  "gender",
+  "occupation",
+  "employment",
+  "education_level",
+  "marital_status",
+  "relationship",
+  "license",
+  "status",
+  "years_licensed",
+] as const;
+
+type DriverSeedSuffix = (typeof DRIVER_SEED_SUFFIXES)[number];
+
+type DriverPersonSeed = Record<DriverSeedSuffix, string>;
+
+const DRIVER_SUFFIX_SET = new Set(DRIVER_BLOCK_FIELDS.map((field) => field.suffix));
+
+function driverPersonHasAny(person: DriverPersonSeed): boolean {
+  return DRIVER_SEED_SUFFIXES.some((suffix) => person[suffix]);
+}
+
+function pickDriverOption(raw: string | null | undefined, options: readonly string[]): string {
+  return normalizePicklistOption(raw, options);
+}
+
+function pickDriverGender(raw?: string | null): string {
+  return normalizeGender(raw);
+}
+
+function pickDriverLicenseStatus(raw?: string | null): string {
+  const normalized = normalizeLicenseStatus(raw);
+  return pickDriverOption(normalized, LICENSE_STATUS_OPTIONS);
+}
+
+function pickDriverRelationship(raw?: string | null): string {
+  return pickDriverOption(raw, AUTO_DRIVER_RELATIONSHIP_OPTIONS);
+}
+
+/** Personal Auto Risk Profile only — never invent driver slots on Home/Flood/Life/Health. */
+export function isPersonalAutoDriverSheet(
+  values: Record<string, QuoteSheetFieldValue>,
+  quotingLine?: string | null,
+): boolean {
+  const line = (quotingLine ?? "").trim();
+  if (line && line !== "auto") return false;
+  return Object.prototype.hasOwnProperty.call(values, "driver_1_name");
+}
+
+function nextEmptyDriverSlot(
+  values: Record<string, QuoteSheetFieldValue>,
+  startIndex: number,
+): number | null {
+  for (let index = startIndex; index <= PERSONAL_DRIVER_CAP; index += 1) {
+    if (!unitHasValue(values, "driver", index)) return index;
+  }
+  return null;
+}
+
+function readIndexedCoApplicant(
+  stored: Record<string, string>,
+  index: number,
+): DriverPersonSeed {
+  const prefix = `co_applicant_${index}_`;
+  return {
+    name: firstFilled(
+      stored[`${prefix}name`],
+      personName([stored[`${prefix}first_name`], stored[`${prefix}middle_name`], stored[`${prefix}last_name`]]),
+    ),
+    dob: formatDobForSheet(
+      firstFilled(stored[`${prefix}dob`], stored[`${prefix}date_of_birth`]),
+    ),
+    gender: pickDriverGender(firstFilled(stored[`${prefix}gender`])),
+    occupation: pickDriverOption(firstFilled(stored[`${prefix}occupation`]), OCCUPATION_OPTIONS),
+    employment: pickDriverOption(firstFilled(stored[`${prefix}employment`]), EMPLOYMENT_STATUS_OPTIONS),
+    education_level: pickDriverOption(
+      firstFilled(stored[`${prefix}education_level`]),
+      EDUCATION_LEVEL_OPTIONS,
+    ),
+    marital_status: pickDriverOption(
+      firstFilled(stored[`${prefix}marital_status`]),
+      MARITAL_STATUS_OPTIONS,
+    ),
+    relationship: pickDriverRelationship(
+      firstFilled(stored[`${prefix}relationship_to_insured`], stored[`${prefix}relationship`]),
+    ),
+    license: firstFilled(
+      stored[`${prefix}license`],
+      stored[`${prefix}license_number`],
+      stored[`${prefix}dl`],
+    ),
+    status: pickDriverLicenseStatus(
+      firstFilled(stored[`${prefix}license_status`], stored[`${prefix}status`]),
+    ),
+    years_licensed: firstFilled(stored[`${prefix}years_licensed`]),
+  };
+}
+
+/** Deal Details supports one co-applicant today; also reads co_applicant_2_* … if present. */
+export function collectDealCoApplicantDrivers(
+  input: DealSheetCopyInput,
+  stored: Record<string, string>,
+): DriverPersonSeed[] {
+  if (!isCoApplicantEnabled(stored)) return [];
+  const people: DriverPersonSeed[] = [];
+  const primaryCo: DriverPersonSeed = {
+    name: firstFilled(
+      input.secondaryNamedInsured,
+      stored.co_applicant_name,
+      stored.secondary_named_insured,
+      personName([
+        stored.co_applicant_first_name,
+        stored.co_applicant_middle_name,
+        stored.co_applicant_last_name,
+      ]),
+    ),
+    dob: formatDobForSheet(
+      firstFilled(
+        stored.co_applicant_dob,
+        stored.co_applicant_date_of_birth,
+        stored.secondary_dob,
+        stored.secondary_date_of_birth,
+        stored.spouse_dob,
+        stored.spouse_date_of_birth,
+      ),
+    ),
+    gender: pickDriverGender(firstFilled(stored.co_applicant_gender, stored.spouse_gender)),
+    occupation: pickDriverOption(
+      firstFilled(stored.co_applicant_occupation, stored.spouse_occupation),
+      OCCUPATION_OPTIONS,
+    ),
+    employment: pickDriverOption(
+      firstFilled(stored.co_applicant_employment, stored.spouse_employment),
+      EMPLOYMENT_STATUS_OPTIONS,
+    ),
+    education_level: pickDriverOption(
+      firstFilled(stored.co_applicant_education_level, stored.spouse_education_level),
+      EDUCATION_LEVEL_OPTIONS,
+    ),
+    marital_status: pickDriverOption(
+      firstFilled(stored.co_applicant_marital_status, stored.spouse_marital_status),
+      MARITAL_STATUS_OPTIONS,
+    ),
+    relationship: pickDriverRelationship(
+      firstFilled(
+        stored.co_applicant_relationship_to_insured,
+        stored.co_applicant_relationship,
+        stored.relationship_to_insured,
+      ),
+    ),
+    license: firstFilled(
+      stored.co_applicant_license,
+      stored.co_applicant_license_number,
+      stored.co_applicant_dl,
+      stored.spouse_license,
+    ),
+    status: pickDriverLicenseStatus(
+      firstFilled(stored.co_applicant_license_status, stored.spouse_license_status),
+    ),
+    years_licensed: firstFilled(stored.co_applicant_years_licensed, stored.spouse_years_licensed),
+  };
+  if (driverPersonHasAny(primaryCo)) people.push(primaryCo);
+
+  for (let index = 2; index <= PERSONAL_DRIVER_CAP; index += 1) {
+    const extra = readIndexedCoApplicant(stored, index);
+    if (driverPersonHasAny(extra)) people.push(extra);
+  }
+  return people;
 }
 
 /**
@@ -156,17 +347,34 @@ export function fillSheetFromDealDetails(
   put("applicant_occupation", occupation);
   put("driver_1_occupation", occupation);
 
+  const employment = firstFilled(stored.applicant_employment, stored.employment, stored.employment_status);
+  const maritalStatus = firstFilled(stored.applicant_marital_status, stored.marital_status);
+  const educationLevel = firstFilled(
+    stored.applicant_education_level,
+    stored.education_level,
+    stored.education,
+  );
+  put("applicant_employment", employment);
+  put("applicant_marital_status", maritalStatus);
+  put("applicant_education_level", educationLevel);
+  put("driver_1_employment", pickDriverOption(employment, EMPLOYMENT_STATUS_OPTIONS) || employment);
+  put("driver_1_marital_status", pickDriverOption(maritalStatus, MARITAL_STATUS_OPTIONS) || maritalStatus);
   put(
-    "applicant_employment",
-    firstFilled(stored.applicant_employment, stored.employment, stored.employment_status),
+    "driver_1_education_level",
+    pickDriverOption(educationLevel, EDUCATION_LEVEL_OPTIONS) || educationLevel,
+  );
+  if (named) put("driver_1_relationship", "Named insured");
+  put(
+    "driver_1_license",
+    firstFilled(stored.driver_license, stored.license_number, stored.license),
   );
   put(
-    "applicant_marital_status",
-    firstFilled(stored.applicant_marital_status, stored.marital_status),
+    "driver_1_status",
+    pickDriverLicenseStatus(firstFilled(stored.driver_license_status, stored.license_status)),
   );
   put(
-    "applicant_education_level",
-    firstFilled(stored.applicant_education_level, stored.education_level, stored.education),
+    "driver_1_years_licensed",
+    firstFilled(stored.years_licensed, stored.driver_years_licensed),
   );
   put("entity_type", firstFilled(stored.entity_type));
   const commercialSheet = Object.prototype.hasOwnProperty.call(values, "coverage_lines");
@@ -284,6 +492,39 @@ export function fillSheetFromDealDetails(
       "co_applicant_education_level",
       firstFilled(stored.co_applicant_education_level, stored.spouse_education_level),
     );
+  }
+
+  // Personal Auto: primary is Driver 1; each Deal Details co-applicant seeds the next empty driver slot.
+  if (isPersonalAutoDriverSheet(values, input.quotingLine)) {
+    const putDriver = (index: number, suffix: DriverSeedSuffix, raw?: string | null) => {
+      if (index < 1 || index > PERSONAL_DRIVER_CAP) return;
+      if (!DRIVER_SUFFIX_SET.has(suffix)) return;
+      const key = `driver_${index}_${suffix}`;
+      const value = (raw ?? "").trim();
+      if (!value) return;
+      const current = values[key];
+      if (isLockedSheetField(current) || !fieldIsBlank(current)) {
+        skippedKeys.push(key);
+        return;
+      }
+      values[key] = {
+        value,
+        status: "check",
+        source: "agent",
+        sourceLabel: DEAL_DETAILS_SOURCE_LABEL,
+      };
+      filledKeys.push(key);
+    };
+
+    let searchFrom = 2;
+    for (const person of collectDealCoApplicantDrivers(input, stored)) {
+      const slot = nextEmptyDriverSlot(values, searchFrom);
+      if (slot == null) break;
+      for (const suffix of DRIVER_SEED_SUFFIXES) {
+        putDriver(slot, suffix, person[suffix]);
+      }
+      searchFrom = slot + 1;
+    }
   }
 
   // Insured / property address (risk + deal insured fields)

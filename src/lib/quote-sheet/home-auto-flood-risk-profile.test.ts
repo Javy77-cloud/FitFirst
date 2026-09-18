@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -157,10 +158,18 @@ describe("Home / Auto / Flood Risk Profile vs Deal Details", () => {
     const result = fillSheetFromDealDetails(
       {
         primaryNamedInsured: "Heather Camirand",
+        quotingLine: "auto",
         stored: {
           date_of_birth: "1975-09-14",
           previous_address: "9 Pine St",
           aaa_member: "None",
+          has_co_applicant: "true",
+          co_applicant_first_name: "Tom",
+          co_applicant_last_name: "Camirand",
+          co_applicant_dob: "1974-01-02",
+          co_applicant_gender: "Male",
+          co_applicant_occupation: "Trades",
+          co_applicant_relationship_to_insured: "Spouse",
         },
       },
       emptySheetValues("auto"),
@@ -168,8 +177,70 @@ describe("Home / Auto / Flood Risk Profile vs Deal Details", () => {
     expect(result.values.applicant_name).toBeUndefined();
     expect(result.values.driver_1_name.value).toBe("Heather Camirand");
     expect(result.values.driver_1_dob.value).toBe("9/14/1975");
+    expect(result.values.driver_2_name.value).toBe("Tom Camirand");
+    expect(result.values.driver_2_dob.value).toBe("1/2/1974");
+    expect(result.values.driver_2_gender.value).toBe("Male");
+    expect(result.values.driver_2_occupation.value).toBe("Trades");
+    expect(result.values.driver_2_relationship.value).toBe("Spouse");
     expect(result.values.prior_address.value).toBe("9 Pine St");
     expect(result.values.aaa_member.value).toBe("None");
+  });
+
+  it("Fill does not seed Auto driver_2 when co-applicant is Off", () => {
+    const result = fillSheetFromDealDetails(
+      {
+        primaryNamedInsured: "Heather Camirand",
+        quotingLine: "auto",
+        stored: {
+          date_of_birth: "1975-09-14",
+          has_co_applicant: "false",
+          co_applicant_first_name: "Tom",
+          co_applicant_last_name: "Camirand",
+          co_applicant_dob: "1974-01-02",
+        },
+      },
+      emptySheetValues("auto"),
+    );
+    expect(result.values.driver_1_name.value).toBe("Heather Camirand");
+    expect(result.values.driver_2_name?.value ?? "").toBe("");
+    expect(result.filledKeys).not.toContain("driver_2_name");
+  });
+
+  it("Fill does not overwrite an existing Auto driver_2", () => {
+    const existing = emptySheetValues("auto");
+    existing.driver_2_name = { value: "Keep Driver", status: "confirmed", source: "agent" };
+    const result = fillSheetFromDealDetails(
+      {
+        primaryNamedInsured: "Heather Camirand",
+        quotingLine: "auto",
+        stored: {
+          has_co_applicant: "true",
+          co_applicant_first_name: "Tom",
+          co_applicant_last_name: "Camirand",
+          co_applicant_dob: "1974-01-02",
+        },
+      },
+      existing,
+    );
+    expect(result.values.driver_2_name.value).toBe("Keep Driver");
+    expect(result.values.driver_3_name.value).toBe("Tom Camirand");
+  });
+
+  it("first-open Auto Risk Profile seeds from Deal Details through the same fill helper", () => {
+    const source = readFileSync("src/app/actions/quote-sheet.ts", "utf8");
+    const ensureFn = source.slice(
+      source.indexOf("export async function ensureQuoteSheet"),
+      source.indexOf("export async function persistQuoteSheetValues"),
+    );
+    expect(ensureFn).toMatch(/line === "auto"/);
+    expect(ensureFn).toMatch(/fillSheetFromDealDetails/);
+    expect(ensureFn).toMatch(/loadDealSheetCopyInput/);
+    const fillFn = source.slice(
+      source.indexOf("export async function runFillFromDealDetails"),
+      source.indexOf("async function persistMasterSheetDefaults"),
+    );
+    expect(fillFn).toMatch(/loadDealSheetCopyInput/);
+    expect(fillFn).toMatch(/fillSheetFromDealDetails/);
   });
 
   it("renders Home / Auto / Flood without Applicant name and with new product labels", () => {
