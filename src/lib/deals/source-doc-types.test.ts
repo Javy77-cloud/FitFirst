@@ -35,7 +35,9 @@ describe("deal worksheet source docs", () => {
 
   it("keeps one compact type / file / create zone on the worksheet", () => {
     const form = readFileSync("src/components/deal/source-docs-upload.tsx", "utf8");
-    expect(form).toMatch(/Create/);
+    expect(form).toMatch(/Save files/);
+    expect(form).not.toMatch(/^\s*Create\s*$/m);
+    expect(form).toMatch(/action=\{uploadDocument\}/);
     expect(form).toMatch(/name=\{`files_\$\{index\}`\}/);
     expect(form).toMatch(/name=\{`docType_\$\{index\}`\}/);
     expect(form).toMatch(/FileDeleteIcon/);

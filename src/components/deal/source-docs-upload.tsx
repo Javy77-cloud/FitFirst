@@ -104,7 +104,7 @@ export function SourceDocsUpload({
           + Add another document
         </button>
         <Button type="submit" size="sm">
-          Create
+          Save files
         </Button>
       </div>
     </form>
