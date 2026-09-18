@@ -2,7 +2,9 @@ import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { CollapsibleListCard } from "@/components/settings/collapsible-list-card";
 import { ListOptionInput } from "@/components/settings/list-option-input";
+import { ListOptionPersist } from "@/components/settings/list-option-persist";
 import { ListOptionRow } from "@/components/settings/list-option-row";
 import {
   matchStarterList,
@@ -221,5 +223,34 @@ describe("admin list editors", () => {
       expect(html).toContain(`value="${value}"`);
       expect(html).toContain("data-ff-list-option-input");
     }
+
+    const lifeNotices = ["Inspection", "Paramed exam", "APS", "Labs", "Carrier call", "UW hold"];
+    const preview = renderToString(
+      createElement(CollapsibleListCard, {
+        cardId: "deal-notices-life",
+        items: lifeNotices.map((label, index) =>
+          createElement(ListOptionInput, {
+            key: listOptionRowKey("deal-notices-life", index),
+            committedValue: label,
+            "aria-label": `Option ${index + 1}`,
+          }),
+        ),
+        collapsedPersist: createElement(ListOptionPersist, {
+          fields: collapsedPicklistPersistFields(
+            lifeNotices.map((value) => ({ value })),
+          ),
+        }),
+      }),
+    );
+    expect(preview).toContain('aria-label="Option 1"');
+    expect(preview).toContain('aria-label="Option 4"');
+    expect(preview).toContain('value="Inspection"');
+    expect(preview).not.toContain('aria-label="Option 5"');
+    expect(preview).not.toContain('aria-label="Option 6"');
+    expect(preview).toContain("data-ff-list-collapsed-persist");
+    expect(preview).toContain('data-ff-list-option-persist="options"');
+    expect(preview).toContain('value="Carrier call"');
+    expect(preview).toContain('value="UW hold"');
+    expect(preview.match(/data-ff-list-option-input/g)?.length).toBe(4);
   });
 });
