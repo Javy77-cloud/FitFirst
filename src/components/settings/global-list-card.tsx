@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import {
   addGlobalListItem,
   clearGlobalListColors,
   deleteGlobalList,
   deleteGlobalListItem,
   saveGlobalList,
+  updateGlobalListItemColor,
 } from "@/app/actions/global-lists";
 import { ClearAllColorsForm } from "@/components/desk/clear-all-colors-form";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
-import { StatusColorSelect, StatusColorSwatch } from "@/components/desk/status-color-select";
 import { CollapsibleListCard } from "@/components/settings/collapsible-list-card";
 import { ListOptionInput } from "@/components/settings/list-option-input";
 import { ListOptionPersist } from "@/components/settings/list-option-persist";
@@ -21,25 +20,8 @@ import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { Input } from "@/components/ui/input";
 import type { GlobalListRow } from "@/lib/db/schema";
 import type { GlobalListKey } from "@/lib/desk/global-lists";
-import { liveColorKey, statusColorClass } from "@/lib/desk/status-colors";
 import { INSURANCE_FAMILIES } from "@/lib/desk/policy-family";
 import { collapsedGlobalListPersistFields } from "@/lib/settings/list-editor";
-import { cn } from "@/lib/utils";
-
-function AddValueColor() {
-  const [color, setColor] = useState<string | null>(null);
-  const token = liveColorKey(color);
-  return (
-    <span className="inline-flex items-center gap-2" data-ff-live-color={token}>
-      <StatusColorSwatch color={color} showEmpty />
-      <StatusColorSelect
-        className={cn("mt-0.5 block", token !== "none" && statusColorClass(token))}
-        defaultValue={null}
-        onColorChange={setColor}
-      />
-    </span>
-  );
-}
 
 export function GlobalListCard({
   listKey,
@@ -65,10 +47,20 @@ export function GlobalListCard({
     <div key={row.id} data-ff-global-list-item={row.id}>
       <ListOptionRow
         defaultValue={row.color}
-        name="itemColors"
+        name=""
         form={saveFormId}
         colorAriaLabel={`Color for ${row.label}`}
         hidePicker={!canEdit}
+        onColorChange={
+          canEdit
+            ? (color) => {
+                const data = new FormData();
+                data.set("id", row.id);
+                data.set("color", color ?? "");
+                void updateGlobalListItemColor(data);
+              }
+            : undefined
+        }
       >
         {canEdit ? (
           <>
@@ -123,7 +115,7 @@ export function GlobalListCard({
               <h2 className="text-sm font-semibold tracking-tight text-navy">{title}</h2>
               <span className="ff-list-count">{sorted.length}</span>
             </div>
-            <p className="text-helper text-muted-foreground">A–Z · full color palette</p>
+            <p className="text-helper text-muted-foreground">A–Z · click Color for the full palette</p>
           </div>
         }
         actions={
@@ -165,26 +157,24 @@ export function GlobalListCard({
                   Save list
                 </Button>
               </StayOnSaveForm>
-              <StayOnSaveForm action={addItem} flash="global-list-saved" className="ff-list-row">
+              <StayOnSaveForm action={addItem} flash="global-list-saved">
                 <input type="hidden" name="listKey" value={listKey} />
-                {familyPicker ? (
-                  <select name="family" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
-                    <option value="">Any family</option>
-                    {INSURANCE_FAMILIES.map((family) => (
-                      <option key={family} value={family}>
-                        {family}
-                      </option>
-                    ))}
-                  </select>
-                ) : null}
-                <Input name="label" required placeholder="Add a value" className="h-8 min-w-40 flex-1" />
-                <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  Color
-                  <AddValueColor />
-                </label>
-                <Button type="submit" size="sm" variant="outline">
-                  Add
-                </Button>
+                <ListOptionRow defaultValue={null} name="color" colorAriaLabel="Color for new value">
+                  {familyPicker ? (
+                    <select name="family" className="h-8 rounded-md border border-input bg-card px-2 text-sm">
+                      <option value="">Any family</option>
+                      {INSURANCE_FAMILIES.map((family) => (
+                        <option key={family} value={family}>
+                          {family}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
+                  <Input name="label" required placeholder="Add a value" className="h-8 min-w-40 flex-1" />
+                  <Button type="submit" size="sm" variant="outline">
+                    Add
+                  </Button>
+                </ListOptionRow>
               </StayOnSaveForm>
             </div>
           ) : null

@@ -1,3 +1,14 @@
+"use client";
+
+import { useRef, useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   STATUS_COLOR_KEYS,
   liveColorKey,
@@ -27,33 +38,88 @@ export function StatusColorSelect({
   onColorChange?: (color: string | null) => void;
   "aria-label"?: string;
 }) {
-  const selected = statusColorSelectValue(defaultValue);
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState(() => statusColorSelectValue(defaultValue));
+  const inputRef = useRef<HTMLInputElement>(null);
+  const token = liveColorKey(selected);
+
+  function apply(raw: string) {
+    const next = statusColorSelectValue(raw);
+    setSelected(next);
+    if (inputRef.current) inputRef.current.value = next;
+    onColorChange?.(next || null);
+    setOpen(false);
+  }
+
   return (
-    <select
-      id={id}
-      form={form}
-      name={name}
-      defaultValue={selected}
-      aria-label={ariaLabel}
-      disabled={disabled}
-      className={cn("h-8 rounded-md border border-input bg-card px-2 text-xs capitalize", className)}
-      data-ff-status-color-select=""
-      onChange={
-        onColorChange
-          ? (event) => {
-              const next = statusColorSelectValue(event.currentTarget.value);
-              onColorChange(next || null);
-            }
-          : undefined
-      }
-    >
-      <option value="">None</option>
-      {STATUS_COLOR_KEYS.map((key) => (
-        <option key={key} value={key}>
-          {key}
-        </option>
-      ))}
-    </select>
+    <span className="inline-flex shrink-0 items-center" data-ff-status-color-picker="">
+      {name ? (
+        <input
+          id={id}
+          ref={inputRef}
+          type="hidden"
+          form={form}
+          name={name}
+          defaultValue={selected}
+          disabled={disabled}
+          data-ff-status-color-select=""
+        />
+      ) : null}
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger
+          type="button"
+          disabled={disabled}
+          aria-label={ariaLabel}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          data-ff-status-color-palette-trigger=""
+          className={cn(
+            "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-input bg-card px-2 text-xs capitalize",
+            token !== "none" && statusColorClass(token),
+            className,
+          )}
+        >
+          <StatusColorSwatch color={selected || null} showEmpty />
+          {selected || "Color"}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          sideOffset={4}
+          className="w-56 p-2"
+          data-ff-status-color-palette=""
+        >
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Full color palette</DropdownMenuLabel>
+          </DropdownMenuGroup>
+          <DropdownMenuItem
+            onClick={() => apply("")}
+            data-ff-status-color-palette-none=""
+          >
+            None
+          </DropdownMenuItem>
+          <div className="grid grid-cols-5 gap-1 p-1" role="listbox" aria-label="Full color palette">
+            {STATUS_COLOR_KEYS.map((key) => (
+              <DropdownMenuItem
+                key={key}
+                onClick={() => apply(key)}
+                aria-label={key}
+                title={key}
+                data-ff-status-color-palette-key={key}
+                className="size-8 min-w-8 justify-center p-0"
+              >
+                <span
+                  className={cn(
+                    "inline-block size-5 rounded-full border shadow-[inset_0_0_0_1px_rgb(255_255_255/0.4)]",
+                    statusColorClass(key),
+                    selected === key && "ring-2 ring-navy ring-offset-1",
+                  )}
+                />
+              </DropdownMenuItem>
+            ))}
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </span>
   );
 }
 

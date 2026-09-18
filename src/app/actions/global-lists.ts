@@ -122,16 +122,22 @@ export async function saveGlobalList(formData: FormData): Promise<ListMutationRe
   const colors = formData.getAll("itemColors").map((item) => String(item));
   const families = formData.getAll("families").map((item) => String(item));
   const count = Math.max(ids.length, labels.length);
+  const colorsAligned = colors.length === count;
 
   for (let i = 0; i < count; i++) {
     const id = ids[i]?.trim() ?? "";
     const label = labels[i]?.trim() ?? "";
-    const color = colorFrom(colors[i] ?? "");
+    const color = colorsAligned ? colorFrom(colors[i] ?? "") : undefined;
     const family = families[i]?.trim() || null;
     if (id && label) {
       await db
         .update(globalLists)
-        .set({ label, color, family, updatedAt: new Date() })
+        .set({
+          label,
+          family,
+          ...(color !== undefined ? { color } : {}),
+          updatedAt: new Date(),
+        })
         .where(and(eq(globalLists.tenantId, DEFAULT_TENANT_ID), eq(globalLists.id, id)));
       continue;
     }

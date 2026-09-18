@@ -19,12 +19,14 @@ import {
   LIST_PREVIEW_COUNT,
   collapsedGlobalListPersistFields,
   collapsedPicklistPersistFields,
+  collectNamedFormControls,
   listMutationOk,
   listOptionIdentitiesDuringTyping,
   listOptionNeedsCommit,
   listOptionRowKey,
   listOptionTypingRemounts,
   listSaveValues,
+  namedFormControlEntriesToFormData,
   visibleListItems,
 } from "@/lib/settings/list-editor";
 
@@ -97,6 +99,21 @@ describe("admin list editors", () => {
       "Paramed exam",
       "APS",
     ]);
+    const entries = collectNamedFormControls([
+      { name: "ids", value: "1" },
+      { name: "labels", value: "Active" },
+      { name: "itemColors", value: "cyan" },
+      { name: "itemColors", value: "green", disabled: true },
+      { name: "defaultIndex", value: "0", type: "radio", checked: false },
+      { name: "defaultIndex", value: "1", type: "radio", checked: true },
+    ]);
+    expect(entries).toEqual([
+      ["ids", "1"],
+      ["labels", "Active"],
+      ["itemColors", "cyan"],
+      ["defaultIndex", "1"],
+    ]);
+    expect(namedFormControlEntriesToFormData(entries).get("itemColors")).toBe("cyan");
   });
 
   it("saves picklist and global list names without a scroll-to-top redirect", () => {
@@ -104,9 +121,12 @@ describe("admin list editors", () => {
     expect(source("src/app/actions/field-picklists.ts")).not.toMatch(/flashAction\("\/settings\/picklists"/);
     expect(source("src/app/actions/global-lists.ts")).toMatch(/listMutationOk\("global-list-saved"\)/);
     expect(source("src/app/actions/global-lists.ts")).toMatch(/export async function saveGlobalList/);
+    expect(source("src/app/actions/global-lists.ts")).toMatch(/colorsAligned/);
     expect(source("src/app/actions/global-lists.ts")).toMatch(/export async function deleteGlobalList/);
     expect(source("src/app/actions/global-lists.ts")).toMatch(/export async function updateGlobalListItem/);
     expect(source("src/components/settings/stay-on-save-form.tsx")).toMatch(/router\.refresh\(\)/);
+    expect(source("src/components/settings/stay-on-save-form.tsx")).toMatch(/readListFormData/);
+    expect(source("src/components/settings/stay-on-save-form.tsx")).toMatch(/\[form="\$\{CSS\.escape\(form\.id\)\}"\]/);
     expect(source("src/app/actions/field-picklists.ts")).not.toMatch(/from "@\/lib\/flash-action"/);
     expect(source("src/app/actions/global-lists.ts")).not.toMatch(/from "@\/lib\/flash-action"/);
     expect(listMutationOk("pick-list-saved")).toEqual({
@@ -124,7 +144,8 @@ describe("admin list editors", () => {
     expect(listsPage).toMatch(/lg:grid-cols-2/);
     expect(pickPage).toMatch(/lg:grid-cols-2/);
     expect(globalCard).toMatch(/name="labels"/);
-    expect(globalCard).toMatch(/StatusColorSelect/);
+    expect(globalCard).toMatch(/updateGlobalListItemColor/);
+    expect(globalCard).toMatch(/name=""/);
     expect(globalCard).toMatch(/deleteGlobalList/);
     expect(globalCard).toMatch(/deleteGlobalListItem/);
     expect(globalCard).toMatch(/Add a value/);
@@ -134,9 +155,14 @@ describe("admin list editors", () => {
     expect(pickCard).toMatch(/ListOptionRow/);
     expect(pickCard).toMatch(/defaultValue=\{option\.color\}/);
     expect(globalCard).toMatch(/ListOptionRow/);
+    expect(globalCard).toMatch(/click Color for the full palette/);
+    expect(globalCard).toMatch(/colorAriaLabel="Color for new value"/);
+    expect(globalCard).not.toMatch(/function AddValueColor/);
+    expect(pickCard).toMatch(/click Color/);
     expect(source("src/components/settings/collapsible-list-card.tsx")).toMatch(/ff-list-card/);
     expect(source("src/components/settings/list-option-row.tsx")).toMatch(/data-ff-live-color-row/);
     expect(source("src/components/settings/list-option-row.tsx")).toMatch(/onColorChange/);
+    expect(source("src/components/desk/status-color-select.tsx")).toMatch(/data-ff-status-color-palette-trigger/);
     expect(source("src/app/globals.css")).toMatch(/\.ff-list-row/);
     expect(source("src/lib/flash.ts")).toMatch(/"pick-list-saved": "Pick list saved"/);
     expect(source("src/lib/flash.ts")).toMatch(/"global-list-saved": "Global list saved"/);
@@ -154,6 +180,7 @@ describe("admin list editors", () => {
     );
     expect(html).toContain('data-ff-live-color-row="teal"');
     expect(html).toContain('data-ff-status-color-swatch="teal"');
+    expect(html).toContain("data-ff-status-color-palette-trigger");
     expect(html).toContain('value="Open"');
     expect(html).not.toContain("useEffect");
     const row = source("src/components/settings/list-option-row.tsx");

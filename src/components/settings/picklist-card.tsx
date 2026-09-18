@@ -70,7 +70,7 @@ export function PicklistCard({ list }: { list: FieldPicklist }) {
               <FieldTypeIcon type="picklist" />
               <h2 className="text-sm font-semibold tracking-tight text-navy">{list.name}</h2>
               <span className="ff-list-count">{list.options.length}</span>
-              <span className="text-helper text-muted-foreground">A–Z · colors · default</span>
+              <span className="text-helper text-muted-foreground">A–Z · click Color · default</span>
             </div>
             <StayOnSaveForm id={saveFormId} action={saveFieldPicklist} flash="pick-list-saved" className="space-y-2">
               <input type="hidden" name="id" value={list.id} />

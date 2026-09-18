@@ -32,9 +32,16 @@ describe("sep7jf StatusColorSelect None + clear all colors", () => {
 
   it("puts None first in the shared StatusColorSelect markup", () => {
     const source = readFileSync("src/components/desk/status-color-select.tsx", "utf8");
-    expect(source).toMatch(/<option value="">None<\/option>/);
+    expect(source).toMatch(/type="hidden"/);
+    expect(source).toMatch(/inputRef\.current\.value = next/);
+    expect(source).toMatch(/data-ff-status-color-palette-none/);
     expect(source).toMatch(/statusColorSelectValue/);
     expect(source).not.toMatch(/defaultValue = "slate"/);
+    expect(source).toMatch(/data-ff-status-color-palette-trigger/);
+    expect(source).toMatch(/data-ff-status-color-palette=/);
+    expect(source).toMatch(/Full color palette/);
+    expect(source).toMatch(/DropdownMenuGroup/);
+    expect(source).toMatch(/\{selected \|\| "Color"\}/);
   });
 
   it("wires None for all on Global lists and Picklists", () => {
