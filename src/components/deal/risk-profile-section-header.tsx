@@ -29,7 +29,7 @@ export function useRiskProfileSectionDensity(
   const choices = riskProfileSectionChoices(maxColumns);
 
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect -- restore per-section density from session */
+    /* eslint-disable react-hooks/set-state-in-effect -- restore per-user density from localStorage */
     const stored = readStoredRiskProfileDensity(sectionId);
     if (stored) setDensityState(clampRiskProfileDensity(stored, maxColumns));
     /* eslint-enable react-hooks/set-state-in-effect */
