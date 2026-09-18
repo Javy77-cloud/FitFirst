@@ -1,9 +1,10 @@
-/** Source-document types on the Deal worksheet upload form only. */
+/** Source-document types on the Deal worksheet upload form only. Most-used first; Other last. */
 export const DEAL_WORKSHEET_SOURCE_DOC_TYPES = [
   { value: "dec", label: "Declaration page", shortLabel: "Dec page" },
+  { value: "wind_mit", label: "Wind mitigation", shortLabel: "Wind mit" },
+  { value: "floor_plan", label: "Floor plan", shortLabel: "Floor plan" },
   { value: "photo", label: "Photos", shortLabel: "Photos" },
   { value: "inspection", label: "Inspections", shortLabel: "Inspections" },
-  { value: "wind_mit", label: "Wind mitigation", shortLabel: "Wind mit" },
   { value: "report", label: "Reports", shortLabel: "Reports" },
   { value: "four_point", label: "4-point", shortLabel: "4-point" },
   { value: "other", label: "Other", shortLabel: "Other" },

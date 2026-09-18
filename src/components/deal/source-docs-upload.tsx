@@ -9,12 +9,7 @@ import {
   DEAL_WORKSHEET_SOURCE_DOC_TYPES,
   SOURCE_DOC_ACCEPT,
 } from "@/lib/deals/source-doc-types";
-
-type Row = { id: number; docType: string; fileName: string; pick: number };
-
-function emptyRow(id: number): Row {
-  return { id, docType: "dec", fileName: "", pick: 0 };
-}
+import { applyPickedFilesToRows, emptyUploadRow, type UploadDocRow } from "@/lib/documents/upload-rows";
 
 export function SourceDocsUpload({
   dealId,
@@ -25,10 +20,13 @@ export function SourceDocsUpload({
   riskId: string;
   line?: string | null;
 }) {
-  const [rows, setRows] = useState<Row[]>([emptyRow(0)]);
-  const [nextId, setNextId] = useState(1);
+  const [rows, setRows] = useState<UploadDocRow[]>([emptyUploadRow(0)]);
 
-  function patchRow(id: number, patch: Partial<Row>) {
+  function applyFiles(rowId: number, files: File[]) {
+    setRows((current) => applyPickedFilesToRows(current, rowId, files));
+  }
+
+  function patchRow(id: number, patch: Partial<UploadDocRow>) {
     setRows((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   }
 
@@ -36,7 +34,7 @@ export function SourceDocsUpload({
     setRows((current) => {
       if (current.length === 1) {
         return current.map((item) =>
-          item.id === id ? { ...item, fileName: "", pick: item.pick + 1 } : item,
+          item.id === id ? { ...item, fileName: "", file: null, pick: item.pick + 1 } : item,
         );
       }
       return current.filter((item) => item.id !== id);
@@ -72,8 +70,10 @@ export function SourceDocsUpload({
             name={`files_${index}`}
             accept={SOURCE_DOC_ACCEPT}
             keepLabel
+            multiple
+            assignedFile={row.file}
             className="h-8 shrink-0"
-            onFile={(file) => patchRow(row.id, { fileName: file?.name ?? "" })}
+            onFiles={(files) => applyFiles(row.id, files)}
           />
           {row.fileName ? (
             <span className="deal-doc-filename min-w-0 flex-1 truncate text-sm text-navy" data-testid="deal-doc-filename">
@@ -95,14 +95,16 @@ export function SourceDocsUpload({
           className="text-sm font-medium text-primary hover:underline"
           data-testid="deal-add-document"
           onClick={() => {
-            setRows((current) => [...current, emptyRow(nextId)]);
-            setNextId((n) => n + 1);
+            setRows((current) => [
+              ...current,
+              emptyUploadRow(Math.max(0, ...current.map((row) => row.id)) + 1),
+            ]);
           }}
         >
           + Add another document
         </button>
         <Button type="submit" size="sm">
-          Save
+          Create
         </Button>
       </div>
     </form>

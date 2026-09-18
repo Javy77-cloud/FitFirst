@@ -1,0 +1,50 @@
+/** Repeatable document-upload row used by deal Documents / attach forms. */
+
+export type UploadDocRow = {
+  id: number;
+  docType: string;
+  fileName: string;
+  pick: number;
+  file?: File | null;
+};
+
+export function emptyUploadRow(id: number, docType = "dec"): UploadDocRow {
+  return { id, docType, fileName: "", pick: 0, file: null };
+}
+
+/**
+ * Apply one or more picked files to a row.
+ * Empty / cancel → no-op.
+ * The first file fills the target row; each extra file becomes its own row
+ * (same shape as “+ Add another document”). Does not collapse files into one slot.
+ */
+export function applyPickedFilesToRows(
+  rows: UploadDocRow[],
+  rowId: number,
+  files: readonly File[],
+): UploadDocRow[] {
+  if (files.length === 0) return rows;
+  const target = rows.find((row) => row.id === rowId);
+  if (!target) return rows;
+
+  const first = files[0]!;
+  let nextId = Math.max(...rows.map((row) => row.id)) + 1;
+  const extras = files.slice(1).map((file) => {
+    const row: UploadDocRow = {
+      id: nextId,
+      docType: target.docType,
+      fileName: file.name,
+      pick: 0,
+      file,
+    };
+    nextId += 1;
+    return row;
+  });
+
+  return [
+    ...rows.map((row) =>
+      row.id === rowId ? { ...row, fileName: first.name, file: first } : row,
+    ),
+    ...extras,
+  ];
+}
