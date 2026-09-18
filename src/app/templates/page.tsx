@@ -17,8 +17,8 @@ const CARDS = [
   },
   {
     href: "/documents",
-    title: "Document templates",
-    body: "Forms and the document library used on shops and files.",
+    title: "Documents",
+    body: "Forms and the document library used on shops and files. Folders by type, carrier inside.",
   },
 ];
 
@@ -27,7 +27,7 @@ export default async function TemplatesHubPage() {
   return (
     <AppShell title="Templates" eyebrow="Library">
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Signatures, email templates, and document templates in one folder. Personal drafts live under
+        Signatures, email templates, and Documents in one folder. Personal drafts live under
         the avatar Settings menu.
       </p>
       <div className="grid gap-3 md:grid-cols-3">
