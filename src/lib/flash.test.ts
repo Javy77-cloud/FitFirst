@@ -1,11 +1,14 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  FLASH_COOKIE,
   FLASH_COPY,
   FLASH_KIND_PARAM,
   FLASH_PARAM,
   FLASH_STORAGE_KEY,
   clearPersistedFlash,
+  decodeFlashCookie,
   dealDetailsSavedHref,
+  encodeFlashCookie,
   quotesRequestedHref,
   persistFlash,
   readPersistedFlash,
@@ -52,6 +55,9 @@ describe("flash helper", () => {
     expect(resolveFlashMessage("document-deleted")).toBe("Document deleted");
     expect(resolveFlashMessage("documents-saved")).toBe("Documents saved");
     expect(FLASH_COPY["documents-saved"]).toBe("Documents saved");
+    expect(FLASH_COPY["choose-file"]).toBe("Choose a file to upload.");
+    expect(FLASH_COPY["documents-save-failed"]).toBe("Could not save documents. Try again.");
+    expect(FLASH_COPY["documents-too-large"]).toMatch(/too large/);
     expect(FLASH_COPY["deal-details-saved"]).toBe("Deal details saved");
     expect(FLASH_COPY["layout-saved"]).toBe("Deal layout saved");
     expect(FLASH_COPY["lead-saved"]).toBe("Lead saved");
@@ -124,6 +130,19 @@ describe("flash helper", () => {
     expect(readPersistedFlash()).toEqual({ message: "Sheet saved", kind: "success" });
     clearPersistedFlash();
     expect(readPersistedFlash()).toBeNull();
+  });
+
+  it("encodes a same-page flash cookie without a redirect query", () => {
+    expect(FLASH_COOKIE).toBe("ff-action-flash");
+    expect(encodeFlashCookie("esign-saved")).toBe("esign-saved|success");
+    expect(decodeFlashCookie("esign-saved|success")).toEqual({
+      message: "E-sign preference saved",
+      kind: "success",
+    });
+    expect(decodeFlashCookie(encodeFlashCookie("credentials-saved"))).toEqual({
+      message: "Credentials saved",
+      kind: "success",
+    });
   });
 });
 

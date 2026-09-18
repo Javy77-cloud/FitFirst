@@ -9,6 +9,8 @@ import { redirect } from "next/navigation";
 import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID, isShopLine, type ShopLine } from "@/lib/domain";
 import { withFlash } from "@/lib/flash";
 import { flashAction } from "@/lib/flash-action";
+import { dealDocumentsTabHref, type DealDocumentsSaveResult } from "@/lib/documents/deal-docs-save";
+import { isRedirectError } from "@/lib/lifecycle/shop";
 import { formTag, leadDocFormById, lineTag } from "@/lib/leads/line-documents";
 import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
 import { coerceDealUploadDocType, matchDealLookup, slotForDocType } from "@/lib/deals/lookup";
@@ -178,13 +180,14 @@ export async function persistFile(input: {
 export async function persistDealSourceUploads(formData: FormData): Promise<{
   count: number;
   last: Awaited<ReturnType<typeof persistFile>> | null;
+  attempted: number;
   createPolicyPrompt?: { documentId: string; carrierName: string; product?: string | null } | null;
 }> {
   let dealId = optionalId(formData, "dealId");
   let riskId = optionalId(formData, "riskId");
   let contactId = optionalId(formData, "contactId");
   let policyId = optionalId(formData, "policyId");
-  let folderId = optionalId(formData, "folderId");
+  const folderId = optionalId(formData, "folderId");
   if (folderId) {
     const [folder] = await db.select().from(documentFolders).where(eq(documentFolders.id, folderId));
     if (folder) {
@@ -207,9 +210,9 @@ export async function persistDealSourceUploads(formData: FormData): Promise<{
     }
   }
   const uploads = await collectUploadedFiles(formData);
-  if (uploads.length === 0) return { count: 0, last: null, createPolicyPrompt: null };
+  if (uploads.length === 0) return { count: 0, last: null, attempted: 0, createPolicyPrompt: null };
   if (!dealId && !contactId && !policyId && !folderId && !formData.get("library")) {
-    return { count: 0, last: null, createPolicyPrompt: null };
+    return { count: 0, last: null, attempted: uploads.length, createPolicyPrompt: null };
   }
   const library = String(formData.get("library") ?? "").trim() === "forms" ? "forms" : "shared";
   const fillable = String(formData.get("fillable") ?? "") === "on" || String(formData.get("fillable") ?? "") === "true";
@@ -235,21 +238,27 @@ export async function persistDealSourceUploads(formData: FormData): Promise<{
     });
     const lineRaw = String(formData.get("line") ?? "").trim();
     const lineTags = dealId && isShopLine(lineRaw) ? [lineTag(lineRaw)] : [];
-    const doc = await persistFile({
-      dealId,
-      riskId,
-      contactId,
-      policyId,
-      folderId: resolvedFolder,
-      library,
-      fillable: fillable || library === "forms",
-      filename: upload.filename,
-      mimeType: upload.file.type || "application/octet-stream",
-      buffer: upload.bytes,
-      docType,
-      slot,
-      tags: [...parseTags(formData.get("tags")), ...lineTags],
-    });
+    let doc: Awaited<ReturnType<typeof persistFile>> | null = null;
+    try {
+      doc = await persistFile({
+        dealId,
+        riskId,
+        contactId,
+        policyId,
+        folderId: resolvedFolder,
+        library,
+        fillable: fillable || library === "forms",
+        filename: upload.filename,
+        mimeType: upload.file.type || "application/octet-stream",
+        buffer: upload.bytes,
+        docType,
+        slot,
+        tags: [...parseTags(formData.get("tags")), ...lineTags],
+      });
+    } catch (error) {
+      console.error("[persistDealSourceUploads]", error);
+      continue;
+    }
     if (doc?.riskId && !(doc.slot === "source_doc" && docTypeUsesGemini(doc.docType))) {
       await runExtraction(doc.id, doc.dealId ?? "").catch(() => null);
     }
@@ -277,13 +286,42 @@ export async function persistDealSourceUploads(formData: FormData): Promise<{
       filename: lastDeclaration.filename,
       carrierName,
       product,
+    }).catch((error) => {
+      console.error("[persistDealSourceUploads] create-policy prompt", error);
+      return null;
     });
   }
-  return { count, last, createPolicyPrompt };
+  return { count, last, attempted: uploads.length, createPolicyPrompt };
 }
 
 export async function extractDocument(documentId: string, dealId: string) {
   await runExtraction(documentId, dealId);
+}
+
+/**
+ * Deal Documents "Save files". Returns a result instead of redirect() so the
+ * client onSubmit path cannot mis-handle NEXT_REDIRECT as documents-save-failed.
+ */
+export async function saveDealDocuments(formData: FormData): Promise<DealDocumentsSaveResult> {
+  const dealId = optionalId(formData, "dealId");
+  if (!dealId) {
+    return { ok: false, count: 0, reason: "documents-save-failed" };
+  }
+  try {
+    const { count, last, attempted } = await persistDealSourceUploads(formData);
+    if (count === 0 || !last) {
+      return {
+        ok: false,
+        count: 0,
+        reason: attempted > 0 ? "documents-save-failed" : "choose-file",
+      };
+    }
+    revalidateDocumentPaths(last);
+    return { ok: true, count };
+  } catch (error) {
+    console.error("[saveDealDocuments]", error);
+    return { ok: false, count: 0, reason: "documents-save-failed" };
+  }
 }
 
 function revalidateDocumentPaths(doc: {
@@ -301,47 +339,62 @@ function revalidateDocumentPaths(doc: {
 }
 
 export async function uploadDocument(formData: FormData) {
-  const { count, last, createPolicyPrompt } = await persistDealSourceUploads(formData);
-  if (count === 0 || !last) {
-    throw new Error("Choose a file to upload.");
-  }
-  if (last) revalidateDocumentPaths(last);
-  const afterAction = String(formData.get("after") ?? "");
-  // Explicit Upload-and-fill (SheetDrop) only — Documents Save must not auto-Fill.
-  if (last?.dealId && afterAction === "fill-sheet") {
-    const dealId = last.dealId;
-    const line = String(formData.get("line") ?? "home") || "home";
-    const tab = String(formData.get("returnTab") ?? "documents") || "documents";
-    if (last.slot === "source_doc") {
-      after(() => fillDealSheetIfReady(dealId, line));
-    }
-    redirect(withFlash(`/deals/${last.dealId}?tab=${tab}&notice=filled&line=${line}`, "sheet-filled"));
-  }
-  if (formData.get("library")) {
-    const library = String(formData.get("library") ?? "").trim() === "forms" ? "forms" : "shared";
-    const folderId = optionalId(formData, "folderId");
-    redirect(withFlash(libraryHref({ library, folderId, notice: "uploaded" }), "document-uploaded"));
-  }
-  if (last?.dealId) {
-    const line = String(formData.get("line") ?? "").trim();
-    const product = String(formData.get("product") ?? "").trim();
-    if (createPolicyPrompt) {
-      const query = new URLSearchParams({
-        tab: "quotes",
-        createPolicy: "1",
-        doc: createPolicyPrompt.documentId,
-        carrier: createPolicyPrompt.carrierName,
-      });
-      if (line) query.set("line", line);
-      if (product || createPolicyPrompt.product) {
-        query.set("product", product || createPolicyPrompt.product || "");
+  const dealId = optionalId(formData, "dealId");
+  const lineHint = String(formData.get("line") ?? "").trim();
+  const documentsHref = dealId ? dealDocumentsTabHref(dealId, lineHint) : null;
+  try {
+    const { count, last, attempted, createPolicyPrompt } = await persistDealSourceUploads(formData);
+    if (count === 0 || !last) {
+      if (documentsHref) {
+        flashAction(documentsHref, attempted > 0 ? "documents-save-failed" : "choose-file", "error");
       }
-      flashAction(`/deals/${last.dealId}?${query.toString()}`, "declaration-received");
+      throw new Error("Choose a file to upload.");
     }
-    const href = line
-      ? `/deals/${last.dealId}?tab=documents&line=${line}`
-      : `/deals/${last.dealId}?tab=documents`;
-    flashAction(href, "documents-saved");
+    revalidateDocumentPaths(last);
+    const afterAction = String(formData.get("after") ?? "");
+    // Explicit Upload-and-fill (SheetDrop) only — Documents Save must not auto-Fill.
+    if (last.dealId && afterAction === "fill-sheet") {
+      const savedDealId = last.dealId;
+      const line = String(formData.get("line") ?? "home") || "home";
+      const tab = String(formData.get("returnTab") ?? "documents") || "documents";
+      if (last.slot === "source_doc") {
+        after(() => fillDealSheetIfReady(savedDealId, line));
+      }
+      redirect(withFlash(`/deals/${last.dealId}?tab=${tab}&notice=filled&line=${line}`, "sheet-filled"));
+    }
+    if (formData.get("library")) {
+      const library = String(formData.get("library") ?? "").trim() === "forms" ? "forms" : "shared";
+      const folderId = optionalId(formData, "folderId");
+      redirect(withFlash(libraryHref({ library, folderId, notice: "uploaded" }), "document-uploaded"));
+    }
+    if (last.dealId) {
+      const line = String(formData.get("line") ?? "").trim();
+      const product = String(formData.get("product") ?? "").trim();
+      if (createPolicyPrompt) {
+        const query = new URLSearchParams({
+          tab: "quotes",
+          createPolicy: "1",
+          doc: createPolicyPrompt.documentId,
+          carrier: createPolicyPrompt.carrierName,
+        });
+        if (line) query.set("line", line);
+        if (product || createPolicyPrompt.product) {
+          query.set("product", product || createPolicyPrompt.product || "");
+        }
+        flashAction(`/deals/${last.dealId}?${query.toString()}`, "declaration-received");
+      }
+      flashAction(dealDocumentsTabHref(last.dealId, line), "documents-saved");
+    }
+  } catch (error) {
+    if (isRedirectError(error)) throw error;
+    if (documentsHref) {
+      const message =
+        error instanceof Error && error.message === "Choose a file to upload."
+          ? "choose-file"
+          : "documents-save-failed";
+      flashAction(documentsHref, message, "error");
+    }
+    throw error;
   }
 }
 

@@ -41,15 +41,19 @@ import { DEFAULT_HEALTH_SUBFILTERS, DEFAULT_LIFE_SUBFILTERS } from "@/lib/desk/l
 import { db } from "@/lib/db";
 import { agencySettings } from "@/lib/db/schema";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
+import { parseQuickCommsKind } from "@/lib/desk/quick-comms-open";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeadDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ qc?: string }>;
 }) {
   const { id } = await params;
+  const { qc } = (await searchParams) ?? {};
   if (!isUuid(id)) notFound();
   const [row, users, session, agents, routingLog, macros, buttons, scripts, tagExtra, leadLayout, deskLineSettings, comms, agencyRow] =
     await Promise.all([
@@ -212,6 +216,7 @@ export default async function LeadDetailPage({
               contactEmail={lead.email}
               officeAddress={officeAddress}
               clientAddress={clientAddress}
+              initialKind={parseQuickCommsKind(qc)}
             />
             <RecordContextRail context={context} defaultTab="info" headingName={partyName} />
           </>

@@ -29,6 +29,9 @@ describe("site-wide action confirmation toast", () => {
     expect(host).toMatch(/requestAnimationFrame/);
     expect(host).toMatch(/router\.replace/);
     expect(host).toMatch(/router\.refresh/);
+    expect(host).toMatch(/readFlashCookie/);
+    expect(host).toMatch(/lockFlashScroll/);
+    expect(host).toMatch(/window\.location\.hash/);
 
     const layout = source("src/app/layout.tsx");
     expect(layout).toMatch(/ActionToastHost/);
@@ -39,12 +42,12 @@ describe("site-wide action confirmation toast", () => {
     const values = source("src/app/actions/custom-fields.ts");
     expect(values).toMatch(/dealDetailsSavedHref\(dealId/);
     expect(values).toMatch(/"deal-details-saved"/);
-    expect(values).toMatch(/flashAction\(fieldBuilderHref\(module, line\), "layout-saved"\)/);
+    expect(values).toMatch(/flashSettings\(fieldBuilderHref\(module, line\), "layout-saved"\)/);
     expect(values).toMatch(/str\(formData, "line"\)/);
     expect(values).toMatch(/product: product \|\| str\(formData, "product"\)/);
     expect(values).toMatch(/throw new Error\("Deal details could not be saved\."\)/);
     const layoutAt = values.indexOf("await saveLayoutForEveryLine(layout)");
-    const flashAt = values.indexOf('flashAction(fieldBuilderHref(module, line), "layout-saved")');
+    const flashAt = values.indexOf('flashSettings(fieldBuilderHref(module, line), "layout-saved")', layoutAt);
     expect(layoutAt).toBeGreaterThan(-1);
     expect(flashAt).toBeGreaterThan(layoutAt);
 
@@ -58,7 +61,7 @@ describe("site-wide action confirmation toast", () => {
 
     const master = source("src/components/deal/master-sheet-compare.tsx");
     expect(master).toMatch(/action=\{saveQuoteSheet\}/);
-    expect(master).toMatch(/Save Risk Profile/);
+    expect(master).toMatch(/SAVE_RISK_PROFILE_LABEL/);
     expect(master).toMatch(/name="returnTo"/);
   });
 
@@ -86,6 +89,8 @@ describe("site-wide action confirmation toast", () => {
     );
     expect(source("src/lib/flash-action.ts")).toMatch(/export function flashAction/);
     expect(source("src/lib/flash-action.ts")).toMatch(/export function flashStay/);
+    expect(source("src/lib/flash-action.ts")).toMatch(/export async function flashSettings/);
+    expect(source("src/lib/flash-action.ts")).toMatch(/flashInPlace/);
     expect(source("src/lib/flash-client.ts")).toMatch(/export function flashAction/);
   });
 
@@ -94,30 +99,30 @@ describe("site-wide action confirmation toast", () => {
     expect(source("src/components/settings/stay-on-save-form.tsx")).toMatch(/flashAction\(/);
     expect(source("src/components/settings/stay-on-save-form.tsx")).toMatch(/router\.refresh\(\)/);
     expect(source("src/app/actions/policy-record.ts")).toMatch(/flashAction\(`\/policies\/\$\{id\}`, "policy-saved"\)/);
-    expect(source("src/app/actions/agency.ts")).toMatch(/flashAction\("\/settings", "brand-saved"\)/);
-    expect(source("src/app/actions/agency.ts")).toMatch(/flashAction\("\/settings", "template-saved"\)/);
-    expect(source("src/app/actions/brand.ts")).toMatch(/flashAction\("\/settings\/agency", "brand-saved"\)/);
-    expect(source("src/app/actions/brand.ts")).toMatch(/flashAction\("\/settings\/my-desk", "desk-saved"\)/);
+    expect(source("src/app/actions/agency.ts")).toMatch(/flashSettings\("\/settings", "brand-saved"\)/);
+    expect(source("src/app/actions/agency.ts")).toMatch(/flashSettings\("\/settings", "template-saved"\)/);
+    expect(source("src/app/actions/brand.ts")).toMatch(/flashSettings\("\/settings\/agency", "brand-saved"\)/);
+    expect(source("src/app/actions/brand.ts")).toMatch(/flashSettings\("\/settings\/my-desk", "desk-saved"\)/);
     expect(source("src/app/actions/home-dashboard.ts")).toMatch(/flashAction\("\/", "widgets-saved"\)/);
     expect(source("src/app/actions/home-dashboard.ts")).toMatch(/flashAction\("\/", "home-layout-saved"\)/);
     expect(source("src/app/actions/nav-layout.ts")).toMatch(/flashAction\("\/me", "settings-saved"\)/);
     expect(source("src/app/actions/line-settings.ts")).toMatch(
-      /flashAction\("\/settings\/lines", "line-settings-saved"\)/,
+      /flashSettings\("\/settings\/lines", "line-settings-saved"\)/,
     );
-    expect(source("src/app/actions/offices.ts")).toMatch(/flashAction\("\/settings\/offices", "office-saved"\)/);
+    expect(source("src/app/actions/offices.ts")).toMatch(/flashSettings\("\/settings\/offices", "office-saved"\)/);
     expect(source("src/app/actions/offices.ts")).toMatch(
-      /flashAction\("\/settings\/territories", "territory-saved"\)/,
+      /flashSettings\("\/settings\/territories", "territory-saved"\)/,
     );
-    expect(source("src/app/actions/lead-routing.ts")).toMatch(/flashAction\("\/settings\/routing", "rule-saved"\)/);
-    expect(source("src/app/actions/telephony.ts")).toMatch(/flashAction\("\/settings\/phone", "phone-saved"\)/);
-    expect(source("src/app/actions/esign-settings.ts")).toMatch(/flashAction\("\/settings\/esign", "esign-saved"\)/);
+    expect(source("src/app/actions/lead-routing.ts")).toMatch(/flashSettings\("\/settings\/routing", "rule-saved"\)/);
+    expect(source("src/app/actions/telephony.ts")).toMatch(/flashSettings\("\/settings\/phone", "phone-saved"\)/);
+    expect(source("src/app/actions/esign-settings.ts")).toMatch(/flashSettings\("\/settings\/esign", "esign-saved"\)/);
     expect(source("src/app/actions/people.ts")).toMatch(
-      /flashAction\(`\/settings\/agents\/\$\{id\}`, "privileges-saved"\)/,
+      /flashSettings\(`\/settings\/agents\/\$\{id\}`, "privileges-saved"\)/,
     );
-    expect(source("src/app/actions/mfa.ts")).toMatch(/flashAction\("\/settings\/profile", "profile-saved"\)/);
-    expect(source("src/app/actions/mfa.ts")).toMatch(/flashAction\("\/settings\/security", "password-saved"\)/);
+    expect(source("src/app/actions/mfa.ts")).toMatch(/flashSettings\("\/settings\/profile", "profile-saved"\)/);
+    expect(source("src/app/actions/mfa.ts")).toMatch(/flashSettings\("\/settings\/security", "password-saved"\)/);
     expect(source("src/app/actions/meetings.ts")).toMatch(
-      /flashAction\("\/settings\/communications", "communications-saved"\)/,
+      /flashSettings\("\/settings\/communications", "communications-saved"\)/,
     );
     expect(source("src/app/actions/activities-desk.ts")).toMatch(/"changes-saved"/);
     expect(source("src/app/actions/alerts.ts")).toMatch(/flashAction\(`\/tasks\/\$\{id\}`, "changes-saved"\)/);

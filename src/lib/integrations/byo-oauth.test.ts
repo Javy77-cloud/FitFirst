@@ -175,7 +175,8 @@ describe("BYO OAuth wave", () => {
     const startAction = readFileSync("src/app/actions/byo-oauth.ts", "utf8");
     expect(startAction).toMatch(/isPlatformHostedGoogleOauth\(raw\) && !envHasOauthApp\("google"\)/);
     expect(startAction).toMatch(/startByoOauthCredentialNotice/);
-    expect(startAction).toMatch(/if \(isPlatformHostedGoogleOauth\(raw\)\) \{\s*redirect\(`\$\{dest\}\?notice=google-connect-not-setup/);
+    expect(startAction).toMatch(/Google Connect does not take a pasted Client ID/);
+    expect(startAction).toMatch(/isPlatformHostedGoogleOauth\(raw\) && !envHasOauthApp\("google"\)/);
 
     const card = readFileSync("src/components/settings/byo-oauth-card.tsx", "utf8");
     expect(card).toMatch(/showsByoCredentialPasteForm\(item\.id\)/);

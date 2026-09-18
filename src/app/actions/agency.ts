@@ -9,7 +9,7 @@ import { db } from "@/lib/db";
 import { agencySettings, emailTemplates } from "@/lib/db/schema";
 import { currentDeskSession } from "@/lib/auth/session";
 import { AGENCY_SETTINGS_ID } from "@/lib/fixtures/ids";
-import { flashAction } from "@/lib/flash-action";
+import { flashSettings } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -42,7 +42,7 @@ export async function saveAgencyBrand(formData: FormData) {
   }
   revalidatePath("/");
   revalidatePath("/settings");
-  flashAction("/settings", "brand-saved");
+  await flashSettings("/settings", "brand-saved");
 }
 
 export async function uploadAgencyLogo(formData: FormData) {
@@ -103,5 +103,5 @@ export async function saveEmailTemplate(formData: FormData) {
     })
     .where(and(eq(emailTemplates.tenantId, DEFAULT_TENANT_ID), eq(emailTemplates.id, id)));
   revalidatePath("/settings");
-  flashAction("/settings", "template-saved");
+  await flashSettings("/settings", "template-saved");
 }

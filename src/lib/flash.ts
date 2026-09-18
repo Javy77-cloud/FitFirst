@@ -4,6 +4,8 @@ export const FLASH_EVENT = "ff-flash";
 export const FLASH_DISMISS_MS = 2500;
 /** sessionStorage key so ActionToastHost survives Suspense remount after ?flash= strip. */
 export const FLASH_STORAGE_KEY = "ff-action-toast";
+/** Cookie set when a same-page save toasts without redirecting. */
+export const FLASH_COOKIE = "ff-action-flash";
 
 export type FlashKind = "success" | "error";
 
@@ -94,6 +96,9 @@ export const FLASH_COPY = {
   "document-deleted": "Document deleted",
   "document-replaced": "Document replaced",
   "documents-saved": "Documents saved",
+  "choose-file": "Choose a file to upload.",
+  "documents-save-failed": "Could not save documents. Try again.",
+  "documents-too-large": "Those files are too large to upload together. Try fewer or smaller files.",
   "document-uploaded": "Files saved",
   "image-uploaded": "Image uploaded",
   "market-added": "Market added",
@@ -190,6 +195,42 @@ export function clearPersistedFlash(): void {
   } catch {
     // ignore
   }
+}
+
+export function encodeFlashCookie(message: string, kind: FlashKind = "success"): string {
+  return `${encodeURIComponent(message)}|${kind}`;
+}
+
+export function decodeFlashCookie(raw: string | null | undefined): FlashPayload | null {
+  if (raw == null) return null;
+  let value = raw.trim();
+  if (!value) return null;
+  try {
+    value = decodeURIComponent(value);
+  } catch {
+    // already decoded
+  }
+  const sep = value.lastIndexOf("|");
+  const messageRaw = sep >= 0 ? value.slice(0, sep) : value;
+  const kindRaw = sep >= 0 ? value.slice(sep + 1) : "success";
+  const message = resolveFlashMessage(messageRaw);
+  if (!message) return null;
+  return { message, kind: kindRaw === "error" ? "error" : "success" };
+}
+
+export function readFlashCookie(): FlashPayload | null {
+  if (typeof document === "undefined") return null;
+  const parts = document.cookie.split("; ");
+  for (const part of parts) {
+    if (!part.startsWith(`${FLASH_COOKIE}=`)) continue;
+    return decodeFlashCookie(part.slice(FLASH_COOKIE.length + 1));
+  }
+  return null;
+}
+
+export function clearFlashCookie(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${FLASH_COOKIE}=; path=/; max-age=0`;
 }
 
 /** After Save Deal Details, stay on Details with a success flash; keep line/product. */

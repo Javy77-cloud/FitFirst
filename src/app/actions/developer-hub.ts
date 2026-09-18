@@ -16,7 +16,7 @@ import {
 import { mergeTokens, type MergeRecord } from "@/lib/developer-hub/merge";
 import { parseJsonInput } from "@/lib/developer-hub/runner";
 import { applyMacroToRecords } from "@/lib/developer-hub/run-macro";
-import { flashAction } from "@/lib/flash-action";
+import { flashAction, flashSettings } from "@/lib/flash-action";
 import {
   createDeveloperConnection,
   createDeveloperFunction,
@@ -365,14 +365,15 @@ export async function saveDeskMacro(formData: FormData) {
       .set(values)
       .where(and(eq(deskMacros.tenantId, DEFAULT_TENANT_ID), eq(deskMacros.id, id)));
     refreshHub([`/automations/macros/${id}`, `/settings/developer-hub/macros/${id}`]);
-    flashAction(`/settings/developer-hub/macros/${id}`, "macro-saved");
+    await flashSettings(`/settings/developer-hub/macros/${id}`, "macro-saved");
+    return;
   }
   const [created] = await db
     .insert(deskMacros)
     .values({ tenantId: DEFAULT_TENANT_ID, ...values })
     .returning({ id: deskMacros.id });
   refreshHub([`/automations/macros/${created.id}`, `/settings/developer-hub/macros/${created.id}`]);
-  flashAction(`/settings/developer-hub/macros/${created.id}`, "macro-saved");
+  await flashSettings(`/settings/developer-hub/macros/${created.id}`, "macro-saved");
 }
 
 export async function deleteDeskMacro(formData: FormData) {
@@ -451,14 +452,15 @@ export async function saveDeskButton(formData: FormData) {
       .set(values)
       .where(and(eq(deskCustomButtons.tenantId, DEFAULT_TENANT_ID), eq(deskCustomButtons.id, id)));
     refreshHub([`/automations/buttons/${id}`, `/settings/developer-hub/custom-buttons/${id}`]);
-    flashAction(`/settings/developer-hub/custom-buttons/${id}`, "button-saved");
+    await flashSettings(`/settings/developer-hub/custom-buttons/${id}`, "button-saved");
+    return;
   }
   const [created] = await db
     .insert(deskCustomButtons)
     .values({ tenantId: DEFAULT_TENANT_ID, ...values })
     .returning({ id: deskCustomButtons.id });
   refreshHub();
-  flashAction(`/settings/developer-hub/custom-buttons/${created.id}`, "button-saved");
+  await flashSettings(`/settings/developer-hub/custom-buttons/${created.id}`, "button-saved");
 }
 
 export async function deleteDeskButton(formData: FormData) {
@@ -546,14 +548,15 @@ export async function saveDeskScript(formData: FormData) {
       .set(values)
       .where(and(eq(deskClientScripts.tenantId, DEFAULT_TENANT_ID), eq(deskClientScripts.id, id)));
     refreshHub([`/automations/client-scripts/${id}`, `/settings/developer-hub/client-scripts/${id}`]);
-    flashAction(`/settings/developer-hub/client-scripts/${id}`, "script-saved");
+    await flashSettings(`/settings/developer-hub/client-scripts/${id}`, "script-saved");
+    return;
   }
   const [created] = await db
     .insert(deskClientScripts)
     .values({ tenantId: DEFAULT_TENANT_ID, ...values })
     .returning({ id: deskClientScripts.id });
   refreshHub();
-  flashAction(`/settings/developer-hub/client-scripts/${created.id}`, "script-saved");
+  await flashSettings(`/settings/developer-hub/client-scripts/${created.id}`, "script-saved");
 }
 
 export async function deleteDeskScript(formData: FormData) {
@@ -598,14 +601,15 @@ export async function saveDeskWidget(formData: FormData) {
       .set(values)
       .where(and(eq(deskWidgets.tenantId, DEFAULT_TENANT_ID), eq(deskWidgets.id, id)));
     refreshHub([`/settings/developer-hub/widgets/${id}`]);
-    flashAction(`/settings/developer-hub/widgets/${id}`, "widget-saved");
+    await flashSettings(`/settings/developer-hub/widgets/${id}`, "widget-saved");
+    return;
   }
   const [created] = await db
     .insert(deskWidgets)
     .values({ tenantId: DEFAULT_TENANT_ID, ...values })
     .returning({ id: deskWidgets.id });
   refreshHub();
-  flashAction(`/settings/developer-hub/widgets/${created.id}`, "widget-saved");
+  await flashSettings(`/settings/developer-hub/widgets/${created.id}`, "widget-saved");
 }
 
 export async function deleteDeskWidget(formData: FormData) {

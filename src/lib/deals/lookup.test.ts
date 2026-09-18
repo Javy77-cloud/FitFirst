@@ -67,5 +67,7 @@ describe("deal upload slots", () => {
     expect(coerceDealUploadDocType("permits")).toBe("permits");
     expect(coerceDealUploadDocType("mystery")).toBe("other");
     expect(coerceDealUploadDocType("report")).toBe("report");
+    expect(coerceDealUploadDocType("floor_plan")).toBe("floor_plan");
+    expect(coerceDealUploadDocType("floorplan")).toBe("floor_plan");
   });
 });

@@ -1,10 +1,10 @@
 import {
   clearByoOauthCredentials,
   disconnectByoOauth,
-  saveByoOauthCredentials,
   smokeTestByoProvider,
   startByoOauth,
 } from "@/app/actions/byo-oauth";
+import { ByoOauthCredentialsForm } from "@/components/settings/byo-oauth-credentials-form";
 import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -147,44 +147,7 @@ export function ByoOauthCard({
           ) : null}
 
           {showsByoCredentialPasteForm(item.id) ? (
-            <form action={saveByoOauthCredentials} className="space-y-2">
-              <input type="hidden" name="provider" value={item.id} />
-              <input type="hidden" name="next" value={returnTo} />
-              <div>
-                <Label className="text-xs">{spec.clientIdLabel}</Label>
-                <Input
-                  name="clientId"
-                  defaultValue={item.clientId ?? ""}
-                  className="mt-1"
-                  autoComplete="off"
-                  placeholder={spec.developerAppName}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">{spec.clientSecretLabel}</Label>
-                <Input
-                  name="clientSecret"
-                  type="password"
-                  defaultValue={item.hasCredentials && !item.hasEnvCredentials ? "••••••••••••" : ""}
-                  className="mt-1"
-                  autoComplete="new-password"
-                  placeholder={item.hasCredentials ? "Saved · leave to keep" : "Agency secret only"}
-                />
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button type="submit" size="sm" variant="outline">
-                  Save credentials
-                </Button>
-                <a
-                  href={spec.developerUrl}
-                  target="_blank"
-                  rel="noopener"
-                  className="text-helper text-primary hover:underline"
-                >
-                  Create free {spec.vendor} app
-                </a>
-              </div>
-            </form>
+            <ByoOauthCredentialsForm item={item} spec={spec} returnTo={returnTo} />
           ) : null}
 
           <div className="flex flex-wrap items-center gap-2">

@@ -1,5 +1,6 @@
 import {
   isCompactLayoutField,
+  isTrueAddressFieldKey,
   type LayoutFieldHint,
 } from "@/lib/custom-fields/section-density";
 import type { QuoteFieldDef } from "./applicant-core";
@@ -13,7 +14,9 @@ export const RISK_PROFILE_SHORT_FIELD_MAX: RiskProfileDensity = 5;
 /** Fallback when a section has no short-field default. */
 export const DEFAULT_RISK_PROFILE_DENSITY: RiskProfileDensity = 3;
 
+/** localStorage prefix. Full key is `${RISK_PROFILE_DENSITY_STORAGE_KEY}:${userId}`. */
 export const RISK_PROFILE_DENSITY_STORAGE_KEY = "ff-risk-profile-section-density";
+export const RISK_PROFILE_DENSITY_ANON_USER = "anon";
 
 const FIVE_COL_SECTIONS =
   /^(property|dwelling|location|premises|building|structure|vehicles?|drivers?|commercial property|commercial auto)$/i;
@@ -75,12 +78,70 @@ export function riskProfileSectionDensityId(title: string): string {
   return title.trim() || "section";
 }
 
-export function readStoredRiskProfileDensity(sectionId: string): RiskProfileDensity | undefined {
+/** Signed-in user id from the root layout stamp, or an explicit override. */
+export function riskProfileDensityUserKey(userId?: string | null): string {
+  const explicit = typeof userId === "string" ? userId.trim() : "";
+  if (explicit) return explicit;
+  return readDomUserId() || RISK_PROFILE_DENSITY_ANON_USER;
+}
+
+export function riskProfileDensityStorageKey(userId?: string | null): string {
+  return `${RISK_PROFILE_DENSITY_STORAGE_KEY}:${riskProfileDensityUserKey(userId)}`;
+}
+
+function readDomUserId(): string {
+  if (typeof document === "undefined") return "";
+  try {
+    const fromHtml = document.documentElement?.dataset?.ffUserId?.trim();
+    if (fromHtml) return fromHtml;
+    const stamped = document.querySelector("[data-ff-user-id]")?.getAttribute("data-ff-user-id");
+    return stamped?.trim() ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function parseDensityRecord(raw: string | null): Record<string, unknown> {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return parsed as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function readStorageItem(storage: Storage | undefined, key: string): string | null {
+  if (!storage) return null;
+  try {
+    return storage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/** User-keyed localStorage, then unscoped local/session leftovers from earlier builds. */
+function readDensityRecord(userId?: string | null): Record<string, unknown> {
+  if (typeof window === "undefined") return {};
+  const userKey = riskProfileDensityStorageKey(userId);
+  const local = window.localStorage;
+  const session = window.sessionStorage;
+  return parseDensityRecord(
+    readStorageItem(local, userKey) ??
+      readStorageItem(local, RISK_PROFILE_DENSITY_STORAGE_KEY) ??
+      readStorageItem(session, userKey) ??
+      readStorageItem(session, RISK_PROFILE_DENSITY_STORAGE_KEY),
+  );
+}
+
+export function readStoredRiskProfileDensity(
+  sectionId: string,
+  userId?: string | null,
+): RiskProfileDensity | undefined {
   if (typeof window === "undefined") return undefined;
   try {
-    const raw = window.sessionStorage.getItem(RISK_PROFILE_DENSITY_STORAGE_KEY);
-    if (!raw) return undefined;
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const parsed = readDensityRecord(userId);
     if (!(sectionId in parsed)) return undefined;
     return riskProfileDensityOf(parsed[sectionId]);
   } catch {
@@ -88,13 +149,16 @@ export function readStoredRiskProfileDensity(sectionId: string): RiskProfileDens
   }
 }
 
-export function writeStoredRiskProfileDensity(sectionId: string, density: RiskProfileDensity) {
+export function writeStoredRiskProfileDensity(
+  sectionId: string,
+  density: RiskProfileDensity,
+  userId?: string | null,
+) {
   if (typeof window === "undefined") return;
   try {
-    const raw = window.sessionStorage.getItem(RISK_PROFILE_DENSITY_STORAGE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+    const parsed = readDensityRecord(userId);
     parsed[sectionId] = density;
-    window.sessionStorage.setItem(RISK_PROFILE_DENSITY_STORAGE_KEY, JSON.stringify(parsed));
+    window.localStorage.setItem(riskProfileDensityStorageKey(userId), JSON.stringify(parsed));
   } catch {
     /* ignore quota / private mode */
   }
@@ -105,7 +169,7 @@ export function sheetFieldLayoutHint(field: QuoteFieldDef | undefined): LayoutFi
   if (field.input === "textarea" || field.input === "multiselect" || field.input === "chips") {
     return { type: "multi_line" };
   }
-  if (/(^|_)address$/.test(field.key) || field.key.includes("address")) {
+  if (isTrueAddressFieldKey(field.key)) {
     return { type: "address" };
   }
   if (field.options && field.options.length > 0) {

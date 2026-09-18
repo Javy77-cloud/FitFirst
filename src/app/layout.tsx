@@ -34,11 +34,16 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const jar = await cookies();
-  if (jar.get(SESSION_COOKIES.actorId)?.value) {
+  const userId = jar.get(SESSION_COOKIES.actorId)?.value ?? "";
+  if (userId) {
     preloadDeskShell();
   }
   return (
-    <html lang="en" className={`${plex.variable} ${plexMono.variable} h-full`}>
+    <html
+      lang="en"
+      className={`${plex.variable} ${plexMono.variable} h-full`}
+      data-ff-user-id={userId}
+    >
       <body className="min-h-full">
         {children}
         <Suspense fallback={null}>

@@ -11,13 +11,8 @@ import { suggestParties, type PartyHit, type PartyRecord } from "@/lib/crm/party
 import { matchDealLookup, suggestDealLookup, type DealLookupRow } from "@/lib/deals/lookup";
 import { uploadDealCta, uploadDealCtaLabel } from "@/lib/deals/pipeline-desk";
 import { DEAL_UPLOAD_DOC_TYPES, DOC_TYPE_LABELS } from "@/lib/domain";
+import { applyPickedFilesToRows, emptyUploadRow, type UploadDocRow } from "@/lib/documents/upload-rows";
 import { setLiveQuery } from "@/lib/search/live-query";
-
-type Row = { id: number; docType: string; fileName: string; pick: number };
-
-function emptyRow(id: number): Row {
-  return { id, docType: "dec", fileName: "", pick: 0 };
-}
 
 export function DealDocsUpload({
   deals,
@@ -34,8 +29,11 @@ export function DealDocsUpload({
     lockedDeal ? lockedDeal.partyName || lockedDeal.title : "",
   );
   const [dealId, setDealId] = useState(lockedDeal?.id ?? "");
-  const [rows, setRows] = useState<Row[]>([emptyRow(0)]);
-  const [nextId, setNextId] = useState(1);
+  const [rows, setRows] = useState<UploadDocRow[]>([emptyUploadRow(0)]);
+
+  function applyFiles(rowId: number, files: File[]) {
+    setRows((current) => applyPickedFilesToRows(current, rowId, files));
+  }
 
   const dealRows = useMemo(() => {
     if (!lockedDeal?.id) return deals;
@@ -90,7 +88,7 @@ export function DealDocsUpload({
     setDealId(next?.id ?? "");
   }
 
-  function patchRow(id: number, patch: Partial<Row>) {
+  function patchRow(id: number, patch: Partial<UploadDocRow>) {
     setRows((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   }
 
@@ -98,7 +96,7 @@ export function DealDocsUpload({
     setRows((current) => {
       if (current.length === 1) {
         return current.map((item) =>
-          item.id === id ? { ...item, fileName: "", pick: item.pick + 1 } : item,
+          item.id === id ? { ...item, fileName: "", file: null, pick: item.pick + 1 } : item,
         );
       }
       return current.filter((item) => item.id !== id);
@@ -197,8 +195,10 @@ export function DealDocsUpload({
               key={`${row.id}-${row.pick}`}
               name={`files_${index}`}
               keepLabel
+              multiple
+              assignedFile={row.file}
               className="h-8 shrink-0"
-              onFile={(file) => patchRow(row.id, { fileName: file?.name ?? "" })}
+              onFiles={(files) => applyFiles(row.id, files)}
             />
             {row.fileName ? (
               <span className="deal-doc-filename min-w-0 truncate text-sm text-navy" data-testid="deal-doc-filename">
@@ -220,8 +220,10 @@ export function DealDocsUpload({
           className="text-sm font-medium text-primary hover:underline"
           data-testid="deal-add-document"
           onClick={() => {
-            setRows((current) => [...current, emptyRow(nextId)]);
-            setNextId((n) => n + 1);
+            setRows((current) => [
+              ...current,
+              emptyUploadRow(Math.max(0, ...current.map((row) => row.id)) + 1),
+            ]);
           }}
         >
           + Add another document

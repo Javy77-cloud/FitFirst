@@ -14,7 +14,7 @@ import { defaultStageColor, STATUS_COLOR_KEYS, type StatusColorKey } from "@/lib
 import { isUuid } from "@/lib/ids";
 import { matchDealLookup } from "@/lib/deals/lookup";
 import { listDealLookup } from "@/lib/db/queries";
-import { flashAction } from "@/lib/flash-action";
+import { flashAction, flashSettings } from "@/lib/flash-action";
 import { insertRequiredDealRisk } from "@/lib/deals/ensure-risk";
 import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-deal-write";
 import { dealStageForPipeline, resolveStageMove } from "@/lib/wire/pipeline";
@@ -340,7 +340,7 @@ export async function saveCommissionRate(formData: FormData) {
   }
   revalidatePath("/settings");
   revalidatePath("/policies");
-  flashAction("/settings", "settings-saved");
+  await flashSettings("/settings", "settings-saved");
 }
 
 export async function updateCarrierContact(formData: FormData) {

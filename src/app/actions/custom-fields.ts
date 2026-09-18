@@ -67,7 +67,7 @@ import {
 import { allowLifeHealthFamily } from "@/lib/desk/line-settings";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { dealDetailsSavedHref } from "@/lib/flash";
-import { flashAction } from "@/lib/flash-action";
+import { flashAction, flashSettings } from "@/lib/flash-action";
 import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
 import { resolveDealProduct, sheetProductForQuotingForm } from "@/lib/deals/deal-line";
 import { isPcPackageLine, mergeShopLinesKeepExisting } from "@/lib/deals/package-lines";
@@ -181,9 +181,9 @@ export async function saveDealFieldLayout(formData: FormData) {
   }
   revalidateDealSurfaces(str(formData, "dealId") || undefined, line, module);
   if (module === "deals") {
-    flashAction(fieldBuilderHref(module, line), "layout-saved");
+    await flashSettings(fieldBuilderHref(module, line), "layout-saved");
   } else {
-    flashAction(fieldBuilderHref(module, line), "layout-saved");
+    await flashSettings(fieldBuilderHref(module, line), "layout-saved");
   }
 }
 
@@ -304,7 +304,7 @@ export async function deleteDealLayoutField(formData: FormData) {
     }
   }
   revalidateDealSurfaces(str(formData, "dealId") || undefined, line, module);
-  flashAction(fieldBuilderHref(module, line), "layout-saved");
+  await flashSettings(fieldBuilderHref(module, line), "layout-saved");
 }
 
 export async function saveDealFieldValues(formData: FormData) {

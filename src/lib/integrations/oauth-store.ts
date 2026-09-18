@@ -2,7 +2,8 @@ import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { integrationConnections } from "@/lib/db/schema";
-import { decryptSecret, encryptSecret, isMaskedSecretInput } from "@/lib/secrets/vault";
+import { planByoSecretWrite } from "@/lib/integrations/byo-credentials";
+import { decryptSecret, encryptSecret } from "@/lib/secrets/vault";
 import { envHasOauthApp, envOauthApp, pickOauthClientApp } from "./oauth-env";
 import {
   buildByoAuthorizeUrl,
@@ -22,7 +23,7 @@ import {
 } from "./oauth-specs";
 
 export async function loadByoConnection(provider: ByoOauthProviderId) {
-  const [row] = await db
+  const rows = await db
     .select()
     .from(integrationConnections)
     .where(
@@ -31,7 +32,8 @@ export async function loadByoConnection(provider: ByoOauthProviderId) {
         eq(integrationConnections.provider, provider),
       ),
     );
-  return row ?? null;
+  const category = catalogCategory(provider);
+  return rows.find((row) => row.category === category) ?? rows[0] ?? null;
 }
 
 function credentialCandidates(provider: ByoOauthProviderId): ByoOauthProviderId[] {
@@ -83,18 +85,33 @@ export async function saveByoApp(input: {
   clientId: string;
   clientSecret?: string;
   accountLabel?: string | null;
-}) {
+}): Promise<{ ok: true; clientId: string; hasSecret: boolean } | { ok: false; message: string }> {
   const spec = byoOauthSpec(input.provider);
-  const clientId = input.clientId.trim();
-  const keepSecret = isMaskedSecretInput(input.clientSecret);
   const existing = await loadByoConnection(input.provider);
-  const sealed = input.clientSecret && !keepSecret ? encryptSecret(input.clientSecret) : null;
+  const secretPlan = planByoSecretWrite({
+    incoming: input.clientSecret,
+    hasExistingSecret: Boolean(existing?.clientSecretEnc && existing.clientSecretIv),
+  });
+  if (secretPlan.action === "reject") return { ok: false, message: secretPlan.message };
+  const clientId = input.clientId.trim() || existing?.clientId?.trim() || "";
+  if (!clientId) return { ok: false, message: "Paste the Integration Key / Client ID." };
+  let sealed: ReturnType<typeof encryptSecret> | null = null;
+  try {
+    sealed = secretPlan.action === "write" ? encryptSecret(secretPlan.secret) : null;
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Could not encrypt the Secret Key.",
+    };
+  }
+  const hasSecret = Boolean(sealed || (existing?.clientSecretEnc && existing.clientSecretIv));
   const patch = {
     category: catalogCategory(input.provider),
     provider: input.provider,
-    clientId: clientId || existing?.clientId || null,
+    clientId,
     clientSecretEnc: sealed?.enc ?? existing?.clientSecretEnc ?? null,
     clientSecretIv: sealed?.iv ?? existing?.clientSecretIv ?? null,
+    connectMode: "credentials" as const,
     lastOauthError: null,
     notes: `${spec.vendor} BYO app saved. ${spec.worksWhen}`,
     accountLabel: input.accountLabel?.trim() || existing?.accountLabel || null,
@@ -102,13 +119,14 @@ export async function saveByoApp(input: {
   };
   if (existing) {
     await db.update(integrationConnections).set(patch).where(eq(integrationConnections.id, existing.id));
-    return;
+    return { ok: true, clientId, hasSecret };
   }
   await db.insert(integrationConnections).values({
     tenantId: DEFAULT_TENANT_ID,
     connected: false,
     ...patch,
   });
+  return { ok: true, clientId, hasSecret };
 }
 
 export async function clearByoApp(provider: ByoOauthProviderId) {

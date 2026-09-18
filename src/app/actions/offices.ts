@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { requireAdminAction } from "@/lib/auth/guards";
-import { flashAction } from "@/lib/flash-action";
+import { flashSettings } from "@/lib/flash-action";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { db } from "@/lib/db";
@@ -139,7 +139,7 @@ export async function saveOffice(formData: FormData) {
     if (row) await replaceUserOffices(row.id, agentIds, isUuid(primaryUserId) ? primaryUserId : null);
   }
   refresh();
-  flashAction("/settings/offices", "office-saved");
+  await flashSettings("/settings/offices", "office-saved");
 }
 
 export async function deleteOffice(formData: FormData) {
@@ -185,7 +185,7 @@ export async function saveTerritory(formData: FormData) {
     }
   }
   refresh();
-  flashAction("/settings/territories", "territory-saved");
+  await flashSettings("/settings/territories", "territory-saved");
 }
 
 export async function deleteTerritory(formData: FormData) {

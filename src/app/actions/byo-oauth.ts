@@ -8,8 +8,9 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { calendarConnections } from "@/lib/db/schema";
-import { flashAction } from "@/lib/flash-action";
+import { flashSettings } from "@/lib/flash-action";
 import { deskPublicOrigin } from "@/lib/social/origin";
+import { planByoClientId } from "@/lib/integrations/byo-credentials";
 import { canConnectByoIntegration, tenantLooksSolo } from "@/lib/integrations/connect-policy";
 import { listRecentGmail, sendGmailMessage } from "@/lib/integrations/gmail";
 import { yahooMailboxPing } from "@/lib/integrations/yahoo-mail";
@@ -28,6 +29,7 @@ import {
 import {
   clearByoApp,
   disconnectByo,
+  loadByoConnection,
   prepareByoAuthorize,
   saveByoApp,
 } from "@/lib/integrations/oauth-store";
@@ -51,26 +53,38 @@ async function assertCanConnect() {
   return session;
 }
 
-export async function saveByoOauthCredentials(formData: FormData) {
-  await assertCanConnect();
-  const raw = String(formData.get("provider") ?? "");
-  const dest = byoOauthReturnPath(String(formData.get("next") ?? ""));
-  if (!isByoOauthProviderId(raw)) redirect(`${dest}?notice=unknown-provider`);
-  if (isPlatformHostedGoogleOauth(raw)) {
-    redirect(`${dest}?notice=google-connect-not-setup&provider=${raw}`);
+export async function saveByoOauthCredentials(formData: FormData): Promise<{
+  ok: boolean;
+  message: string;
+}> {
+  try {
+    await assertCanConnect();
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Agency Admin only.",
+    };
   }
-  const clientId = String(formData.get("clientId") ?? "").trim();
-  const clientSecret = String(formData.get("clientSecret") ?? "");
+  const raw = String(formData.get("provider") ?? "");
+  if (!isByoOauthProviderId(raw)) return { ok: false, message: "Unknown provider." };
+  if (isPlatformHostedGoogleOauth(raw)) {
+    return { ok: false, message: "Google Connect does not take a pasted Client ID." };
+  }
+  const incomingId = String(formData.get("clientId") ?? "");
+  const incomingSecret = String(formData.get("clientSecret") ?? "");
   const accountLabel = String(formData.get("accountLabel") ?? "").trim();
-  if (!clientId) redirect(`${dest}?notice=needs-credentials&provider=${raw}`);
-  await saveByoApp({
+  const existing = await loadByoConnection(raw);
+  const idPlan = planByoClientId({ incoming: incomingId, existing: existing?.clientId });
+  if (!idPlan.ok) return idPlan;
+  const saved = await saveByoApp({
     provider: raw,
-    clientId,
-    clientSecret,
+    clientId: idPlan.clientId,
+    clientSecret: incomingSecret,
     accountLabel: accountLabel || null,
   });
+  if (!saved.ok) return saved;
   refreshByoSurfaces();
-  flashAction(dest, "credentials-saved");
+  return { ok: true, message: "credentials-saved" };
 }
 
 export async function startByoOauth(formData: FormData) {
@@ -181,7 +195,7 @@ export async function smokeTestByoProvider(formData: FormData) {
     if (raw === "gmail" && kind === "read") {
       await listRecentGmail(3);
       refreshByoSurfaces();
-      flashAction(dest, "gmail-read");
+      await flashSettings(dest, "gmail-read");
     }
     if (raw === "gmail" && kind === "send") {
       const to = String(formData.get("to") ?? "").trim();
@@ -192,27 +206,27 @@ export async function smokeTestByoProvider(formData: FormData) {
         body: "Desk Gmail OAuth is connected. This message left your BYO mailbox.",
       });
       refreshByoSurfaces();
-      flashAction(dest, "gmail-sent");
+      await flashSettings(dest, "gmail-sent");
     }
     if (raw === "yahoo") {
       await yahooMailboxPing();
       refreshByoSurfaces();
-      flashAction(dest, "yahoo-ping");
+      await flashSettings(dest, "yahoo-ping");
     }
     if (raw === "google_calendar") {
       await syncGoogleBusy();
       refreshByoSurfaces();
-      flashAction(dest, "busy-synced");
+      await flashSettings(dest, "busy-synced");
     }
     if (raw === "outlook_calendar") {
       await syncOutlookBusy();
       refreshByoSurfaces();
-      flashAction(dest, "busy-synced");
+      await flashSettings(dest, "busy-synced");
     }
     if (raw === "docusign") {
       await pingDocuSignSandbox();
       refreshByoSurfaces();
-      flashAction(dest, "docusign-ping");
+      await flashSettings(dest, "docusign-ping");
     }
     if (raw === "google_meet") {
       redirect(`${dest}?notice=meet-helper&provider=google_meet`);

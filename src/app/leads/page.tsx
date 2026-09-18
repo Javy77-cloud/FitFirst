@@ -52,6 +52,7 @@ import { agencySettings } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { eq } from "drizzle-orm";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
+import { parseQuickCommsKind } from "@/lib/desk/quick-comms-open";
 
 export const dynamic = "force-dynamic";
 
@@ -375,6 +376,7 @@ export default async function LeadsPage({
                 contactEmail={railLead.email}
                 officeAddress={railOfficeAddress}
                 clientAddress={railClientAddress}
+                initialKind={parseQuickCommsKind(firstParam(params.qc))}
               />
               <RecordContextRail
                 key={railLead.id}
