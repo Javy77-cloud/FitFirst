@@ -131,12 +131,9 @@ export function isShortSheetValue(field: QuoteFieldDef | undefined): boolean {
   return false;
 }
 
+/** Short values fill the density cell so 4 columns is visibly wider than 5. */
 export function shortSheetControlClass(field: QuoteFieldDef | undefined): string {
-  if (!isShortSheetValue(field)) return "";
-  const key = field?.key.toLowerCase() ?? "";
-  if (/(^|_)(state|zip|year|stories|beds|baths|acres)$/.test(key) || SHORT_YEAR.test(key)) {
-    return "max-w-[6.5rem]";
-  }
-  return "max-w-[8rem]";
+  if (!field) return "min-w-0 w-full";
+  return "min-w-0 w-full";
 }
 

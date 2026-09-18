@@ -75,6 +75,7 @@ export function RiskProfileSectionBar({
         onChange={onDensityChange}
         choices={choices ?? riskProfileSectionChoices(RISK_PROFILE_LONG_TEXT_MAX)}
         tone="onDark"
+        label="Columns"
       />
     </div>
   );

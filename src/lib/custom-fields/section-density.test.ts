@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { LayoutSectionFieldGrid } from "@/components/custom-fields/layout-section-field-grid";
 import { RecordLayoutFields } from "@/components/custom-fields/record-layout-form";
 import { addSection, duplicateSection, setSectionDensity } from "./layout";
 import {
@@ -12,6 +13,7 @@ import {
   layoutFieldKind,
   propertyAddressRun,
   sectionFieldGridClass,
+  sectionFieldGridVars,
 } from "./section-density";
 import {
   DEFAULT_SECTION_DENSITY,
@@ -121,10 +123,28 @@ describe("section field packing", () => {
     expect(sectionFieldGridClass(3, { collapse: false })).toMatch(/repeat\(3,minmax\(0,1fr\)\)/);
     expect(sectionFieldGridClass(3, { collapse: false })).not.toMatch(/grid-cols-3/);
     expect(sectionFieldGridClass(3, { collapse: false })).not.toMatch(/max-\[699px\]/);
+    expect(sectionFieldGridClass(4, { collapse: false })).toMatch(/repeat\(4,minmax\(0,1fr\)\)/);
     expect(sectionFieldGridClass(5, { collapse: false })).toMatch(/repeat\(5,minmax\(0,1fr\)\)/);
+    expect(sectionFieldGridClass(3, { collapse: false })).not.toEqual(
+      sectionFieldGridClass(4, { collapse: false }),
+    );
+    expect(sectionFieldGridClass(4, { collapse: false })).not.toEqual(
+      sectionFieldGridClass(5, { collapse: false }),
+    );
     expect(compactRowClass(3)).toMatch(/repeat\(3,minmax\(0,1fr\)\)/);
     expect(compactRowClass(3)).not.toMatch(/grid-cols-3/);
+    expect(compactRowClass(4)).toMatch(/repeat\(4,minmax\(0,1fr\)\)/);
     expect(compactRowClass(5)).toMatch(/repeat\(5,minmax\(0,1fr\)\)/);
+    expect(compactRowClass(4)).not.toEqual(compactRowClass(5));
+  });
+
+  it("keeps 4-col and 5-col Tailwind class names as complete source strings", () => {
+    const src = readFileSync("src/lib/custom-fields/section-density.ts", "utf8");
+    expect(src).toMatch(/grid-cols-\[repeat\(3,minmax\(0,1fr\)\)\]/);
+    expect(src).toMatch(/grid-cols-\[repeat\(4,minmax\(0,1fr\)\)\]/);
+    expect(src).toMatch(/grid-cols-\[repeat\(5,minmax\(0,1fr\)\)\]/);
+    expect(src).not.toMatch(/repeat\(\$\{cols\}/);
+    expect(src).not.toMatch(/repeat\(\$\{count\}/);
   });
 
   it("packs property address + city + state + zip + county on one 5-col row", () => {
@@ -149,6 +169,42 @@ describe("section field packing", () => {
     });
     expect(rows[1]).toEqual({ keys: ["mailing_address"], kind: "wide" });
     expect(rows.slice(2).every((row) => row.keys.length === 1)).toBe(true);
+  });
+
+  it("changes grid column classes and styles from 3 to 4 to 5 on a short-field section", () => {
+    const keys = ["year_built", "stories", "beds", "baths", "square_feet"];
+    const fieldOf = () => ({ type: "single_line" as const });
+    const html = [3, 4, 5].map((density) =>
+      renderToStaticMarkup(
+        createElement(LayoutSectionFieldGrid, {
+          density,
+          keys,
+          fieldOf,
+          renderField: (key) => createElement("span", { "data-ff-cell": key }, key),
+          collapse: false,
+        }),
+      ),
+    );
+    const [html3, html4, html5] = html;
+
+    expect(sectionFieldGridVars(3)).toEqual({ "--ff-section-cols": "3" });
+    expect(sectionFieldGridVars(4)).toEqual({ "--ff-section-cols": "4" });
+    expect(sectionFieldGridVars(5)).toEqual({ "--ff-section-cols": "5" });
+
+    expect(html3).toMatch(/data-ff-section-density="3"/);
+    expect(html4).toMatch(/data-ff-section-density="4"/);
+    expect(html5).toMatch(/data-ff-section-density="5"/);
+    expect(html3).toMatch(/grid-cols-\[repeat\(3,minmax\(0,1fr\)\)\]/);
+    expect(html4).toMatch(/grid-cols-\[repeat\(4,minmax\(0,1fr\)\)\]/);
+    expect(html5).toMatch(/grid-cols-\[repeat\(5,minmax\(0,1fr\)\)\]/);
+    expect(html3).toMatch(/--ff-section-cols:3/);
+    expect(html4).toMatch(/--ff-section-cols:4/);
+    expect(html5).toMatch(/--ff-section-cols:5/);
+    expect(html3).not.toMatch(/repeat\(4,minmax\(0,1fr\)\)/);
+    expect(html4).not.toMatch(/repeat\(5,minmax\(0,1fr\)\)/);
+    expect(html5).not.toMatch(/repeat\(3,minmax\(0,1fr\)\)/);
+    expect(html3).not.toEqual(html4);
+    expect(html4).not.toEqual(html5);
   });
 });
 

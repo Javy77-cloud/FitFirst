@@ -8,7 +8,12 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/deals/deal-1",
 }));
 import { MasterSheetCompare } from "@/components/deal/master-sheet-compare";
-import { isCompactLayoutField } from "@/lib/custom-fields/section-density";
+import { RiskProfileFieldsGrid } from "@/components/deal/risk-profile-field-grid";
+import {
+  compactRowClass,
+  isCompactLayoutField,
+  sectionFieldGridClass,
+} from "@/lib/custom-fields/section-density";
 import { emptySheetValues, fieldsForLine } from "./catalog";
 import {
   COMMERCIAL_COVERAGE_KEY,
@@ -22,6 +27,7 @@ import {
   clampRiskProfileDensity,
   defaultRiskProfileSectionDensity,
   isShortSheetValue,
+  shortSheetControlClass,
   riskProfileDensityOf,
   riskProfileSectionChoices,
   riskProfileSectionDensityId,
@@ -67,6 +73,9 @@ describe("Risk Profile per-section density + full labels", () => {
     expect(sheet).not.toMatch(/minmax\(0,7\.5rem\)/);
     expect(source("src/components/deal/risk-profile-section-header.tsx")).toMatch(
       /SectionDensityControl/,
+    );
+    expect(source("src/components/deal/risk-profile-section-header.tsx")).toMatch(
+      /label="Columns"/,
     );
     expect(source("src/components/custom-fields/section-density-control.tsx")).toMatch(
       /data-ff-section-density-control/,
@@ -149,6 +158,9 @@ describe("Risk Profile per-section density + full labels", () => {
     expect(html).toContain("Roof deck attachment");
     expect(html).toContain("Wind mit inspector");
     expect(html).toMatch(/data-ff-section-density="5"/);
+    expect(html).toMatch(/>Columns</);
+    expect(html).toMatch(/aria-label="Columns — fields per row"/);
+    expect(html).not.toMatch(/>Density</);
     expect(html).toMatch(/data-ff-section-density-control="Property"/);
     expect(html).toMatch(/data-ff-section-density-control="Dwelling"/);
     expect(html).toMatch(/data-ff-density-choice="1"/);
@@ -346,6 +358,53 @@ describe("Risk Profile per-section density + full labels", () => {
     expect(autoKeys.indexOf("garaging_zip") - autoKeys.indexOf("garaging_address")).toBe(1);
   });
 
+  it("changes short-field grid classes and styles from 3 to 4 to 5 columns", () => {
+    expect(sectionFieldGridClass(3, { collapse: false })).not.toEqual(
+      sectionFieldGridClass(4, { collapse: false }),
+    );
+    expect(sectionFieldGridClass(4, { collapse: false })).not.toEqual(
+      sectionFieldGridClass(5, { collapse: false }),
+    );
+    expect(compactRowClass(4)).not.toEqual(compactRowClass(5));
+    expect(source("src/lib/custom-fields/section-density.ts")).toMatch(
+      /grid-cols-\[repeat\(4,minmax\(0,1fr\)\)\]/,
+    );
+    expect(source("src/lib/custom-fields/section-density.ts")).toMatch(
+      /grid-cols-\[repeat\(5,minmax\(0,1fr\)\)\]/,
+    );
+    expect(source("src/app/globals.css")).toMatch(/data-ff-section-density="4"/);
+    expect(source("src/app/globals.css")).toMatch(/data-ff-section-density="5"/);
+
+    const dwelling = [
+      { key: "year_built", label: "Year built", group: "Dwelling", input: "number" as const },
+      { key: "stories", label: "Stories", group: "Dwelling", input: "select" as const, options: ["1", "2"] },
+      { key: "beds", label: "Bedrooms", group: "Dwelling", input: "number" as const },
+      { key: "baths", label: "Bathrooms", group: "Dwelling", input: "number" as const },
+      { key: "square_feet", label: "Square footage", group: "Dwelling", input: "number" as const },
+    ];
+    const html = [3, 4, 5].map((density) =>
+      renderToString(
+        createElement(RiskProfileFieldsGrid, {
+          density,
+          fields: dwelling,
+          renderField: (field) => createElement("span", { "data-ff-cell": field.key }, field.label),
+        }),
+      ),
+    );
+    const [html3, html4, html5] = html;
+    expect(html3).toMatch(/data-ff-section-density="3"/);
+    expect(html4).toMatch(/data-ff-section-density="4"/);
+    expect(html5).toMatch(/data-ff-section-density="5"/);
+    expect(html3).toMatch(/grid-cols-\[repeat\(3,minmax\(0,1fr\)\)\]/);
+    expect(html4).toMatch(/grid-cols-\[repeat\(4,minmax\(0,1fr\)\)\]/);
+    expect(html5).toMatch(/grid-cols-\[repeat\(5,minmax\(0,1fr\)\)\]/);
+    expect(html3).toMatch(/--ff-section-cols:3/);
+    expect(html4).toMatch(/--ff-section-cols:4/);
+    expect(html5).toMatch(/--ff-section-cols:5/);
+    expect(html3).not.toEqual(html4);
+    expect(html4).not.toEqual(html5);
+  });
+
   it("marks yes/no, year, and city/state/zip as short/compact values", () => {
     const home = fieldsForLine("home", "homeowners");
     const byKey = Object.fromEntries(home.map((field) => [field.key, field]));
@@ -354,6 +413,8 @@ describe("Risk Profile per-section density + full labels", () => {
     expect(isShortSheetValue(byKey.pool)).toBe(true);
     expect(isShortSheetValue(byKey.address1)).toBe(false);
     expect(isCompactLayoutField("zip", sheetFieldLayoutHint(byKey.zip))).toBe(true);
+    expect(shortSheetControlClass(byKey.zip)).toMatch(/w-full/);
+    expect(shortSheetControlClass(byKey.zip)).not.toMatch(/max-w-/);
     expect(sheetFieldLayoutHint(byKey.notes).type).toBe("multi_line");
     expect(sheetFieldLayoutHint(byKey.address1).type).toBe("address");
     expect(sheetFieldLayoutHint(byKey.mailing_address).type).toBe("address");

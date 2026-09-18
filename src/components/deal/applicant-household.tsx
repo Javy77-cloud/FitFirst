@@ -50,7 +50,7 @@ export function ApplicantHousehold({
             const value =
               field.key === "applicant_marital_status" ? marital : (cell?.value ?? "");
             const className = cn(
-              "h-7 w-full text-xs cursor-text",
+              "h-7 w-full min-w-0 text-xs cursor-text",
               cell?.status === "check" && "ff-field-check",
               (!String(value).trim() || cell?.status === "missing") && "ff-field-missing",
             );

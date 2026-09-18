@@ -1179,6 +1179,53 @@ button:enabled:not([data-ff-no-hover]):active {
   font-weight: 600;
 }
 
+/*
+  Risk Profile / layout section columns. Tailwind JIT missed interpolated
+  `grid-cols-[repeat(${n},…)]` for 4 and 5, so those densities looked identical.
+  --ff-section-cols / --ff-compact-cols are the source of truth; static Tailwind
+  classes stay as a fallback.
+*/
+[data-ff-section-field-grid] {
+  grid-template-columns: repeat(var(--ff-section-cols, 2), minmax(0, 1fr));
+}
+[data-ff-section-field-grid][data-ff-section-density="1"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+[data-ff-section-field-grid][data-ff-section-density="2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+[data-ff-section-field-grid][data-ff-section-density="3"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+[data-ff-section-field-grid][data-ff-section-density="4"] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+[data-ff-section-field-grid][data-ff-section-density="5"] {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+[data-ff-compact-row] {
+  grid-template-columns: repeat(var(--ff-compact-cols, 2), minmax(0, 1fr));
+}
+[data-ff-compact-row][data-ff-compact-cols="3"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+[data-ff-compact-row][data-ff-compact-cols="4"] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+[data-ff-compact-row][data-ff-compact-cols="5"] {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+@media (max-width: 699px) {
+  [data-ff-section-field-grid][data-ff-collapse="1"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  [data-ff-compact-row][data-ff-compact-cols="3"],
+  [data-ff-compact-row][data-ff-compact-cols="4"],
+  [data-ff-compact-row][data-ff-compact-cols="5"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* Portal Login Save — forced colors (Tailwind arbitrary bg can miss on new files) */
 button[data-ff-carrier-portal-save],
 .ff-portal-save {

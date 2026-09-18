@@ -15,25 +15,54 @@ export type LayoutFieldHint = {
 
 const YES_NO = new Set(["yes", "no"]);
 
+export type SectionColumnCount = 1 | 2 | 3 | 4 | 5;
+
+/**
+ * Complete Tailwind class strings — never interpolate the column count.
+ * Tailwind v4 only emits CSS for static class names it can see in source.
+ * Density 4 and 5 previously built those class names at runtime and shipped
+ * with no grid-template-columns, so 4 and 5 looked identical.
+ */
+const SECTION_GRID_COL_CLASS: Record<SectionColumnCount, string> = {
+  1: "grid grid-cols-1 gap-x-3 gap-y-2",
+  2: "grid grid-cols-2 gap-x-3 gap-y-2",
+  3: "grid grid-cols-[repeat(3,minmax(0,1fr))] gap-x-3 gap-y-2",
+  4: "grid grid-cols-[repeat(4,minmax(0,1fr))] gap-x-3 gap-y-2",
+  5: "grid grid-cols-[repeat(5,minmax(0,1fr))] gap-x-3 gap-y-2",
+};
+
+const COMPACT_ROW_COL_CLASS: Record<SectionColumnCount, string> = {
+  1: "grid grid-cols-1 gap-x-3 gap-y-2",
+  2: "grid grid-cols-2 gap-x-3 gap-y-2",
+  3: "grid grid-cols-[repeat(3,minmax(0,1fr))] gap-x-3 gap-y-2 max-[699px]:grid-cols-2",
+  4: "grid grid-cols-[repeat(4,minmax(0,1fr))] gap-x-3 gap-y-2 max-[699px]:grid-cols-2",
+  5: "grid grid-cols-[repeat(5,minmax(0,1fr))] gap-x-3 gap-y-2 max-[699px]:grid-cols-2",
+};
+
+export function clampSectionColumns(density: number): SectionColumnCount {
+  if (!Number.isFinite(density)) return 2;
+  return Math.min(5, Math.max(1, Math.round(density))) as SectionColumnCount;
+}
+
 export function sectionFieldGridClass(
   density: number,
   opts?: { collapse?: boolean },
 ): string {
-  const collapse = opts?.collapse === false ? "" : " max-[699px]:grid-cols-1";
-  const cols = Number.isFinite(density) ? Math.min(5, Math.max(1, Math.round(density))) : 2;
-  if (cols === 1) return "grid grid-cols-1 gap-x-3 gap-y-2";
-  if (cols === 2) return `grid grid-cols-2 gap-x-3 gap-y-2${collapse}`;
-  return `grid grid-cols-[repeat(${cols},minmax(0,1fr))] gap-x-3 gap-y-2${collapse}`;
+  const cols = clampSectionColumns(density);
+  const collapse = opts?.collapse === false || cols === 1 ? "" : " max-[699px]:grid-cols-1";
+  return `${SECTION_GRID_COL_CLASS[cols]}${collapse}`;
+}
+
+export function sectionFieldGridVars(density: number): { "--ff-section-cols": string } {
+  return { "--ff-section-cols": String(clampSectionColumns(density)) };
 }
 
 export function compactRowClass(count: number): string {
-  const cols = Math.min(5, Math.max(1, count));
-  if (cols >= 4) {
-    return `grid grid-cols-[repeat(${cols},minmax(0,1fr))] gap-x-3 gap-y-2 max-[699px]:grid-cols-2`;
-  }
-  if (cols === 3) return "grid grid-cols-[repeat(3,minmax(0,1fr))] gap-x-3 gap-y-2 max-[699px]:grid-cols-2";
-  if (cols === 2) return "grid grid-cols-2 gap-x-3 gap-y-2";
-  return "grid grid-cols-1 gap-x-3 gap-y-2";
+  return COMPACT_ROW_COL_CLASS[clampSectionColumns(count)];
+}
+
+export function compactRowVars(count: number): { "--ff-compact-cols": string } {
+  return { "--ff-compact-cols": String(clampSectionColumns(count)) };
 }
 
 export function isCityFieldKey(key: string): boolean {
@@ -160,7 +189,7 @@ export function groupSectionFieldRows(
   fieldOf?: (key: string) => LayoutFieldHint | undefined,
   density: number = DEFAULT_SECTION_DENSITY,
 ): SectionFieldRow[] {
-  const pack = Number.isFinite(density) ? Math.min(5, Math.max(1, Math.round(density))) : 2;
+  const pack = clampSectionColumns(density);
   const flowInGrid = pack >= 4;
   const list = keys.filter((key) => key);
   const rows: SectionFieldRow[] = [];
