@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { applyPickedFilesToRows, emptyUploadRow } from "./upload-rows";
+import {
+  appendUploadRowFiles,
+  applyPickedFilesToRows,
+  emptyUploadRow,
+  uploadRowsHaveFiles,
+  uploadRowsTotalBytes,
+} from "./upload-rows";
 
 function file(name: string): File {
   return new File([name], name, { type: "application/pdf" });
@@ -50,5 +56,25 @@ describe("applyPickedFilesToRows", () => {
   it("leaves rows unchanged when the target row is missing", () => {
     const rows = [emptyUploadRow(0)];
     expect(applyPickedFilesToRows(rows, 9, [file("x.pdf")])).toBe(rows);
+  });
+
+  it("stamps every row file onto files_N so Create does not wait on DataTransfer", () => {
+    const a = file("a.jpg");
+    const b = file("b.jpg");
+    const form = new FormData();
+    form.set("dealId", "deal-1");
+    form.set("files_0", new File([], ""));
+    const next = appendUploadRowFiles(form, [
+      { file: a },
+      { file: b },
+      { file: null },
+    ]);
+    expect(next.get("rowCount")).toBe("3");
+    expect((next.get("files_0") as File).name).toBe("a.jpg");
+    expect((next.get("files_1") as File).name).toBe("b.jpg");
+    expect(next.get("files_2")).toBeNull();
+    expect(uploadRowsHaveFiles([{ file: a }, { file: null }])).toBe(true);
+    expect(uploadRowsHaveFiles([{ file: null }])).toBe(false);
+    expect(uploadRowsTotalBytes([{ file: a }, { file: b }])).toBe(a.size + b.size);
   });
 });
