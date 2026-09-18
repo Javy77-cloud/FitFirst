@@ -150,24 +150,23 @@ describe("document pipeline fill", () => {
 });
 
 describe("document pipeline wiring", () => {
-  it("keeps Agency letters on the Documents rail as a collapsed job-card drawer", () => {
+  it("removes Agency letters from the deal Documents rail", () => {
     const panel = source("src/components/deal/documents-panel.tsx");
-    const rail = source("src/components/deal/agency-letters-rail.tsx");
-    const review = source("src/components/deal/agency-letter-review-sheet.tsx");
     const page = source("src/app/deals/[id]/page.tsx");
-    expect(panel).toMatch(/AgencyLettersRail/);
-    expect(panel).toMatch(/letterJobs/);
-    expect(panel).toMatch(/agency_letter/);
-    expect(panel).toMatch(/filled_letter/);
+    const queries = source("src/lib/db/queries.ts");
+    const review = source("src/components/deal/agency-letter-review-sheet.tsx");
+    expect(panel).not.toMatch(/AgencyLettersRail/);
+    expect(panel).not.toMatch(/letterJobs/);
+    expect(panel).not.toMatch(/Agency letters/);
+    expect(page).not.toMatch(/letterJobs/);
+    expect(queries).not.toMatch(/letterJobs/);
+    const sourceList = source("src/lib/documents/deal-docs-save.ts");
+    expect(sourceList).toMatch(/agency_letter/);
+    expect(sourceList).toMatch(/filled_letter/);
     expect(panel).not.toMatch(/grid-cols-/);
-    expect(page).toMatch(/letterJobs=\{letterJobs\}/);
     const types = source("src/lib/document-pipeline/types.ts");
-    expect(rail).toMatch(/Agency letters/);
-    expect(rail).toMatch(/defaultOpen=\{false\}/);
-    expect(rail).toMatch(/letterJobCards/);
     expect(types).toMatch(/Cancellation pack/);
     expect(types).toMatch(/AOR pack/);
-    expect(rail).toMatch(/Extracting/);
     expect(types).toMatch(/Needs review/);
     expect(types).toMatch(/Out for signature/);
     expect(review).toMatch(/data-ff-letter-diff/);
