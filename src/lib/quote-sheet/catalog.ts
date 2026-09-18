@@ -1402,6 +1402,20 @@ const EXTRACT_ALIASES: Record<string, string> = {
 };
 
 /** Home-style property keys → Flood catalog keys (GetParcel / county PA emit Home names). */
+const COMMERCIAL_EXTRACT_ALIASES: Record<string, string> = {
+  fein: "ein",
+  legal_name: "business_name",
+  annual_revenue: "annual_sales",
+  sales: "annual_sales",
+  gross_sales: "annual_sales",
+  revenue: "annual_sales",
+  employees: "employee_count",
+  business_description: "operations",
+  operations_description: "operations",
+  annual_payroll: "payroll",
+  payroll_w2: "payroll",
+};
+
 const LINE_SHEET_KEY_ALIASES: Partial<Record<ShopLine, Record<string, string>>> = {
   flood: {
     construction: "construction_type",
@@ -1413,6 +1427,9 @@ const LINE_SHEET_KEY_ALIASES: Partial<Record<ShopLine, Record<string, string>>> 
     number_of_stories: "number_of_floors",
     floors: "number_of_floors",
   },
+  workers_comp: COMMERCIAL_EXTRACT_ALIASES,
+  general_liability: COMMERCIAL_EXTRACT_ALIASES,
+  bop: COMMERCIAL_EXTRACT_ALIASES,
 };
 
 export function extractKeyToSheetKey(line: ShopLine, extractKey: string): string | null {

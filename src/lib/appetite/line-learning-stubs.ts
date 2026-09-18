@@ -94,7 +94,12 @@ export function buildGlFeatureSnapshot(input: {
     zip: cell(v, "zip") || risk?.zip || null,
     industryClass: cell(v, "industry_class") || cell(v, "class_code") || cell(v, "gl_class") || null,
     naics: cell(v, "naics") || null,
-    revenue: num(cell(v, "revenue") || cell(v, "annual_revenue") || cell(v, "gross_sales")),
+    revenue: num(
+      cell(v, "revenue") ||
+        cell(v, "annual_revenue") ||
+        cell(v, "gross_sales") ||
+        cell(v, "annual_sales"),
+    ),
     employees: num(cell(v, "employees") || cell(v, "employee_count")),
   };
 }
