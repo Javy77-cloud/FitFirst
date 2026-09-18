@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SECRET_MASK, type VaultPublicStatus } from "@/lib/developer/vault-public";
+import { looksLikeMaskedSecret, SECRET_MASK, type VaultPublicStatus } from "@/lib/developer/vault-public";
 
 function SiteDeveloperLockNote() {
   return (
@@ -275,8 +275,9 @@ function HealthSherpaMedicareVaultCard({
         <div>
           <h2 className="text-sm font-semibold text-navy">{status.label}</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Agency BYO Medicare Partner API key. FitFirst does not subscribe for the agency. v1 uses
-            X-API-Key; agent email is required on each contact sync.
+            Outbound Medicare Partner API key FitFirst sends to HealthSherpa. This is not the inbound
+            webhook secret HealthSherpa posts to FitFirst. v1 uses X-API-Key; agent email is required on
+            each contact sync.
           </p>
         </div>
         <span
@@ -298,7 +299,8 @@ function HealthSherpaMedicareVaultCard({
       </div>
       <p className="text-xs text-muted-foreground">
         Environment: {status.environment}
-        {status.source === "env" ? " · configured from server env (vault row empty)" : null}.
+        {status.source === "env" ? " · configured from server env (vault row empty)" : status.source === "vault" ? " · stored in vault" : " · not configured"}
+        . Do not paste the inbound webhook secret here.
       </p>
       {canEdit ? (
         unlocked ? (
@@ -374,8 +376,9 @@ function HealthSherpaAcaVaultCard({
         <div>
           <h2 className="text-sm font-semibold text-navy">{status.label}</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Agency BYO ICHRA / QuoteConnect partner key. Same HealthSherpa integration as Medicare.
-            FitFirst does not quote ACA inside the desk — Sync opens Marketplace and can call QuoteConnect.
+            Outbound ICHRA / QuoteConnect partner key. Same HealthSherpa integration as Medicare — not the
+            inbound webhook secret. FitFirst does not quote ACA inside the desk — Sync opens Marketplace
+            and can call QuoteConnect.
           </p>
         </div>
         <span
@@ -397,7 +400,8 @@ function HealthSherpaAcaVaultCard({
       </div>
       <p className="text-xs text-muted-foreground">
         Environment: {status.environment}
-        {status.source === "env" ? " · configured from server env (vault row empty)" : null}.
+        {status.source === "env" ? " · configured from server env (vault row empty)" : status.source === "vault" ? " · stored in vault" : " · not configured"}
+        . Do not paste the inbound webhook secret here.
       </p>
       {canEdit ? (
         unlocked ? (
@@ -445,6 +449,136 @@ function HealthSherpaAcaVaultCard({
         ) : (
           <Button type="button" size="sm" onClick={() => setUnlocked(true)} data-ff-vault-unlock-btn>
             Unlock vault
+          </Button>
+        )
+      ) : (
+        <SiteDeveloperLockNote />
+      )}
+    </section>
+  );
+}
+
+function inboundSourceLabel(status: VaultPublicStatus): string {
+  if (status.unreadable) return "Stored but unreadable — re-save";
+  if (status.source === "vault") return "Configured from vault";
+  if (status.source === "env") return "Configured from HEALTHSHERPA_WEBHOOK_API_KEY";
+  return "Not configured";
+}
+
+function HealthSherpaInboundVaultCard({
+  canEdit,
+  status,
+}: {
+  canEdit: boolean;
+  status: VaultPublicStatus;
+}) {
+  const [unlocked, setUnlocked] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  return (
+    <section
+      className="ff-card space-y-4 border-primary/30 p-4"
+      data-ff-api-vault
+      data-ff-vault-provider="healthsherpa_inbound"
+      data-ff-vault-can-edit={canEdit ? "1" : "0"}
+      data-ff-vault-source={status.source}
+      data-ff-vault-unreadable={status.unreadable ? "1" : "0"}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-navy">{status.label}</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Secret HealthSherpa sends <span className="font-medium text-navy">to FitFirst</span> as{" "}
+            <code className="text-[11px]">X-API-Key</code> on{" "}
+            <code className="text-[11px]">POST /api/integrations/healthsherpa/webhook</code>. Do not
+            paste the Medicare Partner API key or the Marketplace / ACA partner key here.
+          </p>
+        </div>
+        <span
+          className="rounded-md bg-muted px-2 py-1 text-xs text-navy"
+          data-ff-vault-status={status.configured ? "configured" : "empty"}
+        >
+          {status.configured ? "Configured" : "Not configured"}
+        </span>
+      </div>
+      <div className="max-w-md">
+        <Label className="text-xs">Inbound webhook secret</Label>
+        <Input
+          readOnly
+          value={status.configured ? SECRET_MASK : ""}
+          placeholder="Not configured"
+          className="mt-1 h-8"
+          data-ff-vault-mask="inboundWebhookSecret"
+        />
+      </div>
+      <p className="text-xs text-muted-foreground" data-ff-inbound-source={status.source}>
+        Source: {inboundSourceLabel(status)}. Env fallback:{" "}
+        <code className="text-[11px]">HEALTHSHERPA_WEBHOOK_API_KEY</code>. Admins see this mask only —
+        there is no reveal.
+      </p>
+      {status.unreadable ? (
+        <p className="text-xs text-destructive" data-ff-inbound-unreadable="">
+          The inbound vault row could not be decrypted (or a masked value was saved). Unlock and paste
+          the real webhook secret once to overwrite it.
+        </p>
+      ) : null}
+      {canEdit ? (
+        unlocked ? (
+          <form
+            action={saveHealthSherpaInboundVaultAction}
+            className="space-y-3 border-t border-border pt-3"
+            data-ff-vault-unlock
+            data-ff-inbound-unlock=""
+            onSubmit={(event) => {
+              const submitter = "submitter" in event.nativeEvent ? (event.nativeEvent as SubmitEvent).submitter : null;
+              if (submitter instanceof HTMLButtonElement && submitter.getAttribute("formAction")) {
+                return;
+              }
+              const value = String(new FormData(event.currentTarget).get("inboundWebhookSecret") ?? "");
+              if (looksLikeMaskedSecret(value)) {
+                event.preventDefault();
+                setSaveError("Paste the real inbound webhook secret. Masked values are not saved.");
+              }
+            }}
+          >
+            <p className="text-xs text-muted-foreground">
+              Vault unlocked. Paste the inbound webhook secret HealthSherpa is configured to send. The
+              previous value is never shown, so a masked field cannot overwrite the vault.
+            </p>
+            <div className="max-w-md">
+              <Label htmlFor="healthsherpa-inbound-webhook-secret" className="text-xs">
+                New inbound webhook secret
+              </Label>
+              <Input
+                id="healthsherpa-inbound-webhook-secret"
+                name="inboundWebhookSecret"
+                type="password"
+                required
+                autoComplete="new-password"
+                className="mt-1 h-8"
+                data-ff-inbound-secret-input=""
+              />
+            </div>
+            {saveError ? (
+              <p className="text-xs text-destructive" data-ff-inbound-mask-error="">
+                {saveError}
+              </p>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" size="sm">
+                Save inbound webhook secret
+              </Button>
+              <Button type="submit" size="sm" variant="outline" formAction={clearHealthSherpaInboundVaultAction}>
+                Clear
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setUnlocked(false)}>
+                Lock vault
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <Button type="button" size="sm" onClick={() => setUnlocked(true)} data-ff-vault-unlock-btn>
+            Unlock inbound vault
           </Button>
         )
       ) : (
@@ -605,19 +739,9 @@ export function ApiVaultPanel({
         saveAction={savePermitStackVaultAction}
         clearAction={clearPermitStackVaultAction}
       />
+      <HealthSherpaInboundVaultCard canEdit={canEdit} status={healthSherpaInbound} />
       <HealthSherpaMedicareVaultCard canEdit={canEdit} status={healthSherpaMedicare} />
       <HealthSherpaAcaVaultCard canEdit={canEdit} status={healthSherpaAca} />
-      <SingleKeyVaultCard
-        canEdit={canEdit}
-        status={healthSherpaInbound}
-        provider="healthsherpa_inbound"
-        envVar="HEALTHSHERPA_WEBHOOK_API_KEY"
-        blurb="Shared Medicare + Marketplace inbound secret. HealthSherpa Authentication = API Key (X-API-Key; Bearer and api-key also accepted) on POST /api/integrations/healthsherpa/webhook. Manual enrollments may not fire."
-        inputId="healthsherpa-inbound-api-key"
-        saveLabel="Save inbound webhook secret"
-        saveAction={saveHealthSherpaInboundVaultAction}
-        clearAction={clearHealthSherpaInboundVaultAction}
-      />
     </div>
   );
 }

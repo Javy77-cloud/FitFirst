@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { publicVaultStatus, SECRET_MASK } from "./vault-public";
+import { looksLikeMaskedSecret, publicVaultStatus, SECRET_MASK } from "./vault-public";
 
 describe("API vault public view", () => {
   it("never returns plaintext — configured keys are ****************", () => {
@@ -15,5 +15,11 @@ describe("API vault public view", () => {
     const view = publicVaultStatus({ configured: false, source: "none", environment: "sandbox" });
     expect(view.configured).toBe(false);
     expect(view.masked).toBe("");
+  });
+
+  it("flags masked or empty vault input without treating a real key as a mask", () => {
+    expect(looksLikeMaskedSecret("")).toBe(true);
+    expect(looksLikeMaskedSecret(SECRET_MASK)).toBe(true);
+    expect(looksLikeMaskedSecret("ff_hs_wh_example_not_a_live_secret")).toBe(false);
   });
 });

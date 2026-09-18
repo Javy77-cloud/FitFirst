@@ -19,7 +19,14 @@ export type VaultPublicStatus = {
   /** FedEx only; GetParcelData ignores this. */
   environment: FedExEnvironment;
   masked: string;
+  /** Ciphertext exists but cannot be decrypted (or stored value was a mask). */
+  unreadable?: boolean;
 };
+
+export function looksLikeMaskedSecret(value: string | null | undefined): boolean {
+  const raw = (value ?? "").trim();
+  return !raw || raw.includes("•") || raw.includes("*");
+}
 
 export function publicVaultStatus(input: {
   configured: boolean;
@@ -27,6 +34,7 @@ export function publicVaultStatus(input: {
   environment?: FedExEnvironment;
   provider?: string;
   label?: string;
+  unreadable?: boolean;
 }): VaultPublicStatus {
   return {
     provider: input.provider ?? FEDEX_VAULT_PROVIDER,
@@ -35,5 +43,6 @@ export function publicVaultStatus(input: {
     source: input.source,
     environment: input.environment ?? "sandbox",
     masked: input.configured ? SECRET_MASK : "",
+    unreadable: input.unreadable,
   };
 }

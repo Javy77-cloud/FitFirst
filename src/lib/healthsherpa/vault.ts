@@ -27,12 +27,55 @@ export type HealthSherpaAcaCredentials = {
   environment: HealthSherpaEnvironment;
 };
 
+export type HealthSherpaInboundSource = "vault" | "env" | "none";
+
 export type HealthSherpaInboundVaultState = {
   hasRow: boolean;
   readable: boolean;
   envFallback: boolean;
   acceptedCount: number;
+  inboundConfigured: boolean;
+  inboundSource: HealthSherpaInboundSource;
 };
+
+export type HealthSherpaInboundSecretState = {
+  secret: string | null;
+  source: HealthSherpaInboundSource;
+  hasRow: boolean;
+  readable: boolean;
+  envFallback: boolean;
+};
+
+const INBOUND_PREFIX_CHARS = 8;
+
+/**
+ * Strip BOM, wrapping quotes, and accidental "X-API-Key:" / Bearer prefixes.
+ * Never log the result. Used for both stored/env secrets and presented keys.
+ */
+export function normalizeHealthSherpaSecret(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  let value = raw.replace(/^\uFEFF/, "").trim();
+  if (
+    (value.startsWith('"') && value.endsWith('"') && value.length >= 2) ||
+    (value.startsWith("'") && value.endsWith("'") && value.length >= 2)
+  ) {
+    value = value.slice(1, -1).replace(/^\uFEFF/, "").trim();
+  }
+  const header = /^(?:x-api-key|x-apikey|api-key|apikey|x-fitfirst-key|x-webhook-secret|x-healthsherpa-key|authorization)\s*[:=]\s*/i.exec(
+    value,
+  );
+  if (header) value = value.slice(header[0].length).replace(/^\uFEFF/, "").trim();
+  const scheme = /^(Bearer|Api-?Key|Token|Key)\s+/i.exec(value);
+  if (scheme) value = value.slice(scheme[0].length).replace(/^\uFEFF/, "").trim();
+  if (!value || isMaskedSecretInput(value)) return null;
+  return value;
+}
+
+export function inboundWebhookPrefixMatch(presented: string[], inboundSecret: string | null): boolean {
+  if (!inboundSecret || inboundSecret.length < 4) return false;
+  const prefixLen = Math.min(INBOUND_PREFIX_CHARS, inboundSecret.length);
+  return presented.some((candidate) => candidate.length >= prefixLen && candidate.slice(0, prefixLen) === inboundSecret.slice(0, prefixLen));
+}
 
 function normalizeEnvironment(value: string | null | undefined): HealthSherpaEnvironment {
   return value === "production" ? "production" : "sandbox";
@@ -72,8 +115,7 @@ async function loadVaultRowsByProvider(provider: string) {
 function decryptVaultKey(enc: string | null | undefined, iv: string | null | undefined): string | null {
   if (!enc || !iv) return null;
   try {
-    const key = decryptSecretTryingKeys(enc, iv).trim();
-    return key || null;
+    return normalizeHealthSherpaSecret(decryptSecretTryingKeys(enc, iv));
   } catch {
     return null;
   }
@@ -86,7 +128,7 @@ const WEBHOOK_SECRET_PROVIDERS = [
 ] as const;
 
 function envMedicare(): HealthSherpaMedicareCredentials | null {
-  const apiKey = process.env.HEALTHSHERPA_MEDICARE_API_KEY?.trim() || "";
+  const apiKey = normalizeHealthSherpaSecret(process.env.HEALTHSHERPA_MEDICARE_API_KEY);
   if (!apiKey) return null;
   return {
     apiKey,
@@ -96,11 +138,11 @@ function envMedicare(): HealthSherpaMedicareCredentials | null {
 }
 
 function envAcaKey(): string | null {
-  return process.env.HEALTHSHERPA_ACA_API_KEY?.trim() || null;
+  return normalizeHealthSherpaSecret(process.env.HEALTHSHERPA_ACA_API_KEY);
 }
 
 function envInboundKey(): string | null {
-  return process.env.HEALTHSHERPA_WEBHOOK_API_KEY?.trim() || null;
+  return normalizeHealthSherpaSecret(process.env.HEALTHSHERPA_WEBHOOK_API_KEY);
 }
 
 export async function loadHealthSherpaMedicareCredentials(): Promise<HealthSherpaMedicareCredentials | null> {
@@ -146,7 +188,7 @@ export async function loadHealthSherpaInboundKey(): Promise<string | null> {
 }
 
 function pushUniqueSecret(out: string[], value: string | null | undefined) {
-  const key = value?.trim();
+  const key = normalizeHealthSherpaSecret(value);
   if (key && !out.includes(key)) out.push(key);
 }
 
@@ -165,16 +207,35 @@ export async function loadHealthSherpaWebhookSecrets(): Promise<string[]> {
   return secrets;
 }
 
-export async function describeHealthSherpaInboundVault(): Promise<HealthSherpaInboundVaultState> {
+/** Inbound vault or HEALTHSHERPA_WEBHOOK_API_KEY only — not Medicare / ACA partner keys. */
+export async function loadNormalizedInboundWebhookSecret(): Promise<HealthSherpaInboundSecretState> {
   const inboundRows = await loadVaultRowsByProvider(HEALTHSHERPA_INBOUND_VAULT_PROVIDER);
   const hasRow = inboundRows.some((row) => Boolean(row.apiKeyEnc && row.apiKeyIv));
-  const readable = inboundRows.some((row) => Boolean(decryptVaultKey(row.apiKeyEnc, row.apiKeyIv)));
+  let vaultSecret: string | null = null;
+  for (const row of inboundRows) {
+    vaultSecret = decryptVaultKey(row.apiKeyEnc, row.apiKeyIv);
+    if (vaultSecret) break;
+  }
+  const envFallback = envInboundKey();
+  if (vaultSecret) {
+    return { secret: vaultSecret, source: "vault", hasRow, readable: true, envFallback: Boolean(envFallback) };
+  }
+  if (envFallback) {
+    return { secret: envFallback, source: "env", hasRow, readable: !hasRow, envFallback: true };
+  }
+  return { secret: null, source: "none", hasRow, readable: false, envFallback: false };
+}
+
+export async function describeHealthSherpaInboundVault(): Promise<HealthSherpaInboundVaultState> {
+  const inbound = await loadNormalizedInboundWebhookSecret();
   const accepted = await loadHealthSherpaWebhookSecrets();
   return {
-    hasRow,
-    readable,
-    envFallback: Boolean(envInboundKey()),
+    hasRow: inbound.hasRow,
+    readable: inbound.readable,
+    envFallback: inbound.envFallback,
     acceptedCount: accepted.length,
+    inboundConfigured: Boolean(inbound.secret),
+    inboundSource: inbound.source,
   };
 }
 
@@ -238,8 +299,17 @@ export async function loadHealthSherpaAcaPublicStatus(): Promise<VaultPublicStat
 }
 
 export async function loadHealthSherpaInboundPublicStatus(): Promise<VaultPublicStatus> {
-  const row = await loadVaultRow(HEALTHSHERPA_INBOUND_VAULT_PROVIDER);
-  if (row?.configured && row.apiKeyEnc) {
+  const inbound = await loadNormalizedInboundWebhookSecret();
+  if (inbound.hasRow && !inbound.readable && !inbound.envFallback) {
+    return publicVaultStatus({
+      configured: true,
+      source: "vault",
+      provider: HEALTHSHERPA_INBOUND_VAULT_PROVIDER,
+      label: HEALTHSHERPA_INBOUND_VAULT_LABEL,
+      unreadable: true,
+    });
+  }
+  if (inbound.source === "vault") {
     return publicVaultStatus({
       configured: true,
       source: "vault",
@@ -247,12 +317,13 @@ export async function loadHealthSherpaInboundPublicStatus(): Promise<VaultPublic
       label: HEALTHSHERPA_INBOUND_VAULT_LABEL,
     });
   }
-  if (envInboundKey()) {
+  if (inbound.source === "env") {
     return publicVaultStatus({
       configured: true,
       source: "env",
       provider: HEALTHSHERPA_INBOUND_VAULT_PROVIDER,
       label: HEALTHSHERPA_INBOUND_VAULT_LABEL,
+      unreadable: inbound.hasRow && !inbound.readable,
     });
   }
   return publicVaultStatus({
@@ -271,10 +342,16 @@ async function saveSingleKey(input: {
   environment?: HealthSherpaEnvironment;
   actorId: string | null;
 }): Promise<VaultPublicStatus> {
-  if (isMaskedSecretInput(input.apiKey) || !input.apiKey.trim()) {
-    throw new Error("Enter a real API key. Masked values are not saved.");
+  const normalized = normalizeHealthSherpaSecret(input.apiKey);
+  if (!normalized) {
+    const inbound = input.provider === HEALTHSHERPA_INBOUND_VAULT_PROVIDER;
+    throw new Error(
+      inbound
+        ? "Paste the real inbound webhook secret. Masked or empty values are not saved. This is not the Medicare Partner API key."
+        : "Enter a real API key. Masked values are not saved.",
+    );
   }
-  const key = encryptSecret(input.apiKey.trim());
+  const key = encryptSecret(normalized);
   const email = input.agentEmail?.trim() ? encryptSecret(input.agentEmail.trim()) : null;
   const existing = await loadVaultRow(input.provider);
   const values = {
