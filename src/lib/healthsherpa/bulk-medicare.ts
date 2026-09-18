@@ -3,16 +3,44 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { contacts, healthsherpaEnrollments, policies } from "@/lib/db/schema";
 import { homeLineKey } from "@/lib/home/lines";
+import { isMedicareCoverageType } from "@/lib/quote-sheet/sheet-defaults";
 import {
   HEALTHSHERPA_AGENT_EMAIL_MISSING,
   HEALTHSHERPA_KEYS_MISSING,
   HEALTHSHERPA_MEDICARE_BULK_FILTER,
 } from "./copy";
+import { ensureHealthSherpaFailure } from "./client";
 import { syncContactToHealthSherpa, type HealthSherpaContactRecord } from "./sync";
 import {
   loadHealthSherpaMedicareCredentials,
   type HealthSherpaMedicareCredentials,
 } from "./vault";
+import {
+  parseMedicareBulkOneshotState,
+  persistableMedicareBulkLastRun,
+  type MedicareBulkOneshotState,
+  type MedicareBulkRow,
+  type MedicareBulkRunResult,
+  type MedicareBulkTally,
+} from "./bulk-medicare-result";
+
+export {
+  failedMedicareBulkMessages,
+  MEDICARE_BULK_ONESHOT_ERROR_LIMIT,
+  medicareBulkAuthBanner,
+  medicareBulkAuthKind,
+  parseMedicareBulkOneshotState,
+  persistableMedicareBulkLastRun,
+} from "./bulk-medicare-result";
+export type {
+  MedicareBulkErrorRow,
+  MedicareBulkOneshotLastRun,
+  MedicareBulkOneshotState,
+  MedicareBulkRow,
+  MedicareBulkRowStatus,
+  MedicareBulkRunResult,
+  MedicareBulkTally,
+} from "./bulk-medicare-result";
 
 /** Sentinel enrollment row: last-run tally + whether the one-shot control is hidden. */
 export const MEDICARE_BULK_ONESHOT_APPLICATION_ID = "ff:medicare-bulk-oneshot";
@@ -20,54 +48,23 @@ export const MEDICARE_BULK_ONESHOT_EVENT = "bulk_oneshot";
 export const MEDICARE_BULK_RATE_LIMIT_MS = 250;
 
 export const MEDICARE_HEALTH_TAG_TOKENS = [
-  "health",
   "medicare",
   "mapd",
   "medigap",
   "medicare advantage",
   "medicare supplement",
   "medicare a&b",
-  "using healthsherpa",
-  "healthsherpa",
+  "using healthsherpa medicare",
 ] as const;
-
-export type MedicareBulkRowStatus = "synced" | "skipped" | "failed";
-
-export type MedicareBulkRow = {
-  contactId: string;
-  name: string;
-  status: MedicareBulkRowStatus;
-  code?: string;
-  message?: string;
-};
-
-export type MedicareBulkTally = {
-  synced: number;
-  skipped: number;
-  failed: number;
-  errors: Array<{ contactId: string; name: string; message: string }>;
-};
 
 export type MedicareBulkReady =
   | { ok: true; agentEmail: string }
   | { ok: false; code: "not_configured" | "agent_email"; message: string };
 
-export type MedicareBulkRunResult = MedicareBulkTally & {
-  ok: boolean;
-  code: string;
-  message: string;
-  candidateCount: number;
-  rows: MedicareBulkRow[];
-  configured: boolean;
-};
-
-export type MedicareBulkOneshotState = {
-  hidden: boolean;
-  lastRunAt: string | null;
-  lastRun: Pick<MedicareBulkRunResult, "synced" | "skipped" | "failed" | "code" | "message" | "candidateCount"> | null;
-};
-
 export type MedicareHealthContactSignals = {
+  /** HEALTH policy whose subtype/type is Medicare (not Marketplace/ACA). */
+  hasMedicarePolicy?: boolean;
+  /** @deprecated Generic HEALTH line is not enough — use hasMedicarePolicy. */
   hasHealthPolicy?: boolean;
   source?: string | null;
   tags?: string[] | null;
@@ -75,6 +72,7 @@ export type MedicareHealthContactSignals = {
   status?: string | null;
   archivedAt?: Date | string | null;
   mergedIntoId?: string | null;
+  healthSherpaProduct?: "medicare" | "marketplace" | null;
 };
 
 export const MEDICARE_BULK_FILTER_DOC = HEALTHSHERPA_MEDICARE_BULK_FILTER;
@@ -93,27 +91,51 @@ export function isHealthPolicyLine(lineOfBusiness: string | null | undefined): b
   return homeLineKey(String(lineOfBusiness ?? "")) === "HEALTH";
 }
 
+export function policyLooksMedicare(input: {
+  lineOfBusiness?: string | null;
+  policySubType?: string | null;
+  policyType?: string | null;
+  insuranceType?: string | null;
+  sourceProduct?: string | null;
+}): boolean {
+  if (!isHealthPolicyLine(input.lineOfBusiness)) return false;
+  return (
+    isMedicareCoverageType(input.policySubType) ||
+    isMedicareCoverageType(input.policyType) ||
+    isMedicareCoverageType(input.insuranceType) ||
+    isMedicareCoverageType(input.sourceProduct)
+  );
+}
+
 export function tagLooksMedicareHealth(tag: string | null | undefined): boolean {
   const raw = String(tag ?? "").trim().toLowerCase();
   if (!raw) return false;
   if ((MEDICARE_HEALTH_TAG_TOKENS as readonly string[]).includes(raw)) return true;
-  return raw.includes("medicare") || raw.includes("healthsherpa");
+  if (raw.includes("marketplace") || raw === "aca" || raw.includes("ichra")) return false;
+  return raw.includes("medicare") || raw.includes("mapd") || raw.includes("medigap");
+}
+
+export function textLooksMedicare(raw: string | null | undefined): boolean {
+  const text = String(raw ?? "").trim().toLowerCase();
+  if (!text) return false;
+  return /medicare|mapd|medigap|med[\s-]?supp|part\s*[ab]\b|using healthsherpa medicare/.test(text);
 }
 
 export function hasMedicareHealthFlag(input: Pick<MedicareHealthContactSignals, "tags" | "healthNotes">): boolean {
-  if (!blank(input.healthNotes)) return true;
+  if (textLooksMedicare(input.healthNotes)) return true;
   return (input.tags ?? []).some((tag) => tagLooksMedicareHealth(tag));
 }
 
 /**
- * Medicare/Health candidate filter. Does not match the whole CRM.
- * Include when any of: HEALTH policy, source=healthsherpa, Health/Medicare tag, or Health notes.
- * Exclude archived / merged contacts.
+ * Medicare-only candidate filter. Does not match Marketplace/ACA or the whole CRM.
+ * Include when any of: clearly-Medicare HEALTH policy, Medicare HealthSherpa enrollment,
+ * Medicare/MAPD/Medigap tag, or Health notes that mention Medicare.
+ * HealthSherpa source alone is not enough. Exclude archived / merged contacts.
  */
 export function contactLooksMedicareHealth(input: MedicareHealthContactSignals): boolean {
   if (isRetiredMedicareContact(input)) return false;
-  if (input.hasHealthPolicy) return true;
-  if (String(input.source ?? "").trim().toLowerCase() === "healthsherpa") return true;
+  if (input.hasMedicarePolicy) return true;
+  if (input.healthSherpaProduct === "medicare") return true;
   return hasMedicareHealthFlag(input);
 }
 
@@ -144,10 +166,15 @@ export function tallyMedicareBulkRows(rows: MedicareBulkRow[]): MedicareBulkTall
     else if (row.status === "skipped") skipped += 1;
     else {
       failed += 1;
+      const failure = ensureHealthSherpaFailure({
+        code: row.code,
+        message: row.message,
+      });
       errors.push({
         contactId: row.contactId,
         name: row.name,
-        message: row.message || "HealthSherpa sync failed.",
+        code: failure.code,
+        message: failure.message,
       });
     }
   }
@@ -195,26 +222,6 @@ export async function describeMedicareBulkReady(): Promise<{
   };
 }
 
-function parseOneshotPayload(raw: Record<string, unknown> | null | undefined): MedicareBulkOneshotState {
-  const hidden = raw?.hidden === true;
-  const lastRunAt = typeof raw?.lastRunAt === "string" ? raw.lastRunAt : null;
-  const last = raw?.lastRun && typeof raw.lastRun === "object" ? (raw.lastRun as Record<string, unknown>) : null;
-  return {
-    hidden,
-    lastRunAt,
-    lastRun: last
-      ? {
-          synced: Number(last.synced) || 0,
-          skipped: Number(last.skipped) || 0,
-          failed: Number(last.failed) || 0,
-          code: typeof last.code === "string" ? last.code : "ok",
-          message: typeof last.message === "string" ? last.message : "",
-          candidateCount: Number(last.candidateCount) || 0,
-        }
-      : null,
-  };
-}
-
 async function loadOneshotRow() {
   const [row] = await db
     .select()
@@ -232,7 +239,7 @@ async function loadOneshotRow() {
 export async function loadMedicareBulkOneshotState(): Promise<MedicareBulkOneshotState> {
   try {
     const row = await loadOneshotRow();
-    return parseOneshotPayload(row?.payload);
+    return parseMedicareBulkOneshotState(row?.payload);
   } catch {
     return { hidden: false, lastRunAt: null, lastRun: null };
   }
@@ -289,12 +296,38 @@ type ListedContact = HealthSherpaContactRecord & {
 
 async function listMedicareHealthCandidateContacts(): Promise<ListedContact[]> {
   const policyRows = await db
-    .select({ contactId: policies.contactId, lineOfBusiness: policies.lineOfBusiness })
+    .select({
+      contactId: policies.contactId,
+      lineOfBusiness: policies.lineOfBusiness,
+      policySubType: policies.policySubType,
+      policyType: policies.policyType,
+      insuranceType: policies.insuranceType,
+      sourceProduct: policies.sourceProduct,
+    })
     .from(policies)
     .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), isNotNull(policies.contactId)));
-  const healthPolicySet = new Set(
+  const medicarePolicySet = new Set(
     policyRows
-      .filter((row) => isHealthPolicyLine(row.lineOfBusiness) && row.contactId)
+      .filter((row) => row.contactId && policyLooksMedicare(row))
+      .map((row) => row.contactId as string),
+  );
+
+  const enrollmentRows = await db
+    .select({
+      contactId: healthsherpaEnrollments.contactId,
+      product: healthsherpaEnrollments.product,
+    })
+    .from(healthsherpaEnrollments)
+    .where(
+      and(
+        eq(healthsherpaEnrollments.tenantId, DEFAULT_TENANT_ID),
+        isNotNull(healthsherpaEnrollments.contactId),
+        ne(healthsherpaEnrollments.event, MEDICARE_BULK_ONESHOT_EVENT),
+      ),
+    );
+  const medicareEnrollmentSet = new Set(
+    enrollmentRows
+      .filter((row) => row.contactId && row.product === "medicare")
       .map((row) => row.contactId as string),
   );
 
@@ -326,32 +359,34 @@ async function listMedicareHealthCandidateContacts(): Promise<ListedContact[]> {
         isNull(contacts.mergedIntoId),
         ne(contacts.status, "archived"),
         or(
-          eq(contacts.source, "healthsherpa"),
-          sql`coalesce(trim(${contacts.healthNotes}), '') <> ''`,
+          sql`coalesce(${contacts.healthNotes}, '') ~* 'medicare|mapd|medigap|med[[:space:]-]?supp|part[[:space:]]*[ab]'`,
           sql`exists (
             select 1
             from jsonb_array_elements_text(coalesce(${contacts.tags}, '[]'::jsonb)) as tag
             where lower(tag) in (
-              'health', 'medicare', 'mapd', 'medigap', 'medicare advantage',
-              'medicare supplement', 'medicare a&b', 'using healthsherpa', 'healthsherpa'
+              'medicare', 'mapd', 'medigap', 'medicare advantage',
+              'medicare supplement', 'medicare a&b', 'using healthsherpa medicare'
             )
             or lower(tag) like '%medicare%'
-            or lower(tag) like '%healthsherpa%'
+            or lower(tag) like '%mapd%'
+            or lower(tag) like '%medigap%'
           )`,
-          healthPolicySet.size ? inArray(contacts.id, [...healthPolicySet]) : sql`false`,
+          medicarePolicySet.size ? inArray(contacts.id, [...medicarePolicySet]) : sql`false`,
+          medicareEnrollmentSet.size ? inArray(contacts.id, [...medicareEnrollmentSet]) : sql`false`,
         ),
       ),
     );
 
   return flagged.filter((row) =>
     contactLooksMedicareHealth({
-      hasHealthPolicy: healthPolicySet.has(row.id),
+      hasMedicarePolicy: medicarePolicySet.has(row.id),
       source: row.source,
       tags: row.tags,
       healthNotes: row.healthNotes,
       status: row.status,
       archivedAt: row.archivedAt,
       mergedIntoId: row.mergedIntoId,
+      healthSherpaProduct: medicareEnrollmentSet.has(row.id) ? "medicare" : null,
     }),
   );
 }
@@ -396,27 +431,45 @@ export async function runMedicareContactBulkSync(input?: {
       continue;
     }
     if (index > 0) await sleep(MEDICARE_BULK_RATE_LIMIT_MS);
-    const result = await syncContact({
-      contact,
-      agentEmail: ready.agentEmail,
-      notes: [`FitFirst Medicare bulk sync ${new Date().toISOString().slice(0, 10)}`],
-    });
-    if (result.ok) {
+    try {
+      const result = await syncContact({
+        contact,
+        agentEmail: ready.agentEmail,
+        notes: [`FitFirst Medicare bulk sync ${new Date().toISOString().slice(0, 10)}`],
+      });
+      if (result.ok) {
+        rows.push({
+          contactId: contact.id,
+          name,
+          status: "synced",
+          message: result.message,
+        });
+        continue;
+      }
+      const failure = ensureHealthSherpaFailure({
+        code: result.code,
+        message: result.message,
+      });
       rows.push({
         contactId: contact.id,
         name,
-        status: "synced",
-        message: result.message,
+        status: "failed",
+        code: failure.code,
+        message: failure.message,
       });
-      continue;
+    } catch (error) {
+      const failure = ensureHealthSherpaFailure({
+        code: "healthsherpa_error",
+        message: error instanceof Error ? error.message : "HealthSherpa sync failed.",
+      });
+      rows.push({
+        contactId: contact.id,
+        name,
+        status: "failed",
+        code: failure.code,
+        message: failure.message,
+      });
     }
-    rows.push({
-      contactId: contact.id,
-      name,
-      status: "failed",
-      code: result.code,
-      message: result.message,
-    });
   }
 
   const tally = tallyMedicareBulkRows(rows);
@@ -442,14 +495,7 @@ export async function runMedicareContactBulkSync(input?: {
       await saveMedicareBulkOneshotState({
         hidden: autoHide || current.hidden,
         lastRunAt: new Date().toISOString(),
-        lastRun: {
-          synced: completed.synced,
-          skipped: completed.skipped,
-          failed: completed.failed,
-          code: completed.code,
-          message: completed.message,
-          candidateCount: completed.candidateCount,
-        },
+        lastRun: persistableMedicareBulkLastRun(completed),
       });
     } catch {
       /* oneshot persistence is optional — do not fail the push */

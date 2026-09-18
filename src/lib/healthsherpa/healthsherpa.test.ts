@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { MasterSheetCompare } from "@/components/deal/master-sheet-compare";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { parseHealthSherpaPayload } from "./payload";
-import { healthSherpaMedicareRequest } from "./client";
+import { compactHealthSherpaErrorBody, healthSherpaClientError, healthSherpaMedicareRequest } from "./client";
 import { authorizeHealthSherpaWebhook, collectPresentedHealthSherpaSecrets } from "./auth";
 import { healthSherpaAcaQuote } from "./aca";
 import { publicHealthSherpaIngestError } from "./errors";
@@ -334,6 +334,63 @@ describe("HealthSherpa Medicare + Marketplace", () => {
     }
     expect(source("src/lib/healthsherpa/client.ts")).toMatch(/noteDeveloperApiCall\("healthsherpa_medicare"\)/);
     expect(source("src/lib/developer/usage.ts")).toMatch(/healthsherpa_medicare/);
+  });
+
+  it("never returns a blank HealthSherpa client message and includes the HTTP status", async () => {
+    const empty401 = healthSherpaClientError(401, { error: { code: "unauthorized", message: "" } });
+    expect(empty401.ok).toBe(false);
+    expect(empty401.status).toBe(401);
+    expect(empty401.code).toBe("unauthorized");
+    expect(empty401.message).toMatch(/HealthSherpa HTTP 401/);
+    expect(empty401.message).toMatch(/unauthorized/);
+    expect(
+      healthSherpaClientError(403, { errors: { agent_email: ["is invalid"] } }).message,
+    ).toMatch(/HealthSherpa HTTP 403: agent_email is invalid/);
+    expect(healthSherpaClientError(422, { message: "   " }).message).toMatch(/HealthSherpa HTTP 422/);
+    expect(JSON.stringify(healthSherpaClientError(500, { error: { message: "postgres://user:hunter2@db/ff" } }))).not.toMatch(
+      /hunter2/,
+    );
+
+    const tia = healthSherpaClientError(422, {
+      error: { message: "invalid" },
+      errors: { contact: ["invalid"], birth_date: ["is invalid"] },
+    });
+    expect(tia.message).toMatch(/HealthSherpa HTTP 422/);
+    expect(tia.message).toMatch(/birth_date/);
+    expect(tia.message).toContain(compactHealthSherpaErrorBody({
+      error: { message: "invalid" },
+      errors: { contact: ["invalid"], birth_date: ["is invalid"] },
+    }));
+    expect(tia.message).not.toBe("HealthSherpa HTTP 422: invalid");
+
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({ error: { message: "" } }), { status: 401 }));
+    const denied = await healthSherpaMedicareRequest("/contacts", {
+      method: "POST",
+      apiKey: "hs_test",
+      environment: "sandbox",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      body: { agent_email: "agent@agency.test", contact: { external_id: "c1", first_name: "Ada", last_name: "Lovelace" } },
+    });
+    expect(denied.ok).toBe(false);
+    if (!denied.ok) {
+      expect(denied.code).toBeTruthy();
+      expect(denied.message).toMatch(/HealthSherpa HTTP 401/);
+    }
+
+    const offline = await healthSherpaMedicareRequest("/contacts", {
+      method: "POST",
+      apiKey: "hs_test",
+      environment: "sandbox",
+      fetchImpl: (async () => {
+        throw new Error("getaddrinfo ENOTFOUND api.medicare-staging.healthsherpa.com");
+      }) as unknown as typeof fetch,
+    });
+    expect(offline).toMatchObject({
+      ok: false,
+      code: "network",
+      message: expect.stringMatching(/sandbox versus production/i),
+    });
+    expect(JSON.stringify(offline)).not.toMatch(/hs_test|ENOTFOUND/);
   });
 
   it("wires vault, webhook, catalog, and Health Risk Profile toggle", () => {
