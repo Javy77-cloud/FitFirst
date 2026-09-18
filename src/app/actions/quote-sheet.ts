@@ -103,7 +103,7 @@ import {
   NHTSA_VPIC_LABEL,
   orchestrateVinDecodeFill,
 } from "@/lib/vin-decode";
-import { fillSheetFromDealDetails } from "@/lib/quote-sheet/fill-from-deal";
+import { fillSheetFromDealDetails, type DealSheetCopyInput } from "@/lib/quote-sheet/fill-from-deal";
 import { loadRecordValues, writeRecordValues } from "@/lib/custom-fields/store";
 import { cascadeValuesFromDealHints } from "@/lib/deals/insurance-cascade";
 import {
@@ -150,6 +150,64 @@ function isShopLine(value: string): value is ShopLine {
   return (SHOP_LINES as readonly string[]).includes(value);
 }
 
+/** Shared Deal Details payload for Fill and first-open Auto seed — same mapping, one helper. */
+async function loadDealSheetCopyInput(
+  dealId: string,
+  lineRaw: ShopLine,
+): Promise<DealSheetCopyInput | null> {
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  if (!deal) return null;
+  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+  const [contact] = deal.contactId
+    ? await db.select().from(contacts).where(eq(contacts.id, deal.contactId))
+    : [];
+  const [lead] = deal.leadId ? await db.select().from(leads).where(eq(leads.id, deal.leadId)) : [];
+  const stored = await loadRecordValues(dealId, "deals");
+  return {
+    primaryNamedInsured: deal.primaryNamedInsured,
+    secondaryNamedInsured: deal.secondaryNamedInsured,
+    propertyOneliner: deal.propertyOneliner,
+    currentCarrier: deal.currentCarrier,
+    coverageAmount: deal.coverageAmount,
+    quotingForm: deal.quotingForm,
+    policySubType: deal.policySubType,
+    quotingLine: lineRaw,
+    shopProducts: deal.shopProducts,
+    stored,
+    risk: risk ?? null,
+    contact: contact
+      ? {
+          firstName: contact.firstName,
+          lastName: contact.lastName,
+          email: contact.email,
+          phone: contact.phone,
+          dateOfBirth: contact.dateOfBirth,
+          mailingAddress: contact.mailingAddress,
+          city: contact.city,
+          state: contact.state,
+          zip: contact.zip,
+        }
+      : null,
+    lead: lead
+      ? {
+          firstName: lead.firstName,
+          middleName: lead.middleName,
+          lastName: lead.lastName,
+          email: lead.email,
+          phone: lead.phone,
+          dateOfBirth: lead.dateOfBirth,
+          mailingAddress: lead.mailingAddress,
+          city: lead.city,
+          state: lead.state,
+          zip: lead.zip,
+          notes: lead.notes,
+          source: lead.source,
+          preferredLanguage: lead.preferredLanguage,
+        }
+      : null,
+  };
+}
+
 export async function ensureQuoteSheet(dealId: string, line: ShopLine) {
   const [existing] = await db
     .select()
@@ -185,6 +243,13 @@ export async function ensureQuoteSheet(dealId: string, line: ShopLine) {
     }
     if (!String(values.premises_same_as_business?.value ?? "").trim()) {
       values.premises_same_as_business = { value: "Yes", status: "confirmed", source: "agent" };
+    }
+  }
+  // First-open Auto Risk Profile: same Deal Details → driver mapping as Fill (empty cells only).
+  if (line === "auto") {
+    const input = await loadDealSheetCopyInput(dealId, line);
+    if (input) {
+      Object.assign(values, fillSheetFromDealDetails(input, values).values);
     }
   }
   const [created] = await db
@@ -839,63 +904,12 @@ export async function runFillFromDealDetails(
   lineRaw: ShopLine,
 ): Promise<DealFillRunResult> {
   const sheet = await ensureQuoteSheet(dealId, lineRaw);
-  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
-  if (!deal) {
+  const input = await loadDealSheetCopyInput(dealId, lineRaw);
+  if (!input) {
     return { filledKeys: [], skippedKeys: [], note: MASTER_FILL_SKIP_NO_DEAL };
   }
-  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
-  const [contact] = deal.contactId
-    ? await db.select().from(contacts).where(eq(contacts.id, deal.contactId))
-    : [];
-  const [lead] = deal.leadId ? await db.select().from(leads).where(eq(leads.id, deal.leadId)) : [];
-  const stored = await loadRecordValues(dealId, "deals");
   const fresh = await loadFreshSheetValues(sheet.id, sheet.values);
-  const applied = fillSheetFromDealDetails(
-    {
-      primaryNamedInsured: deal.primaryNamedInsured,
-      secondaryNamedInsured: deal.secondaryNamedInsured,
-      propertyOneliner: deal.propertyOneliner,
-      currentCarrier: deal.currentCarrier,
-      coverageAmount: deal.coverageAmount,
-      quotingForm: deal.quotingForm,
-      policySubType: deal.policySubType,
-      quotingLine: lineRaw,
-      shopProducts: deal.shopProducts,
-      stored,
-      risk: risk ?? null,
-      contact: contact
-        ? {
-            firstName: contact.firstName,
-            lastName: contact.lastName,
-            email: contact.email,
-            phone: contact.phone,
-            dateOfBirth: contact.dateOfBirth,
-            mailingAddress: contact.mailingAddress,
-            city: contact.city,
-            state: contact.state,
-            zip: contact.zip,
-          }
-        : null,
-      lead: lead
-        ? {
-            firstName: lead.firstName,
-            middleName: lead.middleName,
-            lastName: lead.lastName,
-            email: lead.email,
-            phone: lead.phone,
-            dateOfBirth: lead.dateOfBirth,
-            mailingAddress: lead.mailingAddress,
-            city: lead.city,
-            state: lead.state,
-            zip: lead.zip,
-            notes: lead.notes,
-            source: lead.source,
-            preferredLanguage: lead.preferredLanguage,
-          }
-        : null,
-    },
-    fresh,
-  );
+  const applied = fillSheetFromDealDetails(input, fresh);
   if (!applied.filledKeys.length) {
     return {
       filledKeys: [],

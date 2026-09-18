@@ -72,7 +72,7 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     expect(result.filledKeys).toContain("applicant_dob");
   });
 
-  it("copies primary DOB onto Auto driver_1_dob and co_applicant_dob when present", () => {
+  it("copies primary DOB onto Auto driver_1_dob and co-applicant onto driver_2 when present", () => {
     const existing = emptySheetValues("auto");
     const result = fillSheetFromDealDetails(
       {
@@ -89,9 +89,49 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     expect(result.values.co_applicant_dob).toBeUndefined();
     expect(result.values.driver_1_dob.value).toBe("9/14/1975");
     expect(result.values.driver_1_name.value).toBe("Heather Camirand");
+    expect(result.values.driver_2_name.value).toBe("Tom Camirand");
+    expect(result.values.driver_2_dob.value).toBe("1/2/1974");
     expect(result.filledKeys).toEqual(
-      expect.arrayContaining(["driver_1_dob", "driver_1_name"]),
+      expect.arrayContaining(["driver_1_dob", "driver_1_name", "driver_2_name", "driver_2_dob"]),
     );
+  });
+
+  it("does not seed Auto driver_2 when co-applicant is Off", () => {
+    const result = fillSheetFromDealDetails(
+      {
+        primaryNamedInsured: "Heather Camirand",
+        secondaryNamedInsured: "Tom Camirand",
+        stored: {
+          date_of_birth: "1975-09-14",
+          has_co_applicant: "false",
+          co_applicant_dob: "1974-01-02",
+        },
+      },
+      emptySheetValues("auto"),
+    );
+    expect(result.values.driver_1_name.value).toBe("Heather Camirand");
+    expect(result.values.driver_2_name?.value ?? "").toBe("");
+    expect(result.filledKeys).not.toContain("driver_2_name");
+  });
+
+  it("does not overwrite an existing Auto driver_2 on Fill", () => {
+    const existing = emptySheetValues("auto");
+    existing.driver_2_name = { value: "Manual Driver", status: "confirmed", source: "agent" };
+    existing.driver_2_dob = { value: "2/2/1980", status: "confirmed", source: "agent" };
+    const result = fillSheetFromDealDetails(
+      {
+        primaryNamedInsured: "Heather Camirand",
+        secondaryNamedInsured: "Tom Camirand",
+        stored: {
+          date_of_birth: "1975-09-14",
+          co_applicant_dob: "1974-01-02",
+        },
+      },
+      existing,
+    );
+    expect(result.values.driver_2_name.value).toBe("Manual Driver");
+    expect(result.values.driver_2_dob.value).toBe("2/2/1980");
+    expect(result.values.driver_3_name.value).toBe("Tom Camirand");
   });
 
   it("maps date_inspected from Gemini and falls back from four_point_date", () => {
