@@ -12,6 +12,7 @@ import { RiskProfileFieldsGrid } from "@/components/deal/risk-profile-field-grid
 import {
   compactRowClass,
   isCompactLayoutField,
+  readRenderedColumnCount,
   sectionFieldGridClass,
 } from "@/lib/custom-fields/section-density";
 import { emptySheetValues, fieldsForLine } from "./catalog";
@@ -166,7 +167,8 @@ describe("Risk Profile per-section density + full labels", () => {
     expect(html).toMatch(/data-ff-density-choice="1"/);
     expect(html).toMatch(/data-ff-density-choice="4"/);
     expect(html).toMatch(/data-ff-density-choice="5"/);
-    expect(html).toMatch(/grid-cols-\[repeat\(5,minmax\(0,1fr\)\)\]/);
+    expect(html).toMatch(/grid-cols-5/);
+    expect(html).toMatch(/grid-template-columns:repeat\(5/);
     expect(html).toMatch(/data-ff-compact-row/);
     expect(html).not.toMatch(/data-ff-section-density-control="risk-profile"/);
     expect(html).not.toMatch(/Reside at risk address…/);
@@ -289,7 +291,8 @@ describe("Risk Profile per-section density + full labels", () => {
     expect(html).toMatch(/data-ff-section-density-control="Commercial Property"/);
     expect(html).toMatch(/data-ff-section-density-control="Commercial Auto"/);
     expect(html).toMatch(/data-ff-density-choice="5"/);
-    expect(html).toMatch(/grid-cols-\[repeat\(5,minmax\(0,1fr\)\)\]/);
+    expect(html).toMatch(/grid-cols-5/);
+    expect(html).toMatch(/grid-template-columns:repeat\(5/);
     const glControl = html.slice(html.indexOf('data-ff-section-density-control="General Liability"'));
     const glChunk = glControl.slice(0, glControl.indexOf("</div>") + 6);
     expect(glChunk).toMatch(/data-ff-density-choice="4"/);
@@ -366,12 +369,8 @@ describe("Risk Profile per-section density + full labels", () => {
       sectionFieldGridClass(5, { collapse: false }),
     );
     expect(compactRowClass(4)).not.toEqual(compactRowClass(5));
-    expect(source("src/lib/custom-fields/section-density.ts")).toMatch(
-      /grid-cols-\[repeat\(4,minmax\(0,1fr\)\)\]/,
-    );
-    expect(source("src/lib/custom-fields/section-density.ts")).toMatch(
-      /grid-cols-\[repeat\(5,minmax\(0,1fr\)\)\]/,
-    );
+    expect(source("src/lib/custom-fields/section-density.ts")).toMatch(/grid-cols-4/);
+    expect(source("src/lib/custom-fields/section-density.ts")).toMatch(/grid-cols-5/);
     expect(source("src/app/globals.css")).toMatch(/data-ff-section-density="4"/);
     expect(source("src/app/globals.css")).toMatch(/data-ff-section-density="5"/);
 
@@ -392,15 +391,21 @@ describe("Risk Profile per-section density + full labels", () => {
       ),
     );
     const [html3, html4, html5] = html;
+    expect(readRenderedColumnCount(html3)).toBe(3);
+    expect(readRenderedColumnCount(html4)).toBe(4);
+    expect(readRenderedColumnCount(html5)).toBe(5);
+    expect(readRenderedColumnCount(html4)).not.toBe(3);
     expect(html3).toMatch(/data-ff-section-density="3"/);
     expect(html4).toMatch(/data-ff-section-density="4"/);
     expect(html5).toMatch(/data-ff-section-density="5"/);
-    expect(html3).toMatch(/grid-cols-\[repeat\(3,minmax\(0,1fr\)\)\]/);
-    expect(html4).toMatch(/grid-cols-\[repeat\(4,minmax\(0,1fr\)\)\]/);
-    expect(html5).toMatch(/grid-cols-\[repeat\(5,minmax\(0,1fr\)\)\]/);
-    expect(html3).toMatch(/--ff-section-cols:3/);
-    expect(html4).toMatch(/--ff-section-cols:4/);
-    expect(html5).toMatch(/--ff-section-cols:5/);
+    expect(html3).toMatch(/grid-cols-3/);
+    expect(html4).toMatch(/grid-cols-4/);
+    expect(html5).toMatch(/grid-cols-5/);
+    expect(html4).not.toMatch(/grid-cols-3/);
+    expect(html5).not.toMatch(/grid-cols-3/);
+    expect(html3).toMatch(/grid-template-columns:repeat\(3/);
+    expect(html4).toMatch(/grid-template-columns:repeat\(4/);
+    expect(html5).toMatch(/grid-template-columns:repeat\(5/);
     expect(html3).not.toEqual(html4);
     expect(html4).not.toEqual(html5);
   });
