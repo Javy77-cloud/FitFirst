@@ -16,7 +16,13 @@ import {
   isHealthSherpaManualPlan,
   isUsingHealthSherpa,
 } from "./sheet";
-import { HEALTHSHERPA_ACA_NEEDS_PARTNER, HEALTHSHERPA_WEBHOOK_PATH } from "./copy";
+import {
+  HEALTHSHERPA_ACA_NEEDS_PARTNER,
+  HEALTHSHERPA_EXTERNAL_ID_STAMP,
+  HEALTHSHERPA_NEEDS_REVIEW_REASON,
+  HEALTHSHERPA_REVIEW_PATH,
+  HEALTHSHERPA_WEBHOOK_PATH,
+} from "./copy";
 import { encryptSecret, decryptSecretTryingKeys, LOCAL_SECRETS_KEY_HEX } from "@/lib/secrets/vault";
 import { inboundWebhookPrefixMatch, normalizeHealthSherpaSecret } from "./vault";
 
@@ -332,7 +338,20 @@ describe("HealthSherpa Medicare + Marketplace", () => {
 
   it("wires vault, webhook, catalog, and Health Risk Profile toggle", () => {
     expect(source("drizzle/0139_healthsherpa.sql")).toMatch(/healthsherpa_enrollments/);
-    expect(source("drizzle/meta/_journal.json")).toMatch(/0139_healthsherpa/);
+    expect(source("drizzle/0140_healthsherpa_contact_match.sql")).toMatch(/match_status/);
+    expect(source("drizzle/meta/_journal.json")).toMatch(/0140_healthsherpa_contact_match/);
+    expect(source("src/lib/healthsherpa/inbound.ts")).toMatch(/HEALTHSHERPA_NEEDS_REVIEW_REASON/);
+    expect(source("src/lib/healthsherpa/inbound.ts")).not.toMatch(/console\.(log|info|debug|error)\(/);
+    expect(source("src/lib/desk-id.ts")).toMatch(/healthsherpa-review/);
+    expect(source("src/app/contacts/page.tsx")).toMatch(/data-ff-healthsherpa-review-banner/);
+    expect(source("src/app/contacts/healthsherpa-review/page.tsx")).toMatch(/HealthSherpaReviewQueue/);
+    expect(source("src/app/developer/healthsherpa/page.tsx")).toMatch(/HealthSherpaReviewQueue/);
+    expect(source("src/components/healthsherpa/review-queue.tsx")).toMatch(/Link to existing contact/);
+    expect(source("src/components/healthsherpa/review-queue.tsx")).toMatch(/Create new contact/);
+    expect(source("src/components/healthsherpa/review-queue.tsx")).toMatch(/HEALTHSHERPA_EXTERNAL_ID_STAMP/);
+    expect(HEALTHSHERPA_EXTERNAL_ID_STAMP).toMatch(/stamps contact\.external_id/);
+    expect(HEALTHSHERPA_NEEDS_REVIEW_REASON).toMatch(/No contact was created/);
+    expect(HEALTHSHERPA_REVIEW_PATH).toBe("/contacts/healthsherpa-review");
     expect(source("src/app/api/integrations/healthsherpa/webhook/route.ts")).toMatch(/authorizeHealthSherpaWebhook/);
     expect(source("src/app/api/integrations/healthsherpa/webhook/route.ts")).toMatch(/X-API-Key/);
     expect(source("src/lib/auth/access.ts")).toMatch(/\/api\/integrations\//);
@@ -377,6 +396,21 @@ describe("HealthSherpa Medicare + Marketplace", () => {
     expect(html).toContain("data-ff-healthsherpa-collapse=\"Medicare\"");
     expect(html).toContain("Skip re-keying");
     expect(html).toContain("HealthSherpa Medicare API key is not configured");
+    const ready = renderToString(
+      createElement(MasterSheetCompare, {
+        dealId: "deal-health",
+        line: "health",
+        fields: [],
+        values: {
+          ...emptySheetValues("health"),
+          using_healthsherpa: { value: "yes", status: "confirmed", source: "agent" },
+          plan_type: { value: "Medicare Advantage", status: "confirmed", source: "agent" },
+        },
+        product: "health",
+        healthSherpa: { medicareReady: true, acaReady: false },
+      }),
+    );
+    expect(ready).toContain(HEALTHSHERPA_EXTERNAL_ID_STAMP);
   });
 
   it("collects HealthSherpa API-key headers without preferring Bearer over X-API-Key", () => {

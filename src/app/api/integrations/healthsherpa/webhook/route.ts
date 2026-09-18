@@ -62,6 +62,8 @@ export async function POST(request: Request) {
         policyId: result.policyId ?? null,
         enrollmentId: result.enrollmentId ?? null,
         product: result.product ?? null,
+        matchStatus: result.matchStatus ?? null,
+        matchReason: result.matchReason ?? null,
         note: "Manual enrollments in HealthSherpa may not fire this webhook.",
       },
       // ACA onboarding asks for HTTP 200; Medicare accepts any 2xx.
@@ -79,6 +81,8 @@ export async function POST(request: Request) {
         policyId: null,
         enrollmentId: null,
         product: null,
+        matchStatus: null,
+        matchReason: null,
         note: "Manual enrollments in HealthSherpa may not fire this webhook.",
       },
       { status: failure.status, headers: cors },

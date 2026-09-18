@@ -4,16 +4,24 @@ import { requireDeveloperPage } from "@/lib/auth/guards";
 import { DEVELOPER_UPCOMING } from "@/lib/developer/notes";
 import { loadDeveloperUsageTiles } from "@/lib/developer/usage-store";
 import { NOT_COUNTED_YET } from "@/lib/developer/usage";
+import { countHealthSherpaReviewEnrollments } from "@/lib/healthsherpa/review";
+import { HEALTHSHERPA_EXTERNAL_ID_STAMP } from "@/lib/healthsherpa/copy";
 
 export const dynamic = "force-dynamic";
 
 export default async function DeveloperHubPage() {
   const session = await requireDeveloperPage();
   let tiles: Awaited<ReturnType<typeof loadDeveloperUsageTiles>> = [];
+  let hsReviewCount = 0;
   try {
     tiles = await loadDeveloperUsageTiles();
   } catch {
     tiles = [];
+  }
+  try {
+    hsReviewCount = await countHealthSherpaReviewEnrollments();
+  } catch {
+    hsReviewCount = 0;
   }
 
   return (
@@ -45,6 +53,23 @@ export default async function DeveloperHubPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="mb-6" data-ff-developer-healthsherpa="">
+        <h2 className="mb-2 text-sm font-semibold text-navy">HealthSherpa</h2>
+        <Link
+          href="/developer/healthsherpa"
+          className="ff-card block p-4 hover:border-primary/40"
+          data-ff-developer-healthsherpa-open=""
+        >
+          <div className="text-sm font-semibold text-navy">Inbound contact review</div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {hsReviewCount > 0
+              ? `${hsReviewCount} enrollment${hsReviewCount === 1 ? "" : "s"} need a link or a new contact.`
+              : "No unmatched enrollments. Weak name-only inbound stays here instead of creating a duplicate."}
+          </p>
+          <p className="mt-2 text-helper text-muted-foreground">{HEALTHSHERPA_EXTERNAL_ID_STAMP}</p>
+        </Link>
       </section>
 
       <section className="mb-6" data-ff-developer-gaps="">

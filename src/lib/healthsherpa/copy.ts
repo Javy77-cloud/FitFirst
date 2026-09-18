@@ -13,6 +13,19 @@ export const HEALTHSHERPA_ACA_BLURB =
 export const HEALTHSHERPA_INBOUND_BLURB =
   "Medicare and Marketplace share this URL. HealthSherpa Authentication = API Key — they send X-API-Key (Bearer / api-key also accepted). Paste the inbound webhook secret (not the Medicare Partner API key) in Developer Hub → API vault. Manual enrollments may not fire this webhook.";
 
+export const HEALTHSHERPA_EXTERNAL_ID_STAMP =
+  "Sync to HealthSherpa from FitFirst stamps contact.external_id with the FitFirst contact id so later enrollments hit the same contact.";
+
+export const HEALTHSHERPA_REVIEW_BLURB =
+  "Inbound enrollments without a strong match stay here. Strong matches are a HealthSherpa source id, a FitFirst UUID on external_id, exact email, or exact phone. Name-only is not enough — link an existing contact or create a new one, then FitFirst attaches the unpublished policy.";
+
+export const HEALTHSHERPA_NEEDS_REVIEW_REASON =
+  "Enrollment stored for review. No contact was created because the match was not strong enough.";
+
+export const HEALTHSHERPA_LINKED_REASON = "Enrollment stored as an unpublished Health policy.";
+
+export const HEALTHSHERPA_REVIEW_PATH = "/contacts/healthsherpa-review";
+
 export const HEALTHSHERPA_MANUAL_LINES_NOTE =
   "Dental, Vision, and Short-term stay manual. They are not a HealthSherpa enrollment path.";
 

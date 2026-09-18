@@ -8,8 +8,18 @@ import {
   healthsherpaEnrollments,
   policies,
 } from "@/lib/db/schema";
-import { findExistingContactMatch } from "@/lib/crm/existing-contact-match";
 import { listDealLookup } from "@/lib/db/queries";
+import {
+  HEALTHSHERPA_LINKED_REASON,
+  HEALTHSHERPA_NEEDS_REVIEW_REASON,
+} from "./copy";
+import {
+  classifyHealthSherpaContactMatch,
+  healthSherpaMatchStatus,
+  isStrongHealthSherpaMatch,
+  type HealthSherpaMatchKind,
+  type HealthSherpaMatchStatus,
+} from "./contact-match";
 import { mailingLine, parseHealthSherpaPayload, type HealthSherpaParsedPayload } from "./payload";
 import { fitFirstMatchId } from "./match-id";
 
@@ -21,6 +31,8 @@ export type HealthSherpaInboundResult = {
   dealId?: string | null;
   policyId?: string | null;
   enrollmentId?: string;
+  matchStatus?: HealthSherpaMatchStatus;
+  matchReason?: HealthSherpaMatchKind;
 };
 
 function addYear(date: Date): Date {
@@ -50,6 +62,14 @@ function appendNote(existing: string | null | undefined, line: string): string {
   if (!current) return line;
   if (current.includes(line)) return current;
   return `${current}\n${line}`;
+}
+
+function payloadRecord(payload: unknown): Record<string, unknown> {
+  return (payload && typeof payload === "object" ? payload : { raw: payload }) as Record<string, unknown>;
+}
+
+function enrollmentNote(parsed: HealthSherpaParsedPayload): string {
+  return `HealthSherpa ${parsed.event} ${parsed.confirmationNumber ?? parsed.applicationId ?? ""}`.trim();
 }
 
 async function matchDeal(input: {
@@ -87,51 +107,9 @@ async function matchDeal(input: {
   return null;
 }
 
-async function upsertContact(parsed: HealthSherpaParsedPayload): Promise<string> {
+function contactPatch(parsed: HealthSherpaParsedPayload) {
   const incoming = parsed.contact;
-  const [byHs] = incoming.hsContactId
-    ? await db
-        .select()
-        .from(contacts)
-        .where(
-          and(
-            eq(contacts.tenantId, DEFAULT_TENANT_ID),
-            eq(contacts.source, "healthsherpa"),
-            eq(contacts.sourceId, incoming.hsContactId),
-          ),
-        )
-        .limit(1)
-    : [];
-  const fitfirstId = fitFirstMatchId(incoming.externalId);
-  const [byExternal] =
-    !byHs && fitfirstId
-      ? await db
-          .select()
-          .from(contacts)
-          .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, fitfirstId)))
-          .limit(1)
-      : [];
-  const rows = await db
-    .select({
-      id: contacts.id,
-      firstName: contacts.firstName,
-      lastName: contacts.lastName,
-      email: contacts.email,
-      phone: contacts.phone,
-    })
-    .from(contacts)
-    .where(eq(contacts.tenantId, DEFAULT_TENANT_ID));
-  const matched =
-    byHs ??
-    byExternal ??
-    findExistingContactMatch(rows, {
-      firstName: incoming.firstName,
-      lastName: incoming.lastName,
-      email: incoming.email,
-      phone: incoming.phone,
-    })?.contact;
-
-  const patch = {
+  return {
     firstName: incoming.firstName,
     lastName: incoming.lastName,
     email: incoming.email ?? undefined,
@@ -145,24 +123,27 @@ async function upsertContact(parsed: HealthSherpaParsedPayload): Promise<string>
     sourceId: incoming.hsContactId ?? incoming.externalId ?? undefined,
     updatedAt: new Date(),
   };
+}
 
-  if (matched) {
-    const [full] = await db
-      .select({ healthNotes: contacts.healthNotes })
-      .from(contacts)
-      .where(eq(contacts.id, matched.id))
-      .limit(1);
-    const note = `HealthSherpa ${parsed.event} ${parsed.confirmationNumber ?? parsed.applicationId ?? ""}`.trim();
-    await db
-      .update(contacts)
-      .set({
-        ...patch,
-        healthNotes: appendNote(full?.healthNotes, note),
-      })
-      .where(eq(contacts.id, matched.id));
-    return matched.id;
-  }
+async function applyContactPatch(contactId: string, parsed: HealthSherpaParsedPayload): Promise<void> {
+  const [full] = await db
+    .select({ healthNotes: contacts.healthNotes })
+    .from(contacts)
+    .where(eq(contacts.id, contactId))
+    .limit(1);
+  await db
+    .update(contacts)
+    .set({
+      ...contactPatch(parsed),
+      healthNotes: appendNote(full?.healthNotes, enrollmentNote(parsed)),
+    })
+    .where(eq(contacts.id, contactId));
+}
 
+export async function createContactFromHealthSherpaPayload(
+  parsed: HealthSherpaParsedPayload,
+): Promise<string> {
+  const incoming = parsed.contact;
   const [created] = await db
     .insert(contacts)
     .values({
@@ -178,14 +159,14 @@ async function upsertContact(parsed: HealthSherpaParsedPayload): Promise<string>
       zip: incoming.zip ?? incoming.mailingZip,
       source: "healthsherpa",
       sourceId: incoming.hsContactId ?? incoming.externalId,
-      healthNotes: `HealthSherpa ${parsed.event} ${parsed.confirmationNumber ?? parsed.applicationId ?? ""}`.trim(),
+      healthNotes: enrollmentNote(parsed),
       status: "active",
     })
     .returning({ id: contacts.id });
   return created!.id;
 }
 
-async function upsertPolicy(input: {
+export async function upsertHealthSherpaPolicy(input: {
   parsed: HealthSherpaParsedPayload;
   contactId: string;
   dealId: string | null;
@@ -215,8 +196,7 @@ async function upsertPolicy(input: {
 
   const effective = parseDate(parsed.effectiveDate) ?? new Date();
   const expiration = addYear(effective);
-  const premium =
-    parsed.premiumCents != null ? (parsed.premiumCents / 100).toFixed(2) : null;
+  const premium = parsed.premiumCents != null ? (parsed.premiumCents / 100).toFixed(2) : null;
   const values = {
     contactId: input.contactId,
     dealId: input.dealId,
@@ -262,6 +242,150 @@ async function upsertPolicy(input: {
   return created?.id ?? null;
 }
 
+export async function attachHealthSherpaEnrollment(input: {
+  parsed: HealthSherpaParsedPayload;
+  payload: unknown;
+  contactId: string;
+  matchReason: HealthSherpaMatchKind;
+  existingEnrollmentId?: string | null;
+}): Promise<{ enrollmentId: string; dealId: string | null; policyId: string | null }> {
+  const { parsed, contactId } = input;
+  await applyContactPatch(contactId, parsed);
+  const dealId = await matchDeal({
+    contactId,
+    externalId: parsed.contact.externalId,
+    firstName: parsed.contact.firstName,
+    lastName: parsed.contact.lastName,
+    email: parsed.contact.email,
+  });
+  const policyId = await upsertHealthSherpaPolicy({ parsed, contactId, dealId });
+
+  if (dealId) {
+    const [deal] = await db
+      .select({ contactId: deals.contactId })
+      .from(deals)
+      .where(and(eq(deals.id, dealId), eq(deals.tenantId, DEFAULT_TENANT_ID)))
+      .limit(1);
+    if (deal && !deal.contactId) {
+      await db.update(deals).set({ contactId, updatedAt: new Date() }).where(eq(deals.id, dealId));
+    }
+  }
+
+  const enrollmentId = await upsertEnrollmentRow({
+    parsed,
+    payload: input.payload,
+    existingId: input.existingEnrollmentId,
+    values: {
+      contactId,
+      dealId,
+      policyId,
+      matchStatus: "linked",
+      matchReason: input.matchReason,
+      candidateContactId: null,
+      reviewedAt: new Date(),
+    },
+  });
+
+  await db.insert(alerts).values({
+    tenantId: DEFAULT_TENANT_ID,
+    kind: "signal",
+    title:
+      parsed.event === "policy_status"
+        ? `HealthSherpa ${parsed.product === "marketplace" ? "Marketplace" : "Medicare"} policy update · ${parsed.confirmationNumber ?? parsed.applicationId ?? "enrollment"}`
+        : `HealthSherpa ${parsed.product === "marketplace" ? "Marketplace" : "Medicare"} enrollment submitted · ${parsed.confirmationNumber ?? parsed.planName ?? "application"}`,
+    body: `${parsed.contact.firstName} ${parsed.contact.lastName} · ${parsed.carrierName ?? "HealthSherpa"} ${parsed.planName ?? parsed.policySubType ?? ""}`.trim(),
+    severity: "info",
+    entityType: dealId ? "deal" : "contact",
+    entityId: dealId ?? contactId,
+  });
+
+  return { enrollmentId, dealId, policyId };
+}
+
+async function upsertEnrollmentRow(input: {
+  parsed: HealthSherpaParsedPayload;
+  payload: unknown;
+  existingId?: string | null;
+  values: {
+    contactId: string | null;
+    dealId: string | null;
+    policyId: string | null;
+    matchStatus: HealthSherpaMatchStatus;
+    matchReason: HealthSherpaMatchKind;
+    candidateContactId: string | null;
+    reviewedAt: Date | null;
+  };
+}): Promise<string> {
+  const parsed = input.parsed;
+  const existingId = input.existingId;
+  const linkValues = {
+    product: parsed.product,
+    event: parsed.event,
+    hsContactId: parsed.contact.hsContactId,
+    hsApplicationId: parsed.applicationId,
+    hsExternalId: parsed.contact.externalId,
+    confirmationNumber: parsed.confirmationNumber,
+    payload: payloadRecord(input.payload),
+    updatedAt: new Date(),
+    ...input.values,
+  };
+
+  if (existingId) {
+    await db.update(healthsherpaEnrollments).set(linkValues).where(eq(healthsherpaEnrollments.id, existingId));
+    return existingId;
+  }
+
+  const [created] = await db
+    .insert(healthsherpaEnrollments)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      ...linkValues,
+    })
+    .returning({ id: healthsherpaEnrollments.id });
+  return created!.id;
+}
+
+async function storeUnmatchedEnrollment(input: {
+  parsed: HealthSherpaParsedPayload;
+  payload: unknown;
+  existingEnrollmentId?: string | null;
+  matchReason: HealthSherpaMatchKind;
+  candidateContactId: string | null;
+}): Promise<string> {
+  const parsed = input.parsed;
+  const matchStatus = healthSherpaMatchStatus(input.matchReason);
+  const enrollmentId = await upsertEnrollmentRow({
+    parsed,
+    payload: input.payload,
+    existingId: input.existingEnrollmentId,
+    values: {
+      contactId: null,
+      dealId: null,
+      policyId: null,
+      matchStatus,
+      matchReason: input.matchReason,
+      candidateContactId: input.candidateContactId,
+      reviewedAt: null,
+    },
+  });
+
+  await db.insert(alerts).values({
+    tenantId: DEFAULT_TENANT_ID,
+    kind: "signal",
+    title: `HealthSherpa enrollment needs review · ${parsed.contact.firstName} ${parsed.contact.lastName}`,
+    body: `${parsed.carrierName ?? "HealthSherpa"} ${parsed.planName ?? parsed.policySubType ?? ""} · ${
+      input.matchReason === "name"
+        ? "Name matches someone on the book, but email/phone/id did not. Link or create before attaching the unpublished policy."
+        : "No strong HealthSherpa source id, FitFirst UUID, email, or phone match. Link or create a contact before attaching the unpublished policy."
+    }`.trim(),
+    severity: "warning",
+    entityType: "healthsherpa_enrollment",
+    entityId: enrollmentId,
+  });
+
+  return enrollmentId;
+}
+
 export async function ingestHealthSherpaWebhook(payload: unknown): Promise<HealthSherpaInboundResult> {
   let parsed: HealthSherpaParsedPayload | null;
   try {
@@ -280,30 +404,13 @@ export async function ingestHealthSherpaWebhook(payload: unknown): Promise<Healt
     return { accepted: false, reason: "Enrollment contact is missing first or last name." };
   }
 
-  const contactId = await upsertContact(parsed);
-  const dealId = await matchDeal({
-    contactId,
-    externalId: parsed.contact.externalId,
-    firstName: parsed.contact.firstName,
-    lastName: parsed.contact.lastName,
-    email: parsed.contact.email,
-  });
-  const policyId = await upsertPolicy({ parsed, contactId, dealId });
-
-  if (dealId) {
-    const [deal] = await db
-      .select({ contactId: deals.contactId })
-      .from(deals)
-      .where(and(eq(deals.id, dealId), eq(deals.tenantId, DEFAULT_TENANT_ID)))
-      .limit(1);
-    if (deal && !deal.contactId) {
-      await db.update(deals).set({ contactId, updatedAt: new Date() }).where(eq(deals.id, dealId));
-    }
-  }
-
   const existing = parsed.applicationId
     ? await db
-        .select({ id: healthsherpaEnrollments.id })
+        .select({
+          id: healthsherpaEnrollments.id,
+          contactId: healthsherpaEnrollments.contactId,
+          matchStatus: healthsherpaEnrollments.matchStatus,
+        })
         .from(healthsherpaEnrollments)
         .where(
           and(
@@ -314,58 +421,67 @@ export async function ingestHealthSherpaWebhook(payload: unknown): Promise<Healt
         .limit(1)
     : [];
 
-  const linkValues = {
-    product: parsed.product,
-    event: parsed.event,
-    hsContactId: parsed.contact.hsContactId,
-    hsApplicationId: parsed.applicationId,
-    hsExternalId: parsed.contact.externalId,
-    confirmationNumber: parsed.confirmationNumber,
-    contactId,
-    dealId,
-    policyId,
-    payload: (payload && typeof payload === "object" ? payload : { raw: payload }) as Record<string, unknown>,
-    updatedAt: new Date(),
-  };
+  const book = await db
+    .select({
+      id: contacts.id,
+      firstName: contacts.firstName,
+      lastName: contacts.lastName,
+      email: contacts.email,
+      phone: contacts.phone,
+      source: contacts.source,
+      sourceId: contacts.sourceId,
+    })
+    .from(contacts)
+    .where(eq(contacts.tenantId, DEFAULT_TENANT_ID));
 
-  let enrollmentId: string;
-  if (existing[0]) {
-    await db
-      .update(healthsherpaEnrollments)
-      .set(linkValues)
-      .where(eq(healthsherpaEnrollments.id, existing[0].id));
-    enrollmentId = existing[0].id;
-  } else {
-    const [created] = await db
-      .insert(healthsherpaEnrollments)
-      .values({
-        tenantId: DEFAULT_TENANT_ID,
-        ...linkValues,
-      })
-      .returning({ id: healthsherpaEnrollments.id });
-    enrollmentId = created!.id;
+  const match = classifyHealthSherpaContactMatch(book, {
+    firstName: parsed.contact.firstName,
+    lastName: parsed.contact.lastName,
+    email: parsed.contact.email,
+    phone: parsed.contact.phone,
+    hsContactId: parsed.contact.hsContactId,
+    externalId: parsed.contact.externalId,
+  });
+  const alreadyLinkedId =
+    existing[0]?.matchStatus === "linked" && existing[0].contactId ? existing[0].contactId : null;
+  const matchStatus = alreadyLinkedId ? "linked" : healthSherpaMatchStatus(match.kind);
+
+  if (alreadyLinkedId || (isStrongHealthSherpaMatch(match.kind) && match.contact)) {
+    const contactId = alreadyLinkedId ?? match.contact!.id;
+    const attached = await attachHealthSherpaEnrollment({
+      parsed,
+      payload,
+      contactId,
+      matchReason: alreadyLinkedId && !isStrongHealthSherpaMatch(match.kind) ? "fitfirst_id" : match.kind,
+      existingEnrollmentId: existing[0]?.id,
+    });
+    return {
+      accepted: true,
+      reason: HEALTHSHERPA_LINKED_REASON,
+      product: parsed.product,
+      contactId,
+      dealId: attached.dealId,
+      policyId: attached.policyId,
+      enrollmentId: attached.enrollmentId,
+      matchStatus,
+      matchReason: alreadyLinkedId && !isStrongHealthSherpaMatch(match.kind) ? "fitfirst_id" : match.kind,
+    };
   }
 
-  await db.insert(alerts).values({
-    tenantId: DEFAULT_TENANT_ID,
-    kind: "signal",
-    title:
-      parsed.event === "policy_status"
-        ? `HealthSherpa ${parsed.product === "marketplace" ? "Marketplace" : "Medicare"} policy update · ${parsed.confirmationNumber ?? parsed.applicationId ?? "enrollment"}`
-        : `HealthSherpa ${parsed.product === "marketplace" ? "Marketplace" : "Medicare"} enrollment submitted · ${parsed.confirmationNumber ?? parsed.planName ?? "application"}`,
-    body: `${parsed.contact.firstName} ${parsed.contact.lastName} · ${parsed.carrierName ?? "HealthSherpa"} ${parsed.planName ?? parsed.policySubType ?? ""}`.trim(),
-    severity: "info",
-    entityType: dealId ? "deal" : "contact",
-    entityId: dealId ?? contactId,
+  const enrollmentId = await storeUnmatchedEnrollment({
+    parsed,
+    payload,
+    existingEnrollmentId: existing[0]?.id,
+    matchReason: match.kind,
+    candidateContactId: match.contact?.id ?? null,
   });
 
   return {
     accepted: true,
-    reason: "Enrollment stored as an unpublished Health policy.",
+    reason: HEALTHSHERPA_NEEDS_REVIEW_REASON,
     product: parsed.product,
-    contactId,
-    dealId,
-    policyId,
     enrollmentId,
+    matchStatus,
+    matchReason: match.kind,
   };
 }

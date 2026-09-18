@@ -96,6 +96,20 @@ describe("toHeaderAlert", () => {
     expect(alert.body).toBe("Flood shop is still open.");
   });
 
+  it("opens HealthSherpa unmatched enrollments on the review queue", () => {
+    const alert = toHeaderAlert({
+      id: "hs1",
+      title: "HealthSherpa enrollment needs review · Test Enrollment",
+      body: "No strong match.",
+      severity: "warning",
+      kind: "signal",
+      readAt: null,
+      entityType: "healthsherpa_enrollment",
+      entityId: "e1",
+    });
+    expect(alert.href).toBe("/contacts/healthsherpa-review?enrollment=e1");
+  });
+
   it("opens the specific lead for a follow-up ping", () => {
     const alert = toHeaderAlert({
       id: "a4",
