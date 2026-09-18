@@ -430,6 +430,20 @@ export async function saveHealthSherpaMedicareVault(input: {
   environment: HealthSherpaEnvironment;
   actorId: string | null;
 }): Promise<VaultPublicStatus> {
+  const normalized = normalizeHealthSherpaSecret(input.apiKey);
+  if (!normalized) {
+    const existing = await loadHealthSherpaMedicareCredentials();
+    if (existing?.apiKey && input.agentEmail?.trim()) {
+      return saveSingleKey({
+        provider: HEALTHSHERPA_MEDICARE_VAULT_PROVIDER,
+        label: HEALTHSHERPA_MEDICARE_VAULT_LABEL,
+        apiKey: existing.apiKey,
+        agentEmail: input.agentEmail,
+        environment: input.environment,
+        actorId: input.actorId,
+      });
+    }
+  }
   return saveSingleKey({
     provider: HEALTHSHERPA_MEDICARE_VAULT_PROVIDER,
     label: HEALTHSHERPA_MEDICARE_VAULT_LABEL,

@@ -22,6 +22,17 @@ export const HEALTHSHERPA_SKIP_REKEY =
 export const HEALTHSHERPA_KEYS_MISSING =
   "HealthSherpa Medicare API key is not configured. Add it in Settings → Developer Hub → API vault (or HEALTHSHERPA_MEDICARE_API_KEY). No sync ran.";
 
+export const HEALTHSHERPA_AGENT_EMAIL_MISSING =
+  "Add the HealthSherpa agent email on the Medicare vault row (or HEALTHSHERPA_AGENT_EMAIL). No sync ran.";
+
+export const HEALTHSHERPA_MEDICARE_BULK_TITLE = "Sync Medicare contacts to HealthSherpa";
+
+export const HEALTHSHERPA_MEDICARE_BULK_FILTER =
+  "Selects contacts that look Medicare/Health — not the whole CRM. A contact is included if it has a HEALTH policy (unpublished or published), source is healthsherpa, a Health/Medicare tag, or non-empty Health notes. Archived and merged contacts are left alone. Does not delete contacts.";
+
+export const HEALTHSHERPA_MEDICARE_BULK_ONESHOT =
+  "Temporary one-shot Admin control (18 Sep 2026). Contacts without deals have no Risk Profile Sync button — this push uses the Medicare Partner vault key and the agent email stored on that vault row. Change the agent email later by re-saving the vault; it is not hardcoded.";
+
 export const HEALTHSHERPA_ACA_NEEDS_PARTNER =
   "Marketplace / ACA needs HealthSherpa partner credentials (QuoteConnect / ICHRA). Medicare sync is available. FitFirst does not quote ACA here.";
 
