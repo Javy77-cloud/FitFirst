@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { readFileSync } from "node:fs";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: () => undefined, replace: () => undefined, push: () => undefined }),
   useSearchParams: () => new URLSearchParams(),
@@ -24,17 +24,23 @@ import {
 import {
   DEFAULT_RISK_PROFILE_DENSITY,
   RISK_PROFILE_DENSITIES,
+  RISK_PROFILE_DENSITY_ANON_USER,
+  RISK_PROFILE_DENSITY_STORAGE_KEY,
   RISK_PROFILE_LONG_TEXT_MAX,
   RISK_PROFILE_SHORT_FIELD_MAX,
   clampRiskProfileDensity,
   defaultRiskProfileSectionDensity,
   isShortSheetValue,
+  readStoredRiskProfileDensity,
   shortSheetControlClass,
   riskProfileDensityOf,
+  riskProfileDensityStorageKey,
+  riskProfileDensityUserKey,
   riskProfileSectionChoices,
   riskProfileSectionDensityId,
   riskProfileSectionMaxColumns,
   sheetFieldLayoutHint,
+  writeStoredRiskProfileDensity,
 } from "./risk-profile-layout";
 
 function source(file: string) {
@@ -71,6 +77,17 @@ describe("Risk Profile per-section density + full labels", () => {
     expect(sheet).toMatch(/useRiskProfileSectionDensity/);
     expect(sheet).toMatch(/data-ff-risk-profile-density="per-section"/);
     expect(sheet).not.toMatch(/RISK_PROFILE_DENSITY_CONTROL_ID/);
+    const persist = source("src/lib/quote-sheet/risk-profile-layout.ts");
+    expect(persist).toMatch(/window\.localStorage/);
+    expect(persist).toMatch(/riskProfileDensityStorageKey/);
+    expect(persist).toMatch(/data-ff-user-id/);
+    expect(source("src/app/layout.tsx")).toMatch(/data-ff-user-id=\{userId\}/);
+    expect(source("src/components/deal/risk-profile-section-header.tsx")).toMatch(
+      /readStoredRiskProfileDensity/,
+    );
+    expect(source("src/components/deal/risk-profile-section-header.tsx")).toMatch(
+      /writeStoredRiskProfileDensity/,
+    );
     expect(sheet).not.toMatch(/sm:grid-cols-2/);
     expect(sheet).not.toMatch(/minmax\(0,7\.5rem\)/);
     expect(source("src/components/deal/risk-profile-section-header.tsx")).toMatch(
@@ -566,5 +583,101 @@ describe("Risk Profile per-section density + full labels", () => {
     expect(vehicleHtml).toMatch(/data-ff-cell="vin"/);
     expect(vehicleHtml).toMatch(/data-ff-cell="vehicle_year"/);
     expect(vehicleHtml).toMatch(/<div class="min-w-0"><span data-ff-cell="garaging_address"/);
+  });
+});
+
+function memoryStorage(): Storage {
+  const data = new Map<string, string>();
+  return {
+    get length() {
+      return data.size;
+    },
+    clear() {
+      data.clear();
+    },
+    getItem(key) {
+      return data.has(key) ? data.get(key)! : null;
+    },
+    key(index) {
+      return [...data.keys()][index] ?? null;
+    },
+    removeItem(key) {
+      data.delete(key);
+    },
+    setItem(key, value) {
+      data.set(key, String(value));
+    },
+  };
+}
+
+function installBrowserStorage() {
+  const local = memoryStorage();
+  const session = memoryStorage();
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: { localStorage: local, sessionStorage: session },
+  });
+  Object.defineProperty(globalThis, "localStorage", { configurable: true, value: local });
+  Object.defineProperty(globalThis, "sessionStorage", { configurable: true, value: session });
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: {
+      documentElement: { dataset: {} as Record<string, string> },
+      querySelector: () => null,
+    },
+  });
+  return { local, session };
+}
+
+describe("Risk Profile density persistence", () => {
+  afterEach(() => {
+    delete (globalThis as { window?: unknown }).window;
+    delete (globalThis as { localStorage?: unknown }).localStorage;
+    delete (globalThis as { sessionStorage?: unknown }).sessionStorage;
+    delete (globalThis as { document?: unknown }).document;
+  });
+
+  it("keys localStorage by signed-in user and leaves the default unset until a change", () => {
+    expect(riskProfileDensityUserKey(null)).toBe(RISK_PROFILE_DENSITY_ANON_USER);
+    expect(riskProfileDensityUserKey("  user-javy  ")).toBe("user-javy");
+    expect(riskProfileDensityStorageKey("user-javy")).toBe(
+      `${RISK_PROFILE_DENSITY_STORAGE_KEY}:user-javy`,
+    );
+    expect(riskProfileDensityStorageKey("user-javy")).not.toBe(
+      riskProfileDensityStorageKey("user-javier"),
+    );
+
+    const { local, session } = installBrowserStorage();
+    expect(readStoredRiskProfileDensity("Property", "user-javy")).toBeUndefined();
+    expect(DEFAULT_RISK_PROFILE_DENSITY).toBe(3);
+
+    writeStoredRiskProfileDensity("Property", 5, "user-javy");
+    writeStoredRiskProfileDensity("Residence", 4, "user-javy");
+    writeStoredRiskProfileDensity("Property", 2, "user-javier");
+
+    expect(readStoredRiskProfileDensity("Property", "user-javy")).toBe(5);
+    expect(readStoredRiskProfileDensity("Residence", "user-javy")).toBe(4);
+    expect(readStoredRiskProfileDensity("Property", "user-javier")).toBe(2);
+    expect(readStoredRiskProfileDensity("Residence", "user-javier")).toBeUndefined();
+    expect(local.getItem(riskProfileDensityStorageKey("user-javy"))).toContain('"Property":5');
+    expect(session.getItem(RISK_PROFILE_DENSITY_STORAGE_KEY)).toBeNull();
+  });
+
+  it("reads the layout user stamp when no userId is passed", () => {
+    const { local } = installBrowserStorage();
+    (globalThis.document.documentElement.dataset as Record<string, string>).ffUserId = "user-maya";
+    writeStoredRiskProfileDensity("Drivers", 4);
+    expect(riskProfileDensityUserKey()).toBe("user-maya");
+    expect(readStoredRiskProfileDensity("Drivers")).toBe(4);
+    expect(local.getItem(`${RISK_PROFILE_DENSITY_STORAGE_KEY}:user-maya`)).toContain('"Drivers":4');
+    expect(local.getItem(`${RISK_PROFILE_DENSITY_STORAGE_KEY}:anon`)).toBeNull();
+  });
+
+  it("migrates unscoped sessionStorage leftovers into the user-keyed read", () => {
+    const { local, session } = installBrowserStorage();
+    session.setItem(RISK_PROFILE_DENSITY_STORAGE_KEY, JSON.stringify({ Vehicles: 5 }));
+    expect(readStoredRiskProfileDensity("Vehicles", "user-javy")).toBe(5);
+    writeStoredRiskProfileDensity("Vehicles", 5, "user-javy");
+    expect(local.getItem(riskProfileDensityStorageKey("user-javy"))).toContain('"Vehicles":5');
   });
 });
