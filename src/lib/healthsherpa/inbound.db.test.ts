@@ -2,8 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { and, eq, inArray, like } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { alerts, contacts, healthsherpaEnrollments, policies } from "@/lib/db/schema";
-import { seed } from "@/lib/db/seed";
+import { alerts, contacts, healthsherpaEnrollments, policies, tenants } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { ingestHealthSherpaWebhook } from "./inbound";
 import { resolveHealthSherpaEnrollment } from "./review";
@@ -62,14 +61,14 @@ async function cleanup() {
       ...enrollments.map((row) => row.contactId).filter((id): id is string => Boolean(id)),
     ]),
   ];
-  if (policyIds.length) {
-    await db.delete(policies).where(inArray(policies.id, policyIds));
-  }
-  await db.delete(policies).where(like(policies.sourceId, `${MARKER}%`));
   if (enrollmentIds.length) {
     await db.delete(alerts).where(inArray(alerts.entityId, enrollmentIds));
     await db.delete(healthsherpaEnrollments).where(inArray(healthsherpaEnrollments.id, enrollmentIds));
   }
+  if (policyIds.length) {
+    await db.delete(policies).where(inArray(policies.id, policyIds));
+  }
+  await db.delete(policies).where(like(policies.sourceId, `${MARKER}%`));
   if (contactIds.length) {
     await db.delete(alerts).where(inArray(alerts.entityId, contactIds));
     await db.delete(contacts).where(inArray(contacts.id, contactIds));
@@ -78,7 +77,10 @@ async function cleanup() {
 
 describe("HealthSherpa inbound contact-match safety", () => {
   beforeAll(async () => {
-    await seed();
+    await db
+      .insert(tenants)
+      .values({ id: DEFAULT_TENANT_ID, tenantId: DEFAULT_TENANT_ID, name: "FitFirst" })
+      .onConflictDoNothing();
     await cleanup();
   });
 
