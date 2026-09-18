@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { uploadDocument } from "@/app/actions/documents";
+import { useRouter } from "next/navigation";
+import { saveDealDocuments } from "@/app/actions/documents";
 import { ChooseFileButton } from "@/components/choose-file-button";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,6 @@ import {
 } from "@/lib/deals/source-doc-types";
 import { DEAL_DOCUMENTS_BODY_LIMIT_BYTES } from "@/lib/documents/deal-docs-save";
 import { flashAction } from "@/lib/flash-client";
-import { isRedirectError } from "@/lib/lifecycle/shop";
 import {
   appendUploadRowFiles,
   applyPickedFilesToRows,
@@ -30,7 +30,9 @@ export function SourceDocsUpload({
   riskId: string;
   line?: string | null;
 }) {
+  const router = useRouter();
   const [rows, setRows] = useState<UploadDocRow[]>([emptyUploadRow(0)]);
+  const [saving, setSaving] = useState(false);
 
   function applyFiles(rowId: number, files: File[]) {
     setRows((current) => applyPickedFilesToRows(current, rowId, files));
@@ -62,17 +64,26 @@ export function SourceDocsUpload({
       return;
     }
     const formData = appendUploadRowFiles(new FormData(event.currentTarget), rows);
+    setSaving(true);
     try {
-      await uploadDocument(formData);
+      const result = await saveDealDocuments(formData);
+      if (!result.ok) {
+        flashAction(result.reason ?? "documents-save-failed", "error");
+        return;
+      }
+      flashAction("documents-saved");
+      setRows([emptyUploadRow(0)]);
+      router.refresh();
     } catch (error) {
-      if (isRedirectError(error)) throw error;
+      console.error("[SourceDocsUpload]", error);
       flashAction("documents-save-failed", "error");
+    } finally {
+      setSaving(false);
     }
   }
 
   return (
     <form
-      action={uploadDocument}
       onSubmit={submitFromRows}
       className="mb-3 space-y-2"
       data-ff-source-docs-upload
@@ -137,8 +148,8 @@ export function SourceDocsUpload({
         >
           + Add another document
         </button>
-        <Button type="submit" size="sm">
-          Save files
+        <Button type="submit" size="sm" disabled={saving}>
+          {saving ? "Saving…" : "Save files"}
         </Button>
       </div>
     </form>

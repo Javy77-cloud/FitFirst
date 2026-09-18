@@ -37,7 +37,7 @@ describe("deal worksheet source docs", () => {
     const form = readFileSync("src/components/deal/source-docs-upload.tsx", "utf8");
     expect(form).toMatch(/Save files/);
     expect(form).not.toMatch(/^\s*Create\s*$/m);
-    expect(form).toMatch(/action=\{uploadDocument\}/);
+    expect(form).toMatch(/await saveDealDocuments\(formData\)/);
     expect(form).toMatch(/name=\{`files_\$\{index\}`\}/);
     expect(form).toMatch(/name=\{`docType_\$\{index\}`\}/);
     expect(form).toMatch(/FileDeleteIcon/);

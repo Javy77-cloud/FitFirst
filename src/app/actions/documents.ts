@@ -9,7 +9,7 @@ import { redirect } from "next/navigation";
 import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID, isShopLine, type ShopLine } from "@/lib/domain";
 import { withFlash } from "@/lib/flash";
 import { flashAction } from "@/lib/flash-action";
-import { dealDocumentsTabHref } from "@/lib/documents/deal-docs-save";
+import { dealDocumentsTabHref, type DealDocumentsSaveResult } from "@/lib/documents/deal-docs-save";
 import { isRedirectError } from "@/lib/lifecycle/shop";
 import { formTag, leadDocFormById, lineTag } from "@/lib/leads/line-documents";
 import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
@@ -296,6 +296,32 @@ export async function persistDealSourceUploads(formData: FormData): Promise<{
 
 export async function extractDocument(documentId: string, dealId: string) {
   await runExtraction(documentId, dealId);
+}
+
+/**
+ * Deal Documents "Save files". Returns a result instead of redirect() so the
+ * client onSubmit path cannot mis-handle NEXT_REDIRECT as documents-save-failed.
+ */
+export async function saveDealDocuments(formData: FormData): Promise<DealDocumentsSaveResult> {
+  const dealId = optionalId(formData, "dealId");
+  if (!dealId) {
+    return { ok: false, count: 0, reason: "documents-save-failed" };
+  }
+  try {
+    const { count, last, attempted } = await persistDealSourceUploads(formData);
+    if (count === 0 || !last) {
+      return {
+        ok: false,
+        count: 0,
+        reason: attempted > 0 ? "documents-save-failed" : "choose-file",
+      };
+    }
+    revalidateDocumentPaths(last);
+    return { ok: true, count };
+  } catch (error) {
+    console.error("[saveDealDocuments]", error);
+    return { ok: false, count: 0, reason: "documents-save-failed" };
+  }
 }
 
 function revalidateDocumentPaths(doc: {
