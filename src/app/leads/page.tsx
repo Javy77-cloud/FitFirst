@@ -5,7 +5,8 @@ import { StartShopForm } from "@/components/leads/start-shop-form";
 import { AppShell } from "@/components/app-shell";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { LeadListRailFocus } from "@/components/leads/lead-list-rail-focus";
-import { listLeads } from "@/lib/db/queries";
+import { LeadQuickComms } from "@/components/leads/lead-quick-comms";
+import { listLeads, listRecordActivities } from "@/lib/db/queries";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { leadsListColumnsFromLayout } from "@/lib/list-columns";
 import { listFieldDefs, loadLayoutForModule } from "@/lib/custom-fields/store";
@@ -46,6 +47,11 @@ import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
 import { loadRecordContext } from "@/lib/record-context";
 import type { RecordContextPayload } from "@/lib/record-context-types";
+import { db } from "@/lib/db";
+import { agencySettings } from "@/lib/db/schema";
+import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { eq } from "drizzle-orm";
+import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
 
 export const dynamic = "force-dynamic";
 
@@ -117,12 +123,33 @@ export default async function LeadsPage({
     newDealHref: "/deals/new",
     newActivityHref: "/calendar",
   };
-  const railContext = railLead
-    ? await loadRecordContext({
-        leadId: railLead.id,
-        dealId: railLead.convertedDealId ?? null,
+  const [railContext, railComms, agencyRow] = await Promise.all([
+    railLead
+      ? loadRecordContext({
+          leadId: railLead.id,
+          dealId: railLead.convertedDealId ?? null,
+        })
+      : emptyRail,
+    railLead ? listRecordActivities({ leadId: railLead.id }).catch(() => []) : [],
+    db
+      .select({
+        agencyName: agencySettings.agencyName,
+        officeAddress: agencySettings.officeAddress,
       })
-    : emptyRail;
+      .from(agencySettings)
+      .where(eq(agencySettings.tenantId, DEFAULT_TENANT_ID))
+      .limit(1)
+      .then((rows) => rows[0] ?? null)
+      .catch(() => null),
+  ]);
+  const railOfficeAddress = officeMeetingAddress({
+    agencyName: agencyRow?.agencyName,
+    officeAddress: agencyRow?.officeAddress,
+  });
+  const railClientAddress = railLead ? homeAddressFromRecords({ lead: railLead }) : null;
+  const railPartyName = railLead
+    ? `${railLead.firstName} ${railLead.lastName}`.trim()
+    : "";
 
   return (
     <AppShell title="Leads">
@@ -338,12 +365,24 @@ export default async function LeadsPage({
           data-ff-deal-right-rail=""
         >
           {railLead ? (
-            <RecordContextRail
-              key={railLead.id}
-              context={railContext}
-              defaultTab="conversations"
-              headingName={`${railLead.firstName} ${railLead.lastName}`.trim()}
-            />
+            <>
+              <LeadQuickComms
+                items={railComms}
+                leadId={railLead.id}
+                dealId={railLead.convertedDealId ?? null}
+                contactName={railPartyName}
+                contactPhone={railLead.phone}
+                contactEmail={railLead.email}
+                officeAddress={railOfficeAddress}
+                clientAddress={railClientAddress}
+              />
+              <RecordContextRail
+                key={railLead.id}
+                context={railContext}
+                defaultTab="conversations"
+                headingName={railPartyName}
+              />
+            </>
           ) : (
             <div className="ff-card p-4 text-sm text-muted-foreground">
               No open lead selected. Queue a lead to see Conversations.
