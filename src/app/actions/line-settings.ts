@@ -4,10 +4,16 @@ import { revalidatePath } from "next/cache";
 import { and, eq, sql } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import {
+  defaultFamilyForLobCode,
+  isAgencyLobFamily,
+  resolveSheetProduct,
+  slugifyAgencyLob,
+} from "@/lib/desk/agency-lobs";
 import { slugifySubfilter } from "@/lib/desk/line-settings";
 import { db } from "@/lib/db";
-import { agencySettings, lineSubfilterOptions } from "@/lib/db/schema";
-import { ensureDefaultLineSubfilters } from "@/lib/db/line-settings";
+import { agencyLobs, agencySettings, lineSubfilterOptions } from "@/lib/db/schema";
+import { ensureDefaultAgencyLobs, ensureDefaultLineSubfilters } from "@/lib/db/line-settings";
 import { flashSettings } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
@@ -32,7 +38,92 @@ function refresh() {
   revalidatePath("/deals");
   revalidatePath("/deals/new");
   revalidatePath("/carriers");
+  revalidatePath("/forms");
+  revalidatePath("/documents");
   revalidatePath("/");
+}
+
+export async function addAgencyLob(formData: FormData) {
+  await assertAdmin();
+  await ensureDefaultAgencyLobs();
+  const label = str(formData, "label");
+  if (!label) return;
+  const family = isAgencyLobFamily(str(formData, "family"))
+    ? str(formData, "family")
+    : defaultFamilyForLobCode(str(formData, "lobCode"));
+  const lobCode = (str(formData, "lobCode") || label).trim().toUpperCase().replace(/\s+/g, "_").slice(0, 24);
+  const productId = slugifyAgencyLob(str(formData, "productId") || label);
+  const [{ n }] = await db
+    .select({ n: sql<number>`coalesce(max(${agencyLobs.sortOrder}), -1) + 1` })
+    .from(agencyLobs)
+    .where(eq(agencyLobs.tenantId, DEFAULT_TENANT_ID));
+  try {
+    await db.insert(agencyLobs).values({
+      tenantId: DEFAULT_TENANT_ID,
+      productId,
+      label,
+      lobCode: lobCode || "HO",
+      family,
+      sheetProduct: resolveSheetProduct(str(formData, "sheetProduct") || null),
+      quotingForm: str(formData, "quotingForm") || label,
+      active: true,
+      builtIn: false,
+      sortOrder: Number(n ?? 0),
+    });
+  } catch {
+    // Unique (tenant, product_id) — keep the existing line.
+  }
+  refresh();
+}
+
+export async function updateAgencyLob(formData: FormData) {
+  await assertAdmin();
+  const id = str(formData, "id");
+  const label = str(formData, "label");
+  if (!id || !label) return;
+  await db
+    .update(agencyLobs)
+    .set({
+      label,
+      lobCode: (str(formData, "lobCode") || label).trim().toUpperCase().slice(0, 24),
+      family: isAgencyLobFamily(str(formData, "family")) ? str(formData, "family") : "personal",
+      active: checked(formData, "active"),
+      updatedAt: new Date(),
+    })
+    .where(and(eq(agencyLobs.tenantId, DEFAULT_TENANT_ID), eq(agencyLobs.id, id)));
+  refresh();
+}
+
+export async function toggleAgencyLob(formData: FormData) {
+  await assertAdmin();
+  const id = str(formData, "id");
+  if (!id) return;
+  const [row] = await db
+    .select({ active: agencyLobs.active })
+    .from(agencyLobs)
+    .where(and(eq(agencyLobs.tenantId, DEFAULT_TENANT_ID), eq(agencyLobs.id, id)));
+  if (!row) return;
+  await db
+    .update(agencyLobs)
+    .set({ active: !row.active, updatedAt: new Date() })
+    .where(and(eq(agencyLobs.tenantId, DEFAULT_TENANT_ID), eq(agencyLobs.id, id)));
+  refresh();
+}
+
+export async function deleteAgencyLob(formData: FormData) {
+  await assertAdmin();
+  const id = str(formData, "id");
+  if (!id) return;
+  await db
+    .delete(agencyLobs)
+    .where(
+      and(
+        eq(agencyLobs.tenantId, DEFAULT_TENANT_ID),
+        eq(agencyLobs.id, id),
+        eq(agencyLobs.builtIn, false),
+      ),
+    );
+  refresh();
 }
 
 export async function saveWrittenLines(formData: FormData) {

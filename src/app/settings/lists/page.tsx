@@ -26,7 +26,7 @@ export default async function GlobalListsPage() {
           <div className="ff-list-card-body">
             <h2 className="text-sm font-semibold tracking-tight text-navy">Lines of business</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Hide Life or Health. Subfilters and selling-agency picklists.
+              Agency catalog for deals, policies, and forms. Life / Health write toggles.
             </p>
           </div>
         </Link>

@@ -1,7 +1,11 @@
 import {
+  addAgencyLob,
   addLineSubfilter,
+  deleteAgencyLob,
   deleteLineSubfilter,
   saveWrittenLines,
+  toggleAgencyLob,
+  updateAgencyLob,
 } from "@/app/actions/line-settings";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
@@ -10,7 +14,8 @@ import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { requireAdminPage } from "@/lib/auth/guards";
-import { loadDeskLineSettings } from "@/lib/db/line-settings";
+import { loadAgencyLobCatalog, loadDeskLineSettings } from "@/lib/db/line-settings";
+import { AGENCY_LOB_FAMILIES, type AgencyLobRecord } from "@/lib/desk/agency-lobs";
 import type { LineSubfilterOption } from "@/lib/desk/line-settings";
 
 export const dynamic = "force-dynamic";
@@ -88,15 +93,175 @@ function OptionList({
   );
 }
 
+function MasterLobList({
+  rows,
+  canEdit,
+}: {
+  rows: AgencyLobRecord[];
+  canEdit: boolean;
+}) {
+  return (
+    <CollapsibleListCard
+      cardId="agency-lobs"
+      header={
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-sm font-semibold tracking-tight text-navy">Agency catalog</h2>
+            <span className="ff-list-count">{rows.length}</span>
+          </div>
+          <p className="text-helper text-muted-foreground">
+            Every deal, policy, and form picks one line from this list. Turn a row off to hide it
+            from pickers. Built-in lines stay; custom lines can be deleted.
+          </p>
+        </div>
+      }
+      items={
+        rows.length === 0
+          ? [
+              <p key="empty" className="px-1 py-1 text-sm text-muted-foreground">
+                No lines yet. Seed the desk or add one below.
+              </p>,
+            ]
+          : rows.map((row) => (
+              <div
+                key={row.id ?? row.productId}
+                className="ff-list-row items-start justify-between gap-3"
+                data-ff-agency-lob={row.productId}
+              >
+                {canEdit && row.id ? (
+                  <form action={updateAgencyLob} className="flex min-w-0 flex-1 flex-wrap items-end gap-2">
+                    <input type="hidden" name="id" value={row.id} />
+                    <div className="min-w-40 flex-1">
+                      <label className="text-helper text-muted-foreground" htmlFor={`lob-label-${row.id}`}>
+                        Label
+                      </label>
+                      <Input
+                        id={`lob-label-${row.id}`}
+                        name="label"
+                        required
+                        defaultValue={row.label}
+                        className="mt-1 h-8"
+                      />
+                    </div>
+                    <div className="w-28">
+                      <label className="text-helper text-muted-foreground" htmlFor={`lob-code-${row.id}`}>
+                        Code
+                      </label>
+                      <Input
+                        id={`lob-code-${row.id}`}
+                        name="lobCode"
+                        defaultValue={row.lobCode}
+                        className="mt-1 h-8 uppercase"
+                      />
+                    </div>
+                    <div className="w-36">
+                      <label className="text-helper text-muted-foreground" htmlFor={`lob-family-${row.id}`}>
+                        Family
+                      </label>
+                      <select
+                        id={`lob-family-${row.id}`}
+                        name="family"
+                        defaultValue={row.family}
+                        className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+                      >
+                        {AGENCY_LOB_FAMILIES.map((family) => (
+                          <option key={family} value={family}>
+                            {family}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <label className="flex items-center gap-1.5 text-sm">
+                      <input type="checkbox" name="active" value="true" defaultChecked={row.active} />
+                      Active
+                    </label>
+                    <Button type="submit" size="sm" variant="outline">
+                      Save
+                    </Button>
+                  </form>
+                ) : (
+                  <div className="min-w-0">
+                    <span className="font-medium text-navy">{row.label}</span>
+                    <span className="ml-2 text-helper text-muted-foreground">
+                      {row.lobCode} · {row.family}
+                      {row.active ? "" : " · hidden"}
+                    </span>
+                  </div>
+                )}
+                {canEdit && row.id ? (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <form action={toggleAgencyLob}>
+                      <input type="hidden" name="id" value={row.id} />
+                      <Button type="submit" size="sm" variant="ghost">
+                        {row.active ? "Hide" : "Show"}
+                      </Button>
+                    </form>
+                    {!row.builtIn ? (
+                      <HardDeleteForm action={deleteAgencyLob} subject="this line of business">
+                        <input type="hidden" name="id" value={row.id} />
+                        <FileDeleteIcon label={`Delete ${row.label}`} className="text-destructive" />
+                      </HardDeleteForm>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ))
+      }
+      footer={
+        canEdit ? (
+          <form action={addAgencyLob} className="ff-list-row items-end">
+            <div className="min-w-48 flex-1">
+              <label className="text-helper text-muted-foreground" htmlFor="new-lob-label">
+                Add a line this agency writes
+              </label>
+              <Input id="new-lob-label" name="label" required placeholder="Inland Marine" className="mt-1 h-8" />
+            </div>
+            <div className="w-28">
+              <label className="text-helper text-muted-foreground" htmlFor="new-lob-code">
+                Code
+              </label>
+              <Input id="new-lob-code" name="lobCode" placeholder="IM" className="mt-1 h-8 uppercase" />
+            </div>
+            <div className="w-36">
+              <label className="text-helper text-muted-foreground" htmlFor="new-lob-family">
+                Family
+              </label>
+              <select
+                id="new-lob-family"
+                name="family"
+                defaultValue="personal"
+                className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+              >
+                {AGENCY_LOB_FAMILIES.map((family) => (
+                  <option key={family} value={family}>
+                    {family}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Button type="submit" size="sm" variant="outline">
+              Add
+            </Button>
+          </form>
+        ) : null
+      }
+    />
+  );
+}
+
 export default async function LinesSettingsPage() {
-  const [session, settings] = await Promise.all([requireAdminPage(), loadDeskLineSettings()]);
+  const [session, settings, catalog] = await Promise.all([
+    requireAdminPage(),
+    loadDeskLineSettings(),
+    loadAgencyLobCatalog(),
+  ]);
 
   return (
     <SettingsShell title="Lines of business" current="lines">
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
-        Hide Life or Health when this agency does not write those lines. Navigation, pipeline
-        boards, and book filters follow these toggles. Selling Agency stays off the day-to-day
-        desk unless you turn the picklists on.
+        This is the agency master list. Deals, policies, and forms pick one line from it. Hide Life
+        or Health when this desk does not write those books — navigation and pipeline boards follow
+        the toggles. Selling Agency stays off the day-to-day desk unless you turn the picklists on.
       </p>
 
       {!session.isAdmin ? (
@@ -157,6 +322,10 @@ export default async function LinesSettingsPage() {
         </fieldset>
         </div>
       </form>
+
+      <div className="mb-4">
+        <MasterLobList rows={catalog} canEdit={session.isAdmin} />
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <OptionList
