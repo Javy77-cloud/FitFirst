@@ -48,10 +48,10 @@ export function LayoutSectionFieldGrid({
           return (
             <div
               key={`compact:${row.keys.join(":")}:${index}`}
-              className={`col-span-full min-w-0 ${compactRowClass(row.keys.length)}`}
-              style={compactRowVars(row.keys.length) as CSSProperties}
+              className={`col-span-full min-w-0 ${compactRowClass(columns)}`}
+              style={compactRowVars(columns) as CSSProperties}
               data-ff-compact-row=""
-              data-ff-compact-cols={row.keys.length}
+              data-ff-compact-cols={columns}
             >
               {row.keys.map((key) => (
                 <div key={key} className="min-w-0">

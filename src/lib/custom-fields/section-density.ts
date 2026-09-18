@@ -18,30 +18,35 @@ const YES_NO = new Set(["yes", "no"]);
 export type SectionColumnCount = 1 | 2 | 3 | 4 | 5;
 
 /**
- * Complete Tailwind class strings — never interpolate the column count.
- * Tailwind v4 only emits CSS for static class names it can see in source.
- * Density 4 and 5 previously built those class names at runtime and shipped
- * with no grid-template-columns, so 4 and 5 looked identical.
+ * Standard Tailwind column utilities — always in the default set, never purged.
+ * Arbitrary `repeat(N,minmax(0,1fr))` classes are not the source of truth:
+ * Tailwind v4 can drop or collide them, which made Columns 4 paint as 3.
  */
 const SECTION_GRID_COL_CLASS: Record<SectionColumnCount, string> = {
   1: "grid grid-cols-1 gap-x-3 gap-y-2",
   2: "grid grid-cols-2 gap-x-3 gap-y-2",
-  3: "grid grid-cols-[repeat(3,minmax(0,1fr))] gap-x-3 gap-y-2",
-  4: "grid grid-cols-[repeat(4,minmax(0,1fr))] gap-x-3 gap-y-2",
-  5: "grid grid-cols-[repeat(5,minmax(0,1fr))] gap-x-3 gap-y-2",
+  3: "grid grid-cols-3 gap-x-3 gap-y-2",
+  4: "grid grid-cols-4 gap-x-3 gap-y-2",
+  5: "grid grid-cols-5 gap-x-3 gap-y-2",
 };
 
 const COMPACT_ROW_COL_CLASS: Record<SectionColumnCount, string> = {
   1: "grid grid-cols-1 gap-x-3 gap-y-2",
   2: "grid grid-cols-2 gap-x-3 gap-y-2",
-  3: "grid grid-cols-[repeat(3,minmax(0,1fr))] gap-x-3 gap-y-2 max-[699px]:grid-cols-2",
-  4: "grid grid-cols-[repeat(4,minmax(0,1fr))] gap-x-3 gap-y-2 max-[699px]:grid-cols-2",
-  5: "grid grid-cols-[repeat(5,minmax(0,1fr))] gap-x-3 gap-y-2 max-[699px]:grid-cols-2",
+  3: "grid grid-cols-3 gap-x-3 gap-y-2 max-[699px]:grid-cols-2",
+  4: "grid grid-cols-4 gap-x-3 gap-y-2 max-[699px]:grid-cols-2",
+  5: "grid grid-cols-5 gap-x-3 gap-y-2 max-[699px]:grid-cols-2",
 };
 
 export function clampSectionColumns(density: number): SectionColumnCount {
   if (!Number.isFinite(density)) return 2;
   return Math.min(5, Math.max(1, Math.round(density))) as SectionColumnCount;
+}
+
+/** Winning column template. Inline this so stylesheets cannot leave 4 stuck at 3. */
+export function sectionGridTemplate(density: number): string {
+  const cols = clampSectionColumns(density);
+  return cols === 1 ? "minmax(0, 1fr)" : `repeat(${cols}, minmax(0, 1fr))`;
 }
 
 export function sectionFieldGridClass(
@@ -53,16 +58,43 @@ export function sectionFieldGridClass(
   return `${SECTION_GRID_COL_CLASS[cols]}${collapse}`;
 }
 
-export function sectionFieldGridVars(density: number): { "--ff-section-cols": string } {
-  return { "--ff-section-cols": String(clampSectionColumns(density)) };
+export function sectionFieldGridVars(density: number): {
+  "--ff-section-cols": string;
+  gridTemplateColumns: string;
+} {
+  const cols = clampSectionColumns(density);
+  return {
+    "--ff-section-cols": String(cols),
+    gridTemplateColumns: sectionGridTemplate(cols),
+  };
 }
 
 export function compactRowClass(count: number): string {
   return COMPACT_ROW_COL_CLASS[clampSectionColumns(count)];
 }
 
-export function compactRowVars(count: number): { "--ff-compact-cols": string } {
-  return { "--ff-compact-cols": String(clampSectionColumns(count)) };
+export function compactRowVars(count: number): {
+  "--ff-compact-cols": string;
+  gridTemplateColumns: string;
+} {
+  const cols = clampSectionColumns(count);
+  return {
+    "--ff-compact-cols": String(cols),
+    gridTemplateColumns: sectionGridTemplate(cols),
+  };
+}
+
+/** Inline style wins. Used by tests so "Columns 4" cannot silently mean 3. */
+export function readRenderedColumnCount(html: string): number {
+  const inline = html.match(/grid-template-columns:\s*repeat\((\d+)/i);
+  if (inline) return Number(inline[1]);
+  const single = html.match(/grid-template-columns:\s*minmax\(0,\s*1fr\)/i);
+  if (single) return 1;
+  const data = html.match(/data-ff-section-density="(\d+)"/);
+  if (data) return Number(data[1]);
+  const cls = html.match(/\bgrid-cols-([1-5])\b/);
+  if (cls) return Number(cls[1]);
+  throw new Error("Could not read rendered column count");
 }
 
 export function isCityFieldKey(key: string): boolean {
@@ -190,7 +222,6 @@ export function groupSectionFieldRows(
   density: number = DEFAULT_SECTION_DENSITY,
 ): SectionFieldRow[] {
   const pack = clampSectionColumns(density);
-  const flowInGrid = pack >= 4;
   const list = keys.filter((key) => key);
   const rows: SectionFieldRow[] = [];
   let i = 0;
@@ -209,26 +240,26 @@ export function groupSectionFieldRows(
       i += 1;
       continue;
     }
-    if (!flowInGrid) {
+    if (pack < 4) {
       const trio = cityStateZipRun(list, i);
       if (trio) {
         rows.push({ keys: trio, kind: "compact" });
         i += 3;
         continue;
       }
-      if (kind === "compact") {
-        const chunk = [key];
-        while (chunk.length < pack && i + chunk.length < list.length) {
-          const nextKey = list[i + chunk.length]!;
-          if (cityStateZipRun(list, i + chunk.length)) break;
-          if (kindAtDensity(nextKey, fieldOf?.(nextKey), pack) !== "compact") break;
-          chunk.push(nextKey);
-        }
-        if (chunk.length >= 2) {
-          rows.push({ keys: chunk, kind: "compact" });
-          i += chunk.length;
-          continue;
-        }
+    }
+    if (kind === "compact") {
+      const chunk = [key];
+      while (chunk.length < pack && i + chunk.length < list.length) {
+        const nextKey = list[i + chunk.length]!;
+        if (pack < 4 && cityStateZipRun(list, i + chunk.length)) break;
+        if (kindAtDensity(nextKey, fieldOf?.(nextKey), pack) !== "compact") break;
+        chunk.push(nextKey);
+      }
+      if (chunk.length >= 2) {
+        rows.push({ keys: chunk, kind: "compact" });
+        i += chunk.length;
+        continue;
       }
     }
     rows.push({ keys: [key], kind: kind === "compact" ? "compact" : "standard" });
