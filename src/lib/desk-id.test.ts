@@ -14,6 +14,7 @@ describe("isInvalidDeskRecordPath", () => {
   it("leaves reserved segments and valid seeded ids alone", () => {
     expect(isInvalidDeskRecordPath("/automations/functions/new")).toBe(false);
     expect(isInvalidDeskRecordPath("/deals/new")).toBe(false);
+    expect(isInvalidDeskRecordPath("/contacts/healthsherpa-review")).toBe(false);
     expect(isInvalidDeskRecordPath("/certificates/holders")).toBe(false);
     expect(isInvalidDeskRecordPath("/renewals/queue")).toBe(false);
     expect(isInvalidDeskRecordPath("/carriers/logs")).toBe(false);

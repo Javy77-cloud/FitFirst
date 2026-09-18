@@ -130,7 +130,7 @@ describe("HealthSherpa inbound contact-match safety", () => {
       .values({
         tenantId: DEFAULT_TENANT_ID,
         firstName: "Renewal",
-        lastName: "Neighbor",
+        lastName: "Hsreview",
         email: bookEmail,
         phone: "3215550222",
         status: "active",
@@ -141,7 +141,7 @@ describe("HealthSherpa inbound contact-match safety", () => {
       medicarePayload({
         applicationId,
         firstName: "Renewal",
-        lastName: "Neighbor",
+        lastName: "Hsreview",
         email: `${MARKER}.renewal+hs@other.test`,
         phone: "9995550000",
         confirmation: "ANAMEONLY0001",
@@ -152,8 +152,13 @@ describe("HealthSherpa inbound contact-match safety", () => {
     expect(result.matchReason).toBe("name");
     expect(result.contactId).toBeUndefined();
     expect(result.policyId).toBeUndefined();
-    const after = await db.select().from(contacts).where(eq(contacts.firstName, "Renewal"));
-    expect(after.filter((row) => row.lastName === "Neighbor")).toHaveLength(1);
+    const [stillThere] = await db.select({ id: contacts.id }).from(contacts).where(eq(contacts.id, existing!.id));
+    expect(stillThere?.id).toBe(existing!.id);
+    const createdDup = await db
+      .select({ id: contacts.id })
+      .from(contacts)
+      .where(eq(contacts.email, `${MARKER}.renewal+hs@other.test`));
+    expect(createdDup).toHaveLength(0);
     const [enrollment] = await db
       .select()
       .from(healthsherpaEnrollments)
