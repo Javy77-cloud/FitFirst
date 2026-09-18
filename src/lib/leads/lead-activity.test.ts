@@ -80,7 +80,7 @@ describe("lead activity set + Quick Comms surfaces", () => {
 
     expect(menu).toMatch(/LEAD_ACTIVITY_MENU_ITEMS/);
     expect(menu).toMatch(/data-testid="lead-activity-menu"/);
-    expect(menu).toMatch(/Tasks/);
-    expect(menu).toMatch(/Meetings/);
+    expect(menu).toMatch(/data-ff-lead-activity-option/);
+    expect(menu).toMatch(/\/leads\/\$\{leadId\}#\$\{action\.kind\}/);
   });
 });
