@@ -126,6 +126,13 @@ export function isStreetAddressFieldKey(key: string): boolean {
   );
 }
 
+/** Genuine address blocks — not keys that merely contain "address" (`prior_address`, `years_at_address`). */
+export function isTrueAddressFieldKey(key: string): boolean {
+  const k = key.toLowerCase();
+  if (isStreetAddressFieldKey(k)) return true;
+  return /(^|_)(mailing_address|legal_address)$/.test(k);
+}
+
 export function isCompactLayoutField(key: string, field?: LayoutFieldHint): boolean {
   const k = key.toLowerCase();
   if (/(^|_)(city|state|zip|county|unit)$/.test(k)) return true;
@@ -165,17 +172,6 @@ export function layoutFieldKind(key: string, field?: LayoutFieldHint): LayoutFie
   return "standard";
 }
 
-function cityStateZipRun(keys: string[], start: number): string[] | null {
-  const city = keys[start];
-  const state = keys[start + 1];
-  const zip = keys[start + 2];
-  if (!city || !state || !zip) return null;
-  if (isCityFieldKey(city) && isStateFieldKey(state) && isZipFieldKey(zip)) {
-    return [city, state, zip];
-  }
-  return null;
-}
-
 function isAddressPartKey(key: string): boolean {
   return (
     isCityFieldKey(key) ||
@@ -185,7 +181,7 @@ function isAddressPartKey(key: string): boolean {
   );
 }
 
-/** Property address + city + state + zip + county on one row at 4–5 density. */
+/** Property address + city + state + zip + county that share one CSS row at 4–5 density. */
 export function propertyAddressRun(
   keys: string[],
   start: number,
@@ -216,54 +212,19 @@ function kindAtDensity(
   return kind;
 }
 
+/**
+ * Honest N-column packing: density only chooses the parent CSS column count.
+ * Each field is exactly one cell. Wide fields (notes / chips / true address) may
+ * still span the full row. Compact yes/no pairs are not re-bucketed into a nested grid.
+ */
 export function groupSectionFieldRows(
   keys: readonly string[],
   fieldOf?: (key: string) => LayoutFieldHint | undefined,
   density: number = DEFAULT_SECTION_DENSITY,
 ): SectionFieldRow[] {
   const pack = clampSectionColumns(density);
-  const list = keys.filter((key) => key);
-  const rows: SectionFieldRow[] = [];
-  let i = 0;
-  while (i < list.length) {
-    const key = list[i]!;
-    const field = fieldOf?.(key);
-    const addressRow = propertyAddressRun(list, i, pack);
-    if (addressRow) {
-      rows.push({ keys: addressRow, kind: "compact" });
-      i += addressRow.length;
-      continue;
-    }
-    const kind = kindAtDensity(key, field, pack);
-    if (kind === "wide") {
-      rows.push({ keys: [key], kind: "wide" });
-      i += 1;
-      continue;
-    }
-    if (pack < 4) {
-      const trio = cityStateZipRun(list, i);
-      if (trio) {
-        rows.push({ keys: trio, kind: "compact" });
-        i += 3;
-        continue;
-      }
-    }
-    if (kind === "compact") {
-      const chunk = [key];
-      while (chunk.length < pack && i + chunk.length < list.length) {
-        const nextKey = list[i + chunk.length]!;
-        if (pack < 4 && cityStateZipRun(list, i + chunk.length)) break;
-        if (kindAtDensity(nextKey, fieldOf?.(nextKey), pack) !== "compact") break;
-        chunk.push(nextKey);
-      }
-      if (chunk.length >= 2) {
-        rows.push({ keys: chunk, kind: "compact" });
-        i += chunk.length;
-        continue;
-      }
-    }
-    rows.push({ keys: [key], kind: kind === "compact" ? "compact" : "standard" });
-    i += 1;
-  }
-  return rows;
+  return keys.filter((key) => key).map((key) => ({
+    keys: [key],
+    kind: kindAtDensity(key, fieldOf?.(key), pack),
+  }));
 }
