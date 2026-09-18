@@ -11,6 +11,7 @@ import {
 import { findExistingContactMatch } from "@/lib/crm/existing-contact-match";
 import { listDealLookup } from "@/lib/db/queries";
 import { mailingLine, parseHealthSherpaPayload, type HealthSherpaParsedPayload } from "./payload";
+import { fitFirstMatchId } from "./match-id";
 
 export type HealthSherpaInboundResult = {
   accepted: boolean;
@@ -58,11 +59,12 @@ async function matchDeal(input: {
   lastName: string;
   email: string | null;
 }): Promise<string | null> {
-  if (input.externalId) {
+  const dealId = fitFirstMatchId(input.externalId);
+  if (dealId) {
     const [bySource] = await db
       .select({ id: deals.id })
       .from(deals)
-      .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.id, input.externalId)))
+      .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.id, dealId)))
       .limit(1);
     if (bySource) return bySource.id;
   }
@@ -100,12 +102,13 @@ async function upsertContact(parsed: HealthSherpaParsedPayload): Promise<string>
         )
         .limit(1)
     : [];
+  const fitfirstId = fitFirstMatchId(incoming.externalId);
   const [byExternal] =
-    !byHs && incoming.externalId
+    !byHs && fitfirstId
       ? await db
           .select()
           .from(contacts)
-          .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, incoming.externalId)))
+          .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, fitfirstId)))
           .limit(1)
       : [];
   const rows = await db
@@ -260,7 +263,12 @@ async function upsertPolicy(input: {
 }
 
 export async function ingestHealthSherpaWebhook(payload: unknown): Promise<HealthSherpaInboundResult> {
-  const parsed = parseHealthSherpaPayload(payload);
+  let parsed: HealthSherpaParsedPayload | null;
+  try {
+    parsed = parseHealthSherpaPayload(payload);
+  } catch {
+    return { accepted: false, reason: "HealthSherpa payload could not be parsed." };
+  }
   if (!parsed) {
     return {
       accepted: false,
