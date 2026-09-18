@@ -15,6 +15,7 @@ import {
   serializeExistingCoverageTypes,
 } from "@/lib/coverage/declared-coverage";
 import { gapLineLabel, type CoverageLine } from "@/lib/coverage/gaps";
+import { CONTACT_LABEL_VALUE_GRID } from "@/lib/contacts/contact-field-layout";
 import { flashAction } from "@/lib/flash-client";
 import { cn } from "@/lib/utils";
 
@@ -124,11 +125,14 @@ export function ContactCoverageRecord({
           return (
             <li
               key={line}
-              className="grid grid-cols-[6.75rem_minmax(0,1fr)] items-stretch border-b border-border last:border-b-0"
+              className={cn(
+                CONTACT_LABEL_VALUE_GRID,
+                "border-b border-border last:border-b-0",
+              )}
               data-ff-coverage-record-line={line}
             >
-              <div className="flex items-center border-r border-border bg-[var(--ff-wash)] px-2 py-1.5">
-                <span className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
+              <div className="flex min-w-0 items-center border-r border-border bg-[var(--ff-wash)] px-2 py-1.5">
+                <span className="text-[10px] font-medium uppercase leading-tight tracking-[0.04em] text-muted-foreground">
                   {gapLineLabel(line)}
                 </span>
               </div>

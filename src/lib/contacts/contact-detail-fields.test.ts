@@ -3,7 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ContactCoverageRecord } from "@/components/contacts/contact-coverage-record";
 import { ContactDetailField } from "@/components/contacts/contact-detail-field";
+import { ContactOwnerFlags } from "@/components/contacts/contact-owner-flags";
 import { RecordLayoutFields } from "@/components/custom-fields/record-layout-form";
+import { CONTACT_LABEL_COL, CONTACT_LABEL_VALUE_GRID } from "./contact-field-layout";
 import { contactCardLayout } from "./contact-field-catalog";
 
 describe("contact detail field system", () => {
@@ -19,7 +21,24 @@ describe("contact detail field system", () => {
     expect(html).toMatch(/uppercase/);
     expect(html).toMatch(/text-muted-foreground/);
     expect(html).toMatch(/Rosa/);
-    expect(html).toMatch(/grid-cols-\[6\.75rem_minmax\(0,1fr\)\]/);
+    expect(html).toMatch(/grid-cols-\[10\.5rem_minmax\(0,1fr\)\]/);
+    expect(CONTACT_LABEL_COL).toBe("10.5rem");
+    expect(CONTACT_LABEL_VALUE_GRID).toContain("10.5rem");
+  });
+
+  it("lets a long email wrap instead of clipping mid-address", () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        ContactDetailField,
+        { fieldKey: "email", label: "Email" },
+        createElement("span", null, "rosa.castellanos.longname@agencyexample.com"),
+      ),
+    );
+    expect(html).toMatch(/data-ff-long-text="1"/);
+    expect(html).toMatch(/break-all/);
+    expect(html).not.toMatch(/overflow-hidden/);
+    expect(html).not.toMatch(/truncate/);
+    expect(html).toMatch(/rosa\.castellanos\.longname@agencyexample\.com/);
   });
 
   it("uses the same compact cells across the five Contact Details sections", () => {
@@ -76,6 +95,22 @@ describe("contact detail field system", () => {
     expect(html).toMatch(/data-ff-contact-field-compact="1"/);
     expect(html).not.toMatch(/text-center text-lg font-semibold/);
     expect(html).not.toMatch(/data-ff-click-to-edit="cross_selling_opportunity"/);
+    expect(html).toMatch(/data-ff-contact-owner-flags/);
+    expect(html).toMatch(/data-ff-independent-flag="is_homeowner"/);
+    expect(html).toMatch(/data-ff-independent-flag="is_business_owner"/);
+    expect(html).not.toMatch(/role="radiogroup"/);
+  });
+
+  it("keeps homeowner and business owner as independent checkboxes", () => {
+    const html = renderToStaticMarkup(
+      createElement(ContactOwnerFlags, {
+        values: { is_homeowner: "true", is_business_owner: "true" },
+      }),
+    );
+    expect(html).toMatch(/data-ff-independent-flag="is_homeowner"/);
+    expect(html).toMatch(/data-ff-independent-flag="is_business_owner"/);
+    expect(html.match(/checked/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(html).not.toMatch(/type="radio"/);
   });
 
   it("shows with-us as book status only; another-carrier is the writable field", () => {
@@ -93,5 +128,8 @@ describe("contact detail field system", () => {
     expect(html).toMatch(/On the book/);
     expect(html).toMatch(/not stored here/);
     expect(html).toMatch(/not a missing-line gap/);
+    expect(html).toMatch(/grid-cols-\[10\.5rem_minmax\(0,1fr\)\]/);
+    expect(html).toMatch(/Homeowners/);
+    expect(html).not.toMatch(/grid-cols-\[6\.75rem/);
   });
 });

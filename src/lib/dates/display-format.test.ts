@@ -3,9 +3,9 @@ import { formatDisplayDate } from "./display-format";
 import { formatDob, formatDay } from "@/lib/domain";
 
 describe("formatDisplayDate / formatDob", () => {
-  it("formats ISO DOB as M-D-Y by default", () => {
+  it("formats ISO calendar dates as M-D-Y; DOB is MM/DD/YYYY", () => {
     expect(formatDisplayDate("1990-05-15")).toBe("5-15-1990");
-    expect(formatDob("1990-05-15")).toBe("5-15-1990");
+    expect(formatDob("1990-05-15")).toBe("05/15/1990");
     expect(formatDay("1990-05-15")).toBe("5-15-1990");
   });
 

@@ -1,4 +1,8 @@
 import type { ReactNode } from "react";
+import {
+  CONTACT_LABEL_VALUE_GRID,
+  isLongContactTextField,
+} from "@/lib/contacts/contact-field-layout";
 import { cn } from "@/lib/utils";
 
 export function isContactNameField(key: string): boolean {
@@ -23,16 +27,17 @@ export function ContactDetailField({
   const nameValue = isContactNameField(fieldKey);
   return (
     <div
-      className="overflow-hidden rounded-md border border-border bg-[var(--ff-card)]"
+      className="min-w-0 rounded-md border border-border bg-[var(--ff-card)]"
       data-ff-record-field={fieldKey}
       data-ff-contact-field={fieldKey}
       data-ff-contact-field-compact={compact ? "1" : undefined}
+      data-ff-long-text={isLongContactTextField(fieldKey) ? "1" : undefined}
     >
       <div
         className={
           compact
             ? "flex min-w-0 flex-col"
-            : "grid grid-cols-[6.75rem_minmax(0,1fr)] items-stretch"
+            : CONTACT_LABEL_VALUE_GRID
         }
       >
         <label
@@ -48,6 +53,7 @@ export function ContactDetailField({
         <div
           className={cn(
             "flex min-h-[2rem] min-w-0 items-center px-1.5 py-0.5",
+            isLongContactTextField(fieldKey) && "items-start py-1 [&_*]:break-all [&_*]:whitespace-normal",
             nameValue && "[&_[data-ff-click-to-edit]]:text-base [&_[data-ff-click-to-edit]]:font-semibold",
           )}
         >

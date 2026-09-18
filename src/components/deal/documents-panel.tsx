@@ -31,6 +31,7 @@ export function DocumentsPanel({
   hasRequestedQuotes = false,
   productId,
   healthSherpa,
+  insuredPropertyKind,
 }: {
   dealId: string;
   riskId: string;
@@ -54,6 +55,7 @@ export function DocumentsPanel({
     medicareReady: boolean;
     acaReady: boolean;
   };
+  insuredPropertyKind?: string | null;
 }) {
   const sourceDocs = asList(docs).filter(
     (d) =>
@@ -120,6 +122,7 @@ export function DocumentsPanel({
           hasRequestedQuotes={hasRequestedQuotes}
           productId={productId}
           healthSherpa={healthSherpa}
+          insuredPropertyKind={insuredPropertyKind}
         />
         {health ? (
           <p className="text-helper text-muted-foreground">

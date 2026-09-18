@@ -46,6 +46,11 @@ import {
   mergeSellingAgencyStoredValues,
 } from "@/lib/deals/selling-agency";
 import { APPLICANT_CUSTOM_KEYS } from "./applicant-fields";
+import {
+  ensureInsuredPropertyKindInLayout,
+  INSURED_PROPERTY_KIND_FIELD,
+  needsInsuredPropertyKindLayout,
+} from "@/lib/deals/insured-property-kind";
 import { canonicalizeIdentityField, identityTypeNeedsRepair } from "./identity-field";
 import { defaultFieldPermissions, parseFieldPermissions, parseLayout } from "./types";
 import { listFieldPicklists } from "./picklist-store";
@@ -211,6 +216,7 @@ export async function ensureDealFieldCatalog() {
   } else {
     await insertMissingDealFields(CORE_FIELDS);
   }
+  await insertMissingDealFields([INSURED_PROPERTY_KIND_FIELD]);
   await ensureDealCoreLabelUpgrades();
   await ensureInsuranceSubtypeField();
   await ensureSellingAgencyCatalogFields("deals");
@@ -774,6 +780,24 @@ async function migrateDealParityLayouts(
   return migrated;
 }
 
+async function migrateInsuredPropertyKindLayout(
+  rows: { id: string; columns: unknown }[],
+  picked: FieldLayout,
+): Promise<FieldLayout> {
+  if (!needsInsuredPropertyKindLayout(picked)) return picked;
+  const next = ensureInsuredPropertyKindInLayout(picked);
+  for (const row of rows) {
+    const parsed = parseLayout(row.columns);
+    const remapped = ensureInsuredPropertyKindInLayout(parsed);
+    if (JSON.stringify(parsed.columns) === JSON.stringify(remapped.columns)) continue;
+    await db
+      .update(deskFieldLayouts)
+      .set({ columns: remapped, updatedAt: new Date() })
+      .where(eq(deskFieldLayouts.id, row.id));
+  }
+  return next;
+}
+
 async function migrateDealLandlordStrip(
   rows: { id: string; columns: unknown }[],
   picked: FieldLayout,
@@ -833,8 +857,9 @@ export async function loadLayoutForModule(module: FieldLayoutModule, line = "HO"
         const withAddresses = await migrateAddressSections(module, rows, dealLayout);
         const withParity = await migrateDealParityLayouts(rows, withAddresses);
         const stripped = await migrateDealLandlordStrip(rows, withParity);
+        const withPropertyKind = await migrateInsuredPropertyKindLayout(rows, stripped);
         const fields = await listFieldDefs("deals").catch(() => []);
-        return persistCanonicalSellingAgencyLayout("deals", rows, stripped, fields);
+        return persistCanonicalSellingAgencyLayout("deals", rows, withPropertyKind, fields);
       }
       // Tip sep7hk: carriers sparse seed still gets full catalog in Edit Layout.
       // Tip sep7jr: leads/contacts/etc keep agency removals — do not resurrect deleted fields.

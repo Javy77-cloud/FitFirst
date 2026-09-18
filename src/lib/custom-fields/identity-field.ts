@@ -46,7 +46,8 @@ export function htmlInputTypeForField(field: {
 }): string {
   if (isPersonNameField(field)) return "text";
   if (isEmailField(field)) return "email";
-  if (field.type === "date" || field.type === "dob") return "date";
+  if (field.type === "dob") return "text";
+  if (field.type === "date") return "date";
   if (field.type === "date_time") return "datetime-local";
   if (field.type === "number") return "number";
   return "text";

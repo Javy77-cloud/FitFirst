@@ -19,6 +19,7 @@ import { ApplicantHousehold } from "@/components/deal/applicant-household";
 import { RepeatableUnitBlocks } from "@/components/deal/repeatable-unit-blocks";
 import { fieldsForLine, groupFields, sheetFieldIsVisible, sheetGroupIsVisible } from "@/lib/quote-sheet/catalog";
 import { parseSheetProduct } from "@/lib/quote-sheet/products";
+import { InsuredPropertyKindControl } from "@/components/deal/insured-property-kind-control";
 import { RISK_PROFILE_LABEL, SAVE_RISK_PROFILE_LABEL } from "@/lib/quote-sheet/risk-profile-copy";
 import { HealthSherpaHandoff } from "@/components/deal/healthsherpa-handoff";
 import { HEALTHSHERPA_MANUAL_LINES_NOTE, HEALTHSHERPA_SKIP_REKEY } from "@/lib/healthsherpa/copy";
@@ -92,6 +93,7 @@ export function MasterSheetWorkspace({
   hasRequestedQuotes = false,
   productId,
   healthSherpa,
+  insuredPropertyKind,
 }: {
   dealId: string;
   line: ShopLine;
@@ -106,6 +108,7 @@ export function MasterSheetWorkspace({
   needsReapprove?: boolean;
   hasRequestedQuotes?: boolean;
   productId?: string | null;
+  insuredPropertyKind?: string | null;
   healthSherpa?: {
     medicareReady: boolean;
     acaReady: boolean;
@@ -145,6 +148,7 @@ export function MasterSheetWorkspace({
         persistSheet={() => persistSheet()}
         hasCoApplicantFlag={hasCoApplicantFlag}
         healthSherpa={healthSherpa}
+        insuredPropertyKind={insuredPropertyKind}
       />
       <SheetApproveGate
         dealId={dealId}
@@ -172,6 +176,7 @@ export function MasterSheetCompare({
   persistSheet,
   hasCoApplicantFlag,
   healthSherpa,
+  insuredPropertyKind,
 }: {
   dealId: string;
   line: ShopLine;
@@ -186,6 +191,7 @@ export function MasterSheetCompare({
     medicareReady: boolean;
     acaReady: boolean;
   };
+  insuredPropertyKind?: string | null;
 }) {
   const product = parseSheetProduct(productParam ?? values.sheet_product?.value, line);
   const catalog = asList(fieldsForLine(line, product));
@@ -357,6 +363,7 @@ export function MasterSheetCompare({
                 title={group.group}
                 dealId={dealId}
                 line={line}
+                product={product}
                 groupFields={asList(group.fields)}
                 values={values}
                 liveValues={liveValues}
@@ -366,6 +373,8 @@ export function MasterSheetCompare({
                 }
                 extractedByKey={extractedByKey}
                 usingHealthSherpa={usingHealthSherpa}
+                insuredPropertyKind={insuredPropertyKind}
+                quotingForm={liveValues.quoting_form}
               />
             );
           })}
@@ -384,16 +393,20 @@ function SheetGroup({
   title,
   dealId,
   line,
+  product,
   groupFields,
   values,
   liveValues,
   cascadeKeys,
   onLiveChange,
   usingHealthSherpa = false,
+  insuredPropertyKind,
+  quotingForm,
 }: {
   title: string;
   dealId: string;
   line: ShopLine;
+  product?: string | null;
   groupFields: ReturnType<typeof fieldsForLine>;
   values: Record<string, QuoteSheetFieldValue>;
   liveValues: Record<string, string>;
@@ -401,6 +414,8 @@ function SheetGroup({
   onLiveChange: (key: string, next: string) => void;
   extractedByKey: Map<string, ExtractedFieldRow>;
   usingHealthSherpa?: boolean;
+  insuredPropertyKind?: string | null;
+  quotingForm?: string | null;
 }) {
   const rows = asList(groupFields).filter((field) => field.key !== USING_HEALTHSHERPA_KEY);
   const groupVisible = sheetGroupIsVisible(rows, liveValues);
@@ -425,6 +440,20 @@ function SheetGroup({
       }
     />
   ) : null;
+  const propertyUse =
+    groupVisible && title.trim().toLowerCase() === "property" ? (
+      <div className="border-b border-border/70 px-3 py-2" data-ff-risk-profile-property-use="">
+        <InsuredPropertyKindControl
+          dealId={dealId}
+          value={insuredPropertyKind}
+          product={product}
+          quotingForm={quotingForm}
+          sheetUsage={liveValues.usage}
+          occupancy={liveValues.occupancy}
+          tone="sheet"
+        />
+      </div>
+    ) : null;
   const grid = groupVisible ? (
     <RiskProfileFieldsGrid
       density={density}
@@ -499,11 +528,13 @@ function SheetGroup({
           {healthSherpaProductForPlan(liveValues.plan_type) === "manual" ? (
             <p className="px-3 py-1 text-[11px] text-muted-foreground">{HEALTHSHERPA_MANUAL_LINES_NOTE}</p>
           ) : null}
+          {propertyUse}
           {grid}
         </details>
       ) : (
         <>
           {header}
+          {propertyUse}
           {grid}
         </>
       )}

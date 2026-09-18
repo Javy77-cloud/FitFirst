@@ -1,3 +1,4 @@
+import { formatDobMdy } from "@/lib/contacts/dob-sync";
 import { formatDisplayDate } from "@/lib/dates/display-format";
 /** Additive constants consumed by later desk slices. Re-exported from domain.ts. */
 
@@ -226,8 +227,7 @@ export function vehicleUseLabel(value: string | null | undefined): string {
 }
 
 export function formatDob(value: Date | string | null | undefined): string {
-  // Same sitewide desk format as formatDay / formatDate (default M-D-Y).
-  return formatDisplayDate(value);
+  return formatDobMdy(value);
 }
 
 export function formatVehicleTitle(vehicle: {

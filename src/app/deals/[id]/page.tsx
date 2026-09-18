@@ -903,6 +903,7 @@ export default async function DealPage({
                         approvedBy={deal.sheetApprovedBy}
                         product={selectedProduct}
                         hasCoApplicantFlag={dealValues[HAS_CO_APPLICANT_KEY] ?? null}
+                        insuredPropertyKind={dealValues.insured_property_kind ?? null}
                         needsReapprove={needsVisualReapprove}
                         hasRequestedQuotes={hasRequestedQuotes}
                         productId={activeProduct}

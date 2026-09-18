@@ -86,6 +86,11 @@ import {
   defaultSellingAgencyValue,
 } from "@/lib/deals/selling-agency";
 import { applySystemDealValues } from "@/app/actions/custom-fields";
+import {
+  defaultInsuredPropertyKind,
+  INSURED_PROPERTY_KIND_KEY,
+  insuredPropertyKindLabel,
+} from "@/lib/deals/insured-property-kind";
 import { listFieldDefs, writeRecordValues } from "@/lib/custom-fields/store";
 import { normalizeLeadCadence } from "@/lib/leads/queue";
 import { fillBlankParty, fillSheetFromLead, leadOntoRisk } from "@/lib/desk/copy-once";
@@ -95,6 +100,7 @@ import {
   emptyOnlyCoApplicantContactValues,
   emptyOnlyContactValues,
   hasCoApplicantIdentity,
+  incomingContactValuesFromDeal,
 } from "@/lib/crm/contact-bind-transfer";
 import {
   convertActivityLineLabel,
@@ -1196,31 +1202,17 @@ async function applyEmptyOnlyContactBind(opts: {
     () => ({} as Record<string, string>),
   );
 
-  const sheetStr = (key: string) => {
-    const cell = opts.sheetValues[key];
-    if (!cell) return "";
-    return String((cell as { value?: unknown }).value ?? cell ?? "").trim();
-  };
-
-  const incoming: Record<string, string | null | undefined> = {
-    ...leadCustom,
-    ...dealCustom,
-    first_name: opts.lead?.firstName ?? sheetStr("first_name"),
-    middle_name: opts.lead?.middleName ?? sheetStr("middle_name"),
-    last_name: opts.lead?.lastName ?? sheetStr("last_name"),
-    email: opts.lead?.email ?? sheetStr("email"),
-    phone: opts.lead?.phone ?? sheetStr("phone"),
-    date_of_birth: opts.lead?.dateOfBirth ?? sheetStr("date_of_birth"),
-    mailing_address: opts.risk?.address1 || opts.lead?.mailingAddress || sheetStr("mailing_address"),
-    city: opts.risk?.city || opts.lead?.city || sheetStr("city"),
-    state: opts.risk?.state || opts.lead?.state || sheetStr("state"),
-    zip: opts.risk?.zip || opts.lead?.zip || sheetStr("zip"),
-    preferred_language: opts.lead?.preferredLanguage,
-    life_notes: opts.lead?.lifeNotes,
-    health_notes: opts.lead?.healthNotes,
-    notes: opts.lead?.notes,
-    source: opts.dealSource || opts.lead?.source,
-  };
+  const [dealRow] = await db.select().from(deals).where(eq(deals.id, opts.dealId));
+  const { incoming, propertyKind } = incomingContactValuesFromDeal({
+    dealCustom,
+    leadCustom,
+    lead: opts.lead,
+    sheetValues: opts.sheetValues,
+    risk: opts.risk,
+    dealSource: opts.dealSource,
+    product: dealRow?.quotingForm ?? dealRow?.lineOfBusiness ?? null,
+    quotingForm: dealRow?.quotingForm ?? null,
+  });
 
   const existingValues: Record<string, string> = {
     ...contactCustom,
@@ -1241,7 +1233,7 @@ async function applyEmptyOnlyContactBind(opts: {
     source: existing.source ?? "",
   };
 
-  const patch = emptyOnlyContactValues(existingValues, incoming);
+  const patch = emptyOnlyContactValues(existingValues, incoming, { propertyKind });
   const systemPatch = contactSystemPatchFromValues(patch);
   const customPatch = contactCustomPatchFromValues(patch);
 
@@ -1454,13 +1446,23 @@ export async function bindDeal(formData: FormData) {
       phone: lead?.phone,
     };
     const existing = await findMatchingContact(identity);
+    const dealCustom = await loadRecordValues(dealId, "deals").catch(() => ({} as Record<string, string>));
+    const { incoming: bindIncoming } = incomingContactValuesFromDeal({
+      dealCustom,
+      lead,
+      sheetValues,
+      risk,
+      dealSource: deal.source,
+      product: deal.quotingForm ?? deal.lineOfBusiness,
+      quotingForm: deal.quotingForm,
+    });
     const copied = contactFieldsFromSheet(sheetValues, {
       ...identity,
-      mailingAddress: risk?.address1 || lead?.mailingAddress,
-      city: risk?.city || lead?.city,
-      state: risk?.state || lead?.state || "FL",
-      zip: risk?.zip || lead?.zip,
-      dateOfBirth: lead?.dateOfBirth,
+      mailingAddress: bindIncoming.mailing_address || lead?.mailingAddress,
+      city: bindIncoming.city || lead?.city,
+      state: bindIncoming.state || lead?.state || "FL",
+      zip: bindIncoming.zip || lead?.zip,
+      dateOfBirth: bindIncoming.date_of_birth || lead?.dateOfBirth,
     });
     if (existing) {
       contactId = existing.id;
@@ -1847,6 +1849,13 @@ async function persistNewDealLayoutValues(
       catalog.find((field) => field.key === DEAL_SELLING_AGENCY_KEY)?.options,
     );
     if (agency) custom[DEAL_SELLING_AGENCY_KEY] = agency;
+  }
+  if (!String(custom[INSURED_PROPERTY_KIND_KEY] ?? "").trim()) {
+    const inferred = defaultInsuredPropertyKind({
+      product: custom.insurance_subtype || line.quotingForm || line.policySubType || line.lineOfBusiness,
+      quotingForm: custom.insurance_subtype || line.quotingForm,
+    });
+    if (inferred) custom[INSURED_PROPERTY_KIND_KEY] = insuredPropertyKindLabel(inferred);
   }
   Object.assign(
     custom,

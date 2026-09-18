@@ -17,6 +17,127 @@ export type ContactSectionDef = {
   label: string;
 };
 
+/** Emails + SMS + Meetings — one Communications chip in the top nav. */
+export const CONTACT_COMMUNICATION_SECTION_IDS = ["emails", "sms", "meetings"] as const;
+export type ContactCommunicationSectionId = (typeof CONTACT_COMMUNICATION_SECTION_IDS)[number];
+
+export const CONTACT_COMMUNICATIONS_CHIP_ID = "communications";
+
+export function isContactCommunicationSectionId(
+  value: string,
+): value is ContactCommunicationSectionId {
+  return (CONTACT_COMMUNICATION_SECTION_IDS as readonly string[]).includes(value);
+}
+
+export type ContactNavChip =
+  | { kind: "section"; id: ContactSectionId; label: string }
+  | {
+      kind: "communications";
+      id: typeof CONTACT_COMMUNICATIONS_CHIP_ID;
+      label: "Communications";
+      children: ContactSectionDef[];
+    };
+
+export function communicationCountSum(
+  counts: Partial<Record<ContactSectionId, number>> | undefined,
+): number {
+  return CONTACT_COMMUNICATION_SECTION_IDS.reduce(
+    (sum, id) => sum + (counts?.[id] ?? 0),
+    0,
+  );
+}
+
+/** Collapse Emails/SMS/Meetings into one Communications chip for the top bar. */
+export function contactNavChips(selectedIds: ContactSectionId[]): ContactNavChip[] {
+  const defs = contactSectionDefsForNav(selectedIds);
+  const chips: ContactNavChip[] = [];
+  let sawCommunications = false;
+  for (const def of defs) {
+    if (isContactCommunicationSectionId(def.id)) {
+      if (sawCommunications) continue;
+      sawCommunications = true;
+      chips.push({
+        kind: "communications",
+        id: CONTACT_COMMUNICATIONS_CHIP_ID,
+        label: "Communications",
+        children: CONTACT_COMMUNICATION_SECTION_IDS.map((id) => {
+          const found = CONTACT_SECTION_POOL.find((section) => section.id === id);
+          return found ?? { id, label: id };
+        }),
+      });
+      continue;
+    }
+    chips.push({ kind: "section", id: def.id, label: def.label });
+  }
+  return chips;
+}
+
+/** Customize dialog: one Communications row instead of Emails / SMS / Meetings. */
+export function contactCustomizeDefs(selectedIds: ContactSectionId[]): {
+  selected: Array<ContactSectionDef | { id: typeof CONTACT_COMMUNICATIONS_CHIP_ID; label: "Communications" }>;
+  available: Array<ContactSectionDef | { id: typeof CONTACT_COMMUNICATIONS_CHIP_ID; label: "Communications" }>;
+} {
+  const normalized = normalizeContactSectionNavIds(selectedIds);
+  const selectedHasComms = normalized.some(isContactCommunicationSectionId);
+  const selected: Array<
+    ContactSectionDef | { id: typeof CONTACT_COMMUNICATIONS_CHIP_ID; label: "Communications" }
+  > = [];
+  let sawComms = false;
+  for (const id of normalized) {
+    if (isContactCommunicationSectionId(id)) {
+      if (sawComms) continue;
+      sawComms = true;
+      selected.push({ id: CONTACT_COMMUNICATIONS_CHIP_ID, label: "Communications" });
+      continue;
+    }
+    const def = CONTACT_SECTION_POOL.find((section) => section.id === id);
+    if (def) selected.push(def);
+  }
+  const available = CONTACT_SECTION_POOL.filter(
+    (section) =>
+      !isContactCommunicationSectionId(section.id) && !normalized.includes(section.id),
+  ) as Array<ContactSectionDef | { id: typeof CONTACT_COMMUNICATIONS_CHIP_ID; label: "Communications" }>;
+  if (!selectedHasComms) {
+    available.push({ id: CONTACT_COMMUNICATIONS_CHIP_ID, label: "Communications" });
+  }
+  return { selected, available };
+}
+
+export function addCommunicationsToNav(selectedIds: ContactSectionId[]): ContactSectionId[] {
+  if (selectedIds.some(isContactCommunicationSectionId)) return selectedIds;
+  if (selectedIds.length + CONTACT_COMMUNICATION_SECTION_IDS.length > CONTACT_SECTION_NAV_MAX) {
+    return selectedIds;
+  }
+  return normalizeContactSectionNavIds([...selectedIds, ...CONTACT_COMMUNICATION_SECTION_IDS]);
+}
+
+export function removeCommunicationsFromNav(selectedIds: ContactSectionId[]): ContactSectionId[] {
+  return selectedIds.filter((id) => !isContactCommunicationSectionId(id));
+}
+
+export function reorderNavTreatingCommunications(
+  selectedIds: ContactSectionId[],
+  fromId: string,
+  toId: string,
+): ContactSectionId[] {
+  const chips = contactCustomizeDefs(selectedIds).selected.map((item) => item.id);
+  const from = chips.indexOf(fromId as ContactSectionId | typeof CONTACT_COMMUNICATIONS_CHIP_ID);
+  const to = chips.indexOf(toId as ContactSectionId | typeof CONTACT_COMMUNICATIONS_CHIP_ID);
+  if (from < 0 || to < 0 || from === to) return selectedIds;
+  const next = [...chips];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  const expanded: ContactSectionId[] = [];
+  for (const id of next) {
+    if (id === CONTACT_COMMUNICATIONS_CHIP_ID) {
+      expanded.push(...CONTACT_COMMUNICATION_SECTION_IDS);
+    } else if (isContactSectionId(id)) {
+      expanded.push(id);
+    }
+  }
+  return normalizeContactSectionNavIds(expanded);
+}
+
 /** Full pool + default order (top → bottom). Nav shows at most 12 selected. */
 export const CONTACT_SECTION_POOL: ContactSectionDef[] = [
   { id: "at-a-glance", label: "At a Glance" },

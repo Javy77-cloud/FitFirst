@@ -51,7 +51,9 @@ describe("Deal Details tab", () => {
     expect(panel).not.toMatch(/Add section/);
     expect(panel).not.toMatch(/Delete section/);
     expect(panel).not.toMatch(/Open field builder/);
-    expect(panel).not.toMatch(/Property/);
+    expect(panel).not.toMatch(/data-ff-deal-section="property"/);
+    expect(panel).not.toMatch(/>Property</);
+    expect(panel).toMatch(/InsuredPropertyKindControl/);
     expect(panel).not.toMatch(/Photos & calc/);
     expect(panel).not.toMatch(/Year built/);
     expect(panel).not.toMatch(/Roof photo/);

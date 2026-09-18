@@ -18,6 +18,7 @@ import { MailingSameSwitch } from "@/components/custom-fields/mailing-same-switc
 import { ContactCoverageRecord } from "@/components/contacts/contact-coverage-record";
 import { ContactDetailField } from "@/components/contacts/contact-detail-field";
 import { ContactGeneratedOpportunities } from "@/components/contacts/contact-generated-opportunities";
+import { ContactOwnerFlags } from "@/components/contacts/contact-owner-flags";
 import {
   MAILING_SAME_AS_INSURED_KEY,
   isMailingAddressFieldKey,
@@ -177,6 +178,13 @@ export function RecordLayoutFields({
                     return false;
                   }
                   if (key === COVERAGE_CARRIER_FIELD_KEY) return false;
+                  if (
+                    contactDesk &&
+                    key === "is_business_owner" &&
+                    asList(section.fieldKeys).includes("is_homeowner")
+                  ) {
+                    return false;
+                  }
                   return true;
                 })}
                 fieldOf={(key) => byKey[key]}
@@ -201,6 +209,20 @@ export function RecordLayoutFields({
                           }}
                         />
                       </div>
+                    );
+                  }
+                  if (contactDesk && (key === "is_homeowner" || key === "is_business_owner")) {
+                    const ownerKeys = asList(section.fieldKeys).filter(
+                      (item) => item === "is_homeowner" || item === "is_business_owner",
+                    );
+                    if (key !== ownerKeys[0]) return null;
+                    return (
+                      <ContactOwnerFlags
+                        values={liveValues}
+                        recordId={inline ? recordId : undefined}
+                        form={form}
+                        onChange={patchValue}
+                      />
                     );
                   }
                   if (contactDesk && key === "cross_selling_opportunity") {

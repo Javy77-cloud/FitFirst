@@ -1,6 +1,14 @@
 import type { FieldLayout, LayoutSection } from "./types";
 
-const INSURED_KEYS = new Set(["mailing_address", "mailing_unit", "city", "state", "zip", "county"]);
+const INSURED_KEYS = new Set([
+  "mailing_address",
+  "insured_property_kind",
+  "mailing_unit",
+  "city",
+  "state",
+  "zip",
+  "county",
+]);
 const MAILING_KEYS = new Set([
   "contact_mailing_address",
   "contact_mailing_unit",

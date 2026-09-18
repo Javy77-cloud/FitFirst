@@ -41,6 +41,8 @@ import { buildPolicyCoApplicantLinks } from "@/lib/contacts/policy-co-applicants
 import { getAgencyContactSectionNav } from "@/lib/contacts/contact-section-nav-prefs";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
 import { isContactSectionId, type ContactSectionId } from "@/lib/desk/contact-sections";
+import { prepareContactDealHeal } from "@/app/actions/contacts-ops";
+import { ContactSecondaryAddressCue } from "@/components/contacts/contact-secondary-address-cue";
 
 export const dynamic = "force-dynamic";
 
@@ -148,6 +150,10 @@ export default async function ContactDetailPage({
     contactLayout?.stored ?? {},
     contactLayout?.fields ?? [],
   );
+  const dealHeal = await prepareContactDealHeal(contact.id);
+  if (dealHeal.healed && dealHeal.dateOfBirth) {
+    fieldValues.date_of_birth = dealHeal.dateOfBirth;
+  }
 
   const optedOut = contact.emailOptOut || contact.smsOptOut;
   const partyName = `${contact.firstName} ${contact.lastName}`.trim();
@@ -408,6 +414,13 @@ export default async function ContactDetailPage({
                   businesses={businesses.map((b) => ({ id: b.id, name: b.name }))}
                 />
               </section>
+
+              {dealHeal.cue ? (
+                <ContactSecondaryAddressCue
+                  dealId={dealHeal.cue.dealId}
+                  insuredAddress={dealHeal.cue.insuredAddress}
+                />
+              ) : null}
 
               <section
                 id="contact-details"
