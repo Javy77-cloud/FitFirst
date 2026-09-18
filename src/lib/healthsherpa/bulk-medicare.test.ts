@@ -523,6 +523,8 @@ describe("Medicare bulk one-shot UI + wiring", () => {
     expect(panel).toMatch(/One-time \/ temporary/);
     expect(panel).toMatch(/failedMedicareBulkMessages/);
     expect(panel).toMatch(/medicareBulkAuthBanner/);
+    expect(panel).toMatch(/bulk-medicare-result/);
+    expect(panel).not.toMatch(/from ["']@\/lib\/healthsherpa\/bulk-medicare["']/);
     expect(bulk).toMatch(/MEDICARE_BULK_ONESHOT_ERROR_LIMIT/);
     expect(bulk).toMatch(/persistableMedicareBulkLastRun/);
     expect(source("src/components/developer-hub/api-vault-panel.tsx")).toMatch(/MedicareBulkSyncPanel/);

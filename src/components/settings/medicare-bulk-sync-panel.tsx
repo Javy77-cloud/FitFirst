@@ -18,7 +18,7 @@ import {
   persistableMedicareBulkLastRun,
   type MedicareBulkOneshotState,
   type MedicareBulkRunResult,
-} from "@/lib/healthsherpa/bulk-medicare";
+} from "@/lib/healthsherpa/bulk-medicare-result";
 
 export function MedicareBulkSyncPanel({
   ready,
