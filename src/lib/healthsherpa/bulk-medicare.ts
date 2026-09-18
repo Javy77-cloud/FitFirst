@@ -3,6 +3,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { contacts, healthsherpaEnrollments, policies } from "@/lib/db/schema";
 import { homeLineKey } from "@/lib/home/lines";
+import { isMedicareCoverageType } from "@/lib/quote-sheet/sheet-defaults";
 import {
   HEALTHSHERPA_AGENT_EMAIL_MISSING,
   HEALTHSHERPA_KEYS_MISSING,
@@ -47,15 +48,13 @@ export const MEDICARE_BULK_ONESHOT_EVENT = "bulk_oneshot";
 export const MEDICARE_BULK_RATE_LIMIT_MS = 250;
 
 export const MEDICARE_HEALTH_TAG_TOKENS = [
-  "health",
   "medicare",
   "mapd",
   "medigap",
   "medicare advantage",
   "medicare supplement",
   "medicare a&b",
-  "using healthsherpa",
-  "healthsherpa",
+  "using healthsherpa medicare",
 ] as const;
 
 export type MedicareBulkReady =
@@ -63,6 +62,9 @@ export type MedicareBulkReady =
   | { ok: false; code: "not_configured" | "agent_email"; message: string };
 
 export type MedicareHealthContactSignals = {
+  /** HEALTH policy whose subtype/type is Medicare (not Marketplace/ACA). */
+  hasMedicarePolicy?: boolean;
+  /** @deprecated Generic HEALTH line is not enough — use hasMedicarePolicy. */
   hasHealthPolicy?: boolean;
   source?: string | null;
   tags?: string[] | null;
@@ -70,6 +72,7 @@ export type MedicareHealthContactSignals = {
   status?: string | null;
   archivedAt?: Date | string | null;
   mergedIntoId?: string | null;
+  healthSherpaProduct?: "medicare" | "marketplace" | null;
 };
 
 export const MEDICARE_BULK_FILTER_DOC = HEALTHSHERPA_MEDICARE_BULK_FILTER;
@@ -88,27 +91,51 @@ export function isHealthPolicyLine(lineOfBusiness: string | null | undefined): b
   return homeLineKey(String(lineOfBusiness ?? "")) === "HEALTH";
 }
 
+export function policyLooksMedicare(input: {
+  lineOfBusiness?: string | null;
+  policySubType?: string | null;
+  policyType?: string | null;
+  insuranceType?: string | null;
+  sourceProduct?: string | null;
+}): boolean {
+  if (!isHealthPolicyLine(input.lineOfBusiness)) return false;
+  return (
+    isMedicareCoverageType(input.policySubType) ||
+    isMedicareCoverageType(input.policyType) ||
+    isMedicareCoverageType(input.insuranceType) ||
+    isMedicareCoverageType(input.sourceProduct)
+  );
+}
+
 export function tagLooksMedicareHealth(tag: string | null | undefined): boolean {
   const raw = String(tag ?? "").trim().toLowerCase();
   if (!raw) return false;
   if ((MEDICARE_HEALTH_TAG_TOKENS as readonly string[]).includes(raw)) return true;
-  return raw.includes("medicare") || raw.includes("healthsherpa");
+  if (raw.includes("marketplace") || raw === "aca" || raw.includes("ichra")) return false;
+  return raw.includes("medicare") || raw.includes("mapd") || raw.includes("medigap");
+}
+
+export function textLooksMedicare(raw: string | null | undefined): boolean {
+  const text = String(raw ?? "").trim().toLowerCase();
+  if (!text) return false;
+  return /medicare|mapd|medigap|med[\s-]?supp|part\s*[ab]\b|using healthsherpa medicare/.test(text);
 }
 
 export function hasMedicareHealthFlag(input: Pick<MedicareHealthContactSignals, "tags" | "healthNotes">): boolean {
-  if (!blank(input.healthNotes)) return true;
+  if (textLooksMedicare(input.healthNotes)) return true;
   return (input.tags ?? []).some((tag) => tagLooksMedicareHealth(tag));
 }
 
 /**
- * Medicare/Health candidate filter. Does not match the whole CRM.
- * Include when any of: HEALTH policy, source=healthsherpa, Health/Medicare tag, or Health notes.
- * Exclude archived / merged contacts.
+ * Medicare-only candidate filter. Does not match Marketplace/ACA or the whole CRM.
+ * Include when any of: clearly-Medicare HEALTH policy, Medicare HealthSherpa enrollment,
+ * Medicare/MAPD/Medigap tag, or Health notes that mention Medicare.
+ * HealthSherpa source alone is not enough. Exclude archived / merged contacts.
  */
 export function contactLooksMedicareHealth(input: MedicareHealthContactSignals): boolean {
   if (isRetiredMedicareContact(input)) return false;
-  if (input.hasHealthPolicy) return true;
-  if (String(input.source ?? "").trim().toLowerCase() === "healthsherpa") return true;
+  if (input.hasMedicarePolicy) return true;
+  if (input.healthSherpaProduct === "medicare") return true;
   return hasMedicareHealthFlag(input);
 }
 
@@ -269,12 +296,38 @@ type ListedContact = HealthSherpaContactRecord & {
 
 async function listMedicareHealthCandidateContacts(): Promise<ListedContact[]> {
   const policyRows = await db
-    .select({ contactId: policies.contactId, lineOfBusiness: policies.lineOfBusiness })
+    .select({
+      contactId: policies.contactId,
+      lineOfBusiness: policies.lineOfBusiness,
+      policySubType: policies.policySubType,
+      policyType: policies.policyType,
+      insuranceType: policies.insuranceType,
+      sourceProduct: policies.sourceProduct,
+    })
     .from(policies)
     .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), isNotNull(policies.contactId)));
-  const healthPolicySet = new Set(
+  const medicarePolicySet = new Set(
     policyRows
-      .filter((row) => isHealthPolicyLine(row.lineOfBusiness) && row.contactId)
+      .filter((row) => row.contactId && policyLooksMedicare(row))
+      .map((row) => row.contactId as string),
+  );
+
+  const enrollmentRows = await db
+    .select({
+      contactId: healthsherpaEnrollments.contactId,
+      product: healthsherpaEnrollments.product,
+    })
+    .from(healthsherpaEnrollments)
+    .where(
+      and(
+        eq(healthsherpaEnrollments.tenantId, DEFAULT_TENANT_ID),
+        isNotNull(healthsherpaEnrollments.contactId),
+        ne(healthsherpaEnrollments.event, MEDICARE_BULK_ONESHOT_EVENT),
+      ),
+    );
+  const medicareEnrollmentSet = new Set(
+    enrollmentRows
+      .filter((row) => row.contactId && row.product === "medicare")
       .map((row) => row.contactId as string),
   );
 
@@ -306,32 +359,34 @@ async function listMedicareHealthCandidateContacts(): Promise<ListedContact[]> {
         isNull(contacts.mergedIntoId),
         ne(contacts.status, "archived"),
         or(
-          eq(contacts.source, "healthsherpa"),
-          sql`coalesce(trim(${contacts.healthNotes}), '') <> ''`,
+          sql`coalesce(${contacts.healthNotes}, '') ~* 'medicare|mapd|medigap|med[[:space:]-]?supp|part[[:space:]]*[ab]'`,
           sql`exists (
             select 1
             from jsonb_array_elements_text(coalesce(${contacts.tags}, '[]'::jsonb)) as tag
             where lower(tag) in (
-              'health', 'medicare', 'mapd', 'medigap', 'medicare advantage',
-              'medicare supplement', 'medicare a&b', 'using healthsherpa', 'healthsherpa'
+              'medicare', 'mapd', 'medigap', 'medicare advantage',
+              'medicare supplement', 'medicare a&b', 'using healthsherpa medicare'
             )
             or lower(tag) like '%medicare%'
-            or lower(tag) like '%healthsherpa%'
+            or lower(tag) like '%mapd%'
+            or lower(tag) like '%medigap%'
           )`,
-          healthPolicySet.size ? inArray(contacts.id, [...healthPolicySet]) : sql`false`,
+          medicarePolicySet.size ? inArray(contacts.id, [...medicarePolicySet]) : sql`false`,
+          medicareEnrollmentSet.size ? inArray(contacts.id, [...medicareEnrollmentSet]) : sql`false`,
         ),
       ),
     );
 
   return flagged.filter((row) =>
     contactLooksMedicareHealth({
-      hasHealthPolicy: healthPolicySet.has(row.id),
+      hasMedicarePolicy: medicarePolicySet.has(row.id),
       source: row.source,
       tags: row.tags,
       healthNotes: row.healthNotes,
       status: row.status,
       archivedAt: row.archivedAt,
       mergedIntoId: row.mergedIntoId,
+      healthSherpaProduct: medicareEnrollmentSet.has(row.id) ? "medicare" : null,
     }),
   );
 }

@@ -19,6 +19,7 @@ import {
   medicareBulkCredentialsReady,
   parseMedicareBulkOneshotState,
   persistableMedicareBulkLastRun,
+  policyLooksMedicare,
   runMedicareContactBulkSync,
   tallyMedicareBulkRows,
 } from "./bulk-medicare";
@@ -44,10 +45,10 @@ function source(file: string) {
 }
 
 describe("Medicare/Health contact filter", () => {
-  it("includes HEALTH policies unpublished or published, HealthSherpa source, and Health flags", () => {
+  it("includes clearly-Medicare policies, Medicare enrollments, Medicare tags, and Medicare notes", () => {
     expect(
       contactLooksMedicareHealth({
-        hasHealthPolicy: true,
+        hasMedicarePolicy: true,
         source: "zoho",
         tags: [],
         healthNotes: null,
@@ -55,7 +56,7 @@ describe("Medicare/Health contact filter", () => {
     ).toBe(true);
     expect(
       contactLooksMedicareHealth({
-        hasHealthPolicy: false,
+        healthSherpaProduct: "medicare",
         source: "healthsherpa",
         tags: [],
         healthNotes: null,
@@ -63,7 +64,6 @@ describe("Medicare/Health contact filter", () => {
     ).toBe(true);
     expect(
       contactLooksMedicareHealth({
-        hasHealthPolicy: false,
         source: "zoho",
         tags: ["Medicare"],
         healthNotes: null,
@@ -71,26 +71,58 @@ describe("Medicare/Health contact filter", () => {
     ).toBe(true);
     expect(
       contactLooksMedicareHealth({
-        hasHealthPolicy: false,
+        source: "zoho",
+        tags: ["MAPD"],
+        healthNotes: null,
+      }),
+    ).toBe(true);
+    expect(
+      contactLooksMedicareHealth({
         source: "zoho",
         tags: [],
         healthNotes: "MAPD from last AEP",
       }),
     ).toBe(true);
+    expect(policyLooksMedicare({ lineOfBusiness: "HEALTH", policySubType: "Medicare Advantage" })).toBe(true);
+    expect(policyLooksMedicare({ lineOfBusiness: "HEALTH", policySubType: "Medigap" })).toBe(true);
   });
 
-  it("does not push every CRM contact and skips archived/merged", () => {
+  it("excludes Marketplace/ACA-only, generic HealthSherpa source, and archived/merged", () => {
     expect(
       contactLooksMedicareHealth({
-        hasHealthPolicy: false,
+        hasHealthPolicy: true,
         source: "zoho",
-        tags: ["homeowner"],
+        tags: [],
         healthNotes: null,
       }),
     ).toBe(false);
     expect(
       contactLooksMedicareHealth({
-        hasHealthPolicy: true,
+        source: "healthsherpa",
+        tags: [],
+        healthNotes: null,
+      }),
+    ).toBe(false);
+    expect(
+      contactLooksMedicareHealth({
+        source: "healthsherpa",
+        healthSherpaProduct: "marketplace",
+        tags: ["health"],
+        healthNotes: "ACA silver Marketplace plan",
+      }),
+    ).toBe(false);
+    expect(
+      contactLooksMedicareHealth({
+        source: "zoho",
+        tags: ["Marketplace"],
+        healthNotes: "ICHRA QuoteConnect",
+      }),
+    ).toBe(false);
+    expect(policyLooksMedicare({ lineOfBusiness: "HEALTH", policySubType: "Marketplace" })).toBe(false);
+    expect(policyLooksMedicare({ lineOfBusiness: "HEALTH", policySubType: null })).toBe(false);
+    expect(
+      contactLooksMedicareHealth({
+        hasMedicarePolicy: true,
         source: "healthsherpa",
         tags: ["medicare"],
         healthNotes: "yes",
@@ -99,13 +131,14 @@ describe("Medicare/Health contact filter", () => {
     ).toBe(false);
     expect(
       contactLooksMedicareHealth({
-        hasHealthPolicy: true,
+        hasMedicarePolicy: true,
         mergedIntoId: "keeper",
       }),
     ).toBe(false);
-    expect(HEALTHSHERPA_MEDICARE_BULK_FILTER).toMatch(/HEALTH policy/);
-    expect(HEALTHSHERPA_MEDICARE_BULK_FILTER).toMatch(/source is healthsherpa/);
-    expect(HEALTHSHERPA_MEDICARE_BULK_FILTER).toMatch(/Does not push the whole CRM|not the whole CRM/);
+    expect(HEALTHSHERPA_MEDICARE_BULK_FILTER).toMatch(/Medicare-oriented/);
+    expect(HEALTHSHERPA_MEDICARE_BULK_FILTER).toMatch(/not Marketplace\/ACA/);
+    expect(HEALTHSHERPA_MEDICARE_BULK_FILTER).toMatch(/look Medicare/);
+    expect(HEALTHSHERPA_MEDICARE_BULK_FILTER).toMatch(/Does not delete contacts/);
   });
 });
 
@@ -454,7 +487,9 @@ describe("Medicare bulk one-shot UI + wiring", () => {
     expect(html).toContain("One-time / temporary");
     expect(html).toContain("data-ff-healthsherpa-medicare-bulk-not-configured");
     expect(html).toContain(HEALTHSHERPA_KEYS_MISSING);
-    expect(html).toContain(HEALTHSHERPA_MEDICARE_BULK_FILTER);
+    expect(html).toContain("data-ff-healthsherpa-medicare-bulk-filter");
+    expect(html).toContain("Medicare-oriented");
+    expect(html).toContain("not Marketplace/ACA");
   });
 
   it("renders persisted lastRun failed-row messages and the shared auth banner", () => {
@@ -527,6 +562,8 @@ describe("Medicare bulk one-shot UI + wiring", () => {
     expect(panel).not.toMatch(/from ["']@\/lib\/healthsherpa\/bulk-medicare["']/);
     expect(bulk).toMatch(/MEDICARE_BULK_ONESHOT_ERROR_LIMIT/);
     expect(bulk).toMatch(/persistableMedicareBulkLastRun/);
+    expect(bulk).toMatch(/policyLooksMedicare/);
+    expect(bulk).not.toMatch(/eq\(contacts\.source, "healthsherpa"\)/);
     expect(source("src/components/developer-hub/api-vault-panel.tsx")).toMatch(/MedicareBulkSyncPanel/);
     expect(source("src/components/settings/healthsherpa-card.tsx")).toMatch(/MedicareBulkSyncPanel/);
     expect(source("src/app/settings/developer-hub/api-vault/page.tsx")).toMatch(/describeMedicareBulkReady/);

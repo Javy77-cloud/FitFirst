@@ -88,10 +88,12 @@ function collectJsonMessages(json: unknown, depth = 0): string[] {
   const row = asRecord(json);
   if (!row) return [];
   const out: string[] = [];
+  const field = typeof row.field === "string" ? row.field.trim() : "";
   for (const key of ["message", "error", "detail", "details", "title", "description", "reason"]) {
     const value = row[key];
-    if (typeof value === "string" && value.trim()) out.push(value.trim());
-    else if (value && typeof value === "object") out.push(...collectJsonMessages(value, depth + 1));
+    if (typeof value === "string" && value.trim()) {
+      out.push(field && key === "message" ? `${field} ${value.trim()}` : value.trim());
+    } else if (value && typeof value === "object") out.push(...collectJsonMessages(value, depth + 1));
   }
   if (row.errors != null) {
     if (Array.isArray(row.errors) || typeof row.errors === "string") {
@@ -99,14 +101,58 @@ function collectJsonMessages(json: unknown, depth = 0): string[] {
     } else {
       const fields = asRecord(row.errors);
       if (fields) {
-        for (const [field, msgs] of Object.entries(fields)) {
+        for (const [name, msgs] of Object.entries(fields)) {
           const parts = collectJsonMessages(msgs, depth + 1);
-          if (parts.length) out.push(`${field} ${parts.join(", ")}`);
+          if (parts.length) out.push(`${name} ${parts.join(", ")}`);
         }
       }
     }
   }
   return out;
+}
+
+const ERROR_BODY_KEYS = [
+  "error",
+  "errors",
+  "message",
+  "detail",
+  "details",
+  "title",
+  "code",
+  "status",
+  "type",
+  "reason",
+] as const;
+
+/** Compact HealthSherpa error JSON for the UI. Never include API keys or secrets. */
+export function compactHealthSherpaErrorBody(json: unknown, maxLength = 480): string {
+  if (json == null) return "";
+  if (typeof json === "string") {
+    const text = publicHealthSherpaClientMessage(json, 0);
+    return text === "HealthSherpa sync failed." ? "" : text.slice(0, maxLength);
+  }
+  if (typeof json === "number" && Number.isFinite(json)) return String(json);
+  const row = asRecord(json);
+  let payload: unknown = json;
+  if (row) {
+    const picked: Record<string, unknown> = {};
+    for (const key of ERROR_BODY_KEYS) {
+      if (row[key] !== undefined) picked[key] = row[key];
+    }
+    payload = Object.keys(picked).length ? picked : row;
+  }
+  let text = "";
+  try {
+    text = JSON.stringify(payload);
+  } catch {
+    return "";
+  }
+  text = text
+    .replace(/postgres(?:ql)?:\/\/\S+/gi, "[redacted]")
+    .replace(/mongodb(?:\+srv)?:\/\/\S+/gi, "[redacted]")
+    .replace(/\b(?:api[_-]?key|bearer|authorization|x-api-key)\s*[:=]\s*\S+/gi, "[redacted]");
+  if (!text || text === "{}" || text === "[]" || text === "null") return "";
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
 }
 
 function collectJsonCode(json: unknown): string | undefined {
@@ -135,12 +181,17 @@ export function ensureHealthSherpaFailure(input: {
 }
 
 export function healthSherpaClientError(status: number, json: unknown, fallback?: string): HealthSherpaClientError {
-  const messages = collectJsonMessages(json);
-  const raw = messages.find((item) => item.trim()) || fallback || "";
+  const messages = [...new Set(collectJsonMessages(json).map((item) => item.trim()).filter(Boolean))];
+  const body = compactHealthSherpaErrorBody(json);
+  const joined = messages.join("; ");
+  let raw = joined;
+  if (body && body !== joined && !joined.includes(body)) {
+    raw = joined ? `${joined} — ${body}` : body;
+  }
   return ensureHealthSherpaFailure({
     status,
     code: collectJsonCode(json),
-    message: raw,
+    message: raw || fallback || "",
   });
 }
 

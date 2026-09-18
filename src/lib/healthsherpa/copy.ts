@@ -28,7 +28,7 @@ export const HEALTHSHERPA_AGENT_EMAIL_MISSING =
 export const HEALTHSHERPA_MEDICARE_BULK_TITLE = "Sync Medicare contacts to HealthSherpa";
 
 export const HEALTHSHERPA_MEDICARE_BULK_FILTER =
-  "Selects contacts that look Medicare/Health — not the whole CRM. A contact is included if it has a HEALTH policy (unpublished or published), source is healthsherpa, a Health/Medicare tag, or non-empty Health notes. Archived and merged contacts are left alone. Does not delete contacts.";
+  "Selects Medicare-oriented contacts only — not Marketplace/ACA and not the whole CRM. A contact is included if it has a HEALTH policy whose type is clearly Medicare (Medicare Advantage / MAPD, Supplement / Medigap, or Medicare A&B), a Medicare HealthSherpa enrollment, a Medicare / MAPD / Medigap tag, or Health notes that mention Medicare. HealthSherpa-source contacts are kept only when they also look Medicare. Marketplace/ACA-only contacts are left alone. Archived and merged contacts are left alone. Does not delete contacts.";
 
 export const HEALTHSHERPA_MEDICARE_BULK_ONESHOT =
   "Temporary one-shot Admin control (18 Sep 2026). Contacts without deals have no Risk Profile Sync button — this push uses the Medicare Partner vault key and the agent email stored on that vault row. Change the agent email later by re-saving the vault; it is not hardcoded.";
