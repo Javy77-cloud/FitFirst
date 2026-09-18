@@ -18,19 +18,25 @@ import { isSocialPlatformId } from "@/lib/social/platforms";
 import { MacContinuityToggle } from "@/components/settings/mac-continuity-toggle";
 import { getAgencySettings } from "@/lib/db/queries";
 import {
+  describeMedicareBulkReady,
+  loadMedicareBulkOneshotState,
+} from "@/lib/healthsherpa/bulk-medicare";
+import {
   loadHealthSherpaAcaPublicStatus,
   loadHealthSherpaInboundPublicStatus,
   loadHealthSherpaMedicarePublicStatus,
 } from "@/lib/healthsherpa/vault";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export default async function IntegrationsCatalogPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [session, groups, query, agency, soloDesk, hsMedicare, hsAca, hsInbound] = await Promise.all([
+  const [session, groups, query, agency, soloDesk, hsMedicare, hsAca, hsInbound, hsBulkReady, hsBulkOneshot] =
+    await Promise.all([
     currentDeskSession(),
     listCatalogByCategory(),
     searchParams,
@@ -39,6 +45,8 @@ export default async function IntegrationsCatalogPage({
     loadHealthSherpaMedicarePublicStatus(),
     loadHealthSherpaAcaPublicStatus(),
     loadHealthSherpaInboundPublicStatus(),
+    describeMedicareBulkReady(),
+    loadMedicareBulkOneshotState(),
   ]);
   const notice = typeof query.notice === "string" ? query.notice : undefined;
   const provider = typeof query.provider === "string" ? query.provider : undefined;
@@ -187,6 +195,8 @@ export default async function IntegrationsCatalogPage({
                       medicare={hsMedicare}
                       aca={hsAca}
                       inbound={hsInbound}
+                      medicareBulkReady={hsBulkReady}
+                      medicareBulkOneshot={hsBulkOneshot}
                     />
                   );
                 }

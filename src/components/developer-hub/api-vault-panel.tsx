@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { looksLikeMaskedSecret, SECRET_MASK, type VaultPublicStatus } from "@/lib/developer/vault-public";
+import type { MedicareBulkOneshotState } from "@/lib/healthsherpa/bulk-medicare";
+import { MedicareBulkSyncPanel } from "@/components/settings/medicare-bulk-sync-panel";
 
 function SiteDeveloperLockNote() {
   return (
@@ -259,9 +261,19 @@ function SingleKeyVaultCard({
 function HealthSherpaMedicareVaultCard({
   canEdit,
   status,
+  bulkReady,
+  bulkOneshot,
 }: {
   canEdit: boolean;
   status: VaultPublicStatus;
+  bulkReady: {
+    hasApiKey: boolean;
+    hasAgentEmail: boolean;
+    configured: boolean;
+    code: "ok" | "not_configured" | "agent_email";
+    message: string | null;
+  };
+  bulkOneshot: MedicareBulkOneshotState;
 }) {
   const [unlocked, setUnlocked] = useState(false);
   return (
@@ -310,7 +322,7 @@ function HealthSherpaMedicareVaultCard({
                 <Label htmlFor="hs-medicare-key" className="text-xs">
                   New API key
                 </Label>
-                <Input id="hs-medicare-key" name="apiKey" type="password" required autoComplete="new-password" className="mt-1 h-8" />
+                <Input id="hs-medicare-key" name="apiKey" type="password" autoComplete="new-password" className="mt-1 h-8" />
               </div>
               <div>
                 <Label htmlFor="hs-medicare-agent" className="text-xs">
@@ -333,6 +345,10 @@ function HealthSherpaMedicareVaultCard({
                 </select>
               </div>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Leave the API key blank to keep the stored key and only update the agent email. The email is
+              read from this vault row on each sync — it is not hardcoded.
+            </p>
             <div className="flex flex-wrap gap-2">
               <Button type="submit" size="sm">
                 Save HealthSherpa Medicare
@@ -353,6 +369,7 @@ function HealthSherpaMedicareVaultCard({
       ) : (
         <SiteDeveloperLockNote />
       )}
+      <MedicareBulkSyncPanel ready={bulkReady} oneshot={bulkOneshot} />
     </section>
   );
 }
@@ -702,6 +719,8 @@ export function ApiVaultPanel({
   healthSherpaMedicare,
   healthSherpaAca,
   healthSherpaInbound,
+  medicareBulkReady,
+  medicareBulkOneshot,
   meta,
 }: {
   canEdit: boolean;
@@ -711,6 +730,14 @@ export function ApiVaultPanel({
   healthSherpaMedicare: VaultPublicStatus;
   healthSherpaAca: VaultPublicStatus;
   healthSherpaInbound: VaultPublicStatus;
+  medicareBulkReady: {
+    hasApiKey: boolean;
+    hasAgentEmail: boolean;
+    configured: boolean;
+    code: "ok" | "not_configured" | "agent_email";
+    message: string | null;
+  };
+  medicareBulkOneshot: MedicareBulkOneshotState;
   meta: VaultPublicStatus;
 }) {
   return (
@@ -740,7 +767,12 @@ export function ApiVaultPanel({
         clearAction={clearPermitStackVaultAction}
       />
       <HealthSherpaInboundVaultCard canEdit={canEdit} status={healthSherpaInbound} />
-      <HealthSherpaMedicareVaultCard canEdit={canEdit} status={healthSherpaMedicare} />
+      <HealthSherpaMedicareVaultCard
+        canEdit={canEdit}
+        status={healthSherpaMedicare}
+        bulkReady={medicareBulkReady}
+        bulkOneshot={medicareBulkOneshot}
+      />
       <HealthSherpaAcaVaultCard canEdit={canEdit} status={healthSherpaAca} />
     </div>
   );

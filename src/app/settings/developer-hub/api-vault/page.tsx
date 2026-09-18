@@ -7,6 +7,10 @@ import {
   loadPermitStackPublicStatus,
 } from "@/lib/developer/vault";
 import {
+  describeMedicareBulkReady,
+  loadMedicareBulkOneshotState,
+} from "@/lib/healthsherpa/bulk-medicare";
+import {
   loadHealthSherpaAcaPublicStatus,
   loadHealthSherpaInboundPublicStatus,
   loadHealthSherpaMedicarePublicStatus,
@@ -15,17 +19,29 @@ import { loadMetaPublicStatus } from "@/lib/social/meta-app";
 import { NHTSA_VPIC_SETTINGS_NOTE } from "@/lib/vin-decode";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export default async function DeveloperApiVaultPage() {
   const session = await requireAdminOrDeveloperPage();
-  const [fedex, getParcelData, permitStack, healthSherpaMedicare, healthSherpaAca, healthSherpaInbound, meta] =
-    await Promise.all([
+  const [
+    fedex,
+    getParcelData,
+    permitStack,
+    healthSherpaMedicare,
+    healthSherpaAca,
+    healthSherpaInbound,
+    medicareBulkReady,
+    medicareBulkOneshot,
+    meta,
+  ] = await Promise.all([
       loadFedExPublicStatus(),
       loadGetParcelDataPublicStatus(),
       loadPermitStackPublicStatus(),
       loadHealthSherpaMedicarePublicStatus(),
       loadHealthSherpaAcaPublicStatus(),
       loadHealthSherpaInboundPublicStatus(),
+      describeMedicareBulkReady(),
+      loadMedicareBulkOneshotState(),
       loadMetaPublicStatus(),
     ]);
 
@@ -44,6 +60,8 @@ export default async function DeveloperApiVaultPage() {
         healthSherpaMedicare={healthSherpaMedicare}
         healthSherpaAca={healthSherpaAca}
         healthSherpaInbound={healthSherpaInbound}
+        medicareBulkReady={medicareBulkReady}
+        medicareBulkOneshot={medicareBulkOneshot}
         meta={meta}
       />
       <p className="mt-4 max-w-3xl text-sm text-muted-foreground" data-ff-nhtsa-vpic-note="">

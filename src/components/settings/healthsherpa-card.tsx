@@ -11,17 +11,29 @@ import {
   HEALTHSHERPA_WEBHOOK_PATH,
 } from "@/lib/healthsherpa/copy";
 import type { VaultPublicStatus } from "@/lib/developer/vault-public";
+import type { MedicareBulkOneshotState } from "@/lib/healthsherpa/bulk-medicare";
+import { MedicareBulkSyncPanel } from "@/components/settings/medicare-bulk-sync-panel";
 
 export function HealthSherpaCard({
   item,
   medicare,
   aca,
   inbound,
+  medicareBulkReady,
+  medicareBulkOneshot,
 }: {
   item: CatalogItem;
   medicare: VaultPublicStatus;
   aca: VaultPublicStatus;
   inbound: VaultPublicStatus;
+  medicareBulkReady?: {
+    hasApiKey: boolean;
+    hasAgentEmail: boolean;
+    configured: boolean;
+    code: "ok" | "not_configured" | "agent_email";
+    message: string | null;
+  };
+  medicareBulkOneshot?: MedicareBulkOneshotState;
 }) {
   const isMedicare = item.id === "healthsherpa_medicare";
   const ready = isMedicare ? medicare.configured : aca.configured;
@@ -77,6 +89,11 @@ export function HealthSherpaCard({
             ? "Marketplace partner key is stored. Sync opens HealthSherpa Marketplace; QuoteConnect runs when ZIP and date of birth are on the deal."
             : "Needs partner credentials. Medicare path works without this card. Same inbound webhook either way."}
         </p>
+      ) : null}
+      {isMedicare && medicareBulkReady && medicareBulkOneshot ? (
+        <div className="mt-3">
+          <MedicareBulkSyncPanel ready={medicareBulkReady} oneshot={medicareBulkOneshot} compact />
+        </div>
       ) : null}
       <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm">
         <Link href="/settings/developer-hub/api-vault" className="font-medium text-primary hover:underline">

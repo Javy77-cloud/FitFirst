@@ -339,6 +339,9 @@ describe("HealthSherpa Medicare + Marketplace", () => {
     expect(source("src/lib/integrations/catalog.ts")).toMatch(/healthsherpa_medicare/);
     expect(source("src/app/settings/integrations/page.tsx")).toMatch(/HealthSherpaCard/);
     expect(source("src/components/developer-hub/api-vault-panel.tsx")).toMatch(/healthsherpa_medicare/);
+    expect(source("src/components/developer-hub/api-vault-panel.tsx")).toMatch(/MedicareBulkSyncPanel/);
+    expect(source("src/lib/healthsherpa/bulk-medicare.ts")).toMatch(/contactLooksMedicareHealth/);
+    expect(source("src/lib/healthsherpa/bulk-medicare.ts")).toMatch(/loadHealthSherpaMedicareCredentials/);
     expect(source("src/components/developer-hub/api-vault-panel.tsx")).toMatch(/inboundWebhookSecret/);
     expect(source("src/components/developer-hub/api-vault-panel.tsx")).toMatch(/not the inbound\s+webhook secret/);
     expect(source("src/components/developer-hub/api-vault-panel.tsx")).toMatch(/Do not\s+paste the Medicare Partner API key/);
