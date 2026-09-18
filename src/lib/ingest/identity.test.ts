@@ -79,12 +79,15 @@ describe("drop ingest identity", () => {
     expect(inferDocType("4-point-inspection.pdf")).toBe("four_point");
     expect(inferDocType("roof-inspection.pdf")).toBe("inspection");
     expect(inferDocType("photo-dec.jpg")).toBe("photo");
+    expect(inferDocType("floor-plan.pdf")).toBe("floor_plan");
+    expect(inferDocType("floor_plan.jpg")).toBe("floor_plan");
     expect(inferDocType("carrier-quote.pdf")).toBe("quote_pdf");
     expect(inferDocType("proposal-Ruiz_Melbourne_HO3.pdf")).toBe("proposal");
     expect(inferDocType("signed-app.pdf")).toBe("signed_app");
     expect(inferDocType("building-permit.pdf")).toBe("permits");
     expect(inferDocType("hand-notes.txt")).toBe("hand_notes");
     expect(isSourceDocType("dec")).toBe(true);
+    expect(isSourceDocType("floor_plan")).toBe(true);
     expect(isSourceDocType("current_policy")).toBe(true);
     expect(isSourceDocType("quote")).toBe(false);
     expect(isQuoteAttachment("quote", "later-quote.pdf")).toBe(true);

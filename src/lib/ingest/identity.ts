@@ -49,6 +49,7 @@ export function inferDocType(filename: string, declared?: string | null): DocTyp
   if (/quote/.test(name)) return "quote_pdf";
   if (/wind/.test(name)) return "wind_mit";
   if (/4[-_ ]?point|four[-_ ]?point/.test(name)) return "four_point";
+  if (/floor[-_ ]?plan/.test(name)) return "floor_plan";
   if (/inspect/.test(name)) return "inspection";
   if (/\.(png|jpe?g|gif|webp|tiff?|heic|bmp)$/.test(name)) return "photo";
   if (/dec|declaration/.test(name)) return "dec";

@@ -63,6 +63,22 @@ describe("deal source document persist", () => {
     expect(collected[0]?.bytes.length).toBe(4);
   });
 
+  it("collects one upload per files_N slot when several files are attached", async () => {
+    const form = new FormData();
+    form.set("rowCount", "4");
+    for (const [index, name] of ["a.pdf", "b.pdf", "c.pdf", "d.pdf"].entries()) {
+      form.set(`docType_${index}`, "photo");
+      form.append(
+        `files_${index}`,
+        new File([Uint8Array.from([37, 80, 68, 70, index])], name, { type: "application/pdf" }),
+      );
+    }
+    const collected = await collectUploadedFiles(form);
+    expect(collected).toHaveLength(4);
+    expect(collected.map((row) => row.filename)).toEqual(["a.pdf", "b.pdf", "c.pdf", "d.pdf"]);
+    expect(collected.map((row) => row.index)).toEqual([0, 1, 2, 3]);
+  });
+
   it("upload + sheet save restore docs and never wipe on save", () => {
     const upload = source("src/app/actions/documents.ts");
     expect(upload).toMatch(/dealSourceSlotForUpload/);
