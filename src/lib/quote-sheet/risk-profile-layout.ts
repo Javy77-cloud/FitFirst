@@ -18,7 +18,7 @@ export const RISK_PROFILE_DENSITY_STORAGE_KEY = "ff-risk-profile-section-density
 const FIVE_COL_SECTIONS =
   /^(property|dwelling|location|premises|building|structure|vehicles?|drivers?|commercial property|commercial auto)$/i;
 const FOUR_COL_SECTIONS =
-  /^(applicant|co-applicant|protection|hazards|coverages?|coverage|coastal|flood|household|location \/ premises)/i;
+  /^(applicant|co-applicant|protection|hazards|coverages?|coverage|coastal|flood|household|business|location \/ premises)/i;
 
 export function defaultRiskProfileSectionDensity(title: string): RiskProfileDensity {
   const key = title.trim();

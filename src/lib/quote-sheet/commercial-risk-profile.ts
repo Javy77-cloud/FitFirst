@@ -1,3 +1,4 @@
+import { BUSINESS_ENTITY_TYPE_OPTIONS } from "@/lib/businesses/entity-industry";
 import type { DealProductId } from "@/lib/deals/deal-products";
 import { parseDealProduct } from "@/lib/deals/deal-products";
 import type { ShopLine } from "@/lib/domain";
@@ -10,11 +11,45 @@ export const COMMERCIAL_RISK_PROFILE_LABEL = "Risk Profile";
 export const COMMERCIAL_COVERAGE_KEY = "coverage_lines";
 
 /**
+ * Deal Details keys that also live on the commercial shared/general Risk Profile.
+ * Same keys so document / COI / policy / Fill-from-Details transfer without remapping.
+ * Owner contact (first_name / last_name / date_of_birth / phone / email) stays on Details only.
+ */
+export const COMMERCIAL_SHARED_DEAL_DETAIL_KEYS = [
+  "business_name",
+  "dba",
+  "entity_type",
+  "ein",
+  "years_in_business",
+  "naics",
+  "operations",
+  "annual_sales",
+  "employee_count",
+  "payroll",
+  "mailing_address",
+  "city",
+  "state",
+  "zip",
+] as const;
+
+/** Incoming aliases → Deal Details / shared sheet keys. Prefer the Details key. */
+export const COMMERCIAL_DEAL_KEY_ALIASES: Record<string, readonly string[]> = {
+  business_name: ["business_name", "legal_name", "named_insured"],
+  ein: ["ein", "fein"],
+  operations: ["operations", "business_description", "operations_description"],
+  annual_sales: ["annual_sales", "annual_revenue", "sales", "gross_sales", "revenue"],
+  employee_count: ["employee_count", "employees"],
+  payroll: ["payroll", "annual_payroll", "payroll_w2"],
+  mailing_address: ["mailing_address"],
+};
+
+/**
  * Existing home / deal / auto / business keys reused on the lean Risk Profile.
  * Relabel in COMMERCIAL_RISK_PROFILE_FIELDS — do not mint square_footage / construction_type /
- * premises_address / premises_owned / alarm / employees_ft / primary_use / claims_last_5_years.
+ * premises_address / premises_owned / alarm / fein / annual_revenue / primary_use / claims_last_5_years.
  */
 export const COMMERCIAL_RISK_PROFILE_REUSED_KEYS = [
+  ...COMMERCIAL_SHARED_DEAL_DETAIL_KEYS,
   "address1",
   "own_rent",
   "square_feet",
@@ -24,9 +59,7 @@ export const COMMERCIAL_RISK_PROFILE_REUSED_KEYS = [
   "central_alarm",
   "protection_class",
   "class_code",
-  "employees",
   "seasonal",
-  "annual_sales",
   "current_carrier",
   "building_limit",
   "fleet_size",
@@ -106,6 +139,68 @@ export const COMMERCIAL_RISK_PROFILE_FIELDS: QuoteFieldDef[] = [
     options: [...COMMERCIAL_COVERAGE_OPTIONS],
   },
 
+  {
+    key: "business_name",
+    label: "Business name",
+    group: "Business",
+    extractKey: "business_name",
+  },
+  { key: "dba", label: "DBA", group: "Business", extractKey: "dba" },
+  {
+    key: "entity_type",
+    label: "Entity type",
+    group: "Business",
+    input: "select",
+    options: [...BUSINESS_ENTITY_TYPE_OPTIONS],
+    extractKey: "entity_type",
+  },
+  { key: "ein", label: "FEIN", group: "Business", extractKey: "ein" },
+  {
+    key: "years_in_business",
+    label: "Years in business",
+    group: "Business",
+    input: "number",
+    extractKey: "years_in_business",
+  },
+  { key: "naics", label: "NAICS code", group: "Business", extractKey: "naics" },
+  {
+    key: "operations",
+    label: "Business description",
+    group: "Business",
+    input: "textarea",
+    extractKey: "operations",
+  },
+  {
+    key: "annual_sales",
+    label: "Annual revenue",
+    group: "Business",
+    input: "number",
+    extractKey: "annual_sales",
+  },
+  {
+    key: "employee_count",
+    label: "Number of employees",
+    group: "Business",
+    input: "number",
+    extractKey: "employee_count",
+  },
+  {
+    key: "payroll",
+    label: "Payroll",
+    group: "Business",
+    input: "number",
+    extractKey: "payroll",
+  },
+  {
+    key: "mailing_address",
+    label: "Business address",
+    group: "Business",
+    extractKey: "mailing_address",
+  },
+  { key: "city", label: "City", group: "Business", extractKey: "city" },
+  { key: "state", label: "State", group: "Business", extractKey: "state" },
+  { key: "zip", label: "ZIP", group: "Business", extractKey: "zip" },
+
   yn("premises_same_as_business", "Same as business address?", "Location / premises"),
   {
     key: "address1",
@@ -184,8 +279,22 @@ export const COMMERCIAL_RISK_PROFILE_FIELDS: QuoteFieldDef[] = [
     visibleWhen: whenCoverage("Workers' Comp"),
   },
   {
-    key: "employees",
-    label: "Employees",
+    key: "employees_ft",
+    label: "Full-time employees",
+    group: "Workers' Comp",
+    input: "number",
+    visibleWhen: whenCoverage("Workers' Comp"),
+  },
+  {
+    key: "employees_pt",
+    label: "Part-time employees",
+    group: "Workers' Comp",
+    input: "number",
+    visibleWhen: whenCoverage("Workers' Comp"),
+  },
+  {
+    key: "employees_seasonal",
+    label: "Seasonal employees",
     group: "Workers' Comp",
     input: "number",
     visibleWhen: whenCoverage("Workers' Comp"),
@@ -236,13 +345,6 @@ export const COMMERCIAL_RISK_PROFILE_FIELDS: QuoteFieldDef[] = [
     label: "Products / services",
     group: "General Liability",
     input: "textarea",
-    visibleWhen: whenCoverage("General Liability"),
-  },
-  {
-    key: "annual_sales",
-    label: "Annual sales",
-    group: "General Liability",
-    input: "number",
     visibleWhen: whenCoverage("General Liability"),
   },
   {
@@ -414,5 +516,20 @@ export function coverageLinesValueForDeal(input: {
   const fromProducts = coverageLinesFromProducts(input.products);
   if (fromProducts.length) return fromProducts.join(",");
   return defaultCoverageForLine(input.line);
+}
+
+/** First filled Deal Details / extract value for a shared commercial key (aliases included). */
+export function storedValueForCommercialDealKey(
+  stored: Record<string, string | null | undefined> | null | undefined,
+  key: (typeof COMMERCIAL_SHARED_DEAL_DETAIL_KEYS)[number],
+): string {
+  const bag = stored ?? {};
+  const aliases = COMMERCIAL_DEAL_KEY_ALIASES[key] ?? [key];
+  for (const alias of aliases) {
+    const value = String(bag[alias] ?? "").trim();
+    if (value) return value;
+  }
+  const fallback = String(bag[key] ?? "").trim();
+  return fallback;
 }
 

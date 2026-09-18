@@ -4,7 +4,11 @@ import { fieldIsBlank } from "@/lib/quote-sheet/apply";
 import { isLockedSheetField } from "@/lib/lifecycle/quote-sheet";
 import { isCoApplicantEnabled } from "@/lib/custom-fields/co-applicant-fields";
 import { normalizeHealthPlanType, normalizeLifeProductType } from "@/lib/quote-sheet/sheet-defaults";
-import { coverageLinesValueForDeal } from "./commercial-risk-profile";
+import {
+  COMMERCIAL_SHARED_DEAL_DETAIL_KEYS,
+  coverageLinesValueForDeal,
+  storedValueForCommercialDealKey,
+} from "./commercial-risk-profile";
 
 export const DEAL_DETAILS_SOURCE_LABEL = "deal details";
 
@@ -167,10 +171,11 @@ export function fillSheetFromDealDetails(
   put("entity_type", firstFilled(stored.entity_type));
   const commercialSheet = Object.prototype.hasOwnProperty.call(values, "coverage_lines");
   if (commercialSheet) {
-    // Identity stays on Deal Details (business_name / ein / operations). Risk Profile
-    // only copies existing sheet keys — annual_sales, employees, square_feet, construction.
-    put("annual_sales", firstFilled(stored.annual_sales, stored.annual_revenue, stored.sales));
-    put("employees", firstFilled(stored.employee_count, stored.employees));
+    // Shared/general Risk Profile reuses Deal Details keys so Fill / COI / policy
+    // transfer lands on the same cells. Owner contact stays off this sheet.
+    for (const key of COMMERCIAL_SHARED_DEAL_DETAIL_KEYS) {
+      put(key, storedValueForCommercialDealKey(stored, key));
+    }
     put("square_feet", firstFilled(stored.square_feet, stored.square_footage, stored.sqft));
     put("construction", firstFilled(stored.construction, stored.construction_type));
     put("own_rent", firstFilled(stored.own_rent, stored.premises_owned));
