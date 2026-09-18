@@ -38,6 +38,8 @@ describe("deal worksheet source docs", () => {
     expect(form).toMatch(/Save files/);
     expect(form).not.toMatch(/^\s*Create\s*$/m);
     expect(form).toMatch(/await saveDealDocuments\(formData\)/);
+    expect(form).toMatch(/buildDealDocumentRowForm/);
+    expect(form).toMatch(/filesToSave\(rows\)/);
     expect(form).toMatch(/name=\{`files_\$\{index\}`\}/);
     expect(form).toMatch(/name=\{`docType_\$\{index\}`\}/);
     expect(form).toMatch(/FileDeleteIcon/);

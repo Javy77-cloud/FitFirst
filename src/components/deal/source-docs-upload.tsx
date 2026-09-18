@@ -13,11 +13,10 @@ import {
 import { DEAL_DOCUMENTS_BODY_LIMIT_BYTES } from "@/lib/documents/deal-docs-save";
 import { flashAction } from "@/lib/flash-client";
 import {
-  appendUploadRowFiles,
   applyPickedFilesToRows,
+  buildDealDocumentRowForm,
   emptyUploadRow,
-  uploadRowsHaveFiles,
-  uploadRowsTotalBytes,
+  filesToSave,
   type UploadDocRow,
 } from "@/lib/documents/upload-rows";
 
@@ -55,28 +54,43 @@ export function SourceDocsUpload({
 
   async function submitFromRows(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!uploadRowsHaveFiles(rows)) {
+    const pending = filesToSave(rows);
+    if (pending.length === 0) {
       flashAction("choose-file", "error");
       return;
     }
-    if (uploadRowsTotalBytes(rows) > DEAL_DOCUMENTS_BODY_LIMIT_BYTES) {
+    if (pending.some((row) => row.file.size > DEAL_DOCUMENTS_BODY_LIMIT_BYTES)) {
       flashAction("documents-too-large", "error");
       return;
     }
-    const formData = appendUploadRowFiles(new FormData(event.currentTarget), rows);
     setSaving(true);
     try {
-      const result = await saveDealDocuments(formData);
-      if (!result.ok) {
-        flashAction(result.reason ?? "documents-save-failed", "error");
+      let saved = 0;
+      let lastReason: "choose-file" | "documents-save-failed" | undefined;
+      for (const row of pending) {
+        const formData = buildDealDocumentRowForm({
+          dealId,
+          riskId,
+          line,
+          docType: row.docType,
+          file: row.file,
+        });
+        try {
+          const result = await saveDealDocuments(formData);
+          if (result.ok) saved += result.count;
+          else lastReason = result.reason;
+        } catch (error) {
+          console.error("[SourceDocsUpload]", error);
+          lastReason = "documents-save-failed";
+        }
+      }
+      if (saved === 0) {
+        flashAction(lastReason ?? "documents-save-failed", "error");
         return;
       }
       flashAction("documents-saved");
       setRows([emptyUploadRow(0)]);
       router.refresh();
-    } catch (error) {
-      console.error("[SourceDocsUpload]", error);
-      flashAction("documents-save-failed", "error");
     } finally {
       setSaving(false);
     }

@@ -63,6 +63,34 @@ export function appendUploadRowFiles(
   return form;
 }
 
+export function filesToSave(
+  rows: readonly Pick<UploadDocRow, "docType" | "file">[],
+): { docType: string; file: File }[] {
+  return rows.flatMap((row) => (row.file ? [{ docType: row.docType, file: row.file }] : []));
+}
+
+/**
+ * One file per server action. Multi-pick must not pack files_0..N into a single
+ * FormData(form) payload — Next drops extra File parts / empty DataTransfer stamps
+ * and saveDealDocuments then returns documents-save-failed.
+ */
+export function buildDealDocumentRowForm(input: {
+  dealId: string;
+  riskId?: string | null;
+  line?: string | null;
+  docType: string;
+  file: File;
+}): FormData {
+  const form = new FormData();
+  form.set("dealId", input.dealId);
+  if (input.riskId) form.set("riskId", input.riskId);
+  if (input.line) form.set("line", input.line);
+  form.set("rowCount", "1");
+  form.set("docType_0", input.docType);
+  form.set("files_0", input.file);
+  return form;
+}
+
 export function uploadRowsHaveFiles(rows: readonly Pick<UploadDocRow, "file">[]): boolean {
   return rows.some((row) => Boolean(row.file));
 }
