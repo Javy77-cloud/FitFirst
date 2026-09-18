@@ -1203,7 +1203,7 @@ async function applyEmptyOnlyContactBind(opts: {
   );
 
   const [dealRow] = await db.select().from(deals).where(eq(deals.id, opts.dealId));
-  const { incoming, propertyKind } = incomingContactValuesFromDeal({
+  const { incoming } = incomingContactValuesFromDeal({
     dealCustom,
     leadCustom,
     lead: opts.lead,
@@ -1233,7 +1233,7 @@ async function applyEmptyOnlyContactBind(opts: {
     source: existing.source ?? "",
   };
 
-  const patch = emptyOnlyContactValues(existingValues, incoming, { propertyKind });
+  const patch = emptyOnlyContactValues(existingValues, incoming);
   const systemPatch = contactSystemPatchFromValues(patch);
   const customPatch = contactCustomPatchFromValues(patch);
 

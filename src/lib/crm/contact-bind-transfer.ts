@@ -38,7 +38,6 @@ function emptyOnlyMapped(
 export function emptyOnlyContactValues(
   existing: Record<string, string>,
   incoming: Record<string, string | null | undefined>,
-  _opts?: { propertyKind?: InsuredPropertyKind | null },
 ): Record<string, string> {
   // Address gating belongs in incomingContactValuesFromDeal so a lead home
   // address still copies when the insured location is rental / secondary.

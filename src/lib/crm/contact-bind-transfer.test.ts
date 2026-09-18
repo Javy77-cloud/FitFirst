@@ -90,7 +90,6 @@ describe("incomingContactValuesFromDeal", () => {
     const patch = emptyOnlyContactValues(
       { mailing_address: "", date_of_birth: "" },
       incoming,
-      { propertyKind },
     );
     expect(patch.date_of_birth).toBe("1965-03-22");
     expect(patch.mailing_address).toBeUndefined();
@@ -106,7 +105,7 @@ describe("incomingContactValuesFromDeal", () => {
     expect(propertyKind).toBe("secondary");
     expect(incoming.mailing_address).toBe("8561 SW 85th St Ave");
     expect(
-      emptyOnlyContactValues({ mailing_address: "" }, incoming, { propertyKind }).mailing_address,
+      emptyOnlyContactValues({ mailing_address: "" }, incoming).mailing_address,
     ).toBe("8561 SW 85th St Ave");
   });
 
@@ -119,7 +118,7 @@ describe("incomingContactValuesFromDeal", () => {
     expect(propertyKind).toBe("primary");
     expect(incoming.mailing_address).toBe("12 Oak St");
     expect(
-      emptyOnlyContactValues({ mailing_address: "" }, incoming, { propertyKind }).mailing_address,
+      emptyOnlyContactValues({ mailing_address: "" }, incoming).mailing_address,
     ).toBe("12 Oak St");
   });
 });
