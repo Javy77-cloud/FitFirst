@@ -1028,6 +1028,7 @@ a.ff-pending-link:has([data-ff-link-pending="1"]) {
 [data-ff-deal-right-rail] .ff-card,
 [data-ff-deal-right-rail] .ff-completeness,
 [data-ff-deal-right-rail] [data-ff-sheet-health-toggle],
+[data-ff-deal-right-rail] [data-ff-lead-quick-comms],
 [data-ff-deal-right-rail] [data-ff-deal-quick-comms],
 [data-ff-deal-right-rail] [data-ff-deal-quotes-corner] {
   width: 100%;

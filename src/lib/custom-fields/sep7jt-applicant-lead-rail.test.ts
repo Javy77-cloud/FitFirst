@@ -31,7 +31,8 @@ describe("sep7jt Lead rail + shared applicant fields", () => {
     expect(desk).toMatch(/gridTemplateColumns: "minmax\(0, 1fr\) 420px"/);
     expect(desk).toMatch(/data-ff-lead-context-rail/);
     expect(page).toMatch(/loadRecordContext\(\{/);
-    expect(page).toMatch(/rail=\{<RecordContextRail context=\{context\} \/>\}/);
+    expect(page).toMatch(/LeadQuickComms/);
+    expect(page).toMatch(/<RecordContextRail context=\{context\}/);
     expect(source("src/lib/record-context.ts")).toMatch(/if \(scope\.leadId\)/);
   });
 

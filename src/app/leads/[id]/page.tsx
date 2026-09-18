@@ -5,15 +5,14 @@ import { ClickToCall } from "@/components/click-to-call";
 import { RecordLayoutFields } from "@/components/custom-fields/record-layout-form";
 import { StagePill } from "@/components/fit-badge";
 import { RecordLink } from "@/components/record-links";
-import { RecordSection } from "@/components/record-section";
 import { Button } from "@/components/ui/button";
 import { formatPersonName } from "@/lib/crm/display";
 import { sourceLabel } from "@/lib/crm/sources";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { AwardLeadForm } from "@/components/leads/award-form";
+import { LeadActivityPanels } from "@/components/leads/lead-activity-panels";
 import { LeadDetailWorkspace } from "@/components/leads/lead-detail-workspace";
-import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
-import { ContactSectionBlock } from "@/components/contacts/contact-section-block";
+import { LeadQuickComms } from "@/components/leads/lead-quick-comms";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { loadRecordContext } from "@/lib/record-context";
 import { RelatedRecordNav } from "@/components/crm/related-record-nav";
@@ -23,11 +22,12 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { ClientScriptRunner } from "@/components/developer-hub/client-script-runner";
 import { RecordDeveloperActions } from "@/components/developer-hub/record-actions";
 import { parseMacroKind } from "@/lib/developer-hub/macros";
-import { getLead, listRecordActivities, type TimelineItem } from "@/lib/db/queries";
+import { getLead, listRecordActivities } from "@/lib/db/queries";
 import { listEnabledMacrosFor, listEnabledScriptsFor, listVisibleButtons } from "@/lib/db/developer-hub-queries";
 import { listDeskUsers } from "@/lib/db/activity-queries";
 import { isInboundSocialSource, listAwardableAgents } from "@/lib/leads/offers";
-import { ACTIVITY_KIND_LABEL, ACTIVITY_KINDS, DEFAULT_TENANT_ID, type ActivityKind, type LineOfBusiness } from "@/lib/domain";
+import { leadActivityByKind } from "@/lib/leads/lead-activity";
+import { DEFAULT_TENANT_ID, type LineOfBusiness } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { RecordTags } from "@/components/tags/record-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
@@ -43,33 +43,6 @@ import { agencySettings } from "@/lib/db/schema";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
 
 export const dynamic = "force-dynamic";
-
-const ACTIVITY_SECTION_TITLE: Record<ActivityKind, string> = {
-  task: "Tasks",
-  meeting: "Meetings",
-  call: "Calls",
-  email: "Emails",
-  sms: "SMS",
-};
-
-const ACTIVITY_SECTION_EMPTY: Record<ActivityKind, string> = {
-  task: "No tasks yet. Use Quick Comms to add a task.",
-  meeting: "No meetings yet. Schedule from Quick Comms.",
-  call: "No calls yet. Use Quick Comms to log a call.",
-  email: "No emails yet. Use Quick Comms to log an email.",
-  sms: "No SMS yet. Use Quick Comms to send a text.",
-};
-
-function timelineItemsForKind(timeline: TimelineItem[], kind: ActivityKind) {
-  return timeline
-    .filter((item) => item.kind.toLowerCase() === kind)
-    .map((item) => ({
-      id: item.id,
-      title: item.subject || item.activityTitle || item.body || ACTIVITY_KIND_LABEL[kind],
-      when: item.occurredAt,
-      meta: item.direction ?? item.eventType ?? null,
-    }));
-}
 
 export default async function LeadDetailPage({
   params,
@@ -116,9 +89,7 @@ export default async function LeadDetailPage({
     officeAddress: agencyRow?.officeAddress,
   });
   const clientAddress = homeAddressFromRecords({ lead });
-  const activityByKind = Object.fromEntries(
-    ACTIVITY_KINDS.map((kind) => [kind, timelineItemsForKind(timeline, kind)]),
-  ) as Record<ActivityKind, ReturnType<typeof timelineItemsForKind>>;
+  const activityByKind = leadActivityByKind(timeline);
   const lineLabel = lead.insuranceTypeDesired
     ? (LINE_LABELS[lead.insuranceTypeDesired as LineOfBusiness] ?? lead.insuranceTypeDesired)
     : null;
@@ -224,83 +195,74 @@ export default async function LeadDetailPage({
         </div>
       ) : null}
 
-      <RecordSection
-        id="record"
-        title="This lead"
-        summary="Edit layout fields, Quick Comms, and the conversations rail."
-      >
-        <LeadDetailWorkspace
-          leadId={lead.id}
-          dealId={deal?.id ?? null}
-          insuranceTypeDesired={lead.insuranceTypeDesired}
-          state={lead.state ?? "FL"}
-          docs={docs}
-          rail={
-            <>
-              <div className="min-w-0 w-full max-w-full" data-ff-lead-quick-comms="">
-                <QuickCommsBoard
-                  items={comms}
-                  leadId={lead.id}
-                  dealId={deal?.id ?? null}
-                  contactName={partyName}
-                  contactPhone={lead.phone}
-                  contactEmail={lead.email}
-                  officeAddress={officeAddress}
-                  clientAddress={clientAddress}
-                />
-              </div>
-              <RecordContextRail context={context} defaultTab="info" headingName={partyName} />
-            </>
-          }
-        >
-          <RecordLayoutFields
-            module="leads"
-            layout={leadLayout?.layout ?? defaultLayoutForModule("leads")}
-            fields={leadLayout?.fields ?? []}
-            values={mergeRecordSystemValues(
-              lead as unknown as Record<string, unknown>,
-              leadLayout?.stored ?? {},
-              leadLayout?.fields ?? [],
-            )}
-            lifeOptions={(deskLineSettings?.lifeOptions?.length ? deskLineSettings.lifeOptions : DEFAULT_LIFE_SUBFILTERS)}
-            healthOptions={(deskLineSettings?.healthOptions?.length ? deskLineSettings.healthOptions : DEFAULT_HEALTH_SUBFILTERS)}
-            lineSettings={deskLineSettings}
-          />
-        </LeadDetailWorkspace>
-      </RecordSection>
-
-      <RecordSection
-        id="activity"
-        title="Activity"
-        summary="Tasks, meetings, calls, SMS, and emails — same set as contacts and deals."
-      >
-        <div className="space-y-3" data-ff-lead-activity="">
-          {ACTIVITY_KINDS.map((kind) => (
-            <ContactSectionBlock
-              key={kind}
-              id={kind}
-              title={ACTIVITY_SECTION_TITLE[kind]}
-              count={activityByKind[kind].length}
-              emptyLabel={ACTIVITY_SECTION_EMPTY[kind]}
-              items={activityByKind[kind]}
+      <LeadDetailWorkspace
+        leadId={lead.id}
+        dealId={deal?.id ?? null}
+        insuranceTypeDesired={lead.insuranceTypeDesired}
+        state={lead.state ?? "FL"}
+        docs={docs}
+        rail={
+          <>
+            <LeadQuickComms
+              items={comms}
+              leadId={lead.id}
+              dealId={deal?.id ?? null}
+              contactName={partyName}
+              contactPhone={lead.phone}
+              contactEmail={lead.email}
+              officeAddress={officeAddress}
+              clientAddress={clientAddress}
             />
-          ))}
-        </div>
-      </RecordSection>
-
-      <RecordSection id="related" title="Related" summary="Deal created from this lead — no policy until bind">
-        {deal ? (
-          <p className="flex flex-wrap items-center gap-2 text-sm">
-            <RecordLink href={`/deals/${deal.id}`}>Open deal · {deal.title}</RecordLink>
-            <StagePill stage={deal.pipelineStage} />
-          </p>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No deal yet. Convert when you start the shop. Line files already on this lead come with
-            it.
-          </p>
-        )}
-      </RecordSection>
+            <RecordContextRail context={context} defaultTab="info" headingName={partyName} />
+          </>
+        }
+        afterFields={
+          <>
+            <section id="activity" className="ff-card space-y-3 p-4" data-ff-lead-activity-section="">
+              <div>
+                <h2 className="text-base font-semibold text-navy">Activity</h2>
+                <p className="text-xs text-muted-foreground">
+                  Tasks, Meetings, Calls, Emails, SMS — same set as contacts and deals.
+                </p>
+              </div>
+              <LeadActivityPanels itemsByKind={activityByKind} />
+            </section>
+            <section id="related" className="ff-card space-y-3 p-4" data-ff-lead-related="">
+              <div>
+                <h2 className="text-base font-semibold text-navy">Related</h2>
+                <p className="text-xs text-muted-foreground">
+                  Deal created from this lead — no policy until bind
+                </p>
+              </div>
+              {deal ? (
+                <p className="flex flex-wrap items-center gap-2 text-sm">
+                  <RecordLink href={`/deals/${deal.id}`}>Open deal · {deal.title}</RecordLink>
+                  <StagePill stage={deal.pipelineStage} />
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No deal yet. Convert when you start the shop. Line files already on this lead come with
+                  it.
+                </p>
+              )}
+            </section>
+          </>
+        }
+      >
+        <RecordLayoutFields
+          module="leads"
+          layout={leadLayout?.layout ?? defaultLayoutForModule("leads")}
+          fields={leadLayout?.fields ?? []}
+          values={mergeRecordSystemValues(
+            lead as unknown as Record<string, unknown>,
+            leadLayout?.stored ?? {},
+            leadLayout?.fields ?? [],
+          )}
+          lifeOptions={(deskLineSettings?.lifeOptions?.length ? deskLineSettings.lifeOptions : DEFAULT_LIFE_SUBFILTERS)}
+          healthOptions={(deskLineSettings?.healthOptions?.length ? deskLineSettings.healthOptions : DEFAULT_HEALTH_SUBFILTERS)}
+          lineSettings={deskLineSettings}
+        />
+      </LeadDetailWorkspace>
     </AppShell>
   );
 }

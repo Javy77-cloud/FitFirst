@@ -8,15 +8,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  CONTACT_ACTION_BUTTONS,
   contactActionButtonClass,
   contactActionButtonStyle,
   contactActionHref,
+  isContactActionKind,
   type ContactActionKind,
 } from "@/lib/desk/contact-actions";
+import { LEAD_ACTIVITY_MENU_ITEMS } from "@/lib/leads/lead-activity";
 import { cn } from "@/lib/utils";
 
 export function ContactActionButtons({
+  leadId,
   phone,
   email,
 }: {
@@ -38,7 +40,19 @@ export function ContactActionButtons({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[9.5rem] p-1.5" sideOffset={4}>
         <div className="flex flex-col gap-1" data-testid="lead-contact-actions">
-          {CONTACT_ACTION_BUTTONS.map((action) => {
+          {LEAD_ACTIVITY_MENU_ITEMS.map((action) => {
+            if (!isContactActionKind(action.kind)) {
+              return (
+                <a
+                  key={action.kind}
+                  href={`/leads/${leadId}#${action.kind}`}
+                  data-ff-lead-activity-option={action.kind}
+                  className="inline-flex h-7 w-full items-center justify-start rounded bg-navy px-2 text-[11px] font-semibold text-white"
+                >
+                  {action.label}
+                </a>
+              );
+            }
             const href = contactActionHref(action.kind, { phone, email });
             return (
               <ContactActionButton
@@ -68,6 +82,7 @@ function ContactActionButton({
     <button
       type="button"
       disabled={!href}
+      data-ff-lead-activity-option={kind}
       onClick={() => {
         if (href) window.location.href = href;
       }}

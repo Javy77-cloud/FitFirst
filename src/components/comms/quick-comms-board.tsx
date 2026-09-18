@@ -303,7 +303,7 @@ export function QuickCommsBoard({
           : `Task, meeting, call, email, and SMS on this ${dealId ? "deal" : "lead"}. Not a carrier portal and not a live mail trunk.`}
       </p>
 
-      <div className="mt-3 flex flex-nowrap items-center gap-1.5 overflow-x-hidden">
+      <div className="mt-3 flex flex-wrap items-center gap-1.5" data-ff-quick-comms-kinds="">
         {ACTIVITY_KINDS.map((value) => (
           <button
             key={value}
