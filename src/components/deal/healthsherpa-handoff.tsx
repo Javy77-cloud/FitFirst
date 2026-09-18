@@ -4,7 +4,9 @@ import { useState } from "react";
 import { syncDealToHealthSherpaAction } from "@/app/actions/healthsherpa";
 import { Button } from "@/components/ui/button";
 import {
+  HEALTHSHERPA_ACA_LOGIN_URL,
   HEALTHSHERPA_ACA_NEEDS_PARTNER,
+  HEALTHSHERPA_ACA_READY,
   HEALTHSHERPA_KEYS_MISSING,
   HEALTHSHERPA_LOGIN_URL,
   HEALTHSHERPA_MANUAL_LINES_NOTE,
@@ -60,7 +62,13 @@ export function HealthSherpaHandoff({
           type="button"
           size="sm"
           variant="outline"
-          onClick={() => window.open(HEALTHSHERPA_LOGIN_URL, "_blank", "noopener,noreferrer")}
+          onClick={() =>
+            window.open(
+              product === "marketplace" ? HEALTHSHERPA_ACA_LOGIN_URL : HEALTHSHERPA_LOGIN_URL,
+              "_blank",
+              "noopener,noreferrer",
+            )
+          }
           data-ff-healthsherpa-login=""
         >
           Open HealthSherpa
@@ -79,8 +87,10 @@ export function HealthSherpaHandoff({
         {note ??
           (product === "manual"
             ? HEALTHSHERPA_MANUAL_LINES_NOTE
-            : product === "marketplace" && !acaReady
-              ? HEALTHSHERPA_ACA_NEEDS_PARTNER
+            : product === "marketplace"
+              ? acaReady
+                ? HEALTHSHERPA_ACA_READY
+                : HEALTHSHERPA_ACA_NEEDS_PARTNER
               : !medicareReady
                 ? HEALTHSHERPA_KEYS_MISSING
                 : "Syncs the contact, then opens the HealthSherpa quote page.")}

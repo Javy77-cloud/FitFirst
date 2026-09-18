@@ -3,14 +3,16 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { contacts, deals, healthsherpaEnrollments, quoteSheets } from "@/lib/db/schema";
 import {
+  HEALTHSHERPA_ACA_LOGIN_URL,
   HEALTHSHERPA_ACA_NEEDS_PARTNER,
+  HEALTHSHERPA_ACA_READY,
   HEALTHSHERPA_KEYS_MISSING,
   HEALTHSHERPA_MANUAL_LINES_NOTE,
 } from "./copy";
 import { syncHealthSherpaContact, type HealthSherpaContactBody } from "./client";
-import { healthSherpaAcaStatus } from "./aca";
+import { healthSherpaAcaQuote, healthSherpaAcaStatus } from "./aca";
 import { healthSherpaProductForPlan, isUsingHealthSherpa, USING_HEALTHSHERPA_KEY } from "./sheet";
-import { loadHealthSherpaMedicareCredentials } from "./vault";
+import { loadHealthSherpaAcaCredentials, loadHealthSherpaMedicareCredentials } from "./vault";
 
 export type HealthSherpaSyncResult =
   | { ok: true; redirectUrl: string | null; contactId: string | null; message: string }
@@ -30,6 +32,17 @@ function yesNoBool(raw: string | null): boolean | undefined {
   if (lower === "yes" || lower === "true") return true;
   if (lower === "no" || lower === "false") return false;
   return undefined;
+}
+
+function ageFromDob(raw: string | null | undefined): number | null {
+  if (!raw) return null;
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const now = new Date();
+  let age = now.getUTCFullYear() - parsed.getUTCFullYear();
+  const month = now.getUTCMonth() - parsed.getUTCMonth();
+  if (month < 0 || (month === 0 && now.getUTCDate() < parsed.getUTCDate())) age -= 1;
+  return age >= 0 && age < 130 ? age : null;
 }
 
 export async function syncDealToHealthSherpa(input: {
@@ -61,8 +74,7 @@ export async function syncDealToHealthSherpa(input: {
     return { ok: false, code: "manual_only", message: HEALTHSHERPA_MANUAL_LINES_NOTE };
   }
   if (product === "marketplace") {
-    const aca = await healthSherpaAcaStatus();
-    return { ok: false, code: "aca_needs_partner", message: aca.message || HEALTHSHERPA_ACA_NEEDS_PARTNER };
+    return syncMarketplaceDeal({ deal, values });
   }
 
   const creds = await loadHealthSherpaMedicareCredentials();
@@ -196,6 +208,131 @@ export async function syncDealToHealthSherpa(input: {
     message: result.data.redirectUrl
       ? "Contact synced. Opening the HealthSherpa quote page."
       : "Contact synced. HealthSherpa did not return a quote URL — open Medicare and confirm the county.",
+  };
+}
+
+async function syncMarketplaceDeal(input: {
+  deal: {
+    id: string;
+    contactId: string | null;
+    primaryNamedInsured: string | null;
+  };
+  values: Record<string, { value?: string } | undefined>;
+}): Promise<HealthSherpaSyncResult> {
+  const creds = await loadHealthSherpaAcaCredentials();
+  if (!creds) {
+    const aca = await healthSherpaAcaStatus();
+    return { ok: false, code: "aca_needs_partner", message: aca.message || HEALTHSHERPA_ACA_NEEDS_PARTNER };
+  }
+
+  let contact = input.deal.contactId
+    ? (
+        await db
+          .select()
+          .from(contacts)
+          .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, input.deal.contactId)))
+          .limit(1)
+      )[0] ?? null
+    : null;
+
+  const firstName = contact?.firstName?.trim() || (input.deal.primaryNamedInsured ?? "").split(" ")[0] || "";
+  const lastName =
+    contact?.lastName?.trim() ||
+    (input.deal.primaryNamedInsured ?? "").split(" ").slice(1).join(" ") ||
+    "";
+  if (!firstName || !lastName) {
+    return {
+      ok: false,
+      code: "identity",
+      message: "Add first and last name on Deal Details (or link a contact) before opening Marketplace.",
+    };
+  }
+
+  if (!contact) {
+    const [created] = await db
+      .insert(contacts)
+      .values({
+        tenantId: DEFAULT_TENANT_ID,
+        firstName,
+        lastName,
+        email: null,
+        phone: null,
+        source: "healthsherpa",
+        status: "active",
+      })
+      .returning();
+    contact = created ?? null;
+    if (contact) {
+      await db
+        .update(deals)
+        .set({ contactId: contact.id, updatedAt: new Date() })
+        .where(eq(deals.id, input.deal.id));
+    }
+  }
+  if (!contact) return { ok: false, code: "contact", message: "Could not create a contact for this deal." };
+
+  const zip = (contact.zip ?? "").replace(/\D/g, "").slice(0, 5);
+  const age = ageFromDob(contact.dateOfBirth);
+  const incomeRaw = sheetValue(input.values, "household_income");
+  const income = incomeRaw ? Number(incomeRaw.replace(/[^0-9.]/g, "")) : NaN;
+  const tobacco = sheetValue(input.values, "tobacco_status");
+  const quote =
+    zip.length === 5 && age != null
+      ? await healthSherpaAcaQuote({
+          zip,
+          fips: sheetValue(input.values, "fips") ?? sheetValue(input.values, "county_fips"),
+          state: contact.state,
+          householdIncome: Number.isFinite(income) ? income : null,
+          applicants: [
+            {
+              age,
+              relationship: "primary",
+              smoker: Boolean(tobacco && /current|yes|true/i.test(tobacco)),
+            },
+          ],
+        })
+      : null;
+
+  const existingLink = await db
+    .select()
+    .from(healthsherpaEnrollments)
+    .where(
+      and(
+        eq(healthsherpaEnrollments.tenantId, DEFAULT_TENANT_ID),
+        eq(healthsherpaEnrollments.contactId, contact.id),
+      ),
+    )
+    .limit(1);
+  const linkValues = {
+    product: "marketplace" as const,
+    event: "sync",
+    hsExternalId: contact.id,
+    contactId: contact.id,
+    dealId: input.deal.id,
+    updatedAt: new Date(),
+  };
+  if (existingLink[0]) {
+    await db.update(healthsherpaEnrollments).set(linkValues).where(eq(healthsherpaEnrollments.id, existingLink[0].id));
+  } else {
+    await db.insert(healthsherpaEnrollments).values({
+      tenantId: DEFAULT_TENANT_ID,
+      ...linkValues,
+    });
+  }
+
+  const quoteNote = quote?.ok
+    ? quote.message
+    : quote
+      ? `${quote.message} ${HEALTHSHERPA_ACA_READY}`
+      : zip.length === 5
+        ? "Add date of birth to run QuoteConnect. Opening HealthSherpa Marketplace."
+        : "Add a 5-digit ZIP to run QuoteConnect. Opening HealthSherpa Marketplace.";
+
+  return {
+    ok: true,
+    redirectUrl: HEALTHSHERPA_ACA_LOGIN_URL,
+    contactId: contact.id,
+    message: quoteNote,
   };
 }
 

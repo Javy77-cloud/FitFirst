@@ -6,7 +6,8 @@ export const dynamic = "force-dynamic";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Authorization, Content-Type, X-API-Key, X-Api-Key, X-FitFirst-Key",
+  "Access-Control-Allow-Headers":
+    "Authorization, Content-Type, X-API-Key, X-Api-Key, x-api-key, api-key, Api-Key, X-FitFirst-Key, X-Webhook-Secret",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -16,9 +17,13 @@ export function OPTIONS() {
 
 export async function POST(request: Request) {
   const authorized = await authorizeHealthSherpaWebhook(request);
-  if (!authorized) {
+  if (!authorized.ok) {
     return NextResponse.json(
-      { error: "unauthorized", message: "X-API-Key did not match the HealthSherpa inbound secret or an org API key." },
+      {
+        error: "unauthorized",
+        reason: authorized.reason,
+        message: authorized.message,
+      },
       { status: 401, headers: cors },
     );
   }
@@ -45,8 +50,10 @@ export async function POST(request: Request) {
       dealId: result.dealId ?? null,
       policyId: result.policyId ?? null,
       enrollmentId: result.enrollmentId ?? null,
+      product: result.product ?? null,
       note: "Manual enrollments in HealthSherpa may not fire this webhook.",
     },
-    { status: result.accepted ? 202 : 422, headers: cors },
+    // ACA onboarding asks for HTTP 200; Medicare accepts any 2xx.
+    { status: result.accepted ? 200 : 422, headers: cors },
   );
 }

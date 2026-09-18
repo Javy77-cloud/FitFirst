@@ -369,9 +369,9 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     category: "health_enrollment",
     name: "HealthSherpa Marketplace / ACA",
     initials: "HA",
-    blurb: "QuoteConnect / enrollment handoff. Scaffolded until HealthSherpa partner credentials exist.",
+    blurb: "Same HealthSherpa integration as Medicare: partner key, Marketplace handoff, shared enrollment webhook.",
     byoNote:
-      "Agency pays HealthSherpa for Marketplace / ICHRA partner access. FitFirst does not quote ACA inside the desk.",
+      "Agency pays HealthSherpa for Marketplace / ICHRA partner access. FitFirst does not quote ACA inside the desk. Same inbound webhook as Medicare.",
     tone: "health",
     adminGated: true,
     optional: true,

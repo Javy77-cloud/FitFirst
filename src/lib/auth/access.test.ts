@@ -109,6 +109,7 @@ describe("Admin vs Agent capabilities", () => {
     expect(isPublicPath("/api/dev/functions/echo_payload/execute")).toBe(true);
     expect(isPublicPath("/api/dev/webhooks/inbound/desk-echo")).toBe(true);
     expect(isPublicPath("/api/integrations/healthsherpa/webhook")).toBe(true);
+    expect(isPublicPath("/api/integrations/healthsherpa/webhooks")).toBe(true);
     expect(isPublicPath("/api/integrations/oauth/callback")).toBe(true);
     expect(isPublicPath("/portal")).toBe(true);
     expect(isPublicPath("/portal/elena-ruiz-2026/id-cards")).toBe(true);

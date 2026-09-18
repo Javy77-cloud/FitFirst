@@ -59,19 +59,18 @@ export function HealthSherpaCard({
       </div>
       <p className="mt-2 text-helper text-muted-foreground">{HEALTHSHERPA_NO_FF_FEE}</p>
       <p className="text-helper text-muted-foreground">{blurb}</p>
-      {isMedicare ? (
-        <p className="mt-2 text-helper text-muted-foreground" data-ff-healthsherpa-webhook="">
-          {HEALTHSHERPA_INBOUND_BLURB} Destination{" "}
-          <code className="text-[11px]">{HEALTHSHERPA_WEBHOOK_PATH}</code>
-          {inbound.configured ? " · inbound secret stored" : " · inbound secret not configured"}.
-        </p>
-      ) : (
-        <p className="mt-2 text-helper text-muted-foreground">
+      <p className="mt-2 text-helper text-muted-foreground" data-ff-healthsherpa-webhook="">
+        {HEALTHSHERPA_INBOUND_BLURB} Destination{" "}
+        <code className="text-[11px]">{HEALTHSHERPA_WEBHOOK_PATH}</code>
+        {inbound.configured ? " · inbound secret stored" : " · inbound secret not configured"}.
+      </p>
+      {!isMedicare ? (
+        <p className="text-helper text-muted-foreground">
           {aca.configured
-            ? "Marketplace key is stored. Quoting UI stays in HealthSherpa until partner onboarding confirms QuoteConnect."
-            : "Needs partner credentials. Medicare path works without this card."}
+            ? "Marketplace partner key is stored. Sync opens HealthSherpa Marketplace; QuoteConnect runs when ZIP and date of birth are on the deal."
+            : "Needs partner credentials. Medicare path works without this card. Same inbound webhook either way."}
         </p>
-      )}
+      ) : null}
       <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm">
         <Link href="/settings/developer-hub/api-vault" className="font-medium text-primary hover:underline">
           API vault
