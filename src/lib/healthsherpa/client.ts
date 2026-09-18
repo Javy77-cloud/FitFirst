@@ -76,8 +76,8 @@ export function healthSherpaErrorCode(status: number, rawCode?: string | null): 
   if (trimmed) return trimmed;
   if (status === 401) return "http_401";
   if (status === 403) return "http_403";
-  if (status === 0) return "network";
-  return status > 0 ? `http_${status}` : "healthsherpa_error";
+  if (status > 0) return `http_${status}`;
+  return "healthsherpa_error";
 }
 
 function collectJsonMessages(json: unknown, depth = 0): string[] {

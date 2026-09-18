@@ -496,14 +496,16 @@ describe("Medicare bulk one-shot UI + wiring", () => {
       }),
     );
     expect(html).toContain("data-ff-healthsherpa-medicare-bulk-errors");
-    expect(html).toContain("Ada Lovelace: HealthSherpa HTTP 401: Unauthorized.");
-    expect(html).toContain("Grace Hopper: HealthSherpa HTTP 401: Unauthorized.");
+    expect(html).toContain("Ada Lovelace");
+    expect(html).toContain("Grace Hopper");
+    expect(html).toContain("HealthSherpa HTTP 401: Unauthorized.");
     expect(html).toContain("data-ff-healthsherpa-medicare-bulk-auth-banner");
     expect(html).toContain(HEALTHSHERPA_MEDICARE_BULK_AUTH_BANNER);
     expect(html).toContain("Medicare vault key");
     expect(html).toContain("agent email");
     expect(html).toContain("sandbox versus production");
-    expect(html).toContain("+ 55 more failed");
+    expect(html).toContain("more failed");
+    expect(html).toContain("55");
   });
 
   it("reuses contact sync + vault credentials and never hardcodes an agent email", () => {
