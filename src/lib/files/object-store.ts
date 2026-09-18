@@ -30,6 +30,8 @@ export const BLOB_NOT_CONFIGURED_MESSAGE =
 export const BLOB_PUT_FAILED_MESSAGE = "Could not store the document in Vercel Blob.";
 
 function requiresRemoteStorage(options?: { durable?: boolean }): boolean {
+  // Local desk verification without Blob. Production (VERCEL) still requires remote.
+  if (!process.env.VERCEL && process.env.FF_LOCAL_DURABLE_UPLOADS === "1") return false;
   return Boolean(options?.durable || process.env.VERCEL);
 }
 

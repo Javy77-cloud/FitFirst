@@ -15,6 +15,7 @@ const prevUpload = process.env.UPLOAD_DIR;
 const prevBlob = process.env.BLOB_READ_WRITE_TOKEN;
 const prevStoreId = process.env.BLOB_STORE_ID;
 const prevVercel = process.env.VERCEL;
+const prevLocalDurable = process.env.FF_LOCAL_DURABLE_UPLOADS;
 
 afterEach(() => {
   if (prevUpload === undefined) delete process.env.UPLOAD_DIR;
@@ -25,6 +26,8 @@ afterEach(() => {
   else process.env.BLOB_STORE_ID = prevStoreId;
   if (prevVercel === undefined) delete process.env.VERCEL;
   else process.env.VERCEL = prevVercel;
+  if (prevLocalDurable === undefined) delete process.env.FF_LOCAL_DURABLE_UPLOADS;
+  else process.env.FF_LOCAL_DURABLE_UPLOADS = prevLocalDurable;
 });
 
 describe("blobStoreReady", () => {
@@ -70,11 +73,30 @@ describe("object-store local path", () => {
     delete process.env.BLOB_READ_WRITE_TOKEN;
     delete process.env.BLOB_STORE_ID;
     delete process.env.VERCEL;
+    delete process.env.FF_LOCAL_DURABLE_UPLOADS;
     await expect(
       writeStoredFile("docs/deal-dec.pdf", Buffer.from("%PDF-1.4 test"), "application/pdf", {
         durable: true,
       }),
     ).rejects.toThrow(BLOB_NOT_CONFIGURED_MESSAGE);
+    await rm(root, { recursive: true, force: true });
+  });
+
+  it("writes durable deal uploads locally when FF_LOCAL_DURABLE_UPLOADS=1", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ff-uploads-"));
+    process.env.UPLOAD_DIR = root;
+    process.env.FF_LOCAL_DURABLE_UPLOADS = "1";
+    delete process.env.BLOB_READ_WRITE_TOKEN;
+    delete process.env.BLOB_STORE_ID;
+    delete process.env.VERCEL;
+    const stored = await writeStoredFile(
+      "docs/deal-photo.png",
+      Buffer.from("%PDF-1.4 test"),
+      "image/png",
+      { durable: true },
+    );
+    expect(isRemoteStoragePath(stored)).toBe(false);
+    expect(await readStoredFile(stored)).not.toBeNull();
     await rm(root, { recursive: true, force: true });
   });
 
