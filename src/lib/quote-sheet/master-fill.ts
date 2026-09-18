@@ -23,10 +23,10 @@ export const MASTER_FILL_SKIP_NO_VIN = "No VIN on sheet — skipped";
 export const MASTER_FILL_REVIEW_NUDGE =
   "Review CHECK fields and Confirm when ready";
 
-/** Shown under the step list while Fill is in flight (~20s). */
+/** Shown under the step list while Fill is in flight. */
 export const MASTER_FILL_BUSY_TITLE = FILLING_RISK_PROFILE_TITLE;
 export const MASTER_FILL_BUSY_COPY =
-  "Skimming deal, docs, and property notes — about 20 seconds.";
+  "Skimming deal, docs, and property notes — we’ll be back soon.";
 
 export type MasterFillStepId = "deal" | "property" | "docs" | "vin";
 
