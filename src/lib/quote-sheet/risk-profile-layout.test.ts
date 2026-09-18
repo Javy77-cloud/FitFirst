@@ -15,6 +15,7 @@ import {
   readRenderedColumnCount,
   sectionFieldGridClass,
 } from "@/lib/custom-fields/section-density";
+import { SECTION_DENSITIES } from "@/lib/custom-fields/types";
 import { AUTO_FIELDS, emptySheetValues, fieldsForLine } from "./catalog";
 import { fieldsForUnit } from "./repeatable-units";
 import {
@@ -67,9 +68,6 @@ describe("Risk Profile per-section density + full labels", () => {
     expect(defaultRiskProfileSectionDensity("Commercial Property")).toBe(5);
     expect(defaultRiskProfileSectionDensity("Commercial Auto")).toBe(5);
     expect(defaultRiskProfileSectionDensity("Current policy")).toBe(3);
-    expect(riskProfileDensityOf(undefined)).toBe(3);
-    expect(riskProfileDensityOf(5)).toBe(5);
-    expect(riskProfileDensityOf("4")).toBe(4);
     expect(riskProfileSectionDensityId("Property")).toBe("Property");
 
     const sheet = source("src/components/deal/master-sheet-compare.tsx");
@@ -583,6 +581,29 @@ describe("Risk Profile per-section density + full labels", () => {
     expect(vehicleHtml).toMatch(/data-ff-cell="vin"/);
     expect(vehicleHtml).toMatch(/data-ff-cell="vehicle_year"/);
     expect(vehicleHtml).toMatch(/<div class="min-w-0"><span data-ff-cell="garaging_address"/);
+  });
+});
+
+describe("riskProfileDensityOf accepts honest 1–5 SECTION_DENSITIES", () => {
+  it("keeps stored Columns 4 and 5 instead of falling back to DEFAULT 3", () => {
+    expect(RISK_PROFILE_DENSITIES).toEqual(SECTION_DENSITIES);
+    expect(RISK_PROFILE_DENSITIES).toEqual([1, 2, 3, 4, 5]);
+    expect(source("src/lib/quote-sheet/risk-profile-layout.ts")).toMatch(/parseSectionDensity\(raw\)/);
+    expect(source("src/lib/quote-sheet/risk-profile-layout.ts")).toMatch(/SECTION_DENSITIES/);
+
+    for (const density of SECTION_DENSITIES) {
+      expect(riskProfileDensityOf(density)).toBe(density);
+      expect(riskProfileDensityOf(String(density))).toBe(density);
+    }
+    expect(riskProfileDensityOf(4)).not.toBe(DEFAULT_RISK_PROFILE_DENSITY);
+    expect(riskProfileDensityOf(5)).not.toBe(DEFAULT_RISK_PROFILE_DENSITY);
+    expect(riskProfileDensityOf("4")).not.toBe(DEFAULT_RISK_PROFILE_DENSITY);
+    expect(riskProfileDensityOf("5")).not.toBe(DEFAULT_RISK_PROFILE_DENSITY);
+    expect(riskProfileDensityOf(undefined)).toBe(DEFAULT_RISK_PROFILE_DENSITY);
+    expect(riskProfileDensityOf(null)).toBe(DEFAULT_RISK_PROFILE_DENSITY);
+    expect(riskProfileDensityOf(0)).toBe(DEFAULT_RISK_PROFILE_DENSITY);
+    expect(riskProfileDensityOf(6)).toBe(DEFAULT_RISK_PROFILE_DENSITY);
+    expect(riskProfileDensityOf("comfortable")).toBe(DEFAULT_RISK_PROFILE_DENSITY);
   });
 });
 

@@ -3,10 +3,11 @@ import {
   isTrueAddressFieldKey,
   type LayoutFieldHint,
 } from "@/lib/custom-fields/section-density";
+import { parseSectionDensity, SECTION_DENSITIES } from "@/lib/custom-fields/types";
 import type { QuoteFieldDef } from "./applicant-core";
 
-/** Per-section columns on Risk Profile. Long-text sections cap at 4; short-field sections may use 5. */
-export const RISK_PROFILE_DENSITIES = [1, 2, 3, 4, 5] as const;
+/** Same 1–5 scale as Deal Details (`SECTION_DENSITIES`). Long-text sections cap at 4. */
+export const RISK_PROFILE_DENSITIES = SECTION_DENSITIES;
 export type RiskProfileDensity = (typeof RISK_PROFILE_DENSITIES)[number];
 export const RISK_PROFILE_LONG_TEXT_MAX: RiskProfileDensity = 4;
 export const RISK_PROFILE_SHORT_FIELD_MAX: RiskProfileDensity = 5;
@@ -65,13 +66,7 @@ export function clampRiskProfileDensity(
 }
 
 export function riskProfileDensityOf(raw: unknown): RiskProfileDensity {
-  if (raw === 1 || raw === 2 || raw === 3 || raw === 4 || raw === 5) return raw;
-  if (raw === "1") return 1;
-  if (raw === "2") return 2;
-  if (raw === "3") return 3;
-  if (raw === "4") return 4;
-  if (raw === "5") return 5;
-  return DEFAULT_RISK_PROFILE_DENSITY;
+  return parseSectionDensity(raw) ?? DEFAULT_RISK_PROFILE_DENSITY;
 }
 
 export function riskProfileSectionDensityId(title: string): string {
