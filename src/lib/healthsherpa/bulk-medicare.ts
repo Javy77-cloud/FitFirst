@@ -6,8 +6,10 @@ import { homeLineKey } from "@/lib/home/lines";
 import {
   HEALTHSHERPA_AGENT_EMAIL_MISSING,
   HEALTHSHERPA_KEYS_MISSING,
+  HEALTHSHERPA_MEDICARE_BULK_AUTH_BANNER,
   HEALTHSHERPA_MEDICARE_BULK_FILTER,
 } from "./copy";
+import { ensureHealthSherpaFailure } from "./client";
 import { syncContactToHealthSherpa, type HealthSherpaContactRecord } from "./sync";
 import {
   loadHealthSherpaMedicareCredentials,
@@ -18,6 +20,8 @@ import {
 export const MEDICARE_BULK_ONESHOT_APPLICATION_ID = "ff:medicare-bulk-oneshot";
 export const MEDICARE_BULK_ONESHOT_EVENT = "bulk_oneshot";
 export const MEDICARE_BULK_RATE_LIMIT_MS = 250;
+/** First failed-row messages kept on the oneshot lastRun payload so refresh still shows them. */
+export const MEDICARE_BULK_ONESHOT_ERROR_LIMIT = 20;
 
 export const MEDICARE_HEALTH_TAG_TOKENS = [
   "health",
@@ -41,11 +45,18 @@ export type MedicareBulkRow = {
   message?: string;
 };
 
+export type MedicareBulkErrorRow = {
+  contactId: string;
+  name: string;
+  code?: string;
+  message: string;
+};
+
 export type MedicareBulkTally = {
   synced: number;
   skipped: number;
   failed: number;
-  errors: Array<{ contactId: string; name: string; message: string }>;
+  errors: MedicareBulkErrorRow[];
 };
 
 export type MedicareBulkReady =
@@ -61,10 +72,17 @@ export type MedicareBulkRunResult = MedicareBulkTally & {
   configured: boolean;
 };
 
+export type MedicareBulkOneshotLastRun = Pick<
+  MedicareBulkRunResult,
+  "synced" | "skipped" | "failed" | "code" | "message" | "candidateCount"
+> & {
+  errors: MedicareBulkErrorRow[];
+};
+
 export type MedicareBulkOneshotState = {
   hidden: boolean;
   lastRunAt: string | null;
-  lastRun: Pick<MedicareBulkRunResult, "synced" | "skipped" | "failed" | "code" | "message" | "candidateCount"> | null;
+  lastRun: MedicareBulkOneshotLastRun | null;
 };
 
 export type MedicareHealthContactSignals = {
@@ -134,6 +152,88 @@ export function medicareBulkCredentialsReady(
   return { ok: true, agentEmail };
 }
 
+export function failedMedicareBulkMessages(
+  input: Pick<MedicareBulkRunResult, "errors" | "rows"> | Pick<MedicareBulkOneshotLastRun, "errors">,
+): MedicareBulkErrorRow[] {
+  const errors = "errors" in input && Array.isArray(input.errors) ? input.errors : [];
+  if (errors.length) {
+    return errors.map((error) => ({
+      contactId: error.contactId,
+      name: error.name,
+      code: error.code,
+      message: error.message?.trim() || "HealthSherpa sync failed.",
+    }));
+  }
+  const rows = "rows" in input && Array.isArray(input.rows) ? input.rows : [];
+  return rows
+    .filter((row) => row.status === "failed")
+    .map((row) => ({
+      contactId: row.contactId,
+      name: row.name,
+      code: row.code,
+      message: row.message?.trim() || "HealthSherpa sync failed.",
+    }));
+}
+
+export function medicareBulkAuthKind(input: { code?: string; message?: string }): "401" | "403" | "agent_email" | null {
+  const hay = `${input.code ?? ""} ${input.message ?? ""}`.toLowerCase();
+  if (/agent[_\s-]?email/.test(hay)) return "agent_email";
+  if (/http_403|\b403\b|forbidden/.test(hay)) return "403";
+  if (/http_401|\b401\b|unauthor|invalid (api )?key|api key|not_configured|access denied/.test(hay)) {
+    return "401";
+  }
+  return null;
+}
+
+/** One banner when every failed row is the same 401 / 403 / agent-email error. */
+export function medicareBulkAuthBanner(input: {
+  synced: number;
+  failed: number;
+  errors?: MedicareBulkErrorRow[];
+  rows?: MedicareBulkRow[];
+}): string | null {
+  if (input.synced > 0 || input.failed <= 0) return null;
+  const samples = failedMedicareBulkMessages(input);
+  if (!samples.length) return null;
+  const kinds = samples.map((sample) => medicareBulkAuthKind(sample));
+  if (kinds.some((kind) => kind == null)) return null;
+  if (new Set(kinds).size !== 1) return null;
+  return HEALTHSHERPA_MEDICARE_BULK_AUTH_BANNER;
+}
+
+export function persistableMedicareBulkLastRun(result: MedicareBulkRunResult): MedicareBulkOneshotLastRun {
+  return {
+    synced: result.synced,
+    skipped: result.skipped,
+    failed: result.failed,
+    code: result.code,
+    message: result.message,
+    candidateCount: result.candidateCount,
+    errors: failedMedicareBulkMessages(result).slice(0, MEDICARE_BULK_ONESHOT_ERROR_LIMIT),
+  };
+}
+
+function parsePersistedErrors(raw: unknown): MedicareBulkErrorRow[] {
+  if (!Array.isArray(raw)) return [];
+  const errors: MedicareBulkErrorRow[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    const contactId = typeof row.contactId === "string" ? row.contactId : "";
+    const name = typeof row.name === "string" && row.name.trim() ? row.name : "Unnamed contact";
+    const message = typeof row.message === "string" && row.message.trim() ? row.message : "";
+    if (!contactId && !message) continue;
+    errors.push({
+      contactId,
+      name,
+      code: typeof row.code === "string" ? row.code : undefined,
+      message: message || "HealthSherpa sync failed.",
+    });
+    if (errors.length >= MEDICARE_BULK_ONESHOT_ERROR_LIMIT) break;
+  }
+  return errors;
+}
+
 export function tallyMedicareBulkRows(rows: MedicareBulkRow[]): MedicareBulkTally {
   const errors: MedicareBulkTally["errors"] = [];
   let synced = 0;
@@ -144,10 +244,15 @@ export function tallyMedicareBulkRows(rows: MedicareBulkRow[]): MedicareBulkTall
     else if (row.status === "skipped") skipped += 1;
     else {
       failed += 1;
+      const failure = ensureHealthSherpaFailure({
+        code: row.code,
+        message: row.message,
+      });
       errors.push({
         contactId: row.contactId,
         name: row.name,
-        message: row.message || "HealthSherpa sync failed.",
+        code: failure.code,
+        message: failure.message,
       });
     }
   }
@@ -195,7 +300,9 @@ export async function describeMedicareBulkReady(): Promise<{
   };
 }
 
-function parseOneshotPayload(raw: Record<string, unknown> | null | undefined): MedicareBulkOneshotState {
+export function parseMedicareBulkOneshotState(
+  raw: Record<string, unknown> | null | undefined,
+): MedicareBulkOneshotState {
   const hidden = raw?.hidden === true;
   const lastRunAt = typeof raw?.lastRunAt === "string" ? raw.lastRunAt : null;
   const last = raw?.lastRun && typeof raw.lastRun === "object" ? (raw.lastRun as Record<string, unknown>) : null;
@@ -210,6 +317,7 @@ function parseOneshotPayload(raw: Record<string, unknown> | null | undefined): M
           code: typeof last.code === "string" ? last.code : "ok",
           message: typeof last.message === "string" ? last.message : "",
           candidateCount: Number(last.candidateCount) || 0,
+          errors: parsePersistedErrors(last.errors),
         }
       : null,
   };
@@ -232,7 +340,7 @@ async function loadOneshotRow() {
 export async function loadMedicareBulkOneshotState(): Promise<MedicareBulkOneshotState> {
   try {
     const row = await loadOneshotRow();
-    return parseOneshotPayload(row?.payload);
+    return parseMedicareBulkOneshotState(row?.payload);
   } catch {
     return { hidden: false, lastRunAt: null, lastRun: null };
   }
@@ -396,27 +504,45 @@ export async function runMedicareContactBulkSync(input?: {
       continue;
     }
     if (index > 0) await sleep(MEDICARE_BULK_RATE_LIMIT_MS);
-    const result = await syncContact({
-      contact,
-      agentEmail: ready.agentEmail,
-      notes: [`FitFirst Medicare bulk sync ${new Date().toISOString().slice(0, 10)}`],
-    });
-    if (result.ok) {
+    try {
+      const result = await syncContact({
+        contact,
+        agentEmail: ready.agentEmail,
+        notes: [`FitFirst Medicare bulk sync ${new Date().toISOString().slice(0, 10)}`],
+      });
+      if (result.ok) {
+        rows.push({
+          contactId: contact.id,
+          name,
+          status: "synced",
+          message: result.message,
+        });
+        continue;
+      }
+      const failure = ensureHealthSherpaFailure({
+        code: result.code,
+        message: result.message,
+      });
       rows.push({
         contactId: contact.id,
         name,
-        status: "synced",
-        message: result.message,
+        status: "failed",
+        code: failure.code,
+        message: failure.message,
       });
-      continue;
+    } catch (error) {
+      const failure = ensureHealthSherpaFailure({
+        code: "healthsherpa_error",
+        message: error instanceof Error ? error.message : "HealthSherpa sync failed.",
+      });
+      rows.push({
+        contactId: contact.id,
+        name,
+        status: "failed",
+        code: failure.code,
+        message: failure.message,
+      });
     }
-    rows.push({
-      contactId: contact.id,
-      name,
-      status: "failed",
-      code: result.code,
-      message: result.message,
-    });
   }
 
   const tally = tallyMedicareBulkRows(rows);
@@ -442,14 +568,7 @@ export async function runMedicareContactBulkSync(input?: {
       await saveMedicareBulkOneshotState({
         hidden: autoHide || current.hidden,
         lastRunAt: new Date().toISOString(),
-        lastRun: {
-          synced: completed.synced,
-          skipped: completed.skipped,
-          failed: completed.failed,
-          code: completed.code,
-          message: completed.message,
-          candidateCount: completed.candidateCount,
-        },
+        lastRun: persistableMedicareBulkLastRun(completed),
       });
     } catch {
       /* oneshot persistence is optional — do not fail the push */

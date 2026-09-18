@@ -12,7 +12,13 @@ import {
   HEALTHSHERPA_MEDICARE_BULK_ONESHOT,
   HEALTHSHERPA_MEDICARE_BULK_TITLE,
 } from "@/lib/healthsherpa/copy";
-import type { MedicareBulkOneshotState, MedicareBulkRunResult } from "@/lib/healthsherpa/bulk-medicare";
+import {
+  failedMedicareBulkMessages,
+  medicareBulkAuthBanner,
+  persistableMedicareBulkLastRun,
+  type MedicareBulkOneshotState,
+  type MedicareBulkRunResult,
+} from "@/lib/healthsherpa/bulk-medicare";
 
 export function MedicareBulkSyncPanel({
   ready,
@@ -41,14 +47,7 @@ export function MedicareBulkSyncPanel({
     try {
       const next = await bulkSyncMedicareContactsAction();
       setResult(next);
-      setLastRun({
-        synced: next.synced,
-        skipped: next.skipped,
-        failed: next.failed,
-        code: next.code,
-        message: next.message,
-        candidateCount: next.candidateCount,
-      });
+      setLastRun(persistableMedicareBulkLastRun(next));
       if (next.configured && next.ok && next.code !== "empty") {
         setHidden(true);
       }
@@ -93,9 +92,18 @@ export function MedicareBulkSyncPanel({
         ok: lastRun.failed === 0,
         configured: true,
         rows: [],
-        errors: [],
+        errors: lastRun.errors ?? [],
       }
     : null);
+  const displayedErrors = live ? failedMedicareBulkMessages(live) : [];
+  const authBanner = live
+    ? medicareBulkAuthBanner({
+        synced: live.synced,
+        failed: live.failed,
+        errors: displayedErrors,
+        rows: live.rows,
+      })
+    : null;
 
   if (hidden) {
     return (
@@ -168,25 +176,39 @@ export function MedicareBulkSyncPanel({
           {busy ? "Syncing Medicare contacts…" : HEALTHSHERPA_MEDICARE_BULK_TITLE}
         </Button>
       </div>
+      {authBanner ? (
+        <p
+          className="rounded-md border border-amber-800/40 bg-amber-100/80 p-2 text-xs text-amber-950"
+          data-ff-healthsherpa-medicare-bulk-auth-banner=""
+        >
+          {authBanner}
+        </p>
+      ) : null}
       {note ? (
         <p className="text-xs text-navy" data-ff-healthsherpa-medicare-bulk-note="">
           {note}
         </p>
       ) : null}
       {live ? (
-        <div className="text-xs text-navy" data-ff-healthsherpa-medicare-bulk-tally="">
+        <div className="space-y-2 text-xs text-navy" data-ff-healthsherpa-medicare-bulk-tally="">
           <p>
             {live.synced} synced · {live.skipped} skipped · {live.failed} failed
             {live.candidateCount != null ? ` · ${live.candidateCount} matched` : ""}
           </p>
-          {result?.errors.length ? (
+          {displayedErrors.length ? (
             <ul className="mt-2 list-disc space-y-1 pl-4" data-ff-healthsherpa-medicare-bulk-errors="">
-              {result.errors.map((error) => (
+              {displayedErrors.map((error) => (
                 <li key={`${error.contactId}-${error.message}`}>
                   {error.name}: {error.message}
                 </li>
               ))}
             </ul>
+          ) : null}
+          {live.failed > displayedErrors.length ? (
+            <p className="text-muted-foreground" data-ff-healthsherpa-medicare-bulk-errors-more="">
+              + {live.failed - displayedErrors.length} more failed
+              {displayedErrors.length ? " (first messages kept after refresh)" : ""}.
+            </p>
           ) : null}
         </div>
       ) : null}

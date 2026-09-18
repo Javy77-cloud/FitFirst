@@ -10,7 +10,7 @@ import {
   HEALTHSHERPA_KEYS_MISSING,
   HEALTHSHERPA_MANUAL_LINES_NOTE,
 } from "./copy";
-import { syncHealthSherpaContact, type HealthSherpaContactBody } from "./client";
+import { ensureHealthSherpaFailure, syncHealthSherpaContact, type HealthSherpaContactBody } from "./client";
 import { healthSherpaAcaQuote, healthSherpaAcaStatus } from "./aca";
 import { healthSherpaProductForPlan, isUsingHealthSherpa, USING_HEALTHSHERPA_KEY } from "./sheet";
 import { loadHealthSherpaAcaCredentials, loadHealthSherpaMedicareCredentials } from "./vault";
@@ -78,92 +78,101 @@ export async function syncContactToHealthSherpa(input: {
   >;
   notes?: string[];
 }): Promise<HealthSherpaSyncResult> {
-  const firstName = input.contact.firstName?.trim() || "";
-  const lastName = input.contact.lastName?.trim() || "";
-  if (!firstName || !lastName) {
-    return {
-      ok: false,
-      code: "identity",
-      message: "Add first and last name before syncing.",
+  try {
+    const firstName = input.contact.firstName?.trim() || "";
+    const lastName = input.contact.lastName?.trim() || "";
+    if (!firstName || !lastName) {
+      return {
+        ok: false,
+        code: "identity",
+        message: "Add first and last name before syncing.",
+      };
+    }
+
+    const existingLink = await db
+      .select()
+      .from(healthsherpaEnrollments)
+      .where(
+        and(
+          eq(healthsherpaEnrollments.tenantId, DEFAULT_TENANT_ID),
+          eq(healthsherpaEnrollments.contactId, input.contact.id),
+          ne(healthsherpaEnrollments.event, "bulk_oneshot"),
+        ),
+      )
+      .limit(1);
+
+    const body: HealthSherpaContactBody = {
+      external_id: input.contact.id,
+      first_name: firstName,
+      last_name: lastName,
+      email: input.contact.email ?? undefined,
+      phone: input.contact.phone ?? undefined,
+      birth_date: input.contact.dateOfBirth ?? undefined,
+      address_1: input.contact.mailingAddress ?? undefined,
+      city: input.contact.city ?? undefined,
+      state: input.contact.state ?? undefined,
+      zip: input.contact.zip ?? undefined,
+      medicare_number: input.extras?.medicare_number,
+      medicare_part_a_effective_date: input.extras?.medicare_part_a_effective_date,
+      medicare_part_b_effective_date: input.extras?.medicare_part_b_effective_date,
+      extra_help: input.extras?.extra_help,
+      medicaid_eligible: input.extras?.medicaid_eligible,
+      notes: input.notes ?? input.extras?.notes,
     };
-  }
 
-  const existingLink = await db
-    .select()
-    .from(healthsherpaEnrollments)
-    .where(
-      and(
-        eq(healthsherpaEnrollments.tenantId, DEFAULT_TENANT_ID),
-        eq(healthsherpaEnrollments.contactId, input.contact.id),
-        ne(healthsherpaEnrollments.event, "bulk_oneshot"),
-      ),
-    )
-    .limit(1);
-
-  const body: HealthSherpaContactBody = {
-    external_id: input.contact.id,
-    first_name: firstName,
-    last_name: lastName,
-    email: input.contact.email ?? undefined,
-    phone: input.contact.phone ?? undefined,
-    birth_date: input.contact.dateOfBirth ?? undefined,
-    address_1: input.contact.mailingAddress ?? undefined,
-    city: input.contact.city ?? undefined,
-    state: input.contact.state ?? undefined,
-    zip: input.contact.zip ?? undefined,
-    medicare_number: input.extras?.medicare_number,
-    medicare_part_a_effective_date: input.extras?.medicare_part_a_effective_date,
-    medicare_part_b_effective_date: input.extras?.medicare_part_b_effective_date,
-    extra_help: input.extras?.extra_help,
-    medicaid_eligible: input.extras?.medicaid_eligible,
-    notes: input.notes ?? input.extras?.notes,
-  };
-
-  const result = await syncHealthSherpaContact({
-    agentEmail: input.agentEmail,
-    hsContactId:
-      existingLink[0]?.hsContactId ??
-      (input.contact.source === "healthsherpa" ? input.contact.sourceId : null),
-    contact: body,
-  });
-  if (!result.ok) {
-    return { ok: false, code: result.code, message: result.message };
-  }
-
-  const hsContactId = result.data.contactId;
-  if (hsContactId) {
-    await db
-      .update(contacts)
-      .set({ source: "healthsherpa", sourceId: hsContactId, updatedAt: new Date() })
-      .where(eq(contacts.id, input.contact.id));
-  }
-
-  const linkValues = {
-    product: "medicare" as const,
-    event: "sync",
-    hsContactId,
-    hsExternalId: input.contact.id,
-    contactId: input.contact.id,
-    dealId: input.dealId ?? existingLink[0]?.dealId ?? null,
-    updatedAt: new Date(),
-  };
-  if (existingLink[0]) {
-    await db.update(healthsherpaEnrollments).set(linkValues).where(eq(healthsherpaEnrollments.id, existingLink[0].id));
-  } else {
-    await db.insert(healthsherpaEnrollments).values({
-      tenantId: DEFAULT_TENANT_ID,
-      ...linkValues,
+    const result = await syncHealthSherpaContact({
+      agentEmail: input.agentEmail,
+      hsContactId:
+        existingLink[0]?.hsContactId ??
+        (input.contact.source === "healthsherpa" ? input.contact.sourceId : null),
+      contact: body,
     });
-  }
+    if (!result.ok) {
+      const failure = ensureHealthSherpaFailure(result);
+      return { ok: false, code: failure.code, message: failure.message };
+    }
 
-  return {
-    ok: true,
-    redirectUrl: result.data.redirectUrl,
-    contactId: hsContactId,
-    message: result.data.redirectUrl
-      ? "Contact synced. Opening the HealthSherpa quote page."
-      : "Contact synced. HealthSherpa did not return a quote URL — open Medicare and confirm the county.",
-  };
+    const hsContactId = result.data.contactId;
+    if (hsContactId) {
+      await db
+        .update(contacts)
+        .set({ source: "healthsherpa", sourceId: hsContactId, updatedAt: new Date() })
+        .where(eq(contacts.id, input.contact.id));
+    }
+
+    const linkValues = {
+      product: "medicare" as const,
+      event: "sync",
+      hsContactId,
+      hsExternalId: input.contact.id,
+      contactId: input.contact.id,
+      dealId: input.dealId ?? existingLink[0]?.dealId ?? null,
+      updatedAt: new Date(),
+    };
+    if (existingLink[0]) {
+      await db.update(healthsherpaEnrollments).set(linkValues).where(eq(healthsherpaEnrollments.id, existingLink[0].id));
+    } else {
+      await db.insert(healthsherpaEnrollments).values({
+        tenantId: DEFAULT_TENANT_ID,
+        ...linkValues,
+      });
+    }
+
+    return {
+      ok: true,
+      redirectUrl: result.data.redirectUrl,
+      contactId: hsContactId,
+      message: result.data.redirectUrl
+        ? "Contact synced. Opening the HealthSherpa quote page."
+        : "Contact synced. HealthSherpa did not return a quote URL — open Medicare and confirm the county.",
+    };
+  } catch (error) {
+    const failure = ensureHealthSherpaFailure({
+      code: "healthsherpa_error",
+      message: error instanceof Error ? error.message : "HealthSherpa sync failed.",
+    });
+    return { ok: false, code: failure.code, message: failure.message };
+  }
 }
 
 export async function syncDealToHealthSherpa(input: {
