@@ -19,12 +19,14 @@ import {
   LIST_PREVIEW_COUNT,
   collapsedGlobalListPersistFields,
   collapsedPicklistPersistFields,
+  collectNamedFormControls,
   listMutationOk,
   listOptionIdentitiesDuringTyping,
   listOptionNeedsCommit,
   listOptionRowKey,
   listOptionTypingRemounts,
   listSaveValues,
+  namedFormControlEntriesToFormData,
   visibleListItems,
 } from "@/lib/settings/list-editor";
 
@@ -97,6 +99,21 @@ describe("admin list editors", () => {
       "Paramed exam",
       "APS",
     ]);
+    const entries = collectNamedFormControls([
+      { name: "ids", value: "1" },
+      { name: "labels", value: "Active" },
+      { name: "itemColors", value: "cyan" },
+      { name: "itemColors", value: "green", disabled: true },
+      { name: "defaultIndex", value: "0", type: "radio", checked: false },
+      { name: "defaultIndex", value: "1", type: "radio", checked: true },
+    ]);
+    expect(entries).toEqual([
+      ["ids", "1"],
+      ["labels", "Active"],
+      ["itemColors", "cyan"],
+      ["defaultIndex", "1"],
+    ]);
+    expect(namedFormControlEntriesToFormData(entries).get("itemColors")).toBe("cyan");
   });
 
   it("saves picklist and global list names without a scroll-to-top redirect", () => {
@@ -107,7 +124,8 @@ describe("admin list editors", () => {
     expect(source("src/app/actions/global-lists.ts")).toMatch(/export async function deleteGlobalList/);
     expect(source("src/app/actions/global-lists.ts")).toMatch(/export async function updateGlobalListItem/);
     expect(source("src/components/settings/stay-on-save-form.tsx")).toMatch(/router\.refresh\(\)/);
-    expect(source("src/components/settings/stay-on-save-form.tsx")).toMatch(/new FormData\(formRef\.current\)/);
+    expect(source("src/components/settings/stay-on-save-form.tsx")).toMatch(/readListFormData/);
+    expect(source("src/components/settings/stay-on-save-form.tsx")).toMatch(/\[form="\$\{CSS\.escape\(form\.id\)\}"\]/);
     expect(source("src/app/actions/field-picklists.ts")).not.toMatch(/from "@\/lib\/flash-action"/);
     expect(source("src/app/actions/global-lists.ts")).not.toMatch(/from "@\/lib\/flash-action"/);
     expect(listMutationOk("pick-list-saved")).toEqual({

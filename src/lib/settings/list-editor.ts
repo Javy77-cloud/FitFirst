@@ -107,3 +107,28 @@ export function visibleListItems<T>(items: T[], expanded: boolean, previewCount 
   if (expanded || items.length <= previewCount) return items;
   return items.slice(0, previewCount);
 }
+
+/** Named controls that Save must send — including those associated via `form=`. */
+export type ListFormControl = {
+  name: string;
+  value: string;
+  disabled?: boolean;
+  type?: string;
+  checked?: boolean;
+};
+
+export function collectNamedFormControls(controls: readonly ListFormControl[]): Array<[string, string]> {
+  const entries: Array<[string, string]> = [];
+  for (const control of controls) {
+    if (!control.name || control.disabled) continue;
+    if ((control.type === "checkbox" || control.type === "radio") && !control.checked) continue;
+    entries.push([control.name, control.value]);
+  }
+  return entries;
+}
+
+export function namedFormControlEntriesToFormData(entries: ReadonlyArray<readonly [string, string]>): FormData {
+  const data = new FormData();
+  for (const [name, value] of entries) data.append(name, value);
+  return data;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,11 +40,13 @@ export function StatusColorSelect({
 }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(() => statusColorSelectValue(defaultValue));
+  const inputRef = useRef<HTMLInputElement>(null);
   const token = liveColorKey(selected);
 
   function apply(raw: string) {
     const next = statusColorSelectValue(raw);
     setSelected(next);
+    if (inputRef.current) inputRef.current.value = next;
     onColorChange?.(next || null);
     setOpen(false);
   }
@@ -53,10 +55,11 @@ export function StatusColorSelect({
     <span className="inline-flex shrink-0 items-center" data-ff-status-color-picker="">
       <input
         id={id}
+        ref={inputRef}
         type="hidden"
         form={form}
         name={name}
-        value={selected}
+        defaultValue={selected}
         disabled={disabled}
         data-ff-status-color-select=""
       />
