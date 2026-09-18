@@ -178,7 +178,6 @@ export default async function DealPage({
     account,
     sheets,
     jobs,
-    letterJobs,
     boundPolicies,
   } = workspace;
   const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow, pipelines, context, agencyRow, noticePicklists, session, hsMedicare, hsAca, hsEnrollment] =
@@ -893,7 +892,6 @@ export default async function DealPage({
                         docs={docs}
                         fields={fields}
                         jobs={jobs}
-                        letterJobs={letterJobs}
                         pendingFill={notice === "filled"}
                         health={health}
                         sheetLine={sheetLine}
