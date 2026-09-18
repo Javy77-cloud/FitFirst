@@ -322,7 +322,7 @@ function TypedControl({
     );
   }
   if (field.type === "multi_select") {
-    // Long lists (e.g. Existing Coverage / policy subtypes) get type-to-filter.
+    // Long lists (e.g. coverage with other carriers / policy subtypes) get type-to-filter.
     const searchable =
       field.key === "existing_coverage_types" ||
       options.length >= 12;

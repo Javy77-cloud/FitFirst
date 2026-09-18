@@ -96,7 +96,13 @@ export const CONTACT_RECENT_LIFE_EVENT_OPTIONS = [
   "Other",
 ] as const;
 
-/** Starter options for Settings → Picklists → Cross-Selling Opportunities. */
+/** Label for existing_coverage_types — other carriers only, never this agency. */
+export const CONTACT_EXTERNAL_COVERAGE_LABEL = "Coverage with other carriers";
+
+/** Layout slot for the read-only generated Opportunities surface. */
+export const CONTACT_GENERATED_OPPORTUNITIES_LABEL = "Opportunities";
+
+/** Legacy labels kept for Settings → Picklists. Contact Details does not use this picklist. */
 export const CONTACT_CROSS_SELL_OPTIONS = [
   "Auto",
   "Home",
@@ -112,7 +118,7 @@ export const CONTACT_CROSS_SELL_OPTIONS = [
   "Other",
 ] as const;
 
-/** Existing coverage multi-select — same labels as Global Lists → Policy sub-types. */
+/** Other-carrier coverage multi-select — same labels as Global Lists → Policy sub-types. */
 export const CONTACT_EXISTING_COVERAGE_OPTIONS = [...POLICY_SUB_TYPES];
 
 /** Full Contact module field catalog — Edit Layout + bind transfer. */
@@ -177,15 +183,19 @@ export const CONTACT_MODULE_FIELDS: CustomFieldDef[] = [
   },
   {
     key: "existing_coverage_types",
-    label: "Existing Coverage Type",
+    label: CONTACT_EXTERNAL_COVERAGE_LABEL,
     type: "multi_select",
     options: [...CONTACT_EXISTING_COVERAGE_OPTIONS],
   },
+  /**
+   * JSON map of CoverageLine → other. Not a layout field — Coverage section owns the UX.
+   * “With us” is in-force Policies only.
+   */
+  { key: "coverage_carrier_of_record", label: "Carrier of Record", type: "single_line" },
   {
     key: "cross_selling_opportunity",
-    label: "Cross-Selling Opportunity",
-    type: "picklist",
-    options: [...CONTACT_CROSS_SELL_OPTIONS],
+    label: CONTACT_GENERATED_OPPORTUNITIES_LABEL,
+    type: "single_line",
   },
   { key: "is_homeowner", label: "Homeowner", type: "checkbox" },
   { key: "is_business_owner", label: "Business Owner", type: "checkbox" },
@@ -239,6 +249,54 @@ export function isCombinedCoverageOpportunitiesSection(section: {
 }
 
 /** Split the old combined CRM section so Coverage and Opportunities stay on Contact. */
+const DEFAULT_IDENTITY_KEYS = [
+  "first_name",
+  "last_name",
+  "email",
+  "phone",
+  "date_of_birth",
+  "marital_status",
+  "mailing_address",
+  "city",
+  "state",
+  "zip",
+] as const;
+
+function sameKeySet(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  const next = new Set(b);
+  return a.every((key) => next.has(key));
+}
+
+/** Move Preferences next to Contact and pair DOB + marital so the five sections share one grid. */
+export function rebalanceContactDetailLayout(layout: FieldLayout): FieldLayout {
+  const left = layout.columns[0];
+  const right = layout.columns[1];
+  if (!left || !right) return layout;
+  let nextLeft = left.sections.map((section) => {
+    if (section.id !== "identity") return section;
+    if (!sameKeySet(section.fieldKeys, DEFAULT_IDENTITY_KEYS)) return section;
+    if (section.fieldKeys.join("|") === DEFAULT_IDENTITY_KEYS.join("|")) return section;
+    return { ...section, fieldKeys: [...DEFAULT_IDENTITY_KEYS] };
+  });
+  let nextRight = right.sections;
+  const leftIds = nextLeft.map((section) => section.id);
+  const prefsOnRight = nextRight.find((section) => section.id === "prefs");
+  if (leftIds.length === 1 && leftIds[0] === "identity" && prefsOnRight) {
+    nextLeft = [...nextLeft, prefsOnRight];
+    nextRight = nextRight.filter((section) => section.id !== "prefs");
+  }
+  const next = {
+    ...layout,
+    columns: [
+      { ...left, sections: nextLeft },
+      { ...right, sections: nextRight },
+    ] as FieldLayout["columns"],
+  };
+  if (JSON.stringify(next.columns) === JSON.stringify(layout.columns)) return layout;
+  return next;
+}
+
 export function splitCoverageOpportunitiesLayout(layout: FieldLayout): FieldLayout {
   const splitColumn = (column: FieldLayout["columns"][number]) => ({
     ...column,
@@ -283,8 +341,8 @@ export function splitCoverageOpportunitiesLayout(layout: FieldLayout): FieldLayo
 
 /**
  * Contact Details / Edit Layout default — two even columns.
- * Left: identity + address + marital. Right: prefs, Coverage, Opportunities, lead source.
- * Coverage / Opportunities belong on Contact (household book + cross-sell), not Policy.
+ * Left: Contact + Preferences. Right: Coverage, Opportunities, Lead Source.
+ * Fields inside each section use the same 2-col grid (city/state/zip is the only trio).
  */
 export function contactCardLayout(): FieldLayout {
   return twoCol(
@@ -295,20 +353,20 @@ export function contactCardLayout(): FieldLayout {
         "email",
         "phone",
         "date_of_birth",
+        "marital_status",
         "mailing_address",
         "city",
         "state",
         "zip",
-        "marital_status",
       ]),
-    ],
-    [
       section("prefs", "Preferences", [
         "occupation",
         "education_level",
         "preferred_contact_method",
         "preferred_contact_time",
       ]),
+    ],
+    [
       section("coverage", "Coverage", [...CONTACT_COVERAGE_FIELD_KEYS]),
       section("opportunities", "Opportunities", [...CONTACT_OPPORTUNITY_FIELD_KEYS]),
       section("intake", "Lead Source", ["source", "referral"]),

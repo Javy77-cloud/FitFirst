@@ -1,3 +1,4 @@
+import type { DeclaredCoverageLine } from "@/lib/coverage/declared-coverage";
 import { isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
 
 /** Lines the gap engine can see. Quotes never appear here. */
@@ -40,11 +41,20 @@ export type CoverageGapFinding = {
   severity: "talk" | "watch";
 };
 
+export type CoverageGapRewrite = {
+  line: CoverageLine;
+  plainEnglish: string;
+};
+
 export type CoverageGapReport = {
   partyName: string;
   inForceCount: number;
   inForceLines: CoverageLine[];
+  /** In-force plus declared us/other. “Missing” is the complement of this set. */
+  coveredLines: CoverageLine[];
+  otherCarrierLines: CoverageLine[];
   findings: CoverageGapFinding[];
+  rewrites: CoverageGapRewrite[];
   emptyReason: string | null;
   quotesDoNotCount: string;
 };
@@ -88,26 +98,57 @@ function hasAny(lines: Set<CoverageLine>, group: CoverageLine[]): boolean {
   return group.some((line) => lines.has(line));
 }
 
+function isCompanionLine(line: CoverageLine): boolean {
+  return line !== "OTHER" && line !== "LIFE" && line !== "HEALTH";
+}
+
+function coveredLineSet(
+  policies: GapPolicyInput[],
+  declared: readonly DeclaredCoverageLine[] | undefined,
+): { covered: Set<CoverageLine>; otherCarrier: Set<CoverageLine>; inForce: Set<CoverageLine> } {
+  const inForce = lineSet(policies);
+  const covered = new Set(inForce);
+  const otherCarrier = new Set<CoverageLine>();
+  for (const row of declared ?? []) {
+    if (!isCompanionLine(row.line)) continue;
+    covered.add(row.line);
+    if (row.carrierOfRecord === "other" && !inForce.has(row.line)) {
+      otherCarrier.add(row.line);
+    }
+  }
+  return { covered, otherCarrier, inForce };
+}
+
 export function analyzeCoverageGaps(input: {
   policies: GapPolicyInput[];
   partyName: string;
   isAna?: boolean;
   quoteCount?: number;
+  /** Contact Coverage marks — other-carrier only. In-force with us comes from policies. */
+  declaredCoverage?: DeclaredCoverageLine[];
 }): CoverageGapReport {
   const inForce = inForceGapPolicies(input.policies);
-  const lines = lineSet(input.policies);
-  const inForceLines = [...lines].sort();
+  const { covered: lines, otherCarrier, inForce: inForceSet } = coveredLineSet(
+    input.policies,
+    input.declaredCoverage,
+  );
+  const inForceLines = [...inForceSet].sort();
+  const coveredLines = [...lines].sort();
+  const otherCarrierLines = [...otherCarrier].sort();
   const quotesDoNotCount =
     input.quoteCount && input.quoteCount > 0
       ? `${input.quoteCount} quote${input.quoteCount === 1 ? "" : "s"} on the shop do not count as coverage.`
       : "Quotes are not coverage. Only Active, Bound, or Pending policies count.";
 
-  if (inForce.length === 0) {
+  if (inForce.length === 0 && lines.size === 0) {
     return {
       partyName: input.partyName,
       inForceCount: 0,
       inForceLines: [],
+      coveredLines: [],
+      otherCarrierLines: [],
       findings: [],
+      rewrites: [],
       emptyReason: input.isAna
         ? "Ana Dib has no in-force policy. This shop stays Quote Sent. Coverage A is $321,000. Do not bind Ana."
         : `${input.partyName} has no in-force policy yet. ${quotesDoNotCount}`,
@@ -124,7 +165,7 @@ export function analyzeCoverageGaps(input: {
       findings.push({
         id: "auto-no-home",
         title: "Auto on the books — no homeowners",
-        plainEnglish: `${input.partyName} has an in-force auto policy and no homeowners. The car is covered; the house is not. A dwelling claim would have nowhere to go.`,
+        plainEnglish: `${input.partyName} has an auto policy and no homeowners. The car is covered; the house is not. A dwelling claim would have nowhere to go.`,
         has: ["AUTO"],
         missing: ["HO"],
         severity: "talk",
@@ -134,7 +175,7 @@ export function analyzeCoverageGaps(input: {
       findings.push({
         id: "home-no-auto",
         title: "Home on the books — no auto",
-        plainEnglish: `${input.partyName} has homeowners in force and no auto. The house is written; the driveway is not. Ask whether anyone in the household drives.`,
+        plainEnglish: `${input.partyName} has homeowners and no auto. The house is written; the driveway is not. Ask whether anyone in the household drives.`,
         has: ["HO"],
         missing: ["AUTO"],
         severity: "talk",
@@ -144,7 +185,7 @@ export function analyzeCoverageGaps(input: {
       findings.push({
         id: "home-no-flood",
         title: "Homeowners, no flood",
-        plainEnglish: `${input.partyName} has homeowners in force and no flood policy. An HO3 does not pay for flood. In Florida that is a separate conversation.`,
+        plainEnglish: `${input.partyName} has homeowners and no flood policy. An HO3 does not pay for flood. In Florida that is a separate conversation.`,
         has: ["HO"],
         missing: ["FLOOD"],
         severity: "talk",
@@ -160,7 +201,7 @@ export function analyzeCoverageGaps(input: {
             : lines.has("HO")
               ? "homeowners"
               : "auto"
-        } in force and no umbrella. A serious liability claim can blow past those limits.`,
+        } and no umbrella. A serious liability claim can blow past those limits.`,
         has: lines.has("HO") && lines.has("AUTO") ? ["HO", "AUTO"] : lines.has("HO") ? ["HO"] : ["AUTO"],
         missing: ["UMBRELLA"],
         severity: "watch",
@@ -170,7 +211,7 @@ export function analyzeCoverageGaps(input: {
       findings.push({
         id: "flood-no-home",
         title: "Flood on the books — no homeowners",
-        plainEnglish: `${input.partyName} has flood in force and no homeowners. Flood does not replace an HO3 for fire, wind, or theft.`,
+        plainEnglish: `${input.partyName} has flood and no homeowners. Flood does not replace an HO3 for fire, wind, or theft.`,
         has: ["FLOOD"],
         missing: ["HO"],
         severity: "talk",
@@ -185,7 +226,7 @@ export function analyzeCoverageGaps(input: {
         title: "Liability written — no workers comp",
         plainEnglish: `${input.partyName} has ${
           lines.has("GL") ? "general liability" : "a BOP"
-        } in force and no workers comp. A hurt employee or crew is not covered by GL.`,
+        } and no workers comp. A hurt employee or crew is not covered by GL.`,
         has: lines.has("GL") ? ["GL"] : ["BOP"],
         missing: ["WC"],
         severity: "talk",
@@ -197,7 +238,7 @@ export function analyzeCoverageGaps(input: {
         title: "No commercial umbrella",
         plainEnglish: `${input.partyName} has ${
           lines.has("GL") ? "GL" : "a BOP"
-        } in force and no umbrella. One bad liability claim can exceed those limits.`,
+        } and no umbrella. One bad liability claim can exceed those limits.`,
         has: lines.has("GL") ? ["GL"] : ["BOP"],
         missing: ["UMBRELLA"],
         severity: "watch",
@@ -205,12 +246,23 @@ export function analyzeCoverageGaps(input: {
     }
   }
 
+  const rewrites = otherCarrierLines.map((line) => ({
+    line,
+    plainEnglish: `${input.partyName} has ${gapLineLabel(line).toLowerCase()} with another carrier — rewrite, not a missing-${gapLineLabel(line).toLowerCase()} gap.`,
+  }));
+
   return {
     partyName: input.partyName,
     inForceCount: inForce.length,
     inForceLines,
+    coveredLines,
+    otherCarrierLines,
     findings,
-    emptyReason: findings.length === 0 ? `${input.partyName} has the companion lines this desk checks from in-force only.` : null,
+    rewrites,
+    emptyReason:
+      findings.length === 0 && rewrites.length === 0
+        ? `${input.partyName} has the companion lines this desk checks.`
+        : null,
     quotesDoNotCount,
   };
 }

@@ -65,6 +65,7 @@ import { ensureBusinessDetailPicklists } from "@/lib/businesses/business-detail-
 import {
   contactCardLayout,
   CONTACT_MODULE_FIELDS,
+  rebalanceContactDetailLayout,
   splitCoverageOpportunitiesLayout,
 } from "@/lib/contacts/contact-field-catalog";
 import {
@@ -463,6 +464,7 @@ async function ensureContactCatalogUpgrades() {
       field.key === "preferred_contact_time" ||
       field.key === "recent_life_events" ||
       field.key === "existing_coverage_types" ||
+      field.key === "coverage_carrier_of_record" ||
       field.key === "cross_selling_opportunity" ||
       field.key === "is_homeowner" ||
       field.key === "is_business_owner"
@@ -485,7 +487,7 @@ export async function ensureContactDetailLayout(): Promise<FieldLayout> {
     await saveLayoutForModule("contacts", next);
     return next;
   }
-  const migrated = splitCoverageOpportunitiesLayout(picked);
+  const migrated = rebalanceContactDetailLayout(splitCoverageOpportunitiesLayout(picked));
   if (JSON.stringify(migrated.columns) !== JSON.stringify(picked.columns)) {
     await saveLayoutForModule("contacts", migrated);
     return migrated;

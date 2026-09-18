@@ -7,7 +7,6 @@ import type { FieldPicklist } from "@/lib/custom-fields/picklists";
 import {
   STARTER_PICKLIST_CONTACT_METHOD,
   STARTER_PICKLIST_CONTACT_TIME,
-  STARTER_PICKLIST_CROSS_SELL,
   STARTER_PICKLIST_EDUCATION,
   STARTER_PICKLIST_EMPLOYMENT,
   STARTER_PICKLIST_LEAD_SOURCE,
@@ -33,11 +32,6 @@ export const CONTACT_DETAIL_PICKLIST_BINDINGS = [
     fieldKey: "existing_coverage_types",
     picklistName: STARTER_PICKLIST_POLICY_SUBTYPES,
     type: "multi_select" as const,
-  },
-  {
-    fieldKey: "cross_selling_opportunity",
-    picklistName: STARTER_PICKLIST_CROSS_SELL,
-    type: "picklist" as const,
   },
   {
     fieldKey: "marital_status",

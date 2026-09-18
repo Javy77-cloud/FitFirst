@@ -16,12 +16,18 @@ export function GapPanel({
       <div className={embedded ? "" : "border-b border-border px-4 py-3"}>
         <h3 className="text-sm font-semibold text-navy">Coverage gaps</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Rule-based, from in-force policies only. {report.quotesDoNotCount}
+          Rule-based from in-force policies plus Coverage carrier-of-record. Missing means
+          not covered — another carrier still counts as has that line. {report.quotesDoNotCount}
         </p>
-        {report.inForceCount > 0 ? (
+        {report.inForceCount > 0 || report.otherCarrierLines.length > 0 ? (
           <p className="mt-1 text-[11px] text-muted-foreground">
-            In force: {report.inForceLines.map(gapLineLabel).join(", ") || "none"} ·{" "}
-            {report.inForceCount} polic{report.inForceCount === 1 ? "y" : "ies"}
+            In force: {report.inForceLines.map(gapLineLabel).join(", ") || "none"}
+            {report.inForceCount
+              ? ` · ${report.inForceCount} polic${report.inForceCount === 1 ? "y" : "ies"}`
+              : ""}
+            {report.otherCarrierLines.length
+              ? ` · Another carrier: ${report.otherCarrierLines.map(gapLineLabel).join(", ")}`
+              : ""}
           </p>
         ) : null}
       </div>

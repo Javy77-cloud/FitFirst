@@ -2,8 +2,11 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   CONTACT_EDUCATION_OPTIONS,
+  CONTACT_EXTERNAL_COVERAGE_LABEL,
+  CONTACT_GENERATED_OPPORTUNITIES_LABEL,
   CONTACT_MODULE_FIELDS,
   contactCardLayout,
+  rebalanceContactDetailLayout,
   splitCoverageOpportunitiesLayout,
 } from "./contact-field-catalog";
 import { defaultFieldsForModule, defaultLayoutForModule } from "@/lib/custom-fields/modules";
@@ -84,6 +87,22 @@ describe("Contacts module v1 standards", () => {
       expect.arrayContaining(["coverage", "opportunities"]),
     );
     expect(sections.find((section) => section.label === "Coverage & Opportunities")).toBeUndefined();
+    expect(contactCardLayout().columns[0].sections.map((section) => section.id)).toEqual([
+      "identity",
+      "prefs",
+    ]);
+    expect(sections.find((section) => section.id === "identity")?.fieldKeys).toEqual([
+      "first_name",
+      "last_name",
+      "email",
+      "phone",
+      "date_of_birth",
+      "marital_status",
+      "mailing_address",
+      "city",
+      "state",
+      "zip",
+    ]);
     expect(sections.find((section) => section.id === "coverage")?.fieldKeys).toEqual([
       "existing_coverage_types",
       "is_homeowner",
@@ -93,6 +112,15 @@ describe("Contacts module v1 standards", () => {
       "recent_life_events",
       "cross_selling_opportunity",
     ]);
+    expect(CONTACT_MODULE_FIELDS.find((field) => field.key === "existing_coverage_types")?.label).toBe(
+      CONTACT_EXTERNAL_COVERAGE_LABEL,
+    );
+    expect(CONTACT_MODULE_FIELDS.find((field) => field.key === "cross_selling_opportunity")).toEqual(
+      expect.objectContaining({
+        label: CONTACT_GENERATED_OPPORTUNITIES_LABEL,
+        type: "single_line",
+      }),
+    );
     const occupation = CONTACT_MODULE_FIELDS.find((f) => f.key === "occupation");
     expect(occupation?.type).toBe("picklist");
     const education = CONTACT_MODULE_FIELDS.find((f) => f.key === "education_level");
@@ -131,6 +159,47 @@ describe("Contacts module v1 standards", () => {
       "coverage",
       "opportunities",
     ]);
+    const stackedPrefs = {
+      columns: [
+        {
+          id: "left",
+          sections: [
+            {
+              id: "identity",
+              label: "Contact",
+              fieldKeys: [
+                "first_name",
+                "last_name",
+                "email",
+                "phone",
+                "date_of_birth",
+                "mailing_address",
+                "city",
+                "state",
+                "zip",
+                "marital_status",
+              ],
+            },
+          ],
+        },
+        {
+          id: "right",
+          sections: [
+            { id: "prefs", label: "Preferences", fieldKeys: ["occupation"] },
+            { id: "coverage", label: "Coverage", fieldKeys: ["existing_coverage_types"] },
+          ],
+        },
+      ],
+    } as ReturnType<typeof contactCardLayout>;
+    const rebalanced = rebalanceContactDetailLayout(stackedPrefs);
+    expect(rebalanced.columns[0].sections.map((section) => section.id)).toEqual([
+      "identity",
+      "prefs",
+    ]);
+    expect(rebalanced.columns[0].sections[0]?.fieldKeys).toContain("marital_status");
+    expect(rebalanced.columns[0].sections[0]?.fieldKeys.indexOf("marital_status")).toBeLessThan(
+      rebalanced.columns[0].sections[0]!.fieldKeys.indexOf("mailing_address"),
+    );
   });
 
   it("list columns include phone email tags last activity", () => {
