@@ -54,6 +54,8 @@ describe("experience_reviews migrate-on-deploy", () => {
     expect(write).toMatch(/441 the desk when a Pulse rate is chosen/);
     expect(write).toMatch(/Could not save that pulse/);
     expect(source("src/lib/db/ensure-experience-reviews.ts")).toMatch(/sql\.unsafe/);
+    expect(source("src/lib/db/ensure-experience-reviews.ts")).toMatch(/0145 statement failed/);
+    expect(source("scripts/migrate-on-deploy.ts")).toMatch(/0145 statement failed/);
   });
 
   it("exposes greppable Pulse save errors for Vercel logs", () => {

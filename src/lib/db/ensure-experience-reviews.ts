@@ -17,7 +17,13 @@ export async function experienceReviewsTableExists(): Promise<boolean> {
 
 async function applyExperienceReviewsSql(): Promise<boolean> {
   for (const statement of splitMigrationStatements(EXPERIENCE_REVIEWS_SQL)) {
-    await sql.unsafe(statement);
+    try {
+      await sql.unsafe(statement);
+    } catch (error) {
+      console.error("[pulse] 0145 statement failed; continuing ensure", {
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
   const exists = await experienceReviewsTableExists();
   console.log("[pulse] ensure experience_reviews", {
@@ -25,6 +31,7 @@ async function applyExperienceReviewsSql(): Promise<boolean> {
     table: EXPERIENCE_REVIEWS_TABLE,
     exists,
   });
+  if (!exists) throw new Error("experience_reviews is still missing after 0145 ensure");
   return exists;
 }
 

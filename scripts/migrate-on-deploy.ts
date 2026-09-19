@@ -32,7 +32,11 @@ async function tableExists(client: ReturnType<typeof postgres>, name: string) {
 async function applySqlFile(client: ReturnType<typeof postgres>, filePath: string) {
   const statements = splitMigrationStatements(readFileSync(filePath, "utf8"));
   for (const statement of statements) {
-    await client.unsafe(statement);
+    try {
+      await client.unsafe(statement);
+    } catch (error) {
+      console.error("[migrate-on-deploy] 0145 statement failed; continuing ensure", error);
+    }
   }
 }
 
