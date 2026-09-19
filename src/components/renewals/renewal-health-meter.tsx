@@ -11,6 +11,10 @@ function Pips({ stars, hot }: { stars: number; hot?: boolean }) {
   );
 }
 
+function asStars(value: number | null | undefined): number {
+  return Number.isFinite(value) ? Number(value) : 0;
+}
+
 export function RenewalHealthMeter({
   stars,
   policyStars,
@@ -22,27 +26,29 @@ export function RenewalHealthMeter({
   flagged?: boolean;
   source?: "rated" | "model";
 }) {
+  const client = asStars(stars);
+  const policy = policyStars == null ? undefined : asStars(policyStars);
   return (
     <div
       className={cn("ff-renewal-health", flagged && "is-flagged")}
-      data-ff-client-health={Math.round(stars)}
-      data-ff-policy-health={policyStars != null ? Math.round(policyStars) : undefined}
+      data-ff-client-health={Math.round(client)}
+      data-ff-policy-health={policy != null ? Math.round(policy) : undefined}
       data-ff-health-flagged={flagged ? "true" : "false"}
       data-ff-health-source={source ?? "model"}
       title={
         flagged
           ? "Flagged — two ratings under 3"
-          : `Client ${stars.toFixed(1)} · Policy ${(policyStars ?? stars).toFixed(1)}`
+          : `Client ${client.toFixed(1)} · Policy ${(policy ?? client).toFixed(1)}`
       }
     >
       <span className="ff-renewal-health-pair">
         <span className="ff-renewal-health-label">Client</span>
-        <Pips stars={stars} hot={flagged || stars <= 2} />
+        <Pips stars={client} hot={flagged || client <= 2} />
       </span>
-      {policyStars != null ? (
+      {policy != null ? (
         <span className="ff-renewal-health-pair">
           <span className="ff-renewal-health-label">Policy</span>
-          <Pips stars={policyStars} hot={policyStars <= 2} />
+          <Pips stars={policy} hot={policy <= 2} />
         </span>
       ) : null}
       {flagged ? <span className="ff-renewal-health-flag">Flag</span> : null}
