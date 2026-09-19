@@ -30,6 +30,7 @@ export const MASTER_FILL_UNEXPECTED =
   "Unexpected response from server. Fields already filled are saved.";
 export const MASTER_FILL_DOCS_FAILED =
   "Could not read docs. Fields already filled are saved.";
+export const MASTER_FILL_CANCEL = "Cancel";
 
 export type MasterFillStepId = "deal" | "property" | "docs" | "vin";
 
@@ -76,6 +77,29 @@ export function isMasterFillStepResult(raw: unknown): raw is MasterFillStepResul
 
 export function masterFillUnexpectedMessage(stepLabel: string): string {
   return `${stepLabel} failed — ${MASTER_FILL_UNEXPECTED}`;
+}
+
+export function isMasterFillAbortError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const name = "name" in error ? String((error as { name?: unknown }).name) : "";
+  const message = error instanceof Error ? error.message : "";
+  return name === "AbortError" || /aborted/i.test(message);
+}
+
+/** Lose the client race when the user cancels — the server step may still finish. */
+export function rejectWhenAborted(signal: AbortSignal): Promise<never> {
+  return new Promise((_, reject) => {
+    const fail = () => {
+      const error = new Error("The operation was aborted");
+      error.name = "AbortError";
+      reject(error);
+    };
+    if (signal.aborted) {
+      fail();
+      return;
+    }
+    signal.addEventListener("abort", fail, { once: true });
+  });
 }
 
 export function masterFillDoneSummary(steps: MasterFillStepResult[]): string {
