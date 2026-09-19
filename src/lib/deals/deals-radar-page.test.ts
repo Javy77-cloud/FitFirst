@@ -26,6 +26,9 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-deals-radar/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-radar-dot/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/ff-product-chip/);
+    expect(source("src/components/deals/deals-radar.tsx")).toMatch(/EventSpark/);
+    expect(source("src/components/deals/priority-stack.tsx")).toMatch(/VelocityClockRail/);
+    expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/DealQuickActions/);
     expect(source("src/app/globals.css")).toMatch(/ff-heat-pulse/);
     expect(source("src/app/globals.css")).toMatch(/ff-heat-flicker/);
   });
@@ -63,7 +66,7 @@ describe("Deals Priority Stack + Radar", () => {
         { lens: "agency-cold", viewerId: "a1", canSeeTeam: true },
       ),
     ).toBe(false);
-    expect(source("src/components/deals/deals-command-workspace.tsx")).toMatch(/Your velocity/);
+    expect(source("src/components/deals/deals-heat-pulse.tsx")).toMatch(/Your velocity/);
     expect(source("src/components/deals/deals-command-workspace.tsx")).not.toMatch(/leaderboard/);
     expect(source("src/lib/deals/velocity.ts")).toMatch(/Client health/);
     expect(source("src/components/deals/priority-stack.tsx")).toMatch(/Client health/);

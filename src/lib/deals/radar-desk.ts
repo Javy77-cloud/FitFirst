@@ -23,6 +23,7 @@ import {
   primaryDealAction,
   radarPosition,
   resolveActivePhase,
+  sparkBuckets,
   urgencyScore,
   type HeatState,
   type VelocityClock,
@@ -64,6 +65,7 @@ export type RadarDealCard = {
   x: number;
   y: number;
   closed: boolean;
+  spark: number[];
 };
 
 function detailsReady(row: DealListRow): boolean {
@@ -276,6 +278,12 @@ export function presentRadarCards(
         x: pos.x,
         y: pos.y,
         closed,
+        spark: sparkBuckets(
+          [lastCommAt, touches.lastDocByDeal.get(deal.id) ?? null, touches.lastQuoteByDeal.get(deal.id) ?? null, createdAt].filter(
+            (at): at is Date => Boolean(at),
+          ),
+          now,
+        ),
       } satisfies RadarDealCard;
     })
     .sort((a, b) => b.urgencyScore - a.urgencyScore || b.value - a.value || a.title.localeCompare(b.title));

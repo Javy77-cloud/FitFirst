@@ -17,6 +17,7 @@ import {
   radarPosition,
   rankByScore,
   resolveActivePhase,
+  sparkBuckets,
   urgencyScore,
 } from "./velocity";
 
@@ -141,5 +142,14 @@ describe("velocity engine", () => {
         commGapDays: 0,
       }),
     ).toBe(100);
+  });
+
+  it("buckets the last 14 days into a 7-point spark", () => {
+    expect(
+      sparkBuckets(
+        [new Date("2026-09-19T11:00:00.000Z"), new Date("2026-09-12T12:00:00.000Z")],
+        now,
+      ),
+    ).toHaveLength(7);
   });
 });

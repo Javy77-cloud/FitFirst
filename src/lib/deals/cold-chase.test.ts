@@ -28,5 +28,7 @@ describe("deal cold chase", () => {
     expect(isDealColdChaseKind(DEAL_COLD_CHASE_KIND)).toBe(true);
     expect(coldChaseOpenLabel(DEAL_COLD_CHASE_KIND)).toBe("Chase");
     expect(coldChaseOpenLabel("lead_follow_up")).toBe("Open lead");
+    expect(coldChaseOpenLabel("quote_declined")).toBe("Retry carriers");
+    expect(coldChaseOpenLabel("ask")).toBe("Open");
   });
 });

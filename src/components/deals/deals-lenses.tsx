@@ -3,6 +3,7 @@ import { dealsViewHref, type DealsViewId } from "@/lib/deals/deals-views";
 import { DEAL_LENSES, parseDealHeat, parseDealLens, parseDealScope, parseValueBand } from "@/lib/deals/deals-lenses";
 import { HEAT_LABELS, type HeatState } from "@/lib/deals/velocity";
 import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
+import { cn } from "@/lib/utils";
 
 type LensHrefOpts = {
   view: DealsViewId;
@@ -43,10 +44,7 @@ export function DealsLenses({
 
   return (
     <div className="ff-deals-lenses" data-ff-deals-lenses="">
-      <div className={FF_CHIP_TAB_GROUP} aria-label="Heat">
-        <Link href={dealsViewHref({ ...base, lens: href.lens, scope: href.scope, valueBand: href.valueBand })} className={chipTabClass(!heat)}>
-          All heat
-        </Link>
+      <div className="ff-heat-lenses" aria-label="Heat">
         {(["hot", "cooling", "near_cold", "cold"] as const).map((id) => (
           <Link
             key={id}
@@ -57,11 +55,13 @@ export function DealsLenses({
               scope: href.scope,
               valueBand: href.valueBand,
             })}
-            className={chipTabClass(heat === id)}
+            className={cn("ff-heat-lens", `ff-heat-${id}`, heat === id && "is-on")}
             data-ff-heat-chip={id}
+            title={HEAT_LABELS[id]}
+            aria-label={`${HEAT_LABELS[id]} ${counts[id]}`}
           >
-            {HEAT_LABELS[id]}
-            <span className="ff-lens-count">{counts[id]}</span>
+            <i aria-hidden />
+            <span>{counts[id]}</span>
           </Link>
         ))}
       </div>
@@ -81,7 +81,7 @@ export function DealsLenses({
           </Link>
         </div>
       ) : null}
-      <div className={FF_CHIP_TAB_GROUP} aria-label="Value">
+      <div className={FF_CHIP_TAB_GROUP} aria-label="Saved lenses">
         <Link
           href={dealsViewHref({
             ...base,
@@ -94,8 +94,6 @@ export function DealsLenses({
         >
           High value
         </Link>
-      </div>
-      <div className={FF_CHIP_TAB_GROUP} aria-label="Saved lenses">
         {DEAL_LENSES.map((item) => (
           <Link
             key={item.id}

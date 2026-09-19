@@ -22,6 +22,10 @@ export const VELOCITY_PHASES = [
 ] as const;
 export type VelocityPhase = (typeof VELOCITY_PHASES)[number];
 
+/** Glance rail — skip the lead→deal diagnostic. */
+export const CLOCK_RAIL_PHASES = ["details", "docs", "risk", "quotes", "post_quote_gap"] as const;
+export type ClockRailPhase = (typeof CLOCK_RAIL_PHASES)[number];
+
 export const HEAT_STATES = ["hot", "cooling", "near_cold", "cold"] as const;
 export type HeatState = (typeof HEAT_STATES)[number];
 
@@ -360,6 +364,19 @@ export function radarPosition(input: { daysInPhase: number; value: number; maxVa
   const max = Math.max(input.maxValue, 1);
   const y = Math.max(0, Math.min(1, input.value / max));
   return { x, y };
+}
+
+/** 14-day spark, 7 buckets — visual only, no letter wall. */
+export function sparkBuckets(events: Date[], now: Date, days = 14, buckets = 7): number[] {
+  const width = days / buckets;
+  const out = Array.from({ length: buckets }, () => 0);
+  for (const at of events) {
+    const ago = (now.getTime() - at.getTime()) / 86_400_000;
+    if (ago < 0 || ago > days) continue;
+    const index = Math.min(buckets - 1, Math.max(0, Math.floor((days - ago) / width)));
+    out[index] += 1;
+  }
+  return out;
 }
 
 export function formatClockDays(days: number): string {

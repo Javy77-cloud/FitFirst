@@ -40,7 +40,7 @@ export async function syncDealColdChaseNotices(cards: readonly ColdChaseCard[]):
       tenantId: DEFAULT_TENANT_ID,
       kind: DEAL_COLD_CHASE_KIND,
       title: notice.title,
-      body: notice.body,
+      body: `<!--ff-panel:deal_cold_chase:${notice.dealId}-->\n\n${notice.body}`,
       severity: "warning",
       entityType: "deal",
       entityId: notice.dealId,

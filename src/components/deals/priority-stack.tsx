@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { DealStatusStamp } from "@/components/deal/deal-status-stamp";
-import { DealQuickActions } from "@/components/deals/deal-quick-actions";
+import { VelocityClockRail } from "@/components/deals/velocity-clock-rail";
+import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
 import type { RadarDealCard } from "@/lib/deals/radar-desk";
 import { formatDealValue } from "@/lib/deals/velocity";
 import { cn } from "@/lib/utils";
@@ -16,7 +16,7 @@ export function PriorityStack({ cards }: { cards: RadarDealCard[] }) {
 
   return (
     <ol className="ff-priority-stack" data-ff-priority-stack="">
-      {cards.map((card, index) => (
+      {cards.map((card) => (
         <li key={card.id}>
           <article
             className={cn("ff-stack-card", `ff-heat-${card.heat}`)}
@@ -26,45 +26,23 @@ export function PriorityStack({ cards }: { cards: RadarDealCard[] }) {
           >
             <span className="ff-stack-glyph" aria-hidden data-ff-stack-glyph={card.heat} />
             <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="flex min-w-0 items-center gap-1">
-                    <Link
-                      href={card.href}
-                      className="truncate text-sm font-semibold text-navy hover:text-primary hover:underline"
-                    >
-                      {card.insured !== "—" ? card.insured : card.title}
-                    </Link>
-                    <DealQuickActions
-                      dealId={card.id}
-                      phone={card.phone}
-                      email={card.email}
-                      contactId={card.contactId}
-                      leadId={card.leadId}
-                      accountId={card.accountId}
-                    />
-                  </div>
-                  <p className="ff-stack-meta">
-                    {card.productLabels[0] ?? card.lineOfBusiness}
-                    {" · "}
-                    {card.clockLabel}
-                    {" · "}
-                    {formatDealValue(card.value, card.valueMetric)}
-                  </p>
-                </div>
-                <span className="ff-stack-rank" aria-hidden>
-                  {index + 1}
-                </span>
+              <Link
+                href={card.href}
+                className="block truncate text-sm font-semibold text-navy hover:text-primary hover:underline"
+              >
+                {card.insured !== "—" ? card.insured : card.title}
+              </Link>
+              <div className="ff-stack-glance">
+                <span className="ff-product-chip">{card.productLabels[0] ?? card.lineOfBusiness}</span>
+                <span className="ff-stack-value">{formatDealValue(card.value, card.valueMetric)}</span>
+                <VelocityClockRail clocks={card.clocks} phase={card.phase} compact />
               </div>
-              <div className="ff-stack-foot">
-                {card.stageStamp ? <DealStatusStamp stage={card.stageStamp} /> : null}
-                <span
-                  className="ff-health-dot"
-                  title={`Client health ${card.clientHealth}`}
-                  data-health={card.clientHealth >= 70 ? "good" : card.clientHealth >= 40 ? "watch" : "low"}
-                  aria-label={`Client health ${card.clientHealth}`}
-                />
-              </div>
+              <RenewalHealthMeter
+                stars={card.clientHealth / 20}
+                policyStars={card.policyHealth / 20}
+                flagged={card.heat === "cold" || card.clientHealth < 40}
+              />
+              <span className="sr-only">{`Client health ${card.clientHealth}`}</span>
             </div>
             <Link href={card.primaryAction.href} className="ff-stack-action">
               {card.primaryAction.label}
