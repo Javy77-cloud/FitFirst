@@ -16,11 +16,7 @@ import { listRecentGmail, sendGmailMessage } from "@/lib/integrations/gmail";
 import { yahooMailboxPing } from "@/lib/integrations/yahoo-mail";
 import { pingDocuSignSandbox } from "@/lib/integrations/docusign-sandbox";
 import { syncGoogleBusy, syncOutlookBusy } from "@/lib/integrations/calendar-busy";
-import {
-  envHasOauthApp,
-  isPlatformHostedGoogleOauth,
-  startByoOauthCredentialNotice,
-} from "@/lib/integrations/oauth-env";
+import { startByoOauthCredentialNotice } from "@/lib/integrations/oauth-env";
 import {
   BYO_OAUTH_COOKIE,
   byoOauthReturnPath,
@@ -29,7 +25,7 @@ import {
 import {
   clearByoApp,
   disconnectByo,
-  loadByoConnection,
+  loadStoredByoApp,
   prepareByoAuthorize,
   saveByoApp,
 } from "@/lib/integrations/oauth-store";
@@ -67,13 +63,10 @@ export async function saveByoOauthCredentials(formData: FormData): Promise<{
   }
   const raw = String(formData.get("provider") ?? "");
   if (!isByoOauthProviderId(raw)) return { ok: false, message: "Unknown provider." };
-  if (isPlatformHostedGoogleOauth(raw)) {
-    return { ok: false, message: "Google Connect does not take a pasted Client ID." };
-  }
   const incomingId = String(formData.get("clientId") ?? "");
   const incomingSecret = String(formData.get("clientSecret") ?? "");
   const accountLabel = String(formData.get("accountLabel") ?? "").trim();
-  const existing = await loadByoConnection(raw);
+  const existing = await loadStoredByoApp(raw);
   const idPlan = planByoClientId({ incoming: incomingId, existing: existing?.clientId });
   if (!idPlan.ok) return idPlan;
   const saved = await saveByoApp({
@@ -92,9 +85,6 @@ export async function startByoOauth(formData: FormData) {
   const raw = String(formData.get("provider") ?? "");
   const dest = byoOauthReturnPath(String(formData.get("next") ?? ""));
   if (!isByoOauthProviderId(raw)) redirect(`${dest}?notice=unknown-provider`);
-  if (isPlatformHostedGoogleOauth(raw) && !envHasOauthApp("google")) {
-    redirect(`${dest}?notice=${startByoOauthCredentialNotice(raw, null)}&provider=${raw}`);
-  }
   const origin = await deskPublicOrigin();
   const prepared = await prepareByoAuthorize({
     provider: raw,

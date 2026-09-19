@@ -12,15 +12,7 @@ import { Label } from "@/components/ui/label";
 import { AGENCY_PAYS_VENDOR } from "@/lib/integrations/catalog";
 import type { CatalogItem } from "@/lib/integrations/catalog-store";
 import { gmailConnectCopy } from "@/lib/integrations/connect-policy";
-import {
-  GOOGLE_CONNECT_NOT_SETUP_COPY,
-  showsByoCredentialPasteForm,
-} from "@/lib/integrations/oauth-env";
-import {
-  byoOauthSpec,
-  isByoOauthProviderId,
-  type ByoOauthReturnPath,
-} from "@/lib/integrations/oauth-specs";
+import { byoOauthSpec, isByoOauthProviderId, type ByoOauthReturnPath } from "@/lib/integrations/oauth-specs";
 import { socialConnectStatus, socialConnectStatusLabel } from "@/lib/social/byo";
 
 export function ByoOauthCard({
@@ -36,8 +28,7 @@ export function ByoOauthCard({
 }) {
   if (!isByoOauthProviderId(item.id)) return null;
   const spec = byoOauthSpec(item.id);
-  const platformGoogle = !showsByoCredentialPasteForm(item.id);
-  const googleReady = !platformGoogle || item.hasEnvCredentials;
+  const ready = item.hasCredentials;
   const connected = item.connected && item.connectMode === "byo";
   const status = socialConnectStatus({
     connected,
@@ -69,9 +60,9 @@ export function ByoOauthCard({
       data-connected={connected ? "true" : "false"}
       data-connect-status={status}
       data-has-credentials={item.hasCredentials ? "true" : "false"}
-      data-oauth-byo={platformGoogle ? undefined : "1"}
-      data-google-one-click={platformGoogle ? "1" : undefined}
-      data-google-oauth-ready={platformGoogle ? (googleReady ? "true" : "false") : undefined}
+      data-has-stored-credentials={item.hasStoredCredentials ? "true" : "false"}
+      data-has-env-credentials={item.hasEnvCredentials ? "true" : "false"}
+      data-oauth-byo="1"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-2.5">
@@ -99,22 +90,17 @@ export function ByoOauthCard({
         />
       </div>
 
-      {platformGoogle ? (
-        <p className="mt-2 text-helper text-muted-foreground">
-          One-click Google Connect. FitFirst owns the OAuth app — Admin never pastes a Client ID or
-          Client Secret.
-        </p>
-      ) : (
-        <p className="mt-2 text-helper text-muted-foreground">{AGENCY_PAYS_VENDOR}</p>
-      )}
+      <p className="mt-2 text-helper text-muted-foreground">{AGENCY_PAYS_VENDOR}</p>
       <p className="text-helper text-muted-foreground">{item.byoNote}</p>
-      {googleReady ? <p className="mt-1 text-helper text-muted-foreground">{spec.worksWhen}</p> : null}
-      {item.id === "gmail" && googleReady ? (
+      <p className="mt-1 text-helper text-muted-foreground">{spec.worksWhen}</p>
+      {item.id === "gmail" ? (
         <p className="mt-1 text-helper text-navy">{gmailConnectCopy(soloDesk)}</p>
       ) : null}
-      {!platformGoogle && item.hasEnvCredentials ? (
+      {item.hasEnvCredentials ? (
         <p className="mt-1 text-helper text-navy">
-          Using {spec.vendor} client from environment. Settings paste overrides it.
+          {item.hasStoredCredentials
+            ? `Settings-pasted ${spec.vendor} keys override environment. Replace or Clear to change which pair Connect uses.`
+            : `Using ${spec.vendor} client from environment. Saving a Client ID + Secret here overrides it.`}
         </p>
       ) : null}
       {connected && item.accountLabel ? (
@@ -132,26 +118,10 @@ export function ByoOauthCard({
 
       {canEdit ? (
         <div className="mt-3 space-y-3">
-          {platformGoogle && !googleReady && !connected ? (
-            <p
-              className="rounded-md border border-border bg-fit-flag-bg px-2.5 py-2 text-helper text-navy"
-              data-google-connect-empty="1"
-            >
-              {GOOGLE_CONNECT_NOT_SETUP_COPY}
-            </p>
-          ) : null}
-          {platformGoogle && !googleReady && connected ? (
-            <p className="text-helper text-muted-foreground">
-              Reconnect needs Google Connect on this FitFirst install. Disconnect still works.
-            </p>
-          ) : null}
-
-          {showsByoCredentialPasteForm(item.id) ? (
-            <ByoOauthCredentialsForm item={item} spec={spec} returnTo={returnTo} />
-          ) : null}
+          <ByoOauthCredentialsForm item={item} spec={spec} returnTo={returnTo} />
 
           <div className="flex flex-wrap items-center gap-2">
-            {googleReady ? (
+            {ready ? (
               <form action={startByoOauth}>
                 <input type="hidden" name="provider" value={item.id} />
                 <input type="hidden" name="next" value={returnTo} />
@@ -160,15 +130,13 @@ export function ByoOauthCard({
                 </Button>
               </form>
             ) : null}
-            {!platformGoogle && item.hasCredentials && !item.hasEnvCredentials ? (
-              <form action={clearByoOauthCredentials}>
-                <input type="hidden" name="provider" value={item.id} />
-                <input type="hidden" name="next" value={returnTo} />
-                <Button type="submit" size="sm" variant="ghost">
-                  Clear app keys
-                </Button>
-              </form>
-            ) : null}
+            <form action={clearByoOauthCredentials} data-ff-byo-clear={item.id}>
+              <input type="hidden" name="provider" value={item.id} />
+              <input type="hidden" name="next" value={returnTo} />
+              <Button type="submit" size="sm" variant="ghost">
+                Clear app keys
+              </Button>
+            </form>
             {connected ? (
               <form action={disconnectByoOauth}>
                 <input type="hidden" name="provider" value={item.id} />
@@ -179,6 +147,11 @@ export function ByoOauthCard({
               </form>
             ) : null}
           </div>
+          <p className="text-caption text-muted-foreground" data-ff-byo-clear-copy="">
+            {item.hasEnvCredentials
+              ? `Clear removes Settings-pasted ${spec.clientIdLabel} and ${spec.clientSecretLabel}. ${spec.vendor} environment credentials still apply after clear.`
+              : `Clear removes Settings-pasted ${spec.clientIdLabel} and ${spec.clientSecretLabel}. Paste a new pair to connect.`}
+          </p>
 
           {connected ? (
             <div className="flex flex-wrap items-end gap-2">
@@ -234,13 +207,11 @@ export function ByoOauthCard({
               ) : null}
             </div>
           ) : null}
-          {googleReady ? <p className="text-caption text-muted-foreground">{spec.stubbed}</p> : null}
+          {ready ? <p className="text-caption text-muted-foreground">{spec.stubbed}</p> : null}
         </div>
       ) : (
         <p className="mt-3 text-helper text-muted-foreground">
-          {platformGoogle
-            ? "Agency Admin connects Google. Agents can see status only."
-            : `Agency Admin pastes the ${spec.vendor} app and starts OAuth. ${AGENCY_PAYS_VENDOR}`}
+          Agency Admin pastes or replaces the {spec.vendor} app and starts OAuth. {AGENCY_PAYS_VENDOR}
         </p>
       )}
     </article>

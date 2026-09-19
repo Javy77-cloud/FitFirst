@@ -60,6 +60,7 @@ export const FLASH_COPY = {
   "notes-saved": "Notes saved",
   "automation-saved": "Automation saved",
   "credentials-saved": "Credentials saved",
+  "credentials-cleared": "App keys cleared",
   "gmail-sent": "Gmail smoke-test sent",
   "gmail-read": "Gmail inbox readable",
   "busy-synced": "External busy synced",

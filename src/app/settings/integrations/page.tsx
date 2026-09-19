@@ -63,8 +63,9 @@ export default async function IntegrationsCatalogPage({
     <SettingsShell title="Integrations" current="integrations">
       <p className="mb-3 text-sm text-muted-foreground">
         Agency Admin controls OAuth. Gmail, Google Calendar, and Google Meet are one-click Google
-        Connect — FitFirst owns that OAuth app; Admin never pastes a Google Client ID. Yahoo Mail,
-        Outlook Calendar, social / GBP, and DocuSign sandbox stay bring-your-own vendor apps.{" "}
+        Connect — paste or replace Client ID + Secret on each card (Settings wins over env; Clear
+        falls back to env). Yahoo Mail, Outlook Calendar, social / GBP, and DocuSign sandbox stay
+        bring-your-own vendor apps.{" "}
         {AGENCY_PAYS_VENDOR} A solo Admin who also works the desk can connect personal Gmail. Stripe,
         Twilio and Nylas stay out of this wave. HealthSherpa Medicare is BYO in this catalog (vault +
         webhook) — no FitFirst fee. {MAPS_FREE_LINK_NOTE}
@@ -96,10 +97,16 @@ export default async function IntegrationsCatalogPage({
           Click Connect to open the vendor OAuth dialog.
         </p>
       ) : null}
+      {notice === "credentials-cleared" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
+          Settings-pasted app keys cleared
+          {provider ? ` for ${provider}` : ""}. Environment credentials still apply if they are set.
+        </p>
+      ) : null}
       {notice === "needs-credentials" ? (
         <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          Paste the agency App ID / Client ID and secret, or set the matching env vars first. Gmail
-          and Google Calendar never take a pasted Google client — those use Google Connect.
+          Paste the agency App ID / Client ID and secret, or set the matching env vars first. Saved
+          Settings keys override env until you Clear app keys.
         </p>
       ) : null}
       {notice === "google-connect-not-setup" ? (

@@ -1,5 +1,5 @@
 import { docusignAuthBase, microsoftTokenUrl } from "./oauth";
-import { envOauthApp, isPlatformHostedGoogleOauth } from "./oauth-env";
+import { envOauthApp } from "./oauth-env";
 import { byoOauthSpec, type ByoOauthProviderId } from "./oauth-specs";
 import { completeByoConnect, resolveByoClientApp } from "./oauth-store";
 
@@ -35,9 +35,7 @@ export async function exchangeByoOAuthCode(input: {
   if (!app) {
     return {
       ok: false,
-      message: isPlatformHostedGoogleOauth(input.provider)
-        ? "Google Connect isn’t set up on this FitFirst install."
-        : "Agency app credentials are missing. Paste them or set env vars.",
+      message: "Agency app credentials are missing. Paste them in Settings or set env vars.",
     };
   }
 

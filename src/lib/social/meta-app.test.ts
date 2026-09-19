@@ -28,6 +28,7 @@ function catalogItem(
     ownerUserId: null,
     clientId: null,
     hasCredentials: false,
+    hasStoredCredentials: false,
     connectMode: null,
     lastOauthError: null,
     hasEnvCredentials: false,
@@ -168,7 +169,7 @@ describe("platform-hosted Meta OAuth gate", () => {
     expect(source("src/app/settings/developer-hub/api-vault/page.tsx")).toMatch(/loadMetaPublicStatus/);
 
     const catalog = source("src/lib/integrations/catalog-store.ts");
-    expect(catalog).toMatch(/hosted \|\| platformGoogle \? null/);
+    expect(catalog).toMatch(/clientId: hosted \? null/);
     expect(catalog).toMatch(/metaAppIsConfigured/);
 
     expect(source("src/app/settings/social/page.tsx")).toMatch(

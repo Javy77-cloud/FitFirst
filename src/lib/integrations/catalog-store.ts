@@ -19,8 +19,8 @@ import {
   type IntegrationProviderId,
   stubAccountLabel,
 } from "./catalog";
-import { envHasOauthApp, isPlatformHostedGoogleOauth } from "./oauth-env";
-import { byoOauthSpec, isByoOauthProviderId } from "./oauth-specs";
+import { envHasOauthApp } from "./oauth-env";
+import { byoOauthSpec, googleFamilyIds, isByoOauthProviderId } from "./oauth-specs";
 import { isPlatformHostedSocial, metaAppIsConfigured } from "@/lib/social/meta-app";
 
 export type CatalogItem = IntegrationProvider & {
@@ -30,6 +30,8 @@ export type CatalogItem = IntegrationProvider & {
   ownerUserId: string | null;
   clientId: string | null;
   hasCredentials: boolean;
+  /** Settings-pasted Client ID + encrypted secret (not env-only). */
+  hasStoredCredentials: boolean;
   connectMode: string | null;
   lastOauthError: string | null;
   hasEnvCredentials: boolean;
@@ -116,29 +118,39 @@ export async function listCatalogItems(): Promise<CatalogItem[]> {
   const byProviderOnly = new Map(stored.map((row) => [row.provider, row]));
   const metaConfigured = await metaAppIsConfigured();
 
+  const rowHasStored = (row?: (typeof stored)[number] | null) =>
+    Boolean(row?.clientId?.trim() && row?.clientSecretEnc && row?.clientSecretIv);
+
+  const storedByoIds = (id: string): string[] => {
+    if (!isByoOauthProviderId(id)) return [id];
+    const spec = byoOauthSpec(id);
+    if (spec.family === "google") return googleFamilyIds();
+    return spec.shareCredentialsWith ? [id, spec.shareCredentialsWith] : [id];
+  };
+
   return INTEGRATION_PROVIDERS.map((provider) => {
     const row =
       byProvider.get(`${provider.category}:${provider.id}`) ?? byProviderOnly.get(provider.id);
     const connected = Boolean(row?.connected) || legacyConnected(provider.id, flags);
     const hosted = isPlatformHostedSocial(provider.id);
-    const hasOwnSecret = Boolean(row?.clientSecretEnc && row?.clientSecretIv);
-    const hasOwnClient = Boolean(row?.clientId?.trim());
+    const familyRows = storedByoIds(provider.id).map((id) => byProviderOnly.get(id));
+    const storedCreds = !hosted && (rowHasStored(row) || familyRows.some((family) => rowHasStored(family)));
+    const storedClientId =
+      row?.clientId?.trim() ||
+      familyRows.find((family) => family?.clientId?.trim())?.clientId?.trim() ||
+      null;
     const envCreds = hosted
       ? metaConfigured
       : isByoOauthProviderId(provider.id) && envHasOauthApp(byoOauthSpec(provider.id).family);
-    const platformGoogle = isPlatformHostedGoogleOauth(provider.id);
     return {
       ...provider,
       connected,
       accountLabel: row?.accountLabel ?? (connected ? stubAccountLabel(provider.id) : null),
       lastConnectStatus: row?.lastConnectStatus ?? (connected ? "not_implemented" : null),
       ownerUserId: row?.ownerUserId ?? null,
-      clientId: hosted || platformGoogle ? null : (row?.clientId ?? null),
-      hasCredentials: hosted
-        ? metaConfigured
-        : platformGoogle
-          ? envCreds
-          : (hasOwnClient && hasOwnSecret) || envCreds,
+      clientId: hosted ? null : storedClientId,
+      hasCredentials: hosted ? metaConfigured : storedCreds || envCreds,
+      hasStoredCredentials: hosted ? false : storedCreds,
       hasEnvCredentials: envCreds,
       hasRefreshToken: Boolean(row?.refreshTokenEnc && row?.refreshTokenIv),
       tokenAccountEmail: row?.tokenAccountEmail ?? null,
