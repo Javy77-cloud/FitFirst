@@ -35,6 +35,7 @@ describe("client health chrome", () => {
     const host = source("src/components/app-shell.tsx");
     const prompt = source("src/components/health/review-prompt.tsx");
     const pending = source("src/lib/health/pending-review.ts");
+    const reviewHost = source("src/components/health/review-prompt-host.tsx");
     expect(host).toMatch(/ExperienceReviewHost/);
     expect(prompt).toMatch(/data-ff-review-star/);
     expect(prompt).toMatch(/10-second pulse/);
@@ -45,5 +46,16 @@ describe("client health chrome", () => {
     expect(pending).toMatch(/moment: "bind"/);
     expect(pending).toMatch(/REVIEW_EVENT/);
     expect(pending).not.toMatch(/logged_email/);
+    expect(pending).toMatch(/function asDate/);
+    expect(pending).toMatch(/loadPendingReviewPromptUnsafe/);
+    expect(reviewHost).toMatch(/try \{/);
+    expect(reviewHost).toMatch(/return null;/);
+  });
+
+  it("keeps a cream desk recovery page so RSC throws are not a black Next error screen", () => {
+    const pageError = source("src/app/error.tsx");
+    expect(pageError).toMatch(/bg-background/);
+    expect(pageError).toMatch(/This desk page could not load/);
+    expect(pageError).toMatch(/href="\/"/);
   });
 });

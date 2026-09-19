@@ -24,6 +24,12 @@ import { contacts, accounts } from "@/lib/db/schema";
 
 const LOOKBACK_DAYS = 5;
 
+function asDate(value: Date | string | null | undefined): Date | null {
+  if (value == null || value === "") return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 type Candidate = {
   moment: ReviewMoment;
   contactId: string | null;
@@ -51,6 +57,16 @@ export async function loadPendingReviewPrompt(
   reviewerUserId: string | null,
 ): Promise<PendingReviewPrompt | null> {
   if (!reviewerUserId) return null;
+  try {
+    return await loadPendingReviewPromptUnsafe(reviewerUserId);
+  } catch {
+    return null;
+  }
+}
+
+async function loadPendingReviewPromptUnsafe(
+  reviewerUserId: string,
+): Promise<PendingReviewPrompt | null> {
   const since = addUtcDays(deskNow(), -LOOKBACK_DAYS);
 
   const [recentComms, recentBinds, recentClaims, existing, renewingPolicies, wedgeReviews] = await Promise.all([
@@ -149,51 +165,57 @@ export async function loadPendingReviewPrompt(
   const candidates: Candidate[] = [];
   for (const row of renewingPolicies) {
     if (row.stage !== "bound") continue;
-    if (row.updatedAt.getTime() < since.getTime()) continue;
+    const at = asDate(row.updatedAt);
+    if (!at || at.getTime() < since.getTime()) continue;
     candidates.push({
       moment: "renewal_close",
       contactId: null,
       policyId: row.policyId,
       dealId: null,
       activityId: null,
-      at: row.updatedAt,
+      at,
       label: "Renewal close",
     });
   }
 
   for (const row of recentComms) {
     if (row.kind !== "call") continue;
+    const at = asDate(row.createdAt);
+    if (!at) continue;
     candidates.push({
       moment: "logged_call",
       contactId: row.contactId,
       policyId: row.policyId,
       dealId: row.dealId,
       activityId: row.id,
-      at: row.createdAt,
+      at,
       label: row.title || "Logged call",
     });
   }
   for (const row of recentBinds) {
+    const at = asDate(row.boundAt) ?? deskNow();
     candidates.push({
       moment: "bind",
       contactId: row.contactId,
       policyId: null,
       dealId: row.id,
       activityId: null,
-      at: row.boundAt ?? deskNow(),
+      at,
       label: row.title || "Bind",
     });
   }
   for (const row of recentClaims) {
     const status = (row.status || "").toLowerCase();
     if (!/close|settled|paid|wrap|complete/.test(status)) continue;
+    const at = asDate(row.updatedAt);
+    if (!at) continue;
     candidates.push({
       moment: "claim_wrap",
       contactId: row.contactId,
       policyId: row.policyId,
       dealId: null,
       activityId: null,
-      at: row.updatedAt,
+      at,
       label: "Claim wrap",
     });
   }

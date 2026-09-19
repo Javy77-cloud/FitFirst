@@ -238,7 +238,7 @@ export function presentRadarCards(
         }),
         lineOfBusiness: deal.lineOfBusiness,
         family: bookFamily(deal.lineOfBusiness),
-        productLabels: products.map((id) => dealProductDef(id).label),
+        productLabels: products.map((id) => dealProductDef(id)?.label ?? id),
         stageStamp: resolveDealStampStage(deal.pipelineStageSlug, deal.pipelineStage, deal.boundAt),
         stageLabel: humanizeDealStage(deal.pipelineStageSlug || deal.pipelineStage),
         ownerId: deal.ownerId ?? null,
