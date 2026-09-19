@@ -131,7 +131,7 @@ export async function RenewalsDesk({
     <div className="space-y-3" data-ff-renewals-workspace="" data-ff-renewals-desk="">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="mb-0" data-ff-pipeline-book-toggle-wrap="">
-          <PipelineBookModeToggle mode="renewals" {...pipelineBookToggleHrefs(view)} />
+          <PipelineBookModeToggle mode="renewals" {...pipelineBookToggleHrefs(view, "renewals")} />
         </div>
         <p className="text-sm text-muted-foreground">
           <Link href="/renewals/queue" className="text-primary hover:underline">
@@ -251,6 +251,7 @@ export async function RenewalsDesk({
             <RenewalsPulse daysUntil={filtered.map((card) => card.daysUntil)} />
             <RenewalsFilteredViews
               cards={filtered}
+              view={view}
               searchModuleId="renewals-pipeline"
               initialQuery={q}
             />

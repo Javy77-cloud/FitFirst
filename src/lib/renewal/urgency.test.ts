@@ -3,6 +3,7 @@ import {
   renewalDeltaPhrase,
   renewalDaysPhrase,
   renewalUrgencyBand,
+  rankRenewalCards,
   renewalWhyLine,
   stubRenewalRisk,
   stubRenewalRiskFromDays,
@@ -57,6 +58,18 @@ describe("renewal why line", () => {
       "Expires in 28 days · premium up +$363",
     );
     expect(renewalWhyLine({ daysUntil: 73 })).toBe("Expires in 73 days");
+  });
+});
+
+describe("renewal priority stack rank", () => {
+  it("sorts soonest first, then higher risk", () => {
+    expect(
+      rankRenewalCards([
+        { daysUntil: 80, riskScore: 90, clientName: "Zed" },
+        { daysUntil: 12, riskScore: 10, clientName: "Ann" },
+        { daysUntil: 12, riskScore: 40, clientName: "Bea" },
+      ]).map((row) => row.clientName),
+    ).toEqual(["Bea", "Ann", "Zed"]);
   });
 });
 

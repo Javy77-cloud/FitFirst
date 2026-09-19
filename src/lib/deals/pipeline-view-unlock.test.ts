@@ -10,7 +10,7 @@ describe("Deals pipeline chrome unlock (activity lift must not steal clicks)", (
     const chrome = source("src/app/globals.css");
     const bar = source("src/components/deals/deal-workspace-bar.tsx");
     const page = source("src/app/deals/page.tsx");
-    expect(bar).toMatch(/aria-label=\{isRenewals \? "List Grid Board Funnel" : "Stack Radar"\}/);
+    expect(bar).toMatch(/aria-label=\{isRenewals \? "Board Stack" : "Stack Radar"\}/);
     expect(bar).toMatch(/\["radar", "Radar"\]/);
     expect(bar).toMatch(/deal-pipeline-views/);
     expect(bar).toMatch(/deal-line-filters/);

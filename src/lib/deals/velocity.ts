@@ -177,6 +177,32 @@ export function valueAxisLabel(metric: DealValueMetric): string {
   return metric === "premium" ? "Quoted premium" : "Coverage A";
 }
 
+/** Glance phases on the radar — skip the lead→deal diagnostic. */
+export const RADAR_PHASE_LEGEND = "Details · Docs · Risk · Quotes · Post-quote gap";
+
+/** Scannable X/Y copy so the field is not a floating-dot mystery. */
+export function radarLegendCopy(metric: DealValueMetric = "coverage_a"): {
+  x: string;
+  y: string;
+  xTitle: string;
+  yTitle: string;
+  xStart: string;
+  xEnd: string;
+  yLow: string;
+  yHigh: string;
+} {
+  return {
+    x: `Time in current phase (${RADAR_PHASE_LEGEND})`,
+    y: metric === "premium" ? "Value (quoted premium)" : "Value (Coverage A)",
+    xTitle: "Days in current phase",
+    yTitle: valueAxisLabel(metric),
+    xStart: "Now",
+    xEnd: `${RADAR_X_DAYS}d`,
+    yLow: "Lower",
+    yHigh: "Higher",
+  };
+}
+
 function latest(...stamps: Array<Date | null | undefined>): Date | null {
   let best: Date | null = null;
   for (const stamp of stamps) {

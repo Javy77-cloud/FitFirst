@@ -2737,14 +2737,91 @@ button.ff-renewal-risk-badge {
 .ff-stack-action:hover { background: var(--ff-accent-hover); }
 .ff-deals-empty { margin: 1.5rem 0; text-align: center; color: var(--ff-muted); font-size: 0.85rem; }
 
-.ff-deals-radar { display: grid; gap: 0.35rem; }
-.ff-radar-axis-y,
-.ff-radar-axis-x {
+.ff-stack-card[class*="ff-urgency-tone-"] { --ff-heat: var(--ff-urgency); }
+
+.ff-deals-radar { display: grid; gap: 0.7rem; }
+.ff-radar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem 1.15rem;
+  color: var(--ff-navy);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+.ff-radar-legend p { margin: 0; }
+.ff-radar-legend-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  margin-right: 0.35rem;
+  padding: 0 0.28rem;
+  border-radius: 0.28rem;
+  background: var(--ff-navy);
+  color: #fff;
   font-size: 0.68rem;
+  font-weight: 800;
+}
+.ff-radar-heat-key {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.7rem;
   font-weight: 650;
+  color: var(--ff-muted);
+}
+.ff-radar-heat-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+}
+.ff-radar-heat-swatch .ff-radar-dot {
+  position: static;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin: 0;
+  pointer-events: none;
+}
+.ff-radar-plot {
+  display: grid;
+  grid-template-columns: 2.55rem minmax(0, 1fr);
+  gap: 0.35rem 0.45rem;
+  align-items: stretch;
+}
+.ff-radar-plot-main { display: grid; gap: 0.35rem; min-width: 0; }
+.ff-radar-axis-y {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0 1.6rem;
+  color: var(--ff-navy);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.ff-radar-axis-y-title {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--ff-muted);
+}
+.ff-radar-axis-x {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--ff-navy);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.ff-radar-axis-x-title {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 .ff-radar-field {
   position: relative;
