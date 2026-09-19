@@ -6,12 +6,19 @@ function source(file: string) {
 }
 
 describe("Renewals desk chrome", () => {
-  it("clones Deals workspace chrome on /renewals and /deals?book=renewals", () => {
+  it("uses an urgency-only board, pulse, and corner Today Activity on /renewals", () => {
     const desk = source("src/components/renewals/renewals-desk.tsx");
+    const views = source("src/components/renewals/renewals-filtered-views.tsx");
+    const board = source("src/components/renewals/renewals-urgency-board.tsx");
+    const urgency = source("src/lib/renewal/urgency.ts");
+    const card = source("src/components/renewals/renewal-card.tsx");
+    const pulse = source("src/components/renewals/renewals-pulse.tsx");
+    const corner = source("src/components/renewals/today-activity-corner.tsx");
     const renewalsPage = source("src/app/renewals/page.tsx");
     const dealsPage = source("src/app/deals/page.tsx");
+
     expect(desk).toMatch(/DealWorkspaceBar/);
-    expect(desk).toMatch(/TodayActivityStrip/);
+    expect(desk).toMatch(/TodayActivityCorner/);
     expect(desk).toMatch(/DealWorkQueuePanel/);
     expect(desk).toMatch(/PipelineBookModeToggle/);
     expect(desk).toMatch(/pipelineBookToggleHrefs\(view\)/);
@@ -22,11 +29,33 @@ describe("Renewals desk chrome", () => {
     expect(desk).toMatch(/PipelineFilterPopover/);
     expect(desk).toMatch(/renewals-pipeline/);
     expect(desk).toMatch(/RenewalsFilteredViews/);
-    expect(desk).toMatch(/RenewalsList/);
-    const views = source("src/components/renewals/renewals-filtered-views.tsx");
-    expect(views).toMatch(/RenewalsKanban/);
-    expect(views).toMatch(/RenewalsTable/);
-    expect(views).toMatch(/RenewalsFunnel/);
+    expect(desk).toMatch(/RenewalsPulse/);
+    expect(desk).not.toMatch(/RenewalsList/);
+    expect(desk).not.toMatch(/TodayActivityStrip/);
+    expect(desk).not.toMatch(/deal-upload-activity/);
+    expect(desk).not.toMatch(/deal-today-slot/);
+    expect(views).toMatch(/RenewalsUrgencyBoard/);
+    expect(views).not.toMatch(/RenewalsKanban/);
+    expect(views).not.toMatch(/RenewalsTable/);
+    expect(views).not.toMatch(/RenewalsFunnel/);
+    expect(board).toMatch(/RENEWAL_URGENCY_BANDS/);
+    expect(board).toMatch(/data-ff-urgency-band/);
+    expect(board).not.toMatch(/Upcoming|Contacted|Quoted|Bound|Lost/);
+    expect(urgency).toMatch(/Under 30 days/);
+    expect(urgency).toMatch(/30–60 days/);
+    expect(urgency).toMatch(/60–90 days/);
+    expect(urgency).toMatch(/90\+ days/);
+    expect(urgency).not.toMatch(/Upcoming|Contacted|Quoted|Bound|Lost/);
+    expect(card).toMatch(/clientName/);
+    expect(card).toMatch(/data-ff-risk-badge/);
+    expect(card).toMatch(/premiumDelta/);
+    expect(card).toMatch(/renewalWhyLine/);
+    expect(pulse).toMatch(/data-ff-renewals-pulse/);
+    expect(pulse).toMatch(/Book pulse/);
+    expect(corner).toMatch(/data-ff-today-activity-corner/);
+    expect(corner).toMatch(/Open Today Activity/);
+    expect(corner).toMatch(/Collapse Today Activity/);
+    expect(corner).toMatch(/TodayActivityStrip/);
     expect(desk).toMatch(/No archived renewals yet/);
     expect(desk).toMatch(/Classic queue/);
     expect(desk).toMatch(/Book health/);

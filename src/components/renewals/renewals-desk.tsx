@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
 import { DealWorkQueuePanel } from "@/components/deals/deal-work-queue-panel";
-import { TodayActivityStrip } from "@/components/deals/today-activity-strip";
 import { PipelineBookModeToggle } from "@/components/pipeline/book-mode-toggle";
 import { RenewalsFilteredViews } from "@/components/renewals/renewals-filtered-views";
-import { RenewalsList } from "@/components/renewals/renewals-list";
+import { RenewalsPulse } from "@/components/renewals/renewals-pulse";
+import { TodayActivityCorner } from "@/components/renewals/today-activity-corner";
 import { readDefaultRenewalsView } from "@/app/actions/pipeline-view-prefs";
 import { loadDealPipelineDesk } from "@/lib/deals/pipeline-desk-data";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
@@ -17,7 +17,6 @@ import {
 } from "@/lib/renewal/board-filter";
 import { visiblePipelineBoards } from "@/lib/desk/line-settings";
 import {
-  isPipelineSheetView,
   parseRenewalsView,
   pipelineBookToggleHrefs,
   renewalsHref,
@@ -42,7 +41,7 @@ function first(value: string | string[] | undefined): string | undefined {
 export async function RenewalsDesk({
   searchParams,
   canEditStages = false,
-  canDrag = true,
+  canDrag: _canDrag = true,
 }: {
   searchParams: Record<string, string | string[] | undefined>;
   canEditStages?: boolean;
@@ -154,19 +153,13 @@ export async function RenewalsDesk({
         />
       ) : null}
 
-      <div className="deal-upload-activity" data-testid="deal-upload-activity">
-        <div className="deal-today-slot">
-          <TodayActivityStrip
-            counts={desk.todayCounts}
-            active={desk.queueType}
-            basePath="/renewals"
-          />
-        </div>
-      </div>
+      <TodayActivityCorner
+        counts={desk.todayCounts}
+        active={desk.queueType}
+        basePath="/renewals"
+      />
 
-      <div className="deal-activity-list-spacer" data-ff-activity-list-spacer="" aria-hidden />
-
-      <div className="deal-list-below-activity" data-ff-renewals-below-activity>
+      <div data-ff-renewals-below-activity>
         <PipelineFilterPopover
           moduleId="renewals-pipeline"
           fields={pipelineFilterFields}
@@ -189,19 +182,15 @@ export async function RenewalsDesk({
             No archived renewals yet. This book does not park cards on Archived — shopping stays on
             All / P&amp;C / Health / Life, and bound or lost sit on Won-Lost.
           </p>
-        ) : isPipelineSheetView(view) && view !== "grid" ? (
-          <RenewalsList cards={filtered} initialQuery={q} />
         ) : (
-          <RenewalsFilteredViews
-            cards={filtered}
-            stages={visibleStages}
-            view={view === "grid" ? "grid" : view === "funnel" ? "funnel" : "board"}
-            pipeline={pipeline}
-            viewExtras={{ pcSub, lifeSub, healthSub }}
-            searchModuleId="renewals-pipeline"
-            initialQuery={q}
-            canDrag={canDrag}
-          />
+          <>
+            <RenewalsPulse daysUntil={filtered.map((card) => card.daysUntil)} />
+            <RenewalsFilteredViews
+              cards={filtered}
+              searchModuleId="renewals-pipeline"
+              initialQuery={q}
+            />
+          </>
         )}
       </div>
 

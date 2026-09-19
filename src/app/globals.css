@@ -27,6 +27,9 @@
   --ff-accent-hover: #0A3161;
   --ff-paper: #f7f3ec;
   --ff-terracotta: #b4532a;
+  --ff-urgency-amber: #c4872a;
+  --ff-urgency-navy: #3d5a80;
+  --ff-urgency-gray: #7b8494;
   --ff-wash: #f3eee6;
   --ff-canvas: #f7f3ec;
   --ff-ink: #1c2430;
@@ -1539,5 +1542,319 @@ a[data-ff-carrier-portal-status="connected"]:hover {
     animation: none;
     opacity: 0.8;
     transform: rotate(-24deg) scale(1);
+  }
+}
+
+/* Renewals Milestone 1 — urgency board, pulse, corner Today Activity. */
+.ff-urgency-tone-terracotta {
+  --ff-urgency: var(--ff-terracotta);
+  --ff-urgency-wash: color-mix(in srgb, var(--ff-terracotta) 14%, #fffaf4);
+}
+.ff-urgency-tone-amber {
+  --ff-urgency: var(--ff-urgency-amber);
+  --ff-urgency-wash: color-mix(in srgb, var(--ff-urgency-amber) 16%, #fffaf4);
+}
+.ff-urgency-tone-navy {
+  --ff-urgency: var(--ff-urgency-navy);
+  --ff-urgency-wash: color-mix(in srgb, var(--ff-urgency-navy) 12%, #fffaf4);
+}
+.ff-urgency-tone-gray {
+  --ff-urgency: var(--ff-urgency-gray);
+  --ff-urgency-wash: color-mix(in srgb, var(--ff-urgency-gray) 12%, #fffaf4);
+}
+
+[data-ff-renewals-desk] {
+  padding-bottom: 4.5rem;
+}
+
+.ff-renewals-pulse {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.25rem;
+  margin-bottom: 0.85rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--ff-border);
+  border-radius: 0.75rem;
+  background: var(--ff-card);
+  box-shadow: var(--ff-shadow);
+}
+.ff-renewals-pulse-ring-wrap {
+  position: relative;
+  width: 5.5rem;
+  height: 5.5rem;
+  flex: 0 0 5.5rem;
+}
+.ff-renewals-pulse-ring {
+  width: 100%;
+  height: 100%;
+}
+.ff-renewals-pulse-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.ff-renewals-pulse-center strong {
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--ff-navy);
+}
+.ff-renewals-pulse-center span {
+  font-size: 0.65rem;
+  color: var(--ff-muted);
+}
+.ff-renewals-pulse-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 1rem;
+  margin-top: 0.55rem;
+}
+.ff-renewals-pulse-legend li {
+  display: grid;
+  grid-template-columns: 0.65rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+}
+.ff-renewals-pulse-swatch {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  background: var(--ff-urgency);
+}
+.ff-renewals-pulse-label {
+  color: var(--ff-ink);
+}
+.ff-renewals-pulse-pct {
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  color: var(--ff-navy);
+}
+.ff-renewals-pulse-count {
+  color: var(--ff-muted);
+  font-variant-numeric: tabular-nums;
+}
+.ff-renewals-pulse-bar {
+  display: flex;
+  overflow: hidden;
+  height: 0.45rem;
+  margin-top: 0.65rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ff-border) 70%, white);
+}
+.ff-renewals-pulse-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--ff-urgency);
+}
+.ff-renewals-pulse-bar-empty {
+  background: color-mix(in srgb, var(--ff-border) 80%, white);
+}
+
+.ff-renewals-urgency-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(16rem, 1fr));
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+}
+.ff-renewals-urgency-col {
+  display: flex;
+  min-width: 16rem;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--ff-urgency) 28%, var(--ff-border));
+  border-radius: 0.75rem;
+  background: var(--ff-card);
+  box-shadow: var(--ff-shadow);
+}
+.ff-renewals-urgency-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--ff-urgency-wash);
+  border-bottom: 3px solid var(--ff-urgency);
+}
+.ff-renewals-urgency-head h2 {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ff-navy);
+}
+.ff-renewals-urgency-head span {
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ff-muted);
+}
+.ff-renewals-urgency-cards {
+  display: flex;
+  min-height: 12rem;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.65rem;
+}
+.ff-renewals-urgency-empty {
+  margin: auto 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--ff-muted);
+}
+
+.ff-renewal-urgency-card {
+  border: 1px solid var(--ff-border);
+  border-radius: 0.55rem;
+  background: #fff;
+  padding: 0.65rem 0.7rem;
+}
+.ff-renewal-risk-badge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ff-renewal-risk-high {
+  background: color-mix(in srgb, var(--ff-terracotta) 16%, white);
+  color: var(--ff-terracotta);
+}
+.ff-renewal-risk-medium {
+  background: color-mix(in srgb, var(--ff-urgency-amber) 18%, white);
+  color: #8a6500;
+}
+.ff-renewal-risk-low {
+  background: color-mix(in srgb, var(--ff-urgency-gray) 16%, white);
+  color: #4d5560;
+}
+.ff-renewal-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+.ff-renewal-delta-up {
+  color: var(--ff-terracotta);
+}
+.ff-renewal-delta-down {
+  color: var(--ff-green);
+}
+.ff-renewal-delta-flat {
+  color: var(--ff-muted);
+}
+.ff-renewal-why {
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--ff-muted);
+}
+
+.ff-today-activity-corner {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  max-width: min(24rem, calc(100vw - 1.5rem));
+  pointer-events: none;
+}
+.ff-today-activity-corner-toggle,
+.ff-today-activity-corner-panel,
+.ff-today-activity-corner-panel-head button {
+  pointer-events: auto;
+}
+.ff-today-activity-corner-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--ff-navy) 22%, transparent);
+  border-radius: 999px;
+  background: var(--ff-navy);
+  color: #fff;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 650;
+  box-shadow: 0 8px 18px rgb(12 35 64 / 18%);
+}
+.ff-today-activity-corner-toggle strong {
+  font-variant-numeric: tabular-nums;
+}
+.ff-today-activity-corner-panel {
+  width: min(22.5rem, calc(100vw - 1.5rem));
+  padding: 0.65rem 0.7rem 0.75rem;
+  border: 1px solid var(--ff-border);
+  border-radius: 0.85rem;
+  background: var(--ff-card);
+  box-shadow: 0 12px 28px rgb(12 35 64 / 16%);
+}
+.ff-today-activity-corner-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+.ff-today-activity-corner-panel-head p {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ff-navy);
+}
+.ff-today-activity-corner-panel-head button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--ff-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ff-navy);
+}
+.ff-today-activity-corner .deal-today-strip {
+  width: 100%;
+  max-width: 100%;
+}
+.ff-today-activity-corner .deal-today-heading p {
+  font-size: 0.85rem;
+}
+.ff-today-activity-corner .deal-today-chips {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.ff-today-activity-corner .deal-today-chip {
+  min-width: 3.4rem;
+  min-height: 3.4rem;
+  padding: 0.4rem 0.25rem;
+}
+.ff-today-activity-corner .deal-today-chip-count {
+  font-size: 0.95rem;
+}
+.ff-today-activity-corner .deal-today-chip-word {
+  font-size: 0.62rem;
+}
+
+@media (max-width: 72rem) {
+  .ff-renewals-urgency-board {
+    grid-template-columns: repeat(2, minmax(16rem, 1fr));
+  }
+}
+@media (max-width: 40rem) {
+  .ff-renewals-urgency-board {
+    grid-template-columns: minmax(16rem, 1fr);
+  }
+  .ff-renewals-pulse-legend {
+    grid-template-columns: 1fr;
   }
 }

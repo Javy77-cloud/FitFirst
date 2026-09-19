@@ -1,22 +1,18 @@
 import Link from "next/link";
 import { PipelineBookModeToggle } from "@/components/pipeline/book-mode-toggle";
-import { RenewalsKanban } from "@/components/renewals/renewals-kanban";
+import { RenewalsPulse } from "@/components/renewals/renewals-pulse";
+import { RenewalsUrgencyBoard } from "@/components/renewals/renewals-urgency-board";
 import { RENEWAL_QUEUE_DISCLAIMER } from "@/lib/domain-ams";
 import type { RenewalBoardCard } from "@/lib/renewal/board-data";
-import type { RenewalQueueStage } from "@/lib/domain-ams";
 
 export function RenewalsWorkspace({
-  stages,
   cards,
   notice,
   error,
-  canDrag = true,
 }: {
-  stages: RenewalQueueStage[];
   cards: RenewalBoardCard[];
   notice?: string;
   error?: string;
-  canDrag?: boolean;
 }) {
   return (
     <div className="space-y-3" data-ff-renewals-workspace="">
@@ -46,7 +42,8 @@ export function RenewalsWorkspace({
           Email template queued on the outbound stub — nothing sent.
         </p>
       ) : null}
-      <RenewalsKanban stages={stages} cards={cards} canDrag={canDrag} />
+      <RenewalsPulse daysUntil={cards.map((card) => card.daysUntil)} />
+      <RenewalsUrgencyBoard cards={cards} />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   carriers,
   contacts,
   policies,
+  policyTerms,
   renewalQueue,
 } from "@/lib/db/schema";
 import { isInForceStatus } from "@/lib/policy/status";
@@ -46,6 +47,8 @@ export type RenewalBoardCard = {
   expirationDate: Date | string | null;
   daysUntil: number;
   premium: string | null;
+  proposedPremium: string | null;
+  premiumDelta: number | null;
 };
 
 function partyName(
@@ -125,6 +128,24 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
     .leftJoin(carriers, eq(policies.carrierId, carriers.id))
     .where(eq(renewalQueue.tenantId, DEFAULT_TENANT_ID));
 
+  const policyIds = queueRows.map((row) => row.policy.id);
+  const termRows = policyIds.length
+    ? await db
+        .select({
+          policyId: policyTerms.policyId,
+          role: policyTerms.role,
+          premium: policyTerms.premium,
+        })
+        .from(policyTerms)
+        .where(and(eq(policyTerms.tenantId, DEFAULT_TENANT_ID), inArray(policyTerms.policyId, policyIds)))
+    : [];
+  const currentByPolicy = new Map<string, string | null>();
+  const proposedByPolicy = new Map<string, string | null>();
+  for (const term of termRows) {
+    if (term.role === "current") currentByPolicy.set(term.policyId, term.premium);
+    if (term.role === "proposed") proposedByPolicy.set(term.policyId, term.premium);
+  }
+
   const cards: RenewalBoardCard[] = [];
   for (const row of queueRows) {
     const exp = expirationDay(row.policy.expirationDate);
@@ -146,6 +167,8 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
         premium: row.policy.premium,
         partyName: partyName(row.contact, row.account),
         carrierName: row.carrier?.name ?? "Carrier TBD",
+        currentPremium: currentByPolicy.get(row.policy.id) ?? row.policy.premium,
+        proposedPremium: proposedByPolicy.get(row.policy.id) ?? null,
       },
       deskNow(),
     );
@@ -184,6 +207,8 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
       expirationDate: row.policy.expirationDate,
       daysUntil: days,
       premium: built.currentPremium,
+      proposedPremium: built.proposedPremium,
+      premiumDelta: built.delta,
     });
   }
 
