@@ -235,10 +235,10 @@ describe("Contacts module v1 standards", () => {
     expect(asCo[0]?.relation).toBe("co-applies-with");
   });
 
-  it("workspace keeps 420px rail on the right (never stacks under fields)", () => {
+  it("workspace keeps 320px rail on the right (never stacks under fields)", () => {
     const ws = readFileSync("src/components/contacts/contact-detail-workspace.tsx", "utf8");
     expect(ws).toMatch(/gap-x-6/);
-    expect(ws).toMatch(/minmax\(0, 1fr\) 420px/);
+    expect(ws).toMatch(/minmax\(0, 1fr\) 320px/);
     expect(ws).toMatch(/data-ff-deal-right-rail/);
     // Outer rail grid must not use responsive stacking; top chip nav lives in main column only.
     expect(ws).not.toMatch(/lg:grid-cols-/);

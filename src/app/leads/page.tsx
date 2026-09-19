@@ -157,7 +157,7 @@ export default async function LeadsPage({
       <LeadSavedToast show={saved} />
       <div
         className="grid w-full items-start"
-        style={{ gridTemplateColumns: "minmax(0, 1fr) 420px", columnGap: "1.25rem", rowGap: "1.25rem" }}
+        style={{ gridTemplateColumns: "minmax(0, 1fr) 320px", columnGap: "1.25rem", rowGap: "1.25rem" }}
         data-ff-leads-list-layout="list-rail"
         data-ff-leads-workspace=""
       >
@@ -360,10 +360,11 @@ export default async function LeadsPage({
         </div>
 
         <aside
-          className="min-w-0 w-full space-y-3 overflow-x-hidden"
+          className="w-[320px] min-w-[320px] max-w-[320px] shrink-0 grow-0 basis-[320px] space-y-3 overflow-x-hidden"
           style={{ gridColumn: 2, gridRow: 2 }}
           data-ff-leads-list-rail=""
           data-ff-deal-right-rail=""
+          data-ff-deal-rail-lock="320"
         >
           {railLead ? (
             <>

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { StagePill } from "@/components/fit-badge";
 import { ColumnTable } from "@/components/lists/column-table";
-import { GapCountBadge } from "@/components/coverage/gap-count-badge";
 import { PolicyQuickActions } from "@/components/policy/policy-quick-actions";
 import { formatDay, formatMoney } from "@/lib/domain";
 import {
@@ -50,7 +49,6 @@ export function RenewalsList({
           card.policySubType,
           card.carrierName,
           card.stage,
-          card.gapCount > 0 ? `${card.gapCount} gaps` : "",
         ]),
         cells: {
           policy: (
@@ -69,7 +67,6 @@ export function RenewalsList({
                 contactId={card.contactId}
                 accountId={card.accountId}
               />
-              <GapCountBadge count={card.gapCount} href={`/policies/${card.policyId}`} />
             </div>
           ),
           lob: card.lineOfBusiness,

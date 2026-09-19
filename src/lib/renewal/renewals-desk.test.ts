@@ -39,33 +39,32 @@ describe("Renewals desk chrome", () => {
     expect(dealsPage).not.toMatch(/RenewalsWorkspace/);
   });
 
-  it("shows household coverage-gap badges on list, board, grid, and classic queue", () => {
+  it("keeps coverage-gap and cross-sell prompts off renewals list, board, grid, and classic queue", () => {
     const list = source("src/components/renewals/renewals-list.tsx");
     const card = source("src/components/renewals/renewal-card.tsx");
     const grid = source("src/components/renewals/renewals-table.tsx");
     const queue = source("src/app/renewals/queue/page.tsx");
     const deskData = source("src/lib/renewal/board-data.ts");
-    expect(list).toMatch(/GapCountBadge/);
-    expect(card).toMatch(/GapCountBadge/);
-    expect(grid).toMatch(/GapCountBadge/);
-    expect(queue).toMatch(/GapCountBadge/);
-    expect(deskData).toMatch(/gapCount/);
-    expect(deskData).toMatch(/analyzeCoverageGaps|householdGapCount/);
-    expect(source("src/components/coverage/gap-count-badge.tsx")).toMatch(/if \(count <= 0\) return null/);
+    const desk = source("src/components/renewals/renewals-desk.tsx");
+    expect(list).not.toMatch(/GapCountBadge/);
+    expect(card).not.toMatch(/GapCountBadge/);
+    expect(grid).not.toMatch(/GapCountBadge/);
+    expect(queue).not.toMatch(/GapCountBadge/);
+    expect(queue).not.toMatch(/loadRenewalGapCounts/);
+    expect(card).not.toMatch(/RenewalCrossSellPanel/);
+    expect(card).not.toMatch(/data-ff-renewal-cross-sell/);
+    expect(desk).not.toMatch(/emailTemplates/);
+    expect(deskData).not.toMatch(/gapCount/);
+    expect(deskData).not.toMatch(/crossSell/);
+    expect(deskData).not.toMatch(/analyzeCoverageGaps|householdGapCount|missingRenewalCrossSellLines/);
   });
 
-  it("puts a compact coverage-gap strip on renewal policy, not on deal tabs", () => {
-    const strip = source("src/components/coverage/renewal-gap-strip.tsx");
+  it("keeps RenewalGapStrip off policy renewal views and deal tabs", () => {
     const policy = source("src/app/policies/[id]/page.tsx");
     const deal = source("src/app/deals/[id]/page.tsx");
-    expect(strip).toMatch(/Add product to package/);
-    expect(strip).toMatch(/GAP_DISMISS_REASONS/);
-    expect(source("src/lib/coverage/renewal-gaps.ts")).toMatch(/not_interested/);
-    expect(source("src/lib/coverage/renewal-gaps.ts")).toMatch(/already_elsewhere/);
-    expect(source("src/lib/coverage/renewal-gaps.ts")).toMatch(/not_eligible/);
-    expect(strip).toMatch(/if \(findings\.length === 0\) return null/);
-    expect(strip).not.toMatch(/sparkle/i);
-    expect(policy).toMatch(/RenewalGapStrip/);
+    expect(policy).not.toMatch(/RenewalGapStrip/);
+    expect(policy).not.toMatch(/loadRenewalGapItems/);
+    expect(policy).not.toMatch(/Add product to package/);
     expect(deal).not.toMatch(/RenewalGapStrip/);
     expect(deal).not.toMatch(/loadRenewalGapItems/);
     expect(deal).not.toMatch(/GapPanel/);

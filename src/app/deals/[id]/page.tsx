@@ -651,7 +651,7 @@ export default async function DealPage({
           tabSize="deal"
           toolbar={activeTab === "details" ? <EditLayoutLink module="deals" line={activeLob} /> : null}
           heading={
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1 space-y-1" data-ff-deal-top-left="">
               <div className="min-w-0">
                 <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
                   {visibleDealTitle}
@@ -814,7 +814,11 @@ export default async function DealPage({
             ) : null
           }
           sidePanel={
-            <>
+            <div
+              className="w-[320px] min-w-[320px] max-w-[320px] shrink-0 overflow-x-hidden grow-0 basis-[320px] space-y-3"
+              data-ff-deal-right-rail=""
+              data-ff-deal-rail-lock="320"
+            >
               <div className="min-w-0 w-full max-w-full" data-ff-deal-quick-comms="">
                 <QuickCommsBoard
                   items={comms}
@@ -854,7 +858,7 @@ export default async function DealPage({
                 />
               </div>
               <RecordContextRail context={context} />
-            </>
+            </div>
           }
           tabs={AGENT_DEAL_TABS.map((id) => ({
             id,

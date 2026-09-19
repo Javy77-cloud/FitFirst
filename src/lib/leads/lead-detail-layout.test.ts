@@ -6,7 +6,7 @@ function source(file: string) {
 }
 
 describe("lead detail layout + per-line documents", () => {
-  it("keeps full-width fields + 420px context rail (no docs column)", () => {
+  it("keeps full-width fields + 320px context rail (no docs column)", () => {
     const page = source("src/app/leads/[id]/page.tsx");
     const desk = source("src/components/leads/lead-detail-workspace.tsx");
     const form = source("src/components/crm/lead-form-fields.tsx");
@@ -22,7 +22,7 @@ describe("lead detail layout + per-line documents", () => {
     expect(page).toMatch(/LeadDetailWorkspace/);
     expect(page).not.toMatch(/uploadDocument/);
     expect(desk).toMatch(/data-ff-lead-layout="layout-rail"/);
-    expect(desk).toMatch(/gridTemplateColumns: "minmax\(0, 1fr\) 420px"/);
+    expect(desk).toMatch(/gridTemplateColumns: "minmax\(0, 1fr\) 320px"/);
     expect(desk).toMatch(/data-ff-deal-right-rail/);
     expect(desk).toMatch(/data-ff-lead-context-rail/);
     expect(desk).toMatch(/data-ff-lead-edit-layout/);

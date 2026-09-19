@@ -999,7 +999,7 @@ a.ff-pending-link:has([data-ff-link-pending="1"]) {
   text-decoration: underline;
 }
 
-/* HARD LOCK (Javy 2026-09-09): deal right rail 420px so per-type Quick Comms forms breathe. Left column takes leftover flex. */
+/* HARD LOCK: deal / record right rail 320px. Left column takes leftover flex. Do not override. */
 [data-ff-deal-topband] {
   display: block;
   width: 100%;
@@ -1007,23 +1007,45 @@ a.ff-pending-link:has([data-ff-link-pending="1"]) {
 [data-ff-deal-title] {
   margin: 0;
 }
+[data-ff-deal-top-left] {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
 [data-ff-deal-workspace] {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 420px !important;
+  grid-template-columns: minmax(0, 1fr) 320px !important;
   column-gap: 1.25rem !important;
   row-gap: 0 !important;
   align-items: start !important;
 }
 [data-ff-deal-quotes-corner] {
   justify-self: end !important;
-  width: 420px !important;
-  max-width: 420px !important;
+  width: 320px !important;
+  max-width: 320px !important;
 }
 [data-ff-deal-right-rail] {
-  width: 420px !important;
-  max-width: 420px !important;
+  width: 320px !important;
+  min-width: 320px !important;
+  max-width: 320px !important;
+  flex: 0 0 320px !important;
   box-sizing: border-box !important;
   overflow-x: hidden !important;
+}
+[data-ff-quick-comms-kinds] {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  width: 100%;
+  min-width: 0;
+  gap: 0.25rem;
+}
+[data-ff-quick-comms-kinds] .ff-record-activity-action {
+  width: auto !important;
+  min-width: 0 !important;
+  flex: 1 1 0 !important;
+  max-width: none;
+  padding-left: 0;
+  padding-right: 0;
 }
 [data-ff-deal-right-rail] > * {
   width: 100% !important;
@@ -1352,8 +1374,8 @@ a[data-ff-carrier-portal-status="connected"]:hover {
 .ff-deal-stamp-row {
   position: absolute;
   top: 13.5rem;
-  /* Sit over the white content column (left of the 420px rail), not page-center. */
-  left: calc((100% - 420px - 1.25rem) / 2);
+  /* Sit over the white content column (left of the 320px rail), not page-center. */
+  left: calc((100% - 320px - 1.25rem) / 2);
   z-index: 8;
   display: flex;
   width: max-content;

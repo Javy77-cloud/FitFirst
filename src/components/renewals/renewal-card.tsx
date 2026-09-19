@@ -3,20 +3,13 @@
 import Link from "next/link";
 import { formatDay, formatMoney } from "@/lib/domain";
 import type { RenewalBoardCard } from "@/lib/renewal/board-data";
-import {
-  RenewalCrossSellPanel,
-  type EmailTemplateOption,
-} from "@/components/renewals/cross-sell-panel";
-import { GapCountBadge } from "@/components/coverage/gap-count-badge";
 import { PolicyQuickActions } from "@/components/policy/policy-quick-actions";
 
 export function RenewalBoardCardView({
   card,
-  templates,
   canDrag = true,
 }: {
   card: RenewalBoardCard;
-  templates: EmailTemplateOption[];
   canDrag?: boolean;
 }) {
   const daysLabel =
@@ -60,7 +53,6 @@ export function RenewalBoardCardView({
           contactId={card.contactId}
           accountId={card.accountId}
         />
-        <GapCountBadge count={card.gapCount} href={`/policies/${card.policyId}`} />
       </div>
       <p className="mt-0.5 text-[11px] text-muted-foreground">
         Exp {formatDay(card.expirationDate)} · {daysLabel}
@@ -71,15 +63,6 @@ export function RenewalBoardCardView({
       <p className="mt-0.5 text-[11px] text-muted-foreground">
         Premium {card.premium != null && card.premium !== "" ? formatMoney(card.premium) : "—"}
       </p>
-      <RenewalCrossSellPanel
-        suggestions={card.crossSell}
-        policyId={card.policyId}
-        contactId={card.contactId}
-        accountId={card.accountId}
-        clientName={card.clientName}
-        email={card.email}
-        templates={templates}
-      />
     </article>
   );
 }

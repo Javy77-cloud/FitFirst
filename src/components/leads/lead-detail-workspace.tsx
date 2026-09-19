@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 
 /**
- * Lead detail: page-level fields | 420px Quick Comms + Info rail (same stack as contacts/deals).
+ * Lead detail: page-level fields | 320px Quick Comms + Info rail (same stack as contacts/deals).
  * Activity / Related sit in the main column under Save — never inside a clipping RecordSection card.
  * Save Lead sits under the fields only — never under the rail.
  */
@@ -29,7 +29,7 @@ export function LeadDetailWorkspace({
   return (
     <div
       className="grid w-full items-start gap-x-5"
-      style={{ gridTemplateColumns: "minmax(0, 1fr) 420px" }}
+      style={{ gridTemplateColumns: "minmax(0, 1fr) 320px" }}
       data-ff-lead-layout="layout-rail"
       data-ff-lead-detail-workspace=""
     >
@@ -53,9 +53,10 @@ export function LeadDetailWorkspace({
       </div>
       {rail ? (
         <aside
-          className="min-w-0 w-full space-y-3 overflow-x-hidden"
+          className="w-[320px] min-w-[320px] max-w-[320px] shrink-0 grow-0 basis-[320px] space-y-3 overflow-x-hidden"
           data-ff-lead-context-rail=""
           data-ff-deal-right-rail=""
+          data-ff-deal-rail-lock="320"
         >
           {rail}
         </aside>
