@@ -23,11 +23,11 @@ function source(file: string) {
 }
 
 describe("sep7jt Lead rail + shared applicant fields", () => {
-  it("Lead desk is full-width fields + 420px RecordContextRail", () => {
+  it("Lead desk is full-width fields + 320px RecordContextRail", () => {
     const desk = source("src/components/leads/lead-detail-workspace.tsx");
     const page = source("src/app/leads/[id]/page.tsx");
     expect(desk).toMatch(/data-ff-lead-layout="layout-rail"/);
-    expect(desk).toMatch(/gridTemplateColumns: "minmax\(0, 1fr\) 420px"/);
+    expect(desk).toMatch(/gridTemplateColumns: "minmax\(0, 1fr\) 320px"/);
     expect(desk).toMatch(/data-ff-lead-context-rail/);
     expect(page).toMatch(/loadRecordContext\(\{/);
     expect(page).toMatch(/LeadQuickComms/);

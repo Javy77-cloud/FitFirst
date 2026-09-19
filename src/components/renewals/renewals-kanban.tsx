@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { moveRenewalBoardCard } from "@/app/actions/renewals-board";
 import { RenewalBoardCardView } from "@/components/renewals/renewal-card";
-import type { EmailTemplateOption } from "@/components/renewals/cross-sell-panel";
 import { StagePill } from "@/components/fit-badge";
 import { cn } from "@/lib/utils";
 import {
@@ -45,12 +44,10 @@ function asKanbanStages(stages: Array<string | RenewalsKanbanStage>): RenewalsKa
 export function RenewalsKanban({
   stages,
   cards,
-  templates,
   canDrag = true,
 }: {
   stages: Array<string | RenewalsKanbanStage>;
   cards: RenewalBoardCard[];
-  templates: EmailTemplateOption[];
   canDrag?: boolean;
 }) {
   const router = useRouter();
@@ -143,7 +140,7 @@ export function RenewalsKanban({
                   </p>
                 ) : (
                   column.map((card) => (
-                    <RenewalBoardCardView key={card.queueId} card={card} templates={templates} />
+                    <RenewalBoardCardView key={card.queueId} card={card} />
                   ))
                 )}
               </div>

@@ -112,7 +112,7 @@ export function SectionTabs({
         data-ff-deal-workspace=""
         className="grid w-full items-start"
         style={{
-          gridTemplateColumns: "minmax(0, 1fr) 420px",
+          gridTemplateColumns: "minmax(0, 1fr) 320px",
           columnGap: "1.25rem",
           rowGap: "0",
         }}
@@ -141,10 +141,10 @@ export function SectionTabs({
           {current?.content}
         </div>
         <aside
-          className="min-w-0 space-y-3 overflow-x-hidden"
+          className="w-[320px] min-w-[320px] max-w-[320px] shrink-0 overflow-x-hidden grow-0 basis-[320px] space-y-3"
           data-ff-deal-right-rail=""
-          data-ff-deal-rail-lock="420"
-          style={{ gridColumn: 2, gridRow: 2, paddingTop: 50, width: 420 }}
+          data-ff-deal-rail-lock="320"
+          style={{ gridColumn: 2, gridRow: 2, paddingTop: 50, width: 320 }}
         >
           {sidePanel}
         </aside>

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { and, eq } from "drizzle-orm";
 import { DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
 import { DealWorkQueuePanel } from "@/components/deals/deal-work-queue-panel";
 import { TodayActivityStrip } from "@/components/deals/today-activity-strip";
@@ -7,9 +6,6 @@ import { PipelineBookModeToggle } from "@/components/pipeline/book-mode-toggle";
 import { RenewalsFilteredViews } from "@/components/renewals/renewals-filtered-views";
 import { RenewalsList } from "@/components/renewals/renewals-list";
 import { readDefaultRenewalsView } from "@/app/actions/pipeline-view-prefs";
-import { DEFAULT_TENANT_ID } from "@/lib/domain";
-import { db } from "@/lib/db";
-import { emailTemplates } from "@/lib/db/schema";
 import { loadDealPipelineDesk } from "@/lib/deals/pipeline-desk-data";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { RENEWAL_QUEUE_DISCLAIMER } from "@/lib/domain-ams";
@@ -64,13 +60,8 @@ export async function RenewalsDesk({
   const savedDefaultView = await readDefaultRenewalsView();
   const view = parseRenewalsView(viewParam ?? savedDefaultView ?? undefined);
 
-  const [{ stageRows, pipelineId, cards }, templateRows, settings, desk, pageFilterPrefs] = await Promise.all([
+  const [{ stageRows, pipelineId, cards }, settings, desk, pageFilterPrefs] = await Promise.all([
     loadRenewalsBoard(180),
-    db
-      .select({ id: emailTemplates.id, name: emailTemplates.name })
-      .from(emailTemplates)
-      .where(and(eq(emailTemplates.tenantId, DEFAULT_TENANT_ID)))
-      .catch(() => [] as { id: string; name: string }[]),
     loadDeskLineSettings(),
     loadDealPipelineDesk(queue),
     loadPageFilterPrefs("renewals-pipeline"),
@@ -207,7 +198,6 @@ export async function RenewalsDesk({
             view={view === "grid" ? "grid" : view === "funnel" ? "funnel" : "board"}
             pipeline={pipeline}
             viewExtras={{ pcSub, lifeSub, healthSub }}
-            templates={templateRows}
             searchModuleId="renewals-pipeline"
             initialQuery={q}
             canDrag={canDrag}

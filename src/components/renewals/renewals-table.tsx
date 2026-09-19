@@ -8,7 +8,6 @@ import {
   isRenewalQueueStage,
 } from "@/lib/domain-ams";
 import type { RenewalBoardCard } from "@/lib/renewal/board-data";
-import { GapCountBadge } from "@/components/coverage/gap-count-badge";
 import { PolicyQuickActions } from "@/components/policy/policy-quick-actions";
 
 function stageLabel(stage: string) {
@@ -53,7 +52,6 @@ export function RenewalsTable({ cards }: { cards: RenewalBoardCard[] }) {
               contactId={card.contactId}
               accountId={card.accountId}
             />
-            <GapCountBadge count={card.gapCount} href={`/policies/${card.policyId}`} />
           </div>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             {card.lineOfBusiness} · {card.carrierName}

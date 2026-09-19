@@ -16,7 +16,6 @@ export function RenewalsFilteredViews({
   view,
   pipeline,
   viewExtras,
-  templates,
   searchModuleId = "renewals-pipeline",
   initialQuery = "",
   canDrag = true,
@@ -26,7 +25,6 @@ export function RenewalsFilteredViews({
   view: Exclude<PipelineViewId, "list"> | "grid" | "board" | "funnel";
   pipeline?: string | null;
   viewExtras?: { pcSub?: string | null; lifeSub?: string | null; healthSub?: string | null };
-  templates: Array<{ id: string; name: string }>;
   searchModuleId?: string;
   initialQuery?: string;
   canDrag?: boolean;
@@ -50,5 +48,5 @@ export function RenewalsFilteredViews({
       />
     );
   }
-  return <RenewalsKanban stages={stages} cards={filtered} templates={templates} canDrag={canDrag} />;
+  return <RenewalsKanban stages={stages} cards={filtered} canDrag={canDrag} />;
 }

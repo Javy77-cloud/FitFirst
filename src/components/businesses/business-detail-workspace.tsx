@@ -18,7 +18,7 @@ export function BusinessDetailWorkspace({
   return (
     <div
       className="grid w-full items-start gap-x-6"
-      style={{ gridTemplateColumns: "minmax(0, 1fr) 420px" }}
+      style={{ gridTemplateColumns: "minmax(0, 1fr) 320px" }}
       data-ff-business-layout="layout-rail"
     >
       <div className="min-w-0 w-full space-y-3" data-ff-business-main="">
@@ -33,9 +33,10 @@ export function BusinessDetailWorkspace({
       </div>
       {rail ? (
         <aside
-          className="min-w-0 w-full space-y-3 overflow-x-hidden pt-0"
+          className="w-[320px] min-w-[320px] max-w-[320px] shrink-0 grow-0 basis-[320px] space-y-3 overflow-x-hidden pt-0"
           data-ff-business-context-rail=""
           data-ff-deal-right-rail=""
+          data-ff-deal-rail-lock="320"
         >
           {rail}
         </aside>

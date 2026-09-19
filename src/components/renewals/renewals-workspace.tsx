@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { PipelineBookModeToggle } from "@/components/pipeline/book-mode-toggle";
 import { RenewalsKanban } from "@/components/renewals/renewals-kanban";
-import type { EmailTemplateOption } from "@/components/renewals/cross-sell-panel";
 import { RENEWAL_QUEUE_DISCLAIMER } from "@/lib/domain-ams";
 import type { RenewalBoardCard } from "@/lib/renewal/board-data";
 import type { RenewalQueueStage } from "@/lib/domain-ams";
@@ -9,14 +8,12 @@ import type { RenewalQueueStage } from "@/lib/domain-ams";
 export function RenewalsWorkspace({
   stages,
   cards,
-  templates,
   notice,
   error,
   canDrag = true,
 }: {
   stages: RenewalQueueStage[];
   cards: RenewalBoardCard[];
-  templates: EmailTemplateOption[];
   notice?: string;
   error?: string;
   canDrag?: boolean;
@@ -49,7 +46,7 @@ export function RenewalsWorkspace({
           Email template queued on the outbound stub — nothing sent.
         </p>
       ) : null}
-      <RenewalsKanban stages={stages} cards={cards} templates={templates} canDrag={canDrag} />
+      <RenewalsKanban stages={stages} cards={cards} canDrag={canDrag} />
     </div>
   );
 }

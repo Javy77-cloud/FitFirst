@@ -71,13 +71,21 @@ describe("sep7by deal right rail hard-locked to 320px", () => {
     expect(page).not.toMatch(/lg:w-\[72%\]/);
   });
 
-  it("BY4 — page stacks Tags, Quick Comms, sheet health, and context inside the locked rail", () => {
+  it("BY4 — page stacks Quick Comms and context inside the locked 320px rail", () => {
     const page = source("src/app/deals/[id]/page.tsx");
-    expect(page.indexOf("data-ff-deal-right-rail")).toBeLessThan(page.indexOf("<SheetHealthToggle"));
-    expect(page.indexOf("<SheetHealthToggle")).toBeLessThan(page.indexOf("<RecordTags"));
-    expect(page.indexOf("<RecordTags")).toBeLessThan(page.indexOf("data-ff-deal-quick-comms"));
+    const tabs = source("src/components/section-tabs.tsx");
+    expect(page).toMatch(/data-ff-deal-right-rail/);
+    expect(page).toMatch(/data-ff-deal-rail-lock="320"/);
+    expect(tabs).toMatch(/data-ff-deal-rail-lock="320"/);
+    expect(page.indexOf("data-ff-deal-right-rail")).toBeLessThan(page.indexOf("data-ff-deal-quick-comms"));
     expect(page.indexOf("data-ff-deal-quick-comms")).toBeLessThan(page.indexOf("<RecordContextRail"));
-    expect(page).toMatch(/ff-card min-w-0 w-full max-w-full p-3/);
     expect(page).toMatch(/min-w-0 w-full max-w-full" data-ff-deal-quick-comms/);
+    const comms = source("src/components/comms/quick-comms-board.tsx");
+    expect(comms).toMatch(/data-ff-quick-comms-kinds/);
+    expect(comms).toMatch(/flex-nowrap/);
+    expect(comms).not.toMatch(/flex-wrap items-center gap-1\.5" data-ff-quick-comms-kinds/);
+    const css = source("src/app/globals.css");
+    expect(css).toMatch(/\[data-ff-quick-comms-kinds\]/);
+    expect(css).toMatch(/flex-wrap: nowrap !important;/);
   });
 });
