@@ -14,6 +14,8 @@ import { formatMoney } from "@/lib/domain";
 import { isClosedWonStage } from "@/lib/wire/pipeline";
 import type { DeskUserOption } from "@/lib/deals/transfer";
 import { AssignRecordTags, type TagCatalogRow } from "@/components/tags/assign-record-tags";
+import { PromiseChips } from "@/components/notifications/promise-chips";
+import type { SerializedCommitment } from "@/lib/notifications/commitments";
 import type { PipelineCardView } from "@/lib/wire/pipeline-cards";
 
 export function PipelineDealCard({
@@ -23,6 +25,7 @@ export function PipelineDealCard({
   showArchive,
   agents = [],
   tagCatalog = [],
+  commitments = [],
 }: {
   deal: PipelineCardView;
   stageName?: string;
@@ -30,6 +33,7 @@ export function PipelineDealCard({
   showArchive?: boolean;
   agents?: DeskUserOption[];
   tagCatalog?: TagCatalogRow[];
+  commitments?: SerializedCommitment[];
 }) {
   const line =
     LINE_LABELS[deal.lineOfBusiness as keyof typeof LINE_LABELS] ?? deal.lineOfBusiness;
@@ -48,6 +52,7 @@ export function PipelineDealCard({
           {deal.title}
         </Link>
       </FieldSlot>
+      {commitments.length > 0 ? <PromiseChips commitments={commitments} /> : null}
       <FieldSlot id="insured" className="mt-1 text-[11px] text-navy">
         <InsuredLink href={deal.insuredHref} name={deal.insured} />
       </FieldSlot>

@@ -75,13 +75,8 @@ describe("module tag manage + assign popup", () => {
     expect(source("src/app/contacts/page.tsx")).toMatch(/AssignRecordTags/);
     expect(source("src/app/policies/page.tsx")).toMatch(/AssignRecordTags/);
     expect(source("src/app/carriers/page.tsx")).toMatch(/AssignRecordTags/);
-    expect(source("src/app/tasks/page.tsx")).toMatch(/AssignRecordTags/);
-    expect(source("src/app/tasks/page.tsx")).toMatch(/ManageTagsButton/);
-    expect(source("src/app/tasks/page.tsx")).toMatch(/ModuleListActions/);
-    // ONE bar + ONE DeskColumnTable — group headers share widths (sections.flatMap)
-    expect(source("src/app/tasks/page.tsx")).toMatch(/sections\.flatMap/);
-    expect(source("src/app/tasks/page.tsx")).toMatch(/groupHeader/);
-    expect(source("src/app/tasks/page.tsx")).not.toMatch(/sections\.map\(/);
+    expect(source("src/app/tasks/page.tsx")).toMatch(/redirect/);
+    expect(source("src/app/tasks/page.tsx")).toMatch(/\/notifications#commitments/);
     expect(source("src/components/deals/deals-table.tsx")).toMatch(/AssignRecordTags/);
     expect(source("src/components/pipeline/table-view.tsx")).toMatch(/AssignRecordTags/);
     expect(source("src/components/pipeline/deal-card.tsx")).toMatch(/AssignRecordTags/);

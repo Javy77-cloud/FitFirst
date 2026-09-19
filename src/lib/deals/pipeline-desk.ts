@@ -123,9 +123,9 @@ export function todayActivityWorkHref(
   return `${basePath}?queue=${type}`;
 }
 
-/** Tasks page is the work queue for now — relabel later. */
+/** Today Activity is the human bubble — Calendar, never the Notification Panel. */
 export function todayActivityCalendarHref(): string {
-  return "/tasks";
+  return "/calendar";
 }
 
 /** e.g. "Monday, Sep 7" */

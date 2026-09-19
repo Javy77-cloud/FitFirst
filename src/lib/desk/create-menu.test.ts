@@ -25,7 +25,8 @@ describe("home create menu", () => {
     expect(hrefs).not.toContain("/quotes/new");
     expect(hrefs).toContain("/claims/new");
     expect(hrefs).toContain("/calls/new");
-    expect(hrefs).toContain("/tasks?newTask=1");
+    expect(hrefs).toContain("/notifications?newCommitment=1#commitments");
     expect(hrefs).not.toContain("/tasks/new");
+    expect(hrefs).not.toContain("/tasks?newTask=1");
   });
 });

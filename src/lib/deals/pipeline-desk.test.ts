@@ -41,7 +41,7 @@ describe("Deals today activity strip", () => {
   it("filters the work queue to one type", () => {
     expect(filterTodayDealActivity(rows, "training", now).map((row) => row.id)).toEqual(["5"]);
     expect(todayActivityWorkHref("call")).toBe("/deals?queue=call");
-    expect(todayActivityCalendarHref()).toBe("/tasks");
+    expect(todayActivityCalendarHref()).toBe("/calendar");
     expect(formatTodayActivityDate(now)).toBe("Monday, Sep 7");
   });
 

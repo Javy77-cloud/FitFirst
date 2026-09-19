@@ -34,7 +34,7 @@ export const CREATE_MENU: CreateMenuGroup[] = [
     id: "activities",
     label: "Activities",
     items: [
-      { id: "task", label: "Task", href: "/tasks?newTask=1" },
+      { id: "task", label: "Promise", href: "/notifications?newCommitment=1#commitments" },
       { id: "meeting", label: "Meeting", href: "/meetings/new" },
       { id: "call", label: "Call", href: "/calls/new" },
     ],

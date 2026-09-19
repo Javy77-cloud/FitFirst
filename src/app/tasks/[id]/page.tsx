@@ -1,12 +1,13 @@
-import { ActivityRecordPage } from "@/components/record-context/activity-record-page";
+import { redirect } from "next/navigation";
+import { resolveTaskRedirect } from "@/lib/notifications/load-commitments";
 
 export const dynamic = "force-dynamic";
 
-export default async function TaskDetailPage({
+export default async function TaskDetailRedirectPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <ActivityRecordPage id={id} expectKind="task" />;
+  redirect(await resolveTaskRedirect(id));
 }

@@ -32,6 +32,17 @@ describe("retired Pipeline nav prefs", () => {
     });
   });
 
+  it("maps retired Tasks nav onto Notifications", () => {
+    expect(remapNavId("tasks")).toBe("alerts");
+    expect(remapNavIds(["home", "tasks", "calendar", "alerts"])).toEqual([
+      "home",
+      "alerts",
+      "calendar",
+    ]);
+    expect(remapNavPath("/tasks")).toBe("/notifications");
+    expect(remapNavPath("/tasks/abc")).toBe("/notifications");
+  });
+
   it("rewrites leftover /pipeline paths to Deals", () => {
     expect(remapNavPath("/pipeline")).toBe("/deals");
     expect(remapNavPath("/pipeline?pipeline=p-c")).toBe("/deals");

@@ -54,7 +54,6 @@ describe("nav layout defaults", () => {
       "business",
       "policies",
       "carriers",
-      "tasks",
       "calendar",
       "templates",
       "divider",
@@ -72,7 +71,6 @@ describe("nav layout defaults", () => {
       "Accounts",
       "Policies",
       "Carriers",
-      "Tasks",
       "Calendar",
       "Templates",
       "Reports",
@@ -93,7 +91,7 @@ describe("nav layout defaults", () => {
   });
 
   it("leaves Deals without a Quotes child and keeps template / admin / policies children only", () => {
-    expect(NAV_LAYOUT_VERSION).toBe(12);
+    expect(NAV_LAYOUT_VERSION).toBe(13);
     const rows = resolveNavLayout(null);
     const byId = Object.fromEntries(
       rows.filter((row) => row.kind === "item").map((row) => [row.id, row]),
@@ -103,7 +101,6 @@ describe("nav layout defaults", () => {
     expect(byId.contacts.submenu).toEqual([]);
     expect(DEFAULT_SUBMENUS.policies).toEqual([...POLICIES_DEFAULT_KIDS]);
     expect(DEFAULT_SUBMENUS.policies).toEqual(["renewals", "certificates"]);
-    expect(DEFAULT_SUBMENUS.tasks).toEqual([]);
     expect(DEFAULT_SUBMENUS.calendar).toEqual([]);
     expect(DEFAULT_SUBMENUS.reports).toEqual([]);
     expect(DEFAULT_SUBMENUS.settings).toEqual([]);
@@ -113,7 +110,6 @@ describe("nav layout defaults", () => {
     expect(byId.policies.submenu.find((item) => item.id === "renewals")?.href).toBe("/renewals");
     expect(byId.policies.submenu.find((item) => item.id === "certificates")?.href).toBe("/certificates");
     expect(byId.policies.submenu.every((item) => item.children.length === 0)).toBe(true);
-    expect(byId.tasks.submenu).toEqual([]);
     expect(byId.calendar.submenu).toEqual([]);
     expect(byId.reports.submenu).toEqual([]);
     expect(byId.settings.submenu).toEqual([]);
@@ -221,7 +217,6 @@ describe("nav layout defaults", () => {
       "business",
       "policies",
       "carriers",
-      "tasks",
       "calendar",
       "templates",
       "reports",
@@ -241,7 +236,7 @@ describe("nav layout defaults", () => {
   it("keeps a customized agent primary order after save (no force strip)", () => {
     const custom = normalizeNavLayout(
       {
-        version: 12,
+        version: NAV_LAYOUT_VERSION,
         primaryOrder: [
           "contacts",
           "business",
@@ -250,7 +245,6 @@ describe("nav layout defaults", () => {
           "home",
           "leads",
           "deals",
-          "tasks",
           "calendar",
           "templates",
           "divider",
@@ -272,7 +266,6 @@ describe("nav layout defaults", () => {
       "home",
       "leads",
       "deals",
-      "tasks",
       "calendar",
       "templates",
       "reports",
@@ -291,7 +284,7 @@ describe("nav layout defaults", () => {
   it("keeps live desk destinations reachable and omits stubs", () => {
     const hrefs = flattenResolvedNav(resolveNavLayout(null)).map((item) => item.href);
     const ids = flattenResolvedNav(resolveNavLayout(null)).map((item) => item.id);
-    for (const href of ["/", "/leads", "/deals", "/contacts", "/accounts", "/policies", "/carriers", "/tasks", "/calendar", "/settings", "/admin", "/templates", "/reports"]) {
+    for (const href of ["/", "/leads", "/deals", "/contacts", "/accounts", "/policies", "/carriers", "/calendar", "/settings", "/admin", "/templates", "/reports"]) {
       expect(hrefs).toContain(href);
     }
     expect(hrefs).not.toContain("/quotes");
@@ -326,7 +319,6 @@ describe("nav layout defaults", () => {
         "business",
         "carriers",
         "divider",
-        "tasks",
         "calendar",
         "templates",
         "reports",
@@ -336,7 +328,7 @@ describe("nav layout defaults", () => {
       hiddenPrimaryIds: ["operations", "billing"],
       submenus: { admin: ["agents", "operations"], operations: [] },
     });
-    expect(next.version).toBe(12);
+    expect(next.version).toBe(13);
     expect(next.primaryOrder.at(-1)).toBe("operations");
     expect(next.hiddenPrimaryIds).toEqual([]);
     expect(next.submenus.admin).not.toContain("operations");
@@ -369,7 +361,6 @@ describe("nav layout defaults", () => {
       "business",
       "policies",
       "carriers",
-      "tasks",
       "calendar",
       "templates",
     ]);
@@ -387,7 +378,6 @@ describe("normalizeNavLayout", () => {
         contacts: ["merge"],
         home: ["social"],
         policies: ["book-health", "renewals"],
-        tasks: ["work-queue"],
         calendar: ["phone"],
         reports: ["scorecards", "glance", "commissions"],
       },
@@ -402,7 +392,6 @@ describe("normalizeNavLayout", () => {
     expect(stale.submenus.admin).not.toContain("operations");
     expect(stale.submenus.admin).not.toContain("billing");
     expect(stale.submenus.operations).toEqual([...OPERATIONS_NAV_IDS]);
-    expect(stale.submenus.tasks).toEqual([]);
     expect(stale.submenus.calendar).toEqual([]);
     expect(stale.submenus.reports).toEqual([]);
     expect(stale.primaryOrder).not.toContain("social");
@@ -499,7 +488,7 @@ describe("free rearrange", () => {
     const start = defaultStoredNavLayout();
     const moved = applyNavDrop(start, "settings", { type: "before", id: "home" });
     expect(moved.primaryOrder[0]).toBe("settings");
-    expect(applyNavDrop(start, "admin", { type: "before", id: "tasks" }).primaryOrder).toContain("admin");
+    expect(applyNavDrop(start, "admin", { type: "before", id: "calendar" }).primaryOrder).toContain("admin");
   });
 
   it("adds unused catalog links on the primary rail from one Add link control", () => {
@@ -517,14 +506,14 @@ describe("free rearrange", () => {
     const start = addSubmenuLink(defaultStoredNavLayout(), "deals", "quotes");
     const reordered = reorderSubmenu(start, "deals", "quotes", "quotes");
     expect(reordered.submenus.deals).toEqual(["quotes"]);
-    const added = addSubmenuLink(start, "deals", "tasks");
-    expect(added.submenus.deals).toContain("tasks");
-    expect(added.primaryOrder).not.toContain("tasks");
+    const added = addSubmenuLink(start, "deals", "phone");
+    expect(added.submenus.deals).toContain("phone");
+    expect(added.primaryOrder).not.toContain("phone");
     expect(removeSubmenuLink(added, "deals", "quotes").primaryOrder).toContain("quotes");
     const available = availableSubmenuLinks(added, "deals").map((link) => link.id);
     expect(available).not.toContain("deals");
     expect(available).not.toContain("quotes");
-    expect(available).not.toContain("tasks");
+    expect(available).not.toContain("phone");
   });
 
   it("nudges a primary or submenu one step, including Settings", () => {
@@ -582,8 +571,8 @@ describe("free rearrange", () => {
 
   it("reorders primaries including across the divider", () => {
     const start = defaultStoredNavLayout();
-    const moved = reorderPrimaries(start, "tasks", "home");
-    expect(moved.primaryOrder[0]).toBe("tasks");
+    const moved = reorderPrimaries(start, "calendar", "home");
+    expect(moved.primaryOrder[0]).toBe("calendar");
   });
 
   it("nests a folder under Admin and keeps its children", () => {
@@ -710,6 +699,8 @@ describe("catalog", () => {
     expect(ids).toContain("glance");
     expect(ids).toContain("commissions");
     expect(ids).toContain("developer");
+    expect(ids).toContain("alerts");
+    expect(ids).not.toContain("tasks");
     for (const id of [
       "book-health",
       "renewals",

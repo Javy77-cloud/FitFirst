@@ -35,6 +35,9 @@ import { listModuleTags } from "@/app/actions/record-tags";
 import { AddContactDialog } from "@/components/contacts/add-contact-dialog";
 import { countHealthSherpaReviewEnrollments } from "@/lib/healthsherpa/review";
 import { HEALTHSHERPA_REVIEW_PATH } from "@/lib/healthsherpa/copy";
+import { PromiseChips } from "@/components/notifications/promise-chips";
+import { loadOpenCommitments } from "@/lib/notifications/load-commitments";
+import { serializeCommitments } from "@/lib/notifications/commitments";
 
 export const dynamic = "force-dynamic";
 
@@ -51,13 +54,14 @@ export default async function ContactsPage({
   const dateFormat = normalizeDateDisplayFormat(personalLayout?.personal?.dateFormat);
   const q = firstParam(params.q) ?? "";
   const saved = firstParam(params.saved) === "1";
-  const [all, tagCatalog, contactLayout, contactFields, pageFilters, hsReviewCount] = await Promise.all([
+  const [all, tagCatalog, contactLayout, contactFields, pageFilters, hsReviewCount, promiseRows] = await Promise.all([
     listContacts(),
     listModuleTags("contacts").catch(() => []),
     loadLayoutForModule("contacts").catch(() => null),
     listFieldDefs("contacts").catch(() => []),
     loadPageFilterPrefs("contacts"),
     countHealthSherpaReviewEnrollments().catch(() => 0),
+    loadOpenCommitments().catch(() => []),
   ]);
   const visibleFilters = mergeLiveOptions(enabledPageFilters(pageFilters), {
     source: all.map((contact) => contact.source),
@@ -237,6 +241,11 @@ export default async function ContactsPage({
                     <RecordLink href={`/contacts/${c.id}`}>
                       {c.lastName}, {c.firstName}
                     </RecordLink>
+                    <PromiseChips
+                      commitments={serializeCommitments(
+                        promiseRows.filter((row) => row.contactId === c.id),
+                      )}
+                    />
                   </span>
                 ),
                 phone: formatPhoneDisplay(c.phone),

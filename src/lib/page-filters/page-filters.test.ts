@@ -86,7 +86,7 @@ describe("page filter modules", () => {
       "This Month",
     );
     expect(defaultPageFilters("businesses")[0]?.options.find((row) => row.value === "not_a_client")?.label).toBe(
-      "Not A Client",
+      "Not a Client",
     );
   });
 
@@ -165,31 +165,25 @@ describe("page filter modules", () => {
 });
 
 describe("Zoho plug points", () => {
-  it("Contacts, Business, Policies, Carriers, and Tasks wire PipelineFilterPopover", () => {
+  it("Contacts, Accounts, Policies, and Carriers wire PipelineFilterPopover", () => {
     const accounts = readFileSync("src/app/accounts/page.tsx", "utf8");
     const carriers = readFileSync("src/app/carriers/page.tsx", "utf8");
     const policies = readFileSync("src/app/policies/page.tsx", "utf8");
     const contacts = readFileSync("src/app/contacts/page.tsx", "utf8");
-    const tasks = readFileSync("src/app/tasks/page.tsx", "utf8");
     expect(accounts).toMatch(/PipelineFilterPopover/);
     expect(carriers).toMatch(/PipelineFilterPopover/);
     expect(policies).toMatch(/PipelineFilterPopover/);
     expect(contacts).toMatch(/PipelineFilterPopover/);
-    expect(tasks).toMatch(/PipelineFilterPopover/);
     expect(accounts).not.toMatch(/PageFiltersBar/);
     expect(carriers).not.toMatch(/PageFiltersBar/);
     expect(policies).not.toMatch(/SavedFiltersBar/);
     expect(contacts).not.toMatch(/SavedFiltersBar/);
-    expect(tasks).not.toMatch(/SavedFiltersBar/);
     expect(policies).toMatch(/matchesPageFilters/);
     expect(contacts).toMatch(/matchesPageFilters/);
-    expect(tasks).toMatch(/matchesPageFilters/);
     expect(policies).toMatch(/canConfigure=\{session\.isAdmin\}/);
     expect(contacts).toMatch(/canConfigure=\{session\.isAdmin\}/);
-    expect(tasks).toMatch(/canConfigure=\{session\.isAdmin\}/);
     expect(contacts).toMatch(/filterFieldsFromPageFilters/);
     expect(contacts).toMatch(/moduleId="contacts"/);
-    expect(tasks).toMatch(/moduleId="tasks"/);
   });
 });
 

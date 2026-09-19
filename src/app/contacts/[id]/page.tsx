@@ -43,6 +43,8 @@ import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/typ
 import { isContactSectionId, type ContactSectionId } from "@/lib/desk/contact-sections";
 import { prepareContactDealHeal } from "@/app/actions/contacts-ops";
 import { ContactSecondaryAddressCue } from "@/components/contacts/contact-secondary-address-cue";
+import { loadCommitmentsForEntities } from "@/lib/notifications/load-commitments";
+import { serializeCommitments } from "@/lib/notifications/commitments";
 
 export const dynamic = "force-dynamic";
 
@@ -84,7 +86,7 @@ export default async function ContactDetailPage({
   });
   scheduleContactCoverageNotices(contact.id);
 
-  const [tagExtra, contactLayout, book, comms, agencyRow, resolvedNavIds, contactDocs] =
+  const [tagExtra, contactLayout, book, comms, agencyRow, resolvedNavIds, contactDocs, contactPromises] =
     await Promise.all([
       listModuleTags("contacts").catch(() => [] as { name: string; color: string | null }[]),
       loadModuleLayoutBundle("contacts", contact.id).catch(() => null),
@@ -135,6 +137,10 @@ export default async function ContactDetailPage({
         .orderBy(desc(documents.createdAt))
         .then((rows) => rows)
         .catch(() => [] as { id: string; filename: string; createdAt: Date; status: string }[]),
+      loadCommitmentsForEntities({
+        contactIds: [contact.id],
+        dealIds: deals.map((deal) => deal.id),
+      }).catch(() => []),
     ]);
 
   const dups = softEmailPhoneDups(book, contact);
@@ -408,6 +414,7 @@ export default async function ContactDetailPage({
                   }
                   emailOptOut={contact.emailOptOut}
                   smsOptOut={contact.smsOptOut}
+                  commitments={serializeCommitments(contactPromises)}
                 />
                 <LinkedBusinessLine
                   contactId={contact.id}

@@ -14,6 +14,7 @@ import type { Actor } from "@/lib/auth/rbac";
 import type { HeaderRecordContext } from "@/lib/desk/header-record";
 import { listUsers } from "@/lib/db/queries";
 import { scheduleDueLeadFollowUpRelease } from "@/lib/leads/schedule-follow-up-release";
+import { schedulePanelSignalSync } from "@/lib/notifications/sync-panel";
 import { AgencyLobProvider } from "@/components/desk/agency-lob-context";
 import { loadAgencyLobs } from "@/lib/db/line-settings";
 
@@ -45,6 +46,7 @@ export async function AppShell({
   recordContext?: HeaderRecordContext | null;
 }) {
   scheduleDueLeadFollowUpRelease();
+  schedulePanelSignalSync();
   const [session, actor, catalog] = await Promise.all([
     currentDeskSession(),
     getActor(),

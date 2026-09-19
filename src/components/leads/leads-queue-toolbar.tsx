@@ -123,7 +123,7 @@ export function LeadsQueueToolbar({
       </div>
       <FollowUpTemplatesPanel templates={templateList} />
       {dueCount > 0 ? (
-        <a href="/tasks" className="text-xs font-medium text-primary hover:underline">
+        <a href="/notifications" className="text-xs font-medium text-primary hover:underline">
           {dueCount === 1 ? "1 follow-up due" : `${dueCount} follow-ups due`}
         </a>
       ) : null}
