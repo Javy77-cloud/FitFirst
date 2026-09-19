@@ -53,6 +53,8 @@ describe("client health chrome", () => {
     const write = source("src/app/actions/health-reviews.ts");
     expect(write).toMatch(/Could not save that pulse/);
     expect(write).toMatch(/441 the desk when a Pulse rate is chosen/);
+    expect(write).toMatch(/ensureExperienceReviewsTable/);
+    expect(write).toMatch(/logPulseSaveFailure/);
     expect(prompt).toMatch(/Could not save that pulse/);
   });
 

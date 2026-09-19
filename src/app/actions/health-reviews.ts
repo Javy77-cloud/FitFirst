@@ -5,7 +5,9 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { db } from "@/lib/db";
+import { ensureExperienceReviewsTable } from "@/lib/db/ensure-experience-reviews";
 import { experienceReviews } from "@/lib/db/schema";
+import { logPulseSaveFailure } from "@/lib/health/pulse-save-log";
 import {
   isReviewMoment,
   parseReviewStars,
@@ -62,11 +64,26 @@ async function writeReview(input: {
     dealId,
     activityId,
   };
+  const logCtx = {
+    moment,
+    promptId,
+    skipped: input.skipped,
+    hasContact: Boolean(contactId),
+    hasPolicy: Boolean(policyId),
+    hasDeal: Boolean(dealId),
+    hasActivity: Boolean(activityId),
+  };
+  try {
+    await ensureExperienceReviewsTable();
+  } catch (error) {
+    logPulseSaveFailure({ stage: "ensure-table", error, ...logCtx });
+  }
   try {
     await db.insert(experienceReviews).values(row);
-  } catch {
+  } catch (error) {
     // Missing experience_reviews table, stale FK, or catalog miss must not
     // 441 the desk when a Pulse rate is chosen.
+    logPulseSaveFailure({ stage: "insert", error, ...logCtx });
     try {
       await db.insert(experienceReviews).values({
         tenantId: row.tenantId,
@@ -77,7 +94,8 @@ async function writeReview(input: {
         note: row.note,
         skipped: row.skipped,
       });
-    } catch {
+    } catch (retryError) {
+      logPulseSaveFailure({ stage: "insert-without-optional-fks", error: retryError, ...logCtx });
       return { ok: false as const, error: "Could not save that pulse. Your book is still saved." };
     }
   }
@@ -94,7 +112,14 @@ export async function submitExperienceReview(formData: FormData) {
     const stars = parseReviewStars(formData.get("stars"));
     if (stars == null) return { ok: false as const, error: "Pick 1 to 5 stars." };
     return await writeReview({ stars, skipped: false, form: formData });
-  } catch {
+  } catch (error) {
+    logPulseSaveFailure({
+      stage: "action",
+      error,
+      moment: String(formData.get("moment") ?? ""),
+      promptId: String(formData.get("promptId") ?? ""),
+      skipped: false,
+    });
     return { ok: false as const, error: "Could not save that pulse. Your book is still saved." };
   }
 }
@@ -102,7 +127,14 @@ export async function submitExperienceReview(formData: FormData) {
 export async function skipExperienceReview(formData: FormData) {
   try {
     return await writeReview({ stars: null, skipped: true, form: formData });
-  } catch {
+  } catch (error) {
+    logPulseSaveFailure({
+      stage: "action",
+      error,
+      moment: String(formData.get("moment") ?? ""),
+      promptId: String(formData.get("promptId") ?? ""),
+      skipped: true,
+    });
     return { ok: false as const, error: "Could not save that pulse. Your book is still saved." };
   }
 }
