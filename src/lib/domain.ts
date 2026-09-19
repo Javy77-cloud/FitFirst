@@ -1,6 +1,18 @@
 import { formatDisplayDate } from "@/lib/dates/display-format";
-export const DEFAULT_TENANT_ID =
-  process.env.TENANT_ID ?? "11111111-1111-4111-8111-111111111111";
+
+/** Single-tenant fallback. Do not change — seed, fixtures, and session share this id. */
+export const FALLBACK_TENANT_ID = "11111111-1111-4111-8111-111111111111";
+
+/**
+ * Resolve a UUID env var. Vercel can persist TENANT_ID="" — empty is not nullish,
+ * so `??` would keep "" and every tenant-scoped query would 500 (22P02).
+ */
+export function envUuid(raw: string | undefined, fallback: string): string {
+  const value = raw?.trim() ?? "";
+  return value || fallback;
+}
+
+export const DEFAULT_TENANT_ID = envUuid(process.env.TENANT_ID, FALLBACK_TENANT_ID);
 
 export const CONFIDENCE_THRESHOLD = 0.8;
 
