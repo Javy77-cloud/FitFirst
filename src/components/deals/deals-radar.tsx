@@ -73,11 +73,14 @@ export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
               {HEAT_LABELS[open.heat]} · {open.clockLabel}
             </p>
             <h3>{open.insured !== "—" ? open.insured : open.title}</h3>
-            <p className="ff-stack-meta">
-              {open.productLabels.join(" · ") || open.lineOfBusiness}
-              {" · "}
-              {formatDealValue(open.value, open.valueMetric)}
-            </p>
+            <div className="ff-product-chips">
+              {(open.productLabels.length ? open.productLabels : [open.lineOfBusiness]).map((label) => (
+                <span key={label} className="ff-product-chip">
+                  {label}
+                </span>
+              ))}
+              <span className="ff-stack-meta">{formatDealValue(open.value, open.valueMetric)}</span>
+            </div>
             <div className="ff-stack-foot">
               {open.stageStamp ? <DealStatusStamp stage={open.stageStamp} /> : <span className="ff-stage-stamp-quiet">{open.stageLabel}</span>}
               <span className="ff-health-chip">Client {open.clientHealth}</span>

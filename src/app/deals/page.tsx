@@ -29,6 +29,7 @@ import {
 import { pickFilterParams } from "@/lib/saved-filters";
 import { defaultDealsView, parseDealsView } from "@/lib/deals/deals-views";
 import { matchesDealLens } from "@/lib/deals/deals-lenses";
+import { scheduleDealColdChaseNotices } from "@/lib/deals/cold-chase-sync";
 import { loadDealVelocityTouches, ownerScorecards, presentRadarCards, agentVelocityScores } from "@/lib/deals/radar-desk";
 import { rankByScore } from "@/lib/deals/velocity";
 
@@ -109,6 +110,7 @@ export default async function DealsPage({
   });
   const touches = await loadDealVelocityTouches(rawRows.map((row) => row.deal.id));
   const presented = presentRadarCards(rawRows, touches, users);
+  scheduleDealColdChaseNotices(presented);
   const canSeeTeam = sessionSeesAgencyBook(session);
   const filtered = presented.filter((card) => {
     if (q) {

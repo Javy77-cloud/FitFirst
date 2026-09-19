@@ -110,6 +110,20 @@ describe("toHeaderAlert", () => {
     expect(alert.href).toBe("/contacts/healthsherpa-review?enrollment=e1");
   });
 
+  it("deep-links a cold deal chase onto Quotes", () => {
+    const alert = toHeaderAlert({
+      id: "cold-1",
+      title: "Deal went cold — one-click chase",
+      body: "Ana Dib · 14 days with no platform-logged comms.",
+      severity: "warning",
+      kind: "deal_cold_chase",
+      readAt: null,
+      entityType: "deal",
+      entityId: "d1",
+    });
+    expect(alert.href).toBe("/deals/d1?tab=quotes");
+  });
+
   it("opens the specific lead for a follow-up ping", () => {
     const alert = toHeaderAlert({
       id: "a4",

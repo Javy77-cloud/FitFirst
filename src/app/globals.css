@@ -2474,6 +2474,16 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   text-align: left;
   cursor: default;
 }
+.ff-product-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; margin-top: 0.35rem; }
+.ff-product-chip {
+  border-radius: 999px;
+  padding: 0.08rem 0.42rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ff-navy);
+  background: color-mix(in srgb, var(--ff-navy) 8%, white);
+}
 .ff-radar-card-kicker { margin: 0; font-size: 0.68rem; font-weight: 700; color: var(--ff-heat); text-transform: uppercase; letter-spacing: 0.04em; }
 .ff-radar-card h3 { margin: 0.2rem 0 0; font-size: 1rem; color: var(--ff-navy); }
 .ff-velocity-clocks {

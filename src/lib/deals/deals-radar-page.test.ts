@@ -25,6 +25,7 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/draggable/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-deals-radar/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-radar-dot/);
+    expect(source("src/components/deals/deals-radar.tsx")).toMatch(/ff-product-chip/);
     expect(source("src/app/globals.css")).toMatch(/ff-heat-pulse/);
     expect(source("src/app/globals.css")).toMatch(/ff-heat-flicker/);
   });
@@ -37,6 +38,7 @@ describe("Deals Priority Stack + Radar", () => {
     expect(defaultDealsView({ isAdmin: true, user: { canSeeAgencyWidgets: true } as never })).toBe("radar");
     expect(source("src/app/deals/page.tsx")).toMatch(/listDeals/);
     expect(source("src/app/deals/page.tsx")).not.toMatch(/listLeads/);
+    expect(source("src/app/deals/page.tsx")).toMatch(/scheduleDealColdChaseNotices/);
     expect(COLD_COMM_DAYS).toBe(14);
     expect(VELOCITY_PHASES).toEqual([
       "lead_to_deal",
@@ -66,5 +68,7 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/lib/deals/velocity.ts")).toMatch(/Client health/);
     expect(source("src/components/deals/priority-stack.tsx")).toMatch(/Client health/);
     expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/retention/i);
+    expect(source("src/app/deals/page.tsx")).toMatch(/scheduleDealColdChaseNotices/);
+    expect(source("src/lib/deals/cold-chase.ts")).toMatch(/Deal went cold — one-click chase/);
   });
 });
