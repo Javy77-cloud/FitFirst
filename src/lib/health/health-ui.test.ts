@@ -62,8 +62,12 @@ describe("client health chrome", () => {
     expect(reviewHost).toMatch(/try \{/);
     expect(reviewHost).toMatch(/return null;/);
     const write = source("src/app/actions/health-reviews.ts");
+    const ensure = source("src/lib/db/ensure-experience-reviews.ts");
     expect(write).toMatch(/Could not save that pulse/);
     expect(write).toMatch(/441 the desk when a Pulse rate is chosen/);
+    expect(write).toMatch(/ensureExperienceReviewsTable/);
+    expect(ensure).toMatch(/CREATE TABLE IF NOT EXISTS "experience_reviews"/);
+    expect(ensure).toMatch(/0145/);
     expect(prompt).toMatch(/Could not save that pulse/);
   });
 
