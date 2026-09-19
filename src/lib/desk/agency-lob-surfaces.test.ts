@@ -12,6 +12,17 @@ describe("agency LOB surfaces", () => {
     expect(page).toMatch(/mapOrphanLob/);
   });
 
+  it("does not let agency_lobs seed take down desk line settings", () => {
+    const loader = readFileSync("src/lib/db/line-settings.ts", "utf8");
+    expect(loader).toMatch(/export async function ensureDefaultAgencyLobs/);
+    expect(loader).toMatch(/Catalog seed is optional chrome/);
+    expect(loader).toMatch(/missing agency_lobs table/);
+    const deskFn = loader.slice(loader.indexOf("export async function loadDeskLineSettings"));
+    expect(deskFn).toMatch(/return DEFAULT_DESK_LINE_SETTINGS/);
+    expect(deskFn).not.toMatch(/await ensureDefaultAgencyLobs\(\)/);
+    expect(loader).toMatch(/visibleAgencyLobs\(DEFAULT_AGENCY_LOBS, DEFAULT_DESK_LINE_SETTINGS/);
+  });
+
   it("deal picker and policy field consume the catalog", () => {
     const picker = readFileSync("src/components/deals/product-picker.tsx", "utf8");
     const policy = readFileSync("src/components/policy/policy-information.tsx", "utf8");
