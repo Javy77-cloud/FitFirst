@@ -4,7 +4,7 @@ import { DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
 import { DealWorkQueuePanel } from "@/components/deals/deal-work-queue-panel";
 import { AddNewDealDialog } from "@/components/deals/add-new-deal-dialog";
 import { DealsCommandWorkspace } from "@/components/deals/deals-command-workspace";
-import { TodayActivityCorner } from "@/components/renewals/today-activity-corner";
+import { TodayActivityCorner } from "@/components/desk/today-activity-corner";
 import { PipelineBookModeToggle } from "@/components/pipeline/book-mode-toggle";
 import { RenewalsDesk } from "@/components/renewals/renewals-desk";
 import { requireSignedIn } from "@/lib/auth/guards";

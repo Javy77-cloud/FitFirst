@@ -38,10 +38,13 @@ describe("Calendar + Deals density", () => {
     expect(chrome).toMatch(/\[data-ff-pipeline-filter-chrome\] \[data-ff-pipeline-filters\] \{[\s\S]*margin-bottom: 0;/);
   });
 
-  it("lifts today's activity counters and the list another ~2 lines", () => {
+  it("does not reserve in-flow space for Today Activity", () => {
     const chrome = source("src/app/globals.css");
-    expect(chrome).toMatch(/\.deal-upload-activity \{[\s\S]*margin-top: -5rem;/);
-    expect(chrome).toMatch(/\.deal-upload-activity \{[\s\S]*padding-bottom: 0\.5rem !important;/);
+    const page = source("src/app/deals/page.tsx");
+    expect(page).toMatch(/TodayActivityCorner/);
+    expect(page).not.toMatch(/deal-upload-activity|deal-today-slot|deal-activity-list-spacer/);
+    expect(chrome).toMatch(/\.ff-today-activity-corner \{[\s\S]*position: fixed;/);
+    expect(chrome).not.toMatch(/\.deal-upload-activity/);
     expect(chrome).toMatch(/\.deal-list-below-activity \{[\s\S]*margin-top: 0 !important;/);
   });
 });

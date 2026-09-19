@@ -13,7 +13,7 @@ describe("Renewals desk chrome", () => {
     const urgency = source("src/lib/renewal/urgency.ts");
     const card = source("src/components/renewals/renewal-card.tsx");
     const pulse = source("src/components/renewals/renewals-pulse.tsx");
-    const corner = source("src/components/renewals/today-activity-corner.tsx");
+    const corner = source("src/components/desk/today-activity-corner.tsx");
     const renewalsPage = source("src/app/renewals/page.tsx");
     const dealsPage = source("src/app/deals/page.tsx");
 
