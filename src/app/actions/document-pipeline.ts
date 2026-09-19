@@ -53,6 +53,7 @@ function dealDocumentsHref(dealId: string): string {
 function revalidateLetterPaths(dealId: string) {
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/documents");
+  revalidatePath("/documents/signed");
   revalidatePath("/esign");
 }
 

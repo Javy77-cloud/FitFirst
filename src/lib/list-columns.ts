@@ -1020,9 +1020,11 @@ export const CERTIFICATES_LIST_COLUMNS = labeledColumns([
 ]);
 
 export const ESIGN_LIST_COLUMNS = labeledColumns([
-  ["packet", "Packet", true],
-  ["record", "Record"],
+  ["signer", "Client / signer", true],
+  ["form", "Form"],
   ["status", "Status"],
+  ["record", "Record"],
+  ["sent", "Sent"],
   ["actions", ""],
 ]);
 

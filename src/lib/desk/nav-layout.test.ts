@@ -55,6 +55,8 @@ describe("nav layout defaults", () => {
       "policies",
       "carriers",
       "calendar",
+      "documents",
+      "email-templates",
       "templates",
       "divider",
       "reports",
@@ -72,6 +74,8 @@ describe("nav layout defaults", () => {
       "Policies",
       "Carriers",
       "Calendar",
+      "Documents",
+      "Email templates",
       "Templates",
       "Reports",
       "Settings",
@@ -91,7 +95,7 @@ describe("nav layout defaults", () => {
   });
 
   it("leaves Deals without a Quotes child and keeps template / admin / policies children only", () => {
-    expect(NAV_LAYOUT_VERSION).toBe(13);
+    expect(NAV_LAYOUT_VERSION).toBe(14);
     const rows = resolveNavLayout(null);
     const byId = Object.fromEntries(
       rows.filter((row) => row.kind === "item").map((row) => [row.id, row]),
@@ -113,16 +117,14 @@ describe("nav layout defaults", () => {
     expect(byId.calendar.submenu).toEqual([]);
     expect(byId.reports.submenu).toEqual([]);
     expect(byId.settings.submenu).toEqual([]);
-    expect(byId.templates.submenu.map((item) => item.id)).toEqual([
-      "email-signatures",
-      "email-templates",
-      "document-templates",
-    ]);
-    expect(byId.templates.submenu.map((item) => item.label)).toEqual([
-      "Email signatures",
-      "Email templates",
-      "Documents",
-    ]);
+    expect(byId.documents.submenu.map((item) => item.id)).toEqual(["esign"]);
+    expect(byId.documents.submenu.map((item) => item.label)).toEqual(["Signed"]);
+    expect(byId.documents.link.href).toBe("/documents");
+    expect(byId["email-templates"].submenu).toEqual([]);
+    expect(byId["email-templates"].link.href).toBe("/automations/templates");
+    expect(byId.templates.submenu.map((item) => item.id)).toEqual(["email-signatures"]);
+    expect(byId.templates.submenu.map((item) => item.label)).toEqual(["Email signatures"]);
+    expect(byId.templates.submenu.map((item) => item.label)).not.toContain("Documents");
     expect(byId.admin.submenu.map((item) => item.id)).toEqual([
       "agents",
       "integrations",
@@ -218,6 +220,8 @@ describe("nav layout defaults", () => {
       "policies",
       "carriers",
       "calendar",
+      "documents",
+      "email-templates",
       "templates",
       "reports",
     ]);
@@ -246,6 +250,8 @@ describe("nav layout defaults", () => {
           "leads",
           "deals",
           "calendar",
+          "documents",
+          "email-templates",
           "templates",
           "divider",
           "reports",
@@ -267,6 +273,8 @@ describe("nav layout defaults", () => {
       "leads",
       "deals",
       "calendar",
+      "documents",
+      "email-templates",
       "templates",
       "reports",
     ]);
@@ -284,7 +292,7 @@ describe("nav layout defaults", () => {
   it("keeps live desk destinations reachable and omits stubs", () => {
     const hrefs = flattenResolvedNav(resolveNavLayout(null)).map((item) => item.href);
     const ids = flattenResolvedNav(resolveNavLayout(null)).map((item) => item.id);
-    for (const href of ["/", "/leads", "/deals", "/contacts", "/accounts", "/policies", "/carriers", "/calendar", "/settings", "/admin", "/templates", "/reports"]) {
+    for (const href of ["/", "/leads", "/deals", "/contacts", "/accounts", "/policies", "/carriers", "/calendar", "/documents", "/automations/templates", "/esign", "/settings", "/admin", "/templates", "/reports"]) {
       expect(hrefs).toContain(href);
     }
     expect(hrefs).not.toContain("/quotes");
@@ -328,7 +336,7 @@ describe("nav layout defaults", () => {
       hiddenPrimaryIds: ["operations", "billing"],
       submenus: { admin: ["agents", "operations"], operations: [] },
     });
-    expect(next.version).toBe(13);
+    expect(next.version).toBe(14);
     expect(next.primaryOrder.at(-1)).toBe("operations");
     expect(next.hiddenPrimaryIds).toEqual([]);
     expect(next.submenus.admin).not.toContain("operations");
@@ -362,6 +370,8 @@ describe("nav layout defaults", () => {
       "policies",
       "carriers",
       "calendar",
+      "documents",
+      "email-templates",
       "templates",
     ]);
     expect(itemIds(utility)).toEqual(["reports", "settings", "admin", "operations"]);
@@ -659,6 +669,9 @@ describe("primaryIdForPath", () => {
     expect(primaryIdForPath("/pipeline")).toBe("deals");
     expect(primaryIdForPath("/deals")).toBe("deals");
     expect(primaryIdForPath("/templates")).toBe("templates");
+    expect(primaryIdForPath("/documents")).toBe("documents");
+    expect(primaryIdForPath("/esign")).toBe("documents");
+    expect(primaryIdForPath("/automations/templates")).toBe("email-templates");
     expect(primaryIdForPath("/admin")).toBe("admin");
     expect(primaryIdForPath("/policies")).toBe("policies");
     expect(primaryIdForPath("/renewals")).toBe("policies");
@@ -700,7 +713,11 @@ describe("catalog", () => {
     expect(ids).toContain("commissions");
     expect(ids).toContain("developer");
     expect(ids).toContain("alerts");
+    expect(ids).toContain("documents");
+    expect(ids).toContain("esign");
+    expect(ids).toContain("email-templates");
     expect(ids).not.toContain("tasks");
+    expect(ids).not.toContain("document-templates");
     for (const id of [
       "book-health",
       "renewals",

@@ -245,6 +245,11 @@ describe("document pipeline wiring", () => {
     expect(envelopes).toMatch(/dateSignedTabs/);
     expect(webhook).toMatch(/applyDocumentPipelineEnvelopeStatus/);
     expect(source("src/lib/document-pipeline/apply-envelope.ts")).toMatch(/applyDocumentPipelineEnvelopeStatus/);
+    expect(source("src/app/esign/page.tsx")).toMatch(/SignedRetrievalDesk/);
+    expect(source("src/app/esign/page.tsx")).toMatch(/listSignedRetrievalRows/);
+    expect(source("src/lib/esign/retrieval.ts")).toMatch(/Applications \/ other/);
+    expect(source("src/lib/integrations/docusign-envelopes.ts")).toMatch(/documents\/combined/);
+    expect(source("src/lib/integrations/docusign-envelopes.ts")).toMatch(/resend_envelope/);
     expect(isAgencyLetterDocType("cancellation")).toBe(true);
     expect(isAgencyLetterDocType("aor")).toBe(true);
     expect(isAgencyLetterDocType("acord")).toBe(true);

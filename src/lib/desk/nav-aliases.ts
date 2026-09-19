@@ -3,6 +3,7 @@
 export const RETIRED_NAV_IDS: Record<string, string> = {
   pipeline: "deals",
   tasks: "alerts",
+  "document-templates": "documents",
 };
 
 export const RETIRED_NAV_PATHS: Record<string, string> = {

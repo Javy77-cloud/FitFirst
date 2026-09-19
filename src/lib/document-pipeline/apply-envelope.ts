@@ -37,6 +37,7 @@ export async function applyDocumentPipelineEnvelopeStatus(input: {
     );
   revalidatePath(`/deals/${job.dealId}`);
   revalidatePath("/documents");
+  revalidatePath("/documents/signed");
   revalidatePath("/esign");
   return true;
 }

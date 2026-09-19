@@ -7,13 +7,17 @@ function source(file: string) {
 }
 
 describe("templates IA", () => {
-  it("renames Document templates to Documents and keeps Tasks", () => {
+  it("renames Document templates to Documents and keeps Email templates off that row", () => {
     const catalog = source("src/lib/desk/nav-catalog.ts");
-    expect(catalog).toMatch(/id: "document-templates"/);
+    expect(catalog).toMatch(/id: "documents"/);
     expect(catalog).toMatch(/label: "Documents"/);
     expect(catalog).not.toMatch(/Document templates/);
-    expect(catalog).toMatch(/id: "tasks"/);
-    expect(catalog).toMatch(/label: "Tasks"/);
+    expect(catalog).not.toMatch(/id: "document-templates"/);
+    expect(catalog).not.toMatch(/id: "tasks"/);
+    expect(catalog).toMatch(/id: "email-templates"/);
+    expect(catalog).toMatch(/label: "Email templates"/);
+    expect(catalog).toMatch(/id: "esign"/);
+    expect(catalog).toMatch(/label: "Signed"/);
     expect(catalog).toMatch(/id: "business"/);
     expect(catalog).toMatch(/href: "\/accounts"/);
   });
@@ -26,6 +30,8 @@ describe("templates IA", () => {
     expect(hub).not.toMatch(/Document templates/);
     expect(hub).toMatch(/Email templates/);
     expect(hub).toMatch(/Agency signature/);
+    expect(hub).toMatch(/href: "\/esign"/);
+    expect(hub).toMatch(/title: "Signed"/);
     expect(source("src/app/templates/page.tsx")).toMatch(/TemplatesHub/);
   });
 

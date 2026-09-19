@@ -281,6 +281,103 @@ export async function pollDocuSignEnvelope(envelopeId: string): Promise<DocuSign
   }
 }
 
+export async function downloadDocuSignCombinedPdf(
+  envelopeId: string,
+): Promise<{ ok: true; bytes: Buffer; filename: string } | { ok: false; message: string }> {
+  try {
+    const account = await resolveDocuSignAccount();
+    if (!account.ok) return { ok: false, message: account.result.message };
+    const res = await fetch(
+      `${account.baseUri}/restapi/v2.1/accounts/${account.accountId}/envelopes/${encodeURIComponent(envelopeId)}/documents/combined`,
+      {
+        headers: { Authorization: `Bearer ${account.token}`, Accept: "application/pdf" },
+        signal: AbortSignal.timeout(20000),
+      },
+    );
+    if (!res.ok) {
+      const payload = (await res.json().catch(() => ({}))) as { message?: string };
+      return { ok: false, message: payload.message || `DocuSign signed PDF failed (${res.status}).` };
+    }
+    const bytes = Buffer.from(await res.arrayBuffer());
+    return { ok: true, bytes, filename: `signed-${envelopeId}.pdf` };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "DocuSign signed PDF failed.",
+    };
+  }
+}
+
+export async function resendDocuSignEnvelope(
+  envelopeId: string,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    const account = await resolveDocuSignAccount();
+    if (!account.ok) return { ok: false, message: account.result.message };
+    const res = await fetch(
+      `${account.baseUri}/restapi/v2.1/accounts/${account.accountId}/envelopes/${encodeURIComponent(envelopeId)}/recipients?resend_envelope=true`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${account.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+        signal: AbortSignal.timeout(12000),
+      },
+    );
+    if (!res.ok) {
+      const payload = (await res.json().catch(() => ({}))) as { message?: string };
+      return { ok: false, message: payload.message || `DocuSign resend failed (${res.status}).` };
+    }
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "DocuSign resend failed.",
+    };
+  }
+}
+
+export async function createDocuSignRecipientView(input: {
+  envelopeId: string;
+  signerName: string;
+  signerEmail: string;
+  returnUrl: string;
+}): Promise<{ ok: true; url: string } | { ok: false; message: string }> {
+  try {
+    const account = await resolveDocuSignAccount();
+    if (!account.ok) return { ok: false, message: account.result.message };
+    const res = await fetch(
+      `${account.baseUri}/restapi/v2.1/accounts/${account.accountId}/envelopes/${encodeURIComponent(input.envelopeId)}/views/recipient`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${account.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          authenticationMethod: "none",
+          userName: input.signerName,
+          email: input.signerEmail,
+          returnUrl: input.returnUrl,
+        }),
+        signal: AbortSignal.timeout(12000),
+      },
+    );
+    const payload = (await res.json()) as { url?: string; message?: string };
+    if (!res.ok || !payload.url) {
+      return { ok: false, message: payload.message || `DocuSign signing link failed (${res.status}).` };
+    }
+    return { ok: true, url: payload.url };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "DocuSign signing link failed.",
+    };
+  }
+}
+
 /** Identity ping used by the Documents eSign test path when send is not attempted. */
 export async function docusignSandboxIdentity(): Promise<{ ready: boolean; label: string | null }> {
   const ready = await docusignIsReady();

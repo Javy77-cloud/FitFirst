@@ -10,7 +10,7 @@ import {
 import { remapNavIds, remapNavSubmenus } from "@/lib/desk/nav-aliases";
 
 /** Bump when the signed default rail changes so stale per-user prefs reset. */
-export const NAV_LAYOUT_VERSION = 13 as const;
+export const NAV_LAYOUT_VERSION = 14 as const;
 export const DIVIDER_ID = "divider";
 
 /** Admin-only Operations folder. Default rail places it top-level; Customize can nest or promote it. */
@@ -51,6 +51,8 @@ export const DEFAULT_PRIMARY_ORDER = [
   "policies",
   "carriers",
   "calendar",
+  "documents",
+  "email-templates",
   "templates",
   DIVIDER_ID,
   "reports",
@@ -82,7 +84,9 @@ export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
   business: [],
   carriers: [],
   calendar: [],
-  templates: ["email-signatures", "email-templates", "document-templates"],
+  documents: ["esign"],
+  "email-templates": [],
+  templates: ["email-signatures"],
   reports: [],
   settings: [],
   admin: [

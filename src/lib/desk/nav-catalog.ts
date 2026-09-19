@@ -17,6 +17,7 @@ import {
   Home,
   Landmark,
   ListChecks,
+  Mail,
   PenLine,
   Phone,
   Plug,
@@ -126,13 +127,7 @@ export const NAV_LINK_CATALOG: NavLinkDef[] = [
     match: "/installments",
   },
   { id: "documents", href: "/documents", label: "Documents", icon: FileStack, match: "/documents" },
-  {
-    id: "document-templates",
-    href: "/documents",
-    label: "Documents",
-    icon: FileStack,
-    match: "/documents",
-  },
+  { id: "esign", href: "/esign", label: "Signed", icon: PenLine, match: "/esign" },
   { id: "forms", href: "/forms", label: "Forms", icon: FileStack, match: "/forms" },
   { id: "claims", href: "/claims", label: "Claims", icon: FileStack, match: "/claims", adminOnly: true },
   { id: "commissions", href: "/commissions", label: "Commissions", icon: Briefcase, match: "/commissions" },
@@ -170,7 +165,7 @@ export const NAV_LINK_CATALOG: NavLinkDef[] = [
     id: "email-templates",
     href: "/automations/templates",
     label: "Email templates",
-    icon: FileStack,
+    icon: Mail,
     match: "/automations/templates",
   },
   { id: "reports", href: "/reports", label: "Reports", icon: BarChart3, match: "/reports" },
@@ -317,8 +312,17 @@ export function navLinkIsActive(pathname: string, item: Pick<NavLinkDef, "href" 
   if (match === "/accounts" && (pathname === "/businesses" || pathname.startsWith("/businesses/"))) {
     return true;
   }
-  if (match === "/documents" && (pathname === "/forms" || pathname.startsWith("/forms/"))) {
+  if (
+    match === "/documents" &&
+    (pathname === "/forms" ||
+      pathname.startsWith("/forms/") ||
+      pathname === "/esign" ||
+      pathname.startsWith("/esign/"))
+  ) {
     return true;
+  }
+  if (match === "/automations" && (pathname === "/automations/templates" || pathname.startsWith("/automations/templates/"))) {
+    return false;
   }
   if (match === "/deals" && (pathname === "/pipeline" || pathname.startsWith("/pipeline/"))) {
     return true;
