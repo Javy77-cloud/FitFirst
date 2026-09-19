@@ -43,6 +43,7 @@ export async function sendDocumentForSignature(formData: FormData) {
 
   const returnTo = str(formData, "returnTo") || "/esign";
   revalidatePath("/esign");
+  revalidatePath("/documents/signed");
   revalidatePath("/documents");
   if (doc.dealId) revalidatePath(`/deals/${doc.dealId}`);
   redirect(`${returnTo}?notice=esign-not-implemented&envelope=${envelope.id}`);
@@ -59,5 +60,6 @@ export async function markEnvelopeSigned(formData: FormData) {
     })
     .where(and(eq(signatureEnvelopes.tenantId, DEFAULT_TENANT_ID), eq(signatureEnvelopes.id, id)));
   revalidatePath("/esign");
+  revalidatePath("/documents/signed");
   redirect("/esign?notice=marked-signed");
 }

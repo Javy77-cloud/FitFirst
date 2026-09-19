@@ -80,14 +80,19 @@ export default async function DocumentsPage({
     <AppShell
       title="Documents"
       actions={
-        <Link href="/documents?library=shared" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
-          Library
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/esign" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+            Signed
+          </Link>
+          <Link href="/documents?library=shared" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+            Library
+          </Link>
+        </div>
       }
     >
       <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
         Documents by type, carrier nested inside. Forms hold ACORD, No Run Loss, Cancellation, and AOR.
-        Library holds marketing and appetite. The mail library stays under Templates → Email.
+        Signed envelopes live on Signed. Email templates are their own nav section, not this library.
       </p>
 
       {notice === "bad-move" ? (

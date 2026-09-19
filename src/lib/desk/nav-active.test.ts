@@ -59,6 +59,7 @@ describe("navItemIsActive", () => {
     expect(navItemIsActive("/documents/fill/fl-ho3", "/documents")).toBe(true);
     expect(navItemIsActive("/forms", "/documents")).toBe(true);
     expect(navItemIsActive("/forms/fl-ho3", "/documents")).toBe(true);
+    expect(navItemIsActive("/esign", "/documents")).toBe(true);
     expect(navItemIsActive("/quotes", "/documents")).toBe(false);
   });
 

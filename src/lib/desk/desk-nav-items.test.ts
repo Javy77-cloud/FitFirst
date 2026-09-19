@@ -99,8 +99,14 @@ describe("desk nav chrome", () => {
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
     expect(labels).toContain("Documents");
     expect(labels).not.toContain("Forms");
+    expect(labels).not.toContain("Document templates");
     expect(hrefs).toContain("/documents");
     expect(hrefs).not.toContain("/forms");
+    expect(labels.filter((label) => label === "Documents")).toHaveLength(1);
+    expect(labels).toContain("Signed");
+    expect(hrefs).toContain("/esign");
+    expect(labels).toContain("Email templates");
+    expect(hrefs).toContain("/automations/templates");
   });
 
   it("removes standalone Tasks from the left nav", () => {

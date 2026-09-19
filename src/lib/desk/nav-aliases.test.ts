@@ -32,6 +32,14 @@ describe("retired Pipeline nav prefs", () => {
     });
   });
 
+  it("maps retired Document templates onto Documents", () => {
+    expect(remapNavId("document-templates")).toBe("documents");
+    expect(remapNavIds(["templates", "document-templates", "documents"])).toEqual([
+      "templates",
+      "documents",
+    ]);
+  });
+
   it("maps retired Tasks nav onto Notifications", () => {
     expect(remapNavId("tasks")).toBe("alerts");
     expect(remapNavIds(["home", "tasks", "calendar", "alerts"])).toEqual([

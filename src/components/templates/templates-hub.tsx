@@ -40,6 +40,13 @@ const DOCUMENTS = [
     meta: "One-button send",
     icon: FileStack,
   },
+  {
+    href: "/esign",
+    title: "Signed",
+    body: "Agency-wide DocuSign and in-desk envelopes. Search, download, resend, open the deal.",
+    meta: "Retrieval desk",
+    icon: FileStack,
+  },
 ] as const;
 
 const OTHER = [
@@ -114,7 +121,7 @@ export function TemplatesHub() {
         id="email"
         kicker="Email"
         title="Email"
-        intro="Templates and signatures stay together. Documents never appear in this list."
+        intro="Email templates are their own library — not Documents, not Tasks. Signatures stay with email."
         cards={EMAIL}
       />
       <Section
