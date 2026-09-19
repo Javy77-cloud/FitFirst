@@ -3,6 +3,7 @@ import {
   Building2,
   Code2,
   CreditCard,
+  Mail,
   Phone,
   Plug,
   Shield,
@@ -21,6 +22,7 @@ const ICONS: Record<IconId, LucideIcon> = {
   security: Shield,
   billing: CreditCard,
   "import-export": ArrowLeftRight,
+  templates: Mail,
 };
 
 export function SettingsGroupIcon({

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { CalendarDays, X } from "lucide-react";
 import { TodayActivityStrip } from "@/components/deals/today-activity-strip";
@@ -22,9 +23,14 @@ export function TodayActivityCorner({
   basePath?: "/deals" | "/renewals";
 }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
   const dated = formatTodayActivityDate(now);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -43,7 +49,7 @@ export function TodayActivityCorner({
     };
   }, [open]);
 
-  return (
+  const node = (
     <div
       ref={rootRef}
       className="ff-today-activity-corner"
@@ -83,8 +89,14 @@ export function TodayActivityCorner({
         onClick={() => setOpen((current) => !current)}
       >
         <CalendarDays className="size-4" aria-hidden />
+        <span className="ff-today-activity-corner-copy" data-ff-today-activity-label="">
+          Today Activity
+        </span>
         <strong>{total}</strong>
       </button>
     </div>
   );
+
+  if (!mounted || typeof document === "undefined") return node;
+  return createPortal(node, document.body);
 }

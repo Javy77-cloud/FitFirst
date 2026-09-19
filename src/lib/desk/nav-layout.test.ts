@@ -50,6 +50,7 @@ describe("nav layout defaults", () => {
       "home",
       "leads",
       "deals",
+      "alerts",
       "contacts",
       "business",
       "policies",
@@ -69,6 +70,7 @@ describe("nav layout defaults", () => {
       "Dashboard",
       "Leads",
       "Deals",
+      "Notifications",
       "Contacts",
       "Accounts",
       "Policies",
@@ -95,12 +97,15 @@ describe("nav layout defaults", () => {
   });
 
   it("leaves Deals without a Quotes child and keeps template / admin / policies children only", () => {
-    expect(NAV_LAYOUT_VERSION).toBe(14);
+    expect(NAV_LAYOUT_VERSION).toBe(15);
     const rows = resolveNavLayout(null);
     const byId = Object.fromEntries(
       rows.filter((row) => row.kind === "item").map((row) => [row.id, row]),
     );
     expect(byId.deals.submenu.map((item) => item.id)).toEqual([]);
+    expect(byId.alerts.link.href).toBe("/notifications");
+    expect(byId.alerts.link.label).toBe("Notifications");
+    expect(byId.alerts.submenu).toEqual([]);
     expect(byId.leads.submenu).toEqual([]);
     expect(byId.contacts.submenu).toEqual([]);
     expect(DEFAULT_SUBMENUS.policies).toEqual([...POLICIES_DEFAULT_KIDS]);
@@ -215,6 +220,7 @@ describe("nav layout defaults", () => {
       "home",
       "leads",
       "deals",
+      "alerts",
       "contacts",
       "business",
       "policies",
@@ -272,6 +278,7 @@ describe("nav layout defaults", () => {
       "home",
       "leads",
       "deals",
+      "alerts",
       "calendar",
       "documents",
       "email-templates",
@@ -292,7 +299,7 @@ describe("nav layout defaults", () => {
   it("keeps live desk destinations reachable and omits stubs", () => {
     const hrefs = flattenResolvedNav(resolveNavLayout(null)).map((item) => item.href);
     const ids = flattenResolvedNav(resolveNavLayout(null)).map((item) => item.id);
-    for (const href of ["/", "/leads", "/deals", "/contacts", "/accounts", "/policies", "/carriers", "/calendar", "/documents", "/automations/templates", "/esign", "/settings", "/admin", "/templates", "/reports"]) {
+    for (const href of ["/", "/leads", "/deals", "/notifications", "/contacts", "/accounts", "/policies", "/carriers", "/calendar", "/documents", "/automations/templates", "/esign", "/settings", "/admin", "/templates", "/reports"]) {
       expect(hrefs).toContain(href);
     }
     expect(hrefs).not.toContain("/quotes");
@@ -336,7 +343,7 @@ describe("nav layout defaults", () => {
       hiddenPrimaryIds: ["operations", "billing"],
       submenus: { admin: ["agents", "operations"], operations: [] },
     });
-    expect(next.version).toBe(14);
+    expect(next.version).toBe(15);
     expect(next.primaryOrder.at(-1)).toBe("operations");
     expect(next.hiddenPrimaryIds).toEqual([]);
     expect(next.submenus.admin).not.toContain("operations");
@@ -365,6 +372,7 @@ describe("nav layout defaults", () => {
       "home",
       "leads",
       "deals",
+      "alerts",
       "contacts",
       "business",
       "policies",
@@ -434,7 +442,7 @@ describe("normalizeNavLayout", () => {
       submenus: { home: ["get-started", "social", "support"], calendar: ["phone", "inbox", "alerts"] },
     });
     expect(dropped.submenus.home).toEqual(["social"]);
-    expect(dropped.submenus.calendar).toEqual(["phone", "alerts"]);
+    expect(dropped.submenus.calendar).toEqual(["phone"]);
     const remapped = normalizeNavLayout({
       version: NAV_LAYOUT_VERSION,
       primaryOrder: ["home", "pipeline", "leads"],
@@ -665,9 +673,9 @@ describe("primaryIdForPath", () => {
     expect(primaryIdForPath("/me")).toBe("");
     expect(primaryIdForPath("/settings/profile")).toBe("");
     expect(primaryIdForPath("/settings/security")).toBe("");
-    expect(primaryIdForPath("/notifications")).toBe("");
     expect(primaryIdForPath("/pipeline")).toBe("deals");
     expect(primaryIdForPath("/deals")).toBe("deals");
+    expect(primaryIdForPath("/notifications")).toBe("alerts");
     expect(primaryIdForPath("/templates")).toBe("templates");
     expect(primaryIdForPath("/documents")).toBe("documents");
     expect(primaryIdForPath("/esign")).toBe("documents");

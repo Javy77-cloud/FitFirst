@@ -3,6 +3,7 @@ import {
   SETTINGS_KNOWN_HREFS,
   SETTINGS_NAV,
   SETTINGS_NAV_IDS,
+  SETTINGS_PINNED_LINKS,
   settingsChildFor,
   settingsGroupFor,
 } from "./nav";
@@ -12,6 +13,7 @@ describe("settings IA cards", () => {
     expect(SETTINGS_NAV.map((group) => group.id)).toEqual([
       "agency-people",
       "desk-phone",
+      "email-templates",
       "connect",
       "automations-dev",
       "security",
@@ -49,8 +51,13 @@ describe("settings IA cards", () => {
     expect(SETTINGS_NAV.find((group) => group.id === "agency-people")?.badge).toBe("Admin");
     expect(SETTINGS_NAV.find((group) => group.id === "desk-phone")?.badge).toBe("Admin");
     expect(SETTINGS_NAV.find((group) => group.id === "agency-people")?.children.map((child) => child.id)).toEqual(
-      expect.arrayContaining(["agency", "agents", "offices", "territories", "routing", "agent-policy-access"]),
+      expect.arrayContaining(["agency", "lines", "agents", "offices", "territories", "routing", "agent-policy-access"]),
     );
+    expect(SETTINGS_NAV.find((group) => group.id === "agency-people")?.children[1]).toMatchObject({
+      id: "lines",
+      href: "/settings/lines",
+      label: "Lines of business",
+    });
     expect(SETTINGS_NAV.find((group) => group.id === "desk-phone")?.children.map((child) => child.id)).toEqual(
       expect.arrayContaining(["phone", "communications", "email", "outbound"]),
     );
@@ -97,11 +104,13 @@ describe("settings IA cards", () => {
     const hub = SETTINGS_NAV.find((group) => group.id === "automations-dev");
     expect(hub?.href).toBe("/automations");
     expect(hub?.children.map((child) => child.id)).toEqual(
-      expect.arrayContaining(["automations", "templates", "triggers", "playbooks"]),
+      expect.arrayContaining(["automations", "triggers", "playbooks"]),
     );
+    expect(hub?.children.some((child) => child.id === "templates")).toBe(false);
     expect(hub?.children.some((child) => child.id === "developer")).toBe(false);
     expect(hub?.children.every((child) => child.href !== "/settings/developer")).toBe(true);
-    expect(settingsGroupFor("templates")).toBe("automations-dev");
+    expect(settingsGroupFor("templates")).toBe("email-templates");
+    expect(settingsGroupFor("email-templates")).toBe("email-templates");
     expect(settingsGroupFor("triggers")).toBe("automations-dev");
     const allChildren = SETTINGS_NAV.flatMap((group) => group.children);
     expect(allChildren.filter((child) => child.label === "Macros")).toHaveLength(1);
@@ -118,6 +127,32 @@ describe("settings IA cards", () => {
     expect(SETTINGS_NAV.find((group) => group.id === "import-export")?.children.map((child) => child.id)).toEqual(
       ["import-export", "import", "export"],
     );
+  });
+
+  it("surfaces Lines of business and Email templates as their own findable entries", () => {
+    expect(SETTINGS_PINNED_LINKS.map((item) => item.label)).toEqual([
+      "Lines of business",
+      "Email templates",
+    ]);
+    expect(SETTINGS_PINNED_LINKS.map((item) => item.href)).toEqual([
+      "/settings/lines",
+      "/settings/email-templates",
+    ]);
+    const email = SETTINGS_NAV.find((group) => group.id === "email-templates");
+    expect(email?.label).toBe("Email templates");
+    expect(email?.href).toBe("/settings/email-templates");
+    expect(email?.children).toEqual([
+      { id: "templates", href: "/settings/email-templates", label: "Email templates", hint: "Admin library" },
+    ]);
+    expect(email?.blurb).toMatch(/Not Documents/);
+    expect(email?.blurb).toMatch(/Not Tasks/);
+    const automations = SETTINGS_NAV.find((group) => group.id === "automations-dev");
+    expect(automations?.children.some((child) => child.label === "Email templates")).toBe(false);
+    expect(automations?.children.some((child) => child.label === "Documents")).toBe(true);
+    expect(automations?.children.some((child) => /task/i.test(child.label) && child.id !== "playbooks")).toBe(
+      false,
+    );
+    expect(settingsChildFor("email-templates")).toBe("templates");
   });
 
   it("does not invent dead links", () => {

@@ -90,6 +90,9 @@ describe("notification bell unread badge", () => {
     expect(checklist).toMatch(/onMarkedRead/);
     expect(checklist).toMatch(/router\.refresh\(\)/);
     expect(bell).toMatch(/NOTIFICATION_IN_APP_COPY/);
+    expect(bell).toMatch(/href=\{NOTIFICATION_BOARD_HREF\}/);
+    expect(bell).toMatch(/data-testid="notification-board-link"/);
+    expect(source("src/lib/desk/notifications.ts")).toMatch(/NOTIFICATION_BOARD_HREF = "\/notifications"/);
     expect(bell).not.toMatch(/mailto:/);
   });
 });

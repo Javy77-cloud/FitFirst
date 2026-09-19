@@ -13,6 +13,7 @@ const CARDS = [
   { href: "/settings/email-triggers", title: "Triggers", body: "Won-date jobs. Nothing sends." },
   { href: "/settings#commission", title: "Commission rates", body: "Optional line hints on agency Settings." },
   { href: "/settings/lines", title: "Lines of business", body: "Agency catalog for deals, policies, and forms." },
+  { href: "/settings/email-templates", title: "Email templates", body: "System + custom library. Not Documents. Not Tasks." },
   { href: "/settings/offices", title: "Offices", body: "Desks, states, and who sits where." },
   { href: "/settings/agency", title: "Agency chrome", body: "Name, logo, and the inherited signature." },
 ];

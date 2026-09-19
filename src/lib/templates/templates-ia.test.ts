@@ -7,13 +7,15 @@ function source(file: string) {
 }
 
 describe("templates IA", () => {
-  it("renames Document templates to Documents and keeps Email templates off that row", () => {
+  it("renames Document templates to Documents and keeps Tasks dissolved off the rail", () => {
     const catalog = source("src/lib/desk/nav-catalog.ts");
     expect(catalog).toMatch(/id: "documents"/);
     expect(catalog).toMatch(/label: "Documents"/);
     expect(catalog).not.toMatch(/Document templates/);
     expect(catalog).not.toMatch(/id: "document-templates"/);
     expect(catalog).not.toMatch(/id: "tasks"/);
+    expect(catalog).toMatch(/id: "alerts"/);
+    expect(catalog).toMatch(/label: "Notifications"/);
     expect(catalog).toMatch(/id: "email-templates"/);
     expect(catalog).toMatch(/label: "Email templates"/);
     expect(catalog).toMatch(/id: "esign"/);
@@ -29,10 +31,16 @@ describe("templates IA", () => {
     expect(hub).toMatch(/kicker="Documents"/);
     expect(hub).not.toMatch(/Document templates/);
     expect(hub).toMatch(/Email templates/);
+    expect(hub).toMatch(/Settings → Email templates/);
     expect(hub).toMatch(/Agency signature/);
     expect(hub).toMatch(/href: "\/esign"/);
     expect(hub).toMatch(/title: "Signed"/);
+    expect(hub).toMatch(/dissolved Tasks never appear in this list/);
     expect(source("src/app/templates/page.tsx")).toMatch(/TemplatesHub/);
+    expect(source("src/app/settings/email-templates/page.tsx")).toMatch(/title="Email templates"/);
+    expect(source("src/lib/settings/nav.ts")).toMatch(/id: "email-templates"/);
+    expect(source("src/lib/settings/nav.ts")).toMatch(/href: "\/settings\/email-templates"/);
+    expect(source("src/components/settings/settings-pinned-links.tsx")).toMatch(/Email templates/);
   });
 
   it("keeps the agency signature editor on a live preview + {{signature}}", () => {

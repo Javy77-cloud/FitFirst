@@ -42,17 +42,21 @@ describe("primary desk nav", () => {
       "home",
       "leads",
       "deals",
+      "alerts",
       "contacts",
       "business",
       "policies",
       "carriers",
       "calendar",
+      "documents",
+      "email-templates",
       "templates",
       "reports",
       "settings",
       "admin",
       "operations",
     ]);
+    expect(NAV_GROUPS.find((group) => group.id === "alerts")?.label).toBe("Notifications");
     expect(NAV_GROUPS.some((group) => group.label === "People")).toBe(false);
     expect(NAV_GROUPS.some((group) => group.id === "work")).toBe(false);
     expect(NAV_GROUPS.find((group) => group.id === "business")?.label).toBe("Accounts");
@@ -83,9 +87,9 @@ describe("primary desk nav", () => {
     expect(home?.items.map((item) => item.label)).toEqual([]);
     expect(templates?.items.map((item) => item.label)).toEqual([
       "Email signatures",
-      "Email templates",
-      "Documents",
     ]);
+    expect(NAV_GROUPS.find((group) => group.id === "email-templates")?.label).toBe("Email templates");
+    expect(NAV_GROUPS.find((group) => group.id === "documents")?.label).toBe("Documents");
     expect(labels).not.toContain("Get Started");
     expect(labels).not.toContain("Inbox");
     expect(labels).not.toContain("Support");
