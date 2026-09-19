@@ -14,6 +14,8 @@ import type { Actor } from "@/lib/auth/rbac";
 import type { HeaderRecordContext } from "@/lib/desk/header-record";
 import { listUsers } from "@/lib/db/queries";
 import { scheduleDueLeadFollowUpRelease } from "@/lib/leads/schedule-follow-up-release";
+import { AgencyLobProvider } from "@/components/desk/agency-lob-context";
+import { loadAgencyLobs } from "@/lib/db/line-settings";
 
 export async function AppShell({
   children,
@@ -43,7 +45,11 @@ export async function AppShell({
   recordContext?: HeaderRecordContext | null;
 }) {
   scheduleDueLeadFollowUpRelease();
-  const [session, actor] = await Promise.all([currentDeskSession(), getActor()]);
+  const [session, actor, catalog] = await Promise.all([
+    currentDeskSession(),
+    getActor(),
+    loadAgencyLobs().catch(() => []),
+  ]);
   if (session.signedIn && session.mfaStatus === "challenge") redirect("/login/mfa");
   if (session.signedIn && session.mfaStatus === "pending" && !allowMfaPending) {
     redirect("/enroll-mfa");
@@ -51,6 +57,7 @@ export async function AppShell({
 
   return (
     <SupportProvider>
+    <AgencyLobProvider catalog={catalog}>
       <div className="flex min-h-screen bg-background">
         <Suspense fallback={<aside className="hidden w-60 shrink-0 bg-sidebar md:block" aria-hidden />}>
           <AppShellSidebar session={session} actor={actor} />
@@ -98,6 +105,7 @@ export async function AppShell({
           <SupportLauncher />
         </Suspense>
       </div>
+    </AgencyLobProvider>
     </SupportProvider>
   );
 }

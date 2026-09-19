@@ -1,8 +1,10 @@
 "use client";
 
+import { useAgencyLobs } from "@/components/desk/agency-lob-context";
 import {
   DEAL_PRODUCT_DEFS,
   DEAL_PRODUCT_GROUPS,
+  isDealProductId,
   normalizeDealProducts,
   type DealProductId,
 } from "@/lib/deals/deal-products";
@@ -22,12 +24,24 @@ export function ProductPicker({
   disabled?: boolean;
   idPrefix?: string;
 }) {
+  const catalog = useAgencyLobs();
+  const allowed = new Set(
+    catalog
+      .filter((row) => row.active)
+      .map((row) => row.productId)
+      .filter(isDealProductId),
+  );
+  const labelById = new Map(catalog.map((row) => [row.productId, row.label]));
+  const defs = DEAL_PRODUCT_DEFS.filter((row) => allowed.has(row.id) || selected.includes(row.id)).map(
+    (row) => ({ ...row, label: labelById.get(row.id) ?? row.label }),
+  );
+  const groups = DEAL_PRODUCT_GROUPS.filter((group) => defs.some((row) => row.group === group.id));
   const picked = new Set(selected);
-  const labels = DEAL_PRODUCT_DEFS.filter((row) => picked.has(row.id)).map((row) => row.label);
+  const labels = defs.filter((row) => picked.has(row.id)).map((row) => row.label);
 
   function toggle(id: DealProductId, checked: boolean) {
     if (!onChange) return;
-    const next = DEAL_PRODUCT_DEFS.filter((row) => (row.id === id ? checked : picked.has(row.id))).map(
+    const next = defs.filter((row) => (row.id === id ? checked : picked.has(row.id))).map(
       (row) => row.id,
     );
     onChange(normalizeDealProducts(next));
@@ -54,9 +68,9 @@ export function ProductPicker({
         ))}
       </div>
       <div className="space-y-3">
-        {DEAL_PRODUCT_GROUPS.map((group) => {
+        {groups.map((group) => {
           const theme = DEAL_GROUP_THEMES[group.id];
-          const items = DEAL_PRODUCT_DEFS.filter((row) => row.group === group.id);
+          const items = defs.filter((row) => row.group === group.id);
           const groupCount = items.filter((row) => picked.has(row.id)).length;
           return (
             <div

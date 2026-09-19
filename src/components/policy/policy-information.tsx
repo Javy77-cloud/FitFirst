@@ -5,6 +5,7 @@ import {
   PolicyInlineStatus,
   PolicyInlineText,
 } from "@/components/policy/policy-inline-fields";
+import { PolicyLobField } from "@/components/policy/policy-lob-field";
 import { RecordLink } from "@/components/record-links";
 import { POLICY_STATUSES } from "@/lib/policy/status";
 import { partyLabel } from "@/lib/desk/policy-name";
@@ -116,10 +117,8 @@ export function PolicyInformationCard({
           carrierName={carrierName}
           readOnly={readOnly}
         />
-        <PolicyInlineText
+        <PolicyLobField
           policyId={policy.id}
-          fieldKey="lineOfBusiness"
-          label="Line / product"
           value={policy.lineOfBusiness}
           readOnly={readOnly}
         />

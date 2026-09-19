@@ -545,6 +545,29 @@ export const globalLists = pgTable(
   ],
 );
 
+/** Agency master Lines of Business. Deal / policy / form pickers read this list. */
+export const agencyLobs = pgTable(
+  "agency_lobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    productId: text("product_id").notNull(),
+    label: text("label").notNull(),
+    lobCode: text("lob_code").notNull(),
+    family: text("family").notNull(),
+    sheetProduct: text("sheet_product").notNull(),
+    quotingForm: text("quoting_form"),
+    active: boolean("active").notNull().default(true),
+    builtIn: boolean("built_in").notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [
+    index("agency_lobs_tenant_idx").on(t.tenantId, t.active, t.sortOrder),
+    uniqueIndex("agency_lobs_product_uidx").on(t.tenantId, t.productId),
+  ],
+);
+
 /** Configurable Life / Health book chips. Defaults seed Term/Whole/IUL/Final Expense and Marketplace/MA/A&B/Supplemental. */
 export const lineSubfilterOptions = pgTable(
   "line_subfilter_options",
@@ -3285,6 +3308,7 @@ export type CalendarInvite = typeof calendarInvites.$inferSelect;
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export type Pipeline = typeof pipelines.$inferSelect;
 export type PipelineStage = typeof pipelineStages.$inferSelect;
+export type AgencyLob = typeof agencyLobs.$inferSelect;
 export type FormTemplate = typeof formTemplates.$inferSelect;
 export type FormFill = typeof formFills.$inferSelect;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;

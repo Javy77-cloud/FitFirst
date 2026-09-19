@@ -158,6 +158,93 @@ export function PolicyInlineText({
   );
 }
 
+export function PolicyInlineSelect({
+  policyId,
+  fieldKey,
+  label,
+  value,
+  options,
+  readOnly = false,
+}: {
+  policyId: string;
+  fieldKey: string;
+  label: string;
+  value: string;
+  options: readonly { value: string; label: string }[];
+  readOnly?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  const chosen = options.find((row) => row.value === value)?.label ?? value;
+
+  function persist(next: string) {
+    if (readOnly || next.trim() === (value ?? "").trim()) {
+      setEditing(false);
+      return;
+    }
+    startTransition(async () => {
+      const result = await updatePolicyField({ policyId, fieldKey, value: next });
+      if (!result.ok) {
+        flashAction(result.error ?? "Could Not Save", "error");
+        setDraft(value);
+        setEditing(false);
+        return;
+      }
+      flashAction("Saved");
+      setEditing(false);
+    });
+  }
+
+  return (
+    <div data-ff-policy-inline={fieldKey} data-ff-policy-lob-select="">
+      <dt className="text-helper text-muted-foreground">{label}</dt>
+      <dd className="font-medium text-navy">
+        {readOnly ? (
+          displayValue(chosen)
+        ) : editing ? (
+          <select
+            autoFocus
+            className="h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+            value={draft}
+            disabled={pending}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              persist(e.target.value);
+            }}
+            onBlur={() => setEditing(false)}
+          >
+            {value && !options.some((row) => row.value === value) ? (
+              <option value={value}>{value}</option>
+            ) : null}
+            {options.map((row) => (
+              <option key={row.value} value={row.value}>
+                {row.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <button
+            type="button"
+            className={cn(
+              "w-full rounded-sm px-0.5 text-left hover:bg-[#002868]/5",
+              !value?.trim() && "text-muted-foreground",
+            )}
+            onClick={() => setEditing(true)}
+          >
+            {displayValue(chosen)}
+          </button>
+        )}
+      </dd>
+    </div>
+  );
+}
+
 export function PolicyInlineDate({
   policyId,
   fieldKey,

@@ -12,7 +12,7 @@ const CARDS = [
   { href: "/automations", title: "Automations", body: "Playbooks, sequences, and developer tools." },
   { href: "/settings/email-triggers", title: "Triggers", body: "Won-date jobs. Nothing sends." },
   { href: "/settings#commission", title: "Commission rates", body: "Optional line hints on agency Settings." },
-  { href: "/settings/lines", title: "Lines of business", body: "Hide Life or Health for this agency." },
+  { href: "/settings/lines", title: "Lines of business", body: "Agency catalog for deals, policies, and forms." },
   { href: "/settings/offices", title: "Offices", body: "Desks, states, and who sits where." },
   { href: "/settings/agency", title: "Agency chrome", body: "Name, logo, and the inherited signature." },
 ];
