@@ -1,0 +1,69 @@
+import { describe, expect, it } from "vitest";
+import {
+  partyAttentionHeat,
+  policyAttention,
+  relativeTouchLabel,
+  sortCommandStack,
+} from "./heat";
+
+describe("book-list heat", () => {
+  it("flags people who need a touch, not a shame board", () => {
+    expect(partyAttentionHeat({ lastTouchDays: 100, inForce: 2, openDeals: 0 })).toBe("hot");
+    expect(partyAttentionHeat({ lastTouchDays: 10, inForce: 1, openDeals: 1 })).toBe("cooling");
+    expect(partyAttentionHeat({ lastTouchDays: 3, inForce: 1, openDeals: 0 })).toBe("cold");
+    expect(relativeTouchLabel(0)).toBe("Today");
+    expect(relativeTouchLabel(null)).toBe("Never");
+  });
+
+  it("bands policies by renewal, silence, and open needs", () => {
+    expect(
+      policyAttention({
+        daysUntil: 12,
+        lastTouchDays: 2,
+        lapsed: false,
+        openClaims: 0,
+        pendingEndorsements: 0,
+        missingDocs: 0,
+      }).column,
+    ).toBe("now");
+    expect(
+      policyAttention({
+        daysUntil: 80,
+        lastTouchDays: 40,
+        lapsed: false,
+        openClaims: 0,
+        pendingEndorsements: 0,
+        missingDocs: 0,
+      }).column,
+    ).toBe("watch");
+    expect(
+      policyAttention({
+        daysUntil: 200,
+        lastTouchDays: 4,
+        lapsed: false,
+        openClaims: 0,
+        pendingEndorsements: 0,
+        missingDocs: 0,
+      }).column,
+    ).toBe("current");
+    expect(
+      policyAttention({
+        daysUntil: 200,
+        lastTouchDays: 4,
+        lapsed: false,
+        openClaims: 1,
+        pendingEndorsements: 0,
+        missingDocs: 0,
+      }).why,
+    ).toMatch(/claim/);
+  });
+
+  it("stacks hottest / stalest first", () => {
+    const ranked = sortCommandStack([
+      { heat: "cold", lastTouchDays: 2 },
+      { heat: "hot", lastTouchDays: 12 },
+      { heat: "hot", lastTouchDays: 90 },
+    ]);
+    expect(ranked.map((row) => row.lastTouchDays)).toEqual([90, 12, 2]);
+  });
+});

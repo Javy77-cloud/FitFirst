@@ -26,8 +26,9 @@ describe("Contacts module v1 standards", () => {
     expect(page).toMatch(/data-ff-contacts-list-actions/);
     expect(page).not.toMatch(/Add contact/);
     expect(page).not.toMatch(/lg:grid-cols-\[320px/);
-    expect(page).toMatch(/lastActivity/);
-    expect(page).toMatch(/defaultSort=\{\{ key: "lastActivity", dir: "desc" \}\}/);
+    expect(page).toMatch(/BookCommandWorkspace/);
+    expect(page).toMatch(/layout="stack"/);
+    expect(page).not.toMatch(/DeskColumnTable/);
   });
 
   it("new contact uses live layout + existing-contact guard", () => {

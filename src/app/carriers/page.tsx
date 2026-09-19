@@ -1,10 +1,7 @@
 import { AppShell } from "@/components/app-shell";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
-import { formatMoney } from "@/lib/domain";
 import { listCarriersDesk } from "@/lib/db/queries";
-import { DeskColumnTable } from "@/components/lists/desk-column-table";
-import { CARRIERS_LIST_COLUMNS, type ListColumn } from "@/lib/list-columns";
 import { PipelineFilterPopover } from "@/components/filters/pipeline-filter-popover";
 import { firstParam, pickFilterParams } from "@/lib/saved-filters";
 import {
@@ -25,18 +22,19 @@ import {
   normalizeAppetiteRows,
   normalizeDontWriteRows,
 } from "@/lib/carriers/appetite-rows";
-import { formatHitRatePct, formatDays } from "@/lib/carriers/metrics";
 import { RecordLink } from "@/components/record-links";
 import { AssignRecordTags } from "@/components/tags/assign-record-tags";
 import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
 import Link from "next/link";
 import { AddCarrierDialog } from "@/components/carriers/add-carrier-dialog";
-import { CarrierPortalStatusCell } from "@/components/carriers/carrier-portal-status-cell";
-import { formatDisplayDate } from "@/lib/dates/display-format";
+import { BookCommandWorkspace } from "@/components/book-lists/book-workspace";
+import { loadCarrierMarketSignals } from "@/lib/book-lists/load";
+import { matchesBookLens, parseBookHeat, parseBookLens } from "@/lib/book-lists/lenses";
+import { presentCarrierCard } from "@/lib/book-lists/present";
+import { deskNow } from "@/lib/home/as-of";
 
 export const dynamic = "force-dynamic";
-
 
 function carrierDeskStatus(carrier: { active?: boolean | null; deskStatus?: string | null }): string {
   const rawDesk = carrier.deskStatus?.toLowerCase();
@@ -79,23 +77,6 @@ function carrierFilterValues(row: {
   };
 }
 
-function columnsForData(has: {
-  label: boolean;
-  commission: boolean;
-  hitRate: boolean;
-  avgDays: boolean;
-  amBest: boolean;
-}): ListColumn[] {
-  return CARRIERS_LIST_COLUMNS.map((col) => {
-    if (col.id === "label") return { ...col, defaultOn: has.label };
-    if (col.id === "commission") return { ...col, defaultOn: has.commission };
-    if (col.id === "hitRate") return { ...col, defaultOn: has.hitRate };
-    if (col.id === "avgDays") return { ...col, defaultOn: has.avgDays };
-    if (col.id === "amBest") return { ...col, defaultOn: has.amBest };
-    return col;
-  });
-}
-
 export default async function CarriersPage({
   searchParams,
 }: {
@@ -103,6 +84,8 @@ export default async function CarriersPage({
 }) {
   const params = await searchParams;
   const q = firstParam(params.q) ?? "";
+  const heat = parseBookHeat(firstParam(params.heat));
+  const lens = parseBookLens(firstParam(params.lens));
   const [all, tagCatalog, pageFilters, session] = await Promise.all([
     listCarriersDesk(),
     listModuleTags("carriers").catch(() => []),
@@ -111,47 +94,70 @@ export default async function CarriersPage({
   ]);
   const visibleFilters = enabledPageFilters(pageFilters);
   const filter = pickFilterParams(params, pageFilterParamKeys(visibleFilters));
-
-  const rows = all
-    .filter((row) => {
-      const { carrier } = row;
-      if (!matchesPageFilters(carrierFilterValues(row), filter)) return false;
+  const filtered = all.filter((row) => {
+    const { carrier } = row;
+    if (!matchesPageFilters(carrierFilterValues(row), filter)) return false;
+    if (q) {
       const appetiteRows = normalizeAppetiteRows(
         (carrier as { appetiteRows?: unknown }).appetiteRows,
       );
       const dontWriteRows = normalizeDontWriteRows(
         (carrier as { dontWriteRows?: unknown }).dontWriteRows,
       );
-      if (q) {
-        const hay = carrierListHaystack({
-          name: carrier.name,
-          agencyCode: carrier.agencyCode,
-          writtenLines: carrier.writtenLines,
-          tags: carrier.tags,
-          appetiteNotes: carrier.appetiteNotes,
-          dontWriteNotes: carrier.dontWriteNotes,
-          appetiteRows,
-          dontWriteRows,
-          autoLabel: row.autoLabel,
-        });
-        if (!hay.includes(q.toLowerCase())) return false;
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      // Default: last contacted ascending (nobody talked to first).
-      const aT = a.carrier.lastContactedAt
-        ? new Date(a.carrier.lastContactedAt).getTime()
-        : 0;
-      const bT = b.carrier.lastContactedAt
-        ? new Date(b.carrier.lastContactedAt).getTime()
-        : 0;
-      if (aT !== bT) return aT - bT;
-      return a.carrier.name.localeCompare(b.carrier.name);
-    });
+      const hay = carrierListHaystack({
+        name: carrier.name,
+        agencyCode: carrier.agencyCode,
+        writtenLines: carrier.writtenLines,
+        tags: carrier.tags,
+        appetiteNotes: carrier.appetiteNotes,
+        dontWriteNotes: carrier.dontWriteNotes,
+        appetiteRows,
+        dontWriteRows,
+        autoLabel: row.autoLabel,
+      });
+      if (!hay.includes(q.toLowerCase())) return false;
+    }
+    return true;
+  });
+
+  const signals = await loadCarrierMarketSignals(
+    filtered.map((row) => ({
+      id: row.carrier.id,
+      name: row.carrier.name,
+      lastContactedAt: row.carrier.lastContactedAt,
+    })),
+    filtered.map((row) => ({
+      id: row.carrier.id,
+      lastQuoteAt: row.lastQuoteAt,
+      lastIssuedAt: row.lastIssuedAt,
+      activePolicyCount: row.activePolicyCount,
+    })),
+  );
+  const asOf = deskNow();
+  const cards = filtered
+    .map((row) =>
+      presentCarrierCard(
+        row.carrier,
+        signals.get(row.carrier.id) ?? {
+          rateable: null,
+          skipDecline: false,
+          skipWhy: null,
+          limited: false,
+          appetiteLines: row.carrier.writtenLines ?? [],
+          dontWrite: [],
+          lastUseAt: row.lastQuoteAt ?? row.lastIssuedAt,
+          lastUseKind: row.lastQuoteAt ? "quote" : row.lastIssuedAt ? "issued" : null,
+          declineCount: 0,
+          skipCount: 0,
+          activePolicies: row.activePolicyCount,
+        },
+        asOf,
+      ),
+    )
+    .filter((card) => matchesBookLens(card, { heat, lens, q: heat || lens ? q : "" }));
 
   const appetiteHits = q
-    ? rows
+    ? filtered
         .map((row) => {
           const appetiteRows = normalizeAppetiteRows(
             (row.carrier as { appetiteRows?: unknown }).appetiteRows,
@@ -174,15 +180,6 @@ export default async function CarriersPage({
   const excludesHits = appetiteHits.filter(
     (x) => x.hit.side === "excludes" || x.hit.side === "both",
   );
-
-  const hasData = {
-    label: rows.some((r) => Boolean(r.autoLabel)),
-    commission: rows.some((r) => r.commissionEarned > 0),
-    hitRate: rows.some((r) => r.hitRate != null),
-    avgDays: rows.some((r) => r.avgDaysToBind != null),
-    amBest: rows.some((r) => Boolean(r.carrier.amBestRating)),
-  };
-  const listColumns = columnsForData(hasData);
 
   return (
     <AppShell
@@ -208,8 +205,7 @@ export default async function CarriersPage({
       }
     >
       <p className="mb-3 text-base text-muted-foreground">
-        Agency Carrier Directory — One Record, Permission-Filtered For Agents. Search Appetite And
-        Don&apos;t Write Across All Carriers (Try &quot;Flood&quot;).
+        Quote-ready, skip-decline, and stale markets — scannable for quoting, not every field as a column.
       </p>
       {q && appetiteHits.length > 0 ? (
         <section
@@ -217,249 +213,95 @@ export default async function CarriersPage({
           data-ff-carrier-appetite-search=""
         >
           <h3 className="text-sm font-semibold text-[#002868]">
-            Appetite + Don&apos;t Write · &quot;{q}&quot;
+            Appetite cue · &quot;{q}&quot;
           </h3>
           <div className="mt-2 grid gap-3 md:grid-cols-2">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-[#002868]">
-                Writes / Appetite ({writesHits.length})
+                Writes ({writesHits.length})
               </p>
-              {writesHits.length === 0 ? (
-                <p className="mt-1 text-xs text-muted-foreground">No Appetite Matches.</p>
-              ) : (
-                <ul className="mt-1 space-y-1.5">
-                  {writesHits.map(({ row, hit }) => (
-                    <li key={`w-${row.carrier.id}`} className="text-sm">
-                      <RecordLink href={`/carriers/${row.carrier.id}`}>
-                        {row.carrier.name}
-                      </RecordLink>
-                      {hit.writesSnippet ? (
-                        <div className="text-xs text-muted-foreground">{hit.writesSnippet}</div>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {writesHits.slice(0, 6).map(({ row, hit }) => (
+                <p key={`w-${row.carrier.id}`} className="text-sm">
+                  <RecordLink href={`/carriers/${row.carrier.id}`}>{row.carrier.name}</RecordLink>
+                  {hit.writesSnippet ? (
+                    <span className="block text-xs text-muted-foreground">{hit.writesSnippet}</span>
+                  ) : null}
+                </p>
+              ))}
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-[#BF0A30]">
-                Don&apos;t Write / Excludes ({excludesHits.length})
+                Don&apos;t write ({excludesHits.length})
               </p>
-              {excludesHits.length === 0 ? (
-                <p className="mt-1 text-xs text-muted-foreground">No Don&apos;t Write Matches.</p>
-              ) : (
-                <ul className="mt-1 space-y-1.5">
-                  {excludesHits.map(({ row, hit }) => (
-                    <li key={`x-${row.carrier.id}`} className="text-sm">
-                      <RecordLink href={`/carriers/${row.carrier.id}`}>
-                        {row.carrier.name}
-                      </RecordLink>
-                      {hit.excludesSnippet ? (
-                        <div className="text-xs text-[#BF0A30]/90">{hit.excludesSnippet}</div>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {excludesHits.slice(0, 6).map(({ row, hit }) => (
+                <p key={`x-${row.carrier.id}`} className="text-sm">
+                  <RecordLink href={`/carriers/${row.carrier.id}`}>{row.carrier.name}</RecordLink>
+                  {hit.excludesSnippet ? (
+                    <span className="block text-xs text-[#BF0A30]/90">{hit.excludesSnippet}</span>
+                  ) : null}
+                </p>
+              ))}
             </div>
           </div>
         </section>
       ) : null}
-      <PipelineFilterPopover
-        moduleId="carriers"
-        fields={filterFieldsFromPageFilters(visibleFilters)}
-        searchPlaceholder="Contains Name, Agency Code, Appetite, Or Don't Write…"
-        preserveParams={[]}
-        canConfigure={session.isAdmin}
-        searchClassName={PAGE_FILTER_SEARCH_CLASS}
-        searchInputClassName={PAGE_FILTER_SEARCH_INPUT_CLASS}
-      />
-      <section className="ff-card overflow-hidden">
-        <ModuleListActions
-          module="carriers"
-          recordIds={[...new Set(rows.map(({ carrier }) => carrier.id))]}
-          records={[
-            ...new Map(
-              rows.map(({ carrier }) => [
-                carrier.id,
-                {
-                  id: carrier.id,
-                  label: carrier.name,
-                  email: carrier.email ?? carrier.underwriterEmail ?? carrier.accountManagerEmail,
-                  phone:
-                    carrier.phone ??
-                    carrier.agentPhone ??
-                    carrier.customerServicePhone ??
-                    carrier.underwriterPhone,
-                },
-              ]),
-            ).values(),
-          ]}
-        >
-          <DeskColumnTable
-            moduleId="carriers"
-            initialQuery={q}
-            columns={listColumns}
-            defaultSort={{ key: "lastContacted", dir: "asc" }}
-            empty={
-              <div className="space-y-2 py-6 text-center">
-                <p className="text-sm text-muted-foreground">No carriers match this filter.</p>
-                <div className="flex justify-center">
-                  <AddCarrierDialog />
-                </div>
-              </div>
-            }
-            rows={rows.map((row) => {
-              const {
-                carrier,
-                activePolicyCount,
-                premiumVolume,
-                lastQuoteAt,
-                lastIssuedAt,
-                portalCredStatus,
-                hitRate,
-                avgDaysToBind,
-                commissionEarned,
-                autoLabel,
-              } = row;
-              const appetiteRows = normalizeAppetiteRows(
-                (carrier as { appetiteRows?: unknown }).appetiteRows,
-              );
-              const dontWriteRows = normalizeDontWriteRows(
-                (carrier as { dontWriteRows?: unknown }).dontWriteRows,
-              );
-              const rawDesk = (carrier as { deskStatus?: string | null }).deskStatus?.toLowerCase();
-              const statusLabel =
-                rawDesk === "pending"
-                  ? "Pending"
-                  : rawDesk === "inactive" || (!rawDesk && !carrier.active)
-                    ? "Inactive"
-                    : "Active";
-              return {
-                key: carrier.id,
-                hay: carrierListHaystack({
-                  name: carrier.name,
-                  agencyCode: carrier.agencyCode,
-                  writtenLines: carrier.writtenLines,
-                  tags: carrier.tags,
-                  appetiteNotes: carrier.appetiteNotes,
-                  dontWriteNotes: carrier.dontWriteNotes,
-                  appetiteRows,
-                  dontWriteRows,
-                  autoLabel,
-                }),
-                sort: {
-                  pick: "",
-                  carrier: carrier.name,
-                  label: autoLabel,
-                  status: statusLabel,
-                  lines: (carrier.writtenLines ?? []).join(", "),
-                  activePolicies: String(activePolicyCount).padStart(8, "0"),
-                  premium: String(Math.round(premiumVolume * 100)).padStart(16, "0"),
-                  commission: String(Math.round(commissionEarned * 100)).padStart(16, "0"),
-                  hitRate: hitRate == null ? "" : String(Math.round(hitRate * 10000)).padStart(8, "0"),
-                  avgDays:
-                    avgDaysToBind == null
-                      ? ""
-                      : String(Math.round(avgDaysToBind * 100)).padStart(10, "0"),
-                  lastQuote: lastQuoteAt ? new Date(lastQuoteAt).toISOString() : "",
-                  lastIssued: lastIssuedAt ? new Date(lastIssuedAt).toISOString() : "",
-                  // Empty last contacted sorts first (ascending = nobody talked to first).
-                  lastContacted: carrier.lastContactedAt
-                    ? new Date(carrier.lastContactedAt).toISOString()
-                    : "0000-01-01T00:00:00.000Z",
-                  amBest: carrier.amBestRating ?? "",
-                  portal: portalCredStatus,
-                  tags: tagSortText(carrier.tags),
-                },
-                cells: {
-                  pick: <SelectRowCheckbox id={carrier.id} />,
-                  carrier: (
-                    <div className="font-medium">
-                      <RecordLink href={`/carriers/${carrier.id}`}>{carrier.name}</RecordLink>
-                      {carrier.agencyCode ? (
-                        <div className="text-xs text-muted-foreground">{carrier.agencyCode}</div>
-                      ) : null}
-                    </div>
-                  ),
-                  label: <span className="text-xs text-muted-foreground">{autoLabel}</span>,
-                  status: (
-                    <span
-                      className={
-                        statusLabel === "Active"
-                          ? "rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800"
-                          : statusLabel === "Pending"
-                            ? "rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
-                            : "rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
-                      }
-                    >
-                      {statusLabel}
-                    </span>
-                  ),
-                  lines: (
-                    <span className="text-xs">{(carrier.writtenLines ?? []).join(", ") || "—"}</span>
-                  ),
-                  activePolicies: <span className="text-xs tabular-nums">{activePolicyCount}</span>,
-                  premium: (
-                    <span className="text-xs tabular-nums">
-                      {premiumVolume > 0 ? formatMoney(premiumVolume) : "—"}
-                    </span>
-                  ),
-                  commission: (
-                    <span className="text-xs tabular-nums">
-                      {commissionEarned > 0 ? formatMoney(commissionEarned) : "—"}
-                    </span>
-                  ),
-                  hitRate: (
-                    <span className="text-xs tabular-nums">{formatHitRatePct(hitRate)}</span>
-                  ),
-                  avgDays: (
-                    <span className="text-xs tabular-nums">{formatDays(avgDaysToBind)}</span>
-                  ),
-                  lastQuote: (
-                    <span className="text-xs">
-                      {lastQuoteAt ? formatDisplayDate(lastQuoteAt) : "—"}
-                    </span>
-                  ),
-                  lastIssued: (
-                    <span className="text-xs">
-                      {lastIssuedAt ? formatDisplayDate(lastIssuedAt) : "—"}
-                    </span>
-                  ),
-                  lastContacted: (
-                    <span className="text-xs">
-                      {carrier.lastContactedAt
-                        ? formatDisplayDate(carrier.lastContactedAt)
-                        : "—"}
-                    </span>
-                  ),
-                  amBest: (
-                    <span className="text-xs">{carrier.amBestRating || "—"}</span>
-                  ),
-                  portal: (
-                    <CarrierPortalStatusCell
-                      carrierId={carrier.id}
-                      status={portalCredStatus}
-                      href={
-                        (carrier.portalUrl || carrier.agentPortalUrl || carrier.website || "").trim() ||
-                        null
-                      }
-                    />
-                  ),
-                  tags: (
-                    <AssignRecordTags
-                      module="carriers"
-                      recordId={carrier.id}
-                      tags={carrier.tags}
-                      catalog={tagCatalog}
-                    />
-                  ),
-                },
-              };
-            })}
-          />
-        </ModuleListActions>
-      </section>
+      <div className="mb-3 rounded-xl border border-border/80 bg-card/80 px-3 py-2 shadow-sm">
+        <PipelineFilterPopover
+          moduleId="carriers"
+          fields={filterFieldsFromPageFilters(visibleFilters)}
+          searchPlaceholder="Find a market, appetite, or don't-write…"
+          preserveParams={["heat", "lens"]}
+          canConfigure={session.isAdmin}
+          searchClassName={PAGE_FILTER_SEARCH_CLASS}
+          searchInputClassName={PAGE_FILTER_SEARCH_INPUT_CLASS}
+        />
+      </div>
+      <ModuleListActions
+        module="carriers"
+        recordIds={[...new Set(cards.map((card) => card.id))]}
+        records={[
+          ...new Map(
+            filtered.map(({ carrier }) => [
+              carrier.id,
+              {
+                id: carrier.id,
+                label: carrier.name,
+                email: carrier.email ?? carrier.underwriterEmail ?? carrier.accountManagerEmail,
+                phone:
+                  carrier.phone ??
+                  carrier.agentPhone ??
+                  carrier.customerServicePhone ??
+                  carrier.underwriterPhone,
+              },
+            ]),
+          ).values(),
+        ]}
+      >
+        <BookCommandWorkspace
+          surface="carriers"
+          path="/carriers"
+          label="Market pulse"
+          layout="stack"
+          cards={cards}
+          heat={heat}
+          lens={lens}
+          q={q}
+          empty="No markets in this lens. Clear a chip or add a carrier."
+          flagged={cards.filter((card) => card.column === "skip").length}
+          renderLeading={(card) => <SelectRowCheckbox id={card.id} />}
+          renderExtra={(card) => (
+            <>
+              <AssignRecordTags
+                module="carriers"
+                recordId={card.id}
+                tags={card.tags}
+                catalog={tagCatalog}
+              />
+              <span className="sr-only">{tagSortText(card.tags)}</span>
+            </>
+          )}
+        />
+      </ModuleListActions>
     </AppShell>
   );
 }

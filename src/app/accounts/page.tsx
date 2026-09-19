@@ -1,16 +1,11 @@
-import type { ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
 import { SavedToast } from "@/components/desk/saved-toast";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
-import { ClientStatusPill, RecordLink } from "@/components/record-links";
 import { listAccounts } from "@/lib/db/queries";
-import { DeskColumnTable } from "@/components/lists/desk-column-table";
-import { accountsListColumnsFromLayout } from "@/lib/list-columns";
 import { listFieldDefs, loadLayoutForModule, loadRecordValuesForIds } from "@/lib/custom-fields/store";
 import { mergeRecordSystemValues } from "@/lib/custom-fields/resolve-layout";
 import { PipelineFilterPopover } from "@/components/filters/pipeline-filter-popover";
-import { formatDay } from "@/lib/domain";
 import { firstParam, pickFilterParams } from "@/lib/saved-filters";
 import {
   enabledPageFilters,
@@ -23,23 +18,17 @@ import {
 } from "@/lib/page-filters";
 import { loadPageFilterPrefs } from "@/lib/page-filters/store";
 import { currentDeskSession } from "@/lib/auth/session";
-import { haystack } from "@/lib/search/live-query";
-import { sourceLabel } from "@/lib/crm/sources";
+import { AssignRecordTags } from "@/components/tags/assign-record-tags";
+import { tagSortText } from "@/lib/tags/module-tags";
+import { listModuleTags } from "@/app/actions/record-tags";
 import { AddBusinessDialog } from "@/components/businesses/add-business-dialog";
-import { formatPhoneDisplay } from "@/lib/phone/format";
+import { BookCommandWorkspace } from "@/components/book-lists/book-workspace";
+import { loadBookHealthMap, loadOpenDealSignals } from "@/lib/book-lists/load";
+import { matchesBookLens, parseBookHeat, parseBookLens } from "@/lib/book-lists/lenses";
+import { presentPartyCard } from "@/lib/book-lists/present";
+import { deskNow } from "@/lib/home/as-of";
 
 export const dynamic = "force-dynamic";
-
-const SYSTEM_CELL_IDS = new Set([
-  "pick",
-  "business",
-  "status",
-  "industry",
-  "source",
-  "linkedContacts",
-  "policies",
-  "lastActivity",
-]);
 
 export default async function AccountsPage({
   searchParams,
@@ -48,22 +37,25 @@ export default async function AccountsPage({
 }) {
   const params = await searchParams;
   const q = firstParam(params.q) ?? "";
+  const heat = parseBookHeat(firstParam(params.heat));
+  const lens = parseBookLens(firstParam(params.lens));
   const saved = firstParam(params.saved) === "1";
   const openNew = firstParam(params.new) === "1";
-  const [all, businessLayout, businessFields, pageFilters, session] = await Promise.all([
+  const [all, businessFields, pageFilters, session, tagCatalog, openDeals] = await Promise.all([
     listAccounts(),
-    loadLayoutForModule("businesses").catch(() => null),
     listFieldDefs("businesses").catch(() => []),
     loadPageFilterPrefs("businesses"),
     currentDeskSession(),
+    listModuleTags("accounts").catch(() => []),
+    loadOpenDealSignals(),
   ]);
+  await loadLayoutForModule("businesses").catch(() => null);
   const visibleFilters = mergeLiveOptions(enabledPageFilters(pageFilters), {
     industry: all.map((account) => account.industry),
     source: all.map((account) => account.source),
     status: all.map((account) => account.clientStatus),
   });
   const filter = pickFilterParams(params, pageFilterParamKeys(visibleFilters));
-  const accountColumns = accountsListColumnsFromLayout(businessLayout, businessFields);
   const customById = await loadRecordValuesForIds(
     all.map((row) => row.id),
     "businesses",
@@ -86,6 +78,20 @@ export default async function AccountsPage({
       filter,
     );
   });
+  const healthMap = await loadBookHealthMap({
+    contactIds: [],
+    accountIds: rows.map((row) => row.id),
+  });
+  const asOf = deskNow();
+  const cards = rows
+    .map((account) =>
+      presentPartyCard(account, "account", {
+        open: openDeals.byAccount.get(account.id),
+        health: healthMap.get(`a:${account.id}`) ?? null,
+        asOf,
+      }),
+    )
+    .filter((card) => matchesBookLens(card, { heat, lens, q }));
   const businessBook = all.map((row) => ({
     id: row.id,
     name: row.name,
@@ -98,115 +104,63 @@ export default async function AccountsPage({
     <AppShell title="Accounts">
       <SavedToast show={saved} message="Account saved." listHref="/accounts" />
       <p className="mb-3 text-base text-muted-foreground">
-        Commercial bind creates an Account. Personal HO stays on a Contact. The same
-        person can be linked here without moving their personal policies. New Account uses a popup.
+        Orgs that need a touch — book size and open shops as cues, not a column wall.
       </p>
-      <PipelineFilterPopover
-        moduleId="businesses"
-        fields={filterFieldsFromPageFilters(visibleFilters)}
-        searchPlaceholder="Contains Name, EIN, Or Phone…"
-        preserveParams={[]}
-        canConfigure={session.isAdmin}
-        searchClassName={PAGE_FILTER_SEARCH_CLASS}
-        searchInputClassName={PAGE_FILTER_SEARCH_INPUT_CLASS}
-      />
-      <section className="ff-card overflow-hidden" data-ff-businesses-list="">
-        <div
-          className="flex items-center justify-end border-b border-border px-3 py-2"
-          data-ff-businesses-list-actions=""
-        >
-          <AddBusinessDialog businesses={businessBook} defaultOpen={openNew} />
-        </div>
-        <ModuleListActions
-          module="businesses"
-          recordIds={rows.map((account) => account.id)}
-          records={rows.map((account) => ({
-            id: account.id,
-            label: account.name,
-            email: account.email,
-            phone: account.phone,
-            accountId: account.id,
-          }))}
-        >
-          <DeskColumnTable
+      <div
+        className="mb-3 rounded-xl border border-border/80 bg-card/80 px-3 py-2 shadow-sm"
+        data-ff-businesses-list=""
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <PipelineFilterPopover
             moduleId="businesses"
-            initialQuery={q}
-            columns={accountColumns}
-            defaultSort={{ key: "lastActivity", dir: "desc" }}
-            empty="No accounts yet. Bind a commercial deal as an Account, or open the Elena Ruiz personal path — she is linked to Ruiz Tile LLC with zero commercial policies."
-            rows={rows.map((account) => {
-              const fieldValues = mergeRecordSystemValues(
-                account as unknown as Record<string, unknown>,
-                customById.get(account.id) ?? {},
-                businessFields,
-              );
-              const layoutCells: Record<string, ReactNode> = {};
-              const layoutSort: Record<string, string | number> = {};
-              for (const column of accountColumns) {
-                if (SYSTEM_CELL_IDS.has(column.id)) continue;
-                if (column.id === "phone") {
-                  layoutCells.phone = formatPhoneDisplay(account.phone);
-                  layoutSort.phone = account.phone ?? "";
-                  continue;
-                }
-                if (column.id === "email") {
-                  layoutCells.email = account.email ?? "—";
-                  layoutSort.email = account.email ?? "";
-                  continue;
-                }
-                const raw = fieldValues[column.id] ?? "";
-                const display = String(raw).trim() || "—";
-                layoutCells[column.id] = display;
-                layoutSort[column.id] = display === "—" ? "" : display;
-              }
-              return {
-                key: account.id,
-                hay: haystack([
-                  account.name,
-                  account.legalName,
-                  account.dba,
-                  account.phone,
-                  account.ein,
-                  account.einLast4,
-                  account.einLookup,
-                  account.industry,
-                  account.source,
-                  account.clientStatus,
-                  ...Object.values(fieldValues),
-                ]),
-                sort: {
-                  pick: "",
-                  business: account.name,
-                  status: account.clientStatus,
-                  industry: account.industry ?? "",
-                  source: account.source ?? "",
-                  linkedContacts: account.linkedContactsCount,
-                  policies: account.policyCount,
-                  lastActivity: account.lastActivityAt
-                    ? new Date(account.lastActivityAt).getTime()
-                    : 0,
-                  ...layoutSort,
-                },
-                cells: {
-                  pick: <SelectRowCheckbox id={account.id} />,
-                  business: (
-                    <RecordLink href={`/accounts/${account.id}`}>{account.name}</RecordLink>
-                  ),
-                  status: <ClientStatusPill status={account.clientStatus} />,
-                  industry: account.industry || "—",
-                  source: account.source ? sourceLabel(account.source) : "—",
-                  linkedContacts: account.linkedContactsCount,
-                  policies: account.policyCount,
-                  lastActivity: account.lastActivityAt
-                    ? formatDay(account.lastActivityAt)
-                    : "—",
-                  ...layoutCells,
-                },
-              };
-            })}
+            fields={filterFieldsFromPageFilters(visibleFilters)}
+            searchPlaceholder="Find an account, EIN, or phone…"
+            preserveParams={["heat", "lens"]}
+            canConfigure={session.isAdmin}
+            searchClassName={PAGE_FILTER_SEARCH_CLASS}
+            searchInputClassName={PAGE_FILTER_SEARCH_INPUT_CLASS}
           />
-        </ModuleListActions>
-      </section>
+          <div data-ff-businesses-list-actions="">
+            <AddBusinessDialog businesses={businessBook} defaultOpen={openNew} />
+          </div>
+        </div>
+      </div>
+      <ModuleListActions
+        module="businesses"
+        recordIds={cards.map((card) => card.id)}
+        records={rows.map((account) => ({
+          id: account.id,
+          label: account.name,
+          email: account.email,
+          phone: account.phone,
+          accountId: account.id,
+        }))}
+      >
+        <BookCommandWorkspace
+          surface="accounts"
+          path="/accounts"
+          label="Account pulse"
+          layout="stack"
+          cards={cards}
+          heat={heat}
+          lens={lens}
+          q={q}
+          empty="No accounts in this lens. Bind a commercial deal or clear a chip."
+          flagged={cards.filter((card) => card.heat === "hot").length}
+          renderLeading={(card) => <SelectRowCheckbox id={card.id} />}
+          renderExtra={(card) => (
+            <>
+              <AssignRecordTags
+                module="accounts"
+                recordId={card.id}
+                tags={card.tags}
+                catalog={tagCatalog}
+              />
+              <span className="sr-only">{tagSortText(card.tags)}</span>
+            </>
+          )}
+        />
+      </ModuleListActions>
     </AppShell>
   );
 }

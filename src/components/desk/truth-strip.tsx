@@ -5,6 +5,7 @@ import {
   truthLine,
   waveformTicks,
   type HeatShare,
+  type TruthSurface,
 } from "@/lib/desk/truth-strip";
 
 export function DeskTruthStrip({
@@ -20,7 +21,7 @@ export function DeskTruthStrip({
   flagged?: number;
   clients: number;
   label: string;
-  surface: "renewals" | "deals";
+  surface: TruthSurface;
 }) {
   const ticks = waveformTicks(heat);
   const line = truthLine({ heat, flagged, clients, surface });

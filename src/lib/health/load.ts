@@ -398,3 +398,28 @@ export async function loadContactOwnerId(contactId: string | null): Promise<stri
     .where(and(eq(contacts.tenantId, tenant()), eq(contacts.id, contactId)));
   return row?.ownerId ?? null;
 }
+
+/** Batch client-health chips for list boards. Fail-closed — never take down the desk. */
+export async function loadPartyHealthMap(input: {
+  contactIds: string[];
+  accountIds: string[];
+}): Promise<Map<string, HealthChipView>> {
+  const contactIds = uniq(input.contactIds);
+  const accountIds = uniq(input.accountIds);
+  const out = new Map<string, HealthChipView>();
+  if (contactIds.length === 0 && accountIds.length === 0) return out;
+  try {
+    const bundle = await loadFactsForParties({ contactIds, accountIds });
+    for (const contactId of contactIds) {
+      const pair = assembleClientPair(factsForParty(bundle, contactId, null));
+      out.set(`c:${contactId}`, pair.client);
+    }
+    for (const accountId of accountIds) {
+      const pair = assembleClientPair(factsForParty(bundle, null, accountId));
+      out.set(`a:${accountId}`, pair.client);
+    }
+  } catch {
+    return out;
+  }
+  return out;
+}

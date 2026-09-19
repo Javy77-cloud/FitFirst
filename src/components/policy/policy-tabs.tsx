@@ -10,10 +10,12 @@ export function PolicyTabsNav({
   policyId,
   active,
   tabs,
+  counts,
 }: {
   policyId: string;
   active: AgentPolicyTab;
   tabs: AgentPolicyTab[];
+  counts?: Partial<Record<AgentPolicyTab, number>>;
 }) {
   return (
     <nav
@@ -23,6 +25,7 @@ export function PolicyTabsNav({
     >
       {tabs.map((tab) => {
         const selected = tab === active;
+        const waiting = counts?.[tab] ?? 0;
         return (
           <Link
             key={tab}
@@ -35,6 +38,11 @@ export function PolicyTabsNav({
             className={chipTabClass(selected, "shrink-0 whitespace-nowrap")}
           >
             {AGENT_POLICY_TAB_LABELS[tab]}
+            {waiting > 0 ? (
+              <span className="ff-policy-tab-wait" data-ff-policy-tab-wait={tab}>
+                {waiting}
+              </span>
+            ) : null}
           </Link>
         );
       })}
