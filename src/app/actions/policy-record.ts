@@ -27,6 +27,7 @@ import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices"
 import { isPolicySensitiveInlineKey, sensitiveFieldConfirmCopy } from "@/lib/policy/sensitive-fields";
 import { getAllowPolicyLabelOverride } from "@/lib/policy/auto-label-prefs";
 import { splitPremisesAddress, streetOnlyPremises } from "@/lib/policy/premises";
+import { requireStoredLobCode } from "@/lib/db/line-settings";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -68,10 +69,12 @@ export async function updatePolicyRecord(formData: FormData) {
 
   const next = {
     status: str(formData, "status") || existing.status,
-    lineOfBusiness:
+    lineOfBusiness: await requireStoredLobCode(
       str(formData, "lineOfBusiness") ||
-      lineOfBusinessForFamily(insuranceType, policyType, subType) ||
+        lineOfBusinessForFamily(insuranceType, policyType, subType) ||
+        existing.lineOfBusiness,
       existing.lineOfBusiness,
+    ),
     policyNumber: str(formData, "policyNumber") || existing.policyNumber,
     premium: premium === "" ? existing.premium : premium,
     billingFrequency: str(formData, "billingFrequency") || existing.billingFrequency,
@@ -405,6 +408,8 @@ export async function updatePolicyField(input: {
       premisesState: parts.state || existing.premisesState,
       premisesZip: parts.zip || existing.premisesZip,
     };
+  } else if (fieldKey === "lineOfBusiness") {
+    patch = { lineOfBusiness: await requireStoredLobCode(raw, existing.lineOfBusiness) };
   } else {
     patch = { [fieldKey]: raw || null };
   }

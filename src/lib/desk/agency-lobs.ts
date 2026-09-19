@@ -105,3 +105,121 @@ export function parseLobCode(value: string | null | undefined): LineOfBusiness |
   const raw = (value ?? "").trim().toUpperCase();
   return raw || "HO";
 }
+
+/** Form / product / free-text words that should land on a master `lobCode`. */
+export const LOB_CODE_ALIASES: Record<string, string> = {
+  ho3: "HO",
+  ho4: "HO",
+  ho5: "HO",
+  ho6: "HO",
+  ho8: "HO",
+  mho: "HO",
+  mdp: "HO",
+  mh: "HO",
+  dp: "HO",
+  dp1: "HO",
+  dp3: "HO",
+  home: "HO",
+  homeowners: "HO",
+  homeowner: "HO",
+  renters: "HO",
+  landlord: "HO",
+  dwelling: "HO",
+  pa: "AUTO",
+  "personal auto": "AUTO",
+  car: "AUTO",
+  motorcycle: "AUTO",
+  ca: "AUTO",
+  "commercial auto": "AUTO",
+  commercial_auto: "AUTO",
+  rec: "RV",
+  "rec rv": "RV",
+  rec_rv: "RV",
+  boat: "RV",
+  "boat/watercraft": "RV",
+  watercraft: "RV",
+  workers_comp: "WC",
+  "workers comp": "WC",
+  "workers' comp": "WC",
+  "work comp": "WC",
+  "term life": "LIFE",
+  "whole life": "LIFE",
+  iul: "LIFE",
+  "final expense": "LIFE",
+  marketplace: "HEALTH",
+  medicare: "HEALTH",
+  "medicare advantage": "HEALTH",
+  aca: "HEALTH",
+  medigap: "HEALTH",
+  supplemental: "HEALTH",
+};
+
+export type AgencyLobOrphan = {
+  raw: string;
+  count: number;
+};
+
+export function normalizeLobKey(value: string | null | undefined): string {
+  return (value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function resolveAgencyLobCode(
+  value: string | null | undefined,
+  rows: readonly AgencyLobRecord[],
+): string | null {
+  const raw = (value ?? "").trim();
+  if (!raw) return null;
+  const upper = raw.toUpperCase();
+  const key = normalizeLobKey(raw);
+  const byCode = rows.find((row) => row.lobCode.trim().toUpperCase() === upper);
+  if (byCode) return byCode.lobCode.trim().toUpperCase();
+  const byProduct = rows.find((row) => normalizeLobKey(row.productId) === key);
+  if (byProduct) return byProduct.lobCode.trim().toUpperCase();
+  const byLabel = rows.find((row) => normalizeLobKey(row.label) === key);
+  if (byLabel) return byLabel.lobCode.trim().toUpperCase();
+  const alias = LOB_CODE_ALIASES[key];
+  if (alias && rows.some((row) => row.lobCode.trim().toUpperCase() === alias)) return alias;
+  return null;
+}
+
+/** Unknown values stay as-is so migrate never drops a record. */
+export function canonicalizeLobCode(
+  value: string | null | undefined,
+  rows: readonly AgencyLobRecord[],
+): string | null {
+  const raw = (value ?? "").trim();
+  if (!raw) return null;
+  return resolveAgencyLobCode(raw, rows) ?? raw;
+}
+
+export function findAgencyLobOrphans(
+  values: readonly string[],
+  rows: readonly AgencyLobRecord[],
+): AgencyLobOrphan[] {
+  const counts = new Map<string, number>();
+  for (const value of values) {
+    const raw = value.trim();
+    if (!raw) continue;
+    if (resolveAgencyLobCode(raw, rows)) continue;
+    counts.set(raw, (counts.get(raw) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([raw, count]) => ({ raw, count }))
+    .sort((a, b) => b.count - a.count || a.raw.localeCompare(b.raw));
+}
+
+export function agencyLobFamilyCounts(rows: readonly AgencyLobRecord[]) {
+  return {
+    personal: rows.filter((row) => row.family === "personal" && row.active).length,
+    commercial: rows.filter((row) => row.family === "commercial" && row.active).length,
+    life: rows.filter((row) => row.family === "life" && row.active).length,
+    health: rows.filter((row) => row.family === "health" && row.active).length,
+    hidden: rows.filter((row) => !row.active).length,
+  };
+}

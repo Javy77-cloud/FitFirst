@@ -7,8 +7,10 @@ import { parseNumericInput } from "@/lib/custom-fields/format";
 import { listDealFieldDefs, writeRecordValues } from "@/lib/custom-fields/store";
 import { formatDealTitle } from "@/lib/deals/deal-title";
 import { isPipelineGridEditable } from "@/lib/deals/pipeline-sheet";
-import { DEFAULT_TENANT_ID, LINES, type LineOfBusiness } from "@/lib/domain";
+import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
+import { loadAgencyLobCatalog } from "@/lib/db/line-settings";
+import { resolveAgencyLobCode } from "@/lib/desk/agency-lobs";
 import { accounts, contacts, deals, leads, risks, users } from "@/lib/db/schema";
 import { moveDealToStage } from "@/app/actions/pipeline";
 
@@ -23,8 +25,9 @@ export type SaveDealPipelineCellResult =
   | { ok: true }
   | { ok: false; error: string };
 
-function isLine(value: string): value is LineOfBusiness {
-  return (LINES as readonly string[]).includes(value);
+async function resolveDealLine(value: string): Promise<string | null> {
+  const catalog = await loadAgencyLobCatalog();
+  return resolveAgencyLobCode(value, catalog);
 }
 
 export async function saveDealPipelineCell(
@@ -57,7 +60,8 @@ export async function saveDealPipelineCell(
   }
 
   if (columnId === "line") {
-    if (!isLine(value)) return { ok: false, error: "Unknown line of business." };
+    const nextLine = await resolveDealLine(value);
+    if (!nextLine) return { ok: false, error: "Unknown line of business." };
     const [contact] = deal.contactId
       ? await db.select().from(contacts).where(eq(contacts.id, deal.contactId))
       : [null];
@@ -71,11 +75,11 @@ export async function saveDealPipelineCell(
       accountName: account?.name,
       primaryNamedInsured: deal.primaryNamedInsured,
       existingTitle: deal.title,
-      line: value,
+      line: nextLine,
     });
     await db
       .update(deals)
-      .set({ lineOfBusiness: value, title, updatedAt: new Date() })
+      .set({ lineOfBusiness: nextLine, title, updatedAt: new Date() })
       .where(eq(deals.id, dealId));
     return finish(dealId);
   }
