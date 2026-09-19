@@ -1,31 +1,21 @@
-import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { SavedToast } from "@/components/desk/saved-toast";
 import { DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
 import { DealWorkQueuePanel } from "@/components/deals/deal-work-queue-panel";
 import { AddNewDealDialog } from "@/components/deals/add-new-deal-dialog";
-import { DealsTable } from "@/components/deals/deals-table";
-import { TodayActivityStrip } from "@/components/deals/today-activity-strip";
-import { PipelineWorkspace } from "@/components/pipeline/workspace";
+import { DealsCommandWorkspace } from "@/components/deals/deals-command-workspace";
+import { TodayActivityCorner } from "@/components/renewals/today-activity-corner";
 import { PipelineBookModeToggle } from "@/components/pipeline/book-mode-toggle";
 import { RenewalsDesk } from "@/components/renewals/renewals-desk";
 import { requireSignedIn } from "@/lib/auth/guards";
+import { sessionSeesAgencyBook } from "@/lib/auth/session";
 import { loadDealPipelineDesk } from "@/lib/deals/pipeline-desk-data";
-import {
-  getPipelineBoard,
-  listBoundPendingDeals,
-  listDeals,
-  listUsers,
-  type DealListFilter,
-} from "@/lib/db/queries";
+import { getPipelineBoard, listBoundPendingDeals, listDeals, listUsers, type DealListFilter } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import {
   EDITABLE_DEAL_PIPELINE_SLUGS,
-  isPipelineSheetView,
-  parsePipelineView,
   pipelineBookToggleHrefs,
 } from "@/lib/wire/pipeline";
-import { presentPipelineCard } from "@/lib/wire/pipeline-cards";
 import { listModuleTags } from "@/app/actions/record-tags";
 import { readDefaultPipelineView } from "@/app/actions/pipeline-view-prefs";
 import { PipelineFilterPopover } from "@/components/filters/pipeline-filter-popover";
@@ -37,20 +27,16 @@ import {
   matchesDealPipelineColumnFilters,
 } from "@/lib/deals/pipeline-column-filters";
 import { pickFilterParams } from "@/lib/saved-filters";
-import { loadOpenCommitments } from "@/lib/notifications/load-commitments";
-import { serializeCommitments } from "@/lib/notifications/commitments";
+import { defaultDealsView, parseDealsView } from "@/lib/deals/deals-views";
+import { matchesDealLens } from "@/lib/deals/deals-lenses";
+import { loadDealVelocityTouches, ownerScorecards, presentRadarCards, agentVelocityScores } from "@/lib/deals/radar-desk";
+import { rankByScore } from "@/lib/deals/velocity";
 
 export const dynamic = "force-dynamic";
 
 function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
-
-const STAGE_HINT: Record<string, string> = {
-  open: "Open quotes — shopping, quoting, comparing.",
-  quote_sent: "Quote sent. Still not coverage.",
-  won: "Closed won / bound this book. Issue may still be outstanding.",
-};
 
 export default async function DealsPage({
   searchParams,
@@ -68,15 +54,18 @@ export default async function DealsPage({
       </AppShell>
     );
   }
-  const viewParam = first(params.view);
+  const roleDefault = defaultDealsView(session);
   const savedDefaultView = await readDefaultPipelineView();
-  const view = parsePipelineView(viewParam ?? savedDefaultView ?? undefined);
-  const stage = first(params.stage);
+  const view = parseDealsView(first(params.view) ?? savedDefaultView ?? roleDefault, roleDefault);
   const q = first(params.q) ?? "";
   const queue = first(params.queue);
+  const heat = first(params.heat);
+  const lens = first(params.lens);
+  const scope = first(params.scope);
+  const valueBand = first(params.valueBand);
   const columnFilter = pickFilterParams(params, [...DEAL_PIPELINE_FILTER_KEYS]);
   const filter: DealListFilter = {
-    stage: columnFilter.stage ?? stage,
+    stage: columnFilter.stage,
     attention: first(params.attention),
     family: first(params.family),
     pcSub: first(params.pcSub),
@@ -86,55 +75,26 @@ export default async function DealsPage({
   };
   const boardSlug = pipeline || "p-c";
   const selectedPipeline = pipeline || undefined;
-  const [boardData, listRows, userRows, lineSettings, desk, tagCatalog, pageFilterPrefs, promiseRows] = await Promise.all([
+  const [boardData, listRows, userRows, lineSettings, desk, tagCatalog, pageFilterPrefs] = await Promise.all([
     getPipelineBoard(boardSlug, {
       lifeSub: filter.lifeSub,
       healthSub: filter.healthSub,
       pcSub: pipeline === "p-c" ? filter.pcSub : undefined,
-      stage: isPipelineSheetView(view) && pipeline ? stage : undefined,
     }),
-    filter.attention === "bound_pending"
-      ? listBoundPendingDeals()
-      : !pipeline
-        ? listDeals(filter)
-        : Promise.resolve(null),
+    filter.attention === "bound_pending" ? listBoundPendingDeals() : listDeals(filter),
     listUsers(),
     loadDeskLineSettings(),
     loadDealPipelineDesk(queue),
     listModuleTags("deals").catch(() => []),
     loadPageFilterPrefs("deals-pipeline"),
-    loadOpenCommitments().catch(() => []),
   ]);
   const boards = boardData?.boards ?? [];
   const settings = boardData?.lineSettings ?? lineSettings;
   const users = new Map(userRows.map((user) => [user.id, user.name]));
   const agents = userRows.map((user) => ({ id: user.id, name: user.name }));
   const board = boardData?.board ?? null;
-  const rawTableRows =
-    filter.attention === "bound_pending" || !pipeline
-      ? (listRows ?? [])
-      : isPipelineSheetView(view) && boardData
-        ? boardData.cards
-        : [];
-  const tableRows = rawTableRows.filter((row) =>
-    matchesDealPipelineColumnFilters(row.deal, columnFilter),
-  );
-  const boardCards = (
-    !pipeline && listRows
-      ? listRows
-      : (boardData?.cards ?? [])
-  ).filter((row) => matchesDealPipelineColumnFilters(row.deal, columnFilter));
-  const presented = boardCards.map(presentPipelineCard);
-  const commitmentsByDealId = Object.fromEntries(
-    [...new Set(presented.map((card) => card.id))].map((id) => [
-      id,
-      serializeCommitments(promiseRows.filter((row) => row.dealId === id)),
-    ]),
-  );
-  const optionDeals = [
-    ...boardCards.map((row) => row.deal),
-    ...(listRows ?? []).map((row) => row.deal),
-  ];
+  const rawRows = (listRows ?? []).filter((row) => matchesDealPipelineColumnFilters(row.deal, columnFilter));
+  const optionDeals = rawRows.map((row) => row.deal);
   const pipelineFilterFields = buildDealPipelineFilterFields({
     deals: optionDeals,
     agents,
@@ -147,26 +107,37 @@ export default async function DealsPage({
     tags: tagCatalog.map((tag) => tag.name),
     prefs: pageFilterPrefs,
   });
+  const touches = await loadDealVelocityTouches(rawRows.map((row) => row.deal.id));
+  const presented = presentRadarCards(rawRows, touches, users);
+  const canSeeTeam = sessionSeesAgencyBook(session);
+  const filtered = presented.filter((card) => {
+    if (q) {
+      const hay = `${card.title} ${card.insured} ${card.phone ?? ""}`.toLowerCase();
+      if (!hay.includes(q.toLowerCase())) return false;
+    }
+    return matchesDealLens(card, {
+      heat,
+      lens,
+      scope,
+      valueBand,
+      viewerId: session.userId,
+      canSeeTeam,
+    });
+  });
+  const scores = agentVelocityScores(presented);
+  const selfScore = session.userId ? scores.get(session.userId) : undefined;
+  const rankLabel =
+    selfScore != null && scores.size > 1
+      ? rankByScore([...scores.values()], selfScore).label
+      : selfScore != null && scores.size === 1
+        ? rankByScore([selfScore], selfScore).label
+        : null;
   const notice = first(params.notice);
   const saved = first(params.saved) === "1";
-  // Tip sep7gn: no list/grid/board/funnel instructional blurbs under the title.
-  const hint =
-    filter.attention === "bound_pending"
-      ? "Bound, waiting on the carrier to issue. No in-force policy on the file."
-      : pipeline === "won-lost"
-        ? "Closed Won and Closed Lost from every shopping board. Archived is its own tab — parking here does not cancel emails hung on won date."
-        : pipeline === "archive"
-          ? "Parked deals only. Drag a Closed Won shop here later; won-date emails stay queued."
-          : pipeline === "flood"
-            ? "Flood shopping. Same stages as the other boards — add, remove, or reorder as Admin."
-            : filter.stage
-              ? (STAGE_HINT[filter.stage] ?? `Stage · ${filter.stage}`)
-              : "";
 
   return (
     <AppShell title="Deals / Pipeline" eyebrow="">
       <SavedToast show={saved} message="Deal saved." listHref="/deals" />
-      {hint ? <p className="mb-3 text-sm text-muted-foreground">{hint}</p> : null}
       {notice === "need-deal" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
           Choose an existing Deal (person or business name) before files are stored.
@@ -198,12 +169,15 @@ export default async function DealsPage({
         boardWhenNoPipeline={null}
         view={view}
         defaultView={savedDefaultView}
-        stage={stage}
         family={filter.family}
         pcSub={filter.pcSub}
         lifeSub={filter.lifeSub}
         healthSub={filter.healthSub}
         attention={filter.attention}
+        heat={heat}
+        lens={lens}
+        scope={scope}
+        valueBand={valueBand}
         settings={settings}
         canEditStages={session.isAdmin}
         stagePipelineId={board?.id ?? null}
@@ -220,9 +194,7 @@ export default async function DealsPage({
             : []
         }
         stageBoards={(boardData?.boards ?? [])
-          .filter((item) =>
-            (EDITABLE_DEAL_PIPELINE_SLUGS as readonly string[]).includes(item.slug),
-          )
+          .filter((item) => (EDITABLE_DEAL_PIPELINE_SLUGS as readonly string[]).includes(item.slug))
           .map((item) => ({
             id: item.id,
             slug: item.slug,
@@ -240,13 +212,7 @@ export default async function DealsPage({
 
       {desk.queueType ? <DealWorkQueuePanel type={desk.queueType} items={desk.queueItems} /> : null}
 
-      <div className="deal-upload-activity" data-testid="deal-upload-activity">
-        <div className="deal-today-slot">
-          <TodayActivityStrip counts={desk.todayCounts} active={desk.queueType} />
-        </div>
-      </div>
-
-      <div className="deal-activity-list-spacer" data-ff-activity-list-spacer="" aria-hidden />
+      <TodayActivityCorner counts={desk.todayCounts} active={desk.queueType} basePath="/deals" />
 
       <div className="deal-list-below-activity" data-ff-deal-list-below-activity>
         <div
@@ -268,69 +234,26 @@ export default async function DealsPage({
             <AddNewDealDialog triggerSize="sm" />
           </div>
         </div>
-        {isPipelineSheetView(view) ? (
-          <>
-            {pipeline ||
-            filter.stage ||
-            filter.attention ||
-            filter.family ||
-            filter.lifeSub ||
-            filter.healthSub ||
-            filter.pcSub ? (
-              <p className="mb-3 text-sm">
-                <Link href="/deals" className="text-primary hover:underline">
-                  Clear filter
-                </Link>
-              </p>
-            ) : null}
-            <DealsTable
-              rows={tableRows}
-              users={users}
-              agents={agents}
-              initialQuery={q}
-              nextByDeal={desk.nextByDeal}
-              commitmentsByDealId={commitmentsByDealId}
-              mode={view}
-              listFilter={{
-                pipeline: selectedPipeline,
-                family: filter.family,
-                pcSub: filter.pcSub,
-                lifeSub: filter.lifeSub,
-                healthSub: filter.healthSub,
-              }}
-            />
-          </>
-        ) : board ? (
-          <PipelineWorkspace
-            agents={agents}
-            initialQuery={q}
-            searchModuleId="deals-pipeline"
-            board={{
-              id: board.id,
-              slug: board.slug,
-              name: board.name,
-              kind: board.kind,
-              seeded: board.seeded,
-              stages: board.stages.map((item) => ({
-                id: item.id,
-                slug: item.slug,
-                name: item.name,
-                sortOrder: item.sortOrder,
-                color: item.color,
-                seeded: item.seeded,
-              })),
-            }}
-            cards={presented}
-            view={view}
-            stageFilter={stage}
-            tagCatalog={tagCatalog}
-            commitmentsByDealId={commitmentsByDealId}
-          />
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No pipeline boards yet. Table still lists every deal on this book.
-          </p>
-        )}
+        <DealsCommandWorkspace
+          view={view}
+          cards={filtered}
+          canSeeTeam={canSeeTeam}
+          scorecards={ownerScorecards(filtered)}
+          rankLabel={rankLabel}
+          href={{
+            view,
+            pipeline: selectedPipeline,
+            family: filter.family,
+            pcSub: filter.pcSub,
+            lifeSub: filter.lifeSub,
+            healthSub: filter.healthSub,
+            heat,
+            lens,
+            scope,
+            valueBand,
+            q,
+          }}
+        />
       </div>
     </AppShell>
   );

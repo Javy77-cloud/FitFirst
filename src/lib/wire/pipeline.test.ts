@@ -249,20 +249,28 @@ describe("renewals href / default view", () => {
       "/renewals?pipeline=won-lost&view=funnel",
     );
     expect(pipelineBookToggleHrefs("list")).toEqual({
-      newHref: "/deals?view=list",
+      newHref: "/deals",
       renewalsHref: "/renewals?view=list",
     });
     expect(pipelineBookToggleHrefs("grid")).toEqual({
-      newHref: "/deals?view=grid",
+      newHref: "/deals",
       renewalsHref: "/renewals?view=grid",
     });
     expect(pipelineBookToggleHrefs("board")).toEqual({
-      newHref: "/deals?view=board",
+      newHref: "/deals",
       renewalsHref: "/renewals?view=board",
     });
     expect(pipelineBookToggleHrefs("funnel")).toEqual({
-      newHref: "/deals?view=funnel",
+      newHref: "/deals",
       renewalsHref: "/renewals?view=funnel",
+    });
+    expect(pipelineBookToggleHrefs("stack")).toEqual({
+      newHref: "/deals?view=stack",
+      renewalsHref: "/renewals",
+    });
+    expect(pipelineBookToggleHrefs("radar")).toEqual({
+      newHref: "/deals?view=radar",
+      renewalsHref: "/renewals",
     });
   });
 });

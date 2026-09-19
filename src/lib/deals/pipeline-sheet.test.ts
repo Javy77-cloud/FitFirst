@@ -25,8 +25,8 @@ describe("pipeline list / grid sheet", () => {
     const bar = source("src/components/deals/deal-workspace-bar.tsx");
     expect(bar).toMatch(/\["list", "List"\]/);
     expect(bar).toMatch(/\["grid", "Grid"\]/);
-    expect(bar).toMatch(/aria-label="List Grid Board Funnel"/);
-    expect(source("src/app/deals/page.tsx")).toMatch(/mode=\{view\}/);
+    expect(bar).toMatch(/aria-label=\{isRenewals \? "List Grid Board Funnel" : "Stack Radar"\}/);
+    expect(source("src/app/deals/page.tsx")).toMatch(/DealsCommandWorkspace/);
     expect(source("src/components/deals/deals-table.tsx")).toMatch(/data-ff-pipe-mode=\{mode\}/);
   });
 
@@ -149,7 +149,7 @@ describe("pipeline list / grid sheet", () => {
     expect(table).toMatch(/attachListProductStageHrefs/);
     expect(table).not.toMatch(/filterPipeline: listFilter\.pipeline/);
     expect(table).not.toMatch(/pipelineSlug: stage\.pipelineSlug,\s*\n\s*stageSlug/);
-    expect(source("src/app/deals/page.tsx")).toMatch(/listFilter=\{\{/);
+    expect(source("src/components/deals/deals-table.tsx")).toMatch(/listFilter/);
     expect(source("src/lib/deals/pipeline-sheet.ts")).toMatch(/listStageFilterHref/);
     expect(source("src/lib/deals/pipeline-sheet.ts")).not.toMatch(
       /pipeline: input\.pipelineSlug \|\| undefined/,

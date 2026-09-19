@@ -5,7 +5,7 @@ export type PipelineBookMode = "new" | "renewals";
 /** Top toggle: New (shopping deals) | Renewals — large segmented control. */
 export function PipelineBookModeToggle({
   mode,
-  newHref = "/deals?view=list",
+  newHref = "/deals",
   renewalsHref = "/renewals",
 }: {
   mode: PipelineBookMode;

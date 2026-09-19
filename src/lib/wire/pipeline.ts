@@ -139,6 +139,10 @@ export type PipelineDeskHrefOpts = {
   family?: string | null;
   pcSub?: string | null;
   attention?: string | null;
+  heat?: string | null;
+  lens?: string | null;
+  scope?: string | null;
+  valueBand?: string | null;
 };
 
 export type PipelineDeskBasePath = "/deals" | "/renewals";
@@ -155,7 +159,13 @@ export function pipelineDeskHref(basePath: PipelineDeskBasePath, opts: PipelineD
   if (opts.pipeline && opts.pipeline !== "all") params.set("pipeline", opts.pipeline);
   // When view is provided (including list), always write it so URL wins over cookie default.
   if (opts.view != null && String(opts.view).length > 0) {
-    const view = basePath === "/renewals" ? parseRenewalsView(opts.view) : parsePipelineView(opts.view);
+    const raw = String(opts.view);
+    const view =
+      basePath === "/renewals"
+        ? parseRenewalsView(raw)
+        : raw === "stack" || raw === "radar"
+          ? raw
+          : parsePipelineView(raw);
     params.set("view", view);
   }
   if (opts.stage) params.set("stage", opts.stage);
@@ -164,6 +174,10 @@ export function pipelineDeskHref(basePath: PipelineDeskBasePath, opts: PipelineD
   if (opts.family) params.set("family", opts.family);
   if (opts.pcSub) params.set("pcSub", opts.pcSub);
   if (opts.attention) params.set("attention", opts.attention);
+  if (opts.heat) params.set("heat", opts.heat);
+  if (opts.lens) params.set("lens", opts.lens);
+  if (opts.scope) params.set("scope", opts.scope);
+  if (opts.valueBand) params.set("valueBand", opts.valueBand);
   const qs = params.toString();
   return qs ? `${basePath}?${qs}` : basePath;
 }
@@ -176,16 +190,22 @@ export function renewalsHref(opts: PipelineDeskHrefOpts = {}) {
   return pipelineDeskHref("/renewals", opts);
 }
 
-/** New ↔ Renewals keeps list/grid/board/funnel instead of each book's default. */
+/** New ↔ Renewals does not carry Stack/Radar onto Renewals or List/Grid onto Deals. */
 export function pipelineBookToggleHrefs(view?: string | null): {
   newHref: string;
   renewalsHref: string;
 } {
   const raw = view === "table" ? "list" : view;
+  if (raw === "stack" || raw === "radar") {
+    return {
+      newHref: dealsHref({ view: raw }),
+      renewalsHref: "/renewals",
+    };
+  }
   const id: PipelineViewId =
     raw === "board" || raw === "funnel" || raw === "grid" || raw === "list" ? raw : "list";
   return {
-    newHref: dealsHref({ view: id }),
+    newHref: "/deals",
     renewalsHref: renewalsHref({ view: id }),
   };
 }

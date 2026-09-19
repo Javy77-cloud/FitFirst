@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CalendarDays, X } from "lucide-react";
 import { TodayActivityStrip } from "@/components/deals/today-activity-strip";
 import type { DealTodayActivityType } from "@/lib/deals/pipeline-desk";
@@ -15,10 +15,22 @@ export function TodayActivityCorner({
   basePath?: "/deals" | "/renewals";
 }) {
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(event: MouseEvent) {
+      if (rootRef.current?.contains(event.target as Node)) return;
+      setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
 
   return (
     <div
+      ref={rootRef}
       className="ff-today-activity-corner"
       data-ff-today-activity-corner=""
       data-open={open ? "true" : "false"}
