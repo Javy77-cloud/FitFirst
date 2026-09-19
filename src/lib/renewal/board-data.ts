@@ -26,6 +26,8 @@ import type { PipelineStageView } from "@/lib/wire/pipeline-cards";
 import { partyLabel } from "@/lib/desk/policy-name";
 import { buildPolicyLabel } from "@/lib/policy/auto-label";
 import { getAgencyPolicyLabelTemplate } from "@/lib/policy/auto-label-prefs";
+import { enrichRenewalCards } from "@/lib/renewal/board-enrich";
+import type { RenewalRiskLevel } from "@/lib/renewal/urgency";
 
 export type RenewalBoardCard = {
   queueId: string;
@@ -49,6 +51,24 @@ export type RenewalBoardCard = {
   premium: string | null;
   proposedPremium: string | null;
   premiumDelta: number | null;
+  ownerId: string | null;
+  ownerName: string | null;
+  partyKey: string;
+  risk: RenewalRiskLevel;
+  riskScore: number;
+  why: string;
+  whyExtra: string | null;
+  hasCurrentTerm: boolean;
+  hasProposedTerm: boolean;
+  canCompare: boolean;
+  chasedThisBand: boolean;
+  reviewDue: boolean;
+  reviewSkipCount: number;
+  healthStars: number;
+  policyHealthStars: number;
+  healthSource: "rated" | "model";
+  healthFlagged: boolean;
+  lastContactDays: number | null;
 };
 
 function partyName(
@@ -209,12 +229,31 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
       premium: built.currentPremium,
       proposedPremium: built.proposedPremium,
       premiumDelta: built.delta,
+      ownerId: row.policy.ownerId ?? row.contact?.ownerId ?? null,
+      ownerName: null,
+      partyKey: "",
+      risk: "low",
+      riskScore: 0,
+      why: "",
+      whyExtra: null,
+      hasCurrentTerm: Boolean(built.currentPremium),
+      hasProposedTerm: Boolean(built.proposedPremium),
+      canCompare: Boolean(built.currentPremium && built.proposedPremium),
+      chasedThisBand: false,
+      reviewDue: false,
+      reviewSkipCount: 0,
+      healthStars: 4,
+      policyHealthStars: 4,
+      healthSource: "model",
+      healthFlagged: false,
+      lastContactDays: null,
     });
   }
 
   cards.sort(
     (a, b) => a.daysUntil - b.daysUntil || a.policyNumber.localeCompare(b.policyNumber),
   );
+  const enriched = await enrichRenewalCards(cards);
 
   const stageRows = renewalsPipeline?.stages ?? RENEWAL_QUEUE_STAGES.map((slug, sortOrder) => ({
     id: slug,
@@ -234,6 +273,6 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
     stages,
     stageRows,
     pipelineId: renewalsPipeline?.id ?? null,
-    cards,
+    cards: enriched,
   };
 }

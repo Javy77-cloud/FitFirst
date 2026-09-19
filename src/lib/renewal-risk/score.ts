@@ -16,7 +16,10 @@ export type RenewalRiskFactorId =
   | "premium_change"
   | "monoline"
   | "lapse_history"
-  | "no_contact_60d";
+  | "no_contact_60d"
+  | "reply_gap"
+  | "tenure"
+  | "adds_cancels";
 
 export type RenewalRiskFactor = {
   id: RenewalRiskFactorId;
@@ -31,6 +34,16 @@ export type RenewalRiskInput = {
   inForceCount: number;
   hasLapseHistory: boolean;
   daysSinceContact: number | null;
+  /** Days since we last reached out (outbound). */
+  daysSinceOurTouch?: number | null;
+  /** Days since they last wrote or called us (inbound). */
+  daysSinceTheirReply?: number | null;
+  /** Days this household has been with the agency. */
+  tenureDays?: number | null;
+  /** Ended / cancelled policies on the household. */
+  cancelCount?: number;
+  /** In-force adds in the last year. */
+  addCount?: number;
 };
 
 export type RenewalRiskScore = {
@@ -183,6 +196,68 @@ function premiumChangeFactor(pct: number | null): RenewalRiskFactor {
   };
 }
 
+function replyGapFactor(input: RenewalRiskInput): RenewalRiskFactor {
+  const ours = input.daysSinceOurTouch;
+  const theirs = input.daysSinceTheirReply;
+  if (ours != null && (theirs == null || theirs > ours + 13)) {
+    const gap = theirs == null ? ours : theirs;
+    return {
+      id: "reply_gap",
+      label: "Reply gap",
+      points: gap >= 30 ? 12 : 8,
+      detail: theirs == null ? `We reached out ${ours}d ago — no reply yet.` : `Reply gap ${gap}d.`,
+    };
+  }
+  return {
+    id: "reply_gap",
+    label: "Reply gap",
+    points: 0,
+    detail: theirs != null ? `They replied ${theirs}d ago.` : "No outbound waiting on a reply.",
+  };
+}
+
+function tenureFactor(days: number | null | undefined): RenewalRiskFactor {
+  if (days == null) {
+    return { id: "tenure", label: "Tenure", points: 0, detail: "Tenure not on file." };
+  }
+  if (days < 365) {
+    return {
+      id: "tenure",
+      label: "Tenure",
+      points: 8,
+      detail: `With us ${Math.max(1, Math.round(days / 30))} mo — newer book.`,
+    };
+  }
+  return {
+    id: "tenure",
+    label: "Tenure",
+    points: 0,
+    detail: `With us ${Math.round(days / 365)} yr.`,
+  };
+}
+
+function addsCancelsFactor(input: RenewalRiskInput): RenewalRiskFactor {
+  const cancels = input.cancelCount ?? 0;
+  const adds = input.addCount ?? 0;
+  if (cancels > 0) {
+    return {
+      id: "adds_cancels",
+      label: "Adds / cancels",
+      points: Math.min(15, 8 + cancels * 4),
+      detail: `${cancels} cancel${cancels === 1 ? "" : "s"} on the book${adds ? ` · ${adds} add${adds === 1 ? "" : "s"}` : ""}.`,
+    };
+  }
+  if (adds > 0) {
+    return {
+      id: "adds_cancels",
+      label: "Adds / cancels",
+      points: 0,
+      detail: `${adds} add${adds === 1 ? "" : "s"} this year.`,
+    };
+  }
+  return { id: "adds_cancels", label: "Adds / cancels", points: 0, detail: "No recent adds or cancels." };
+}
+
 export function scoreRenewalRisk(input: RenewalRiskInput): RenewalRiskScore {
   const factors: RenewalRiskFactor[] = [
     daysToRenewalFactor(input.daysToRenewal),
@@ -217,6 +292,9 @@ export function scoreRenewalRisk(input: RenewalRiskInput): RenewalRiskScore {
             ? `Last contact ${input.daysSinceContact} days ago.`
             : `Last contact ${input.daysSinceContact} days ago.`,
     },
+    replyGapFactor(input),
+    tenureFactor(input.tenureDays),
+    addsCancelsFactor(input),
   ];
 
   const score = Math.min(
