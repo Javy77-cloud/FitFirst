@@ -6,6 +6,7 @@ import { defaultFieldsForModule, defaultLayoutForModule } from "@/lib/custom-fie
 import { listFieldDefs, loadLayoutForModule } from "@/lib/custom-fields/store";
 import { loadOpenCommitments } from "@/lib/notifications/load-commitments";
 import { serializeCommitments } from "@/lib/notifications/commitments";
+import { loadPanelCards } from "@/lib/notifications/load-panel";
 import { attachAlertIds, syncPanelSignals } from "@/lib/notifications/sync-panel";
 import { PANEL_IN_APP_COPY } from "@/lib/notifications/panel";
 
@@ -20,7 +21,9 @@ export default async function NotificationBoardPage({
   const newCommitment = (typeof params.newCommitment === "string" ? params.newCommitment : "") === "1";
   const session = await currentDeskSession();
   const [cards, commitments, taskLayout, taskFields] = await Promise.all([
-    syncPanelSignals().catch(() => attachAlertIds([])),
+    syncPanelSignals().catch(async () =>
+      attachAlertIds(await loadPanelCards().catch(() => [])),
+    ),
     loadOpenCommitments(),
     loadLayoutForModule("tasks").catch(() => defaultLayoutForModule("tasks")),
     listFieldDefs("tasks").catch(() => defaultFieldsForModule("tasks")),

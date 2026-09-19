@@ -88,9 +88,13 @@ export async function syncPanelSignals(): Promise<PanelCard[]> {
     await db.update(alerts).set({ readAt: now }).where(eq(alerts.id, row.id));
   }
 
-  revalidatePath("/");
-  revalidatePath("/notifications");
-  revalidatePath("/alerts");
+  try {
+    revalidatePath("/");
+    revalidatePath("/notifications");
+    revalidatePath("/alerts");
+  } catch {
+    // Render-time sync has no revalidate store; still return live cards.
+  }
   return cards.map((card) => {
     const unread = unreadByKey.get(card.key);
     return {
