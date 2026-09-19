@@ -1,5 +1,6 @@
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
 import type { ExtractedField, ExtractionResult, UnmappedExtractLabel } from "@/lib/extraction/extract";
+import { normalizeVin } from "@/lib/vin-decode/normalize";
 import { GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, GEMINI_LETTER_EXTRACT_JSON_KEYS, type GeminiExtractKey } from "./prompt";
 
 /** Gemini JSON key → one or more sheet / extract field keys. */
@@ -121,9 +122,19 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   landlord_liability: ["landlord_liability", "coverage_e"],
   // Personal Auto dec
   vin: ["vin"],
+  vehicle_identification_number: ["vin"],
+  vehicle_id_number: ["vin"],
+  vin_number: ["vin"],
+  vehicle_1_vin: ["vin"],
   vehicle_year: ["vehicle_year"],
+  vehicle_1_year: ["vehicle_year"],
   vehicle_make: ["vehicle_make"],
+  vehicle_1_make: ["vehicle_make"],
   vehicle_model: ["vehicle_model"],
+  vehicle_1_model: ["vehicle_model"],
+  vehicle_body_class: ["vehicle_body_class"],
+  vehicle_fuel_type: ["vehicle_fuel_type"],
+  vehicle_engine: ["vehicle_engine"],
   vehicle_usage: ["vehicle_usage"],
   annual_miles: ["annual_miles"],
   rideshare: ["rideshare"],
@@ -391,7 +402,10 @@ export function mapGeminiJsonToFields(
     for (const fieldKey of sheetKeys) {
       if (seen.has(fieldKey)) continue;
       seen.add(fieldKey);
-      const letterValue = normalizeOirLetterCode(fieldKey, payload.value);
+      const rawForKey = /(?:^|_)vin$/.test(fieldKey)
+        ? normalizeVin(payload.value) || payload.value
+        : payload.value;
+      const letterValue = normalizeOirLetterCode(fieldKey, rawForKey);
       fields.push({
         fieldKey,
         label: labelForKey(fieldKey),
@@ -482,15 +496,32 @@ export function mapGeminiJsonToFields(
     });
   }
 
-  const glanceRequired = fields.some((f) => f.flagged || f.blankAfterMatch) || unmappedLabels.length > 0;
+  const kept = dropUnnamedExtraDrivers(fields);
+  const glanceRequired = kept.some((f) => f.flagged || f.blankAfterMatch) || unmappedLabels.length > 0;
   return {
-    fields,
-    documentQuality: fields.length ? "clean" : "messy",
+    fields: kept,
+    documentQuality: kept.length ? "clean" : "messy",
     qualityNotes: ["gemini"],
     glanceRequired,
     unmappedLabels,
     fieldMapDocType: docType ?? null,
   };
+}
+
+/** Driver 2+ without a printed name is almost always Gemini inventing a slot (stray driver 3). */
+export function dropUnnamedExtraDrivers(fields: ExtractedField[]): ExtractedField[] {
+  const named = new Set<number>();
+  for (const field of fields) {
+    const match = /^driver_(\d+)_name$/.exec(field.fieldKey);
+    if (match && field.normalizedValue.trim()) named.add(Number(match[1]));
+  }
+  return fields.filter((field) => {
+    const match = /^driver_(\d+)_/.exec(field.fieldKey);
+    if (!match) return true;
+    const index = Number(match[1]);
+    if (index <= 1) return true;
+    return named.has(index);
+  });
 }
 
 /** Fields safe to pass into applyExtractedToSheet (skips below-threshold blanks). */

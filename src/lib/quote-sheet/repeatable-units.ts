@@ -313,3 +313,51 @@ export function fieldsForUnit(kind: RepeatableKind, index: number): Array<Repeat
       key: repeatableFieldKey(kind, index, field.suffix),
     }));
 }
+
+function blankRepeatableCell(): QuoteSheetFieldValue {
+  return { value: "", status: "missing", source: "blank" };
+}
+
+/** Clear every sheet key for one vehicle / driver / household slot. */
+export function clearRepeatableUnit(
+  values: Record<string, QuoteSheetFieldValue>,
+  kind: RepeatableKind,
+  index: number,
+): Record<string, QuoteSheetFieldValue> {
+  const next = { ...values };
+  for (const field of fieldsForKind(kind)) {
+    next[repeatableFieldKey(kind, index, field.suffix)] = blankRepeatableCell();
+  }
+  if (kind === "driver" && index === 1) {
+    next.driver_1_relationship = blankRepeatableCell();
+  }
+  return next;
+}
+
+/**
+ * Remove unit `index` and pack later units down so keys stay contiguous.
+ * Driver 1 never keeps a relationship-to-self value after packing.
+ */
+export function removeRepeatableUnit(
+  values: Record<string, QuoteSheetFieldValue>,
+  kind: RepeatableKind,
+  index: number,
+  product?: string | null,
+): Record<string, QuoteSheetFieldValue> {
+  const cap = unitCap(kind, product);
+  if (index < 1 || index > cap) return values;
+  const next = { ...values };
+  const suffixes = fieldsForKind(kind).map((field) => field.suffix);
+  for (let dest = index; dest < cap; dest += 1) {
+    for (const suffix of suffixes) {
+      const src = next[repeatableFieldKey(kind, dest + 1, suffix)];
+      next[repeatableFieldKey(kind, dest, suffix)] = src
+        ? { ...src }
+        : blankRepeatableCell();
+    }
+    if (kind === "driver" && dest === 1) {
+      next.driver_1_relationship = blankRepeatableCell();
+    }
+  }
+  return clearRepeatableUnit(next, kind, cap);
+}

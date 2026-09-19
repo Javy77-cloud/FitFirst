@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { confirmQuoteSheetField } from "@/app/actions/quote-sheet";
+import { confirmQuoteSheetField, removeRepeatableSheetUnit } from "@/app/actions/quote-sheet";
 import { DecodeVinButton } from "@/components/deal/decode-vin-button";
 import {
   RiskProfileFieldShell,
@@ -44,7 +44,9 @@ export function RepeatableUnitBlocks({
   dealId?: string;
   line?: ShopLine;
 }) {
-  const [count, setCount] = useState(() => visibleUnitCount(values, kind, product));
+  const persistedCount = visibleUnitCount(values, kind, product);
+  const [extra, setExtra] = useState(0);
+  const count = persistedCount + extra;
   const [liveByKey, setLiveByKey] = useState<Record<string, string>>(() => {
     const next: Record<string, string> = {};
     for (const [key, cell] of Object.entries(values)) {
@@ -62,6 +64,12 @@ export function RepeatableUnitBlocks({
       : kind === "household"
         ? "+ Add household member"
         : "+ Add driver";
+  const removeLabel =
+    kind === "vehicle"
+      ? "Remove vehicle"
+      : kind === "household"
+        ? "Remove household member"
+        : "Remove driver";
   const sampleFields = fieldsForUnit(kind, 1).map((field) => unitFieldAsQuote(field, groupTitle));
   const maxColumns = riskProfileSectionMaxColumns(groupTitle, sampleFields);
   const { sectionId, density, setDensity, choices } = useRiskProfileSectionDensity(
@@ -83,9 +91,29 @@ export function RepeatableUnitBlocks({
         const unitFields = fieldsForUnit(kind, index);
         return (
           <div key={`${kind}-${index}`} className="border-t border-border/60 first:border-t-0" data-ff-unit-block={`${kind}-${index}`}>
-            <p className="px-3 py-1.5 text-xs font-semibold text-navy">
-              {title} {index}
-            </p>
+            <div className="flex items-center justify-between gap-2 px-3 py-1.5">
+              <p className="text-xs font-semibold text-navy">
+                {title} {index}
+              </p>
+              <button
+                type="submit"
+                className="text-sm font-medium text-primary hover:underline"
+                data-testid={`deal-remove-${kind}`}
+                data-ff-remove-unit={`${kind}-${index}`}
+                formAction={async (formData) => {
+                  if (index > persistedCount) {
+                    setExtra((current) => Math.max(0, current - 1));
+                    return;
+                  }
+                  formData.set("unitKind", kind);
+                  formData.set("unitIndex", String(index));
+                  await removeRepeatableSheetUnit(formData);
+                  setExtra(0);
+                }}
+              >
+                {removeLabel}
+              </button>
+            </div>
             <RiskProfileFieldsGrid
               density={density}
               fields={unitFields.map((field) => unitFieldAsQuote(field, groupTitle))}
@@ -143,7 +171,7 @@ export function RepeatableUnitBlocks({
                 ? "deal-add-household"
                 : "deal-add-driver"
           }
-          onClick={() => setCount((current) => current + 1)}
+          onClick={() => setExtra((current) => current + 1)}
         >
           {addLabel}
         </button>

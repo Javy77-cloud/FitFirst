@@ -44,6 +44,17 @@ export function shopLineFromSourceDoc(doc: QuoteDocLike): string | null {
   const blob = `${doc.slot ?? ""} ${doc.docType ?? ""}`.toLowerCase();
   if (/flood/.test(blob)) return "flood";
   if (/auto|vin|id.?card/.test(blob)) return "auto";
-  if (/home|ho3|dec|wind.?mit|4.?point|four.?point/.test(blob)) return "home";
+  // Bare `dec` / "declaration" is not a line — Auto decs use the same docType.
+  if (/ho3|wind.?mit|4.?point|four.?point/.test(blob)) return "home";
+  if (/\bhome\b/.test(blob) && !/\bdec/.test(blob)) return "home";
   return null;
+}
+
+/** Docs Fill should read declarations / ID cards / photos even if a quote slot leaked. */
+export function isFillSourceDoc(doc: QuoteDocLike): boolean {
+  if (doc.slot === "policy_file" || doc.slot === "quote_pdf") return false;
+  const type = (doc.docType ?? "").toLowerCase();
+  if (isDeclarationDocType(doc.docType)) return true;
+  if (type === "photo" || type === "auto_id_card" || type === "id_card") return true;
+  return isDocumentsSourceDoc(doc);
 }

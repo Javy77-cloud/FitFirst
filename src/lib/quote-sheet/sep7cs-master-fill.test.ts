@@ -16,6 +16,10 @@ import {
   MASTER_FILL_CANCEL,
   MASTER_FILL_REVIEW_NUDGE,
   MASTER_FILL_SKIP_NO_DOCS,
+  MASTER_FILL_SKIP_NO_SOURCE_DOCS,
+  MASTER_FILL_SKIP_WRONG_LINE,
+  MASTER_FILL_SKIP_NO_VIN,
+  masterFillDocsNote,
   MASTER_FILL_STEP_DEAL,
   MASTER_FILL_STEP_DOCS,
   MASTER_FILL_STEP_PROPERTY,
@@ -88,7 +92,8 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(action).toMatch(/runFillFromDealDetails/);
     expect(action).toMatch(/runFillFromPropertyRecords/);
     expect(action).toMatch(/runFillDealSheets/);
-    expect(action).toMatch(/MASTER_FILL_SKIP_NO_DOCS/);
+    expect(action).toMatch(/masterFillDocsNote/);
+    expect(action).toMatch(/isFillSourceDoc/);
     expect(action).toMatch(/Copied deal details into blank master-sheet fields \(CHECK\)/);
     const dealFill = source("src/lib/quote-sheet/fill-from-deal.ts");
     expect(dealFill).toMatch(/status: "check"/);
@@ -111,6 +116,25 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(MASTER_FILL_STEP_PROPERTY).toBe("Property");
     expect(MASTER_FILL_STEP_DOCS).toBe("Docs");
     expect(MASTER_FILL_SKIP_NO_DOCS).toBe("No docs uploaded — skipped");
+    expect(MASTER_FILL_SKIP_NO_SOURCE_DOCS).toMatch(/none are source docs/i);
+    expect(MASTER_FILL_SKIP_WRONG_LINE).toMatch(/wrong shop line/i);
+    expect(MASTER_FILL_SKIP_NO_VIN).toMatch(/did not extract a VIN/i);
+    expect(
+      masterFillDocsNote({
+        dealFileCount: 1,
+        fillSourceCount: 0,
+        filledCount: 0,
+        skippedWrongLine: 0,
+      }),
+    ).toBe(MASTER_FILL_SKIP_NO_SOURCE_DOCS);
+    expect(
+      masterFillDocsNote({
+        dealFileCount: 1,
+        fillSourceCount: 1,
+        filledCount: 0,
+        skippedWrongLine: 1,
+      }),
+    ).toBe(MASTER_FILL_SKIP_WRONG_LINE);
     expect(MASTER_FILL_REVIEW_NUDGE).toMatch(/Review CHECK fields and Confirm when ready/);
 
     const summary = masterFillDoneSummary([
