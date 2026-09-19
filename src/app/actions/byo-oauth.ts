@@ -39,6 +39,8 @@ function refreshByoSurfaces() {
   revalidatePath("/settings/esign");
   revalidatePath("/settings/social");
   revalidatePath("/calendar");
+  revalidatePath("/inbox");
+  revalidatePath("/notifications");
 }
 
 async function assertCanConnect() {

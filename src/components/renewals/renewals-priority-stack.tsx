@@ -46,6 +46,17 @@ export function RenewalsPriorityStack({ cards }: { cards: RenewalBoardCard[] }) 
                   <span className="ff-stack-value">{renewalDaysPhrase(card.daysUntil)}</span>
                   {card.premium ? <span className="ff-stack-value">{formatMoney(card.premium)}</span> : null}
                 </div>
+                {card.inboxCue ? (
+                  <p className="ff-inbox-cue" data-ff-inbox-cue="">
+                    {card.inboxHref ? (
+                      <Link href={card.inboxHref} className="hover:underline">
+                        {card.inboxCue}
+                      </Link>
+                    ) : (
+                      card.inboxCue
+                    )}
+                  </p>
+                ) : null}
                 <RenewalHealthMeter
                   stars={card.healthStars}
                   policyStars={card.policyHealthStars}

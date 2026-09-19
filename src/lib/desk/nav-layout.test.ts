@@ -50,6 +50,7 @@ describe("nav layout defaults", () => {
       "home",
       "leads",
       "deals",
+      "inbox",
       "alerts",
       "contacts",
       "business",
@@ -70,6 +71,7 @@ describe("nav layout defaults", () => {
       "Dashboard",
       "Leads",
       "Deals",
+      "Inbox",
       "Notifications",
       "Contacts",
       "Accounts",
@@ -97,7 +99,7 @@ describe("nav layout defaults", () => {
   });
 
   it("leaves Deals without a Quotes child and keeps template / admin / policies children only", () => {
-    expect(NAV_LAYOUT_VERSION).toBe(15);
+    expect(NAV_LAYOUT_VERSION).toBe(16);
     const rows = resolveNavLayout(null);
     const byId = Object.fromEntries(
       rows.filter((row) => row.kind === "item").map((row) => [row.id, row]),
@@ -220,6 +222,7 @@ describe("nav layout defaults", () => {
       "home",
       "leads",
       "deals",
+      "inbox",
       "alerts",
       "contacts",
       "business",
@@ -278,6 +281,7 @@ describe("nav layout defaults", () => {
       "home",
       "leads",
       "deals",
+      "inbox",
       "alerts",
       "calendar",
       "documents",
@@ -299,7 +303,7 @@ describe("nav layout defaults", () => {
   it("keeps live desk destinations reachable and omits stubs", () => {
     const hrefs = flattenResolvedNav(resolveNavLayout(null)).map((item) => item.href);
     const ids = flattenResolvedNav(resolveNavLayout(null)).map((item) => item.id);
-    for (const href of ["/", "/leads", "/deals", "/notifications", "/contacts", "/accounts", "/policies", "/carriers", "/calendar", "/documents", "/automations/templates", "/esign", "/settings", "/admin", "/templates", "/reports"]) {
+    for (const href of ["/", "/leads", "/deals", "/inbox", "/notifications", "/contacts", "/accounts", "/policies", "/carriers", "/calendar", "/documents", "/automations/templates", "/esign", "/settings", "/admin", "/templates", "/reports"]) {
       expect(hrefs).toContain(href);
     }
     expect(hrefs).not.toContain("/quotes");
@@ -311,7 +315,7 @@ describe("nav layout defaults", () => {
     expect(ids).toContain("book-health");
     expect(ids).toContain("operations");
     expect(hrefs).not.toContain("/get-started");
-    expect(hrefs).not.toContain("/inbox");
+    expect(hrefs).toContain("/inbox");
     expect(hrefs).not.toContain("/support");
     expect(hrefs).not.toContain("/search");
   });
@@ -343,7 +347,7 @@ describe("nav layout defaults", () => {
       hiddenPrimaryIds: ["operations", "billing"],
       submenus: { admin: ["agents", "operations"], operations: [] },
     });
-    expect(next.version).toBe(15);
+    expect(next.version).toBe(16);
     expect(next.primaryOrder.at(-1)).toBe("operations");
     expect(next.hiddenPrimaryIds).toEqual([]);
     expect(next.submenus.admin).not.toContain("operations");
@@ -372,6 +376,7 @@ describe("nav layout defaults", () => {
       "home",
       "leads",
       "deals",
+      "inbox",
       "alerts",
       "contacts",
       "business",
@@ -705,7 +710,7 @@ describe("catalog", () => {
     const ids = NAV_LINK_CATALOG.map((link) => link.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).not.toContain("get-started");
-    expect(ids).not.toContain("inbox");
+    expect(ids).toContain("inbox");
     expect(ids).not.toContain("support");
     expect(ids).toContain("templates");
     expect(ids).toContain("admin");

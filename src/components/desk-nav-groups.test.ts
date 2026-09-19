@@ -42,6 +42,7 @@ describe("primary desk nav", () => {
       "home",
       "leads",
       "deals",
+      "inbox",
       "alerts",
       "contacts",
       "business",
@@ -91,7 +92,8 @@ describe("primary desk nav", () => {
     expect(NAV_GROUPS.find((group) => group.id === "email-templates")?.label).toBe("Email templates");
     expect(NAV_GROUPS.find((group) => group.id === "documents")?.label).toBe("Documents");
     expect(labels).not.toContain("Get Started");
-    expect(labels).not.toContain("Inbox");
+    expect(labels).toContain("Inbox");
+    expect(NAV_GROUPS.find((group) => group.id === "inbox")?.label).toBe("Inbox");
     expect(labels).not.toContain("Support");
     expect(labels).not.toContain("Pipeline");
     expect(NAV_GROUPS.find((group) => group.id === "contacts")?.items).toEqual([]);

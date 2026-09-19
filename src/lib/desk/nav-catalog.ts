@@ -144,6 +144,7 @@ export const NAV_LINK_CATALOG: NavLinkDef[] = [
     match: "/automations",
     adminOnly: true,
   },
+  { id: "inbox", href: "/inbox", label: "Inbox", icon: Mail, match: "/inbox" },
   { id: "calendar", href: "/calendar", label: "Calendar", icon: CalendarDays, match: "/calendar" },
   { id: "phone", href: "/phone", label: "Phone", icon: Phone, match: "/phone" },
   {

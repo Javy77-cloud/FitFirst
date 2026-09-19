@@ -1,4 +1,4 @@
-/** Inbox / Envoys stubs. Work email connects later — no live mailbox. */
+/** Inbox helpers. Live Gmail threads sit on /inbox; activity-log rows stay as book fallback. */
 
 export type InboxStubKind = "email" | "sms" | "inbound_email";
 export type InboxStubStatus = "queued" | "received";
@@ -95,5 +95,21 @@ export function inboxWorkEmailConnected(accounts: { connected?: boolean; status?
     if (row.connected) return true;
     const status = (row.status ?? "").toLowerCase();
     return status === "connected" || status === "connected_demo";
+  });
+}
+
+export function inboxGmailConnected(row: { connected?: boolean; connectMode?: string | null } | null | undefined): boolean {
+  return Boolean(row?.connected && row.connectMode === "byo");
+}
+
+export function formatInboxWhen(iso: string | number | Date | null | undefined): string {
+  if (iso == null || iso === "") return "";
+  const date = iso instanceof Date ? iso : typeof iso === "number" ? new Date(iso) : new Date(iso);
+  if (Number.isNaN(date.getTime())) return String(iso);
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   });
 }

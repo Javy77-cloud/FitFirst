@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  inboxGmailConnected,
   inboxStubFromActivity,
   inboxStubFromLeadOffer,
   inboxWorkEmailConnected,
@@ -62,5 +63,8 @@ describe("inbox / Envoys stubs", () => {
     expect(inboxWorkEmailConnected([])).toBe(false);
     expect(inboxWorkEmailConnected([{ status: "disconnected" }])).toBe(false);
     expect(inboxWorkEmailConnected([{ connected: true }])).toBe(true);
+    expect(inboxGmailConnected(null)).toBe(false);
+    expect(inboxGmailConnected({ connected: true, connectMode: "demo" })).toBe(false);
+    expect(inboxGmailConnected({ connected: true, connectMode: "byo" })).toBe(true);
   });
 });

@@ -41,6 +41,17 @@ export function PriorityStack({ cards }: { cards: RadarDealCard[] }) {
                 <span className="sr-only">{HEAT_LABELS[card.heat]}</span>
                 <VelocityClockRail clocks={card.clocks} phase={card.phase} compact />
               </div>
+              {card.inboxCue ? (
+                <p className="ff-inbox-cue" data-ff-inbox-cue="">
+                  {card.inboxHref ? (
+                    <Link href={card.inboxHref} className="hover:underline">
+                      {card.inboxCue}
+                    </Link>
+                  ) : (
+                    card.inboxCue
+                  )}
+                </p>
+              ) : null}
               <RenewalHealthMeter
                 stars={card.clientHealth / 20}
                 policyStars={card.policyHealth / 20}

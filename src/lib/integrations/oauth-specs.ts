@@ -19,6 +19,8 @@ export const BYO_OAUTH_RETURN_PATHS = [
   "/settings/email",
   "/settings/video",
   "/settings/esign",
+  "/inbox",
+  "/calendar",
 ] as const;
 
 export type ByoOauthReturnPath = (typeof BYO_OAUTH_RETURN_PATHS)[number];

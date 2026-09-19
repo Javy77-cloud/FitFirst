@@ -54,6 +54,17 @@ export function BookGlanceCardView({
         <p className="ff-book-why" data-ff-book-why="" title={card.why}>
           {card.why}
         </p>
+        {card.inboxCue ? (
+          <p className="ff-inbox-cue" data-ff-inbox-cue="">
+            {card.inboxHref ? (
+              <Link href={card.inboxHref} className="hover:underline">
+                {card.inboxCue}
+              </Link>
+            ) : (
+              card.inboxCue
+            )}
+          </p>
+        ) : null}
         {extra}
       </div>
       <Link href={card.primaryAction.href} className="ff-stack-action" data-ff-book-action="">

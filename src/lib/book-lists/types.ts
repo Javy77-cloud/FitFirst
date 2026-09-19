@@ -57,6 +57,8 @@ export type BookGlanceCard = {
   hay: string;
   lastTouchDays: number | null;
   flags: BookCardFlags;
+  inboxCue?: string | null;
+  inboxHref?: string | null;
 };
 
 export type BookLensId =
