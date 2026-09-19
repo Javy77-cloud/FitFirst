@@ -38,8 +38,9 @@ export default async function EsignPage({
     >
       <Notice code={notice} />
       <InDeskEsignBanner>
-        Request a signature on a Deal or Policy. The client or an agent draws or types a name.
-        Status and timestamp stay on that record. DocuSign is not wired.
+        Request a signature on a Deal or Policy, or confirm a filled Documents form. The client or
+        an agent can still draw or type a name in-desk. DocuSign sandbox send runs only when
+        connected.
       </InDeskEsignBanner>
 
       <section className="ff-card mb-4 overflow-hidden p-4">

@@ -28,6 +28,7 @@ export const FLASH_COPY = {
   "brand-saved": "Brand saved",
   "template-saved": "Template saved",
   "signature-saved": "Signature saved",
+  "signature-test-queued": "Test close queued to you. Vendor send waits on a connected inbox.",
   "desk-saved": "Desk saved",
   "columns-saved": "Columns saved",
   "widgets-saved": "Widgets saved",

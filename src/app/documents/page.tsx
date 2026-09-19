@@ -3,8 +3,10 @@ import { AppShell } from "@/components/app-shell";
 import { FileList } from "@/components/documents/file-list";
 import { FolderTools } from "@/components/documents/folder-tools";
 import { FolderTree } from "@/components/documents/folder-tree";
+import { FormSendLoop } from "@/components/documents/form-send-loop";
 import { LibraryTabs } from "@/components/documents/library-tabs";
 import { LibraryUpload } from "@/components/documents/library-upload";
+import { TypeCarrierBrowse } from "@/components/documents/type-carrier-browse";
 import { buttonVariants } from "@/components/ui/button";
 import {
   folderFileCounts,
@@ -13,8 +15,12 @@ import {
   listLibraryDocuments,
   listLibraryFolders,
 } from "@/lib/db/ops-queries";
-import { listFormTemplates } from "@/lib/db/queries";
+import { listDealLookup, listFormTemplates } from "@/lib/db/queries";
+import { listRecentDocumentPipelineJobs } from "@/lib/document-pipeline/store";
+import { isDocumentPipelineJobType, isDocumentPipelineStatus } from "@/lib/document-pipeline/types";
 import { buildFolderTree, libraryHref, libraryLabel, parseLibrary } from "@/lib/documents/library";
+import { groupFoldersByTypeAndCarrier } from "@/lib/documents/type-folders";
+import { docusignSandboxIdentity } from "@/lib/integrations/docusign-envelopes";
 import { folderBreadcrumbs } from "@/lib/ops/documents";
 import { cn } from "@/lib/utils";
 
@@ -37,10 +43,13 @@ export default async function DocumentsPage({
   const notice = typeof params.notice === "string" ? params.notice : "";
   const folder = folderId ? await getFolder(folderId) : null;
 
-  const [libraryFolders, { counts }, templates] = await Promise.all([
+  const [libraryFolders, { counts }, templates, deals, recentJobs, docusign] = await Promise.all([
     listLibraryFolders(library),
     folderFileCounts(),
     listFormTemplates(),
+    listDealLookup().catch(() => []),
+    listRecentDocumentPipelineJobs(24).catch(() => []),
+    docusignSandboxIdentity(),
   ]);
 
   const files = folder
@@ -77,9 +86,8 @@ export default async function DocumentsPage({
       }
     >
       <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
-        Forms (ACORD, cancellation, AOR) and Library (marketing, carrier flyers, appetite
-        guides). Folders are by type, with a carrier folder inside. Scan &amp; suggest is not
-        live OCR.
+        Documents by type, carrier nested inside. Forms hold ACORD, No Run Loss, Cancellation, and AOR.
+        Library holds marketing and appetite. The mail library stays under Templates → Email.
       </p>
 
       {notice === "bad-move" ? (
@@ -98,11 +106,44 @@ export default async function DocumentsPage({
         </p>
       ) : null}
 
-      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <FormSendLoop
+        deals={deals.map((deal) => ({
+          id: deal.id,
+          title: deal.title,
+          partyName: deal.partyName,
+          email: deal.email,
+          firstName: deal.firstName,
+          lastName: deal.lastName,
+        }))}
+        jobs={recentJobs
+          .filter((job) => isDocumentPipelineJobType(job.type) && isDocumentPipelineStatus(job.status))
+          .map((job) => ({
+            id: job.id,
+            dealId: job.dealId,
+            type: job.type,
+            status: job.status,
+            extractFields: job.extractPayload?.fields ?? [],
+            confirmedFields: job.confirmedFields ?? {},
+            confirmedAt: job.confirmedAt ? job.confirmedAt.toISOString() : null,
+            filledDocumentId: job.filledDocumentId,
+            envelopeId: job.envelopeId ?? null,
+            envelopeStatus: job.envelopeStatus ?? null,
+            signerName: job.signerName ?? null,
+            signerEmail: job.signerEmail ?? null,
+            message: job.message,
+            createdAt: job.createdAt.toISOString(),
+          }))}
+        docusignReady={docusign.ready}
+        docusignLabel={docusign.label}
+      />
+
+      <div className="mb-3 mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <LibraryTabs library={library} />
         <p className="text-xs text-muted-foreground">
           {libraryFolders.length} folders ·{" "}
-          {library === "forms" ? "fillable ACORD / cancellation / AOR" : "marketing, appetite, carrier files"}
+          {library === "forms"
+            ? "fillable ACORD / loss run / cancellation / AOR"
+            : "marketing, appetite, carrier files"}
         </p>
       </div>
 
@@ -143,6 +184,30 @@ export default async function DocumentsPage({
           <FolderTools library={library} folder={folder} siblings={libraryFolders} />
           <LibraryUpload library={library} folderId={folder?.id ?? null} />
 
+          {!folder ? (
+            <section className="space-y-3">
+              <div>
+                <h2 className="text-sm font-semibold text-navy">Browse by type</h2>
+                <p className="text-xs text-muted-foreground">
+                  Open a type, then the carrier inside it. Email is not listed here.
+                </p>
+              </div>
+              <TypeCarrierBrowse
+                groups={groupFoldersByTypeAndCarrier(
+                  libraryFolders.map((row) => ({
+                    id: row.id,
+                    name: row.name,
+                    parentId: row.parentId,
+                    library: row.library,
+                    kind: row.kind,
+                  })),
+                )}
+                library={library}
+                counts={counts}
+              />
+            </section>
+          ) : null}
+
           <section className="ff-card p-4">
             <h2 className="mb-3 text-sm font-semibold text-navy">
               {folder ? folder.name : `${libraryLabel(library)} files`}
@@ -152,8 +217,8 @@ export default async function DocumentsPage({
               templates={folderTemplates}
               empty={
                 folder
-                  ? "This folder is empty. Upload files or add a subfolder."
-                  : "Open a folder to file uploads, or create one on the left."
+                  ? "This folder is empty. Upload files or add a subfolder. Nest a carrier folder inside a type."
+                  : "Root files. Prefer a type folder, then nest the carrier inside."
               }
             />
           </section>

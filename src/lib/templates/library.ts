@@ -44,3 +44,27 @@ export function templateLanguageLabel(ready: TemplateLocaleReady): string {
 export function isWorkEmailTemplate(template: Pick<EmailTemplate, "slug" | "kind">): boolean {
   return Boolean(template.slug || template.kind);
 }
+
+const SYSTEM_KINDS = new Set(["google_review", "checkin_4mo", "renewal_awareness"]);
+
+export function isSystemEmailTemplate(template: {
+  kind?: string | null;
+  isSeeded?: boolean | null;
+  slug?: string | null;
+}): boolean {
+  if (template.kind === "custom") return false;
+  if (template.kind && SYSTEM_KINDS.has(template.kind)) return true;
+  return Boolean(template.isSeeded);
+}
+
+export function partitionEmailTemplates<T extends { kind?: string | null; isSeeded?: boolean | null; slug?: string | null }>(
+  templates: T[],
+): { system: T[]; custom: T[] } {
+  const system: T[] = [];
+  const custom: T[] = [];
+  for (const template of templates) {
+    if (isSystemEmailTemplate(template)) system.push(template);
+    else custom.push(template);
+  }
+  return { system, custom };
+}

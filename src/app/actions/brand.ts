@@ -12,6 +12,7 @@ import {
   DEFAULT_TENANT_ID,
   DESK_ROLES,
   DENSITY_PRESETS,
+  EMAIL_JOB_HOLD,
   FONT_PRESETS,
   LIST_COLUMN_CATALOG,
   type ColorPreset,
@@ -20,10 +21,12 @@ import {
   type DeskRole,
   type FontPreset,
 } from "@/lib/domain";
+import { requireSignedInAction } from "@/lib/auth/guards";
 import { mergeOneList } from "@/lib/brand/column-layout";
 import { DESK_ROLE_COOKIE, getDeskActor, isAdminActor } from "@/lib/brand/desk-role";
 import { db } from "@/lib/db";
-import { agencyBrand, agentUiPrefs, emailSignatures } from "@/lib/db/schema";
+import { agencyBrand, agentUiPrefs, emailSendJobs, emailSignatures } from "@/lib/db/schema";
+import { previewMergedSignature } from "@/lib/templates/signature-html";
 import { AGENCY_BRAND_ID, AGENT_PREF_IDS } from "@/lib/fixtures/ids";
 import { flashSettings } from "@/lib/flash-action";
 
@@ -199,6 +202,29 @@ export async function saveEmailSignature(formData: FormData) {
   }
   refreshBrand();
   await flashSettings("/settings/email-signatures", "signature-saved");
+}
+
+export async function testSendEmailSignature(formData: FormData) {
+  const session = await requireSignedInAction();
+  if (!session.isAdmin) throw new Error("Admin only.");
+  const locale = str(formData, "locale") === "es" ? "es" : "en";
+  const body = locale === "es" ? str(formData, "bodyEs") : str(formData, "bodyEn");
+  const preview = previewMergedSignature(body);
+  const now = new Date();
+  await db.insert(emailSendJobs).values({
+    tenantId: DEFAULT_TENANT_ID,
+    anchorKind: "signature_test",
+    anchorAt: now,
+    scheduledFor: now,
+    status: "queued",
+    toEmail: session.email,
+    subject: "FitFirst signature test",
+    body: preview,
+    holdReason: EMAIL_JOB_HOLD,
+    locale,
+  });
+  refreshBrand();
+  await flashSettings("/settings/email-signatures", "signature-test-queued");
 }
 
 export async function saveMyDeskPrefs(formData: FormData) {

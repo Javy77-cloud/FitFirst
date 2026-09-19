@@ -328,7 +328,7 @@ export default async function SettingsPage({
                   </form>
                 ))}
                 <Link href="/settings/email-templates" className="text-sm text-primary hover:underline">
-                  Template library
+                  Email templates
                 </Link>
               </div>
             ) : (

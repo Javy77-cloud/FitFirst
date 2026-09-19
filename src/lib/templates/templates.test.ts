@@ -36,10 +36,23 @@ describe("mergeTemplate", () => {
       },
     );
     expect(text).toContain("Hi Marcus from Javier Garcia Insurance");
-    expect(text).toContain("HO on 2026-08-30");
+    expect(text).toContain("HO on 8-30-2026");
     expect(text).toContain(AGENCY_BRAND.phone);
     expect(text).toContain("[Google review link]");
     expect(text).not.toMatch(/\d{2,5}\s+\w+\s+(St|Ave|Ct|Rd)/i);
+  });
+});
+
+describe("mergeTemplate signature", () => {
+  it("replaces {{signature}} with the agency close", () => {
+    const text = mergeTemplate("Thanks.\n\n{{signature}}", {
+      contactFirstName: "Marcus",
+      policyType: "HO",
+      wonDate: null,
+      signature: "Javy\nFitFirst",
+    });
+    expect(text).toContain("Javy\nFitFirst");
+    expect(text).not.toContain("{{signature}}");
   });
 });
 

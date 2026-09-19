@@ -38,8 +38,9 @@ export default async function EsignSettingsPage({
       ) : (
         <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
           In-desk signing lives on Deal and Policy. DocuSign sandbox OAuth is wired below (free
-          developer account, account-d). Dropbox Sign stays a preference stub. Envelope send from a
-          Deal packet is later. Signed apps still return on the Deal.
+          developer account, account-d). Filled Documents can attempt a sandbox envelope after
+          confirm — if credentials are missing, the fill-send loop records a local test envelope.
+          Dropbox Sign stays a preference stub. Signed apps still return on the Deal.
         </p>
       )}
       {notice === "esign-stub" ? (
