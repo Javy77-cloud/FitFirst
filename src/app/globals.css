@@ -1681,6 +1681,13 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+button.ff-renewal-risk-badge {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  line-height: inherit;
+  font-family: inherit;
+}
 .ff-renewal-risk-high {
   background: color-mix(in srgb, var(--ff-terracotta) 16%, white);
   color: var(--ff-terracotta);
@@ -1894,15 +1901,15 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   padding: 0.22rem 0.55rem;
 }
 .ff-renewals-health-why-panel {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 0.4rem);
-  z-index: 24;
+  /* Portaled panels use .ff-health-breakdown-portal; keep this for older markup. */
   width: min(20rem, 78vw);
 }
 .ff-renewal-health-graphs {
   display: grid;
   gap: 0.85rem;
+  max-height: min(70vh, 100%);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .ff-renewal-health-graphs .ff-health-factor-list {
   padding: 0.55rem 0.15rem 0;
@@ -2091,6 +2098,22 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   border-radius: 0.7rem;
   background: #fff;
   box-shadow: 0 10px 24px rgb(12 35 64 / 14%);
+}
+.ff-health-breakdown-portal {
+  position: fixed;
+  z-index: 80;
+  top: auto;
+  left: auto;
+  margin: 0;
+  max-height: min(70vh, calc(100vh - 16px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ff-health-breakdown-portal .ff-health-factor-list + .ff-health-factor-list {
+  margin-top: 0.7rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--ff-border);
 }
 .ff-health-breakdown-head {
   margin: 0 0 0.45rem;

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { AgentHealthRollup } from "@/lib/health/model";
 import type { HealthChipView } from "@/lib/health/model";
-import { HealthFactorList } from "@/components/health/health-score-chip";
+import { HealthFactorList } from "@/components/health/health-factor-list";
+import { HealthWhyPanel } from "@/components/health/health-why-popover";
 import { RENEWAL_RISK_LABEL } from "@/lib/renewal/urgency";
 import type { RoleHealthSummary } from "@/lib/renewal/health-rollup";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,7 @@ export function RenewalsHealthStrip({
   weakest?: HealthChipView | null;
 }) {
   const [openWhy, setOpenWhy] = useState(false);
+  const whyRef = useRef<HTMLButtonElement>(null);
   const stars = summary.combinedStars;
   const total = book ? book.highCount + book.mediumCount + book.lowCount : 0;
   const pct = (count: number) => (total === 0 ? 0 : Math.round((count / total) * 100));
@@ -127,19 +129,24 @@ export function RenewalsHealthStrip({
       {weakest ? (
         <div className="ff-renewals-health-why">
           <button
+            ref={whyRef}
             type="button"
             className="ff-renewals-health-why-btn"
             data-ff-health-why=""
+            data-ff-no-title-tip=""
             aria-expanded={openWhy}
             onClick={() => setOpenWhy((value) => !value)}
           >
             Why
           </button>
-          {openWhy ? (
-            <div className="ff-health-breakdown ff-renewals-health-why-panel">
-              <HealthFactorList health={weakest} />
-            </div>
-          ) : null}
+          <HealthWhyPanel
+            open={openWhy}
+            onOpenChange={setOpenWhy}
+            anchorRef={whyRef}
+            align="end"
+          >
+            <HealthFactorList health={weakest} />
+          </HealthWhyPanel>
         </div>
       ) : null}
     </section>
