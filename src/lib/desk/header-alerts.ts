@@ -1,4 +1,5 @@
 import { displayNoticeBody, noticeHrefFromAlert } from "@/lib/coverage/notices";
+import { coldChaseHref, isDealColdChaseKind } from "@/lib/deals/cold-chase";
 import { followUpLeadHref, notificationWhen } from "@/lib/desk/notifications";
 import { isPanelSignalKind } from "@/lib/notifications/panel";
 import { recordHref } from "@/lib/desk/record-href";
@@ -20,6 +21,7 @@ export function alertRecordHref(row: {
   entityType: string | null;
   entityId: string | null;
 }): string | null {
+  if (isDealColdChaseKind(row.kind) && row.entityId) return coldChaseHref(row.entityId);
   if (isPanelSignalKind(row.kind) && row.entityId) {
     if (row.kind === "quote_declined" && row.entityType === "deal") {
       return `/deals/${row.entityId}?tab=markets`;

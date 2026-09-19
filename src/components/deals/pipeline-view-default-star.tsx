@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { Star } from "lucide-react";
 import { saveDefaultPipelineViewAction } from "@/app/actions/pipeline-view-prefs";
 import { cn } from "@/lib/utils";
+import type { DealsViewId } from "@/lib/deals/deals-views";
 import type { PipelineViewId } from "@/lib/wire/pipeline";
 import { PIPELINE_VIEW_COOKIE, type PipelineViewCookie } from "@/lib/wire/pipeline-view-cookies";
 
@@ -12,8 +13,8 @@ export function PipelineViewDefaultStar({
   defaultView,
   cookieKey = PIPELINE_VIEW_COOKIE,
 }: {
-  currentView: PipelineViewId;
-  defaultView: PipelineViewId | null;
+  currentView: PipelineViewId | DealsViewId;
+  defaultView: PipelineViewId | DealsViewId | null;
   cookieKey?: PipelineViewCookie;
 }) {
   const [pending, startTransition] = useTransition();

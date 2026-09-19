@@ -12,6 +12,7 @@ import {
   selectedNotificationIds,
   toggleNotificationSelection,
 } from "@/lib/desk/notification-selection";
+import { coldChaseOpenLabel } from "@/lib/deals/cold-chase";
 import {
   applyLocalNotificationReads,
   notificationRowUnread,
@@ -168,15 +169,7 @@ export function NotificationChecklist({
                       className="text-xs font-medium text-primary hover:underline"
                       data-testid="notification-open"
                     >
-                      {alert.kind === "quote_declined"
-                        ? "Retry carriers"
-                        : alert.kind === "renewal_silence"
-                          ? "Send reminder"
-                          : alert.kind === "stale_docs"
-                            ? "Open upload"
-                            : alert.kind === "lead_follow_up"
-                              ? "Open lead"
-                              : "Open"}
+                      {coldChaseOpenLabel(alert.kind)}
                     </Link>
                     <button
                       type="button"

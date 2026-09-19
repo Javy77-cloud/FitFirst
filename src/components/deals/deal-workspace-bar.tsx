@@ -6,22 +6,26 @@ import type { PipelineStageBoard, PipelineStageView } from "@/lib/wire/pipeline-
 import {
   dealsHref,
   isPipelineSheetView,
-  parsePipelineView,
   parseRenewalsView,
   pipelineTabLabel,
   type PipelineDeskHrefOpts,
   type PipelineViewId,
 } from "@/lib/wire/pipeline";
+import { parseDealsView, type DealsViewId } from "@/lib/deals/deals-views";
 import { PIPELINE_VIEW_COOKIE, RENEWALS_VIEW_COOKIE, type PipelineViewCookie } from "@/lib/wire/pipeline-view-cookies";
 import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 
 type BoardTab = { slug: string; name: string };
 
-const VIEWS: Array<[PipelineViewId, string]> = [
+const RENEWAL_VIEWS: Array<[PipelineViewId, string]> = [
   ["list", "List"],
   ["grid", "Grid"],
   ["board", "Board"],
   ["funnel", "Funnel"],
+];
+const DEAL_VIEWS: Array<[DealsViewId, string]> = [
+  ["stack", "Stack"],
+  ["radar", "Radar"],
 ];
 
 const ACTIVE_SLUGS = ["p-c", "health", "life"] as const;
@@ -49,6 +53,10 @@ export function DealWorkspaceBar({
   lifeSub,
   healthSub,
   attention,
+  heat = null,
+  lens = null,
+  scope = null,
+  valueBand = null,
   settings,
   stagePipelineId = null,
   stageRows = [],
@@ -62,13 +70,17 @@ export function DealWorkspaceBar({
   pipeline?: string | null;
   view?: string | null;
   /** Saved per-agent cookie default (null = system list fallback). */
-  defaultView?: PipelineViewId | null;
+  defaultView?: PipelineViewId | DealsViewId | null;
   stage?: string | null;
   family?: string | null;
   pcSub?: string | null;
   lifeSub?: string | null;
   healthSub?: string | null;
   attention?: string | null;
+  heat?: string | null;
+  lens?: string | null;
+  scope?: string | null;
+  valueBand?: string | null;
   settings: DeskLineSettings;
   /** Active board for Edit stages (⋯ menu). */
   stagePipelineId?: string | null;
@@ -81,8 +93,9 @@ export function DealWorkspaceBar({
   /** Board/funnel without a selected filter tab. Deals uses p-c; renewals stays on All. */
   boardWhenNoPipeline?: string | null;
 }) {
-  const parsedView =
-    cookieKey === RENEWALS_VIEW_COOKIE ? parseRenewalsView(view) : parsePipelineView(view);
+  const isRenewals = cookieKey === RENEWALS_VIEW_COOKIE;
+  const parsedView = isRenewals ? parseRenewalsView(view) : parseDealsView(view);
+  const viewRows = isRenewals ? RENEWAL_VIEWS : DEAL_VIEWS;
   const extras = {
     view: parsedView,
     stage,
@@ -91,6 +104,10 @@ export function DealWorkspaceBar({
     lifeSub,
     healthSub,
     attention,
+    heat,
+    lens,
+    scope,
+    valueBand,
   };
   const bySlug = new Map(boards.filter((item) => !SKIP_SLUGS.has(item.slug)).map((item) => [item.slug, item]));
   const left = ACTIVE_SLUGS.map((slug) => bySlug.get(slug)).filter((item): item is BoardTab => Boolean(item));
@@ -161,15 +178,19 @@ export function DealWorkspaceBar({
             </div>
           ) : null}
         </div>
-        <span className={`ml-auto ${FF_CHIP_TAB_GROUP}`} data-testid="deal-pipeline-views" aria-label="List Grid Board Funnel">
-          {VIEWS.map(([id, label]) => (
+        <span
+          className={`ml-auto ${FF_CHIP_TAB_GROUP}`}
+          data-testid="deal-pipeline-views"
+          aria-label={isRenewals ? "List Grid Board Funnel" : "Stack Radar"}
+        >
+          {viewRows.map(([id, label]) => (
             <Link
               key={id}
               href={hrefBuilder({
                 ...extras,
-                pipeline: pipeline || (isPipelineSheetView(id) ? null : boardWhenNoPipeline),
+                pipeline: pipeline || (isRenewals && isPipelineSheetView(id as PipelineViewId) ? null : isRenewals ? boardWhenNoPipeline : pipeline),
                 view: id,
-                stage: isPipelineSheetView(id) ? stage : null,
+                stage: isRenewals && isPipelineSheetView(id as PipelineViewId) ? stage : null,
               })}
               className={chipTabClass(parsedView === id)}
               data-active={parsedView === id ? "true" : "false"}

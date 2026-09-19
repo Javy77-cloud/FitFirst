@@ -390,12 +390,36 @@ export async function loadCommitmentNudgeSignals(asOf = deskNow()): Promise<Pane
   return cards;
 }
 
+export async function loadColdChaseSignals(): Promise<PanelCard[]> {
+  const { listDeals } = await import("@/lib/db/queries");
+  const { loadDealVelocityTouches, presentRadarCards } = await import("@/lib/deals/radar-desk");
+  const { planColdChaseNotices } = await import("@/lib/deals/cold-chase");
+  const rows = await listDeals({});
+  const touches = await loadDealVelocityTouches(rows.map((row) => row.deal.id));
+  const cards = presentRadarCards(rows, touches, new Map());
+  return planColdChaseNotices(cards).map((notice) => ({
+    key: `deal_cold_chase:${notice.dealId}`,
+    kind: "deal_cold_chase" as const,
+    urgency: "high" as const,
+    entityLine: notice.body.split(" · ")[0] || notice.title,
+    why: notice.body,
+    primary: { id: "chase", label: "Chase", href: notice.href },
+    href: notice.href,
+    entityType: "deal",
+    entityId: notice.dealId,
+    deadline: null,
+    source: "live" as const,
+    dealId: notice.dealId,
+  }));
+}
+
 export async function loadPanelCards(asOf = deskNow()): Promise<PanelCard[]> {
-  const [declines, renewals, docs, nudges] = await Promise.all([
+  const [declines, renewals, docs, nudges, cold] = await Promise.all([
     loadQuoteDeclinedSignals(asOf).catch(() => []),
     loadRenewalSilenceSignals(asOf).catch(() => []),
     loadStaleDocSignals(asOf).catch(() => []),
     loadCommitmentNudgeSignals(asOf).catch(() => []),
+    loadColdChaseSignals().catch(() => []),
   ]);
-  return sortPanelCards([...declines, ...renewals, ...docs, ...nudges]);
+  return sortPanelCards([...declines, ...renewals, ...docs, ...nudges, ...cold]);
 }

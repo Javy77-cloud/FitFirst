@@ -22,8 +22,10 @@ describe("Deals page sep7h", () => {
     expect(page).toMatch(/eyebrow=""/);
     expect(page).not.toMatch(/Personal Lines Worksheet/);
     const bar = source("src/components/deals/deal-workspace-bar.tsx");
-    expect(bar).toMatch(/aria-label="List Grid Board Funnel"/);
+    expect(bar).toMatch(/aria-label=\{isRenewals \? "List Grid Board Funnel" : "Stack Radar"\}/);
     expect(bar).not.toMatch(/>\s*Pipeline\s*</);
+    expect(bar).toMatch(/\["stack", "Stack"\]/);
+    expect(bar).toMatch(/\["radar", "Radar"\]/);
     expect(bar).toMatch(/\["list", "List"\]/);
     expect(bar).toMatch(/\["grid", "Grid"\]/);
     expect(bar).toMatch(/\["board", "Board"\]/);
@@ -36,32 +38,32 @@ describe("Deals page sep7h", () => {
     expect(bar).toMatch(/gap-x-6/);
   });
 
-  it("keeps Today Activity band; list Attach documents panel removed (sep7gl)", () => {
+  it("keeps Today Activity as a corner bubble; list Attach documents panel removed (sep7gl)", () => {
     const page = source("src/app/deals/page.tsx");
-    expect(page).toMatch(/deal-upload-activity/);
+    expect(page).not.toMatch(/deal-upload-activity/);
     expect(page).not.toMatch(/deal-attach-slot/);
-    expect(page).toMatch(/deal-today-slot/);
+    expect(page).not.toMatch(/deal-today-slot/);
     expect(page).not.toMatch(/w-\[min\(819px,44\.8%\)\]/);
     expect(page).not.toMatch(/w-\[min\(797px,43\.6%\)\]/);
-    expect(page).not.toMatch(/justify-between/);
     expect(page).not.toMatch(/w-\[66%\]/);
     expect(page).not.toMatch(/max-w-\[66%\]/);
     expect(page).not.toMatch(/max-w-\[34%\]/);
-    expect(page).not.toMatch(/flex-col/);
     expect(page).not.toMatch(/lg:flex-wrap/);
     expect(page).not.toMatch(/lg:grid-cols-12/);
     expect(page).not.toMatch(/lg:col-span-7/);
     expect(page).not.toMatch(/lg:col-span-5/);
     expect(page).not.toMatch(/lg:justify-start/);
-    expect(page).not.toMatch(/justify-end/);
-    expect(page).not.toMatch(/ml-auto/);
     expect(page).not.toMatch(/PipelineCreateDealForm/);
     expect(page).not.toMatch(/deal-name-typeahead/);
     expect(page).not.toMatch(/Deal name — Contact or Business/);
     expect(page).not.toMatch(/DealDocsUpload/);
     expect(page).not.toMatch(/listDealLookup/);
     expect(page).not.toMatch(/listPartyTypeahead/);
-    expect(page).toMatch(/<TodayActivityStrip/);
+    expect(page).toMatch(/<TodayActivityCorner/);
+    expect(page).toMatch(/basePath="\/deals"/);
+    expect(page).toMatch(/<DealsCommandWorkspace/);
+    expect(page).not.toMatch(/<DealsTable/);
+    expect(page).not.toMatch(/<PipelineWorkspace/);
     // Component stays for Actions → Attach document (sep7gk) and lockedDeal flows
     const upload = source("src/components/deal/deal-docs-upload.tsx");
     expect(upload).toMatch(/Attach documents to a deal/);

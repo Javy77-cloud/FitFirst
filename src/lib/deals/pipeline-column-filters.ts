@@ -37,6 +37,10 @@ export const DEAL_PIPELINE_PRESERVE_PARAMS = [
   "lifeSub",
   "healthSub",
   "attention",
+  "heat",
+  "lens",
+  "scope",
+  "valueBand",
 ] as const;
 
 export type DealPipelineFilterRow = {

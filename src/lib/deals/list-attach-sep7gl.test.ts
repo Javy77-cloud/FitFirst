@@ -18,12 +18,13 @@ describe("sep7gl — remove list Attach documents panel; keep Actions", () => {
     expect(page).toMatch(/DealWorkspaceBar/);
   });
 
-  it("keeps Today's Activity strip (sep7ai activity band)", () => {
+  it("keeps Today's Activity as a floating corner bubble", () => {
     const page = source("src/app/deals/page.tsx");
-    expect(page).toMatch(/deal-upload-activity/);
-    expect(page).toMatch(/deal-today-slot/);
-    expect(page).toMatch(/<TodayActivityStrip/);
+    expect(page).not.toMatch(/deal-upload-activity/);
+    expect(page).not.toMatch(/deal-today-slot/);
+    expect(page).toMatch(/<TodayActivityCorner/);
     expect(source("src/components/deals/today-activity-strip.tsx")).toMatch(/deal-today-chips/);
+    expect(source("src/components/renewals/today-activity-corner.tsx")).toMatch(/data-ff-today-activity-corner/);
   });
 
   it("keeps Actions → Attach document with locked deal (sep7gk)", () => {
