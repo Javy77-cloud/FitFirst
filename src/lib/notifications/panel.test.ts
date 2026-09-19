@@ -77,6 +77,8 @@ describe("notification panel signals", () => {
   it("names Renewal Autopilot as a live panel kind", () => {
     expect(PANEL_KIND_LABEL.renewal_autopilot).toMatch(/Autopilot/);
     expect(PANEL_SIGNAL_KINDS).toContain("renewal_autopilot");
+    expect(PANEL_SIGNAL_KINDS).toContain("inbox_mail");
+    expect(PANEL_KIND_LABEL.inbox_mail).toMatch(/Inbox/);
     const page = readFileSync("src/app/notifications/page.tsx", "utf8");
     const sync = readFileSync("src/lib/notifications/sync-panel.ts", "utf8");
     expect(page).toMatch(/loadPanelCards/);

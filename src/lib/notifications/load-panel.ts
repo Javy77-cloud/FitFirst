@@ -416,15 +416,16 @@ export async function loadColdChaseSignals(): Promise<PanelCard[]> {
 }
 
 export async function loadPanelCards(asOf = deskNow()): Promise<PanelCard[]> {
-  const [declines, renewals, autopilot, docs, nudges, cold] = await Promise.all([
+  const [declines, renewals, autopilot, docs, nudges, cold, inbox] = await Promise.all([
     loadQuoteDeclinedSignals(asOf).catch(() => []),
     loadRenewalSilenceSignals(asOf).catch(() => []),
     loadAutopilotSignals(asOf).catch(() => []),
     loadStaleDocSignals(asOf).catch(() => []),
     loadCommitmentNudgeSignals(asOf).catch(() => []),
     loadColdChaseSignals().catch(() => []),
+    import("@/lib/notifications/load-inbox").then((mod) => mod.loadInboxMailSignals(asOf).catch(() => [])),
   ]);
   const covered = autopilotCoveredPolicyIds(autopilot);
   const silence = renewals.filter((card) => !card.policyId || !covered.has(card.policyId));
-  return sortPanelCards([...declines, ...silence, ...autopilot, ...docs, ...nudges, ...cold]);
+  return sortPanelCards([...declines, ...silence, ...autopilot, ...docs, ...nudges, ...cold, ...inbox]);
 }

@@ -725,7 +725,7 @@ function MonthGrid({
                     title={`${block.title} · ${block.provider}`}
                     data-ff-calendar-busy={block.provider}
                   >
-                    Busy
+                    {block.title || "Busy"}
                   </div>
                 ))}
                 {items.slice(0, 4).map((item) => (
@@ -859,7 +859,7 @@ function TimeGrid({
                       style={{ top, height: Math.max((minutes / 60) * HOUR_H, 16) }}
                       data-ff-calendar-busy={block.provider}
                     >
-                      Busy
+                      {block.title || "Busy"}
                     </div>
                   );
                 })}

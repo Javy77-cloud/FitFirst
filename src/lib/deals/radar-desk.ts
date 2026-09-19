@@ -70,6 +70,8 @@ export type RadarDealCard = {
   closed: boolean;
   spark: number[];
   updatedAt: string | null;
+  inboxCue?: string | null;
+  inboxHref?: string | null;
 };
 
 function detailsReady(row: DealListRow): boolean {

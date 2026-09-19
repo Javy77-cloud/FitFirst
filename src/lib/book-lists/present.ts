@@ -110,6 +110,8 @@ export function presentPartyCard(
     open?: OpenDealSignal;
     health?: HealthChipView | null;
     asOf: Date;
+    inboxCue?: string | null;
+    inboxHref?: string | null;
   },
 ): BookGlanceCard {
   const href = kind === "contact" ? `/contacts/${row.id}` : `/accounts/${row.id}`;
@@ -169,6 +171,8 @@ export function presentPartyCard(
     phone: row.phone,
     email: row.email,
     lastTouchDays,
+    inboxCue: extra.inboxCue ?? null,
+    inboxHref: extra.inboxHref ?? null,
     flags: {
       client: /client/i.test(row.clientStatus ?? "") && !/former/i.test(row.clientStatus ?? ""),
       openShops: openDeals,

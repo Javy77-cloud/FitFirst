@@ -110,8 +110,14 @@ export default async function DealsPage({
     tags: tagCatalog.map((tag) => tag.name),
     prefs: pageFilterPrefs,
   });
-  const touches = await loadDealVelocityTouches(rawRows.map((row) => row.deal.id));
-  const presented = presentRadarCards(rawRows, touches, users);
+  const [touches, inboxCues] = await Promise.all([
+    loadDealVelocityTouches(rawRows.map((row) => row.deal.id)),
+    import("@/lib/notifications/load-inbox").then((mod) => mod.loadInboxCues().catch(() => [])),
+  ]);
+  const presented = presentRadarCards(rawRows, touches, users).map((card) => {
+    const cue = inboxCues.find((row) => row.dealId === card.id || row.contactId === card.contactId);
+    return cue ? { ...card, inboxCue: cue.why, inboxHref: cue.href } : card;
+  });
   scheduleDealColdChaseNotices(presented);
   const canSeeTeam = session.isAdmin;
   const viewScope = resolveDealScope({ scope, canSeeTeam, view });

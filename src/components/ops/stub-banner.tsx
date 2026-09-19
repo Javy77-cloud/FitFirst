@@ -6,10 +6,11 @@ export function Notice({ code }: { code?: string }) {
   if (!code) return null;
   const copy: Record<string, string> = {
     "google-connected":
-      "Google Calendar is stub-connected. FitFirst tasks, calls, and meetings still display. OAuth is not implemented — no tokens stored.",
+      "Connect Google Calendar under Settings → Integrations. Busy blocks sync onto this desk.",
     "google-disconnected": "Google Calendar marked not connected.",
-    "google-sync-not_implemented":
-      "Google Calendar sync returned not_implemented. FitFirst activities are unchanged.",
+    "google-sync-later":
+      "Two-way event push is later. Busy pull is live — use Sync now on Calendar.",
+    "busy-synced": "External busy is on the desk calendar.",
     "would-send":
       "Campaign send is stubbed. FitFirst logged “would send” for each audience member. No SMTP.",
     "esign-not-implemented":

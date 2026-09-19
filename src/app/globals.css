@@ -3318,3 +3318,86 @@ button.ff-renewal-risk-badge {
   font-weight: 750;
   font-variant-numeric: tabular-nums;
 }
+
+/* Agency Inbox — command bands, not a mail table. */
+.ff-inbox-desk { display: grid; gap: 1rem; }
+.ff-inbox-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.ff-inbox-kicker {
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ff-muted);
+}
+.ff-inbox-empty,
+.ff-inbox-empty-hero {
+  padding: 1rem 1.1rem;
+  border: 1px dashed color-mix(in srgb, var(--ff-navy) 18%, var(--ff-border));
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--ff-card) 88%, #fffaf4);
+}
+.ff-inbox-empty h2 { margin: 0.35rem 0; font-size: 1.15rem; color: var(--ff-navy); }
+.ff-inbox-split {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(18rem, 1fr) minmax(16rem, 0.9fr);
+}
+@media (max-width: 900px) {
+  .ff-inbox-split { grid-template-columns: 1fr; }
+}
+.ff-inbox-bands { display: grid; gap: 0.85rem; }
+.ff-inbox-band header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+.ff-inbox-band h2 { margin: 0; font-size: 0.82rem; color: var(--ff-navy); }
+.ff-inbox-band ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.45rem; }
+.ff-inbox-card {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--ff-border);
+  border-left: 4px solid var(--ff-navy);
+  border-radius: 0.6rem;
+  background: #fff;
+  text-decoration: none;
+}
+.ff-inbox-card.is-open { box-shadow: 0 0 0 2px color-mix(in srgb, var(--ff-navy) 18%, transparent); }
+.ff-inbox-band-needs_reply .ff-inbox-card { border-left-color: var(--ff-terracotta, #c45c26); }
+.ff-inbox-band-unread .ff-inbox-card { border-left-color: #d4a017; }
+.ff-inbox-band-open_deal .ff-inbox-card { border-left-color: #1d6fb8; }
+.ff-inbox-card-kicker { font-size: 0.62rem; font-weight: 750; text-transform: uppercase; color: var(--ff-muted); }
+.ff-inbox-card-from, .ff-inbox-card-subject { color: var(--ff-navy); font-weight: 650; font-size: 0.86rem; }
+.ff-inbox-card-snippet, .ff-inbox-card-when { font-size: 0.75rem; color: var(--ff-muted); }
+.ff-inbox-detail {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--ff-border);
+  border-radius: 0.75rem;
+  background: #fff;
+}
+.ff-inbox-detail h2 { margin: 0.35rem 0 0; font-size: 1.05rem; color: var(--ff-navy); }
+.ff-inbox-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.7rem 0; }
+.ff-inbox-body { white-space: pre-wrap; font-size: 0.88rem; color: var(--ff-navy); }
+.ff-inbox-thread { margin: 0.7rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.55rem; }
+.ff-inbox-msg { padding: 0.55rem 0.65rem; border-radius: 0.55rem; border: 1px solid var(--ff-border); background: #fff; }
+.ff-inbox-msg.is-in { border-left: 3px solid var(--ff-terracotta, #c45c26); }
+.ff-inbox-msg.is-out { border-left: 3px solid var(--ff-navy); background: color-mix(in srgb, var(--ff-card) 86%, #fff); }
+.ff-inbox-compose { display: grid; gap: 0.45rem; margin-top: 0.85rem; }
+.ff-inbox-new { padding-top: 0.5rem; border-top: 1px dashed var(--ff-border); }
+.ff-inbox-cue { margin: 0.25rem 0 0; font-size: 0.72rem; font-weight: 650; color: #c45c26; }
+.ff-calendar-sync {
+  margin-bottom: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--ff-border);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--ff-card) 92%, #fffaf4);
+}

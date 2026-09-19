@@ -88,14 +88,20 @@ export default async function ContactsPage({
     accountIds: [],
   });
   const asOf = deskNow();
+  const inboxCues = await import("@/lib/notifications/load-inbox").then((mod) =>
+    mod.loadInboxCues().catch(() => []),
+  );
   const cards = rows
-    .map((contact) =>
-      presentPartyCard(contact, "contact", {
+    .map((contact) => {
+      const cue = inboxCues.find((row) => row.contactId === contact.id);
+      return presentPartyCard(contact, "contact", {
         open: openDeals.byContact.get(contact.id),
         health: healthMap.get(`c:${contact.id}`) ?? null,
         asOf,
-      }),
-    )
+        inboxCue: cue?.why ?? null,
+        inboxHref: cue?.href ?? null,
+      });
+    })
     .filter((card) => matchesBookLens(card, { heat, lens, q }));
   const contactBook = all.map((row) => ({
     id: row.id,

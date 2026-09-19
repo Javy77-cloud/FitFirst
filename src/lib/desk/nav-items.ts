@@ -1,4 +1,4 @@
-/** Left-nav rows. One Deals module. One Settings. Stub-only rows (Get Started, Support, Inbox) are gone. */
+/** Legacy catalog. Live rail is NAV_LINK_CATALOG + DEFAULT_PRIMARY_ORDER (Inbox is on the rail). */
 export const DESK_NAV_ITEMS = [
   { href: "/", label: "Dashboard" },
   { href: "/social", label: "Social" },

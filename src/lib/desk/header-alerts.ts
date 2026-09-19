@@ -32,6 +32,13 @@ export function alertRecordHref(row: {
     if (row.kind === "renewal_silence" || row.kind === "renewal_autopilot") {
       return row.kind === "renewal_autopilot" ? "/notifications" : row.entityType === "policy" ? `/policies/${row.entityId}` : "/renewals";
     }
+    if (row.kind === "inbox_mail") {
+      return row.entityType === "deal" && row.entityId
+        ? `/deals/${row.entityId}`
+        : row.entityType === "contact" && row.entityId
+          ? `/contacts/${row.entityId}`
+          : "/inbox";
+    }
   }
   return (
     noticeHrefFromAlert(row) ??

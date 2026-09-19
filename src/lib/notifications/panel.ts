@@ -7,6 +7,7 @@ export const PANEL_SIGNAL_KINDS = [
   "stale_docs",
   "commitment_nudge",
   "deal_cold_chase",
+  "inbox_mail",
 ] as const;
 
 export type PanelSignalKind = (typeof PANEL_SIGNAL_KINDS)[number];
@@ -64,6 +65,7 @@ export const PANEL_KIND_LABEL: Record<PanelSignalKind, string> = {
   stale_docs: "Missing docs going stale",
   commitment_nudge: "Promise due",
   deal_cold_chase: "Deal went cold",
+  inbox_mail: "Inbox needs you",
 };
 
 export const OVERNIGHT_HOURS = 18;
@@ -206,6 +208,7 @@ export function panelCardHref(card: Pick<PanelCard, "kind" | "dealId" | "policyI
   if (card.kind === "renewal_silence" && card.policyId) return `/policies/${card.policyId}`;
   if (card.kind === "deal_cold_chase" && card.dealId) return `/deals/${card.dealId}?tab=quotes`;
   if (card.kind === "renewal_autopilot") return "/renewals";
+  if (card.kind === "inbox_mail") return card.href;
   return card.href;
 }
 

@@ -4,21 +4,21 @@ import { sendEnvelope } from "./esign";
 import {
   completeGoogleOAuthStub,
   startGoogleOAuth,
-  syncGoogleCalendarIn,
   syncGoogleCalendarOut,
 } from "./google-calendar";
 import { connectSmsProvider, sendSms } from "./sms";
 import { connectTelephonyProvider, placeDeskCall } from "./telephony";
 
 describe("agency connector stubs", () => {
-  it("Google Calendar OAuth and sync return not_implemented", () => {
-    expect(startGoogleOAuth().status).toBe("not_implemented");
-    expect(syncGoogleCalendarIn().status).toBe("not_implemented");
-    expect(syncGoogleCalendarOut().status).toBe("not_implemented");
+  it("Google Calendar OAuth points at BYO Connect and two-way push stays later", () => {
+    expect(startGoogleOAuth().status).toBe("use_byo");
+    expect(startGoogleOAuth().href).toBe("/settings/integrations#google_calendar");
+    expect(syncGoogleCalendarOut().status).toBe("later");
+    expect(syncGoogleCalendarOut().message).toMatch(/Busy pull is live/);
     const stub = completeGoogleOAuthStub("desk@agency.test");
-    expect(stub.connected).toBe(true);
+    expect(stub.connected).toBe(false);
     expect(stub.displayEmail).toBe("desk@agency.test");
-    expect(stub.oauth.status).toBe("not_implemented");
+    expect(stub.oauth.status).toBe("use_byo");
   });
 
   it("campaign send logs would_send and never claims SMTP", () => {

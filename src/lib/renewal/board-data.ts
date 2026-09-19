@@ -76,6 +76,8 @@ export type RenewalBoardCard = {
   clientHealth: HealthChipView | null;
   autopilotQueued: boolean;
   autopilotEscalated: boolean;
+  inboxCue?: string | null;
+  inboxHref?: string | null;
 };
 
 function partyName(
@@ -265,6 +267,17 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
     (a, b) => a.daysUntil - b.daysUntil || a.policyNumber.localeCompare(b.policyNumber),
   );
   const enriched = await enrichRenewalCards(cards);
+  const inboxCues = await import("@/lib/notifications/load-inbox").then((mod) =>
+    mod.loadInboxCues().catch(() => []),
+  );
+  for (const card of enriched) {
+    const cue = inboxCues.find(
+      (row) => row.policyId === card.policyId || row.contactId === card.contactId,
+    );
+    if (!cue) continue;
+    card.inboxCue = cue.why;
+    card.inboxHref = cue.href;
+  }
   const health = await loadRenewalHealthMap(enriched).catch(() => new Map());
   for (const card of enriched) {
     const row = health.get(card.policyId);

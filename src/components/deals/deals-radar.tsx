@@ -148,6 +148,17 @@ export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
                   {formatClockDays(open.daysInPhase)} in phase · {formatClockDays(open.silenceDays)} silent
                   {open.quoteSent ? " (quote sent)" : ""}
                 </p>
+                {open.inboxCue ? (
+                  <p className="ff-inbox-cue" data-ff-inbox-cue="">
+                    {open.inboxHref ? (
+                      <Link href={open.inboxHref} className="hover:underline">
+                        {open.inboxCue}
+                      </Link>
+                    ) : (
+                      open.inboxCue
+                    )}
+                  </p>
+                ) : null}
                 <VelocityClockRail clocks={open.clocks} phase={open.phase} />
                 <RenewalHealthMeter
                   stars={open.clientHealth / 20}
