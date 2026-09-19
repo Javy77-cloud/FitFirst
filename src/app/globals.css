@@ -2850,3 +2850,188 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   .ff-radar-field { min-height: 22rem; }
   .ff-deals-scorecards { grid-template-columns: 1fr; }
 }
+
+/* One-desk truth strip — book heat, not a scoreboard. */
+.ff-truth-strip {
+  margin-bottom: 0.85rem;
+  padding: 0.75rem 0.9rem 0.85rem;
+  border: 1px solid var(--ff-border);
+  border-radius: 0.85rem;
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--ff-terracotta) 7%, white), #fff 42%, color-mix(in srgb, var(--ff-green) 8%, white));
+  box-shadow: var(--ff-shadow);
+}
+.ff-truth-strip-wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.14rem;
+  height: 1.55rem;
+  margin-bottom: 0.65rem;
+}
+.ff-truth-tick {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 999px 999px 4px 4px;
+  transform-origin: bottom;
+  animation: ff-truth-pulse 2.4s ease-in-out infinite;
+}
+.ff-truth-tick-hot {
+  height: 100%;
+  background: var(--ff-terracotta);
+}
+.ff-truth-tick-cooling {
+  height: 68%;
+  background: var(--ff-urgency-amber);
+}
+.ff-truth-tick-cold {
+  height: 42%;
+  background: var(--ff-urgency-navy);
+}
+@keyframes ff-truth-pulse {
+  0%, 100% { opacity: 0.55; transform: scaleY(0.86); }
+  50% { opacity: 1; transform: scaleY(1); }
+}
+.ff-truth-strip-kicker {
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ff-navy);
+}
+.ff-truth-strip-line {
+  margin: 0.2rem 0 0;
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: var(--ff-ink);
+}
+.ff-truth-strip-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.9rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ff-truth-strip-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--ff-ink);
+}
+.ff-truth-strip-legend em {
+  font-style: normal;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ff-navy);
+}
+.ff-truth-swatch {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: var(--ff-urgency);
+}
+.ff-truth-health {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+}
+.ff-truth-health-label {
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ff-muted);
+}
+.ff-truth-health-bar {
+  display: flex;
+  overflow: hidden;
+  height: 0.38rem;
+  flex: 1 1 auto;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ff-border) 70%, white);
+}
+.ff-truth-health-seg {
+  display: block;
+  height: 100%;
+}
+.ff-health-tone-green { background: var(--ff-green); }
+.ff-health-tone-amber { background: var(--ff-urgency-amber); }
+.ff-health-tone-terracotta { background: var(--ff-terracotta); }
+
+.ff-review-chip {
+  margin-top: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--ff-navy) 16%, var(--ff-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ff-navy) 6%, white);
+  color: var(--ff-navy);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.18rem 0.55rem;
+  cursor: pointer;
+}
+.ff-review-chip:hover {
+  background: color-mix(in srgb, var(--ff-navy) 12%, white);
+}
+.ff-review-pulse-dialog {
+  background: var(--ff-card);
+}
+.ff-review-pulse-step {
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ff-muted);
+}
+.ff-review-pulse-prompt {
+  margin: 0.35rem 0 0.7rem;
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--ff-navy);
+}
+.ff-review-pips {
+  display: flex;
+  gap: 0.4rem;
+}
+.ff-review-pip {
+  flex: 1 1 0;
+  height: 2.4rem;
+  border: 1px solid var(--ff-border);
+  border-radius: 0.7rem;
+  background: #fff;
+  color: var(--ff-navy);
+  font-size: 1rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.ff-review-pip:hover,
+.ff-review-pip.is-on {
+  border-color: var(--ff-navy);
+  background: color-mix(in srgb, var(--ff-navy) 8%, white);
+}
+.ff-review-pulse-scale {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.35rem 0 0;
+  font-size: 0.65rem;
+  color: var(--ff-muted);
+}
+.ff-autopilot-escalated {
+  margin-left: 0.4rem;
+  border-radius: 999px;
+  padding: 0.05rem 0.35rem;
+  background: color-mix(in srgb, var(--ff-terracotta) 16%, white);
+  color: var(--ff-terracotta);
+  font-size: 0.58rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ff-renewal-health.is-flagged {
+  padding: 0.15rem 0.25rem;
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--ff-terracotta) 8%, white);
+}

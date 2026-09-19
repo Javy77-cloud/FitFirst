@@ -3,6 +3,7 @@
 export const PANEL_SIGNAL_KINDS = [
   "quote_declined",
   "renewal_silence",
+  "renewal_autopilot",
   "stale_docs",
   "commitment_nudge",
   "deal_cold_chase",
@@ -27,7 +28,7 @@ export type PanelPrimaryAction = {
   label: string;
   href?: string;
   /** Server action name posted from the card. */
-  action?: "retry_markets" | "send_renewal_reminder" | "open_upload" | "open_entity";
+  action?: "retry_markets" | "send_renewal_reminder" | "confirm_chase" | "open_upload" | "open_entity";
 };
 
 export type PanelCard = {
@@ -49,11 +50,17 @@ export type PanelCard = {
   policyId?: string | null;
   quoteId?: string | null;
   remainingMarkets?: number;
+  chaseBand?: "under30" | "30to60" | "60to90";
+  escalated?: boolean;
+  clientName?: string;
+  daysUntil?: number;
+  metaBody?: string;
 };
 
 export const PANEL_KIND_LABEL: Record<PanelSignalKind, string> = {
   quote_declined: "Quote declined overnight",
   renewal_silence: "Renewal silence",
+  renewal_autopilot: "Renewal Autopilot",
   stale_docs: "Missing docs going stale",
   commitment_nudge: "Promise due",
   deal_cold_chase: "Deal went cold",
@@ -198,11 +205,12 @@ export function panelCardHref(card: Pick<PanelCard, "kind" | "dealId" | "policyI
   if (card.kind === "stale_docs" && card.dealId) return `/deals/${card.dealId}?tab=documents`;
   if (card.kind === "renewal_silence" && card.policyId) return `/policies/${card.policyId}`;
   if (card.kind === "deal_cold_chase" && card.dealId) return `/deals/${card.dealId}?tab=quotes`;
+  if (card.kind === "renewal_autopilot") return "/renewals";
   return card.href;
 }
 
 export const PANEL_EMPTY_BOARD =
-  "Nothing the system caught — keep shopping. Overnight declines, quiet renewals, and stale docs land here.";
+  "Nothing the system caught — keep shopping. Overnight declines, quiet renewals, Autopilot chases, and stale docs land here.";
 
 export const PANEL_IN_APP_COPY =
   "System-found attention. One click advances the job. Nothing emails Javy or the agent.";

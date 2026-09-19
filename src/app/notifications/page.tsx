@@ -29,6 +29,9 @@ export default async function NotificationBoardPage({
   return (
     <AppShell title="Notifications" eyebrow="System attention">
       <p className="mb-4 max-w-3xl text-base text-muted-foreground">{PANEL_IN_APP_COPY}</p>
+      {(typeof params.notice === "string" ? params.notice : "") === "autopilot_sent" ? (
+        <p className="mb-3 text-sm text-navy">Autopilot confirmed. That band will not nag again.</p>
+      ) : null}
       <NotificationPanelBoard cards={cards} />
       <CommitmentsTimeline
         commitments={serializeCommitments(commitments)}

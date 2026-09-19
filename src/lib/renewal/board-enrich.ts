@@ -18,6 +18,7 @@ import {
   riskLevelFromScore,
 } from "@/lib/renewal/health";
 import { countRatingsUnder3, parseReviewScores } from "@/lib/renewal/mini-review";
+import { AUTOPILOT_SILENCE_DAYS, shouldQueueAutopilot } from "@/lib/renewal/autopilot";
 import { renewalUrgencyBand, renewalWhyLine } from "@/lib/renewal/urgency";
 import { isEndedStatus, isInForceStatus } from "@/lib/policy/status";
 import { daysUntil, scoreRenewalRisk } from "@/lib/renewal-risk/score";
@@ -224,6 +225,9 @@ export async function enrichRenewalCards(cards: RenewalBoardCard[]): Promise<Ren
     const bindOrClose = card.stage === "bound" || card.stage === "lost";
     const triggerReady = chasedThisBand || bindOrClose || wrappedClaim || loggedCall;
     const reviewDue = triggerReady && reviewLogs.length === 0 && skipCount < 2;
+    const autopilotQueued = shouldQueueAutopilot({ chasedThisBand, band });
+    const autopilotEscalated =
+      autopilotQueued && lastContactDays != null && lastContactDays >= AUTOPILOT_SILENCE_DAYS;
     const hasCurrentTerm = card.premium != null && card.premium !== "";
     const hasProposedTerm = card.proposedPremium != null && card.proposedPremium !== "";
 
@@ -250,6 +254,10 @@ export async function enrichRenewalCards(cards: RenewalBoardCard[]): Promise<Ren
       healthSource: ratedStars != null ? "rated" : "model",
       healthFlagged,
       lastContactDays,
+      policyHealth: null,
+      clientHealth: null,
+      autopilotQueued,
+      autopilotEscalated,
     };
   });
 }

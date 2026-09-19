@@ -74,6 +74,8 @@ export type RenewalBoardCard = {
   /** Last-night weighted model — strip + drawer only, not a second card face. */
   policyHealth: HealthChipView | null;
   clientHealth: HealthChipView | null;
+  autopilotQueued: boolean;
+  autopilotEscalated: boolean;
 };
 
 function partyName(
@@ -254,6 +256,8 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
       lastContactDays: null,
       policyHealth: null,
       clientHealth: null,
+      autopilotQueued: false,
+      autopilotEscalated: false,
     });
   }
 

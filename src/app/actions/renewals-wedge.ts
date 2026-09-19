@@ -7,7 +7,7 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID, formatDay, formatMoney } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { db } from "@/lib/db";
-import { policies, policyTerms } from "@/lib/db/schema";
+import { alerts, policies, policyTerms } from "@/lib/db/schema";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import { sendDeskEmail } from "@/app/actions/comms";
 import {
@@ -26,6 +26,7 @@ import { CHASE_EVENT, CHASE_MARK, chaseTemplateFor } from "@/lib/renewal/chase";
 import { REVIEW_EVENT, REVIEW_SKIP_EVENT } from "@/lib/renewal/chase";
 import { renewalUrgencyBand } from "@/lib/renewal/urgency";
 import { MINI_REVIEW_QUESTIONS } from "@/lib/renewal/mini-review";
+import { clearReviewPulseCookie, queueReviewPulse } from "@/app/actions/review-pulse";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -226,8 +227,26 @@ export async function sendRenewalChase(formData: FormData) {
     assignee: session.userId,
   });
 
+  const alertId = str(formData, "alertId");
+  if (alertId && isUuid(alertId)) {
+    await db
+      .update(alerts)
+      .set({ readAt: new Date() })
+      .where(and(eq(alerts.id, alertId), eq(alerts.tenantId, DEFAULT_TENANT_ID)));
+  }
+
+  await queueReviewPulse({
+    policyId,
+    contactId: isUuid(contactId) ? contactId : null,
+    accountId: isUuid(accountId) ? accountId : null,
+    trigger: "chase",
+    clientName,
+  });
+
   refreshRenewals(policyId);
-  redirect("/renewals?notice=chase_logged");
+  revalidatePath("/notifications");
+  const returnTo = str(formData, "returnTo");
+  redirect(returnTo.startsWith("/") ? returnTo : "/renewals?notice=chase_logged");
 }
 
 export async function submitRenewalMiniReview(formData: FormData) {
@@ -259,6 +278,7 @@ export async function submitRenewalMiniReview(formData: FormData) {
     accountId: isUuid(accountId) ? accountId : null,
     assignee: session.userId,
   });
+  await clearReviewPulseCookie();
   refreshRenewals(policyId);
   redirect("/renewals?notice=review_saved");
 }
@@ -286,6 +306,7 @@ export async function skipRenewalMiniReview(formData: FormData) {
     accountId: isUuid(accountId) ? accountId : null,
     assignee: session.userId,
   });
+  await clearReviewPulseCookie();
   refreshRenewals(policyId);
   redirect("/renewals?notice=review_skipped");
 }

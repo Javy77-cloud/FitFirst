@@ -6,6 +6,8 @@ import {
   isOvernightDecline,
   isRenewalSilenceWindow,
   isRenewalSilent,
+  PANEL_KIND_LABEL,
+  PANEL_SIGNAL_KINDS,
   quoteDeclinedUrgency,
   quoteDeclinedWhy,
   renewalSilenceUrgency,
@@ -69,6 +71,11 @@ describe("notification panel signals", () => {
     expect(renewalSilenceUrgency(22)).toBe("high");
     expect(renewalSilenceUrgency(45)).toBe("medium");
     expect(renewalSilenceWhy({ daysUntil: 45, lastOutreachAt: null, asOf })).toMatch(/no outreach/);
+  });
+
+  it("names Renewal Autopilot as a live panel kind", () => {
+    expect(PANEL_KIND_LABEL.renewal_autopilot).toMatch(/Autopilot/);
+    expect(PANEL_SIGNAL_KINDS).toContain("renewal_autopilot");
   });
 
   it("rates expired and long-quiet docs as High", () => {

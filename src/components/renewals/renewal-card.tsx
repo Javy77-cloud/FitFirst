@@ -10,6 +10,7 @@ import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
 import { RenewalMiniReview } from "@/components/renewals/renewal-mini-review";
 import { Button } from "@/components/ui/button";
 import { formatSignedMoney } from "@/lib/renewal/compare";
+import { autopilotConfirmLabel } from "@/lib/renewal/autopilot";
 import { chaseTemplateFor, primaryActionLabel, primaryRenewalAction } from "@/lib/renewal/chase";
 import type { RenewalBoardCard } from "@/lib/renewal/board-data";
 import {
@@ -166,8 +167,13 @@ export function RenewalBoardCardView({
           {card.premiumDelta != null ? (
             <input type="hidden" name="premiumDelta" value={String(card.premiumDelta)} />
           ) : null}
-          <Button type="submit" size="xs" data-ff-chase-send={band}>
-            {primaryActionLabel(action, template)}
+          <Button type="submit" size="xs" data-ff-chase-send={band} data-ff-autopilot={card.autopilotQueued ? "queued" : undefined}>
+            {card.autopilotQueued && band !== "90plus"
+              ? autopilotConfirmLabel(
+                  band === "under30" || band === "30to60" || band === "60to90" ? band : "60to90",
+                  card.autopilotEscalated,
+                )
+              : primaryActionLabel(action, template)}
           </Button>
         </form>
       ) : (
@@ -183,6 +189,7 @@ export function RenewalBoardCardView({
             accountId={card.accountId}
             skipCount={card.reviewSkipCount}
             seed={`${card.partyKey}:${card.stage}`}
+            clientName={card.clientName}
           />
         </div>
       ) : null}
