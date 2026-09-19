@@ -194,8 +194,8 @@ export const BYO_OAUTH_SPECS: Record<ByoOauthProviderId, ByoOauthSpec> = {
     worksWhen:
       "Free DocuSign developer account. Add this desk’s redirect URI on the Integration Key. Sandbox only — account-d.docusign.com.",
     wallBody:
-      "DocuSign production accounts are out of this wave. Sandbox OAuth completes and stores the connection. Envelope send from a Deal packet stays later.",
-    stubbed: "In-desk signing stays on Deal / Policy. Vendor envelope send is not this PR.",
+      "DocuSign production accounts are out of this wave. Sandbox OAuth completes and stores the connection. Documents can send ACORD, loss-run, Cancellation, and AOR envelopes to the deal contact.",
+    stubbed: "In-desk signing stays on Deal / Policy. Vendor send uses the Documents loop.",
     smokeTests: ["ping"],
   },
 };

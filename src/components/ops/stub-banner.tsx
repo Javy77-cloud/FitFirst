@@ -14,6 +14,11 @@ export function Notice({ code }: { code?: string }) {
       "Campaign send is stubbed. FitFirst logged “would send” for each audience member. No SMTP.",
     "esign-not-implemented":
       "Finish-line DocuSign / Dropbox Sign stay parked (not_implemented). Use the in-desk stub on a Deal or Policy.",
+    "esign-fill-sent": "DocuSign sandbox envelope created from the filled form.",
+    "esign-fill-stub":
+      "Fill confirmed. DocuSign sandbox is not connected — local envelope recorded. Use in-desk sign or connect Settings → E-sign.",
+    "esign-fill-error":
+      "DocuSign sandbox is connected but envelope send failed. Local envelope kept. Use the in-desk test path.",
     "marked-signed": "Vendor envelope marked signed in FitFirst only. Prefer the in-desk stub on Deal or Policy.",
     "esign-requested": "In-desk signature requested. Open the client link or agent demo — not DocuSign.",
     "esign-signed": "Signed in the in-desk stub. Status and timestamp are on the record.",

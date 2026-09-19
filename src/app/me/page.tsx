@@ -2,10 +2,11 @@ import Link from "next/link";
 import { savePersonalPrefsAction } from "@/app/actions/nav-layout";
 import { AppShell } from "@/components/app-shell";
 import { PersonalSettingsNav } from "@/components/personal-settings-nav";
+import { PersonalSignatureEditor } from "@/components/templates/personal-signature-editor";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { requireSignedIn } from "@/lib/auth/guards";
+import { getDefaultSignature } from "@/lib/db/brand-queries";
 import { getStoredNavLayout } from "@/lib/db/nav-prefs";
 import {
   DATE_DISPLAY_FORMATS,
@@ -30,7 +31,11 @@ export default async function PersonalSettingsPage({
   searchParams: Promise<{ saved?: string; error?: string; section?: string }>;
 }) {
   const session = await requireSignedIn();
-  const [params, layout] = await Promise.all([searchParams, getStoredNavLayout(session.userId)]);
+  const [params, layout, agencySignature] = await Promise.all([
+    searchParams,
+    getStoredNavLayout(session.userId),
+    getDefaultSignature(),
+  ]);
   const personal = layout.personal ?? {};
   const section = params.section ?? "overview";
   const current =
@@ -90,14 +95,12 @@ export default async function PersonalSettingsPage({
             <section id="signature" className="ff-card space-y-2 p-4">
               <h2 className="text-sm font-semibold text-navy">Email signature</h2>
               <p className="text-sm text-muted-foreground">
-                Your personal close. Agency signatures stay under Admin.
+                Personal override. The agency close is Admin-owned. Leave this blank to inherit it.
+                Templates still merge {`{{signature}}`}.
               </p>
-              <Label className="text-xs">Signature</Label>
-              <Textarea
-                name="emailSignature"
-                rows={5}
+              <PersonalSignatureEditor
                 defaultValue={personal.emailSignature ?? ""}
-                placeholder={`${session.name}\nFitFirst Insurance`}
+                agencyPreview={agencySignature?.bodyEn ?? ""}
               />
             </section>
 

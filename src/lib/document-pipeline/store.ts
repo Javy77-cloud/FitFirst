@@ -19,12 +19,36 @@ export async function listDocumentPipelineJobs(dealId: string): Promise<Document
     .orderBy(desc(documentPipelineJobs.createdAt));
 }
 
+export async function listRecentDocumentPipelineJobs(limit = 24): Promise<DocumentPipelineJob[]> {
+  return db
+    .select()
+    .from(documentPipelineJobs)
+    .where(eq(documentPipelineJobs.tenantId, DEFAULT_TENANT_ID))
+    .orderBy(desc(documentPipelineJobs.updatedAt))
+    .limit(limit);
+}
+
 export async function getDocumentPipelineJob(jobId: string): Promise<DocumentPipelineJob | null> {
   const [row] = await db
     .select()
     .from(documentPipelineJobs)
     .where(
       and(eq(documentPipelineJobs.tenantId, DEFAULT_TENANT_ID), eq(documentPipelineJobs.id, jobId)),
+    );
+  return row ?? null;
+}
+
+export async function getDocumentPipelineJobByEnvelope(
+  envelopeId: string,
+): Promise<DocumentPipelineJob | null> {
+  const [row] = await db
+    .select()
+    .from(documentPipelineJobs)
+    .where(
+      and(
+        eq(documentPipelineJobs.tenantId, DEFAULT_TENANT_ID),
+        eq(documentPipelineJobs.envelopeId, envelopeId),
+      ),
     );
   return row ?? null;
 }
@@ -69,6 +93,13 @@ export async function updateDocumentPipelineJob(
     extractedAt?: Date | null;
     confirmedAt?: Date | null;
     filledAt?: Date | null;
+    envelopeId?: string | null;
+    envelopeStatus?: string | null;
+    signerName?: string | null;
+    signerEmail?: string | null;
+    envelopeSentAt?: Date | null;
+    envelopeViewedAt?: Date | null;
+    envelopeCompletedAt?: Date | null;
   },
 ): Promise<DocumentPipelineJob | null> {
   const [row] = await db

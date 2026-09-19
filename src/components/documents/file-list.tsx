@@ -115,6 +115,7 @@ export function FileList({
 function slugFromDoc(doc: Document): string {
   if (doc.docType === "cancellation") return "agency-cancellation";
   if (doc.docType === "aor") return "agency-aor";
+  if (doc.docType === "loss_run") return "agency-loss-run";
   if (doc.docType === "acord") return "fl-ho3";
   return "fl-ho3";
 }

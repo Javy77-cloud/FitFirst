@@ -44,7 +44,7 @@ export async function syncEsignSettingsFromDocuSign(accountLabel: string) {
     provider: "docusign",
     connected: true,
     accountLabel,
-    notes: "DocuSign sandbox OAuth connected. Envelope send from Deal stays later.",
+    notes: "DocuSign sandbox OAuth connected. Documents can send envelopes to the deal contact.",
     lastConnectStatus: "byo_oauth",
     updatedAt: new Date(),
   };

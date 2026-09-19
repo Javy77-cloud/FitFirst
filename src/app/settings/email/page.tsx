@@ -38,11 +38,11 @@ export default async function EmailSettingsPage({
       </p>
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         <Link href="/settings/email-templates" className="text-primary hover:underline">
-          Template library
+          Email templates
         </Link>
         <span className="text-muted-foreground">·</span>
         <Link href="/settings/email-signatures" className="text-primary hover:underline">
-          Signatures
+          Email signatures
         </Link>
         <span className="text-muted-foreground">·</span>
         <Link href="/settings/email-triggers" className="text-primary hover:underline">

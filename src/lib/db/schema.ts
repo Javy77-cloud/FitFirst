@@ -1684,7 +1684,7 @@ export const extractionJobs = pgTable(
   (t) => [index("extraction_jobs_deal_idx").on(t.tenantId, t.dealId)],
 );
 
-/** Agency letter jobs: Cancellation / AOR pack. Gemini extract → agent confirm. Never auto-sends DocuSign. */
+/** Form send jobs: ACORD / loss run / Cancellation / AOR. Gemini extract → agent confirm → DocuSign. */
 export const documentPipelineJobs = pgTable(
   "document_pipeline_jobs",
   {
@@ -1718,11 +1718,19 @@ export const documentPipelineJobs = pgTable(
     extractedAt: timestamp("extracted_at", { withTimezone: true }),
     confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
     filledAt: timestamp("filled_at", { withTimezone: true }),
+    envelopeId: text("envelope_id"),
+    envelopeStatus: text("envelope_status"),
+    signerName: text("signer_name"),
+    signerEmail: text("signer_email"),
+    envelopeSentAt: timestamp("envelope_sent_at", { withTimezone: true }),
+    envelopeViewedAt: timestamp("envelope_viewed_at", { withTimezone: true }),
+    envelopeCompletedAt: timestamp("envelope_completed_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [
     index("document_pipeline_jobs_deal_idx").on(t.tenantId, t.dealId, t.createdAt),
     index("document_pipeline_jobs_type_idx").on(t.tenantId, t.dealId, t.type),
+    index("document_pipeline_jobs_envelope_idx").on(t.tenantId, t.envelopeId),
   ],
 );
 

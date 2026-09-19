@@ -102,8 +102,8 @@ export const AUTOMATION_DESK_SECTIONS = [
   {
     id: "templates",
     href: "/automations/templates",
-    label: "Template library",
-    summary: "EN + ES work-email copy. Preview only — nothing sends from this desk.",
+    label: "Email templates",
+    summary: "System + custom EN/ES work-email copy. Preview only — nothing sends from this desk.",
     group: "desk",
   },
   {

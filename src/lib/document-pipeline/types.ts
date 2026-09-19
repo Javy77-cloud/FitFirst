@@ -1,9 +1,12 @@
-export const DOCUMENT_PIPELINE_JOB_TYPES = ["cancellation", "aor"] as const;
+export const DOCUMENT_PIPELINE_JOB_TYPES = ["acord", "loss_run", "cancellation", "aor"] as const;
 export type DocumentPipelineJobType = (typeof DOCUMENT_PIPELINE_JOB_TYPES)[number];
 
 export const DOCUMENT_PIPELINE_STATUSES = [
   "extracting",
   "needs_review",
+  "sent",
+  "viewed",
+  "completed",
   "out_for_signature",
   "done",
 ] as const;
@@ -38,6 +41,18 @@ export type DocumentPipelineDealExtras = {
   policyNumber?: string | null;
   effectiveDate?: string | null;
   newAgency?: string | null;
+  address1?: string | null;
+  city?: string | null;
+  county?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  yearBuilt?: string | null;
+  construction?: string | null;
+  occupancy?: string | null;
+  roofYear?: string | null;
+  roofCovering?: string | null;
+  openingProtection?: string | null;
+  coverageA?: string | null;
 };
 
 export type DocumentPipelineReviewRow = {
@@ -51,18 +66,25 @@ export type DocumentPipelineReviewRow = {
 };
 
 export const DOCUMENT_PIPELINE_TYPE_LABELS: Record<DocumentPipelineJobType, string> = {
-  cancellation: "Cancellation pack",
-  aor: "AOR pack",
+  acord: "ACORD",
+  loss_run: "No Run Loss",
+  cancellation: "Cancellation",
+  aor: "AOR",
 };
 
 export const DOCUMENT_PIPELINE_STATUS_LABELS: Record<DocumentPipelineStatus, string> = {
   extracting: "Extracting",
   needs_review: "Needs review",
-  out_for_signature: "Out for signature",
-  done: "Done",
+  sent: "Sent",
+  viewed: "Viewed",
+  completed: "Completed",
+  out_for_signature: "Sent",
+  done: "Completed",
 };
 
 export const DOCUMENT_PIPELINE_TEMPLATE_SLUGS: Record<DocumentPipelineJobType, string> = {
+  acord: "fl-ho3",
+  loss_run: "agency-loss-run",
   cancellation: "agency-cancellation",
   aor: "agency-aor",
 };
@@ -75,14 +97,26 @@ export function isDocumentPipelineStatus(value: string | null | undefined): valu
   return DOCUMENT_PIPELINE_STATUSES.includes((value ?? "") as DocumentPipelineStatus);
 }
 
+export function normalizePipelineStatus(status: string | null | undefined): DocumentPipelineStatus | null {
+  if (!isDocumentPipelineStatus(status)) return null;
+  if (status === "out_for_signature") return "sent";
+  if (status === "done") return "completed";
+  return status;
+}
+
 export function isAgencyLetterDocType(docType?: string | null): boolean {
   const t = (docType ?? "").trim().toLowerCase();
   return (
     t === "cancellation" ||
     t === "aor" ||
+    t === "acord" ||
+    t === "loss_run" ||
     t === "agency_letter" ||
     t.includes("cancellation") ||
     t === "agency-aor" ||
+    t === "agency-loss-run" ||
+    t.includes("loss-run") ||
+    t.includes("loss_run") ||
     t.includes("aor")
   );
 }

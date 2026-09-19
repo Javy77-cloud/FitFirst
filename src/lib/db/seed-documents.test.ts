@@ -37,5 +37,6 @@ describe("document library seed", () => {
     expect(slugs).toContain("fl-home-packet");
     expect(slugs).toContain("agency-cancellation");
     expect(slugs).toContain("agency-aor");
+    expect(slugs).toContain("agency-loss-run");
   });
 });
