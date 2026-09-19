@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { SettingsGroupIcon } from "@/components/settings/settings-group-icon";
+import { SettingsPinnedLinks } from "@/components/settings/settings-pinned-links";
 import {
   SETTINGS_NAV,
   settingsChildFor,
@@ -25,6 +26,7 @@ export function SettingsNav({ current }: { current: SettingsNavId }) {
         </Link>
         <p className="text-xs text-muted-foreground">Setup groups, then the page.</p>
       </div>
+      <SettingsPinnedLinks current={current} compact />
       <ul className="space-y-1.5 p-2">
         {SETTINGS_NAV.map((group) => {
           const groupActive = group.id === current || group.id === activeGroup;

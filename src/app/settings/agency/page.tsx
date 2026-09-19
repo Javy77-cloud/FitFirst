@@ -54,6 +54,16 @@ export default async function AgencySettingsPage() {
       {desk.isAdmin ? (
         <div className="mb-4 grid gap-3 sm:grid-cols-2">
           <Link
+            href="/settings/lines"
+            className="ff-card block p-4 hover:border-primary/40"
+            data-ff-agency-lines-card=""
+          >
+            <div className="text-sm font-semibold text-navy">Lines of business</div>
+            <p className="mt-1 text-helper text-muted-foreground">
+              Master catalog for deals, policies, and forms. Hide Life or Health when those books are off.
+            </p>
+          </Link>
+          <Link
             href="/settings/offices"
             className="ff-card block p-4 hover:border-primary/40"
           >

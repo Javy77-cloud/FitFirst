@@ -4,12 +4,29 @@ import { describe, expect, it } from "vitest";
 describe("agency LOB surfaces", () => {
   it("settings/lines edits the master catalog", () => {
     const page = readFileSync("src/app/settings/lines/page.tsx", "utf8");
+    expect(page).toMatch(/title="Lines of business"/);
     expect(page).toMatch(/Agency catalog/);
     expect(page).toMatch(/addAgencyLob/);
     expect(page).toMatch(/Every deal, policy, and form picks one line/);
     expect(page).toMatch(/Unlisted values/);
     expect(page).toMatch(/adoptOrphanLob/);
     expect(page).toMatch(/mapOrphanLob/);
+  });
+
+  it("puts Lines of business on Agency settings and Settings nav, not buried", () => {
+    const agency = readFileSync("src/app/settings/agency/page.tsx", "utf8");
+    const home = readFileSync("src/app/settings/page.tsx", "utf8");
+    const nav = readFileSync("src/components/settings/settings-nav.tsx", "utf8");
+    const pin = readFileSync("src/components/settings/settings-pinned-links.tsx", "utf8");
+    expect(agency).toMatch(/Lines of business/);
+    expect(agency).toMatch(/href="\/settings\/lines"/);
+    expect(agency).toMatch(/data-ff-agency-lines-card/);
+    expect(home).toMatch(/SettingsPinnedLinks/);
+    expect(home).toMatch(/title="Lines of business"/);
+    expect(home).toMatch(/defaultOpen/);
+    expect(nav).toMatch(/SettingsPinnedLinks/);
+    expect(pin).toMatch(/Lines of business/);
+    expect(pin).toMatch(/SETTINGS_PINNED_LINKS/);
   });
 
   it("does not let agency_lobs seed take down desk line settings", () => {

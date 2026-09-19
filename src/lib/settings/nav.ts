@@ -22,6 +22,7 @@ export const SETTINGS_NAV_IDS = [
   "esign",
   "lists",
   "lines",
+  "email-templates",
   "field-builder",
   "policy-labels",
   "agent-policy-access",
@@ -78,7 +79,8 @@ export type SettingsGroupIcon =
   | "developer"
   | "security"
   | "billing"
-  | "import-export";
+  | "import-export"
+  | "templates";
 
 export type SettingsNavChild = {
   id: SettingsNavId;
@@ -110,11 +112,11 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     badge: "Admin",
     children: [
       { id: "agency", href: "/settings/agency", label: "Agency chrome", hint: "Name + logo" },
+      { id: "lines", href: "/settings/lines", label: "Lines of business", hint: "Agency catalog" },
       { id: "agents", href: "/settings/agents", label: "People / Agents", hint: "Create, freeze, notify" },
       { id: "offices", href: "/settings/offices", label: "Offices", hint: "Desks + states" },
       { id: "territories", href: "/settings/territories", label: "Territories", hint: "Geo books" },
       { id: "routing", href: "/settings/routing", label: "Lead routing", hint: "Territory · line · capacity" },
-      { id: "lines", href: "/settings/lines", label: "Lines of business", hint: "Agency catalog" },
       { id: "lists", href: "/settings/lists", label: "Global lists", hint: "Books and picklists" },
       { id: "field-builder", href: "/settings/field-builder", label: "Field layouts", hint: "Leads · Deals · Policies · Contacts · Accounts · Carriers · Tasks" },
       { id: "policy-labels", href: "/settings/policy-labels", label: "Policy labels", hint: "Auto-name template" },
@@ -144,6 +146,18 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     ],
   },
   {
+    id: "email-templates",
+    href: "/settings/email-templates",
+    label: "Email templates",
+    hint: "System + custom library",
+    blurb: "Agency email copy — thank-you, review, and renewal stubs. Not Documents. Not Tasks (those live on the notification panel).",
+    icon: "templates",
+    badge: "Admin",
+    children: [
+      { id: "templates", href: "/settings/email-templates", label: "Email templates", hint: "Admin library" },
+    ],
+  },
+  {
     id: "connect",
     href: "/settings/integrations",
     label: "Integrations / Connect",
@@ -168,7 +182,6 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       { id: "automations", href: "/automations", label: "Automations hub", hint: "Playbooks · sequences · tools" },
       { id: "playbooks", href: "/automations/playbooks", label: "Playbooks", hint: "Tasks + Alerts" },
       { id: "sequences", href: "/automations/sequences", label: "Sequences", hint: "Nurture drafts" },
-      { id: "templates", href: "/automations/templates", label: "Email templates", hint: "System + custom" },
       { id: "documents-library", href: "/documents", label: "Documents", hint: "Type folders · carriers" },
       { id: "triggers", href: "/settings/email-triggers", label: "Email triggers", hint: "Won-date jobs" },
       { id: "macros", href: "/automations/macros", label: "Macros", hint: "Manual run" },
@@ -220,6 +233,12 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
   },
 ];
 
+/** Always-visible Admin catalog shortcuts — not buried in a collapsed Setup group. */
+export const SETTINGS_PINNED_LINKS = [
+  { id: "lines" as const, href: "/settings/lines", label: "Lines of business" },
+  { id: "templates" as const, href: "/settings/email-templates", label: "Email templates" },
+] as const;
+
 /** Old Developer Hub group ids + /settings/developer* pages fold into Automations & Developer. */
 const AUTOMATIONS_DEVELOPER_ALIASES = new Set<SettingsNavId>([
   "developer",
@@ -247,6 +266,7 @@ const AUTOMATIONS_DEVELOPER_ALIASES = new Set<SettingsNavId>([
 ]);
 
 const SETTINGS_CHILD_ALIASES: Partial<Record<SettingsNavId, SettingsNavId>> = {
+  "email-templates": "templates",
   developer: "developer-hub",
   "dev-macros": "macros",
   "dev-functions": "functions",
@@ -271,6 +291,7 @@ export function settingsGroupFor(current: SettingsNavId): SettingsNavId {
   if (current === "people") return "agency-people";
   if (current === "account") return "security";
   if (current === "prefs") return "desk-phone";
+  if (current === "templates" || current === "email-templates") return "email-templates";
   const group = SETTINGS_NAV.find(
     (item) => item.id === current || item.children.some((child) => child.id === current),
   );

@@ -121,7 +121,7 @@ export function TemplatesHub() {
         id="email"
         kicker="Email"
         title="Email"
-        intro="Email templates are their own library — not Documents, not Tasks. Signatures stay with email."
+        intro="Email templates is its own library — Admin edits under Settings → Email templates. Documents and dissolved Tasks never appear in this list."
         cards={EMAIL}
       />
       <Section

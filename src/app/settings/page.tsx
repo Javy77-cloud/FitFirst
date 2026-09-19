@@ -8,6 +8,7 @@ import { saveCommissionRate } from "@/app/actions/pipeline-admin";
 import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { SettingsAccordion } from "@/components/settings/settings-accordion";
 import { SettingsHomeCards } from "@/components/settings/settings-home-cards";
+import { SettingsPinnedLinks } from "@/components/settings/settings-pinned-links";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
@@ -47,9 +48,10 @@ export default async function SettingsPage({
     <SettingsShell title="Settings" current="overview">
       <p className="mb-4 text-sm text-muted-foreground">
         {session.isAdmin
-          ? "Admin settings change the agency. Agent settings change only this desk. Open a Setup card — Agency & People, Desk & Phone, Connect, Automations & Developer, Security, Import / Export, or Billing."
+          ? "Admin settings change the agency. Agent settings change only this desk. Lines of business and Email templates sit at the top. Then open a Setup card — Agency & People, Email templates, Desk & Phone, Connect, Automations & Developer, Security, Import / Export, or Billing."
           : "Agent settings change only this desk. Agency chrome, integrations, and global lists stay with Admin."}
       </p>
+      {session.isAdmin ? <SettingsPinnedLinks /> : null}
       <div className="mb-6">
         <SettingsHomeCards />
       </div>
@@ -220,6 +222,7 @@ export default async function SettingsPage({
             title="Lines of business"
             badge="Admin"
             summary="Agency catalog for deals, policies, and forms."
+            defaultOpen
           >
             <p className="text-sm text-muted-foreground">
               Master lines this agency writes. Hide Life or Health when those books are off.
@@ -312,7 +315,8 @@ export default async function SettingsPage({
             id="templates"
             title="Email templates"
             badge="Admin"
-            summary="Thank-you and review stubs. Sending logs the message on the record."
+            summary="Thank-you and review stubs. Sending logs the message on the record. Not Documents. Not Tasks."
+            defaultOpen
           >
             {session.isAdmin ? (
               <div className="grid gap-3 md:grid-cols-2">
