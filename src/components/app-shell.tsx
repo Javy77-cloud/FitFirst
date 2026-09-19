@@ -125,7 +125,7 @@ async function AppShellSidebar({
 }) {
   const [navLayout, header] = await Promise.all([
     getStoredNavLayout(session.userId, { isAdmin: session.isAdmin, isDeveloper: session.isDeveloper }),
-    loadHeaderNotificationState(),
+    loadHeaderNotificationState().catch(() => ({ unread: 0, alerts: [] })),
   ]);
   return (
     <DeskSidebar
@@ -179,7 +179,10 @@ async function AppShellHeader({
   hideHeaderTitle: boolean;
   recordContext?: HeaderRecordContext | null;
 }) {
-  const [userRows, header] = await Promise.all([listUsers(), loadHeaderNotificationState()]);
+  const [userRows, header] = await Promise.all([
+    listUsers().catch(() => []),
+    loadHeaderNotificationState().catch(() => ({ unread: 0, alerts: [] })),
+  ]);
   const users: Actor[] = userRows.map((row) => ({
     id: row.id,
     name: row.name,
