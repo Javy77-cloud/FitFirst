@@ -325,7 +325,22 @@ describe("auto gemini keys", () => {
     expect(sheetKeysForGeminiKey("vin")).toEqual(["vin"]);
     expect(sheetKeysForGeminiKey("vehicle_year")).toEqual(["vehicle_year"]);
     expect(sheetKeysForGeminiKey("driver_1_name")).toEqual(["driver_1_name"]);
+    expect(sheetKeysForGeminiKey("driver_1_industry")).toEqual([
+      "driver_1_industry",
+      "applicant_industry",
+    ]);
+    expect(sheetKeysForGeminiKey("driver_2_relationship")).toEqual(["driver_2_relationship"]);
+    expect(sheetKeysForGeminiKey("driver_1_relationship")).toEqual([]);
     expect(geminiKeysForShopLine("auto")).toContain("vin");
+    expect(geminiKeysForShopLine("auto")).toContain("driver_1_industry");
+    expect(geminiKeysForShopLine("auto")).toContain("driver_2_marital_status");
+    expect(geminiKeysForShopLine("auto")).not.toContain("driver_1_employment");
+    expect(geminiKeysForShopLine("auto")).not.toContain("driver_1_relationship");
     expect(geminiKeysForShopLine("home")).not.toContain("vin");
+    const autoPrompt = buildGeminiUserPrompt("dec", "auto");
+    expect(autoPrompt).toMatch(/industry/);
+    expect(autoPrompt).toMatch(/Never fill driver_1_relationship/);
+    expect(autoPrompt).toMatch(/comprehensive deductible/i);
+    expect(autoPrompt).toMatch(/Never fill employment/);
   });
 });

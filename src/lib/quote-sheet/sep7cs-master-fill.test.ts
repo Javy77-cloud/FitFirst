@@ -12,12 +12,16 @@ import { emptySheetValues } from "@/lib/quote-sheet/catalog";
 import { fillSheetFromDealDetails } from "@/lib/quote-sheet/fill-from-deal";
 import {
   FILL_MASTER_SHEET_LABEL,
+  MASTER_FILL_BUSY_COPY,
   MASTER_FILL_REVIEW_NUDGE,
   MASTER_FILL_SKIP_NO_DOCS,
   MASTER_FILL_STEP_DEAL,
   MASTER_FILL_STEP_DOCS,
   MASTER_FILL_STEP_PROPERTY,
+  isMasterFillStepResult,
+  masterFillBusyTitle,
   masterFillDoneSummary,
+  masterFillUnexpectedMessage,
 } from "@/lib/quote-sheet/master-fill";
 
 function source(file: string) {
@@ -46,6 +50,9 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(button).toMatch(/router\.refresh\(\)/);
     expect(button).not.toMatch(/withFlash/);
     expect(button).toMatch(/MASTER_FILL_BUSY_COPY/);
+    expect(button).toMatch(/masterFillBusyTitle/);
+    expect(button).toMatch(/isMasterFillStepResult/);
+    expect(button).toMatch(/masterFillUnexpectedMessage/);
     expect(button).toMatch(/WaitHold/);
 
     const html = renderToString(
@@ -89,9 +96,9 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(master).toMatch(/masterFillStepsForLine/);
     expect(master).toMatch(/Deal → Docs → VIN/);
 
-    expect(MASTER_FILL_STEP_DEAL).toBe("Loading deal details…");
-    expect(MASTER_FILL_STEP_PROPERTY).toBe("Loading property details…");
-    expect(MASTER_FILL_STEP_DOCS).toBe("Loading docs…");
+    expect(MASTER_FILL_STEP_DEAL).toBe("Deal");
+    expect(MASTER_FILL_STEP_PROPERTY).toBe("Property");
+    expect(MASTER_FILL_STEP_DOCS).toBe("Docs");
     expect(MASTER_FILL_SKIP_NO_DOCS).toBe("No docs uploaded — skipped");
     expect(MASTER_FILL_REVIEW_NUDGE).toMatch(/Review CHECK fields and Confirm when ready/);
 
@@ -103,6 +110,14 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(summary).toMatch(/Filled 5, skipped 1/);
     expect(summary).toMatch(/No docs uploaded — skipped/);
     expect(summary).toMatch(/Review CHECK fields and Confirm when ready/);
+    expect(MASTER_FILL_BUSY_COPY).toMatch(/Working on it/);
+    expect(masterFillBusyTitle(MASTER_FILL_STEP_DOCS)).toBe(MASTER_FILL_STEP_DOCS);
+    expect(isMasterFillStepResult({ step: "docs", filledCount: 1, skippedCount: 0 })).toBe(true);
+    expect(isMasterFillStepResult("not-json")).toBe(false);
+    expect(masterFillUnexpectedMessage(MASTER_FILL_STEP_DOCS)).toMatch(/Docs/);
+    expect(masterFillUnexpectedMessage(MASTER_FILL_STEP_DOCS)).toMatch(/unexpected response/i);
+    expect(action).toMatch(/purpose: "fill"/);
+    expect(action).toMatch(/fillMasterSheetStepInner/);
   });
 
   it("copies deal blanks as CHECK and never overwrites agent/confirmed", () => {

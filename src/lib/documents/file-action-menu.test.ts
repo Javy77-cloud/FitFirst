@@ -53,8 +53,9 @@ describe("standard file action menu", () => {
     expect(text).toMatch(/<Download \/>\s*Download/);
     expect(text).toMatch(/<Replace \/>\s*Replace/);
     expect(text).toMatch(/<Trash2 \/>\s*Delete/);
-    expect(text).toMatch(/filePreviewHref/);
-    expect(text).toMatch(/target="_blank"/);
+    expect(text).toMatch(/DocumentPreviewDialog/);
+    expect(text).not.toMatch(/target="_blank"/);
+    expect(text).not.toMatch(/filePreviewHref/);
     expect(text).toMatch(/fileDownloadHref/);
     expect(text).toMatch(/replaceDocument/);
     expect(text).toMatch(/deleteUploadedFile/);

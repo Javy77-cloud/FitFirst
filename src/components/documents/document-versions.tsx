@@ -3,6 +3,7 @@
 import { replaceDocument } from "@/app/actions/document-versions";
 import { ChooseFiles } from "@/components/choose-files";
 import { DeleteUploadedFileButton } from "@/components/documents/delete-uploaded-file";
+import { DocumentViewButton } from "@/components/documents/document-preview-dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { formatDay } from "@/lib/domain";
@@ -38,9 +39,16 @@ export function DocumentVersions({
           {prior.map((row) => (
             <li key={row.id} className="flex flex-wrap items-center gap-2 text-muted-foreground">
               <span className="font-medium text-navy">v{row.versionNumber}</span>
-              <a href={fileVersionHref(documentId, row.id)} className="hover:underline">
+              <DocumentViewButton
+                documentId={documentId}
+                filename={row.filename}
+                mimeType={row.mimeType}
+                src={fileVersionHref(documentId, row.id)}
+                downloadHref={fileVersionHref(documentId, row.id, true)}
+                className="text-[11px] hover:underline"
+              >
                 {row.filename}
-              </a>
+              </DocumentViewButton>
               <span>{formatDay(row.createdAt)}</span>
               {row.uploadedByName ? <span>{row.uploadedByName}</span> : null}
               <a href={fileVersionHref(documentId, row.id, true)} className="hover:underline">

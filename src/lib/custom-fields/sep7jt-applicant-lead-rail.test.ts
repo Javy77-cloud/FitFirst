@@ -10,7 +10,6 @@ import {
 } from "./applicant-fields";
 import {
   EDUCATION_LEVEL_OPTIONS,
-  EMPLOYMENT_STATUS_OPTIONS,
   ENTITY_TYPE_OPTIONS,
   GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
@@ -49,7 +48,8 @@ describe("sep7jt Lead rail + shared applicant fields", () => {
     expect(APPLICANT_CRM_FIELDS.some((field) => field.key === "applicant_industry")).toBe(true);
     expect(leadByKey.applicant_gender?.options).toEqual([...GENDER_OPTIONS]);
     expect(leadByKey.applicant_marital_status?.options).toEqual([...MARITAL_STATUS_OPTIONS]);
-    expect(leadByKey.applicant_employment?.options).toEqual([...EMPLOYMENT_STATUS_OPTIONS]);
+    expect(leadByKey.applicant_employment).toBeUndefined();
+    expect(leadByKey.applicant_industry?.label).toBe("Industry");
     expect(leadByKey.applicant_occupation?.options).toEqual([...OCCUPATION_OPTIONS]);
     expect(leadByKey.applicant_education_level?.options).toEqual([...EDUCATION_LEVEL_OPTIONS]);
     expect(leadByKey.entity_type?.options).toEqual([...ENTITY_TYPE_OPTIONS]);

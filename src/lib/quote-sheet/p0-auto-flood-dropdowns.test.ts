@@ -38,8 +38,10 @@ describe("P0 Auto + Flood master-sheet dropdowns", () => {
     expect(byKey.driver_1_status.options).toEqual([...LICENSE_STATUS_OPTIONS]);
     expect(byKey.driver_1_status.label.toLowerCase()).toMatch(/license status/);
     expect(byKey.driver_1_marital_status.options).toEqual([...MARITAL_STATUS_OPTIONS]);
-    expect(byKey.driver_1_relationship.options).toEqual([...AUTO_DRIVER_RELATIONSHIP_OPTIONS]);
+    expect(byKey.driver_1_relationship).toBeUndefined();
     expect(AUTO_DRIVER_RELATIONSHIP_OPTIONS[0]).toBe("Named insured");
+    expect(byKey.comp_deductible.label).toBe("Comprehensive deductible");
+    expect(byKey.comp_deductible.label.toLowerCase()).not.toBe("comp deductible");
 
     expect(byKey.liability_bi.options).toEqual([...AUTO_BI_LIMIT_OPTIONS]);
     expect(byKey.liability_pd.options).toEqual([...AUTO_PD_LIMIT_OPTIONS]);
@@ -65,9 +67,11 @@ describe("P0 Auto + Flood master-sheet dropdowns", () => {
     expect(drivers.find((slot) => slot.suffix === "marital_status")?.options).toEqual([
       ...MARITAL_STATUS_OPTIONS,
     ]);
-    expect(drivers.find((slot) => slot.suffix === "relationship")?.options).toEqual([
-      ...AUTO_DRIVER_RELATIONSHIP_OPTIONS,
-    ]);
+    expect(drivers.find((slot) => slot.suffix === "relationship")).toBeUndefined();
+    expect(
+      fieldsForUnit("driver" as RepeatableKind, 2).find((slot) => slot.suffix === "relationship")
+        ?.options,
+    ).toEqual([...AUTO_DRIVER_RELATIONSHIP_OPTIONS]);
     expect(isRepeatableSheetKey("driver_2_marital_status")).toBe(true);
     expect(isRepeatableSheetKey("driver_2_relationship")).toBe(true);
     expect(isRepeatableSheetKey("driver_3_status")).toBe(true);

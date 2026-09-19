@@ -4,10 +4,10 @@ import { FILL_RISK_PROFILE_LABEL, FILLING_RISK_PROFILE_TITLE } from "./risk-prof
 
 export const FILL_MASTER_SHEET_LABEL = FILL_RISK_PROFILE_LABEL;
 
-export const MASTER_FILL_STEP_DEAL = "Loading deal details…";
-export const MASTER_FILL_STEP_PROPERTY = "Loading property details…";
-export const MASTER_FILL_STEP_DOCS = "Loading docs…";
-export const MASTER_FILL_STEP_VIN = "Decoding VINs (NHTSA vPIC)…";
+export const MASTER_FILL_STEP_DEAL = "Deal";
+export const MASTER_FILL_STEP_PROPERTY = "Property";
+export const MASTER_FILL_STEP_DOCS = "Docs";
+export const MASTER_FILL_STEP_VIN = "VIN";
 
 export const MASTER_FILL_SKIP_NO_DOCS = "No docs uploaded — skipped";
 export const MASTER_FILL_SKIP_NO_ADDRESS = "No property address — skipped";
@@ -23,10 +23,13 @@ export const MASTER_FILL_SKIP_NO_VIN = "No VIN on sheet — skipped";
 export const MASTER_FILL_REVIEW_NUDGE =
   "Review CHECK fields and Confirm when ready";
 
-/** Shown under the step list while Fill is in flight. */
+/** Fallback dialog title. WaitHold title tracks the live step instead. */
 export const MASTER_FILL_BUSY_TITLE = FILLING_RISK_PROFILE_TITLE;
-export const MASTER_FILL_BUSY_COPY =
-  "Skimming deal, docs, and property notes — we’ll be back soon.";
+export const MASTER_FILL_BUSY_COPY = "Working on it — we’ll be back soon.";
+export const MASTER_FILL_UNEXPECTED =
+  "Unexpected response from server. Fields already filled are saved.";
+export const MASTER_FILL_DOCS_FAILED =
+  "Could not read docs. Fields already filled are saved.";
 
 export type MasterFillStepId = "deal" | "property" | "docs" | "vin";
 
@@ -52,6 +55,27 @@ export function masterFillStepsForLine(line: string): { id: MasterFillStepId; la
     { id: "property", label: MASTER_FILL_STEP_PROPERTY },
     { id: "docs", label: MASTER_FILL_STEP_DOCS },
   ];
+}
+
+export function masterFillBusyTitle(stepLabel: string): string {
+  return stepLabel.trim() || MASTER_FILL_BUSY_TITLE;
+}
+
+export function isMasterFillStepResult(raw: unknown): raw is MasterFillStepResult {
+  if (!raw || typeof raw !== "object") return false;
+  const value = raw as Partial<MasterFillStepResult>;
+  return (
+    (value.step === "deal" ||
+      value.step === "property" ||
+      value.step === "docs" ||
+      value.step === "vin") &&
+    typeof value.filledCount === "number" &&
+    typeof value.skippedCount === "number"
+  );
+}
+
+export function masterFillUnexpectedMessage(stepLabel: string): string {
+  return `${stepLabel} failed — ${MASTER_FILL_UNEXPECTED}`;
 }
 
 export function masterFillDoneSummary(steps: MasterFillStepResult[]): string {

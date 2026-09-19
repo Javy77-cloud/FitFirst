@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
@@ -16,8 +16,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DocumentPreviewDialog } from "@/components/documents/document-preview-dialog";
 import { LOST_BUSINESS_REASON_LABELS, isLostBusinessReason } from "@/lib/domain";
-import { filePreviewHref } from "@/lib/files/urls";
 import { compareHref, quoteCompareId } from "@/lib/quotes/board";
 import type { TrackingRow } from "@/lib/quotes/tracking";
 import { cn } from "@/lib/utils";
@@ -47,6 +47,7 @@ function MenuLink({ href, children }: { href: string; children: ReactNode }) {
 export function QuoteActionsMenu({ row }: { row: TrackingRow }) {
   const emailFormRef = useRef<HTMLFormElement>(null);
   const smsFormRef = useRef<HTMLFormElement>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const compareId = quoteCompareId(row);
   const emailBody = `Emailed ${row.carrierName} quote ${row.quoteNumber ?? "—"} (${row.status}) from the Quotes list.`;
   const smsBody = `Texted ${row.carrierName} quote ${row.quoteNumber ?? "—"} from the Quotes list.`;
@@ -83,7 +84,7 @@ export function QuoteActionsMenu({ row }: { row: TrackingRow }) {
           <DropdownMenuGroup>
             <MenuLink href={compareHref(row.dealId, [compareId])}>Compare</MenuLink>
             {row.pdfDocumentId ? (
-              <MenuLink href={filePreviewHref(row.pdfDocumentId)}>Open PDF</MenuLink>
+              <DropdownMenuItem onClick={() => setPreviewOpen(true)}>Open PDF</DropdownMenuItem>
             ) : (
               <DropdownMenuItem disabled>No PDF</DropdownMenuItem>
             )}
@@ -108,6 +109,14 @@ export function QuoteActionsMenu({ row }: { row: TrackingRow }) {
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
+      {row.pdfDocumentId ? (
+        <DocumentPreviewDialog
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+          documentId={row.pdfDocumentId}
+          filename={`${row.carrierName} quote.pdf`}
+        />
+      ) : null}
     </div>
   );
 }

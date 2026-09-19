@@ -41,7 +41,7 @@ describe("migrateLeadLayout", () => {
       expect.arrayContaining([
         "applicant_gender",
         "applicant_occupation",
-        "applicant_employment",
+        "applicant_industry",
         "applicant_marital_status",
         "applicant_education_level",
         "contact_mailing_address",
@@ -57,9 +57,9 @@ describe("migrateLeadLayout", () => {
       "military_discount",
       "credit_permission",
       "assumed_credit_rating",
-      "applicant_employment",
       "applicant_education_level",
     ]);
+    expect(applicant?.fieldKeys).not.toContain("applicant_employment");
   });
 
   it("default lead layout already clean", () => {

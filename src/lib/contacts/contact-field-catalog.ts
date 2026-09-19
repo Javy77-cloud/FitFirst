@@ -411,7 +411,6 @@ export const DEAL_TO_CONTACT_FIELD_MAP: Record<string, string> = {
   preferred_contact_method: "preferred_contact_method",
   preferred_contact_time: "preferred_contact_time",
   applicant_occupation: "occupation",
-  applicant_employment: "employment_status",
   applicant_marital_status: "marital_status",
   applicant_education_level: "education_level",
   source: "source",
@@ -431,6 +430,5 @@ export const CO_APPLICANT_TO_CONTACT_FIELD_MAP: Record<string, string> = {
   co_applicant_dob: "date_of_birth",
   co_applicant_marital_status: "marital_status",
   co_applicant_occupation: "occupation",
-  co_applicant_employment: "employment_status",
   co_applicant_education_level: "education_level",
 };

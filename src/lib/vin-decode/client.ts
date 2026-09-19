@@ -7,6 +7,9 @@ type FetchLike = typeof fetch;
 
 const cache = new Map<string, VinDecodeValues>();
 
+export const NHTSA_FETCH_TIMEOUT_MS = 15_000;
+export const NHTSA_TIMEOUT_MESSAGE = "NHTSA vPIC timed out. Try again, or fill year/make/model by hand.";
+
 export function clearVinDecodeCache(): void {
   cache.clear();
 }
@@ -25,6 +28,7 @@ export type DecodeVinResult =
 export async function decodeVinValues(
   rawVin: string,
   fetchImpl: FetchLike = fetch,
+  options?: { timeoutMs?: number },
 ): Promise<DecodeVinResult> {
   const vin = normalizeVin(rawVin);
   if (!isDecodableVin(vin)) {
@@ -35,13 +39,19 @@ export async function decodeVinValues(
   if (hit) return { ok: true, vin, values: hit, cached: true };
 
   const url = `${NHTSA_VPIC_DECODE_VALUES_URL}/${encodeURIComponent(vin)}?format=json`;
+  const timeoutMs = options?.timeoutMs ?? NHTSA_FETCH_TIMEOUT_MS;
   let response: Response;
   try {
     response = await fetchImpl(url, {
       method: "GET",
       headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (error) {
+    const name = error && typeof error === "object" && "name" in error ? String(error.name) : "";
+    if (name === "AbortError" || /aborted|timeout/i.test(error instanceof Error ? error.message : "")) {
+      return { ok: false, vin, message: NHTSA_TIMEOUT_MESSAGE };
+    }
     const message = error instanceof Error ? error.message : "NHTSA vPIC request failed";
     return { ok: false, vin, message };
   }

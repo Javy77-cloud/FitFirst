@@ -1,5 +1,9 @@
 import type { QuoteFieldDef, QuoteFieldVisibleWhen } from "./applicant-core";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
+import {
+  isIndustryCascadeParent,
+  occupationIndustryParentKey,
+} from "@/lib/custom-fields/industry-occupation";
 
 export type SheetValueBag = Record<
   string,
@@ -66,6 +70,9 @@ export function cascadeParentKeys(fields: readonly QuoteFieldDef[]): string[] {
   for (const field of fields) {
     if (field.visibleWhen?.field) keys.add(field.visibleWhen.field);
     if (field.showWhen?.key) keys.add(field.showWhen.key);
+    if (isIndustryCascadeParent(field.key)) keys.add(field.key);
+    const industryParent = occupationIndustryParentKey(field.key);
+    if (industryParent) keys.add(industryParent);
   }
   return [...keys];
 }

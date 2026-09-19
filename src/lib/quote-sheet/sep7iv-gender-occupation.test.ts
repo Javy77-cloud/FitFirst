@@ -20,7 +20,8 @@ describe("Auto gender + occupation picklists (sep7iv)", () => {
     const byKey = Object.fromEntries(fields.map((f) => [f.key, f]));
     expect(byKey.applicant_occupation).toBeUndefined();
     expect(byKey.driver_1_occupation?.input).toBe("select");
-    expect(byKey.driver_1_occupation?.options).toEqual([...OCCUPATION_OPTIONS]);
+    expect(byKey.driver_1_occupation?.label).toBe("Occupation");
+    expect(byKey.driver_1_industry?.label).toBe("Industry");
     expect(OCCUPATION_OPTIONS).toContain("Employed");
     expect(OCCUPATION_OPTIONS).toContain("Administrative");
     expect(OCCUPATION_OPTIONS).toContain("Professional");

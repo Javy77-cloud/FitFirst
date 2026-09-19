@@ -13,11 +13,10 @@ import {
   VEHICLE_LIENHOLDER_OPTIONS,
   PASSIVE_RESTRAINT_OPTIONS,
   GENDER_OPTIONS,
-  OCCUPATION_OPTIONS,
   EDUCATION_LEVEL_OPTIONS,
-  EMPLOYMENT_STATUS_OPTIONS,
   YES_NO_OPTIONS,
 } from "@/lib/quote-sheet/sheet-defaults";
+import { INDUSTRY_OPTIONS } from "@/lib/custom-fields/industry-occupation";
 import { MARITAL_STATUS_OPTIONS } from "@/lib/quote-sheet/applicant-core";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { SheetProduct } from "@/lib/quote-sheet/products";
@@ -129,8 +128,8 @@ export const DRIVER_BLOCK_FIELDS: RepeatableField[] = [
   { suffix: "name", label: "Name" },
   { suffix: "dob", label: "DOB" },
   { suffix: "gender", label: "Gender", input: "select", options: GENDER_OPTIONS },
-  { suffix: "occupation", label: "Occupation / job category", input: "select", options: OCCUPATION_OPTIONS },
-  { suffix: "employment", label: "Employment", input: "select", options: EMPLOYMENT_STATUS_OPTIONS },
+  { suffix: "industry", label: "Industry", input: "select", options: INDUSTRY_OPTIONS },
+  { suffix: "occupation", label: "Occupation", input: "select" },
   { suffix: "education_level", label: "Education level", input: "select", options: EDUCATION_LEVEL_OPTIONS },
   { suffix: "marital_status", label: "Marital status", input: "select", options: MARITAL_STATUS_OPTIONS },
   {
@@ -142,6 +141,25 @@ export const DRIVER_BLOCK_FIELDS: RepeatableField[] = [
   { suffix: "license", label: "License" },
   { suffix: "status", label: "License status", input: "select", options: LICENSE_STATUS_OPTIONS },
   { suffix: "years_licensed", label: "Years licensed", input: "number" },
+  {
+    suffix: "household_status",
+    label: "Household status",
+    input: "select",
+    options: AUTO_HOUSEHOLD_STATUS_OPTIONS,
+  },
+  {
+    suffix: "exclude_reason",
+    label: "Exclude reason",
+    input: "select",
+    options: AUTO_HOUSEHOLD_EXCLUDE_REASON_OPTIONS,
+  },
+  { suffix: "age_first_licensed", label: "Age first licensed" },
+  {
+    suffix: "suspension_5yr",
+    label: "Suspension in last 5 years",
+    input: "select",
+    options: YES_NO_OPTIONS,
+  },
 ];
 
 export const HOUSEHOLD_BLOCK_FIELDS: RepeatableField[] = [
@@ -254,7 +272,7 @@ export function repeatableFieldKey(kind: RepeatableKind, index: number, suffix: 
 
 export function isRepeatableSheetKey(key: string): boolean {
   if (Object.values(VEHICLE_1_KEYS).includes(key)) return true;
-  return /^(vehicle|driver|household)_\d+_(vin|year|make|model|body_class|fuel_type|engine|usage|ownership|ownership_length|lienholder|lienholder_other|purchased_new|original_cost_new|annual_miles|commute_days_week|commute_miles_daily|rideshare|aftermarket_parts|garaging_at_residence|garaging_zip|garaging_address|name|dob|gender|occupation|employment|education_level|marital_status|license|status|years_licensed|relationship|exclude_reason|separate_auto_policy|separate_policy_status|age_first_licensed|suspension_5yr)$/.test(
+  return /^(vehicle|driver|household)_\d+_(vin|year|make|model|body_class|fuel_type|engine|usage|ownership|ownership_length|lienholder|lienholder_other|purchased_new|original_cost_new|annual_miles|commute_days_week|commute_miles_daily|rideshare|aftermarket_parts|garaging_at_residence|garaging_zip|garaging_address|name|dob|gender|industry|occupation|education_level|marital_status|license|status|years_licensed|relationship|household_status|exclude_reason|separate_auto_policy|separate_policy_status|age_first_licensed|suspension_5yr)$/.test(
     key,
   );
 }
@@ -288,8 +306,10 @@ export function visibleUnitCount(
 }
 
 export function fieldsForUnit(kind: RepeatableKind, index: number): Array<RepeatableField & { key: string }> {
-  return fieldsForKind(kind).map((field) => ({
-    ...field,
-    key: repeatableFieldKey(kind, index, field.suffix),
-  }));
+  return fieldsForKind(kind)
+    .filter((field) => !(kind === "driver" && field.suffix === "relationship" && index === 1))
+    .map((field) => ({
+      ...field,
+      key: repeatableFieldKey(kind, index, field.suffix),
+    }));
 }

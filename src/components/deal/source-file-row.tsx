@@ -37,6 +37,7 @@ export function SourceFileRow({
       <FileActionMenu
         documentId={doc.id}
         filename={filename}
+        mimeType={doc.mimeType}
         slot={doc.slot}
         docType={doc.docType}
         dealId={dealId}

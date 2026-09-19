@@ -48,6 +48,7 @@ export function DealFiles({
                     <FileActionMenu
                       documentId={doc.id}
                       filename={doc.filename}
+                      mimeType={doc.mimeType}
                       slot={doc.slot}
                       docType={doc.docType}
                       dealId={dealId}

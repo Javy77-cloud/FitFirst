@@ -30,6 +30,8 @@ describe("Deal Details personal / identity layout", () => {
     );
     expect(keys).toContain("middle_name");
     expect(keys).toContain("applicant_industry");
+    expect(keys).not.toContain("applicant_employment");
+    expect(keys).not.toContain("co_applicant_employment");
     expect(keys).toContain("epolicy");
     expect(layout.columns[0].sections.map((s) => s.id)).toEqual([
       "contact",

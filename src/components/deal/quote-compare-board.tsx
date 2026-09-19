@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { generateBrandedProposal, saveVideoProposalUrl } from "@/app/actions/proposal";
+import { DocumentViewButton } from "@/components/documents/document-preview-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatMoney } from "@/lib/domain";
@@ -22,7 +23,7 @@ export function QuoteCompareBoard({
   quotes: CompareQuote[];
   initialSelectedIds?: string[];
   videoProposalUrl?: string | null;
-  proposals: { id: string; filename: string; href: string }[];
+  proposals: { id: string; filename: string; href?: string }[];
 }) {
   const [selected, setSelected] = useState<string[]>(() => {
     if (initialSelectedIds?.length) return initialSelectedIds;
@@ -163,9 +164,13 @@ export function QuoteCompareBoard({
           <ul className="mt-3 space-y-1 text-sm">
             {proposals.map((doc) => (
               <li key={doc.id}>
-                <a href={doc.href} className="text-primary hover:underline">
+                <DocumentViewButton
+                  documentId={doc.id}
+                  filename={doc.filename}
+                  className="text-sm"
+                >
                   {doc.filename}
-                </a>
+                </DocumentViewButton>
               </li>
             ))}
           </ul>

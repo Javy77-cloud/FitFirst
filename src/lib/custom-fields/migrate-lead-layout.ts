@@ -3,7 +3,13 @@ import { APPLICANT_SECTION_FIELD_KEYS, applicantLayoutSection } from "./applican
 import { needsAddressSectionSplit, splitInsuredMailingAddressSections } from "./split-address-sections";
 
 /** Drop from Lead detail/Edit Layout (Javy 2026-09-11) — keep Temperature; Insurance subtype stays. */
-export const LEAD_LAYOUT_STRIP_KEYS = new Set(["insurance_type_desired"]);
+export const LEAD_LAYOUT_STRIP_KEYS = new Set([
+  "insurance_type_desired",
+  "applicant_employment",
+  "co_applicant_employment",
+  "employment_status",
+  "employment",
+]);
 
 function stripKeys(section: LayoutSection): LayoutSection {
   return {

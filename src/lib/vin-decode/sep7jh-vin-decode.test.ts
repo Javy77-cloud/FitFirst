@@ -163,7 +163,7 @@ describe("Auto NHTSA vPIC VIN decode (sep7jh)", () => {
       "property",
       "docs",
     ]);
-    expect(MASTER_FILL_STEP_VIN).toMatch(/NHTSA vPIC/);
+    expect(MASTER_FILL_STEP_VIN).toBe("VIN");
     expect(MASTER_FILL_SKIP_AUTO_PROPERTY).toMatch(/skips property/i);
 
     const root = join(process.cwd(), "src");
@@ -183,4 +183,22 @@ describe("Auto NHTSA vPIC VIN decode (sep7jh)", () => {
     expect(NHTSA_VPIC_SETTINGS_NOTE).toMatch(/no api key/i);
     expect(toastForVinDecode({ filledCount: 3, skippedCount: 0 })).toMatch(/NHTSA vPIC/);
   });
+
+  it("aborts a hung NHTSA fetch instead of hanging", async () => {
+    const { clearVinDecodeCache, decodeVinValues, NHTSA_TIMEOUT_MESSAGE } = await import("./client");
+    clearVinDecodeCache();
+    const fetchImpl = async (_url: RequestInfo | URL, init?: RequestInit) =>
+      await new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => {
+          const error = new Error("The operation was aborted");
+          error.name = "AbortError";
+          reject(error);
+        });
+      });
+    const result = await decodeVinValues(HEATHER_VIN, fetchImpl as typeof fetch, {
+      timeoutMs: 20,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.message).toBe(NHTSA_TIMEOUT_MESSAGE);
+  }, 10_000);
 });

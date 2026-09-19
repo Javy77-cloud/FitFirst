@@ -282,6 +282,7 @@ function LineCard({
                   <FileActionMenu
                     documentId={doc.id}
                     filename={doc.filename}
+                    mimeType={doc.mimeType}
                     slot={doc.slot}
                     docType={doc.docType}
                     leadId={leadId}

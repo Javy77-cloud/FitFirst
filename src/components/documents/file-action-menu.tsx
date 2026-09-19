@@ -15,13 +15,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { deleteUploadedFileSubject, uploadedFileDeleteMode } from "@/lib/documents/delete-file";
+import { DocumentPreviewDialog } from "@/components/documents/document-preview-dialog";
 import { FILE_ACTION_ACCEPT } from "@/lib/documents/file-action-menu";
-import { fileDownloadHref, filePreviewHref } from "@/lib/files/urls";
+import { fileDownloadHref } from "@/lib/files/urls";
 import { cn } from "@/lib/utils";
 
 export type FileActionMenuProps = {
   documentId: string;
   filename: string;
+  mimeType?: string | null;
   slot?: string;
   docType?: string;
   dealId?: string | null;
@@ -39,6 +41,7 @@ export type FileActionMenuProps = {
 export function FileActionMenu({
   documentId,
   filename,
+  mimeType,
   slot = "source_doc",
   docType = "other",
   dealId,
@@ -55,7 +58,7 @@ export function FileActionMenu({
   const replaceFormRef = useRef<HTMLFormElement>(null);
   const deleteBtnRef = useRef<HTMLButtonElement>(null);
   const [gone, setGone] = useState(false);
-  const viewHref = filePreviewHref(documentId);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const downloadHref = fileDownloadHref(documentId);
   const mode = uploadedFileDeleteMode({ slot, docType });
   const subject = deleteUploadedFileSubject(filename, mode);
@@ -118,7 +121,7 @@ export function FileActionMenu({
           <DropdownMenuGroup>
             <DropdownMenuItem
               data-ff-file-action="view"
-              render={<a href={viewHref} target="_blank" rel="noreferrer" />}
+              onClick={() => setPreviewOpen(true)}
             >
               <Eye />
               View
@@ -148,6 +151,14 @@ export function FileActionMenu({
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <DocumentPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        documentId={documentId}
+        filename={filename}
+        mimeType={mimeType}
+      />
 
       <FileDeleteIcon
         type="button"
