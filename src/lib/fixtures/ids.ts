@@ -494,6 +494,14 @@ export const NATIONWIDE_CARRIER_NAME = "Nationwide";
 /** Olympus desk row — reuse by name; seeded UUID only if missing. */
 export const OLYMPUS_CARRIER_ID = "33333333-3333-4333-8333-333333333342";
 export const OLYMPUS_CARRIER_NAME = "Olympus";
+
+/**
+ * Apex Star Reciprocal Exchange (aka Apex Star Insurance Exchange).
+ * Seed/migration upsert by name aliases so an existing desk row is reused.
+ */
+export const APEX_STAR_CARRIER_ID = "33333333-3333-4333-8333-333333333343";
+export const APEX_STAR_CARRIER_NAME = "Apex Star Reciprocal Exchange";
+export const APEX_STAR_NAIC = "17742";
 export const HALE_CONTACT_ID = "22222222-2222-4222-8222-222222222241";
 export const HALE_DEAL_ID = "22222222-2222-4222-8222-222222222242";
 export const HALE_RISK_ID = "22222222-2222-4222-8222-222222222243";

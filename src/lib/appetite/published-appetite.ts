@@ -249,12 +249,56 @@ export const OLYMPUS_HO_APPETITE: PublishedHoAppetite = {
   bulletinDate: OLYMPUS_UW_GUIDE_DATE,
 };
 
+/** Apex Star Reciprocal Exchange — FL admitted P&C reciprocal. Contacts only; no invented UW mins. */
+export const APEX_STAR_CS_PHONE = "(888) 876-8005";
+export const APEX_STAR_SUPPORT_EMAIL = "customerservice@apexstarins.com";
+export const APEX_STAR_WEBSITE = "https://apexstarins.com";
+export const APEX_STAR_HQ = "6135 W. Sitka St., Tampa, FL 33634";
+export const APEX_STAR_NAIC = "17742";
+export const APEX_STAR_GROUP = "StarLight Insurance Group";
+
+export const APEX_STAR_HO_NOTES =
+  `Apex Star Reciprocal Exchange (aka Apex Star Insurance Exchange). Florida-admitted P&C reciprocal, member of ${APEX_STAR_GROUP} (Tampa). HO-3, DP-3, and commercial property. Contact ${APEX_STAR_SUPPORT_EMAIL} / ${APEX_STAR_CS_PHONE}. Web apexstarins.com. HQ ${APEX_STAR_HQ}. NAIC ${APEX_STAR_NAIC}. No UW mins on this contacts sheet.`;
+
+export const APEX_STAR_CARRIER_INFO =
+  "Apex Star Reciprocal Exchange (aka Apex Star Insurance Exchange). Florida-admitted P&C reciprocal. StarLight Insurance Group, Tampa. HO-3 / DP-3 / commercial property. apexstarins.com. customerservice@apexstarins.com / (888) 876-8005.";
+
+export const APEX_STAR_HO_APPETITE: PublishedHoAppetite = {
+  slug: "apex_star",
+  legalName: "Apex Star Reciprocal Exchange",
+  aliases: [
+    "apex star reciprocal exchange",
+    "apex star insurance exchange",
+    "apex star reciprocal",
+    "apex star",
+  ],
+  line: "HO3",
+  state: "FL",
+  minCovA: null,
+  maxCovA: null,
+  maxDwellingAgeYears: null,
+  minYearBuilt: null,
+  minMilesToCoast: null,
+  maxRoofAge: null,
+  allowedRoofCoverings: null,
+  mobileAllowed: false,
+  placement: "Apex Star",
+  csPhone: APEX_STAR_CS_PHONE,
+  supportEmail: APEX_STAR_SUPPORT_EMAIL,
+  website: APEX_STAR_WEBSITE,
+  hardDeclines: ["state!=FL", "mobile_home"],
+  softCautions: ["older_roof"],
+  preferredSignals: ["fl_reciprocal", "fl_single_family"],
+  notesForAgent: APEX_STAR_HO_NOTES,
+};
+
 export const PUBLISHED_HO_APPETITE: PublishedHoAppetite[] = [
   TRIDENT_HO_APPETITE,
   SOUTHERN_OAK_HO_APPETITE,
   STAND_HO_APPETITE,
   UNIVERSAL_PC_HO_APPETITE,
   OLYMPUS_HO_APPETITE,
+  APEX_STAR_HO_APPETITE,
 ];
 
 export function publishedHoBySlug(slug: string): PublishedHoAppetite | undefined {

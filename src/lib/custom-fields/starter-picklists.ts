@@ -125,6 +125,7 @@ export const LINE_OF_BUSINESS_OPTIONS: string[] = [
 export const COMMON_CARRIER_OPTIONS: string[] = [
   "American Integrity",
   "Allstate",
+  "Apex Star Reciprocal Exchange",
   "Benchmark",
   "Citizens",
   "Farmers",
