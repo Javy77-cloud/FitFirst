@@ -18,6 +18,10 @@ import {
   type RepeatableKind,
 } from "@/lib/quote-sheet/repeatable-units";
 import {
+  occupationIndustryParentKey,
+  occupationsForIndustry,
+} from "@/lib/custom-fields/industry-occupation";
+import {
   RiskProfileSectionBar,
   useRiskProfileSectionDensity,
 } from "@/components/deal/risk-profile-section-header";
@@ -41,6 +45,13 @@ export function RepeatableUnitBlocks({
   line?: ShopLine;
 }) {
   const [count, setCount] = useState(() => visibleUnitCount(values, kind, product));
+  const [liveByKey, setLiveByKey] = useState<Record<string, string>>(() => {
+    const next: Record<string, string> = {};
+    for (const [key, cell] of Object.entries(values)) {
+      if (cell?.value) next[key] = cell.value;
+    }
+    return next;
+  });
   const groupTitle =
     kind === "vehicle" ? "Vehicles" : kind === "household" ? "Household" : "Drivers";
   const title =
@@ -83,11 +94,16 @@ export function RepeatableUnitBlocks({
                 const extracted = extractedByKey.get(field.key);
                 const cell = values[field.key];
                 const sourceText = extracted?.normalizedValue || extracted?.rawValue || "";
+                const industryParent = occupationIndustryParentKey(field.key);
+                const options = industryParent
+                  ? occupationsForIndustry(liveByKey[industryParent] ?? values[industryParent]?.value)
+                  : field.options;
                 return (
                   <RiskProfileFieldShell
                     fieldKey={field.key}
                     label={field.label}
                     field={field}
+                    cascadeKey={industryParent ?? undefined}
                     footer={
                       sourceText ? (
                         <p className="text-[9px] leading-none text-muted-foreground" data-ff-sheet-source={field.key}>
@@ -100,11 +116,14 @@ export function RepeatableUnitBlocks({
                       fieldKey={field.key}
                       fieldSuffix={unit?.suffix}
                       input={field.input === "select" || field.input === "number" ? field.input : "text"}
-                      options={field.options}
+                      options={options}
                       cell={cell}
                       dealId={dealId}
                       line={line}
                       kind={kind}
+                      onLiveChange={(next) =>
+                        setLiveByKey((prev) => ({ ...prev, [field.key]: next }))
+                      }
                     />
                   </RiskProfileFieldShell>
                 );
@@ -155,6 +174,7 @@ function BlockCell({
   dealId,
   line,
   kind,
+  onLiveChange,
 }: {
   fieldKey: string;
   fieldSuffix?: string;
@@ -164,6 +184,7 @@ function BlockCell({
   dealId?: string;
   line?: ShopLine;
   kind?: RepeatableKind;
+  onLiveChange?: (next: string) => void;
 }) {
   const className = cn(
     "h-8 w-full min-w-0 text-sm",
@@ -178,6 +199,7 @@ function BlockCell({
           name={fieldKey}
           defaultValue={cell?.value ?? ""}
           className={cn(className, "w-full rounded-md border border-input bg-background px-2")}
+          onChange={(event) => onLiveChange?.(event.target.value)}
         >
           <option value="">None</option>
           {options.map((opt) => (

@@ -23,7 +23,6 @@ const dealLike: FieldLayout = {
           fieldKeys: [
             "applicant_gender",
             "applicant_occupation",
-            "applicant_employment",
             "applicant_education_level",
           ],
         },

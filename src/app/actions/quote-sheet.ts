@@ -107,6 +107,7 @@ import { fillSheetFromDealDetails, type DealSheetCopyInput } from "@/lib/quote-s
 import { loadRecordValues, writeRecordValues } from "@/lib/custom-fields/store";
 import { cascadeValuesFromDealHints } from "@/lib/deals/insurance-cascade";
 import {
+  MASTER_FILL_DOCS_FAILED,
   MASTER_FILL_SKIP_AUTO_PROPERTY,
   MASTER_FILL_SKIP_NEEDS_KEY,
   MASTER_FILL_SKIP_NO_ADDRESS,
@@ -114,9 +115,12 @@ import {
   MASTER_FILL_SKIP_NO_DOCS,
   MASTER_FILL_SKIP_NO_VIN,
   MASTER_FILL_SKIP_NOT_FOUND,
+  MASTER_FILL_UNEXPECTED,
+  masterFillStepsForLine,
   type MasterFillStepId,
   type MasterFillStepResult,
 } from "@/lib/quote-sheet/master-fill";
+import { GEMINI_TIMEOUT_MESSAGE } from "@/lib/extraction/gemini/client";
 import { SHOP_LINES } from "@/lib/domain";
 import { currentDeskSession } from "@/lib/auth/session";
 import { applyLearningToExtracted } from "@/lib/fill-learning/lookup";
@@ -960,6 +964,31 @@ export async function fillMasterSheetStep(input: {
   line: string;
   step: MasterFillStepId;
 }): Promise<MasterFillStepResult> {
+  const step = input.step;
+  const stepLabel =
+    masterFillStepsForLine(String(input.line ?? "home")).find((row) => row.id === step)?.label ??
+    step;
+  try {
+    return await fillMasterSheetStepInner(input);
+  } catch (error) {
+    const raw = error instanceof Error ? error.message : MASTER_FILL_UNEXPECTED;
+    const unexpected = /json|unexpected|non-json|failed to parse/i.test(raw);
+    return {
+      step,
+      filledCount: 0,
+      skippedCount: 0,
+      error: unexpected
+        ? `${stepLabel} failed — ${MASTER_FILL_UNEXPECTED}`
+        : `${stepLabel} failed. ${raw}`,
+    };
+  }
+}
+
+async function fillMasterSheetStepInner(input: {
+  dealId: string;
+  line: string;
+  step: MasterFillStepId;
+}): Promise<MasterFillStepResult> {
   const dealId = String(input.dealId ?? "").trim();
   const lineRaw = String(input.line ?? "home").trim() || "home";
   if (!dealId) throw new Error("Missing deal");
@@ -1059,6 +1088,15 @@ export async function fillMasterSheetStep(input: {
   }
   const counts = await runFillDealSheets(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);
+  if (counts.error) {
+    return {
+      step,
+      filledCount: counts.filledKeys.length,
+      skippedCount: counts.skippedKeys.length,
+      error: counts.error,
+      note: counts.filledKeys.length ? "Partial fill saved" : undefined,
+    };
+  }
   return {
     step,
     filledCount: counts.filledKeys.length,
@@ -1086,7 +1124,7 @@ export async function fillQuoteSheet(formData: FormData) {
   );
 }
 
-export type FillDealCounts = { filledKeys: string[]; skippedKeys: string[] };
+export type FillDealCounts = { filledKeys: string[]; skippedKeys: string[]; error?: string };
 
 export async function runFillDealSheets(dealId: string, primary: ShopLine): Promise<FillDealCounts> {
   const primaryCounts = await runFillQuoteSheet(dealId, primary);
@@ -1094,6 +1132,7 @@ export async function runFillDealSheets(dealId: string, primary: ShopLine): Prom
   const counts = {
     filledKeys: [...primaryCounts.filledKeys, ...other.filledKeys],
     skippedKeys: [...primaryCounts.skippedKeys, ...other.skippedKeys],
+    error: primaryCounts.error || other.error,
   };
   if (primaryCounts.filledKeys.length) {
     await persistSheetRecheckCue(dealId, primary);
@@ -1107,12 +1146,14 @@ export async function runFillDealSheets(dealId: string, primary: ShopLine): Prom
 async function fillOtherShopLines(dealId: string, already: ShopLine): Promise<FillDealCounts> {
   const filledKeys: string[] = [];
   const skippedKeys: string[] = [];
+  const errors: string[] = [];
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   for (const line of deal?.shopLines ?? []) {
     if (line !== already && isShopLine(line)) {
       const counts = await runFillQuoteSheet(dealId, line);
       filledKeys.push(...counts.filledKeys);
       skippedKeys.push(...counts.skippedKeys);
+      if (counts.error) errors.push(counts.error);
       if (counts.filledKeys.length) {
         await persistSheetRecheckCue(dealId, line);
         await markShopFlowStaleAfterRiskChange(dealId, line, {
@@ -1121,7 +1162,7 @@ async function fillOtherShopLines(dealId: string, already: ShopLine): Promise<Fi
       }
     }
   }
-  return { filledKeys, skippedKeys };
+  return { filledKeys, skippedKeys, error: errors[0] };
 }
 
 export async function attachSampleMelbourneDec(formData: FormData) {
@@ -1383,6 +1424,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
   if (Object.keys(values).length === 0) values = emptySheetValues(line);
   const aggregateFilled: string[] = [];
   const aggregateSkipped: string[] = [];
+  const geminiErrors: string[] = [];
 
   for (const doc of docs) {
     if (isQuoteAttachment(doc.docType, doc.filename) || isQuoteFileDoc(doc)) continue;
@@ -1502,9 +1544,20 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
         continue;
       }
 
-      const gemini = await extractWithGeminiPdf(buffer, doc.docType, { apiKey: geminiKey, mimeType: doc.mimeType, filename: doc.filename, shopLine: line });
+      const gemini = await extractWithGeminiPdf(buffer, doc.docType, {
+        apiKey: geminiKey,
+        mimeType: doc.mimeType,
+        filename: doc.filename,
+        shopLine: line,
+        purpose: "fill",
+      });
       const engine = "gemini" as const;
       if (!gemini.ok) {
+        geminiErrors.push(
+          gemini.message === GEMINI_TIMEOUT_MESSAGE
+            ? `${GEMINI_TIMEOUT_MESSAGE} (${doc.filename})`
+            : `${MASTER_FILL_DOCS_FAILED} ${doc.filename}: ${gemini.message}`,
+        );
         await db.insert(extractionJobs).values({
           tenantId: DEFAULT_TENANT_ID,
           dealId,
@@ -1663,6 +1716,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Extract failed";
+      geminiErrors.push(`${MASTER_FILL_DOCS_FAILED} ${doc.filename}: ${message}`);
       await logExtractionJob({
         dealId,
         documentId: doc.id,
@@ -1729,7 +1783,11 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
 
   await syncRiskFromSheet(dealId, values, "fill");
   await syncHeaderFromSheet(dealId, values, "fill");
-  return { filledKeys: aggregateFilled, skippedKeys: aggregateSkipped };
+  return {
+    filledKeys: aggregateFilled,
+    skippedKeys: aggregateSkipped,
+    error: geminiErrors[0],
+  };
 }
 
 async function syncNamedInsuredFromExtract(dealId: string, fields: ExtractedField[]) {

@@ -134,22 +134,54 @@ export const GEMINI_AUTO_EXTRACT_JSON_KEYS = [
   "driver_1_name",
   "driver_1_dob",
   "driver_1_gender",
+  "driver_1_industry",
   "driver_1_occupation",
+  "driver_1_education_level",
+  "driver_1_marital_status",
   "driver_1_license",
   "driver_1_status",
   "driver_1_years_licensed",
+  "driver_1_household_status",
+  "driver_1_exclude_reason",
+  "driver_1_age_first_licensed",
+  "driver_1_suspension_5yr",
   "applicant_gender",
+  "applicant_industry",
   "applicant_occupation",
   "driver_2_name",
   "driver_2_dob",
+  "driver_2_gender",
+  "driver_2_industry",
+  "driver_2_occupation",
+  "driver_2_education_level",
+  "driver_2_marital_status",
+  "driver_2_relationship",
   "driver_2_license",
   "driver_2_status",
   "driver_2_years_licensed",
+  "driver_2_household_status",
+  "driver_2_exclude_reason",
+  "driver_2_age_first_licensed",
+  "driver_2_suspension_5yr",
   "driver_3_name",
   "driver_3_dob",
+  "driver_3_gender",
+  "driver_3_industry",
+  "driver_3_occupation",
+  "driver_3_education_level",
+  "driver_3_marital_status",
+  "driver_3_relationship",
   "driver_3_license",
+  "driver_3_status",
+  "driver_3_years_licensed",
   "driver_4_name",
   "driver_4_dob",
+  "driver_4_gender",
+  "driver_4_industry",
+  "driver_4_occupation",
+  "driver_4_education_level",
+  "driver_4_marital_status",
+  "driver_4_relationship",
   "driver_4_license",
   "accidents_3yr",
   "violations_3yr",
@@ -260,10 +292,12 @@ Rules:
 - Extract ONLY what is written on the page. Never invent.
 - If unknown or not present: value null and low confidence.
 - VIN: full 17 characters when printed. Year/make/model per vehicle.
-- Drivers: name, DOB, license # when printed. Number vehicles/drivers in order (1 = first listed).
+- Drivers: for EVERY listed driver, extract demographics when printed — name, DOB, gender (Male/Female), industry, occupation, education_level, marital_status, license #, license status, years licensed, household status (Resident / Occasional / Excluded driver / Listed driver / Non-resident), exclude reason, age first licensed, suspension in last 5 years.
+- Relationship: Driver 1 is the named insured — NEVER output driver_1_relationship (no relationship-to-self). For drivers 2+ use relationship relative to Driver 1 (Spouse / Child / Parent / Sibling / Other relative / Roommate / Excluded / Listed non-driver).
+- Do not extract employment / employment status. Industry and occupation are separate fields.
 - Money: digits only (no $). Dates: keep as printed.
 - named_insured / current_policy_name_insured: primary named insured on the auto dec.
-- liability_bi / liability_pd / um_uim / pip / comp_deductible / collision_deductible when printed.
+- liability_bi / liability_pd / um_uim / pip / comprehensive deductible (comp_deductible) / collision_deductible when printed. Spell comprehensive in values when a label is needed — never shorthand "comp" for that coverage.
 `;
   }
   return `You extract structured fields from Florida personal-lines insurance documents
@@ -349,7 +383,7 @@ export function buildGeminiUserPrompt(docType?: string | null, shopLine?: string
   const line = (shopLine ?? "").trim().toLowerCase();
   if (line === "auto" || line === "motorcycle" || line === "commercial_auto") {
     focus =
-      "This is a personal Auto declaration / ID card / photo of an auto dec. MUST fill when present: named_insured/current_policy_name_insured, secondary_named_insured, phone, email, mailing_address, city, state, zip, vin, vehicle_year, vehicle_make, vehicle_model, vehicle_usage, annual_miles, rideshare, aftermarket_parts, garaging_zip, garaging_address, vehicle_2_* / vehicle_3_* / vehicle_4_* for additional vehicles, driver_1_* / driver_2_* (and 3/4 when listed; gender Male/Female only; occupation from Employed/Self-employed/Homemaker/Retired/Student/Unemployed/Administrative/Professional/Sales/Trades/Management/Military/…), applicant_gender, applicant_occupation, accidents_3yr, violations_3yr, liability_bi, liability_pd, um_uim, pip, comp_deductible, collision_deductible, policy_number, current_premium, current_carrier, effective_date, expiration_date, years_with_carrier, currently_insured. For vehicle_usage use Personal / Commute / Business / Farm when stated. For annual_miles map stated yearly miles into the closest bracket (0 – 2,999 … 11,000 – 11,999, then 12,000 – 14,999 / 15,000 – 19,999 / 20,000 – 24,999 / 25,000+). For rideshare answer yes/no if the dec or notes mention Uber/Lyft/TNC. For aftermarket_parts answer yes/no for non-factory/custom/aftermarket equipment. For currently_insured map continuous coverage or lapse wording into one of: Currently insured 6 months or more; Lapse within last 30 days — 7 days or less; Lapse within last 30 days — 8 to 14 days; Lapse within last 30 days — 15 to 30 days; More than 30 days lapse in the last 6 months / no prior insurance; Other. Read every vehicle and driver block you can see. Do not treat this as homeowners / Coverage A.";
+      "This is a personal Auto declaration / ID card / photo of an auto dec. MUST fill when present: named_insured/current_policy_name_insured, secondary_named_insured, phone, email, mailing_address, city, state, zip, vin, vehicle_year, vehicle_make, vehicle_model, vehicle_usage, annual_miles, rideshare, aftermarket_parts, garaging_zip, garaging_address, vehicle_2_* / vehicle_3_* / vehicle_4_* for additional vehicles, and for each listed driver (1–4): name, dob, gender (Male/Female only), industry, occupation, education_level, marital_status, license, license status, years_licensed, household_status, exclude_reason, age_first_licensed, suspension_5yr. For drivers 2+ also fill relationship relative to Driver 1. Never fill driver_1_relationship. Never fill employment / employment status — use industry + occupation only. Also fill applicant_gender, applicant_industry, applicant_occupation, accidents_3yr, violations_3yr, liability_bi, liability_pd, um_uim, pip, comp_deductible (comprehensive deductible), collision_deductible, policy_number, current_premium, current_carrier, effective_date, expiration_date, years_with_carrier, currently_insured. For vehicle_usage use Personal / Commute / Business / Farm when stated. For annual_miles map stated yearly miles into the closest bracket (0 – 2,999 … 11,000 – 11,999, then 12,000 – 14,999 / 15,000 – 19,999 / 20,000 – 24,999 / 25,000+). For rideshare answer yes/no if the dec or notes mention Uber/Lyft/TNC. For aftermarket_parts answer yes/no for non-factory/custom/aftermarket equipment. For currently_insured map continuous coverage or lapse wording into one of: Currently insured 6 months or more; Lapse within last 30 days — 7 days or less; Lapse within last 30 days — 8 to 14 days; Lapse within last 30 days — 15 to 30 days; More than 30 days lapse in the last 6 months / no prior insurance; Other. Read every vehicle and driver block you can see. Do not treat this as homeowners / Coverage A.";
   }
   return `Extract the JSON field object from this ${docType || "insurance"} document. ${focus} Invent nothing. Do not return an empty object when fields are visible.`;
 }

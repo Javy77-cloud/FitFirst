@@ -159,11 +159,10 @@ export const LEAD_TO_DEAL_CUSTOM_KEYS = [
   "co_applicant_relationship_to_insured",
   "co_applicant_gender",
   "co_applicant_marital_status",
+  "co_applicant_industry",
   "co_applicant_occupation",
-  "co_applicant_employment",
   "co_applicant_education_level",
   "co_applicant_middle_name",
-  "co_applicant_industry",
   "co_applicant_military_discount",
 ] as const;
 

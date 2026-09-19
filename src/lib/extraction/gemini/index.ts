@@ -20,7 +20,14 @@ export {
   sheetKeysForGeminiKey,
   GEMINI_KEY_TO_SHEET,
 } from "./map";
-export { extractWithGeminiPdf, isGeminiDailyQuotaExhausted, parseGeminiResponseText, resolveGeminiInlineMime } from "./client";
+export {
+  extractWithGeminiPdf,
+  isGeminiDailyQuotaExhausted,
+  parseGeminiResponseText,
+  resolveGeminiInlineMime,
+  GEMINI_FETCH_TIMEOUT_MS,
+  GEMINI_TIMEOUT_MESSAGE,
+} from "./client";
 
 /** Doc types that Fill from source routes through Gemini (not legacy synonym extract). */
 export function docTypeUsesGemini(docType?: string | null): boolean {

@@ -15,7 +15,7 @@ describe("fill master sheet from Deal Details (applicant + co-applicant)", () =>
           email: "heather@example.com",
           applicant_gender: "Female",
           applicant_occupation: "Professional",
-          applicant_employment: "Employed",
+          applicant_industry: "Information Technology",
           applicant_marital_status: "Married",
           applicant_education_level: "Bachelor",
           entity_type: "LLC",
@@ -36,7 +36,7 @@ describe("fill master sheet from Deal Details (applicant + co-applicant)", () =>
           co_applicant_gender: "Male",
           co_applicant_marital_status: "Married",
           co_applicant_occupation: "Trades",
-          co_applicant_employment: "Self-employed",
+          co_applicant_industry: "Construction / Energy / Trades",
           co_applicant_education_level: "Associate",
         },
       },
@@ -96,7 +96,7 @@ describe("fill Auto Risk Profile drivers from Deal Details", () => {
       date_of_birth: "1975-09-14",
       applicant_gender: "Female",
       applicant_occupation: "Professional",
-      applicant_employment: "Employed",
+      applicant_industry: "Information Technology",
       applicant_marital_status: "Married",
       applicant_education_level: "Bachelor",
       has_co_applicant: "true",
@@ -105,7 +105,7 @@ describe("fill Auto Risk Profile drivers from Deal Details", () => {
       co_applicant_dob: "1974-01-02",
       co_applicant_gender: "Male",
       co_applicant_occupation: "Trades",
-      co_applicant_employment: "Self-employed",
+      co_applicant_industry: "Construction / Energy / Trades",
       co_applicant_education_level: "Associate",
       co_applicant_marital_status: "Married",
       co_applicant_relationship_to_insured: "Spouse",
@@ -121,14 +121,16 @@ describe("fill Auto Risk Profile drivers from Deal Details", () => {
     expect(result.values.driver_1_name.value).toBe("Heather Camirand");
     expect(result.values.driver_1_dob.value).toBe("9/14/1975");
     expect(result.values.driver_1_gender.value).toBe("Female");
+    expect(result.values.driver_1_industry.value).toBe("Information Technology");
     expect(result.values.driver_1_occupation.value).toBe("Professional");
-    expect(result.values.driver_1_relationship.value).toBe("Named insured");
+    expect(result.values.driver_1_relationship).toBeUndefined();
 
     expect(result.values.driver_2_name.value).toBe("Tom Camirand");
     expect(result.values.driver_2_dob.value).toBe("1/2/1974");
     expect(result.values.driver_2_gender.value).toBe("Male");
+    expect(result.values.driver_2_industry.value).toBe("Construction / Energy / Trades");
     expect(result.values.driver_2_occupation.value).toBe("Trades");
-    expect(result.values.driver_2_employment.value).toBe("Self-employed");
+    expect(result.values.driver_2_employment).toBeUndefined();
     expect(result.values.driver_2_education_level.value).toBe("Associate");
     expect(result.values.driver_2_marital_status.value).toBe("Married");
     expect(result.values.driver_2_relationship.value).toBe("Spouse");
@@ -187,6 +189,31 @@ describe("fill Auto Risk Profile drivers from Deal Details", () => {
     expect(result.values.driver_3_dob.value).toBe("6/8/2001");
     expect(result.values.driver_3_relationship.value).toBe("Child");
     expect(result.values.driver_5_name).toBeUndefined();
+  });
+
+  it("maps leftover household_N_* into empty driver fields and never fills D1 relationship", () => {
+    const existing = emptySheetValues("auto");
+    existing.household_1_status = { value: "Resident", status: "check", source: "agent" };
+    existing.household_2_name = { value: "Sam Camirand", status: "check", source: "agent" };
+    existing.household_2_relationship = { value: "Child", status: "check", source: "agent" };
+    existing.household_2_exclude_reason = {
+      value: "Never licensed",
+      status: "check",
+      source: "agent",
+    };
+    const result = fillSheetFromDealDetails(
+      {
+        primaryNamedInsured: "Heather Camirand",
+        quotingLine: "auto",
+        stored: { date_of_birth: "1975-09-14" },
+      },
+      existing,
+    );
+    expect(result.values.driver_1_household_status.value).toBe("Resident");
+    expect(result.values.driver_1_relationship?.value ?? "").toBe("");
+    expect(result.values.driver_2_name.value).toBe("Sam Camirand");
+    expect(result.values.driver_2_relationship.value).toBe("Child");
+    expect(result.values.driver_2_exclude_reason.value).toBe("Never licensed");
   });
 
   it("leaves Home / Flood / Life / Health without auto driver slots", () => {

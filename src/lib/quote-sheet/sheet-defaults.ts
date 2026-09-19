@@ -594,7 +594,8 @@ export const MASTER_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
   // applicant_gender / driver_1_gender / applicant_occupation / driver_1_occupation:
   // leave blank — agent answers (no Heather defaults).
   // applicant_education_level / driver_1_education_level: leave blank — wait for Javy (Geico blocked when blank; no Heather defaults).
-  // applicant_employment / driver_1_employment: leave blank — Progressive Employment required; wait for Javy (no Heather defaults).
+  // applicant_industry / applicant_occupation / driver_N_industry / driver_N_occupation:
+  // leave blank — agent answers (no Heather defaults). Personal employment status is gone.
   // own_rent: leave blank — set per deal (Heather Own on deal sheet).
   // years_at_address / address_same_6_months / prior_address: leave blank —
   // set per deal (Heather ~1yr Tallwood + address_same_6_months yes).

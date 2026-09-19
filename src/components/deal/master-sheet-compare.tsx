@@ -31,6 +31,10 @@ import {
 } from "@/lib/healthsherpa/sheet";
 import type { QuoteFieldDef } from "@/lib/quote-sheet/applicant-core";
 import { cascadeParentKeys, joinChipList, parseChipList } from "@/lib/quote-sheet/sheet-visibility";
+import {
+  occupationIndustryParentKey,
+  occupationsForIndustry,
+} from "@/lib/custom-fields/industry-occupation";
 import type { ShopLine } from "@/lib/domain";
 import { asList } from "@/lib/safe-list";
 import { cn } from "@/lib/utils";
@@ -347,15 +351,7 @@ export function MasterSheetCompare({
               );
             }
             if (useAutoRepeaters && (group.group === "Household" || group.group === "Household members")) {
-              return (
-                <RepeatableUnitBlocks
-                  key={group.group}
-                  kind="household"
-                  product={product}
-                  values={values}
-                  extractedByKey={extractedByKey}
-                />
-              );
+              return null;
             }
             return (
               <SheetGroup
@@ -492,7 +488,11 @@ function SheetGroup({
               fieldKey={field.key}
               fieldLabel={field.label}
               input={field.input}
-              options={field.options}
+              options={
+                occupationIndustryParentKey(field.key)
+                  ? occupationsForIndustry(liveValues[occupationIndustryParentKey(field.key) ?? ""])
+                  : field.options
+              }
               cell={cell}
               liveValue={liveValues[field.key] ?? cell?.value ?? ""}
               onLiveChange={

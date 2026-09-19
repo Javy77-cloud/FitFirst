@@ -1,7 +1,6 @@
 import type { CustomFieldDef, LayoutSection } from "./types";
 import {
   EDUCATION_LEVEL_OPTIONS,
-  EMPLOYMENT_STATUS_OPTIONS,
   GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
   OCCUPATION_OPTIONS,
@@ -51,12 +50,6 @@ export const CO_APPLICANT_CRM_FIELDS: CustomFieldDef[] = [
     options: [...OCCUPATION_OPTIONS],
   },
   {
-    key: "co_applicant_employment",
-    label: "Employment",
-    type: "picklist",
-    options: [...EMPLOYMENT_STATUS_OPTIONS],
-  },
-  {
     key: "co_applicant_education_level",
     label: "Education level",
     type: "picklist",
@@ -83,7 +76,6 @@ export const CO_APPLICANT_SECTION_FIELD_KEYS = [
   "co_applicant_military_discount",
   "co_applicant_phone",
   "co_applicant_email",
-  "co_applicant_employment",
   "co_applicant_education_level",
 ] as const;
 

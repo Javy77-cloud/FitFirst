@@ -1,7 +1,6 @@
 import type { CustomFieldDef, LayoutSection } from "./types";
 import {
   EDUCATION_LEVEL_OPTIONS,
-  EMPLOYMENT_STATUS_OPTIONS,
   ENTITY_TYPE_OPTIONS,
   GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
@@ -34,12 +33,6 @@ export const APPLICANT_CORE_CRM_FIELDS: CustomFieldDef[] = [
     label: "Occupation",
     type: "picklist",
     options: [...OCCUPATION_OPTIONS],
-  },
-  {
-    key: "applicant_employment",
-    label: "Employment",
-    type: "picklist",
-    options: [...EMPLOYMENT_STATUS_OPTIONS],
   },
   {
     key: "applicant_marital_status",
@@ -100,7 +93,7 @@ export const APPLICANT_CRM_FIELDS: CustomFieldDef[] = [
 
 /**
  * Applicant stack on Deal/Lead (entity type lives on Contact / main info).
- * Gender → marital → industry → occupation → credit/military → employment → education.
+ * Gender → marital → industry → occupation → credit/military → education.
  */
 export const APPLICANT_SECTION_FIELD_KEYS = [
   "applicant_gender",
@@ -110,14 +103,12 @@ export const APPLICANT_SECTION_FIELD_KEYS = [
   "military_discount",
   "credit_permission",
   "assumed_credit_rating",
-  "applicant_employment",
   "applicant_education_level",
 ] as const;
 
 export const APPLICANT_CUSTOM_KEYS = [
   "applicant_gender",
   "applicant_occupation",
-  "applicant_employment",
   "applicant_marital_status",
   "applicant_education_level",
   "entity_type",

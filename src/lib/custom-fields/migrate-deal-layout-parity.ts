@@ -49,7 +49,13 @@ function ensureDealApplicantKeys(layout: FieldLayout): FieldLayout {
       ...col,
       sections: col.sections.map((section) => {
         if (!isApplicantSection(section)) return section;
-        const keys = [...section.fieldKeys].filter((key) => key !== "entity_type");
+        const keys = [...section.fieldKeys].filter(
+          (key) =>
+            key !== "entity_type" &&
+            key !== "applicant_employment" &&
+            key !== "co_applicant_employment" &&
+            key !== "employment_status",
+        );
         for (const key of APPLICANT_SECTION_FIELD_KEYS) {
           if (!keys.includes(key)) keys.push(key);
         }
@@ -64,6 +70,12 @@ function needsDealApplicantKeys(layout: FieldLayout): boolean {
     for (const section of col.sections) {
       if (!isApplicantSection(section)) continue;
       if (section.fieldKeys.includes("entity_type")) return true;
+      if (
+        section.fieldKeys.includes("applicant_employment") ||
+        section.fieldKeys.includes("co_applicant_employment")
+      ) {
+        return true;
+      }
       for (const key of APPLICANT_SECTION_FIELD_KEYS) {
         if (!section.fieldKeys.includes(key)) return true;
       }
@@ -143,7 +155,9 @@ function ensureExistingCoApplicantKeys(layout: FieldLayout): FieldLayout {
       ...col,
       sections: col.sections.map((section) => {
         if (!isCoApplicantSection(section)) return section;
-        const keys = [...section.fieldKeys];
+        const keys = [...section.fieldKeys].filter(
+          (key) => key !== "co_applicant_employment" && key !== "applicant_employment",
+        );
         for (const key of CO_APPLICANT_SECTION_FIELD_KEYS) {
           if (!keys.includes(key)) keys.push(key);
         }

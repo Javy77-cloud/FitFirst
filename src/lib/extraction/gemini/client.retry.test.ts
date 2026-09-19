@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { extractWithGeminiPdf, isGeminiDailyQuotaExhausted } from "./client";
+import {
+  extractWithGeminiPdf,
+  GEMINI_TIMEOUT_MESSAGE,
+  isGeminiDailyQuotaExhausted,
+} from "./client";
 import { GEMINI_CAPACITY_FALLBACKS, GEMINI_DEFAULT_MODEL } from "./key";
 
 describe("isGeminiDailyQuotaExhausted", () => {
@@ -107,4 +111,48 @@ describe("extractWithGeminiPdf retries", () => {
     expect(modelsHit).toHaveLength(2);
     expect(result.result.fields.some((f) => f.fieldKey === "applicant_name")).toBe(true);
   });
+
+  it("uses fewer primary attempts on the Fill path", async () => {
+    let calls = 0;
+    const fetchImpl = vi.fn(async () => {
+      calls += 1;
+      return new Response(JSON.stringify({ error: { message: "overloaded" } }), {
+        status: 503,
+        headers: { "Content-Type": "application/json", "Retry-After": "0" },
+      });
+    }) as unknown as typeof fetch;
+
+    const result = await extractWithGeminiPdf(Buffer.from("%PDF-1.4"), "dec", {
+      apiKey: "test-key",
+      model: "gemini-3.6-flash",
+      fetchImpl,
+      purpose: "fill",
+    });
+    expect(result.ok).toBe(false);
+    expect(calls).toBe(2 + GEMINI_CAPACITY_FALLBACKS.length * 1);
+    expect(result.message).toMatch(/gemini_http_503/);
+  }, 15_000);
+
+  it("fails immediately when Gemini fetch is aborted", async () => {
+    const fetchImpl = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+      return await new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => {
+          const error = new Error("The operation was aborted");
+          error.name = "AbortError";
+          reject(error);
+        });
+      });
+    }) as unknown as typeof fetch;
+
+    const result = await extractWithGeminiPdf(Buffer.from("%PDF-1.4"), "dec", {
+      apiKey: "test-key",
+      model: "gemini-3.6-flash",
+      fetchImpl,
+      purpose: "fill",
+      timeoutMs: 20,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.message).toBe(GEMINI_TIMEOUT_MESSAGE);
+    expect(result.result.qualityNotes).toContain("gemini_timeout");
+  }, 10_000);
 });

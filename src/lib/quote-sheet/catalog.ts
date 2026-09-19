@@ -6,7 +6,6 @@ import {
   GENDER_OPTIONS,
   OCCUPATION_OPTIONS,
   EDUCATION_LEVEL_OPTIONS,
-  EMPLOYMENT_STATUS_OPTIONS,
   MARITAL_STATUS_OPTIONS,
   RELATIONSHIP_TO_INSURED_OPTIONS,
   type QuoteFieldDef,
@@ -58,11 +57,8 @@ import {
   AUTO_CURRENTLY_INSURED_OPTIONS,
   AUTO_ANNUAL_MILES_OPTIONS,
   AUTO_INCIDENT_COUNT_OPTIONS,
-  AUTO_HOUSEHOLD_RELATIONSHIP_OPTIONS,
   AUTO_HOUSEHOLD_STATUS_OPTIONS,
   AUTO_HOUSEHOLD_EXCLUDE_REASON_OPTIONS,
-  AUTO_HOUSEHOLD_SEPARATE_POLICY_STATUS_OPTIONS,
-  AUTO_DRIVER_RELATIONSHIP_OPTIONS,
   AUTO_BI_LIMIT_OPTIONS,
   AUTO_PD_LIMIT_OPTIONS,
   AUTO_UM_UIM_OPTIONS,
@@ -98,6 +94,7 @@ import {
   applyMasterSheetDefaults,
   emptyDefaultsForLine,
 } from "./sheet-defaults";
+import { INDUSTRY_OPTIONS } from "@/lib/custom-fields/industry-occupation";
 import { COMMERCIAL_RISK_PROFILE_FIELDS, isCommercialSheetLine } from "./commercial-risk-profile";
 import { fieldIsVisible, visibleQuoteFields } from "./sheet-visibility";
 import type { SheetValueBag } from "./sheet-visibility";
@@ -112,7 +109,6 @@ export {
   MARITAL_STATUS_OPTIONS,
   OCCUPATION_OPTIONS,
   EDUCATION_LEVEL_OPTIONS,
-  EMPLOYMENT_STATUS_OPTIONS,
   RELATIONSHIP_TO_INSURED_OPTIONS,
 } from "./applicant-core";
 
@@ -484,18 +480,18 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
     options: [...GENDER_OPTIONS],
   },
   {
+    key: "driver_1_industry",
+    label: "Industry",
+    group: "Drivers",
+    input: "select",
+    options: [...INDUSTRY_OPTIONS],
+  },
+  {
     key: "driver_1_occupation",
-    label: "Driver 1 occupation / job category",
+    label: "Occupation",
     group: "Drivers",
     input: "select",
     options: [...OCCUPATION_OPTIONS],
-  },
-  {
-    key: "driver_1_employment",
-    label: "Driver 1 employment",
-    group: "Drivers",
-    input: "select",
-    options: [...EMPLOYMENT_STATUS_OPTIONS],
   },
   {
     key: "driver_1_education_level",
@@ -511,13 +507,6 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
     input: "select",
     options: [...MARITAL_STATUS_OPTIONS],
   },
-  {
-    key: "driver_1_relationship",
-    label: "Driver 1 relationship",
-    group: "Drivers",
-    input: "select",
-    options: [...AUTO_DRIVER_RELATIONSHIP_OPTIONS],
-  },
   { key: "driver_1_license", label: "Driver 1 license", group: "Drivers" },
   {
     key: "driver_1_status",
@@ -527,6 +516,32 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
     options: [...LICENSE_STATUS_OPTIONS],
   },
   { key: "driver_1_years_licensed", label: "Driver 1 years licensed", group: "Drivers", input: "number" },
+  {
+    key: "driver_1_household_status",
+    label: "Household status",
+    group: "Drivers",
+    input: "select",
+    options: [...AUTO_HOUSEHOLD_STATUS_OPTIONS],
+  },
+  {
+    key: "driver_1_exclude_reason",
+    label: "Exclude reason",
+    group: "Drivers",
+    input: "select",
+    options: [...AUTO_HOUSEHOLD_EXCLUDE_REASON_OPTIONS],
+  },
+  {
+    key: "driver_1_age_first_licensed",
+    label: "Age first licensed",
+    group: "Drivers",
+  },
+  {
+    key: "driver_1_suspension_5yr",
+    label: "Suspension in last 5 years",
+    group: "Drivers",
+    input: "select",
+    options: [...YES_NO_OPTIONS],
+  },
   { key: "driver_2_name", label: "Driver 2 name", group: "Drivers" },
   { key: "driver_2_dob", label: "Driver 2 DOB", group: "Drivers" },
   { key: "driver_2_license", label: "Driver 2 license", group: "Drivers" },
@@ -577,56 +592,7 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
     input: "select",
     options: [...YES_NO_OPTIONS],
   },
-  // Slots — UI uses RepeatableUnitBlocks (Household); keys keep catalog group present.
-  { key: "household_1_name", label: "Household 1 name", group: "Household" },
-  { key: "household_1_dob", label: "Household 1 DOB", group: "Household" },
-  {
-    key: "household_1_relationship",
-    label: "Household 1 relationship",
-    group: "Household",
-    input: "select",
-    options: [...AUTO_HOUSEHOLD_RELATIONSHIP_OPTIONS],
-  },
-  {
-    key: "household_1_status",
-    label: "Household 1 status",
-    group: "Household",
-    input: "select",
-    options: [...AUTO_HOUSEHOLD_STATUS_OPTIONS],
-  },
-  {
-    key: "household_1_exclude_reason",
-    label: "Household 1 exclude reason (Non-Rated/Excluded)",
-    group: "Household",
-    input: "select",
-    options: [...AUTO_HOUSEHOLD_EXCLUDE_REASON_OPTIONS],
-  },
-  {
-    key: "household_1_separate_auto_policy",
-    label: "Household 1 has separate auto policy",
-    group: "Household",
-    input: "select",
-    options: [...YES_NO_OPTIONS],
-  },
-  {
-    key: "household_1_separate_policy_status",
-    label: "Household 1 separate policy status",
-    group: "Household",
-    input: "select",
-    options: [...AUTO_HOUSEHOLD_SEPARATE_POLICY_STATUS_OPTIONS],
-  },
-  {
-    key: "household_1_age_first_licensed",
-    label: "Household 1 age first licensed",
-    group: "Household",
-  },
-  {
-    key: "household_1_suspension_5yr",
-    label: "Household 1 suspension in last 5 years",
-    group: "Household",
-    input: "select",
-    options: [...YES_NO_OPTIONS],
-  },
+  // Auto household block is folded into Drivers. Home/Health keep household_size/income.
   {
     key: "liability_bi",
     label: "BI limits",
@@ -657,7 +623,7 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
   },
   {
     key: "comp_deductible",
-    label: "Comp deductible",
+    label: "Comprehensive deductible",
     group: "Coverages",
     input: "select",
     options: [...AUTO_PHYS_DAM_DEDUCTIBLE_OPTIONS],
@@ -1399,6 +1365,10 @@ const EXTRACT_ALIASES: Record<string, string> = {
   aaa_membership: "aaa_member",
   passive_restraint: "passive_restraints",
   screen_enclosure_limit: "screen_enclosure",
+  household_1_status: "driver_1_household_status",
+  household_1_exclude_reason: "driver_1_exclude_reason",
+  household_1_age_first_licensed: "driver_1_age_first_licensed",
+  household_1_suspension_5yr: "driver_1_suspension_5yr",
 };
 
 /** Home-style property keys → Flood catalog keys (GetParcel / county PA emit Home names). */

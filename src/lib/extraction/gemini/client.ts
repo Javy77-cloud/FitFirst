@@ -16,7 +16,15 @@ const MAX_ATTEMPTS = 6;
 const WIND_MIT_MAX_ATTEMPTS = 8;
 /** Fewer attempts once we leave primary — fallbacks are for quota/capacity, not long 503 storms. */
 const FALLBACK_MAX_ATTEMPTS = 3;
+/** Risk Profile Fill must fail fast instead of 6–8 retries with 60s backoff. */
+const FILL_MAX_ATTEMPTS = 2;
+const FILL_FALLBACK_MAX_ATTEMPTS = 1;
+const FILL_RETRY_CAP_MS = 4_000;
 const RETRYABLE_STATUS = new Set([429, 503]);
+export const GEMINI_FETCH_TIMEOUT_MS = 25_000;
+export const GEMINI_TIMEOUT_NOTE = "gemini_timeout";
+export const GEMINI_TIMEOUT_MESSAGE =
+  "Docs timed out reading this file. Fields already filled are saved.";
 
 export type GeminiClientResult = {
   ok: boolean;
@@ -133,23 +141,46 @@ function isWindMitDoc(docType?: string | null): boolean {
   return t === "wind_mit" || t.includes("wind");
 }
 
-function maxAttemptsFor(docType?: string | null, isPrimary = true): number {
+function isFillPurpose(purpose?: string | null): boolean {
+  return purpose === "fill";
+}
+
+function maxAttemptsFor(
+  docType?: string | null,
+  isPrimary = true,
+  purpose?: string | null,
+): number {
+  if (isFillPurpose(purpose)) {
+    return isPrimary ? FILL_MAX_ATTEMPTS : FILL_FALLBACK_MAX_ATTEMPTS;
+  }
   if (!isPrimary) return FALLBACK_MAX_ATTEMPTS;
   return isWindMitDoc(docType) ? WIND_MIT_MAX_ATTEMPTS : MAX_ATTEMPTS;
 }
 
-/** Exponential backoff with jitter. Honors Retry-After / body retryDelay. Cap 60s. */
-function retryDelayMs(attempt: number, response: Response | null, errText = ""): number {
+function isAbortError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const name = "name" in error ? String((error as { name?: string }).name) : "";
+  return name === "AbortError" || /aborted|timeout/i.test(error instanceof Error ? error.message : "");
+}
+
+/** Exponential backoff with jitter. Honors Retry-After / body retryDelay. Cap 60s (4s on Fill). */
+function retryDelayMs(
+  attempt: number,
+  response: Response | null,
+  errText = "",
+  purpose?: string | null,
+): number {
+  const cap = isFillPurpose(purpose) ? FILL_RETRY_CAP_MS : 60_000;
   const fromBody = retryDelayFromErrorBody(errText);
-  if (fromBody != null) return fromBody;
+  if (fromBody != null) return Math.min(fromBody, cap);
   const retryAfter = response?.headers?.get?.("retry-after");
   if (retryAfter) {
     const secs = Number(retryAfter);
-    if (Number.isFinite(secs) && secs >= 0) return Math.min(Math.ceil(secs * 1000), 60_000);
+    if (Number.isFinite(secs) && secs >= 0) return Math.min(Math.ceil(secs * 1000), cap);
   }
-  const base = Math.min(1000 * 2 ** (attempt - 1), 12_000);
+  const base = Math.min(1000 * 2 ** (attempt - 1), isFillPurpose(purpose) ? 2_000 : 12_000);
   const jitter = Math.floor(Math.random() * 400);
-  return base + jitter;
+  return Math.min(base + jitter, cap);
 }
 
 /**
@@ -193,6 +224,9 @@ export async function extractWithGeminiPdf(
     filename?: string | null;
     /** Active master-sheet shop line (home / auto / …) so Auto photos extract Auto keys. */
     shopLine?: string | null;
+    /** Fill Risk Profile — fewer retries, hard timeout, fail instead of hanging. */
+    purpose?: "fill" | "extract";
+    timeoutMs?: number;
   },
 ): Promise<GeminiClientResult> {
   const apiKey = (options?.apiKey ?? readGeminiApiKey()).trim();
@@ -232,12 +266,14 @@ export async function extractWithGeminiPdf(
   };
 
   const fetchImpl = options?.fetchImpl ?? fetch;
+  const timeoutMs = options?.timeoutMs ?? GEMINI_FETCH_TIMEOUT_MS;
+  const purpose = options?.purpose;
   let response: Response | null = null;
   let errText = "";
   let lastStatus = 0;
   outer: for (const model of modelCandidates) {
     const isPrimary = model === primaryModel;
-    const maxAttempts = maxAttemptsFor(docType, isPrimary);
+    const maxAttempts = maxAttemptsFor(docType, isPrimary, purpose);
     const url = `${GENERATIVE_BASE}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
@@ -245,12 +281,16 @@ export async function extractWithGeminiPdf(
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(timeoutMs),
         });
         noteDeveloperApiCall("gemini");
       } catch (error) {
+        if (isAbortError(error)) {
+          return emptyFail(docType, GEMINI_TIMEOUT_MESSAGE, [GEMINI_TIMEOUT_NOTE]);
+        }
         const message = error instanceof Error ? error.message : "gemini_network_error";
         if (attempt < maxAttempts) {
-          await sleep(retryDelayMs(attempt, null));
+          await sleep(retryDelayMs(attempt, null, "", purpose));
           continue;
         }
         errText = message;
@@ -275,7 +315,7 @@ export async function extractWithGeminiPdf(
         continue outer;
       }
       if (RETRYABLE_STATUS.has(response.status) && attempt < maxAttempts) {
-        await sleep(retryDelayMs(attempt, response, errText));
+        await sleep(retryDelayMs(attempt, response, errText, purpose));
         continue;
       }
       if (RETRYABLE_STATUS.has(response.status)) {

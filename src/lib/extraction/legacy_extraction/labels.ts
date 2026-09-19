@@ -69,7 +69,7 @@ export const EXTRACT_LABELS: Record<string, string> = {
   liability_pd: "PD limit",
   um_uim: "UM / UIM",
   pip: "PIP",
-  comp_deductible: "Comp deductible",
+  comp_deductible: "Comprehensive deductible",
   collision_deductible: "Collision deductible",
   building_code: "Building code",
   inspection_company: "Inspection company",

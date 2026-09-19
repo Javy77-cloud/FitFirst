@@ -1,3 +1,4 @@
+import { INDUSTRY_OPTIONS } from "@/lib/custom-fields/industry-occupation";
 import type { SheetProduct } from "./products";
 
 export type QuoteFieldShowWhen = {
@@ -63,9 +64,8 @@ export const RELATIONSHIP_TO_INSURED_OPTIONS = [
 export const GENDER_OPTIONS = ["Male", "Female"] as const;
 
 /**
- * FL Auto / Allstate-style occupation / job categories (portal-mapped).
- * Mixes employment statuses + common job categories portals accept — not a lone Other.
- * Progressive portal "Employment" uses applicant_employment (EMPLOYMENT_STATUS_OPTIONS) instead.
+ * Fallback occupation labels when no industry is selected.
+ * Live Deal Details / Risk Profile occupation lists come from occupationsForIndustry.
  */
 
 /**
@@ -119,9 +119,8 @@ export const OCCUPATION_OPTIONS = [
 ] as const;
 
 /**
- * Progressive-style Employment status (portal "Employment" / employment category).
- * Separate from applicant_occupation (which mixes status + job categories for Allstate-style).
- * No default — wait for Javy / Heather.
+ * @deprecated Personal employment status is removed. Deal Details + Risk Profile
+ * use industry + occupation. Kept only so leftover stored keys type-check.
  */
 export const EMPLOYMENT_STATUS_OPTIONS = [
   "Employed",
@@ -162,20 +161,20 @@ export const APPLICANT_CORE_FIELDS: QuoteFieldDef[] = [
     extractKey: "applicant_marital_status",
   },
   {
+    key: "applicant_industry",
+    label: "Industry",
+    group: "Applicant",
+    input: "select",
+    options: [...INDUSTRY_OPTIONS],
+    extractKey: "applicant_industry",
+  },
+  {
     key: "applicant_occupation",
-    label: "Occupation / job category",
+    label: "Occupation",
     group: "Applicant",
     input: "select",
     options: [...OCCUPATION_OPTIONS],
     extractKey: "applicant_occupation",
-  },
-  {
-    key: "applicant_employment",
-    label: "Employment",
-    group: "Applicant",
-    input: "select",
-    options: [...EMPLOYMENT_STATUS_OPTIONS],
-    extractKey: "applicant_employment",
   },
   {
     key: "applicant_education_level",
@@ -226,20 +225,20 @@ export const CO_APPLICANT_FIELDS: QuoteFieldDef[] = [
     extractKey: "co_applicant_marital_status",
   },
   {
+    key: "co_applicant_industry",
+    label: "Industry",
+    group: "Co-applicant",
+    input: "select",
+    options: [...INDUSTRY_OPTIONS],
+    extractKey: "co_applicant_industry",
+  },
+  {
     key: "co_applicant_occupation",
-    label: "Occupation / job category",
+    label: "Occupation",
     group: "Co-applicant",
     input: "select",
     options: [...OCCUPATION_OPTIONS],
     extractKey: "co_applicant_occupation",
-  },
-  {
-    key: "co_applicant_employment",
-    label: "Employment",
-    group: "Co-applicant",
-    input: "select",
-    options: [...EMPLOYMENT_STATUS_OPTIONS],
-    extractKey: "co_applicant_employment",
   },
   {
     key: "co_applicant_education_level",
