@@ -2583,6 +2583,12 @@ button.ff-renewal-risk-badge {
 .ff-heat-cold { --ff-heat: var(--ff-urgency-gray); --ff-heat-wash: color-mix(in srgb, var(--ff-urgency-gray) 16%, white); }
 
 .ff-deals-command { display: grid; gap: 0.85rem; }
+.ff-stack-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 22rem);
+  gap: 1.15rem 1.35rem;
+  align-items: start;
+}
 .ff-deals-pulse {
   display: flex;
   flex-wrap: wrap;
@@ -2593,6 +2599,12 @@ button.ff-renewal-risk-badge {
   border-radius: 0.85rem;
   background: var(--ff-card);
   box-shadow: var(--ff-shadow);
+}
+.ff-deals-pulse-aside {
+  position: sticky;
+  top: 1rem;
+  flex-direction: column;
+  align-items: stretch;
 }
 .ff-deals-pulse .ff-renewals-pulse-bar > span { background: var(--ff-heat); }
 .ff-deals-pulse-legend {
@@ -2645,6 +2657,52 @@ button.ff-renewal-risk-badge {
   font-weight: 650;
 }
 .ff-deals-lenses { display: flex; flex-wrap: wrap; align-items: center; gap: 0.55rem 0.85rem; }
+.ff-deals-lens-help {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--ff-muted);
+}
+.ff-clear-lenses {
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--ff-navy);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.ff-pulse-hot-count {
+  margin: 0.7rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ff-navy);
+}
+.ff-pulse-hot-count strong {
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ff-terracotta);
+}
+.ff-phase-mix {
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.28rem;
+}
+.ff-phase-mix li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.72rem;
+  color: var(--ff-ink);
+}
+.ff-phase-mix strong { font-variant-numeric: tabular-nums; color: var(--ff-navy); }
+.ff-stack-clocks,
+.ff-radar-clocks {
+  font-size: 0.68rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--ff-navy);
+}
 .ff-heat-lenses { display: inline-flex; gap: 0.35rem; }
 .ff-heat-lens {
   display: inline-flex;
@@ -2670,7 +2728,8 @@ button.ff-renewal-risk-badge {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-width: 40rem;
+  max-width: none;
+  width: 100%;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -2840,6 +2899,18 @@ button.ff-renewal-risk-badge {
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+.ff-radar-ticks-x,
+.ff-radar-ticks-y { position: absolute; inset: 0; pointer-events: none; }
+.ff-radar-ticks-x span,
+.ff-radar-ticks-y span {
+  position: absolute;
+  font-size: 0.58rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--ff-muted) 80%, var(--ff-navy));
+}
+.ff-radar-ticks-x span { bottom: 0.35rem; transform: translateX(-50%); }
+.ff-radar-ticks-y span { left: 0.4rem; transform: translateY(50%); }
 .ff-radar-field {
   position: relative;
   min-height: 30rem;
@@ -3170,6 +3241,14 @@ button.ff-renewal-risk-badge {
   font-style: normal;
   font-weight: 650;
   color: var(--ff-muted);
+}
+@media (max-width: 56rem) {
+  .ff-stack-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ff-deals-pulse-aside {
+    position: static;
+  }
 }
 @media (max-width: 48rem) {
   .ff-book-board {

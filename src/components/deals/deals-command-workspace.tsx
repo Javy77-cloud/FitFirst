@@ -9,6 +9,7 @@ import type { HeatState } from "@/lib/deals/velocity";
 export function DealsCommandWorkspace({
   view,
   cards,
+  chipCounts,
   href,
   canSeeTeam,
   scorecards,
@@ -16,6 +17,7 @@ export function DealsCommandWorkspace({
 }: {
   view: DealsViewId;
   cards: RadarDealCard[];
+  chipCounts: Record<HeatState, number>;
   href: {
     view: DealsViewId;
     pipeline?: string | null;
@@ -33,21 +35,31 @@ export function DealsCommandWorkspace({
   scorecards: { open: number; cold: number; coldRate: number; medianPostQuoteGap: number; hot: number };
   rankLabel: string | null;
 }) {
-  const counts = { hot: 0, cooling: 0, near_cold: 0, cold: 0 } as Record<HeatState, number>;
-  for (const card of cards) counts[card.heat] += 1;
+  const pulse = (
+    <DealsHeatPulse
+      heats={cards.map((card) => card.heat)}
+      phases={cards.map((card) => card.phase)}
+      view={view}
+      rankLabel={rankLabel}
+      coldRate={scorecards.coldRate}
+      variant={view === "stack" ? "aside" : "banner"}
+    />
+  );
 
   return (
     <div className="ff-deals-command" data-ff-deals-command="" data-ff-deals-view={view}>
-      <DealsHeatPulse
-        heats={cards.map((card) => card.heat)}
-        view={view}
-        rankLabel={rankLabel}
-        coldRate={scorecards.coldRate}
-      />
+      {view === "radar" ? pulse : null}
 
-      <DealsLenses href={href} canSeeTeam={canSeeTeam} counts={counts} />
+      <DealsLenses href={href} canSeeTeam={canSeeTeam} counts={chipCounts} />
 
-      {view === "radar" ? <DealsRadar cards={cards} /> : <PriorityStack cards={cards} />}
+      {view === "radar" ? (
+        <DealsRadar cards={cards} />
+      ) : (
+        <div className="ff-stack-workspace" data-ff-stack-workspace="">
+          <PriorityStack cards={cards} />
+          {pulse}
+        </div>
+      )}
     </div>
   );
 }

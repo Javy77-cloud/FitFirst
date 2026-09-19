@@ -7,17 +7,24 @@ import { VelocityClockRail } from "@/components/deals/velocity-clock-rail";
 import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
 import type { RadarDealCard } from "@/lib/deals/radar-desk";
 import {
+  formatClockDays,
   formatDealValue,
   HEAT_LABELS,
   HEAT_STATES,
+  RADAR_X_AXIS_LABEL,
+  RADAR_X_DAYS,
+  RADAR_Y_AXIS_LABEL,
+  RADAR_Y_DAYS,
   radarLegendCopy,
 } from "@/lib/deals/velocity";
 import { cn } from "@/lib/utils";
 
+const TICKS = [0, 7, 14, 21] as const;
+
 export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = cards.find((card) => card.id === openId) ?? null;
-  const legend = radarLegendCopy(cards[0]?.valueMetric ?? "coverage_a");
+  const legend = radarLegendCopy();
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -56,9 +63,9 @@ export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
         </ul>
       </div>
       <div className="ff-radar-plot" data-ff-radar-plot="">
-        <div className="ff-radar-axis-y">
+        <div className="ff-radar-axis-y" data-ff-radar-axis-y="">
           <span className="ff-radar-axis-y-high">{legend.yHigh}</span>
-          <span className="ff-radar-axis-y-title">{legend.yTitle}</span>
+          <span className="ff-radar-axis-y-title">{RADAR_Y_AXIS_LABEL}</span>
           <span className="ff-radar-axis-y-low">{legend.yLow}</span>
         </div>
         <div className="ff-radar-plot-main">
@@ -69,11 +76,25 @@ export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
             data-ff-radar-field=""
             onClick={() => setOpenId(null)}
           >
+            <span className="ff-radar-ticks-x" aria-hidden>
+              {TICKS.map((day) => (
+                <span key={`x-${day}`} style={{ left: `${8 + (day / RADAR_X_DAYS) * 84}%` }}>
+                  {day}d
+                </span>
+              ))}
+            </span>
+            <span className="ff-radar-ticks-y" aria-hidden>
+              {TICKS.map((day) => (
+                <span key={`y-${day}`} style={{ bottom: `${8 + (day / RADAR_Y_DAYS) * 78}%` }}>
+                  {day}d
+                </span>
+              ))}
+            </span>
             {cards.length === 0 ? (
               <p className="ff-deals-empty">No deals on this field.</p>
             ) : (
               cards.map((card) => {
-                const size = 0.72 + card.y * 0.55;
+                const size = card.heat === "cold" ? 1.05 : card.heat === "near_cold" ? 0.95 : 0.82;
                 return (
                   <span
                     key={card.id}
@@ -88,7 +109,7 @@ export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
                     }}
                     data-ff-radar-dot={card.id}
                     data-ff-heat={card.heat}
-                    title={`${card.insured !== "—" ? card.insured : card.title} · ${HEAT_LABELS[card.heat]}`}
+                    title={`${card.insured !== "—" ? card.insured : card.title} · ${HEAT_LABELS[card.heat]} · ${formatClockDays(card.daysInPhase)} in phase · ${formatClockDays(card.silenceDays)} silent`}
                     onMouseEnter={() => openCard(card.id)}
                     onClick={(event) => {
                       event.stopPropagation();
@@ -123,6 +144,10 @@ export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
                   ))}
                   <span className="ff-stack-value">{formatDealValue(open.value, open.valueMetric)}</span>
                 </div>
+                <p className="ff-radar-clocks">
+                  {formatClockDays(open.daysInPhase)} in phase · {formatClockDays(open.silenceDays)} silent
+                  {open.quoteSent ? " (quote sent)" : ""}
+                </p>
                 <VelocityClockRail clocks={open.clocks} phase={open.phase} />
                 <RenewalHealthMeter
                   stars={open.clientHealth / 20}
@@ -140,9 +165,9 @@ export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
               </aside>
             ) : null}
           </button>
-          <div className="ff-radar-axis-x">
+          <div className="ff-radar-axis-x" data-ff-radar-axis-x="">
             <span>{legend.xStart}</span>
-            <span className="ff-radar-axis-x-title">{legend.xTitle}</span>
+            <span className="ff-radar-axis-x-title">{RADAR_X_AXIS_LABEL}</span>
             <span>{legend.xEnd}</span>
           </div>
         </div>

@@ -12,7 +12,6 @@ import { insuredContactName } from "@/lib/crm/lists";
 import {
   buildVelocityClocks,
   clientHealthScore,
-  commGapDays,
   dealValue,
   formatClockDays,
   heatForDeal,
@@ -23,6 +22,7 @@ import {
   primaryDealAction,
   radarPosition,
   resolveActivePhase,
+  silenceDays,
   sparkBuckets,
   urgencyScore,
   type HeatState,
@@ -51,7 +51,10 @@ export type RadarDealCard = {
   clocks: Record<VelocityPhase, VelocityClock>;
   daysInPhase: number;
   commGapDays: number;
+  silenceDays: number;
   lastCommAt: string | null;
+  lastQuoteAt: string | null;
+  quoteSent: boolean;
   clockLabel: string;
   clientHealth: number;
   policyHealth: number;
@@ -171,16 +174,12 @@ export function presentRadarCards(
   users: Map<string, string>,
   now = new Date(),
 ): RadarDealCard[] {
-  const values = rows.map((row) =>
-    dealValue(row.risk?.coverageA ?? row.deal.coverageAmount, touches.premiumByDeal.get(row.deal.id)).amount,
-  );
-  const maxValue = Math.max(1, ...values);
-
   return rows
     .map((row) => {
       const deal = row.deal;
       const createdAt = parseDate(deal.createdAt) ?? now;
       const lastCommAt = touches.lastCommByDeal.get(deal.id) ?? null;
+      const lastQuoteAt = touches.lastQuoteByDeal.get(deal.id) ?? null;
       const details = detailsReady(row);
       const docs = touches.hasDocs.has(deal.id);
       const risk = riskReady(row);
@@ -205,7 +204,7 @@ export function presentRadarCards(
         productCount: products.length,
         lastCommAt,
         lastDocAt: touches.lastDocByDeal.get(deal.id) ?? null,
-        lastQuoteAt: touches.lastQuoteByDeal.get(deal.id) ?? null,
+        lastQuoteAt,
         detailsReadyAt: details ? parseDate(deal.updatedAt) : null,
         now,
       });
@@ -216,8 +215,14 @@ export function presentRadarCards(
         quotesReady: quoted,
       });
       const daysInPhase = clocks[phase].days;
-      const gap = commGapDays({ lastCommAt, openedAt: createdAt, now });
-      const heat = heatForDeal({ commGapDays: gap, closed, value: value.amount, daysInPhase });
+      const gap = silenceDays({
+        lastCommAt,
+        lastQuoteAt,
+        quotesReady: quoted,
+        openedAt: createdAt,
+        now,
+      });
+      const heat = heatForDeal({ silenceDays: gap, closed });
       const score = urgencyScore({
         heat,
         commGapDays: gap,
@@ -227,7 +232,7 @@ export function presentRadarCards(
         productCount: products.length,
         closed,
       });
-      const pos = radarPosition({ daysInPhase, value: value.amount, maxValue });
+      const pos = radarPosition({ daysInPhase, silenceDays: gap });
       return {
         id: deal.id,
         title: visibleDealTitle(deal),
@@ -254,7 +259,10 @@ export function presentRadarCards(
         clocks,
         daysInPhase,
         commGapDays: gap,
+        silenceDays: gap,
         lastCommAt: lastCommAt?.toISOString() ?? null,
+        lastQuoteAt: lastQuoteAt?.toISOString() ?? null,
+        quoteSent: quoted,
         clockLabel: `${clocks[phase].label} · ${formatClockDays(daysInPhase)}`,
         clientHealth: clientHealthScore({
           commGapDays: gap,

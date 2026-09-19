@@ -2,7 +2,7 @@ import Link from "next/link";
 import { VelocityClockRail } from "@/components/deals/velocity-clock-rail";
 import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
 import type { RadarDealCard } from "@/lib/deals/radar-desk";
-import { formatDealValue } from "@/lib/deals/velocity";
+import { formatClockDays, formatDealValue, HEAT_LABELS } from "@/lib/deals/velocity";
 import { cn } from "@/lib/utils";
 
 export function PriorityStack({ cards }: { cards: RadarDealCard[] }) {
@@ -34,7 +34,11 @@ export function PriorityStack({ cards }: { cards: RadarDealCard[] }) {
               </Link>
               <div className="ff-stack-glance">
                 <span className="ff-product-chip">{card.productLabels[0] ?? card.lineOfBusiness}</span>
+                <span className="ff-stack-clocks">
+                  {formatClockDays(card.daysInPhase)} in phase · {formatClockDays(card.silenceDays)} silent
+                </span>
                 <span className="ff-stack-value">{formatDealValue(card.value, card.valueMetric)}</span>
+                <span className="sr-only">{HEAT_LABELS[card.heat]}</span>
                 <VelocityClockRail clocks={card.clocks} phase={card.phase} compact />
               </div>
               <RenewalHealthMeter
