@@ -3,12 +3,19 @@ import { DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
 import { DealWorkQueuePanel } from "@/components/deals/deal-work-queue-panel";
 import { PipelineBookModeToggle } from "@/components/pipeline/book-mode-toggle";
 import { RenewalsFilteredViews } from "@/components/renewals/renewals-filtered-views";
+import { DeskTruthStrip } from "@/components/desk/truth-strip";
 import { RenewalsHealthStrip } from "@/components/renewals/renewals-health-strip";
 import { RenewalsPulse } from "@/components/renewals/renewals-pulse";
 import { TodayActivityCorner } from "@/components/renewals/today-activity-corner";
 import { currentDeskSession } from "@/lib/auth/session";
 import { rollupRenewalHealth } from "@/lib/health/load";
 import { roleHealthSummary } from "@/lib/renewal/health-rollup";
+import {
+  flaggedClientCount,
+  renewalHealthShares,
+  renewalHeatShares,
+  uniqueRenewalClients,
+} from "@/lib/desk/truth-strip";
 import { readDefaultRenewalsView } from "@/app/actions/pipeline-view-prefs";
 import { loadDealPipelineDesk } from "@/lib/deals/pipeline-desk-data";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
@@ -97,6 +104,12 @@ export async function RenewalsDesk({
   const hasOwnedBook = Boolean(
     session.userId && filtered.some((card) => card.ownerId === session.userId),
   );
+  const healthSummary = roleHealthSummary({
+    cards: filtered,
+    isOwner: session.isAdmin,
+    viewerId: session.userId,
+    viewerName: session.name,
+  });
   const healthRollup = rollupRenewalHealth(
     filtered
       .filter((card) => card.clientHealth)
@@ -152,6 +165,9 @@ export async function RenewalsDesk({
       ) : null}
       {notice === "review_skipped" ? (
         <p className="text-sm text-navy">Skipped once. Next time the review stays up.</p>
+      ) : null}
+      {notice === "autopilot_sent" ? (
+        <p className="text-sm text-navy">Autopilot confirmed. That band will not nag again.</p>
       ) : null}
 
       <DealWorkspaceBar
@@ -218,18 +234,21 @@ export async function RenewalsDesk({
           </p>
         ) : (
           <>
-            <RenewalsPulse daysUntil={filtered.map((card) => card.daysUntil)} />
+            <DeskTruthStrip
+              surface="renewals"
+              label={healthSummary.label}
+              heat={renewalHeatShares(filtered)}
+              health={renewalHealthShares(filtered)}
+              flagged={flaggedClientCount(filtered)}
+              clients={uniqueRenewalClients(filtered)}
+            />
             <RenewalsHealthStrip
-              summary={roleHealthSummary({
-                cards: filtered,
-                isOwner: session.isAdmin,
-                viewerId: session.userId,
-                viewerName: session.name,
-              })}
+              summary={healthSummary}
               book={healthRollup.book}
               agents={showAgencyHealth ? healthRollup.agents : []}
               weakest={weakest}
             />
+            <RenewalsPulse daysUntil={filtered.map((card) => card.daysUntil)} />
             <RenewalsFilteredViews
               cards={filtered}
               searchModuleId="renewals-pipeline"

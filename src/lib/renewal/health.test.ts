@@ -49,6 +49,8 @@ function card(partial: Partial<RenewalBoardCard>): RenewalBoardCard {
     lastContactDays: 90,
     policyHealth: null,
     clientHealth: null,
+    autopilotQueued: false,
+    autopilotEscalated: false,
     ...partial,
   };
 }

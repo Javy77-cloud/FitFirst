@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { sendRenewalChase } from "@/app/actions/renewals-wedge";
 import { dismissPanelCard, sendRenewalSilenceReminder, snoozePanelCard } from "@/app/actions/notification-panel";
 import type { PanelCard } from "@/lib/notifications/panel";
 import { PANEL_KIND_LABEL, PANEL_URGENCY_META } from "@/lib/notifications/panel";
@@ -19,7 +20,10 @@ export function NotificationUrgencyCard({ card }: { card: PanelCard }) {
       data-ff-panel-source={card.source}
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="ff-panel-kind">{PANEL_KIND_LABEL[card.kind]}</p>
+        <p className="ff-panel-kind">
+          {PANEL_KIND_LABEL[card.kind]}
+          {card.escalated ? <span className="ff-autopilot-escalated">Escalated once</span> : null}
+        </p>
         <span className={cn("ff-renewal-risk-badge", `ff-renewal-risk-${card.urgency}`)}>{meta.label}</span>
       </div>
       <p className="ff-panel-entity">
@@ -31,7 +35,19 @@ export function NotificationUrgencyCard({ card }: { card: PanelCard }) {
         {card.why}
       </p>
       <div className="ff-panel-actions">
-        {card.kind === "renewal_silence" && card.policyId ? (
+        {card.kind === "renewal_autopilot" && card.policyId ? (
+          <form action={sendRenewalChase}>
+            <input type="hidden" name="policyId" value={card.policyId} />
+            {card.contactId ? <input type="hidden" name="contactId" value={card.contactId} /> : null}
+            {card.alertId ? <input type="hidden" name="alertId" value={card.alertId} /> : null}
+            <input type="hidden" name="clientName" value={card.clientName || card.entityLine} />
+            <input type="hidden" name="daysUntil" value={String(card.daysUntil ?? 45)} />
+            <input type="hidden" name="returnTo" value="/notifications?notice=autopilot_sent" />
+            <button type="submit" className="ff-panel-primary" data-ff-autopilot-confirm="">
+              {card.primary.label}
+            </button>
+          </form>
+        ) : card.kind === "renewal_silence" && card.policyId ? (
           <form action={sendRenewalSilenceReminder}>
             <input type="hidden" name="policyId" value={card.policyId} />
             {card.contactId ? <input type="hidden" name="contactId" value={card.contactId} /> : null}

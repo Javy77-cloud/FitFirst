@@ -30,6 +30,8 @@ describe("Renewals desk chrome", () => {
     expect(desk).toMatch(/renewals-pipeline/);
     expect(desk).toMatch(/RenewalsFilteredViews/);
     expect(desk).toMatch(/RenewalsPulse/);
+    expect(desk).toMatch(/DeskTruthStrip/);
+    expect(desk).toMatch(/renewalHeatShares/);
     expect(desk).not.toMatch(/RenewalsList/);
     expect(desk).not.toMatch(/TodayActivityStrip/);
     expect(desk).not.toMatch(/deal-upload-activity/);
@@ -56,8 +58,12 @@ describe("Renewals desk chrome", () => {
     expect(card).toMatch(/RenewalMiniReview/);
     expect(pulse).toMatch(/data-ff-renewals-pulse/);
     expect(pulse).toMatch(/Book pulse/);
-    expect(desk).toMatch(/RenewalsHealthStrip/);
+    expect(desk).toMatch(/DeskTruthStrip/);
     expect(desk).toMatch(/roleHealthSummary/);
+    expect(card).toMatch(/autopilotConfirmLabel|data-ff-autopilot/);
+    expect(card).toMatch(/data-ff-autopilot-badge/);
+    expect(source("src/lib/renewal/autopilot.ts")).toMatch(/AUTOPILOT_SILENCE_DAYS/);
+    expect(source("src/lib/notifications/panel.ts")).toMatch(/renewal_autopilot/);
     expect(source("src/lib/renewal/health-rollup.ts")).toMatch(/Never per-policy primary/);
     expect(source("src/components/renewals/renewal-compare-drawer.tsx")).toMatch(/data-ff-compare-eye/);
     expect(source("src/components/renewals/renewal-compare-drawer.tsx")).toMatch(/ff-renewal-compare-dark/);

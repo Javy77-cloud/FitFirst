@@ -29,8 +29,8 @@ export function alertRecordHref(row: {
     if (row.kind === "stale_docs" && row.entityType === "deal") {
       return `/deals/${row.entityId}?tab=documents`;
     }
-    if (row.kind === "renewal_silence") {
-      return row.entityType === "policy" ? `/policies/${row.entityId}` : "/renewals";
+    if (row.kind === "renewal_silence" || row.kind === "renewal_autopilot") {
+      return row.kind === "renewal_autopilot" ? "/notifications" : row.entityType === "policy" ? `/policies/${row.entityId}` : "/renewals";
     }
   }
   return (

@@ -435,8 +435,10 @@ export async function saveCallOutcome(formData: FormData) {
     await logDeskActivity(formData);
   }
   revalidatePath("/phone");
+  const policyId = str(formData, "policyId");
+  const contactId = str(formData, "contactId");
   const returnTo =
     str(formData, "returnTo") ||
-    (str(formData, "contactId") ? `/contacts/${str(formData, "contactId")}` : "/phone");
-  return { returnTo, contactId: str(formData, "contactId") || null, policyId: str(formData, "policyId") || null };
+    (contactId ? `/contacts/${contactId}` : "/phone");
+  return { returnTo, contactId: contactId || null, policyId: policyId || null };
 }

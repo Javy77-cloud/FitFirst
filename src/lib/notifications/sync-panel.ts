@@ -51,7 +51,9 @@ export async function syncPanelSignals(): Promise<PanelCard[]> {
   for (const card of cards) {
     if (dismissedKeys.has(card.key) || snoozedKeys.has(card.key)) continue;
     const unread = unreadByKey.get(card.key);
-    const body = panelAlertBody(card.why, card.key);
+    const body = card.metaBody
+      ? `${panelAlertBody(card.why, card.key)}\n${card.metaBody}`
+      : panelAlertBody(card.why, card.key);
     if (unread) {
       card.alertId = unread.id;
       if (unread.title !== card.entityLine || unread.body !== body) {
@@ -86,9 +88,13 @@ export async function syncPanelSignals(): Promise<PanelCard[]> {
     await db.update(alerts).set({ readAt: now }).where(eq(alerts.id, row.id));
   }
 
-  revalidatePath("/");
-  revalidatePath("/notifications");
-  revalidatePath("/alerts");
+  try {
+    revalidatePath("/");
+    revalidatePath("/notifications");
+    revalidatePath("/alerts");
+  } catch {
+    // Render-time sync has no revalidate store; still return live cards.
+  }
   return cards.map((card) => {
     const unread = unreadByKey.get(card.key);
     return {

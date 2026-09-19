@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   commitmentNudgeUrgency,
@@ -6,6 +7,8 @@ import {
   isOvernightDecline,
   isRenewalSilenceWindow,
   isRenewalSilent,
+  PANEL_KIND_LABEL,
+  PANEL_SIGNAL_KINDS,
   quoteDeclinedUrgency,
   quoteDeclinedWhy,
   renewalSilenceUrgency,
@@ -69,6 +72,16 @@ describe("notification panel signals", () => {
     expect(renewalSilenceUrgency(22)).toBe("high");
     expect(renewalSilenceUrgency(45)).toBe("medium");
     expect(renewalSilenceWhy({ daysUntil: 45, lastOutreachAt: null, asOf })).toMatch(/no outreach/);
+  });
+
+  it("names Renewal Autopilot as a live panel kind", () => {
+    expect(PANEL_KIND_LABEL.renewal_autopilot).toMatch(/Autopilot/);
+    expect(PANEL_SIGNAL_KINDS).toContain("renewal_autopilot");
+    const page = readFileSync("src/app/notifications/page.tsx", "utf8");
+    const sync = readFileSync("src/lib/notifications/sync-panel.ts", "utf8");
+    expect(page).toMatch(/loadPanelCards/);
+    expect(page).toMatch(/autopilot_sent/);
+    expect(sync).toMatch(/Render-time sync has no revalidate store/);
   });
 
   it("rates expired and long-quiet docs as High", () => {

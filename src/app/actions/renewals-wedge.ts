@@ -7,7 +7,7 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID, formatDay, formatMoney } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { db } from "@/lib/db";
-import { policies, policyTerms } from "@/lib/db/schema";
+import { alerts, policies, policyTerms } from "@/lib/db/schema";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import { sendDeskEmail } from "@/app/actions/comms";
 import {
@@ -226,8 +226,18 @@ export async function sendRenewalChase(formData: FormData) {
     assignee: session.userId,
   });
 
+  const alertId = str(formData, "alertId");
+  if (alertId && isUuid(alertId)) {
+    await db
+      .update(alerts)
+      .set({ readAt: new Date() })
+      .where(and(eq(alerts.id, alertId), eq(alerts.tenantId, DEFAULT_TENANT_ID)));
+  }
+
   refreshRenewals(policyId);
-  redirect("/renewals?notice=chase_logged");
+  revalidatePath("/notifications");
+  const returnTo = str(formData, "returnTo");
+  redirect(returnTo.startsWith("/") ? returnTo : "/renewals?notice=chase_logged");
 }
 
 export async function submitRenewalMiniReview(formData: FormData) {

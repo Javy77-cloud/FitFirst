@@ -62,6 +62,8 @@ describe("Deals page sep7h", () => {
     expect(page).toMatch(/<TodayActivityCorner/);
     expect(page).toMatch(/basePath="\/deals"/);
     expect(page).toMatch(/<DealsCommandWorkspace/);
+    expect(page).toMatch(/DeskTruthStrip/);
+    expect(page).toMatch(/dealHeatShares/);
     expect(page).not.toMatch(/<DealsTable/);
     expect(page).not.toMatch(/<PipelineWorkspace/);
     // Component stays for Actions → Attach document (sep7gk) and lockedDeal flows

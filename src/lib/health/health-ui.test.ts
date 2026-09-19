@@ -37,6 +37,8 @@ describe("client health chrome", () => {
     const pending = source("src/lib/health/pending-review.ts");
     expect(host).toMatch(/ExperienceReviewHost/);
     expect(prompt).toMatch(/data-ff-review-star/);
+    expect(prompt).toMatch(/10-second pulse/);
+    expect(prompt).not.toMatch(/Save rating/);
     expect(pending).toMatch(/renewal_close/);
     expect(pending).toMatch(/logged_call/);
     expect(pending).toMatch(/claim_wrap/);
