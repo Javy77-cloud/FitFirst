@@ -2,8 +2,12 @@ import { describe, expect, it } from "vitest";
 import { DEAL_PRODUCT_DEFS } from "@/lib/deals/deal-products";
 import {
   DEFAULT_AGENCY_LOBS,
+  agencyLobFamilyCounts,
+  canonicalizeLobCode,
   familyHiddenByWriteToggles,
+  findAgencyLobOrphans,
   labelForLobCode,
+  resolveAgencyLobCode,
   slugifyAgencyLob,
   uniqueLobCodes,
   visibleAgencyLobs,
@@ -54,5 +58,25 @@ describe("agency master Lines of Business", () => {
   it("slugifies custom labels for product ids", () => {
     expect(slugifyAgencyLob("Inland Marine")).toBe("inland_marine");
     expect(slugifyAgencyLob("  ")).toBe("line");
+  });
+
+  it("maps form codes and free-text onto the master catalog without dropping unknowns", () => {
+    expect(resolveAgencyLobCode("HO3", DEFAULT_AGENCY_LOBS)).toBe("HO");
+    expect(resolveAgencyLobCode("DP", DEFAULT_AGENCY_LOBS)).toBe("HO");
+    expect(resolveAgencyLobCode("PA", DEFAULT_AGENCY_LOBS)).toBe("AUTO");
+    expect(resolveAgencyLobCode("landlord", DEFAULT_AGENCY_LOBS)).toBe("HO");
+    expect(canonicalizeLobCode("Cyber", DEFAULT_AGENCY_LOBS)).toBe("Cyber");
+    expect(findAgencyLobOrphans(["HO", "DP", "Cyber", "PA"], DEFAULT_AGENCY_LOBS)).toEqual([
+      { raw: "Cyber", count: 1 },
+    ]);
+  });
+
+  it("counts active families for the settings chips", () => {
+    const counts = agencyLobFamilyCounts(DEFAULT_AGENCY_LOBS);
+    expect(counts.personal).toBeGreaterThan(0);
+    expect(counts.commercial).toBeGreaterThan(0);
+    expect(counts.life).toBeGreaterThan(0);
+    expect(counts.health).toBeGreaterThan(0);
+    expect(counts.hidden).toBe(0);
   });
 });

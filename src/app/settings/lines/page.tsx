@@ -1,8 +1,11 @@
 import {
   addAgencyLob,
   addLineSubfilter,
+  adoptOrphanLob,
   deleteAgencyLob,
   deleteLineSubfilter,
+  mapOrphanLob,
+  normalizeAgencyLobOrphans,
   saveWrittenLines,
   toggleAgencyLob,
   updateAgencyLob,
@@ -14,8 +17,14 @@ import { SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { requireAdminPage } from "@/lib/auth/guards";
-import { loadAgencyLobCatalog, loadDeskLineSettings } from "@/lib/db/line-settings";
-import { AGENCY_LOB_FAMILIES, type AgencyLobRecord } from "@/lib/desk/agency-lobs";
+import { listAgencyLobOrphans, loadAgencyLobCatalog, loadDeskLineSettings } from "@/lib/db/line-settings";
+import {
+  AGENCY_LOB_FAMILIES,
+  agencyLobFamilyCounts,
+  uniqueLobCodes,
+  type AgencyLobOrphan,
+  type AgencyLobRecord,
+} from "@/lib/desk/agency-lobs";
 import type { LineSubfilterOption } from "@/lib/desk/line-settings";
 
 export const dynamic = "force-dynamic";
@@ -93,6 +102,116 @@ function OptionList({
   );
 }
 
+function FamilyCountChips({ rows }: { rows: AgencyLobRecord[] }) {
+  const counts = agencyLobFamilyCounts(rows);
+  const chips: { label: string; count: number }[] = [
+    { label: "Personal", count: counts.personal },
+    { label: "Commercial", count: counts.commercial },
+    { label: "Life", count: counts.life },
+    { label: "Health", count: counts.health },
+  ];
+  if (counts.hidden > 0) chips.push({ label: "Hidden", count: counts.hidden });
+  return (
+    <div className="flex flex-wrap gap-1.5 pt-1">
+      {chips.map((chip) => (
+        <span
+          key={chip.label}
+          className="rounded-full border border-navy/15 bg-[var(--ff-card)] px-2 py-0.5 text-[11px] font-medium text-navy"
+        >
+          {chip.label} {chip.count}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function OrphanLobList({
+  orphans,
+  catalog,
+  canEdit,
+}: {
+  orphans: AgencyLobOrphan[];
+  catalog: AgencyLobRecord[];
+  canEdit: boolean;
+}) {
+  const codes = uniqueLobCodes(catalog);
+  return (
+    <CollapsibleListCard
+      cardId="agency-lob-orphans"
+      header={
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-sm font-semibold tracking-tight text-navy">Unlisted values</h2>
+            <span className="ff-list-count">{orphans.length}</span>
+          </div>
+          <p className="text-helper text-muted-foreground">
+            Stored deal and policy lines that are not on the catalog. Adopt them as a new line, or
+            map them onto an existing code. Records are never deleted.
+          </p>
+        </div>
+      }
+      actions={
+        canEdit ? (
+          <form action={normalizeAgencyLobOrphans}>
+            <Button type="submit" size="sm" variant="outline">
+              Remap known aliases
+            </Button>
+          </form>
+        ) : null
+      }
+      items={
+        orphans.length === 0
+          ? [
+              <p key="empty" className="px-1 py-1 text-sm text-muted-foreground">
+                Every stored deal and policy already matches the catalog.
+              </p>,
+            ]
+          : orphans.map((orphan) => (
+              <div
+                key={orphan.raw}
+                className="ff-list-row items-end justify-between gap-3"
+                data-ff-lob-orphan={orphan.raw}
+              >
+                <div className="min-w-0">
+                  <div className="font-medium text-navy">{orphan.raw}</div>
+                  <div className="text-helper text-muted-foreground">
+                    {orphan.count} stored {orphan.count === 1 ? "record" : "records"}
+                  </div>
+                </div>
+                {canEdit ? (
+                  <div className="flex flex-wrap items-end gap-2">
+                    <form action={adoptOrphanLob} className="flex items-end gap-2">
+                      <input type="hidden" name="raw" value={orphan.raw} />
+                      <Button type="submit" size="sm" variant="outline">
+                        Adopt
+                      </Button>
+                    </form>
+                    <form action={mapOrphanLob} className="flex items-end gap-2">
+                      <input type="hidden" name="raw" value={orphan.raw} />
+                      <select
+                        name="toCode"
+                        className="h-8 rounded-md border border-input bg-card px-2 text-sm"
+                        defaultValue={codes[0] ?? "HO"}
+                      >
+                        {codes.map((code) => (
+                          <option key={code} value={code}>
+                            {code}
+                          </option>
+                        ))}
+                      </select>
+                      <Button type="submit" size="sm" variant="outline">
+                        Map
+                      </Button>
+                    </form>
+                  </div>
+                ) : null}
+              </div>
+            ))
+      }
+    />
+  );
+}
+
 function MasterLobList({
   rows,
   canEdit,
@@ -113,6 +232,7 @@ function MasterLobList({
             Every deal, policy, and form picks one line from this list. Turn a row off to hide it
             from pickers. Built-in lines stay; custom lines can be deleted.
           </p>
+          <FamilyCountChips rows={rows} />
         </div>
       }
       items={
@@ -250,10 +370,11 @@ function MasterLobList({
 }
 
 export default async function LinesSettingsPage() {
-  const [session, settings, catalog] = await Promise.all([
+  const [session, settings, catalog, orphans] = await Promise.all([
     requireAdminPage(),
     loadDeskLineSettings(),
     loadAgencyLobCatalog(),
+    listAgencyLobOrphans().catch(() => []),
   ]);
 
   return (
@@ -323,8 +444,9 @@ export default async function LinesSettingsPage() {
         </div>
       </form>
 
-      <div className="mb-4">
+      <div className="mb-4 space-y-4">
         <MasterLobList rows={catalog} canEdit={session.isAdmin} />
+        <OrphanLobList orphans={orphans} catalog={catalog} canEdit={session.isAdmin} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

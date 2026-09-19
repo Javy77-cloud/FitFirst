@@ -7,6 +7,9 @@ describe("agency LOB surfaces", () => {
     expect(page).toMatch(/Agency catalog/);
     expect(page).toMatch(/addAgencyLob/);
     expect(page).toMatch(/Every deal, policy, and form picks one line/);
+    expect(page).toMatch(/Unlisted values/);
+    expect(page).toMatch(/adoptOrphanLob/);
+    expect(page).toMatch(/mapOrphanLob/);
   });
 
   it("deal picker and policy field consume the catalog", () => {
@@ -15,6 +18,11 @@ describe("agency LOB surfaces", () => {
     const forms = readFileSync("src/app/forms/page.tsx", "utf8");
     expect(picker).toMatch(/useAgencyLobs/);
     expect(policy).toMatch(/PolicyLobField/);
+    const policyField = readFileSync("src/components/policy/policy-lob-field.tsx", "utf8");
+    expect(policyField).toMatch(/resolveAgencyLobCode/);
+    expect(policyField).toMatch(/not on list/);
+    const sheet = readFileSync("src/app/actions/pipeline-sheet.ts", "utf8");
+    expect(sheet).toMatch(/resolveAgencyLobCode/);
     expect(forms).toMatch(/loadAgencyLobs/);
     expect(forms).toMatch(/tied to one agency/);
   });

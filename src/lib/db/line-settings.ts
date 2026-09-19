@@ -1,9 +1,15 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, or, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
   DEFAULT_AGENCY_LOBS,
+  LOB_CODE_ALIASES,
+  canonicalizeLobCode,
+  findAgencyLobOrphans,
   isAgencyLobFamily,
+  resolveAgencyLobCode,
+  uniqueLobCodes,
   visibleAgencyLobs,
+  type AgencyLobOrphan,
   type AgencyLobRecord,
 } from "@/lib/desk/agency-lobs";
 import {
@@ -15,7 +21,7 @@ import {
   type LineSubfilterOption,
 } from "@/lib/desk/line-settings";
 import { db } from "./index";
-import { agencyLobs, agencySettings, lineSubfilterOptions } from "./schema";
+import { agencyLobs, agencySettings, deals, lineSubfilterOptions, policies } from "./schema";
 
 function tenant() {
   return DEFAULT_TENANT_ID;
@@ -85,6 +91,107 @@ export async function loadAgencyLobs(opts?: {
 
 export async function loadAgencyLobCatalog(): Promise<AgencyLobRecord[]> {
   return loadAgencyLobs({ includeInactive: true });
+}
+
+export async function listAgencyLobOrphans(): Promise<AgencyLobOrphan[]> {
+  const catalog = await loadAgencyLobCatalog();
+  const [dealRows, policyRows] = await Promise.all([
+    db
+      .select({ lineOfBusiness: deals.lineOfBusiness })
+      .from(deals)
+      .where(eq(deals.tenantId, tenant())),
+    db
+      .select({ lineOfBusiness: policies.lineOfBusiness })
+      .from(policies)
+      .where(eq(policies.tenantId, tenant())),
+  ]);
+  return findAgencyLobOrphans(
+    [...dealRows.map((row) => row.lineOfBusiness), ...policyRows.map((row) => row.lineOfBusiness)],
+    catalog,
+  );
+}
+
+export async function remapStoredLob(fromRaw: string, toCode: string) {
+  const from = fromRaw.trim();
+  const to = toCode.trim();
+  if (!from || !to) return { deals: 0, policies: 0 };
+  const dealResult = await db
+    .update(deals)
+    .set({ lineOfBusiness: to, updatedAt: new Date() })
+    .where(
+      and(
+        eq(deals.tenantId, tenant()),
+        or(eq(deals.lineOfBusiness, from), sql`upper(trim(${deals.lineOfBusiness})) = ${from.toUpperCase()}`),
+      ),
+    );
+  const policyResult = await db
+    .update(policies)
+    .set({ lineOfBusiness: to, updatedAt: new Date() })
+    .where(
+      and(
+        eq(policies.tenantId, tenant()),
+        or(
+          eq(policies.lineOfBusiness, from),
+          sql`upper(trim(${policies.lineOfBusiness})) = ${from.toUpperCase()}`,
+        ),
+      ),
+    );
+  return { deals: dealResult.rowCount ?? 0, policies: policyResult.rowCount ?? 0 };
+}
+
+export async function normalizeStoredAgencyLobs() {
+  const catalog = await loadAgencyLobCatalog();
+  const codes = uniqueLobCodes(catalog);
+  let dealsChanged = 0;
+  let policiesChanged = 0;
+  for (const code of codes) {
+    const keys = catalog
+      .filter((row) => row.lobCode.trim().toUpperCase() === code)
+      .flatMap((row) => [row.lobCode, row.label, row.productId]);
+    const extras = Object.entries(LOB_CODE_ALIASES)
+      .filter(([, target]) => target === code)
+      .map(([alias]) => alias);
+    const all = [...new Set([...keys, ...extras])].map((item) => item.trim()).filter(Boolean);
+    if (all.length === 0) continue;
+    const upper = all.map((item) => item.toUpperCase());
+    const dealResult = await db
+      .update(deals)
+      .set({ lineOfBusiness: code, updatedAt: new Date() })
+      .where(
+        and(
+          eq(deals.tenantId, tenant()),
+          sql`${deals.lineOfBusiness} <> ${code}`,
+          sql`upper(trim(${deals.lineOfBusiness})) in (${sql.join(
+            upper.map((item) => sql`${item}`),
+            sql`, `,
+          )})`,
+        ),
+      );
+    dealsChanged += dealResult.rowCount ?? 0;
+    const policyResult = await db
+      .update(policies)
+      .set({ lineOfBusiness: code, updatedAt: new Date() })
+      .where(
+        and(
+          eq(policies.tenantId, tenant()),
+          sql`${policies.lineOfBusiness} <> ${code}`,
+          sql`upper(trim(${policies.lineOfBusiness})) in (${sql.join(
+            upper.map((item) => sql`${item}`),
+            sql`, `,
+          )})`,
+        ),
+      );
+    policiesChanged += policyResult.rowCount ?? 0;
+  }
+  return { deals: dealsChanged, policies: policiesChanged };
+}
+
+export async function requireStoredLobCode(
+  value: string | null | undefined,
+  fallback = "HO",
+): Promise<string> {
+  const catalog = await loadAgencyLobCatalog();
+  return resolveAgencyLobCode(value, catalog) ?? canonicalizeLobCode(value, catalog) ?? fallback;
 }
 
 export async function loadDeskLineSettings(): Promise<DeskLineSettings> {
