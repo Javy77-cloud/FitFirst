@@ -50,6 +50,10 @@ describe("client health chrome", () => {
     expect(pending).toMatch(/loadPendingReviewPromptUnsafe/);
     expect(reviewHost).toMatch(/try \{/);
     expect(reviewHost).toMatch(/return null;/);
+    const write = source("src/app/actions/health-reviews.ts");
+    expect(write).toMatch(/Could not save that pulse/);
+    expect(write).toMatch(/441 the desk when a Pulse rate is chosen/);
+    expect(prompt).toMatch(/Could not save that pulse/);
   });
 
   it("keeps a cream desk recovery page so RSC throws are not a black Next error screen", () => {

@@ -8,8 +8,8 @@ export function triggerFromReviewMoment(moment: ReviewMoment): MiniReviewTrigger
   return "bind";
 }
 
-export function reviewPulseHeadline(trigger: MiniReviewTrigger, clientName: string): string {
-  const first = clientName.trim().split(/\s+/)[0] || "them";
+export function reviewPulseHeadline(trigger: MiniReviewTrigger, clientName: string | null | undefined): string {
+  const first = String(clientName ?? "").trim().split(/\s+/)[0] || "them";
   if (trigger === "bind") return `Bound — how does ${first} feel?`;
   if (trigger === "close") return `Renewal closed — a 10-second pulse on ${first}`;
   if (trigger === "claim") return `Claim wrapped — how is ${first}?`;

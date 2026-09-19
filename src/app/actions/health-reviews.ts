@@ -49,7 +49,7 @@ async function writeReview(input: {
   const dealId = optionalUuid(input.form.get("dealId"));
   const activityId = optionalUuid(input.form.get("activityId"));
   const note = String(input.form.get("note") ?? "").trim() || null;
-  await db.insert(experienceReviews).values({
+  const row = {
     tenantId: DEFAULT_TENANT_ID,
     reviewerUserId: session.userId,
     moment,
@@ -61,17 +61,48 @@ async function writeReview(input: {
     policyId,
     dealId,
     activityId,
-  });
-  refreshHealthPaths({ contactId, policyId, dealId });
+  };
+  try {
+    await db.insert(experienceReviews).values(row);
+  } catch {
+    // Missing experience_reviews table, stale FK, or catalog miss must not
+    // 441 the desk when a Pulse rate is chosen.
+    try {
+      await db.insert(experienceReviews).values({
+        tenantId: row.tenantId,
+        reviewerUserId: row.reviewerUserId,
+        moment: row.moment,
+        promptId: row.promptId,
+        stars: row.stars,
+        note: row.note,
+        skipped: row.skipped,
+      });
+    } catch {
+      return { ok: false as const, error: "Could not save that pulse. Your book is still saved." };
+    }
+  }
+  try {
+    refreshHealthPaths({ contactId, policyId, dealId });
+  } catch {
+    // Revalidate is optional; the score is already written.
+  }
   return { ok: true as const };
 }
 
 export async function submitExperienceReview(formData: FormData) {
-  const stars = parseReviewStars(formData.get("stars"));
-  if (stars == null) return { ok: false as const, error: "Pick 1 to 5 stars." };
-  return writeReview({ stars, skipped: false, form: formData });
+  try {
+    const stars = parseReviewStars(formData.get("stars"));
+    if (stars == null) return { ok: false as const, error: "Pick 1 to 5 stars." };
+    return await writeReview({ stars, skipped: false, form: formData });
+  } catch {
+    return { ok: false as const, error: "Could not save that pulse. Your book is still saved." };
+  }
 }
 
 export async function skipExperienceReview(formData: FormData) {
-  return writeReview({ stars: null, skipped: true, form: formData });
+  try {
+    return await writeReview({ stars: null, skipped: true, form: formData });
+  } catch {
+    return { ok: false as const, error: "Could not save that pulse. Your book is still saved." };
+  }
 }
