@@ -258,17 +258,21 @@ export async function submitRenewalMiniReview(formData: FormData) {
     redirect("/renewals?error=" + encodeURIComponent("Rate at least one question."));
   }
 
-  await writeDeskComms({
-    kind: "task",
-    title: "Renewal mini-review",
-    body: `[renewal-review] ${JSON.stringify({ trigger, scores })}`,
-    eventType: REVIEW_EVENT,
-    status: "completed",
-    policyId,
-    contactId: isUuid(contactId) ? contactId : null,
-    accountId: isUuid(accountId) ? accountId : null,
-    assignee: session.userId,
-  });
+  try {
+    await writeDeskComms({
+      kind: "task",
+      title: "Renewal mini-review",
+      body: `[renewal-review] ${JSON.stringify({ trigger, scores })}`,
+      eventType: REVIEW_EVENT,
+      status: "completed",
+      policyId,
+      contactId: isUuid(contactId) ? contactId : null,
+      accountId: isUuid(accountId) ? accountId : null,
+      assignee: session.userId,
+    });
+  } catch {
+    redirect("/renewals?error=" + encodeURIComponent("Could not save that pulse. Your book is still saved."));
+  }
   refreshRenewals(policyId);
   redirect("/renewals?notice=review_saved");
 }

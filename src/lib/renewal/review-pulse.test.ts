@@ -6,6 +6,8 @@ describe("bind → review → health pulse", () => {
   it("writes premium, not naggy, copy for locked moments", () => {
     expect(reviewPulseHeadline("bind", "Elena Hale")).toMatch(/Bound/);
     expect(reviewPulseHeadline("call", "Elena Hale")).toMatch(/Call logged/);
+    expect(reviewPulseHeadline("bind", null)).toMatch(/them/);
+    expect(reviewPulseHeadline("bind", undefined)).toMatch(/them/);
     expect(triggerFromReviewMoment("bind")).toBe("bind");
     expect(triggerFromReviewMoment("renewal_close")).toBe("close");
     expect(triggerFromReviewMoment("claim_wrap")).toBe("claim");

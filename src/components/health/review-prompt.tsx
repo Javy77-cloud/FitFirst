@@ -25,19 +25,25 @@ export function ExperienceReviewPrompt({ prompt }: { prompt: PendingReviewPrompt
     form.set("activityId", prompt.activityId ?? "");
     if (kind === "rate") form.set("stars", String(stars));
     start(async () => {
-      const result = kind === "skip" ? await skipExperienceReview(form) : await submitExperienceReview(form);
-      if (!result.ok) {
-        setError(result.error);
-        return;
+      try {
+        const result = kind === "skip" ? await skipExperienceReview(form) : await submitExperienceReview(form);
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
+        setOpen(false);
+      } catch {
+        setError("Could not save that pulse. Your book is still saved.");
       }
-      setOpen(false);
     });
   }
 
   return (
     <div className="ff-review-prompt" data-ff-review-prompt={prompt.moment} role="dialog" aria-label="Experience review">
-      <p className="ff-review-prompt-kicker">10-second pulse · {REVIEW_MOMENT_LABEL[prompt.moment]}</p>
-      <p className="ff-review-prompt-title">{reviewPulseHeadline(trigger, prompt.entityLabel)}</p>
+      <p className="ff-review-prompt-kicker">
+        10-second pulse · {REVIEW_MOMENT_LABEL[prompt.moment] ?? "after this touch"}
+      </p>
+      <p className="ff-review-prompt-title">{reviewPulseHeadline(trigger, prompt.entityLabel ?? "this client")}</p>
       <p className="ff-review-prompt-entity">{prompt.promptText}</p>
       <div className="ff-review-pips" role="group" aria-label="1 to 5">
         {[1, 2, 3, 4, 5].map((value) => (
