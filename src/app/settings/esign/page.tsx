@@ -64,7 +64,8 @@ export default async function EsignSettingsPage({
       ) : null}
       {notice === "credentials-cleared" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm">
-          DocuSign app keys cleared. Signed apps stay on the Deal.
+          DocuSign app keys cleared. Environment credentials still apply if they are set. Signed apps
+          stay on the Deal.
         </p>
       ) : null}
 

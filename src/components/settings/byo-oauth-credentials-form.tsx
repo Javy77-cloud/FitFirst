@@ -24,7 +24,7 @@ export function ByoOauthCredentialsForm({
   const router = useRouter();
   const pathname = usePathname();
   const formRef = useRef<HTMLFormElement>(null);
-  const savedSecret = item.hasCredentials && !item.hasEnvCredentials;
+  const savedSecret = item.hasStoredCredentials;
 
   return (
     <form
@@ -64,13 +64,17 @@ export function ByoOauthCredentialsForm({
           defaultValue={savedSecret ? "••••••••••••" : ""}
           className="mt-1"
           autoComplete="new-password"
-          placeholder={savedSecret ? "Saved · leave to keep" : "Agency secret only"}
+          placeholder={
+            savedSecret
+              ? "Saved · leave blank to keep if Client ID is unchanged"
+              : "Agency secret only"
+          }
           data-ff-byo-client-secret={item.id}
         />
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" size="sm" variant="outline">
-          Save credentials
+        <Button type="submit" size="sm" variant="outline" data-ff-byo-save={item.id}>
+          Replace / Save credentials
         </Button>
         <a
           href={spec.developerUrl}

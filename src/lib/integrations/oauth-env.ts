@@ -75,15 +75,14 @@ export function isPlatformHostedGoogleOauth(
   return (PLATFORM_GOOGLE_OAUTH_IDS as readonly string[]).includes(provider);
 }
 
-/** Agency Admin never pastes Google Cloud client credentials. */
-export function showsByoCredentialPasteForm(provider: ByoOauthProviderId): boolean {
-  return !isPlatformHostedGoogleOauth(provider);
+/** Every ByoOauthCard (including Gmail / Calendar / Meet) shows replaceable Client ID + Secret. */
+export function showsByoCredentialPasteForm(_provider: ByoOauthProviderId): boolean {
+  return true;
 }
 
 /**
- * Platform Google env wins over any leftover Settings paste.
- * Missing Google env does not fall back to pasted Client ID / Secret.
- * Yahoo / Microsoft / DocuSign still prefer pasted BYO, then env.
+ * Settings-pasted Client ID + Secret win over env for every BYO family (including Google).
+ * Clear wipes the Settings pair so env can apply. Missing both means not configured.
  */
 export function pickOauthClientApp(input: {
   family: ByoOauthFamily;
@@ -97,10 +96,6 @@ export function pickOauthClientApp(input: {
       ? { clientId: input.settings.clientId.trim(), clientSecret: input.settings.clientSecret }
       : null;
 
-  if (input.family === "google") {
-    if (!env) return null;
-    return { ...env, source: "env" };
-  }
   if (settings) {
     return {
       ...settings,
@@ -114,12 +109,9 @@ export function pickOauthClientApp(input: {
 }
 
 export function startByoOauthCredentialNotice(
-  provider: ByoOauthProviderId,
+  _provider: ByoOauthProviderId,
   resolved: { source: "settings" | "env" } | null,
 ): typeof GOOGLE_CONNECT_NOT_SETUP_NOTICE | "needs-credentials" | null {
-  if (isPlatformHostedGoogleOauth(provider)) {
-    return resolved?.source === "env" ? null : GOOGLE_CONNECT_NOT_SETUP_NOTICE;
-  }
   if (resolved) return null;
   return "needs-credentials";
 }

@@ -75,9 +75,9 @@ export const BYO_OAUTH_SPECS: Record<ByoOauthProviderId, ByoOauthSpec> = {
     extraParams: { ...GOOGLE_OFFLINE },
     pkce: true,
     worksWhen:
-      "One-click Google Connect. FitFirst owns the OAuth web client. Admin approves Gmail on Google’s consent screen. Solos can connect personal Gmail.",
+      "One-click Google Connect. Paste or replace the Google Client ID and Secret here, or use GOOGLE_OAUTH_* env. Settings paste wins over env. Solos can connect personal Gmail.",
     wallBody:
-      "Google Connect fails if this FitFirst install is missing the platform Google OAuth client on the server, or Gmail API is off. Admin never pastes a Client ID. FitFirst does not buy Workspace seats.",
+      "Google Connect fails if Settings keys and GOOGLE_OAUTH_* env are both missing, or Gmail API is off. Admin can replace or clear pasted keys at any time. FitFirst does not buy Workspace seats.",
     stubbed: "Campaign blasts stay would_send. Desk compose can send through this mailbox.",
     smokeTests: ["read", "send"],
   },
@@ -124,9 +124,9 @@ export const BYO_OAUTH_SPECS: Record<ByoOauthProviderId, ByoOauthSpec> = {
     pkce: true,
     shareCredentialsWith: "gmail",
     worksWhen:
-      "Same platform Google Connect as Gmail. Busy sync pulls Free/Busy so FitFirst will not book over external busy.",
+      "Same platform Google Connect as Gmail. Paste or replace keys here; Settings wins over env. Busy sync pulls Free/Busy so FitFirst will not book over external busy.",
     wallBody:
-      "Google Calendar Connect fails if this FitFirst install is missing the platform Google OAuth client, or Calendar API is off. Admin never pastes a Client ID. FitFirst does not buy Workspace.",
+      "Google Calendar Connect fails if Settings keys and GOOGLE_OAUTH_* env are both missing, or Calendar API is off. Admin can replace or clear pasted keys. FitFirst does not buy Workspace.",
     stubbed: "Two-way event push is not in this wave. Busy pull + Meet helper are live.",
     smokeTests: ["busy", "meet"],
   },
@@ -171,9 +171,9 @@ export const BYO_OAUTH_SPECS: Record<ByoOauthProviderId, ByoOauthSpec> = {
     pkce: true,
     shareCredentialsWith: "gmail",
     worksWhen:
-      "Same platform Google Connect. Meet links are minted through Calendar conferenceData — connecting Google Calendar is enough, or connect Meet here.",
+      "Same platform Google Connect. Paste or replace keys here; Settings wins over env. Meet links are minted through Calendar conferenceData — connecting Google Calendar is enough, or connect Meet here.",
     wallBody:
-      "Meet helper needs Calendar events scope on the platform Google client. Admin never pastes a Client ID. FitFirst does not buy Workspace Meet.",
+      "Meet helper needs Calendar events scope on the Google client. Admin can replace or clear pasted keys. FitFirst does not buy Workspace Meet.",
     stubbed: "Zoom stays unwired. Meet helper writes the URL onto the desk event.",
     smokeTests: ["meet"],
   },

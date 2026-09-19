@@ -26,6 +26,7 @@ function item(
     ownerUserId: null,
     clientId: null,
     hasCredentials: false,
+    hasStoredCredentials: false,
     connectMode: connected ? "demo" : null,
     lastOauthError: null,
     hasEnvCredentials: false,

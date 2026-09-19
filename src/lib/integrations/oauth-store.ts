@@ -80,6 +80,16 @@ export function hasEnvByoCredentials(provider: ByoOauthProviderId): boolean {
   return envHasOauthApp(byoOauthSpec(provider).family);
 }
 
+export async function loadStoredByoApp(provider: ByoOauthProviderId) {
+  const own = await loadByoConnection(provider);
+  if (own?.clientId?.trim() && own.clientSecretEnc && own.clientSecretIv) return own;
+  for (const id of credentialCandidates(provider)) {
+    const row = await loadByoConnection(id);
+    if (row?.clientId?.trim() && row.clientSecretEnc && row.clientSecretIv) return row;
+  }
+  return own;
+}
+
 export async function saveByoApp(input: {
   provider: ByoOauthProviderId;
   clientId: string;
@@ -87,14 +97,16 @@ export async function saveByoApp(input: {
   accountLabel?: string | null;
 }): Promise<{ ok: true; clientId: string; hasSecret: boolean } | { ok: false; message: string }> {
   const spec = byoOauthSpec(input.provider);
-  const existing = await loadByoConnection(input.provider);
+  const existing = await loadStoredByoApp(input.provider);
+  const clientId = input.clientId.trim() || existing?.clientId?.trim() || "";
+  if (!clientId) return { ok: false, message: "Paste the Integration Key / Client ID." };
+  const existingId = existing?.clientId?.trim() || "";
   const secretPlan = planByoSecretWrite({
     incoming: input.clientSecret,
     hasExistingSecret: Boolean(existing?.clientSecretEnc && existing.clientSecretIv),
+    clientIdUnchanged: Boolean(existingId) && clientId === existingId,
   });
   if (secretPlan.action === "reject") return { ok: false, message: secretPlan.message };
-  const clientId = input.clientId.trim() || existing?.clientId?.trim() || "";
-  if (!clientId) return { ok: false, message: "Paste the Integration Key / Client ID." };
   let sealed: ReturnType<typeof encryptSecret> | null = null;
   try {
     sealed = secretPlan.action === "write" ? encryptSecret(secretPlan.secret) : null;
@@ -130,19 +142,21 @@ export async function saveByoApp(input: {
 }
 
 export async function clearByoApp(provider: ByoOauthProviderId) {
-  const existing = await loadByoConnection(provider);
-  if (!existing) return;
-  await db
-    .update(integrationConnections)
-    .set({
-      clientId: null,
-      clientSecretEnc: null,
-      clientSecretIv: null,
-      oauthState: null,
-      lastOauthError: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(integrationConnections.id, existing.id));
+  for (const id of credentialCandidates(provider)) {
+    const existing = await loadByoConnection(id);
+    if (!existing) continue;
+    await db
+      .update(integrationConnections)
+      .set({
+        clientId: null,
+        clientSecretEnc: null,
+        clientSecretIv: null,
+        oauthState: null,
+        lastOauthError: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(integrationConnections.id, existing.id));
+  }
 }
 
 export async function prepareByoAuthorize(input: {
@@ -157,13 +171,10 @@ export async function prepareByoAuthorize(input: {
   const spec = byoOauthSpec(input.provider);
   const app = await resolveByoClientApp(input.provider);
   if (!app) {
-    const googleHosted = spec.family === "google";
     return {
       ok: false,
-      reason: googleHosted ? "google_not_setup" : "needs_credentials",
-      message: googleHosted
-        ? "Google Connect isn’t set up on this FitFirst install. Ask the site developer to configure the platform Google OAuth client on Vercel."
-        : `Paste the agency ${spec.clientIdLabel} and ${spec.clientSecretLabel}, or set the ${spec.vendor} env vars. ${spec.worksWhen}`,
+      reason: "needs_credentials",
+      message: `Paste the agency ${spec.clientIdLabel} and ${spec.clientSecretLabel}, or set the ${spec.vendor} env vars. ${spec.worksWhen}`,
     };
   }
   const pkce = spec.pkce ? createPkcePair() : null;

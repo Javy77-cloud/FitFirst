@@ -28,6 +28,7 @@ function catalogItem(
     ownerUserId: null,
     clientId: null,
     hasCredentials: false,
+    hasStoredCredentials: false,
     connectMode: null,
     lastOauthError: null,
     hasEnvCredentials: false,

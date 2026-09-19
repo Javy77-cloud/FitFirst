@@ -4,7 +4,6 @@ import { rangesOverlap } from "./calendar-busy";
 import { canConnectByoIntegration, gmailConnectCopy } from "./connect-policy";
 import {
   GOOGLE_CONNECT_NOT_SETUP_COPY,
-  GOOGLE_CONNECT_NOT_SETUP_NOTICE,
   isPlatformHostedGoogleOauth,
   pickOauthClientApp,
   showsByoCredentialPasteForm,
@@ -103,22 +102,22 @@ describe("BYO OAuth wave", () => {
     expect(gmailConnectCopy(true)).not.toMatch(/owns the Google Cloud app/i);
   });
 
-  it("hides Client ID paste for Google providers and keeps it for Yahoo / Outlook / DocuSign", () => {
+  it("shows Client ID paste on every ByoOauthCard provider, including Google", () => {
     expect(isPlatformHostedGoogleOauth("gmail")).toBe(true);
     expect(isPlatformHostedGoogleOauth("google_calendar")).toBe(true);
     expect(isPlatformHostedGoogleOauth("google_meet")).toBe(true);
     expect(isPlatformHostedGoogleOauth("yahoo")).toBe(false);
     expect(isPlatformHostedGoogleOauth("outlook_calendar")).toBe(false);
     expect(isPlatformHostedGoogleOauth("docusign")).toBe(false);
-    expect(showsByoCredentialPasteForm("gmail")).toBe(false);
-    expect(showsByoCredentialPasteForm("google_calendar")).toBe(false);
-    expect(showsByoCredentialPasteForm("google_meet")).toBe(false);
+    expect(showsByoCredentialPasteForm("gmail")).toBe(true);
+    expect(showsByoCredentialPasteForm("google_calendar")).toBe(true);
+    expect(showsByoCredentialPasteForm("google_meet")).toBe(true);
     expect(showsByoCredentialPasteForm("yahoo")).toBe(true);
     expect(showsByoCredentialPasteForm("outlook_calendar")).toBe(true);
     expect(showsByoCredentialPasteForm("docusign")).toBe(true);
   });
 
-  it("prefers platform Google env over pasted BYO and refuses Google paste fallback", () => {
+  it("prefers Settings paste over env for every family, including Google", () => {
     const pasted = {
       clientId: "agency-pasted.apps.googleusercontent.com",
       clientSecret: "pasted-agency-secret",
@@ -133,14 +132,21 @@ describe("BYO OAuth wave", () => {
         settings: pasted,
         env: platform,
       }),
-    ).toEqual({ ...platform, source: "env" });
+    ).toEqual({ ...pasted, source: "settings" });
     expect(
       pickOauthClientApp({
         family: "google",
         settings: pasted,
         env: null,
       }),
-    ).toBeNull();
+    ).toEqual({ ...pasted, source: "settings" });
+    expect(
+      pickOauthClientApp({
+        family: "google",
+        settings: null,
+        env: platform,
+      }),
+    ).toEqual({ ...platform, source: "env" });
     expect(
       pickOauthClientApp({
         family: "yahoo",
@@ -157,34 +163,33 @@ describe("BYO OAuth wave", () => {
     ).toMatchObject({ clientId: "ik", source: "env" });
   });
 
-  it("starts Google OAuth from platform env and never asks Admin to paste a Client ID", () => {
+  it("lets Admin replace or clear keys on every card, including when env is set", () => {
     expect(startByoOauthCredentialNotice("gmail", { source: "env" })).toBeNull();
     expect(startByoOauthCredentialNotice("google_calendar", { source: "env" })).toBeNull();
-    expect(startByoOauthCredentialNotice("gmail", { source: "settings" })).toBe(
-      GOOGLE_CONNECT_NOT_SETUP_NOTICE,
-    );
-    expect(startByoOauthCredentialNotice("gmail", null)).toBe(GOOGLE_CONNECT_NOT_SETUP_NOTICE);
-    expect(startByoOauthCredentialNotice("google_calendar", null)).toBe(GOOGLE_CONNECT_NOT_SETUP_NOTICE);
-    expect(startByoOauthCredentialNotice("google_meet", null)).toBe(GOOGLE_CONNECT_NOT_SETUP_NOTICE);
+    expect(startByoOauthCredentialNotice("gmail", { source: "settings" })).toBeNull();
+    expect(startByoOauthCredentialNotice("gmail", null)).toBe("needs-credentials");
+    expect(startByoOauthCredentialNotice("google_calendar", null)).toBe("needs-credentials");
+    expect(startByoOauthCredentialNotice("google_meet", null)).toBe("needs-credentials");
     expect(startByoOauthCredentialNotice("yahoo", null)).toBe("needs-credentials");
     expect(startByoOauthCredentialNotice("outlook_calendar", null)).toBe("needs-credentials");
     expect(GOOGLE_CONNECT_NOT_SETUP_COPY).toMatch(/isn’t set up on this FitFirst install/i);
-    expect(GOOGLE_CONNECT_NOT_SETUP_COPY).toMatch(/does not paste a Client ID/i);
-    expect(GOOGLE_CONNECT_NOT_SETUP_COPY).not.toMatch(/paste the agency/i);
 
     const startAction = readFileSync("src/app/actions/byo-oauth.ts", "utf8");
-    expect(startAction).toMatch(/isPlatformHostedGoogleOauth\(raw\) && !envHasOauthApp\("google"\)/);
     expect(startAction).toMatch(/startByoOauthCredentialNotice/);
-    expect(startAction).toMatch(/Google Connect does not take a pasted Client ID/);
-    expect(startAction).toMatch(/isPlatformHostedGoogleOauth\(raw\) && !envHasOauthApp\("google"\)/);
+    expect(startAction).toMatch(/saveByoApp/);
+    expect(startAction).toMatch(/clearByoApp/);
+    expect(startAction).not.toMatch(/Google Connect does not take a pasted Client ID/);
+    expect(startAction).not.toMatch(/isPlatformHostedGoogleOauth\(raw\) && !envHasOauthApp\("google"\)/);
 
     const card = readFileSync("src/components/settings/byo-oauth-card.tsx", "utf8");
-    expect(card).toMatch(/showsByoCredentialPasteForm\(item\.id\)/);
-    expect(card).toMatch(/GOOGLE_CONNECT_NOT_SETUP_COPY/);
-    expect(card).toMatch(/data-google-one-click/);
-    expect(card).toMatch(/!platformGoogle && item\.hasEnvCredentials/);
-    expect(card).toMatch(/Admin never pastes a Client ID/);
+    expect(card).toMatch(/ByoOauthCredentialsForm/);
+    expect(card).toMatch(/Clear app keys/);
+    expect(card).toMatch(/data-ff-byo-clear/);
+    expect(card).toMatch(/environment credentials still apply after clear/i);
+    expect(card).not.toMatch(/hasCredentials && !item\.hasEnvCredentials/);
+    expect(card).not.toMatch(/Admin never pastes a Client ID/);
     expect(BYO_OAUTH_SPECS.gmail.worksWhen).toMatch(/One-click Google Connect/i);
+    expect(BYO_OAUTH_SPECS.gmail.worksWhen).toMatch(/Settings paste wins over env/i);
     expect(BYO_OAUTH_SPECS.gmail.worksWhen).not.toMatch(/Agency Google Cloud OAuth web client/i);
     expect(BYO_OAUTH_SPECS.google_calendar.worksWhen).toMatch(/platform Google Connect/i);
   });
