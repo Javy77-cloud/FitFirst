@@ -14,7 +14,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { HealthFactorList } from "@/components/health/health-score-chip";
+import { HealthFactorList } from "@/components/health/health-factor-list";
 import type { HealthChipView } from "@/lib/health/model";
 import { cn } from "@/lib/utils";
 

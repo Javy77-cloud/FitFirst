@@ -13,12 +13,21 @@ describe("client health chrome", () => {
     const drawer = source("src/components/renewals/renewal-compare-drawer.tsx");
     const board = source("src/lib/renewal/board-data.ts");
     const chip = source("src/components/health/health-score-chip.tsx");
+    const factors = source("src/components/health/health-factor-list.tsx");
     expect(card).toMatch(/RenewalHealthMeter/);
     expect(card).toMatch(/RenewalCompareDrawer/);
     expect(card).toMatch(/clientHealth=\{card\.clientHealth\}/);
     expect(card).toMatch(/policyHealth=\{card\.policyHealth\}/);
     expect(card).toMatch(/data-ff-client-health-band/);
+    expect(card).toMatch(/HealthWhyBadge/);
+    expect(card).toMatch(/extraHealth=\{card\.policyHealth\}/);
     expect(card).not.toMatch(/HealthScoreChip/);
+    expect(strip).toMatch(/HealthWhyPanel/);
+    expect(chip).toMatch(/HealthWhyPanel/);
+    expect(source("src/components/health/health-why-popover.tsx")).toMatch(/createPortal/);
+    expect(source("src/components/health/health-why-popover.tsx")).toMatch(/document\.body/);
+    expect(source("src/app/globals.css")).toMatch(/ff-health-breakdown-portal/);
+    expect(source("src/app/globals.css")).toMatch(/overscroll-behavior:\s*contain/);
     expect(board).toMatch(/clientHealth\.why/);
     expect(board).toMatch(/clientHealth\.band/);
     expect(desk).toMatch(/RenewalsHealthStrip/);
@@ -27,8 +36,10 @@ describe("client health chrome", () => {
     expect(strip).not.toMatch(/retention/i);
     expect(drawer).toMatch(/data-ff-health-graphs/);
     expect(drawer).toMatch(/HealthFactorList/);
-    expect(chip).toMatch(/Talk history|Client health/);
+    expect(chip).toMatch(/Talk history|Client health|HealthWhyPanel/);
+    expect(factors).toMatch(/Talk history|Client health/);
     expect(chip).not.toMatch(/retention/i);
+    expect(factors).not.toMatch(/retention/i);
   });
 
   it("hosts the 1–5 mini-review after locked moments", () => {
