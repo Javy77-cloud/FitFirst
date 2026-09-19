@@ -61,6 +61,7 @@ describe("Renewals desk chrome", () => {
     expect(desk).toMatch(/DeskTruthStrip/);
     expect(desk).toMatch(/roleHealthSummary/);
     expect(card).toMatch(/autopilotConfirmLabel|data-ff-autopilot/);
+    expect(card).toMatch(/data-ff-autopilot-badge/);
     expect(source("src/lib/renewal/autopilot.ts")).toMatch(/AUTOPILOT_SILENCE_DAYS/);
     expect(source("src/lib/notifications/panel.ts")).toMatch(/renewal_autopilot/);
     expect(source("src/lib/renewal/health-rollup.ts")).toMatch(/Never per-policy primary/);

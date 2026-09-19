@@ -136,12 +136,22 @@ export function RenewalBoardCardView({
             policyHealth={card.policyHealth}
           />
         </div>
-        <span
-          className={cn("ff-renewal-risk-badge", `ff-renewal-risk-${risk}`)}
-          data-ff-risk-badge={risk}
-          data-ff-client-health-band={card.clientHealth?.band ?? risk}
-        >
-          {RENEWAL_RISK_LABEL[risk]}
+        <span className="flex shrink-0 flex-col items-end gap-1">
+          <span
+            className={cn("ff-renewal-risk-badge", `ff-renewal-risk-${risk}`)}
+            data-ff-risk-badge={risk}
+            data-ff-client-health-band={card.clientHealth?.band ?? risk}
+          >
+            {RENEWAL_RISK_LABEL[risk]}
+          </span>
+          {card.autopilotQueued ? (
+            <span
+              className={cn("ff-autopilot-badge", card.autopilotEscalated && "is-escalated")}
+              data-ff-autopilot-badge={card.autopilotEscalated ? "escalated" : "queued"}
+            >
+              {card.autopilotEscalated ? "Escalated once" : "Autopilot"}
+            </span>
+          ) : null}
         </span>
       </div>
       <RenewalHealthMeter

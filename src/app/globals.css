@@ -2891,6 +2891,13 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   0%, 100% { opacity: 0.55; transform: scaleY(0.86); }
   50% { opacity: 1; transform: scaleY(1); }
 }
+@media (prefers-reduced-motion: reduce) {
+  .ff-truth-tick {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
 .ff-truth-strip-kicker {
   margin: 0;
   font-size: 0.62rem;
@@ -3018,6 +3025,20 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   margin: 0.35rem 0 0;
   font-size: 0.65rem;
   color: var(--ff-muted);
+}
+.ff-autopilot-badge {
+  border-radius: 999px;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.58rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--ff-navy) 10%, white);
+  color: var(--ff-navy);
+}
+.ff-autopilot-badge.is-escalated {
+  background: color-mix(in srgb, var(--ff-terracotta) 16%, white);
+  color: var(--ff-terracotta);
 }
 .ff-autopilot-escalated {
   margin-left: 0.4rem;
