@@ -395,7 +395,7 @@ describe("per-product stages", () => {
     expect(source("src/app/deals/page.tsx")).toMatch(/boardWhenNoPipeline=\{null\}/);
     expect(source("src/app/deals/page.tsx")).toMatch(/pipelineBookToggleHrefs\(view\)/);
     expect(source("src/components/renewals/renewals-desk.tsx")).toMatch(
-      /pipelineBookToggleHrefs\(view\)/,
+      /pipelineBookToggleHrefs\(view, "renewals"\)/,
     );
     expect(source("src/app/deals/page.tsx")).not.toMatch(/newHref="\/deals\?view=list"/);
     expect(source("src/components/renewals/renewals-desk.tsx")).not.toMatch(

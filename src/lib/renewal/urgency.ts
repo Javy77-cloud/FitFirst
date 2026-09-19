@@ -93,6 +93,17 @@ function largestRemainderPercents(counts: number[], total: number): number[] {
   return pcts;
 }
 
+/** Priority stack order: soonest first, then risk, then name. */
+export function rankRenewalCards<
+  T extends { daysUntil: number; riskScore: number; clientName: string },
+>(cards: T[]): T[] {
+  return [...cards].sort((a, b) => {
+    if (a.daysUntil !== b.daysUntil) return a.daysUntil - b.daysUntil;
+    if (a.riskScore !== b.riskScore) return b.riskScore - a.riskScore;
+    return a.clientName.localeCompare(b.clientName);
+  });
+}
+
 /** % of the current book in each urgency band. Percents always sum to 0 or 100. */
 export function urgencyPulseShares(daysUntil: number[]): UrgencyPulseShare[] {
   const counts: Record<RenewalUrgencyBand, number> = {

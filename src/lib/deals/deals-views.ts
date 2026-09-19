@@ -60,15 +60,14 @@ export function dealsViewHref(opts: {
   return qs ? `/deals?${qs}` : "/deals";
 }
 
-/** New ↔ Renewals does not carry Stack/Radar onto Renewals or List/Grid onto Deals. */
+/** New ↔ Renewals does not carry Stack/Radar onto Renewals or Board/Stack onto Deals. */
 export function dealsBookToggleHrefs(view?: string | null): { newHref: string; renewalsHref: string } {
   if (isDealsViewId(view)) {
     return { newHref: dealsViewHref({ view }), renewalsHref: "/renewals" };
   }
-  const renewals = view ? parseRenewalsView(view) : null;
   return {
     newHref: "/deals",
-    renewalsHref: renewals ? renewalsHref({ view: renewals }) : "/renewals",
+    renewalsHref: view ? renewalsHref({ view: parseRenewalsView(view) }) : "/renewals",
   };
 }
 

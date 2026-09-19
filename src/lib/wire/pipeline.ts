@@ -118,6 +118,12 @@ export const SEEDED_PIPELINES: SeededPipeline[] = [
 ];
 
 export type PipelineViewId = "list" | "grid" | "board" | "funnel";
+export const RENEWALS_VIEWS = ["board", "stack"] as const;
+export type RenewalsViewId = (typeof RENEWALS_VIEWS)[number];
+
+export function isRenewalsViewId(raw?: string | null): raw is RenewalsViewId {
+  return raw === "board" || raw === "stack";
+}
 
 /** Deals owns the workspace. List is the default (the table Javy already uses). */
 export function parsePipelineView(raw?: string | null): PipelineViewId {
@@ -147,10 +153,9 @@ export type PipelineDeskHrefOpts = {
 
 export type PipelineDeskBasePath = "/deals" | "/renewals";
 
-/** Renewals book defaults to Board when no saved view / URL param. */
-export function parseRenewalsView(raw?: string | null): PipelineViewId {
-  if (raw === "list" || raw === "table") return "list";
-  if (raw === "funnel" || raw === "grid") return raw;
+/** Urgency board is the default. Legacy list/grid/funnel collapse to board. */
+export function parseRenewalsView(raw?: string | null): RenewalsViewId {
+  if (raw === "stack") return "stack";
   return "board";
 }
 
@@ -190,23 +195,29 @@ export function renewalsHref(opts: PipelineDeskHrefOpts = {}) {
   return pipelineDeskHref("/renewals", opts);
 }
 
-/** New ↔ Renewals does not carry Stack/Radar onto Renewals or List/Grid onto Deals. */
-export function pipelineBookToggleHrefs(view?: string | null): {
+/** New ↔ Renewals does not carry Stack/Radar onto Renewals or Board/Stack onto Deals. */
+export function pipelineBookToggleHrefs(
+  view?: string | null,
+  book: "new" | "renewals" = "new",
+): {
   newHref: string;
   renewalsHref: string;
 } {
-  const raw = view === "table" ? "list" : view;
-  if (raw === "stack" || raw === "radar") {
+  if (book === "renewals") {
     return {
-      newHref: dealsHref({ view: raw }),
+      newHref: "/deals",
+      renewalsHref: view ? renewalsHref({ view: parseRenewalsView(view) }) : "/renewals",
+    };
+  }
+  if (view === "stack" || view === "radar") {
+    return {
+      newHref: dealsHref({ view }),
       renewalsHref: "/renewals",
     };
   }
-  const id: PipelineViewId =
-    raw === "board" || raw === "funnel" || raw === "grid" || raw === "list" ? raw : "list";
   return {
     newHref: "/deals",
-    renewalsHref: renewalsHref({ view: id }),
+    renewalsHref: "/renewals",
   };
 }
 

@@ -5,11 +5,11 @@ import { PipelineViewsMenu } from "@/components/deals/pipeline-views-menu";
 import type { PipelineStageBoard, PipelineStageView } from "@/lib/wire/pipeline-cards";
 import {
   dealsHref,
-  isPipelineSheetView,
   parseRenewalsView,
   pipelineTabLabel,
   type PipelineDeskHrefOpts,
   type PipelineViewId,
+  type RenewalsViewId,
 } from "@/lib/wire/pipeline";
 import { parseDealsView, type DealsViewId } from "@/lib/deals/deals-views";
 import { PIPELINE_VIEW_COOKIE, RENEWALS_VIEW_COOKIE, type PipelineViewCookie } from "@/lib/wire/pipeline-view-cookies";
@@ -17,11 +17,9 @@ import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 
 type BoardTab = { slug: string; name: string };
 
-const RENEWAL_VIEWS: Array<[PipelineViewId, string]> = [
-  ["list", "List"],
-  ["grid", "Grid"],
+const RENEWAL_VIEWS: Array<[RenewalsViewId, string]> = [
   ["board", "Board"],
-  ["funnel", "Funnel"],
+  ["stack", "Stack"],
 ];
 const DEAL_VIEWS: Array<[DealsViewId, string]> = [
   ["stack", "Stack"],
@@ -70,7 +68,7 @@ export function DealWorkspaceBar({
   pipeline?: string | null;
   view?: string | null;
   /** Saved per-agent cookie default (null = system list fallback). */
-  defaultView?: PipelineViewId | DealsViewId | null;
+  defaultView?: PipelineViewId | DealsViewId | RenewalsViewId | null;
   stage?: string | null;
   family?: string | null;
   pcSub?: string | null;
@@ -181,16 +179,15 @@ export function DealWorkspaceBar({
         <span
           className={`ml-auto ${FF_CHIP_TAB_GROUP}`}
           data-testid="deal-pipeline-views"
-          aria-label={isRenewals ? "List Grid Board Funnel" : "Stack Radar"}
+          aria-label={isRenewals ? "Board Stack" : "Stack Radar"}
         >
           {viewRows.map(([id, label]) => (
             <Link
               key={id}
               href={hrefBuilder({
                 ...extras,
-                pipeline: pipeline || (isRenewals && isPipelineSheetView(id as PipelineViewId) ? null : isRenewals ? boardWhenNoPipeline : pipeline),
+                pipeline: pipeline || (isRenewals ? boardWhenNoPipeline : pipeline),
                 view: id,
-                stage: isRenewals && isPipelineSheetView(id as PipelineViewId) ? stage : null,
               })}
               className={chipTabClass(parsedView === id)}
               data-active={parsedView === id ? "true" : "false"}

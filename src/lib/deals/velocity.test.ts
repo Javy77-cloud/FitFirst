@@ -14,6 +14,7 @@ import {
   policyHealthScore,
   primaryDealAction,
   privateRankLabel,
+  radarLegendCopy,
   radarPosition,
   rankByScore,
   resolveActivePhase,
@@ -123,6 +124,16 @@ describe("velocity engine", () => {
       x: 0.5,
       y: 0.5,
     });
+    expect(radarLegendCopy("coverage_a")).toMatchObject({
+      x: "Time in current phase (Details · Docs · Risk · Quotes · Post-quote gap)",
+      y: "Value (Coverage A)",
+      xTitle: "Days in current phase",
+      yTitle: "Coverage A",
+      xStart: "Now",
+      xEnd: "21d",
+    });
+    expect(radarLegendCopy("premium").y).toBe("Value (quoted premium)");
+    expect(radarLegendCopy("premium").yTitle).toBe("Quoted premium");
     expect(formatClockDays(1)).toBe("1d");
     expect(privateRankLabel(6, 40)).toBe("6 of 40, top 15%");
     expect(rankByScore([10, 20, 30, 40], 20)).toEqual({

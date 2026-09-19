@@ -21,7 +21,7 @@ describe("Renewals desk chrome", () => {
     expect(desk).toMatch(/TodayActivityCorner/);
     expect(desk).toMatch(/DealWorkQueuePanel/);
     expect(desk).toMatch(/PipelineBookModeToggle/);
-    expect(desk).toMatch(/pipelineBookToggleHrefs\(view\)/);
+    expect(desk).toMatch(/pipelineBookToggleHrefs\(view, "renewals"\)/);
     expect(desk).toMatch(/cookieKey=\{RENEWALS_VIEW_COOKIE\}/);
     expect(desk).toMatch(/hrefBuilder=\{renewalsHref\}/);
     expect(desk).toMatch(/boardWhenNoPipeline=\{null\}/);
@@ -37,9 +37,18 @@ describe("Renewals desk chrome", () => {
     expect(desk).not.toMatch(/deal-upload-activity/);
     expect(desk).not.toMatch(/deal-today-slot/);
     expect(views).toMatch(/RenewalsUrgencyBoard/);
+    expect(views).toMatch(/RenewalsPriorityStack/);
     expect(views).not.toMatch(/RenewalsKanban/);
     expect(views).not.toMatch(/RenewalsTable/);
     expect(views).not.toMatch(/RenewalsFunnel/);
+    expect(source("src/components/deals/deal-workspace-bar.tsx")).toMatch(/\["board", "Board"\]/);
+    expect(source("src/components/deals/deal-workspace-bar.tsx")).toMatch(/\["stack", "Stack"\]/);
+    expect(source("src/components/deals/deal-workspace-bar.tsx")).not.toMatch(/\["list", "List"\]/);
+    expect(source("src/components/deals/deal-workspace-bar.tsx")).not.toMatch(/\["grid", "Grid"\]/);
+    expect(source("src/components/deals/deal-workspace-bar.tsx")).not.toMatch(/\["funnel", "Funnel"\]/);
+    expect(source("src/components/renewals/renewals-priority-stack.tsx")).toMatch(
+      /data-ff-renewals-priority-stack/,
+    );
     expect(board).toMatch(/RENEWAL_URGENCY_BANDS/);
     expect(board).toMatch(/data-ff-urgency-band/);
     expect(board).not.toMatch(/Upcoming|Contacted|Quoted|Bound|Lost/);

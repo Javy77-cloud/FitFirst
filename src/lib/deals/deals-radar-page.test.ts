@@ -25,6 +25,10 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/draggable/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-deals-radar/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-radar-dot/);
+    expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-radar-legend/);
+    expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-radar-legend-x/);
+    expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-radar-legend-y/);
+    expect(source("src/components/deals/deals-radar.tsx")).toMatch(/onMouseEnter/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/ff-product-chip/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/EventSpark/);
     expect(source("src/components/deals/priority-stack.tsx")).toMatch(/VelocityClockRail/);
@@ -69,6 +73,10 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/components/deals/deals-heat-pulse.tsx")).toMatch(/Your velocity/);
     expect(source("src/components/deals/deals-command-workspace.tsx")).not.toMatch(/leaderboard/);
     expect(source("src/lib/deals/velocity.ts")).toMatch(/Client health/);
+    expect(source("src/lib/deals/velocity.ts")).toMatch(/radarLegendCopy/);
+    expect(source("src/lib/deals/velocity.ts")).toMatch(/Time in current phase/);
+    expect(source("src/app/globals.css")).toMatch(/ff-radar-legend/);
+    expect(source("src/app/globals.css")).toMatch(/ff-radar-plot/);
     expect(source("src/components/deals/priority-stack.tsx")).toMatch(/Client health/);
     expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/retention/i);
     expect(source("src/app/deals/page.tsx")).toMatch(/scheduleDealColdChaseNotices/);

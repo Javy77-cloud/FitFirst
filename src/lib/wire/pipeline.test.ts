@@ -233,36 +233,34 @@ describe("pipeline views", () => {
 });
 
 describe("renewals href / default view", () => {
-  it("mirrors dealsHref on /renewals and defaults to board", () => {
+  it("keeps Board | Stack only and defaults to the urgency board", () => {
     expect(parseRenewalsView(undefined)).toBe("board");
     expect(parseRenewalsView("kanban")).toBe("board");
-    expect(parseRenewalsView("list")).toBe("list");
-    expect(parseRenewalsView("table")).toBe("list");
-    expect(parseRenewalsView("grid")).toBe("grid");
-    expect(parseRenewalsView("funnel")).toBe("funnel");
+    expect(parseRenewalsView("list")).toBe("board");
+    expect(parseRenewalsView("table")).toBe("board");
+    expect(parseRenewalsView("grid")).toBe("board");
+    expect(parseRenewalsView("funnel")).toBe("board");
+    expect(parseRenewalsView("stack")).toBe("stack");
     expect(renewalsHref({})).toBe("/renewals");
     expect(renewalsHref({ view: "board" })).toBe("/renewals?view=board");
+    expect(renewalsHref({ view: "stack" })).toBe("/renewals?view=stack");
     expect(renewalsHref({ pipeline: "p-c", view: "list", pcSub: "home" })).toBe(
-      "/renewals?pipeline=p-c&view=list&pcSub=home",
+      "/renewals?pipeline=p-c&view=board&pcSub=home",
     );
     expect(renewalsHref({ pipeline: "won-lost", view: "funnel" })).toBe(
-      "/renewals?pipeline=won-lost&view=funnel",
+      "/renewals?pipeline=won-lost&view=board",
     );
-    expect(pipelineBookToggleHrefs("list")).toEqual({
-      newHref: "/deals",
-      renewalsHref: "/renewals?view=list",
-    });
-    expect(pipelineBookToggleHrefs("grid")).toEqual({
-      newHref: "/deals",
-      renewalsHref: "/renewals?view=grid",
-    });
-    expect(pipelineBookToggleHrefs("board")).toEqual({
+    expect(pipelineBookToggleHrefs("board", "renewals")).toEqual({
       newHref: "/deals",
       renewalsHref: "/renewals?view=board",
     });
-    expect(pipelineBookToggleHrefs("funnel")).toEqual({
+    expect(pipelineBookToggleHrefs("stack", "renewals")).toEqual({
       newHref: "/deals",
-      renewalsHref: "/renewals?view=funnel",
+      renewalsHref: "/renewals?view=stack",
+    });
+    expect(pipelineBookToggleHrefs("list", "renewals")).toEqual({
+      newHref: "/deals",
+      renewalsHref: "/renewals?view=board",
     });
     expect(pipelineBookToggleHrefs("stack")).toEqual({
       newHref: "/deals?view=stack",

@@ -23,9 +23,11 @@ describe("pipeline list / grid sheet", () => {
     expect(isPipelineSheetView("grid")).toBe(true);
     expect(isPipelineSheetView("board")).toBe(false);
     const bar = source("src/components/deals/deal-workspace-bar.tsx");
-    expect(bar).toMatch(/\["list", "List"\]/);
-    expect(bar).toMatch(/\["grid", "Grid"\]/);
-    expect(bar).toMatch(/aria-label=\{isRenewals \? "List Grid Board Funnel" : "Stack Radar"\}/);
+    expect(bar).not.toMatch(/\["list", "List"\]/);
+    expect(bar).not.toMatch(/\["grid", "Grid"\]/);
+    expect(bar).toMatch(/\["board", "Board"\]/);
+    expect(bar).toMatch(/\["stack", "Stack"\]/);
+    expect(bar).toMatch(/aria-label=\{isRenewals \? "Board Stack" : "Stack Radar"\}/);
     expect(source("src/app/deals/page.tsx")).toMatch(/DealsCommandWorkspace/);
     expect(source("src/components/deals/deals-table.tsx")).toMatch(/data-ff-pipe-mode=\{mode\}/);
   });
