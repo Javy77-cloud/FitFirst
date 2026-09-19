@@ -1,5 +1,6 @@
 import { BackgroundFillRefresh } from "@/components/deal/background-fill-refresh";
 import { DealDocsErrorBoundary } from "@/components/deal/deal-docs-error-boundary";
+import { DealFormSends } from "@/components/deal/deal-form-sends";
 import { SourceDocsUpload } from "@/components/deal/source-docs-upload";
 import { MasterSheetWorkspace } from "@/components/deal/master-sheet-compare";
 import { SourceFileRow } from "@/components/deal/source-file-row";
@@ -95,6 +96,7 @@ export function DocumentsPanel({
 
             <SourceDocsUpload dealId={dealId} riskId={riskId} line={sheetLine} />
           </section>
+          <DealFormSends dealId={dealId} />
         </div>
 
         <div className="w-full min-w-0 space-y-3" data-ff-deal-docs-sheet>

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { classifyDocuSignSend } from "./docusign-envelopes";
+import {
+  classifyDocuSignSend,
+  envelopeIdFromConnectPayload,
+  mapDocuSignEnvelopeStatus,
+  signerTabSet,
+} from "./docusign-envelopes";
 
 describe("DocuSign fill-send classifier", () => {
   it("stubs when sandbox is not connected", () => {
@@ -30,5 +35,24 @@ describe("DocuSign fill-send classifier", () => {
     expect(result.status).toBe("sandbox_error");
     expect(result.testPath).toBe("in_desk_stub");
     expect(result.message).toContain("SCOPE missing");
+  });
+});
+
+describe("DocuSign signer tabs and Connect status", () => {
+  it("places signature, initials, and date tabs", () => {
+    const tabs = signerTabSet();
+    expect(tabs.signHereTabs[0]).toMatchObject({ documentId: "1", pageNumber: "1" });
+    expect(tabs.initialHereTabs[0]).toMatchObject({ documentId: "1", pageNumber: "1" });
+    expect(tabs.dateSignedTabs[0]).toMatchObject({ documentId: "1", pageNumber: "1" });
+  });
+
+  it("maps sandbox envelope statuses to sent / viewed / completed", () => {
+    expect(mapDocuSignEnvelopeStatus("sent")).toBe("sent");
+    expect(mapDocuSignEnvelopeStatus("delivered")).toBe("viewed");
+    expect(mapDocuSignEnvelopeStatus("completed")).toBe("completed");
+    expect(envelopeIdFromConnectPayload({ data: { envelopeId: "env-9", envelopeSummary: { status: "delivered" } } })).toEqual({
+      envelopeId: "env-9",
+      status: "delivered",
+    });
   });
 });

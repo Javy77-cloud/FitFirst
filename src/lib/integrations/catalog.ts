@@ -268,7 +268,7 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     category: "esign",
     name: "DocuSign",
     initials: "Ds",
-    blurb: "Connect a free DocuSign developer sandbox. Envelope send from Deal stays later.",
+    blurb: "Connect a free DocuSign developer sandbox. Documents can send envelopes to the deal contact.",
     byoNote: "Agency DocuSign sandbox. OAuth completes on account-d. Production keys are out of scope.",
     tone: "esign",
     adminGated: true,

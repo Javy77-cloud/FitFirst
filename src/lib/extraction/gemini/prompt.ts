@@ -217,6 +217,9 @@ export const GEMINI_LETTER_EXTRACT_JSON_KEYS = [
   "prior_agency",
   "selling_agency",
   "new_agency",
+  "requested_years",
+  "loss_run_years",
+  "request_reason",
 ] as const;
 
 export type GeminiExtractKey =
@@ -229,8 +232,11 @@ export function isAgencyLetterGeminiDoc(docType?: string | null): boolean {
   return (
     t === "cancellation" ||
     t === "aor" ||
+    t === "loss_run" ||
     t === "agency_letter" ||
+    t === "agency-loss-run" ||
     t.includes("cancellation") ||
+    t.includes("loss") ||
     (t.includes("aor") && !t.includes("four"))
   );
 }
@@ -273,6 +279,7 @@ Rules:
 - cancellation_date / cancellation_reason: only when the page is a cancellation request or states a cancel date/reason.
 - prior_agency / selling_agency: the outgoing / current agency on an AOR or dec.
 - new_agency: the incoming agency on an AOR letter when printed.
+- requested_years / loss_run_years / request_reason: only on a loss-run request.
 - Dates: keep as printed. Phone / email when printed.
 `;
   }
@@ -362,9 +369,10 @@ export function buildGeminiUserPrompt(docType?: string | null, shopLine?: string
   let focus =
     "Extract every listed key that is clearly printed or checked. Prefer a non-empty value when the form shows one.";
   if (isAgencyLetterGeminiDoc(docType)) {
-    focus =
-      kind.includes("aor")
-        ? "This is an Agent of Record pack / AOR letter (or a dec used to fill one). MUST fill when present: named_insured, policy_number, current_carrier, effective_date, mailing_address, phone, email, prior_agency / selling_agency, new_agency. Do not invent a cancellation date."
+    focus = kind.includes("aor")
+      ? "This is an Agent of Record pack / AOR letter (or a dec used to fill one). MUST fill when present: named_insured, policy_number, current_carrier, effective_date, mailing_address, phone, email, prior_agency / selling_agency, new_agency. Do not invent a cancellation date."
+      : kind.includes("loss")
+        ? "This is a No Run Loss / loss-run request (or a dec used to fill one). MUST fill when present: named_insured, policy_number, current_carrier, effective_date, mailing_address, phone, email, requested_years / loss_run_years, request_reason, new_agency. Invent nothing."
         : "This is a cancellation request (or a dec used to fill one). MUST fill when present: named_insured, policy_number, current_carrier, effective_date, mailing_address, phone, email, cancellation_date, cancellation_reason. Invent nothing.";
   }
   if (kind === "wind_mit" || kind.includes("wind")) {

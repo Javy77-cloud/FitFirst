@@ -5,14 +5,17 @@ import { DOCUMENT_PIPELINE_TYPE_LABELS, type DocumentPipelineJobType } from "./t
 
 export const LETTER_FILL_SLOT = "filled_letter";
 export const LETTER_FILL_DISCLAIMER =
-  "Agency letter filled from confirmed fields. Not a licensed ACORD product.";
+  "Agency form filled from confirmed fields. Not a licensed ACORD product.";
 
 export function letterFillFilename(type: DocumentPipelineJobType): string {
-  return type === "aor" ? "AOR-pack-filled.pdf" : "Cancellation-pack-filled.pdf";
+  if (type === "aor") return "AOR-pack-filled.pdf";
+  if (type === "acord") return "ACORD-HO3-filled.pdf";
+  if (type === "loss_run") return "Loss-run-request-filled.pdf";
+  return "Cancellation-pack-filled.pdf";
 }
 
 export function letterFillDocType(type: DocumentPipelineJobType): string {
-  return type === "aor" ? "aor" : "cancellation";
+  return type;
 }
 
 export async function buildAgencyLetterPdf(input: {
@@ -36,7 +39,7 @@ export async function buildAgencyLetterPdf(input: {
   const write = (text: string, size = 11, face = font, color = ink) => {
     const lines = wrapText(text, face, size, width);
     for (const line of lines) {
-      if (y < 56) return;
+      if (y < 140) return;
       page.drawText(line, { x: left, y, size, font: face, color });
       y -= size + 6;
     }
@@ -62,8 +65,28 @@ export async function buildAgencyLetterPdf(input: {
     write(`${field.label}: ${value}`, 11);
   }
 
-  y = Math.min(y, 72);
-  write(LETTER_FILL_DISCLAIMER, 8, font, muted);
+  page.drawLine({
+    start: { x: left, y: 118 },
+    end: { x: 280, y: 118 },
+    thickness: 0.8,
+    color: navy,
+  });
+  page.drawText("Signature", { x: left, y: 102, size: 8, font, color: muted });
+  page.drawLine({
+    start: { x: 300, y: 118 },
+    end: { x: 380, y: 118 },
+    thickness: 0.8,
+    color: navy,
+  });
+  page.drawText("Initials", { x: 300, y: 102, size: 8, font, color: muted });
+  page.drawLine({
+    start: { x: 400, y: 118 },
+    end: { x: 540, y: 118 },
+    thickness: 0.8,
+    color: navy,
+  });
+  page.drawText("Date", { x: 400, y: 102, size: 8, font, color: muted });
+  page.drawText(LETTER_FILL_DISCLAIMER, { x: left, y: 48, size: 8, font, color: muted });
 
   return Buffer.from(await pdf.save());
 }

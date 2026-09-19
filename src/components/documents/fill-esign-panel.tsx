@@ -70,7 +70,7 @@ export function FillEsignPanel({
       </label>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" size="sm">
-          {docusignReady ? "Send via DocuSign sandbox" : "Confirm · record test envelope"}
+          {docusignReady ? "Send to DocuSign" : "Confirm · record test envelope"}
         </Button>
       </div>
     </form>

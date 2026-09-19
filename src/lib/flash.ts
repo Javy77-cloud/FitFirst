@@ -147,6 +147,11 @@ export const FLASH_COPY = {
   "letter-extract-failed": "Could not extract letter fields. Review and type values, or re-upload.",
   "letter-need-confirm": "Confirm extracted fields before fill or signature.",
   "letter-send-later": "DocuSign sandbox is identity-only. Envelope send is not wired — never auto-sends.",
+  "letter-sent": "Sent to DocuSign sandbox",
+  "letter-need-connect": "Connect DocuSign sandbox in Settings → E-sign before send.",
+  "letter-sandbox-error": "DocuSign sandbox rejected the envelope. Check the Integration Key and try again.",
+  "letter-need-signer": "Deal contact needs an email before send.",
+  "letter-status-refreshed": "Envelope status refreshed",
 } as const;
 
 export type FlashKey = keyof typeof FLASH_COPY;

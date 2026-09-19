@@ -1,7 +1,9 @@
 import {
+  DOCUMENT_PIPELINE_JOB_TYPES,
   DOCUMENT_PIPELINE_STATUS_LABELS,
   DOCUMENT_PIPELINE_TYPE_LABELS,
   isDocumentPipelineStatus,
+  normalizePipelineStatus,
   type DocumentPipelineJobType,
   type DocumentPipelineStatus,
 } from "./types";
@@ -19,20 +21,29 @@ export type LetterJobCard = {
 };
 
 export function letterStatusLabel(status: string | null | undefined): string | null {
-  if (!isDocumentPipelineStatus(status)) return null;
-  return DOCUMENT_PIPELINE_STATUS_LABELS[status];
+  const normalized = normalizePipelineStatus(status);
+  if (!normalized) return null;
+  return DOCUMENT_PIPELINE_STATUS_LABELS[normalized];
 }
 
 export function letterStatusChipClass(status: DocumentPipelineStatus | null): string {
-  if (status === "extracting") return "bg-fit-yellow-bg text-fit-yellow";
-  if (status === "needs_review") return "bg-fit-check-bg text-fit-check";
-  if (status === "out_for_signature") return "bg-violet-100 text-violet-900";
-  if (status === "done") return "bg-fit-green-bg text-fit-green";
+  const normalized = normalizePipelineStatus(status);
+  if (normalized === "extracting") return "bg-fit-yellow-bg text-fit-yellow";
+  if (normalized === "needs_review") return "bg-fit-check-bg text-fit-check";
+  if (normalized === "sent") return "bg-violet-100 text-violet-900";
+  if (normalized === "viewed") return "bg-sky-100 text-sky-900";
+  if (normalized === "completed") return "bg-fit-green-bg text-fit-green";
   return "bg-muted text-muted-foreground";
 }
 
 export function canReviewLetterJob(status: DocumentPipelineStatus | null): boolean {
-  return status === "needs_review" || status === "out_for_signature" || status === "done";
+  const normalized = normalizePipelineStatus(status);
+  return (
+    normalized === "needs_review" ||
+    normalized === "sent" ||
+    normalized === "viewed" ||
+    normalized === "completed"
+  );
 }
 
 export function canFillLetterJob(input: {
@@ -42,11 +53,22 @@ export function canFillLetterJob(input: {
 }): boolean {
   if (!input.confirmedAt) return false;
   const values = Object.values(input.confirmedFields ?? {}).filter((value) => value.trim());
-  return values.length > 0 && input.status !== "extracting";
+  return values.length > 0 && normalizePipelineStatus(input.status) !== "extracting";
 }
 
-export function canSendLetterJob(): boolean {
-  return false;
+export function canSendLetterJob(input?: {
+  status?: DocumentPipelineStatus | null;
+  confirmedAt?: Date | string | null;
+  confirmedFields?: Record<string, string> | null;
+  signerEmail?: string | null;
+}): boolean {
+  if (!input) return false;
+  if (!input.confirmedAt) return false;
+  const values = Object.values(input.confirmedFields ?? {}).filter((value) => value.trim());
+  if (values.length === 0) return false;
+  if (normalizePipelineStatus(input.status) === "extracting") return false;
+  if (normalizePipelineStatus(input.status) === "completed") return false;
+  return Boolean((input.signerEmail ?? "").trim());
 }
 
 export function letterJobCards<
@@ -62,8 +84,7 @@ export function letterJobCards<
     createdAt?: Date | string;
   },
 >(jobs: T[]): LetterJobCard[] {
-  const types: DocumentPipelineJobType[] = ["cancellation", "aor"];
-  return types.map((type) => {
+  return DOCUMENT_PIPELINE_JOB_TYPES.map((type) => {
     const latest = jobs
       .filter((job) => job.type === type)
       .sort((a, b) => {

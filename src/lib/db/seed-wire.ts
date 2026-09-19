@@ -35,6 +35,7 @@ import {
   FORM_AOR_ID,
   FORM_CANCEL_ID,
   FORM_HO3_ID,
+  FORM_LOSS_RUN_ID,
   FORM_PACKET_ID,
   HARBOR_ACCOUNT_ID,
   HARBOR_CERTIFICATE_ID,
@@ -274,7 +275,9 @@ export async function seedWireDesk() {
                 ? FORM_CANCEL_ID
                 : seed.slug === "agency-aor"
                   ? FORM_AOR_ID
-                  : undefined,
+                  : seed.slug === "agency-loss-run"
+                    ? FORM_LOSS_RUN_ID
+                    : undefined,
         tenantId: TENANT_ID,
         slug: seed.slug,
         name: seed.name,

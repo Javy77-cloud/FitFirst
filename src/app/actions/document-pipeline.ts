@@ -6,7 +6,9 @@ import { and, eq } from "drizzle-orm";
 import { persistFile } from "@/app/actions/documents";
 import { AGENCY_BRAND, DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { contacts, deals, documents, formFills, formTemplates, quoteSheets } from "@/lib/db/schema";
+import { contacts, deals, documents, formFills, formTemplates, quoteSheets, signatureEnvelopes } from "@/lib/db/schema";
+import { applyDocumentPipelineEnvelopeStatus } from "@/lib/document-pipeline/apply-envelope";
+import { envelopeTimestamps } from "@/lib/document-pipeline/envelope-status";
 import { letterExtractPayload } from "@/lib/document-pipeline/extract";
 import {
   buildAgencyLetterPdf,
@@ -23,9 +25,11 @@ import {
   updateDocumentPipelineJob,
 } from "@/lib/document-pipeline/store";
 import {
+  DOCUMENT_PIPELINE_TYPE_LABELS,
   isDocumentPipelineJobType,
   type DocumentPipelineDealExtras,
   type DocumentPipelineJobType,
+  type DocumentPipelineStatus,
 } from "@/lib/document-pipeline/types";
 import { collectUploadedFiles } from "@/lib/documents/uploaded-file";
 import {
@@ -36,6 +40,7 @@ import {
 import { inferMimeFromName } from "@/lib/files/urls";
 import { readStoredFile } from "@/lib/files/object-store";
 import { flashAction } from "@/lib/flash-action";
+import { attemptDocuSignEnvelope, pollDocuSignEnvelope } from "@/lib/integrations/docusign-envelopes";
 
 function str(form: FormData, key: string): string {
   return String(form.get(key) ?? "").trim();
@@ -48,6 +53,7 @@ function dealDocumentsHref(dealId: string): string {
 function revalidateLetterPaths(dealId: string) {
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/documents");
+  revalidatePath("/esign");
 }
 
 async function loadDealExtras(dealId: string): Promise<DocumentPipelineDealExtras> {
@@ -77,6 +83,18 @@ async function loadDealExtras(dealId: string): Promise<DocumentPipelineDealExtra
     policyNumber: values.policy_number?.value ?? null,
     effectiveDate: values.effective_date?.value ?? null,
     newAgency: AGENCY_BRAND.name,
+    address1: values.address1?.value ?? null,
+    city: values.city?.value ?? null,
+    county: values.county?.value ?? null,
+    state: values.state?.value ?? null,
+    zip: values.zip?.value ?? null,
+    yearBuilt: values.year_built?.value ?? null,
+    construction: values.construction?.value ?? values.construction_type?.value ?? null,
+    occupancy: values.occupancy?.value ?? null,
+    roofYear: values.roof_year?.value ?? null,
+    roofCovering: values.roof_covering?.value ?? null,
+    openingProtection: values.opening_protection?.value ?? null,
+    coverageA: values.coverage_a?.value ?? null,
   };
 }
 
@@ -89,7 +107,7 @@ export async function runAgencyLetterExtract(jobId: string): Promise<void> {
     await updateDocumentPipelineJob(jobId, {
       status: "needs_review",
       extractPayload: letterExtractPayload(job.type as DocumentPipelineJobType, [], extras),
-      message: "Upload a source file to extract.",
+      message: "Prefill from deal fields. Upload a declaration to extract more.",
       extractedAt: new Date(),
     });
     return;
@@ -147,13 +165,10 @@ export async function startAgencyLetterJob(formData: FormData) {
   const dealId = str(formData, "dealId");
   const typeRaw = str(formData, "type");
   if (!dealId || !isDocumentPipelineJobType(typeRaw)) {
-    throw new Error("Choose Cancellation or AOR.");
+    throw new Error("Choose ACORD, No Run Loss, Cancellation, or AOR.");
   }
   const riskId = str(formData, "riskId") || null;
   const uploads = await collectUploadedFiles(formData);
-  if (uploads.length === 0) {
-    flashAction(dealDocumentsHref(dealId), "letter-need-file", "error");
-  }
   const sourceIds: string[] = [];
   for (const upload of uploads) {
     const doc = await persistFile({
@@ -164,7 +179,7 @@ export async function startAgencyLetterJob(formData: FormData) {
       buffer: upload.bytes,
       docType: typeRaw,
       slot: "source_doc",
-      tags: ["agency_letter", typeRaw],
+      tags: ["form_send", typeRaw],
     });
     sourceIds.push(doc.id);
   }
@@ -176,7 +191,8 @@ export async function startAgencyLetterJob(formData: FormData) {
   });
   after(() => runAgencyLetterExtract(job.id));
   revalidateLetterPaths(dealId);
-  flashAction(dealDocumentsHref(dealId), "letter-extracting");
+  const stay = str(formData, "next");
+  flashAction(stay.startsWith("/") ? stay : dealDocumentsHref(dealId), "letter-extracting");
 }
 
 export async function confirmAgencyLetterJob(formData: FormData): Promise<{
@@ -204,16 +220,21 @@ export async function confirmAgencyLetterJob(formData: FormData): Promise<{
   return { ok: true };
 }
 
-export async function fillAgencyLetterJob(formData: FormData): Promise<{
+async function fillConfirmedJob(jobId: string): Promise<{
   ok: boolean;
   reason?: string;
+  documentId?: string;
+  filename?: string;
+  mimeType?: string;
+  storagePath?: string;
+  type?: DocumentPipelineJobType;
+  dealId?: string;
 }> {
-  const jobId = str(formData, "jobId");
   const job = await getDocumentPipelineJob(jobId);
   if (!job) return { ok: false, reason: "letter-need-confirm" };
   if (
     !canFillLetterJob({
-      status: job.status as "needs_review",
+      status: job.status as DocumentPipelineStatus,
       confirmedAt: job.confirmedAt,
       confirmedFields: job.confirmedFields,
     })
@@ -221,6 +242,20 @@ export async function fillAgencyLetterJob(formData: FormData): Promise<{
     return { ok: false, reason: "letter-need-confirm" };
   }
   const type = job.type as DocumentPipelineJobType;
+  if (job.filledDocumentId) {
+    const [existing] = await db.select().from(documents).where(eq(documents.id, job.filledDocumentId));
+    if (existing) {
+      return {
+        ok: true,
+        documentId: existing.id,
+        filename: existing.filename,
+        mimeType: existing.mimeType,
+        storagePath: existing.storagePath,
+        type,
+        dealId: job.dealId,
+      };
+    }
+  }
   const [deal] = await db
     .select()
     .from(deals)
@@ -268,27 +303,161 @@ export async function fillAgencyLetterJob(formData: FormData): Promise<{
     slot: LETTER_FILL_SLOT,
     fillable: true,
     formTemplateId: template?.id ?? null,
-    tags: ["agency_letter", "filled", type],
+    tags: ["form_send", "filled", type],
   });
   await updateDocumentPipelineJob(job.id, {
     filledDocumentId: doc.id,
     formFillId,
     filledAt: new Date(),
-    status: "done",
+    status: "needs_review",
   });
-  revalidateLetterPaths(job.dealId);
+  return {
+    ok: true,
+    documentId: doc.id,
+    filename: doc.filename,
+    mimeType: doc.mimeType,
+    storagePath: doc.storagePath,
+    type,
+    dealId: job.dealId,
+  };
+}
+
+export async function fillAgencyLetterJob(formData: FormData): Promise<{
+  ok: boolean;
+  reason?: string;
+}> {
+  const result = await fillConfirmedJob(str(formData, "jobId"));
+  if (!result.ok || !result.dealId) return { ok: false, reason: result.reason };
+  revalidateLetterPaths(result.dealId);
   return { ok: true };
 }
 
-export async function sendAgencyLetterForSignature(): Promise<{
-  ok: false;
-  reason: "letter-send-later";
-  message: string;
+export async function sendDocumentPipelineForSignature(formData: FormData): Promise<{
+  ok: boolean;
+  reason?: string;
+  message?: string;
+  envelopeId?: string;
+  status?: string;
 }> {
-  return {
-    ok: false,
-    reason: "letter-send-later",
-    message:
-      "DocuSign sandbox is connected for identity only. Envelope send is not wired. FitFirst never auto-sends.",
-  };
+  const jobId = str(formData, "jobId");
+  const job = await getDocumentPipelineJob(jobId);
+  if (!job) return { ok: false, reason: "letter-need-confirm" };
+
+  const extractFields = job.extractPayload.fields ?? [];
+  if (extractFields.some((field) => formData.has(`value_${field.key}`))) {
+    const confirmed = collectConfirmedFields(
+      Object.fromEntries(extractFields.map((field) => [field.key, str(formData, `value_${field.key}`)])),
+      extractFields.map((field) => field.key),
+    );
+    if (Object.keys(confirmed).length === 0) {
+      return { ok: false, reason: "letter-need-confirm" };
+    }
+    await updateDocumentPipelineJob(job.id, {
+      confirmedFields: confirmed,
+      confirmedAt: new Date(),
+      status: "needs_review",
+      message: null,
+    });
+  }
+
+  const extras = await loadDealExtras(job.dealId);
+  const signerName =
+    str(formData, "signerName") || extras.namedInsured || "Deal contact";
+  const signerEmail = str(formData, "signerEmail") || extras.email || "";
+  if (!signerEmail) {
+    return { ok: false, reason: "letter-need-signer", message: "Deal contact needs an email before send." };
+  }
+
+  const filled = await fillConfirmedJob(job.id);
+  if (!filled.ok || !filled.storagePath || !filled.filename || !filled.documentId) {
+    return { ok: false, reason: filled.reason ?? "letter-need-confirm" };
+  }
+
+  const type = filled.type ?? (job.type as DocumentPipelineJobType);
+  const send = await attemptDocuSignEnvelope({
+    filename: filled.filename,
+    mimeType: filled.mimeType ?? "application/pdf",
+    storagePath: filled.storagePath,
+    signerName,
+    signerEmail,
+    subject: `Please sign ${DOCUMENT_PIPELINE_TYPE_LABELS[type]}`,
+  });
+
+  if (send.status !== "sent" || !send.envelopeId) {
+    await updateDocumentPipelineJob(job.id, {
+      signerName,
+      signerEmail,
+      message: send.message,
+    });
+    revalidateLetterPaths(job.dealId);
+    return {
+      ok: false,
+      reason: send.status === "needs_connect" ? "letter-need-connect" : "letter-sandbox-error",
+      message: send.message,
+    };
+  }
+
+  const now = new Date();
+  await updateDocumentPipelineJob(job.id, {
+    status: "sent",
+    envelopeId: send.envelopeId,
+    envelopeStatus: "sent",
+    signerName,
+    signerEmail,
+    message: send.message,
+    ...envelopeTimestamps("sent", now),
+  });
+  await db.insert(signatureEnvelopes).values({
+    tenantId: DEFAULT_TENANT_ID,
+    documentId: filled.documentId,
+    dealId: job.dealId,
+    provider: "docusign",
+    mode: "vendor",
+    status: "sent",
+    signerName,
+    signerEmail,
+    subject: `Please sign ${DOCUMENT_PIPELINE_TYPE_LABELS[type]}`,
+    lastProviderResult: `sent:${send.envelopeId}`,
+    sentAt: now,
+  });
+  revalidateLetterPaths(job.dealId);
+  return { ok: true, envelopeId: send.envelopeId, status: "sent", message: send.message };
+}
+
+/** Agent-clicked send only. FitFirst never auto-sends. */
+export async function sendAgencyLetterForSignature(formData?: FormData): Promise<{
+  ok: boolean;
+  reason?: string;
+  message?: string;
+  envelopeId?: string;
+  status?: string;
+}> {
+  if (!formData) {
+    return {
+      ok: false,
+      reason: "letter-need-confirm",
+      message: "Confirm fields, then click Send to DocuSign. FitFirst never auto-sends.",
+    };
+  }
+  return sendDocumentPipelineForSignature(formData);
+}
+
+export async function refreshDocumentPipelineEnvelope(formData: FormData): Promise<{
+  ok: boolean;
+  reason?: string;
+  status?: string;
+  message?: string;
+}> {
+  const job = await getDocumentPipelineJob(str(formData, "jobId"));
+  if (!job?.envelopeId) return { ok: false, reason: "letter-need-confirm" };
+  const poll = await pollDocuSignEnvelope(job.envelopeId);
+  if (!poll.ok) {
+    return { ok: false, reason: "letter-sandbox-error", message: poll.message };
+  }
+  await applyDocumentPipelineEnvelopeStatus({
+    envelopeId: job.envelopeId,
+    status: poll.status,
+    rawStatus: poll.rawStatus,
+  });
+  return { ok: true, status: poll.status ?? undefined };
 }

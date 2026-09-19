@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   confirmAgencyLetterJob,
   fillAgencyLetterJob,
+  sendDocumentPipelineForSignature,
 } from "@/app/actions/document-pipeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,7 +92,7 @@ export function AgencyLetterReviewSheet({
           <SheetTitle>{DOCUMENT_PIPELINE_TYPE_LABELS[job.type]}</SheetTitle>
           <SheetDescription>
             Confirm extracted fields before fill. {DOCUMENT_PIPELINE_STATUS_LABELS[job.status]}.
-            DocuSign never auto-sends.
+            FitFirst never auto-sends — click Send to DocuSign.
           </SheetDescription>
         </SheetHeader>
         {job.message ? (
@@ -182,11 +183,31 @@ export function AgencyLetterReviewSheet({
             </p>
           </div>
           <div className="space-y-1">
-            <Button type="button" variant="outline" disabled data-ff-letter-sign="">
-              Send for signature
+            <Button
+              type="button"
+              disabled={pending || !confirmed || !fillReady}
+              data-ff-letter-sign=""
+              onClick={() => {
+                const data = new FormData();
+                data.set("jobId", job.id);
+                for (const [key, value] of Object.entries(values)) {
+                  data.set(`value_${key}`, value);
+                }
+                startTransition(async () => {
+                  const result = await sendDocumentPipelineForSignature(data);
+                  if (!result.ok) {
+                    flashAction(result.reason ?? "letter-sandbox-error", "error");
+                    return;
+                  }
+                  flashAction("letter-sent");
+                  router.refresh();
+                });
+              }}
+            >
+              Send to DocuSign
             </Button>
             <p className="text-[11px] text-muted-foreground" data-ff-letter-sign-copy="">
-              DocuSign sandbox is connected for identity only. Envelope send is not wired — never
+              Places signature, initials, and date tabs for the deal contact. FitFirst never
               auto-sends.
             </p>
           </div>

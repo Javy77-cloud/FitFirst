@@ -66,7 +66,7 @@ export const FORM_TEMPLATE_SEEDS: FormTemplateSeed[] = [
     name: "Cancellation request",
     line: "HO",
     family: "Agency form",
-    summary: "Agency cancellation request. Fill from a source dec or paste fields. Not a carrier portal.",
+    summary: "Agency cancellation request. Prefill from a dec or deal, then send for signature. Not a carrier portal.",
     fields: [
       ...agencyFields,
       { key: "cancellation_date", label: "Cancellation date", group: "Request" },
@@ -78,11 +78,24 @@ export const FORM_TEMPLATE_SEEDS: FormTemplateSeed[] = [
     name: "Agent of record",
     line: "HO",
     family: "Agency form",
-    summary: "Agency AOR letter. Map fields from an uploaded dec or paste. Stub schema only.",
+    summary: "Agency AOR letter. Map fields from an uploaded dec or paste. Live in the Documents send loop.",
     fields: [
       ...agencyFields,
       { key: "prior_agency", label: "Prior agency", group: "AOR" },
       { key: "new_agency", label: "New agency", group: "AOR" },
+    ],
+  },
+  {
+    slug: "agency-loss-run",
+    name: "No Run Loss request",
+    line: "HO",
+    family: "Agency form",
+    summary: "Loss-run request. Prefill from the deal or an uploaded dec, then send for signature.",
+    fields: [
+      ...agencyFields,
+      { key: "requested_years", label: "Years requested", group: "Request" },
+      { key: "request_reason", label: "Reason", group: "Request" },
+      { key: "new_agency", label: "Requesting agency", group: "Request" },
     ],
   },
 ];

@@ -46,6 +46,8 @@ export function docTypeUsesGemini(docType?: string | null): boolean {
       "report",
       "cancellation",
       "aor",
+      "acord",
+      "loss_run",
       "agency_letter",
     ].includes(t)
   ) {

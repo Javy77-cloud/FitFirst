@@ -14,7 +14,8 @@ describe("templates IA", () => {
     expect(catalog).not.toMatch(/Document templates/);
     expect(catalog).toMatch(/id: "tasks"/);
     expect(catalog).toMatch(/label: "Tasks"/);
-    expect(catalog).toMatch(/label: "Business"/);
+    expect(catalog).toMatch(/id: "business"/);
+    expect(catalog).toMatch(/href: "\/accounts"/);
   });
 
   it("splits the Templates hub into Email vs Documents", () => {
@@ -39,7 +40,9 @@ describe("templates IA", () => {
   it("wires fill confirm + eSign without mixing email into Documents", () => {
     const docs = source("src/app/documents/page.tsx");
     expect(docs).toMatch(/TypeCarrierBrowse/);
+    expect(docs).toMatch(/FormSendLoop/);
     expect(docs).not.toMatch(/\/automations\/templates/);
+    expect(source("src/components/documents/form-send-loop.tsx")).toMatch(/Send to DocuSign/);
     expect(source("src/components/documents/fill-esign-panel.tsx")).toMatch(/confirmFilledFormForEsign/);
     expect(source("src/app/documents/fill/[slug]/page.tsx")).toMatch(/FillEsignPanel/);
   });

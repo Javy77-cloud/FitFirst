@@ -14,6 +14,8 @@ import { SOURCE_DOC_ACCEPT } from "@/lib/deals/source-doc-types";
 import { letterJobCards, letterStatusChipClass } from "@/lib/document-pipeline/status";
 import {
   DOCUMENT_PIPELINE_TYPE_LABELS,
+  isDocumentPipelineJobType,
+  isDocumentPipelineStatus,
   type DocumentPipelineExtractField,
   type DocumentPipelineJobType,
 } from "@/lib/document-pipeline/types";
@@ -75,8 +77,8 @@ export function AgencyLettersRail({
         badge={extracting ? "Extracting" : undefined}
       >
         <p className="mb-3 text-helper text-muted-foreground">
-          Drop a dec or letter on Cancellation or AOR. Gemini extracts fields. You confirm before
-          fill. Signature send stays later.
+          Drop a dec on ACORD, No Run Loss, Cancellation, or AOR. Gemini extracts. You confirm,
+          then Send to DocuSign. Prefer the Documents send loop.
         </p>
         <div className="space-y-2" data-ff-letter-cards="">
           {cards.map((card) => {
@@ -204,14 +206,8 @@ function LetterUploadForm({
 }
 
 function toReviewJob(row: AgencyLetterJobView): AgencyLetterReviewJob | null {
-  const type = row.type === "aor" || row.type === "cancellation" ? row.type : null;
-  const status =
-    row.status === "extracting" ||
-    row.status === "needs_review" ||
-    row.status === "out_for_signature" ||
-    row.status === "done"
-      ? row.status
-      : null;
+  const type = isDocumentPipelineJobType(row.type) ? row.type : null;
+  const status = isDocumentPipelineStatus(row.status) ? row.status : null;
   if (!type || !status) return null;
   return {
     id: row.id,

@@ -8,6 +8,7 @@ import {
   DOC_AOR_ID,
   DOC_APPETITE_ID,
   DOC_CANCEL_ID,
+  DOC_LOSS_RUN_ID,
   DOC_FLYER_ID,
   DOC_HURRICANE_ID,
   FOLDER_ACORD_CITIZENS_ID,
@@ -21,11 +22,13 @@ import {
   FOLDER_CARRIER_FORMS_ID,
   FOLDER_FLYERS_ID,
   FOLDER_FLYERS_TAILROW_ID,
+  FOLDER_LOSS_RUN_ID,
   FOLDER_MARKETING_ID,
   FOLDER_MISC_ID,
   FORM_AOR_ID,
   FORM_CANCEL_ID,
   FORM_HO3_ID,
+  FORM_LOSS_RUN_ID,
   TENANT_ID,
 } from "../fixtures/ids";
 
@@ -140,6 +143,15 @@ const FOLDERS: FolderSeed[] = [
     sortOrder: 40,
   },
   {
+    id: FOLDER_LOSS_RUN_ID,
+    name: "No Run Loss",
+    library: "forms",
+    kind: "forms_library",
+    parentId: null,
+    description: "Type folder for loss-run requests.",
+    sortOrder: 45,
+  },
+  {
     id: FOLDER_CARRIER_FORMS_ID,
     name: "Carrier forms",
     library: "forms",
@@ -228,6 +240,16 @@ const FILES: FileSeed[] = [
     formTemplateId: FORM_AOR_ID,
     body: "Agent of record letter. Fillable stub.",
   },
+  {
+    id: DOC_LOSS_RUN_ID,
+    folderId: FOLDER_LOSS_RUN_ID,
+    library: "forms",
+    filename: "Loss-run-request.pdf",
+    docType: "loss_run",
+    fillable: true,
+    formTemplateId: FORM_LOSS_RUN_ID,
+    body: "No Run Loss request. Fillable form for the Documents send loop.",
+  },
 ];
 
 /** Shared + Forms libraries. Does not touch Ana folders or the Ana fixture. */
@@ -264,6 +286,7 @@ export async function seedDocumentLibraries() {
     "fl-home-packet": FOLDER_ACORD_CITIZENS_ID,
     "agency-cancellation": FOLDER_CANCEL_ID,
     "agency-aor": FOLDER_AOR_ID,
+    "agency-loss-run": FOLDER_LOSS_RUN_ID,
   };
 
   for (const [slug, folderId] of Object.entries(folderBySlug)) {
