@@ -25,11 +25,11 @@ import {
 describe("notification board helpers", () => {
   it("names the board route and keeps copy in-desk", () => {
     expect(NOTIFICATION_BOARD_HREF).toBe("/notifications");
-    expect(NOTIFICATION_BOARD_LABEL).toBe("Notification board");
+    expect(NOTIFICATION_BOARD_LABEL).toBe("Notifications");
     expect(NOTIFICATION_IN_APP_COPY).toMatch(/in-app/i);
     expect(NOTIFICATION_IN_APP_COPY).toMatch(/nothing emails/i);
-    expect(NOTIFICATION_EMPTY_PANEL).toMatch(/nothing emails javy/i);
-    expect(NOTIFICATION_EMPTY_BOARD).toMatch(/nothing emails/i);
+    expect(NOTIFICATION_EMPTY_PANEL).toMatch(/system caught/i);
+    expect(NOTIFICATION_EMPTY_BOARD).toMatch(/keep shopping/i);
   });
 
   it("slices recent rows and counts unread", () => {

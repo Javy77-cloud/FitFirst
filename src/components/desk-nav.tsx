@@ -51,7 +51,6 @@ const NAV_ICONS: Record<(typeof DESK_NAV_ITEMS)[number]["label"], LucideIcon> = 
   Commissions: Briefcase,
   Scorecards: BarChart3,
   Glance: Layers,
-  Tasks: ListChecks,
   Automations: Workflow,
   Calendar,
   Carriers: Building2,
@@ -60,6 +59,7 @@ const NAV_ICONS: Record<(typeof DESK_NAV_ITEMS)[number]["label"], LucideIcon> = 
   Reports: BarChart3,
   Settings: ClipboardList,
   Admin: Shield,
+  Developer: Shield,
 };
 
 export function DeskNav({ variant }: { variant: "sidebar" | "mobile" }) {

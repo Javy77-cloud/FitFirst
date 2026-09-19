@@ -2,6 +2,7 @@
 
 export const RETIRED_NAV_IDS: Record<string, string> = {
   pipeline: "deals",
+  tasks: "alerts",
 };
 
 export const RETIRED_NAV_PATHS: Record<string, string> = {
@@ -47,6 +48,9 @@ export function remapNavPath(pathname: string): string {
   const path = (pathname.split("?")[0] || "/").replace(/\/$/, "") || "/";
   if (path === "/pipeline" || path.startsWith("/pipeline/")) {
     return path.replace(/^\/pipeline/, "/deals");
+  }
+  if (path === "/tasks" || path.startsWith("/tasks/")) {
+    return "/notifications";
   }
   return path;
 }

@@ -35,10 +35,9 @@ const NAV = [
   { href: "/work-queue", label: "Work queue", icon: ListChecks },
   { href: "/claims", label: "Claims log", icon: FileStack },
   { href: "/commissions", label: "Commissions", icon: Wallet },
-  { href: "/tasks", label: "Tasks", icon: ListChecks },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/carriers", label: "Carriers", icon: Building2 },
-  { href: "/notifications", label: "Alerts", icon: Bell },
+  { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/phone", label: "Phone", icon: Phone },
   { href: "/settings", label: "Settings", icon: ClipboardList },
 ];

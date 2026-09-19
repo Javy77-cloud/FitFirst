@@ -13,6 +13,7 @@ import { isQuotesOnlyBoardStage } from "@/lib/deals/product-stages";
 import { collapsedStorageKey, dealMatchesStage, parseCollapsedStages } from "@/lib/wire/pipeline";
 import type { DeskUserOption } from "@/lib/deals/transfer";
 import type { TagCatalogRow } from "@/components/tags/assign-record-tags";
+import type { SerializedCommitment } from "@/lib/notifications/commitments";
 import type { PipelineBoardView, PipelineCardView } from "@/lib/wire/pipeline-cards";
 
 export function PipelineKanban({
@@ -20,11 +21,13 @@ export function PipelineKanban({
   cards,
   agents = [],
   tagCatalog = [],
+  commitmentsByDealId = {},
 }: {
   board: PipelineBoardView;
   cards: PipelineCardView[];
   agents?: DeskUserOption[];
   tagCatalog?: TagCatalogRow[];
+  commitmentsByDealId?: Record<string, SerializedCommitment[]>;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -149,6 +152,7 @@ export function PipelineKanban({
                       showArchive={board.slug !== "archive"}
                       agents={agents}
                       tagCatalog={tagCatalog}
+                      commitments={commitmentsByDealId[deal.id] ?? []}
                     />
                   ))
                 )}

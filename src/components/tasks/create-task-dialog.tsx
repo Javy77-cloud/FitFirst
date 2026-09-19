@@ -62,13 +62,13 @@ export function CreateTaskDialog({
     if (!controlled) setInternalOpen(next);
     onOpenChange?.(next);
     if (!next && defaultOpen) {
-      router.replace("/tasks");
+      router.replace(defaults?.returnTo ?? "/notifications#commitments");
     }
   }
 
   const formDefaults: CreateTaskFormDefaults = {
     ...defaults,
-    returnTo: defaults?.returnTo ?? "/tasks",
+    returnTo: defaults?.returnTo ?? "/notifications#commitments",
   };
 
   return (

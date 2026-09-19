@@ -86,8 +86,8 @@ describe("due time wired on create/edit and lists", () => {
   });
 
   it("task list and cards format the due datetime", () => {
-    const list = readFileSync("src/app/tasks/page.tsx", "utf8");
-    expect(list).toMatch(/formatTaskDueAt\(task\.due\)/);
+    const list = readFileSync("src/components/notifications/commitments-timeline.tsx", "utf8");
+    expect(list).toMatch(/formatTaskDueAt\(row\.dueAt\)/);
     const board = readFileSync("src/components/comms/quick-comms-board.tsx", "utf8");
     expect(board).toMatch(/formatTaskDueAt\(item\.dueAt\)/);
     const detail = readFileSync("src/components/record-context/activity-record-page.tsx", "utf8");

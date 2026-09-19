@@ -15,8 +15,9 @@ describe("moduleTitleFromPath", () => {
     expect(moduleTitleFromPath("/accounts/1")).toBe("Accounts");
     expect(moduleTitleFromPath("/businesses/1")).toBe("Accounts");
     expect(moduleTitleFromPath("/search?q=Elena")).toBe("Search");
-    expect(moduleTitleFromPath("/alerts")).toBe("Alerts");
-    expect(moduleTitleFromPath("/notifications")).toBe("Notification board");
+    expect(moduleTitleFromPath("/alerts")).toBe("Notifications");
+    expect(moduleTitleFromPath("/notifications")).toBe("Notifications");
+    expect(moduleTitleFromPath("/tasks")).toBe("Notifications");
     expect(moduleTitleFromPath("/inbox")).toBe("Inbox");
     expect(moduleTitleFromPath("/phone")).toBe("Phone");
     expect(moduleTitleFromPath("/settings/my-desk")).toBe("Settings");

@@ -1,17 +1,17 @@
 /** In-desk notification board. Internal alerts never email Javy or the agent. */
 
 export const NOTIFICATION_BOARD_HREF = "/notifications";
-export const NOTIFICATION_BOARD_LABEL = "Notification board";
+export const NOTIFICATION_BOARD_LABEL = "Notifications";
 export const RECENT_NOTIFICATION_LIMIT = 12;
 
 export const NOTIFICATION_IN_APP_COPY =
   "In-app only. Nothing emails Javy or the agent.";
 
 export const NOTIFICATION_EMPTY_PANEL =
-  "No in-app notifications. Nothing emails Javy.";
+  "Nothing the system caught. Overnight misses land on the Notifications board.";
 
 export const NOTIFICATION_EMPTY_BOARD =
-  "No notifications on this desk. Playbooks, asks, and work-queue pings land here. Nothing emails the agent.";
+  "Nothing the system caught — keep shopping. Overnight declines, quiet renewals, and stale docs land here.";
 
 /** Prefer unread rows so the bell panel can clear the badge, then fill with recent read. */
 export function recentNotifications<T extends { read: boolean }>(

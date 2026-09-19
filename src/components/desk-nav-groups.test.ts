@@ -46,7 +46,6 @@ describe("primary desk nav", () => {
       "business",
       "policies",
       "carriers",
-      "tasks",
       "calendar",
       "templates",
       "reports",

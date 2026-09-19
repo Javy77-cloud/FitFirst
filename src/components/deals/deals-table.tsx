@@ -47,6 +47,8 @@ import { dealSearchHaystack, visibleDealTitle } from "@/lib/deals/deal-title";
 import { haystack } from "@/lib/search/live-query";
 import { sheetAttr } from "@/lib/desk/sheet-attr";
 import { AssignRecordTags } from "@/components/tags/assign-record-tags";
+import { PromiseChips } from "@/components/notifications/promise-chips";
+import type { SerializedCommitment } from "@/lib/notifications/commitments";
 import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
 import { dealsListColumnsFromFields } from "@/lib/list-columns";
@@ -89,6 +91,7 @@ export async function DealsTable({
   nextByDeal = new Map(),
   mode = "list",
   listFilter: _listFilter = {},
+  commitmentsByDealId = {},
 }: {
   rows: DealsSheetRow[];
   users: Map<string, string>;
@@ -99,6 +102,7 @@ export async function DealsTable({
   mode?: PipelineSheetMode;
   /** Current All / book chips. Stage click must not replace these with the deal's board. */
   listFilter?: ListStageFilterBook;
+  commitmentsByDealId?: Record<string, SerializedCommitment[]>;
 }) {
   const [tagCatalog, fields, layout, valueMap, pipelines, carrierRows, listColorMaps] = await Promise.all([
     listModuleTags("deals").catch(() => []),
@@ -201,6 +205,7 @@ export async function DealsTable({
               carriers,
               userRecords,
               listColorMaps,
+              commitments: commitmentsByDealId[deal.id] ?? [],
             });
             return {
               key: deal.id,
@@ -257,6 +262,7 @@ function dealRowCells({
   carriers,
   userRecords,
   listColorMaps,
+  commitments = [],
 }: {
   deal: DealsSheetRow["deal"];
   stored: Record<string, string>;
@@ -278,6 +284,7 @@ function dealRowCells({
   carriers: NamedRecord[];
   userRecords: NamedRecord[];
   listColorMaps: DealListColorMaps;
+  commitments?: SerializedCommitment[];
 }) {
   const sort: Record<string, string> = {
     pick: "",
@@ -314,6 +321,7 @@ function dealRowCells({
           />
         </div>
         {stale ? <DealStaleBadge dealId={deal.id} contactId={contactId} leadId={leadId} /> : null}
+        <PromiseChips commitments={commitments} />
       </div>
     ),
     stage:

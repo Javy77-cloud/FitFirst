@@ -10,7 +10,7 @@ import {
 import { remapNavIds, remapNavSubmenus } from "@/lib/desk/nav-aliases";
 
 /** Bump when the signed default rail changes so stale per-user prefs reset. */
-export const NAV_LAYOUT_VERSION = 12 as const;
+export const NAV_LAYOUT_VERSION = 13 as const;
 export const DIVIDER_ID = "divider";
 
 /** Admin-only Operations folder. Default rail places it top-level; Customize can nest or promote it. */
@@ -50,7 +50,6 @@ export const DEFAULT_PRIMARY_ORDER = [
   "business",
   "policies",
   "carriers",
-  "tasks",
   "calendar",
   "templates",
   DIVIDER_ID,
@@ -82,7 +81,6 @@ export const DEFAULT_SUBMENUS: Record<string, readonly string[]> = {
   renewals: [],
   business: [],
   carriers: [],
-  tasks: [],
   calendar: [],
   templates: ["email-signatures", "email-templates", "document-templates"],
   reports: [],
@@ -300,8 +298,8 @@ export function normalizeNavLayout(raw: unknown, options: NavLayoutOptions = {})
 
   if (!primaryOrder.includes(DIVIDER_ID)) {
     const carriersAt = primaryOrder.indexOf("carriers");
-    const tasksAt = primaryOrder.indexOf("tasks");
-    const insertAt = carriersAt >= 0 ? carriersAt + 1 : tasksAt >= 0 ? tasksAt : primaryOrder.length;
+    const calendarAt = primaryOrder.indexOf("calendar");
+    const insertAt = carriersAt >= 0 ? carriersAt + 1 : calendarAt >= 0 ? calendarAt : primaryOrder.length;
     primaryOrder.splice(insertAt, 0, DIVIDER_ID);
   }
 

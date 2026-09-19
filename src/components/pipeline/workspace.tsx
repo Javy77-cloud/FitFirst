@@ -9,6 +9,7 @@ import { SheetSettingsMenu } from "@/components/lists/sheet-settings-menu";
 import type { DeskUserOption } from "@/lib/deals/transfer";
 import type { TagCatalogRow } from "@/components/tags/assign-record-tags";
 import type { PipelineViewId } from "@/lib/wire/pipeline";
+import type { SerializedCommitment } from "@/lib/notifications/commitments";
 import type { PipelineBoardView, PipelineCardView } from "@/lib/wire/pipeline-cards";
 import { useLiveContainsQuery } from "@/hooks/use-live-contains-query";
 import { matchesContains } from "@/lib/search/live-query";
@@ -22,6 +23,7 @@ export function PipelineWorkspace({
   tagCatalog = [],
   searchModuleId = "deals-pipeline",
   initialQuery = "",
+  commitmentsByDealId = {},
 }: {
   board: PipelineBoardView;
   cards: PipelineCardView[];
@@ -31,6 +33,7 @@ export function PipelineWorkspace({
   tagCatalog?: TagCatalogRow[];
   searchModuleId?: string;
   initialQuery?: string;
+  commitmentsByDealId?: Record<string, SerializedCommitment[]>;
 }) {
   const liveQuery = useLiveContainsQuery(searchModuleId, initialQuery);
   const visibleCards = useMemo(
@@ -91,7 +94,13 @@ export function PipelineWorkspace({
       ) : view === "funnel" ? (
         <PipelineFunnelView board={board} cards={visibleCards} />
       ) : (
-        <PipelineKanban board={board} cards={visibleCards} agents={agents} tagCatalog={tagCatalog} />
+        <PipelineKanban
+          board={board}
+          cards={visibleCards}
+          agents={agents}
+          tagCatalog={tagCatalog}
+          commitmentsByDealId={commitmentsByDealId}
+        />
       )}
     </div>
   );

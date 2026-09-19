@@ -103,6 +103,9 @@ import {
   normalizeDealPageStageSlug,
 } from "@/lib/deals/new-deal-write";
 import { DealPackageShell } from "@/components/deal/deal-package-shell";
+import { PromiseChips } from "@/components/notifications/promise-chips";
+import { loadCommitmentsForEntities } from "@/lib/notifications/load-commitments";
+import { serializeCommitments } from "@/lib/notifications/commitments";
 import { DealHeaderStage } from "@/components/deals/deal-header-stage";
 import { relabelConvertActivityTitle } from "@/lib/crm/convert";
 import { dealStageView } from "@/lib/deals/deal-columns";
@@ -182,7 +185,7 @@ export default async function DealPage({
     jobs,
     boundPolicies,
   } = workspace;
-  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow, pipelines, context, agencyRow, noticePicklists, session, hsMedicare, hsAca, hsEnrollment] =
+  const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow, pipelines, context, agencyRow, noticePicklists, session, hsMedicare, hsAca, hsEnrollment, dealPromises] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
       listEnabledScriptsFor("deals", "edit"),
@@ -219,6 +222,10 @@ export default async function DealPage({
       loadHealthSherpaMedicarePublicStatus().catch(() => ({ configured: false })),
       loadHealthSherpaAcaPublicStatus().catch(() => ({ configured: false })),
       loadDealHealthSherpaEnrollment(deal.id),
+      loadCommitmentsForEntities({
+        dealIds: [deal.id],
+        contactIds: deal.contactId ? [deal.contactId] : [],
+      }).catch(() => []),
     ]);
   const stageView = dealStageView(
     {
@@ -656,6 +663,7 @@ export default async function DealPage({
                 <h1 className="min-w-0 text-xl font-semibold text-navy" data-ff-deal-title>
                   {visibleDealTitle}
                 </h1>
+                <PromiseChips commitments={serializeCommitments(dealPromises)} />
                 {!noticeStampVisible ? (
                   <div className="mt-1.5" data-ff-deal-create-notice="">
                     <DealNotices {...noticeProps} placement="header" />

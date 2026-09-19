@@ -2,19 +2,19 @@ import { describe, expect, it } from "vitest";
 import { NOTIFICATION_LINKS, PROFILE_SETTINGS_HREF, QUICK_ACTIONS, SUPPORT_COPY, SUPPORT_HREF } from "./quick-actions";
 
 describe("header quick actions", () => {
-  it("links Add Lead / Deal / Policy / Task / Meeting to new routes", () => {
+  it("links Add Lead / Deal / Policy / promise / Meeting to new routes", () => {
     expect(QUICK_ACTIONS.map((item) => item.label)).toEqual([
       "Add Lead",
       "Add Deal",
       "Add Policy",
-      "Add Task",
+      "Add promise",
       "Add Meeting",
     ]);
     expect(QUICK_ACTIONS.map((item) => item.href)).toEqual([
       "/leads/new",
       "/deals/new",
       "/policies/new",
-      "/tasks?newTask=1",
+      "/notifications?newCommitment=1#commitments",
       "/meetings/new",
     ]);
   });
@@ -26,9 +26,9 @@ describe("header quick actions", () => {
     expect(NOTIFICATION_LINKS.map((link) => link.href)).toEqual([
       "/notifications",
       "/work-queue",
-      "/tasks",
+      "/notifications#commitments",
       "/calendar",
     ]);
-    expect(NOTIFICATION_LINKS[0]?.label).toBe("Notification board");
+    expect(NOTIFICATION_LINKS[0]?.label).toBe("Notifications");
   });
 });

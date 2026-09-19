@@ -168,7 +168,15 @@ export function NotificationChecklist({
                       className="text-xs font-medium text-primary hover:underline"
                       data-testid="notification-open"
                     >
-                      Open lead
+                      {alert.kind === "quote_declined"
+                        ? "Retry carriers"
+                        : alert.kind === "renewal_silence"
+                          ? "Send reminder"
+                          : alert.kind === "stale_docs"
+                            ? "Open upload"
+                            : alert.kind === "lead_follow_up"
+                              ? "Open lead"
+                              : "Open"}
                     </Link>
                     <button
                       type="button"

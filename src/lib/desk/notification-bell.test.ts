@@ -75,8 +75,8 @@ describe("notification bell unread badge", () => {
     expect(header).toMatch(/HeaderRecordActions[\s\S]*NotificationBell/);
     expect(header).toMatch(/<NotificationBell unread=\{unread\} alerts=\{alerts\} \/>/);
     expect(header).toMatch(/ProfileMenu/);
-    expect(shell).toMatch(/alertRows\.filter\(\(row\) => !row\.readAt\)\.length/);
-    expect(shell).toMatch(/unread=\{unread\}/);
+    expect(shell).toMatch(/unread=\{header\.unread\}/);
+    expect(source("src/lib/db/header-alerts.ts")).toMatch(/isNull\(alerts\.readAt\)/);
     expect(bell).toMatch(/notificationBellBadge\(displayUnread\)/);
     expect(bell).toMatch(/data-unread-count=\{displayUnread\}/);
     expect(bell).not.toMatch(/data-ff-bell-highlight/);

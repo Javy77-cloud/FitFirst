@@ -140,7 +140,6 @@ export const NAV_LINK_CATALOG: NavLinkDef[] = [
   { id: "decline-log", href: "/logs", label: "Decline log", icon: FileStack, match: "/logs" },
   { id: "scorecards", href: "/scorecards", label: "Scorecards", icon: ClipboardList, match: "/scorecards" },
   { id: "glance", href: "/glance", label: "Glance", icon: ListChecks, match: "/glance" },
-  { id: "tasks", href: "/tasks", label: "Tasks", icon: ListChecks, match: "/tasks" },
   { id: "work-queue", href: "/work-queue", label: "Work queue", icon: ListChecks, match: "/work-queue" },
   {
     id: "automations",
@@ -155,7 +154,7 @@ export const NAV_LINK_CATALOG: NavLinkDef[] = [
   {
     id: "alerts",
     href: "/notifications",
-    label: "Alerts",
+    label: "Notifications",
     icon: Bell,
     match: "/notifications",
   },
@@ -312,7 +311,7 @@ export function navLinkIsActive(pathname: string, item: Pick<NavLinkDef, "href" 
   if (match === "/admin" && (pathname === "/admin/operations" || pathname.startsWith("/admin/operations/"))) {
     return false;
   }
-  if (match === "/notifications" && (pathname === "/alerts" || pathname.startsWith("/alerts/"))) {
+  if (match === "/notifications" && (pathname === "/alerts" || pathname.startsWith("/alerts/") || pathname === "/tasks" || pathname.startsWith("/tasks/"))) {
     return true;
   }
   if (match === "/accounts" && (pathname === "/businesses" || pathname.startsWith("/businesses/"))) {

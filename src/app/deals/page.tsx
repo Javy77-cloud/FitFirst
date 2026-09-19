@@ -37,6 +37,8 @@ import {
   matchesDealPipelineColumnFilters,
 } from "@/lib/deals/pipeline-column-filters";
 import { pickFilterParams } from "@/lib/saved-filters";
+import { loadOpenCommitments } from "@/lib/notifications/load-commitments";
+import { serializeCommitments } from "@/lib/notifications/commitments";
 
 export const dynamic = "force-dynamic";
 
@@ -84,7 +86,7 @@ export default async function DealsPage({
   };
   const boardSlug = pipeline || "p-c";
   const selectedPipeline = pipeline || undefined;
-  const [boardData, listRows, userRows, lineSettings, desk, tagCatalog, pageFilterPrefs] = await Promise.all([
+  const [boardData, listRows, userRows, lineSettings, desk, tagCatalog, pageFilterPrefs, promiseRows] = await Promise.all([
     getPipelineBoard(boardSlug, {
       lifeSub: filter.lifeSub,
       healthSub: filter.healthSub,
@@ -101,6 +103,7 @@ export default async function DealsPage({
     loadDealPipelineDesk(queue),
     listModuleTags("deals").catch(() => []),
     loadPageFilterPrefs("deals-pipeline"),
+    loadOpenCommitments().catch(() => []),
   ]);
   const boards = boardData?.boards ?? [];
   const settings = boardData?.lineSettings ?? lineSettings;
@@ -122,6 +125,12 @@ export default async function DealsPage({
       : (boardData?.cards ?? [])
   ).filter((row) => matchesDealPipelineColumnFilters(row.deal, columnFilter));
   const presented = boardCards.map(presentPipelineCard);
+  const commitmentsByDealId = Object.fromEntries(
+    [...new Set(presented.map((card) => card.id))].map((id) => [
+      id,
+      serializeCommitments(promiseRows.filter((row) => row.dealId === id)),
+    ]),
+  );
   const optionDeals = [
     ...boardCards.map((row) => row.deal),
     ...(listRows ?? []).map((row) => row.deal),
@@ -280,6 +289,7 @@ export default async function DealsPage({
               agents={agents}
               initialQuery={q}
               nextByDeal={desk.nextByDeal}
+              commitmentsByDealId={commitmentsByDealId}
               mode={view}
               listFilter={{
                 pipeline: selectedPipeline,
@@ -314,6 +324,7 @@ export default async function DealsPage({
             view={view}
             stageFilter={stage}
             tagCatalog={tagCatalog}
+            commitmentsByDealId={commitmentsByDealId}
           />
         ) : (
           <p className="text-sm text-muted-foreground">

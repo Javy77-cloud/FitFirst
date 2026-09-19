@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { CheckCircle2, ThumbsDown, ThumbsUp, XCircle } from "lucide-react";
 import { formatDay } from "@/lib/domain";
 import { displayStatusLabel } from "@/lib/desk/status-colors";
+import { PromiseChips } from "@/components/notifications/promise-chips";
+import type { Commitment, SerializedCommitment } from "@/lib/notifications/commitments";
 import { cn } from "@/lib/utils";
 
 export type GlancePolicy = {
@@ -172,6 +174,7 @@ export function ContactAtAGlanceCards({
   lastActivity,
   emailOptOut = false,
   smsOptOut = false,
+  commitments = [],
 }: {
   contactId: string;
   policies: GlancePolicy[];
@@ -180,6 +183,7 @@ export function ContactAtAGlanceCards({
   lastActivity?: GlanceActivity | null;
   emailOptOut?: boolean | string | number | null;
   smsOptOut?: boolean | string | number | null;
+  commitments?: Array<Commitment | SerializedCommitment>;
 }) {
   void contactId;
   const inForce = policies.filter((p) => {
@@ -206,6 +210,7 @@ export function ContactAtAGlanceCards({
       </span>
       <CommsOkMark ok={!coerceOptOut(smsOptOut)} label="SMS" />
     </p>
+    {commitments.length > 0 ? <PromiseChips commitments={commitments} /> : null}
     <div
       className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
       data-ff-contact-glance-cards=""
