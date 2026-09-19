@@ -5,7 +5,7 @@ import { PipelineBookModeToggle } from "@/components/pipeline/book-mode-toggle";
 import { RenewalsFilteredViews } from "@/components/renewals/renewals-filtered-views";
 import { RenewalsHealthStrip } from "@/components/renewals/renewals-health-strip";
 import { RenewalsPulse } from "@/components/renewals/renewals-pulse";
-import { TodayActivityCorner } from "@/components/renewals/today-activity-corner";
+import { TodayActivityCorner } from "@/components/desk/today-activity-corner";
 import { currentDeskSession } from "@/lib/auth/session";
 import { rollupRenewalHealth } from "@/lib/health/load";
 import { roleHealthSummary } from "@/lib/renewal/health-rollup";

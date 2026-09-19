@@ -18,7 +18,7 @@ describe("Deals pipeline chrome unlock (activity lift must not steal clicks)", (
     expect(page).toMatch(/TodayActivityCorner/);
     expect(page).not.toMatch(/deal-upload-activity/);
     expect(chrome).toMatch(/\.deal-workspace-bar \{[\s\S]*z-index: 5;/);
-    expect(chrome).toMatch(/\.deal-workspace-bar \{[\s\S]*isolation: isolate;/);
+    expect(chrome).toMatch(/\.ff-today-activity-corner \{[\s\S]*position: fixed;/);
     expect(chrome).toMatch(/\.ff-today-activity-corner/);
     expect(page).not.toMatch(/marginTop:\s*["']-5rem["']/);
     expect(page).not.toMatch(/marginTop:\s*["']-2\.5rem["']/);

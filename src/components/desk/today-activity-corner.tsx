@@ -1,22 +1,30 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { CalendarDays, X } from "lucide-react";
 import { TodayActivityStrip } from "@/components/deals/today-activity-strip";
-import type { DealTodayActivityType } from "@/lib/deals/pipeline-desk";
+import {
+  formatTodayActivityDate,
+  todayActivityCalendarHref,
+  type DealTodayActivityType,
+} from "@/lib/deals/pipeline-desk";
 
 export function TodayActivityCorner({
   counts,
   active,
+  now,
   basePath = "/renewals",
 }: {
   counts: Record<DealTodayActivityType, number>;
   active?: DealTodayActivityType | null;
+  now?: Date;
   basePath?: "/deals" | "/renewals";
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  const dated = formatTodayActivityDate(now);
 
   useEffect(() => {
     if (!open) return;
@@ -24,8 +32,15 @@ export function TodayActivityCorner({
       if (rootRef.current?.contains(event.target as Node)) return;
       setOpen(false);
     }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   return (
@@ -38,7 +53,16 @@ export function TodayActivityCorner({
       {open ? (
         <div className="ff-today-activity-corner-panel" data-ff-today-activity-panel="">
           <div className="ff-today-activity-corner-panel-head">
-            <p>Today Activity</p>
+            <Link
+              href={todayActivityCalendarHref()}
+              className="ff-today-activity-corner-calendar"
+              title="Open calendar"
+              aria-label="Open calendar"
+              data-testid="deal-today-calendar"
+            >
+              <CalendarDays className="size-3.5" aria-hidden />
+              <span data-testid="deal-today-date">{dated}</span>
+            </Link>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -59,7 +83,6 @@ export function TodayActivityCorner({
         onClick={() => setOpen((current) => !current)}
       >
         <CalendarDays className="size-4" aria-hidden />
-        <span>Today</span>
         <strong>{total}</strong>
       </button>
     </div>

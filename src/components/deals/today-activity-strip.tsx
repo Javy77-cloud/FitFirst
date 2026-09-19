@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { Calendar, CalendarDays, GraduationCap, ListTodo, MessageSquare, Phone } from "lucide-react";
+import { Calendar, GraduationCap, ListTodo, MessageSquare, Phone } from "lucide-react";
 import {
   DEAL_ACTIVITY_TONES,
   DEAL_TODAY_ACTIVITY_CHIPS,
-  formatTodayActivityDate,
-  todayActivityCalendarHref,
   todayActivityWorkHref,
   type DealTodayActivityType,
 } from "@/lib/deals/pipeline-desk";
@@ -20,38 +18,15 @@ const CHIP_ICONS = {
 export function TodayActivityStrip({
   counts,
   active,
-  now,
   basePath = "/deals",
 }: {
   counts: Record<DealTodayActivityType, number>;
   active?: DealTodayActivityType | null;
-  now?: Date;
   basePath?: "/deals" | "/renewals";
 }) {
-  const dated = formatTodayActivityDate(now);
   return (
-    <aside
-      className="deal-today-strip inline-grid max-w-full justify-items-center bg-transparent"
-      data-testid="deal-today-activity"
-    >
-      <div className="deal-today-heading flex w-full flex-col items-center justify-center text-center">
-        <div className="flex items-center justify-center gap-2">
-          <Link
-            href={todayActivityCalendarHref()}
-            className="rounded-md p-1 text-navy/70 hover:bg-muted hover:text-navy"
-            title="Open work queue"
-            aria-label="Open work queue"
-            data-testid="deal-today-calendar"
-          >
-            <CalendarDays className="size-6" aria-hidden />
-          </Link>
-          <p className="text-base font-semibold tracking-wide text-navy">Today&apos;s Activity</p>
-        </div>
-        <p className="mt-0 text-[16px] leading-tight text-muted-foreground" data-testid="deal-today-date">
-          {dated}
-        </p>
-      </div>
-      <div className="deal-today-chips mt-0.5 flex flex-nowrap items-center justify-center gap-2 overflow-visible">
+    <aside className="deal-today-strip bg-transparent" data-testid="deal-today-activity">
+      <div className="deal-today-chips">
         {DEAL_TODAY_ACTIVITY_CHIPS.map((chip) => {
           const on = active === chip.id;
           const tone = DEAL_ACTIVITY_TONES[chip.id];
@@ -72,20 +47,8 @@ export function TodayActivityStrip({
               data-testid={`deal-today-${chip.id}`}
               data-tone={chip.tone}
             >
-              <span
-                className="deal-today-chip"
-                style={{
-                  display: "inline-flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  minWidth: 84,
-                  minHeight: 84,
-                  borderRadius: 10,
-                  boxSizing: "border-box",
-                }}
-              >
-                <Icon className="size-4 shrink-0" aria-hidden />
+              <span className="deal-today-chip">
+                <Icon className="size-3.5 shrink-0" aria-hidden />
                 <span className="deal-today-chip-count">{counts[chip.id]}</span>
                 <span className="deal-today-chip-word">{chip.label}</span>
               </span>
