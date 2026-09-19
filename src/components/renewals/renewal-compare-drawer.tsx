@@ -14,6 +14,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { HealthFactorList } from "@/components/health/health-score-chip";
 import { cn } from "@/lib/utils";
 
 export function RenewalCompareDrawer({
@@ -127,6 +128,12 @@ export function RenewalCompareDrawer({
                     <p className="ff-renewal-compare-fallback">Gemini key not live — this is the desk fallback.</p>
                   ) : null}
                 </aside>
+                {payload.clientHealth || payload.policyHealth ? (
+                  <div className="ff-renewal-health-graphs" data-ff-health-graphs="">
+                    {payload.clientHealth ? <HealthFactorList health={payload.clientHealth} /> : null}
+                    {payload.policyHealth ? <HealthFactorList health={payload.policyHealth} /> : null}
+                  </div>
+                ) : null}
               </>
             ) : null}
           </div>

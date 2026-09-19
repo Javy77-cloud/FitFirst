@@ -2028,6 +2028,33 @@ export const activityLogs = pgTable(
   ],
 );
 
+/** Agent 1–5 experience reviews after renewal / bind / claim / comms moments. */
+export const experienceReviews = pgTable(
+  "experience_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    reviewerUserId: uuid("reviewer_user_id").references(() => users.id),
+    moment: text("moment").notNull(),
+    promptId: text("prompt_id").notNull(),
+    stars: integer("stars"),
+    note: text("note"),
+    skipped: boolean("skipped").notNull().default(false),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    accountId: uuid("account_id"),
+    policyId: uuid("policy_id").references(() => policies.id),
+    dealId: uuid("deal_id").references(() => deals.id),
+    activityId: uuid("activity_id").references(() => activities.id),
+    ...timestamps,
+  },
+  (t) => [
+    index("experience_reviews_tenant_idx").on(t.tenantId, t.createdAt),
+    index("experience_reviews_reviewer_idx").on(t.tenantId, t.reviewerUserId, t.moment),
+    index("experience_reviews_contact_idx").on(t.tenantId, t.contactId),
+    index("experience_reviews_policy_idx").on(t.tenantId, t.policyId),
+  ],
+);
+
 /** Invited desk users for Admin company / training events. */
 export const calendarInvites = pgTable(
   "calendar_invites",
@@ -3314,6 +3341,7 @@ export type ReviewTask = typeof reviewTasks.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
 export type CalendarInvite = typeof calendarInvites.$inferSelect;
 export type ActivityLog = typeof activityLogs.$inferSelect;
+export type ExperienceReview = typeof experienceReviews.$inferSelect;
 export type Pipeline = typeof pipelines.$inferSelect;
 export type PipelineStage = typeof pipelineStages.$inferSelect;
 export type AgencyLob = typeof agencyLobs.$inferSelect;

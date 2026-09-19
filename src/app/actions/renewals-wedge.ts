@@ -18,6 +18,10 @@ import {
 } from "@/lib/renewal/compare";
 import { compareLineTone, toneCoverageRows } from "@/lib/renewal/compare-tone";
 import { summarizeRenewalDiff, type GeminiDiffNote } from "@/lib/renewal/gemini-diff";
+import { loadPartyHealth } from "@/lib/health/load";
+import type { HealthChipView } from "@/lib/health/model";
+import { daysUntilExpiration } from "@/lib/ams/renewals";
+import { deskNow } from "@/lib/home/as-of";
 import { CHASE_EVENT, CHASE_MARK, chaseTemplateFor } from "@/lib/renewal/chase";
 import { REVIEW_EVENT, REVIEW_SKIP_EVENT } from "@/lib/renewal/chase";
 import { renewalUrgencyBand } from "@/lib/renewal/urgency";
@@ -52,6 +56,8 @@ export type RenewalCompareDrawerPayload = {
     tone: "green" | "amber" | "red";
   }>;
   note: GeminiDiffNote;
+  clientHealth: HealthChipView | null;
+  policyHealth: HealthChipView | null;
 };
 
 export async function loadRenewalCompareDrawer(
@@ -129,6 +135,13 @@ export async function loadRenewalCompareDrawer(
     clientName: policy.policyNumber,
     lineOfBusiness: policy.lineOfBusiness,
   });
+  const health = await loadPartyHealth({
+    contactId: policy.contactId,
+    accountId: policy.accountId,
+    policyId: policy.id,
+    daysUntil: daysUntilExpiration(policy.expirationDate, deskNow()),
+    premiumDelta: change?.delta ?? null,
+  }).catch(() => ({ client: null, policy: null }));
 
   return {
     policyId,
@@ -143,6 +156,8 @@ export async function loadRenewalCompareDrawer(
     premiumTone: rows.find((row) => row.key === "premium")?.tone ?? "amber",
     rows,
     note,
+    clientHealth: health.client,
+    policyHealth: health.policy,
   };
 }
 

@@ -7,6 +7,7 @@ import { RenewalsHealthStrip } from "@/components/renewals/renewals-health-strip
 import { RenewalsPulse } from "@/components/renewals/renewals-pulse";
 import { TodayActivityCorner } from "@/components/renewals/today-activity-corner";
 import { currentDeskSession } from "@/lib/auth/session";
+import { rollupRenewalHealth } from "@/lib/health/load";
 import { roleHealthSummary } from "@/lib/renewal/health-rollup";
 import { readDefaultRenewalsView } from "@/app/actions/pipeline-view-prefs";
 import { loadDealPipelineDesk } from "@/lib/deals/pipeline-desk-data";
@@ -92,6 +93,26 @@ export async function RenewalsDesk({
   const visibleStages = renewalStagesForPipeline(stageRows, pipeline);
   const archiveEmpty = pipeline === "archive";
   const hasFilter = Boolean(pipeline || stage || pcSub || lifeSub || healthSub);
+  const showAgencyHealth = session.isAdmin;
+  const hasOwnedBook = Boolean(
+    session.userId && filtered.some((card) => card.ownerId === session.userId),
+  );
+  const healthRollup = rollupRenewalHealth(
+    filtered
+      .filter((card) => card.clientHealth)
+      .map((card) => ({
+        ownerId: card.ownerId,
+        ownerName: card.ownerName ?? "Unassigned",
+        clientHealth: card.clientHealth!,
+        contactId: card.contactId,
+        accountId: card.accountId,
+      })),
+    showAgencyHealth || !hasOwnedBook ? undefined : { ownerId: session.userId },
+  );
+  const weakest = filtered
+    .map((card) => card.clientHealth)
+    .filter((row): row is NonNullable<typeof row> => Boolean(row))
+    .sort((a, b) => a.score - b.score)[0] ?? null;
 
   return (
     <div className="space-y-3" data-ff-renewals-workspace="" data-ff-renewals-desk="">
@@ -205,6 +226,9 @@ export async function RenewalsDesk({
                 viewerId: session.userId,
                 viewerName: session.name,
               })}
+              book={healthRollup.book}
+              agents={showAgencyHealth ? healthRollup.agents : []}
+              weakest={weakest}
             />
             <RenewalsFilteredViews
               cards={filtered}

@@ -17,6 +17,7 @@ import { scheduleDueLeadFollowUpRelease } from "@/lib/leads/schedule-follow-up-r
 import { schedulePanelSignalSync } from "@/lib/notifications/sync-panel";
 import { AgencyLobProvider } from "@/components/desk/agency-lob-context";
 import { loadAgencyLobs } from "@/lib/db/line-settings";
+import { ExperienceReviewHost } from "@/components/health/review-prompt-host";
 
 export async function AppShell({
   children,
@@ -103,6 +104,9 @@ export async function AppShell({
           </Suspense>
           <main className="flex-1 px-2 py-5">{children}</main>
         </div>
+        <Suspense fallback={null}>
+          <ExperienceReviewHost />
+        </Suspense>
         <Suspense fallback={null}>
           <SupportLauncher />
         </Suspense>
