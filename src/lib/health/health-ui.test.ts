@@ -6,27 +6,28 @@ function source(file: string) {
 }
 
 describe("client health chrome", () => {
-  it("enriches the shipped #153 board without a second card face", () => {
+  it("feeds locked dig-in into #153 cards and the compare drawer", () => {
     const card = source("src/components/renewals/renewal-card.tsx");
     const desk = source("src/components/renewals/renewals-desk.tsx");
     const strip = source("src/components/renewals/renewals-health-strip.tsx");
     const drawer = source("src/components/renewals/renewal-compare-drawer.tsx");
+    const board = source("src/lib/renewal/board-data.ts");
     const chip = source("src/components/health/health-score-chip.tsx");
     expect(card).toMatch(/RenewalHealthMeter/);
     expect(card).toMatch(/RenewalCompareDrawer/);
+    expect(card).toMatch(/clientHealth=\{card\.clientHealth\}/);
+    expect(card).toMatch(/policyHealth=\{card\.policyHealth\}/);
+    expect(card).toMatch(/data-ff-client-health-band/);
     expect(card).not.toMatch(/HealthScoreChip/);
-    expect(card).not.toMatch(/card\.clientHealth/);
+    expect(board).toMatch(/clientHealth\.why/);
+    expect(board).toMatch(/clientHealth\.band/);
     expect(desk).toMatch(/RenewalsHealthStrip/);
     expect(desk).toMatch(/rollupRenewalHealth/);
-    expect(desk).toMatch(/roleHealthSummary/);
     expect(strip).toMatch(/data-ff-health-agent-rollups/);
-    expect(strip).toMatch(/data-ff-health-mix/);
-    expect(strip).toMatch(/Why/);
     expect(strip).not.toMatch(/retention/i);
     expect(drawer).toMatch(/data-ff-health-graphs/);
     expect(drawer).toMatch(/HealthFactorList/);
-    expect(chip).toMatch(/Client health/);
-    expect(chip).toMatch(/Policy health/);
+    expect(chip).toMatch(/Talk history|Client health/);
     expect(chip).not.toMatch(/retention/i);
   });
 

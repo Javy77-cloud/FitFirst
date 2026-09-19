@@ -131,9 +131,15 @@ export function RenewalBoardCardView({
             canCompare={card.canCompare}
             open={compareOpen}
             onOpenChange={setCompareOpen}
+            clientHealth={card.clientHealth}
+            policyHealth={card.policyHealth}
           />
         </div>
-        <span className={cn("ff-renewal-risk-badge", `ff-renewal-risk-${risk}`)} data-ff-risk-badge={risk}>
+        <span
+          className={cn("ff-renewal-risk-badge", `ff-renewal-risk-${risk}`)}
+          data-ff-risk-badge={risk}
+          data-ff-client-health-band={card.clientHealth?.band ?? risk}
+        >
           {RENEWAL_RISK_LABEL[risk]}
         </span>
       </div>

@@ -3,6 +3,7 @@ import { deskNow } from "@/lib/home/as-of";
 import {
   computeClientHealth,
   computePolicyHealth,
+  lockedHealthDigIn,
   toHealthChip,
   type BookShapeInput,
   type DeskSignalsInput,
@@ -36,6 +37,7 @@ export type HealthPolicyRow = {
   ownerId: string | null;
   status: string;
   effectiveDate: Date | string | null;
+  originalEffectiveDate?: Date | string | null;
   expirationDate: Date | string | null;
   endedAt: Date | string | null;
   premium: string | number | null;
@@ -139,7 +141,11 @@ export function engagementFromComms(rows: HealthCommsRow[], now = deskNow()): En
   };
 }
 
-export function bookShapeFromPolicies(rows: HealthPolicyRow[], now = deskNow()): BookShapeInput {
+export function bookShapeFromPolicies(
+  rows: HealthPolicyRow[],
+  now = deskNow(),
+  tenureStart?: Date | string | null,
+): BookShapeInput {
   const inForceCount = rows.filter((row) => isInForceStatus(row.status)).length;
   const addedLast180 = rows.filter((row) => {
     const start = asDate(row.effectiveDate);
@@ -150,11 +156,17 @@ export function bookShapeFromPolicies(rows: HealthPolicyRow[], now = deskNow()):
     const ended = asDate(row.endedAt) ?? asDate(row.expirationDate);
     return ended ? daysBetween(now, ended) <= 180 : false;
   }).length;
+  const starts = [
+    asDate(tenureStart),
+    ...rows.map((row) => asDate(row.originalEffectiveDate) ?? asDate(row.effectiveDate)),
+  ].filter((date): date is Date => Boolean(date));
+  const oldest = starts.sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
   return {
     inForceCount,
     lifetimeCount: rows.length,
     addedLast180,
     endedLast180,
+    tenureDays: oldest ? Math.max(0, daysBetween(now, oldest)) : null,
   };
 }
 
@@ -264,6 +276,7 @@ export type ClientHealthFacts = {
   alerts: HealthAlertRow[];
   renewalDaysByPolicy?: Record<string, number>;
   premiumDeltaByPolicy?: Record<string, number | null>;
+  tenureStart?: Date | string | null;
   now?: Date;
 };
 
@@ -288,7 +301,7 @@ export function assemblePolicyHealth(
   const engagement = engagementFromComms(policyComms, facts.now);
   return computePolicyHealth({
     engagement,
-    bookShape: bookShapeFromPolicies(facts.policies, facts.now),
+    bookShape: bookShapeFromPolicies(facts.policies, facts.now, facts.tenureStart),
     velocity: velocityFromRecords({
       leads: facts.leads,
       deals: clientDeals,
@@ -337,7 +350,7 @@ export function assembleClientHealth(facts: ClientHealthFacts): HealthScore {
     .map((policy) => assemblePolicyHealth(facts, policy.id).score);
   return computeClientHealth({
     engagement,
-    bookShape: bookShapeFromPolicies(facts.policies, facts.now),
+    bookShape: bookShapeFromPolicies(facts.policies, facts.now, facts.tenureStart),
     velocity: velocityFromRecords({
       leads: facts.leads,
       deals: facts.deals,
@@ -358,14 +371,36 @@ export function assembleClientHealth(facts: ClientHealthFacts): HealthScore {
   });
 }
 
+function digInFor(
+  facts: ClientHealthFacts,
+  policyId?: string,
+): ReturnType<typeof lockedHealthDigIn> {
+  const policy = policyId ? facts.policies.find((row) => row.id === policyId) : null;
+  const comms = filterEntityComms(facts.comms, {
+    policyId: policyId ?? null,
+    contactId: facts.contactId,
+    accountId: facts.accountId,
+    dealId: policy?.dealId,
+  });
+  return lockedHealthDigIn({
+    engagement: engagementFromComms(comms, facts.now),
+    bookShape: bookShapeFromPolicies(facts.policies, facts.now, facts.tenureStart),
+    ratings: ratingsFromReviews(
+      policyId
+        ? facts.reviews.filter((row) => row.policyId === policyId || row.contactId === facts.contactId)
+        : facts.reviews,
+    ),
+  });
+}
+
 export function assembleClientPair(facts: ClientHealthFacts): {
   client: HealthChipView;
   policies: Record<string, HealthChipView>;
 } {
-  const client = toHealthChip(assembleClientHealth(facts));
+  const client = toHealthChip(assembleClientHealth(facts), digInFor(facts));
   const policies: Record<string, HealthChipView> = {};
   for (const policy of facts.policies) {
-    policies[policy.id] = toHealthChip(assemblePolicyHealth(facts, policy.id));
+    policies[policy.id] = toHealthChip(assemblePolicyHealth(facts, policy.id), digInFor(facts, policy.id));
   }
   return { client, policies };
 }

@@ -15,6 +15,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { HealthFactorList } from "@/components/health/health-score-chip";
+import type { HealthChipView } from "@/lib/health/model";
 import { cn } from "@/lib/utils";
 
 export function RenewalCompareDrawer({
@@ -24,6 +25,8 @@ export function RenewalCompareDrawer({
   open,
   onOpenChange,
   hideTrigger = false,
+  clientHealth = null,
+  policyHealth = null,
 }: {
   policyId: string;
   clientName: string;
@@ -31,6 +34,8 @@ export function RenewalCompareDrawer({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
+  clientHealth?: HealthChipView | null;
+  policyHealth?: HealthChipView | null;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = open ?? internalOpen;
@@ -94,6 +99,12 @@ export function RenewalCompareDrawer({
                 {error}
               </p>
             ) : null}
+            {!payload && (clientHealth || policyHealth) ? (
+              <div className="ff-renewal-health-graphs" data-ff-health-graphs="">
+                {clientHealth ? <HealthFactorList health={clientHealth} /> : null}
+                {policyHealth ? <HealthFactorList health={policyHealth} /> : null}
+              </div>
+            ) : null}
             {payload ? (
               <>
                 <div className="ff-renewal-compare-premium" data-ff-compare-premium={payload.premiumTone}>
@@ -128,10 +139,14 @@ export function RenewalCompareDrawer({
                     <p className="ff-renewal-compare-fallback">Gemini key not live — this is the desk fallback.</p>
                   ) : null}
                 </aside>
-                {payload.clientHealth || payload.policyHealth ? (
+                {payload.clientHealth || payload.policyHealth || clientHealth || policyHealth ? (
                   <div className="ff-renewal-health-graphs" data-ff-health-graphs="">
-                    {payload.clientHealth ? <HealthFactorList health={payload.clientHealth} /> : null}
-                    {payload.policyHealth ? <HealthFactorList health={payload.policyHealth} /> : null}
+                    {(payload.clientHealth ?? clientHealth) ? (
+                      <HealthFactorList health={(payload.clientHealth ?? clientHealth)!} />
+                    ) : null}
+                    {(payload.policyHealth ?? policyHealth) ? (
+                      <HealthFactorList health={(payload.policyHealth ?? policyHealth)!} />
+                    ) : null}
                   </div>
                 ) : null}
               </>

@@ -29,7 +29,7 @@ import { getAgencyPolicyLabelTemplate } from "@/lib/policy/auto-label-prefs";
 import { enrichRenewalCards } from "@/lib/renewal/board-enrich";
 import type { HealthChipView } from "@/lib/health/model";
 import { loadRenewalHealthMap } from "@/lib/health/load";
-import type { RenewalRiskLevel } from "@/lib/renewal/urgency";
+import { renewalWhyLine, type RenewalRiskLevel } from "@/lib/renewal/urgency";
 
 export type RenewalBoardCard = {
   queueId: string;
@@ -269,6 +269,13 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
     card.clientHealth = row.clientHealth;
     if (!card.ownerId && row.ownerId) card.ownerId = row.ownerId;
     if (!card.ownerName && row.ownerName) card.ownerName = row.ownerName;
+    card.risk = row.clientHealth.band;
+    card.whyExtra = row.clientHealth.why;
+    card.why = renewalWhyLine({
+      daysUntil: card.daysUntil,
+      premiumDelta: card.premiumDelta,
+      whyExtra: row.clientHealth.why,
+    });
   }
 
   const stageRows = renewalsPipeline?.stages ?? RENEWAL_QUEUE_STAGES.map((slug, sortOrder) => ({

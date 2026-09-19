@@ -27,7 +27,7 @@ export function HealthFactorList({
   return (
     <div className={cn("ff-health-factor-list", className)} data-ff-health-breakdown={health.kind}>
       <p className="ff-health-breakdown-head">
-        {label}
+        {label} · {RENEWAL_RISK_LABEL[health.band]}
         {health.flags.includes("Two ratings under 3") ? " · flagged under 3" : ""}
       </p>
       <ul>

@@ -47,6 +47,7 @@ async function loadFactsForParties(input: {
   reviews: HealthReviewRow[];
   alerts: HealthAlertRow[];
   owners: Map<string, string>;
+  tenureStart: Map<string, Date | null>;
 }> {
   const contactIds = uniq(input.contactIds);
   const accountIds = uniq(input.accountIds);
@@ -60,6 +61,7 @@ async function loadFactsForParties(input: {
       reviews: [],
       alerts: [],
       owners: new Map(),
+      tenureStart: new Map(),
     };
   }
 
@@ -88,6 +90,7 @@ async function loadFactsForParties(input: {
         ownerId: policies.ownerId,
         status: policies.status,
         effectiveDate: policies.effectiveDate,
+        originalEffectiveDate: policies.originalEffectiveDate,
         expirationDate: policies.expirationDate,
         endedAt: policies.endedAt,
         premium: policies.premium,
@@ -130,6 +133,13 @@ async function loadFactsForParties(input: {
       .from(users)
       .where(eq(users.tenantId, tenant())),
   ]);
+  const tenureRows = contactIds.length
+    ? await db
+        .select({ id: contacts.id, tenureStart: contacts.tenureStart })
+        .from(contacts)
+        .where(and(eq(contacts.tenantId, tenant()), inArray(contacts.id, contactIds)))
+        .catch(() => [])
+    : [];
 
   const allPolicyIds = uniq([...policyRows.map((row) => row.id), ...policyIds]);
   const allDealIds = uniq(dealRows.map((row) => row.id));
@@ -198,6 +208,7 @@ async function loadFactsForParties(input: {
     reviews: reviewRows,
     alerts: alertRows,
     owners: new Map(ownerRows.map((row) => [row.id, row.name])),
+    tenureStart: new Map(tenureRows.map((row) => [row.id, row.tenureStart])),
   };
 }
 
@@ -246,6 +257,7 @@ function factsForParty(
     ),
     alerts: bundle.alerts,
     ...extra,
+    tenureStart: extra?.tenureStart ?? (contactId ? bundle.tenureStart.get(contactId) : null) ?? null,
   };
 }
 

@@ -5,6 +5,7 @@ import {
   computeClientHealth,
   computePolicyHealth,
   healthBand,
+  lockedHealthDigIn,
   rollupHealthScores,
   scoreBookShape,
   scoreEngagement,
@@ -91,7 +92,7 @@ describe("named score inputs", () => {
     expect(live.source).toBe("live");
   });
 
-  it("scores book shape from policies with us, adds, and cancels", () => {
+  it("scores book shape from policies with us, tenure, adds, and cancels", () => {
     const mono = scoreBookShape(bookMono);
     const multi = scoreBookShape(bookMulti);
     const cancelled = scoreBookShape({
@@ -99,10 +100,12 @@ describe("named score inputs", () => {
       lifetimeCount: 3,
       addedLast180: 0,
       endedLast180: 2,
+      tenureDays: 400,
     });
     expect(multi.score).toBeGreaterThan(mono.score);
     expect(cancelled.score).toBeLessThan(mono.score);
     expect(cancelled.why).toMatch(/ended in 180d/);
+    expect(cancelled.why).toMatch(/with us/);
   });
 
   it("scores lead → deal → close velocity and renewal reply", () => {
@@ -162,6 +165,24 @@ describe("client vs policy health", () => {
     });
     expect(policy.kind).toBe("policy");
     expect(policy.band).toBe("low");
+  });
+});
+
+describe("locked dig-in rows", () => {
+  it("exposes talk, reply, policy count, tenure, adds/cancels, and ratings", () => {
+    const rows = lockedHealthDigIn({
+      engagement: liveEngagement,
+      bookShape: { ...bookMulti, tenureDays: 800 },
+      ratings: { ratings: [5, 4], average: 4.5 },
+    });
+    const ids = rows.map((row) => row.id);
+    expect(ids).toEqual(["interaction", "reply", "policyCount", "tenure", "bookMotion", "ratings"]);
+    expect(rows.find((row) => row.id === "interaction")?.why).toMatch(/comms \/ 30d/);
+    expect(rows.find((row) => row.id === "reply")?.why).toMatch(/Replies in/);
+    expect(rows.find((row) => row.id === "policyCount")?.why).toMatch(/in-force/);
+    expect(rows.find((row) => row.id === "tenure")?.why).toMatch(/with us/);
+    expect(rows.find((row) => row.id === "bookMotion")?.why).toMatch(/add/);
+    expect(rows.find((row) => row.id === "ratings")?.why).toMatch(/★/);
   });
 });
 

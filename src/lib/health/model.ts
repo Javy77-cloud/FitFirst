@@ -55,6 +55,8 @@ export type BookShapeInput = {
   lifetimeCount: number;
   addedLast180: number;
   endedLast180: number;
+  /** Days since first policy / contact tenureStart. */
+  tenureDays?: number | null;
 };
 
 export type VelocityInput = {
@@ -170,12 +172,28 @@ export function scoreEngagement(input: EngagementInput): HealthFactor {
   };
 }
 
+export function tenurePhrase(days: number | null | undefined): string {
+  if (days == null || !Number.isFinite(days)) return "tenure unknown";
+  if (days < 60) return "with us under 2mo";
+  if (days < 365) return `with us ${Math.max(1, Math.round(days / 30))}mo`;
+  const years = Math.floor(days / 365);
+  return years <= 1 ? "with us 1y" : `with us ${years}y`;
+}
+
 export function scoreBookShape(input: BookShapeInput): HealthFactor {
   const base =
     input.inForceCount >= 3 ? 94 : input.inForceCount === 2 ? 80 : input.inForceCount === 1 ? 58 : 22;
   const addBoost = Math.min(20, input.addedLast180 * 8);
   const endHit = Math.min(50, input.endedLast180 * 22);
-  const score = clampScore(base + addBoost - endHit);
+  const tenure =
+    input.tenureDays == null
+      ? 0
+      : input.tenureDays < 90
+        ? -8
+        : input.tenureDays >= 365 * 3
+          ? 6
+          : 0;
+  const score = clampScore(base + addBoost - endHit + tenure);
   const book =
     input.inForceCount === 0
       ? "No in-force policies"
@@ -192,10 +210,116 @@ export function scoreBookShape(input: BookShapeInput): HealthFactor {
     id: "bookShape",
     label: "Book shape",
     score,
-    why: `${book} · ${motion}`,
+    why: `${book} · ${tenurePhrase(input.tenureDays)} · ${motion}`,
     source: "live",
     weight: 0,
   };
+}
+
+/** Last-night dig-in rows — talk, reply, policy count, tenure, adds/cancels, ratings. */
+export function lockedHealthDigIn(input: {
+  engagement: EngagementInput;
+  bookShape: BookShapeInput;
+  ratings: RatingsInput;
+}): HealthFactor[] {
+  const talk = scoreEngagement(input.engagement);
+  const replyScore =
+    input.engagement.medianReplyHours == null
+      ? 58
+      : input.engagement.medianReplyHours <= 4
+        ? 100
+        : input.engagement.medianReplyHours <= 24
+          ? 86
+          : input.engagement.medianReplyHours <= 72
+            ? 68
+            : input.engagement.medianReplyHours <= 168
+              ? 48
+              : 30;
+  const replyWhy =
+    input.engagement.medianReplyHours == null
+      ? "Reply speed unknown"
+      : input.engagement.medianReplyHours < 24
+        ? `Replies in ${Math.max(1, Math.round(input.engagement.medianReplyHours))}h`
+        : `Replies in ${Math.round(input.engagement.medianReplyHours / 24)}d`;
+  const talkWhy =
+    input.engagement.lastCommsDaysAgo == null
+      ? "No platform-logged talk yet"
+      : input.engagement.lastCommsDaysAgo === 0
+        ? `Talked today · ${input.engagement.commsLast30} comms / 30d`
+        : `Last talk ${input.engagement.lastCommsDaysAgo}d · ${input.engagement.commsLast30} comms / 30d`;
+  const countScore =
+    input.bookShape.inForceCount >= 3 ? 94 : input.bookShape.inForceCount === 2 ? 80 : input.bookShape.inForceCount === 1 ? 58 : 22;
+  const tenureScore =
+    input.bookShape.tenureDays == null
+      ? 58
+      : input.bookShape.tenureDays < 90
+        ? 42
+        : input.bookShape.tenureDays < 365
+          ? 70
+          : input.bookShape.tenureDays >= 365 * 3
+            ? 92
+            : 80;
+  const motionScore = clampScore(78 + input.bookShape.addedLast180 * 8 - input.bookShape.endedLast180 * 22);
+  const motionWhy =
+    input.bookShape.endedLast180 > 0
+      ? `${input.bookShape.endedLast180} cancel${input.bookShape.endedLast180 === 1 ? "" : "s"} in 180d`
+      : input.bookShape.addedLast180 > 0
+        ? `${input.bookShape.addedLast180} add${input.bookShape.addedLast180 === 1 ? "" : "s"} in 180d`
+        : "No recent adds or cancels";
+  const ratings = scoreRatings(input.ratings);
+  return [
+    {
+      id: "interaction",
+      label: "Talk history",
+      score: talk.score,
+      weight: 0,
+      why: talkWhy,
+      source: talk.source,
+    },
+    {
+      id: "reply",
+      label: "Reply",
+      score: clampScore(replyScore),
+      weight: 0,
+      why: replyWhy,
+      source: input.engagement.medianReplyHours == null ? "neutral" : "live",
+    },
+    {
+      id: "policyCount",
+      label: "Policies with us",
+      score: countScore,
+      weight: 0,
+      why:
+        input.bookShape.inForceCount === 0
+          ? "No in-force policies"
+          : `${input.bookShape.inForceCount} in-force · ${input.bookShape.lifetimeCount} lifetime`,
+      source: "live",
+    },
+    {
+      id: "tenure",
+      label: "Tenure",
+      score: tenureScore,
+      weight: 0,
+      why: tenurePhrase(input.bookShape.tenureDays),
+      source: input.bookShape.tenureDays == null ? "neutral" : "live",
+    },
+    {
+      id: "bookMotion",
+      label: "Adds / cancels",
+      score: motionScore,
+      weight: 0,
+      why: motionWhy,
+      source: "live",
+    },
+    {
+      id: "ratings",
+      label: "Ratings",
+      score: ratings.score,
+      weight: 0,
+      why: ratings.why,
+      source: ratings.source,
+    },
+  ];
 }
 
 export function scoreVelocity(input: VelocityInput): HealthFactor {
@@ -455,14 +579,14 @@ export type HealthChipView = {
   factors: HealthFactor[];
 };
 
-export function toHealthChip(score: HealthScore): HealthChipView {
+export function toHealthChip(score: HealthScore, factors?: HealthFactor[]): HealthChipView {
   return {
     kind: score.kind,
     score: score.score,
     band: score.band,
     why: score.why,
     flags: score.flags,
-    factors: score.factors,
+    factors: factors ?? score.factors,
   };
 }
 
