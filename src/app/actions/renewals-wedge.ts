@@ -270,7 +270,12 @@ export async function submitRenewalMiniReview(formData: FormData) {
       accountId: isUuid(accountId) ? accountId : null,
       assignee: session.userId,
     });
-  } catch {
+  } catch (error) {
+    console.error("[pulse] could not save renewal mini-review", {
+      message: error instanceof Error ? error.message : String(error),
+      trigger,
+      hasPolicy: Boolean(policyId),
+    });
     redirect("/renewals?error=" + encodeURIComponent("Could not save that pulse. Your book is still saved."));
   }
   refreshRenewals(policyId);

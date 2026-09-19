@@ -13,7 +13,7 @@ for i in $(seq 1 40); do
   fi
 done
 
-npx drizzle-kit migrate
+npx tsx scripts/migrate-on-deploy.ts
 npx tsx scripts/seed.ts
 npx tsx scripts/generate-pdfs.ts || true
 
