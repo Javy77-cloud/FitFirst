@@ -8,7 +8,6 @@ import { TodayActivityCorner } from "@/components/desk/today-activity-corner";
 import { PipelineBookModeToggle } from "@/components/pipeline/book-mode-toggle";
 import { RenewalsDesk } from "@/components/renewals/renewals-desk";
 import { requireSignedIn } from "@/lib/auth/guards";
-import { sessionSeesAgencyBook } from "@/lib/auth/session";
 import { loadDealPipelineDesk } from "@/lib/deals/pipeline-desk-data";
 import { getPipelineBoard, listBoundPendingDeals, listDeals, listUsers, type DealListFilter } from "@/lib/db/queries";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
@@ -28,10 +27,10 @@ import {
 } from "@/lib/deals/pipeline-column-filters";
 import { pickFilterParams } from "@/lib/saved-filters";
 import { defaultDealsView, parseDealsView } from "@/lib/deals/deals-views";
-import { matchesDealLens } from "@/lib/deals/deals-lenses";
+import { matchesDealLens, resolveDealScope } from "@/lib/deals/deals-lenses";
 import { scheduleDealColdChaseNotices } from "@/lib/deals/cold-chase-sync";
 import { loadDealVelocityTouches, ownerScorecards, presentRadarCards, agentVelocityScores } from "@/lib/deals/radar-desk";
-import { rankByScore } from "@/lib/deals/velocity";
+import { heatCounts, rankByScore } from "@/lib/deals/velocity";
 import { DeskTruthStrip } from "@/components/desk/truth-strip";
 import { dealHeatShares } from "@/lib/desk/truth-strip";
 import { deskNow } from "@/lib/home/as-of";
@@ -114,21 +113,31 @@ export default async function DealsPage({
   const touches = await loadDealVelocityTouches(rawRows.map((row) => row.deal.id));
   const presented = presentRadarCards(rawRows, touches, users);
   scheduleDealColdChaseNotices(presented);
-  const canSeeTeam = sessionSeesAgencyBook(session);
-  const filtered = presented.filter((card) => {
+  const canSeeTeam = session.isAdmin;
+  const viewScope = resolveDealScope({ scope, canSeeTeam, view });
+  const scoped = presented.filter((card) => {
     if (q) {
       const hay = `${card.title} ${card.insured} ${card.phone ?? ""}`.toLowerCase();
       if (!hay.includes(q.toLowerCase())) return false;
     }
     return matchesDealLens(card, {
-      heat,
-      lens,
-      scope,
-      valueBand,
+      scope: viewScope,
       viewerId: session.userId,
       canSeeTeam,
+      view,
     });
   });
+  const filtered = scoped.filter((card) =>
+    matchesDealLens(card, {
+      heat,
+      lens,
+      scope: viewScope,
+      viewerId: session.userId,
+      canSeeTeam,
+      view,
+    }),
+  );
+  const chipCounts = heatCounts(scoped.map((card) => card.heat));
   const scores = agentVelocityScores(presented);
   const selfScore = session.userId ? scores.get(session.userId) : undefined;
   const rankLabel =
@@ -252,6 +261,7 @@ export default async function DealsPage({
         <DealsCommandWorkspace
           view={view}
           cards={filtered}
+          chipCounts={chipCounts}
           canSeeTeam={canSeeTeam}
           scorecards={ownerScorecards(filtered)}
           rankLabel={rankLabel}
@@ -264,7 +274,7 @@ export default async function DealsPage({
             healthSub: filter.healthSub,
             heat,
             lens,
-            scope,
+            scope: viewScope,
             valueBand,
             q,
           }}

@@ -1,25 +1,40 @@
-import type { HeatState, VelocityPhase } from "@/lib/deals/velocity";
-import { HIGH_VALUE_COVERAGE_A } from "@/lib/deals/velocity";
-import { bookFamily } from "@/lib/desk/policy-line";
+import type { HeatState } from "@/lib/deals/velocity";
+import type { DealsViewId } from "@/lib/deals/deals-views";
 
 export const DEAL_HEAT_FILTERS = ["hot", "cooling", "near_cold", "cold"] as const;
 export type DealHeatFilter = (typeof DEAL_HEAT_FILTERS)[number];
 
-export const DEAL_LENS_IDS = ["my-hot-pc", "agency-cold", "high-value-quoting"] as const;
+export const DEAL_LENS_IDS = ["my-hot", "book-cold"] as const;
 export type DealLensId = (typeof DEAL_LENS_IDS)[number];
+
+const LEGACY_LENS_MAP: Record<string, DealLensId> = {
+  "my-hot-pc": "my-hot",
+  "agency-cold": "book-cold",
+};
 
 export const DEAL_LENSES: Array<{
   id: DealLensId;
   label: string;
-  heat?: DealHeatFilter;
-  scope?: "mine" | "team";
-  family?: "pc" | "life" | "health";
-  valueBand?: "high";
-  phase?: VelocityPhase;
+  heat: DealHeatFilter;
+  scope: "mine" | "team";
+  ownerOnly?: boolean;
+  help: string;
 }> = [
-  { id: "my-hot-pc", label: "My hot P&C", heat: "hot", scope: "mine", family: "pc" },
-  { id: "agency-cold", label: "Agency cold 14d+", heat: "cold", scope: "team" },
-  { id: "high-value-quoting", label: "High value quoting", valueBand: "high", phase: "quotes" },
+  {
+    id: "my-hot",
+    label: "My hot",
+    heat: "hot",
+    scope: "mine",
+    help: "Your deals silent under 5 days (call, email, SMS, or meeting). After a quote is sent, silence is days since the quote with no reply.",
+  },
+  {
+    id: "book-cold",
+    label: "Book cold 14d+",
+    heat: "cold",
+    scope: "team",
+    ownerOnly: true,
+    help: "Agency book silent 14+ days — the cold rule. Same clock as Radar Y.",
+  },
 ];
 
 export function parseDealHeat(raw?: string | null): DealHeatFilter | null {
@@ -27,53 +42,94 @@ export function parseDealHeat(raw?: string | null): DealHeatFilter | null {
 }
 
 export function parseDealLens(raw?: string | null): DealLensId | null {
-  return raw && (DEAL_LENS_IDS as readonly string[]).includes(raw) ? (raw as DealLensId) : null;
+  if (!raw) return null;
+  if ((DEAL_LENS_IDS as readonly string[]).includes(raw)) return raw as DealLensId;
+  return LEGACY_LENS_MAP[raw] ?? null;
 }
 
 export function parseDealScope(raw?: string | null): "mine" | "team" | null {
   return raw === "mine" || raw === "team" ? raw : null;
 }
 
-export function parseValueBand(raw?: string | null): "high" | "mid" | "low" | null {
-  return raw === "high" || raw === "mid" || raw === "low" ? raw : null;
+export function parseValueBand(_raw?: string | null): "high" | "mid" | "low" | null {
+  return null;
+}
+
+export function defaultDealScope(input: { canSeeTeam: boolean; view?: DealsViewId | null }): "mine" | "team" {
+  if (!input.canSeeTeam) return "mine";
+  return input.view === "radar" ? "team" : "mine";
+}
+
+export function resolveDealScope(input: {
+  scope?: string | null;
+  canSeeTeam: boolean;
+  view?: DealsViewId | null;
+}): "mine" | "team" {
+  if (!input.canSeeTeam) return "mine";
+  return parseDealScope(input.scope) ?? defaultDealScope(input);
 }
 
 export type DealLensCard = {
   ownerId?: string | null;
   lineOfBusiness?: string | null;
   heat: HeatState;
-  value: number;
-  phase: VelocityPhase;
+  value?: number;
+  phase?: string;
 };
 
-export function matchesDealLens(
-  card: DealLensCard,
-  filter: {
-    heat?: string | null;
-    lens?: string | null;
-    scope?: string | null;
-    valueBand?: string | null;
-    viewerId?: string | null;
-    canSeeTeam?: boolean;
-  },
-): boolean {
+export type DealLensFilter = {
+  heat?: string | null;
+  lens?: string | null;
+  scope?: string | null;
+  valueBand?: string | null;
+  viewerId?: string | null;
+  canSeeTeam?: boolean;
+  view?: DealsViewId | null;
+};
+
+export function resolveDealFilters(filter: DealLensFilter): {
+  heat: DealHeatFilter | null;
+  scope: "mine" | "team";
+  lens: DealLensId | null;
+} {
   const lens = parseDealLens(filter.lens);
   const preset = lens ? DEAL_LENSES.find((row) => row.id === lens) : null;
-  const heat = parseDealHeat(filter.heat) ?? preset?.heat ?? null;
-  const scope = parseDealScope(filter.scope) ?? preset?.scope ?? null;
-  const valueBand = parseValueBand(filter.valueBand) ?? preset?.valueBand ?? null;
-  const family = preset?.family ?? null;
-  const phase = preset?.phase ?? null;
-
-  if (heat && card.heat !== heat) return false;
-  if (family && bookFamily(card.lineOfBusiness ?? "") !== family) return false;
-  if (phase === "quotes" && card.phase !== "quotes" && card.phase !== "post_quote_gap") return false;
-  if (valueBand === "high" && card.value < HIGH_VALUE_COVERAGE_A) return false;
-  if (valueBand === "mid" && (card.value < 80_000 || card.value >= HIGH_VALUE_COVERAGE_A)) return false;
-  if (valueBand === "low" && card.value >= 80_000) return false;
-  if (scope === "mine" && filter.viewerId && card.ownerId !== filter.viewerId) return false;
-  if (scope === "team" && !filter.canSeeTeam && filter.viewerId && card.ownerId !== filter.viewerId) {
-    return false;
+  const canSeeTeam = Boolean(filter.canSeeTeam);
+  if (preset?.ownerOnly && !canSeeTeam) {
+    return {
+      heat: parseDealHeat(filter.heat),
+      scope: "mine",
+      lens: null,
+    };
   }
+  const heat = parseDealHeat(filter.heat) ?? preset?.heat ?? null;
+  const scope = resolveDealScope({
+    scope: filter.scope ?? preset?.scope ?? null,
+    canSeeTeam,
+    view: filter.view,
+  });
+  return { heat, scope, lens: preset && (!preset.ownerOnly || canSeeTeam) ? lens : null };
+}
+
+export function matchesDealLens(card: DealLensCard, filter: DealLensFilter): boolean {
+  const resolved = resolveDealFilters(filter);
+  if (resolved.heat && card.heat !== resolved.heat) return false;
+  if (resolved.scope === "mine" && filter.viewerId && card.ownerId !== filter.viewerId) return false;
   return true;
+}
+
+export function lensesAreActive(filter: {
+  heat?: string | null;
+  lens?: string | null;
+  scope?: string | null;
+  canSeeTeam?: boolean;
+  view?: DealsViewId | null;
+}): boolean {
+  const resolved = resolveDealFilters(filter);
+  const defaultScope = defaultDealScope({ canSeeTeam: Boolean(filter.canSeeTeam), view: filter.view });
+  return Boolean(resolved.heat || resolved.lens || resolved.scope !== defaultScope);
+}
+
+export function visibleLenses(canSeeTeam: boolean) {
+  return DEAL_LENSES.filter((item) => !item.ownerOnly || canSeeTeam);
 }

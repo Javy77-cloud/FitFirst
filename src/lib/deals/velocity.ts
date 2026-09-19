@@ -9,8 +9,17 @@ export const NEAR_COLD_DAYS = 10;
 export const COOLING_DAYS = 5;
 /** Radar X fills across this many days in the active phase. */
 export const RADAR_X_DAYS = 21;
+/** Radar Y fills across this many silent days (14-day cold sits at 14/21). */
+export const RADAR_Y_DAYS = 21;
 /** High-value band when Coverage A (or fallback premium) is at least this. */
 export const HIGH_VALUE_COVERAGE_A = 250_000;
+
+export const RADAR_X_AXIS_LABEL = "Days in current phase";
+export const RADAR_Y_AXIS_LABEL = "Days silent";
+export const RADAR_AXIS_HELP =
+  "X = days in this phase (since the last phase move). Y = days since the last platform-logged call, email, SMS, or meeting. After a quote is sent, Y is days since the quote with no reply.";
+export const HEAT_RULE_HELP =
+  "Hot = silent under 5 days. Cooling = 5–9. Near cold = 10–13. Cold = 14+ days with no logged call, email, SMS, or meeting. After a quote is sent, the clock is days since the quote with no reply.";
 
 export const VELOCITY_PHASES = [
   "lead_to_deal",
@@ -121,6 +130,29 @@ export function commGapDays(input: {
   return daysBetween(input.lastCommAt ?? input.openedAt, input.now);
 }
 
+/**
+ * Silence clock for Radar Y and heat.
+ * Prefer the post-quote gap when a quote is on file: days since quote sent
+ * with no later platform-logged reply. Otherwise days since last logged comm.
+ */
+export function silenceDays(input: {
+  lastCommAt?: Date | null;
+  lastQuoteAt?: Date | null;
+  quotesReady?: boolean;
+  openedAt: Date;
+  now: Date;
+}): number {
+  const lastComm = parseDate(input.lastCommAt);
+  const lastQuote = parseDate(input.lastQuoteAt);
+  if (input.quotesReady && lastQuote) {
+    if (lastComm && lastComm.getTime() > lastQuote.getTime()) {
+      return daysBetween(lastComm, input.now);
+    }
+    return daysBetween(lastQuote, input.now);
+  }
+  return commGapDays({ lastCommAt: lastComm, openedAt: input.openedAt, now: input.now });
+}
+
 export function heatFromCommGap(days: number): HeatState {
   if (days >= COLD_COMM_DAYS) return "cold";
   if (days >= NEAR_COLD_DAYS) return "near_cold";
@@ -180,8 +212,8 @@ export function valueAxisLabel(metric: DealValueMetric): string {
 /** Glance phases on the radar — skip the lead→deal diagnostic. */
 export const RADAR_PHASE_LEGEND = "Details · Docs · Risk · Quotes · Post-quote gap";
 
-/** Scannable X/Y copy so the field is not a floating-dot mystery. */
-export function radarLegendCopy(metric: DealValueMetric = "coverage_a"): {
+/** Scannable X/Y copy — time in phase vs silence, never Coverage A. */
+export function radarLegendCopy(_metric?: DealValueMetric): {
   x: string;
   y: string;
   xTitle: string;
@@ -190,17 +222,23 @@ export function radarLegendCopy(metric: DealValueMetric = "coverage_a"): {
   xEnd: string;
   yLow: string;
   yHigh: string;
+  help: string;
 } {
   return {
-    x: `Time in current phase (${RADAR_PHASE_LEGEND})`,
-    y: metric === "premium" ? "Value (quoted premium)" : "Value (Coverage A)",
-    xTitle: "Days in current phase",
-    yTitle: valueAxisLabel(metric),
+    x: `Days in current phase (${RADAR_PHASE_LEGEND})`,
+    y: "Days silent — last logged call, email, SMS, or meeting. After a quote is sent, days since the quote with no reply.",
+    xTitle: RADAR_X_AXIS_LABEL,
+    yTitle: RADAR_Y_AXIS_LABEL,
     xStart: "Now",
     xEnd: `${RADAR_X_DAYS}d`,
-    yLow: "Lower",
-    yHigh: "Higher",
+    yLow: "Today",
+    yHigh: `${RADAR_Y_DAYS}d`,
+    help: RADAR_AXIS_HELP,
   };
+}
+
+export function radarAxisLabels(): { x: string; y: string; help: string } {
+  return { x: RADAR_X_AXIS_LABEL, y: RADAR_Y_AXIS_LABEL, help: RADAR_AXIS_HELP };
 }
 
 function latest(...stamps: Array<Date | null | undefined>): Date | null {
@@ -287,20 +325,18 @@ export function activeClock(clocks: Record<VelocityPhase, VelocityClock>, phase:
 }
 
 export function heatForDeal(input: {
-  commGapDays: number;
+  commGapDays?: number;
+  silenceDays?: number;
   closed?: boolean;
   value?: number;
   daysInPhase?: number;
 }): HeatState {
+  const days = input.silenceDays ?? input.commGapDays ?? 0;
   if (input.closed) {
-    if (input.commGapDays >= COLD_COMM_DAYS) return "cold";
+    if (days >= COLD_COMM_DAYS) return "cold";
     return "cooling";
   }
-  const heat = heatFromCommGap(input.commGapDays);
-  if (heat === "hot" && (input.daysInPhase ?? 0) >= COOLING_DAYS && (input.value ?? 0) < HIGH_VALUE_COVERAGE_A) {
-    return "cooling";
-  }
-  return heat;
+  return heatFromCommGap(days);
 }
 
 export function urgencyScore(input: {
@@ -382,13 +418,12 @@ export function policyHealthScore(input: {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
-export function radarPosition(input: { daysInPhase: number; value: number; maxValue: number }): {
+export function radarPosition(input: { daysInPhase: number; silenceDays: number }): {
   x: number;
   y: number;
 } {
   const x = Math.max(0, Math.min(1, input.daysInPhase / RADAR_X_DAYS));
-  const max = Math.max(input.maxValue, 1);
-  const y = Math.max(0, Math.min(1, input.value / max));
+  const y = Math.max(0, Math.min(1, input.silenceDays / RADAR_Y_DAYS));
   return { x, y };
 }
 
@@ -445,6 +480,37 @@ export function heatPulseShares(heats: HeatState[]): Array<{ heat: HeatState; co
     count: counts[heat],
     pct: total === 0 ? 0 : Math.round((counts[heat] / total) * 100),
   }));
+}
+
+export const PHASE_MIX_ORDER = ["details", "docs", "risk", "quotes", "post_quote_gap"] as const;
+
+export function phaseMixShares(
+  phases: VelocityPhase[],
+): Array<{ phase: (typeof PHASE_MIX_ORDER)[number]; label: string; count: number; pct: number }> {
+  const counts: Record<(typeof PHASE_MIX_ORDER)[number], number> = {
+    details: 0,
+    docs: 0,
+    risk: 0,
+    quotes: 0,
+    post_quote_gap: 0,
+  };
+  for (const phase of phases) {
+    if (phase === "lead_to_deal") continue;
+    counts[phase] += 1;
+  }
+  const total = PHASE_MIX_ORDER.reduce((sum, phase) => sum + counts[phase], 0);
+  return PHASE_MIX_ORDER.map((phase) => ({
+    phase,
+    label: VELOCITY_PHASE_LABELS[phase],
+    count: counts[phase],
+    pct: total === 0 ? 0 : Math.round((counts[phase] / total) * 100),
+  }));
+}
+
+export function heatCounts(heats: HeatState[]): Record<HeatState, number> {
+  const counts: Record<HeatState, number> = { hot: 0, cooling: 0, near_cold: 0, cold: 0 };
+  for (const heat of heats) counts[heat] += 1;
+  return counts;
 }
 
 export function latestCommAt(events: DeskEvent[]): Date | null {

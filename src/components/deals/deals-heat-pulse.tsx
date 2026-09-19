@@ -1,5 +1,11 @@
 import { cn } from "@/lib/utils";
-import { HEAT_LABELS, heatPulseShares, type HeatState } from "@/lib/deals/velocity";
+import {
+  HEAT_LABELS,
+  heatPulseShares,
+  phaseMixShares,
+  type HeatState,
+  type VelocityPhase,
+} from "@/lib/deals/velocity";
 
 const RING: Record<HeatState, string> = {
   hot: "var(--ff-terracotta)",
@@ -25,22 +31,33 @@ function ringArcs(shares: ReturnType<typeof heatPulseShares>) {
 
 export function DealsHeatPulse({
   heats,
+  phases,
   view,
   rankLabel,
   coldRate,
+  variant = "banner",
 }: {
   heats: HeatState[];
+  phases?: VelocityPhase[];
   view: "radar" | "stack";
   rankLabel: string | null;
   coldRate: number;
+  variant?: "banner" | "aside";
 }) {
   const shares = heatPulseShares(heats);
+  const phasesMix = phaseMixShares(phases ?? []);
   const total = heats.length;
+  const hot = shares.find((share) => share.heat === "hot")?.count ?? 0;
   const arcs = ringArcs(shares);
   const radius = 34;
 
   return (
-    <section className="ff-deals-pulse" data-ff-deals-pulse="" aria-label="Book heat">
+    <section
+      className={cn("ff-deals-pulse", variant === "aside" && "ff-deals-pulse-aside")}
+      data-ff-deals-pulse=""
+      data-ff-pulse-variant={variant}
+      aria-label="Book heat"
+    >
       <div className="ff-renewals-pulse-ring-wrap">
         <svg viewBox="0 0 88 88" className="ff-renewals-pulse-ring" aria-hidden>
           <circle
@@ -67,7 +84,7 @@ export function DealsHeatPulse({
           ))}
         </svg>
         <div className="ff-renewals-pulse-center">
-          <strong>{total}</strong>
+          <strong data-ff-pulse-total="">{total}</strong>
           <span>{total === 1 ? "deal" : "deals"}</span>
         </div>
       </div>
@@ -92,6 +109,21 @@ export function DealsHeatPulse({
           )}
           {total === 0 ? <span className="ff-renewals-pulse-bar-empty" style={{ width: "100%" }} /> : null}
         </div>
+        {variant === "aside" ? (
+          <>
+            <p className="ff-pulse-hot-count" data-ff-pulse-hot="">
+              <strong>{hot}</strong> hot
+            </p>
+            <ul className="ff-phase-mix" data-ff-phase-mix="" aria-label="Phase mix">
+              {phasesMix.map((row) => (
+                <li key={row.phase} data-ff-phase-mix-row={row.phase}>
+                  <span>{row.label}</span>
+                  <strong>{row.count}</strong>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
       </div>
       {coldRate > 0 ? (
         <p className="ff-cold-chip" data-ff-deals-scorecards="">

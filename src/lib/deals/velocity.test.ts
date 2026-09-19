@@ -18,6 +18,7 @@ import {
   radarPosition,
   rankByScore,
   resolveActivePhase,
+  silenceDays,
   sparkBuckets,
   urgencyScore,
 } from "./velocity";
@@ -117,23 +118,42 @@ describe("velocity engine", () => {
     expect(primaryDealAction({ dealId: "d1", phase: "post_quote_gap", heat: "cold" }).label).toBe("Chase");
     expect(isClosedShoppingDeal({ pipelineStageSlug: "closed_won" })).toBe(true);
     expect(heatForDeal({ commGapDays: 16, closed: true })).toBe("cold");
+    expect(heatForDeal({ silenceDays: 2, daysInPhase: 12, value: 40_000 })).toBe("hot");
+    expect(heatForDeal({ silenceDays: 14 })).toBe("cold");
   });
 
-  it("places radar dots by phase age and Coverage A, and keeps rank private", () => {
-    expect(radarPosition({ daysInPhase: 10.5, value: 160500, maxValue: 321000 })).toEqual({
+  it("places radar dots by phase age and silence, not Coverage A", () => {
+    expect(radarPosition({ daysInPhase: 10.5, silenceDays: 10.5 })).toEqual({
       x: 0.5,
       y: 0.5,
     });
-    expect(radarLegendCopy("coverage_a")).toMatchObject({
-      x: "Time in current phase (Details · Docs · Risk · Quotes · Post-quote gap)",
-      y: "Value (Coverage A)",
+    expect(radarLegendCopy()).toMatchObject({
+      x: "Days in current phase (Details · Docs · Risk · Quotes · Post-quote gap)",
       xTitle: "Days in current phase",
-      yTitle: "Coverage A",
+      yTitle: "Days silent",
       xStart: "Now",
       xEnd: "21d",
     });
-    expect(radarLegendCopy("premium").y).toBe("Value (quoted premium)");
-    expect(radarLegendCopy("premium").yTitle).toBe("Quoted premium");
+    expect(radarLegendCopy().y).toMatch(/Days silent/);
+    expect(radarLegendCopy().y).not.toMatch(/Coverage A/);
+    expect(
+      silenceDays({
+        lastCommAt: new Date("2026-08-01T12:00:00.000Z"),
+        lastQuoteAt: new Date("2026-09-17T12:00:00.000Z"),
+        quotesReady: true,
+        openedAt: new Date("2026-08-01T12:00:00.000Z"),
+        now,
+      }),
+    ).toBe(2);
+    expect(
+      silenceDays({
+        lastCommAt: new Date("2026-09-18T12:00:00.000Z"),
+        lastQuoteAt: new Date("2026-09-10T12:00:00.000Z"),
+        quotesReady: true,
+        openedAt: new Date("2026-08-01T12:00:00.000Z"),
+        now,
+      }),
+    ).toBe(1);
     expect(formatClockDays(1)).toBe("1d");
     expect(privateRankLabel(6, 40)).toBe("6 of 40, top 15%");
     expect(rankByScore([10, 20, 30, 40], 20)).toEqual({
