@@ -5,6 +5,7 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { db } from "@/lib/db";
+import { ensureExperienceReviewsTable } from "@/lib/db/ensure-experience-reviews";
 import { experienceReviews } from "@/lib/db/schema";
 import {
   isReviewMoment,
@@ -63,11 +64,18 @@ async function writeReview(input: {
     activityId,
   };
   try {
+    await ensureExperienceReviewsTable();
+  } catch {
+    // CREATE TABLE IF NOT EXISTS from 0145 — if Neon rejects DDL, insert still
+    // fail-closes below. Must not 441 the desk.
+  }
+  try {
     await db.insert(experienceReviews).values(row);
   } catch {
     // Missing experience_reviews table, stale FK, or catalog miss must not
     // 441 the desk when a Pulse rate is chosen.
     try {
+      await ensureExperienceReviewsTable();
       await db.insert(experienceReviews).values({
         tenantId: row.tenantId,
         reviewerUserId: row.reviewerUserId,
