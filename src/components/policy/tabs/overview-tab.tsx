@@ -34,6 +34,7 @@ export function PolicyOverviewTab({
   risk,
   readOnly = false,
   showCommission = true,
+  lineOptions,
 }: {
   policy: {
     id: string;
@@ -98,6 +99,7 @@ export function PolicyOverviewTab({
   } | null;
   readOnly?: boolean;
   showCommission?: boolean;
+  lineOptions?: readonly { value: string; label: string; orphan?: boolean }[];
 }) {
   const renewalLine = policy.renewalDate
     ? `Renewal ${formatDay(policy.renewalDate)}`
@@ -124,6 +126,7 @@ export function PolicyOverviewTab({
         mailing={mailing}
         readOnly={readOnly}
         showCommission={showCommission}
+        lineOptions={lineOptions}
       />
 
       <section className="ff-card space-y-3 p-4">

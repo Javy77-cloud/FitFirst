@@ -66,12 +66,14 @@ export async function updatePolicyRecord(formData: FormData) {
   const faceAmount = str(formData, "faceAmount");
   const sameAsMailing = str(formData, "insuredSameAsMailing") === "on" || str(formData, "insuredSameAsMailing") === "true";
 
+  const { requireStoredLineOfBusiness } = await import("@/lib/db/agency-lines");
   const next = {
     status: str(formData, "status") || existing.status,
-    lineOfBusiness:
+    lineOfBusiness: await requireStoredLineOfBusiness(
       str(formData, "lineOfBusiness") ||
-      lineOfBusinessForFamily(insuranceType, policyType, subType) ||
-      existing.lineOfBusiness,
+        lineOfBusinessForFamily(insuranceType, policyType, subType) ||
+        existing.lineOfBusiness,
+    ),
     policyNumber: str(formData, "policyNumber") || existing.policyNumber,
     premium: premium === "" ? existing.premium : premium,
     billingFrequency: str(formData, "billingFrequency") || existing.billingFrequency,
@@ -405,6 +407,20 @@ export async function updatePolicyField(input: {
       premisesState: parts.state || existing.premisesState,
       premisesZip: parts.zip || existing.premisesZip,
     };
+  } else if (fieldKey === "lineOfBusiness") {
+    const { loadAgencyLines } = await import("@/lib/db/agency-lines");
+    const { resolveAgencyLine } = await import("@/lib/desk/agency-lines");
+    const lines = await loadAgencyLines();
+    const resolved = resolveAgencyLine(raw, lines);
+    if (!resolved) {
+      if (raw && raw === existing.lineOfBusiness) {
+        patch = { lineOfBusiness: raw };
+      } else {
+        return { ok: false, error: "Pick a line from the agency list." };
+      }
+    } else {
+      patch = { lineOfBusiness: resolved.code };
+    }
   } else {
     patch = { [fieldKey]: raw || null };
   }

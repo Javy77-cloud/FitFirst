@@ -2,11 +2,10 @@ import {
   CLIENT_STATUSES,
   DEAL_STAGES,
   LEAD_STATUSES,
-  LINES,
   POLICY_STATUSES,
   SELLING_AGENCIES,
 } from "@/lib/domain";
-import { LINE_LABELS } from "@/lib/crm/bind";
+import { DEFAULT_AGENCY_LINES, visibleAgencyLines } from "@/lib/desk/agency-lines";
 import { RECORD_SOURCES } from "@/lib/crm/sources";
 import type { ListColumn } from "@/lib/list-columns";
 import type { CrmListModule } from "@/lib/lists/selection-actions";
@@ -175,7 +174,10 @@ export function massUpdateSellingAgencyOptions(): MassUpdateOption[] {
 }
 
 export function massUpdateLineOptions(): MassUpdateOption[] {
-  return LINES.map((line) => ({ value: line, label: LINE_LABELS[line] ?? line }));
+  return visibleAgencyLines(DEFAULT_AGENCY_LINES).map((line) => ({
+    value: line.code,
+    label: `${line.label} (${line.code})`,
+  }));
 }
 
 /** Normalize legacy mass-update field ids onto list column ids. */

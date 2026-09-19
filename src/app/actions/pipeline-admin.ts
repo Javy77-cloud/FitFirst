@@ -89,10 +89,12 @@ export async function createPipelineDeal(formData: FormData) {
     pipelineSlug === "life" || pipelineSlug === "health" || !subtypeRaw
       ? null
       : dealCreateFieldsFromPick(subtypeRaw);
-  const lineOfBusiness =
+  const { requireStoredLineOfBusiness } = await import("@/lib/db/agency-lines");
+  const lineOfBusiness = await requireStoredLineOfBusiness(
     picked?.lineOfBusiness ||
-    str(formData, "lineOfBusiness") ||
-    (pipelineSlug === "life" ? "LIFE" : pipelineSlug === "health" ? "HEALTH" : "HO");
+      str(formData, "lineOfBusiness") ||
+      (pipelineSlug === "life" ? "LIFE" : pipelineSlug === "health" ? "HEALTH" : "HO"),
+  );
   const policySubType =
     picked?.policySubType || str(formData, "policySubType") || null;
   const quotingForm =

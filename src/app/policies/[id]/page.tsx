@@ -45,6 +45,8 @@ import { getAgencyPolicyLabelTemplate } from "@/lib/policy/auto-label-prefs";
 import { getRenewalQueueForPolicy } from "@/lib/ams/queries";
 import { getAgentPolicyAccess } from "@/lib/policy/agent-policy-access-prefs";
 import { resolvePolicyViewerAccess } from "@/lib/policy/agent-policy-access";
+import { loadAgencyLines } from "@/lib/db/agency-lines";
+import { agencyLineSelectOptions } from "@/lib/desk/agency-lines";
 
 export const dynamic = "force-dynamic";
 
@@ -114,6 +116,8 @@ export default async function PolicyDetailPage({
     quoteSheet,
     fileVersions,
   } = workspace;
+  const agencyLineRows = await loadAgencyLines().catch(() => []);
+  const lineOptions = agencyLineSelectOptions(agencyLineRows, null, policy.lineOfBusiness);
   const error = typeof query.error === "string" ? query.error : undefined;
   const filed = typeof query.filed === "string" ? query.filed : undefined;
   const notice = typeof query.notice === "string" ? query.notice : filed;
@@ -359,6 +363,7 @@ export default async function PolicyDetailPage({
             risk={risk}
             readOnly={!isAdmin}
             showCommission={viewer.commissionBreakdown.read}
+            lineOptions={lineOptions}
           />
         ) : null}
 

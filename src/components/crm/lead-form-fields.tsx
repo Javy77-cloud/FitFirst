@@ -27,11 +27,13 @@ export function LeadFormFields({
   lead,
   requireName = true,
   hideLineSelect = false,
+  lineOptions,
 }: {
   lead?: LeadFieldDefaults;
   requireName?: boolean;
   /** Detail page uses line cards as the only lines-of-interest control. */
   hideLineSelect?: boolean;
+  lineOptions?: Array<{ value: string; label: string }>;
 }) {
   const language = lead?.preferredLanguage ?? "";
   const knownLanguage = LEAD_LANGUAGES.some((lang) => lang.value === language);
@@ -143,6 +145,8 @@ export function LeadFormFields({
               id="insuranceTypeDesired"
               name="insuranceTypeDesired"
               defaultValue={lead?.insuranceTypeDesired ?? "HO"}
+              lines={lineOptions}
+              required
             />
           </div>
         )}

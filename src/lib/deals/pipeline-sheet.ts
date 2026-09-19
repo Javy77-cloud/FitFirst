@@ -1,8 +1,7 @@
 import { mailtoHref, telHref } from "@/lib/crm/lists";
 import { RECORD_SOURCES } from "@/lib/crm/sources";
 import type { CustomFieldDef, CustomFieldType } from "@/lib/custom-fields/types";
-import { LINE_LABELS } from "@/lib/crm/bind";
-import { LINES } from "@/lib/domain";
+import { DEFAULT_AGENCY_LINES, visibleAgencyLines } from "@/lib/desk/agency-lines";
 import { dealsHref, type PipelineViewId } from "@/lib/wire/pipeline";
 
 export type PipelineSheetMode = "list" | "grid";
@@ -95,7 +94,10 @@ export function nativePicklistOptions(
   users: readonly NamedRecord[] = [],
 ): Array<{ value: string; label: string }> {
   if (columnId === "line") {
-    return LINES.map((line) => ({ value: line, label: LINE_LABELS[line] ?? line }));
+    return visibleAgencyLines(DEFAULT_AGENCY_LINES).map((line) => ({
+      value: line.code,
+      label: `${line.label} (${line.code})`,
+    }));
   }
   if (columnId === "source") {
     return RECORD_SOURCES.map((row) => ({ value: row.value, label: row.label }));

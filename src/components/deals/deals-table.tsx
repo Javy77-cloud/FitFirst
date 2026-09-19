@@ -11,6 +11,8 @@ import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { StatusBadge } from "@/components/status-badge";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { listDealFieldDefs, loadLayoutForModule, loadRecordValuesForIds } from "@/lib/custom-fields/store";
+import { loadAgencyLines } from "@/lib/db/agency-lines";
+import { agencyLineSelectOptions } from "@/lib/desk/agency-lines";
 import { sourceLabel } from "@/lib/crm/sources";
 import {
   dealFieldRawValue,
@@ -100,7 +102,7 @@ export async function DealsTable({
   /** Current All / book chips. Stage click must not replace these with the deal's board. */
   listFilter?: ListStageFilterBook;
 }) {
-  const [tagCatalog, fields, layout, valueMap, pipelines, carrierRows, listColorMaps] = await Promise.all([
+  const [tagCatalog, fields, layout, valueMap, pipelines, carrierRows, listColorMaps, agencyLines] = await Promise.all([
     listModuleTags("deals").catch(() => []),
     listDealFieldDefs().catch(() => []),
     loadLayoutForModule("deals").catch(() => null),
@@ -108,6 +110,7 @@ export async function DealsTable({
     listPipelines().catch(() => []),
     listCarriers().catch(() => []),
     loadDealListColorMaps().catch(() => ({ sellingAgency: {}, pipeline: {} })),
+    loadAgencyLines().catch(() => []),
   ]);
   const boards = boardsFromPipelines(pipelines);
   const columns = dealsListColumnsFromFields(fields, layout);
@@ -342,6 +345,7 @@ function dealRowCells({
       raw: deal.lineOfBusiness,
       label: "Line",
       userRecords,
+      lineOptions: agencyLineSelectOptions(agencyLines, null, deal.lineOfBusiness),
     }),
     subType: sheetCell({
       mode,
@@ -447,6 +451,7 @@ function sheetCell({
   stageSlug,
   stages,
   listColorMaps,
+  lineOptions,
 }: {
   mode: PipelineSheetMode;
   dealId: string;
@@ -465,6 +470,7 @@ function sheetCell({
   stageSlug?: string;
   stages?: ReturnType<typeof dealStageView>["stages"];
   listColorMaps?: DealListColorMaps | null;
+  lineOptions?: Array<{ value: string; label: string }>;
 }) {
   const control = pipelineGridControl(columnId, field);
   // Notes / multi-line stay editable in List too so they can collapse to one line
@@ -475,9 +481,11 @@ function sheetCell({
   if (useGridCell) {
     const options =
       control === "picklist"
-        ? field?.options?.length
-          ? field.options.map((option) => ({ value: option, label: option }))
-          : nativePicklistOptions(columnId, userRecords)
+        ? columnId === "line" && lineOptions?.length
+          ? lineOptions
+          : field?.options?.length
+            ? field.options.map((option) => ({ value: option, label: option }))
+            : nativePicklistOptions(columnId, userRecords)
         : [];
     return (
       <PipelineGridCell

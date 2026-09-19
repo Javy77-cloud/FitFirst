@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   PolicyCarrierLookup,
   PolicyInlineDate,
+  PolicyInlineSelect,
   PolicyInlineStatus,
   PolicyInlineText,
 } from "@/components/policy/policy-inline-fields";
@@ -22,6 +23,7 @@ export function PolicyInformationCard({
   mailing,
   readOnly = false,
   showCommission = true,
+  lineOptions,
 }: {
   policy: {
     id: string;
@@ -60,6 +62,7 @@ export function PolicyInformationCard({
   /** Agents: Overview is fully read-only. Admins can edit (sensitive fields confirm). */
   readOnly?: boolean;
   showCommission?: boolean;
+  lineOptions?: readonly { value: string; label: string; orphan?: boolean }[];
 }) {
   const insured = partyLabel(contact, account);
   const insuredHref = contact
@@ -116,13 +119,24 @@ export function PolicyInformationCard({
           carrierName={carrierName}
           readOnly={readOnly}
         />
-        <PolicyInlineText
-          policyId={policy.id}
-          fieldKey="lineOfBusiness"
-          label="Line / product"
-          value={policy.lineOfBusiness}
-          readOnly={readOnly}
-        />
+        {lineOptions && lineOptions.length > 0 ? (
+          <PolicyInlineSelect
+            policyId={policy.id}
+            fieldKey="lineOfBusiness"
+            label="Line of business"
+            value={policy.lineOfBusiness}
+            options={lineOptions}
+            readOnly={readOnly}
+          />
+        ) : (
+          <PolicyInlineText
+            policyId={policy.id}
+            fieldKey="lineOfBusiness"
+            label="Line of business"
+            value={policy.lineOfBusiness}
+            readOnly={readOnly}
+          />
+        )}
         <PolicyInlineText
           policyId={policy.id}
           fieldKey="policySubType"

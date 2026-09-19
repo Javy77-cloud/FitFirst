@@ -349,6 +349,88 @@ export function PolicyInlineStatus({
   );
 }
 
+export function PolicyInlineSelect({
+  policyId,
+  fieldKey,
+  label,
+  value,
+  options,
+  readOnly = false,
+}: {
+  policyId: string;
+  fieldKey: string;
+  label: string;
+  value: string;
+  options: readonly { value: string; label: string; orphan?: boolean }[];
+  readOnly?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const current = options.find((row) => row.value === value);
+  const display = current?.label || value || "—";
+  const orphan = Boolean(current?.orphan || (value && !current));
+
+  function persist(next: string) {
+    if (readOnly || next === value || !next) {
+      setEditing(false);
+      return;
+    }
+    startTransition(async () => {
+      const result = await updatePolicyField({
+        policyId,
+        fieldKey,
+        value: next,
+      });
+      if (!result.ok) {
+        flashAction(result.error ?? "Could Not Save", "error");
+        setEditing(false);
+        return;
+      }
+      flashAction("Saved");
+      setEditing(false);
+    });
+  }
+
+  return (
+    <div data-ff-policy-inline={fieldKey} data-ff-line-orphan={orphan ? "1" : undefined}>
+      <dt className="text-helper text-muted-foreground">{label}</dt>
+      <dd className="font-medium text-navy">
+        {readOnly ? (
+          <span className={orphan ? "text-amber-800" : undefined}>{display}</span>
+        ) : editing ? (
+          <select
+            autoFocus
+            className="h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+            defaultValue={value}
+            disabled={pending}
+            required
+            onBlur={(e) => persist(e.target.value)}
+            onChange={(e) => persist(e.target.value)}
+          >
+            {options.map((opt) => (
+              <option key={opt.value || "__empty"} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <button
+            type="button"
+            className={cn(
+              "w-full rounded-sm px-0.5 text-left hover:bg-[#002868]/5",
+              orphan && "text-amber-800",
+              display === "—" && "text-muted-foreground",
+            )}
+            onClick={() => setEditing(true)}
+          >
+            {display}
+          </button>
+        )}
+      </dd>
+    </div>
+  );
+}
+
 export function PolicyCarrierLookup({
   policyId,
   carrierId,

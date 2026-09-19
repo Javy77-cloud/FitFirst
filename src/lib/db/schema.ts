@@ -563,6 +563,27 @@ export const lineSubfilterOptions = pgTable(
   ],
 );
 
+/** Agency master line-of-business catalog. Deals, policies, and forms store `code`. */
+export const agencyLines = pgTable(
+  "agency_lines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    code: text("code").notNull(),
+    label: text("label").notNull(),
+    family: text("family").notNull().default("pc"),
+    active: boolean("active").notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(0),
+    aliases: jsonb("aliases").$type<string[]>().notNull().default([]),
+    system: boolean("system").notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [
+    index("agency_lines_tenant_idx").on(t.tenantId, t.family),
+    uniqueIndex("agency_lines_code_uidx").on(t.tenantId, t.code),
+  ],
+);
+
 export const leads = pgTable(
   "leads",
   {
@@ -3342,6 +3363,7 @@ export type ExtractionJob = typeof extractionJobs.$inferSelect;
 export type DocumentPipelineJob = typeof documentPipelineJobs.$inferSelect;
 export type FillFeedbackLog = typeof fillFeedbackLogs.$inferSelect;
 export type LineSubfilterOptionRow = typeof lineSubfilterOptions.$inferSelect;
+export type AgencyLineRow = typeof agencyLines.$inferSelect;
 export type GlobalListRow = typeof globalLists.$inferSelect;
 export type UserDashboardPref = typeof userDashboardPrefs.$inferSelect;
 export type UserHomeLayout = typeof userHomeLayouts.$inferSelect;

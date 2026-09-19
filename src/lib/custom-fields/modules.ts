@@ -280,7 +280,7 @@ export function fieldLayoutListHref(module: FieldLayoutModule): string {
 
 export function fieldBuilderHref(module: FieldLayoutModule, line?: string): string {
   const params = new URLSearchParams({ module });
-  if (module === "deals" && line) params.set("line", line);
+  if ((module === "deals" || module === "policies") && line) params.set("line", line);
   return `/settings/field-builder?${params.toString()}`;
 }
 

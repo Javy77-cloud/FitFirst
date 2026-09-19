@@ -3,22 +3,32 @@ import { LINE_LABELS } from "@/lib/crm/bind";
 import { visibleLines, type DeskLineSettings } from "@/lib/desk/line-settings";
 import { withNoneOption } from "@/lib/ui/select-options";
 
+export type LineSelectOption = { value: string; label: string };
+
 export function LineSelect({
   name = "line",
   id = "line",
   defaultValue = "",
   settings,
   required,
+  lines,
 }: {
   name?: string;
   id?: string;
   defaultValue?: string;
   settings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   required?: boolean;
+  /** Agency master list. Falls back to seeded `LINES` when omitted. */
+  lines?: readonly LineSelectOption[];
 }) {
-  const lines = settings ? visibleLines(LINES, settings) : [...LINES];
+  const fallback = (settings ? visibleLines(LINES, settings) : [...LINES]).map((line) => ({
+    value: line,
+    label: LINE_LABELS[line] ?? line,
+  }));
+  const source = lines && lines.length > 0 ? [...lines] : fallback;
+  const hasCurrent = !defaultValue || source.some((row) => row.value === defaultValue);
   const options = withNoneOption(
-    lines.map((line) => ({ value: line, label: LINE_LABELS[line] })),
+    hasCurrent ? source : [{ value: defaultValue, label: `${defaultValue} · not on list` }, ...source],
   );
   return (
     <select

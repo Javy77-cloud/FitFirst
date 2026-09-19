@@ -602,10 +602,13 @@ export async function createDeal(formData: FormData) {
   const picked = isHiddenLine(pickedRaw.lineOfBusiness, createSettings)
     ? dealCreateFieldsFromPick("HO3")
     : pickedRaw;
+  const { requireStoredLineOfBusiness } = await import("@/lib/db/agency-lines");
   const line =
-    packageDraft && !str(formData, "line") && !str(formData, "field_insurance_subtype")
-      ? packageDraft.lineOfBusiness
-      : picked.lineOfBusiness;
+    await requireStoredLineOfBusiness(
+      packageDraft && !str(formData, "line") && !str(formData, "field_insurance_subtype")
+        ? packageDraft.lineOfBusiness
+        : picked.lineOfBusiness,
+    );
   const policySubType =
     line === "LIFE"
       ? str(formData, "lifeSubType") || str(formData, "policySubType") || picked.policySubType

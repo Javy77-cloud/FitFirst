@@ -219,11 +219,11 @@ export default async function SettingsPage({
             id="lines"
             title="Lines of business"
             badge="Admin"
-            summary="Hide Life or Health. Subfilters and selling-agency picklists."
+            summary="Master list for deals, policies, and forms. Written books and subfilters."
           >
             <p className="text-sm text-muted-foreground">
-              Life and Health chips, hide a book this agency does not write, and the optional
-              selling-agency picklists.
+              Canonical lines this agency writes. Hide Life or Health, edit subfilters, and keep
+              optional selling-agency picklists off unless you place through more than one.
             </p>
             <Link href="/settings/lines" className="mt-3 inline-block text-sm text-primary hover:underline">
               Open line settings

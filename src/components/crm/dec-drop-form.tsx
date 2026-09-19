@@ -4,10 +4,13 @@ import { LineSelect } from "@/components/crm/line-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { loadAgencyLines } from "@/lib/db/agency-lines";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
+import { agencyLineSelectOptions } from "@/lib/desk/agency-lines";
 
 export async function DecDropForm() {
-  const settings = await loadDeskLineSettings();
+  const [settings, agencyLines] = await Promise.all([loadDeskLineSettings(), loadAgencyLines()]);
+  const lineOptions = agencyLineSelectOptions(agencyLines, settings);
   return (
     <form action={createDealFromDecDrop} className="ff-card space-y-3 p-4">
       <div>
@@ -46,7 +49,7 @@ export async function DecDropForm() {
           <Label htmlFor="decLine" className="text-xs">
             Line
           </Label>
-          <LineSelect id="decLine" settings={settings} />
+          <LineSelect id="decLine" settings={settings} lines={lineOptions} required />
         </div>
         <div>
           <Label htmlFor="decFile" className="text-xs">
