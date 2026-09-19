@@ -70,6 +70,7 @@ export function FileList({
                     <FileActionMenu
                       documentId={doc.id}
                       filename={doc.filename}
+                      mimeType={doc.mimeType}
                       slot={doc.slot}
                       docType={doc.docType}
                       dealId={doc.dealId}

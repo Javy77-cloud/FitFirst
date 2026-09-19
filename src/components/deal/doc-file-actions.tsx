@@ -13,6 +13,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { DocumentViewButton } from "@/components/documents/document-preview-dialog";
 import { fileDownloadHref, filePreviewHref, fileViewHref } from "@/lib/files/urls";
 
 export type DocFileActionsProps = {
@@ -43,14 +44,7 @@ export function DocFileActions({
 
   return (
     <div className={compact ? "flex flex-wrap items-center gap-1" : "flex flex-wrap items-center gap-2"}>
-      <a
-        href={viewHref}
-        target="_blank"
-        rel="noreferrer"
-        className="text-xs text-primary hover:underline"
-      >
-        View
-      </a>
+      <DocumentViewButton documentId={documentId} filename={filename} />
       <a href={downloadHref} className="text-xs text-primary hover:underline">
         Download
       </a>

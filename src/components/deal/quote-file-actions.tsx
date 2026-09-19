@@ -13,7 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatMoney } from "@/lib/domain";
-import { fileDownloadHref, fileViewHref } from "@/lib/files/urls";
+import { DocumentViewButton } from "@/components/documents/document-preview-dialog";
+import { fileDownloadHref } from "@/lib/files/urls";
 import {
   bindRequirementChips,
   normalizeRiskOutcome,
@@ -128,14 +129,7 @@ function FileList({
               : null}
           </div>
           <div className="mt-1.5 flex flex-wrap gap-2">
-            <a
-              href={fileViewHref(file.id)}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs text-primary hover:underline"
-            >
-              View
-            </a>
+            <DocumentViewButton documentId={file.id} filename={file.filename} />
             <a href={fileDownloadHref(file.id)} className="text-xs text-primary hover:underline">
               Download
             </a>
