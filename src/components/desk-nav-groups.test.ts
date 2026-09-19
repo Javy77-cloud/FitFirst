@@ -85,7 +85,7 @@ describe("primary desk nav", () => {
     expect(templates?.items.map((item) => item.label)).toEqual([
       "Email signatures",
       "Email templates",
-      "Document templates",
+      "Documents",
     ]);
     expect(labels).not.toContain("Get Started");
     expect(labels).not.toContain("Inbox");

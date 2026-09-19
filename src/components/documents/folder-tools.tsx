@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { DocumentFolder } from "@/lib/db/schema";
 import type { DocumentLibrary } from "@/lib/domain";
+import { folderRole, typeFolderOptions } from "@/lib/documents/folder-taxonomy";
 
 export function FolderTools({
   library,
@@ -15,23 +16,48 @@ export function FolderTools({
   siblings: DocumentFolder[];
 }) {
   const moveTargets = siblings.filter((row) => row.id !== folder?.id);
+  const role = folderRole(folder?.id);
+  const typeOptions = typeFolderOptions(library);
   return (
     <div className="grid gap-3 lg:grid-cols-3">
       <form action={createFolder} className="ff-card space-y-2 p-3">
-        <div className="text-sm font-semibold text-navy">New folder</div>
+        <div className="text-sm font-semibold text-navy">
+          {role === "type" ? "New type folder" : "New carrier folder"}
+        </div>
+        <p className="text-helper text-muted-foreground">
+          {role === "type"
+            ? "Top level is the document type. Put a carrier folder inside."
+            : `Carrier inside ${folder?.name ?? "this type"}.`}
+        </p>
         <input type="hidden" name="library" value={library} />
         {folder ? <input type="hidden" name="parentId" value={folder.id} /> : null}
-        <div>
-          <Label className="text-xs">Name</Label>
-          <Input
-            name="name"
-            required
-            className="mt-1 h-8"
-            placeholder={library === "forms" ? "HO applications" : "Hurricane season"}
-          />
-        </div>
+        {role === "type" ? (
+          <div>
+            <Label className="text-xs">Type</Label>
+            <select
+              name="name"
+              required
+              className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
+              defaultValue=""
+            >
+              <option value="" disabled>
+                Choose a type
+              </option>
+              {typeOptions.map((option) => (
+                <option key={option.docType} value={option.label}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <div>
+            <Label className="text-xs">Carrier</Label>
+            <Input name="name" required className="mt-1 h-8" placeholder="Citizens" />
+          </div>
+        )}
         <Button type="submit" size="sm">
-          {folder ? "Add subfolder" : "Create folder"}
+          {role === "carrier" ? "Add carrier folder" : "Create type folder"}
         </Button>
       </form>
 

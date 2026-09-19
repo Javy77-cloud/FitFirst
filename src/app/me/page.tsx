@@ -111,7 +111,7 @@ export default async function PersonalSettingsPage({
                   Email template library
                 </Link>
                 <Link href="/documents" className="text-primary hover:underline">
-                  Document templates
+                  Documents
                 </Link>
                 <Link href="/templates" className="text-primary hover:underline">
                   Templates folder

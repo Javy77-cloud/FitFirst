@@ -125,7 +125,7 @@ describe("nav layout defaults", () => {
     expect(byId.templates.submenu.map((item) => item.label)).toEqual([
       "Email signatures",
       "Email templates",
-      "Document templates",
+      "Documents",
     ]);
     expect(byId.admin.submenu.map((item) => item.id)).toEqual([
       "agents",

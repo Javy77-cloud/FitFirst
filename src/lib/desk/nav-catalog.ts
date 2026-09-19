@@ -129,7 +129,7 @@ export const NAV_LINK_CATALOG: NavLinkDef[] = [
   {
     id: "document-templates",
     href: "/documents",
-    label: "Document templates",
+    label: "Documents",
     icon: FileStack,
     match: "/documents",
   },

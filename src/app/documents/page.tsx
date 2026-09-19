@@ -78,7 +78,8 @@ export default async function DocumentsPage({
     >
       <p className="mb-3 max-w-3xl text-sm text-muted-foreground">
         Forms (ACORD, cancellation, AOR) and Library (marketing, carrier flyers, appetite
-        guides). Folders nest. Scan &amp; suggest is not live OCR.
+        guides). Folders are by type, with a carrier folder inside. Scan &amp; suggest is not
+        live OCR.
       </p>
 
       {notice === "bad-move" ? (
