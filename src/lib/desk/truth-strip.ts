@@ -124,23 +124,58 @@ export function dealHeatShares(
   return heatShares(updatedAt.map((value) => bookHeatFromDeal(daysSince(value, asOf))));
 }
 
+export type TruthSurface = "renewals" | "deals" | "contacts" | "accounts" | "carriers" | "policies";
+
 export function truthLine(input: {
   heat: HeatShare[];
   flagged?: number;
   clients: number;
-  surface: "renewals" | "deals";
+  surface: TruthSurface;
 }): string {
   if (input.clients === 0) {
-    return input.surface === "deals" ? "No open shops on this book yet." : "No renewals on this book yet.";
+    if (input.surface === "deals") return "No open shops on this book yet.";
+    if (input.surface === "contacts") return "No people on this book yet.";
+    if (input.surface === "accounts") return "No accounts on this book yet.";
+    if (input.surface === "carriers") return "No markets on this desk yet.";
+    if (input.surface === "policies") return "No policies on this book yet.";
+    return "No renewals on this book yet.";
   }
   const hot = input.heat.find((row) => row.level === "hot")?.count ?? 0;
   const cooling = input.heat.find((row) => row.level === "cooling")?.count ?? 0;
   const cold = input.heat.find((row) => row.level === "cold")?.count ?? 0;
-  const noun = input.surface === "deals" ? "shops" : "renewals";
   const flag =
     input.flagged && input.flagged > 0
       ? ` · ${input.flagged} flagged`
       : "";
+  if (input.surface === "contacts" || input.surface === "accounts") {
+    const noun = input.surface === "contacts" ? "people" : "accounts";
+    if (hot >= cooling && hot >= cold) {
+      return `${hot} need a touch · ${cooling} watch · ${cold} current${flag} — the ${noun} need eyes.`;
+    }
+    if (cold > hot && cold >= cooling) {
+      return `${cold} current · ${cooling} watch · ${hot} need a touch${flag} — most of the ${noun} can wait.`;
+    }
+    return `${cooling} watch · ${hot} need a touch · ${cold} current${flag} — watch the slide.`;
+  }
+  if (input.surface === "policies") {
+    if (hot >= cooling && hot >= cold) {
+      return `${hot} need care now · ${cooling} watch · ${cold} current${flag} — start with the fire.`;
+    }
+    if (cold > hot && cold >= cooling) {
+      return `${cold} current · ${cooling} watch · ${hot} need care now${flag} — most terms can wait.`;
+    }
+    return `${cooling} watch · ${hot} need care now · ${cold} current${flag} — watch silence and renewals.`;
+  }
+  if (input.surface === "carriers") {
+    if (hot >= cooling && hot >= cold) {
+      return `${hot} rateable · ${cooling} limited · ${cold} skip${flag} — quote the greens.`;
+    }
+    if (cold > hot && cold >= cooling) {
+      return `${cold} skip · ${cooling} limited · ${hot} rateable${flag} — most markets are closed.`;
+    }
+    return `${cooling} limited · ${hot} rateable · ${cold} skip${flag} — check appetite first.`;
+  }
+  const noun = input.surface === "deals" ? "shops" : "renewals";
   if (hot >= cooling && hot >= cold) {
     return `${hot} hot · ${cooling} cooling · ${cold} cold${flag} — the ${noun} are running hot.`;
   }

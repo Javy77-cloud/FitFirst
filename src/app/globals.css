@@ -3032,3 +3032,116 @@ button.ff-renewal-risk-badge {
   border-radius: 0.4rem;
   background: color-mix(in srgb, var(--ff-terracotta) 8%, white);
 }
+
+.ff-book-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(16rem, 1fr));
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+}
+.ff-book-stack {
+  max-width: 42rem;
+}
+.ff-book-card {
+  align-items: flex-start;
+}
+.ff-book-why {
+  margin: 0.28rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--ff-ink);
+}
+.ff-book-hint {
+  display: inline-flex;
+  align-items: center;
+}
+.ff-book-hint i {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: var(--ff-urgency-amber);
+}
+.ff-book-hint-green i { background: var(--ff-green); }
+.ff-book-hint-yellow i { background: var(--ff-urgency-amber); }
+.ff-book-hint-red i { background: var(--ff-terracotta); }
+.ff-book-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.68rem;
+  color: var(--ff-navy);
+}
+.ff-book-metric em {
+  font-style: normal;
+  font-weight: 650;
+  color: var(--ff-muted);
+}
+@media (max-width: 48rem) {
+  .ff-book-board {
+    grid-template-columns: minmax(16rem, 1fr);
+  }
+}
+
+.ff-policy-care {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.85rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--ff-terracotta) 32%, var(--ff-border));
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--ff-terracotta) 9%, white);
+  box-shadow: var(--ff-shadow);
+}
+.ff-policy-care-kicker {
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ff-terracotta);
+}
+.ff-policy-care-line {
+  margin: 0.15rem 0 0;
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: var(--ff-navy);
+}
+.ff-policy-care-jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.ff-policy-care-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.28rem 0.65rem;
+  background: var(--ff-navy);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+.ff-policy-care-jump em {
+  font-style: normal;
+  min-width: 1rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #fff 18%, transparent);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.ff-policy-tab-wait {
+  margin-left: 0.35rem;
+  min-width: 1.05rem;
+  border-radius: 999px;
+  padding: 0 0.28rem;
+  background: var(--ff-terracotta);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}

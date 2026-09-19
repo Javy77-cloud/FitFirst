@@ -24,6 +24,9 @@ import { listModuleTags } from "@/app/actions/record-tags";
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
 import { PolicyDetailWorkspace } from "@/components/policy/policy-detail-workspace";
 import { PolicyTabsNav } from "@/components/policy/policy-tabs";
+import { PolicyCareStrip } from "@/components/policy/policy-care-strip";
+import { buildPolicyCareItems, policyTabCareCounts } from "@/lib/policy/care-strip";
+import { deskNow } from "@/lib/home/as-of";
 import { PolicyOverviewTab } from "@/components/policy/tabs/overview-tab";
 import { PolicyCoverageTab } from "@/components/policy/tabs/coverage-tab";
 import { PolicyEndorsementsTab } from "@/components/policy/tabs/endorsements-tab";
@@ -153,6 +156,24 @@ export default async function PolicyDetailPage({
     viewer.commissionBreakdown.read;
   const viewerTabs = policyTabsForViewer({ hasClaims, isAdmin, showAgencyTab });
   const activeTab = parseAgentPolicyTab(tabParam, { hasClaims, isAdmin, showAgencyTab });
+  const openClaims = claims.filter((claim) => {
+    const status = (claim.status ?? "").toLowerCase();
+    return status !== "closed" && status !== "denied" && status !== "withdrawn";
+  }).length;
+  const pendingEndorsements = (servicing?.drafts ?? []).filter((draft) => {
+    const status = (draft.status ?? "").toLowerCase();
+    return status !== "withdrawn" && status !== "filed" && status !== "issued";
+  }).length;
+  const careItems = buildPolicyCareItems({
+    expirationDate: policy.expirationDate,
+    updatedAt: policy.updatedAt,
+    status: policy.status,
+    missingDocs: servicing?.missingPackets?.length ?? 0,
+    pendingEndorsements,
+    openClaims,
+    asOf: deskNow(),
+  });
+  const tabCareCounts = policyTabCareCounts(careItems);
 
   const officeAddress = officeMeetingAddress({
     agencyName: agencyRow?.agencyName,
@@ -259,6 +280,8 @@ export default async function PolicyDetailPage({
         </div>
       </div>
 
+      <PolicyCareStrip policyId={policy.id} items={careItems} />
+
       <PolicyOutcomeBanner filed={filed} error={error} policy={policy} />
 
       {policy.mintPayload || policy.sourceProduct || policy.sourceDocumentId ? (
@@ -289,7 +312,7 @@ export default async function PolicyDetailPage({
       ) : (
 
       <PolicyDetailWorkspace
-        nav={<PolicyTabsNav policyId={policy.id} active={activeTab} tabs={viewerTabs} />}
+        nav={<PolicyTabsNav policyId={policy.id} active={activeTab} tabs={viewerTabs} counts={tabCareCounts} />}
         rail={
           <>
             <div className="min-w-0 w-full max-w-full" data-ff-policy-quick-comms="">
