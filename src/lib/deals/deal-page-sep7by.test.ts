@@ -12,7 +12,6 @@ const RAIL_CHILD_FILES = [
   "src/components/tags/record-tags.tsx",
   "src/components/comms/quick-comms-board.tsx",
   "src/components/record-context/record-context-rail.tsx",
-  "src/components/deal/deal-motivation.tsx",
 ] as const;
 
 const OVERFLOW_WIDTH =
