@@ -74,4 +74,11 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/app/deals/page.tsx")).toMatch(/scheduleDealColdChaseNotices/);
     expect(source("src/lib/deals/cold-chase.ts")).toMatch(/Deal went cold — one-click chase/);
   });
+
+  it("feeds deal updatedAt into book-heat chrome so the truth strip is not all cooling", () => {
+    const radar = source("src/lib/deals/radar-desk.ts");
+    const page = source("src/app/deals/page.tsx");
+    expect(radar).toMatch(/updatedAt: parseDate\(deal\.updatedAt\)/);
+    expect(page).toMatch(/presented\.map\(\(card\) => card\.updatedAt\)/);
+  });
 });

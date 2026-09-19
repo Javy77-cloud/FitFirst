@@ -66,6 +66,7 @@ export type RadarDealCard = {
   y: number;
   closed: boolean;
   spark: number[];
+  updatedAt: string | null;
 };
 
 function detailsReady(row: DealListRow): boolean {
@@ -278,6 +279,7 @@ export function presentRadarCards(
         x: pos.x,
         y: pos.y,
         closed,
+        updatedAt: parseDate(deal.updatedAt)?.toISOString() ?? createdAt.toISOString(),
         spark: sparkBuckets(
           [lastCommAt, touches.lastDocByDeal.get(deal.id) ?? null, touches.lastQuoteByDeal.get(deal.id) ?? null, createdAt].filter(
             (at): at is Date => Boolean(at),

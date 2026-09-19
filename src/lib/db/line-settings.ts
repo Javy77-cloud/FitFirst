@@ -53,40 +53,51 @@ function toAgencyLob(row: typeof agencyLobs.$inferSelect): AgencyLobRecord {
 }
 
 export async function ensureDefaultAgencyLobs() {
-  const existing = await db
-    .select({ id: agencyLobs.id })
-    .from(agencyLobs)
-    .where(eq(agencyLobs.tenantId, tenant()));
-  if (existing.length > 0) return;
+  try {
+    const existing = await db
+      .select({ id: agencyLobs.id })
+      .from(agencyLobs)
+      .where(eq(agencyLobs.tenantId, tenant()));
+    if (existing.length > 0) return;
 
-  await db.insert(agencyLobs).values(
-    DEFAULT_AGENCY_LOBS.map((row) => ({
-      tenantId: tenant(),
-      productId: row.productId,
-      label: row.label,
-      lobCode: row.lobCode,
-      family: row.family,
-      sheetProduct: row.sheetProduct,
-      quotingForm: row.quotingForm,
-      active: row.active,
-      builtIn: row.builtIn,
-      sortOrder: row.sortOrder,
-    })),
-  ).onConflictDoNothing();
+    await db.insert(agencyLobs).values(
+      DEFAULT_AGENCY_LOBS.map((row) => ({
+        tenantId: tenant(),
+        productId: row.productId,
+        label: row.label,
+        lobCode: row.lobCode,
+        family: row.family,
+        sheetProduct: row.sheetProduct,
+        quotingForm: row.quotingForm,
+        active: row.active,
+        builtIn: row.builtIn,
+        sortOrder: row.sortOrder,
+      })),
+    ).onConflictDoNothing();
+  } catch {
+    // Catalog seed is optional chrome. A missing agency_lobs table or insert miss
+    // must not take down Home / Deals / Renewals / Policies.
+  }
 }
 
 export async function loadAgencyLobs(opts?: {
   includeInactive?: boolean;
 }): Promise<AgencyLobRecord[]> {
-  await ensureDefaultAgencyLobs();
-  const settings = await loadDeskLineSettings();
-  const rows = await db
-    .select()
-    .from(agencyLobs)
-    .where(eq(agencyLobs.tenantId, tenant()))
-    .orderBy(asc(agencyLobs.sortOrder), asc(agencyLobs.label));
-  const mapped = rows.length > 0 ? rows.map(toAgencyLob) : DEFAULT_AGENCY_LOBS;
-  return visibleAgencyLobs(mapped, settings, { includeInactive: opts?.includeInactive });
+  try {
+    await ensureDefaultAgencyLobs();
+    const settings = await loadDeskLineSettings();
+    const rows = await db
+      .select()
+      .from(agencyLobs)
+      .where(eq(agencyLobs.tenantId, tenant()))
+      .orderBy(asc(agencyLobs.sortOrder), asc(agencyLobs.label));
+    const mapped = rows.length > 0 ? rows.map(toAgencyLob) : DEFAULT_AGENCY_LOBS;
+    return visibleAgencyLobs(mapped, settings, { includeInactive: opts?.includeInactive });
+  } catch {
+    return visibleAgencyLobs(DEFAULT_AGENCY_LOBS, DEFAULT_DESK_LINE_SETTINGS, {
+      includeInactive: opts?.includeInactive,
+    });
+  }
 }
 
 export async function loadAgencyLobCatalog(): Promise<AgencyLobRecord[]> {
@@ -195,28 +206,32 @@ export async function requireStoredLobCode(
 }
 
 export async function loadDeskLineSettings(): Promise<DeskLineSettings> {
-  await ensureDefaultLineSubfilters();
-  await ensureDefaultAgencyLobs();
-  const [row] = await db
-    .select()
-    .from(agencySettings)
-    .where(eq(agencySettings.tenantId, tenant()));
-  const options = await db
-    .select()
-    .from(lineSubfilterOptions)
-    .where(eq(lineSubfilterOptions.tenantId, tenant()))
-    .orderBy(asc(lineSubfilterOptions.sortOrder), asc(lineSubfilterOptions.label));
+  try {
+    await ensureDefaultLineSubfilters();
+    const [row] = await db
+      .select()
+      .from(agencySettings)
+      .where(eq(agencySettings.tenantId, tenant()));
+    const options = await db
+      .select()
+      .from(lineSubfilterOptions)
+      .where(eq(lineSubfilterOptions.tenantId, tenant()))
+      .orderBy(asc(lineSubfilterOptions.sortOrder), asc(lineSubfilterOptions.label));
 
-  const life = options.filter((item) => item.book === "life").map(toOption);
-  const health = options.filter((item) => item.book === "health").map(toOption);
+    const life = options.filter((item) => item.book === "life").map(toOption);
+    const health = options.filter((item) => item.book === "health").map(toOption);
 
-  return {
-    writeLife: row?.writeLife ?? DEFAULT_DESK_LINE_SETTINGS.writeLife,
-    writeHealth: row?.writeHealth ?? DEFAULT_DESK_LINE_SETTINGS.writeHealth,
-    showSellingAgency: row?.showSellingAgency ?? DEFAULT_DESK_LINE_SETTINGS.showSellingAgency,
-    lifeOptions: life.length > 0 ? life : DEFAULT_LIFE_SUBFILTERS,
-    healthOptions: health.length > 0 ? health : DEFAULT_HEALTH_SUBFILTERS,
-  };
+    return {
+      writeLife: row?.writeLife ?? DEFAULT_DESK_LINE_SETTINGS.writeLife,
+      writeHealth: row?.writeHealth ?? DEFAULT_DESK_LINE_SETTINGS.writeHealth,
+      showSellingAgency: row?.showSellingAgency ?? DEFAULT_DESK_LINE_SETTINGS.showSellingAgency,
+      lifeOptions: life.length > 0 ? life : DEFAULT_LIFE_SUBFILTERS,
+      healthOptions: health.length > 0 ? health : DEFAULT_HEALTH_SUBFILTERS,
+    };
+  } catch {
+    // Life/Health chips are optional. A missing catalog table must not 441 the desk.
+    return DEFAULT_DESK_LINE_SETTINGS;
+  }
 }
 
 export async function ensureDefaultLineSubfilters() {
