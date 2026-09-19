@@ -20,7 +20,7 @@ import { compareLineTone, toneCoverageRows } from "@/lib/renewal/compare-tone";
 import { summarizeRenewalDiff, type GeminiDiffNote } from "@/lib/renewal/gemini-diff";
 import { loadPartyHealth } from "@/lib/health/load";
 import type { HealthChipView } from "@/lib/health/model";
-import { daysUntilExpiration } from "@/lib/ams/renewals";
+import { daysUntilExpiration, expirationDay } from "@/lib/ams/renewals";
 import { deskNow } from "@/lib/home/as-of";
 import { CHASE_EVENT, CHASE_MARK, chaseTemplateFor } from "@/lib/renewal/chase";
 import { REVIEW_EVENT, REVIEW_SKIP_EVENT } from "@/lib/renewal/chase";
@@ -139,7 +139,10 @@ export async function loadRenewalCompareDrawer(
     contactId: policy.contactId,
     accountId: policy.accountId,
     policyId: policy.id,
-    daysUntil: daysUntilExpiration(policy.expirationDate, deskNow()),
+    daysUntil: (() => {
+      const exp = expirationDay(policy.expirationDate);
+      return exp ? daysUntilExpiration(exp, deskNow()) : null;
+    })(),
     premiumDelta: change?.delta ?? null,
   }).catch(() => ({ client: null, policy: null }));
 

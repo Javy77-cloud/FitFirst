@@ -15,7 +15,7 @@ describe("client health chrome", () => {
     expect(card).toMatch(/RenewalHealthMeter/);
     expect(card).toMatch(/RenewalCompareDrawer/);
     expect(card).not.toMatch(/HealthScoreChip/);
-    expect(card).not.toMatch(/card\.policyHealth/);
+    expect(card).not.toMatch(/card\.clientHealth/);
     expect(desk).toMatch(/RenewalsHealthStrip/);
     expect(desk).toMatch(/rollupRenewalHealth/);
     expect(desk).toMatch(/roleHealthSummary/);
