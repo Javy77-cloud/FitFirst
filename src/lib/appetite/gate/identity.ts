@@ -1,4 +1,5 @@
 import {
+  APEX_STAR_HO_APPETITE,
   OLYMPUS_HO_APPETITE,
   SOUTHERN_OAK_HO_APPETITE,
   STAND_HO_APPETITE,
@@ -32,6 +33,7 @@ export const SLUG_NAME_ALIASES: Record<string, string[]> = {
   security_first: ["security first"],
   peoples_trust: ["people's trust", "peoples trust"],
   trident_reciprocal: TRIDENT_HO_APPETITE.aliases,
+  apex_star: APEX_STAR_HO_APPETITE.aliases,
   typtap: ["typtap"],
   olympus: OLYMPUS_HO_APPETITE.aliases,
   stand: STAND_HO_APPETITE.aliases,

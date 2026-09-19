@@ -131,7 +131,7 @@ describe("Javy 2026-09-16 bulletins (Stand / UPCIC / Nationwide / Olympus)", () 
   it("keeps CSV notes in sync with published constants and leaves Southern Oak alone", () => {
     const specialty = loadCsv(APPETITE_FL_SPECIALTY_CSV);
     const nationals = loadCsv(APPETITE_NATIONALS_CSV);
-    expect(specialty).toHaveLength(30);
+    expect(specialty).toHaveLength(31);
     expect(specialty.map((c) => c.carrierId)).toContain("stand");
     expect(specialty.map((c) => c.carrierId)).toContain("southern_oak");
 

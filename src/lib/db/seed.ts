@@ -58,6 +58,7 @@ import { seedPiiVault } from "./seed-pii";
 import { seedMfaDemo } from "./seed-mfa";
 import { seedCarrierPortals } from "./seed-carrier-portals";
 import { seedTridentReciprocal } from "./seed-trident";
+import { seedApexStarReciprocal } from "./seed-apex-star";
 import { seedSouthernOak } from "./seed-southern-oak";
 import { seedJavyBulletins } from "./seed-javy-bulletins";
 import { seedFillLearning } from "./seed-fill-learning";
@@ -568,6 +569,7 @@ async function seedUnlocked() {
   await seedMfaDemo();
   await seedCarrierPortals();
   await seedTridentReciprocal();
+  await seedApexStarReciprocal();
   await seedSouthernOak();
   await seedJavyBulletins();
   const { seedFillFeedback } = await import("./seed-fill-feedback");

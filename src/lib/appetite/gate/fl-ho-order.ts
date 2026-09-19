@@ -21,6 +21,7 @@ export const DEFAULT_FL_HO_ORDER = [
   "edison",
   "peoples_trust",
   "trident_reciprocal",
+  "apex_star",
   "olympus",
   "stand",
   "florida_family",
@@ -52,6 +53,7 @@ export const HAGERTY_SLUG = "hagerty";
 export const UNIVERSAL_PC_SLUG = "universal_pc";
 export const UICNA_SLUG = "uicna";
 export const TRIDENT_SLUG = "trident_reciprocal";
+export const APEX_STAR_SLUG = "apex_star";
 export const SOUTHERN_OAK_SLUG = "southern_oak";
 export const STAND_SLUG = "stand";
 export const OLYMPUS_SLUG = "olympus";
