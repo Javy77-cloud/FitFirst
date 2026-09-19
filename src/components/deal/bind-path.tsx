@@ -68,7 +68,7 @@ export function BindPath({
         <h2 className="text-sm font-semibold text-navy">Closed Won path</h2>
         <p className="text-sm text-navy/90">{sentence}</p>
         <div className="flex flex-wrap gap-3 text-sm">
-          {party ? <RecordLink href={party.href}>{party.kind === "account" ? "Business" : "Contact"} {party.name}</RecordLink> : null}
+          {party ? <RecordLink href={party.href}>{party.kind === "account" ? "Account" : "Contact"} {party.name}</RecordLink> : null}
           {policies.map((policy) => (
             <RecordLink key={policy.id} href={`/policies/${policy.id}`}>
               Policy {policy.policyNumber}
@@ -122,9 +122,9 @@ export function BindPath({
             checked={target === "account"}
             onChange={() => setTarget("account")}
           />
-          <span className="font-semibold text-navy">Commercial · Business + Policy</span>
+          <span className="font-semibold text-navy">Commercial · Account + Policy</span>
           <span className="mt-0.5 block text-helper text-muted-foreground">
-            Creates or reuses a Business, then one {lineLabel} Policy.
+            Creates or reuses an Account, then one {lineLabel} Policy.
           </span>
         </label>
       </fieldset>
@@ -132,7 +132,7 @@ export function BindPath({
         <div className="grid gap-2 sm:grid-cols-2">
           <div>
             <Label htmlFor="businessName" className="text-xs">
-              Business legal name
+              Account legal name
             </Label>
             <Input
               id="businessName"

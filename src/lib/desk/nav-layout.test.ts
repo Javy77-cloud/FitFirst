@@ -69,7 +69,7 @@ describe("nav layout defaults", () => {
       "Leads",
       "Deals",
       "Contacts",
-      "Business",
+      "Accounts",
       "Policies",
       "Carriers",
       "Tasks",

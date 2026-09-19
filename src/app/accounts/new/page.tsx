@@ -17,10 +17,10 @@ export default async function NewBusinessPage() {
   const values = Object.fromEntries(allLayoutFieldKeys(layout).map((key) => [key, ""]));
 
   return (
-    <AppShell title="Add Business">
+    <AppShell title="Add Account">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          Same Business layout as detail — fill what you know, Save Business opens the record.
+          Same Account layout as detail — fill what you know, Save Account opens the record.
         </p>
         <EditLayoutLink module="businesses" />
       </div>
@@ -30,10 +30,10 @@ export default async function NewBusinessPage() {
         <RecordLayoutFields module="businesses" layout={layout} fields={fields} values={values} />
         <div className="flex items-center justify-end gap-3 pt-1" data-ff-business-actions="">
           <Link href="/accounts" className="text-sm text-primary hover:underline">
-            Back To Businesses
+            Back To Accounts
           </Link>
           <Button type="submit" data-ff-save-business="">
-            Save Business
+            Save Account
           </Button>
         </div>
       </form>

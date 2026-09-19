@@ -32,7 +32,7 @@ describe("navItemIsActive", () => {
     expect(navItemIsActive("/quotes", "/deals")).toBe(false);
   });
 
-  it("treats /businesses as the Businesses nav row", () => {
+  it("treats /businesses as the Accounts nav row", () => {
     expect(navItemIsActive("/accounts", "/accounts")).toBe(true);
     expect(navItemIsActive("/accounts/abc", "/accounts")).toBe(true);
     expect(navItemIsActive("/businesses", "/accounts")).toBe(true);

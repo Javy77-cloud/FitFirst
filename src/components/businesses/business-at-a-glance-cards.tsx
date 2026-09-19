@@ -216,7 +216,7 @@ export function BusinessAtAGlanceCards({
         value={policies.length}
         detail={
           policies.length === 0
-            ? "No policies on this business yet."
+            ? "No policies on this account yet."
             : lines.length
               ? `Lines: ${lines.slice(0, 3).join(", ")}${lines.length > 3 ? "…" : ""}`
               : `${policies.length} on book`

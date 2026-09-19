@@ -94,7 +94,7 @@ export function BusinessLocationsSection({
         <DialogContent className="sm:max-w-lg" data-ff-add-location-dialog="">
           <DialogHeader>
             <DialogTitle>Add Location</DialogTitle>
-            <DialogDescription>Premises For Commercial Coverage On This Business.</DialogDescription>
+            <DialogDescription>Premises For Commercial Coverage On This Account.</DialogDescription>
           </DialogHeader>
           <AddLocationForm businessId={accountId} defaultOccupancy="commercial" />
         </DialogContent>

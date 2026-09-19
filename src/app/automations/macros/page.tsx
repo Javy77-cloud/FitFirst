@@ -39,7 +39,7 @@ export default async function MacrosPage({
       <p className="mb-4 max-w-3xl text-sm text-muted-foreground">
         Manual only — not workflows and never scheduled. Same <code>desk_macros</code> rows as
         Settings → Automations &amp; Developer → Macros. Configure every run surface there
-        (Leads, Deals / Pipeline, Contacts, Businesses, Policies, Campaigns, Tasks, Quotes).
+        (Leads, Deals / Pipeline, Contacts, Accounts, Policies, Campaigns, Tasks, Quotes).
         Check rows, then <strong>Run Macro</strong>. Leads also has <strong>Run Follow-up Macro</strong>.
         Macros run on the records you pick.
       </p>

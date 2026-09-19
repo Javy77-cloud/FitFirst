@@ -188,7 +188,7 @@ export function listSelectionActions(input: {
       module === "carriers"
         ? "Carriers stay on the shared appetite book — no owner to assign."
         : module === "businesses"
-          ? "Assign owner is not wired for Businesses yet (no owner column)."
+          ? "Assign owner is not wired for Accounts yet (no owner column)."
           : module === "tasks"
             ? "Tasks use assignee on the task row — not list Assign."
             : "Assign owner is not on this list.";
@@ -290,7 +290,7 @@ export function listSelectionActions(input: {
         : module === "tasks"
           ? "Tasks complete or delete — no archive."
           : module === "businesses"
-            ? "Businesses stay on the book — no archive column."
+            ? "Accounts stay on the book — no archive column."
             : module === "carriers"
               ? "Carriers stay on the appetite book."
               : "Archive is not wired on this list.";
@@ -310,7 +310,7 @@ export function listSelectionActions(input: {
         : module === "carriers"
           ? "Carriers stay on the appetite book."
           : module === "businesses"
-            ? "Businesses stay on the book — Archive is not wired; not wiped."
+            ? "Accounts stay on the book — Archive is not wired; not wiped."
             : "Hard delete is off on the live book — Archive or Merge.";
     actions.push(withReason("delete", "Delete", false, reason));
   } else if (count === 0) {

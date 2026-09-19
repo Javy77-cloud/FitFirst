@@ -34,7 +34,7 @@ export function businessHealthScore(input: {
   if (!hasPolicies) {
     return {
       level: "red",
-      tip: "No policies on this business.",
+      tip: "No policies on this account.",
     };
   }
   return {

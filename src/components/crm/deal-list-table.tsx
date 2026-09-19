@@ -203,7 +203,7 @@ export function DealListTable({
                     <td data-col="updated" data-sheet-col="updated">{formatIsoDate(deal.updatedAt)}</td>
                     <td data-col="bound" data-sheet-col="bound">{deal.boundAt ? formatIsoDate(deal.boundAt) : "Unbound"}</td>
                     <td data-col="account" data-sheet-col="account" className="capitalize">
-                      {deal.accountKind === "commercial" ? "Business" : contact ? "Personal" : "Lead"}
+                      {deal.accountKind === "commercial" ? "Account" : contact ? "Personal" : "Lead"}
                     </td>
                   </tr>
                 );

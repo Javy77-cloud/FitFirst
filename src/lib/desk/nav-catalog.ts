@@ -51,7 +51,7 @@ export const NAV_LINK_CATALOG: NavLinkDef[] = [
   { id: "deals", href: "/deals", label: "Deals", icon: ClipboardList, match: "/deals" },
   { id: "quotes", href: "/quotes", label: "Quotes", icon: ClipboardList, match: "/quotes" },
   { id: "contacts", href: "/contacts", label: "Contacts", icon: Contact, match: "/contacts" },
-  { id: "business", href: "/accounts", label: "Business", icon: Briefcase, match: "/accounts" },
+  { id: "business", href: "/accounts", label: "Accounts", icon: Briefcase, match: "/accounts" },
   { id: "merge", href: "/merge", label: "Merge", icon: Users, match: "/merge" },
   { id: "policies", href: "/policies", label: "Policies", icon: Shield, match: "/policies" },
   { id: "my-book", href: "/policies", label: "My Book", icon: Shield, match: "/policies", exact: true },

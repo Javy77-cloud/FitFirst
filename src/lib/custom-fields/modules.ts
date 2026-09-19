@@ -39,7 +39,7 @@ export const FIELD_LAYOUT_MODULE_LABEL: Record<FieldLayoutModule, string> = {
   deals: "Deals",
   policies: "Policies",
   contacts: "Contacts",
-  businesses: "Business",
+  businesses: "Accounts",
   carriers: "Carriers",
   tasks: "Tasks",
 };
@@ -156,7 +156,7 @@ const POLICY_FIELDS: CustomFieldDef[] = [
 ];
 
 const BUSINESS_FIELDS: CustomFieldDef[] = [
-  { key: "business_name", label: "Business Name", type: "single_line", systemKey: "name" },
+  { key: "business_name", label: "Account Name", type: "single_line", systemKey: "name" },
   { key: "dba", label: "DBA", type: "single_line", systemKey: "dba" },
   { key: "legal_name", label: "Legal Name", type: "single_line", systemKey: "legalName" },
   { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
@@ -340,11 +340,11 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
     );
   }
   if (module === "businesses") {
-    // Even left|right like Contacts. Keep Business Name on left; Phone (and
+    // Even left|right like Contacts. Keep Account Name on left; Phone (and
     // email/website) on right so name + phone are not stacked in one column.
     return twoCol(
       [
-        section("business", "Business", [
+        section("business", "Account", [
           "business_name",
           "dba",
           "legal_name",

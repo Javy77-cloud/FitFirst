@@ -128,7 +128,7 @@ export function LinkedContactsSection({
           <DialogHeader>
             <DialogTitle>Link Contact</DialogTitle>
             <DialogDescription>
-              Search An Existing Contact. A Contact Can Link To Multiple Businesses.
+              Search An Existing Contact. A Contact Can Link To Multiple Accounts.
             </DialogDescription>
           </DialogHeader>
           <Input

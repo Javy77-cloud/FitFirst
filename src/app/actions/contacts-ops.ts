@@ -129,7 +129,7 @@ export async function unlinkContactCoapplicant(formData: FormData) {
 export async function linkContactBusiness(formData: FormData) {
   const contactId = str(formData, "contactId");
   const accountId = str(formData, "accountId");
-  if (!contactId || !accountId) return { ok: false as const, error: "Pick a business." };
+  if (!contactId || !accountId) return { ok: false as const, error: "Pick an account." };
   const [acct] = await db
     .select({ id: accounts.id })
     .from(accounts)

@@ -208,7 +208,7 @@ export function OwnerDesk({
                       icon={Users}
                       label="Active accounts"
                       value={fmt(snapshot.activeAccounts)}
-                      hint="Contacts and businesses with active, bound, or pending policies"
+                      hint="Contacts and Accounts with active, bound, or pending policies"
                     />
                   ),
                 }

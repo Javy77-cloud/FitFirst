@@ -37,14 +37,14 @@ describe("desk settings IA", () => {
 });
 
 describe("primary desk nav", () => {
-  it("lists the signed default primaries, with Business and Carriers after Policies", () => {
+  it("lists the signed default primaries, with Accounts after Contacts", () => {
     expect(NAV_GROUPS.map((group) => group.id)).toEqual([
       "home",
       "leads",
       "deals",
       "contacts",
-      "policies",
       "business",
+      "policies",
       "carriers",
       "tasks",
       "calendar",
@@ -56,12 +56,12 @@ describe("primary desk nav", () => {
     ]);
     expect(NAV_GROUPS.some((group) => group.label === "People")).toBe(false);
     expect(NAV_GROUPS.some((group) => group.id === "work")).toBe(false);
-    expect(NAV_GROUPS.find((group) => group.id === "business")?.label).toBe("Business");
+    expect(NAV_GROUPS.find((group) => group.id === "business")?.label).toBe("Accounts");
   });
 
-  it("keeps Contacts and Business as their own primaries", () => {
+  it("keeps Contacts and Accounts as their own primaries", () => {
     expect(NAV_GROUPS.find((group) => group.id === "contacts")?.label).toBe("Contacts");
-    expect(NAV_GROUPS.find((group) => group.id === "business")?.label).toBe("Business");
+    expect(NAV_GROUPS.find((group) => group.id === "business")?.label).toBe("Accounts");
   });
 
   it("keeps one search surface — top bar only, not the sidebar", () => {
@@ -95,7 +95,6 @@ describe("primary desk nav", () => {
     expect(labels).not.toContain("Merge");
     expect(labels).not.toContain("Social");
     expect(NAV_GROUPS.find((group) => group.id === "policies")?.items.map((item) => item.label)).toEqual([
-      "My Book",
       "Renewals",
       "Certificates",
     ]);

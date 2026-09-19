@@ -37,7 +37,7 @@ export function ZohoJsonlImportCard() {
       <div className="text-sm font-semibold text-navy">Zoho JSONL book (records only)</div>
       <p className="text-sm text-muted-foreground">
         Dual-enter path for the Air desk. Wipe FitFirst demo CRM rows, keep login + tenant +
-        appointed carriers, then import Zoho Contacts, Businesses, Leads, Deals, Vendors, Policies,
+        appointed carriers, then import Zoho Contacts, Accounts, Leads, Deals, Vendors, Policies,
         and Tasks. Files stay out of this pass. Ana is not re-seeded after wipe.
         Import maps Zoho Owner to a FitFirst user and falls back to Javy when it cannot.
       </p>

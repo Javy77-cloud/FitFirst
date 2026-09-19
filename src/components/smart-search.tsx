@@ -122,7 +122,7 @@ export function SmartSearch({ defaultQuery = "" }: { defaultQuery?: string }) {
               setActive((index) => (index - 1 + hits.length) % hits.length);
             }
           }}
-          placeholder="Contacts, leads, deals, businesses, policies, carriers…"
+          placeholder="Contacts, leads, deals, accounts, policies, carriers…"
           autoComplete="off"
           role="combobox"
           aria-expanded={showPanel}

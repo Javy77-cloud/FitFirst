@@ -48,7 +48,7 @@ export function phoneDigits(value: string | null | undefined): string {
 
 export function partyDisplayName(row: PartyRecord): string {
   if (row.kind === "business") {
-    return asText(row.name) || asText(row.legalName) || asText(row.dba) || asText(row.partyName) || "Business";
+    return asText(row.name) || asText(row.legalName) || asText(row.dba) || asText(row.partyName) || "Account";
   }
   const formatted = formatPersonName({
     firstName: asText(row.firstName) || null,
@@ -106,7 +106,7 @@ function subtitleFor(row: PartyRecord): string {
   const phone = asText(row.phone);
   const bits = [email, phone].filter(Boolean);
   if (row.kind === "business") {
-    return bits.length ? `Business · ${bits.join(" · ")}` : "Business";
+    return bits.length ? `Account · ${bits.join(" · ")}` : "Account";
   }
   return bits.length ? `Contact · ${bits.join(" · ")}` : "Contact";
 }

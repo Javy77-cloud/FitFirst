@@ -128,7 +128,7 @@ export function AddBusinessDialog({
 
       const result = await createBusinessPopup(fd);
       if (!result.ok) {
-        setError("error" in result ? result.error : "Could not save business.");
+        setError("error" in result ? result.error : "Could not save account.");
         return;
       }
       setOpen(false);
@@ -154,7 +154,7 @@ export function AddBusinessDialog({
         data-ff-new-business=""
         onClick={() => setOpen(true)}
       >
-        New Business
+        New Account
       </Button>
 
       <Dialog
@@ -172,7 +172,7 @@ export function AddBusinessDialog({
           data-ff-add-business-dialog=""
         >
           <DialogHeader>
-            <DialogTitle>New Business</DialogTitle>
+            <DialogTitle>New Account</DialogTitle>
             <DialogDescription>
               Quick add commercial account. Status defaults to Not A Client until a policy binds.
             </DialogDescription>
@@ -402,7 +402,7 @@ export function AddBusinessDialog({
                   Cancel
                 </Button>
                 <Button type="submit" size="sm" disabled={busy} data-ff-save-business-popup="">
-                  Save Business
+                  Save Account
                 </Button>
               </div>
             </div>

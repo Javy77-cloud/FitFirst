@@ -22,7 +22,7 @@ export const FLASH_COPY = {
   "colors-cleared": "Colors cleared",
   "lead-saved": "Lead saved",
   "contact-saved": "Contact saved",
-  "business-saved": "Business saved",
+  "business-saved": "Account saved",
   "policy-saved": "Policy saved",
   "settings-saved": "Settings saved",
   "brand-saved": "Brand saved",

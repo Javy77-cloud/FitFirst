@@ -27,10 +27,10 @@ export function bindPathCopy(target: BindPathTarget, lineLabel = "this line"): B
   if (target === "account") {
     return {
       target,
-      headline: "Commercial · Business + Policy",
-      button: "Bind Closed Won — Business + Policy",
-      whatHappens: `One click copies the Risk Profile onto a Business and writes one ${lineLabel} Policy. Quotes stay on the deal. You do not retype name, EIN, or address.`,
-      partyLabel: "Business",
+      headline: "Commercial · Account + Policy",
+      button: "Bind Closed Won — Account + Policy",
+      whatHappens: `One click copies the Risk Profile onto an Account and writes one ${lineLabel} Policy. Quotes stay on the deal. You do not retype name, EIN, or address.`,
+      partyLabel: "Account",
       policyLabel: "Policy",
     };
   }
@@ -109,6 +109,6 @@ export function closedWonPathSentence(input: {
   partyName: string;
   policyNumber: string;
 }): string {
-  const party = input.partyKind === "account" ? "Business" : "Contact";
+  const party = input.partyKind === "account" ? "Account" : "Contact";
   return `Closed Won wrote ${party} ${input.partyName} + Policy ${input.policyNumber}. Quotes on this deal stayed quotes.`;
 }

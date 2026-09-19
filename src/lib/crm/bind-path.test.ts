@@ -26,11 +26,11 @@ describe("Closed Won bind path", () => {
     expect(copy.whatHappens).toMatch(/Quotes stay on the deal/);
   });
 
-  it("labels commercial Closed Won as Business + Policy", () => {
+  it("labels commercial Closed Won as Account + Policy", () => {
     const copy = bindPathCopy("account", "General liability");
-    expect(copy.headline).toBe("Commercial · Business + Policy");
-    expect(copy.button).toBe("Bind Closed Won — Business + Policy");
-    expect(copy.whatHappens).toMatch(/Business/);
+    expect(copy.headline).toBe("Commercial · Account + Policy");
+    expect(copy.button).toBe("Bind Closed Won — Account + Policy");
+    expect(copy.whatHappens).toMatch(/Account/);
     expect(copy.whatHappens).toMatch(/EIN/);
   });
 
@@ -51,7 +51,7 @@ describe("Closed Won bind path", () => {
     })).toBe("Ruiz, Elena");
   });
 
-  it("names Harbor Closed Won as Business + Policy", () => {
+  it("names Harbor Closed Won as Account + Policy", () => {
     const party = dealBindParty({
       bindTarget: "account",
       contact: { id: "c2", firstName: "Marco", lastName: "Alvarez" },
@@ -76,6 +76,6 @@ describe("Closed Won bind path", () => {
         partyName: "Harbor Key Marine LLC",
         policyNumber: "GL-HARBOR-2026",
       }),
-    ).toMatch(/Business Harbor Key Marine LLC \+ Policy GL-HARBOR-2026/);
+    ).toMatch(/Account Harbor Key Marine LLC \+ Policy GL-HARBOR-2026/);
   });
 });

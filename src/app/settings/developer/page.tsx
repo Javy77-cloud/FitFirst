@@ -17,7 +17,7 @@ const TOOLS: {
   {
     href: "/automations/macros",
     title: "Macros",
-    body: "Platform Settings macros. Target Leads, Deals, Contacts, Businesses, Policies, Campaigns, Tasks, Quotes. Same desk_macros table — not a second list.",
+    body: "Platform Settings macros. Target Leads, Deals, Contacts, Accounts, Policies, Campaigns, Tasks, Quotes. Same desk_macros table — not a second list.",
     status: "working",
     countKey: "macros",
   },

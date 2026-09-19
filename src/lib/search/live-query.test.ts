@@ -17,6 +17,6 @@ describe("live contains match", () => {
   it("builds a haystack and labels kinds", () => {
     expect(haystack(["Elena", null, "Ruiz", ""])).toBe("Elena Ruiz");
     expect(kindLabel("carrier")).toBe("Carrier");
-    expect(kindLabel("business")).toBe("Business");
+    expect(kindLabel("business")).toBe("Account");
   });
 });

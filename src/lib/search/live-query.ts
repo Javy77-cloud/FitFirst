@@ -86,7 +86,7 @@ export function kindLabel(kind: string): string {
     case "contact":
       return "Contact";
     case "business":
-      return "Business";
+      return "Account";
     case "policy":
       return "Policy";
     case "carrier":
