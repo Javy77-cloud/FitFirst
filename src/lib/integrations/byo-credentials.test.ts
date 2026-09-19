@@ -96,6 +96,7 @@ describe("BYO OAuth credential save", () => {
     expect(card).toMatch(/clearByoOauthCredentials/);
     expect(card).toMatch(/data-ff-byo-clear/);
     expect(card).not.toMatch(/hasCredentials && !item\.hasEnvCredentials/);
+    expect(card).toMatch(/environment credentials still apply after clear/i);
 
     const store = source("src/lib/integrations/oauth-store.ts");
     expect(store).toMatch(/connectMode: \"credentials\"/);
