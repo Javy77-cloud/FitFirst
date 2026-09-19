@@ -633,7 +633,7 @@ export const DEALS_LIST_COLUMNS: ListColumn[] = dealsListColumnsFromFields(
 
 const ACCOUNTS_SYSTEM_COLUMNS: ListColumn[] = [
   { id: "pick", label: "", locked: true, defaultWidth: DEFAULT_PICK_COLUMN_WIDTH },
-  { id: "business", label: "Business Name" },
+  { id: "business", label: "Account Name" },
   { id: "status", label: "Status" },
   { id: "industry", label: "Industry" },
   { id: "source", label: "Source" },
@@ -642,7 +642,7 @@ const ACCOUNTS_SYSTEM_COLUMNS: ListColumn[] = [
   { id: "lastActivity", label: "Last Activity" },
 ];
 
-/** Layout keys already covered by Businesses system columns. */
+/** Layout keys already covered by Accounts system columns. */
 const ACCOUNTS_LAYOUT_COVERED = new Set([
   "name",
   "business_name",

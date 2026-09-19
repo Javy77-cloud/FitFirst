@@ -44,7 +44,7 @@ export const ENTITY_PACKS: EntityPack[] = [
     key: "contacts",
     label: "Contacts",
     group: "crm",
-    hint: "People records — not businesses. Match on email.",
+    hint: "People records — not accounts. Match on email.",
     match: "email",
     capability: "full",
     headers: [
@@ -70,7 +70,7 @@ export const ENTITY_PACKS: EntityPack[] = [
   },
   {
     key: "businesses",
-    label: "Businesses",
+    label: "Accounts",
     group: "crm",
     hint: "Commercial accounts — not Contacts. Match on email, then name.",
     match: "email or name",

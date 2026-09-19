@@ -20,7 +20,7 @@ export function massAssignBlockedReason(module: CrmListModule): string | null {
     return "Carriers stay on the shared appetite book — no owner to assign.";
   }
   if (module === "businesses") {
-    return "Assign owner is not wired for Businesses yet (no owner column).";
+    return "Assign owner is not wired for Accounts yet (no owner column).";
   }
   if (module === "tasks") {
     return "Tasks use assignee on the task row — not list Assign.";

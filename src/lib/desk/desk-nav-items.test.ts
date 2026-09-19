@@ -22,6 +22,14 @@ describe("desk nav chrome", () => {
     expect(hrefs).toContain("/developer");
   });
 
+  it("labels the /accounts module Accounts, not Business or Businesses", () => {
+    const accounts = DESK_NAV_ITEMS.find((item) => item.href === "/accounts");
+    expect(accounts?.label).toBe("Accounts");
+    const labels = DESK_NAV_ITEMS.map((item) => item.label as string);
+    expect(labels).not.toContain("Business");
+    expect(labels).not.toContain("Businesses");
+  });
+
   it("moves Alerts and Search out of the left nav into top chrome", () => {
     const hrefs = DESK_NAV_ITEMS.map((item) => item.href);
     const labels = DESK_NAV_ITEMS.map((item) => item.label as string);

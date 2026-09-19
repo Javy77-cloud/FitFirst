@@ -104,7 +104,7 @@ export const DEV_HUB_MODULE_LABEL: Record<DevHubModule, string> = {
   deals: "Deals / Pipeline",
   policies: "Policies",
   tasks: "Tasks",
-  businesses: "Businesses",
+  businesses: "Accounts",
   campaigns: "Campaigns",
   quotes: "Quotes",
 };

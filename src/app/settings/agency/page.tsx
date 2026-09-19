@@ -77,7 +77,7 @@ export default async function AgencySettingsPage() {
           >
             <div className="text-sm font-semibold text-navy">Agency data / Import Export</div>
             <p className="mt-1 text-xs text-muted-foreground">
-              CSV packs for Contacts, Businesses, Leads, Deals, Policies, and Carriers. No paid
+              CSV packs for Contacts, Accounts, Leads, Deals, Policies, and Carriers. No paid
               migration vendor.
             </p>
           </Link>

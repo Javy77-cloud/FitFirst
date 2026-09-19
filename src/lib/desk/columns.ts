@@ -65,7 +65,7 @@ export const TABLE_COLUMNS: Record<string, ColumnDef[]> = {
     { key: "inForce", label: "In-force", defaultOn: true },
   ],
   accounts: [
-    { key: "name", label: "Business", defaultOn: true },
+    { key: "name", label: "Account", defaultOn: true },
     { key: "status", label: "Status", defaultOn: true },
     { key: "ein", label: "EIN", defaultOn: true },
     { key: "phone", label: "Phone", defaultOn: true },

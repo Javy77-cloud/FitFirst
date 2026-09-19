@@ -311,7 +311,7 @@ async function mergeAccounts(
   const duplicate = await loadAccount(duplicateId);
   if (!keeper || !duplicate) throw new MergeLockError("Both businesses must exist.");
   if (keeper.tenantId !== tenant() || duplicate.tenantId !== tenant()) {
-    throw new MergeLockError("Businesses must belong to this desk.");
+    throw new MergeLockError("Accounts must belong to this desk.");
   }
   if (keeperId === duplicateId) {
     throw new MergeLockError("Keeper and duplicate must be different records.");

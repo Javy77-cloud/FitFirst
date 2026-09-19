@@ -14,7 +14,7 @@ export const TASK_RECORD_TYPE_LABELS: Record<TaskRecordType, string> = {
   contact: "Contact",
   deal: "Deal",
   policy: "Policy",
-  business: "Business",
+  business: "Account",
   lead: "Lead",
 };
 

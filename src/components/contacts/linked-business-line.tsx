@@ -45,7 +45,7 @@ export function LinkedBusinessLine({
   const primary = businesses[0];
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm" data-ff-linked-business-line="">
-      <span className="text-muted-foreground">Business</span>
+      <span className="text-muted-foreground">Account</span>
       {primary ? (
         <>
           <RecordLink href={`/accounts/${primary.id}`}>{primary.name}</RecordLink>
@@ -68,7 +68,7 @@ export function LinkedBusinessLine({
         </>
       ) : (
         <>
-          <span className="text-muted-foreground">No Business Yet — Add One.</span>
+          <span className="text-muted-foreground">No Account Yet — Add One.</span>
           <Button
             type="button"
             size="sm"
@@ -77,7 +77,7 @@ export function LinkedBusinessLine({
             onClick={() => setOpen(true)}
           >
             <Plus className="size-3.5" />
-            Link Business
+            Link Account
           </Button>
         </>
       )}
@@ -91,12 +91,12 @@ export function LinkedBusinessLine({
       >
         <DialogContent className="sm:max-w-md" data-ff-link-business-dialog="">
           <DialogHeader>
-            <DialogTitle>Link Business</DialogTitle>
-            <DialogDescription>Search an existing business account.</DialogDescription>
+            <DialogTitle>Link Account</DialogTitle>
+            <DialogDescription>Search an existing account.</DialogDescription>
           </DialogHeader>
           <Input
             className="h-8"
-            placeholder="Search Business…"
+            placeholder="Search Account…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             autoFocus

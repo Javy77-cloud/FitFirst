@@ -38,7 +38,7 @@ export const IMPORT_EXPORT_PACKS: ImportExportPack[] = [
   },
   {
     id: "accounts",
-    label: "Businesses / Accounts",
+    label: "Accounts",
     group: "core",
     blurb: "Commercial accounts. Encrypted EIN stays off the file.",
     importStatus: "placeholder",

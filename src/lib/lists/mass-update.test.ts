@@ -165,10 +165,10 @@ describe("mass update matches available list columns (catalog)", () => {
     expect(fields.some((field) => field.id === "lastActivity")).toBe(false);
   });
 
-  it("Businesses catalog includes defaultOn:false layout field and excludes computed columns", () => {
+  it("Accounts catalog includes defaultOn:false layout field and excludes computed columns", () => {
     const businessesColumns: ListColumn[] = [
       { id: "pick", label: "", locked: true },
-      { id: "business", label: "Business Name", locked: true },
+      { id: "business", label: "Account Name", locked: true },
       { id: "status", label: "Status" },
       { id: "industry", label: "Industry" },
       { id: "source", label: "Source" },

@@ -125,7 +125,7 @@ export async function saveModuleRecordValues(formData: FormData) {
   revalidatePath(fieldLayoutListHref(module));
   revalidatePath(href);
   if (module === "contacts") scheduleContactCoverageNotices(recordId);
-  flashAction(href, `${module === "businesses" ? "Business" : module.slice(0, 1).toUpperCase() + module.slice(1)} saved`);
+  flashAction(href, `${module === "businesses" ? "Account" : module.slice(0, 1).toUpperCase() + module.slice(1)} saved`);
 }
 
 export async function saveDealFieldLayout(formData: FormData) {

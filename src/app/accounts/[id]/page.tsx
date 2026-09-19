@@ -180,7 +180,7 @@ export default async function AccountDetailPage({
 
   return (
     <AppShell
-      title="Businesses"
+      title="Accounts"
       recordContext={{
         accountId: account.id,
         contactId: contacts[0]?.id,
@@ -194,11 +194,11 @@ export default async function AccountDetailPage({
         backLabel={fromPolicy ? "Back to policy" : "Back"}
         fallbackHref={fromPolicy ? `/policies/${fromPolicy}` : "/accounts"}
         crumbs={[
-          { href: "/accounts", label: "Business" },
+          { href: "/accounts", label: "Accounts" },
           ...(fromPolicy
             ? [{ href: `/policies/${fromPolicy}`, label: "Policy" }]
             : []),
-          { label: "Business" },
+          { label: "Account" },
         ]}
       />
       <div className="mb-3 space-y-1" data-ff-business-header-bar="">
@@ -332,7 +332,7 @@ export default async function AccountDetailPage({
                   className="flex items-center justify-between gap-3"
                   data-ff-business-details-header=""
                 >
-                  <h2 className="text-base font-semibold text-[#002868]">Business Details</h2>
+                  <h2 className="text-base font-semibold text-[#002868]">Account Details</h2>
                   <div className="shrink-0" data-ff-business-edit-layout="">
                     <EditLayoutLink module="businesses" />
                   </div>
@@ -343,7 +343,7 @@ export default async function AccountDetailPage({
                   layout={businessLayout?.layout ?? defaultLayoutForModule("businesses")}
                   fields={businessLayout?.fields ?? []}
                   values={fieldValues}
-                  saveLabel="Save Business"
+                  saveLabel="Save Account"
                   clickToEdit
                 />
               </section>
@@ -514,7 +514,7 @@ export default async function AccountDetailPage({
                   id="notes"
                   title="Notes"
                   count={noteBits.length}
-                  emptyLabel="No notes yet. Add notes in Business Details."
+                  emptyLabel="No notes yet. Add notes in Account Details."
                   items={noteBits.map((n) => ({
                     id: n.id,
                     title: n.title,

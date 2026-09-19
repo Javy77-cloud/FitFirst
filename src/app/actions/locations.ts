@@ -22,7 +22,7 @@ export async function createLocation(formData: FormData) {
   const contactId = str(formData, "contactId") || null;
   const accountId = str(formData, "accountId") || str(formData, "businessId") || null;
   if (!contactId && !accountId) {
-    throw new Error("A location must belong to a contact or a business.");
+    throw new Error("A location must belong to a contact or an account.");
   }
 
   const street = str(formData, "street");

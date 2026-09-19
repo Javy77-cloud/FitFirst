@@ -32,7 +32,7 @@ const NAV_ICONS: Record<(typeof DESK_NAV_ITEMS)[number]["label"], LucideIcon> = 
   Leads: Users,
   Deals: ClipboardList,
   Contacts: Contact,
-  Businesses: Briefcase,
+  Accounts: Briefcase,
   Policies: Shield,
   "Book health": Shield,
   Renewals: ClipboardList,

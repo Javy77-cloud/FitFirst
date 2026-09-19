@@ -13,7 +13,7 @@ export const TAG_MODULE_LABELS: Record<TagModule, string> = {
   leads: "Leads",
   deals: "Deals",
   contacts: "Contacts",
-  accounts: "Business",
+  accounts: "Accounts",
   policies: "Policies",
   carriers: "Carriers",
   tasks: "Tasks",

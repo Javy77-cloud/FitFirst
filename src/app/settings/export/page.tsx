@@ -71,7 +71,7 @@ export default async function AdminExportPage() {
         <Link href={IMPORT_EXPORT_HUB_HREF} className="text-primary hover:underline">
           Import / Export hub
         </Link>
-        . Encrypted SSN / EIN / DL values stay off the file. Businesses, carriers, leads,
+        . Encrypted SSN / EIN / DL values stay off the file. Accounts, carriers, leads,
         documents, and quote sheets sit on the Import / Export hub.
       </p>
 

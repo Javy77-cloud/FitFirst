@@ -92,7 +92,7 @@ export async function loadRecordContext(
         href: `/accounts/${account.id}`,
         phone: account.phone ?? null,
         email: account.email ?? null,
-        kindLabel: "Business",
+        kindLabel: "Account",
       });
     }
   }

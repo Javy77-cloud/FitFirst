@@ -46,7 +46,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     summary: "A quote is a number. Bind is the only step that creates a policy.",
     body: [
       "Quoted, declined, and floor-only results stay on the deal.",
-      "Bind creates the Contact or Business and the Policy. Not before.",
+      "Bind creates the Contact or Account and the Policy. Not before.",
       "A quote is not coverage. Bind is the only step that creates a policy.",
     ],
   },
@@ -77,8 +77,8 @@ export const HELP_ARTICLES: HelpArticle[] = [
     summary: "The line book picks the pipeline and the bind target.",
     body: [
       "Personal: HO, auto, flood, umbrella. Bind creates a Contact.",
-      "Commercial: GL, BOP, WC, and the rest. Bind creates a Business.",
-      "Commercial bind creates a Business. Personal bind creates a Contact.",
+      "Commercial: GL, BOP, WC, and the rest. Bind creates an Account.",
+      "Commercial bind creates an Account. Personal bind creates a Contact.",
     ],
   },
 ];
@@ -107,7 +107,7 @@ export const HELP_FAQ: HelpFaq[] = [
   {
     id: "comms",
     q: "Where do I log a call or SMS?",
-    a: "Deal and Lead: Quick Communications. Contact, Business, and Policy: the activity timeline.",
+    a: "Deal and Lead: Quick Communications. Contact, Account, and Policy: the activity timeline.",
   },
   {
     id: "calendar-sync",

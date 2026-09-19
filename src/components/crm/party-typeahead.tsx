@@ -16,7 +16,7 @@ export function PartyTypeahead({
   name = "dealName",
   label = "Deal name",
   required = false,
-  placeholder = "Name, email, or phone — Contacts and Businesses",
+  placeholder = "Name, email, or phone — Contacts and Accounts",
   titleName,
   defaultQuery = "",
   onPick,
@@ -82,7 +82,7 @@ export function PartyTypeahead({
         >
           {suggestions.length === 0 ? (
             <li className="px-2 py-1.5 text-sm text-muted-foreground">
-              No Contact or Business matches. Keep typing a new name, or check email / phone.
+              No Contact or Account matches. Keep typing a new name, or check email / phone.
             </li>
           ) : (
             suggestions.map((hit) => (
@@ -107,12 +107,12 @@ export function PartyTypeahead({
         </ul>
       ) : (
         <p className="text-helper text-muted-foreground">
-          Type to pull Contacts and Businesses. Contains match on name, email, or phone.
+          Type to pull Contacts and Accounts. Contains match on name, email, or phone.
         </p>
       )}
       {picked ? (
         <p className="text-xs text-fit-green">
-          Linked {picked.kind === "contact" ? "Contact" : "Business"}:{" "}
+          Linked {picked.kind === "contact" ? "Contact" : "Account"}:{" "}
           <span className="font-medium">{picked.title}</span>
         </p>
       ) : null}

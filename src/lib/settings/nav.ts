@@ -115,7 +115,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       { id: "routing", href: "/settings/routing", label: "Lead routing", hint: "Territory · line · capacity" },
       { id: "lines", href: "/settings/lines", label: "Lines of business", hint: "Life / Health" },
       { id: "lists", href: "/settings/lists", label: "Global lists", hint: "Books and picklists" },
-      { id: "field-builder", href: "/settings/field-builder", label: "Field layouts", hint: "Leads · Deals · Policies · Contacts · Business · Carriers · Tasks" },
+      { id: "field-builder", href: "/settings/field-builder", label: "Field layouts", hint: "Leads · Deals · Policies · Contacts · Accounts · Carriers · Tasks" },
       { id: "policy-labels", href: "/settings/policy-labels", label: "Policy labels", hint: "Auto-name template" },
       { id: "agent-policy-access", href: "/settings/agent-policy-access", label: "Agent Policy Access", hint: "Read / write gates" },
       { id: "picklists", href: "/settings/picklists", label: "Picklists", hint: "Reusable field options" },
@@ -195,7 +195,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     href: "/settings/import-export",
     label: "Import / Export",
     hint: "CSV + Open API",
-    blurb: "Admin book move: contacts, businesses, policies, carriers, leads, deals, plus related packs.",
+    blurb: "Admin book move: contacts, accounts, policies, carriers, leads, deals, plus related packs.",
     icon: "import-export",
     badge: "Admin",
     children: [

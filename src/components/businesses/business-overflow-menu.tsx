@@ -168,7 +168,7 @@ export function BusinessOverflowMenu({
           <DropdownMenuItem onClick={() => setReminderOpen(true)}>Set Reminder</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setArchiveOpen(true)}>Archive</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setMergeOpen(true)}>Merge Businesses</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setMergeOpen(true)}>Merge Accounts</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -176,7 +176,7 @@ export function BusinessOverflowMenu({
         <DialogContent className="sm:max-w-md" data-ff-business-tags-dialog="">
           <DialogHeader>
             <DialogTitle>Tags</DialogTitle>
-            <DialogDescription>Assign Tags For This Business.</DialogDescription>
+            <DialogDescription>Assign Tags For This Account.</DialogDescription>
           </DialogHeader>
           <RecordTags
             module="accounts"
@@ -214,14 +214,14 @@ export function BusinessOverflowMenu({
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Set Reminder</DialogTitle>
-            <DialogDescription>Logs A Follow-Up Task On This Business.</DialogDescription>
+            <DialogDescription>Logs A Follow-Up Task On This Account.</DialogDescription>
           </DialogHeader>
           <form
             className="space-y-3"
             action={async () => {
               const form = new FormData();
               form.set("kind", "task");
-              form.set("title", reminderNote.trim() || "Business Reminder");
+              form.set("title", reminderNote.trim() || "Account Reminder");
               form.set("accountId", accountId);
               form.set("allowOrphan", "1");
               form.set("createReminder", "1");
@@ -253,7 +253,7 @@ export function BusinessOverflowMenu({
             <DialogTitle>Assign</DialogTitle>
             <DialogDescription>
               {/* TODO(businesses): accounts table has no ownerId yet — wire assign when ownership lands. */}
-              Assign Owner Is Not Wired For Businesses Yet (No Owner Column). Coming Next Wave.
+              Assign Owner Is Not Wired For Accounts Yet (No Owner Column). Coming Next Wave.
             </DialogDescription>
           </DialogHeader>
           <Button type="button" size="sm" variant="outline" onClick={() => setAssignOpen(false)}>
@@ -268,7 +268,7 @@ export function BusinessOverflowMenu({
             <DialogTitle>Archive</DialogTitle>
             <DialogDescription>
               {/* TODO(businesses): standalone Archive menu uses same columns as merge — wire next wave. */}
-              Standalone Archive Is Not Wired Yet. Use Merge Businesses To Archive A Duplicate.
+              Standalone Archive Is Not Wired Yet. Use Merge Accounts To Archive A Duplicate.
             </DialogDescription>
           </DialogHeader>
           <Button type="button" size="sm" variant="outline" onClick={() => setArchiveOpen(false)}>
@@ -286,10 +286,10 @@ export function BusinessOverflowMenu({
       >
         <DialogContent className="sm:max-w-2xl" data-ff-business-merge-dialog="">
           <DialogHeader>
-            <DialogTitle>Merge Businesses</DialogTitle>
+            <DialogTitle>Merge Accounts</DialogTitle>
             <DialogDescription>
               Pick The Surviving Record. Linked Contacts, Policies, And Timeline Move To The
-              Survivor; The Other Business Is Archived.
+              Survivor; The Other Account Is Archived.
             </DialogDescription>
           </DialogHeader>
 
@@ -345,7 +345,7 @@ export function BusinessOverflowMenu({
                     }}
                   />
                   <span>
-                    Keep This Business
+                    Keep This Account
                     {accountName ? (
                       <>
                         {" "}

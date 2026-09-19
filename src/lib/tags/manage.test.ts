@@ -14,9 +14,9 @@ function source(file: string) {
 }
 
 describe("module tag manage + assign popup", () => {
-  it("scopes a catalog to each CRM module including Business and Carriers", () => {
+  it("scopes a catalog to each CRM module including Accounts and Carriers", () => {
     expect([...TAG_MODULES]).toEqual(["leads", "deals", "contacts", "accounts", "policies", "carriers", "tasks"]);
-    expect(tagModuleLabel("accounts")).toBe("Business");
+    expect(tagModuleLabel("accounts")).toBe("Accounts");
     expect(tagModuleForList("businesses")).toBe("accounts");
     expect(tagModuleForList("pipeline")).toBe("deals");
     expect(tagModuleForList("leads-queue")).toBe("leads");
@@ -33,7 +33,7 @@ describe("module tag manage + assign popup", () => {
     const header = source("src/components/sheet/sheet-header.tsx");
     expect(menu).toMatch(/MoreHorizontal/);
     expect(menu).toMatch(/data-ff-sheet-settings/);
-    expect(menu).toMatch(/Manage tags/);
+    expect(menu).toMatch(/Manage Tags/);
     expect(menu).toMatch(/ManageTagsDialog/);
     expect(table).toMatch(/SheetSettingsMenu/);
     expect(table).toMatch(/data-ff-list-chrome/);

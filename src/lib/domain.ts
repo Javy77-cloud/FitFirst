@@ -699,7 +699,7 @@ export const LIST_COLUMN_CATALOG: Record<string, { key: string; label: string }[
     { key: "comms", label: "Comms" },
   ],
   accounts: [
-    { key: "name", label: "Business" },
+    { key: "name", label: "Account" },
     { key: "status", label: "Status" },
     { key: "ein", label: "EIN" },
     { key: "phone", label: "Phone" },
