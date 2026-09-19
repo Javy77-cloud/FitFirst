@@ -28,7 +28,7 @@ export default async function RenewalQueuePage({
       <p className="mb-3 text-base text-muted-foreground">{RENEWAL_QUEUE_DISCLAIMER}</p>
       <p className="mb-4 text-sm">
         <Link href="/renewals" className="text-primary hover:underline">
-          Renewal list
+          Renewals
         </Link>
         {" · "}
         <Link href="/book-health" className="text-primary hover:underline">

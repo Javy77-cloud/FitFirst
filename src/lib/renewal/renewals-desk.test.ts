@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 function source(file: string) {
@@ -41,6 +41,8 @@ describe("Renewals desk chrome", () => {
     expect(views).not.toMatch(/RenewalsKanban/);
     expect(views).not.toMatch(/RenewalsTable/);
     expect(views).not.toMatch(/RenewalsFunnel/);
+    expect(views).not.toMatch(/RenewalsList/);
+    expect(views).not.toMatch(/RenewalsWorkspace/);
     expect(source("src/components/deals/deal-workspace-bar.tsx")).toMatch(/\["board", "Board"\]/);
     expect(source("src/components/deals/deal-workspace-bar.tsx")).toMatch(/\["stack", "Stack"\]/);
     expect(source("src/components/deals/deal-workspace-bar.tsx")).not.toMatch(/\["list", "List"\]/);
@@ -92,18 +94,23 @@ describe("Renewals desk chrome", () => {
     expect(dealsPage).toMatch(/book === "renewals"/);
     expect(dealsPage).toMatch(/<RenewalsDesk/);
     expect(dealsPage).not.toMatch(/RenewalsWorkspace/);
+    expect(existsSync("src/components/renewals/renewals-list.tsx")).toBe(false);
+    expect(existsSync("src/components/renewals/renewals-table.tsx")).toBe(false);
+    expect(existsSync("src/components/renewals/renewals-funnel.tsx")).toBe(false);
+    expect(existsSync("src/components/renewals/renewals-kanban.tsx")).toBe(false);
+    expect(existsSync("src/components/renewals/renewals-workspace.tsx")).toBe(false);
   });
 
-  it("keeps coverage-gap and cross-sell prompts off renewals list, board, grid, and classic queue", () => {
-    const list = source("src/components/renewals/renewals-list.tsx");
+  it("keeps coverage-gap and cross-sell prompts off the urgency board, stack, and classic queue", () => {
+    const board = source("src/components/renewals/renewals-urgency-board.tsx");
+    const stack = source("src/components/renewals/renewals-priority-stack.tsx");
     const card = source("src/components/renewals/renewal-card.tsx");
-    const grid = source("src/components/renewals/renewals-table.tsx");
     const queue = source("src/app/renewals/queue/page.tsx");
     const deskData = source("src/lib/renewal/board-data.ts");
     const desk = source("src/components/renewals/renewals-desk.tsx");
-    expect(list).not.toMatch(/GapCountBadge/);
+    expect(board).not.toMatch(/GapCountBadge/);
+    expect(stack).not.toMatch(/GapCountBadge/);
     expect(card).not.toMatch(/GapCountBadge/);
-    expect(grid).not.toMatch(/GapCountBadge/);
     expect(queue).not.toMatch(/GapCountBadge/);
     expect(queue).not.toMatch(/loadRenewalGapCounts/);
     expect(card).not.toMatch(/RenewalCrossSellPanel/);
