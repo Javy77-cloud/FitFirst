@@ -26,7 +26,6 @@ import { CHASE_EVENT, CHASE_MARK, chaseTemplateFor } from "@/lib/renewal/chase";
 import { REVIEW_EVENT, REVIEW_SKIP_EVENT } from "@/lib/renewal/chase";
 import { renewalUrgencyBand } from "@/lib/renewal/urgency";
 import { MINI_REVIEW_QUESTIONS } from "@/lib/renewal/mini-review";
-import { clearReviewPulseCookie, queueReviewPulse } from "@/app/actions/review-pulse";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -235,14 +234,6 @@ export async function sendRenewalChase(formData: FormData) {
       .where(and(eq(alerts.id, alertId), eq(alerts.tenantId, DEFAULT_TENANT_ID)));
   }
 
-  await queueReviewPulse({
-    policyId,
-    contactId: isUuid(contactId) ? contactId : null,
-    accountId: isUuid(accountId) ? accountId : null,
-    trigger: "chase",
-    clientName,
-  });
-
   refreshRenewals(policyId);
   revalidatePath("/notifications");
   const returnTo = str(formData, "returnTo");
@@ -278,7 +269,6 @@ export async function submitRenewalMiniReview(formData: FormData) {
     accountId: isUuid(accountId) ? accountId : null,
     assignee: session.userId,
   });
-  await clearReviewPulseCookie();
   refreshRenewals(policyId);
   redirect("/renewals?notice=review_saved");
 }
@@ -306,7 +296,6 @@ export async function skipRenewalMiniReview(formData: FormData) {
     accountId: isUuid(accountId) ? accountId : null,
     assignee: session.userId,
   });
-  await clearReviewPulseCookie();
   refreshRenewals(policyId);
   redirect("/renewals?notice=review_skipped");
 }

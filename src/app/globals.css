@@ -2317,12 +2317,21 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   right: 1rem;
   bottom: 5.25rem;
   z-index: 45;
-  width: min(20rem, calc(100vw - 1.5rem));
-  padding: 0.85rem 0.9rem;
+  width: min(21rem, calc(100vw - 1.5rem));
+  padding: 0.95rem 1rem 1rem;
   border: 1px solid var(--ff-border);
-  border-radius: 0.85rem;
-  background: #fff;
-  box-shadow: 0 12px 28px rgb(12 35 64 / 16%);
+  border-radius: 1rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ff-navy) 4%, white), #fff 38%);
+  box-shadow: 0 16px 36px rgb(12 35 64 / 16%);
+  animation: ff-review-prompt-in 0.28s ease-out;
+}
+@keyframes ff-review-prompt-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ff-review-prompt { animation: none; }
 }
 .ff-review-prompt-kicker {
   margin: 0;
@@ -2363,26 +2372,22 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   font-size: 0.72rem;
   color: var(--ff-terracotta);
 }
-.ff-review-prompt-actions {
-  display: flex;
-  gap: 0.45rem;
+.ff-review-prompt .ff-review-pips {
+  margin-top: 0.7rem;
 }
-.ff-review-prompt-save,
-.ff-review-prompt-skip {
-  border-radius: 999px;
-  padding: 0.35rem 0.7rem;
-  font-size: 0.75rem;
-  font-weight: 650;
-}
-.ff-review-prompt-save {
-  border: 0;
-  background: var(--ff-navy);
-  color: #fff;
+.ff-review-prompt-hint {
+  margin: 0.45rem 0 0.55rem;
+  font-size: 0.7rem;
+  color: var(--ff-muted);
 }
 .ff-review-prompt-skip {
   border: 1px solid var(--ff-border);
   background: #fff;
   color: var(--ff-navy);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 650;
 }
 
 @media (max-width: 72rem) {

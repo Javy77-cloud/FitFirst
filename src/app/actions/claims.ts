@@ -25,7 +25,6 @@ import { claimDiaryLine, nextClaimDiaryStatus, validateClaimDiaryDraft } from "@
 import { parseIsoDate } from "@/lib/policy/workflow";
 import { isUuid } from "@/lib/ids";
 import { getClaimDiaryEntry } from "@/lib/ams/queries";
-import { queueReviewPulse } from "@/app/actions/review-pulse";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -482,15 +481,6 @@ export async function updateClaimStatus(formData: FormData) {
   }
 
   revalidateClaimSurfaces(claimId, existing.policyId, existing.contactId ?? policy?.contactId);
-  if (status === "closed" && existing.policyId) {
-    await queueReviewPulse({
-      policyId: existing.policyId,
-      contactId: existing.contactId ?? policy?.contactId ?? null,
-      accountId: null,
-      trigger: "claim",
-      clientName: partyLabel(contact) || "this client",
-    });
-  }
 }
 
 export async function notifyClaimProducer(formData: FormData) {

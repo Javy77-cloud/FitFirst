@@ -58,13 +58,20 @@ export function bookHeatFromRenewal(card: {
   healthFlagged?: boolean;
   healthStars?: number | null;
   lastContactDays?: number | null;
+  clientHealthBand?: "high" | "medium" | "low" | null;
 }): HeatLevel {
-  if (card.healthFlagged || card.daysUntil < 30 || (card.healthStars != null && card.healthStars <= 2)) {
+  if (
+    card.healthFlagged ||
+    card.daysUntil < 30 ||
+    (card.healthStars != null && card.healthStars <= 2) ||
+    card.clientHealthBand === "high"
+  ) {
     return "hot";
   }
   if (
     card.daysUntil < 60 ||
     card.healthStars === 3 ||
+    card.clientHealthBand === "medium" ||
     (card.lastContactDays != null && card.lastContactDays >= 7)
   ) {
     return "cooling";
@@ -87,8 +94,21 @@ export function daysSince(iso: string | Date | null | undefined, asOf: Date): nu
   return Math.max(0, Math.floor((asOf.getTime() - date.getTime()) / 86_400_000));
 }
 
-export function renewalHeatShares(cards: Array<Parameters<typeof bookHeatFromRenewal>[0]>): HeatShare[] {
-  return heatShares(cards.map(bookHeatFromRenewal));
+export function renewalHeatShares(
+  cards: Array<
+    Parameters<typeof bookHeatFromRenewal>[0] & {
+      clientHealth?: { band?: "high" | "medium" | "low" } | null;
+    }
+  >,
+): HeatShare[] {
+  return heatShares(
+    cards.map((card) =>
+      bookHeatFromRenewal({
+        ...card,
+        clientHealthBand: card.clientHealthBand ?? card.clientHealth?.band ?? null,
+      }),
+    ),
+  );
 }
 
 export function renewalHealthShares(

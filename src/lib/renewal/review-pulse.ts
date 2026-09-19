@@ -1,46 +1,11 @@
+import type { ReviewMoment } from "@/lib/health/reviews";
 import type { MiniReviewTrigger } from "@/lib/renewal/mini-review";
 
-export const REVIEW_PULSE_COOKIE = "ff-review-pulse";
-
-export type ReviewPulsePayload = {
-  policyId: string;
-  contactId: string | null;
-  accountId: string | null;
-  trigger: MiniReviewTrigger;
-  clientName: string;
-};
-
-const TRIGGERS: MiniReviewTrigger[] = ["chase", "bind", "close", "claim", "call"];
-
-export function isReviewTrigger(value: string | null | undefined): value is MiniReviewTrigger {
-  return Boolean(value && TRIGGERS.includes(value as MiniReviewTrigger));
-}
-
-export function encodeReviewPulse(payload: ReviewPulsePayload): string {
-  return JSON.stringify({
-    policyId: payload.policyId,
-    contactId: payload.contactId,
-    accountId: payload.accountId,
-    trigger: payload.trigger,
-    clientName: payload.clientName,
-  });
-}
-
-export function decodeReviewPulse(raw: string | null | undefined): ReviewPulsePayload | null {
-  if (!raw?.trim()) return null;
-  try {
-    const parsed = JSON.parse(raw) as Partial<ReviewPulsePayload>;
-    if (!parsed.policyId || !isReviewTrigger(parsed.trigger)) return null;
-    return {
-      policyId: parsed.policyId,
-      contactId: parsed.contactId ?? null,
-      accountId: parsed.accountId ?? null,
-      trigger: parsed.trigger,
-      clientName: (parsed.clientName ?? "this client").trim() || "this client",
-    };
-  } catch {
-    return null;
-  }
+export function triggerFromReviewMoment(moment: ReviewMoment): MiniReviewTrigger {
+  if (moment === "renewal_close") return "close";
+  if (moment === "claim_wrap") return "claim";
+  if (moment === "logged_call") return "call";
+  return "bind";
 }
 
 export function reviewPulseHeadline(trigger: MiniReviewTrigger, clientName: string): string {
@@ -53,7 +18,7 @@ export function reviewPulseHeadline(trigger: MiniReviewTrigger, clientName: stri
 }
 
 export function reviewPulseHint(trigger: MiniReviewTrigger): string {
-  if (trigger === "bind") return "One tap per question. Two scores under 3 flags the client — not the policy.";
+  if (trigger === "bind") return "One tap. Two scores under 3 flags the client — not the policy.";
   if (trigger === "claim") return "After wrap, two weak scores flag health on the renewal card.";
   return "Skip once if you need the desk. Next time it stays up.";
 }

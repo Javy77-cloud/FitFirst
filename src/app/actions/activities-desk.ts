@@ -15,8 +15,6 @@ import {
 import { and, eq } from "drizzle-orm";
 import { flashAction } from "@/lib/flash-action";
 import { resolvePolicyProducerName } from "@/lib/activity/producer";
-import { queueReviewPulse } from "@/app/actions/review-pulse";
-import { isUuid } from "@/lib/ids";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -439,15 +437,6 @@ export async function saveCallOutcome(formData: FormData) {
   revalidatePath("/phone");
   const policyId = str(formData, "policyId");
   const contactId = str(formData, "contactId");
-  if (isUuid(policyId)) {
-    await queueReviewPulse({
-      policyId,
-      contactId: isUuid(contactId) ? contactId : null,
-      accountId: isUuid(str(formData, "accountId")) ? str(formData, "accountId") : null,
-      trigger: "call",
-      clientName: str(formData, "clientName") || str(formData, "title") || "this client",
-    });
-  }
   const returnTo =
     str(formData, "returnTo") ||
     (contactId ? `/contacts/${contactId}` : "/phone");

@@ -38,7 +38,6 @@ import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-de
 import { requireInsertedRisk } from "@/lib/deals/ensure-risk";
 import { assertAnaUnbound } from "@/lib/crm/bind-path";
 import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices";
-import { queueReviewPulse } from "@/app/actions/review-pulse";
 import { formatPersonName } from "@/lib/crm/display";
 import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
 import { splitTypedPartyName } from "@/lib/crm/party-typeahead";
@@ -1563,16 +1562,6 @@ export async function bindDeal(formData: FormData) {
   const alreadyBound = existingPolicies.find((row) => wantedLobs.includes(row.lineOfBusiness));
   if (linesToBind.length === 0 && alreadyBound) {
     revalidatePath(`/deals/${dealId}`);
-    await queueReviewPulse({
-      policyId: alreadyBound.id,
-      contactId: contactId ?? null,
-      accountId: accountId ?? null,
-      trigger: "bind",
-      clientName:
-        [lead?.firstName, lead?.lastName].filter(Boolean).join(" ") ||
-        deal.primaryNamedInsured ||
-        "this client",
-    });
     redirect(`/policies/${alreadyBound.id}`);
   }
 
@@ -1789,16 +1778,6 @@ export async function bindDeal(formData: FormData) {
   revalidatePath("/accounts");
   revalidatePath(`/deals/${dealId}`);
   scheduleContactCoverageNotices(contactId);
-  await queueReviewPulse({
-    policyId: policy.id,
-    contactId: contactId ?? null,
-    accountId: accountId ?? null,
-    trigger: "bind",
-    clientName:
-      [lead?.firstName, lead?.lastName].filter(Boolean).join(" ") ||
-      deal.primaryNamedInsured ||
-      "this client",
-  });
   redirect(`/policies/${policy.id}`);
 }
 

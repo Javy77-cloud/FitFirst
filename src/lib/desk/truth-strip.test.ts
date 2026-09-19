@@ -17,6 +17,7 @@ describe("one-desk truth strip", () => {
     expect(bookHeatFromRenewal({ daysUntil: 45, healthStars: 4 })).toBe("cooling");
     expect(bookHeatFromRenewal({ daysUntil: 80, healthStars: 4, lastContactDays: 12 })).toBe("cooling");
     expect(bookHeatFromRenewal({ daysUntil: 80, healthStars: 4, lastContactDays: 2 })).toBe("cold");
+    expect(bookHeatFromRenewal({ daysUntil: 80, healthStars: 4, clientHealthBand: "high" })).toBe("hot");
   });
 
   it("maps deal silence to the 3 / 14 day clocks", () => {

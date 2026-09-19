@@ -1,26 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { decodeReviewPulse, encodeReviewPulse, reviewPulseHeadline } from "./review-pulse";
+import { reviewPulseHeadline, triggerFromReviewMoment } from "./review-pulse";
 import { miniReviewDue } from "./mini-review";
 
 describe("bind → review → health pulse", () => {
-  it("round-trips the cookie payload and writes premium, not naggy, copy", () => {
-    const raw = encodeReviewPulse({
-      policyId: "p1",
-      contactId: "c1",
-      accountId: null,
-      trigger: "bind",
-      clientName: "Elena Hale",
-    });
-    expect(decodeReviewPulse(raw)).toEqual({
-      policyId: "p1",
-      contactId: "c1",
-      accountId: null,
-      trigger: "bind",
-      clientName: "Elena Hale",
-    });
-    expect(decodeReviewPulse("nope")).toBeNull();
+  it("writes premium, not naggy, copy for locked moments", () => {
     expect(reviewPulseHeadline("bind", "Elena Hale")).toMatch(/Bound/);
     expect(reviewPulseHeadline("call", "Elena Hale")).toMatch(/Call logged/);
+    expect(triggerFromReviewMoment("bind")).toBe("bind");
+    expect(triggerFromReviewMoment("renewal_close")).toBe("close");
+    expect(triggerFromReviewMoment("claim_wrap")).toBe("claim");
+    expect(triggerFromReviewMoment("logged_call")).toBe("call");
   });
 
   it("stays quiet when a review is already on file — skip once, not twice", () => {
