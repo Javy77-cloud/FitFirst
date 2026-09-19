@@ -4,10 +4,10 @@ import { FILL_RISK_PROFILE_LABEL, FILLING_RISK_PROFILE_TITLE } from "./risk-prof
 
 export const FILL_MASTER_SHEET_LABEL = FILL_RISK_PROFILE_LABEL;
 
-export const MASTER_FILL_STEP_DEAL = "Loading deal details…";
-export const MASTER_FILL_STEP_PROPERTY = "Loading property details…";
-export const MASTER_FILL_STEP_DOCS = "Loading docs…";
-export const MASTER_FILL_STEP_VIN = "Decoding VINs (NHTSA vPIC)…";
+export const MASTER_FILL_STEP_DEAL = "Deal";
+export const MASTER_FILL_STEP_PROPERTY = "Property";
+export const MASTER_FILL_STEP_DOCS = "Docs";
+export const MASTER_FILL_STEP_VIN = "VIN";
 
 export const MASTER_FILL_SKIP_NO_DOCS = "No docs uploaded — skipped";
 export const MASTER_FILL_SKIP_NO_ADDRESS = "No property address — skipped";

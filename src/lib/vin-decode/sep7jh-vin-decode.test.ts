@@ -163,7 +163,7 @@ describe("Auto NHTSA vPIC VIN decode (sep7jh)", () => {
       "property",
       "docs",
     ]);
-    expect(MASTER_FILL_STEP_VIN).toMatch(/NHTSA vPIC/);
+    expect(MASTER_FILL_STEP_VIN).toBe("VIN");
     expect(MASTER_FILL_SKIP_AUTO_PROPERTY).toMatch(/skips property/i);
 
     const root = join(process.cwd(), "src");

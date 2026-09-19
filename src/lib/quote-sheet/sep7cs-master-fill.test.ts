@@ -96,9 +96,9 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(master).toMatch(/masterFillStepsForLine/);
     expect(master).toMatch(/Deal → Docs → VIN/);
 
-    expect(MASTER_FILL_STEP_DEAL).toBe("Loading deal details…");
-    expect(MASTER_FILL_STEP_PROPERTY).toBe("Loading property details…");
-    expect(MASTER_FILL_STEP_DOCS).toBe("Loading docs…");
+    expect(MASTER_FILL_STEP_DEAL).toBe("Deal");
+    expect(MASTER_FILL_STEP_PROPERTY).toBe("Property");
+    expect(MASTER_FILL_STEP_DOCS).toBe("Docs");
     expect(MASTER_FILL_SKIP_NO_DOCS).toBe("No docs uploaded — skipped");
     expect(MASTER_FILL_REVIEW_NUDGE).toMatch(/Review CHECK fields and Confirm when ready/);
 
