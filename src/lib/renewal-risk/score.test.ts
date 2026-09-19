@@ -81,4 +81,23 @@ describe("renewal-risk heuristics (no ML)", () => {
     expect(risk.label).toBe("Critical");
     expect(risk.inRateIncreaseWindow).toBe(true);
   });
+
+  it("digs into reply gaps, tenure, and cancels when those signals exist", () => {
+    const quiet = scoreRenewalRisk({
+      daysToRenewal: 80,
+      premiumChangePct: null,
+      inForceCount: 2,
+      hasLapseHistory: false,
+      daysSinceContact: 10,
+      daysSinceOurTouch: 21,
+      daysSinceTheirReply: null,
+      tenureDays: 120,
+      cancelCount: 1,
+      addCount: 0,
+    });
+    expect(quiet.factors.map((factor) => factor.id)).toEqual(
+      expect.arrayContaining(["reply_gap", "tenure", "adds_cancels"]),
+    );
+    expect(quiet.score).toBeGreaterThan(20);
+  });
 });

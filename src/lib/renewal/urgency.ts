@@ -58,14 +58,16 @@ export function renewalDeltaPhrase(premiumDelta: number | null | undefined): str
   return "premium unchanged";
 }
 
-/** One-line why — stub from days + delta until health/risk scores land. */
+/** One-line why — days + delta, plus the top composite-risk note when present. */
 export function renewalWhyLine(input: {
   daysUntil: number;
   premiumDelta?: number | null;
+  whyExtra?: string | null;
 }): string {
   const days = renewalDaysPhrase(input.daysUntil);
   const delta = renewalDeltaPhrase(input.premiumDelta);
-  return delta ? `${days} · ${delta}` : days;
+  const extra = input.whyExtra?.trim() || null;
+  return [days, delta, extra].filter(Boolean).join(" · ");
 }
 
 export type UrgencyPulseShare = {

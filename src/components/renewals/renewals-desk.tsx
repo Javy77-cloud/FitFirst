@@ -3,8 +3,11 @@ import { DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
 import { DealWorkQueuePanel } from "@/components/deals/deal-work-queue-panel";
 import { PipelineBookModeToggle } from "@/components/pipeline/book-mode-toggle";
 import { RenewalsFilteredViews } from "@/components/renewals/renewals-filtered-views";
+import { RenewalsHealthStrip } from "@/components/renewals/renewals-health-strip";
 import { RenewalsPulse } from "@/components/renewals/renewals-pulse";
 import { TodayActivityCorner } from "@/components/renewals/today-activity-corner";
+import { currentDeskSession } from "@/lib/auth/session";
+import { roleHealthSummary } from "@/lib/renewal/health-rollup";
 import { readDefaultRenewalsView } from "@/app/actions/pipeline-view-prefs";
 import { loadDealPipelineDesk } from "@/lib/deals/pipeline-desk-data";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
@@ -59,11 +62,12 @@ export async function RenewalsDesk({
   const savedDefaultView = await readDefaultRenewalsView();
   const view = parseRenewalsView(viewParam ?? savedDefaultView ?? undefined);
 
-  const [{ stageRows, pipelineId, cards }, settings, desk, pageFilterPrefs] = await Promise.all([
+  const [{ stageRows, pipelineId, cards }, settings, desk, pageFilterPrefs, session] = await Promise.all([
     loadRenewalsBoard(180),
     loadDeskLineSettings(),
     loadDealPipelineDesk(queue),
     loadPageFilterPrefs("renewals-pipeline"),
+    currentDeskSession(),
   ]);
 
   const boards = visiblePipelineBoards(
@@ -118,6 +122,15 @@ export async function RenewalsDesk({
         <p className="text-sm text-navy">
           Email template queued on the outbound stub — nothing sent.
         </p>
+      ) : null}
+      {notice === "chase_logged" ? (
+        <p className="text-sm text-navy">Chase logged. One-click send will not nag this band again.</p>
+      ) : null}
+      {notice === "review_saved" ? (
+        <p className="text-sm text-navy">Mini-review saved on the client — not the policy.</p>
+      ) : null}
+      {notice === "review_skipped" ? (
+        <p className="text-sm text-navy">Skipped once. Next time the review stays up.</p>
       ) : null}
 
       <DealWorkspaceBar
@@ -185,6 +198,14 @@ export async function RenewalsDesk({
         ) : (
           <>
             <RenewalsPulse daysUntil={filtered.map((card) => card.daysUntil)} />
+            <RenewalsHealthStrip
+              summary={roleHealthSummary({
+                cards: filtered,
+                isOwner: session.isAdmin,
+                viewerId: session.userId,
+                viewerName: session.name,
+              })}
+            />
             <RenewalsFilteredViews
               cards={filtered}
               searchModuleId="renewals-pipeline"

@@ -1757,6 +1757,243 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   line-height: 1.35;
   color: var(--ff-muted);
 }
+.ff-renewal-health {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+.ff-renewal-health-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+}
+.ff-renewal-health-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ff-muted);
+}
+.ff-renewal-policy-link {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.62rem;
+  font-weight: 650;
+  color: var(--ff-muted);
+}
+.ff-renewal-policy-link:hover {
+  color: var(--ff-navy);
+}
+.ff-renewal-health-pips {
+  display: inline-flex;
+  gap: 0.18rem;
+}
+.ff-renewal-health-pips i {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ff-border) 80%, white);
+}
+.ff-renewal-health-pips i.is-on {
+  background: var(--ff-green);
+}
+.ff-renewal-health-pips i.is-hot {
+  background: var(--ff-terracotta);
+}
+.ff-renewal-health-flag {
+  border-radius: 999px;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.58rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--ff-terracotta) 16%, white);
+  color: var(--ff-terracotta);
+}
+.ff-renewal-eye {
+  color: var(--ff-navy);
+}
+.ff-renewal-chase {
+  margin-top: 0.45rem;
+}
+.ff-renewal-chased {
+  margin-top: 0.4rem;
+  font-size: 0.68rem;
+  color: var(--ff-green);
+}
+.ff-renewal-review {
+  margin-top: 0.55rem;
+  padding-top: 0.45rem;
+  border-top: 1px dashed var(--ff-border);
+}
+.ff-renewal-review > p {
+  margin: 0 0 0.35rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ff-navy);
+}
+.ff-renewal-review ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.3rem;
+}
+.ff-renewal-review li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem;
+  align-items: center;
+  font-size: 0.7rem;
+}
+.ff-renewal-review select {
+  height: 1.5rem;
+  border: 1px solid var(--ff-border);
+  border-radius: 0.35rem;
+  background: #fff;
+  font-size: 0.7rem;
+}
+.ff-renewal-review-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.45rem;
+}
+.ff-renewal-review-locked {
+  font-size: 0.65rem;
+  color: var(--ff-terracotta);
+}
+.ff-renewals-health-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 0.85rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--ff-border);
+  border-radius: 0.75rem;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--ff-green) 8%, white), #fff 55%);
+}
+.ff-renewals-health-combined,
+.ff-renewals-health-flagged {
+  display: flex;
+  flex-direction: column;
+  min-width: 6rem;
+}
+.ff-renewals-health-combined strong,
+.ff-renewals-health-flagged strong {
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--ff-navy);
+}
+.ff-renewals-health-combined span,
+.ff-renewals-health-flagged span {
+  font-size: 0.68rem;
+  color: var(--ff-muted);
+}
+.ff-renewals-health-agents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ff-renewals-health-agents li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+  background: color-mix(in srgb, var(--ff-urgency-navy) 10%, white);
+  font-size: 0.7rem;
+}
+.ff-renewals-health-agents em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--ff-navy);
+}
+.ff-renewals-health-agents b {
+  color: var(--ff-terracotta);
+}
+.ff-renewal-compare-drawer {
+  overflow-y: auto;
+}
+.ff-renewal-compare-dark {
+  background: #102033;
+  color: #e8eef6;
+}
+.ff-renewal-compare-dark [data-slot="sheet-title"],
+.ff-renewal-compare-dark [data-slot="sheet-description"] {
+  color: #e8eef6;
+}
+.ff-renewal-compare-premium {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem 0.7rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--ff-navy) 8%, white);
+}
+.ff-renewal-compare-premium span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ff-renewal-compare-premium strong {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+.ff-renewal-compare-premium[data-ff-compare-premium="red"] strong {
+  color: var(--ff-terracotta);
+}
+.ff-renewal-compare-premium[data-ff-compare-premium="green"] strong {
+  color: var(--ff-green);
+}
+.ff-renewal-compare-premium[data-ff-compare-premium="amber"] strong {
+  color: #8a6500;
+}
+.ff-renewal-compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.ff-renewal-compare-table th,
+.ff-renewal-compare-table td {
+  padding: 0.4rem 0.45rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--ff-border) 70%, transparent);
+  text-align: left;
+}
+.ff-renewal-compare-table tr[data-ff-compare-tone="green"] td {
+  background: color-mix(in srgb, var(--ff-green) 10%, transparent);
+}
+.ff-renewal-compare-table tr[data-ff-compare-tone="amber"] td {
+  background: color-mix(in srgb, var(--ff-urgency-amber) 16%, transparent);
+}
+.ff-renewal-compare-table tr[data-ff-compare-tone="red"] td {
+  background: color-mix(in srgb, var(--ff-terracotta) 14%, transparent);
+}
+.ff-renewal-compare-note {
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--ff-navy) 7%, white);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+.ff-renewal-compare-dark .ff-renewal-compare-note,
+.ff-renewal-compare-dark .ff-renewal-compare-premium {
+  background: rgba(255, 255, 255, 0.06);
+}
+.ff-renewal-compare-fallback {
+  margin-top: 0.35rem;
+  font-size: 0.68rem;
+  color: var(--ff-muted);
+}
 
 .ff-today-activity-corner {
   position: fixed;
