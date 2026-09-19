@@ -27,7 +27,9 @@ import { partyLabel } from "@/lib/desk/policy-name";
 import { buildPolicyLabel } from "@/lib/policy/auto-label";
 import { getAgencyPolicyLabelTemplate } from "@/lib/policy/auto-label-prefs";
 import { enrichRenewalCards } from "@/lib/renewal/board-enrich";
-import type { RenewalRiskLevel } from "@/lib/renewal/urgency";
+import type { HealthChipView } from "@/lib/health/model";
+import { loadRenewalHealthMap } from "@/lib/health/load";
+import { renewalWhyLine, type RenewalRiskLevel } from "@/lib/renewal/urgency";
 
 export type RenewalBoardCard = {
   queueId: string;
@@ -69,6 +71,9 @@ export type RenewalBoardCard = {
   healthSource: "rated" | "model";
   healthFlagged: boolean;
   lastContactDays: number | null;
+  /** Last-night weighted model — strip + drawer only, not a second card face. */
+  policyHealth: HealthChipView | null;
+  clientHealth: HealthChipView | null;
 };
 
 function partyName(
@@ -247,6 +252,8 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
       healthSource: "model",
       healthFlagged: false,
       lastContactDays: null,
+      policyHealth: null,
+      clientHealth: null,
     });
   }
 
@@ -254,6 +261,22 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
     (a, b) => a.daysUntil - b.daysUntil || a.policyNumber.localeCompare(b.policyNumber),
   );
   const enriched = await enrichRenewalCards(cards);
+  const health = await loadRenewalHealthMap(enriched).catch(() => new Map());
+  for (const card of enriched) {
+    const row = health.get(card.policyId);
+    if (!row) continue;
+    card.policyHealth = row.policyHealth;
+    card.clientHealth = row.clientHealth;
+    if (!card.ownerId && row.ownerId) card.ownerId = row.ownerId;
+    if (!card.ownerName && row.ownerName) card.ownerName = row.ownerName;
+    card.risk = row.clientHealth.band;
+    card.whyExtra = row.clientHealth.why;
+    card.why = renewalWhyLine({
+      daysUntil: card.daysUntil,
+      premiumDelta: card.premiumDelta,
+      whyExtra: row.clientHealth.why,
+    });
+  }
 
   const stageRows = renewalsPipeline?.stages ?? RENEWAL_QUEUE_STAGES.map((slug, sortOrder) => ({
     id: slug,

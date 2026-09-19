@@ -47,6 +47,8 @@ function card(partial: Partial<RenewalBoardCard>): RenewalBoardCard {
     healthSource: "rated",
     healthFlagged: true,
     lastContactDays: 90,
+    policyHealth: null,
+    clientHealth: null,
     ...partial,
   };
 }

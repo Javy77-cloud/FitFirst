@@ -45,6 +45,8 @@ function card(partial: Partial<RenewalBoardCard> & Pick<RenewalBoardCard, "stage
     healthSource: "model",
     healthFlagged: false,
     lastContactDays: null,
+    policyHealth: null,
+    clientHealth: null,
     ...partial,
   };
 }

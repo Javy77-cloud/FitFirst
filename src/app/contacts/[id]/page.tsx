@@ -45,6 +45,8 @@ import { prepareContactDealHeal } from "@/app/actions/contacts-ops";
 import { ContactSecondaryAddressCue } from "@/components/contacts/contact-secondary-address-cue";
 import { loadCommitmentsForEntities } from "@/lib/notifications/load-commitments";
 import { serializeCommitments } from "@/lib/notifications/commitments";
+import { HealthScoreChip } from "@/components/health/health-score-chip";
+import { loadPartyHealth } from "@/lib/health/load";
 
 export const dynamic = "force-dynamic";
 
@@ -143,6 +145,10 @@ export default async function ContactDetailPage({
       }).catch(() => []),
     ]);
 
+  const health = await loadPartyHealth({
+    contactId: contact.id,
+    accountId: businesses[0]?.id ?? contact.accountId,
+  }).catch(() => ({ client: null, policy: null }));
   const dups = softEmailPhoneDups(book, contact);
   const context = await loadRecordContext({
     contactId: contact.id,
@@ -288,6 +294,7 @@ export default async function ContactDetailPage({
               </h2>
               <div className="flex min-w-0 flex-wrap items-center gap-2 pl-1">
                 <ClientStatusPill status={clientStatus} />
+                {health.client ? <HealthScoreChip health={health.client} compact /> : null}
                 <span className="text-sm text-muted-foreground">
                   Source · {sourceLabel(contact.source)}
                 </span>
