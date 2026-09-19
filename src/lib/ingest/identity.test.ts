@@ -72,6 +72,17 @@ describe("drop ingest identity", () => {
         text: "HOMEOWNERS Coverage A 310000 wind mit",
       }),
     ).toBe(false);
+    expect(
+      trustSheetLineForFill({
+        sheetLine: "auto",
+        inferred: "home",
+        docType: "dec",
+        mimeType: "application/pdf",
+        text: "DECLARATIONS Named Insured Policy Number 123",
+        filename: "auto-declaration.pdf",
+      }),
+    ).toBe(true);
+    expect(inferShopLine("DECLARATIONS Named Insured", "client-auto-dec.pdf", "dec")).toBe("auto");
   });
 
   it("classifies source docs vs later quote-PDF attachments", () => {

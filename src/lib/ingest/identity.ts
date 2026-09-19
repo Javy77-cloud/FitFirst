@@ -73,20 +73,25 @@ export function sourceDocFillsHome(docType: string): boolean {
   return HO_SOURCE_TYPES.has(docType);
 }
 
+const AUTO_LINE_RE =
+  /\bvin\b|personal auto|\bpa\b|auto (policy|dec|id)|id card|vehicle year|vehicle identification|listed driver|rated driver/;
+const HOME_ONLY_RE = /homeowners|coverage a|wind mit|4[- ]?point|four[- ]?point/;
+
 /** Home first. Only move off Home when the packet is clearly another line. */
 export function inferShopLine(text: string, filename: string, docType: string): ShopLine {
   const blob = `${filename}\n${text}`.toLowerCase();
   if (docType === "quote" || docType === "quote_pdf") return "home";
+  if (docType === "auto_id_card" || docType === "id_card") return "auto";
   if (sourceDocFillsHome(docType)) {
-    if (
-      /\bvin\b|personal auto|auto (policy|dec)|vehicle year/.test(blob) &&
-      !/homeowners|coverage a|wind mit|4[- ]?point|four[- ]?point/.test(blob)
-    ) {
+    if (AUTO_LINE_RE.test(blob) && !HOME_ONLY_RE.test(blob)) {
+      return "auto";
+    }
+    if (/auto.*(dec|declar)|declar.*auto|\bid.?card\b/.test(filename.toLowerCase()) && !HOME_ONLY_RE.test(blob)) {
       return "auto";
     }
     return "home";
   }
-  if (/\bvin\b|personal auto|auto (policy|dec)|vehicle year/.test(blob) && !/homeowners|coverage a/.test(blob)) {
+  if (AUTO_LINE_RE.test(blob) && !/homeowners|coverage a/.test(blob)) {
     return "auto";
   }
   if (/\bflood\b/.test(blob) && !/homeowners|coverage a|wind mit/.test(blob)) return "flood";
@@ -113,6 +118,8 @@ export function trustSheetLineForFill(opts: {
   const mime = String(opts.mimeType ?? "").toLowerCase();
   const doc = String(opts.docType ?? "").toLowerCase();
   const name = String(opts.filename ?? "").toLowerCase();
+  const text = String(opts.text ?? "").toLowerCase();
+  const blob = `${name}\n${text}`;
   const isPhoto =
     doc === "photo" ||
     mime.startsWith("image/") ||
@@ -121,8 +128,24 @@ export function trustSheetLineForFill(opts: {
   // Pre-Gemini OCR often defaults inferShopLine to Home and wrongly skips Auto.
   if (isPhoto) return true;
   // Only empty pre-OCR text — short HO PDF snippets must still fail the Auto gate.
-  const emptyText = String(opts.text ?? "").trim().length === 0;
+  const emptyText = text.trim().length === 0;
   if (emptyText && opts.sheetLine !== "home") return true;
+  // Auto Fill: a bare `dec` / "declaration" filename is not Home. Trust Auto unless
+  // the page is clearly homeowners-only (Coverage A / wind mit / 4-point, no VIN).
+  if (opts.sheetLine === "auto") {
+    const homeOnlyType = /wind.?mit|four.?point|4.?point/.test(`${doc} ${name}`);
+    if (homeOnlyType) return false;
+    const clearlyHomeNoAuto = HOME_ONLY_RE.test(blob) && !AUTO_LINE_RE.test(blob);
+    if (clearlyHomeNoAuto) return false;
+    if (
+      doc === "dec" ||
+      doc === "auto_id_card" ||
+      doc === "id_card" ||
+      /declar|id.?card|\bauto\b/.test(name)
+    ) {
+      return true;
+    }
+  }
   return false;
 }
 

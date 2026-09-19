@@ -1,6 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { isDocumentsSourceDoc, isQuoteFileDoc, shopLineFromSourceDoc } from "./quote-docs";
+import {
+  isDocumentsSourceDoc,
+  isFillSourceDoc,
+  isQuoteFileDoc,
+  shopLineFromSourceDoc,
+} from "./quote-docs";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -57,12 +62,22 @@ describe("quote docs vs documents source docs", () => {
     expect(shopLineFromSourceDoc({ slot: "source_doc", docType: "auto_id_card", tags: [] })).toBe(
       "auto",
     );
+    expect(shopLineFromSourceDoc({ slot: "source_doc", docType: "dec", tags: [] })).toBe(null);
+    expect(
+      isFillSourceDoc({ slot: "quote_file", docType: "dec", tags: [] }),
+    ).toBe(true);
+    expect(
+      isFillSourceDoc({ slot: "source_doc", docType: "auto_id_card", tags: [] }),
+    ).toBe(true);
+    expect(isFillSourceDoc({ slot: "quote_file", docType: "agency_quote", tags: [] })).toBe(false);
   });
 
   it("Documents panel filters with isDocumentsSourceDoc; Quotes keeps isQuoteFileDoc", () => {
     const docsPanel = source("src/components/deal/documents-panel.tsx");
-    expect(docsPanel).toContain("isDocumentsSourceDoc");
+    expect(docsPanel).toContain("listWorksheetSourceDocs");
     expect(docsPanel).not.toContain('d.slot !== "quote_pdf" && d.slot !== "policy_file"');
+    const worksheet = source("src/lib/documents/deal-docs-save.ts");
+    expect(worksheet).toContain("isDocumentsSourceDoc");
 
     const quotesPanel = source("src/components/deal/quotes-panel.tsx");
     expect(quotesPanel).toContain("isQuoteFileDoc");
@@ -75,6 +90,6 @@ describe("quote docs vs documents source docs", () => {
 
     const fill = source("src/app/actions/quote-sheet.ts");
     expect(fill).toContain("isQuoteFileDoc(doc)");
-    expect(fill).toContain("isDocumentsSourceDoc(doc)");
+    expect(fill).toContain("isFillSourceDoc(doc)");
   });
 });

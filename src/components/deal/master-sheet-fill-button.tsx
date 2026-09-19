@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { fillMasterSheetStep } from "@/app/actions/quote-sheet";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,13 +18,16 @@ import {
   FILL_MASTER_SHEET_LABEL,
   MASTER_FILL_BUSY_COPY,
   MASTER_FILL_BUSY_TITLE,
+  MASTER_FILL_CANCEL,
   MASTER_FILL_REVIEW_NUDGE,
   MASTER_FILL_STEP_DEAL,
+  isMasterFillAbortError,
   isMasterFillStepResult,
   masterFillBusyTitle,
   masterFillDoneSummary,
   masterFillStepsForLine,
   masterFillUnexpectedMessage,
+  rejectWhenAborted,
   type MasterFillStepResult,
 } from "@/lib/quote-sheet/master-fill";
 import type { ShopLine } from "@/lib/domain";
@@ -37,6 +40,7 @@ export function MasterSheetFillButton({
   line: ShopLine;
 }) {
   const router = useRouter();
+  const abortRef = useRef<AbortController | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const steps = masterFillStepsForLine(line);
@@ -44,7 +48,31 @@ export function MasterSheetFillButton({
   const [done, setDone] = useState(false);
   const [summary, setSummary] = useState("");
 
+  function closeAndAbort() {
+    abortRef.current?.abort();
+    setBusy(false);
+    setDone(false);
+    setSummary("");
+    setOpen(false);
+    router.refresh();
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (next) {
+      setOpen(true);
+      return;
+    }
+    if (busy) {
+      closeAndAbort();
+      return;
+    }
+    setOpen(false);
+  }
+
   async function runFill() {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setOpen(true);
     setBusy(true);
     setDone(false);
@@ -53,12 +81,17 @@ export function MasterSheetFillButton({
     let currentLabel = MASTER_FILL_STEP_DEAL;
     try {
       for (const step of steps) {
+        if (controller.signal.aborted) return;
         currentLabel = step.label;
         setStatus(step.label);
         let raw: unknown;
         try {
-          raw = await fillMasterSheetStep({ dealId, line, step: step.id });
+          raw = await Promise.race([
+            fillMasterSheetStep({ dealId, line, step: step.id }),
+            rejectWhenAborted(controller.signal),
+          ]);
         } catch (error) {
+          if (controller.signal.aborted || isMasterFillAbortError(error)) return;
           const message =
             error instanceof Error && error.message.trim()
               ? error.message
@@ -76,6 +109,7 @@ export function MasterSheetFillButton({
           router.refresh();
           return;
         }
+        if (controller.signal.aborted) return;
         if (!isMasterFillStepResult(raw)) {
           const failed: MasterFillStepResult = {
             step: step.id,
@@ -99,6 +133,7 @@ export function MasterSheetFillButton({
           return;
         }
       }
+      if (controller.signal.aborted) return;
       const text = masterFillDoneSummary(results);
       setSummary(text);
       setDone(true);
@@ -118,13 +153,16 @@ export function MasterSheetFillButton({
       router.replace(`/deals/${dealId}?tab=documents&line=${line}`);
       router.refresh();
     } catch (error) {
+      if (controller.signal.aborted || isMasterFillAbortError(error)) return;
       const message = error instanceof Error ? error.message : masterFillUnexpectedMessage(currentLabel);
       const partial = results.length ? ` ${masterFillDoneSummary(results)}` : "";
       setSummary(`${currentLabel} failed. ${message}.${partial}`);
       setDone(true);
       flashAction(`${currentLabel} failed. ${message}`, "error");
     } finally {
-      setBusy(false);
+      if (abortRef.current === controller) {
+        setBusy(false);
+      }
     }
   }
 
@@ -142,8 +180,8 @@ export function MasterSheetFillButton({
       >
         {FILL_MASTER_SHEET_LABEL}
       </Button>
-      <Dialog open={open} onOpenChange={(next) => !busy && setOpen(next)}>
-        <DialogContent className="sm:max-w-sm" showCloseButton={!busy}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="sm:max-w-sm" showCloseButton>
           <DialogHeader>
             <DialogTitle>{FILL_MASTER_SHEET_LABEL}</DialogTitle>
             <DialogDescription data-ff-master-fill-status="">
@@ -165,6 +203,15 @@ export function MasterSheetFillButton({
                   data-ff-master-fill-step={status}
                 />
               ) : null}
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                data-ff-master-fill-cancel=""
+                onClick={closeAndAbort}
+              >
+                {MASTER_FILL_CANCEL}
+              </Button>
             </div>
           )}
           {done ? (

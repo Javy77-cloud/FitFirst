@@ -10,6 +10,10 @@ export const MASTER_FILL_STEP_DOCS = "Docs";
 export const MASTER_FILL_STEP_VIN = "VIN";
 
 export const MASTER_FILL_SKIP_NO_DOCS = "No docs uploaded — skipped";
+export const MASTER_FILL_SKIP_NO_SOURCE_DOCS =
+  "Deal has files but none are source docs for Fill — skipped";
+export const MASTER_FILL_SKIP_WRONG_LINE =
+  "Docs uploaded but skipped — wrong shop line for this sheet";
 export const MASTER_FILL_SKIP_NO_ADDRESS = "No property address — skipped";
 export const MASTER_FILL_SKIP_NO_DEAL = "No deal details to copy — skipped";
 export const MASTER_FILL_SKIP_NEEDS_KEY = "Property records key missing — skipped";
@@ -17,7 +21,7 @@ export const MASTER_FILL_SKIP_NOT_FOUND = "Property records not found — skippe
 /** Auto Fill never runs Home property / FEMA — VIN decode is the Auto enrichment step. */
 export const MASTER_FILL_SKIP_AUTO_PROPERTY =
   "Auto skips property records — VIN decode runs after docs";
-export const MASTER_FILL_SKIP_NO_VIN = "No VIN on sheet — skipped";
+export const MASTER_FILL_SKIP_NO_VIN = "Docs did not extract a VIN — skipped";
 
 /** Done-state nudge: filled cells stay CHECK until the agent Confirms. */
 export const MASTER_FILL_REVIEW_NUDGE =
@@ -30,6 +34,7 @@ export const MASTER_FILL_UNEXPECTED =
   "Unexpected response from server. Fields already filled are saved.";
 export const MASTER_FILL_DOCS_FAILED =
   "Could not read docs. Fields already filled are saved.";
+export const MASTER_FILL_CANCEL = "Cancel";
 
 export type MasterFillStepId = "deal" | "property" | "docs" | "vin";
 
@@ -76,6 +81,45 @@ export function isMasterFillStepResult(raw: unknown): raw is MasterFillStepResul
 
 export function masterFillUnexpectedMessage(stepLabel: string): string {
   return `${stepLabel} failed — ${MASTER_FILL_UNEXPECTED}`;
+}
+
+export function isMasterFillAbortError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const name = "name" in error ? String((error as { name?: unknown }).name) : "";
+  const message = error instanceof Error ? error.message : "";
+  return name === "AbortError" || /aborted/i.test(message);
+}
+
+/** Lose the client race when the user cancels — the server step may still finish. */
+export function rejectWhenAborted(signal: AbortSignal): Promise<never> {
+  return new Promise((_, reject) => {
+    const fail = () => {
+      const error = new Error("The operation was aborted");
+      error.name = "AbortError";
+      reject(error);
+    };
+    if (signal.aborted) {
+      fail();
+      return;
+    }
+    signal.addEventListener("abort", fail, { once: true });
+  });
+}
+
+/** Docs step copy: never say "No docs uploaded" when the deal already has files. */
+export function masterFillDocsNote(input: {
+  dealFileCount: number;
+  fillSourceCount: number;
+  filledCount: number;
+  skippedWrongLine: number;
+}): string | undefined {
+  if (input.fillSourceCount <= 0) {
+    return input.dealFileCount > 0 ? MASTER_FILL_SKIP_NO_SOURCE_DOCS : MASTER_FILL_SKIP_NO_DOCS;
+  }
+  if (input.filledCount <= 0 && input.skippedWrongLine > 0) {
+    return MASTER_FILL_SKIP_WRONG_LINE;
+  }
+  return undefined;
 }
 
 export function masterFillDoneSummary(steps: MasterFillStepResult[]): string {

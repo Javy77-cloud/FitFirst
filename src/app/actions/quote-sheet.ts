@@ -112,10 +112,10 @@ import {
   MASTER_FILL_SKIP_NEEDS_KEY,
   MASTER_FILL_SKIP_NO_ADDRESS,
   MASTER_FILL_SKIP_NO_DEAL,
-  MASTER_FILL_SKIP_NO_DOCS,
   MASTER_FILL_SKIP_NO_VIN,
   MASTER_FILL_SKIP_NOT_FOUND,
   MASTER_FILL_UNEXPECTED,
+  masterFillDocsNote,
   masterFillStepsForLine,
   type MasterFillStepId,
   type MasterFillStepResult,
@@ -138,7 +138,8 @@ import {
   packageCreateDraft,
 } from "@/lib/deals/package-lines";
 import { flashAction } from "@/lib/flash-action";
-import { isDocumentsSourceDoc, isQuoteFileDoc } from "@/lib/deals/quote-docs";
+import { isFillSourceDoc, isQuoteFileDoc } from "@/lib/deals/quote-docs";
+import { removeRepeatableUnit, type RepeatableKind } from "@/lib/quote-sheet/repeatable-units";
 import { withFlash } from "@/lib/flash";
 import { dealTitleForRecords } from "@/lib/deals/deal-title";
 import { markShopFlowStaleAfterRiskChange, persistSheetRecheckCue } from "@/lib/deals/shop-flow-persist";
@@ -358,6 +359,38 @@ export async function saveQuoteSheet(formData: FormData) {
         hash: SHEET_CONFIRM_HASH,
       });
   flashAction(dest, "sheet-saved");
+}
+
+const REPEATABLE_KINDS = new Set<RepeatableKind>(["vehicle", "driver", "household"]);
+
+/** Persist form edits, then remove one vehicle/driver and pack later units down. */
+export async function removeRepeatableSheetUnit(formData: FormData) {
+  const dealId = str(formData, "dealId");
+  const lineRaw = str(formData, "line") || "auto";
+  const kindRaw = str(formData, "unitKind");
+  const index = Number(str(formData, "unitIndex"));
+  if (!dealId) throw new Error("Missing deal");
+  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+  if (!REPEATABLE_KINDS.has(kindRaw as RepeatableKind)) throw new Error("Unknown unit");
+  if (!Number.isInteger(index) || index < 1) throw new Error("Unknown unit");
+  const submitted = submittedSheetValues(formData);
+  const product = str(formData, "sheet_product");
+  if (product) submitted.sheet_product = product;
+  const merged = await persistQuoteSheetValues(dealId, lineRaw, submitted, str(formData, "formId"));
+  const packed = removeRepeatableUnit(
+    merged,
+    kindRaw as RepeatableKind,
+    index,
+    product || merged.sheet_product?.value,
+  );
+  const sheet = await ensureQuoteSheet(dealId, lineRaw);
+  await db
+    .update(quoteSheets)
+    .set({ values: packed, updatedAt: new Date() })
+    .where(eq(quoteSheets.id, sheet.id));
+  await syncRiskFromSheet(dealId, packed, "save");
+  await syncHeaderFromSheet(dealId, packed, "save");
+  revalidatePath(`/deals/${dealId}`);
 }
 
 export async function confirmQuoteSheetField(formData: FormData) {
@@ -1073,9 +1106,19 @@ async function fillMasterSheetStepInner(input: {
     .select({ id: documents.id, slot: documents.slot, docType: documents.docType, tags: documents.tags })
     .from(documents)
     .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)));
-  const docs = allDocs.filter((doc) => isDocumentsSourceDoc(doc));
+  const docs = allDocs.filter((doc) => isFillSourceDoc(doc));
   if (docs.length === 0) {
-    return { step, filledCount: 0, skippedCount: 0, note: MASTER_FILL_SKIP_NO_DOCS };
+    return {
+      step,
+      filledCount: 0,
+      skippedCount: 0,
+      note: masterFillDocsNote({
+        dealFileCount: allDocs.length,
+        fillSourceCount: 0,
+        filledCount: 0,
+        skippedWrongLine: 0,
+      }),
+    };
   }
   const geminiKey = await loadGeminiApiKey();
   if (!geminiKeyReady(geminiKey)) {
@@ -1101,6 +1144,14 @@ async function fillMasterSheetStepInner(input: {
     step,
     filledCount: counts.filledKeys.length,
     skippedCount: counts.skippedKeys.length,
+    note:
+      counts.note ??
+      masterFillDocsNote({
+        dealFileCount: allDocs.length,
+        fillSourceCount: docs.length,
+        filledCount: counts.filledKeys.length,
+        skippedWrongLine: counts.skippedWrongLine ?? 0,
+      }),
   };
 }
 
@@ -1124,7 +1175,13 @@ export async function fillQuoteSheet(formData: FormData) {
   );
 }
 
-export type FillDealCounts = { filledKeys: string[]; skippedKeys: string[]; error?: string };
+export type FillDealCounts = {
+  filledKeys: string[];
+  skippedKeys: string[];
+  error?: string;
+  note?: string;
+  skippedWrongLine?: number;
+};
 
 export async function runFillDealSheets(dealId: string, primary: ShopLine): Promise<FillDealCounts> {
   const primaryCounts = await runFillQuoteSheet(dealId, primary);
@@ -1133,6 +1190,8 @@ export async function runFillDealSheets(dealId: string, primary: ShopLine): Prom
     filledKeys: [...primaryCounts.filledKeys, ...other.filledKeys],
     skippedKeys: [...primaryCounts.skippedKeys, ...other.skippedKeys],
     error: primaryCounts.error || other.error,
+    note: primaryCounts.note || other.note,
+    skippedWrongLine: (primaryCounts.skippedWrongLine ?? 0) + (other.skippedWrongLine ?? 0),
   };
   if (primaryCounts.filledKeys.length) {
     await persistSheetRecheckCue(dealId, primary);
@@ -1147,12 +1206,14 @@ async function fillOtherShopLines(dealId: string, already: ShopLine): Promise<Fi
   const filledKeys: string[] = [];
   const skippedKeys: string[] = [];
   const errors: string[] = [];
+  let skippedWrongLine = 0;
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   for (const line of deal?.shopLines ?? []) {
     if (line !== already && isShopLine(line)) {
       const counts = await runFillQuoteSheet(dealId, line);
       filledKeys.push(...counts.filledKeys);
       skippedKeys.push(...counts.skippedKeys);
+      skippedWrongLine += counts.skippedWrongLine ?? 0;
       if (counts.error) errors.push(counts.error);
       if (counts.filledKeys.length) {
         await persistSheetRecheckCue(dealId, line);
@@ -1162,7 +1223,7 @@ async function fillOtherShopLines(dealId: string, already: ShopLine): Promise<Fi
       }
     }
   }
-  return { filledKeys, skippedKeys, error: errors[0] };
+  return { filledKeys, skippedKeys, error: errors[0], skippedWrongLine };
 }
 
 export async function attachSampleMelbourneDec(formData: FormData) {
@@ -1425,9 +1486,15 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
   const aggregateFilled: string[] = [];
   const aggregateSkipped: string[] = [];
   const geminiErrors: string[] = [];
+  let skippedWrongLine = 0;
 
   for (const doc of docs) {
-    if (isQuoteAttachment(doc.docType, doc.filename) || isQuoteFileDoc(doc)) continue;
+    if (
+      !isFillSourceDoc(doc) &&
+      (isQuoteAttachment(doc.docType, doc.filename) || isQuoteFileDoc(doc))
+    ) {
+      continue;
+    }
     const startedAt = new Date();
     const buffer = await readStoredFile(doc.storagePath);
     if (!buffer) {
@@ -1503,6 +1570,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
         filename: doc.filename,
       });
       if (inferred !== line && !hoOntoHome && !trustSheet) {
+        skippedWrongLine += 1;
         await insertExtractionAttempt({
           dealId,
           documentId: doc.id,
@@ -1756,7 +1824,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
       skippedKeys: [],
       message: "No source files on this deal. Drop a dec, wind mit, or 4-point first.",
     });
-    return { filledKeys: [], skippedKeys: [] };
+    return { filledKeys: [], skippedKeys: [], skippedWrongLine };
   }
 
   // Re-read before public gap-fill / final write — never clobber concurrent Fill.
@@ -1787,6 +1855,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
     filledKeys: aggregateFilled,
     skippedKeys: aggregateSkipped,
     error: geminiErrors[0],
+    skippedWrongLine,
   };
 }
 

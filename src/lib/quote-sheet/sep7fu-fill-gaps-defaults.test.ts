@@ -49,6 +49,9 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     expect(MASTER_FILL_BUSY_COPY).not.toMatch(/\d+\s*seconds?/);
     expect(button).toMatch(/masterFillBusyTitle/);
     expect(button).toMatch(/Deal → Property → Docs/);
+    expect(button).toMatch(/data-ff-master-fill-cancel/);
+    expect(button).toMatch(/AbortController/);
+    expect(button).not.toMatch(/showCloseButton=\{!busy\}/);
   });
 
   it("copies applicant_dob from Deal Details date_of_birth only when the sheet already has that key", () => {
