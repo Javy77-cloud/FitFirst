@@ -153,8 +153,8 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     category: "calendar",
     name: "Google Calendar",
     initials: "Gc",
-    blurb: "Pull Free/Busy onto the desk board so scheduling will not land on external busy.",
-    byoNote: "Agency Google account. Busy sync is live. Full two-way event push is later.",
+    blurb: "Two-way primary calendar events on the desk — titles on the grid, FitFirst events write back.",
+    byoNote: "Agency Google account. Event import + push use calendar.events. Extra calendars later.",
     tone: "google",
   },
   {
@@ -162,8 +162,8 @@ export const INTEGRATION_PROVIDERS: IntegrationProvider[] = [
     category: "calendar",
     name: "Outlook Calendar",
     initials: "Oc",
-    blurb: "Microsoft 365 calendar busy next to the in-desk board.",
-    byoNote: "Agency Microsoft 365. Graph Free/Busy is live. FitFirst does not buy a seat.",
+    blurb: "Microsoft 365 calendar events on the same desk contract as Google.",
+    byoNote: "Agency Microsoft 365. Same import/push interface as Google. FitFirst does not buy a seat.",
     tone: "outlook",
   },
   {

@@ -1030,6 +1030,13 @@
       "when": 1791700000000,
       "tag": "0146_agent_feature_toggles",
       "breakpoints": true
+    },
+    {
+      "idx": 147,
+      "version": "7",
+      "when": 1791800000000,
+      "tag": "0147_calendar_event_sync",
+      "breakpoints": true
     }
   ]
 }

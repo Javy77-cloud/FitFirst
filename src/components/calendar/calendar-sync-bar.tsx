@@ -32,15 +32,15 @@ export function CalendarSyncBar({
   return (
     <section className="ff-calendar-sync" data-ff-calendar-sync="">
       {notice === "busy-synced" && !vendorError ? (
-        <p className="mb-2 text-sm text-navy">External busy is on the desk calendar.</p>
+        <p className="mb-2 text-sm text-navy">Calendar events are on the desk.</p>
       ) : null}
       {showFailed ? (
         <p className="mb-2 text-sm text-navy" data-ff-calendar-busy-error="">
-          Busy sync failed. {vendorError || "Try Sync now, or reconnect in Settings."}
+          Calendar sync failed. {vendorError || "Try Sync now, or reconnect in Settings."}
         </p>
       ) : null}
       {notice === "byo-connected" ? (
-        <p className="mb-2 text-sm text-navy">Google Calendar connected. External busy will sync onto this desk.</p>
+        <p className="mb-2 text-sm text-navy">Google Calendar connected. Events will appear on this desk.</p>
       ) : null}
       {notice === "oauth-wall" ? (
         <p className="mb-2 text-sm text-navy" data-ff-oauth-wall="">
@@ -56,9 +56,9 @@ export function CalendarSyncBar({
             {googleConnected ? "Google" : ""}
             {googleConnected && outlookConnected ? " + " : ""}
             {outlookConnected ? "Outlook" : ""}{" "}
-            busy last synced {formatBusySyncedAt(lastSyncedAt)}
+            last synced {formatBusySyncedAt(lastSyncedAt)}
             {googleEmail ? ` · ${googleEmail}` : ""}
-            {overlayCount > 0 ? ` · ${overlayCount} Google event${overlayCount === 1 ? "" : "s"}` : ""}
+            {overlayCount > 0 ? ` · ${overlayCount} event${overlayCount === 1 ? "" : "s"}` : ""}
           </p>
           <form action={syncDeskBusyNow}>
             <Button type="submit" size="sm" variant="outline" data-ff-calendar-sync-now="">
@@ -69,8 +69,7 @@ export function CalendarSyncBar({
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-2" data-ff-calendar-connect="">
           <p className="text-sm text-navy">
-            Connect Google Calendar to show external busy on this desk. Two-way event push is later —
-            busy blocks book around you today.
+            Connect Google Calendar to show those events on this desk.
           </p>
           {canConnect ? (
             <form action={startByoOauth}>

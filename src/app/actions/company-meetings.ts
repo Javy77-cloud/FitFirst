@@ -122,13 +122,16 @@ export async function createCompanyMeeting(formData: FormData) {
     if (conflicts.length) throw new Error(busyConflictMessage(conflicts));
   }
   let videoUrl = parsed.videoUrl;
+  let meetExternalId: string | null = null;
   if (!videoUrl && str(formData, "addGoogleMeet") === "1") {
-    const { createGoogleMeetLink } = await import("@/lib/integrations/google-meet");
-    videoUrl = await createGoogleMeetLink({
+    const { createGoogleMeetConference } = await import("@/lib/integrations/google-meet");
+    const meet = await createGoogleMeetConference({
       title: parsed.title,
       startAt: parsed.startAt,
       endAt: parsed.endAt,
     });
+    videoUrl = meet.url;
+    meetExternalId = meet.externalId;
   }
   const videoProvider = videoUrl?.includes("meet.google")
     ? "meet"
@@ -171,6 +174,10 @@ export async function createCompanyMeeting(formData: FormData) {
   });
 
   await replaceInvites(activity.id, inviteeIds, parsed.title, `${whenLabel(parsed.startAt)}.`);
+  const { pushDeskActivityToCalendars } = await import("@/lib/integrations/calendar-event-sync");
+  await pushDeskActivityToCalendars(activity, meetExternalId
+    ? { existingExternalId: { provider: "google_calendar", externalId: meetExternalId } }
+    : undefined).catch(() => undefined);
   revalidatePath("/calendar");
   revalidatePath("/alerts");
   return { ok: true as const, id: activity.id };
@@ -250,6 +257,15 @@ export async function updateCompanyMeeting(formData: FormData) {
   });
 
   await replaceInvites(id, inviteeIds, parsed.title, `${whenLabel(parsed.startAt)}.`);
+  const { pushDeskActivityToCalendars } = await import("@/lib/integrations/calendar-event-sync");
+  await pushDeskActivityToCalendars({
+    id,
+    title: parsed.title,
+    notes: parsed.notes,
+    meetingLocation: videoUrl,
+    startAt: parsed.startAt,
+    endAt: parsed.endAt,
+  }).catch(() => undefined);
   revalidatePath("/calendar");
   revalidatePath("/alerts");
   return { ok: true as const, id };
