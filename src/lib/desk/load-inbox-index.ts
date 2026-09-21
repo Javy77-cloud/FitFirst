@@ -9,6 +9,7 @@ import { partyLabel } from "@/lib/desk/policy-name";
 import { gmailAccountEmail, gmailIsReady } from "@/lib/integrations/gmail";
 import {
   dealClosedForInbox,
+  INBOX_EMAIL_ALIAS_KEY,
   parseInboxAliasEmails,
   type InboxContactHit,
   type InboxDealHit,
@@ -65,7 +66,7 @@ export async function loadInboxMatchIndex(asOf = deskNow()): Promise<InboxMatchI
         and(
           eq(deskCustomFieldValues.tenantId, DEFAULT_TENANT_ID),
           eq(deskCustomFieldValues.module, "contacts"),
-          eq(deskCustomFieldValues.fieldKey, "inbox_emails"),
+          eq(deskCustomFieldValues.fieldKey, INBOX_EMAIL_ALIAS_KEY),
         ),
       )
       .then((rows) => rows)

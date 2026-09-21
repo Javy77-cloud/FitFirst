@@ -8,7 +8,12 @@ import { writeDeskComms } from "@/lib/desk/write-comms";
 import { parseEmailFrom } from "@/lib/home/lead-offers";
 import { getGmailThread, replyGmailThread, sendGmailMessage } from "@/lib/integrations/gmail";
 import { writeRecordValues, loadRecordValues } from "@/lib/custom-fields/store";
-import { inboxThreadHref, normalizeInboxEmail, parseInboxAliasEmails } from "@/lib/desk/inbox-match";
+import {
+  INBOX_EMAIL_ALIAS_KEY,
+  inboxThreadHref,
+  normalizeInboxEmail,
+  parseInboxAliasEmails,
+} from "@/lib/desk/inbox-match";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { contacts } from "@/lib/db/schema";
@@ -94,8 +99,6 @@ export async function logInboxThread(formData: FormData) {
   refreshInbox(threadId);
   flashAction(inboxThreadHref(threadId), "inbox-logged");
 }
-
-export const INBOX_EMAIL_ALIAS_KEY = "inbox_emails";
 
 /** Attach this thread's address to an existing contact without leaving Inbox. */
 export async function linkInboxContact(formData: FormData): Promise<{ ok: true } | { ok: false; error: string }> {
