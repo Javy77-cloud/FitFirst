@@ -12,6 +12,7 @@ import { extractWithGeminiPdf } from "@/lib/extraction/gemini";
 import { loadGeminiApiKey } from "@/lib/extraction/gemini/key";
 import { readStoredFile } from "@/lib/files/object-store";
 import {
+  allowCreatePolicyPrompt,
   documentKindFromGeminiJson,
   looksLikeDeclarationFromGemini,
   shouldPromptCreatePolicy,
@@ -142,6 +143,18 @@ export async function classifyDeclarationLook(input: {
   }
 }
 
+/** Bound / Policy issued only. Open-shop current-policy uploads stay on the risk profile. */
+export async function dealAllowsCreatePolicyPrompt(dealId: string, product?: string | null) {
+  const deal = await loadDeal(dealId);
+  if (!deal) return false;
+  const saved = parseShopFlow(deal.shopFlow);
+  const id = parseDealProduct(product ?? "");
+  const stage = id
+    ? productStageFor(parseProductStages(saved.productStages), id, deal.pipelineStage).stage
+    : deal.pipelineStage;
+  return allowCreatePolicyPrompt({ stage });
+}
+
 export async function maybeQueueCreatePolicyPrompt(input: {
   dealId: string;
   docType: string;
@@ -153,7 +166,10 @@ export async function maybeQueueCreatePolicyPrompt(input: {
   product?: string | null;
   /** Known dec (Rosa forcing case) — skip Gemini reject. */
   force?: boolean;
+  /** Bound → Policy issued. Shopping uploads must pass false and are ignored. */
+  binding?: boolean;
 }): Promise<PendingDecPrompt | null> {
+  if (!input.force && input.binding !== true) return null;
   if (!shouldPromptCreatePolicy({ docType: input.docType, looksLikeDec: "unknown" })) {
     return null;
   }

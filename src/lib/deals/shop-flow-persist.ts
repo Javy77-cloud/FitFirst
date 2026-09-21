@@ -164,14 +164,25 @@ export async function persistSheetRecheckCue(dealId: string, line: string) {
 }
 
 /** Visual confirm after a later edit — drop the Recheck cue, keep Markets. */
-export async function persistSheetConfirmClear(dealId: string, line: string) {
+export async function persistSheetConfirmClear(
+  dealId: string,
+  line: string,
+  opts?: { clearCreatePolicyPrompt?: boolean },
+) {
   if (!dealId || !line) return;
   const [deal] = await db
     .select({ shopFlow: deals.shopFlow })
     .from(deals)
     .where(and(eq(deals.id, dealId), eq(deals.tenantId, DEFAULT_TENANT_ID)));
   if (!deal) return;
-  await persistDealShopFlow(dealId, nextShopFlowAfterSheetConfirm({ saved: deal.shopFlow, line }));
+  await persistDealShopFlow(
+    dealId,
+    nextShopFlowAfterSheetConfirm({
+      saved: deal.shopFlow,
+      line,
+      clearCreatePolicyPrompt: opts?.clearCreatePolicyPrompt,
+    }),
+  );
 }
 
 /** After a material sheet / source-doc change: Quotes must be re-run. Markets stay checked. */

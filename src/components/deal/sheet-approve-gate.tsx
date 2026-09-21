@@ -58,8 +58,8 @@ export function SheetApproveGate({
   const [reviewed, setReviewed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const showForm = !unlocked || needsReapprove;
-  const subsequent = Boolean(unlocked || needsReapprove);
   const reapprove = Boolean(approvedBy) && !unlocked;
+  const opensQuotes = hasRequestedQuotes;
   const approvedHref = hasRequestedQuotes
     ? `/deals/${dealId}?tab=quotes&line=${line}${product ? `&product=${product}` : ""}`
     : `/deals/${dealId}?tab=markets&line=${line}${product ? `&product=${product}` : ""}`;
@@ -155,10 +155,10 @@ export function SheetApproveGate({
       <p className="text-sm font-semibold text-navy">
         {reapprove ? "Re-confirm rating-critical changes" : "Confirm Risk Profile"}
       </p>
-      <p className="mt-1 text-helper text-muted-foreground">
-        {reapprove
+      <p className="mt-1 text-helper text-muted-foreground" data-ff-sheet-confirm-next={opensQuotes ? "quotes" : "markets"}>
+        {reapprove && opensQuotes
           ? `Coverage A, year built, roof, claims, or another rating field changed on the ${formLabel} Risk Profile. Confirm again, then continue to Quotes. Markets stay as last shopped.`
-          : subsequent
+          : opensQuotes
           ? `Glance the ${formLabel} Risk Profile. Confirm opens Quotes so you can recheck.`
           : `Glance the ${formLabel} Risk Profile. Confirm opens Markets so you can select carriers and request quotes.`}
       </p>

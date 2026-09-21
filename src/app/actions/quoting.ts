@@ -16,17 +16,23 @@ import {
   deals,
   quoteAttemptLogs,
   quoteSheets,
+  quotes,
   risks,
 } from "@/lib/db/schema";
 import { autoSnapshotFieldsForDeal } from "@/lib/appetite/auto-premium-capture";
 import { lineLearningSnapshotFieldsForDeal } from "@/lib/appetite/line-learning-capture";
 import { emptySheetValues } from "@/lib/quote-sheet/catalog";
-import { persistDealWorkTab } from "@/lib/deals/work-tab";
+import { forceDealWorkTab } from "@/lib/deals/work-tab";
 import { persistSheetConfirmClear } from "@/lib/deals/shop-flow-persist";
+import { lineAlreadyShopped, riskConfirmTab } from "@/lib/deals/risk-confirm-next";
+import { parseDealProduct } from "@/lib/deals/deal-products";
+import { productStageFor } from "@/lib/deals/product-stages";
+import { parseShopFlow, requestScopeForLine } from "@/lib/deals/shop-flow";
+import { allowCreatePolicyPrompt } from "@/lib/policy/dec-prompt";
 import { autoAdvanceDealProductStage } from "@/app/actions/product-stage";
 import { withFlash } from "@/lib/flash";
 import { persistQuoteSheetValues, runFillDealSheets } from "@/app/actions/quote-sheet";
-import { submittedSheetValues } from "@/lib/quote-sheet/apply";
+import { keepFilledCurrentPolicyOnConfirm, submittedSheetValues } from "@/lib/quote-sheet/apply";
 import {
   canUnlockQuoting,
   isAppetiteCaptureResult,
@@ -115,13 +121,24 @@ export async function approveMasterSheet(formData: FormData) {
   if (dealId === DEAL_ID && (deal.pipelineStage === "bound" || deal.pipelineStage === "closed_won")) {
     throw new Error("Ana stays shopping. Do not bind this shop.");
   }
-  const subsequent = Boolean(deal.quotingUnlocked || deal.sheetApprovedAt);
-
   const session = await currentDeskSession();
   const now = new Date();
   const who = session.name || "desk";
 
-  const submitted = submittedSheetValues(formData);
+  const [existingSheet] = await db
+    .select()
+    .from(quoteSheets)
+    .where(
+      and(
+        eq(quoteSheets.tenantId, DEFAULT_TENANT_ID),
+        eq(quoteSheets.dealId, dealId),
+        eq(quoteSheets.line, line),
+      ),
+    );
+  const submitted = keepFilledCurrentPolicyOnConfirm(
+    existingSheet?.values ?? {},
+    submittedSheetValues(formData),
+  );
   if (Object.keys(submitted).length > 0) {
     await persistQuoteSheetValues(dealId, line, submitted);
   }
@@ -159,14 +176,47 @@ export async function approveMasterSheet(formData: FormData) {
       .where(eq(quoteSheets.id, sheet.id));
   }
 
-  await persistSheetConfirmClear(dealId, line).catch(() => null);
+  const product = str(formData, "product");
+  const productId = parseDealProduct(product);
+  const flow = parseShopFlow(deal.shopFlow);
+  const stage = productId
+    ? productStageFor(flow.productStages, productId, deal.pipelineStage).stage
+    : deal.pipelineStage;
+  const binding = allowCreatePolicyPrompt({ stage });
+  const [logRows, quoteRows] = await Promise.all([
+    db
+      .select({
+        id: quoteAttemptLogs.id,
+        lineOfBusiness: quoteAttemptLogs.lineOfBusiness,
+        why: quoteAttemptLogs.why,
+      })
+      .from(quoteAttemptLogs)
+      .where(and(eq(quoteAttemptLogs.tenantId, DEFAULT_TENANT_ID), eq(quoteAttemptLogs.dealId, dealId))),
+    db
+      .select({
+        stub: quotes.stub,
+        shopLine: quotes.shopLine,
+        notes: quotes.notes,
+        quoteAttemptLogId: quotes.quoteAttemptLogId,
+      })
+      .from(quotes)
+      .where(and(eq(quotes.tenantId, DEFAULT_TENANT_ID), eq(quotes.dealId, dealId))),
+  ]);
+  const shopped = lineAlreadyShopped({
+    line,
+    logs: logRows,
+    quotes: quoteRows,
+    requestCarrierIds: requestScopeForLine(flow, line),
+  });
+  const nextTab = riskConfirmTab({ shopped, binding });
+  await persistSheetConfirmClear(dealId, line, {
+    clearCreatePolicyPrompt: !binding,
+  }).catch(() => null);
 
-  // First confirm → Markets. Later / rating-critical re-approve → Quotes.
-  const laterConfirm = subsequent || reapprove;
-  if (laterConfirm) {
-    const product = str(formData, "product");
-    const productQuery = product ? `&product=${encodeURIComponent(product)}` : "";
-    await persistDealWorkTab(dealId, "quotes").catch(() => null);
+  // Unshopped confirm → Markets (pick carriers). Quotes only after a shop, or when binding.
+  const productQuery = product ? `&product=${encodeURIComponent(product)}` : "";
+  if (nextTab === "quotes") {
+    await forceDealWorkTab(dealId, "quotes").catch(() => null);
     revalidatePath(`/deals/${dealId}`);
     redirect(
       withFlash(
@@ -175,14 +225,14 @@ export async function approveMasterSheet(formData: FormData) {
       ),
     );
   }
-  await persistDealWorkTab(dealId, "markets").catch(() => null);
+  await forceDealWorkTab(dealId, "markets").catch(() => null);
   await autoAdvanceDealProductStage({
     dealId,
     stageSlug: "markets",
     line,
   }).catch(() => null);
   revalidatePath(`/deals/${dealId}`);
-  redirect(withFlash(`/deals/${dealId}?tab=markets&line=${line}`, "Sheet approved"));
+  redirect(withFlash(`/deals/${dealId}?tab=markets&line=${line}${productQuery}`, "Sheet approved"));
 }
 
 export async function logAppetiteResult(formData: FormData) {

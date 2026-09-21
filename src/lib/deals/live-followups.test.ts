@@ -155,6 +155,22 @@ describe("Javy live follow-ups after PR #28", () => {
     expect(reedit).toContain("Confirm opens Quotes");
     expect(reedit).not.toContain("Go to Markets");
 
+    const unshopped = renderToString(
+      createElement(SheetApproveGate, {
+        dealId: "deal-domenic",
+        line: "auto",
+        product: "auto",
+        formLabel: "Personal Auto",
+        unlocked: false,
+        approvedBy: "Javy",
+        needsReapprove: true,
+        hasRequestedQuotes: false,
+      }),
+    );
+    expect(unshopped).toMatch(/data-ff-sheet-confirm-next="markets"/);
+    expect(unshopped).toContain("Confirm opens Markets");
+    expect(unshopped).not.toContain("Confirm opens Quotes");
+
     const afterQuotes = renderToString(
       createElement(SheetApproveGate, {
         dealId: "deal-1",
