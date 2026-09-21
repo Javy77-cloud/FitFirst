@@ -232,9 +232,15 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(action).toMatch(/photoLike/);
     expect(action).toMatch(/isImageUpload/);
     expect(action).toMatch(/withDeadline/);
-    expect(action).toMatch(/onlyLine: true/);
+    expect(action).toMatch(/export async function fillMasterSheetDocument/);
+    expect(action).toMatch(/export async function listMasterFillDocs/);
+    expect(action).toMatch(/documentId/);
     expect(action).toMatch(/shopLine: line/);
     const button = readFileSync("src/components/deal/master-sheet-fill-button.tsx", "utf8");
+    expect(button).toMatch(/fillMasterSheetDocument/);
+    expect(button).toMatch(/listMasterFillDocs/);
+    expect(button).toMatch(/step\.id === "docs"/);
+    expect(button).toMatch(/MASTER_FILL_DOC_CLIENT_TIMEOUT_MS/);
     expect(button).toMatch(/MASTER_FILL_STEP_TIMEOUT_MS/);
     expect(button).toMatch(/Promise\.race/);
   });

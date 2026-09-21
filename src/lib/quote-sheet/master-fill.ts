@@ -32,6 +32,13 @@ export const MASTER_FILL_DOCS_FAILED =
   "Could not read docs. Fields already filled are saved.";
 /** Client + server hard wall per Fill step so the modal cannot spin forever. */
 export const MASTER_FILL_STEP_TIMEOUT_MS = 120_000;
+/**
+ * One photo / PDF. Stays under the deal-page maxDuration so a single file
+ * returns a Flight result instead of dying with the whole Docs batch (~4 min).
+ */
+export const MASTER_FILL_DOC_TIMEOUT_MS = 100_000;
+/** Client waits past the server deadline so a Flight result can arrive. */
+export const MASTER_FILL_DOC_CLIENT_TIMEOUT_MS = 120_000;
 export const MASTER_FILL_STEP_TIMEOUT_MESSAGE =
   "timed out. Fields already filled are saved — close and retry, or fill by hand.";
 
@@ -102,6 +109,43 @@ export function masterFillCaughtMessage(stepLabel: string, error: unknown): stri
 
 export function masterFillStepTimeoutMessage(stepLabel: string): string {
   return `${stepLabel} ${MASTER_FILL_STEP_TIMEOUT_MESSAGE}`;
+}
+
+export type MasterFillDocRef = { id: string; filename: string };
+
+export type MasterFillDocList = {
+  ok: boolean;
+  docs: MasterFillDocRef[];
+  error?: string;
+  note?: string;
+};
+
+export function isMasterFillDocList(raw: unknown): raw is MasterFillDocList {
+  if (!raw || typeof raw !== "object") return false;
+  const value = raw as Partial<MasterFillDocList>;
+  return typeof value.ok === "boolean" && Array.isArray(value.docs);
+}
+
+export function masterFillDocStatus(index: number, total: number, filename: string): string {
+  const name = filename.trim() || "file";
+  const count = Math.max(total, 1);
+  const at = Math.min(Math.max(index, 0) + 1, count);
+  return `Docs · ${at}/${count} · ${name}`;
+}
+
+/** Sum per-file Fill results. A failed file keeps its error and does not zero the others. */
+export function mergeMasterFillFileResults(files: MasterFillStepResult[]): MasterFillStepResult {
+  const filledCount = files.reduce((sum, file) => sum + file.filledCount, 0);
+  const skippedCount = files.reduce((sum, file) => sum + file.skippedCount, 0);
+  const errors = files.map((file) => file.error).filter((row): row is string => Boolean(row?.trim()));
+  const notes = files.map((file) => file.note).filter((row): row is string => Boolean(row?.trim()));
+  return {
+    step: "docs",
+    filledCount,
+    skippedCount,
+    error: errors.length ? errors.join(" · ") : undefined,
+    note: notes.length ? notes.join(" · ") : undefined,
+  };
 }
 
 export function masterFillDoneSummary(steps: MasterFillStepResult[]): string {

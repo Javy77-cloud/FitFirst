@@ -167,6 +167,22 @@ function isAbortError(error: unknown): boolean {
   return name === "AbortError" || /aborted|timeout/i.test(error instanceof Error ? error.message : "");
 }
 
+/** Per-attempt timeout, plus the Fill deadline signal so a hung call stops. */
+function geminiFetchSignal(timeoutMs: number, parent?: AbortSignal): AbortSignal {
+  const timeout = AbortSignal.timeout(timeoutMs);
+  if (!parent) return timeout;
+  if (typeof AbortSignal.any === "function") return AbortSignal.any([timeout, parent]);
+  const controller = new AbortController();
+  const onAbort = () => controller.abort();
+  if (timeout.aborted || parent.aborted) {
+    controller.abort();
+    return controller.signal;
+  }
+  timeout.addEventListener("abort", onAbort, { once: true });
+  parent.addEventListener("abort", onAbort, { once: true });
+  return controller.signal;
+}
+
 /** Exponential backoff with jitter. Honors Retry-After / body retryDelay. Cap 60s (4s on Fill). */
 function retryDelayMs(
   attempt: number,
@@ -233,16 +249,19 @@ export async function extractWithGeminiPdf(
     timeoutMs?: number;
     /** Overall wall-clock for Fill (HEIC + all model attempts). Defaults when purpose=fill. */
     overallTimeoutMs?: number;
+    /** Aborted when the Fill deadline wins so the server action can return. */
+    signal?: AbortSignal;
   },
 ): Promise<GeminiClientResult> {
   const purpose = options?.purpose;
   const overallMs =
     options?.overallTimeoutMs ??
     (isFillPurpose(purpose) ? GEMINI_FILL_OVERALL_TIMEOUT_MS : 0);
+  const controller = overallMs > 0 ? new AbortController() : null;
   try {
-    if (overallMs > 0) {
+    if (overallMs > 0 && controller) {
       return await withDeadline(
-        extractWithGeminiPdfInner(pdfBytes, docType, options),
+        extractWithGeminiPdfInner(pdfBytes, docType, { ...options, signal: controller.signal }),
         overallMs,
         GEMINI_TIMEOUT_MESSAGE,
       );
@@ -255,6 +274,8 @@ export async function extractWithGeminiPdf(
     const message = error instanceof Error ? error.message : "gemini_extract_failed";
     console.error("[extractWithGeminiPdf]", message.slice(0, 300));
     return emptyFail(docType, message.slice(0, 300), ["gemini_extract_failed"]);
+  } finally {
+    controller?.abort();
   }
 }
 
@@ -271,6 +292,7 @@ async function extractWithGeminiPdfInner(
     purpose?: "fill" | "extract";
     timeoutMs?: number;
     overallTimeoutMs?: number;
+    signal?: AbortSignal;
   },
 ): Promise<GeminiClientResult> {
   const apiKey = (options?.apiKey ?? readGeminiApiKey()).trim();
@@ -345,12 +367,15 @@ async function extractWithGeminiPdfInner(
     const maxAttempts = maxAttemptsFor(docType, isPrimary, purpose);
     const url = `${GENERATIVE_BASE}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      if (options?.signal?.aborted) {
+        return emptyFail(docType, GEMINI_TIMEOUT_MESSAGE, [GEMINI_TIMEOUT_NOTE]);
+      }
       try {
         response = await fetchImpl(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
-          signal: AbortSignal.timeout(timeoutMs),
+          signal: geminiFetchSignal(timeoutMs, options?.signal),
         });
         noteDeveloperApiCall("gemini");
       } catch (error) {
