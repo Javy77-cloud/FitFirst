@@ -3568,10 +3568,10 @@ button.ff-renewal-risk-badge {
 .ff-inbox-band li:last-child .ff-inbox-row { border-bottom: 0; }
 .ff-inbox-row:hover { background: color-mix(in srgb, var(--ff-navy) 4%, #fff); }
 .ff-inbox-row.is-selected {
-  background: color-mix(in srgb, var(--ff-navy) 14%, #fff);
-  box-shadow: inset 3px 0 0 var(--ff-navy);
+  background: color-mix(in srgb, var(--ff-navy) 20%, #dce6f4);
+  box-shadow: inset 4px 0 0 var(--ff-navy);
 }
-.ff-inbox-row.is-selected:hover { background: color-mix(in srgb, var(--ff-navy) 16%, #fff); }
+.ff-inbox-row.is-selected:hover { background: color-mix(in srgb, var(--ff-navy) 24%, #dce6f4); }
 .ff-inbox-row-from {
   grid-area: from;
   min-width: 0;
