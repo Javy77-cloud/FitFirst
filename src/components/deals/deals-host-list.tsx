@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ListCommsPick } from "@/components/desk/list-comms-rail";
 import { ColumnTable, type ColumnRow } from "@/components/lists/column-table";
 import {
   docsGlanceLabel,
@@ -40,9 +41,12 @@ export function DealsHostList({ cards }: { cards: RadarDealCard[] }) {
       },
       cells: {
         client: (
-          <Link href={card.href} className="font-semibold text-navy hover:underline">
-            {name}
-          </Link>
+          <span className="inline-flex min-w-0 items-center gap-1">
+            <Link href={card.href} className="font-semibold text-navy hover:underline">
+              {name}
+            </Link>
+            <ListCommsPick id={card.id} />
+          </span>
         ),
         lob,
         premium: formatPremiumColumn(card.premium),

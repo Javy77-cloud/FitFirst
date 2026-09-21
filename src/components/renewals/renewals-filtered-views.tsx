@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { ListCommsShell } from "@/components/desk/list-comms-rail";
 import { RenewalsHostList } from "@/components/renewals/renewals-host-list";
 import { RenewalsPriorityStack } from "@/components/renewals/renewals-priority-stack";
 import { RenewalsUrgencyBoard } from "@/components/renewals/renewals-urgency-board";
@@ -28,6 +29,22 @@ export function RenewalsFilteredViews({
   );
 
   if (view === "stack") return <RenewalsPriorityStack cards={filtered} />;
-  if (view === "list") return <RenewalsHostList cards={filtered} />;
+  if (view === "list") {
+    return (
+      <ListCommsShell
+        rows={filtered.map((card) => ({
+          id: card.queueId,
+          name: card.clientName,
+          email: card.email,
+          phone: card.phone,
+          policyId: card.policyId,
+          contactId: card.contactId,
+          accountId: card.accountId,
+        }))}
+      >
+        <RenewalsHostList cards={filtered} />
+      </ListCommsShell>
+    );
+  }
   return <RenewalsUrgencyBoard cards={filtered} />;
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ListCommsPick } from "@/components/desk/list-comms-rail";
 import {
   LeadCadenceSelect,
   LeadHeatToggle,
@@ -52,9 +53,12 @@ export function LeadsHostList({
     },
     cells: {
       name: (
-        <Link href={record.href} className="font-semibold text-navy hover:underline">
-          {record.name}
-        </Link>
+        <span className="inline-flex min-w-0 items-center gap-1">
+          <Link href={record.href} className="font-semibold text-navy hover:underline">
+            {record.name}
+          </Link>
+          <ListCommsPick id={record.id} />
+        </span>
       ),
       policyForm: (
         <span data-ff-lead-policy-form="">{record.policyForm || "—"}</span>

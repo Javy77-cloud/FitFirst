@@ -1,4 +1,6 @@
 import { DealsHostList } from "@/components/deals/deals-host-list";
+import { dealDisplayName } from "@/components/deals/deal-host-face";
+import { ListCommsShell } from "@/components/desk/list-comms-rail";
 import { PriorityStack } from "@/components/deals/priority-stack";
 import { DealsRadar } from "@/components/deals/deals-radar";
 import { DealsLenses } from "@/components/deals/deals-lenses";
@@ -86,7 +88,20 @@ export function DealsCommandWorkspace({
       {view === "radar" ? (
         <DealsRadar cards={cards} />
       ) : view === "list" ? (
-        <DealsHostList cards={cards} />
+        <ListCommsShell
+          rows={cards.map((card) => ({
+            id: card.id,
+            name: dealDisplayName(card),
+            email: card.email,
+            phone: card.phone,
+            dealId: card.id,
+            leadId: card.leadId,
+            contactId: card.contactId,
+            accountId: card.accountId,
+          }))}
+        >
+          <DealsHostList cards={cards} />
+        </ListCommsShell>
       ) : (
         <div className="ff-stack-workspace" data-ff-stack-workspace="">
           <PriorityStack cards={cards} />

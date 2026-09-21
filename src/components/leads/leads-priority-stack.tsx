@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { StackQuickComms } from "@/components/desk/stack-quick-comms";
+import { stackMidLine } from "@/lib/desk/stack-mid";
 import {
   LeadCadenceSelect,
   LeadHeatToggle,
@@ -82,14 +84,24 @@ export function LeadsPriorityStack({
                   <Link href={record.href} className="ff-stack-name">
                     {record.name}
                   </Link>
-                  <span
-                    className="ff-stack-silent"
+                  <Link
+                    href={record.href}
+                    className="ff-stack-mid"
+                    data-ff-stack-mid=""
                     data-ff-lead-silence=""
                     data-ff-silence-cue=""
+                    data-ff-next-chase=""
                     title={record.waitingOnFirstCall ? "No logged first call yet" : "Since the first logged contact"}
                   >
-                    {record.silence}
-                  </span>
+                    {stackMidLine([record.silence, record.nextChase])}
+                  </Link>
+                  <StackQuickComms
+                    name={record.name}
+                    email={record.email}
+                    phone={record.phone}
+                    leadId={record.id}
+                    dealId={record.convertedDealId}
+                  />
                 </div>
                 <div className="ff-stack-job" data-ff-lead-job="">
                   <ul className="ff-stack-products">
@@ -124,9 +136,6 @@ export function LeadsPriorityStack({
                     resolvedTemplateId={record.resolvedTemplateId}
                   />
                 </div>
-                <Link href={record.href} className="ff-stack-next" data-ff-next-chase="">
-                  {record.nextChase}
-                </Link>
               </div>
               <span className="sr-only">{record.heatLabel}</span>
             </article>

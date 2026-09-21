@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ListCommsPick } from "@/components/desk/list-comms-rail";
 import { ColumnTable, type ColumnRow } from "@/components/lists/column-table";
 import { formatPremiumColumn } from "@/lib/deals/card-glance";
 import { formatSignedMoney } from "@/lib/renewal/compare";
@@ -44,9 +45,12 @@ export function RenewalsHostList({ cards }: { cards: RenewalBoardCard[] }) {
       },
       cells: {
         client: (
-          <Link href={`/policies/${card.policyId}`} className="font-semibold text-navy hover:underline">
-            {card.clientName}
-          </Link>
+          <span className="inline-flex min-w-0 items-center gap-1">
+            <Link href={`/policies/${card.policyId}`} className="font-semibold text-navy hover:underline">
+              {card.clientName}
+            </Link>
+            <ListCommsPick id={card.queueId} />
+          </span>
         ),
         lob,
         carrier: card.carrierName,

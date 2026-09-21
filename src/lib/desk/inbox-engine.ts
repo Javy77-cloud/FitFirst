@@ -37,7 +37,7 @@ export async function loadInboxDesk(selectedId: string | null): Promise<InboxDes
   const grantMissing = Boolean(mail && opened?.unread && !allowMarkRead);
   const marked =
     mail && live.connected && opened?.unread && !grantMissing ? await mail.markThreadRead(opened.id) : null;
-  const threads = marked?.ok && selectedId ? markDeskThreadRead(live.threads, selectedId) : live.threads;
+  const threads = selectedId ? markDeskThreadRead(live.threads, selectedId) : live.threads;
   const markReadNotice = grantMissing || marked?.needsReconnect ? (mail?.markReadReconnectCopy() ?? null) : null;
 
   return {
