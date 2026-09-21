@@ -8,6 +8,8 @@ export const SHEET_FORM_META_KEYS = new Set([
   "reviewed",
   "sure",
   "requestQuotes",
+  "unitKind",
+  "unitIndex",
 ]);
 
 export function isSheetFormMetaKey(key: string): boolean {

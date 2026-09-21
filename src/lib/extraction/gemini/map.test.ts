@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
 import {
+  dropUnnamedExtraDrivers,
   fillableGeminiFields,
   mapGeminiJsonToFields,
   normalizeOirLetterCode,
@@ -323,6 +324,8 @@ describe("agency letter gemini keys", () => {
 describe("auto gemini keys", () => {
   it("maps vin / vehicle / driver keys onto the auto sheet", () => {
     expect(sheetKeysForGeminiKey("vin")).toEqual(["vin"]);
+    expect(sheetKeysForGeminiKey("vehicle_identification_number")).toEqual(["vin"]);
+    expect(sheetKeysForGeminiKey("vehicle_1_vin")).toEqual(["vin"]);
     expect(sheetKeysForGeminiKey("vehicle_year")).toEqual(["vehicle_year"]);
     expect(sheetKeysForGeminiKey("driver_1_name")).toEqual(["driver_1_name"]);
     expect(sheetKeysForGeminiKey("driver_1_industry")).toEqual([
@@ -342,5 +345,44 @@ describe("auto gemini keys", () => {
     expect(autoPrompt).toMatch(/Never fill driver_1_relationship/);
     expect(autoPrompt).toMatch(/comprehensive deductible/i);
     expect(autoPrompt).toMatch(/Never fill employment/);
+    expect(autoPrompt).toMatch(/Never invent a driver 3/);
+    expect(autoPrompt).toMatch(/Vehicle Identification Number/);
+    const autoSystem = buildGeminiSystemPrompt("dec", "auto");
+    expect(autoSystem).toMatch(/Do NOT invent extra drivers/);
+    expect(autoSystem).toMatch(/17-character/);
+
+    const mapped = mapGeminiJsonToFields(
+      {
+        vin: { value: "1hgcm82633a004352", confidence: 0.95 },
+        driver_1_name: { value: "Ada Lopez", confidence: 0.95 },
+        driver_3_gender: { value: "Female", confidence: 0.9 },
+        driver_3_dob: { value: "2010-01-01", confidence: 0.9 },
+      },
+      "dec",
+    );
+    expect(mapped.fields.find((f) => f.fieldKey === "vin")?.normalizedValue).toBe("1HGCM82633A004352");
+    expect(mapped.fields.find((f) => f.fieldKey === "driver_3_gender")).toBeUndefined();
+    expect(
+      dropUnnamedExtraDrivers([
+        {
+          fieldKey: "driver_2_name",
+          label: "name",
+          rawValue: "",
+          normalizedValue: "",
+          confidence: 0.9,
+          flagged: false,
+          source: "labeled",
+        },
+        {
+          fieldKey: "driver_2_dob",
+          label: "dob",
+          rawValue: "2000-01-01",
+          normalizedValue: "2000-01-01",
+          confidence: 0.9,
+          flagged: false,
+          source: "labeled",
+        },
+      ]).map((f) => f.fieldKey),
+    ).toEqual([]);
   });
 });

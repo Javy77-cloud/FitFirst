@@ -13,15 +13,22 @@ import { fillSheetFromDealDetails } from "@/lib/quote-sheet/fill-from-deal";
 import {
   FILL_MASTER_SHEET_LABEL,
   MASTER_FILL_BUSY_COPY,
+  MASTER_FILL_CANCEL,
   MASTER_FILL_REVIEW_NUDGE,
   MASTER_FILL_SKIP_NO_DOCS,
+  MASTER_FILL_SKIP_NO_SOURCE_DOCS,
+  MASTER_FILL_SKIP_WRONG_LINE,
+  MASTER_FILL_SKIP_NO_VIN,
+  masterFillDocsNote,
   MASTER_FILL_STEP_DEAL,
   MASTER_FILL_STEP_DOCS,
   MASTER_FILL_STEP_PROPERTY,
+  isMasterFillAbortError,
   isMasterFillStepResult,
   masterFillBusyTitle,
   masterFillDoneSummary,
   masterFillUnexpectedMessage,
+  rejectWhenAborted,
 } from "@/lib/quote-sheet/master-fill";
 
 function source(file: string) {
@@ -54,6 +61,14 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(button).toMatch(/isMasterFillStepResult/);
     expect(button).toMatch(/masterFillUnexpectedMessage/);
     expect(button).toMatch(/WaitHold/);
+    expect(button).toMatch(/AbortController/);
+    expect(button).toMatch(/rejectWhenAborted/);
+    expect(button).toMatch(/closeAndAbort/);
+    expect(button).toMatch(/data-ff-master-fill-cancel/);
+    expect(button).toMatch(/MASTER_FILL_CANCEL/);
+    expect(button).toMatch(/showCloseButton/);
+    expect(button).not.toMatch(/showCloseButton=\{!busy\}/);
+    expect(button).not.toMatch(/!busy && setOpen/);
 
     const html = renderToString(
       createElement(MasterSheetCompare, {
@@ -71,13 +86,14 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(html).not.toContain("Fill from source");
   });
 
-  it("orchestrates Deal → Property → Docs and keeps CHECK / review nudge", () => {
+  it("orchestrates Deal → Property → Docs and keeps CHECK / review nudge", async () => {
     const action = source("src/app/actions/quote-sheet.ts");
     expect(action).toMatch(/export async function fillMasterSheetStep/);
     expect(action).toMatch(/runFillFromDealDetails/);
     expect(action).toMatch(/runFillFromPropertyRecords/);
     expect(action).toMatch(/runFillDealSheets/);
-    expect(action).toMatch(/MASTER_FILL_SKIP_NO_DOCS/);
+    expect(action).toMatch(/masterFillDocsNote/);
+    expect(action).toMatch(/isFillSourceDoc/);
     expect(action).toMatch(/Copied deal details into blank master-sheet fields \(CHECK\)/);
     const dealFill = source("src/lib/quote-sheet/fill-from-deal.ts");
     expect(dealFill).toMatch(/status: "check"/);
@@ -100,6 +116,25 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(MASTER_FILL_STEP_PROPERTY).toBe("Property");
     expect(MASTER_FILL_STEP_DOCS).toBe("Docs");
     expect(MASTER_FILL_SKIP_NO_DOCS).toBe("No docs uploaded — skipped");
+    expect(MASTER_FILL_SKIP_NO_SOURCE_DOCS).toMatch(/none are source docs/i);
+    expect(MASTER_FILL_SKIP_WRONG_LINE).toMatch(/wrong shop line/i);
+    expect(MASTER_FILL_SKIP_NO_VIN).toMatch(/did not extract a VIN/i);
+    expect(
+      masterFillDocsNote({
+        dealFileCount: 1,
+        fillSourceCount: 0,
+        filledCount: 0,
+        skippedWrongLine: 0,
+      }),
+    ).toBe(MASTER_FILL_SKIP_NO_SOURCE_DOCS);
+    expect(
+      masterFillDocsNote({
+        dealFileCount: 1,
+        fillSourceCount: 1,
+        filledCount: 0,
+        skippedWrongLine: 1,
+      }),
+    ).toBe(MASTER_FILL_SKIP_WRONG_LINE);
     expect(MASTER_FILL_REVIEW_NUDGE).toMatch(/Review CHECK fields and Confirm when ready/);
 
     const summary = masterFillDoneSummary([
@@ -118,6 +153,14 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(masterFillUnexpectedMessage(MASTER_FILL_STEP_DOCS)).toMatch(/unexpected response/i);
     expect(action).toMatch(/purpose: "fill"/);
     expect(action).toMatch(/fillMasterSheetStepInner/);
+    expect(MASTER_FILL_CANCEL).toBe("Cancel");
+    const already = new AbortController();
+    already.abort();
+    await expect(rejectWhenAborted(already.signal)).rejects.toMatchObject({ name: "AbortError" });
+    expect(isMasterFillAbortError({ name: "AbortError", message: "The operation was aborted" })).toBe(
+      true,
+    );
+    expect(isMasterFillAbortError(new Error("Docs failed"))).toBe(false);
   });
 
   it("copies deal blanks as CHECK and never overwrites agent/confirmed", () => {
