@@ -4,6 +4,8 @@ import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import type { QuoteFileRow } from "@/components/deal/quote-file-actions";
 import { LoadShopListButton } from "@/components/deal/load-shop-list-button";
 import { ManualCarrierAdd } from "@/components/deal/manual-carrier-add";
+import { RecordManualQuote } from "@/components/deal/record-manual-quote";
+import { marketCarriersForManualQuote } from "@/lib/deals/manual-quote";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { IssuePolicyFromDec, type IssuedPolicyChip } from "@/components/deal/issue-policy-from-dec";
@@ -248,6 +250,23 @@ export function QuotesPanel({
       ]),
   );
   const lineLabel = activeLine ? shopLineLabel(activeLine) : null;
+  const manualQuoteCarriers = marketCarriersForManualQuote(
+    logs.map((row) => ({
+      carrierId: row.log.carrierId,
+      why: row.log.why,
+      lineOfBusiness: row.log.lineOfBusiness,
+      carrierName: row.carrier.name,
+    })),
+    activeLine,
+  );
+  const manualQuoteForm = (
+    <RecordManualQuote
+      dealId={dealId}
+      carriers={manualQuoteCarriers}
+      shopLine={activeLine}
+      product={product}
+    />
+  );
 
   if (sorted.length === 0) {
     return (
@@ -271,8 +290,9 @@ export function QuotesPanel({
             0 quote rows · build carriers on Markets first
           </p>
           <p className="text-sm text-muted-foreground">
-            Confirm & request quotes lands on Markets so you can load a list and add carriers.
-            Real quote rows show here once portals or Fill return them.
+            {manualQuoteCarriers.length > 0
+              ? "Request Quotes does not write a premium. Enter the carrier premium below to create the quote row."
+              : "Confirm & request quotes lands on Markets so you can load a list and add carriers. Real quote rows show here once portals or Fill return them."}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <Link
@@ -290,6 +310,7 @@ export function QuotesPanel({
             alreadyIds={[]}
             dealLine={dealLine}
           />
+          {manualQuoteForm}
         </div>
       </div>
     );
@@ -302,6 +323,7 @@ export function QuotesPanel({
         sheetStale={sheetStale}
         completeness={completeness}
       />
+      {manualQuoteForm}
       {product &&
       (isBoundReadyForIssue(productStage) || mintStatus || issuedPolicy || autoIssue) ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
