@@ -51,7 +51,8 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(button).not.toMatch(/withFlash/);
     expect(button).toMatch(/MASTER_FILL_BUSY_COPY/);
     expect(button).toMatch(/masterFillBusyTitle/);
-    expect(button).toMatch(/isMasterFillStepResult/);
+    expect(button).toMatch(/runMasterFillSteps/);
+    expect(button).toMatch(/masterFillFailureToast/);
     expect(button).toMatch(/masterFillUnexpectedMessage/);
     expect(button).toMatch(/WaitHold/);
 
@@ -118,6 +119,15 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(masterFillUnexpectedMessage(MASTER_FILL_STEP_DOCS)).toMatch(/unexpected response/i);
     expect(action).toMatch(/purpose: "fill"/);
     expect(action).toMatch(/fillMasterSheetStepInner/);
+    expect(action).toMatch(/readFillShopLineText/);
+    expect(action).not.toMatch(/readUploadText/);
+    expect(action).toMatch(/withDeadline/);
+    expect(action).toMatch(/MASTER_FILL_DOCS_TIMEOUT_MS/);
+    expect(action).toMatch(/MASTER_FILL_VIN_TIMEOUT_MS/);
+    expect(master).toMatch(/isMasterFillStepResult/);
+    expect(master).toMatch(/runMasterFillSteps/);
+    const dealPage = source("src/app/deals/[id]/page.tsx");
+    expect(dealPage).toMatch(/export const maxDuration = 60/);
   });
 
   it("copies deal blanks as CHECK and never overwrites agent/confirmed", () => {

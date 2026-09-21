@@ -155,4 +155,29 @@ describe("extractWithGeminiPdf retries", () => {
     expect(result.message).toBe(GEMINI_TIMEOUT_MESSAGE);
     expect(result.result.qualityNotes).toContain("gemini_timeout");
   }, 10_000);
+
+  it("returns a Docs timeout when the Gemini body never finishes", async () => {
+    const fetchImpl = vi.fn(async () => {
+      return {
+        ok: true,
+        status: 200,
+        json: () => new Promise(() => undefined),
+        text: () => new Promise(() => undefined),
+      } as unknown as Response;
+    }) as unknown as typeof fetch;
+
+    const started = Date.now();
+    const result = await extractWithGeminiPdf(Buffer.from("%PDF-1.4"), "photo", {
+      apiKey: "test-key",
+      model: "gemini-3.6-flash",
+      fetchImpl,
+      purpose: "fill",
+      shopLine: "auto",
+      overallTimeoutMs: 40,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.message).toBe(GEMINI_TIMEOUT_MESSAGE);
+    expect(result.result.qualityNotes).toContain("gemini_timeout");
+    expect(Date.now() - started).toBeLessThan(1_000);
+  });
 });

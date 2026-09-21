@@ -10,6 +10,7 @@ import { mapGeminiJsonToFields, type GeminiExtractJson } from "./map";
 import type { ExtractionResult } from "@/lib/extraction/extract";
 import { isHeicUpload, prepareImageBuffer } from "@/lib/extraction/ocr";
 import { noteDeveloperApiCall } from "@/lib/developer/usage";
+import { withDeadline } from "@/lib/async/deadline";
 
 const GENERATIVE_BASE = "https://generativelanguage.googleapis.com/v1beta";
 /** Default attempts for dec / 4pt. Wind mit PDFs are large and often 503 under load. */
@@ -23,6 +24,11 @@ const FILL_FALLBACK_MAX_ATTEMPTS = 1;
 const FILL_RETRY_CAP_MS = 4_000;
 const RETRYABLE_STATUS = new Set([429, 503]);
 export const GEMINI_FETCH_TIMEOUT_MS = 25_000;
+/**
+ * Whole Fill extract (retries + response body). A 200 whose body never finishes
+ * used to sit on `response.json()` outside the abort, so the Docs action never returned.
+ */
+export const GEMINI_FILL_OVERALL_TIMEOUT_MS = 32_000;
 export const GEMINI_TIMEOUT_NOTE = "gemini_timeout";
 export const GEMINI_TIMEOUT_MESSAGE =
   "Docs timed out reading this file. Fields already filled are saved.";
@@ -228,8 +234,20 @@ export async function extractWithGeminiPdf(
     /** Fill Risk Profile — fewer retries, hard timeout, fail instead of hanging. */
     purpose?: "fill" | "extract";
     timeoutMs?: number;
+    /** Caps the whole Fill call, including a body read that ignores abort. */
+    overallTimeoutMs?: number;
+    /** Internal: deadline already applied. */
+    overallTimeoutApplied?: boolean;
   },
 ): Promise<GeminiClientResult> {
+  if (options?.purpose === "fill" && !options.overallTimeoutApplied) {
+    const budget = options.overallTimeoutMs ?? GEMINI_FILL_OVERALL_TIMEOUT_MS;
+    return withDeadline(
+      extractWithGeminiPdf(pdfBytes, docType, { ...options, overallTimeoutApplied: true }),
+      budget,
+      () => emptyFail(docType, GEMINI_TIMEOUT_MESSAGE, [GEMINI_TIMEOUT_NOTE]),
+    );
+  }
   const apiKey = (options?.apiKey ?? readGeminiApiKey()).trim();
   // Hard-pin primary only. Fallbacks keep their own ids (separate free-tier quotas).
   const primaryModel = resolveGeminiModel(options?.model ?? readGeminiModel() ?? GEMINI_DEFAULT_MODEL);
@@ -320,7 +338,28 @@ export async function extractWithGeminiPdf(
         if (!isPrimary) {
           console.info("[extractWithGeminiPdf] capacity fallback ok", { model, primaryModel, docType });
         }
-        break outer;
+        try {
+          const payload = (await response.json()) as {
+            candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+          };
+          const text = payload.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+          const json = parseGeminiResponseText(text);
+          if (!json) {
+            return emptyFail(docType, "gemini_parse_error", ["gemini_parse_error"], text.slice(0, 500));
+          }
+          return {
+            ok: true,
+            message: "ok",
+            rawText: text.slice(0, 2000),
+            result: mapGeminiJsonToFields(json, docType, options?.shopLine),
+          };
+        } catch (error) {
+          if (isAbortError(error)) {
+            return emptyFail(docType, GEMINI_TIMEOUT_MESSAGE, [GEMINI_TIMEOUT_NOTE]);
+          }
+          const message = error instanceof Error ? error.message : "gemini_parse_error";
+          return emptyFail(docType, message, ["gemini_parse_error"]);
+        }
       }
       lastStatus = response.status;
       errText = await response.text().catch(() => "");
@@ -354,33 +393,15 @@ export async function extractWithGeminiPdf(
     }
   }
 
-  if (!response || !response.ok) {
-    const snippet = apiErrorSnippet(errText);
-    return emptyFail(
-      docType,
-      snippet
-        ? `gemini_http_${lastStatus || "error"}: ${snippet}`
-        : lastStatus
-          ? `gemini_http_${lastStatus}`
-          : "gemini_http_error",
-      [lastStatus ? `gemini_http_${lastStatus}` : "gemini_http_error"],
-      errText.slice(0, 500),
-    );
-  }
-
-  const payload = (await response.json()) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-  };
-  const text = payload.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
-  const json = parseGeminiResponseText(text);
-  if (!json) {
-    return emptyFail(docType, "gemini_parse_error", ["gemini_parse_error"], text.slice(0, 500));
-  }
-
-  return {
-    ok: true,
-    message: "ok",
-    rawText: text.slice(0, 2000),
-    result: mapGeminiJsonToFields(json, docType, options?.shopLine),
-  };
+  const snippet = apiErrorSnippet(errText);
+  return emptyFail(
+    docType,
+    snippet
+      ? `gemini_http_${lastStatus || "error"}: ${snippet}`
+      : lastStatus
+        ? `gemini_http_${lastStatus}`
+        : "gemini_http_error",
+    [lastStatus ? `gemini_http_${lastStatus}` : "gemini_http_error"],
+    errText.slice(0, 500),
+  );
 }

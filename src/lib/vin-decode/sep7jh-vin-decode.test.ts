@@ -201,4 +201,20 @@ describe("Auto NHTSA vPIC VIN decode (sep7jh)", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.message).toBe(NHTSA_TIMEOUT_MESSAGE);
   }, 10_000);
+
+  it("times out when the NHTSA body never finishes", async () => {
+    const { clearVinDecodeCache, decodeVinValues, NHTSA_TIMEOUT_MESSAGE } = await import("./client");
+    clearVinDecodeCache();
+    const fetchImpl = async () =>
+      ({
+        ok: true,
+        status: 200,
+        json: () => new Promise(() => undefined),
+      }) as unknown as Response;
+    const started = Date.now();
+    const result = await decodeVinValues(HEATHER_VIN, fetchImpl as typeof fetch, { timeoutMs: 30 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.message).toBe(NHTSA_TIMEOUT_MESSAGE);
+    expect(Date.now() - started).toBeLessThan(1_000);
+  });
 });

@@ -1,3 +1,4 @@
+import { withDeadline } from "@/lib/async/deadline";
 import { normalizeVin, isDecodableVin } from "./normalize";
 import { parseDecodeVinValuesRow, decodeLooksSuccessful } from "./map";
 import type { VinDecodeValues } from "./types";
@@ -38,8 +39,20 @@ export async function decodeVinValues(
   const hit = cache.get(vin);
   if (hit) return { ok: true, vin, values: hit, cached: true };
 
-  const url = `${NHTSA_VPIC_DECODE_VALUES_URL}/${encodeURIComponent(vin)}?format=json`;
   const timeoutMs = options?.timeoutMs ?? NHTSA_FETCH_TIMEOUT_MS;
+  return withDeadline(fetchVinDecode(vin, fetchImpl, timeoutMs), timeoutMs, () => ({
+    ok: false,
+    vin,
+    message: NHTSA_TIMEOUT_MESSAGE,
+  }));
+}
+
+async function fetchVinDecode(
+  vin: string,
+  fetchImpl: FetchLike,
+  timeoutMs: number,
+): Promise<DecodeVinResult> {
+  const url = `${NHTSA_VPIC_DECODE_VALUES_URL}/${encodeURIComponent(vin)}?format=json`;
   let response: Response;
   try {
     response = await fetchImpl(url, {
@@ -63,7 +76,11 @@ export async function decodeVinValues(
   let body: { Results?: Array<Record<string, unknown>> };
   try {
     body = (await response.json()) as { Results?: Array<Record<string, unknown>> };
-  } catch {
+  } catch (error) {
+    const name = error && typeof error === "object" && "name" in error ? String(error.name) : "";
+    if (name === "AbortError" || /aborted|timeout/i.test(error instanceof Error ? error.message : "")) {
+      return { ok: false, vin, message: NHTSA_TIMEOUT_MESSAGE };
+    }
     return { ok: false, vin, message: "NHTSA vPIC returned non-JSON." };
   }
 

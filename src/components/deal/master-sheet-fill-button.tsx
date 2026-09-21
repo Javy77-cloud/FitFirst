@@ -20,12 +20,12 @@ import {
   MASTER_FILL_BUSY_TITLE,
   MASTER_FILL_REVIEW_NUDGE,
   MASTER_FILL_STEP_DEAL,
-  isMasterFillStepResult,
   masterFillBusyTitle,
   masterFillDoneSummary,
+  masterFillFailureToast,
   masterFillStepsForLine,
   masterFillUnexpectedMessage,
-  type MasterFillStepResult,
+  runMasterFillSteps,
 } from "@/lib/quote-sheet/master-fill";
 import type { ShopLine } from "@/lib/domain";
 
@@ -49,80 +49,41 @@ export function MasterSheetFillButton({
     setBusy(true);
     setDone(false);
     setSummary("");
-    const results: MasterFillStepResult[] = [];
-    let currentLabel = MASTER_FILL_STEP_DEAL;
     try {
-      for (const step of steps) {
-        currentLabel = step.label;
-        setStatus(step.label);
-        let raw: unknown;
-        try {
-          raw = await fillMasterSheetStep({ dealId, line, step: step.id });
-        } catch (error) {
-          const message =
-            error instanceof Error && error.message.trim()
-              ? error.message
-              : masterFillUnexpectedMessage(step.label);
-          const failed: MasterFillStepResult = {
-            step: step.id,
-            filledCount: 0,
-            skippedCount: 0,
-            error: `${step.label} failed. ${message}`,
-          };
-          results.push(failed);
-          setSummary(masterFillDoneSummary(results));
-          setDone(true);
-          flashAction(failed.error ?? message, "error");
-          router.refresh();
-          return;
-        }
-        if (!isMasterFillStepResult(raw)) {
-          const failed: MasterFillStepResult = {
-            step: step.id,
-            filledCount: 0,
-            skippedCount: 0,
-            error: masterFillUnexpectedMessage(step.label),
-          };
-          results.push(failed);
-          setSummary(masterFillDoneSummary(results));
-          setDone(true);
-          flashAction(failed.error ?? masterFillUnexpectedMessage(step.label), "error");
-          router.refresh();
-          return;
-        }
-        results.push(raw);
-        if (raw.error) {
-          setSummary(masterFillDoneSummary(results));
-          setDone(true);
-          flashAction(raw.error, "error");
-          router.refresh();
-          return;
-        }
-      }
+      const results = await runMasterFillSteps({
+        steps,
+        onStep: (step) => setStatus(step.label),
+        runStep: (step) => fillMasterSheetStep({ dealId, line, step: step.id }),
+      });
       const text = masterFillDoneSummary(results);
       setSummary(text);
       setDone(true);
       const filled = results.reduce((sum, step) => sum + step.filledCount, 0);
       const skipped = results.reduce((sum, step) => sum + step.skippedCount, 0);
-      const sources = [
-        ...new Set(
-          results
-            .flatMap((step) => (step.note ?? "").split("·"))
-            .map((part) => part.trim())
-            .filter((part) => part === "NHTSA vPIC"),
-        ),
-      ];
-      const toast = toastForFillCounts({ filledCount: filled, skippedCount: skipped, sources });
-      // Stay on Documents after Fill — Markets only after Confirm & request quotes.
-      flashAction(toast);
+      const failed = results.some((step) => step.error);
+      if (failed) {
+        flashAction(masterFillFailureToast(results), "error");
+      } else {
+        const sources = [
+          ...new Set(
+            results
+              .flatMap((step) => (step.note ?? "").split("·"))
+              .map((part) => part.trim())
+              .filter((part) => part === "NHTSA vPIC"),
+          ),
+        ];
+        const toast = toastForFillCounts({ filledCount: filled, skippedCount: skipped, sources });
+        // Stay on Documents after Fill — Markets only after Confirm & request quotes.
+        flashAction(toast);
+      }
       router.replace(`/deals/${dealId}?tab=documents&line=${line}`);
       router.refresh();
     } catch (error) {
-      const message = error instanceof Error ? error.message : masterFillUnexpectedMessage(currentLabel);
-      const partial = results.length ? ` ${masterFillDoneSummary(results)}` : "";
-      setSummary(`${currentLabel} failed. ${message}.${partial}`);
+      const message = error instanceof Error ? error.message : masterFillUnexpectedMessage(MASTER_FILL_STEP_DEAL);
+      setSummary(message);
       setDone(true);
-      flashAction(`${currentLabel} failed. ${message}`, "error");
+      flashAction(message, "error");
+      router.refresh();
     } finally {
       setBusy(false);
     }

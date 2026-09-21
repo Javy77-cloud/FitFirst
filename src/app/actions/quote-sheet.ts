@@ -47,7 +47,12 @@ import {
 } from "@/lib/extraction/gemini";
 import { classifyIngest } from "@/lib/extraction/ocr";
 import { inferShopLine, isQuoteAttachment, sourceDocFillsHome, trustSheetLineForFill } from "@/lib/ingest/identity";
-import { readUploadText } from "@/lib/extraction/pdf";
+import {
+  FILL_STORAGE_READ_TIMEOUT_MS,
+  compareFillSourceDocs,
+  readFillShopLineText,
+} from "@/lib/ingest/fill-line-text";
+import { withDeadline } from "@/lib/async/deadline";
 import {
   MELBOURNE_DEC_FILENAME,
   MELBOURNE_DEC_TEXT,
@@ -108,6 +113,8 @@ import { loadRecordValues, writeRecordValues } from "@/lib/custom-fields/store";
 import { cascadeValuesFromDealHints } from "@/lib/deals/insurance-cascade";
 import {
   MASTER_FILL_DOCS_FAILED,
+  MASTER_FILL_DOCS_TIMEOUT_MESSAGE,
+  MASTER_FILL_DOCS_TIMEOUT_MS,
   MASTER_FILL_SKIP_AUTO_PROPERTY,
   MASTER_FILL_SKIP_NEEDS_KEY,
   MASTER_FILL_SKIP_NO_ADDRESS,
@@ -116,6 +123,8 @@ import {
   MASTER_FILL_SKIP_NO_VIN,
   MASTER_FILL_SKIP_NOT_FOUND,
   MASTER_FILL_UNEXPECTED,
+  MASTER_FILL_VIN_TIMEOUT_MESSAGE,
+  MASTER_FILL_VIN_TIMEOUT_MS,
   masterFillStepsForLine,
   type MasterFillStepId,
   type MasterFillStepResult,
@@ -1047,7 +1056,14 @@ async function fillMasterSheetStepInner(input: {
     if (lineRaw !== "auto") {
       return { step, filledCount: 0, skippedCount: 0, note: "VIN decode is Auto-only — skipped" };
     }
-    const vin = await runFillFromVinDecode(dealId, lineRaw);
+    const vin = await withDeadline(runFillFromVinDecode(dealId, lineRaw), MASTER_FILL_VIN_TIMEOUT_MS, () => ({
+      filledKeys: [] as string[],
+      skippedKeys: [] as string[],
+      vinsDecoded: [] as string[],
+      toast: "",
+      status: "error" as const,
+      message: MASTER_FILL_VIN_TIMEOUT_MESSAGE,
+    }));
     revalidatePath(`/deals/${dealId}`);
     if (vin.status === "no_vin") {
       return { step, filledCount: 0, skippedCount: 0, note: MASTER_FILL_SKIP_NO_VIN };
@@ -1086,7 +1102,26 @@ async function fillMasterSheetStepInner(input: {
       error: "Gemini API key is not configured — docs fill skipped",
     };
   }
-  const counts = await runFillDealSheets(dealId, lineRaw);
+  const progress: FillRunProgress = { filledKeys: [], skippedKeys: [], cancelled: false };
+  let counts: FillDealCounts;
+  try {
+    counts = await withDeadline(runFillDealSheets(dealId, lineRaw, progress), MASTER_FILL_DOCS_TIMEOUT_MS, () => {
+      progress.cancelled = true;
+      return {
+        filledKeys: [...progress.filledKeys],
+        skippedKeys: [...progress.skippedKeys],
+        error: progress.error || MASTER_FILL_DOCS_TIMEOUT_MESSAGE,
+      };
+    });
+  } catch (error) {
+    progress.cancelled = true;
+    const message = error instanceof Error ? error.message : MASTER_FILL_DOCS_TIMEOUT_MESSAGE;
+    counts = {
+      filledKeys: [...progress.filledKeys],
+      skippedKeys: [...progress.skippedKeys],
+      error: progress.error || message,
+    };
+  }
   revalidatePath(`/deals/${dealId}`);
   if (counts.error) {
     return {
@@ -1126,9 +1161,28 @@ export async function fillQuoteSheet(formData: FormData) {
 
 export type FillDealCounts = { filledKeys: string[]; skippedKeys: string[]; error?: string };
 
-export async function runFillDealSheets(dealId: string, primary: ShopLine): Promise<FillDealCounts> {
-  const primaryCounts = await runFillQuoteSheet(dealId, primary);
-  const other = await fillOtherShopLines(dealId, primary);
+/** Live counts so a Docs deadline can return cells already written. */
+type FillRunProgress = FillDealCounts & { cancelled: boolean };
+
+function rememberFill(
+  progress: FillRunProgress | undefined,
+  filled: string[],
+  skipped: string[],
+  error?: string,
+) {
+  if (!progress || progress.cancelled) return;
+  if (filled.length) progress.filledKeys.push(...filled);
+  if (skipped.length) progress.skippedKeys.push(...skipped);
+  if (error && !progress.error) progress.error = error;
+}
+
+export async function runFillDealSheets(
+  dealId: string,
+  primary: ShopLine,
+  progress?: FillRunProgress,
+): Promise<FillDealCounts> {
+  const primaryCounts = await runFillQuoteSheet(dealId, primary, progress);
+  const other = await fillOtherShopLines(dealId, primary, progress);
   const counts = {
     filledKeys: [...primaryCounts.filledKeys, ...other.filledKeys],
     skippedKeys: [...primaryCounts.skippedKeys, ...other.skippedKeys],
@@ -1143,14 +1197,19 @@ export async function runFillDealSheets(dealId: string, primary: ShopLine): Prom
   return counts;
 }
 
-async function fillOtherShopLines(dealId: string, already: ShopLine): Promise<FillDealCounts> {
+async function fillOtherShopLines(
+  dealId: string,
+  already: ShopLine,
+  progress?: FillRunProgress,
+): Promise<FillDealCounts> {
   const filledKeys: string[] = [];
   const skippedKeys: string[] = [];
   const errors: string[] = [];
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   for (const line of deal?.shopLines ?? []) {
+    if (progress?.cancelled) break;
     if (line !== already && isShopLine(line)) {
-      const counts = await runFillQuoteSheet(dealId, line);
+      const counts = await runFillQuoteSheet(dealId, line, progress);
       filledKeys.push(...counts.filledKeys);
       skippedKeys.push(...counts.skippedKeys);
       if (counts.error) errors.push(counts.error);
@@ -1408,7 +1467,11 @@ async function logExtractionJob(input: {
   }
 }
 
-export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise<FillDealCounts> {
+export async function runFillQuoteSheet(
+  dealId: string,
+  line: ShopLine,
+  progress?: FillRunProgress,
+): Promise<FillDealCounts> {
   const sheet = await ensureQuoteSheet(dealId, line);
   const docs = await db
     .select()
@@ -1426,10 +1489,16 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
   const aggregateSkipped: string[] = [];
   const geminiErrors: string[] = [];
 
-  for (const doc of docs) {
+  const orderedDocs = [...docs].sort(compareFillSourceDocs);
+  for (const doc of orderedDocs) {
+    if (progress?.cancelled) break;
     if (isQuoteAttachment(doc.docType, doc.filename) || isQuoteFileDoc(doc)) continue;
     const startedAt = new Date();
-    const buffer = await readStoredFile(doc.storagePath);
+    const buffer = await withDeadline(
+      readStoredFile(doc.storagePath),
+      FILL_STORAGE_READ_TIMEOUT_MS,
+      () => null,
+    );
     if (!buffer) {
       await db.insert(extractionJobs).values({
         tenantId: DEFAULT_TENANT_ID,
@@ -1484,11 +1553,29 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
         continue;
       }
 
-      // Prefer filename / typed docType for shop-line gate (no synonym text extract).
+      // Photos skip Tesseract — that OCR promise never settles on serverless and
+      // left Fill Risk Profile on "Docs" forever. PDFs still read a text layer, with a deadline.
+      // A timed-out PDF is skipped so empty text cannot trust a homeowners packet onto Auto.
       let textForLine = "";
       try {
-        const uploaded = await readUploadText(buffer, doc.mimeType, doc.filename);
-        textForLine = uploaded.text;
+        const gate = await readFillShopLineText(buffer, doc.mimeType, doc.filename, doc.docType || "");
+        if (gate.timedOut) {
+          const message = `${MASTER_FILL_DOCS_FAILED} ${doc.filename}: Could not read the file in time.`;
+          geminiErrors.push(message);
+          rememberFill(progress, [], [], message);
+          await logExtractionJob({
+            dealId,
+            documentId: doc.id,
+            quoteSheetId: sheet.id,
+            engine: "pdf_text",
+            status: "failed",
+            filledKeys: [],
+            skippedKeys: [],
+            message,
+          });
+          continue;
+        }
+        textForLine = gate.text;
       } catch {
         textForLine = "";
       }
@@ -1553,11 +1640,12 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
       });
       const engine = "gemini" as const;
       if (!gemini.ok) {
-        geminiErrors.push(
+        const failMessage =
           gemini.message === GEMINI_TIMEOUT_MESSAGE
             ? `${GEMINI_TIMEOUT_MESSAGE} (${doc.filename})`
-            : `${MASTER_FILL_DOCS_FAILED} ${doc.filename}: ${gemini.message}`,
-        );
+            : `${MASTER_FILL_DOCS_FAILED} ${doc.filename}: ${gemini.message}`;
+        geminiErrors.push(failMessage);
+        rememberFill(progress, [], [], failMessage);
         await db.insert(extractionJobs).values({
           tenantId: DEFAULT_TENANT_ID,
           dealId,
@@ -1614,9 +1702,11 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
         recordMismatches: true,
         mismatchIncomingLabel: isFourPoint ? "4pt" : "Gemini",
       });
+      if (progress?.cancelled) break;
       values = applied.values;
       aggregateFilled.push(...applied.filledKeys);
       aggregateSkipped.push(...applied.skippedKeys);
+      rememberFill(progress, applied.filledKeys, applied.skippedKeys);
       // Persist IMMEDIATELY so a later audit FK failure / delete race cannot leave
       // "Filled N fields" jobs with an empty sheet.
       await persistSheetValues(sheet.id, values);
@@ -1716,7 +1806,9 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Extract failed";
-      geminiErrors.push(`${MASTER_FILL_DOCS_FAILED} ${doc.filename}: ${message}`);
+      const failMessage = `${MASTER_FILL_DOCS_FAILED} ${doc.filename}: ${message}`;
+      geminiErrors.push(failMessage);
+      rememberFill(progress, [], [], failMessage);
       await logExtractionJob({
         dealId,
         documentId: doc.id,
@@ -1743,6 +1835,14 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
         /* audit optional — sheet values already persisted when apply succeeded */
       }
     }
+  }
+
+  if (progress?.cancelled) {
+    return {
+      filledKeys: aggregateFilled,
+      skippedKeys: aggregateSkipped,
+      error: geminiErrors[0] || progress.error || MASTER_FILL_DOCS_TIMEOUT_MESSAGE,
+    };
   }
 
   if (docs.length === 0) {
@@ -1777,6 +1877,14 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
       skippedKeys: publicApplied.skippedKeys,
       message: publicLookup.message,
     });
+  }
+
+  if (progress?.cancelled) {
+    return {
+      filledKeys: aggregateFilled,
+      skippedKeys: aggregateSkipped,
+      error: geminiErrors[0] || progress.error || MASTER_FILL_DOCS_TIMEOUT_MESSAGE,
+    };
   }
 
   await persistSheetValues(sheet.id, values);

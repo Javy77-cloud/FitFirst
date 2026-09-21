@@ -140,6 +140,8 @@ import { parseQuickCommsKind } from "@/lib/desk/quick-comms-open";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
 
 export const dynamic = "force-dynamic";
+/** Fill Risk Profile server actions must be able to return a timeout instead of being killed mid-flight. */
+export const maxDuration = 60;
 
 export default async function DealPage({
   params,
