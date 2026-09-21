@@ -55,6 +55,60 @@ export function isVehicleVinSheetKey(key: string): boolean {
   return key === "vin" || /^vehicle_\d+_vin$/.test(key);
 }
 
+const VIN_CORE_SUFFIXES = ["year", "make", "model", "body_class", "fuel_type", "engine"] as const;
+
+/**
+ * Blank year / make / model / body / fuel / engine cells on units that already
+ * have a decodable VIN. A later save must decode again — the VIN itself may
+ * be unchanged after a failed or wiped fill.
+ */
+export function blankVinCoreFacts(
+  values: Record<string, QuoteSheetFieldValue | undefined>,
+  product?: string | null,
+): string[] {
+  const blank: string[] = [];
+  for (const vehicle of collectSheetVehicleVins(values, product)) {
+    for (const suffix of VIN_CORE_SUFFIXES) {
+      const key = repeatableFieldKey("vehicle", vehicle.index, suffix);
+      if (!String(values[key]?.value ?? "").trim()) blank.push(key);
+    }
+  }
+  return blank;
+}
+
+/** Decode when a VIN was set/changed, or core vehicle facts are still blank. */
+export function shouldRunVinDecode(
+  before: Record<string, { value?: string | null } | undefined>,
+  after: Record<string, QuoteSheetFieldValue | undefined>,
+  product?: string | null,
+): boolean {
+  return (
+    decodableVinsChanged(before, after, product).length > 0 ||
+    blankVinCoreFacts(after, product).length > 0
+  );
+}
+
+/**
+ * Copy decodable VINs from the open Risk Profile into the sheet snapshot.
+ * Used when Decode VIN runs before Save. Does not touch other cells.
+ */
+export function overlayFormVins(
+  values: Record<string, QuoteSheetFieldValue>,
+  formVins: Record<string, string> | undefined,
+): { values: Record<string, QuoteSheetFieldValue>; changed: boolean } {
+  if (!formVins) return { values, changed: false };
+  const next: Record<string, QuoteSheetFieldValue> = { ...values };
+  let changed = false;
+  for (const [key, raw] of Object.entries(formVins)) {
+    if (!isVehicleVinSheetKey(key) || !isDecodableVin(raw)) continue;
+    const vin = normalizeVin(raw);
+    if (normalizeVin(next[key]?.value) === vin) continue;
+    next[key] = { value: vin, status: "confirmed", source: "agent" };
+    changed = true;
+  }
+  return { values: next, changed };
+}
+
 /**
  * Decodable VINs that were set or changed between two sheet snapshots.
  * Same normalized VIN is not a change. Clearing a VIN is not a decode trigger.

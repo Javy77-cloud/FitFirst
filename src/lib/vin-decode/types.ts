@@ -53,10 +53,19 @@ export type VinSheetKeyBag = {
 };
 
 /**
- * Auto Risk Profile vehicle fields NHTSA vPIC DecodeVinValues can fill.
- * Engine comes from DisplacementL / EngineCylinders / EngineHP / EngineModel.
+ * Auto Risk Profile vehicle fields NHTSA vPIC DecodeVinValues fills when the
+ * cell is blank. Year / make / model / body / fuel come straight off the
+ * decode. Engine is DisplacementL + EngineCylinders + EngineHP + EngineModel.
+ * Unit 1 uses these keys; later units use vehicle_N_*.
  */
-export const NHTSA_WIRED_RP_VEHICLE_KEYS = ["vehicle_engine"] as const;
+export const NHTSA_WIRED_RP_VEHICLE_KEYS = [
+  "vehicle_year",
+  "vehicle_make",
+  "vehicle_model",
+  "vehicle_body_class",
+  "vehicle_fuel_type",
+  "vehicle_engine",
+] as const;
 
 /**
  * Requested Auto RP fields DecodeVinValues does not honestly return.

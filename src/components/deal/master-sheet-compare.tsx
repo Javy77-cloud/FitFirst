@@ -10,6 +10,12 @@ import { sourceTag } from "@/lib/quote-sheet/apply";
 import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
 import { ACTION_FLASH_MESSAGE, SHEET_CONFIRM_HASH } from "@/lib/desk/action-flash";
 import { flashAction } from "@/lib/flash-client";
+import { isNhtsaTransportFailure } from "@/lib/vin-decode/client";
+import {
+  paintSheetInputs,
+  readRiskProfileVins,
+  recoverVinDecodeFromBrowser,
+} from "@/lib/vin-decode/browser";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -127,9 +133,41 @@ export function MasterSheetWorkspace({
     appendSourceDocUploads(data);
     // Stay on Confirm — a redirect remounts the deal page at the top.
     data.set("flash", "0");
-    await saveQuoteSheet(data);
-    if (opts?.flash === false) return;
-    flashAction(ACTION_FLASH_MESSAGE["sheet-saved"]);
+    let saved: Awaited<ReturnType<typeof saveQuoteSheet>> | undefined;
+    try {
+      saved = await saveQuoteSheet(data);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not save Risk Profile";
+      if (line === "auto" && (isNhtsaTransportFailure(message) || /unexpected|failed to fetch|network/i.test(message))) {
+        const recovered = await recoverVinDecodeFromBrowser({
+          dealId,
+          line,
+          formVins: readRiskProfileVins(),
+        });
+        if (!recovered.ok) flashAction(recovered.error, "error");
+        else if (opts?.flash !== false) flashAction(recovered.toast);
+        router.refresh();
+        return;
+      }
+      flashAction(message, "error");
+      return;
+    }
+    const vinError = saved && "vinDecodeError" in saved ? saved.vinDecodeError : undefined;
+    const vinFilled = saved && "vinFilled" in saved ? saved.vinFilled : [];
+    if (vinFilled?.length) paintSheetInputs(vinFilled);
+    if (vinError && line === "auto" && isNhtsaTransportFailure(vinError)) {
+      const recovered = await recoverVinDecodeFromBrowser({
+        dealId,
+        line,
+        formVins: readRiskProfileVins(),
+      });
+      if (!recovered.ok) flashAction(recovered.error, "error");
+      else if (opts?.flash !== false) flashAction(recovered.toast);
+    } else if (vinError) {
+      flashAction(vinError, "error");
+    } else if (opts?.flash !== false) {
+      flashAction(ACTION_FLASH_MESSAGE["sheet-saved"]);
+    }
     router.refresh();
     requestAnimationFrame(() => {
       document.getElementById(SHEET_CONFIRM_HASH)?.scrollIntoView({
@@ -294,7 +332,9 @@ export function MasterSheetCompare({
 
       <form
         id={formId}
-        action={saveQuoteSheet}
+        action={async (formData) => {
+          await saveQuoteSheet(formData);
+        }}
         onSubmit={onSave}
         onChange={onSheetFormChange}
         className="space-y-0"

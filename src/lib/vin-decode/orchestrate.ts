@@ -3,9 +3,10 @@ import type { ApplyFillResult } from "@/lib/quote-sheet/apply";
 import { applyVinFactsToSheet } from "./apply";
 import { decodeVinValues } from "./client";
 import { mapVinDecodeToFacts } from "./map";
+import { normalizeVin } from "./normalize";
 import { collectSheetVehicleVins } from "./vehicles";
 import { toastForVinDecode } from "./toast";
-import type { VinDecodeFact, VinDecodeSourceId } from "./types";
+import type { VinDecodeFact, VinDecodeSourceId, VinDecodeValues } from "./types";
 import { NHTSA_VPIC_LABEL } from "./types";
 
 type FetchLike = typeof fetch;
@@ -26,8 +27,15 @@ export async function orchestrateVinDecodeFill(input: {
   values: Record<string, QuoteSheetFieldValue>;
   product?: string | null;
   fetchImpl?: FetchLike;
+  /** Browser-fetched decodes when the server cannot reach vPIC. */
+  prefetched?: ReadonlyArray<{ vin: string; values: VinDecodeValues }>;
 }): Promise<VinDecodeFillBundle> {
   const fetchImpl = input.fetchImpl ?? fetch;
+  const prefetched = new Map<string, VinDecodeValues>();
+  for (const row of input.prefetched ?? []) {
+    const vin = normalizeVin(row.vin);
+    if (vin) prefetched.set(vin, row.values);
+  }
   const vehicles = collectSheetVehicleVins(input.values, input.product);
   if (!vehicles.length) {
     return {
@@ -50,7 +58,10 @@ export async function orchestrateVinDecodeFill(input: {
   const errors: string[] = [];
 
   for (const vehicle of vehicles) {
-    const decoded = await decodeVinValues(vehicle.vin, fetchImpl);
+    const cached = prefetched.get(vehicle.vin);
+    const decoded = cached
+      ? { ok: true as const, vin: vehicle.vin, values: cached, cached: true }
+      : await decodeVinValues(vehicle.vin, fetchImpl);
     if (!decoded.ok) {
       errors.push(decoded.message);
       continue;
@@ -72,7 +83,7 @@ export async function orchestrateVinDecodeFill(input: {
       : "no_vin";
 
   const message = vinsDecoded.length
-    ? `Decoded ${vinsDecoded.length} VIN(s) via ${NHTSA_VPIC_LABEL}; filled ${filledKeys.length}, skipped ${skippedKeys.length}.`
+    ? `Decoded ${vinsDecoded.length} VIN(s) via ${NHTSA_VPIC_LABEL}; filled ${filledKeys.length}, skipped ${skippedKeys.length}.${errors.length ? ` ${errors[0]}` : ""}`
     : errors[0] || "NHTSA vPIC decode failed.";
 
   return {

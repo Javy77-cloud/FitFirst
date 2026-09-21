@@ -30,6 +30,8 @@ import {
   type MasterFillStepResult,
 } from "@/lib/quote-sheet/master-fill";
 import type { ShopLine } from "@/lib/domain";
+import { isNhtsaTransportFailure } from "@/lib/vin-decode/client";
+import { recoverVinDecodeFromBrowser } from "@/lib/vin-decode/browser";
 
 export function MasterSheetFillButton({
   dealId,
@@ -73,6 +75,30 @@ export function MasterSheetFillButton({
             error instanceof Error && error.message.trim()
               ? error.message
               : masterFillUnexpectedMessage(step.label);
+          if (step.id === "vin" && line === "auto" && (isNhtsaTransportFailure(message) || /unexpected|failed to fetch|network/i.test(message))) {
+            const recovered = await recoverVinDecodeFromBrowser({ dealId, line });
+            if (recovered.ok) {
+              results.push({
+                step: "vin",
+                filledCount: recovered.filledCount,
+                skippedCount: 0,
+                note: "NHTSA vPIC",
+              });
+              continue;
+            }
+            const failed: MasterFillStepResult = {
+              step: step.id,
+              filledCount: 0,
+              skippedCount: 0,
+              error: recovered.error,
+            };
+            results.push(failed);
+            setSummary(masterFillDoneSummary(results));
+            setDone(true);
+            flashAction(recovered.error, "error");
+            router.refresh();
+            return;
+          }
           const failed: MasterFillStepResult = {
             step: step.id,
             filledCount: 0,
@@ -100,11 +126,25 @@ export function MasterSheetFillButton({
           router.refresh();
           return;
         }
-        results.push(raw);
-        if (raw.error) {
+        let stepResult: MasterFillStepResult = raw;
+        if (stepResult.error && step.id === "vin" && line === "auto" && isNhtsaTransportFailure(stepResult.error)) {
+          const recovered = await recoverVinDecodeFromBrowser({ dealId, line });
+          if (recovered.ok) {
+            results.push({
+              step: "vin",
+              filledCount: recovered.filledCount,
+              skippedCount: stepResult.skippedCount,
+              note: "NHTSA vPIC",
+            });
+            continue;
+          }
+          stepResult = { ...stepResult, error: recovered.error };
+        }
+        results.push(stepResult);
+        if (stepResult.error) {
           setSummary(masterFillDoneSummary(results));
           setDone(true);
-          flashAction(raw.error, "error");
+          flashAction(stepResult.error, "error");
           router.refresh();
           return;
         }

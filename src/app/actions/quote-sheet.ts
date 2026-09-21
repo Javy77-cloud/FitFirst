@@ -101,10 +101,16 @@ import { orchestratePropertyFill } from "@/lib/property-fill/orchestrate";
 import { isZoneXNoBfe, toastForPropertyFill } from "@/lib/property-fill/merge";
 import {
   NHTSA_VPIC_LABEL,
-  decodableVinsChanged,
+  coerceVinDecodeValues,
+  isDecodableVin,
   isVehicleVinSheetKey,
+  normalizeVin,
   orchestrateVinDecodeFill,
+  blankVinCoreFacts,
+  overlayFormVins,
+  shouldRunVinDecode,
 } from "@/lib/vin-decode";
+import type { VinDecodeValues } from "@/lib/vin-decode";
 import { fillSheetFromDealDetails, type DealSheetCopyInput } from "@/lib/quote-sheet/fill-from-deal";
 import { loadRecordValues, writeRecordValues } from "@/lib/custom-fields/store";
 import { cascadeValuesFromDealHints } from "@/lib/deals/insurance-cascade";
@@ -311,20 +317,31 @@ export async function persistQuoteSheetValues(
   }
   // Sheet save / confirm / stale cue must never unlink or hide source docs.
   await restoreDealSourceDocuments(dealId).catch(() => null);
+  let vinDecode: VinDecodeRun | null = null;
   if (line === "auto") {
     const product = (values.sheet_product?.value ?? "").trim() || null;
-    if (decodableVinsChanged(sheet.values, values, product).length) {
-      // VIN set/changed → same NHTSA empty-only merge. Save already landed; decode
-      // must not fail the save if vPIC is down. Agent-typed cells stay put.
+    // VIN set/changed, or year/make/model/body/fuel/engine still blank.
+    // Save already landed; a vPIC failure must not fail the save. Agent and
+    // Gemini values stay put (empty-only merge).
+    if (shouldRunVinDecode(sheet.values, values, product)) {
       try {
-        await runFillFromVinDecode(dealId, line);
+        vinDecode = await runFillFromVinDecode(dealId, line);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "vin decode failed";
+        const message = error instanceof Error ? error.message : "NHTSA vPIC decode failed";
         console.error("[persistQuoteSheetValues] vin decode", message.slice(0, 300));
+        vinDecode = {
+          filledKeys: [],
+          skippedKeys: [],
+          vinsDecoded: [],
+          filled: [],
+          toast: "",
+          status: "error",
+          message,
+        };
       }
     }
   }
-  return values;
+  return { values, vinDecode };
 }
 
 export async function applySavedSheetToDeal(dealId: string, line: ShopLine) {
@@ -354,13 +371,19 @@ export async function saveQuoteSheet(formData: FormData) {
   if (product) submitted.sheet_product = product;
   const { persistDealSourceUploads } = await import("@/app/actions/documents");
   await persistDealSourceUploads(formData);
-  await persistQuoteSheetValues(dealId, lineRaw, submitted, str(formData, "formId"));
+  const persisted = await persistQuoteSheetValues(dealId, lineRaw, submitted, str(formData, "formId"));
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/quotes/fill-feedback");
+  const vinDecodeError =
+    persisted.vinDecode?.status === "error"
+      ? persisted.vinDecode.message || "NHTSA vPIC decode failed"
+      : undefined;
   const flash = {
     ok: true as const,
     notice: ACTION_FLASH.sheetSaved,
     message: ACTION_FLASH_MESSAGE[ACTION_FLASH.sheetSaved],
+    vinDecodeError,
+    vinFilled: persisted.vinDecode?.filled ?? [],
   };
   if (str(formData, "flash") === "0") return flash;
   const returnTo = str(formData, "returnTo");
@@ -376,6 +399,7 @@ export async function saveQuoteSheet(formData: FormData) {
         notice: ACTION_FLASH.sheetSaved,
         hash: SHEET_CONFIRM_HASH,
       });
+  if (vinDecodeError) flashAction(dest, vinDecodeError, "error");
   flashAction(dest, "sheet-saved");
 }
 
@@ -800,54 +824,97 @@ export async function runComputeMilesToCoast(input: {
 }
 
 
-/** Empty-only NHTSA vPIC VIN decode for Auto master sheet (no vault key). */
-export async function runFillFromVinDecode(
-  dealId: string,
-  lineRaw: ShopLine,
-): Promise<{
+type VinFilledCell = { sheetKey: string; value: string };
+
+type VinDecodeRun = {
   filledKeys: string[];
   skippedKeys: string[];
   vinsDecoded: string[];
+  filled: VinFilledCell[];
   toast: string;
   note?: string;
   status: "ok" | "no_vin" | "error" | "skipped_line";
   message?: string;
-}> {
+};
+
+function filledVinCells(
+  values: Record<string, { value?: string | null }>,
+  keys: string[],
+): VinFilledCell[] {
+  return keys
+    .map((sheetKey) => ({ sheetKey, value: String(values[sheetKey]?.value ?? "").trim() }))
+    .filter((cell) => cell.value);
+}
+
+function sanitizePrefetched(
+  rows: ReadonlyArray<{ vin: string; values: VinDecodeValues }> | undefined,
+): Array<{ vin: string; values: VinDecodeValues }> {
+  if (!rows?.length) return [];
+  const out: Array<{ vin: string; values: VinDecodeValues }> = [];
+  for (const row of rows.slice(0, 8)) {
+    const vin = normalizeVin(row?.vin);
+    const values = coerceVinDecodeValues(row?.values);
+    if (!isDecodableVin(vin) || !values) continue;
+    out.push({ vin, values });
+  }
+  return out;
+}
+
+/** Empty-only NHTSA vPIC VIN decode for Auto master sheet (no vault key). */
+export async function runFillFromVinDecode(
+  dealId: string,
+  lineRaw: ShopLine,
+  options?: {
+    formVins?: Record<string, string>;
+    prefetched?: ReadonlyArray<{ vin: string; values: VinDecodeValues }>;
+  },
+): Promise<VinDecodeRun> {
   if (lineRaw !== "auto") {
     return {
       filledKeys: [],
       skippedKeys: [],
       vinsDecoded: [],
+      filled: [],
       toast: "",
       status: "skipped_line",
     };
   }
   const sheet = await ensureQuoteSheet(dealId, lineRaw);
   const fresh = await loadFreshSheetValues(sheet.id, sheet.values);
-  const product = (fresh.sheet_product?.value ?? "").trim() || null;
-  const bundle = await orchestrateVinDecodeFill({ values: fresh, product });
+  const overlaid = overlayFormVins(fresh, options?.formVins);
+  const product = (overlaid.values.sheet_product?.value ?? "").trim() || null;
+  const bundle = await orchestrateVinDecodeFill({
+    values: overlaid.values,
+    product,
+    prefetched: sanitizePrefetched(options?.prefetched),
+  });
   if (bundle.status === "no_vin") {
+    if (overlaid.changed) await persistSheetValues(sheet.id, overlaid.values);
     return {
       filledKeys: [],
       skippedKeys: [],
       vinsDecoded: [],
+      filled: [],
       toast: bundle.toast,
       status: "no_vin",
       message: bundle.message,
     };
   }
   if (bundle.status !== "ok") {
+    if (overlaid.changed) await persistSheetValues(sheet.id, overlaid.values);
     return {
       filledKeys: [],
       skippedKeys: [],
       vinsDecoded: [],
+      filled: [],
       toast: bundle.toast,
       status: "error",
       message: bundle.message,
     };
   }
-  if (bundle.filledKeys.length) {
+  if (bundle.filledKeys.length || overlaid.changed) {
     await persistSheetValues(sheet.id, bundle.values);
+    await syncRiskFromSheet(dealId, bundle.values, "fill");
   }
   await logExtractionJob({
     dealId,
@@ -862,6 +929,7 @@ export async function runFillFromVinDecode(
     filledKeys: bundle.filledKeys,
     skippedKeys: bundle.skippedKeys,
     vinsDecoded: bundle.vinsDecoded,
+    filled: filledVinCells(bundle.values, bundle.filledKeys),
     toast: bundle.toast,
     note: bundle.filledKeys.length || bundle.vinsDecoded.length ? NHTSA_VPIC_LABEL : undefined,
     status: "ok",
@@ -869,17 +937,24 @@ export async function runFillFromVinDecode(
   };
 }
 
-/** Button entry: Decode VIN via free NHTSA vPIC → empty-only year/make/model/engine. */
+/** Button entry: Decode VIN via free NHTSA vPIC → empty-only year/make/model/body/fuel/engine. */
 export async function runDecodeVin(input: {
   dealId: string;
   line: string;
-}): Promise<{ ok: true; toast: string; filledCount: number } | { ok: false; error: string }> {
+  formVins?: Record<string, string>;
+  prefetched?: Array<{ vin: string; values: VinDecodeValues }>;
+}): Promise<
+  { ok: true; toast: string; filledCount: number; filled: VinFilledCell[] } | { ok: false; error: string }
+> {
   const dealId = String(input.dealId ?? "").trim();
   const lineRaw = String(input.line ?? "auto").trim() || "auto";
   if (!dealId) return { ok: false, error: "Missing deal" };
   if (!isShopLine(lineRaw)) return { ok: false, error: "Unknown line" };
   if (lineRaw !== "auto") return { ok: false, error: "VIN decode is Auto-only." };
-  const result = await runFillFromVinDecode(dealId, lineRaw);
+  const result = await runFillFromVinDecode(dealId, lineRaw, {
+    formVins: input.formVins,
+    prefetched: input.prefetched,
+  });
   revalidatePath(`/deals/${dealId}`);
   if (result.status === "error") {
     return { ok: false, error: result.message || "NHTSA vPIC decode failed" };
@@ -891,6 +966,7 @@ export async function runDecodeVin(input: {
     ok: true,
     toast: result.toast,
     filledCount: result.filledKeys.length,
+    filled: result.filled,
   };
 }
 
@@ -1826,16 +1902,21 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
 
   await syncRiskFromSheet(dealId, values, "fill");
   await syncHeaderFromSheet(dealId, values, "fill");
-  // Gemini just wrote a VIN — fill engine (and other vPIC fields) into blanks.
-  // Does not overwrite dec / agent cells. Master Fill's later VIN step is a no-op
-  // on cells this already wrote.
-  if (line === "auto" && aggregateFilled.some((key) => isVehicleVinSheetKey(key))) {
+  // Gemini wrote a VIN, or core vehicle facts are still blank — empty-only vPIC fill.
+  // A vPIC error stays on the later Auto Fill VIN step (and the Decode VIN button)
+  // so Docs can finish. Agent / Gemini values are not overwritten.
+  const vinProduct = (values.sheet_product?.value ?? "").trim() || null;
+  const vinLanded = aggregateFilled.some((key) => isVehicleVinSheetKey(key));
+  if (line === "auto" && (vinLanded || blankVinCoreFacts(values, vinProduct).length > 0)) {
     try {
       const decoded = await runFillFromVinDecode(dealId, line);
       if (decoded.filledKeys.length) aggregateFilled.push(...decoded.filledKeys);
       if (decoded.skippedKeys.length) aggregateSkipped.push(...decoded.skippedKeys);
+      if (decoded.status === "error" && decoded.message) {
+        console.error("[runFillQuoteSheet] vin decode", decoded.message.slice(0, 300));
+      }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "vin decode failed";
+      const message = error instanceof Error ? error.message : "NHTSA vPIC decode failed";
       console.error("[runFillQuoteSheet] vin decode", message.slice(0, 300));
     }
   }
@@ -1938,6 +2019,14 @@ async function syncRiskFromSheet(
   if (values.address1?.value.trim() && (mode === "fill" ? !risk.address1 : true)) {
     if (mode === "save" || !risk.address1) patch.address1 = values.address1.value;
   }
+  const sheetVin = values.vin?.value?.trim();
+  if (sheetVin && !risk.vin) patch.vin = sheetVin;
+  const yearNum = Number(values.vehicle_year?.value?.trim());
+  if (Number.isFinite(yearNum) && yearNum > 0 && risk.vehicleYear == null) patch.vehicleYear = yearNum;
+  const sheetMake = values.vehicle_make?.value?.trim();
+  if (sheetMake && !risk.vehicleMake) patch.vehicleMake = sheetMake;
+  const sheetModel = values.vehicle_model?.value?.trim();
+  if (sheetModel && !risk.vehicleModel) patch.vehicleModel = sheetModel;
   if (Object.keys(patch).length === 0) return;
   await db
     .update(risks)
