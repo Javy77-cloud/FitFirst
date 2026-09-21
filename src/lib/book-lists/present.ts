@@ -1,12 +1,19 @@
+import { mailtoHref, telHref } from "@/lib/desk/contact-actions";
+import { bookFamily } from "@/lib/desk/policy-line";
+import { formatMoney } from "@/lib/domain";
+import { homeLineLabel } from "@/lib/home/lines";
 import { contactHealthScore } from "@/lib/contacts/health-score";
 import type { HealthChipView } from "@/lib/health/model";
 import { haystack } from "@/lib/search/live-query";
-import type { BookGlanceCard, BookHeat } from "./types";
+import { stackMidLine } from "@/lib/desk/stack-mid";
+import { RECENT_TOUCH_DAYS } from "./kpi";
+import type { BookCardAction, BookGlanceCard, BookHeat } from "./types";
 import {
   carrierColumnFor,
   carrierMarketHeat,
   daysSinceTouch,
   daysUntilDate,
+  glanceDate,
   partyAttentionHeat,
   partyColumnForHeat,
   policyAttention,
@@ -31,6 +38,13 @@ export type PartyListRow = {
   activePolicyCount: number;
   lifetimeDealCount?: number;
   lastActivityAt?: Date | string | null;
+  loggedTouchAt?: Date | string | null;
+  preferredLanguage?: string | null;
+  language?: string | null;
+  entityType?: string | null;
+  einLast4?: string | null;
+  linkedContactsCount?: number;
+  officerContactId?: string | null;
 };
 
 export type OpenDealSignal = {
@@ -49,6 +63,15 @@ export type CarrierListRow = {
   dontWriteNotes?: string | null;
   tags?: string[] | null;
   lastContactedAt?: Date | string | null;
+  phone?: string | null;
+  email?: string | null;
+  portalUrl?: string | null;
+  agentPortalUrl?: string | null;
+  agentPhone?: string | null;
+  customerServicePhone?: string | null;
+  underwriterPhone?: string | null;
+  underwriterEmail?: string | null;
+  accountManagerEmail?: string | null;
 };
 
 export type CarrierMarketSignal = {
@@ -86,6 +109,71 @@ function primaryPartyAction(input: {
   return { label: "Open", href: input.href };
 }
 
+function filled(value: string | null | undefined): boolean {
+  return Boolean(value?.trim());
+}
+
+function languageCue(row: PartyListRow): string | null {
+  const raw = (row.preferredLanguage || row.language || "").trim();
+  if (!raw) return null;
+  const key = raw.toLowerCase();
+  if (key === "english" || key === "en" || key === "eng") return null;
+  if (key === "spanish" || key === "es" || key === "spa") return "Spanish";
+  if (key === "creole" || key === "ht" || key === "haitian creole") return "Creole";
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+function maskedFein(last4: string | null | undefined): string | null {
+  const digits = (last4 ?? "").replace(/\D/g, "").slice(-4);
+  if (digits.length < 4) return null;
+  return `FEIN ••••${digits}`;
+}
+
+function entityCue(raw: string | null | undefined): string | null {
+  const value = raw?.trim();
+  if (!value) return null;
+  const known: Record<string, string> = {
+    llc: "LLC",
+    inc: "Inc",
+    corp: "Corp",
+    corporation: "Corporation",
+    partnership: "Partnership",
+    sole_prop: "Sole prop",
+    "sole prop": "Sole prop",
+    llp: "LLP",
+  };
+  return known[value.toLowerCase()] ?? value;
+}
+
+function httpHref(raw: string | null | undefined): string | null {
+  const value = raw?.trim();
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    if (url.protocol === "http:" || url.protocol === "https:") return url.toString();
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function withSecondFact(why: string, fact: string | null): string {
+  if (!fact) return why;
+  const parts = why
+    .split(" · ")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length >= 2) return parts.slice(0, 2).join(" · ");
+  return [...parts, fact].join(" · ");
+}
+
+function premiumCue(premium: string | number | null | undefined): string | null {
+  if (premium == null || premium === "") return null;
+  const amount = typeof premium === "string" ? Number(premium) : premium;
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return formatMoney(amount);
+}
+
 function partyWhy(input: {
   lastTouchDays: number | null;
   openDeals: number;
@@ -116,6 +204,8 @@ export function presentPartyCard(
 ): BookGlanceCard {
   const href = kind === "contact" ? `/contacts/${row.id}` : `/accounts/${row.id}`;
   const lastTouchDays = daysSinceTouch(row.lastActivityAt, extra.asOf);
+  const loggedDays =
+    "loggedTouchAt" in row ? daysSinceTouch(row.loggedTouchAt, extra.asOf) : lastTouchDays;
   const openDeals = extra.open?.count ?? 0;
   const heat = partyAttentionHeat({
     lastTouchDays,
@@ -129,6 +219,21 @@ export function presentPartyCard(
     now: extra.asOf,
   });
   const title = partyTitle(row, kind);
+  const touchCue = loggedDays == null ? "Never touched" : `Last touch ${relativeTouchLabel(loggedDays)}`;
+  const language = kind === "contact" ? languageCue(row) : null;
+  const openCue = openDeals > 0 ? `${openDeals} open deal${openDeals === 1 ? "" : "s"}` : null;
+  const industry = row.industry?.trim() || null;
+  const mid = stackMidLine([touchCue, openCue || language || (kind === "account" ? industry : null)]);
+  const dba = row.dba?.trim();
+  const peek =
+    kind === "account"
+      ? stackMidLine([
+          dba && dba.toLowerCase() !== title.toLowerCase() ? `DBA ${dba}` : null,
+          maskedFein(row.einLast4),
+          entityCue(row.entityType),
+          openCue || language ? industry : null,
+        ])
+      : null;
   return {
     id: row.id,
     surface: kind === "contact" ? "contacts" : "accounts",
@@ -161,6 +266,9 @@ export function presentPartyCard(
       inForce: row.activePolicyCount,
       healthBand: extra.health?.band ?? null,
     }),
+    mid,
+    midHref: extra.open?.dealId ? `/deals/${extra.open.dealId}` : null,
+    peek,
     primaryAction: primaryPartyAction({
       heat,
       phone: row.phone,
@@ -178,6 +286,11 @@ export function presentPartyCard(
       openShops: openDeals,
       inForce: row.activePolicyCount,
       writtenBook: row.activePolicyCount > 0,
+      hasPhone: filled(row.phone),
+      hasEmail: filled(row.email),
+      recentTouch: loggedDays != null && loggedDays <= RECENT_TOUCH_DAYS,
+      neverTouched: loggedDays == null,
+      portalContact: (row.linkedContactsCount ?? 0) > 0 || Boolean(row.officerContactId),
     },
     hay: haystack([
       title,
@@ -197,10 +310,43 @@ export function presentPartyCard(
   };
 }
 
+function visibleCarrierLines(
+  lines: string[] | null | undefined,
+  settings: { writeLife: boolean; writeHealth: boolean },
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const line of lines ?? []) {
+    const family = bookFamily(line);
+    if (family === "life" && !settings.writeLife) continue;
+    if (family === "health" && !settings.writeHealth) continue;
+    const label = homeLineLabel(line).trim();
+    const key = label.toLowerCase();
+    if (!label || seen.has(key)) continue;
+    seen.add(key);
+    out.push(label);
+  }
+  return out;
+}
+
+function carrierActions(row: CarrierListRow): BookCardAction[] {
+  const actions: BookCardAction[] = [];
+  const portal = httpHref(row.portalUrl) || httpHref(row.agentPortalUrl);
+  if (portal) actions.push({ id: "portal", label: "Portal", href: portal, external: true });
+  const phone = row.phone || row.agentPhone || row.customerServicePhone || row.underwriterPhone;
+  const tel = telHref(phone);
+  if (tel && phone?.trim()) actions.push({ id: "phone", label: phone.trim(), href: tel });
+  const email = row.email || row.underwriterEmail || row.accountManagerEmail;
+  const mail = mailtoHref(email);
+  if (mail && email?.trim()) actions.push({ id: "email", label: email.trim(), href: mail });
+  return actions;
+}
+
 export function presentCarrierCard(
   row: CarrierListRow,
   signal: CarrierMarketSignal,
   asOf: Date,
+  settings: { writeLife: boolean; writeHealth: boolean } = { writeLife: true, writeHealth: true },
 ): BookGlanceCard {
   const lastUse = signal.lastUseAt ?? row.lastContactedAt ?? null;
   const lastTouchDays = daysSinceTouch(lastUse, asOf);
@@ -218,17 +364,23 @@ export function presentCarrierCard(
     skipDecline: signal.skipDecline,
     rateable: signal.rateable,
   });
-  const appetite = signal.appetiteLines.slice(0, 3).join(" · ") || (row.writtenLines ?? []).slice(0, 3).join(" · ");
+  const lines = visibleCarrierLines(
+    signal.appetiteLines.length ? signal.appetiteLines : row.writtenLines,
+    settings,
+  );
+  const appetite = lines.slice(0, 4).join(" · ");
   const skipCue =
     signal.skipWhy ||
     signal.dontWrite[0] ||
     (signal.declineCount > 0 ? `${signal.declineCount} recent declines` : null) ||
     (inactive ? "Inactive on desk" : null);
-  const whyBits = [
-    column === "rateable" ? "Rateable" : column === "limited" ? "Limited appetite" : "Skip / decline",
-    appetite || null,
-    skipCue && column !== "rateable" ? skipCue : lastTouchDays != null ? `Last use ${relativeTouchLabel(lastTouchDays)}` : "No recent use",
-  ].filter(Boolean);
+  const posture =
+    column === "rateable" ? "Rateable" : column === "limited" ? "Limited appetite" : skipCue || "Skip";
+  const useCue = lastTouchDays != null ? `Last use ${relativeTouchLabel(lastTouchDays)}` : "No recent use";
+  const lineCue = appetite ? `Writes ${appetite}` : null;
+  const mid = stackMidLine([posture, useCue]);
+  const phone = row.phone || row.agentPhone || row.customerServicePhone || row.underwriterPhone;
+  const email = row.email || row.underwriterEmail || row.accountManagerEmail;
   return {
     id: row.id,
     surface: "carriers",
@@ -264,12 +416,17 @@ export function presentCarrierCard(
         tone: signal.activePolicies > 0 ? "ok" : "cool",
       },
     ],
-    why: whyBits.join(" · "),
+    why: mid,
+    mid,
+    peek: lineCue,
+    actions: carrierActions(row),
     primaryAction:
       column === "skip"
         ? { label: "See why", href: `/carriers/${row.id}` }
         : { label: "Open market", href: `/carriers/${row.id}` },
     tags: row.tags ?? [],
+    phone,
+    email,
     lastTouchDays,
     flags: {
       writtenBook: signal.activePolicies > 0,
@@ -318,6 +475,7 @@ export function presentPolicyCard(
   const lastTouchDays = daysSinceTouch(row.updatedAt, asOf);
   const daysUntil = daysUntilDate(row.expirationDate, asOf);
   const lapsed = /lapse|cancel|expired|terminated/i.test(row.status);
+  const expires = glanceDate(row.expirationDate);
   const attention = policyAttention({
     daysUntil,
     lastTouchDays,
@@ -325,7 +483,9 @@ export function presentPolicyCard(
     openClaims: needs.openClaims,
     pendingEndorsements: needs.pendingEndorsements,
     missingDocs: needs.missingDocs,
+    expirationLabel: expires,
   });
+  const why = withSecondFact(attention.why, premiumCue(row.premium));
   let action = { label: "Open", href: `/policies/${row.id}` };
   if (needs.openClaims > 0) {
     action = { label: "Claims", href: `/policies/${row.id}?tab=claims` };
@@ -353,7 +513,7 @@ export function presentPolicyCard(
           : { level: "green", tip: attention.why },
     riskBand: attention.heat === "hot" ? "high" : attention.heat === "cooling" ? "medium" : "low",
     glance: [],
-    why: attention.why,
+    why,
     primaryAction: action,
     tags: row.tags ?? [],
     phone: row.phone,
@@ -365,6 +525,7 @@ export function presentPolicyCard(
       needsCare: attention.column === "now",
       lapsed,
       writtenBook: !lapsed,
+      family: bookFamily(row.lineOfBusiness),
     },
     hay: haystack([
       row.displayName,

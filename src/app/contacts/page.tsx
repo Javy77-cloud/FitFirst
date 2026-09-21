@@ -164,14 +164,12 @@ export default async function ContactsPage({
         <BookCommandWorkspace
           surface="contacts"
           path="/contacts"
-          label="People pulse"
           layout="stack"
           cards={cards}
           heat={heat}
           lens={lens}
           q={q}
           empty="Nobody in this lens. Bind a deal or clear a chip."
-          flagged={cards.filter((card) => card.heat === "hot").length}
           renderLeading={(card) => <SelectRowCheckbox id={card.id} />}
           renderExtra={(card) => (
             <>

@@ -139,14 +139,12 @@ export default async function AccountsPage({
         <BookCommandWorkspace
           surface="accounts"
           path="/accounts"
-          label="Account pulse"
           layout="stack"
           cards={cards}
           heat={heat}
           lens={lens}
           q={q}
           empty="No accounts in this lens. Bind a commercial deal or clear a chip."
-          flagged={cards.filter((card) => card.heat === "hot").length}
           renderLeading={(card) => <SelectRowCheckbox id={card.id} />}
           renderExtra={(card) => (
             <>

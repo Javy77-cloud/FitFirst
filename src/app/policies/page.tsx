@@ -32,6 +32,7 @@ import {
 import { partyLabel } from "@/lib/desk/policy-name";
 import { BookCommandWorkspace } from "@/components/book-lists/book-workspace";
 import { loadPolicyNeedSignals } from "@/lib/book-lists/load";
+import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { matchesBookLens, parseBookHeat, parseBookLens } from "@/lib/book-lists/lenses";
 import { presentPolicyCard } from "@/lib/book-lists/present";
 import { POLICY_COLUMNS } from "@/lib/book-lists/types";
@@ -138,13 +139,14 @@ export default async function PoliciesPage({
   const q = firstParam(params.q) ?? "";
   const heat = parseBookHeat(firstParam(params.heat));
   const lens = parseBookLens(firstParam(params.lens));
-  const [all, tagCatalog, labelTemplate, pageFilters, session, needs] = await Promise.all([
+  const [all, tagCatalog, labelTemplate, pageFilters, session, needs, lineSettings] = await Promise.all([
     listPolicies(),
     listModuleTags("policies").catch(() => []),
     getAgencyPolicyLabelTemplate(),
     loadPageFilterPrefs("policies"),
     currentDeskSession(),
     loadPolicyNeedSignals(),
+    loadDeskLineSettings(),
   ]);
   const visibleFilters = mergeLiveOptions(enabledPageFilters(pageFilters), {
     line: all.map(({ policy }) => policy.lineOfBusiness),
@@ -235,7 +237,6 @@ export default async function PoliciesPage({
         <BookCommandWorkspace
           surface="policies"
           path="/policies"
-          label="Policy attention"
           layout="bands"
           columns={POLICY_COLUMNS}
           cards={cards}
@@ -243,7 +244,7 @@ export default async function PoliciesPage({
           lens={lens}
           q={q}
           empty="No policies in this lens. Bind a shopping deal when a market is actually written."
-          flagged={cards.filter((card) => card.column === "now").length}
+          lineSettings={lineSettings}
           renderLeading={(card) => <SelectRowCheckbox id={card.id} />}
           renderExtra={(card) => (
             <>

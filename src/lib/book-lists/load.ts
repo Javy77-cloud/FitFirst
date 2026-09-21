@@ -1,12 +1,14 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
   appetiteQuoteDecisions,
   carrierAppetite,
+  carriers,
   claims,
   deals,
   endorsementDrafts,
+  policies,
   quoteAttemptLogs,
 } from "@/lib/db/schema";
 import type { PolicyNeedSignal } from "./present";
@@ -271,4 +273,51 @@ export async function loadPolicyNeedSignals(): Promise<Map<string, PolicyNeedSig
     return out;
   }
   return out;
+}
+
+export type CarrierLobUsageRow = {
+  carrierId: string;
+  carrierName: string;
+  lineOfBusiness: string;
+  policies: number;
+  premium: number;
+};
+
+/** In-force premium and policy counts by carrier and line. Life/Health filtering stays in the glance. */
+export async function loadCarrierLobUsage(): Promise<CarrierLobUsageRow[]> {
+  try {
+    const rows = await db
+      .select({
+        carrierId: policies.carrierId,
+        carrierName: carriers.name,
+        lineOfBusiness: policies.lineOfBusiness,
+        policies: sql<number>`count(*)::int`,
+        premium: sql<string>`coalesce(sum(${policies.premium}::numeric), 0)`,
+      })
+      .from(policies)
+      .innerJoin(carriers, eq(policies.carrierId, carriers.id))
+      .where(
+        and(
+          eq(policies.tenantId, tenant()),
+          sql`${policies.carrierId} is not null`,
+          sql`lower(${policies.status}) in ('active', 'bound', 'in_force', 'in-force')`,
+        ),
+      )
+      .groupBy(policies.carrierId, carriers.name, policies.lineOfBusiness);
+    return rows.flatMap((row) => {
+      if (!row.carrierId) return [];
+      const premium = Number(row.premium ?? 0);
+      return [
+        {
+          carrierId: row.carrierId,
+          carrierName: row.carrierName,
+          lineOfBusiness: row.lineOfBusiness,
+          policies: Number(row.policies ?? 0),
+          premium: Number.isFinite(premium) ? premium : 0,
+        },
+      ];
+    });
+  } catch {
+    return [];
+  }
 }

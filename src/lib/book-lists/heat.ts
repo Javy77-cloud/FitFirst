@@ -74,6 +74,22 @@ export function daysUntilDate(iso: string | Date | null | undefined, asOf: Date)
   return Math.round((date.getTime() - asOf.getTime()) / 86_400_000);
 }
 
+const GLANCE_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+
+/** Short expiration for a card glance. UTC so a date-only term does not slip a day. */
+export function glanceDate(iso: string | Date | null | undefined): string | null {
+  if (!iso) return null;
+  const date = iso instanceof Date ? iso : new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return `${GLANCE_MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}, ${date.getUTCFullYear()}`;
+}
+
+function renewsIn(daysUntil: number, expirationLabel?: string | null): string {
+  const when = expirationLabel?.trim();
+  if (daysUntil < 0) return when ? `Expired ${when}` : "Past expiration";
+  return when ? `Renews in ${daysUntil}d, ${when}` : `Renews in ${daysUntil}d`;
+}
+
 export function policyAttention(input: {
   daysUntil: number | null;
   lastTouchDays: number | null;
@@ -81,12 +97,12 @@ export function policyAttention(input: {
   openClaims: number;
   pendingEndorsements: number;
   missingDocs: number;
+  expirationLabel?: string | null;
 }): { heat: BookHeat; column: BookColumnId; why: string } {
   const reasons: string[] = [];
   if (input.lapsed) reasons.push("Lapsed or cancelled");
-  if (input.daysUntil != null && input.daysUntil < 0) reasons.push("Past expiration");
-  else if (input.daysUntil != null && input.daysUntil < 30) {
-    reasons.push(`Renews in ${input.daysUntil}d`);
+  if (input.daysUntil != null && input.daysUntil < 30) {
+    reasons.push(renewsIn(input.daysUntil, input.expirationLabel));
   }
   if (input.openClaims > 0) {
     reasons.push(`${input.openClaims} open claim${input.openClaims === 1 ? "" : "s"}`);
@@ -110,7 +126,7 @@ export function policyAttention(input: {
     reasons.push(input.lastTouchDays == null ? "No logged touch" : `Silent ${relativeTouchLabel(input.lastTouchDays)}`);
   }
   if (input.daysUntil != null && input.daysUntil < 90) {
-    reasons.push(`Renews in ${input.daysUntil}d`);
+    reasons.push(renewsIn(input.daysUntil, input.expirationLabel));
   }
   const watch =
     input.pendingEndorsements > 0 ||
@@ -126,7 +142,7 @@ export function policyAttention(input: {
   return {
     heat: "cold",
     column: "current",
-    why: input.daysUntil != null ? `Current · renews in ${input.daysUntil}d` : "Current — no open needs",
+    why: input.daysUntil != null ? renewsIn(input.daysUntil, input.expirationLabel) : "Current — no open needs",
   };
 }
 
