@@ -70,6 +70,7 @@ export const FLASH_COPY = {
   "gmail-sent": "Gmail smoke-test sent",
   "gmail-read": "Gmail inbox readable",
   "busy-synced": "External busy synced",
+  "busy-sync-failed": "Busy sync failed. Try Sync now, or reconnect in Settings.",
   "inbox-sent": "Message sent from agency Gmail",
   "inbox-logged": "Thread logged to activity",
   "inbox-need-reply": "Add a reply and a To address",

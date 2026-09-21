@@ -15,6 +15,8 @@ describe("Calendar + Deals density", () => {
     expect(calendar).toMatch(/data-ff-calendar-toolbar-wrap=/);
     expect(calendar).toMatch(/data-ff-calendar-toolbar-offset=/);
     expect(calendar).toMatch(/aria-label="Calendar toolbar"/);
+    expect(calendar).toMatch(/data-calendar-toolbar="sync"/);
+    expect(page).toMatch(/syncControl=/);
     expect(calendar).toMatch(/>\s*Today\s*</);
     expect(calendar).not.toMatch(/-mt-8/);
     expect(chrome).toMatch(/\[data-ff-calendar-page\] \{[\s\S]*margin-top: -0\.5rem;/);

@@ -73,6 +73,8 @@ describe("flash helper", () => {
     expect(FLASH_COPY["letter-extracting"]).toBe("Extracting letter fields");
     expect(FLASH_COPY["letter-confirmed"]).toBe("Letter fields confirmed");
     expect(FLASH_COPY["letter-send-later"]).toMatch(/never auto-sends/);
+    expect(FLASH_COPY["busy-synced"]).toBe("External busy synced");
+    expect(FLASH_COPY["busy-sync-failed"]).toMatch(/Busy sync failed/);
   });
 
   it("accepts a short raw phrase and ignores blanks", () => {
