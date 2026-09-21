@@ -4,6 +4,7 @@ import {
   counterpartEmails,
   emailsFromHeader,
   inboxAttentionFor,
+  inboxBandLabel,
   inboxMailWhy,
   inboxThreadHref,
   matchInboxParty,
@@ -54,10 +55,14 @@ describe("inbox address matching", () => {
     expect(twoShops).toBeNull();
   });
 
-  it("ranks needs-reply over unread and silences our own chase", () => {
-    expect(inboxAttentionFor({ unread: true, inboundLast: true, dealId: "d1" })).toBe("needs_reply");
+  it("bands Unread vs Read and does not dump read INBOX mail into Needs reply", () => {
+    expect(inboxAttentionFor({ unread: true, inboundLast: true, dealId: "d1" })).toBe("unread");
     expect(inboxAttentionFor({ unread: true, inboundLast: false, dealId: null })).toBe("unread");
-    expect(inboxAttentionFor({ unread: false, inboundLast: false, dealId: "d1" })).toBe("open_deal");
+    expect(inboxAttentionFor({ unread: false, inboundLast: true, dealId: "d1" })).toBe("read");
+    expect(inboxAttentionFor({ unread: false, inboundLast: false, dealId: "d1" })).toBe("read");
+    expect(inboxAttentionFor({ unread: false, inboundLast: true, dealId: null })).toBe("read");
+    expect(inboxBandLabel("unread")).toBe("Unread");
+    expect(inboxBandLabel("read")).toBe("Read");
     expect(shouldSilenceInboxSignal({ inboundLast: false, quoteChasedRecently: true, renewalChasedRecently: false })).toBe(
       true,
     );

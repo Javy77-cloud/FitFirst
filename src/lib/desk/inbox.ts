@@ -1,5 +1,7 @@
 /** Inbox helpers. Live Gmail threads sit on /inbox; activity-log rows stay as book fallback. */
 
+import { parseEmailFrom } from "@/lib/home/lead-offers";
+
 export type InboxStubKind = "email" | "sms" | "inbound_email";
 export type InboxStubStatus = "queued" | "received";
 
@@ -112,4 +114,31 @@ export function formatInboxWhen(iso: string | number | Date | null | undefined):
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+/** Gmail-like list date: time today, month+day this year, else month+day+year. */
+export function formatInboxListWhen(
+  iso: string | number | Date | null | undefined,
+  asOf: Date = new Date(),
+): string {
+  if (iso == null || iso === "") return "";
+  const date = iso instanceof Date ? iso : typeof iso === "number" ? new Date(iso) : new Date(iso);
+  if (Number.isNaN(date.getTime())) return String(iso);
+  if (date.toDateString() === asOf.toDateString()) {
+    return date.toLocaleString("en-US", { hour: "numeric", minute: "2-digit" });
+  }
+  if (date.getFullYear() === asOf.getFullYear()) {
+    return date.toLocaleString("en-US", { month: "short", day: "numeric" });
+  }
+  return date.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+export function inboxSenderLabel(from: string, contactName?: string | null): string {
+  const known = contactName?.trim();
+  if (known) return known;
+  const parsed = parseEmailFrom(from);
+  if (parsed.displayName && parsed.displayName !== parsed.email) return parsed.displayName;
+  const named = [parsed.firstName, parsed.lastName].filter(Boolean).join(" ").trim();
+  if (named && named !== "Unknown Lead") return named;
+  return parsed.email || from.trim() || "Unknown sender";
 }

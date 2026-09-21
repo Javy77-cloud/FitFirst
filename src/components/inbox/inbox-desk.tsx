@@ -4,9 +4,10 @@ import { createContactFromInbox, logInboxThread, replyInboxThread, sendInboxMess
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { formatInboxWhen } from "@/lib/desk/inbox";
-import { INBOX_BANDS, type InboxDeskThread } from "@/lib/desk/inbox-desk";
+import { formatInboxListWhen, formatInboxWhen, inboxSenderLabel, snippetOf } from "@/lib/desk/inbox";
+import { INBOX_BANDS, groupInboxThreads, type InboxDeskThread } from "@/lib/desk/inbox-desk";
 import { inboxBandLabel, contactCreateHref } from "@/lib/desk/inbox-match";
+import { inboxSkinListRole, resolveInboxSkin, type InboxMailProvider } from "@/lib/desk/inbox-skin";
 import type { GmailThreadMessage } from "@/lib/integrations/gmail";
 import { cn } from "@/lib/utils";
 
@@ -87,6 +88,7 @@ export function InboxDesk({
   connected,
   error,
   accountEmail,
+  mailProvider = "gmail",
 }: {
   threads: InboxDeskThread[];
   selectedId: string | null;
@@ -95,18 +97,17 @@ export function InboxDesk({
   connected: boolean;
   error: string | null;
   accountEmail: string | null;
+  mailProvider?: InboxMailProvider;
 }) {
   const selected = threads.find((row) => row.id === selectedId) ?? threads[0] ?? null;
+  const groups = groupInboxThreads(threads);
+  const skin = resolveInboxSkin(mailProvider);
 
   if (!connected) {
     return (
       <section className="ff-inbox-empty" data-ff-inbox-disconnected="">
-        <p className="ff-inbox-kicker">Agency Gmail</p>
-        <h2>Connect the mailbox the desk works from</h2>
-        <p>
-          FitFirst does not host mail. It surfaces the agency Gmail on this desk — threads, reply, and
-          jumps into Contacts and Deals.
-        </p>
+        <h2>Connect Gmail</h2>
+        <p>FitFirst surfaces the agency mailbox here — reply, send, and jump into Contacts or Deals.</p>
         {canConnect ? (
           <form action={startByoOauth} className="mt-3">
             <input type="hidden" name="provider" value="gmail" />
@@ -124,28 +125,29 @@ export function InboxDesk({
   }
 
   return (
-    <div className="ff-inbox-desk" data-ff-inbox-desk="">
+    <div
+      className="ff-inbox-desk"
+      data-ff-inbox-desk=""
+      data-ff-inbox-skin={skin}
+      data-ff-inbox-provider={mailProvider}
+      data-ff-inbox-list-role={inboxSkinListRole(skin)}
+    >
       <header className="ff-inbox-toolbar">
-        <div>
-          <p className="ff-inbox-kicker">Agency inbox</p>
-          <p className="text-sm text-muted-foreground">
-            {accountEmail ? `Working ${accountEmail}` : "Connected Gmail"} · reply sends from this mailbox
-          </p>
-        </div>
+        <p className="ff-inbox-mailbox">{accountEmail || "Inbox"}</p>
         <Link href="/settings/email#gmail" className="text-sm text-primary hover:underline">
-          Email settings
+          Settings
         </Link>
       </header>
       {error ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy">{error}</p>
       ) : null}
       {threads.length === 0 && !error ? (
-        <p className="ff-inbox-empty-hero">Inbox is quiet. New agency mail lands in Needs reply and Unread.</p>
+        <p className="ff-inbox-empty-hero">Inbox is empty.</p>
       ) : null}
       <div className="ff-inbox-split">
         <div className="ff-inbox-bands">
           {INBOX_BANDS.map((band) => {
-            const rows = threads.filter((row) => row.attention === band);
+            const rows = groups[band];
             if (rows.length === 0) return null;
             return (
               <section key={band} className={cn("ff-inbox-band", `ff-inbox-band-${band}`)} data-ff-inbox-band={band}>
@@ -154,25 +156,28 @@ export function InboxDesk({
                   <span>{rows.length}</span>
                 </header>
                 <ul>
-                  {rows.map((row) => (
-                    <li key={row.id}>
-                      <Link
-                        href={row.href}
-                        className={cn("ff-inbox-card", selected?.id === row.id && "is-open")}
-                        data-ff-inbox-thread={row.id}
-                        data-ff-inbox-attention={row.attention}
-                      >
-                        <span className="ff-inbox-card-kicker">
-                          {row.unread ? "Unread" : row.inboundLast ? "Needs you" : "Linked"}
-                          {row.match.deal ? " · Open deal" : row.match.contact ? ` · ${row.match.contact.name}` : ""}
-                        </span>
-                        <span className="ff-inbox-card-from">{row.from || "Unknown sender"}</span>
-                        <span className="ff-inbox-card-subject">{row.subject}</span>
-                        <span className="ff-inbox-card-snippet">{row.snippet}</span>
-                        <span className="ff-inbox-card-when">{formatInboxWhen(row.lastInternalDate || row.date)}</span>
-                      </Link>
-                    </li>
-                  ))}
+                  {rows.map((row) => {
+                    const open = selected?.id === row.id;
+                    return (
+                      <li key={row.id}>
+                        <Link
+                          href={row.href}
+                          className={cn("ff-inbox-row", row.unread && "is-unread", open && "is-selected")}
+                          data-ff-inbox-thread={row.id}
+                          data-ff-inbox-attention={row.attention}
+                          aria-current={open ? "true" : undefined}
+                        >
+                          <span className="ff-inbox-row-from">
+                            {inboxSenderLabel(row.from, row.match.contact?.name)}
+                            {row.messageCount > 1 ? ` (${row.messageCount})` : ""}
+                          </span>
+                          <span className="ff-inbox-row-when">{formatInboxListWhen(row.lastInternalDate || row.date)}</span>
+                          <span className="ff-inbox-row-subject">{row.subject}</span>
+                          <span className="ff-inbox-row-snippet">{snippetOf(row.snippet, 88)}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
             );
@@ -180,10 +185,10 @@ export function InboxDesk({
         </div>
         {selected ? (
           <article className="ff-inbox-detail" data-ff-inbox-detail={selected.id}>
-            <p className="ff-inbox-kicker">{selected.why}</p>
             <h2>{selected.subject}</h2>
             <p className="text-sm text-muted-foreground">
-              {selected.from} · {formatInboxWhen(selected.lastInternalDate || selected.date)}
+              {inboxSenderLabel(selected.from, selected.match.contact?.name)} ·{" "}
+              {formatInboxWhen(selected.lastInternalDate || selected.date)}
             </p>
             {selected.match.unmatched ? (
               <p className="mt-2 text-sm text-navy">No contact for this address yet.</p>
@@ -193,8 +198,8 @@ export function InboxDesk({
               <ol className="ff-inbox-thread">
                 {messages.map((msg) => (
                   <li key={msg.id} className={cn("ff-inbox-msg", msg.inbound ? "is-in" : "is-out")}>
-                    <p className="ff-inbox-card-kicker">
-                      {msg.inbound ? "Inbound" : "Sent"} · {msg.from || "Unknown"} ·{" "}
+                    <p className="ff-inbox-msg-meta">
+                      {msg.inbound ? "Inbound" : "Sent"} · {inboxSenderLabel(msg.from) || "Unknown"} ·{" "}
                       {formatInboxWhen(msg.internalDate || msg.date)}
                     </p>
                     <p className="ff-inbox-body">{msg.body || msg.snippet}</p>

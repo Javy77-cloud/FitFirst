@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { getGmailThread, gmailIsReady, listRecentGmailThreads, type GmailThreadMessage } from "@/lib/integrations/gmail";
-import { presentInboxThread, type InboxDeskThread } from "@/lib/desk/inbox-desk";
+import { flattenInboxBands, presentInboxThread, type InboxDeskThread } from "@/lib/desk/inbox-desk";
 import { loadInboxMatchIndex } from "@/lib/desk/load-inbox-index";
 
 export type LiveInboxIndex = {
@@ -16,7 +16,7 @@ export const loadLiveInboxThreads = cache(async (limit = 20): Promise<LiveInboxI
     const [rows, index] = await Promise.all([listRecentGmailThreads(limit), loadInboxMatchIndex()]);
     return {
       connected: true,
-      threads: rows.map((row) => presentInboxThread(row, index)),
+      threads: flattenInboxBands(rows.map((row) => presentInboxThread(row, index))),
       error: null,
     };
   } catch (error) {

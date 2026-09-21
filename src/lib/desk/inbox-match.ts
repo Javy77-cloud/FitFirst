@@ -36,7 +36,7 @@ export type InboxMatch = {
   unmatched: boolean;
 };
 
-export type InboxAttention = "needs_reply" | "unread" | "open_deal" | "rest";
+export type InboxAttention = "unread" | "read";
 
 export function normalizeInboxEmail(value: string | null | undefined): string | null {
   const parsed = parseEmailFrom(value);
@@ -145,27 +145,22 @@ export function matchInboxParty(
 
 export function inboxAttentionFor(input: {
   unread: boolean;
-  inboundLast: boolean;
+  inboundLast?: boolean;
   dealId?: string | null;
 }): InboxAttention {
-  if (input.inboundLast) return "needs_reply";
-  if (input.unread) return "unread";
-  if (input.dealId) return "open_deal";
-  return "rest";
+  // List bands are Unread vs Read only. Read INBOX mail — even inbound / open-deal —
+  // stays in Read. Do not dump long-read mail into Needs reply.
+  void input.inboundLast;
+  void input.dealId;
+  return input.unread ? "unread" : "read";
 }
 
 export function inboxBandLabel(band: InboxAttention): string {
-  if (band === "needs_reply") return "Needs reply";
-  if (band === "unread") return "Unread";
-  if (band === "open_deal") return "Open deal";
-  return "Rest of inbox";
+  return band === "unread" ? "Unread" : "Read";
 }
 
 export function inboxBandRank(band: InboxAttention): number {
-  if (band === "needs_reply") return 0;
-  if (band === "unread") return 1;
-  if (band === "open_deal") return 2;
-  return 3;
+  return band === "unread" ? 0 : 1;
 }
 
 /** After we chased a quote or renewal, don't nag about our own outbound sitting unread. */

@@ -28,7 +28,7 @@ export default async function InboxPage({
   ]);
 
   return (
-    <AppShell title="Inbox" eyebrow="Agency Gmail">
+    <AppShell title="Inbox" eyebrow="Gmail">
       {notice === "byo-connected" ? (
         <p className="mb-3 rounded-md border border-dashed border-border bg-secondary/40 px-3 py-2 text-sm text-navy">
           Gmail connected. Agency mail will show on this desk.
@@ -47,6 +47,7 @@ export default async function InboxPage({
         connected={live.connected}
         error={live.error}
         accountEmail={accountEmail}
+        mailProvider="gmail"
       />
     </AppShell>
   );
