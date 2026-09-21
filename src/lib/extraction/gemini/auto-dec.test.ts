@@ -17,6 +17,7 @@ import {
 import { HEIC_CONVERT_TIMEOUT_MS } from "@/lib/extraction/ocr";
 import { MASTER_FILL_STEP_TIMEOUT_MS } from "@/lib/quote-sheet/master-fill";
 import { fillableGeminiFields, mapGeminiJsonToFields } from "@/lib/extraction/gemini/map";
+import { evaluateMintExtract } from "@/lib/policy/mint-gate";
 import { buildGeminiSystemPrompt, buildGeminiUserPrompt } from "@/lib/extraction/gemini/prompt";
 import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
 import { emptySheetValues, extractKeyToSheetKey } from "@/lib/quote-sheet/catalog";
@@ -362,6 +363,42 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(applied.values.expiration_date.value).toBe("");
     expect(applied.values.currently_insured.value).toBe("Yes");
     expect(applied.values.aaa_member.value).toBe("Yes");
+  });
+
+  it("reads a Travelers issued auto policy into policy number, premium, and dates", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        writing_company: "Travelers",
+        "Policy Number": "612345678 101 1",
+        "Total Premium": "$2,109.00",
+        policy_period: "09/21/2026 to 03/21/2027",
+      },
+      "current_policy",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.current_carrier.value).toBe("Travelers");
+    expect(applied.values.policy_number.value).toBe("612345678 101 1");
+    expect(applied.values.current_premium.value).toBe("2109.00");
+    expect(applied.values.effective_date.value).toBe("09/21/2026");
+    expect(applied.values.expiration_date.value).toBe("03/21/2027");
+    const gate = evaluateMintExtract(
+      mapped.fields.map((field) => ({
+        fieldKey: field.fieldKey,
+        normalizedValue: field.normalizedValue,
+        rawValue: field.rawValue,
+        confidence: field.confidence,
+        flagged: field.flagged,
+      })),
+    );
+    expect(gate.ok).toBe(true);
+    if (gate.ok) {
+      expect(gate.policyNumber).toBe("612345678 101 1");
+      expect(gate.premium).toBe("2109");
+      expect(gate.effectiveDate).toMatch(/2026-09-21/);
+    }
+    expect(buildGeminiSystemPrompt("current_policy", "auto")).toMatch(/Full Term Premium/);
+    expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/current_premium/);
   });
 
   it("fills Allstate Current Policy keys and leaves years, insured, and AAA blank when unprinted", () => {

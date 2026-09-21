@@ -38,12 +38,16 @@ export type LoadGeminiRowsInput = {
   mimeType?: string | null;
   filename?: string | null;
   force?: boolean;
+  /** home / auto — Auto issued policies must use the current-policy prompt. */
+  shopLine?: string | null;
+  /** dec or current_policy. Defaults to dec for homeowners. */
+  docType?: string | null;
 };
 
 export type GeminiExtractFn = (
   buffer: Buffer,
   docType: string,
-  options: { apiKey: string; mimeType: string; filename: string },
+  options: { apiKey: string; mimeType: string; filename: string; shopLine?: string | null },
 ) => Promise<{
   ok: boolean;
   message?: string;
@@ -149,10 +153,11 @@ export async function loadGeminiRows(
   }
 
   try {
-    const gemini = await deps.extractWithGeminiPdf(bytes.buffer, "dec", {
+    const gemini = await deps.extractWithGeminiPdf(bytes.buffer, input.docType?.trim() || "dec", {
       apiKey: key,
       mimeType: input.mimeType ?? "application/pdf",
       filename: input.filename ?? "declaration.pdf",
+      shopLine: input.shopLine ?? null,
     });
     if (!gemini.ok) {
       log("dec extract: Gemini failed", { documentId: input.docId, message: gemini.message });

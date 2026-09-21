@@ -2,7 +2,10 @@
 
 import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { uploadAgencyQuoteFileAction } from "@/app/actions/quote-files";
+import { deleteUploadedFile } from "@/app/actions/documents";
 import { retagDocumentAsDeclarationAction } from "@/app/actions/declaration";
+import { HardDeleteForm } from "@/components/desk/hard-delete-form";
+import { deleteUploadedFileSubject, uploadedFileDeleteMode } from "@/lib/documents/delete-file";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,6 +32,8 @@ export type QuoteFileRow = {
   displayName: string;
   uploadedByName: string | null;
   createdAt: string | Date;
+  slot?: string | null;
+  docType?: string | null;
 };
 
 export type QuoteQuickViewFields = {
@@ -145,6 +150,28 @@ function FileList({
                 Use as declaration
               </button>
             </form>
+            <HardDeleteForm
+              action={deleteUploadedFile}
+              subject={deleteUploadedFileSubject(
+                file.filename,
+                uploadedFileDeleteMode({
+                  slot: file.slot || "quote_file",
+                  docType: file.docType || "other",
+                }),
+              )}
+              className="inline"
+            >
+              <input type="hidden" name="documentId" value={file.id} />
+              <input type="hidden" name="dealId" value={dealId} />
+              <input type="hidden" name="returnTo" value={`/deals/${dealId}?tab=quotes`} />
+              <button
+                type="submit"
+                className="text-xs text-primary hover:underline"
+                data-ff-quote-file-delete={file.id}
+              >
+                Delete
+              </button>
+            </HardDeleteForm>
           </div>
         </li>
       ))}

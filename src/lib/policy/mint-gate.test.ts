@@ -134,6 +134,42 @@ describe("policy issued mint gate", () => {
     ).toBe("typed");
   });
 
+  it("reads the popup upload even when an older declaration scores higher", () => {
+    const picked = evaluateMintGate({
+      currentStage: "bound",
+      selectedQuoteIds: ["q1"],
+      liveQuoteIds: ["q1"],
+      surface: "quotes",
+      preferredDocumentId: "issued",
+      docs: [
+        { id: "old", docType: "dec", filename: "old-dec.pdf", mimeType: "application/pdf" },
+        {
+          id: "issued",
+          docType: "current_policy",
+          slot: "quote_file",
+          filename: "Travelers policy.pdf",
+          mimeType: "application/pdf",
+        },
+      ],
+    });
+    expect(picked.ok).toBe(true);
+    if (picked.ok) expect(picked.dec.id).toBe("issued");
+
+    const ignored = evaluateMintGate({
+      currentStage: "bound",
+      selectedQuoteIds: ["q1"],
+      liveQuoteIds: ["q1"],
+      surface: "quotes",
+      preferredDocumentId: "packet",
+      docs: [
+        { id: "packet", docType: "agency_quote", filename: "quote.pdf", mimeType: "application/pdf" },
+        { id: "dec", docType: "dec", filename: "dec.pdf", mimeType: "application/pdf" },
+      ],
+    });
+    expect(ignored.ok).toBe(true);
+    if (ignored.ok) expect(ignored.dec.id).toBe("dec");
+  });
+
   it("keeps one policy per product line", () => {
     const rows = [
       { id: "ho3", sourceProduct: "homeowners", lineOfBusiness: "HO" },

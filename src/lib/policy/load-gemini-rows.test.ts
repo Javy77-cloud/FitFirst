@@ -70,6 +70,35 @@ describe("loadGeminiRows document store", () => {
     expect(persistRows).toHaveBeenCalledTimes(1);
   });
 
+  it("sends Auto current-policy extracts with the auto shop line", async () => {
+    const extractWithGeminiPdf = extractOk([
+      { fieldKey: "policy_number", normalizedValue: "612345678 101 1" },
+      { fieldKey: "current_premium", normalizedValue: "2109.00" },
+      { fieldKey: "effective_date", normalizedValue: "2026-09-21" },
+    ]);
+    const result = await loadGeminiRows(
+      {
+        docId: "travelers-dec",
+        storagePath: ROSA_BLOB_KEY,
+        mimeType: "application/pdf",
+        filename: "Travelers policy.pdf",
+        shopLine: "auto",
+        docType: "current_policy",
+      },
+      {
+        readStoredFile: async () => Buffer.from("%PDF-1.4 travelers"),
+        loadGeminiApiKey: async () => "test-key",
+        extractWithGeminiPdf,
+      },
+    );
+    expect(result.ok).toBe(true);
+    expect(extractWithGeminiPdf).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      "current_policy",
+      expect.objectContaining({ shopLine: "auto", filename: "Travelers policy.pdf" }),
+    );
+  });
+
   it("fails loud when the document store cannot read the file", async () => {
     const readStoredFile = vi.fn(async () => null);
     const extractWithGeminiPdf = vi.fn();

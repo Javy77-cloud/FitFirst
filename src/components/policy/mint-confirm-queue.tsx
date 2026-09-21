@@ -70,15 +70,7 @@ export function MintConfirmQueue({
       setLocalFields(nextFields);
       const remaining = mintConfirmQueue(nextFields);
       if (result.remaining === 0 || remaining.length === 0) {
-        const publish = new FormData();
-        publish.set("policyId", policyId);
-        const published = await publishMintedPolicy(publish);
-        if (published.ok) {
-          flashAction("policy-published");
-          router.refresh();
-        } else {
-          flashMintFailure(published.reason);
-        }
+        router.refresh();
         return;
       }
       show(0, remaining);
@@ -89,11 +81,15 @@ export function MintConfirmQueue({
   if (done) {
     return (
       <section className="ff-card mx-auto max-w-lg space-y-3 p-5" data-ff-mint-confirm-empty="">
-        <h2 className="text-lg font-semibold text-navy">Declaration looks right</h2>
-        <p className="text-sm text-muted-foreground">Every flagged field is confirmed. Publish to open the book record.</p>
+        <h2 className="text-lg font-semibold text-navy">Policy looks good?</h2>
+        <p className="text-sm text-muted-foreground">
+          Review the policy number, premium, and dates on this record. Policy looks good records your name
+          and the Eastern time, then publishes.
+        </p>
         <Button
           type="button"
           data-ff-publish-minted-policy=""
+          data-ff-policy-looks-good=""
           disabled={pending}
           onClick={() => {
             const data = new FormData();
@@ -109,7 +105,7 @@ export function MintConfirmQueue({
             });
           }}
         >
-          Publish policy
+          Policy looks good
         </Button>
       </section>
     );

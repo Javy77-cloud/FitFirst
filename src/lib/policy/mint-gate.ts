@@ -1,4 +1,5 @@
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
+import { parseAgentConfirm, type AgentConfirmAudit } from "@/lib/policy/agent-confirm";
 import {
   isLateProductStage,
   lateStageNeedsQuoteSelection,
@@ -23,7 +24,7 @@ export type MintGateReason =
   | "need_dec_fields";
 
 export const NEED_DEC_FIELDS_MESSAGE =
-  "Declaration extract did not return a policy number and premium. No unpublished policy was created.";
+  "Declaration extract did not return a policy number and premium. The uploaded file stays in the folder. No unpublished policy was created.";
 
 export function mintFailureToast(reason: string): { key: string; kind: "error" | "success" } {
   switch (reason) {
@@ -94,6 +95,8 @@ export type MintPayload = {
   product?: string | null;
   mintedAt?: string | null;
   adminNotifiedAt?: string | null;
+  /** Set when the agent marks Policy looks good. Unpublished until then. */
+  agentConfirm?: AgentConfirmAudit | null;
 };
 
 export const MINT_CONFIRM_FIELDS = [
@@ -286,6 +289,8 @@ export function evaluateMintGate(input: {
   docs?: readonly DeclarationLike[] | null;
   surface?: MintSurface | string | null;
   mintStatus?: string | null;
+  /** Popup upload. Wins over an older dec so Gemini reads the file the agent just saved. */
+  preferredDocumentId?: string | null;
 }): { ok: true; dec: DeclarationLike } | { ok: false; reason: MintGateReason } {
   if (quotesOnlyStageBlocked(POLICY_ISSUED_STAGE, input.surface)) {
     return { ok: false, reason: "quotes_only" };
@@ -305,7 +310,14 @@ export function evaluateMintGate(input: {
   if (input.mintStatus === "creating") {
     return { ok: false, reason: "creating" };
   }
-  const dec = findDealDeclaration(input.docs ?? []);
+  const preferredId = (input.preferredDocumentId ?? "").trim();
+  const preferred = preferredId
+    ? (input.docs ?? []).find((doc) => doc.id === preferredId)
+    : null;
+  const dec =
+    preferred && isDeclarationPdf(preferred)
+      ? preferred
+      : findDealDeclaration(input.docs ?? []);
   if (!dec) return { ok: false, reason: "need_dec" };
   return { ok: true, dec };
 }
@@ -863,6 +875,7 @@ export function parseMintPayload(raw: unknown): MintPayload | null {
     product: row.product ?? null,
     mintedAt: typeof row.mintedAt === "string" ? row.mintedAt : null,
     adminNotifiedAt: typeof row.adminNotifiedAt === "string" ? row.adminNotifiedAt : null,
+    agentConfirm: parseAgentConfirm(row.agentConfirm),
   };
 }
 
@@ -883,7 +896,10 @@ export function policyNeedsMintConfirm(policy: {
   mintPayload?: unknown;
 }): boolean {
   if (!policyMintUnpublished(policy)) return false;
-  return mintNeedsConfirm(parseMintPayload(policy.mintPayload));
+  const payload = parseMintPayload(policy.mintPayload);
+  if (payload?.agentConfirm?.confirmedAt) return false;
+  if (payload?.status === "published") return false;
+  return true;
 }
 
 export function policyForProduct<
