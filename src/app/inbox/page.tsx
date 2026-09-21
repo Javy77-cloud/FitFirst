@@ -18,6 +18,7 @@ export default async function InboxPage({
     searchParams,
   ]);
   const selectedId = typeof query.thread === "string" ? query.thread : null;
+  const notice = typeof query.notice === "string" ? query.notice : null;
   const [accountEmail, messages] = await Promise.all([
     live.connected ? gmailAccountEmail().catch(() => null) : Promise.resolve(null),
     live.connected ? loadInboxThreadMessages(selectedId ?? live.threads[0]?.id ?? null) : Promise.resolve([]),
@@ -25,6 +26,16 @@ export default async function InboxPage({
 
   return (
     <AppShell title="Inbox" eyebrow="Agency Gmail">
+      {notice === "byo-connected" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border bg-secondary/40 px-3 py-2 text-sm text-navy">
+          Gmail connected. Agency mail will show on this desk.
+        </p>
+      ) : null}
+      {notice === "oauth-wall" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy">
+          Gmail Connect hit a wall. Open Settings → Email, check Client ID/Secret and Gmail API, then try again.
+        </p>
+      ) : null}
       <InboxDesk
         threads={live.threads}
         selectedId={selectedId}
