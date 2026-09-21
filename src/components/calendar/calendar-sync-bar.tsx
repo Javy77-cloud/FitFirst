@@ -2,7 +2,7 @@ import Link from "next/link";
 import { startByoOauth } from "@/app/actions/byo-oauth";
 import { syncDeskBusyNow } from "@/app/actions/calendar-sync";
 import { Button } from "@/components/ui/button";
-import { formatBusySyncedAt } from "@/lib/integrations/calendar-sync";
+import { displayBusySyncError, formatBusySyncedAt } from "@/lib/integrations/calendar-sync";
 
 export function CalendarSyncBar({
   googleConnected,
@@ -12,6 +12,7 @@ export function CalendarSyncBar({
   googleEmail,
   overlayCount,
   notice,
+  syncError,
 }: {
   googleConnected: boolean;
   outlookConnected: boolean;
@@ -20,15 +21,20 @@ export function CalendarSyncBar({
   googleEmail: string | null;
   overlayCount: number;
   notice?: string | null;
+  syncError?: string | null;
 }) {
   const connected = googleConnected || outlookConnected;
+  const vendorError = displayBusySyncError(syncError);
+  const showFailed = notice === "busy-sync-failed" || Boolean(vendorError);
   return (
     <section className="ff-calendar-sync" data-ff-calendar-sync="">
-      {notice === "busy-synced" ? (
+      {notice === "busy-synced" && !vendorError ? (
         <p className="mb-2 text-sm text-navy">External busy is on the desk calendar.</p>
       ) : null}
-      {notice === "busy-sync-failed" ? (
-        <p className="mb-2 text-sm text-navy">Busy sync failed. Try Sync now, or reconnect in Settings.</p>
+      {showFailed ? (
+        <p className="mb-2 text-sm text-navy" data-ff-calendar-busy-error="">
+          Busy sync failed. {vendorError || "Try Sync now, or reconnect in Settings."}
+        </p>
       ) : null}
       {notice === "byo-connected" ? (
         <p className="mb-2 text-sm text-navy">Google Calendar connected. External busy will sync onto this desk.</p>

@@ -290,6 +290,7 @@ export async function smokeTestByoProvider(formData: FormData) {
       redirect(`${dest}?notice=meet-helper&provider=google_meet`);
     }
   } catch (error) {
+    if (isRedirectError(error)) throw error;
     const message = error instanceof Error ? error.message : "Smoke test failed.";
     const { recordByoOauthError } = await import("@/lib/integrations/oauth-store");
     await recordByoOauthError(raw, message);

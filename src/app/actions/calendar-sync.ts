@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { currentDeskSession } from "@/lib/auth/session";
 import { syncConnectedBusy } from "@/lib/integrations/calendar-busy";
+import { isRedirectError } from "@/lib/lifecycle/shop";
 
 function refreshCalendar() {
   revalidatePath("/calendar");
@@ -18,6 +19,7 @@ export async function syncDeskBusyNow() {
     refreshCalendar();
     redirect("/calendar?notice=busy-synced");
   } catch (error) {
+    if (isRedirectError(error)) throw error;
     const message = error instanceof Error ? error.message : "Busy sync failed.";
     const { recordByoOauthError } = await import("@/lib/integrations/oauth-store");
     await recordByoOauthError("google_calendar", message).catch(() => undefined);

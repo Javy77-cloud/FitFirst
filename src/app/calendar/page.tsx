@@ -7,7 +7,7 @@ import { listOfficeStubs, listTerritoryStubs } from "@/lib/db/office-queries";
 import { listCalendarActivities } from "@/lib/db/queries";
 import { deskNow } from "@/lib/home/as-of";
 import { canConnectByoIntegration } from "@/lib/integrations/connect-policy";
-import { shouldAutoSyncBusy } from "@/lib/integrations/calendar-sync";
+import { displayBusySyncError, isByoBusyConnection, shouldAutoSyncBusy } from "@/lib/integrations/calendar-sync";
 import {
   listBusyWindows,
   meetHelperAvailable,
@@ -43,14 +43,25 @@ export default async function CalendarPage({
     loadByoConnection("google_calendar").catch(() => null),
     loadByoConnection("outlook_calendar").catch(() => null),
   ]);
-  const googleConnected = Boolean(googleRow?.connected && googleRow.connectMode === "byo");
-  const outlookConnected = Boolean(outlookRow?.connected && outlookRow.connectMode === "byo");
+  const googleConnected = isByoBusyConnection(googleRow);
+  const outlookConnected = isByoBusyConnection(outlookRow);
   let lastSyncedAt = [googleRow?.lastBusySyncAt, outlookRow?.lastBusySyncAt]
     .filter((at): at is Date => Boolean(at))
     .sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
+  let syncError = displayBusySyncError(googleRow?.lastOauthError ?? outlookRow?.lastOauthError);
   if ((googleConnected || outlookConnected) && shouldAutoSyncBusy(lastSyncedAt)) {
-    const synced = await syncConnectedBusy().catch(() => null);
-    if (synced) lastSyncedAt = new Date();
+    try {
+      await syncConnectedBusy();
+      lastSyncedAt = new Date();
+      syncError = null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Busy sync failed.";
+      syncError = displayBusySyncError(message);
+      const { recordByoOauthError } = await import("@/lib/integrations/oauth-store");
+      if (syncError) {
+        await recordByoOauthError("google_calendar", syncError).catch(() => undefined);
+      }
+    }
   }
   const [rows, options, offices, territories, calendarPrefs, busyRows, meetHelper, googleEvents] = await Promise.all([
     listCalendarActivities(range.from, range.to),
@@ -81,6 +92,7 @@ export default async function CalendarPage({
         googleEmail={googleRow?.tokenAccountEmail ?? null}
         overlayCount={googleEvents.length}
         notice={notice}
+        syncError={syncError}
       />
       <DeskCalendar
         events={events}

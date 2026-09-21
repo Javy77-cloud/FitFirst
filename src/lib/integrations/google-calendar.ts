@@ -1,6 +1,7 @@
 import { liveAccessToken } from "./oauth-exchange";
 import { loadByoConnection } from "./oauth-store";
 import { serializeBusyBlock, syncGoogleBusy, type SerializedBusyBlock } from "./calendar-busy";
+import { googleCalendarHttpError } from "./calendar-sync";
 
 export type GoogleCalendarSyncResult = {
   status: "ok" | "skipped" | "later";
@@ -81,7 +82,7 @@ export async function listUpcomingGoogleEvents(days = 14): Promise<SerializedBus
       transparency?: string;
     }[];
   };
-  if (!res.ok) throw new Error(data.error?.message || `Google events failed (${res.status}).`);
+  if (!res.ok) throw new Error(googleCalendarHttpError(data, res.status, "events"));
   return (data.items ?? [])
     .filter((row) => row.status !== "cancelled" && row.transparency !== "transparent")
     .map((row, index) => {
