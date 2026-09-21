@@ -46,6 +46,67 @@ export function marketCarriersForManualQuote(
     .sort((a, b) => a.name.localeCompare(b.name, "en"));
 }
 
+export type ManualQuoteExisting = {
+  id: string;
+  shopLine?: string | null;
+  stub?: boolean | null;
+  notes?: string | null;
+  quoteRunId?: string | null;
+  quoteAttemptLogId?: string | null;
+};
+
+/**
+ * Same carrier and shop line only. Other quotes stay untouched.
+ * A hidden stub on this line is filled in place so we do not add a second row.
+ */
+export function manualQuoteTarget(
+  rows: readonly ManualQuoteExisting[],
+  shopLine: string,
+): ManualQuoteExisting | null {
+  const onLine = rows.filter((row) => row.shopLine === shopLine);
+  return onLine.find((row) => !row.stub) ?? onLine[0] ?? null;
+}
+
+export type ManualQuoteWrite = {
+  premium: string;
+  stub: false;
+  shopLine: string;
+  bindable: boolean;
+  riskOutcome: string;
+  nextStep: string;
+  quoteAttemptLogId: string;
+  quoteRunId?: string;
+  notes?: string;
+};
+
+/**
+ * Fields written on save. Existing notes, quote number, coverages, and run id stay.
+ * This never describes a delete.
+ */
+export function manualQuoteWrite(input: {
+  existing: ManualQuoteExisting | null;
+  premium: string;
+  shopLine: string;
+  quoteRunId: string;
+  attemptLogId: string;
+  riskOutcome: string;
+  nextStep: string;
+  bindable: boolean;
+}): ManualQuoteWrite {
+  const write: ManualQuoteWrite = {
+    premium: input.premium,
+    stub: false,
+    shopLine: input.existing?.shopLine || input.shopLine,
+    bindable: input.bindable,
+    riskOutcome: input.riskOutcome,
+    nextStep: input.nextStep,
+    quoteAttemptLogId: input.existing?.quoteAttemptLogId || input.attemptLogId,
+  };
+  if (!input.existing?.quoteRunId) write.quoteRunId = input.quoteRunId;
+  if (!input.existing?.notes?.trim()) write.notes = MANUAL_QUOTE_NOTE;
+  return write;
+}
+
 /** Positive dollar amount for a recorded premium. Empty or zero is not a quote. */
 export function parseManualQuotePremium(raw: string | null | undefined): string | null {
   const cleaned = String(raw ?? "").replace(/[$,\s]/g, "").trim();

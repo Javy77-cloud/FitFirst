@@ -20,6 +20,8 @@ import { appointmentLine, DEFAULT_TENANT_ID, writesDealLine, type PriorAttempt }
 import { resolveShopLineAndLob } from "@/lib/deals/package-lines";
 import {
   MANUAL_QUOTE_NOTE,
+  manualQuoteTarget,
+  manualQuoteWrite,
   marketCarriersForManualQuote,
   parseManualQuotePremium,
 } from "@/lib/deals/manual-quote";
@@ -592,50 +594,54 @@ export async function recordManualQuoteAction(formData: FormData) {
         eq(quotes.tenantId, DEFAULT_TENANT_ID),
       ),
     );
-  const exact = existing.filter((row) => row.shopLine === resolved.line);
-  const pool = exact.length > 0 ? exact : existing.filter((row) => !row.shopLine);
-  const target = pool.find((row) => !row.stub) ?? pool[0] ?? null;
-  const quotePatch = {
-    quoteAttemptLogId: log.id,
+  const target = manualQuoteTarget(existing, resolved.line);
+  const quoteWrite = manualQuoteWrite({
+    existing: target,
     premium,
-    notes: MANUAL_QUOTE_NOTE,
-    stub: false,
     shopLine: resolved.line,
     quoteRunId,
+    attemptLogId: log.id,
     riskOutcome: synced.riskOutcome,
     nextStep: synced.nextStep,
     bindable: synced.bindable,
-  };
-  const quoteId = target
-    ? target.id
-    : (
-        await db
-          .insert(quotes)
-          .values({
-            tenantId: DEFAULT_TENANT_ID,
-            dealId,
-            riskId: risk.id,
-            carrierId,
-            agentStatus: "new",
-            ...quotePatch,
-          })
-          .returning({ id: quotes.id })
-      )[0]?.id;
+  });
+  let quoteId = target?.id ?? null;
   if (target) {
     await db
       .update(quotes)
-      .set(quotePatch)
-      .where(and(eq(quotes.id, target.id), eq(quotes.dealId, dealId)));
+      .set(quoteWrite)
+      .where(
+        and(
+          eq(quotes.id, target.id),
+          eq(quotes.dealId, dealId),
+          eq(quotes.carrierId, carrierId),
+        ),
+      );
+  } else {
+    const [created] = await db
+      .insert(quotes)
+      .values({
+        tenantId: DEFAULT_TENANT_ID,
+        dealId,
+        riskId: risk.id,
+        carrierId,
+        agentStatus: "new",
+        ...quoteWrite,
+      })
+      .returning({ id: quotes.id });
+    quoteId = created?.id ?? null;
   }
   if (!quoteId) throw new Error("Could not save the quote.");
 
   const product = parseDealProduct(productRaw);
   const stages = parseProductStages(saved.productStages);
-  const selected = product ? (stages[product]?.selectedQuoteIds ?? []).filter(Boolean) : [];
-  const productStages =
-    product && selected.length === 0
-      ? setProductStage(stages, product, { selectedQuoteIds: [quoteId] })
-      : saved.productStages;
+  const selected = new Set(
+    product ? (stages[product]?.selectedQuoteIds ?? []).filter(Boolean) : [],
+  );
+  if (product) selected.add(quoteId);
+  const productStages = product
+    ? setProductStage(stages, product, { selectedQuoteIds: [...selected] })
+    : saved.productStages;
   await persistDealShopFlow(dealId, {
     ...saved,
     quoteRuns: { ...saved.quoteRuns, [resolved.line]: quoteRunId },
