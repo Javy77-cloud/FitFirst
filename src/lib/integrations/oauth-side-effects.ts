@@ -46,19 +46,13 @@ export async function applyByoConnectSideEffects(input: {
       });
     }
     if (input.provider === "google_calendar") {
-      try {
-        await syncGoogleBusy();
-      } catch {
-        /* connect still succeeded */
-      }
+      // Never await on the OAuth callback path — Google's consent screen
+      // spins until our redirect returns. Busy sync runs on Calendar load.
+      void syncGoogleBusy().catch(() => null);
     }
   }
   if (input.provider === "outlook_calendar") {
-    try {
-      await syncOutlookBusy();
-    } catch {
-      /* connect still succeeded */
-    }
+    void syncOutlookBusy().catch(() => null);
   }
   if (input.provider === "docusign") {
     await syncEsignSettingsFromDocuSign(input.accountLabel);
