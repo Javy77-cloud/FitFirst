@@ -2129,7 +2129,7 @@ Yahoo Mail, Outlook Calendar, and DocuSign sandbox stay bring-your-own: Agency A
 
 | Connector | What works | What is stubbed |
 | --- | --- | --- |
-| **Gmail** | One-click Google Connect. OAuth with `gmail.send` + `gmail.readonly`. Desk **Read latest** / **Send test**. Connected inbox send uses Gmail API. Solos (Admin+desk) connect personal Gmail. | Campaign blasts stay `would_send`. |
+| **Gmail** | One-click Google Connect. OAuth with `gmail.send` + `gmail.readonly` + `gmail.modify`. Desk **Read latest** / **Send test**. Connected inbox send uses Gmail API. Opening a thread removes Gmail’s Unread label. Solos (Admin+desk) connect personal Gmail. **Reconnect once** if the mailbox was connected before `gmail.modify` — the old token cannot mark mail read. | Campaign blasts stay `would_send`. |
 | **Yahoo Mail** | Free Yahoo developer OpenID. Connection + identity ping. | Yahoo Mail REST is retired. IMAP/XOAUTH2 send-read is later. |
 | **Google Calendar** | Same platform Google Connect. Calendar API + Free/Busy. Busy blocks render on the desk calendar. Scheduling a meeting/call over busy throws unless forced. | Two-way event push. |
 | **Outlook Calendar** | Entra app (`tenant=common`). Graph `calendarView` busy pull. Same desk busy gate. | Two-way Outlook write. Yahoo Calendar has no free OAuth API — skipped. |

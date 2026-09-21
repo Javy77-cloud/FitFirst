@@ -3880,21 +3880,22 @@ button.ff-renewal-risk-badge {
   position: sticky;
   top: 0;
   z-index: 1;
-  padding: 0.42rem 0.75rem 0.2rem;
+  padding: 0.55rem 0.75rem 0.35rem;
   background: #fff;
 }
 .ff-inbox-band h2 {
   margin: 0;
-  font-size: 0.68rem;
+  font-size: 0.84rem;
   font-weight: 750;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--ff-muted);
+  color: var(--ff-navy);
 }
 .ff-inbox-band header span {
-  font-size: 0.68rem;
+  font-size: 0.78rem;
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
-  color: var(--ff-muted);
+  color: var(--ff-navy);
 }
 .ff-inbox-band ul { margin: 0; padding: 0; list-style: none; }
 .ff-inbox-row {
@@ -3912,8 +3913,13 @@ button.ff-renewal-risk-badge {
   color: inherit;
 }
 .ff-inbox-band li:last-child .ff-inbox-row { border-bottom: 0; }
-.ff-inbox-row:hover { background: color-mix(in srgb, var(--ff-navy) 4%, #fff); }
-.ff-inbox-row.is-selected {
+.ff-inbox-row.is-unread { background: #fff; }
+.ff-inbox-row.is-unread:hover { background: color-mix(in srgb, var(--ff-navy) 4%, #fff); }
+.ff-inbox-row.is-read { background: #f2f6fc; }
+.ff-inbox-row.is-read:hover { background: #e8eef6; }
+.ff-inbox-row.is-selected,
+.ff-inbox-row.is-selected.is-read,
+.ff-inbox-row.is-selected.is-unread {
   background: color-mix(in srgb, var(--ff-navy) 20%, #dce6f4);
   box-shadow: inset 4px 0 0 var(--ff-navy);
 }
@@ -4006,8 +4012,17 @@ button.ff-renewal-risk-badge {
 .ff-inbox-body-html p {
   white-space: normal !important;
 }
-.ff-inbox-body-html img {
+.ff-inbox-body-html img,
+.ff-inbox-inline-images img {
   height: auto !important;
+  display: block;
+  margin: 0.45rem 0;
+}
+.ff-inbox-inline-images {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+  max-width: 100%;
 }
 .ff-inbox-thread {
   margin: 0.7rem 0 0;

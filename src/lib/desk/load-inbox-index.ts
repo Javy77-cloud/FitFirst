@@ -1,7 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { contacts, deals, policies } from "@/lib/db/schema";
+import { contacts, deals, deskCustomFieldValues, policies } from "@/lib/db/schema";
 import { isInForceStatus } from "@/lib/policy/status";
 import { daysUntilExpiration, expirationDay } from "@/lib/ams/renewals";
 import { deskNow } from "@/lib/home/as-of";
@@ -9,6 +9,7 @@ import { partyLabel } from "@/lib/desk/policy-name";
 import { gmailAccountEmail, gmailIsReady } from "@/lib/integrations/gmail";
 import {
   dealClosedForInbox,
+  parseInboxAliasEmails,
   type InboxContactHit,
   type InboxDealHit,
   type InboxMatchIndex,
@@ -18,7 +19,7 @@ import {
 export async function loadInboxMatchIndex(asOf = deskNow()): Promise<InboxMatchIndex> {
   const ready = await gmailIsReady().catch(() => false);
   const agencyEmail = ready ? await gmailAccountEmail().catch(() => null) : null;
-  const [contactRows, dealRows, policyRows] = await Promise.all([
+  const [contactRows, dealRows, policyRows, aliasRows] = await Promise.all([
     db
       .select({
         id: contacts.id,
@@ -54,15 +55,38 @@ export async function loadInboxMatchIndex(asOf = deskNow()): Promise<InboxMatchI
       .from(policies)
       .leftJoin(contacts, eq(policies.contactId, contacts.id))
       .where(eq(policies.tenantId, DEFAULT_TENANT_ID)),
+    db
+      .select({
+        recordId: deskCustomFieldValues.recordId,
+        value: deskCustomFieldValues.value,
+      })
+      .from(deskCustomFieldValues)
+      .where(
+        and(
+          eq(deskCustomFieldValues.tenantId, DEFAULT_TENANT_ID),
+          eq(deskCustomFieldValues.module, "contacts"),
+          eq(deskCustomFieldValues.fieldKey, "inbox_emails"),
+        ),
+      )
+      .then((rows) => rows)
+      .catch(() => [] as { recordId: string; value: string | null }[]),
   ]);
 
-  const contactHits: InboxContactHit[] = contactRows
-    .filter((row) => (row.email ?? "").trim())
-    .map((row) => ({
-      id: row.id,
-      name: partyLabel({ firstName: row.firstName, lastName: row.lastName }, null) || "Contact",
-      email: row.email ?? "",
-    }));
+  const aliasesByContact = new Map<string, string[]>();
+  for (const row of aliasRows) {
+    aliasesByContact.set(row.recordId, parseInboxAliasEmails(row.value));
+  }
+  const contactHits: InboxContactHit[] = [];
+  for (const row of contactRows) {
+    const name = partyLabel({ firstName: row.firstName, lastName: row.lastName }, null) || "Contact";
+    const emails = new Set<string>();
+    const primary = (row.email ?? "").trim();
+    if (primary) emails.add(primary);
+    for (const alias of aliasesByContact.get(row.id) ?? []) emails.add(alias);
+    for (const email of emails) {
+      contactHits.push({ id: row.id, name, email });
+    }
+  }
 
   const dealHits: InboxDealHit[] = dealRows.map((row) => ({
     id: row.id,

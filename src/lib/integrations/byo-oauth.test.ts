@@ -34,6 +34,7 @@ describe("BYO OAuth wave", () => {
     expect(BYO_OAUTH_SPECS.docusign.authorizeUrl).toContain("account-d.docusign.com");
     expect(BYO_OAUTH_SPECS.yahoo.scopes).toContain("openid");
     expect(BYO_OAUTH_SPECS.gmail.scopes.join(" ")).toMatch(/gmail.send/);
+    expect(BYO_OAUTH_SPECS.gmail.scopes.join(" ")).toMatch(/gmail.modify/);
     expect(BYO_OAUTH_SPECS.google_calendar.scopes.join(" ")).toMatch(/calendar.freebusy/);
     expect(BYO_OAUTH_SPECS.outlook_calendar.scopes).toContain("Calendars.Read");
   });

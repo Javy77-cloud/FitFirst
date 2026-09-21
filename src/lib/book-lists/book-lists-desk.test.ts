@@ -15,6 +15,10 @@ describe("command-card book lists", () => {
       expect(page).toMatch(/PipelineFilterPopover/);
     }
     expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/data-ff-book-why/);
+    expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/data-hay=\{card\.hay\}/);
+    expect(source("src/components/book-lists/book-workspace.tsx")).toMatch(/BookLiveScope/);
+    expect(source("src/components/smart-search.tsx")).toMatch(/chrome-search/);
+    expect(source("src/components/smart-search.tsx")).toMatch(/\/contacts/);
     expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/ff-stack-action/);
     expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/ff-stack-glyph/);
   });

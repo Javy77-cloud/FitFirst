@@ -32,7 +32,18 @@ export function SmartSearch({ defaultQuery = "" }: { defaultQuery?: string }) {
   useEffect(() => {
     const q = debounced.trim();
     setLiveQuery("chrome-search", q);
-    if (pathname === "/search") replaceQueryParam("q", q);
+    const bookModule =
+      pathname === "/contacts"
+        ? "contacts"
+        : pathname === "/accounts"
+          ? "businesses"
+          : pathname === "/policies"
+            ? "policies"
+            : pathname === "/carriers"
+              ? "carriers"
+              : null;
+    if (bookModule) setLiveQuery(bookModule, q);
+    if (pathname === "/search" || bookModule) replaceQueryParam("q", q);
     if (!q) {
       setHits([]);
       setLoading(false);

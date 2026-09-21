@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, or, ne, isNull } from "drizzle-orm";
+import { and, asc, eq, ilike, or, ne, isNull, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { accounts, contactAccounts, contactCoapplicants, contacts, deals, risks } from "@/lib/db/schema";
@@ -514,14 +514,26 @@ export async function updateContactCoverageRecord(input: {
 }
 
 export async function searchContactsForLink(query: string, excludeId?: string) {
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
   const clauses = [
     eq(contacts.tenantId, DEFAULT_TENANT_ID),
     isNull(contacts.archivedAt),
     isNull(contacts.mergedIntoId),
   ];
   if (excludeId) clauses.push(ne(contacts.id, excludeId));
-  const rows = await db
+  if (q) {
+    const like = `%${q.replace(/[%_]/g, "")}%`;
+    clauses.push(
+      or(
+        ilike(contacts.firstName, like),
+        ilike(contacts.lastName, like),
+        ilike(contacts.email, like),
+        sql`(${contacts.firstName} || ' ' || ${contacts.lastName}) ilike ${like}`,
+        sql`(${contacts.lastName} || ', ' || ${contacts.firstName}) ilike ${like}`,
+      )!,
+    );
+  }
+  return db
     .select({
       id: contacts.id,
       firstName: contacts.firstName,
@@ -531,14 +543,8 @@ export async function searchContactsForLink(query: string, excludeId?: string) {
     })
     .from(contacts)
     .where(and(...clauses))
-    .limit(80);
-  if (!q) return rows.slice(0, 20);
-  return rows
-    .filter((row) => {
-      const hay = `${row.firstName} ${row.lastName} ${row.email ?? ""} ${row.phone ?? ""}`.toLowerCase();
-      return hay.includes(q);
-    })
-    .slice(0, 20);
+    .orderBy(asc(contacts.lastName), asc(contacts.firstName))
+    .limit(20);
 }
 
 export async function searchBusinessesForLink(query: string) {

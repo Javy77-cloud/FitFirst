@@ -5,6 +5,7 @@ import {
   groupInboxThreads,
   inboxCuesFromThreads,
   inboxThreadRecency,
+  markDeskThreadRead,
   presentInboxThread,
 } from "./inbox-desk";
 import type { GmailThreadPreview } from "@/lib/integrations/gmail";
@@ -90,6 +91,17 @@ describe("inbox desk presentation", () => {
     expect(groups.read.map((row) => row.id)).toEqual(["r-new", "r-old"]);
   });
 
+  it("moves an opened unread thread into the Read band", () => {
+    const unread = presentInboxThread(preview({ id: "t1", unread: true }), index);
+    const read = presentInboxThread(preview({ id: "t2", unread: false, lastInternalDate: 1 }), index);
+    const opened = markDeskThreadRead([unread, read], "t1");
+    expect(opened.find((row) => row.id === "t1")?.attention).toBe("read");
+    expect(opened.find((row) => row.id === "t1")?.unread).toBe(false);
+    const groups = groupInboxThreads(opened);
+    expect(groups.unread).toEqual([]);
+    expect(groups.read.map((row) => row.id)).toEqual(["t1", "t2"]);
+  });
+
   it("keeps FitFirst mail cues for read inbound that is still in INBOX", () => {
     const readInbound = presentInboxThread(preview({ id: "t2", unread: false, inboundLast: true }), index);
     const cues = inboxCuesFromThreads([readInbound]);
@@ -122,6 +134,14 @@ describe("inbox desk presentation", () => {
     expect(chrome).toMatch(/ff-inbox-splitter/);
     expect(chrome).toMatch(/--ff-inbox-list-width/);
     expect(desk).toMatch(/data-ff-inbox-band-label=\{band\}/);
+    expect(desk).toMatch(/is-read/);
+    expect(desk).toMatch(/InboxLinkContactDialog/);
+    expect(desk).toMatch(/data-ff-inbox-images/);
+    expect(page).toMatch(/markGmailThreadRead/);
+    expect(page).toMatch(/GMAIL_MARK_READ_RECONNECT/);
+    expect(chrome).toMatch(/\.ff-inbox-row\.is-read \{[\s\S]*#f2f6fc/);
+    expect(chrome).toMatch(/\.ff-inbox-band h2 \{[\s\S]*font-size: 0\.84rem;/);
+    expect(readFileSync("src/lib/integrations/oauth-specs.ts", "utf8")).toMatch(/gmail\.modify/);
     expect(desk).toMatch(/ff-inbox-body-html/);
     expect(chrome).toMatch(/\.ff-inbox-bands \{[\s\S]*flex: 0 0 auto;/);
     expect(chrome).toMatch(/\.ff-inbox-detail-pane \{[\s\S]*overflow-x: hidden;/);

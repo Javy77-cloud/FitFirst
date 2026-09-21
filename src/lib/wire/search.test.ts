@@ -13,6 +13,8 @@ describe("smart search", () => {
   it("finds lead, deal, contact, business, policy, and carrier by contains match", () => {
     expect(matchesQuery("lena", "Elena", "Ruiz")).toBe(true);
     expect(matchesQuery("integri", "American Integrity")).toBe(true);
+    expect(matchesQuery("Ruiz, Elena", "Elena", "Ruiz")).toBe(true);
+    expect(matchesQuery("Elena Ruiz / HO3", "Elena", "Ruiz", "HO3", "HO-100")).toBe(true);
     expect(hitFromLead({ id: "l", firstName: "Elena", lastName: "Ruiz" }).href).toBe("/leads/l");
     expect(hitFromDeal({ id: "d", title: "Ruiz · Melbourne HO3", pipelineStage: "bound" }).href).toBe("/deals/d");
     expect(hitFromContact({ id: "c", firstName: "Elena", lastName: "Ruiz" }).href).toBe("/contacts/c");

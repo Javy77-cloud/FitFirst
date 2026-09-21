@@ -35,6 +35,7 @@ export function BookGlanceCardView({
     <article
       className={cn("ff-stack-card ff-book-card", `ff-heat-${card.heat}`)}
       data-ff-book-card={card.id}
+      data-hay={card.hay}
       data-ff-book-surface={card.surface}
       data-ff-heat={card.heat}
       data-ff-book-column={card.column}
