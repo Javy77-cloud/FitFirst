@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
+import { saveCalendarAgencySettings } from "@/app/actions/calendar-settings";
 import { saveCommunicationsSettings } from "@/app/actions/meetings";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { SettingsShell } from "@/components/settings/settings-shell";
@@ -14,6 +15,7 @@ import { users } from "@/lib/db/schema";
 import { ADMIN_USER_ID, AGENT_USER_ID } from "@/lib/fixtures/ids";
 import { listCatalogItems } from "@/lib/integrations/catalog-store";
 import type { IntegrationCategory } from "@/lib/integrations/catalog";
+import { getCalendarAgencyPrefs } from "@/lib/ops/calendar-agency-prefs";
 import { meetingActorId, VIDEO_PROVIDER_LABEL, VIDEO_PROVIDERS } from "@/lib/meetings/types";
 
 export const dynamic = "force-dynamic";
@@ -63,10 +65,11 @@ export default async function CommunicationsSettingsPage() {
     adminUserId: ADMIN_USER_ID,
     agentUserId: AGENT_USER_ID,
   });
-  const [items, actor, agency] = await Promise.all([
+  const [items, actor, agency, calendarPrefs] = await Promise.all([
     listCatalogItems(),
     db.select().from(users).where(eq(users.id, actorId)).then((rows) => rows[0] ?? null),
     getAgencySettings(),
+    getCalendarAgencyPrefs(),
   ]);
   const videoProvider =
     "videoProvider" in agency && typeof agency.videoProvider === "string" ? agency.videoProvider : "none";
@@ -104,10 +107,65 @@ export default async function CommunicationsSettingsPage() {
           Outbound email / SMS queue
         </Link>
         <span className="mx-2 text-muted-foreground">·</span>
+        <Link href="/settings/email-templates" className="text-primary hover:underline">
+          Email templates
+        </Link>
+        <span className="mx-2 text-muted-foreground">·</span>
         <Link href="/settings/integrations" className="text-primary hover:underline">
           Open the Integrations catalog
         </Link>
       </p>
+
+      <section id="calendar" className="ff-card mt-6 space-y-3 p-4 scroll-mt-4">
+        <h2 className="text-sm font-semibold text-navy">Calendar prefs</h2>
+        <p className="text-sm text-muted-foreground">
+          Sunday tint and US federal holiday labels on the desk calendar. Google Calendar connect
+          lives under Email / Integrations. Agents still schedule over holidays — labels are
+          reference only.
+        </p>
+        {session.isAdmin ? (
+          <form action={saveCalendarAgencySettings} className="space-y-3">
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="calendarMarkSundayNonWorking"
+                value="true"
+                defaultChecked={calendarPrefs.calendarMarkSundayNonWorking}
+                className="mt-1"
+              />
+              <span>
+                <span className="font-medium text-navy">Mark Sunday as non-working</span>
+                <span className="mt-0.5 block text-helper text-muted-foreground">
+                  Tint Sunday cells light gray on the month grid. Default on.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="calendarShowUsFederalHolidays"
+                value="true"
+                defaultChecked={calendarPrefs.calendarShowUsFederalHolidays}
+                className="mt-1"
+              />
+              <span>
+                <span className="font-medium text-navy">Show US federal holidays</span>
+                <span className="mt-0.5 block text-helper text-muted-foreground">
+                  Label observed US federal holidays on the month grid. Default on.
+                </span>
+              </span>
+            </label>
+            <Button type="submit" size="sm">
+              Save calendar settings
+            </Button>
+          </form>
+        ) : (
+          <p className="text-sm text-muted-foreground">Only Admin can change agency calendar prefs.</p>
+        )}
+        <Link href="/calendar" className="inline-block text-sm text-primary hover:underline">
+          Open calendar
+        </Link>
+      </section>
 
       <form action={saveCommunicationsSettings} className="mt-6 grid gap-4 xl:grid-cols-2 xl:items-start">
         <section className="ff-card space-y-3 p-4">

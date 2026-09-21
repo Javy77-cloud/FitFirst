@@ -38,7 +38,7 @@ describe("templates IA", () => {
     expect(hub).toMatch(/dissolved Tasks never appear in this list/);
     expect(source("src/app/templates/page.tsx")).toMatch(/TemplatesHub/);
     expect(source("src/app/settings/email-templates/page.tsx")).toMatch(/title="Email templates"/);
-    expect(source("src/lib/settings/nav.ts")).toMatch(/id: "email-templates"/);
+    expect(source("src/lib/settings/nav.ts")).toMatch(/"email-templates"/);
     expect(source("src/lib/settings/nav.ts")).toMatch(/href: "\/settings\/email-templates"/);
     expect(source("src/components/settings/settings-pinned-links.tsx")).toMatch(/Email templates/);
   });

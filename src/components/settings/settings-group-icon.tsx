@@ -1,5 +1,6 @@
 import {
   ArrowLeftRight,
+  BookOpen,
   Building2,
   Code2,
   CreditCard,
@@ -7,6 +8,8 @@ import {
   Phone,
   Plug,
   Shield,
+  TrendingUp,
+  Users,
   Workflow,
   type LucideIcon,
 } from "lucide-react";
@@ -15,7 +18,10 @@ import { cn } from "@/lib/utils";
 
 const ICONS: Record<IconId, LucideIcon> = {
   agency: Building2,
+  people: Users,
   phone: Phone,
+  book: BookOpen,
+  growth: TrendingUp,
   connect: Plug,
   automations: Workflow,
   developer: Code2,
@@ -28,16 +34,21 @@ const ICONS: Record<IconId, LucideIcon> = {
 export function SettingsGroupIcon({
   name,
   className,
+  tone = "default",
 }: {
   name: IconId;
   className?: string;
+  tone?: "default" | "navy" | "terracotta";
 }) {
   const Icon = ICONS[name];
   return (
     <span
       aria-hidden
       className={cn(
-        "flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary text-navy",
+        "flex size-9 shrink-0 items-center justify-center rounded-md",
+        tone === "navy" && "bg-navy text-white",
+        tone === "terracotta" && "bg-[color:var(--ff-terracotta)] text-white",
+        tone === "default" && "bg-navy/10 text-navy",
         className,
       )}
     >

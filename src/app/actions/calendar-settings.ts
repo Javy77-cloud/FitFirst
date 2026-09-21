@@ -16,6 +16,7 @@ export async function saveCalendarAgencySettings(formData: FormData) {
     calendarShowUsFederalHolidays: checked(formData, "calendarShowUsFederalHolidays"),
   });
   revalidatePath("/settings");
+  revalidatePath("/settings/communications");
   revalidatePath("/calendar");
-  await flashSettings("/settings", "calendar-settings-saved");
+  await flashSettings("/settings/communications", "calendar-settings-saved");
 }

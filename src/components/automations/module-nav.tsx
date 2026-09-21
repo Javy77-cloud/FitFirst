@@ -39,7 +39,11 @@ function NavRow({
   );
 }
 
-export function AutomationsModuleNav() {
+export function AutomationsModuleNav({ showMacros = true }: { showMacros?: boolean }) {
+  const devItems = AUTOMATION_DEV_SECTIONS.filter((section) => showMacros || section.id !== "macros").map((section) => ({
+    href: section.href,
+    label: section.label,
+  }));
   return (
     <div className="mb-4 space-y-2">
       <NavRow
@@ -59,10 +63,7 @@ export function AutomationsModuleNav() {
         <NavRow
           label="Developer tools"
           items={[
-            ...AUTOMATION_DEV_SECTIONS.map((section) => ({
-              href: section.href,
-              label: section.label,
-            })),
+            ...devItems,
             { href: "/settings/developer-hub", label: "Developer Hub" },
           ]}
         />

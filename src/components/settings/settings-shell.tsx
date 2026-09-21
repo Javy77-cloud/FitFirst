@@ -4,9 +4,11 @@ import { AppShell } from "@/components/app-shell";
 import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { SettingsNav } from "@/components/settings/settings-nav";
 import { SettingsScrollPreserve } from "@/components/settings/settings-scroll-preserve";
+import { currentDeskSession } from "@/lib/auth/session";
 import type { SettingsNavId } from "@/lib/settings/nav";
+import { sessionMayUseMacros } from "@/lib/settings/agent-feature-toggles-prefs";
 
-export function SettingsShell({
+export async function SettingsShell({
   title,
   current = "overview",
   children,
@@ -21,10 +23,13 @@ export function SettingsShell({
   eyebrow?: string;
   allowMfaPending?: boolean;
 }) {
+  const session = await currentDeskSession();
+  const showMacros = current === "overview" ? true : await sessionMayUseMacros(session);
+
   return (
     <AppShell title={title} eyebrow={eyebrow} actions={actions} allowMfaPending={allowMfaPending}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-        {current === "overview" ? null : <SettingsNav current={current} />}
+        {current === "overview" ? null : <SettingsNav current={current} showMacros={showMacros} />}
         <div className="min-w-0 flex-1">
           {current !== "overview" ? (
             <DeskPageTrail
