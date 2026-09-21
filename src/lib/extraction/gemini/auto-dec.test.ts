@@ -8,6 +8,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { shopLineForGeminiExtract } from "@/lib/deals/quote-docs";
+import { docTypeUsesGemini } from "@/lib/extraction/gemini";
 import { fillableGeminiFields, mapGeminiJsonToFields } from "@/lib/extraction/gemini/map";
 import { buildGeminiSystemPrompt, buildGeminiUserPrompt } from "@/lib/extraction/gemini/prompt";
 import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
@@ -127,16 +128,51 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(extractKeyToSheetKey("home", "vehicle_3_vin")).toBeNull();
   });
 
-  it("teaches ACORD auto dec photos to return visible fields", () => {
+  it("teaches Gemini to read auto policies and declarations into priority Auto RP fields", () => {
     const system = buildGeminiSystemPrompt("photo", "auto");
-    const user = buildGeminiUserPrompt("dec", "auto");
+    const user = buildGeminiUserPrompt("policy", "auto");
+    const pdf = buildGeminiUserPrompt("dec", "auto");
+    expect(system).toMatch(/Auto policies and Auto declarations/);
+    expect(system).toMatch(/phone photos and PDFs/);
     expect(system).toMatch(/ACORD 90/);
     expect(system).toMatch(/2019 TOYOTA CAMRY/);
     expect(system).toMatch(/Never return an empty object/);
     expect(system).toMatch(/Bodily Injury/);
+    expect(system.indexOf("Vehicles and VIN")).toBeLessThan(system.indexOf("Other allowed keys"));
+    expect(system.indexOf("Drivers")).toBeLessThan(system.indexOf("Coverage limits"));
+    expect(system.indexOf("effective_date and expiration_date")).toBeLessThan(system.indexOf("current_carrier"));
+    expect(user).toMatch(/Auto policy or Auto declaration/);
     expect(user).toMatch(/not_declaration/);
     expect(user).toMatch(/Do not treat this as homeowners/);
     expect(user).toMatch(/coverage table/);
+    expect(user).toMatch(/policy_number/);
+    expect(pdf).toMatch(/vin and vehicle_year/);
+    expect(docTypeUsesGemini("current_policy")).toBe(true);
+    expect(docTypeUsesGemini("policy")).toBe(true);
+  });
+
+  it("maps dec-style split limits and Policy # onto Auto RP options", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        "Policy #": "PA 90211",
+        carrier: "GEICO",
+        liability_bi: "$100,000/$300,000",
+        liability_pd: "$50,000",
+        um_uim: "100k/300k",
+        effective_date: "01/01/2026",
+        expiration_date: "07/01/2026",
+      },
+      "current_policy",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.policy_number.value).toBe("PA 90211");
+    expect(applied.values.current_carrier.value).toBe("GEICO");
+    expect(applied.values.liability_bi.value).toBe("100/300");
+    expect(applied.values.liability_pd.value).toBe("50000");
+    expect(applied.values.um_uim.value).toBe("100/300");
+    expect(applied.values.effective_date.value).toBe("01/01/2026");
+    expect(applied.values.expiration_date.value).toBe("07/01/2026");
   });
 
   it("uses the Auto prompt for an Auto deal photo even when the file is typed dec", () => {

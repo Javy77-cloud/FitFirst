@@ -970,13 +970,21 @@ export function normalizeAutoSplitLimit(raw: string | null | undefined): string 
   const compact = text.replace(/[$,\s]/g, "").replace(/-/g, "/").toLowerCase();
   if (compact === "none" || compact === "n/a" || compact === "na") return "None";
   if (compact === "rejected" || compact === "declined" || compact === "waived") return "Rejected";
+  const known = [...AUTO_BI_LIMIT_OPTIONS, ...AUTO_UM_UIM_OPTIONS] as readonly string[];
   const slash = compact.match(/^(\d{2,3})\/(\d{2,3})$/);
   if (slash) {
     const next = `${Number(slash[1])}/${Number(slash[2])}`;
-    const known = [
-      ...AUTO_BI_LIMIT_OPTIONS,
-      ...AUTO_UM_UIM_OPTIONS,
-    ] as readonly string[];
+    if (known.includes(next)) return next;
+  }
+  // Dec pages print $100,000/$300,000 or 100k/300k. Sheet options are 100/300.
+  const parts = [...compact.matchAll(/(\d+)(k)?/g)];
+  if (parts.length >= 2) {
+    const toPart = (digits: string, thousands: boolean) => {
+      const amount = Number(digits) * (thousands ? 1000 : 1);
+      if (amount >= 1000 && amount % 1000 === 0) return String(amount / 1000);
+      return String(amount);
+    };
+    const next = `${toPart(parts[0][1], Boolean(parts[0][2]))}/${toPart(parts[1][1], Boolean(parts[1][2]))}`;
     if (known.includes(next)) return next;
   }
   return text;

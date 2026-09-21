@@ -73,20 +73,25 @@ export function sourceDocFillsHome(docType: string): boolean {
   return HO_SOURCE_TYPES.has(docType);
 }
 
+/** Auto policy / declaration wording. "Policy #" alone is not enough — HO decs have that too. */
+const AUTO_PACKET =
+  /\bvin\b|vehicle identification|personal auto|automobile (policy|declaration)|auto (policy|dec)|vehicle year|bodily injury|uninsured motorist|comprehensive|collision deductible|covered auto/;
+
+export function looksLikeAutoPacket(text: string): boolean {
+  return AUTO_PACKET.test(text.toLowerCase());
+}
+
 /** Home first. Only move off Home when the packet is clearly another line. */
 export function inferShopLine(text: string, filename: string, docType: string): ShopLine {
   const blob = `${filename}\n${text}`.toLowerCase();
   if (docType === "quote" || docType === "quote_pdf") return "home";
   if (sourceDocFillsHome(docType)) {
-    if (
-      /\bvin\b|personal auto|auto (policy|dec)|vehicle year/.test(blob) &&
-      !/homeowners|coverage a|wind mit|4[- ]?point|four[- ]?point/.test(blob)
-    ) {
+    if (looksLikeAutoPacket(blob) && !/homeowners|coverage a|wind mit|4[- ]?point|four[- ]?point/.test(blob)) {
       return "auto";
     }
     return "home";
   }
-  if (/\bvin\b|personal auto|auto (policy|dec)|vehicle year/.test(blob) && !/homeowners|coverage a/.test(blob)) {
+  if (looksLikeAutoPacket(blob) && !/homeowners|coverage a/.test(blob)) {
     return "auto";
   }
   if (/\bflood\b/.test(blob) && !/homeowners|coverage a|wind mit/.test(blob)) return "flood";
