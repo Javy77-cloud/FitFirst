@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { startByoOauth } from "@/app/actions/byo-oauth";
 import { createContactFromInbox, logInboxThread, replyInboxThread, sendInboxMessage } from "@/app/actions/inbox";
+import { InboxSplit } from "@/components/inbox/inbox-split";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -144,75 +145,79 @@ export function InboxDesk({
       {threads.length === 0 && !error ? (
         <p className="ff-inbox-empty-hero">Inbox is empty.</p>
       ) : null}
-      <div className="ff-inbox-split">
-        <div className="ff-inbox-bands">
-          {INBOX_BANDS.map((band) => {
-            const rows = groups[band];
-            if (rows.length === 0) return null;
-            return (
-              <section key={band} className={cn("ff-inbox-band", `ff-inbox-band-${band}`)} data-ff-inbox-band={band}>
-                <header>
-                  <h2>{inboxBandLabel(band)}</h2>
-                  <span>{rows.length}</span>
-                </header>
-                <ul>
-                  {rows.map((row) => {
-                    const open = selected?.id === row.id;
-                    return (
-                      <li key={row.id}>
-                        <Link
-                          href={row.href}
-                          className={cn("ff-inbox-row", row.unread && "is-unread", open && "is-selected")}
-                          data-ff-inbox-thread={row.id}
-                          data-ff-inbox-attention={row.attention}
-                          aria-current={open ? "true" : undefined}
-                        >
-                          <span className="ff-inbox-row-from">
-                            {inboxSenderLabel(row.from, row.match.contact?.name)}
-                            {row.messageCount > 1 ? ` (${row.messageCount})` : ""}
-                          </span>
-                          <span className="ff-inbox-row-when">{formatInboxListWhen(row.lastInternalDate || row.date)}</span>
-                          <span className="ff-inbox-row-subject">{row.subject}</span>
-                          <span className="ff-inbox-row-snippet">{snippetOf(row.snippet, 88)}</span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            );
-          })}
-        </div>
-        {selected ? (
-          <article className="ff-inbox-detail" data-ff-inbox-detail={selected.id}>
-            <h2>{selected.subject}</h2>
-            <p className="text-sm text-muted-foreground">
-              {inboxSenderLabel(selected.from, selected.match.contact?.name)} ·{" "}
-              {formatInboxWhen(selected.lastInternalDate || selected.date)}
-            </p>
-            {selected.match.unmatched ? (
-              <p className="mt-2 text-sm text-navy">No contact for this address yet.</p>
-            ) : null}
-            <ThreadActions thread={selected} />
-            {messages.length > 0 ? (
-              <ol className="ff-inbox-thread">
-                {messages.map((msg) => (
-                  <li key={msg.id} className={cn("ff-inbox-msg", msg.inbound ? "is-in" : "is-out")}>
-                    <p className="ff-inbox-msg-meta">
-                      {msg.inbound ? "Inbound" : "Sent"} · {inboxSenderLabel(msg.from) || "Unknown"} ·{" "}
-                      {formatInboxWhen(msg.internalDate || msg.date)}
-                    </p>
-                    <p className="ff-inbox-body">{msg.body || msg.snippet}</p>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p className="ff-inbox-body">{selected.snippet}</p>
-            )}
-            <ReplyForm thread={selected} />
-          </article>
-        ) : null}
-      </div>
+      <InboxSplit
+        list={
+          <div className="ff-inbox-bands">
+            {INBOX_BANDS.map((band) => {
+              const rows = groups[band];
+              if (rows.length === 0) return null;
+              return (
+                <section key={band} className={cn("ff-inbox-band", `ff-inbox-band-${band}`)} data-ff-inbox-band={band}>
+                  <header>
+                    <h2>{inboxBandLabel(band)}</h2>
+                    <span>{rows.length}</span>
+                  </header>
+                  <ul>
+                    {rows.map((row) => {
+                      const open = selected?.id === row.id;
+                      return (
+                        <li key={row.id}>
+                          <Link
+                            href={row.href}
+                            className={cn("ff-inbox-row", row.unread && "is-unread", open && "is-selected")}
+                            data-ff-inbox-thread={row.id}
+                            data-ff-inbox-attention={row.attention}
+                            aria-current={open ? "true" : undefined}
+                          >
+                            <span className="ff-inbox-row-from">
+                              {inboxSenderLabel(row.from, row.match.contact?.name)}
+                              {row.messageCount > 1 ? ` (${row.messageCount})` : ""}
+                            </span>
+                            <span className="ff-inbox-row-when">{formatInboxListWhen(row.lastInternalDate || row.date)}</span>
+                            <span className="ff-inbox-row-subject">{row.subject}</span>
+                            <span className="ff-inbox-row-snippet">{snippetOf(row.snippet, 88)}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              );
+            })}
+          </div>
+        }
+        detail={
+          selected ? (
+            <article className="ff-inbox-detail" data-ff-inbox-detail={selected.id}>
+              <h2>{selected.subject}</h2>
+              <p className="text-sm text-muted-foreground">
+                {inboxSenderLabel(selected.from, selected.match.contact?.name)} ·{" "}
+                {formatInboxWhen(selected.lastInternalDate || selected.date)}
+              </p>
+              {selected.match.unmatched ? (
+                <p className="mt-2 text-sm text-navy">No contact for this address yet.</p>
+              ) : null}
+              <ThreadActions thread={selected} />
+              {messages.length > 0 ? (
+                <ol className="ff-inbox-thread">
+                  {messages.map((msg) => (
+                    <li key={msg.id} className={cn("ff-inbox-msg", msg.inbound ? "is-in" : "is-out")}>
+                      <p className="ff-inbox-msg-meta">
+                        {msg.inbound ? "Inbound" : "Sent"} · {inboxSenderLabel(msg.from) || "Unknown"} ·{" "}
+                        {formatInboxWhen(msg.internalDate || msg.date)}
+                      </p>
+                      <p className="ff-inbox-body">{msg.body || msg.snippet}</p>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="ff-inbox-body">{selected.snippet}</p>
+              )}
+              <ReplyForm thread={selected} />
+            </article>
+          ) : null
+        }
+      />
       <form action={sendInboxMessage} className="ff-inbox-compose ff-inbox-new" data-ff-inbox-compose="">
         <p className="text-sm font-semibold text-navy">New message</p>
         <div className="grid gap-2 sm:grid-cols-2">
