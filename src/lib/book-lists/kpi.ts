@@ -4,6 +4,9 @@ import type { BookFamily, BookGlanceCard } from "./types";
 /** A logged call, email, SMS, or meeting inside this window counts as recent. */
 export const RECENT_TOUCH_DAYS = 14;
 
+export const REACHED_LATELY_LABEL = "Reached lately";
+export const NOT_REACHED_LABEL = "Not reached";
+
 export type BookKpiItem = {
   id: string;
   label: string;
@@ -21,6 +24,7 @@ export type BookKpiStripModel = {
   label: string;
   items: BookKpiItem[];
   share: BookKpiShare[] | null;
+  shareLabel?: string | null;
 };
 
 function countItem(id: string, label: string, value: number): BookKpiItem {
@@ -37,10 +41,19 @@ export function partyBookKpis(kind: "contact" | "account", cards: BookGlanceCard
     countItem("phone", "With phone", phone),
     countItem("email", "With email", email),
   ];
+  const missingPhone = cards.filter((card) => card.flags.hasPhone === false).length;
+  const missingEmail = cards.filter((card) => card.flags.hasEmail === false).length;
+  if (missingPhone > 0) items.push(countItem("missing-phone", "Missing phone", missingPhone));
+  if (missingEmail > 0) items.push(countItem("missing-email", "Missing email", missingEmail));
   if (kind === "account") {
     items.push(countItem("portal", "Portal contact", cards.filter((card) => card.flags.portalContact).length));
   }
-  items.push(countItem("recent", "Touched lately", recent), countItem("never", "Never touched", never));
+  items.push(
+    countItem("recent", REACHED_LATELY_LABEL, recent),
+    countItem("never", NOT_REACHED_LABEL, never),
+    countItem("deals", "Open deals", cards.filter((card) => (card.flags.openShops ?? 0) > 0).length),
+    countItem("renewing", "Renewing ≤60d", cards.filter((card) => card.flags.renewalSoon).length),
+  );
   return {
     label: kind === "contact" ? "Contacts" : "Accounts",
     items,
@@ -57,8 +70,13 @@ export function policyBookKpis(
     countItem("now", "Needs care now", cards.filter((card) => card.column === "now").length),
     countItem("watch", "Watch", cards.filter((card) => card.column === "watch").length),
     countItem("current", "Current", cards.filter((card) => card.column === "current").length),
-    countItem("pc", "P&C", familyCount("pc")),
+    countItem("renewing", "Renewing ≤60d", cards.filter((card) => card.flags.renewalSoon).length),
   ];
+  const withClaims = cards.filter((card) => (card.flags.openClaims ?? 0) > 0).length;
+  const missingPhone = cards.filter((card) => card.flags.hasPhone === false).length;
+  if (withClaims > 0) items.push(countItem("claims", "With claims", withClaims));
+  if (missingPhone > 0) items.push(countItem("missing-phone", "Missing phone", missingPhone));
+  items.push(countItem("pc", "P&C", familyCount("pc")));
   if (settings.writeLife) items.push(countItem("life", "Life", familyCount("life")));
   if (settings.writeHealth) items.push(countItem("health", "Health", familyCount("health")));
   return { label: "Policies", items, share: null };
@@ -151,5 +169,5 @@ export function carrierMarketGlance(input: {
     share = shareSlices(slices, totalPremium);
   }
 
-  return { label: "Carriers", items, share };
+  return { label: "Carriers", items, share, shareLabel: "Premium share" };
 }

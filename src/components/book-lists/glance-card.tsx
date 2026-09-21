@@ -39,6 +39,34 @@ function CardActions({ actions }: { actions: BookCardAction[] }) {
   );
 }
 
+function FactLine({ card }: { card: BookGlanceCard }) {
+  const facts = card.facts ?? [];
+  if (facts.length === 0) return null;
+  return (
+    <ul className="ff-book-facts" data-ff-book-facts="">
+      {facts.map((fact) => (
+        <li key={fact.id} data-ff-book-fact={fact.id} className={fact.tone ? `is-${fact.tone}` : undefined}>
+          {fact.href ? <Link href={fact.href}>{fact.label}</Link> : fact.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function CueColumns({ card }: { card: BookGlanceCard }) {
+  const columns = card.columns ?? [];
+  if (columns.length === 0) return null;
+  return (
+    <div className="ff-book-columns" data-ff-book-columns="" data-ff-book-why="" title={card.why}>
+      {columns.map((column) => (
+        <span key={column.id} data-ff-book-column-cue={column.id}>
+          {column.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function ChannelLine({ card }: { card: BookGlanceCard }) {
   if (card.surface !== "contacts" && card.surface !== "accounts") return null;
   const tel = telHref(card.phone);
@@ -65,6 +93,7 @@ export function BookGlanceCardView({
 }) {
   const tip = card.health?.why || card.healthHint?.tip || card.why;
   const mid = card.mid?.trim() || "";
+  const aligned = (card.columns?.length ?? 0) > 0;
   const showPill = !activity && !(card.actions && card.actions.length > 0);
   return (
     <article
@@ -78,7 +107,7 @@ export function BookGlanceCardView({
       {leading}
       <RiskGlyph heat={card.heat} tip={tip} />
       <div className="ff-stack-card-body min-w-0 flex-1">
-        {mid ? (
+        {mid || aligned ? (
           <div className="ff-stack-card-spread">
             <div className="flex min-w-0 items-center gap-1.5">
               {card.subtitle ? <ClientStatusDot status={card.subtitle} /> : null}
@@ -86,7 +115,9 @@ export function BookGlanceCardView({
                 {card.title}
               </Link>
             </div>
-            {card.midHref ? (
+            {aligned ? (
+              <CueColumns card={card} />
+            ) : card.midHref ? (
               <Link href={card.midHref} className="ff-stack-mid" data-ff-stack-mid="" data-ff-book-why="" title={card.why}>
                 {mid}
               </Link>
@@ -113,6 +144,7 @@ export function BookGlanceCardView({
             {card.peek}
           </p>
         ) : null}
+        <FactLine card={card} />
         <ChannelLine card={card} />
         <CardActions actions={card.actions ?? []} />
         {mid ? null : (

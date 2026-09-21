@@ -52,6 +52,21 @@ describe("command-card book lists", () => {
     expect(source("src/lib/book-lists/types.ts")).toMatch(/Needs care now/);
   });
 
+  it("says reached, and only offers a carrier line filter when Life or Health is on", () => {
+    const kpi = source("src/lib/book-lists/kpi.ts");
+    expect(kpi).toMatch(/Reached lately/);
+    expect(kpi).toMatch(/Not reached/);
+    expect(kpi).not.toMatch(/Touched lately|Never touched/);
+    expect(source("src/lib/book-lists/present.ts")).not.toMatch(/Never touched|Last touch|No logged touch|No touch in/);
+    expect(source("src/app/contacts/page.tsx")).not.toMatch(/need a touch/);
+    expect(source("src/app/accounts/page.tsx")).not.toMatch(/need a touch/);
+    const filter = source("src/components/book-lists/carrier-lob-filter.tsx");
+    expect(filter).toMatch(/if \(!writeLife && !writeHealth\) return null/);
+    expect(source("src/app/carriers/page.tsx")).toMatch(/CarrierLobFilter/);
+    expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/ff-book-columns/);
+    expect(source("src/components/book-lists/book-kpi-strip.tsx")).toMatch(/ff-book-share-title/);
+  });
+
   it("policy detail has a care strip and waiting-only tab counters", () => {
     const detail = source("src/app/policies/[id]/page.tsx");
     expect(detail).toMatch(/PolicyCareStrip/);

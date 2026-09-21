@@ -18,7 +18,13 @@ export function relativeTouchLabel(days: number | null): string {
   return `${Math.floor(days / 365)}y ago`;
 }
 
-/** People / orgs: hot = needs a touch, not a shame board. */
+/** "Reached 3d ago" / "Not reached" — the card and KPI words for a logged contact. */
+export function reachCue(days: number | null): string {
+  if (days == null) return "Not reached";
+  return `Reached ${relativeTouchLabel(days)}`;
+}
+
+/** People / orgs: hot = needs a reach, not a shame board. */
 export function partyAttentionHeat(input: {
   lastTouchDays: number | null;
   healthBand?: "high" | "medium" | "low" | null;
@@ -123,7 +129,7 @@ export function policyAttention(input: {
     reasons.push(`${input.pendingEndorsements} endorsement draft${input.pendingEndorsements === 1 ? "" : "s"}`);
   }
   if (input.lastTouchDays == null || input.lastTouchDays >= 21) {
-    reasons.push(input.lastTouchDays == null ? "No logged touch" : `Silent ${relativeTouchLabel(input.lastTouchDays)}`);
+    reasons.push(input.lastTouchDays == null ? "Not reached" : `Silent ${relativeTouchLabel(input.lastTouchDays)}`);
   }
   if (input.daysUntil != null && input.daysUntil < 90) {
     reasons.push(renewsIn(input.daysUntil, input.expirationLabel));

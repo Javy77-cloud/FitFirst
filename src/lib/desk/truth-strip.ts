@@ -150,12 +150,12 @@ export function truthLine(input: {
   if (input.surface === "contacts" || input.surface === "accounts") {
     const noun = input.surface === "contacts" ? "people" : "accounts";
     if (hot >= cooling && hot >= cold) {
-      return `${hot} need a touch · ${cooling} watch · ${cold} current${flag} — the ${noun} need eyes.`;
+      return `${hot} to reach · ${cooling} watch · ${cold} current${flag} — the ${noun} need eyes.`;
     }
     if (cold > hot && cold >= cooling) {
-      return `${cold} current · ${cooling} watch · ${hot} need a touch${flag} — most of the ${noun} can wait.`;
+      return `${cold} current · ${cooling} watch · ${hot} to reach${flag} — most of the ${noun} can wait.`;
     }
-    return `${cooling} watch · ${hot} need a touch · ${cold} current${flag} — watch the slide.`;
+    return `${cooling} watch · ${hot} to reach · ${cold} current${flag} — watch the slide.`;
   }
   if (input.surface === "policies") {
     if (hot >= cooling && hot >= cold) {
