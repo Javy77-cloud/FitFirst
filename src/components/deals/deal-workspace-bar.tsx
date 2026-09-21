@@ -20,10 +20,12 @@ type BoardTab = { slug: string; name: string };
 const RENEWAL_VIEWS: Array<[RenewalsViewId, string]> = [
   ["board", "Board"],
   ["stack", "Stack"],
+  ["list", "List"],
 ];
 const DEAL_VIEWS: Array<[DealsViewId, string]> = [
   ["stack", "Stack"],
   ["radar", "Radar"],
+  ["list", "List"],
 ];
 
 const ACTIVE_SLUGS = ["p-c", "health", "life"] as const;
@@ -179,7 +181,7 @@ export function DealWorkspaceBar({
         <span
           className={`ml-auto ${FF_CHIP_TAB_GROUP}`}
           data-testid="deal-pipeline-views"
-          aria-label={isRenewals ? "Board Stack" : "Stack Radar"}
+          aria-label={isRenewals ? "Board Stack List" : "Stack Radar List"}
         >
           {viewRows.map(([id, label]) => (
             <Link

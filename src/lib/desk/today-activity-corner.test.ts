@@ -39,6 +39,8 @@ describe("Shared Today Activity floating bubble", () => {
     expect(corner).toMatch(/onPointerDown/);
     expect(corner).toMatch(/onDoubleClick/);
     expect(corner).toMatch(/data-ff-drag-pos/);
+    expect(corner).toMatch(/data-ff-panel-side/);
+    expect(corner).toMatch(/placePanel/);
     expect(corner).toMatch(/clampPos|EDGE_PAD/);
     expect(corner).toMatch(/todayActivityCalendarHref/);
     expect(corner).not.toMatch(/Today['’]s Activity/);
@@ -62,6 +64,7 @@ describe("Shared Today Activity floating bubble", () => {
     expect(cornerBlock).toContain("display: flex;");
     expect(cornerBlock).not.toContain("left: 1rem;");
     expect(chrome).toMatch(/data-ff-drag-pos/);
+    expect(chrome).toMatch(/\.ff-today-activity-corner-panel \{[^}]*position: absolute;/);
     expect(chrome).not.toMatch(/\.deal-upload-activity/);
     expect(chrome).not.toMatch(/\.deal-today-slot/);
     expect(chrome).not.toMatch(/\.deal-activity-list-spacer/);

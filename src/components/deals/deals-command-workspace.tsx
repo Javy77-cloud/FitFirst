@@ -1,3 +1,4 @@
+import { DealsHostList } from "@/components/deals/deals-host-list";
 import { PriorityStack } from "@/components/deals/priority-stack";
 import { DealsRadar } from "@/components/deals/deals-radar";
 import { DealsLenses } from "@/components/deals/deals-lenses";
@@ -69,7 +70,7 @@ export function DealsCommandWorkspace({
     <DealsHeatPulse
       heats={shownHeats}
       phases={cards.map((card) => card.phase)}
-      view={view}
+      view={view === "radar" ? "radar" : "stack"}
       rankLabel={rankLabel}
       coldRate={scorecards.coldRate}
       variant="aside"
@@ -84,6 +85,8 @@ export function DealsCommandWorkspace({
 
       {view === "radar" ? (
         <DealsRadar cards={cards} />
+      ) : view === "list" ? (
+        <DealsHostList cards={cards} />
       ) : (
         <div className="ff-stack-workspace" data-ff-stack-workspace="">
           <PriorityStack cards={cards} />

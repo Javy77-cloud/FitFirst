@@ -6,10 +6,10 @@ import {
 } from "@/lib/renewal/urgency";
 
 const RING_COLORS: Record<RenewalUrgencyBand, string> = {
-  under30: "var(--ff-terracotta)",
-  "30to60": "var(--ff-urgency-amber)",
-  "60to90": "var(--ff-urgency-navy)",
-  "90plus": "var(--ff-urgency-gray)",
+  under30: "var(--ff-heat-hot)",
+  "30to60": "var(--ff-heat-cooling)",
+  "60to90": "var(--ff-heat-near-cold)",
+  "90plus": "var(--ff-heat-cold)",
 };
 
 function ringArcs(shares: ReturnType<typeof urgencyPulseShares>) {
@@ -89,7 +89,7 @@ export function RenewalsPulse({
             ? "No renewals on this book yet."
             : "Share of this book in each urgency band."}
         </p>
-        <ul className="ff-renewals-pulse-legend">
+        <ul className="ff-renewals-pulse-legend" data-ff-pulse-depth="">
           {shares.map((share) => (
             <li key={share.band} data-ff-pulse-band={share.band}>
               <span

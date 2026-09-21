@@ -1510,27 +1510,65 @@ a[data-ff-carrier-portal-status="connected"]:hover {
 }
 
 /* Renewals Milestone 1 — urgency board, pulse, corner Today Activity. */
+/* Renewals heat uses the same Hot / Cooling / Near cold / Cold tokens as Deals. */
 .ff-urgency-tone-terracotta {
-  --ff-urgency: var(--ff-terracotta);
-  --ff-urgency-wash: color-mix(in srgb, var(--ff-terracotta) 14%, #fffaf4);
+  --ff-urgency: var(--ff-heat-hot);
+  --ff-urgency-wash: color-mix(in srgb, var(--ff-heat-hot) 14%, #fff);
 }
 .ff-urgency-tone-amber {
-  --ff-urgency: var(--ff-urgency-amber);
-  --ff-urgency-wash: color-mix(in srgb, var(--ff-urgency-amber) 16%, #fffaf4);
+  --ff-urgency: var(--ff-heat-cooling);
+  --ff-urgency-wash: color-mix(in srgb, var(--ff-heat-cooling) 16%, #fff);
 }
 .ff-urgency-tone-navy {
-  --ff-urgency: var(--ff-urgency-navy);
-  --ff-urgency-wash: color-mix(in srgb, var(--ff-urgency-navy) 20%, #fffaf4);
+  --ff-urgency: var(--ff-heat-near-cold);
+  --ff-urgency-wash: color-mix(in srgb, var(--ff-heat-near-cold) 18%, #fff);
 }
 .ff-urgency-tone-gray {
-  --ff-urgency: var(--ff-urgency-gray);
-  --ff-urgency-wash: color-mix(in srgb, var(--ff-urgency-gray) 12%, #fffaf4);
+  --ff-urgency: var(--ff-heat-cold);
+  --ff-urgency-wash: color-mix(in srgb, var(--ff-heat-cold) 12%, #fff);
 }
 
 [data-ff-renewals-desk] {
   padding-bottom: 4.5rem;
 }
 
+.ff-renewals-glance {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: stretch;
+  margin-bottom: 0.85rem;
+}
+.ff-renewals-glance .ff-renewals-health-strip,
+.ff-renewals-glance .ff-renewals-pulse {
+  margin-bottom: 0;
+  height: 100%;
+  min-width: 0;
+}
+.ff-renewals-glance .ff-health-band-high {
+  background: var(--ff-heat-hot);
+  color: var(--ff-heat-hot);
+}
+.ff-renewals-glance .ff-health-band-medium {
+  background: var(--ff-heat-cooling);
+  color: var(--ff-heat-cooling);
+}
+.ff-renewals-glance .ff-health-band-low {
+  background: var(--ff-heat-cold);
+  color: var(--ff-heat-cold);
+}
+.ff-renewals-glance-kicker {
+  flex: 1 0 100%;
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ff-navy);
+}
+@media (max-width: 52rem) {
+  .ff-renewals-glance { grid-template-columns: minmax(0, 1fr); }
+}
 .ff-renewals-pulse {
   display: flex;
   flex-wrap: wrap;
@@ -1694,16 +1732,36 @@ button.ff-renewal-risk-badge {
   font-family: inherit;
 }
 .ff-renewal-risk-high {
-  background: color-mix(in srgb, var(--ff-terracotta) 16%, white);
-  color: var(--ff-terracotta);
+  background: color-mix(in srgb, var(--ff-heat-hot) 16%, white);
+  color: var(--ff-heat-hot);
 }
 .ff-renewal-risk-medium {
-  background: color-mix(in srgb, var(--ff-urgency-amber) 18%, white);
-  color: #8a6500;
+  background: color-mix(in srgb, var(--ff-heat-cooling) 18%, white);
+  color: var(--ff-heat-cooling);
 }
 .ff-renewal-risk-low {
-  background: color-mix(in srgb, var(--ff-urgency-gray) 16%, white);
-  color: #4d5560;
+  background: color-mix(in srgb, var(--ff-heat-cold) 14%, white);
+  color: var(--ff-heat-cold);
+}
+.ff-renewal-health-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.ff-health-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 999px;
+  border: 1px solid var(--ff-border);
+  background: #fff;
+  color: var(--ff-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  font-style: italic;
+  line-height: 1;
 }
 .ff-renewal-delta {
   display: inline-flex;
@@ -2058,12 +2116,25 @@ button.ff-renewal-risk-badge {
   font-variant-numeric: tabular-nums;
 }
 .ff-today-activity-corner-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.45rem);
   width: min(19.5rem, calc(100vw - 1.5rem));
+  max-height: min(70vh, calc(100vh - 5rem));
+  overflow: auto;
   padding: 0.55rem 0.6rem 0.65rem;
   border: 1px solid var(--ff-border);
   border-radius: 0.85rem;
   background: var(--ff-card);
   box-shadow: 0 12px 28px rgb(12 35 64 / 16%);
+}
+.ff-today-activity-corner-panel[data-ff-panel-side="below"] {
+  bottom: auto;
+  top: calc(100% + 0.45rem);
+}
+.ff-today-activity-corner-panel[data-ff-panel-align="start"] {
+  right: auto;
+  left: 0;
 }
 .ff-today-activity-corner-panel-head {
   display: flex;
@@ -2830,8 +2901,8 @@ button.ff-renewal-risk-badge {
 }
 .ff-stack-card-spread {
   display: grid;
-  grid-template-columns: minmax(10rem, 2.4fr) minmax(5.5rem, 1.1fr) auto auto auto;
-  gap: 0.55rem 1.15rem;
+  grid-template-columns: minmax(9rem, 2fr) minmax(4.75rem, 0.9fr) minmax(8.5rem, auto) 5.75rem;
+  gap: 0.45rem 1rem;
   align-items: baseline;
   width: 100%;
 }
@@ -2857,6 +2928,12 @@ button.ff-renewal-risk-badge {
   color: var(--ff-ink);
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ff-stack-silent {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--ff-navy);
   white-space: nowrap;
 }
 .ff-stack-phase-days,
@@ -2891,10 +2968,92 @@ button.ff-renewal-risk-badge {
   }
   .ff-stack-product,
   .ff-stack-phase-days,
+  .ff-stack-silent,
   .ff-stack-silent-days,
   .ff-stack-value {
     grid-column: 1 / -1;
   }
+}
+.ff-stack-job {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  color: var(--ff-ink);
+}
+.ff-deal-job-stamp {
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+  background: color-mix(in srgb, var(--ff-navy) 8%, white);
+  color: var(--ff-navy);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.ff-stack-next {
+  width: fit-content;
+  color: var(--ff-navy);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.14rem;
+}
+.ff-stack-next:hover { color: var(--ff-accent); }
+.ff-priority-pin { position: relative; flex: 0 0 auto; align-self: center; }
+.ff-priority-pin-btn {
+  min-width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 0.55rem;
+  border: 1px dashed color-mix(in srgb, var(--ff-navy) 35%, var(--ff-border));
+  background: #fff;
+  color: var(--ff-navy);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.ff-priority-pin.is-set .ff-priority-pin-btn {
+  border-style: solid;
+  background: var(--ff-navy);
+  color: #fff;
+}
+.ff-priority-pin-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.3rem);
+  z-index: 6;
+  display: grid;
+  grid-template-columns: repeat(5, 1.65rem);
+  gap: 0.25rem;
+  width: max-content;
+  padding: 0.45rem;
+  border: 1px solid var(--ff-border);
+  border-radius: 0.55rem;
+  background: #fff;
+  box-shadow: var(--ff-shadow);
+}
+.ff-priority-pin-menu button {
+  height: 1.65rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--ff-border);
+  background: var(--ff-wash);
+  color: var(--ff-navy);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+.ff-priority-pin-menu button[aria-pressed="true"] {
+  background: var(--ff-navy);
+  color: #fff;
+}
+.ff-priority-pin-hint,
+.ff-priority-pin-clear {
+  grid-column: 1 / -1;
+}
+.ff-priority-pin-hint {
+  margin: 0 0 0.15rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--ff-muted);
 }
 .ff-stack-card.ff-heat-cold {
   background: color-mix(in srgb, var(--ff-heat-cold) 9%, #fff);

@@ -233,19 +233,19 @@ describe("pipeline views", () => {
 });
 
 describe("renewals href / default view", () => {
-  it("keeps Board | Stack only and defaults to the urgency board", () => {
+  it("keeps the urgency board as default and adds List beside Stack", () => {
     expect(parseRenewalsView(undefined)).toBe("board");
     expect(parseRenewalsView("kanban")).toBe("board");
-    expect(parseRenewalsView("list")).toBe("board");
-    expect(parseRenewalsView("table")).toBe("board");
-    expect(parseRenewalsView("grid")).toBe("board");
+    expect(parseRenewalsView("list")).toBe("list");
+    expect(parseRenewalsView("table")).toBe("list");
+    expect(parseRenewalsView("grid")).toBe("list");
     expect(parseRenewalsView("funnel")).toBe("board");
     expect(parseRenewalsView("stack")).toBe("stack");
     expect(renewalsHref({})).toBe("/renewals");
     expect(renewalsHref({ view: "board" })).toBe("/renewals?view=board");
     expect(renewalsHref({ view: "stack" })).toBe("/renewals?view=stack");
     expect(renewalsHref({ pipeline: "p-c", view: "list", pcSub: "home" })).toBe(
-      "/renewals?pipeline=p-c&view=board&pcSub=home",
+      "/renewals?pipeline=p-c&view=list&pcSub=home",
     );
     expect(renewalsHref({ pipeline: "won-lost", view: "funnel" })).toBe(
       "/renewals?pipeline=won-lost&view=board",
@@ -260,7 +260,7 @@ describe("renewals href / default view", () => {
     });
     expect(pipelineBookToggleHrefs("list", "renewals")).toEqual({
       newHref: "/deals",
-      renewalsHref: "/renewals?view=board",
+      renewalsHref: "/renewals?view=list",
     });
     expect(pipelineBookToggleHrefs("stack")).toEqual({
       newHref: "/deals?view=stack",

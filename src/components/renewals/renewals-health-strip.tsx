@@ -15,10 +15,10 @@ function MiniRing({ score, band }: { score: number; band: AgentHealthRollup["ban
   const dash = ((score || 0) / 100) * circumference;
   const color =
     band === "high"
-      ? "var(--ff-terracotta)"
+      ? "var(--ff-heat-hot)"
       : band === "medium"
-        ? "var(--ff-urgency-amber)"
-        : "var(--ff-urgency-gray)";
+        ? "var(--ff-heat-cooling)"
+        : "var(--ff-heat-cold)";
   return (
     <svg viewBox="0 0 44 44" className="ff-health-strip-ring" aria-hidden>
       <circle cx="22" cy="22" r={radius} fill="none" stroke="color-mix(in srgb, var(--ff-border) 80%, white)" strokeWidth="6" />
@@ -63,6 +63,7 @@ export function RenewalsHealthStrip({
       data-ff-health-book-score={book?.averageScore}
       data-ff-health-book-band={book?.band}
     >
+      <p className="ff-renewals-glance-kicker">Client reviews</p>
       <div className="ff-renewals-health-combined">
         {book ? (
           <div className="ff-health-strip-ring-wrap">
