@@ -20,11 +20,13 @@ describe("deal lens filters", () => {
     expect(parseValueBand("high")).toBe(null);
   });
 
-  it("forces Mine for agents and defaults owners to Team on Radar", () => {
+  it("forces Mine for agents and keeps the same default on Radar and Stack", () => {
     expect(defaultDealScope({ canSeeTeam: false, view: "radar" })).toBe("mine");
     expect(resolveDealScope({ scope: "team", canSeeTeam: false, view: "radar" })).toBe("mine");
-    expect(resolveDealScope({ canSeeTeam: true, view: "radar" })).toBe("team");
+    expect(resolveDealScope({ canSeeTeam: true, view: "radar" })).toBe("mine");
     expect(resolveDealScope({ canSeeTeam: true, view: "stack" })).toBe("mine");
+    expect(resolveDealScope({ scope: "team", canSeeTeam: true, view: "stack" })).toBe("team");
+    expect(resolveDealScope({ scope: "team", canSeeTeam: true, view: "radar" })).toBe("team");
   });
 
   it("ANDs heat and scope without blanking the other category", () => {

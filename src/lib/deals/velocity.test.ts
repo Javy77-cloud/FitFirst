@@ -15,6 +15,7 @@ import {
   primaryDealAction,
   privateRankLabel,
   radarLegendCopy,
+  bubbleSizeRem,
   radarPosition,
   rankByScore,
   resolveActivePhase,
@@ -37,7 +38,13 @@ describe("velocity engine", () => {
     expect(eventsFromTouches({ comms: [{ at: now, kind: "call" }] })).toHaveLength(1);
   });
 
-  it("locks the 14-day cold rule and near-cold flicker band", () => {
+  it("sizes Book Heat bubbles by deal value", () => {
+    expect(bubbleSizeRem(0)).toBeLessThan(bubbleSizeRem(50_000));
+    expect(bubbleSizeRem(50_000)).toBeLessThan(bubbleSizeRem(500_000));
+    expect(bubbleSizeRem(1_000_000)).toBeGreaterThan(1);
+  });
+
+    it("locks the 14-day cold rule and near-cold flicker band", () => {
     expect(COLD_COMM_DAYS).toBe(14);
     expect(heatFromCommGap(4)).toBe("hot");
     expect(heatFromCommGap(5)).toBe("cooling");

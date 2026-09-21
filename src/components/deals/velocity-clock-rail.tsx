@@ -18,17 +18,26 @@ export function VelocityClockRail({
       data-ff-clock-rail=""
       data-ff-clock-phase={phase}
       title={`${VELOCITY_PHASE_LABELS[phase]} · ${formatClockDays(active.days)}`}
+      aria-label={`Phase clocks: ${CLOCK_RAIL_PHASES.map((id) => `${VELOCITY_PHASE_LABELS[id]} ${Math.round(clocks[id].days)}`).join(", ")}`}
     >
       {CLOCK_RAIL_PHASES.map((id) => {
         const clock = clocks[id];
+        const days = Math.round(clock.days);
         return (
-          <i
+          <span
             key={id}
-            className={cn(clock.complete && id !== "post_quote_gap" && "is-done", phase === id && "is-now")}
+            className={cn(
+              "ff-clock-rail-tick",
+              clock.complete && id !== "post_quote_gap" && "is-done",
+              phase === id && "is-now",
+            )}
             data-ff-clock={id}
             data-complete={clock.complete ? "true" : "false"}
-            aria-hidden
-          />
+            title={`${VELOCITY_PHASE_LABELS[id]} · ${formatClockDays(clock.days)}`}
+          >
+            <strong className="ff-clock-rail-days">{days}</strong>
+            <i aria-hidden />
+          </span>
         );
       })}
       <span className="ff-clock-rail-now">{formatClockDays(active.days)}</span>

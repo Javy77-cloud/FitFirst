@@ -7,11 +7,12 @@ import {
   type VelocityPhase,
 } from "@/lib/deals/velocity";
 
+/** Glory red → orange → cooler amber → blue (same silence heat as cards). */
 const RING: Record<HeatState, string> = {
-  hot: "var(--ff-terracotta)",
-  cooling: "var(--ff-urgency-amber)",
-  near_cold: "var(--ff-urgency-navy)",
-  cold: "var(--ff-urgency-gray)",
+  hot: "var(--ff-red)",
+  cooling: "var(--ff-heat-cooling)",
+  near_cold: "var(--ff-heat-near-cold)",
+  cold: "var(--ff-heat-cold)",
 };
 
 function ringArcs(shares: ReturnType<typeof heatPulseShares>) {

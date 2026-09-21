@@ -31,9 +31,6 @@ import { matchesDealLens, resolveDealScope } from "@/lib/deals/deals-lenses";
 import { scheduleDealColdChaseNotices } from "@/lib/deals/cold-chase-sync";
 import { loadDealVelocityTouches, ownerScorecards, presentRadarCards, agentVelocityScores } from "@/lib/deals/radar-desk";
 import { heatCounts, rankByScore } from "@/lib/deals/velocity";
-import { DeskTruthStrip } from "@/components/desk/truth-strip";
-import { dealHeatShares } from "@/lib/desk/truth-strip";
-import { deskNow } from "@/lib/home/as-of";
 
 export const dynamic = "force-dynamic";
 
@@ -233,16 +230,6 @@ export default async function DealsPage({
       {desk.queueType ? <DealWorkQueuePanel type={desk.queueType} items={desk.queueItems} /> : null}
 
       <TodayActivityCorner counts={desk.todayCounts} active={desk.queueType} basePath="/deals" />
-
-      <DeskTruthStrip
-        surface="deals"
-        label="Book heat"
-        heat={dealHeatShares(
-          presented.map((card) => card.updatedAt),
-          deskNow(),
-        )}
-        clients={presented.length}
-      />
 
       <div className="deal-list-below-activity" data-ff-deal-list-below-activity>
         <div

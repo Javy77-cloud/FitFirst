@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { EventSpark } from "@/components/deals/event-spark";
 import { VelocityClockRail } from "@/components/deals/velocity-clock-rail";
 import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
 import type { RadarDealCard } from "@/lib/deals/radar-desk";
 import {
+  bubbleSizeRem,
   formatClockDays,
   formatDealValue,
   HEAT_LABELS,
@@ -22,6 +24,7 @@ import { cn } from "@/lib/utils";
 const TICKS = [0, 7, 14, 21] as const;
 
 export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
+  const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
   const open = cards.find((card) => card.id === openId) ?? null;
   const legend = radarLegendCopy();
@@ -34,16 +37,16 @@ export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  function openCard(id: string) {
+  function previewCard(id: string) {
     setOpenId(id);
   }
 
-  function toggleCard(id: string) {
-    setOpenId((current) => (current === id ? null : id));
+  function openDeal(href: string) {
+    router.push(href);
   }
 
   return (
-    <div className="ff-deals-radar" data-ff-deals-radar="">
+    <div className="ff-deals-radar" data-ff-deals-radar="" data-ff-book-heat-bubbles="">
       <div className="ff-radar-legend" data-ff-radar-legend="">
         <p data-ff-radar-legend-x="">
           <span className="ff-radar-legend-key">X</span>
@@ -72,7 +75,7 @@ export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
           <button
             type="button"
             className="ff-radar-field"
-            aria-label={`${legend.x}. ${legend.y}. Hover or click a dot to expand. Click empty space to collapse.`}
+            aria-label={`${legend.x}. ${legend.y}. Hover a bubble for preview. Click to open the deal.`}
             data-ff-radar-field=""
             onClick={() => setOpenId(null)}
           >
@@ -94,11 +97,12 @@ export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
               <p className="ff-deals-empty">No deals on this field.</p>
             ) : (
               cards.map((card) => {
-                const size = card.heat === "cold" ? 1.05 : card.heat === "near_cold" ? 0.95 : 0.82;
+                const size = bubbleSizeRem(card.value || card.premium || 0);
+                const name = card.insured !== "—" ? card.insured : card.title;
                 return (
                   <span
                     key={card.id}
-                    role="button"
+                    role="link"
                     tabIndex={0}
                     className={cn("ff-radar-dot", `ff-heat-${card.heat}`, openId === card.id && "is-open")}
                     style={{
@@ -106,19 +110,23 @@ export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
                       bottom: `${8 + card.y * 78}%`,
                       width: `${size}rem`,
                       height: `${size}rem`,
+                      marginLeft: `${-size / 2}rem`,
+                      marginTop: `${-size / 2}rem`,
                     }}
                     data-ff-radar-dot={card.id}
                     data-ff-heat={card.heat}
-                    title={`${card.insured !== "—" ? card.insured : card.title} · ${HEAT_LABELS[card.heat]} · ${formatClockDays(card.daysInPhase)} in phase · ${formatClockDays(card.silenceDays)} silent`}
-                    onMouseEnter={() => openCard(card.id)}
+                    data-ff-bubble-size={size}
+                    title={`${name} · ${HEAT_LABELS[card.heat]} · ${formatDealValue(card.value, card.valueMetric)} · ${formatClockDays(card.daysInPhase)} in phase · ${formatClockDays(card.silenceDays)} silent`}
+                    onMouseEnter={() => previewCard(card.id)}
+                    onFocus={() => previewCard(card.id)}
                     onClick={(event) => {
                       event.stopPropagation();
-                      toggleCard(card.id);
+                      openDeal(card.href);
                     }}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
                         event.preventDefault();
-                        toggleCard(card.id);
+                        openDeal(card.href);
                       }
                     }}
                   />
