@@ -519,6 +519,8 @@ export async function recordManualAttempt(formData: FormData) {
  * Record a carrier premium already chosen on Markets.
  * Request Quotes only writes attempt logs, so the Quotes tab stays at 0 rows
  * until a quotes row exists. This inserts that row without a portal pull.
+ * Insert or fill the matching carrier line only. Never deletes a deal, quote,
+ * contact, or any other row.
  */
 export async function recordManualQuoteAction(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "").trim();
