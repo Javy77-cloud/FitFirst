@@ -129,6 +129,22 @@ function maskedFein(last4: string | null | undefined): string | null {
   return `FEIN ••••${digits}`;
 }
 
+function entityCue(raw: string | null | undefined): string | null {
+  const value = raw?.trim();
+  if (!value) return null;
+  const known: Record<string, string> = {
+    llc: "LLC",
+    inc: "Inc",
+    corp: "Corp",
+    corporation: "Corporation",
+    partnership: "Partnership",
+    sole_prop: "Sole prop",
+    "sole prop": "Sole prop",
+    llp: "LLP",
+  };
+  return known[value.toLowerCase()] ?? value;
+}
+
 function httpHref(raw: string | null | undefined): string | null {
   const value = raw?.trim();
   if (!value) return null;
@@ -213,8 +229,8 @@ export function presentPartyCard(
     kind === "account"
       ? stackMidLine([
           dba && dba.toLowerCase() !== title.toLowerCase() ? `DBA ${dba}` : null,
-          row.entityType?.trim() || null,
           maskedFein(row.einLast4),
+          entityCue(row.entityType),
           openCue || language ? industry : null,
         ])
       : null;
