@@ -24,7 +24,7 @@ export async function SettingsShell({
   allowMfaPending?: boolean;
 }) {
   const session = await currentDeskSession();
-  const showMacros = current === "overview" ? true : await sessionMayUseMacros(session);
+  const showMacros = current === "overview" ? true : await sessionMayUseMacros(session).catch(() => false);
 
   return (
     <AppShell title={title} eyebrow={eyebrow} actions={actions} allowMfaPending={allowMfaPending}>
