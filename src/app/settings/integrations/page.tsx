@@ -16,6 +16,7 @@ import { isByoOauthProviderId } from "@/lib/integrations/oauth-specs";
 import { MAPS_FREE_LINK_NOTE, socialByoSpec } from "@/lib/social/byo";
 import { isSocialPlatformId } from "@/lib/social/platforms";
 import { MacContinuityToggle } from "@/components/settings/mac-continuity-toggle";
+import { publicVaultStatus } from "@/lib/developer/vault-public";
 import { getAgencySettings } from "@/lib/db/queries";
 import {
   describeMedicareBulkReady,
@@ -38,15 +39,42 @@ export default async function IntegrationsCatalogPage({
   const [session, groups, query, agency, soloDesk, hsMedicare, hsAca, hsInbound, hsBulkReady, hsBulkOneshot] =
     await Promise.all([
     currentDeskSession(),
-    listCatalogByCategory(),
+    listCatalogByCategory().catch(() => []),
     searchParams,
-    getAgencySettings(),
-    tenantLooksSolo(),
-    loadHealthSherpaMedicarePublicStatus(),
-    loadHealthSherpaAcaPublicStatus(),
-    loadHealthSherpaInboundPublicStatus(),
-    describeMedicareBulkReady(),
-    loadMedicareBulkOneshotState(),
+    getAgencySettings().catch(() => ({ fiscalYearStartMonth: 1 })),
+    tenantLooksSolo().catch(() => false),
+    loadHealthSherpaMedicarePublicStatus().catch(() =>
+      publicVaultStatus({
+        configured: false,
+        source: "none",
+        provider: "healthsherpa_medicare",
+        label: "HealthSherpa Medicare",
+      }),
+    ),
+    loadHealthSherpaAcaPublicStatus().catch(() =>
+      publicVaultStatus({
+        configured: false,
+        source: "none",
+        provider: "healthsherpa_aca",
+        label: "HealthSherpa ACA",
+      }),
+    ),
+    loadHealthSherpaInboundPublicStatus().catch(() =>
+      publicVaultStatus({
+        configured: false,
+        source: "none",
+        provider: "healthsherpa_inbound",
+        label: "HealthSherpa inbound",
+      }),
+    ),
+    describeMedicareBulkReady().catch(() => ({
+      hasApiKey: false,
+      hasAgentEmail: false,
+      configured: false,
+      code: "not_configured" as const,
+      message: null,
+    })),
+    loadMedicareBulkOneshotState().catch(() => ({ hidden: false, lastRunAt: null, lastRun: null })),
   ]);
   const notice = typeof query.notice === "string" ? query.notice : undefined;
   const provider = typeof query.provider === "string" ? query.provider : undefined;
