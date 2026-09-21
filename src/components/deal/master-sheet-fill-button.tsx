@@ -23,6 +23,7 @@ import {
   MASTER_FILL_STEP_TIMEOUT_MS,
   isMasterFillStepResult,
   masterFillBusyTitle,
+  masterFillCaughtMessage,
   masterFillDoneSummary,
   masterFillStepTimeoutMessage,
   masterFillStepsForLine,
@@ -71,11 +72,15 @@ export function MasterSheetFillButton({
             }),
           ]);
         } catch (error) {
-          const message =
-            error instanceof Error && error.message.trim()
-              ? error.message
-              : masterFillUnexpectedMessage(step.label);
-          if (step.id === "vin" && line === "auto" && (isNhtsaTransportFailure(message) || /unexpected|failed to fetch|network/i.test(message))) {
+          const raw = error instanceof Error ? error.message : "";
+          const message = masterFillCaughtMessage(step.label, error);
+          if (
+            step.id === "vin" &&
+            line === "auto" &&
+            (isNhtsaTransportFailure(raw) ||
+              isNhtsaTransportFailure(message) ||
+              /unexpected|failed to fetch|network/i.test(raw))
+          ) {
             const recovered = await recoverVinDecodeFromBrowser({ dealId, line });
             if (recovered.ok) {
               results.push({
@@ -103,7 +108,7 @@ export function MasterSheetFillButton({
             step: step.id,
             filledCount: 0,
             skippedCount: 0,
-            error: `${step.label} failed. ${message}`,
+            error: message,
           };
           results.push(failed);
           setSummary(masterFillDoneSummary(results));
@@ -168,11 +173,11 @@ export function MasterSheetFillButton({
       router.replace(`/deals/${dealId}?tab=documents&line=${line}`);
       router.refresh();
     } catch (error) {
-      const message = error instanceof Error ? error.message : masterFillUnexpectedMessage(currentLabel);
+      const message = masterFillCaughtMessage(currentLabel, error);
       const partial = results.length ? ` ${masterFillDoneSummary(results)}` : "";
-      setSummary(`${currentLabel} failed. ${message}.${partial}`);
+      setSummary(`${message}.${partial}`);
       setDone(true);
-      flashAction(`${currentLabel} failed. ${message}`, "error");
+      flashAction(message, "error");
     } finally {
       setBusy(false);
     }

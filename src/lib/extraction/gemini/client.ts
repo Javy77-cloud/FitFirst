@@ -8,9 +8,9 @@ import {
 import { buildGeminiSystemPrompt, buildGeminiUserPrompt } from "./prompt";
 import { mapGeminiJsonToFields, type GeminiExtractJson } from "./map";
 import type { ExtractionResult } from "@/lib/extraction/extract";
-import { isHeicUpload, prepareImageBuffer } from "@/lib/extraction/ocr";
 import { noteDeveloperApiCall } from "@/lib/developer/usage";
 import { DeadlineError, withDeadline } from "@/lib/async/deadline";
+import { prepareGeminiInlineBytes } from "@/lib/extraction/gemini/image-bytes";
 
 const GENERATIVE_BASE = "https://generativelanguage.googleapis.com/v1beta";
 /** Default attempts for dec / 4pt. Wind mit PDFs are large and often 503 under load. */
@@ -239,21 +239,23 @@ export async function extractWithGeminiPdf(
   const overallMs =
     options?.overallTimeoutMs ??
     (isFillPurpose(purpose) ? GEMINI_FILL_OVERALL_TIMEOUT_MS : 0);
-  if (overallMs > 0) {
-    try {
+  try {
+    if (overallMs > 0) {
       return await withDeadline(
         extractWithGeminiPdfInner(pdfBytes, docType, options),
         overallMs,
         GEMINI_TIMEOUT_MESSAGE,
       );
-    } catch (error) {
-      if (error instanceof DeadlineError || (error instanceof Error && /timed out/i.test(error.message))) {
-        return emptyFail(docType, GEMINI_TIMEOUT_MESSAGE, [GEMINI_TIMEOUT_NOTE]);
-      }
-      throw error;
     }
+    return await extractWithGeminiPdfInner(pdfBytes, docType, options);
+  } catch (error) {
+    if (error instanceof DeadlineError || (error instanceof Error && /timed out/i.test(error.message))) {
+      return emptyFail(docType, GEMINI_TIMEOUT_MESSAGE, [GEMINI_TIMEOUT_NOTE]);
+    }
+    const message = error instanceof Error ? error.message : "gemini_extract_failed";
+    console.error("[extractWithGeminiPdf]", message.slice(0, 300));
+    return emptyFail(docType, message.slice(0, 300), ["gemini_extract_failed"]);
   }
-  return extractWithGeminiPdfInner(pdfBytes, docType, options);
 }
 
 async function extractWithGeminiPdfInner(
@@ -281,25 +283,32 @@ async function extractWithGeminiPdfInner(
     return emptyFail(docType, "missing_gemini_key", ["missing_gemini_key"]);
   }
 
-  let payloadBytes: Buffer | Uint8Array = pdfBytes;
-  let inlineMime = resolveGeminiInlineMime(options?.mimeType, options?.filename);
-  if (
-    isHeicUpload(options?.mimeType ?? "", options?.filename ?? "") ||
-    inlineMime === "image/heic" ||
-    inlineMime === "image/heif"
-  ) {
-    try {
-      payloadBytes = await prepareImageBuffer(
-        Buffer.from(pdfBytes),
-        options?.mimeType || inlineMime,
-        options?.filename || "photo.heic",
-      );
-      inlineMime = "image/jpeg";
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "heic_convert_failed";
-      console.warn("[extractWithGeminiPdf] HEIC convert failed; sending original", message.slice(0, 180));
-    }
+  const prepared = await prepareGeminiInlineBytes({
+    bytes: pdfBytes,
+    mimeType: options?.mimeType,
+    filename: options?.filename,
+  });
+  if (!prepared.ok) {
+    console.error("[extractWithGeminiPdf] inline refused", {
+      docType,
+      shopLine: options?.shopLine ?? null,
+      filename: options?.filename ?? null,
+      message: prepared.message,
+    });
+    return emptyFail(docType, prepared.message, ["gemini_payload_too_large"]);
   }
+  const payloadBytes = prepared.bytes;
+  const inlineMime = prepared.shrunk
+    ? prepared.mimeType
+    : resolveGeminiInlineMime(prepared.mimeType, options?.filename);
+  console.info("[extractWithGeminiPdf] inline", {
+    docType,
+    shopLine: options?.shopLine ?? null,
+    filename: options?.filename ?? null,
+    mime: inlineMime,
+    bytes: payloadBytes.length,
+    shrunk: prepared.shrunk,
+  });
   const b64 = Buffer.from(payloadBytes).toString("base64");
   const body = {
     systemInstruction: {

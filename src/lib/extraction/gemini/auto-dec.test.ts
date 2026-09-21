@@ -215,7 +215,10 @@ describe("auto declaration extract → Auto risk profile", () => {
     const client = readFileSync("src/lib/extraction/gemini/client.ts", "utf8");
     expect(documents).toMatch(/shopLineForGeminiExtract/);
     expect(client).toMatch(/mapGeminiJsonToFields\(json, docType, options\?\.shopLine\)/);
-    expect(client).toMatch(/prepareImageBuffer/);
+    expect(client).toMatch(/prepareGeminiInlineBytes/);
+    expect(readFileSync("src/lib/extraction/gemini/image-bytes.ts", "utf8")).toMatch(/prepareImageBuffer/);
+    expect(readFileSync("src/app/actions/quote-sheet.ts", "utf8")).toMatch(/shopLine: line/);
+    expect(readFileSync("src/app/deals/[id]/page.tsx", "utf8")).toMatch(/export const maxDuration = 300/);
   });
 
   it("keeps hard deadlines so one photo cannot hang Fill Risk Profile Docs forever", () => {
@@ -229,6 +232,8 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(action).toMatch(/photoLike/);
     expect(action).toMatch(/isImageUpload/);
     expect(action).toMatch(/withDeadline/);
+    expect(action).toMatch(/onlyLine: true/);
+    expect(action).toMatch(/shopLine: line/);
     const button = readFileSync("src/components/deal/master-sheet-fill-button.tsx", "utf8");
     expect(button).toMatch(/MASTER_FILL_STEP_TIMEOUT_MS/);
     expect(button).toMatch(/Promise\.race/);

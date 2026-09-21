@@ -141,6 +141,12 @@ import { parseQuickCommsKind } from "@/lib/desk/quick-comms-open";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
 
 export const dynamic = "force-dynamic";
+/**
+ * Fill Risk Profile → Docs calls Gemini. Without this, Vercel uses the platform
+ * default (often 10–60s) and kills the action with a non-Flight 504. The client
+ * then cannot read a Fill result. Must stay above the Docs step deadline (120s).
+ */
+export const maxDuration = 300;
 
 export default async function DealPage({
   params,

@@ -27,7 +27,7 @@ export const MASTER_FILL_REVIEW_NUDGE =
 export const MASTER_FILL_BUSY_TITLE = FILLING_RISK_PROFILE_TITLE;
 export const MASTER_FILL_BUSY_COPY = "Working on it — we’ll be back soon.";
 export const MASTER_FILL_UNEXPECTED =
-  "Unexpected response from server. Fields already filled are saved.";
+  "Gemini did not return a Fill result. Fields already filled are saved.";
 export const MASTER_FILL_DOCS_FAILED =
   "Could not read docs. Fields already filled are saved.";
 /** Client + server hard wall per Fill step so the modal cannot spin forever. */
@@ -80,6 +80,24 @@ export function isMasterFillStepResult(raw: unknown): raw is MasterFillStepResul
 
 export function masterFillUnexpectedMessage(stepLabel: string): string {
   return `${stepLabel} failed — ${MASTER_FILL_UNEXPECTED}`;
+}
+
+/**
+ * Next.js throws this exact sentence when a server action POST is not
+ * `text/x-component` (Vercel 504/502 HTML, OOM kill). Show a Fill result instead.
+ */
+export function masterFillCaughtMessage(stepLabel: string, error: unknown): string {
+  const raw = error instanceof Error ? error.message.replace(/\s+/g, " ").trim() : "";
+  const protocol =
+    !raw ||
+    /unexpected response was received from the server/i.test(raw) ||
+    /failed to fetch/i.test(raw) ||
+    /network error/i.test(raw);
+  if (protocol) {
+    return `${stepLabel} failed. Gemini did not return a result — the server cut off this step before it could answer.`;
+  }
+  const text = raw.slice(0, 500);
+  return text.startsWith(`${stepLabel} failed`) ? text : `${stepLabel} failed. ${text}`;
 }
 
 export function masterFillStepTimeoutMessage(stepLabel: string): string {

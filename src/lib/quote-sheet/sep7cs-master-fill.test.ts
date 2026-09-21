@@ -22,6 +22,7 @@ import {
   isMasterFillStepResult,
   masterFillBusyTitle,
   masterFillDoneSummary,
+  masterFillCaughtMessage,
   masterFillStepTimeoutMessage,
   masterFillUnexpectedMessage,
 } from "@/lib/quote-sheet/master-fill";
@@ -117,7 +118,20 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(isMasterFillStepResult({ step: "docs", filledCount: 1, skippedCount: 0 })).toBe(true);
     expect(isMasterFillStepResult("not-json")).toBe(false);
     expect(masterFillUnexpectedMessage(MASTER_FILL_STEP_DOCS)).toMatch(/Docs/);
-    expect(masterFillUnexpectedMessage(MASTER_FILL_STEP_DOCS)).toMatch(/unexpected response/i);
+    expect(masterFillUnexpectedMessage(MASTER_FILL_STEP_DOCS)).toMatch(/Gemini did not return a Fill result/);
+    const protocol = masterFillCaughtMessage(
+      MASTER_FILL_STEP_DOCS,
+      new Error("An unexpected response was received from the server."),
+    );
+    expect(protocol).toMatch(/Docs failed/);
+    expect(protocol).not.toMatch(/unexpected response/i);
+    expect(
+      masterFillCaughtMessage(
+        MASTER_FILL_STEP_DOCS,
+        new Error("gemini_http_400: Request payload size exceeds the limit"),
+      ),
+    ).toMatch(/Request payload size exceeds the limit/);
+    expect(source("src/components/deal/master-sheet-fill-button.tsx")).toMatch(/masterFillCaughtMessage/);
     expect(action).toMatch(/purpose: "fill"/);
     expect(action).toMatch(/fillMasterSheetStepInner/);
 
