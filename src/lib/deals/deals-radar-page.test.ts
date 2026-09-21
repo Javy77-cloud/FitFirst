@@ -39,8 +39,11 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/RadarBoard/);
     expect(source("src/components/deals/deals-radar.tsx")).not.toMatch(/data-ff-radar-strip|RadarMetricStrip/);
     expect(source("src/components/deals/radar-board.tsx")).toMatch(/data-ff-radar-banner/);
+    expect(source("src/components/deals/radar-board.tsx")).toMatch(/data-ff-radar-chart="heat"/);
     expect(source("src/components/deals/radar-board.tsx")).toMatch(/data-ff-radar-silence/);
     expect(source("src/components/deals/radar-board.tsx")).toMatch(/data-ff-radar-trend/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-banner-lead strong \{ font-size: 2\.7rem/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-chart-body \{[^}]*min-height: 5\.2rem/);
     expect(source("src/components/deals/radar-board.tsx")).not.toMatch(/days silent/);
     expect(source("src/components/deals/priority-stack.tsx")).toMatch(/PriorityPinControl/);
     expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/VelocityClockRail/);

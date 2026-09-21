@@ -45,7 +45,7 @@ export function RenewalsHostList({ cards }: { cards: RenewalBoardCard[] }) {
       },
       cells: {
         client: (
-          <span className="inline-flex min-w-0 items-center gap-1">
+          <span className="inline-flex min-w-0 items-center gap-1" data-ff-list-client="">
             <Link href={`/policies/${card.policyId}`} className="font-semibold text-navy hover:underline">
               {card.clientName}
             </Link>

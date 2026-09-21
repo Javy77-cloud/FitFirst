@@ -33,7 +33,7 @@ describe("shared Activity rail", () => {
   it("shrinks Radar charts without removing the heat banner, and matches inbox edges", () => {
     const css = source("src/app/globals.css");
     expect(css).toMatch(/\.ff-radar-banner/);
-    expect(css).toMatch(/\.ff-radar-chart-body \{[^}]*min-height: 8\.4rem/);
+    expect(css).toMatch(/\.ff-radar-chart-body \{[^}]*min-height: 5\.2rem/);
     expect(css).not.toMatch(/min-height: calc\(100dvh - 12rem\)/);
     expect(css).toMatch(/--ff-inbox-open-edge: var\(--ff-navy\)/);
     expect(css).toMatch(/\.ff-inbox-row\.is-selected \{[^}]*var\(--ff-inbox-open-edge\)/);

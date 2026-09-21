@@ -11,7 +11,7 @@ export function LeadMotivation({ stats }: { stats: LeadMotivationStat[] }) {
 
   return (
     <aside
-      className="w-full rounded-xl border border-border bg-card px-4 py-3 shadow-sm"
+      className="rounded-xl border border-border bg-card px-4 py-3 shadow-sm"
       data-ff-lead-motivation=""
       title={converted.hint}
     >
