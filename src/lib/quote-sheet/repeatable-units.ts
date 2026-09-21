@@ -257,6 +257,11 @@ export function canAddAnother(
   return count < PERSONAL_VEHICLE_CAP;
 }
 
+/** Auto keeps at least one vehicle and one driver (household members too). */
+export function canRemoveUnit(count: number): boolean {
+  return count > 1;
+}
+
 export function fieldsForKind(kind: RepeatableKind): RepeatableField[] {
   if (kind === "vehicle") return VEHICLE_BLOCK_FIELDS;
   if (kind === "household") return HOUSEHOLD_BLOCK_FIELDS;
@@ -312,4 +317,27 @@ export function fieldsForUnit(kind: RepeatableKind, index: number): Array<Repeat
       ...field,
       key: repeatableFieldKey(kind, index, field.suffix),
     }));
+}
+
+/**
+ * Sheet writes for removing one card.
+ * Later cards shift down so an empty middle slot cannot reopen on save.
+ * The last card is blanked. Returns null when the last remaining card cannot be removed.
+ * `snapshots` is 1-based: `snapshots[index][suffix]` is the current field text.
+ */
+export function repeatableRemovalWrites(
+  kind: RepeatableKind,
+  count: number,
+  removeIndex: number,
+  snapshots: Array<Record<string, string> | undefined>,
+): Record<string, string> | null {
+  if (!canRemoveUnit(count) || removeIndex < 1 || removeIndex > count) return null;
+  const writes: Record<string, string> = {};
+  for (let index = removeIndex; index <= count; index += 1) {
+    const source = snapshots[index + 1];
+    for (const field of fieldsForUnit(kind, index)) {
+      writes[field.key] = source?.[field.suffix] ?? "";
+    }
+  }
+  return writes;
 }

@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { mergeAgentEdits } from "./apply";
 import {
   PERSONAL_VEHICLE_CAP,
   canAddAnother,
+  canRemoveUnit,
   isRepeatableSheetKey,
   repeatableFieldKey,
+  repeatableRemovalWrites,
   visibleUnitCount,
 } from "./repeatable-units";
 
@@ -36,5 +39,55 @@ describe("repeatable vehicle and driver blocks", () => {
     expect(isRepeatableSheetKey("vin")).toBe(true);
     expect(isRepeatableSheetKey("vehicle_3_make")).toBe(true);
     expect(isRepeatableSheetKey("coverage_a")).toBe(false);
+  });
+
+  it("keeps the last vehicle or driver and compacts a removed middle card", () => {
+    expect(canRemoveUnit(1)).toBe(false);
+    expect(canRemoveUnit(2)).toBe(true);
+    expect(repeatableRemovalWrites("driver", 1, 1, [undefined, { name: "Ana" }])).toBeNull();
+
+    const shifted = repeatableRemovalWrites("driver", 4, 3, [
+      undefined,
+      { name: "Ana" },
+      { name: "Bob" },
+      { name: "Bob" },
+      { name: "Cara" },
+    ]);
+    expect(shifted?.driver_3_name).toBe("Cara");
+    expect(shifted?.driver_4_name).toBe("");
+    expect(shifted?.driver_1_name).toBeUndefined();
+    expect(shifted?.driver_2_name).toBeUndefined();
+
+    const vehicleShift = repeatableRemovalWrites("vehicle", 2, 1, [
+      undefined,
+      { vin: "AAA", year: "2010" },
+      { vin: "BBB", year: "2020" },
+    ]);
+    expect(vehicleShift?.vin).toBe("BBB");
+    expect(vehicleShift?.vehicle_year).toBe("2020");
+    expect(vehicleShift?.vehicle_2_vin).toBe("");
+    expect(vehicleShift?.vehicle_2_year).toBe("");
+  });
+
+  it("blanks a removed extra vehicle so save does not reopen the slot", () => {
+    const existing = {
+      vin: { value: "AAA", status: "confirmed" as const, source: "agent" as const },
+      vehicle_2_vin: { value: "BBB", status: "confirmed" as const, source: "agent" as const },
+      vehicle_2_make: { value: "Ford", status: "confirmed" as const, source: "agent" as const },
+    };
+    expect(visibleUnitCount(existing, "vehicle")).toBe(2);
+    const writes = repeatableRemovalWrites("vehicle", 2, 2, [
+      undefined,
+      { vin: "AAA" },
+      { vin: "BBB", make: "Ford" },
+    ]);
+    expect(writes?.vehicle_2_vin).toBe("");
+    expect(writes?.vehicle_2_make).toBe("");
+    expect(writes?.vin).toBeUndefined();
+    const merged = mergeAgentEdits(existing, writes ?? {}, "auto", "auto");
+    expect(merged.vehicle_2_vin).toMatchObject({ value: "", status: "missing" });
+    expect(merged.vehicle_2_make).toMatchObject({ value: "", status: "missing" });
+    expect(merged.vin.value).toBe("AAA");
+    expect(visibleUnitCount(merged, "vehicle")).toBe(1);
   });
 });
