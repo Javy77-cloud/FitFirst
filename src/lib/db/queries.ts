@@ -559,8 +559,38 @@ export const listUsers = cache(async function listUsers() {
 });
 
 export async function getAgencySettings() {
+  // Column-safe select: never pull agent_feature_toggles here. That additive
+  // column is read only via getAgentFeatureToggles (try/catch). A bare select()
+  // after #170 takes down Home / Communications when migrate 0146 has not run.
   const [row] = await db
-    .select()
+    .select({
+      id: agencySettings.id,
+      tenantId: agencySettings.tenantId,
+      fiscalYearStartMonth: agencySettings.fiscalYearStartMonth,
+      agencyName: agencySettings.agencyName,
+      logoPath: agencySettings.logoPath,
+      emailSignature: agencySettings.emailSignature,
+      writeLife: agencySettings.writeLife,
+      writeHealth: agencySettings.writeHealth,
+      showSellingAgency: agencySettings.showSellingAgency,
+      officeAddress: agencySettings.officeAddress,
+      zoomUrl: agencySettings.zoomUrl,
+      meetUrl: agencySettings.meetUrl,
+      byoVideoUrl: agencySettings.byoVideoUrl,
+      videoProvider: agencySettings.videoProvider,
+      showCompanyWidgets: agencySettings.showCompanyWidgets,
+      allowAgentsMonitorGbp: agencySettings.allowAgentsMonitorGbp,
+      macContinuity: agencySettings.macContinuity,
+      contactSectionNav: agencySettings.contactSectionNav,
+      businessSectionNav: agencySettings.businessSectionNav,
+      policyLabelTemplate: agencySettings.policyLabelTemplate,
+      allowPolicyLabelOverride: agencySettings.allowPolicyLabelOverride,
+      agentPolicyAccess: agencySettings.agentPolicyAccess,
+      calendarMarkSundayNonWorking: agencySettings.calendarMarkSundayNonWorking,
+      calendarShowUsFederalHolidays: agencySettings.calendarShowUsFederalHolidays,
+      createdAt: agencySettings.createdAt,
+      updatedAt: agencySettings.updatedAt,
+    })
     .from(agencySettings)
     .where(eq(agencySettings.tenantId, tenant()));
   return row ?? { fiscalYearStartMonth: 1 };
@@ -2967,7 +2997,10 @@ export async function ownerHomeDashboard(bookRaw?: string | null) {
         .from(users)
         .where(and(eq(users.tenantId, scope.tenantId), eq(users.active, true))),
       db.select().from(contests).where(eq(contests.tenantId, scope.tenantId)).orderBy(desc(contests.startsAt)),
-      db.select().from(agencySettings).where(eq(agencySettings.tenantId, scope.tenantId)),
+      db
+        .select({ showCompanyWidgets: agencySettings.showCompanyWidgets })
+        .from(agencySettings)
+        .where(eq(agencySettings.tenantId, scope.tenantId)),
       db.select().from(leadOffers).where(eq(leadOffers.tenantId, scope.tenantId)).orderBy(desc(leadOffers.createdAt)),
       db.select().from(leadOfferClaims).where(eq(leadOfferClaims.tenantId, scope.tenantId)),
     ]);

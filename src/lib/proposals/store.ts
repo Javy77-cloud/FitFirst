@@ -36,7 +36,11 @@ export function isProposalDoc(doc: { docType?: string | null; slot?: string | nu
 export async function loadProposalBrand(): Promise<ProposalBrand> {
   const [brand, settings] = await Promise.all([
     db.select().from(agencyBrand).where(eq(agencyBrand.tenantId, DEFAULT_TENANT_ID)).then((rows) => rows[0]),
-    db.select().from(agencySettings).where(eq(agencySettings.tenantId, DEFAULT_TENANT_ID)).then((rows) => rows[0]),
+    db
+      .select({ logoPath: agencySettings.logoPath, agencyName: agencySettings.agencyName })
+      .from(agencySettings)
+      .where(eq(agencySettings.tenantId, DEFAULT_TENANT_ID))
+      .then((rows) => rows[0]),
   ]);
   let logoBytes: Uint8Array | null = null;
   const logoPath = brand?.logoStoragePath || settings?.logoPath;

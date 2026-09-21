@@ -12,7 +12,12 @@ export type AgencyBrand = {
 
 export async function loadAgencyBrand(): Promise<AgencyBrand> {
   const [row] = await db
-    .select()
+    .select({
+      agencyName: agencySettings.agencyName,
+      logoPath: agencySettings.logoPath,
+      emailSignature: agencySettings.emailSignature,
+      fiscalYearStartMonth: agencySettings.fiscalYearStartMonth,
+    })
     .from(agencySettings)
     .where(eq(agencySettings.tenantId, DEFAULT_TENANT_ID));
   const name = row?.agencyName?.trim();

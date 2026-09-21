@@ -35,6 +35,11 @@ describe("Shared Today Activity floating bubble", () => {
     expect(corner).toMatch(/Escape/);
     expect(corner).toMatch(/TodayActivityStrip/);
     expect(corner).toMatch(/formatTodayActivityDate/);
+    expect(corner).toMatch(/ff-today-activity-corner:pos:v1/);
+    expect(corner).toMatch(/onPointerDown/);
+    expect(corner).toMatch(/onDoubleClick/);
+    expect(corner).toMatch(/data-ff-drag-pos/);
+    expect(corner).toMatch(/clampPos|EDGE_PAD/);
     expect(corner).toMatch(/todayActivityCalendarHref/);
     expect(corner).not.toMatch(/Today['’]s Activity/);
     expect(corner).not.toMatch(/>Today</);
@@ -48,11 +53,15 @@ describe("Shared Today Activity floating bubble", () => {
     expect(strip).not.toMatch(/minWidth:\s*84/);
     expect(strip).not.toMatch(/minHeight:\s*84/);
 
-    expect(chrome).toMatch(/\.ff-today-activity-corner \{[\s\S]*position: fixed;/);
-    expect(chrome).toMatch(/\.ff-today-activity-corner \{[\s\S]*bottom: 1rem;/);
-    expect(chrome).toMatch(/\.ff-today-activity-corner \{[\s\S]*right: 1rem;/);
-    expect(chrome).toMatch(/\.ff-today-activity-corner \{[\s\S]*z-index: 70;/);
-    expect(chrome).toMatch(/\.ff-today-activity-corner \{[\s\S]*display: flex;/);
+    const cornerBlock = chrome.match(/\.ff-today-activity-corner \{[^}]+\}/s)?.[0] ?? "";
+    expect(cornerBlock).toContain("position: fixed;");
+    expect(cornerBlock).toContain("bottom: 1rem;");
+    expect(cornerBlock).toContain("right: 1rem;");
+    expect(cornerBlock).toContain("left: auto;");
+    expect(cornerBlock).toContain("z-index: 70;");
+    expect(cornerBlock).toContain("display: flex;");
+    expect(cornerBlock).not.toContain("left: 1rem;");
+    expect(chrome).toMatch(/data-ff-drag-pos/);
     expect(chrome).not.toMatch(/\.deal-upload-activity/);
     expect(chrome).not.toMatch(/\.deal-today-slot/);
     expect(chrome).not.toMatch(/\.deal-activity-list-spacer/);

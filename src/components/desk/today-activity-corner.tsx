@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { CalendarDays, X } from "lucide-react";
@@ -10,6 +10,45 @@ import {
   todayActivityCalendarHref,
   type DealTodayActivityType,
 } from "@/lib/deals/pipeline-desk";
+
+const STORAGE_KEY = "ff-today-activity-corner:pos:v1";
+const DRAG_THRESHOLD_PX = 4;
+const EDGE_PAD = 8;
+
+type CornerPos = { left: number; top: number };
+
+function readStoredPos(): CornerPos | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<CornerPos>;
+    if (typeof parsed.left !== "number" || typeof parsed.top !== "number") return null;
+    if (!Number.isFinite(parsed.left) || !Number.isFinite(parsed.top)) return null;
+    return { left: parsed.left, top: parsed.top };
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredPos(pos: CornerPos | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (!pos) window.localStorage.removeItem(STORAGE_KEY);
+    else window.localStorage.setItem(STORAGE_KEY, JSON.stringify(pos));
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+function clampPos(left: number, top: number, width: number, height: number): CornerPos {
+  const maxLeft = Math.max(EDGE_PAD, window.innerWidth - width - EDGE_PAD);
+  const maxTop = Math.max(EDGE_PAD, window.innerHeight - height - EDGE_PAD);
+  return {
+    left: Math.min(maxLeft, Math.max(EDGE_PAD, left)),
+    top: Math.min(maxTop, Math.max(EDGE_PAD, top)),
+  };
+}
 
 export function TodayActivityCorner({
   counts,
@@ -24,13 +63,41 @@ export function TodayActivityCorner({
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [pos, setPos] = useState<CornerPos | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    originLeft: number;
+    originTop: number;
+    moved: boolean;
+  } | null>(null);
+  const skipClickRef = useRef(false);
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
   const dated = formatTodayActivityDate(now);
 
   useEffect(() => {
     setMounted(true);
+    setPos(readStoredPos());
   }, []);
+
+  const reclamp = useCallback(() => {
+    setPos((current) => {
+      if (!current || !rootRef.current) return current;
+      const rect = rootRef.current.getBoundingClientRect();
+      const next = clampPos(current.left, current.top, rect.width, rect.height);
+      if (next.left === current.left && next.top === current.top) return current;
+      writeStoredPos(next);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!pos) return;
+    window.addEventListener("resize", reclamp);
+    return () => window.removeEventListener("resize", reclamp);
+  }, [pos, reclamp]);
 
   useEffect(() => {
     if (!open) return;
@@ -49,12 +116,70 @@ export function TodayActivityCorner({
     };
   }, [open]);
 
+  function resetPosition() {
+    writeStoredPos(null);
+    setPos(null);
+  }
+
+  function onTogglePointerDown(event: React.PointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0) return;
+    const root = rootRef.current;
+    if (!root) return;
+    const rect = root.getBoundingClientRect();
+    const origin = pos ?? { left: rect.left, top: rect.top };
+    skipClickRef.current = false;
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originLeft: origin.left,
+      originTop: origin.top,
+      moved: false,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function onTogglePointerMove(event: React.PointerEvent<HTMLButtonElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    if (!drag.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+    drag.moved = true;
+    skipClickRef.current = true;
+    const root = rootRef.current;
+    const width = root?.offsetWidth ?? 160;
+    const height = root?.offsetHeight ?? 48;
+    const next = clampPos(drag.originLeft + dx, drag.originTop + dy, width, height);
+    setPos(next);
+  }
+
+  function endDrag(event: React.PointerEvent<HTMLButtonElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    dragRef.current = null;
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      /* already released */
+    }
+    if (drag.moved) {
+      setPos((current) => {
+        if (current) writeStoredPos(current);
+        return current;
+      });
+    }
+  }
+
   const node = (
     <div
       ref={rootRef}
       className="ff-today-activity-corner"
       data-ff-today-activity-corner=""
       data-open={open ? "true" : "false"}
+      data-ff-drag-pos={pos ? "1" : undefined}
+      style={pos ? { left: pos.left, top: pos.top, bottom: "auto", right: "auto" } : undefined}
+      title={pos ? "Double-click the bubble to reset position" : undefined}
     >
       {open ? (
         <div className="ff-today-activity-corner-panel" data-ff-today-activity-panel="">
@@ -86,7 +211,21 @@ export function TodayActivityCorner({
         aria-expanded={open}
         aria-label={open ? "Collapse Today Activity" : "Open Today Activity"}
         data-ff-today-activity-toggle=""
-        onClick={() => setOpen((current) => !current)}
+        onPointerDown={onTogglePointerDown}
+        onPointerMove={onTogglePointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onDoubleClick={(event) => {
+          event.preventDefault();
+          resetPosition();
+        }}
+        onClick={() => {
+          if (skipClickRef.current) {
+            skipClickRef.current = false;
+            return;
+          }
+          setOpen((current) => !current);
+        }}
       >
         <CalendarDays className="size-4" aria-hidden />
         <span className="ff-today-activity-corner-copy" data-ff-today-activity-label="">
