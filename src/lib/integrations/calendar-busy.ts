@@ -5,6 +5,11 @@ import { calendarBusyBlocks } from "@/lib/db/schema";
 import { liveAccessToken } from "./oauth-exchange";
 import { loadByoConnection } from "./oauth-store";
 import type { ByoOauthProviderId } from "./oauth-specs";
+import {
+  busySlotsFromFreeBusy,
+  googleCalendarHttpError,
+  isByoBusyConnection,
+} from "./calendar-sync";
 
 export type BusyWindow = {
   id: string;
@@ -117,11 +122,11 @@ export async function syncGoogleBusy(): Promise<number> {
     signal: AbortSignal.timeout(10_000),
   });
   const data = (await res.json()) as {
-    error?: { message?: string };
-    calendars?: { primary?: { busy?: { start?: string; end?: string }[] } };
+    error?: { message?: string; status?: string; errors?: { reason?: string; message?: string }[] };
+    calendars?: Record<string, { busy?: { start?: string; end?: string }[]; errors?: { message?: string }[] }>;
   };
-  if (!res.ok) throw new Error(data.error?.message || `Google FreeBusy failed (${res.status}).`);
-  const busy = data.calendars?.primary?.busy ?? [];
+  if (!res.ok) throw new Error(googleCalendarHttpError(data, res.status));
+  const busy = busySlotsFromFreeBusy(data.calendars);
   const blocks = busy
     .map((row, index) => {
       const start = row.start ? new Date(row.start) : null;
@@ -189,7 +194,7 @@ async function stampBusySync(provider: "google_calendar" | "outlook_calendar") {
   const { eq } = await import("drizzle-orm");
   await db
     .update(integrationConnections)
-    .set({ lastBusySyncAt: new Date(), updatedAt: new Date() })
+    .set({ lastBusySyncAt: new Date(), lastOauthError: null, updatedAt: new Date() })
     .where(eq(integrationConnections.id, row.id));
 }
 
@@ -200,8 +205,8 @@ export async function syncConnectedBusy(): Promise<{ google: number | null; outl
   ]);
   let google: number | null = null;
   let outlook: number | null = null;
-  if (googleRow?.connected) google = await syncGoogleBusy();
-  if (outlookRow?.connected) outlook = await syncOutlookBusy();
+  if (isByoBusyConnection(googleRow)) google = await syncGoogleBusy();
+  if (isByoBusyConnection(outlookRow)) outlook = await syncOutlookBusy();
   return { google, outlook };
 }
 
