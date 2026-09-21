@@ -113,7 +113,7 @@ export const HELP_FAQ: HelpFaq[] = [
   {
     id: "calendar-sync",
     q: "Does Calendar sync to Google or Outlook?",
-    a: "No. It is in-desk only. Drag and + stay on this computer.",
+    a: "Yes. Sync pulls titled Google or Outlook events onto the desk. FitFirst timed events write back.",
   },
   {
     id: "flood",

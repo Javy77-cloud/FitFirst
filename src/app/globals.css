@@ -3568,10 +3568,7 @@ button.ff-renewal-risk-badge {
 .ff-inbox-compose { display: grid; gap: 0.45rem; margin-top: 0.85rem; }
 .ff-inbox-new { padding-top: 0.5rem; border-top: 1px dashed var(--ff-border); }
 .ff-inbox-cue { margin: 0.25rem 0 0; font-size: 0.72rem; font-weight: 650; color: #c45c26; }
-.ff-calendar-sync {
-  margin-bottom: 0.75rem;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid var(--ff-border);
-  border-radius: 0.75rem;
-  background: color-mix(in srgb, var(--ff-card) 92%, #fffaf4);
+/* Last-sync lives in the toolbar Sync popover — do not restore a full-width ribbon. */
+[data-ff-calendar-sync] {
+  min-width: 0;
 }

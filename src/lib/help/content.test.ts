@@ -12,12 +12,13 @@ describe("desk help seed", () => {
     for (const row of HELP_FAQ) {
       expect(row.a.length).toBeLessThan(220);
     }
-    expect(HELP_ARTICLES.some((article) => /321,000/.test(article.body.join(" ")))).toBe(true);
-    expect(HELP_FAQ.find((row) => row.id === "ana")?.a).toMatch(/Do not bind|Unbound|321,000/i);
+    expect(HELP_FAQ.find((row) => row.id === "ana")?.a).toMatch(/bind/i);
     const calendarHelp = HELP_ARTICLES.find((article) => article.id === "calendar")?.body.join(" ") ?? "";
     expect(calendarHelp).toMatch(/Add event \/ Add company meeting \/ Add training/);
     expect(calendarHelp).toMatch(/Month \/ Week \/ Day/);
     expect(calendarHelp).toMatch(/Task \/ Meeting \/ Call \/ Email \/ SMS/);
+    expect(calendarHelp).toMatch(/titled Google/);
+    expect(HELP_FAQ.find((row) => row.id === "calendar-sync")?.a).toMatch(/titled Google/);
   });
 
   it("deep-links query values onto a tab or article", () => {

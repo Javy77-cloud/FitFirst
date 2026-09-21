@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronLeft, ChevronRight, CircleHelp } from "lucide-react";
 import {
@@ -98,6 +98,7 @@ export function DeskCalendar({
   showUsFederalHolidays = true,
   busyBlocks = [],
   meetHelper = false,
+  syncControl = null,
 }: {
   events: CalendarEvent[];
   options: RelatedOptions;
@@ -112,6 +113,7 @@ export function DeskCalendar({
   showUsFederalHolidays?: boolean;
   busyBlocks?: SerializedBusyBlock[];
   meetHelper?: boolean;
+  syncControl?: ReactNode;
 }) {
   const router = useRouter();
   void initialKinds; // kinds URL param unused — UI shows all types
@@ -321,7 +323,9 @@ export function DeskCalendar({
             Today
           </Button>
         </div>
-        <div className="hidden sm:block" data-calendar-toolbar="add" aria-hidden />
+        <div className="flex flex-wrap items-center justify-end gap-1" data-calendar-toolbar="sync">
+          {syncControl}
+        </div>
       </nav>
 
       <WeekAheadStrip

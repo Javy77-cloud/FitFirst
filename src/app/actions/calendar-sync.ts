@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { flashAction } from "@/lib/flash-action";
 import { currentDeskSession } from "@/lib/auth/session";
 import { eventSyncWindow } from "@/lib/integrations/calendar-event-map";
 import { syncConnectedCalendarsBothWays } from "@/lib/integrations/calendar-event-sync";
@@ -18,12 +18,12 @@ export async function syncDeskBusyNow() {
   try {
     await syncConnectedCalendarsBothWays(eventSyncWindow(new Date(), new Date()));
     refreshCalendar();
-    redirect("/calendar?notice=busy-synced");
+    flashAction("/calendar", "busy-synced");
   } catch (error) {
     if (isRedirectError(error)) throw error;
     const message = error instanceof Error ? error.message : "Busy sync failed.";
     const { recordByoOauthError } = await import("@/lib/integrations/oauth-store");
     await recordByoOauthError("google_calendar", message).catch(() => undefined);
-    redirect("/calendar?notice=busy-sync-failed");
+    flashAction("/calendar", "busy-sync-failed", "error");
   }
 }

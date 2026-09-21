@@ -62,18 +62,41 @@ describe("calendar busy auto-sync", () => {
     expect(googleCalendarHttpError({ error: { message: "Rate Limit Exceeded" } }, 429)).toBe("Rate Limit Exceeded");
     expect(displayBusySyncError("NEXT_REDIRECT;replace;/calendar?notice=busy-synced;307")).toBeNull();
     expect(displayBusySyncError("Google Calendar is not connected.")).toBe("Google Calendar is not connected.");
+    expect(readFileSync("src/lib/flash.ts", "utf8")).toMatch(/"busy-sync-failed":/);
   });
 
   it("does not treat Sync Now redirect() as a busy-sync failure", () => {
     const action = readFileSync("src/app/actions/calendar-sync.ts", "utf8");
     expect(action).toMatch(/if \(isRedirectError\(error\)\) throw error/);
-    expect(action).toMatch(/redirect\("\/calendar\?notice=busy-synced"\)/);
-    expect(action).toMatch(/redirect\("\/calendar\?notice=busy-sync-failed"\)/);
+    expect(action).toMatch(/syncConnectedCalendarsBothWays/);
+    expect(action).toMatch(/flashAction\("\/calendar", "busy-synced"\)/);
+    expect(action).toMatch(/flashAction\("\/calendar", "busy-sync-failed", "error"\)/);
     const smoke = readFileSync("src/app/actions/byo-oauth.ts", "utf8");
     const start = smoke.indexOf("export async function smokeTestByoProvider");
     expect(smoke.slice(start)).toMatch(/if \(isRedirectError\(error\)\) throw error/);
     expect(readFileSync("src/components/calendar/calendar-sync-bar.tsx", "utf8")).toMatch(/data-ff-calendar-busy-error/);
     expect(readFileSync("src/lib/integrations/calendar-busy.ts", "utf8")).toMatch(/isByoBusyConnection/);
     expect(readFileSync("src/lib/integrations/calendar-busy.ts", "utf8")).toMatch(/lastOauthError: null/);
+  });
+
+  it("keeps last-sync in compact chrome, not a permanent ribbon", () => {
+    const bar = readFileSync("src/components/calendar/calendar-sync-bar.tsx", "utf8");
+    const page = readFileSync("src/app/calendar/page.tsx", "utf8");
+    const calendar = readFileSync("src/components/calendar/desk-calendar.tsx", "utf8");
+    const chrome = readFileSync("src/app/globals.css", "utf8");
+    expect(bar).toMatch(/data-ff-calendar-sync-trigger=/);
+    expect(bar).toMatch(/data-ff-calendar-last-synced=/);
+    expect(bar).toMatch(/data-ff-calendar-sync-now=/);
+    expect(bar).toMatch(/DropdownMenu/);
+    expect(bar).not.toMatch(/className="ff-calendar-sync"/);
+    expect(bar).not.toMatch(/busy last synced/);
+    expect(page).toMatch(/syncControl=/);
+    expect(page).toMatch(/<CalendarSyncBar/);
+    expect(page).toMatch(/overlayCount=\{externalEvents\.length\}/);
+    expect(page).toMatch(/importConnectedEvents/);
+    expect(page).toMatch(/listSyncedEvents/);
+    expect(calendar).toMatch(/data-calendar-toolbar="sync"/);
+    expect(calendar).toMatch(/syncControl/);
+    expect(chrome).not.toMatch(/\.ff-calendar-sync \{[\s\S]*margin-bottom: 0\.75rem;/);
   });
 });

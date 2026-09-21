@@ -116,17 +116,6 @@ export default async function CalendarPage({
   return (
     <AppShell title="Calendar">
       <div data-ff-calendar-page="">
-      <CalendarSyncBar
-        googleConnected={googleConnected}
-        outlookConnected={outlookConnected}
-        lastSyncedAt={lastSyncedAt}
-        canConnect={canConnectByoIntegration(session)}
-        googleEmail={googleRow?.tokenAccountEmail ?? null}
-        overlayCount={externalEvents.length}
-        notice={notice}
-        syncError={syncError}
-        lastOauthError={googleRow?.lastOauthError ?? outlookRow?.lastOauthError ?? null}
-      />
       <DeskCalendar
         events={events}
         options={options}
@@ -141,6 +130,19 @@ export default async function CalendarPage({
         showUsFederalHolidays={calendarPrefs.calendarShowUsFederalHolidays}
         busyBlocks={busyBlocks}
         meetHelper={meetHelper}
+        syncControl={
+          <CalendarSyncBar
+            googleConnected={googleConnected}
+            outlookConnected={outlookConnected}
+            lastSyncedAt={lastSyncedAt ? lastSyncedAt.toISOString() : null}
+            canConnect={canConnectByoIntegration(session)}
+            googleEmail={googleRow?.tokenAccountEmail ?? null}
+            overlayCount={externalEvents.length}
+            notice={notice}
+            syncError={syncError}
+            lastOauthError={googleRow?.lastOauthError ?? outlookRow?.lastOauthError ?? null}
+          />
+        }
       />
       </div>
     </AppShell>
