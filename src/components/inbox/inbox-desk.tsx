@@ -11,7 +11,7 @@ import { INBOX_BANDS, groupInboxThreads, type InboxDeskThread } from "@/lib/desk
 import { InboxLinkContactDialog } from "@/components/inbox/inbox-link-contact-dialog";
 import { inboxBandLabel } from "@/lib/desk/inbox-match";
 import { inboxSkinListRole, resolveInboxSkin, type InboxMailProvider } from "@/lib/desk/inbox-skin";
-import type { GmailThreadMessage } from "@/lib/integrations/gmail";
+import type { MailThreadMessage } from "@/lib/integrations/mail-contract";
 import { cn } from "@/lib/utils";
 
 function InboxMessageBody({
@@ -58,7 +58,7 @@ function ReplyForm({ thread }: { thread: InboxDeskThread }) {
       </label>
       <label className="text-xs font-semibold text-navy">
         Reply
-        <Textarea name="body" rows={4} className="mt-1" required placeholder="Keep it short. This sends from the agency Gmail." />
+        <Textarea name="body" rows={4} className="mt-1" required placeholder="Keep it short. This sends from the connected agency mailbox." />
       </label>
       <Button type="submit" size="sm">
         Send reply
@@ -125,16 +125,20 @@ export function InboxDesk({
   accountEmail,
   markReadNotice = null,
   mailProvider = "gmail",
+  connectLabel = "Gmail",
+  connectOauthId = "gmail",
 }: {
   threads: InboxDeskThread[];
   selectedId: string | null;
-  messages: GmailThreadMessage[];
+  messages: MailThreadMessage[];
   canConnect: boolean;
   connected: boolean;
   error: string | null;
   accountEmail: string | null;
   markReadNotice?: string | null;
   mailProvider?: InboxMailProvider;
+  connectLabel?: string;
+  connectOauthId?: string;
 }) {
   const selected = threads.find((row) => row.id === selectedId) ?? threads[0] ?? null;
   const groups = groupInboxThreads(threads);
@@ -143,18 +147,18 @@ export function InboxDesk({
   if (!connected) {
     return (
       <section className="ff-inbox-empty" data-ff-inbox-disconnected="">
-        <h2>Connect Gmail</h2>
+        <h2>Connect {connectLabel}</h2>
         <p>FitFirst surfaces the agency mailbox here — reply, send, and jump into Contacts or Deals.</p>
         {canConnect ? (
           <form action={startByoOauth} className="mt-3">
-            <input type="hidden" name="provider" value="gmail" />
+            <input type="hidden" name="provider" value={connectOauthId} />
             <input type="hidden" name="next" value="/inbox" />
-            <Button type="submit">Connect Gmail</Button>
+            <Button type="submit">Connect {connectLabel}</Button>
           </form>
         ) : (
-          <p className="mt-3 text-sm text-navy">Ask an Admin to connect Gmail under Settings → Email.</p>
+          <p className="mt-3 text-sm text-navy">Ask an Admin to connect {connectLabel} under Settings → Email.</p>
         )}
-        <Link href="/settings/email#gmail" className="mt-2 inline-block text-sm text-primary hover:underline">
+        <Link href={`/settings/email#${connectOauthId}`} className="mt-2 inline-block text-sm text-primary hover:underline">
           Settings → Email
         </Link>
       </section>
@@ -171,7 +175,7 @@ export function InboxDesk({
     >
       <header className="ff-inbox-toolbar">
         <p className="ff-inbox-mailbox">{accountEmail || "Inbox"}</p>
-        <Link href="/settings/email#gmail" className="text-sm text-primary hover:underline">
+        <Link href={`/settings/email#${mailProvider}`} className="text-sm text-primary hover:underline">
           Settings
         </Link>
       </header>
@@ -179,10 +183,10 @@ export function InboxDesk({
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy">{error}</p>
       ) : null}
       {markReadNotice ? (
-        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy" data-ff-gmail-reconnect="">
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy" data-ff-inbox-reconnect="">
           {markReadNotice}{" "}
-          <Link href="/settings/email#gmail" className="font-semibold text-primary hover:underline">
-            Reconnect Gmail
+          <Link href={`/settings/email#${mailProvider}`} className="font-semibold text-primary hover:underline">
+            Reconnect {connectLabel}
           </Link>
         </p>
       ) : null}
@@ -272,7 +276,7 @@ export function InboxDesk({
           <Input name="to" type="email" placeholder="client@email.com" required />
           <Input name="subject" placeholder="Subject" />
         </div>
-        <Textarea name="body" rows={3} placeholder="Send from the connected agency Gmail." required />
+        <Textarea name="body" rows={3} placeholder="Send from the connected agency mailbox." required />
         <Button type="submit" size="sm" variant="outline">
           Send
         </Button>

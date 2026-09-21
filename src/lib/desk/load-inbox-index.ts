@@ -6,9 +6,10 @@ import { isInForceStatus } from "@/lib/policy/status";
 import { daysUntilExpiration, expirationDay } from "@/lib/ams/renewals";
 import { deskNow } from "@/lib/home/as-of";
 import { partyLabel } from "@/lib/desk/policy-name";
-import { gmailAccountEmail, gmailIsReady } from "@/lib/integrations/gmail";
+import { activeInboxMail } from "@/lib/integrations/mail-provider";
 import {
   dealClosedForInbox,
+  INBOX_EMAIL_ALIAS_KEY,
   parseInboxAliasEmails,
   type InboxContactHit,
   type InboxDealHit,
@@ -17,8 +18,8 @@ import {
 } from "@/lib/desk/inbox-match";
 
 export async function loadInboxMatchIndex(asOf = deskNow()): Promise<InboxMatchIndex> {
-  const ready = await gmailIsReady().catch(() => false);
-  const agencyEmail = ready ? await gmailAccountEmail().catch(() => null) : null;
+  const mail = await activeInboxMail();
+  const agencyEmail = mail ? await mail.accountEmail().catch(() => null) : null;
   const [contactRows, dealRows, policyRows, aliasRows] = await Promise.all([
     db
       .select({
@@ -65,7 +66,7 @@ export async function loadInboxMatchIndex(asOf = deskNow()): Promise<InboxMatchI
         and(
           eq(deskCustomFieldValues.tenantId, DEFAULT_TENANT_ID),
           eq(deskCustomFieldValues.module, "contacts"),
-          eq(deskCustomFieldValues.fieldKey, "inbox_emails"),
+          eq(deskCustomFieldValues.fieldKey, INBOX_EMAIL_ALIAS_KEY),
         ),
       )
       .then((rows) => rows)

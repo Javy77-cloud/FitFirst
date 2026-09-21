@@ -44,6 +44,9 @@ export function normalizeInboxEmail(value: string | null | undefined): string | 
 }
 
 /** Extra addresses saved when an inbox thread is linked onto a contact that already has an email. */
+/** Custom-field key for extra addresses linked from Inbox (not the contact's primary email). */
+export const INBOX_EMAIL_ALIAS_KEY = "inbox_emails";
+
 export function parseInboxAliasEmails(value: string | null | undefined): string[] {
   const seen = new Set<string>();
   const out: string[] = [];

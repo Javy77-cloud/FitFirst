@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyInboxInlineImages, looksLikeHtml, plainFromInboxHtml, sanitizeInboxHtml } from "./inbox-body";
+import { applyInboxInlineImages, looksLikeHtml, paintInboxMessage, plainFromInboxHtml, sanitizeInboxHtml } from "./inbox-body";
 
 describe("inbox body fit", () => {
   it("keeps a contract table and strips widths, scripts, and nowrap styles", () => {
@@ -50,5 +50,18 @@ describe("inbox body fit", () => {
     expect(
       applyInboxInlineImages(`<img src="cid:x">`, [{ contentId: "x", dataUrl: "data:text/html;base64,nope" }]),
     ).toContain("cid:x");
+  });
+
+  it("paints cid images for any mailbox and drops non-image data urls", () => {
+    const painted = paintInboxMessage({
+      bodyHtml: `<img src="cid:logo">`,
+      images: [
+        { contentId: "logo", filename: "logo.png", dataUrl: "data:image/png;base64,abc" },
+        { contentId: "bad", filename: "x.html", dataUrl: "data:text/html;base64,nope" },
+      ],
+    });
+    expect(painted.bodyHtml).toContain("data:image/png;base64,abc");
+    expect(painted.bodyHtml).not.toMatch(/cid:/i);
+    expect(painted.images).toHaveLength(1);
   });
 });
