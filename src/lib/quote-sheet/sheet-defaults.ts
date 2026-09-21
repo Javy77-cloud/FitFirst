@@ -970,9 +970,13 @@ export function normalizeAutoSplitLimit(raw: string | null | undefined): string 
   const compact = text.replace(/[$,\s]/g, "").replace(/-/g, "/").toLowerCase();
   if (compact === "none" || compact === "n/a" || compact === "na") return "None";
   if (compact === "rejected" || compact === "declined" || compact === "waived") return "Rejected";
-  const slash = compact.match(/^(\d{2,3})\/(\d{2,3})$/);
+  const slash = compact.match(/^(\d+)\/(\d+)$/);
   if (slash) {
-    const next = `${Number(slash[1])}/${Number(slash[2])}`;
+    const left = Number(slash[1]);
+    const right = Number(slash[2]);
+    const asThousands =
+      left >= 1000 && right >= 1000 && left % 1000 === 0 && right % 1000 === 0;
+    const next = asThousands ? `${left / 1000}/${right / 1000}` : `${left}/${right}`;
     const known = [
       ...AUTO_BI_LIMIT_OPTIONS,
       ...AUTO_UM_UIM_OPTIONS,

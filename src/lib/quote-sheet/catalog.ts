@@ -11,6 +11,7 @@ import {
   type QuoteFieldDef,
 } from "./applicant-core";
 import type { SheetProduct } from "./products";
+import { isRepeatableSheetKey } from "./repeatable-units";
 import {
   AOP_DEDUCTIBLE_OPTIONS,
   CONSTRUCTION_OPTIONS,
@@ -1415,7 +1416,13 @@ export function extractKeyToSheetKey(line: ShopLine, extractKey: string): string
   const match = fields.find(
     (field) => field.extractKey === extractKey || field.extractKey === aliased,
   );
-  return match?.key ?? null;
+  if (match) return match.key;
+  // Repeatable vehicle/driver blocks live on the Auto sheet even when the static catalog
+  // only lists the first unit's primary keys.
+  if (line === "auto" && (isRepeatableSheetKey(extractKey) || isRepeatableSheetKey(aliased))) {
+    return isRepeatableSheetKey(extractKey) ? extractKey : aliased;
+  }
+  return null;
 }
 
 export function groupFields(
