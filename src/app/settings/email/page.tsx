@@ -32,6 +32,22 @@ export default async function EmailSettingsPage({
           Settings-pasted app keys cleared. Environment credentials still apply if they are set.
         </p>
       ) : null}
+      {notice === "byo-connected" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border bg-secondary/40 px-3 py-2 text-sm text-navy">
+          Gmail connected. Tokens are stored for this agency — open Inbox to work the mailbox.
+        </p>
+      ) : null}
+      {notice === "oauth-wall" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy">
+          Google Connect hit a wall. Check the card error below, Client ID/Secret, Gmail API, and the
+          redirect URI <code className="text-xs">/api/integrations/oauth/callback</code>.
+        </p>
+      ) : null}
+      {notice === "admin-only" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy">
+          Only Agency Admin can connect the agency mailbox (unless People &amp; access allows personal Google).
+        </p>
+      ) : null}
       <p className="mb-4 text-sm text-muted-foreground">
         Gmail is one-click Google Connect — Admin can paste, replace, or clear Google Client ID and
         Secret on the card. Yahoo Mail stays BYO OAuth. Agency Admin connects the agency inbox; a

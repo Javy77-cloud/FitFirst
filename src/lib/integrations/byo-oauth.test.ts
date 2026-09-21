@@ -92,6 +92,31 @@ describe("BYO OAuth wave", () => {
     );
   });
 
+  it("accepts desk return paths for Calendar and Inbox Connect", () => {
+    for (const r of ["/calendar", "/inbox", "/settings/email", "/settings/integrations"] as const) {
+      const token = encodeByoOauthState(
+        {
+          p: r === "/inbox" || r === "/settings/email" ? "gmail" : "google_calendar",
+          n: "n2",
+          r,
+          exp: Date.now() + 60_000,
+        },
+        "test-hmac",
+      );
+      expect(decodeByoOauthState(token, "test-hmac")?.r).toBe(r);
+    }
+    const forged = encodeByoOauthState(
+      {
+        p: "gmail",
+        n: "n4",
+        r: "/evil" as "/settings/email",
+        exp: Date.now() + 60_000,
+      },
+      "test-hmac",
+    );
+    expect(decodeByoOauthState(forged, "test-hmac")).toBeNull();
+  });
+
   it("lets Agency Admin connect and describes solo personal Gmail", () => {
     expect(canConnectByoIntegration({ signedIn: true, isAdmin: true })).toBe(true);
     expect(canConnectByoIntegration({ signedIn: true, isAdmin: false })).toBe(false);

@@ -28,6 +28,16 @@ export default async function VideoSettingsPage({
           Settings-pasted app keys cleared. Environment credentials still apply if they are set.
         </p>
       ) : null}
+      {notice === "byo-connected" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border bg-secondary/40 px-3 py-2 text-sm text-navy">
+          Google Meet helper connected. Tokens are stored for this agency.
+        </p>
+      ) : null}
+      {notice === "oauth-wall" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy">
+          Google Connect hit a wall. Check the card error, Client ID/Secret, Calendar API, and redirect URI.
+        </p>
+      ) : null}
       <p className="mb-4 text-sm text-muted-foreground">
         Google Meet uses the same one-click Google Connect as Gmail and Calendar. Paste, replace, or
         clear Client ID + Secret on the card. The helper writes a Meet URL onto calendar events when

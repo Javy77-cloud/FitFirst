@@ -30,6 +30,17 @@ export function CalendarSyncBar({
       {notice === "busy-sync-failed" ? (
         <p className="mb-2 text-sm text-navy">Busy sync failed. Try Sync now, or reconnect in Settings.</p>
       ) : null}
+      {notice === "byo-connected" ? (
+        <p className="mb-2 text-sm text-navy">Google Calendar connected. External busy will sync onto this desk.</p>
+      ) : null}
+      {notice === "oauth-wall" ? (
+        <p className="mb-2 text-sm text-navy">
+          Google Calendar Connect hit a wall. Open Settings → Integrations, check Client ID/Secret and Calendar API, then try again.
+        </p>
+      ) : null}
+      {notice === "admin-only" ? (
+        <p className="mb-2 text-sm text-navy">Only Agency Admin can connect Google Calendar.</p>
+      ) : null}
       {connected ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-navy" data-ff-calendar-last-synced="">

@@ -1,5 +1,6 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import {
+  BYO_OAUTH_RETURN_PATHS,
   BYO_OAUTH_SPECS,
   byoOauthRedirectUri,
   isByoOauthProviderId,
@@ -42,7 +43,13 @@ export function decodeByoOauthState(raw: string, secret = oauthStateSecret()): B
     const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as ByoOauthStatePayload;
     if (!isByoOauthProviderId(payload.p)) return null;
     if (typeof payload.exp !== "number" || Date.now() > payload.exp) return null;
-    if (payload.r && !payload.r.startsWith("/settings/")) return null;
+    // Allow desk return paths (/calendar, /inbox) as well as Settings surfaces.
+    if (
+      payload.r &&
+      !(BYO_OAUTH_RETURN_PATHS as readonly string[]).includes(payload.r)
+    ) {
+      return null;
+    }
     return payload;
   } catch {
     return null;
