@@ -2901,10 +2901,34 @@ button.ff-renewal-risk-badge {
 }
 .ff-stack-card-spread {
   display: grid;
-  grid-template-columns: minmax(9rem, 2fr) minmax(4.75rem, 0.9fr) minmax(8.5rem, auto) 5.75rem;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.45rem 1rem;
   align-items: baseline;
   width: 100%;
+}
+.ff-stack-products {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  width: 100%;
+  flex: 1 0 100%;
+}
+.ff-stack-products li {
+  display: grid;
+  grid-template-columns: 6.75rem minmax(0, 1fr);
+  gap: 0.25rem 0.85rem;
+  align-items: baseline;
+}
+.ff-stack-product-detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.55rem;
+  min-width: 0;
+  font-size: 0.78rem;
+  color: var(--ff-ink);
 }
 .ff-stack-name {
   min-width: 0;
@@ -2966,9 +2990,10 @@ button.ff-renewal-risk-badge {
   .ff-stack-card-spread {
     grid-template-columns: minmax(0, 1fr) auto;
   }
-  .ff-stack-product,
+  .ff-stack-products li {
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+  }
   .ff-stack-phase-days,
-  .ff-stack-silent,
   .ff-stack-silent-days,
   .ff-stack-value {
     grid-column: 1 / -1;
@@ -2983,15 +3008,29 @@ button.ff-renewal-risk-badge {
   color: var(--ff-ink);
 }
 .ff-deal-job-stamp {
-  border-radius: 999px;
-  padding: 0.05rem 0.45rem;
-  background: color-mix(in srgb, var(--ff-navy) 8%, white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.14rem 0.42rem;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  background: color-mix(in srgb, #fff8e8 78%, white);
   color: var(--ff-navy);
-  font-size: 0.68rem;
-  font-weight: 750;
-  letter-spacing: 0.03em;
+  font-family: Palatino, "Palatino Linotype", "Times New Roman", serif;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
   text-transform: uppercase;
+  transform: rotate(-7deg);
 }
+.ff-deal-job-stamp[data-ff-deal-stamp="Quote sent"] { color: #1b4f8a; }
+.ff-deal-job-stamp[data-ff-deal-stamp="Bound"],
+.ff-deal-job-stamp[data-ff-deal-stamp="Closed won"] { color: #bf0a30; }
+.ff-deal-job-stamp[data-ff-deal-stamp="Inspection"],
+.ff-deal-job-stamp[data-ff-deal-stamp="Payment due"] { color: #8a6500; }
+.ff-deal-job-stamp[data-ff-deal-stamp="Policy issued"],
+.ff-deal-job-stamp[data-ff-deal-stamp="Done"] { color: #0f7a3a; }
 .ff-stack-next {
   width: fit-content;
   color: var(--ff-navy);
@@ -3067,17 +3106,16 @@ button.ff-renewal-risk-badge {
   background: var(--ff-heat);
 }
 .ff-heat-hot .ff-stack-glyph,
-.ff-radar-dot.ff-heat-hot { animation: ff-heat-pulse 1.6s ease-in-out infinite; }
+.ff-radar-dot.ff-heat-hot { animation: ff-heat-pulse 1.25s ease-in-out infinite; }
 .ff-heat-cooling .ff-stack-glyph,
-.ff-radar-dot.ff-heat-cooling { opacity: 0.5; }
+.ff-radar-dot.ff-heat-cooling { animation: ff-heat-pulse 1.55s ease-in-out infinite; }
 .ff-heat-near_cold .ff-stack-glyph,
-.ff-radar-dot.ff-heat-near_cold { animation: ff-heat-flicker 0.9s steps(2, end) infinite; }
+.ff-radar-dot.ff-heat-near_cold { animation: ff-heat-pulse 2.8s ease-in-out infinite; }
 .ff-heat-cold .ff-stack-glyph,
 .ff-radar-dot.ff-heat-cold {
   background: var(--ff-heat-cold);
-  box-shadow:
-    0 0 0 4px color-mix(in srgb, var(--ff-heat-cold) 28%, transparent),
-    0 0 0 8px color-mix(in srgb, var(--ff-heat-cold) 12%, transparent);
+  animation: ff-heat-still 6.5s ease-in-out infinite;
+  box-shadow: none;
 }
 .ff-stack-glance {
   display: flex;
@@ -3148,6 +3186,72 @@ button.ff-renewal-risk-badge {
 .ff-deals-empty { margin: 1.5rem 0; text-align: center; color: var(--ff-muted); font-size: 0.85rem; }
 
 .ff-stack-card[class*="ff-urgency-tone-"] { --ff-heat: var(--ff-urgency); }
+
+.ff-heat-glance {
+  display: grid;
+  gap: 0.55rem;
+}
+.ff-heat-row {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: 0.35rem 0.85rem;
+  align-items: center;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--ff-heat) 28%, var(--ff-border));
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--ff-heat-wash, #fff) 55%, #fff);
+}
+.ff-heat-row-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  color: var(--ff-navy);
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+.ff-heat-row-label strong {
+  font-variant-numeric: tabular-nums;
+}
+.ff-heat-row-deals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.ff-heat-glance-card {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
+  max-width: 100%;
+  padding: 0.22rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--ff-heat) 35%, var(--ff-border));
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ff-navy);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+.ff-heat-glance-card:hover {
+  border-color: var(--ff-heat);
+  background: var(--ff-heat-wash, #fff);
+}
+.ff-heat-glance-card strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.ff-heat-glance-card span,
+.ff-heat-row-empty {
+  color: var(--ff-muted);
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+@media (max-width: 40rem) {
+  .ff-heat-row { grid-template-columns: minmax(0, 1fr); }
+}
 
 .ff-deals-radar { display: grid; gap: 0.7rem; }
 .ff-radar-legend {
@@ -3312,12 +3416,22 @@ button.ff-renewal-risk-badge {
 .ff-radar-open { font-size: 0.75rem; font-weight: 650; color: var(--ff-navy); text-decoration: underline; }
 
 @keyframes ff-heat-pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--ff-heat-hot) 45%, transparent); }
-  50% { transform: scale(1.18); box-shadow: 0 0 0 6px color-mix(in srgb, var(--ff-heat-hot) 0%, transparent); }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--ff-heat) 58%, transparent); }
+  50% { transform: scale(1.28); box-shadow: 0 0 0 7px color-mix(in srgb, var(--ff-heat) 0%, transparent); }
+}
+@keyframes ff-heat-still {
+  0%, 100% { transform: scale(1); opacity: 0.86; }
+  50% { transform: scale(1.02); opacity: 0.94; }
 }
 @keyframes ff-heat-flicker {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ff-stack-glyph,
+  .ff-radar-dot {
+    animation: none;
+  }
 }
 
 @media (max-width: 40rem) {
@@ -3692,7 +3806,8 @@ button.ff-renewal-risk-badge {
   width: clamp(15rem, var(--ff-inbox-list-width, 52%), calc(100% - 18.5rem));
   min-width: 0;
   max-height: min(46rem, calc(100dvh - 13rem));
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   overscroll-behavior: contain;
 }
 .ff-inbox-split:not(:has(.ff-inbox-detail-pane)) .ff-inbox-list-pane {
@@ -3701,8 +3816,10 @@ button.ff-renewal-risk-badge {
 .ff-inbox-detail-pane {
   flex: 1 1 auto;
   min-width: 0;
+  max-width: 100%;
   max-height: min(46rem, calc(100dvh - 13rem));
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   overscroll-behavior: contain;
 }
 .ff-inbox-splitter {
@@ -3734,24 +3851,37 @@ button.ff-renewal-risk-badge {
   .ff-inbox-list-pane,
   .ff-inbox-detail-pane {
     width: auto;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .ff-inbox-list-pane {
+    max-height: min(24rem, 52dvh);
+    overflow-y: auto;
+  }
+  .ff-inbox-detail-pane {
     max-height: none;
-    overflow: visible;
+    overflow-y: visible;
   }
   .ff-inbox-splitter { display: none; }
 }
 .ff-inbox-bands {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
+  min-width: 0;
   border: 1px solid var(--ff-border);
   border-radius: 0.7rem;
   background: #fff;
-  overflow: hidden;
+  overflow: visible;
 }
 .ff-inbox-band + .ff-inbox-band { border-top: 1px solid var(--ff-border); }
 .ff-inbox-band header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1;
   padding: 0.42rem 0.75rem 0.2rem;
+  background: #fff;
 }
 .ff-inbox-band h2 {
   margin: 0;
@@ -3830,16 +3960,73 @@ button.ff-renewal-risk-badge {
 /* Outlook hook — reserved. Do not invent a Yahoo skin. */
 .ff-inbox-desk[data-ff-inbox-skin="outlook"] .ff-inbox-row { border-radius: 0; }
 .ff-inbox-detail {
+  min-width: 0;
+  max-width: 100%;
   padding: 0.85rem 1rem;
   border: 1px solid var(--ff-border);
   border-radius: 0.7rem;
   background: #fff;
+  overflow-x: hidden;
 }
-.ff-inbox-detail h2 { margin: 0; font-size: 1.05rem; color: var(--ff-navy); }
+.ff-inbox-detail h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--ff-navy);
+  overflow-wrap: anywhere;
+}
 .ff-inbox-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.7rem 0; }
-.ff-inbox-body { white-space: pre-wrap; font-size: 0.88rem; color: var(--ff-navy); }
-.ff-inbox-thread { margin: 0.7rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.55rem; }
-.ff-inbox-msg { padding: 0.55rem 0.65rem; border-radius: 0.55rem; border: 1px solid var(--ff-border); background: #fff; }
+.ff-inbox-body {
+  min-width: 0;
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-size: 0.88rem;
+  color: var(--ff-navy);
+}
+.ff-inbox-body-html,
+.ff-inbox-body-html * {
+  max-width: 100% !important;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.ff-inbox-body-html {
+  white-space: normal;
+}
+.ff-inbox-body-html table {
+  width: 100% !important;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.ff-inbox-body-html td,
+.ff-inbox-body-html th,
+.ff-inbox-body-html pre,
+.ff-inbox-body-html div,
+.ff-inbox-body-html p {
+  white-space: normal !important;
+}
+.ff-inbox-body-html img {
+  height: auto !important;
+}
+.ff-inbox-thread {
+  margin: 0.7rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.ff-inbox-msg {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.55rem;
+  border: 1px solid var(--ff-border);
+  background: #fff;
+  overflow-x: hidden;
+}
 .ff-inbox-msg.is-in { border-left: 3px solid var(--ff-terracotta, #c45c26); }
 .ff-inbox-msg.is-out { border-left: 3px solid var(--ff-navy); background: color-mix(in srgb, var(--ff-card) 86%, #fff); }
 .ff-inbox-msg-meta { margin: 0 0 0.25rem; font-size: 0.68rem; font-weight: 650; color: var(--ff-muted); }

@@ -220,7 +220,7 @@ describe("Javy live follow-ups after PR #28", () => {
     const css = source("src/app/globals.css");
     expect(css).toMatch(/\.ff-deal-stamp-row \{[\s\S]*top: 13\.5rem;/);
     expect(css).toMatch(/\.ff-deal-stamp-row \{[\s\S]*position: absolute;/);
-    expect(css).not.toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: sticky;/);
+    expect(css).not.toMatch(/\.ff-deal-status-stamp \{[^}]*position:\s*sticky/);
     const trail = source("src/components/desk/desk-page-trail.tsx");
     expect(trail).toMatch(/data-ff-desk-crumb="link"/);
     expect(trail).not.toMatch(/border-navy bg-navy text-white/);

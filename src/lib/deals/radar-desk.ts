@@ -7,11 +7,12 @@ import { inferDealProducts, dealProductDef } from "@/lib/deals/deal-products";
 import { visibleDealTitle } from "@/lib/deals/deal-title";
 import {
   bestQuotePremium,
-  dealJobStamps,
   isPendingQuoteStatus,
   isQuoteSentStatus,
-  noticeSlugsFromShopFlow,
+  stackProductLines,
+  type StackProductLine,
 } from "@/lib/deals/card-glance";
+import { listProductStageChips } from "@/lib/deals/product-stages";
 import { resolveDealStampStage } from "@/lib/deals/status-stamp";
 import { humanizeDealStage } from "@/lib/deals/package-lines";
 import { bookFamily } from "@/lib/desk/policy-line";
@@ -54,6 +55,7 @@ export type RadarDealCard = {
   quoteCount: number;
   pendingQuotes: number;
   stamps: string[];
+  productLines: StackProductLine[];
   value: number;
   valueMetric: "coverage_a" | "premium";
   heat: HeatState;
@@ -103,6 +105,15 @@ export type DealQuoteGlance = {
   inspection: boolean;
 };
 
+type DealQuoteRowGlance = {
+  premium: number | null;
+  agentStatus: string | null;
+  stub: boolean;
+  shopLine: string | null;
+  notes: string | null;
+  quoteRunId: string | null;
+};
+
 function riskReady(row: DealListRow): boolean {
   const risk = row.risk;
   if (!risk) return false;
@@ -119,6 +130,7 @@ export async function loadDealVelocityTouches(dealIds: string[]) {
       hasDocs: new Set<string>(),
       hasQuotes: new Set<string>(),
       quoteGlanceByDeal: new Map<string, DealQuoteGlance>(),
+      quoteRowsByDeal: new Map<string, DealQuoteRowGlance[]>(),
     };
   }
   const tenant = DEFAULT_TENANT_ID;
@@ -139,6 +151,9 @@ export async function loadDealVelocityTouches(dealIds: string[]) {
         coverageA: quotes.coverageA,
         agentStatus: quotes.agentStatus,
         stub: quotes.stub,
+        shopLine: quotes.shopLine,
+        notes: quotes.notes,
+        quoteRunId: quotes.quoteRunId,
       })
       .from(quotes)
       .where(and(eq(quotes.tenantId, tenant), inArray(quotes.dealId, dealIds))),
@@ -161,6 +176,7 @@ export async function loadDealVelocityTouches(dealIds: string[]) {
   const hasQuotes = new Set<string>();
   const premiumsByDeal = new Map<string, number[]>();
   const quoteGlanceByDeal = new Map<string, DealQuoteGlance>();
+  const quoteRowsByDeal = new Map<string, DealQuoteRowGlance[]>();
 
   for (const row of docRows) {
     if (!row.dealId) continue;
@@ -188,6 +204,16 @@ export async function loadDealVelocityTouches(dealIds: string[]) {
       premiumsByDeal.set(row.dealId, list);
     }
     if (emptyStub) continue;
+    const rows = quoteRowsByDeal.get(row.dealId) ?? [];
+    rows.push({
+      premium: hasPremium ? premiumNumber : null,
+      agentStatus: status,
+      stub: Boolean(row.stub),
+      shopLine: row.shopLine,
+      notes: row.notes,
+      quoteRunId: row.quoteRunId,
+    });
+    quoteRowsByDeal.set(row.dealId, rows);
     const glance = quoteGlanceByDeal.get(row.dealId) ?? {
       count: 0,
       bestPremium: null,
@@ -215,7 +241,16 @@ export async function loadDealVelocityTouches(dealIds: string[]) {
     if (!prev || at.getTime() > prev.getTime()) lastCommByDeal.set(row.dealId, at);
   }
 
-  return { lastCommByDeal, lastDocByDeal, lastQuoteByDeal, premiumByDeal, hasDocs, hasQuotes, quoteGlanceByDeal };
+  return {
+    lastCommByDeal,
+    lastDocByDeal,
+    lastQuoteByDeal,
+    premiumByDeal,
+    hasDocs,
+    hasQuotes,
+    quoteGlanceByDeal,
+    quoteRowsByDeal,
+  };
 }
 
 export function presentRadarCards(
@@ -285,13 +320,31 @@ export function presentRadarCards(
       const pos = radarPosition({ daysInPhase, silenceDays: gap });
       const glance = touches.quoteGlanceByDeal.get(deal.id);
       const stageStamp = resolveDealStampStage(deal.pipelineStageSlug, deal.pipelineStage, deal.boundAt);
-      const noticeSlugs = noticeSlugsFromShopFlow(deal.shopFlow);
-      const stamps = dealJobStamps({
-        stageStamp,
-        noticeSlugs,
-        quoteSent: Boolean(glance?.quoteSent) || stageStamp === "quote_sent",
-        inspection: Boolean(glance?.inspection),
+      const stageLabel = humanizeDealStage(deal.pipelineStageSlug || deal.pipelineStage);
+      const chips = listProductStageChips({
+        shopProducts: deal.shopProducts,
+        shopLines: deal.shopLines,
+        lineOfBusiness: deal.lineOfBusiness,
+        quotingLine: deal.quotingLine,
+        quotingForm: deal.quotingForm,
+        policySubType: deal.policySubType,
+        shopFlow: deal.shopFlow,
+        pipelineStage: deal.pipelineStageSlug || deal.pipelineStage,
       });
+      const stageNotices = deal.shopFlow?.productStages ?? {};
+      const productLines = stackProductLines({
+        products: chips.map((chip) => ({
+          product: chip.product,
+          label: chip.label,
+          stage: chip.stage,
+          noticeType: stageNotices[chip.product]?.noticeType,
+          inspectionStatus: stageNotices[chip.product]?.inspectionStatus,
+        })),
+        quotes: touches.quoteRowsByDeal.get(deal.id) ?? [],
+        quoteRuns: deal.shopFlow?.quoteRuns,
+      });
+      const stamps = [...new Set(productLines.flatMap((line) => line.stamps))];
+      const quoteSent = stamps.includes("Quote sent");
       return {
         id: deal.id,
         title: visibleDealTitle(deal),
@@ -305,7 +358,7 @@ export function presentRadarCards(
         family: bookFamily(deal.lineOfBusiness),
         productLabels: products.map((id) => dealProductDef(id)?.label ?? id),
         stageStamp,
-        stageLabel: humanizeDealStage(deal.pipelineStageSlug || deal.pipelineStage),
+        stageLabel,
         ownerId: deal.ownerId ?? null,
         ownerName: deal.ownerId ? users.get(deal.ownerId) ?? null : null,
         coverageA: row.risk?.coverageA ?? deal.coverageAmount ?? null,
@@ -314,6 +367,7 @@ export function presentRadarCards(
         quoteCount: glance?.count ?? 0,
         pendingQuotes: glance?.pending ?? 0,
         stamps,
+        productLines,
         value: value.amount,
         valueMetric: value.metric,
         heat,
@@ -340,7 +394,14 @@ export function presentRadarCards(
           quotesReady: quoted,
           commGapDays: gap,
         }),
-        primaryAction: primaryDealAction({ dealId: deal.id, phase, heat }),
+        primaryAction: primaryDealAction({
+          dealId: deal.id,
+          phase,
+          heat,
+          quoteSent,
+          stageStamp,
+          inspection: stamps.includes("Inspection"),
+        }),
         phone: row.contact?.phone ?? row.lead?.phone ?? null,
         email: row.contact?.email ?? row.lead?.email ?? null,
         contactId: deal.contactId,

@@ -1,7 +1,7 @@
 import Link from "next/link";
+import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
 import {
   docsGlanceLabel,
-  formatPremiumColumn,
   formatSilenceCue,
   quotesGlanceLabel,
 } from "@/lib/deals/card-glance";
@@ -12,15 +12,11 @@ export function dealDisplayName(card: Pick<RadarDealCard, "insured" | "title">):
 }
 
 export function DealHostSpread({ card }: { card: RadarDealCard }) {
-  const product = card.productLabels[0] ?? card.lineOfBusiness;
   return (
     <div className="ff-stack-card-spread">
       <Link href={card.href} className="ff-stack-name">
         {dealDisplayName(card)}
       </Link>
-      <span className="ff-stack-product" title={product}>
-        {product}
-      </span>
       <span
         className="ff-stack-silent"
         data-ff-silence-cue=""
@@ -28,14 +24,42 @@ export function DealHostSpread({ card }: { card: RadarDealCard }) {
       >
         {formatSilenceCue(card.silenceDays)}
       </span>
-      <span className="ff-stack-value" data-ff-premium-column="" title="Premium">
-        {formatPremiumColumn(card.premium)}
-      </span>
     </div>
   );
 }
 
 export function DealHostJob({ card }: { card: RadarDealCard }) {
+  if (card.productLines.length > 0) {
+    return (
+      <div className="ff-stack-job" data-ff-deal-job="">
+        <ul className="ff-stack-products" data-ff-product-lines="">
+          {card.productLines.map((line) => (
+            <li key={line.product} data-ff-product-line={line.product}>
+              <span className="ff-stack-product" data-ff-product-label="" title={line.label}>
+                {line.label}
+              </span>
+              <span className="ff-stack-product-detail">
+                <span data-ff-product-place="">{line.stageLabel}</span>
+                {line.stamps.map((stamp) => (
+                  <span key={stamp} className="ff-deal-job-stamp" data-ff-deal-stamp={stamp}>
+                    {stamp}
+                  </span>
+                ))}
+                <span data-ff-product-quotes="" data-ff-premium-column="">
+                  {line.quoteSummary}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+        <RenewalHealthMeter
+          stars={card.clientHealth / 20}
+          policyStars={card.policyHealth / 20}
+          flagged={card.heat === "cold" || card.clientHealth < 40}
+        />
+      </div>
+    );
+  }
   return (
     <div className="ff-stack-job" data-ff-deal-job="">
       <span data-ff-docs-cue="">{docsGlanceLabel(card.docsSubmitted)}</span>

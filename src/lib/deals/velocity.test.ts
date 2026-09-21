@@ -122,7 +122,14 @@ describe("velocity engine", () => {
     expect(primaryDealAction({ dealId: "d1", phase: "docs", heat: "hot" }).href).toBe(
       "/deals/d1?tab=documents",
     );
-    expect(primaryDealAction({ dealId: "d1", phase: "post_quote_gap", heat: "cold" }).label).toBe("Chase");
+    expect(primaryDealAction({ dealId: "d1", phase: "docs", heat: "cold" }).label).toBe("Upload docs");
+    expect(primaryDealAction({ dealId: "d1", phase: "post_quote_gap", heat: "cold" }).label).toBe("Follow up");
+    expect(primaryDealAction({ dealId: "d1", phase: "quotes", heat: "cold" }).label).toBe("Send quote");
+    expect(primaryDealAction({ dealId: "d1", phase: "details", heat: "cold" }).label).toBe("Call");
+    expect(
+      primaryDealAction({ dealId: "d1", phase: "quotes", heat: "hot", quoteSent: true }).label,
+    ).toBe("Follow up");
+    expect(primaryDealAction({ dealId: "d1", phase: "quotes", heat: "hot" }).label).not.toBe("Chase");
     expect(isClosedShoppingDeal({ pipelineStageSlug: "closed_won" })).toBe(true);
     expect(heatForDeal({ commGapDays: 16, closed: true })).toBe("cold");
     expect(heatForDeal({ silenceDays: 2, daysInPhase: 12, value: 40_000 })).toBe("hot");

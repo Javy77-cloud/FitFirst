@@ -53,6 +53,15 @@ describe("Renewals desk chrome", () => {
     expect(source("src/components/renewals/renewals-priority-stack.tsx")).toMatch(
       /data-ff-renewals-priority-stack/,
     );
+    expect(source("src/components/renewals/renewals-priority-stack.tsx")).toMatch(/ff-stack-card/);
+    expect(source("src/components/renewals/renewals-priority-stack.tsx")).toMatch(/ff-stack-glyph/);
+    expect(source("src/components/renewals/renewals-priority-stack.tsx")).toMatch(/renewalStackHeat/);
+    expect(source("src/components/renewals/renewals-priority-stack.tsx")).toMatch(/Work renewal/);
+    expect(source("src/components/renewals/renewals-priority-stack.tsx")).toMatch(/\/compare/);
+    expect(source("src/components/renewals/renewals-priority-stack.tsx")).toMatch(/data-ff-compare-eye|RenewalCompareDrawer/);
+    expect(source("src/components/renewals/renewals-priority-stack.tsx")).toMatch(/renewalRiskHover/);
+    expect(source("src/components/renewals/renewals-priority-stack.tsx")).not.toMatch(/ff-stack-action/);
+    expect(source("src/components/renewals/renewals-host-list.tsx")).toMatch(/data-ff-renewals-host-list/);
     expect(board).toMatch(/RENEWAL_URGENCY_BANDS/);
     expect(board).toMatch(/data-ff-urgency-band/);
     expect(board).not.toMatch(/Upcoming|Contacted|Quoted|Bound|Lost/);

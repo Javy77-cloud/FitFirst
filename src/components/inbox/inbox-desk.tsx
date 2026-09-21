@@ -6,11 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatInboxListWhen, formatInboxWhen, inboxSenderLabel, snippetOf } from "@/lib/desk/inbox";
+import { looksLikeHtml, sanitizeInboxHtml } from "@/lib/desk/inbox-body";
 import { INBOX_BANDS, groupInboxThreads, type InboxDeskThread } from "@/lib/desk/inbox-desk";
 import { inboxBandLabel, contactCreateHref } from "@/lib/desk/inbox-match";
 import { inboxSkinListRole, resolveInboxSkin, type InboxMailProvider } from "@/lib/desk/inbox-skin";
 import type { GmailThreadMessage } from "@/lib/integrations/gmail";
 import { cn } from "@/lib/utils";
+
+function InboxMessageBody({ text, html }: { text: string; html?: string | null }) {
+  const source = html && looksLikeHtml(html) ? html : looksLikeHtml(text) ? text : "";
+  const safe = sanitizeInboxHtml(source);
+  if (safe) {
+    return <div className="ff-inbox-body ff-inbox-body-html" dangerouslySetInnerHTML={{ __html: safe }} />;
+  }
+  return <p className="ff-inbox-body">{text}</p>;
+}
 
 function ReplyForm({ thread }: { thread: InboxDeskThread }) {
   const replyTo = thread.match.emails[0] || thread.from;
@@ -154,7 +164,7 @@ export function InboxDesk({
               return (
                 <section key={band} className={cn("ff-inbox-band", `ff-inbox-band-${band}`)} data-ff-inbox-band={band}>
                   <header>
-                    <h2>{inboxBandLabel(band)}</h2>
+                    <h2 data-ff-inbox-band-label={band}>{inboxBandLabel(band)}</h2>
                     <span>{rows.length}</span>
                   </header>
                   <ul>
@@ -206,12 +216,12 @@ export function InboxDesk({
                         {msg.inbound ? "Inbound" : "Sent"} · {inboxSenderLabel(msg.from) || "Unknown"} ·{" "}
                         {formatInboxWhen(msg.internalDate || msg.date)}
                       </p>
-                      <p className="ff-inbox-body">{msg.body || msg.snippet}</p>
+                      <InboxMessageBody text={msg.body || msg.snippet} html={msg.bodyHtml} />
                     </li>
                   ))}
                 </ol>
               ) : (
-                <p className="ff-inbox-body">{selected.snippet}</p>
+                <InboxMessageBody text={selected.snippet} />
               )}
               <ReplyForm thread={selected} />
             </article>

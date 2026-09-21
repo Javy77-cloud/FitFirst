@@ -1,6 +1,8 @@
 import { formatMoney } from "@/lib/domain";
+import { splitHomeProducts } from "@/lib/deals/deal-products";
 import { noticeStampPhrase } from "@/lib/deals/notices";
-import { type DealStampStage } from "@/lib/deals/status-stamp";
+import { quoteMatchesDealProduct } from "@/lib/deals/shop-flow";
+import { resolveDealStampStage, type DealStampStage } from "@/lib/deals/status-stamp";
 
 const STAMP_LABEL: Record<DealStampStage, string> = {
   quote_sent: "Quote sent",
@@ -18,6 +20,24 @@ export type ShopFlowNoticeSource = {
     { noticeType?: string | null; inspectionStatus?: string | null; stage?: string | null } | null | undefined
   > | null;
 } | null;
+
+const STAGE_WORD_STAMPS: Record<string, string> = {
+  "quote sent": "Quote sent",
+  bound: "Bound",
+  inspection: "Inspection",
+  "pending inspection": "Inspection",
+  "policy issued": "Policy issued",
+  "closed won": "Closed won",
+  done: "Done",
+};
+
+function stageKey(value: string | null | undefined): string {
+  return (value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+}
 
 /** Premium column only. Coverage A and life face never fill this number. */
 export function premiumColumnAmount(input: {
@@ -99,6 +119,18 @@ export function noticeSlugsFromShopFlow(shopFlow: ShopFlowNoticeSource): string[
   return slugs;
 }
 
+/** Product stage words (quote sent, bound, inspection) even when the deal slug lags. */
+export function productStageSlugsFromShopFlow(shopFlow: ShopFlowNoticeSource): string[] {
+  const stages = shopFlow?.productStages;
+  if (!stages) return [];
+  const slugs: string[] = [];
+  for (const row of Object.values(stages)) {
+    const stage = (row?.stage ?? "").trim();
+    if (stage) slugs.push(stage);
+  }
+  return slugs;
+}
+
 function addChip(chips: string[], seen: Set<string>, label: string) {
   const key = label.trim().toLowerCase();
   if (!key || seen.has(key)) return;
@@ -106,9 +138,23 @@ function addChip(chips: string[], seen: Set<string>, label: string) {
   chips.push(label.trim());
 }
 
-/** Readable job stamps — inspection, quote sent, bound, payment due. */
+function addResolvedStageStamp(chips: string[], seen: Set<string>, slug: string | null | undefined) {
+  const key = stageKey(slug);
+  if (!key || key === "chase") return;
+  if (key === "pending_inspection" || key === "waiting_on_inspection" || key === "inspection") {
+    addChip(chips, seen, "Inspection");
+    return;
+  }
+  const resolved = resolveDealStampStage(slug);
+  if (resolved === "quote_sent") addChip(chips, seen, "Quote sent");
+  else if (resolved) addChip(chips, seen, STAMP_LABEL[resolved]);
+}
+
+/** Readable job stamps — inspection, quote sent, bound, payment due. Never Chase. */
 export function dealJobStamps(input: {
   stageStamp: DealStampStage | null;
+  stageLabel?: string | null;
+  productStageSlugs?: readonly string[];
   noticeSlugs?: readonly string[];
   quoteSent?: boolean;
   inspection?: boolean;
@@ -119,10 +165,13 @@ export function dealJobStamps(input: {
   if (input.stageStamp && input.stageStamp !== "quote_sent") {
     addChip(chips, seen, STAMP_LABEL[input.stageStamp]);
   }
+  const fromLabel = STAGE_WORD_STAMPS[(input.stageLabel ?? "").trim().toLowerCase()];
+  if (fromLabel) addChip(chips, seen, fromLabel);
+  for (const slug of input.productStageSlugs ?? []) addResolvedStageStamp(chips, seen, slug);
   if (input.inspection) addChip(chips, seen, "Inspection");
   for (const slug of input.noticeSlugs ?? []) {
-    const key = slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-    if (!key || key === "none") continue;
+    const key = stageKey(slug);
+    if (!key || key === "none" || key === "chase") continue;
     if (key.includes("inspection")) addChip(chips, seen, "Inspection");
     else if (key.includes("mortgagee") || key.includes("payment")) addChip(chips, seen, "Payment due");
     else {
@@ -130,5 +179,130 @@ export function dealJobStamps(input: {
       if (phrase) addChip(chips, seen, phrase.replace(/^Notice · /, ""));
     }
   }
-  return chips;
+  return chips.filter((chip) => chip.toLowerCase() !== "chase");
+}
+
+const STACK_PRODUCT_NAMES: Record<string, string> = {
+  homeowners: "Home",
+  landlord: "Landlord",
+  renters: "Renters",
+  auto: "Auto",
+  motorcycle: "Motorcycle",
+  flood: "Flood",
+  rv: "RV",
+  boat: "Boat",
+  umbrella: "Umbrella",
+};
+
+/** Documents / Markets / Quotes / Bound — the place this product is in. */
+const STACK_PLACE: Record<string, string> = {
+  gathering: "Documents",
+  gather: "Documents",
+  markets: "Markets",
+  quote_review: "Quotes",
+  review: "Quotes",
+  quotes: "Quotes",
+  quote_sent: "Quotes",
+  bound: "Bound",
+  pending_inspection: "Bound",
+  waiting_on_inspection: "Bound",
+  policy_issued: "Bound",
+  closed_won: "Closed won",
+  closed_lost: "Closed lost",
+  done: "Done",
+};
+
+export type StackProductQuote = {
+  premium?: number | string | null;
+  agentStatus?: string | null;
+  stub?: boolean | null;
+  shopLine?: string | null;
+  notes?: string | null;
+  quoteRunId?: string | null;
+};
+
+export type StackProductLine = {
+  product: string;
+  label: string;
+  stageLabel: string;
+  stamps: string[];
+  quoteSummary: string;
+};
+
+export function stackProductName(product: string, fallback?: string | null): string {
+  return STACK_PRODUCT_NAMES[product] ?? (fallback?.trim() || product);
+}
+
+export function stackPlaceLabel(stage: string | null | undefined): string {
+  const key = stageKey(stage);
+  return STACK_PLACE[key] ?? (key ? key.replace(/_/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase()) : "Documents");
+}
+
+/**
+ * One row per open product. Quote totals and stamps stay on the product they
+ * belong to — a Flood $487 never becomes the Home line.
+ */
+export function stackProductLines(input: {
+  products: readonly {
+    product: string;
+    label?: string | null;
+    stage?: string | null;
+    noticeType?: string | null;
+    inspectionStatus?: string | null;
+  }[];
+  quotes?: readonly StackProductQuote[];
+  quoteRuns?: Partial<Record<string, string>> | null;
+}): StackProductLine[] {
+  const products = input.products.filter((row) => row.product.trim());
+  const multiLine = products.length > 1;
+  const splitHome = splitHomeProducts(products.map((row) => row.product));
+  const quotes = input.quotes ?? [];
+  return products.map((product) => {
+    const mine = quotes.filter((quote) => {
+      const premium = premiumColumnAmount({ premium: quote.premium });
+      const statusKey = (quote.agentStatus ?? "").trim().toLowerCase();
+      const emptyStub = Boolean(quote.stub) && premium == null && (statusKey === "" || statusKey === "new");
+      if (emptyStub) return false;
+      return quoteMatchesDealProduct(
+        {
+          shopLine: quote.shopLine,
+          notes: quote.notes,
+          quoteRunId: quote.quoteRunId,
+          quoteRuns: input.quoteRuns,
+        },
+        product.product,
+        { multiLine, splitHomeProducts: splitHome },
+      );
+    });
+    const stage = product.stage ?? "";
+    const key = stageKey(stage);
+    const noticeSlugs = [product.noticeType, product.inspectionStatus].filter(
+      (value): value is string => Boolean(value && value.trim() && value !== "none"),
+    );
+    const quoteSent = mine.some((quote) => isQuoteSentStatus(quote.agentStatus)) || key === "quote_sent";
+    const inspection =
+      mine.some((quote) => (quote.agentStatus ?? "").trim().toLowerCase() === "waiting_on_inspection") ||
+      noticeSlugs.some((slug) => stageKey(slug).includes("inspection"));
+    const stageStamp =
+      key === "pending_inspection" || key === "inspection" || key === "waiting_on_inspection"
+        ? null
+        : resolveDealStampStage(stage);
+    return {
+      product: product.product,
+      label: stackProductName(product.product, product.label),
+      stageLabel: stackPlaceLabel(stage),
+      stamps: dealJobStamps({
+        stageStamp,
+        productStageSlugs: stage ? [stage] : [],
+        noticeSlugs,
+        quoteSent,
+        inspection,
+      }),
+      quoteSummary: quotesGlanceLabel({
+        count: mine.length,
+        bestPremium: bestQuotePremium(mine.map((quote) => quote.premium)),
+        pending: mine.filter((quote) => isPendingQuoteStatus(quote.agentStatus)).length,
+      }),
+    };
+  });
 }

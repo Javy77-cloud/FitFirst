@@ -121,6 +121,13 @@ describe("inbox desk presentation", () => {
     expect(readFileSync("src/lib/desk/inbox-split.ts", "utf8")).toMatch(/ff-inbox-list-width:v1/);
     expect(chrome).toMatch(/ff-inbox-splitter/);
     expect(chrome).toMatch(/--ff-inbox-list-width/);
+    expect(desk).toMatch(/data-ff-inbox-band-label=\{band\}/);
+    expect(desk).toMatch(/ff-inbox-body-html/);
+    expect(chrome).toMatch(/\.ff-inbox-bands \{[\s\S]*flex: 0 0 auto;/);
+    expect(chrome).toMatch(/\.ff-inbox-detail-pane \{[\s\S]*overflow-x: hidden;/);
+    expect(chrome).toMatch(/\.ff-inbox-body \{[\s\S]*overflow-wrap: anywhere;/);
+    expect(chrome).toMatch(/ff-heat-still/);
+    expect(chrome).toMatch(/\.ff-heat-cooling \.ff-stack-glyph,[\s\S]*ff-heat-pulse/);
     expect(desk).not.toMatch(/does not host a mailbox/);
     expect(desk).not.toMatch(/Needs reply/);
     expect(desk).not.toMatch(/Needs you/);

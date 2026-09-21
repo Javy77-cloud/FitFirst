@@ -6,8 +6,10 @@ import {
   formatPremiumColumn,
   formatSilenceCue,
   noticeSlugsFromShopFlow,
+  productStageSlugsFromShopFlow,
   premiumColumnAmount,
   quotesGlanceLabel,
+  stackProductLines,
 } from "./card-glance";
 
 describe("deal card glance", () => {
@@ -52,5 +54,66 @@ describe("deal card glance", () => {
         },
       }),
     ).toEqual(["inspection_before_bind", "check_mortgagee_payment"]);
+  });
+
+  it("stamps a product-level quote sent (Gloria) and never invents Chase", () => {
+    expect(
+      dealJobStamps({
+        stageStamp: null,
+        stageLabel: "Quote sent",
+        productStageSlugs: ["quote_sent"],
+        noticeSlugs: ["chase"],
+      }),
+    ).toEqual(["Quote sent"]);
+    expect(
+      dealJobStamps({
+        stageStamp: null,
+        productStageSlugs: ["pending_inspection"],
+      }),
+    ).toEqual(["Inspection"]);
+    expect(
+      productStageSlugsFromShopFlow({
+        productStages: { homeowners: { stage: "quote_sent" }, auto: { stage: "review" } },
+      }),
+    ).toEqual(["quote_sent", "review"]);
+    expect(dealJobStamps({ stageStamp: null, noticeSlugs: ["chase"] })).not.toContain("Chase");
+  });
+
+  it("keeps Heather and Gloria products on their own lines", () => {
+    const heather = stackProductLines({
+      products: [
+        { product: "homeowners", stage: "gathering" },
+        { product: "auto", stage: "markets" },
+        { product: "flood", stage: "quote_sent", noticeType: "inspection_before_bind" },
+      ],
+      quotes: [
+        { shopLine: "flood", premium: 487, agentStatus: "sent_to_client", stub: false },
+        { shopLine: "home", premium: 1840, agentStatus: "new", stub: false },
+      ],
+    });
+    expect(heather.map((line) => line.label)).toEqual(["Home", "Auto", "Flood"]);
+    expect(heather.map((line) => line.stageLabel)).toEqual(["Documents", "Markets", "Quotes"]);
+    expect(heather[0]?.quoteSummary).toBe("1 quote pulled · best $1,840 · 1 pending");
+    expect(heather[0]?.stamps).not.toContain("Quote sent");
+    expect(heather[1]?.quoteSummary).toBe("No quotes yet");
+    expect(heather[2]?.quoteSummary).toBe("1 quote pulled · best $487");
+    expect(heather[2]?.stamps).toEqual(expect.arrayContaining(["Quote sent", "Inspection"]));
+    expect(heather[2]?.quoteSummary).not.toContain("1,840");
+
+    const gloria = stackProductLines({
+      products: [
+        { product: "homeowners", stage: "quote_sent" },
+        { product: "landlord", stage: "quote_review" },
+      ],
+      quotes: [{ shopLine: "home", notes: "DP3 landlord dwelling", premium: 900, agentStatus: "new", stub: false }],
+    });
+    expect(gloria.map((line) => `${line.label}:${line.stageLabel}`)).toEqual([
+      "Home:Quotes",
+      "Landlord:Quotes",
+    ]);
+    expect(gloria[0]?.stamps).toContain("Quote sent");
+    expect(gloria[1]?.stamps).not.toContain("Quote sent");
+    expect(gloria[0]?.quoteSummary).toBe("No quotes yet");
+    expect(gloria[1]?.quoteSummary).toContain("$900");
   });
 });
