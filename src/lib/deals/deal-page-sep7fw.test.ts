@@ -12,12 +12,14 @@ function source(file: string) {
 describe("sep7fw Documents Confirm → Markets; Markets Approve → Quotes", () => {
   it("FW1 — Documents Confirm lands Markets; Markets Approve & request lands Quotes", () => {
     const quoting = source("src/app/actions/quoting.ts");
+    expect(quoting).toMatch(/riskConfirmTab/);
+    expect(quoting).toMatch(/lineAlreadyShopped/);
     expect(quoting).toMatch(
-      /redirect\(withFlash\(`\/deals\/\$\{dealId\}\?tab=markets&line=\$\{line\}`, "Sheet approved"\)\)/,
+      /redirect\(withFlash\(`\/deals\/\$\{dealId\}\?tab=markets&line=\$\{line\}\$\{productQuery\}`, "Sheet approved"\)\)/,
     );
-    expect(quoting).toMatch(/const subsequent = Boolean\(deal\.quotingUnlocked/);
+    expect(quoting).toMatch(/clearCreatePolicyPrompt: !binding/);
     expect(quoting).toMatch(
-      /redirect\(withFlash\(`\/deals\/\$\{dealId\}\?tab=quotes&line=\$\{line\}\$\{productQuery\}`, "Sheet approved"\)\)/,
+      /`\/deals\/\$\{dealId\}\?tab=quotes&line=\$\{line\}\$\{productQuery\}`/,
     );
     expect(quoting).not.toMatch(/shopDealQuotes/);
     expect(quoting).not.toMatch(

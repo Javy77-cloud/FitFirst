@@ -1,4 +1,9 @@
-import { canonicalizeProductStage, type DealProductStageState, type DealProductStages } from "@/lib/deals/product-stages";
+import {
+  canonicalizeProductStage,
+  productChipBound,
+  type DealProductStageState,
+  type DealProductStages,
+} from "@/lib/deals/product-stages";
 import type { DealProductId } from "@/lib/deals/deal-products";
 
 /**
@@ -99,6 +104,18 @@ export function shouldPromptCreatePolicy(input: {
   if (!isDeclarationDocType(input.docType)) return false;
   if (input.looksLikeDec === false) return false;
   return true;
+}
+
+/**
+ * Create policy is the Bound → Policy issued mint. A current-policy dec used
+ * to fill an open shop must not queue that prompt.
+ */
+export function allowCreatePolicyPrompt(input: {
+  stage?: string | null;
+  force?: boolean;
+}): boolean {
+  if (input.force) return true;
+  return productChipBound(input.stage);
 }
 
 export function parsePendingDecPrompt(raw: unknown): PendingDecPrompt | null {

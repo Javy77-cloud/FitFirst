@@ -57,6 +57,7 @@ export async function retagDocumentAsDeclaration(input: {
       carrierName: input.carrierName,
       product: input.product,
       force: input.forcePrompt,
+      binding: true,
     });
   }
   if (dealId) revalidatePath(`/deals/${dealId}`);
@@ -129,6 +130,7 @@ export async function receiveCarrierDeclaration(input: {
     filename: doc.filename,
     carrierName,
     product,
+    binding: true,
   });
   revalidatePath(`/deals/${dealId}`);
   return {

@@ -73,7 +73,7 @@ import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
 import { DealStatusStamp } from "@/components/deal/deal-status-stamp";
 import { CreatePolicyFromDecModal } from "@/components/deal/create-policy-from-dec-modal";
 import { ensureRosaDeclarationRetag } from "@/app/actions/declaration";
-import { ROSA_DEC_DEAL_ID } from "@/lib/policy/dec-prompt";
+import { allowCreatePolicyPrompt, ROSA_DEC_DEAL_ID } from "@/lib/policy/dec-prompt";
 import {
   lineQuoteCompleteness,
   productQuoteCompleteness,
@@ -646,9 +646,9 @@ export default async function DealPage({
         {(() => {
           const pending = shopFlow.pendingDecPrompt;
           const promptDoc = doc?.trim() || pending?.documentId;
-          const showPrompt = Boolean(
-            promptDoc && (createPolicy === "1" || pending?.documentId),
-          );
+          const showPrompt =
+            allowCreatePolicyPrompt({ stage: activeProductState.stage }) &&
+            Boolean(promptDoc && (createPolicy === "1" || pending?.documentId));
           if (!showPrompt || !promptDoc) return null;
           return (
             <CreatePolicyFromDecModal

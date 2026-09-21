@@ -15,3 +15,9 @@ export async function persistDealWorkTab(dealId: string, tab: AgentDealTab) {
   if (next === existing) return;
   await writeRecordValues(dealId, { [DEAL_WORK_TAB_KEY]: next }, "deals");
 }
+
+/** Risk confirm lands a specific tab — including back from a mistaken Quotes persist. */
+export async function forceDealWorkTab(dealId: string, tab: AgentDealTab) {
+  if (!dealId) return;
+  await writeRecordValues(dealId, { [DEAL_WORK_TAB_KEY]: tab }, "deals");
+}

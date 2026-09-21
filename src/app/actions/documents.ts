@@ -14,7 +14,11 @@ import { isRedirectError } from "@/lib/lifecycle/shop";
 import { formTag, leadDocFormById, lineTag } from "@/lib/leads/line-documents";
 import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
 import { coerceDealUploadDocType, matchDealLookup, slotForDocType } from "@/lib/deals/lookup";
-import { maybeQueueCreatePolicyPrompt, resolveDeclarationCarrierName } from "@/app/actions/declaration-prompt";
+import {
+  dealAllowsCreatePolicyPrompt,
+  maybeQueueCreatePolicyPrompt,
+  resolveDeclarationCarrierName,
+} from "@/app/actions/declaration-prompt";
 import { isDeclarationDocType } from "@/lib/policy/dec-prompt";
 import { parseDealProduct } from "@/lib/deals/deal-products";
 import { db } from "@/lib/db";
@@ -282,22 +286,26 @@ export async function persistDealSourceUploads(
     const product =
       parseDealProduct(String(formData.get("product") ?? "")) ??
       parseDealProduct(String(formData.get("line") ?? ""));
-    const carrierName =
-      String(formData.get("carrierName") ?? "").trim() ||
-      (await resolveDeclarationCarrierName(dealId, product));
-    createPolicyPrompt = await maybeQueueCreatePolicyPrompt({
-      dealId,
-      docType: lastDeclaration.docType,
-      documentId: lastDeclaration.id,
-      storagePath: lastDeclaration.storagePath,
-      mimeType: lastDeclaration.mimeType,
-      filename: lastDeclaration.filename,
-      carrierName,
-      product,
-    }).catch((error) => {
-      console.error("[persistDealSourceUploads] create-policy prompt", error);
-      return null;
-    });
+    const binding = await dealAllowsCreatePolicyPrompt(dealId, product);
+    if (binding) {
+      const carrierName =
+        String(formData.get("carrierName") ?? "").trim() ||
+        (await resolveDeclarationCarrierName(dealId, product));
+      createPolicyPrompt = await maybeQueueCreatePolicyPrompt({
+        dealId,
+        docType: lastDeclaration.docType,
+        documentId: lastDeclaration.id,
+        storagePath: lastDeclaration.storagePath,
+        mimeType: lastDeclaration.mimeType,
+        filename: lastDeclaration.filename,
+        carrierName,
+        product,
+        binding: true,
+      }).catch((error) => {
+        console.error("[persistDealSourceUploads] create-policy prompt", error);
+        return null;
+      });
+    }
   }
   return { count, last, attempted: uploads.length, createPolicyPrompt };
 }

@@ -554,11 +554,14 @@ export function sheetNeedsRecheckCue(
 export function nextShopFlowAfterSheetConfirm(input: {
   saved?: DealShopFlowState | null;
   line: string;
+  /** Shopping confirm must not keep a Create policy prompt from a current-policy dec. */
+  clearCreatePolicyPrompt?: boolean;
 }): DealShopFlowState {
   const saved = parseShopFlow(input.saved);
   return {
     ...saved,
     sheetRecheckLines: { ...saved.sheetRecheckLines, [input.line]: false },
+    pendingDecPrompt: input.clearCreatePolicyPrompt ? null : saved.pendingDecPrompt,
   };
 }
 

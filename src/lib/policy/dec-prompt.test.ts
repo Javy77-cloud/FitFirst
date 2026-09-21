@@ -19,6 +19,7 @@ import {
   parsePendingDecPrompt,
   ROSA_DEC_DEAL_ID,
   ROSA_DEC_DOCUMENT_ID,
+  allowCreatePolicyPrompt,
   shouldPromptCreatePolicy,
   tagsAfterDeclarationRetag,
 } from "./dec-prompt";
@@ -40,6 +41,12 @@ describe("declaration create-policy prompt", () => {
     expect(shouldPromptCreatePolicy({ docType: "dec", looksLikeDec: false })).toBe(false);
     expect(shouldPromptCreatePolicy({ docType: "photo", looksLikeDec: true })).toBe(false);
     expect(shouldPromptCreatePolicy({ docType: "agency_quote", looksLikeDec: true })).toBe(false);
+    expect(allowCreatePolicyPrompt({ stage: "gathering" })).toBe(false);
+    expect(allowCreatePolicyPrompt({ stage: "markets" })).toBe(false);
+    expect(allowCreatePolicyPrompt({ stage: "quote_review" })).toBe(false);
+    expect(allowCreatePolicyPrompt({ stage: "bound" })).toBe(true);
+    expect(allowCreatePolicyPrompt({ stage: "policy_issued" })).toBe(true);
+    expect(allowCreatePolicyPrompt({ stage: "gathering", force: true })).toBe(true);
   });
 
   it("trusts Gemini when it says the file does not look like a dec", () => {
@@ -220,7 +227,11 @@ describe("rosa retag + 72h admin notify stub", () => {
     expect(source("src/app/actions/declaration.ts")).toMatch(/forcePrompt: true/);
     expect(source("src/app/actions/declaration.ts")).toMatch(/ensureRosaDeclarationRetag/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/ff-deal-stamp-row/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/allowCreatePolicyPrompt/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/CreatePolicyFromDecModal/);
+    expect(source("src/app/actions/documents.ts")).toMatch(/dealAllowsCreatePolicyPrompt/);
+    expect(source("src/app/actions/declaration-prompt.ts")).toMatch(/binding !== true/);
+    expect(source("src/app/actions/declaration.ts")).toMatch(/binding: true/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/placement="overlay"/);
   });
 });

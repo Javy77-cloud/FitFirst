@@ -559,6 +559,36 @@ export function parseSheetDate(raw: string | null | undefined): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+/** Current policy cells Confirm must not blank when the posted value is empty. */
+export const CURRENT_POLICY_CONFIRM_KEYS = [
+  "policy_number",
+  "effective_date",
+  "expiration_date",
+  "current_carrier",
+  "current_premium",
+  "current_policy_named_insured",
+] as const;
+
+/**
+ * Confirm means "I reviewed this sheet." An empty post for a filled Current
+ * policy cell (effective date, policy number, expiration) is a dropped input,
+ * not an intentional clear. Save can still blank them.
+ */
+export function keepFilledCurrentPolicyOnConfirm(
+  existing: Record<string, QuoteSheetFieldValue | undefined>,
+  submitted: Record<string, string>,
+): Record<string, string> {
+  const next = { ...submitted };
+  for (const key of CURRENT_POLICY_CONFIRM_KEYS) {
+    const had = String(existing[key]?.value ?? "").trim();
+    if (!had) continue;
+    if (!Object.prototype.hasOwnProperty.call(next, key)) continue;
+    if (String(next[key] ?? "").trim()) continue;
+    delete next[key];
+  }
+  return next;
+}
+
 export function mergeAgentEdits(
   existing: Record<string, QuoteSheetFieldValue>,
   submitted: Record<string, string>,
