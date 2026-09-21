@@ -2663,6 +2663,7 @@ button.ff-renewal-risk-badge {
 
 .ff-heat-hot { --ff-heat: var(--ff-heat-hot); --ff-heat-wash: color-mix(in srgb, var(--ff-heat-hot) 16%, white); }
 .ff-heat-cooling { --ff-heat: var(--ff-heat-cooling); --ff-heat-wash: color-mix(in srgb, var(--ff-heat-cooling) 16%, white); }
+.ff-heat-warm { --ff-heat: var(--ff-heat-cooling); --ff-heat-wash: color-mix(in srgb, var(--ff-heat-cooling) 16%, white); }
 .ff-heat-near_cold { --ff-heat: var(--ff-heat-near-cold); --ff-heat-wash: color-mix(in srgb, var(--ff-heat-near-cold) 16%, white); }
 .ff-heat-cold { --ff-heat: var(--ff-heat-cold); --ff-heat-wash: color-mix(in srgb, var(--ff-heat-cold) 16%, white); }
 
@@ -3040,6 +3041,15 @@ button.ff-renewal-risk-badge {
   text-underline-offset: 0.14rem;
 }
 .ff-stack-next:hover { color: var(--ff-accent); }
+.ff-stack-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.45rem;
+}
+.ff-stack-card .ff-stack-edit select {
+  max-width: 9.5rem;
+}
 .ff-priority-pin { position: relative; flex: 0 0 auto; align-self: center; }
 .ff-priority-pin-btn {
   min-width: 2.15rem;
@@ -3108,7 +3118,8 @@ button.ff-renewal-risk-badge {
 .ff-heat-hot .ff-stack-glyph,
 .ff-radar-dot.ff-heat-hot { animation: ff-heat-pulse 1.25s ease-in-out infinite; }
 .ff-heat-cooling .ff-stack-glyph,
-.ff-radar-dot.ff-heat-cooling { animation: ff-heat-pulse 1.55s ease-in-out infinite; }
+.ff-radar-dot.ff-heat-cooling,
+.ff-heat-warm .ff-stack-glyph { animation: ff-heat-pulse 1.55s ease-in-out infinite; }
 .ff-heat-near_cold .ff-stack-glyph,
 .ff-radar-dot.ff-heat-near_cold { animation: ff-heat-pulse 2.8s ease-in-out infinite; }
 .ff-heat-cold .ff-stack-glyph,

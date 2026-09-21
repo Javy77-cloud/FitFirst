@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -7,9 +8,19 @@ import { RecordContextRail } from "@/components/record-context/record-context-ra
 import { LeadListRailFocus } from "@/components/leads/lead-list-rail-focus";
 import { LeadQuickComms } from "@/components/leads/lead-quick-comms";
 import { listLeads, listRecordActivities } from "@/lib/db/queries";
+import { LeadsHostList } from "@/components/leads/leads-host-list";
+import { LeadsPriorityStack } from "@/components/leads/leads-priority-stack";
+import { LeadsViewSwitch } from "@/components/leads/leads-view-switch";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { leadsListColumnsFromLayout } from "@/lib/list-columns";
-import { listFieldDefs, loadLayoutForModule } from "@/lib/custom-fields/store";
+import { mergeRecordSystemValues } from "@/lib/custom-fields/resolve-layout";
+import { listFieldDefs, loadLayoutForModule, loadRecordValuesForIds } from "@/lib/custom-fields/store";
+import {
+  isLeadPolicyFormColumn,
+  leadLayoutDisplayValue,
+  parseLeadsView,
+  presentLeadDesk,
+} from "@/lib/leads/lead-desk";
 import { ModuleListActions } from "@/components/developer-hub/module-list-actions";
 import { SelectRowCheckbox } from "@/components/developer-hub/list-selection";
 import { sourceFilterOptions, sourceLabel } from "@/lib/crm/sources";
@@ -65,6 +76,7 @@ export default async function LeadsPage({
   const filter = pickFilterParams(params, ["status", "cadence", "source", "temperature"]);
   const q = firstParam(params.q) ?? "";
   const saved = firstParam(params.saved) === "1";
+  const view = parseLeadsView(firstParam(params.view));
   await resetLeadsWithoutLoggedContact().catch(() => null);
   scheduleDueLeadFollowUpRelease();
   const [all, loadedTemplates, tagCatalog, leadLayout, leadFields, motivation] = await Promise.all([
@@ -111,6 +123,59 @@ export default async function LeadsPage({
     }
     if (item.status === "completed") finishedByLead.add(item.leadId);
   }
+
+  const customById = await loadRecordValuesForIds(
+    rows.map((lead) => lead.id),
+    "leads",
+  ).catch(() => new Map<string, Record<string, string>>());
+  const desk = rows.map((lead) => {
+    const status = normalizeLeadStatus(lead.status);
+    const cadence = normalizeLeadCadence(
+      (lead as { cadence?: string | null }).cadence ?? splitLegacyLeadStatus(lead.status).cadence,
+    );
+    const queuedDue = nextByLead.get(lead.id);
+    const releasedDue = releasedByLead.get(lead.id);
+    const nextDue = queuedDue ?? releasedDue ?? null;
+    const clockDone = !queuedDue && !releasedDue && finishedByLead.has(lead.id);
+    const picked = pickTemplateForLead(templates, {
+      followUpTemplateId: lead.followUpTemplateId,
+      status,
+    });
+    return presentLeadDesk({
+      id: lead.id,
+      firstName: lead.firstName,
+      lastName: lead.lastName,
+      email: lead.email,
+      phone: lead.phone,
+      source: lead.source,
+      status,
+      cadence,
+      temperature: lead.temperature,
+      notes: lead.notes,
+      mailingAddress: lead.mailingAddress,
+      city: lead.city,
+      state: lead.state,
+      zip: lead.zip,
+      tags: lead.tags,
+      createdAt: lead.createdAt,
+      firstContactAt: lead.firstContactAt,
+      followUpTemplateId: lead.followUpTemplateId,
+      convertedDealId: lead.convertedDealId,
+      archivedAt: lead.archivedAt,
+      insuranceTypeDesired: lead.insuranceTypeDesired,
+      fieldValues: mergeRecordSystemValues(
+        lead as unknown as Record<string, unknown>,
+        customById.get(lead.id) ?? {},
+        leadFields,
+      ),
+      nextDue,
+      clockDone,
+      followUpName: picked ? followUpTemplateChipName(picked) : "",
+      resolvedTemplateId: picked?.id ?? "",
+      parked: isParkedFromDefaultLeadsView(lead) && !filter.status,
+    });
+  });
+  const deskById = new Map(desk.map((record) => [record.id, record]));
 
   const railParam = firstParam(params.rail);
   const railLead =
@@ -163,10 +228,10 @@ export default async function LeadsPage({
       >
         <div className="min-w-0" style={{ gridColumn: 1, gridRow: 1 }} data-ff-leads-heading="">
           <p className="mb-3 text-base text-muted-foreground">
-            Work queue only — converted leads live on Deals. Untouched first, newest arrival next.
-            Cadence drives follow-up clocks. Temp badges stay Hot / Warm / Cold. Lost stays off this
-            list until you search. Nurture parks until the contact-again date. Click a name to open
-            the lead layout. The right rail shows Conversations for the focused/open queue lead.
+            Stack is the desk — cadence, response, and the next chase stay on the card. Queue is the
+            work sheet. List is the rearrangeable column view. Converted leads live on Deals.
+            Untouched first. Lost stays off until you search. Nurture parks until the contact-again
+            date. The right rail shows Conversations for the focused queue lead.
           </p>
           <LeadsQueueToolbar
         sources={uniqueOptions(
@@ -201,11 +266,15 @@ export default async function LeadsPage({
           style={{ gridColumn: 1, gridRow: 2 }}
           data-ff-leads-list-panel=""
         >
-        <section className="ff-leads-queue ff-card min-w-0 overflow-hidden">
+        <section
+          className={view === "queue" ? "ff-leads-queue ff-card min-w-0 overflow-hidden" : "min-w-0"}
+          data-ff-leads-view={view}
+        >
           <div
-            className="flex items-center justify-end border-b border-border px-3 py-2"
+            className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2"
             data-ff-leads-list-actions=""
           >
+            <LeadsViewSwitch view={view} searchParams={params} />
             <Link
               href="/leads/new"
               className={cn(
@@ -217,6 +286,13 @@ export default async function LeadsPage({
               New Lead
             </Link>
           </div>
+          {view === "stack" ? (
+            <LeadsPriorityStack records={desk} templates={templates} initialQuery={q} />
+          ) : null}
+          {view === "list" ? (
+            <LeadsHostList records={desk} templates={templates} initialQuery={q} />
+          ) : null}
+          {view === "queue" ? (
           <ModuleListActions
             module="leads"
             showMacrosLink={false}
@@ -237,31 +313,76 @@ export default async function LeadsPage({
               searchModuleId="leads"
               initialQuery={q}
               columns={leadColumns}
+              pinVisibleIds={["insurance_subtype", "insurance_category", "policy_form", "quoting_form"]}
               empty={
                 firstParam(params.status) || firstParam(params.cadence) || firstParam(params.source) || firstParam(params.temperature)
                   ? "No leads match this filter."
                   : "No open leads. Converted records are on Deals."
               }
               rows={rows.map((lead) => {
-                const status = normalizeLeadStatus(lead.status);
-                const cadence = normalizeLeadCadence(
+                const record = deskById.get(lead.id);
+                const status = record?.status ?? normalizeLeadStatus(lead.status);
+                const cadence = record?.cadence ?? normalizeLeadCadence(
                   (lead as { cadence?: string | null }).cadence ??
                     splitLegacyLeadStatus(lead.status).cadence,
                 );
                 const queuedDue = nextByLead.get(lead.id);
                 const releasedDue = releasedByLead.get(lead.id);
                 const nextDue = queuedDue ?? releasedDue;
-                const clockDone = !queuedDue && !releasedDue && finishedByLead.has(lead.id);
+                const clockDone = record?.clockDone ?? (!queuedDue && !releasedDue && finishedByLead.has(lead.id));
                 const picked = pickTemplateForLead(templates, {
                   followUpTemplateId: lead.followUpTemplateId,
                   status,
                 });
-                const followUpName = picked ? followUpTemplateChipName(picked) : "";
+                const followUpName = record?.followUpName || (picked ? followUpTemplateChipName(picked) : "");
+                const fieldValues = record?.fieldValues ?? {};
+                const layoutCells: Record<string, ReactNode> = {};
+                const layoutSort: Record<string, string> = {};
+                for (const column of leadColumns) {
+                  if (
+                    column.id === "pick" ||
+                    column.id === "name" ||
+                    column.id === "cadence" ||
+                    column.id === "status" ||
+                    column.id === "source" ||
+                    column.id === "timer" ||
+                    column.id === "heat" ||
+                    column.id === "followUp" ||
+                    column.id === "shop" ||
+                    column.id === "tags" ||
+                    column.id === "email" ||
+                    column.id === "phone" ||
+                    column.id === "notes" ||
+                    column.id === "mailing_address" ||
+                    column.id === "city" ||
+                    column.id === "state" ||
+                    column.id === "zip"
+                  ) {
+                    continue;
+                  }
+                  const text = leadLayoutDisplayValue(column.id, fieldValues, lead.insuranceTypeDesired);
+                  layoutSort[column.id] = text === "—" ? "" : text;
+                  layoutCells[column.id] = isLeadPolicyFormColumn(column.id) ? (
+                    <span data-ff-lead-policy-form="">{text}</span>
+                  ) : (
+                    text
+                  );
+                }
                 return {
                   key: lead.id,
                   id: lead.id,
                   parked: isParkedFromDefaultLeadsView(lead) && !filter.status,
-                  hay: haystack([lead.firstName, lead.lastName, lead.email, lead.phone, lead.source, lead.status, ...(lead.tags ?? [])]),
+                  hay: haystack([
+                    lead.firstName,
+                    lead.lastName,
+                    lead.email,
+                    lead.phone,
+                    lead.source,
+                    lead.status,
+                    record?.policyForm,
+                    record?.lob,
+                    ...(lead.tags ?? []),
+                  ]),
                   sort: {
                     pick: "",
                     name: `${lead.lastName}, ${lead.firstName}`,
@@ -279,6 +400,7 @@ export default async function LeadsPage({
                     city: lead.city ?? "",
                     state: lead.state ?? "",
                     zip: lead.zip ?? "",
+                    ...layoutSort,
                   },
                   cells: {
                     pick: <SelectRowCheckbox id={lead.id} />,
@@ -351,11 +473,13 @@ export default async function LeadsPage({
                     city: lead.city || "—",
                     state: lead.state || "—",
                     zip: lead.zip || "—",
+                    ...layoutCells,
                   },
                 };
               })}
             />
           </ModuleListActions>
+          ) : null}
         </section>
         </div>
 
