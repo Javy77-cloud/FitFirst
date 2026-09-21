@@ -9,6 +9,12 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { shopLineForGeminiExtract } from "@/lib/deals/quote-docs";
 import { docTypeUsesGemini } from "@/lib/extraction/gemini";
+import {
+  GEMINI_FETCH_TIMEOUT_MS,
+  GEMINI_FILL_OVERALL_TIMEOUT_MS,
+} from "@/lib/extraction/gemini/client";
+import { HEIC_CONVERT_TIMEOUT_MS } from "@/lib/extraction/ocr";
+import { MASTER_FILL_STEP_TIMEOUT_MS } from "@/lib/quote-sheet/master-fill";
 import { fillableGeminiFields, mapGeminiJsonToFields } from "@/lib/extraction/gemini/map";
 import { buildGeminiSystemPrompt, buildGeminiUserPrompt } from "@/lib/extraction/gemini/prompt";
 import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
@@ -211,4 +217,21 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(client).toMatch(/mapGeminiJsonToFields\(json, docType, options\?\.shopLine\)/);
     expect(client).toMatch(/prepareImageBuffer/);
   });
+
+  it("keeps hard deadlines so one photo cannot hang Fill Risk Profile Docs forever", () => {
+    expect(GEMINI_FETCH_TIMEOUT_MS).toBeLessThanOrEqual(30_000);
+    expect(GEMINI_FILL_OVERALL_TIMEOUT_MS).toBeLessThanOrEqual(MASTER_FILL_STEP_TIMEOUT_MS);
+    expect(HEIC_CONVERT_TIMEOUT_MS).toBeLessThanOrEqual(15_000);
+    const client = readFileSync("src/lib/extraction/gemini/client.ts", "utf8");
+    expect(client).toMatch(/withDeadline/);
+    expect(client).toMatch(/GEMINI_FILL_OVERALL_TIMEOUT_MS/);
+    const action = readFileSync("src/app/actions/quote-sheet.ts", "utf8");
+    expect(action).toMatch(/photoLike/);
+    expect(action).toMatch(/isImageUpload/);
+    expect(action).toMatch(/withDeadline/);
+    const button = readFileSync("src/components/deal/master-sheet-fill-button.tsx", "utf8");
+    expect(button).toMatch(/MASTER_FILL_STEP_TIMEOUT_MS/);
+    expect(button).toMatch(/Promise\.race/);
+  });
+
 });

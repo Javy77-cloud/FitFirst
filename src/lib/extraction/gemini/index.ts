@@ -26,7 +26,9 @@ export {
   parseGeminiResponseText,
   resolveGeminiInlineMime,
   GEMINI_FETCH_TIMEOUT_MS,
+  GEMINI_FILL_OVERALL_TIMEOUT_MS,
   GEMINI_TIMEOUT_MESSAGE,
+  GEMINI_TIMEOUT_NOTE,
 } from "./client";
 
 /** Doc types that Fill from source routes through Gemini (not legacy synonym extract). */

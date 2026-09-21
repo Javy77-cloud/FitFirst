@@ -118,10 +118,14 @@ import {
   MASTER_FILL_SKIP_NO_VIN,
   MASTER_FILL_SKIP_NOT_FOUND,
   MASTER_FILL_UNEXPECTED,
+  MASTER_FILL_STEP_TIMEOUT_MS,
+  masterFillStepTimeoutMessage,
   masterFillStepsForLine,
   type MasterFillStepId,
   type MasterFillStepResult,
 } from "@/lib/quote-sheet/master-fill";
+import { DeadlineError, withDeadline } from "@/lib/async/deadline";
+import { isImageUpload } from "@/lib/extraction/ocr";
 import { GEMINI_TIMEOUT_MESSAGE } from "@/lib/extraction/gemini/client";
 import { SHOP_LINES } from "@/lib/domain";
 import { currentDeskSession } from "@/lib/auth/session";
@@ -984,8 +988,21 @@ export async function fillMasterSheetStep(input: {
     masterFillStepsForLine(String(input.line ?? "home")).find((row) => row.id === step)?.label ??
     step;
   try {
-    return await fillMasterSheetStepInner(input);
+    return await withDeadline(
+      fillMasterSheetStepInner(input),
+      MASTER_FILL_STEP_TIMEOUT_MS,
+      masterFillStepTimeoutMessage(stepLabel),
+    );
   } catch (error) {
+    if (error instanceof DeadlineError || (error instanceof Error && /timed out/i.test(error.message))) {
+      return {
+        step,
+        filledCount: 0,
+        skippedCount: 0,
+        error: masterFillStepTimeoutMessage(stepLabel),
+        note: "Partial fill may be saved",
+      };
+    }
     const raw = error instanceof Error ? error.message : MASTER_FILL_UNEXPECTED;
     const unexpected = /json|unexpected|non-json|failed to parse/i.test(raw);
     return {
@@ -1500,12 +1517,23 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
       }
 
       // Prefer filename / typed docType for shop-line gate (no synonym text extract).
+      // Photos: skip OCR entirely — trustSheetLineForFill already trusts the sheet line,
+      // and HEIC/tesseract has hung Fill Risk Profile Docs forever (Domenic Iori Auto).
       let textForLine = "";
-      try {
-        const uploaded = await readUploadText(buffer, doc.mimeType, doc.filename);
-        textForLine = uploaded.text;
-      } catch {
-        textForLine = "";
+      const photoLike =
+        isImageUpload(doc.mimeType || "", doc.filename || "") ||
+        (doc.docType || "").toLowerCase() === "photo";
+      if (!photoLike) {
+        try {
+          const uploaded = await withDeadline(
+            readUploadText(buffer, doc.mimeType, doc.filename),
+            20_000,
+            `OCR timed out reading ${doc.filename}`,
+          );
+          textForLine = uploaded.text;
+        } catch {
+          textForLine = "";
+        }
       }
       const inferred = inferShopLine(textForLine, doc.filename, doc.docType);
       const hoOntoHome = sourceDocFillsHome(doc.docType) && line === "home";
