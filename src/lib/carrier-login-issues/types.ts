@@ -1,7 +1,8 @@
 /**
  * Carrier portal LOGIN failures for quote-pulling bots.
- * Not missing Risk Profile questions, not UW declines, not a successful login
- * that later died on a rating page.
+ * Not missing Risk Profile questions and not UW declines.
+ * Portal access blocks count: CloudFront after login, the wrong NordPass item,
+ * and a standing wrong-user session.
  *
  * Canonical event log: data/carrier-login-issues.ndjson
  * See data/carrier-login-issues.md.
@@ -18,6 +19,9 @@ export const LOGIN_ERROR_CATEGORIES = [
   "credentials_rejected",
   "autofill_failed",
   "missing_credentials",
+  "access_blocked",
+  "wrong_vault_item",
+  "wrong_session",
 ] as const;
 
 export type LoginErrorCategory = (typeof LOGIN_ERROR_CATEGORIES)[number];
@@ -49,6 +53,11 @@ export type CarrierLoginEvent = {
   occurred_at: string;
   source: string | null;
   deal_id: string | null;
+  /**
+   * True when the handoff treated this as a standing fight (skipped until fixed,
+   * holding for Javy, known access wall, "Standing:" in the note).
+   */
+  standing: boolean;
 };
 
 export type CarrierLoginRollup = {
@@ -60,8 +69,12 @@ export type CarrierLoginRollup = {
   count: number;
   first_seen: string;
   last_seen: string;
-  /** True when count > 1, or two events of this carrier + category fall inside the window. */
+  /**
+   * True when count > 1, two events of this carrier + category fall inside the
+   * window, or any event in the group is a standing fight.
+   */
   recurring: boolean;
+  standing: boolean;
   lob: string | null;
 };
 

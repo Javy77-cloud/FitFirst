@@ -1688,6 +1688,8 @@ export const carrierLoginIssues = pgTable(
     occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
     source: text("source"),
     dealId: uuid("deal_id"),
+    /** Handoff treated the failure as a standing fight. Live appends stay false. */
+    standing: boolean("standing").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [

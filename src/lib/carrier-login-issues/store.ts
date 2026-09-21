@@ -53,6 +53,8 @@ export type NewCarrierLoginIssue = {
   source?: string | null;
   dealId?: string | null;
   id?: string | null;
+  /** Handoff called this a standing fight. Live bot appends leave this false. */
+  standing?: boolean | null;
 };
 
 export function buildCarrierLoginEvent(input: NewCarrierLoginIssue): CarrierLoginEvent | null {
@@ -82,6 +84,7 @@ export function buildCarrierLoginEvent(input: NewCarrierLoginIssue): CarrierLogi
     occurred_at: occurredAt,
     source: input.source?.trim() || null,
     deal_id: asUuid(input.dealId),
+    standing: input.standing === true,
   };
 }
 
@@ -101,7 +104,7 @@ export function readCarrierLoginEvents(file = carrierLoginIssuesFile()): Carrier
       const parsed = JSON.parse(trimmed) as CarrierLoginEvent;
       if (!parsed?.id || !parsed.carrier_name || !parsed.error_message || !parsed.occurred_at) continue;
       if (!isLoginErrorCategory(parsed.error_category)) continue;
-      events.push(parsed);
+      events.push({ ...parsed, standing: parsed.standing === true });
     } catch {
       // Skip a torn line rather than hiding the rest of the list.
     }
@@ -148,7 +151,10 @@ export function rollupCarrierLoginIssues(events: readonly CarrierLoginEvent[]): 
       count: ordered.length,
       first_seen: first.occurred_at,
       last_seen: latest.occurred_at,
-      recurring: groupIsRecurring(ordered.map((event) => Date.parse(event.occurred_at))),
+      standing: ordered.some((event) => event.standing),
+      recurring:
+        ordered.some((event) => event.standing) ||
+        groupIsRecurring(ordered.map((event) => Date.parse(event.occurred_at))),
       lob: latest.lob,
     });
   }
@@ -163,8 +169,9 @@ export function rollupCarrierLoginIssues(events: readonly CarrierLoginEvent[]): 
  * Soft skip helper. Default OFF.
  * TODO: do not turn FF_BLOCK_CARRIER_LOGIN_ISSUES on in production markets
  * until someone explicitly wants routing to leave these carriers.
- * When the flag is on, only a recurring login issue (count > 1, or a repeat
- * inside the window) blocks. A one-off failure does not.
+ * When the flag is on, only a recurring login issue blocks: count > 1, a
+ * repeat inside the window, or a standing fight. A one-off that is not
+ * standing does not.
  */
 export function isCarrierLoginBlocked(
   carrier: { id?: string | null; name?: string | null },

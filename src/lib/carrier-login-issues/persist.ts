@@ -25,6 +25,7 @@ function rowToEvent(row: typeof carrierLoginIssues.$inferSelect): CarrierLoginEv
     occurred_at: row.occurredAt.toISOString(),
     source: row.source,
     deal_id: row.dealId,
+    standing: row.standing,
   };
 }
 
@@ -42,6 +43,7 @@ async function insertCarrierLoginRow(event: CarrierLoginEvent): Promise<void> {
       occurredAt: new Date(event.occurred_at),
       source: event.source,
       dealId: event.deal_id,
+      standing: event.standing,
     })
     .onConflictDoNothing();
 }

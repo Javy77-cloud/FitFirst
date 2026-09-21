@@ -66,7 +66,12 @@ export function CarrierLoginIssuesPanel({
                   </td>
                   <td className="px-2 py-2">{row.error_category}</td>
                   <td className="px-2 py-2">{row.count}</td>
-                  <td className="px-2 py-2">{row.recurring ? "Yes" : "No"}</td>
+                  <td
+                    className="px-2 py-2"
+                    data-ff-carrier-login-standing={row.standing ? "true" : "false"}
+                  >
+                    {row.recurring ? (row.standing ? "Yes · standing" : "Yes") : "No"}
+                  </td>
                   <td className="px-2 py-2">
                     <time dateTime={row.first_seen}>{formatWhen(row.first_seen)}</time>
                   </td>

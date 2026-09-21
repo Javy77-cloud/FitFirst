@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS "carrier_login_issues" (
   "occurred_at" timestamp with time zone NOT NULL,
   "source" text,
   "deal_id" uuid,
+  "standing" boolean DEFAULT false NOT NULL,
   "created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint

@@ -28,7 +28,9 @@ export function classifyCarrierLoginFailure(
 
 function classifyLoginText(text: string): LoginErrorCategory | null {
   if (!text.trim()) return null;
-  // Auth that already succeeded is not this list (CloudFront after login, MFA cleared, etc.).
+  // CloudFront 403 still blocks the portal after NordPass accepts the password.
+  if (/cloudfront\s*403|cloudfront blocked/.test(text)) return "access_blocked";
+  // Auth that already succeeded and was not then blocked (MFA cleared, rating page, etc.).
   if (/login succeeded|mfa cleared|mfa used|password already matched/.test(text)) return null;
 
   if (/captcha|recaptcha|hcaptcha|verify you are human|i am not a robot/.test(text)) {
@@ -57,11 +59,25 @@ function classifyLoginText(text: string): LoginErrorCategory | null {
     if (!/no credentials typed/.test(text)) return "credentials_rejected";
   }
   if (
-    /no items to autofill|autofill no items|no autofill item|did not (fill|populate)|autofill failed|autofill did not|no credentials typed|login failed after\b.*autofill|after one nordpass autofill/.test(
+    /no items to autofill|autofill no items|no autofill item|did not (fill|populate)|autofill fail|autofill did not|no credentials typed|login failed after\b.*autofill|after one nordpass autofill/.test(
       text,
     )
   ) {
     return "autofill_failed";
+  }
+  if (
+    /wrong nordpass|nordpass\b.{0,80}instead of|instead of upcic|need separate [\w& ]{0,40}nordpass item/.test(
+      text,
+    )
+  ) {
+    return "wrong_vault_item";
+  }
+  if (
+    /wrong [\w ]{0,40}account|sso didn'?t open|quote only under scott|reopen under scott|not scott\b|need scott login|session is joseph/.test(
+      text,
+    )
+  ) {
+    return "wrong_session";
   }
   if (
     /no nordpass|password still not|missing credentials|no portal username|no portal password|account not in \w+ tenant|no [\w/-]+ credentials/.test(
