@@ -167,11 +167,73 @@ function applyVehicle(out: LooseJson, item: LooseJson, index: number) {
   }
 }
 
+function fieldText(item: LooseJson, names: string[]): string {
+  for (const key of Object.keys(item)) {
+    if (!names.includes(normKey(key))) continue;
+    const text = textOf(item[key]).trim();
+    if (text) return text;
+  }
+  return "";
+}
+
+function hasNameToken(full: string, token: string): boolean {
+  if (!token) return true;
+  const needle = token.toLowerCase().replace(/\.$/, "");
+  return full
+    .toLowerCase()
+    .split(/\s+/)
+    .some((part) => part.replace(/\.$/, "") === needle);
+}
+
+/** Join First / Middle / Last when the single name cell was cut off ("Domenic Ic"). */
+function driverPrintedName(item: LooseJson): string {
+  const direct = fieldText(item, ["name", "driver_name", "full_name"]);
+  const first = fieldText(item, ["first_name", "first", "given_name"]);
+  const middle = fieldText(item, ["middle_name", "middle", "middle_initial", "mi"]);
+  const last = fieldText(item, ["last_name", "last", "surname", "family_name"]);
+  const joined = [first, middle, last].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+  if (!joined) return direct;
+  if (!direct) return joined;
+  const missingLast = Boolean(last) && !hasNameToken(direct, last);
+  const missingMiddle = Boolean(middle) && !hasNameToken(direct, middle);
+  if ((missingLast || missingMiddle) && joined.length > direct.length) return joined;
+  return direct;
+}
+
+function fieldRaw(item: LooseJson, names: string[]): unknown {
+  for (const key of Object.keys(item)) {
+    if (!names.includes(normKey(key))) continue;
+    if (textOf(item[key]).trim()) return item[key];
+  }
+  return undefined;
+}
+
 function applyDriver(out: LooseJson, item: LooseJson, index: number) {
   if (index > 3) return;
   const n = index + 1;
   const prefix = `driver_${n}_`;
-  setIfEmpty(out, `${prefix}name`, pull(item, ["name", "driver_name", "full_name"]));
+  const directRaw = fieldRaw(item, ["name", "driver_name", "full_name"]);
+  const fullName = driverPrintedName(item);
+  if (fullName) {
+    const sameAsPrinted = textOf(directRaw).trim() === fullName;
+    setIfEmpty(out, `${prefix}name`, sameAsPrinted && directRaw != null ? directRaw : fullName);
+  }
+  pull(item, [
+    "name",
+    "driver_name",
+    "full_name",
+    "first_name",
+    "first",
+    "given_name",
+    "middle_name",
+    "middle",
+    "middle_initial",
+    "mi",
+    "last_name",
+    "last",
+    "surname",
+    "family_name",
+  ]);
   setIfEmpty(out, `${prefix}dob`, pull(item, ["dob", "date_of_birth", "birth_date", "birthdate"]));
   setIfEmpty(out, `${prefix}gender`, pull(item, ["gender", "sex"]));
   setIfEmpty(
@@ -196,64 +258,81 @@ function applyDriver(out: LooseJson, item: LooseJson, index: number) {
 function textOf(raw: unknown): string {
   if (typeof raw === "string" || typeof raw === "number") return String(raw);
   if (!isRecord(raw)) return "";
-  const inner = raw.value ?? raw.text;
+  const inner = raw.value ?? raw.text ?? raw.limit ?? raw.amount ?? raw.deductible;
   if (typeof inner === "string" || typeof inner === "number") return String(inner);
   return "";
 }
 
+type CoverageTarget =
+  | "liability_bi"
+  | "liability_pd"
+  | "um_uim"
+  | "pip"
+  | "comp_deductible"
+  | "collision_deductible";
+
+/** Dec labels vary ("Liability Bodily Injury", "Uninsured Motorist Bodily Injury"). */
+function coverageTargetForLabel(label: string): CoverageTarget | null {
+  const key = normKey(label);
+  if (!key) return null;
+  const um = /(^|_)um($|_)|(^|_)uim($|_)|uninsured|underinsured|umbi|uimbi/.test(key);
+  if (um && !/property_damage/.test(key)) return "um_uim";
+  if (/other_than_collision|(^|_)otc($|_)|comprehensive|(^|_)comp($|_)/.test(key)) {
+    return "comp_deductible";
+  }
+  if (/collision/.test(key)) return "collision_deductible";
+  if (/property_damage|(^|_)pd($|_)/.test(key)) return "liability_pd";
+  if (/personal_injury_protection|(^|_)pip($|_)/.test(key)) return "pip";
+  if (/bodily_injury|(^|_)bi($|_)/.test(key)) return "liability_bi";
+  return null;
+}
+
+function isSplitBi(key: string, kind: "person" | "accident"): boolean {
+  if (/(^|_)um($|_)|(^|_)uim($|_)|uninsured|underinsured/.test(key)) return false;
+  if (!/bodily_injury|(^|_)bi($|_)/.test(key)) return false;
+  if (kind === "person") return /person/.test(key);
+  return /accident|occurrence/.test(key);
+}
+
 function applyCoverages(out: LooseJson, raw: unknown) {
+  const split: { person?: unknown; accident?: unknown } = {};
   const items = Array.isArray(raw) ? raw : isRecord(raw) ? [raw] : [];
   for (const item of items) {
     if (!isRecord(item)) continue;
     const label = textOf(pull(item, ["name", "coverage", "type", "label"]));
     const limit = pull(item, ["limit", "value", "amount", "deductible"]);
     if (label && Object.keys(item).length === 0) {
-      applyCoverageEntry(out, label, limit ?? label);
+      applyCoverageEntry(out, label, limit ?? label, split);
       continue;
     }
-    if (label && limit != null) applyCoverageEntry(out, label, limit);
+    if (label && limit != null) applyCoverageEntry(out, label, limit, split);
     for (const [key, value] of Object.entries(item)) {
-      applyCoverageEntry(out, key, value);
+      applyCoverageEntry(out, key, value, split);
     }
+  }
+  if (!hasPrinted(out.liability_bi) && split.person != null && split.accident != null) {
+    const person = textOf(split.person).trim();
+    const accident = textOf(split.accident).trim();
+    if (person && accident) setIfEmpty(out, "liability_bi", `${person}/${accident}`);
   }
 }
 
-function applyCoverageEntry(out: LooseJson, label: string, raw: unknown) {
+function applyCoverageEntry(
+  out: LooseJson,
+  label: string,
+  raw: unknown,
+  split?: { person?: unknown; accident?: unknown },
+) {
   const key = normKey(label);
-  const target =
-    key === "bodily_injury" ||
-    key === "bodily_injury_liability" ||
-    key === "bi" ||
-    key === "bi_limits" ||
-    key === "bi_limit" ||
-    key === "liability_bi"
-      ? "liability_bi"
-      : key === "property_damage" ||
-          key === "property_damage_liability" ||
-          key === "pd" ||
-          key === "pd_limit" ||
-          key === "liability_pd"
-        ? "liability_pd"
-        : key === "uninsured_motorist" ||
-            key === "uninsured_motorists" ||
-            key === "underinsured_motorist" ||
-            key === "underinsured_motorists" ||
-            key === "um" ||
-            key === "uim" ||
-            key === "um_uim" ||
-            key === "umbi"
-          ? "um_uim"
-          : key === "personal_injury_protection" || key === "pip" || key === "pip_limit"
-            ? "pip"
-            : key === "comprehensive" ||
-                key === "comprehensive_deductible" ||
-                key === "other_than_collision" ||
-                key === "otc" ||
-                key === "comp_deductible"
-              ? "comp_deductible"
-              : key === "collision" || key === "collision_deductible"
-                ? "collision_deductible"
-                : null;
+  if (split && isSplitBi(key, "person")) {
+    split.person = raw;
+    return;
+  }
+  if (split && isSplitBi(key, "accident")) {
+    split.accident = raw;
+    return;
+  }
+  const target = coverageTargetForLabel(label);
   if (!target) return;
   setIfEmpty(out, target, raw);
 }
@@ -268,6 +347,147 @@ function applyPolicyPeriod(out: LooseJson, raw: unknown) {
   const split = splitPolicyPeriod(String(raw));
   if (split.effective) setIfEmpty(out, "effective_date", split.effective);
   if (split.expiration) setIfEmpty(out, "expiration_date", split.expiration);
+}
+
+const POLICY_ENVELOPES = [
+  "current_policy",
+  "current_policy_info",
+  "policy_info",
+  "policy_information",
+  "prior_policy",
+];
+
+/** Nested carrier/policy blocks used to die in asPayload because the value is an object. */
+function applyPolicyRecord(out: LooseJson, rec: LooseJson) {
+  setIfEmpty(
+    out,
+    "current_carrier",
+    pull(rec, [
+      "current_carrier",
+      "carrier",
+      "carrier_name",
+      "company_name",
+      "insurance_name",
+      "insurance_company",
+      "insurer",
+      "insurer_name",
+      "named_insurer",
+      "writing_company",
+      "issuing_company",
+      "underwriting_company",
+      "insurance_carrier",
+      "company",
+    ]),
+  );
+  setIfEmpty(
+    out,
+    "policy_number",
+    pull(rec, [
+      "policy_number",
+      "policy_no",
+      "policy_num",
+      "pol_no",
+      "pol_number",
+      "pol_num",
+      "policy_id",
+      "current_policy_id",
+      "current_policy_number",
+      "policy_id_number",
+      "number",
+    ]),
+  );
+  const nestedPolicy = pull(rec, ["policy"]);
+  if (typeof nestedPolicy === "string" || typeof nestedPolicy === "number") {
+    setIfEmpty(out, "policy_number", nestedPolicy);
+  } else if (isRecord(nestedPolicy)) {
+    applyPolicyRecord(out, nestedPolicy);
+  }
+  setIfEmpty(
+    out,
+    "current_premium",
+    pull(rec, [
+      "current_premium",
+      "premium",
+      "total_premium",
+      "total_policy_premium",
+      "six_month_premium",
+      "premium_total",
+      "annual_premium",
+      "policy_premium",
+      "term_premium",
+    ]),
+  );
+  setIfEmpty(
+    out,
+    "years_with_carrier",
+    pull(rec, ["years_with_carrier", "years_with_company", "years_insured", "years_with_insurer"]),
+  );
+  setIfEmpty(
+    out,
+    "effective_date",
+    pull(rec, ["effective_date", "effective", "eff_date", "eff", "inception_date"]),
+  );
+  setIfEmpty(out, "expiration_date", pull(rec, ["expiration_date", "expiration", "exp_date", "exp"]));
+  setIfEmpty(
+    out,
+    "currently_insured",
+    pull(rec, ["currently_insured", "prior_insurance", "continuous_coverage"]),
+  );
+  setIfEmpty(out, "aaa_member", pull(rec, ["aaa_member", "aaa", "aaa_membership"]));
+  applyPolicyPeriod(out, pull(rec, ["policy_period", "policy_term"]));
+}
+
+function takePolicyEnvelopes(out: LooseJson) {
+  for (const key of POLICY_ENVELOPES) {
+    const raw = pull(out, [key]);
+    if (raw == null) continue;
+    if (isRecord(raw)) applyPolicyRecord(out, { ...raw });
+    else out[key] = raw;
+  }
+  if (isRecord(out.policy)) {
+    const raw = pull(out, ["policy"]);
+    if (isRecord(raw)) applyPolicyRecord(out, { ...raw });
+  }
+}
+
+function applyLooseVehicle(out: LooseJson) {
+  const raw = pull(out, ["vehicle", "covered_vehicle"]);
+  if (raw == null) return;
+  if (isRecord(raw)) {
+    applyVehicle(out, { ...raw }, 0);
+    return;
+  }
+  if (typeof raw !== "string" && typeof raw !== "number") return;
+  const text = String(raw).trim();
+  if (/^[A-HJ-NPR-Z0-9]{17}$/i.test(text)) {
+    setIfEmpty(out, "vin", text.toUpperCase());
+    return;
+  }
+  const split = splitYearMakeModel(text);
+  if (split.year) setIfEmpty(out, "vehicle_year", split.year);
+  if (split.make) setIfEmpty(out, "vehicle_make", split.make);
+  if (split.model) setIfEmpty(out, "vehicle_model", split.model);
+}
+
+function repairFlatDriverNames(out: LooseJson) {
+  for (let n = 1; n <= 4; n++) {
+    const key = `driver_${n}_name`;
+    const item: LooseJson = {
+      name: out[key],
+      first_name: pull(out, [`driver_${n}_first_name`, `driver_${n}_first`, `driver_${n}_given_name`]),
+      middle_name: pull(out, [
+        `driver_${n}_middle_name`,
+        `driver_${n}_middle`,
+        `driver_${n}_middle_initial`,
+        `driver_${n}_mi`,
+      ]),
+      last_name: pull(out, [`driver_${n}_last_name`, `driver_${n}_last`, `driver_${n}_surname`]),
+    };
+    const full = driverPrintedName(item);
+    if (!full) continue;
+    const current = textOf(out[key]).trim();
+    if (!current || full.length > current.length) out[key] = full;
+  }
 }
 
 /** Flatten ACORD / carrier auto-dec JSON onto Auto risk-profile keys. */
@@ -304,7 +524,19 @@ export function expandAutoDecLayout(json: LooseJson, shopLine?: string | null): 
   setIfEmpty(out, "vehicle_year", pull(out, ["year", "model_year"]));
   setIfEmpty(out, "vehicle_make", pull(out, ["make"]));
   setIfEmpty(out, "vehicle_model", pull(out, ["model"]));
-  setIfEmpty(out, "vin", pull(out, ["vehicle_identification_number", "vehicle_vin"]));
+  applyLooseVehicle(out);
+  setIfEmpty(
+    out,
+    "vin",
+    pull(out, [
+      "vehicle_identification_number",
+      "vehicle_vin",
+      "v_i_n",
+      "vin_number",
+      "vin_no",
+      "vehicle_identification_no",
+    ]),
+  );
   setIfEmpty(out, "driver_1_name", pull(out, ["driver_name"]));
   setIfEmpty(out, "driver_1_dob", pull(out, ["date_of_birth", "birth_date"]));
   setIfEmpty(
@@ -312,18 +544,92 @@ export function expandAutoDecLayout(json: LooseJson, shopLine?: string | null): 
     "driver_1_license",
     pull(out, ["drivers_license", "driver_license", "dl_number"]),
   );
-  setIfEmpty(out, "current_premium", pull(out, ["total_policy_premium", "six_month_premium", "premium_total"]));
-  setIfEmpty(out, "current_carrier", pull(out, ["writing_company", "insurer", "insurance_company"]));
-  applyCoverageEntry(out, "bodily_injury", pull(out, ["bodily_injury", "bodily_injury_liability", "bi_limits", "bi_limit"]));
-  applyCoverageEntry(out, "property_damage", pull(out, ["property_damage", "property_damage_liability", "pd_limit"]));
+  setIfEmpty(
+    out,
+    "current_premium",
+    pull(out, ["total_policy_premium", "six_month_premium", "premium_total", "six_month_total_premium"]),
+  );
+  setIfEmpty(
+    out,
+    "current_carrier",
+    pull(out, [
+      "writing_company",
+      "insurer",
+      "insurance_company",
+      "insurance_name",
+      "named_insurer",
+      "insurance_carrier",
+      "issuing_company",
+      "underwriting_company",
+      "insurer_name",
+    ]),
+  );
+  setIfEmpty(
+    out,
+    "policy_number",
+    pull(out, [
+      "current_policy_id",
+      "current_policy_number",
+      "policy_id_number",
+    ]),
+  );
+  setIfEmpty(
+    out,
+    "years_with_carrier",
+    pull(out, ["years_with_company", "years_insured", "years_with_insurer"]),
+  );
+  setIfEmpty(out, "aaa_member", pull(out, ["aaa", "aaa_membership"]));
+  takePolicyEnvelopes(out);
+  repairFlatDriverNames(out);
+  applyCoverageEntry(
+    out,
+    "bodily_injury",
+    pull(out, [
+      "bodily_injury",
+      "bodily_injury_liability",
+      "liability_bodily_injury",
+      "bi_limits",
+      "bi_limit",
+    ]),
+  );
+  applyCoverageEntry(
+    out,
+    "property_damage",
+    pull(out, ["property_damage", "property_damage_liability", "pd_limit"]),
+  );
   applyCoverageEntry(
     out,
     "uninsured_motorist",
-    pull(out, ["uninsured_motorist", "uninsured_motorists", "underinsured_motorist"]),
+    pull(out, [
+      "uninsured_motorist",
+      "uninsured_motorists",
+      "underinsured_motorist",
+      "uninsured_motorist_bodily_injury",
+      "underinsured_motorist_bodily_injury",
+    ]),
   );
   applyCoverageEntry(out, "pip", pull(out, ["personal_injury_protection"]));
   applyCoverageEntry(out, "comprehensive", pull(out, ["comprehensive", "other_than_collision", "otc"]));
-  applyCoverageEntry(out, "collision", pull(out, ["collision"]));
+  applyCoverageEntry(out, "collision", pull(out, ["collision", "collision_coverage"]));
+  if (!hasPrinted(out.liability_bi)) {
+    const person = pull(out, [
+      "bodily_injury_each_person",
+      "bi_each_person",
+      "bi_per_person",
+      "bodily_injury_per_person",
+    ]);
+    const accident = pull(out, [
+      "bodily_injury_each_accident",
+      "bi_each_accident",
+      "bi_per_accident",
+      "bodily_injury_per_accident",
+    ]);
+    const personText = textOf(person).trim();
+    const accidentText = textOf(accident).trim();
+    if (personText && accidentText) setIfEmpty(out, "liability_bi", `${personText}/${accidentText}`);
+    else if (personText) setIfEmpty(out, "liability_bi", personText);
+    else if (accidentText) setIfEmpty(out, "liability_bi", accidentText);
+  }
 
   const effective = out.effective_date;
   if (typeof effective === "string" && !hasPrinted(out.expiration_date)) {

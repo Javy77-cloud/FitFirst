@@ -110,6 +110,32 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   protection_class: ["protection_class"],
   number_of_families: ["number_of_families"],
   current_carrier: ["current_carrier"],
+  insurance_name: ["current_carrier"],
+  named_insurer: ["current_carrier"],
+  insurance_carrier: ["current_carrier"],
+  insurance_company: ["current_carrier"],
+  issuing_company: ["current_carrier"],
+  underwriting_company: ["current_carrier"],
+  writing_company: ["current_carrier"],
+  insurer: ["current_carrier"],
+  current_policy_id: ["policy_number"],
+  current_policy_number: ["policy_number"],
+  policy_id_number: ["policy_number"],
+  years_with_company: ["years_with_carrier"],
+  years_insured: ["years_with_carrier"],
+  years_with_insurer: ["years_with_carrier"],
+  aaa_member: ["aaa_member"],
+  aaa: ["aaa_member"],
+  aaa_membership: ["aaa_member"],
+  v_i_n: ["vin"],
+  vin_number: ["vin"],
+  vin_no: ["vin"],
+  vehicle_identification_no: ["vin"],
+  liability_bodily_injury: ["liability_bi"],
+  uninsured_motorist_bodily_injury: ["um_uim"],
+  underinsured_motorist_bodily_injury: ["um_uim"],
+  collision_coverage: ["collision_deductible"],
+  other_than_collision: ["comp_deductible"],
   cancellation_date: ["cancellation_date"],
   cancellation_reason: ["cancellation_reason"],
   prior_agency: ["prior_agency"],
@@ -365,6 +391,60 @@ function labelForKey(key: string): string {
   return key.replace(/_/g, " ");
 }
 
+const CURRENTLY_INSURED_OPTIONS = [
+  "Currently insured 6 months or more",
+  "Lapse within last 30 days — 7 days or less",
+  "Lapse within last 30 days — 8 to 14 days",
+  "Lapse within last 30 days — 15 to 30 days",
+  "More than 30 days lapse in the last 6 months / no prior insurance",
+  "Other",
+] as const;
+
+/** Map a printed prior-insurance phrase onto the Auto dropdown. Bare "yes" is not 6 months. */
+export function normalizeCurrentlyInsured(raw: string): string {
+  const trimmed = raw.trim();
+  const exact = CURRENTLY_INSURED_OPTIONS.find((opt) => opt.toLowerCase() === trimmed.toLowerCase());
+  if (exact) return exact;
+  const low = trimmed.toLowerCase().replace(/\s+/g, " ");
+  if (/no prior|no insurance|more than 30 days/.test(low)) {
+    return "More than 30 days lapse in the last 6 months / no prior insurance";
+  }
+  if (/15\s*(to|-)\s*30/.test(low)) return "Lapse within last 30 days — 15 to 30 days";
+  if (/8\s*(to|-)\s*14/.test(low)) return "Lapse within last 30 days — 8 to 14 days";
+  if (/7 days or less/.test(low)) return "Lapse within last 30 days — 7 days or less";
+  if (/6 months or more/.test(low)) return "Currently insured 6 months or more";
+  return trimmed;
+}
+
+/** AAA tenure only. "Yes" without years stays as printed — do not guess 1–9 or 10+. */
+export function normalizeAaaMember(raw: string): string {
+  const trimmed = raw.trim();
+  const low = trimmed.toLowerCase();
+  if (low === "none" || low === "no" || low === "n" || low === "not a member" || low === "non-member") {
+    return "None";
+  }
+  if (/10\s*\+|10\+?\s*years|10 or more/.test(low)) return "10+ years";
+  if (/1\s*[–\-]\s*9|1 to 9|less than 10/.test(low)) return "1–9 years";
+  return trimmed;
+}
+
+function moneyDigits(raw: string): string {
+  const cleaned = raw.replace(/[$,]/g, "").trim();
+  const match = cleaned.match(/\d+(?:\.\d+)?/);
+  return match ? match[0] : cleaned;
+}
+
+export function normalizeAutoPolicyValue(fieldKey: string, raw: string): string {
+  if (fieldKey === "current_premium" || fieldKey === "premium") return moneyDigits(raw);
+  if (fieldKey === "years_with_carrier") {
+    const match = raw.match(/\d+/);
+    return match ? match[0] : raw.trim();
+  }
+  if (fieldKey === "currently_insured") return normalizeCurrentlyInsured(raw);
+  if (fieldKey === "aaa_member") return normalizeAaaMember(raw);
+  return raw;
+}
+
 /**
  * Map Gemini JSON → ExtractedField[].
  * Below CONFIDENCE_THRESHOLD: do not auto-fill (empty normalizedValue), flagged=true for audit.
@@ -413,7 +493,10 @@ export function mapGeminiJsonToFields(
     for (const fieldKey of sheetKeys) {
       if (seen.has(fieldKey)) continue;
       seen.add(fieldKey);
-      const letterValue = normalizeOirLetterCode(fieldKey, payload.value);
+      const letterValue = normalizeAutoPolicyValue(
+        fieldKey,
+        normalizeOirLetterCode(fieldKey, payload.value),
+      );
       fields.push({
         fieldKey,
         label: labelForKey(fieldKey),
