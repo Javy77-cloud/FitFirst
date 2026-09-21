@@ -22,8 +22,8 @@ describe("agency LOB surfaces", () => {
     expect(agency).toMatch(/href="\/settings\/lines"/);
     expect(agency).toMatch(/data-ff-agency-lines-card/);
     expect(home).toMatch(/SettingsPinnedLinks/);
-    expect(home).toMatch(/title="Lines of business"/);
-    expect(home).toMatch(/defaultOpen/);
+    expect(home).toMatch(/SettingsHomeCards/);
+    expect(home).toMatch(/SettingsSearch/);
     expect(nav).toMatch(/SettingsPinnedLinks/);
     expect(pin).toMatch(/Lines of business/);
     expect(pin).toMatch(/SETTINGS_PINNED_LINKS/);

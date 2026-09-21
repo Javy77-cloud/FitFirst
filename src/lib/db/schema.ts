@@ -314,6 +314,13 @@ export const agencySettings = pgTable(
       lifecycleActions?: { read?: boolean; write?: boolean };
       renewalPipelineDrag?: { read?: boolean; write?: boolean };
     } | null>(),
+    /** Agency → agent feature toggles (People & access). */
+    agentFeatureToggles: jsonb("agent_feature_toggles").$type<{
+      agentsMayConnectPersonalGoogle?: boolean;
+      agentsMayUseMacros?: boolean;
+      agentsMaySeeTeamScope?: boolean;
+      agentsMayAdvertiseGoogleBusiness?: boolean;
+    } | null>(),
     /** Tint Sunday cells on the desk calendar (non-working day look). Agency default on. */
     calendarMarkSundayNonWorking: boolean("calendar_mark_sunday_non_working").notNull().default(true),
     /** Show US federal holiday labels on calendar cells. Agency default on. */

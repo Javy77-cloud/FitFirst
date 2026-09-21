@@ -15,11 +15,13 @@ import { listCampaignSequences } from "@/lib/db/sequence-queries";
 import { listEmailTemplates } from "@/lib/db/queries";
 import { listDeskButtons, listDeskMacros } from "@/lib/db/developer-hub-queries";
 import { developerToolCounts } from "@/lib/developer-hub/store";
+import { sessionMayUseMacros } from "@/lib/settings/agent-feature-toggles-prefs";
 
 export const dynamic = "force-dynamic";
 
 export default async function AutomationsHubPage() {
   const session = await requireSignedIn();
+  const showMacros = await sessionMayUseMacros(session);
   const [templates, automations, pending, mine, sequences, runs, tools, macros, buttons] =
     await Promise.all([
       listEmailTemplates(),
@@ -70,12 +72,12 @@ export default async function AutomationsHubPage() {
 
   return (
     <AppShell title="Automations">
-      <AutomationsModuleNav />
+      <AutomationsModuleNav showMacros={showMacros} />
       <p className="mb-2 max-w-3xl text-sm text-muted-foreground">
         In-desk automations. Playbooks create Tasks and in-app Alerts. Templates stay EN/ES
         drafts. Paid campaign and SMS vendors are off. Developer tools (Functions, Macros,
         Buttons, Client Scripts, Webhooks, API Keys, Connections) live here too — same records as
-        Settings → Automations & Developer.
+        Settings → Automations & tools.
       </p>
       <p className="mb-4 rounded-md border border-border bg-card px-3 py-2 text-sm">
         {session.isAdmin ? (
@@ -125,7 +127,7 @@ export default async function AutomationsHubPage() {
         then Run Macro. Leads also has Run Follow-up Macro. Same Settings desk_macros rows.
       </p>
       <div className="grid gap-3 md:grid-cols-2">
-        {AUTOMATION_DEV_SECTIONS.map((section) => (
+        {(showMacros ? AUTOMATION_DEV_SECTIONS : AUTOMATION_DEV_SECTIONS.filter((section) => section.id !== "macros")).map((section) => (
           <Link
             key={section.id}
             href={section.href}

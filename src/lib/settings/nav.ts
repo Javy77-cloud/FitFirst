@@ -9,6 +9,10 @@ export const SETTINGS_NAV_IDS = [
   "import-export",
   "import",
   "people",
+  "people-access",
+  "book-desk",
+  "growth",
+  "roles-access",
   "agents",
   "communications",
   "email",
@@ -73,7 +77,10 @@ export type SettingsNavId = (typeof SETTINGS_NAV_IDS)[number];
 
 export type SettingsGroupIcon =
   | "agency"
+  | "people"
   | "phone"
+  | "book"
+  | "growth"
   | "connect"
   | "automations"
   | "developer"
@@ -87,6 +94,9 @@ export type SettingsNavChild = {
   href: string;
   label: string;
   hint: string;
+  aliases?: string[];
+  /** Macros / functions / developer — not agent-primary. */
+  advanced?: boolean;
 };
 
 export type SettingsNavGroup = {
@@ -97,98 +107,186 @@ export type SettingsNavGroup = {
   blurb: string;
   icon: SettingsGroupIcon;
   badge?: "Admin";
+  /** Thin groups stay in the rail but off the 8 home umbrellas. */
+  thin?: boolean;
+  aliases?: string[];
   children: SettingsNavChild[];
 };
 
-/** Zoho-like Setup categories. Every href is a route that already exists. */
+/** FitFirst Setup umbrellas — not a Zoho clone. Every href is a live route. */
 export const SETTINGS_NAV: SettingsNavGroup[] = [
   {
-    id: "agency-people",
+    id: "agency",
     href: "/settings/agency",
-    label: "Agency & People",
-    hint: "Brand, desks, producers",
-    blurb: "Admin chrome every agent inherits: name, offices, territories, and who can sign in.",
+    label: "Agency",
+    hint: "Chrome, lines, desks",
+    blurb: "Admin chrome every agent inherits: name, lines of business, offices, territories, and routing.",
     icon: "agency",
     badge: "Admin",
+    aliases: ["Agency & People", "brand", "logo"],
     children: [
       { id: "agency", href: "/settings/agency", label: "Agency chrome", hint: "Name + logo" },
       { id: "lines", href: "/settings/lines", label: "Lines of business", hint: "Agency catalog" },
-      { id: "agents", href: "/settings/agents", label: "People / Agents", hint: "Create, freeze, notify" },
       { id: "offices", href: "/settings/offices", label: "Offices", hint: "Desks + states" },
       { id: "territories", href: "/settings/territories", label: "Territories", hint: "Geo books" },
       { id: "routing", href: "/settings/routing", label: "Lead routing", hint: "Territory · line · capacity" },
       { id: "lists", href: "/settings/lists", label: "Global lists", hint: "Books and picklists" },
-      { id: "field-builder", href: "/settings/field-builder", label: "Field layouts", hint: "Leads · Deals · Policies · Contacts · Accounts · Carriers · Tasks" },
-      { id: "policy-labels", href: "/settings/policy-labels", label: "Policy labels", hint: "Auto-name template" },
-      { id: "agent-policy-access", href: "/settings/agent-policy-access", label: "Agent Policy Access", hint: "Read / write gates" },
-      { id: "picklists", href: "/settings/picklists", label: "Picklists", hint: "Reusable field options" },
-      { id: "tags", href: "/settings/tags", label: "Tags", hint: "Per-module catalog · colors" },
       { id: "signatures", href: "/settings/email-signatures", label: "Email signatures", hint: "Agency close" },
       { id: "master-risk", href: "/settings/master-risk", label: "Master risk", hint: "Admin appetite worksheet" },
     ],
   },
   {
-    id: "desk-phone",
-    href: "/settings/communications",
-    label: "Desk & Phone",
-    hint: "Email, SMS, phone, video",
-    blurb: "Channels this desk uses. Phone line is Admin. My desk prefs stay on this login.",
-    icon: "phone",
+    id: "people-access",
+    href: "/settings/roles-access",
+    label: "People & access",
+    hint: "Agents, roles, toggles",
+    blurb: "Who can sign in, the roles matrix, and what agents may do on this desk — including agency-book widgets.",
+    icon: "people",
     badge: "Admin",
+    aliases: ["credentials", "roles", "permissions", "agency-people", "people"],
     children: [
-      { id: "communications", href: "/settings/communications", label: "Communications", hint: "Email, SMS, phone, video" },
-      { id: "email", href: "/settings/email", label: "Email", hint: "Inbox + templates" },
-      { id: "sms", href: "/settings/sms", label: "SMS", hint: "Connect Twilio" },
-      { id: "outbound", href: "/settings/outbound", label: "Outbound queue", hint: "Email / SMS intent" },
-      { id: "phone", href: "/settings/phone", label: "Phone", hint: "Call log line" },
-      { id: "video", href: "/settings/video", label: "Video", hint: "Zoom / Meet" },
-      { id: "my-desk", href: "/settings/my-desk", label: "My desk", hint: "This login only" },
+      { id: "agents", href: "/settings/agents", label: "People / Agents", hint: "Create, freeze, notify" },
+      {
+        id: "roles-access",
+        href: "/settings/roles-access",
+        label: "Roles & access",
+        hint: "Matrix + agency toggles",
+        aliases: ["credentials", "permissions", "Google", "macros", "team"],
+      },
+      { id: "agent-policy-access", href: "/settings/agent-policy-access", label: "Agent Policy Access", hint: "Read / write gates" },
     ],
   },
   {
-    id: "email-templates",
-    href: "/settings/email-templates",
-    label: "Email templates",
-    hint: "System + custom library",
-    blurb: "Agency email copy — thank-you, review, and renewal stubs. Not Documents. Not Tasks (those live on the notification panel).",
-    icon: "templates",
+    id: "communications",
+    href: "/settings/communications",
+    label: "Communications",
+    hint: "Email, SMS, phone, video",
+    blurb: "Channels this desk uses — email, SMS, phone, video, templates, and calendar prefs. Phone line is Admin.",
+    icon: "phone",
     badge: "Admin",
+    aliases: ["Desk & Phone", "desk", "inbox", "Google"],
     children: [
-      { id: "templates", href: "/settings/email-templates", label: "Email templates", hint: "Admin library" },
+      { id: "communications", href: "/settings/communications", label: "Communications hub", hint: "Email, SMS, phone, video" },
+      {
+        id: "email",
+        href: "/settings/email",
+        label: "Email",
+        hint: "Gmail + Yahoo inbox",
+        aliases: ["Google", "Gmail", "Workspace", "inbox", "mail"],
+      },
+      { id: "sms", href: "/settings/sms", label: "SMS", hint: "Connect Twilio" },
+      { id: "outbound", href: "/settings/outbound", label: "Outbound queue", hint: "Email / SMS intent" },
+      { id: "phone", href: "/settings/phone", label: "Phone", hint: "Call log line" },
+      {
+        id: "video",
+        href: "/settings/video",
+        label: "Video",
+        hint: "Zoom / Meet",
+        aliases: ["Google", "Google Meet", "Meet", "Zoom"],
+      },
+      {
+        id: "templates",
+        href: "/settings/email-templates",
+        label: "Email templates",
+        hint: "Admin library",
+        aliases: ["Gmail", "mail", "email-templates"],
+      },
+      {
+        id: "prefs",
+        href: "/settings/communications",
+        label: "Calendar prefs",
+        hint: "Sunday tint · holidays",
+        aliases: ["Google", "Google Calendar", "Calendar", "holidays"],
+      },
+    ],
+  },
+  {
+    id: "book-desk",
+    href: "/settings/field-builder",
+    label: "Book & desk",
+    hint: "Layouts, labels, My desk",
+    blurb: "How the book looks on every record: field layouts, policy labels, picklists, tags, documents, and this login’s desk.",
+    icon: "book",
+    children: [
+      { id: "field-builder", href: "/settings/field-builder", label: "Field layouts", hint: "Leads · Deals · Policies · Contacts · Accounts · Carriers · Tasks" },
+      { id: "policy-labels", href: "/settings/policy-labels", label: "Policy labels", hint: "Auto-name template" },
+      { id: "picklists", href: "/settings/picklists", label: "Picklists", hint: "Reusable field options" },
+      { id: "tags", href: "/settings/tags", label: "Tags", hint: "Per-module catalog · colors" },
+      { id: "my-desk", href: "/settings/my-desk", label: "My desk", hint: "This login only" },
+      { id: "documents-library", href: "/documents", label: "Documents library", hint: "Type folders · carriers" },
+    ],
+  },
+  {
+    id: "growth",
+    href: "/settings/social",
+    label: "Growth",
+    hint: "Social / GBP",
+    blurb: "Agency Social and Google Business Profile. Agents advertise only after Admin approval.",
+    icon: "growth",
+    aliases: ["Google", "GBP", "Google Business", "Facebook", "Instagram", "LinkedIn", "social"],
+    children: [
+      {
+        id: "social",
+        href: "/settings/social",
+        label: "Social / GBP",
+        hint: "BYO OAuth · X paid wall",
+        aliases: ["Google", "GBP", "Google Business", "Facebook", "Instagram", "LinkedIn", "X", "Twitter"],
+      },
     ],
   },
   {
     id: "connect",
     href: "/settings/integrations",
-    label: "Integrations / Connect",
+    label: "Integrations",
     hint: "BYO catalog",
-    blurb: "Gmail, Twilio, Zoom, Social / GBP, e-sign. Agency pays. No Zoho in the catalog.",
+    blurb: "Gmail, Twilio, Zoom, e-sign, IVANS. Agency pays. No Zoho in the catalog.",
     icon: "connect",
+    aliases: ["Connect", "Google", "Gmail", "catalog"],
     children: [
-      { id: "integrations", href: "/settings/integrations", label: "Catalog", hint: "BYO providers" },
-      { id: "carrier-download", href: "/settings/carrier-download", label: "IVANS / AL3", hint: "Not connected" },
-      { id: "social", href: "/settings/social", label: "Social / GBP", hint: "BYO OAuth · X paid wall" },
+      {
+        id: "integrations",
+        href: "/settings/integrations",
+        label: "Catalog",
+        hint: "BYO providers",
+        aliases: ["Google", "Gmail", "Twilio", "Connect"],
+      },
       { id: "esign", href: "/settings/esign", label: "E-sign", hint: "DocuSign / Dropbox Sign" },
+      { id: "carrier-download", href: "/settings/carrier-download", label: "IVANS / AL3", hint: "Not connected" },
+    ],
+  },
+  {
+    id: "import-export",
+    href: "/settings/import-export",
+    label: "Data",
+    hint: "CSV + Open API",
+    blurb: "Admin book move: contacts, accounts, policies, carriers, leads, deals, plus related packs.",
+    icon: "import-export",
+    badge: "Admin",
+    aliases: ["Import / Export", "CSV", "Zoho JSONL"],
+    children: [
+      { id: "import-export", href: "/settings/import-export", label: "Hub", hint: "All packs" },
+      { id: "import", href: "/settings/import", label: "Import", hint: "CSV + Zoho JSONL" },
+      { id: "export", href: "/settings/export", label: "Export", hint: "CSV of the book" },
     ],
   },
   {
     id: "automations-dev",
     href: "/automations",
-    label: "Automations & Developer",
-    hint: "Playbooks, macros, developer tools",
-    blurb: "One Setup card for the Automations hub and Developer Hub. Platform macros live once at /automations/macros (Settings editor at /settings/developer-hub/macros) — same desk_macros rows. No second Macros card.",
+    label: "Automations & tools",
+    hint: "Playbooks first, then admin tools",
+    blurb: "Playbooks and sequences first. Macros, functions, and Developer Hub stay under Advanced / Admin — not agent-primary settings.",
     icon: "automations",
+    aliases: ["Automations & Developer", "developer", "macros"],
     children: [
       { id: "automations", href: "/automations", label: "Automations hub", hint: "Playbooks · sequences · tools" },
       { id: "playbooks", href: "/automations/playbooks", label: "Playbooks", hint: "Tasks + Alerts" },
       { id: "sequences", href: "/automations/sequences", label: "Sequences", hint: "Nurture drafts" },
-      { id: "documents-library", href: "/documents", label: "Documents", hint: "Type folders · carriers" },
       { id: "triggers", href: "/settings/email-triggers", label: "Email triggers", hint: "Won-date jobs" },
-      { id: "macros", href: "/automations/macros", label: "Macros", hint: "Manual run" },
-      { id: "functions", href: "/automations/functions", label: "Functions", hint: "Test + REST" },
-      { id: "developer-hub", href: "/settings/developer-hub", label: "Developer Hub", hint: "API · webhooks · widgets" },
-      { id: "api-vault", href: "/settings/developer-hub/api-vault", label: "API vault", hint: "FedEx · site developers" },
-      { id: "missing-questions", href: "/settings/developer-hub/missing-questions", label: "Missing questions", hint: "Carrier field gaps" },
+      { id: "macros", href: "/automations/macros", label: "Macros", hint: "Manual run · Admin", advanced: true },
+      { id: "functions", href: "/automations/functions", label: "Functions", hint: "Test + REST · Admin", advanced: true },
+      { id: "developer-hub", href: "/settings/developer-hub", label: "Developer Hub", hint: "API · webhooks · widgets", advanced: true },
+      { id: "api-vault", href: "/settings/developer-hub/api-vault", label: "API vault", hint: "FedEx · site developers", advanced: true },
+      { id: "missing-questions", href: "/settings/developer-hub/missing-questions", label: "Missing questions", hint: "Carrier field gaps", advanced: true },
     ],
   },
   {
@@ -198,6 +296,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     hint: "Profile, 2FA, recovery",
     blurb: "Password and 2FA on this login. Admin recovery and the E&O trail sit here.",
     icon: "security",
+    thin: true,
     children: [
       { id: "profile", href: "/settings/profile", label: "Profile", hint: "Name on this login" },
       { id: "security", href: "/settings/security", label: "Password and 2FA", hint: "Enroll or recover" },
@@ -206,32 +305,22 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     ],
   },
   {
-    id: "import-export",
-    href: "/settings/import-export",
-    label: "Import / Export",
-    hint: "CSV + Open API",
-    blurb: "Admin book move: contacts, accounts, policies, carriers, leads, deals, plus related packs.",
-    icon: "import-export",
-    badge: "Admin",
-    children: [
-      { id: "import-export", href: "/settings/import-export", label: "Hub", hint: "All packs" },
-      { id: "import", href: "/settings/import", label: "Import", hint: "CSV + Zoho JSONL" },
-      { id: "export", href: "/settings/export", label: "Export", hint: "CSV of the book" },
-    ],
-  },
-  {
     id: "billing",
     href: "/settings/billing",
     label: "Billing",
     hint: "No SaaS invoicing",
-    blurb: "FitFirst does not bill producers from this desk. Book CSV lives under Import / Export.",
+    blurb: "FitFirst does not bill producers from this desk. Book CSV lives under Data.",
     icon: "billing",
     badge: "Admin",
+    thin: true,
     children: [
       { id: "billing", href: "/settings/billing", label: "Billing", hint: "No invoicing here" },
     ],
   },
 ];
+
+/** Home umbrellas — Security and Billing stay on the rail only. */
+export const SETTINGS_HOME_NAV = SETTINGS_NAV.filter((group) => !group.thin);
 
 /** Always-visible Admin catalog shortcuts — not buried in a collapsed Setup group. */
 export const SETTINGS_PINNED_LINKS = [
@@ -239,7 +328,7 @@ export const SETTINGS_PINNED_LINKS = [
   { id: "templates" as const, href: "/settings/email-templates", label: "Email templates" },
 ] as const;
 
-/** Old Developer Hub group ids + /settings/developer* pages fold into Automations & Developer. */
+/** Old Developer Hub group ids + /settings/developer* pages fold into Automations & tools. */
 const AUTOMATIONS_DEVELOPER_ALIASES = new Set<SettingsNavId>([
   "developer",
   "developer-hub",
@@ -285,13 +374,21 @@ const SETTINGS_CHILD_ALIASES: Partial<Record<SettingsNavId, SettingsNavId>> = {
   widgets: "developer-hub",
 };
 
+const SETTINGS_GROUP_ALIASES: Partial<Record<SettingsNavId, SettingsNavId>> = {
+  "agency-people": "agency",
+  "desk-phone": "communications",
+  "email-templates": "communications",
+  people: "people-access",
+  account: "security",
+  prefs: "communications",
+  templates: "communications",
+};
+
 export function settingsGroupFor(current: SettingsNavId): SettingsNavId {
   if (AUTOMATIONS_DEVELOPER_ALIASES.has(current)) return "automations-dev";
   if (current === "overview") return "overview";
-  if (current === "people") return "agency-people";
-  if (current === "account") return "security";
-  if (current === "prefs") return "desk-phone";
-  if (current === "templates" || current === "email-templates") return "email-templates";
+  const aliased = SETTINGS_GROUP_ALIASES[current];
+  if (aliased) return aliased;
   const group = SETTINGS_NAV.find(
     (item) => item.id === current || item.children.some((child) => child.id === current),
   );
@@ -315,6 +412,7 @@ export const SETTINGS_KNOWN_HREFS = [
   "/settings/field-builder",
   "/settings/policy-labels",
   "/settings/agent-policy-access",
+  "/settings/roles-access",
   "/settings/picklists",
   "/settings/tags",
   "/settings/email-signatures",

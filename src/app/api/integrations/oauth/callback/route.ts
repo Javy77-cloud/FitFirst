@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { currentDeskSession } from "@/lib/auth/session";
-import { canConnectByoIntegration } from "@/lib/integrations/connect-policy";
+import { canStartByoOauth } from "@/lib/integrations/connect-policy";
+import { getAgentFeatureToggles } from "@/lib/settings/agent-feature-toggles-prefs";
 import { decodeByoOauthState } from "@/lib/integrations/oauth";
 import { exchangeByoOAuthCode } from "@/lib/integrations/oauth-exchange";
 import { applyByoConnectSideEffects } from "@/lib/integrations/oauth-side-effects";
@@ -30,9 +31,6 @@ export async function GET(request: Request) {
   const redirectUri = byoOauthRedirectUri(origin);
 
   const session = await currentDeskSession();
-  if (!canConnectByoIntegration(session)) {
-    return NextResponse.redirect(new URL("/settings/integrations?notice=admin-only", request.url));
-  }
 
   const jar = await cookies();
   const cookieState = jar.get(BYO_OAUTH_COOKIE)?.value ?? "";
@@ -47,6 +45,11 @@ export async function GET(request: Request) {
     return NextResponse.redirect(
       new URL(destFor("/settings/integrations", "notice=oauth-wall&reason=bad-state"), request.url),
     );
+  }
+
+  const toggles = await getAgentFeatureToggles();
+  if (!canStartByoOauth(session, provider, toggles.agentsMayConnectPersonalGoogle)) {
+    return NextResponse.redirect(new URL("/settings/integrations?notice=admin-only", request.url));
   }
 
   const spec = byoOauthSpec(provider);

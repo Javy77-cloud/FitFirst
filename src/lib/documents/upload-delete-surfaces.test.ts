@@ -13,7 +13,6 @@ const SURFACES: Array<{ file: string; label: string; stored: boolean }> = [
   { file: "src/components/ops/entity-upload.tsx", label: "Entity document table", stored: true },
   { file: "src/components/claims/claim-record.tsx", label: "Claim files", stored: true },
   { file: "src/components/esign/in-desk-panel.tsx", label: "In-desk signature packets", stored: true },
-  { file: "src/app/settings/page.tsx", label: "Settings logo", stored: true },
   { file: "src/app/settings/agency/page.tsx", label: "Agency logo", stored: true },
   { file: "src/components/settings/import-export-hub.tsx", label: "Import CSV", stored: true },
   { file: "src/components/documents/fill-workspace.tsx", label: "Forms scan source", stored: true },

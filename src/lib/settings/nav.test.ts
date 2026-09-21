@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  SETTINGS_HOME_NAV,
   SETTINGS_KNOWN_HREFS,
   SETTINGS_NAV,
   SETTINGS_NAV_IDS,
@@ -9,17 +10,31 @@ import {
 } from "./nav";
 
 describe("settings IA cards", () => {
-  it("groups into Setup categories instead of a flat rail", () => {
+  it("groups into FitFirst umbrellas instead of Desk & Phone", () => {
     expect(SETTINGS_NAV.map((group) => group.id)).toEqual([
-      "agency-people",
-      "desk-phone",
-      "email-templates",
+      "agency",
+      "people-access",
+      "communications",
+      "book-desk",
+      "growth",
       "connect",
+      "import-export",
       "automations-dev",
       "security",
-      "import-export",
       "billing",
     ]);
+    expect(SETTINGS_HOME_NAV.map((group) => group.id)).toEqual([
+      "agency",
+      "people-access",
+      "communications",
+      "book-desk",
+      "growth",
+      "connect",
+      "import-export",
+      "automations-dev",
+    ]);
+    expect(SETTINGS_HOME_NAV).toHaveLength(8);
+    expect(SETTINGS_NAV.find((group) => group.id === "communications")?.label).toBe("Communications");
     expect(SETTINGS_NAV.every((group) => group.blurb.length > 20)).toBe(true);
     expect(SETTINGS_NAV.every((group) => group.children.length > 0)).toBe(true);
   });
@@ -33,47 +48,55 @@ describe("settings IA cards", () => {
     expect(SETTINGS_NAV_IDS).toContain("picklists");
     expect(SETTINGS_NAV_IDS).toContain("policy-labels");
     expect(SETTINGS_NAV_IDS).toContain("agent-policy-access");
-    expect(settingsGroupFor("policy-labels")).toBe("agency-people");
-    expect(settingsGroupFor("picklists")).toBe("agency-people");
-    expect(settingsGroupFor("agents")).toBe("agency-people");
-    expect(settingsGroupFor("people")).toBe("agency-people");
+    expect(SETTINGS_NAV_IDS).toContain("roles-access");
+    expect(settingsGroupFor("policy-labels")).toBe("book-desk");
+    expect(settingsGroupFor("picklists")).toBe("book-desk");
+    expect(settingsGroupFor("agents")).toBe("people-access");
+    expect(settingsGroupFor("people")).toBe("people-access");
+    expect(settingsGroupFor("roles-access")).toBe("people-access");
     expect(settingsGroupFor("profile")).toBe("security");
     expect(settingsGroupFor("security")).toBe("security");
     expect(settingsGroupFor("recovery")).toBe("security");
     expect(settingsGroupFor("compliance")).toBe("security");
     expect(settingsGroupFor("account")).toBe("security");
-    expect(settingsGroupFor("outbound")).toBe("desk-phone");
+    expect(settingsGroupFor("outbound")).toBe("communications");
   });
 
   it("keeps phone and agency under obvious Admin groups", () => {
-    expect(settingsGroupFor("phone")).toBe("desk-phone");
-    expect(settingsGroupFor("agency")).toBe("agency-people");
-    expect(SETTINGS_NAV.find((group) => group.id === "agency-people")?.badge).toBe("Admin");
-    expect(SETTINGS_NAV.find((group) => group.id === "desk-phone")?.badge).toBe("Admin");
-    expect(SETTINGS_NAV.find((group) => group.id === "agency-people")?.children.map((child) => child.id)).toEqual(
-      expect.arrayContaining(["agency", "lines", "agents", "offices", "territories", "routing", "agent-policy-access"]),
+    expect(settingsGroupFor("phone")).toBe("communications");
+    expect(settingsGroupFor("agency")).toBe("agency");
+    expect(settingsGroupFor("agency-people")).toBe("agency");
+    expect(settingsGroupFor("desk-phone")).toBe("communications");
+    expect(SETTINGS_NAV.find((group) => group.id === "agency")?.badge).toBe("Admin");
+    expect(SETTINGS_NAV.find((group) => group.id === "communications")?.badge).toBe("Admin");
+    expect(SETTINGS_NAV.find((group) => group.id === "agency")?.children.map((child) => child.id)).toEqual(
+      expect.arrayContaining(["agency", "lines", "offices", "territories", "routing"]),
     );
-    expect(SETTINGS_NAV.find((group) => group.id === "agency-people")?.children[1]).toMatchObject({
+    expect(SETTINGS_NAV.find((group) => group.id === "agency")?.children[1]).toMatchObject({
       id: "lines",
       href: "/settings/lines",
       label: "Lines of business",
     });
-    expect(SETTINGS_NAV.find((group) => group.id === "desk-phone")?.children.map((child) => child.id)).toEqual(
-      expect.arrayContaining(["phone", "communications", "email", "outbound"]),
+    expect(SETTINGS_NAV.find((group) => group.id === "communications")?.children.map((child) => child.id)).toEqual(
+      expect.arrayContaining(["phone", "communications", "email", "outbound", "templates", "prefs"]),
     );
   });
 
-  it("nests Social and e-sign under Connect", () => {
+  it("nests Social under Growth and e-sign under Integrations", () => {
+    const growth = SETTINGS_NAV.find((group) => group.id === "growth");
     const connect = SETTINGS_NAV.find((group) => group.id === "connect");
+    expect(growth?.label).toBe("Growth");
+    expect(growth?.children.map((child) => child.id)).toEqual(["social"]);
+    expect(connect?.label).toBe("Integrations");
     expect(connect?.children.map((child) => child.id)).toEqual(
-      expect.arrayContaining(["integrations", "social", "esign", "carrier-download"]),
+      expect.arrayContaining(["integrations", "esign", "carrier-download"]),
     );
-    expect(settingsGroupFor("social")).toBe("connect");
+    expect(settingsGroupFor("social")).toBe("growth");
     expect(settingsGroupFor("esign")).toBe("connect");
     expect(settingsGroupFor("carrier-download")).toBe("connect");
   });
 
-  it("keeps Developer Hub + Automations macros on one Setup card", () => {
+  it("keeps Developer Hub + Automations macros on one Setup card under Advanced", () => {
     expect(settingsGroupFor("dev-macros")).toBe("automations-dev");
     expect(settingsGroupFor("dev-buttons")).toBe("automations-dev");
     expect(settingsGroupFor("dev-scripts")).toBe("automations-dev");
@@ -88,14 +111,15 @@ describe("settings IA cards", () => {
     expect(settingsChildFor("dev-macros")).toBe("macros");
     expect(settingsChildFor("developer")).toBe("developer-hub");
     const hub = SETTINGS_NAV.find((group) => group.id === "automations-dev");
-    expect(hub?.label).toBe("Automations & Developer");
+    expect(hub?.label).toBe("Automations & tools");
     expect(hub?.href).toBe("/automations");
     expect(SETTINGS_NAV.filter((group) => /automations|developer/i.test(group.label))).toHaveLength(1);
     expect(SETTINGS_NAV.filter((group) => group.label === "Developer Hub")).toHaveLength(0);
     expect(hub?.children.filter((child) => child.label === "Macros")).toHaveLength(1);
     expect(hub?.children.find((child) => child.id === "macros")?.href).toBe("/automations/macros");
+    expect(hub?.children.find((child) => child.id === "macros")?.advanced).toBe(true);
     expect(hub?.children.map((child) => child.id)).toEqual(
-      expect.arrayContaining(["automations", "macros", "functions", "developer-hub"]),
+      expect.arrayContaining(["automations", "playbooks", "macros", "functions", "developer-hub"]),
     );
     expect(hub?.children.filter((child) => child.href.includes("macros"))).toHaveLength(1);
   });
@@ -109,21 +133,24 @@ describe("settings IA cards", () => {
     expect(hub?.children.some((child) => child.id === "templates")).toBe(false);
     expect(hub?.children.some((child) => child.id === "developer")).toBe(false);
     expect(hub?.children.every((child) => child.href !== "/settings/developer")).toBe(true);
-    expect(settingsGroupFor("templates")).toBe("email-templates");
-    expect(settingsGroupFor("email-templates")).toBe("email-templates");
+    expect(settingsGroupFor("templates")).toBe("communications");
+    expect(settingsGroupFor("email-templates")).toBe("communications");
     expect(settingsGroupFor("triggers")).toBe("automations-dev");
     const allChildren = SETTINGS_NAV.flatMap((group) => group.children);
     expect(allChildren.filter((child) => child.label === "Macros")).toHaveLength(1);
     expect(allChildren.filter((child) => child.id === "macros" || child.id === "dev-macros")).toHaveLength(1);
+    expect(allChildren.some((child) => child.label === "Documents library")).toBe(true);
+    expect(hub?.children.some((child) => child.label === "Documents")).toBe(false);
   });
 
-  it("puts Import / Export on its own Admin group", () => {
+  it("puts Data (Import / Export) on its own Admin group", () => {
     expect(settingsGroupFor("export")).toBe("import-export");
     expect(settingsGroupFor("import")).toBe("import-export");
     expect(settingsGroupFor("import-export")).toBe("import-export");
     expect(settingsGroupFor("billing")).toBe("billing");
-    expect(settingsGroupFor("routing")).toBe("agency-people");
+    expect(settingsGroupFor("routing")).toBe("agency");
     expect(SETTINGS_NAV.find((group) => group.id === "import-export")?.badge).toBe("Admin");
+    expect(SETTINGS_NAV.find((group) => group.id === "import-export")?.label).toBe("Data");
     expect(SETTINGS_NAV.find((group) => group.id === "import-export")?.children.map((child) => child.id)).toEqual(
       ["import-export", "import", "export"],
     );
@@ -138,17 +165,14 @@ describe("settings IA cards", () => {
       "/settings/lines",
       "/settings/email-templates",
     ]);
-    const email = SETTINGS_NAV.find((group) => group.id === "email-templates");
-    expect(email?.label).toBe("Email templates");
-    expect(email?.href).toBe("/settings/email-templates");
-    expect(email?.children).toEqual([
-      { id: "templates", href: "/settings/email-templates", label: "Email templates", hint: "Admin library" },
-    ]);
-    expect(email?.blurb).toMatch(/Not Documents/);
-    expect(email?.blurb).toMatch(/Not Tasks/);
+    const comms = SETTINGS_NAV.find((group) => group.id === "communications");
+    expect(comms?.children.some((child) => child.label === "Email templates")).toBe(true);
+    expect(comms?.children.find((child) => child.id === "templates")).toMatchObject({
+      href: "/settings/email-templates",
+      label: "Email templates",
+    });
     const automations = SETTINGS_NAV.find((group) => group.id === "automations-dev");
     expect(automations?.children.some((child) => child.label === "Email templates")).toBe(false);
-    expect(automations?.children.some((child) => child.label === "Documents")).toBe(true);
     expect(automations?.children.some((child) => /task/i.test(child.label) && child.id !== "playbooks")).toBe(
       false,
     );

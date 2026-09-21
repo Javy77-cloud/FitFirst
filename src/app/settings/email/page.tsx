@@ -5,6 +5,7 @@ import { ByoOauthCard } from "@/components/settings/byo-oauth-card";
 import { currentDeskSession } from "@/lib/auth/session";
 import { listCatalogItems } from "@/lib/integrations/catalog-store";
 import { tenantLooksSolo } from "@/lib/integrations/connect-policy";
+import { getAgentFeatureToggles } from "@/lib/settings/agent-feature-toggles-prefs";
 import { isByoOauthProviderId } from "@/lib/integrations/oauth-specs";
 
 export const dynamic = "force-dynamic";
@@ -14,11 +15,12 @@ export default async function EmailSettingsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [session, items, soloDesk, query] = await Promise.all([
+  const [session, items, soloDesk, query, toggles] = await Promise.all([
     currentDeskSession(),
     listCatalogItems(),
     tenantLooksSolo(),
     searchParams,
+    getAgentFeatureToggles(),
   ]);
   const inboxes = items.filter((item) => item.category === "email");
   const notice = typeof query.notice === "string" ? query.notice : undefined;
@@ -56,8 +58,13 @@ export default async function EmailSettingsPage({
               key={item.id}
               item={item}
               canEdit={session.isAdmin}
+              canConnect={
+                session.isAdmin ||
+                (item.id === "gmail" && toggles.agentsMayConnectPersonalGoogle)
+              }
               returnTo="/settings/email"
               soloDesk={soloDesk}
+              agentsMayConnectPersonalGoogle={toggles.agentsMayConnectPersonalGoogle}
             />
           ) : (
             <IntegrationCard key={item.id} item={item} canEdit={session.isAdmin} />

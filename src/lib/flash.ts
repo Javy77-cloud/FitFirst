@@ -25,6 +25,8 @@ export const FLASH_COPY = {
   "business-saved": "Account saved",
   "policy-saved": "Policy saved",
   "settings-saved": "Settings saved",
+  "calendar-settings-saved": "Calendar settings saved",
+  "agent-toggles-saved": "Agent access saved",
   "brand-saved": "Brand saved",
   "template-saved": "Template saved",
   "signature-saved": "Signature saved",

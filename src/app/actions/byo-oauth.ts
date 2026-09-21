@@ -11,7 +11,8 @@ import { calendarConnections } from "@/lib/db/schema";
 import { flashSettings } from "@/lib/flash-action";
 import { deskPublicOrigin } from "@/lib/social/origin";
 import { planByoClientId } from "@/lib/integrations/byo-credentials";
-import { canConnectByoIntegration, tenantLooksSolo } from "@/lib/integrations/connect-policy";
+import { canConnectByoIntegration, canStartByoOauth, tenantLooksSolo } from "@/lib/integrations/connect-policy";
+import { getAgentFeatureToggles } from "@/lib/settings/agent-feature-toggles-prefs";
 import { listRecentGmail, sendGmailMessage } from "@/lib/integrations/gmail";
 import { yahooMailboxPing } from "@/lib/integrations/yahoo-mail";
 import { pingDocuSignSandbox } from "@/lib/integrations/docusign-sandbox";
@@ -51,6 +52,15 @@ async function assertCanConnect() {
   return session;
 }
 
+async function assertCanStartOauth(provider: string) {
+  const session = await currentDeskSession();
+  const toggles = await getAgentFeatureToggles();
+  if (!canStartByoOauth(session, provider, toggles.agentsMayConnectPersonalGoogle)) {
+    throw new Error("Agency Admin only. Solos (Admin + desk) can connect personal Gmail.");
+  }
+  return session;
+}
+
 export async function saveByoOauthCredentials(formData: FormData): Promise<{
   ok: boolean;
   message: string;
@@ -83,10 +93,10 @@ export async function saveByoOauthCredentials(formData: FormData): Promise<{
 }
 
 export async function startByoOauth(formData: FormData) {
-  const session = await assertCanConnect();
   const raw = String(formData.get("provider") ?? "");
   const dest = byoOauthReturnPath(String(formData.get("next") ?? ""));
   if (!isByoOauthProviderId(raw)) redirect(`${dest}?notice=unknown-provider`);
+  const session = await assertCanStartOauth(raw);
   const origin = await deskPublicOrigin();
   const prepared = await prepareByoAuthorize({
     provider: raw,

@@ -18,15 +18,20 @@ import { socialConnectStatus, socialConnectStatusLabel } from "@/lib/social/byo"
 export function ByoOauthCard({
   item,
   canEdit,
+  canConnect,
   returnTo = "/settings/integrations",
   soloDesk = false,
+  agentsMayConnectPersonalGoogle = false,
 }: {
   item: CatalogItem;
   canEdit: boolean;
+  canConnect?: boolean;
   returnTo?: ByoOauthReturnPath;
   soloDesk?: boolean;
+  agentsMayConnectPersonalGoogle?: boolean;
 }) {
   if (!isByoOauthProviderId(item.id)) return null;
+  const allowConnect = canConnect ?? canEdit;
   const spec = byoOauthSpec(item.id);
   const ready = item.hasCredentials;
   const connected = item.connected && item.connectMode === "byo";
@@ -94,7 +99,7 @@ export function ByoOauthCard({
       <p className="text-helper text-muted-foreground">{item.byoNote}</p>
       <p className="mt-1 text-helper text-muted-foreground">{spec.worksWhen}</p>
       {item.id === "gmail" ? (
-        <p className="mt-1 text-helper text-navy">{gmailConnectCopy(soloDesk)}</p>
+        <p className="mt-1 text-helper text-navy">{gmailConnectCopy(soloDesk, agentsMayConnectPersonalGoogle)}</p>
       ) : null}
       {item.hasEnvCredentials ? (
         <p className="mt-1 text-helper text-navy">
@@ -116,12 +121,12 @@ export function ByoOauthCard({
         </p>
       ) : null}
 
-      {canEdit ? (
+      {canEdit || allowConnect ? (
         <div className="mt-3 space-y-3">
-          <ByoOauthCredentialsForm item={item} spec={spec} returnTo={returnTo} />
+          {canEdit ? <ByoOauthCredentialsForm item={item} spec={spec} returnTo={returnTo} /> : null}
 
           <div className="flex flex-wrap items-center gap-2">
-            {ready ? (
+            {ready && allowConnect ? (
               <form action={startByoOauth}>
                 <input type="hidden" name="provider" value={item.id} />
                 <input type="hidden" name="next" value={returnTo} />
@@ -130,14 +135,16 @@ export function ByoOauthCard({
                 </Button>
               </form>
             ) : null}
-            <form action={clearByoOauthCredentials} data-ff-byo-clear={item.id}>
-              <input type="hidden" name="provider" value={item.id} />
-              <input type="hidden" name="next" value={returnTo} />
-              <Button type="submit" size="sm" variant="ghost">
-                Clear app keys
-              </Button>
-            </form>
-            {connected ? (
+            {canEdit ? (
+              <form action={clearByoOauthCredentials} data-ff-byo-clear={item.id}>
+                <input type="hidden" name="provider" value={item.id} />
+                <input type="hidden" name="next" value={returnTo} />
+                <Button type="submit" size="sm" variant="ghost">
+                  Clear app keys
+                </Button>
+              </form>
+            ) : null}
+            {connected && canEdit ? (
               <form action={disconnectByoOauth}>
                 <input type="hidden" name="provider" value={item.id} />
                 <input type="hidden" name="next" value={returnTo} />
@@ -147,13 +154,15 @@ export function ByoOauthCard({
               </form>
             ) : null}
           </div>
+          {canEdit ? (
           <p className="text-caption text-muted-foreground" data-ff-byo-clear-copy="">
             {item.hasEnvCredentials
               ? `Clear removes Settings-pasted ${spec.clientIdLabel} and ${spec.clientSecretLabel}. ${spec.vendor} environment credentials still apply after clear.`
               : `Clear removes Settings-pasted ${spec.clientIdLabel} and ${spec.clientSecretLabel}. Paste a new pair to connect.`}
           </p>
+          ) : null}
 
-          {connected ? (
+          {connected && canEdit ? (
             <div className="flex flex-wrap items-end gap-2">
               {spec.smokeTests.includes("read") ? (
                 <form action={smokeTestByoProvider}>
