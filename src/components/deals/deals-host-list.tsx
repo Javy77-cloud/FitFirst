@@ -41,7 +41,7 @@ export function DealsHostList({ cards }: { cards: RadarDealCard[] }) {
       },
       cells: {
         client: (
-          <span className="inline-flex min-w-0 items-center gap-1">
+          <span className="inline-flex min-w-0 items-center gap-1" data-ff-list-client="">
             <Link href={card.href} className="font-semibold text-navy hover:underline">
               {name}
             </Link>

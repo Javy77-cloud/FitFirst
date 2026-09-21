@@ -1,6 +1,61 @@
 import { radarDesk, type RadarDeskCard } from "@/lib/deals/radar-glance";
-import { HEAT_LABELS, HEAT_STATES } from "@/lib/deals/velocity";
+import { HEAT_LABELS, HEAT_STATES, type HeatState } from "@/lib/deals/velocity";
 import { cn } from "@/lib/utils";
+
+const HEAT_STROKE: Record<HeatState, string> = {
+  hot: "var(--ff-heat-hot)",
+  cooling: "var(--ff-heat-cooling)",
+  near_cold: "var(--ff-heat-near-cold)",
+  cold: "var(--ff-heat-cold)",
+};
+
+function BookDonut({ counts, total }: { counts: Record<HeatState, number>; total: number }) {
+  const radius = 58;
+  const circumference = 2 * Math.PI * radius;
+  let offset = 0;
+  const arcs =
+    total === 0
+      ? []
+      : HEAT_STATES.filter((heat) => counts[heat] > 0).map((heat) => {
+          const length = (counts[heat] / total) * circumference;
+          const arc = { heat, dash: `${length} ${circumference - length}`, offset };
+          offset += length;
+          return arc;
+        });
+
+  return (
+    <div className="ff-radar-donut-wrap">
+      <svg viewBox="0 0 160 160" className="ff-radar-donut" role="img" aria-label="Book heat">
+        <circle
+          cx="80"
+          cy="80"
+          r={radius}
+          fill="none"
+          stroke="color-mix(in srgb, var(--ff-border) 80%, white)"
+          strokeWidth="18"
+        />
+        {arcs.map((arc) => (
+          <circle
+            key={arc.heat}
+            cx="80"
+            cy="80"
+            r={radius}
+            fill="none"
+            stroke={HEAT_STROKE[arc.heat]}
+            strokeWidth="18"
+            strokeDasharray={arc.dash}
+            strokeDashoffset={-arc.offset}
+            transform="rotate(-90 80 80)"
+          />
+        ))}
+      </svg>
+      <div className="ff-radar-donut-center">
+        <strong data-ff-radar-donut-total="">{total}</strong>
+        <span>{total === 1 ? "deal" : "deals"}</span>
+      </div>
+    </div>
+  );
+}
 
 function SilenceChart({
   bands,
@@ -26,9 +81,9 @@ function SilenceChart({
 
 function TrendChart({ values }: { values: number[] }) {
   const width = 320;
-  const height = 168;
-  const padX = 12;
-  const padY = 16;
+  const height = 120;
+  const padX = 10;
+  const padY = 12;
   const series = values.length > 0 ? values : [0, 0];
   const max = Math.max(...series, 1);
   const step = series.length === 1 ? 0 : (width - padX * 2) / (series.length - 1);
@@ -61,7 +116,7 @@ function TrendChart({ values }: { values: number[] }) {
   );
 }
 
-/** One glance: book share, how quiet, whether anyone was touched, then where deals sit. */
+/** Open-book KPI strip, then three short charts, then where deals sit. */
 export function RadarBoard({ cards }: { cards: RadarDeskCard[] }) {
   const glance = radarDesk(cards);
   const quiet =
@@ -73,33 +128,46 @@ export function RadarBoard({ cards }: { cards: RadarDeskCard[] }) {
         <div className="ff-radar-banner-lead">
           <p>Open</p>
           <strong data-ff-radar-total="">{glance.total}</strong>
+          <span>{glance.total === 1 ? "deal" : "deals"}</span>
         </div>
-        <ul className="ff-radar-share" data-ff-radar-kpis="">
+        <ul className="ff-radar-kpis" data-ff-radar-kpis="">
           {HEAT_STATES.map((heat) => (
-            <li
-              key={heat}
-              className={cn("ff-radar-share-seg", `ff-heat-${heat}`)}
-              data-ff-radar-heat={heat}
-              style={{ flexGrow: glance.total === 0 ? 1 : Math.max(glance.counts[heat], 0.42) }}
-            >
+            <li key={heat} className={cn("ff-radar-kpi", `ff-heat-${heat}`)} data-ff-radar-heat={heat}>
               <strong>{glance.counts[heat]}</strong>
               <span>{HEAT_LABELS[heat]}</span>
             </li>
           ))}
         </ul>
-        <div className="ff-radar-facts">
-          <div data-ff-radar-median="">
-            <strong>{quiet}</strong>
-            <span>{glance.medianSilence === 1 ? "median day quiet" : "median days quiet"}</span>
-          </div>
-          <div data-ff-radar-touches="">
-            <strong>{glance.touches}</strong>
-            <span>{glance.touches === 1 ? "touch · 14 days" : "touches · 14 days"}</span>
-          </div>
+        <div className="ff-radar-kpi-side" data-ff-radar-median="">
+          <strong>{quiet}</strong>
+          <span>{glance.medianSilence === 1 ? "median day quiet" : "median days quiet"}</span>
+        </div>
+        <div className="ff-radar-kpi-side" data-ff-radar-touches="">
+          <strong>{glance.touches}</strong>
+          <span>{glance.touches === 1 ? "touch · 14 days" : "touches · 14 days"}</span>
         </div>
       </section>
 
       <div className="ff-radar-charts">
+        <article className="ff-radar-chart" data-ff-radar-chart="heat">
+          <header>
+            <h2>What’s hot</h2>
+            <p>Share of the open book</p>
+          </header>
+          <div className="ff-radar-chart-body ff-radar-heat-body">
+            <BookDonut counts={glance.counts} total={glance.total} />
+            <ul className="ff-radar-heat-legend">
+              {HEAT_STATES.map((heat) => (
+                <li key={heat} className={`ff-heat-${heat}`}>
+                  <i aria-hidden />
+                  <span>{HEAT_LABELS[heat]}</span>
+                  <strong>{glance.counts[heat]}</strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </article>
+
         <article className="ff-radar-chart" data-ff-radar-chart="silence">
           <header>
             <h2>How quiet</h2>

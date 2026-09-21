@@ -241,19 +241,20 @@ export default async function LeadsPage({
       <ActivityDeskProvider initialId={railLead?.id ?? null} initialKind={activityKind}>
       <div
         className="grid w-full items-start"
-        style={{ gridTemplateColumns: ACTIVITY_RAIL_COLUMNS, columnGap: "0.65rem", rowGap: "0.3rem" }}
+        style={{ gridTemplateColumns: ACTIVITY_RAIL_COLUMNS, columnGap: "0.65rem" }}
         data-ff-leads-list-layout="list-rail"
         data-ff-leads-workspace=""
       >
-        <div className="min-w-0" style={{ gridColumn: 1, gridRow: 1 }} data-ff-leads-heading="">
+        <div className="min-w-0" style={{ gridColumn: 1 }} data-ff-leads-column="">
+        <div className="min-w-0" data-ff-leads-heading="">
           <div className="ff-leads-banner-row" data-ff-leads-banner-row="">
             <LeadsSourceBanner sources={rows.map((lead) => lead.source)} />
             <LeadMotivation stats={motivation} />
+            <p className="ff-leads-desk-note">
+              Stack is the desk. Queue is the work sheet. List is columns. The Activity board on the
+              right is the same panel as a contact.
+            </p>
           </div>
-          <p className="ff-leads-desk-note">
-            Stack is the desk. Queue is the work sheet. List is columns. The Activity board on the
-            right is the same panel as a contact.
-          </p>
           <LeadsQueueToolbar
         sources={uniqueOptions(
           queue.map((lead) => lead.source),
@@ -275,17 +276,13 @@ export default async function LeadsPage({
         dueCount={dueCount}
       />
         </div>
-        <div
-          className="min-w-0"
-          style={{ gridColumn: 1, gridRow: 2 }}
-          data-ff-leads-list-panel=""
-        >
+        <div className="min-w-0" data-ff-leads-list-panel="">
         <section
           className={view === "queue" ? "ff-leads-queue ff-card min-w-0 overflow-hidden" : "min-w-0"}
           data-ff-leads-view={view}
         >
           <div
-            className="mb-1 flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-1"
+            className="mb-0 flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-1"
             data-ff-leads-list-actions=""
           >
             <LeadsViewSwitch view={view} searchParams={params} />
@@ -504,10 +501,11 @@ export default async function LeadsPage({
           ) : null}
         </section>
         </div>
+        </div>
 
         <aside
           className={ACTIVITY_RAIL_ASIDE_CLASS}
-          style={{ gridColumn: 2, gridRow: "1 / span 2" }}
+          style={{ gridColumn: 2 }}
           data-ff-leads-list-rail=""
           data-ff-deal-right-rail=""
           data-ff-deal-rail-lock={ACTIVITY_RAIL_LOCK}

@@ -89,7 +89,7 @@ export function RenewalsPriorityStack({ cards }: { cards: RenewalBoardCard[] }) 
                       <span className="ff-stack-product" data-ff-renewal-policy-type="" title={policyType}>
                         {policyType}
                       </span>
-                      <span className="ff-stack-product-detail">
+                      <span className="ff-renewal-detail-main">
                         <span data-ff-renewal-urgency="">{meta.label}</span>
                         <span
                           className={cn("ff-renewal-risk-badge", `ff-renewal-risk-${card.risk}`)}
@@ -99,6 +99,8 @@ export function RenewalsPriorityStack({ cards }: { cards: RenewalBoardCard[] }) 
                         >
                           {RENEWAL_RISK_LABEL[card.risk]}
                         </span>
+                      </span>
+                      <span className="ff-renewal-detail-side">
                         {card.premium ? (
                           <span className="ff-stack-value" data-ff-premium-column="">
                             {formatMoney(card.premium)}
