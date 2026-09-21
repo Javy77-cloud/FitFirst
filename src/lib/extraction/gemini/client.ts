@@ -8,9 +8,9 @@ import {
 import { buildGeminiSystemPrompt, buildGeminiUserPrompt } from "./prompt";
 import { mapGeminiJsonToFields, type GeminiExtractJson } from "./map";
 import type { ExtractionResult } from "@/lib/extraction/extract";
-import { isHeicUpload, prepareImageBuffer } from "@/lib/extraction/ocr";
 import { noteDeveloperApiCall } from "@/lib/developer/usage";
 import { DeadlineError, withDeadline } from "@/lib/async/deadline";
+import { prepareGeminiInlineBytes } from "@/lib/extraction/gemini/image-bytes";
 
 const GENERATIVE_BASE = "https://generativelanguage.googleapis.com/v1beta";
 /** Default attempts for dec / 4pt. Wind mit PDFs are large and often 503 under load. */
@@ -167,6 +167,22 @@ function isAbortError(error: unknown): boolean {
   return name === "AbortError" || /aborted|timeout/i.test(error instanceof Error ? error.message : "");
 }
 
+/** Per-attempt timeout, plus the Fill deadline signal so a hung call stops. */
+function geminiFetchSignal(timeoutMs: number, parent?: AbortSignal): AbortSignal {
+  const timeout = AbortSignal.timeout(timeoutMs);
+  if (!parent) return timeout;
+  if (typeof AbortSignal.any === "function") return AbortSignal.any([timeout, parent]);
+  const controller = new AbortController();
+  const onAbort = () => controller.abort();
+  if (timeout.aborted || parent.aborted) {
+    controller.abort();
+    return controller.signal;
+  }
+  timeout.addEventListener("abort", onAbort, { once: true });
+  parent.addEventListener("abort", onAbort, { once: true });
+  return controller.signal;
+}
+
 /** Exponential backoff with jitter. Honors Retry-After / body retryDelay. Cap 60s (4s on Fill). */
 function retryDelayMs(
   attempt: number,
@@ -233,27 +249,34 @@ export async function extractWithGeminiPdf(
     timeoutMs?: number;
     /** Overall wall-clock for Fill (HEIC + all model attempts). Defaults when purpose=fill. */
     overallTimeoutMs?: number;
+    /** Aborted when the Fill deadline wins so the server action can return. */
+    signal?: AbortSignal;
   },
 ): Promise<GeminiClientResult> {
   const purpose = options?.purpose;
   const overallMs =
     options?.overallTimeoutMs ??
     (isFillPurpose(purpose) ? GEMINI_FILL_OVERALL_TIMEOUT_MS : 0);
-  if (overallMs > 0) {
-    try {
+  const controller = overallMs > 0 ? new AbortController() : null;
+  try {
+    if (overallMs > 0 && controller) {
       return await withDeadline(
-        extractWithGeminiPdfInner(pdfBytes, docType, options),
+        extractWithGeminiPdfInner(pdfBytes, docType, { ...options, signal: controller.signal }),
         overallMs,
         GEMINI_TIMEOUT_MESSAGE,
       );
-    } catch (error) {
-      if (error instanceof DeadlineError || (error instanceof Error && /timed out/i.test(error.message))) {
-        return emptyFail(docType, GEMINI_TIMEOUT_MESSAGE, [GEMINI_TIMEOUT_NOTE]);
-      }
-      throw error;
     }
+    return await extractWithGeminiPdfInner(pdfBytes, docType, options);
+  } catch (error) {
+    if (error instanceof DeadlineError || (error instanceof Error && /timed out/i.test(error.message))) {
+      return emptyFail(docType, GEMINI_TIMEOUT_MESSAGE, [GEMINI_TIMEOUT_NOTE]);
+    }
+    const message = error instanceof Error ? error.message : "gemini_extract_failed";
+    console.error("[extractWithGeminiPdf]", message.slice(0, 300));
+    return emptyFail(docType, message.slice(0, 300), ["gemini_extract_failed"]);
+  } finally {
+    controller?.abort();
   }
-  return extractWithGeminiPdfInner(pdfBytes, docType, options);
 }
 
 async function extractWithGeminiPdfInner(
@@ -269,6 +292,7 @@ async function extractWithGeminiPdfInner(
     purpose?: "fill" | "extract";
     timeoutMs?: number;
     overallTimeoutMs?: number;
+    signal?: AbortSignal;
   },
 ): Promise<GeminiClientResult> {
   const apiKey = (options?.apiKey ?? readGeminiApiKey()).trim();
@@ -281,25 +305,32 @@ async function extractWithGeminiPdfInner(
     return emptyFail(docType, "missing_gemini_key", ["missing_gemini_key"]);
   }
 
-  let payloadBytes: Buffer | Uint8Array = pdfBytes;
-  let inlineMime = resolveGeminiInlineMime(options?.mimeType, options?.filename);
-  if (
-    isHeicUpload(options?.mimeType ?? "", options?.filename ?? "") ||
-    inlineMime === "image/heic" ||
-    inlineMime === "image/heif"
-  ) {
-    try {
-      payloadBytes = await prepareImageBuffer(
-        Buffer.from(pdfBytes),
-        options?.mimeType || inlineMime,
-        options?.filename || "photo.heic",
-      );
-      inlineMime = "image/jpeg";
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "heic_convert_failed";
-      console.warn("[extractWithGeminiPdf] HEIC convert failed; sending original", message.slice(0, 180));
-    }
+  const prepared = await prepareGeminiInlineBytes({
+    bytes: pdfBytes,
+    mimeType: options?.mimeType,
+    filename: options?.filename,
+  });
+  if (!prepared.ok) {
+    console.error("[extractWithGeminiPdf] inline refused", {
+      docType,
+      shopLine: options?.shopLine ?? null,
+      filename: options?.filename ?? null,
+      message: prepared.message,
+    });
+    return emptyFail(docType, prepared.message, ["gemini_payload_too_large"]);
   }
+  const payloadBytes = prepared.bytes;
+  const inlineMime = prepared.shrunk
+    ? prepared.mimeType
+    : resolveGeminiInlineMime(prepared.mimeType, options?.filename);
+  console.info("[extractWithGeminiPdf] inline", {
+    docType,
+    shopLine: options?.shopLine ?? null,
+    filename: options?.filename ?? null,
+    mime: inlineMime,
+    bytes: payloadBytes.length,
+    shrunk: prepared.shrunk,
+  });
   const b64 = Buffer.from(payloadBytes).toString("base64");
   const body = {
     systemInstruction: {
@@ -336,12 +367,15 @@ async function extractWithGeminiPdfInner(
     const maxAttempts = maxAttemptsFor(docType, isPrimary, purpose);
     const url = `${GENERATIVE_BASE}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      if (options?.signal?.aborted) {
+        return emptyFail(docType, GEMINI_TIMEOUT_MESSAGE, [GEMINI_TIMEOUT_NOTE]);
+      }
       try {
         response = await fetchImpl(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
-          signal: AbortSignal.timeout(timeoutMs),
+          signal: geminiFetchSignal(timeoutMs, options?.signal),
         });
         noteDeveloperApiCall("gemini");
       } catch (error) {

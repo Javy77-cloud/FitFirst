@@ -53,10 +53,11 @@ export async function prepareImageBuffer(
   buffer: Buffer,
   mimeType: string,
   filename: string,
-  options?: { timeoutMs?: number },
+  options?: { timeoutMs?: number; quality?: number },
 ): Promise<Buffer> {
   if (!isHeicUpload(mimeType, filename)) return buffer;
   const timeoutMs = options?.timeoutMs ?? HEIC_CONVERT_TIMEOUT_MS;
+  const quality = options?.quality ?? 0.92;
   try {
     const convert = (await import("heic-convert")).default as unknown as (opts: {
       buffer: Buffer;
@@ -64,7 +65,7 @@ export async function prepareImageBuffer(
       quality?: number;
     }) => Promise<ArrayBuffer>;
     const jpeg = await withDeadline(
-      convert({ buffer, format: "JPEG", quality: 0.92 }),
+      convert({ buffer, format: "JPEG", quality }),
       timeoutMs,
       `HEIC convert timed out after ${timeoutMs}ms (${filename})`,
     );

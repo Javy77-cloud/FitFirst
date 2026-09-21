@@ -3,7 +3,7 @@
 import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID, type ShopLine } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
@@ -115,7 +115,6 @@ import { fillSheetFromDealDetails, type DealSheetCopyInput } from "@/lib/quote-s
 import { loadRecordValues, writeRecordValues } from "@/lib/custom-fields/store";
 import { cascadeValuesFromDealHints } from "@/lib/deals/insurance-cascade";
 import {
-  MASTER_FILL_DOCS_FAILED,
   MASTER_FILL_SKIP_AUTO_PROPERTY,
   MASTER_FILL_SKIP_NEEDS_KEY,
   MASTER_FILL_SKIP_NO_ADDRESS,
@@ -124,15 +123,17 @@ import {
   MASTER_FILL_SKIP_NO_VIN,
   MASTER_FILL_SKIP_NOT_FOUND,
   MASTER_FILL_UNEXPECTED,
+  MASTER_FILL_DOC_TIMEOUT_MS,
   MASTER_FILL_STEP_TIMEOUT_MS,
   masterFillStepTimeoutMessage,
+  masterFillUnexpectedMessage,
+  type MasterFillDocList,
   masterFillStepsForLine,
   type MasterFillStepId,
   type MasterFillStepResult,
 } from "@/lib/quote-sheet/master-fill";
 import { DeadlineError, withDeadline } from "@/lib/async/deadline";
 import { isImageUpload } from "@/lib/extraction/ocr";
-import { GEMINI_TIMEOUT_MESSAGE } from "@/lib/extraction/gemini/client";
 import { SHOP_LINES } from "@/lib/domain";
 import { currentDeskSession } from "@/lib/auth/session";
 import { applyLearningToExtracted } from "@/lib/fill-learning/lookup";
@@ -1079,15 +1080,16 @@ export async function fillMasterSheetStep(input: {
         note: "Partial fill may be saved",
       };
     }
-    const raw = error instanceof Error ? error.message : MASTER_FILL_UNEXPECTED;
-    const unexpected = /json|unexpected|non-json|failed to parse/i.test(raw);
+    const raw = (error instanceof Error ? error.message : String(error ?? ""))
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 400);
+    console.error("[fillMasterSheetStep]", { step, message: raw || MASTER_FILL_UNEXPECTED });
     return {
       step,
       filledCount: 0,
       skippedCount: 0,
-      error: unexpected
-        ? `${stepLabel} failed — ${MASTER_FILL_UNEXPECTED}`
-        : `${stepLabel} failed. ${raw}`,
+      error: raw ? `${stepLabel} failed. ${raw}` : masterFillUnexpectedMessage(stepLabel),
     };
   }
 }
@@ -1176,39 +1178,140 @@ async function fillMasterSheetStepInner(input: {
     };
   }
 
-  // docs
-  const allDocs = await db
-    .select({ id: documents.id, slot: documents.slot, docType: documents.docType, tags: documents.tags })
-    .from(documents)
-    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)));
-  const docs = allDocs.filter((doc) => isDocumentsSourceDoc(doc));
-  if (docs.length === 0) {
-    return { step, filledCount: 0, skippedCount: 0, note: MASTER_FILL_SKIP_NO_DOCS };
-  }
-  const geminiKey = await loadGeminiApiKey();
-  if (!geminiKeyReady(geminiKey)) {
-    return {
-      step,
-      filledCount: 0,
-      skippedCount: 0,
-      error: "Gemini API key is not configured — docs fill skipped",
-    };
-  }
-  const counts = await runFillDealSheets(dealId, lineRaw);
-  revalidatePath(`/deals/${dealId}`);
-  if (counts.error) {
-    return {
-      step,
-      filledCount: counts.filledKeys.length,
-      skippedCount: counts.skippedKeys.length,
-      error: counts.error,
-      note: counts.filledKeys.length ? "Partial fill saved" : undefined,
-    };
-  }
+  // docs — Fill Risk Profile does not run Gemini here.
+  // Each photo is listMasterFillDocs + fillMasterSheetDocument so one file
+  // cannot hold the action open until the platform kills it (~4 min).
   return {
     step,
+    filledCount: 0,
+    skippedCount: 0,
+    note: "Docs run one file at a time.",
+  };
+}
+
+/** Fast metadata list. No Gemini, no file bytes. */
+export async function listMasterFillDocs(input: {
+  dealId: string;
+  line: string;
+}): Promise<MasterFillDocList> {
+  try {
+    const dealId = String(input.dealId ?? "").trim();
+    const lineRaw = String(input.line ?? "home").trim() || "home";
+    if (!dealId) return { ok: false, docs: [], error: "Docs failed. Missing deal." };
+    if (!isShopLine(lineRaw)) return { ok: false, docs: [], error: "Docs failed. Unknown line." };
+    const geminiKey = await loadGeminiApiKey();
+    if (!geminiKeyReady(geminiKey)) {
+      return {
+        ok: false,
+        docs: [],
+        error: "Docs failed. Gemini API key is not configured — docs fill skipped",
+      };
+    }
+    const rows = await db
+      .select({
+        id: documents.id,
+        filename: documents.filename,
+        slot: documents.slot,
+        docType: documents.docType,
+        tags: documents.tags,
+        createdAt: documents.createdAt,
+      })
+      .from(documents)
+      .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)))
+      .orderBy(asc(documents.createdAt));
+    const docs = rows.filter(
+      (doc) =>
+        isDocumentsSourceDoc(doc) &&
+        !isQuoteFileDoc(doc) &&
+        !isQuoteAttachment(doc.docType, doc.filename),
+    );
+    if (docs.length === 0) {
+      return { ok: true, docs: [], note: MASTER_FILL_SKIP_NO_DOCS };
+    }
+    return {
+      ok: true,
+      docs: docs.map((doc) => ({ id: doc.id, filename: doc.filename || "file" })),
+    };
+  } catch (error) {
+    const message = (error instanceof Error ? error.message : "Could not list docs")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 400);
+    console.error("[listMasterFillDocs]", message);
+    return { ok: false, docs: [], error: message ? `Docs failed. ${message}` : masterFillUnexpectedMessage("Docs") };
+  }
+}
+
+/**
+ * One photo / PDF. Gemini errors return on this result. They do not throw,
+ * and they do not roll back fields a previous file already saved.
+ */
+export async function fillMasterSheetDocument(input: {
+  dealId: string;
+  line: string;
+  documentId: string;
+}): Promise<MasterFillStepResult> {
+  const label = "Docs";
+  try {
+    return await withDeadline(
+      fillMasterSheetDocumentInner(input),
+      MASTER_FILL_DOC_TIMEOUT_MS,
+      masterFillStepTimeoutMessage(label),
+    );
+  } catch (error) {
+    if (error instanceof DeadlineError || (error instanceof Error && /timed out/i.test(error.message))) {
+      return {
+        step: "docs",
+        filledCount: 0,
+        skippedCount: 0,
+        error: masterFillStepTimeoutMessage(label),
+        note: "Partial fill may be saved",
+      };
+    }
+    const raw = (error instanceof Error ? error.message : String(error ?? ""))
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 400);
+    console.error("[fillMasterSheetDocument]", { documentId: input.documentId, message: raw });
+    return {
+      step: "docs",
+      filledCount: 0,
+      skippedCount: 0,
+      error: raw ? `Docs failed. ${raw}` : masterFillUnexpectedMessage(label),
+    };
+  }
+}
+
+async function fillMasterSheetDocumentInner(input: {
+  dealId: string;
+  line: string;
+  documentId: string;
+}): Promise<MasterFillStepResult> {
+  const dealId = String(input.dealId ?? "").trim();
+  const lineRaw = String(input.line ?? "home").trim() || "home";
+  const documentId = String(input.documentId ?? "").trim();
+  if (!dealId) throw new Error("Missing deal");
+  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+  if (!documentId) throw new Error("Missing document");
+  const counts = await runFillQuoteSheet(dealId, lineRaw, { documentId });
+  revalidatePath(`/deals/${dealId}`);
+  if (counts.filledKeys.length) {
+    try {
+      await persistSheetRecheckCue(dealId, lineRaw);
+      await markShopFlowStaleAfterRiskChange(dealId, lineRaw, {
+        ratingCritical: filledKeysAreRatingCritical(counts.filledKeys),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "recheck failed";
+      console.error("[fillMasterSheetDocument] recheck", message.slice(0, 300));
+    }
+  }
+  return {
+    step: "docs",
     filledCount: counts.filledKeys.length,
     skippedCount: counts.skippedKeys.length,
+    error: counts.error,
+    note: counts.note,
   };
 }
 
@@ -1232,11 +1335,22 @@ export async function fillQuoteSheet(formData: FormData) {
   );
 }
 
-export type FillDealCounts = { filledKeys: string[]; skippedKeys: string[]; error?: string };
+export type FillDealCounts = {
+  filledKeys: string[];
+  skippedKeys: string[];
+  error?: string;
+  note?: string;
+};
 
-export async function runFillDealSheets(dealId: string, primary: ShopLine): Promise<FillDealCounts> {
+export async function runFillDealSheets(
+  dealId: string,
+  primary: ShopLine,
+  options?: { onlyLine?: boolean },
+): Promise<FillDealCounts> {
   const primaryCounts = await runFillQuoteSheet(dealId, primary);
-  const other = await fillOtherShopLines(dealId, primary);
+  const other = options?.onlyLine
+    ? { filledKeys: [] as string[], skippedKeys: [] as string[], error: undefined }
+    : await fillOtherShopLines(dealId, primary);
   const counts = {
     filledKeys: [...primaryCounts.filledKeys, ...other.filledKeys],
     skippedKeys: [...primaryCounts.skippedKeys, ...other.skippedKeys],
@@ -1516,12 +1630,25 @@ async function logExtractionJob(input: {
   }
 }
 
-export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise<FillDealCounts> {
+export async function runFillQuoteSheet(
+  dealId: string,
+  line: ShopLine,
+  options?: { documentId?: string },
+): Promise<FillDealCounts> {
+  const onlyId = String(options?.documentId ?? "").trim();
   const sheet = await ensureQuoteSheet(dealId, line);
   const docs = await db
     .select()
     .from(documents)
     .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)));
+  const scoped = onlyId ? docs.filter((doc) => doc.id === onlyId) : docs;
+  if (onlyId && scoped.length === 0) {
+    return {
+      filledKeys: [],
+      skippedKeys: [],
+      error: "Docs failed. That file is not on this deal.",
+    };
+  }
   const corrections = await loadFillCorrections();
   const learningLogs = mergeLearningHints(
     await listFillLearningForLookup(),
@@ -1533,12 +1660,16 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
   const aggregateFilled: string[] = [];
   const aggregateSkipped: string[] = [];
   const geminiErrors: string[] = [];
+  let geminiAttempts = 0;
+  let geminiMapped = 0;
+  let passiveNote: string | undefined;
 
-  for (const doc of docs) {
+  for (const doc of scoped) {
     if (isQuoteAttachment(doc.docType, doc.filename) || isQuoteFileDoc(doc)) continue;
     const startedAt = new Date();
     const buffer = await readStoredFile(doc.storagePath);
     if (!buffer) {
+      geminiErrors.push(`Docs failed. Could not read ${doc.filename} from storage.`);
       await db.insert(extractionJobs).values({
         tenantId: DEFAULT_TENANT_ID,
         dealId,
@@ -1645,6 +1776,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
           skippedKeys: [],
           message: `Skipped ${doc.filename} — wrong shop line (inferred ${inferred}).`,
         });
+        passiveNote = `Skipped ${doc.filename} — wrong shop line (inferred ${inferred}).`;
         continue;
       }
 
@@ -1660,9 +1792,11 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
           message: `Skipped ${doc.filename} — not a Gemini source doc type.`,
           startedAt,
         });
+        passiveNote = `Skipped ${doc.filename} — not a Gemini source doc type.`;
         continue;
       }
 
+      geminiAttempts += 1;
       const gemini = await extractWithGeminiPdf(buffer, doc.docType, {
         apiKey: geminiKey,
         mimeType: doc.mimeType,
@@ -1672,11 +1806,14 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
       });
       const engine = "gemini" as const;
       if (!gemini.ok) {
-        geminiErrors.push(
-          gemini.message === GEMINI_TIMEOUT_MESSAGE
-            ? `${GEMINI_TIMEOUT_MESSAGE} (${doc.filename})`
-            : `${MASTER_FILL_DOCS_FAILED} ${doc.filename}: ${gemini.message}`,
-        );
+        const detail = (gemini.message || "Gemini extract failed").replace(/\s+/g, " ").trim().slice(0, 400);
+        console.error("[runFillQuoteSheet] gemini failed", {
+          dealId,
+          filename: doc.filename,
+          shopLine: line,
+          message: detail,
+        });
+        geminiErrors.push(`Docs failed. ${doc.filename}: ${detail}`);
         await db.insert(extractionJobs).values({
           tenantId: DEFAULT_TENANT_ID,
           dealId,
@@ -1736,6 +1873,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
       values = applied.values;
       aggregateFilled.push(...applied.filledKeys);
       aggregateSkipped.push(...applied.skippedKeys);
+      geminiMapped += applied.filledKeys.length + applied.skippedKeys.length;
       // Persist IMMEDIATELY so a later audit FK failure / delete race cannot leave
       // "Filled N fields" jobs with an empty sheet.
       await persistSheetValues(sheet.id, values);
@@ -1834,8 +1972,17 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
         /* doc may have been deleted mid-fill */
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Extract failed";
-      geminiErrors.push(`${MASTER_FILL_DOCS_FAILED} ${doc.filename}: ${message}`);
+      const message = (error instanceof Error ? error.message : "Extract failed")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 400);
+      console.error("[runFillQuoteSheet] extract threw", {
+        dealId,
+        filename: doc.filename,
+        shopLine: line,
+        message,
+      });
+      geminiErrors.push(`Docs failed. ${doc.filename}: ${message}`);
       await logExtractionJob({
         dealId,
         documentId: doc.id,
@@ -1864,7 +2011,7 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
     }
   }
 
-  if (docs.length === 0) {
+  if (scoped.length === 0) {
     await db.insert(extractionJobs).values({
       tenantId: DEFAULT_TENANT_ID,
       dealId,
@@ -1902,12 +2049,12 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
 
   await syncRiskFromSheet(dealId, values, "fill");
   await syncHeaderFromSheet(dealId, values, "fill");
-  // Gemini wrote a VIN, or core vehicle facts are still blank — empty-only vPIC fill.
-  // A vPIC error stays on the later Auto Fill VIN step (and the Decode VIN button)
-  // so Docs can finish. Agent / Gemini values are not overwritten.
+  // Batch Fill can vPIC here. A single photo (documentId) leaves VIN to the
+  // master Fill VIN step so one file's deadline stays on Gemini.
+  // Empty-only: agent / Gemini values are not overwritten.
   const vinProduct = (values.sheet_product?.value ?? "").trim() || null;
   const vinLanded = aggregateFilled.some((key) => isVehicleVinSheetKey(key));
-  if (line === "auto" && (vinLanded || blankVinCoreFacts(values, vinProduct).length > 0)) {
+  if (!onlyId && line === "auto" && (vinLanded || blankVinCoreFacts(values, vinProduct).length > 0)) {
     try {
       const decoded = await runFillFromVinDecode(dealId, line);
       if (decoded.filledKeys.length) aggregateFilled.push(...decoded.filledKeys);
@@ -1920,10 +2067,25 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
       console.error("[runFillQuoteSheet] vin decode", message.slice(0, 300));
     }
   }
+  if (line === "auto" && geminiErrors.length === 0 && geminiMapped === 0 && geminiAttempts > 0) {
+    geminiErrors.push(
+      "Docs failed. Gemini returned no Auto fields (VIN, year, make, model, drivers, coverages, or policy).",
+    );
+  } else if (
+    !onlyId &&
+    line === "auto" &&
+    geminiErrors.length === 0 &&
+    geminiMapped === 0 &&
+    scoped.length > 0 &&
+    geminiAttempts === 0
+  ) {
+    geminiErrors.push("Docs failed. No Auto declaration was sent to Gemini.");
+  }
   return {
     filledKeys: aggregateFilled,
     skippedKeys: aggregateSkipped,
-    error: geminiErrors[0],
+    error: geminiErrors.find((row) => row.trim()),
+    note: onlyId ? passiveNote : undefined,
   };
 }
 

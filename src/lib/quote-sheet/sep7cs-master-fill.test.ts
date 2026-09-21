@@ -22,8 +22,12 @@ import {
   isMasterFillStepResult,
   masterFillBusyTitle,
   masterFillDoneSummary,
+  MASTER_FILL_DOC_CLIENT_TIMEOUT_MS,
+  MASTER_FILL_DOC_TIMEOUT_MS,
+  masterFillCaughtMessage,
   masterFillStepTimeoutMessage,
   masterFillUnexpectedMessage,
+  mergeMasterFillFileResults,
 } from "@/lib/quote-sheet/master-fill";
 
 function source(file: string) {
@@ -117,7 +121,20 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(isMasterFillStepResult({ step: "docs", filledCount: 1, skippedCount: 0 })).toBe(true);
     expect(isMasterFillStepResult("not-json")).toBe(false);
     expect(masterFillUnexpectedMessage(MASTER_FILL_STEP_DOCS)).toMatch(/Docs/);
-    expect(masterFillUnexpectedMessage(MASTER_FILL_STEP_DOCS)).toMatch(/unexpected response/i);
+    expect(masterFillUnexpectedMessage(MASTER_FILL_STEP_DOCS)).toMatch(/Gemini did not return a Fill result/);
+    const protocol = masterFillCaughtMessage(
+      MASTER_FILL_STEP_DOCS,
+      new Error("An unexpected response was received from the server."),
+    );
+    expect(protocol).toMatch(/Docs failed/);
+    expect(protocol).not.toMatch(/unexpected response/i);
+    expect(
+      masterFillCaughtMessage(
+        MASTER_FILL_STEP_DOCS,
+        new Error("gemini_http_400: Request payload size exceeds the limit"),
+      ),
+    ).toMatch(/Request payload size exceeds the limit/);
+    expect(source("src/components/deal/master-sheet-fill-button.tsx")).toMatch(/masterFillCaughtMessage/);
     expect(action).toMatch(/purpose: "fill"/);
     expect(action).toMatch(/fillMasterSheetStepInner/);
 
@@ -126,9 +143,40 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(masterFillStepTimeoutMessage(MASTER_FILL_STEP_DOCS)).toMatch(/timed out/i);
     expect(button).toMatch(/MASTER_FILL_STEP_TIMEOUT_MS/);
     expect(button).toMatch(/Promise\.race/);
+    expect(button).toMatch(/fillMasterSheetDocument/);
+    expect(button).toMatch(/listMasterFillDocs/);
+    expect(button).toMatch(/step\.id === "docs"/);
+    expect(action).toMatch(/export async function fillMasterSheetDocument/);
+    expect(action).toMatch(/export async function listMasterFillDocs/);
     expect(action).toMatch(/withDeadline/);
     expect(action).toMatch(/isImageUpload/);
     expect(action).toMatch(/photoLike/);
+    expect(MASTER_FILL_DOC_TIMEOUT_MS).toBeLessThan(MASTER_FILL_STEP_TIMEOUT_MS);
+    expect(MASTER_FILL_DOC_CLIENT_TIMEOUT_MS).toBeGreaterThan(MASTER_FILL_DOC_TIMEOUT_MS);
+    expect(MASTER_FILL_DOC_CLIENT_TIMEOUT_MS).toBeLessThan(180_000);
+
+    const merged = mergeMasterFillFileResults([
+      { step: "docs", filledCount: 6, skippedCount: 2, note: "dec-page-1.jpg" },
+      {
+        step: "docs",
+        filledCount: 0,
+        skippedCount: 0,
+        error: "Docs failed. dec-page-2.jpg: gemini_http_400: Request payload size exceeds the limit",
+      },
+    ]);
+    expect(merged.step).toBe("docs");
+    expect(merged.filledCount).toBe(6);
+    expect(merged.skippedCount).toBe(2);
+    expect(merged.error).toMatch(/dec-page-2.jpg/);
+    expect(merged.error).toMatch(/Request payload size exceeds the limit/);
+    expect(merged.note).toMatch(/dec-page-1.jpg/);
+    const partial = masterFillDoneSummary([
+      { step: "deal", filledCount: 1, skippedCount: 0 },
+      merged,
+      { step: "vin", filledCount: 3, skippedCount: 0, note: "NHTSA vPIC" },
+    ]);
+    expect(partial).toMatch(/Filled 10, skipped 2/);
+    expect(partial).toMatch(/dec-page-2.jpg/);
   });
 
   it("copies deal blanks as CHECK and never overwrites agent/confirmed", () => {

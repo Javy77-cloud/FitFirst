@@ -157,7 +157,13 @@ describe("extractWithGeminiPdf retries", () => {
   }, 10_000);
 
   it("fails Fill on overall wall-clock even when a single fetch never settles", async () => {
-    const fetchImpl = vi.fn(async () => new Promise<Response>(() => undefined)) as unknown as typeof fetch;
+    let aborted = false;
+    const fetchImpl = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+      init?.signal?.addEventListener("abort", () => {
+        aborted = true;
+      });
+      return new Promise<Response>(() => undefined);
+    }) as unknown as typeof fetch;
     const result = await extractWithGeminiPdf(Buffer.from("%PDF-1.4"), "photo", {
       apiKey: "test-key",
       model: "gemini-3.6-flash",
@@ -171,5 +177,6 @@ describe("extractWithGeminiPdf retries", () => {
     expect(result.ok).toBe(false);
     expect(result.message).toBe(GEMINI_TIMEOUT_MESSAGE);
     expect(result.result.qualityNotes).toContain("gemini_timeout");
+    expect(aborted).toBe(true);
   }, 10_000);
 });

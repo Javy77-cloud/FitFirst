@@ -27,11 +27,18 @@ export const MASTER_FILL_REVIEW_NUDGE =
 export const MASTER_FILL_BUSY_TITLE = FILLING_RISK_PROFILE_TITLE;
 export const MASTER_FILL_BUSY_COPY = "Working on it — we’ll be back soon.";
 export const MASTER_FILL_UNEXPECTED =
-  "Unexpected response from server. Fields already filled are saved.";
+  "Gemini did not return a Fill result. Fields already filled are saved.";
 export const MASTER_FILL_DOCS_FAILED =
   "Could not read docs. Fields already filled are saved.";
 /** Client + server hard wall per Fill step so the modal cannot spin forever. */
 export const MASTER_FILL_STEP_TIMEOUT_MS = 120_000;
+/**
+ * One photo / PDF. Stays under the deal-page maxDuration so a single file
+ * returns a Flight result instead of dying with the whole Docs batch (~4 min).
+ */
+export const MASTER_FILL_DOC_TIMEOUT_MS = 100_000;
+/** Client waits past the server deadline so a Flight result can arrive. */
+export const MASTER_FILL_DOC_CLIENT_TIMEOUT_MS = 120_000;
 export const MASTER_FILL_STEP_TIMEOUT_MESSAGE =
   "timed out. Fields already filled are saved — close and retry, or fill by hand.";
 
@@ -82,8 +89,63 @@ export function masterFillUnexpectedMessage(stepLabel: string): string {
   return `${stepLabel} failed — ${MASTER_FILL_UNEXPECTED}`;
 }
 
+/**
+ * Next.js throws this exact sentence when a server action POST is not
+ * `text/x-component` (Vercel 504/502 HTML, OOM kill). Show a Fill result instead.
+ */
+export function masterFillCaughtMessage(stepLabel: string, error: unknown): string {
+  const raw = error instanceof Error ? error.message.replace(/\s+/g, " ").trim() : "";
+  const protocol =
+    !raw ||
+    /unexpected response was received from the server/i.test(raw) ||
+    /failed to fetch/i.test(raw) ||
+    /network error/i.test(raw);
+  if (protocol) {
+    return `${stepLabel} failed. Gemini did not return a result — the server cut off this step before it could answer.`;
+  }
+  const text = raw.slice(0, 500);
+  return text.startsWith(`${stepLabel} failed`) ? text : `${stepLabel} failed. ${text}`;
+}
+
 export function masterFillStepTimeoutMessage(stepLabel: string): string {
   return `${stepLabel} ${MASTER_FILL_STEP_TIMEOUT_MESSAGE}`;
+}
+
+export type MasterFillDocRef = { id: string; filename: string };
+
+export type MasterFillDocList = {
+  ok: boolean;
+  docs: MasterFillDocRef[];
+  error?: string;
+  note?: string;
+};
+
+export function isMasterFillDocList(raw: unknown): raw is MasterFillDocList {
+  if (!raw || typeof raw !== "object") return false;
+  const value = raw as Partial<MasterFillDocList>;
+  return typeof value.ok === "boolean" && Array.isArray(value.docs);
+}
+
+export function masterFillDocStatus(index: number, total: number, filename: string): string {
+  const name = filename.trim() || "file";
+  const count = Math.max(total, 1);
+  const at = Math.min(Math.max(index, 0) + 1, count);
+  return `Docs · ${at}/${count} · ${name}`;
+}
+
+/** Sum per-file Fill results. A failed file keeps its error and does not zero the others. */
+export function mergeMasterFillFileResults(files: MasterFillStepResult[]): MasterFillStepResult {
+  const filledCount = files.reduce((sum, file) => sum + file.filledCount, 0);
+  const skippedCount = files.reduce((sum, file) => sum + file.skippedCount, 0);
+  const errors = files.map((file) => file.error).filter((row): row is string => Boolean(row?.trim()));
+  const notes = files.map((file) => file.note).filter((row): row is string => Boolean(row?.trim()));
+  return {
+    step: "docs",
+    filledCount,
+    skippedCount,
+    error: errors.length ? errors.join(" · ") : undefined,
+    note: notes.length ? notes.join(" · ") : undefined,
+  };
 }
 
 export function masterFillDoneSummary(steps: MasterFillStepResult[]): string {

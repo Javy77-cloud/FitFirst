@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { fillMasterSheetStep } from "@/app/actions/quote-sheet";
+import { fillMasterSheetDocument, fillMasterSheetStep, listMasterFillDocs } from "@/app/actions/quote-sheet";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,20 +18,36 @@ import {
   FILL_MASTER_SHEET_LABEL,
   MASTER_FILL_BUSY_COPY,
   MASTER_FILL_BUSY_TITLE,
+  MASTER_FILL_DOC_CLIENT_TIMEOUT_MS,
   MASTER_FILL_REVIEW_NUDGE,
+  MASTER_FILL_SKIP_NO_DOCS,
   MASTER_FILL_STEP_DEAL,
   MASTER_FILL_STEP_TIMEOUT_MS,
+  isMasterFillDocList,
   isMasterFillStepResult,
   masterFillBusyTitle,
+  masterFillCaughtMessage,
+  masterFillDocStatus,
   masterFillDoneSummary,
   masterFillStepTimeoutMessage,
   masterFillStepsForLine,
   masterFillUnexpectedMessage,
+  mergeMasterFillFileResults,
   type MasterFillStepResult,
 } from "@/lib/quote-sheet/master-fill";
 import type { ShopLine } from "@/lib/domain";
 import { isNhtsaTransportFailure } from "@/lib/vin-decode/client";
 import { recoverVinDecodeFromBrowser } from "@/lib/vin-decode/browser";
+
+function withClientDeadline<T>(work: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+  });
+  return Promise.race([work, timeout]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
 
 export function MasterSheetFillButton({
   dealId,
@@ -48,6 +64,82 @@ export function MasterSheetFillButton({
   const [done, setDone] = useState(false);
   const [summary, setSummary] = useState("");
 
+  async function fillDocsOneFileAtATime(): Promise<MasterFillStepResult> {
+    let listed: unknown;
+    try {
+      listed = await withClientDeadline(
+        listMasterFillDocs({ dealId, line }),
+        20_000,
+        masterFillStepTimeoutMessage("Docs"),
+      );
+    } catch (error) {
+      return {
+        step: "docs",
+        filledCount: 0,
+        skippedCount: 0,
+        error: masterFillCaughtMessage("Docs", error),
+      };
+    }
+    if (!isMasterFillDocList(listed)) {
+      return {
+        step: "docs",
+        filledCount: 0,
+        skippedCount: 0,
+        error: masterFillUnexpectedMessage("Docs"),
+      };
+    }
+    if (!listed.ok) {
+      return {
+        step: "docs",
+        filledCount: 0,
+        skippedCount: 0,
+        error: listed.error || masterFillUnexpectedMessage("Docs"),
+        note: listed.note,
+      };
+    }
+    if (listed.docs.length === 0) {
+      return {
+        step: "docs",
+        filledCount: 0,
+        skippedCount: 0,
+        note: listed.note || MASTER_FILL_SKIP_NO_DOCS,
+      };
+    }
+    const fileResults: MasterFillStepResult[] = [];
+    for (let index = 0; index < listed.docs.length; index += 1) {
+      const doc = listed.docs[index];
+      if (!doc?.id) continue;
+      const label = doc.filename.trim() || "Docs";
+      setStatus(masterFillDocStatus(index, listed.docs.length, label));
+      try {
+        const raw = await withClientDeadline(
+          fillMasterSheetDocument({ dealId, line, documentId: doc.id }),
+          MASTER_FILL_DOC_CLIENT_TIMEOUT_MS,
+          masterFillStepTimeoutMessage(label),
+        );
+        if (!isMasterFillStepResult(raw)) {
+          fileResults.push({
+            step: "docs",
+            filledCount: 0,
+            skippedCount: 0,
+            error: masterFillCaughtMessage(label, new Error("An unexpected response was received from the server.")),
+          });
+          continue;
+        }
+        fileResults.push(raw);
+      } catch (error) {
+        fileResults.push({
+          step: "docs",
+          filledCount: 0,
+          skippedCount: 0,
+          error: masterFillCaughtMessage(label, error),
+        });
+        continue;
+      }
+    }
+    return mergeMasterFillFileResults(fileResults);
+  }
+
   async function runFill() {
     setOpen(true);
     setBusy(true);
@@ -59,23 +151,29 @@ export function MasterSheetFillButton({
       for (const step of steps) {
         currentLabel = step.label;
         setStatus(step.label);
+        if (step.id === "docs") {
+          const docsResult = await fillDocsOneFileAtATime();
+          results.push(docsResult);
+          // One photo can fail. Keep its fields' siblings and still run VIN.
+          continue;
+        }
         let raw: unknown;
         try {
-          raw = await Promise.race([
+          raw = await withClientDeadline(
             fillMasterSheetStep({ dealId, line, step: step.id }),
-            new Promise<never>((_resolve, reject) => {
-              setTimeout(
-                () => reject(new Error(masterFillStepTimeoutMessage(step.label))),
-                MASTER_FILL_STEP_TIMEOUT_MS,
-              );
-            }),
-          ]);
+            MASTER_FILL_STEP_TIMEOUT_MS,
+            masterFillStepTimeoutMessage(step.label),
+          );
         } catch (error) {
-          const message =
-            error instanceof Error && error.message.trim()
-              ? error.message
-              : masterFillUnexpectedMessage(step.label);
-          if (step.id === "vin" && line === "auto" && (isNhtsaTransportFailure(message) || /unexpected|failed to fetch|network/i.test(message))) {
+          const caught = error instanceof Error ? error.message : "";
+          const message = masterFillCaughtMessage(step.label, error);
+          if (
+            step.id === "vin" &&
+            line === "auto" &&
+            (isNhtsaTransportFailure(caught) ||
+              isNhtsaTransportFailure(message) ||
+              /unexpected|failed to fetch|network/i.test(caught))
+          ) {
             const recovered = await recoverVinDecodeFromBrowser({ dealId, line });
             if (recovered.ok) {
               results.push({
@@ -103,7 +201,7 @@ export function MasterSheetFillButton({
             step: step.id,
             filledCount: 0,
             skippedCount: 0,
-            error: `${step.label} failed. ${message}`,
+            error: message,
           };
           results.push(failed);
           setSummary(masterFillDoneSummary(results));
@@ -152,6 +250,11 @@ export function MasterSheetFillButton({
       const text = masterFillDoneSummary(results);
       setSummary(text);
       setDone(true);
+      if (results.some((step) => step.error)) {
+        flashAction(text, "error");
+        router.refresh();
+        return;
+      }
       const filled = results.reduce((sum, step) => sum + step.filledCount, 0);
       const skipped = results.reduce((sum, step) => sum + step.skippedCount, 0);
       const sources = [
@@ -168,11 +271,11 @@ export function MasterSheetFillButton({
       router.replace(`/deals/${dealId}?tab=documents&line=${line}`);
       router.refresh();
     } catch (error) {
-      const message = error instanceof Error ? error.message : masterFillUnexpectedMessage(currentLabel);
+      const message = masterFillCaughtMessage(currentLabel, error);
       const partial = results.length ? ` ${masterFillDoneSummary(results)}` : "";
-      setSummary(`${currentLabel} failed. ${message}.${partial}`);
+      setSummary(`${message}.${partial}`);
       setDone(true);
-      flashAction(`${currentLabel} failed. ${message}`, "error");
+      flashAction(message, "error");
     } finally {
       setBusy(false);
     }
