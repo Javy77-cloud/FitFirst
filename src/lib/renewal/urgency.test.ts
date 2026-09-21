@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   renewalDeltaPhrase,
   renewalDaysPhrase,
+  renewalRiskHover,
+  renewalStackHeat,
   renewalUrgencyBand,
   rankRenewalCards,
   renewalWhyLine,
@@ -28,6 +30,13 @@ describe("renewal urgency bands", () => {
     expect(stubRenewalRiskFromDays(12)).toBe("high");
     expect(stubRenewalRiskFromDays(45)).toBe("medium");
     expect(stubRenewalRiskFromDays(73)).toBe("low");
+    expect(renewalRiskHover("medium")).toMatch(/90\+/);
+    expect(renewalRiskHover("medium")).toMatch(/not days left/);
+    expect(renewalRiskHover("high")).toMatch(/^High risk/);
+    expect(renewalStackHeat("under30")).toBe("hot");
+    expect(renewalStackHeat("30to60")).toBe("cooling");
+    expect(renewalStackHeat("60to90")).toBe("near_cold");
+    expect(renewalStackHeat("90plus")).toBe("cold");
   });
 
   it("does not treat Upcoming/Contacted/Quoted/Bound/Lost as bands", () => {

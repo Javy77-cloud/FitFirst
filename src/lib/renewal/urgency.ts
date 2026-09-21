@@ -22,6 +22,22 @@ export const RENEWAL_RISK_LABEL: Record<RenewalRiskLevel, string> = {
   low: "Low",
 };
 
+/**
+ * Days-out (Under 30 / 90+) and risk are different columns.
+ * 90+ can still be Medium when premium, silence, or lapse is elevated.
+ */
+export function renewalRiskHover(level: RenewalRiskLevel): string {
+  return `${RENEWAL_RISK_LABEL[level]} risk comes from premium change, silence, and lapse — not days left, so a 90+ renewal can still be Medium.`;
+}
+
+/** Same heartbeat as Deals Stack: soon is hot, far out is barely-moving cold. */
+export function renewalStackHeat(band: RenewalUrgencyBand): "hot" | "cooling" | "near_cold" | "cold" {
+  if (band === "under30") return "hot";
+  if (band === "30to60") return "cooling";
+  if (band === "60to90") return "near_cold";
+  return "cold";
+}
+
 /** Urgency bands for the visual board. Overdue sits in Under 30. */
 export function renewalUrgencyBand(daysUntil: number): RenewalUrgencyBand {
   if (daysUntil < 30) return "under30";

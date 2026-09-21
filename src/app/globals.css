@@ -3187,6 +3187,72 @@ button.ff-renewal-risk-badge {
 
 .ff-stack-card[class*="ff-urgency-tone-"] { --ff-heat: var(--ff-urgency); }
 
+.ff-heat-glance {
+  display: grid;
+  gap: 0.55rem;
+}
+.ff-heat-row {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: 0.35rem 0.85rem;
+  align-items: center;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--ff-heat) 28%, var(--ff-border));
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--ff-heat-wash, #fff) 55%, #fff);
+}
+.ff-heat-row-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  color: var(--ff-navy);
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+.ff-heat-row-label strong {
+  font-variant-numeric: tabular-nums;
+}
+.ff-heat-row-deals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.ff-heat-glance-card {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
+  max-width: 100%;
+  padding: 0.22rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--ff-heat) 35%, var(--ff-border));
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ff-navy);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+.ff-heat-glance-card:hover {
+  border-color: var(--ff-heat);
+  background: var(--ff-heat-wash, #fff);
+}
+.ff-heat-glance-card strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.ff-heat-glance-card span,
+.ff-heat-row-empty {
+  color: var(--ff-muted);
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+@media (max-width: 40rem) {
+  .ff-heat-row { grid-template-columns: minmax(0, 1fr); }
+}
+
 .ff-deals-radar { display: grid; gap: 0.7rem; }
 .ff-radar-legend {
   display: flex;

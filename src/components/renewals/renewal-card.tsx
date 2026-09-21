@@ -17,6 +17,7 @@ import type { RenewalBoardCard } from "@/lib/renewal/board-data";
 import { renewalPolicyTypeLabel } from "@/lib/renewal/policy-type";
 import {
   RENEWAL_RISK_LABEL,
+  renewalRiskHover,
   renewalUrgencyBand,
   renewalWhyLine,
 } from "@/lib/renewal/urgency";
@@ -139,27 +140,29 @@ export function RenewalBoardCardView({
           />
         </div>
         <span className="flex shrink-0 flex-col items-end gap-1">
-          {card.clientHealth ? (
-            <HealthWhyBadge
-              health={card.clientHealth}
-              extraHealth={card.policyHealth}
-              align="end"
-              className={cn("ff-renewal-risk-badge", `ff-renewal-risk-${risk}`)}
-              data-ff-risk-badge={risk}
-              data-ff-client-health-band={card.clientHealth.band}
-              aria-label={`${RENEWAL_RISK_LABEL[risk]} risk — why`}
-            >
-              {RENEWAL_RISK_LABEL[risk]}
-            </HealthWhyBadge>
-          ) : (
-            <span
-              className={cn("ff-renewal-risk-badge", `ff-renewal-risk-${risk}`)}
-              data-ff-risk-badge={risk}
-              data-ff-client-health-band={risk}
-            >
-              {RENEWAL_RISK_LABEL[risk]}
-            </span>
-          )}
+          <span title={renewalRiskHover(risk)} data-ff-risk-hover={risk}>
+            {card.clientHealth ? (
+              <HealthWhyBadge
+                health={card.clientHealth}
+                extraHealth={card.policyHealth}
+                align="end"
+                className={cn("ff-renewal-risk-badge", `ff-renewal-risk-${risk}`)}
+                data-ff-risk-badge={risk}
+                data-ff-client-health-band={card.clientHealth.band}
+                aria-label={`${RENEWAL_RISK_LABEL[risk]} risk — why`}
+              >
+                {RENEWAL_RISK_LABEL[risk]}
+              </HealthWhyBadge>
+            ) : (
+              <span
+                className={cn("ff-renewal-risk-badge", `ff-renewal-risk-${risk}`)}
+                data-ff-risk-badge={risk}
+                data-ff-client-health-band={risk}
+              >
+                {RENEWAL_RISK_LABEL[risk]}
+              </span>
+            )}
+          </span>
           {card.autopilotQueued ? (
             <span
               className={cn("ff-autopilot-badge", card.autopilotEscalated && "is-escalated")}

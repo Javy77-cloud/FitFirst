@@ -1,11 +1,16 @@
 import Link from "next/link";
+import { RenewalCompareDrawer } from "@/components/renewals/renewal-compare-drawer";
 import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
 import { formatMoney } from "@/lib/domain";
 import type { RenewalBoardCard } from "@/lib/renewal/board-data";
+import { renewalPolicyTypeLabel } from "@/lib/renewal/policy-type";
 import {
+  RENEWAL_RISK_LABEL,
   RENEWAL_URGENCY_META,
   rankRenewalCards,
   renewalDaysPhrase,
+  renewalRiskHover,
+  renewalStackHeat,
   renewalUrgencyBand,
 } from "@/lib/renewal/urgency";
 import { cn } from "@/lib/utils";
@@ -26,25 +31,63 @@ export function RenewalsPriorityStack({ cards }: { cards: RenewalBoardCard[] }) 
       {ranked.map((card) => {
         const band = renewalUrgencyBand(card.daysUntil);
         const meta = RENEWAL_URGENCY_META[band];
+        const heat = renewalStackHeat(band);
+        const policyType = renewalPolicyTypeLabel(card);
         return (
           <li key={card.queueId}>
             <article
-              className={cn("ff-stack-card", `ff-urgency-tone-${meta.tone}`)}
+              className={cn("ff-stack-card", `ff-heat-${heat}`, `ff-urgency-tone-${meta.tone}`)}
               data-ff-renewals-stack-card={card.queueId}
               data-ff-urgency-card={band}
+              data-ff-heat={heat}
             >
-              <span className="ff-stack-glyph" aria-hidden data-ff-stack-glyph={band} />
-              <div className="min-w-0 flex-1">
-                <Link
-                  href={`/policies/${card.policyId}`}
-                  className="block truncate text-sm font-semibold text-navy hover:text-primary hover:underline"
-                >
-                  {card.clientName}
-                </Link>
-                <div className="ff-stack-glance">
-                  <span className="ff-product-chip">{meta.shortLabel}</span>
-                  <span className="ff-stack-value">{renewalDaysPhrase(card.daysUntil)}</span>
-                  {card.premium ? <span className="ff-stack-value">{formatMoney(card.premium)}</span> : null}
+              <span className="ff-stack-glyph" aria-hidden data-ff-stack-glyph={heat} />
+              <div className="ff-stack-card-body">
+                <div className="ff-stack-card-spread">
+                  <Link href={`/policies/${card.policyId}`} className="ff-stack-name">
+                    {card.clientName}
+                  </Link>
+                  <span className="ff-stack-silent" data-ff-renewal-days="">
+                    {renewalDaysPhrase(card.daysUntil)}
+                  </span>
+                </div>
+                <div className="ff-stack-job" data-ff-renewal-job="">
+                  <ul className="ff-stack-products">
+                    <li data-ff-renewal-line="">
+                      <span className="ff-stack-product" data-ff-renewal-policy-type="" title={policyType}>
+                        {policyType}
+                      </span>
+                      <span className="ff-stack-product-detail">
+                        <span data-ff-renewal-urgency="">{meta.label}</span>
+                        <span
+                          className={cn("ff-renewal-risk-badge", `ff-renewal-risk-${card.risk}`)}
+                          data-ff-risk-badge={card.risk}
+                          data-ff-risk-hover={card.risk}
+                          title={renewalRiskHover(card.risk)}
+                        >
+                          {RENEWAL_RISK_LABEL[card.risk]}
+                        </span>
+                        {card.premium ? (
+                          <span className="ff-stack-value" data-ff-premium-column="">
+                            {formatMoney(card.premium)}
+                          </span>
+                        ) : null}
+                        <RenewalCompareDrawer
+                          policyId={card.policyId}
+                          clientName={card.clientName}
+                          canCompare={card.canCompare}
+                          clientHealth={card.clientHealth}
+                          policyHealth={card.policyHealth}
+                        />
+                      </span>
+                    </li>
+                  </ul>
+                  <RenewalHealthMeter
+                    stars={card.healthStars}
+                    policyStars={card.policyHealthStars}
+                    flagged={card.healthFlagged}
+                    source={card.healthSource}
+                  />
                 </div>
                 {card.inboxCue ? (
                   <p className="ff-inbox-cue" data-ff-inbox-cue="">
@@ -57,16 +100,14 @@ export function RenewalsPriorityStack({ cards }: { cards: RenewalBoardCard[] }) 
                     )}
                   </p>
                 ) : null}
-                <RenewalHealthMeter
-                  stars={card.healthStars}
-                  policyStars={card.policyHealthStars}
-                  flagged={card.healthFlagged}
-                  source={card.healthSource}
-                />
+                <Link
+                  href={`/policies/${card.policyId}/compare`}
+                  className="ff-stack-next"
+                  data-ff-renewal-work=""
+                >
+                  Work renewal
+                </Link>
               </div>
-              <Link href={`/policies/${card.policyId}`} className="ff-stack-action">
-                Open
-              </Link>
             </article>
           </li>
         );
