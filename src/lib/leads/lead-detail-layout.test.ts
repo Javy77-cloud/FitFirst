@@ -22,7 +22,7 @@ describe("lead detail layout + per-line documents", () => {
     expect(page).toMatch(/LeadDetailWorkspace/);
     expect(page).not.toMatch(/uploadDocument/);
     expect(desk).toMatch(/data-ff-lead-layout="layout-rail"/);
-    expect(desk).toMatch(/gridTemplateColumns: "minmax\(0, 1fr\) 320px"/);
+    expect(desk).toMatch(/ACTIVITY_RAIL_COLUMNS/);
     expect(desk).toMatch(/data-ff-deal-right-rail/);
     expect(desk).toMatch(/data-ff-lead-context-rail/);
     expect(desk).toMatch(/data-ff-lead-edit-layout/);

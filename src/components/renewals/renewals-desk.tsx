@@ -227,21 +227,23 @@ export async function RenewalsDesk({
           </p>
         ) : (
           <>
-            <div className="ff-renewals-glance" data-ff-renewals-glance="">
-              <RenewalsHealthStrip
-                summary={healthSummary}
-                book={healthRollup.book}
-                agents={showAgencyHealth ? healthRollup.agents : []}
-                weakest={weakest}
+            <div className="ff-renewals-book" data-ff-renewals-book="">
+              <div className="ff-renewals-glance" data-ff-renewals-glance="">
+                <RenewalsHealthStrip
+                  summary={healthSummary}
+                  book={healthRollup.book}
+                  agents={showAgencyHealth ? healthRollup.agents : []}
+                  weakest={weakest}
+                />
+                <RenewalsPulse daysUntil={filtered.map((card) => card.daysUntil)} />
+              </div>
+              <RenewalsFilteredViews
+                cards={filtered}
+                view={view}
+                searchModuleId="renewals-pipeline"
+                initialQuery={q}
               />
-              <RenewalsPulse daysUntil={filtered.map((card) => card.daysUntil)} />
             </div>
-            <RenewalsFilteredViews
-              cards={filtered}
-              view={view}
-              searchModuleId="renewals-pipeline"
-              initialQuery={q}
-            />
           </>
         )}
       </div>

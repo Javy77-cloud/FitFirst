@@ -55,7 +55,7 @@ export function LeadsPriorityStack({
 
   return (
     <div data-ff-leads-stack="">
-      <section className="ff-book-heat-header mb-3" data-ff-leads-heat="" aria-label="Lead heat">
+      <section className="ff-book-heat-header mb-1" data-ff-leads-heat="" aria-label="Lead heat">
         <div className="ff-book-heat-title">
           <p>Lead heat</p>
           <strong data-ff-leads-heat-total="">{visible.length}</strong>

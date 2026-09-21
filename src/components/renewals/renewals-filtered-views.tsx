@@ -28,7 +28,24 @@ export function RenewalsFilteredViews({
     [cards, liveQuery],
   );
 
-  if (view === "stack") return <RenewalsPriorityStack cards={filtered} />;
+  if (view === "stack") {
+    return (
+      <StandardActivityShell
+        surface="renewals-stack"
+        rows={filtered.map((card) => ({
+          id: card.queueId,
+          name: card.clientName,
+          email: card.email,
+          phone: card.phone,
+          policyId: card.policyId,
+          contactId: card.contactId,
+          accountId: card.accountId,
+        }))}
+      >
+        <RenewalsPriorityStack cards={filtered} />
+      </StandardActivityShell>
+    );
+  }
   if (view === "list") {
     return (
       <StandardActivityShell

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { PendingTabList, type PendingTabMark } from "@/components/desk/pending-tab-list";
 import { chipTabClass, dealTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
+import { ACTIVITY_RAIL_ASIDE_CLASS, ACTIVITY_RAIL_COLUMNS, ACTIVITY_RAIL_LOCK, ACTIVITY_RAIL_PX } from "@/lib/desk/activity-rail";
 import { cn } from "@/lib/utils";
 
 export type SectionTab = {
@@ -112,7 +113,7 @@ export function SectionTabs({
         data-ff-deal-workspace=""
         className="grid w-full items-start"
         style={{
-          gridTemplateColumns: "minmax(0, 1fr) 320px",
+          gridTemplateColumns: ACTIVITY_RAIL_COLUMNS,
           columnGap: "1.25rem",
           rowGap: "0",
         }}
@@ -141,10 +142,10 @@ export function SectionTabs({
           {current?.content}
         </div>
         <aside
-          className="w-[320px] min-w-[320px] max-w-[320px] shrink-0 overflow-x-hidden grow-0 basis-[320px] space-y-3"
+          className={ACTIVITY_RAIL_ASIDE_CLASS}
           data-ff-deal-right-rail=""
-          data-ff-deal-rail-lock="320"
-          style={{ gridColumn: 2, gridRow: 2, paddingTop: 50, width: 320 }}
+          data-ff-deal-rail-lock={ACTIVITY_RAIL_LOCK}
+          style={{ gridColumn: 2, gridRow: 2, paddingTop: 50, width: ACTIVITY_RAIL_PX }}
         >
           {sidePanel}
         </aside>

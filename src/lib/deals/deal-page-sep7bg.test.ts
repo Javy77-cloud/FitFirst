@@ -50,7 +50,7 @@ describe("sep7bg deal page four fixes", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     const tabs = source("src/components/section-tabs.tsx");
     expect(tabs).toMatch(/data-ff-deal-right-rail/);
-    expect(tabs).toMatch(/data-ff-deal-rail-lock="320"/);
+    expect(tabs).toMatch(/data-ff-deal-rail-lock=\{ACTIVITY_RAIL_LOCK\}/);
     expect(page).not.toMatch(/lg:w-\[300px\]/);
     expect(page).not.toMatch(/max-w-\[300px\]/);
   });

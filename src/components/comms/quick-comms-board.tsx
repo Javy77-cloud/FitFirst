@@ -358,7 +358,7 @@ export function QuickCommsBoard({
             type="button"
             onClick={() => setKind(value)}
             className={cn(
-              "inline-flex h-7 min-w-0 flex-1 items-center justify-center rounded-md px-0 text-[10px] font-medium whitespace-nowrap",
+              "inline-flex h-7 min-w-0 flex-1 items-center justify-center rounded-md px-1.5 text-xs font-medium whitespace-nowrap",
               RECORD_ACTIVITY_ACTION_WIDTH_CLASS,
               kind === value ? KIND_TONE[value] : "border border-border bg-card text-muted-foreground",
             )}

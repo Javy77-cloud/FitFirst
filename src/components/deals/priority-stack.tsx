@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { DealHostJob, DealHostSpread } from "@/components/deals/deal-host-face";
+import { ActivityGlyph, useActivityPick } from "@/components/desk/standard-activity-panel";
 import { PriorityPinControl, usePriorityPins, orderWithPriorityPins } from "@/components/deals/priority-pin-control";
 import type { RadarDealCard } from "@/lib/deals/radar-desk";
 import { HEAT_LABELS } from "@/lib/deals/velocity";
@@ -9,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 export function PriorityStack({ cards }: { cards: RadarDealCard[] }) {
   const { pins, setRank } = usePriorityPins();
+  const activityDesk = useActivityPick();
   const ordered = orderWithPriorityPins(cards, pins);
 
   if (ordered.length === 0) {
@@ -31,10 +33,31 @@ export function PriorityStack({ cards }: { cards: RadarDealCard[] }) {
               data-ff-heat={card.heat}
               data-ff-phase={card.phase}
               data-ff-priority-rank={rank ?? undefined}
+              data-ff-activity-selected={activityDesk?.selectedId === card.id ? "true" : undefined}
+              onClick={(event) => {
+                if (!activityDesk) return;
+                const target = event.target;
+                if (!(target instanceof Element)) return;
+                if (target.closest("a, button, input, select, textarea, label, form")) return;
+                activityDesk.pick(card.id);
+              }}
             >
               <span className="ff-stack-glyph" aria-hidden data-ff-stack-glyph={card.heat} />
               <div className="ff-stack-card-body">
-                <DealHostSpread card={card} />
+                <DealHostSpread
+                  card={card}
+                  comms={
+                    <ActivityGlyph
+                      id={card.id}
+                      menuTestId={`deal-stack-activity-${card.id}`}
+                      listTestId={`deal-stack-activity-menu-${card.id}`}
+                      dealId={card.id}
+                      leadId={card.leadId}
+                      contactId={card.contactId}
+                      accountId={card.accountId}
+                    />
+                  }
+                />
                 <DealHostJob card={card} />
                 {card.inboxCue ? (
                   <p className="ff-inbox-cue" data-ff-inbox-cue="">

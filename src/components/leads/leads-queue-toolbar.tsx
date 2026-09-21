@@ -43,7 +43,7 @@ export function LeadsQueueToolbar({
   const temperature = search.get("temperature") ?? "";
 
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-1.5">
+    <div className="mb-1 flex flex-wrap items-center gap-1.5">
       <LiveContainsInput
         moduleId="leads"
         initialQuery={search.get("q") ?? ""}

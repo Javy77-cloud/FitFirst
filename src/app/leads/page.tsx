@@ -16,6 +16,7 @@ import {
 } from "@/components/desk/standard-activity-panel";
 import { LeadsHostList } from "@/components/leads/leads-host-list";
 import { LeadsPriorityStack } from "@/components/leads/leads-priority-stack";
+import { ACTIVITY_RAIL_ASIDE_CLASS, ACTIVITY_RAIL_COLUMNS, ACTIVITY_RAIL_LOCK } from "@/lib/desk/activity-rail";
 import { LeadsSourceBanner } from "@/components/leads/leads-source-banner";
 import { LeadsViewSwitch } from "@/components/leads/leads-view-switch";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
@@ -240,18 +241,18 @@ export default async function LeadsPage({
       <ActivityDeskProvider initialId={railLead?.id ?? null} initialKind={activityKind}>
       <div
         className="grid w-full items-start"
-        style={{ gridTemplateColumns: "minmax(0, 1fr) 320px", columnGap: "1.25rem", rowGap: "1.25rem" }}
+        style={{ gridTemplateColumns: ACTIVITY_RAIL_COLUMNS, columnGap: "0.65rem", rowGap: "0.3rem" }}
         data-ff-leads-list-layout="list-rail"
         data-ff-leads-workspace=""
       >
         <div className="min-w-0" style={{ gridColumn: 1, gridRow: 1 }} data-ff-leads-heading="">
-          <LeadsSourceBanner sources={rows.map((lead) => lead.source)} />
-          <p className="mb-3 text-base text-muted-foreground">
-            Stack is the desk — cadence, response, and the next chase stay on the card. Queue is the
-            work sheet. List is the rearrangeable column view. Converted leads live on Deals.
-            Untouched first. Lost stays off until you search. Nurture parks until the contact-again
-            date. The Activity board on the right is the same panel as a contact — pick a lead to
-            load call, SMS, email, meeting, and task.
+          <div className="ff-leads-banner-row" data-ff-leads-banner-row="">
+            <LeadsSourceBanner sources={rows.map((lead) => lead.source)} />
+            <LeadMotivation stats={motivation} />
+          </div>
+          <p className="ff-leads-desk-note">
+            Stack is the desk. Queue is the work sheet. List is columns. The Activity board on the
+            right is the same panel as a contact.
           </p>
           <LeadsQueueToolbar
         sources={uniqueOptions(
@@ -273,9 +274,6 @@ export default async function LeadsPage({
         templates={templates}
         dueCount={dueCount}
       />
-          <div className="mt-3 flex justify-end" data-ff-lead-motivation-gap="">
-            <LeadMotivation stats={motivation} />
-          </div>
         </div>
         <div
           className="min-w-0"
@@ -287,7 +285,7 @@ export default async function LeadsPage({
           data-ff-leads-view={view}
         >
           <div
-            className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2"
+            className="mb-1 flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-1"
             data-ff-leads-list-actions=""
           >
             <LeadsViewSwitch view={view} searchParams={params} />
@@ -508,11 +506,11 @@ export default async function LeadsPage({
         </div>
 
         <aside
-          className="w-[320px] min-w-[320px] max-w-[320px] shrink-0 grow-0 basis-[320px] space-y-3 overflow-x-hidden"
+          className={ACTIVITY_RAIL_ASIDE_CLASS}
           style={{ gridColumn: 2, gridRow: "1 / span 2" }}
           data-ff-leads-list-rail=""
           data-ff-deal-right-rail=""
-          data-ff-deal-rail-lock="320"
+          data-ff-deal-rail-lock={ACTIVITY_RAIL_LOCK}
         >
           <LeadActivitySwitch
             initialId={railLead?.id ?? null}

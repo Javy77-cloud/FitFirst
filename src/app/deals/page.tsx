@@ -258,7 +258,7 @@ export default async function DealsPage({
 
       <div className="deal-list-below-activity" data-ff-deal-list-below-activity>
         <div
-          className="mb-3 rounded-xl border border-border/80 bg-card/80 px-3 py-2 shadow-sm"
+          className="mb-1 rounded-xl border border-border/80 bg-card/80 px-3 py-1.5 shadow-sm"
           data-ff-pipeline-filter-chrome=""
         >
           <div className="min-w-0 flex-1">
