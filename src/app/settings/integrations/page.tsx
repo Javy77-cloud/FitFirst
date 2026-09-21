@@ -236,12 +236,20 @@ export default async function IntegrationsCatalogPage({
                   );
                 }
                 if (isByoOauthProviderId(item.id)) {
+                  const returnTo =
+                    item.id === "gmail"
+                      ? "/inbox"
+                      : item.id === "google_calendar"
+                        ? "/calendar"
+                        : item.id === "google_meet"
+                          ? "/settings/video"
+                          : "/settings/integrations";
                   return (
                     <ByoOauthCard
                       key={item.id}
                       item={item}
                       canEdit={session.isAdmin}
-                      returnTo="/settings/integrations"
+                      returnTo={returnTo}
                       soloDesk={soloDesk}
                     />
                   );
