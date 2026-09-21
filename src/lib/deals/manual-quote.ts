@@ -1,0 +1,56 @@
+import {
+  excludedCarrierIdsFromLogs,
+  isExcludedMarketWhy,
+  isExplicitMarketActionText,
+} from "@/lib/deals/manual-markets";
+import { shopLineFromLob } from "@/lib/deals/shop-flow";
+import { isShopLine } from "@/lib/domain";
+
+/** Stored on quotes.notes and the attempt log. Not a portal pull. */
+export const MANUAL_QUOTE_NOTE = "Manual quote recorded. No portal pull.";
+
+export type ManualQuoteMarketLog = {
+  carrierId: string;
+  why?: string | null;
+  lineOfBusiness?: string | null;
+  carrierName?: string | null;
+};
+
+/**
+ * Carriers already on this line's Markets (shop, shop list, or manual add).
+ * Excluded carriers stay off the premium form.
+ */
+export function marketCarriersForManualQuote(
+  logs: readonly ManualQuoteMarketLog[],
+  line?: string | null,
+): { id: string; name: string }[] {
+  const wanted = isShopLine(line) ? line : null;
+  const excluded = new Set(
+    excludedCarrierIdsFromLogs(
+      logs.map((log) => ({ carrierId: log.carrierId, why: log.why })),
+    ),
+  );
+  const seen = new Map<string, string>();
+  for (const log of logs) {
+    const id = log.carrierId?.trim();
+    if (!id || excluded.has(id)) continue;
+    if (!isExplicitMarketActionText(log.why) || isExcludedMarketWhy(log.why)) continue;
+    if (wanted) {
+      const logLine = shopLineFromLob(log.lineOfBusiness);
+      if (logLine && logLine !== wanted) continue;
+    }
+    if (!seen.has(id)) seen.set(id, (log.carrierName ?? "").trim() || "Carrier");
+  }
+  return [...seen.entries()]
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name, "en"));
+}
+
+/** Positive dollar amount for a recorded premium. Empty or zero is not a quote. */
+export function parseManualQuotePremium(raw: string | null | undefined): string | null {
+  const cleaned = String(raw ?? "").replace(/[$,\s]/g, "").trim();
+  if (!cleaned) return null;
+  const amount = Number(cleaned);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return amount.toFixed(2);
+}

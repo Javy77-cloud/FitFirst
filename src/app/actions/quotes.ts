@@ -18,6 +18,12 @@ import {
 } from "@/lib/quote-bot/auto-question-gaps";
 import { appointmentLine, DEFAULT_TENANT_ID, writesDealLine, type PriorAttempt } from "@/lib/domain";
 import { resolveShopLineAndLob } from "@/lib/deals/package-lines";
+import {
+  MANUAL_QUOTE_NOTE,
+  marketCarriersForManualQuote,
+  parseManualQuotePremium,
+} from "@/lib/deals/manual-quote";
+import { isUuid } from "@/lib/ids";
 import { db } from "@/lib/db";
 import { appointedByCarrierLine } from "@/lib/db/queries";
 import {
@@ -505,6 +511,150 @@ export async function recordManualAttempt(formData: FormData) {
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/carriers/logs");
   revalidatePath("/logs");
+}
+
+/**
+ * Record a carrier premium already chosen on Markets.
+ * Request Quotes only writes attempt logs, so the Quotes tab stays at 0 rows
+ * until a quotes row exists. This inserts that row without a portal pull.
+ */
+export async function recordManualQuoteAction(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const carrierId = String(formData.get("carrierId") ?? "").trim();
+  const shopLineRaw = String(formData.get("shopLine") ?? "").trim();
+  const productRaw = String(formData.get("product") ?? "").trim();
+  if (!isUuid(dealId) || !isUuid(carrierId)) {
+    throw new Error("Pick a carrier already on Markets.");
+  }
+  const premium = parseManualQuotePremium(String(formData.get("premium") ?? ""));
+  if (!premium) throw new Error("Enter a premium greater than 0.");
+
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+  if (!deal || !risk) throw new Error("Deal or master risk is missing.");
+  const [carrier] = await db
+    .select()
+    .from(carriers)
+    .where(and(eq(carriers.id, carrierId), eq(carriers.tenantId, DEFAULT_TENANT_ID)));
+  if (!carrier) throw new Error("Carrier not found.");
+
+  const resolved = resolveShopLineAndLob({
+    override: shopLineRaw,
+    quotingLine: deal.quotingLine,
+    lineOfBusiness: deal.lineOfBusiness,
+  });
+  const dealLogs = await db
+    .select()
+    .from(quoteAttemptLogs)
+    .where(
+      and(eq(quoteAttemptLogs.dealId, dealId), eq(quoteAttemptLogs.tenantId, DEFAULT_TENANT_ID)),
+    );
+  const allowed = marketCarriersForManualQuote(
+    dealLogs.map((log) => ({
+      carrierId: log.carrierId,
+      why: log.why,
+      lineOfBusiness: log.lineOfBusiness,
+      carrierName: log.carrierId === carrierId ? carrier.name : "Carrier",
+    })),
+    resolved.line,
+  );
+  if (!allowed.some((row) => row.id === carrierId)) {
+    throw new Error("That carrier is not on Markets for this line. Add it on Markets first.");
+  }
+
+  const saved = parseShopFlow(deal.shopFlow);
+  const quoteRunId = saved.quoteRuns?.[resolved.line]?.trim() || randomUUID();
+  const synced = syncQuoteOutcomes({ riskOutcome: "bindable" });
+  const [log] = await db
+    .insert(quoteAttemptLogs)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      dealId,
+      riskId: risk.id,
+      carrierId,
+      lineOfBusiness: resolved.lob,
+      result: "quoted",
+      bindable: true,
+      premium,
+      why: MANUAL_QUOTE_NOTE,
+      covATried: risk.coverageA,
+    })
+    .returning();
+  if (!log) throw new Error("Could not save the quote.");
+
+  const existing = await db
+    .select()
+    .from(quotes)
+    .where(
+      and(
+        eq(quotes.dealId, dealId),
+        eq(quotes.carrierId, carrierId),
+        eq(quotes.tenantId, DEFAULT_TENANT_ID),
+      ),
+    );
+  const exact = existing.filter((row) => row.shopLine === resolved.line);
+  const pool = exact.length > 0 ? exact : existing.filter((row) => !row.shopLine);
+  const target = pool.find((row) => !row.stub) ?? pool[0] ?? null;
+  const quotePatch = {
+    quoteAttemptLogId: log.id,
+    premium,
+    notes: MANUAL_QUOTE_NOTE,
+    stub: false,
+    shopLine: resolved.line,
+    quoteRunId,
+    riskOutcome: synced.riskOutcome,
+    nextStep: synced.nextStep,
+    bindable: synced.bindable,
+  };
+  const quoteId = target
+    ? target.id
+    : (
+        await db
+          .insert(quotes)
+          .values({
+            tenantId: DEFAULT_TENANT_ID,
+            dealId,
+            riskId: risk.id,
+            carrierId,
+            agentStatus: "new",
+            ...quotePatch,
+          })
+          .returning({ id: quotes.id })
+      )[0]?.id;
+  if (target) {
+    await db
+      .update(quotes)
+      .set(quotePatch)
+      .where(and(eq(quotes.id, target.id), eq(quotes.dealId, dealId)));
+  }
+  if (!quoteId) throw new Error("Could not save the quote.");
+
+  const product = parseDealProduct(productRaw);
+  const stages = parseProductStages(saved.productStages);
+  const selected = product ? (stages[product]?.selectedQuoteIds ?? []).filter(Boolean) : [];
+  const productStages =
+    product && selected.length === 0
+      ? setProductStage(stages, product, { selectedQuoteIds: [quoteId] })
+      : saved.productStages;
+  await persistDealShopFlow(dealId, {
+    ...saved,
+    quoteRuns: { ...saved.quoteRuns, [resolved.line]: quoteRunId },
+    productStages,
+  });
+  if (product) {
+    await autoAdvanceDealProductStage({
+      dealId,
+      stageSlug: "quote_review",
+      line: resolved.line,
+      product,
+    }).catch(() => null);
+  }
+  await persistDealWorkTab(dealId, "quotes").catch(() => null);
+  revalidatePath(`/deals/${dealId}`);
+  flashAction(
+    quotesRequestedHref(dealId, { line: resolved.line, product: product ?? productRaw }),
+    "manual-quote-recorded",
+  );
 }
 
 export async function deleteSelectedQuotesAction(formData: FormData) {

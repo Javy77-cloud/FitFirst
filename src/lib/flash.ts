@@ -121,6 +121,7 @@ export const FLASH_COPY = {
   "product-already-on-package": "Already on this package",
   "deal-archived": "Deal archived",
   "quotes-requested": "Quotes requested",
+  "manual-quote-recorded": "Manual quote recorded",
   "meeting-saved": "Meeting saved",
   "outcome-saved": "Outcome saved",
   "consent-saved": "Consent saved",
