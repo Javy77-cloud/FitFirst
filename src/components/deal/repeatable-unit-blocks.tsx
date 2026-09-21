@@ -17,6 +17,8 @@ import {
   canRemoveUnit,
   fieldsForUnit,
   repeatableRemovalWrites,
+  repeatableUnitSignature,
+  shownRepeatableCount,
   unitHasValue,
   visibleUnitCount,
   type RepeatableKind,
@@ -76,6 +78,19 @@ export function RepeatableUnitBlocks({
   });
   const [pending, setPending] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
+  const signature = repeatableUnitSignature(values, kind, product);
+  const [appliedSignature, setAppliedSignature] = useState(signature);
+  const serverChanged = appliedSignature !== signature;
+  if (serverChanged) {
+    setAppliedSignature(signature);
+    setUnits((current) => ({
+      ...current,
+      count: visibleUnitCount(values, kind, product),
+      overlays: {},
+      layoutRev: current.layoutRev + 1,
+      revFrom: 1,
+    }));
+  }
   const groupTitle =
     kind === "vehicle" ? "Vehicles" : kind === "household" ? "Household" : "Drivers";
   const title =
@@ -110,9 +125,9 @@ export function RepeatableUnitBlocks({
     groupTitle,
     maxColumns,
   );
-  const pruned = pruneOverlays(units.overlays, values);
+  const pruned = serverChanged ? {} : pruneOverlays(units.overlays, values);
   const serverCount = visibleUnitCount(withOverlays(values, pruned), kind, product);
-  const shownCount = Math.max(units.count, serverCount);
+  const shownCount = shownRepeatableCount(units.count, serverCount, serverChanged);
   const canRemove = canRemoveUnit(shownCount);
   const keepOneHintId = `ff-keep-one-${kind}`;
   const renderedKeys = new Set<string>();

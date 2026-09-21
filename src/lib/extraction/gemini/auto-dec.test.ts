@@ -20,6 +20,7 @@ import { fillableGeminiFields, mapGeminiJsonToFields } from "@/lib/extraction/ge
 import { buildGeminiSystemPrompt, buildGeminiUserPrompt } from "@/lib/extraction/gemini/prompt";
 import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
 import { emptySheetValues, extractKeyToSheetKey } from "@/lib/quote-sheet/catalog";
+import { visibleUnitCount } from "@/lib/quote-sheet/repeatable-units";
 
 const ACORD_AUTO_DEC_JSON = {
   named_insured: "Domenic Iori",
@@ -469,6 +470,33 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(applied.values.driver_1_dob.value).toBe("06/01/1962");
     expect(applied.values.driver_2_name.value).toBe("James Iori");
     expect(applied.values.driver_2_dob.value).toBe("06/01/1990");
+  });
+
+  it("merges James Iori 04/22/1959 across three photo extracts and keeps other drivers", () => {
+    const photos = [
+      { driver_1_name: "James Iori", driver_1_dob: "04/22/1959", driver_1_gender: "Male" },
+      { driver_2_name: "James Iori", driver_2_dob: "4/22/59", driver_2_license: "I400-222-33-444" },
+      {
+        driver_1_name: "Domenic Iori",
+        driver_1_dob: "04/02/1984",
+        driver_2_name: "Maria Iori",
+        driver_2_dob: "07/07/1992",
+        driver_3_name: "James Iori",
+        driver_3_dob: "April 22, 1959",
+      },
+    ];
+    let values = emptySheetValues("auto");
+    for (const json of photos) {
+      const mapped = mapGeminiJsonToFields(json, "photo", "auto");
+      values = applyExtractedToSheet("auto", values, fillableGeminiFields(mapped.fields)).values;
+    }
+    expect(values.driver_1_name.value).toBe("James Iori");
+    expect(values.driver_1_gender.value).toBe("Male");
+    expect(values.driver_1_license.value).toBe("I400-222-33-444");
+    expect(values.driver_2_name.value).toBe("Domenic Iori");
+    expect(values.driver_3_name.value).toBe("Maria Iori");
+    expect(values.driver_4_name?.value ?? "").toBe("");
+    expect(visibleUnitCount(values, "driver")).toBe(3);
   });
 
 });

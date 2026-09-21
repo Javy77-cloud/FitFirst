@@ -27,6 +27,7 @@ import {
   coverageLinesValueForDeal,
   storedValueForCommercialDealKey,
 } from "./commercial-risk-profile";
+import { collapseAutoDriverSheet } from "./auto-driver-dedupe";
 import {
   DRIVER_BLOCK_FIELDS,
   PERSONAL_DRIVER_CAP,
@@ -548,6 +549,17 @@ export function fillSheetFromDealDetails(
         putDriver(slot, suffix, person[suffix]);
       }
       searchFrom = slot + 1;
+    }
+
+    const collapsed = collapseAutoDriverSheet(values);
+    for (const [key, cell] of Object.entries(collapsed)) {
+      if (key.startsWith("driver_")) values[key] = cell;
+    }
+    for (let index = filledKeys.length - 1; index >= 0; index -= 1) {
+      const key = filledKeys[index];
+      if (key.startsWith("driver_") && !(values[key]?.value ?? "").trim()) {
+        filledKeys.splice(index, 1);
+      }
     }
   }
 
