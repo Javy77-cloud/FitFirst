@@ -97,14 +97,22 @@ export async function saveByoApp(input: {
   accountLabel?: string | null;
 }): Promise<{ ok: true; clientId: string; hasSecret: boolean } | { ok: false; message: string }> {
   const spec = byoOauthSpec(input.provider);
-  const existing = await loadStoredByoApp(input.provider);
-  const clientId = input.clientId.trim() || existing?.clientId?.trim() || "";
+  // Always write the OWN provider row. loadStoredByoApp may return a sibling
+  // Google family row (e.g. gmail when saving google_calendar); updating that
+  // row's provider/category hits unique(tenant, category, provider) and never
+  // reaches Google OAuth.
+  const own = await loadByoConnection(input.provider);
+  const shared = await loadStoredByoApp(input.provider);
+  const clientId =
+    input.clientId.trim() || own?.clientId?.trim() || shared?.clientId?.trim() || "";
   if (!clientId) return { ok: false, message: "Paste the Integration Key / Client ID." };
-  const existingId = existing?.clientId?.trim() || "";
+  const priorId = own?.clientId?.trim() || shared?.clientId?.trim() || "";
+  const hasOwnSecret = Boolean(own?.clientSecretEnc && own.clientSecretIv);
+  const hasSharedSecret = Boolean(shared?.clientSecretEnc && shared.clientSecretIv);
   const secretPlan = planByoSecretWrite({
     incoming: input.clientSecret,
-    hasExistingSecret: Boolean(existing?.clientSecretEnc && existing.clientSecretIv),
-    clientIdUnchanged: Boolean(existingId) && clientId === existingId,
+    hasExistingSecret: hasOwnSecret || hasSharedSecret,
+    clientIdUnchanged: Boolean(priorId) && clientId === priorId,
   });
   if (secretPlan.action === "reject") return { ok: false, message: secretPlan.message };
   let sealed: ReturnType<typeof encryptSecret> | null = null;
@@ -116,28 +124,42 @@ export async function saveByoApp(input: {
       message: error instanceof Error ? error.message : "Could not encrypt the Secret Key.",
     };
   }
-  const hasSecret = Boolean(sealed || (existing?.clientSecretEnc && existing.clientSecretIv));
+  const clientSecretEnc =
+    sealed?.enc ?? own?.clientSecretEnc ?? shared?.clientSecretEnc ?? null;
+  const clientSecretIv =
+    sealed?.iv ?? own?.clientSecretIv ?? shared?.clientSecretIv ?? null;
+  const hasSecret = Boolean(clientSecretEnc && clientSecretIv);
   const patch = {
     category: catalogCategory(input.provider),
     provider: input.provider,
     clientId,
-    clientSecretEnc: sealed?.enc ?? existing?.clientSecretEnc ?? null,
-    clientSecretIv: sealed?.iv ?? existing?.clientSecretIv ?? null,
+    clientSecretEnc,
+    clientSecretIv,
     connectMode: "credentials" as const,
     lastOauthError: null,
     notes: `${spec.vendor} BYO app saved. ${spec.worksWhen}`,
-    accountLabel: input.accountLabel?.trim() || existing?.accountLabel || null,
+    accountLabel: input.accountLabel?.trim() || own?.accountLabel || shared?.accountLabel || null,
     updatedAt: new Date(),
   };
-  if (existing) {
-    await db.update(integrationConnections).set(patch).where(eq(integrationConnections.id, existing.id));
-    return { ok: true, clientId, hasSecret };
+  try {
+    if (own) {
+      await db.update(integrationConnections).set(patch).where(eq(integrationConnections.id, own.id));
+    } else {
+      await db.insert(integrationConnections).values({
+        tenantId: DEFAULT_TENANT_ID,
+        connected: false,
+        ...patch,
+      });
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error
+          ? error.message.slice(0, 400)
+          : "Could not save agency app credentials.",
+    };
   }
-  await db.insert(integrationConnections).values({
-    tenantId: DEFAULT_TENANT_ID,
-    connected: false,
-    ...patch,
-  });
   return { ok: true, clientId, hasSecret };
 }
 
