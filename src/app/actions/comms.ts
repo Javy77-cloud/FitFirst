@@ -7,8 +7,13 @@ import { db } from "@/lib/db";
 import { emailTemplates } from "@/lib/db/schema";
 import { loadAgencyBrand } from "@/lib/desk/brand";
 import { writeDeskComms } from "@/lib/desk/write-comms";
-import { enqueueOutboundJob, loadContactOptOuts } from "@/lib/desk/outbound-queue";
+import { enqueueOutboundJob, loadContactOptOuts, decideOutboundStatus } from "@/lib/desk/outbound-queue";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
+import {
+  decideDeskEmailDelivery,
+  GMAIL_NOT_CONNECTED_MESSAGE,
+} from "@/lib/desk/desk-email-delivery";
+import { gmailAccountEmail, gmailIsReady, sendGmailMessage } from "@/lib/integrations/gmail";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -33,7 +38,7 @@ function revalidate(ids: ReturnType<typeof related>) {
   revalidatePath("/quotes");
 }
 
-/** Queue an outbound email. Nothing leaves the desk — vendor send is later. */
+/** Send now / schedule-due-now through connected Gmail; remind and future schedule do not send. */
 export async function sendDeskEmail(formData: FormData) {
   const ids = related(formData);
   const brand = await loadAgencyBrand();
@@ -58,43 +63,88 @@ export async function sendDeskEmail(formData: FormData) {
   const dueAtRaw = str(formData, "dueAt");
   const dueAt = dueAtRaw ? new Date(dueAtRaw) : null;
   const dueAtSafe = dueAt && !Number.isNaN(dueAt.getTime()) ? dueAt : null;
-  const written = await writeDeskComms({
-    kind: "email",
-    title: subject || "Email queued",
-    subject: subject || "Email",
-    body,
-    direction: "outbound",
-    eventType: "queued",
-    status: "open",
-    toAddress,
-    fromAddress: str(formData, "fromAddress") || "desk@agency.local",
+  const delivery = decideDeskEmailDelivery({
+    intent: str(formData, "intent"),
     dueAt: dueAtSafe,
-    startAt: dueAtSafe,
-    logEmailJob: false,
-    ...ids,
   });
-  if (!written.activity) return;
+  if (delivery === "remind") return;
+
+  const hold = decideOutboundStatus({
+    channel: "email",
+    toAddress,
+    emailOptOut: optOuts.emailOptOut,
+  });
   const attachmentIds = formData
     .getAll("attachDoc")
     .map((value) => String(value ?? "").trim())
     .filter(Boolean);
+  const mailbox = await gmailAccountEmail();
+  const fromAddress = str(formData, "fromAddress") || mailbox || "desk@agency.local";
+
+  const liveSend = delivery === "send" && hold.status !== "held";
+  let gmailThreadId: string | undefined;
+  if (liveSend) {
+    if (!(await gmailIsReady())) {
+      throw new Error(GMAIL_NOT_CONNECTED_MESSAGE);
+    }
+    const sent = await sendGmailMessage({
+      to: toAddress,
+      subject: subject || "Email",
+      body,
+    });
+    gmailThreadId = sent.threadId;
+  }
+
+  const written = await writeDeskComms({
+    kind: "email",
+    title: subject || (liveSend ? "Email sent" : "Email queued"),
+    subject: subject || "Email",
+    body,
+    direction: "outbound",
+    eventType: liveSend ? "sent" : "queued",
+    status: liveSend ? "completed" : "open",
+    toAddress,
+    fromAddress,
+    dueAt: liveSend ? null : dueAtSafe,
+    startAt: liveSend ? null : dueAtSafe,
+    threadKey: gmailThreadId ? `gmail:${gmailThreadId}` : undefined,
+    logEmailJob: false,
+    ...ids,
+  });
+  if (!written.activity) return;
   const { job, decision } = await enqueueOutboundJob({
     channel: "email",
     toAddress,
-    fromAddress: str(formData, "fromAddress") || "desk@agency.local",
+    fromAddress,
     subject: subject || "Email",
     body,
     activityId: written.activity.id,
     attachmentIds,
+    scheduledFor: delivery === "queue" ? dueAtSafe : new Date(),
+    vendor: liveSend ? "gmail" : null,
+    status: liveSend ? "sent" : hold.status,
+    holdReason: hold.holdReason,
     ...ids,
     ...optOuts,
   });
   await writeCrmSignalsSafe({
-    kind: decision.status === "held" ? "comms_held" : "comms_queued",
-    title: decision.status === "held" ? `Email held · ${subject || "Email"}` : `Email queued · ${subject || "Email"}`,
+    kind:
+      decision.status === "held"
+        ? "comms_held"
+        : liveSend
+          ? "comms_sent"
+          : "comms_queued",
+    title:
+      decision.status === "held"
+        ? `Email held · ${subject || "Email"}`
+        : liveSend
+          ? `Email sent · ${subject || "Email"}`
+          : `Email queued · ${subject || "Email"}`,
     body: decision.holdReason
       ? `Held: ${decision.holdReason}. Nothing sent.`
-      : `Queued for later vendor send. Job ${job.id}.`,
+      : liveSend
+        ? `Sent through connected Gmail. Job ${job.id}.`
+        : `Queued for later. Only Send now is live until a send worker exists. Job ${job.id}.`,
     entityType: ids.contactId ? "contact" : ids.dealId ? "deal" : "lead",
     entityId: ids.contactId || ids.dealId || ids.leadId || job.id,
     contactId: ids.contactId,
@@ -104,6 +154,7 @@ export async function sendDeskEmail(formData: FormData) {
   });
   revalidate(ids);
   revalidatePath("/settings/outbound");
+  revalidatePath("/inbox");
 }
 
 /** Persist selected quote PDFs on a reminder without queueing a send. */
