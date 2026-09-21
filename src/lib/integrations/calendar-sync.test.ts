@@ -7,6 +7,7 @@ import {
   googleCalendarHttpError,
   isByoBusyConnection,
   shouldAutoSyncBusy,
+  shouldAutoSyncEvents,
 } from "./calendar-sync";
 
 describe("calendar busy auto-sync", () => {
@@ -16,6 +17,12 @@ describe("calendar busy auto-sync", () => {
     expect(shouldAutoSyncBusy(null, asOf)).toBe(true);
     expect(shouldAutoSyncBusy(new Date("2026-09-19T16:40:00.000Z"), asOf)).toBe(true);
     expect(shouldAutoSyncBusy(new Date("2026-09-19T16:50:00.000Z"), asOf)).toBe(false);
+  });
+
+  it("refreshes titled events sooner, and always if none are stored yet", () => {
+    expect(shouldAutoSyncEvents(new Date("2026-09-19T16:59:00.000Z"), false, asOf)).toBe(true);
+    expect(shouldAutoSyncEvents(new Date("2026-09-19T16:59:00.000Z"), true, asOf)).toBe(false);
+    expect(shouldAutoSyncEvents(new Date("2026-09-19T16:50:00.000Z"), true, asOf)).toBe(true);
   });
 
   it("formats last synced for the desk", () => {

@@ -126,10 +126,10 @@ export const BYO_OAUTH_SPECS: Record<ByoOauthProviderId, ByoOauthSpec> = {
     pkce: true,
     shareCredentialsWith: "gmail",
     worksWhen:
-      "Same platform Google Connect as Gmail. Paste or replace keys here; Settings wins over env. Busy sync pulls Free/Busy so FitFirst will not book over external busy.",
+      "Same platform Google Connect as Gmail. Paste or replace keys here; Settings wins over env. Sync pulls titled primary-calendar events (and Free/Busy for private/busy-only) onto the desk. Creating or editing a timed FitFirst event writes it back to Google.",
     wallBody:
       "Google Calendar Connect fails if Settings keys and GOOGLE_OAUTH_* env are both missing, or Calendar API is off. Admin can replace or clear pasted keys. FitFirst does not buy Workspace.",
-    stubbed: "Two-way event push is not in this wave. Busy pull + Meet helper are live.",
+    stubbed: "Additional Google calendars beyond primary are deferred. Meet helper stays live.",
     smokeTests: ["busy", "meet"],
   },
   outlook_calendar: {
@@ -147,10 +147,10 @@ export const BYO_OAUTH_SPECS: Record<ByoOauthProviderId, ByoOauthSpec> = {
     extraParams: { prompt: "consent" },
     pkce: true,
     worksWhen:
-      "Free Azure / Entra app registration, redirect URI as Web, Calendars.Read delegated. Personal Microsoft accounts work with tenant=common.",
+      "Free Azure / Entra app registration, redirect URI as Web, Calendars.ReadWrite delegated. Personal Microsoft accounts work with tenant=common. Same event import/push contract as Google.",
     wallBody:
       "Microsoft will refuse the grant if the redirect URI, tenant, or Graph permission admin-consent is wrong. FitFirst does not buy Microsoft 365.",
-    stubbed: "Two-way Outlook event write is not required. Busy pull is live.",
+    stubbed: "Additional Outlook calendars beyond the primary mailbox calendar are deferred.",
     smokeTests: ["busy"],
   },
   google_meet: {

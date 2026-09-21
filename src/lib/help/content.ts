@@ -53,12 +53,13 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "calendar",
     title: "Calendar",
-    summary: "In-desk month, week, and day. Nothing syncs off this computer.",
+    summary: "In-desk month, week, and day. Connected Google or Outlook events show by title.",
     body: [
       "Row 1 is Add event / Add company meeting / Add training. Company meeting and training stay Admin.",
       "Row 2 is Month / Week / Day. Row 3 is Task / Meeting / Call / Email / SMS.",
       "Add event or a type on row 3, or double-click a day or hour. Drag an item to move it.",
       "Deal and lead items also show on that record’s Quick Communications board.",
+      "Sync pulls titled Google (or Outlook) events onto the grid. FitFirst-created timed events write back. G/O chips are external; private events stay Busy or Private event.",
     ],
   },
   {

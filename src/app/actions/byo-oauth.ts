@@ -17,7 +17,6 @@ import { getAgentFeatureToggles } from "@/lib/settings/agent-feature-toggles-pre
 import { listRecentGmail, sendGmailMessage } from "@/lib/integrations/gmail";
 import { yahooMailboxPing } from "@/lib/integrations/yahoo-mail";
 import { pingDocuSignSandbox } from "@/lib/integrations/docusign-sandbox";
-import { syncGoogleBusy, syncOutlookBusy } from "@/lib/integrations/calendar-busy";
 import { startByoOauthCredentialNotice } from "@/lib/integrations/oauth-env";
 import {
   BYO_OAUTH_COOKIE,
@@ -211,7 +210,9 @@ export async function disconnectByoOauth(formData: FormData) {
   if (raw === "google_calendar") {
     try {
       const { clearBusyFor } = await import("@/lib/integrations/calendar-busy");
+      const { clearSyncedFor } = await import("@/lib/integrations/calendar-event-store");
       await clearBusyFor("google_calendar");
+      await clearSyncedFor("google_calendar");
       const [existing] = await db
         .select()
         .from(calendarConnections)
@@ -234,7 +235,9 @@ export async function disconnectByoOauth(formData: FormData) {
   if (raw === "outlook_calendar") {
     try {
       const { clearBusyFor } = await import("@/lib/integrations/calendar-busy");
+      const { clearSyncedFor } = await import("@/lib/integrations/calendar-event-store");
       await clearBusyFor("outlook_calendar");
+      await clearSyncedFor("outlook_calendar");
     } catch {
       /* ignore */
     }
@@ -276,12 +279,14 @@ export async function smokeTestByoProvider(formData: FormData) {
       await flashSettings(dest, "yahoo-ping");
     }
     if (raw === "google_calendar") {
-      await syncGoogleBusy();
+      const { syncConnectedCalendars } = await import("@/lib/integrations/calendar-event-sync");
+      await syncConnectedCalendars();
       refreshByoSurfaces();
       await flashSettings(dest, "busy-synced");
     }
     if (raw === "outlook_calendar") {
-      await syncOutlookBusy();
+      const { syncConnectedCalendars } = await import("@/lib/integrations/calendar-event-sync");
+      await syncConnectedCalendars();
       refreshByoSurfaces();
       await flashSettings(dest, "busy-synced");
     }

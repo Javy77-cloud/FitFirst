@@ -1,11 +1,12 @@
 import { liveAccessToken } from "./oauth-exchange";
 import { loadByoConnection } from "./oauth-store";
 
-export async function createGoogleMeetLink(input: {
+export async function createGoogleMeetConference(input: {
   title: string;
   startAt: Date;
   endAt: Date;
-}): Promise<string> {
+  activityId?: string;
+}): Promise<{ url: string; externalId: string | null }> {
   const calendar = await loadByoConnection("google_calendar");
   const meet = await loadByoConnection("google_meet");
   const provider = calendar?.connected ? "google_calendar" : meet?.connected ? "google_meet" : null;
@@ -25,6 +26,9 @@ export async function createGoogleMeetLink(input: {
         summary: input.title,
         start: { dateTime: input.startAt.toISOString() },
         end: { dateTime: input.endAt.toISOString() },
+        extendedProperties: input.activityId
+          ? { private: { fitfirstActivityId: input.activityId } }
+          : undefined,
         conferenceData: {
           createRequest: {
             requestId,
@@ -36,6 +40,7 @@ export async function createGoogleMeetLink(input: {
     },
   );
   const data = (await res.json()) as {
+    id?: string;
     error?: { message?: string };
     hangoutLink?: string;
     conferenceData?: { entryPoints?: { entryPointType?: string; uri?: string }[] };
@@ -46,5 +51,15 @@ export async function createGoogleMeetLink(input: {
   const entry = data.conferenceData?.entryPoints?.find((row) => row.entryPointType === "video")?.uri;
   const link = data.hangoutLink || entry;
   if (!link) throw new Error("Google created the event but did not return a Meet URL.");
-  return link;
+  return { url: link, externalId: data.id ?? null };
+}
+
+export async function createGoogleMeetLink(input: {
+  title: string;
+  startAt: Date;
+  endAt: Date;
+  activityId?: string;
+}): Promise<string> {
+  const created = await createGoogleMeetConference(input);
+  return created.url;
 }

@@ -1,10 +1,24 @@
 export const BUSY_AUTO_SYNC_MS = 15 * 60 * 1000;
+export const EVENT_AUTO_SYNC_MS = 2 * 60 * 1000;
 
-export function shouldAutoSyncBusy(lastSyncedAt: Date | string | null | undefined, asOf = new Date()): boolean {
+function isStaleSync(lastSyncedAt: Date | string | null | undefined, maxAgeMs: number, asOf: Date): boolean {
   if (!lastSyncedAt) return true;
   const at = lastSyncedAt instanceof Date ? lastSyncedAt : new Date(lastSyncedAt);
   if (Number.isNaN(at.getTime())) return true;
-  return asOf.getTime() - at.getTime() >= BUSY_AUTO_SYNC_MS;
+  return asOf.getTime() - at.getTime() >= maxAgeMs;
+}
+
+export function shouldAutoSyncBusy(lastSyncedAt: Date | string | null | undefined, asOf = new Date()): boolean {
+  return isStaleSync(lastSyncedAt, BUSY_AUTO_SYNC_MS, asOf);
+}
+
+export function shouldAutoSyncEvents(
+  lastSyncedAt: Date | string | null | undefined,
+  hasImportedEvents: boolean,
+  asOf = new Date(),
+): boolean {
+  if (!hasImportedEvents) return true;
+  return isStaleSync(lastSyncedAt, EVENT_AUTO_SYNC_MS, asOf);
 }
 
 export function formatBusySyncedAt(lastSyncedAt: Date | string | null | undefined): string {

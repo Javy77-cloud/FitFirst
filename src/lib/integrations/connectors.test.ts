@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { sendCampaignEmail } from "./email";
 import { sendEnvelope } from "./esign";
+import { readFileSync } from "node:fs";
 import {
   completeGoogleOAuthStub,
   startGoogleOAuth,
-  syncGoogleCalendarOut,
 } from "./google-calendar";
 import { connectSmsProvider, sendSms } from "./sms";
 import { connectTelephonyProvider, placeDeskCall } from "./telephony";
 
 describe("agency connector stubs", () => {
-  it("Google Calendar OAuth points at BYO Connect and two-way push stays later", () => {
+  it("Google Calendar OAuth points at BYO Connect and two-way event push is wired", () => {
     expect(startGoogleOAuth().status).toBe("use_byo");
     expect(startGoogleOAuth().href).toBe("/settings/integrations#google_calendar");
-    expect(syncGoogleCalendarOut().status).toBe("later");
-    expect(syncGoogleCalendarOut().message).toMatch(/Busy pull is live/);
+    expect(readFileSync("src/lib/integrations/google-calendar.ts", "utf8")).toMatch(/syncConnectedCalendarsBothWays/);
+    expect(readFileSync("src/app/actions/activities-desk.ts", "utf8")).toMatch(/pushDeskActivityToCalendars/);
     const stub = completeGoogleOAuthStub("desk@agency.test");
     expect(stub.connected).toBe(false);
     expect(stub.displayEmail).toBe("desk@agency.test");

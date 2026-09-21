@@ -1,6 +1,9 @@
 import { liveAccessToken } from "./oauth-exchange";
 import { loadByoConnection } from "./oauth-store";
-import { serializeBusyBlock, syncGoogleBusy, type SerializedBusyBlock } from "./calendar-busy";
+import { serializeBusyBlock, type SerializedBusyBlock } from "./calendar-busy";
+import { eventSyncWindow } from "./calendar-event-map";
+import { googleCalendarEventsProvider } from "./calendar-providers/google";
+import { syncConnectedCalendars, syncConnectedCalendarsBothWays } from "./calendar-event-sync";
 import { googleCalendarHttpError } from "./calendar-sync";
 
 export type GoogleCalendarSyncResult = {
@@ -40,64 +43,44 @@ export async function syncGoogleCalendarIn(): Promise<GoogleCalendarSyncResult> 
   if (!ready) {
     return { status: "skipped", count: 0, message: "Google Calendar is not connected." };
   }
-  const count = await syncGoogleBusy();
+  const result = await syncConnectedCalendars();
   return {
     status: "ok",
-    count,
-    message: `Synced ${count} Google busy block${count === 1 ? "" : "s"}.`,
+    count: result.imported,
+    message: `Synced ${result.imported} Google event${result.imported === 1 ? "" : "s"}.`,
   };
 }
 
-export function syncGoogleCalendarOut(): GoogleCalendarSyncResult {
+export async function syncGoogleCalendarOut(): Promise<GoogleCalendarSyncResult> {
+  const ready = await googleCalendarIsReady();
+  if (!ready) {
+    return { status: "skipped", count: 0, message: "Google Calendar is not connected." };
+  }
+  const result = await syncConnectedCalendarsBothWays();
   return {
-    status: "later",
-    count: 0,
-    message: "Two-way event push is not in this wave. Busy pull is live on the desk calendar.",
+    status: "ok",
+    count: result.pushed,
+    message: `Pushed ${result.pushed} FitFirst event${result.pushed === 1 ? "" : "s"} to Google.`,
   };
 }
 
 export async function listUpcomingGoogleEvents(days = 14): Promise<SerializedBusyBlock[]> {
   const token = await liveAccessToken("google_calendar");
   if (!token) return [];
-  const timeMin = new Date();
-  const timeMax = new Date(Date.now() + Math.max(1, days) * 24 * 60 * 60 * 1000);
-  const url = new URL("https://www.googleapis.com/calendar/v3/calendars/primary/events");
-  url.searchParams.set("timeMin", timeMin.toISOString());
-  url.searchParams.set("timeMax", timeMax.toISOString());
-  url.searchParams.set("singleEvents", "true");
-  url.searchParams.set("orderBy", "startTime");
-  url.searchParams.set("maxResults", "50");
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-    signal: AbortSignal.timeout(10_000),
-  });
-  const data = (await res.json()) as {
-    error?: { message?: string };
-    items?: {
-      id?: string;
-      summary?: string;
-      status?: string;
-      start?: { dateTime?: string; date?: string };
-      end?: { dateTime?: string; date?: string };
-      transparency?: string;
-    }[];
-  };
-  if (!res.ok) throw new Error(googleCalendarHttpError(data, res.status, "events"));
-  return (data.items ?? [])
-    .filter((row) => row.status !== "cancelled" && row.transparency !== "transparent")
-    .map((row, index) => {
-      const startRaw = row.start?.dateTime || (row.start?.date ? `${row.start.date}T09:00:00` : "");
-      const endRaw = row.end?.dateTime || (row.end?.date ? `${row.end.date}T10:00:00` : "");
-      const start = startRaw ? new Date(startRaw) : null;
-      const end = endRaw ? new Date(endRaw) : null;
-      if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
-      return serializeBusyBlock({
-        id: row.id || `gcal-event-${start.getTime()}-${index}`,
+  const now = new Date();
+  const range = eventSyncWindow(now, new Date(now.getTime() + Math.max(1, days) * 24 * 60 * 60 * 1000), now);
+  const events = await googleCalendarEventsProvider.listEvents(range);
+  return events
+    .filter((event) => event.busy)
+    .map((event) =>
+      serializeBusyBlock({
+        id: event.externalId,
         provider: "google_event",
-        startAt: start,
-        endAt: end,
-        title: (row.summary ?? "").trim() || "Google event",
-      });
-    })
-    .filter((row): row is SerializedBusyBlock => Boolean(row));
+        startAt: event.startAt,
+        endAt: event.endAt,
+        title: event.title,
+      }),
+    );
 }
+
+export { googleCalendarHttpError };

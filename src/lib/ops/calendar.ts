@@ -28,6 +28,10 @@ export type CalendarActivity = {
   inviteOfficeId?: string | null;
   inviteTerritoryId?: string | null;
   createdByUserId?: string | null;
+  origin?: "fitfirst" | "external";
+  calendarProvider?: string | null;
+  calendarHtmlLink?: string | null;
+  calendarVisibility?: string | null;
 };
 
 export const CALENDAR_VIEWS = ["month", "week", "day"] as const;
@@ -283,7 +287,15 @@ export function kindClass(kind: string, meetingType?: string | null): string {
   return "ff-cal-task";
 }
 
-export function eventToneColor(activity: { kind: string; meetingType?: string | null }): string {
+export function eventToneColor(activity: {
+  kind: string;
+  meetingType?: string | null;
+  origin?: "fitfirst" | "external";
+  calendarProvider?: string | null;
+}): string {
+  if (activity.origin === "external") {
+    return activity.calendarProvider === "outlook_calendar" ? "#0f4c81" : "#0f766e";
+  }
   if (activity.meetingType === "training") return "#1d6fb8";
   if (activity.meetingType === "company") return "#c2410c";
   return ACTIVITY_KIND_HEX[activity.kind] ?? "#5c6b7a";

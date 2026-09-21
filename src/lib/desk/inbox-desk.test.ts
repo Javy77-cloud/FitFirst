@@ -50,6 +50,7 @@ describe("inbox desk presentation", () => {
     expect(desk).not.toMatch(/does not host a mailbox/);
     expect(readFileSync("src/lib/desk/nav-catalog.ts", "utf8")).toMatch(/id: "inbox"/);
     expect(readFileSync("src/app/calendar/page.tsx", "utf8")).toMatch(/CalendarSyncBar/);
+    expect(readFileSync("src/app/calendar/page.tsx", "utf8")).toMatch(/importConnectedEvents/);
     expect(readFileSync("src/app/calendar/page.tsx", "utf8")).toMatch(/syncConnectedBusy/);
     expect(readFileSync("src/lib/integrations/google-calendar.ts", "utf8")).not.toMatch(/notImplemented/);
   });
