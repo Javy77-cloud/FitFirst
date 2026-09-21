@@ -50,7 +50,6 @@ describe("primary desk nav", () => {
       "carriers",
       "calendar",
       "documents",
-      "email-templates",
       "templates",
       "reports",
       "settings",
@@ -87,9 +86,10 @@ describe("primary desk nav", () => {
     expect(calendar?.items.map((item) => item.label)).toEqual([]);
     expect(home?.items.map((item) => item.label)).toEqual([]);
     expect(templates?.items.map((item) => item.label)).toEqual([
+      "Email templates",
       "Email signatures",
     ]);
-    expect(NAV_GROUPS.find((group) => group.id === "email-templates")?.label).toBe("Email templates");
+    expect(NAV_GROUPS.find((group) => group.id === "email-templates")).toBeUndefined();
     expect(NAV_GROUPS.find((group) => group.id === "documents")?.label).toBe("Documents");
     expect(labels).not.toContain("Get Started");
     expect(labels).toContain("Inbox");
