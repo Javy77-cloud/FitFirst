@@ -8,6 +8,7 @@ import {
 import { buildGeminiSystemPrompt, buildGeminiUserPrompt } from "./prompt";
 import { mapGeminiJsonToFields, type GeminiExtractJson } from "./map";
 import type { ExtractionResult } from "@/lib/extraction/extract";
+import { isHeicUpload, prepareImageBuffer } from "@/lib/extraction/ocr";
 import { noteDeveloperApiCall } from "@/lib/developer/usage";
 
 const GENERATIVE_BASE = "https://generativelanguage.googleapis.com/v1beta";
@@ -239,8 +240,26 @@ export async function extractWithGeminiPdf(
     return emptyFail(docType, "missing_gemini_key", ["missing_gemini_key"]);
   }
 
-  const b64 = Buffer.from(pdfBytes).toString("base64");
-  const inlineMime = resolveGeminiInlineMime(options?.mimeType, options?.filename);
+  let payloadBytes: Buffer | Uint8Array = pdfBytes;
+  let inlineMime = resolveGeminiInlineMime(options?.mimeType, options?.filename);
+  if (
+    isHeicUpload(options?.mimeType ?? "", options?.filename ?? "") ||
+    inlineMime === "image/heic" ||
+    inlineMime === "image/heif"
+  ) {
+    try {
+      payloadBytes = await prepareImageBuffer(
+        Buffer.from(pdfBytes),
+        options?.mimeType || inlineMime,
+        options?.filename || "photo.heic",
+      );
+      inlineMime = "image/jpeg";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "heic_convert_failed";
+      console.warn("[extractWithGeminiPdf] HEIC convert failed; sending original", message.slice(0, 180));
+    }
+  }
+  const b64 = Buffer.from(payloadBytes).toString("base64");
   const body = {
     systemInstruction: {
       parts: [{ text: buildGeminiSystemPrompt(docType, options?.shopLine) }],
@@ -362,6 +381,6 @@ export async function extractWithGeminiPdf(
     ok: true,
     message: "ok",
     rawText: text.slice(0, 2000),
-    result: mapGeminiJsonToFields(json, docType),
+    result: mapGeminiJsonToFields(json, docType, options?.shopLine),
   };
 }

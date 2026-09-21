@@ -11,6 +11,7 @@ import {
   type QuoteFieldDef,
 } from "./applicant-core";
 import type { SheetProduct } from "./products";
+import { isRepeatableSheetKey } from "./repeatable-units";
 import {
   AOP_DEDUCTIBLE_OPTIONS,
   CONSTRUCTION_OPTIONS,
@@ -1415,7 +1416,9 @@ export function extractKeyToSheetKey(line: ShopLine, extractKey: string): string
   const match = fields.find(
     (field) => field.extractKey === extractKey || field.extractKey === aliased,
   );
-  return match?.key ?? null;
+  if (match) return match.key;
+  if (line === "auto" && isRepeatableSheetKey(aliased)) return aliased;
+  return null;
 }
 
 export function groupFields(
