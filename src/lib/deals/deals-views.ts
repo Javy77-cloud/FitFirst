@@ -1,10 +1,10 @@
 import { parseRenewalsView, renewalsHref, type PipelineViewId } from "@/lib/wire/pipeline";
 
-export const DEALS_VIEWS = ["stack", "radar"] as const;
+export const DEALS_VIEWS = ["stack", "radar", "list"] as const;
 export type DealsViewId = (typeof DEALS_VIEWS)[number];
 
 export function isDealsViewId(raw?: string | null): raw is DealsViewId {
-  return raw === "stack" || raw === "radar";
+  return raw === "stack" || raw === "radar" || raw === "list";
 }
 
 /** Agents land on Priority Stack. Owners / agency-book roles land on Radar. */
@@ -16,16 +16,15 @@ export function defaultDealsView(
 }
 
 /**
- * Stack | Radar are the only Deals shopping views.
- * Legacy list/grid → stack. Legacy board/funnel → radar.
+ * Stack | Radar | List. Legacy board/funnel → radar. Legacy table/grid → list.
  */
 export function parseDealsView(
   raw?: string | null,
   fallback: DealsViewId = "stack",
 ): DealsViewId {
-  if (raw === "stack" || raw === "radar") return raw;
+  if (raw === "stack" || raw === "radar" || raw === "list") return raw;
   if (raw === "board" || raw === "funnel") return "radar";
-  if (raw === "list" || raw === "table" || raw === "grid") return "stack";
+  if (raw === "table" || raw === "grid") return "list";
   return fallback;
 }
 
@@ -74,6 +73,6 @@ export function dealsBookToggleHrefs(view?: string | null): { newHref: string; r
 export function asSavedDealsView(raw?: string | null): DealsViewId | PipelineViewId | null {
   if (isDealsViewId(raw)) return raw;
   if (raw === "board" || raw === "funnel") return "radar";
-  if (raw === "list" || raw === "table" || raw === "grid") return "stack";
+  if (raw === "table" || raw === "grid") return "list";
   return null;
 }

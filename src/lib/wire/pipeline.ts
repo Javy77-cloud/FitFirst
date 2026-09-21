@@ -118,11 +118,11 @@ export const SEEDED_PIPELINES: SeededPipeline[] = [
 ];
 
 export type PipelineViewId = "list" | "grid" | "board" | "funnel";
-export const RENEWALS_VIEWS = ["board", "stack"] as const;
+export const RENEWALS_VIEWS = ["board", "stack", "list"] as const;
 export type RenewalsViewId = (typeof RENEWALS_VIEWS)[number];
 
 export function isRenewalsViewId(raw?: string | null): raw is RenewalsViewId {
-  return raw === "board" || raw === "stack";
+  return raw === "board" || raw === "stack" || raw === "list";
 }
 
 /** Deals owns the workspace. List is the default (the table Javy already uses). */
@@ -153,9 +153,10 @@ export type PipelineDeskHrefOpts = {
 
 export type PipelineDeskBasePath = "/deals" | "/renewals";
 
-/** Urgency board is the default. Legacy list/grid/funnel collapse to board. */
+/** Urgency board is the default. List is the column sheet. Funnel/kanban stay on the board. */
 export function parseRenewalsView(raw?: string | null): RenewalsViewId {
-  if (raw === "stack") return "stack";
+  if (raw === "stack" || raw === "list") return raw;
+  if (raw === "table" || raw === "grid") return "list";
   return "board";
 }
 
@@ -168,7 +169,7 @@ export function pipelineDeskHref(basePath: PipelineDeskBasePath, opts: PipelineD
     const view =
       basePath === "/renewals"
         ? parseRenewalsView(raw)
-        : raw === "stack" || raw === "radar"
+        : raw === "stack" || raw === "radar" || raw === "list"
           ? raw
           : parsePipelineView(raw);
     params.set("view", view);
@@ -209,7 +210,7 @@ export function pipelineBookToggleHrefs(
       renewalsHref: view ? renewalsHref({ view: parseRenewalsView(view) }) : "/renewals",
     };
   }
-  if (view === "stack" || view === "radar") {
+  if (view === "stack" || view === "radar" || view === "list") {
     return {
       newHref: dealsHref({ view }),
       renewalsHref: "/renewals",

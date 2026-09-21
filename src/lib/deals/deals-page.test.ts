@@ -22,12 +22,12 @@ describe("Deals page sep7h", () => {
     expect(page).toMatch(/eyebrow=""/);
     expect(page).not.toMatch(/Personal Lines Worksheet/);
     const bar = source("src/components/deals/deal-workspace-bar.tsx");
-    expect(bar).toMatch(/aria-label=\{isRenewals \? "Board Stack" : "Stack Radar"\}/);
+    expect(bar).toMatch(/aria-label=\{isRenewals \? "Board Stack List" : "Stack Radar List"\}/);
     expect(bar).not.toMatch(/>\s*Pipeline\s*</);
     expect(bar).toMatch(/\["stack", "Stack"\]/);
     expect(bar).toMatch(/\["radar", "Radar"\]/);
     expect(bar).toMatch(/\["board", "Board"\]/);
-    expect(bar).not.toMatch(/\["list", "List"\]/);
+    expect(bar).toMatch(/\["list", "List"\]/);
     expect(bar).not.toMatch(/\["grid", "Grid"\]/);
     expect(bar).not.toMatch(/\["funnel", "Funnel"\]/);
     expect(bar).not.toMatch(/\["table", "Table"\]/);

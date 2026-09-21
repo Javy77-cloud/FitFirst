@@ -5,6 +5,13 @@ import { activityLogs, documents, quotes } from "@/lib/db/schema";
 import type { DealListRow } from "@/lib/db/queries";
 import { inferDealProducts, dealProductDef } from "@/lib/deals/deal-products";
 import { visibleDealTitle } from "@/lib/deals/deal-title";
+import {
+  bestQuotePremium,
+  dealJobStamps,
+  isPendingQuoteStatus,
+  isQuoteSentStatus,
+  noticeSlugsFromShopFlow,
+} from "@/lib/deals/card-glance";
 import { resolveDealStampStage } from "@/lib/deals/status-stamp";
 import { humanizeDealStage } from "@/lib/deals/package-lines";
 import { bookFamily } from "@/lib/desk/policy-line";
@@ -43,6 +50,10 @@ export type RadarDealCard = {
   ownerName: string | null;
   coverageA: number | null;
   premium: number | null;
+  docsSubmitted: boolean;
+  quoteCount: number;
+  pendingQuotes: number;
+  stamps: string[];
   value: number;
   valueMetric: "coverage_a" | "premium";
   heat: HeatState;
@@ -84,6 +95,14 @@ function detailsReady(row: DealListRow): boolean {
   );
 }
 
+export type DealQuoteGlance = {
+  count: number;
+  bestPremium: number | null;
+  pending: number;
+  quoteSent: boolean;
+  inspection: boolean;
+};
+
 function riskReady(row: DealListRow): boolean {
   const risk = row.risk;
   if (!risk) return false;
@@ -99,6 +118,7 @@ export async function loadDealVelocityTouches(dealIds: string[]) {
       premiumByDeal: new Map<string, number>(),
       hasDocs: new Set<string>(),
       hasQuotes: new Set<string>(),
+      quoteGlanceByDeal: new Map<string, DealQuoteGlance>(),
     };
   }
   const tenant = DEFAULT_TENANT_ID;
@@ -117,6 +137,8 @@ export async function loadDealVelocityTouches(dealIds: string[]) {
         createdAt: quotes.createdAt,
         premium: quotes.premium,
         coverageA: quotes.coverageA,
+        agentStatus: quotes.agentStatus,
+        stub: quotes.stub,
       })
       .from(quotes)
       .where(and(eq(quotes.tenantId, tenant), inArray(quotes.dealId, dealIds))),
@@ -137,6 +159,8 @@ export async function loadDealVelocityTouches(dealIds: string[]) {
   const premiumByDeal = new Map<string, number>();
   const hasDocs = new Set<string>();
   const hasQuotes = new Set<string>();
+  const premiumsByDeal = new Map<string, number[]>();
+  const quoteGlanceByDeal = new Map<string, DealQuoteGlance>();
 
   for (const row of docRows) {
     if (!row.dealId) continue;
@@ -153,11 +177,35 @@ export async function loadDealVelocityTouches(dealIds: string[]) {
       const prev = lastQuoteByDeal.get(row.dealId);
       if (!prev || at.getTime() > prev.getTime()) lastQuoteByDeal.set(row.dealId, at);
     }
-    const prem = Number(row.premium);
-    if (Number.isFinite(prem) && prem > 0) {
-      const prev = premiumByDeal.get(row.dealId) ?? 0;
-      if (prem > prev) premiumByDeal.set(row.dealId, prem);
+    const premiumNumber = Number(row.premium);
+    const hasPremium = Number.isFinite(premiumNumber) && premiumNumber > 0;
+    const status = row.agentStatus;
+    const statusKey = (status ?? "").trim().toLowerCase();
+    const emptyStub = Boolean(row.stub) && !hasPremium && (statusKey === "" || statusKey === "new");
+    if (hasPremium) {
+      const list = premiumsByDeal.get(row.dealId) ?? [];
+      list.push(premiumNumber);
+      premiumsByDeal.set(row.dealId, list);
     }
+    if (emptyStub) continue;
+    const glance = quoteGlanceByDeal.get(row.dealId) ?? {
+      count: 0,
+      bestPremium: null,
+      pending: 0,
+      quoteSent: false,
+      inspection: false,
+    };
+    glance.count += 1;
+    if (isPendingQuoteStatus(status)) glance.pending += 1;
+    if (isQuoteSentStatus(status)) glance.quoteSent = true;
+    if ((status ?? "").trim().toLowerCase() === "waiting_on_inspection") glance.inspection = true;
+    quoteGlanceByDeal.set(row.dealId, glance);
+  }
+  for (const [dealId, premiums] of premiumsByDeal) {
+    const best = bestQuotePremium(premiums);
+    if (best != null) premiumByDeal.set(dealId, best);
+    const glance = quoteGlanceByDeal.get(dealId);
+    if (glance) glance.bestPremium = best;
   }
   for (const row of logRows) {
     if (!row.dealId || !isPlatformCommKind(row.kind)) continue;
@@ -167,7 +215,7 @@ export async function loadDealVelocityTouches(dealIds: string[]) {
     if (!prev || at.getTime() > prev.getTime()) lastCommByDeal.set(row.dealId, at);
   }
 
-  return { lastCommByDeal, lastDocByDeal, lastQuoteByDeal, premiumByDeal, hasDocs, hasQuotes };
+  return { lastCommByDeal, lastDocByDeal, lastQuoteByDeal, premiumByDeal, hasDocs, hasQuotes, quoteGlanceByDeal };
 }
 
 export function presentRadarCards(
@@ -235,6 +283,15 @@ export function presentRadarCards(
         closed,
       });
       const pos = radarPosition({ daysInPhase, silenceDays: gap });
+      const glance = touches.quoteGlanceByDeal.get(deal.id);
+      const stageStamp = resolveDealStampStage(deal.pipelineStageSlug, deal.pipelineStage, deal.boundAt);
+      const noticeSlugs = noticeSlugsFromShopFlow(deal.shopFlow);
+      const stamps = dealJobStamps({
+        stageStamp,
+        noticeSlugs,
+        quoteSent: Boolean(glance?.quoteSent) || stageStamp === "quote_sent",
+        inspection: Boolean(glance?.inspection),
+      });
       return {
         id: deal.id,
         title: visibleDealTitle(deal),
@@ -247,12 +304,16 @@ export function presentRadarCards(
         lineOfBusiness: deal.lineOfBusiness,
         family: bookFamily(deal.lineOfBusiness),
         productLabels: products.map((id) => dealProductDef(id)?.label ?? id),
-        stageStamp: resolveDealStampStage(deal.pipelineStageSlug, deal.pipelineStage, deal.boundAt),
+        stageStamp,
         stageLabel: humanizeDealStage(deal.pipelineStageSlug || deal.pipelineStage),
         ownerId: deal.ownerId ?? null,
         ownerName: deal.ownerId ? users.get(deal.ownerId) ?? null : null,
         coverageA: row.risk?.coverageA ?? deal.coverageAmount ?? null,
-        premium: touches.premiumByDeal.get(deal.id) ?? null,
+        premium: glance?.bestPremium ?? touches.premiumByDeal.get(deal.id) ?? null,
+        docsSubmitted: docs,
+        quoteCount: glance?.count ?? 0,
+        pendingQuotes: glance?.pending ?? 0,
+        stamps,
         value: value.amount,
         valueMetric: value.metric,
         heat,

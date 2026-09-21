@@ -9,7 +9,7 @@ function source(file: string) {
 }
 
 describe("Deals Priority Stack + Radar", () => {
-  it("makes Stack and Radar the only Deals shopping views", () => {
+  it("keeps Stack, Radar, and List as the Deals shopping views", () => {
     const page = source("src/app/deals/page.tsx");
     const bar = source("src/components/deals/deal-workspace-bar.tsx");
     expect(page).toMatch(/parseDealsView/);
@@ -21,6 +21,7 @@ describe("Deals Priority Stack + Radar", () => {
     expect(page).not.toMatch(/<TodayActivityStrip/);
     expect(bar).toMatch(/\["stack", "Stack"\]/);
     expect(bar).toMatch(/\["radar", "Radar"\]/);
+    expect(bar).toMatch(/\["list", "List"\]/);
     expect(source("src/components/deals/priority-stack.tsx")).toMatch(/data-ff-priority-stack/);
     expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/draggable/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-deals-radar/);
@@ -29,7 +30,7 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-radar-legend-x/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-radar-legend-y/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/onMouseEnter/);
-    expect(source("src/components/deals/deals-radar.tsx")).toMatch(/bubbleSizeRem/);
+    expect(source("src/components/deals/deals-radar.tsx")).toMatch(/radarPulseSizeRem/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/ff-product-chip/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/EventSpark/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/RADAR_X_AXIS_LABEL/);
@@ -37,7 +38,10 @@ describe("Deals Priority Stack + Radar", () => {
     expect(RADAR_X_AXIS_LABEL).toBe("Days in current phase");
     expect(RADAR_Y_AXIS_LABEL).toBe("Days silent");
     expect(source("src/components/deals/deals-radar.tsx")).not.toMatch(/valueAxisLabel/);
-    expect(source("src/components/deals/priority-stack.tsx")).toMatch(/VelocityClockRail/);
+    expect(source("src/components/deals/priority-stack.tsx")).toMatch(/DealHostSpread/);
+    expect(source("src/components/deals/priority-stack.tsx")).toMatch(/PriorityPinControl/);
+    expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/VelocityClockRail/);
+    expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/RenewalHealthMeter/);
     expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/DealQuickActions/);
     expect(source("src/components/deals/deals-command-workspace.tsx")).toMatch(/data-ff-stack-workspace/);
     expect(source("src/components/deals/deals-lenses.tsx")).toMatch(/Clear lenses/);
@@ -55,7 +59,8 @@ describe("Deals Priority Stack + Radar", () => {
 
   it("defaults agents to Stack and owners to Radar, and keeps leads off the board", () => {
     expect(parseDealsView(undefined, "stack")).toBe("stack");
-    expect(parseDealsView("list")).toBe("stack");
+    expect(parseDealsView("list")).toBe("list");
+    expect(parseDealsView("table")).toBe("list");
     expect(parseDealsView("board")).toBe("radar");
     expect(defaultDealsView({ isAdmin: false, user: { canSeeAgencyWidgets: false } as never })).toBe("stack");
     expect(defaultDealsView({ isAdmin: true, user: { canSeeAgencyWidgets: true } as never })).toBe("radar");
@@ -96,7 +101,8 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/lib/deals/velocity.ts")).toMatch(/Days in current phase/);
     expect(source("src/app/globals.css")).toMatch(/ff-radar-legend/);
     expect(source("src/app/globals.css")).toMatch(/ff-radar-plot/);
-    expect(source("src/components/deals/priority-stack.tsx")).toMatch(/Client health/);
+    expect(source("src/components/deals/priority-stack.tsx")).toMatch(/data-ff-deal-job|DealHostJob/);
+    expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/Client health/);
     expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/retention/i);
     expect(source("src/app/deals/page.tsx")).toMatch(/scheduleDealColdChaseNotices/);
     expect(source("src/lib/deals/cold-chase.ts")).toMatch(/Deal went cold — one-click chase/);
@@ -111,7 +117,7 @@ describe("Deals Priority Stack + Radar", () => {
     expect(page).not.toMatch(/dealHeatShares/);
     expect(workspace).toMatch(/data-ff-book-heat/);
     expect(workspace).toMatch(/BookHeatHeader|Book heat/);
-    expect(radarUi).toMatch(/bubbleSizeRem/);
+    expect(radarUi).toMatch(/radarPulseSizeRem/);
     expect(radarUi).toMatch(/data-ff-book-heat-bubbles/);
     expect(radarUi).toMatch(/router\.push\(card\.href\)|openDeal\(card\.href\)/);
     expect(velocity).toMatch(/export function bubbleSizeRem/);

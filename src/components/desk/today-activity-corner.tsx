@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { CalendarDays, X } from "lucide-react";
@@ -41,6 +41,51 @@ function writeStoredPos(pos: CornerPos | null) {
   }
 }
 
+const posListeners = new Set<() => void>();
+let posCache: CornerPos | null = null;
+let posRaw: string | null | undefined;
+
+function snapshotPos(): CornerPos | null {
+  if (posRaw !== undefined) return posCache;
+  posCache = readStoredPos();
+  posRaw = posCache ? JSON.stringify(posCache) : null;
+  return posCache;
+}
+
+function publishPos(next: CornerPos | null, persist: boolean) {
+  posCache = next;
+  if (persist) {
+    writeStoredPos(next);
+    posRaw = next ? JSON.stringify(next) : null;
+  } else if (posRaw === undefined) {
+    posRaw = null;
+  }
+  for (const listener of posListeners) listener();
+}
+
+function subscribePos(listener: () => void) {
+  posListeners.add(listener);
+  return () => {
+    posListeners.delete(listener);
+  };
+}
+
+function serverPos(): CornerPos | null {
+  return null;
+}
+
+function subscribeMounted(): () => void {
+  return () => {};
+}
+
+function clientMounted(): boolean {
+  return true;
+}
+
+function serverMounted(): boolean {
+  return false;
+}
+
 function clampPos(left: number, top: number, width: number, height: number): CornerPos {
   const maxLeft = Math.max(EDGE_PAD, window.innerWidth - width - EDGE_PAD);
   const maxTop = Math.max(EDGE_PAD, window.innerHeight - height - EDGE_PAD);
@@ -62,8 +107,10 @@ export function TodayActivityCorner({
   basePath?: "/deals" | "/renewals";
 }) {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [pos, setPos] = useState<CornerPos | null>(null);
+  const mounted = useSyncExternalStore(subscribeMounted, clientMounted, serverMounted);
+  const pos = useSyncExternalStore(subscribePos, snapshotPos, serverPos);
+  const [panelSide, setPanelSide] = useState<"above" | "below">("above");
+  const [panelAlign, setPanelAlign] = useState<"start" | "end">("end");
   const rootRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
     pointerId: number;
@@ -77,20 +124,13 @@ export function TodayActivityCorner({
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
   const dated = formatTodayActivityDate(now);
 
-  useEffect(() => {
-    setMounted(true);
-    setPos(readStoredPos());
-  }, []);
-
   const reclamp = useCallback(() => {
-    setPos((current) => {
-      if (!current || !rootRef.current) return current;
-      const rect = rootRef.current.getBoundingClientRect();
-      const next = clampPos(current.left, current.top, rect.width, rect.height);
-      if (next.left === current.left && next.top === current.top) return current;
-      writeStoredPos(next);
-      return next;
-    });
+    const current = snapshotPos();
+    if (!current || !rootRef.current) return;
+    const rect = rootRef.current.getBoundingClientRect();
+    const next = clampPos(current.left, current.top, rect.width, rect.height);
+    if (next.left === current.left && next.top === current.top) return;
+    publishPos(next, true);
   }, []);
 
   useEffect(() => {
@@ -98,6 +138,18 @@ export function TodayActivityCorner({
     window.addEventListener("resize", reclamp);
     return () => window.removeEventListener("resize", reclamp);
   }, [pos, reclamp]);
+
+  const placePanel = useCallback(() => {
+    const rect = rootRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const need = 220;
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceLeft = rect.left;
+    const spaceRight = window.innerWidth - rect.right;
+    setPanelSide(spaceAbove >= need || spaceAbove >= spaceBelow ? "above" : "below");
+    setPanelAlign(spaceRight >= spaceLeft ? "start" : "end");
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -110,15 +162,16 @@ export function TodayActivityCorner({
     }
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", placePanel);
     return () => {
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", placePanel);
     };
-  }, [open]);
+  }, [open, placePanel]);
 
   function resetPosition() {
-    writeStoredPos(null);
-    setPos(null);
+    publishPos(null, true);
   }
 
   function onTogglePointerDown(event: React.PointerEvent<HTMLButtonElement>) {
@@ -151,7 +204,7 @@ export function TodayActivityCorner({
     const width = root?.offsetWidth ?? 160;
     const height = root?.offsetHeight ?? 48;
     const next = clampPos(drag.originLeft + dx, drag.originTop + dy, width, height);
-    setPos(next);
+    publishPos(next, false);
   }
 
   function endDrag(event: React.PointerEvent<HTMLButtonElement>) {
@@ -164,10 +217,9 @@ export function TodayActivityCorner({
       /* already released */
     }
     if (drag.moved) {
-      setPos((current) => {
-        if (current) writeStoredPos(current);
-        return current;
-      });
+      const current = snapshotPos();
+      if (current) publishPos(current, true);
+      if (open) placePanel();
     }
   }
 
@@ -182,7 +234,12 @@ export function TodayActivityCorner({
       title={pos ? "Double-click the bubble to reset position" : undefined}
     >
       {open ? (
-        <div className="ff-today-activity-corner-panel" data-ff-today-activity-panel="">
+        <div
+          className="ff-today-activity-corner-panel"
+          data-ff-today-activity-panel=""
+          data-ff-panel-side={panelSide}
+          data-ff-panel-align={panelAlign}
+        >
           <div className="ff-today-activity-corner-panel-head">
             <Link
               href={todayActivityCalendarHref()}
@@ -224,6 +281,7 @@ export function TodayActivityCorner({
             skipClickRef.current = false;
             return;
           }
+          if (!open) placePanel();
           setOpen((current) => !current);
         }}
       >

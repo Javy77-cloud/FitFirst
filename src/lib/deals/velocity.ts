@@ -427,7 +427,15 @@ export function radarPosition(input: { daysInPhase: number; silenceDays: number 
   return { x, y };
 }
 
-/** Bubble diameter on Book Heat / Radar — sized by deal value (Coverage A or premium). */
+/** Living heartbeat on Radar. Heat sets the pulse — not face amount or premium. */
+export function radarPulseSizeRem(heat: HeatState): number {
+  if (heat === "hot") return 0.95;
+  if (heat === "near_cold") return 0.78;
+  if (heat === "cold") return 0.7;
+  return 0.86;
+}
+
+/** Legacy value diameter. Host Radar uses radarPulseSizeRem so circles stay a heartbeat. */
 export function bubbleSizeRem(value: number, opts?: { min?: number; max?: number }): number {
   const min = opts?.min ?? 0.55;
   const max = opts?.max ?? 1.9;

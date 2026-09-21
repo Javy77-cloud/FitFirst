@@ -3,14 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { DealHostJob, DealHostNext, dealDisplayName } from "@/components/deals/deal-host-face";
 import { EventSpark } from "@/components/deals/event-spark";
-import { VelocityClockRail } from "@/components/deals/velocity-clock-rail";
-import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
+import { formatPremiumColumn, formatSilenceCue } from "@/lib/deals/card-glance";
 import type { RadarDealCard } from "@/lib/deals/radar-desk";
 import {
-  bubbleSizeRem,
-  formatClockDays,
-  formatDealValue,
   HEAT_LABELS,
   HEAT_STATES,
   RADAR_X_AXIS_LABEL,
@@ -18,6 +15,7 @@ import {
   RADAR_Y_AXIS_LABEL,
   RADAR_Y_DAYS,
   radarLegendCopy,
+  radarPulseSizeRem,
 } from "@/lib/deals/velocity";
 import { cn } from "@/lib/utils";
 
@@ -97,8 +95,8 @@ export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
               <p className="ff-deals-empty">No deals on this field.</p>
             ) : (
               cards.map((card) => {
-                const size = bubbleSizeRem(card.value || card.premium || 0);
-                const name = card.insured !== "—" ? card.insured : card.title;
+                const size = radarPulseSizeRem(card.heat);
+                const name = dealDisplayName(card);
                 return (
                   <span
                     key={card.id}
@@ -116,7 +114,7 @@ export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
                     data-ff-radar-dot={card.id}
                     data-ff-heat={card.heat}
                     data-ff-bubble-size={size}
-                    title={`${name} · ${HEAT_LABELS[card.heat]} · ${formatDealValue(card.value, card.valueMetric)} · ${formatClockDays(card.daysInPhase)} in phase · ${formatClockDays(card.silenceDays)} silent`}
+                    title={`${name} · ${HEAT_LABELS[card.heat]} · Premium ${formatPremiumColumn(card.premium)} · ${formatSilenceCue(card.silenceDays)}`}
                     onMouseEnter={() => previewCard(card.id)}
                     onFocus={() => previewCard(card.id)}
                     onClick={(event) => {
@@ -143,19 +141,21 @@ export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
                   {HEAT_LABELS[open.heat]}
                   <EventSpark values={open.spark} label="14-day activity" />
                 </p>
-                <h3>{open.insured !== "—" ? open.insured : open.title}</h3>
+                <h3>{dealDisplayName(open)}</h3>
                 <div className="ff-product-chips">
                   {(open.productLabels.length ? open.productLabels : [open.lineOfBusiness]).map((label) => (
                     <span key={label} className="ff-product-chip">
                       {label}
                     </span>
                   ))}
-                  <span className="ff-stack-value">{formatDealValue(open.value, open.valueMetric)}</span>
+                  <span className="ff-stack-value" data-ff-premium-column="">
+                    {formatPremiumColumn(open.premium)}
+                  </span>
                 </div>
-                <p className="ff-radar-clocks">
-                  {formatClockDays(open.daysInPhase)} in phase · {formatClockDays(open.silenceDays)} silent
-                  {open.quoteSent ? " (quote sent)" : ""}
+                <p className="ff-stack-silent" data-ff-silence-cue="">
+                  {formatSilenceCue(open.silenceDays)}
                 </p>
+                <DealHostJob card={open} />
                 {open.inboxCue ? (
                   <p className="ff-inbox-cue" data-ff-inbox-cue="">
                     {open.inboxHref ? (
@@ -167,16 +167,8 @@ export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
                     )}
                   </p>
                 ) : null}
-                <VelocityClockRail clocks={open.clocks} phase={open.phase} />
-                <RenewalHealthMeter
-                  stars={open.clientHealth / 20}
-                  policyStars={open.policyHealth / 20}
-                  flagged={open.heat === "cold" || open.clientHealth < 40}
-                />
                 <div className="ff-radar-card-actions">
-                  <Link href={open.primaryAction.href} className="ff-stack-action">
-                    {open.primaryAction.label}
-                  </Link>
+                  <DealHostNext card={open} />
                   <Link href={open.href} className="ff-radar-open">
                     Open
                   </Link>

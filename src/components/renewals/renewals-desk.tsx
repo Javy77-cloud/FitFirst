@@ -3,19 +3,12 @@ import { DealWorkspaceBar } from "@/components/deals/deal-workspace-bar";
 import { DealWorkQueuePanel } from "@/components/deals/deal-work-queue-panel";
 import { PipelineBookModeToggle } from "@/components/pipeline/book-mode-toggle";
 import { RenewalsFilteredViews } from "@/components/renewals/renewals-filtered-views";
-import { DeskTruthStrip } from "@/components/desk/truth-strip";
 import { RenewalsHealthStrip } from "@/components/renewals/renewals-health-strip";
 import { RenewalsPulse } from "@/components/renewals/renewals-pulse";
 import { TodayActivityCorner } from "@/components/desk/today-activity-corner";
 import { currentDeskSession } from "@/lib/auth/session";
 import { rollupRenewalHealth } from "@/lib/health/load";
 import { roleHealthSummary } from "@/lib/renewal/health-rollup";
-import {
-  flaggedClientCount,
-  renewalHealthShares,
-  renewalHeatShares,
-  uniqueRenewalClients,
-} from "@/lib/desk/truth-strip";
 import { readDefaultRenewalsView } from "@/app/actions/pipeline-view-prefs";
 import { loadDealPipelineDesk } from "@/lib/deals/pipeline-desk-data";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
@@ -234,21 +227,15 @@ export async function RenewalsDesk({
           </p>
         ) : (
           <>
-            <DeskTruthStrip
-              surface="renewals"
-              label={healthSummary.label}
-              heat={renewalHeatShares(filtered)}
-              health={renewalHealthShares(filtered)}
-              flagged={flaggedClientCount(filtered)}
-              clients={uniqueRenewalClients(filtered)}
-            />
-            <RenewalsHealthStrip
-              summary={healthSummary}
-              book={healthRollup.book}
-              agents={showAgencyHealth ? healthRollup.agents : []}
-              weakest={weakest}
-            />
-            <RenewalsPulse daysUntil={filtered.map((card) => card.daysUntil)} />
+            <div className="ff-renewals-glance" data-ff-renewals-glance="">
+              <RenewalsHealthStrip
+                summary={healthSummary}
+                book={healthRollup.book}
+                agents={showAgencyHealth ? healthRollup.agents : []}
+                weakest={weakest}
+              />
+              <RenewalsPulse daysUntil={filtered.map((card) => card.daysUntil)} />
+            </div>
             <RenewalsFilteredViews
               cards={filtered}
               view={view}

@@ -30,14 +30,16 @@ describe("Renewals desk chrome", () => {
     expect(desk).toMatch(/renewals-pipeline/);
     expect(desk).toMatch(/RenewalsFilteredViews/);
     expect(desk).toMatch(/RenewalsPulse/);
-    expect(desk).toMatch(/DeskTruthStrip/);
-    expect(desk).toMatch(/renewalHeatShares/);
+    expect(desk).toMatch(/data-ff-renewals-glance/);
+    expect(desk).not.toMatch(/DeskTruthStrip/);
+    expect(desk).not.toMatch(/renewalHeatShares/);
     expect(desk).not.toMatch(/RenewalsList/);
     expect(desk).not.toMatch(/TodayActivityStrip/);
     expect(desk).not.toMatch(/deal-upload-activity/);
     expect(desk).not.toMatch(/deal-today-slot/);
     expect(views).toMatch(/RenewalsUrgencyBoard/);
     expect(views).toMatch(/RenewalsPriorityStack/);
+    expect(views).toMatch(/RenewalsHostList/);
     expect(views).not.toMatch(/RenewalsKanban/);
     expect(views).not.toMatch(/RenewalsTable/);
     expect(views).not.toMatch(/RenewalsFunnel/);
@@ -45,7 +47,7 @@ describe("Renewals desk chrome", () => {
     expect(views).not.toMatch(/RenewalsWorkspace/);
     expect(source("src/components/deals/deal-workspace-bar.tsx")).toMatch(/\["board", "Board"\]/);
     expect(source("src/components/deals/deal-workspace-bar.tsx")).toMatch(/\["stack", "Stack"\]/);
-    expect(source("src/components/deals/deal-workspace-bar.tsx")).not.toMatch(/\["list", "List"\]/);
+    expect(source("src/components/deals/deal-workspace-bar.tsx")).toMatch(/\["list", "List"\]/);
     expect(source("src/components/deals/deal-workspace-bar.tsx")).not.toMatch(/\["grid", "Grid"\]/);
     expect(source("src/components/deals/deal-workspace-bar.tsx")).not.toMatch(/\["funnel", "Funnel"\]/);
     expect(source("src/components/renewals/renewals-priority-stack.tsx")).toMatch(
@@ -65,11 +67,16 @@ describe("Renewals desk chrome", () => {
     expect(card).toMatch(/renewalWhyLine/);
     expect(card).toMatch(/RenewalCompareDrawer/);
     expect(card).toMatch(/RenewalHealthMeter/);
+    expect(card).toMatch(/renewalPolicyTypeLabel/);
+    expect(card).toMatch(/data-ff-health-info/);
+    expect(card).not.toMatch(/>\s*Policy\s*</);
     expect(card).toMatch(/sendRenewalChase/);
     expect(card).toMatch(/RenewalMiniReview/);
     expect(pulse).toMatch(/data-ff-renewals-pulse/);
+    expect(pulse).toMatch(/data-ff-pulse-depth/);
     expect(pulse).toMatch(/Book pulse/);
-    expect(desk).toMatch(/DeskTruthStrip/);
+    expect(pulse).toMatch(/--ff-heat-hot/);
+    expect(desk).toMatch(/ff-renewals-glance/);
     expect(desk).toMatch(/roleHealthSummary/);
     expect(card).toMatch(/autopilotConfirmLabel|data-ff-autopilot/);
     expect(card).toMatch(/data-ff-autopilot-badge/);

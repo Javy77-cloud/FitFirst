@@ -14,6 +14,7 @@ import { formatSignedMoney } from "@/lib/renewal/compare";
 import { autopilotConfirmLabel } from "@/lib/renewal/autopilot";
 import { chaseTemplateFor, primaryActionLabel, primaryRenewalAction } from "@/lib/renewal/chase";
 import type { RenewalBoardCard } from "@/lib/renewal/board-data";
+import { renewalPolicyTypeLabel } from "@/lib/renewal/policy-type";
 import {
   RENEWAL_RISK_LABEL,
   renewalUrgencyBand,
@@ -169,12 +170,25 @@ export function RenewalBoardCardView({
           ) : null}
         </span>
       </div>
-      <RenewalHealthMeter
-        stars={card.healthStars}
-        policyStars={card.policyHealthStars}
-        flagged={card.healthFlagged}
-        source={card.healthSource}
-      />
+      <div className="ff-renewal-health-row">
+        <RenewalHealthMeter
+          stars={card.healthStars}
+          policyStars={card.policyHealthStars}
+          flagged={card.healthFlagged}
+          source={card.healthSource}
+        />
+        <button
+          type="button"
+          className="ff-health-info"
+          data-ff-health-info=""
+          data-ff-no-compare=""
+          title="Client score is the person. Policy score is this contract."
+          aria-label="Client score is the person. Policy score is this contract."
+          onClick={(event) => event.stopPropagation()}
+        >
+          i
+        </button>
+      </div>
       {card.premiumDelta != null ? <PremiumDeltaArrow delta={card.premiumDelta} /> : null}
       <p className="ff-renewal-why" title={why}>
         {why}
@@ -224,7 +238,7 @@ export function RenewalBoardCardView({
         data-ff-no-compare=""
         onClick={(event) => event.stopPropagation()}
       >
-        Policy
+        {renewalPolicyTypeLabel(card)}
       </Link>
     </article>
   );
