@@ -198,6 +198,7 @@ export const GEMINI_AUTO_EXTRACT_JSON_KEYS = [
   "expiration_date",
   "years_with_carrier",
   "currently_insured",
+  "aaa_member",
 ] as const;
 
 /** Agency cancellation / AOR letter jobs. Kept off the HO/Auto sheet lists. */
@@ -294,18 +295,28 @@ Return ONLY one JSON object. No markdown. Omit keys that are not printed. Never 
 
 Each present key is { "value": string, "confidence": number } (confidence 0..1) or a plain string.
 
-Fill these first, in this order, when printed:
-1. Vehicles and VIN. vin is the 17-character vehicle identification number. vehicle_year, vehicle_make, vehicle_model from columns or from one cell such as "2019 TOYOTA CAMRY". More vehicles: vehicle_2_*, vehicle_3_*, vehicle_4_* (vin, year, make, model).
-2. Drivers. driver_1_name, driver_1_dob, driver_1_license, then driver_2_name, driver_2_dob, driver_2_license. Add gender (Male/Female only), marital status, and relationship for drivers 2+ when printed. Never fill driver_1_relationship. Never fill employment — use industry and occupation only when printed.
-3. Coverage limits from the coverage table. Bodily Injury → liability_bi as 100/300 (not 100000/300000). Property Damage → liability_pd digits (100000). Uninsured or Underinsured Motorist → um_uim. PIP or Personal Injury Protection → pip digits. Comprehensive or Other Than Collision → comp_deductible (comprehensive deductible). Collision → collision_deductible.
-4. Dates. Policy period from/to → effective_date and expiration_date, as printed.
-5. Carrier and policy number. Writing company / insurer → current_carrier. Policy # / Policy No / Policy Number → policy_number.
+Fill these first, in this order, when printed. Current Policy comes before vehicles and drivers so a long page cannot drop the carrier.
+1. Current Policy. Do not leave these empty when the dec prints them. Copy only what is printed.
+   - current_carrier: the named insurer / writing company. Copy the full company name (Allstate Fire and Casualty Insurance Company, not Allstate).
+   - policy_number: Policy Number, Policy No, Policy #, or Current policy ID. Keep internal spaces (941 953 485).
+   - effective_date and expiration_date: policy period from/to, as printed, including a month name (Sept 29, 2026).
+   - current_premium: total term premium when printed, digits only, cents kept (3393.51).
+   - years_with_carrier, currently_insured, and aaa_member only when that fact is printed. Do not calculate years from the dates. Do not treat a declarations page as "Currently insured 6 months or more". Do not guess AAA tenure. Leave those three out when the page does not state them.
+2. Vehicles and VIN. vin is the 17-character vehicle identification number (labels: VIN, V.I.N., Vehicle Identification No). vehicle_year, vehicle_make, vehicle_model from columns or from one cell such as "2019 TOYOTA CAMRY". More vehicles: vehicle_2_*, vehicle_3_*, vehicle_4_* (vin, year, make, model).
+3. Drivers. List each person once. The same name and date of birth is one driver — do not repeat them as driver 2 and driver 3. driver_1_name is the full printed legal name: first, middle name or middle initial, and the complete last name. Do not truncate. "Domenic M Iori" stays "Domenic M Iori" — never "Domenic Ic", "Domenic I", or "D. Iori". If First / Middle / Last are separate columns, join them in that order. Then driver_1_dob, driver_1_license, and driver_2_* only for a different person. Add gender (Male/Female only), marital status, and relationship for drivers 2+ when printed. Never fill driver_1_relationship. Never fill employment — use industry and occupation only when printed.
+4. Coverage limits, only when a page prints them. Do not invent coverages. Page 1 of a dec often has the carrier and vehicles and no BI/PD/UM/PIP/comp/collision table — omit those keys. Read every page of a multi-page PDF. If page 2 or a later page prints the coverage table, fill from that page: Bodily Injury or Liability Bodily Injury → liability_bi as 100/300 (not 100000/300000). If Each Person and Each Accident are separate cells, join them as 100/300. Property Damage → liability_pd digits (100000). Uninsured or Underinsured Motorist, including Uninsured Motorist Bodily Injury → um_uim. PIP or Personal Injury Protection → pip digits. Comprehensive or Other Than Collision → comp_deductible (comprehensive deductible). Collision → collision_deductible.
 
-Example (include only keys you can read):
-{"vin":{"value":"4T1B11HK5KU123456","confidence":0.95},"vehicle_year":{"value":"2019","confidence":0.95},"vehicle_make":{"value":"TOYOTA","confidence":0.95},"vehicle_model":{"value":"CAMRY","confidence":0.9},"driver_1_name":{"value":"Alex Rivera","confidence":0.95},"driver_1_dob":{"value":"04/02/1984","confidence":0.9},"driver_1_license":{"value":"R400-123-45-678","confidence":0.9},"liability_bi":{"value":"100/300","confidence":0.9},"liability_pd":{"value":"100000","confidence":0.9},"um_uim":{"value":"100/300","confidence":0.9},"pip":{"value":"10000","confidence":0.9},"comp_deductible":{"value":"500","confidence":0.9},"collision_deductible":{"value":"500","confidence":0.9},"effective_date":{"value":"03/15/2026","confidence":0.9},"expiration_date":{"value":"09/15/2026","confidence":0.9},"current_carrier":{"value":"Progressive","confidence":0.9},"policy_number":{"value":"PA-441902","confidence":0.95}}
+Current Policy example (emit a key only when that fact is printed. Never copy these sample values):
+{"current_carrier":{"value":"Allstate Fire and Casualty Insurance Company","confidence":0.95},"policy_number":{"value":"941 953 485","confidence":0.95},"effective_date":{"value":"Sept 29, 2026","confidence":0.95},"expiration_date":{"value":"Mar 29, 2027","confidence":0.95},"current_premium":{"value":"3393.51","confidence":0.95}}
+
+Vehicle and driver example (include only keys you can read; one row per person):
+{"vin":{"value":"4T1B11HK5KU123456","confidence":0.95},"vehicle_year":{"value":"2019","confidence":0.95},"vehicle_make":{"value":"TOYOTA","confidence":0.95},"vehicle_model":{"value":"CAMRY","confidence":0.9},"driver_1_name":{"value":"Domenic M Iori","confidence":0.95},"driver_1_dob":{"value":"04/02/1984","confidence":0.9},"driver_1_license":{"value":"R400-123-45-678","confidence":0.9}}
+
+Coverage example — only when some page prints a coverage table. If no page shows limits, omit every key below. Do not invent coverages:
+{"liability_bi":{"value":"100/300","confidence":0.9},"liability_pd":{"value":"100000","confidence":0.9},"um_uim":{"value":"100/300","confidence":0.9},"pip":{"value":"10000","confidence":0.9},"comp_deductible":{"value":"500","confidence":0.9},"collision_deductible":{"value":"500","confidence":0.9}}
 
 Other allowed keys when printed: ${keys.join(", ")}
-Money: digits only (no $). Dates: keep as printed.
+Money: digits only (no $); keep cents. Dates: keep as printed. Never invent a carrier, policy ID, premium, date, coverage, VIN, or driver name.
 `;
   }
   return `You extract structured fields from Florida personal-lines insurance documents
@@ -392,7 +403,7 @@ export function buildGeminiUserPrompt(docType?: string | null, shopLine?: string
   const line = (shopLine ?? "").trim().toLowerCase();
   if (line === "auto" || line === "motorcycle" || line === "commercial_auto") {
     focus =
-      "This photo or PDF is an Auto policy or Auto declaration (carrier dec, policy jacket, ID card, or ACORD 90). Do not treat this as homeowners / Coverage A. Read the page and fill, in order: vin and vehicle_year / vehicle_make / vehicle_model (split a cell like 2019 TOYOTA CAMRY; vehicle_2_* for the next car); driver_1_name, driver_1_dob, driver_1_license and driver_2_* when a second driver is listed; coverage limits from the coverage table — Bodily Injury liability_bi as 100/300, Property Damage liability_pd as digits, UM/UIM um_uim, PIP pip, comprehensive deductible comp_deductible, collision_deductible; effective_date and expiration_date from the policy period; current_carrier and policy_number. Also fill when printed: industry, occupation, gender (Male/Female only), marital status, garaging address and ZIP, premium. Never fill driver_1_relationship. Never fill employment / employment status — use industry + occupation only. Do not return {} and do not mark the page not_declaration when a VIN, vehicle, driver, or coverage table is visible.";
+      "This photo or PDF is an Auto policy or Auto declaration (carrier dec, policy jacket, ID card, or ACORD 90). Do not treat this as homeowners / Coverage A. Read every page. Fill Current Policy first when printed: current_carrier (full insurance company name), policy_number (Policy # / Current policy ID, keep spaces), effective_date and expiration_date, current_premium (keep cents). years_with_carrier, currently_insured, and aaa_member only when those facts are printed — do not invent them. Then vin and vehicle_year / vehicle_make / vehicle_model (split a cell like 2019 TOYOTA CAMRY; vehicle_2_* for the next car). driver_1_name is the full legal name — Domenic M Iori, never Domenic Ic. List each person once; the same name and date of birth is not driver 2 and driver 3. Coverage limits only from a printed coverage table on any page, including page 2 of a multi-page dec — Bodily Injury liability_bi as 100/300, Property Damage liability_pd as digits, UM/UIM um_uim, PIP pip, comprehensive deductible comp_deductible, collision_deductible. If this file's pages do not show those limits, omit them. Do not invent coverages. Also fill when printed: industry, occupation, gender (Male/Female only), marital status, garaging address and ZIP. Never fill driver_1_relationship. Never fill employment / employment status — use industry + occupation only. Do not return {} and do not mark the page not_declaration when a VIN, vehicle, driver, coverage table, carrier, or policy number is visible.";
   }
   return `Extract the JSON field object from this ${docType || "insurance"} document. ${focus} Invent nothing. Do not return an empty object when fields are visible.`;
 }

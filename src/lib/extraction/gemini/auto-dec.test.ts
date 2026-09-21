@@ -3,7 +3,8 @@
  * Gemini vision often sends bare strings or a nested vehicles/drivers/coverages object.
  * Production check: https://fit-first-seven.vercel.app → Domenic Iori deal →
  * Documents, Auto line → confirm the dec photo is on the deal → Fill Risk Profile.
- * VIN, year/make/model, drivers, BI/PD/PIP/comp/collision, and policy dates should land as CHECK.
+ * VIN, year/make/model, full driver names, BI/PD/UM/PIP/comp/collision,
+ * and the Current Policy block should land as CHECK.
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -146,7 +147,19 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(system).toMatch(/Bodily Injury/);
     expect(system.indexOf("Vehicles and VIN")).toBeLessThan(system.indexOf("Other allowed keys"));
     expect(system.indexOf("Drivers")).toBeLessThan(system.indexOf("Coverage limits"));
-    expect(system.indexOf("effective_date and expiration_date")).toBeLessThan(system.indexOf("current_carrier"));
+    expect(system.indexOf("current_carrier")).toBeLessThan(system.indexOf("Vehicles and VIN"));
+    expect(system).toMatch(/Do not invent coverages/);
+    expect(system).toMatch(/page 2/);
+    expect(system).toMatch(/same name and date of birth/);
+    expect(system).toMatch(/Allstate Fire and Casualty Insurance Company/);
+    expect(system).toMatch(/Current Policy example/);
+    expect(system).toMatch(/Domenic M Iori/);
+    expect(system).toMatch(/Do not truncate/);
+    expect(system).toMatch(/years_with_carrier/);
+    expect(system).toMatch(/currently_insured/);
+    expect(system).toMatch(/aaa_member/);
+    expect(system).toMatch(/Never copy these sample values/);
+    expect(system).toMatch(/Never invent/);
     expect(user).toMatch(/Auto policy or Auto declaration/);
     expect(user).toMatch(/not_declaration/);
     expect(user).toMatch(/Do not treat this as homeowners/);
@@ -243,6 +256,219 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(button).toMatch(/MASTER_FILL_DOC_CLIENT_TIMEOUT_MS/);
     expect(button).toMatch(/MASTER_FILL_STEP_TIMEOUT_MS/);
     expect(button).toMatch(/Promise\.race/);
+  });
+
+  it("fills Current Policy from nested dec labels that used to be dropped", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        current_policy: {
+          insurance_name: "Progressive American Insurance Company",
+          current_policy_id: "923456789",
+          effective_date: "03/15/2026",
+          expiration_date: "09/15/2026",
+          premium: "$1,640",
+          years_with_carrier: "3 years",
+          currently_insured: "Currently insured 6 months or more",
+          aaa_member: "None",
+        },
+        drivers: [
+          {
+            name: "Domenic Ic",
+            first_name: "Domenic",
+            middle_initial: "M",
+            last_name: "Iori",
+          },
+        ],
+        coverages: {
+          liability_bodily_injury: "$100,000/$300,000",
+          property_damage_liability: "$100,000",
+          uninsured_motorist_bodily_injury: "100/300",
+          personal_injury_protection: "10000",
+          other_than_collision: "500",
+          collision_coverage: "500",
+        },
+        "v.i.n.": "4T1B11HK5KU123456",
+        vehicle: "2019 TOYOTA CAMRY",
+      },
+      "photo",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.current_carrier.value).toBe("Progressive American Insurance Company");
+    expect(applied.values.policy_number.value).toBe("923456789");
+    expect(applied.values.effective_date.value).toBe("03/15/2026");
+    expect(applied.values.expiration_date.value).toBe("09/15/2026");
+    expect(applied.values.current_premium.value).toBe("1640");
+    expect(applied.values.years_with_carrier.value).toBe("3");
+    expect(applied.values.currently_insured.value).toBe("Currently insured 6 months or more");
+    expect(applied.values.aaa_member.value).toBe("None");
+    expect(applied.values.driver_1_name.value).toBe("Domenic M Iori");
+    expect(applied.values.liability_bi.value).toBe("100/300");
+    expect(applied.values.liability_pd.value).toBe("100000");
+    expect(applied.values.um_uim.value).toBe("100/300");
+    expect(applied.values.pip.value).toBe("10000");
+    expect(applied.values.comp_deductible.value).toBe("500");
+    expect(applied.values.collision_deductible.value).toBe("500");
+    expect(applied.values.vin.value).toBe("4T1B11HK5KU123456");
+    expect(applied.values.vehicle_year.value).toBe("2019");
+    expect(applied.values.vehicle_make.value).toBe("TOYOTA");
+    expect(applied.values.vehicle_model.value).toBe("CAMRY");
+  });
+
+  it("keeps a full driver name and joins Each Person / Each Accident BI", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        driver_1_name: "Domenic Ic",
+        driver_1_first_name: "Domenic",
+        driver_1_middle_name: "M",
+        driver_1_last_name: "Iori",
+        coverages: {
+          bodily_injury_each_person: "100000",
+          bodily_injury_each_accident: "300000",
+        },
+        named_insurer: "GEICO General Insurance Company",
+        "Current policy ID": "PA 90211",
+      },
+      "current_policy",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.driver_1_name.value).toBe("Domenic M Iori");
+    expect(applied.values.liability_bi.value).toBe("100/300");
+    expect(applied.values.current_carrier.value).toBe("GEICO General Insurance Company");
+    expect(applied.values.policy_number.value).toBe("PA 90211");
+  });
+
+  it("does not invent Current Policy facts that are not in the extract", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        vin: "4T1B11HK5KU123456",
+        driver_1_name: "Domenic M Iori",
+        currently_insured: "Yes",
+        aaa_member: "Yes",
+      },
+      "photo",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.vin.value).toBe("4T1B11HK5KU123456");
+    expect(applied.values.driver_1_name.value).toBe("Domenic M Iori");
+    expect(applied.values.current_carrier.value).toBe("");
+    expect(applied.values.policy_number.value).toBe("");
+    expect(applied.values.current_premium.value).toBe("");
+    expect(applied.values.years_with_carrier.value).toBe("");
+    expect(applied.values.effective_date.value).toBe("");
+    expect(applied.values.expiration_date.value).toBe("");
+    expect(applied.values.currently_insured.value).toBe("Yes");
+    expect(applied.values.aaa_member.value).toBe("Yes");
+  });
+
+  it("fills Allstate Current Policy keys and leaves years, insured, and AAA blank when unprinted", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        current_carrier: "Allstate Fire and Casualty Insurance Company",
+        current_premium: "3393.51",
+        effective_date: "Sept 29, 2026",
+        expiration_date: "Mar 29, 2027",
+        policy_number: "941 953 485",
+        driver_1_name: "Domenic Iori",
+      },
+      "photo",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.current_carrier.value).toBe("Allstate Fire and Casualty Insurance Company");
+    expect(applied.values.current_premium.value).toBe("3393.51");
+    expect(applied.values.effective_date.value).toBe("Sept 29, 2026");
+    expect(applied.values.expiration_date.value).toBe("Mar 29, 2027");
+    expect(applied.values.policy_number.value).toBe("941 953 485");
+    expect(applied.values.driver_1_name.value).toBe("Domenic Iori");
+    expect(applied.values.years_with_carrier.value).toBe("");
+    expect(applied.values.currently_insured.value).toBe("");
+    expect(applied.values.aaa_member.value).toBe("");
+    expect(applied.values.liability_bi.value).toBe("");
+    expect(applied.values.liability_pd.value).toBe("");
+    expect(applied.values.um_uim.value).toBe("");
+    expect(applied.values.pip.value).toBe("");
+    expect(applied.values.comp_deductible.value).toBe("");
+    expect(applied.values.collision_deductible.value).toBe("");
+  });
+
+  it("reads coverages from page 2 and does not invent them from a summary page", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        current_carrier: "Allstate Fire and Casualty Insurance Company",
+        pages: [
+          { named_insured: "Domenic Iori" },
+          {
+            coverages: {
+              bodily_injury: "100/300",
+              property_damage: "100000",
+              uninsured_motorist: "100/300",
+              personal_injury_protection: "10000",
+              comprehensive: "500",
+              collision: "500",
+            },
+          },
+        ],
+      },
+      "dec",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.current_carrier.value).toBe("Allstate Fire and Casualty Insurance Company");
+    expect(applied.values.liability_bi.value).toBe("100/300");
+    expect(applied.values.liability_pd.value).toBe("100000");
+    expect(applied.values.um_uim.value).toBe("100/300");
+    expect(applied.values.pip.value).toBe("10000");
+    expect(applied.values.comp_deductible.value).toBe("500");
+    expect(applied.values.collision_deductible.value).toBe("500");
+  });
+
+  it("dedupes a driver repeated with the same name and date of birth", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        drivers: [
+          { name: "Domenic Iori", dob: "04/02/1984" },
+          { name: "James Iori", dob: "06/01/1990", gender: "Male" },
+          { name: "James Iori", dob: "6/1/1990", license: "I400-222-33-444" },
+          { name: "Maria Iori", dob: "07/07/1992" },
+        ],
+        driver_2_name: "James Iori",
+        driver_2_dob: "06/01/1990",
+        driver_3_name: "James Iori",
+        driver_3_dob: "06/01/1990",
+      },
+      "photo",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.driver_1_name.value).toBe("Domenic Iori");
+    expect(applied.values.driver_2_name.value).toBe("James Iori");
+    expect(applied.values.driver_2_dob.value).toBe("06/01/1990");
+    expect(applied.values.driver_2_license.value).toBe("I400-222-33-444");
+    expect(applied.values.driver_2_gender.value).toBe("Male");
+    expect(applied.values.driver_3_name.value).toBe("Maria Iori");
+    expect(applied.values.driver_3_dob.value).toBe("07/07/1992");
+    expect(mapped.fields.some((field) => field.fieldKey === "driver_4_name")).toBe(false);
+  });
+
+  it("keeps two drivers who share a name and have different dates of birth", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        drivers: [
+          { name: "James Iori", dob: "06/01/1962" },
+          { name: "James Iori", dob: "06/01/1990" },
+        ],
+      },
+      "photo",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.driver_1_name.value).toBe("James Iori");
+    expect(applied.values.driver_1_dob.value).toBe("06/01/1962");
+    expect(applied.values.driver_2_name.value).toBe("James Iori");
+    expect(applied.values.driver_2_dob.value).toBe("06/01/1990");
   });
 
 });
