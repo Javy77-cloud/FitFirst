@@ -33,6 +33,11 @@ export type RadarPhaseShare = {
   count: number;
 };
 
+/** Daily touch chart. Longer than the banner, still one quiet window — no range chrome. */
+export const RADAR_TREND_DAYS = 30;
+/** Banner copy stays "touches · 14 days". Count only this tail of a daily trend. */
+export const RADAR_TOUCH_KPI_DAYS = 14;
+
 export type RadarDesk = {
   total: number;
   counts: Record<HeatState, number>;
@@ -52,7 +57,7 @@ function median(values: number[]): number | null {
   return Math.round(value);
 }
 
-/** Full Radar glance: heat counts, silence distribution, and a 14-day touch trend. */
+/** Full Radar glance: heat counts, silence distribution, and a 30-day touch trend. */
 export function radarDesk(cards: RadarDeskCard[]): RadarDesk {
   const counts: Record<HeatState, number> = { hot: 0, cooling: 0, near_cold: 0, cold: 0 };
   for (const card of cards) {
@@ -81,13 +86,14 @@ export function radarDesk(cards: RadarDeskCard[]): RadarDesk {
     label: VELOCITY_PHASE_LABELS[phase],
     count: phaseCounts.get(phase) ?? 0,
   }));
+  const touchDays = Math.min(RADAR_TOUCH_KPI_DAYS, trend.length);
   return {
     total: cards.length,
     counts,
     silence,
     medianSilence: median(silences),
     trend,
-    touches: trend.reduce((total, value) => total + value, 0),
+    touches: trend.slice(trend.length - touchDays).reduce((total, value) => total + value, 0),
     phases,
     quoteSent: cards.filter((card) => card.quoteSent).length,
   };

@@ -1,4 +1,4 @@
-import { radarDesk, type RadarDeskCard } from "@/lib/deals/radar-glance";
+import { RADAR_TREND_DAYS, radarDesk, type RadarDeskCard } from "@/lib/deals/radar-glance";
 import { HEAT_LABELS, HEAT_STATES, type HeatState } from "@/lib/deals/velocity";
 import { cn } from "@/lib/utils";
 
@@ -79,12 +79,13 @@ function SilenceChart({
   );
 }
 
-function TrendChart({ values }: { values: number[] }) {
+function TrendChart({ values, days }: { values: number[]; days: number }) {
   const width = 320;
   const height = 120;
   const padX = 10;
   const padY = 12;
   const series = values.length > 0 ? values : [0, 0];
+  const span = Math.max(days, series.length, 1);
   const max = Math.max(...series, 1);
   const step = series.length === 1 ? 0 : (width - padX * 2) / (series.length - 1);
   const coords = series.map((value, index) => {
@@ -96,20 +97,28 @@ function TrendChart({ values }: { values: number[] }) {
   const area = `${coords[0]!.x.toFixed(1)},${height - padY} ${line} ${coords[coords.length - 1]!.x.toFixed(1)},${height - padY}`;
   const midY = height - padY - (height - padY * 2) / 2;
   const quiet = values.every((value) => value === 0);
+  const showDots = series.length <= 16;
 
   return (
-    <div className="ff-radar-trend" data-ff-radar-trend="">
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Touches over the last 14 days">
+    <div className="ff-radar-trend" data-ff-radar-trend="" data-ff-radar-trend-days={span}>
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={`Touches over the last ${span} days`}
+      >
         <line x1={padX} x2={width - padX} y1={height - padY} y2={height - padY} className="ff-radar-axis" />
         <line x1={padX} x2={width - padX} y1={midY} y2={midY} className="ff-radar-axis is-mid" />
         <polygon points={area} className="ff-radar-area" />
         <polyline points={line} className="ff-radar-line" />
-        {coords.map((point, index) => (
-          <circle key={index} cx={point.x} cy={point.y} r="3.2" className="ff-radar-point" />
-        ))}
+        {showDots
+          ? coords.map((point, index) => (
+              <circle key={index} cx={point.x} cy={point.y} r="3.2" className="ff-radar-point" />
+            ))
+          : null}
       </svg>
       <div className="ff-radar-trend-scale">
-        <span>14 days ago</span>
+        <span>{span} days ago</span>
         <span>{quiet ? "No logged touches" : "Today"}</span>
       </div>
     </div>
@@ -188,7 +197,7 @@ export function RadarBoard({ cards }: { cards: RadarDeskCard[] }) {
             </p>
           </header>
           <div className="ff-radar-chart-body">
-            <TrendChart values={glance.trend} />
+            <TrendChart values={glance.trend} days={Math.max(glance.trend.length, RADAR_TREND_DAYS)} />
           </div>
         </article>
       </div>

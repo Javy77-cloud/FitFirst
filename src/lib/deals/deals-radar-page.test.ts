@@ -48,6 +48,19 @@ describe("Deals Priority Stack + Radar", () => {
       /\.ff-radar-chart-body \{[^}]*align-items: center;[^}]*justify-content: center/,
     );
     expect(source("src/app/globals.css")).toMatch(/\.ff-radar-heat-body \{[^}]*justify-content: center/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-donut-wrap \{[^}]*13\.8rem/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-bars \{[^}]*min-height: 15\.6rem/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-bars \{[^}]*gap: 0\.45rem/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-trend svg \{[^}]*height: 3\.64rem/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-heat-row-deals \{[^}]*overflow-x: clip/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-heat-row-deals \{[^}]*repeat\(4, minmax\(0, 1fr\)\)/);
+    expect(source("src/app/globals.css")).toMatch(/@container \(max-width: 58rem\)[\s\S]*repeat\(3, minmax\(0, 1fr\)\)/);
+    expect(source("src/app/globals.css")).toMatch(/@container \(max-width: 42rem\)[\s\S]*repeat\(2, minmax\(0, 1fr\)\)/);
+    expect(source("src/app/globals.css")).not.toMatch(/\.ff-heat-row-deals \{[^}]*overflow-x: auto/);
+    expect(source("src/components/deals/radar-board.tsx")).toMatch(/touches · 14 days/);
+    expect(source("src/components/deals/radar-board.tsx")).toMatch(/RADAR_TREND_DAYS/);
+    expect(source("src/lib/deals/radar-glance.ts")).toMatch(/RADAR_TREND_DAYS = 30/);
+    expect(source("src/lib/deals/radar-glance.ts")).toMatch(/RADAR_TOUCH_KPI_DAYS = 14/);
     expect(source("src/components/deals/radar-board.tsx")).not.toMatch(/days silent/);
     expect(source("src/components/deals/priority-stack.tsx")).toMatch(/PriorityPinControl/);
     expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/VelocityClockRail/);

@@ -48,6 +48,10 @@ describe("activity board and radar glance", () => {
     ]);
     expect(glance.trend).toEqual([3, 3, 4]);
     expect(glance.touches).toBe(10);
+    const month = Array.from({ length: 30 }, (_, index) => (index < 16 ? 10 : 1));
+    const monthGlance = radarDesk([{ heat: "hot", silenceDays: 1, spark: month }]);
+    expect(monthGlance.trend).toHaveLength(30);
+    expect(monthGlance.touches).toBe(14);
     expect(glance.quoteSent).toBe(1);
     expect(glance.phases.find((row) => row.phase === "quotes")?.count).toBe(2);
   });
