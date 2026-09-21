@@ -7,8 +7,16 @@ type FetchLike = typeof fetch;
 
 const cache = new Map<string, VinDecodeValues>();
 
-export const NHTSA_FETCH_TIMEOUT_MS = 15_000;
+/** Stay inside a default serverless budget so a hung vPIC call returns this error. */
+export const NHTSA_FETCH_TIMEOUT_MS = 8_000;
 export const NHTSA_TIMEOUT_MESSAGE = "NHTSA vPIC timed out. Try again, or fill year/make/model by hand.";
+
+/** Network / HTTP / timeout — the browser can call vPIC directly (CORS *). */
+export function isNhtsaTransportFailure(message: string): boolean {
+  return /timed out|timeout|NHTSA vPIC HTTP|non-JSON|NHTSA vPIC request failed|fetch failed|network|ECONN|ENOTFOUND|ETIMEDOUT|aborted|socket|getaddrinfo/i.test(
+    message,
+  );
+}
 
 export function clearVinDecodeCache(): void {
   cache.clear();
@@ -44,7 +52,11 @@ export async function decodeVinValues(
   try {
     response = await fetchImpl(url, {
       method: "GET",
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        // Browsers ignore this forbidden header; Node/Vercel send it.
+        "User-Agent": "FitFirst/vin-decode",
+      },
       signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (error) {

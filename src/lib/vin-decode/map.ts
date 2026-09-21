@@ -87,3 +87,33 @@ export function decodeLooksSuccessful(decoded: VinDecodeValues): boolean {
   if (decoded.make || decoded.model || decoded.modelYear) return true;
   return decoded.errorCode === "0" || decoded.errorCode.startsWith("0,");
 }
+
+const VIN_DECODE_TEXT_KEYS = [
+  "make",
+  "model",
+  "modelYear",
+  "trim",
+  "series",
+  "bodyClass",
+  "vehicleType",
+  "fuelTypePrimary",
+  "engine",
+  "displacementL",
+  "engineCylinders",
+  "engineHP",
+  "abs",
+  "airBagLocFront",
+  "errorCode",
+  "errorText",
+] as const;
+
+/** Accept a client-supplied decode only when it is the flat vPIC shape and succeeded. */
+export function coerceVinDecodeValues(raw: unknown): VinDecodeValues | null {
+  if (!raw || typeof raw !== "object") return null;
+  const record = raw as Record<string, unknown>;
+  const values = {} as VinDecodeValues;
+  for (const key of VIN_DECODE_TEXT_KEYS) {
+    values[key] = String(record[key] ?? "").trim().slice(0, 240);
+  }
+  return decodeLooksSuccessful(values) ? values : null;
+}

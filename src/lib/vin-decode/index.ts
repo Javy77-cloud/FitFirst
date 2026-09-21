@@ -11,9 +11,23 @@ export {
   mapVinDecodeToFacts,
   parseDecodeVinValuesRow,
   decodeLooksSuccessful,
+  coerceVinDecodeValues,
 } from "./map";
-export { decodeVinValues, clearVinDecodeCache, peekVinDecodeCache } from "./client";
-export { applyVinFactsToSheet } from "./apply";
-export { collectSheetVehicleVins, decodableVinsChanged, isVehicleVinSheetKey } from "./vehicles";
+export {
+  decodeVinValues,
+  clearVinDecodeCache,
+  peekVinDecodeCache,
+  isNhtsaTransportFailure,
+} from "./client";
+export { applyVinFactsToSheet, vinCellOccupied } from "./apply";
+export {
+  collectSheetVehicleVins,
+  decodableVinsChanged,
+  isVehicleVinSheetKey,
+  blankVinCoreFacts,
+  shouldRunVinDecode,
+  overlayFormVins,
+} from "./vehicles";
+export { valueToPaint } from "./paint";
 export { orchestrateVinDecodeFill } from "./orchestrate";
 export { toastForVinDecode } from "./toast";

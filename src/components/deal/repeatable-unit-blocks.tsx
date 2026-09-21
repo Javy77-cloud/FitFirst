@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
 import { DecodeVinButton } from "@/components/deal/decode-vin-button";
@@ -31,6 +31,7 @@ import {
 } from "@/components/deal/risk-profile-section-header";
 import { riskProfileSectionMaxColumns } from "@/lib/quote-sheet/risk-profile-layout";
 import type { ShopLine } from "@/lib/domain";
+import { valueToPaint } from "@/lib/vin-decode/paint";
 import { cn } from "@/lib/utils";
 
 type FieldOverlay = { value: string; previous: string };
@@ -392,14 +393,7 @@ function readControlValue(form: HTMLFormElement | null, key: string, fallback: s
     return el.value;
   }
   if (typeof RadioNodeList !== "undefined" && el instanceof RadioNodeList) {
-    const first = el[0];
-    if (
-      first instanceof HTMLInputElement ||
-      first instanceof HTMLSelectElement ||
-      first instanceof HTMLTextAreaElement
-    ) {
-      return first.value;
-    }
+    return el.item(0)?.value ?? fallback;
   }
   return fallback;
 }
@@ -438,6 +432,17 @@ function BlockCell({
   kind?: RepeatableKind;
   onLiveChange?: (next: string) => void;
 }) {
+  const fieldRef = useRef<HTMLInputElement | HTMLSelectElement | null>(null);
+  const serverValue = cell?.value ?? "";
+  useEffect(() => {
+    const el = fieldRef.current;
+    if (!el) return;
+    const next = valueToPaint(el.value, serverValue);
+    if (next != null) el.value = next;
+  }, [serverValue, cell?.sourceLabel]);
+  function bindField(el: HTMLInputElement | HTMLSelectElement | null) {
+    fieldRef.current = el;
+  }
   const className = cn(
     "h-8 w-full min-w-0 text-sm",
     cell?.status === "check" && "ff-field-check",
@@ -447,6 +452,7 @@ function BlockCell({
     <div className="flex flex-col gap-1">
       {input === "select" && options?.length ? (
         <select
+          ref={bindField}
           id={`ff-sheet-input-${fieldKey}`}
           name={fieldKey}
           defaultValue={cell?.value ?? ""}
@@ -462,6 +468,7 @@ function BlockCell({
         </select>
       ) : (
         <Input
+          ref={bindField}
           id={`ff-sheet-input-${fieldKey}`}
           name={fieldKey}
           type={input === "number" ? "number" : "text"}
