@@ -30,6 +30,7 @@ export function collectSheetVehicleVins(
       continue;
     }
     // Fuel / body / engine use catalog keys when present on unit 1 / vehicle_N_*.
+    // Usage / ownership / lienholder / OCN / annual miles are not vPIC data — omitted.
     // Safety sheet home is left for a follow-up tip (mapper still accepts keys.safety).
     const keys: VinSheetKeyBag = {
       year: repeatableFieldKey("vehicle", index, "year"),
@@ -47,4 +48,29 @@ export function collectSheetVehicleVins(
     });
   }
   return found;
+}
+
+/** Sheet keys that hold a vehicle VIN (unit 1 is `vin`, later units `vehicle_N_vin`). */
+export function isVehicleVinSheetKey(key: string): boolean {
+  return key === "vin" || /^vehicle_\d+_vin$/.test(key);
+}
+
+/**
+ * Decodable VINs that were set or changed between two sheet snapshots.
+ * Same normalized VIN is not a change. Clearing a VIN is not a decode trigger.
+ */
+export function decodableVinsChanged(
+  before: Record<string, { value?: string | null } | undefined>,
+  after: Record<string, { value?: string | null } | undefined>,
+  product?: string | null,
+): string[] {
+  const cap = Math.max(vehicleCap(product), PERSONAL_VEHICLE_CAP);
+  const changed: string[] = [];
+  for (let index = 1; index <= cap; index += 1) {
+    const vinKey = repeatableFieldKey("vehicle", index, "vin");
+    const prev = normalizeVin(before[vinKey]?.value);
+    const next = normalizeVin(after[vinKey]?.value);
+    if (isDecodableVin(next) && next !== prev) changed.push(vinKey);
+  }
+  return changed;
 }
