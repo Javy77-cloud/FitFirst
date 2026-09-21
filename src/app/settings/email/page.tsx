@@ -32,6 +32,11 @@ export default async function EmailSettingsPage({
           Settings-pasted app keys cleared. Environment credentials still apply if they are set.
         </p>
       ) : null}
+      {notice === "credentials-saved" ? (
+        <p className="mb-3 rounded-md border border-dashed border-border bg-secondary/40 px-3 py-2 text-sm text-navy">
+          Google Client ID and Secret saved. Click Connect Gmail to finish.
+        </p>
+      ) : null}
       {notice === "byo-connected" ? (
         <p className="mb-3 rounded-md border border-dashed border-border bg-secondary/40 px-3 py-2 text-sm text-navy">
           Gmail connected. Tokens are stored for this agency — open Inbox to work the mailbox.
