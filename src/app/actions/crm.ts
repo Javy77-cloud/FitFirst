@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { and, eq, ne } from "drizzle-orm";
+import { resolveWriteOwnerId } from "@/lib/auth/canonical-owner-backfill";
 import { getActor } from "@/lib/auth/session";
 import { periodKey, splitCommission } from "@/lib/commissions/math";
 import {
@@ -354,7 +355,12 @@ export async function convertLeadToDeal(
       tenantId: DEFAULT_TENANT_ID,
       leadId,
       contactId: matchedContact?.id ?? null,
-      ownerId: lead.ownerId ?? actor.id ?? null,
+      ownerId: await resolveWriteOwnerId(lead.ownerId ?? actor.id, {
+        id: actor.id,
+        name: actor.name,
+        email: actor.email,
+        role: actor.role,
+      }),
       title: copy.title,
       notes: copy.notes,
       shopLines,
