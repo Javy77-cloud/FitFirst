@@ -87,6 +87,22 @@ export default async function DeveloperHubPage() {
         </Link>
       </section>
 
+      <section className="mb-6" data-ff-developer-login-issues="">
+        <h2 className="mb-2 text-sm font-semibold text-navy">Carrier login issues</h2>
+        <Link
+          href="/developer/carrier-login-issues"
+          className="ff-card block p-4 hover:border-primary/40"
+          data-ff-developer-login-issues-open=""
+        >
+          <div className="text-sm font-semibold text-navy">Quote-bot login failures</div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Carriers whose quote bot could not authenticate — captcha, 2FA, lockout, expired
+            session, rejected credentials. The list is data/carrier-login-issues.ndjson. This does
+            not record missing Risk Profile questions, and it does not skip markets.
+          </p>
+        </Link>
+      </section>
+
       <section className="mb-6" data-ff-developer-gaps="">
         <h2 className="mb-2 text-sm font-semibold text-navy">Missing questions</h2>
         <Link
