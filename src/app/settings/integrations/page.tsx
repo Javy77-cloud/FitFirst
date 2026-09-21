@@ -2,6 +2,7 @@ import { SettingsShell } from "@/components/settings/settings-shell";
 import { IntegrationCard } from "@/components/settings/integration-card";
 import { HealthSherpaCard } from "@/components/settings/healthsherpa-card";
 import { ByoOauthCard } from "@/components/settings/byo-oauth-card";
+import { ByoOauthWallNotice } from "@/components/settings/byo-oauth-wall-notice";
 import { ConnectionBadge } from "@/components/settings/connection-badge";
 import { SocialByoCard } from "@/components/social/social-byo-card";
 import { currentDeskSession } from "@/lib/auth/session";
@@ -78,6 +79,11 @@ export default async function IntegrationsCatalogPage({
   ]);
   const notice = typeof query.notice === "string" ? query.notice : undefined;
   const provider = typeof query.provider === "string" ? query.provider : undefined;
+  const catalogItems = groups.flatMap((group) => group.items);
+  const wallError =
+    catalogItems.find((item) => item.id === provider)?.lastOauthError ??
+    catalogItems.find((item) => item.lastOauthError)?.lastOauthError ??
+    null;
   const liveCount = groups.reduce(
     (sum, group) =>
       sum +
@@ -158,12 +164,7 @@ export default async function IntegrationsCatalogPage({
             : "That vendor requires a paid API. FitFirst does not buy it."}
         </p>
       ) : null}
-      {notice === "oauth-wall" ? (
-        <p className="mb-3 rounded-md border border-border bg-fit-flag-bg px-3 py-2 text-sm">
-          OAuth stopped at the vendor wall. Open the card for the error from Google / Microsoft /
-          Yahoo / Meta / DocuSign.
-        </p>
-      ) : null}
+      {notice === "oauth-wall" ? <ByoOauthWallNotice lastOauthError={wallError} /> : null}
       {notice === "byo-connected" ? (
         <p className="mb-3 rounded-md border border-[var(--ff-green)]/30 bg-[var(--ff-green-bg)] px-3 py-2 text-sm">
           {provider === "gmail" || provider === "google_calendar" || provider === "google_meet"

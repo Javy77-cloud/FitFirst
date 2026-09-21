@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { IntegrationCard } from "@/components/settings/integration-card";
 import { ByoOauthCard } from "@/components/settings/byo-oauth-card";
+import { ByoOauthWallNotice } from "@/components/settings/byo-oauth-wall-notice";
 import { currentDeskSession } from "@/lib/auth/session";
 import { listCatalogItems } from "@/lib/integrations/catalog-store";
 import { isByoOauthProviderId } from "@/lib/integrations/oauth-specs";
@@ -20,6 +21,7 @@ export default async function VideoSettingsPage({
   ]);
   const video = items.filter((item) => item.category === "video");
   const notice = typeof query.notice === "string" ? query.notice : undefined;
+  const wallError = video.find((item) => item.lastOauthError)?.lastOauthError ?? null;
 
   return (
     <SettingsShell title="Video">
@@ -33,11 +35,7 @@ export default async function VideoSettingsPage({
           Google Meet helper connected. Tokens are stored for this agency.
         </p>
       ) : null}
-      {notice === "oauth-wall" ? (
-        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy">
-          Google Connect hit a wall. Check the card error, Client ID/Secret, Calendar API, and redirect URI.
-        </p>
-      ) : null}
+      {notice === "oauth-wall" ? <ByoOauthWallNotice lastOauthError={wallError} /> : null}
       <p className="mb-4 text-sm text-muted-foreground">
         Google Meet uses the same one-click Google Connect as Gmail and Calendar. Paste, replace, or
         clear Client ID + Secret on the card. The helper writes a Meet URL onto calendar events when

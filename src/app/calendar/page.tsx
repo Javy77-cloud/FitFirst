@@ -93,6 +93,7 @@ export default async function CalendarPage({
         overlayCount={googleEvents.length}
         notice={notice}
         syncError={syncError}
+        lastOauthError={googleRow?.lastOauthError ?? outlookRow?.lastOauthError ?? null}
       />
       <DeskCalendar
         events={events}

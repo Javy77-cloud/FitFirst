@@ -146,6 +146,10 @@ export async function startByoOauth(formData: FormData) {
       origin,
       returnTo: dest,
       userId: session.userId,
+      form: {
+        clientId: incomingId,
+        clientSecret: hasTypedSecret ? incomingSecret : "",
+      },
     });
     if (!prepared.ok) {
       const notice = startByoOauthCredentialNotice(raw, null);

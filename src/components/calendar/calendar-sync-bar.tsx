@@ -2,6 +2,7 @@ import Link from "next/link";
 import { startByoOauth } from "@/app/actions/byo-oauth";
 import { syncDeskBusyNow } from "@/app/actions/calendar-sync";
 import { Button } from "@/components/ui/button";
+import { byoOauthWallCopy } from "@/lib/integrations/byo-credentials";
 import { displayBusySyncError, formatBusySyncedAt } from "@/lib/integrations/calendar-sync";
 
 export function CalendarSyncBar({
@@ -13,6 +14,7 @@ export function CalendarSyncBar({
   overlayCount,
   notice,
   syncError,
+  lastOauthError,
 }: {
   googleConnected: boolean;
   outlookConnected: boolean;
@@ -22,6 +24,7 @@ export function CalendarSyncBar({
   overlayCount: number;
   notice?: string | null;
   syncError?: string | null;
+  lastOauthError?: string | null;
 }) {
   const connected = googleConnected || outlookConnected;
   const vendorError = displayBusySyncError(syncError);
@@ -40,8 +43,8 @@ export function CalendarSyncBar({
         <p className="mb-2 text-sm text-navy">Google Calendar connected. External busy will sync onto this desk.</p>
       ) : null}
       {notice === "oauth-wall" ? (
-        <p className="mb-2 text-sm text-navy">
-          Google Calendar Connect hit a wall. Open Settings → Integrations, check Client ID/Secret and Calendar API, then try again.
+        <p className="mb-2 text-sm text-navy" data-ff-oauth-wall="">
+          {byoOauthWallCopy(lastOauthError)}
         </p>
       ) : null}
       {notice === "admin-only" ? (

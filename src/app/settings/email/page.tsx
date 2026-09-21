@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import { IntegrationCard } from "@/components/settings/integration-card";
 import { ByoOauthCard } from "@/components/settings/byo-oauth-card";
+import { ByoOauthWallNotice } from "@/components/settings/byo-oauth-wall-notice";
 import { currentDeskSession } from "@/lib/auth/session";
 import { listCatalogItems } from "@/lib/integrations/catalog-store";
 import { tenantLooksSolo } from "@/lib/integrations/connect-policy";
@@ -24,6 +25,11 @@ export default async function EmailSettingsPage({
   ]);
   const inboxes = items.filter((item) => item.category === "email");
   const notice = typeof query.notice === "string" ? query.notice : undefined;
+  const provider = typeof query.provider === "string" ? query.provider : undefined;
+  const wallError =
+    inboxes.find((item) => item.id === provider)?.lastOauthError ??
+    inboxes.find((item) => item.lastOauthError)?.lastOauthError ??
+    null;
 
   return (
     <SettingsShell title="Email" current="email">
@@ -42,12 +48,7 @@ export default async function EmailSettingsPage({
           Gmail connected. Tokens are stored for this agency — open Inbox to work the mailbox.
         </p>
       ) : null}
-      {notice === "oauth-wall" ? (
-        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy">
-          Google Connect hit a wall. Check the card error below, Client ID/Secret, Gmail API, and the
-          redirect URI <code className="text-xs">/api/integrations/oauth/callback</code>.
-        </p>
-      ) : null}
+      {notice === "oauth-wall" ? <ByoOauthWallNotice lastOauthError={wallError} /> : null}
       {notice === "admin-only" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy">
           Only Agency Admin can connect the agency mailbox (unless People &amp; access allows personal Google).
