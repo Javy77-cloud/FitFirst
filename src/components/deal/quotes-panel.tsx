@@ -61,6 +61,8 @@ function toQuoteFileRow(doc: Document, versions: DocumentVersion[]): QuoteFileRo
     displayName: labelFromTags(doc.tags, doc.filename),
     uploadedByName: version?.uploadedByName ?? null,
     createdAt: version?.createdAt ?? doc.createdAt,
+    slot: doc.slot,
+    docType: doc.docType,
   };
 }
 

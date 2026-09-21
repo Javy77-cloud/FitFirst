@@ -18,6 +18,8 @@ import {
   policyAdditionalInterests,
   policyInstallments,
   quoteSheets,
+  policyChangeLogs,
+  quoteAttemptLogs,
   quotes,
   reviewTasks,
   risks,
@@ -46,6 +48,9 @@ import {
   MINT_ADMIN_NOTIFY_KIND,
   MINT_CONFIRM_TASK_KIND,
 } from "@/lib/policy/dec-prompt";
+import { buildAgentConfirmAudit } from "@/lib/policy/agent-confirm";
+import { issuedPolicyDocType, issuedUploadFolder, issuedUploadPersist } from "@/lib/policy/issued-upload";
+import { isManualMarketWhy } from "@/lib/deals/manual-markets";
 import { extractWithGeminiPdf } from "@/lib/extraction/gemini";
 import { loadGeminiApiKey } from "@/lib/extraction/gemini/key";
 import { readStoredFile } from "@/lib/files/object-store";
@@ -310,6 +315,8 @@ async function loadMintGeminiRows(input: {
   mimeType?: string | null;
   filename?: string | null;
   force?: boolean;
+  shopLine?: string | null;
+  docType?: string | null;
 }) {
   return loadGeminiRows(input, {
     readStoredFile,
@@ -411,6 +418,7 @@ export async function issuePolicyFromDeclaration(input: {
     docs: pickedDoc ? [pickedDoc, ...docs] : docs,
     surface: input.surface ?? "quotes",
     mintStatus: current.mintStatus,
+    preferredDocumentId: input.documentId,
   });
   if (!gate.ok) return gate;
 
@@ -463,6 +471,8 @@ export async function issuePolicyFromDeclaration(input: {
     mimeType: decRow?.mimeType ?? "application/pdf",
     filename: decRow?.filename ?? gate.dec.filename,
     force: Boolean(input.force) || remintUnpublished,
+    shopLine: def.shopLine,
+    docType: decRow?.docType || issuedPolicyDocType(def.shopLine),
   });
   if (!extracted.ok) {
     await markMintStatus(dealId, product, { mintStatus: previousMint, selectedQuoteIds });
@@ -704,24 +714,68 @@ export async function uploadDeclarationAndMint(formData: FormData) {
     return { ok: false as const, reason: "need_dec" as const };
   }
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+  const quoteIds = formData
+    .getAll("quoteId")
+    .map((value) => String(value ?? "").trim())
+    .filter(Boolean);
+  const quoteId = quoteIds[0] ?? "";
+  const productId = parseDealProduct(product);
+  const shopLine = productId ? dealProductDef(productId).shopLine : null;
+  let why: string | null = null;
+  let notes: string | null = null;
+  let hasCarrierDownload = false;
+  if (quoteId) {
+    const [quote] = await db
+      .select({
+        notes: quotes.notes,
+        quoteAttemptLogId: quotes.quoteAttemptLogId,
+      })
+      .from(quotes)
+      .where(and(eq(quotes.tenantId, DEFAULT_TENANT_ID), eq(quotes.id, quoteId), eq(quotes.dealId, dealId)));
+    notes = quote?.notes ?? null;
+    if (quote?.quoteAttemptLogId) {
+      const [log] = await db
+        .select({ why: quoteAttemptLogs.why })
+        .from(quoteAttemptLogs)
+        .where(eq(quoteAttemptLogs.id, quote.quoteAttemptLogId));
+      why = log?.why ?? null;
+    }
+    if (!isManualMarketWhy(why) && !isManualMarketWhy(notes)) {
+      const tagged = await db
+        .select({ tags: documents.tags, docType: documents.docType })
+        .from(documents)
+        .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)));
+      hasCarrierDownload = tagged.some((row) => {
+        const tags = row.tags ?? [];
+        return (
+          tags.includes(`quote:${quoteId}`) &&
+          (tags.includes("source:carrier") || row.docType === "carrier_quote")
+        );
+      });
+    }
+  }
+  const placed = issuedUploadPersist({
+    quoteId,
+    shopLine,
+    folder: issuedUploadFolder({ why, notes, hasCarrierDownload }),
+    filename: file.name,
+  });
   const doc = await persistFile({
     dealId,
     riskId: risk?.id ?? null,
     filename: file.name,
     mimeType: file.type || "application/pdf",
     buffer: Buffer.from(await file.arrayBuffer()),
-    docType: "dec",
-    slot: "source_doc",
-    tags: ["dec", "mint"],
+    docType: placed.docType,
+    slot: placed.slot,
+    tags: placed.tags,
   });
   if (!doc) return { ok: false as const, reason: "need_dec" as const };
+  revalidatePath(`/deals/${dealId}`);
   return issuePolicyFromDeclaration({
     dealId,
     product,
-    selectedQuoteIds: formData
-      .getAll("quoteId")
-      .map((value) => String(value ?? "").trim())
-      .filter(Boolean),
+    selectedQuoteIds: quoteIds,
     surface: "quotes",
     documentId: doc.id,
   });
@@ -800,7 +854,29 @@ export async function publishMintedPolicy(formData: FormData) {
   if (!policy) return { ok: false as const, reason: "missing" as const };
   const payload = parseMintPayload(policy.mintPayload);
   if (!canPublishMint(payload)) return { ok: false as const, reason: "need_confirm" as const };
-  const published: MintPayload = { ...payload!, status: "published" };
+  const session = await currentDeskSession();
+  const audit = buildAgentConfirmAudit({
+    userId: session.userId,
+    name: session.name || "Agent",
+  });
+  const published: MintPayload = { ...payload!, status: "published", agentConfirm: audit };
+  await db
+    .insert(policyChangeLogs)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      policyId,
+      changedBy: audit.userId,
+      changedByName: audit.name,
+      changedAt: new Date(audit.confirmedAt),
+      fieldKey: "agent_confirm",
+      fieldLabel: "Policy looks good",
+      beforeValue: "unpublished",
+      afterValue: `${audit.name} · ${audit.confirmedAtEt}`,
+      source: "mint",
+    })
+    .catch((error) => {
+      console.error("[publishMintedPolicy] agent confirm log", error);
+    });
   await db
     .update(policies)
     .set({

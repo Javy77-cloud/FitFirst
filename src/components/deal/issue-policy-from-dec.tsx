@@ -96,6 +96,7 @@ export function IssuePolicyFromDec({
       const result = await uploadDeclarationAndMint(data);
       if (!result.ok) {
         setCreating(false);
+        router.refresh();
         if (result.reason === "need_dec") setOpen(true);
         const toast = mintFailureToast(result.reason);
         flashAction(toast.key, toast.kind);
@@ -183,7 +184,9 @@ export function IssuePolicyFromDec({
           <DialogHeader>
             <DialogTitle>Declaration PDF</DialogTitle>
             <DialogDescription>
-              Policy mint reads the issued declaration only — not a quote packet or wind mit.
+              Upload the issued declaration or policy. It is saved on this quote’s Manual folder, or the
+              carrier folder when that quote already has carrier files. Gemini reads the policy number,
+              premium, and dates before a policy is created.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

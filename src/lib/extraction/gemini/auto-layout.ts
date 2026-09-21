@@ -422,6 +422,10 @@ function applyPolicyRecord(out: LooseJson, rec: LooseJson) {
       "annual_premium",
       "policy_premium",
       "term_premium",
+      "full_term_premium",
+      "total_premium_for_this_policy",
+      "total_premium_for_the_policy",
+      "written_premium",
     ]),
   );
   setIfEmpty(
@@ -667,7 +671,16 @@ export function expandAutoDecLayout(json: LooseJson, shopLine?: string | null): 
   setIfEmpty(
     out,
     "current_premium",
-    pull(out, ["total_policy_premium", "six_month_premium", "premium_total", "six_month_total_premium"]),
+    pull(out, [
+      "total_policy_premium",
+      "six_month_premium",
+      "premium_total",
+      "six_month_total_premium",
+      "full_term_premium",
+      "total_premium_for_this_policy",
+      "total_premium_for_the_policy",
+      "written_premium",
+    ]),
   );
   setIfEmpty(
     out,
