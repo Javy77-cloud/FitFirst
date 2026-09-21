@@ -76,30 +76,34 @@ describe("BYO OAuth credential save", () => {
     });
   });
 
-  it("reads live form fields and stays on the card after DocuSign save", () => {
+  it("saves credentials via redirect and Connect persists a typed secret", () => {
     const action = source("src/app/actions/byo-oauth.ts");
     expect(action).toMatch(/planByoClientId/);
     expect(action).toMatch(/loadStoredByoApp/);
     expect(action).toMatch(/saveByoApp/);
+    expect(action).toMatch(/isByoPlaceholderSecret/);
+    expect(action).toMatch(/notice=credentials-saved/);
     expect(action).not.toMatch(/if \(!clientId\) redirect/);
 
     const form = source("src/components/settings/byo-oauth-credentials-form.tsx");
-    expect(form).toMatch(/readListFormData/);
-    expect(form).toMatch(/router\.refresh\(\)/);
+    expect(form).toMatch(/formAction=\{startByoOauth\}/);
+    expect(form).toMatch(/action=\{saveByoOauthCredentials\}/);
     expect(form).toMatch(/data-ff-byo-credentials-form/);
     expect(form).toMatch(/item\.hasStoredCredentials/);
     expect(form).toMatch(/Replace \/ Save credentials/);
-    expect(form).not.toMatch(/hasCredentials && !item\.hasEnvCredentials/);
+    expect(form).not.toMatch(/router\.refresh/);
+    expect(form).not.toMatch(/••••/);
 
     const card = source("src/components/settings/byo-oauth-card.tsx");
     expect(card).toMatch(/ByoOauthCredentialsForm/);
+    expect(card).toMatch(/showConnect=/);
     expect(card).toMatch(/clearByoOauthCredentials/);
     expect(card).toMatch(/data-ff-byo-clear/);
     expect(card).not.toMatch(/hasCredentials && !item\.hasEnvCredentials/);
     expect(card).toMatch(/environment credentials still apply after clear/i);
 
     const store = source("src/lib/integrations/oauth-store.ts");
-    expect(store).toMatch(/connectMode: \"credentials\"/);
+    expect(store).toMatch(/connectMode: "credentials"/);
     expect(store).toMatch(/planByoSecretWrite/);
   });
 });

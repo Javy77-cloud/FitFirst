@@ -10,7 +10,7 @@ import { db } from "@/lib/db";
 import { calendarConnections } from "@/lib/db/schema";
 import { flashSettings } from "@/lib/flash-action";
 import { deskPublicOrigin } from "@/lib/social/origin";
-import { planByoClientId } from "@/lib/integrations/byo-credentials";
+import { isByoPlaceholderSecret, planByoClientId } from "@/lib/integrations/byo-credentials";
 import { canConnectByoIntegration, canStartByoOauth, tenantLooksSolo } from "@/lib/integrations/connect-policy";
 import { getAgentFeatureToggles } from "@/lib/settings/agent-feature-toggles-prefs";
 import { listRecentGmail, sendGmailMessage } from "@/lib/integrations/gmail";
@@ -28,6 +28,7 @@ import {
   disconnectByo,
   loadStoredByoApp,
   prepareByoAuthorize,
+  recordByoOauthError,
   saveByoApp,
 } from "@/lib/integrations/oauth-store";
 import { markSendAccountConnected } from "@/lib/templates/connectors";
@@ -61,35 +62,36 @@ async function assertCanStartOauth(provider: string) {
   return session;
 }
 
-export async function saveByoOauthCredentials(formData: FormData): Promise<{
-  ok: boolean;
-  message: string;
-}> {
+export async function saveByoOauthCredentials(formData: FormData) {
+  const dest = byoOauthReturnPath(String(formData.get("next") ?? ""));
   try {
     await assertCanConnect();
-  } catch (error) {
-    return {
-      ok: false,
-      message: error instanceof Error ? error.message : "Agency Admin only.",
-    };
+  } catch {
+    redirect(`${dest}?notice=admin-only`);
   }
   const raw = String(formData.get("provider") ?? "");
-  if (!isByoOauthProviderId(raw)) return { ok: false, message: "Unknown provider." };
+  if (!isByoOauthProviderId(raw)) redirect(`${dest}?notice=unknown-provider`);
   const incomingId = String(formData.get("clientId") ?? "");
   const incomingSecret = String(formData.get("clientSecret") ?? "");
   const accountLabel = String(formData.get("accountLabel") ?? "").trim();
   const existing = await loadStoredByoApp(raw);
   const idPlan = planByoClientId({ incoming: incomingId, existing: existing?.clientId });
-  if (!idPlan.ok) return idPlan;
+  if (!idPlan.ok) {
+    await recordByoOauthError(raw, idPlan.message);
+    redirect(`${dest}?notice=oauth-wall&provider=${raw}#${raw}`);
+  }
   const saved = await saveByoApp({
     provider: raw,
     clientId: idPlan.clientId,
     clientSecret: incomingSecret,
     accountLabel: accountLabel || null,
   });
-  if (!saved.ok) return saved;
+  if (!saved.ok) {
+    await recordByoOauthError(raw, saved.message);
+    redirect(`${dest}?notice=oauth-wall&provider=${raw}#${raw}`);
+  }
   refreshByoSurfaces();
-  return { ok: true, message: "credentials-saved" };
+  redirect(`${dest}?notice=credentials-saved&provider=${raw}#${raw}`);
 }
 
 export async function startByoOauth(formData: FormData) {
@@ -97,6 +99,35 @@ export async function startByoOauth(formData: FormData) {
   const dest = byoOauthReturnPath(String(formData.get("next") ?? ""));
   if (!isByoOauthProviderId(raw)) redirect(`${dest}?notice=unknown-provider`);
   const session = await assertCanStartOauth(raw);
+
+  // Connect must persist a freshly typed Client ID / Secret. Paste-without-Save
+  // used to ignore the fields and keep the old invalid secret in the vault.
+  const incomingId = String(formData.get("clientId") ?? "");
+  const incomingSecret = String(formData.get("clientSecret") ?? "");
+  const hasTypedSecret = Boolean(incomingSecret.trim()) && !isByoPlaceholderSecret(incomingSecret);
+  if (incomingId.trim() || hasTypedSecret) {
+    if (!canConnectByoIntegration(session)) {
+      redirect(`${dest}?notice=admin-only`);
+    }
+    const existing = await loadStoredByoApp(raw);
+    const idPlan = planByoClientId({ incoming: incomingId, existing: existing?.clientId });
+    if (!idPlan.ok) {
+      await recordByoOauthError(raw, idPlan.message);
+      redirect(`${dest}?notice=oauth-wall&provider=${raw}#${raw}`);
+    }
+    const saved = await saveByoApp({
+      provider: raw,
+      clientId: idPlan.clientId,
+      clientSecret: hasTypedSecret ? incomingSecret : "",
+      accountLabel: null,
+    });
+    if (!saved.ok) {
+      await recordByoOauthError(raw, saved.message);
+      redirect(`${dest}?notice=oauth-wall&provider=${raw}#${raw}`);
+    }
+    refreshByoSurfaces();
+  }
+
   const origin = await deskPublicOrigin();
   const prepared = await prepareByoAuthorize({
     provider: raw,

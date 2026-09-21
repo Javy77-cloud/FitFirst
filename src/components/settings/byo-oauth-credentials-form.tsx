@@ -1,14 +1,7 @@
-"use client";
-
-import { usePathname, useRouter } from "next/navigation";
-import { useRef } from "react";
-import { saveByoOauthCredentials } from "@/app/actions/byo-oauth";
-import { readListFormData } from "@/components/settings/stay-on-save-form";
+import { saveByoOauthCredentials, startByoOauth } from "@/app/actions/byo-oauth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { flashAction } from "@/lib/flash-client";
-import { persistFlashScroll } from "@/lib/flash-scroll";
 import type { CatalogItem } from "@/lib/integrations/catalog-store";
 import type { ByoOauthReturnPath, ByoOauthSpec } from "@/lib/integrations/oauth-specs";
 
@@ -16,33 +9,19 @@ export function ByoOauthCredentialsForm({
   item,
   spec,
   returnTo,
+  showConnect = false,
+  connectLabel = "Connect",
 }: {
   item: CatalogItem;
   spec: ByoOauthSpec;
   returnTo: ByoOauthReturnPath;
+  showConnect?: boolean;
+  connectLabel?: string;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const formRef = useRef<HTMLFormElement>(null);
   const savedSecret = item.hasStoredCredentials;
 
   return (
-    <form
-      ref={formRef}
-      className="space-y-2"
-      data-ff-byo-credentials-form={item.id}
-      action={async (submitted) => {
-        persistFlashScroll({ pathname, anchor: item.id });
-        const payload = formRef.current ? readListFormData(formRef.current) : submitted;
-        const result = await saveByoOauthCredentials(payload);
-        if (!result.ok) {
-          flashAction(result.message, "error");
-          return;
-        }
-        flashAction(result.message, "success");
-        router.refresh();
-      }}
-    >
+    <form className="space-y-2" data-ff-byo-credentials-form={item.id} action={saveByoOauthCredentials}>
       <input type="hidden" name="provider" value={item.id} />
       <input type="hidden" name="next" value={returnTo} />
       <div>
@@ -61,12 +40,12 @@ export function ByoOauthCredentialsForm({
         <Input
           name="clientSecret"
           type="password"
-          defaultValue={savedSecret ? "••••••••••••" : ""}
+          defaultValue=""
           className="mt-1"
           autoComplete="new-password"
           placeholder={
             savedSecret
-              ? "Saved · leave blank to keep if Client ID is unchanged"
+              ? "Saved · paste a new secret to replace, or leave blank to keep"
               : "Agency secret only"
           }
           data-ff-byo-client-secret={item.id}
@@ -76,6 +55,11 @@ export function ByoOauthCredentialsForm({
         <Button type="submit" size="sm" variant="outline" data-ff-byo-save={item.id}>
           Replace / Save credentials
         </Button>
+        {showConnect ? (
+          <Button formAction={startByoOauth} type="submit" size="sm" data-ff-byo-connect={item.id}>
+            {connectLabel}
+          </Button>
+        ) : null}
         <a
           href={spec.developerUrl}
           target="_blank"
@@ -85,6 +69,12 @@ export function ByoOauthCredentialsForm({
           Create free {spec.vendor} app
         </a>
       </div>
+      {showConnect ? (
+        <p className="text-caption text-muted-foreground">
+          Paste a new Client Secret, then Connect — FitFirst saves it before opening Google. You do not
+          need a separate Save first.
+        </p>
+      ) : null}
     </form>
   );
 }

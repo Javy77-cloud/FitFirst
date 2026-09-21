@@ -123,10 +123,18 @@ export function ByoOauthCard({
 
       {canEdit || allowConnect ? (
         <div className="mt-3 space-y-3">
-          {canEdit ? <ByoOauthCredentialsForm item={item} spec={spec} returnTo={returnTo} /> : null}
+          {canEdit ? (
+            <ByoOauthCredentialsForm
+              item={item}
+              spec={spec}
+              returnTo={returnTo}
+              showConnect={ready && allowConnect}
+              connectLabel={connectLabel}
+            />
+          ) : null}
 
           <div className="flex flex-wrap items-center gap-2">
-            {ready && allowConnect ? (
+            {!canEdit && ready && allowConnect ? (
               <form action={startByoOauth}>
                 <input type="hidden" name="provider" value={item.id} />
                 <input type="hidden" name="next" value={returnTo} />
