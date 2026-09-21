@@ -29,9 +29,12 @@ import { listModuleTags } from "@/app/actions/record-tags";
 import Link from "next/link";
 import { AddCarrierDialog } from "@/components/carriers/add-carrier-dialog";
 import { BookCommandWorkspace } from "@/components/book-lists/book-workspace";
-import { loadCarrierMarketSignals } from "@/lib/book-lists/load";
+import { loadCarrierLobUsage, loadCarrierMarketSignals } from "@/lib/book-lists/load";
+import { carrierMarketGlance } from "@/lib/book-lists/kpi";
 import { matchesBookLens, parseBookHeat, parseBookLens } from "@/lib/book-lists/lenses";
 import { presentCarrierCard } from "@/lib/book-lists/present";
+import { bookFamily } from "@/lib/desk/policy-line";
+import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { deskNow } from "@/lib/home/as-of";
 
 export const dynamic = "force-dynamic";
@@ -86,11 +89,13 @@ export default async function CarriersPage({
   const q = firstParam(params.q) ?? "";
   const heat = parseBookHeat(firstParam(params.heat));
   const lens = parseBookLens(firstParam(params.lens));
-  const [all, tagCatalog, pageFilters, session] = await Promise.all([
+  const [all, tagCatalog, pageFilters, session, usage, lineSettings] = await Promise.all([
     listCarriersDesk(),
     listModuleTags("carriers").catch(() => []),
     loadPageFilterPrefs("carriers"),
     currentDeskSession(),
+    loadCarrierLobUsage(),
+    loadDeskLineSettings(),
   ]);
   const visibleFilters = enabledPageFilters(pageFilters);
   const filter = pickFilterParams(params, pageFilterParamKeys(visibleFilters));
@@ -152,9 +157,24 @@ export default async function CarriersPage({
           activePolicies: row.activePolicyCount,
         },
         asOf,
+        lineSettings,
       ),
     )
     .filter((card) => matchesBookLens(card, { heat, lens, q: heat || lens ? q : "" }));
+  const shownCarriers = new Set(cards.map((card) => card.id));
+  const market = carrierMarketGlance({
+    writeLife: lineSettings.writeLife,
+    writeHealth: lineSettings.writeHealth,
+    usage: usage
+      .filter((row) => shownCarriers.has(row.carrierId))
+      .map((row) => ({
+        carrierId: row.carrierId,
+        carrierName: row.carrierName,
+        family: bookFamily(row.lineOfBusiness),
+        policies: row.policies,
+        premium: row.premium,
+      })),
+  });
 
   const appetiteHits = q
     ? filtered
@@ -280,14 +300,13 @@ export default async function CarriersPage({
         <BookCommandWorkspace
           surface="carriers"
           path="/carriers"
-          label="Market pulse"
           layout="stack"
           cards={cards}
           heat={heat}
           lens={lens}
           q={q}
           empty="No markets in this lens. Clear a chip or add a carrier."
-          flagged={cards.filter((card) => card.column === "skip").length}
+          banner={market}
           renderLeading={(card) => <SelectRowCheckbox id={card.id} />}
           renderExtra={(card) => (
             <>

@@ -26,6 +26,8 @@ export type BookPrimaryAction = {
   href: string;
 };
 
+export type BookFamily = "pc" | "life" | "health";
+
 export type BookCardFlags = {
   client?: boolean;
   openShops?: number;
@@ -35,6 +37,19 @@ export type BookCardFlags = {
   silent?: boolean;
   needsCare?: boolean;
   lapsed?: boolean;
+  hasPhone?: boolean;
+  hasEmail?: boolean;
+  recentTouch?: boolean;
+  neverTouched?: boolean;
+  portalContact?: boolean;
+  family?: BookFamily;
+};
+
+export type BookCardAction = {
+  id: string;
+  label: string;
+  href: string;
+  external?: boolean;
 };
 
 export type BookGlanceCard = {
@@ -50,6 +65,12 @@ export type BookGlanceCard = {
   riskBand?: "high" | "medium" | "low" | null;
   glance: BookGlanceMetric[];
   why: string;
+  /** Center glance. Two cues at most — same rule as Deals. */
+  mid?: string | null;
+  midHref?: string | null;
+  /** One quiet line under the name. Only when it earns a look. */
+  peek?: string | null;
+  actions?: BookCardAction[];
   primaryAction: BookPrimaryAction;
   tags?: string[];
   phone?: string | null;

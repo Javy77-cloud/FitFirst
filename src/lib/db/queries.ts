@@ -807,11 +807,14 @@ export async function listContacts(filter: { status?: string; ownerId?: string; 
     .select({ contactId: activities.contactId, updatedAt: activities.updatedAt, startAt: activities.startAt })
     .from(activities)
     .where(eq(activities.tenantId, tenant()));
+  const loggedByContact = new Map<string, Date>();
   const lastByContact = new Map<string, Date>();
   for (const row of activityRows) {
     if (!row.contactId) continue;
     const at = row.startAt ?? row.updatedAt;
     if (!at) continue;
+    const prevLogged = loggedByContact.get(row.contactId);
+    if (!prevLogged || at.getTime() > prevLogged.getTime()) loggedByContact.set(row.contactId, at);
     const prev = lastByContact.get(row.contactId);
     if (!prev || at.getTime() > prev.getTime()) lastByContact.set(row.contactId, at);
   }
@@ -835,6 +838,7 @@ export async function listContacts(filter: { status?: string; ownerId?: string; 
       activePolicyCount: counts.inForce,
       lifetimeDealCount: counts.lifetimeDeals,
       lastActivityAt,
+      loggedTouchAt: loggedByContact.get(contact.id) ?? null,
       clientStatus: clientStatusFromCounts(counts.lifetime, counts.inForce),
     };
   }).filter((row) => {
@@ -879,11 +883,14 @@ export async function listAccounts(filter: { status?: string; city?: string; ind
     })
     .from(activities)
     .where(eq(activities.tenantId, tenant()));
+  const loggedByAccount = new Map<string, Date>();
   const lastByAccount = new Map<string, Date>();
   for (const row of activityRows) {
     if (!row.accountId) continue;
     const at = row.startAt ?? row.updatedAt;
     if (!at) continue;
+    const prevLogged = loggedByAccount.get(row.accountId);
+    if (!prevLogged || at.getTime() > prevLogged.getTime()) loggedByAccount.set(row.accountId, at);
     const prev = lastByAccount.get(row.accountId);
     if (!prev || at.getTime() > prev.getTime()) lastByAccount.set(row.accountId, at);
   }
@@ -907,6 +914,7 @@ export async function listAccounts(filter: { status?: string; city?: string; ind
       activePolicyCount: counts.inForce,
       linkedContactsCount: linkCountByAccount.get(account.id) ?? 0,
       lastActivityAt,
+      loggedTouchAt: loggedByAccount.get(account.id) ?? null,
       clientStatus: clientStatusFromCounts(counts.lifetime, counts.inForce),
     };
   }).filter((row) => {

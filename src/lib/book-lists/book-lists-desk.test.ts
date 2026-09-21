@@ -15,7 +15,13 @@ describe("command-card book lists", () => {
       expect(page).toMatch(/PipelineFilterPopover/);
     }
     expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/data-ff-book-why/);
+    expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/data-ff-stack-mid/);
     expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/data-hay=\{card\.hay\}/);
+    expect(source("src/app/contacts/page.tsx")).not.toMatch(/People pulse/);
+    expect(source("src/app/accounts/page.tsx")).not.toMatch(/Account pulse/);
+    expect(source("src/components/book-lists/book-workspace.tsx")).toMatch(/contacts-stack/);
+    expect(source("src/components/book-lists/book-workspace.tsx")).toMatch(/StandardActivityShell/);
+    expect(source("src/components/book-lists/book-workspace.tsx")).not.toMatch(/DeskTruthStrip/);
     expect(source("src/components/book-lists/book-workspace.tsx")).toMatch(/BookLiveScope/);
     expect(source("src/components/smart-search.tsx")).toMatch(/chrome-search/);
     expect(source("src/components/smart-search.tsx")).toMatch(/\/contacts/);
@@ -29,6 +35,9 @@ describe("command-card book lists", () => {
     expect(page).toMatch(/layout="stack"/);
     expect(page).not.toMatch(/DeskColumnTable/);
     expect(page).toMatch(/presentCarrierCard/);
+    expect(page).not.toMatch(/Market pulse/);
+    expect(page).toMatch(/carrierMarketGlance/);
+    expect(page).not.toMatch(/StandardActivityShell/);
     expect(source("src/lib/book-lists/lenses.ts")).toMatch(/Quote-ready/);
     expect(source("src/lib/book-lists/lenses.ts")).toMatch(/Skip/);
   });
@@ -37,6 +46,8 @@ describe("command-card book lists", () => {
     const page = source("src/app/policies/page.tsx");
     expect(page).toMatch(/layout="bands"/);
     expect(page).toMatch(/POLICY_COLUMNS/);
+    expect(page).not.toMatch(/Policy attention/);
+    expect(page).not.toMatch(/StandardActivityShell/);
     expect(page).not.toMatch(/DeskColumnTable/);
     expect(source("src/lib/book-lists/types.ts")).toMatch(/Needs care now/);
   });

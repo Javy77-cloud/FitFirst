@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  glanceDate,
   partyAttentionHeat,
   policyAttention,
   relativeTouchLabel,
@@ -56,6 +57,18 @@ describe("book-list heat", () => {
         missingDocs: 0,
       }).why,
     ).toMatch(/claim/);
+    expect(glanceDate("2026-10-03T00:00:00.000Z")).toBe("Oct 3, 2026");
+    expect(
+      policyAttention({
+        daysUntil: 12,
+        lastTouchDays: 2,
+        lapsed: false,
+        openClaims: 0,
+        pendingEndorsements: 0,
+        missingDocs: 0,
+        expirationLabel: "Oct 3, 2026",
+      }).why,
+    ).toBe("Renews in 12d, Oct 3, 2026");
   });
 
   it("stacks hottest / stalest first", () => {

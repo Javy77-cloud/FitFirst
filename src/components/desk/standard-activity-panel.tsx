@@ -255,7 +255,13 @@ function ActivityAside({
   );
 }
 
-export type ActivitySurface = "deals-list" | "renewals-list" | "deals-stack" | "renewals-stack";
+export type ActivitySurface =
+  | "deals-list"
+  | "renewals-list"
+  | "deals-stack"
+  | "renewals-stack"
+  | "contacts-stack"
+  | "accounts-stack";
 
 /** List and Stack desks: the shared Activity board is on by default and keeps its column. */
 export function StandardActivityShell({
