@@ -212,7 +212,10 @@ export default async function DealPage({
         accountId: deal.accountId,
       }),
       db
-        .select()
+        .select({
+          agencyName: agencySettings.agencyName,
+          officeAddress: agencySettings.officeAddress,
+        })
         .from(agencySettings)
         .where(eq(agencySettings.tenantId, DEFAULT_TENANT_ID))
         .limit(1)

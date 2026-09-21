@@ -209,7 +209,11 @@ export async function loadDeskLineSettings(): Promise<DeskLineSettings> {
   try {
     await ensureDefaultLineSubfilters();
     const [row] = await db
-      .select()
+      .select({
+        writeLife: agencySettings.writeLife,
+        writeHealth: agencySettings.writeHealth,
+        showSellingAgency: agencySettings.showSellingAgency,
+      })
       .from(agencySettings)
       .where(eq(agencySettings.tenantId, tenant()));
     const options = await db

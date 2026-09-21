@@ -1997,8 +1997,8 @@ button.ff-renewal-risk-badge {
 
 .ff-today-activity-corner {
   position: fixed;
-  left: 1rem;
-  right: auto;
+  right: 1rem;
+  left: auto;
   bottom: 1rem;
   z-index: 70;
   isolation: isolate;
@@ -2006,11 +2006,16 @@ button.ff-renewal-risk-badge {
   visibility: visible;
   opacity: 1;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 0.45rem;
   max-width: min(22rem, calc(100vw - 1.5rem));
   pointer-events: none;
 }
+.ff-today-activity-corner[data-ff-drag-pos="1"] {
+  right: auto;
+  left: 0;
+}
+
 .ff-today-activity-corner-toggle,
 .ff-today-activity-corner-panel,
 .ff-today-activity-corner-panel a,
@@ -2021,6 +2026,8 @@ button.ff-renewal-risk-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+  touch-action: none;
+  cursor: grab;
   min-height: 3rem;
   border: 1px solid color-mix(in srgb, var(--ff-navy) 22%, transparent);
   border-radius: 999px;
