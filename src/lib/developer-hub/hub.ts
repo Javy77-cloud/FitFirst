@@ -16,6 +16,14 @@ export const DEV_HUB_SECTIONS = [
     badge: "Gaps",
   },
   {
+    id: "carrier-login-issues",
+    href: "/settings/developer-hub/carrier-login-issues",
+    label: "Carrier login issues",
+    hint: "Quote-bot portal login failures. List file: data/carrier-login-issues.ndjson. Does not skip markets unless FF_BLOCK_CARRIER_LOGIN_ISSUES=1.",
+    ownedHere: true,
+    badge: "Login",
+  },
+  {
     id: "functions",
     href: "/settings/developer-hub/functions",
     label: "Functions",

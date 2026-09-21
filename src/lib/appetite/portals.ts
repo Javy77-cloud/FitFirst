@@ -4,6 +4,11 @@ export type PortalQuoteRequest = {
   riskId: string;
 };
 
+/**
+ * `login_failed` is an auth failure (captcha, 2FA, lockout, expired session, …).
+ * shopDealQuotes records that on data/carrier-login-issues.ndjson.
+ * `not_implemented` means no portal login ran — it is not a login failure.
+ */
 /** A question the carrier page asked during a quote pull. */
 export type PortalObservedQuestion = {
   question: string;
@@ -13,7 +18,7 @@ export type PortalObservedQuestion = {
 };
 
 export type PortalQuoteResult = {
-  status: "not_implemented";
+  status: "not_implemented" | "login_failed";
   message: string;
   /**
    * Carrier prompts seen on this pull. Auto shop logs the ones that are not

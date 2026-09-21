@@ -71,6 +71,7 @@ export const SETTINGS_NAV_IDS = [
   "dev-scripts",
   "dev-widgets",
   "missing-questions",
+  "carrier-login-issues",
 ] as const;
 
 export type SettingsNavId = (typeof SETTINGS_NAV_IDS)[number];
@@ -287,6 +288,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       { id: "developer-hub", href: "/settings/developer-hub", label: "Developer Hub", hint: "API · webhooks · widgets", advanced: true },
       { id: "api-vault", href: "/settings/developer-hub/api-vault", label: "API vault", hint: "FedEx · site developers", advanced: true },
       { id: "missing-questions", href: "/settings/developer-hub/missing-questions", label: "Missing questions", hint: "Carrier field gaps", advanced: true },
+      { id: "carrier-login-issues", href: "/settings/developer-hub/carrier-login-issues", label: "Carrier login issues", hint: "Quote-bot auth failures", advanced: true },
     ],
   },
   {
@@ -352,6 +354,7 @@ const AUTOMATIONS_DEVELOPER_ALIASES = new Set<SettingsNavId>([
   "playbooks",
   "sequences",
   "missing-questions",
+  "carrier-login-issues",
 ]);
 
 const SETTINGS_CHILD_ALIASES: Partial<Record<SettingsNavId, SettingsNavId>> = {
@@ -448,6 +451,7 @@ export const SETTINGS_KNOWN_HREFS = [
   "/settings/developer-hub/client-scripts",
   "/settings/developer-hub/widgets",
   "/settings/developer-hub/missing-questions",
+  "/settings/developer-hub/carrier-login-issues",
   "/settings/profile",
   "/settings/security",
   "/compliance",

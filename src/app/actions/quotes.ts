@@ -6,6 +6,12 @@ import { and, eq, inArray } from "drizzle-orm";
 import { matchCarrier, rankFits, riskFromRecord } from "@/lib/appetite/match";
 import { toAppetiteInput } from "@/lib/appetite/rule-input";
 import { portalFor } from "@/lib/appetite/portals";
+import { captureQuoteBotLoginFailure, loadCarrierLoginEvents } from "@/lib/carrier-login-issues/persist";
+import {
+  carrierLoginBlockEnabled,
+  isCarrierLoginBlocked,
+  rollupCarrierLoginIssues,
+} from "@/lib/carrier-login-issues/store";
 import {
   captureAutoGapsFromAttemptWhy,
   recordPortalObservedQuestions,
@@ -338,16 +344,24 @@ export async function shopDealQuotes(
 
   // Live desk: do not invent stub premiums. Real quotes come from Chrome Fill / portal paste.
   // Quote-gate Skip-Decline: do not open a portal for that carrier.
+  // TODO: FF_BLOCK_CARRIER_LOGIN_ISSUES defaults OFF. Do not skip production markets
+  // for login issues until that flag is explicitly set to 1.
+  const loginRollup = carrierLoginBlockEnabled()
+    ? rollupCarrierLoginIssues(await loadCarrierLoginEvents())
+    : [];
   for (const carrierId of [...shopIds].filter((id) => !excludedIds.has(id) && !skipGateIds.has(id))) {
     const match = byId.get(carrierId);
     const carrierName = match?.carrierName ?? nameById.get(carrierId) ?? "Carrier";
+    const loginBlocked = isCarrierLoginBlocked({ id: carrierId, name: carrierName }, loginRollup);
     const portal = portalFor(carrierId, carrierName);
-    const portalResult = await portal.submitQuote({
-      carrierId,
-      dealId,
-      riskId: risk.id,
-    });
-    if (portalResult.observedQuestions?.length) {
+    const portalResult = loginBlocked
+      ? null
+      : await portal.submitQuote({
+          carrierId,
+          dealId,
+          riskId: risk.id,
+        });
+    if (portalResult?.observedQuestions?.length) {
       try {
         recordPortalObservedQuestions({
           shopLine: resolved.line,
@@ -362,9 +376,23 @@ export async function shopDealQuotes(
         console.error("auto question gap capture failed", error);
       }
     }
+    if (portalResult) {
+      await captureQuoteBotLoginFailure({
+        carrierName,
+        carrierId,
+        errorMessage: portalResult.message,
+        result: portalResult.status,
+        lob: resolved.lob || deal.lineOfBusiness || "HO",
+        dealId,
+        source: "quote-bot.portal.submitQuote",
+      });
+    }
     const manual = manualIds.has(carrierId);
     const shopLob = resolved.lob || deal.lineOfBusiness || "HO";
     const shopAutoSnap = await autoSnapshotFieldsForDeal(dealId, shopLob);
+    const portalWhy = loginBlocked
+      ? "TODO FF_BLOCK_CARRIER_LOGIN_ISSUES=1 — skipped portal. Recurring login failure is on the carrier login list. Flag default is off."
+      : portalResult?.message ?? "";
     await db.insert(quoteAttemptLogs).values({
       tenantId: DEFAULT_TENANT_ID,
       dealId,
@@ -373,7 +401,7 @@ export async function shopDealQuotes(
       lineOfBusiness: shopLob,
       result: "maybe",
       bindable: false,
-      why: `${EXPLICIT_MARKET_ACTION_MARKER} ${pass} shop · ${portalResult.message}${manual ? ` ${MANUAL_MARKET_MARKER}` : ""} · no stub premium (Fill/portal for real quote). Fit ${match?.fitScore ?? "—"}.`,
+      why: `${EXPLICIT_MARKET_ACTION_MARKER} ${pass} shop · ${portalWhy}${manual ? ` ${MANUAL_MARKET_MARKER}` : ""} · no stub premium (Fill/portal for real quote). Fit ${match?.fitScore ?? "—"}.`,
       snapYearBuilt: risk.yearBuilt,
       snapRoofYear: risk.roofYear,
       snapRoofCovering: risk.roofCovering,
@@ -407,20 +435,23 @@ export async function recordManualAttempt(formData: FormData) {
   if (!risk) throw new Error("Master risk missing");
 
   const manualLob = String(formData.get("line") ?? "HO");
+  const manualCarrierId = String(formData.get("carrierId") ?? "");
+  const manualResult = String(formData.get("result") ?? "declined");
+  const manualWhy = String(formData.get("why") ?? "") || null;
   const manualAutoSnap = await autoSnapshotFieldsForDeal(dealId, manualLob);
   const manualLineSnap = await lineLearningSnapshotFieldsForDeal(dealId, manualLob);
   await db.insert(quoteAttemptLogs).values({
     tenantId: DEFAULT_TENANT_ID,
     dealId,
     riskId: risk.id,
-    carrierId: String(formData.get("carrierId") ?? ""),
+    carrierId: manualCarrierId,
     lineOfBusiness: manualLob,
-    result: String(formData.get("result") ?? "declined"),
+    result: manualResult,
     bindable: formData.get("bindable") === "true",
     quoteNumber: String(formData.get("quoteNumber") ?? "") || null,
     premium: String(formData.get("premium") ?? "") || null,
     covATried: risk.coverageA,
-    why: String(formData.get("why") ?? "") || null,
+    why: manualWhy,
     lostReason:
       String(formData.get("result") ?? "declined") === "declined"
         ? String(formData.get("lostReason") ?? "").trim() || null
@@ -442,12 +473,12 @@ export async function recordManualAttempt(formData: FormData) {
     ...manualLineSnap,
   });
 
-  const manualCarrierId = String(formData.get("carrierId") ?? "");
   const [manualCarrier] = manualCarrierId
     ? await db
         .select({ name: carriers.name })
         .from(carriers)
         .where(eq(carriers.id, manualCarrierId))
+        .limit(1)
     : [];
   try {
     captureAutoGapsFromAttemptWhy({
@@ -461,6 +492,15 @@ export async function recordManualAttempt(formData: FormData) {
   } catch (error) {
     console.error("auto question gap capture failed", error);
   }
+  await captureQuoteBotLoginFailure({
+    carrierName: manualCarrier?.name || "Carrier",
+    carrierId: manualCarrierId,
+    errorMessage: manualWhy || manualResult,
+    result: manualResult,
+    lob: manualLob,
+    dealId,
+    source: "quote-bot.recordManualAttempt",
+  });
 
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/carriers/logs");

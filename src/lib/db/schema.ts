@@ -1669,6 +1669,33 @@ export const carrierMissingQuestions = pgTable(
   ],
 );
 
+/**
+ * Quote-bot LOGIN / auth failures (captcha, 2FA, lockout, expired session, …).
+ * Not carrier_missing_questions. Seeded events live in data/carrier-login-issues.ndjson;
+ * this table is the durable append target when the process can reach Postgres.
+ * No carrier FK — a login note must still store if the desk row is missing.
+ */
+export const carrierLoginIssues = pgTable(
+  "carrier_login_issues",
+  {
+    id: uuid("id").primaryKey(),
+    tenantId: tenantCol(),
+    carrierId: uuid("carrier_id"),
+    carrierName: text("carrier_name").notNull(),
+    lob: text("lob"),
+    errorMessage: text("error_message").notNull(),
+    errorCategory: text("error_category").notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+    source: text("source"),
+    dealId: uuid("deal_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("carrier_login_issues_tenant_carrier_idx").on(t.tenantId, t.carrierId, t.errorCategory),
+    index("carrier_login_issues_occurred_idx").on(t.tenantId, t.occurredAt),
+  ],
+);
+
 export const extractionJobs = pgTable(
   "extraction_jobs",
   {
