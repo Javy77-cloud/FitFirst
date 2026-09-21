@@ -62,6 +62,13 @@ export function presentInboxThread(row: GmailThreadPreview, index: InboxMatchInd
   };
 }
 
+/** Newest mail first. Gmail internal time wins; a missing stamp falls back to the Date header. */
+export function inboxThreadRecency(row: Pick<InboxDeskThread, "lastInternalDate" | "date">): number {
+  if (Number.isFinite(row.lastInternalDate) && row.lastInternalDate > 0) return row.lastInternalDate;
+  const parsed = Date.parse(row.date);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export function groupInboxThreads(rows: InboxDeskThread[]): Record<InboxAttention, InboxDeskThread[]> {
   const groups: Record<InboxAttention, InboxDeskThread[]> = {
     unread: [],
@@ -70,7 +77,7 @@ export function groupInboxThreads(rows: InboxDeskThread[]): Record<InboxAttentio
   const sorted = [...rows].sort((a, b) => {
     const band = inboxBandRank(a.attention) - inboxBandRank(b.attention);
     if (band !== 0) return band;
-    return b.lastInternalDate - a.lastInternalDate;
+    return inboxThreadRecency(b) - inboxThreadRecency(a);
   });
   for (const row of sorted) {
     groups[row.attention].push(row);
