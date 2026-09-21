@@ -89,6 +89,16 @@ export function pinPickColumnFirst(ids: string[]): string[] {
   return ["pick", ...ids.filter((id) => id !== "pick")];
 }
 
+/** Append catalog columns that saved prefs never included (Leads policy form). */
+export function insertMissingColumnIds(visible: string[], ids: readonly string[]): string[] {
+  const next = [...visible];
+  for (const id of ids) {
+    if (!id || next.includes(id)) continue;
+    next.push(id);
+  }
+  return next;
+}
+
 /** Raw user-saved column ids — keep unknowns so layout/catalog growth can restore them later. */
 export function sanitizeStoredColumnIds(stored: unknown): string[] | null {
   if (!Array.isArray(stored)) return null;
@@ -446,6 +456,32 @@ const LEADS_LAYOUT_COVERED = new Set([
   "stage",
 ]);
 
+/** Policy form and insurance type start visible — detail had them while the list cell stayed blank. */
+const LEADS_LAYOUT_DEFAULT_ON = new Set([
+  "insurance_subtype",
+  "policy_form",
+  "quoting_form",
+  "insurance_category",
+]);
+
+function leadLayoutColumnLabel(key: string, fieldLabel?: string): string {
+  if (key === "insurance_subtype" || key === "policy_form" || key === "quoting_form" || key === "form") {
+    return "Policy form";
+  }
+  if (key === "insurance_category") return "Insurance type";
+  if (fieldLabel?.trim()) return fieldLabel;
+  return key
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function leadLayoutColumnDefaultOn(key: string, label: string): boolean {
+  if (LEADS_LAYOUT_DEFAULT_ON.has(key)) return true;
+  return /^(policy form|insurance type)$/i.test(label.trim());
+}
+
 const LEADS_LAYOUT_WIDTHS: Record<string, number> = {
   source: LEADS_DEFAULT_WIDTHS.source,
   email: 180,
@@ -480,16 +516,11 @@ export function leadsListColumnsFromLayout(
     if (seen.has(key) || LEADS_LAYOUT_COVERED.has(key)) continue;
     // Never invent junk / LOB phantoms that are not on this module layout.
     const field = byKey.get(key);
+    const label = leadLayoutColumnLabel(key, field?.label);
     extras.push({
       id: key,
-      label:
-        field?.label ??
-        key
-          .split("_")
-          .filter(Boolean)
-          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-          .join(" "),
-      defaultOn: false,
+      label,
+      defaultOn: leadLayoutColumnDefaultOn(key, label),
       defaultWidth: LEADS_LAYOUT_WIDTHS[key],
     });
     seen.add(key);
