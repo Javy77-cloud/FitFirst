@@ -7,7 +7,7 @@ import { HEAT_LABELS, HEAT_STATES } from "@/lib/deals/velocity";
 
 /**
  * Radar fills the desk: a heat share, silence and touch charts, then one
- * line of names per heat that actually has deals.
+ * continuous section per heat. Names wrap down the section; they do not scroll sideways.
  */
 export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
   const named = HEAT_STATES.map((heat) => ({

@@ -3476,6 +3476,7 @@ tr[data-ff-activity-selected="true"] {
   display: grid;
   grid-template-columns: minmax(12rem, 0.86fr) minmax(0, 1.05fr) minmax(0, 1.15fr);
   gap: 0.4rem;
+  align-items: start;
   flex: 0 0 auto;
   min-height: 0;
 }
@@ -3504,8 +3505,13 @@ tr[data-ff-activity-selected="true"] {
   width: 100%;
   min-height: 5.2rem;
 }
-.ff-radar-heat-body { align-items: center; justify-content: center; gap: 0.55rem; }
-.ff-radar-donut-wrap { position: relative; width: 4.6rem; height: 4.6rem; flex: 0 0 auto; }
+.ff-radar-heat-body { align-items: center; justify-content: center; gap: 1.1rem; flex-wrap: wrap; }
+.ff-radar-donut-wrap {
+  position: relative;
+  width: min(13.8rem, 100%);
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+}
 .ff-radar-donut { width: 100%; height: 100%; }
 .ff-radar-donut-center {
   position: absolute;
@@ -3516,32 +3522,33 @@ tr[data-ff-activity-selected="true"] {
   justify-content: center;
   color: var(--ff-navy);
 }
-.ff-radar-donut-center strong { font-size: 1.05rem; line-height: 1; font-variant-numeric: tabular-nums; }
-.ff-radar-donut-center span { font-size: 0.58rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ff-muted); }
-.ff-radar-heat-legend { display: grid; gap: 0.22rem; margin: 0; padding: 0; list-style: none; flex: 0 1 auto; }
-.ff-radar-heat-legend li { display: grid; grid-template-columns: auto 1fr auto; gap: 0.3rem; align-items: center; color: var(--ff-navy); font-size: 0.72rem; font-weight: 650; }
-.ff-radar-heat-legend i { width: 0.55rem; height: 0.55rem; border-radius: 999px; background: var(--ff-heat); }
+.ff-radar-donut-center strong { font-size: 1.9rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.ff-radar-donut-center span { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ff-muted); }
+.ff-radar-heat-legend { display: grid; gap: 0.4rem; margin: 0; padding: 0; list-style: none; flex: 0 1 auto; }
+.ff-radar-heat-legend li { display: grid; grid-template-columns: auto 1fr auto; gap: 0.4rem; align-items: center; color: var(--ff-navy); font-size: 0.82rem; font-weight: 650; }
+.ff-radar-heat-legend i { width: 0.7rem; height: 0.7rem; border-radius: 999px; background: var(--ff-heat); }
 .ff-radar-heat-legend strong { font-variant-numeric: tabular-nums; }
 .ff-radar-bars {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.3rem;
-  align-items: end;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 0.45rem;
   align-self: center;
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   margin-inline: auto;
-  min-height: 5.2rem;
+  min-height: 15.6rem;
 }
-.ff-radar-bar { display: grid; grid-template-rows: auto 1fr auto auto; justify-items: center; height: 100%; min-height: 5.2rem; }
+.ff-radar-bar { display: grid; grid-template-rows: auto 1fr auto auto; justify-items: center; width: 4.65rem; height: 100%; min-height: 15.6rem; }
 .ff-radar-bar-value { color: var(--ff-navy); font-size: 0.82rem; font-weight: 750; font-variant-numeric: tabular-nums; }
 .ff-radar-bar-track {
   display: flex;
   align-items: flex-end;
   width: 100%;
-  max-width: 1.55rem;
+  max-width: 4.65rem;
   height: 100%;
-  min-height: 2.45rem;
-  border-radius: 0.4rem 0.4rem 0.14rem 0.14rem;
+  min-height: 7.35rem;
+  border-radius: 0.45rem 0.45rem 0.15rem 0.15rem;
   background: color-mix(in srgb, var(--ff-navy) 5%, white);
 }
 .ff-radar-bar-track i {
@@ -3559,17 +3566,17 @@ tr[data-ff-activity-selected="true"] {
 .ff-radar-trend {
   display: flex;
   flex-direction: column;
-  align-self: center;
+  align-self: stretch;
   justify-content: center;
   width: 100%;
   margin-inline: auto;
-  min-height: 5.2rem;
+  min-height: 0;
 }
-.ff-radar-trend svg { width: 100%; height: 100%; flex: 1 1 auto; min-height: 3.7rem; }
-.ff-radar-axis { stroke: color-mix(in srgb, var(--ff-navy) 16%, var(--ff-border)); stroke-width: 1; }
+.ff-radar-trend svg { width: 100%; height: 3.64rem; flex: 0 0 auto; }
+.ff-radar-axis { stroke: color-mix(in srgb, var(--ff-navy) 16%, var(--ff-border)); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .ff-radar-axis.is-mid { stroke-dasharray: 3 4; }
 .ff-radar-area { fill: color-mix(in srgb, var(--ff-navy) 16%, white); }
-.ff-radar-line { fill: none; stroke: var(--ff-navy); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.ff-radar-line { fill: none; stroke: var(--ff-navy); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .ff-radar-point { fill: #fff; stroke: var(--ff-heat-hot); stroke-width: 2; }
 .ff-radar-trend-scale { display: flex; justify-content: space-between; color: var(--ff-muted); font-size: 0.66rem; font-weight: 700; }
 .ff-radar-phases {
@@ -3630,8 +3637,10 @@ tr[data-ff-activity-selected="true"] {
   display: grid;
   grid-template-columns: 7.4rem minmax(0, 1fr);
   gap: 0.25rem 0.7rem;
-  align-items: center;
+  align-items: start;
+  min-width: 0;
   padding: 0.32rem 0.65rem;
+  container-type: inline-size;
   border: 1px solid color-mix(in srgb, var(--ff-heat) 28%, var(--ff-border));
   border-radius: 0.7rem;
   background: color-mix(in srgb, var(--ff-heat-wash, #fff) 55%, #fff);
@@ -3641,6 +3650,7 @@ tr[data-ff-activity-selected="true"] {
   align-items: center;
   gap: 0.45rem;
   min-width: 0;
+  padding-top: 0.28rem;
   color: var(--ff-navy);
   font-size: 0.84rem;
   font-weight: 750;
@@ -3649,19 +3659,27 @@ tr[data-ff-activity-selected="true"] {
   font-variant-numeric: tabular-nums;
 }
 .ff-heat-row-deals {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.35rem;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: thin;
+  overflow-x: clip;
+}
+@container (max-width: 58rem) {
+  .ff-heat-row-deals { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container (max-width: 42rem) {
+  .ff-heat-row-deals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (max-width: 28rem) {
+  .ff-heat-row-deals { grid-template-columns: minmax(0, 1fr); }
 }
 .ff-heat-glance-card {
-  display: inline-flex;
-  flex: 0 0 auto;
+  display: flex;
   align-items: baseline;
   gap: 0.35rem 0.5rem;
-  max-width: 16rem;
+  min-width: 0;
+  max-width: 100%;
   padding: 0.22rem 0.6rem;
   border: 1px solid color-mix(in srgb, var(--ff-heat) 35%, var(--ff-border));
   border-radius: 999px;

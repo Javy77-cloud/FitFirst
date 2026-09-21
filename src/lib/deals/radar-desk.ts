@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { activityLogs, documents, quotes } from "@/lib/db/schema";
 import type { DealListRow } from "@/lib/db/queries";
 import { inferDealProducts, dealProductDef } from "@/lib/deals/deal-products";
+import { RADAR_TREND_DAYS } from "@/lib/deals/radar-glance";
 import { visibleDealTitle } from "@/lib/deals/deal-title";
 import {
   bestQuotePremium,
@@ -417,6 +418,8 @@ export function presentRadarCards(
             (at): at is Date => Boolean(at),
           ),
           now,
+          RADAR_TREND_DAYS,
+          RADAR_TREND_DAYS,
         ),
       } satisfies RadarDealCard;
     })
