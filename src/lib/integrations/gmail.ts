@@ -1,3 +1,4 @@
+import { plainFromInboxHtml } from "@/lib/desk/inbox-body";
 import { liveAccessToken } from "./oauth-exchange";
 import { loadByoConnection } from "./oauth-store";
 
@@ -29,6 +30,8 @@ export type GmailThreadMessage = {
   date: string;
   snippet: string;
   body: string;
+  /** Raw HTML alternative, when the message has one. Empty for plain-only mail. */
+  bodyHtml: string;
   unread: boolean;
   inbound: boolean;
   internalDate: number;
@@ -130,24 +133,28 @@ function decodeGmailBody(data: string | undefined): string {
   }
 }
 
-function walkGmailParts(part?: {
+type GmailMimePart = {
   mimeType?: string;
   body?: { data?: string };
   parts?: unknown[];
-}): string {
-  if (!part) return "";
-  if (part.mimeType === "text/plain" && part.body?.data) return decodeGmailBody(part.body.data);
-  for (const child of part.parts ?? []) {
-    const text = walkGmailParts(child as { mimeType?: string; body?: { data?: string }; parts?: unknown[] });
-    if (text) return text;
-  }
-  if (part.mimeType === "text/html" && part.body?.data) {
-    return decodeGmailBody(part.body.data)
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/&nbsp;/g, " ");
-  }
-  return "";
+};
+
+/** Plain text plus the HTML alternative. HTML is kept so the desk can wrap tables. */
+export function gmailBodiesFromPart(part?: GmailMimePart): { plain: string; html: string } {
+  let plain = "";
+  let html = "";
+  const walk = (node?: GmailMimePart) => {
+    if (!node) return;
+    if (!plain && node.mimeType === "text/plain" && node.body?.data) {
+      plain = decodeGmailBody(node.body.data);
+    }
+    if (!html && node.mimeType === "text/html" && node.body?.data) {
+      html = decodeGmailBody(node.body.data);
+    }
+    for (const child of node.parts ?? []) walk(child as GmailMimePart);
+  };
+  walk(part);
+  return { plain: plain.trim(), html: html.trim() };
 }
 
 export function isGmailInbound(labelIds: string[] | undefined, from: string, agencyEmail: string | null): boolean {
@@ -171,7 +178,8 @@ function mapThreadMessage(
 ): GmailThreadMessage {
   const headers = gmailHeadersFrom(msg.payload);
   const labels = msg.labelIds ?? [];
-  const body = walkGmailParts(msg.payload) || (msg.snippet ?? "").trim();
+  const extracted = gmailBodiesFromPart(msg.payload);
+  const body = extracted.plain || plainFromInboxHtml(extracted.html) || (msg.snippet ?? "").trim();
   return {
     id: msg.id ?? "",
     threadId: msg.threadId ?? "",
@@ -182,6 +190,7 @@ function mapThreadMessage(
     date: headers.date,
     snippet: (msg.snippet ?? "").trim() || body.slice(0, 160),
     body: body.trim(),
+    bodyHtml: extracted.html,
     unread: labels.includes("UNREAD"),
     inbound: isGmailInbound(labels, headers.from, agencyEmail),
     internalDate: Number(msg.internalDate ?? 0),

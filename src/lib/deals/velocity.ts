@@ -363,13 +363,35 @@ export function urgencyScore(input: {
   return Math.round(score);
 }
 
+const CLOSED_STAMP = new Set(["bound", "policy_issued", "closed_won", "done"]);
+
+/**
+ * Next step on a stack card. There is no Chase pipeline stamp — name the move
+ * the file is actually in (follow up, call, send quote, upload docs).
+ */
 export function primaryDealAction(input: {
   dealId: string;
   phase: VelocityPhase;
   heat: HeatState;
+  quoteSent?: boolean;
+  stageStamp?: string | null;
+  inspection?: boolean;
 }): PrimaryDealAction {
-  if (input.heat === "cold" || input.phase === "post_quote_gap") {
-    return { label: "Chase", href: `/deals/${input.dealId}?tab=quotes`, tab: "quotes" };
+  const stamp = (input.stageStamp ?? "").trim().toLowerCase();
+  const quoted = Boolean(input.quoteSent) || stamp === "quote_sent" || input.phase === "post_quote_gap";
+  if (CLOSED_STAMP.has(stamp)) {
+    return { label: "Open deal", href: `/deals/${input.dealId}`, tab: "details" };
+  }
+  if (input.inspection || quoted) {
+    return { label: "Follow up", href: `/deals/${input.dealId}?tab=quotes`, tab: "quotes" };
+  }
+  if (input.heat === "cold" || input.heat === "near_cold") {
+    if (input.phase === "quotes") {
+      return { label: "Send quote", href: `/deals/${input.dealId}?tab=quotes`, tab: "quotes" };
+    }
+    if (input.phase === "details" || input.phase === "lead_to_deal") {
+      return { label: "Call", href: `/deals/${input.dealId}?tab=details`, tab: "details" };
+    }
   }
   if (input.phase === "details") {
     return { label: "Open details", href: `/deals/${input.dealId}?tab=details`, tab: "details" };

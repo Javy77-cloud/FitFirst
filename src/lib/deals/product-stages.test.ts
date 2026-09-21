@@ -331,7 +331,7 @@ describe("per-product stages", () => {
     const css = source("src/app/globals.css");
     expect(css).toMatch(/\.ff-deal-stamp-row \{[\s\S]*position: absolute;/);
     expect(css).toMatch(/\.ff-deal-stamp-row \{[\s\S]*top: 13\.5rem;/);
-    expect(css).not.toMatch(/\.ff-deal-status-stamp \{[\s\S]*position: sticky;/);
+    expect(css).not.toMatch(/\.ff-deal-status-stamp \{[^}]*position:\s*sticky/);
     expect(css).toMatch(/\.ff-deal-notice-stamp/);
     expect(productChipStageLabel("review")).toBe("Quote review");
     expect(productChipStageLabel("quote_review")).toBe("Quote review");

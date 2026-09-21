@@ -123,4 +123,21 @@ describe("Deals Priority Stack + Radar", () => {
     expect(velocity).toMatch(/export function bubbleSizeRem/);
     expect(source("src/lib/deals/radar-desk.ts")).toMatch(/updatedAt: parseDate\(deal\.updatedAt\)/);
   });
+
+  it("keeps Stack product names on the left and that product's place, stamps, and quotes on the right", () => {
+    const face = source("src/components/deals/deal-host-face.tsx");
+    const css = source("src/app/globals.css");
+    const meter = source("src/components/renewals/renewal-health-meter.tsx");
+    expect(face).toMatch(/data-ff-product-lines/);
+    expect(face).toMatch(/data-ff-product-label/);
+    expect(face).toMatch(/data-ff-product-place/);
+    expect(face).toMatch(/data-ff-product-quotes/);
+    expect(face).toMatch(/data-ff-deal-stamp/);
+    expect(face).toMatch(/RenewalHealthMeter/);
+    expect(meter).toMatch(/ff-renewal-health-label">Client/);
+    expect(meter).toMatch(/ff-renewal-health-label">Policy/);
+    expect(css).toMatch(/\.ff-stack-products li \{[^}]*grid-template-columns:\s*6\.75rem minmax\(0,\s*1fr\)/);
+    expect(css).toMatch(/\.ff-stack-products \{[^}]*flex:\s*1 0 100%/);
+    expect(source("src/lib/deals/velocity.ts")).not.toMatch(/label:\s*"Chase"/);
+  });
 });
