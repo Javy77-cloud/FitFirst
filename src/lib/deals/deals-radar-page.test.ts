@@ -44,6 +44,10 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/components/deals/radar-board.tsx")).toMatch(/data-ff-radar-trend/);
     expect(source("src/app/globals.css")).toMatch(/\.ff-radar-banner-lead strong \{ font-size: 2\.7rem/);
     expect(source("src/app/globals.css")).toMatch(/\.ff-radar-chart-body \{[^}]*min-height: 5\.2rem/);
+    expect(source("src/app/globals.css")).toMatch(
+      /\.ff-radar-chart-body \{[^}]*align-items: center;[^}]*justify-content: center/,
+    );
+    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-heat-body \{[^}]*justify-content: center/);
     expect(source("src/components/deals/radar-board.tsx")).not.toMatch(/days silent/);
     expect(source("src/components/deals/priority-stack.tsx")).toMatch(/PriorityPinControl/);
     expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/VelocityClockRail/);
