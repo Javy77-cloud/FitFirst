@@ -1,41 +1,13 @@
 import { DealsHostList } from "@/components/deals/deals-host-list";
 import { dealDisplayName } from "@/components/deals/deal-host-face";
-import { ListCommsShell } from "@/components/desk/list-comms-rail";
+import { StandardActivityShell } from "@/components/desk/standard-activity-panel";
 import { PriorityStack } from "@/components/deals/priority-stack";
 import { DealsRadar } from "@/components/deals/deals-radar";
 import { DealsLenses } from "@/components/deals/deals-lenses";
 import { DealsHeatPulse } from "@/components/deals/deals-heat-pulse";
 import type { DealsViewId } from "@/lib/deals/deals-views";
 import type { RadarDealCard } from "@/lib/deals/radar-desk";
-import { HEAT_LABELS, HEAT_STATES, heatCounts, type HeatState } from "@/lib/deals/velocity";
-import { cn } from "@/lib/utils";
-
-function BookHeatHeader({
-  counts,
-  total,
-}: {
-  counts: Record<HeatState, number>;
-  total: number;
-}) {
-  return (
-    <section className="ff-book-heat-header" data-ff-book-heat="" aria-label="Book heat">
-      <div className="ff-book-heat-title">
-        <p>Book heat</p>
-        <strong data-ff-book-heat-total="">{total}</strong>
-        <span>{total === 1 ? "deal" : "deals"} · silence clock</span>
-      </div>
-      <ul className="ff-book-heat-counts" data-ff-book-heat-counts="">
-        {HEAT_STATES.map((heat) => (
-          <li key={heat} className={cn("ff-book-heat-count", `ff-heat-${heat}`)} data-ff-book-heat-row={heat}>
-            <i className="ff-book-heat-swatch" aria-hidden />
-            <span>{HEAT_LABELS[heat]}</span>
-            <strong>{counts[heat]}</strong>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
+import type { HeatState } from "@/lib/deals/velocity";
 
 export function DealsCommandWorkspace({
   view,
@@ -67,7 +39,6 @@ export function DealsCommandWorkspace({
   rankLabel: string | null;
 }) {
   const shownHeats = cards.map((card) => card.heat);
-  const bookHeatCounts = heatCounts(shownHeats);
   const pulse = (
     <DealsHeatPulse
       heats={shownHeats}
@@ -81,14 +52,15 @@ export function DealsCommandWorkspace({
 
   return (
     <div className="ff-deals-command" data-ff-deals-command="" data-ff-deals-view={view}>
-      {view === "radar" ? <BookHeatHeader counts={bookHeatCounts} total={cards.length} /> : null}
-
       <DealsLenses href={href} canSeeTeam={canSeeTeam} counts={chipCounts} />
 
       {view === "radar" ? (
-        <DealsRadar cards={cards} />
+        <section data-ff-book-heat="" aria-label="Book heat">
+          <DealsRadar cards={cards} />
+        </section>
       ) : view === "list" ? (
-        <ListCommsShell
+        <StandardActivityShell
+          surface="deals-list"
           rows={cards.map((card) => ({
             id: card.id,
             name: dealDisplayName(card),
@@ -101,7 +73,7 @@ export function DealsCommandWorkspace({
           }))}
         >
           <DealsHostList cards={cards} />
-        </ListCommsShell>
+        </StandardActivityShell>
       ) : (
         <div className="ff-stack-workspace" data-ff-stack-workspace="">
           <PriorityStack cards={cards} />

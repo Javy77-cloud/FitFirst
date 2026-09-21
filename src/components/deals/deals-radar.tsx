@@ -1,20 +1,24 @@
 import Link from "next/link";
 import { dealDisplayName } from "@/components/deals/deal-host-face";
-import { RadarMetricStrip } from "@/components/deals/radar-metric-strip";
+import { RadarBoard } from "@/components/deals/radar-board";
 import { formatSilenceCue } from "@/lib/deals/card-glance";
 import type { RadarDealCard } from "@/lib/deals/radar-desk";
 import { HEAT_LABELS, HEAT_STATES } from "@/lib/deals/velocity";
 
 /**
- * Heat glance — four rows in the same Hot / Cooling / Near cold / Cold language
- * as Stack. Names are readable in a glance; the scatter chart is gone.
+ * Radar fills the desk: KPI banner, heat donut, silence bars, touch trend,
+ * then the heat rows so a name is still one click away.
  */
 export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
   return (
-    <div className="ff-heat-glance" data-ff-deals-radar="" data-ff-heat-glance="">
-      <div data-ff-radar-strip="">
-        <RadarMetricStrip cards={cards} />
-      </div>
+    <div
+      className="ff-radar-desk"
+      data-ff-deals-radar=""
+      data-ff-heat-glance=""
+      data-ff-book-heat=""
+      data-ff-book-heat-bubbles=""
+    >
+      <RadarBoard cards={cards} />
       {HEAT_STATES.map((heat) => {
         const rows = cards.filter((card) => card.heat === heat);
         return (

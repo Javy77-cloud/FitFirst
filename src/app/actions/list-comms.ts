@@ -2,7 +2,7 @@
 
 import { listRecordActivities } from "@/lib/db/queries";
 
-/** Activities for the optional list communication rail. */
+/** Activities for the standard 320px Activity board. */
 export async function loadListComms(input: {
   leadId?: string | null;
   dealId?: string | null;

@@ -33,6 +33,8 @@ export function RecordActivityMenu({
   contactId,
   accountId,
   policyId,
+  onKind,
+  onOpen,
 }: {
   menuTestId: string;
   listTestId: string;
@@ -42,17 +44,31 @@ export function RecordActivityMenu({
   contactId?: string | null;
   accountId?: string | null;
   policyId?: string | null;
+  /** When the desk already has a board, select that record instead of navigating away. */
+  onKind?: (kind: QuickCommsTarget["kind"]) => void;
+  /** Load that record’s right-hand board as soon as the Activity symbol is used. */
+  onOpen?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const targetBase = { dealId, leadId, contactId, accountId, policyId };
 
   function run(kind: QuickCommsTarget["kind"]) {
     setOpen(false);
+    if (onKind) {
+      onKind(kind);
+      return;
+    }
     launchQuickCommsAction({ ...targetBase, kind });
   }
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) onOpen?.();
+      }}
+    >
       <DropdownMenuTrigger
         type="button"
         aria-label="Activity"

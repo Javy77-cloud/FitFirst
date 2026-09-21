@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { StackQuickComms } from "@/components/desk/stack-quick-comms";
+import { ActivityGlyph, useActivityPick } from "@/components/desk/standard-activity-panel";
 import { stackMidLine } from "@/lib/desk/stack-mid";
 import {
   LeadCadenceSelect,
@@ -38,6 +38,7 @@ export function LeadsPriorityStack({
   initialQuery?: string;
 }) {
   const liveQuery = useLiveContainsQuery("leads", initialQuery);
+  const activityDesk = useActivityPick();
   const visible = records.filter((record) => {
     if (record.parked && !liveQuery.trim()) return false;
     return matchesContains(liveQuery, record.hay);
@@ -77,6 +78,14 @@ export function LeadsPriorityStack({
               className={cn("ff-stack-card", `ff-heat-${record.temperature}`)}
               data-ff-leads-stack-card={record.id}
               data-ff-heat={record.temperature}
+              data-ff-activity-selected={activityDesk?.selectedId === record.id ? "true" : undefined}
+              onClick={(event) => {
+                if (!activityDesk) return;
+                const target = event.target;
+                if (!(target instanceof Element)) return;
+                if (target.closest("a, button, input, select, textarea, label, form")) return;
+                activityDesk.pick(record.id);
+              }}
             >
               <span className="ff-stack-glyph" aria-hidden data-ff-stack-glyph={record.temperature} />
               <div className="ff-stack-card-body">
@@ -95,10 +104,11 @@ export function LeadsPriorityStack({
                   >
                     {stackMidLine([record.silence, record.nextChase])}
                   </Link>
-                  <StackQuickComms
-                    name={record.name}
-                    email={record.email}
-                    phone={record.phone}
+                  <ActivityGlyph
+                    id={record.id}
+                    menuTestId={`lead-stack-activity-${record.id}`}
+                    listTestId={`lead-stack-activity-menu-${record.id}`}
+                    optionAttr="data-ff-lead-activity-option"
                     leadId={record.id}
                     dealId={record.convertedDealId}
                   />

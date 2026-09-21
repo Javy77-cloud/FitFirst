@@ -90,10 +90,13 @@ describe("Pipeline filter popover chrome", () => {
   });
 
 
-  it("never pulls renewals list / column-prefs into the client filtered-views module", () => {
+  it("never pulls the deleted renewals list module or column-prefs into the client filtered-views module", () => {
     const views = source("src/components/renewals/renewals-filtered-views.tsx");
     expect(views).toMatch(/^"use client";/m);
-    expect(views).not.toMatch(/renewals-list/);
+    // The List view names the Activity surface `renewals-list`. That is not an import of the deleted module.
+    expect(views).toMatch(/surface="renewals-list"/);
+    expect(views).not.toMatch(/components\/renewals\/renewals-list/);
+    expect(views).not.toMatch(/RenewalsList/);
     expect(views).not.toMatch(/desk-column-table/);
     expect(views).not.toMatch(/column-prefs/);
     expect(views).not.toMatch(/next\/headers/);

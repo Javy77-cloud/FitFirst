@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ListCommsPick } from "@/components/desk/list-comms-rail";
+import { ActivityGlyph } from "@/components/desk/standard-activity-panel";
 import { ColumnTable, type ColumnRow } from "@/components/lists/column-table";
 import {
   docsGlanceLabel,
@@ -45,7 +45,15 @@ export function DealsHostList({ cards }: { cards: RadarDealCard[] }) {
             <Link href={card.href} className="font-semibold text-navy hover:underline">
               {name}
             </Link>
-            <ListCommsPick id={card.id} />
+            <ActivityGlyph
+              id={card.id}
+              menuTestId={`deal-list-activity-${card.id}`}
+              listTestId={`deal-list-activity-menu-${card.id}`}
+              dealId={card.id}
+              leadId={card.leadId}
+              contactId={card.contactId}
+              accountId={card.accountId}
+            />
           </span>
         ),
         lob,

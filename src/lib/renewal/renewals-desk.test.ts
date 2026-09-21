@@ -62,6 +62,22 @@ describe("Renewals desk chrome", () => {
     expect(source("src/components/renewals/renewals-priority-stack.tsx")).toMatch(/renewalRiskHover/);
     expect(source("src/components/renewals/renewals-priority-stack.tsx")).not.toMatch(/ff-stack-action/);
     expect(source("src/components/renewals/renewals-host-list.tsx")).toMatch(/data-ff-renewals-host-list/);
+    expect(views).toMatch(/surface="renewals-list"/);
+    expect(views).toMatch(/StandardActivityShell/);
+    expect(source("src/components/renewals/renewals-host-list.tsx")).toMatch(/ActivityGlyph/);
+    expect(source("src/components/renewals/renewals-host-list.tsx")).not.toMatch(/>Comms</);
+    const panel = source("src/components/desk/standard-activity-panel.tsx");
+    expect(panel).toMatch(/data-ff-renewals-list-rail/);
+    expect(panel).toMatch(/data-ff-activity-surface=\{surface\}/);
+    expect(panel).toMatch(/data-ff-deal-rail-lock="320"/);
+    expect(panel).toMatch(/w-\[320px\] min-w-\[320px\] max-w-\[320px\]/);
+    expect(panel).toMatch(/QuickCommsBoard/);
+    expect(panel).toMatch(/onOpen=\{desk \? \(\) => desk\.pick\(id\) : undefined\}/);
+    expect(source("src/components/desk/record-activity-menu.tsx")).toMatch(/aria-label="Activity"/);
+    expect(source("src/lib/desk/quick-comms-open.ts")).toMatch(
+      /kind: "call"[\s\S]*kind: "sms"[\s\S]*kind: "email"[\s\S]*kind: "task"[\s\S]*kind: "meeting"/,
+    );
+    expect(views).not.toMatch(/ListCommsShell|StackQuickComms/);
     expect(board).toMatch(/RENEWAL_URGENCY_BANDS/);
     expect(board).toMatch(/data-ff-urgency-band/);
     expect(board).not.toMatch(/Upcoming|Contacted|Quoted|Bound|Lost/);

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { DealHostJob, DealHostSpread } from "@/components/deals/deal-host-face";
-import { StackQuickComms } from "@/components/desk/stack-quick-comms";
 import { PriorityPinControl, usePriorityPins, orderWithPriorityPins } from "@/components/deals/priority-pin-control";
 import type { RadarDealCard } from "@/lib/deals/radar-desk";
 import { HEAT_LABELS } from "@/lib/deals/velocity";
@@ -35,20 +34,7 @@ export function PriorityStack({ cards }: { cards: RadarDealCard[] }) {
             >
               <span className="ff-stack-glyph" aria-hidden data-ff-stack-glyph={card.heat} />
               <div className="ff-stack-card-body">
-                <DealHostSpread
-                  card={card}
-                  comms={
-                    <StackQuickComms
-                      name={card.insured !== "—" ? card.insured : card.title}
-                      email={card.email}
-                      phone={card.phone}
-                      dealId={card.id}
-                      leadId={card.leadId}
-                      contactId={card.contactId}
-                      accountId={card.accountId}
-                    />
-                  }
-                />
+                <DealHostSpread card={card} />
                 <DealHostJob card={card} />
                 {card.inboxCue ? (
                   <p className="ff-inbox-cue" data-ff-inbox-cue="">

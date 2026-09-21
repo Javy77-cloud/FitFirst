@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { ListCommsShell } from "@/components/desk/list-comms-rail";
+import { StandardActivityShell } from "@/components/desk/standard-activity-panel";
 import { RenewalsHostList } from "@/components/renewals/renewals-host-list";
 import { RenewalsPriorityStack } from "@/components/renewals/renewals-priority-stack";
 import { RenewalsUrgencyBoard } from "@/components/renewals/renewals-urgency-board";
@@ -31,7 +31,8 @@ export function RenewalsFilteredViews({
   if (view === "stack") return <RenewalsPriorityStack cards={filtered} />;
   if (view === "list") {
     return (
-      <ListCommsShell
+      <StandardActivityShell
+        surface="renewals-list"
         rows={filtered.map((card) => ({
           id: card.queueId,
           name: card.clientName,
@@ -43,7 +44,7 @@ export function RenewalsFilteredViews({
         }))}
       >
         <RenewalsHostList cards={filtered} />
-      </ListCommsShell>
+      </StandardActivityShell>
     );
   }
   return <RenewalsUrgencyBoard cards={filtered} />;

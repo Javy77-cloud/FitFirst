@@ -8,7 +8,12 @@ import { RecordContextRail } from "@/components/record-context/record-context-ra
 import { LeadListRailFocus } from "@/components/leads/lead-list-rail-focus";
 import { LeadQuickComms } from "@/components/leads/lead-quick-comms";
 import { listLeads, listRecordActivities } from "@/lib/db/queries";
-import { ListCommsShell } from "@/components/desk/list-comms-rail";
+import {
+  ActivityContextGate,
+  ActivityDeskProvider,
+  ActivityGlyph,
+  LeadActivitySwitch,
+} from "@/components/desk/standard-activity-panel";
 import { LeadsHostList } from "@/components/leads/leads-host-list";
 import { LeadsPriorityStack } from "@/components/leads/leads-priority-stack";
 import { LeadsSourceBanner } from "@/components/leads/leads-source-banner";
@@ -218,18 +223,25 @@ export default async function LeadsPage({
   const railPartyName = railLead
     ? `${railLead.firstName} ${railLead.lastName}`.trim()
     : "";
+  const activityRows = rows.map((lead) => ({
+    id: lead.id,
+    name: `${lead.firstName} ${lead.lastName}`.trim(),
+    email: lead.email,
+    phone: lead.phone,
+    leadId: lead.id,
+    dealId: lead.convertedDealId,
+    clientAddress: homeAddressFromRecords({ lead }),
+  }));
+  const activityKind = parseQuickCommsKind(firstParam(params.qc));
 
   return (
     <AppShell title="Leads">
       <LeadSavedToast show={saved} />
+      <ActivityDeskProvider initialId={railLead?.id ?? null} initialKind={activityKind}>
       <div
         className="grid w-full items-start"
-        style={
-          view === "queue"
-            ? { gridTemplateColumns: "minmax(0, 1fr) 320px", columnGap: "1.25rem", rowGap: "1.25rem" }
-            : { gridTemplateColumns: "minmax(0, 1fr)", rowGap: "1rem" }
-        }
-        data-ff-leads-list-layout={view === "queue" ? "list-rail" : view}
+        style={{ gridTemplateColumns: "minmax(0, 1fr) 320px", columnGap: "1.25rem", rowGap: "1.25rem" }}
+        data-ff-leads-list-layout="list-rail"
         data-ff-leads-workspace=""
       >
         <div className="min-w-0" style={{ gridColumn: 1, gridRow: 1 }} data-ff-leads-heading="">
@@ -238,7 +250,8 @@ export default async function LeadsPage({
             Stack is the desk — cadence, response, and the next chase stay on the card. Queue is the
             work sheet. List is the rearrangeable column view. Converted leads live on Deals.
             Untouched first. Lost stays off until you search. Nurture parks until the contact-again
-            date. The right rail shows Conversations for the focused queue lead.
+            date. The Activity board on the right is the same panel as a contact — pick a lead to
+            load call, SMS, email, meeting, and task.
           </p>
           <LeadsQueueToolbar
         sources={uniqueOptions(
@@ -260,21 +273,10 @@ export default async function LeadsPage({
         templates={templates}
         dueCount={dueCount}
       />
-          {view !== "queue" ? (
-            <div className="mt-3 flex justify-end" data-ff-lead-motivation-gap="">
-              <LeadMotivation stats={motivation} />
-            </div>
-          ) : null}
+          <div className="mt-3 flex justify-end" data-ff-lead-motivation-gap="">
+            <LeadMotivation stats={motivation} />
+          </div>
         </div>
-        {view === "queue" ? (
-        <div
-          className="flex items-start justify-end"
-          style={{ gridColumn: 2, gridRow: 1 }}
-          data-ff-lead-motivation-gap=""
-        >
-          <LeadMotivation stats={motivation} />
-        </div>
-        ) : null}
         <div
           className="min-w-0"
           style={{ gridColumn: 1, gridRow: 2 }}
@@ -304,18 +306,7 @@ export default async function LeadsPage({
             <LeadsPriorityStack records={desk} templates={templates} initialQuery={q} />
           ) : null}
           {view === "list" ? (
-            <ListCommsShell
-              rows={desk.map((record) => ({
-                id: record.id,
-                name: record.name,
-                email: record.email,
-                phone: record.phone,
-                leadId: record.id,
-                dealId: record.convertedDealId,
-              }))}
-            >
-              <LeadsHostList records={desk} templates={templates} initialQuery={q} />
-            </ListCommsShell>
+            <LeadsHostList records={desk} templates={templates} initialQuery={q} />
           ) : null}
           {view === "queue" ? (
           <ModuleListActions
@@ -436,6 +427,14 @@ export default async function LeadsPage({
                           label={`${lead.lastName}, ${lead.firstName}`}
                           active={railLead?.id === lead.id}
                         />
+                        <ActivityGlyph
+                          id={lead.id}
+                          menuTestId={`lead-queue-activity-${lead.id}`}
+                          listTestId={`lead-queue-activity-menu-${lead.id}`}
+                          optionAttr="data-ff-lead-activity-option"
+                          leadId={lead.id}
+                          dealId={lead.convertedDealId}
+                        />
                         <LeadLogContact leadId={lead.id} phone={lead.phone} email={lead.email} />
                       </div>
                     ),
@@ -508,42 +507,50 @@ export default async function LeadsPage({
         </section>
         </div>
 
-        {view === "queue" ? (
         <aside
           className="w-[320px] min-w-[320px] max-w-[320px] shrink-0 grow-0 basis-[320px] space-y-3 overflow-x-hidden"
-          style={{ gridColumn: 2, gridRow: 2 }}
+          style={{ gridColumn: 2, gridRow: "1 / span 2" }}
           data-ff-leads-list-rail=""
           data-ff-deal-right-rail=""
           data-ff-deal-rail-lock="320"
         >
-          {railLead ? (
-            <>
-              <LeadQuickComms
-                items={railComms}
-                leadId={railLead.id}
-                dealId={railLead.convertedDealId ?? null}
-                contactName={railPartyName}
-                contactPhone={railLead.phone}
-                contactEmail={railLead.email}
-                officeAddress={railOfficeAddress}
-                clientAddress={railClientAddress}
-                initialKind={parseQuickCommsKind(firstParam(params.qc))}
-              />
+          <LeadActivitySwitch
+            initialId={railLead?.id ?? null}
+            rows={activityRows}
+            officeAddress={railOfficeAddress}
+            seed={
+              railLead ? (
+                <LeadQuickComms
+                  items={railComms}
+                  leadId={railLead.id}
+                  dealId={railLead.convertedDealId ?? null}
+                  contactName={railPartyName}
+                  contactPhone={railLead.phone}
+                  contactEmail={railLead.email}
+                  officeAddress={railOfficeAddress}
+                  clientAddress={railClientAddress}
+                  initialKind={activityKind}
+                />
+              ) : (
+                <div className="ff-card p-4 text-sm text-muted-foreground">
+                  No open lead selected. Queue a lead to see Conversations.
+                </div>
+              )
+            }
+          />
+          {view === "queue" && railLead ? (
+            <ActivityContextGate id={railLead.id}>
               <RecordContextRail
                 key={railLead.id}
                 context={railContext}
                 defaultTab="conversations"
                 headingName={railPartyName}
               />
-            </>
-          ) : (
-            <div className="ff-card p-4 text-sm text-muted-foreground">
-              No open lead selected. Queue a lead to see Conversations.
-            </div>
-          )}
+            </ActivityContextGate>
+          ) : null}
         </aside>
-        ) : null}
       </div>
+      </ActivityDeskProvider>
     </AppShell>
   );
 }
