@@ -3300,6 +3300,11 @@ tr[data-ff-activity-selected="true"] {
   column-gap: 1.25rem;
   align-items: start;
 }
+.ff-activity-desk.is-open > [data-ff-deal-right-rail] {
+  position: sticky;
+  top: 0.75rem;
+  justify-self: end;
+}
 .ff-radar-desk {
   display: flex;
   flex-direction: column;
@@ -3471,9 +3476,6 @@ tr[data-ff-activity-selected="true"] {
   .ff-radar-banner,
   .ff-radar-charts { grid-template-columns: minmax(0, 1fr); }
   .ff-radar-desk { min-height: 0; }
-}
-@media (max-width: 52rem) {
-  .ff-activity-desk.is-open { grid-template-columns: minmax(0, 1fr); }
 }
 .ff-inbox-reconnect {
   margin-bottom: 0.75rem;

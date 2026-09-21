@@ -32,6 +32,7 @@ export function RenewalsFilteredViews({
   if (view === "list") {
     return (
       <StandardActivityShell
+        surface="renewals-list"
         rows={filtered.map((card) => ({
           id: card.queueId,
           name: card.clientName,

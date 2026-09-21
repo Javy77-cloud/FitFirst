@@ -91,6 +91,7 @@ export function ActivityGlyph({
       contactId={contactId}
       accountId={accountId}
       policyId={policyId}
+      onOpen={desk ? () => desk.pick(id) : undefined}
       onKind={desk ? (kind) => desk.pick(id, kind) : undefined}
     />
   );
@@ -253,19 +254,22 @@ function ActivityAside({
   );
 }
 
-/** Deals list and Renewals list: the 320px board appears when a row is selected. */
+/** Deals List and Renewals List: the 320px board sits on the right when a row is selected. */
 export function StandardActivityShell({
   rows,
   officeAddress = null,
+  surface,
   children,
 }: {
   rows: ActivityPanelRow[];
   officeAddress?: string | null;
+  /** `deals-list` or `renewals-list` — same rail as Contacts. */
+  surface: "deals-list" | "renewals-list";
   children: ReactNode;
 }) {
   return (
     <ActivityDeskProvider>
-      <ActivityDeskLayout rows={rows} officeAddress={officeAddress}>
+      <ActivityDeskLayout rows={rows} officeAddress={officeAddress} surface={surface}>
         {children}
       </ActivityDeskLayout>
     </ActivityDeskProvider>
@@ -275,10 +279,12 @@ export function StandardActivityShell({
 function ActivityDeskLayout({
   rows,
   officeAddress,
+  surface,
   children,
 }: {
   rows: ActivityPanelRow[];
   officeAddress?: string | null;
+  surface: "deals-list" | "renewals-list";
   children: ReactNode;
 }) {
   const desk = useActivityPick();
@@ -287,6 +293,9 @@ function ActivityDeskLayout({
     <div
       className={cn("ff-activity-desk", row && "is-open")}
       data-ff-activity-desk={row ? "open" : "off"}
+      data-ff-activity-surface={surface}
+      data-ff-renewals-list-rail={surface === "renewals-list" ? "" : undefined}
+      data-ff-deals-list-rail={surface === "deals-list" ? "" : undefined}
     >
       <div className="min-w-0">{children}</div>
       {row ? (

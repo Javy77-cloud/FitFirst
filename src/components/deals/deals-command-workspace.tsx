@@ -60,6 +60,7 @@ export function DealsCommandWorkspace({
         </section>
       ) : view === "list" ? (
         <StandardActivityShell
+          surface="deals-list"
           rows={cards.map((card) => ({
             id: card.id,
             name: dealDisplayName(card),

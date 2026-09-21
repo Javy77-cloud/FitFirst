@@ -68,6 +68,8 @@ describe("activity board and radar glance", () => {
     expect(leads).toMatch(/ActivityGlyph/);
     expect(deals).toMatch(/StandardActivityShell/);
     expect(renewals).toMatch(/StandardActivityShell/);
+    expect(renewals).toMatch(/surface="renewals-list"/);
+    expect(deals).toMatch(/surface="deals-list"/);
     expect(stack).toMatch(/ActivityGlyph/);
     expect(stack).not.toMatch(/StackQuickComms|>Comms</);
     expect(source("src/components/deals/deals-host-list.tsx")).toMatch(/ActivityGlyph/);

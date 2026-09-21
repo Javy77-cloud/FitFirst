@@ -34,6 +34,7 @@ export function RecordActivityMenu({
   accountId,
   policyId,
   onKind,
+  onOpen,
 }: {
   menuTestId: string;
   listTestId: string;
@@ -45,6 +46,8 @@ export function RecordActivityMenu({
   policyId?: string | null;
   /** When the desk already has a board, select that record instead of navigating away. */
   onKind?: (kind: QuickCommsTarget["kind"]) => void;
+  /** Load that record’s right-hand board as soon as the Activity symbol is used. */
+  onOpen?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const targetBase = { dealId, leadId, contactId, accountId, policyId };
@@ -59,7 +62,13 @@ export function RecordActivityMenu({
   }
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) onOpen?.();
+      }}
+    >
       <DropdownMenuTrigger
         type="button"
         aria-label="Activity"
