@@ -20,13 +20,35 @@ describe("deal lens filters", () => {
     expect(parseValueBand("high")).toBe(null);
   });
 
-  it("forces Mine for agents and keeps the same default on Radar and Stack", () => {
+  it("defaults Owner/Admin to Team and agents to Mine on both Radar and Stack", () => {
     expect(defaultDealScope({ canSeeTeam: false, view: "radar" })).toBe("mine");
     expect(resolveDealScope({ scope: "team", canSeeTeam: false, view: "radar" })).toBe("mine");
-    expect(resolveDealScope({ canSeeTeam: true, view: "radar" })).toBe("mine");
-    expect(resolveDealScope({ canSeeTeam: true, view: "stack" })).toBe("mine");
+    expect(resolveDealScope({ canSeeTeam: true, view: "radar" })).toBe("team");
+    expect(resolveDealScope({ canSeeTeam: true, view: "stack" })).toBe("team");
+    expect(resolveDealScope({ scope: "mine", canSeeTeam: true, view: "stack" })).toBe("mine");
+    expect(resolveDealScope({ scope: "mine", canSeeTeam: true, view: "radar" })).toBe("mine");
     expect(resolveDealScope({ scope: "team", canSeeTeam: true, view: "stack" })).toBe("team");
     expect(resolveDealScope({ scope: "team", canSeeTeam: true, view: "radar" })).toBe("team");
+  });
+
+  it("counts Francisco-owned shops as Javy Mine without treating Maya as Javy", () => {
+    const franciscoOwned = { ownerId: "francisco", heat: "hot" as const, lineOfBusiness: "AUTO" };
+    const mayaOwned = { ownerId: "maya", heat: "hot" as const, lineOfBusiness: "HO" };
+    const javyMine = {
+      scope: "mine" as const,
+      viewerId: "javy",
+      viewerIds: ["javy", "francisco"],
+      canSeeTeam: true,
+      view: "radar" as const,
+    };
+    expect(matchesDealLens(franciscoOwned, javyMine)).toBe(true);
+    expect(matchesDealLens(mayaOwned, javyMine)).toBe(false);
+    expect(
+      matchesDealLens(mayaOwned, {
+        ...javyMine,
+        soloBook: true,
+      }),
+    ).toBe(true);
   });
 
   it("ANDs heat and scope without blanking the other category", () => {

@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import { ADMIN_USER_ID, AGENT_USER_ID } from "@/lib/fixtures/ids";
 import { extractZohoOwner, resolveOwnerId } from "./owners";
 
+const FRANCISCO_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1";
+
 const directory = [
   { id: ADMIN_USER_ID, name: "Javy Rivera", email: "javy@fitfirst.local", role: "admin" },
   { id: AGENT_USER_ID, name: "Maya Chen", email: "maya@fitfirst.local", role: "agent" },
+  { id: FRANCISCO_ID, name: "Francisco Javier Garcia", email: "francisco@fitfirst.local", role: "agent" },
 ];
 
 describe("Zoho Owner mapping", () => {
@@ -50,5 +53,12 @@ describe("Zoho Owner mapping", () => {
     expect(resolveOwnerId({ zohoId: null, name: null, email: null }, directory, ADMIN_USER_ID)).toBe(
       ADMIN_USER_ID,
     );
+    expect(
+      resolveOwnerId(
+        { zohoId: null, name: "Francisco Javier Garcia", email: null },
+        directory,
+        ADMIN_USER_ID,
+      ),
+    ).toBe(ADMIN_USER_ID);
   });
 });

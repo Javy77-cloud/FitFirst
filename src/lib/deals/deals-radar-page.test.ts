@@ -44,6 +44,9 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/components/deals/deals-lenses.tsx")).not.toMatch(/High value/);
     expect(source("src/components/deals/deals-lenses.tsx")).not.toMatch(/My hot P&C/);
     expect(page).toMatch(/const canSeeTeam = session\.isAdmin/);
+    expect(page).toMatch(/mineScopeForViewer/);
+    expect(page).toMatch(/reassignAliasOwnedRecords/);
+    expect(page).toMatch(/viewerIds: mine\.ownerIds/);
     expect(page).toMatch(/chipCounts/);
     expect(source("src/app/globals.css")).toMatch(/ff-heat-pulse/);
     expect(source("src/app/globals.css")).toMatch(/ff-heat-flicker/);
@@ -72,8 +75,8 @@ describe("Deals Priority Stack + Radar", () => {
 
   it("applies saved lenses without a public agent-name board", () => {
     expect(resolveDealScope({ canSeeTeam: false, view: "stack" })).toBe("mine");
-    expect(resolveDealScope({ canSeeTeam: true, view: "radar" })).toBe("mine");
-    expect(resolveDealScope({ canSeeTeam: true, view: "stack" })).toBe("mine");
+    expect(resolveDealScope({ canSeeTeam: true, view: "radar" })).toBe("team");
+    expect(resolveDealScope({ canSeeTeam: true, view: "stack" })).toBe("team");
     expect(
       matchesDealLens(
         { ownerId: "a1", lineOfBusiness: "HO", heat: "hot", value: 321000, phase: "quotes" },

@@ -27,6 +27,8 @@ import {
 } from "@/lib/deals/pipeline-column-filters";
 import { pickFilterParams } from "@/lib/saved-filters";
 import { defaultDealsView, parseDealsView } from "@/lib/deals/deals-views";
+import { reassignAliasOwnedRecords } from "@/lib/auth/canonical-owner-backfill";
+import { mineScopeForViewer } from "@/lib/auth/producer-identity";
 import { matchesDealLens, resolveDealScope } from "@/lib/deals/deals-lenses";
 import { scheduleDealColdChaseNotices } from "@/lib/deals/cold-chase-sync";
 import { loadDealVelocityTouches, ownerScorecards, presentRadarCards, agentVelocityScores } from "@/lib/deals/radar-desk";
@@ -91,6 +93,21 @@ export default async function DealsPage({
   const boards = boardData?.boards ?? [];
   const settings = boardData?.lineSettings ?? lineSettings;
   const users = new Map(userRows.map((user) => [user.id, user.name]));
+  const mine = mineScopeForViewer(
+    {
+      id: session.userId ?? "",
+      name: session.name,
+      email: session.email,
+      role: session.role,
+    },
+    userRows,
+  );
+  if (session.userId && mine.aliasUserIds.length > 0) {
+    await reassignAliasOwnedRecords({
+      canonicalUserId: session.userId,
+      aliasUserIds: mine.aliasUserIds,
+    }).catch(() => null);
+  }
   const agents = userRows.map((user) => ({ id: user.id, name: user.name }));
   const board = boardData?.board ?? null;
   const rawRows = (listRows ?? []).filter((row) => matchesDealPipelineColumnFilters(row.deal, columnFilter));
@@ -111,13 +128,25 @@ export default async function DealsPage({
     loadDealVelocityTouches(rawRows.map((row) => row.deal.id)),
     import("@/lib/notifications/load-inbox").then((mod) => mod.loadInboxCues().catch(() => [])),
   ]);
+  const aliasOwners = new Set(mine.aliasUserIds);
   const presented = presentRadarCards(rawRows, touches, users).map((card) => {
     const cue = inboxCues.find((row) => row.dealId === card.id || row.contactId === card.contactId);
-    return cue ? { ...card, inboxCue: cue.why, inboxHref: cue.href } : card;
+    const canon =
+      card.ownerId && aliasOwners.has(card.ownerId) && session.userId
+        ? { ...card, ownerId: session.userId, ownerName: session.name || card.ownerName }
+        : card;
+    return cue ? { ...canon, inboxCue: cue.why, inboxHref: cue.href } : canon;
   });
   scheduleDealColdChaseNotices(presented);
   const canSeeTeam = session.isAdmin;
   const viewScope = resolveDealScope({ scope, canSeeTeam, view });
+  const mineFilter = {
+    viewerId: session.userId,
+    viewerIds: mine.ownerIds,
+    soloBook: mine.soloBook,
+    canSeeTeam,
+    view,
+  };
   const scoped = presented.filter((card) => {
     if (q) {
       const hay = `${card.title} ${card.insured} ${card.phone ?? ""}`.toLowerCase();
@@ -125,9 +154,7 @@ export default async function DealsPage({
     }
     return matchesDealLens(card, {
       scope: viewScope,
-      viewerId: session.userId,
-      canSeeTeam,
-      view,
+      ...mineFilter,
     });
   });
   const filtered = scoped.filter((card) =>
@@ -135,9 +162,7 @@ export default async function DealsPage({
       heat,
       lens,
       scope: viewScope,
-      viewerId: session.userId,
-      canSeeTeam,
-      view,
+      ...mineFilter,
     }),
   );
   const chipCounts = heatCounts(scoped.map((card) => card.heat));
