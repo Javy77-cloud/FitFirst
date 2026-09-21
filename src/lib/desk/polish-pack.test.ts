@@ -60,8 +60,9 @@ describe("activity board and radar glance", () => {
     const stack = source("src/components/leads/leads-priority-stack.tsx");
     const css = source("src/app/globals.css");
     expect(panel).toMatch(/QuickCommsBoard/);
-    expect(panel).toMatch(/data-ff-deal-rail-lock="320"/);
-    expect(panel).toMatch(/w-\[320px\]/);
+    expect(panel).toMatch(/data-ff-deal-rail-lock=\{ACTIVITY_RAIL_LOCK\}/);
+    expect(panel).toMatch(/ACTIVITY_RAIL_ASIDE_CLASS/);
+    expect(panel).toMatch(/rows\[0\]\?\.id/);
     expect(panel).not.toMatch(/>Comms</);
     expect(leads).toMatch(/data-ff-leads-list-layout="list-rail"/);
     expect(leads).toMatch(/LeadQuickComms/);
@@ -76,7 +77,15 @@ describe("activity board and radar glance", () => {
     expect(source("src/components/deals/deals-host-list.tsx")).not.toMatch(/>Comms</);
     expect(source("src/components/renewals/renewals-host-list.tsx")).toMatch(/ActivityGlyph/);
     expect(source("src/components/leads/leads-host-list.tsx")).toMatch(/ActivityGlyph/);
-    expect(css).toMatch(/grid-template-columns: minmax\(0, 1fr\) 320px/);
+    expect(css).toMatch(/--ff-activity-rail: 420px/);
+    expect(css).toMatch(/grid-template-columns: minmax\(0, 1fr\) var\(--ff-activity-rail\)/);
+    expect(source("src/components/deals/deals-command-workspace.tsx")).toMatch(/surface="deals-stack"/);
+    expect(renewals).toMatch(/surface="renewals-stack"/);
+    expect(source("src/components/deals/priority-stack.tsx")).toMatch(/ActivityGlyph/);
+    expect(source("src/components/renewals/renewals-priority-stack.tsx")).toMatch(/ActivityGlyph/);
+    expect(css).toMatch(/--ff-inbox-open-edge/);
+    expect(css).toMatch(/\.ff-inbox-detail \{[\s\S]*border-left: 3px solid var\(--ff-inbox-open-edge\)/);
+    expect(css).toMatch(/\.ff-inbox-row\.is-selected \{[^}]*var\(--ff-inbox-open-edge\)/);
     expect(css).not.toMatch(/ff-radar-strip/);
     expect(css).not.toMatch(/ff-list-comms/);
     expect(css).toMatch(/ff-radar-banner/);

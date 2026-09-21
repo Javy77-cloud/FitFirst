@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { ActivityGlyph, useActivityPick } from "@/components/desk/standard-activity-panel";
 import { RenewalCompareDrawer } from "@/components/renewals/renewal-compare-drawer";
 import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
 import { formatSilenceCue } from "@/lib/deals/card-glance";
@@ -18,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export function RenewalsPriorityStack({ cards }: { cards: RenewalBoardCard[] }) {
+  const activityDesk = useActivityPick();
   const ranked = rankRenewalCards(cards);
 
   if (ranked.length === 0) {
@@ -42,6 +46,14 @@ export function RenewalsPriorityStack({ cards }: { cards: RenewalBoardCard[] }) 
               data-ff-renewals-stack-card={card.queueId}
               data-ff-urgency-card={band}
               data-ff-heat={heat}
+              data-ff-activity-selected={activityDesk?.selectedId === card.queueId ? "true" : undefined}
+              onClick={(event) => {
+                if (!activityDesk) return;
+                const target = event.target;
+                if (!(target instanceof Element)) return;
+                if (target.closest("a, button, input, select, textarea, label, form")) return;
+                activityDesk.pick(card.queueId);
+              }}
             >
               <span className="ff-stack-glyph" aria-hidden data-ff-stack-glyph={heat} />
               <div className="ff-stack-card-body">
@@ -62,6 +74,14 @@ export function RenewalsPriorityStack({ cards }: { cards: RenewalBoardCard[] }) 
                       renewalDaysPhrase(card.daysUntil),
                     ])}
                   </Link>
+                  <ActivityGlyph
+                    id={card.queueId}
+                    menuTestId={`renewal-stack-activity-${card.queueId}`}
+                    listTestId={`renewal-stack-activity-menu-${card.queueId}`}
+                    policyId={card.policyId}
+                    contactId={card.contactId}
+                    accountId={card.accountId}
+                  />
                 </div>
                 <div className="ff-stack-job" data-ff-renewal-job="">
                   <ul className="ff-stack-products">

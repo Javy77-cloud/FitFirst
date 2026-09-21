@@ -27,7 +27,7 @@ describe("sep7jt Lead rail + shared applicant fields", () => {
     const desk = source("src/components/leads/lead-detail-workspace.tsx");
     const page = source("src/app/leads/[id]/page.tsx");
     expect(desk).toMatch(/data-ff-lead-layout="layout-rail"/);
-    expect(desk).toMatch(/gridTemplateColumns: "minmax\(0, 1fr\) 320px"/);
+    expect(desk).toMatch(/ACTIVITY_RAIL_COLUMNS/);
     expect(desk).toMatch(/data-ff-lead-context-rail/);
     expect(page).toMatch(/loadRecordContext\(\{/);
     expect(page).toMatch(/LeadQuickComms/);

@@ -7,6 +7,7 @@ import { RecordActivityMenu } from "@/components/desk/record-activity-menu";
 import type { SerializedActivity } from "@/lib/db/queries";
 import { QUICK_COMMS_EVENT, type QuickCommsTarget } from "@/lib/desk/quick-comms-open";
 import type { ActivityKind } from "@/lib/domain";
+import { ACTIVITY_RAIL_ASIDE_CLASS, ACTIVITY_RAIL_LOCK } from "@/lib/desk/activity-rail";
 import { cn } from "@/lib/utils";
 
 export type ActivityPanelRow = {
@@ -242,10 +243,10 @@ function ActivityAside({
 }) {
   return (
     <aside
-      className="w-[320px] min-w-[320px] max-w-[320px] shrink-0 grow-0 basis-[320px] space-y-3 overflow-x-hidden"
+      className={ACTIVITY_RAIL_ASIDE_CLASS}
       data-ff-standard-activity=""
       data-ff-deal-right-rail=""
-      data-ff-deal-rail-lock="320"
+      data-ff-deal-rail-lock={ACTIVITY_RAIL_LOCK}
       data-ff-activity-for={row.id}
     >
       <Party name={row.name} />
@@ -254,7 +255,9 @@ function ActivityAside({
   );
 }
 
-/** Deals List and Renewals List: the 320px board sits on the right when a row is selected. */
+export type ActivitySurface = "deals-list" | "renewals-list" | "deals-stack" | "renewals-stack";
+
+/** List and Stack desks: the shared Activity board is on by default and keeps its column. */
 export function StandardActivityShell({
   rows,
   officeAddress = null,
@@ -263,12 +266,11 @@ export function StandardActivityShell({
 }: {
   rows: ActivityPanelRow[];
   officeAddress?: string | null;
-  /** `deals-list` or `renewals-list` — same rail as Contacts. */
-  surface: "deals-list" | "renewals-list";
+  surface: ActivitySurface;
   children: ReactNode;
 }) {
   return (
-    <ActivityDeskProvider>
+    <ActivityDeskProvider initialId={rows[0]?.id ?? null}>
       <ActivityDeskLayout rows={rows} officeAddress={officeAddress} surface={surface}>
         {children}
       </ActivityDeskLayout>
@@ -284,11 +286,11 @@ function ActivityDeskLayout({
 }: {
   rows: ActivityPanelRow[];
   officeAddress?: string | null;
-  surface: "deals-list" | "renewals-list";
+  surface: ActivitySurface;
   children: ReactNode;
 }) {
   const desk = useActivityPick();
-  const row = rows.find((item) => item.id === desk?.selectedId) ?? null;
+  const row = rows.find((item) => item.id === desk?.selectedId) ?? rows[0] ?? null;
   return (
     <div
       className={cn("ff-activity-desk", row && "is-open")}
@@ -296,6 +298,8 @@ function ActivityDeskLayout({
       data-ff-activity-surface={surface}
       data-ff-renewals-list-rail={surface === "renewals-list" ? "" : undefined}
       data-ff-deals-list-rail={surface === "deals-list" ? "" : undefined}
+      data-ff-renewals-stack-rail={surface === "renewals-stack" ? "" : undefined}
+      data-ff-deals-stack-rail={surface === "deals-stack" ? "" : undefined}
     >
       <div className="min-w-0">{children}</div>
       {row ? (

@@ -42,6 +42,7 @@ import {
 } from "@/lib/deals/tabs";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
+import { ACTIVITY_RAIL_ASIDE_CLASS, ACTIVITY_RAIL_LOCK } from "@/lib/desk/activity-rail";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { reportFromSheet } from "@/lib/completeness/report";
 import { parseSheetFieldParam } from "@/lib/completeness/fix-href";
@@ -826,9 +827,9 @@ export default async function DealPage({
           }
           sidePanel={
             <div
-              className="w-[320px] min-w-[320px] max-w-[320px] shrink-0 overflow-x-hidden grow-0 basis-[320px] space-y-3"
+              className={ACTIVITY_RAIL_ASIDE_CLASS}
               data-ff-deal-right-rail=""
-              data-ff-deal-rail-lock="320"
+              data-ff-deal-rail-lock={ACTIVITY_RAIL_LOCK}
             >
               <div className="min-w-0 w-full max-w-full" data-ff-deal-quick-comms="">
                 <QuickCommsBoard

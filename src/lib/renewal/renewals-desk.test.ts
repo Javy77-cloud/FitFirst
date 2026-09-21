@@ -69,8 +69,10 @@ describe("Renewals desk chrome", () => {
     const panel = source("src/components/desk/standard-activity-panel.tsx");
     expect(panel).toMatch(/data-ff-renewals-list-rail/);
     expect(panel).toMatch(/data-ff-activity-surface=\{surface\}/);
-    expect(panel).toMatch(/data-ff-deal-rail-lock="320"/);
-    expect(panel).toMatch(/w-\[320px\] min-w-\[320px\] max-w-\[320px\]/);
+    expect(panel).toMatch(/data-ff-deal-rail-lock=\{ACTIVITY_RAIL_LOCK\}/);
+    expect(panel).toMatch(/ACTIVITY_RAIL_ASIDE_CLASS/);
+    expect(panel).toMatch(/data-ff-renewals-stack-rail/);
+    expect(views).toMatch(/surface="renewals-stack"/);
     expect(panel).toMatch(/QuickCommsBoard/);
     expect(panel).toMatch(/onOpen=\{desk \? \(\) => desk\.pick\(id\) : undefined\}/);
     expect(source("src/components/desk/record-activity-menu.tsx")).toMatch(/aria-label="Activity"/);

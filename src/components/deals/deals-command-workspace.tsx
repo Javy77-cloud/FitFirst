@@ -46,7 +46,7 @@ export function DealsCommandWorkspace({
       view={view === "radar" ? "radar" : "stack"}
       rankLabel={rankLabel}
       coldRate={scorecards.coldRate}
-      variant="aside"
+      variant="banner"
     />
   );
 
@@ -76,8 +76,22 @@ export function DealsCommandWorkspace({
         </StandardActivityShell>
       ) : (
         <div className="ff-stack-workspace" data-ff-stack-workspace="">
-          <PriorityStack cards={cards} />
           {pulse}
+          <StandardActivityShell
+            surface="deals-stack"
+            rows={cards.map((card) => ({
+              id: card.id,
+              name: dealDisplayName(card),
+              email: card.email,
+              phone: card.phone,
+              dealId: card.id,
+              leadId: card.leadId,
+              contactId: card.contactId,
+              accountId: card.accountId,
+            }))}
+          >
+            <PriorityStack cards={cards} />
+          </StandardActivityShell>
         </div>
       )}
     </div>

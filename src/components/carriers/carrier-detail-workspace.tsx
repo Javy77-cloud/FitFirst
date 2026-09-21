@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
+import { ACTIVITY_RAIL_ASIDE_CLASS, ACTIVITY_RAIL_COLUMNS, ACTIVITY_RAIL_LOCK } from "@/lib/desk/activity-rail";
 
 /**
- * Carrier detail: main sections | Quick Comms + Info rail (320px).
+ * Carrier detail: main sections | Quick Comms + Info rail.
  * Same chrome as Contacts / Businesses / Deals — never stacks under fields.
  */
 export function CarrierDetailWorkspace({
@@ -14,7 +15,7 @@ export function CarrierDetailWorkspace({
   return (
     <div
       className="grid w-full items-start gap-x-6"
-      style={{ gridTemplateColumns: "minmax(0, 1fr) 320px" }}
+      style={{ gridTemplateColumns: ACTIVITY_RAIL_COLUMNS }}
       data-ff-carrier-layout="layout-rail"
     >
       <div className="min-w-0 w-full space-y-3" data-ff-carrier-main="">
@@ -22,10 +23,10 @@ export function CarrierDetailWorkspace({
       </div>
       {rail ? (
         <aside
-          className="w-[320px] min-w-[320px] max-w-[320px] shrink-0 grow-0 basis-[320px] space-y-3 overflow-x-hidden pt-0"
+          className={`${ACTIVITY_RAIL_ASIDE_CLASS} pt-0`}
           data-ff-carrier-context-rail=""
           data-ff-deal-right-rail=""
-          data-ff-deal-rail-lock="320"
+          data-ff-deal-rail-lock={ACTIVITY_RAIL_LOCK}
         >
           {rail}
         </aside>

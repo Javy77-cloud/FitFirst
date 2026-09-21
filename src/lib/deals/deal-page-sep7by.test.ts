@@ -22,9 +22,9 @@ describe("sep7by deal right rail hard-locked to 320px", () => {
   it("BY1 — rail is 320 on every viewport, not lg-only, left takes leftover flex", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/data-ff-deal-right-rail/);
-    expect(page).toMatch(/data-ff-deal-rail-lock="320"/);
-    expect(page).toMatch(/w-\[320px\] min-w-\[320px\] max-w-\[320px\] shrink-0 overflow-x-hidden/);
-    expect(page).toMatch(/grow-0 basis-\[320px\]/);
+    expect(page).toMatch(/data-ff-deal-rail-lock=\{ACTIVITY_RAIL_LOCK\}/);
+    expect(page).toMatch(/ACTIVITY_RAIL_ASIDE_CLASS/);
+    expect(source("src/lib/desk/activity-rail.ts")).toMatch(/overflow-x-hidden/);
     expect(page).not.toMatch(/lg:w-\[320px\]/);
     expect(page).not.toMatch(/lg:w-\[72%\]/);
     expect(page).not.toMatch(/lg:w-\[300px\]/);
@@ -35,10 +35,10 @@ describe("sep7by deal right rail hard-locked to 320px", () => {
   it("BY2 — CSS lock uses !important so cascade cannot widen the rail", () => {
     const css = source("src/app/globals.css");
     expect(css).toMatch(/\[data-ff-deal-right-rail\]/);
-    expect(css).toMatch(/width: 320px !important;/);
-    expect(css).toMatch(/min-width: 320px !important;/);
-    expect(css).toMatch(/max-width: 320px !important;/);
-    expect(css).toMatch(/flex: 0 0 320px !important;/);
+    expect(css).toMatch(/width: var\(--ff-activity-rail\) !important;/);
+    expect(css).toMatch(/min-width: var\(--ff-activity-rail\) !important;/);
+    expect(css).toMatch(/max-width: var\(--ff-activity-rail\) !important;/);
+    expect(css).toMatch(/flex: 0 0 var\(--ff-activity-rail\) !important;/);
     expect(css).toMatch(/overflow-x: hidden !important;/);
     expect(css).toMatch(/\[data-ff-deal-top-left\]/);
     expect(css).toMatch(/flex: 1 1 0% !important;/);
@@ -74,8 +74,8 @@ describe("sep7by deal right rail hard-locked to 320px", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     const tabs = source("src/components/section-tabs.tsx");
     expect(page).toMatch(/data-ff-deal-right-rail/);
-    expect(page).toMatch(/data-ff-deal-rail-lock="320"/);
-    expect(tabs).toMatch(/data-ff-deal-rail-lock="320"/);
+    expect(page).toMatch(/data-ff-deal-rail-lock=\{ACTIVITY_RAIL_LOCK\}/);
+    expect(tabs).toMatch(/data-ff-deal-rail-lock=\{ACTIVITY_RAIL_LOCK\}/);
     expect(page.indexOf("data-ff-deal-right-rail")).toBeLessThan(page.indexOf("data-ff-deal-quick-comms"));
     expect(page.indexOf("data-ff-deal-quick-comms")).toBeLessThan(page.indexOf("<RecordContextRail"));
     expect(page).toMatch(/min-w-0 w-full max-w-full" data-ff-deal-quick-comms/);

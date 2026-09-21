@@ -646,7 +646,7 @@ describe("per-product stages", () => {
     expect(source("src/app/globals.css")).toMatch(/rotate\(-24deg\)/);
     expect(source("src/app/globals.css")).toMatch(/right: -8\.6rem;/);
     expect(source("src/app/globals.css")).toMatch(/bottom: -2\.05rem;/);
-    expect(source("src/app/globals.css")).toMatch(/left: calc\(\(100% - 320px - 1\.25rem\) \/ 2\)/);
+    expect(source("src/app/globals.css")).toMatch(/left: calc\(\(100% - var\(--ff-activity-rail\) - 1\.25rem\) \/ 2\)/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/ff-deal-stamp-stack/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/data-ff-deal-create-notice/);
     expect(source("src/app/deals/[id]/page.tsx")).not.toMatch(/noticeAction=/);

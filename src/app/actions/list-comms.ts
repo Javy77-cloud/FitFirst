@@ -2,7 +2,7 @@
 
 import { listRecordActivities } from "@/lib/db/queries";
 
-/** Activities for the standard 320px Activity board. */
+/** Activities for the shared Activity board. */
 export async function loadListComms(input: {
   leadId?: string | null;
   dealId?: string | null;
