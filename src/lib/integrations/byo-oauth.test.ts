@@ -236,6 +236,9 @@ describe("BYO OAuth wave", () => {
     expect(store).toMatch(/Always write the OWN provider row/);
     expect(store).toMatch(/const own = await loadByoConnection\(input\.provider\)/);
     expect(store).toMatch(/where\(eq\(integrationConnections\.id, own\.id\)\)/);
+    expect(store).toMatch(/pickByoFamilyCredentials/);
+    expect(store).toMatch(/propagateGoogleFamilyCredentials/);
+    expect(store).toMatch(/resolveByoClientApp\(input\.provider, input\.form\)/);
   });
 
 });

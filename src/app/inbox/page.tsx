@@ -2,7 +2,9 @@ import { AppShell } from "@/components/app-shell";
 import { InboxDesk } from "@/components/inbox/inbox-desk";
 import { currentDeskSession } from "@/lib/auth/session";
 import { canConnectByoIntegration } from "@/lib/integrations/connect-policy";
+import { byoOauthWallCopy } from "@/lib/integrations/byo-credentials";
 import { gmailAccountEmail } from "@/lib/integrations/gmail";
+import { loadByoConnection } from "@/lib/integrations/oauth-store";
 import { loadInboxThreadMessages, loadLiveInboxThreads } from "@/lib/desk/load-inbox-live";
 
 export const dynamic = "force-dynamic";
@@ -12,10 +14,11 @@ export default async function InboxPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [session, live, query] = await Promise.all([
+  const [session, live, query, gmailRow] = await Promise.all([
     currentDeskSession(),
     loadLiveInboxThreads(20),
     searchParams,
+    loadByoConnection("gmail").catch(() => null),
   ]);
   const selectedId = typeof query.thread === "string" ? query.thread : null;
   const notice = typeof query.notice === "string" ? query.notice : null;
@@ -32,8 +35,8 @@ export default async function InboxPage({
         </p>
       ) : null}
       {notice === "oauth-wall" ? (
-        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy">
-          Gmail Connect hit a wall. Open Settings → Email, check Client ID/Secret and Gmail API, then try again.
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy" data-ff-oauth-wall="">
+          {byoOauthWallCopy(gmailRow?.lastOauthError)}
         </p>
       ) : null}
       <InboxDesk

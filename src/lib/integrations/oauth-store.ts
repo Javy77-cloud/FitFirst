@@ -2,7 +2,13 @@ import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { integrationConnections } from "@/lib/db/schema";
-import { planByoSecretWrite } from "@/lib/integrations/byo-credentials";
+import {
+  isByoPlaceholderSecret,
+  looksLikeInvalidClientSecretError,
+  pickByoFamilyCredentials,
+  planByoSecretWrite,
+  type ByoVaultCandidate,
+} from "@/lib/integrations/byo-credentials";
 import { decryptSecret, encryptSecret } from "@/lib/secrets/vault";
 import { envHasOauthApp, envOauthApp, pickOauthClientApp } from "./oauth-env";
 import {
@@ -46,7 +52,31 @@ function credentialCandidates(provider: ByoOauthProviderId): ByoOauthProviderId[
   return [...ids];
 }
 
-export async function resolveByoClientApp(provider: ByoOauthProviderId): Promise<{
+function vaultCandidateFromRow(
+  provider: ByoOauthProviderId,
+  row: Awaited<ReturnType<typeof loadByoConnection>>,
+): ByoVaultCandidate | null {
+  if (!row?.clientId?.trim() || !row.clientSecretEnc || !row.clientSecretIv) return null;
+  try {
+    const clientSecret = decryptSecret(row.clientSecretEnc, row.clientSecretIv);
+    if (!clientSecret || isByoPlaceholderSecret(clientSecret)) return null;
+    return {
+      provider,
+      clientId: row.clientId.trim(),
+      clientSecret,
+      connected: Boolean(row.connected && row.connectMode === "byo"),
+      lastOauthError: row.lastOauthError,
+      updatedAtMs: row.updatedAt ? new Date(row.updatedAt).getTime() : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function resolveByoClientApp(
+  provider: ByoOauthProviderId,
+  form?: { clientId?: string | null; clientSecret?: string | null } | null,
+): Promise<{
   clientId: string;
   clientSecret: string;
   source: "settings" | "env";
@@ -54,24 +84,18 @@ export async function resolveByoClientApp(provider: ByoOauthProviderId): Promise
   authBase?: string;
 } | null> {
   const spec = byoOauthSpec(provider);
-  let settings: { clientId: string; clientSecret: string } | null = null;
+  const ownRow = await loadByoConnection(provider);
+  const own = vaultCandidateFromRow(provider, ownRow);
+  const siblings: ByoVaultCandidate[] = [];
   for (const id of credentialCandidates(provider)) {
-    const row = await loadByoConnection(id);
-    if (row?.clientId?.trim() && row.clientSecretEnc && row.clientSecretIv) {
-      try {
-        const clientSecret = decryptSecret(row.clientSecretEnc, row.clientSecretIv);
-        if (clientSecret) {
-          settings = { clientId: row.clientId.trim(), clientSecret };
-          break;
-        }
-      } catch {
-        /* try next / env */
-      }
-    }
+    if (id === provider) continue;
+    const sibling = vaultCandidateFromRow(id, await loadByoConnection(id));
+    if (sibling) siblings.push(sibling);
   }
+  const picked = pickByoFamilyCredentials({ form, own, siblings });
   return pickOauthClientApp({
     family: spec.family,
-    settings,
+    settings: picked ? { clientId: picked.clientId, clientSecret: picked.clientSecret } : null,
     env: envOauthApp(spec.family),
   });
 }
@@ -160,7 +184,38 @@ export async function saveByoApp(input: {
           : "Could not save agency app credentials.",
     };
   }
+  if (spec.family === "google" && clientSecretEnc && clientSecretIv) {
+    await propagateGoogleFamilyCredentials({
+      sourceProvider: input.provider,
+      clientId,
+      clientSecretEnc,
+      clientSecretIv,
+    });
+  }
   return { ok: true, clientId, hasSecret };
+}
+
+async function propagateGoogleFamilyCredentials(input: {
+  sourceProvider: ByoOauthProviderId;
+  clientId: string;
+  clientSecretEnc: string;
+  clientSecretIv: string;
+}) {
+  for (const id of googleFamilyIds()) {
+    if (id === input.sourceProvider) continue;
+    const row = await loadByoConnection(id);
+    if (!row) continue;
+    await db
+      .update(integrationConnections)
+      .set({
+        clientId: input.clientId,
+        clientSecretEnc: input.clientSecretEnc,
+        clientSecretIv: input.clientSecretIv,
+        lastOauthError: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(integrationConnections.id, row.id));
+  }
 }
 
 export async function clearByoApp(provider: ByoOauthProviderId) {
@@ -186,18 +241,35 @@ export async function prepareByoAuthorize(input: {
   origin: string;
   returnTo: string;
   userId?: string | null;
+  form?: { clientId?: string | null; clientSecret?: string | null } | null;
 }): Promise<
   | { ok: true; url: string; state: string }
   | { ok: false; reason: "needs_credentials" | "google_not_setup"; message: string }
 > {
   const spec = byoOauthSpec(input.provider);
-  const app = await resolveByoClientApp(input.provider);
+  const app = await resolveByoClientApp(input.provider, input.form);
   if (!app) {
     return {
       ok: false,
       reason: "needs_credentials",
       message: `Paste the agency ${spec.clientIdLabel} and ${spec.clientSecretLabel}, or set the ${spec.vendor} env vars. ${spec.worksWhen}`,
     };
+  }
+  if (app.source === "settings" && spec.family === "google") {
+    const own = await loadByoConnection(input.provider);
+    const ownSecret = vaultCandidateFromRow(input.provider, own);
+    const ownUnusable =
+      !ownSecret ||
+      looksLikeInvalidClientSecretError(own?.lastOauthError) ||
+      ownSecret.clientSecret !== app.clientSecret ||
+      ownSecret.clientId !== app.clientId;
+    if (ownUnusable) {
+      await saveByoApp({
+        provider: input.provider,
+        clientId: app.clientId,
+        clientSecret: app.clientSecret,
+      });
+    }
   }
   const pkce = spec.pkce ? createPkcePair() : null;
   const payload: ByoOauthStatePayload = {

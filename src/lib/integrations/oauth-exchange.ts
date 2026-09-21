@@ -67,7 +67,15 @@ async function postToken(
     body,
     signal: AbortSignal.timeout(10_000),
   });
-  return (await res.json()) as TokenJson;
+  const text = await res.text();
+  try {
+    return JSON.parse(text) as TokenJson;
+  } catch {
+    return {
+      error: res.statusText || "token_error",
+      error_description: text.slice(0, 400) || undefined,
+    };
+  }
 }
 
 function failToken(data: TokenJson, fallback: string): TokenExchangeResult {

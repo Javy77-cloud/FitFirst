@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { isMaskedSecretInput } from "@/lib/secrets/vault";
 import {
+  byoOauthWallCopy,
   isByoPlaceholderSecret,
+  looksLikeInvalidClientSecretError,
+  pickByoFamilyCredentials,
   planByoClientId,
   planByoSecretWrite,
 } from "./byo-credentials";
@@ -105,5 +108,73 @@ describe("BYO OAuth credential save", () => {
     const store = source("src/lib/integrations/oauth-store.ts");
     expect(store).toMatch(/connectMode: "credentials"/);
     expect(store).toMatch(/planByoSecretWrite/);
+    expect(store).toMatch(/pickByoFamilyCredentials/);
+    expect(store).toMatch(/propagateGoogleFamilyCredentials/);
+  });
+
+  it("reuses a connected Calendar sibling secret when Gmail's vault is stale-invalid", () => {
+    const gmail = {
+      provider: "gmail",
+      clientId: "stale.apps.googleusercontent.com",
+      clientSecret: "old-invalid-secret",
+      connected: false,
+      lastOauthError: "The provided client secret is invalid.",
+      updatedAtMs: 200,
+    };
+    const calendar = {
+      provider: "google_calendar",
+      clientId: "live.apps.googleusercontent.com",
+      clientSecret: "calendar-working-secret",
+      connected: true,
+      lastOauthError: null,
+      updatedAtMs: 100,
+    };
+    expect(
+      pickByoFamilyCredentials({
+        own: gmail,
+        siblings: [calendar],
+      }),
+    ).toEqual({
+      clientId: "live.apps.googleusercontent.com",
+      clientSecret: "calendar-working-secret",
+      source: "sibling",
+    });
+    expect(
+      pickByoFamilyCredentials({
+        form: { clientId: "typed.apps.googleusercontent.com", clientSecret: "fresh-typed-secret" },
+        own: gmail,
+        siblings: [calendar],
+      }),
+    ).toEqual({
+      clientId: "typed.apps.googleusercontent.com",
+      clientSecret: "fresh-typed-secret",
+      source: "form",
+    });
+    expect(
+      pickByoFamilyCredentials({
+        form: { clientId: "", clientSecret: "••••••••••••" },
+        own: gmail,
+        siblings: [calendar],
+      })?.source,
+    ).toBe("sibling");
+    expect(
+      pickByoFamilyCredentials({
+        own: { ...gmail, lastOauthError: null },
+        siblings: [calendar],
+      })?.source,
+    ).toBe("sibling");
+    expect(
+      pickByoFamilyCredentials({
+        own: { ...gmail, lastOauthError: null },
+        siblings: [],
+      }),
+    ).toMatchObject({ source: "own", clientSecret: "old-invalid-secret" });
+    expect(looksLikeInvalidClientSecretError("The provided client secret is invalid.")).toBe(true);
+    expect(looksLikeInvalidClientSecretError("invalid_client")).toBe(true);
+    expect(looksLikeInvalidClientSecretError("redirect_uri_mismatch")).toBe(false);
+    expect(byoOauthWallCopy("The provided client secret is invalid.")).toMatch(
+      /The provided client secret is invalid/,
+    );
+    expect(byoOauthWallCopy(null)).toMatch(/Open the card for the error/);
   });
 });
