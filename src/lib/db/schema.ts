@@ -3061,6 +3061,53 @@ export const calendarBusyBlocks = pgTable(
   ],
 );
 
+/** Titled events imported from a connected calendar provider (Google first; Outlook same table). */
+export const calendarSyncedEvents = pgTable(
+  "calendar_synced_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    provider: text("provider").notNull(),
+    calendarId: text("calendar_id").notNull().default("primary"),
+    externalId: text("external_id").notNull(),
+    title: text("title").notNull(),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    allDay: boolean("all_day").notNull().default(false),
+    visibility: text("visibility"),
+    transparency: text("transparency"),
+    htmlLink: text("html_link"),
+    etag: text("etag"),
+    syncedAt: timestamp("synced_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("calendar_synced_events_ext_uidx").on(t.tenantId, t.provider, t.calendarId, t.externalId),
+    index("calendar_synced_events_when_idx").on(t.tenantId, t.startsAt, t.endsAt),
+  ],
+);
+
+/** FitFirst-owned desk activity mirrored onto a provider calendar. */
+export const calendarEventLinks = pgTable(
+  "calendar_event_links",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    activityId: uuid("activity_id")
+      .notNull()
+      .references(() => activities.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    calendarId: text("calendar_id").notNull().default("primary"),
+    externalId: text("external_id").notNull(),
+    syncedAt: timestamp("synced_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("calendar_event_links_activity_uidx").on(t.activityId, t.provider),
+    uniqueIndex("calendar_event_links_ext_uidx").on(t.tenantId, t.provider, t.calendarId, t.externalId),
+  ],
+);
+
 /** Named Home boards. Tile order/span + hidden cards, scoped per user/tenant. */
 export const userHomeLayouts = pgTable(
   "user_home_layouts",
@@ -3401,6 +3448,8 @@ export type EsignSettings = typeof esignSettings.$inferSelect;
 export type SignatureEnvelope = typeof signatureEnvelopes.$inferSelect;
 export type IntegrationConnection = typeof integrationConnections.$inferSelect;
 export type CalendarBusyBlock = typeof calendarBusyBlocks.$inferSelect;
+export type CalendarSyncedEvent = typeof calendarSyncedEvents.$inferSelect;
+export type CalendarEventLink = typeof calendarEventLinks.$inferSelect;
 export type LeadOfferRow = typeof leadOffers.$inferSelect;
 export type SocialLeadOffer = typeof socialLeadOffers.$inferSelect;
 export type PiiRevealLog = typeof piiRevealLogs.$inferSelect;

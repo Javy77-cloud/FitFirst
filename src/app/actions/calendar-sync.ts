@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { flashAction } from "@/lib/flash-action";
 import { currentDeskSession } from "@/lib/auth/session";
-import { syncConnectedBusy } from "@/lib/integrations/calendar-busy";
+import { eventSyncWindow } from "@/lib/integrations/calendar-event-map";
+import { syncConnectedCalendarsBothWays } from "@/lib/integrations/calendar-event-sync";
 import { isRedirectError } from "@/lib/lifecycle/shop";
 
 function refreshCalendar() {
@@ -15,7 +16,7 @@ export async function syncDeskBusyNow() {
   const session = await currentDeskSession();
   if (!session.signedIn) return;
   try {
-    await syncConnectedBusy();
+    await syncConnectedCalendarsBothWays(eventSyncWindow(new Date(), new Date()));
     refreshCalendar();
     flashAction("/calendar", "busy-synced");
   } catch (error) {

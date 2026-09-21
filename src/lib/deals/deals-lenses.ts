@@ -1,3 +1,4 @@
+import { ownerMatchesMine } from "@/lib/auth/producer-identity";
 import type { HeatState } from "@/lib/deals/velocity";
 import type { DealsViewId } from "@/lib/deals/deals-views";
 
@@ -57,9 +58,9 @@ export function parseValueBand(_raw?: string | null): "high" | "mid" | "low" | n
 
 export function defaultDealScope(input: { canSeeTeam: boolean; view?: DealsViewId | null }): "mine" | "team" {
   // Same default for Radar and Stack so switching views never flips Mine/Team.
+  // Owner/Admin can see Team; land there so a stale Mine URL is the opt-in.
   void input.view;
-  if (!input.canSeeTeam) return "mine";
-  return "mine";
+  return input.canSeeTeam ? "team" : "mine";
 }
 
 export function resolveDealScope(input: {
@@ -85,6 +86,10 @@ export type DealLensFilter = {
   scope?: string | null;
   valueBand?: string | null;
   viewerId?: string | null;
+  /** Session user plus same-person alias user ids (Javy Rivera / Francisco Javier Garcia). */
+  viewerIds?: readonly string[] | null;
+  /** Solo agency: Mine includes every deal the viewer can already see. */
+  soloBook?: boolean;
   canSeeTeam?: boolean;
   view?: DealsViewId | null;
 };
@@ -116,7 +121,17 @@ export function resolveDealFilters(filter: DealLensFilter): {
 export function matchesDealLens(card: DealLensCard, filter: DealLensFilter): boolean {
   const resolved = resolveDealFilters(filter);
   if (resolved.heat && card.heat !== resolved.heat) return false;
-  if (resolved.scope === "mine" && filter.viewerId && card.ownerId !== filter.viewerId) return false;
+  if (resolved.scope === "mine") {
+    if (
+      !ownerMatchesMine(card.ownerId, {
+        viewerId: filter.viewerId,
+        viewerIds: filter.viewerIds,
+        soloBook: filter.soloBook,
+      })
+    ) {
+      return false;
+    }
+  }
   return true;
 }
 

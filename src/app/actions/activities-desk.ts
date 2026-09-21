@@ -48,6 +48,18 @@ function relatedFromForm(form: FormData, requireRelated: boolean) {
   return related;
 }
 
+async function pushAfterSave(activity: {
+  id: string;
+  title: string;
+  notes?: string | null;
+  meetingLocation?: string | null;
+  startAt: Date | string | null;
+  endAt: Date | string | null;
+}) {
+  const { pushDeskActivityToCalendars } = await import("@/lib/integrations/calendar-event-sync");
+  await pushDeskActivityToCalendars(activity).catch(() => undefined);
+}
+
 function revalidateRelated(related: {
   contactId?: string | null;
   accountId?: string | null;
@@ -113,10 +125,13 @@ export async function logDeskActivity(formData: FormData) {
     const conflicts = await findBusyConflicts(startAt, endAt);
     if (conflicts.length) throw new Error(busyConflictMessage(conflicts));
   }
+  let meetExternalId: string | null = null;
   if (kind === "meeting" && str(formData, "addGoogleMeet") === "1" && startAt && endAt) {
-    const { createGoogleMeetLink } = await import("@/lib/integrations/google-meet");
-    videoUrl = await createGoogleMeetLink({ title, startAt, endAt });
+    const { createGoogleMeetConference } = await import("@/lib/integrations/google-meet");
+    const meet = await createGoogleMeetConference({ title, startAt, endAt });
+    videoUrl = meet.url;
     videoProvider = "meet";
+    meetExternalId = meet.externalId;
   }
   const writeLog = shouldWriteCommsActivityLog({ kind, eventType, status, outcome });
   const isScheduledComms =
@@ -200,6 +215,13 @@ export async function logDeskActivity(formData: FormData) {
     });
   }
 
+  if (startAt && endAt) {
+    const { pushDeskActivityToCalendars } = await import("@/lib/integrations/calendar-event-sync");
+    await pushDeskActivityToCalendars(activity, meetExternalId
+      ? { existingExternalId: { provider: "google_calendar", externalId: meetExternalId } }
+      : undefined).catch(() => undefined);
+  }
+
   revalidateRelated(related);
   if (kind === "call") revalidatePath("/phone");
   revalidatePath("/notifications");
@@ -272,15 +294,22 @@ export async function updateDeskActivity(formData: FormData) {
   const title = str(formData, "title") || activity.title;
   const notes = str(formData, "notes") || null;
   const dueAt = when(formData, "dueAt");
+  const startAt = when(formData, "startAt") ?? activity.startAt;
+  const endAt = when(formData, "endAt") ?? activity.endAt;
+  const status = str(formData, "status") || activity.status;
   await db
     .update(activities)
     .set({
       title,
       notes,
-      dueAt: dueAt ?? activity.dueAt,
+      status,
+      dueAt: dueAt ?? startAt ?? activity.dueAt,
+      startAt,
+      endAt,
       updatedAt: new Date(),
     })
     .where(eq(activities.id, id));
+  await pushAfterSave({ ...activity, title, notes, startAt, endAt });
 
   const producerName = await resolvePolicyProducerName(activity.policyId);
   await db.insert(activityLogs).values({
@@ -357,6 +386,7 @@ export async function rescheduleDeskActivity(formData: FormData) {
     producerName,
   });
 
+  await pushAfterSave({ ...activity, startAt, endAt });
   revalidateRelated(activity);
   revalidatePath("/phone");
   return { ok: true };
@@ -371,6 +401,8 @@ export async function deleteDeskActivity(formData: FormData) {
     .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), eq(activities.id, id)));
   if (!activity) return { error: "Activity not found." };
 
+  const { deleteDeskActivityFromCalendars } = await import("@/lib/integrations/calendar-event-sync");
+  await deleteDeskActivityFromCalendars(id).catch(() => undefined);
   await db.delete(activityLogs).where(eq(activityLogs.activityId, id));
   await db.delete(calendarInvites).where(eq(calendarInvites.activityId, id));
   await db.delete(alerts).where(and(eq(alerts.entityType, "activity"), eq(alerts.entityId, id)));

@@ -45,7 +45,7 @@ export async function disconnectGoogleCalendar() {
 export async function syncGoogleCalendar(formData: FormData) {
   await requireAdminAction("Only an admin can sync the agency Google Calendar.");
   const direction = String(formData.get("direction") ?? "in") === "out" ? "out" : "in";
-  const result = direction === "out" ? syncGoogleCalendarOut() : await syncGoogleCalendarIn();
+  const result = direction === "out" ? await syncGoogleCalendarOut() : await syncGoogleCalendarIn();
   const existing = await loadConnection();
   if (existing) {
     await db

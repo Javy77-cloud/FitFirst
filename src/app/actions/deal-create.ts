@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { and, desc, eq } from "drizzle-orm";
+import { resolveWriteOwnerId } from "@/lib/auth/canonical-owner-backfill";
 import { getActor } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID, isShopLine, type ShopLine } from "@/lib/domain";
 import { flashAction } from "@/lib/flash-action";
@@ -195,7 +196,12 @@ async function createCopiedDeal(
       propertyOneliner: row.propertyOneliner,
       currentCarrier: row.currentCarrier,
       accountKind: row.accountKind,
-      ownerId: row.ownerId || actor.id || null,
+      ownerId: await resolveWriteOwnerId(row.ownerId || actor.id, {
+        id: actor.id,
+        name: actor.name,
+        email: actor.email,
+        role: actor.role,
+      }),
       source: row.source ?? "manual",
       quotingForm,
       quotingLine,
@@ -352,7 +358,12 @@ export async function createDealFromExistingPick(
       quotingForm: draft.quotingForm,
       policySubType: draft.quotingForm,
       state: contact.state || "FL",
-      ownerId: contact.ownerId || actor.id || null,
+      ownerId: await resolveWriteOwnerId(contact.ownerId || actor.id, {
+        id: actor.id,
+        name: actor.name,
+        email: actor.email,
+        role: actor.role,
+      }),
       source: contact.source ?? "manual",
       shopLines: draft.shopLines,
       accountKind: "personal",

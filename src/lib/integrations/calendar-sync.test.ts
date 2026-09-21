@@ -7,6 +7,7 @@ import {
   googleCalendarHttpError,
   isByoBusyConnection,
   shouldAutoSyncBusy,
+  shouldAutoSyncEvents,
 } from "./calendar-sync";
 
 describe("calendar busy auto-sync", () => {
@@ -16,6 +17,12 @@ describe("calendar busy auto-sync", () => {
     expect(shouldAutoSyncBusy(null, asOf)).toBe(true);
     expect(shouldAutoSyncBusy(new Date("2026-09-19T16:40:00.000Z"), asOf)).toBe(true);
     expect(shouldAutoSyncBusy(new Date("2026-09-19T16:50:00.000Z"), asOf)).toBe(false);
+  });
+
+  it("refreshes titled events sooner, and always if none are stored yet", () => {
+    expect(shouldAutoSyncEvents(new Date("2026-09-19T16:59:00.000Z"), false, asOf)).toBe(true);
+    expect(shouldAutoSyncEvents(new Date("2026-09-19T16:59:00.000Z"), true, asOf)).toBe(false);
+    expect(shouldAutoSyncEvents(new Date("2026-09-19T16:50:00.000Z"), true, asOf)).toBe(true);
   });
 
   it("formats last synced for the desk", () => {
@@ -61,6 +68,7 @@ describe("calendar busy auto-sync", () => {
   it("does not treat Sync Now redirect() as a busy-sync failure", () => {
     const action = readFileSync("src/app/actions/calendar-sync.ts", "utf8");
     expect(action).toMatch(/if \(isRedirectError\(error\)\) throw error/);
+    expect(action).toMatch(/syncConnectedCalendarsBothWays/);
     expect(action).toMatch(/flashAction\("\/calendar", "busy-synced"\)/);
     expect(action).toMatch(/flashAction\("\/calendar", "busy-sync-failed", "error"\)/);
     const smoke = readFileSync("src/app/actions/byo-oauth.ts", "utf8");
@@ -84,6 +92,9 @@ describe("calendar busy auto-sync", () => {
     expect(bar).not.toMatch(/busy last synced/);
     expect(page).toMatch(/syncControl=/);
     expect(page).toMatch(/<CalendarSyncBar/);
+    expect(page).toMatch(/overlayCount=\{externalEvents\.length\}/);
+    expect(page).toMatch(/importConnectedEvents/);
+    expect(page).toMatch(/listSyncedEvents/);
     expect(calendar).toMatch(/data-calendar-toolbar="sync"/);
     expect(calendar).toMatch(/syncControl/);
     expect(chrome).not.toMatch(/\.ff-calendar-sync \{[\s\S]*margin-bottom: 0\.75rem;/);

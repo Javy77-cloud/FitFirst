@@ -9,7 +9,7 @@ export function Notice({ code }: { code?: string }) {
       "Connect Google Calendar under Settings → Integrations. Busy blocks sync onto this desk.",
     "google-disconnected": "Google Calendar marked not connected.",
     "google-sync-later":
-      "Two-way event push is later. Busy pull is live — use Sync now on Calendar.",
+      "Calendar events synced. Use Sync now on Calendar to refresh Google or Outlook.",
     "busy-synced": "External busy is on the desk calendar.",
     "would-send":
       "Campaign send is stubbed. FitFirst logged “would send” for each audience member. No SMTP.",

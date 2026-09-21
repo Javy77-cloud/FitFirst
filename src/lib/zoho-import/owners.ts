@@ -1,5 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { ADMIN_EMAIL } from "@/lib/auth/api";
+import { resolveDirectoryOwnerId } from "@/lib/auth/producer-identity";
 import { db, sql } from "@/lib/db";
 import { contacts, deals, leads, policies, users } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
@@ -63,17 +64,7 @@ export function resolveOwnerId(
   directory: TenantUserRef[],
   fallbackId: string,
 ): string {
-  const email = owner?.email?.trim().toLowerCase();
-  if (email) {
-    const hit = directory.find((user) => user.email.trim().toLowerCase() === email);
-    if (hit) return hit.id;
-  }
-  const name = owner?.name?.trim().toLowerCase();
-  if (name) {
-    const hit = directory.find((user) => user.name.trim().toLowerCase() === name);
-    if (hit) return hit.id;
-  }
-  return fallbackId;
+  return resolveDirectoryOwnerId(owner, directory, fallbackId);
 }
 
 export async function loadTenantUsers(tenantId = DEFAULT_TENANT_ID): Promise<TenantUserRef[]> {

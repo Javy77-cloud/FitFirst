@@ -157,7 +157,7 @@ export function DeskCalendar({
 
   async function dropOn(eventId: string, nextStart: Date) {
     const event = events.find((row) => row.id === eventId);
-    if (!event) return;
+    if (!event || event.origin === "external") return;
     const window = rescheduleWindow(event, nextStart);
     const form = new FormData();
     form.set("activityId", eventId);
@@ -359,6 +359,14 @@ export function DeskCalendar({
               {KIND_LABELS[kind]}
             </span>
           ))}
+          <span className="inline-flex items-center gap-1.5 text-xs text-navy">
+            <span className="inline-block size-2.5 rounded-sm" style={{ background: "#0f766e" }} aria-hidden />
+            Google
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-xs text-navy">
+            <span className="inline-block size-2.5 rounded-sm" style={{ background: "#0f4c81" }} aria-hidden />
+            Outlook
+          </span>
         </div>
         <div
           className="-mt-3 mb-0.5 flex items-center gap-1 self-start"
@@ -867,19 +875,21 @@ function TimeGrid({
                     </div>
                   );
                 })}
-              {dayItems.map((item) => {
+                {dayItems.map((item) => {
                 const start = activityAnchor(item);
                 if (!start) return null;
                 const top =
                   (start.getHours() - gridStart) * HOUR_H +
                   (start.getMinutes() / 60) * HOUR_H;
                 const height = Math.min(eventHeightPx(item, HOUR_H), HOUR_H * 4);
+                const external = item.origin === "external";
                 return (
                   <button
                     key={item.id}
                     type="button"
-                    draggable
+                    draggable={!external}
                     onDragStart={(e) => {
+                      if (external) return;
                       e.dataTransfer.setData("text/activity-id", item.id);
                       e.dataTransfer.effectAllowed = "move";
                       onDragStart(item.id);
@@ -891,6 +901,7 @@ function TimeGrid({
                     className={cn(
                       "absolute inset-x-1 z-10 overflow-hidden rounded-sm px-1 py-0.5 text-left text-[11px] font-medium text-white",
                       kindClass(item.kind, item.meetingType),
+                      external && "ring-1 ring-white/70",
                       selectedId === item.id && "ring-2 ring-white",
                     )}
                     style={{
@@ -898,9 +909,14 @@ function TimeGrid({
                       height: Math.max(height, 18),
                       background: eventToneColor(item),
                     }}
-                    title={`${item.title} · ${formatTime(item.startAt ?? item.dueAt)}`}
+                    title={`${item.title} · ${formatTime(item.startAt ?? item.dueAt)}${external ? " · External" : ""}`}
+                    data-ff-calendar-origin={item.origin ?? "fitfirst"}
+                    data-ff-calendar-provider={item.calendarProvider ?? undefined}
                   >
-                    <span className="block truncate">{item.title}</span>
+                    <span className="block truncate">
+                      {external ? `${item.calendarProvider === "outlook_calendar" ? "O" : "G"} · ` : ""}
+                      {item.title}
+                    </span>
                     <span className="block text-[10px] opacity-80">
                       {formatTime(item.startAt ?? item.dueAt)}
                     </span>
@@ -926,11 +942,13 @@ function EventChip({
   onDragStart: (id: string) => void;
   onSelect: (event: CalendarEvent) => void;
 }) {
+  const external = event.origin === "external";
   return (
     <button
       type="button"
-      draggable
+      draggable={!external}
       onDragStart={(e) => {
+        if (external) return;
         e.dataTransfer.setData("text/activity-id", event.id);
         e.dataTransfer.effectAllowed = "move";
         onDragStart(event.id);
@@ -941,7 +959,10 @@ function EventChip({
       }}
       className={`block w-full truncate rounded-sm px-1 py-0.5 text-left text-[10px] font-medium text-white ${selected ? "ring-2 ring-navy" : ""}`}
       style={{ background: eventToneColor(event) }}
+      data-ff-calendar-origin={event.origin ?? "fitfirst"}
+      data-ff-calendar-provider={event.calendarProvider ?? undefined}
     >
+      {external ? `${event.calendarProvider === "outlook_calendar" ? "O" : "G"} · ` : ""}
       {formatTime(event.startAt ?? event.dueAt)} {event.title}
     </button>
   );
@@ -963,16 +984,49 @@ function CalendarEditor({
   onClose: () => void;
 }) {
   const isNew = !event;
+  const external = event?.origin === "external";
   const [error, setError] = useState<string | null>(null);
+  const providerLabel = event?.calendarProvider === "outlook_calendar" ? "Outlook" : "Google";
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-3 sm:items-center">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border border-border bg-card p-4 shadow-lg">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-navy">{isNew ? "New on calendar" : "Edit activity"}</h3>
+          <h3 className="text-sm font-semibold text-navy">
+            {isNew ? "New on calendar" : external ? `${providerLabel} event` : "Edit activity"}
+          </h3>
           <Button type="button" size="xs" variant="ghost" onClick={onClose}>
             Close
           </Button>
         </div>
+        {external && event ? (
+          <div className="grid gap-2" data-ff-calendar-external-detail="">
+            <p className="text-sm font-medium text-navy">{event.title}</p>
+            <p className="text-sm text-muted-foreground">
+              {formatTime(event.startAt)} – {formatTime(event.endAt)} · {providerLabel}
+              {event.calendarVisibility === "private" || event.calendarVisibility === "confidential"
+                ? " · Private"
+                : ""}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              This event lives on {providerLabel}. FitFirst imported the title and time. Edit or delete it there.
+            </p>
+            {event.calendarHtmlLink ? (
+              <a
+                href={event.calendarHtmlLink}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Open in {providerLabel} Calendar
+              </a>
+            ) : null}
+            <div className="flex justify-end">
+              <Button type="button" size="sm" variant="outline" onClick={onClose}>
+                Close
+              </Button>
+            </div>
+          </div>
+        ) : (
         <form
           action={async (formData) => {
             setError(null);
@@ -1119,6 +1173,7 @@ function CalendarEditor({
             </Button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

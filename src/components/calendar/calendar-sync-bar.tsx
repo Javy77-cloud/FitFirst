@@ -98,7 +98,7 @@ export function CalendarSyncBar({
                     : "h-8 gap-1"
                 }
                 data-ff-calendar-sync-trigger=""
-                aria-label={`${vendorLabel(googleConnected, outlookConnected)} busy sync`}
+                aria-label={`${vendorLabel(googleConnected, outlookConnected)} calendar sync`}
               />
             }
           >
@@ -109,7 +109,7 @@ export function CalendarSyncBar({
           <DropdownMenuContent align="end" className="w-64 p-2.5">
             <div className="space-y-2">
               <p className="text-xs font-semibold text-navy">
-                {vendorLabel(googleConnected, outlookConnected)} busy
+                {vendorLabel(googleConnected, outlookConnected)} calendar
               </p>
               <p className="text-xs leading-snug text-muted-foreground" data-ff-calendar-last-synced="">
                 Last synced {formatBusySyncedAt(lastSyncedAt)}
@@ -122,13 +122,13 @@ export function CalendarSyncBar({
                 {overlayCount > 0 ? (
                   <>
                     <br />
-                    {overlayCount} Google event{overlayCount === 1 ? "" : "s"}
+                    {overlayCount} event{overlayCount === 1 ? "" : "s"}
                   </>
                 ) : null}
               </p>
               {showFailed ? (
                 <p className="text-xs leading-snug text-destructive" data-ff-calendar-busy-error="">
-                  {vendorError || "Busy sync failed. Try Sync now, or reconnect in Settings."}
+                  {vendorError || "Calendar sync failed. Try Sync now, or reconnect in Settings."}
                 </p>
               ) : null}
               <form action={syncDeskBusyNow}>
@@ -165,7 +165,7 @@ export function CalendarSyncBar({
                 <p className="text-xs leading-snug text-navy">Only Agency Admin can connect Google Calendar.</p>
               ) : (
                 <p className="text-xs leading-snug text-navy">
-                  Show Google busy on this desk. Two-way push is later.
+                  Show Google events on this desk.
                 </p>
               )}
               {canConnect ? (

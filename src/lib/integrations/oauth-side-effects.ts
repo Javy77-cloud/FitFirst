@@ -47,8 +47,15 @@ export async function applyByoConnectSideEffects(input: {
     }
     if (input.provider === "google_calendar") {
       // Never await on the OAuth callback path — Google's consent screen
-      // spins until our redirect returns. Busy sync runs on Calendar load.
+      // spins until our redirect returns. Event + busy sync run on Calendar load.
       void syncGoogleBusy().catch(() => null);
+      void import("@/lib/integrations/calendar-event-sync").then(({ importConnectedEvents }) => {
+        const now = new Date();
+        return importConnectedEvents({
+          from: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000),
+          to: new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000),
+        });
+      }).catch(() => null);
     }
   }
   if (input.provider === "outlook_calendar") {
