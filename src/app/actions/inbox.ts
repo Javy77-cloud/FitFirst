@@ -6,7 +6,7 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { createContactPopup } from "@/app/actions/contacts-ops";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import { parseEmailFrom } from "@/lib/home/lead-offers";
-import { getGmailThread, replyGmailThread, sendGmailMessage } from "@/lib/integrations/gmail";
+import { activeInboxMail, mailThreadKey } from "@/lib/integrations/mail-provider";
 import { writeRecordValues, loadRecordValues } from "@/lib/custom-fields/store";
 import {
   INBOX_EMAIL_ALIAS_KEY,
@@ -43,7 +43,9 @@ export async function replyInboxThread(formData: FormData) {
   if (!threadId || !to || !body) {
     flashAction(threadId ? inboxThreadHref(threadId) : "/inbox", "inbox-need-reply", "error");
   }
-  await replyGmailThread({
+  const mail = await activeInboxMail();
+  if (!mail) flashAction("/inbox", "inbox-need-reply", "error");
+  await mail.reply({
     threadId,
     to,
     subject: subject || "Re:",
@@ -62,7 +64,9 @@ export async function sendInboxMessage(formData: FormData) {
   const subject = str(formData, "subject");
   const body = str(formData, "body");
   if (!to || !body) flashAction("/inbox", "inbox-need-send", "error");
-  await sendGmailMessage({ to, subject: subject || "(no subject)", body });
+  const mail = await activeInboxMail();
+  if (!mail) flashAction("/inbox", "inbox-need-send", "error");
+  await mail.send({ to, subject: subject || "(no subject)", body });
   refreshInbox();
   flashAction("/inbox", "inbox-sent");
 }
@@ -75,7 +79,9 @@ export async function logInboxThread(formData: FormData) {
   const dealId = str(formData, "dealId") || null;
   const policyId = str(formData, "policyId") || null;
   if (!threadId) redirect("/inbox");
-  const loaded = await getGmailThread(threadId);
+  const mail = await activeInboxMail();
+  if (!mail) flashAction("/inbox", "inbox-need-record", "error");
+  const loaded = await mail.getThread(threadId);
   const last = loaded?.messages[loaded.messages.length - 1];
   const subject = loaded?.preview.subject || str(formData, "subject") || "Inbox thread";
   if (!contactId && !dealId && !policyId) {
@@ -93,7 +99,7 @@ export async function logInboxThread(formData: FormData) {
     contactId,
     dealId,
     policyId,
-    threadKey: `gmail:${threadId}`,
+    threadKey: mailThreadKey(mail.id, threadId),
     actorId: session.userId,
   });
   refreshInbox(threadId);

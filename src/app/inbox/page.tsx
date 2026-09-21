@@ -3,11 +3,7 @@ import { InboxDesk } from "@/components/inbox/inbox-desk";
 import { currentDeskSession } from "@/lib/auth/session";
 import { canConnectByoIntegration } from "@/lib/integrations/connect-policy";
 import { byoOauthWallCopy } from "@/lib/integrations/byo-credentials";
-import { gmailAccountEmail, markGmailThreadRead } from "@/lib/integrations/gmail";
-import { GMAIL_MARK_READ_RECONNECT, gmailScopesAllowModify } from "@/lib/integrations/oauth-specs";
-import { loadByoConnection } from "@/lib/integrations/oauth-store";
-import { markDeskThreadRead } from "@/lib/desk/inbox-desk";
-import { loadInboxThreadMessages, loadLiveInboxThreads } from "@/lib/desk/load-inbox-live";
+import { loadInboxDesk } from "@/lib/desk/inbox-engine";
 
 export const dynamic = "force-dynamic";
 
@@ -16,49 +12,35 @@ export default async function InboxPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [session, live, query, gmailRow] = await Promise.all([
-    currentDeskSession(),
-    loadLiveInboxThreads(20),
-    searchParams,
-    loadByoConnection("gmail").catch(() => null),
-  ]);
+  const query = await searchParams;
   const selectedId = typeof query.thread === "string" ? query.thread : null;
   const notice = typeof query.notice === "string" ? query.notice : null;
-  const opened = selectedId ? live.threads.find((row) => row.id === selectedId) : null;
-  const grantMissing =
-    live.connected && Boolean(gmailRow?.grantedScopes) && !gmailScopesAllowModify(gmailRow?.grantedScopes);
-  const [accountEmail, messages, marked] = await Promise.all([
-    live.connected ? gmailAccountEmail().catch(() => null) : Promise.resolve(null),
-    live.connected ? loadInboxThreadMessages(selectedId ?? live.threads[0]?.id ?? null) : Promise.resolve([]),
-    live.connected && opened?.unread && !grantMissing
-      ? markGmailThreadRead(opened.id)
-      : Promise.resolve(null),
-  ]);
-  const threads = marked?.ok && selectedId ? markDeskThreadRead(live.threads, selectedId) : live.threads;
-  const markReadNotice = grantMissing || marked?.needsReconnect ? GMAIL_MARK_READ_RECONNECT : null;
+  const [session, desk] = await Promise.all([currentDeskSession(), loadInboxDesk(selectedId)]);
 
   return (
-    <AppShell title="Inbox" eyebrow="Gmail">
+    <AppShell title="Inbox" eyebrow={desk.label}>
       {notice === "byo-connected" ? (
         <p className="mb-3 rounded-md border border-dashed border-border bg-secondary/40 px-3 py-2 text-sm text-navy">
-          Gmail connected. Agency mail will show on this desk.
+          {desk.label} connected. Agency mail will show on this desk.
         </p>
       ) : null}
       {notice === "oauth-wall" ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy" data-ff-oauth-wall="">
-          {byoOauthWallCopy(gmailRow?.lastOauthError)}
+          {byoOauthWallCopy(desk.oauthError)}
         </p>
       ) : null}
       <InboxDesk
-        threads={threads}
+        threads={desk.threads}
         selectedId={selectedId}
-        messages={messages}
+        messages={desk.messages}
         canConnect={canConnectByoIntegration(session)}
-        connected={live.connected}
-        error={live.error}
-        accountEmail={accountEmail}
-        markReadNotice={markReadNotice}
-        mailProvider="gmail"
+        connected={desk.connected}
+        error={desk.error}
+        accountEmail={desk.accountEmail}
+        markReadNotice={desk.markReadNotice}
+        mailProvider={desk.providerId}
+        connectLabel={desk.connectLabel}
+        connectOauthId={desk.connectOauthId}
       />
     </AppShell>
   );

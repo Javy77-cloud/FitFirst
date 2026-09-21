@@ -1,4 +1,5 @@
-import { applyInboxInlineImages, plainFromInboxHtml } from "@/lib/desk/inbox-body";
+import { plainFromInboxHtml } from "@/lib/desk/inbox-body";
+import type { MailInlineImage, MailThreadMessage, MailThreadPreview } from "./mail-contract";
 import { gmailScopesAllowModify } from "./oauth-specs";
 import { liveAccessToken } from "./oauth-exchange";
 import { loadByoConnection } from "./oauth-store";
@@ -21,34 +22,10 @@ export type GmailHeaderMap = {
   references: string;
 };
 
-export type GmailThreadMessage = {
-  id: string;
-  threadId: string;
-  from: string;
-  to: string;
-  cc: string;
-  subject: string;
-  date: string;
-  snippet: string;
-  body: string;
-  /** Raw HTML alternative, when the message has one. Empty for plain-only mail. */
-  bodyHtml: string;
-  /** Inline and attached images, as data URLs the reading pane can paint. */
-  images: GmailInlineImage[];
-  unread: boolean;
-  inbound: boolean;
-  internalDate: number;
-  messageId: string;
-  inReplyTo: string;
-  references: string;
-  labelIds: string[];
-};
+/** Gmail label ids stay on the vendor message. The desk reads MailThreadMessage. */
+export type GmailThreadMessage = MailThreadMessage & { labelIds: string[] };
 
-export type GmailInlineImage = {
-  contentId: string;
-  filename: string;
-  dataUrl: string;
-};
+export type GmailInlineImage = MailInlineImage;
 
 export type GmailPendingImage = {
   contentId: string;
@@ -61,21 +38,7 @@ export type GmailPendingImage = {
 
 const MAX_INLINE_IMAGE_BYTES = 1_500_000;
 
-export type GmailThreadPreview = {
-  id: string;
-  subject: string;
-  from: string;
-  to: string;
-  date: string;
-  snippet: string;
-  unread: boolean;
-  inboundLast: boolean;
-  messageCount: number;
-  lastMessageId: string;
-  lastInternalDate: number;
-  messageIdHeader: string;
-  references: string;
-};
+export type GmailThreadPreview = MailThreadPreview;
 
 function rfc2822(input: {
   to: string;
@@ -378,7 +341,6 @@ async function resolveMessageImages(
   }
   return {
     ...message,
-    bodyHtml: applyInboxInlineImages(message.bodyHtml, images),
     images,
   };
 }

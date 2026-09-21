@@ -8,9 +8,9 @@ import {
   markDeskThreadRead,
   presentInboxThread,
 } from "./inbox-desk";
-import type { GmailThreadPreview } from "@/lib/integrations/gmail";
+import type { MailThreadPreview } from "@/lib/integrations/mail-contract";
 
-function preview(partial: Partial<GmailThreadPreview> & Pick<GmailThreadPreview, "id">): GmailThreadPreview {
+function preview(partial: Partial<MailThreadPreview> & Pick<MailThreadPreview, "id">): MailThreadPreview {
   return {
     subject: "HO3 bind",
     from: "Elena Ruiz <elena@x.com>",
@@ -114,9 +114,21 @@ describe("inbox desk presentation", () => {
     const page = readFileSync("src/app/inbox/page.tsx", "utf8");
     const desk = readFileSync("src/components/inbox/inbox-desk.tsx", "utf8");
     const chrome = readFileSync("src/app/globals.css", "utf8");
-    expect(page).toMatch(/loadLiveInboxThreads/);
-    expect(page).toMatch(/mailProvider="gmail"/);
-    expect(desk).toMatch(/Connect Gmail/);
+    expect(page).toMatch(/loadInboxDesk/);
+    expect(page).not.toMatch(/integrations\/gmail/);
+    expect(readFileSync("src/lib/desk/inbox-engine.ts", "utf8")).toMatch(/markThreadRead/);
+    expect(readFileSync("src/lib/desk/inbox-engine.ts", "utf8")).toMatch(/markReadReconnectCopy/);
+    expect(readFileSync("src/lib/desk/inbox-engine.ts", "utf8")).toMatch(/loadInboxThreadMessages/);
+    expect(readFileSync("src/lib/desk/load-inbox-live.ts", "utf8")).toMatch(/paintInboxMessage/);
+    expect(readFileSync("src/lib/integrations/mail-provider.ts", "utf8")).toMatch(/gmailMailProvider/);
+    expect(readFileSync("src/lib/integrations/mail-provider.ts", "utf8")).toMatch(/outlookMailProvider/);
+    expect(readFileSync("src/lib/integrations/mail-providers/gmail.ts", "utf8")).toMatch(/markThreadRead/);
+    expect(readFileSync("src/lib/integrations/mail-providers/outlook.ts", "utf8")).toMatch(/mailboxLive: false/);
+    expect(readFileSync("src/lib/integrations/mail-providers/yahoo.ts", "utf8")).toMatch(/mailboxLive: false/);
+    expect(readFileSync("src/app/actions/inbox.ts", "utf8")).toMatch(/activeInboxMail/);
+    expect(readFileSync("src/app/actions/inbox.ts", "utf8")).toMatch(/mailThreadKey/);
+    expect(readFileSync("src/app/actions/inbox.ts", "utf8")).not.toMatch(/replyGmailThread|getGmailThread/);
+    expect(desk).toMatch(/Connect \{connectLabel\}/);
     expect(desk).toMatch(/startByoOauth/);
     expect(desk).toMatch(/messages\.map/);
     expect(desk).toMatch(/replyInboxThread/);
@@ -137,8 +149,8 @@ describe("inbox desk presentation", () => {
     expect(desk).toMatch(/is-read/);
     expect(desk).toMatch(/InboxLinkContactDialog/);
     expect(desk).toMatch(/data-ff-inbox-images/);
-    expect(page).toMatch(/markGmailThreadRead/);
-    expect(page).toMatch(/GMAIL_MARK_READ_RECONNECT/);
+    expect(desk).toMatch(/connectLabel/);
+    expect(desk).toMatch(/startByoOauth/);
     expect(chrome).toMatch(/\.ff-inbox-row\.is-read \{[\s\S]*#f2f6fc/);
     expect(chrome).toMatch(/\.ff-inbox-band h2 \{[\s\S]*font-size: 0\.84rem;/);
     expect(readFileSync("src/lib/integrations/oauth-specs.ts", "utf8")).toMatch(/gmail\.modify/);

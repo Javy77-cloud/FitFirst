@@ -25,6 +25,18 @@ export function sanitizeInboxHtml(raw: string | null | undefined): string {
   return html.trim();
 }
 
+/** Shared reading-pane step for every mailbox: keep image data URLs and rewrite cid:. */
+export function paintInboxMessage<T extends { bodyHtml: string; images: { contentId: string; filename: string; dataUrl: string }[] }>(
+  message: T,
+): T {
+  const images = message.images.filter((image) => image.dataUrl.startsWith("data:image/"));
+  return {
+    ...message,
+    images,
+    bodyHtml: applyInboxInlineImages(message.bodyHtml, images),
+  };
+}
+
 /** Swap cid: sources for data:image URLs. Non-image data URLs are ignored. */
 export function applyInboxInlineImages(
   html: string | null | undefined,

@@ -1,4 +1,4 @@
-import type { GmailThreadPreview } from "@/lib/integrations/gmail";
+import type { MailThreadPreview } from "@/lib/integrations/mail-contract";
 import {
   counterpartEmails,
   inboxAttentionFor,
@@ -33,7 +33,7 @@ export type InboxDeskThread = {
 
 export const INBOX_BANDS: InboxAttention[] = ["unread", "read"];
 
-export function presentInboxThread(row: GmailThreadPreview, index: InboxMatchIndex): InboxDeskThread {
+export function presentInboxThread(row: MailThreadPreview, index: InboxMatchIndex): InboxDeskThread {
   const emails = counterpartEmails({
     from: row.from,
     to: row.to,
