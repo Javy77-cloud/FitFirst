@@ -12,6 +12,7 @@ import {
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { db } from "@/lib/db";
 import {
+  carriers,
   deals,
   quoteAttemptLogs,
   quoteSheets,
@@ -35,6 +36,7 @@ import {
   sheetsToPrepare,
 } from "@/lib/quoting/forms";
 import { mergeShopLinesKeepExisting } from "@/lib/deals/package-lines";
+import { captureAutoGapsFromAttemptWhy } from "@/lib/quote-bot/auto-question-gaps";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -232,6 +234,24 @@ export async function logAppetiteResult(formData: FormData) {
     ...autoSnap,
     ...lineSnap,
   });
+
+  const [carrier] = await db
+    .select({ name: carriers.name })
+    .from(carriers)
+    .where(eq(carriers.id, carrierId));
+  try {
+    captureAutoGapsFromAttemptWhy({
+      why: str(formData, "why"),
+      shopLine: line,
+      lineOfBusiness: lob,
+      carrierId,
+      carrierName: carrier?.name ?? "Carrier",
+      dealId,
+      source: "logAppetiteResult",
+    });
+  } catch (error) {
+    console.error("auto question gap capture failed", error);
+  }
 
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/quotes");

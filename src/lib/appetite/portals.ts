@@ -4,9 +4,22 @@ export type PortalQuoteRequest = {
   riskId: string;
 };
 
+/** A question the carrier page asked during a quote pull. */
+export type PortalObservedQuestion = {
+  question: string;
+  options?: string[];
+  url?: string;
+  selector?: string;
+};
+
 export type PortalQuoteResult = {
   status: "not_implemented";
   message: string;
+  /**
+   * Carrier prompts seen on this pull. Auto shop logs the ones that are not
+   * already on the Auto risk profile (data/quote-bot/auto-question-gaps.json).
+   */
+  observedQuestions?: PortalObservedQuestion[];
 };
 
 export interface CarrierPortalAdapter {

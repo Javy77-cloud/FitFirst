@@ -1,6 +1,7 @@
 import { eq, and, ilike, or } from "drizzle-orm";
 import { db } from "../src/lib/db";
 import { carriers, quotes, quoteAttemptLogs, risks, deals } from "../src/lib/db/schema";
+import { captureAutoGapsFromAttemptWhy } from "../src/lib/quote-bot/auto-question-gaps";
 
 const DEAL = "12aa92aa-3b8d-4211-acf3-fda09d77a194";
 const PORTAL = "https://agent.thegeneral.com";
@@ -68,6 +69,20 @@ async function upsertQuote(opts: {
     .select()
     .from(quotes)
     .where(and(eq(quotes.dealId, DEAL), eq(quotes.carrierId, carrier.id)));
+
+  try {
+    captureAutoGapsFromAttemptWhy({
+      why: opts.note,
+      shopLine: "auto",
+      carrierId: carrier.id,
+      carrierName: carrier.name,
+      dealId: DEAL,
+      url: PORTAL,
+      source: "scripts/ff-dairyland-and-general.ts",
+    });
+  } catch (error) {
+    console.log("gap capture skip", String(error).slice(0, 160));
+  }
 
   const [log] = await db
     .insert(quoteAttemptLogs)

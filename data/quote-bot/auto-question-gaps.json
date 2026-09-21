@@ -1,0 +1,141 @@
+{
+  "version": 1,
+  "shopLine": "auto",
+  "description": "Auto carrier questions that are not on the Auto risk profile (AUTO_FIELDS and repeatable vehicle, driver, and household blocks). Grouped by similar question. Counts bump and answer choices are a union. This file does not add risk-profile fields.",
+  "updatedAt": "2026-09-11T16:00:00.000Z",
+  "entries": [
+    {
+      "id": "employment",
+      "shopLine": "auto",
+      "normalizedQuestion": "employment",
+      "canonicalQuestion": "Employment required",
+      "count": 2,
+      "phrasings": [
+        {
+          "text": "Employment required",
+          "count": 1
+        },
+        {
+          "text": "employment category",
+          "count": 1
+        }
+      ],
+      "options": [],
+      "optionsNote": "Free text — carrier offered no answer choices.",
+      "carriers": [
+        {
+          "carrierId": "1d29f707-67e5-4e64-8528-2a0f58ad92a4",
+          "carrierName": "Progressive",
+          "count": 2,
+          "firstSeenAt": "2026-09-11T16:00:00.000Z",
+          "lastSeenAt": "2026-09-11T16:00:00.000Z"
+        }
+      ],
+      "sources": [
+        "scripts/ff-progressive-employment-hold.ts"
+      ],
+      "recentSightings": [
+        {
+          "at": "2026-09-11T16:00:00.000Z",
+          "carrierId": "1d29f707-67e5-4e64-8528-2a0f58ad92a4",
+          "carrierName": "Progressive",
+          "question": "employment category",
+          "dealId": "12aa92aa-3b8d-4211-acf3-fda09d77a194",
+          "url": "https://quoting.foragentsonly.com",
+          "selector": null
+        },
+        {
+          "at": "2026-09-11T16:00:00.000Z",
+          "carrierId": "1d29f707-67e5-4e64-8528-2a0f58ad92a4",
+          "carrierName": "Progressive",
+          "question": "Employment required",
+          "dealId": "12aa92aa-3b8d-4211-acf3-fda09d77a194",
+          "url": "https://quoting.foragentsonly.com",
+          "selector": null
+        }
+      ],
+      "firstSeenAt": "2026-09-11T16:00:00.000Z",
+      "lastSeenAt": "2026-09-11T16:00:00.000Z"
+    },
+    {
+      "id": "insurance-score",
+      "shopLine": "auto",
+      "normalizedQuestion": "insurance score",
+      "canonicalQuestion": "insurance score not found",
+      "count": 1,
+      "phrasings": [
+        {
+          "text": "insurance score not found",
+          "count": 1
+        }
+      ],
+      "options": [],
+      "optionsNote": "Free text — carrier offered no answer choices.",
+      "carriers": [
+        {
+          "carrierId": null,
+          "carrierName": "Dairyland",
+          "count": 1,
+          "firstSeenAt": "2026-09-11T16:00:00.000Z",
+          "lastSeenAt": "2026-09-11T16:00:00.000Z"
+        }
+      ],
+      "sources": [
+        "scripts/ff-dairyland-and-general.ts"
+      ],
+      "recentSightings": [
+        {
+          "at": "2026-09-11T16:00:00.000Z",
+          "carrierId": null,
+          "carrierName": "Dairyland",
+          "question": "insurance score not found",
+          "dealId": "12aa92aa-3b8d-4211-acf3-fda09d77a194",
+          "url": "https://agent.thegeneral.com",
+          "selector": null
+        }
+      ],
+      "firstSeenAt": "2026-09-11T16:00:00.000Z",
+      "lastSeenAt": "2026-09-11T16:00:00.000Z"
+    },
+    {
+      "id": "lienholder-report-details",
+      "shopLine": "auto",
+      "normalizedQuestion": "lienholder report details",
+      "canonicalQuestion": "lienholder report details required",
+      "count": 1,
+      "phrasings": [
+        {
+          "text": "lienholder report details required",
+          "count": 1
+        }
+      ],
+      "options": [],
+      "optionsNote": "Free text — carrier offered no answer choices.",
+      "carriers": [
+        {
+          "carrierId": null,
+          "carrierName": "Dairyland",
+          "count": 1,
+          "firstSeenAt": "2026-09-11T16:00:00.000Z",
+          "lastSeenAt": "2026-09-11T16:00:00.000Z"
+        }
+      ],
+      "sources": [
+        "scripts/ff-dairyland-and-general.ts"
+      ],
+      "recentSightings": [
+        {
+          "at": "2026-09-11T16:00:00.000Z",
+          "carrierId": null,
+          "carrierName": "Dairyland",
+          "question": "lienholder report details required",
+          "dealId": "12aa92aa-3b8d-4211-acf3-fda09d77a194",
+          "url": "https://agent.thegeneral.com",
+          "selector": null
+        }
+      ],
+      "firstSeenAt": "2026-09-11T16:00:00.000Z",
+      "lastSeenAt": "2026-09-11T16:00:00.000Z"
+    }
+  ]
+}
