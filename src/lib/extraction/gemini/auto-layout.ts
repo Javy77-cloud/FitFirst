@@ -6,6 +6,13 @@
  * This flattens that shape onto the real Auto risk-profile keys before mapping.
  */
 
+import {
+  AUTO_DRIVER_PARTS,
+  autoDriversSamePerson,
+  collapseDriverRecords,
+  normalizeAutoDriverName,
+} from "@/lib/quote-sheet/auto-driver-dedupe";
+
 export type LooseJson = Record<string, unknown>;
 
 const AUTO_LINES = new Set(["auto", "motorcycle", "commercial_auto"]);
@@ -490,54 +497,9 @@ function repairFlatDriverNames(out: LooseJson) {
   }
 }
 
-const DRIVER_FIELDS = [
-  "name",
-  "dob",
-  "gender",
-  "industry",
-  "occupation",
-  "education_level",
-  "marital_status",
-  "license",
-  "status",
-  "years_licensed",
-  "household_status",
-  "exclude_reason",
-  "age_first_licensed",
-  "suspension_5yr",
-  "relationship",
-] as const;
-
-function normPersonName(raw: unknown): string {
-  return textOf(raw)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function normDob(raw: unknown): string {
-  const text = textOf(raw).trim();
-  const match = text.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
-  if (!match) return text.toLowerCase().replace(/\s+/g, "");
-  const year = match[3].length === 2 ? `20${match[3]}` : match[3];
-  return `${year}-${match[1].padStart(2, "0")}-${match[2].padStart(2, "0")}`;
-}
-
-/** Same listed person. Different dates of birth stay separate (father / son). */
-function sameDriver(a: { name?: unknown; dob?: unknown }, b: { name?: unknown; dob?: unknown }): boolean {
-  const nameA = normPersonName(a.name);
-  const nameB = normPersonName(b.name);
-  if (!nameA || nameA !== nameB) return false;
-  const dobA = normDob(a.dob);
-  const dobB = normDob(b.dob);
-  if (dobA && dobB && dobA !== dobB) return false;
-  return true;
-}
-
 function snapshotDriver(out: LooseJson, n: number): LooseJson {
   const snap: LooseJson = {};
-  for (const part of DRIVER_FIELDS) {
+  for (const part of AUTO_DRIVER_PARTS) {
     const value = out[`driver_${n}_${part}`];
     if (textOf(value).trim()) snap[part] = value;
   }
@@ -545,39 +507,21 @@ function snapshotDriver(out: LooseJson, n: number): LooseJson {
 }
 
 function clearDriver(out: LooseJson, n: number) {
-  for (const part of DRIVER_FIELDS) delete out[`driver_${n}_${part}`];
+  for (const part of AUTO_DRIVER_PARTS) delete out[`driver_${n}_${part}`];
 }
 
 function writeDriver(out: LooseJson, n: number, snap: LooseJson) {
-  for (const part of DRIVER_FIELDS) {
+  for (const part of AUTO_DRIVER_PARTS) {
     if (n === 1 && part === "relationship") continue;
     const value = snap[part];
     if (textOf(value).trim()) out[`driver_${n}_${part}`] = value;
   }
 }
 
-function mergeDriverSnap(keep: LooseJson, extra: LooseJson) {
-  const extraName = textOf(extra.name).trim();
-  if (extraName.length > textOf(keep.name).trim().length) keep.name = extra.name;
-  for (const part of DRIVER_FIELDS) {
-    if (part === "name") continue;
-    if (!textOf(keep[part]).trim() && textOf(extra[part]).trim()) keep[part] = extra[part];
-  }
-}
-
 /** James listed as driver 2 and driver 3 with the same name and DOB collapses to one row. */
 function dedupeDriverSlots(out: LooseJson) {
-  const kept: LooseJson[] = [];
-  for (let n = 1; n <= 4; n++) {
-    const snap = snapshotDriver(out, n);
-    if (!textOf(snap.name).trim()) continue;
-    const match = kept.find((row) => sameDriver(row, snap));
-    if (!match) {
-      kept.push(snap);
-      continue;
-    }
-    mergeDriverSnap(match, snap);
-  }
+  const slots = [1, 2, 3, 4].map((n) => snapshotDriver(out, n));
+  const kept = collapseDriverRecords(slots, (value) => textOf(value));
   for (let n = 1; n <= 4; n++) clearDriver(out, n);
   kept.forEach((snap, index) => writeDriver(out, index + 1, snap));
 }
@@ -594,13 +538,22 @@ function mergeIfListed(out: LooseJson, item: LooseJson): boolean {
     name: driverPrintedName(item),
     dob: fieldText(item, ["dob", "date_of_birth", "birth_date", "birthdate"]),
   };
-  if (!normPersonName(person.name)) return false;
+  if (!normalizeAutoDriverName(person.name)) return false;
   for (let n = 1; n <= 4; n++) {
-    if (!sameDriver({ name: out[`driver_${n}_name`], dob: out[`driver_${n}_dob`] }, person)) continue;
+    if (
+      !autoDriversSamePerson(
+        textOf(out[`driver_${n}_name`]),
+        textOf(out[`driver_${n}_dob`]),
+        person.name,
+        person.dob,
+      )
+    ) {
+      continue;
+    }
     const scratch: LooseJson = {};
     applyDriver(scratch, { ...item }, n - 1);
     const prefix = `driver_${n}_`;
-    for (const part of DRIVER_FIELDS) {
+    for (const part of AUTO_DRIVER_PARTS) {
       const key = `${prefix}${part}`;
       if (part === "name") {
         const longer = textOf(scratch[key]).trim();

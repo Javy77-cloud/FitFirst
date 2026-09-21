@@ -9,6 +9,7 @@ import {
   sheetSourcePhrase,
   valuesDiffer,
 } from "./records-check";
+import { collapseAutoDriverSheet, retargetAutoDriverFields } from "./auto-driver-dedupe";
 import { isSheetFormMetaKey, submittedSheetValues } from "./save-values";
 import {
   normalizeAutoDollarLimit,
@@ -167,8 +168,9 @@ export function applyExtractedToSheet(
   const overwriteWeakCheck = Boolean(options?.overwriteWeakCheck);
   const recordMismatches = Boolean(options?.recordMismatches);
   const mismatchIncomingLabel = options?.mismatchIncomingLabel ?? "Gemini";
+  const rows = line === "auto" ? retargetAutoDriverFields(existing, extracted) : extracted;
 
-  for (const item of extracted) {
+  for (const item of rows) {
     const key = extractKeyToSheetKey(line, item.fieldKey);
     if (!key) continue;
     const current = values[key];
@@ -328,6 +330,22 @@ export function applyExtractedToSheet(
   if (fieldIsBlank(values.driver_1_occupation) && values.applicant_occupation?.value?.trim()) {
     values.driver_1_occupation = { ...values.applicant_occupation };
     filledKeys.push("driver_1_occupation");
+  }
+
+  if (line === "auto") {
+    const collapsed = collapseAutoDriverSheet(values);
+    for (const key of new Set([...Object.keys(values), ...Object.keys(collapsed)])) {
+      if (!key.startsWith("driver_")) continue;
+      const before = values[key]?.value?.trim() ?? "";
+      const after = collapsed[key]?.value?.trim() ?? "";
+      if (before && !after) {
+        const index = filledKeys.indexOf(key);
+        if (index >= 0) filledKeys.splice(index, 1);
+      } else if (after && after !== before && !filledKeys.includes(key)) {
+        filledKeys.push(key);
+      }
+    }
+    return { values: collapsed, filledKeys, skippedKeys };
   }
 
   return { values, filledKeys, skippedKeys };
@@ -584,7 +602,7 @@ export function mergeAgentEdits(
     if (isSheetFormMetaKey(key) || catalog.has(key)) continue;
     writeCell(key, raw);
   }
-  return next;
+  return line === "auto" ? collapseAutoDriverSheet(next) : next;
 }
 
 export { submittedSheetValues };

@@ -22,7 +22,10 @@ import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { SheetProduct } from "@/lib/quote-sheet/products";
 
 export const PERSONAL_VEHICLE_CAP = 4;
-/** Personal Auto drivers share the same 4-unit cap as vehicles. */
+/**
+ * Personal Auto allows up to 4 drivers. That cap is not a target:
+ * driver count stays independent of how many vehicles are on the sheet.
+ */
 export const PERSONAL_DRIVER_CAP = PERSONAL_VEHICLE_CAP;
 /** Household / related persons / excluded / listed non-drivers (FL Auto portals). */
 export const PERSONAL_HOUSEHOLD_CAP = 8;
@@ -294,6 +297,36 @@ export function unitHasValue(
   return fieldsForKind(kind).some((field) =>
     cellFilled(values[repeatableFieldKey(kind, index, field.suffix)]),
   );
+}
+
+/** Fingerprint of stored unit values. Drivers and vehicles are hashed separately. */
+export function repeatableUnitSignature(
+  values: Record<string, { value?: string } | undefined>,
+  kind: RepeatableKind,
+  product?: SheetProduct | string | null,
+): string {
+  const cap = unitCap(kind, product);
+  const chunks: string[] = [];
+  for (let index = 1; index <= cap; index += 1) {
+    for (const field of fieldsForKind(kind)) {
+      chunks.push(values[repeatableFieldKey(kind, index, field.suffix)]?.value?.trim() ?? "");
+    }
+  }
+  return chunks.join("\u001f");
+}
+
+/**
+ * After save, fill, or refresh, the server count wins so a removed driver stays gone.
+ * A local Add can still hold a blank card while the server snapshot is unchanged.
+ * Driver cards never grow to match the vehicle count — each block has its own count.
+ */
+export function shownRepeatableCount(
+  localCount: number,
+  serverCount: number,
+  serverChanged: boolean,
+): number {
+  if (serverChanged) return Math.max(1, serverCount);
+  return Math.max(localCount, serverCount, 1);
 }
 
 /** Always start at vehicle/driver 1. Never open on vehicle 2 alone. */
