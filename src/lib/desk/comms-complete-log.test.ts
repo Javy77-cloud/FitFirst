@@ -74,10 +74,12 @@ describe("quick-comm open does not insert activity_logs", () => {
     expect(header).toMatch(/await sendDeskEmail\(formData\)/);
 
     const comms = source("src/app/actions/comms.ts");
-    expect(comms).toMatch(/eventType: "queued"/);
+    expect(comms).toMatch(/eventType: liveSend \? "sent" : "queued"/);
     expect(comms).toMatch(/eventType: "received"/);
+    expect(comms).toMatch(/sendGmailMessage/);
     expect(shouldWriteCommsActivityLog({ kind: "sms", eventType: "queued" })).toBe(true);
     expect(shouldWriteCommsActivityLog({ kind: "email", eventType: "queued" })).toBe(true);
+    expect(shouldWriteCommsActivityLog({ kind: "email", eventType: "sent" })).toBe(true);
     expect(shouldWriteCommsActivityLog({ kind: "call", eventType: "logged" })).toBe(false);
   });
 });

@@ -9,6 +9,7 @@ export type CrmSignalKind =
   | "meeting_scheduled"
   | "comms_queued"
   | "comms_held"
+  | "comms_sent"
   | "sheet_invalidated";
 
 export type CrmSignalInput = {
@@ -45,6 +46,9 @@ export function crmSignalDefaults(kind: CrmSignalKind): {
   }
   if (kind === "comms_held") {
     return { taskKind: "comms_hold", dueInDays: 0, createTask: false, severity: "warning" };
+  }
+  if (kind === "comms_sent") {
+    return { taskKind: "comms_sent", dueInDays: 0, createTask: false, severity: "info" };
   }
   if (kind === "sheet_invalidated") {
     return { taskKind: "sheet_invalidated", dueInDays: 0, createTask: false, severity: "info" };

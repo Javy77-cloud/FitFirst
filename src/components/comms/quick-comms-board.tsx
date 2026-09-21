@@ -129,7 +129,7 @@ export function QuickCommsBoard({
   const [kind, setKind] = useState<ActivityKind>(initialKind ?? "task");
   const [meetingType, setMeetingType] = useState<MeetingType>("in_office");
   const [callMode, setCallMode] = useState<"now" | "schedule">("now");
-  const [emailMode, setEmailMode] = useState<"remind" | "schedule">("remind");
+  const [emailMode, setEmailMode] = useState<"now" | "remind" | "schedule">("now");
   const [smsMode, setSmsMode] = useState<"now" | "schedule">("now");
   const [callBusy, setCallBusy] = useState(false);
 
@@ -231,6 +231,7 @@ export function QuickCommsBoard({
         formData.set("status", "open");
         formData.set("createReminder", "1");
         formData.set("direction", "outbound");
+        formData.set("intent", "remind");
         stampRelated(formData);
         await logDeskActivity(formData);
         if (attach.length) await persistDealEmailAttachments(formData);
@@ -238,10 +239,21 @@ export function QuickCommsBoard({
         return;
       }
 
-      // Schedule for later — requires dueAt
+      if (intent === "now" || emailMode === "now") {
+        formData.set("intent", "now");
+        formData.delete("dueAt");
+        formData.delete("startAt");
+        stampRelated(formData);
+        await sendDeskEmail(formData);
+        await afterCarrierComms("Email");
+        return;
+      }
+
+      // Schedule for later — requires dueAt. Due-now sends through Gmail; future stays queued.
       if (!formData.get("dueAt")) {
         throw new Error("Pick Send at date and time to schedule the email.");
       }
+      formData.set("intent", "schedule");
       stampRelated(formData);
       await sendDeskEmail(formData);
       await afterCarrierComms("Email");
@@ -336,7 +348,7 @@ export function QuickCommsBoard({
       <p className="mt-1 text-base text-muted-foreground">
         {carrierId
           ? "Task, meeting, call, email, and SMS on this carrier. Updates Last Contacted."
-          : `Task, meeting, call, email, and SMS on this ${dealId ? "deal" : "lead"}. Not a carrier portal and not a live mail trunk.`}
+          : `Task, meeting, call, email, and SMS on this ${dealId ? "deal" : "lead"}. Email Send now uses the connected Gmail mailbox.`}
       </p>
 
       <div className="mt-3 flex flex-nowrap items-center gap-1" data-ff-quick-comms-kinds="">
@@ -595,10 +607,11 @@ export function QuickCommsBoard({
                 <Segmented
                   value={emailMode}
                   options={[
+                    { value: "now", label: "Send now" },
                     { value: "remind", label: "Set up a reminder" },
                     { value: "schedule", label: "Schedule for later" },
                   ]}
-                  onChange={(next) => setEmailMode(next as "remind" | "schedule")}
+                  onChange={(next) => setEmailMode(next as "now" | "remind" | "schedule")}
                 />
               </div>
             </div>
@@ -620,23 +633,27 @@ export function QuickCommsBoard({
               <Label className="text-xs">Body</Label>
               <Textarea name="body" className="mt-1 min-h-20" defaultValue={`Hi ${party},\n\n`} />
             </div>
-            <div>
-              <Label className="text-xs">
-                {emailMode === "remind" ? "Reminder when" : "Send at"}
-              </Label>
-              <Input
-                name="dueDate"
-                type="date"
-                required
-                className="mt-1 h-8"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">
-                {emailMode === "remind" ? "Reminder time" : "Send time"}
-              </Label>
-              <Input name="dueTime" type="time" required className="mt-1 h-8" />
-            </div>
+            {emailMode !== "now" ? (
+              <>
+                <div>
+                  <Label className="text-xs">
+                    {emailMode === "remind" ? "Reminder when" : "Send at"}
+                  </Label>
+                  <Input
+                    name="dueDate"
+                    type="date"
+                    required
+                    className="mt-1 h-8"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">
+                    {emailMode === "remind" ? "Reminder time" : "Send time"}
+                  </Label>
+                  <Input name="dueTime" type="time" required className="mt-1 h-8" />
+                </div>
+              </>
+            ) : null}
             {dealId && quoteFiles.length > 0 ? (
               <fieldset className="space-y-1.5">
                 <Legend className="text-xs font-medium">Attach quote file(s)</Legend>
@@ -656,15 +673,24 @@ export function QuickCommsBoard({
             ) : null}
             <input type="hidden" name="intent" value={emailMode} />
             <Button type="submit" size="sm" className="mt-1 w-full">
-              {emailMode === "remind" ? "Set reminder (do not send)" : "Schedule email"}
+              {emailMode === "remind"
+                ? "Set reminder (do not send)"
+                : emailMode === "now"
+                  ? "Send now"
+                  : "Schedule email"}
             </Button>
             {emailMode === "remind" ? (
               <p className="text-[11px] text-muted-foreground">
-                Saves the draft and pops an in-app reminder. Nothing is sent yet.
+                Saves the draft and pops an in-app reminder. Nothing is sent.
+              </p>
+            ) : emailMode === "now" ? (
+              <p className="text-[11px] text-muted-foreground">
+                Sends now through the connected agency Gmail (same mailbox as Inbox).
               </p>
             ) : (
               <p className="text-[11px] text-muted-foreground">
-                Queues the outbound email for the Send at time.
+                Times that are already due send now through Gmail. Future times stay queued on the
+                desk — only Send now is live until a send worker exists.
               </p>
             )}
           </>

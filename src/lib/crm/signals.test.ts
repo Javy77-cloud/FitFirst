@@ -14,6 +14,13 @@ describe("CRM action signals", () => {
     expect(crmSignalDefaults("meeting_scheduled").createTask).toBe(true);
   });
 
+  it("logs a sent outbound without opening a follow-up task", () => {
+    expect(crmSignalDefaults("comms_sent")).toMatchObject({
+      createTask: false,
+      taskKind: "comms_sent",
+    });
+  });
+
   it("never auto-creates a task on stage moves, including quote sent / review", () => {
     expect(crmSignalDefaults("stage_moved").createTask).toBe(false);
     expect(shouldCreateStageTask("gather")).toBe(false);

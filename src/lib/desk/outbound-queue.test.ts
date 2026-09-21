@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decideOutboundStatus } from "./outbound-queue";
+import { decideOutboundStatus, OUTBOUND_STATUSES } from "./outbound-queue";
 
 describe("outbound queue (no vendor send)", () => {
   it("queues email when there is an address and no opt-out", () => {
@@ -23,5 +23,10 @@ describe("outbound queue (no vendor send)", () => {
       status: "held",
       holdReason: "missing_phone",
     });
+  });
+
+  it("records a live Gmail send as sent, not queued", () => {
+    expect(OUTBOUND_STATUSES).toContain("sent");
+    expect(OUTBOUND_STATUSES).toContain("queued");
   });
 });

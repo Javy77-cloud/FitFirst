@@ -6,7 +6,7 @@ import { commsOutboundJobs, contacts } from "@/lib/db/schema";
 export const OUTBOUND_CHANNELS = ["email", "sms"] as const;
 export type OutboundChannel = (typeof OUTBOUND_CHANNELS)[number];
 
-export const OUTBOUND_STATUSES = ["queued", "held", "draft", "cancelled", "logged"] as const;
+export const OUTBOUND_STATUSES = ["queued", "held", "draft", "cancelled", "logged", "sent"] as const;
 export type OutboundStatus = (typeof OUTBOUND_STATUSES)[number];
 
 export type OutboundDecisionInput = {
@@ -52,17 +52,23 @@ export type EnqueueOutboundInput = {
   smsOptOut?: boolean | null;
   attachmentIds?: string[] | null;
   draft?: boolean;
+  vendor?: string | null;
+  scheduledFor?: Date | null;
+  status?: OutboundStatus;
+  holdReason?: string | null;
 };
 
 export async function enqueueOutboundJob(input: EnqueueOutboundInput) {
   const decision = input.draft
     ? { status: "draft" as OutboundStatus, holdReason: null }
-    : decideOutboundStatus({
-        channel: input.channel,
-        toAddress: input.toAddress,
-        emailOptOut: input.emailOptOut,
-        smsOptOut: input.smsOptOut,
-      });
+    : input.status
+      ? { status: input.status, holdReason: input.holdReason ?? null }
+      : decideOutboundStatus({
+          channel: input.channel,
+          toAddress: input.toAddress,
+          emailOptOut: input.emailOptOut,
+          smsOptOut: input.smsOptOut,
+        });
   const now = new Date();
   const [job] = await db
     .insert(commsOutboundJobs)
@@ -81,8 +87,8 @@ export async function enqueueOutboundJob(input: EnqueueOutboundInput) {
       leadId: input.leadId ?? null,
       activityId: input.activityId ?? null,
       holdReason: decision.holdReason,
-      vendor: null,
-      scheduledFor: now,
+      vendor: input.vendor ?? null,
+      scheduledFor: input.scheduledFor ?? now,
       attachmentIds: (input.attachmentIds ?? []).map((id) => String(id).trim()).filter(Boolean),
     })
     .returning();
