@@ -978,7 +978,7 @@ a.ff-pending-link:has([data-ff-link-pending="1"]) {
 /* HARD LOCK: Activity / Quick Communications rail. Width is --ff-activity-rail (see activity-rail.ts). */
 :root {
   --ff-activity-rail: 400px;
-  --ff-inbox-open-edge: var(--ff-navy);
+  --ff-inbox-open-edge: var(--ff-red);
 }
 .ff-activity-rail {
   width: var(--ff-activity-rail);
@@ -3598,9 +3598,9 @@ tr[data-ff-activity-selected="true"] {
 .ff-inbox-reconnect {
   margin-bottom: 0.75rem;
   padding: 0.7rem 0.85rem;
-  border: 1px solid color-mix(in srgb, var(--ff-navy) 35%, var(--ff-border));
+  border: 1px solid color-mix(in srgb, var(--ff-red) 32%, var(--ff-border));
   border-radius: 0.7rem;
-  background: #f2f6fc;
+  background: #fff;
   color: var(--ff-navy);
   font-size: 0.88rem;
   font-weight: 650;
@@ -4261,7 +4261,7 @@ tr[data-ff-activity-selected="true"] {
 .ff-inbox-splitter:hover::before,
 .ff-inbox-splitter:focus-visible::before,
 .ff-inbox-splitter[data-dragging="true"]::before {
-  background: var(--ff-navy);
+  background: var(--ff-red);
 }
 .ff-inbox-splitter:focus-visible { outline: none; }
 @media (max-width: 900px) {
@@ -4336,18 +4336,37 @@ tr[data-ff-activity-selected="true"] {
   border-bottom: 1px solid color-mix(in srgb, var(--ff-border) 70%, transparent);
   text-decoration: none;
   color: inherit;
-  transition: background-color 80ms ease;
+  transition: box-shadow 120ms ease;
 }
 .ff-inbox-band li:last-child .ff-inbox-row { border-bottom: 0; }
-.ff-inbox-desk [data-ff-inbox-band="read"] > header { background-color: #f2f6fc; }
-.ff-inbox-desk [data-ff-inbox-band="unread"] > header { background-color: #fff; }
-.ff-inbox-band li { background-color: transparent; }
-.ff-inbox-row.is-read { background-color: #f2f6fc; }
-.ff-inbox-row.is-read:hover { background-color: #fff; }
-.ff-inbox-row.is-unread { background-color: #fff; }
-.ff-inbox-row.is-unread:hover { background-color: color-mix(in srgb, var(--ff-navy) 9%, #fff); }
-.ff-inbox-row.is-selected { background-color: #d6e4f5; box-shadow: inset 3px 0 0 var(--ff-inbox-open-edge); }
-.ff-inbox-row.is-selected:hover { background-color: #d6e4f5; }
+.ff-inbox-desk [data-ff-inbox-band="read"],
+.ff-inbox-desk [data-ff-inbox-band="read"] > header,
+.ff-inbox-desk [data-ff-inbox-band="read"] li {
+  background-color: #d8d4ce;
+}
+.ff-inbox-desk [data-ff-inbox-band="unread"],
+.ff-inbox-desk [data-ff-inbox-band="unread"] > header,
+.ff-inbox-desk [data-ff-inbox-band="unread"] li {
+  background-color: #fff;
+}
+.ff-inbox-row.is-unread {
+  background-color: #fff;
+}
+.ff-inbox-row.is-read {
+  background-color: #d8d4ce;
+}
+.ff-inbox-row.is-selected {
+  background-color: #b6d2f8;
+  box-shadow: inset 4px 0 0 var(--ff-inbox-open-edge);
+}
+.ff-inbox-row:hover {
+  position: relative;
+  z-index: 1;
+  box-shadow: inset 0 0 0 1px rgb(28 36 48 / 16%), 0 3px 10px rgb(28 36 48 / 14%);
+}
+.ff-inbox-row.is-selected:hover {
+  box-shadow: inset 4px 0 0 var(--ff-inbox-open-edge), 0 3px 10px rgb(28 36 48 / 16%);
+}
 .ff-inbox-row-from {
   flex: 0 1 11.5rem;
   max-width: 34%;
@@ -4408,7 +4427,7 @@ tr[data-ff-activity-selected="true"] {
   max-width: 100%;
   padding: 0.85rem 1rem;
   border: 1px solid var(--ff-border);
-  border-left: 3px solid var(--ff-inbox-open-edge);
+  border-left: 4px solid var(--ff-inbox-open-edge);
   border-radius: 0.7rem;
   background: #fff;
   overflow-x: hidden;
@@ -4481,8 +4500,11 @@ tr[data-ff-activity-selected="true"] {
   background: #fff;
   overflow-x: hidden;
 }
-.ff-inbox-msg.is-in { border-left: 3px solid var(--ff-inbox-open-edge); }
-.ff-inbox-msg.is-out { border-left: 3px solid var(--ff-navy); background: color-mix(in srgb, var(--ff-card) 86%, #fff); }
+.ff-inbox-msg.is-in { border-left: 4px solid var(--ff-inbox-open-edge); }
+.ff-inbox-msg.is-out {
+  border-left: 4px solid color-mix(in srgb, var(--ff-red) 48%, #d9cfc6);
+  background: #faf7f4;
+}
 .ff-inbox-msg-meta { margin: 0 0 0.25rem; font-size: 0.68rem; font-weight: 650; color: var(--ff-muted); }
 .ff-inbox-compose { display: grid; gap: 0.45rem; margin-top: 0.85rem; }
 .ff-inbox-new { padding-top: 0.5rem; border-top: 1px dashed var(--ff-border); }

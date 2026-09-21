@@ -155,11 +155,17 @@ describe("inbox desk presentation", () => {
     expect(readFileSync("src/lib/desk/inbox-engine.ts", "utf8")).toMatch(
       /selectedId \? markDeskThreadRead\(live\.threads, selectedId\)/,
     );
-    expect(chrome).toMatch(/\.ff-inbox-row\.is-read \{[^}]*#f2f6fc/);
+    expect(chrome).toMatch(/\.ff-inbox-row\.is-read \{[^}]*#d8d4ce/);
     expect(chrome).toMatch(/\.ff-inbox-row\.is-unread \{[^}]*#fff/);
-    expect(chrome).toMatch(/\.ff-inbox-row\.is-read:hover \{[^}]*#fff/);
-    expect(chrome).toMatch(/\.ff-inbox-row\.is-unread:hover \{[^}]*color-mix/);
-    expect(chrome).toMatch(/\.ff-inbox-row\.is-selected \{[^}]*#d6e4f5/);
+    expect(chrome).toMatch(/--ff-inbox-open-edge: var\(--ff-red\)/);
+    expect(chrome).toMatch(/\.ff-inbox-row\.is-selected \{[^}]*#b6d2f8/);
+    expect(chrome).toMatch(/\.ff-inbox-row\.is-selected \{[^}]*var\(--ff-inbox-open-edge\)/);
+    expect(chrome).toMatch(/\.ff-inbox-row:hover \{[^}]*box-shadow/);
+    expect(chrome).not.toMatch(/\.ff-inbox-row:hover \{[^}]*background/);
+    expect(chrome).not.toMatch(/\.ff-inbox-row\.is-(?:un)?read:hover \{[^}]*background/);
+    expect(chrome).toMatch(/\.ff-inbox-detail \{[^}]*var\(--ff-inbox-open-edge\)/);
+    expect(chrome).not.toMatch(/\.ff-inbox-row\.is-selected \{[^}]*var\(--ff-navy\)/);
+    expect(chrome).not.toMatch(/#f2f6fc/);
     expect(chrome).not.toMatch(/\.ff-inbox-row\.is-selected\.is-read \{[^}]*color-mix/);
     expect(chrome).toMatch(/\.ff-inbox-band h2 \{[\s\S]*font-size: 0\.84rem;/);
     expect(readFileSync("src/lib/integrations/oauth-specs.ts", "utf8")).toMatch(/gmail\.modify/);
