@@ -2,13 +2,25 @@ import type { VinDecodeFact, VinDecodeValues, VinSheetKeyBag } from "./types";
 import { NHTSA_VPIC_LABEL } from "./types";
 import { titleCaseMake } from "./normalize";
 
+/**
+ * Rating-facing engine line from vPIC specs.
+ * EngineModel is often a manufacturer code (K20C4) and EngineConfiguration
+ * is "In-Line" — keep displacement / cylinders / HP in front, then the code.
+ */
 function buildEngineSummary(decoded: VinDecodeValues): string {
-  if (decoded.engine.trim()) return decoded.engine.trim();
   const bits: string[] = [];
-  if (decoded.displacementL) bits.push(`${decoded.displacementL}L`);
-  if (decoded.engineCylinders) bits.push(`${decoded.engineCylinders} cyl`);
-  if (decoded.engineHP) bits.push(`${decoded.engineHP} hp`);
-  return bits.join(" · ");
+  const liters = decoded.displacementL.trim();
+  if (liters) bits.push(`${liters}L`);
+  const cylinders = decoded.engineCylinders.trim();
+  if (cylinders) bits.push(`${cylinders} cyl`);
+  const hp = decoded.engineHP.trim();
+  if (hp) bits.push(`${hp} hp`);
+  const spec = bits.join(" · ");
+  const model = decoded.engine.trim();
+  if (!model) return spec;
+  if (!spec) return model;
+  if (spec.toLowerCase().includes(model.toLowerCase())) return spec;
+  return `${spec} · ${model}`;
 }
 
 function buildSafetySummary(decoded: VinDecodeValues): string {
@@ -22,6 +34,8 @@ function buildSafetySummary(decoded: VinDecodeValues): string {
  * Map flat DecodeVinValues → Auto sheet keys for one vehicle unit.
  * Always maps year / make / model when present.
  * Fuel / body / engine / safety only when the key bag has a sheet home.
+ * Usage, ownership, ownership length, lienholder, purchased new, OCN, and
+ * annual miles are not vPIC fields — do not invent them here.
  */
 export function mapVinDecodeToFacts(
   decoded: VinDecodeValues,

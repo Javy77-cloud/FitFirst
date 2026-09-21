@@ -101,6 +101,8 @@ import { orchestratePropertyFill } from "@/lib/property-fill/orchestrate";
 import { isZoneXNoBfe, toastForPropertyFill } from "@/lib/property-fill/merge";
 import {
   NHTSA_VPIC_LABEL,
+  decodableVinsChanged,
+  isVehicleVinSheetKey,
   orchestrateVinDecodeFill,
 } from "@/lib/vin-decode";
 import { fillSheetFromDealDetails, type DealSheetCopyInput } from "@/lib/quote-sheet/fill-from-deal";
@@ -305,6 +307,19 @@ export async function persistQuoteSheetValues(
   }
   // Sheet save / confirm / stale cue must never unlink or hide source docs.
   await restoreDealSourceDocuments(dealId).catch(() => null);
+  if (line === "auto") {
+    const product = (values.sheet_product?.value ?? "").trim() || null;
+    if (decodableVinsChanged(sheet.values, values, product).length) {
+      // VIN set/changed → same NHTSA empty-only merge. Save already landed; decode
+      // must not fail the save if vPIC is down. Agent-typed cells stay put.
+      try {
+        await runFillFromVinDecode(dealId, line);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "vin decode failed";
+        console.error("[persistQuoteSheetValues] vin decode", message.slice(0, 300));
+      }
+    }
+  }
   return values;
 }
 
@@ -850,7 +865,7 @@ export async function runFillFromVinDecode(
   };
 }
 
-/** Button entry: Decode VIN via free NHTSA vPIC → empty-only year/make/model. */
+/** Button entry: Decode VIN via free NHTSA vPIC → empty-only year/make/model/engine. */
 export async function runDecodeVin(input: {
   dealId: string;
   line: string;
@@ -1783,6 +1798,19 @@ export async function runFillQuoteSheet(dealId: string, line: ShopLine): Promise
 
   await syncRiskFromSheet(dealId, values, "fill");
   await syncHeaderFromSheet(dealId, values, "fill");
+  // Gemini just wrote a VIN — fill engine (and other vPIC fields) into blanks.
+  // Does not overwrite dec / agent cells. Master Fill's later VIN step is a no-op
+  // on cells this already wrote.
+  if (line === "auto" && aggregateFilled.some((key) => isVehicleVinSheetKey(key))) {
+    try {
+      const decoded = await runFillFromVinDecode(dealId, line);
+      if (decoded.filledKeys.length) aggregateFilled.push(...decoded.filledKeys);
+      if (decoded.skippedKeys.length) aggregateSkipped.push(...decoded.skippedKeys);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "vin decode failed";
+      console.error("[runFillQuoteSheet] vin decode", message.slice(0, 300));
+    }
+  }
   return {
     filledKeys: aggregateFilled,
     skippedKeys: aggregateSkipped,

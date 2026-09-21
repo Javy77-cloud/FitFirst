@@ -19,7 +19,7 @@ export type VinDecodeFillBundle = ApplyFillResult & {
 };
 
 /**
- * Decode every VIN on the Auto sheet and empty-only fill year / make / model.
+ * Decode every VIN on the Auto sheet and empty-only fill year / make / model / engine.
  * Reasonable rate: sequential calls; client caches per VIN.
  */
 export async function orchestrateVinDecodeFill(input: {
