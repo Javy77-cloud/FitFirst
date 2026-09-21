@@ -362,6 +362,6 @@ export async function extractWithGeminiPdf(
     ok: true,
     message: "ok",
     rawText: text.slice(0, 2000),
-    result: mapGeminiJsonToFields(json, docType),
+    result: mapGeminiJsonToFields(json, docType, { shopLine: options?.shopLine }),
   };
 }

@@ -630,6 +630,25 @@ async function fillDealSheetIfReady(dealId: string, lineHint: string) {
   }
 }
 
+/** Auto deal (or a line:auto tag) so a dec photo is not read with the homeowners key list. */
+async function shopLineForGeminiExtract(
+  dealId: string,
+  tags: string[] | null | undefined,
+): Promise<string | null> {
+  for (const tag of tags ?? []) {
+    if (!tag.startsWith("line:")) continue;
+    const line = tag.slice("line:".length).trim().toLowerCase();
+    if (isShopLine(line)) return line;
+  }
+  if (!dealId) return null;
+  const [deal] = await db
+    .select({ quotingLine: deals.quotingLine })
+    .from(deals)
+    .where(eq(deals.id, dealId));
+  const line = (deal?.quotingLine ?? "").trim();
+  return line || null;
+}
+
 async function runExtraction(documentId: string, dealId: string) {
   const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
   if (!doc) throw new Error("Document not found");
@@ -673,7 +692,12 @@ async function runExtraction(documentId: string, dealId: string) {
   let result;
   let engine: "pdf_text" | "ocr" | "gemini" = "gemini";
   if (docTypeUsesGemini(doc.docType)) {
-    const gemini = await extractWithGeminiPdf(buffer, doc.docType, { apiKey: geminiKey, mimeType: doc.mimeType, filename: doc.filename });
+    const gemini = await extractWithGeminiPdf(buffer, doc.docType, {
+      apiKey: geminiKey,
+      mimeType: doc.mimeType,
+      filename: doc.filename,
+      shopLine: await shopLineForGeminiExtract(dealId, doc.tags),
+    });
     engine = "gemini";
     if (!gemini.ok) {
       await db

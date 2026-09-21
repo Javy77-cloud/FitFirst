@@ -349,20 +349,421 @@ function labelForKey(key: string): string {
 }
 
 /**
+ * Phone photos of auto decs rarely score 0.8 ("clearly printed").
+ * Readable VIN / driver / coverage text still belongs on the Auto sheet.
+ * Home wind-mit letter codes stay on CONFIDENCE_THRESHOLD.
+ */
+export const AUTO_EXTRACT_CONFIDENCE_FLOOR = 0.5;
+
+const AUTO_SIGNAL_KEYS = new Set([
+  "vehicles",
+  "vehicle",
+  "vehicle_schedule",
+  "drivers",
+  "driver",
+  "operators",
+  "coverages",
+  "coverage_schedule",
+  "vin",
+  "vehicle_year",
+  "vehicle_make",
+  "liability_bi",
+  "bodily_injury",
+  "comp_deductible",
+  "collision_deductible",
+  "vehicle_identification_number",
+]);
+
+/** ACORD / carrier dec labels → existing Auto risk-profile keys. */
+const AUTO_FLAT_ALIAS: Record<string, string> = {
+  bodily_injury: "liability_bi",
+  bodily_injury_liability: "liability_bi",
+  bi: "liability_bi",
+  bi_limits: "liability_bi",
+  bi_limit: "liability_bi",
+  property_damage: "liability_pd",
+  property_damage_liability: "liability_pd",
+  pd: "liability_pd",
+  pd_limit: "liability_pd",
+  uninsured_motorist: "um_uim",
+  underinsured_motorist: "um_uim",
+  uninsured_underinsured: "um_uim",
+  um: "um_uim",
+  uim: "um_uim",
+  personal_injury_protection: "pip",
+  no_fault: "pip",
+  comprehensive: "comp_deductible",
+  comprehensive_deductible: "comp_deductible",
+  other_than_collision: "comp_deductible",
+  otc: "comp_deductible",
+  comp: "comp_deductible",
+  collision: "collision_deductible",
+  vehicle_identification_number: "vin",
+  vin_number: "vin",
+  garaging_location: "garaging_address",
+  garage_address: "garaging_address",
+  insured_name: "named_insured",
+  writing_company: "current_carrier",
+  insurance_company: "current_carrier",
+};
+
+const COVERAGE_ROWS: Array<{ test: RegExp; key: string; part: "limit" | "deductible" }> = [
+  { test: /bodily|bi liability|\bbi\b/, key: "liability_bi", part: "limit" },
+  { test: /property damage|\bpd\b/, key: "liability_pd", part: "limit" },
+  { test: /uninsured|underinsured|\bum\b|\buim\b/, key: "um_uim", part: "limit" },
+  { test: /personal injury|\bpip\b|no-?fault/, key: "pip", part: "limit" },
+  { test: /comprehensive|other than collision|\botc\b/, key: "comp_deductible", part: "deductible" },
+  { test: /\bcollision\b/, key: "collision_deductible", part: "deductible" },
+];
+
+const VEHICLE_SUFFIX: Record<string, string> = {
+  vin: "vin",
+  vehicle_identification_number: "vin",
+  vin_number: "vin",
+  year: "year",
+  vehicle_year: "year",
+  model_year: "year",
+  make: "make",
+  manufacturer: "make",
+  model: "model",
+  body: "body_class",
+  body_style: "body_class",
+  body_class: "body_class",
+  usage: "usage",
+  use: "usage",
+  vehicle_usage: "usage",
+  annual_miles: "annual_miles",
+  annual_mileage: "annual_miles",
+  mileage: "annual_miles",
+  rideshare: "rideshare",
+  aftermarket_parts: "aftermarket_parts",
+  garaging_zip: "garaging_zip",
+  garage_zip: "garaging_zip",
+  garaging_address: "garaging_address",
+  garage_address: "garaging_address",
+  garaging: "garaging_address",
+  garaging_location: "garaging_address",
+};
+
+const DRIVER_SUFFIX: Record<string, string> = {
+  name: "name",
+  full_name: "name",
+  driver_name: "name",
+  dob: "dob",
+  date_of_birth: "dob",
+  birth_date: "dob",
+  birthdate: "dob",
+  gender: "gender",
+  sex: "gender",
+  license: "license",
+  license_number: "license",
+  license_no: "license",
+  dl: "license",
+  drivers_license: "license",
+  marital_status: "marital_status",
+  marital: "marital_status",
+  relationship: "relationship",
+  relation: "relationship",
+  industry: "industry",
+  occupation: "occupation",
+  education: "education_level",
+  education_level: "education_level",
+  status: "status",
+  license_status: "status",
+  years_licensed: "years_licensed",
+  household_status: "household_status",
+  age_first_licensed: "age_first_licensed",
+  suspension_5yr: "suspension_5yr",
+};
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function scalarString(raw: unknown): string {
+  if (raw == null) return "";
+  if (typeof raw === "string" || typeof raw === "number") {
+    const value = String(raw).trim();
+    if (!value || value.toLowerCase() === "null") return "";
+    return value;
+  }
+  if (isPlainObject(raw)) {
+    if ("value" in raw) return scalarString(raw.value);
+    if ("limit" in raw) return scalarString(raw.limit);
+    if ("deductible" in raw) return scalarString(raw.deductible);
+    if ("amount" in raw) return scalarString(raw.amount);
+  }
+  return "";
+}
+
+function readConfidence(raw: unknown, fallback = 0.9): number {
+  if (isPlainObject(raw) && raw.confidence != null) {
+    const n = Number(raw.confidence);
+    if (Number.isFinite(n)) return Math.min(1, Math.max(0, n));
+  }
+  return fallback;
+}
+
+function isAutoShopLine(shopLine?: string | null): boolean {
+  const line = (shopLine ?? "").trim().toLowerCase();
+  return line === "auto" || line === "motorcycle" || line === "commercial_auto";
+}
+
+function unwrapGeminiEnvelope(json: GeminiExtractJson): GeminiExtractJson {
+  const keys = Object.keys(json);
+  if (keys.length !== 1) return json;
+  const only = normalizeGeminiJsonKey(keys[0]);
+  const inner = json[keys[0]];
+  if (
+    (only === "fields" ||
+      only === "extracted" ||
+      only === "extraction" ||
+      only === "data" ||
+      only === "result" ||
+      only === "output") &&
+    isPlainObject(inner)
+  ) {
+    return inner as GeminiExtractJson;
+  }
+  return json;
+}
+
+function payloadLooksAuto(json: GeminiExtractJson): boolean {
+  const root = unwrapGeminiEnvelope(json);
+  for (const key of Object.keys(root)) {
+    if (AUTO_SIGNAL_KEYS.has(normalizeGeminiJsonKey(key))) return true;
+  }
+  return false;
+}
+
+function autoFieldKey(fieldKey: string): boolean {
+  return (
+    fieldKey === "vin" ||
+    fieldKey.startsWith("vehicle_") ||
+    fieldKey.startsWith("driver_") ||
+    fieldKey === "garaging_zip" ||
+    fieldKey === "garaging_address" ||
+    fieldKey === "annual_miles" ||
+    fieldKey === "rideshare" ||
+    fieldKey === "aftermarket_parts" ||
+    fieldKey === "purchased_new" ||
+    fieldKey === "original_cost_new" ||
+    fieldKey === "commute_days_week" ||
+    fieldKey === "commute_miles_daily" ||
+    fieldKey === "liability_bi" ||
+    fieldKey === "liability_pd" ||
+    fieldKey === "um_uim" ||
+    fieldKey === "pip" ||
+    fieldKey === "comp_deductible" ||
+    fieldKey === "collision_deductible" ||
+    fieldKey === "accidents_3yr" ||
+    fieldKey === "violations_3yr" ||
+    fieldKey === "currently_insured" ||
+    fieldKey === "years_with_carrier" ||
+    fieldKey === "policy_number" ||
+    fieldKey === "current_premium" ||
+    fieldKey === "premium" ||
+    fieldKey === "effective_date" ||
+    fieldKey === "expiration_date" ||
+    fieldKey === "current_carrier" ||
+    fieldKey === "named_insured" ||
+    fieldKey === "secondary_named_insured" ||
+    fieldKey === "phone" ||
+    fieldKey === "email" ||
+    fieldKey === "mailing_address" ||
+    fieldKey === "city" ||
+    fieldKey === "state" ||
+    fieldKey === "zip"
+  );
+}
+
+function sheetKeysForExtract(geminiKey: string, auto: boolean): string[] {
+  const direct = sheetKeysForGeminiKey(geminiKey);
+  if (direct.length > 0) return direct;
+  if (!auto) return [];
+  const aliased = AUTO_FLAT_ALIAS[geminiKey];
+  return aliased ? [aliased] : [];
+}
+
+function writeFlat(target: GeminiExtractJson, key: string, raw: unknown, fallbackConfidence = 0.9) {
+  const value = scalarString(raw);
+  if (!value) return;
+  if (scalarString(target[key])) return;
+  target[key] = { value, confidence: readConfidence(raw, fallbackConfidence) };
+}
+
+function takeCollection(obj: GeminiExtractJson, names: string[]): unknown[] | null {
+  for (const name of names) {
+    const raw = obj[name];
+    if (Array.isArray(raw) && raw.length > 0) return raw;
+    if (isPlainObject(raw)) {
+      const values = Object.values(raw);
+      if (values.length > 0 && values.every((item) => isPlainObject(item))) return values;
+      if (scalarString(raw.vin ?? raw.name ?? raw.year ?? raw.make)) return [raw];
+    }
+  }
+  return null;
+}
+
+function vehicleSheetKey(index: number, suffix: string): string | null {
+  if (index < 1 || index > 4) return null;
+  if (index === 1) {
+    const first: Record<string, string> = {
+      vin: "vin",
+      year: "vehicle_year",
+      make: "vehicle_make",
+      model: "vehicle_model",
+      body_class: "vehicle_body_class",
+      usage: "vehicle_usage",
+      annual_miles: "annual_miles",
+      rideshare: "rideshare",
+      aftermarket_parts: "aftermarket_parts",
+      garaging_zip: "garaging_zip",
+      garaging_address: "garaging_address",
+    };
+    return first[suffix] ?? `vehicle_${suffix}`;
+  }
+  return `vehicle_${index}_${suffix}`;
+}
+
+function absorbCoverages(target: GeminiExtractJson, raw: unknown) {
+  if (Array.isArray(raw)) {
+    for (const row of raw) {
+      if (!isPlainObject(row)) continue;
+      const label = scalarString(row.name ?? row.coverage ?? row.type ?? row.label ?? row.description).toLowerCase();
+      const limit = scalarString(row.limit ?? row.limits ?? row.amount ?? row.value);
+      const deductible = scalarString(row.deductible ?? row.ded);
+      const hit = COVERAGE_ROWS.find((rowTest) => rowTest.test.test(label));
+      if (!hit) continue;
+      const chosen = hit.part === "deductible" ? deductible || limit : limit || deductible;
+      writeFlat(target, hit.key, { value: chosen, confidence: readConfidence(row, 0.88) }, 0.88);
+    }
+    return;
+  }
+  if (!isPlainObject(raw)) return;
+  for (const [key, value] of Object.entries(raw)) {
+    const normalized = normalizeGeminiJsonKey(key);
+    const sheetKey = AUTO_FLAT_ALIAS[normalized] ?? (sheetKeysForGeminiKey(normalized)[0] || "");
+    if (!sheetKey || !autoFieldKey(sheetKey)) continue;
+    const nested =
+      isPlainObject(value) && !("value" in value)
+        ? scalarString(value.deductible ?? value.limit ?? value.amount) || scalarString(value)
+        : value;
+    writeFlat(target, sheetKey, nested, 0.88);
+  }
+}
+
+function splitPolicyPeriod(raw: string): { start: string; end: string } | null {
+  const match = raw.match(/^(.{4,}?)\s*(?:-{1,2}|–|—|\bto\b|\bthrough\b)\s*(.{4,})$/i);
+  if (!match) return null;
+  if (!/\d/.test(match[1]) || !/\d/.test(match[2])) return null;
+  return { start: match[1].trim(), end: match[2].trim() };
+}
+
+/** Flatten ACORD-style vehicles / drivers / coverages into Auto sheet keys. */
+export function expandAutoGeminiJson(json: GeminiExtractJson): GeminiExtractJson {
+  const envelopeKey = Object.keys(json);
+  let root: GeminiExtractJson = json;
+  if (envelopeKey.length === 1) {
+    const only = normalizeGeminiJsonKey(envelopeKey[0]);
+    const inner = json[envelopeKey[0]];
+    if (
+      (only === "fields" || only === "extracted" || only === "extraction" || only === "data" || only === "result" || only === "output") &&
+      isPlainObject(inner)
+    ) {
+      root = inner as GeminiExtractJson;
+    }
+  }
+  const out: GeminiExtractJson = { ...root };
+
+  const vehicles = takeCollection(out, ["vehicles", "vehicle_schedule", "autos", "units", "vehicle"]);
+  vehicles?.forEach((item, index) => {
+    if (!isPlainObject(item)) return;
+    for (const [key, value] of Object.entries(item)) {
+      const suffix = VEHICLE_SUFFIX[normalizeGeminiJsonKey(key)];
+      if (!suffix) continue;
+      const sheetKey = vehicleSheetKey(index + 1, suffix);
+      if (!sheetKey) continue;
+      writeFlat(out, sheetKey, value, 0.9);
+    }
+  });
+
+  const drivers = takeCollection(out, ["drivers", "operators", "driver_schedule", "driver"]);
+  const hadDriverList = Boolean(drivers && drivers.length > 0);
+  drivers?.forEach((item, index) => {
+    if (!isPlainObject(item)) return;
+    for (const [key, value] of Object.entries(item)) {
+      const suffix = DRIVER_SUFFIX[normalizeGeminiJsonKey(key)];
+      if (!suffix) continue;
+      if (suffix === "relationship" && index === 0) continue;
+      const sheetKey = index < 4 ? `driver_${index + 1}_${suffix}` : null;
+      if (!sheetKey) continue;
+      writeFlat(out, sheetKey, value, 0.9);
+    }
+  });
+
+  const coverages = out.coverages ?? out.coverage ?? out.coverage_schedule ?? out.limits;
+  if (coverages) absorbCoverages(out, coverages);
+
+  const policy = out.policy ?? out.policy_info;
+  if (isPlainObject(policy)) {
+    writeFlat(out, "policy_number", policy.policy_number ?? policy.number ?? policy.policy_no ?? policy.policy_num);
+    writeFlat(out, "current_carrier", policy.carrier ?? policy.company ?? policy.current_carrier ?? policy.writing_company);
+    writeFlat(out, "current_premium", policy.premium ?? policy.total_premium ?? policy.current_premium);
+    writeFlat(out, "effective_date", policy.effective_date ?? policy.effective ?? policy.from ?? policy.inception);
+    writeFlat(out, "expiration_date", policy.expiration_date ?? policy.expiration ?? policy.to ?? policy.expires);
+    writeFlat(out, "named_insured", policy.named_insured ?? policy.insured ?? policy.insured_name);
+  }
+
+  if (!scalarString(out.driver_1_name)) {
+    const named =
+      scalarString(out.named_insured) ||
+      scalarString(out.current_policy_name_insured) ||
+      scalarString(out.applicant_name);
+    if (named) writeFlat(out, "driver_1_name", named, 0.86);
+  }
+  if (!hadDriverList && !scalarString(out.driver_2_name) && scalarString(out.secondary_named_insured)) {
+    writeFlat(out, "driver_2_name", out.secondary_named_insured, 0.8);
+  }
+
+  const effective = scalarString(out.effective_date);
+  if (effective && !scalarString(out.expiration_date)) {
+    const period = splitPolicyPeriod(effective);
+    if (period) {
+      out.effective_date = { value: period.start, confidence: readConfidence(out.effective_date, 0.9) };
+      out.expiration_date = { value: period.end, confidence: readConfidence(out.effective_date, 0.9) };
+    }
+  }
+
+  if (!scalarString(out.garaging_zip) && scalarString(out.garaging_address)) {
+    const parts = parseAddressParts(scalarString(out.garaging_address));
+    if (parts.zip) writeFlat(out, "garaging_zip", parts.zip, 0.85);
+  }
+
+  return out;
+}
+
+/**
  * Map Gemini JSON → ExtractedField[].
- * Below CONFIDENCE_THRESHOLD: do not auto-fill (empty normalizedValue), flagged=true for audit.
- * At/above threshold: writeable value, flagged=false, matchPath=gemini.
+ * Below the confidence floor: do not auto-fill (empty normalizedValue), flagged=true for audit.
+ * At/above the floor: writeable value, flagged=false, matchPath=gemini.
+ * Auto decs (including photos) use AUTO_EXTRACT_CONFIDENCE_FLOOR. Other lines keep CONFIDENCE_THRESHOLD.
  */
 export function mapGeminiJsonToFields(
   json: GeminiExtractJson | null | undefined,
   docType?: string | null,
+  options?: { shopLine?: string | null },
 ): ExtractionResult {
   const fields: ExtractedField[] = [];
   const unmappedLabels: UnmappedExtractLabel[] = [];
   const sourceDocTag = sourceTagForDoc(docType);
   const seen = new Set<string>();
+  const shopAuto = isAutoShopLine(options?.shopLine);
+  const looksAuto = Boolean(json && typeof json === "object" && payloadLooksAuto(json));
+  const autoMode = shopAuto || looksAuto;
+  const sourceJson = autoMode && json ? expandAutoGeminiJson(json) : json;
 
-  if (!json || typeof json !== "object") {
+  if (!sourceJson || typeof sourceJson !== "object") {
     return {
       fields: [],
       documentQuality: "messy",
@@ -373,11 +774,11 @@ export function mapGeminiJsonToFields(
     };
   }
 
-  for (const [rawKey, raw] of Object.entries(json)) {
+  for (const [rawKey, raw] of Object.entries(sourceJson)) {
     const geminiKey = normalizeGeminiJsonKey(rawKey);
     const payload = asPayload(raw);
     if (!payload) continue;
-    const sheetKeys = sheetKeysForGeminiKey(geminiKey);
+    const sheetKeys = sheetKeysForExtract(geminiKey, autoMode);
     if (sheetKeys.length === 0) {
       const knownKeys = new Set<string>([
         ...GEMINI_EXTRACT_JSON_KEYS,
@@ -390,7 +791,11 @@ export function mapGeminiJsonToFields(
       continue;
     }
 
-    const above = payload.confidence >= CONFIDENCE_THRESHOLD;
+    const floor =
+      shopAuto || (looksAuto && sheetKeys.some((key) => autoFieldKey(key)))
+        ? AUTO_EXTRACT_CONFIDENCE_FLOOR
+        : CONFIDENCE_THRESHOLD;
+    const above = payload.confidence >= floor;
     for (const fieldKey of sheetKeys) {
       if (seen.has(fieldKey)) continue;
       seen.add(fieldKey);
