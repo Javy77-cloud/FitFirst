@@ -71,13 +71,14 @@ export const BYO_OAUTH_SPECS: Record<ByoOauthProviderId, ByoOauthSpec> = {
       "email",
       "https://www.googleapis.com/auth/gmail.send",
       "https://www.googleapis.com/auth/gmail.readonly",
+      "https://www.googleapis.com/auth/gmail.modify",
     ],
     authorizeUrl: GOOGLE_AUTH,
     tokenUrl: GOOGLE_TOKEN,
     extraParams: { ...GOOGLE_OFFLINE },
     pkce: true,
     worksWhen:
-      "One-click Google Connect. Paste or replace the Google Client ID and Secret here, or use GOOGLE_OAUTH_* env. Settings paste wins over env. Solos can connect personal Gmail.",
+      "One-click Google Connect. Paste or replace the Google Client ID and Secret here, or use GOOGLE_OAUTH_* env. Settings paste wins over env. Solos can connect personal Gmail. Opening a thread clears Gmail’s Unread label (gmail.modify). Connections made before that scope must reconnect once.",
     wallBody:
       "Google Connect fails if Settings keys and GOOGLE_OAUTH_* env are both missing, or Gmail API is off. Admin can replace or clear pasted keys at any time. FitFirst does not buy Workspace seats.",
     stubbed: "Campaign blasts stay would_send. Desk compose can send through this mailbox.",
@@ -227,3 +228,12 @@ export function isCatalogByoOauthId(value: string): value is IntegrationProvider
 export function googleFamilyIds(): ByoOauthProviderId[] {
   return BYO_OAUTH_PROVIDER_IDS.filter((id) => BYO_OAUTH_SPECS[id].family === "google");
 }
+
+/** threads.modify (clear UNREAD) needs gmail.modify. readonly + send cannot change labels. */
+export function gmailScopesAllowModify(scopes: string | null | undefined): boolean {
+  const text = (scopes ?? "").toLowerCase();
+  return text.includes("gmail.modify") || text.includes("mail.google.com");
+}
+
+export const GMAIL_MARK_READ_RECONNECT =
+  "Opening a message marks it read in Gmail. This connection does not include gmail.modify yet. Reconnect Gmail under Settings → Email (or Inbox → Connect Gmail), approve the new permission, then open the thread again.";

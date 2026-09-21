@@ -43,6 +43,19 @@ export function normalizeInboxEmail(value: string | null | undefined): string | 
   return parsed.email?.trim().toLowerCase() || null;
 }
 
+/** Extra addresses saved when an inbox thread is linked onto a contact that already has an email. */
+export function parseInboxAliasEmails(value: string | null | undefined): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const part of (value ?? "").split(/[\s,;]+/)) {
+    const email = normalizeInboxEmail(part);
+    if (!email || seen.has(email)) continue;
+    seen.add(email);
+    out.push(email);
+  }
+  return out;
+}
+
 /** Pull every address out of a From/To/Cc header (comma-separated). */
 export function emailsFromHeader(raw: string | null | undefined): string[] {
   const value = (raw ?? "").trim();

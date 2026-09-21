@@ -9,6 +9,7 @@ import {
   inboxThreadHref,
   matchInboxParty,
   normalizeInboxEmail,
+  parseInboxAliasEmails,
   shouldSilenceInboxSignal,
   unambiguousOpenDeal,
 } from "./inbox-match";
@@ -16,6 +17,7 @@ import {
 describe("inbox address matching", () => {
   it("pulls emails from angled and bare headers", () => {
     expect(normalizeInboxEmail("Elena Ruiz <elena.ruiz@example.com>")).toBe("elena.ruiz@example.com");
+    expect(parseInboxAliasEmails("elena@x.com, Maya <maya@x.com>")).toEqual(["elena@x.com", "maya@x.com"]);
     expect(emailsFromHeader("Elena Ruiz <elena@x.com>, Maya <maya@x.com>")).toEqual([
       "elena@x.com",
       "maya@x.com",

@@ -85,6 +85,29 @@ export function groupInboxThreads(rows: InboxDeskThread[]): Record<InboxAttentio
   return groups;
 }
 
+/** Opening a thread clears Unread the way Gmail does — the row joins the Read band. */
+export function markDeskThreadRead(rows: InboxDeskThread[], threadId: string): InboxDeskThread[] {
+  const id = threadId.trim();
+  if (!id) return rows;
+  return rows.map((row) => {
+    if (row.id !== id || !row.unread) return row;
+    return {
+      ...row,
+      unread: false,
+      attention: "read",
+      why: inboxMailWhy({
+        subject: row.subject,
+        from: row.from,
+        inboundLast: row.inboundLast,
+        unread: false,
+        contactName: row.match.contact?.name,
+        dealTitle: row.match.deal?.title,
+        renewalName: row.match.renewal ? `${row.match.renewal.clientName} renewal` : null,
+      }),
+    };
+  });
+}
+
 export function flattenInboxBands(rows: InboxDeskThread[]): InboxDeskThread[] {
   const groups = groupInboxThreads(rows);
   return INBOX_BANDS.flatMap((band) => groups[band]);

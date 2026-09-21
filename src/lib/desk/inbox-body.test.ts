@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { looksLikeHtml, plainFromInboxHtml, sanitizeInboxHtml } from "./inbox-body";
+import { applyInboxInlineImages, looksLikeHtml, plainFromInboxHtml, sanitizeInboxHtml } from "./inbox-body";
 
 describe("inbox body fit", () => {
   it("keeps a contract table and strips widths, scripts, and nowrap styles", () => {
@@ -22,6 +22,12 @@ describe("inbox body fit", () => {
     expect(safe).not.toMatch(/\swidth=/i);
     expect(safe).not.toMatch(/\sstyle=/i);
     expect(sanitizeInboxHtml("Plain note with no tags")).toBe("");
+    const withPhoto = sanitizeInboxHtml(
+      `<p>Photo</p><img src="data:image/png;base64,abc" alt="roof"><img src="data:text/html;base64,xx" alt="bad"><img src="cid:missing">`,
+    );
+    expect(withPhoto).toContain("data:image/png;base64,abc");
+    expect(withPhoto).not.toMatch(/data:text\/html/i);
+    expect(withPhoto).not.toMatch(/cid:/i);
   });
 
   it("turns an HTML-only body into wrapped plain lines", () => {
@@ -31,5 +37,18 @@ describe("inbox body fit", () => {
     expect(plain).toMatch(/Hello/);
     expect(plain).toMatch(/Agility/);
     expect(plain).not.toMatch(/<table/);
+  });
+
+  it("rewrites cid sources to image data URLs and leaves other urls alone", () => {
+    const html = applyInboxInlineImages(
+      `<img src="cid:ii_roof@mail" alt="roof"><img src="https://cdn.example/logo.png" alt="logo">`,
+      [{ contentId: "<ii_roof@mail>", dataUrl: "data:image/jpeg;base64,abc" }],
+    );
+    expect(html).toContain('src="data:image/jpeg;base64,abc"');
+    expect(html).toContain("https://cdn.example/logo.png");
+    expect(html).not.toMatch(/cid:/i);
+    expect(
+      applyInboxInlineImages(`<img src="cid:x">`, [{ contentId: "x", dataUrl: "data:text/html;base64,nope" }]),
+    ).toContain("cid:x");
   });
 });

@@ -8,18 +8,40 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatInboxListWhen, formatInboxWhen, inboxSenderLabel, snippetOf } from "@/lib/desk/inbox";
 import { looksLikeHtml, sanitizeInboxHtml } from "@/lib/desk/inbox-body";
 import { INBOX_BANDS, groupInboxThreads, type InboxDeskThread } from "@/lib/desk/inbox-desk";
-import { inboxBandLabel, contactCreateHref } from "@/lib/desk/inbox-match";
+import { InboxLinkContactDialog } from "@/components/inbox/inbox-link-contact-dialog";
+import { inboxBandLabel } from "@/lib/desk/inbox-match";
 import { inboxSkinListRole, resolveInboxSkin, type InboxMailProvider } from "@/lib/desk/inbox-skin";
 import type { GmailThreadMessage } from "@/lib/integrations/gmail";
 import { cn } from "@/lib/utils";
 
-function InboxMessageBody({ text, html }: { text: string; html?: string | null }) {
+function InboxMessageBody({
+  text,
+  html,
+  images = [],
+}: {
+  text: string;
+  html?: string | null;
+  images?: { filename: string; dataUrl: string }[];
+}) {
   const source = html && looksLikeHtml(html) ? html : looksLikeHtml(text) ? text : "";
   const safe = sanitizeInboxHtml(source);
-  if (safe) {
-    return <div className="ff-inbox-body ff-inbox-body-html" dangerouslySetInnerHTML={{ __html: safe }} />;
-  }
-  return <p className="ff-inbox-body">{text}</p>;
+  const extras = images.filter((image) => image.dataUrl.startsWith("data:image/") && !safe.includes(image.dataUrl));
+  return (
+    <>
+      {safe ? (
+        <div className="ff-inbox-body ff-inbox-body-html" dangerouslySetInnerHTML={{ __html: safe }} />
+      ) : (
+        <p className="ff-inbox-body">{text}</p>
+      )}
+      {extras.length > 0 ? (
+        <div className="ff-inbox-inline-images" data-ff-inbox-images="">
+          {extras.map((image) => (
+            <img key={`${image.filename}-${image.dataUrl.slice(0, 48)}`} src={image.dataUrl} alt={image.filename} />
+          ))}
+        </div>
+      ) : null}
+    </>
+  );
 }
 
 function ReplyForm({ thread }: { thread: InboxDeskThread }) {
@@ -83,9 +105,11 @@ function ThreadActions({ thread }: { thread: InboxDeskThread }) {
           </button>
         </form>
       ) : (
-        <Link href={contactCreateHref(thread.match.emails[0] ?? "", thread.from)} className="ff-panel-ghost">
-          Link or create contact
-        </Link>
+        <InboxLinkContactDialog
+          threadId={thread.id}
+          from={thread.from}
+          email={thread.match.emails[0] ?? ""}
+        />
       )}
     </div>
   );
@@ -99,6 +123,7 @@ export function InboxDesk({
   connected,
   error,
   accountEmail,
+  markReadNotice = null,
   mailProvider = "gmail",
 }: {
   threads: InboxDeskThread[];
@@ -108,6 +133,7 @@ export function InboxDesk({
   connected: boolean;
   error: string | null;
   accountEmail: string | null;
+  markReadNotice?: string | null;
   mailProvider?: InboxMailProvider;
 }) {
   const selected = threads.find((row) => row.id === selectedId) ?? threads[0] ?? null;
@@ -152,6 +178,14 @@ export function InboxDesk({
       {error ? (
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy">{error}</p>
       ) : null}
+      {markReadNotice ? (
+        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy" data-ff-gmail-reconnect="">
+          {markReadNotice}{" "}
+          <Link href="/settings/email#gmail" className="font-semibold text-primary hover:underline">
+            Reconnect Gmail
+          </Link>
+        </p>
+      ) : null}
       {threads.length === 0 && !error ? (
         <p className="ff-inbox-empty-hero">Inbox is empty.</p>
       ) : null}
@@ -174,7 +208,11 @@ export function InboxDesk({
                         <li key={row.id}>
                           <Link
                             href={row.href}
-                            className={cn("ff-inbox-row", row.unread && "is-unread", open && "is-selected")}
+                            className={cn(
+                            "ff-inbox-row",
+                            row.unread ? "is-unread" : "is-read",
+                            open && "is-selected",
+                          )}
                             data-ff-inbox-thread={row.id}
                             data-ff-inbox-attention={row.attention}
                             aria-current={open ? "true" : undefined}
@@ -216,7 +254,7 @@ export function InboxDesk({
                         {msg.inbound ? "Inbound" : "Sent"} · {inboxSenderLabel(msg.from) || "Unknown"} ·{" "}
                         {formatInboxWhen(msg.internalDate || msg.date)}
                       </p>
-                      <InboxMessageBody text={msg.body || msg.snippet} html={msg.bodyHtml} />
+                      <InboxMessageBody text={msg.body || msg.snippet} html={msg.bodyHtml} images={msg.images} />
                     </li>
                   ))}
                 </ol>

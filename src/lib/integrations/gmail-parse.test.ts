@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gmailBodiesFromPart, gmailHeadersFrom, isGmailInbound } from "./gmail";
+import { collectGmailImages, gmailBodiesFromPart, gmailHeadersFrom, gmailImageDataUrl, isGmailInbound } from "./gmail";
 
 describe("gmail thread helpers", () => {
   it("reads headers and treats SENT-only as outbound", () => {
@@ -32,5 +32,32 @@ describe("gmail thread helpers", () => {
     expect(bodies.plain).toMatch(/attached terms/);
     expect(bodies.html).toMatch(/<table/);
     expect(bodies.html).toMatch(/Agility producer contract/);
+  });
+
+  it("collects CID images and normal image attachments", () => {
+    const jpeg = Buffer.from("jpeg-bytes").toString("base64url");
+    const parts = collectGmailImages({
+      mimeType: "multipart/related",
+      parts: [
+        { mimeType: "text/html", body: { data: Buffer.from("<img src='cid:roof@x'>").toString("base64url") } },
+        {
+          mimeType: "image/jpeg",
+          filename: "roof.jpg",
+          headers: [{ name: "Content-ID", value: "<roof@x>" }],
+          body: { data: jpeg, size: 10 },
+        },
+        {
+          mimeType: "image/png",
+          filename: "dec.png",
+          headers: [{ name: "Content-Disposition", value: "attachment" }],
+          body: { attachmentId: "att-1", size: 20 },
+        },
+      ],
+    });
+    expect(parts.map((part) => part.filename)).toEqual(["roof.jpg", "dec.png"]);
+    expect(parts[0]?.contentId).toBe("roof@x");
+    expect(parts[0]?.data).toBe(jpeg);
+    expect(parts[1]?.attachmentId).toBe("att-1");
+    expect(gmailImageDataUrl("image/jpeg", jpeg)).toMatch(/^data:image\/jpeg;base64,/);
   });
 });

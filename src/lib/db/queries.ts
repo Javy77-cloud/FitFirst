@@ -2730,17 +2730,111 @@ export async function listEmailJobsForDeal(dealId: string) {
     .orderBy(asc(emailSendJobs.scheduledFor));
 }
 
+async function searchRows<T>(load: () => Promise<T[]>): Promise<T[]> {
+  try {
+    return await load();
+  } catch {
+    return [];
+  }
+}
+
 export async function smartSearch(query: string): Promise<SearchHit[]> {
   const q = query.trim();
   if (!q) return [];
   const session = await currentDeskSession();
+  // Named columns only. A bare select() dies when a later module column is not migrated yet,
+  // and Promise.all then returns no contacts, policies, accounts, or carriers.
   const [leadRows, dealRows, contactRows, accountRows, policyRows, carrierRows] = await Promise.all([
-    db.select().from(leads).where(eq(leads.tenantId, tenant())),
-    db.select().from(deals).where(eq(deals.tenantId, tenant())),
-    db.select().from(contacts).where(eq(contacts.tenantId, tenant())),
-    db.select().from(accounts).where(eq(accounts.tenantId, tenant())),
-    db.select().from(policies).where(eq(policies.tenantId, tenant())),
-    db.select().from(carriers).where(eq(carriers.tenantId, tenant())),
+    searchRows(() =>
+      db
+        .select({
+          id: leads.id,
+          firstName: leads.firstName,
+          middleName: leads.middleName,
+          lastName: leads.lastName,
+          email: leads.email,
+          phone: leads.phone,
+          ownerId: leads.ownerId,
+        })
+        .from(leads)
+        .where(eq(leads.tenantId, tenant())),
+    ),
+    searchRows(() =>
+      db
+        .select({
+          id: deals.id,
+          title: deals.title,
+          primaryNamedInsured: deals.primaryNamedInsured,
+          notes: deals.notes,
+          pipelineStage: deals.pipelineStage,
+          ownerId: deals.ownerId,
+        })
+        .from(deals)
+        .where(eq(deals.tenantId, tenant())),
+    ),
+    searchRows(() =>
+      db
+        .select({
+          id: contacts.id,
+          firstName: contacts.firstName,
+          lastName: contacts.lastName,
+          email: contacts.email,
+          phone: contacts.phone,
+          mailingAddress: contacts.mailingAddress,
+          city: contacts.city,
+          ownerId: contacts.ownerId,
+        })
+        .from(contacts)
+        .where(
+          and(eq(contacts.tenantId, tenant()), isNull(contacts.archivedAt), isNull(contacts.mergedIntoId)),
+        ),
+    ),
+    searchRows(() =>
+      db
+        .select({
+          id: accounts.id,
+          name: accounts.name,
+          legalName: accounts.legalName,
+          dba: accounts.dba,
+          einLast4: accounts.einLast4,
+          city: accounts.city,
+        })
+        .from(accounts)
+        .where(
+          and(eq(accounts.tenantId, tenant()), isNull(accounts.archivedAt), isNull(accounts.mergedIntoId)),
+        ),
+    ),
+    searchRows(() =>
+      db
+        .select({
+          id: policies.id,
+          policyNumber: policies.policyNumber,
+          lineOfBusiness: policies.lineOfBusiness,
+          formType: policies.formType,
+          policySubType: policies.policySubType,
+          policyType: policies.policyType,
+          labelOverride: policies.labelOverride,
+          ownerId: policies.ownerId,
+          contactId: policies.contactId,
+          accountId: policies.accountId,
+          carrierId: policies.carrierId,
+        })
+        .from(policies)
+        .where(eq(policies.tenantId, tenant())),
+    ),
+    searchRows(() =>
+      db
+        .select({
+          id: carriers.id,
+          name: carriers.name,
+          naic: carriers.naic,
+          territory: carriers.territory,
+          amBestRating: carriers.amBestRating,
+          writtenLines: carriers.writtenLines,
+        })
+        .from(carriers)
+        .where(eq(carriers.tenantId, tenant())),
+    ),
   ]);
   const hits: SearchHit[] = [];
   for (const row of leadRows) {
@@ -2753,7 +2847,19 @@ export async function smartSearch(query: string): Promise<SearchHit[]> {
   }
   for (const row of contactRows) {
     if (!canViewOwned(session, row.ownerId)) continue;
-    if (matchesQuery(q, row.firstName, row.lastName, row.email, row.phone, row.mailingAddress)) {
+    if (
+      matchesQuery(
+        q,
+        row.firstName,
+        row.lastName,
+        `${row.lastName}, ${row.firstName}`,
+        `${row.firstName} ${row.lastName}`,
+        row.email,
+        row.phone,
+        row.mailingAddress,
+        row.city,
+      )
+    ) {
       hits.push(hitFromContact(row));
     }
   }
@@ -2771,18 +2877,28 @@ export async function smartSearch(query: string): Promise<SearchHit[]> {
     const contact = contactRows.find((item) => item.id === row.contactId);
     const account = accountRows.find((item) => item.id === row.accountId);
     const carrier = carrierRows.find((item) => item.id === row.carrierId);
+    const party = contact
+      ? `${contact.firstName} ${contact.lastName}`.trim()
+      : account?.name ?? null;
     if (
       matchesQuery(
         q,
         row.policyNumber,
         row.lineOfBusiness,
+        row.formType,
+        row.policySubType,
+        row.policyType,
+        row.labelOverride,
+        party,
         contact?.firstName,
         contact?.lastName,
+        contact ? `${contact.lastName}, ${contact.firstName}` : null,
         account?.name,
+        account?.legalName,
         carrier?.name,
       )
     ) {
-      hits.push(hitFromPolicy(row));
+      hits.push(hitFromPolicy({ ...row, partyName: party }));
     }
   }
   for (const row of carrierRows) {

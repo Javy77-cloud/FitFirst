@@ -3,8 +3,10 @@ import { InboxDesk } from "@/components/inbox/inbox-desk";
 import { currentDeskSession } from "@/lib/auth/session";
 import { canConnectByoIntegration } from "@/lib/integrations/connect-policy";
 import { byoOauthWallCopy } from "@/lib/integrations/byo-credentials";
-import { gmailAccountEmail } from "@/lib/integrations/gmail";
+import { gmailAccountEmail, markGmailThreadRead } from "@/lib/integrations/gmail";
+import { GMAIL_MARK_READ_RECONNECT, gmailScopesAllowModify } from "@/lib/integrations/oauth-specs";
 import { loadByoConnection } from "@/lib/integrations/oauth-store";
+import { markDeskThreadRead } from "@/lib/desk/inbox-desk";
 import { loadInboxThreadMessages, loadLiveInboxThreads } from "@/lib/desk/load-inbox-live";
 
 export const dynamic = "force-dynamic";
@@ -22,10 +24,18 @@ export default async function InboxPage({
   ]);
   const selectedId = typeof query.thread === "string" ? query.thread : null;
   const notice = typeof query.notice === "string" ? query.notice : null;
-  const [accountEmail, messages] = await Promise.all([
+  const opened = selectedId ? live.threads.find((row) => row.id === selectedId) : null;
+  const grantMissing =
+    live.connected && Boolean(gmailRow?.grantedScopes) && !gmailScopesAllowModify(gmailRow?.grantedScopes);
+  const [accountEmail, messages, marked] = await Promise.all([
     live.connected ? gmailAccountEmail().catch(() => null) : Promise.resolve(null),
     live.connected ? loadInboxThreadMessages(selectedId ?? live.threads[0]?.id ?? null) : Promise.resolve([]),
+    live.connected && opened?.unread && !grantMissing
+      ? markGmailThreadRead(opened.id)
+      : Promise.resolve(null),
   ]);
+  const threads = marked?.ok && selectedId ? markDeskThreadRead(live.threads, selectedId) : live.threads;
+  const markReadNotice = grantMissing || marked?.needsReconnect ? GMAIL_MARK_READ_RECONNECT : null;
 
   return (
     <AppShell title="Inbox" eyebrow="Gmail">
@@ -40,13 +50,14 @@ export default async function InboxPage({
         </p>
       ) : null}
       <InboxDesk
-        threads={live.threads}
+        threads={threads}
         selectedId={selectedId}
         messages={messages}
         canConnect={canConnectByoIntegration(session)}
         connected={live.connected}
         error={live.error}
         accountEmail={accountEmail}
+        markReadNotice={markReadNotice}
         mailProvider="gmail"
       />
     </AppShell>

@@ -8,17 +8,26 @@ export type SearchHit = {
   href: string;
 };
 
+/** Drop commas and apostrophes so "Ruiz, Elena" matches first + last stored separately. */
+export function foldSearchText(value: string | null | undefined): string {
+  return (value ?? "")
+    .toLowerCase()
+    .replace(/['’`,./|·\-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function hay(parts: Array<string | null | undefined>) {
-  return parts
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
+  return foldSearchText(parts.filter(Boolean).join(" "));
 }
 
 export function matchesQuery(query: string, ...parts: Array<string | null | undefined>) {
-  const q = query.trim().toLowerCase();
+  const q = foldSearchText(query);
   if (!q) return false;
-  return hay(parts).includes(q);
+  const text = hay(parts);
+  if (text.includes(q)) return true;
+  const tokens = q.split(" ").filter(Boolean);
+  return tokens.length > 1 && tokens.every((token) => text.includes(token));
 }
 
 export function rankHits(hits: SearchHit[], query: string): SearchHit[] {
@@ -86,12 +95,18 @@ export function hitFromBusiness(row: {
   };
 }
 
-export function hitFromPolicy(row: { id: string; policyNumber: string; lineOfBusiness: string }): SearchHit {
+export function hitFromPolicy(row: {
+  id: string;
+  policyNumber: string;
+  lineOfBusiness: string;
+  partyName?: string | null;
+}): SearchHit {
+  const party = row.partyName?.trim();
   return {
     kind: "policy",
     id: row.id,
     title: row.policyNumber,
-    subtitle: `Policy · ${row.lineOfBusiness}`,
+    subtitle: party ? `Policy · ${party} · ${row.lineOfBusiness}` : `Policy · ${row.lineOfBusiness}`,
     href: `/policies/${row.id}`,
   };
 }

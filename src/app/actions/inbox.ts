@@ -7,7 +7,12 @@ import { createContactPopup } from "@/app/actions/contacts-ops";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import { parseEmailFrom } from "@/lib/home/lead-offers";
 import { getGmailThread, replyGmailThread, sendGmailMessage } from "@/lib/integrations/gmail";
-import { inboxThreadHref } from "@/lib/desk/inbox-match";
+import { writeRecordValues, loadRecordValues } from "@/lib/custom-fields/store";
+import { inboxThreadHref, normalizeInboxEmail, parseInboxAliasEmails } from "@/lib/desk/inbox-match";
+import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { db } from "@/lib/db";
+import { contacts } from "@/lib/db/schema";
+import { and, eq } from "drizzle-orm";
 import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
@@ -88,6 +93,38 @@ export async function logInboxThread(formData: FormData) {
   });
   refreshInbox(threadId);
   flashAction(inboxThreadHref(threadId), "inbox-logged");
+}
+
+export const INBOX_EMAIL_ALIAS_KEY = "inbox_emails";
+
+/** Attach this thread's address to an existing contact without leaving Inbox. */
+export async function linkInboxContact(formData: FormData): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await currentDeskSession();
+  if (!session.signedIn) return { ok: false, error: "Sign in to link a contact." };
+  const contactId = str(formData, "contactId");
+  const email = normalizeInboxEmail(str(formData, "email") || str(formData, "from"));
+  const threadId = str(formData, "threadId");
+  if (!contactId || !email) return { ok: false, error: "Pick a contact and an email address." };
+  const [contact] = await db
+    .select({ id: contacts.id, email: contacts.email })
+    .from(contacts)
+    .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, contactId)))
+    .limit(1);
+  if (!contact) return { ok: false, error: "That contact is not on this desk." };
+  const current = normalizeInboxEmail(contact.email);
+  if (!current) {
+    await db
+      .update(contacts)
+      .set({ email, updatedAt: new Date() })
+      .where(eq(contacts.id, contactId));
+  } else if (current !== email) {
+    const stored = await loadRecordValues(contactId, "contacts").catch(() => ({} as Record<string, string>));
+    const aliases = new Set(parseInboxAliasEmails(stored[INBOX_EMAIL_ALIAS_KEY]));
+    aliases.add(email);
+    await writeRecordValues(contactId, { [INBOX_EMAIL_ALIAS_KEY]: [...aliases].join(", ") }, "contacts");
+  }
+  refreshInbox(threadId);
+  return { ok: true };
 }
 
 export async function createContactFromInbox(formData: FormData) {

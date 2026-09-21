@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { BookLiveScope } from "@/components/book-lists/book-live-scope";
 import { BookBoard } from "@/components/book-lists/book-board";
 import { BookLenses } from "@/components/book-lists/book-lenses";
 import { BookPriorityStack } from "@/components/book-lists/book-stack";
@@ -10,6 +11,13 @@ import type {
   BookLensId,
   BookSurface,
 } from "@/lib/book-lists/types";
+
+const SEARCH_MODULE: Record<BookSurface, string> = {
+  contacts: "contacts",
+  accounts: "businesses",
+  carriers: "carriers",
+  policies: "policies",
+};
 import { heatShares } from "@/lib/desk/truth-strip";
 import { healthPulseShares, type HealthMixLevel } from "@/lib/renewal/health";
 
@@ -70,22 +78,24 @@ export function BookCommandWorkspace({
       />
       <BookLenses surface={surface} path={path} heat={heat} lens={lens} q={q} counts={counts} />
       {children}
-      {layout === "bands" ? (
-        <BookBoard
-          cards={cards}
-          columns={columns}
-          empty={empty}
-          renderExtra={renderExtra}
-          renderLeading={renderLeading}
-        />
-      ) : (
-        <BookPriorityStack
-          cards={cards}
-          empty={empty}
-          renderExtra={renderExtra}
-          renderLeading={renderLeading}
-        />
-      )}
+      <BookLiveScope moduleId={SEARCH_MODULE[surface]} initialQuery={q ?? ""}>
+        {layout === "bands" ? (
+          <BookBoard
+            cards={cards}
+            columns={columns}
+            empty={empty}
+            renderExtra={renderExtra}
+            renderLeading={renderLeading}
+          />
+        ) : (
+          <BookPriorityStack
+            cards={cards}
+            empty={empty}
+            renderExtra={renderExtra}
+            renderLeading={renderLeading}
+          />
+        )}
+      </BookLiveScope>
     </div>
   );
 }

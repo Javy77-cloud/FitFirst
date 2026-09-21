@@ -1,4 +1,5 @@
-import { plainFromInboxHtml } from "@/lib/desk/inbox-body";
+import { applyInboxInlineImages, plainFromInboxHtml } from "@/lib/desk/inbox-body";
+import { gmailScopesAllowModify } from "./oauth-specs";
 import { liveAccessToken } from "./oauth-exchange";
 import { loadByoConnection } from "./oauth-store";
 
@@ -32,6 +33,8 @@ export type GmailThreadMessage = {
   body: string;
   /** Raw HTML alternative, when the message has one. Empty for plain-only mail. */
   bodyHtml: string;
+  /** Inline and attached images, as data URLs the reading pane can paint. */
+  images: GmailInlineImage[];
   unread: boolean;
   inbound: boolean;
   internalDate: number;
@@ -40,6 +43,23 @@ export type GmailThreadMessage = {
   references: string;
   labelIds: string[];
 };
+
+export type GmailInlineImage = {
+  contentId: string;
+  filename: string;
+  dataUrl: string;
+};
+
+export type GmailPendingImage = {
+  contentId: string;
+  filename: string;
+  mimeType: string;
+  attachmentId: string | null;
+  data: string | null;
+  bytes: number;
+};
+
+const MAX_INLINE_IMAGE_BYTES = 1_500_000;
 
 export type GmailThreadPreview = {
   id: string;
@@ -89,7 +109,7 @@ async function gmailFetch(path: string, init?: RequestInit) {
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
     const err = data.error as { message?: string } | undefined;
-    throw new Error(err?.message || `Gmail API ${res.status}`);
+    throw new Error(err?.message ? `Gmail API ${res.status}: ${err.message}` : `Gmail API ${res.status}`);
   }
   return data;
 }
@@ -135,9 +155,49 @@ function decodeGmailBody(data: string | undefined): string {
 
 type GmailMimePart = {
   mimeType?: string;
-  body?: { data?: string };
+  filename?: string;
+  headers?: { name?: string; value?: string }[];
+  body?: { data?: string; attachmentId?: string; size?: number };
   parts?: unknown[];
 };
+
+function headerValue(part: GmailMimePart, name: string): string {
+  return part.headers?.find((header) => (header.name ?? "").toLowerCase() === name.toLowerCase())?.value ?? "";
+}
+
+function contentIdOf(part: GmailMimePart): string {
+  return headerValue(part, "Content-ID").replace(/^<|>$/g, "").trim();
+}
+
+/** Image parts (CID inline and normal attachments) without fetching bytes yet. */
+export function collectGmailImages(part?: GmailMimePart): GmailPendingImage[] {
+  const out: GmailPendingImage[] = [];
+  const walk = (node?: GmailMimePart) => {
+    if (!node) return;
+    const mime = (node.mimeType ?? "").toLowerCase();
+    if (mime.startsWith("image/")) {
+      const data = node.body?.data ?? null;
+      const bytes = node.body?.size ?? (data ? Math.floor((data.length * 3) / 4) : 0);
+      out.push({
+        contentId: contentIdOf(node),
+        filename: node.filename?.trim() || contentIdOf(node) || "image",
+        mimeType: mime,
+        attachmentId: node.body?.attachmentId ?? null,
+        data,
+        bytes,
+      });
+    }
+    for (const child of node.parts ?? []) walk(child as GmailMimePart);
+  };
+  walk(part);
+  return out;
+}
+
+export function gmailImageDataUrl(mimeType: string, base64url: string): string {
+  const mime = mimeType.toLowerCase().startsWith("image/") ? mimeType.toLowerCase() : "image/png";
+  const b64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
+  return `data:${mime};base64,${b64}`;
+}
 
 /** Plain text plus the HTML alternative. HTML is kept so the desk can wrap tables. */
 export function gmailBodiesFromPart(part?: GmailMimePart): { plain: string; html: string } {
@@ -172,32 +232,36 @@ function mapThreadMessage(
     snippet?: string;
     internalDate?: string;
     labelIds?: string[];
-    payload?: { headers?: { name?: string; value?: string }[]; mimeType?: string; body?: { data?: string }; parts?: unknown[] };
+    payload?: GmailMimePart & { headers?: { name?: string; value?: string }[] };
   },
   agencyEmail: string | null,
-): GmailThreadMessage {
+): { message: GmailThreadMessage; pendingImages: GmailPendingImage[] } {
   const headers = gmailHeadersFrom(msg.payload);
   const labels = msg.labelIds ?? [];
   const extracted = gmailBodiesFromPart(msg.payload);
   const body = extracted.plain || plainFromInboxHtml(extracted.html) || (msg.snippet ?? "").trim();
   return {
-    id: msg.id ?? "",
-    threadId: msg.threadId ?? "",
-    from: headers.from,
-    to: headers.to,
-    cc: headers.cc,
-    subject: headers.subject,
-    date: headers.date,
-    snippet: (msg.snippet ?? "").trim() || body.slice(0, 160),
-    body: body.trim(),
-    bodyHtml: extracted.html,
-    unread: labels.includes("UNREAD"),
-    inbound: isGmailInbound(labels, headers.from, agencyEmail),
-    internalDate: Number(msg.internalDate ?? 0),
-    messageId: headers.messageId,
-    inReplyTo: headers.inReplyTo,
-    references: headers.references,
-    labelIds: labels,
+    pendingImages: collectGmailImages(msg.payload),
+    message: {
+      id: msg.id ?? "",
+      threadId: msg.threadId ?? "",
+      from: headers.from,
+      to: headers.to,
+      cc: headers.cc,
+      subject: headers.subject,
+      date: headers.date,
+      snippet: (msg.snippet ?? "").trim() || body.slice(0, 160),
+      body: body.trim(),
+      bodyHtml: extracted.html,
+      images: [],
+      unread: labels.includes("UNREAD"),
+      inbound: isGmailInbound(labels, headers.from, agencyEmail),
+      internalDate: Number(msg.internalDate ?? 0),
+      messageId: headers.messageId,
+      inReplyTo: headers.inReplyTo,
+      references: headers.references,
+      labelIds: labels,
+    },
   };
 }
 
@@ -274,7 +338,7 @@ export async function listRecentGmailThreads(limit = 20): Promise<GmailThreadPre
             payload?: { headers?: { name?: string; value?: string }[] };
           }[];
         };
-        const messages = (thread.messages ?? []).map((msg) => mapThreadMessage(msg, agencyEmail));
+        const messages = (thread.messages ?? []).map((msg) => mapThreadMessage(msg, agencyEmail).message);
         return previewFromMessages(thread.id ?? row.id, thread.snippet ?? row.snippet ?? "", messages);
       }),
     );
@@ -283,6 +347,40 @@ export async function listRecentGmailThreads(limit = 20): Promise<GmailThreadPre
     }
   }
   return out.sort((a, b) => b.lastInternalDate - a.lastInternalDate);
+}
+
+async function gmailAttachmentData(messageId: string, attachmentId: string): Promise<string | null> {
+  const data = (await gmailFetch(
+    `/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`,
+  )) as { data?: string; size?: number };
+  if ((data.size ?? 0) > MAX_INLINE_IMAGE_BYTES) return null;
+  return data.data ?? null;
+}
+
+async function resolveMessageImages(
+  message: GmailThreadMessage,
+  pending: GmailPendingImage[],
+): Promise<GmailThreadMessage> {
+  const images: GmailInlineImage[] = [];
+  for (const part of pending) {
+    if (part.bytes > MAX_INLINE_IMAGE_BYTES) continue;
+    let raw = part.data;
+    if (!raw && part.attachmentId && message.id) {
+      raw = await gmailAttachmentData(message.id, part.attachmentId).catch(() => null);
+    }
+    if (!raw) continue;
+    if (Math.floor((raw.length * 3) / 4) > MAX_INLINE_IMAGE_BYTES) continue;
+    images.push({
+      contentId: part.contentId,
+      filename: part.filename,
+      dataUrl: gmailImageDataUrl(part.mimeType, raw),
+    });
+  }
+  return {
+    ...message,
+    bodyHtml: applyInboxInlineImages(message.bodyHtml, images),
+    images,
+  };
 }
 
 export async function getGmailThread(threadId: string): Promise<{
@@ -299,13 +397,39 @@ export async function getGmailThread(threadId: string): Promise<{
       snippet?: string;
       internalDate?: string;
       labelIds?: string[];
-      payload?: { headers?: { name?: string; value?: string }[]; mimeType?: string; body?: { data?: string }; parts?: unknown[] };
+      payload?: GmailMimePart & { headers?: { name?: string; value?: string }[] };
     }[];
   };
-  const messages = (thread.messages ?? []).map((msg) => mapThreadMessage(msg, agencyEmail));
+  const mapped = (thread.messages ?? []).map((msg) => mapThreadMessage(msg, agencyEmail));
+  const messages = await Promise.all(mapped.map((row) => resolveMessageImages(row.message, row.pendingImages)));
   const preview = previewFromMessages(thread.id ?? threadId, thread.snippet ?? "", messages);
   if (!preview) return null;
   return { preview, messages };
+}
+
+export async function markGmailThreadRead(
+  threadId: string,
+): Promise<{ ok: boolean; needsReconnect: boolean }> {
+  const id = threadId.trim();
+  if (!id) return { ok: false, needsReconnect: false };
+  const row = await loadByoConnection("gmail");
+  if (row?.grantedScopes && !gmailScopesAllowModify(row.grantedScopes)) {
+    return { ok: false, needsReconnect: true };
+  }
+  try {
+    await gmailFetch(`/threads/${encodeURIComponent(id)}/modify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ removeLabelIds: ["UNREAD"] }),
+    });
+    return { ok: true, needsReconnect: false };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (/insufficient|permission|scope|403|forbidden/i.test(message)) {
+      return { ok: false, needsReconnect: true };
+    }
+    return { ok: false, needsReconnect: false };
+  }
 }
 
 export async function sendGmailMessage(input: {
