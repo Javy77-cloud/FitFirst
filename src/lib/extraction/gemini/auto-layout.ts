@@ -490,6 +490,171 @@ function repairFlatDriverNames(out: LooseJson) {
   }
 }
 
+const DRIVER_FIELDS = [
+  "name",
+  "dob",
+  "gender",
+  "industry",
+  "occupation",
+  "education_level",
+  "marital_status",
+  "license",
+  "status",
+  "years_licensed",
+  "household_status",
+  "exclude_reason",
+  "age_first_licensed",
+  "suspension_5yr",
+  "relationship",
+] as const;
+
+function normPersonName(raw: unknown): string {
+  return textOf(raw)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normDob(raw: unknown): string {
+  const text = textOf(raw).trim();
+  const match = text.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
+  if (!match) return text.toLowerCase().replace(/\s+/g, "");
+  const year = match[3].length === 2 ? `20${match[3]}` : match[3];
+  return `${year}-${match[1].padStart(2, "0")}-${match[2].padStart(2, "0")}`;
+}
+
+/** Same listed person. Different dates of birth stay separate (father / son). */
+function sameDriver(a: { name?: unknown; dob?: unknown }, b: { name?: unknown; dob?: unknown }): boolean {
+  const nameA = normPersonName(a.name);
+  const nameB = normPersonName(b.name);
+  if (!nameA || nameA !== nameB) return false;
+  const dobA = normDob(a.dob);
+  const dobB = normDob(b.dob);
+  if (dobA && dobB && dobA !== dobB) return false;
+  return true;
+}
+
+function snapshotDriver(out: LooseJson, n: number): LooseJson {
+  const snap: LooseJson = {};
+  for (const part of DRIVER_FIELDS) {
+    const value = out[`driver_${n}_${part}`];
+    if (textOf(value).trim()) snap[part] = value;
+  }
+  return snap;
+}
+
+function clearDriver(out: LooseJson, n: number) {
+  for (const part of DRIVER_FIELDS) delete out[`driver_${n}_${part}`];
+}
+
+function writeDriver(out: LooseJson, n: number, snap: LooseJson) {
+  for (const part of DRIVER_FIELDS) {
+    if (n === 1 && part === "relationship") continue;
+    const value = snap[part];
+    if (textOf(value).trim()) out[`driver_${n}_${part}`] = value;
+  }
+}
+
+function mergeDriverSnap(keep: LooseJson, extra: LooseJson) {
+  const extraName = textOf(extra.name).trim();
+  if (extraName.length > textOf(keep.name).trim().length) keep.name = extra.name;
+  for (const part of DRIVER_FIELDS) {
+    if (part === "name") continue;
+    if (!textOf(keep[part]).trim() && textOf(extra[part]).trim()) keep[part] = extra[part];
+  }
+}
+
+/** James listed as driver 2 and driver 3 with the same name and DOB collapses to one row. */
+function dedupeDriverSlots(out: LooseJson) {
+  const kept: LooseJson[] = [];
+  for (let n = 1; n <= 4; n++) {
+    const snap = snapshotDriver(out, n);
+    if (!textOf(snap.name).trim()) continue;
+    const match = kept.find((row) => sameDriver(row, snap));
+    if (!match) {
+      kept.push(snap);
+      continue;
+    }
+    mergeDriverSnap(match, snap);
+  }
+  for (let n = 1; n <= 4; n++) clearDriver(out, n);
+  kept.forEach((snap, index) => writeDriver(out, index + 1, snap));
+}
+
+function nextDriverSlot(out: LooseJson): number {
+  for (let n = 1; n <= 4; n++) {
+    if (!textOf(out[`driver_${n}_name`]).trim()) return n - 1;
+  }
+  return 4;
+}
+
+function mergeIfListed(out: LooseJson, item: LooseJson): boolean {
+  const person = {
+    name: driverPrintedName(item),
+    dob: fieldText(item, ["dob", "date_of_birth", "birth_date", "birthdate"]),
+  };
+  if (!normPersonName(person.name)) return false;
+  for (let n = 1; n <= 4; n++) {
+    if (!sameDriver({ name: out[`driver_${n}_name`], dob: out[`driver_${n}_dob`] }, person)) continue;
+    const scratch: LooseJson = {};
+    applyDriver(scratch, { ...item }, n - 1);
+    const prefix = `driver_${n}_`;
+    for (const part of DRIVER_FIELDS) {
+      const key = `${prefix}${part}`;
+      if (part === "name") {
+        const longer = textOf(scratch[key]).trim();
+        if (longer.length > textOf(out[key]).trim().length) out[key] = scratch[key];
+        continue;
+      }
+      setIfEmpty(out, key, scratch[key]);
+    }
+    return true;
+  }
+  return false;
+}
+
+function applyDriverList(out: LooseJson, raw: unknown) {
+  for (const item of asItemList(raw)) {
+    const copy = { ...item };
+    if (mergeIfListed(out, copy)) continue;
+    applyDriver(out, copy, nextDriverSlot(out));
+  }
+}
+
+function absorbPage(out: LooseJson, page: LooseJson) {
+  for (const key of DRIVER_LIST_KEYS) {
+    const raw = pull(page, [key]);
+    if (raw != null) applyDriverList(out, raw);
+  }
+  for (const key of COVERAGE_LIST_KEYS) {
+    const raw = pull(page, [key]);
+    if (raw != null) applyCoverages(out, raw);
+  }
+  applyPolicyRecord(out, page);
+  for (const [key, value] of Object.entries(page)) {
+    if (coverageTargetForLabel(key)) applyCoverageEntry(out, key, value);
+  }
+}
+
+/** Page 2 of a multi-page dec often holds the coverage table the summary page omits. */
+function absorbLaterPages(out: LooseJson) {
+  const bundles: LooseJson[] = [];
+  for (const key of ["pages", "dec_pages"]) {
+    const raw = pull(out, [key]);
+    if (Array.isArray(raw)) {
+      for (const page of raw) if (isRecord(page)) bundles.push({ ...page });
+    } else if (isRecord(raw)) {
+      for (const page of Object.values(raw)) if (isRecord(page)) bundles.push({ ...page });
+    }
+  }
+  for (const key of ["page_2", "page_3", "second_page", "coverage_page"]) {
+    const raw = pull(out, [key]);
+    if (isRecord(raw)) bundles.push({ ...raw });
+  }
+  for (const page of bundles) absorbPage(out, page);
+}
+
 /** Flatten ACORD / carrier auto-dec JSON onto Auto risk-profile keys. */
 export function expandAutoDecLayout(json: LooseJson, shopLine?: string | null): LooseJson {
   const out: LooseJson = { ...unwrapEnvelope(json) };
@@ -500,16 +665,18 @@ export function expandAutoDecLayout(json: LooseJson, shopLine?: string | null): 
     if (raw == null) continue;
     asItemList(raw).forEach((item, index) => applyVehicle(out, { ...item }, index));
   }
+  repairFlatDriverNames(out);
   for (const key of DRIVER_LIST_KEYS) {
     const raw = pull(out, [key]);
     if (raw == null) continue;
-    asItemList(raw).forEach((item, index) => applyDriver(out, { ...item }, index));
+    applyDriverList(out, raw);
   }
   for (const key of COVERAGE_LIST_KEYS) {
     const raw = pull(out, [key]);
     if (raw == null) continue;
     applyCoverages(out, raw);
   }
+  absorbLaterPages(out);
 
   applyPolicyPeriod(out, pull(out, ["policy_period", "policy_term"]));
 
@@ -581,6 +748,7 @@ export function expandAutoDecLayout(json: LooseJson, shopLine?: string | null): 
   setIfEmpty(out, "aaa_member", pull(out, ["aaa", "aaa_membership"]));
   takePolicyEnvelopes(out);
   repairFlatDriverNames(out);
+  dedupeDriverSlots(out);
   applyCoverageEntry(
     out,
     "bodily_injury",

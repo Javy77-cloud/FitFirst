@@ -147,7 +147,11 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(system).toMatch(/Bodily Injury/);
     expect(system.indexOf("Vehicles and VIN")).toBeLessThan(system.indexOf("Other allowed keys"));
     expect(system.indexOf("Drivers")).toBeLessThan(system.indexOf("Coverage limits"));
-    expect(system.indexOf("effective_date and expiration_date")).toBeLessThan(system.indexOf("current_carrier"));
+    expect(system.indexOf("current_carrier")).toBeLessThan(system.indexOf("Vehicles and VIN"));
+    expect(system).toMatch(/Do not invent coverages/);
+    expect(system).toMatch(/page 2/);
+    expect(system).toMatch(/same name and date of birth/);
+    expect(system).toMatch(/Allstate Fire and Casualty Insurance Company/);
     expect(system).toMatch(/Current Policy example/);
     expect(system).toMatch(/Domenic M Iori/);
     expect(system).toMatch(/Do not truncate/);
@@ -357,6 +361,114 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(applied.values.expiration_date.value).toBe("");
     expect(applied.values.currently_insured.value).toBe("Yes");
     expect(applied.values.aaa_member.value).toBe("Yes");
+  });
+
+  it("fills Allstate Current Policy keys and leaves years, insured, and AAA blank when unprinted", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        current_carrier: "Allstate Fire and Casualty Insurance Company",
+        current_premium: "3393.51",
+        effective_date: "Sept 29, 2026",
+        expiration_date: "Mar 29, 2027",
+        policy_number: "941 953 485",
+        driver_1_name: "Domenic Iori",
+      },
+      "photo",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.current_carrier.value).toBe("Allstate Fire and Casualty Insurance Company");
+    expect(applied.values.current_premium.value).toBe("3393.51");
+    expect(applied.values.effective_date.value).toBe("Sept 29, 2026");
+    expect(applied.values.expiration_date.value).toBe("Mar 29, 2027");
+    expect(applied.values.policy_number.value).toBe("941 953 485");
+    expect(applied.values.driver_1_name.value).toBe("Domenic Iori");
+    expect(applied.values.years_with_carrier.value).toBe("");
+    expect(applied.values.currently_insured.value).toBe("");
+    expect(applied.values.aaa_member.value).toBe("");
+    expect(applied.values.liability_bi.value).toBe("");
+    expect(applied.values.liability_pd.value).toBe("");
+    expect(applied.values.um_uim.value).toBe("");
+    expect(applied.values.pip.value).toBe("");
+    expect(applied.values.comp_deductible.value).toBe("");
+    expect(applied.values.collision_deductible.value).toBe("");
+  });
+
+  it("reads coverages from page 2 and does not invent them from a summary page", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        current_carrier: "Allstate Fire and Casualty Insurance Company",
+        pages: [
+          { named_insured: "Domenic Iori" },
+          {
+            coverages: {
+              bodily_injury: "100/300",
+              property_damage: "100000",
+              uninsured_motorist: "100/300",
+              personal_injury_protection: "10000",
+              comprehensive: "500",
+              collision: "500",
+            },
+          },
+        ],
+      },
+      "dec",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.current_carrier.value).toBe("Allstate Fire and Casualty Insurance Company");
+    expect(applied.values.liability_bi.value).toBe("100/300");
+    expect(applied.values.liability_pd.value).toBe("100000");
+    expect(applied.values.um_uim.value).toBe("100/300");
+    expect(applied.values.pip.value).toBe("10000");
+    expect(applied.values.comp_deductible.value).toBe("500");
+    expect(applied.values.collision_deductible.value).toBe("500");
+  });
+
+  it("dedupes a driver repeated with the same name and date of birth", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        drivers: [
+          { name: "Domenic Iori", dob: "04/02/1984" },
+          { name: "James Iori", dob: "06/01/1990", gender: "Male" },
+          { name: "James Iori", dob: "6/1/1990", license: "I400-222-33-444" },
+          { name: "Maria Iori", dob: "07/07/1992" },
+        ],
+        driver_2_name: "James Iori",
+        driver_2_dob: "06/01/1990",
+        driver_3_name: "James Iori",
+        driver_3_dob: "06/01/1990",
+      },
+      "photo",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.driver_1_name.value).toBe("Domenic Iori");
+    expect(applied.values.driver_2_name.value).toBe("James Iori");
+    expect(applied.values.driver_2_dob.value).toBe("06/01/1990");
+    expect(applied.values.driver_2_license.value).toBe("I400-222-33-444");
+    expect(applied.values.driver_2_gender.value).toBe("Male");
+    expect(applied.values.driver_3_name.value).toBe("Maria Iori");
+    expect(applied.values.driver_3_dob.value).toBe("07/07/1992");
+    expect(mapped.fields.some((field) => field.fieldKey === "driver_4_name")).toBe(false);
+  });
+
+  it("keeps two drivers who share a name and have different dates of birth", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        drivers: [
+          { name: "James Iori", dob: "06/01/1962" },
+          { name: "James Iori", dob: "06/01/1990" },
+        ],
+      },
+      "photo",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.driver_1_name.value).toBe("James Iori");
+    expect(applied.values.driver_1_dob.value).toBe("06/01/1962");
+    expect(applied.values.driver_2_name.value).toBe("James Iori");
+    expect(applied.values.driver_2_dob.value).toBe("06/01/1990");
   });
 
 });
