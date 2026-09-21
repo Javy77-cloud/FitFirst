@@ -91,6 +91,8 @@ export async function GET(request: Request) {
     scopes: exchanged.scopes,
     ownerUserId: payload.u ?? session.userId,
   });
+  // Busy sync is fire-and-forget inside applyByoConnectSideEffects so this
+  // stays a fast DB write — awaiting freeBusy used to leave Google spinning.
   try {
     await applyByoConnectSideEffects({
       provider,
