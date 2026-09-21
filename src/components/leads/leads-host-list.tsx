@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ListCommsPick } from "@/components/desk/list-comms-rail";
+import { ActivityGlyph } from "@/components/desk/standard-activity-panel";
 import {
   LeadCadenceSelect,
   LeadHeatToggle,
@@ -57,7 +57,14 @@ export function LeadsHostList({
           <Link href={record.href} className="font-semibold text-navy hover:underline">
             {record.name}
           </Link>
-          <ListCommsPick id={record.id} />
+          <ActivityGlyph
+            id={record.id}
+            menuTestId={`lead-list-activity-${record.id}`}
+            listTestId={`lead-list-activity-menu-${record.id}`}
+            optionAttr="data-ff-lead-activity-option"
+            leadId={record.id}
+            dealId={record.convertedDealId}
+          />
         </span>
       ),
       policyForm: (

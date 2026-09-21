@@ -157,6 +157,9 @@ describe("inbox desk presentation", () => {
     );
     expect(chrome).toMatch(/\.ff-inbox-row\.is-read \{[^}]*#f2f6fc/);
     expect(chrome).toMatch(/\.ff-inbox-row\.is-unread \{[^}]*#fff/);
+    expect(chrome).toMatch(/\.ff-inbox-row\.is-read:hover \{[^}]*#fff/);
+    expect(chrome).toMatch(/\.ff-inbox-row\.is-unread:hover \{[^}]*color-mix/);
+    expect(chrome).toMatch(/\.ff-inbox-row\.is-selected \{[^}]*#d6e4f5/);
     expect(chrome).not.toMatch(/\.ff-inbox-row\.is-selected\.is-read \{[^}]*color-mix/);
     expect(chrome).toMatch(/\.ff-inbox-band h2 \{[\s\S]*font-size: 0\.84rem;/);
     expect(readFileSync("src/lib/integrations/oauth-specs.ts", "utf8")).toMatch(/gmail\.modify/);

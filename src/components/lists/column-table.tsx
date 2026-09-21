@@ -48,6 +48,7 @@ import { matchesContains } from "@/lib/search/live-query";
 import { sheetAttr, sheetCellProps } from "@/lib/desk/sheet-attr";
 import { cn } from "@/lib/utils";
 import { useOptionalSelection } from "@/components/developer-hub/list-selection";
+import { useActivityPick } from "@/components/desk/standard-activity-panel";
 
 export type { ListColumn };
 
@@ -108,6 +109,7 @@ export function ColumnTable({
 }) {
   const queryModule = searchModuleId ?? moduleId;
   const liveQuery = useLiveContainsQuery(queryModule, initialQuery);
+  const activityDesk = useActivityPick();
   const visibleRows = useMemo(() => {
     return rows.filter((row) => {
       if (row.parked && !liveQuery.trim()) return false;
@@ -433,12 +435,21 @@ export function ColumnTable({
               }
               const rowId = row.id ?? row.key;
               const isSelected = selectedSet.has(rowId);
+              const activitySelected = Boolean(rowId && activityDesk?.selectedId === rowId);
               return (
               <tr
                 key={row.key}
                 id={row.id}
-                className={isSelected ? "ff-row-selected" : undefined}
+                className={cn(isSelected && "ff-row-selected", activitySelected && "ff-activity-row")}
                 data-ff-row-selected={isSelected ? "true" : undefined}
+                data-ff-activity-selected={activitySelected ? "true" : undefined}
+                onClick={(event) => {
+                  if (!activityDesk || !rowId) return;
+                  const target = event.target;
+                  if (!(target instanceof Element)) return;
+                  if (target.closest("a, button, input, select, textarea, label")) return;
+                  activityDesk.pick(rowId);
+                }}
               >
                 {shown.map((column) => {
                   const width = appliedWidths[column.id] ?? defaultColumnWidth(column);

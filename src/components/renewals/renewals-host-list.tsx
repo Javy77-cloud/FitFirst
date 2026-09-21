@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ListCommsPick } from "@/components/desk/list-comms-rail";
+import { ActivityGlyph } from "@/components/desk/standard-activity-panel";
 import { ColumnTable, type ColumnRow } from "@/components/lists/column-table";
 import { formatPremiumColumn } from "@/lib/deals/card-glance";
 import { formatSignedMoney } from "@/lib/renewal/compare";
@@ -36,7 +36,7 @@ export function RenewalsHostList({ cards }: { cards: RenewalBoardCard[] }) {
       });
     return {
       key: card.queueId,
-      id: card.policyId,
+      id: card.queueId,
       hay: `${card.clientName} ${card.policyNumber} ${lob} ${card.carrierName} ${why}`,
       sort: {
         premium: Number(card.premium) || 0,
@@ -49,7 +49,14 @@ export function RenewalsHostList({ cards }: { cards: RenewalBoardCard[] }) {
             <Link href={`/policies/${card.policyId}`} className="font-semibold text-navy hover:underline">
               {card.clientName}
             </Link>
-            <ListCommsPick id={card.queueId} />
+            <ActivityGlyph
+              id={card.queueId}
+              menuTestId={`renewal-list-activity-${card.queueId}`}
+              listTestId={`renewal-list-activity-menu-${card.queueId}`}
+              policyId={card.policyId}
+              contactId={card.contactId}
+              accountId={card.accountId}
+            />
           </span>
         ),
         lob,

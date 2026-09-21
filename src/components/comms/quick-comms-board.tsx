@@ -348,7 +348,7 @@ export function QuickCommsBoard({
       <p className="mt-1 text-base text-muted-foreground">
         {carrierId
           ? "Task, meeting, call, email, and SMS on this carrier. Updates Last Contacted."
-          : `Task, meeting, call, email, and SMS on this ${dealId ? "deal" : "lead"}. Email Send now uses the connected Gmail mailbox.`}
+          : `Task, meeting, call, email, and SMS on this ${dealId ? "deal" : policyId ? "policy" : "lead"}. Email Send now uses the connected Gmail mailbox.`}
       </p>
 
       <div className="mt-3 flex flex-nowrap items-center gap-1" data-ff-quick-comms-kinds="">

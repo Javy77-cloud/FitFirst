@@ -33,6 +33,7 @@ export function RecordActivityMenu({
   contactId,
   accountId,
   policyId,
+  onKind,
 }: {
   menuTestId: string;
   listTestId: string;
@@ -42,12 +43,18 @@ export function RecordActivityMenu({
   contactId?: string | null;
   accountId?: string | null;
   policyId?: string | null;
+  /** When the desk already has a board, select that record instead of navigating away. */
+  onKind?: (kind: QuickCommsTarget["kind"]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const targetBase = { dealId, leadId, contactId, accountId, policyId };
 
   function run(kind: QuickCommsTarget["kind"]) {
     setOpen(false);
+    if (onKind) {
+      onKind(kind);
+      return;
+    }
     launchQuickCommsAction({ ...targetBase, kind });
   }
 

@@ -36,7 +36,12 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/components/deals/deals-radar.tsx")).not.toMatch(/valueAxisLabel/);
     expect(source("src/components/deals/priority-stack.tsx")).toMatch(/DealHostSpread/);
     expect(source("src/components/deals/priority-stack.tsx")).toMatch(/data-ff-stack-mid|DealHostSpread/);
-    expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-radar-strip/);
+    expect(source("src/components/deals/deals-radar.tsx")).toMatch(/RadarBoard/);
+    expect(source("src/components/deals/deals-radar.tsx")).not.toMatch(/data-ff-radar-strip|RadarMetricStrip/);
+    expect(source("src/components/deals/radar-board.tsx")).toMatch(/data-ff-radar-banner/);
+    expect(source("src/components/deals/radar-board.tsx")).toMatch(/data-ff-radar-silence/);
+    expect(source("src/components/deals/radar-board.tsx")).toMatch(/data-ff-radar-trend/);
+    expect(source("src/components/deals/radar-board.tsx")).not.toMatch(/days silent/);
     expect(source("src/components/deals/priority-stack.tsx")).toMatch(/PriorityPinControl/);
     expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/VelocityClockRail/);
     expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/RenewalHealthMeter/);

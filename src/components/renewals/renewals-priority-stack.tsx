@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { RenewalCompareDrawer } from "@/components/renewals/renewal-compare-drawer";
 import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
-import { StackQuickComms } from "@/components/desk/stack-quick-comms";
 import { formatSilenceCue } from "@/lib/deals/card-glance";
 import { stackMidLine } from "@/lib/desk/stack-mid";
 import { formatMoney } from "@/lib/domain";
@@ -63,14 +62,6 @@ export function RenewalsPriorityStack({ cards }: { cards: RenewalBoardCard[] }) 
                       renewalDaysPhrase(card.daysUntil),
                     ])}
                   </Link>
-                  <StackQuickComms
-                    name={card.clientName}
-                    email={card.email}
-                    phone={card.phone}
-                    policyId={card.policyId}
-                    contactId={card.contactId}
-                    accountId={card.accountId}
-                  />
                 </div>
                 <div className="ff-stack-job" data-ff-renewal-job="">
                   <ul className="ff-stack-products">
