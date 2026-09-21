@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { RenewalCompareDrawer } from "@/components/renewals/renewal-compare-drawer";
 import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
+import { StackQuickComms } from "@/components/desk/stack-quick-comms";
+import { formatSilenceCue } from "@/lib/deals/card-glance";
+import { stackMidLine } from "@/lib/desk/stack-mid";
 import { formatMoney } from "@/lib/domain";
 import type { RenewalBoardCard } from "@/lib/renewal/board-data";
 import { renewalPolicyTypeLabel } from "@/lib/renewal/policy-type";
@@ -47,9 +50,27 @@ export function RenewalsPriorityStack({ cards }: { cards: RenewalBoardCard[] }) 
                   <Link href={`/policies/${card.policyId}`} className="ff-stack-name">
                     {card.clientName}
                   </Link>
-                  <span className="ff-stack-silent" data-ff-renewal-days="">
-                    {renewalDaysPhrase(card.daysUntil)}
-                  </span>
+                  <Link
+                    href={`/policies/${card.policyId}/compare`}
+                    className="ff-stack-mid"
+                    data-ff-stack-mid=""
+                    data-ff-renewal-days=""
+                    data-ff-renewal-work=""
+                    title="Work renewal"
+                  >
+                    {stackMidLine([
+                      card.lastContactDays == null ? "No logged touch" : formatSilenceCue(card.lastContactDays),
+                      renewalDaysPhrase(card.daysUntil),
+                    ])}
+                  </Link>
+                  <StackQuickComms
+                    name={card.clientName}
+                    email={card.email}
+                    phone={card.phone}
+                    policyId={card.policyId}
+                    contactId={card.contactId}
+                    accountId={card.accountId}
+                  />
                 </div>
                 <div className="ff-stack-job" data-ff-renewal-job="">
                   <ul className="ff-stack-products">
@@ -100,13 +121,6 @@ export function RenewalsPriorityStack({ cards }: { cards: RenewalBoardCard[] }) 
                     )}
                   </p>
                 ) : null}
-                <Link
-                  href={`/policies/${card.policyId}/compare`}
-                  className="ff-stack-next"
-                  data-ff-renewal-work=""
-                >
-                  Work renewal
-                </Link>
               </div>
             </article>
           </li>

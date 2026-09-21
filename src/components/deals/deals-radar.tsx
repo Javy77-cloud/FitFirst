@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { dealDisplayName } from "@/components/deals/deal-host-face";
+import { RadarMetricStrip } from "@/components/deals/radar-metric-strip";
 import { formatSilenceCue } from "@/lib/deals/card-glance";
 import type { RadarDealCard } from "@/lib/deals/radar-desk";
 import { HEAT_LABELS, HEAT_STATES } from "@/lib/deals/velocity";
@@ -11,6 +12,9 @@ import { HEAT_LABELS, HEAT_STATES } from "@/lib/deals/velocity";
 export function DealsRadar({ cards }: { cards: RadarDealCard[] }) {
   return (
     <div className="ff-heat-glance" data-ff-deals-radar="" data-ff-heat-glance="">
+      <div data-ff-radar-strip="">
+        <RadarMetricStrip cards={cards} />
+      </div>
       {HEAT_STATES.map((heat) => {
         const rows = cards.filter((card) => card.heat === heat);
         return (

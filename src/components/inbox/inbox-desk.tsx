@@ -183,7 +183,7 @@ export function InboxDesk({
         <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy">{error}</p>
       ) : null}
       {markReadNotice ? (
-        <p className="mb-3 rounded-md border border-dashed border-border px-3 py-2 text-sm text-navy" data-ff-inbox-reconnect="">
+        <p className="ff-inbox-reconnect" data-ff-inbox-reconnect="">
           {markReadNotice}{" "}
           <Link href={`/settings/email#${mailProvider}`} className="font-semibold text-primary hover:underline">
             Reconnect {connectLabel}

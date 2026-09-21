@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
 import {
@@ -5,25 +6,34 @@ import {
   formatSilenceCue,
   quotesGlanceLabel,
 } from "@/lib/deals/card-glance";
+import { stackMidLine } from "@/lib/desk/stack-mid";
 import type { RadarDealCard } from "@/lib/deals/radar-desk";
 
 export function dealDisplayName(card: Pick<RadarDealCard, "insured" | "title">): string {
   return card.insured !== "—" ? card.insured : card.title;
 }
 
-export function DealHostSpread({ card }: { card: RadarDealCard }) {
+export function DealHostSpread({ card, comms }: { card: RadarDealCard; comms?: ReactNode }) {
+  const line = stackMidLine([
+    formatSilenceCue(card.silenceDays),
+    card.primaryAction.label ? `Next ${card.primaryAction.label}` : null,
+  ]);
   return (
     <div className="ff-stack-card-spread">
       <Link href={card.href} className="ff-stack-name">
         {dealDisplayName(card)}
       </Link>
-      <span
-        className="ff-stack-silent"
+      <Link
+        href={card.primaryAction.href}
+        className="ff-stack-mid"
+        data-ff-stack-mid=""
+        data-ff-next-action=""
         data-ff-silence-cue=""
-        title="Days since the last logged call, email, SMS, or meeting"
+        title={card.inboxCue || "Days since the last logged call, email, SMS, or meeting"}
       >
-        {formatSilenceCue(card.silenceDays)}
-      </span>
+        {line}
+      </Link>
+      {comms}
     </div>
   );
 }
@@ -76,13 +86,5 @@ export function DealHostJob({ card }: { card: RadarDealCard }) {
         </span>
       ))}
     </div>
-  );
-}
-
-export function DealHostNext({ card }: { card: RadarDealCard }) {
-  return (
-    <Link href={card.primaryAction.href} className="ff-stack-next" data-ff-next-action="">
-      Next · {card.primaryAction.label}
-    </Link>
   );
 }

@@ -8,8 +8,10 @@ import { RecordContextRail } from "@/components/record-context/record-context-ra
 import { LeadListRailFocus } from "@/components/leads/lead-list-rail-focus";
 import { LeadQuickComms } from "@/components/leads/lead-quick-comms";
 import { listLeads, listRecordActivities } from "@/lib/db/queries";
+import { ListCommsShell } from "@/components/desk/list-comms-rail";
 import { LeadsHostList } from "@/components/leads/leads-host-list";
 import { LeadsPriorityStack } from "@/components/leads/leads-priority-stack";
+import { LeadsSourceBanner } from "@/components/leads/leads-source-banner";
 import { LeadsViewSwitch } from "@/components/leads/leads-view-switch";
 import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { leadsListColumnsFromLayout } from "@/lib/list-columns";
@@ -222,11 +224,16 @@ export default async function LeadsPage({
       <LeadSavedToast show={saved} />
       <div
         className="grid w-full items-start"
-        style={{ gridTemplateColumns: "minmax(0, 1fr) 320px", columnGap: "1.25rem", rowGap: "1.25rem" }}
-        data-ff-leads-list-layout="list-rail"
+        style={
+          view === "queue"
+            ? { gridTemplateColumns: "minmax(0, 1fr) 320px", columnGap: "1.25rem", rowGap: "1.25rem" }
+            : { gridTemplateColumns: "minmax(0, 1fr)", rowGap: "1rem" }
+        }
+        data-ff-leads-list-layout={view === "queue" ? "list-rail" : view}
         data-ff-leads-workspace=""
       >
         <div className="min-w-0" style={{ gridColumn: 1, gridRow: 1 }} data-ff-leads-heading="">
+          <LeadsSourceBanner sources={rows.map((lead) => lead.source)} />
           <p className="mb-3 text-base text-muted-foreground">
             Stack is the desk — cadence, response, and the next chase stay on the card. Queue is the
             work sheet. List is the rearrangeable column view. Converted leads live on Deals.
@@ -253,7 +260,13 @@ export default async function LeadsPage({
         templates={templates}
         dueCount={dueCount}
       />
+          {view !== "queue" ? (
+            <div className="mt-3 flex justify-end" data-ff-lead-motivation-gap="">
+              <LeadMotivation stats={motivation} />
+            </div>
+          ) : null}
         </div>
+        {view === "queue" ? (
         <div
           className="flex items-start justify-end"
           style={{ gridColumn: 2, gridRow: 1 }}
@@ -261,6 +274,7 @@ export default async function LeadsPage({
         >
           <LeadMotivation stats={motivation} />
         </div>
+        ) : null}
         <div
           className="min-w-0"
           style={{ gridColumn: 1, gridRow: 2 }}
@@ -290,7 +304,18 @@ export default async function LeadsPage({
             <LeadsPriorityStack records={desk} templates={templates} initialQuery={q} />
           ) : null}
           {view === "list" ? (
-            <LeadsHostList records={desk} templates={templates} initialQuery={q} />
+            <ListCommsShell
+              rows={desk.map((record) => ({
+                id: record.id,
+                name: record.name,
+                email: record.email,
+                phone: record.phone,
+                leadId: record.id,
+                dealId: record.convertedDealId,
+              }))}
+            >
+              <LeadsHostList records={desk} templates={templates} initialQuery={q} />
+            </ListCommsShell>
           ) : null}
           {view === "queue" ? (
           <ModuleListActions
@@ -483,6 +508,7 @@ export default async function LeadsPage({
         </section>
         </div>
 
+        {view === "queue" ? (
         <aside
           className="w-[320px] min-w-[320px] max-w-[320px] shrink-0 grow-0 basis-[320px] space-y-3 overflow-x-hidden"
           style={{ gridColumn: 2, gridRow: 2 }}
@@ -516,6 +542,7 @@ export default async function LeadsPage({
             </div>
           )}
         </aside>
+        ) : null}
       </div>
     </AppShell>
   );

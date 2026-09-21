@@ -35,6 +35,8 @@ describe("Deals Priority Stack + Radar", () => {
     expect(RADAR_Y_AXIS_LABEL).toBe("Days silent");
     expect(source("src/components/deals/deals-radar.tsx")).not.toMatch(/valueAxisLabel/);
     expect(source("src/components/deals/priority-stack.tsx")).toMatch(/DealHostSpread/);
+    expect(source("src/components/deals/priority-stack.tsx")).toMatch(/data-ff-stack-mid|DealHostSpread/);
+    expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-radar-strip/);
     expect(source("src/components/deals/priority-stack.tsx")).toMatch(/PriorityPinControl/);
     expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/VelocityClockRail/);
     expect(source("src/components/deals/priority-stack.tsx")).not.toMatch(/RenewalHealthMeter/);

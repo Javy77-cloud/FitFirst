@@ -150,8 +150,14 @@ describe("inbox desk presentation", () => {
     expect(desk).toMatch(/InboxLinkContactDialog/);
     expect(desk).toMatch(/data-ff-inbox-images/);
     expect(desk).toMatch(/connectLabel/);
-    expect(desk).toMatch(/startByoOauth/);
-    expect(chrome).toMatch(/\.ff-inbox-row\.is-read \{[\s\S]*#f2f6fc/);
+    expect(desk).toMatch(/ff-inbox-reconnect/);
+    expect(desk).toMatch(/data-ff-inbox-reconnect/);
+    expect(readFileSync("src/lib/desk/inbox-engine.ts", "utf8")).toMatch(
+      /selectedId \? markDeskThreadRead\(live\.threads, selectedId\)/,
+    );
+    expect(chrome).toMatch(/\.ff-inbox-row\.is-read \{[^}]*#f2f6fc/);
+    expect(chrome).toMatch(/\.ff-inbox-row\.is-unread \{[^}]*#fff/);
+    expect(chrome).not.toMatch(/\.ff-inbox-row\.is-selected\.is-read \{[^}]*color-mix/);
     expect(chrome).toMatch(/\.ff-inbox-band h2 \{[\s\S]*font-size: 0\.84rem;/);
     expect(readFileSync("src/lib/integrations/oauth-specs.ts", "utf8")).toMatch(/gmail\.modify/);
     expect(desk).toMatch(/ff-inbox-body-html/);
