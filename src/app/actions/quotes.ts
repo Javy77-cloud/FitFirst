@@ -6,6 +6,10 @@ import { and, eq, inArray } from "drizzle-orm";
 import { matchCarrier, rankFits, riskFromRecord } from "@/lib/appetite/match";
 import { toAppetiteInput } from "@/lib/appetite/rule-input";
 import { portalFor } from "@/lib/appetite/portals";
+import {
+  captureAutoGapsFromAttemptWhy,
+  recordPortalObservedQuestions,
+} from "@/lib/quote-bot/auto-question-gaps";
 import { appointmentLine, DEFAULT_TENANT_ID, writesDealLine, type PriorAttempt } from "@/lib/domain";
 import { resolveShopLineAndLob } from "@/lib/deals/package-lines";
 import { db } from "@/lib/db";
@@ -343,6 +347,21 @@ export async function shopDealQuotes(
       dealId,
       riskId: risk.id,
     });
+    if (portalResult.observedQuestions?.length) {
+      try {
+        recordPortalObservedQuestions({
+          shopLine: resolved.line,
+          lineOfBusiness: resolved.lob,
+          carrierId,
+          carrierName,
+          dealId,
+          questions: portalResult.observedQuestions,
+          source: "shopDealQuotes",
+        });
+      } catch (error) {
+        console.error("auto question gap capture failed", error);
+      }
+    }
     const manual = manualIds.has(carrierId);
     const shopLob = resolved.lob || deal.lineOfBusiness || "HO";
     const shopAutoSnap = await autoSnapshotFieldsForDeal(dealId, shopLob);
@@ -422,6 +441,26 @@ export async function recordManualAttempt(formData: FormData) {
     ...manualAutoSnap,
     ...manualLineSnap,
   });
+
+  const manualCarrierId = String(formData.get("carrierId") ?? "");
+  const [manualCarrier] = manualCarrierId
+    ? await db
+        .select({ name: carriers.name })
+        .from(carriers)
+        .where(eq(carriers.id, manualCarrierId))
+    : [];
+  try {
+    captureAutoGapsFromAttemptWhy({
+      why: String(formData.get("why") ?? ""),
+      lineOfBusiness: manualLob,
+      carrierId: manualCarrierId,
+      carrierName: manualCarrier?.name ?? "Carrier",
+      dealId,
+      source: "recordManualAttempt",
+    });
+  } catch (error) {
+    console.error("auto question gap capture failed", error);
+  }
 
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/carriers/logs");

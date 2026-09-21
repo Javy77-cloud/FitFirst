@@ -72,6 +72,21 @@ export default async function DeveloperHubPage() {
         </Link>
       </section>
 
+      <section className="mb-6" data-ff-developer-auto-gaps="">
+        <h2 className="mb-2 text-sm font-semibold text-navy">Auto quote gaps</h2>
+        <Link
+          href="/developer/auto-question-gaps"
+          className="ff-card block p-4 hover:border-primary/40"
+          data-ff-developer-auto-gaps-open=""
+        >
+          <div className="text-sm font-semibold text-navy">Carrier questions not on the Auto risk profile</div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Quote pulls append here when a carrier asks for something AUTO_FIELDS and the vehicle,
+            driver, and household blocks do not already have. Same question bumps the count.
+          </p>
+        </Link>
+      </section>
+
       <section className="mb-6" data-ff-developer-gaps="">
         <h2 className="mb-2 text-sm font-semibold text-navy">Missing questions</h2>
         <Link
