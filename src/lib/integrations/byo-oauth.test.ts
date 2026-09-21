@@ -230,4 +230,12 @@ describe("BYO OAuth wave", () => {
     expect(rangesOverlap(a, b, e, f)).toBe(false);
     expect(rangesOverlap(a, b, a, b)).toBe(true);
   });
+
+  it("saveByoApp writes the own provider row, not a Google sibling", () => {
+    const store = readFileSync("src/lib/integrations/oauth-store.ts", "utf8");
+    expect(store).toMatch(/Always write the OWN provider row/);
+    expect(store).toMatch(/const own = await loadByoConnection\(input\.provider\)/);
+    expect(store).toMatch(/where\(eq\(integrationConnections\.id, own\.id\)\)/);
+  });
+
 });
