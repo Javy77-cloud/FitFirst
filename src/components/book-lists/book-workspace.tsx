@@ -48,6 +48,7 @@ export function BookCommandWorkspace({
   empty,
   banner,
   lineSettings,
+  preserve,
   renderExtra,
   renderLeading,
   children,
@@ -63,6 +64,7 @@ export function BookCommandWorkspace({
   empty: string;
   banner?: BookKpiStripModel | null;
   lineSettings?: { writeLife: boolean; writeHealth: boolean };
+  preserve?: Record<string, string | undefined>;
   renderExtra?: (card: BookGlanceCard) => ReactNode;
   renderLeading?: (card: BookGlanceCard) => ReactNode;
   children?: ReactNode;
@@ -96,8 +98,18 @@ export function BookCommandWorkspace({
 
   return (
     <div className="ff-deals-command" data-ff-book-command={surface} data-ff-book-layout={layout}>
-      {kpi ? <BookKpiStrip label={kpi.label} items={kpi.items} share={kpi.share} /> : null}
-      <BookLenses surface={surface} path={path} heat={heat} lens={lens} q={q} counts={counts} />
+      {kpi ? (
+        <BookKpiStrip label={kpi.label} items={kpi.items} share={kpi.share} shareTitle={kpi.shareLabel} />
+      ) : null}
+      <BookLenses
+        surface={surface}
+        path={path}
+        heat={heat}
+        lens={lens}
+        q={q}
+        counts={counts}
+        extra={preserve}
+      />
       {children}
       <BookLiveScope moduleId={SEARCH_MODULE[surface]} initialQuery={q ?? ""}>
         {layout === "bands" ? (

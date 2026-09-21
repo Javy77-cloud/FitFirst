@@ -2,7 +2,7 @@ import type { BookKpiItem, BookKpiShare } from "@/lib/book-lists/kpi";
 
 const SHARE_COLORS = ["var(--ff-navy)", "var(--ff-heat-near-cold)", "var(--ff-urgency-amber)", "var(--ff-border)"] as const;
 
-function SharePie({ share }: { share: BookKpiShare[] }) {
+function SharePie({ share, title }: { share: BookKpiShare[]; title: string }) {
   let cursor = 0;
   const stops = share.map((slice, index) => {
     const start = cursor;
@@ -12,13 +12,14 @@ function SharePie({ share }: { share: BookKpiShare[] }) {
   });
   return (
     <div className="ff-book-share" data-ff-book-share="">
+      <p className="ff-book-share-title">{title}</p>
       <span
         className="ff-book-share-pie"
         style={{ background: `conic-gradient(${stops.join(", ")})` }}
         aria-hidden
       />
       <ul>
-        {share.slice(0, 3).map((slice) => (
+        {share.map((slice) => (
           <li key={slice.name}>
             <strong>{slice.pct}%</strong> {slice.name}
           </li>
@@ -32,10 +33,12 @@ export function BookKpiStrip({
   label,
   items,
   share = null,
+  shareTitle = "Premium share",
 }: {
   label: string;
   items: BookKpiItem[];
   share?: BookKpiShare[] | null;
+  shareTitle?: string | null;
 }) {
   return (
     <section className="ff-book-kpi" data-ff-book-kpi="" aria-label={label}>
@@ -50,7 +53,7 @@ export function BookKpiStrip({
           {item.hint ? <em>{item.hint}</em> : null}
         </div>
       ))}
-      {share && share.length > 1 ? <SharePie share={share} /> : null}
+      {share && share.length > 1 ? <SharePie share={share} title={shareTitle || "Premium share"} /> : null}
     </section>
   );
 }

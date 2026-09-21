@@ -1,4 +1,4 @@
-import type { BookGlanceCard, BookHeat, BookLensId, BookSurface } from "./types";
+import type { BookFamily, BookGlanceCard, BookHeat, BookLensId, BookSurface } from "./types";
 
 const LENS_IDS = new Set<BookLensId>([
   "clients",
@@ -23,6 +23,13 @@ const HEATS = new Set<BookHeat>(["hot", "cooling", "cold"]);
 export function parseBookHeat(value: string | null | undefined): BookHeat | null {
   if (!value) return null;
   return HEATS.has(value as BookHeat) ? (value as BookHeat) : null;
+}
+
+const LOBS = new Set<BookFamily>(["pc", "life", "health"]);
+
+export function parseBookLob(value: string | null | undefined): BookFamily | null {
+  if (!value) return null;
+  return LOBS.has(value as BookFamily) ? (value as BookFamily) : null;
 }
 
 export function parseBookLens(value: string | null | undefined): BookLensId | null {

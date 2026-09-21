@@ -12,6 +12,7 @@ export function BookLenses({
   lens,
   q,
   counts,
+  extra,
 }: {
   surface: BookSurface;
   path: string;
@@ -19,6 +20,7 @@ export function BookLenses({
   lens: BookLensId | null;
   q?: string | null;
   counts: Record<HeatLevel, number>;
+  extra?: Record<string, string | undefined>;
 }) {
   const saved = lensesFor(surface);
   return (
@@ -32,6 +34,7 @@ export function BookLenses({
               q,
               lens,
               heat: heat === id ? null : id,
+              extra,
             })}
             className={cn("ff-heat-lens", `ff-heat-${id}`, heat === id && "is-on")}
             data-ff-heat-chip={id}
@@ -52,6 +55,7 @@ export function BookLenses({
               q,
               heat: null,
               lens: lens === item.id ? null : item.id,
+              extra,
             })}
             className={chipTabClass(lens === item.id)}
             data-ff-book-lens={item.id}

@@ -7,6 +7,7 @@ import { alertVisibleWhere } from "@/lib/alerts/visibility";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { sessionCanRevealPortal } from "@/lib/policy/agent-policy-access-prefs";
 import { isUuid } from "@/lib/ids";
+import { partyPolicyGlance } from "@/lib/book-lists/party-stats";
 import { clientStatusFromCounts, isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
 import { addUtcDays, deskNow, priorMonth, startOfUtcMonth, endOfUtcMonth } from "@/lib/home/as-of";
 import {
@@ -807,6 +808,7 @@ export async function listContacts(filter: { status?: string; ownerId?: string; 
     .select({ contactId: activities.contactId, updatedAt: activities.updatedAt, startAt: activities.startAt })
     .from(activities)
     .where(eq(activities.tenantId, tenant()));
+  const asOf = deskNow();
   const loggedByContact = new Map<string, Date>();
   const lastByContact = new Map<string, Date>();
   for (const row of activityRows) {
@@ -831,6 +833,7 @@ export async function listContacts(filter: { status?: string; ownerId?: string; 
       inForce: related.filter((p) => isInForcePolicyStatus(p.status)).length,
       lifetimeDeals: relatedDeals.length,
     };
+    const book = partyPolicyGlance(related, asOf, isInForcePolicyStatus);
     const lastActivityAt = lastByContact.get(contact.id) ?? contact.updatedAt ?? null;
     return {
       ...contact,
@@ -839,6 +842,8 @@ export async function listContacts(filter: { status?: string; ownerId?: string; 
       lifetimeDealCount: counts.lifetimeDeals,
       lastActivityAt,
       loggedTouchAt: loggedByContact.get(contact.id) ?? null,
+      premiumBook: book.premium,
+      nearestRenewalDays: book.nearestRenewalDays,
       clientStatus: clientStatusFromCounts(counts.lifetime, counts.inForce),
     };
   }).filter((row) => {
@@ -867,14 +872,42 @@ export async function listAccounts(filter: { status?: string; city?: string; ind
     .from(policies)
     .where(eq(policies.tenantId, tenant()));
   const allLinks = await db
-    .select({ accountId: contactAccounts.accountId, ownerId: contacts.ownerId })
+    .select({
+      accountId: contactAccounts.accountId,
+      contactId: contactAccounts.contactId,
+      role: contactAccounts.role,
+      ownerId: contacts.ownerId,
+      firstName: contacts.firstName,
+      lastName: contacts.lastName,
+    })
     .from(contactAccounts)
     .innerJoin(contacts, eq(contactAccounts.contactId, contacts.id))
     .where(eq(contactAccounts.tenantId, tenant()));
   const linkCountByAccount = new Map<string, number>();
+  const nameByContact = new Map<string, string>();
   for (const link of allLinks) {
     linkCountByAccount.set(link.accountId, (linkCountByAccount.get(link.accountId) ?? 0) + 1);
+    const name = [link.firstName, link.lastName].filter(Boolean).join(" ").trim();
+    if (name) nameByContact.set(link.contactId, name);
   }
+  const missingOfficers = [
+    ...new Set(
+      rows
+        .map((account) => account.officerContactId)
+        .filter((id): id is string => Boolean(id) && !nameByContact.has(id as string)),
+    ),
+  ];
+  if (missingOfficers.length > 0) {
+    const officers = await db
+      .select({ id: contacts.id, firstName: contacts.firstName, lastName: contacts.lastName })
+      .from(contacts)
+      .where(and(eq(contacts.tenantId, tenant()), inArray(contacts.id, missingOfficers)));
+    for (const officer of officers) {
+      const name = [officer.firstName, officer.lastName].filter(Boolean).join(" ").trim();
+      if (name) nameByContact.set(officer.id, name);
+    }
+  }
+  const asOf = deskNow();
   const activityRows = await db
     .select({
       accountId: activities.accountId,
@@ -905,7 +938,15 @@ export async function listAccounts(filter: { status?: string; city?: string; ind
       lifetime: related.length,
       inForce: related.filter((p) => isInForcePolicyStatus(p.status)).length,
     };
+    const book = partyPolicyGlance(related, asOf, isInForcePolicyStatus);
     const industry = account.industry || account.naics || account.operations || null;
+    const linked = allLinks.filter((link) => link.accountId === account.id);
+    const principal = linked.find((link) => /principal|owner|primary/i.test(link.role ?? ""));
+    const primaryContactName =
+      (account.officerContactId ? nameByContact.get(account.officerContactId) : null) ||
+      (principal ? nameByContact.get(principal.contactId) : null) ||
+      (linked[0] ? nameByContact.get(linked[0].contactId) : null) ||
+      null;
     const lastActivityAt = lastByAccount.get(account.id) ?? account.updatedAt ?? null;
     return {
       ...account,
@@ -913,6 +954,9 @@ export async function listAccounts(filter: { status?: string; city?: string; ind
       policyCount: counts.lifetime,
       activePolicyCount: counts.inForce,
       linkedContactsCount: linkCountByAccount.get(account.id) ?? 0,
+      primaryContactName,
+      premiumBook: book.premium,
+      nearestRenewalDays: book.nearestRenewalDays,
       lastActivityAt,
       loggedTouchAt: loggedByAccount.get(account.id) ?? null,
       clientStatus: clientStatusFromCounts(counts.lifetime, counts.inForce),

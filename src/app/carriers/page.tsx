@@ -28,10 +28,11 @@ import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
 import Link from "next/link";
 import { AddCarrierDialog } from "@/components/carriers/add-carrier-dialog";
+import { CarrierLobFilter } from "@/components/book-lists/carrier-lob-filter";
 import { BookCommandWorkspace } from "@/components/book-lists/book-workspace";
 import { loadCarrierLobUsage, loadCarrierMarketSignals } from "@/lib/book-lists/load";
 import { carrierMarketGlance } from "@/lib/book-lists/kpi";
-import { matchesBookLens, parseBookHeat, parseBookLens } from "@/lib/book-lists/lenses";
+import { matchesBookLens, parseBookHeat, parseBookLens, parseBookLob } from "@/lib/book-lists/lenses";
 import { presentCarrierCard } from "@/lib/book-lists/present";
 import { bookFamily } from "@/lib/desk/policy-line";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
@@ -89,6 +90,7 @@ export default async function CarriersPage({
   const q = firstParam(params.q) ?? "";
   const heat = parseBookHeat(firstParam(params.heat));
   const lens = parseBookLens(firstParam(params.lens));
+  const requestedLob = parseBookLob(firstParam(params.lob));
   const [all, tagCatalog, pageFilters, session, usage, lineSettings] = await Promise.all([
     listCarriersDesk(),
     listModuleTags("carriers").catch(() => []),
@@ -97,6 +99,24 @@ export default async function CarriersPage({
     loadCarrierLobUsage(),
     loadDeskLineSettings(),
   ]);
+  const lobChoices = lineSettings.writeLife || lineSettings.writeHealth;
+  const lob =
+    lobChoices &&
+    requestedLob &&
+    (requestedLob === "pc" ||
+      (requestedLob === "life" && lineSettings.writeLife) ||
+      (requestedLob === "health" && lineSettings.writeHealth))
+      ? requestedLob
+      : null;
+  const familiesByCarrier = new Map<string, Array<"pc" | "life" | "health">>();
+  for (const row of usage) {
+    const family = bookFamily(row.lineOfBusiness);
+    if (family === "life" && !lineSettings.writeLife) continue;
+    if (family === "health" && !lineSettings.writeHealth) continue;
+    const prev = familiesByCarrier.get(row.carrierId) ?? [];
+    if (!prev.includes(family)) prev.push(family);
+    familiesByCarrier.set(row.carrierId, prev);
+  }
   const visibleFilters = enabledPageFilters(pageFilters);
   const filter = pickFilterParams(params, pageFilterParamKeys(visibleFilters));
   const filtered = all.filter((row) => {
@@ -142,31 +162,37 @@ export default async function CarriersPage({
   const cards = filtered
     .map((row) =>
       presentCarrierCard(
-        row.carrier,
-        signals.get(row.carrier.id) ?? {
-          rateable: null,
-          skipDecline: false,
-          skipWhy: null,
-          limited: false,
-          appetiteLines: row.carrier.writtenLines ?? [],
-          dontWrite: [],
-          lastUseAt: row.lastQuoteAt ?? row.lastIssuedAt,
-          lastUseKind: row.lastQuoteAt ? "quote" : row.lastIssuedAt ? "issued" : null,
-          declineCount: 0,
-          skipCount: 0,
-          activePolicies: row.activePolicyCount,
+        { ...row.carrier, premiumVolume: row.premiumVolume },
+        {
+          ...(signals.get(row.carrier.id) ?? {
+            rateable: null,
+            skipDecline: false,
+            skipWhy: null,
+            limited: false,
+            appetiteLines: row.carrier.writtenLines ?? [],
+            dontWrite: [],
+            lastUseAt: row.lastQuoteAt ?? row.lastIssuedAt,
+            lastUseKind: row.lastQuoteAt ? "quote" : row.lastIssuedAt ? "issued" : null,
+            declineCount: 0,
+            skipCount: 0,
+            activePolicies: row.activePolicyCount,
+          }),
+          premiumVolume: row.premiumVolume,
+          bookFamilies: familiesByCarrier.get(row.carrier.id) ?? [],
         },
         asOf,
         lineSettings,
       ),
     )
-    .filter((card) => matchesBookLens(card, { heat, lens, q: heat || lens ? q : "" }));
+    .filter((card) => matchesBookLens(card, { heat, lens, q: heat || lens ? q : "" }))
+    .filter((card) => !lob || (card.flags.families ?? []).includes(lob));
   const shownCarriers = new Set(cards.map((card) => card.id));
   const market = carrierMarketGlance({
-    writeLife: lineSettings.writeLife,
-    writeHealth: lineSettings.writeHealth,
+    writeLife: lob ? lob === "life" : lineSettings.writeLife,
+    writeHealth: lob ? lob === "health" : lineSettings.writeHealth,
     usage: usage
       .filter((row) => shownCarriers.has(row.carrierId))
+      .filter((row) => !lob || bookFamily(row.lineOfBusiness) === lob)
       .map((row) => ({
         carrierId: row.carrierId,
         carrierName: row.carrierName,
@@ -175,6 +201,8 @@ export default async function CarriersPage({
         premium: row.premium,
       })),
   });
+  const shareLabel =
+    lob === "life" ? "Life premium" : lob === "health" ? "Health premium" : lob === "pc" ? "P&C premium" : "Premium share";
 
   const appetiteHits = q
     ? filtered
@@ -270,7 +298,7 @@ export default async function CarriersPage({
           moduleId="carriers"
           fields={filterFieldsFromPageFilters(visibleFilters)}
           searchPlaceholder="Find a market, appetite, or don't-write…"
-          preserveParams={["heat", "lens"]}
+          preserveParams={["heat", "lens", "lob"]}
           canConfigure={session.isAdmin}
           searchClassName={PAGE_FILTER_SEARCH_CLASS}
           searchInputClassName={PAGE_FILTER_SEARCH_INPUT_CLASS}
@@ -306,7 +334,8 @@ export default async function CarriersPage({
           lens={lens}
           q={q}
           empty="No markets in this lens. Clear a chip or add a carrier."
-          banner={market}
+          banner={{ ...market, shareLabel }}
+          preserve={lob ? { lob } : undefined}
           renderLeading={(card) => <SelectRowCheckbox id={card.id} />}
           renderExtra={(card) => (
             <>
@@ -319,7 +348,17 @@ export default async function CarriersPage({
               <span className="sr-only">{tagSortText(card.tags)}</span>
             </>
           )}
-        />
+        >
+          <CarrierLobFilter
+            path="/carriers"
+            lob={lob}
+            heat={heat}
+            lens={lens}
+            q={q}
+            writeLife={lineSettings.writeLife}
+            writeHealth={lineSettings.writeHealth}
+          />
+        </BookCommandWorkspace>
       </ModuleListActions>
     </AppShell>
   );

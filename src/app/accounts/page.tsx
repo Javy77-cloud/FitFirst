@@ -104,7 +104,7 @@ export default async function AccountsPage({
     <AppShell title="Accounts">
       <SavedToast show={saved} message="Account saved." listHref="/accounts" />
       <p className="mb-3 text-base text-muted-foreground">
-        Orgs that need a touch — book size and open shops as cues, not a column wall.
+        Accounts to reach — book size, open shops, and who to call, not a column wall.
       </p>
       <div
         className="mb-3 rounded-xl border border-border/80 bg-card/80 px-3 py-2 shadow-sm"

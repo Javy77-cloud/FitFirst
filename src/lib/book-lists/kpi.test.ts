@@ -43,7 +43,12 @@ describe("book desk KPIs", () => {
       ["email", "1"],
       ["recent", "1"],
       ["never", "2"],
+      ["deals", "0"],
+      ["renewing", "0"],
     ]);
+    expect(model.items.find((item) => item.id === "recent")?.label).toBe("Reached lately");
+    expect(model.items.find((item) => item.id === "never")?.label).toBe("Not reached");
+    expect(model.items.some((item) => /touch/i.test(item.label))).toBe(false);
     expect(model.items.some((item) => item.id === "portal")).toBe(false);
     expect(model.share).toBeNull();
   });
@@ -64,11 +69,19 @@ describe("book desk KPIs", () => {
       card({ id: "4", column: "current", surface: "policies", flags: { family: "pc" } }),
     ];
     const both = policyBookKpis(cards, { writeLife: true, writeHealth: true });
-    expect(both.items.map((item) => item.id)).toEqual(["now", "watch", "current", "pc", "life", "health"]);
+    expect(both.items.map((item) => item.id)).toEqual([
+      "now",
+      "watch",
+      "current",
+      "renewing",
+      "pc",
+      "life",
+      "health",
+    ]);
     expect(both.items.find((item) => item.id === "now")?.value).toBe("1");
     expect(both.items.find((item) => item.id === "pc")?.value).toBe("2");
     const pcOnly = policyBookKpis(cards, { writeLife: false, writeHealth: false });
-    expect(pcOnly.items.map((item) => item.id)).toEqual(["now", "watch", "current", "pc"]);
+    expect(pcOnly.items.map((item) => item.id)).toEqual(["now", "watch", "current", "renewing", "pc"]);
   });
 
   it("names the most-used carrier per enabled book and skips a one-slice pie", () => {

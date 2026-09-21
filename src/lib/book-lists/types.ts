@@ -43,6 +43,22 @@ export type BookCardFlags = {
   neverTouched?: boolean;
   portalContact?: boolean;
   family?: BookFamily;
+  /** Lines this carrier actually writes or has in force. */
+  families?: BookFamily[];
+  openClaims?: number;
+};
+
+export type BookCardFact = {
+  id: string;
+  label: string;
+  href?: string | null;
+  tone?: "hot" | "ok" | "cool";
+};
+
+/** Fixed glance columns so the same tag starts on the same vertical line. */
+export type BookCueColumn = {
+  id: string;
+  label: string;
 };
 
 export type BookCardAction = {
@@ -68,6 +84,10 @@ export type BookGlanceCard = {
   /** Center glance. Two cues at most — same rule as Deals. */
   mid?: string | null;
   midHref?: string | null;
+  /** Aligned tags (carrier posture, last use). Replaces the centered mid line. */
+  columns?: BookCueColumn[] | null;
+  /** Short chips under the name. Four at most. */
+  facts?: BookCardFact[];
   /** One quiet line under the name. Only when it earns a look. */
   peek?: string | null;
   actions?: BookCardAction[];

@@ -119,7 +119,7 @@ export default async function ContactsPage({
     <AppShell title="Contacts">
       <SavedToast show={saved} message="Contact saved." listHref="/contacts" />
       <p className="mb-3 text-base text-muted-foreground">
-        People who need a touch today. Search and lenses — not a spreadsheet wall.
+        People to reach today. Search and lenses — not a spreadsheet wall.
       </p>
       {hsReviewCount > 0 ? (
         <p className="mb-3 text-sm text-muted-foreground" data-ff-healthsherpa-review-banner="">

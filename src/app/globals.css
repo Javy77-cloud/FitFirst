@@ -4169,19 +4169,32 @@ tr[data-ff-activity-selected="true"] {
   font-weight: 650;
 }
 .ff-book-share {
-  display: flex;
+  display: grid;
+  grid-template-columns: 3.35rem minmax(10.5rem, 1fr);
+  grid-template-rows: auto auto;
   align-items: center;
-  gap: 0.55rem;
+  column-gap: 0.75rem;
+  row-gap: 0.12rem;
   margin-left: auto;
-  padding: 0.35rem 0.7rem;
+  min-width: 16.75rem;
+  padding: 0.4rem 0.9rem 0.45rem 0.7rem;
   border: 1px solid color-mix(in srgb, var(--ff-navy) 14%, var(--ff-border));
   border-radius: 0.65rem;
   background: #fff;
   box-shadow: var(--ff-shadow);
 }
+.ff-book-share-title {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--ff-muted);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
 .ff-book-share-pie {
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 3.35rem;
+  height: 3.35rem;
   border-radius: 999px;
   flex: 0 0 auto;
 }
@@ -4190,12 +4203,64 @@ tr[data-ff-activity-selected="true"] {
   padding: 0;
   list-style: none;
   color: var(--ff-navy);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 650;
+  line-height: 1.35;
 }
 .ff-book-share strong {
   font-variant-numeric: tabular-nums;
 }
+.ff-book-card .ff-stack-mid {
+  text-align: left;
+}
+.ff-book-columns {
+  display: grid;
+  grid-template-columns: minmax(8.75rem, 1.05fr) minmax(8.25rem, 0.95fr);
+  width: 100%;
+  max-width: 19.5rem;
+  justify-self: end;
+  gap: 0.35rem 0.7rem;
+  align-items: baseline;
+}
+.ff-stack-card-spread:has(.ff-book-columns) {
+  grid-template-columns: minmax(0, 1.1fr) minmax(17rem, 0.95fr);
+}
+.ff-book-columns span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  color: var(--ff-navy);
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+.ff-book-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem 0.35rem;
+  margin: 0.16rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ff-book-facts li {
+  border-radius: 999px;
+  padding: 0.04rem 0.48rem;
+  background: color-mix(in srgb, var(--ff-navy) 7%, white);
+  color: var(--ff-navy);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ff-book-facts li.is-hot {
+  background: color-mix(in srgb, var(--ff-terracotta) 14%, white);
+  color: var(--ff-terracotta);
+}
+.ff-book-facts a {
+  color: inherit;
+  text-decoration: none;
+}
+.ff-book-facts a:hover { text-decoration: underline; }
 .ff-book-peek,
 .ff-book-channels,
 .ff-book-actions {
@@ -4264,6 +4329,18 @@ tr[data-ff-activity-selected="true"] {
 @media (max-width: 48rem) {
   .ff-book-board {
     grid-template-columns: minmax(16rem, 1fr);
+  }
+  .ff-book-share {
+    margin-left: 0;
+    min-width: 0;
+    width: 100%;
+  }
+  .ff-stack-card-spread:has(.ff-book-columns) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ff-book-columns {
+    max-width: none;
+    justify-self: stretch;
   }
 }
 
