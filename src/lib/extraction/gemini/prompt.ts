@@ -284,27 +284,28 @@ Rules:
 `;
   }
   if (line === "auto" || line === "motorcycle" || line === "commercial_auto") {
-    return `You extract structured fields from Florida personal Auto insurance documents
-(auto declaration page, ID card, declarations photos, related insured).
+    return `You read personal Auto policies and Auto declarations (phone photos and PDFs) into an Auto risk profile.
+In scope: carrier declaration pages, auto policy jackets, ID cards, and ACORD 90 (Progressive, GEICO, State Farm, Allstate, Travelers, and similar). This is not a homeowners dec.
 
 Document type hint: ${kind}
 Shop line: Auto
 
-Rules:
-- Return ONLY a single JSON object. No markdown fences, no commentary.
-- Keys MUST be exactly from this list (omit unknown keys or set value null):
-  ${keys.join(", ")}
-- Each present key maps to an object: { "value": string|null, "confidence": number }
-  where confidence is 0..1 (1 = clearly printed on the page).
-- Extract ONLY what is written on the page. Never invent.
-- If unknown or not present: value null and low confidence.
-- VIN: full 17 characters when printed. Year/make/model per vehicle.
-- Drivers: for EVERY listed driver, extract demographics when printed — name, DOB, gender (Male/Female), industry, occupation, education_level, marital_status, license #, license status, years licensed, household status (Resident / Occasional / Excluded driver / Listed driver / Non-resident), exclude reason, age first licensed, suspension in last 5 years.
-- Relationship: Driver 1 is the named insured — NEVER output driver_1_relationship (no relationship-to-self). For drivers 2+ use relationship relative to Driver 1 (Spouse / Child / Parent / Sibling / Other relative / Roommate / Excluded / Listed non-driver).
-- Do not extract employment / employment status. Industry and occupation are separate fields.
-- Money: digits only (no $). Dates: keep as printed.
-- named_insured / current_policy_name_insured: primary named insured on the auto dec.
-- liability_bi / liability_pd / um_uim / pip / comprehensive deductible (comp_deductible) / collision_deductible when printed. Spell comprehensive in values when a label is needed — never shorthand "comp" for that coverage.
+Return ONLY one JSON object. No markdown. Omit keys that are not printed. Never invent. Never return an empty object when a VIN, vehicle, driver, coverage, date, carrier, or policy number is visible. Do not mark the page not_declaration.
+
+Each present key is { "value": string, "confidence": number } (confidence 0..1) or a plain string.
+
+Fill these first, in this order, when printed:
+1. Vehicles and VIN. vin is the 17-character vehicle identification number. vehicle_year, vehicle_make, vehicle_model from columns or from one cell such as "2019 TOYOTA CAMRY". More vehicles: vehicle_2_*, vehicle_3_*, vehicle_4_* (vin, year, make, model).
+2. Drivers. driver_1_name, driver_1_dob, driver_1_license, then driver_2_name, driver_2_dob, driver_2_license. Add gender (Male/Female only), marital status, and relationship for drivers 2+ when printed. Never fill driver_1_relationship. Never fill employment — use industry and occupation only when printed.
+3. Coverage limits from the coverage table. Bodily Injury → liability_bi as 100/300 (not 100000/300000). Property Damage → liability_pd digits (100000). Uninsured or Underinsured Motorist → um_uim. PIP or Personal Injury Protection → pip digits. Comprehensive or Other Than Collision → comp_deductible (comprehensive deductible). Collision → collision_deductible.
+4. Dates. Policy period from/to → effective_date and expiration_date, as printed.
+5. Carrier and policy number. Writing company / insurer → current_carrier. Policy # / Policy No / Policy Number → policy_number.
+
+Example (include only keys you can read):
+{"vin":{"value":"4T1B11HK5KU123456","confidence":0.95},"vehicle_year":{"value":"2019","confidence":0.95},"vehicle_make":{"value":"TOYOTA","confidence":0.95},"vehicle_model":{"value":"CAMRY","confidence":0.9},"driver_1_name":{"value":"Alex Rivera","confidence":0.95},"driver_1_dob":{"value":"04/02/1984","confidence":0.9},"driver_1_license":{"value":"R400-123-45-678","confidence":0.9},"liability_bi":{"value":"100/300","confidence":0.9},"liability_pd":{"value":"100000","confidence":0.9},"um_uim":{"value":"100/300","confidence":0.9},"pip":{"value":"10000","confidence":0.9},"comp_deductible":{"value":"500","confidence":0.9},"collision_deductible":{"value":"500","confidence":0.9},"effective_date":{"value":"03/15/2026","confidence":0.9},"expiration_date":{"value":"09/15/2026","confidence":0.9},"current_carrier":{"value":"Progressive","confidence":0.9},"policy_number":{"value":"PA-441902","confidence":0.95}}
+
+Other allowed keys when printed: ${keys.join(", ")}
+Money: digits only (no $). Dates: keep as printed.
 `;
   }
   return `You extract structured fields from Florida personal-lines insurance documents
@@ -391,7 +392,7 @@ export function buildGeminiUserPrompt(docType?: string | null, shopLine?: string
   const line = (shopLine ?? "").trim().toLowerCase();
   if (line === "auto" || line === "motorcycle" || line === "commercial_auto") {
     focus =
-      "This is a personal Auto declaration / ID card / photo of an auto dec. MUST fill when present: named_insured/current_policy_name_insured, secondary_named_insured, phone, email, mailing_address, city, state, zip, vin, vehicle_year, vehicle_make, vehicle_model, vehicle_usage, annual_miles, rideshare, aftermarket_parts, garaging_zip, garaging_address, vehicle_2_* / vehicle_3_* / vehicle_4_* for additional vehicles, and for each listed driver (1–4): name, dob, gender (Male/Female only), industry, occupation, education_level, marital_status, license, license status, years_licensed, household_status, exclude_reason, age_first_licensed, suspension_5yr. For drivers 2+ also fill relationship relative to Driver 1. Never fill driver_1_relationship. Never fill employment / employment status — use industry + occupation only. Also fill applicant_gender, applicant_industry, applicant_occupation, accidents_3yr, violations_3yr, liability_bi, liability_pd, um_uim, pip, comp_deductible (comprehensive deductible), collision_deductible, policy_number, current_premium, current_carrier, effective_date, expiration_date, years_with_carrier, currently_insured. For vehicle_usage use Personal / Commute / Business / Farm when stated. For annual_miles map stated yearly miles into the closest bracket (0 – 2,999 … 11,000 – 11,999, then 12,000 – 14,999 / 15,000 – 19,999 / 20,000 – 24,999 / 25,000+). For rideshare answer yes/no if the dec or notes mention Uber/Lyft/TNC. For aftermarket_parts answer yes/no for non-factory/custom/aftermarket equipment. For currently_insured map continuous coverage or lapse wording into one of: Currently insured 6 months or more; Lapse within last 30 days — 7 days or less; Lapse within last 30 days — 8 to 14 days; Lapse within last 30 days — 15 to 30 days; More than 30 days lapse in the last 6 months / no prior insurance; Other. Read every vehicle and driver block you can see. Do not treat this as homeowners / Coverage A.";
+      "This photo or PDF is an Auto policy or Auto declaration (carrier dec, policy jacket, ID card, or ACORD 90). Do not treat this as homeowners / Coverage A. Read the page and fill, in order: vin and vehicle_year / vehicle_make / vehicle_model (split a cell like 2019 TOYOTA CAMRY; vehicle_2_* for the next car); driver_1_name, driver_1_dob, driver_1_license and driver_2_* when a second driver is listed; coverage limits from the coverage table — Bodily Injury liability_bi as 100/300, Property Damage liability_pd as digits, UM/UIM um_uim, PIP pip, comprehensive deductible comp_deductible, collision_deductible; effective_date and expiration_date from the policy period; current_carrier and policy_number. Also fill when printed: industry, occupation, gender (Male/Female only), marital status, garaging address and ZIP, premium. Never fill driver_1_relationship. Never fill employment / employment status — use industry + occupation only. Do not return {} and do not mark the page not_declaration when a VIN, vehicle, driver, or coverage table is visible.";
   }
   return `Extract the JSON field object from this ${docType || "insurance"} document. ${focus} Invent nothing. Do not return an empty object when fields are visible.`;
 }

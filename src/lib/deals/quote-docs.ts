@@ -47,3 +47,49 @@ export function shopLineFromSourceDoc(doc: QuoteDocLike): string | null {
   if (/home|ho3|dec|wind.?mit|4.?point|four.?point/.test(blob)) return "home";
   return null;
 }
+
+const HO_DOC_BLOB = /homeowners|wind.?mit|4.?point|four.?point|ho-?3|oir-b1/i;
+const AUTO_DOC_BLOB = /\bauto\b|\bvin\b|id.?card|acord\s*90/i;
+
+/**
+ * Shop line for a Gemini extract call.
+ * A photo typed as "dec" is not automatically Home — an Auto deal's declaration
+ * photo must use the Auto key list or the model returns an empty object.
+ */
+export function shopLineForGeminiExtract(opts: {
+  docType?: string | null;
+  filename?: string | null;
+  tags?: string[] | null;
+  quotingLine?: string | null;
+}): string | null {
+  for (const tag of opts.tags ?? []) {
+    if (!tag.startsWith("line:")) continue;
+    const key = tag.slice("line:".length).trim().toLowerCase();
+    if (key === "auto" || key === "motorcycle" || key === "commercial_auto") return "auto";
+    if (key === "home" || key === "flood") return key;
+  }
+  const blob = `${opts.filename ?? ""} ${opts.docType ?? ""}`;
+  if (AUTO_DOC_BLOB.test(blob) && !HO_DOC_BLOB.test(blob)) return "auto";
+  const doc = (opts.docType ?? "").trim().toLowerCase();
+  const quoting = (opts.quotingLine ?? "").trim().toLowerCase();
+  const photoOrDec =
+    doc === "" ||
+    doc === "photo" ||
+    doc === "dec" ||
+    doc === "policy" ||
+    doc === "current_policy" ||
+    doc.includes("dec") ||
+    doc.includes("photo") ||
+    doc.includes("declar");
+  if (
+    (quoting === "auto" || quoting === "motorcycle" || quoting === "commercial_auto") &&
+    photoOrDec &&
+    !HO_DOC_BLOB.test(blob)
+  ) {
+    return "auto";
+  }
+  return (
+    shopLineFromSourceDoc({ docType: opts.docType, tags: opts.tags }) ??
+    (quoting || null)
+  );
+}

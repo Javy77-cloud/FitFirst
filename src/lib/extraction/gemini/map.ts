@@ -1,5 +1,6 @@
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
 import type { ExtractedField, ExtractionResult, UnmappedExtractLabel } from "@/lib/extraction/extract";
+import { expandAutoDecLayout } from "./auto-layout";
 import { GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, GEMINI_LETTER_EXTRACT_JSON_KEYS, type GeminiExtractKey } from "./prompt";
 
 /** Gemini JSON key → one or more sheet / extract field keys. */
@@ -39,6 +40,12 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   wind_hail_deductible: ["wind_hail_deductible"],
   current_policy_name_insured: ["named_insured", "current_policy_named_insured"],
   policy_number: ["policy_number"],
+  policy: ["policy_number"],
+  pol: ["policy_number"],
+  carrier: ["current_carrier"],
+  carrier_name: ["current_carrier"],
+  company_name: ["current_carrier"],
+  insurer_name: ["current_carrier"],
   policy_no: ["policy_number", "policy_no"],
   policy_num: ["policy_number", "policy_num"],
   pol_number: ["policy_number", "pol_number"],
@@ -234,19 +241,29 @@ function clampConfidence(n: number): number {
   return Math.min(1, Math.max(0, n));
 }
 
+/** A printed value with no confidence object is a model commitment, not a 0.5 maybe. */
+const BARE_PRINTED_CONFIDENCE = 0.9;
+
 function asPayload(raw: unknown): { value: string; confidence: number } | null {
   if (raw == null) return null;
   if (typeof raw === "string" || typeof raw === "number") {
     const value = String(raw).trim();
-    if (!value || value.toLowerCase() === "null") return null;
-    return { value, confidence: 0.5 };
+    if (!value || value.toLowerCase() === "null" || value.toLowerCase() === "n/a") return null;
+    return { value, confidence: BARE_PRINTED_CONFIDENCE };
   }
-  if (typeof raw !== "object") return null;
-  const obj = raw as GeminiFieldPayload;
-  if (obj.value == null) return null;
-  const value = String(obj.value).trim();
-  if (!value || value.toLowerCase() === "null") return null;
-  const confidence = clampConfidence(Number(obj.confidence ?? 0.5));
+  if (typeof raw !== "object" || Array.isArray(raw)) return null;
+  const obj = raw as GeminiFieldPayload & {
+    text?: string | number | null;
+    limit?: string | number | null;
+    amount?: string | number | null;
+    deductible?: string | number | null;
+  };
+  const rawValue = obj.value ?? obj.text ?? obj.limit ?? obj.amount ?? obj.deductible;
+  if (rawValue == null || typeof rawValue === "object") return null;
+  const value = String(rawValue).trim();
+  if (!value || value.toLowerCase() === "null" || value.toLowerCase() === "n/a") return null;
+  const confidence =
+    obj.confidence == null ? BARE_PRINTED_CONFIDENCE : clampConfidence(Number(obj.confidence));
   return { value, confidence };
 }
 
@@ -356,6 +373,7 @@ function labelForKey(key: string): string {
 export function mapGeminiJsonToFields(
   json: GeminiExtractJson | null | undefined,
   docType?: string | null,
+  shopLine?: string | null,
 ): ExtractionResult {
   const fields: ExtractedField[] = [];
   const unmappedLabels: UnmappedExtractLabel[] = [];
@@ -373,7 +391,8 @@ export function mapGeminiJsonToFields(
     };
   }
 
-  for (const [rawKey, raw] of Object.entries(json)) {
+  const prepared = expandAutoDecLayout(json as Record<string, unknown>, shopLine);
+  for (const [rawKey, raw] of Object.entries(prepared)) {
     const geminiKey = normalizeGeminiJsonKey(rawKey);
     const payload = asPayload(raw);
     if (!payload) continue;

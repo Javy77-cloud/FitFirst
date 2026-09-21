@@ -43,6 +43,18 @@ describe("drop ingest identity", () => {
     );
   });
 
+  it("treats an auto policy PDF as Auto even when the page says Vehicle Identification Number", () => {
+    const policy = `PERSONAL AUTOMOBILE POLICY
+Named Insured: ALEX RIVERA
+Vehicle Identification Number: 4T1B11HK5KU123456
+2019 TOYOTA CAMRY
+Bodily Injury Liability 100/300
+Policy Number: PA-441902
+Effective 03/15/2026 to 09/15/2026`;
+    expect(inferShopLine(policy, "client-auto-policy.pdf", "current_policy")).toBe("auto");
+    expect(inferShopLine(policy, "scan.pdf", "dec")).toBe("auto");
+  });
+
   it("trusts Auto sheet for photo with weak OCR instead of defaulting Home skip", () => {
     expect(
       trustSheetLineForFill({

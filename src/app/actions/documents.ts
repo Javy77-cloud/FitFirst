@@ -60,7 +60,7 @@ import {
   MISSING_GEMINI_KEY_MESSAGE,
 } from "@/lib/extraction/gemini";
 import { inferMimeFromName } from "@/lib/files/urls";
-import { isDocumentsSourceDoc, shopLineFromSourceDoc } from "@/lib/deals/quote-docs";
+import { isDocumentsSourceDoc, shopLineForGeminiExtract, shopLineFromSourceDoc } from "@/lib/deals/quote-docs";
 import { dealSourceSlotForUpload } from "@/lib/documents/restore-deal-docs";
 import { collectUploadedFiles, isUploadedFile } from "@/lib/documents/uploaded-file";
 import { markShopFlowStaleAfterRiskChange } from "@/lib/deals/shop-flow-persist";
@@ -673,7 +673,24 @@ async function runExtraction(documentId: string, dealId: string) {
   let result;
   let engine: "pdf_text" | "ocr" | "gemini" = "gemini";
   if (docTypeUsesGemini(doc.docType)) {
-    const gemini = await extractWithGeminiPdf(buffer, doc.docType, { apiKey: geminiKey, mimeType: doc.mimeType, filename: doc.filename });
+    const [deal] = dealId
+      ? await db
+          .select({ quotingLine: deals.quotingLine })
+          .from(deals)
+          .where(eq(deals.id, dealId))
+      : [];
+    const shopLine = shopLineForGeminiExtract({
+      docType: doc.docType,
+      filename: doc.filename,
+      tags: doc.tags,
+      quotingLine: deal?.quotingLine,
+    });
+    const gemini = await extractWithGeminiPdf(buffer, doc.docType, {
+      apiKey: geminiKey,
+      mimeType: doc.mimeType,
+      filename: doc.filename,
+      shopLine,
+    });
     engine = "gemini";
     if (!gemini.ok) {
       await db

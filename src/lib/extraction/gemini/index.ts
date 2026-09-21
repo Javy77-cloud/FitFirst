@@ -56,7 +56,7 @@ export function docTypeUsesGemini(docType?: string | null): boolean {
   if (t.includes("wind") || t.includes("four") || t.includes("4pt") || t.includes("4-point")) {
     return true;
   }
-  if (t.includes("dec") || t.includes("declar")) return true;
+  if (t.includes("dec") || t.includes("declar") || t.includes("policy")) return true;
   if (t.includes("photo") || t.includes("inspect") || t.includes("report")) return true;
   return false;
 }
