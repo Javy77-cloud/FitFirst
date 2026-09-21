@@ -35,8 +35,9 @@ describe("shared Activity rail", () => {
     expect(css).toMatch(/\.ff-radar-banner/);
     expect(css).toMatch(/\.ff-radar-chart-body \{[^}]*min-height: 5\.2rem/);
     expect(css).not.toMatch(/min-height: calc\(100dvh - 12rem\)/);
-    expect(css).toMatch(/--ff-inbox-open-edge: var\(--ff-navy\)/);
+    expect(css).toMatch(/--ff-inbox-open-edge: var\(--ff-red\)/);
+    expect(css).toMatch(/\.ff-inbox-row\.is-selected \{[^}]*#b6d2f8/);
     expect(css).toMatch(/\.ff-inbox-row\.is-selected \{[^}]*var\(--ff-inbox-open-edge\)/);
-    expect(css).toMatch(/\.ff-inbox-msg\.is-in \{ border-left: 3px solid var\(--ff-inbox-open-edge\)/);
+    expect(css).toMatch(/\.ff-inbox-msg\.is-in \{ border-left: 4px solid var\(--ff-inbox-open-edge\)/);
   });
 });
