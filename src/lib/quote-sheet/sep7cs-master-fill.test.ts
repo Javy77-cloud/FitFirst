@@ -18,9 +18,11 @@ import {
   MASTER_FILL_STEP_DEAL,
   MASTER_FILL_STEP_DOCS,
   MASTER_FILL_STEP_PROPERTY,
+  MASTER_FILL_STEP_TIMEOUT_MS,
   isMasterFillStepResult,
   masterFillBusyTitle,
   masterFillDoneSummary,
+  masterFillStepTimeoutMessage,
   masterFillUnexpectedMessage,
 } from "@/lib/quote-sheet/master-fill";
 
@@ -118,6 +120,15 @@ describe("sep7cs one-button master sheet Fill", () => {
     expect(masterFillUnexpectedMessage(MASTER_FILL_STEP_DOCS)).toMatch(/unexpected response/i);
     expect(action).toMatch(/purpose: "fill"/);
     expect(action).toMatch(/fillMasterSheetStepInner/);
+
+    expect(MASTER_FILL_STEP_TIMEOUT_MS).toBeGreaterThan(30_000);
+    expect(masterFillStepTimeoutMessage(MASTER_FILL_STEP_DOCS)).toMatch(/Docs/);
+    expect(masterFillStepTimeoutMessage(MASTER_FILL_STEP_DOCS)).toMatch(/timed out/i);
+    expect(button).toMatch(/MASTER_FILL_STEP_TIMEOUT_MS/);
+    expect(button).toMatch(/Promise\.race/);
+    expect(action).toMatch(/withDeadline/);
+    expect(action).toMatch(/isImageUpload/);
+    expect(action).toMatch(/photoLike/);
   });
 
   it("copies deal blanks as CHECK and never overwrites agent/confirmed", () => {

@@ -20,9 +20,11 @@ import {
   MASTER_FILL_BUSY_TITLE,
   MASTER_FILL_REVIEW_NUDGE,
   MASTER_FILL_STEP_DEAL,
+  MASTER_FILL_STEP_TIMEOUT_MS,
   isMasterFillStepResult,
   masterFillBusyTitle,
   masterFillDoneSummary,
+  masterFillStepTimeoutMessage,
   masterFillStepsForLine,
   masterFillUnexpectedMessage,
   type MasterFillStepResult,
@@ -57,7 +59,15 @@ export function MasterSheetFillButton({
         setStatus(step.label);
         let raw: unknown;
         try {
-          raw = await fillMasterSheetStep({ dealId, line, step: step.id });
+          raw = await Promise.race([
+            fillMasterSheetStep({ dealId, line, step: step.id }),
+            new Promise<never>((_resolve, reject) => {
+              setTimeout(
+                () => reject(new Error(masterFillStepTimeoutMessage(step.label))),
+                MASTER_FILL_STEP_TIMEOUT_MS,
+              );
+            }),
+          ]);
         } catch (error) {
           const message =
             error instanceof Error && error.message.trim()

@@ -1,4 +1,5 @@
 import path from "node:path";
+import { withDeadline } from "@/lib/async/deadline";
 import { looksLikePdf } from "@/lib/files/urls";
 import type { ExtractedField } from "./extract";
 
@@ -45,19 +46,28 @@ export function classifyIngest(mimeType: string, filename: string, buffer?: Buff
   return { engine: "pdf_text", implemented: true };
 }
 
+/** HEIC convert is CPU-bound and has hung forever on some iPhone uploads. */
+export const HEIC_CONVERT_TIMEOUT_MS = 12_000;
+
 export async function prepareImageBuffer(
   buffer: Buffer,
   mimeType: string,
   filename: string,
+  options?: { timeoutMs?: number },
 ): Promise<Buffer> {
   if (!isHeicUpload(mimeType, filename)) return buffer;
+  const timeoutMs = options?.timeoutMs ?? HEIC_CONVERT_TIMEOUT_MS;
   try {
     const convert = (await import("heic-convert")).default as unknown as (opts: {
       buffer: Buffer;
       format: "JPEG" | "PNG";
       quality?: number;
     }) => Promise<ArrayBuffer>;
-    const jpeg = await convert({ buffer, format: "JPEG", quality: 0.92 });
+    const jpeg = await withDeadline(
+      convert({ buffer, format: "JPEG", quality: 0.92 }),
+      timeoutMs,
+      `HEIC convert timed out after ${timeoutMs}ms (${filename})`,
+    );
     return Buffer.from(jpeg);
   } catch (error) {
     const message = error instanceof Error ? error.message : "HEIC convert failed";

@@ -30,6 +30,10 @@ export const MASTER_FILL_UNEXPECTED =
   "Unexpected response from server. Fields already filled are saved.";
 export const MASTER_FILL_DOCS_FAILED =
   "Could not read docs. Fields already filled are saved.";
+/** Client + server hard wall per Fill step so the modal cannot spin forever. */
+export const MASTER_FILL_STEP_TIMEOUT_MS = 120_000;
+export const MASTER_FILL_STEP_TIMEOUT_MESSAGE =
+  "timed out. Fields already filled are saved — close and retry, or fill by hand.";
 
 export type MasterFillStepId = "deal" | "property" | "docs" | "vin";
 
@@ -76,6 +80,10 @@ export function isMasterFillStepResult(raw: unknown): raw is MasterFillStepResul
 
 export function masterFillUnexpectedMessage(stepLabel: string): string {
   return `${stepLabel} failed — ${MASTER_FILL_UNEXPECTED}`;
+}
+
+export function masterFillStepTimeoutMessage(stepLabel: string): string {
+  return `${stepLabel} ${MASTER_FILL_STEP_TIMEOUT_MESSAGE}`;
 }
 
 export function masterFillDoneSummary(steps: MasterFillStepResult[]): string {

@@ -10,6 +10,7 @@ import { mapGeminiJsonToFields, type GeminiExtractJson } from "./map";
 import type { ExtractionResult } from "@/lib/extraction/extract";
 import { isHeicUpload, prepareImageBuffer } from "@/lib/extraction/ocr";
 import { noteDeveloperApiCall } from "@/lib/developer/usage";
+import { DeadlineError, withDeadline } from "@/lib/async/deadline";
 
 const GENERATIVE_BASE = "https://generativelanguage.googleapis.com/v1beta";
 /** Default attempts for dec / 4pt. Wind mit PDFs are large and often 503 under load. */
@@ -26,6 +27,8 @@ export const GEMINI_FETCH_TIMEOUT_MS = 25_000;
 export const GEMINI_TIMEOUT_NOTE = "gemini_timeout";
 export const GEMINI_TIMEOUT_MESSAGE =
   "Docs timed out reading this file. Fields already filled are saved.";
+/** Wall-clock cap for Fill: HEIC prep + retries + body read. Prevents infinite Docs spinner. */
+export const GEMINI_FILL_OVERALL_TIMEOUT_MS = 90_000;
 
 export type GeminiClientResult = {
   ok: boolean;
@@ -228,6 +231,44 @@ export async function extractWithGeminiPdf(
     /** Fill Risk Profile — fewer retries, hard timeout, fail instead of hanging. */
     purpose?: "fill" | "extract";
     timeoutMs?: number;
+    /** Overall wall-clock for Fill (HEIC + all model attempts). Defaults when purpose=fill. */
+    overallTimeoutMs?: number;
+  },
+): Promise<GeminiClientResult> {
+  const purpose = options?.purpose;
+  const overallMs =
+    options?.overallTimeoutMs ??
+    (isFillPurpose(purpose) ? GEMINI_FILL_OVERALL_TIMEOUT_MS : 0);
+  if (overallMs > 0) {
+    try {
+      return await withDeadline(
+        extractWithGeminiPdfInner(pdfBytes, docType, options),
+        overallMs,
+        GEMINI_TIMEOUT_MESSAGE,
+      );
+    } catch (error) {
+      if (error instanceof DeadlineError || (error instanceof Error && /timed out/i.test(error.message))) {
+        return emptyFail(docType, GEMINI_TIMEOUT_MESSAGE, [GEMINI_TIMEOUT_NOTE]);
+      }
+      throw error;
+    }
+  }
+  return extractWithGeminiPdfInner(pdfBytes, docType, options);
+}
+
+async function extractWithGeminiPdfInner(
+  pdfBytes: Buffer | Uint8Array,
+  docType?: string | null,
+  options?: {
+    apiKey?: string;
+    model?: string;
+    fetchImpl?: typeof fetch;
+    mimeType?: string | null;
+    filename?: string | null;
+    shopLine?: string | null;
+    purpose?: "fill" | "extract";
+    timeoutMs?: number;
+    overallTimeoutMs?: number;
   },
 ): Promise<GeminiClientResult> {
   const apiKey = (options?.apiKey ?? readGeminiApiKey()).trim();
@@ -368,9 +409,20 @@ export async function extractWithGeminiPdf(
     );
   }
 
-  const payload = (await response.json()) as {
+  let payload: {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
   };
+  try {
+    payload = (await response.json()) as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    };
+  } catch (error) {
+    if (isAbortError(error)) {
+      return emptyFail(docType, GEMINI_TIMEOUT_MESSAGE, [GEMINI_TIMEOUT_NOTE]);
+    }
+    const message = error instanceof Error ? error.message : "gemini_body_error";
+    return emptyFail(docType, message, ["gemini_body_error"]);
+  }
   const text = payload.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
   const json = parseGeminiResponseText(text);
   if (!json) {
