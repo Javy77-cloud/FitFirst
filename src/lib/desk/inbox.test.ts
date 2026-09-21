@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatInboxListWhen,
   inboxGmailConnected,
+  inboxSenderLabel,
   inboxStubFromActivity,
   inboxStubFromLeadOffer,
   inboxWorkEmailConnected,
@@ -66,5 +68,15 @@ describe("inbox / Envoys stubs", () => {
     expect(inboxGmailConnected(null)).toBe(false);
     expect(inboxGmailConnected({ connected: true, connectMode: "demo" })).toBe(false);
     expect(inboxGmailConnected({ connected: true, connectMode: "byo" })).toBe(true);
+  });
+
+  it("formats Gmail-like list dates and sender names", () => {
+    const asOf = new Date(2026, 8, 21, 16, 0, 0);
+    expect(formatInboxListWhen(new Date(2026, 8, 21, 9, 4, 0), asOf)).toMatch(/\d{1,2}:\d{2}/);
+    expect(formatInboxListWhen(new Date(2026, 8, 19, 12, 0, 0), asOf)).toMatch(/Sep/);
+    expect(formatInboxListWhen(new Date(2025, 8, 19, 12, 0, 0), asOf)).toMatch(/2025/);
+    expect(inboxSenderLabel("Elena Ruiz <elena@x.com>")).toBe("Elena Ruiz");
+    expect(inboxSenderLabel("Elena Ruiz <elena@x.com>", "Ruiz, Elena")).toBe("Ruiz, Elena");
+    expect(inboxSenderLabel("", null)).toBe("Unknown sender");
   });
 });

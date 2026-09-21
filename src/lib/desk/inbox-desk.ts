@@ -31,7 +31,7 @@ export type InboxDeskThread = {
   href: string;
 };
 
-export const INBOX_BANDS: InboxAttention[] = ["needs_reply", "unread", "open_deal", "rest"];
+export const INBOX_BANDS: InboxAttention[] = ["unread", "read"];
 
 export function presentInboxThread(row: GmailThreadPreview, index: InboxMatchIndex): InboxDeskThread {
   const emails = counterpartEmails({
@@ -64,10 +64,8 @@ export function presentInboxThread(row: GmailThreadPreview, index: InboxMatchInd
 
 export function groupInboxThreads(rows: InboxDeskThread[]): Record<InboxAttention, InboxDeskThread[]> {
   const groups: Record<InboxAttention, InboxDeskThread[]> = {
-    needs_reply: [],
     unread: [],
-    open_deal: [],
-    rest: [],
+    read: [],
   };
   const sorted = [...rows].sort((a, b) => {
     const band = inboxBandRank(a.attention) - inboxBandRank(b.attention);
@@ -78,6 +76,11 @@ export function groupInboxThreads(rows: InboxDeskThread[]): Record<InboxAttentio
     groups[row.attention].push(row);
   }
   return groups;
+}
+
+export function flattenInboxBands(rows: InboxDeskThread[]): InboxDeskThread[] {
+  const groups = groupInboxThreads(rows);
+  return INBOX_BANDS.flatMap((band) => groups[band]);
 }
 
 export type InboxCue = {

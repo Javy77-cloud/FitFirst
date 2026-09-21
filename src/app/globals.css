@@ -3493,22 +3493,20 @@ button.ff-renewal-risk-badge {
   font-variant-numeric: tabular-nums;
 }
 
-/* Agency Inbox — command bands, not a mail table. */
-.ff-inbox-desk { display: grid; gap: 1rem; }
+/* Agency Inbox — Gmail-density list (Outlook-ready skin hook; no Yahoo skin). */
+.ff-inbox-desk { display: grid; gap: 0.7rem; }
 .ff-inbox-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: baseline;
   justify-content: space-between;
   gap: 0.5rem;
 }
-.ff-inbox-kicker {
+.ff-inbox-mailbox {
   margin: 0;
-  font-size: 0.62rem;
-  font-weight: 750;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--ff-muted);
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: var(--ff-navy);
 }
 .ff-inbox-empty,
 .ff-inbox-empty-hero {
@@ -3526,45 +3524,109 @@ button.ff-renewal-risk-badge {
 @media (max-width: 900px) {
   .ff-inbox-split { grid-template-columns: 1fr; }
 }
-.ff-inbox-bands { display: grid; gap: 0.85rem; }
+.ff-inbox-bands {
+  border: 1px solid var(--ff-border);
+  border-radius: 0.7rem;
+  background: #fff;
+  overflow: hidden;
+}
+.ff-inbox-band + .ff-inbox-band { border-top: 1px solid var(--ff-border); }
 .ff-inbox-band header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 0.4rem;
+  padding: 0.42rem 0.75rem 0.2rem;
 }
-.ff-inbox-band h2 { margin: 0; font-size: 0.82rem; color: var(--ff-navy); }
-.ff-inbox-band ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.45rem; }
-.ff-inbox-card {
+.ff-inbox-band h2 {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ff-muted);
+}
+.ff-inbox-band header span {
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ff-muted);
+}
+.ff-inbox-band ul { margin: 0; padding: 0; list-style: none; }
+.ff-inbox-row {
   display: grid;
-  gap: 0.15rem;
-  padding: 0.65rem 0.75rem;
-  border: 1px solid var(--ff-border);
-  border-left: 4px solid var(--ff-navy);
-  border-radius: 0.6rem;
-  background: #fff;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "from when"
+    "subject subject"
+    "snippet snippet";
+  column-gap: 0.75rem;
+  row-gap: 0.04rem;
+  padding: 0.4rem 0.75rem 0.42rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--ff-border) 70%, transparent);
   text-decoration: none;
+  color: inherit;
 }
-.ff-inbox-card.is-open { box-shadow: 0 0 0 2px color-mix(in srgb, var(--ff-navy) 18%, transparent); }
-.ff-inbox-band-needs_reply .ff-inbox-card { border-left-color: var(--ff-terracotta, #c45c26); }
-.ff-inbox-band-unread .ff-inbox-card { border-left-color: #d4a017; }
-.ff-inbox-band-open_deal .ff-inbox-card { border-left-color: #1d6fb8; }
-.ff-inbox-card-kicker { font-size: 0.62rem; font-weight: 750; text-transform: uppercase; color: var(--ff-muted); }
-.ff-inbox-card-from, .ff-inbox-card-subject { color: var(--ff-navy); font-weight: 650; font-size: 0.86rem; }
-.ff-inbox-card-snippet, .ff-inbox-card-when { font-size: 0.75rem; color: var(--ff-muted); }
+.ff-inbox-band li:last-child .ff-inbox-row { border-bottom: 0; }
+.ff-inbox-row:hover { background: color-mix(in srgb, var(--ff-navy) 4%, #fff); }
+.ff-inbox-row.is-selected {
+  background: color-mix(in srgb, var(--ff-navy) 20%, #dce6f4);
+  box-shadow: inset 4px 0 0 var(--ff-navy);
+}
+.ff-inbox-row.is-selected:hover { background: color-mix(in srgb, var(--ff-navy) 24%, #dce6f4); }
+.ff-inbox-row-from {
+  grid-area: from;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ff-navy);
+  font-size: 0.84rem;
+  font-weight: 550;
+}
+.ff-inbox-row-when {
+  grid-area: when;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ff-muted);
+  white-space: nowrap;
+}
+.ff-inbox-row-subject {
+  grid-area: subject;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ff-navy);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.ff-inbox-row-snippet {
+  grid-area: snippet;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.74rem;
+  color: var(--ff-muted);
+}
+.ff-inbox-row.is-unread .ff-inbox-row-from,
+.ff-inbox-row.is-unread .ff-inbox-row-subject { font-weight: 750; }
+.ff-inbox-row.is-unread .ff-inbox-row-when { font-weight: 650; color: var(--ff-navy); }
+/* Outlook hook — reserved. Do not invent a Yahoo skin. */
+.ff-inbox-desk[data-ff-inbox-skin="outlook"] .ff-inbox-row { border-radius: 0; }
 .ff-inbox-detail {
-  padding: 0.9rem 1rem;
+  padding: 0.85rem 1rem;
   border: 1px solid var(--ff-border);
-  border-radius: 0.75rem;
+  border-radius: 0.7rem;
   background: #fff;
 }
-.ff-inbox-detail h2 { margin: 0.35rem 0 0; font-size: 1.05rem; color: var(--ff-navy); }
+.ff-inbox-detail h2 { margin: 0; font-size: 1.05rem; color: var(--ff-navy); }
 .ff-inbox-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.7rem 0; }
 .ff-inbox-body { white-space: pre-wrap; font-size: 0.88rem; color: var(--ff-navy); }
 .ff-inbox-thread { margin: 0.7rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.55rem; }
 .ff-inbox-msg { padding: 0.55rem 0.65rem; border-radius: 0.55rem; border: 1px solid var(--ff-border); background: #fff; }
 .ff-inbox-msg.is-in { border-left: 3px solid var(--ff-terracotta, #c45c26); }
 .ff-inbox-msg.is-out { border-left: 3px solid var(--ff-navy); background: color-mix(in srgb, var(--ff-card) 86%, #fff); }
+.ff-inbox-msg-meta { margin: 0 0 0.25rem; font-size: 0.68rem; font-weight: 650; color: var(--ff-muted); }
 .ff-inbox-compose { display: grid; gap: 0.45rem; margin-top: 0.85rem; }
 .ff-inbox-new { padding-top: 0.5rem; border-top: 1px dashed var(--ff-border); }
 .ff-inbox-cue { margin: 0.25rem 0 0; font-size: 0.72rem; font-weight: 650; color: #c45c26; }
