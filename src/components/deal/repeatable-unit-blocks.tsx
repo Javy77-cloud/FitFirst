@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { confirmQuoteSheetField } from "@/app/actions/quote-sheet";
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
 import { DecodeVinButton } from "@/components/deal/decode-vin-button";
 import {
   RiskProfileFieldShell,
@@ -13,7 +14,10 @@ import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { QuoteFieldDef } from "@/lib/quote-sheet/applicant-core";
 import {
   canAddAnother,
+  canRemoveUnit,
   fieldsForUnit,
+  repeatableRemovalWrites,
+  unitHasValue,
   visibleUnitCount,
   type RepeatableKind,
 } from "@/lib/quote-sheet/repeatable-units";
@@ -28,6 +32,15 @@ import {
 import { riskProfileSectionMaxColumns } from "@/lib/quote-sheet/risk-profile-layout";
 import type { ShopLine } from "@/lib/domain";
 import { cn } from "@/lib/utils";
+
+type FieldOverlay = { value: string; previous: string };
+
+type UnitLayout = {
+  count: number;
+  overlays: Record<string, FieldOverlay>;
+  layoutRev: number;
+  revFrom: number;
+};
 
 export function RepeatableUnitBlocks({
   kind,
@@ -44,7 +57,15 @@ export function RepeatableUnitBlocks({
   dealId?: string;
   line?: ShopLine;
 }) {
-  const [count, setCount] = useState(() => visibleUnitCount(values, kind, product));
+  const router = useRouter();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const pendingRef = useRef(false);
+  const [units, setUnits] = useState<UnitLayout>(() => ({
+    count: visibleUnitCount(values, kind, product),
+    overlays: {},
+    layoutRev: 0,
+    revFrom: Number.POSITIVE_INFINITY,
+  }));
   const [liveByKey, setLiveByKey] = useState<Record<string, string>>(() => {
     const next: Record<string, string> = {};
     for (const [key, cell] of Object.entries(values)) {
@@ -52,6 +73,8 @@ export function RepeatableUnitBlocks({
     }
     return next;
   });
+  const [pending, setPending] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
   const groupTitle =
     kind === "vehicle" ? "Vehicles" : kind === "household" ? "Household" : "Drivers";
   const title =
@@ -62,15 +85,113 @@ export function RepeatableUnitBlocks({
       : kind === "household"
         ? "+ Add household member"
         : "+ Add driver";
+  const removeLabel =
+    kind === "vehicle"
+      ? "- Remove vehicle"
+      : kind === "household"
+        ? "- Remove household member"
+        : "- Remove driver";
+  const keepOneHint =
+    kind === "vehicle"
+      ? "At least one vehicle stays on the profile."
+      : kind === "household"
+        ? "At least one household member stays on the profile."
+        : "At least one driver stays on the profile.";
+  const removeTestId =
+    kind === "vehicle"
+      ? "deal-remove-vehicle"
+      : kind === "household"
+        ? "deal-remove-household"
+        : "deal-remove-driver";
   const sampleFields = fieldsForUnit(kind, 1).map((field) => unitFieldAsQuote(field, groupTitle));
   const maxColumns = riskProfileSectionMaxColumns(groupTitle, sampleFields);
   const { sectionId, density, setDensity, choices } = useRiskProfileSectionDensity(
     groupTitle,
     maxColumns,
   );
+  const pruned = pruneOverlays(units.overlays, values);
+  const serverCount = visibleUnitCount(withOverlays(values, pruned), kind, product);
+  const shownCount = Math.max(units.count, serverCount);
+  const canRemove = canRemoveUnit(shownCount);
+  const keepOneHintId = `ff-keep-one-${kind}`;
+  const renderedKeys = new Set<string>();
+  for (let index = 1; index <= shownCount; index += 1) {
+    for (const field of fieldsForUnit(kind, index)) renderedKeys.add(field.key);
+  }
+  const hiddenBlanks = Object.entries(pruned).filter(
+    ([key, overlay]) => !overlay.value.trim() && !renderedKeys.has(key),
+  );
+
+  async function removeAt(removeIndex: number) {
+    if (pendingRef.current) return;
+    const total = shownCount;
+    if (!canRemoveUnit(total) || removeIndex < 1 || removeIndex > total) return;
+    setRemoveError(null);
+    const formNode = rootRef.current?.closest("form");
+    const form = formNode instanceof HTMLFormElement ? formNode : null;
+    const snapshots: Array<Record<string, string> | undefined> = [];
+    for (let index = 1; index <= total; index += 1) {
+      const snap: Record<string, string> = {};
+      for (const field of fieldsForUnit(kind, index)) {
+        const fallback = pruned[field.key]?.value ?? values[field.key]?.value ?? "";
+        snap[field.suffix] = readControlValue(form, field.key, fallback);
+      }
+      snapshots[index] = snap;
+    }
+    const writes = repeatableRemovalWrites(kind, total, removeIndex, snapshots);
+    if (!writes) return;
+    const previousValues = values;
+    let needsPersist = false;
+    for (let index = removeIndex; index <= total; index += 1) {
+      if (unitHasValue(previousValues, kind, index)) needsPersist = true;
+    }
+    pendingRef.current = true;
+    setPending(true);
+    try {
+      if (needsPersist) {
+        if (!form) throw new Error("Risk Profile form is missing.");
+        const data = new FormData(form);
+        for (const [key, value] of Object.entries(writes)) data.set(key, value);
+        data.set("flash", "0");
+        await saveQuoteSheet(data);
+      }
+      setUnits((current) => {
+        const base = pruneOverlays(current.overlays, previousValues);
+        const overlays = { ...base };
+        for (const [key, value] of Object.entries(writes)) {
+          overlays[key] = { value, previous: previousValues[key]?.value ?? "" };
+        }
+        return {
+          count: Math.max(1, Math.max(current.count, total) - 1),
+          overlays,
+          layoutRev: current.layoutRev + 1,
+          revFrom: removeIndex,
+        };
+      });
+      setLiveByKey((prev) => {
+        const next = { ...prev };
+        for (const [key, value] of Object.entries(writes)) {
+          if (value.trim()) next[key] = value;
+          else delete next[key];
+        }
+        return next;
+      });
+      if (needsPersist) router.refresh();
+    } catch (error) {
+      if (isNextRedirect(error)) throw error;
+      setRemoveError("Couldn't remove that entry. Try again.");
+    } finally {
+      pendingRef.current = false;
+      setPending(false);
+    }
+  }
 
   return (
-    <div className="border-b border-border/70 last:border-b-0" data-ff-repeatable-units={kind}>
+    <div
+      ref={rootRef}
+      className="border-b border-border/70 last:border-b-0"
+      data-ff-repeatable-units={kind}
+    >
       <RiskProfileSectionBar
         title={groupTitle}
         sectionId={sectionId}
@@ -78,25 +199,44 @@ export function RepeatableUnitBlocks({
         onDensityChange={setDensity}
         choices={choices}
       />
-      {Array.from({ length: count }, (_, offset) => {
+      {Array.from({ length: shownCount }, (_, offset) => {
         const index = offset + 1;
         const unitFields = fieldsForUnit(kind, index);
+        const resetToken = index >= units.revFrom ? units.layoutRev : 0;
         return (
           <div key={`${kind}-${index}`} className="border-t border-border/60 first:border-t-0" data-ff-unit-block={`${kind}-${index}`}>
-            <p className="px-3 py-1.5 text-xs font-semibold text-navy">
-              {title} {index}
-            </p>
+            <div className="flex items-center justify-between gap-2 px-3 py-1.5">
+              <p className="text-xs font-semibold text-navy">
+                {title} {index}
+              </p>
+              {canRemove ? (
+                <button
+                  type="button"
+                  className="text-xs font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground"
+                  disabled={pending}
+                  data-ff-remove-unit={`${kind}-${index}`}
+                  aria-label={`Remove ${title.toLowerCase()} ${index}`}
+                  onClick={() => void removeAt(index)}
+                >
+                  Remove
+                </button>
+              ) : null}
+            </div>
             <RiskProfileFieldsGrid
               density={density}
               fields={unitFields.map((field) => unitFieldAsQuote(field, groupTitle))}
               renderField={(field) => {
                 const unit = unitFields.find((item) => item.key === field.key);
                 const extracted = extractedByKey.get(field.key);
-                const cell = values[field.key];
+                const cell = displayCell(field.key, values, pruned);
                 const sourceText = extracted?.normalizedValue || extracted?.rawValue || "";
                 const industryParent = occupationIndustryParentKey(field.key);
+                const industryValue =
+                  industryParent && industryParent in pruned
+                    ? pruned[industryParent]?.value
+                    : (liveByKey[industryParent ?? ""] ?? values[industryParent ?? ""]?.value);
                 const options = industryParent
-                  ? occupationsForIndustry(liveByKey[industryParent] ?? values[industryParent]?.value)
+                  ? occupationsForIndustry(industryValue)
                   : field.options;
                 return (
                   <RiskProfileFieldShell
@@ -113,6 +253,7 @@ export function RepeatableUnitBlocks({
                     }
                   >
                     <BlockCell
+                      key={`${field.key}:${resetToken}`}
                       fieldKey={field.key}
                       fieldSuffix={unit?.suffix}
                       input={field.input === "select" || field.input === "number" ? field.input : "text"}
@@ -132,24 +273,135 @@ export function RepeatableUnitBlocks({
           </div>
         );
       })}
-      {canAddAnother(count, product, kind) ? (
+      <div className="flex flex-wrap items-center">
+        {canAddAnother(shownCount, product, kind) ? (
+          <button
+            type="button"
+            className="px-3 py-2 text-sm font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground"
+            disabled={pending}
+            data-testid={
+              kind === "vehicle"
+                ? "deal-add-vehicle"
+                : kind === "household"
+                  ? "deal-add-household"
+                  : "deal-add-driver"
+            }
+            onClick={() => {
+              if (pendingRef.current) return;
+              setUnits((current) => ({
+                ...current,
+                count: Math.max(current.count, shownCount) + 1,
+              }));
+            }}
+          >
+            {addLabel}
+          </button>
+        ) : null}
         <button
           type="button"
-          className="px-3 py-2 text-sm font-medium text-primary hover:underline"
-          data-testid={
-            kind === "vehicle"
-              ? "deal-add-vehicle"
-              : kind === "household"
-                ? "deal-add-household"
-                : "deal-add-driver"
-          }
-          onClick={() => setCount((current) => current + 1)}
+          className="px-3 py-2 text-sm font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline"
+          disabled={!canRemove || pending}
+          data-testid={removeTestId}
+          data-ff-remove-unit-last={kind}
+          aria-describedby={canRemove ? undefined : keepOneHintId}
+          onClick={() => void removeAt(shownCount)}
         >
-          {addLabel}
+          {pending ? "Removing…" : removeLabel}
         </button>
+        {canRemove ? null : (
+          <span id={keepOneHintId} className="py-2 pr-3 text-xs text-muted-foreground" data-ff-remove-blocked={kind}>
+            {keepOneHint}
+          </span>
+        )}
+      </div>
+      {removeError ? (
+        <p className="px-3 pb-2 text-xs text-destructive" role="alert">
+          {removeError}
+        </p>
       ) : null}
+      {hiddenBlanks.map(([key]) => (
+        <input key={key} type="hidden" name={key} defaultValue="" data-ff-cleared-unit-field={key} />
+      ))}
     </div>
   );
+}
+
+function isNextRedirect(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    String((error as { digest?: unknown }).digest).startsWith("NEXT_REDIRECT")
+  );
+}
+
+function displayCell(
+  key: string,
+  values: Record<string, QuoteSheetFieldValue>,
+  overlays: Record<string, FieldOverlay>,
+): QuoteSheetFieldValue | undefined {
+  const overlay = overlays[key];
+  if (!overlay) return values[key];
+  if (!overlay.value.trim()) return { value: "", status: "missing", source: "blank" };
+  return { value: overlay.value, status: "confirmed", source: "agent" };
+}
+
+function withOverlays(
+  values: Record<string, QuoteSheetFieldValue | undefined>,
+  overlays: Record<string, FieldOverlay>,
+): Record<string, QuoteSheetFieldValue | undefined> {
+  if (Object.keys(overlays).length === 0) return values;
+  const next: Record<string, QuoteSheetFieldValue | undefined> = { ...values };
+  for (const [key, overlay] of Object.entries(overlays)) {
+    next[key] = overlay.value.trim()
+      ? { value: overlay.value, status: "confirmed", source: "agent" }
+      : { value: "", status: "missing", source: "blank" };
+  }
+  return next;
+}
+
+function pruneOverlays(
+  overlays: Record<string, FieldOverlay>,
+  values: Record<string, QuoteSheetFieldValue | undefined>,
+): Record<string, FieldOverlay> {
+  let changed = false;
+  const next: Record<string, FieldOverlay> = {};
+  for (const [key, overlay] of Object.entries(overlays)) {
+    const server = values[key]?.value.trim() ?? "";
+    const forced = overlay.value.trim();
+    const previous = overlay.previous.trim();
+    const caughtUp = server === forced;
+    const serverMoved = server !== previous && server !== forced;
+    if (caughtUp || serverMoved) {
+      changed = true;
+      continue;
+    }
+    next[key] = overlay;
+  }
+  return changed ? next : overlays;
+}
+
+function readControlValue(form: HTMLFormElement | null, key: string, fallback: string): string {
+  if (!form) return fallback;
+  const el = form.elements.namedItem(key);
+  if (
+    el instanceof HTMLInputElement ||
+    el instanceof HTMLSelectElement ||
+    el instanceof HTMLTextAreaElement
+  ) {
+    return el.value;
+  }
+  if (typeof RadioNodeList !== "undefined" && el instanceof RadioNodeList) {
+    const first = el[0];
+    if (
+      first instanceof HTMLInputElement ||
+      first instanceof HTMLSelectElement ||
+      first instanceof HTMLTextAreaElement
+    ) {
+      return first.value;
+    }
+  }
+  return fallback;
 }
 
 function unitFieldAsQuote(
