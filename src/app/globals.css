@@ -47,6 +47,11 @@
   --ff-yellow-bg: #fff4d1;
   --ff-red: #BF0A30;
   --ff-red-bg: #FCE8EC;
+  /* Deal silence heat — glory red → orange → cooler amber → blue */
+  --ff-heat-hot: var(--ff-red);
+  --ff-heat-cooling: #E67E22;
+  --ff-heat-near-cold: #5B8DB8;
+  --ff-heat-cold: #2563EB;
   --ff-flag: #BF0A30;
   --ff-flag-bg: #ffedd5;
   /* Call / SMS / E-mail action fills — lock with CONTACT_ACTION_COLORS. */
@@ -1992,7 +1997,8 @@ button.ff-renewal-risk-badge {
 
 .ff-today-activity-corner {
   position: fixed;
-  right: 1rem;
+  left: 1rem;
+  right: auto;
   bottom: 1rem;
   z-index: 70;
   isolation: isolate;
@@ -2000,7 +2006,7 @@ button.ff-renewal-risk-badge {
   visibility: visible;
   opacity: 1;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.45rem;
   max-width: min(22rem, calc(100vw - 1.5rem));
   pointer-events: none;
@@ -2577,10 +2583,10 @@ button.ff-renewal-risk-badge {
   }
 }
 
-.ff-heat-hot { --ff-heat: var(--ff-terracotta); --ff-heat-wash: color-mix(in srgb, var(--ff-terracotta) 16%, white); }
-.ff-heat-cooling { --ff-heat: var(--ff-urgency-amber); --ff-heat-wash: color-mix(in srgb, var(--ff-urgency-amber) 16%, white); }
-.ff-heat-near_cold { --ff-heat: var(--ff-urgency-navy); --ff-heat-wash: color-mix(in srgb, var(--ff-urgency-navy) 16%, white); }
-.ff-heat-cold { --ff-heat: var(--ff-urgency-gray); --ff-heat-wash: color-mix(in srgb, var(--ff-urgency-gray) 16%, white); }
+.ff-heat-hot { --ff-heat: var(--ff-heat-hot); --ff-heat-wash: color-mix(in srgb, var(--ff-heat-hot) 16%, white); }
+.ff-heat-cooling { --ff-heat: var(--ff-heat-cooling); --ff-heat-wash: color-mix(in srgb, var(--ff-heat-cooling) 16%, white); }
+.ff-heat-near_cold { --ff-heat: var(--ff-heat-near-cold); --ff-heat-wash: color-mix(in srgb, var(--ff-heat-near-cold) 16%, white); }
+.ff-heat-cold { --ff-heat: var(--ff-heat-cold); --ff-heat-wash: color-mix(in srgb, var(--ff-heat-cold) 16%, white); }
 
 .ff-deals-command { display: grid; gap: 0.85rem; }
 .ff-stack-workspace {
@@ -2635,8 +2641,8 @@ button.ff-renewal-risk-badge {
   margin: 0;
   padding: 0.35rem 0.6rem;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ff-urgency-gray) 16%, white);
-  color: var(--ff-urgency-gray);
+  background: color-mix(in srgb, var(--ff-heat-cold) 16%, white);
+  color: var(--ff-heat-cold);
   font-size: 0.75rem;
   font-weight: 750;
 }
@@ -2644,8 +2650,8 @@ button.ff-renewal-risk-badge {
   width: 0.55rem;
   height: 0.55rem;
   border-radius: 999px;
-  background: var(--ff-urgency-gray);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ff-urgency-gray) 22%, transparent);
+  background: var(--ff-heat-cold);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ff-heat-cold) 22%, transparent);
 }
 .ff-private-rank {
   margin: 0;
@@ -2679,7 +2685,7 @@ button.ff-renewal-risk-badge {
 .ff-pulse-hot-count strong {
   font-size: 1.15rem;
   font-variant-numeric: tabular-nums;
-  color: var(--ff-terracotta);
+  color: var(--ff-heat-hot);
 }
 .ff-phase-mix {
   margin: 0.55rem 0 0;
@@ -2724,10 +2730,74 @@ button.ff-renewal-risk-badge {
 .ff-heat-lens.is-on { background: var(--ff-heat-wash); }
 .ff-lens-count { margin-left: 0.3rem; font-variant-numeric: tabular-nums; opacity: 0.75; }
 
+.ff-book-heat-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1.25rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--ff-border);
+  border-radius: 0.85rem;
+  background: var(--ff-card);
+  box-shadow: var(--ff-shadow);
+}
+.ff-book-heat-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.55rem;
+  margin: 0;
+  color: var(--ff-navy);
+}
+.ff-book-heat-title p {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ff-book-heat-title strong {
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.ff-book-heat-title span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ff-muted);
+}
+.ff-book-heat-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ff-book-heat-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--ff-ink);
+}
+.ff-book-heat-count strong {
+  font-variant-numeric: tabular-nums;
+  color: var(--ff-navy);
+}
+.ff-book-heat-swatch {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  background: var(--ff-heat);
+}
+
 .ff-priority-stack {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.65rem;
   max-width: none;
   width: 100%;
   margin: 0;
@@ -2736,17 +2806,92 @@ button.ff-renewal-risk-badge {
 }
 .ff-stack-card {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem 0.75rem;
+  align-items: stretch;
+  gap: 0.85rem 1rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
   border: 1px solid color-mix(in srgb, var(--ff-heat) 28%, var(--ff-border));
   border-radius: 0.85rem;
   background: #fff;
   box-shadow: var(--ff-shadow);
 }
+.ff-stack-card-body {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: grid;
+  gap: 0.55rem;
+}
+.ff-stack-card-spread {
+  display: grid;
+  grid-template-columns: minmax(10rem, 2.4fr) minmax(5.5rem, 1.1fr) auto auto auto;
+  gap: 0.55rem 1.15rem;
+  align-items: baseline;
+  width: 100%;
+}
+.ff-stack-name {
+  min-width: 0;
+  font-size: 1.15rem;
+  font-weight: 750;
+  line-height: 1.25;
+  color: var(--ff-navy);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ff-stack-name:hover {
+  color: var(--ff-accent);
+  text-decoration: underline;
+}
+.ff-stack-product {
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: var(--ff-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ff-stack-phase-days,
+.ff-stack-silent-days {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05rem;
+  font-size: 0.95rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  color: var(--ff-navy);
+  white-space: nowrap;
+}
+.ff-stack-phase-days small,
+.ff-stack-silent-days small {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ff-muted);
+}
+.ff-stack-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 1rem;
+}
+@media (max-width: 52rem) {
+  .ff-stack-card-spread {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .ff-stack-product,
+  .ff-stack-phase-days,
+  .ff-stack-silent-days,
+  .ff-stack-value {
+    grid-column: 1 / -1;
+  }
+}
 .ff-stack-card.ff-heat-cold {
-  background: color-mix(in srgb, var(--ff-urgency-gray) 9%, #fff);
-  border-color: color-mix(in srgb, var(--ff-urgency-gray) 42%, var(--ff-border));
+  background: color-mix(in srgb, var(--ff-heat-cold) 9%, #fff);
+  border-color: color-mix(in srgb, var(--ff-heat-cold) 42%, var(--ff-border));
 }
 .ff-stack-glyph {
   flex: 0 0 0.95rem;
@@ -2763,10 +2908,10 @@ button.ff-renewal-risk-badge {
 .ff-radar-dot.ff-heat-near_cold { animation: ff-heat-flicker 0.9s steps(2, end) infinite; }
 .ff-heat-cold .ff-stack-glyph,
 .ff-radar-dot.ff-heat-cold {
-  background: var(--ff-urgency-gray);
+  background: var(--ff-heat-cold);
   box-shadow:
-    0 0 0 4px color-mix(in srgb, var(--ff-urgency-gray) 28%, transparent),
-    0 0 0 8px color-mix(in srgb, var(--ff-urgency-gray) 12%, transparent);
+    0 0 0 4px color-mix(in srgb, var(--ff-heat-cold) 28%, transparent),
+    0 0 0 8px color-mix(in srgb, var(--ff-heat-cold) 12%, transparent);
 }
 .ff-stack-glance {
   display: flex;
@@ -2775,31 +2920,54 @@ button.ff-renewal-risk-badge {
   gap: 0.4rem 0.55rem;
   margin-top: 0.3rem;
 }
-.ff-stack-value { font-size: 0.68rem; font-weight: 650; color: var(--ff-muted); }
-.ff-stack-card .ff-renewal-health { margin-top: 0.35rem; }
+.ff-stack-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ff-muted);
+  white-space: nowrap;
+  justify-self: end;
+}
+.ff-stack-card .ff-renewal-health { margin-top: 0; }
 .ff-clock-rail {
   display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
+  align-items: flex-end;
+  gap: 0.35rem;
 }
-.ff-clock-rail i {
+.ff-clock-rail-tick {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.12rem;
+  min-width: 1.15rem;
+}
+.ff-clock-rail-days {
+  font-size: 0.72rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--ff-navy);
+}
+.ff-clock-rail-tick.is-now .ff-clock-rail-days { color: var(--ff-heat); }
+.ff-clock-rail-tick i {
   width: 0.4rem;
   height: 0.4rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--ff-navy) 14%, white);
 }
-.ff-clock-rail i.is-done { background: var(--ff-navy); }
-.ff-clock-rail i.is-now {
+.ff-clock-rail-tick.is-done i { background: var(--ff-navy); }
+.ff-clock-rail-tick.is-now i {
   background: var(--ff-heat);
   transform: scale(1.35);
 }
 .ff-clock-rail-now {
-  margin-left: 0.15rem;
-  font-size: 0.68rem;
+  margin-left: 0.2rem;
+  font-size: 0.78rem;
   font-weight: 750;
   font-variant-numeric: tabular-nums;
   color: var(--ff-navy);
 }
+.ff-clock-rail.is-compact .ff-clock-rail-now { display: none; }
 .ff-event-spark { color: var(--ff-heat); display: inline-block; vertical-align: middle; }
 .ff-stack-action {
   flex: 0 0 auto;
@@ -2920,8 +3088,8 @@ button.ff-renewal-risk-badge {
   background:
     linear-gradient(to right, color-mix(in srgb, var(--ff-navy) 5%, transparent) 1px, transparent 1px),
     linear-gradient(to top, color-mix(in srgb, var(--ff-navy) 5%, transparent) 1px, transparent 1px),
-    radial-gradient(circle at 16% 84%, color-mix(in srgb, var(--ff-terracotta) 11%, transparent), transparent 40%),
-    radial-gradient(circle at 86% 18%, color-mix(in srgb, var(--ff-urgency-gray) 10%, transparent), transparent 36%),
+    radial-gradient(circle at 16% 84%, color-mix(in srgb, var(--ff-heat-hot) 11%, transparent), transparent 40%),
+    radial-gradient(circle at 86% 18%, color-mix(in srgb, var(--ff-heat-cold) 10%, transparent), transparent 36%),
     var(--ff-card);
   background-size: 14% 100%, 100% 16%, auto, auto, auto;
   box-shadow: var(--ff-shadow);
@@ -2931,7 +3099,6 @@ button.ff-renewal-risk-badge {
   position: absolute;
   width: 0.9rem;
   height: 0.9rem;
-  margin: -0.45rem 0 0 -0.45rem;
   border-radius: 999px;
   background: var(--ff-heat);
   border: 2px solid #fff;
@@ -2979,8 +3146,8 @@ button.ff-renewal-risk-badge {
 .ff-radar-open { font-size: 0.75rem; font-weight: 650; color: var(--ff-navy); text-decoration: underline; }
 
 @keyframes ff-heat-pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--ff-terracotta) 45%, transparent); }
-  50% { transform: scale(1.18); box-shadow: 0 0 0 6px color-mix(in srgb, var(--ff-terracotta) 0%, transparent); }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--ff-heat-hot) 45%, transparent); }
+  50% { transform: scale(1.18); box-shadow: 0 0 0 6px color-mix(in srgb, var(--ff-heat-hot) 0%, transparent); }
 }
 @keyframes ff-heat-flicker {
   0%, 100% { opacity: 1; }

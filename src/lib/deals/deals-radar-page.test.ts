@@ -29,6 +29,7 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-radar-legend-x/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/data-ff-radar-legend-y/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/onMouseEnter/);
+    expect(source("src/components/deals/deals-radar.tsx")).toMatch(/bubbleSizeRem/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/ff-product-chip/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/EventSpark/);
     expect(source("src/components/deals/deals-radar.tsx")).toMatch(/RADAR_X_AXIS_LABEL/);
@@ -71,7 +72,7 @@ describe("Deals Priority Stack + Radar", () => {
 
   it("applies saved lenses without a public agent-name board", () => {
     expect(resolveDealScope({ canSeeTeam: false, view: "stack" })).toBe("mine");
-    expect(resolveDealScope({ canSeeTeam: true, view: "radar" })).toBe("team");
+    expect(resolveDealScope({ canSeeTeam: true, view: "radar" })).toBe("mine");
     expect(resolveDealScope({ canSeeTeam: true, view: "stack" })).toBe("mine");
     expect(
       matchesDealLens(
@@ -98,10 +99,19 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/lib/deals/cold-chase.ts")).toMatch(/Deal went cold — one-click chase/);
   });
 
-  it("feeds deal updatedAt into book-heat chrome so the truth strip is not all cooling", () => {
-    const radar = source("src/lib/deals/radar-desk.ts");
+  it("uses silence-heat Book Heat bubbles on Radar (no last-updated truth strip)", () => {
     const page = source("src/app/deals/page.tsx");
-    expect(radar).toMatch(/updatedAt: parseDate\(deal\.updatedAt\)/);
-    expect(page).toMatch(/presented\.map\(\(card\) => card\.updatedAt\)/);
+    const workspace = source("src/components/deals/deals-command-workspace.tsx");
+    const radarUi = source("src/components/deals/deals-radar.tsx");
+    const velocity = source("src/lib/deals/velocity.ts");
+    expect(page).not.toMatch(/DeskTruthStrip/);
+    expect(page).not.toMatch(/dealHeatShares/);
+    expect(workspace).toMatch(/data-ff-book-heat/);
+    expect(workspace).toMatch(/BookHeatHeader|Book heat/);
+    expect(radarUi).toMatch(/bubbleSizeRem/);
+    expect(radarUi).toMatch(/data-ff-book-heat-bubbles/);
+    expect(radarUi).toMatch(/router\.push\(card\.href\)|openDeal\(card\.href\)/);
+    expect(velocity).toMatch(/export function bubbleSizeRem/);
+    expect(source("src/lib/deals/radar-desk.ts")).toMatch(/updatedAt: parseDate\(deal\.updatedAt\)/);
   });
 });

@@ -427,6 +427,16 @@ export function radarPosition(input: { daysInPhase: number; silenceDays: number 
   return { x, y };
 }
 
+/** Bubble diameter on Book Heat / Radar — sized by deal value (Coverage A or premium). */
+export function bubbleSizeRem(value: number, opts?: { min?: number; max?: number }): number {
+  const min = opts?.min ?? 0.55;
+  const max = opts?.max ?? 1.9;
+  if (!Number.isFinite(value) || value <= 0) return min;
+  const span = Math.log10(1 + HIGH_VALUE_COVERAGE_A * 4);
+  const t = Math.max(0, Math.min(1, Math.log10(1 + value) / span));
+  return Math.round((min + t * (max - min)) * 100) / 100;
+}
+
 /** 14-day spark, 7 buckets — visual only, no letter wall. */
 export function sparkBuckets(events: Date[], now: Date, days = 14, buckets = 7): number[] {
   const width = days / buckets;

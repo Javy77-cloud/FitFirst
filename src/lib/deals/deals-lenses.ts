@@ -56,8 +56,10 @@ export function parseValueBand(_raw?: string | null): "high" | "mid" | "low" | n
 }
 
 export function defaultDealScope(input: { canSeeTeam: boolean; view?: DealsViewId | null }): "mine" | "team" {
+  // Same default for Radar and Stack so switching views never flips Mine/Team.
+  void input.view;
   if (!input.canSeeTeam) return "mine";
-  return input.view === "radar" ? "team" : "mine";
+  return "mine";
 }
 
 export function resolveDealScope(input: {
