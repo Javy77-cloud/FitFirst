@@ -17,6 +17,8 @@ import { IdCardsUploadPanel } from "@/components/policy/id-cards-upload-panel";
 import { deskNow } from "@/lib/home/as-of";
 import { shouldShowManualRenewalHelp } from "@/lib/policy/care-strip";
 import { DOCUMENT_CATEGORIES } from "@/lib/desk/policy-family";
+import { FillCompareFromDecsButton } from "@/components/policy/fill-compare-from-decs-button";
+import { canFillCompareFromTermRoleDocs } from "@/lib/renewal/fill-compare-from-decs";
 
 export function PolicyDocumentsTab({
   policy,
@@ -62,6 +64,7 @@ export function PolicyDocumentsTab({
     status: policy.status,
     asOf: deskNow(),
   });
+  const canFillCompare = canFillCompareFromTermRoleDocs(files);
 
   return (
     <div className="space-y-4" data-ff-policy-tab="documents">
@@ -75,12 +78,26 @@ export function PolicyDocumentsTab({
             No AMS renewal API yet — park paper here, then compare terms.
           </p>
           <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-navy/90">
-            <li>Upload current term DEC/complete as <strong>Issued declaration page</strong>.</li>
-            <li>Upload the new renewal DEC or binder.</li>
+            <li>Upload Prior/Current and Renewal DECs.</li>
             <li>
-              Then Overview → <strong>Renew</strong> opens Compare for terms.
+              Set <strong>Term role</strong> on each row (Prior / Current / Renewal), or click the
+              filename → <strong>Set term role</strong>.
+            </li>
+            <li>
+              Click <strong>Fill Compare from DECs</strong>, then Overview → <strong>Renew</strong> to
+              see $ and % change.
             </li>
           </ol>
+          {canFillCompare ? (
+            <div className="mt-3">
+              <FillCompareFromDecsButton policyId={policy.id} />
+            </div>
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Use the Term role column on each file (or filename → Set term role). Mark Prior or
+              Current plus Renewal to unlock Fill Compare.
+            </p>
+          )}
           <p className="mt-2 text-xs text-muted-foreground">
             AOR-change renewals use this same Documents home; API later drops into the same place.
           </p>
@@ -128,6 +145,14 @@ export function PolicyDocumentsTab({
             Attach file
           </Button>
         </form>
+        {canFillCompare && !showManualRenewalHelp ? (
+          <div className="my-3 flex flex-wrap items-center gap-3 rounded-md border border-border bg-muted/20 p-3">
+            <FillCompareFromDecsButton policyId={policy.id} />
+            <p className="text-xs text-muted-foreground">
+              Extracts Prior/Current + Renewal DECs into Compare (premium $ and %).
+            </p>
+          </div>
+        ) : null}
         <div className="my-3 space-y-2 rounded-md border border-dashed border-border p-3" data-ff-id-cards-quiet="">
           <div>
             <h3 className="text-sm font-semibold text-navy">Upload ID cards</h3>
