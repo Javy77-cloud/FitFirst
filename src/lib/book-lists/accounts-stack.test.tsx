@@ -106,6 +106,9 @@ describe("Accounts Stack layout lock", () => {
       /\[data-ff-book-command="accounts"\]\[data-ff-book-layout="stack"\] \.ff-account-stack-spread \{[^}]*grid-template-rows:\s*auto auto auto/,
     );
     expect(css).toMatch(
+      /\[data-ff-book-command="accounts"\]\[data-ff-book-layout="stack"\] \.ff-account-stack-spread \{[^}]*row-gap:\s*0\.35rem/,
+    );
+    expect(css).toMatch(
       /\[data-ff-book-command="accounts"\]\[data-ff-book-layout="stack"\] \.ff-account-stack-header,\s*\[data-ff-book-command="accounts"\]\[data-ff-book-layout="stack"\] \.ff-account-stack-spread \{[^}]*grid-template-columns:\s*var\(--ff-account-stack-cols\)/,
     );
     expect(css).toMatch(

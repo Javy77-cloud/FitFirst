@@ -194,6 +194,19 @@ function policyFact(card: BookGlanceCard, id: string): string {
   return isEmptyDash(label) ? "" : label;
 }
 
+const POLICY_STACK_TOP = ["form", "carrier", "status", "premium"] as const;
+const POLICY_STACK_BOTTOM = ["number", "expires", "renews", "billing"] as const;
+
+/** Renews / Expires line that sits left of Open. Existing cue text only. */
+function policyOpenCue(card: BookGlanceCard): string {
+  const bits = (card.why ?? "")
+    .split(" · ")
+    .map((bit) => bit.trim())
+    .filter((bit) => bit && !isEmptyDash(bit) && /^(?:renews|expires|expired|past expiration)\b/i.test(bit));
+  if (bits.length > 0) return bits.join(" · ");
+  return policyFact(card, "renews") || policyFact(card, "expires");
+}
+
 const CONTACT_STACK_META = ["language", "status", "dob", "policies"] as const;
 
 const CONTACT_STACK_HEADER = [
@@ -414,7 +427,7 @@ function AccountStackCard({
   );
 }
 
-/** Policies Stack — same top-to-bottom card column as Deals/Renewals. Existing facts only. */
+/** Policies Stack — name, then phone + column tops, then email + column bottoms. */
 function PolicyStackCard({
   card,
   leading,
@@ -426,24 +439,20 @@ function PolicyStackCard({
   extra?: ReactNode;
   tip: string;
 }) {
-  const form = policyFact(card, "form") || policyFact(card, "lob");
-  const lob = policyFact(card, "lob");
-  const number = policyFact(card, "number");
-  const line = form && lob && lob !== form ? lob : number;
-  const renewal = policyFact(card, "renewal-premium") || policyFact(card, "billing") || policyFact(card, "claims");
-  const cells = [
-    { id: "form", label: form },
-    { id: "carrier", label: policyFact(card, "carrier") },
-    { id: "status", label: policyFact(card, "status") },
-    { id: "premium", label: policyFact(card, "premium") },
-    { id: "line", label: line },
-    { id: "expires", label: policyFact(card, "expires") },
-    { id: "renews", label: policyFact(card, "renews") },
-    { id: "renewal", label: renewal },
-  ];
+  const tel = telHref(card.phone);
+  const mail = mailtoHref(card.email);
+  const cue = policyOpenCue(card);
+  const cell = (id: string) => {
+    const label = policyFact(card, id);
+    return (
+      <span key={id} className="ff-policy-stack-cell" data-ff-policy-field={id} title={label || undefined}>
+        {label}
+      </span>
+    );
+  };
   return (
     <article
-      className={cn("ff-stack-card ff-book-card", `ff-heat-${card.heat}`)}
+      className={cn("ff-stack-card ff-book-card ff-policy-stack-card", `ff-heat-${card.heat}`)}
       data-ff-book-card={card.id}
       data-ff-policy-stack-card={card.id}
       data-hay={card.hay}
@@ -451,27 +460,29 @@ function PolicyStackCard({
       data-ff-heat={card.heat}
       data-ff-book-column={card.column}
     >
-      {leading}
-      <RiskGlyph heat={card.heat} tip={tip} />
       <div className="ff-stack-card-body min-w-0 flex-1">
-        <div className="ff-stack-card-spread ff-policy-stack-spread">
-          <div className="ff-policy-stack-identity" data-ff-book-identity="">
-            <NameLink card={card} />
-            <ChannelLine card={card} />
+        <div className="ff-policy-stack-grid" data-ff-policy-stack-grid="">
+          <div className="ff-policy-stack-name" data-ff-policy-stack-row="name">
+            {leading ? <span className="ff-policy-stack-check">{leading}</span> : null}
+            <Link href={card.href} className="ff-stack-name">
+              {card.title}
+            </Link>
           </div>
-          <div className="ff-policy-stack-center" data-ff-book-center="">
-            {cells.map((cell) => (
-              <span key={cell.id} className="ff-policy-stack-cell" data-ff-policy-field={cell.id} title={cell.label || undefined}>
-                {cell.label}
-              </span>
-            ))}
-          </div>
-          <div className="ff-policy-stack-cue" data-ff-book-rail="">
-            {card.why && !isEmptyDash(card.why) ? (
-              <p className="ff-stack-mid" data-ff-stack-mid="" data-ff-book-why="" title={card.why}>
-                {card.why}
-              </p>
-            ) : null}
+          <span className="ff-policy-stack-glyph" data-ff-policy-stack-row="phone">
+            <RiskGlyph heat={card.heat} tip={tip} />
+          </span>
+          <span className="ff-policy-stack-phone" data-ff-policy-stack-phone="">
+            {tel ? <a href={tel}>{card.phone}</a> : null}
+          </span>
+          {POLICY_STACK_TOP.map((id) => cell(id))}
+          <span className="ff-policy-stack-email" data-ff-policy-stack-row="email" data-ff-policy-stack-email="">
+            {mail ? <a href={mail}>{card.email}</a> : null}
+          </span>
+          {POLICY_STACK_BOTTOM.map((id) => cell(id))}
+          <div className="ff-policy-stack-open" data-ff-policy-stack-open="">
+            <p className="ff-stack-mid" data-ff-stack-mid="" data-ff-policy-renew-cue="" title={cue || undefined}>
+              {cue}
+            </p>
             <Link href={card.primaryAction.href} className="ff-stack-action" data-ff-book-action="">
               {card.primaryAction.label}
             </Link>

@@ -5,6 +5,7 @@ import {
   BookGlanceCardView,
   ContactStackColumnHeader,
 } from "@/components/book-lists/glance-card";
+import { PolicyStackColumnHeader } from "@/components/book-lists/policy-stack-header";
 import { ActivityGlyph } from "@/components/desk/standard-activity-panel";
 import { sortCommandStack } from "@/lib/book-lists/heat";
 import type { BookGlanceCard } from "@/lib/book-lists/types";
@@ -34,6 +35,7 @@ export function BookPriorityStack({
   }
   const contactStack = layoutMode === "stack" && ranked[0]?.surface === "contacts";
   const accountStack = layoutMode === "stack" && ranked[0]?.surface === "accounts";
+  const policyStack = layoutMode === "stack" && ranked.some((card) => card.surface === "policies");
   const list = (
     <ol className="ff-priority-stack ff-book-stack" data-ff-priority-stack="" data-ff-book-stack="">
       {ranked.map((card) => {
@@ -72,11 +74,21 @@ export function BookPriorityStack({
       </div>
     );
   }
-  if (!contactStack) return list;
-  return (
-    <div className="ff-contact-priority-stack" data-ff-contact-priority-stack="">
-      <ContactStackColumnHeader />
-      {list}
-    </div>
-  );
+  if (contactStack) {
+    return (
+      <div className="ff-contact-priority-stack" data-ff-contact-priority-stack="">
+        <ContactStackColumnHeader />
+        {list}
+      </div>
+    );
+  }
+  if (policyStack) {
+    return (
+      <div className="ff-policy-stack-sheet" data-ff-policy-stack-sheet="">
+        <PolicyStackColumnHeader />
+        {list}
+      </div>
+    );
+  }
+  return list;
 }
