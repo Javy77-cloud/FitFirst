@@ -105,6 +105,7 @@ import {
 import { INDUSTRY_OPTIONS } from "@/lib/custom-fields/industry-occupation";
 import { COMMERCIAL_RISK_PROFILE_FIELDS, isCommercialSheetLine } from "./commercial-risk-profile";
 import { isInspectionSectionGroup, orderHomeGroups } from "./home-inspections";
+import { manufacturedHomeFieldsFor } from "./mho-risk-profile";
 import { RECORDS_CHECK_KEY, recordsCheckHiddenOnRiskProfile } from "./records-check";
 import { fieldIsVisible, visibleQuoteFields } from "./sheet-visibility";
 import type { SheetValueBag } from "./sheet-visibility";
@@ -1371,16 +1372,25 @@ function dedupeFields(fields: QuoteFieldDef[]): QuoteFieldDef[] {
  */
 const LINES_WITHOUT_SHEET_IDENTITY = new Set<ShopLine>(["life", "health", "home", "auto", "flood"]);
 
-export function fieldsForLine(line: ShopLine, product?: SheetProduct): QuoteFieldDef[] {
+export function fieldsForLine(
+  line: ShopLine,
+  product?: SheetProduct,
+  quotingForm?: string | null,
+): QuoteFieldDef[] {
   const skipIdentity = LINES_WITHOUT_SHEET_IDENTITY.has(line) || isCommercialSheetLine(line);
   const identity = skipIdentity ? [] : [...APPLICANT_CORE_FIELDS, ...CO_APPLICANT_FIELDS];
   const raw = dedupeFields([...identity, ...(CATALOG[line] ?? [])]);
-  if (!product) return raw;
-  return raw.filter((field) => {
-    if (!field.products || field.products.includes(product)) return true;
-    // HO4 / renters / MDP share the inspection sections with HO and DP forms.
-    return line === "home" && product === "renters" && isInspectionSectionGroup(field.group);
-  });
+  const filtered = !product
+    ? raw
+    : raw.filter((field) => {
+        if (!field.products || field.products.includes(product)) return true;
+        // HO4 / renters / MDP share the inspection sections with HO and DP forms.
+        return line === "home" && product === "renters" && isInspectionSectionGroup(field.group);
+      });
+  if (line === "home" && (!product || product === "homeowners")) {
+    return manufacturedHomeFieldsFor(filtered, quotingForm);
+  }
+  return filtered;
 }
 
 export function sheetFieldIsVisible(
@@ -1513,10 +1523,11 @@ export function groupFields(
   line: ShopLine,
   product?: SheetProduct,
   values?: SheetValueBag,
+  quotingForm?: string | null,
 ): { group: string; fields: QuoteFieldDef[] }[] {
   const listed = values
-    ? visibleQuoteFields(fieldsForLine(line, product), values)
-    : fieldsForLine(line, product);
+    ? visibleQuoteFields(fieldsForLine(line, product, quotingForm), values)
+    : fieldsForLine(line, product, quotingForm);
   const source = recordsCheckHiddenOnRiskProfile(line)
     ? listed.filter((field) => field.key !== RECORDS_CHECK_KEY)
     : listed;
