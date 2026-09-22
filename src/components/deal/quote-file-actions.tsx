@@ -5,6 +5,7 @@ import { uploadAgencyQuoteFileAction } from "@/app/actions/quote-files";
 import { deleteUploadedFile } from "@/app/actions/documents";
 import { retagDocumentAsDeclarationAction } from "@/app/actions/declaration";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
+import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { deleteUploadedFileSubject, uploadedFileDeleteMode } from "@/lib/documents/delete-file";
 import { Button } from "@/components/ui/button";
 import {
@@ -164,13 +165,10 @@ function FileList({
               <input type="hidden" name="documentId" value={file.id} />
               <input type="hidden" name="dealId" value={dealId} />
               <input type="hidden" name="returnTo" value={`/deals/${dealId}?tab=quotes`} />
-              <button
-                type="submit"
-                className="text-xs text-primary hover:underline"
+              <FileDeleteIcon
+                label="Delete"
                 data-ff-quote-file-delete={file.id}
-              >
-                Delete
-              </button>
+              />
             </HardDeleteForm>
           </div>
         </li>

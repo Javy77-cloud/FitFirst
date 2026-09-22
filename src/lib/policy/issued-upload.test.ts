@@ -86,10 +86,12 @@ describe("issued policy upload folder", () => {
     expect(popup).toMatch(/router\.push\(`\/policies\/\$\{result\.policyId\}`\)/);
   });
 
-  it("offers Delete on Manual and carrier folders for that file only", () => {
+  it("offers a trash delete on Manual and carrier folders for that file only", () => {
     const actions = source("src/components/deal/quote-file-actions.tsx");
     expect(actions).toMatch(/data-ff-quote-file-delete/);
-    expect(actions).toMatch(/>\s*Delete\s*</);
+    expect(actions).toMatch(/FileDeleteIcon/);
+    expect(actions).toMatch(/label="Delete"/);
+    expect(actions).not.toMatch(/>\s*Delete\s*</);
     const del = source("src/app/actions/documents.ts");
     const body = del.slice(del.indexOf("export async function deleteUploadedFile"));
     expect(body).toMatch(/documentId/);
