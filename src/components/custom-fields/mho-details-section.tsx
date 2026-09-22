@@ -6,6 +6,8 @@ import { FieldControl } from "@/components/custom-fields/field-control";
 import {
   MHO_DETAILS_GROUPS,
   MHO_DETAILS_SECTION_ID,
+  MHO_STRUCTURE_TYPE,
+  MHO_STRUCTURE_TYPE_OPTIONS,
   mhoDetailsFieldsForGroup,
   mhoYes,
   type MhoDetailsField,
@@ -15,6 +17,55 @@ function displayValue(field: MhoDetailsField, values: Record<string, string>): s
   const stored = (values[field.key] ?? "").trim();
   if (stored) return stored;
   return field.defaultValue?.trim() ?? "";
+}
+
+function structureTypeValue(values: Record<string, string>): string {
+  const stored = (values.structure_type ?? "").trim();
+  if (stored && (MHO_STRUCTURE_TYPE_OPTIONS as readonly string[]).includes(stored)) {
+    return stored;
+  }
+  return MHO_STRUCTURE_TYPE;
+}
+
+/** Explicit editable dropdown — do not route through FieldControl (was easy to mistake for locked). */
+function MhoStructureTypeSelect({
+  values,
+  formId,
+  onValueChange,
+}: {
+  values: Record<string, string>;
+  formId: string;
+  onValueChange: (key: string, value: string) => void;
+}) {
+  const value = structureTypeValue(values);
+  return (
+    <div
+      className="space-y-1"
+      data-ff-deal-field="structure_type"
+      data-ff-mho-structure-type=""
+      data-ff-mho-structure-editable="1"
+    >
+      <label className="text-xs font-medium text-navy" htmlFor="field_structure_type">
+        Structure type
+      </label>
+      <select
+        id="field_structure_type"
+        name="field_structure_type"
+        form={formId}
+        aria-label="Structure type"
+        value={value}
+        onChange={(event) => onValueChange("structure_type", event.target.value)}
+        className="mt-1 h-8 w-full cursor-pointer appearance-auto rounded-md border border-border bg-background px-2 text-sm text-navy"
+        data-ff-picklist="structure_type"
+      >
+        {MHO_STRUCTURE_TYPE_OPTIONS.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
 }
 
 function MhoFieldControl({
@@ -28,13 +79,14 @@ function MhoFieldControl({
   formId: string;
   onValueChange: (key: string, value: string) => void;
 }) {
+  if (field.key === "structure_type") {
+    return (
+      <MhoStructureTypeSelect values={values} formId={formId} onValueChange={onValueChange} />
+    );
+  }
   const value = displayValue(field, values);
   return (
-    <div
-      className="space-y-1"
-      data-ff-deal-field={field.key}
-      data-ff-mho-structure-type={field.key === "structure_type" ? "" : undefined}
-    >
+    <div className="space-y-1" data-ff-deal-field={field.key}>
       <label className="text-xs font-medium text-navy" htmlFor={`field_${field.key}`}>
         {field.label}
       </label>

@@ -86,6 +86,10 @@ describe("MHO Deal Details section", () => {
     }
     expect(html).not.toMatch(/data-ff-mho-locked="structure-type"/);
     expect(html).toMatch(/data-ff-mho-structure-type/);
+    expect(html).toMatch(/data-ff-mho-structure-editable="1"/);
+    expect(html).toMatch(/data-ff-picklist="structure_type"/);
+    expect(html).not.toMatch(/data-ff-picklist="structure_type"[^>]*disabled/);
+    expect(html).not.toMatch(/data-ff-mho-locked/);
     expect(MHO_STRUCTURE_TYPE_OPTIONS).toEqual([MHO_STRUCTURE_TYPE, MHO_MOBILE_HOME_TYPE]);
     expect(html).toContain(MHO_STRUCTURE_TYPE);
     expect(html).toContain(MHO_MOBILE_HOME_TYPE);
