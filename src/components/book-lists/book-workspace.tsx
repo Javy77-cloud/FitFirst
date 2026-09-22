@@ -3,6 +3,7 @@ import { BookLiveScope } from "@/components/book-lists/book-live-scope";
 import { BookBoard } from "@/components/book-lists/book-board";
 import { BookKpiStrip } from "@/components/book-lists/book-kpi-strip";
 import { BookLenses } from "@/components/book-lists/book-lenses";
+import { PoliciesViewSwitch } from "@/components/book-lists/policies-view-switch";
 import { BookPriorityStack } from "@/components/book-lists/book-stack";
 import { StandardActivityShell } from "@/components/desk/standard-activity-panel";
 import { sortCommandStack } from "@/lib/book-lists/heat";
@@ -102,16 +103,37 @@ export function BookCommandWorkspace({
       {kpi ? (
         <BookKpiStrip label={kpi.label} items={kpi.items} share={kpi.share} shareTitle={kpi.shareLabel} />
       ) : null}
-      <BookLenses
-        surface={surface}
-        path={path}
-        heat={heat}
-        lens={lens}
-        q={q}
-        counts={counts}
-        extra={preserve}
-        layout={layout}
-      />
+      {surface === "policies" ? (
+        <div className="ff-book-lens-bar" data-ff-book-lens-bar="policies">
+          <BookLenses
+            surface={surface}
+            path={path}
+            heat={heat}
+            lens={lens}
+            q={q}
+            counts={counts}
+            extra={preserve}
+          />
+          <PoliciesViewSwitch
+            path={path}
+            heat={heat}
+            lens={lens}
+            q={q}
+            layout={layout}
+            extra={preserve}
+          />
+        </div>
+      ) : (
+        <BookLenses
+          surface={surface}
+          path={path}
+          heat={heat}
+          lens={lens}
+          q={q}
+          counts={counts}
+          extra={preserve}
+        />
+      )}
       {children}
       <BookLiveScope moduleId={SEARCH_MODULE[surface]} initialQuery={q ?? ""}>
         {layout === "bands" ? (

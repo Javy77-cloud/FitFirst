@@ -46,21 +46,31 @@ describe("command-card book lists", () => {
     expect(source("src/lib/book-lists/lenses.ts")).toMatch(/Skip/);
   });
 
-  it("Policies use attention bands, and List is the same two-row grid", () => {
+  it("Policies use attention bands, and Stack is a 3-row card", () => {
     const page = source("src/app/policies/page.tsx");
     const css = source("src/app/globals.css");
     const card = source("src/components/book-lists/glance-card.tsx");
     expect(page).toMatch(/parseBookLayout/);
     expect(page).toMatch(/layout=\{layout\}/);
     expect(page).toMatch(/POLICY_COLUMNS/);
-    expect(source("src/components/book-lists/book-lenses.tsx")).toMatch(/data-ff-book-layout="list"/);
-    expect(source("src/components/book-lists/book-lenses.tsx")).toMatch(/data-ff-book-layout="bands"/);
-    expect(source("src/components/book-lists/book-lenses.tsx")).toMatch(/data-ff-book-layout="stack"/);
+    expect(source("src/components/book-lists/book-lenses.tsx")).not.toMatch(/data-ff-book-layout/);
+    expect(source("src/components/book-lists/policies-view-switch.tsx")).toMatch(/aria-label="Bands Stack"/);
+    expect(source("src/components/book-lists/policies-view-switch.tsx")).toMatch(/data-ff-book-layout="bands"/);
+    expect(source("src/components/book-lists/policies-view-switch.tsx")).toMatch(/data-ff-book-layout="stack"/);
+    expect(source("src/components/book-lists/policies-view-switch.tsx")).not.toMatch(/data-ff-book-layout="list"/);
+    expect(source("src/components/book-lists/policies-view-switch.tsx")).not.toMatch(/>List</);
     expect(source("src/lib/book-lists/lenses.ts")).toMatch(/if \(value === "stack"\) return "stack"/);
     expect(card).toMatch(/data-ff-policy-list-card/);
     expect(card).toMatch(/data-ff-policy-stack-card/);
     expect(card).toMatch(/layoutMode === "stack"/);
-    expect(card).toMatch(/ff-policy-stack-center/);
+    expect(card).toMatch(/ff-policy-stack-grid/);
+    expect(card).toMatch(/data-ff-policy-stack-row="name"/);
+    expect(card).toMatch(/data-ff-policy-stack-row="phone"/);
+    expect(card).toMatch(/data-ff-policy-stack-row="email"/);
+    expect(card).toMatch(/POLICY_STACK_TOP = \["form", "carrier", "status", "premium"\]/);
+    expect(card).toMatch(/POLICY_STACK_BOTTOM = \["number", "expires", "renews", "billing"\]/);
+    expect(card).toMatch(/data-ff-policy-stack-open/);
+    expect(card).toMatch(/data-ff-policy-renew-cue/);
     expect(card).toMatch(/ff-party-card/);
     expect(card).toMatch(/data-ff-book-center/);
     expect(card).toMatch(/data-ff-book-identity/);
@@ -81,8 +91,20 @@ describe("command-card book lists", () => {
     );
     expect(css).toMatch(/\.ff-policy-list-card \.ff-book-center \.ff-book-facts \{[^}]*repeat\(6, minmax\(0, 1fr\)\)/);
     expect(css).toMatch(
-      /\[data-ff-book-command="policies"\]\[data-ff-book-layout="stack"\] \.ff-policy-stack-center \{[^}]*grid-template-rows:\s*auto auto/,
+      /\[data-ff-book-command="policies"\]\[data-ff-book-layout="stack"\] \.ff-policy-stack-grid \{[^}]*grid-template-rows:\s*auto auto auto/,
     );
+    expect(css).toMatch(
+      /\[data-ff-book-command="policies"\]\[data-ff-book-layout="stack"\] \.ff-policy-stack-header \{[^}]*position:\s*sticky/,
+    );
+    expect(css).toMatch(
+      /\[data-ff-book-command="policies"\]\[data-ff-book-layout="stack"\] \.ff-policy-stack-open \{[^}]*grid-row:\s*2\s*\/\s*span 2/,
+    );
+    expect(css).toMatch(
+      /\[data-ff-book-command="policies"\]\[data-ff-book-layout="stack"\] \.ff-policy-stack-open \.ff-stack-mid \{[^}]*text-align:\s*left/,
+    );
+    expect(source("src/components/book-lists/policy-stack-header.tsx")).toMatch(/data-ff-policy-stack-header/);
+    expect(source("src/components/book-lists/policy-stack-header.tsx")).not.toMatch(/aria-sort|button/);
+    expect(source("src/components/book-lists/book-stack.tsx")).toMatch(/card\.surface === "policies"/);
     expect(css).toMatch(
       /\[data-ff-book-command="policies"\]\[data-ff-book-layout="stack"\] \.ff-stack-name \{[^}]*font-weight:\s*750/,
     );

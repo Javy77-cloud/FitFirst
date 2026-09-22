@@ -32,9 +32,8 @@ export function parseBookLob(value: string | null | undefined): BookFamily | nul
   return LOBS.has(value as BookFamily) ? (value as BookFamily) : null;
 }
 
-/** Policies default to the band board. List stays the wide grid. Stack is its own card column. */
+/** Policies default to the band board. Stack is the card column. List bookmarks return to bands. */
 export function parseBookLayout(value: string | null | undefined): BookLayout {
-  if (value === "list") return "list";
   if (value === "stack") return "stack";
   return "bands";
 }
