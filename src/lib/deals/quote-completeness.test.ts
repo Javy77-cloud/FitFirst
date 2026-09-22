@@ -244,9 +244,8 @@ describe("quote completeness", () => {
       createElement(QuotesPanel, {
         dealId: "deal-1",
         shopLine: "home",
-        quotes: [{ quote, carrier }],
+        quotes: [],
         logs: [],
-        currentQuoteRunId: "run-2",
         completeness: {
           line: "home",
           shopped: true,
@@ -266,5 +265,33 @@ describe("quote completeness", () => {
     );
     expect(html).toMatch(/data-ff-quotes-missing-warning=""/);
     expect(html).toContain("Missing quotes — Universal (Portal timed out)");
+  });
+
+  it("does not paint Missing quotes for Carrier still pending (manual premium workflow)", () => {
+    const html = renderToString(
+      createElement(QuotesPanel, {
+        dealId: "deal-cath",
+        shopLine: "home",
+        quotes: [],
+        logs: [],
+        completeness: {
+          line: "home",
+          shopped: true,
+          complete: false,
+          expected: 3,
+          retrieved: 0,
+          missing: [
+            { carrierName: "American Integrity", reason: "pending", why: "Carrier still pending" },
+            { carrierName: "American Modern", reason: "pending", why: "Carrier still pending" },
+            { carrierName: "Aspera", reason: "pending", why: "Carrier still pending" },
+          ],
+          summary:
+            "Missing quotes — American Integrity (Carrier still pending); American Modern (Carrier still pending); Aspera (Carrier still pending)",
+        },
+      }),
+    );
+    expect(html).not.toMatch(/data-ff-quotes-missing-warning/);
+    expect(html).not.toContain("Carrier still pending");
+    expect(html).not.toContain("American Integrity");
   });
 });
