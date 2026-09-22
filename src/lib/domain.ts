@@ -148,7 +148,7 @@ export const DOC_TYPE_LABELS: Record<DocType, string> = {
   quote: "Quotes",
   quote_pdf: "Quote PDF",
   proposal_pdf: "Branded proposal",
-  policy_dec: "Policy dec",
+  policy_dec: "Issued declaration page",
   policy_complete: "Complete policy",
   policy_id: "ID card",
   acord: "ACORD form",

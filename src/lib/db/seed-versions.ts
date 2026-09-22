@@ -184,7 +184,7 @@ export async function seedPolicyDocVersions() {
       docType: polDec.docType,
       uploadedBy: ADMIN_USER_ID,
       uploadedByName: ADMIN_NAME,
-      note: "Replaced with issued dec. Prior draft kept.",
+      note: "Replaced with issued declaration page. Prior draft kept.",
       createdAt: new Date("2026-09-01T16:20:00.000Z"),
     },
     {

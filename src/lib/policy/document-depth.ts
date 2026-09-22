@@ -42,8 +42,9 @@ export function docExpiryWarning(
 }
 
 export function autoTagDocType(docType: string): string {
-  const raw = docType.replaceAll("_", " ");
-  if (/dec/i.test(docType)) return "Dec";
+  const normalized = docType.trim().toLowerCase().replaceAll("-", "_").replaceAll(/\s+/g, "_");
+  const raw = normalized.replaceAll("_", " ");
+  if (/(?:^|_)(?:dec|declaration)(?:s|_page)?$/.test(normalized)) return "Issued declaration page";
   if (/endors/i.test(docType)) return "Endorsement";
   if (/appl/i.test(docType)) return "Application";
   if (/bind/i.test(docType)) return "Binder";
