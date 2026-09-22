@@ -3,9 +3,6 @@ import { ensureQuoteSheet } from "@/app/actions/quote-sheet";
 import { AppShell } from "@/components/app-shell";
 import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
-import { SourceDocsUpload } from "@/components/deal/source-docs-upload";
-import { blobStoreReady } from "@/lib/files/object-store";
-import { quoteFileUploadMode } from "@/lib/files/upload-plan";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import { LifeHealthQuotesPanel } from "@/components/deal/life-health-quotes-panel";
@@ -535,11 +532,6 @@ export default async function DealPage({
       quotingForm: form,
     };
   });
-  const savedSourceDocs = docs.map((row) => ({
-    docType: row.docType,
-    slot: row.slot,
-    tags: Array.isArray(row.tags) ? row.tags : [],
-  }));
   const visibleDealTitle = dealTitleForActiveProduct({
     title: deal.title,
     product: activeProduct,
@@ -611,28 +603,6 @@ export default async function DealPage({
           thin: true,
           requestedProductType: requestedLifeProductType,
         };
-  const quoteRequiredDocs = risk ? (
-    <section className="ff-card mb-3 p-3" data-ff-quote-doc-slots="">
-      <h3 className="mb-1 text-sm font-semibold text-navy">Required documents</h3>
-      <p className="mb-2 text-helper text-muted-foreground">
-        Save one required file and the next empty slot opens. The last one goes to the next task.
-      </p>
-      <SourceDocsUpload
-        dealId={deal.id}
-        riskId={risk.id}
-        line={sheetLine}
-        product={activeProduct}
-        quotingForm={titleForm}
-        surface="quotes"
-        docSlot={docSlot}
-        marketsDone={flowCompletion.isComplete("markets")}
-        quotesDone={flowCompletion.isComplete("quotes")}
-        savedDocs={savedSourceDocs}
-        packageProducts={docSlotProducts}
-        uploadMode={quoteFileUploadMode({ vercel: process.env.VERCEL, blobReady: blobStoreReady() })}
-      />
-    </section>
-  ) : null;
 
   return (
     <AppShell
@@ -1032,8 +1002,6 @@ export default async function DealPage({
                         )}
                       </div>
                     ) : lifeHealthLine ? (
-                      <>
-                      {quoteRequiredDocs}
                       <LifeHealthQuotesPanel
                         dealId={deal.id}
                         quotes={lineQuotes}
@@ -1080,10 +1048,7 @@ export default async function DealPage({
                             : null
                         }
                       />
-                      </>
                     ) : (
-                      <>
-                      {quoteRequiredDocs}
                       <QuotesPanel
                         dealId={deal.id}
                         quotes={lineQuotes}
@@ -1136,7 +1101,6 @@ export default async function DealPage({
                         })()}
                         autoIssue={issue === "1"}
                       />
-                      </>
                     )}
                   </div>
             ),
