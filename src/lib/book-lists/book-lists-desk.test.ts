@@ -52,9 +52,11 @@ describe("command-card book lists", () => {
     expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/data-ff-policy-stack-card/);
     expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/data-ff-book-center/);
     expect(source("src/app/globals.css")).toMatch(
-      /\.ff-party-center,\s*\.ff-carrier-center,\s*\.ff-policy-center \{[^}]*justify-content:\s*space-evenly/,
+      /\.ff-party-center,\s*\.ff-carrier-center,\s*\.ff-policy-center,\s*\.ff-deal-host-center,[\s\S]*?display:\s*contents/,
     );
-    expect(source("src/app/globals.css")).toMatch(/\.ff-deal-host-center \{[^}]*justify-content:\s*space-evenly/);
+    expect(source("src/app/globals.css")).toMatch(
+      /\.ff-policy-center \.ff-book-facts li,[\s\S]{0,700}?flex:\s*1 1 7\.5rem/,
+    );
     expect(source("src/components/deals/deal-host-face.tsx")).toMatch(/data-ff-deal-center/);
     expect(page).not.toMatch(/Policy attention/);
     expect(page).not.toMatch(/StandardActivityShell/);

@@ -2946,36 +2946,13 @@ button.ff-renewal-risk-badge {
   gap: 0.35rem 0.85rem;
   width: 100%;
 }
-.ff-deal-host-spread > .ff-stack-name {
-  flex: 0 1 12.5rem;
-  max-width: 16rem;
-}
-.ff-deal-host-center {
-  flex: 1 1 14rem;
-  min-width: 10rem;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-evenly;
-  align-items: center;
-  align-content: center;
-  gap: 0.28rem 0.85rem;
-}
+.ff-deal-host-center,
+.ff-deal-host-cue,
 .ff-deal-host-center .ff-stack-job,
 .ff-deal-host-center .ff-stack-products,
 .ff-deal-host-center .ff-stack-products li,
 .ff-deal-host-center .ff-stack-product-detail {
   display: contents;
-}
-.ff-deal-host-cue {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.45rem;
-  min-width: 0;
-}
-.ff-deal-host-cue .ff-stack-mid {
-  text-align: right;
 }
 .ff-stack-mid {
   margin: 0;
@@ -4310,36 +4287,31 @@ tr[data-ff-activity-selected="true"] {
 }
 .ff-party-line,
 .ff-carrier-line,
-.ff-policy-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 0.85rem;
-  width: 100%;
-}
-.ff-party-line > .ff-book-name,
-.ff-carrier-line > .ff-book-name,
-.ff-policy-line > .ff-book-name {
-  flex: 0 1 12.5rem;
-  max-width: 16rem;
-}
-.ff-party-center,
-.ff-carrier-center,
-.ff-policy-center {
-  flex: 1 1 14rem;
-  min-width: 10rem;
+.ff-policy-line,
+.ff-stack-card-spread.ff-deal-host-spread {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   align-content: center;
-  justify-content: space-evenly;
-  gap: 0.28rem 0.85rem;
+  gap: 0.28rem 0.4rem;
+  width: 100%;
 }
+.ff-party-center,
+.ff-carrier-center,
+.ff-policy-center,
+.ff-deal-host-center,
+.ff-party-right,
+.ff-deal-host-cue,
+.ff-carrier-card .ff-book-columns,
 .ff-party-center .ff-book-facts,
 .ff-party-center .ff-book-channels,
 .ff-carrier-center .ff-book-facts,
 .ff-carrier-center .ff-book-actions,
-.ff-policy-center .ff-book-facts {
+.ff-policy-center .ff-book-facts,
+.ff-deal-host-center .ff-stack-job,
+.ff-deal-host-center .ff-stack-products,
+.ff-deal-host-center .ff-stack-products li,
+.ff-deal-host-center .ff-stack-product-detail {
   display: contents;
 }
 .ff-party-center .ff-book-facts,
@@ -4347,39 +4319,69 @@ tr[data-ff-activity-selected="true"] {
 .ff-policy-center .ff-book-facts {
   margin: 0;
 }
-.ff-party-right {
+/* Name, each fact, and the right cue share one wrapping row. */
+.ff-party-line > .ff-book-name,
+.ff-carrier-line > .ff-book-name,
+.ff-policy-line > .ff-book-name,
+.ff-deal-host-spread > .ff-stack-name,
+.ff-party-center .ff-book-facts li,
+.ff-carrier-center .ff-book-facts li,
+.ff-policy-center .ff-book-facts li,
+.ff-party-center .ff-book-channels a,
+.ff-carrier-center .ff-book-actions a,
+.ff-party-right .ff-stack-mid,
+.ff-deal-host-cue .ff-stack-mid,
+.ff-carrier-card .ff-book-columns span,
+.ff-deal-host-center .ff-stack-product,
+.ff-deal-host-center [data-ff-product-place],
+.ff-deal-host-center [data-ff-product-quotes],
+.ff-deal-host-center [data-ff-docs-cue],
+.ff-deal-host-center [data-ff-quotes-cue],
+.ff-deal-host-center .ff-renewal-health {
+  flex: 1 1 7.5rem;
+  box-sizing: border-box;
+  min-width: min-content;
   display: flex;
-  flex: 0 0 auto;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.4rem;
-  min-width: 0;
+  justify-content: center;
+  text-align: center;
 }
-.ff-party-right .ff-stack-mid {
+.ff-party-line > .ff-book-name,
+.ff-carrier-line > .ff-book-name,
+.ff-policy-line > .ff-book-name,
+.ff-deal-host-spread > .ff-stack-name {
+  flex: 1 1 11rem;
+  box-sizing: border-box;
+  max-width: 16rem;
+  min-width: 7rem;
+  justify-content: flex-start;
+  text-align: left;
+}
+.ff-party-right .ff-stack-mid,
+.ff-deal-host-cue .ff-stack-mid,
+.ff-carrier-card .ff-book-columns span {
+  justify-content: flex-end;
   text-align: right;
   white-space: nowrap;
 }
-.ff-carrier-card .ff-book-columns {
-  display: flex;
+.ff-party-right button,
+.ff-deal-host-cue button,
+.ff-deal-host-center .ff-deal-job-stamp {
   flex: 0 0 auto;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  width: auto;
-  max-width: none;
-  gap: 0.12rem 0.4rem;
 }
 .ff-carrier-card .ff-book-columns span {
   overflow: visible;
   text-overflow: unset;
-  text-align: right;
-  white-space: nowrap;
 }
-.ff-carrier-center .ff-book-facts li[data-ff-book-fact="appetite"],
-.ff-carrier-center .ff-book-facts li[data-ff-book-fact^="line:"] {
+.ff-carrier-center .ff-book-facts li[data-ff-book-fact="appetite"] {
+  flex: 1.6 1 14rem;
+  min-width: 8rem;
+  max-width: none;
   white-space: normal;
-  max-width: 16rem;
   line-height: 1.25;
+}
+.ff-carrier-center .ff-book-facts li[data-ff-book-fact^="line:"] {
+  white-space: nowrap;
 }
 .ff-policy-center .ff-book-facts li {
   white-space: nowrap;
@@ -4401,6 +4403,10 @@ tr[data-ff-activity-selected="true"] {
 .ff-party-center .ff-book-channels,
 .ff-carrier-center .ff-book-actions {
   display: contents;
+}
+.ff-party-center .ff-book-channels a,
+.ff-carrier-center .ff-book-actions a {
+  max-width: none;
 }
 .ff-book-channels a,
 .ff-book-actions a {
@@ -4462,30 +4468,14 @@ tr[data-ff-activity-selected="true"] {
     min-width: 0;
     width: 100%;
   }
-  .ff-stack-card-spread:has(.ff-book-columns),
-  .ff-stack-card-spread.ff-deal-host-spread,
-  .ff-party-line,
-  .ff-carrier-line,
-  .ff-policy-line {
+  .ff-stack-card-spread:has(.ff-book-columns) {
     grid-template-columns: minmax(0, 1fr);
   }
-  .ff-party-center,
-  .ff-carrier-center,
-  .ff-policy-center,
-  .ff-deal-host-center {
-    flex-basis: 100%;
-    justify-content: space-evenly;
-  }
-  .ff-party-right,
-  .ff-deal-host-cue,
-  .ff-carrier-card .ff-book-columns {
-    justify-content: flex-start;
-    align-items: flex-start;
-  }
-  .ff-party-right .ff-stack-mid,
-  .ff-deal-host-cue .ff-stack-mid,
-  .ff-carrier-card .ff-book-columns span {
-    text-align: left;
+  .ff-party-line > .ff-book-name,
+  .ff-carrier-line > .ff-book-name,
+  .ff-policy-line > .ff-book-name,
+  .ff-deal-host-spread > .ff-stack-name {
+    max-width: none;
   }
   .ff-book-columns {
     max-width: none;

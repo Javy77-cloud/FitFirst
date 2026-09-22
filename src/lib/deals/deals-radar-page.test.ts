@@ -161,8 +161,8 @@ describe("Deals Priority Stack + Radar", () => {
     expect(meter).toMatch(/ff-renewal-health-label">Client/);
     expect(meter).toMatch(/ff-renewal-health-label">Policy/);
     expect(css).toMatch(/\.ff-stack-products li \{[^}]*grid-template-columns:\s*6\.75rem minmax\(0,\s*1fr\)/);
-    expect(css).toMatch(/\.ff-deal-host-center \{[^}]*flex:\s*1 1 14rem/);
-    expect(css).toMatch(/\.ff-deal-host-center \{[^}]*justify-content:\s*space-evenly/);
+    expect(css).toMatch(/\.ff-deal-host-center,[\s\S]{0,500}?display:\s*contents/);
+    expect(css).toMatch(/\.ff-deal-host-center \.ff-stack-product,[\s\S]{0,400}?flex:\s*1 1 7\.5rem/);
     expect(css).toMatch(/\.ff-stack-products \{[^}]*flex:\s*1 0 100%/);
     expect(source("src/lib/deals/velocity.ts")).not.toMatch(/label:\s*"Chase"/);
   });
