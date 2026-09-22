@@ -166,7 +166,7 @@ describe("sep7co Fill property records = GetParcel + County PA + FEMA", () => {
     expect(facts.find((f) => f.sheetKey === "baths")?.value).toBe("2");
     expect(facts.find((f) => f.sheetKey === "square_feet")?.value).toBe("1224");
     expect(facts.find((f) => f.sheetKey === "stories")?.value).toBe("1");
-    expect(facts.find((f) => f.sheetKey === "garage_type")?.value).toBe("garage");
+    expect(facts.find((f) => f.sheetKey === "garage_type")).toBeUndefined();
     expect(facts.find((f) => f.sheetKey === "acres")?.value).toBe("0.303");
     expect(facts.find((f) => f.sheetKey === "improvement_value")?.value).toBe("117171");
     expect(facts.every((f) => f.sourceLabel === "county PA")).toBe(true);
@@ -224,7 +224,7 @@ describe("sep7co Fill property records = GetParcel + County PA + FEMA", () => {
     expect(facts.find((f) => f.sheetKey === "baths")?.value).toBe("2");
     expect(facts.find((f) => f.sheetKey === "square_feet")?.value).toBe("1224");
     expect(facts.find((f) => f.sheetKey === "stories")?.value).toBe("1");
-    expect(facts.find((f) => f.sheetKey === "garage_type")?.value).toBe("garage");
+    expect(facts.find((f) => f.sheetKey === "garage_type")).toBeUndefined();
     expect(facts.find((f) => f.sheetKey === "improvement_value")?.value).toBe("117171");
   }, 20000);
 

@@ -213,7 +213,7 @@ export function QuoteNotePad({
               value={body}
               maxLength={4000}
               rows={3}
-              placeholder="e.g. needs 4-point + wind mit before bind"
+              placeholder="e.g. needs Four-Point + wind mit before bind"
               onChange={(event) => setBody(event.target.value)}
               className="w-full rounded-md border border-border bg-background px-2.5 py-2 text-sm"
               data-ff-quote-note-input={quoteId}

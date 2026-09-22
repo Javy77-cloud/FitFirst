@@ -206,7 +206,7 @@ describe("sep7fu Fill gaps + defaults + popup; Fill stays on Documents", () => {
     const applied = applyMasterSheetDefaults(blank);
     expect(applied.values.deadbolts.value).toBe("yes");
     expect(applied.values.central_alarm.value).toBe("no");
-    expect(applied.values.smoke_detectors.value).toBe("no");
+    expect(applied.values.smoke_detectors.value).toBe("yes");
     expect(applied.values.sprinkler.value).toBe("no");
     expect(applied.values.pool.value).toBe("no");
     expect(applied.values.animals.value).toBe(MASTER_SHEET_EMPTY_DEFAULTS.animals);

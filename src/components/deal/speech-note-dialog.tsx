@@ -28,7 +28,7 @@ export function SpeechNoteDialog({
   title,
   description,
   initialValue = "",
-  placeholder = "e.g. 4-point cleared, waiting on wind mit",
+  placeholder = "e.g. Four-Point cleared, waiting on wind mit",
   saveLabel = "Save note",
   pendingLabel = "Saving…",
   testId = "ff-speech-note",

@@ -70,7 +70,7 @@ export function DocumentTable({
   if (docs.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        No documents yet. Upload a dec, wind mit, 4-point, photo, or signed application.
+        No documents yet. Upload a dec, wind mit, Four-Point, photo, or signed application.
       </p>
     );
   }

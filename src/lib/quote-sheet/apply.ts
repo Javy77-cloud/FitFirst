@@ -38,6 +38,9 @@ import {
   normalizeTerrain,
   normalizeUsage,
   normalizeWaterBackup,
+  normalizeWindHailDeductible,
+  normalizeScreenEnclosure,
+  parseGarageFact,
   normalizeWindSpeed,
   normalizeLifeProductType,
   normalizeHealthPlanType,
@@ -242,7 +245,9 @@ export function applyExtractedToSheet(
     if (
       key === "sprinkler" ||
       key === "central_alarm" ||
+      key === "fire_alarm" ||
       key === "smoke_detectors" ||
+      key === "carport" ||
       key === "deadbolts" ||
       key === "mobile_home" ||
       key === "pool" ||
@@ -255,6 +260,27 @@ export function applyExtractedToSheet(
     }
     if (key === "opening_protection") nextValue = normalizeOpeningProtection(nextValue);
     if (key === "water_backup") nextValue = normalizeWaterBackup(nextValue);
+    if (key === "screen_enclosure") nextValue = normalizeScreenEnclosure(nextValue);
+    if (key === "wind_hail_deductible") nextValue = normalizeWindHailDeductible(nextValue);
+    if (key === "garage_type" || key === "garage_spaces") {
+      const parsed = parseGarageFact(nextValue);
+      if (parsed.spaces && fieldIsBlank(values.garage_spaces)) {
+        values.garage_spaces = {
+          value: parsed.spaces,
+          status: "check",
+          source,
+          sourceLabel: cellSourceDocument(item, source),
+        };
+        if (!filledKeys.includes("garage_spaces")) filledKeys.push("garage_spaces");
+      }
+      if (key === "garage_spaces") {
+        nextValue = parsed.spaces;
+      } else if (!parsed.type) {
+        continue;
+      } else {
+        nextValue = parsed.type;
+      }
+    }
     if (key === "claims_5yr") nextValue = normalizeClaims5yr(nextValue);
     if (key === "insurance_score_range") nextValue = normalizeInsuranceScoreRange(nextValue);
     if (key === "roof_to_wall") nextValue = normalizeRoofToWall(nextValue);
@@ -403,9 +429,35 @@ export function applyExtractedToSheet(
     return { values: collapsed, filledKeys, skippedKeys };
   }
 
+  if (line === "home") copyAopDeductibleIntoWindHail(values, filledKeys);
+
   const stamped =
     line === "home" ? applyInspectionExistenceFromDoc(values, options?.docType, source) : values;
   return { values: stamped, filledKeys, skippedKeys };
+}
+
+/**
+ * A dec that prints only an all-other-perils deductible has no separate wind/hail.
+ * Copy that AOP amount into wind/hail. A printed wind/hail value is left alone.
+ */
+function copyAopDeductibleIntoWindHail(
+  values: Record<string, QuoteSheetFieldValue>,
+  filledKeys: string[],
+) {
+  if (!fieldIsBlank(values.wind_hail_deductible)) return;
+  const aop = values.aop_deductible;
+  const aopValue = aop?.value?.trim() ?? "";
+  if (!aopValue || fieldIsBlank(aop)) return;
+  const next = normalizeWindHailDeductible(aopValue);
+  if (!next) return;
+  const sourceLabel = (aop.sourceLabel ?? "").trim();
+  values.wind_hail_deductible = {
+    value: next,
+    status: "check",
+    source: aop.source ?? "extracted",
+    sourceLabel: sourceLabel ? `${sourceLabel} · AOP` : "AOP deductible",
+  };
+  if (!filledKeys.includes("wind_hail_deductible")) filledKeys.push("wind_hail_deductible");
 }
 
 /** Gap-fill blanks from public records. Uploaded dec / agent / Javy always win. */

@@ -53,7 +53,7 @@ export function readyToShopCue(input: {
     return {
       kind: "need_docs",
       title: "Drop a source dec first",
-      body: "Upload a dec, wind mit, 4-point, or photo on Documents. Fill reads those files into the Quote Sheet — never the other way around.",
+      body: "Upload a dec, wind mit, Four-Point, or photo on Documents. Fill reads those files into the Quote Sheet — never the other way around.",
       tone: "warn",
       fillStep,
     };

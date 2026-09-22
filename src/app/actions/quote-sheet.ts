@@ -2051,7 +2051,7 @@ export async function runFillQuoteSheet(
       status: "failed",
       filledKeys: [],
       skippedKeys: [],
-      message: "No source files on this deal. Drop a dec, wind mit, or 4-point first.",
+        message: "No source files on this deal. Drop a dec, wind mit, or Four-Point first.",
     });
     return { filledKeys: [], skippedKeys: [] };
   }

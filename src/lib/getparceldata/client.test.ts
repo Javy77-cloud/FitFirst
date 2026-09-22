@@ -109,6 +109,40 @@ describe("GetParcelData client", () => {
     expect(facts.some((f) => f.sheetKey === "sale_price" && f.value === "600000")).toBe(true);
     expect(facts.some((f) => f.sheetKey === "acres" && f.value === "1.25")).toBe(true);
     expect(facts.some((f) => f.sheetKey === "coverage_a")).toBe(false);
+    expect(facts.some((f) => f.sheetKey === "hydrant")).toBe(false);
+    expect(facts.some((f) => f.sheetKey === "miles_to_fire_station")).toBe(false);
+    expect(facts.some((f) => f.sheetKey === "within_city_limits")).toBe(false);
+    expect(facts.some((f) => f.sheetKey === "elevation")).toBe(false);
+  });
+
+  it("maps optional parcel keys when the vendor sends them and skips a bare garage yes", () => {
+    const facts = factsFromGetParcel({
+      year_built: "1978",
+      structure_type: "Single Family",
+      basement: "Full",
+      garage_type: "2 car attached",
+      within_city_limits: "yes",
+      usage: "Primary",
+      months_occupied: "12",
+      distance_to_hydrant: "500",
+      distance_to_fire_station: "2",
+      elevation: "12.4",
+      foundation: "Slab",
+      exterior: "Stucco",
+    });
+    expect(facts.find((f) => f.sheetKey === "structure_type")?.value).toBe("Single Family");
+    expect(facts.find((f) => f.sheetKey === "basement")?.value).toBe("yes");
+    expect(facts.find((f) => f.sheetKey === "garage_type")?.value).toBe("Attached");
+    expect(facts.find((f) => f.sheetKey === "garage_spaces")?.value).toBe("2");
+    expect(facts.find((f) => f.sheetKey === "within_city_limits")?.value).toBe("yes");
+    expect(facts.find((f) => f.sheetKey === "usage")?.value).toBe("Primary");
+    expect(facts.find((f) => f.sheetKey === "hydrant")?.value).toBe("500");
+    expect(facts.find((f) => f.sheetKey === "miles_to_fire_station")?.value).toBe("2");
+    expect(facts.find((f) => f.sheetKey === "elevation")?.value).toBe("12.4");
+    expect(facts.find((f) => f.sheetKey === "foundation")?.value).toBe("Slab");
+    expect(facts.find((f) => f.sheetKey === "exterior")?.value).toBe("Stucco");
+    const bare = factsFromGetParcel({ garage: "Y" });
+    expect(bare.some((f) => f.sheetKey === "garage_type" || f.sheetKey === "garage_spaces")).toBe(false);
   });
 
   it("formats acres and notes null dwelling feed", () => {

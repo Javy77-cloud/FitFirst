@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { useRouter } from "next/navigation";
 import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
 import { MasterSheetFillButton } from "@/components/deal/master-sheet-fill-button";
@@ -10,6 +10,7 @@ import { sourceTag } from "@/lib/quote-sheet/apply";
 import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
 import { ACTION_FLASH_MESSAGE, SHEET_CONFIRM_HASH } from "@/lib/desk/action-flash";
 import { flashAction } from "@/lib/flash-client";
+import { fillMasterSheetDocument } from "@/app/actions/quote-sheet";
 import { isNhtsaTransportFailure } from "@/lib/vin-decode/client";
 import {
   paintSheetInputs,
@@ -24,6 +25,7 @@ import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { ApplicantHousehold } from "@/components/deal/applicant-household";
 import { RepeatableUnitBlocks } from "@/components/deal/repeatable-unit-blocks";
 import { fieldsForLine, groupFields, sheetFieldIsVisible, sheetGroupIsVisible } from "@/lib/quote-sheet/catalog";
+import { RECORDS_CHECK_KEY, recordsCheckHiddenOnRiskProfile } from "@/lib/quote-sheet/records-check";
 import { parseSheetProduct } from "@/lib/quote-sheet/products";
 import { InsuredPropertyKindControl } from "@/components/deal/insured-property-kind-control";
 import { RISK_PROFILE_LABEL, SAVE_RISK_PROFILE_LABEL } from "@/lib/quote-sheet/risk-profile-copy";
@@ -55,13 +57,17 @@ import {
 } from "@/components/deal/risk-profile-section-header";
 import { riskProfileSectionMaxColumns } from "@/lib/quote-sheet/risk-profile-layout";
 import {
+  FOUR_POINT_FIELD_KEYS,
   FOUR_POINT_INSPECTION_KEY,
   FOUR_POINT_INSPECTION_LABEL,
+  WIND_MIT_FIELD_KEYS,
   WIND_MIT_INSPECTION_KEY,
   WIND_MIT_INSPECTION_LABEL,
+  inspectionCheckBlock,
   inspectionInHand,
   inspectionKindForSection,
   inspectionSectionDefaultOpen,
+  type InspectionUploadIds,
 } from "@/lib/quote-sheet/home-inspections";
 
 function sheetValuesToLive(values: Record<string, QuoteSheetFieldValue>): Record<string, string> {
@@ -113,6 +119,7 @@ export function MasterSheetWorkspace({
   productId,
   healthSherpa,
   insuredPropertyKind,
+  inspectionUploads,
 }: {
   dealId: string;
   line: ShopLine;
@@ -132,6 +139,7 @@ export function MasterSheetWorkspace({
     medicareReady: boolean;
     acaReady: boolean;
   };
+  inspectionUploads?: InspectionUploadIds;
 }) {
   const router = useRouter();
 
@@ -200,6 +208,7 @@ export function MasterSheetWorkspace({
         hasCoApplicantFlag={hasCoApplicantFlag}
         healthSherpa={healthSherpa}
         insuredPropertyKind={insuredPropertyKind}
+        inspectionUploads={inspectionUploads}
       />
       <SheetApproveGate
         dealId={dealId}
@@ -228,6 +237,7 @@ export function MasterSheetCompare({
   hasCoApplicantFlag,
   healthSherpa,
   insuredPropertyKind,
+  inspectionUploads,
 }: {
   dealId: string;
   line: ShopLine;
@@ -243,7 +253,9 @@ export function MasterSheetCompare({
     acaReady: boolean;
   };
   insuredPropertyKind?: string | null;
+  inspectionUploads?: InspectionUploadIds;
 }) {
+  const router = useRouter();
   const product = parseSheetProduct(productParam ?? values.sheet_product?.value, line);
   const catalog = asList(fieldsForLine(line, product));
   const cascadeKeys = new Set(cascadeParentKeys(catalog));
@@ -253,6 +265,7 @@ export function MasterSheetCompare({
   const healthPlanType = liveValues.plan_type ?? values.plan_type?.value ?? "";
   const extractedByKey = new Map(asList(fields).map((field) => [field.fieldKey, field]));
   const filled = catalog.filter((field) => {
+    if (recordsCheckHiddenOnRiskProfile(line) && field.key === RECORDS_CHECK_KEY) return false;
     const cell = values[field.key];
     return Boolean(cell?.value.trim() && cell.status !== "missing");
   }).length;
@@ -337,24 +350,6 @@ export function MasterSheetCompare({
             <span className="sr-only" data-ff-master-source-docs={sourceDocCount} />
           </div>
         </div>
-        {line === "home" ? (
-          <HomeInspectionRibbon
-            windChecked={inspectionInHand(liveValues, "wind")}
-            fourChecked={inspectionInHand(liveValues, "four")}
-            onWindChange={(checked) =>
-              setLiveValues((prev) => ({
-                ...prev,
-                [WIND_MIT_INSPECTION_KEY]: checked ? "yes" : "",
-              }))
-            }
-            onFourChange={(checked) =>
-              setLiveValues((prev) => ({
-                ...prev,
-                [FOUR_POINT_INSPECTION_KEY]: checked ? "yes" : "",
-              }))
-            }
-          />
-        ) : null}
       </div>
 
       <form
@@ -452,6 +447,20 @@ export function MasterSheetCompare({
                 usingHealthSherpa={usingHealthSherpa}
                 insuredPropertyKind={insuredPropertyKind}
                 quotingForm={liveValues.quoting_form}
+                inspectionUploads={inspectionUploads}
+                onInspectionChange={(kind, checked) =>
+                  onInspectionToggle({
+                    kind,
+                    checked,
+                    dealId,
+                    line,
+                    uploads: inspectionUploads,
+                    liveValues,
+                    stored: values,
+                    setLiveValues,
+                    refresh: () => router.refresh(),
+                  })
+                }
               />
             );
           })}
@@ -479,6 +488,8 @@ function SheetGroup({
   usingHealthSherpa = false,
   insuredPropertyKind,
   quotingForm,
+  inspectionUploads,
+  onInspectionChange,
 }: {
   title: string;
   dealId: string;
@@ -493,6 +504,8 @@ function SheetGroup({
   usingHealthSherpa?: boolean;
   insuredPropertyKind?: string | null;
   quotingForm?: string | null;
+  inspectionUploads?: InspectionUploadIds;
+  onInspectionChange?: (kind: "wind" | "four", checked: boolean) => void;
 }) {
   const rows = asList(groupFields).filter((field) => field.key !== USING_HEALTHSHERPA_KEY);
   const groupVisible = sheetGroupIsVisible(rows, liveValues);
@@ -528,6 +541,20 @@ function SheetGroup({
           <span className="ml-2 text-[10px] font-normal normal-case text-muted-foreground">
             {HEALTHSHERPA_SKIP_REKEY}
           </span>
+        ) : null
+      }
+      titleCheck={
+        inspectionKind ? (
+          <InspectionBannerCheck
+            kind={inspectionKind}
+            checked={inspectionInHand(liveValues, inspectionKind)}
+            uploaded={Boolean(
+              inspectionKind === "wind"
+                ? inspectionUploads?.windDocumentId
+                : inspectionUploads?.fourDocumentId,
+            )}
+            onChange={(checked) => onInspectionChange?.(inspectionKind, checked)}
+          />
         ) : null
       }
     />
@@ -614,6 +641,7 @@ function SheetGroup({
     <div
       className={groupVisible ? "border-b border-border/70 last:border-b-0" : undefined}
       data-ff-sheet-group={title}
+      data-ff-section-chrome={homeSection ? "home" : undefined}
       data-ff-sheet-group-hidden={groupVisible ? undefined : "true"}
       data-ff-section-open={homeSection ? (open ? "true" : "false") : undefined}
       hidden={!groupVisible}
@@ -644,43 +672,79 @@ function SheetGroup({
   );
 }
 
-function HomeInspectionRibbon({
-  windChecked,
-  fourChecked,
-  onWindChange,
-  onFourChange,
+function InspectionBannerCheck({
+  kind,
+  checked,
+  uploaded,
+  onChange,
 }: {
-  windChecked: boolean;
-  fourChecked: boolean;
-  onWindChange: (checked: boolean) => void;
-  onFourChange: (checked: boolean) => void;
+  kind: "wind" | "four";
+  checked: boolean;
+  uploaded: boolean;
+  onChange: (checked: boolean) => void;
 }) {
+  const label = kind === "wind" ? WIND_MIT_INSPECTION_LABEL : FOUR_POINT_INSPECTION_LABEL;
   return (
-    <div
-      className="ff-sheet-group-header mt-2"
-      style={{ backgroundColor: "#002868", color: "#ffffff", justifyContent: "flex-start", gap: "1.5rem" }}
-      data-ff-inspection-ribbon=""
-    >
-      <label className="inline-flex items-center gap-2 text-sm font-medium normal-case tracking-normal">
-        <input
-          type="checkbox"
-          checked={windChecked}
-          data-ff-wind-mit-inspection=""
-          onChange={(event) => onWindChange(event.target.checked)}
-        />
-        {WIND_MIT_INSPECTION_LABEL}
-      </label>
-      <label className="inline-flex items-center gap-2 text-sm font-medium normal-case tracking-normal">
-        <input
-          type="checkbox"
-          checked={fourChecked}
-          data-ff-four-point-inspection=""
-          onChange={(event) => onFourChange(event.target.checked)}
-        />
-        {FOUR_POINT_INSPECTION_LABEL}
-      </label>
-    </div>
+    <input
+      type="checkbox"
+      checked={checked}
+      aria-label={label}
+      data-ff-wind-mit-inspection={kind === "wind" ? "" : undefined}
+      data-ff-four-point-inspection={kind === "four" ? "" : undefined}
+      data-ff-inspection-banner={kind}
+      data-ff-inspection-ready={uploaded ? "true" : "false"}
+      className="size-4 shrink-0 accent-white"
+      onChange={(event) => onChange(event.target.checked)}
+    />
   );
+}
+
+function inspectionSectionHasData(
+  kind: "wind" | "four",
+  liveValues: Record<string, string>,
+  stored: Record<string, QuoteSheetFieldValue>,
+): boolean {
+  const keys = kind === "wind" ? WIND_MIT_FIELD_KEYS : FOUR_POINT_FIELD_KEYS;
+  return keys.some((key) => (liveValues[key] ?? stored[key]?.value ?? "").trim());
+}
+
+async function onInspectionToggle({
+  kind,
+  checked,
+  dealId,
+  line,
+  uploads,
+  liveValues,
+  stored,
+  setLiveValues,
+  refresh,
+}: {
+  kind: "wind" | "four";
+  checked: boolean;
+  dealId: string;
+  line: ShopLine;
+  uploads?: InspectionUploadIds;
+  liveValues: Record<string, string>;
+  stored: Record<string, QuoteSheetFieldValue>;
+  setLiveValues: Dispatch<SetStateAction<Record<string, string>>>;
+  refresh: () => void;
+}) {
+  const key = kind === "wind" ? WIND_MIT_INSPECTION_KEY : FOUR_POINT_INSPECTION_KEY;
+  if (!checked) {
+    setLiveValues((prev) => ({ ...prev, [key]: "" }));
+    return;
+  }
+  const documentId = kind === "wind" ? uploads?.windDocumentId : uploads?.fourDocumentId;
+  const gate = inspectionCheckBlock(kind, Boolean(documentId));
+  if (!gate.ok) {
+    flashAction(gate.message, "error");
+    return;
+  }
+  setLiveValues((prev) => ({ ...prev, [key]: "yes" }));
+  if (inspectionSectionHasData(kind, liveValues, stored) || !documentId) return;
+  const filled = await fillMasterSheetDocument({ dealId, line, documentId });
+  if (filled.error) flashAction(filled.error, "error");
+  refresh();
 }
 
 function selectedMultiValues(raw: string): string[] {

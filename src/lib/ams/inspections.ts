@@ -45,7 +45,7 @@ export function validateInspectionDraft(input: {
   | { ok: true; kind: InspectionKind; vendor: string | null; scheduledOn: Date | null; notes: string | null }
   | { ok: false; error: string } {
   if (!isInspectionKind(input.kind)) {
-    return { ok: false, error: "Choose 4-point, wind mit, roof, or photo." };
+    return { ok: false, error: "Choose Four-Point, wind mit, roof, or photo." };
   }
   return {
     ok: true,

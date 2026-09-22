@@ -83,6 +83,11 @@ export function mapFloodZoneMapToFacts(payload: unknown): PropertyRecordsFact[] 
 
   push(facts, "flood_zone", asTrimmed(zone.zone));
   push(facts, "bfe", validBfe(zone.base_flood_elevation));
+  const elevation = asTrimmed((data as { elevation?: unknown; ground_elevation?: unknown }).elevation)
+    || asTrimmed((data as { ground_elevation?: unknown }).ground_elevation);
+  if (elevation && elevation !== validBfe(zone.base_flood_elevation)) {
+    push(facts, "elevation", elevation);
+  }
   // dfirm_id ≈ community/map id — map onto firm_panel when present
   push(facts, "firm_panel", asTrimmed(zone.dfirm_id));
   // sfha not in quote-sheet catalog — skip

@@ -36,12 +36,13 @@ describe("sep7ce Fill from property records", () => {
     expect(html).toContain("Fill Risk Profile");
     expect(html).toContain("Parcel ID");
     expect(html).toContain("Assessed value");
-    expect(html).toContain("Records check");
+    expect(html).not.toContain("Records check");
+    expect(html).not.toContain('name="records_check"');
     expect(html).toContain("Square footage");
     expect(html.indexOf("Fill Risk Profile")).toBeLessThan(html.indexOf("Save Risk Profile"));
   });
 
-  it("adds Parcel ID, Assessed value, Records check, and Square footage on the HO sheet", () => {
+  it("keeps Parcel ID, Assessed value, Records check, and Square footage on the HO catalog", () => {
     const home = fieldsForLine("home", "homeowners");
     expect(home.map((field) => field.label)).toEqual(
       expect.arrayContaining(["Parcel ID", "Assessed value", "Records check", "Square footage"]),

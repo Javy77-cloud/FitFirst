@@ -35,7 +35,7 @@ export function DeskDrop({ compact = false }: { compact?: boolean }) {
         input.form?.requestSubmit();
       }}
     >
-      <h2 className="text-sm font-semibold text-navy">Drop a dec, wind mit, or 4-point</h2>
+      <h2 className="text-sm font-semibold text-navy">Drop a dec, wind mit, or Four-Point</h2>
       <p className={cn("mt-1 text-xs text-muted-foreground", compact ? "mb-2" : "mb-3 max-w-2xl")}>
         Source docs live on the Deal. We match or create the person, open one shopping deal,
         attach the file, and fill Quote Sheet blanks. No policy until bind.

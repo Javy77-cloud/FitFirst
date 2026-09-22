@@ -50,7 +50,7 @@ export type DocSaveAdvance =
 const HOME_PROPERTY: DocSlotDef[] = [
   { docType: "dec", label: "Declaration page", required: true },
   { docType: "wind_mit", label: "Wind mitigation", required: true },
-  { docType: "four_point", label: "4-point", required: true },
+  { docType: "four_point", label: "Four-Point", required: true },
   { docType: "photo", label: "Photos", required: true },
 ];
 

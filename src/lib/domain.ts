@@ -136,7 +136,7 @@ export type DocType = (typeof DOC_TYPES)[number];
 export const DOC_TYPE_LABELS: Record<DocType, string> = {
   dec: "Dec pages",
   wind_mit: "Wind mit",
-  four_point: "4-point",
+  four_point: "Four-Point",
   inspection: "Inspection",
   photo: "Photo",
   floor_plan: "Floor plan",

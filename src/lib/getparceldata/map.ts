@@ -1,4 +1,5 @@
 import type { PublicFact } from "@/lib/quote-sheet/apply";
+import { parseGarageFact } from "@/lib/quote-sheet/sheet-defaults";
 
 export const PROPERTY_RECORDS_SOURCE = "property-records" as const;
 export const PROPERTY_RECORDS_LABEL = "property records";
@@ -47,7 +48,7 @@ const FIELD_ALIASES: Array<{ sheetKey: string; keys: string[] }> = [
     keys: ["roof_type", "roof_cover", "roof_covering", "roof_material"],
   },
   { sheetKey: "pool", keys: ["pool", "has_pool", "swimming_pool"] },
-  { sheetKey: "garage_type", keys: ["garage", "garage_type", "garage_spaces"] },
+  { sheetKey: "structure_type", keys: ["structure_type", "building_type"] },
   { sheetKey: "flood_zone", keys: ["flood_zone", "fld_zone"] },
   { sheetKey: "parcel_id", keys: ["parcel_id", "apn", "parcelid", "folio"] },
   { sheetKey: "assessed_value", keys: ["assessed_value", "assessed", "just_value"] },
@@ -173,7 +174,67 @@ export function factsFromGetParcel(hit: GetParcelHit | null | undefined): Proper
   const mailing = composeMailingAddress(hit);
   if (mailing) pushFact(facts, "mailing_address", mailing);
 
+  pushOptionalParcelFacts(facts, hit);
+
   return facts;
+}
+
+function yesNoFact(raw: string): string {
+  const lower = raw.trim().toLowerCase();
+  if (lower === "y" || lower === "yes" || lower === "true" || lower === "1") return "yes";
+  if (lower === "n" || lower === "no" || lower === "false" || lower === "0") return "no";
+  return "";
+}
+
+function basementFact(raw: string): string {
+  const yn = yesNoFact(raw);
+  if (yn) return yn;
+  const lower = raw.toLowerCase();
+  if (/none|no basement|slab only/.test(lower)) return "no";
+  if (/full|partial|finished|unfinished|basement|walkout|walk-out/.test(lower)) return "yes";
+  return "";
+}
+
+/**
+ * Optional vendor keys. Absent keys stay off the fact list — never defaulted.
+ * County layers and FEMA do not supply hydrant, station, city limits, usage,
+ * months occupied, or a building elevation distinct from base flood elevation.
+ */
+function pushOptionalParcelFacts(facts: PropertyRecordsFact[], hit: GetParcelHit) {
+  const garageRaw = firstString(hit, ["garage_type", "garage"]);
+  if (garageRaw) {
+    const parsed = parseGarageFact(garageRaw);
+    if (parsed.type) pushFact(facts, "garage_type", parsed.type);
+    if (parsed.spaces) pushFact(facts, "garage_spaces", parsed.spaces);
+  }
+  const spacesRaw = firstString(hit, ["garage_spaces", "garage_stalls", "number_of_garage_spaces"]);
+  if (spacesRaw) {
+    const parsed = parseGarageFact(spacesRaw);
+    if (parsed.spaces) pushFact(facts, "garage_spaces", parsed.spaces);
+    else if (parsed.type && !facts.some((fact) => fact.sheetKey === "garage_type")) {
+      pushFact(facts, "garage_type", parsed.type);
+    }
+  }
+  const basement = basementFact(firstString(hit, ["basement", "has_basement", "basement_type"]));
+  if (basement) pushFact(facts, "basement", basement);
+  const cityLimits = yesNoFact(
+    firstString(hit, ["within_city_limits", "in_city", "inside_city_limits", "city_limits"]),
+  );
+  if (cityLimits) pushFact(facts, "within_city_limits", cityLimits);
+  const usage = firstString(hit, ["usage"]);
+  if (usage) pushFact(facts, "usage", usage);
+  const months = firstString(hit, ["months_occupied"]);
+  if (months) pushFact(facts, "months_occupied", months);
+  const hydrant = firstString(hit, ["distance_to_hydrant", "hydrant_distance", "hydrant"]);
+  if (hydrant) pushFact(facts, "hydrant", hydrant);
+  const station = firstString(hit, [
+    "distance_to_fire_station",
+    "fire_station_distance",
+    "miles_to_fire_station",
+  ]);
+  if (station) pushFact(facts, "miles_to_fire_station", station);
+  const elevation = firstString(hit, ["elevation", "ground_elevation"]);
+  if (elevation) pushFact(facts, "elevation", elevation);
 }
 
 export function pickFirstParcel(payload: unknown): GetParcelHit | null {

@@ -13,7 +13,7 @@ export const MASTER_TO_FILL_STEPS: FillPathStep[] = [
     n: 1,
     id: "drop",
     label: "Drop source docs",
-    hint: "Dec, wind mit, and 4-point stay on this Deal. They never become the paste source.",
+    hint: "Dec, wind mit, and Four-Point stay on this Deal. They never become the paste source.",
   },
   {
     n: 2,
