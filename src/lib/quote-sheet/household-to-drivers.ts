@@ -1,7 +1,10 @@
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import { fieldIsBlank } from "@/lib/quote-sheet/apply";
 import { isLockedSheetField } from "@/lib/lifecycle/quote-sheet";
-import { PERSONAL_DRIVER_CAP } from "@/lib/quote-sheet/repeatable-units";
+import {
+  PERSONAL_DRIVER_CAP,
+  readStoredDriverCount,
+} from "@/lib/quote-sheet/repeatable-units";
 
 /** Household suffixes that move onto the matching Auto driver (empty-only). */
 export const HOUSEHOLD_TO_DRIVER_MOVED = [
@@ -38,6 +41,7 @@ function cellText(cell?: QuoteSheetFieldValue): string {
 export function mapHouseholdIntoDrivers(
   existing: Record<string, QuoteSheetFieldValue>,
   sourceLabel = "household migrate",
+  maxIndex = PERSONAL_DRIVER_CAP,
 ): HouseholdDriverCopyResult {
   const values: Record<string, QuoteSheetFieldValue> = { ...existing };
   const filledKeys: string[] = [];
@@ -60,7 +64,9 @@ export function mapHouseholdIntoDrivers(
     filledKeys.push(destKey);
   };
 
-  for (let index = 1; index <= PERSONAL_DRIVER_CAP; index += 1) {
+  const storedCount = readStoredDriverCount(existing);
+  const cap = Math.min(PERSONAL_DRIVER_CAP, maxIndex, storedCount ?? PERSONAL_DRIVER_CAP);
+  for (let index = 1; index <= cap; index += 1) {
     for (const suffix of HOUSEHOLD_NAME_DOB) {
       putEmpty(`driver_${index}_${suffix}`, cellText(existing[`household_${index}_${suffix}`]));
     }

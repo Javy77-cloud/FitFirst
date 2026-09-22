@@ -10,6 +10,13 @@ import {
   valuesDiffer,
 } from "./records-check";
 import { collapseAutoDriverSheet, retargetAutoDriverFields } from "./auto-driver-dedupe";
+import {
+  AUTO_DRIVER_COUNT_KEY,
+  blankDriverUnitsAbove,
+  clampDriverCount,
+  enforceEstablishedDriverCeiling,
+  stampDriverCount,
+} from "./repeatable-units";
 import { streetsAreSameLocation } from "./home-address-fill";
 import { applyInspectionExistenceFromDoc } from "./home-inspections";
 import { isSheetFormMetaKey, submittedSheetValues } from "./save-values";
@@ -389,10 +396,11 @@ export function applyExtractedToSheet(
 
   if (line === "auto") {
     const collapsed = collapseAutoDriverSheet(values);
-    for (const key of new Set([...Object.keys(values), ...Object.keys(collapsed)])) {
+    const limited = enforceEstablishedDriverCeiling(existing, collapsed);
+    for (const key of new Set([...Object.keys(values), ...Object.keys(limited)])) {
       if (!key.startsWith("driver_")) continue;
       const before = values[key]?.value?.trim() ?? "";
-      const after = collapsed[key]?.value?.trim() ?? "";
+      const after = limited[key]?.value?.trim() ?? "";
       if (before && !after) {
         const index = filledKeys.indexOf(key);
         if (index >= 0) filledKeys.splice(index, 1);
@@ -400,7 +408,7 @@ export function applyExtractedToSheet(
         filledKeys.push(key);
       }
     }
-    return { values: collapsed, filledKeys, skippedKeys };
+    return { values: limited, filledKeys, skippedKeys };
   }
 
   const stamped =
@@ -689,7 +697,12 @@ export function mergeAgentEdits(
     if (isSheetFormMetaKey(key) || catalog.has(key)) continue;
     writeCell(key, raw);
   }
-  return line === "auto" ? collapseAutoDriverSheet(next) : next;
+  if (line !== "auto") return next;
+  const collapsed = collapseAutoDriverSheet(next);
+  const rawCount = submitted[AUTO_DRIVER_COUNT_KEY]?.trim() ?? "";
+  if (!rawCount) return collapsed;
+  const count = clampDriverCount(Number(rawCount));
+  return stampDriverCount(blankDriverUnitsAbove(collapsed, count), count);
 }
 
 export { submittedSheetValues };
@@ -727,7 +740,8 @@ export function sheetCounts(values: Record<string, QuoteSheetFieldValue>): {
   let missing = 0;
   let check = 0;
   let confirmed = 0;
-  for (const field of Object.values(values)) {
+  for (const [key, field] of Object.entries(values)) {
+    if (key === AUTO_DRIVER_COUNT_KEY) continue;
     if (field.status === "check") check += 1;
     else if (field.status === "confirmed" && field.value.trim()) confirmed += 1;
     else missing += 1;

@@ -35,9 +35,13 @@ import {
   resolveHomeRiskAddresses,
 } from "./home-address-fill";
 import {
+  blankDriverUnitsAbove,
   DRIVER_BLOCK_FIELDS,
   PERSONAL_DRIVER_CAP,
+  readStoredDriverCount,
+  stampDriverCount,
   unitHasValue,
+  visibleUnitCount,
 } from "./repeatable-units";
 
 export const DEAL_DETAILS_SOURCE_LABEL = "deal details";
@@ -518,8 +522,14 @@ export function fillSheetFromDealDetails(
   }
 
   // Personal Auto: primary is Driver 1; each Deal Details co-applicant seeds the next empty driver slot.
+  // A saved driver count stops that seed from reopening a card the agent removed.
   if (isPersonalAutoDriverSheet(values, input.quotingLine)) {
-    const migrated = mapHouseholdIntoDrivers(values);
+    const lockedDriverCount = readStoredDriverCount(values);
+    const migrated = mapHouseholdIntoDrivers(
+      values,
+      "household migrate",
+      lockedDriverCount ?? PERSONAL_DRIVER_CAP,
+    );
     Object.assign(values, migrated.values);
     filledKeys.push(...migrated.filledKeys);
     skippedKeys.push(...migrated.skippedKeys);
@@ -527,6 +537,7 @@ export function fillSheetFromDealDetails(
 
     const putDriver = (index: number, suffix: DriverSeedSuffix, raw?: string | null) => {
       if (index < 1 || index > PERSONAL_DRIVER_CAP) return;
+      if (lockedDriverCount != null && index > lockedDriverCount) return;
       if (suffix === "relationship" && index === 1) return;
       if (!DRIVER_SUFFIX_SET.has(suffix)) return;
       const key = `driver_${index}_${suffix}`;
@@ -550,6 +561,7 @@ export function fillSheetFromDealDetails(
     for (const person of collectDealCoApplicantDrivers(input, stored)) {
       const slot = nextEmptyDriverSlot(values, searchFrom);
       if (slot == null) break;
+      if (lockedDriverCount != null && slot > lockedDriverCount) break;
       for (const suffix of DRIVER_SEED_SUFFIXES) {
         if (suffix === "relationship" && slot === 1) continue;
         putDriver(slot, suffix, person[suffix]);
@@ -561,6 +573,9 @@ export function fillSheetFromDealDetails(
     for (const [key, cell] of Object.entries(collapsed)) {
       if (key.startsWith("driver_")) values[key] = cell;
     }
+    const ceiling = lockedDriverCount ?? visibleUnitCount(values, "driver");
+    const capped = lockedDriverCount == null ? values : blankDriverUnitsAbove(values, lockedDriverCount);
+    Object.assign(values, stampDriverCount(capped, ceiling));
     for (let index = filledKeys.length - 1; index >= 0; index -= 1) {
       const key = filledKeys[index];
       if (key.startsWith("driver_") && !(values[key]?.value ?? "").trim()) {

@@ -49,7 +49,7 @@ describe("multi-photo Auto driver dedupe", () => {
     expect(visibleUnitCount(values, "driver")).toBe(1);
   });
 
-  it("keeps the fuller James row when a later photo repeats him beside other drivers", () => {
+  it("keeps the fuller James row and does not open a new card for a later photo's extra person", () => {
     let values = emptySheetValues("auto");
     values = applyExtractedToSheet("auto", values, [
       { fieldKey: "driver_1_name", normalizedValue: "Domenic Iori" },
@@ -79,9 +79,9 @@ describe("multi-photo Auto driver dedupe", () => {
     expect(values.driver_2_dob.value).toBe("04/22/1959");
     expect(values.driver_2_license.value).toBe("I400-222-33-444");
     expect(values.driver_2_gender.value).toBe("Male");
-    expect(values.driver_3_name.value).toBe("Maria Iori");
+    expect(values.driver_3_name?.value ?? "").toBe("");
     expect(values.driver_4_name?.value ?? "").toBe("");
-    expect(visibleUnitCount(values, "driver")).toBe(3);
+    expect(visibleUnitCount(values, "driver")).toBe(2);
     expect(visibleUnitCount(values, "vehicle")).toBe(4);
   });
 
