@@ -1,5 +1,6 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { currentDeskSession } from "@/lib/auth/session";
+import { blobAuthOptions } from "@/lib/files/object-store";
 import { clientUploadPathError, INSURANCE_PDF_MAX_BYTES } from "@/lib/files/upload-plan";
 
 export const dynamic = "force-dynamic";
@@ -17,9 +18,12 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Upload request was not valid JSON. Nothing was saved." }, { status: 400 });
   }
   try {
+    const auth = blobAuthOptions();
     const json = await handleUpload({
       body,
       request,
+      // Force RW token — handleUpload cannot use OIDC; keep put store aligned with server read-back.
+      ...(auth.token ? { token: auth.token } : {}),
       onBeforeGenerateToken: async (pathname, clientPayload) => {
         const dealId = (clientPayload ?? "").trim();
         if (!dealId) throw new Error("This upload is not tied to a deal. Nothing was saved.");
