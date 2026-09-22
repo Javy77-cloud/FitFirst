@@ -261,7 +261,8 @@ export type ActivitySurface =
   | "deals-stack"
   | "renewals-stack"
   | "contacts-stack"
-  | "accounts-stack";
+  | "accounts-stack"
+  | "carriers-stack";
 
 /** List and Stack desks: the shared Activity board is on by default and keeps its column. */
 export function StandardActivityShell({

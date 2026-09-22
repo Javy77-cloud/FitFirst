@@ -3,6 +3,7 @@ import { BookActivityHit } from "@/components/book-lists/book-activity-hit";
 import {
   AccountStackColumnHeader,
   BookGlanceCardView,
+  CarrierStackColumnHeader,
   ContactStackColumnHeader,
 } from "@/components/book-lists/glance-card";
 import { PolicyStackColumnHeader } from "@/components/book-lists/policy-stack-header";
@@ -35,6 +36,7 @@ export function BookPriorityStack({
   }
   const contactStack = layoutMode === "stack" && ranked[0]?.surface === "contacts";
   const accountStack = layoutMode === "stack" && ranked[0]?.surface === "accounts";
+  const carrierStack = layoutMode === "stack" && ranked[0]?.surface === "carriers";
   const policyStack = layoutMode === "stack" && ranked.some((card) => card.surface === "policies");
   const list = (
     <ol className="ff-priority-stack ff-book-stack" data-ff-priority-stack="" data-ff-book-stack="">
@@ -86,6 +88,14 @@ export function BookPriorityStack({
     return (
       <div className="ff-policy-stack-sheet" data-ff-policy-stack-sheet="">
         <PolicyStackColumnHeader />
+        {list}
+      </div>
+    );
+  }
+  if (carrierStack) {
+    return (
+      <div className="ff-carrier-priority-stack" data-ff-carrier-priority-stack="">
+        <CarrierStackColumnHeader />
         {list}
       </div>
     );
