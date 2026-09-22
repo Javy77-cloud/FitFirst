@@ -134,8 +134,8 @@ describe("MHO / HO3 Risk Profile address + property map", () => {
     expect(result.values.named_insured.value).toBe("Catherine Garcia");
     expect(result.values.current_carrier.value).toBe("American Modern");
     expect(result.values.policy_number.value).toBe("LIA-100");
-    expect(result.values.coverage_e.value).toBe("300000");
-    expect(result.values.coverage_f.value).toBe("1000");
+    expect(result.values.coverage_e.value).toBe("$300k");
+    expect(result.values.coverage_f.value).toBe("$1k");
     expect(result.values.address1.value).toContain("Palm Bay");
     expect(result.values.mailing_address.value).toBe("");
     expect(result.values.year_built.value).toBe("");

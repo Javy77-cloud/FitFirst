@@ -39,11 +39,11 @@ describe("dec extraction coverage vs the 12-field miss", () => {
     expect(filled.values.effective_date.value).toBe("03/01/2026");
     expect(filled.values.expiration_date.value).toBe("03/01/2027");
     expect(filled.values.coverage_a.value).toBe("280000");
-    expect(filled.values.coverage_b.value).toBe("28000");
-    expect(filled.values.coverage_c.value).toBe("140000");
-    expect(filled.values.coverage_d.value).toBe("56000");
-    expect(filled.values.coverage_e.value).toBe("300000");
-    expect(filled.values.coverage_f.value).toBe("2000");
+    expect(filled.values.coverage_b.value).toBe("10%");
+    expect(filled.values.coverage_c.value).toBe("50%");
+    expect(filled.values.coverage_d.value).toBe("20%");
+    expect(filled.values.coverage_e.value).toBe("$300k");
+    expect(filled.values.coverage_f.value).toBe("$2k");
     expect(filled.values.year_built.value).toBe("1998");
     expect(filled.values.roof_year.value).toBe("2018");
     // QuoteRUSH roof covering is FBC compliance; material leftovers stay leftover extras.

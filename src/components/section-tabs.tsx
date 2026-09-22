@@ -82,7 +82,7 @@ export function SectionTabs({
           {tab.label}
           {tab.complete ? (
             <span
-              className="pointer-events-none absolute right-0 bottom-0 inline-flex size-3 translate-x-1/4 translate-y-1/4 items-center justify-center rounded-full text-[8px] font-bold leading-none"
+                className="pointer-events-none absolute right-0 bottom-0 inline-flex size-[18px] translate-x-1/4 translate-y-1/4 items-center justify-center rounded-full text-[12px] font-bold leading-none"
               data-ff-tab-complete=""
             >
               ✓

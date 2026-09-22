@@ -7,6 +7,7 @@ import { MasterSheetFillButton } from "@/components/deal/master-sheet-fill-butto
 import { MasterSheetAddressLinks } from "@/components/deal/master-sheet-address-links";
 import { MilesToCoastButton } from "@/components/deal/miles-to-coast-button";
 import { sourceTag } from "@/lib/quote-sheet/apply";
+import { COVERAGE_A_RCE_LABEL } from "@/lib/quote-sheet/home-coverage-rules";
 import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
 import { ACTION_FLASH_MESSAGE, SHEET_CONFIRM_HASH } from "@/lib/desk/action-flash";
 import { flashAction } from "@/lib/flash-client";
@@ -589,6 +590,9 @@ function SheetGroup({
             cascadeKey={field.showWhen ? field.showWhen.key : undefined}
             footer={
               <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0 text-[9px] leading-none text-muted-foreground">
+                {line === "home" && field.key === "coverage_a" && !(liveValues[field.key] ?? cell?.value ?? "").trim() ? (
+                  <span data-ff-coverage-a-rce="">{COVERAGE_A_RCE_LABEL}</span>
+                ) : null}
                 {sourceText ? <span data-ff-sheet-source={field.key}>{sourceText}</span> : null}
                 {cell?.status && filled ? (
                   <span

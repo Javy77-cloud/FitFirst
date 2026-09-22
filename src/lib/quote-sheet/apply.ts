@@ -10,6 +10,11 @@ import {
   valuesDiffer,
 } from "./records-check";
 import { collapseAutoDriverSheet, retargetAutoDriverFields } from "./auto-driver-dedupe";
+import {
+  finalizeHomeDeclarationCoverages,
+  isReplaceableHomeCoverageFill,
+  reapplyDefaultsAfterManualCoverageA,
+} from "./home-coverage-rules";
 import { streetsAreSameLocation } from "./home-address-fill";
 import { applyInspectionExistenceFromDoc } from "./home-inspections";
 import { isSheetFormMetaKey, submittedSheetValues } from "./save-values";
@@ -337,8 +342,10 @@ export function applyExtractedToSheet(
     const canReplacePublic = !fieldIsBlank(current) && isPublicRecordsSource(current);
     const canReplaceWeakCheck =
       overwriteWeakCheck && isWeakCheckOverwriteable(current) && !isProtectedSheetSource(current);
+    const canReplaceCoverageDefault =
+      line === "home" && isReplaceableHomeCoverageFill(key, current);
 
-    if (!canFillBlank && !canReplacePublic && !canReplaceWeakCheck) {
+    if (!canFillBlank && !canReplacePublic && !canReplaceWeakCheck && !canReplaceCoverageDefault) {
       skippedKeys.push(key);
       if (
         recordMismatches &&
@@ -429,35 +436,13 @@ export function applyExtractedToSheet(
     return { values: collapsed, filledKeys, skippedKeys };
   }
 
-  if (line === "home") copyAopDeductibleIntoWindHail(values, filledKeys);
+  if (line === "home") {
+    finalizeHomeDeclarationCoverages(values, filledKeys, options?.docType, extracted);
+  }
 
   const stamped =
     line === "home" ? applyInspectionExistenceFromDoc(values, options?.docType, source) : values;
   return { values: stamped, filledKeys, skippedKeys };
-}
-
-/**
- * A dec that prints only an all-other-perils deductible has no separate wind/hail.
- * Copy that AOP amount into wind/hail. A printed wind/hail value is left alone.
- */
-function copyAopDeductibleIntoWindHail(
-  values: Record<string, QuoteSheetFieldValue>,
-  filledKeys: string[],
-) {
-  if (!fieldIsBlank(values.wind_hail_deductible)) return;
-  const aop = values.aop_deductible;
-  const aopValue = aop?.value?.trim() ?? "";
-  if (!aopValue || fieldIsBlank(aop)) return;
-  const next = normalizeWindHailDeductible(aopValue);
-  if (!next) return;
-  const sourceLabel = (aop.sourceLabel ?? "").trim();
-  values.wind_hail_deductible = {
-    value: next,
-    status: "check",
-    source: aop.source ?? "extracted",
-    sourceLabel: sourceLabel ? `${sourceLabel} · AOP` : "AOP deductible",
-  };
-  if (!filledKeys.includes("wind_hail_deductible")) filledKeys.push("wind_hail_deductible");
 }
 
 /** Gap-fill blanks from public records. Uploaded dec / agent / Javy always win. */
@@ -741,6 +726,7 @@ export function mergeAgentEdits(
     if (isSheetFormMetaKey(key) || catalog.has(key)) continue;
     writeCell(key, raw);
   }
+  if (line === "home") reapplyDefaultsAfterManualCoverageA(existing, next, product);
   return line === "auto" ? collapseAutoDriverSheet(next) : next;
 }
 

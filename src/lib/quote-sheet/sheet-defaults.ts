@@ -575,6 +575,38 @@ export const WIND_HAIL_DEDUCTIBLE_OPTIONS = [
 export const HURRICANE_DEDUCTIBLE_OPTIONS = ["1%", "2%", "3%", "4%", "5%", "10%"] as const;
 export const AOP_DEDUCTIBLE_OPTIONS = ["500", "1000", "1500", "2000", "2500", "5000"] as const;
 
+/** Coverage B — percent of Coverage A. */
+export const COVERAGE_B_OPTIONS = ["1%", "2%", "5%", "10%", "15%", "20%"] as const;
+/** Coverage C — percent of Coverage A. */
+export const COVERAGE_C_OPTIONS = ["20%", "25%", "30%", "35%", "40%", "45%", "50%", "60%", "70%"] as const;
+/** Coverage D — percent of Coverage A. */
+export const COVERAGE_D_OPTIONS = ["5%", "10%", "20%", "25%", "30%"] as const;
+/** Coverage E — liability limit. */
+export const COVERAGE_E_OPTIONS = ["$0", "$100k", "$200k", "$300k", "$400k", "$500k", "$1M"] as const;
+/** Coverage F — medical payments. */
+export const COVERAGE_F_OPTIONS = ["$0", "$1k", "$2k", "$3k", "$4k", "$5k", "$10k"] as const;
+/** Ordinance or law — percent of Coverage A. */
+export const ORDINANCE_OR_LAW_OPTIONS = ["10%", "25%", "50%"] as const;
+
+/**
+ * Home coverages filled only when the declaration omitted them, or when the
+ * agent changes Coverage A. Hurricane and AOP are not in this set.
+ */
+export const HOME_COVERAGE_DEFAULTS = {
+  coverage_b: "2%",
+  coverage_c: "25%",
+  coverage_d: "10%",
+  coverage_e: "$300k",
+  coverage_f: "$1k",
+  ordinance_or_law: "25%",
+  water_backup: "$5,000",
+  sinkhole_deductible: "10%",
+} as const;
+
+/** Shown under a blank Coverage A. Not a dollar amount. */
+export const COVERAGE_A_RCE_LABEL =
+  "Coverage A required — enter it from the replacement-cost estimator";
+
 /**
  * Empty-cell defaults for new blank sheets / Fill.
  * Protection + hazard starters only — never overwrite agent/confirmed/javy.

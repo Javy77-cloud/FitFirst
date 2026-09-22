@@ -75,6 +75,14 @@ function sectionOpen(html: string, title: string): string {
   return chunk.match(/data-ff-section-open="(true|false)"/)?.[1] ?? "";
 }
 
+function sectionArrow(html: string, title: string): string {
+  const marker = `data-ff-section-toggle="${title}"`;
+  const at = html.indexOf(marker);
+  if (at < 0) return "";
+  const chunk = html.slice(Math.max(0, at - 120), at + marker.length + 80);
+  return chunk.match(/data-ff-section-arrow="(up|down)"/)?.[1] ?? "";
+}
+
 describe("Home inspection sections", () => {
   it("recognizes every residential Home form alias and leaves other lines alone", () => {
     const aliases = [
@@ -319,8 +327,9 @@ describe("Home inspection sections", () => {
       expect(html, product).toContain('data-ff-inspection-banner="wind"');
       expect(html, product).toContain('data-ff-inspection-banner="four"');
       expect(html, product).toContain('data-ff-inspection-ready="false"');
-      expect(html, product).toContain('data-ff-section-arrow="up"');
-      expect(html, product).toContain('data-ff-section-arrow="down"');
+      expect(sectionArrow(html, WIND_MIT_SECTION), product).toBe("up");
+      expect(sectionArrow(html, FOUR_POINT_SECTION), product).toBe("up");
+      expect(sectionArrow(html, "Property"), product).toBe("down");
       expect(html, product).toContain("data-ff-columns-anchor");
       expect(html, product).not.toMatch(/>Expand<|>Collapse</);
       expect(html.toLowerCase(), product).not.toMatch(/4[-\s]point/);
@@ -348,7 +357,9 @@ describe("Home inspection sections", () => {
       }),
     );
     expect(sectionOpen(openWind, WIND_MIT_SECTION)).toBe("true");
+    expect(sectionArrow(openWind, WIND_MIT_SECTION)).toBe("down");
     expect(sectionOpen(openWind, FOUR_POINT_SECTION)).toBe("false");
+    expect(sectionArrow(openWind, FOUR_POINT_SECTION)).toBe("up");
 
     for (const [line, product] of [
       ["auto", "auto"],
