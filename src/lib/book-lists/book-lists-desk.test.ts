@@ -27,6 +27,10 @@ describe("command-card book lists", () => {
     expect(source("src/components/smart-search.tsx")).toMatch(/\/contacts/);
     expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/ff-stack-action/);
     expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/ff-stack-glyph/);
+    expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/data-ff-contact-stack-card/);
+    expect(source("src/components/book-lists/glance-card.tsx")).toMatch(
+      /CONTACT_STACK_META = \["language", "status", "dob", "policies"\]/,
+    );
   });
 
   it("Carriers stack quote-ready / skip / stale signals", () => {
