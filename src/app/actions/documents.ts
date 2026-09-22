@@ -156,7 +156,7 @@ export async function persistFile(input: {
     }
     const relPath = path.posix.join(DEFAULT_TENANT_ID, folder, `${id}-${input.filename}`);
     storagePath = await writeStoredFile(relPath, input.buffer, mimeType, {
-      durable: Boolean(input.dealId),
+      durable: Boolean(input.dealId || input.policyId),
     });
   }
 

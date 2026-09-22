@@ -1,61 +1,196 @@
 "use server";
 
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { and, eq } from "drizzle-orm";
+import { persistFile } from "@/app/actions/documents";
+import { dismissIdCardsPrompt } from "@/app/actions/policy-mint";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { documents } from "@/lib/db/schema";
-import { recordInitialDocumentVersion } from "@/lib/documents/version-store";
-
-const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
+import { documents, policies } from "@/lib/db/schema";
+import { isUploadedFile, readUploadedBytes, uploadedFileName } from "@/lib/documents/uploaded-file";
+import { displayFilename } from "@/lib/files/upload-plan";
+import {
+  DOMENIC_IORI_DEC_DOCUMENT_ID,
+  DOMENIC_IORI_POLICY_ID,
+} from "@/lib/policy/dec-prompt";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
 }
 
-/** Multi-file attach on a Policy. Not part of Save policy. */
+function extensionOf(name: string): string {
+  const idx = name.lastIndexOf(".");
+  return idx >= 0 ? name.slice(idx) : "";
+}
+
+function withExtension(display: string, original: string): string {
+  const trimmed = displayFilename(display).trim();
+  if (!trimmed) return displayFilename(original);
+  if (extensionOf(trimmed)) return trimmed;
+  const ext = extensionOf(original);
+  return ext ? `${trimmed}${ext}` : trimmed;
+}
+
+/** Multi-file attach on a Policy. Durable via Vercel Blob when configured. */
 export async function attachPolicyFiles(formData: FormData) {
   const policyId = str(formData, "policyId");
   const dealId = str(formData, "dealId") || null;
   if (!policyId) return;
 
+  const [policy] = await db
+    .select()
+    .from(policies)
+    .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
+  if (!policy) return;
+
   const files = formData.getAll("file");
   const categories = formData.getAll("category").map((value) => String(value ?? "").trim() || "other");
+  const expiresRaw = formData.getAll("expiresAt").map((value) => String(value ?? "").trim());
 
+  let count = 0;
   let index = 0;
   for (const file of files) {
-    if (!(file instanceof File) || file.size === 0) {
+    if (!isUploadedFile(file)) {
       index += 1;
       continue;
     }
-    const id = randomUUID();
-    const storagePath = path.join(DEFAULT_TENANT_ID, "policies", policyId, `${id}-${file.name}`);
-    const abs = path.join(uploadRoot, storagePath);
-    await mkdir(path.dirname(abs), { recursive: true });
-    await writeFile(abs, Buffer.from(await file.arrayBuffer()));
-    await db.insert(documents).values({
-      id,
-      tenantId: DEFAULT_TENANT_ID,
-      dealId,
+    const bytes = await readUploadedBytes(file);
+    if (!bytes) {
+      index += 1;
+      continue;
+    }
+    const docType = categories[index] || str(formData, "docType") || "other";
+    const expiresAt = expiresRaw[index] || str(formData, "expiresAt") || "";
+    const doc = await persistFile({
       policyId,
-      filename: file.name,
+      dealId: dealId || policy.dealId,
+      contactId: policy.contactId,
+      riskId: policy.riskId,
+      filename: uploadedFileName(file),
       mimeType: file.type || "application/octet-stream",
-      storagePath,
-      docType: categories[index] || "other",
+      buffer: bytes,
+      docType,
       slot: "policy_file",
-      status: "uploaded",
     });
-    await recordInitialDocumentVersion({
-      id,
-      filename: file.name,
-      mimeType: file.type || "application/octet-stream",
-      storagePath,
-      docType: categories[index] || "other",
-    });
+    if (expiresAt) {
+      const parsed = new Date(`${expiresAt}T12:00:00`);
+      if (!Number.isNaN(parsed.getTime())) {
+        await db
+          .update(documents)
+          .set({ expiresAt: parsed })
+          .where(eq(documents.id, doc.id));
+      }
+    }
+    count += 1;
     index += 1;
   }
 
   revalidatePath(`/policies/${policyId}`);
+  if (dealId || policy.dealId) revalidatePath(`/deals/${dealId || policy.dealId}`);
+}
+
+/**
+ * Durable ID-card upload (modal step 2 + quiet Documents control).
+ * Accepts file_0..N + displayName_0..N. Multi-file OK.
+ */
+export async function uploadPolicyIdCards(formData: FormData) {
+  const policyId = str(formData, "policyId");
+  const dealId = str(formData, "dealId") || null;
+  const dismiss = str(formData, "dismiss") === "1" || formData.get("dismiss") === "on";
+  if (!policyId) return { ok: false as const, reason: "invalid" as const, count: 0 };
+
+  const [policy] = await db
+    .select()
+    .from(policies)
+    .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
+  if (!policy) return { ok: false as const, reason: "missing" as const, count: 0 };
+
+  const rowCount = Number(formData.get("rowCount") ?? 0);
+  const indexes =
+    Number.isFinite(rowCount) && rowCount > 0
+      ? Array.from({ length: rowCount }, (_, i) => i)
+      : [0];
+
+  let count = 0;
+  for (const i of indexes) {
+    const raw = formData.get(`file_${i}`) ?? (i === 0 ? formData.get("file") : null);
+    if (raw == null || !isUploadedFile(raw)) continue;
+    const file = raw;
+    const bytes = await readUploadedBytes(file);
+    if (!bytes) continue;
+    const original = uploadedFileName(file);
+    const display = withExtension(
+      str(formData, `displayName_${i}`) || str(formData, "displayName"),
+      original,
+    );
+    await persistFile({
+      policyId,
+      dealId: dealId || policy.dealId,
+      contactId: policy.contactId,
+      riskId: policy.riskId,
+      filename: display,
+      mimeType: file.type || "application/octet-stream",
+      buffer: bytes,
+      docType: "policy_id",
+      slot: "policy_file",
+    });
+    count += 1;
+  }
+
+  if (count === 0) {
+    return { ok: false as const, reason: "choose-file" as const, count: 0 };
+  }
+
+  if (dismiss) {
+    const data = new FormData();
+    data.set("policyId", policyId);
+    await dismissIdCardsPrompt(data);
+  }
+
+  revalidatePath(`/policies/${policyId}`);
+  if (dealId || policy.dealId) revalidatePath(`/deals/${dealId || policy.dealId}`);
+  return { ok: true as const, count };
+}
+
+/**
+ * One-shot: retag Domenic Iori Travelers mint DEC onto policy_dec / policy_file.
+ * Does not invent bytes — only fixes doc_type so Dec-on-file counts.
+ */
+export async function ensureDomenicMintDecRetag() {
+  const [doc] = await db
+    .select()
+    .from(documents)
+    .where(
+      and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.id, DOMENIC_IORI_DEC_DOCUMENT_ID)),
+    );
+  if (!doc) return { ok: false as const, reason: "missing" as const };
+
+  const type = (doc.docType ?? "").toLowerCase();
+  const already =
+    type === "policy_dec" &&
+    doc.slot === "policy_file" &&
+    doc.policyId === DOMENIC_IORI_POLICY_ID;
+  if (already) {
+    return { ok: true as const, changed: false as const, documentId: doc.id, docType: doc.docType };
+  }
+
+  await db
+    .update(documents)
+    .set({
+      docType: "policy_dec",
+      slot: "policy_file",
+      policyId: doc.policyId || DOMENIC_IORI_POLICY_ID,
+    })
+    .where(eq(documents.id, doc.id));
+
+  const policyId = doc.policyId || DOMENIC_IORI_POLICY_ID;
+  revalidatePath(`/policies/${policyId}`);
+  if (doc.dealId) revalidatePath(`/deals/${doc.dealId}`);
+  return {
+    ok: true as const,
+    changed: true as const,
+    documentId: doc.id,
+    docType: "policy_dec",
+    previousDocType: doc.docType,
+  };
 }

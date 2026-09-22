@@ -1,4 +1,4 @@
-import { uploadDealSlot } from "@/app/actions/lifecycle";
+import { attachPolicyFiles } from "@/app/actions/policy-files";
 import { deletePolicyFilingAttachment } from "@/app/actions/policies";
 import { ChooseFiles } from "@/components/choose-files";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
@@ -13,6 +13,7 @@ import {
   PolicyDocumentsTable,
   type PolicyDocRow,
 } from "@/components/policy/tabs/documents-table";
+import { IdCardsUploadPanel } from "@/components/policy/id-cards-upload-panel";
 
 export function PolicyDocumentsTab({
   policy,
@@ -60,12 +61,11 @@ export function PolicyDocumentsTab({
           inspection warn at 30 days when an expiry is set.
         </p>
         <form
-          action={uploadDealSlot}
+          action={attachPolicyFiles}
           className="my-3 grid gap-2 rounded-md border border-border p-3 sm:grid-cols-3"
         >
           <input type="hidden" name="policyId" value={policy.id} />
           <input type="hidden" name="dealId" value={policy.dealId ?? ""} />
-          <input type="hidden" name="slot" value="policy_file" />
           <div>
             <Label className="text-xs">Type</Label>
             <select
@@ -100,6 +100,15 @@ export function PolicyDocumentsTab({
             Attach file
           </Button>
         </form>
+        <div className="my-3 space-y-2 rounded-md border border-dashed border-border p-3" data-ff-id-cards-quiet="">
+          <div>
+            <h3 className="text-sm font-semibold text-navy">Upload ID cards</h3>
+            <p className="text-xs text-muted-foreground">
+              Always available here — no reminder popup. Pick, clear, rename, multi-file OK.
+            </p>
+          </div>
+          <IdCardsUploadPanel policyId={policy.id} dealId={policy.dealId} compact />
+        </div>
         <PolicyDocumentsTable
           files={files.map(
             (f): PolicyDocRow => ({

@@ -168,6 +168,8 @@ export async function serveDeskDocument(
   });
 }
 
+export const FILE_MISSING_HEADER = "X-FitFirst-File-Missing";
+
 function missingFileResponse(filename: string, download: boolean): Response {
   const message = `${filename} is not in storage. Re-upload the file — local disk uploads do not survive Vercel deploys. Existing blob URLs are retried automatically.`;
   return new Response(message, {
@@ -177,6 +179,56 @@ function missingFileResponse(filename: string, download: boolean): Response {
       "Content-Disposition": contentDisposition(filename, download),
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
+      [FILE_MISSING_HEADER]: "1",
+    },
+  });
+}
+
+/** Lightweight existence check for in-app preview (no blank iframe). */
+export async function probeDeskDocument(
+  id: string,
+  opts: { versionId?: string | null } = {},
+): Promise<Response> {
+  const doc = await getDeskDocument(id);
+  if (!doc) {
+    return new Response("Not found", {
+      status: 404,
+      headers: { [FILE_MISSING_HEADER]: "1", "Cache-Control": "private, no-store" },
+    });
+  }
+  if (opts.versionId) {
+    const hit = await getDeskDocumentVersion(id, opts.versionId);
+    if (!hit) {
+      return new Response("Not found", {
+        status: 404,
+        headers: { [FILE_MISSING_HEADER]: "1", "Cache-Control": "private, no-store" },
+      });
+    }
+    const file = await loadDocumentBytes({
+      ...doc,
+      filename: hit.version.filename,
+      mimeType: hit.version.mimeType,
+      storagePath: hit.version.storagePath,
+      docType: hit.version.docType,
+    });
+    if (!file) return missingFileResponse(hit.version.filename, false);
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Content-Type": file.mimeType,
+        "Cache-Control": "private, no-store",
+        "X-FitFirst-File-Ok": "1",
+      },
+    });
+  }
+  const file = await loadDocumentBytes(doc);
+  if (!file) return missingFileResponse(doc.filename, false);
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Content-Type": file.mimeType,
+      "Cache-Control": "private, no-store",
+      "X-FitFirst-File-Ok": "1",
     },
   });
 }
