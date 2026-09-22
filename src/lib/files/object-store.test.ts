@@ -24,6 +24,8 @@ import {
   canonicalBlobStoreId,
   privateBlobUrlForToken,
   readbackFailureMessage,
+  assertDeclaredPdfUpload,
+  bodyHeadHex,
   describeBodyPrefix,
   getLastReadbackDiag,
 } from "./object-store";
@@ -462,11 +464,11 @@ describe("RW token put/get alignment (mocked @vercel/blob)", () => {
 
 describe("describeBodyPrefix", () => {
   it("labels PDF magic, HTML, JSON, and XML without leaking body text", () => {
-    expect(describeBodyPrefix(Buffer.from("%PDF-1.4 hello"))).toBe("startsWith %PDF");
-    expect(describeBodyPrefix(Buffer.from("<!DOCTYPE html><html>"))).toBe("startsWith <!DOCTYPE");
-    expect(describeBodyPrefix(Buffer.from('{"error":"nope"}'))).toBe("startsWith {");
-    expect(describeBodyPrefix(Buffer.from('<?xml version="1.0"?>'))).toBe("startsWith <?xml");
-    expect(describeBodyPrefix(Buffer.from("not a document"))).toBe("non-PDF text");
+    expect(describeBodyPrefix(Buffer.from("%PDF-1.4 hello"))).toMatch(/^startsWith %PDF, \d+ bytes, hex 255044462d/);
+    expect(describeBodyPrefix(Buffer.from("<!DOCTYPE html><html>"))).toMatch(/^startsWith <!DOCTYPE, \d+ bytes, hex/);
+    expect(describeBodyPrefix(Buffer.from('{"error":"nope"}'))).toMatch(/^startsWith \{, \d+ bytes, hex 7b/);
+    expect(describeBodyPrefix(Buffer.from('<?xml version="1.0"?>'))).toMatch(/^startsWith <\?xml, \d+ bytes, hex/);
+    expect(describeBodyPrefix(Buffer.from("not a document"))).toMatch(/^non-PDF text, \d+ bytes, hex/);
   });
 });
 
@@ -614,7 +616,7 @@ describe("non-PDF / HTML body read-back (mocked)", () => {
     expect(message).not.toContain("testsecret");
     expect(message).not.toContain(RW_TOKEN);
     const diag = diagFresh();
-    expect(diag?.bodyPrefix).toBe("startsWith {");
+    expect(diag?.bodyPrefix).toMatch(/^startsWith \{, \d+ bytes, hex 7b/);
   });
 
   it("PDF magic bytes pass accept path and clearer non-PDF diag includes content-type when present", async () => {
@@ -747,5 +749,102 @@ describe("assertReadableFromPutResult prefers downloadUrl / pathname over raw Be
     });
     expect(get).toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("describeBodyPrefix hex + byteLength diag", () => {
+  it("includes byte length and first-8 hex for non-PDF text", () => {
+    const bytes = Buffer.from("ISSUED QUOTE NOT A PDF");
+    const label = describeBodyPrefix(bytes);
+    expect(label).toMatch(/non-PDF text/);
+    expect(label).toContain(`${bytes.length} bytes`);
+    expect(label).toContain(`hex ${bodyHeadHex(bytes)}`);
+    expect(label).not.toContain("testsecret");
+    expect(bodyHeadHex(bytes)).toBe(bytes.subarray(0, 8).toString("hex"));
+  });
+
+  it("labels gzip-wrapped PDF safely without dumping body", async () => {
+    const { gzipSync } = await import("node:zlib");
+    const pdf = Buffer.from("%PDF-1.4 mock\n");
+    const gz = gzipSync(pdf);
+    const label = describeBodyPrefix(gz);
+    expect(label).toMatch(/gzip then %PDF/);
+    expect(label).toContain(`${gz.length} bytes`);
+    expect(label).toMatch(/hex 1f8b/);
+    expect(label).not.toContain("%PDF-1.4 mock");
+  });
+});
+
+describe("assertDeclaredPdfUpload", () => {
+  it("rejects non-PDF bytes when mime/path say PDF", () => {
+    expect(() =>
+      assertDeclaredPdfUpload("tenant/deal/policy_dec.pdf", Buffer.from("not a pdf"), "application/pdf"),
+    ).toThrow(/Upload rejected:.*not PDF/);
+    expect(() =>
+      assertDeclaredPdfUpload("tenant/deal/x.pdf", Buffer.from("%PDF-1.4 ok"), "application/pdf"),
+    ).not.toThrow();
+    expect(() =>
+      assertDeclaredPdfUpload("tenant/deal/note.txt", Buffer.from("hello"), "text/plain"),
+    ).not.toThrow();
+  });
+
+  it("accepts BOM-prefixed PDF on put path", () => {
+    const bom = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from("%PDF-1.7\n")]);
+    expect(() => assertDeclaredPdfUpload("a/b/dec.pdf", bom, "application/pdf")).not.toThrow();
+  });
+});
+
+describe("acceptBytes gzip-wrapped PDF read-back", () => {
+  const RW_TOKEN = "vercel_blob_rw_zsetpgqienornflj_testsecret";
+  const PUT_URL = "https://zsetpgqienornflj.private.blob.vercel-storage.com/tenant/deal/doc.pdf";
+
+  beforeEach(() => {
+    process.env.BLOB_READ_WRITE_TOKEN = RW_TOKEN;
+    delete process.env.BLOB_STORE_ID;
+    process.env.VERCEL = "1";
+  });
+
+  it("accepts gzip body with content-type application/pdf via SDK get", async () => {
+    const { gzipSync } = await import("node:zlib");
+    const pdf = Buffer.from("%PDF-1.4 gzip-readback\n");
+    const gz = gzipSync(pdf);
+    const get = vi.fn(async () => ({
+      statusCode: 200 as const,
+      stream: new ReadableStream({
+        start(controller) {
+          controller.enqueue(gz);
+          controller.close();
+        },
+      }),
+      headers: new Headers({ "content-type": "application/pdf" }),
+      blob: {
+        url: PUT_URL,
+        downloadUrl: `${PUT_URL}?download=1`,
+        pathname: "tenant/deal/doc.pdf",
+        contentType: "application/pdf",
+        contentDisposition: "",
+        cacheControl: "",
+        size: gz.length,
+        uploadedAt: new Date(),
+        etag: "e",
+      },
+    }));
+    vi.doMock("@vercel/blob", () => ({
+      put: vi.fn(),
+      get,
+      del: vi.fn(),
+      list: vi.fn(),
+      issueSignedToken: vi.fn(),
+      presignUrl: vi.fn(),
+    }));
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("no bearer"); }));
+
+    const { assertReadableFromPutResult: assertFresh } = await import("./object-store");
+    await assertFresh({
+      url: PUT_URL,
+      downloadUrl: `${PUT_URL}?download=1`,
+      pathname: "tenant/deal/doc.pdf",
+    });
+    expect(get).toHaveBeenCalled();
   });
 });

@@ -13,6 +13,8 @@ import {
   inferMimeFromName,
   isProposalAttachment,
   isFilenameOnlyStub,
+  inflateIfGzip,
+  isGzipMagic,
   looksLikePdf,
   resolveFileMime,
   shouldWrapAsPdf,
@@ -94,5 +96,37 @@ describe("matchQuotePdf", () => {
       matchQuotePdf({ quoteNumber: "Q-AI-MEL-2840" }, { name: "American Integrity" }, docs)?.id,
     ).toBe("1");
     expect(matchQuotePdf({ quoteNumber: "Q-TR-MEL-3120" }, { name: "Tailrow" }, docs)?.id).toBe("2");
+  });
+});
+
+describe("looksLikePdf hardening", () => {
+  it("accepts BOM-prefixed and whitespace-prefixed PDF magic", () => {
+    const bom = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from("%PDF-1.7\n")]);
+    expect(looksLikePdf(bom)).toBe(true);
+    expect(looksLikePdf(Buffer.from("  \n\t%PDF-1.4\n"))).toBe(true);
+    expect(looksLikePdf(Buffer.from("xxxx%PDF-1.5\n"))).toBe(true);
+  });
+
+  it("accepts %PDF followed by version digit without hyphen", () => {
+    expect(looksLikePdf(Buffer.from("%PDF1.4\n"))).toBe(true);
+    expect(looksLikePdf(Buffer.from("%PDFx"))).toBe(false);
+  });
+
+  it("accepts gzip-wrapped PDF and inflateIfGzip returns PDF bytes", async () => {
+    const { gzipSync } = await import("node:zlib");
+    const pdf = Buffer.from("%PDF-1.4 gzip-wrapped\n");
+    const gz = gzipSync(pdf);
+    expect(isGzipMagic(gz)).toBe(true);
+    expect(looksLikePdf(gz)).toBe(true);
+    expect(looksLikePdf(pdf)).toBe(true);
+    const inflated = inflateIfGzip(gz);
+    expect(inflated.toString("utf8")).toContain("%PDF-1.4");
+    expect(isGzipMagic(inflated)).toBe(false);
+  });
+
+  it("rejects plain text and tiny buffers", () => {
+    expect(looksLikePdf(Buffer.from("ISSUED QUOTE"))).toBe(false);
+    expect(looksLikePdf(Buffer.from("%PD"))).toBe(false);
+    expect(looksLikePdf(Buffer.alloc(0))).toBe(false);
   });
 });

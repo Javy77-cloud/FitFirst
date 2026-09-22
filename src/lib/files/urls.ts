@@ -1,3 +1,5 @@
+import { gunzipSync } from "node:zlib";
+
 /** Desk file URLs. View is inline; download forces a save. */
 
 export function fileViewHref(documentId: string): string {
@@ -17,15 +19,57 @@ export function fileVersionHref(documentId: string, versionId: string, download 
   return `/api/files/${documentId}?${query}`;
 }
 
+/** Gzip magic 1f 8b — Blob/CDN sometimes returns gzipped body with Content-Type: application/pdf. */
+export function isGzipMagic(bytes: Uint8Array | Buffer): boolean {
+  return bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b;
+}
+
+/**
+ * True when `%PDF` appears in the first 1KB, allowing leading BOM/whitespace/junk.
+ * Accepts `%PDF-` (normal) or `%PDF` + version digit (tolerant of missing hyphen).
+ */
+function hasPdfMagicInHead(bytes: Uint8Array | Buffer): boolean {
+  const limit = Math.min(bytes.length, 1024);
+  if (limit < 4) return false;
+  for (let i = 0; i <= limit - 4; i++) {
+    if (
+      bytes[i] === 0x25 && // %
+      bytes[i + 1] === 0x50 && // P
+      bytes[i + 2] === 0x44 && // D
+      bytes[i + 3] === 0x46 // F
+    ) {
+      if (i + 4 >= bytes.length) return false;
+      const next = bytes[i + 4]!;
+      // `%PDF-` or `%PDF1` / `%PDF2` …
+      if (next === 0x2d) return true;
+      if (next >= 0x30 && next <= 0x39) return true;
+    }
+  }
+  return false;
+}
+
+/** Inflate gzip body when present; otherwise return original bytes. */
+export function inflateIfGzip(bytes: Buffer): Buffer {
+  if (!isGzipMagic(bytes)) return bytes;
+  try {
+    return gunzipSync(bytes);
+  } catch {
+    return bytes;
+  }
+}
+
 export function looksLikePdf(bytes: Uint8Array | Buffer): boolean {
-  if (bytes.length < 5) return false;
-  return (
-    bytes[0] === 0x25 &&
-    bytes[1] === 0x50 &&
-    bytes[2] === 0x44 &&
-    bytes[3] === 0x46 &&
-    bytes[4] === 0x2d
-  );
+  if (bytes.length < 4) return false;
+  if (hasPdfMagicInHead(bytes)) return true;
+  if (isGzipMagic(bytes)) {
+    try {
+      const inflated = gunzipSync(Buffer.from(bytes));
+      return hasPdfMagicInHead(inflated);
+    } catch {
+      return false;
+    }
+  }
+  return false;
 }
 
 /** JPEG / PNG / GIF / BMP / WEBP magic — used so a misnamed image never goes through pdf-parse. */

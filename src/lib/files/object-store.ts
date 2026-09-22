@@ -1,7 +1,7 @@
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { looksLikeImageBuffer, looksLikePdf } from "@/lib/files/urls";
+import { inflateIfGzip, isGzipMagic, looksLikeImageBuffer, looksLikePdf } from "@/lib/files/urls";
 import { storageObjectKey } from "@/lib/files/upload-plan";
 
 function uploadRoot(): string {
@@ -278,20 +278,36 @@ export function blobPathnameDecoded(url: string): string | null {
   }
 }
 
+/** First 8 bytes as lowercase hex for toast diag — never tokens / full body. */
+export function bodyHeadHex(bytes: Buffer, n = 8): string {
+  const take = Math.min(Math.max(n, 0), bytes.length, 8);
+  return Buffer.from(bytes.subarray(0, take)).toString("hex");
+}
+
 /** Safe toast/label for the first bytes — never the raw body or secrets. */
 export function describeBodyPrefix(bytes: Buffer): string {
+  const lenPart = `${bytes.length} bytes`;
+  const hexPart = `hex ${bodyHeadHex(bytes)}`;
+  const tail = `${lenPart}, ${hexPart}`;
   const head = bytes.subarray(0, 64).toString("utf8").replace(/^\uFEFF/, "").trimStart();
   const lower = head.toLowerCase();
-  if (looksLikePdf(bytes)) return "startsWith %PDF";
-  if (looksLikeImageBuffer(bytes)) return "startsWith image-magic";
-  if (lower.startsWith("<!doctype")) return "startsWith <!DOCTYPE";
-  if (lower.startsWith("<html")) return "startsWith <html";
-  if (head.startsWith("{")) return "startsWith {";
-  if (head.startsWith("[")) return "startsWith [";
-  if (lower.startsWith("<?xml")) return "startsWith <?xml";
-  if (lower.startsWith("<")) return "startsWith <";
-  if (!head) return "non-text body";
-  return "non-PDF text";
+  if (isGzipMagic(bytes)) {
+    const inflated = inflateIfGzip(bytes);
+    if (inflated !== bytes && looksLikePdf(inflated)) {
+      return `gzip then %PDF, ${tail}`;
+    }
+    return `gzip body, ${tail}`;
+  }
+  if (looksLikePdf(bytes)) return `startsWith %PDF, ${tail}`;
+  if (looksLikeImageBuffer(bytes)) return `startsWith image-magic, ${tail}`;
+  if (lower.startsWith("<!doctype")) return `startsWith <!DOCTYPE, ${tail}`;
+  if (lower.startsWith("<html")) return `startsWith <html, ${tail}`;
+  if (head.startsWith("{")) return `startsWith {, ${tail}`;
+  if (head.startsWith("[")) return `startsWith [, ${tail}`;
+  if (lower.startsWith("<?xml")) return `startsWith <?xml, ${tail}`;
+  if (lower.startsWith("<")) return `startsWith <, ${tail}`;
+  if (!head) return `non-text body, ${tail}`;
+  return `non-PDF text, ${tail}`;
 }
 
 function looksLikeAuthErrorBody(bytes: Buffer): boolean {
@@ -351,12 +367,20 @@ function acceptBytes(buf: Buffer, options?: AcceptBytesOptions | string | null):
     setReadbackDiag({ reason: "empty", host, contentType });
     return null;
   }
+  // Capture original shape for toast diag before any inflate.
+  const originalForDiag = buf;
+  if (isGzipMagic(buf)) {
+    const inflated = inflateIfGzip(buf);
+    if (inflated !== buf) {
+      buf = inflated;
+    }
+  }
   if (contentTypeLooksLikeHtmlOrJson(contentType) || looksLikeAuthErrorBody(buf)) {
     setReadbackDiag({
       reason: "auth_body",
       host,
       contentType,
-      bodyPrefix: describeBodyPrefix(buf),
+      bodyPrefix: describeBodyPrefix(originalForDiag),
     });
     return null;
   }
@@ -365,7 +389,7 @@ function acceptBytes(buf: Buffer, options?: AcceptBytesOptions | string | null):
       reason: "non_pdf",
       host,
       contentType,
-      bodyPrefix: describeBodyPrefix(buf),
+      bodyPrefix: describeBodyPrefix(originalForDiag),
     });
     return null;
   }
@@ -806,19 +830,25 @@ export async function probeStoredFile(storagePath: string): Promise<boolean> {
 
 function expectDurableBytes(storagePath: string, bytes: Buffer): void {
   const host = blobHostname(storagePath);
-  if (looksLikeAuthErrorBody(bytes)) {
+  const original = bytes;
+  let check = bytes;
+  if (isGzipMagic(check)) {
+    const inflated = inflateIfGzip(check);
+    if (inflated !== check) check = inflated;
+  }
+  if (looksLikeAuthErrorBody(check)) {
     setReadbackDiag({
       reason: "auth_body",
       host,
-      bodyPrefix: describeBodyPrefix(bytes),
+      bodyPrefix: describeBodyPrefix(original),
     });
     throw new Error(readbackFailureMessage());
   }
-  if (pathExpectsPdf(storagePath) && !looksLikePdf(bytes) && !looksLikeImageBuffer(bytes)) {
+  if (pathExpectsPdf(storagePath) && !looksLikePdf(check) && !looksLikeImageBuffer(check)) {
     setReadbackDiag({
       reason: "non_pdf",
       host,
-      bodyPrefix: describeBodyPrefix(bytes),
+      bodyPrefix: describeBodyPrefix(original),
     });
     throw new Error(readbackFailureMessage());
   }
@@ -904,12 +934,34 @@ function assertPutUrlMatchesRwToken(putUrl: string): void {
  * Deal documents (`durable`) and Vercel runtimes must not succeed with a local relative path —
  * that path is not durable on serverless and agents would treat the PDF as stored.
  */
+/**
+ * Before put: when path/mime says PDF (DEC attach), reject non-PDF upload bytes loudly.
+ * Avoids writing junk that later fails read-back with a confusing toast.
+ */
+export function assertDeclaredPdfUpload(
+  relPath: string,
+  buffer: Buffer,
+  contentType?: string | null,
+): void {
+  const mime = (contentType || "").split(";")[0]?.trim().toLowerCase() ?? "";
+  const pathSaysPdf =
+    pathExpectsPdf(relPath) ||
+    /policy_dec|declaration|\bdec\b/i.test(relPath);
+  const mimeSaysPdf = mime === "application/pdf";
+  if (!pathSaysPdf && !mimeSaysPdf) return;
+  if (looksLikePdf(buffer) || looksLikeImageBuffer(buffer)) return;
+  throw new Error(
+    `Upload rejected: file was declared as PDF but bytes are not PDF (${describeBodyPrefix(buffer)}). Nothing was saved.`,
+  );
+}
+
 export async function writeStoredFile(
   relPath: string,
   buffer: Buffer,
   contentType?: string,
   options?: { durable?: boolean },
 ): Promise<string> {
+  assertDeclaredPdfUpload(relPath, buffer, contentType);
   const key = storageObjectKey(posixKey(relPath));
   const requireRemote = requiresRemoteStorage(options);
   if (blobStoreReady()) {
