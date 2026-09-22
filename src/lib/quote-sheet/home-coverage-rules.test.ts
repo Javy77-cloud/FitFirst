@@ -15,6 +15,7 @@ import { applyExtractedToSheet, mergeAgentEdits } from "./apply";
 import { emptySheetValues, fieldsForLine } from "./catalog";
 import {
   COVERAGE_A_RCE_LABEL,
+  liveValuesAfterManualCoverageA,
   HOME_COVERAGE_DEFAULTS,
 } from "./home-coverage-rules";
 import {
@@ -306,5 +307,53 @@ describe("Coverage A required hint", () => {
     );
     expect(renters).not.toContain("data-ff-coverage-a-rce");
     expect(renters).not.toContain('name="coverage_a"');
+  });
+});
+
+
+describe("liveValuesAfterManualCoverageA", () => {
+  it("reapplies B–F and ordinance defaults when Coverage A amount changes", () => {
+    const stored = emptySheetValues("home", "homeowners");
+    stored.coverage_a = cell("400000", "extracted");
+    stored.coverage_b = cell("5%", "extracted");
+    stored.coverage_c = cell("50%", "extracted");
+    stored.coverage_d = cell("20%", "extracted");
+    stored.coverage_e = cell("$500k", "extracted");
+    stored.coverage_f = cell("$5k", "extracted");
+    stored.ordinance_or_law = cell("50%", "extracted");
+
+    const prevLive = Object.fromEntries(
+      Object.entries(stored).map(([key, value]) => [key, value.value]),
+    );
+
+    const typing = liveValuesAfterManualCoverageA(prevLive, "605000", stored, "homeowners", {
+      reapply: false,
+    });
+    expect(typing.coverage_a).toBe("605000");
+    expect(typing.coverage_b).toBe("5%");
+    expect(typing.coverage_e).toBe("$500k");
+
+    const committed = liveValuesAfterManualCoverageA(prevLive, "605000", stored, "homeowners", {
+      reapply: true,
+    });
+    expect(committed.coverage_a).toBe("605000");
+    expect(committed.coverage_b).toBe(HOME_COVERAGE_DEFAULTS.coverage_b);
+    expect(committed.coverage_c).toBe(HOME_COVERAGE_DEFAULTS.coverage_c);
+    expect(committed.coverage_d).toBe(HOME_COVERAGE_DEFAULTS.coverage_d);
+    expect(committed.coverage_e).toBe("$300k");
+    expect(committed.coverage_f).toBe("$1k");
+    expect(committed.ordinance_or_law).toBe(HOME_COVERAGE_DEFAULTS.ordinance_or_law);
+  });
+
+  it("does not reapply when the normalized Coverage A amount is unchanged", () => {
+    const stored = emptySheetValues("home", "homeowners");
+    stored.coverage_a = cell("605000", "agent");
+    stored.coverage_b = cell("5%", "agent");
+    const prevLive = Object.fromEntries(
+      Object.entries(stored).map(([key, value]) => [key, value.value]),
+    );
+    const next = liveValuesAfterManualCoverageA(prevLive, "$605,000", stored, "homeowners");
+    expect(next.coverage_a).toBe("$605,000");
+    expect(next.coverage_b).toBe("5%");
   });
 });

@@ -7,7 +7,11 @@ import { MasterSheetFillButton } from "@/components/deal/master-sheet-fill-butto
 import { MasterSheetAddressLinks } from "@/components/deal/master-sheet-address-links";
 import { MilesToCoastButton } from "@/components/deal/miles-to-coast-button";
 import { sourceTag } from "@/lib/quote-sheet/apply";
-import { COVERAGE_A_RCE_LABEL } from "@/lib/quote-sheet/home-coverage-rules";
+import {
+  COVERAGE_A_RCE_LABEL,
+  HOME_COVERAGE_DEFAULTS,
+  liveValuesAfterManualCoverageA,
+} from "@/lib/quote-sheet/home-coverage-rules";
 import { SheetApproveGate } from "@/components/deal/sheet-approve-gate";
 import { ACTION_FLASH_MESSAGE, SHEET_CONFIRM_HASH } from "@/lib/desk/action-flash";
 import { flashAction } from "@/lib/flash-client";
@@ -75,6 +79,26 @@ function sheetValuesToLive(values: Record<string, QuoteSheetFieldValue>): Record
   return Object.fromEntries(
     Object.entries(values).map(([key, cell]) => [key, cell?.value ?? ""]),
   );
+}
+
+const HOME_LIVE_COVERAGE_KEYS = new Set<string>([
+  "coverage_a",
+  ...Object.keys(HOME_COVERAGE_DEFAULTS),
+  "wind_hail_deductible",
+]);
+
+function applyHomeCoverageLiveChange(
+  prev: Record<string, string>,
+  key: string,
+  next: string,
+  stored: Record<string, QuoteSheetFieldValue>,
+  product: string | null | undefined,
+  commit: boolean,
+): Record<string, string> {
+  if (key !== "coverage_a") return { ...prev, [key]: next };
+  return liveValuesAfterManualCoverageA(prev, next, stored, product, {
+    reapply: commit,
+  });
 }
 
 const MASTER_SHEET_FORM_ID = "ff-master-sheet-save";
@@ -447,8 +471,12 @@ export function MasterSheetCompare({
                 values={values}
                 liveValues={liveValues}
                 cascadeKeys={cascadeKeys}
-                onLiveChange={(key, next) =>
-                  setLiveValues((prev) => ({ ...prev, [key]: next }))
+                onLiveChange={(key, next, commit = false) =>
+                  setLiveValues((prev) =>
+                    line === "home"
+                      ? applyHomeCoverageLiveChange(prev, key, next, values, product, commit)
+                      : { ...prev, [key]: next },
+                  )
                 }
                 extractedByKey={extractedByKey}
                 usingHealthSherpa={usingHealthSherpa}
@@ -506,7 +534,7 @@ function SheetGroup({
   values: Record<string, QuoteSheetFieldValue>;
   liveValues: Record<string, string>;
   cascadeKeys: Set<string>;
-  onLiveChange: (key: string, next: string) => void;
+  onLiveChange: (key: string, next: string, commit?: boolean) => void;
   extractedByKey: Map<string, ExtractedFieldRow>;
   usingHealthSherpa?: boolean;
   insuredPropertyKind?: string | null;
@@ -629,8 +657,10 @@ function SheetGroup({
               cell={cell}
               liveValue={liveValues[field.key] ?? cell?.value ?? ""}
               onLiveChange={
-                cascadeKeys.has(field.key) || field.input === "chips"
-                  ? (next) => onLiveChange(field.key, next)
+                cascadeKeys.has(field.key) ||
+                field.input === "chips" ||
+                (line === "home" && HOME_LIVE_COVERAGE_KEYS.has(field.key))
+                  ? (next, commit) => onLiveChange(field.key, next, commit)
                   : undefined
               }
             />
@@ -783,7 +813,7 @@ function SheetCell({
   options?: string[];
   cell?: QuoteSheetFieldValue;
   liveValue?: string;
-  onLiveChange?: (next: string) => void;
+  onLiveChange?: (next: string, commit?: boolean) => void;
 }) {
   const locked = fieldKey === "coverage_a" && cell?.source === "javy";
   const className = cn(
@@ -910,10 +940,22 @@ function SheetCell({
           id={`ff-sheet-input-${fieldKey}`}
           name={fieldKey}
           type={input === "select" ? "text" : input}
-          defaultValue={value}
+          defaultValue={onLiveChange ? undefined : value}
+          value={onLiveChange ? (liveValue ?? value) : undefined}
+          onChange={
+            onLiveChange
+              ? (event) => onLiveChange(event.target.value, fieldKey === "coverage_a" ? false : true)
+              : undefined
+          }
+          onBlur={
+            onLiveChange && fieldKey === "coverage_a"
+              ? (event) => onLiveChange(event.target.value, true)
+              : undefined
+          }
           readOnly={locked}
           aria-label={fieldLabel}
           className={className}
+          data-ff-coverage-a-live={fieldKey === "coverage_a" ? "" : undefined}
         />
       )}
       <div className="flex flex-wrap items-center gap-1">
