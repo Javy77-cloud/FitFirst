@@ -2939,6 +2939,21 @@ button.ff-renewal-risk-badge {
 .ff-stack-card-spread:has(> :nth-child(3)) {
   grid-template-columns: minmax(0, 1.05fr) minmax(8.5rem, 1fr) auto;
 }
+.ff-stack-card-spread.ff-deal-host-spread {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.85rem;
+  width: 100%;
+}
+.ff-deal-host-center,
+.ff-deal-host-cue,
+.ff-deal-host-center .ff-stack-job,
+.ff-deal-host-center .ff-stack-products,
+.ff-deal-host-center .ff-stack-products li,
+.ff-deal-host-center .ff-stack-product-detail {
+  display: contents;
+}
 .ff-stack-mid {
   margin: 0;
   min-width: 0;
@@ -3474,16 +3489,18 @@ tr[data-ff-activity-selected="true"] {
 }
 .ff-radar-charts {
   display: grid;
-  grid-template-columns: minmax(12rem, 0.86fr) minmax(0, 1.05fr) minmax(0, 1.15fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.4rem;
-  align-items: start;
+  align-items: stretch;
   flex: 0 0 auto;
   min-height: 0;
 }
 .ff-radar-chart {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
+  height: 100%;
   padding: 0.45rem 0.6rem 0.4rem;
   border: 1px solid var(--ff-border);
   border-radius: 0.75rem;
@@ -3508,7 +3525,7 @@ tr[data-ff-activity-selected="true"] {
 .ff-radar-heat-body { align-items: center; justify-content: center; gap: 1.1rem; flex-wrap: wrap; }
 .ff-radar-donut-wrap {
   position: relative;
-  width: min(13.8rem, 100%);
+  width: min(10.35rem, 100%);
   aspect-ratio: 1;
   flex: 0 0 auto;
 }
@@ -3522,7 +3539,7 @@ tr[data-ff-activity-selected="true"] {
   justify-content: center;
   color: var(--ff-navy);
 }
-.ff-radar-donut-center strong { font-size: 1.9rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.ff-radar-donut-center strong { font-size: 1.43rem; line-height: 1; font-variant-numeric: tabular-nums; }
 .ff-radar-donut-center span { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ff-muted); }
 .ff-radar-heat-legend { display: grid; gap: 0.4rem; margin: 0; padding: 0; list-style: none; flex: 0 1 auto; }
 .ff-radar-heat-legend li { display: grid; grid-template-columns: auto 1fr auto; gap: 0.4rem; align-items: center; color: var(--ff-navy); font-size: 0.82rem; font-weight: 650; }
@@ -3533,21 +3550,22 @@ tr[data-ff-activity-selected="true"] {
   justify-content: center;
   align-items: flex-end;
   gap: 0.45rem;
-  align-self: center;
-  width: auto;
+  align-self: stretch;
+  width: 100%;
   max-width: 100%;
   margin-inline: auto;
-  min-height: 15.6rem;
+  min-height: 10.35rem;
+  height: 100%;
 }
-.ff-radar-bar { display: grid; grid-template-rows: auto 1fr auto auto; justify-items: center; width: 4.65rem; height: 100%; min-height: 15.6rem; }
+.ff-radar-bar { display: grid; grid-template-rows: auto 1fr auto auto; justify-items: center; flex: 1 1 0; width: auto; min-width: 0; max-width: 3.5rem; height: 100%; min-height: 10.35rem; }
 .ff-radar-bar-value { color: var(--ff-navy); font-size: 0.82rem; font-weight: 750; font-variant-numeric: tabular-nums; }
 .ff-radar-bar-track {
   display: flex;
   align-items: flex-end;
   width: 100%;
-  max-width: 4.65rem;
+  max-width: none;
   height: 100%;
-  min-height: 7.35rem;
+  min-height: 5.5rem;
   border-radius: 0.45rem 0.45rem 0.15rem 0.15rem;
   background: color-mix(in srgb, var(--ff-navy) 5%, white);
 }
@@ -3572,7 +3590,7 @@ tr[data-ff-activity-selected="true"] {
   margin-inline: auto;
   min-height: 0;
 }
-.ff-radar-trend svg { width: 100%; height: 3.64rem; flex: 0 0 auto; }
+.ff-radar-trend svg { width: 100%; height: 8.6rem; flex: 1 1 auto; }
 .ff-radar-axis { stroke: color-mix(in srgb, var(--ff-navy) 16%, var(--ff-border)); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .ff-radar-axis.is-mid { stroke-dasharray: 3 4; }
 .ff-radar-area { fill: color-mix(in srgb, var(--ff-navy) 16%, white); }
@@ -4261,6 +4279,113 @@ tr[data-ff-activity-selected="true"] {
   text-decoration: none;
 }
 .ff-book-facts a:hover { text-decoration: underline; }
+.ff-book-name {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.ff-party-line,
+.ff-carrier-line,
+.ff-policy-line,
+.ff-stack-card-spread.ff-deal-host-spread {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: center;
+  gap: 0.28rem 0.4rem;
+  width: 100%;
+}
+.ff-party-center,
+.ff-carrier-center,
+.ff-policy-center,
+.ff-deal-host-center,
+.ff-party-right,
+.ff-deal-host-cue,
+.ff-carrier-card .ff-book-columns,
+.ff-party-center .ff-book-facts,
+.ff-party-center .ff-book-channels,
+.ff-carrier-center .ff-book-facts,
+.ff-carrier-center .ff-book-actions,
+.ff-policy-center .ff-book-facts,
+.ff-deal-host-center .ff-stack-job,
+.ff-deal-host-center .ff-stack-products,
+.ff-deal-host-center .ff-stack-products li,
+.ff-deal-host-center .ff-stack-product-detail {
+  display: contents;
+}
+.ff-party-center .ff-book-facts,
+.ff-carrier-center .ff-book-facts,
+.ff-policy-center .ff-book-facts {
+  margin: 0;
+}
+/* Name, each fact, and the right cue share one wrapping row. */
+.ff-party-line > .ff-book-name,
+.ff-carrier-line > .ff-book-name,
+.ff-policy-line > .ff-book-name,
+.ff-deal-host-spread > .ff-stack-name,
+.ff-party-center .ff-book-facts li,
+.ff-carrier-center .ff-book-facts li,
+.ff-policy-center .ff-book-facts li,
+.ff-party-center .ff-book-channels a,
+.ff-carrier-center .ff-book-actions a,
+.ff-party-right .ff-stack-mid,
+.ff-deal-host-cue .ff-stack-mid,
+.ff-carrier-card .ff-book-columns span,
+.ff-deal-host-center .ff-stack-product,
+.ff-deal-host-center [data-ff-product-place],
+.ff-deal-host-center [data-ff-product-quotes],
+.ff-deal-host-center [data-ff-docs-cue],
+.ff-deal-host-center [data-ff-quotes-cue],
+.ff-deal-host-center .ff-renewal-health {
+  flex: 1 1 7.5rem;
+  box-sizing: border-box;
+  min-width: min-content;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.ff-party-line > .ff-book-name,
+.ff-carrier-line > .ff-book-name,
+.ff-policy-line > .ff-book-name,
+.ff-deal-host-spread > .ff-stack-name {
+  flex: 1 1 11rem;
+  box-sizing: border-box;
+  max-width: 16rem;
+  min-width: 7rem;
+  justify-content: flex-start;
+  text-align: left;
+}
+.ff-party-right .ff-stack-mid,
+.ff-deal-host-cue .ff-stack-mid,
+.ff-carrier-card .ff-book-columns span {
+  justify-content: flex-end;
+  text-align: right;
+  white-space: nowrap;
+}
+.ff-party-right button,
+.ff-deal-host-cue button,
+.ff-deal-host-center .ff-deal-job-stamp {
+  flex: 0 0 auto;
+}
+.ff-carrier-card .ff-book-columns span {
+  overflow: visible;
+  text-overflow: unset;
+}
+.ff-carrier-center .ff-book-facts li[data-ff-book-fact="appetite"] {
+  flex: 1.6 1 14rem;
+  min-width: 8rem;
+  max-width: none;
+  white-space: normal;
+  line-height: 1.25;
+}
+.ff-carrier-center .ff-book-facts li[data-ff-book-fact^="line:"] {
+  white-space: nowrap;
+}
+.ff-policy-center .ff-book-facts li {
+  white-space: nowrap;
+}
 .ff-book-peek,
 .ff-book-channels,
 .ff-book-actions {
@@ -4274,6 +4399,14 @@ tr[data-ff-activity-selected="true"] {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem 0.75rem;
+}
+.ff-party-center .ff-book-channels,
+.ff-carrier-center .ff-book-actions {
+  display: contents;
+}
+.ff-party-center .ff-book-channels a,
+.ff-carrier-center .ff-book-actions a {
+  max-width: none;
 }
 .ff-book-channels a,
 .ff-book-actions a {
@@ -4337,6 +4470,12 @@ tr[data-ff-activity-selected="true"] {
   }
   .ff-stack-card-spread:has(.ff-book-columns) {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .ff-party-line > .ff-book-name,
+  .ff-carrier-line > .ff-book-name,
+  .ff-policy-line > .ff-book-name,
+  .ff-deal-host-spread > .ff-stack-name {
+    max-width: none;
   }
   .ff-book-columns {
     max-width: none;

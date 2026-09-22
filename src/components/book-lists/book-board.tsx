@@ -57,6 +57,7 @@ export function BookBoard({
                   <BookGlanceCardView
                     key={card.id}
                     card={card}
+                    layoutMode="bands"
                     leading={renderLeading?.(card)}
                     extra={renderExtra?.(card)}
                   />

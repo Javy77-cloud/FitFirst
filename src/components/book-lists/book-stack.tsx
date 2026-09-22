@@ -32,6 +32,7 @@ export function BookPriorityStack({
         const view = (
           <BookGlanceCardView
             card={card}
+            layoutMode="stack"
             leading={renderLeading?.(card)}
             extra={renderExtra?.(card)}
             activity={

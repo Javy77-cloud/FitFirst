@@ -48,10 +48,11 @@ describe("Deals Priority Stack + Radar", () => {
       /\.ff-radar-chart-body \{[^}]*align-items: center;[^}]*justify-content: center/,
     );
     expect(source("src/app/globals.css")).toMatch(/\.ff-radar-heat-body \{[^}]*justify-content: center/);
-    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-donut-wrap \{[^}]*13\.8rem/);
-    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-bars \{[^}]*min-height: 15\.6rem/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-charts \{[^}]*repeat\(3, minmax\(0, 1fr\)\)/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-donut-wrap \{[^}]*10\.35rem/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-bars \{[^}]*min-height: 10\.35rem/);
     expect(source("src/app/globals.css")).toMatch(/\.ff-radar-bars \{[^}]*gap: 0\.45rem/);
-    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-trend svg \{[^}]*height: 3\.64rem/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-trend svg \{[^}]*height: 8\.6rem/);
     expect(source("src/app/globals.css")).toMatch(/\.ff-heat-row-deals \{[^}]*overflow-x: clip/);
     expect(source("src/app/globals.css")).toMatch(/\.ff-heat-row-deals \{[^}]*repeat\(4, minmax\(0, 1fr\)\)/);
     expect(source("src/app/globals.css")).toMatch(/@container \(max-width: 58rem\)[\s\S]*repeat\(3, minmax\(0, 1fr\)\)/);
@@ -160,6 +161,8 @@ describe("Deals Priority Stack + Radar", () => {
     expect(meter).toMatch(/ff-renewal-health-label">Client/);
     expect(meter).toMatch(/ff-renewal-health-label">Policy/);
     expect(css).toMatch(/\.ff-stack-products li \{[^}]*grid-template-columns:\s*6\.75rem minmax\(0,\s*1fr\)/);
+    expect(css).toMatch(/\.ff-deal-host-center,[\s\S]{0,500}?display:\s*contents/);
+    expect(css).toMatch(/\.ff-deal-host-center \.ff-stack-product,[\s\S]{0,400}?flex:\s*1 1 7\.5rem/);
     expect(css).toMatch(/\.ff-stack-products \{[^}]*flex:\s*1 0 100%/);
     expect(source("src/lib/deals/velocity.ts")).not.toMatch(/label:\s*"Chase"/);
   });

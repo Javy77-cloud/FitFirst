@@ -31,9 +31,9 @@ import {
 } from "@/lib/home/as-of";
 import { partyLabel } from "@/lib/desk/policy-name";
 import { BookCommandWorkspace } from "@/components/book-lists/book-workspace";
-import { loadPolicyNeedSignals } from "@/lib/book-lists/load";
+import { loadPolicyNeedSignals, loadRenewalPremiums } from "@/lib/book-lists/load";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
-import { matchesBookLens, parseBookHeat, parseBookLens } from "@/lib/book-lists/lenses";
+import { matchesBookLens, parseBookHeat, parseBookLayout, parseBookLens } from "@/lib/book-lists/lenses";
 import { presentPolicyCard } from "@/lib/book-lists/present";
 import { POLICY_COLUMNS } from "@/lib/book-lists/types";
 
@@ -139,6 +139,7 @@ export default async function PoliciesPage({
   const q = firstParam(params.q) ?? "";
   const heat = parseBookHeat(firstParam(params.heat));
   const lens = parseBookLens(firstParam(params.lens));
+  const layout = parseBookLayout(firstParam(params.view));
   const [all, tagCatalog, labelTemplate, pageFilters, session, needs, lineSettings] = await Promise.all([
     listPolicies(),
     listModuleTags("policies").catch(() => []),
@@ -148,6 +149,7 @@ export default async function PoliciesPage({
     loadPolicyNeedSignals(),
     loadDeskLineSettings(),
   ]);
+  const renewalPremiums = await loadRenewalPremiums(all.map(({ policy }) => policy.id));
   const visibleFilters = mergeLiveOptions(enabledPageFilters(pageFilters), {
     line: all.map(({ policy }) => policy.lineOfBusiness),
     carrier: all.map(({ carrier }) => carrier?.name ?? ""),
@@ -182,6 +184,12 @@ export default async function PoliciesPage({
           status: policy.status,
           lineOfBusiness: policy.lineOfBusiness,
           premium: policy.premium,
+          renewalPremium: renewalPremiums.get(policy.id) ?? null,
+          formType: policy.formType,
+          policyType: policy.policyType,
+          policySubType: policy.policySubType,
+          billingFrequency: policy.billingFrequency,
+          premiumFrequency: policy.premiumFrequency,
           expirationDate: policy.expirationDate,
           updatedAt: policy.updatedAt,
           tags: policy.tags,
@@ -204,7 +212,7 @@ export default async function PoliciesPage({
           moduleId="policies"
           fields={filterFieldsFromPageFilters(visibleFilters)}
           searchPlaceholder="Find a policy, party, or carrier…"
-          preserveParams={["heat", "lens"]}
+          preserveParams={["heat", "lens", "view"]}
           canConfigure={session.isAdmin}
           searchClassName={PAGE_FILTER_SEARCH_CLASS}
           searchInputClassName={PAGE_FILTER_SEARCH_INPUT_CLASS}
@@ -237,7 +245,7 @@ export default async function PoliciesPage({
         <BookCommandWorkspace
           surface="policies"
           path="/policies"
-          layout="bands"
+          layout={layout}
           columns={POLICY_COLUMNS}
           cards={cards}
           heat={heat}
@@ -245,6 +253,7 @@ export default async function PoliciesPage({
           q={q}
           empty="No policies in this lens. Bind a shopping deal when a market is actually written."
           lineSettings={lineSettings}
+          preserve={{ view: layout === "stack" ? "stack" : undefined }}
           renderLeading={(card) => <SelectRowCheckbox id={card.id} />}
           renderExtra={(card) => (
             <>

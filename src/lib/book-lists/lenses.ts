@@ -1,4 +1,4 @@
-import type { BookFamily, BookGlanceCard, BookHeat, BookLensId, BookSurface } from "./types";
+import type { BookFamily, BookGlanceCard, BookHeat, BookLayout, BookLensId, BookSurface } from "./types";
 
 const LENS_IDS = new Set<BookLensId>([
   "clients",
@@ -30,6 +30,11 @@ const LOBS = new Set<BookFamily>(["pc", "life", "health"]);
 export function parseBookLob(value: string | null | undefined): BookFamily | null {
   if (!value) return null;
   return LOBS.has(value as BookFamily) ? (value as BookFamily) : null;
+}
+
+/** Policies land on the band board. Stack is the wide card list. */
+export function parseBookLayout(value: string | null | undefined): BookLayout {
+  return value === "stack" ? "stack" : "bands";
 }
 
 export function parseBookLens(value: string | null | undefined): BookLensId | null {

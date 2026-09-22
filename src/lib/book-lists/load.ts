@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
@@ -9,6 +9,7 @@ import {
   deals,
   endorsementDrafts,
   policies,
+  policyTerms,
   quoteAttemptLogs,
 } from "@/lib/db/schema";
 import type { PolicyNeedSignal } from "./present";
@@ -268,6 +269,31 @@ export async function loadPolicyNeedSignals(): Promise<Map<string, PolicyNeedSig
       if (status === "withdrawn" || status === "filed" || status === "issued") continue;
       const prev = out.get(row.policyId) ?? { openClaims: 0, pendingEndorsements: 0, missingDocs: 0 };
       bump(row.policyId, { pendingEndorsements: prev.pendingEndorsements + 1 });
+    }
+  } catch {
+    return out;
+  }
+  return out;
+}
+
+/** Proposed term premium keyed by policy. Empty when the renewal term is not on file. */
+export async function loadRenewalPremiums(policyIds: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const ids = [...new Set(policyIds.filter(Boolean))];
+  if (ids.length === 0) return out;
+  try {
+    const terms = await db
+      .select({ policyId: policyTerms.policyId, premium: policyTerms.premium })
+      .from(policyTerms)
+      .where(
+        and(
+          eq(policyTerms.tenantId, tenant()),
+          eq(policyTerms.role, "proposed"),
+          inArray(policyTerms.policyId, ids),
+        ),
+      );
+    for (const term of terms) {
+      if (term.premium) out.set(term.policyId, term.premium);
     }
   } catch {
     return out;

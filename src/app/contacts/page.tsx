@@ -94,13 +94,22 @@ export default async function ContactsPage({
   const cards = rows
     .map((contact) => {
       const cue = inboxCues.find((row) => row.contactId === contact.id);
-      return presentPartyCard(contact, "contact", {
-        open: openDeals.byContact.get(contact.id),
-        health: healthMap.get(`c:${contact.id}`) ?? null,
-        asOf,
-        inboxCue: cue?.why ?? null,
-        inboxHref: cue?.href ?? null,
-      });
+      const custom = customById.get(contact.id) ?? {};
+      return presentPartyCard(
+        {
+          ...contact,
+          preferredContactTime: custom.preferred_contact_time ?? null,
+          preferredContactMethod: custom.preferred_contact_method ?? null,
+        },
+        "contact",
+        {
+          open: openDeals.byContact.get(contact.id),
+          health: healthMap.get(`c:${contact.id}`) ?? null,
+          asOf,
+          inboxCue: cue?.why ?? null,
+          inboxHref: cue?.href ?? null,
+        },
+      );
     })
     .filter((card) => matchesBookLens(card, { heat, lens, q }));
   const contactBook = all.map((row) => ({
