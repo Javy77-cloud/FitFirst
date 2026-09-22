@@ -296,6 +296,32 @@ describe("rosa desk training extract prompts", () => {
   });
 });
 
+describe("alarm certificate gemini extract", () => {
+  it("asks for fire and central alarm yes and maps both onto the sheet", () => {
+    const user = buildGeminiUserPrompt("alarm_certificate", "home");
+    const system = buildGeminiSystemPrompt("alarm_certificate", "home");
+    expect(user).toMatch(/fire_alarm to yes/);
+    expect(user).toMatch(/central_alarm to yes/);
+    expect(user).toMatch(/ADT/);
+    expect(user).not.toMatch(/OIR-B1-1802/);
+    expect(system).toMatch(/fire_alarm to yes and central_alarm to yes/);
+    expect(buildGeminiUserPrompt("inspection", "home")).not.toMatch(/central-station alarm certificate/);
+    expect(buildGeminiUserPrompt("wind_mit", "home")).toMatch(/OIR-B1-1802/);
+    expect(buildGeminiUserPrompt("wind_mit", "home")).toMatch(/wind_mit_form/);
+    const result = mapGeminiJsonToFields(
+      {
+        fire_alarm: { value: "yes", confidence: 0.96 },
+        central_alarm: { value: "yes", confidence: 0.96 },
+      },
+      "alarm_certificate",
+    );
+    const byKey = Object.fromEntries(result.fields.map((field) => [field.fieldKey, field]));
+    expect(byKey.fire_alarm.normalizedValue).toBe("yes");
+    expect(byKey.central_alarm.normalizedValue).toBe("yes");
+    expect(byKey.fire_alarm.sourceDocTag).toBe("alarm certificate");
+  });
+});
+
 describe("agency letter gemini keys", () => {
   it("asks cancellation / AOR jobs for letter fields without changing HO sheet keys", () => {
     expect(GEMINI_LETTER_EXTRACT_JSON_KEYS).toEqual(

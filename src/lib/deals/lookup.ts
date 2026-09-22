@@ -3,6 +3,7 @@ import { foldPartyQuery, matchesPartyQuery, phoneDigits } from "@/lib/crm/party-
 import { dealTitleLobWord } from "@/lib/deals/deal-title";
 import type { DocSlot, DocType } from "@/lib/domain";
 import { DEAL_UPLOAD_DOC_TYPES, DOC_TYPES } from "@/lib/domain";
+import { inferDocType } from "@/lib/ingest/identity";
 
 export type DealLookupRow = {
   id: string;
@@ -138,10 +139,16 @@ export function slotForDocType(docType: string): DocSlot {
   return "source_doc";
 }
 
-export function coerceDealUploadDocType(value: string): DocType {
+export function coerceDealUploadDocType(value: string, filename?: string | null): DocType {
   const raw = value.trim().toLowerCase();
+  // Missing, Auto, and Other are not a chosen packet. Classify from the filename
+  // so a wind mit or alarm certificate is not stored as other and skipped by Fill.
+  if (filename && (!raw || raw === "auto" || raw === "other")) {
+    return inferDocType(filename, raw);
+  }
   if (raw === "declaration" || raw === "declarations" || raw === "dec_page") return "dec";
   if (raw === "floorplan" || raw === "floor-plan") return "floor_plan";
+  if (raw === "alarm" || raw === "alarm_cert" || raw === "certificate") return "alarm_certificate";
   if ((DOC_TYPES as readonly string[]).includes(raw)) return raw as DocType;
   return "other";
 }

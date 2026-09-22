@@ -12,6 +12,7 @@ import {
   isQuoteAttachment,
   isSourceDocType,
   parseNamedInsured,
+  sourceDocFillsHome,
 } from "./identity";
 
 describe("drop ingest identity", () => {
@@ -98,6 +99,22 @@ Effective 03/15/2026 to 09/15/2026`;
     expect(inferDocType("signed-app.pdf")).toBe("signed_app");
     expect(inferDocType("building-permit.pdf")).toBe("permits");
     expect(inferDocType("hand-notes.txt")).toBe("hand_notes");
+    expect(
+      inferDocType(
+        "HENRY & ROSA CASTELLANOS MIT PDFwind mitigation inspection Kendall October 2020.PDF",
+        "other",
+      ),
+    ).toBe("wind_mit");
+    expect(inferDocType("ADT alarm certificate.pdf", "other")).toBe("alarm_certificate");
+    expect(inferDocType("ADT alarm certificate.pdf", "")).toBe("alarm_certificate");
+    expect(inferDocType("central-station-certificate.pdf", "auto")).toBe("alarm_certificate");
+    expect(inferDocType("mystery-scan.pdf", "other")).toBe("other");
+    expect(inferDocType("flood-policy.pdf", "inspection")).toBe("inspection");
+    expect(inferDocType("Homeowners Choice policy (dec).pdf", "dec")).toBe("dec");
+    expect(inferDocType("Florida Peninsula Dec Page.pdf", "other")).toBe("dec");
+    expect(isSourceDocType("alarm_certificate")).toBe(true);
+    expect(sourceDocFillsHome("alarm_certificate")).toBe(true);
+    expect(sourceDocFillsHome("inspection")).toBe(true);
     expect(isSourceDocType("dec")).toBe(true);
     expect(isSourceDocType("floor_plan")).toBe(true);
     expect(isSourceDocType("current_policy")).toBe(true);

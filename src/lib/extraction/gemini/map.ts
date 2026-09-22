@@ -412,6 +412,7 @@ export function parseAddressParts(address: string): {
 function sourceTagForDoc(docType?: string | null): string {
   const t = (docType ?? "").toLowerCase();
   if (t.includes("wind")) return "wind mitigation";
+  if (t.includes("alarm") || t.includes("certificate")) return "alarm certificate";
   if (t.includes("four") || t.includes("4")) return "4pt inspection";
   if (t.includes("related")) return "related insured";
   return "dec page";

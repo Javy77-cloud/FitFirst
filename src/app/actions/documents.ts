@@ -257,12 +257,11 @@ export async function persistDealSourceUploads(
     const rawType = String(
       formData.get(`docType_${upload.index}`) ?? formData.get("docType") ?? "",
     ).trim();
-    const docType =
-      rawType && rawType !== "auto"
+    const docType = dealId
+      ? coerceDealUploadDocType(rawType, upload.filename)
+      : rawType && rawType !== "auto" && rawType !== "other"
         ? coerceDealUploadDocType(rawType)
-        : coerceDealUploadDocType(
-            dealId ? inferDocType(upload.filename, rawType) : inferFromName(upload.filename, library),
-          );
+        : coerceDealUploadDocType(inferFromName(upload.filename, library));
     const slot = dealSourceSlotForUpload({
       dealId,
       requestedSlot: String(formData.get("slot") ?? ""),
@@ -432,8 +431,7 @@ export async function saveDealDocumentFromBlob(formData: FormData): Promise<Deal
     const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
     riskId = risk?.id ?? null;
   }
-  const docType =
-    rawType && rawType !== "auto" ? coerceDealUploadDocType(rawType) : coerceDealUploadDocType(inferDocType(filename, rawType));
+  const docType = coerceDealUploadDocType(rawType, filename);
   const lineRaw = String(formData.get("line") ?? "").trim();
   const lineTags = isShopLine(lineRaw) ? [lineTag(lineRaw)] : [];
   try {
@@ -650,9 +648,10 @@ export async function uploadDealDocuments(formData: FormData) {
   let stored = 0;
 
   for (const upload of uploads) {
-    const docType = coerceDealUploadDocType(
-      String(formData.get(`docType_${upload.index}`) ?? formData.getAll("docType")[upload.index] ?? "other"),
+    const rawType = String(
+      formData.get(`docType_${upload.index}`) ?? formData.getAll("docType")[upload.index] ?? "other",
     );
+    const docType = coerceDealUploadDocType(rawType, upload.filename);
     const slot = slotForDocType(docType);
     const doc = await persistFile({
       dealId: match.id,

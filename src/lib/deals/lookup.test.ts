@@ -69,5 +69,19 @@ describe("deal upload slots", () => {
     expect(coerceDealUploadDocType("report")).toBe("report");
     expect(coerceDealUploadDocType("floor_plan")).toBe("floor_plan");
     expect(coerceDealUploadDocType("floorplan")).toBe("floor_plan");
+    expect(coerceDealUploadDocType("certificate")).toBe("alarm_certificate");
+  });
+
+  it("classifies other, blank, and auto from the filename and keeps a chosen type", () => {
+    const wind = "HENRY & ROSA CASTELLANOS MIT PDFwind mitigation inspection Kendall October 2020.PDF";
+    const alarm = "ADT alarm certificate.pdf";
+    const flood = "flood-policy.pdf";
+    expect(coerceDealUploadDocType("other", wind)).toBe("wind_mit");
+    expect(coerceDealUploadDocType("", wind)).toBe("wind_mit");
+    expect(coerceDealUploadDocType("auto", alarm)).toBe("alarm_certificate");
+    expect(coerceDealUploadDocType("other", "random-notes.pdf")).toBe("other");
+    expect(coerceDealUploadDocType("inspection", flood)).toBe("inspection");
+    expect(coerceDealUploadDocType("dec", "Homeowners Choice policy.pdf")).toBe("dec");
+    expect(coerceDealUploadDocType("dec", wind)).toBe("dec");
   });
 });
