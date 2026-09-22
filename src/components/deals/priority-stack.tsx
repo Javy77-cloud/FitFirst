@@ -46,6 +46,7 @@ export function PriorityStack({ cards }: { cards: RadarDealCard[] }) {
               <div className="ff-stack-card-body">
                 <DealHostSpread
                   card={card}
+                  center={<DealHostJob card={card} />}
                   comms={
                     <ActivityGlyph
                       id={card.id}
@@ -58,7 +59,6 @@ export function PriorityStack({ cards }: { cards: RadarDealCard[] }) {
                     />
                   }
                 />
-                <DealHostJob card={card} />
                 {card.inboxCue ? (
                   <p className="ff-inbox-cue" data-ff-inbox-cue="">
                     {card.inboxHref ? (

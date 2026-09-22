@@ -13,27 +13,40 @@ export function dealDisplayName(card: Pick<RadarDealCard, "insured" | "title">):
   return card.insured !== "—" ? card.insured : card.title;
 }
 
-export function DealHostSpread({ card, comms }: { card: RadarDealCard; comms?: ReactNode }) {
+export function DealHostSpread({
+  card,
+  comms,
+  center,
+}: {
+  card: RadarDealCard;
+  comms?: ReactNode;
+  center?: ReactNode;
+}) {
   const line = stackMidLine([
     formatSilenceCue(card.silenceDays),
     card.primaryAction.label ? `Next ${card.primaryAction.label}` : null,
   ]);
   return (
-    <div className="ff-stack-card-spread">
+    <div className="ff-stack-card-spread ff-deal-host-spread">
       <Link href={card.href} className="ff-stack-name">
         {dealDisplayName(card)}
       </Link>
-      <Link
-        href={card.primaryAction.href}
-        className="ff-stack-mid"
-        data-ff-stack-mid=""
-        data-ff-next-action=""
-        data-ff-silence-cue=""
-        title={card.inboxCue || "Days since the last logged call, email, SMS, or meeting"}
-      >
-        {line}
-      </Link>
-      {comms}
+      <div className="ff-deal-host-center" data-ff-deal-center="">
+        {center}
+      </div>
+      <div className="ff-deal-host-cue">
+        <Link
+          href={card.primaryAction.href}
+          className="ff-stack-mid"
+          data-ff-stack-mid=""
+          data-ff-next-action=""
+          data-ff-silence-cue=""
+          title={card.inboxCue || "Days since the last logged call, email, SMS, or meeting"}
+        >
+          {line}
+        </Link>
+        {comms}
+      </div>
     </div>
   );
 }

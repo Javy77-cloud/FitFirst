@@ -48,10 +48,11 @@ describe("Deals Priority Stack + Radar", () => {
       /\.ff-radar-chart-body \{[^}]*align-items: center;[^}]*justify-content: center/,
     );
     expect(source("src/app/globals.css")).toMatch(/\.ff-radar-heat-body \{[^}]*justify-content: center/);
-    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-donut-wrap \{[^}]*13\.8rem/);
-    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-bars \{[^}]*min-height: 15\.6rem/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-charts \{[^}]*repeat\(3, minmax\(0, 1fr\)\)/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-donut-wrap \{[^}]*10\.35rem/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-bars \{[^}]*min-height: 10\.35rem/);
     expect(source("src/app/globals.css")).toMatch(/\.ff-radar-bars \{[^}]*gap: 0\.45rem/);
-    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-trend svg \{[^}]*height: 3\.64rem/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-radar-trend svg \{[^}]*height: 8\.6rem/);
     expect(source("src/app/globals.css")).toMatch(/\.ff-heat-row-deals \{[^}]*overflow-x: clip/);
     expect(source("src/app/globals.css")).toMatch(/\.ff-heat-row-deals \{[^}]*repeat\(4, minmax\(0, 1fr\)\)/);
     expect(source("src/app/globals.css")).toMatch(/@container \(max-width: 58rem\)[\s\S]*repeat\(3, minmax\(0, 1fr\)\)/);

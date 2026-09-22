@@ -109,6 +109,7 @@ export function BookCommandWorkspace({
         q={q}
         counts={counts}
         extra={preserve}
+        layout={layout}
       />
       {children}
       <BookLiveScope moduleId={SEARCH_MODULE[surface]} initialQuery={q ?? ""}>

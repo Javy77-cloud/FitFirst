@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { presentCarrierCard, presentPartyCard } from "./present";
+import { presentCarrierCard, presentPartyCard, presentPolicyCard } from "./present";
 
 describe("account card glance", () => {
   it("prefers a masked FEIN over a raw entity code", () => {
@@ -20,8 +20,13 @@ describe("account card glance", () => {
       { asOf: new Date("2026-09-21T12:00:00.000Z") },
     );
     expect(card.mid).toBe("Not reached");
-    expect(card.peek).toBe("DBA Ruiz Tile · FEIN ••••4321");
-    expect(card.facts?.map((fact) => fact.label)).toEqual(["1 policy", "LLC"]);
+    expect(card.peek).toBeNull();
+    expect(card.facts?.map((fact) => fact.label)).toEqual([
+      "DBA Ruiz Tile",
+      "LLC",
+      "FEIN ••••4321",
+      "1 in-force",
+    ]);
     expect(card.flags.portalContact).toBe(false);
     expect(card.flags.neverTouched).toBe(true);
   });
@@ -49,14 +54,79 @@ describe("account card glance", () => {
     );
     expect(card.mid).toBe("Reached 3d ago");
     expect(card.facts?.map((fact) => fact.label)).toEqual([
-      "Renews ≤60d",
-      "1 open deal",
-      "2 policies",
       "Spanish",
+      "Referral",
+      "1 open shop",
+      "2 in-force",
+      "Renews in 20d",
     ]);
     expect(card.facts?.find((fact) => fact.id === "deals")?.href).toBe("/deals/deal-1");
     expect(card.phone).toBe("(321) 555-0100");
     expect(card.email).toBe("ana@example.com");
+  });
+
+  it("puts a preferred contact window in the center and skips English", () => {
+    const card = presentPartyCard(
+      {
+        id: "c2",
+        firstName: "Luis",
+        lastName: "Vega",
+        city: "Orlando",
+        clientStatus: "client",
+        preferredLanguage: "english",
+        preferredContactMethod: "Phone",
+        preferredContactTime: "Morning",
+        dateOfBirth: "1979-04-12",
+        policyCount: 0,
+        activePolicyCount: 0,
+      },
+      "contact",
+      { asOf: new Date("2026-09-21T12:00:00.000Z") },
+    );
+    expect(card.facts?.map((fact) => fact.label)).toEqual([
+      "Call · Morning",
+      "Orlando",
+      "Client",
+      "DOB 04/12",
+    ]);
+    expect(card.facts?.some((fact) => /english/i.test(fact.label))).toBe(false);
+    expect(card.mid).toBe("Not reached");
+  });
+
+  it("spreads policy term facts across the stack card", () => {
+    const card = presentPolicyCard(
+      {
+        id: "p1",
+        policyNumber: "HP-FL-88421",
+        displayName: "Hale / Heritage / HO3 / HP-FL-88421",
+        status: "active",
+        lineOfBusiness: "HO",
+        formType: "HO3",
+        premium: "2184",
+        renewalPremium: "2547",
+        billingFrequency: "annual",
+        expirationDate: "2026-10-03T00:00:00.000Z",
+        partyName: "Pat Hale",
+        carrierName: "Heritage",
+      },
+      { openClaims: 1, pendingEndorsements: 0, missingDocs: 0 },
+      new Date("2026-09-21T12:00:00.000Z"),
+    );
+    expect(card.title).toBe("Pat Hale");
+    expect(card.facts?.map((fact) => fact.label)).toEqual([
+      "Heritage",
+      "HO3",
+      "Home",
+      "$2,184",
+      "Renewal $2,547",
+      "+$363",
+      "Expires Oct 3, 2026",
+      "Renews in 12d",
+      "Active",
+      "Needs care",
+      "1 open claim",
+      "Annual",
+    ]);
   });
 
   it("lines carrier posture and last use up as separate columns", () => {
@@ -90,8 +160,15 @@ describe("account card glance", () => {
       { writeLife: false, writeHealth: false },
     );
     expect(card.columns?.map((column) => column.label)).toEqual(["Limited appetite", "No recent use"]);
-    expect(card.peek).toBe("Writes Home · Auto");
-    expect(card.facts?.map((fact) => fact.id)).toEqual(["premium", "policies", "appetite"]);
+    expect(card.peek).toBeNull();
+    expect(card.facts?.map((fact) => fact.id)).toEqual([
+      "line:home",
+      "line:auto",
+      "premium",
+      "policies",
+      "appetite",
+    ]);
+    expect(card.facts?.find((fact) => fact.id === "appetite")?.label).toBe("Older roofs need photos");
     expect(card.actions?.map((action) => action.id)).toEqual(["portal", "phone", "email"]);
     expect(card.flags.families).toEqual(["pc"]);
   });
