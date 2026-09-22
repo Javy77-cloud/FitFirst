@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ChooseFileButton } from "@/components/choose-file-button";
-import { isBoundReadyForIssue, mintFailureToast } from "@/lib/policy/mint-gate";
+import { isBoundReadyForIssue, mintFailureFlashText, mintFailureToast } from "@/lib/policy/mint-gate";
 import {
   ISSUED_POLICY_ACCEPT,
   ISSUED_POLICY_FOLDER_SAVED,
@@ -92,7 +92,7 @@ export function IssuePolicyFromDec({
           return;
         }
         const toast = mintFailureToast(result.reason);
-        flashAction(toast.key, toast.kind);
+        flashAction(mintFailureFlashText(result), toast.kind);
         return;
       }
       setOpen(false);
@@ -139,7 +139,7 @@ export function IssuePolicyFromDec({
       router.refresh();
       if (result.reason === "need_dec") setOpen(true);
       const toast = mintFailureToast(result.reason);
-      flashAction(toast.key, toast.kind);
+      flashAction(mintFailureFlashText(result), toast.kind);
       return;
     }
     flashAction("policy-minted");

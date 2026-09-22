@@ -39,6 +39,10 @@ export type ExtractionResult = {
   /** Labeled lines with no map row — stay blank on the sheet; review bucket. */
   unmappedLabels: UnmappedExtractLabel[];
   fieldMapDocType: string | null;
+  /** Gemini document_kind when the model set one (declaration, wind_mit, not_declaration). */
+  documentKind?: string | null;
+  /** Short sanitized key=value list of what Gemini returned. Safe for an error toast. */
+  geminiPreview?: string | null;
 };
 
 export function fieldKeyToRiskColumn(fieldKey: string): string | null {

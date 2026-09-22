@@ -484,11 +484,21 @@ export async function issuePolicyFromDeclaration(input: {
     await markMintStatus(dealId, product, { mintStatus: previousMint, selectedQuoteIds });
     return extracted;
   }
-  const extractGate = evaluateMintExtract(extracted.rows);
+  const extractGate = evaluateMintExtract(extracted.rows, {
+    documentKind: extracted.documentKind,
+    filename: decRow?.filename ?? gate.dec.filename,
+    docType: decRow?.docType ?? gate.dec.docType,
+    geminiPreview: extracted.geminiPreview,
+  });
   if (!extractGate.ok) {
     console.error("dec extract: refusing hollow mint — Gemini missing required fields", {
       documentId: gate.dec.id,
       dealId,
+      filename: decRow?.filename ?? gate.dec.filename ?? null,
+      docType: decRow?.docType ?? null,
+      documentKind: extracted.documentKind ?? null,
+      missing: extractGate.missing,
+      geminiPreview: extracted.geminiPreview ?? null,
       reason: extractGate.reason,
       fieldKeys: extracted.rows.map((row) => row.fieldKey),
     });

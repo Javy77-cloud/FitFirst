@@ -204,7 +204,7 @@ describe("rosa retag + 72h admin notify stub", () => {
       /if \(!next && !creating\) closeWithoutMint/,
     );
     expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(
-      /if \(!result\.ok\) \{\s*const toast = mintFailureToast\(result\.reason\);\s*flashAction\(toast\.key, toast\.kind\);\s*return;/,
+      /if \(!result\.ok\) \{\s*const toast = mintFailureToast\(result\.reason\);\s*flashAction\(mintFailureFlashText\(result\), toast\.kind\);\s*return;/,
     );
     const busy = renderToString(createElement(CreatePolicyBusyPanel));
     expect(busy).toContain('data-ff-create-policy-busy=""');

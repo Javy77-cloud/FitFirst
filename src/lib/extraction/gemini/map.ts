@@ -1,6 +1,7 @@
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
 import type { ExtractedField, ExtractionResult, UnmappedExtractLabel } from "@/lib/extraction/extract";
 import { expandAutoDecLayout } from "./auto-layout";
+import { readGeminiDocumentKind, sanitizeGeminiPreview } from "./preview";
 import { GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, GEMINI_LETTER_EXTRACT_JSON_KEYS, type GeminiExtractKey } from "./prompt";
 
 /** Gemini JSON key → one or more sheet / extract field keys. */
@@ -65,6 +66,17 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   premium_for_this_policy: ["premium", "current_premium"],
   six_month_premium: ["premium", "current_premium"],
   six_month_total_premium: ["premium", "current_premium"],
+  "6_month_premium": ["premium", "current_premium"],
+  "6_mo_premium": ["premium", "current_premium"],
+  "6_month_total_premium": ["premium", "current_premium"],
+  total_6_month_premium: ["premium", "current_premium"],
+  total_six_month_premium: ["premium", "current_premium"],
+  semi_annual_premium: ["premium", "current_premium"],
+  semiannual_premium: ["premium", "current_premium"],
+  premium_for_the_policy_period: ["premium", "current_premium"],
+  total_premium_for_the_policy_period: ["premium", "current_premium"],
+  total_full_term_premium: ["premium", "current_premium"],
+  full_term_premium_charges: ["premium", "current_premium"],
   premium_due: ["premium", "current_premium"],
   total_premium_due: ["premium", "current_premium"],
   amount_due: ["premium", "current_premium"],
@@ -78,7 +90,6 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   policy_effective_date: ["effective_date", "policy_effective_date"],
   inception_date: ["effective_date", "inception_date"],
   policy_period_start: ["effective_date", "policy_period_start"],
-  policy_effective_date: ["effective_date"],
   from_date: ["effective_date"],
   selling_agency: ["selling_agency"],
   renewal_date: ["renewal_date"],
@@ -93,7 +104,6 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   exp_date: ["expiration_date", "exp_date"],
   policy_expiration_date: ["expiration_date", "policy_expiration_date"],
   policy_period_end: ["expiration_date", "policy_period_end"],
-  policy_expiration_date: ["expiration_date"],
   to_date: ["expiration_date"],
   loan_number: ["loan_number"],
   city: ["city"],
@@ -506,6 +516,8 @@ export function mapGeminiJsonToFields(
       glanceRequired: true,
       unmappedLabels: [],
       fieldMapDocType: docType ?? null,
+      documentKind: null,
+      geminiPreview: "",
     };
   }
 
@@ -633,6 +645,8 @@ export function mapGeminiJsonToFields(
     glanceRequired,
     unmappedLabels,
     fieldMapDocType: docType ?? null,
+    documentKind: readGeminiDocumentKind(json),
+    geminiPreview: sanitizeGeminiPreview(json),
   };
 }
 

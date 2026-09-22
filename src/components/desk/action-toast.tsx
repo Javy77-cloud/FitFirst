@@ -152,7 +152,8 @@ export function ActionToastHost() {
 
   useEffect(() => {
     if (!toast) return;
-    const hide = window.setTimeout(dismissToast, FLASH_DISMISS_MS);
+    const wait = toast.kind === "error" && toast.message.length > 80 ? 12_000 : FLASH_DISMISS_MS;
+    const hide = window.setTimeout(dismissToast, wait);
     return () => window.clearTimeout(hide);
   }, [toast]);
 

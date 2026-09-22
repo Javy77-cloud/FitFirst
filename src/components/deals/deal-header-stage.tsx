@@ -26,7 +26,7 @@ import {
 import { stageColorFromNameOrSlug } from "@/lib/desk/status-colors";
 import { flashAction } from "@/lib/flash-client";
 import { OPEN_ISSUED_POLICY_UPLOAD } from "@/components/deal/issue-policy-from-dec";
-import { isBoundReadyForIssue, isPolicyIssuedStage, mintFailureToast } from "@/lib/policy/mint-gate";
+import { isBoundReadyForIssue, isPolicyIssuedStage, mintFailureFlashText, mintFailureToast } from "@/lib/policy/mint-gate";
 import { cn } from "@/lib/utils";
 
 function colorForStage(stage: DealStageOption) {
@@ -169,7 +169,7 @@ export function DealHeaderStage({
           result.reason === "need_dec_fields"
         ) {
           const toast = mintFailureToast(result.reason);
-          flashAction(toast.key, toast.kind);
+          flashAction(mintFailureFlashText(result), toast.kind);
         }
         return;
       }
