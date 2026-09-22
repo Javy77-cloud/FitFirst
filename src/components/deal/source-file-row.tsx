@@ -6,8 +6,11 @@ import { retagDocumentAsDeclarationAction } from "@/app/actions/declaration";
 import { isDeclarationDocType } from "@/lib/policy/dec-prompt";
 import { FileActionMenu } from "@/components/documents/file-action-menu";
 import { Button } from "@/components/ui/button";
-import { worksheetDocTypeLabel } from "@/lib/deals/source-doc-types";
-import { sourceDocDisplayName, sourceDocExtensionLabel } from "@/lib/documents/deal-docs-save";
+import {
+  sourceDocDisplayName,
+  sourceDocExtensionLabel,
+  sourceDocUploadedListLabel,
+} from "@/lib/documents/deal-docs-save";
 import { isImageDoc } from "@/lib/leads/line-documents";
 import { fileViewHref } from "@/lib/files/urls";
 import type { Document } from "@/lib/db/schema";
@@ -15,15 +18,18 @@ import type { Document } from "@/lib/db/schema";
 export function SourceFileRow({
   doc,
   dealId,
-  showType = false,
 }: {
   doc: Document;
   dealId: string;
-  showType?: boolean;
 }) {
   const [gone, setGone] = useState(false);
   if (gone) return null;
   const filename = sourceDocDisplayName(doc.filename);
+  const listLabel = sourceDocUploadedListLabel({
+    filename: doc.filename,
+    docType: doc.docType,
+    mimeType: doc.mimeType,
+  });
   const photo = (() => {
     try {
       return isImageDoc({ filename, mimeType: doc.mimeType });
@@ -53,12 +59,7 @@ export function SourceFileRow({
           </span>
         )}
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-navy">
-          {filename}
-          {showType ? (
-            <span className="ml-2 text-[11px] uppercase text-muted-foreground">
-              {worksheetDocTypeLabel(doc.docType, true)}
-            </span>
-          ) : null}
+          {listLabel}
         </span>
       </FileActionMenu>
       {!isDeclarationDocType(doc.docType) ? (

@@ -110,7 +110,7 @@ export function DocumentsPanel({
             {otherSourceDocs.length > 0 ? (
               <ul className="mb-2 space-y-1.5">
                 {otherSourceDocs.map((doc) => (
-                  <SourceFileRow key={doc.id} doc={doc} dealId={dealId} showType />
+                  <SourceFileRow key={doc.id} doc={doc} dealId={dealId} />
                 ))}
               </ul>
             ) : null}
