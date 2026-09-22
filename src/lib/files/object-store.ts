@@ -34,6 +34,10 @@ export const BLOB_PUT_FAILED_MESSAGE = "Could not store the document in Vercel B
 export const BLOB_READBACK_FAILED_MESSAGE =
   "Document bytes were written but could not be read back from storage. Nothing was saved.";
 
+/** When OIDC can put but private CDN get fails without a RW token. */
+export const BLOB_READBACK_NEEDS_RW_TOKEN_MESSAGE =
+  "Document bytes were written but could not be read back from storage. Set BLOB_READ_WRITE_TOKEN on Production for the fitfirst-docs store, then retry the upload. Nothing was saved.";
+
 /**
  * Prefer the static read-write token when present.
  * OIDC alone can succeed on `put` then fail on private CDN `get` in some runtimes;
@@ -42,6 +46,22 @@ export const BLOB_READBACK_FAILED_MESSAGE =
 export function blobAuthOptions(): { token?: string } {
   const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
   return token ? { token } : {};
+}
+
+export function hasBlobReadWriteToken(): boolean {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
+}
+
+function readbackFailureMessage(): string {
+  // OIDC put + private CDN get mismatch: RW token is the durable Production fix.
+  if (!hasBlobReadWriteToken() && process.env.BLOB_STORE_ID?.trim()) {
+    return BLOB_READBACK_NEEDS_RW_TOKEN_MESSAGE;
+  }
+  return BLOB_READBACK_FAILED_MESSAGE;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function requiresRemoteStorage(options?: { durable?: boolean }): boolean {
@@ -172,12 +192,61 @@ async function readViaBearerFetch(url: string): Promise<Buffer | null> {
   return null;
 }
 
+/**
+ * Control-plane issueSignedToken + client-side presign, then fetch the signed CDN URL.
+ * `put` already proves OIDC/token can talk to the Blob API; private CDN Bearer `get` may
+ * still 403 under OIDC-only. Presigned GET uses the same API auth as put, then reads
+ * without a Bearer header on the CDN.
+ */
+async function readViaPresignedGet(pathname: string): Promise<Buffer | null> {
+  const key = posixKey(pathname);
+  if (!key || !blobStoreReady()) return null;
+  try {
+    const { issueSignedToken, presignUrl } = await import("@vercel/blob");
+    const auth = blobAuthOptions();
+    const signed = await issueSignedToken({
+      pathname: key,
+      operations: ["get"],
+      ...auth,
+    });
+    const { presignedUrl } = await presignUrl(
+      {
+        clientSigningToken: signed.clientSigningToken,
+        delegationToken: signed.delegationToken,
+      },
+      {
+        operation: "get",
+        pathname: key,
+        access: "private",
+        useCache: false,
+      },
+    );
+    if (!presignedUrl) return null;
+    const res = await fetch(presignedUrl, { method: "GET", cache: "no-store" });
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > 0 && !looksLikeAuthErrorBody(buf)) return buf;
+  } catch {
+    /* OIDC/token cannot issue, or CDN rejected signature */
+  }
+  return null;
+}
+
 async function readPrivateBlob(urlOrPathname: string): Promise<Buffer | null> {
   const viaSdk = await readViaSdkGet(urlOrPathname);
   if (viaSdk) return viaSdk;
   if (/^https?:\/\//i.test(urlOrPathname)) {
-    return readViaBearerFetch(urlOrPathname);
+    const viaBearer = await readViaBearerFetch(urlOrPathname);
+    if (viaBearer) return viaBearer;
+    const pathname = blobPathnameDecoded(urlOrPathname) ?? blobPathnameFromUrl(urlOrPathname);
+    if (pathname) {
+      const viaPresign = await readViaPresignedGet(pathname);
+      if (viaPresign) return viaPresign;
+    }
+    return null;
   }
+  const viaPresign = await readViaPresignedGet(urlOrPathname);
+  if (viaPresign) return viaPresign;
   return null;
 }
 
@@ -195,6 +264,10 @@ async function readRemoteUrl(url: string): Promise<Buffer | null> {
       const byDecoded = await readPrivateBlob(decoded);
       if (byDecoded) return byDecoded;
     }
+    // Explicit presign last resort (pathname from put URL).
+    const presignKey = decoded || pathname;
+    const viaPresign = await readViaPresignedGet(presignKey);
+    if (viaPresign) return viaPresign;
     return null;
   }
   try {
@@ -269,27 +342,41 @@ export async function probeStoredFile(storagePath: string): Promise<boolean> {
 
 function expectDurableBytes(storagePath: string, bytes: Buffer): void {
   if (looksLikeAuthErrorBody(bytes)) {
-    throw new Error(BLOB_READBACK_FAILED_MESSAGE);
+    throw new Error(readbackFailureMessage());
   }
   const lower = storagePath.toLowerCase();
   const wantsPdf =
     lower.includes(".pdf") || lower.includes("application/pdf") || /\/[^/?#]+\.pdf(?:$|\?)/i.test(lower);
   if (wantsPdf && !looksLikePdf(bytes) && !looksLikeImageBuffer(bytes)) {
-    throw new Error(BLOB_READBACK_FAILED_MESSAGE);
+    throw new Error(readbackFailureMessage());
   }
 }
 
+/** Backoff after put — private CDN can 404 briefly before the object is visible. */
+const READBACK_RETRY_DELAYS_MS = [0, 150, 350, 700, 1200] as const;
+
 /**
  * After a durable put, confirm bytes are readable before callers insert a row.
+ * Retries briefly so a race with private CDN visibility does not fail the attach.
  */
 export async function assertStoredFileReadable(storagePath: string): Promise<void> {
   // Require a real byte read (not head-only) so View/serve can load the same path.
-  const bytes = await readStoredFile(storagePath);
-  if (bytes && bytes.length > 0) {
-    expectDurableBytes(storagePath, bytes);
-    return;
+  let lastError: Error | null = null;
+  for (let i = 0; i < READBACK_RETRY_DELAYS_MS.length; i++) {
+    const delay = READBACK_RETRY_DELAYS_MS[i]!;
+    if (delay > 0) await sleep(delay);
+    try {
+      const bytes = await readStoredFile(storagePath);
+      if (bytes && bytes.length > 0) {
+        expectDurableBytes(storagePath, bytes);
+        return;
+      }
+      lastError = new Error(readbackFailureMessage());
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(readbackFailureMessage());
+    }
   }
-  throw new Error(BLOB_READBACK_FAILED_MESSAGE);
+  throw lastError ?? new Error(readbackFailureMessage());
 }
 
 /**
@@ -317,8 +404,21 @@ export async function writeStoredFile(
       });
       if (blob?.url) {
         try {
+          // Prefer put URL + same auth; retries inside assert cover CDN visibility races.
           await assertStoredFileReadable(blob.url);
         } catch (error) {
+          // Pathname-based read (SDK builds CDN host from store id / token) before giving up.
+          if (blob.pathname) {
+            try {
+              const byPath = await readPrivateBlob(blob.pathname);
+              if (byPath && byPath.length > 0) {
+                expectDurableBytes(blob.url, byPath);
+                return blob.url;
+              }
+            } catch {
+              /* fall through to cleanup */
+            }
+          }
           try {
             const { del } = await import("@vercel/blob");
             await del(blob.url, blobAuthOptions());
@@ -326,7 +426,7 @@ export async function writeStoredFile(
             /* best-effort cleanup */
           }
           if (requireRemote) {
-            throw error instanceof Error ? error : new Error(BLOB_READBACK_FAILED_MESSAGE);
+            throw error instanceof Error ? error : new Error(readbackFailureMessage());
           }
           // Non-durable local fallback below.
           return writeLocalFile(key, buffer);

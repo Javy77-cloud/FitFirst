@@ -6,11 +6,13 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   BLOB_NOT_CONFIGURED_MESSAGE,
   BLOB_READBACK_FAILED_MESSAGE,
+  BLOB_READBACK_NEEDS_RW_TOKEN_MESSAGE,
   assertStoredFileReadable,
   blobStoreReady,
   deleteStoredFile,
   isRemoteStoragePath,
   blobPathnameFromUrl,
+  hasBlobReadWriteToken,
   probeStoredFile,
   readStoredFile,
   streamToBuffer,
@@ -198,8 +200,19 @@ describe("streamToBuffer getReader path", () => {
   });
 });
 
+
+describe("readback auth messaging", () => {
+  it("exposes RW-token guidance when only BLOB_STORE_ID is set", () => {
+    delete process.env.BLOB_READ_WRITE_TOKEN;
+    process.env.BLOB_STORE_ID = "store_fitfirst_docs";
+    expect(hasBlobReadWriteToken()).toBe(false);
+    expect(BLOB_READBACK_NEEDS_RW_TOKEN_MESSAGE).toMatch(/BLOB_READ_WRITE_TOKEN/);
+    expect(BLOB_READBACK_NEEDS_RW_TOKEN_MESSAGE).toMatch(/Production/);
+  });
+});
+
 describe("private blob read hardening (source)", () => {
-  it("prefers RW token on put/get and uses getReader stream buffering", () => {
+  it("prefers RW token on put/get, buffers via getReader, and falls back to presigned GET", () => {
     const src = readFileSync("src/lib/files/object-store.ts", "utf8");
     expect(src).toMatch(/export function blobAuthOptions/);
     expect(src).toMatch(/BLOB_READ_WRITE_TOKEN/);
@@ -207,5 +220,8 @@ describe("private blob read hardening (source)", () => {
     expect(src).toMatch(/getReader\(\)/);
     expect(src).toMatch(/looksLikePdf/);
     expect(src).toMatch(/\.\.\.blobAuthOptions\(\)/);
+    expect(src).toMatch(/issueSignedToken/);
+    expect(src).toMatch(/presignUrl/);
+    expect(src).toMatch(/READBACK_RETRY_DELAYS_MS/);
   });
 });
