@@ -68,6 +68,47 @@ function MhoStructureTypeSelect({
   );
 }
 
+/** Preserve declared option order — FieldControl A–Z-sorts picklists. */
+function MhoOrderedPicklist({
+  field,
+  values,
+  formId,
+  onValueChange,
+}: {
+  field: MhoDetailsField;
+  values: Record<string, string>;
+  formId: string;
+  onValueChange: (key: string, value: string) => void;
+}) {
+  const value = displayValue(field, values);
+  const options = (field.options ?? []).map((option) => option.trim()).filter(Boolean);
+  return (
+    <div className="space-y-1" data-ff-deal-field={field.key}>
+      <label className="text-xs font-medium text-navy" htmlFor={`field_${field.key}`}>
+        {field.label}
+      </label>
+      <select
+        id={`field_${field.key}`}
+        name={`field_${field.key}`}
+        form={formId}
+        aria-label={field.label}
+        value={value}
+        onChange={(event) => onValueChange(field.key, event.target.value)}
+        className="mt-1 h-8 w-full cursor-pointer appearance-auto rounded-md border border-border bg-background px-2 text-sm text-navy"
+        data-ff-picklist={field.key}
+        data-ff-mho-option-order="1"
+      >
+        {!value ? <option value="">Select…</option> : null}
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function MhoFieldControl({
   field,
   values,
@@ -82,6 +123,16 @@ function MhoFieldControl({
   if (field.key === "structure_type") {
     return (
       <MhoStructureTypeSelect values={values} formId={formId} onValueChange={onValueChange} />
+    );
+  }
+  if (field.type === "picklist") {
+    return (
+      <MhoOrderedPicklist
+        field={field}
+        values={values}
+        formId={formId}
+        onValueChange={onValueChange}
+      />
     );
   }
   const value = displayValue(field, values);
