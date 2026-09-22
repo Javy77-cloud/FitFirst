@@ -1,4 +1,5 @@
 import { SUPER_COPY_KIND, SHOP_LINE_LABELS, type QuoteSheetFieldValue, type ShopLine } from "@/lib/domain";
+import { carrierTransferValues, isInspectionFieldKey } from "@/lib/quote-sheet/home-inspections";
 import { HOME_SHEET_FIELDS } from "@/lib/lifecycle/quote-sheet";
 
 export const SUPER_COPY_LABEL = "copy from this, not the PDFs";
@@ -45,8 +46,15 @@ export type FillSheet = {
   risk: Record<string, string>;
 };
 
+function publishedValues(
+  line: ShopLine,
+  values: Record<string, QuoteSheetFieldValue>,
+): Record<string, QuoteSheetFieldValue> {
+  return line === "home" ? carrierTransferValues(values) : values;
+}
+
 function cellsForLine(values: Record<string, QuoteSheetFieldValue>) {
-  return HOME_SHEET_FIELDS.map((def) => {
+  return HOME_SHEET_FIELDS.filter((def) => !isInspectionFieldKey(def.key) || def.key in values).map((def) => {
     const cell = values[def.key];
     return {
       key: def.key,
@@ -75,7 +83,8 @@ export function buildSuperCopyPacket(input: {
   values: Record<string, QuoteSheetFieldValue>;
   contactName?: string | null;
 }): SuperCopyPacket {
-  const fields = cellsForLine(input.values);
+  const values = publishedValues(input.line, input.values);
+  const fields = cellsForLine(values);
   return {
     kind: SUPER_COPY_KIND,
     version: 1,
@@ -89,8 +98,8 @@ export function buildSuperCopyPacket(input: {
     deal: { id: input.dealId, title: input.dealTitle },
     contact: { name: input.contactName ?? null },
     fields,
-    filled: filledFromValues(input.values),
-    quoteSheet: input.values,
+    filled: filledFromValues(values),
+    quoteSheet: values,
   };
 }
 
@@ -101,7 +110,8 @@ export function buildFillSheetFromQuoteSheet(input: {
   values: Record<string, QuoteSheetFieldValue>;
   insured?: string | null;
 }): FillSheet {
-  const filled = filledFromValues(input.values);
+  const values = publishedValues(input.line, input.values);
+  const filled = filledFromValues(values);
   return {
     kind: SUPER_COPY_KIND,
     version: 1,
@@ -110,7 +120,7 @@ export function buildFillSheetFromQuoteSheet(input: {
     source: "quote_sheets",
     line: input.line,
     insured: { primary: input.insured ?? null },
-    quoteSheet: input.values,
+    quoteSheet: values,
     filled,
     risk: filled,
   };

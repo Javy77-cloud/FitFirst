@@ -1,4 +1,5 @@
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
+import { carrierTransferValues } from "@/lib/quote-sheet/home-inspections";
 import type { AutoFlags, MasterRiskSnapshot, WindMit } from "./types";
 
 function emptyAutoFlags(): AutoFlags {
@@ -130,10 +131,11 @@ export function snapshotFromRisk(input: {
 }): MasterRiskSnapshot {
   const asOfYear = input.asOfYear ?? new Date().getFullYear();
   const values = input.sheetValues;
+  const inspections = carrierTransferValues(values);
   const occupancy = sheetValue(values, "occupancy") ?? input.risk.occupancy ?? null;
   const construction = sheetValue(values, "construction") ?? input.risk.construction ?? null;
   const yearBuilt = sheetNumber(values, "year_built") ?? input.risk.yearBuilt ?? null;
-  const roofYear = sheetNumber(values, "roof_year") ?? input.risk.roofYear ?? null;
+  const roofYear = sheetNumber(inspections, "roof_year") ?? input.risk.roofYear ?? null;
   const mobileSheet = sheetBool(values, "mobile_home");
   const occLower = (occupancy ?? "").toLowerCase();
   const conLower = (construction ?? "").toLowerCase();
@@ -148,14 +150,14 @@ export function snapshotFromRisk(input: {
     occupancy,
     roofAgeYears: roofYear != null ? Math.max(0, asOfYear - roofYear) : null,
     // TODO: roofCertified ← license_or_certificate_number / wind_mit_form on master sheet
-    roofCertified: sheetValue(values, "license_or_certificate_number")
+    roofCertified: sheetValue(inspections, "license_or_certificate_number")
       ? true
-      : sheetValue(values, "wind_mit_form")
+      : sheetValue(inspections, "wind_mit_form")
         ? true
         : null,
     yearBuilt,
     // TODO: windMit ← dedicated wind-mit grade; opening_protection is a stand-in
-    windMit: inferWindMit(sheetValue(values, "opening_protection") ?? input.risk.openingProtection),
+    windMit: inferWindMit(sheetValue(inspections, "opening_protection") ?? input.risk.openingProtection),
     // TODO: coastTier ← territory / CAT tier on master sheet
     coastTier: null,
     milesToCoast: sheetNumber(values, "miles_to_coast") ?? input.risk.milesToCoast ?? null,

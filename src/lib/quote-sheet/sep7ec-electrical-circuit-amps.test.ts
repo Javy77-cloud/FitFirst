@@ -7,12 +7,12 @@ import { mapGeminiJsonToFields, sheetKeysForGeminiKey } from "@/lib/extraction/g
 import { HOME_SHEET_FIELDS } from "@/lib/lifecycle/quote-sheet";
 
 describe("sep7ec Electrical Circuit Amps", () => {
-  it("catalog exposes electrical_circuit_amps on home HO/LL 4-point group", () => {
+  it("catalog exposes electrical_circuit_amps on home HO/LL Four-Point Inspection group", () => {
     const field = fieldsForLine("home", "homeowners").find((f) => f.key === "electrical_circuit_amps");
     expect(field).toMatchObject({
       key: "electrical_circuit_amps",
       label: "Electrical Circuit Amps",
-      group: "4-point",
+      group: "Four-Point Inspection",
       input: "number",
       extractKey: "electrical_circuit_amps",
     });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
 import { MasterSheetFillButton } from "@/components/deal/master-sheet-fill-button";
@@ -54,6 +54,15 @@ import {
   useRiskProfileSectionDensity,
 } from "@/components/deal/risk-profile-section-header";
 import { riskProfileSectionMaxColumns } from "@/lib/quote-sheet/risk-profile-layout";
+import {
+  FOUR_POINT_INSPECTION_KEY,
+  FOUR_POINT_INSPECTION_LABEL,
+  WIND_MIT_INSPECTION_KEY,
+  WIND_MIT_INSPECTION_LABEL,
+  inspectionInHand,
+  inspectionKindForSection,
+  inspectionSectionDefaultOpen,
+} from "@/lib/quote-sheet/home-inspections";
 
 function sheetValuesToLive(values: Record<string, QuoteSheetFieldValue>): Record<string, string> {
   return Object.fromEntries(
@@ -328,6 +337,24 @@ export function MasterSheetCompare({
             <span className="sr-only" data-ff-master-source-docs={sourceDocCount} />
           </div>
         </div>
+        {line === "home" ? (
+          <HomeInspectionRibbon
+            windChecked={inspectionInHand(liveValues, "wind")}
+            fourChecked={inspectionInHand(liveValues, "four")}
+            onWindChange={(checked) =>
+              setLiveValues((prev) => ({
+                ...prev,
+                [WIND_MIT_INSPECTION_KEY]: checked ? "yes" : "",
+              }))
+            }
+            onFourChange={(checked) =>
+              setLiveValues((prev) => ({
+                ...prev,
+                [FOUR_POINT_INSPECTION_KEY]: checked ? "yes" : "",
+              }))
+            }
+          />
+        ) : null}
       </div>
 
       <form
@@ -346,6 +373,20 @@ export function MasterSheetCompare({
         <input type="hidden" name="line" value={line} />
         {line === "health" ? (
           <input type="hidden" name={USING_HEALTHSHERPA_KEY} value={usingHealthSherpa ? "yes" : "no"} />
+        ) : null}
+        {line === "home" ? (
+          <>
+            <input
+              type="hidden"
+              name={WIND_MIT_INSPECTION_KEY}
+              value={inspectionInHand(liveValues, "wind") ? "yes" : ""}
+            />
+            <input
+              type="hidden"
+              name={FOUR_POINT_INSPECTION_KEY}
+              value={inspectionInHand(liveValues, "four") ? "yes" : ""}
+            />
+          </>
         ) : null}
         <input type="hidden" name="sheet_product" value={product} />
         <input
@@ -459,6 +500,19 @@ function SheetGroup({
   const maxColumns = riskProfileSectionMaxColumns(title, visibleFields);
   const { sectionId, density, setDensity, choices } = useRiskProfileSectionDensity(title, maxColumns);
   const hiddenFields = rows.filter((field) => !groupVisible || !sheetFieldIsVisible(field, liveValues));
+  const homeSection = line === "home";
+  const inspectionKind = homeSection ? inspectionKindForSection(title) : null;
+  const inspectionOpen = inspectionSectionDefaultOpen(title, liveValues);
+  const [open, setOpen] = useState(() => (homeSection ? inspectionOpen : true));
+  const [trackedInspection, setTrackedInspection] = useState(inspectionOpen);
+  useEffect(() => {
+    if (!inspectionKind) return;
+    if (trackedInspection === inspectionOpen) return;
+    /* eslint-disable react-hooks/set-state-in-effect -- open the inspection section when the checkbox turns on */
+    setTrackedInspection(inspectionOpen);
+    setOpen(inspectionOpen);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [inspectionKind, inspectionOpen, trackedInspection]);
   const collapsible = usingHealthSherpa && healthSherpaCollapsibleGroups(true).has(title);
   const header = groupVisible ? (
     <RiskProfileSectionBar
@@ -467,6 +521,8 @@ function SheetGroup({
       density={density}
       onDensityChange={setDensity}
       choices={choices}
+      collapsed={homeSection ? !open : undefined}
+      onToggleCollapse={homeSection ? () => setOpen((current) => !current) : undefined}
       extra={
         collapsible ? (
           <span className="ml-2 text-[10px] font-normal normal-case text-muted-foreground">
@@ -547,11 +603,19 @@ function SheetGroup({
     />
   ) : null;
 
+  const sectionBody = (
+    <div hidden={homeSection && !open ? true : undefined} data-ff-section-body={title}>
+      {propertyUse}
+      {grid}
+    </div>
+  );
+
   return (
     <div
       className={groupVisible ? "border-b border-border/70 last:border-b-0" : undefined}
       data-ff-sheet-group={title}
       data-ff-sheet-group-hidden={groupVisible ? undefined : "true"}
+      data-ff-section-open={homeSection ? (open ? "true" : "false") : undefined}
       hidden={!groupVisible}
     >
       {hiddenFields.map((field) => (
@@ -568,16 +632,53 @@ function SheetGroup({
           {healthSherpaProductForPlan(liveValues.plan_type) === "manual" ? (
             <p className="px-3 py-1 text-[11px] text-muted-foreground">{HEALTHSHERPA_MANUAL_LINES_NOTE}</p>
           ) : null}
-          {propertyUse}
-          {grid}
+          {sectionBody}
         </details>
       ) : (
         <>
           {header}
-          {propertyUse}
-          {grid}
+          {sectionBody}
         </>
       )}
+    </div>
+  );
+}
+
+function HomeInspectionRibbon({
+  windChecked,
+  fourChecked,
+  onWindChange,
+  onFourChange,
+}: {
+  windChecked: boolean;
+  fourChecked: boolean;
+  onWindChange: (checked: boolean) => void;
+  onFourChange: (checked: boolean) => void;
+}) {
+  return (
+    <div
+      className="ff-sheet-group-header mt-2"
+      style={{ backgroundColor: "#002868", color: "#ffffff", justifyContent: "flex-start", gap: "1.5rem" }}
+      data-ff-inspection-ribbon=""
+    >
+      <label className="inline-flex items-center gap-2 text-sm font-medium normal-case tracking-normal">
+        <input
+          type="checkbox"
+          checked={windChecked}
+          data-ff-wind-mit-inspection=""
+          onChange={(event) => onWindChange(event.target.checked)}
+        />
+        {WIND_MIT_INSPECTION_LABEL}
+      </label>
+      <label className="inline-flex items-center gap-2 text-sm font-medium normal-case tracking-normal">
+        <input
+          type="checkbox"
+          checked={fourChecked}
+          data-ff-four-point-inspection=""
+          onChange={(event) => onFourChange(event.target.checked)}
+        />
+        {FOUR_POINT_INSPECTION_LABEL}
+      </label>
     </div>
   );
 }

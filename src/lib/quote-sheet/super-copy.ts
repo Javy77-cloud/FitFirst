@@ -6,6 +6,7 @@ import {
   coApplicantRequired,
 } from "./applicant-core";
 import { fieldsForLine } from "./catalog";
+import { carrierTransferValues } from "./home-inspections";
 
 export const SUPER_COPY_LABEL = "copy from this, not the PDFs";
 
@@ -53,10 +54,12 @@ export function buildSuperCopyPacket(input: {
   const includeCoApplicant =
     coApplicantHasValue(input.values) || coApplicantRequired(input.values);
   const coKeys = new Set(CO_APPLICANT_FIELDS.map((field) => field.key));
+  const transferable = input.line === "home" ? carrierTransferValues(input.values) : input.values;
   const fields = fieldsForLine(input.line)
     .filter((def) => includeCoApplicant || !coKeys.has(def.key))
+    .filter((def) => input.line !== "home" || def.key in transferable)
     .map((def) => {
-      const cell = input.values[def.key];
+      const cell = transferable[def.key];
       return {
         key: def.key,
         label: def.label,

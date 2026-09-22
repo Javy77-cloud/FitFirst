@@ -75,6 +75,7 @@ const FORM_TO_PRODUCT: Record<string, SheetProduct> = {
   HO8: "homeowners",
   MHO: "homeowners",
   MH: "homeowners", // legacy alias → MHO
+  MMHO: "homeowners", // manufactured / mobile home owners
   MDP: "renters",
   DP1: "landlord",
   DP3: "landlord",
