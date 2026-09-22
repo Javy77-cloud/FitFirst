@@ -5086,21 +5086,25 @@ tr[data-ff-activity-selected="true"] {
 .ff-inbox-desk [data-ff-inbox-band="read"],
 .ff-inbox-desk [data-ff-inbox-band="read"] > header,
 .ff-inbox-desk [data-ff-inbox-band="read"] li {
-  background-color: #ebe9e5;
+  background-color: #f1efeb;
 }
 .ff-inbox-desk [data-ff-inbox-band="unread"],
 .ff-inbox-desk [data-ff-inbox-band="unread"] > header,
 .ff-inbox-desk [data-ff-inbox-band="unread"] li {
   background-color: #fff;
+  background-image: none;
 }
 .ff-inbox-row.is-unread {
   background-color: #fff;
+  background-image: none;
 }
 .ff-inbox-row.is-read {
-  background-color: #ebe9e5;
+  background-color: #f1efeb;
 }
+/* Selected wins over unread white / read gray — blue only on .is-selected. */
 .ff-inbox-row.is-selected {
   background-color: #dae8fb;
+  background-image: none;
   box-shadow: inset 4px 0 0 var(--ff-inbox-open-edge);
 }
 .ff-inbox-row:hover {
