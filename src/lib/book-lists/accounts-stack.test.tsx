@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { BookPriorityStack } from "@/components/book-lists/book-stack";
 import { BookGlanceCardView } from "@/components/book-lists/glance-card";
+import { AssignRecordTags } from "@/components/tags/assign-record-tags";
 import { presentPartyCard } from "./present";
 
 function source(file: string) {
@@ -94,7 +95,12 @@ describe("Accounts Stack layout lock", () => {
     expect(accountsTable).toMatch(/operations: text\("operations"\)/);
     expect(accountsTable).not.toMatch(/client_status|clientStatus/);
 
-    expect(accountsPage).toMatch(/emptyPlaceholder="none"/);
+    const accountsTags = accountsPage.slice(
+      accountsPage.indexOf("<AssignRecordTags"),
+      accountsPage.indexOf("/>", accountsPage.indexOf("<AssignRecordTags")),
+    );
+    expect(accountsTags).toMatch(/module="accounts"/);
+    expect(accountsTags).toMatch(/emptyPlaceholder="none"/);
 
     expect(css).toMatch(
       /\[data-ff-book-command="accounts"\]\[data-ff-book-layout="stack"\] \.ff-account-stack-spread \{[^}]*grid-template-rows:\s*auto auto auto/,
@@ -248,6 +254,50 @@ describe("Accounts Stack layout lock", () => {
     expect(html).not.toMatch(/aria-sort|sort ascending|sort descending/i);
     expect(html).not.toContain("<button");
     expect(html).not.toContain("data-ff-contact-stack-header");
+  });
+
+  it("does not render the empty tags em-dash under the account card", () => {
+    const card = accountCard({ tags: [] });
+    const html = renderToStaticMarkup(
+      <BookGlanceCardView
+        card={card}
+        layoutMode="stack"
+        extra={
+          <AssignRecordTags
+            module="accounts"
+            recordId={card.id}
+            tags={[]}
+            catalog={[]}
+            emptyPlaceholder="none"
+          />
+        }
+      />,
+    );
+    expect(html).not.toContain("—");
+    expect(html).not.toContain("data-ff-assign-tags");
+    expect(html).not.toContain(">—<");
+  });
+
+  it("keeps real account tags and does not add a dash beside them", () => {
+    const card = accountCard({ tags: ["vip"] });
+    const html = renderToStaticMarkup(
+      <BookGlanceCardView
+        card={card}
+        layoutMode="stack"
+        extra={
+          <AssignRecordTags
+            module="accounts"
+            recordId={card.id}
+            tags={["vip"]}
+            catalog={[{ name: "vip", color: null }]}
+            emptyPlaceholder="none"
+          />
+        }
+      />,
+    );
+    expect(html).toContain('data-ff-assign-tags="accounts"');
+    expect(html).toContain('data-ff-tag-chip="vip"');
+    expect(html).not.toContain(">—<");
   });
 
   it("drops a dash reach and does not paint a status pill or empty-tag dash", () => {
