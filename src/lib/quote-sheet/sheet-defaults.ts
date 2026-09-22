@@ -592,15 +592,28 @@ export const ORDINANCE_OR_LAW_OPTIONS = ["10%", "25%", "50%"] as const;
  * Home coverages filled only when the declaration omitted them, or when the
  * agent changes Coverage A. Hurricane and AOP are not in this set.
  */
+/**
+ * Fixed defaults (and B/C/D percent rates when Coverage A is unknown).
+ * When Coverage A is known, B/C/D are written as dollar amounts:
+ * B = 2% of A, C = 25% of A, D = 10% of A — never the percent string.
+ * F displays as "$1,000" (never "1K" / "$1k").
+ */
 export const HOME_COVERAGE_DEFAULTS = {
   coverage_b: "2%",
   coverage_c: "25%",
   coverage_d: "10%",
-  coverage_e: "$300k",
-  coverage_f: "$1k",
+  coverage_e: "$300,000",
+  coverage_f: "$1,000",
   ordinance_or_law: "25%",
   water_backup: "$5,000",
   sinkhole_deductible: "10%",
+} as const;
+
+/** Percent of Coverage A used when writing B/C/D as dollars. */
+export const HOME_COVERAGE_A_SHARE = {
+  coverage_b: 0.02,
+  coverage_c: 0.25,
+  coverage_d: 0.1,
 } as const;
 
 /** Shown under a blank Coverage A. Not a dollar amount. */

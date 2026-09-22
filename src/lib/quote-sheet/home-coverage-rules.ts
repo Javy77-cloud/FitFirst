@@ -8,6 +8,7 @@ import {
   COVERAGE_D_OPTIONS,
   COVERAGE_E_OPTIONS,
   COVERAGE_F_OPTIONS,
+  HOME_COVERAGE_A_SHARE,
   HOME_COVERAGE_DEFAULTS,
   ORDINANCE_OR_LAW_OPTIONS,
   SHEET_DEFAULT_SOURCE_LABEL,
@@ -290,6 +291,40 @@ export function normalizeHomeCoverageValues(values: SheetBag): void {
   }
 }
 
+
+/** Currency for sheet cells: "$10,000" — never compact "10k". */
+export function formatSheetCoverageMoney(amount: number): string {
+  return `$${Math.round(amount).toLocaleString("en-US")}`;
+}
+
+/**
+ * Defaults after a manual Coverage A change (and Fill when A is known).
+ * B/C/D are dollar amounts from A × share. E/F/ordinance/water/sinkhole are fixed.
+ */
+export function homeCoverageDefaultsForAmount(coverageA: number | null | undefined): Record<string, string> {
+  const fixed: Record<string, string> = {
+    coverage_e: HOME_COVERAGE_DEFAULTS.coverage_e,
+    coverage_f: HOME_COVERAGE_DEFAULTS.coverage_f,
+    ordinance_or_law: HOME_COVERAGE_DEFAULTS.ordinance_or_law,
+    water_backup: HOME_COVERAGE_DEFAULTS.water_backup,
+    sinkhole_deductible: HOME_COVERAGE_DEFAULTS.sinkhole_deductible,
+  };
+  if (coverageA == null || !Number.isFinite(coverageA) || coverageA <= 0) {
+    return {
+      coverage_b: HOME_COVERAGE_DEFAULTS.coverage_b,
+      coverage_c: HOME_COVERAGE_DEFAULTS.coverage_c,
+      coverage_d: HOME_COVERAGE_DEFAULTS.coverage_d,
+      ...fixed,
+    };
+  }
+  return {
+    coverage_b: formatSheetCoverageMoney(coverageA * HOME_COVERAGE_A_SHARE.coverage_b),
+    coverage_c: formatSheetCoverageMoney(coverageA * HOME_COVERAGE_A_SHARE.coverage_c),
+    coverage_d: formatSheetCoverageMoney(coverageA * HOME_COVERAGE_A_SHARE.coverage_d),
+    ...fixed,
+  };
+}
+
 function writeDefault(values: SheetBag, filledKeys: string[] | undefined, key: string, value: string) {
   values[key] = {
     value,
@@ -311,7 +346,8 @@ export function applyMissingHomeCoverageDefaults(
 ): void {
   if (!sheetHasDwellingCoverageA(values, product)) return;
   const allowed = catalogKeys(values, product);
-  for (const [key, value] of Object.entries(HOME_COVERAGE_DEFAULTS)) {
+  const defaults = homeCoverageDefaultsForAmount(coverageAAmount(values));
+  for (const [key, value] of Object.entries(defaults)) {
     if (!allowed.has(key)) continue;
     if (!(key in values) && !sheetHasDwellingCoverageA(values, product)) continue;
     if (!isBlank(values[key])) continue;
@@ -373,7 +409,9 @@ export function reapplyDefaultsAfterManualCoverageA(
   const next = normalizeCoverageAAmount(after.coverage_a?.value ?? "");
   if (!next || next === prior) return;
   const allowed = catalogKeys(after, product);
-  for (const [key, value] of Object.entries(HOME_COVERAGE_DEFAULTS)) {
+  const amount = Number(next);
+  const defaults = homeCoverageDefaultsForAmount(Number.isFinite(amount) ? amount : null);
+  for (const [key, value] of Object.entries(defaults)) {
     if (!allowed.has(key)) continue;
     writeDefault(after, undefined, key, value);
   }

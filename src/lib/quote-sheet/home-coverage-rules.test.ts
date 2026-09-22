@@ -20,11 +20,6 @@ import {
 } from "./home-coverage-rules";
 import {
   AOP_DEDUCTIBLE_OPTIONS,
-  COVERAGE_B_OPTIONS,
-  COVERAGE_C_OPTIONS,
-  COVERAGE_D_OPTIONS,
-  COVERAGE_E_OPTIONS,
-  COVERAGE_F_OPTIONS,
   HURRICANE_DEDUCTIBLE_OPTIONS,
   ORDINANCE_OR_LAW_OPTIONS,
   WIND_HAIL_DEDUCTIBLE_OPTIONS,
@@ -44,11 +39,13 @@ describe("home coverage dropdowns", () => {
 
     for (const product of ["homeowners", "landlord"] as const) {
       const byKey = Object.fromEntries(fieldsForLine("home", product).map((field) => [field.key, field]));
-      expect(byKey.coverage_b.options).toEqual([...COVERAGE_B_OPTIONS]);
-      expect(byKey.coverage_c.options).toEqual([...COVERAGE_C_OPTIONS]);
-      expect(byKey.coverage_d.options).toEqual([...COVERAGE_D_OPTIONS]);
-      expect(byKey.coverage_e.options).toEqual([...COVERAGE_E_OPTIONS]);
-      expect(byKey.coverage_f.options).toEqual([...COVERAGE_F_OPTIONS]);
+      // B–F are free-text dollars (B/C/D = % of A as currency; E/F fixed).
+      expect(byKey.coverage_b.input).toBe("text");
+      expect(byKey.coverage_c.input).toBe("text");
+      expect(byKey.coverage_d.input).toBe("text");
+      expect(byKey.coverage_e.input).toBe("text");
+      expect(byKey.coverage_f.input).toBe("text");
+      expect(byKey.coverage_b.options).toBeUndefined();
       expect(byKey.ordinance_or_law.options).toEqual([...ORDINANCE_OR_LAW_OPTIONS]);
       expect(byKey.hurricane_deductible.options).toEqual([...HURRICANE_DEDUCTIBLE_OPTIONS]);
       expect(byKey.aop_deductible.options).toEqual([...AOP_DEDUCTIBLE_OPTIONS]);
@@ -117,7 +114,7 @@ describe("declaration coverage copy vs defaults", () => {
     );
     expect(applied.values.coverage_b.value).toBe("12%");
     expect(applied.values.coverage_e.value).toBe("250000");
-    expect(applied.values.coverage_c.value).toBe("25%");
+    expect(applied.values.coverage_c.value).toBe("$71,250");
     expect(applied.values.coverage_c.sourceLabel).toBe("default");
   });
 
@@ -137,8 +134,8 @@ describe("declaration coverage copy vs defaults", () => {
     expect(applied.values.coverage_b.value).toBe("2%");
     expect(applied.values.coverage_c.value).toBe("25%");
     expect(applied.values.coverage_d.value).toBe("10%");
-    expect(applied.values.coverage_e.value).toBe("$300k");
-    expect(applied.values.coverage_f.value).toBe("$1k");
+    expect(applied.values.coverage_e.value).toBe("$300,000");
+    expect(applied.values.coverage_f.value).toBe("$1,000");
     expect(applied.values.ordinance_or_law.value).toBe("25%");
     expect(applied.values.water_backup.value).toBe("$5,000");
     expect(applied.values.sinkhole_deductible.value).toBe("10%");
@@ -204,11 +201,11 @@ describe("declaration coverage copy vs defaults", () => {
       "homeowners",
     );
     expect(changed.coverage_a.value).toBe("321000");
-    expect(changed.coverage_b.value).toBe("2%");
-    expect(changed.coverage_c.value).toBe("25%");
-    expect(changed.coverage_d.value).toBe("10%");
-    expect(changed.coverage_e.value).toBe("$300k");
-    expect(changed.coverage_f.value).toBe("$1k");
+    expect(changed.coverage_b.value).toBe("$6,420");
+    expect(changed.coverage_c.value).toBe("$80,250");
+    expect(changed.coverage_d.value).toBe("$32,100");
+    expect(changed.coverage_e.value).toBe("$300,000");
+    expect(changed.coverage_f.value).toBe("$1,000");
     expect(changed.ordinance_or_law.value).toBe("25%");
     expect(changed.water_backup.value).toBe("$5,000");
     expect(changed.sinkhole_deductible.value).toBe("10%");
@@ -247,7 +244,11 @@ describe("declaration coverage copy vs defaults", () => {
       [{ fieldKey: "coverage_a", normalizedValue: "280000" }],
       { docType: "dec" },
     );
-    expect(first.values.coverage_b.value).toBe("2%");
+    expect(first.values.coverage_b.value).toBe("$5,600");
+    expect(first.values.coverage_c.value).toBe("$70,000");
+    expect(first.values.coverage_d.value).toBe("$28,000");
+    expect(first.values.coverage_e.value).toBe("$300,000");
+    expect(first.values.coverage_f.value).toBe("$1,000");
     const confirmed = {
       ...first.values,
       coverage_e: { value: "$500k", status: "confirmed" as const, source: "agent" as const },
@@ -276,9 +277,10 @@ describe("Coverage A required hint", () => {
       );
       expect(html, product).toContain('data-ff-coverage-a-rce=""');
       expect(html, product).toContain(COVERAGE_A_RCE_LABEL);
-      expect(html, product).toContain('data-ff-sheet-picklist="coverage_b"');
-      expect(html, product).toContain(">2%<");
-      expect(html, product).toContain(">$300k<");
+      expect(html, product).toContain('name="coverage_b"');
+      expect(html, product).toContain('name="coverage_e"');
+      expect(html, product).toContain('name="coverage_f"');
+      expect(html, product).not.toContain('data-ff-sheet-picklist="coverage_b"');
       expect(html, product).toContain('name="sinkhole_deductible"');
       expect(html, product).not.toContain('data-ff-sheet-picklist="sinkhole_deductible"');
     }
@@ -337,12 +339,13 @@ describe("liveValuesAfterManualCoverageA", () => {
       reapply: true,
     });
     expect(committed.coverage_a).toBe("605000");
-    expect(committed.coverage_b).toBe(HOME_COVERAGE_DEFAULTS.coverage_b);
-    expect(committed.coverage_c).toBe(HOME_COVERAGE_DEFAULTS.coverage_c);
-    expect(committed.coverage_d).toBe(HOME_COVERAGE_DEFAULTS.coverage_d);
-    expect(committed.coverage_e).toBe("$300k");
-    expect(committed.coverage_f).toBe("$1k");
-    expect(committed.ordinance_or_law).toBe(HOME_COVERAGE_DEFAULTS.ordinance_or_law);
+    expect(committed.coverage_b).toBe("$12,100");
+    expect(committed.coverage_c).toBe("$151,250");
+    expect(committed.coverage_d).toBe("$60,500");
+    expect(committed.coverage_e).toBe("$300,000");
+    expect(committed.coverage_f).toBe("$1,000");
+    expect(committed.ordinance_or_law).toBe("25%");
+    expect(committed.water_backup).toBe("$5,000");
   });
 
 
@@ -366,12 +369,31 @@ describe("liveValuesAfterManualCoverageA", () => {
       reapply: true,
     });
     expect(committed.coverage_a).toBe("605000");
-    expect(committed.coverage_b).toBe(HOME_COVERAGE_DEFAULTS.coverage_b);
-    expect(committed.coverage_c).toBe(HOME_COVERAGE_DEFAULTS.coverage_c);
-    expect(committed.coverage_d).toBe(HOME_COVERAGE_DEFAULTS.coverage_d);
-    expect(committed.coverage_e).toBe("$300k");
-    expect(committed.coverage_f).toBe("$1k");
-    expect(committed.ordinance_or_law).toBe(HOME_COVERAGE_DEFAULTS.ordinance_or_law);
+    expect(committed.coverage_b).toBe("$12,100");
+    expect(committed.coverage_c).toBe("$151,250");
+    expect(committed.coverage_d).toBe("$60,500");
+    expect(committed.coverage_e).toBe("$300,000");
+    expect(committed.coverage_f).toBe("$1,000");
+    expect(committed.ordinance_or_law).toBe("25%");
+    expect(committed.water_backup).toBe("$5,000");
+  });
+
+
+  it("writes B/C/D as dollars of Coverage A (2% / 25% / 10%), never percent strings", () => {
+    const stored = emptySheetValues("home", "homeowners");
+    stored.coverage_a = cell("400000", "extracted");
+    const prevLive = Object.fromEntries(
+      Object.entries(stored).map(([key, value]) => [key, value.value]),
+    );
+    const next = liveValuesAfterManualCoverageA(prevLive, "500000", stored, "homeowners");
+    expect(next.coverage_b).toBe("$10,000");
+    expect(next.coverage_c).toBe("$125,000");
+    expect(next.coverage_d).toBe("$50,000");
+    expect(next.coverage_e).toBe("$300,000");
+    expect(next.coverage_f).toBe("$1,000");
+    expect(next.coverage_f).not.toMatch(/k/i);
+    expect(next.ordinance_or_law).toBe("25%");
+    expect(next.water_backup).toBe("$5,000");
   });
 
   it("does not reapply when the normalized Coverage A amount is unchanged", () => {
