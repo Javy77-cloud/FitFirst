@@ -121,6 +121,7 @@ export function MasterSheetWorkspace({
   healthSherpa,
   insuredPropertyKind,
   inspectionUploads,
+  quotingForm,
 }: {
   dealId: string;
   line: ShopLine;
@@ -141,6 +142,7 @@ export function MasterSheetWorkspace({
     acaReady: boolean;
   };
   inspectionUploads?: InspectionUploadIds;
+  quotingForm?: string | null;
 }) {
   const router = useRouter();
 
@@ -210,6 +212,7 @@ export function MasterSheetWorkspace({
         healthSherpa={healthSherpa}
         insuredPropertyKind={insuredPropertyKind}
         inspectionUploads={inspectionUploads}
+        quotingForm={quotingForm}
       />
       <SheetApproveGate
         dealId={dealId}
@@ -239,6 +242,7 @@ export function MasterSheetCompare({
   healthSherpa,
   insuredPropertyKind,
   inspectionUploads,
+  quotingForm,
 }: {
   dealId: string;
   line: ShopLine;
@@ -255,13 +259,15 @@ export function MasterSheetCompare({
   };
   insuredPropertyKind?: string | null;
   inspectionUploads?: InspectionUploadIds;
+  quotingForm?: string | null;
 }) {
   const router = useRouter();
   const product = parseSheetProduct(productParam ?? values.sheet_product?.value, line);
-  const catalog = asList(fieldsForLine(line, product));
+  const resolvedForm = quotingForm || values.quoting_form?.value || "";
+  const catalog = asList(fieldsForLine(line, product, resolvedForm));
   const cascadeKeys = new Set(cascadeParentKeys(catalog));
   const [liveValues, setLiveValues] = useState(() => sheetValuesToLive(values));
-  const groups = asList(groupFields(line, product, liveValues));
+  const groups = asList(groupFields(line, product, liveValues, resolvedForm));
   const usingHealthSherpa = line === "health" && isUsingHealthSherpa(liveValues[USING_HEALTHSHERPA_KEY]);
   const healthPlanType = liveValues.plan_type ?? values.plan_type?.value ?? "";
   const extractedByKey = new Map(asList(fields).map((field) => [field.fieldKey, field]));
@@ -447,7 +453,7 @@ export function MasterSheetCompare({
                 extractedByKey={extractedByKey}
                 usingHealthSherpa={usingHealthSherpa}
                 insuredPropertyKind={insuredPropertyKind}
-                quotingForm={liveValues.quoting_form}
+                quotingForm={resolvedForm || liveValues.quoting_form}
                 inspectionUploads={inspectionUploads}
                 onInspectionChange={(kind, checked) =>
                   onInspectionToggle({

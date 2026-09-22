@@ -82,6 +82,7 @@ export function isInspectionSectionGroup(group: string): boolean {
  * by the sheet, so they follow Current Policy and stay ahead of the product tails.
  */
 export const HOME_SECTION_ORDER = [
+  "Manufactured home",
   "Property",
   "Protection",
   COST_SECTION,

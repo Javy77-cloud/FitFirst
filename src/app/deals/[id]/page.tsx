@@ -50,6 +50,7 @@ import { SheetFieldFocus } from "@/components/completeness/sheet-field-focus";
 import { loadRecordContext } from "@/lib/record-context";
 import { quotingFormById, quotingUnlockedForLine } from "@/lib/quoting/forms";
 import { resolveDealProduct, resolveDealSheetLine } from "@/lib/deals/deal-line";
+import { quotingFormIsManufacturedHome } from "@/lib/quote-sheet/home-address-fill";
 import { resolveDealHeaderAddresses } from "@/lib/deals/header-addresses";
 import {
   logBelongsToLine,
@@ -957,6 +958,17 @@ export default async function DealPage({
                         hasRequestedQuotes={hasRequestedQuotes}
                         productId={activeProduct}
                         quotingForm={titleForm}
+                        sheetQuotingForm={
+                          quotingFormIsManufacturedHome(
+                            lineForm,
+                            deal.quotingForm,
+                            deal.policySubType,
+                            titleForm,
+                            activeSheet.values.quoting_form?.value,
+                          )
+                            ? "MHO"
+                            : lineForm
+                        }
                         docSlot={docSlot}
                         marketsDone={flowCompletion.isComplete("markets")}
                         quotesDone={flowCompletion.isComplete("quotes")}

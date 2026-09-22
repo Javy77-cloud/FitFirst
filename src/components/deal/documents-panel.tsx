@@ -37,6 +37,7 @@ export function DocumentsPanel({
   healthSherpa,
   insuredPropertyKind,
   quotingForm,
+  sheetQuotingForm,
   docSlot,
   marketsDone = false,
   quotesDone = false,
@@ -65,6 +66,8 @@ export function DocumentsPanel({
   };
   insuredPropertyKind?: string | null;
   quotingForm?: string | null;
+  /** Deal form used to show MHO-only Risk Profile questions (MHO / MMHO / Manufactured Home). */
+  sheetQuotingForm?: string | null;
   docSlot?: string | null;
   marketsDone?: boolean;
   quotesDone?: boolean;
@@ -155,6 +158,7 @@ export function DocumentsPanel({
             healthSherpa={healthSherpa}
             insuredPropertyKind={insuredPropertyKind}
             inspectionUploads={inspectionUploads}
+            quotingForm={sheetQuotingForm || quotingForm}
           />
           {health ? (
             <p className="text-helper text-muted-foreground">
