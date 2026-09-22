@@ -327,9 +327,9 @@ describe("Home inspection sections", () => {
       expect(html, product).toContain('data-ff-inspection-banner="wind"');
       expect(html, product).toContain('data-ff-inspection-banner="four"');
       expect(html, product).toContain('data-ff-inspection-ready="false"');
-      expect(sectionArrow(html, WIND_MIT_SECTION), product).toBe("up");
-      expect(sectionArrow(html, FOUR_POINT_SECTION), product).toBe("up");
-      expect(sectionArrow(html, "Property"), product).toBe("down");
+      expect(sectionArrow(html, WIND_MIT_SECTION), product).toBe("down");
+      expect(sectionArrow(html, FOUR_POINT_SECTION), product).toBe("down");
+      expect(sectionArrow(html, "Property"), product).toBe("up");
       expect(html, product).toContain("data-ff-columns-anchor");
       expect(html, product).not.toMatch(/>Expand<|>Collapse</);
       expect(html.toLowerCase(), product).not.toMatch(/4[-\s]point/);
@@ -357,9 +357,9 @@ describe("Home inspection sections", () => {
       }),
     );
     expect(sectionOpen(openWind, WIND_MIT_SECTION)).toBe("true");
-    expect(sectionArrow(openWind, WIND_MIT_SECTION)).toBe("down");
+    expect(sectionArrow(openWind, WIND_MIT_SECTION)).toBe("up");
     expect(sectionOpen(openWind, FOUR_POINT_SECTION)).toBe("false");
-    expect(sectionArrow(openWind, FOUR_POINT_SECTION)).toBe("up");
+    expect(sectionArrow(openWind, FOUR_POINT_SECTION)).toBe("down");
 
     for (const [line, product] of [
       ["auto", "auto"],
