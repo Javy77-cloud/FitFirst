@@ -2939,21 +2939,6 @@ button.ff-renewal-risk-badge {
 .ff-stack-card-spread:has(> :nth-child(3)) {
   grid-template-columns: minmax(0, 1.05fr) minmax(8.5rem, 1fr) auto;
 }
-.ff-stack-card-spread.ff-deal-host-spread {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 0.85rem;
-  width: 100%;
-}
-.ff-deal-host-center,
-.ff-deal-host-cue,
-.ff-deal-host-center .ff-stack-job,
-.ff-deal-host-center .ff-stack-products,
-.ff-deal-host-center .ff-stack-products li,
-.ff-deal-host-center .ff-stack-product-detail {
-  display: contents;
-}
 .ff-stack-mid {
   margin: 0;
   min-width: 0;
@@ -4287,8 +4272,7 @@ tr[data-ff-activity-selected="true"] {
 }
 .ff-party-line,
 .ff-carrier-line,
-.ff-policy-line,
-.ff-stack-card-spread.ff-deal-host-spread {
+.ff-policy-line {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -4299,19 +4283,13 @@ tr[data-ff-activity-selected="true"] {
 .ff-party-center,
 .ff-carrier-center,
 .ff-policy-center,
-.ff-deal-host-center,
 .ff-party-right,
-.ff-deal-host-cue,
 .ff-carrier-card .ff-book-columns,
 .ff-party-center .ff-book-facts,
 .ff-party-center .ff-book-channels,
 .ff-carrier-center .ff-book-facts,
 .ff-carrier-center .ff-book-actions,
-.ff-policy-center .ff-book-facts,
-.ff-deal-host-center .ff-stack-job,
-.ff-deal-host-center .ff-stack-products,
-.ff-deal-host-center .ff-stack-products li,
-.ff-deal-host-center .ff-stack-product-detail {
+.ff-policy-center .ff-book-facts {
   display: contents;
 }
 .ff-party-center .ff-book-facts,
@@ -4323,21 +4301,13 @@ tr[data-ff-activity-selected="true"] {
 .ff-party-line > .ff-book-name,
 .ff-carrier-line > .ff-book-name,
 .ff-policy-line > .ff-book-name,
-.ff-deal-host-spread > .ff-stack-name,
 .ff-party-center .ff-book-facts li,
 .ff-carrier-center .ff-book-facts li,
 .ff-policy-center .ff-book-facts li,
 .ff-party-center .ff-book-channels a,
 .ff-carrier-center .ff-book-actions a,
 .ff-party-right .ff-stack-mid,
-.ff-deal-host-cue .ff-stack-mid,
-.ff-carrier-card .ff-book-columns span,
-.ff-deal-host-center .ff-stack-product,
-.ff-deal-host-center [data-ff-product-place],
-.ff-deal-host-center [data-ff-product-quotes],
-.ff-deal-host-center [data-ff-docs-cue],
-.ff-deal-host-center [data-ff-quotes-cue],
-.ff-deal-host-center .ff-renewal-health {
+.ff-carrier-card .ff-book-columns span {
   flex: 1 1 7.5rem;
   box-sizing: border-box;
   min-width: min-content;
@@ -4348,8 +4318,7 @@ tr[data-ff-activity-selected="true"] {
 }
 .ff-party-line > .ff-book-name,
 .ff-carrier-line > .ff-book-name,
-.ff-policy-line > .ff-book-name,
-.ff-deal-host-spread > .ff-stack-name {
+.ff-policy-line > .ff-book-name {
   flex: 1 1 11rem;
   box-sizing: border-box;
   max-width: 16rem;
@@ -4358,15 +4327,12 @@ tr[data-ff-activity-selected="true"] {
   text-align: left;
 }
 .ff-party-right .ff-stack-mid,
-.ff-deal-host-cue .ff-stack-mid,
 .ff-carrier-card .ff-book-columns span {
   justify-content: flex-end;
   text-align: right;
   white-space: nowrap;
 }
-.ff-party-right button,
-.ff-deal-host-cue button,
-.ff-deal-host-center .ff-deal-job-stamp {
+.ff-party-right button {
   flex: 0 0 auto;
 }
 .ff-carrier-card .ff-book-columns span {
@@ -4473,13 +4439,147 @@ tr[data-ff-activity-selected="true"] {
   }
   .ff-party-line > .ff-book-name,
   .ff-carrier-line > .ff-book-name,
-  .ff-policy-line > .ff-book-name,
-  .ff-deal-host-spread > .ff-stack-name {
+  .ff-policy-line > .ff-book-name {
     max-width: none;
   }
   .ff-book-columns {
     max-width: none;
     justify-self: stretch;
+  }
+}
+
+/* Deals Priority Stack: three zones. One product is two rows. Each extra product is its own line. */
+[data-ff-priority-stack] .ff-deal-host-spread {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, max-content) minmax(0, 1fr) max-content;
+  align-items: center;
+  column-gap: 0.9rem;
+  width: 100%;
+  min-width: 0;
+}
+[data-ff-priority-stack] .ff-deal-host-spread > .ff-stack-name {
+  align-self: center;
+  max-width: 12.5rem;
+}
+[data-ff-priority-stack] .ff-deal-host-center {
+  display: block;
+  min-width: 0;
+}
+[data-ff-priority-stack] .ff-deal-host-cue {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  min-width: 0;
+}
+[data-ff-priority-stack] .ff-deal-host-cue-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.05rem;
+  min-width: 0;
+  max-width: 11rem;
+}
+[data-ff-priority-stack] .ff-deal-host-cue .ff-stack-mid {
+  flex: 0 1 auto;
+  max-width: 11rem;
+  text-align: right;
+}
+[data-ff-priority-stack] .ff-deal-host-job-single {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 0.85rem;
+  row-gap: 0.16rem;
+  min-width: 0;
+}
+[data-ff-priority-stack] .ff-deal-host-job-single > .ff-deal-host-facts {
+  grid-column: 1;
+  grid-row: 1;
+}
+[data-ff-priority-stack] .ff-deal-host-job-single > .ff-deal-host-quotes {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+[data-ff-priority-stack] .ff-deal-host-job-single > .ff-deal-host-health {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+}
+[data-ff-priority-stack] .ff-deal-host-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, max-content) minmax(0, max-content);
+  align-items: center;
+  column-gap: 0.65rem;
+  min-width: 0;
+  overflow: hidden;
+}
+[data-ff-priority-stack] .ff-deal-host-job-multi {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  row-gap: 0.28rem;
+  min-width: 0;
+}
+[data-ff-priority-stack] .ff-deal-host-lines {
+  display: grid;
+  grid-template-columns: max-content max-content minmax(0, 12rem) minmax(11.5rem, 1fr);
+  align-items: center;
+  column-gap: 0.65rem;
+  row-gap: 0.28rem;
+  min-width: 0;
+}
+[data-ff-priority-stack] .ff-deal-host-line {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-items: center;
+  column-gap: 0.65rem;
+  min-width: 0;
+}
+[data-ff-priority-stack] .ff-stack-product,
+[data-ff-priority-stack] .ff-deal-host-stage,
+[data-ff-priority-stack] .ff-deal-host-quotes {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ff-priority-stack] .ff-deal-host-stage,
+[data-ff-priority-stack] .ff-deal-host-quotes {
+  color: var(--ff-ink);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+[data-ff-priority-stack] .ff-deal-host-stamps {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  min-width: 0;
+  max-width: 12rem;
+  min-height: 1.15rem;
+  overflow: hidden;
+  white-space: nowrap;
+}
+[data-ff-priority-stack] .ff-deal-host-health {
+  justify-self: end;
+}
+[data-ff-priority-stack] .ff-deal-host-health .ff-renewal-health {
+  flex-wrap: nowrap;
+}
+@media (max-width: 42rem) {
+  [data-ff-priority-stack] .ff-deal-host-spread {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.28rem;
+  }
+  [data-ff-priority-stack] .ff-deal-host-cue,
+  [data-ff-priority-stack] .ff-deal-host-cue-copy {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+  [data-ff-priority-stack] .ff-deal-host-cue .ff-stack-mid {
+    text-align: left;
   }
 }
 

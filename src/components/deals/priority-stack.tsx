@@ -58,6 +58,7 @@ export function PriorityStack({ cards }: { cards: RadarDealCard[] }) {
                       accountId={card.accountId}
                     />
                   }
+                  rank={<PriorityPinControl id={card.id} rank={rank} onSet={setRank} />}
                 />
                 {card.inboxCue ? (
                   <p className="ff-inbox-cue" data-ff-inbox-cue="">
@@ -71,7 +72,6 @@ export function PriorityStack({ cards }: { cards: RadarDealCard[] }) {
                   </p>
                 ) : null}
               </div>
-              <PriorityPinControl id={card.id} rank={rank} onSet={setRank} />
               <span className="sr-only">{HEAT_LABELS[card.heat]}</span>
             </article>
           </li>

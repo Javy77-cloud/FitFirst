@@ -157,13 +157,32 @@ describe("Deals Priority Stack + Radar", () => {
     expect(face).toMatch(/data-ff-product-place/);
     expect(face).toMatch(/data-ff-product-quotes/);
     expect(face).toMatch(/data-ff-deal-stamp/);
+    expect(face).toMatch(/data-ff-deal-zone="name"/);
+    expect(face).toMatch(/data-ff-deal-zone="center"/);
+    expect(face).toMatch(/data-ff-deal-zone="cue"/);
+    expect(face).toMatch(/data-ff-deal-products/);
+    expect(face).toMatch(/ff-deal-host-line/);
+    expect(face).not.toMatch(/>\s*—\s*</);
     expect(face).toMatch(/RenewalHealthMeter/);
     expect(meter).toMatch(/ff-renewal-health-label">Client/);
     expect(meter).toMatch(/ff-renewal-health-label">Policy/);
     expect(css).toMatch(/\.ff-stack-products li \{[^}]*grid-template-columns:\s*6\.75rem minmax\(0,\s*1fr\)/);
-    expect(css).toMatch(/\.ff-deal-host-center,[\s\S]{0,500}?display:\s*contents/);
-    expect(css).toMatch(/\.ff-deal-host-center \.ff-stack-product,[\s\S]{0,400}?flex:\s*1 1 7\.5rem/);
     expect(css).toMatch(/\.ff-stack-products \{[^}]*flex:\s*1 0 100%/);
+    expect(css).toMatch(
+      /\[data-ff-priority-stack\] \.ff-deal-host-spread \{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*minmax\(6\.5rem,\s*max-content\) minmax\(0,\s*1fr\) max-content/,
+    );
+    expect(css).toMatch(
+      /\[data-ff-priority-stack\] \.ff-deal-host-job-single \{[^}]*grid-template-rows:\s*auto auto/,
+    );
+    expect(css).toMatch(
+      /\[data-ff-priority-stack\] \.ff-deal-host-job-single > \.ff-deal-host-quotes \{[^}]*grid-column:\s*1 \/ -1;[^}]*grid-row:\s*2/,
+    );
+    expect(css).toMatch(
+      /\[data-ff-priority-stack\] \.ff-deal-host-lines \{[^}]*grid-template-columns:\s*max-content max-content minmax\(0,\s*12rem\) minmax\(11\.5rem,\s*1fr\)/,
+    );
+    expect(css).toMatch(/\[data-ff-priority-stack\] \.ff-deal-host-line \{[^}]*grid-column:\s*1 \/ -1/);
+    expect(css).not.toMatch(/\.ff-deal-host-center,/);
+    expect(css).not.toMatch(/\.ff-deal-host-center \.ff-stack-product[\s\S]{0,250}?flex:\s*1 1 7\.5rem/);
     expect(source("src/lib/deals/velocity.ts")).not.toMatch(/label:\s*"Chase"/);
   });
 });
