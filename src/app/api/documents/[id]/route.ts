@@ -1,5 +1,5 @@
 import { currentDeskSession } from "@/lib/auth/session";
-import { serveDeskDocument } from "@/lib/files/serve-document";
+import { probeDeskDocument, serveDeskDocument } from "@/lib/files/serve-document";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +13,10 @@ export async function GET(
     return new Response("Unauthorized", { status: 401 });
   }
   const { id } = await params;
-  const download = new URL(request.url).searchParams.get("download") === "1";
+  const search = new URL(request.url).searchParams;
+  if (search.get("probe") === "1") {
+    return probeDeskDocument(id);
+  }
+  const download = search.get("download") === "1";
   return serveDeskDocument(id, { download });
 }

@@ -14,6 +14,10 @@ export const ROSA_DEC_DEAL_ID = "5d4a4c04-a477-4691-8cc7-32d5ccf70351";
 export const ROSA_DEC_DOCUMENT_ID = "cbd6719e-4d8e-4ed8-820e-0b3f1c07aa5f";
 export const ROSA_DEC_FILENAME = "Rosa Castellanos Florida Peninsula HO3 Dec Page.pdf";
 
+/** Domenic Iori Travelers mint DEC — retag current_policy → policy_dec when still needed. */
+export const DOMENIC_IORI_DEC_DOCUMENT_ID = "cf3a14da-70f0-4042-b8cb-0e6e2692025a";
+export const DOMENIC_IORI_POLICY_ID = "779ad733-1bc2-4729-8ed1-80208f600121";
+
 export const MINT_CONFIRM_TASK_KIND = "mint_confirm";
 export const MINT_ADMIN_NOTIFY_KIND = "mint_unpublished_72h";
 export const MINT_ADMIN_NOTIFY_MS = 72 * 60 * 60 * 1000;

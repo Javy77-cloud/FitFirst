@@ -60,4 +60,15 @@ describe("in-app document View modal", () => {
     expect(dialog).toMatch(/fileViewHref/);
     expect(dialog).toMatch(/fileDownloadHref/);
   });
+
+  it("probes storage and shows a missing-file message instead of a blank iframe", () => {
+    const dialog = source("src/components/documents/document-preview-dialog.tsx");
+    expect(dialog).toMatch(/probe=1/);
+    expect(dialog).toMatch(/data-ff-document-preview-missing/);
+    expect(dialog).toMatch(/is missing — re-upload/);
+    expect(dialog).toMatch(/X-FitFirst-File-Missing/);
+    const serve = source("src/lib/files/serve-document.ts");
+    expect(serve).toMatch(/FILE_MISSING_HEADER/);
+    expect(serve).toMatch(/probeDeskDocument/);
+  });
 });
