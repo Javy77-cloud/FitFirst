@@ -379,3 +379,56 @@ export function reapplyDefaultsAfterManualCoverageA(
   }
   applyWindHailAopFallback(after);
 }
+
+
+/**
+ * Risk Profile live string map after the agent edits Coverage A.
+ * Always writes the new Coverage A. Reapplies B–F / ordinance / related
+ * defaults only when the normalized Coverage A amount actually changes.
+ */
+export function liveValuesAfterManualCoverageA(
+  prevLive: Record<string, string>,
+  nextCoverageA: string,
+  stored: SheetBag,
+  product?: string | null,
+  opts?: { reapply?: boolean },
+): Record<string, string> {
+  const reapply = opts?.reapply !== false;
+  const nextLive: Record<string, string> = { ...prevLive, coverage_a: nextCoverageA };
+  if (!reapply) return nextLive;
+
+  const keys = new Set<string>([
+    ...Object.keys(stored),
+    ...Object.keys(prevLive),
+    "coverage_a",
+    ...Object.keys(HOME_COVERAGE_DEFAULTS),
+    "wind_hail_deductible",
+  ]);
+  const before: SheetBag = {};
+  const after: SheetBag = {};
+  for (const key of keys) {
+    const fromLive = Object.prototype.hasOwnProperty.call(prevLive, key)
+      ? prevLive[key]
+      : undefined;
+    const cell = stored[key];
+    const value = fromLive !== undefined ? fromLive : (cell?.value ?? "");
+    const base: QuoteSheetFieldValue = cell
+      ? { ...cell, value }
+      : { value, status: "check", source: "agent" };
+    before[key] = base;
+    after[key] = { ...base };
+  }
+  after.coverage_a = {
+    ...(after.coverage_a ?? { value: "", status: "check", source: "agent" }),
+    value: nextCoverageA,
+    source: after.coverage_a?.source === "javy" ? "javy" : "agent",
+  };
+  reapplyDefaultsAfterManualCoverageA(before, after, product);
+  for (const key of Object.keys(HOME_COVERAGE_DEFAULTS)) {
+    if (after[key]) nextLive[key] = after[key].value;
+  }
+  if (after.wind_hail_deductible) {
+    nextLive.wind_hail_deductible = after.wind_hail_deductible.value;
+  }
+  return nextLive;
+}
