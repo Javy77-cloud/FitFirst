@@ -8,7 +8,6 @@ import {
   GARAGE_TYPE_OPTIONS,
   MONTHS_OCCUPIED_OPTIONS,
   SCREEN_ENCLOSURE_OPTIONS,
-  STRUCTURE_TYPE_OPTIONS,
   USAGE_OPTIONS,
   WATER_BACKUP_OPTIONS,
   YES_NO_OPTIONS,
@@ -16,6 +15,9 @@ import {
 
 /** Manufactured / mobile home. Never label this HMO. */
 export const MHO_STRUCTURE_TYPE = "Manufactured Home" as const;
+export const MHO_MOBILE_HOME_TYPE = "Mobile Home" as const;
+/** Structure type choices on the MHO Deal Details section only. */
+export const MHO_STRUCTURE_TYPE_OPTIONS = [MHO_STRUCTURE_TYPE, MHO_MOBILE_HOME_TYPE] as const;
 
 export const MHO_DETAILS_SECTION_ID = "mho";
 
@@ -42,7 +44,7 @@ export type MhoDetailsField = CustomFieldDef & {
   group: MhoDetailsGroupId;
   /** Risk Profile key written on Fill. */
   sheetKey: string;
-  /** Locked to Manufactured Home on an MHO deal. */
+  /** Reserved — structure type is no longer locked (Manufactured Home | Mobile Home). */
   locked?: boolean;
   /** Show only when this Deal Details yes/no key is yes. */
   showWhenKey?: string;
@@ -77,8 +79,7 @@ export const MHO_DETAILS_FIELDS: readonly MhoDetailsField[] = [
   field("mh_year", "Year (unit)", "dwelling", "number"),
   field("year_purchased", "Year purchased", "dwelling", "number"),
   field("structure_type", "Structure type", "dwelling", "picklist", {
-    options: [...STRUCTURE_TYPE_OPTIONS],
-    locked: true,
+    options: [...MHO_STRUCTURE_TYPE_OPTIONS],
     defaultValue: MHO_STRUCTURE_TYPE,
   }),
   field("square_feet", "Sq ft", "dwelling", "number"),
@@ -189,6 +190,7 @@ export function mhoDetailSheetWrites(
   for (const row of MHO_DETAILS_FIELDS) {
     if (row.showWhenKey && !mhoYes(read(row.showWhenKey))) continue;
     let value = row.locked ? row.defaultValue?.trim() || MHO_STRUCTURE_TYPE : read(row.key);
+    if (!value && row.key === "structure_type") value = row.defaultValue?.trim() || MHO_STRUCTURE_TYPE;
     if (!value && row.key === "smoke_detectors") value = row.defaultValue?.trim() || "yes";
     if (!value) continue;
     writes.push({ sheetKey: row.sheetKey, value });

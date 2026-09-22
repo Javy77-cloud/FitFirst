@@ -15,6 +15,9 @@ import { fieldsForLine } from "@/lib/quote-sheet/catalog";
 import {
   MHO_DETAILS_FIELDS,
   MHO_DETAILS_GROUPS,
+  MHO_STRUCTURE_TYPE,
+  MHO_MOBILE_HOME_TYPE,
+  MHO_STRUCTURE_TYPE_OPTIONS,
   dealPolicyFormIsMho,
 } from "@/lib/custom-fields/mho-details-fields";
 
@@ -72,7 +75,7 @@ describe("MHO Deal Details section", () => {
     expect(html.slice(right, mho)).toMatch(/data-ff-deal-section="co_applicant"/);
   });
 
-  it("asks the manufactured-home questions and locks structure type", () => {
+  it("asks the manufactured-home questions with Manufactured Home | Mobile Home structure type", () => {
     const html = renderDetails("MHO");
     for (const row of MHO_DETAILS_FIELDS) {
       if (row.showWhenKey) {
@@ -81,9 +84,16 @@ describe("MHO Deal Details section", () => {
       }
       expect(html).toMatch(new RegExp(`data-ff-deal-field="${row.key}"`));
     }
-    expect(html).toMatch(/data-ff-mho-locked="structure-type"/);
-    expect(html).toContain("Manufactured Home");
-    expect(html).toMatch(/name="field_structure_type"[^>]*value="Manufactured Home"/);
+    expect(html).not.toMatch(/data-ff-mho-locked="structure-type"/);
+    expect(html).toMatch(/data-ff-mho-structure-type/);
+    expect(MHO_STRUCTURE_TYPE_OPTIONS).toEqual([MHO_STRUCTURE_TYPE, MHO_MOBILE_HOME_TYPE]);
+    expect(html).toContain(MHO_STRUCTURE_TYPE);
+    expect(html).toContain(MHO_MOBILE_HOME_TYPE);
+    expect(html).toMatch(/name="field_structure_type"/);
+    expect(html).toMatch(/<option[^>]*>Manufactured Home<\/option>/);
+    expect(html).toMatch(/<option[^>]*>Mobile Home<\/option>/);
+    // Default selected value is Manufactured Home
+    expect(html).toMatch(/value="Manufactured Home"|selected[^>]*>Manufactured Home/);
     expect(html).toMatch(/name="field_smoke_detectors"/);
     expect(html).toMatch(/value="yes"/);
     expect(html).not.toMatch(/HMO/);
@@ -120,7 +130,7 @@ describe("MHO Deal Details section", () => {
     expect(byKey.usage.options).toEqual(home.usage.options);
     expect(byKey.screen_enclosure.options).toEqual([...SCREEN_ENCLOSURE_OPTIONS]);
     expect(byKey.water_backup.options).toEqual([...WATER_BACKUP_OPTIONS]);
-    expect(byKey.structure_type.options).toEqual([...STRUCTURE_TYPE_OPTIONS]);
+    expect(byKey.structure_type.options).toEqual([...MHO_STRUCTURE_TYPE_OPTIONS]);
     expect(byKey.exterior.options).toEqual(home.exterior.options);
     expect(byKey.foundation.options).toEqual(home.foundation.options);
     expect(byKey.hydrant.options).toEqual(home.hydrant.options);

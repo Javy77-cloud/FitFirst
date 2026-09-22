@@ -6,14 +6,12 @@ import { FieldControl } from "@/components/custom-fields/field-control";
 import {
   MHO_DETAILS_GROUPS,
   MHO_DETAILS_SECTION_ID,
-  MHO_STRUCTURE_TYPE,
   mhoDetailsFieldsForGroup,
   mhoYes,
   type MhoDetailsField,
 } from "@/lib/custom-fields/mho-details-fields";
 
 function displayValue(field: MhoDetailsField, values: Record<string, string>): string {
-  if (field.locked) return MHO_STRUCTURE_TYPE;
   const stored = (values[field.key] ?? "").trim();
   if (stored) return stored;
   return field.defaultValue?.trim() ?? "";
@@ -31,28 +29,12 @@ function MhoFieldControl({
   onValueChange: (key: string, value: string) => void;
 }) {
   const value = displayValue(field, values);
-  if (field.locked) {
-    return (
-      <div className="space-y-1" data-ff-deal-field={field.key} data-ff-mho-locked="structure-type">
-        <label className="text-xs font-medium text-navy" htmlFor={`field_${field.key}_display`}>
-          {field.label}
-        </label>
-        <select
-          id={`field_${field.key}_display`}
-          aria-label={field.label}
-          disabled
-          value={MHO_STRUCTURE_TYPE}
-          className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-navy"
-        >
-          <option value={MHO_STRUCTURE_TYPE}>{MHO_STRUCTURE_TYPE}</option>
-        </select>
-        <input type="hidden" name={`field_${field.key}`} form={formId} value={MHO_STRUCTURE_TYPE} />
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-1" data-ff-deal-field={field.key}>
+    <div
+      className="space-y-1"
+      data-ff-deal-field={field.key}
+      data-ff-mho-structure-type={field.key === "structure_type" ? "" : undefined}
+    >
       <label className="text-xs font-medium text-navy" htmlFor={`field_${field.key}`}>
         {field.label}
       </label>
