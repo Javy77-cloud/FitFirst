@@ -1,5 +1,9 @@
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
-import { PERSONAL_DRIVER_CAP } from "@/lib/quote-sheet/repeatable-units";
+import {
+  driverRosterEstablished,
+  establishedDriverCount,
+  PERSONAL_DRIVER_CAP,
+} from "@/lib/quote-sheet/repeatable-units";
 
 /**
  * Auto driver identity fields. Vehicle count is not an input: a household can
@@ -181,6 +185,13 @@ export function collapseAutoDriverSheet(
 ): Record<string, QuoteSheetFieldValue> {
   const collapsed = collapseDriverRecords(sheetSlots(values), (cell) => cell?.value ?? "");
   const next: Record<string, QuoteSheetFieldValue> = { ...values };
+  if (collapsed.length === 0) {
+    const relationship = next.driver_1_relationship;
+    if (relationship?.value?.trim()) {
+      next.driver_1_relationship = { value: "", status: "missing", source: "blank" };
+    }
+    return next;
+  }
   for (let index = 1; index <= PERSONAL_DRIVER_CAP; index += 1) {
     const snap = collapsed[index - 1];
     for (const part of AUTO_DRIVER_PARTS) {
@@ -240,6 +251,21 @@ export function retargetAutoDriverFields<T extends DriverField>(
   }
   if (!sawDriver) return extracted;
 
+  // Named extracts may fill slots the agent already opened. They may not open
+  // a new card to match vehicle count or a longer driver list.
+  const ceiling = driverRosterEstablished(existing)
+    ? establishedDriverCount(existing)
+    : PERSONAL_DRIVER_CAP;
+  const partial: T[] = [];
+  for (let index = 1; index <= ceiling; index += 1) {
+    const slot = incoming[index - 1];
+    if ((slot.name?.normalizedValue ?? "").trim()) continue;
+    for (const part of AUTO_DRIVER_PARTS) {
+      const item = slot[part];
+      if (!item?.normalizedValue.trim()) continue;
+      partial.push(item);
+    }
+  }
   const collapsed = collapseDriverRecords(incoming, (item) => item?.normalizedValue ?? "");
   const taken = new Set<number>();
   const placed: T[] = [];
@@ -248,7 +274,7 @@ export function retargetAutoDriverFields<T extends DriverField>(
     const dob = person.dob?.normalizedValue ?? "";
     if (!name.trim()) continue;
     let dest = 0;
-    for (let index = 1; index <= PERSONAL_DRIVER_CAP; index += 1) {
+    for (let index = 1; index <= ceiling; index += 1) {
       const currentName = printableDriverCell(existing[`driver_${index}_name`]);
       const currentDob = printableDriverCell(existing[`driver_${index}_dob`]);
       if (!currentName) continue;
@@ -258,7 +284,7 @@ export function retargetAutoDriverFields<T extends DriverField>(
       }
     }
     if (!dest) {
-      for (let index = 1; index <= PERSONAL_DRIVER_CAP; index += 1) {
+      for (let index = 1; index <= ceiling; index += 1) {
         if (printableDriverCell(existing[`driver_${index}_name`])) continue;
         if (taken.has(index)) continue;
         dest = index;
@@ -274,5 +300,5 @@ export function retargetAutoDriverFields<T extends DriverField>(
       placed.push({ ...item, fieldKey: `driver_${dest}_${part}` });
     }
   }
-  return [...rest, ...placed];
+  return [...rest, ...partial, ...placed];
 }

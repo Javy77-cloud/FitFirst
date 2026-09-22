@@ -197,6 +197,9 @@ function vehicleKey(index: number, part: string): string {
 
 function applyVehicle(out: LooseJson, item: LooseJson, index: number) {
   if (index > 3) return;
+  // A driver list printed on a vehicle row is not a new driver card.
+  // Driver count comes from the driver roster, never from how many vehicles exist.
+  for (const key of ["driver", ...DRIVER_LIST_KEYS]) pull(item, [key]);
   const description = pull(item, [
     "description",
     "vehicle_description",

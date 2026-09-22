@@ -13,14 +13,16 @@ import { Input } from "@/components/ui/input";
 import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { QuoteFieldDef } from "@/lib/quote-sheet/applicant-core";
 import {
+  AUTO_DRIVER_COUNT_KEY,
   canAddAnother,
   canRemoveUnit,
   fieldsForUnit,
+  initialRepeatableCount,
+  repeatableBlockServerCount,
   repeatableRemovalWrites,
   repeatableUnitSignature,
   shownRepeatableCount,
   unitHasValue,
-  visibleUnitCount,
   type RepeatableKind,
 } from "@/lib/quote-sheet/repeatable-units";
 import {
@@ -64,7 +66,7 @@ export function RepeatableUnitBlocks({
   const rootRef = useRef<HTMLDivElement>(null);
   const pendingRef = useRef(false);
   const [units, setUnits] = useState<UnitLayout>(() => ({
-    count: visibleUnitCount(values, kind, product),
+    count: initialRepeatableCount(values, kind, product),
     overlays: {},
     layoutRev: 0,
     revFrom: Number.POSITIVE_INFINITY,
@@ -85,7 +87,7 @@ export function RepeatableUnitBlocks({
     setAppliedSignature(signature);
     setUnits((current) => ({
       ...current,
-      count: visibleUnitCount(values, kind, product),
+      count: initialRepeatableCount(values, kind, product),
       overlays: {},
       layoutRev: current.layoutRev + 1,
       revFrom: 1,
@@ -126,7 +128,12 @@ export function RepeatableUnitBlocks({
     maxColumns,
   );
   const pruned = serverChanged ? {} : pruneOverlays(units.overlays, values);
-  const serverCount = visibleUnitCount(withOverlays(values, pruned), kind, product);
+  const serverCount = repeatableBlockServerCount(
+    withOverlays(values, pruned),
+    kind,
+    product,
+    serverChanged,
+  );
   const shownCount = shownRepeatableCount(units.count, serverCount, serverChanged);
   const canRemove = canRemoveUnit(shownCount);
   const keepOneHintId = `ff-keep-one-${kind}`;
@@ -157,9 +164,11 @@ export function RepeatableUnitBlocks({
     const writes = repeatableRemovalWrites(kind, total, removeIndex, snapshots);
     if (!writes) return;
     const previousValues = values;
-    let needsPersist = false;
-    for (let index = removeIndex; index <= total; index += 1) {
-      if (unitHasValue(previousValues, kind, index)) needsPersist = true;
+    let needsPersist = kind === "driver";
+    if (!needsPersist) {
+      for (let index = removeIndex; index <= total; index += 1) {
+        if (unitHasValue(previousValues, kind, index)) needsPersist = true;
+      }
     }
     pendingRef.current = true;
     setPending(true);
@@ -168,6 +177,7 @@ export function RepeatableUnitBlocks({
         if (!form) throw new Error("Risk Profile form is missing.");
         const data = new FormData(form);
         for (const [key, value] of Object.entries(writes)) data.set(key, value);
+        if (kind === "driver") data.set(AUTO_DRIVER_COUNT_KEY, String(Math.max(1, total - 1)));
         data.set("flash", "0");
         await saveQuoteSheet(data);
       }
@@ -334,6 +344,9 @@ export function RepeatableUnitBlocks({
         <p className="px-3 pb-2 text-xs text-destructive" role="alert">
           {removeError}
         </p>
+      ) : null}
+      {kind === "driver" ? (
+        <input type="hidden" name={AUTO_DRIVER_COUNT_KEY} value={String(shownCount)} readOnly />
       ) : null}
       {hiddenBlanks.map(([key]) => (
         <input key={key} type="hidden" name={key} defaultValue="" data-ff-cleared-unit-field={key} />

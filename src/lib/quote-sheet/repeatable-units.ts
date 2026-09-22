@@ -312,13 +312,146 @@ export function repeatableUnitSignature(
       chunks.push(values[repeatableFieldKey(kind, index, field.suffix)]?.value?.trim() ?? "");
     }
   }
+  if (kind === "driver") chunks.push(values[AUTO_DRIVER_COUNT_KEY]?.value?.trim() ?? "");
   return chunks.join("\u001f");
+}
+
+/**
+ * Saved Auto driver-card count. Not a risk field and not derived from vehicles.
+ * Fill / Gemini / household sync must not raise it. Add driver and Remove driver do.
+ */
+export const AUTO_DRIVER_COUNT_KEY = "auto_driver_count";
+
+export function clampDriverCount(count: number): number {
+  if (!Number.isFinite(count)) return 1;
+  return Math.min(PERSONAL_DRIVER_CAP, Math.max(1, Math.round(count)));
+}
+
+export function readStoredDriverCount(
+  values: Record<string, { value?: string } | undefined> | null | undefined,
+): number | null {
+  const raw = values?.[AUTO_DRIVER_COUNT_KEY]?.value?.trim() ?? "";
+  if (!raw) return null;
+  const count = Number(raw);
+  if (!Number.isFinite(count)) return null;
+  return clampDriverCount(count);
+}
+
+/** A named driver, or an explicit saved count, is the roster. Empty sheets are not. */
+export function driverRosterEstablished(
+  values: Record<string, { value?: string } | undefined>,
+): boolean {
+  if (readStoredDriverCount(values) != null) return true;
+  for (let index = 1; index <= PERSONAL_DRIVER_CAP; index += 1) {
+    const name = values[repeatableFieldKey("driver", index, "name")]?.value?.trim() ?? "";
+    if (name) return true;
+  }
+  return false;
+}
+
+/**
+ * Driver cards the agent already established.
+ * A saved count wins over stray higher driver rows. Otherwise the filled rows.
+ * Vehicle count is not an input.
+ */
+export function establishedDriverCount(
+  values: Record<string, { value?: string } | undefined>,
+): number {
+  const stored = readStoredDriverCount(values);
+  if (stored != null) return stored;
+  return visibleUnitCount(values as Record<string, QuoteSheetFieldValue | undefined>, "driver");
+}
+
+export function stampDriverCount<T extends Record<string, QuoteSheetFieldValue>>(
+  values: T,
+  count: number,
+): T {
+  return {
+    ...values,
+    [AUTO_DRIVER_COUNT_KEY]: {
+      value: String(clampDriverCount(count)),
+      status: "confirmed",
+      source: "agent",
+    },
+  };
+}
+
+/** Clear driver cards above the established count. Does not read vehicle keys. */
+export function blankDriverUnitsAbove<T extends Record<string, QuoteSheetFieldValue>>(
+  values: T,
+  count: number,
+): T {
+  const ceiling = clampDriverCount(count);
+  let next: T | null = null;
+  for (let index = ceiling + 1; index <= PERSONAL_DRIVER_CAP; index += 1) {
+    for (const field of DRIVER_BLOCK_FIELDS) {
+      const key = repeatableFieldKey("driver", index, field.suffix);
+      if (!(values[key]?.value ?? "").trim()) continue;
+      if (!next) next = { ...values };
+      next[key as keyof T] = { value: "", status: "missing", source: "blank" } as T[keyof T];
+    }
+  }
+  return next ?? values;
+}
+
+/**
+ * Fill / Gemini ceiling.
+ * An empty roster may receive named drivers from the first extract.
+ * Once a roster exists, later fills stay inside that count — they do not
+ * open a card per vehicle or per extra extracted person.
+ */
+export function enforceEstablishedDriverCeiling<T extends Record<string, QuoteSheetFieldValue>>(
+  before: T,
+  after: T,
+): T {
+  if (!driverRosterEstablished(before)) {
+    if (!driverRosterEstablished(after)) return after;
+    return stampDriverCount(after, visibleUnitCount(after, "driver"));
+  }
+  const ceiling = establishedDriverCount(before);
+  return stampDriverCount(blankDriverUnitsAbove(after, ceiling), ceiling);
+}
+
+/**
+ * Cards to show for one block. Driver count never consults vehicle count.
+ * A saved driver count hides leaked higher rows. A saved blank Add stays
+ * after refresh. Vehicle blocks ignore the driver count key.
+ */
+export function initialRepeatableCount(
+  values: Record<string, QuoteSheetFieldValue | undefined>,
+  kind: RepeatableKind,
+  product?: SheetProduct | string | null,
+): number {
+  if (kind === "driver") {
+    const stored = readStoredDriverCount(values);
+    if (stored != null) return stored;
+  }
+  return visibleUnitCount(values, kind, product);
+}
+
+/**
+ * Server side of shownRepeatableCount for a single block.
+ * Pass only this block's values count — never Math.max it with the other block.
+ */
+export function repeatableBlockServerCount(
+  values: Record<string, QuoteSheetFieldValue | undefined>,
+  kind: RepeatableKind,
+  product: SheetProduct | string | null | undefined,
+  serverChanged: boolean,
+): number {
+  const visible = visibleUnitCount(values, kind, product);
+  if (kind !== "driver") return visible;
+  const stored = readStoredDriverCount(values);
+  if (stored == null) return visible;
+  if (serverChanged) return stored;
+  return Math.min(visible, stored);
 }
 
 /**
  * After save, fill, or refresh, the server count wins so a removed driver stays gone.
  * A local Add can still hold a blank card while the server snapshot is unchanged.
- * Driver cards never grow to match the vehicle count — each block has its own count.
+ * `localCount` and `serverCount` are the same block (both drivers, or both vehicles).
+ * Do not pass a vehicle count into a driver call or the reverse.
  */
 export function shownRepeatableCount(
   localCount: number,

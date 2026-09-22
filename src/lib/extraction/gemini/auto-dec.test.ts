@@ -657,7 +657,7 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(applied.values.driver_2_dob.value).toBe("06/01/1990");
   });
 
-  it("merges James Iori 04/22/1959 across three photo extracts and keeps other drivers", () => {
+  it("merges James Iori 04/22/1959 across later photos without opening new driver cards", () => {
     const photos = [
       { driver_1_name: "James Iori", driver_1_dob: "04/22/1959", driver_1_gender: "Male" },
       { driver_2_name: "James Iori", driver_2_dob: "4/22/59", driver_2_license: "I400-222-33-444" },
@@ -678,10 +678,10 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(values.driver_1_name.value).toBe("James Iori");
     expect(values.driver_1_gender.value).toBe("Male");
     expect(values.driver_1_license.value).toBe("I400-222-33-444");
-    expect(values.driver_2_name.value).toBe("Domenic Iori");
-    expect(values.driver_3_name.value).toBe("Maria Iori");
+    expect(values.driver_2_name?.value ?? "").toBe("");
+    expect(values.driver_3_name?.value ?? "").toBe("");
     expect(values.driver_4_name?.value ?? "").toBe("");
-    expect(visibleUnitCount(values, "driver")).toBe(3);
+    expect(visibleUnitCount(values, "driver")).toBe(1);
   });
 
   function mintRows(json: Record<string, unknown>) {
