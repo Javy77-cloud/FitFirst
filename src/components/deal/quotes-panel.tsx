@@ -51,6 +51,14 @@ function toQuoteFileRow(doc: Document, versions: DocumentVersion[]): QuoteFileRo
 
 function MissingQuotesBanner({ completeness }: { completeness: LineQuoteCompleteness | null }) {
   if (!completeness || completeness.complete) return null;
+  // Markets → Quotes creates shop logs before premiums exist. "Carrier still pending"
+  // is the normal manual-entry state — do not paint a red Missing-quotes laundry list.
+  const actionable = completeness.missing.filter((row) => row.reason !== "pending");
+  if (actionable.length === 0) return null;
+  const summary =
+    actionable.length === completeness.missing.length
+      ? completeness.summary
+      : `Missing quotes — ${actionable.map((row) => `${row.carrierName} (${row.why})`).join("; ")}`;
   return (
     <span
       className="inline-flex items-center rounded-full border border-fit-flag/35 bg-fit-flag/10 px-2 py-0.5 text-[11px] font-medium text-fit-flag"
@@ -58,7 +66,7 @@ function MissingQuotesBanner({ completeness }: { completeness: LineQuoteComplete
       data-ff-quotes-missing-line={completeness.line}
       data-ff-quotes-missing-summary=""
     >
-      {completeness.summary}
+      {summary}
     </span>
   );
 }
