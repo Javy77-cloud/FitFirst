@@ -138,6 +138,11 @@ describe("P0 home master-sheet dropdowns", () => {
     expect(normalizeBuildingCode("does not meet")).toBe("D");
     expect(normalizeRoofCovering("Meets FBC 2001")).toBe("Meets FBC 2001");
     expect(normalizeRoofCovering("FBC 1994")).toBe("Meets FBC 1994");
+    expect(normalizeRoofCovering("A")).toBe("Meets FBC 2001");
+    expect(normalizeRoofCovering("B")).toBe("Meets FBC 1994");
+    expect(normalizeRoofCovering("C")).toBe("Non-FBC");
+    expect(normalizeRoofCovering("D")).toBe("Unknown");
+    expect(normalizeRoofCovering("A. All roof coverings meet the FBC")).toBe("Meets FBC 2001");
     expect(normalizeRoofDeckAttachment("C")).toBe("Level C");
     expect(normalizeStories("bi-level")).toBe("Bi-Level");
   });

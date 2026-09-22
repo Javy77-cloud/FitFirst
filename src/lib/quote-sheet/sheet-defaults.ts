@@ -959,6 +959,14 @@ export function normalizeRoofCovering(raw: string | null | undefined): string {
     return "Reinf Concrete Roof Deck";
   }
   if (lower === "unknown" || lower.includes("unidentified")) return "Unknown";
+  // OIR-B1-1802 roof covering letters are not QuoteRUSH option values.
+  const letter = lower.match(/^([abcd])(?:\s*[.)\-:]|$)/);
+  if (letter) {
+    if (letter[1] === "a") return "Meets FBC 2001";
+    if (letter[1] === "b") return "Meets FBC 1994";
+    if (letter[1] === "c") return "Non-FBC";
+    return "Unknown";
+  }
   return text;
 }
 
