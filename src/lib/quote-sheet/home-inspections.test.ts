@@ -367,6 +367,10 @@ describe("Home inspection sections", () => {
       expect(html, line).not.toContain(WIND_MIT_INSPECTION_LABEL);
       expect(html, line).not.toContain("data-ff-inspection-ribbon");
       expect(html, line).not.toContain("data-ff-section-toggle");
+      if (line === "auto") {
+        expect(html, line).not.toContain("Records check");
+        expect(html, line).not.toContain('name="records_check"');
+      }
     }
   });
 
@@ -419,6 +423,48 @@ describe("Home inspection sections", () => {
       "Carport",
     ]);
     expect(fieldsForLine("home", "landlord").find((field) => field.key === "fire_alarm")?.label).toBe("Fire alarm");
+  });
+
+  it("hides Records check on Auto and home risk profiles while keeping the stored note", () => {
+    const dump = "API says 1982, sheet says 1978 (from 4pt).";
+    for (const product of ["homeowners", "landlord"] as const) {
+      expect(fieldsForLine("home", product).some((field) => field.key === "records_check"), product).toBe(true);
+      expect(
+        groupFields("home", product).some((group) => group.fields.some((field) => field.key === "records_check")),
+        product,
+      ).toBe(false);
+      const html = renderToString(
+        createElement(MasterSheetCompare, {
+          dealId: `deal-records-${product}`,
+          line: "home",
+          fields: [],
+          values: {
+            ...emptySheetValues("home", product),
+            records_check: cell(dump),
+          },
+          product,
+        }),
+      );
+      expect(html, product).not.toContain("Records check");
+      expect(html, product).not.toContain('name="records_check"');
+      expect(html, product).not.toContain(dump);
+    }
+    expect(groupFields("auto", "auto").some((group) => group.fields.some((field) => field.key === "records_check"))).toBe(
+      false,
+    );
+    const copied = buildSuperCopyPacket({
+      line: "home",
+      dealId: "deal-1",
+      dealTitle: "Rosa",
+      values: {
+        ...emptySheetValues("home", "homeowners"),
+        records_check: cell(dump),
+        year_built: cell("1978"),
+      },
+    });
+    expect(copied.fields.some((field) => field.key === "records_check")).toBe(false);
+    expect(copied.filled.records_check).toBeUndefined();
+    expect(copied.filled.year_built).toBe("1978");
   });
 
   it("copies AOP into wind-hail only when the dec has no separate wind-hail", () => {

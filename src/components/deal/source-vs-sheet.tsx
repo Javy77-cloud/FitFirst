@@ -1,6 +1,7 @@
 import { FileActionMenu } from "@/components/documents/file-action-menu";
 import type { Document, ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { fieldsForLine } from "@/lib/quote-sheet/catalog";
+import { RECORDS_CHECK_KEY, recordsCheckHiddenOnRiskProfile } from "@/lib/quote-sheet/records-check";
 import type { ShopLine } from "@/lib/domain";
 
 export function SourceVsSheet({
@@ -15,7 +16,9 @@ export function SourceVsSheet({
   values: Record<string, QuoteSheetFieldValue>;
 }) {
   const sourceDocs = docs.filter((doc) => doc.slot === "source_doc");
-  const catalog = fieldsForLine(line);
+  const catalog = fieldsForLine(line).filter(
+    (field) => !(recordsCheckHiddenOnRiskProfile(line) && field.key === RECORDS_CHECK_KEY),
+  );
   const filled = catalog.filter((field) => {
     const cell = values[field.key];
     return cell && cell.value.trim() && cell.status !== "missing";

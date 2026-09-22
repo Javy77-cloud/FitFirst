@@ -99,6 +99,7 @@ import {
 import { INDUSTRY_OPTIONS } from "@/lib/custom-fields/industry-occupation";
 import { COMMERCIAL_RISK_PROFILE_FIELDS, isCommercialSheetLine } from "./commercial-risk-profile";
 import { isInspectionSectionGroup, orderHomeGroups } from "./home-inspections";
+import { RECORDS_CHECK_KEY, recordsCheckHiddenOnRiskProfile } from "./records-check";
 import { fieldIsVisible, visibleQuoteFields } from "./sheet-visibility";
 import type { SheetValueBag } from "./sheet-visibility";
 
@@ -136,7 +137,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "homestead", label: "Homestead", group: "Property" },
   { key: "zoning", label: "Zoning", group: "Property" },
   { key: "land_use", label: "Land use", group: "Property" },
-  { key: "records_check", label: "Records check", group: "Property", input: "textarea" },
+  { key: RECORDS_CHECK_KEY, label: "Records check", group: "Property", input: "textarea" },
   { key: "subdivision", label: "Subdivision", group: "Property" },
   { key: "year_purchased", label: "Year purchased", group: "Property", input: "number" },
   {
@@ -1469,9 +1470,12 @@ export function groupFields(
   product?: SheetProduct,
   values?: SheetValueBag,
 ): { group: string; fields: QuoteFieldDef[] }[] {
-  const source = values
+  const listed = values
     ? visibleQuoteFields(fieldsForLine(line, product), values)
     : fieldsForLine(line, product);
+  const source = recordsCheckHiddenOnRiskProfile(line)
+    ? listed.filter((field) => field.key !== RECORDS_CHECK_KEY)
+    : listed;
   const groups: { group: string; fields: QuoteFieldDef[] }[] = [];
   for (const field of source) {
     const existing = groups.find((g) => g.group === field.group);

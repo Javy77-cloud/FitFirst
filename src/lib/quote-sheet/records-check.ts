@@ -1,4 +1,16 @@
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
+import type { ShopLine } from "@/lib/domain";
+
+/** Sheet key for mismatch / raw property-API notes. Training data, not an agent field. */
+export const RECORDS_CHECK_KEY = "records_check";
+
+/**
+ * Auto and Home risk profiles (HO3, HO5, DP, MHO, and the rest of the home line)
+ * do not show this textarea. The value stays on the sheet for the fill pipeline.
+ */
+export function recordsCheckHiddenOnRiskProfile(line: ShopLine | string | null | undefined): boolean {
+  return line === "home" || line === "auto";
+}
 
 /** Normalize for mismatch compare — strip money commas/spaces, case-insensitive. */
 export function valuesDiffer(left: string, right: string): boolean {
@@ -27,13 +39,13 @@ export function appendRecordsCheck(
   line: string,
   meta?: { source?: QuoteSheetFieldValue["source"]; sourceLabel?: string },
 ): void {
-  const prev = values.records_check?.value?.trim() ?? "";
+  const prev = values[RECORDS_CHECK_KEY]?.value?.trim() ?? "";
   const next = prev ? `${prev} ${line}` : line;
-  values.records_check = {
+  values[RECORDS_CHECK_KEY] = {
     value: next,
     status: "confirmed",
-    source: meta?.source ?? values.records_check?.source ?? "extracted",
-    sourceLabel: meta?.sourceLabel ?? values.records_check?.sourceLabel ?? "Records check",
+    source: meta?.source ?? values[RECORDS_CHECK_KEY]?.source ?? "extracted",
+    sourceLabel: meta?.sourceLabel ?? values[RECORDS_CHECK_KEY]?.sourceLabel ?? "Records check",
   };
 }
 

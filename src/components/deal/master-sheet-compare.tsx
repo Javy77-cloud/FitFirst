@@ -25,6 +25,7 @@ import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { ApplicantHousehold } from "@/components/deal/applicant-household";
 import { RepeatableUnitBlocks } from "@/components/deal/repeatable-unit-blocks";
 import { fieldsForLine, groupFields, sheetFieldIsVisible, sheetGroupIsVisible } from "@/lib/quote-sheet/catalog";
+import { RECORDS_CHECK_KEY, recordsCheckHiddenOnRiskProfile } from "@/lib/quote-sheet/records-check";
 import { parseSheetProduct } from "@/lib/quote-sheet/products";
 import { InsuredPropertyKindControl } from "@/components/deal/insured-property-kind-control";
 import { RISK_PROFILE_LABEL, SAVE_RISK_PROFILE_LABEL } from "@/lib/quote-sheet/risk-profile-copy";
@@ -264,6 +265,7 @@ export function MasterSheetCompare({
   const healthPlanType = liveValues.plan_type ?? values.plan_type?.value ?? "";
   const extractedByKey = new Map(asList(fields).map((field) => [field.fieldKey, field]));
   const filled = catalog.filter((field) => {
+    if (recordsCheckHiddenOnRiskProfile(line) && field.key === RECORDS_CHECK_KEY) return false;
     const cell = values[field.key];
     return Boolean(cell?.value.trim() && cell.status !== "missing");
   }).length;

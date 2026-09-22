@@ -7,6 +7,7 @@ import {
 } from "./applicant-core";
 import { fieldsForLine } from "./catalog";
 import { carrierTransferValues } from "./home-inspections";
+import { RECORDS_CHECK_KEY, recordsCheckHiddenOnRiskProfile } from "./records-check";
 
 export const SUPER_COPY_LABEL = "copy from this, not the PDFs";
 
@@ -57,6 +58,7 @@ export function buildSuperCopyPacket(input: {
   const transferable = input.line === "home" ? carrierTransferValues(input.values) : input.values;
   const fields = fieldsForLine(input.line)
     .filter((def) => includeCoApplicant || !coKeys.has(def.key))
+    .filter((def) => !(recordsCheckHiddenOnRiskProfile(input.line) && def.key === RECORDS_CHECK_KEY))
     .filter((def) => input.line !== "home" || def.key in transferable)
     .map((def) => {
       const cell = transferable[def.key];
