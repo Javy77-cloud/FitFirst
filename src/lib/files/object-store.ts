@@ -138,7 +138,18 @@ function setReadbackDiag(diag: ReadbackDiag): void {
       return;
     }
   }
-  lastReadbackDiag = diag;
+  const next: ReadbackDiag = { ...diag };
+  // non_pdf / auth_body must always carry a safe bodyPrefix for louder toasts.
+  if ((next.reason === "non_pdf" || next.reason === "auth_body") && !next.bodyPrefix) {
+    next.bodyPrefix = prev?.bodyPrefix || "unknown body";
+  }
+  if (!next.contentType && prev?.contentType) {
+    next.contentType = prev.contentType;
+  }
+  if (!next.host && prev?.host) {
+    next.host = prev.host;
+  }
+  lastReadbackDiag = next;
 }
 
 function formatReadbackDiag(diag: ReadbackDiag | null): string {
@@ -147,13 +158,28 @@ function formatReadbackDiag(diag: ReadbackDiag | null): string {
   if (diag.reason === "store_mismatch" && diag.detail) bits.push(diag.detail);
   else if (diag.reason === "http_status" && diag.status != null) bits.push(`HTTP ${diag.status}`);
   else if (diag.reason === "empty") bits.push("empty body");
-  else if (diag.reason === "non_pdf") bits.push("non-PDF body");
-  else if (diag.reason === "auth_body") bits.push("auth error body");
-  if (diag.bodyPrefix) bits.push(diag.bodyPrefix);
+  else if (diag.reason === "non_pdf") {
+    bits.push("non-PDF body");
+    bits.push(diag.bodyPrefix || "unknown body");
+  } else if (diag.reason === "auth_body") {
+    bits.push("auth error body");
+    bits.push(diag.bodyPrefix || "unknown body");
+  }
+  // Avoid duplicating bodyPrefix when already forced above for non_pdf/auth_body.
+  if (diag.bodyPrefix && diag.reason !== "non_pdf" && diag.reason !== "auth_body") {
+    bits.push(diag.bodyPrefix);
+  }
   if (diag.contentType) bits.push(`content-type ${diag.contentType}`);
   if (diag.host) bits.push(`host ${diag.host}`);
   return bits.length ? ` (${bits.join(", ")})` : "";
 }
+
+function clearReadbackDiag(): void {
+  lastReadbackDiag = null;
+}
+
+/** Backoff after put — private CDN can 404 briefly before the object is visible. */
+const READBACK_RETRY_DELAYS_MS = [0, 150, 350, 700, 1200] as const;
 
 export function readbackFailureMessage(diag?: ReadbackDiag | null): string {
   const active = diag ?? lastReadbackDiag;
@@ -490,6 +516,11 @@ async function readViaPresignedGet(pathname: string): Promise<Buffer | null> {
   return null;
 }
 
+/**
+ * Private blob reads: prefer SDK get (token + access private, useCache:false) and
+ * signed URLs. Raw CDN Bearer on private URLs often returns HTML/JSON 200s that are
+ * not document bytes — never treat those as success; try the next strategy instead.
+ */
 async function readPrivateBlob(urlOrPathname: string): Promise<Buffer | null> {
   const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
   const isHttp = /^https?:\/\//i.test(urlOrPathname);
@@ -497,17 +528,31 @@ async function readPrivateBlob(urlOrPathname: string): Promise<Buffer | null> {
     ? (blobPathnameDecoded(urlOrPathname) ?? blobPathnameFromUrl(urlOrPathname))
     : posixKey(urlOrPathname);
 
-  // 1) Bearer on the given URL / constructed CDN URL (same RW token as put).
-  //    HTML/JSON/non-PDF bodies are rejected so we fall through — never treat 200 HTML as PDF.
+  // 1) SDK get — pathname first (constructs store URL from RW token), then URL.
+  //    useCache:false is tried inside readViaSdkGet (required right after put).
+  if (pathname) {
+    const viaPathSdk = await readViaSdkGet(pathname);
+    if (viaPathSdk) return viaPathSdk;
+  }
+  if (isHttp) {
+    const viaUrlSdk = await readViaSdkGet(urlOrPathname);
+    if (viaUrlSdk) return viaUrlSdk;
+  }
+
+  // 2) Presigned GET — control-plane signature; works when raw Bearer CDN returns HTML.
+  if (pathname) {
+    const viaPresign = await readViaPresignedGet(pathname);
+    if (viaPresign) return viaPresign;
+  }
+
+  // 3) Bearer CDN last. Reject HTML/JSON/non-PDF via acceptBytes; do not stop earlier strategies.
   if (token && isHttp) {
-    const viaBearer = await readViaBearerFetch(urlOrPathname);
-    if (viaBearer) return viaBearer;
-    // Prefer ?download=1 next (put.downloadUrl shape) before other host variants.
+    // Prefer put.downloadUrl shape (?download=1) before raw url.
     const downloadUrl = (() => {
       try {
         const u = new URL(urlOrPathname);
         u.hostname = u.hostname.toLowerCase();
-        if (u.searchParams.get("download") === "1") return null;
+        if (u.searchParams.get("download") === "1") return u.toString();
         u.searchParams.set("download", "1");
         return u.toString();
       } catch {
@@ -518,36 +563,8 @@ async function readPrivateBlob(urlOrPathname: string): Promise<Buffer | null> {
       const viaDownload = await readViaBearerFetch(downloadUrl);
       if (viaDownload) return viaDownload;
     }
-  } else if (token && pathname) {
-    const constructed = privateBlobUrlForToken(pathname, token);
-    if (constructed) {
-      const viaConstructed = await readViaBearerFetch(constructed);
-      if (viaConstructed) return viaConstructed;
-      const viaDownload = await readViaBearerFetch(`${constructed}?download=1`);
-      if (viaDownload) return viaDownload;
-    }
-  } else if (!token && isHttp) {
     const viaBearer = await readViaBearerFetch(urlOrPathname);
     if (viaBearer) return viaBearer;
-  }
-
-  // 2) SDK get with explicit RW token (useCache:false then default).
-  const viaSdk = await readViaSdkGet(urlOrPathname);
-  if (viaSdk) return viaSdk;
-  if (pathname && pathname !== urlOrPathname) {
-    const viaPathSdk = await readViaSdkGet(pathname);
-    if (viaPathSdk) return viaPathSdk;
-  }
-
-  // 3) Presigned GET — different auth path than Bearer; often succeeds when CDN returns
-  //    HTML/JSON error bodies to raw Bearer fetches.
-  if (pathname) {
-    const viaPresign = await readViaPresignedGet(pathname);
-    if (viaPresign) return viaPresign;
-  }
-
-  // 4) Last Bearer host-normalization / token-constructed variants.
-  if (token && isHttp) {
     const lowerHostUrl = (() => {
       try {
         const u = new URL(urlOrPathname);
@@ -563,20 +580,120 @@ async function readPrivateBlob(urlOrPathname: string): Promise<Buffer | null> {
       const viaLower = await readViaBearerFetch(lowerHostUrl);
       if (viaLower) return viaLower;
     }
-    if (pathname) {
-      const constructed = privateBlobUrlForToken(pathname, token);
-      if (
-        constructed &&
-        constructed.toLowerCase() !== urlOrPathname.toLowerCase() &&
-        constructed.toLowerCase() !== (lowerHostUrl ?? "").toLowerCase()
-      ) {
-        const viaConstructed = await readViaBearerFetch(constructed);
-        if (viaConstructed) return viaConstructed;
-      }
+  } else if (token && pathname) {
+    const constructed = privateBlobUrlForToken(pathname, token);
+    if (constructed) {
+      const viaDownload = await readViaBearerFetch(`${constructed}?download=1`);
+      if (viaDownload) return viaDownload;
+      const viaConstructed = await readViaBearerFetch(constructed);
+      if (viaConstructed) return viaConstructed;
     }
+  } else if (!token && isHttp) {
+    const viaBearer = await readViaBearerFetch(urlOrPathname);
+    if (viaBearer) return viaBearer;
   }
 
   return null;
+}
+
+/** Put() result shape used for immediate private read-back (url + downloadUrl + pathname). */
+export type PutBlobReadbackSource = {
+  url: string;
+  downloadUrl?: string | null;
+  pathname?: string | null;
+};
+
+/**
+ * Read bytes using the same put() result object — prefer downloadUrl / pathname via
+ * SDK get + presign. Do not re-fetch a bare private CDN URL with Bearer first.
+ */
+async function readBytesFromPutResult(blob: PutBlobReadbackSource): Promise<Buffer | null> {
+  const pathname =
+    (blob.pathname && posixKey(blob.pathname)) ||
+    blobPathnameDecoded(blob.url) ||
+    blobPathnameFromUrl(blob.url);
+  const downloadUrl = blob.downloadUrl?.trim() || null;
+
+  // 1) SDK get(pathname) with token + access private (useCache:false first).
+  if (pathname) {
+    const viaPath = await readViaSdkGet(pathname);
+    if (viaPath) return viaPath;
+  }
+
+  // 2) SDK get on put.downloadUrl then put.url.
+  if (downloadUrl) {
+    const viaDl = await readViaSdkGet(downloadUrl);
+    if (viaDl) return viaDl;
+  }
+  const viaUrl = await readViaSdkGet(blob.url);
+  if (viaUrl) return viaUrl;
+
+  // 3) Presigned GET on pathname (signed URL fetch — not raw Bearer).
+  if (pathname) {
+    const viaPresign = await readViaPresignedGet(pathname);
+    if (viaPresign) return viaPresign;
+  }
+
+  // 4) Bearer only as last resort; acceptBytes rejects HTML/JSON/non-PDF.
+  if (downloadUrl) {
+    const viaDlBearer = await readViaBearerFetch(downloadUrl);
+    if (viaDlBearer) return viaDlBearer;
+  }
+  const viaBearer = await readViaBearerFetch(blob.url);
+  if (viaBearer) return viaBearer;
+
+  if (pathname) {
+    return readPrivateBlob(pathname);
+  }
+  return null;
+}
+
+/**
+ * After durable put, confirm bytes using the put result (url + downloadUrl + pathname)
+ * before callers insert a row or delete on failure.
+ */
+export async function assertReadableFromPutResult(blob: PutBlobReadbackSource): Promise<void> {
+  let lastError: Error | null = null;
+  for (let i = 0; i < READBACK_RETRY_DELAYS_MS.length; i++) {
+    const delay = READBACK_RETRY_DELAYS_MS[i]!;
+    if (delay > 0) await sleep(delay);
+    try {
+      const bytes = await readBytesFromPutResult(blob);
+      if (bytes && bytes.length > 0) {
+        expectDurableBytes(blob.url, bytes);
+        return;
+      }
+      if (!lastReadbackDiag) {
+        setReadbackDiag({ reason: "empty", host: blobHostname(blob.url) });
+      }
+      lastError = new Error(readbackFailureMessage());
+      if (
+        lastReadbackDiag?.reason === "auth_body" ||
+        lastReadbackDiag?.reason === "non_pdf" ||
+        (lastReadbackDiag?.reason === "http_status" &&
+          lastReadbackDiag.status != null &&
+          lastReadbackDiag.status !== 404)
+      ) {
+        // Keep trying remaining put-result strategies across retries only for 404/empty;
+        // auth_body/non_pdf from every strategy are definitive for this attempt loop.
+        // Still allow one full pass (i===0 already ran all strategies); abort further backoff.
+        throw lastError;
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(readbackFailureMessage());
+      if (
+        lastReadbackDiag?.reason === "auth_body" ||
+        lastReadbackDiag?.reason === "non_pdf" ||
+        lastReadbackDiag?.reason === "store_mismatch" ||
+        (lastReadbackDiag?.reason === "http_status" &&
+          lastReadbackDiag.status != null &&
+          lastReadbackDiag.status !== 404)
+      ) {
+        throw lastError;
+      }
+    }
+  }
+  throw lastError ?? new Error(readbackFailureMessage());
 }
 
 async function readRemoteUrl(url: string): Promise<Buffer | null> {
@@ -707,9 +824,6 @@ function expectDurableBytes(storagePath: string, bytes: Buffer): void {
   }
 }
 
-/** Backoff after put — private CDN can 404 briefly before the object is visible. */
-const READBACK_RETRY_DELAYS_MS = [0, 150, 350, 700, 1200] as const;
-
 /**
  * After a durable put, confirm bytes are readable before callers insert a row.
  * Retries briefly so a race with private CDN visibility does not fail the attach.
@@ -812,58 +926,30 @@ export async function writeStoredFile(
       });
       if (blob?.url) {
         try {
+          clearReadbackDiag();
           assertPutUrlMatchesRwToken(blob.url);
-          // Private blobs: prefer put.downloadUrl first, then url, then pathname.
-          // Each strategy rejects HTML/JSON/non-PDF and tries the next.
-          const readbackTargets: string[] = [];
-          if (blob.downloadUrl) readbackTargets.push(blob.downloadUrl);
-          if (!readbackTargets.includes(blob.url)) readbackTargets.push(blob.url);
-          if (blob.pathname && !readbackTargets.includes(blob.pathname)) {
-            readbackTargets.push(blob.pathname);
-          }
-
-          let readable = false;
-          let lastErr: Error | null = null;
-          for (const target of readbackTargets) {
-            try {
-              await assertStoredFileReadable(target);
-              readable = true;
-              break;
-            } catch (error) {
-              lastErr = error instanceof Error ? error : new Error(readbackFailureMessage());
-            }
-          }
-          if (!readable && blob.pathname) {
-            try {
-              const byPath = await readPrivateBlob(blob.pathname);
-              if (byPath && byPath.length > 0) {
-                expectDurableBytes(blob.url, byPath);
-                readable = true;
-              }
-            } catch (error) {
-              lastErr = error instanceof Error ? error : lastErr;
-            }
-          }
-          if (!readable) {
-            try {
-              const { del } = await import("@vercel/blob");
-              await del(blob.url, blobAuthOptions());
-            } catch {
-              /* best-effort cleanup */
-            }
-            if (requireRemote) {
-              throw lastErr ?? new Error(readbackFailureMessage());
-            }
-            return writeLocalFile(key, buffer);
-          }
+          // Private blobs: assert using the same put result (downloadUrl + url + pathname).
+          // SDK get / signed URL first — raw CDN Bearer that returns HTML is not success.
+          await assertReadableFromPutResult({
+            url: blob.url,
+            downloadUrl: blob.downloadUrl,
+            pathname: blob.pathname,
+          });
         } catch (error) {
+          try {
+            const { del } = await import("@vercel/blob");
+            await del(blob.url, blobAuthOptions());
+          } catch {
+            /* best-effort cleanup */
+          }
           if (requireRemote) {
             // Prefer latest read-back diagnosis over a stale early error string.
             throw new Error(readbackFailureMessage());
           }
           return writeLocalFile(key, buffer);
         }
-        return blob.url;
+        // Prefer downloadUrl when present so later reads hit the put.downloadUrl shape first.
+        return blob.downloadUrl || blob.url;
       }
     } catch (error) {
       if (requireRemote) {
