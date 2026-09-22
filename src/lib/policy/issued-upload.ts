@@ -2,6 +2,40 @@ import { isManualMarketWhy } from "@/lib/deals/manual-markets";
 
 export type IssuedUploadFolder = "manual" | "carrier";
 
+/** Fired after the issued-policy file is tagged into Manual/carrier, before Gemini. */
+export const ISSUED_POLICY_FOLDER_SAVED = "ff-issued-policy-folder-saved";
+
+export type IssuedPolicyFolderSavedDetail = {
+  quoteId: string;
+  documentId: string;
+  folder: IssuedUploadFolder;
+};
+
+/** PDF or a phone photo of the issued policy, including HEIC. */
+export const ISSUED_POLICY_ACCEPT =
+  "application/pdf,.pdf,image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif";
+
+/** Keep a phone photo's MIME. An empty or octet-stream HEIC must not be stored as a PDF. */
+export function issuedUploadMime(filename: string, mimeType?: string | null): string {
+  const type = (mimeType ?? "").trim().toLowerCase();
+  const name = filename.trim().toLowerCase();
+  const fromName = name.endsWith(".heic")
+    ? "image/heic"
+    : name.endsWith(".heif")
+      ? "image/heif"
+      : name.endsWith(".png")
+        ? "image/png"
+        : name.endsWith(".webp")
+          ? "image/webp"
+          : name.endsWith(".jpg") || name.endsWith(".jpeg")
+            ? "image/jpeg"
+            : "";
+  if (fromName && (!type || type === "application/octet-stream")) return fromName;
+  if (type.startsWith("image/") || type === "application/pdf") return type;
+  if (fromName) return fromName;
+  return "application/pdf";
+}
+
 const AUTO_LINES = new Set(["auto", "motorcycle", "commercial_auto"]);
 
 /** Auto issued policies use the current-policy extract. Home stays a declaration. */

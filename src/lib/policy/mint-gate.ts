@@ -189,8 +189,15 @@ export const MINT_FIELD_ALIASES: Record<string, string[]> = {
     "policy_effective_date",
     "inception_date",
     "policy_period_start",
+    "from_date",
   ],
-  expiration_date: ["expiration_date", "exp_date", "policy_expiration_date", "policy_period_end"],
+  expiration_date: [
+    "expiration_date",
+    "exp_date",
+    "policy_expiration_date",
+    "policy_period_end",
+    "to_date",
+  ],
   premium: [
     "premium",
     "current_premium",
@@ -201,6 +208,11 @@ export const MINT_FIELD_ALIASES: Record<string, string[]> = {
     "written_premium",
     "term_premium",
     "yearly_premium",
+    "full_term_premium",
+    "total_policy_premium",
+    "premium_due",
+    "total_premium_due",
+    "six_month_premium",
   ],
   coverage_a: ["coverage_a", "dwelling"],
   form: ["form", "policy_form", "quoting_form"],
@@ -245,6 +257,18 @@ export function quotesOnlyStageBlocked(
 ): boolean {
   if (!surface || surface === "quotes") return false;
   return isQuotesOnlyLateStage(stage);
+}
+
+/** Phone photo / HEIC of an issued policy. Not a declarations PDF. */
+export function isPolicyImage(doc: DeclarationLike): boolean {
+  const mime = (doc.mimeType ?? "").toLowerCase();
+  const name = (doc.filename ?? "").toLowerCase();
+  return mime.startsWith("image/") || /\.(jpe?g|png|webp|gif|heic|heif)$/.test(name);
+}
+
+/** Popup upload Gemini should read: a declarations PDF or a photo of that page. */
+export function isIssuedPolicyDocument(doc: DeclarationLike): boolean {
+  return isDeclarationPdf(doc) || isPolicyImage(doc);
 }
 
 export function isDeclarationPdf(doc: DeclarationLike): boolean {
@@ -416,7 +440,7 @@ export function evaluateMintGate(input: {
     : null;
   // Explicit upload / Create policy pick. Stage changes do not pass this, so an
   // empty Manual + carrier folder returns need_dec before Gemini.
-  if (preferred && isDeclarationPdf(preferred)) return { ok: true, dec: preferred };
+  if (preferred && isIssuedPolicyDocument(preferred)) return { ok: true, dec: preferred };
   const dec = findQuoteFolderPolicy({
     docs: input.docs,
     quoteIds: input.selectedQuoteIds,

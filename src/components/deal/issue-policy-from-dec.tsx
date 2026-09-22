@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { issuePolicyFromDeclaration, uploadDeclarationAndMint } from "@/app/actions/policy-mint";
+import { issuePolicyFromDeclaration, saveIssuedPolicyUpload } from "@/app/actions/policy-mint";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,6 +14,11 @@ import {
 } from "@/components/ui/dialog";
 import { ChooseFileButton } from "@/components/choose-file-button";
 import { isBoundReadyForIssue, mintFailureToast } from "@/lib/policy/mint-gate";
+import {
+  ISSUED_POLICY_ACCEPT,
+  ISSUED_POLICY_FOLDER_SAVED,
+  type IssuedPolicyFolderSavedDetail,
+} from "@/lib/policy/issued-upload";
 import { flashAction } from "@/lib/flash-client";
 
 export const OPEN_ISSUED_POLICY_UPLOAD = "ff-open-issued-policy-upload";
@@ -97,7 +102,7 @@ export function IssuePolicyFromDec({
     });
   }
 
-  function uploadAndMint(file: File) {
+  async function uploadAndMint(file: File) {
     const data = new FormData();
     data.set("dealId", dealId);
     data.set("product", product);
@@ -105,20 +110,41 @@ export function IssuePolicyFromDec({
     for (const id of selectedQuoteIds) data.append("quoteId", id);
     setCreating(true);
     setOpen(false);
-    startTransition(async () => {
-      const result = await uploadDeclarationAndMint(data);
-      if (!result.ok) {
-        setCreating(false);
-        router.refresh();
-        if (result.reason === "need_dec") setOpen(true);
-        const toast = mintFailureToast(result.reason);
-        flashAction(toast.key, toast.kind);
-        return;
-      }
-      flashAction("policy-minted");
-      router.push(`/policies/${result.policyId}`);
-      router.refresh();
+    const saved = await saveIssuedPolicyUpload(data);
+    if (!saved.ok) {
+      setCreating(false);
+      if (saved.reason === "need_dec") setOpen(true);
+      const toast = mintFailureToast(saved.reason);
+      flashAction(toast.key, toast.kind);
+      return;
+    }
+    if (saved.quoteId) {
+      const detail: IssuedPolicyFolderSavedDetail = {
+        quoteId: saved.quoteId,
+        documentId: saved.documentId,
+        folder: saved.folder,
+      };
+      window.dispatchEvent(new CustomEvent(ISSUED_POLICY_FOLDER_SAVED, { detail }));
+    }
+    router.refresh();
+    const result = await issuePolicyFromDeclaration({
+      dealId,
+      product,
+      selectedQuoteIds,
+      surface: "quotes",
+      documentId: saved.documentId,
     });
+    if (!result.ok) {
+      setCreating(false);
+      router.refresh();
+      if (result.reason === "need_dec") setOpen(true);
+      const toast = mintFailureToast(result.reason);
+      flashAction(toast.key, toast.kind);
+      return;
+    }
+    flashAction("policy-minted");
+    router.push(`/policies/${result.policyId}`);
+    router.refresh();
   }
 
   if (creating || pending) {
@@ -197,20 +223,20 @@ export function IssuePolicyFromDec({
           <DialogHeader>
             <DialogTitle>Declaration PDF</DialogTitle>
             <DialogDescription>
-              Upload the issued declaration or policy. It is saved on this quote’s Manual folder, or the
-              carrier folder when that quote already has carrier files. Gemini reads the policy number,
-              premium, and dates before a policy is created.
+              Upload the issued declaration or policy (PDF or a photo). It is saved on this quote’s Manual
+              folder, or the carrier folder when that quote already has carrier files, before Gemini reads
+              the policy number, premium, and dates.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <ChooseFileButton
               name="file"
-              accept="application/pdf,.pdf"
+              accept={ISSUED_POLICY_ACCEPT}
               keepLabel
               className="h-8"
               onFile={(file) => {
                 setFileName(file?.name ?? "");
-                if (file) uploadAndMint(file);
+                if (file) void uploadAndMint(file);
               }}
             />
             {fileName ? (
@@ -218,7 +244,7 @@ export function IssuePolicyFromDec({
                 {fileName}
               </p>
             ) : (
-              <p className="text-sm text-muted-foreground">PDF declarations page from the carrier.</p>
+              <p className="text-sm text-muted-foreground">PDF or a photo of the issued policy page.</p>
             )}
           </div>
           <DialogFooter>

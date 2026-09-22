@@ -109,9 +109,16 @@ export function splitYearMakeModel(text: string): { year?: string; make?: string
   return { year: match[1], make: match[2], model: match[3].trim() };
 }
 
+const MONTH_NAME =
+  "Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?";
+const POLICY_DATE = `(?:\\d{1,2}[/.-]\\d{1,2}[/.-]\\d{2,4}|(?:${MONTH_NAME})\\s+\\d{1,2},?\\s+\\d{4})`;
+
 export function splitPolicyPeriod(text: string): { effective?: string; expiration?: string } {
   const match = text.match(
-    /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s*(?:to|through|-|–|—)\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i,
+    new RegExp(
+      `(${POLICY_DATE})(?:[\\s\\S]{0,40}?)(?:to|through|until|-)[:.]?\\s*(${POLICY_DATE})`,
+      "i",
+    ),
   );
   if (!match) return {};
   return { effective: match[1], expiration: match[2] };
@@ -362,7 +369,97 @@ const POLICY_ENVELOPES = [
   "policy_info",
   "policy_information",
   "prior_policy",
+  "premiums",
+  "premium_summary",
+  "premium_information",
+  "policy_premiums",
 ];
+
+/**
+ * Term total beats a coverage-line premium and a down-payment "amount due".
+ * Higher rank wins. A bare `premium` string is only the fallback.
+ */
+const PREMIUM_RANK: Record<string, number> = {
+  full_term_premium: 100,
+  total_premium: 100,
+  total_policy_premium: 100,
+  total_premium_for_this_policy: 100,
+  total_premium_for_the_policy: 100,
+  premium_for_this_policy: 90,
+  six_month_premium: 80,
+  six_month_total_premium: 80,
+  premium_total: 80,
+  written_premium: 70,
+  term_premium: 70,
+  annual_premium: 70,
+  total_annual_premium: 70,
+  policy_premium: 70,
+  your_premium: 60,
+  current_premium: 60,
+  premium_due: 50,
+  total_premium_due: 50,
+  amount_due: 40,
+  premium: 10,
+};
+
+const PREMIUM_BOX_KEYS = new Set([
+  "premium",
+  "premiums",
+  "premium_summary",
+  "premium_information",
+  "policy_premiums",
+  "item_three",
+]);
+
+const PREMIUM_RANK_KEY = "__ffPremiumRank";
+
+function currentPremiumRank(out: LooseJson): number {
+  const stored = out[PREMIUM_RANK_KEY];
+  if (typeof stored === "number") return stored;
+  return hasPrinted(out.current_premium) ? 60 : 0;
+}
+
+function setPremiumIfBetter(out: LooseJson, raw: unknown, rank: number) {
+  if (rank <= 0 || !hasPrinted(raw)) return;
+  if (rank < currentPremiumRank(out)) return;
+  if (rank === currentPremiumRank(out) && hasPrinted(out.current_premium)) return;
+  out.current_premium = raw;
+  out[PREMIUM_RANK_KEY] = rank;
+}
+
+/** Best printed term premium in this object. Does not delete keys. */
+function bestPrintedPremium(node: LooseJson, depth = 0): { rank: number; raw: unknown } | null {
+  let best: { rank: number; raw: unknown } | null = null;
+  const consider = (rank: number, raw: unknown) => {
+    if (rank <= 0 || !hasPrinted(raw)) return;
+    if (!best || rank > best.rank) best = { rank, raw };
+  };
+  for (const [key, value] of Object.entries(node)) {
+    const norm = normKey(key);
+    if (norm === PREMIUM_RANK_KEY) continue;
+    if (depth < 3 && isRecord(value) && PREMIUM_BOX_KEYS.has(norm)) {
+      const inner = bestPrintedPremium(value, depth + 1);
+      if (inner) consider(inner.rank, inner.raw);
+      continue;
+    }
+    if (depth > 0 && (norm === "total" || norm === "amount")) consider(norm === "total" ? 100 : 45, value);
+    consider(PREMIUM_RANK[norm] ?? 0, value);
+  }
+  return best;
+}
+
+function absorbBestPremium(out: LooseJson, node: LooseJson) {
+  const picked = bestPrintedPremium(node);
+  if (picked) setPremiumIfBetter(out, picked.raw, picked.rank);
+}
+
+function stripLosingPremiumKeys(out: LooseJson) {
+  if (!hasPrinted(out.current_premium)) return;
+  for (const key of Object.keys(out)) {
+    const norm = normKey(key);
+    if (norm !== "current_premium" && PREMIUM_RANK[norm]) delete out[key];
+  }
+}
 
 /** Nested carrier/policy blocks used to die in asPayload because the value is an object. */
 function applyPolicyRecord(out: LooseJson, rec: LooseJson) {
@@ -409,25 +506,7 @@ function applyPolicyRecord(out: LooseJson, rec: LooseJson) {
   } else if (isRecord(nestedPolicy)) {
     applyPolicyRecord(out, nestedPolicy);
   }
-  setIfEmpty(
-    out,
-    "current_premium",
-    pull(rec, [
-      "current_premium",
-      "premium",
-      "total_premium",
-      "total_policy_premium",
-      "six_month_premium",
-      "premium_total",
-      "annual_premium",
-      "policy_premium",
-      "term_premium",
-      "full_term_premium",
-      "total_premium_for_this_policy",
-      "total_premium_for_the_policy",
-      "written_premium",
-    ]),
-  );
+  absorbBestPremium(out, rec);
   setIfEmpty(
     out,
     "years_with_carrier",
@@ -436,9 +515,28 @@ function applyPolicyRecord(out: LooseJson, rec: LooseJson) {
   setIfEmpty(
     out,
     "effective_date",
-    pull(rec, ["effective_date", "effective", "eff_date", "eff", "inception_date"]),
+    pull(rec, [
+      "effective_date",
+      "policy_effective_date",
+      "effective",
+      "eff_date",
+      "eff",
+      "inception_date",
+      "from_date",
+    ]),
   );
-  setIfEmpty(out, "expiration_date", pull(rec, ["expiration_date", "expiration", "exp_date", "exp"]));
+  setIfEmpty(
+    out,
+    "expiration_date",
+    pull(rec, [
+      "expiration_date",
+      "policy_expiration_date",
+      "expiration",
+      "exp_date",
+      "exp",
+      "to_date",
+    ]),
+  );
   setIfEmpty(
     out,
     "currently_insured",
@@ -668,20 +766,7 @@ export function expandAutoDecLayout(json: LooseJson, shopLine?: string | null): 
     "driver_1_license",
     pull(out, ["drivers_license", "driver_license", "dl_number"]),
   );
-  setIfEmpty(
-    out,
-    "current_premium",
-    pull(out, [
-      "total_policy_premium",
-      "six_month_premium",
-      "premium_total",
-      "six_month_total_premium",
-      "full_term_premium",
-      "total_premium_for_this_policy",
-      "total_premium_for_the_policy",
-      "written_premium",
-    ]),
-  );
+  absorbBestPremium(out, out);
   setIfEmpty(
     out,
     "current_carrier",
@@ -695,6 +780,7 @@ export function expandAutoDecLayout(json: LooseJson, shopLine?: string | null): 
       "issuing_company",
       "underwriting_company",
       "insurer_name",
+      "company",
     ]),
   );
   setIfEmpty(
@@ -773,6 +859,12 @@ export function expandAutoDecLayout(json: LooseJson, shopLine?: string | null): 
       out.expiration_date = split.expiration;
     }
   }
+
+  setIfEmpty(out, "effective_date", pull(out, ["policy_effective_date", "from_date"]));
+  setIfEmpty(out, "expiration_date", pull(out, ["policy_expiration_date", "to_date"]));
+  absorbBestPremium(out, out);
+  stripLosingPremiumKeys(out);
+  delete out[PREMIUM_RANK_KEY];
 
   if (typeof out.current_premium === "string") {
     const digits = out.current_premium.replace(/[$,]/g, "").trim();
