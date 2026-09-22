@@ -38,6 +38,7 @@ export function IssuePolicyFromDec({
   mintStatus,
   issued,
   autoOpen = false,
+  folderHasPolicy = false,
 }: {
   dealId: string;
   product: string;
@@ -46,10 +47,12 @@ export function IssuePolicyFromDec({
   mintStatus?: string | null;
   issued?: IssuedPolicyChip | null;
   autoOpen?: boolean;
+  /** Selected quote already has a Manual or carrier file. Do not reopen the upload popup. */
+  folderHasPolicy?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [open, setOpen] = useState(autoOpen);
+  const [open, setOpen] = useState(autoOpen && !folderHasPolicy);
   const [creating, setCreating] = useState(mintStatus === "creating");
   const [fileName, setFileName] = useState("");
   const bound = isBoundReadyForIssue(stage);
@@ -60,19 +63,21 @@ export function IssuePolicyFromDec({
   }, [mintStatus]);
 
   useEffect(() => {
+    if (folderHasPolicy) return;
     if (autoOpen && bound && hasQuote && !issued?.id) setOpen(true);
-  }, [autoOpen, bound, hasQuote, issued?.id]);
+  }, [autoOpen, bound, folderHasPolicy, hasQuote, issued?.id]);
 
   useEffect(() => {
     function onOpen(event: Event) {
       const detail = (event as CustomEvent<{ dealId?: string; product?: string }>).detail;
       if (detail?.dealId && detail.dealId !== dealId) return;
       if (detail?.product && detail.product !== product) return;
+      if (folderHasPolicy) return;
       if (bound && hasQuote && !issued?.id) setOpen(true);
     }
     window.addEventListener(OPEN_ISSUED_POLICY_UPLOAD, onOpen);
     return () => window.removeEventListener(OPEN_ISSUED_POLICY_UPLOAD, onOpen);
-  }, [bound, dealId, hasQuote, issued?.id, product]);
+  }, [bound, dealId, folderHasPolicy, hasQuote, issued?.id, product]);
 
   function mint(documentId?: string, force = false) {
     setCreating(true);

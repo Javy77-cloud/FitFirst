@@ -1,6 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { isDocumentsSourceDoc, isQuoteFileDoc, shopLineFromSourceDoc } from "./quote-docs";
+import {
+  isDocumentsSourceDoc,
+  isQuoteFileDoc,
+  quoteFolderKind,
+  quoteFoldersByQuoteId,
+  shopLineFromSourceDoc,
+} from "./quote-docs";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -59,14 +65,52 @@ describe("quote docs vs documents source docs", () => {
     );
   });
 
-  it("Documents panel filters with isDocumentsSourceDoc; Quotes keeps isQuoteFileDoc", () => {
+  it("Manual membership is the agency upload, not a shopping source doc", () => {
+    const manual = {
+      slot: "quote_file",
+      docType: "agency_quote",
+      tags: ["quote:q1", "source:agency", "label:Travelers.pdf"],
+    };
+    expect(quoteFolderKind(manual)).toBe("manual");
+    expect(quoteFoldersByQuoteId([manual]).q1?.manual).toHaveLength(1);
+    expect(quoteFoldersByQuoteId([manual]).q1?.carrier).toHaveLength(0);
+
+    const carrier = {
+      slot: "quote_file",
+      docType: "carrier_quote",
+      tags: ["quote:q-api", "source:carrier"],
+    };
+    expect(quoteFolderKind(carrier)).toBe("carrier");
+    expect(quoteFoldersByQuoteId([manual, carrier])["q-api"]?.carrier).toHaveLength(1);
+
+    const shopping = { slot: "source_doc", docType: "current_policy", tags: ["line:auto"] };
+    expect(quoteFolderKind(shopping)).toBeNull();
+    expect(quoteFoldersByQuoteId([shopping])).toEqual({});
+
+    const documentsDec = {
+      slot: "source_doc",
+      docType: "dec",
+      tags: ["quote:q1", "source:agency", "dec", "mint"],
+    };
+    expect(isQuoteFileDoc(documentsDec)).toBe(false);
+    expect(quoteFolderKind(documentsDec)).toBeNull();
+  });
+
+  it("Documents panel filters with isDocumentsSourceDoc; Quotes uses the same folder buckets as the mint gate", () => {
     const docsPanel = source("src/components/deal/documents-panel.tsx");
-    expect(docsPanel).toContain("isDocumentsSourceDoc");
+    expect(docsPanel).toContain("listWorksheetSourceDocs");
+    expect(source("src/lib/documents/deal-docs-save.ts")).toContain("isDocumentsSourceDoc");
     expect(docsPanel).not.toContain('d.slot !== "quote_pdf" && d.slot !== "policy_file"');
 
     const quotesPanel = source("src/components/deal/quotes-panel.tsx");
-    expect(quotesPanel).toContain("isQuoteFileDoc");
+    expect(quotesPanel).toContain("quoteFoldersByQuoteId");
+    expect(quotesPanel).toContain("folderHasPolicy");
     expect(quotesPanel).toContain('@/lib/deals/quote-docs');
+    const life = source("src/components/deal/life-health-quotes-panel.tsx");
+    expect(life).toContain("quoteFoldersByQuoteId");
+    expect(life).toContain("folderHasPolicy");
+    expect(source("src/lib/policy/mint-gate.ts")).toContain("quoteFoldersByQuoteId");
+    expect(source("src/components/deal/issue-policy-from-dec.tsx")).toContain("folderHasPolicy");
 
     const upload = source("src/app/actions/quote-files.ts");
     expect(upload).toContain('slot: "quote_file"');

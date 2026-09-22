@@ -125,6 +125,7 @@ describe("issued policy upload folder", () => {
     expect(header).toMatch(/issue=1/);
     const popup = source("src/components/deal/issue-policy-from-dec.tsx");
     expect(popup).toMatch(/OPEN_ISSUED_POLICY_UPLOAD/);
+    expect(popup).toMatch(/folderHasPolicy/);
     expect(popup).toMatch(/data-ff-mint-dec-dialog/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/quoteIdsWithFolderPolicy/);
     expect(source("src/lib/flash.ts")).toMatch(/The file stays in the folder/);
