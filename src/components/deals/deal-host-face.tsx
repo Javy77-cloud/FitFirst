@@ -124,56 +124,24 @@ function fallbackLine(card: RadarDealCard): StackProductLine {
 }
 
 export function DealHostJob({ card }: { card: RadarDealCard }) {
-  if (card.productLines.length > 1) {
-    return (
-      <div className="ff-stack-job ff-deal-host-job ff-deal-host-job-multi" data-ff-deal-job="">
-        <div className="ff-deal-host-lines" data-ff-product-lines="">
-          {card.productLines.map((line) => (
-            <div key={line.product} className="ff-deal-host-line" data-ff-product-line={line.product}>
-              <ProductFacts line={line} />
-            </div>
-          ))}
-        </div>
-        <Health card={card} />
-      </div>
-    );
-  }
-
-  const line = card.productLines[0] ?? fallbackLine(card);
+  const lines = card.productLines.length > 0 ? card.productLines : [fallbackLine(card)];
+  const multi = lines.length > 1;
   return (
     <div
-      className="ff-stack-job ff-deal-host-job ff-deal-host-job-single"
+      className={
+        multi
+          ? "ff-stack-job ff-deal-host-job ff-deal-host-job-multi"
+          : "ff-stack-job ff-deal-host-job ff-deal-host-job-single"
+      }
       data-ff-deal-job=""
-      data-ff-product-lines=""
-      data-ff-product-line={line.product}
     >
-      <div className="ff-deal-host-facts">
-        <span className="ff-stack-product" data-ff-product-label="" title={plainFact(line.label) || undefined}>
-          {plainFact(line.label)}
-        </span>
-        <span className="ff-deal-host-stage" data-ff-product-place="">
-          {plainFact(line.stageLabel)}
-        </span>
-        <span className="ff-deal-host-stamps">
-          {line.stamps.map((stamp) => {
-            const label = plainFact(stamp);
-            if (!label) return null;
-            return (
-              <span key={label} className="ff-deal-job-stamp" data-ff-deal-stamp={label}>
-                {label}
-              </span>
-            );
-          })}
-        </span>
+      <div className="ff-deal-host-lines" data-ff-product-lines="">
+        {lines.map((line) => (
+          <div key={line.product} className="ff-deal-host-line" data-ff-product-line={line.product}>
+            <ProductFacts line={line} />
+          </div>
+        ))}
       </div>
-      <span
-        className="ff-deal-host-quotes"
-        data-ff-product-quotes=""
-        data-ff-premium-column=""
-        title={plainFact(line.quoteSummary) || undefined}
-      >
-        {plainFact(line.quoteSummary)}
-      </span>
       <Health card={card} />
     </div>
   );

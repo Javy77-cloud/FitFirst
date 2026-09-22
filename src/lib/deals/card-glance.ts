@@ -182,16 +182,19 @@ export function dealJobStamps(input: {
   return chips.filter((chip) => chip.toLowerCase() !== "chase");
 }
 
+/** Form codes on the stack — never vague “Home”. Chip label wins when present. */
 const STACK_PRODUCT_NAMES: Record<string, string> = {
-  homeowners: "Home",
-  landlord: "Landlord",
-  renters: "Renters",
+  homeowners: "HO3",
+  landlord: "DP3",
+  renters: "HO4",
   auto: "Auto",
   motorcycle: "Motorcycle",
   flood: "Flood",
   rv: "RV",
   boat: "Boat",
   umbrella: "Umbrella",
+  life: "Term Life",
+  term_life: "Term Life",
 };
 
 /** Documents / Markets / Quotes / Bound — the place this product is in. */
@@ -230,7 +233,9 @@ export type StackProductLine = {
 };
 
 export function stackProductName(product: string, fallback?: string | null): string {
-  return STACK_PRODUCT_NAMES[product] ?? (fallback?.trim() || product);
+  const fromChip = fallback?.trim();
+  if (fromChip) return fromChip;
+  return STACK_PRODUCT_NAMES[product] ?? product;
 }
 
 export function stackPlaceLabel(stage: string | null | undefined): string {

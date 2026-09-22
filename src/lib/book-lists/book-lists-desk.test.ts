@@ -68,7 +68,7 @@ describe("command-card book lists", () => {
       /\.ff-carrier-card \.ff-book-grid \{[^}]*grid-template-columns:\s*15\.5rem minmax\(0, 1fr\) 24\.25rem/,
     );
     expect(css).toMatch(
-      /\[data-ff-priority-stack\] \.ff-deal-host-spread \{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*minmax\(6\.5rem,\s*max-content\) minmax\(0,\s*1fr\) max-content/,
+      /\[data-ff-priority-stack\] \.ff-deal-host-spread \{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*14\.5rem minmax\(0,\s*1fr\) 12\.75rem/,
     );
     expect(css).not.toMatch(/\.ff-deal-host-center,/);
     expect(css).toMatch(
@@ -81,6 +81,10 @@ describe("command-card book lists", () => {
     expect(css).toMatch(
       /\[data-ff-book-command="policies"\]\[data-ff-book-layout="stack"\] \.ff-stack-name \{[^}]*font-weight:\s*750/,
     );
+    expect(css).toMatch(/\.ff-party-card \.ff-book-facts li,/);
+    expect(css).toMatch(/\.ff-carrier-card \.ff-book-facts li,/);
+    expect(css).toMatch(/\.ff-party-card \.ff-stack-name,\s*\.ff-carrier-card \.ff-stack-name \{[^}]*font-weight:\s*750/);
+    expect(css).toMatch(/\.ff-carrier-card \.ff-book-columns span \{[^}]*color:\s*var\(--ff-muted\);[^}]*font-weight:\s*500/);
     expect(css).not.toMatch(/\.ff-party-line/);
     expect(source("src/components/deals/deal-host-face.tsx")).toMatch(/data-ff-deal-center/);
     expect(page).not.toMatch(/Policy attention/);

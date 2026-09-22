@@ -91,7 +91,7 @@ describe("deal card glance", () => {
         { shopLine: "home", premium: 1840, agentStatus: "new", stub: false },
       ],
     });
-    expect(heather.map((line) => line.label)).toEqual(["Home", "Auto", "Flood"]);
+    expect(heather.map((line) => line.label)).toEqual(["HO3", "Auto", "Flood"]);
     expect(heather.map((line) => line.stageLabel)).toEqual(["Documents", "Markets", "Quotes"]);
     expect(heather[0]?.quoteSummary).toBe("1 quote pulled · best $1,840 · 1 pending");
     expect(heather[0]?.stamps).not.toContain("Quote sent");
@@ -102,18 +102,35 @@ describe("deal card glance", () => {
 
     const gloria = stackProductLines({
       products: [
-        { product: "homeowners", stage: "quote_sent" },
-        { product: "landlord", stage: "quote_review" },
+        { product: "homeowners", label: "HO3", stage: "quote_sent" },
+        { product: "landlord", label: "DP3", stage: "quote_review" },
       ],
       quotes: [{ shopLine: "home", notes: "DP3 landlord dwelling", premium: 900, agentStatus: "new", stub: false }],
     });
     expect(gloria.map((line) => `${line.label}:${line.stageLabel}`)).toEqual([
-      "Home:Quotes",
-      "Landlord:Quotes",
+      "HO3:Quotes",
+      "DP3:Quotes",
     ]);
     expect(gloria[0]?.stamps).toContain("Quote sent");
     expect(gloria[1]?.stamps).not.toContain("Quote sent");
     expect(gloria[0]?.quoteSummary).toBe("No quotes yet");
     expect(gloria[1]?.quoteSummary).toContain("$900");
+  });
+
+  it("uses form codes on the stack — never vague Home", () => {
+    expect(
+      stackProductLines({
+        products: [
+          { product: "homeowners", label: "MHO", stage: "gathering" },
+          { product: "life", label: "Term Life", stage: "markets" },
+          { product: "auto", stage: "bound" },
+        ],
+      }).map((line) => line.label),
+    ).toEqual(["MHO", "Term Life", "Auto"]);
+    expect(
+      stackProductLines({
+        products: [{ product: "homeowners", stage: "gathering" }],
+      })[0]?.label,
+    ).toBe("HO3");
   });
 });
