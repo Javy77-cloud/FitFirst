@@ -1,4 +1,5 @@
 import { asList } from "@/lib/safe-list";
+import { worksheetDocTypeLabel } from "@/lib/deals/source-doc-types";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 import { isAgencyLetterDocType } from "@/lib/document-pipeline/types";
 import { docCardKeyFromTags } from "@/lib/leads/line-documents";
@@ -100,4 +101,61 @@ export function sourceDocExtensionLabel(filename: unknown): string {
   const name = sourceDocDisplayName(filename);
   const ext = name.includes(".") ? name.split(".").pop() : "";
   return (ext || "file").slice(0, 4);
+}
+
+const LIST_MIME_EXT: Record<string, string> = {
+  "application/pdf": "PDF",
+  "image/jpeg": "JPEG",
+  "image/jpg": "JPG",
+  "image/png": "PNG",
+  "image/webp": "WEBP",
+  "image/gif": "GIF",
+  "image/heic": "HEIC",
+  "image/heif": "HEIF",
+  "text/plain": "TXT",
+  "text/markdown": "MD",
+  "text/csv": "CSV",
+};
+
+/** Human type for the uploaded-files list. Dropdown labels, lowercased; `other` reads "others". */
+export function sourceDocListTypeLabel(docType: unknown): string {
+  const key = typeof docType === "string" ? docType.trim() : "";
+  if (!key || key === "other") return "others";
+  return worksheetDocTypeLabel(key).toLowerCase();
+}
+
+function listFileExtension(filename: string, mimeType: unknown): string {
+  const base = filename.split(/[/\\]/).pop() ?? filename;
+  const dot = base.lastIndexOf(".");
+  if (dot > 0 && dot < base.length - 1) {
+    const ext = base.slice(dot + 1);
+    if (/^[A-Za-z0-9]{1,5}$/.test(ext)) return ext.toUpperCase();
+  }
+  const mime = typeof mimeType === "string" ? mimeType.split(";")[0].trim().toLowerCase() : "";
+  return LIST_MIME_EXT[mime] ?? "FILE";
+}
+
+function listFileBasename(filename: string, ext: string): string {
+  const base = (filename.split(/[/\\]/).pop() ?? filename).trim() || filename;
+  const suffix = `.${ext.toLowerCase()}`;
+  if (ext !== "FILE" && base.toLowerCase().endsWith(suffix)) {
+    const stem = base.slice(0, base.length - suffix.length).trim();
+    if (stem) return stem;
+  }
+  return base;
+}
+
+/**
+ * Uploaded-files row label: `PDF, wind mitigation / original name`.
+ * Display only — callers must keep persisting `filename` unchanged.
+ */
+export function sourceDocUploadedListLabel(input: {
+  filename?: unknown;
+  docType?: unknown;
+  mimeType?: unknown;
+}): string {
+  const stored = sourceDocDisplayName(input.filename);
+  const ext = listFileExtension(stored, input.mimeType);
+  const name = listFileBasename(stored, ext);
+  return `${ext}, ${sourceDocListTypeLabel(input.docType)} / ${name}`;
 }

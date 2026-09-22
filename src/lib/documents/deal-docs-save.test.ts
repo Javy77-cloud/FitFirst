@@ -9,6 +9,7 @@ import {
   listWorksheetSourceDocs,
   sourceDocDisplayName,
   sourceDocExtensionLabel,
+  sourceDocUploadedListLabel,
 } from "./deal-docs-save";
 
 function source(file: string) {
@@ -99,6 +100,47 @@ describe("deal Documents save must not open error.tsx", () => {
     expect(sourceDocExtensionLabel(null)).toBe("file");
   });
 
+  it("labels uploaded files as EXT, type / stored basename", () => {
+    expect(
+      sourceDocUploadedListLabel({
+        filename: "Henry and Rosa Castellanos MIT PDF.pdf",
+        docType: "wind_mit",
+        mimeType: "application/pdf",
+      }),
+    ).toBe("PDF, wind mitigation / Henry and Rosa Castellanos MIT PDF");
+    expect(
+      sourceDocUploadedListLabel({
+        filename: "ADT alarm certificate.pdf",
+        docType: "other",
+        mimeType: "application/pdf",
+      }),
+    ).toBe("PDF, others / ADT alarm certificate");
+    expect(
+      sourceDocUploadedListLabel({
+        filename: "flood policy.pdf",
+        docType: "other",
+        mimeType: "application/pdf",
+      }),
+    ).toBe("PDF, others / flood policy");
+    expect(
+      sourceDocUploadedListLabel({
+        filename: "homeowner's choice policy.pdf",
+        docType: "dec",
+        mimeType: "application/pdf",
+      }),
+    ).toBe("PDF, declaration page / homeowner's choice policy");
+    expect(
+      sourceDocUploadedListLabel({
+        filename: "flood policy",
+        docType: "other",
+        mimeType: "application/pdf",
+      }),
+    ).toBe("PDF, others / flood policy");
+    expect(sourceDocDisplayName("Henry and Rosa Castellanos MIT PDF.pdf")).toBe(
+      "Henry and Rosa Castellanos MIT PDF.pdf",
+    );
+  });
+
   it("renders a source row when filename, mime, or type is an edge case", () => {
     const html = renderToStaticMarkup(
       createElement(SourceFileRow, {
@@ -111,11 +153,9 @@ describe("deal Documents save must not open error.tsx", () => {
           tags: null,
         } as never,
         dealId: "22222222-2222-4222-8222-222222222222",
-        showType: true,
       }),
     );
-    expect(html).toContain("file");
-    expect(html).toContain("Floor plan");
+    expect(html).toContain("HEIC, floor plan / file");
     expect(html).not.toContain("Could not open this deal");
   });
 
