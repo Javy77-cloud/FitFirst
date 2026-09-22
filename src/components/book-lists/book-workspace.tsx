@@ -77,7 +77,8 @@ export function BookCommandWorkspace({
     cold: shares.find((row) => row.level === "cold")?.count ?? 0,
   };
   const kpi = banner === undefined ? defaultBanner(surface, cards, lineSettings) : banner;
-  const activity = surface === "contacts" || surface === "accounts" || surface === "carriers";
+  const activity =
+    surface === "contacts" || surface === "accounts" || surface === "policies" || surface === "carriers";
   const ranked = sortCommandStack(cards);
   const activityRows = ranked.map((card) => ({
     id: card.id,
@@ -86,6 +87,7 @@ export function BookCommandWorkspace({
     phone: card.phone,
     contactId: surface === "contacts" ? card.id : null,
     accountId: surface === "accounts" ? card.id : null,
+    policyId: surface === "policies" ? card.id : null,
   }));
   const stack = (
     <BookPriorityStack
@@ -151,7 +153,9 @@ export function BookCommandWorkspace({
                 ? "contacts-stack"
                 : surface === "accounts"
                   ? "accounts-stack"
-                  : "carriers-stack"
+                  : surface === "policies"
+                    ? "policies-stack"
+                    : "carriers-stack"
             }
             rows={activityRows}
           >

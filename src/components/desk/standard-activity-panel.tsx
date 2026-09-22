@@ -262,6 +262,7 @@ export type ActivitySurface =
   | "renewals-stack"
   | "contacts-stack"
   | "accounts-stack"
+  | "policies-stack"
   | "carriers-stack";
 
 /** List and Stack desks: the shared Activity board is on by default and keeps its column. */

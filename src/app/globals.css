@@ -4453,13 +4453,18 @@ tr[data-ff-activity-selected="true"] {
 [data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-header-open { grid-column: 7; }
 [data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-grid {
   grid-template-rows: auto auto auto;
-  row-gap: 0.16rem;
+  row-gap: 0.35rem;
 }
 [data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-name {
   grid-row: 1;
   display: flex;
   align-items: center;
   gap: 0.45rem;
+}
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-heartbeat {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
 }
 [data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-glyph {
   grid-column: 1;
@@ -4543,7 +4548,32 @@ tr[data-ff-activity-selected="true"] {
   color: var(--ff-navy);
   font-weight: 750;
 }
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-card [data-ff-assign-tags]:not(:has([data-ff-tag-chip])) {
+  display: none;
+}
 /* Contacts Stack — 3 rows. Phone row carries language | status | DOB | policies. */
+
+/* Empty phone/email slot — centered dash (Contacts / Accounts / Policies Stack). */
+.ff-stack-empty-dash {
+  display: block;
+  width: 100%;
+  text-align: center;
+  color: var(--ff-muted);
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.3;
+  user-select: none;
+}
+
+[data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-phone:not(:has(a)),
+[data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-email:not(:has(a)),
+[data-ff-book-command="accounts"][data-ff-book-layout="stack"] .ff-account-stack-phone:not(:has(a)),
+[data-ff-book-command="accounts"][data-ff-book-layout="stack"] .ff-account-stack-email:not(:has(a)),
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-phone:not(:has(a)),
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-email:not(:has(a)) {
+  justify-content: center;
+}
+
 [data-ff-book-command="contacts"][data-ff-book-layout="stack"] {
   --ff-contact-stack-cols: 1.15rem minmax(9rem, 1.35fr) minmax(5rem, 0.72fr) minmax(6.75rem, 0.95fr) minmax(5.25rem, 0.7fr) minmax(3.6rem, 0.42fr) minmax(6.75rem, 0.9fr);
   --ff-contact-stack-gap: 0.85rem;
@@ -4603,7 +4633,7 @@ tr[data-ff-activity-selected="true"] {
 }
 [data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-spread {
   grid-template-rows: auto auto auto;
-  row-gap: 0.16rem;
+  row-gap: 0.35rem;
 }
 [data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-check {
   grid-column: 1;
@@ -4617,10 +4647,21 @@ tr[data-ff-activity-selected="true"] {
 [data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-check input[type="checkbox"] {
   margin: 0;
 }
-[data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-spread > .ff-stack-name {
+[data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-name-host {
   grid-column: 2 / -1;
   grid-row: 1;
   min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+[data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-name-host > .ff-stack-name {
+  min-width: 0;
+}
+[data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-heartbeat {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
 }
 [data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-glyph {
   grid-column: 1;
@@ -4782,10 +4823,21 @@ tr[data-ff-activity-selected="true"] {
 [data-ff-book-command="accounts"][data-ff-book-layout="stack"] .ff-account-stack-check input[type="checkbox"] {
   margin: 0;
 }
-[data-ff-book-command="accounts"][data-ff-book-layout="stack"] .ff-account-stack-spread > .ff-stack-name {
+[data-ff-book-command="accounts"][data-ff-book-layout="stack"] .ff-account-stack-name-host {
   grid-column: 2 / -1;
   grid-row: 1;
   min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+[data-ff-book-command="accounts"][data-ff-book-layout="stack"] .ff-account-stack-name-host > .ff-stack-name {
+  min-width: 0;
+}
+[data-ff-book-command="accounts"][data-ff-book-layout="stack"] .ff-account-stack-heartbeat {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
 }
 [data-ff-book-command="accounts"][data-ff-book-layout="stack"] .ff-account-stack-glyph {
   grid-column: 1;

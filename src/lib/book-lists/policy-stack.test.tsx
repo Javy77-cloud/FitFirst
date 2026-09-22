@@ -194,8 +194,7 @@ describe("policies stack view", () => {
     expect(bare).toContain('data-ff-policy-stack-row="phone"');
     expect(bare).toContain('data-ff-policy-stack-row="email"');
     expect(bare).not.toContain('data-ff-policy-stack-row="dash"');
-    expect(bare).not.toContain(">—</");
-    expect(bare).not.toContain(">—<");
+    expect(bare.match(/data-ff-stack-empty-dash=/g)).toHaveLength(2);
     expect(bare).not.toContain(">n/a<");
     expect(bare.match(/data-ff-policy-stack-row=/g)).toHaveLength(3);
 

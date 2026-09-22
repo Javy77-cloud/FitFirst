@@ -55,6 +55,7 @@ export function BookPriorityStack({
                   listTestId={`book-activity-menu-${card.id}`}
                   contactId={card.surface === "contacts" ? card.id : undefined}
                   accountId={card.surface === "accounts" ? card.id : undefined}
+                  policyId={card.surface === "policies" ? card.id : undefined}
                 />
               ) : null
             }
