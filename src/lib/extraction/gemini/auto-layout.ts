@@ -29,7 +29,33 @@ const VEHICLE_LIST_KEYS = [
 
 const DRIVER_LIST_KEYS = ["drivers", "operators", "listed_drivers", "driver_schedule", "driver_list"];
 
-const COVERAGE_LIST_KEYS = ["coverages", "coverage", "limits", "coverage_limits"];
+const COVERAGE_LIST_KEYS = [
+  "coverages",
+  "coverage",
+  "limits",
+  "coverage_limits",
+  "coverages_limits_and_premiums",
+  "coverage_premiums",
+  "coverage_and_premiums",
+  "schedule_of_coverages",
+];
+
+/** Gemini often keys a multi-page Travelers dec as page_1 (header) plus later coverage pages. */
+const PAGE_OBJECT_KEYS = [
+  "page_1",
+  "page_2",
+  "page_3",
+  "page_4",
+  "page_5",
+  "first_page",
+  "second_page",
+  "third_page",
+  "coverage_page",
+  "premium_page",
+  "declarations_page",
+  "declaration_page",
+  "dec_page",
+];
 
 function normKey(key: string): string {
   return key
@@ -65,6 +91,15 @@ function pull(rec: LooseJson, names: string[]): unknown {
     const value = rec[key];
     delete rec[key];
     return value;
+  }
+  return undefined;
+}
+
+/** Try names in the given order so Policy Number wins over a page or unit `number`. */
+function pullPreferred(rec: LooseJson, names: string[]): unknown {
+  for (const name of names) {
+    const value = pull(rec, [name]);
+    if (value !== undefined) return value;
   }
   return undefined;
 }
@@ -412,8 +447,38 @@ function applyCoverageEntry(
 
 function applyPolicyPeriod(out: LooseJson, raw: unknown) {
   if (isRecord(raw)) {
-    setIfEmpty(out, "effective_date", pull(raw, ["from", "start", "effective", "effective_date", "eff"]));
-    setIfEmpty(out, "expiration_date", pull(raw, ["to", "end", "expiration", "expiration_date", "exp"]));
+    const rec = { ...raw };
+    setIfEmpty(
+      out,
+      "effective_date",
+      pull(rec, [
+        "from",
+        "start",
+        "effective",
+        "effective_date",
+        "eff",
+        "begins",
+        "begin",
+        "inception",
+        "policy_begins",
+        "policy_inception",
+      ]),
+    );
+    setIfEmpty(
+      out,
+      "expiration_date",
+      pull(rec, [
+        "to",
+        "end",
+        "expiration",
+        "expiration_date",
+        "exp",
+        "ends",
+        "expires",
+        "policy_expires",
+        "policy_ends",
+      ]),
+    );
     return;
   }
   if (typeof raw !== "string" && typeof raw !== "number") return;
@@ -486,6 +551,7 @@ function rankForPremiumKey(norm: string): number {
   if (/full_term/.test(norm) && /premium|charge/.test(norm)) return 100;
   if (/total/.test(norm) && /premium/.test(norm)) return 100;
   if (/premium_for_(?:this|the)_policy/.test(norm)) return 90;
+  if (norm === "full_term" || norm === "term_total" || norm === "total_policy") return 100;
   if (norm === "total") return 100;
   return 0;
 }
@@ -500,6 +566,21 @@ const PREMIUM_BOX_KEYS = new Set([
 ]);
 
 const PREMIUM_RANK_KEY = "__ffPremiumRank";
+
+function looksLikeVehicle(rec: LooseJson): boolean {
+  const keys = new Set(Object.keys(rec).map(normKey));
+  if (
+    keys.has("vin") ||
+    keys.has("vehicle_identification_number") ||
+    keys.has("vehicle_vin") ||
+    keys.has("v_i_n")
+  ) {
+    return true;
+  }
+  const hasYear = keys.has("year") || keys.has("model_year") || keys.has("vehicle_year");
+  const hasIdentity = keys.has("make") || keys.has("vehicle_make") || keys.has("model") || keys.has("vehicle_model");
+  return hasYear && hasIdentity;
+}
 
 function currentPremiumRank(out: LooseJson): number {
   const stored = out[PREMIUM_RANK_KEY];
@@ -536,10 +617,15 @@ function bestPrintedPremium(node: LooseJson, depth = 0): { rank: number; raw: un
       }
       continue;
     }
-    if (depth < 3 && isRecord(value) && PREMIUM_BOX_KEYS.has(norm)) {
-      const inner = bestPrintedPremium(value, depth + 1);
-      if (inner) consider(inner.rank, inner.raw);
-      continue;
+    if (depth < 3 && isRecord(value)) {
+      if (looksLikeVehicle(value) || (VEHICLE_LIST_KEYS as readonly string[]).includes(norm)) continue;
+      const walk =
+        PREMIUM_BOX_KEYS.has(norm) || /premium|full_term/.test(norm) || rankForPremiumKey(norm) > 0;
+      if (walk) {
+        const inner = bestPrintedPremium(value, depth + 1);
+        if (inner) consider(inner.rank, inner.raw);
+        continue;
+      }
     }
     if (depth > 0 && (norm === "total" || norm === "amount")) consider(norm === "total" ? 100 : 45, value);
     consider(rankForPremiumKey(norm), value);
@@ -585,7 +671,7 @@ function applyPolicyRecord(out: LooseJson, rec: LooseJson) {
   setIfEmpty(
     out,
     "policy_number",
-    pull(rec, [
+    pullPreferred(rec, [
       "policy_number",
       "policy_no",
       "policy_num",
@@ -627,6 +713,10 @@ function applyPolicyRecord(out: LooseJson, rec: LooseJson) {
       "from",
       "inception",
       "start_date",
+      "begins",
+      "begin",
+      "policy_begins",
+      "policy_inception",
     ]),
   );
   setIfEmpty(
@@ -643,6 +733,10 @@ function applyPolicyRecord(out: LooseJson, rec: LooseJson) {
       "period_to",
       "to",
       "end_date",
+      "ends",
+      "expires",
+      "policy_expires",
+      "policy_ends",
     ]),
   );
   setIfEmpty(
@@ -790,21 +884,28 @@ function applyDriverList(out: LooseJson, raw: unknown) {
 }
 
 function absorbPage(out: LooseJson, page: LooseJson) {
+  const copy = { ...page };
+  for (const key of VEHICLE_LIST_KEYS) {
+    const raw = pull(copy, [key]);
+    if (raw == null) continue;
+    asItemList(raw).forEach((item, index) => applyVehicle(out, { ...item }, index));
+  }
   for (const key of DRIVER_LIST_KEYS) {
-    const raw = pull(page, [key]);
+    const raw = pull(copy, [key]);
     if (raw != null) applyDriverList(out, raw);
   }
   for (const key of COVERAGE_LIST_KEYS) {
-    const raw = pull(page, [key]);
+    const raw = pull(copy, [key]);
     if (raw != null) applyCoverages(out, raw);
   }
-  applyPolicyRecord(out, page);
-  for (const [key, value] of Object.entries(page)) {
+  applyPolicyRecord(out, copy);
+  absorbNestedPolicy(out, copy, 0);
+  for (const [key, value] of Object.entries(copy)) {
     if (coverageTargetForLabel(key)) applyCoverageEntry(out, key, value);
   }
 }
 
-/** Page 2 of a multi-page dec often holds the coverage table the summary page omits. */
+/** Page 1 holds the declarations header. Later pages hold the coverage schedule and term premium. */
 function absorbLaterPages(out: LooseJson) {
   const bundles: LooseJson[] = [];
   for (const key of ["pages", "dec_pages"]) {
@@ -815,7 +916,7 @@ function absorbLaterPages(out: LooseJson) {
       for (const page of Object.values(raw)) if (isRecord(page)) bundles.push({ ...page });
     }
   }
-  for (const key of ["page_2", "page_3", "second_page", "coverage_page"]) {
+  for (const key of PAGE_OBJECT_KEYS) {
     const raw = pull(out, [key]);
     if (isRecord(raw)) bundles.push({ ...raw });
   }
@@ -876,25 +977,67 @@ const POLICY_BLOCK_KEYS = new Set([
   "current_premium",
   "6_month_premium",
   "six_month_premium",
+  "full_term",
+  "writing_company",
+  "carrier",
+  "insurer",
+  "issuing_company",
+  "company_name",
 ]);
 
 function looksLikePolicyBlock(rec: LooseJson): boolean {
   const keys = Object.keys(rec).map(normKey);
   if (keys.some((key) => POLICY_BLOCK_KEYS.has(key) || rankForPremiumKey(key) >= 50)) return true;
   const set = new Set(keys);
-  const hasFrom = set.has("from") || set.has("policy_period_from") || set.has("period_from");
-  const hasTo = set.has("to") || set.has("policy_period_to") || set.has("period_to");
+  const hasFrom =
+    set.has("from") ||
+    set.has("policy_period_from") ||
+    set.has("period_from") ||
+    set.has("begins") ||
+    set.has("begin") ||
+    set.has("inception") ||
+    set.has("policy_begins");
+  const hasTo =
+    set.has("to") ||
+    set.has("policy_period_to") ||
+    set.has("period_to") ||
+    set.has("ends") ||
+    set.has("expires") ||
+    set.has("policy_expires");
   return hasFrom && hasTo;
+}
+
+const NEST_SKIP = new Set<string>([
+  ...VEHICLE_LIST_KEYS,
+  ...DRIVER_LIST_KEYS,
+  ...COVERAGE_LIST_KEYS,
+  "pages",
+  "dec_pages",
+  ...PAGE_OBJECT_KEYS,
+]);
+
+/** Header / policy_information / premium boxes nested under a page, without treating a VIN row as the policy. */
+function absorbNestedPolicy(out: LooseJson, node: LooseJson, depth: number) {
+  if (depth > 3 || looksLikeVehicle(node)) return;
+  if (looksLikePolicyBlock(node)) applyPolicyRecord(out, { ...node });
+  if (depth === 3) return;
+  for (const [key, value] of Object.entries(node)) {
+    if (!isRecord(value)) continue;
+    const norm = normKey(key);
+    if (NEST_SKIP.has(norm) || norm === PREMIUM_RANK_KEY || norm === VEHICLE_PREMIUMS_KEY || looksLikeVehicle(value)) {
+      continue;
+    }
+    absorbNestedPolicy(out, value, depth + 1);
+  }
 }
 
 /** Declarations / item-two blocks Gemini nests under a name we did not list as an envelope. */
 function absorbLoosePolicyBlocks(out: LooseJson) {
-  const skip = new Set<string>([...VEHICLE_LIST_KEYS, ...DRIVER_LIST_KEYS, ...COVERAGE_LIST_KEYS, "pages", "dec_pages"]);
   for (const [key, value] of Object.entries(out)) {
     const norm = normKey(key);
-    if (!isRecord(value) || skip.has(norm) || norm === PREMIUM_RANK_KEY) continue;
-    if (!looksLikePolicyBlock(value)) continue;
-    applyPolicyRecord(out, { ...value });
+    if (!isRecord(value) || NEST_SKIP.has(norm) || norm === PREMIUM_RANK_KEY || norm === VEHICLE_PREMIUMS_KEY) continue;
+    if (looksLikeVehicle(value)) continue;
+    absorbNestedPolicy(out, value, 0);
   }
 }
 

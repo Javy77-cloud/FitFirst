@@ -17,6 +17,11 @@ import {
 import { HEIC_CONVERT_TIMEOUT_MS } from "@/lib/extraction/ocr";
 import { MASTER_FILL_STEP_TIMEOUT_MS } from "@/lib/quote-sheet/master-fill";
 import {
+  ADRIANA_IORI_DEC_PAGE_FILENAME,
+  ADRIANA_IORI_TRAVELERS_DEC_PAGE,
+  ADRIANA_IORI_TRAVELERS_DEC_PREMIUM_BOX,
+} from "@/lib/extraction/gemini/fixtures/adriana-iori-travelers-dec";
+import {
   TRAVELERS_COVERAGE_SCHEDULE,
   TRAVELERS_DECLARATIONS_ENVELOPE,
   TRAVELERS_ISSUED_AUTO_NESTED,
@@ -172,6 +177,8 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(system).toMatch(/aaa_member/);
     expect(system).toMatch(/Never copy these sample values/);
     expect(system).toMatch(/Never invent/);
+    expect(system).toMatch(/Adriana Iori DEC Page Travelers\.pdf/);
+    expect(system).toMatch(/Begins and Ends/);
     expect(user).toMatch(/Auto policy or Auto declaration/);
     expect(user).toMatch(/not_declaration/);
     expect(user).toMatch(/Do not treat this as homeowners/);
@@ -423,6 +430,8 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/HEIC/);
     expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/not a shopping quote/);
     expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/every page/);
+    expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/Adriana Iori DEC Page Travelers\.pdf/);
+    expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/Begins and Ends/);
     expect(buildGeminiSystemPrompt("current_policy", "auto")).toMatch(/not a shopping quote/);
   });
 
@@ -775,6 +784,73 @@ describe("auto declaration extract → Auto risk profile", () => {
     expectIssuedTravelers(TRAVELERS_VEHICLE_TOTALS);
   });
 
+  it("reads the Adriana Iori Travelers DEC page across page 1 header and a later Full Term row", () => {
+    const first = mapGeminiJsonToFields(ADRIANA_IORI_TRAVELERS_DEC_PAGE, "current_policy", "auto");
+    const mapped = mapGeminiJsonToFields(ADRIANA_IORI_TRAVELERS_DEC_PAGE, "current_policy", "auto");
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.policy_number.value).toBe("612345678 101 1");
+    expect(applied.values.policy_number.value).not.toBe("1");
+    expect(applied.values.current_carrier.value).toBe("Travelers");
+    expect(applied.values.current_premium.value).toBe("2109.00");
+    expect(applied.values.current_premium.value).not.toMatch(/^412/);
+    expect(applied.values.current_premium.value).not.toMatch(/^1200/);
+    expect(applied.values.effective_date.value).toBe("September 21, 2026");
+    expect(applied.values.expiration_date.value).toBe("March 21, 2027");
+    expect(applied.values.vin.value).toBe("4T1B11HK5KU123456");
+    expect(applied.values.liability_bi.value).toBe("100/300");
+    expect(first.fields.find((field) => field.fieldKey === "current_premium")?.normalizedValue).toBe(
+      mapped.fields.find((field) => field.fieldKey === "current_premium")?.normalizedValue,
+    );
+    const gate = evaluateMintExtract(
+      mapped.fields.map((field) => ({
+        fieldKey: field.fieldKey,
+        normalizedValue: field.normalizedValue,
+        rawValue: field.rawValue,
+        confidence: field.confidence,
+        flagged: field.flagged,
+      })),
+      {
+        documentKind: mapped.documentKind,
+        filename: ADRIANA_IORI_DEC_PAGE_FILENAME,
+        docType: "current_policy",
+        geminiPreview: mapped.geminiPreview,
+      },
+    );
+    expect(gate.ok).toBe(true);
+    if (gate.ok) {
+      expect(gate.policyNumber).toBe("612345678 101 1");
+      expect(gate.premium).toBe("2109");
+      expect(gate.effectiveDate).toMatch(/2026-09-21/);
+    }
+  });
+
+  it("reads a nested Travelers premium box when the DEC header and the term premium are on different pages", () => {
+    const mapped = mapGeminiJsonToFields(ADRIANA_IORI_TRAVELERS_DEC_PREMIUM_BOX, "current_policy", "auto");
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.policy_number.value).toBe("612345678 101 1");
+    expect(applied.values.current_carrier.value).toBe("Travelers");
+    expect(applied.values.current_premium.value).toBe("2109.00");
+    expect(applied.values.effective_date.value).toBe("September 21, 2026");
+    expect(applied.values.expiration_date.value).toBe("March 21, 2027");
+    const gate = evaluateMintExtract(
+      mapped.fields.map((field) => ({
+        fieldKey: field.fieldKey,
+        normalizedValue: field.normalizedValue,
+        rawValue: field.rawValue,
+        confidence: field.confidence,
+        flagged: field.flagged,
+      })),
+      {
+        documentKind: "not_declaration",
+        filename: ADRIANA_IORI_DEC_PAGE_FILENAME,
+        docType: "current_policy",
+        geminiPreview: mapped.geminiPreview,
+      },
+    );
+    expect(gate.ok).toBe(true);
+    if (gate.ok) expect(gate.effectiveDate).toMatch(/2026-09-21/);
+  });
+
   it("does not mint a coverage-line premium when the term total is missing", () => {
     const { rows } = mintRows({
       policy_number: "612345678 101 1",
@@ -828,6 +904,24 @@ describe("auto declaration extract → Auto risk profile", () => {
       expect(gate.message).toMatch(/wind mitigation/i);
       expect(gate.message).not.toMatch(/could not extract/i);
       expect(gate.missing).toEqual(expect.arrayContaining(["premium", "effective date", "policy number"]));
+    }
+  });
+
+  it("lists the missing fields for a DEC page filename instead of calling it a non-policy", () => {
+    const gate = evaluateMintExtract([], {
+      documentKind: "not_declaration",
+      filename: ADRIANA_IORI_DEC_PAGE_FILENAME,
+      geminiPreview: "document_kind=not_declaration",
+    });
+    expect(gate.ok).toBe(false);
+    if (!gate.ok) {
+      expect(gate.missing).toEqual(["policy number", "premium", "effective date"]);
+      expect(gate.message).toMatch(/Could not extract policy number, premium, effective date/);
+      expect(gate.message).toMatch(/Expiration date was blank/);
+      expect(gate.message).toMatch(/Adriana Iori DEC Page Travelers\.pdf/);
+      expect(gate.message).toMatch(/The file stays in the folder/);
+      expect(gate.message).not.toMatch(/not an issued policy/i);
+      expect(gate.message).not.toMatch(/wind mitigation/i);
     }
   });
 

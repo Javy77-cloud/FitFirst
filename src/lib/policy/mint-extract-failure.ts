@@ -57,7 +57,18 @@ function isIdCard(context: MintExtractFailureContext): boolean {
   return ID_KINDS.has(kind) || /\bid[\s._-]*card\b/.test(name);
 }
 
-function hasPolicyEvidence(rows: readonly MintExtractFailureRow[], preview: string): boolean {
+/** Declarations-page filenames are policy evidence even when Gemini says not_declaration. */
+function filenameLooksLikeDec(filename?: string | null): boolean {
+  const name = (filename ?? "").toLowerCase();
+  return /\bdec(?:larations?)?(?:\s+pages?)?\b/.test(name) || /\bdeclarations?\b/.test(name);
+}
+
+function hasPolicyEvidence(
+  rows: readonly MintExtractFailureRow[],
+  preview: string,
+  filename?: string | null,
+): boolean {
+  if (filenameLooksLikeDec(filename)) return true;
   const keys = new Set(
     rows.filter(rowHasValue).map((row) => row.fieldKey.trim().toLowerCase()),
   );
@@ -84,7 +95,7 @@ export function describeMintExtractFailure(
 ): { message: string; missing: string[] } {
   const missing = REQUIRED.filter((field) => !valueOf(rows, field.key)).map((field) => field.label);
   const preview = (context.geminiPreview ?? "").replace(/\s+/g, " ").trim();
-  const evidence = hasPolicyEvidence(rows, preview);
+  const evidence = hasPolicyEvidence(rows, preview, context.filename);
 
   if (isWindMit(context, rows) && !evidence) {
     return {
@@ -108,9 +119,21 @@ export function describeMintExtractFailure(
     };
   }
 
+  const fileLabel = (context.filename ?? "").replace(/\s+/g, " ").trim();
+  const expirationBlank = !valueOf(rows, "expiration_date");
   const which = missing.length ? missing.join(", ") : "policy number, premium, effective date";
-  const saw = preview ? ` Gemini returned: ${preview}.` : "";
-  let message = `Could not extract ${which}.${saw} The file stays in the folder.`;
-  if (message.length > 400) message = `${message.slice(0, 399)}…`;
-  return { missing, message };
+  const expBit = expirationBlank ? " Expiration date was blank." : "";
+  const fileBit = fileLabel ? ` File: ${fileLabel}.` : "";
+  const head = `Could not extract ${which}.${expBit}${fileBit}`;
+  const suffix = " The file stays in the folder.";
+  let saw = "";
+  if (preview) {
+    const lead = " Gemini returned: ";
+    const budget = 420 - head.length - lead.length - suffix.length - 1;
+    if (budget >= 16) {
+      const body = preview.length > budget ? `${preview.slice(0, Math.max(0, budget - 1))}…` : preview;
+      saw = `${lead}${body}.`;
+    }
+  }
+  return { missing, message: `${head}${saw}${suffix}` };
 }
