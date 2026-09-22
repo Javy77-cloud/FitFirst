@@ -91,7 +91,6 @@ export function BookCommandWorkspace({
       cards={cards}
       empty={empty}
       activity={activity}
-      layoutMode={layout === "list" ? "list" : "stack"}
       renderExtra={renderExtra}
       renderLeading={renderLeading}
     />

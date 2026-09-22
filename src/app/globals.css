@@ -3481,18 +3481,16 @@ tr[data-ff-activity-selected="true"] {
 }
 .ff-radar-charts {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(12rem, 0.86fr) minmax(0, 1.05fr) minmax(0, 1.15fr);
   gap: 0.4rem;
-  align-items: stretch;
+  align-items: start;
   flex: 0 0 auto;
   min-height: 0;
 }
 .ff-radar-chart {
   display: flex;
   flex-direction: column;
-  min-width: 0;
   min-height: 0;
-  height: 100%;
   padding: 0.45rem 0.6rem 0.4rem;
   border: 1px solid var(--ff-border);
   border-radius: 0.75rem;
@@ -3517,7 +3515,7 @@ tr[data-ff-activity-selected="true"] {
 .ff-radar-heat-body { align-items: center; justify-content: center; gap: 1.1rem; flex-wrap: wrap; }
 .ff-radar-donut-wrap {
   position: relative;
-  width: min(10.35rem, 100%);
+  width: min(13.8rem, 100%);
   aspect-ratio: 1;
   flex: 0 0 auto;
 }
@@ -3531,7 +3529,7 @@ tr[data-ff-activity-selected="true"] {
   justify-content: center;
   color: var(--ff-navy);
 }
-.ff-radar-donut-center strong { font-size: 1.43rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.ff-radar-donut-center strong { font-size: 1.9rem; line-height: 1; font-variant-numeric: tabular-nums; }
 .ff-radar-donut-center span { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ff-muted); }
 .ff-radar-heat-legend { display: grid; gap: 0.4rem; margin: 0; padding: 0; list-style: none; flex: 0 1 auto; }
 .ff-radar-heat-legend li { display: grid; grid-template-columns: auto 1fr auto; gap: 0.4rem; align-items: center; color: var(--ff-navy); font-size: 0.82rem; font-weight: 650; }
@@ -3542,22 +3540,21 @@ tr[data-ff-activity-selected="true"] {
   justify-content: center;
   align-items: flex-end;
   gap: 0.45rem;
-  align-self: stretch;
-  width: 100%;
+  align-self: center;
+  width: auto;
   max-width: 100%;
   margin-inline: auto;
-  min-height: 10.35rem;
-  height: 100%;
+  min-height: 15.6rem;
 }
-.ff-radar-bar { display: grid; grid-template-rows: auto 1fr auto auto; justify-items: center; flex: 1 1 0; width: auto; min-width: 0; max-width: 3.5rem; height: 100%; min-height: 10.35rem; }
+.ff-radar-bar { display: grid; grid-template-rows: auto 1fr auto auto; justify-items: center; width: 4.65rem; height: 100%; min-height: 15.6rem; }
 .ff-radar-bar-value { color: var(--ff-navy); font-size: 0.82rem; font-weight: 750; font-variant-numeric: tabular-nums; }
 .ff-radar-bar-track {
   display: flex;
   align-items: flex-end;
   width: 100%;
-  max-width: none;
+  max-width: 4.65rem;
   height: 100%;
-  min-height: 5.5rem;
+  min-height: 7.35rem;
   border-radius: 0.45rem 0.45rem 0.15rem 0.15rem;
   background: color-mix(in srgb, var(--ff-navy) 5%, white);
 }
@@ -3582,7 +3579,7 @@ tr[data-ff-activity-selected="true"] {
   margin-inline: auto;
   min-height: 0;
 }
-.ff-radar-trend svg { width: 100%; height: 8.6rem; flex: 1 1 auto; }
+.ff-radar-trend svg { width: 100%; height: 3.64rem; flex: 0 0 auto; }
 .ff-radar-axis { stroke: color-mix(in srgb, var(--ff-navy) 16%, var(--ff-border)); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .ff-radar-axis.is-mid { stroke-dasharray: 3 4; }
 .ff-radar-area { fill: color-mix(in srgb, var(--ff-navy) 16%, white); }
@@ -4223,101 +4220,17 @@ tr[data-ff-activity-selected="true"] {
 .ff-book-card .ff-stack-mid {
   text-align: left;
 }
-/* Contacts and Accounts share this track list, so every column starts together. */
-.ff-book-grid-card {
-  align-items: center;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-}
-.ff-book-grid-card .ff-stack-card-body {
-  overflow-x: auto;
-  min-width: 0;
-}
-.ff-book-grid {
-  display: grid;
-  grid-template-columns: 15.5rem minmax(0, 1fr) 12.75rem;
-  grid-template-rows: auto auto;
-  column-gap: 0.75rem;
-  row-gap: 0.12rem;
-  align-items: center;
-  width: 100%;
-  min-width: 0;
-}
-.ff-carrier-card .ff-book-grid {
-  grid-template-columns: 15.5rem minmax(0, 1fr) 24.25rem;
-}
-.ff-policy-list-card .ff-book-grid {
-  grid-template-columns: 15.5rem minmax(0, 1fr) 8.75rem;
-}
-.ff-book-identity {
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.08rem;
-  min-width: 0;
-}
-.ff-book-center {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  min-width: 0;
-}
-.ff-book-rail {
-  grid-column: 3;
-  grid-row: 1 / span 2;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.45rem;
-  min-width: 0;
-}
-.ff-book-center .ff-book-facts {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  grid-template-rows: auto auto;
-  align-items: center;
-  gap: 0.16rem 0.4rem;
-  width: 100%;
-  min-width: 0;
-  margin: 0;
-}
-.ff-carrier-card .ff-book-center .ff-book-facts {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-}
-.ff-policy-list-card .ff-book-center .ff-book-facts {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-}
-.ff-book-center .ff-book-facts li {
-  min-width: 0;
-  max-width: 100%;
-  justify-self: start;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ff-book-rail .ff-stack-mid {
-  margin: 0;
-  min-width: 0;
-  overflow: hidden;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ff-book-rail .ff-stack-action {
-  flex: 0 0 6.5rem;
-  width: 6.5rem;
-  margin-left: auto;
-  text-align: center;
-}
 .ff-book-columns {
   display: grid;
-  grid-template-columns: 9rem 8.25rem;
-  flex: 0 0 17.25rem;
-  width: 17.25rem;
-  max-width: 17.25rem;
-  gap: 0.2rem 0.45rem;
-  align-items: center;
+  grid-template-columns: minmax(8.75rem, 1.05fr) minmax(8.25rem, 0.95fr);
+  width: 100%;
+  max-width: 19.5rem;
+  justify-self: end;
+  gap: 0.35rem 0.7rem;
+  align-items: baseline;
+}
+.ff-stack-card-spread:has(.ff-book-columns) {
+  grid-template-columns: minmax(0, 1.1fr) minmax(17rem, 0.95fr);
 }
 .ff-book-columns span {
   min-width: 0;
@@ -4355,12 +4268,6 @@ tr[data-ff-activity-selected="true"] {
   text-decoration: none;
 }
 .ff-book-facts a:hover { text-decoration: underline; }
-.ff-book-name {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-width: 0;
-}
 .ff-book-peek,
 .ff-book-channels,
 .ff-book-actions {
@@ -4369,19 +4276,11 @@ tr[data-ff-activity-selected="true"] {
   font-size: 0.78rem;
   font-weight: 650;
 }
-.ff-book-identity .ff-book-channels,
-.ff-book-identity .ff-book-actions {
+.ff-book-channels,
+.ff-book-actions {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 0.3rem 0.65rem;
-  margin: 0;
-  min-width: 0;
-  overflow: hidden;
-}
-.ff-book-identity .ff-book-channels a,
-.ff-book-identity .ff-book-actions a {
-  min-width: 0;
-  max-width: 100%;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.75rem;
 }
 .ff-book-channels a,
 .ff-book-actions a {
@@ -4443,140 +4342,12 @@ tr[data-ff-activity-selected="true"] {
     min-width: 0;
     width: 100%;
   }
-}
-
-/* Deals Priority Stack: three zones. One product is two rows. Each extra product is its own line. */
-[data-ff-priority-stack] .ff-deal-host-spread {
-  display: grid;
-  grid-template-columns: minmax(6.5rem, max-content) minmax(0, 1fr) max-content;
-  align-items: center;
-  column-gap: 0.9rem;
-  width: 100%;
-  min-width: 0;
-}
-[data-ff-priority-stack] .ff-deal-host-spread > .ff-stack-name {
-  align-self: center;
-  max-width: 12.5rem;
-}
-[data-ff-priority-stack] .ff-deal-host-center {
-  display: block;
-  min-width: 0;
-}
-[data-ff-priority-stack] .ff-deal-host-cue {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.45rem;
-  min-width: 0;
-}
-[data-ff-priority-stack] .ff-deal-host-cue-copy {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.05rem;
-  min-width: 0;
-  max-width: 11rem;
-}
-[data-ff-priority-stack] .ff-deal-host-cue .ff-stack-mid {
-  flex: 0 1 auto;
-  max-width: 11rem;
-  text-align: right;
-}
-[data-ff-priority-stack] .ff-deal-host-job-single {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto auto;
-  align-items: center;
-  column-gap: 0.85rem;
-  row-gap: 0.16rem;
-  min-width: 0;
-}
-[data-ff-priority-stack] .ff-deal-host-job-single > .ff-deal-host-facts {
-  grid-column: 1;
-  grid-row: 1;
-}
-[data-ff-priority-stack] .ff-deal-host-job-single > .ff-deal-host-quotes {
-  grid-column: 1 / -1;
-  grid-row: 2;
-}
-[data-ff-priority-stack] .ff-deal-host-job-single > .ff-deal-host-health {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: center;
-}
-[data-ff-priority-stack] .ff-deal-host-facts {
-  display: grid;
-  grid-template-columns: max-content minmax(0, max-content) minmax(0, max-content);
-  align-items: center;
-  column-gap: 0.65rem;
-  min-width: 0;
-  overflow: hidden;
-}
-[data-ff-priority-stack] .ff-deal-host-job-multi {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: start;
-  row-gap: 0.28rem;
-  min-width: 0;
-}
-[data-ff-priority-stack] .ff-deal-host-lines {
-  display: grid;
-  grid-template-columns: max-content max-content minmax(0, 12rem) minmax(11.5rem, 1fr);
-  align-items: center;
-  column-gap: 0.65rem;
-  row-gap: 0.28rem;
-  min-width: 0;
-}
-[data-ff-priority-stack] .ff-deal-host-line {
-  display: grid;
-  grid-template-columns: subgrid;
-  grid-column: 1 / -1;
-  align-items: center;
-  column-gap: 0.65rem;
-  min-width: 0;
-}
-[data-ff-priority-stack] .ff-stack-product,
-[data-ff-priority-stack] .ff-deal-host-stage,
-[data-ff-priority-stack] .ff-deal-host-quotes {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-[data-ff-priority-stack] .ff-deal-host-stage,
-[data-ff-priority-stack] .ff-deal-host-quotes {
-  color: var(--ff-ink);
-  font-size: 0.9rem;
-  font-weight: 650;
-}
-[data-ff-priority-stack] .ff-deal-host-stamps {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.28rem;
-  min-width: 0;
-  max-width: 12rem;
-  min-height: 1.15rem;
-  overflow: hidden;
-  white-space: nowrap;
-}
-[data-ff-priority-stack] .ff-deal-host-health {
-  justify-self: end;
-}
-[data-ff-priority-stack] .ff-deal-host-health .ff-renewal-health {
-  flex-wrap: nowrap;
-}
-@media (max-width: 42rem) {
-  [data-ff-priority-stack] .ff-deal-host-spread {
+  .ff-stack-card-spread:has(.ff-book-columns) {
     grid-template-columns: minmax(0, 1fr);
-    row-gap: 0.28rem;
   }
-  [data-ff-priority-stack] .ff-deal-host-cue,
-  [data-ff-priority-stack] .ff-deal-host-cue-copy {
-    align-items: flex-start;
-    justify-content: flex-start;
-  }
-  [data-ff-priority-stack] .ff-deal-host-cue .ff-stack-mid {
-    text-align: left;
+  .ff-book-columns {
+    max-width: none;
+    justify-self: stretch;
   }
 }
 

@@ -31,7 +31,7 @@ import {
 } from "@/lib/home/as-of";
 import { partyLabel } from "@/lib/desk/policy-name";
 import { BookCommandWorkspace } from "@/components/book-lists/book-workspace";
-import { loadPolicyNeedSignals, loadRenewalPremiums } from "@/lib/book-lists/load";
+import { loadPolicyNeedSignals } from "@/lib/book-lists/load";
 import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { matchesBookLens, parseBookHeat, parseBookLayout, parseBookLens } from "@/lib/book-lists/lenses";
 import { presentPolicyCard } from "@/lib/book-lists/present";
@@ -149,7 +149,6 @@ export default async function PoliciesPage({
     loadPolicyNeedSignals(),
     loadDeskLineSettings(),
   ]);
-  const renewalPremiums = await loadRenewalPremiums(all.map(({ policy }) => policy.id));
   const visibleFilters = mergeLiveOptions(enabledPageFilters(pageFilters), {
     line: all.map(({ policy }) => policy.lineOfBusiness),
     carrier: all.map(({ carrier }) => carrier?.name ?? ""),
@@ -184,12 +183,6 @@ export default async function PoliciesPage({
           status: policy.status,
           lineOfBusiness: policy.lineOfBusiness,
           premium: policy.premium,
-          renewalPremium: renewalPremiums.get(policy.id) ?? null,
-          formType: policy.formType,
-          policyType: policy.policyType,
-          policySubType: policy.policySubType,
-          billingFrequency: policy.billingFrequency,
-          premiumFrequency: policy.premiumFrequency,
           expirationDate: policy.expirationDate,
           updatedAt: policy.updatedAt,
           tags: policy.tags,

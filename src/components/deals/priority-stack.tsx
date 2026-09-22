@@ -46,7 +46,6 @@ export function PriorityStack({ cards }: { cards: RadarDealCard[] }) {
               <div className="ff-stack-card-body">
                 <DealHostSpread
                   card={card}
-                  center={<DealHostJob card={card} />}
                   comms={
                     <ActivityGlyph
                       id={card.id}
@@ -58,8 +57,8 @@ export function PriorityStack({ cards }: { cards: RadarDealCard[] }) {
                       accountId={card.accountId}
                     />
                   }
-                  rank={<PriorityPinControl id={card.id} rank={rank} onSet={setRank} />}
                 />
+                <DealHostJob card={card} />
                 {card.inboxCue ? (
                   <p className="ff-inbox-cue" data-ff-inbox-cue="">
                     {card.inboxHref ? (
@@ -72,6 +71,7 @@ export function PriorityStack({ cards }: { cards: RadarDealCard[] }) {
                   </p>
                 ) : null}
               </div>
+              <PriorityPinControl id={card.id} rank={rank} onSet={setRank} />
               <span className="sr-only">{HEAT_LABELS[card.heat]}</span>
             </article>
           </li>

@@ -2,10 +2,10 @@ import { mailtoHref, telHref } from "@/lib/desk/contact-actions";
 import { bookFamily } from "@/lib/desk/policy-line";
 import { formatMoney } from "@/lib/domain";
 import { homeLineLabel } from "@/lib/home/lines";
-import { policyStatusLabel } from "@/lib/policy/status";
 import { contactHealthScore } from "@/lib/contacts/health-score";
 import type { HealthChipView } from "@/lib/health/model";
 import { haystack } from "@/lib/search/live-query";
+import { stackMidLine } from "@/lib/desk/stack-mid";
 import { RECENT_TOUCH_DAYS } from "./kpi";
 import type { BookCardAction, BookCardFact, BookCueColumn, BookFamily, BookGlanceCard, BookHeat } from "./types";
 import {
@@ -42,9 +42,6 @@ export type PartyListRow = {
   loggedTouchAt?: Date | string | null;
   preferredLanguage?: string | null;
   language?: string | null;
-  preferredContactTime?: string | null;
-  preferredContactMethod?: string | null;
-  dateOfBirth?: string | null;
   entityType?: string | null;
   einLast4?: string | null;
   linkedContactsCount?: number;
@@ -205,76 +202,11 @@ function countPhrase(count: number, one: string, many: string): string {
   return `${count} ${count === 1 ? one : many}`;
 }
 
-/** Whole note when it is short. A long note keeps the first sentence or a word boundary — no mid-word ellipsis. */
-function appetiteGlance(raw: string | null | undefined): string | null {
-  const value = raw?.replace(/\s+/g, " ").trim();
-  if (!value) return null;
-  if (value.length <= 110) return value;
-  const sentence = value.split(/(?<=[.!?])\s/)[0]?.trim();
-  if (sentence && sentence.length < value.length && sentence.length <= 140) return sentence;
-  const cut = value.slice(0, 110);
-  const space = cut.lastIndexOf(" ");
-  return (space > 40 ? cut.slice(0, space) : cut).trim();
-}
-
 function clipLabel(raw: string | null | undefined, max = 28): string | null {
   const value = raw?.replace(/\s+/g, " ").trim();
   if (!value) return null;
   if (value.length <= max) return value;
   return `${value.slice(0, max - 1).trim()}…`;
-}
-
-function clientStatusCue(raw: string | null | undefined): string | null {
-  const value = raw?.trim();
-  if (!value) return null;
-  const key = value.toLowerCase().replace(/[\s-]+/g, "_");
-  if (key === "client") return "Client";
-  if (key === "former_client") return "Former client";
-  if (key === "not_a_client") return "Not a client";
-  return value
-    .split(/[\s_-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .join(" ");
-}
-
-/** Morning / Afternoon / Evening from the contact form, with the method when it is set. */
-function contactWindowCue(method: string | null | undefined, time: string | null | undefined): string | null {
-  const when = time?.trim();
-  const how = method?.trim();
-  if (!when && !how) return null;
-  if (when && how) {
-    const howWord = how.toLowerCase() === "phone" ? "Call" : how;
-    return `${howWord} · ${when}`;
-  }
-  return when || how || null;
-}
-
-/** Month/day only — an age glance, not a full birth date on the list. */
-function dobGlance(raw: string | null | undefined): string | null {
-  const value = raw?.trim();
-  if (!value) return null;
-  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return `DOB ${iso[2]}/${iso[3]}`;
-  const us = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-  if (us) {
-    const month = us[1]!.padStart(2, "0");
-    const day = us[2]!.padStart(2, "0");
-    return `DOB ${month}/${day}`;
-  }
-  return null;
-}
-
-function renewalInFact(days: number | null | undefined): BookCardFact | null {
-  if (days == null || !Number.isFinite(days)) return null;
-  const tone = days <= 60 ? ("hot" as const) : undefined;
-  if (days < 0) return { id: "renewal", label: `${Math.abs(days)}d past renewal`, tone: "hot" };
-  return { id: "renewal", label: `Renews in ${days}d`, tone };
-}
-
-function contactWindowFact(row: PartyListRow): BookCardFact | null {
-  const label = contactWindowCue(row.preferredContactMethod, row.preferredContactTime);
-  return label ? { id: "window", label } : null;
 }
 
 function sourceCue(raw: string | null | undefined): string | null {
@@ -289,16 +221,10 @@ function sourceCue(raw: string | null | undefined): string | null {
     .join(" ");
 }
 
-/** A lone dash is a blank cell, not a fact. Real labels that contain a hyphen stay. */
-function isEmptyDash(value: string | null | undefined): boolean {
-  const text = value?.trim() ?? "";
-  return !text || /^(?:—|–|-|n\/a|na)$/i.test(text);
-}
-
-function takeFacts(items: Array<BookCardFact | null | undefined>, limit = 8): BookCardFact[] {
+function takeFacts(items: Array<BookCardFact | null | undefined>, limit = 4): BookCardFact[] {
   const out: BookCardFact[] = [];
   for (const item of items) {
-    if (!item?.label.trim() || isEmptyDash(item.label)) continue;
+    if (!item?.label.trim()) continue;
     out.push(item);
     if (out.length >= limit) break;
   }
@@ -336,72 +262,45 @@ export function presentPartyCard(
   const reached = reachCue(loggedDays);
   const language = kind === "contact" ? languageCue(row) : null;
   const renewalSoon = row.nearestRenewalDays != null && row.nearestRenewalDays <= 60;
-  const industry = kind === "account" ? clipLabel(row.industry, 32) : null;
+  const industry = kind === "account" ? clipLabel(row.industry, 22) : null;
   const premium = row.premiumBook ?? 0;
   const primaryName = kind === "account" ? clipLabel(row.primaryContactName, 28) : null;
   const cameFrom = kind === "contact" ? sourceCue(row.source) : null;
   const entity = kind === "account" ? entityCue(row.entityType) : null;
   const dba = row.dba?.trim();
-  const dbaFact =
-    kind === "account" && dba && dba.toLowerCase() !== title.toLowerCase() ? `DBA ${dba}` : null;
-  const fein = kind === "account" ? maskedFein(row.einLast4) : null;
-  const city = kind === "contact" ? clipLabel(row.city, 24) : null;
-  const status = clientStatusCue(row.clientStatus);
-  const windowFact = kind === "contact" ? contactWindowFact(row) : null;
-  const shopFact =
+  const peek =
+    kind === "account"
+      ? stackMidLine([
+          dba && dba.toLowerCase() !== title.toLowerCase() ? `DBA ${dba}` : null,
+          maskedFein(row.einLast4),
+        ])
+      : null;
+  const facts = takeFacts([
+    renewalSoon ? { id: "renewal", label: "Renews ≤60d", tone: "hot" as const } : null,
     openDeals > 0
       ? {
           id: "deals",
-          label: countPhrase(openDeals, "open shop", "open shops"),
+          label: countPhrase(openDeals, "open deal", "open deals"),
           href: extra.open?.dealId ? `/deals/${extra.open.dealId}` : null,
           tone: "hot" as const,
         }
-      : null;
-  const inForceFact =
+      : null,
+    primaryName ? { id: "contact", label: primaryName } : null,
+    kind === "account" && premium > 0 ? { id: "premium", label: `${formatMoney(premium)} book` } : null,
     row.activePolicyCount > 0
-      ? { id: "policies", label: countPhrase(row.activePolicyCount, "in-force", "in-force") }
-      : null;
-  const peopleFact =
-    kind === "account" && (row.linkedContactsCount ?? 0) > 0
-      ? {
-          id: "people",
-          label: countPhrase(row.linkedContactsCount ?? 0, "linked contact", "linked contacts"),
-        }
-      : null;
-  const coreFacts = takeFacts(
-    kind === "contact"
-      ? [
-          language ? { id: "language", label: language } : null,
-          windowFact,
-          city ? { id: "city", label: city } : null,
-          cameFrom ? { id: "source", label: cameFrom } : null,
-          status ? { id: "status", label: status } : null,
-          shopFact,
-          inForceFact,
-          renewalInFact(row.nearestRenewalDays),
-        ]
-      : [
-          dbaFact ? { id: "dba", label: dbaFact } : null,
-          industry ? { id: "industry", label: industry } : null,
-          entity ? { id: "entity", label: entity } : null,
-          fein ? { id: "fein", label: fein } : null,
-          primaryName ? { id: "contact", label: primaryName } : null,
-          premium > 0 ? { id: "premium", label: `${formatMoney(premium)} book` } : null,
-          peopleFact,
-          shopFact,
-          inForceFact,
-          renewalInFact(row.nearestRenewalDays),
-        ],
-    10,
-  );
-  const dob = kind === "contact" ? dobGlance(row.dateOfBirth) : null;
-  const facts = dob && coreFacts.length < 6 ? [...coreFacts, { id: "dob", label: dob }] : coreFacts;
+      ? { id: "policies", label: countPhrase(row.activePolicyCount, "policy", "policies") }
+      : null,
+    language ? { id: "language", label: language } : null,
+    industry ? { id: "industry", label: industry } : null,
+    cameFrom ? { id: "source", label: cameFrom } : null,
+    entity ? { id: "entity", label: entity } : null,
+  ]);
   return {
     id: row.id,
     surface: kind === "contact" ? "contacts" : "accounts",
     href,
     title,
-    subtitle: isEmptyDash(row.clientStatus) ? undefined : row.clientStatus?.trim() || undefined,
+    subtitle: row.clientStatus || undefined,
     heat,
     column: partyColumnForHeat(heat),
     health: extra.health ?? null,
@@ -430,7 +329,7 @@ export function presentPartyCard(
     }),
     mid: reached,
     facts,
-    peek: null,
+    peek,
     primaryAction: primaryPartyAction({
       heat,
       phone: row.phone,
@@ -579,21 +478,15 @@ export function presentCarrierCard(
     { id: "posture", label: posture },
     { id: "use", label: useCue },
   ];
+  const lineCue = appetite ? `Writes ${appetite}` : null;
   const premium = signal.premiumVolume ?? row.premiumVolume ?? 0;
-  const appetiteNote = appetiteGlance(
+  const appetiteNote = clipLabel(
     column === "skip" ? skipCue || row.dontWriteNotes : row.appetiteNotes || skipCue,
+    36,
   );
   const genericNote = new Set(["not rateable", "skip-decline", "skip / decline", "limited appetite", "rateable"]);
-  const lineFacts: BookCardFact[] = lines.slice(0, 6).map((label) => ({
-    id: `line:${label.toLowerCase()}`,
-    label,
-  }));
-  if (lines.length > 6) {
-    lineFacts.push({ id: "lines-more", label: `+${lines.length - 6}` });
-  }
   const facts = takeFacts(
     [
-      ...lineFacts,
       premium > 0 ? { id: "premium", label: `${formatMoney(premium)} book` } : null,
       signal.activePolicies > 0
         ? { id: "policies", label: countPhrase(signal.activePolicies, "policy", "policies") }
@@ -602,7 +495,7 @@ export function presentCarrierCard(
         ? { id: "appetite", label: appetiteNote }
         : null,
     ],
-    10,
+    3,
   );
   const families = carrierFamilies(
     [...(row.writtenLines ?? []), ...signal.appetiteLines],
@@ -616,7 +509,7 @@ export function presentCarrierCard(
     surface: "carriers",
     href: `/carriers/${row.id}`,
     title: row.name,
-    subtitle: isEmptyDash(row.agencyCode) ? undefined : row.agencyCode?.trim() || undefined,
+    subtitle: row.agencyCode || undefined,
     heat,
     column,
     health: null,
@@ -649,7 +542,7 @@ export function presentCarrierCard(
     why: `${posture} · ${useCue}`,
     mid: `${posture} · ${useCue}`,
     columns,
-    peek: null,
+    peek: lineCue,
     facts,
     actions: carrierActions(row),
     primaryAction:
@@ -685,12 +578,6 @@ export type PolicyListRow = {
   status: string;
   lineOfBusiness: string;
   premium?: string | number | null;
-  renewalPremium?: string | number | null;
-  formType?: string | null;
-  policyType?: string | null;
-  policySubType?: string | null;
-  billingFrequency?: string | null;
-  premiumFrequency?: string | null;
   expirationDate: Date | string;
   updatedAt?: Date | string | null;
   tags?: string[] | null;
@@ -698,42 +585,6 @@ export type PolicyListRow = {
   carrierName?: string | null;
   phone?: string | null;
   email?: string | null;
-};
-
-function moneyAmount(premium: string | number | null | undefined): number | null {
-  if (premium == null || premium === "") return null;
-  const amount = typeof premium === "string" ? Number(premium) : premium;
-  if (!Number.isFinite(amount) || amount <= 0) return null;
-  return amount;
-}
-
-function renewalDeltaLabel(current: number | null, proposed: number | null): string | null {
-  if (current == null || proposed == null) return null;
-  const delta = Math.round((proposed - current) * 100) / 100;
-  if (delta === 0) return null;
-  const sign = delta > 0 ? "+" : "−";
-  return `${sign}${formatMoney(Math.abs(delta))}`;
-}
-
-function billingCue(raw: string | null | undefined): string | null {
-  const value = raw?.trim();
-  if (!value) return null;
-  const key = value.toLowerCase().replace(/[\s-]+/g, "_");
-  const known: Record<string, string> = {
-    annual: "Annual",
-    yearly: "Annual",
-    monthly: "Monthly",
-    quarterly: "Quarterly",
-    semiannual: "Semi-annual",
-    semi_annual: "Semi-annual",
-  };
-  return known[key] ?? value;
-}
-
-const POLICY_BAND_LABEL: Record<string, string> = {
-  now: "Needs care",
-  watch: "Watch",
-  current: "Current",
 };
 
 export type PolicyNeedSignal = {
@@ -761,44 +612,6 @@ export function presentPolicyCard(
     expirationLabel: expires,
   });
   const why = withSecondFact(attention.why, premiumCue(row.premium));
-  const insured = row.partyName?.trim() || row.displayName || row.policyNumber;
-  const form =
-    row.formType?.trim() || row.policySubType?.trim() || row.policyType?.trim() || "";
-  const lob = homeLineLabel(row.lineOfBusiness).trim();
-  const currentPremium = moneyAmount(row.premium);
-  const proposedPremium = moneyAmount(row.renewalPremium);
-  const renews =
-    daysUntil == null
-      ? null
-      : daysUntil < 0
-        ? `Past expiration ${Math.abs(daysUntil)}d`
-        : `Renews in ${daysUntil}d`;
-  const delta = renewalDeltaLabel(currentPremium, proposedPremium);
-  const billing = billingCue(row.billingFrequency || row.premiumFrequency);
-  const facts = takeFacts(
-    [
-      row.carrierName?.trim() ? { id: "carrier", label: row.carrierName.trim() } : null,
-      form ? { id: "form", label: form } : null,
-      lob && lob.toLowerCase() !== form.toLowerCase() ? { id: "lob", label: lob } : null,
-      currentPremium != null ? { id: "premium", label: formatMoney(currentPremium) } : null,
-      proposedPremium != null ? { id: "renewal-premium", label: `Renewal ${formatMoney(proposedPremium)}` } : null,
-      delta ? { id: "delta", label: delta, tone: delta.startsWith("+") ? ("hot" as const) : ("ok" as const) } : null,
-      expires ? { id: "expires", label: `Expires ${expires}` } : null,
-      renews ? { id: "renews", label: renews, tone: daysUntil != null && daysUntil < 60 ? ("hot" as const) : undefined } : null,
-      row.status ? { id: "status", label: policyStatusLabel(row.status) } : null,
-      { id: "band", label: POLICY_BAND_LABEL[attention.column] ?? "Current" },
-      needs.openClaims > 0
-        ? {
-            id: "claims",
-            label: countPhrase(needs.openClaims, "open claim", "open claims"),
-            tone: "hot" as const,
-          }
-        : null,
-      billing ? { id: "billing", label: billing } : null,
-      row.policyNumber && row.policyNumber !== insured ? { id: "number", label: row.policyNumber } : null,
-    ],
-    12,
-  );
   let action = { label: "Open", href: `/policies/${row.id}` };
   if (needs.openClaims > 0) {
     action = { label: "Claims", href: `/policies/${row.id}?tab=claims` };
@@ -813,7 +626,7 @@ export function presentPolicyCard(
     id: row.id,
     surface: "policies",
     href: `/policies/${row.id}`,
-    title: insured,
+    title: row.displayName || row.policyNumber,
     subtitle: row.status,
     heat: attention.heat,
     column: attention.column,
@@ -827,7 +640,6 @@ export function presentPolicyCard(
     riskBand: attention.heat === "hot" ? "high" : attention.heat === "cooling" ? "medium" : "low",
     glance: [],
     why,
-    facts,
     primaryAction: action,
     tags: row.tags ?? [],
     phone: row.phone,

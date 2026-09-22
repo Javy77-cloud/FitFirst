@@ -42,41 +42,26 @@ describe("command-card book lists", () => {
     expect(source("src/lib/book-lists/lenses.ts")).toMatch(/Skip/);
   });
 
-  it("Policies use attention bands, and List is the same two-row grid", () => {
+  it("Policies keep Bands and the existing List view", () => {
     const page = source("src/app/policies/page.tsx");
-    const css = source("src/app/globals.css");
-    const card = source("src/components/book-lists/glance-card.tsx");
+    const lenses = source("src/components/book-lists/book-lenses.tsx");
+    const workspace = source("src/components/book-lists/book-workspace.tsx");
     expect(page).toMatch(/parseBookLayout/);
     expect(page).toMatch(/layout=\{layout\}/);
     expect(page).toMatch(/POLICY_COLUMNS/);
-    expect(source("src/components/book-lists/book-lenses.tsx")).toMatch(/data-ff-book-layout="list"/);
-    expect(source("src/components/book-lists/book-lenses.tsx")).toMatch(/data-ff-book-layout="bands"/);
-    expect(source("src/lib/book-lists/lenses.ts")).toMatch(/value === "list" \|\| value === "stack"/);
-    expect(card).toMatch(/data-ff-policy-list-card/);
-    expect(card).toMatch(/ff-party-card/);
-    expect(card).toMatch(/data-ff-book-center/);
-    expect(card).toMatch(/data-ff-book-identity/);
-    expect(card).toMatch(/data-ff-book-rail/);
-    expect(css).toMatch(
-      /\.ff-book-grid \{[^}]*grid-template-columns:\s*15\.5rem minmax\(0, 1fr\) 12\.75rem;[^}]*grid-template-rows:\s*auto auto/,
-    );
-    expect(css).toMatch(
-      /\.ff-carrier-card \.ff-book-grid \{[^}]*grid-template-columns:\s*15\.5rem minmax\(0, 1fr\) 24\.25rem/,
-    );
-    expect(css).toMatch(
-      /\[data-ff-priority-stack\] \.ff-deal-host-spread \{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*minmax\(6\.5rem,\s*max-content\) minmax\(0,\s*1fr\) max-content/,
-    );
-    expect(css).not.toMatch(/\.ff-deal-host-center,/);
-    expect(css).toMatch(
-      /\.ff-book-center \.ff-book-facts \{[^}]*grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);[^}]*grid-template-rows:\s*auto auto/,
-    );
-    expect(css).toMatch(/\.ff-policy-list-card \.ff-book-center \.ff-book-facts \{[^}]*repeat\(6, minmax\(0, 1fr\)\)/);
-    expect(css).not.toMatch(/\.ff-party-line/);
-    expect(source("src/components/deals/deal-host-face.tsx")).toMatch(/data-ff-deal-center/);
     expect(page).not.toMatch(/Policy attention/);
     expect(page).not.toMatch(/StandardActivityShell/);
     expect(page).not.toMatch(/DeskColumnTable/);
+    expect(lenses).toMatch(/data-ff-book-layout="list"/);
+    expect(lenses).toMatch(/data-ff-book-layout="bands"/);
+    expect(workspace).toMatch(/layout === "bands"/);
+    expect(workspace).toMatch(/BookPriorityStack/);
+    expect(source("src/components/book-lists/glance-card.tsx")).not.toMatch(/ff-book-grid|ff-policy-list/);
+    expect(source("src/app/globals.css")).not.toMatch(/ff-policy-list-grid|ff-book-grid/);
     expect(source("src/lib/book-lists/types.ts")).toMatch(/Needs care now/);
+    expect(source("src/app/contacts/page.tsx")).toMatch(/layout="stack"/);
+    expect(source("src/app/accounts/page.tsx")).toMatch(/layout="stack"/);
+    expect(source("src/components/deals/deal-host-face.tsx")).not.toMatch(/data-ff-deal-zone/);
   });
 
   it("says reached, and only offers a carrier line filter when Life or Health is on", () => {
