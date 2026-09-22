@@ -4,6 +4,8 @@ import type { QuoteFileRow } from "@/components/deal/quote-file-actions";
 import { IssuePolicyFromDec, type IssuedPolicyChip } from "@/components/deal/issue-policy-from-dec";
 import { Button } from "@/components/ui/button";
 import { quoteFoldersByQuoteId } from "@/lib/deals/quote-docs";
+import { blobStoreReady } from "@/lib/files/object-store";
+import { quoteFileUploadMode } from "@/lib/files/upload-plan";
 import { isBoundReadyForIssue } from "@/lib/policy/mint-gate";
 import { sortQuotesByRatingThenPremium } from "@/lib/deals/quote-sort";
 import { lifeHealthQuoteCarriers } from "@/lib/life/quote-writer";
@@ -268,6 +270,7 @@ export function LifeHealthQuotesPanel({
             product={product}
             productStage={productStage}
             canLogGap={canLogGap}
+            uploadMode={quoteFileUploadMode({ vercel: process.env.VERCEL, blobReady: blobStoreReady() })}
           />
         </section>
       )}

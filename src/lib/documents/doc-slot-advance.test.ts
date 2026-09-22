@@ -132,8 +132,8 @@ describe("advance after a document save", () => {
       error: "Could not save Wind mitigation. Try again.",
     });
     expect(docSaveStayError({ reason: "choose-file", slotLabel: "Photos" })).toBe("Choose a file to upload.");
-    expect(docSaveStayError({ reason: "documents-too-large" })).toMatch(/too large/);
-    expect(docSaveStayError({ reason: "documents-save-failed" })).toBe("Could not save documents. Try again.");
+    expect(docSaveStayError({ reason: "documents-too-large" })).toMatch(/45 MB/);
+    expect(docSaveStayError({ reason: "documents-save-failed" })).toBe("Could not save that file. Nothing was stored.");
   });
 
   it("sends the last HO3 document to Markets, then Quotes once Markets is done", () => {

@@ -84,7 +84,7 @@ describe("deal source document persist", () => {
     expect(upload).toMatch(/dealSourceSlotForUpload/);
     expect(upload).toMatch(/persistDealSourceUploads/);
     expect(upload).toMatch(/collectUploadedFiles/);
-    expect(upload).toMatch(/Could not save the file to this deal/);
+    expect(upload).toMatch(/Nothing else was changed/);
     expect(upload).not.toMatch(/resolvedFolder \? "library_file"/);
     expect(source("src/app/actions/quote-sheet.ts")).toMatch(/restoreDealSourceDocuments\(dealId\)/);
     expect(source("src/app/actions/quote-sheet.ts")).not.toMatch(/delete\(documents\)/);

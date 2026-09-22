@@ -63,7 +63,15 @@ import {
   loadGeminiApiKey,
   MISSING_GEMINI_KEY_MESSAGE,
 } from "@/lib/extraction/gemini";
-import { inferMimeFromName } from "@/lib/files/urls";
+import {
+  clientUploadPathError,
+  displayFilename,
+  isAllowedStoredUploadUrl,
+  messageFromUploadError,
+  planUpload,
+  storageObjectKey,
+  storedMimeForUpload,
+} from "@/lib/files/upload-plan";
 import { isDocumentsSourceDoc, shopLineForGeminiExtract, shopLineFromSourceDoc } from "@/lib/deals/quote-docs";
 import { dealSourceSlotForUpload } from "@/lib/documents/restore-deal-docs";
 import { collectUploadedFiles, isUploadedFile } from "@/lib/documents/uploaded-file";
@@ -119,21 +127,34 @@ export async function persistFile(input: {
   formTemplateId?: string | null;
   filename: string;
   mimeType: string;
-  buffer: Buffer;
+  buffer?: Buffer;
+  /** Already stored (browser Blob upload). Skips a second write. Never deletes an existing row. */
+  existingStoragePath?: string | null;
   docType: string;
   slot?: string;
   tags?: string[];
 }) {
   const id = randomUUID();
+  const display = displayFilename(input.filename);
   const folder =
     input.folderId ?? input.dealId ?? input.policyId ?? input.contactId ?? input.leadId ?? "library";
-  const relPath = path.posix.join(DEFAULT_TENANT_ID, folder, `${id}-${input.filename}`);
-  const storagePath = await writeStoredFile(
-    relPath,
-    input.buffer,
-    inferMimeFromName(input.filename, input.mimeType),
-    { durable: Boolean(input.dealId) },
-  );
+  const mimeType = storedMimeForUpload(input.filename, input.mimeType, input.buffer);
+  let storagePath = (input.existingStoragePath ?? "").trim();
+  if (storagePath) {
+    if (input.dealId && !isAllowedStoredUploadUrl(storagePath, input.dealId)) {
+      throw new Error(
+        `Could not attach “${display}”. The storage location is not on this deal. Nothing was saved.`,
+      );
+    }
+  } else {
+    if (!input.buffer || input.buffer.length === 0) {
+      throw new Error(`“${display}” had no bytes. Nothing was saved.`);
+    }
+    const relPath = path.posix.join(DEFAULT_TENANT_ID, folder, `${id}-${input.filename}`);
+    storagePath = await writeStoredFile(relPath, input.buffer, mimeType, {
+      durable: Boolean(input.dealId),
+    });
+  }
 
   const values = {
     id,
@@ -143,8 +164,8 @@ export async function persistFile(input: {
     leadId: input.leadId || null,
     contactId: input.contactId || null,
     policyId: input.policyId || null,
-    filename: input.filename,
-    mimeType: inferMimeFromName(input.filename, input.mimeType),
+    filename: display,
+    mimeType,
     storagePath,
     docType: input.docType,
     slot: input.slot ?? "source_doc",
@@ -160,7 +181,9 @@ export async function persistFile(input: {
     [doc] = await db.insert(documents).values(values).returning();
   } catch {
     // Optional FKs (stale risk/contact) must not drop the deal row + storage_path.
-    if (!values.dealId) throw new Error("Could not save the file to this deal.");
+    if (!values.dealId) {
+      throw new Error(`Could not save “${display}” on this record. Nothing else was changed.`);
+    }
     [doc] = await db
       .insert(documents)
       .values({
@@ -172,7 +195,7 @@ export async function persistFile(input: {
       })
       .returning();
   }
-  if (!doc) throw new Error("Could not save the file to this deal.");
+  if (!doc) throw new Error(`Could not save “${display}” on this record. Nothing else was changed.`);
   await recordInitialDocumentVersion(doc).catch(() => null);
   if (doc.dealId && isDocumentsSourceDoc(doc)) {
     await markShopFlowStaleAfterRiskChange(doc.dealId, shopLineFromSourceDoc(doc)).catch(() => null);
@@ -189,6 +212,7 @@ export async function persistDealSourceUploads(
   last: Awaited<ReturnType<typeof persistFile>> | null;
   attempted: number;
   createPolicyPrompt?: { documentId: string; carrierName: string; product?: string | null } | null;
+  failureMessage?: string | null;
 }> {
   const persistOnly = Boolean(options?.persistOnly);
   let dealId = optionalId(formData, "dealId");
@@ -218,9 +242,9 @@ export async function persistDealSourceUploads(
     }
   }
   const uploads = await collectUploadedFiles(formData);
-  if (uploads.length === 0) return { count: 0, last: null, attempted: 0, createPolicyPrompt: null };
+  if (uploads.length === 0) return { count: 0, last: null, attempted: 0, createPolicyPrompt: null, failureMessage: null };
   if (!dealId && !contactId && !policyId && !folderId && !formData.get("library")) {
-    return { count: 0, last: null, attempted: uploads.length, createPolicyPrompt: null };
+    return { count: 0, last: null, attempted: uploads.length, createPolicyPrompt: null, failureMessage: null };
   }
   const library = String(formData.get("library") ?? "").trim() === "forms" ? "forms" : "shared";
   const fillable = String(formData.get("fillable") ?? "") === "on" || String(formData.get("fillable") ?? "") === "true";
@@ -228,6 +252,7 @@ export async function persistDealSourceUploads(
   let last = null as Awaited<ReturnType<typeof persistFile>> | null;
   let lastDeclaration = null as Awaited<ReturnType<typeof persistFile>> | null;
   let count = 0;
+  let failureMessage: string | null = null;
   for (const upload of uploads) {
     const rawType = String(
       formData.get(`docType_${upload.index}`) ?? formData.get("docType") ?? "",
@@ -265,6 +290,7 @@ export async function persistDealSourceUploads(
       });
     } catch (error) {
       console.error("[persistDealSourceUploads]", error);
+      failureMessage = failureMessage ?? messageFromUploadError(error, upload.filename);
       continue;
     }
     if (
@@ -307,7 +333,7 @@ export async function persistDealSourceUploads(
       });
     }
   }
-  return { count, last, attempted: uploads.length, createPolicyPrompt };
+  return { count, last, attempted: uploads.length, createPolicyPrompt, failureMessage };
 }
 
 export async function extractDocument(documentId: string, dealId: string) {
@@ -321,22 +347,115 @@ export async function extractDocument(documentId: string, dealId: string) {
 export async function saveDealDocuments(formData: FormData): Promise<DealDocumentsSaveResult> {
   const dealId = optionalId(formData, "dealId");
   if (!dealId) {
-    return { ok: false, count: 0, reason: "documents-save-failed" };
+    return {
+      ok: false,
+      count: 0,
+      reason: "documents-save-failed",
+      message: "This deal is missing, so the file was not saved.",
+    };
   }
   try {
-    const { count, last, attempted } = await persistDealSourceUploads(formData, { persistOnly: true });
+    const { count, last, attempted, failureMessage } = await persistDealSourceUploads(formData, { persistOnly: true });
     if (count === 0 || !last) {
       return {
         ok: false,
         count: 0,
         reason: attempted > 0 ? "documents-save-failed" : "choose-file",
+        message:
+          failureMessage ??
+          (attempted > 0
+            ? "Could not save that file. Nothing was stored."
+            : "Choose a file to upload."),
       };
     }
     revalidateDocumentPaths(last);
     return { ok: true, count };
   } catch (error) {
     console.error("[saveDealDocuments]", error);
-    return { ok: false, count: 0, reason: "documents-save-failed" };
+    return {
+      ok: false,
+      count: 0,
+      reason: "documents-save-failed",
+      message: messageFromUploadError(error, "file"),
+    };
+  }
+}
+
+export async function prepareDealBlobUpload(formData: FormData): Promise<
+  | { ok: true; pathname: string; mimeType: string; displayName: string }
+  | { ok: false; error: string }
+> {
+  const dealId = optionalId(formData, "dealId");
+  const filename = String(formData.get("filename") ?? "").trim();
+  const byteLength = Number(formData.get("byteLength") ?? 0);
+  const mimeType = String(formData.get("mimeType") ?? "");
+  if (!dealId) return { ok: false, error: "This deal is missing, so the file was not saved." };
+  const plan = planUpload({
+    filename,
+    byteLength,
+    mimeType,
+    onVercel: true,
+    directBlob: true,
+  });
+  if (!plan.ok) return { ok: false, error: plan.error };
+  const pathname = storageObjectKey(path.posix.join(DEFAULT_TENANT_ID, dealId, `${randomUUID()}-${filename}`));
+  const pathError = clientUploadPathError(pathname, dealId);
+  if (pathError) return { ok: false, error: pathError };
+  return { ok: true, pathname, mimeType: plan.mimeType, displayName: plan.displayName };
+}
+
+/** Attach a browser Blob upload onto the deal. Inserts one row. Does not delete other files. */
+export async function saveDealDocumentFromBlob(formData: FormData): Promise<DealDocumentsSaveResult> {
+  const dealId = optionalId(formData, "dealId");
+  const filename = String(formData.get("filename") ?? "").trim();
+  const storageUrl = String(formData.get("storageUrl") ?? "").trim();
+  const mimeType = String(formData.get("mimeType") ?? "");
+  const byteLength = Number(formData.get("byteLength") ?? 0);
+  const rawType = String(formData.get("docType") ?? "").trim();
+  if (!dealId) {
+    return { ok: false, count: 0, reason: "documents-save-failed", message: "This deal is missing, so the file was not saved." };
+  }
+  const plan = planUpload({ filename, byteLength, mimeType, onVercel: true, directBlob: true });
+  if (!plan.ok) {
+    return { ok: false, count: 0, reason: "documents-too-large", message: plan.error };
+  }
+  if (!isAllowedStoredUploadUrl(storageUrl, dealId)) {
+    return {
+      ok: false,
+      count: 0,
+      reason: "documents-save-failed",
+      message: `Could not attach “${displayFilename(filename)}”. The stored file is not on this deal. Nothing was saved.`,
+    };
+  }
+  let riskId = optionalId(formData, "riskId");
+  if (!riskId) {
+    const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+    riskId = risk?.id ?? null;
+  }
+  const docType =
+    rawType && rawType !== "auto" ? coerceDealUploadDocType(rawType) : coerceDealUploadDocType(inferDocType(filename, rawType));
+  const lineRaw = String(formData.get("line") ?? "").trim();
+  const lineTags = isShopLine(lineRaw) ? [lineTag(lineRaw)] : [];
+  try {
+    const doc = await persistFile({
+      dealId,
+      riskId,
+      filename,
+      mimeType: plan.mimeType,
+      existingStoragePath: storageUrl,
+      docType,
+      slot: "source_doc",
+      tags: lineTags,
+    });
+    revalidateDocumentPaths(doc);
+    return { ok: true, count: 1 };
+  } catch (error) {
+    return {
+      ok: false,
+      count: 0,
+      reason: "documents-save-failed",
+      message: messageFromUploadError(error, filename),
+    };
   }
 }
 

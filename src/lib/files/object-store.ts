@@ -1,6 +1,7 @@
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { storageObjectKey } from "@/lib/files/upload-plan";
 
 function uploadRoot(): string {
   return process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
@@ -126,7 +127,7 @@ export async function writeStoredFile(
   contentType?: string,
   options?: { durable?: boolean },
 ): Promise<string> {
-  const key = posixKey(relPath);
+  const key = storageObjectKey(posixKey(relPath));
   const requireRemote = requiresRemoteStorage(options);
   if (blobStoreReady()) {
     try {

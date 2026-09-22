@@ -99,7 +99,7 @@ describe("quote docs vs documents source docs", () => {
   it("Documents panel filters with isDocumentsSourceDoc; Quotes uses the same folder buckets as the mint gate", () => {
     const docsPanel = source("src/components/deal/documents-panel.tsx");
     expect(docsPanel).toContain("listWorksheetSourceDocs");
-    expect(source("src/lib/documents/deal-docs-save.ts")).toContain("isDocumentsSourceDoc");
+    expect(source("src/lib/documents/deal-docs-save.ts")).toMatch(/return isDocumentsSourceDoc\(/);
     expect(docsPanel).not.toContain('d.slot !== "quote_pdf" && d.slot !== "policy_file"');
 
     const quotesPanel = source("src/components/deal/quotes-panel.tsx");
@@ -114,8 +114,9 @@ describe("quote docs vs documents source docs", () => {
 
     const upload = source("src/app/actions/quote-files.ts");
     expect(upload).toContain('slot: "quote_file"');
-    expect(upload).toContain("source:agency");
+    expect(upload).toContain("agencyQuoteTags");
     expect(upload).toContain('docType: "agency_quote"');
+    expect(source("src/lib/files/upload-plan.ts")).toContain('"source:agency"');
 
     const fill = source("src/app/actions/quote-sheet.ts");
     expect(fill).toContain("isQuoteFileDoc(doc)");

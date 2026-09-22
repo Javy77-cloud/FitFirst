@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveDealDocuments } from "@/app/actions/documents";
+import { prepareDealBlobUpload, saveDealDocumentFromBlob, saveDealDocuments } from "@/app/actions/documents";
+import { messageFromUploadError, planUpload } from "@/lib/files/upload-plan";
 import { ChooseFileButton } from "@/components/choose-file-button";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,6 @@ import {
   DEAL_WORKSHEET_SOURCE_DOC_TYPES,
   SOURCE_DOC_ACCEPT,
 } from "@/lib/deals/source-doc-types";
-import { DEAL_DOCUMENTS_BODY_LIMIT_BYTES } from "@/lib/documents/deal-docs-save";
 import {
   filledDocTypesForLine,
   initialDocSlot,
@@ -41,6 +41,7 @@ export function SourceDocsUpload({
   quotesDone = false,
   savedDocs = [],
   packageProducts = [],
+  uploadMode = { onVercel: false, directBlob: false },
 }: {
   dealId: string;
   riskId: string;
@@ -53,6 +54,7 @@ export function SourceDocsUpload({
   quotesDone?: boolean;
   savedDocs?: readonly DocSlotDoc[];
   packageProducts?: readonly DocSlotProduct[];
+  uploadMode?: { onVercel: boolean; directBlob: boolean };
 }) {
   const router = useRouter();
   const slots = requiredDocSlots({ product, quotingForm, shopLine: line });
@@ -61,6 +63,7 @@ export function SourceDocsUpload({
   const [activeSlot, setActiveSlot] = useState(startingSlot);
   const [rows, setRows] = useState<UploadDocRow[]>([emptyUploadRow(0, startingSlot)]);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function selectSlot(docType: string) {
     setActiveSlot(docType);
@@ -93,42 +96,82 @@ export function SourceDocsUpload({
       flashAction("choose-file", "error");
       return;
     }
-    if (pending.some((row) => row.file.size > DEAL_DOCUMENTS_BODY_LIMIT_BYTES)) {
-      flashAction("documents-too-large", "error");
-      return;
+    for (const row of pending) {
+      const plan = planUpload({
+        filename: row.file.name,
+        byteLength: row.file.size,
+        mimeType: row.file.type,
+        onVercel: uploadMode.onVercel,
+        directBlob: uploadMode.directBlob,
+      });
+      if (!plan.ok) {
+        setError(plan.error);
+        return;
+      }
     }
+    setError(null);
     setSaving(true);
     try {
       let saved = 0;
-      let lastReason: "choose-file" | "documents-save-failed" | undefined;
+      let lastMessage: string | undefined;
       for (const row of pending) {
-        const formData = buildDealDocumentRowForm({
-          dealId,
-          riskId,
-          line,
-          docType: row.docType,
-          file: row.file,
+        const plan = planUpload({
+          filename: row.file.name,
+          byteLength: row.file.size,
+          mimeType: row.file.type,
+          onVercel: uploadMode.onVercel,
+          directBlob: uploadMode.directBlob,
         });
         try {
-          const result = await saveDealDocuments(formData);
-          if (result.ok) saved += result.count;
-          else lastReason = result.reason;
-        } catch (error) {
-          console.error("[SourceDocsUpload]", error);
-          lastReason = "documents-save-failed";
+          if (plan.ok && plan.via === "blob-client") {
+            const prep = new FormData();
+            prep.set("dealId", dealId);
+            prep.set("filename", row.file.name);
+            prep.set("byteLength", String(row.file.size));
+            prep.set("mimeType", row.file.type);
+            const prepared = await prepareDealBlobUpload(prep);
+            if (!prepared.ok) {
+              lastMessage = prepared.error;
+              continue;
+            }
+            const { uploadBytesToBlob } = await import("@/lib/files/direct-upload-client");
+            const blob = await uploadBytesToBlob({
+              pathname: prepared.pathname,
+              file: row.file,
+              contentType: prepared.mimeType,
+              dealId,
+            });
+            const commit = new FormData();
+            commit.set("dealId", dealId);
+            commit.set("riskId", riskId);
+            if (line) commit.set("line", line);
+            commit.set("docType", row.docType);
+            commit.set("filename", row.file.name);
+            commit.set("byteLength", String(row.file.size));
+            commit.set("mimeType", prepared.mimeType);
+            commit.set("storageUrl", blob.url);
+            const result = await saveDealDocumentFromBlob(commit);
+            if (result.ok) saved += result.count;
+            else lastMessage = result.message;
+          } else {
+            const formData = buildDealDocumentRowForm({
+              dealId,
+              riskId,
+              line,
+              docType: row.docType,
+              file: row.file,
+            });
+            const result = await saveDealDocuments(formData);
+            if (result.ok) saved += result.count;
+            else lastMessage = result.message;
+          }
+        } catch (saveError) {
+          console.error("[SourceDocsUpload]", saveError);
+          lastMessage = messageFromUploadError(saveError, row.file.name);
         }
       }
-      const activeLabel = slots.find((slot) => slot.docType === activeSlot)?.label ?? null;
-      if (saved === 0 || lastReason) {
-        const stay = planDocSaveAdvance({
-          ok: false,
-          reason: lastReason ?? "documents-save-failed",
-          slotLabel: activeLabel,
-          slots,
-          filledDocTypes: filled,
-          dealId,
-        });
-        flashAction(stay.action === "stay" ? stay.error : "documents-save-failed", "error");
+      if (saved === 0 || lastMessage) {
+        setError(lastMessage ?? "Could not save that file. Nothing was stored.");
         if (saved > 0) router.refresh();
         return;
       }
@@ -147,17 +190,19 @@ export function SourceDocsUpload({
         docs: savedDocs,
       });
       if (plan.action === "stay") {
-        flashAction(plan.error, "error");
+        setError(plan.error);
         return;
       }
       if (plan.action === "slot") {
         setActiveSlot(plan.docType);
         setRows([emptyUploadRow(0, plan.docType)]);
+        setError(null);
         flashAction("documents-saved");
         router.replace(plan.href);
         router.refresh();
         return;
       }
+      setError(null);
       flashAction(plan.toast);
       router.push(plan.href);
     } finally {
@@ -176,6 +221,11 @@ export function SourceDocsUpload({
       {line ? <input type="hidden" name="line" value={line} /> : null}
       <input type="hidden" name="rowCount" value={rows.length} />
       <DocSlotTabList slots={slots} active={activeSlot} filled={filled} onSelect={selectSlot} />
+      {error ? (
+        <p className="text-sm text-destructive" role="alert" data-ff-doc-save-error="">
+          {error}
+        </p>
+      ) : null}
       <p className="text-helper text-muted-foreground" data-ff-source-doc-type-hint="">
         Set the type to match the page — Date inspected only fills from a <span className="font-medium text-navy">4-point</span> (not Declaration).
       </p>
