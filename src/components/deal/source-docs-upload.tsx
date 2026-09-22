@@ -6,11 +6,20 @@ import { saveDealDocuments } from "@/app/actions/documents";
 import { ChooseFileButton } from "@/components/choose-file-button";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { Button } from "@/components/ui/button";
+import { DocSlotTabList } from "@/components/deal/doc-slot-tab-list";
 import {
   DEAL_WORKSHEET_SOURCE_DOC_TYPES,
   SOURCE_DOC_ACCEPT,
 } from "@/lib/deals/source-doc-types";
 import { DEAL_DOCUMENTS_BODY_LIMIT_BYTES } from "@/lib/documents/deal-docs-save";
+import {
+  filledDocTypesForLine,
+  initialDocSlot,
+  planDocSaveAdvance,
+  requiredDocSlots,
+  type DocSlotDoc,
+  type DocSlotProduct,
+} from "@/lib/documents/doc-slot-advance";
 import { flashAction } from "@/lib/flash-client";
 import {
   applyPickedFilesToRows,
@@ -24,14 +33,39 @@ export function SourceDocsUpload({
   dealId,
   riskId,
   line,
+  product,
+  quotingForm,
+  surface = "documents",
+  docSlot,
+  marketsDone = false,
+  quotesDone = false,
+  savedDocs = [],
+  packageProducts = [],
 }: {
   dealId: string;
   riskId: string;
   line?: string | null;
+  product?: string | null;
+  quotingForm?: string | null;
+  surface?: "documents" | "quotes";
+  docSlot?: string | null;
+  marketsDone?: boolean;
+  quotesDone?: boolean;
+  savedDocs?: readonly DocSlotDoc[];
+  packageProducts?: readonly DocSlotProduct[];
 }) {
   const router = useRouter();
-  const [rows, setRows] = useState<UploadDocRow[]>([emptyUploadRow(0)]);
+  const slots = requiredDocSlots({ product, quotingForm, shopLine: line });
+  const filled = filledDocTypesForLine(savedDocs, line);
+  const startingSlot = initialDocSlot(slots, filled, docSlot);
+  const [activeSlot, setActiveSlot] = useState(startingSlot);
+  const [rows, setRows] = useState<UploadDocRow[]>([emptyUploadRow(0, startingSlot)]);
   const [saving, setSaving] = useState(false);
+
+  function selectSlot(docType: string) {
+    setActiveSlot(docType);
+    setRows((current) => current.map((row) => (row.file ? row : { ...row, docType })));
+  }
 
   function applyFiles(rowId: number, files: File[]) {
     setRows((current) => applyPickedFilesToRows(current, rowId, files));
@@ -84,13 +118,48 @@ export function SourceDocsUpload({
           lastReason = "documents-save-failed";
         }
       }
-      if (saved === 0) {
-        flashAction(lastReason ?? "documents-save-failed", "error");
+      const activeLabel = slots.find((slot) => slot.docType === activeSlot)?.label ?? null;
+      if (saved === 0 || lastReason) {
+        const stay = planDocSaveAdvance({
+          ok: false,
+          reason: lastReason ?? "documents-save-failed",
+          slotLabel: activeLabel,
+          slots,
+          filledDocTypes: filled,
+          dealId,
+        });
+        flashAction(stay.action === "stay" ? stay.error : "documents-save-failed", "error");
+        if (saved > 0) router.refresh();
         return;
       }
-      flashAction("documents-saved");
-      setRows([emptyUploadRow(0)]);
-      router.refresh();
+      const plan = planDocSaveAdvance({
+        ok: true,
+        savedDocTypes: pending.map((row) => row.docType),
+        slots,
+        filledDocTypes: filled,
+        dealId,
+        line,
+        product,
+        surface,
+        marketsDone,
+        quotesDone,
+        packageProducts,
+        docs: savedDocs,
+      });
+      if (plan.action === "stay") {
+        flashAction(plan.error, "error");
+        return;
+      }
+      if (plan.action === "slot") {
+        setActiveSlot(plan.docType);
+        setRows([emptyUploadRow(0, plan.docType)]);
+        flashAction("documents-saved");
+        router.replace(plan.href);
+        router.refresh();
+        return;
+      }
+      flashAction(plan.toast);
+      router.push(plan.href);
     } finally {
       setSaving(false);
     }
@@ -106,6 +175,7 @@ export function SourceDocsUpload({
       <input type="hidden" name="riskId" value={riskId} />
       {line ? <input type="hidden" name="line" value={line} /> : null}
       <input type="hidden" name="rowCount" value={rows.length} />
+      <DocSlotTabList slots={slots} active={activeSlot} filled={filled} onSelect={selectSlot} />
       <p className="text-helper text-muted-foreground" data-ff-source-doc-type-hint="">
         Set the type to match the page — Date inspected only fills from a <span className="font-medium text-navy">4-point</span> (not Declaration).
       </p>
@@ -114,7 +184,11 @@ export function SourceDocsUpload({
           <select
             name={`docType_${index}`}
             value={row.docType}
-            onChange={(event) => patchRow(row.id, { docType: event.target.value })}
+            onChange={(event) => {
+              const docType = event.target.value;
+              patchRow(row.id, { docType });
+              if (slots.some((slot) => slot.docType === docType)) setActiveSlot(docType);
+            }}
             aria-label="Doc type"
             className="h-8 w-[10rem] shrink-0 rounded-md border border-input bg-card px-2 text-sm"
           >

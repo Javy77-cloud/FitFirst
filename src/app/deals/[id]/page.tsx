@@ -3,6 +3,7 @@ import { ensureQuoteSheet } from "@/app/actions/quote-sheet";
 import { AppShell } from "@/components/app-shell";
 import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
+import { SourceDocsUpload } from "@/components/deal/source-docs-upload";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import { LifeHealthQuotesPanel } from "@/components/deal/life-health-quotes-panel";
@@ -85,6 +86,7 @@ import {
   parseProductStages,
   productChipBound,
   productStageFor,
+  productChipLabel,
   productStampStage,
   sheetFormForProduct,
   stripStaleCamirandProductNotices,
@@ -164,12 +166,13 @@ export default async function DealPage({
     issue?: string;
     createPolicy?: string;
     doc?: string;
+    docSlot?: string;
     carrier?: string;
     qc?: string;
   }>;
 }) {
   const { id } = await params;
-  const { tab, field, line: lineParam, product, notice, fromPolicy, issue, createPolicy, doc, carrier, qc } =
+  const { tab, field, line: lineParam, product, notice, fromPolicy, issue, createPolicy, doc, docSlot, carrier, qc } =
     await searchParams;
   const focusField = parseSheetFieldParam(field);
   if (id === ROSA_DEC_DEAL_ID) {
@@ -510,6 +513,31 @@ export default async function DealPage({
   const noticeStampVisible = isRenderableNoticeStamp(noticeProps.noticeType);
   const titleForm =
     sheetFormForProduct(activeProduct, lineForm) ?? dealProductDef(activeProduct).quotingForm;
+  const docSlotProducts = dealProducts.map((id) => {
+    const productLine = sheetLineForProduct(id);
+    const sheet = sheets.find((row) => row.line === productLine);
+    const fromSheet =
+      quotingFormFromSheet(sheet?.values) ??
+      resolveLineQuotingForm({
+        sheetValues: sheet?.values,
+        sheetLine: productLine ?? sheetLine,
+        dealQuotingForm: deal.quotingForm,
+        dealQuotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
+        dealLineOfBusiness: deal.lineOfBusiness,
+      });
+    const form = sheetFormForProduct(id, fromSheet) ?? dealProductDef(id).quotingForm;
+    return {
+      id,
+      label: productChipLabel({ product: id, quotingForm: form }),
+      shopLine: productLine,
+      quotingForm: form,
+    };
+  });
+  const savedSourceDocs = docs.map((row) => ({
+    docType: row.docType,
+    slot: row.slot,
+    tags: Array.isArray(row.tags) ? row.tags : [],
+  }));
   const visibleDealTitle = dealTitleForActiveProduct({
     title: deal.title,
     product: activeProduct,
@@ -581,6 +609,28 @@ export default async function DealPage({
           thin: true,
           requestedProductType: requestedLifeProductType,
         };
+  const quoteRequiredDocs = risk ? (
+    <section className="ff-card mb-3 p-3" data-ff-quote-doc-slots="">
+      <h3 className="mb-1 text-sm font-semibold text-navy">Required documents</h3>
+      <p className="mb-2 text-helper text-muted-foreground">
+        Save one required file and the next empty slot opens. The last one goes to the next task.
+      </p>
+      <SourceDocsUpload
+        dealId={deal.id}
+        riskId={risk.id}
+        line={sheetLine}
+        product={activeProduct}
+        quotingForm={titleForm}
+        surface="quotes"
+        docSlot={docSlot}
+        marketsDone={flowCompletion.isComplete("markets")}
+        quotesDone={flowCompletion.isComplete("quotes")}
+        savedDocs={savedSourceDocs}
+        packageProducts={docSlotProducts}
+      />
+    </section>
+  ) : null;
+
   return (
     <AppShell
       title="Deals"
@@ -933,6 +983,11 @@ export default async function DealPage({
                         needsReapprove={needsVisualReapprove}
                         hasRequestedQuotes={hasRequestedQuotes}
                         productId={activeProduct}
+                        quotingForm={titleForm}
+                        docSlot={docSlot}
+                        marketsDone={flowCompletion.isComplete("markets")}
+                        quotesDone={flowCompletion.isComplete("quotes")}
+                        packageProducts={docSlotProducts}
                         healthSherpa={{
                           medicareReady: Boolean(hsMedicare.configured),
                           acaReady: Boolean(hsAca.configured),
@@ -974,6 +1029,8 @@ export default async function DealPage({
                         )}
                       </div>
                     ) : lifeHealthLine ? (
+                      <>
+                      {quoteRequiredDocs}
                       <LifeHealthQuotesPanel
                         dealId={deal.id}
                         quotes={lineQuotes}
@@ -1020,7 +1077,10 @@ export default async function DealPage({
                             : null
                         }
                       />
+                      </>
                     ) : (
+                      <>
+                      {quoteRequiredDocs}
                       <QuotesPanel
                         dealId={deal.id}
                         quotes={lineQuotes}
@@ -1073,6 +1133,7 @@ export default async function DealPage({
                         })()}
                         autoIssue={issue === "1"}
                       />
+                      </>
                     )}
                   </div>
             ),
