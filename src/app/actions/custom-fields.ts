@@ -370,7 +370,7 @@ export async function saveDealFieldValues(formData: FormData) {
     await applySystemDealValues(dealId, system);
   }
   await syncDealDobOntoBlankContact(dealId, custom.date_of_birth || custom.applicant_dob);
-  await persistDealWorkTab(dealId, "details").catch(() => null);
+  await persistDealWorkTab(dealId, "documents").catch(() => null);
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/deals");
   revalidatePath("/pipeline");

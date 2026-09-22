@@ -168,7 +168,7 @@ describe("Deal Details tab", () => {
     expect(save).toMatch(/picklist_8mus/);
     expect(save).toMatch(/dealDetailsSavedHref/);
     expect(save).toMatch(/"deal-details-saved"/);
-    expect(save).toMatch(/persistDealWorkTab\(dealId, "details"\)/);
+    expect(save).toMatch(/persistDealWorkTab\(dealId, "documents"\)/);
     expect(save).toMatch(/canonicalizeIdentityField/);
     const panel = source("src/components/custom-fields/deal-details-panel.tsx");
     expect(panel).toMatch(/data-ff-deal-details-form/);
