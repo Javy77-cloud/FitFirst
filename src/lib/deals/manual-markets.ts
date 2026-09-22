@@ -49,8 +49,10 @@ export function hasExplicitMarketAction(
 }
 
 /**
- * Full in-appetite matcher paint only after Confirm & request quotes / shop.
- * Manual "Add carrier" alone must NOT reopen the whole appetite list.
+ * True after Confirm & request quotes / shop.
+ * Manual "Add carrier" and a curated shop-list load do not count — those overlay
+ * carriers. A filled sheet can paint appetite without this flag, and must not
+ * request quotes by itself.
  */
 export function hasShopMarketAction(
   logs: { why?: string | null }[] = [],
@@ -111,8 +113,9 @@ export function marketBucketLabel(bucket: MarketBucket): string {
 }
 
 /**
- * Markets paint only after an explicit shop or add on this deal.
- * Leftover evaluateDeal matches, filled sheets, and seed quote logs do not count.
+ * Markets paint when a filled sheet has matcher rows, or after an explicit shop / add.
+ * An empty sheet, leftover matches without sheet facts, and seed quote logs do not count.
+ * Zero matcher rows (no rules) stays empty even if the sheet is filled.
  */
 export function hasMarketLookupData(
   matches: { carrierId: string }[],
@@ -120,9 +123,9 @@ export function hasMarketLookupData(
   explicitLookup = false,
   sheetHasValues = false,
 ): boolean {
-  void sheetHasValues;
   if (manualIds.length > 0) return true;
-  return explicitLookup && matches.length > 0;
+  if (matches.length === 0) return false;
+  return explicitLookup || sheetHasValues;
 }
 
 const SHEET_LOOKUP_IGNORE = new Set(["sheet_product"]);

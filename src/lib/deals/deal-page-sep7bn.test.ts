@@ -25,27 +25,30 @@ const leftoverMatch = {
   shoppable: true,
 };
 
-describe("sep7bn Markets start from scratch on every deal", () => {
-  it("BN1 — page load never auto-evaluates leftover sheet / logs / quotes", () => {
+describe("sep7bn Markets paint from a filled sheet without a shop", () => {
+  it("BN1 — a filled sheet evaluates appetite; leftover logs are not a shop and do not request quotes", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/hasShopMarketAction|hasExplicitMarketAction/);
     expect(page).toMatch(/evaluateDealMarkets\(risk, activeSheet\.values/);
-    expect(page).toMatch(/shopMarketsAction \|\| shopListIds/);
+    expect(page).toMatch(/sheetReady \|\| shopMarketsAction \|\| shopListIds\.length > 0/);
     expect(page).not.toMatch(/sheetReady \? await evaluateDealMarkets/);
     expect(page).not.toMatch(/const matches = risk \? await evaluateDealMarkets\(risk\)/);
     expect(page).not.toMatch(/explicitLookup=\{sheetReady && logs\.length > 0\}/);
     expect(page).toMatch(/explicitLookup=\{shopMarketsAction\}/);
-    expect(page).toMatch(/matches=\{shopMarketsAction \? matches : listedMatches\}/);
+    expect(page).toMatch(/sheetHasValues=\{sheetReady\}/);
+    expect(page).toMatch(/matches=\{sheetReady \|\| shopMarketsAction \? matches : listedMatches\}/);
+    expect(page).not.toMatch(/requestAppetiteQuotesAction/);
     expect(page).not.toMatch(/localStorage/);
     expect(page).not.toMatch(/sessionStorage/);
     expect(hasExplicitMarketAction([{ why: "roof age" }], [{ notes: "Stub quote." }])).toBe(false);
-    expect(hasMarketLookupData([leftoverMatch], [], false, true)).toBe(false);
+    expect(hasMarketLookupData([leftoverMatch], [], false, true)).toBe(true);
+    expect(hasMarketLookupData([leftoverMatch], [], false, false)).toBe(false);
     expect(manualCarrierIdsFromLogs([{ carrierId: "c1", why: "[manual] leftover seed" }])).toEqual(
       [],
     );
   });
 
-  it("BN2 — leftover evaluateDeal matches + filled sheet stay empty (zeros + add, no rows)", () => {
+  it("BN2 — filled sheet paints appetite bands without shop-list rows or quote logs", () => {
     const html = renderToString(
       createElement(MarketsPanel, {
         dealId: "deal-ana-or-any",
@@ -56,13 +59,12 @@ describe("sep7bn Markets start from scratch on every deal", () => {
         carriers: [{ id: "c1", name: "Home Co", writtenLines: ["HO"] }],
       }),
     );
-    expect(html).toMatch(/data-ff-markets-empty/);
-    expect(html).toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
-    expect(html).toMatch(/Add carrier manually/);
-    expect(html).not.toMatch(/In appetite/);
-    expect(html).not.toMatch(/Request Quotes/);
-    // Home Co may appear in the manual-add select; it must not paint as a shopped row.
-    expect(html).not.toMatch(/data-ff-markets-select|MarketsSelectTable/);
+    expect(html).toMatch(/In appetite/);
+    expect(html).toMatch(/Home Co/);
+    expect(html).toMatch(/Request Quotes/);
+    expect(html).toMatch(/data-ff-load-home-shop-list|Add carrier manually/);
+    expect(html).not.toMatch(/data-ff-markets-empty/);
+    expect(html).not.toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
   });
 
   it("BN3 — leftover quote logs are not a shop; explicit shop/add paints that deal only", () => {

@@ -87,9 +87,8 @@ export function MarketsPanel({
       ) === "skip",
   );
   const appointed = rows.filter((row) => isAppointedMatch(row)).length;
-  const displayMatches = explicitLookup || manual.size > 0 ? matchList : [];
   const hasData = hasMarketLookupData(
-    displayMatches,
+    matchList,
     asList(manualIds),
     explicitLookup,
     sheetHasValues,
@@ -112,8 +111,9 @@ export function MarketsPanel({
             0 in appetite · 0 stretch · 0 skip · 0 appointed
           </p>
           <p className="text-sm text-muted-foreground">
-            No carriers on this deal yet. Load a shop list or add carriers below,
-            then request quotes — or confirm the sheet to unlock shopping.
+            {sheetHasValues
+              ? "No carriers matched this sheet. Load a shop list or add carriers below."
+              : "No carriers on this deal yet. Load a shop list or add carriers below, then request quotes — or confirm the sheet to unlock shopping."}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <LoadShopListButton dealId={dealId} dealLine={dealLine} />
