@@ -51,6 +51,11 @@ describe("command-card book lists", () => {
     expect(source("src/components/book-lists/book-lenses.tsx")).toMatch(/data-ff-book-layout="bands"/);
     expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/data-ff-policy-stack-card/);
     expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/data-ff-book-center/);
+    expect(source("src/app/globals.css")).toMatch(
+      /\.ff-party-center,\s*\.ff-carrier-center,\s*\.ff-policy-center \{[^}]*justify-content:\s*space-evenly/,
+    );
+    expect(source("src/app/globals.css")).toMatch(/\.ff-deal-host-center \{[^}]*justify-content:\s*space-evenly/);
+    expect(source("src/components/deals/deal-host-face.tsx")).toMatch(/data-ff-deal-center/);
     expect(page).not.toMatch(/Policy attention/);
     expect(page).not.toMatch(/StandardActivityShell/);
     expect(page).not.toMatch(/DeskColumnTable/);
