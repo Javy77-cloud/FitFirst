@@ -14,7 +14,6 @@ import {
   ActivityGlyph,
   LeadActivitySwitch,
 } from "@/components/desk/standard-activity-panel";
-import { LeadsHostList } from "@/components/leads/leads-host-list";
 import { LeadsPriorityStack } from "@/components/leads/leads-priority-stack";
 import { ACTIVITY_RAIL_ASIDE_CLASS, ACTIVITY_RAIL_COLUMNS, ACTIVITY_RAIL_LOCK } from "@/lib/desk/activity-rail";
 import { LeadsSourceBanner } from "@/components/leads/leads-source-banner";
@@ -251,8 +250,8 @@ export default async function LeadsPage({
             <LeadsSourceBanner sources={rows.map((lead) => lead.source)} />
             <LeadMotivation stats={motivation} />
             <p className="ff-leads-desk-note">
-              Stack is the desk. Queue is the work sheet. List is columns. The Activity board on the
-              right is the same panel as a contact.
+              Stack is the desk. Queue is the work sheet. The Activity board on the right is the same
+              panel as a contact.
             </p>
           </div>
           <LeadsQueueToolbar
@@ -299,9 +298,6 @@ export default async function LeadsPage({
           </div>
           {view === "stack" ? (
             <LeadsPriorityStack records={desk} templates={templates} initialQuery={q} />
-          ) : null}
-          {view === "list" ? (
-            <LeadsHostList records={desk} templates={templates} initialQuery={q} />
           ) : null}
           {view === "queue" ? (
           <ModuleListActions

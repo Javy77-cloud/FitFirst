@@ -12,14 +12,13 @@ import {
   type LeadTemperature,
 } from "@/lib/leads/queue";
 
-/** Stack is the desk. Queue keeps the work sheet. List is the rearrangeable column view. */
-export const LEADS_VIEWS = ["stack", "queue", "list"] as const;
+/** Stack is the desk. Queue is the work sheet. */
+export const LEADS_VIEWS = ["stack", "queue"] as const;
 export type LeadsViewId = (typeof LEADS_VIEWS)[number];
 
 export const LEADS_VIEW_OPTIONS: Array<[LeadsViewId, string]> = [
   ["stack", "Stack"],
   ["queue", "Queue"],
-  ["list", "List"],
 ];
 
 const PRESERVE_PARAMS = ["status", "cadence", "source", "temperature", "q", "rail", "saved", "qc"] as const;
@@ -34,8 +33,9 @@ export const LEAD_POLICY_FORM_KEYS = [
 ] as const;
 
 export function parseLeadsView(raw?: string | null): LeadsViewId {
-  if (raw === "stack" || raw === "queue" || raw === "list") return raw;
-  if (raw === "table" || raw === "grid") return "list";
+  if (raw === "stack" || raw === "queue") return raw;
+  // Legacy List / table / grid bookmarks land on Queue (the work sheet).
+  if (raw === "list" || raw === "table" || raw === "grid") return "queue";
   return "stack";
 }
 

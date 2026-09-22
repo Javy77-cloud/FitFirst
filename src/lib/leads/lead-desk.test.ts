@@ -18,23 +18,28 @@ function source(file: string) {
   return readFileSync(file, "utf8");
 }
 
-describe("leads stack + list desk", () => {
-  it("defaults to Stack and keeps List as the third view", () => {
+describe("leads stack + queue desk", () => {
+  it("defaults to Stack and maps legacy List bookmarks to Queue", () => {
     expect(parseLeadsView(undefined)).toBe("stack");
     expect(parseLeadsView("stack")).toBe("stack");
     expect(parseLeadsView("queue")).toBe("queue");
-    expect(parseLeadsView("list")).toBe("list");
-    expect(parseLeadsView("table")).toBe("list");
+    expect(parseLeadsView("list")).toBe("queue");
+    expect(parseLeadsView("table")).toBe("queue");
+    expect(parseLeadsView("grid")).toBe("queue");
     expect(leadsDeskHref("stack", { status: "in_progress" })).toBe("/leads?status=in_progress");
-    expect(leadsDeskHref("list", { q: "Jenny" })).toBe("/leads?q=Jenny&view=list");
-    expect(source("src/components/leads/leads-view-switch.tsx")).toMatch(/Stack Queue List/);
-    expect(source("src/components/leads/leads-view-switch.tsx")).toMatch(/\["list", "List"\]|LEADS_VIEW_OPTIONS/);
+    expect(leadsDeskHref("queue", { q: "Jenny" })).toBe("/leads?q=Jenny&view=queue");
+    expect(source("src/components/leads/leads-view-switch.tsx")).toMatch(/Stack Queue/);
+    expect(source("src/components/leads/leads-view-switch.tsx")).not.toMatch(/Stack Queue List/);
+    expect(source("src/components/leads/leads-view-switch.tsx")).toMatch(/LEADS_VIEW_OPTIONS/);
+    expect(source("src/lib/leads/lead-desk.ts")).not.toMatch(/\["list", "List"\]/);
     expect(source("src/app/leads/page.tsx")).toMatch(/parseLeadsView/);
     expect(source("src/app/leads/page.tsx")).toMatch(/LeadsPriorityStack/);
-    expect(source("src/app/leads/page.tsx")).toMatch(/LeadsHostList/);
+    expect(source("src/app/leads/page.tsx")).not.toMatch(/LeadsHostList/);
+    expect(source("src/app/leads/page.tsx")).toMatch(/Stack is the desk\. Queue is the work sheet\./);
+    expect(source("src/app/leads/page.tsx")).not.toMatch(/List is columns/);
   });
 
-  it("shows policy form and LOB on the list when the lead layout has them", () => {
+  it("shows policy form and LOB on the queue when the lead layout has them", () => {
     expect(leadPolicyFormLabel({ insurance_subtype: "HO3" })).toBe("HO3");
     expect(leadPolicyFormLabel({ insurance_subtype: "", picklist: "DP3" })).toBe("DP3");
     expect(leadPolicyFormLabel({ quoting_form: "HO6" })).toBe("HO6");
@@ -74,8 +79,6 @@ describe("leads stack + list desk", () => {
     expect(source("src/app/leads/page.tsx")).toMatch(/leadLayoutDisplayValue/);
     expect(source("src/app/leads/page.tsx")).toMatch(/data-ff-lead-policy-form/);
     expect(source("src/app/leads/page.tsx")).toMatch(/pinVisibleIds/);
-    expect(source("src/components/leads/leads-host-list.tsx")).toMatch(/Policy form/);
-    expect(source("src/components/leads/leads-host-list.tsx")).toMatch(/data-ff-lead-policy-form/);
     expect(source("src/components/leads/leads-priority-stack.tsx")).toMatch(/data-ff-lead-policy-form/);
   });
 
@@ -124,8 +127,8 @@ describe("leads stack + list desk", () => {
     expect(stack).toMatch(/data-ff-lead-card-edits/);
     expect(stack).toMatch(/ff-heat-/);
     expect(source("src/app/globals.css")).toMatch(/\.ff-heat-warm/);
-    expect(source("src/components/leads/leads-host-list.tsx")).toMatch(/LeadCadenceSelect/);
-    expect(source("src/components/leads/leads-host-list.tsx")).toMatch(/data-ff-leads-host-list/);
+    expect(source("src/app/leads/page.tsx")).toMatch(/LeadCadenceSelect/);
+    expect(source("src/app/leads/page.tsx")).toMatch(/DeskColumnTable/);
     expect(source("src/components/lists/column-table.tsx")).toMatch(/ColumnsMenu|reorderVisibleColumns/);
   });
 });
