@@ -24,6 +24,8 @@ import {
   canonicalBlobStoreId,
   privateBlobUrlForToken,
   readbackFailureMessage,
+  describeBodyPrefix,
+  getLastReadbackDiag,
 } from "./object-store";
 import { CASTELLANOS_WIND_MIT_FILENAME } from "./upload-plan";
 
@@ -266,6 +268,9 @@ describe("private blob read hardening (source)", () => {
     expect(src).toMatch(/READBACK_RETRY_DELAYS_MS/);
     expect(src).toMatch(/store_mismatch/);
     expect(src).toMatch(/downloadUrl/);
+    expect(src).toMatch(/describeBodyPrefix/);
+    expect(src).toMatch(/expectPdf/);
+    expect(src).toMatch(/startsWith <!DOCTYPE/);
   });
 });
 
@@ -449,5 +454,183 @@ describe("RW token put/get alignment (mocked @vercel/blob)", () => {
     expect(message).not.toMatch(/Recreate BLOB_READ_WRITE_TOKEN/);
     expect(message).not.toContain("testsecret");
     expect(message).not.toContain(MIXED_TOKEN);
+  });
+});
+
+
+describe("describeBodyPrefix", () => {
+  it("labels PDF magic, HTML, JSON, and XML without leaking body text", () => {
+    expect(describeBodyPrefix(Buffer.from("%PDF-1.4 hello"))).toBe("startsWith %PDF");
+    expect(describeBodyPrefix(Buffer.from("<!DOCTYPE html><html>"))).toBe("startsWith <!DOCTYPE");
+    expect(describeBodyPrefix(Buffer.from('{"error":"nope"}'))).toBe("startsWith {");
+    expect(describeBodyPrefix(Buffer.from('<?xml version="1.0"?>'))).toBe("startsWith <?xml");
+    expect(describeBodyPrefix(Buffer.from("not a document"))).toBe("non-PDF text");
+  });
+});
+
+describe("non-PDF / HTML body read-back (mocked)", () => {
+  const RW_TOKEN = "vercel_blob_rw_zsetpgqienornflj_testsecret";
+  const PUT_URL = "https://zsetpgqienornflj.private.blob.vercel-storage.com/tenant/deal/doc.pdf";
+  const DOWNLOAD_URL = `${PUT_URL}?download=1`;
+  const PDF = Buffer.from("%PDF-1.4 mock-bytes");
+  const HTML = Buffer.from("<!DOCTYPE html><html><body>login</body></html>");
+  const JSON_ERR = Buffer.from('{"error":"Unauthorized","code":"unauthorized"}');
+
+  beforeEach(() => {
+    process.env.BLOB_READ_WRITE_TOKEN = RW_TOKEN;
+    delete process.env.BLOB_STORE_ID;
+    process.env.VERCEL = "1";
+    delete process.env.FF_LOCAL_DURABLE_UPLOADS;
+  });
+
+  it("HTML body fails that strategy and tries next; PDF magic via presign passes", async () => {
+    const put = vi.fn(async () => ({
+      url: PUT_URL,
+      downloadUrl: DOWNLOAD_URL,
+      pathname: "tenant/deal/doc.pdf",
+      contentType: "application/pdf",
+      contentDisposition: "",
+      etag: "etag",
+    }));
+    const del = vi.fn(async () => undefined);
+    const get = vi.fn(async () => null);
+    const issueSignedToken = vi.fn(async () => ({
+      clientSigningToken: "client-sign",
+      delegationToken: "deleg-sign",
+    }));
+    const PRESIGNED =
+      "https://zsetpgqienornflj.private.blob.vercel-storage.com/tenant/deal/doc.pdf?X-Amz-Signature=abc";
+    const presignUrl = vi.fn(async () => ({ presignedUrl: PRESIGNED }));
+    vi.doMock("@vercel/blob", () => ({
+      put,
+      get,
+      del,
+      list: vi.fn(),
+      issueSignedToken,
+      presignUrl,
+    }));
+
+    let htmlHits = 0;
+    let presignHits = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("X-Amz-Signature")) {
+          presignHits += 1;
+          expect(init?.headers && (init.headers as Record<string, string>).Authorization).toBeFalsy();
+          return new Response(PDF, {
+            status: 200,
+            headers: { "content-type": "application/pdf" },
+          });
+        }
+        htmlHits += 1;
+        return new Response(HTML, {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        });
+      }),
+    );
+
+    const { writeStoredFile: writeFresh } = await import("./object-store");
+    const url = await writeFresh("tenant/deal/doc.pdf", PDF, "application/pdf", { durable: true });
+    expect(url).toBe(PUT_URL);
+    expect(htmlHits).toBeGreaterThan(0);
+    expect(presignHits).toBeGreaterThan(0);
+    expect(issueSignedToken).toHaveBeenCalled();
+    expect(put).toHaveBeenCalled();
+    expect(del).not.toHaveBeenCalled();
+  });
+
+  it("JSON error body is not accepted as readable PDF and surfaces startsWith { in toast", async () => {
+    const put = vi.fn(async () => ({
+      url: PUT_URL,
+      downloadUrl: DOWNLOAD_URL,
+      pathname: "tenant/deal/doc.pdf",
+      contentType: "application/pdf",
+      contentDisposition: "",
+      etag: "etag",
+    }));
+    const del = vi.fn(async () => undefined);
+    vi.doMock("@vercel/blob", () => ({
+      put,
+      get: vi.fn(async () => null),
+      del,
+      list: vi.fn(),
+      issueSignedToken: vi.fn(async () => {
+        throw new Error("no sign");
+      }),
+      presignUrl: vi.fn(),
+    }));
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(JSON_ERR, {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      ),
+    );
+
+    const { writeStoredFile: writeFresh, readbackFailureMessage: msgFresh, getLastReadbackDiag: diagFresh } =
+      await import("./object-store");
+    let message = "";
+    try {
+      await writeFresh("tenant/deal/doc.pdf", PDF, "application/pdf", { durable: true });
+      expect.unreachable("should throw");
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error);
+    }
+    expect(del).toHaveBeenCalled();
+    expect(message).toMatch(/startsWith \{/);
+    expect(message).toMatch(/auth error body|non-PDF body/);
+    expect(message).toMatch(/zsetpgqienornflj\.private\.blob\.vercel-storage\.com/);
+    expect(message).not.toContain("testsecret");
+    expect(message).not.toContain(RW_TOKEN);
+    const diag = diagFresh();
+    expect(diag?.bodyPrefix).toBe("startsWith {");
+  });
+
+  it("PDF magic bytes pass accept path and clearer non-PDF diag includes content-type when present", async () => {
+    process.env.BLOB_READ_WRITE_TOKEN = RW_TOKEN;
+    delete process.env.VERCEL;
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(Buffer.from("ISSUED QUOTE NOT A PDF"), {
+          status: 200,
+          headers: { "content-type": "text/plain" },
+        }),
+      ),
+    );
+    vi.doMock("@vercel/blob", () => ({
+      put: vi.fn(),
+      get: vi.fn(async () => null),
+      del: vi.fn(),
+      list: vi.fn(),
+      issueSignedToken: vi.fn(async () => {
+        throw new Error("no");
+      }),
+      presignUrl: vi.fn(),
+    }));
+
+    const {
+      readStoredFile: readFresh,
+      readbackFailureMessage: msgFresh,
+      getLastReadbackDiag: diagFresh,
+      assertStoredFileReadable: assertFresh,
+    } = await import("./object-store");
+
+    expect(await readFresh(PUT_URL)).toBeNull();
+    const diag = diagFresh();
+    expect(diag?.reason === "non_pdf" || diag?.reason === "auth_body").toBe(true);
+    expect(diag?.bodyPrefix).toMatch(/non-PDF|startsWith/);
+    const message = msgFresh(diag);
+    expect(message).toMatch(/non-PDF body|auth error body|non-PDF text/);
+    expect(message).not.toContain("testsecret");
+
+    await expect(assertFresh(PUT_URL)).rejects.toThrow(/Document bytes were written/);
   });
 });
