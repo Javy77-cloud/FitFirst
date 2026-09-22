@@ -51,8 +51,12 @@ describe("command-card book lists", () => {
     expect(page).toMatch(/POLICY_COLUMNS/);
     expect(source("src/components/book-lists/book-lenses.tsx")).toMatch(/data-ff-book-layout="list"/);
     expect(source("src/components/book-lists/book-lenses.tsx")).toMatch(/data-ff-book-layout="bands"/);
-    expect(source("src/lib/book-lists/lenses.ts")).toMatch(/value === "list" \|\| value === "stack"/);
+    expect(source("src/components/book-lists/book-lenses.tsx")).toMatch(/data-ff-book-layout="stack"/);
+    expect(source("src/lib/book-lists/lenses.ts")).toMatch(/if \(value === "stack"\) return "stack"/);
     expect(card).toMatch(/data-ff-policy-list-card/);
+    expect(card).toMatch(/data-ff-policy-stack-card/);
+    expect(card).toMatch(/layoutMode === "stack"/);
+    expect(card).toMatch(/ff-policy-stack-center/);
     expect(card).toMatch(/ff-party-card/);
     expect(card).toMatch(/data-ff-book-center/);
     expect(card).toMatch(/data-ff-book-identity/);
@@ -71,6 +75,12 @@ describe("command-card book lists", () => {
       /\.ff-book-center \.ff-book-facts \{[^}]*grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);[^}]*grid-template-rows:\s*auto auto/,
     );
     expect(css).toMatch(/\.ff-policy-list-card \.ff-book-center \.ff-book-facts \{[^}]*repeat\(6, minmax\(0, 1fr\)\)/);
+    expect(css).toMatch(
+      /\[data-ff-book-command="policies"\]\[data-ff-book-layout="stack"\] \.ff-policy-stack-center \{[^}]*grid-template-rows:\s*auto auto/,
+    );
+    expect(css).toMatch(
+      /\[data-ff-book-command="policies"\]\[data-ff-book-layout="stack"\] \.ff-stack-name \{[^}]*font-weight:\s*750/,
+    );
     expect(css).not.toMatch(/\.ff-party-line/);
     expect(source("src/components/deals/deal-host-face.tsx")).toMatch(/data-ff-deal-center/);
     expect(page).not.toMatch(/Policy attention/);

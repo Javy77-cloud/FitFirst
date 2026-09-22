@@ -253,7 +253,7 @@ export default async function PoliciesPage({
           q={q}
           empty="No policies in this lens. Bind a shopping deal when a market is actually written."
           lineSettings={lineSettings}
-          preserve={{ view: layout === "list" ? "list" : undefined }}
+          preserve={{ view: layout === "list" || layout === "stack" ? layout : undefined }}
           renderLeading={(card) => <SelectRowCheckbox id={card.id} />}
           renderExtra={(card) => (
             <>
