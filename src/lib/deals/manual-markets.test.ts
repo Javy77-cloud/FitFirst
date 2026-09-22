@@ -3,6 +3,14 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { MarketsPanel } from "@/components/deal/markets-panel";
+import { evaluateShopFits, shopCounts } from "@/lib/appetite/shop-fits";
+import {
+  OLYMPUS_COUNTY_MIN_COV_A,
+  OLYMPUS_EXCLUDED_COUNTIES,
+  PUBLISHED_HO_APPETITE,
+  type PublishedHoAppetite,
+} from "@/lib/appetite/published-appetite";
+import type { AppetiteRuleInput, RiskSnapshot } from "@/lib/domain";
 import {
   EXPLICIT_MARKET_ACTION_MARKER,
   MANUAL_MARKET_MARKER,
@@ -44,13 +52,14 @@ describe("manual markets", () => {
     ).toEqual(["trident"]);
   });
 
-  it("treats Markets as empty until a lookup or manual carrier exists", () => {
+  it("paints matcher rows from a filled sheet, and stays empty without sheet facts or rules", () => {
     expect(hasMarketLookupData([], [])).toBe(false);
     expect(hasMarketLookupData([], ["c1"])).toBe(true);
     expect(hasMarketLookupData([{ carrierId: "c1" }], [])).toBe(false);
     expect(hasMarketLookupData([{ carrierId: "c1" }], [], true)).toBe(true);
     expect(hasMarketLookupData([{ carrierId: "c1" }], [], true, true)).toBe(true);
-    expect(hasMarketLookupData([{ carrierId: "c1" }], [], false, true)).toBe(false);
+    expect(hasMarketLookupData([{ carrierId: "c1" }], [], false, true)).toBe(true);
+    expect(hasMarketLookupData([], [], false, true)).toBe(false);
     expect(hasExplicitMarketAction([{ why: "seeded decline" }], [{ notes: "Stub quote." }])).toBe(
       false,
     );
@@ -201,7 +210,7 @@ describe("manual markets", () => {
     expect(html).not.toMatch(/Request Quotes/);
   });
 
-  it("stays blank when evaluateDeal auto-returns matches and the agent has not acted", () => {
+  it("stays blank when leftover matches arrive without sheet facts", () => {
     const html = renderToString(
       createElement(MarketsPanel, {
         dealId: "deal-auto",
@@ -217,6 +226,7 @@ describe("manual markets", () => {
           },
         ],
         manualIds: [],
+        sheetHasValues: false,
         carriers: [],
       }),
     );
@@ -224,5 +234,199 @@ describe("manual markets", () => {
     expect(html).toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
     expect(html).not.toMatch(/In appetite/);
     expect(html).not.toMatch(/>Home Co</);
+  });
+
+  it("paints appetite bands from a filled sheet without a shop list or quote request", () => {
+    const html = renderToString(
+      createElement(MarketsPanel, {
+        dealId: "deal-rosa-ho3",
+        matches: [
+          {
+            carrierId: "stand",
+            carrierName: "Stand",
+            band: "green",
+            fitScore: 88,
+            reasons: [],
+            learnedDecline: false,
+            shoppable: true,
+          },
+          {
+            carrierId: "olympus",
+            carrierName: "Olympus Insurance Company",
+            band: "yellow",
+            fitScore: 61,
+            reasons: [{ code: "min_cov_a", message: "Cov A below min", severity: "stretch" }],
+            learnedDecline: false,
+            shoppable: true,
+          },
+          {
+            carrierId: "trident",
+            carrierName: "Trident Reciprocal Exchange",
+            band: "red",
+            fitScore: 20,
+            reasons: [
+              {
+                code: "mobile",
+                message: "Mobile / manufactured not written",
+                severity: "fail",
+              },
+            ],
+            learnedDecline: false,
+            shoppable: false,
+          },
+        ],
+        manualIds: [],
+        explicitLookup: false,
+        sheetHasValues: true,
+        unlocked: true,
+        carriers: [],
+        dealLine: "HO",
+      }),
+    );
+    expect(html).not.toMatch(/data-ff-markets-empty/);
+    expect(html).toMatch(/In appetite/);
+    expect(html).toMatch(/Stretch/);
+    expect(html).toMatch(/Skip/);
+    expect(html).toMatch(/Stand/);
+    expect(html).toMatch(/Olympus Insurance Company/);
+    expect(html).toMatch(/Trident Reciprocal Exchange/);
+    expect(html.replace(/<!-- -->/g, "")).toMatch(/1 in appetite · 1 stretch · 1 skip/);
+    expect(html).toMatch(/data-ff-load-home-shop-list/);
+    expect(html).toMatch(/Request Quotes/);
+    expect(html).not.toMatch(/Mobile \/ manufactured not written/);
+  });
+});
+
+function publishedHoRule(row: PublishedHoAppetite): AppetiteRuleInput {
+  return {
+    carrierId: row.slug,
+    carrierName: row.legalName,
+    lineOfBusiness: "HO",
+    minCovA: row.minCovA,
+    maxCovA: row.maxCovA,
+    minYearBuilt: row.minYearBuilt,
+    maxRoofAge: row.maxRoofAge,
+    allowedRoofCoverings: row.allowedRoofCoverings,
+    coastalAllowed: true,
+    minMilesToCoast: row.minMilesToCoast,
+    maxMilesToCoast: null,
+    mobileAllowed: row.mobileAllowed,
+    requiresOpeningProtection: false,
+    maxStories: null,
+    allowedConstruction: null,
+    allowedOccupancy: null,
+    allowedCounties: null,
+    excludedCounties: row.slug === "olympus" ? [...OLYMPUS_EXCLUDED_COUNTIES] : null,
+    countyMinCovA: row.slug === "olympus" ? { ...OLYMPUS_COUNTY_MIN_COV_A } : null,
+    requireReplacementCost: false,
+    rceFloorRatio: null,
+    portalStatus: "open",
+    dontWriteNotes: null,
+    writtenLines: ["HO"],
+    appointed: true,
+    appetiteNotes: row.notesForAgent,
+  };
+}
+
+const rosaHo3Risk: RiskSnapshot = {
+  yearBuilt: 2004,
+  roofYear: 2019,
+  roofCovering: "shingle",
+  construction: "masonry",
+  openingProtection: "basic",
+  occupancy: "owner",
+  stories: 1,
+  pool: false,
+  protectionClass: "4",
+  milesToCoast: 8,
+  city: "Fort Myers",
+  county: "Lee",
+  coverageA: 350_000,
+  mobileHome: false,
+  replacementCostEstimate: 360_000,
+  state: "FL",
+};
+
+describe("filled sheet appetite without a shop list", () => {
+  const rules = PUBLISHED_HO_APPETITE.map(publishedHoRule);
+
+  it("Rosa-shaped HO3 (mobile_home=no) paints a mix of bands from published rules", () => {
+    const result = evaluateShopFits({
+      risk: rosaHo3Risk,
+      dealLine: "HO",
+      rules,
+      prior: [],
+      sheetValues: {
+        coverage_a: { value: "350000", status: "confirmed", source: "agent" },
+        mobile_home: { value: "no", status: "confirmed", source: "agent" },
+        year_built: { value: "2004", status: "confirmed", source: "agent" },
+        county: { value: "Lee", status: "confirmed", source: "agent" },
+      },
+      asOfYear: 2026,
+    });
+    const counts = shopCounts(result.matches);
+    expect(result.matches.length).toBeGreaterThan(0);
+    expect(counts.green).toBeGreaterThan(0);
+    expect(counts.skip).toBeGreaterThan(0);
+    expect(result.matches.some((row) => row.band === "green" && row.carrierId === "stand")).toBe(true);
+    expect(result.matches.some((row) => row.band === "red" && row.carrierId === "olympus")).toBe(true);
+
+    const html = renderToString(
+      createElement(MarketsPanel, {
+        dealId: "260de6f1-d91b-4e9f-ae0e-61e38de04b52",
+        matches: result.matches,
+        explicitLookup: false,
+        sheetHasValues: true,
+        unlocked: true,
+        dealLine: "HO",
+      }),
+    );
+    expect(html).not.toMatch(/data-ff-markets-empty/);
+    expect(html).not.toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
+    expect(html).toMatch(/In appetite/);
+    expect(html).toMatch(/Skip/);
+    expect(html).toMatch(/data-ff-load-home-shop-list/);
+  });
+
+  it("Catherine-shaped MHO (mobile_home=yes) skips carriers that do not write mobile", () => {
+    const result = evaluateShopFits({
+      risk: { ...rosaHo3Risk, mobileHome: true, city: "Melbourne", county: "Brevard" },
+      dealLine: "HO",
+      rules,
+      prior: [],
+      sheetValues: {
+        coverage_a: { value: "350000", status: "confirmed", source: "agent" },
+        mobile_home: { value: "yes", status: "confirmed", source: "agent" },
+        year_built: { value: "2004", status: "confirmed", source: "agent" },
+        county: { value: "Brevard", status: "confirmed", source: "agent" },
+      },
+      asOfYear: 2026,
+    });
+    expect(result.matches.length).toBe(PUBLISHED_HO_APPETITE.length);
+    for (const row of result.matches) {
+      const rule = rules.find((item) => item.carrierId === row.carrierId);
+      expect(rule?.mobileAllowed).toBe(false);
+      expect(row.band).toBe("red");
+      expect(row.reasons.some((reason) => reason.message === "Mobile / manufactured not written")).toBe(
+        true,
+      );
+    }
+    expect(bucketForMatch("red", false, true)).toBe("skip");
+
+    const html = renderToString(
+      createElement(MarketsPanel, {
+        dealId: "c55afeea-2850-486e-99e8-78459056fa88",
+        matches: result.matches,
+        explicitLookup: false,
+        sheetHasValues: true,
+        unlocked: true,
+        dealLine: "HO",
+      }),
+    );
+    const text = html.replace(/<!-- -->/g, "");
+    expect(html).not.toMatch(/data-ff-markets-empty/);
+    expect(html).toMatch(/Skip/);
+    expect(text).toMatch(new RegExp(`${result.matches.length} skip`));
+    expect(text).not.toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
   });
 });

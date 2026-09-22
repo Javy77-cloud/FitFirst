@@ -352,7 +352,11 @@ export default async function DealPage({
     lineQuotes.map((row) => row.quote),
   );
   const shopListIds = shopListCarrierIdsFromLogs(dealLogs).filter((id) => !excludedMarketIds.has(id));
-  const evalMarkets = Boolean(risk && (shopMarketsAction || shopListIds.length > 0));
+  // A filled master sheet evaluates appetite_rules on its own so Markets can paint
+  // In appetite / Stretch / Skip. Shop-list loads and manual adds still overlay.
+  // This does not request quotes — Request Quotes stays an agent action.
+  const sheetReady = sheetHasMarketFacts(activeSheet?.values);
+  const evalMarkets = Boolean(risk && (sheetReady || shopMarketsAction || shopListIds.length > 0));
   const rawMatches = evalMarkets ? await evaluateDealMarkets(risk, activeSheet.values, activeLob) : [];
   const matches = rawMatches.filter((row) => !excludedMarketIds.has(row.carrierId));
   const listedMatches = matches.filter((row) => shopListIds.includes(row.carrierId));
@@ -383,7 +387,7 @@ export default async function DealPage({
     : resolveDealResumeTab({
         recordValues: dealValues,
         quotingUnlocked: unlocked,
-        sheetFilled: sheetHasMarketFacts(activeSheet?.values),
+        sheetFilled: sheetReady,
         quotesRequested: hasShopMarketAction(
           dealLogs,
           lineQuotes.map((row) => row.quote),
@@ -997,14 +1001,14 @@ export default async function DealPage({
                           />
                         ) : (
                       <MarketsPanel
-                        key={agentMarketsAction ? `markets-${activeSheet.id}` : "markets-empty"}
+                        key={sheetReady || agentMarketsAction ? `markets-${activeSheet.id}` : "markets-empty"}
                         dealId={deal.id}
-                        matches={shopMarketsAction ? matches : listedMatches}
+                        matches={sheetReady || shopMarketsAction ? matches : listedMatches}
                         unlocked={unlocked}
                         manualIds={manualIds}
                         shopListIds={shopListIds}
                         explicitLookup={shopMarketsAction}
-                        sheetHasValues={agentMarketsAction}
+                        sheetHasValues={sheetReady}
                         carriers={carrierOptions}
                         dealLine={activeLob}
                         shopLine={sheetLine}
