@@ -10,6 +10,7 @@ import {
   valuesDiffer,
 } from "./records-check";
 import { collapseAutoDriverSheet, retargetAutoDriverFields } from "./auto-driver-dedupe";
+import { streetsAreSameLocation } from "./home-address-fill";
 import { isSheetFormMetaKey, submittedSheetValues } from "./save-values";
 import {
   normalizeAutoDollarLimit,
@@ -153,6 +154,50 @@ export function isProtectedSheetSource(field?: QuoteSheetFieldValue | null): boo
   if (field.source === "agent" || field.source === "javy") return true;
   if (field.status === "confirmed" && field.value.trim()) return true;
   return false;
+}
+
+const LONE_PROPERTY_EXTRACT_KEYS = new Set([
+  "address",
+  "address1",
+  "property_address",
+  "location_description",
+  "property_information",
+  "insured_property",
+  "residence_premises",
+]);
+
+/**
+ * Liability-only (and any home doc with one printed address): that address is the
+ * property location. Do not also leave it on mailing when mailing was empty or was
+ * the same Deal Details misfile. A real second address extracted as property_address
+ * is left on address1 and mailing stays.
+ */
+function promoteLoneMailingToProperty(
+  values: Record<string, QuoteSheetFieldValue>,
+  filledKeys: string[],
+  existing: Record<string, QuoteSheetFieldValue>,
+  extracted: ExtractedInput[],
+) {
+  const hadProperty = extracted.some((item) => {
+    const key = item.fieldKey.trim();
+    return LONE_PROPERTY_EXTRACT_KEYS.has(key) && String(item.normalizedValue ?? "").trim();
+  });
+  if (hadProperty || !fieldIsBlank(values.address1)) return;
+  const mailCell = values.mailing_address;
+  const mail = mailCell?.value?.trim() ?? "";
+  if (!mailCell || !mail) return;
+  values.address1 = { ...mailCell, value: mail };
+  if (!filledKeys.includes("address1")) filledKeys.push("address1");
+  const prior = existing.mailing_address;
+  const priorMail = prior?.value?.trim() ?? "";
+  const dealDetailsCopy = (prior?.sourceLabel ?? "").trim().toLowerCase() === "deal details";
+  const agentKept =
+    isProtectedSheetSource(prior) && !dealDetailsCopy && Boolean(priorMail);
+  if (agentKept) return;
+  if (priorMail && !streetsAreSameLocation(priorMail, mail)) return;
+  values.mailing_address = { value: "", status: "missing", source: "blank" };
+  const index = filledKeys.indexOf("mailing_address");
+  if (index >= 0) filledKeys.splice(index, 1);
 }
 
 export function applyExtractedToSheet(
@@ -310,13 +355,17 @@ export function applyExtractedToSheet(
     values.named_insured = { ...values.current_policy_named_insured };
     filledKeys.push("named_insured");
   }
-  if (fieldIsBlank(values.applicant_address) && values.mailing_address?.value?.trim()) {
-    values.applicant_address = { ...values.mailing_address };
-    filledKeys.push("applicant_address");
-  }
-  if (fieldIsBlank(values.address1) && values.applicant_address?.value?.trim()) {
-    values.address1 = { ...values.applicant_address };
-    filledKeys.push("address1");
+  if (line === "home" || line === "flood") {
+    promoteLoneMailingToProperty(values, filledKeys, existing, extracted);
+  } else {
+    if (fieldIsBlank(values.applicant_address) && values.mailing_address?.value?.trim()) {
+      values.applicant_address = { ...values.mailing_address };
+      filledKeys.push("applicant_address");
+    }
+    if (fieldIsBlank(values.address1) && values.applicant_address?.value?.trim()) {
+      values.address1 = { ...values.applicant_address };
+      filledKeys.push("address1");
+    }
   }
   if (fieldIsBlank(values.mortgagee_name) && values.mortgagee?.value?.trim()) {
     values.mortgagee_name = { ...values.mortgagee };

@@ -52,7 +52,33 @@ export function mergePropertyFillFacts(parts: {
   applyEmptyOnly(parts.getParcel, "property-records");
   applyEmptyOnly(parts.permitStack, "permitstack");
 
-  return { facts: [...byKey.values()], sourcesUsed };
+  return { facts: expandManufacturedHomeFacts([...byKey.values()]), sourcesUsed };
+}
+
+const MANUFACTURED_RE = /mobile\s*home|manufactured|\bmh\b|mho\b/;
+
+/** County land use / construction often says mobile home without a mobile_home column. */
+export function expandManufacturedHomeFacts(facts: PropertyRecordsFact[]): PropertyRecordsFact[] {
+  const blob = facts
+    .filter((fact) => fact.sheetKey === "land_use" || fact.sheetKey === "construction" || fact.sheetKey === "structure_type")
+    .map((fact) => fact.value)
+    .join(" ");
+  if (!MANUFACTURED_RE.test(blob.toLowerCase())) return facts;
+  const out = [...facts];
+  const sample = facts.find((fact) => fact.sheetKey === "land_use") ?? facts[0];
+  const push = (sheetKey: string, value: string) => {
+    if (out.some((fact) => fact.sheetKey === sheetKey)) return;
+    out.push({
+      fieldKey: sheetKey,
+      sheetKey,
+      value,
+      sourceLabel: sample?.sourceLabel || COUNTY_PA_LABEL,
+      kind: sample?.kind ?? "county",
+    });
+  };
+  push("mobile_home", "yes");
+  push("structure_type", /manufactured/i.test(blob) ? "Manufactured Home" : "Mobile Home");
+  return out;
 }
 
 export function toastForPropertyFill(args: {

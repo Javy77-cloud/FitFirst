@@ -9,6 +9,7 @@ import {
   sheetSourcePhrase,
   valuesDiffer,
 } from "@/lib/quote-sheet/records-check";
+import { streetsAreSameLocation } from "@/lib/quote-sheet/home-address-fill";
 import { PROPERTY_RECORDS_LABEL, PROPERTY_RECORDS_SOURCE, type PropertyRecordsFact } from "./map";
 
 const DOC_SOURCE_LABEL = /\b(dec|four[-\s]?point|4[-\s]?point|4pt|wind\s*mit)/i;
@@ -47,7 +48,19 @@ export function applyPropertyRecordsToSheet(
       skippedKeys.push(key);
       continue;
     }
-    if (fieldIsBlank(current)) {
+    if (key === "mailing_address") {
+      const propertyStreet = `${values.address1?.value ?? ""} ${values.property_address?.value ?? ""}`.trim();
+      if (propertyStreet && streetsAreSameLocation(nextValue, propertyStreet)) {
+        skippedKeys.push(key);
+        continue;
+      }
+    }
+    const replaceManufacturedDefault =
+      key === "mobile_home" &&
+      nextValue.toLowerCase() === "yes" &&
+      (current?.sourceLabel ?? "").trim().toLowerCase() === "default" &&
+      (current?.value ?? "").trim().toLowerCase() === "no";
+    if (fieldIsBlank(current) || replaceManufacturedDefault) {
       const label = (fact.sourceLabel || PROPERTY_RECORDS_LABEL).trim() || PROPERTY_RECORDS_LABEL;
       values[key] = {
         value: nextValue,
