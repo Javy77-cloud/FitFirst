@@ -28,6 +28,7 @@ export function AssignRecordTags({
   catalog,
   compact = true,
   appearance = "chips",
+  emptyPlaceholder = "dash",
 }: {
   module: TagModule;
   recordId: string;
@@ -36,6 +37,8 @@ export function AssignRecordTags({
   compact?: boolean;
   /** chips = default chip row; addLink = Zoho-style Tag icon + Add Tags under a name */
   appearance?: "chips" | "addLink";
+  /** dash = lone em dash when there are no tags. none = render nothing (Contacts Stack). */
+  emptyPlaceholder?: "dash" | "none";
 }) {
   const mounted = useClientMounted();
   const [open, setOpen] = useState(false);
@@ -83,6 +86,8 @@ export function AssignRecordTags({
       window.removeEventListener("scroll", place, true);
     };
   }, [open]);
+
+  if (emptyPlaceholder === "none" && current.length === 0) return null;
 
   function toggle(name: string) {
     setDraft((list) => (list.includes(name) ? list.filter((item) => item !== name) : [...list, name]));
