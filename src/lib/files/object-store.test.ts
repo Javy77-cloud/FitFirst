@@ -271,6 +271,8 @@ describe("private blob read hardening (source)", () => {
     expect(src).toMatch(/describeBodyPrefix/);
     expect(src).toMatch(/expectPdf/);
     expect(src).toMatch(/startsWith <!DOCTYPE/);
+    expect(src).toMatch(/assertReadableFromPutResult/);
+    expect(src).toMatch(/readBytesFromPutResult/);
   });
 });
 
@@ -321,7 +323,7 @@ describe("RW token put/get alignment (mocked @vercel/blob)", () => {
 
     const { writeStoredFile: writeFresh } = await import("./object-store");
     const url = await writeFresh("tenant/deal/doc.pdf", PDF, "application/pdf", { durable: true });
-    expect(url).toBe(PUT_URL);
+    expect(url).toBe(`${PUT_URL}?download=1`);
     expect(put).toHaveBeenCalled();
     const putOpts = put.mock.calls[0]![2] as { token?: string };
     expect(putOpts.token).toBe(RW_TOKEN);
@@ -403,7 +405,7 @@ describe("RW token put/get alignment (mocked @vercel/blob)", () => {
 
     const { writeStoredFile: writeFresh, readbackFailureMessage: msgFresh } = await import("./object-store");
     const url = await writeFresh("tenant/deal/doc.pdf", PDF, "application/pdf", { durable: true });
-    expect(url).toBe(PUT_URL);
+    expect(url).toBe(`${PUT_URL}?download=1`);
     expect(put).toHaveBeenCalled();
     // Must not surface recreate-token guidance for casing-only "mismatch"
     expect(msgFresh()).not.toMatch(/Recreate BLOB_READ_WRITE_TOKEN/);
@@ -483,7 +485,7 @@ describe("non-PDF / HTML body read-back (mocked)", () => {
     delete process.env.FF_LOCAL_DURABLE_UPLOADS;
   });
 
-  it("HTML body fails that strategy and tries next; PDF magic via presign passes", async () => {
+  it("HTML from SDK get fails that strategy; PDF magic via presign passes without relying on raw Bearer", async () => {
     const put = vi.fn(async () => ({
       url: PUT_URL,
       downloadUrl: DOWNLOAD_URL,
@@ -493,7 +495,28 @@ describe("non-PDF / HTML body read-back (mocked)", () => {
       etag: "etag",
     }));
     const del = vi.fn(async () => undefined);
-    const get = vi.fn(async () => null);
+    const htmlStream = async () => ({
+      statusCode: 200 as const,
+      stream: new ReadableStream({
+        start(controller) {
+          controller.enqueue(HTML);
+          controller.close();
+        },
+      }),
+      headers: new Headers({ "content-type": "text/html; charset=utf-8" }),
+      blob: {
+        url: PUT_URL,
+        downloadUrl: DOWNLOAD_URL,
+        pathname: "tenant/deal/doc.pdf",
+        contentType: "text/html; charset=utf-8",
+        contentDisposition: "",
+        cacheControl: "",
+        size: HTML.length,
+        uploadedAt: new Date(),
+        etag: "e",
+      },
+    });
+    const get = vi.fn(htmlStream);
     const issueSignedToken = vi.fn(async () => ({
       clientSigningToken: "client-sign",
       delegationToken: "deleg-sign",
@@ -510,7 +533,7 @@ describe("non-PDF / HTML body read-back (mocked)", () => {
       presignUrl,
     }));
 
-    let htmlHits = 0;
+    let bearerHits = 0;
     let presignHits = 0;
     vi.stubGlobal(
       "fetch",
@@ -524,7 +547,7 @@ describe("non-PDF / HTML body read-back (mocked)", () => {
             headers: { "content-type": "application/pdf" },
           });
         }
-        htmlHits += 1;
+        bearerHits += 1;
         return new Response(HTML, {
           status: 200,
           headers: { "content-type": "text/html; charset=utf-8" },
@@ -534,12 +557,14 @@ describe("non-PDF / HTML body read-back (mocked)", () => {
 
     const { writeStoredFile: writeFresh } = await import("./object-store");
     const url = await writeFresh("tenant/deal/doc.pdf", PDF, "application/pdf", { durable: true });
-    expect(url).toBe(PUT_URL);
-    expect(htmlHits).toBeGreaterThan(0);
+    expect(url).toBe(DOWNLOAD_URL);
+    expect(get).toHaveBeenCalled();
     expect(presignHits).toBeGreaterThan(0);
     expect(issueSignedToken).toHaveBeenCalled();
     expect(put).toHaveBeenCalled();
     expect(del).not.toHaveBeenCalled();
+    // Presign should win before raw Bearer is required for success.
+    expect(presignHits).toBeGreaterThan(0);
   });
 
   it("JSON error body is not accepted as readable PDF and surfaces startsWith { in toast", async () => {
@@ -632,5 +657,95 @@ describe("non-PDF / HTML body read-back (mocked)", () => {
     expect(message).not.toContain("testsecret");
 
     await expect(assertFresh(PUT_URL)).rejects.toThrow(/Document bytes were written/);
+  });
+});
+
+
+describe("formatReadbackDiag bodyPrefix always present", () => {
+  it("non_pdf toast always includes bodyPrefix even when diag omits it", () => {
+    const message = readbackFailureMessage({
+      reason: "non_pdf",
+      host: "zsetpgqienornflj.private.blob.vercel-storage.com",
+    });
+    expect(message).toMatch(/non-PDF body/);
+    expect(message).toMatch(/unknown body|startsWith/);
+    expect(message).toMatch(/zsetpgqienornflj\.private\.blob\.vercel-storage\.com/);
+    // Quiet form from pre-#283 / missing bodyPrefix must not reappear.
+    expect(message).not.toBe(
+      "Document bytes were written but could not be read back from storage (non-PDF body, host zsetpgqienornflj.private.blob.vercel-storage.com). Nothing was saved.",
+    );
+  });
+
+  it("auth_body toast always includes bodyPrefix and content-type when provided", () => {
+    const message = readbackFailureMessage({
+      reason: "auth_body",
+      host: "zsetpgqienornflj.private.blob.vercel-storage.com",
+      bodyPrefix: "startsWith <!DOCTYPE",
+      contentType: "text/html; charset=utf-8",
+    });
+    expect(message).toMatch(/auth error body/);
+    expect(message).toMatch(/startsWith <!DOCTYPE/);
+    expect(message).toMatch(/content-type text\/html/);
+  });
+});
+
+describe("assertReadableFromPutResult prefers downloadUrl / pathname over raw Bearer", () => {
+  const RW_TOKEN = "vercel_blob_rw_zsetpgqienornflj_testsecret";
+  const PUT_URL = "https://zsetpgqienornflj.private.blob.vercel-storage.com/tenant/deal/doc.pdf";
+  const DOWNLOAD_URL = `${PUT_URL}?download=1`;
+  const PDF = Buffer.from("%PDF-1.4 mock-bytes");
+
+  beforeEach(() => {
+    process.env.BLOB_READ_WRITE_TOKEN = RW_TOKEN;
+    delete process.env.BLOB_STORE_ID;
+    process.env.VERCEL = "1";
+  });
+
+  it("succeeds via SDK get(pathname) without calling raw Bearer fetch", async () => {
+    const get = vi.fn(async (urlOrPath: string) => {
+      expect(String(urlOrPath)).toMatch(/tenant\/deal\/doc\.pdf/);
+      return {
+        statusCode: 200 as const,
+        stream: new ReadableStream({
+          start(controller) {
+            controller.enqueue(PDF);
+            controller.close();
+          },
+        }),
+        headers: new Headers({ "content-type": "application/pdf" }),
+        blob: {
+          url: PUT_URL,
+          downloadUrl: DOWNLOAD_URL,
+          pathname: "tenant/deal/doc.pdf",
+          contentType: "application/pdf",
+          contentDisposition: "",
+          cacheControl: "",
+          size: PDF.length,
+          uploadedAt: new Date(),
+          etag: "e",
+        },
+      };
+    });
+    vi.doMock("@vercel/blob", () => ({
+      put: vi.fn(),
+      get,
+      del: vi.fn(),
+      list: vi.fn(),
+      issueSignedToken: vi.fn(),
+      presignUrl: vi.fn(),
+    }));
+    const fetchMock = vi.fn(async () => {
+      throw new Error("Bearer CDN must not be required when SDK get works");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { assertReadableFromPutResult: assertFresh } = await import("./object-store");
+    await assertFresh({
+      url: PUT_URL,
+      downloadUrl: DOWNLOAD_URL,
+      pathname: "tenant/deal/doc.pdf",
+    });
+    expect(get).toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
