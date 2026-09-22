@@ -49,7 +49,12 @@ import {
   MINT_CONFIRM_TASK_KIND,
 } from "@/lib/policy/dec-prompt";
 import { buildAgentConfirmAudit } from "@/lib/policy/agent-confirm";
-import { issuedPolicyDocType, issuedUploadFolder, issuedUploadPersist } from "@/lib/policy/issued-upload";
+import {
+  issuedPolicyDocType,
+  issuedUploadFolder,
+  issuedUploadMime,
+  issuedUploadPersist,
+} from "@/lib/policy/issued-upload";
 import { isManualMarketWhy } from "@/lib/deals/manual-markets";
 import { extractWithGeminiPdf } from "@/lib/extraction/gemini";
 import { loadGeminiApiKey } from "@/lib/extraction/gemini/key";
@@ -706,7 +711,11 @@ export async function issuePolicyFromDeclaration(input: {
   }
 }
 
-export async function uploadDeclarationAndMint(formData: FormData) {
+/**
+ * Tag the popup upload into Manual (or carrier) and revalidate the deal
+ * before Gemini runs, so the folder badge can refresh immediately.
+ */
+export async function saveIssuedPolicyUpload(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "").trim();
   const product = String(formData.get("product") ?? "").trim();
   const file = formData.get("file");
@@ -755,17 +764,18 @@ export async function uploadDeclarationAndMint(formData: FormData) {
       });
     }
   }
+  const folder = issuedUploadFolder({ why, notes, hasCarrierDownload });
   const placed = issuedUploadPersist({
     quoteId,
     shopLine,
-    folder: issuedUploadFolder({ why, notes, hasCarrierDownload }),
+    folder,
     filename: file.name,
   });
   const doc = await persistFile({
     dealId,
     riskId: risk?.id ?? null,
     filename: file.name,
-    mimeType: file.type || "application/pdf",
+    mimeType: issuedUploadMime(file.name, file.type),
     buffer: Buffer.from(await file.arrayBuffer()),
     docType: placed.docType,
     slot: placed.slot,
@@ -773,12 +783,24 @@ export async function uploadDeclarationAndMint(formData: FormData) {
   });
   if (!doc) return { ok: false as const, reason: "need_dec" as const };
   revalidatePath(`/deals/${dealId}`);
-  return issuePolicyFromDeclaration({
-    dealId,
-    product,
-    selectedQuoteIds: quoteIds,
-    surface: "quotes",
+  return {
+    ok: true as const,
     documentId: doc.id,
+    quoteId,
+    folder,
+    quoteIds,
+  };
+}
+
+export async function uploadDeclarationAndMint(formData: FormData) {
+  const saved = await saveIssuedPolicyUpload(formData);
+  if (!saved.ok) return saved;
+  return issuePolicyFromDeclaration({
+    dealId: String(formData.get("dealId") ?? "").trim(),
+    product: String(formData.get("product") ?? "").trim(),
+    selectedQuoteIds: saved.quoteIds,
+    surface: "quotes",
+    documentId: saved.documentId,
   });
 }
 

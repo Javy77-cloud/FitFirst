@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { uploadAgencyQuoteFileAction } from "@/app/actions/quote-files";
 import { deleteUploadedFile } from "@/app/actions/documents";
 import { retagDocumentAsDeclarationAction } from "@/app/actions/declaration";
@@ -24,6 +24,10 @@ import {
   normalizeRiskOutcome,
   riskOutcomeLabel,
 } from "@/lib/quotes/outcomes";
+import {
+  ISSUED_POLICY_FOLDER_SAVED,
+  type IssuedPolicyFolderSavedDetail,
+} from "@/lib/policy/issued-upload";
 import { cn } from "@/lib/utils";
 import { Download, Eye, FolderOpen } from "lucide-react";
 
@@ -196,6 +200,29 @@ export function QuoteFileActions({
 }) {
   const [open, setOpen] = useState<OpenDialog>(null);
   const [pending, startTransition] = useTransition();
+  const [pendingFolderFile, setPendingFolderFile] = useState<IssuedPolicyFolderSavedDetail | null>(null);
+
+  useEffect(() => {
+    function onSaved(event: Event) {
+      const detail = (event as CustomEvent<IssuedPolicyFolderSavedDetail>).detail;
+      if (!detail || detail.quoteId !== quoteId) return;
+      setPendingFolderFile(detail);
+    }
+    window.addEventListener(ISSUED_POLICY_FOLDER_SAVED, onSaved);
+    return () => window.removeEventListener(ISSUED_POLICY_FOLDER_SAVED, onSaved);
+  }, [quoteId]);
+
+  const agencyCount =
+    agencyFiles.length +
+    (pendingFolderFile?.folder === "manual" && !agencyFiles.some((file) => file.id === pendingFolderFile.documentId)
+      ? 1
+      : 0);
+  const carrierCount =
+    carrierFiles.length +
+    (pendingFolderFile?.folder === "carrier" &&
+    !carrierFiles.some((file) => file.id === pendingFolderFile.documentId)
+      ? 1
+      : 0);
 
   const outcome =
     normalizeRiskOutcome(quote.riskOutcome) ?? (quote.bindable ? "bindable" : "conditional");
@@ -231,7 +258,7 @@ export function QuoteFileActions({
       <div className="flex shrink-0 items-center gap-1" data-ff-quote-file-actions={quoteId}>
         <IconBadgeButton
           title="Download Quote File From Carrier"
-          count={carrierFiles.length}
+          count={carrierCount}
           onClick={() => toggle("carrier")}
           testId={`quote-carrier-files-${quoteId}`}
         >
@@ -247,7 +274,7 @@ export function QuoteFileActions({
         </IconBadgeButton>
         <IconBadgeButton
           title="Upload / View Our Quote Files"
-          count={agencyFiles.length}
+          count={agencyCount}
           onClick={() => toggle("agency")}
           testId={`quote-agency-files-${quoteId}`}
         >

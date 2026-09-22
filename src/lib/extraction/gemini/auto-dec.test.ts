@@ -16,8 +16,10 @@ import {
 } from "@/lib/extraction/gemini/client";
 import { HEIC_CONVERT_TIMEOUT_MS } from "@/lib/extraction/ocr";
 import { MASTER_FILL_STEP_TIMEOUT_MS } from "@/lib/quote-sheet/master-fill";
+import { TRAVELERS_ISSUED_AUTO_NESTED } from "@/lib/extraction/gemini/fixtures/travelers-issued-auto";
+import { splitPolicyPeriod } from "@/lib/extraction/gemini/auto-layout";
 import { fillableGeminiFields, mapGeminiJsonToFields } from "@/lib/extraction/gemini/map";
-import { evaluateMintExtract } from "@/lib/policy/mint-gate";
+import { evaluateMintExtract, mintGeminiValue } from "@/lib/policy/mint-gate";
 import { buildGeminiSystemPrompt, buildGeminiUserPrompt } from "@/lib/extraction/gemini/prompt";
 import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
 import { emptySheetValues, extractKeyToSheetKey } from "@/lib/quote-sheet/catalog";
@@ -201,6 +203,13 @@ describe("auto declaration extract → Auto risk profile", () => {
       shopLineForGeminiExtract({
         docType: "photo",
         filename: "IMG_1001.HEIC",
+        quotingLine: "auto",
+      }),
+    ).toBe("auto");
+    expect(
+      shopLineForGeminiExtract({
+        docType: "current_policy",
+        filename: "Travelers policy.HEIC",
         quotingLine: "auto",
       }),
     ).toBe("auto");
@@ -399,6 +408,121 @@ describe("auto declaration extract → Auto risk profile", () => {
     }
     expect(buildGeminiSystemPrompt("current_policy", "auto")).toMatch(/Full Term Premium/);
     expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/current_premium/);
+    expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/Premium Due/);
+    expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/HEIC/);
+    expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/not a shopping quote/);
+    expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/every page/);
+    expect(buildGeminiSystemPrompt("current_policy", "auto")).toMatch(/not a shopping quote/);
+  });
+
+  it("reads a nested Travelers issued policy without inventing a coverage-line premium", () => {
+    const mapped = mapGeminiJsonToFields(TRAVELERS_ISSUED_AUTO_NESTED, "current_policy", "auto");
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.current_carrier.value).toBe("Travelers");
+    expect(applied.values.policy_number.value).toBe("612345678 101 1");
+    expect(applied.values.current_premium.value).toBe("2109.00");
+    expect(applied.values.effective_date.value).toBe("September 21, 2026");
+    expect(applied.values.expiration_date.value).toBe("March 21, 2027");
+    expect(applied.values.liability_bi.value).toBe("100/300");
+    expect(applied.values.liability_pd.value).toBe("100000");
+    const gate = evaluateMintExtract(
+      mapped.fields.map((field) => ({
+        fieldKey: field.fieldKey,
+        normalizedValue: field.normalizedValue,
+        rawValue: field.rawValue,
+        confidence: field.confidence,
+        flagged: field.flagged,
+      })),
+    );
+    expect(gate.ok).toBe(true);
+    if (gate.ok) {
+      expect(gate.policyNumber).toBe("612345678 101 1");
+      expect(gate.premium).toBe("2109");
+      expect(gate.effectiveDate).toMatch(/2026-09-21/);
+    }
+  });
+
+  it("prefers Full Term Premium over a coverage-line premium and splits a month-name policy period", () => {
+    expect(splitPolicyPeriod("From: September 21, 2026 To: March 21, 2027")).toEqual({
+      effective: "September 21, 2026",
+      expiration: "March 21, 2027",
+    });
+    expect(splitPolicyPeriod("From: 09/21/2026 12:01 A.M. To: 03/21/2027")).toEqual({
+      effective: "09/21/2026",
+      expiration: "03/21/2027",
+    });
+    const mapped = mapGeminiJsonToFields(
+      {
+        company: "The Standard Fire Insurance Company",
+        "Policy Number": "612345678 101 1",
+        premium: "412.00",
+        "Full Term Premium": "$2,109.00",
+        policy_period: "From: September 21, 2026 To: March 21, 2027",
+      },
+      "current_policy",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.current_carrier.value).toBe("The Standard Fire Insurance Company");
+    expect(applied.values.current_premium.value).toBe("2109.00");
+    expect(applied.values.effective_date.value).toBe("September 21, 2026");
+    expect(applied.values.expiration_date.value).toBe("March 21, 2027");
+    expect(applied.values.policy_number.value).toBe("612345678 101 1");
+  });
+
+  it("keeps a printed Travelers policy number at 0.7 and still blanks an explicit 0.5", () => {
+    const kept = mapGeminiJsonToFields(
+      {
+        policy_number: { value: "612345678 101 1", confidence: 0.7 },
+        current_premium: { value: "2109.00", confidence: 0.72 },
+        effective_date: { value: "09/21/2026", confidence: 0.66 },
+        current_carrier: { value: "Travelers", confidence: 0.61 },
+      },
+      "current_policy",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(kept.fields));
+    expect(applied.values.policy_number.value).toBe("612345678 101 1");
+    expect(applied.values.current_premium.value).toBe("2109.00");
+    expect(applied.values.effective_date.value).toBe("09/21/2026");
+    expect(applied.values.current_carrier.value).toBe("Travelers");
+    const low = mapGeminiJsonToFields(
+      { policy_number: { value: "612345678 101 1", confidence: 0.5 } },
+      "current_policy",
+      "auto",
+    );
+    const blank = low.fields.find((field) => field.fieldKey === "policy_number");
+    expect(blank?.normalizedValue).toBe("");
+    expect(blank?.rawValue).toBe("612345678 101 1");
+    expect(
+      mintGeminiValue(
+        low.fields.map((field) => ({
+          fieldKey: field.fieldKey,
+          normalizedValue: field.normalizedValue,
+          rawValue: field.rawValue,
+          confidence: field.confidence,
+        })),
+        "policy_number",
+      ),
+    ).toBe("612345678 101 1");
+  });
+
+  it("uses Premium Due when that is the only term premium printed", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        writing_company: "Travelers",
+        policy_number: "612345678 101 1",
+        premiums: { premium_due: "2109.00" },
+        effective_date: "09/21/2026",
+        expiration_date: "03/21/2027",
+      },
+      "current_policy",
+      "auto",
+    );
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.current_premium.value).toBe("2109.00");
+    expect(applied.values.current_carrier.value).toBe("Travelers");
+    expect(applied.values.expiration_date.value).toBe("03/21/2027");
   });
 
   it("fills Allstate Current Policy keys and leaves years, insured, and AAA blank when unprinted", () => {

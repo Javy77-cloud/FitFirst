@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { isQuoteFileDoc } from "@/lib/deals/quote-docs";
 import { isDeclarationPdf } from "@/lib/policy/mint-gate";
-import { issuedPolicyDocType, issuedUploadFolder, issuedUploadPersist } from "./issued-upload";
+import { issuedPolicyDocType, issuedUploadFolder, issuedUploadMime, issuedUploadPersist } from "./issued-upload";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -59,6 +59,14 @@ describe("issued policy upload folder", () => {
     expect(isQuoteFileDoc(placed)).toBe(true);
   });
 
+  it("stores a HEIC photo as an image so Gemini does not treat it as a PDF", () => {
+    expect(issuedUploadMime("Travelers policy.HEIC", "")).toBe("image/heic");
+    expect(issuedUploadMime("Travelers policy.HEIC", "application/octet-stream")).toBe("image/heic");
+    expect(issuedUploadMime("policy.jpg", "image/jpeg")).toBe("image/jpeg");
+    expect(issuedUploadMime("Travelers policy.pdf", "application/pdf")).toBe("application/pdf");
+    expect(issuedUploadMime("Travelers policy.pdf", "")).toBe("application/pdf");
+  });
+
   it("still saves a declaration when the quote id is missing", () => {
     const placed = issuedUploadPersist({
       quoteId: "",
@@ -75,15 +83,27 @@ describe("issued policy upload folder", () => {
     const mint = source("src/app/actions/policy-mint.ts");
     expect(mint).toMatch(/issuedUploadPersist/);
     expect(mint).toMatch(/issuedUploadFolder/);
-    const upload = mint.slice(mint.indexOf("export async function uploadDeclarationAndMint"));
-    expect(upload).toMatch(/revalidatePath\(`\/deals\/\$\{dealId\}`\)/);
-    expect(upload).not.toMatch(/delete\(documents\)/);
-    expect(upload).not.toMatch(/delete\(deals\)/);
-    expect(upload).not.toMatch(/delete\(quotes\)/);
-    expect(upload).not.toMatch(/delete\(contacts\)/);
+    const save = mint.slice(
+      mint.indexOf("export async function saveIssuedPolicyUpload"),
+      mint.indexOf("export async function uploadDeclarationAndMint"),
+    );
+    expect(save).toMatch(/revalidatePath\(`\/deals\/\$\{dealId\}`\)/);
+    expect(save).not.toMatch(/loadMintGeminiRows/);
+    expect(save).not.toMatch(/issuePolicyFromDeclaration/);
+    expect(save).not.toMatch(/delete\(documents\)/);
+    expect(save).not.toMatch(/delete\(deals\)/);
+    expect(save).not.toMatch(/delete\(quotes\)/);
+    expect(save).not.toMatch(/delete\(contacts\)/);
     const popup = source("src/components/deal/issue-policy-from-dec.tsx");
-    expect(popup).toMatch(/router\.refresh\(\)/);
+    const upload = popup.slice(popup.indexOf("async function uploadAndMint"));
+    expect(upload.indexOf("saveIssuedPolicyUpload")).toBeGreaterThan(-1);
+    expect(upload.indexOf("saveIssuedPolicyUpload")).toBeLessThan(upload.indexOf("router.refresh()"));
+    expect(upload.indexOf("router.refresh()")).toBeLessThan(upload.indexOf("issuePolicyFromDeclaration"));
+    expect(upload).toMatch(/ISSUED_POLICY_FOLDER_SAVED/);
     expect(popup).toMatch(/router\.push\(`\/policies\/\$\{result\.policyId\}`\)/);
+    expect(popup).toMatch(/ISSUED_POLICY_ACCEPT/);
+    expect(source("src/components/deal/quote-file-actions.tsx")).toMatch(/ISSUED_POLICY_FOLDER_SAVED/);
+    expect(source("src/components/deal/quote-file-actions.tsx")).toMatch(/agencyCount/);
   });
 
   it("opens the upload popup when the quote folders have no policy, and does not Gemini first", () => {

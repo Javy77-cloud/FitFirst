@@ -174,6 +174,27 @@ describe("policy issued mint gate", () => {
     expect(picked.ok).toBe(true);
     if (picked.ok) expect(picked.dec.id).toBe("issued");
 
+    const photo = evaluateMintGate({
+      currentStage: "bound",
+      selectedQuoteIds: ["q1"],
+      liveQuoteIds: ["q1"],
+      surface: "quotes",
+      preferredDocumentId: "heic",
+      docs: [
+        { id: "old", docType: "dec", filename: "old-dec.pdf", mimeType: "application/pdf" },
+        {
+          id: "heic",
+          docType: "current_policy",
+          slot: "quote_file",
+          filename: "Travelers policy.HEIC",
+          mimeType: "image/heic",
+          tags: ["quote:q1", "source:agency", "dec", "mint", "line:auto"],
+        },
+      ],
+    });
+    expect(photo.ok).toBe(true);
+    if (photo.ok) expect(photo.dec.id).toBe("heic");
+
     const ignored = evaluateMintGate({
       currentStage: "bound",
       selectedQuoteIds: ["q1"],
