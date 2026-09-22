@@ -243,8 +243,8 @@ function buildClassicChecklist(input: {
     label: SERVICING_DOC_LABELS.dec,
     ok: hasServicingDoc(input.files, "dec"),
     detail: hasServicingDoc(input.files, "dec")
-      ? "Issued dec or complete policy is on this record."
-      : "Upload the issued dec on this Policy — shopping decs stay on the Deal.",
+      ? "Issued declaration page or complete policy is on this record."
+      : "Upload the issued declaration page on this Policy — shopping decs stay on the Deal.",
     toggleable: false,
   };
   return {
@@ -280,8 +280,8 @@ export function buildServicingChecklist(input: {
         label: SERVICING_DOC_LABELS.dec,
         ok: hasServicingDoc(input.files, "dec"),
         detail: hasServicingDoc(input.files, "dec")
-          ? "Issued dec or complete policy is on this record."
-          : "Upload the issued dec on this Policy — shopping decs stay on the Deal.",
+          ? "Issued declaration page or complete policy is on this record."
+          : "Upload the issued declaration page on this Policy — shopping decs stay on the Deal.",
         toggleable: false,
       });
     } else {

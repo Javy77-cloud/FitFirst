@@ -39,7 +39,7 @@ export const POLICY_TERMS_BY_FAMILY: Record<InsuranceFamily, readonly string[]> 
 };
 
 export const DOCUMENT_CATEGORIES = [
-  { value: "policy_dec", label: "Issued dec" },
+  { value: "policy_dec", label: "Issued declaration page" },
   { value: "policy_complete", label: "Complete policy" },
   { value: "policy_id", label: "ID card" },
   { value: "application", label: "Application" },

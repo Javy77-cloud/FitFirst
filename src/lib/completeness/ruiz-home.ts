@@ -42,6 +42,6 @@ export function ruizHomeSheetValues(): Record<string, QuoteSheetFieldValue> {
   values.four_point_date = confirmed("2025-08-12");
   values.four_point_result = confirmed("satisfactory");
   values.wind_mit_form = confirmed("OIR-B1-1802");
-  values.notes = confirmed("Bound HO3. Sheet filled from the issued dec — not a quote.");
+  values.notes = confirmed("Bound HO3. Sheet filled from the issued declaration page — not a quote.");
   return values;
 }

@@ -73,7 +73,7 @@ export function PolicyDocumentsTab({
               className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
               defaultValue="policy_dec"
             >
-              <option value="policy_dec">Issued dec</option>
+              <option value="policy_dec">Issued declaration page</option>
               <option value="policy_complete">Complete policy</option>
               <option value="policy_id">ID card</option>
               <option value="endorsement">Endorsement</option>
