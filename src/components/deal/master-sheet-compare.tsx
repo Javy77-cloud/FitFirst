@@ -944,7 +944,7 @@ function SheetCell({
           value={onLiveChange ? (liveValue ?? value) : undefined}
           onChange={
             onLiveChange
-              ? (event) => onLiveChange(event.target.value, fieldKey === "coverage_a" ? false : true)
+              ? (event) => onLiveChange(event.target.value, true)
               : undefined
           }
           onBlur={

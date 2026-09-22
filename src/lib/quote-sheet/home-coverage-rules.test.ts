@@ -345,6 +345,35 @@ describe("liveValuesAfterManualCoverageA", () => {
     expect(committed.ordinance_or_law).toBe(HOME_COVERAGE_DEFAULTS.ordinance_or_law);
   });
 
+
+  it("still reapplies after onChange already wrote the new Coverage A into live state", () => {
+    const stored = emptySheetValues("home", "homeowners");
+    stored.coverage_a = cell("400000", "extracted");
+    stored.coverage_b = cell("5%", "extracted");
+    stored.coverage_c = cell("50%", "extracted");
+    stored.coverage_d = cell("20%", "extracted");
+    stored.coverage_e = cell("$500k", "extracted");
+    stored.coverage_f = cell("$5k", "extracted");
+    stored.ordinance_or_law = cell("50%", "extracted");
+
+    // Mimic production: onChange already updated live Coverage A before blur.
+    const prevLive = Object.fromEntries(
+      Object.entries(stored).map(([key, value]) => [key, value.value]),
+    );
+    prevLive.coverage_a = "605000";
+
+    const committed = liveValuesAfterManualCoverageA(prevLive, "605000", stored, "homeowners", {
+      reapply: true,
+    });
+    expect(committed.coverage_a).toBe("605000");
+    expect(committed.coverage_b).toBe(HOME_COVERAGE_DEFAULTS.coverage_b);
+    expect(committed.coverage_c).toBe(HOME_COVERAGE_DEFAULTS.coverage_c);
+    expect(committed.coverage_d).toBe(HOME_COVERAGE_DEFAULTS.coverage_d);
+    expect(committed.coverage_e).toBe("$300k");
+    expect(committed.coverage_f).toBe("$1k");
+    expect(committed.ordinance_or_law).toBe(HOME_COVERAGE_DEFAULTS.ordinance_or_law);
+  });
+
   it("does not reapply when the normalized Coverage A amount is unchanged", () => {
     const stored = emptySheetValues("home", "homeowners");
     stored.coverage_a = cell("605000", "agent");
