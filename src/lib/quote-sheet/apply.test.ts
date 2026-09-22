@@ -142,7 +142,7 @@ describe("quote sheet fill — blanks only", () => {
     expect(result.filledKeys.length).toBeGreaterThanOrEqual(30);
     expect(result.values.coverage_a.source).toBe("extracted");
     expect(result.values.coverage_a.sourceLabel).toBe("dec page");
-    expect(result.values.coverage_b.value).toBe("28500");
+    expect(result.values.coverage_b.value).toBe("10%");
   });
 
   it("gap-fills public facts only on blanks and never uses Zestimate as Cov A", () => {

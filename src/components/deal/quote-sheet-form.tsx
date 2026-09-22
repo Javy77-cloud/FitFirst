@@ -12,6 +12,7 @@ import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
 import { groupFields } from "@/lib/quote-sheet/catalog";
 import { inspectionSectionDefaultOpen } from "@/lib/quote-sheet/home-inspections";
 import { sheetCounts } from "@/lib/quote-sheet/apply";
+import { COVERAGE_A_RCE_LABEL } from "@/lib/quote-sheet/home-coverage-rules";
 import { AddressAutofill, type AddressFillMap } from "@/components/address-autofill";
 import { MarkMappingWrong } from "@/components/deal/mark-mapping-wrong";
 import { DeskDetails } from "@/components/desk-details";
@@ -392,6 +393,11 @@ function SheetField({
           className={cn("h-8", toneClass(tone), editing && "ring-1 ring-primary/30")}
         />
       )}
+      {line === "home" && fieldKey === "coverage_a" && !cell.value.trim() ? (
+        <p className="mt-0.5 text-helper text-muted-foreground" data-ff-coverage-a-rce="">
+          {COVERAGE_A_RCE_LABEL}
+        </p>
+      ) : null}
       {tag ? <p className="mt-0.5 text-helper text-muted-foreground">{tag}</p> : null}
     </div>
   );

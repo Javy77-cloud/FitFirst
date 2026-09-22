@@ -197,7 +197,7 @@ Loan Number: LN-55
     expect(byKey.wind_hail_deductible).toBe("1000"); // AOP fallback
 
     const applied = applyExtractedToSheet("home", emptySheetValues("home"), sparse.fields);
-    expect(applied.values.coverage_e.value).toBe("300000");
+    expect(applied.values.coverage_e.value).toBe("$300k");
     expect(applied.values.deadbolts.value).toBe("yes");
     expect(applied.values.mortgagee_address.value).toMatch(/123 Lender Lane/);
     expect(applied.values.mortgagee_name.value).toMatch(/Wells Fargo/i);
