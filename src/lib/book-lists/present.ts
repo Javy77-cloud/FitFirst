@@ -289,10 +289,16 @@ function sourceCue(raw: string | null | undefined): string | null {
     .join(" ");
 }
 
+/** A lone dash is a blank cell, not a fact. Real labels that contain a hyphen stay. */
+function isEmptyDash(value: string | null | undefined): boolean {
+  const text = value?.trim() ?? "";
+  return !text || /^(?:—|–|-|n\/a|na)$/i.test(text);
+}
+
 function takeFacts(items: Array<BookCardFact | null | undefined>, limit = 8): BookCardFact[] {
   const out: BookCardFact[] = [];
   for (const item of items) {
-    if (!item?.label.trim()) continue;
+    if (!item?.label.trim() || isEmptyDash(item.label)) continue;
     out.push(item);
     if (out.length >= limit) break;
   }
@@ -386,7 +392,7 @@ export function presentPartyCard(
           inForceFact,
           renewalInFact(row.nearestRenewalDays),
         ],
-    8,
+    10,
   );
   const dob = kind === "contact" ? dobGlance(row.dateOfBirth) : null;
   const facts = dob && coreFacts.length < 6 ? [...coreFacts, { id: "dob", label: dob }] : coreFacts;
@@ -395,7 +401,7 @@ export function presentPartyCard(
     surface: kind === "contact" ? "contacts" : "accounts",
     href,
     title,
-    subtitle: row.clientStatus || undefined,
+    subtitle: isEmptyDash(row.clientStatus) ? undefined : row.clientStatus?.trim() || undefined,
     heat,
     column: partyColumnForHeat(heat),
     health: extra.health ?? null,
@@ -610,7 +616,7 @@ export function presentCarrierCard(
     surface: "carriers",
     href: `/carriers/${row.id}`,
     title: row.name,
-    subtitle: row.agencyCode || undefined,
+    subtitle: isEmptyDash(row.agencyCode) ? undefined : row.agencyCode?.trim() || undefined,
     heat,
     column,
     health: null,

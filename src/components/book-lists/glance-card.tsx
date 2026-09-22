@@ -22,6 +22,11 @@ function RiskGlyph({
   );
 }
 
+function isEmptyDash(value: string | null | undefined): boolean {
+  const text = value?.trim() ?? "";
+  return !text || /^(?:—|–|-|n\/a|na)$/i.test(text);
+}
+
 function CardActions({ actions }: { actions: BookCardAction[] }) {
   if (actions.length === 0) return null;
   return (
@@ -30,6 +35,7 @@ function CardActions({ actions }: { actions: BookCardAction[] }) {
         <a
           key={action.id}
           href={action.href}
+          title={action.label}
           {...(action.external ? { target: "_blank", rel: "noreferrer" } : {})}
         >
           {action.label}
@@ -40,11 +46,12 @@ function CardActions({ actions }: { actions: BookCardAction[] }) {
 }
 
 function FactChips({ facts, className }: { facts: BookCardFact[]; className?: string }) {
-  if (facts.length === 0) return null;
+  const shown = facts.filter((fact) => fact.label.trim() && !isEmptyDash(fact.label));
+  if (shown.length === 0) return null;
   return (
     <ul className={cn("ff-book-facts", className)} data-ff-book-facts="">
-      {facts.map((fact) => (
-        <li key={fact.id} data-ff-book-fact={fact.id} className={fact.tone ? `is-${fact.tone}` : undefined}>
+      {shown.map((fact) => (
+        <li key={fact.id} data-ff-book-fact={fact.id} className={fact.tone ? `is-${fact.tone}` : undefined} title={fact.label}>
           {fact.href ? <Link href={fact.href}>{fact.label}</Link> : fact.label}
         </li>
       ))}
@@ -53,7 +60,7 @@ function FactChips({ facts, className }: { facts: BookCardFact[]; className?: st
 }
 
 function ChannelLine({ card }: { card: BookGlanceCard }) {
-  if (card.surface !== "contacts" && card.surface !== "accounts") return null;
+  if (card.surface !== "contacts" && card.surface !== "accounts" && card.surface !== "policies") return null;
   const tel = telHref(card.phone);
   const mail = mailtoHref(card.email);
   if (!tel && !mail) return null;
@@ -67,7 +74,7 @@ function ChannelLine({ card }: { card: BookGlanceCard }) {
 
 function ReachCue({ card }: { card: BookGlanceCard }) {
   const mid = card.mid?.trim() || "";
-  if (!mid) return null;
+  if (!mid || isEmptyDash(mid)) return null;
   if (card.midHref) {
     return (
       <Link href={card.midHref} className="ff-stack-mid" data-ff-stack-mid="" data-ff-book-why="" title={card.why}>
@@ -83,11 +90,13 @@ function ReachCue({ card }: { card: BookGlanceCard }) {
 }
 
 function NameLink({ card }: { card: BookGlanceCard }) {
+  const status =
+    card.subtitle && (card.surface === "contacts" || card.surface === "accounts") && !isEmptyDash(card.subtitle)
+      ? card.subtitle
+      : null;
   return (
     <div className="ff-book-name">
-      {card.subtitle && (card.surface === "contacts" || card.surface === "accounts") ? (
-        <ClientStatusDot status={card.subtitle} />
-      ) : null}
+      {status ? <ClientStatusDot status={status} /> : null}
       <Link href={card.href} className="ff-stack-name">
         {card.title}
       </Link>
@@ -95,135 +104,94 @@ function NameLink({ card }: { card: BookGlanceCard }) {
   );
 }
 
-function PartyCard({
+function InboxCue({ card }: { card: BookGlanceCard }) {
+  if (!card.inboxCue || isEmptyDash(card.inboxCue)) return null;
+  return (
+    <p className="ff-inbox-cue" data-ff-inbox-cue="">
+      {card.inboxHref ? (
+        <Link href={card.inboxHref} className="hover:underline">
+          {card.inboxCue}
+        </Link>
+      ) : (
+        card.inboxCue
+      )}
+    </p>
+  );
+}
+
+function BookGridCard({
   card,
   leading,
   extra,
   activity,
   tip,
+  kind,
 }: {
   card: BookGlanceCard;
   leading?: ReactNode;
   extra?: ReactNode;
   activity?: ReactNode;
   tip: string;
+  kind: "party" | "carrier" | "policy";
 }) {
+  const columns = (card.columns ?? []).filter((column) => !isEmptyDash(column.label));
   return (
     <article
-      className={cn("ff-stack-card ff-book-card ff-party-card", `ff-heat-${card.heat}`)}
+      className={cn(
+        "ff-stack-card ff-book-card ff-book-grid-card",
+        kind === "party" && "ff-party-card",
+        kind === "carrier" && "ff-carrier-card",
+        kind === "policy" && "ff-policy-list-card",
+        `ff-heat-${card.heat}`,
+      )}
       data-ff-book-card={card.id}
+      data-ff-book-grid=""
       data-hay={card.hay}
       data-ff-book-surface={card.surface}
       data-ff-heat={card.heat}
       data-ff-book-column={card.column}
+      {...(kind === "policy"
+        ? { "data-ff-policy-list-card": card.id, "data-ff-policy-stack-card": card.id }
+        : {})}
     >
       {leading}
       <RiskGlyph heat={card.heat} tip={tip} />
       <div className="ff-stack-card-body min-w-0 flex-1">
-        <div className="ff-party-line">
-          <NameLink card={card} />
-          <div className="ff-party-center" data-ff-book-center="">
-            <FactChips facts={card.facts ?? []} />
-            <ChannelLine card={card} />
+        <div className="ff-book-grid">
+          <div className="ff-book-identity" data-ff-book-identity="">
+            <NameLink card={card} />
+            {kind === "carrier" ? <CardActions actions={card.actions ?? []} /> : <ChannelLine card={card} />}
           </div>
-          <div className="ff-party-right">
-            <ReachCue card={card} />
+          <div className="ff-book-center" data-ff-book-center="">
+            <FactChips facts={card.facts ?? []} />
+          </div>
+          <div className="ff-book-rail" data-ff-book-rail="">
+            {kind === "party" ? <ReachCue card={card} /> : null}
+            {kind === "carrier" && columns.length > 0 ? (
+              <div className="ff-book-columns" data-ff-book-columns="" data-ff-book-why="" title={card.why}>
+                {columns.map((column) => (
+                  <span key={column.id} data-ff-book-column-cue={column.id}>
+                    {column.label}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+            {kind !== "party" ? (
+              <Link href={card.primaryAction.href} className="ff-stack-action" data-ff-book-action="">
+                {card.primaryAction.label}
+              </Link>
+            ) : null}
             {activity}
           </div>
         </div>
+        <InboxCue card={card} />
         {extra}
       </div>
     </article>
   );
 }
 
-function CarrierCard({
-  card,
-  leading,
-  extra,
-  tip,
-}: {
-  card: BookGlanceCard;
-  leading?: ReactNode;
-  extra?: ReactNode;
-  tip: string;
-}) {
-  const columns = card.columns ?? [];
-  return (
-    <article
-      className={cn("ff-stack-card ff-book-card ff-carrier-card", `ff-heat-${card.heat}`)}
-      data-ff-book-card={card.id}
-      data-hay={card.hay}
-      data-ff-book-surface={card.surface}
-      data-ff-heat={card.heat}
-      data-ff-book-column={card.column}
-    >
-      {leading}
-      <RiskGlyph heat={card.heat} tip={tip} />
-      <div className="ff-stack-card-body min-w-0 flex-1">
-        <div className="ff-carrier-line">
-          <NameLink card={card} />
-          <div className="ff-carrier-center" data-ff-book-center="">
-            <FactChips facts={card.facts ?? []} />
-            <CardActions actions={card.actions ?? []} />
-          </div>
-          <div className="ff-book-columns ff-carrier-right" data-ff-book-columns="" data-ff-book-why="" title={card.why}>
-            {columns.map((column) => (
-              <span key={column.id} data-ff-book-column-cue={column.id}>
-                {column.label}
-              </span>
-            ))}
-          </div>
-        </div>
-        {extra}
-      </div>
-      <Link href={card.primaryAction.href} className="ff-stack-action" data-ff-book-action="">
-        {card.primaryAction.label}
-      </Link>
-    </article>
-  );
-}
-
-function PolicyStackCard({
-  card,
-  leading,
-  extra,
-  tip,
-}: {
-  card: BookGlanceCard;
-  leading?: ReactNode;
-  extra?: ReactNode;
-  tip: string;
-}) {
-  return (
-    <article
-      className={cn("ff-stack-card ff-book-card ff-policy-stack-card", `ff-heat-${card.heat}`)}
-      data-ff-book-card={card.id}
-      data-ff-policy-stack-card={card.id}
-      data-hay={card.hay}
-      data-ff-book-surface={card.surface}
-      data-ff-heat={card.heat}
-      data-ff-book-column={card.column}
-    >
-      {leading}
-      <RiskGlyph heat={card.heat} tip={tip} />
-      <div className="ff-stack-card-body min-w-0 flex-1">
-        <div className="ff-policy-line">
-          <NameLink card={card} />
-          <div className="ff-policy-center" data-ff-book-center="">
-            <FactChips facts={card.facts ?? []} />
-          </div>
-        </div>
-        {extra}
-      </div>
-      <Link href={card.primaryAction.href} className="ff-stack-action" data-ff-book-action="">
-        {card.primaryAction.label}
-      </Link>
-    </article>
-  );
-}
-
-/** Narrow band column — one why line, not the wide stack. */
+/** Narrow band column — one why line, not the wide list. */
 function BandCard({
   card,
   leading,
@@ -248,20 +216,12 @@ function BandCard({
       <RiskGlyph heat={card.heat} tip={tip} />
       <div className="ff-stack-card-body min-w-0 flex-1">
         <NameLink card={card} />
-        <p className="ff-book-why" data-ff-book-why="" title={card.why}>
-          {card.why}
-        </p>
-        {card.inboxCue ? (
-          <p className="ff-inbox-cue" data-ff-inbox-cue="">
-            {card.inboxHref ? (
-              <Link href={card.inboxHref} className="hover:underline">
-                {card.inboxCue}
-              </Link>
-            ) : (
-              card.inboxCue
-            )}
+        {card.why && !isEmptyDash(card.why) ? (
+          <p className="ff-book-why" data-ff-book-why="" title={card.why}>
+            {card.why}
           </p>
         ) : null}
+        <InboxCue card={card} />
         {extra}
       </div>
       <Link href={card.primaryAction.href} className="ff-stack-action" data-ff-book-action="">
@@ -282,17 +242,17 @@ export function BookGlanceCardView({
   leading?: ReactNode;
   extra?: ReactNode;
   activity?: ReactNode;
-  layoutMode?: "stack" | "bands";
+  layoutMode?: "stack" | "bands" | "list";
 }) {
   const tip = card.health?.why || card.healthHint?.tip || card.why;
   if (card.surface === "contacts" || card.surface === "accounts") {
-    return <PartyCard card={card} leading={leading} extra={extra} activity={activity} tip={tip} />;
+    return <BookGridCard card={card} leading={leading} extra={extra} activity={activity} tip={tip} kind="party" />;
   }
   if (card.surface === "carriers") {
-    return <CarrierCard card={card} leading={leading} extra={extra} tip={tip} />;
+    return <BookGridCard card={card} leading={leading} extra={extra} tip={tip} kind="carrier" />;
   }
-  if (card.surface === "policies" && layoutMode === "stack") {
-    return <PolicyStackCard card={card} leading={leading} extra={extra} tip={tip} />;
+  if (card.surface === "policies" && layoutMode !== "bands") {
+    return <BookGridCard card={card} leading={leading} extra={extra} tip={tip} kind="policy" />;
   }
   return <BandCard card={card} leading={leading} extra={extra} tip={tip} />;
 }

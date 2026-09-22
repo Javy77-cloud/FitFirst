@@ -3,7 +3,7 @@ import type { HeatLevel } from "@/lib/desk/truth-strip";
 
 export type BookHeat = HeatLevel;
 export type BookSurface = "contacts" | "accounts" | "carriers" | "policies";
-export type BookLayout = "stack" | "bands";
+export type BookLayout = "stack" | "bands" | "list";
 
 export type BookColumnId =
   | "touch"

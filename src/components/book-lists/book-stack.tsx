@@ -9,12 +9,14 @@ export function BookPriorityStack({
   cards,
   empty,
   activity = false,
+  layoutMode = "stack",
   renderExtra,
   renderLeading,
 }: {
   cards: BookGlanceCard[];
   empty: string;
   activity?: boolean;
+  layoutMode?: "stack" | "list";
   renderExtra?: (card: BookGlanceCard) => ReactNode;
   renderLeading?: (card: BookGlanceCard) => ReactNode;
 }) {
@@ -32,7 +34,7 @@ export function BookPriorityStack({
         const view = (
           <BookGlanceCardView
             card={card}
-            layoutMode="stack"
+            layoutMode={layoutMode}
             leading={renderLeading?.(card)}
             extra={renderExtra?.(card)}
             activity={
