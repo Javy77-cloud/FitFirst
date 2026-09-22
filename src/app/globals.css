@@ -4289,6 +4289,65 @@ tr[data-ff-activity-selected="true"] {
 .ff-policy-list-card .ff-book-center .ff-book-facts {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
+/* Policies Stack only. Same card column as Deals/Renewals. Name stays heavy; other type stays light. */
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-spread {
+  display: grid;
+  grid-template-columns: 14.5rem minmax(0, 1fr) 12.75rem;
+  align-items: center;
+  column-gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-identity {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.08rem;
+  min-width: 0;
+}
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-center {
+  display: grid;
+  grid-template-columns: minmax(4.25rem, 0.7fr) minmax(6rem, 1.15fr) minmax(4.75rem, 0.85fr) minmax(6.5rem, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 0.55rem;
+  row-gap: 0.12rem;
+  align-items: center;
+  min-width: 0;
+}
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-cell,
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-cue .ff-stack-mid,
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-identity .ff-book-channels,
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-identity .ff-book-channels a {
+  color: var(--ff-muted);
+  font-weight: 500;
+}
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-cell {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.84rem;
+}
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-cue {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.16rem;
+  min-width: 0;
+}
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-cue .ff-stack-mid {
+  max-width: 100%;
+  margin: 0;
+  text-align: right;
+}
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-stack-name {
+  color: var(--ff-navy);
+  font-weight: 750;
+}
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-cue .ff-stack-action {
+  flex: 0 0 auto;
+}
 .ff-book-center .ff-book-facts li {
   min-width: 0;
   max-width: 100%;

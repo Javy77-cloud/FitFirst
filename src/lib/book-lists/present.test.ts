@@ -163,9 +163,10 @@ describe("account card glance", () => {
     expect((card.facts ?? []).length).toBeLessThanOrEqual(10);
   });
 
-  it("opens the policy list from the list url and the old stack url", () => {
+  it("keeps policy bands, list, and stack as separate views", () => {
     expect(parseBookLayout("list")).toBe("list");
-    expect(parseBookLayout("stack")).toBe("list");
+    expect(parseBookLayout("stack")).toBe("stack");
+    expect(parseBookLayout("bands")).toBe("bands");
     expect(parseBookLayout(undefined)).toBe("bands");
   });
 

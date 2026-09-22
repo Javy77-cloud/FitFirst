@@ -150,9 +150,7 @@ function BookGridCard({
       data-ff-book-surface={card.surface}
       data-ff-heat={card.heat}
       data-ff-book-column={card.column}
-      {...(kind === "policy"
-        ? { "data-ff-policy-list-card": card.id, "data-ff-policy-stack-card": card.id }
-        : {})}
+      {...(kind === "policy" ? { "data-ff-policy-list-card": card.id } : {})}
     >
       {leading}
       <RiskGlyph heat={card.heat} tip={tip} />
@@ -182,6 +180,81 @@ function BookGridCard({
               </Link>
             ) : null}
             {activity}
+          </div>
+        </div>
+        <InboxCue card={card} />
+        {extra}
+      </div>
+    </article>
+  );
+}
+
+function policyFact(card: BookGlanceCard, id: string): string {
+  const label = card.facts?.find((fact) => fact.id === id)?.label?.trim() ?? "";
+  return isEmptyDash(label) ? "" : label;
+}
+
+/** Policies Stack — same top-to-bottom card column as Deals/Renewals. Existing facts only. */
+function PolicyStackCard({
+  card,
+  leading,
+  extra,
+  tip,
+}: {
+  card: BookGlanceCard;
+  leading?: ReactNode;
+  extra?: ReactNode;
+  tip: string;
+}) {
+  const form = policyFact(card, "form") || policyFact(card, "lob");
+  const lob = policyFact(card, "lob");
+  const number = policyFact(card, "number");
+  const line = form && lob && lob !== form ? lob : number;
+  const renewal = policyFact(card, "renewal-premium") || policyFact(card, "billing") || policyFact(card, "claims");
+  const cells = [
+    { id: "form", label: form },
+    { id: "carrier", label: policyFact(card, "carrier") },
+    { id: "status", label: policyFact(card, "status") },
+    { id: "premium", label: policyFact(card, "premium") },
+    { id: "line", label: line },
+    { id: "expires", label: policyFact(card, "expires") },
+    { id: "renews", label: policyFact(card, "renews") },
+    { id: "renewal", label: renewal },
+  ];
+  return (
+    <article
+      className={cn("ff-stack-card ff-book-card", `ff-heat-${card.heat}`)}
+      data-ff-book-card={card.id}
+      data-ff-policy-stack-card={card.id}
+      data-hay={card.hay}
+      data-ff-book-surface={card.surface}
+      data-ff-heat={card.heat}
+      data-ff-book-column={card.column}
+    >
+      {leading}
+      <RiskGlyph heat={card.heat} tip={tip} />
+      <div className="ff-stack-card-body min-w-0 flex-1">
+        <div className="ff-stack-card-spread ff-policy-stack-spread">
+          <div className="ff-policy-stack-identity" data-ff-book-identity="">
+            <NameLink card={card} />
+            <ChannelLine card={card} />
+          </div>
+          <div className="ff-policy-stack-center" data-ff-book-center="">
+            {cells.map((cell) => (
+              <span key={cell.id} className="ff-policy-stack-cell" data-ff-policy-field={cell.id} title={cell.label || undefined}>
+                {cell.label}
+              </span>
+            ))}
+          </div>
+          <div className="ff-policy-stack-cue" data-ff-book-rail="">
+            {card.why && !isEmptyDash(card.why) ? (
+              <p className="ff-stack-mid" data-ff-stack-mid="" data-ff-book-why="" title={card.why}>
+                {card.why}
+              </p>
+            ) : null}
+            <Link href={card.primaryAction.href} className="ff-stack-action" data-ff-book-action="">
+              {card.primaryAction.label}
+            </Link>
           </div>
         </div>
         <InboxCue card={card} />
@@ -250,6 +323,9 @@ export function BookGlanceCardView({
   }
   if (card.surface === "carriers") {
     return <BookGridCard card={card} leading={leading} extra={extra} tip={tip} kind="carrier" />;
+  }
+  if (card.surface === "policies" && layoutMode === "stack") {
+    return <PolicyStackCard card={card} leading={leading} extra={extra} tip={tip} />;
   }
   if (card.surface === "policies" && layoutMode !== "bands") {
     return <BookGridCard card={card} leading={leading} extra={extra} tip={tip} kind="policy" />;

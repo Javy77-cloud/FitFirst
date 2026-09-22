@@ -32,9 +32,10 @@ export function parseBookLob(value: string | null | undefined): BookFamily | nul
   return LOBS.has(value as BookFamily) ? (value as BookFamily) : null;
 }
 
-/** Policies land on the band board. List is the wide two-row grid. `stack` is the old list url. */
+/** Policies default to the band board. List stays the wide grid. Stack is its own card column. */
 export function parseBookLayout(value: string | null | undefined): BookLayout {
-  if (value === "list" || value === "stack") return "list";
+  if (value === "list") return "list";
+  if (value === "stack") return "stack";
   return "bands";
 }
 

@@ -56,20 +56,27 @@ export function BookLenses({
         ))}
       </div>
       {surface === "policies" ? (
-        <div className={FF_CHIP_TAB_GROUP} aria-label="Policy layout" data-ff-book-layout-toggle="">
+        <div className={FF_CHIP_TAB_GROUP} aria-label="Bands Stack List" data-ff-book-layout-toggle="">
+          <Link
+            href={layoutHref("bands")}
+            className={chipTabClass(layout === "bands" || layout == null)}
+            data-ff-book-layout="bands"
+          >
+            Bands
+          </Link>
+          <Link
+            href={layoutHref("stack")}
+            className={chipTabClass(layout === "stack")}
+            data-ff-book-layout="stack"
+          >
+            Stack
+          </Link>
           <Link
             href={layoutHref("list")}
             className={chipTabClass(layout === "list")}
             data-ff-book-layout="list"
           >
             List
-          </Link>
-          <Link
-            href={layoutHref("bands")}
-            className={chipTabClass(layout !== "list")}
-            data-ff-book-layout="bands"
-          >
-            Bands
           </Link>
         </div>
       ) : null}
