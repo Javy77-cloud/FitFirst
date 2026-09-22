@@ -146,6 +146,7 @@ export const FLASH_COPY = {
   "mint-policy-missing": "This policy is missing. Refresh and try again.",
   "mint-confirm-invalid": "That mint request was invalid. Refresh and try again.",
   "need-confirm": "Confirm remaining declaration fields before publishing.",
+  "need-policy-number": "Type the real policy number before Policy looks good. Gemini left it blank on this declaration.",
   "need-quote": "Pick a live quote first",
   "declaration-received": "Declaration received",
   "letter-extracting": "Extracting letter fields",

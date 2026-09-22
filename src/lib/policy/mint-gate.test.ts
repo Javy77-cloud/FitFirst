@@ -23,6 +23,9 @@ import {
   quotesOnlyStageBlocked,
   mintFailureToast,
   evaluateMintExtract,
+  mintBookedPolicyNumber,
+  isPendingPolicyNumber,
+  mintPublishBlockReason,
   mintGeminiValue,
   adoptMintFields,
   applyConfirmedMintFields,
@@ -449,7 +452,7 @@ describe("unpublished confirm guard", () => {
     );
   });
 
-  it("blocks hollow mint when Gemini is empty or missing policy number / premium", () => {
+  it("blocks hollow mint when Gemini is empty or missing premium / effective date", () => {
     expect(evaluateMintExtract([]).ok).toBe(false);
     expect(evaluateMintExtract([])).toMatchObject({ ok: false, reason: "need_dec_fields" });
 
@@ -468,10 +471,10 @@ describe("unpublished confirm guard", () => {
     ).toMatchObject({
       ok: true,
       policyNumber: "612345678 101 1",
-      premium: "2109.00",
-      effectiveDate: "09/21/2026",
+      premium: "2109",
+      effectiveDate: "2026-09-21",
     });
-    // Same Gemini holes with no sheet fallback → clear policy-number guidance.
+    // Same Gemini holes with no sheet fallback → still mint; agent types policy number on confirm.
     const onlyNumber = evaluateMintExtract(
       [
         { fieldKey: "current_premium", normalizedValue: "2109.00", confidence: 0.95, flagged: false },
@@ -479,12 +482,14 @@ describe("unpublished confirm guard", () => {
       ],
       { filename: "Adriana Iori DEC Page Travelers.pdf" },
     );
-    expect(onlyNumber.ok).toBe(false);
-    if (!onlyNumber.ok) {
-      expect(onlyNumber.missing).toEqual(["policy number"]);
-      expect(onlyNumber.message).toMatch(/Put the policy number on Risk Profile/);
-      expect(onlyNumber.message).toMatch(/Adriana Iori DEC Page Travelers\.pdf/);
-    }
+    expect(onlyNumber).toMatchObject({
+      ok: true,
+      policyNumber: "",
+      premium: "2109",
+      effectiveDate: "2026-09-21",
+      policyNumberPending: true,
+    });
+    expect(mintBookedPolicyNumber(onlyNumber.ok ? onlyNumber.policyNumber : "")).toBe("PENDING");
 
     expect(
       evaluateMintExtract([
@@ -715,6 +720,50 @@ describe("unpublished confirm guard", () => {
       next = confirmMintField(next, field.key, field.value || "ok");
     }
     expect(canPublishMint({ ...payload, fields: next })).toBe(true);
+    expect(isPendingPolicyNumber("")).toBe(true);
+    expect(isPendingPolicyNumber("PENDING")).toBe(true);
+    expect(mintBookedPolicyNumber("")).toBe("PENDING");
+    expect(mintBookedPolicyNumber("612345678 101 1")).toBe("612345678 101 1");
+    expect(
+      canPublishMint({
+        status: "unpublished",
+        soldBasis: { quoteId: "q1" },
+        fields: [
+          {
+            key: "policy_number",
+            label: "Policy number",
+            value: "",
+            confidence: 0,
+            source: "agent",
+            flagged: false,
+            confirmed: true,
+            soldValue: null,
+            sheetValue: null,
+            geminiValue: null,
+          },
+        ],
+      }),
+    ).toBe(false);
+    expect(
+      mintPublishBlockReason({
+        status: "unpublished",
+        soldBasis: { quoteId: "q1" },
+        fields: [
+          {
+            key: "policy_number",
+            label: "Policy number",
+            value: "",
+            confidence: 0,
+            source: "agent",
+            flagged: false,
+            confirmed: true,
+            soldValue: null,
+            sheetValue: null,
+            geminiValue: null,
+          },
+        ],
+      }),
+    ).toMatch(/Type the real policy number/);
     expect(policyMintUnpublished({ publishedAt: new Date(), status: "active" })).toBe(false);
     expect(parseMintPayload({ status: "unpublished", soldBasis: { quoteId: "q" }, fields: [] })?.status).toBe(
       "unpublished",

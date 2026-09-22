@@ -8,9 +8,12 @@ import type { MintField } from "@/lib/policy/mint-gate";
 import {
   adoptMintFields,
   applyConfirmedMintFields,
+  canPublishMint,
+  isPendingPolicyNumber,
   mintConfirmQueue,
   mintFailureToast,
   mintProposedValue,
+  mintPublishBlockReason,
 } from "@/lib/policy/mint-gate";
 import { flashAction } from "@/lib/flash-client";
 
@@ -79,18 +82,26 @@ export function MintConfirmQueue({
   }
 
   if (done) {
+    const publishPayload = {
+      status: "unpublished" as const,
+      soldBasis: { quoteId: "" },
+      fields: localFields,
+    };
+    const blockReason = mintPublishBlockReason(publishPayload);
+    const canPublish = canPublishMint(publishPayload);
     return (
       <section className="ff-card mx-auto max-w-lg space-y-3 p-5" data-ff-mint-confirm-empty="">
         <h2 className="text-lg font-semibold text-navy">Policy looks good?</h2>
         <p className="text-sm text-muted-foreground">
-          Review the policy number, premium, and dates on this record. Policy looks good records your name
-          and the Eastern time, then publishes.
+          {blockReason
+            ? blockReason
+            : "Review the policy number, premium, and dates on this record. Policy looks good records your name and the Eastern time, then publishes."}
         </p>
         <Button
           type="button"
           data-ff-publish-minted-policy=""
           data-ff-policy-looks-good=""
-          disabled={pending}
+          disabled={pending || !canPublish}
           onClick={() => {
             const data = new FormData();
             data.set("policyId", policyId);
@@ -174,7 +185,11 @@ export function MintConfirmQueue({
         <Button
           type="button"
           size="sm"
-          disabled={pending || !(proposed || value.trim())}
+          disabled={
+            pending ||
+            !(proposed || value.trim()) ||
+            (current.key === "policy_number" && isPendingPolicyNumber(proposed || value))
+          }
           data-ff-mint-confirm-keep=""
           onClick={() => confirm(proposed || value)}
         >
