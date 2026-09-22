@@ -253,11 +253,12 @@ export function clearFlashCookie(): void {
 }
 
 /** After Save Deal Details, stay on Details with a success flash; keep line/product. */
+/** After Deal Details save — advance to Documents (same product line/product query). */
 export function dealDetailsSavedHref(
   dealId: string,
   extras?: { line?: string | null; product?: string | null },
 ): string {
-  const query = new URLSearchParams({ tab: "details" });
+  const query = new URLSearchParams({ tab: "documents" });
   const line = extras?.line?.trim();
   const product = extras?.product?.trim();
   if (line) query.set("line", line);
