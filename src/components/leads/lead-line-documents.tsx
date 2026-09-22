@@ -285,6 +285,7 @@ function LineCard({
                     mimeType={doc.mimeType}
                     slot={doc.slot}
                     docType={doc.docType}
+                    tags={doc.tags}
                     leadId={leadId}
                     dealId={dealId}
                     returnTo={`/leads/${leadId}`}

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Document } from "@/lib/db/schema";
+import { displayDocumentTags } from "@/lib/documents/document-labels";
 import { DOC_TYPE_LABELS, DOC_TYPES, ESIGN_PROVIDERS } from "@/lib/domain";
 import { ESIGN_PROVIDER_LABELS } from "@/lib/integrations/esign";
 
@@ -96,6 +97,7 @@ export function DocumentTable({
                 mimeType={doc.mimeType}
                 slot={doc.slot}
                 docType={doc.docType}
+                tags={doc.tags}
                 dealId={doc.dealId}
                 policyId={doc.policyId}
                 contactId={doc.contactId}
@@ -105,7 +107,7 @@ export function DocumentTable({
               </FileActionMenu>
             </td>
             <td>{DOC_TYPE_LABELS[doc.docType as keyof typeof DOC_TYPE_LABELS] ?? doc.docType}</td>
-            <td className="text-xs">{(doc.tags ?? []).join(", ") || "—"}</td>
+            <td className="text-xs">{displayDocumentTags(doc.tags).join(", ") || "—"}</td>
             <td>{doc.status.replaceAll("_", " ")}</td>
             <td>
               <SendForSignature document={doc} returnTo={returnTo} compact />

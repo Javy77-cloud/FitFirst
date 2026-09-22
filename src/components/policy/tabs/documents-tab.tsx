@@ -16,6 +16,7 @@ import {
 import { IdCardsUploadPanel } from "@/components/policy/id-cards-upload-panel";
 import { deskNow } from "@/lib/home/as-of";
 import { shouldShowManualRenewalHelp } from "@/lib/policy/care-strip";
+import { DOCUMENT_CATEGORIES } from "@/lib/desk/policy-family";
 
 export function PolicyDocumentsTab({
   policy,
@@ -104,15 +105,11 @@ export function PolicyDocumentsTab({
               className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
               defaultValue="policy_dec"
             >
-              <option value="policy_dec">Issued declaration page</option>
-              <option value="policy_complete">Complete policy</option>
-              <option value="policy_id">ID card</option>
-              <option value="endorsement">Endorsement</option>
-              <option value="application">Application</option>
-              <option value="binder">Binder</option>
-              <option value="aor">AOR packet</option>
-              <option value="coi">COI</option>
-              <option value="inspection">Inspection</option>
+              {DOCUMENT_CATEGORIES.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -147,6 +144,7 @@ export function PolicyDocumentsTab({
               filename: f.filename,
               docType: f.docType,
               slot: f.slot,
+              tags: f.tags,
               createdAt: f.createdAt,
               expiresAt: f.expiresAt ?? null,
               versionCount: f.versionCount,

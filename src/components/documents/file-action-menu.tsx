@@ -2,8 +2,13 @@
 
 import { useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Download, Eye, Replace, Trash2 } from "lucide-react";
-import { deleteUploadedFile } from "@/app/actions/documents";
+import { CalendarRange, Download, Eye, Pencil, Replace, Tags, Trash2 } from "lucide-react";
+import {
+  renameUploadedFile,
+  deleteUploadedFile,
+  setDocumentTermRole,
+  updateDocumentLabel,
+} from "@/app/actions/documents";
 import { replaceDocument } from "@/app/actions/document-versions";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
@@ -12,12 +17,22 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { deleteUploadedFileSubject, uploadedFileDeleteMode } from "@/lib/documents/delete-file";
 import { confirmPolicyDocumentDelete } from "@/lib/desk/confirm-policy-document-delete";
 import { DocumentPreviewDialog } from "@/components/documents/document-preview-dialog";
 import { FILE_ACTION_ACCEPT } from "@/lib/documents/file-action-menu";
+import {
+  DOCUMENT_TERM_ROLES,
+  POLICY_ATTACH_DOC_TYPES,
+  termRoleFromTags,
+  type DocumentTermRole,
+} from "@/lib/documents/document-labels";
 import { fileDownloadHref } from "@/lib/files/urls";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +42,7 @@ export type FileActionMenuProps = {
   mimeType?: string | null;
   slot?: string;
   docType?: string;
+  tags?: string[] | null;
   dealId?: string | null;
   policyId?: string | null;
   contactId?: string | null;
@@ -45,6 +61,7 @@ export function FileActionMenu({
   mimeType,
   slot = "source_doc",
   docType = "other",
+  tags,
   dealId,
   policyId,
   contactId,
@@ -57,6 +74,12 @@ export function FileActionMenu({
 }: FileActionMenuProps) {
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const replaceFormRef = useRef<HTMLFormElement>(null);
+  const renameFormRef = useRef<HTMLFormElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const typeFormRef = useRef<HTMLFormElement>(null);
+  const typeInputRef = useRef<HTMLInputElement>(null);
+  const termFormRef = useRef<HTMLFormElement>(null);
+  const termInputRef = useRef<HTMLInputElement>(null);
   const deleteBtnRef = useRef<HTMLButtonElement>(null);
   const reasonInputRef = useRef<HTMLInputElement>(null);
   const [gone, setGone] = useState(false);
@@ -65,6 +88,7 @@ export function FileActionMenu({
   const mode = uploadedFileDeleteMode({ slot, docType });
   const subject = deleteUploadedFileSubject(filename, mode);
   const policyDocDelete = Boolean(policyId);
+  const currentTermRole = termRoleFromTags(tags);
 
   function requestPolicyDelete() {
     const reason = confirmPolicyDocumentDelete(subject);
@@ -73,6 +97,33 @@ export function FileActionMenu({
     setGone(true);
     onDeleted?.();
     deleteBtnRef.current?.click();
+  }
+
+  function requestRename() {
+    const promptFn = typeof globalThis.prompt === "function" ? globalThis.prompt.bind(globalThis) : null;
+    if (!promptFn) return;
+    const next = promptFn("Rename file:", filename)?.trim() ?? "";
+    if (!next || next === filename) return;
+    if (renameInputRef.current) renameInputRef.current.value = next;
+    renameFormRef.current?.requestSubmit();
+  }
+
+  function submitDocType(nextType: string) {
+    if (!nextType || nextType === docType) return;
+    if (typeInputRef.current) typeInputRef.current.value = nextType;
+    typeFormRef.current?.requestSubmit();
+  }
+
+  function submitTermRole(nextRole: DocumentTermRole | "clear") {
+    if (nextRole === "clear") {
+      if (!currentTermRole) return;
+      if (termInputRef.current) termInputRef.current.value = "clear";
+      termFormRef.current?.requestSubmit();
+      return;
+    }
+    if (nextRole === currentTermRole) return;
+    if (termInputRef.current) termInputRef.current.value = nextRole;
+    termFormRef.current?.requestSubmit();
   }
 
   if (gone) return null;
@@ -95,6 +146,33 @@ export function FileActionMenu({
             if (replaceInputRef.current?.files?.length) replaceFormRef.current?.requestSubmit();
           }}
         />
+      </form>
+      <form ref={renameFormRef} action={renameUploadedFile} className="hidden">
+        <input type="hidden" name="documentId" value={documentId} />
+        {dealId ? <input type="hidden" name="dealId" value={dealId} /> : null}
+        {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}
+        {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
+        {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
+        {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+        <input ref={renameInputRef} type="hidden" name="filename" defaultValue="" />
+      </form>
+      <form ref={typeFormRef} action={updateDocumentLabel} className="hidden">
+        <input type="hidden" name="documentId" value={documentId} />
+        {dealId ? <input type="hidden" name="dealId" value={dealId} /> : null}
+        {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}
+        {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
+        {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
+        {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+        <input ref={typeInputRef} type="hidden" name="docType" defaultValue="" />
+      </form>
+      <form ref={termFormRef} action={setDocumentTermRole} className="hidden">
+        <input type="hidden" name="documentId" value={documentId} />
+        {dealId ? <input type="hidden" name="dealId" value={dealId} /> : null}
+        {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}
+        {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
+        {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
+        {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+        <input ref={termInputRef} type="hidden" name="termRole" defaultValue="" />
       </form>
       {/* One HardDeleteForm: menu Delete + visible trash both click this submitter (one confirm). */}
       <HardDeleteForm
@@ -148,6 +226,54 @@ export function FileActionMenu({
               <Download />
               Download
             </DropdownMenuItem>
+            <DropdownMenuItem data-ff-file-action="rename" onClick={requestRename}>
+              <Pencil />
+              Rename
+            </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger data-ff-file-action="change-type">
+                <Tags />
+                Change type
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="min-w-52">
+                <DropdownMenuLabel>Document type</DropdownMenuLabel>
+                {POLICY_ATTACH_DOC_TYPES.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    data-ff-file-action-type={option.value}
+                    onClick={() => submitDocType(option.value)}
+                  >
+                    {option.label}
+                    {option.value === docType ? " ✓" : ""}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger data-ff-file-action="set-term-role">
+                <CalendarRange />
+                Set term role
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="min-w-52">
+                <DropdownMenuLabel>Term role</DropdownMenuLabel>
+                {DOCUMENT_TERM_ROLES.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    data-ff-file-action-term={option.value}
+                    onClick={() => submitTermRole(option.value)}
+                  >
+                    {option.label}
+                    {option.value === currentTermRole ? " ✓" : ""}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuItem
+                  data-ff-file-action-term="clear"
+                  onClick={() => submitTermRole("clear")}
+                >
+                  Clear term role
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
             <DropdownMenuItem
               data-ff-file-action="replace"
               onClick={() => replaceInputRef.current?.click()}

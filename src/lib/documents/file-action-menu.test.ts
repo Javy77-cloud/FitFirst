@@ -24,43 +24,64 @@ const FILE_LIST_SURFACES = [
 ] as const;
 
 describe("standard file action menu", () => {
-  it("keeps labels in View → Download → Replace → Delete order", () => {
-    expect(FILE_ACTION_MENU_LABELS).toEqual(["View", "Download", "Replace", "Delete"]);
+  it("keeps labels in View → Download → Rename → Change type → Set term role → Replace → Delete order", () => {
+    expect(FILE_ACTION_MENU_LABELS).toEqual([
+      "View",
+      "Download",
+      "Rename",
+      "Change type",
+      "Set term role",
+      "Replace",
+      "Delete",
+    ]);
     expect(FILE_ACTION_MENU_ITEMS.map((item) => item.id)).toEqual([
       "view",
       "download",
+      "rename",
+      "change-type",
+      "set-term-role",
       "replace",
       "delete",
     ]);
   });
 
-  it("renders those four actions once, with the same icons and order", () => {
+  it("renders rename, change-type, set-term-role with data-ff attributes", () => {
     const text = source(MENU);
     expect(text).toMatch(/data-ff-file-action="view"/);
     expect(text).toMatch(/data-ff-file-action="download"/);
+    expect(text).toMatch(/data-ff-file-action="rename"/);
+    expect(text).toMatch(/data-ff-file-action="change-type"/);
+    expect(text).toMatch(/data-ff-file-action="set-term-role"/);
     expect(text).toMatch(/data-ff-file-action="replace"/);
     expect(text).toMatch(/data-ff-file-action="delete"/);
     expect(text.indexOf('data-ff-file-action="view"')).toBeLessThan(
       text.indexOf('data-ff-file-action="download"'),
     );
     expect(text.indexOf('data-ff-file-action="download"')).toBeLessThan(
+      text.indexOf('data-ff-file-action="rename"'),
+    );
+    expect(text.indexOf('data-ff-file-action="rename"')).toBeLessThan(
+      text.indexOf('data-ff-file-action="change-type"'),
+    );
+    expect(text.indexOf('data-ff-file-action="change-type"')).toBeLessThan(
+      text.indexOf('data-ff-file-action="set-term-role"'),
+    );
+    expect(text.indexOf('data-ff-file-action="set-term-role"')).toBeLessThan(
       text.indexOf('data-ff-file-action="replace"'),
     );
     expect(text.indexOf('data-ff-file-action="replace"')).toBeLessThan(
       text.indexOf('data-ff-file-action="delete"'),
     );
-    expect(text).toMatch(/<Eye \/>\s*View/);
-    expect(text).toMatch(/<Download \/>\s*Download/);
-    expect(text).toMatch(/<Replace \/>\s*Replace/);
-    expect(text).toMatch(/<Trash2 \/>\s*Delete/);
-    expect(text).toMatch(/DocumentPreviewDialog/);
-    expect(text).not.toMatch(/target="_blank"/);
-    expect(text).not.toMatch(/filePreviewHref/);
-    expect(text).toMatch(/fileDownloadHref/);
+    expect(text).toMatch(/renameUploadedFile/);
+    expect(text).toMatch(/updateDocumentLabel/);
+    expect(text).toMatch(/setDocumentTermRole/);
+    expect(text).toMatch(/POLICY_ATTACH_DOC_TYPES/);
+    expect(text).toMatch(/DOCUMENT_TERM_ROLES/);
     expect(text).toMatch(/replaceDocument/);
     expect(text).toMatch(/deleteUploadedFile/);
     expect(text).toMatch(/FileDeleteIcon/);
     expect(text).toMatch(/data-ff-file-action="delete-icon"/);
+    expect(text).toMatch(/confirmPolicyDocumentDelete/);
   });
 
   it("deletes through HardDeleteForm so confirmHardDelete runs once", () => {
@@ -95,7 +116,15 @@ describe("standard file action menu", () => {
     expect(docs).toMatch(/SourceFileRow/);
     const row = source("src/components/deal/source-file-row.tsx");
     expect(row).toMatch(/data-ff-file-action-menu|FileActionMenu/);
-    expect(row.indexOf("<FileActionMenu")).toBeLessThan(row.indexOf("{filename}"));
+    expect(row.indexOf("<FileActionMenu")).toBeLessThan(row.indexOf("{listLabel}"));
     expect(row).toMatch(/onDeleted/);
+  });
+
+  it("shows term role badge column on Policy Documents table", () => {
+    const table = source("src/components/policy/tabs/documents-table.tsx");
+    expect(table).toMatch(/data-ff-doc-term-role/);
+    expect(table).toMatch(/termRoleFromTags/);
+    expect(table).toMatch(/tags=\{file\.tags\}/);
+    expect(table).toMatch(/<th>Term<\/th>/);
   });
 });

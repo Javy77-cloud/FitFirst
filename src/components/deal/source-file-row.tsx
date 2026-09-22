@@ -46,6 +46,7 @@ export function SourceFileRow({
         mimeType={doc.mimeType}
         slot={doc.slot}
         docType={doc.docType}
+        tags={doc.tags}
         dealId={dealId}
         className="min-w-0 flex-1"
         onDeleted={() => setGone(true)}

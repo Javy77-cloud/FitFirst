@@ -38,15 +38,21 @@ export const POLICY_TERMS_BY_FAMILY: Record<InsuranceFamily, readonly string[]> 
   "P&C": ["6 Months", "12 Months", "3 Months"],
 };
 
+/** Policy Documents attach + FileActionMenu Change type. Order matches Documents tab. */
 export const DOCUMENT_CATEGORIES = [
   { value: "policy_dec", label: "Issued declaration page" },
   { value: "policy_complete", label: "Complete policy" },
   { value: "policy_id", label: "ID card" },
-  { value: "application", label: "Application" },
   { value: "endorsement", label: "Endorsement" },
-  { value: "cancellation", label: "Cancellation" },
-  { value: "other", label: "Other" },
+  { value: "application", label: "Application" },
+  { value: "binder", label: "Binder" },
+  { value: "aor", label: "AOR packet" },
+  { value: "coi", label: "COI" },
+  { value: "inspection", label: "Inspection" },
 ] as const;
+
+/** @deprecated alias — prefer DOCUMENT_CATEGORIES */
+export const POLICY_ATTACH_DOC_TYPES = DOCUMENT_CATEGORIES;
 
 export function insuranceFamilyFromPolicy(input: {
   insuranceType?: string | null;

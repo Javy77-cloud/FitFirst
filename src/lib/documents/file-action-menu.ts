@@ -2,6 +2,9 @@
 export const FILE_ACTION_MENU_ITEMS = [
   { id: "view", label: "View" },
   { id: "download", label: "Download" },
+  { id: "rename", label: "Rename" },
+  { id: "change-type", label: "Change type" },
+  { id: "set-term-role", label: "Set term role" },
   { id: "replace", label: "Replace" },
   { id: "delete", label: "Delete" },
 ] as const;
