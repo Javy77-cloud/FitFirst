@@ -96,7 +96,13 @@ describe("Renewals desk chrome", () => {
     expect(card).toMatch(/RenewalHealthMeter/);
     expect(card).toMatch(/renewalPolicyTypeLabel/);
     expect(card).toMatch(/data-ff-health-info/);
-    expect(card).not.toMatch(/>\s*Policy\s*</);
+    expect(card).toMatch(/data-ff-renewal-policy-scroll/);
+    expect(card).toMatch(/ff-renewal-policy-scroll/);
+    expect(card).toMatch(/Open policy for \$\{card\.clientName\}/);
+    expect(card).toMatch(/\/policies\/\$\{card\.policyId\}/);
+    expect(card).toMatch(/>Policy</);
+    expect(card).not.toMatch(/ff-renewal-policy-link/);
+    expect(source("src/app/globals.css")).toMatch(/ff-renewal-policy-scroll/);
     expect(card).toMatch(/sendRenewalChase/);
     expect(card).toMatch(/RenewalMiniReview/);
     expect(pulse).toMatch(/data-ff-renewals-pulse/);

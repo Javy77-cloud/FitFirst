@@ -1885,15 +1885,101 @@ button.ff-renewal-risk-badge {
   text-transform: uppercase;
   color: var(--ff-muted);
 }
-.ff-renewal-policy-link {
-  display: inline-block;
-  margin-top: 0.35rem;
+.ff-renewal-card-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+}
+.ff-renewal-policy-type {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 0.62rem;
   font-weight: 650;
+  line-height: 1.2;
   color: var(--ff-muted);
 }
-.ff-renewal-policy-link:hover {
+.ff-renewal-policy-scroll {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  min-height: 2rem;
+  text-decoration: none;
   color: var(--ff-navy);
+  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--ff-navy) 12%, transparent));
+}
+.ff-renewal-policy-scroll:hover,
+.ff-renewal-policy-scroll:focus-visible {
+  color: var(--ff-terracotta);
+  outline: none;
+}
+.ff-renewal-policy-scroll:focus-visible .ff-renewal-policy-scroll-face {
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--ff-terracotta) 55%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--ff-terracotta) 22%, transparent);
+}
+.ff-renewal-policy-scroll-roll {
+  position: relative;
+  z-index: 1;
+  width: 0.55rem;
+  min-height: 2rem;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--ff-navy) 28%, #c4a574) 0%,
+      #e8d4a8 22%,
+      #f3e6c4 48%,
+      #d7bc88 78%,
+      color-mix(in srgb, var(--ff-terracotta) 35%, #b8955a) 100%
+    );
+  box-shadow:
+    inset 1px 0 0 color-mix(in srgb, white 45%, transparent),
+    inset -1px 0 0 color-mix(in srgb, var(--ff-navy) 18%, transparent),
+    0 1px 2px color-mix(in srgb, var(--ff-navy) 16%, transparent);
+}
+.ff-renewal-policy-scroll-face {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.6rem;
+  padding: 0.2rem 0.55rem;
+  margin: 0.18rem -0.12rem;
+  border: 1px solid color-mix(in srgb, var(--ff-navy) 16%, #d9c39a);
+  border-left: 0;
+  border-right: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 6px,
+      color-mix(in srgb, var(--ff-navy) 4%, transparent) 6px,
+      color-mix(in srgb, var(--ff-navy) 4%, transparent) 7px
+    ),
+    linear-gradient(180deg, #fff8e8 0%, #f3e4c4 55%, #ead6b0 100%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 70%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--ff-navy) 8%, transparent);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.ff-renewal-policy-scroll:hover .ff-renewal-policy-scroll-face {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 6px,
+      color-mix(in srgb, var(--ff-terracotta) 6%, transparent) 6px,
+      color-mix(in srgb, var(--ff-terracotta) 6%, transparent) 7px
+    ),
+    linear-gradient(180deg, #fff6df 0%, #f0d9b0 55%, #e6c89a 100%);
 }
 .ff-renewal-health-pips {
   display: inline-flex;
