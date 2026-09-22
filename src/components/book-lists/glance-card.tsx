@@ -219,6 +219,32 @@ export function ContactStackColumnHeader() {
   );
 }
 
+const ACCOUNT_STACK_META = ["operations", "contact", "policies", "renewals", "status"] as const;
+
+const ACCOUNT_STACK_HEADER = [
+  ["name", "Name"],
+  ["operations", "Operations"],
+  ["contact", "Attached contact"],
+  ["policies", "Policy count"],
+  ["renewals", "Renewals"],
+  ["status", "Client status"],
+  ["reach", "Reach"],
+] as const;
+
+/** Labels only — same tracks as the Accounts phone row. No sort controls. */
+export function AccountStackColumnHeader() {
+  return (
+    <div className="ff-account-stack-header" data-ff-account-stack-header="" role="row">
+      <span className="ff-account-stack-header-gutter" aria-hidden="true" />
+      {ACCOUNT_STACK_HEADER.map(([id, label]) => (
+        <span key={id} data-ff-stack-col={id}>
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function plainCell(value: string | null | undefined): string {
   const text = value?.trim() ?? "";
   return isEmptyDash(text) ? "" : text;
@@ -292,6 +318,88 @@ function ContactStackCard({
               className="ff-contact-stack-reach"
               data-ff-contact-stack-reach=""
               data-ff-contact-stack-row="email"
+              data-ff-stack-mid=""
+              title={plainCell(card.why) || undefined}
+            >
+              {reach}
+            </p>
+          ) : null}
+        </div>
+        <InboxCue card={card} />
+        {extra}
+      </div>
+    </article>
+  );
+}
+
+/** Accounts Stack: same 3-row chrome as Contacts, with account columns on the phone row. */
+function AccountStackCard({
+  card,
+  leading,
+  extra,
+  activity,
+  tip,
+}: {
+  card: BookGlanceCard;
+  leading?: ReactNode;
+  extra?: ReactNode;
+  activity?: ReactNode;
+  tip: string;
+}) {
+  const byId = new Map((card.columns ?? []).map((column) => [column.id, column.label]));
+  const meta = ACCOUNT_STACK_META.map((id) => ({
+    id,
+    label: plainCell(byId.get(id) ?? (id === "policies" ? "0" : "")),
+  }));
+  const phone = plainCell(card.phone);
+  const email = plainCell(card.email);
+  const tel = phone ? telHref(phone) : null;
+  const mail = email ? mailtoHref(email) : null;
+  const reach = plainCell(card.mid);
+  return (
+    <article
+      className={cn("ff-stack-card ff-book-card ff-party-card ff-account-stack-card", `ff-heat-${card.heat}`)}
+      data-ff-book-card={card.id}
+      data-ff-account-stack-card={card.id}
+      data-hay={card.hay}
+      data-ff-book-surface={card.surface}
+      data-ff-heat={card.heat}
+      data-ff-book-column={card.column}
+    >
+      <div className="ff-stack-card-body min-w-0 flex-1">
+        <div className="ff-account-stack-spread" data-ff-account-stack="">
+          <div className="ff-account-stack-check" data-ff-account-stack-check="" data-ff-account-stack-row="name">
+            {leading}
+          </div>
+          <Link href={card.href} className="ff-stack-name" data-ff-account-stack-row="name">
+            {card.title}
+          </Link>
+          <span className="ff-account-stack-glyph" data-ff-account-stack-glyph="" data-ff-account-stack-row="phone">
+            <RiskGlyph heat={card.heat} tip={tip} />
+          </span>
+          <span className="ff-account-stack-phone" data-ff-account-stack-phone="" data-ff-account-stack-row="phone">
+            {tel ? <a href={tel}>{phone}</a> : null}
+            {activity ? <span className="ff-account-stack-heartbeat">{activity}</span> : null}
+          </span>
+          {meta.map((column) => (
+            <span
+              key={column.id}
+              className="ff-account-stack-col"
+              data-ff-account-stack-col={column.id}
+              data-ff-account-stack-row="phone"
+              title={column.label || undefined}
+            >
+              {column.label}
+            </span>
+          ))}
+          <span className="ff-account-stack-email" data-ff-account-stack-email="" data-ff-account-stack-row="email">
+            {mail ? <a href={mail}>{email}</a> : null}
+          </span>
+          {reach ? (
+            <p
+              className="ff-account-stack-reach"
+              data-ff-account-stack-reach=""
+              data-ff-account-stack-row="email"
               data-ff-stack-mid=""
               title={plainCell(card.why) || undefined}
             >
@@ -433,6 +541,11 @@ export function BookGlanceCardView({
   if (card.surface === "contacts") {
     return (
       <ContactStackCard card={card} leading={leading} extra={extra} activity={activity} tip={tip} />
+    );
+  }
+  if (card.surface === "accounts" && layoutMode === "stack") {
+    return (
+      <AccountStackCard card={card} leading={leading} extra={extra} activity={activity} tip={tip} />
     );
   }
   if (card.surface === "accounts") {
