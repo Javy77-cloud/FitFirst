@@ -302,15 +302,17 @@ function ContactStackCard({
           <div className="ff-contact-stack-check" data-ff-contact-stack-check="" data-ff-contact-stack-row="name">
             {leading}
           </div>
-          <Link href={card.href} className="ff-stack-name" data-ff-contact-stack-row="name">
-            {card.title}
-          </Link>
+          <div className="ff-contact-stack-name-host" data-ff-contact-stack-row="name">
+            <Link href={card.href} className="ff-stack-name">
+              {card.title}
+            </Link>
+            {activity ? <span className="ff-contact-stack-heartbeat">{activity}</span> : null}
+          </div>
           <span className="ff-contact-stack-glyph" data-ff-contact-stack-glyph="" data-ff-contact-stack-row="phone">
             <RiskGlyph heat={card.heat} tip={tip} />
           </span>
           <span className="ff-contact-stack-phone" data-ff-contact-stack-phone="" data-ff-contact-stack-row="phone">
             {tel ? <a href={tel}>{phone}</a> : null}
-            {activity ? <span className="ff-contact-stack-heartbeat">{activity}</span> : null}
           </span>
           {meta.map((column) => (
             <span
@@ -384,15 +386,17 @@ function AccountStackCard({
           <div className="ff-account-stack-check" data-ff-account-stack-check="" data-ff-account-stack-row="name">
             {leading}
           </div>
-          <Link href={card.href} className="ff-stack-name" data-ff-account-stack-row="name">
-            {card.title}
-          </Link>
+          <div className="ff-account-stack-name-host" data-ff-account-stack-row="name">
+            <Link href={card.href} className="ff-stack-name">
+              {card.title}
+            </Link>
+            {activity ? <span className="ff-account-stack-heartbeat">{activity}</span> : null}
+          </div>
           <span className="ff-account-stack-glyph" data-ff-account-stack-glyph="" data-ff-account-stack-row="phone">
             <RiskGlyph heat={card.heat} tip={tip} />
           </span>
           <span className="ff-account-stack-phone" data-ff-account-stack-phone="" data-ff-account-stack-row="phone">
             {tel ? <a href={tel}>{phone}</a> : null}
-            {activity ? <span className="ff-account-stack-heartbeat">{activity}</span> : null}
           </span>
           {meta.map((column) => (
             <span
@@ -432,15 +436,19 @@ function PolicyStackCard({
   card,
   leading,
   extra,
+  activity,
   tip,
 }: {
   card: BookGlanceCard;
   leading?: ReactNode;
   extra?: ReactNode;
+  activity?: ReactNode;
   tip: string;
 }) {
-  const tel = telHref(card.phone);
-  const mail = mailtoHref(card.email);
+  const phone = plainCell(card.phone);
+  const email = plainCell(card.email);
+  const tel = phone ? telHref(phone) : null;
+  const mail = email ? mailtoHref(email) : null;
   const cue = policyOpenCue(card);
   const cell = (id: string) => {
     const label = policyFact(card, id);
@@ -467,16 +475,17 @@ function PolicyStackCard({
             <Link href={card.href} className="ff-stack-name">
               {card.title}
             </Link>
+            {activity ? <span className="ff-policy-stack-heartbeat">{activity}</span> : null}
           </div>
           <span className="ff-policy-stack-glyph" data-ff-policy-stack-row="phone">
             <RiskGlyph heat={card.heat} tip={tip} />
           </span>
           <span className="ff-policy-stack-phone" data-ff-policy-stack-phone="">
-            {tel ? <a href={tel}>{card.phone}</a> : null}
+            {tel ? <a href={tel}>{phone}</a> : null}
           </span>
           {POLICY_STACK_TOP.map((id) => cell(id))}
           <span className="ff-policy-stack-email" data-ff-policy-stack-row="email" data-ff-policy-stack-email="">
-            {mail ? <a href={mail}>{card.email}</a> : null}
+            {mail ? <a href={mail}>{email}</a> : null}
           </span>
           {POLICY_STACK_BOTTOM.map((id) => cell(id))}
           <div className="ff-policy-stack-open" data-ff-policy-stack-open="">
@@ -566,7 +575,7 @@ export function BookGlanceCardView({
     return <BookGridCard card={card} leading={leading} extra={extra} tip={tip} kind="carrier" />;
   }
   if (card.surface === "policies" && layoutMode === "stack") {
-    return <PolicyStackCard card={card} leading={leading} extra={extra} tip={tip} />;
+    return <PolicyStackCard card={card} leading={leading} extra={extra} activity={activity} tip={tip} />;
   }
   if (card.surface === "policies" && layoutMode !== "bands") {
     return <BookGridCard card={card} leading={leading} extra={extra} tip={tip} kind="policy" />;
