@@ -11,6 +11,8 @@ import type { ShopLine } from "@/lib/domain";
 import type { SheetProduct } from "@/lib/quote-sheet/products";
 import { listWorksheetSourceDocs } from "@/lib/documents/deal-docs-save";
 import type { DocSlotProduct } from "@/lib/documents/doc-slot-advance";
+import { blobStoreReady } from "@/lib/files/object-store";
+import { quoteFileUploadMode } from "@/lib/files/upload-plan";
 import { asList } from "@/lib/safe-list";
 
 export function DocumentsPanel({
@@ -121,6 +123,7 @@ export function DocumentsPanel({
                 tags: Array.isArray(row.tags) ? row.tags : [],
               }))}
               packageProducts={packageProducts}
+              uploadMode={quoteFileUploadMode({ vercel: process.env.VERCEL, blobReady: blobStoreReady() })}
             />
           </section>
           <DealFormSends dealId={dealId} />

@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
-import { uploadAgencyQuoteFileAction } from "@/app/actions/quote-files";
+import { useRouter } from "next/navigation";
+import {
+  commitAgencyQuoteBlob,
+  prepareAgencyQuoteBlob,
+  uploadAgencyQuoteFileAction,
+} from "@/app/actions/quote-files";
+import { messageFromUploadError, planUpload } from "@/lib/files/upload-plan";
+import { flashAction } from "@/lib/flash-client";
 import { deleteUploadedFile } from "@/app/actions/documents";
 import { retagDocumentAsDeclarationAction } from "@/app/actions/declaration";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
@@ -189,6 +196,7 @@ export function QuoteFileActions({
   carrierFiles,
   agencyFiles,
   requestedCoverageA = null,
+  uploadMode = { onVercel: false, directBlob: false },
 }: {
   dealId: string;
   quoteId: string;
@@ -197,9 +205,12 @@ export function QuoteFileActions({
   carrierFiles: QuoteFileRow[];
   agencyFiles: QuoteFileRow[];
   requestedCoverageA?: number | null;
+  uploadMode?: { onVercel: boolean; directBlob: boolean };
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState<OpenDialog>(null);
   const [pending, startTransition] = useTransition();
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [pendingFolderFile, setPendingFolderFile] = useState<IssuedPolicyFolderSavedDetail | null>(null);
 
   useEffect(() => {
@@ -248,9 +259,82 @@ export function QuoteFileActions({
     const data = new FormData(form);
     data.set("dealId", dealId);
     data.set("quoteId", quoteId);
-    startTransition(async () => {
-      await uploadAgencyQuoteFileAction(data);
+    const file = data.get("file");
+    const displayName = String(data.get("displayName") ?? "").trim();
+    if (!(file instanceof File)) {
+      setUploadError("Choose a file to upload. Nothing was saved.");
+      return;
+    }
+    const plan = planUpload({
+      filename: file.name,
+      byteLength: file.size,
+      mimeType: file.type,
+      onVercel: uploadMode.onVercel,
+      directBlob: uploadMode.directBlob,
     });
+    if (!plan.ok) {
+      setUploadError(plan.error);
+      return;
+    }
+    setUploadError(null);
+    startTransition(async () => {
+      try {
+        if (plan.via === "blob-client") {
+          const prepared = await prepareAgencyQuoteBlob(blobPrep(file, displayName));
+          if (!prepared.ok) {
+            setUploadError(prepared.error);
+            return;
+          }
+          const { uploadBytesToBlob } = await import("@/lib/files/direct-upload-client");
+          const blob = await uploadBytesToBlob({
+            pathname: prepared.pathname,
+            file,
+            contentType: prepared.mimeType,
+            dealId,
+          });
+          const committed = await commitAgencyQuoteBlob(blobCommit(file, displayName, blob.url, prepared.mimeType));
+          if (!committed.ok) {
+            setUploadError(committed.error);
+            return;
+          }
+        } else {
+          const saved = await uploadAgencyQuoteFileAction(data);
+          if (!saved.ok) {
+            setUploadError(saved.error);
+            return;
+          }
+        }
+        setUploadError(null);
+        form.reset();
+        flashAction("Agency quote file uploaded");
+        router.refresh();
+      } catch (error) {
+        setUploadError(messageFromUploadError(error, file.name));
+      }
+    });
+  }
+
+  function blobPrep(file: File, displayName: string) {
+    const prep = new FormData();
+    prep.set("dealId", dealId);
+    prep.set("quoteId", quoteId);
+    prep.set("filename", file.name);
+    prep.set("byteLength", String(file.size));
+    prep.set("mimeType", file.type);
+    if (displayName) prep.set("displayName", displayName);
+    return prep;
+  }
+
+  function blobCommit(file: File, displayName: string, storageUrl: string, mimeType: string) {
+    const commit = new FormData();
+    commit.set("dealId", dealId);
+    commit.set("quoteId", quoteId);
+    commit.set("filename", file.name);
+    commit.set("byteLength", String(file.size));
+    commit.set("mimeType", mimeType);
+    commit.set("storageUrl", storageUrl);
+    if (displayName) commit.set("displayName", displayName);
+    return commit;
   }
 
   return (
@@ -367,7 +451,7 @@ export function QuoteFileActions({
           <DialogHeader>
             <DialogTitle className="text-navy">Our quote files</DialogTitle>
             <DialogDescription>
-              Agency uploads for {carrierName}. View stored files or add another.
+              Agency uploads for {carrierName}. Quote PDFs and supporting inspections (wind mit) stay on this quote under their file name.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -418,6 +502,11 @@ export function QuoteFileActions({
               <Button type="submit" size="sm" disabled={pending}>
                 {pending ? "Uploading…" : "Upload"}
               </Button>
+              {uploadError ? (
+                <p className="text-xs text-destructive" role="alert" data-ff-quote-upload-error="">
+                  {uploadError}
+                </p>
+              ) : null}
             </form>
           </div>
           <DialogFooter>

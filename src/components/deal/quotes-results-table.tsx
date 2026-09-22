@@ -395,6 +395,7 @@ export function QuotesResultsTable({
   productStage = null,
   priorByQuoteId = {},
   canLogGap = false,
+  uploadMode = { onVercel: false, directBlob: false },
 }: {
   dealId: string;
   rows: Row[];
@@ -412,6 +413,7 @@ export function QuotesResultsTable({
   productStage?: string | null;
   priorByQuoteId?: Record<string, { quote: Quote; carrier: Carrier; label: string | null }>;
   canLogGap?: boolean;
+  uploadMode?: { onVercel: boolean; directBlob: boolean };
 }) {
   const list = asList(rows);
   const [hideMarked, setHideMarked] = useState<string[]>([]);
@@ -1010,6 +1012,7 @@ export function QuotesResultsTable({
                                 carrierFiles={quoteFilesByQuoteId[quote.id]?.carrier ?? []}
                                 agencyFiles={quoteFilesByQuoteId[quote.id]?.agency ?? []}
                                 requestedCoverageA={requestedCoverageA}
+                                uploadMode={uploadMode}
                               />
                             </div>
                           </div>

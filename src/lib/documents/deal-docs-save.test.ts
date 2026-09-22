@@ -39,7 +39,8 @@ describe("deal Documents save must not open error.tsx", () => {
     expect(form).not.toMatch(/appendUploadRowFiles\(new FormData\(event\.currentTarget\)/);
     expect(form).toMatch(/await saveDealDocuments\(formData\)/);
     expect(form).toMatch(/flashAction\("choose-file", "error"\)/);
-    expect(form).toMatch(/flashAction\("documents-too-large", "error"\)/);
+    expect(form).toMatch(/planUpload\(/);
+    expect(form).toMatch(/setError\(plan\.error\)/);
     expect(form).toMatch(/flashAction\("documents-saved"\)/);
     expect(form).toMatch(/planDocSaveAdvance/);
     expect(form).toMatch(/plan\.action === "stay"/);
@@ -47,7 +48,8 @@ describe("deal Documents save must not open error.tsx", () => {
     const push = form.indexOf("router.push");
     expect(stay).toBeGreaterThan(0);
     expect(push).toBeGreaterThan(stay);
-    expect(form).toMatch(/Could not save|documents-save-failed/);
+    expect(form).toMatch(/Could not save that file\. Nothing was stored\./);
+    expect(form).not.toMatch(/Try again/);
     expect(form).not.toMatch(/isRedirectError/);
     expect(form).not.toMatch(/uploadDocument/);
     expect(form).toMatch(/assignedFile=\{row\.file\}/);

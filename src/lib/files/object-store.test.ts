@@ -10,6 +10,7 @@ import {
   readStoredFile,
   writeStoredFile,
 } from "./object-store";
+import { CASTELLANOS_WIND_MIT_FILENAME } from "./upload-plan";
 
 const prevUpload = process.env.UPLOAD_DIR;
 const prevBlob = process.env.BLOB_READ_WRITE_TOKEN;
@@ -97,6 +98,22 @@ describe("object-store local path", () => {
     );
     expect(isRemoteStoragePath(stored)).toBe(false);
     expect(await readStoredFile(stored)).not.toBeNull();
+    await rm(root, { recursive: true, force: true });
+  });
+
+  it("stores the Castellanos wind-mit bytes under a safe key and keeps the readable name out of the path", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ff-uploads-"));
+    process.env.UPLOAD_DIR = root;
+    delete process.env.BLOB_READ_WRITE_TOKEN;
+    delete process.env.BLOB_STORE_ID;
+    delete process.env.VERCEL;
+    const raw = `tenant/deal/aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee-${CASTELLANOS_WIND_MIT_FILENAME}`;
+    const stored = await writeStoredFile(raw, Buffer.from("%PDF-1.4 wind mit"), "application/pdf");
+    expect(stored).not.toContain("&");
+    expect(stored).not.toContain(" ");
+    expect(stored.endsWith(".pdf")).toBe(true);
+    expect(stored).not.toContain(CASTELLANOS_WIND_MIT_FILENAME);
+    expect(await readStoredFile(stored)).toEqual(Buffer.from("%PDF-1.4 wind mit"));
     await rm(root, { recursive: true, force: true });
   });
 

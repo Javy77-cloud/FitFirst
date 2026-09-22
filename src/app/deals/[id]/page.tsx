@@ -4,6 +4,8 @@ import { AppShell } from "@/components/app-shell";
 import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { DocumentsPanel } from "@/components/deal/documents-panel";
 import { SourceDocsUpload } from "@/components/deal/source-docs-upload";
+import { blobStoreReady } from "@/lib/files/object-store";
+import { quoteFileUploadMode } from "@/lib/files/upload-plan";
 import { MarketsPanel } from "@/components/deal/markets-panel";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import { LifeHealthQuotesPanel } from "@/components/deal/life-health-quotes-panel";
@@ -627,6 +629,7 @@ export default async function DealPage({
         quotesDone={flowCompletion.isComplete("quotes")}
         savedDocs={savedSourceDocs}
         packageProducts={docSlotProducts}
+        uploadMode={quoteFileUploadMode({ vercel: process.env.VERCEL, blobReady: blobStoreReady() })}
       />
     </section>
   ) : null;

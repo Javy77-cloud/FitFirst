@@ -23,7 +23,9 @@ export type WorksheetSourceDoc = {
 export type DealDocumentsSaveResult = {
   ok: boolean;
   count: number;
-  reason?: "choose-file" | "documents-save-failed";
+  reason?: "choose-file" | "documents-save-failed" | "documents-too-large";
+  /** Specific reason. Shown as-is. Do not replace this with “try again”. */
+  message?: string;
 };
 
 function worksheetDocTags(raw: unknown): string[] {
