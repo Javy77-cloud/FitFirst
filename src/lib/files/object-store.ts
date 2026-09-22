@@ -110,6 +110,9 @@ export type ReadbackDiag = {
   status?: number;
   host?: string | null;
   detail?: string;
+  /** Safe body-shape label only — never raw body / tokens (e.g. startsWith `<!DOCTYPE`). */
+  bodyPrefix?: string;
+  contentType?: string | null;
 };
 
 /** Last read-back diagnosis (status + host only — never token). */
@@ -120,6 +123,21 @@ export function getLastReadbackDiag(): ReadbackDiag | null {
 }
 
 function setReadbackDiag(diag: ReadbackDiag): void {
+  // Do not let a later null-get 404 wipe a more specific auth_body / non_pdf / HTTP status
+  // from an earlier strategy — that made toasts say empty/404 and burned retry budget.
+  const prev = lastReadbackDiag;
+  if (prev) {
+    const prevSpecific =
+      prev.reason === "auth_body" ||
+      prev.reason === "non_pdf" ||
+      (prev.reason === "http_status" && prev.status != null && prev.status !== 404);
+    const incomingWeak404 =
+      diag.reason === "http_status" && (diag.status === 404 || diag.status == null);
+    const incomingEmpty = diag.reason === "empty";
+    if (prevSpecific && (incomingWeak404 || incomingEmpty)) {
+      return;
+    }
+  }
   lastReadbackDiag = diag;
 }
 
@@ -131,6 +149,8 @@ function formatReadbackDiag(diag: ReadbackDiag | null): string {
   else if (diag.reason === "empty") bits.push("empty body");
   else if (diag.reason === "non_pdf") bits.push("non-PDF body");
   else if (diag.reason === "auth_body") bits.push("auth error body");
+  if (diag.bodyPrefix) bits.push(diag.bodyPrefix);
+  if (diag.contentType) bits.push(`content-type ${diag.contentType}`);
   if (diag.host) bits.push(`host ${diag.host}`);
   return bits.length ? ` (${bits.join(", ")})` : "";
 }
@@ -232,23 +252,95 @@ export function blobPathnameDecoded(url: string): string | null {
   }
 }
 
+/** Safe toast/label for the first bytes — never the raw body or secrets. */
+export function describeBodyPrefix(bytes: Buffer): string {
+  const head = bytes.subarray(0, 64).toString("utf8").replace(/^\uFEFF/, "").trimStart();
+  const lower = head.toLowerCase();
+  if (looksLikePdf(bytes)) return "startsWith %PDF";
+  if (looksLikeImageBuffer(bytes)) return "startsWith image-magic";
+  if (lower.startsWith("<!doctype")) return "startsWith <!DOCTYPE";
+  if (lower.startsWith("<html")) return "startsWith <html";
+  if (head.startsWith("{")) return "startsWith {";
+  if (head.startsWith("[")) return "startsWith [";
+  if (lower.startsWith("<?xml")) return "startsWith <?xml";
+  if (lower.startsWith("<")) return "startsWith <";
+  if (!head) return "non-text body";
+  return "non-PDF text";
+}
+
 function looksLikeAuthErrorBody(bytes: Buffer): boolean {
-  const head = bytes.subarray(0, 256).toString("utf8").trim().toLowerCase();
+  const head = bytes.subarray(0, 256).toString("utf8").replace(/^\uFEFF/, "").trim().toLowerCase();
   if (!head) return false;
   if (head.startsWith("<!doctype html") || head.startsWith("<html")) return true;
+  if (head.startsWith("<?xml")) return true;
+  if (head.startsWith("{") || head.startsWith("[")) {
+    // JSON error payloads from CDN / auth gate — not document bytes.
+    return true;
+  }
   if (head === "forbidden" || head === "unauthorized") return true;
   if (head.includes("access denied") || head.includes("blob access")) return true;
   if (head.includes("unauthorized") && head.length < 200) return true;
   return false;
 }
 
-function acceptBytes(buf: Buffer, host?: string | null): Buffer | null {
+function contentTypeLooksLikeHtmlOrJson(contentType: string | null | undefined): boolean {
+  if (!contentType) return false;
+  const ct = contentType.split(";")[0]?.trim().toLowerCase() ?? "";
+  return (
+    ct === "text/html" ||
+    ct === "application/json" ||
+    ct === "application/problem+json" ||
+    ct === "text/xml" ||
+    ct === "application/xml" ||
+    ct.startsWith("application/json")
+  );
+}
+
+function pathExpectsPdf(urlOrPath: string | undefined | null): boolean {
+  if (!urlOrPath) return false;
+  const lower = urlOrPath.toLowerCase();
+  return (
+    lower.includes(".pdf") ||
+    lower.includes("application/pdf") ||
+    /\/[^/?#]+\.pdf(?:$|\?)/i.test(lower)
+  );
+}
+
+type AcceptBytesOptions = {
+  host?: string | null;
+  contentType?: string | null;
+  /** When true (PDF attach paths), require %PDF / image magic — never accept 200 HTML/JSON as success. */
+  expectPdf?: boolean;
+};
+
+function acceptBytes(buf: Buffer, options?: AcceptBytesOptions | string | null): Buffer | null {
+  // Back-compat: acceptBytes(buf, host) used to pass host as 2nd arg.
+  const opts: AcceptBytesOptions =
+    typeof options === "string" || options == null
+      ? { host: options ?? null }
+      : options;
+  const host = opts.host ?? null;
+  const contentType = opts.contentType ?? null;
   if (!buf.length) {
-    setReadbackDiag({ reason: "empty", host: host ?? null });
+    setReadbackDiag({ reason: "empty", host, contentType });
     return null;
   }
-  if (looksLikeAuthErrorBody(buf)) {
-    setReadbackDiag({ reason: "auth_body", host: host ?? null });
+  if (contentTypeLooksLikeHtmlOrJson(contentType) || looksLikeAuthErrorBody(buf)) {
+    setReadbackDiag({
+      reason: "auth_body",
+      host,
+      contentType,
+      bodyPrefix: describeBodyPrefix(buf),
+    });
+    return null;
+  }
+  if (opts.expectPdf && !looksLikePdf(buf) && !looksLikeImageBuffer(buf)) {
+    setReadbackDiag({
+      reason: "non_pdf",
+      host,
+      contentType,
+      bodyPrefix: describeBodyPrefix(buf),
+    });
     return null;
   }
   return buf;
@@ -266,7 +358,13 @@ export function privateBlobUrlForToken(pathname: string, token: string): string 
 async function readViaSdkGet(urlOrPathname: string): Promise<Buffer | null> {
   const auth = blobAuthOptions();
   const hostHint =
-    /^https?:\/\//i.test(urlOrPathname) ? blobHostname(urlOrPathname) : storeIdFromRwToken(auth.token ?? "") ;
+    /^https?:\/\//i.test(urlOrPathname)
+      ? blobHostname(urlOrPathname)
+      : (() => {
+          const id = storeIdFromRwToken(auth.token ?? "");
+          return id ? `${id}.private.blob.vercel-storage.com` : null;
+        })();
+  const expectPdf = pathExpectsPdf(urlOrPathname);
   const attempts: Array<{ access: "private"; useCache?: boolean }> = [
     { access: "private", useCache: false },
     { access: "private" },
@@ -282,9 +380,10 @@ async function readViaSdkGet(urlOrPathname: string): Promise<Buffer | null> {
         continue;
       }
       const buf = await streamToBuffer(result.stream);
-      const ok = acceptBytes(buf, hostHint);
+      const contentType = result.blob?.contentType ?? result.headers?.get?.("content-type") ?? null;
+      const ok = acceptBytes(buf, { host: hostHint, contentType, expectPdf });
       if (ok) return ok;
-      // Metadata said size>0 but body empty/auth — try next strategy.
+      // Bad body / empty — try next strategy (presign may still return real PDF bytes).
       if (result.blob?.size && result.blob.size > 0 && buf.length === 0) continue;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -307,18 +406,24 @@ type BearerResult = { buf: Buffer | null; status?: number; host?: string | null 
 /** Direct private CDN fetch with Bearer — RW token preferred; OIDC as last resort. */
 async function bearerFetchOnce(url: string, bearer: string): Promise<BearerResult> {
   const host = blobHostname(url);
+  const expectPdf = pathExpectsPdf(url);
   try {
     const res = await fetch(url, {
       method: "GET",
       headers: { Authorization: `Bearer ${bearer}` },
       cache: "no-store",
     });
+    const contentType = res.headers.get("content-type");
     if (!res.ok) {
-      setReadbackDiag({ reason: "http_status", status: res.status, host });
+      setReadbackDiag({ reason: "http_status", status: res.status, host, contentType });
       return { buf: null, status: res.status, host };
     }
     const buf = Buffer.from(await res.arrayBuffer());
-    return { buf: acceptBytes(buf, host), status: res.status, host };
+    return {
+      buf: acceptBytes(buf, { host, contentType, expectPdf }),
+      status: res.status,
+      host,
+    };
   } catch {
     setReadbackDiag({ reason: "empty", host });
     return { buf: null, host };
@@ -370,13 +475,15 @@ async function readViaPresignedGet(pathname: string): Promise<Buffer | null> {
     );
     if (!presignedUrl) return null;
     const host = blobHostname(presignedUrl);
+    const expectPdf = pathExpectsPdf(pathname) || pathExpectsPdf(presignedUrl);
     const res = await fetch(presignedUrl, { method: "GET", cache: "no-store" });
+    const contentType = res.headers.get("content-type");
     if (!res.ok) {
-      setReadbackDiag({ reason: "http_status", status: res.status, host });
+      setReadbackDiag({ reason: "http_status", status: res.status, host, contentType });
       return null;
     }
     const buf = Buffer.from(await res.arrayBuffer());
-    return acceptBytes(buf, host);
+    return acceptBytes(buf, { host, contentType, expectPdf });
   } catch {
     /* OIDC/token cannot issue, or CDN rejected signature */
   }
@@ -385,13 +492,62 @@ async function readViaPresignedGet(pathname: string): Promise<Buffer | null> {
 
 async function readPrivateBlob(urlOrPathname: string): Promise<Buffer | null> {
   const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  const isHttp = /^https?:\/\//i.test(urlOrPathname);
+  const pathname = isHttp
+    ? (blobPathnameDecoded(urlOrPathname) ?? blobPathnameFromUrl(urlOrPathname))
+    : posixKey(urlOrPathname);
 
-  // When RW token is set: prefer Bearer on the put URL / token-constructed URL first
-  // (same credential put used — avoids OIDC/SDK mismatch and empty getReader streams).
-  if (token && /^https?:\/\//i.test(urlOrPathname)) {
+  // 1) Bearer on the given URL / constructed CDN URL (same RW token as put).
+  //    HTML/JSON/non-PDF bodies are rejected so we fall through — never treat 200 HTML as PDF.
+  if (token && isHttp) {
     const viaBearer = await readViaBearerFetch(urlOrPathname);
     if (viaBearer) return viaBearer;
-    // Normalize host to lowercase — DNS/CDN treat store ids as case-insensitive.
+    // Prefer ?download=1 next (put.downloadUrl shape) before other host variants.
+    const downloadUrl = (() => {
+      try {
+        const u = new URL(urlOrPathname);
+        u.hostname = u.hostname.toLowerCase();
+        if (u.searchParams.get("download") === "1") return null;
+        u.searchParams.set("download", "1");
+        return u.toString();
+      } catch {
+        return null;
+      }
+    })();
+    if (downloadUrl) {
+      const viaDownload = await readViaBearerFetch(downloadUrl);
+      if (viaDownload) return viaDownload;
+    }
+  } else if (token && pathname) {
+    const constructed = privateBlobUrlForToken(pathname, token);
+    if (constructed) {
+      const viaConstructed = await readViaBearerFetch(constructed);
+      if (viaConstructed) return viaConstructed;
+      const viaDownload = await readViaBearerFetch(`${constructed}?download=1`);
+      if (viaDownload) return viaDownload;
+    }
+  } else if (!token && isHttp) {
+    const viaBearer = await readViaBearerFetch(urlOrPathname);
+    if (viaBearer) return viaBearer;
+  }
+
+  // 2) SDK get with explicit RW token (useCache:false then default).
+  const viaSdk = await readViaSdkGet(urlOrPathname);
+  if (viaSdk) return viaSdk;
+  if (pathname && pathname !== urlOrPathname) {
+    const viaPathSdk = await readViaSdkGet(pathname);
+    if (viaPathSdk) return viaPathSdk;
+  }
+
+  // 3) Presigned GET — different auth path than Bearer; often succeeds when CDN returns
+  //    HTML/JSON error bodies to raw Bearer fetches.
+  if (pathname) {
+    const viaPresign = await readViaPresignedGet(pathname);
+    if (viaPresign) return viaPresign;
+  }
+
+  // 4) Last Bearer host-normalization / token-constructed variants.
+  if (token && isHttp) {
     const lowerHostUrl = (() => {
       try {
         const u = new URL(urlOrPathname);
@@ -407,27 +563,12 @@ async function readPrivateBlob(urlOrPathname: string): Promise<Buffer | null> {
       const viaLower = await readViaBearerFetch(lowerHostUrl);
       if (viaLower) return viaLower;
     }
-    const downloadUrl = (() => {
-      try {
-        const u = new URL(urlOrPathname);
-        u.hostname = u.hostname.toLowerCase();
-        u.searchParams.set("download", "1");
-        return u.toString();
-      } catch {
-        return null;
-      }
-    })();
-    if (downloadUrl && downloadUrl !== urlOrPathname && downloadUrl !== lowerHostUrl) {
-      const viaDownload = await readViaBearerFetch(downloadUrl);
-      if (viaDownload) return viaDownload;
-    }
-    const pathname = blobPathnameDecoded(urlOrPathname) ?? blobPathnameFromUrl(urlOrPathname);
     if (pathname) {
       const constructed = privateBlobUrlForToken(pathname, token);
       if (
         constructed &&
         constructed.toLowerCase() !== urlOrPathname.toLowerCase() &&
-        constructed !== lowerHostUrl
+        constructed.toLowerCase() !== (lowerHostUrl ?? "").toLowerCase()
       ) {
         const viaConstructed = await readViaBearerFetch(constructed);
         if (viaConstructed) return viaConstructed;
@@ -435,35 +576,6 @@ async function readPrivateBlob(urlOrPathname: string): Promise<Buffer | null> {
     }
   }
 
-  const viaSdk = await readViaSdkGet(urlOrPathname);
-  if (viaSdk) return viaSdk;
-
-  if (/^https?:\/\//i.test(urlOrPathname)) {
-    if (!token) {
-      const viaBearer = await readViaBearerFetch(urlOrPathname);
-      if (viaBearer) return viaBearer;
-    }
-    const pathname = blobPathnameDecoded(urlOrPathname) ?? blobPathnameFromUrl(urlOrPathname);
-    if (pathname) {
-      const viaPresign = await readViaPresignedGet(pathname);
-      if (viaPresign) return viaPresign;
-      if (token) {
-        const viaPathSdk = await readViaSdkGet(pathname);
-        if (viaPathSdk) return viaPathSdk;
-      }
-    }
-    return null;
-  }
-
-  if (token) {
-    const constructed = privateBlobUrlForToken(urlOrPathname, token);
-    if (constructed) {
-      const viaConstructed = await readViaBearerFetch(constructed);
-      if (viaConstructed) return viaConstructed;
-    }
-  }
-  const viaPresign = await readViaPresignedGet(urlOrPathname);
-  if (viaPresign) return viaPresign;
   return null;
 }
 
@@ -493,7 +605,12 @@ async function readRemoteUrl(url: string): Promise<Buffer | null> {
     const stream = result?.stream;
     if (stream) {
       const buf = await streamToBuffer(stream);
-      const ok = acceptBytes(buf, blobHostname(url));
+      const contentType = result.blob?.contentType ?? result.headers?.get?.("content-type") ?? null;
+      const ok = acceptBytes(buf, {
+        host: blobHostname(url),
+        contentType,
+        expectPdf: pathExpectsPdf(url),
+      });
       if (ok) return ok;
     }
   } catch {
@@ -503,16 +620,22 @@ async function readRemoteUrl(url: string): Promise<Buffer | null> {
   if (viaBearer) return viaBearer;
   try {
     const res = await fetch(url);
+    const contentType = res.headers.get("content-type");
     if (!res.ok) {
-      setReadbackDiag({ reason: "http_status", status: res.status, host: blobHostname(url) });
+      setReadbackDiag({
+        reason: "http_status",
+        status: res.status,
+        host: blobHostname(url),
+        contentType,
+      });
       return null;
     }
     const buf = Buffer.from(await res.arrayBuffer());
-    if (looksLikeAuthErrorBody(buf)) {
-      setReadbackDiag({ reason: "auth_body", host: blobHostname(url) });
-      return null;
-    }
-    return buf;
+    return acceptBytes(buf, {
+      host: blobHostname(url),
+      contentType,
+      expectPdf: pathExpectsPdf(url),
+    });
   } catch {
     return null;
   }
@@ -565,15 +688,21 @@ export async function probeStoredFile(storagePath: string): Promise<boolean> {
 }
 
 function expectDurableBytes(storagePath: string, bytes: Buffer): void {
+  const host = blobHostname(storagePath);
   if (looksLikeAuthErrorBody(bytes)) {
-    setReadbackDiag({ reason: "auth_body", host: blobHostname(storagePath) });
+    setReadbackDiag({
+      reason: "auth_body",
+      host,
+      bodyPrefix: describeBodyPrefix(bytes),
+    });
     throw new Error(readbackFailureMessage());
   }
-  const lower = storagePath.toLowerCase();
-  const wantsPdf =
-    lower.includes(".pdf") || lower.includes("application/pdf") || /\/[^/?#]+\.pdf(?:$|\?)/i.test(lower);
-  if (wantsPdf && !looksLikePdf(bytes) && !looksLikeImageBuffer(bytes)) {
-    setReadbackDiag({ reason: "non_pdf", host: blobHostname(storagePath) });
+  if (pathExpectsPdf(storagePath) && !looksLikePdf(bytes) && !looksLikeImageBuffer(bytes)) {
+    setReadbackDiag({
+      reason: "non_pdf",
+      host,
+      bodyPrefix: describeBodyPrefix(bytes),
+    });
     throw new Error(readbackFailureMessage());
   }
 }
@@ -601,8 +730,28 @@ export async function assertStoredFileReadable(storagePath: string): Promise<voi
         setReadbackDiag({ reason: "empty", host: blobHostname(storagePath) });
       }
       lastError = new Error(readbackFailureMessage());
+      // HTML/JSON/non-PDF / non-404 HTTP are definitive — do not burn CDN visibility retries.
+      if (
+        lastReadbackDiag?.reason === "auth_body" ||
+        lastReadbackDiag?.reason === "non_pdf" ||
+        (lastReadbackDiag?.reason === "http_status" &&
+          lastReadbackDiag.status != null &&
+          lastReadbackDiag.status !== 404)
+      ) {
+        throw lastError;
+      }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(readbackFailureMessage());
+      if (
+        lastReadbackDiag?.reason === "auth_body" ||
+        lastReadbackDiag?.reason === "non_pdf" ||
+        lastReadbackDiag?.reason === "store_mismatch" ||
+        (lastReadbackDiag?.reason === "http_status" &&
+          lastReadbackDiag.status != null &&
+          lastReadbackDiag.status !== 404)
+      ) {
+        throw lastError;
+      }
     }
   }
   throw lastError ?? new Error(readbackFailureMessage());
@@ -664,44 +813,54 @@ export async function writeStoredFile(
       if (blob?.url) {
         try {
           assertPutUrlMatchesRwToken(blob.url);
-          // Prefer put URL + same auth; also try pathname and downloadUrl.
-          await assertStoredFileReadable(blob.url);
-        } catch (error) {
-          // Pathname-based read (SDK builds CDN host from token store id) before giving up.
-          if (blob.pathname) {
+          // Private blobs: prefer put.downloadUrl first, then url, then pathname.
+          // Each strategy rejects HTML/JSON/non-PDF and tries the next.
+          const readbackTargets: string[] = [];
+          if (blob.downloadUrl) readbackTargets.push(blob.downloadUrl);
+          if (!readbackTargets.includes(blob.url)) readbackTargets.push(blob.url);
+          if (blob.pathname && !readbackTargets.includes(blob.pathname)) {
+            readbackTargets.push(blob.pathname);
+          }
+
+          let readable = false;
+          let lastErr: Error | null = null;
+          for (const target of readbackTargets) {
+            try {
+              await assertStoredFileReadable(target);
+              readable = true;
+              break;
+            } catch (error) {
+              lastErr = error instanceof Error ? error : new Error(readbackFailureMessage());
+            }
+          }
+          if (!readable && blob.pathname) {
             try {
               const byPath = await readPrivateBlob(blob.pathname);
               if (byPath && byPath.length > 0) {
                 expectDurableBytes(blob.url, byPath);
-                return blob.url;
+                readable = true;
               }
-            } catch {
-              /* fall through to cleanup */
+            } catch (error) {
+              lastErr = error instanceof Error ? error : lastErr;
             }
           }
-          if (blob.downloadUrl && blob.downloadUrl !== blob.url) {
+          if (!readable) {
             try {
-              const byDownload = await readPrivateBlob(blob.downloadUrl);
-              if (byDownload && byDownload.length > 0) {
-                expectDurableBytes(blob.url, byDownload);
-                return blob.url;
-              }
+              const { del } = await import("@vercel/blob");
+              await del(blob.url, blobAuthOptions());
             } catch {
-              /* fall through to cleanup */
+              /* best-effort cleanup */
             }
+            if (requireRemote) {
+              throw lastErr ?? new Error(readbackFailureMessage());
+            }
+            return writeLocalFile(key, buffer);
           }
-          try {
-            const { del } = await import("@vercel/blob");
-            await del(blob.url, blobAuthOptions());
-          } catch {
-            /* best-effort cleanup */
-          }
+        } catch (error) {
           if (requireRemote) {
-            // Prefer latest read-back diagnosis (HTTP status / empty / non-PDF) over a
-            // stale early error string — never leave users with a false recreate-token tip.
+            // Prefer latest read-back diagnosis over a stale early error string.
             throw new Error(readbackFailureMessage());
           }
-          // Non-durable local fallback below.
           return writeLocalFile(key, buffer);
         }
         return blob.url;
