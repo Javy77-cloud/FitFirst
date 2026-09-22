@@ -263,6 +263,52 @@ export const APEX_STAR_HO_NOTES =
 export const APEX_STAR_CARRIER_INFO =
   "Apex Star Reciprocal Exchange (aka Apex Star Insurance Exchange). Florida-admitted P&C reciprocal. StarLight Insurance Group, Tampa. HO-3 / DP-3 / commercial property. apexstarins.com. customerservice@apexstarins.com / (888) 876-8005.";
 
+/**
+ * American Modern — Javy 2026-09-22.
+ * Founding line is manufactured / mobile (FitFirst form MHO, all 50 states, no age cap).
+ * Desk forms are MHO, DP1, and DP3, shopped on the HO line. Does not write standard HO-3,
+ * so this record stays off PUBLISHED_HO_APPETITE (that list is standard homeowners paper).
+ * No UW mins until a QRG arrives. Collector vehicles stay in the notes: the desk has no
+ * specialty-auto written-line code separate from AUTO.
+ */
+export const AMERICAN_MODERN_WEBSITE = "https://www.americanmodern.com";
+
+export const AMERICAN_MODERN_HO_NOTES =
+  "American Modern. Manufactured and mobile homes are the founding line (HO-7 style, FitFirst form MHO, all 50 states, no age cap). Also writes seasonal and vacation homes, vacant property, rental and landlord dwellings (desk forms DP1 and DP3), and non-standard site-built homes (older / hard-to-place primary). Other personal lines, notes only: collector and classic cars; motorcycles, ATVs, UTVs, snowmobiles, and golf carts; boats, yachts, and personal watercraft; pet insurance; farm and ranch in nine states (state list not on this sheet). Does not write standard personal auto, standard HO-3 homeowners, or life. Web https://www.americanmodern.com. No UW mins sheet yet.";
+
+export const AMERICAN_MODERN_CARRIER_INFO =
+  "American Modern. Desk forms MHO, DP1, and DP3. Manufactured and mobile homes in all 50 states, no age cap. Seasonal and vacation homes, vacant property, rental and landlord dwellings, and non-standard site-built homes. Collector and classic cars, motorcycles and off-road vehicles, boats and personal watercraft, pet insurance, and farm and ranch in nine states. Does not write standard personal auto, standard HO-3 homeowners, or life. https://www.americanmodern.com. No UW mins sheet yet.";
+
+export const AMERICAN_MODERN_DONT_WRITE =
+  "Does not write standard personal auto, standard HO-3 homeowners, or life.";
+
+export const AMERICAN_MODERN_TERRITORY =
+  "Manufactured and mobile: all 50 states, no age cap. Farm and ranch: nine states (list not on this sheet).";
+
+export const AMERICAN_MODERN_HO_APPETITE: PublishedHoAppetite = {
+  slug: "american_modern",
+  legalName: "American Modern",
+  aliases: ["american modern"],
+  line: "MHO",
+  state: "US",
+  minCovA: null,
+  maxCovA: null,
+  maxDwellingAgeYears: null,
+  minYearBuilt: null,
+  minMilesToCoast: null,
+  maxRoofAge: null,
+  allowedRoofCoverings: null,
+  mobileAllowed: true,
+  placement: "",
+  csPhone: null,
+  supportEmail: null,
+  website: AMERICAN_MODERN_WEBSITE,
+  hardDeclines: [],
+  softCautions: [],
+  preferredSignals: ["manufactured", "mobile_home", "mho"],
+  notesForAgent: AMERICAN_MODERN_HO_NOTES,
+};
+
 export const APEX_STAR_HO_APPETITE: PublishedHoAppetite = {
   slug: "apex_star",
   legalName: "Apex Star Reciprocal Exchange",

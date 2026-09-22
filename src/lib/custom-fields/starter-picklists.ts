@@ -124,6 +124,7 @@ export const LINE_OF_BUSINESS_OPTIONS: string[] = [
 /** Desk + common personal-lines paper. Not a live appointment list. */
 export const COMMON_CARRIER_OPTIONS: string[] = [
   "American Integrity",
+  "American Modern",
   "Allstate",
   "Apex Star Reciprocal Exchange",
   "Benchmark",
