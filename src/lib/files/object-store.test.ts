@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -14,6 +15,7 @@ import {
   readStoredFile,
   streamToBuffer,
   writeStoredFile,
+  blobAuthOptions,
 } from "./object-store";
 import { CASTELLANOS_WIND_MIT_FILENAME } from "./upload-plan";
 
@@ -169,5 +171,41 @@ describe("probeStoredFile / assertStoredFileReadable local", () => {
       BLOB_READBACK_FAILED_MESSAGE,
     );
     await rm(root, { recursive: true, force: true });
+  });
+});
+
+describe("blobAuthOptions", () => {
+  it("passes the RW token when set so OIDC cannot shadow put/get", () => {
+    process.env.BLOB_READ_WRITE_TOKEN = "vercel_blob_rw_store_testtoken";
+    expect(blobAuthOptions()).toEqual({ token: "vercel_blob_rw_store_testtoken" });
+    delete process.env.BLOB_READ_WRITE_TOKEN;
+    expect(blobAuthOptions()).toEqual({});
+  });
+});
+
+describe("streamToBuffer getReader path", () => {
+  it("reads chunks via getReader without relying on Response.arrayBuffer", async () => {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(encoder.encode("%PDF-1.4"));
+        controller.enqueue(encoder.encode(" more"));
+        controller.close();
+      },
+    });
+    const buf = await streamToBuffer(stream);
+    expect(buf.toString()).toBe("%PDF-1.4 more");
+  });
+});
+
+describe("private blob read hardening (source)", () => {
+  it("prefers RW token on put/get and uses getReader stream buffering", () => {
+    const src = readFileSync("src/lib/files/object-store.ts", "utf8");
+    expect(src).toMatch(/export function blobAuthOptions/);
+    expect(src).toMatch(/BLOB_READ_WRITE_TOKEN/);
+    expect(src).toMatch(/Authorization: `Bearer \$\{token\}`/);
+    expect(src).toMatch(/getReader\(\)/);
+    expect(src).toMatch(/looksLikePdf/);
+    expect(src).toMatch(/\.\.\.blobAuthOptions\(\)/);
   });
 });

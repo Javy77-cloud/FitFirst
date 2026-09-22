@@ -47,6 +47,7 @@ import {
 import {
   clearExtractedSheetCells,
   clearExtractedSheetCellsFromDoc,
+  documentDeleteReturnHref,
   uploadedFileDeleteMode,
 } from "@/lib/documents/delete-file";
 import { inferDocType } from "@/lib/ingest/identity";
@@ -971,17 +972,23 @@ export async function deleteUploadedFile(formData: FormData) {
     // TODO(admin-settings): agentsMayDeletePolicyDocuments is the live gate; keep tied to Agency → Roles.
     const toggles = await getAgentFeatureToggles();
     if (!session.isAdmin && !toggles.agentsMayDeletePolicyDocuments) {
-      const returnTo = String(formData.get("returnTo") ?? "").trim();
       const message = "Agent deletes are turned off for policy documents";
-      if (returnTo) redirect(withFlash(returnTo, message, "error"));
-      if (doc.policyId) flashAction(`/policies/${doc.policyId}?tab=documents`, message, "error");
+      const href = documentDeleteReturnHref({
+        policyId: doc.policyId,
+        dealId: doc.dealId,
+        returnTo: String(formData.get("returnTo") ?? "").trim(),
+      });
+      if (href) flashAction(href, message, "error");
       return;
     }
     if (!deleteReason) {
-      const returnTo = String(formData.get("returnTo") ?? "").trim();
       const message = "A delete reason is required for policy documents";
-      if (returnTo) redirect(withFlash(returnTo, message, "error"));
-      if (doc.policyId) flashAction(`/policies/${doc.policyId}?tab=documents`, message, "error");
+      const href = documentDeleteReturnHref({
+        policyId: doc.policyId,
+        dealId: doc.dealId,
+        returnTo: String(formData.get("returnTo") ?? "").trim(),
+      });
+      if (href) flashAction(href, message, "error");
       return;
     }
   }
@@ -1007,10 +1014,12 @@ export async function deleteUploadedFile(formData: FormData) {
       });
     }
     revalidateDocumentPaths(doc);
-    const hiddenReturn = String(formData.get("returnTo") ?? "").trim();
-    if (hiddenReturn) redirect(withFlash(hiddenReturn, "document-deleted"));
-    if (doc.dealId) flashAction(`/deals/${doc.dealId}?tab=documents`, "document-deleted");
-    if (doc.policyId) flashAction(`/policies/${doc.policyId}?tab=documents`, "document-deleted");
+    const hiddenHref = documentDeleteReturnHref({
+      policyId: doc.policyId,
+      dealId: doc.dealId,
+      returnTo: String(formData.get("returnTo") ?? "").trim(),
+    });
+    if (hiddenHref) flashAction(hiddenHref, "document-deleted");
     return;
   }
 
@@ -1095,11 +1104,13 @@ export async function deleteUploadedFile(formData: FormData) {
     }
   } catch (error) {
     console.error("[deleteUploadedFile]", error);
-    const dealId = doc.dealId || String(formData.get("dealId") ?? "").trim();
-    const returnTo = String(formData.get("returnTo") ?? "").trim();
     const message = "Could not delete document";
-    if (returnTo) redirect(withFlash(returnTo, message, "error"));
-    if (dealId) flashAction(`/deals/${dealId}?tab=documents`, message, "error");
+    const href = documentDeleteReturnHref({
+      policyId: doc.policyId || String(formData.get("policyId") ?? "").trim(),
+      dealId: doc.dealId || String(formData.get("dealId") ?? "").trim(),
+      returnTo: String(formData.get("returnTo") ?? "").trim(),
+    });
+    if (href) flashAction(href, message, "error");
     throw error;
   }
 
@@ -1122,14 +1133,10 @@ export async function deleteUploadedFile(formData: FormData) {
   }
 
   revalidateDocumentPaths(doc);
-  const returnTo = String(formData.get("returnTo") ?? "").trim();
-  if (returnTo) {
-    redirect(withFlash(returnTo, "document-deleted"));
-  }
-  if (doc.dealId) {
-    flashAction(`/deals/${doc.dealId}?tab=documents`, "document-deleted");
-  }
-  if (doc.policyId) {
-    flashAction(`/policies/${doc.policyId}?tab=documents`, "document-deleted");
-  }
+  const href = documentDeleteReturnHref({
+    policyId: doc.policyId,
+    dealId: doc.dealId,
+    returnTo: String(formData.get("returnTo") ?? "").trim(),
+  });
+  if (href) flashAction(href, "document-deleted");
 }

@@ -57,3 +57,22 @@ export function clearExtractedSheetCellsFromDoc(
   }
   return next;
 }
+
+/**
+ * After delete/hide, keep the agent on Policy Documents when the file belongs to a policy.
+ * Prefer policy over deal even when a deal `returnTo` is present — mint uploads live on
+ * `/policies/{id}?tab=documents` and re-upload must stay there.
+ */
+export function documentDeleteReturnHref(input: {
+  policyId?: string | null;
+  dealId?: string | null;
+  returnTo?: string | null;
+}): string | null {
+  const policyId = (input.policyId ?? "").trim();
+  if (policyId) return `/policies/${policyId}?tab=documents`;
+  const returnTo = (input.returnTo ?? "").trim();
+  if (returnTo.startsWith("/") && !returnTo.startsWith("//")) return returnTo;
+  const dealId = (input.dealId ?? "").trim();
+  if (dealId) return `/deals/${dealId}?tab=documents`;
+  return null;
+}

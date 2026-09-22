@@ -80,4 +80,21 @@ describe("upload surfaces offer delete + one confirm", () => {
     expect(helper).not.toMatch(/if \(!ask\(message\)\) return false;/);
     expect(helper).not.toMatch(/return ask\(message\);/);
   });
+
+
+  it("prefers policy Documents after delete when policyId is set (deal returnTo ignored)", () => {
+    const helper = source("src/lib/documents/delete-file.ts");
+    expect(helper).toMatch(/export function documentDeleteReturnHref/);
+    expect(helper).toMatch(/\/policies\/\$\{policyId\}\?tab=documents/);
+    const action = source("src/app/actions/documents.ts");
+    const deleteBody = action.slice(action.indexOf("export async function deleteUploadedFile"));
+    expect(deleteBody).toMatch(/documentDeleteReturnHref/);
+    // Deal flash must not run before policy when both ids are present.
+    expect(deleteBody).not.toMatch(
+      /if \(doc\.dealId\) flashAction\(`\/deals\/\$\{doc\.dealId\}\?tab=documents`/,
+    );
+    const table = source("src/components/policy/tabs/documents-table.tsx");
+    expect(table).toMatch(/returnTo=\{\`\/policies\/\$\{policyId\}\?tab=documents\`\}/);
+  });
+
 });
