@@ -79,13 +79,13 @@ export function RiskProfileSectionBar({
             type="button"
             className="ff-sheet-section-arrow"
             data-ff-section-toggle={title}
-            data-ff-section-arrow={collapsed ? "up" : "down"}
+            data-ff-section-arrow={collapsed ? "down" : "up"}
             data-ff-no-hover=""
             aria-expanded={collapsed ? "false" : "true"}
             aria-label={collapsed ? `Expand ${title}` : `Collapse ${title}`}
             onClick={onToggleCollapse}
           >
-            {collapsed ? <ChevronUp className="size-4" aria-hidden /> : <ChevronDown className="size-4" aria-hidden />}
+            {collapsed ? <ChevronDown className="size-4" aria-hidden /> : <ChevronUp className="size-4" aria-hidden />}
           </button>
         ) : null}
         <span data-ff-columns-anchor="">
