@@ -1,4 +1,5 @@
 import {
+  AMERICAN_MODERN_HO_APPETITE,
   APEX_STAR_HO_APPETITE,
   OLYMPUS_HO_APPETITE,
   SOUTHERN_OAK_HO_APPETITE,
@@ -19,6 +20,7 @@ export const SLUG_NAME_ALIASES: Record<string, string[]> = {
   citizens: ["citizens property", "citizens"],
   slide: ["slide insurance", "slide"],
   american_integrity: ["american integrity"],
+  american_modern: AMERICAN_MODERN_HO_APPETITE.aliases,
   foremost: ["foremost"],
   universal_pc: UNIVERSAL_PC_HO_APPETITE.aliases,
   kin: ["kin interinsurance", "kin "],

@@ -54,6 +54,8 @@ export const UNIVERSAL_PC_SLUG = "universal_pc";
 export const UICNA_SLUG = "uicna";
 export const TRIDENT_SLUG = "trident_reciprocal";
 export const APEX_STAR_SLUG = "apex_star";
+/** Desk / identity slug. Not in DEFAULT_FL_HO_ORDER — they do not write standard HO-3. */
+export const AMERICAN_MODERN_SLUG = "american_modern";
 export const SOUTHERN_OAK_SLUG = "southern_oak";
 export const STAND_SLUG = "stand";
 export const OLYMPUS_SLUG = "olympus";
