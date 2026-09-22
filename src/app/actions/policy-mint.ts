@@ -470,6 +470,16 @@ export async function issuePolicyFromDeclaration(input: {
     sheetRows.find((row) => row.line === def.shopLine) ??
     sheetRows.find((row) => row.line === "home") ??
     sheetRows[0];
+  const sheetValues = (sheet?.values ?? {}) as Record<string, { value?: string | null } | undefined>;
+  const sheetPolicyNumber = sheetValue(
+    sheetValues,
+    "policy_number",
+    "current_policy_number",
+    "policy_no",
+    "pol_number",
+    "current_policy_id",
+    "policy_id",
+  );
   const decRow = docs.find((row) => row.id === gate.dec.id);
   const extracted = await loadMintGeminiRows({
     docId: gate.dec.id,
@@ -484,12 +494,16 @@ export async function issuePolicyFromDeclaration(input: {
     await markMintStatus(dealId, product, { mintStatus: previousMint, selectedQuoteIds });
     return extracted;
   }
-  const extractGate = evaluateMintExtract(extracted.rows, {
-    documentKind: extracted.documentKind,
-    filename: decRow?.filename ?? gate.dec.filename,
-    docType: decRow?.docType ?? gate.dec.docType,
-    geminiPreview: extracted.geminiPreview,
-  });
+  const extractGate = evaluateMintExtract(
+    extracted.rows,
+    {
+      documentKind: extracted.documentKind,
+      filename: decRow?.filename ?? gate.dec.filename,
+      docType: decRow?.docType ?? gate.dec.docType,
+      geminiPreview: extracted.geminiPreview,
+    },
+    { policyNumber: sheetPolicyNumber },
+  );
   if (!extractGate.ok) {
     console.error("dec extract: refusing hollow mint — Gemini missing required fields", {
       documentId: gate.dec.id,
@@ -501,13 +515,13 @@ export async function issuePolicyFromDeclaration(input: {
       geminiPreview: extracted.geminiPreview ?? null,
       reason: extractGate.reason,
       fieldKeys: extracted.rows.map((row) => row.fieldKey),
+      sheetPolicyNumber: sheetPolicyNumber || null,
     });
     await markMintStatus(dealId, product, { mintStatus: previousMint, selectedQuoteIds });
     return extractGate;
   }
   const geminiRows = extracted.rows;
   const risk = riskRows[0];
-  const sheetValues = (sheet?.values ?? {}) as Record<string, { value?: string | null } | undefined>;
   const [owner] = deal.ownerId
     ? await db.select({ name: users.name }).from(users).where(eq(users.id, deal.ownerId))
     : [];
