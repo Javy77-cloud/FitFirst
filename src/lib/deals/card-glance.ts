@@ -113,6 +113,32 @@ export function quotesSentGlanceLabel(
   return parts.join("; ");
 }
 
+/**
+ * Quote / premium copy — Form and Stage must never show this.
+ * Matches pull summaries, “no quotes yet”, best $…, pending counts, bare premiums.
+ */
+export function isStackQuoteLanguage(value: string | null | undefined): boolean {
+  const text = (value ?? "").trim();
+  if (!text) return false;
+  return /pulled|quotes yet|best\s*\$|\bpending\b|\$[\d,]+|\d+\s*quotes?/i.test(text);
+}
+
+/**
+ * Deals Priority Stack health flag.
+ * Red (alert) when cold OR client weak (≤2 pips / score &lt; 40) OR policy weak.
+ * Green only when neither side is weak and the deal is not cold.
+ */
+export function stackHealthFlagged(input: {
+  heat?: string | null;
+  clientHealth: number;
+  policyHealth: number;
+}): boolean {
+  if (input.heat === "cold") return true;
+  if (input.clientHealth < 40) return true;
+  if (input.policyHealth < 40) return true;
+  return false;
+}
+
 /** One silence cue. Hours stay words so a lone "1h" never sits under the name. */
 export function formatSilenceCue(days: number): string {
   if (!Number.isFinite(days) || days < 1) {
@@ -253,13 +279,22 @@ export type StackProductLine = {
 
 export function stackProductName(product: string, fallback?: string | null): string {
   const fromChip = fallback?.trim();
-  if (fromChip) return fromChip;
+  // Form cell = form code only. Never quote language stuffed into a label field.
+  if (fromChip && !isStackQuoteLanguage(fromChip)) return fromChip;
   return STACK_PRODUCT_NAMES[product] ?? product;
 }
 
 export function stackPlaceLabel(stage: string | null | undefined): string {
+  // Stage cell = place only. Premium / pull copy never belongs here.
+  if (isStackQuoteLanguage(stage)) return "Documents";
   const key = stageKey(stage);
-  return STACK_PLACE[key] ?? (key ? key.replace(/_/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase()) : "Documents");
+  if (STACK_PLACE[key]) return STACK_PLACE[key];
+  if (!key) return "Documents";
+  // Mangled quote leftovers (e.g. best_2_109_1_pending) are not places.
+  if (/best_|_pending|pulled|quotes_yet|\d{3,}/.test(key) && !STACK_PLACE[key]) {
+    return "Documents";
+  }
+  return key.replace(/_/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
 }
 
 /**
@@ -300,7 +335,9 @@ export function stackProductLines(input: {
         { multiLine, splitHomeProducts: splitHome },
       );
     });
-    const stage = product.stage ?? "";
+    const stageRaw = product.stage ?? "";
+    const stagePolluted = isStackQuoteLanguage(stageRaw);
+    const stage = stagePolluted ? "" : stageRaw;
     const key = stageKey(stage);
     const noticeSlugs = [product.noticeType, product.inspectionStatus].filter(
       (value): value is string => Boolean(value && value.trim() && value !== "none"),
@@ -312,7 +349,7 @@ export function stackProductLines(input: {
     const stageStamp =
       key === "pending_inspection" || key === "inspection" || key === "waiting_on_inspection"
         ? null
-        : resolveDealStampStage(stage);
+        : resolveDealStampStage(stage || null);
     const stamps = dealJobStamps({
       stageStamp,
       productStageSlugs: stage ? [stage] : [],
@@ -338,10 +375,22 @@ export function stackProductLines(input: {
         pending: mine.filter((quote) => isPendingQuoteStatus(quote.agentStatus)).length,
       });
     }
+    // Manually minted deals sometimes stuff premium / pull copy into label or stage —
+    // remap that text into Quotes so Form/Stage stay pure.
+    const misplaced = [product.label, stageRaw]
+      .map((value) => (value ?? "").trim())
+      .filter((value) => value && isStackQuoteLanguage(value));
+    if (misplaced.length > 0) {
+      const emptyQuotes =
+        !quoteSummary ||
+        quoteSummary === "No quotes yet" ||
+        (!/\$/.test(quoteSummary) && !hasQuoteSentStamp);
+      if (emptyQuotes) quoteSummary = misplaced[0]!;
+    }
     return {
       product: product.product,
       label: stackProductName(product.product, product.label),
-      stageLabel: stackPlaceLabel(stage),
+      stageLabel: stackPlaceLabel(stageRaw),
       stamps,
       quoteSummary,
     };

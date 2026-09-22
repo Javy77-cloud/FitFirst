@@ -5,12 +5,16 @@ import {
   docsGlanceLabel,
   formatPremiumColumn,
   formatSilenceCue,
+  isStackQuoteLanguage,
   noticeSlugsFromShopFlow,
   productStageSlugsFromShopFlow,
   premiumColumnAmount,
   quotesGlanceLabel,
   quotesSentGlanceLabel,
+  stackHealthFlagged,
+  stackPlaceLabel,
   stackProductLines,
+  stackProductName,
 } from "./card-glance";
 
 describe("deal card glance", () => {
@@ -156,7 +160,7 @@ describe("deal card glance", () => {
       products: [{ product: "homeowners", label: "HO3", stage: "quote_sent" }],
       quotes: [
         { id: "q1", shopLine: "home", premium: 2100, agentStatus: "sent_to_client", carrierName: "AI", stub: false },
-        { id: "q2", shopLine: "home", premium: 2400, agentStatus: "new", carrierName: "Other", stub: false },
+        { id: "q2", shopLine: "home", premium: 2400, agentStatus: "new", stub: false, carrierName: "Other" },
       ],
       selectedQuoteIds: { homeowners: ["q1"] },
     });
@@ -164,5 +168,47 @@ describe("deal card glance", () => {
     expect(sent[0]?.quoteSummary).toBe("$2,100 · AI");
     expect(sent[0]?.quoteSummary).not.toMatch(/pulled/i);
     expect(sent[0]?.label).toBe("HO3");
+  });
+
+  it("keeps Form / Stage / Quotes column purity — remaps stuffed premium into Quotes", () => {
+    expect(isStackQuoteLanguage("1 quote pulled")).toBe(true);
+    expect(isStackQuoteLanguage("No quotes yet")).toBe(true);
+    expect(isStackQuoteLanguage("best $2,109 · 1 pending")).toBe(true);
+    expect(isStackQuoteLanguage("HO3")).toBe(false);
+    expect(isStackQuoteLanguage("Documents")).toBe(false);
+
+    // Domenic-style: premium stuffed into Stage field
+    const domenic = stackProductLines({
+      products: [{ product: "homeowners", label: "HO3", stage: "best $2,109 · 1 pending" }],
+    });
+    expect(domenic[0]?.label).toBe("HO3");
+    expect(domenic[0]?.label).not.toMatch(/pulled|quotes yet|best \$/i);
+    expect(domenic[0]?.stageLabel).toBe("Documents");
+    expect(domenic[0]?.stageLabel).not.toMatch(/premium|pending|pulled|\$/i);
+    expect(domenic[0]?.quoteSummary).toMatch(/best \$2,109|2,109/);
+
+    // Quote copy stuffed into Form label
+    const formLeak = stackProductLines({
+      products: [{ product: "auto", label: "1 quote pulled", stage: "markets" }],
+    });
+    expect(formLeak[0]?.label).toBe("Auto");
+    expect(formLeak[0]?.label).not.toMatch(/pulled|quotes yet|best \$/i);
+    expect(formLeak[0]?.stageLabel).toBe("Markets");
+    expect(formLeak[0]?.stageLabel).not.toMatch(/premium|pending|pulled/i);
+    expect(formLeak[0]?.quoteSummary).toMatch(/pulled/i);
+
+    expect(stackProductName("homeowners", "No quotes yet")).toBe("HO3");
+    expect(stackPlaceLabel("best $2,109 · 1 pending")).toBe("Documents");
+    expect(stackPlaceLabel("gathering")).toBe("Documents");
+    expect(stackPlaceLabel("quote_sent")).toBe("Quotes");
+  });
+
+  it("flags stack health red when cold OR client weak OR policy weak", () => {
+    expect(stackHealthFlagged({ heat: "hot", clientHealth: 80, policyHealth: 80 })).toBe(false);
+    expect(stackHealthFlagged({ heat: "cold", clientHealth: 80, policyHealth: 80 })).toBe(true);
+    expect(stackHealthFlagged({ heat: "hot", clientHealth: 30, policyHealth: 80 })).toBe(true);
+    // Mixed: Client green (≥40), Policy red (<40) → alert
+    expect(stackHealthFlagged({ heat: "cooling", clientHealth: 80, policyHealth: 30 })).toBe(true);
+    expect(stackHealthFlagged({ heat: "near_cold", clientHealth: 39, policyHealth: 39 })).toBe(true);
   });
 });

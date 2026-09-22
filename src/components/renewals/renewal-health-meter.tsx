@@ -63,7 +63,12 @@ export function RenewalHealthMeter({
           data-ff-health-flag={flagged ? "alert" : "ok"}
           aria-label={flagged ? "Flagged" : "Healthy"}
         >
-          <Flag className="ff-renewal-health-flag-icon" aria-hidden strokeWidth={2.4} />
+          <Flag
+            className="ff-renewal-health-flag-icon"
+            aria-hidden
+            fill="currentColor"
+            strokeWidth={1.75}
+          />
         </span>
       ) : flagged ? (
         <span className="ff-renewal-health-flag">Flag</span>

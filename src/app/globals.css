@@ -4771,26 +4771,7 @@ tr[data-ff-activity-selected="true"] {
   align-items: center;
   min-width: 0;
 }
-/* Single product: quotes on row 2 so both rows carry content */
-[data-ff-priority-stack] .ff-deal-host-job-single .ff-deal-host-line {
-  display: contents;
-}
-[data-ff-priority-stack] .ff-deal-host-job-single .ff-stack-product {
-  grid-column: 1;
-  grid-row: 1;
-}
-[data-ff-priority-stack] .ff-deal-host-job-single .ff-deal-host-stage {
-  grid-column: 2;
-  grid-row: 1;
-}
-[data-ff-priority-stack] .ff-deal-host-job-single .ff-deal-host-stamps {
-  grid-column: 3;
-  grid-row: 1;
-}
-[data-ff-priority-stack] .ff-deal-host-job-single .ff-deal-host-quotes {
-  grid-column: 1 / 5;
-  grid-row: 2;
-}
+/* One line per product: form | stage | stamps | quotes — never spill quote copy under Form/Stage */
 [data-ff-priority-stack] .ff-deal-host-health {
   grid-column: 2;
   grid-row: 1;
@@ -4863,6 +4844,7 @@ tr[data-ff-activity-selected="true"] {
 [data-ff-priority-stack] .ff-renewal-health--stack .ff-renewal-health-flag-icon {
   width: 0.82rem;
   height: 0.82rem;
+  fill: currentColor;
 }
 @media (max-width: 42rem) {
   [data-ff-priority-stack] .ff-deal-stack-header,
