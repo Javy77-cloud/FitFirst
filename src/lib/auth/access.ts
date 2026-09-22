@@ -137,6 +137,12 @@ export function isAdminOnlyPath(pathname: string): boolean {
   return ADMIN_ONLY_PATHS.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
+/** Desk file APIs authenticate inside the route — do not HTML-redirect to /login. */
+export function isApiSelfAuthPath(pathname: string): boolean {
+  const path = pathname.split("?")[0] ?? pathname;
+  return path.startsWith("/api/files") || path.startsWith("/api/documents");
+}
+
 export function isPublicPath(pathname: string): boolean {
   const path = pathname.split("?")[0] ?? pathname;
   if (path === "/login" || path.startsWith("/login/")) return true;

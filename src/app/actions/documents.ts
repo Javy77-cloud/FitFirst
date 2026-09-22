@@ -77,7 +77,7 @@ import { isDocumentsSourceDoc, shopLineForGeminiExtract, shopLineFromSourceDoc }
 import { dealSourceSlotForUpload } from "@/lib/documents/restore-deal-docs";
 import { collectUploadedFiles, isUploadedFile } from "@/lib/documents/uploaded-file";
 import { markShopFlowStaleAfterRiskChange } from "@/lib/deals/shop-flow-persist";
-import { deleteStoredFile, readStoredFile, writeStoredFile } from "@/lib/files/object-store";
+import { assertStoredFileReadable, deleteStoredFile, readStoredFile, writeStoredFile } from "@/lib/files/object-store";
 import { getAgentFeatureToggles } from "@/lib/settings/agent-feature-toggles-prefs";
 import { currentDeskSession } from "@/lib/auth/session";
 import { formatEasternConfirmStamp } from "@/lib/policy/agent-confirm";
@@ -150,6 +150,8 @@ export async function persistFile(input: {
         `Could not attach “${display}”. The storage location is not on this deal. Nothing was saved.`,
       );
     }
+    // Existing browser/client Blob URL must still be readable or we create a ghost row.
+    await assertStoredFileReadable(storagePath);
   } else {
     if (!input.buffer || input.buffer.length === 0) {
       throw new Error(`“${display}” had no bytes. Nothing was saved.`);
@@ -158,6 +160,8 @@ export async function persistFile(input: {
     storagePath = await writeStoredFile(relPath, input.buffer, mimeType, {
       durable: Boolean(input.dealId || input.policyId),
     });
+    // writeStoredFile already read-back-checks remote puts; assert again for local paths.
+    await assertStoredFileReadable(storagePath);
   }
 
   const values = {

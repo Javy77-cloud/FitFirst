@@ -3,7 +3,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { db } from "@/lib/db";
 import { documents, documentVersions, type Document, type DocumentVersion } from "@/lib/db/schema";
-import { readStoredFile } from "@/lib/files/object-store";
+import { probeStoredFile, readStoredFile } from "@/lib/files/object-store";
 import {
   contentDisposition,
   isFilenameOnlyStub,
@@ -169,6 +169,8 @@ export async function serveDeskDocument(
 }
 
 export const FILE_MISSING_HEADER = "X-FitFirst-File-Missing";
+export const FILE_OK_HEADER = "X-FitFirst-File-Ok";
+export const FILE_PROBE_EXPOSE_HEADERS = `${FILE_OK_HEADER}, ${FILE_MISSING_HEADER}`;
 
 function missingFileResponse(filename: string, download: boolean): Response {
   const message = `${filename} is not in storage. Re-upload the file — local disk uploads do not survive Vercel deploys. Existing blob URLs are retried automatically.`;
@@ -180,11 +182,26 @@ function missingFileResponse(filename: string, download: boolean): Response {
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
       [FILE_MISSING_HEADER]: "1",
+      "Access-Control-Expose-Headers": FILE_PROBE_EXPOSE_HEADERS,
     },
   });
 }
 
-/** Lightweight existence check for in-app preview (no blank iframe). */
+function readyProbeResponse(mimeType?: string | null): Response {
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
+      [FILE_OK_HEADER]: "1",
+      "Access-Control-Expose-Headers": FILE_PROBE_EXPOSE_HEADERS,
+      ...(mimeType ? { "X-FitFirst-File-Mime": mimeType } : {}),
+    },
+  });
+}
+
+/** Lightweight existence check for in-app preview (no blank iframe, no full PDF download). */
 export async function probeDeskDocument(
   id: string,
   opts: { versionId?: string | null } = {},
@@ -193,42 +210,43 @@ export async function probeDeskDocument(
   if (!doc) {
     return new Response("Not found", {
       status: 404,
-      headers: { [FILE_MISSING_HEADER]: "1", "Cache-Control": "private, no-store" },
+      headers: {
+        [FILE_MISSING_HEADER]: "1",
+        "Cache-Control": "private, no-store",
+        "Access-Control-Expose-Headers": FILE_PROBE_EXPOSE_HEADERS,
+      },
     });
   }
+  let storagePath = doc.storagePath;
+  let filename = doc.filename;
+  let mimeType = doc.mimeType;
   if (opts.versionId) {
     const hit = await getDeskDocumentVersion(id, opts.versionId);
     if (!hit) {
       return new Response("Not found", {
         status: 404,
-        headers: { [FILE_MISSING_HEADER]: "1", "Cache-Control": "private, no-store" },
+        headers: {
+          [FILE_MISSING_HEADER]: "1",
+          "Cache-Control": "private, no-store",
+          "Access-Control-Expose-Headers": FILE_PROBE_EXPOSE_HEADERS,
+        },
       });
     }
-    const file = await loadDocumentBytes({
-      ...doc,
-      filename: hit.version.filename,
-      mimeType: hit.version.mimeType,
-      storagePath: hit.version.storagePath,
-      docType: hit.version.docType,
-    });
-    if (!file) return missingFileResponse(hit.version.filename, false);
-    return new Response(null, {
-      status: 204,
-      headers: {
-        "Content-Type": file.mimeType,
-        "Cache-Control": "private, no-store",
-        "X-FitFirst-File-Ok": "1",
-      },
-    });
+    storagePath = hit.version.storagePath;
+    filename = hit.version.filename;
+    mimeType = hit.version.mimeType;
   }
-  const file = await loadDocumentBytes(doc);
-  if (!file) return missingFileResponse(doc.filename, false);
-  return new Response(null, {
-    status: 204,
-    headers: {
-      "Content-Type": file.mimeType,
-      "Cache-Control": "private, no-store",
-      "X-FitFirst-File-Ok": "1",
-    },
+
+  // Prefer Blob head() (no full download). Fall back to a real byte load.
+  const exists = await probeStoredFile(storagePath);
+  if (exists) return readyProbeResponse(mimeType);
+
+  const file = await loadDocumentBytes({
+    ...doc,
+    filename,
+    mimeType,
+    storagePath,
   });
+  if (!file) return missingFileResponse(filename, false);
+  return readyProbeResponse(file.mimeType);
 }

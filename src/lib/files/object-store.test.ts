@@ -4,11 +4,15 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   BLOB_NOT_CONFIGURED_MESSAGE,
+  BLOB_READBACK_FAILED_MESSAGE,
+  assertStoredFileReadable,
   blobStoreReady,
   deleteStoredFile,
   isRemoteStoragePath,
   blobPathnameFromUrl,
+  probeStoredFile,
   readStoredFile,
+  streamToBuffer,
   writeStoredFile,
 } from "./object-store";
 import { CASTELLANOS_WIND_MIT_FILENAME } from "./upload-plan";
@@ -139,5 +143,31 @@ describe("private blob pathname", () => {
       ),
     ).toBe("tenant/deal/file.pdf");
     expect(blobPathnameFromUrl("https://example.com/file.pdf")).toBeNull();
+  });
+});
+
+
+describe("streamToBuffer", () => {
+  it("reads a web ReadableStream via arrayBuffer", async () => {
+    const stream = new Response(Buffer.from("%PDF-1.4 stream")).body!;
+    expect((await streamToBuffer(stream)).toString()).toContain("%PDF-1.4");
+  });
+});
+
+describe("probeStoredFile / assertStoredFileReadable local", () => {
+  it("probes and asserts readable local files, rejects missing paths", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "ff-uploads-"));
+    process.env.UPLOAD_DIR = root;
+    delete process.env.BLOB_READ_WRITE_TOKEN;
+    delete process.env.BLOB_STORE_ID;
+    delete process.env.VERCEL;
+    const stored = await writeStoredFile("docs/probe.pdf", Buffer.from("%PDF-1.4 probe"));
+    expect(await probeStoredFile(stored)).toBe(true);
+    await expect(assertStoredFileReadable(stored)).resolves.toBeUndefined();
+    expect(await probeStoredFile("docs/nope.pdf")).toBe(false);
+    await expect(assertStoredFileReadable("docs/nope.pdf")).rejects.toThrow(
+      BLOB_READBACK_FAILED_MESSAGE,
+    );
+    await rm(root, { recursive: true, force: true });
   });
 });

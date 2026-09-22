@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { documentPreviewKind } from "@/lib/files/document-preview";
+import { documentPreviewKind, interpretDocumentProbe } from "@/lib/files/document-preview";
 import { fileDownloadHref, fileViewHref } from "@/lib/files/urls";
 import { cn } from "@/lib/utils";
 
@@ -54,16 +54,16 @@ export function DocumentPreviewDialog({
     let cancelled = false;
     setLoadState("loading");
     const probeUrl = href.includes("?") ? `${href}&probe=1` : `${href}?probe=1`;
-    fetch(probeUrl, { method: "GET", credentials: "same-origin", cache: "no-store" })
+    fetch(probeUrl, { method: "GET", credentials: "same-origin", cache: "no-store", redirect: "manual" })
       .then(async (res) => {
         if (cancelled) return;
-        const missingHeader = res.headers.get("X-FitFirst-File-Missing") === "1";
-        const okHeader = res.headers.get("X-FitFirst-File-Ok") === "1";
-        if (!res.ok || missingHeader || !okHeader) {
-          setLoadState("missing");
+        // Opaque/manual redirects (e.g. login) must not look like a missing blob.
+        if (res.type === "opaqueredirect" || (res.status >= 300 && res.status < 400)) {
+          setLoadState("error");
           return;
         }
-        setLoadState("ready");
+        const verdict = interpretDocumentProbe(res);
+        setLoadState(verdict === "ready" ? "ready" : verdict === "missing" ? "missing" : "error");
       })
       .catch(() => {
         if (!cancelled) setLoadState("error");

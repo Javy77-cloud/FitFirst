@@ -3,6 +3,7 @@ import {
   adminRedirectPath,
   capabilitiesFor,
   isAdminOnlyPath,
+  isApiSelfAuthPath,
   isPublicPath,
 } from "./access";
 
@@ -111,6 +112,10 @@ describe("Admin vs Agent capabilities", () => {
     expect(isPublicPath("/api/integrations/healthsherpa/webhook")).toBe(true);
     expect(isPublicPath("/api/integrations/healthsherpa/webhooks")).toBe(true);
     expect(isPublicPath("/api/integrations/oauth/callback")).toBe(true);
+    expect(isApiSelfAuthPath("/api/files/abc")).toBe(true);
+    expect(isApiSelfAuthPath("/api/documents/abc")).toBe(true);
+    expect(isApiSelfAuthPath("/api/v1/contacts")).toBe(false);
+    expect(isPublicPath("/api/files/abc")).toBe(false);
     expect(isPublicPath("/portal")).toBe(true);
     expect(isPublicPath("/portal/elena-ruiz-2026/id-cards")).toBe(true);
     expect(isPublicPath("/api/portal/harbor-key-2026/files/x")).toBe(true);
