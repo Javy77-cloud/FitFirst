@@ -310,7 +310,7 @@ export async function shopDealQuotes(
       const line = appointmentLine(rule.lineOfBusiness);
       const key = `${carrier.id}:${line}`;
       const appointed = appointedMap.has(key) ? appointedMap.get(key)! : null;
-      return matchCarrier(snapshot, toAppetiteInput(carrier, rule, appointed), prior);
+      return matchCarrier(snapshot, toAppetiteInput(carrier, rule, appointed), prior, undefined, resolved.lob);
     }),
   );
 

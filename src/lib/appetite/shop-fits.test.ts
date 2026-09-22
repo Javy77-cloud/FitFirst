@@ -190,4 +190,77 @@ describe("shop-fits wiring", () => {
     expect(qbe?.band).toBe("red");
     expect(qbe?.reasons.some((r) => r.code === "not_appointed")).toBe(true);
   });
+
+  it("scores Auto and Flood from that line's writers, and leaves Home writers off those shops", () => {
+    const base = fixtureRules(true)[0];
+    function writer(line: "HO" | "AUTO" | "FLOOD", id: string, name: string): AppetiteRuleInput {
+      return {
+        ...base,
+        carrierId: id,
+        carrierName: name,
+        lineOfBusiness: line,
+        writtenLines: [line],
+        minCovA: null,
+        maxCovA: null,
+        minYearBuilt: null,
+        maxRoofAge: null,
+        allowedRoofCoverings: null,
+        minMilesToCoast: null,
+        maxMilesToCoast: null,
+        mobileAllowed: true,
+        allowedConstruction: null,
+        allowedOccupancy: null,
+        allowedCounties: null,
+        excludedCounties: null,
+        countyMinCovA: null,
+        portalStatus: "open",
+        dontWriteNotes: null,
+        appetiteNotes: null,
+        appointed: true,
+      };
+    }
+    const rules = [
+      writer("HO", "home-co", "Home Co"),
+      writer("AUTO", "auto-co", "Auto Co"),
+      writer("FLOOD", "flood-co", "Flood Co"),
+    ];
+    const sheet = {
+      year_built: { value: "2010", status: "confirmed" as const, source: "agent" as const },
+      coverage_a: { value: "350000", status: "confirmed" as const, source: "agent" as const },
+    };
+
+    const auto = evaluateShopFits({
+      risk: ortega,
+      dealLine: "AUTO",
+      rules,
+      prior: [],
+      sheetValues: sheet,
+      asOfYear: 2026,
+    });
+    expect(auto.matches.map((row) => row.carrierId)).toEqual(["auto-co"]);
+    expect(auto.matches[0]?.band).toBe("green");
+
+    const flood = evaluateShopFits({
+      risk: ortega,
+      dealLine: "FLOOD",
+      rules,
+      prior: [],
+      sheetValues: {
+        flood_zone: { value: "X", status: "confirmed", source: "agent" },
+      },
+      asOfYear: 2026,
+    });
+    expect(flood.matches.map((row) => row.carrierId)).toEqual(["flood-co"]);
+    expect(flood.matches[0]?.band).toBe("green");
+
+    const home = evaluateShopFits({
+      risk: ortega,
+      dealLine: "HO",
+      rules,
+      prior: [],
+      sheetValues: sheet,
+      asOfYear: 2026,
+    });
+    expect(home.matches.map((row) => row.carrierId)).toEqual(["home-co"]);
+  });
 });

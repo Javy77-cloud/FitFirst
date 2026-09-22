@@ -102,6 +102,11 @@ describe("manual markets", () => {
     expect(sheetHasMarketFacts(null)).toBe(false);
     expect(sheetHasMarketFacts({ sheet_product: { value: "homeowners" } })).toBe(false);
     expect(sheetHasMarketFacts({ coverage_a: { value: "321000" } })).toBe(true);
+    expect(sheetHasMarketFacts({ year_built: { value: "2004" } })).toBe(true);
+    expect(sheetHasMarketFacts({ mobile_home: { value: "yes" } })).toBe(true);
+    expect(sheetHasMarketFacts({ miles_to_coast: { value: "8" } })).toBe(true);
+    expect(sheetHasMarketFacts({ vin: { value: "1HGCM82633A004352" } })).toBe(true);
+    expect(sheetHasMarketFacts({ flood_zone: { value: "X" } })).toBe(true);
     expect(hasMarketLookupInput({ state: "FL" } as never, { sheet_product: { value: "homeowners" } })).toBe(
       false,
     );
@@ -428,5 +433,50 @@ describe("filled sheet appetite without a shop list", () => {
     expect(html).toMatch(/Skip/);
     expect(text).toMatch(new RegExp(`${result.matches.length} skip`));
     expect(text).not.toMatch(/0 in appetite · 0 stretch · 0 skip · 0 appointed/);
+  });
+
+  it("paints Auto and Flood from a filled sheet and keeps the shop list as an overlay", () => {
+    const carrier = {
+      carrierId: "line-co",
+      carrierName: "Line Co",
+      band: "green" as const,
+      fitScore: 84,
+      reasons: [],
+      learnedDecline: false,
+      shoppable: true,
+    };
+    for (const line of ["AUTO", "FLOOD"] as const) {
+      const html = renderToString(
+        createElement(MarketsPanel, {
+          dealId: `deal-${line}`,
+          matches: [carrier],
+          explicitLookup: false,
+          sheetHasValues: true,
+          dealLine: line,
+        }),
+      );
+      expect(html).not.toMatch(/data-ff-markets-empty/);
+      expect(html).toMatch(/In appetite/);
+      expect(html).toMatch(/Line Co/);
+      expect(html).toMatch(
+        line === "AUTO" ? /data-ff-load-auto-shop-list/ : /data-ff-load-flood-shop-list/,
+      );
+    }
+
+    const respected = renderToString(
+      createElement(MarketsPanel, {
+        dealId: "deal-auto-list",
+        matches: [{ ...carrier, band: "red", shoppable: false, fitScore: 20 }],
+        manualIds: ["line-co"],
+        shopListIds: ["line-co"],
+        explicitLookup: false,
+        sheetHasValues: true,
+        dealLine: "AUTO",
+        carriers: [{ id: "line-co", name: "Line Co", writtenLines: ["AUTO"] }],
+      }),
+    );
+    expect(respected).toMatch(/Skip/);
+    expect(respected).toMatch(/Line Co/);
+    expect(respected.replace(/<!-- -->/g, "")).not.toMatch(/1 in appetite/);
   });
 });
