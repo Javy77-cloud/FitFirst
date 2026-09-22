@@ -119,16 +119,63 @@ describe("leads stack + queue desk", () => {
     expect(stack).toMatch(/ff-stack-card/);
     expect(stack).toMatch(/ff-stack-glyph/);
     expect(stack).toMatch(/ff-priority-stack/);
-    expect(stack).toMatch(/LeadCadenceSelect/);
     expect(stack).toMatch(/LeadPipelineStatusSelect/);
     expect(stack).toMatch(/LeadTemplateOverride/);
     expect(stack).toMatch(/LeadHeatToggle/);
     expect(stack).toMatch(/ResponseTimer/);
+    expect(stack).toMatch(/StartShopForm/);
     expect(stack).toMatch(/data-ff-lead-card-edits/);
     expect(stack).toMatch(/ff-heat-/);
     expect(source("src/app/globals.css")).toMatch(/\.ff-heat-warm/);
     expect(source("src/app/leads/page.tsx")).toMatch(/LeadCadenceSelect/);
     expect(source("src/app/leads/page.tsx")).toMatch(/DeskColumnTable/);
     expect(source("src/components/lists/column-table.tsx")).toMatch(/ColumnsMenu|reorderVisibleColumns/);
+  });
+
+  it("spreads Stack cards as two fixed rows with chase cue and Convert on top", () => {
+    const stack = source("src/components/leads/leads-priority-stack.tsx");
+    const css = source("src/app/globals.css");
+
+    expect(stack).toMatch(/data-ff-lead-stack-top/);
+    expect(stack).toMatch(/data-ff-lead-stack-bottom/);
+    expect(stack).toMatch(/data-ff-lead-stack-identity/);
+    expect(stack).toMatch(/data-ff-lead-stack-convert/);
+    expect(stack).toMatch(/data-ff-stack-mid/);
+    expect(stack).toMatch(/data-ff-silence-cue/);
+    expect(stack).toMatch(/data-ff-next-chase/);
+    expect(stack).toMatch(/StartShopForm/);
+    expect(stack).toMatch(/data-ff-lead-policy-form/);
+    expect(stack).toMatch(/LeadTemplateOverride/);
+    expect(stack).toMatch(/LeadPipelineStatusSelect/);
+    expect(stack).toMatch(/ResponseTimer/);
+    expect(stack).toMatch(/LeadHeatToggle/);
+    expect(stack).not.toMatch(/LeadCadenceSelect/);
+
+    const topAt = stack.indexOf("data-ff-lead-stack-top");
+    const midAt = stack.indexOf("data-ff-stack-mid");
+    const convertAt = stack.indexOf("data-ff-lead-stack-convert");
+    const bottomAt = stack.indexOf("data-ff-lead-stack-bottom");
+    expect(topAt).toBeGreaterThan(-1);
+    expect(midAt).toBeGreaterThan(topAt);
+    expect(convertAt).toBeGreaterThan(midAt);
+    expect(bottomAt).toBeGreaterThan(convertAt);
+
+    const policyAt = stack.indexOf('data-ff-lead-stack-col="policy"');
+    const followAt = stack.indexOf('data-ff-lead-stack-col="follow-up"');
+    const statusAt = stack.indexOf('data-ff-lead-stack-col="status"');
+    const responseAt = stack.indexOf('data-ff-lead-stack-col="response"');
+    const heatAt = stack.indexOf('data-ff-lead-stack-col="heat"');
+    expect(policyAt).toBeGreaterThan(bottomAt);
+    expect(followAt).toBeGreaterThan(policyAt);
+    expect(statusAt).toBeGreaterThan(followAt);
+    expect(responseAt).toBeGreaterThan(statusAt);
+    expect(heatAt).toBeGreaterThan(responseAt);
+
+    expect(css).toMatch(
+      /\[data-ff-leads-stack\] \.ff-lead-stack-top \{[^}]*grid-template-columns:\s*minmax\(7\.5rem,\s*max-content\) minmax\(0,\s*1fr\) max-content/,
+    );
+    expect(css).toMatch(
+      /\[data-ff-leads-stack\] \.ff-lead-stack-bottom \{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/,
+    );
   });
 });

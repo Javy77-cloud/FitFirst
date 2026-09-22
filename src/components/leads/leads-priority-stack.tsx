@@ -4,12 +4,12 @@ import Link from "next/link";
 import { ActivityGlyph, useActivityPick } from "@/components/desk/standard-activity-panel";
 import { stackMidLine } from "@/lib/desk/stack-mid";
 import {
-  LeadCadenceSelect,
   LeadHeatToggle,
   LeadPipelineStatusSelect,
   LeadTemplateOverride,
 } from "@/components/leads/lead-queue-controls";
 import { ResponseTimer } from "@/components/leads/response-timer";
+import { StartShopForm } from "@/components/leads/start-shop-form";
 import { useLiveContainsQuery } from "@/hooks/use-live-contains-query";
 import type { LeadDeskRecord } from "@/lib/leads/lead-desk";
 import { LEAD_TEMPERATURES, type LeadTemperature } from "@/lib/leads/queue";
@@ -72,85 +72,115 @@ export function LeadsPriorityStack({
         </ul>
       </section>
       <ol className="ff-priority-stack" data-ff-leads-priority-stack="">
-        {visible.map((record) => (
-          <li key={record.id}>
-            <article
-              className={cn("ff-stack-card", `ff-heat-${record.temperature}`)}
-              data-ff-leads-stack-card={record.id}
-              data-ff-heat={record.temperature}
-              data-ff-activity-selected={activityDesk?.selectedId === record.id ? "true" : undefined}
-              onClick={(event) => {
-                if (!activityDesk) return;
-                const target = event.target;
-                if (!(target instanceof Element)) return;
-                if (target.closest("a, button, input, select, textarea, label, form")) return;
-                activityDesk.pick(record.id);
-              }}
-            >
-              <span className="ff-stack-glyph" aria-hidden data-ff-stack-glyph={record.temperature} />
-              <div className="ff-stack-card-body">
-                <div className="ff-stack-card-spread">
-                  <Link href={record.href} className="ff-stack-name">
-                    {record.name}
-                  </Link>
-                  <Link
-                    href={record.href}
-                    className="ff-stack-mid"
-                    data-ff-stack-mid=""
-                    data-ff-lead-silence=""
-                    data-ff-silence-cue=""
-                    data-ff-next-chase=""
-                    title={record.waitingOnFirstCall ? "No logged first call yet" : "Since the first logged contact"}
+        {visible.map((record) => {
+          const policyLabel = record.lineLabel.trim();
+          return (
+            <li key={record.id}>
+              <article
+                className={cn("ff-stack-card", `ff-heat-${record.temperature}`)}
+                data-ff-leads-stack-card={record.id}
+                data-ff-heat={record.temperature}
+                data-ff-activity-selected={activityDesk?.selectedId === record.id ? "true" : undefined}
+                onClick={(event) => {
+                  if (!activityDesk) return;
+                  const target = event.target;
+                  if (!(target instanceof Element)) return;
+                  if (target.closest("a, button, input, select, textarea, label, form")) return;
+                  activityDesk.pick(record.id);
+                }}
+              >
+                <span className="ff-stack-glyph" aria-hidden data-ff-stack-glyph={record.temperature} />
+                <div className="ff-stack-card-body">
+                  <div className="ff-lead-stack-top" data-ff-lead-stack-top="">
+                    <div className="ff-lead-stack-identity" data-ff-lead-stack-identity="">
+                      <Link href={record.href} className="ff-stack-name">
+                        {record.name}
+                      </Link>
+                      <ActivityGlyph
+                        id={record.id}
+                        menuTestId={`lead-stack-activity-${record.id}`}
+                        listTestId={`lead-stack-activity-menu-${record.id}`}
+                        optionAttr="data-ff-lead-activity-option"
+                        leadId={record.id}
+                        dealId={record.convertedDealId}
+                      />
+                    </div>
+                    <Link
+                      href={record.href}
+                      className="ff-stack-mid"
+                      data-ff-stack-mid=""
+                      data-ff-lead-silence=""
+                      data-ff-silence-cue=""
+                      data-ff-next-chase=""
+                      title={
+                        record.waitingOnFirstCall
+                          ? "No logged first call yet"
+                          : "Since the first logged contact"
+                      }
+                    >
+                      {stackMidLine([record.silence, record.nextChase])}
+                    </Link>
+                    <div className="ff-lead-stack-convert" data-ff-lead-stack-convert="">
+                      {record.convertedDealId ? (
+                        <Link href={`/deals/${record.convertedDealId}`} className="ff-lead-stack-open-deal">
+                          Open deal
+                        </Link>
+                      ) : (
+                        <StartShopForm leadId={record.id} />
+                      )}
+                    </div>
+                  </div>
+                  <div
+                    className="ff-lead-stack-bottom"
+                    data-ff-lead-stack-bottom=""
+                    data-ff-lead-job=""
+                    data-ff-lead-card-edits=""
                   >
-                    {stackMidLine([record.silence, record.nextChase])}
-                  </Link>
-                  <ActivityGlyph
-                    id={record.id}
-                    menuTestId={`lead-stack-activity-${record.id}`}
-                    listTestId={`lead-stack-activity-menu-${record.id}`}
-                    optionAttr="data-ff-lead-activity-option"
-                    leadId={record.id}
-                    dealId={record.convertedDealId}
-                  />
-                </div>
-                <div className="ff-stack-job" data-ff-lead-job="">
-                  <ul className="ff-stack-products">
-                    <li data-ff-lead-line="">
-                      <span
-                        className="ff-stack-product"
-                        data-ff-lead-policy-form={record.policyForm || undefined}
-                        title={record.policyForm || record.lob || record.lineLabel}
-                      >
-                        {record.lineLabel}
-                      </span>
-                      <span className="ff-stack-product-detail">
-                        {record.policyForm && record.lob ? (
-                          <span data-ff-lead-lob="">{record.lob}</span>
-                        ) : null}
-                        <span className="ff-stack-edit" data-ff-lead-card-edits="">
-                          <LeadCadenceSelect leadId={record.id} cadence={record.cadence} />
-                          <LeadPipelineStatusSelect leadId={record.id} status={record.status} />
-                          <ResponseTimer leadId={record.id} dueAt={record.dueAt} done={record.clockDone} />
-                          <LeadHeatToggle leadId={record.id} temperature={record.temperature} />
+                    <div className="ff-lead-stack-col" data-ff-lead-stack-col="policy">
+                      {policyLabel ? (
+                        <span
+                          className="ff-lead-stack-policy"
+                          data-ff-lead-policy-form={record.policyForm || undefined}
+                          title={record.policyForm || record.lob || record.lineLabel}
+                        >
+                          {policyLabel}
                         </span>
-                      </span>
-                    </li>
-                  </ul>
+                      ) : null}
+                      {record.policyForm && record.lob ? (
+                        <span className="ff-lead-stack-lob" data-ff-lead-lob="">
+                          {record.lob}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div
+                      className="ff-lead-stack-col"
+                      data-ff-lead-stack-col="follow-up"
+                      data-ff-lead-follow-edit=""
+                    >
+                      <LeadTemplateOverride
+                        leadId={record.id}
+                        templateId={record.templateId}
+                        templates={templates}
+                        resolvedName={record.followUpName}
+                        resolvedTemplateId={record.resolvedTemplateId}
+                      />
+                    </div>
+                    <div className="ff-lead-stack-col" data-ff-lead-stack-col="status">
+                      <LeadPipelineStatusSelect leadId={record.id} status={record.status} />
+                    </div>
+                    <div className="ff-lead-stack-col" data-ff-lead-stack-col="response">
+                      <ResponseTimer leadId={record.id} dueAt={record.dueAt} done={record.clockDone} />
+                    </div>
+                    <div className="ff-lead-stack-col" data-ff-lead-stack-col="heat">
+                      <LeadHeatToggle leadId={record.id} temperature={record.temperature} />
+                    </div>
+                  </div>
                 </div>
-                <div className="ff-stack-edit" data-ff-lead-follow-edit="">
-                  <LeadTemplateOverride
-                    leadId={record.id}
-                    templateId={record.templateId}
-                    templates={templates}
-                    resolvedName={record.followUpName}
-                    resolvedTemplateId={record.resolvedTemplateId}
-                  />
-                </div>
-              </div>
-              <span className="sr-only">{record.heatLabel}</span>
-            </article>
-          </li>
-        ))}
+                <span className="sr-only">{record.heatLabel}</span>
+              </article>
+            </li>
+          );
+        })}
       </ol>
     </div>
   );
