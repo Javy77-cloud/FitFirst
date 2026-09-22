@@ -133,7 +133,7 @@ function languageCue(row: PartyListRow): string | null {
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
-/** Contacts Stack footer — show the stored preference, including English. Empty stays blank. */
+/** Contacts Stack phone-row language column — stored preference, including English. Empty stays blank. */
 function languageColumnCue(row: PartyListRow): string {
   const raw = (row.preferredLanguage || row.language || "").trim();
   if (!raw) return "";
@@ -144,7 +144,7 @@ function languageColumnCue(row: PartyListRow): string {
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
-/** Fixed Contacts Stack footer tracks — same four columns on every card. */
+/** Fixed Contacts Stack phone-row tracks — same four columns on every card. */
 function contactStackFooter(row: PartyListRow): BookCueColumn[] {
   const statusRaw = row.clientStatus?.trim() ?? "";
   const status = !isEmptyDash(statusRaw) ? clientStatusCue(statusRaw) : null;

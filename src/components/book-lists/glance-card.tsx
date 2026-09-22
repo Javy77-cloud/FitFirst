@@ -196,7 +196,35 @@ function policyFact(card: BookGlanceCard, id: string): string {
 
 const CONTACT_STACK_META = ["language", "status", "dob", "policies"] as const;
 
-/** Contacts Stack — top name, center meta columns, bottom phone/email + reach. */
+const CONTACT_STACK_HEADER = [
+  ["name", "Name"],
+  ["language", "Language"],
+  ["status", "Status"],
+  ["dob", "DOB"],
+  ["policies", "Policies"],
+  ["reach", "Reach"],
+] as const;
+
+/** Labels only — same tracks as the phone row. No sort controls. */
+export function ContactStackColumnHeader() {
+  return (
+    <div className="ff-contact-stack-header" data-ff-contact-stack-header="" role="row">
+      <span className="ff-contact-stack-header-gutter" aria-hidden="true" />
+      {CONTACT_STACK_HEADER.map(([id, label]) => (
+        <span key={id} data-ff-stack-col={id}>
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function plainCell(value: string | null | undefined): string {
+  const text = value?.trim() ?? "";
+  return isEmptyDash(text) ? "" : text;
+}
+
+/** Contacts Stack — three rows: name, phone + meta columns, email + reach. */
 function ContactStackCard({
   card,
   leading,
@@ -213,11 +241,13 @@ function ContactStackCard({
   const byId = new Map((card.columns ?? []).map((column) => [column.id, column.label]));
   const meta = CONTACT_STACK_META.map((id) => ({
     id,
-    label: byId.get(id) ?? (id === "policies" ? "0" : ""),
+    label: plainCell(byId.get(id) ?? (id === "policies" ? "0" : "")),
   }));
-  const tel = telHref(card.phone);
-  const mail = mailtoHref(card.email);
-  const reach = card.mid?.trim() && !isEmptyDash(card.mid) ? card.mid.trim() : "";
+  const phone = plainCell(card.phone);
+  const email = plainCell(card.email);
+  const tel = phone ? telHref(phone) : null;
+  const mail = email ? mailtoHref(email) : null;
+  const reach = plainCell(card.mid);
   return (
     <article
       className={cn("ff-stack-card ff-book-card ff-party-card ff-contact-stack-card", `ff-heat-${card.heat}`)}
@@ -230,38 +260,44 @@ function ContactStackCard({
     >
       <div className="ff-stack-card-body min-w-0 flex-1">
         <div className="ff-contact-stack-spread" data-ff-contact-stack="">
-          <div className="ff-contact-stack-row ff-contact-stack-name-row" data-ff-contact-stack-row="name">
-            <div className="ff-contact-stack-check" data-ff-contact-stack-check="">
-              {leading}
-            </div>
-            <Link href={card.href} className="ff-stack-name">
-              {card.title}
-            </Link>
-            {activity ? <div className="ff-contact-stack-activity">{activity}</div> : null}
+          <div className="ff-contact-stack-check" data-ff-contact-stack-check="" data-ff-contact-stack-row="name">
+            {leading}
           </div>
-          <ul className="ff-contact-stack-meta" data-ff-contact-stack-meta="" data-ff-contact-stack-row="meta">
-            {meta.map((column) => (
-              <li key={column.id} data-ff-contact-stack-col={column.id} title={column.label || undefined}>
-                {column.label}
-              </li>
-            ))}
-          </ul>
-          <div className="ff-contact-stack-row ff-contact-stack-reach-row" data-ff-contact-stack-row="contact">
+          <Link href={card.href} className="ff-stack-name" data-ff-contact-stack-row="name">
+            {card.title}
+          </Link>
+          <span className="ff-contact-stack-glyph" data-ff-contact-stack-glyph="" data-ff-contact-stack-row="phone">
             <RiskGlyph heat={card.heat} tip={tip} />
-            <div className="ff-contact-stack-channels">
-              <span className="ff-contact-stack-phone" data-ff-contact-stack-phone="">
-                {tel ? <a href={tel}>{card.phone}</a> : null}
-              </span>
-              <span className="ff-contact-stack-email" data-ff-contact-stack-email="">
-                {mail ? <a href={mail}>{card.email}</a> : null}
-              </span>
-            </div>
-            {reach ? (
-              <p className="ff-contact-stack-reach" data-ff-contact-stack-reach="" data-ff-stack-mid="" title={card.why}>
-                {reach}
-              </p>
-            ) : null}
-          </div>
+          </span>
+          <span className="ff-contact-stack-phone" data-ff-contact-stack-phone="" data-ff-contact-stack-row="phone">
+            {tel ? <a href={tel}>{phone}</a> : null}
+            {activity ? <span className="ff-contact-stack-heartbeat">{activity}</span> : null}
+          </span>
+          {meta.map((column) => (
+            <span
+              key={column.id}
+              className="ff-contact-stack-col"
+              data-ff-contact-stack-col={column.id}
+              data-ff-contact-stack-row="phone"
+              title={column.label || undefined}
+            >
+              {column.label}
+            </span>
+          ))}
+          <span className="ff-contact-stack-email" data-ff-contact-stack-email="" data-ff-contact-stack-row="email">
+            {mail ? <a href={mail}>{email}</a> : null}
+          </span>
+          {reach ? (
+            <p
+              className="ff-contact-stack-reach"
+              data-ff-contact-stack-reach=""
+              data-ff-contact-stack-row="email"
+              data-ff-stack-mid=""
+              title={plainCell(card.why) || undefined}
+            >
+              {reach}
+            </p>
+          ) : null}
         </div>
         <InboxCue card={card} />
         {extra}
