@@ -30,6 +30,9 @@ export const BLOB_NOT_CONFIGURED_MESSAGE =
 
 export const BLOB_PUT_FAILED_MESSAGE = "Could not store the document in Vercel Blob.";
 
+export const BLOB_READBACK_FAILED_MESSAGE =
+  "Document bytes were written but could not be read back from storage. Nothing was saved.";
+
 function requiresRemoteStorage(options?: { durable?: boolean }): boolean {
   // Local desk verification without Blob. Production (VERCEL) still requires remote.
   if (!process.env.VERCEL && process.env.FF_LOCAL_DURABLE_UPLOADS === "1") return false;
@@ -47,7 +50,14 @@ function posixKey(relPath: string): string {
   return relPath.replace(/\\/g, "/").replace(/^\/+/, "");
 }
 
-async function streamToBuffer(stream: ReadableStream<Uint8Array> | NodeJS.ReadableStream): Promise<Buffer> {
+/** Prefer Response.arrayBuffer / getReader — undici web streams are unreliable with for-await alone. */
+export async function streamToBuffer(
+  stream: ReadableStream<Uint8Array> | NodeJS.ReadableStream,
+): Promise<Buffer> {
+  if (stream && typeof (stream as ReadableStream<Uint8Array>).getReader === "function") {
+    const ab = await new Response(stream as ReadableStream<Uint8Array>).arrayBuffer();
+    return Buffer.from(ab);
+  }
   const chunks: Buffer[] = [];
   if (Symbol.asyncIterator in stream) {
     for await (const chunk of stream as AsyncIterable<Uint8Array | Buffer | string>) {
@@ -55,13 +65,7 @@ async function streamToBuffer(stream: ReadableStream<Uint8Array> | NodeJS.Readab
     }
     return Buffer.concat(chunks);
   }
-  const reader = (stream as ReadableStream<Uint8Array>).getReader();
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    if (value) chunks.push(Buffer.from(value));
-  }
-  return Buffer.concat(chunks);
+  throw new Error("Unsupported stream type");
 }
 
 /** Pathname inside a Vercel Blob store URL (private blobs need auth via get()). */
@@ -69,21 +73,53 @@ export function blobPathnameFromUrl(url: string): string | null {
   try {
     const parsed = new URL(url);
     if (!/\.blob\.vercel-storage\.com$/i.test(parsed.hostname)) return null;
-    const pathname = decodeURIComponent(parsed.pathname.replace(/^\/+/, ""));
+    // Keep encoding as the store sees it; also offer a decoded form to callers.
+    const pathname = parsed.pathname.replace(/^\/+/, "");
     return pathname || null;
   } catch {
     return null;
   }
 }
 
-async function readPrivateBlob(urlOrPathname: string): Promise<Buffer | null> {
+export function blobPathnameDecoded(url: string): string | null {
+  const raw = blobPathnameFromUrl(url);
+  if (!raw) return null;
   try {
-    const { get } = await import("@vercel/blob");
-    const result = await get(urlOrPathname, { access: "private", useCache: false });
-    const stream = result?.stream;
-    if (stream) return streamToBuffer(stream);
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+async function headPrivateBlob(urlOrPathname: string): Promise<{ size: number } | null> {
+  try {
+    const { head } = await import("@vercel/blob");
+    const meta = await head(urlOrPathname);
+    if (meta && typeof meta.size === "number" && meta.size > 0) {
+      return { size: meta.size };
+    }
   } catch {
     /* missing token, wrong access, or not found */
+  }
+  return null;
+}
+
+async function readPrivateBlob(urlOrPathname: string): Promise<Buffer | null> {
+  const attempts: Array<{ access: "private"; useCache?: boolean }> = [
+    { access: "private", useCache: false },
+    { access: "private" },
+  ];
+  for (const opts of attempts) {
+    try {
+      const { get } = await import("@vercel/blob");
+      const result = await get(urlOrPathname, opts);
+      const stream = result?.stream;
+      if (!stream) continue;
+      const buf = await streamToBuffer(stream);
+      if (buf.length > 0) return buf;
+    } catch {
+      /* try next strategy */
+    }
   }
   return null;
 }
@@ -92,18 +128,26 @@ async function readRemoteUrl(url: string): Promise<Buffer | null> {
   // Private Vercel blobs: never fall through to bare fetch — that returns an
   // empty/unauthorized body that used to get wrapped into a blank PDF.
   const pathname = blobPathnameFromUrl(url);
+  const decoded = blobPathnameDecoded(url);
   if (pathname) {
     const byUrl = await readPrivateBlob(url);
     if (byUrl) return byUrl;
     const byPath = await readPrivateBlob(pathname);
     if (byPath) return byPath;
+    if (decoded && decoded !== pathname) {
+      const byDecoded = await readPrivateBlob(decoded);
+      if (byDecoded) return byDecoded;
+    }
     return null;
   }
   try {
     const { get } = await import("@vercel/blob");
     const result = await get(url, { access: "private" });
     const stream = result?.stream;
-    if (stream) return streamToBuffer(stream);
+    if (stream) {
+      const buf = await streamToBuffer(stream);
+      if (buf.length > 0) return buf;
+    }
   } catch {
     /* public URL or older SDK */
   }
@@ -151,6 +195,37 @@ async function writeLocalFile(relPath: string, buffer: Buffer): Promise<string> 
 }
 
 /**
+ * Lightweight existence check for preview probes — prefer Blob head() so we do
+ * not download the full PDF just to decide if View should open.
+ */
+export async function probeStoredFile(storagePath: string): Promise<boolean> {
+  const raw = (storagePath ?? "").trim();
+  if (!raw) return false;
+  if (isRemoteStoragePath(raw)) {
+    const pathname = blobPathnameFromUrl(raw);
+    if (pathname) {
+      if (await headPrivateBlob(raw)) return true;
+      if (await headPrivateBlob(pathname)) return true;
+      const decoded = blobPathnameDecoded(raw);
+      if (decoded && decoded !== pathname && (await headPrivateBlob(decoded))) return true;
+      // Fall through to a real read when head is unavailable (token/OIDC quirks).
+    }
+  }
+  const bytes = await readStoredFile(raw);
+  return Boolean(bytes && bytes.length > 0);
+}
+
+/**
+ * After a durable put, confirm bytes are readable before callers insert a row.
+ */
+export async function assertStoredFileReadable(storagePath: string): Promise<void> {
+  // Require a real byte read (not head-only) so View/serve can load the same path.
+  const bytes = await readStoredFile(storagePath);
+  if (bytes && bytes.length > 0) return;
+  throw new Error(BLOB_READBACK_FAILED_MESSAGE);
+}
+
+/**
  * Persist bytes. Returns a blob URL when Blob is configured.
  * Deal documents (`durable`) and Vercel runtimes must not succeed with a local relative path —
  * that path is not durable on serverless and agents would treat the PDF as stored.
@@ -172,7 +247,24 @@ export async function writeStoredFile(
         allowOverwrite: true,
         contentType: contentType || "application/octet-stream",
       });
-      if (blob?.url) return blob.url;
+      if (blob?.url) {
+        try {
+          await assertStoredFileReadable(blob.url);
+        } catch (error) {
+          try {
+            const { del } = await import("@vercel/blob");
+            await del(blob.url);
+          } catch {
+            /* best-effort cleanup */
+          }
+          if (requireRemote) {
+            throw error instanceof Error ? error : new Error(BLOB_READBACK_FAILED_MESSAGE);
+          }
+          // Non-durable local fallback below.
+          return writeLocalFile(key, buffer);
+        }
+        return blob.url;
+      }
     } catch (error) {
       if (requireRemote) {
         throw error instanceof Error ? error : new Error(BLOB_PUT_FAILED_MESSAGE);

@@ -4,6 +4,7 @@ import {
   developerRedirectPath,
   isAdminOnlyPath,
   isDeveloperOnlyPath,
+  isApiSelfAuthPath,
   isPublicPath,
 } from "@/lib/auth/access";
 import { SESSION_COOKIES } from "@/lib/auth/cookies";
@@ -48,7 +49,7 @@ export function proxy(request: NextRequest) {
   if (isInvalidDeskRecordPath(pathname)) {
     return invalidRecordHtml();
   }
-  if (isPublicPath(pathname)) {
+  if (isPublicPath(pathname) || isApiSelfAuthPath(pathname)) {
     return NextResponse.next();
   }
 

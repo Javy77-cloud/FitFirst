@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { documentPreviewKind } from "./document-preview";
+import { documentPreviewKind, interpretDocumentProbe } from "./document-preview";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -64,11 +64,80 @@ describe("in-app document View modal", () => {
   it("probes storage and shows a missing-file message instead of a blank iframe", () => {
     const dialog = source("src/components/documents/document-preview-dialog.tsx");
     expect(dialog).toMatch(/probe=1/);
+    expect(dialog).toMatch(/interpretDocumentProbe/);
     expect(dialog).toMatch(/data-ff-document-preview-missing/);
     expect(dialog).toMatch(/is missing — re-upload/);
-    expect(dialog).toMatch(/X-FitFirst-File-Missing/);
     const serve = source("src/lib/files/serve-document.ts");
     expect(serve).toMatch(/FILE_MISSING_HEADER/);
+    expect(serve).toMatch(/FILE_OK_HEADER/);
     expect(serve).toMatch(/probeDeskDocument/);
+    expect(serve).toMatch(/probeStoredFile/);
+  });
+});
+
+function headers(map: Record<string, string>) {
+  return {
+    get(name: string) {
+      const key = Object.keys(map).find((k) => k.toLowerCase() === name.toLowerCase());
+      return key ? map[key] : null;
+    },
+  };
+}
+
+describe("interpretDocumentProbe", () => {
+  it("treats 204 as ready without requiring the ok header", () => {
+    expect(
+      interpretDocumentProbe({ ok: true, status: 204, headers: headers({}) }),
+    ).toBe("ready");
+  });
+
+  it("treats ok JSON/PDF content-type as ready when custom headers are absent", () => {
+    expect(
+      interpretDocumentProbe({
+        ok: true,
+        status: 200,
+        headers: headers({ "Content-Type": "application/json; charset=utf-8" }),
+      }),
+    ).toBe("ready");
+    expect(
+      interpretDocumentProbe({
+        ok: true,
+        status: 200,
+        headers: headers({ "Content-Type": "application/pdf" }),
+      }),
+    ).toBe("ready");
+  });
+
+  it("treats missing header or 404 as missing even if ok is true", () => {
+    expect(
+      interpretDocumentProbe({
+        ok: false,
+        status: 404,
+        headers: headers({ "X-FitFirst-File-Missing": "1" }),
+      }),
+    ).toBe("missing");
+    expect(
+      interpretDocumentProbe({
+        ok: true,
+        status: 200,
+        headers: headers({ "X-FitFirst-File-Missing": "1" }),
+      }),
+    ).toBe("missing");
+  });
+
+  it("treats ok status without missing header as ready (soft)", () => {
+    expect(
+      interpretDocumentProbe({
+        ok: true,
+        status: 200,
+        headers: headers({ "Content-Type": "text/plain" }),
+      }),
+    ).toBe("ready");
+  });
+
+  it("treats 401/403 as error", () => {
+    expect(
+      interpretDocumentProbe({ ok: false, status: 401, headers: headers({}) }),
+    ).toBe("error");
   });
 });
