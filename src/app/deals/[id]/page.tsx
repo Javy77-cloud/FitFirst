@@ -440,15 +440,15 @@ export default async function DealPage({
       hasMeaningfulDealFieldValues(dealValues) ||
       dealProducts.some((id) => productSectionComplete(id, dealValues)) ||
       sheets.some((row) => sheetHasUserData(row.values)),
-    documentsComplete: Boolean(unlocked) && (
-      Boolean(health && sheetHasUserData(activeSheet.values)) ||
-      sheets.some((row) => sheetHasUserData(row.values))
-    ),
+    // Risk Profile Confirm unlocks quoting → Documents tab check (RP lives on Documents).
+    documentsComplete: Boolean(unlocked),
     hasMarkets: shopMarketsAction || agentMarketsAction,
+    // Request quotes writes market logs + fingerprints before premiums arrive.
     hasQuotes: Boolean(
       quoteCompletenessByProduct[activeProduct]?.shopped ||
         quoteCompletenessByProduct[activeProduct]?.complete ||
-        lineQuotes.some((row) => row.quote.stub !== true),
+        lineQuotes.some((row) => row.quote.stub !== true) ||
+        shopMarketsAction,
     ),
     currentFingerprint,
     saved: shopFlowLive,

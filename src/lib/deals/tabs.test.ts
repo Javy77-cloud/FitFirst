@@ -171,7 +171,7 @@ describe("resolveDealResumeTab", () => {
     const src = (file: string) => readFileSync(file, "utf8");
     expect(src("src/app/actions/crm.ts")).toMatch(/persistDealWorkTab\(deal\.id, "details"\)/);
     expect(src("src/app/actions/custom-fields.ts")).toMatch(/persistDealWorkTab\(dealId, "documents"\)/);
-    expect(src("src/app/actions/quoting.ts")).toMatch(/persistDealWorkTab\(dealId, "markets"\)/);
+    expect(src("src/app/actions/quoting.ts")).toMatch(/forceDealWorkTab\(dealId, "markets"\)/);
     expect(src("src/app/actions/quotes.ts")).toMatch(/persistDealWorkTab\(dealId, "quotes"\)/);
     expect(src("src/app/deals/[id]/page.tsx")).toMatch(/tabSize="deal"/);
     expect(src("src/lib/ui/chip-tabs.ts")).toMatch(/export function dealTabClass/);
