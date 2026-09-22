@@ -235,14 +235,24 @@ export function RenewalBoardCardView({
           />
         </div>
       ) : null}
-      <Link
-        href={`/policies/${card.policyId}`}
-        className="ff-renewal-policy-link"
-        data-ff-no-compare=""
-        onClick={(event) => event.stopPropagation()}
-      >
-        {renewalPolicyTypeLabel(card)}
-      </Link>
+      <div className="ff-renewal-card-footer">
+        <span className="ff-renewal-policy-type" title={renewalPolicyTypeLabel(card)}>
+          {renewalPolicyTypeLabel(card)}
+        </span>
+        <Link
+          href={`/policies/${card.policyId}`}
+          className="ff-renewal-policy-scroll"
+          data-ff-renewal-policy-scroll=""
+          data-ff-no-compare=""
+          aria-label={`Open policy for ${card.clientName}`}
+          title={`Open policy for ${card.clientName}`}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <span className="ff-renewal-policy-scroll-roll" aria-hidden="true" />
+          <span className="ff-renewal-policy-scroll-face">Policy</span>
+          <span className="ff-renewal-policy-scroll-roll" aria-hidden="true" />
+        </Link>
+      </div>
     </article>
   );
 }
