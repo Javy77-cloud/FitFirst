@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { flashAction } from "@/lib/flash-action";
 import { and, eq } from "drizzle-orm";
 import { persistFile } from "@/app/actions/documents";
 import { dismissIdCardsPrompt } from "@/app/actions/policy-mint";
@@ -49,6 +50,7 @@ export async function attachPolicyFiles(formData: FormData) {
 
   let count = 0;
   let index = 0;
+  let lastError: string | null = null;
   for (const file of files) {
     if (!isUploadedFile(file)) {
       index += 1;
@@ -61,32 +63,40 @@ export async function attachPolicyFiles(formData: FormData) {
     }
     const docType = categories[index] || str(formData, "docType") || "other";
     const expiresAt = expiresRaw[index] || str(formData, "expiresAt") || "";
-    const doc = await persistFile({
-      policyId,
-      dealId: dealId || policy.dealId,
-      contactId: policy.contactId,
-      riskId: policy.riskId,
-      filename: uploadedFileName(file),
-      mimeType: file.type || "application/octet-stream",
-      buffer: bytes,
-      docType,
-      slot: "policy_file",
-    });
-    if (expiresAt) {
-      const parsed = new Date(`${expiresAt}T12:00:00`);
-      if (!Number.isNaN(parsed.getTime())) {
-        await db
-          .update(documents)
-          .set({ expiresAt: parsed })
-          .where(eq(documents.id, doc.id));
+    try {
+      const doc = await persistFile({
+        policyId,
+        dealId: dealId || policy.dealId,
+        contactId: policy.contactId,
+        riskId: policy.riskId,
+        filename: uploadedFileName(file),
+        mimeType: file.type || "application/octet-stream",
+        buffer: bytes,
+        docType,
+        slot: "policy_file",
+      });
+      if (expiresAt) {
+        const parsed = new Date(`${expiresAt}T12:00:00`);
+        if (!Number.isNaN(parsed.getTime())) {
+          await db
+            .update(documents)
+            .set({ expiresAt: parsed })
+            .where(eq(documents.id, doc.id));
+        }
       }
+      count += 1;
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : "Could not store the document.";
+      console.error("[attachPolicyFiles]", lastError);
     }
-    count += 1;
     index += 1;
   }
 
   revalidatePath(`/policies/${policyId}`);
   if (dealId || policy.dealId) revalidatePath(`/deals/${dealId || policy.dealId}`);
+  if (count === 0 && lastError) {
+    flashAction(`/policies/${policyId}?tab=documents`, lastError, "error");
+  }
 }
 
 /**

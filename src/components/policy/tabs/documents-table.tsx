@@ -105,6 +105,7 @@ export function PolicyDocumentsTable({
                     docType={file.docType}
                     dealId={dealId ?? null}
                     policyId={policyId}
+                    returnTo={`/policies/${policyId}?tab=documents`}
                   >
                     {file.filename}
                   </FileActionMenu>

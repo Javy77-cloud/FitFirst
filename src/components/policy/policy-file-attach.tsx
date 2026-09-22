@@ -91,6 +91,7 @@ export function PolicyFileAttach({
                   docType={file.docType}
                   dealId={dealId}
                   policyId={policyId}
+                  returnTo={`/policies/${policyId}?tab=documents`}
                   className="min-w-0 flex-1"
                 >
                   <span className="font-medium text-navy">{file.filename}</span>

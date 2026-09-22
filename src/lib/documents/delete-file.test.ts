@@ -3,6 +3,7 @@ import {
   clearExtractedSheetCells,
   clearExtractedSheetCellsFromDoc,
   deleteUploadedFileSubject,
+  documentDeleteReturnHref,
   uploadedFileDeleteMode,
   visibleUploadedFiles,
 } from "./delete-file";
@@ -80,5 +81,45 @@ describe("clearExtractedSheetCellsFromDoc", () => {
     expect(next.coverage_a).toEqual({ value: "", status: "missing", source: "blank" });
     expect(next.roof_shape?.value).toBe("Hip");
     expect(next.notes?.value).toBe("typed");
+  });
+});
+
+
+describe("documentDeleteReturnHref", () => {
+  it("always prefers policy Documents over deal returnTo", () => {
+    expect(
+      documentDeleteReturnHref({
+        policyId: "779ad733-1bc2-4729-8ed1-80208f600121",
+        dealId: "bc96afba-3443-4585-ae74-40dcc274fc63",
+        returnTo: "/deals/bc96afba-3443-4585-ae74-40dcc274fc63?tab=documents",
+      }),
+    ).toBe("/policies/779ad733-1bc2-4729-8ed1-80208f600121?tab=documents");
+  });
+
+  it("uses safe returnTo when no policyId", () => {
+    expect(
+      documentDeleteReturnHref({
+        dealId: "bc96afba-3443-4585-ae74-40dcc274fc63",
+        returnTo: "/deals/bc96afba-3443-4585-ae74-40dcc274fc63?tab=documents",
+      }),
+    ).toBe("/deals/bc96afba-3443-4585-ae74-40dcc274fc63?tab=documents");
+  });
+
+  it("falls back to deal Documents when returnTo empty", () => {
+    expect(
+      documentDeleteReturnHref({
+        dealId: "bc96afba-3443-4585-ae74-40dcc274fc63",
+        returnTo: "",
+      }),
+    ).toBe("/deals/bc96afba-3443-4585-ae74-40dcc274fc63?tab=documents");
+  });
+
+  it("rejects protocol-relative returnTo", () => {
+    expect(
+      documentDeleteReturnHref({
+        dealId: "bc96afba-3443-4585-ae74-40dcc274fc63",
+        returnTo: "//evil.example",
+      }),
+    ).toBe("/deals/bc96afba-3443-4585-ae74-40dcc274fc63?tab=documents");
   });
 });

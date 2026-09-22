@@ -44,13 +44,15 @@ export async function getDeskDocumentVersion(
 
 function looksLikeHtmlError(bytes: Buffer): boolean {
   const head = bytes.subarray(0, 256).toString("utf8").trim().toLowerCase();
-  return (
-    head.startsWith("<!doctype html") ||
-    head.startsWith("<html") ||
-    head.includes("unauthorized") ||
-    head.includes("access denied") ||
-    head.includes("blob access")
-  );
+  // Only treat HTML-shaped / short auth bodies as errors — never scan arbitrary PDF
+  // binary for substrings like "unauthorized" (false missing after a successful get).
+  if (!head) return false;
+  if (head.startsWith("<!doctype html") || head.startsWith("<html")) return true;
+  if (head === "forbidden" || head === "unauthorized") return true;
+  if (head.length < 200 && (head.includes("access denied") || head.includes("blob access"))) {
+    return true;
+  }
+  return false;
 }
 
 export async function loadDocumentBytes(doc: Document): Promise<{
