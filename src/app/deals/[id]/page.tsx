@@ -351,14 +351,16 @@ export default async function DealPage({
     lineQuotes.map((row) => row.quote),
   );
   const shopListIds = shopListCarrierIdsFromLogs(dealLogs).filter((id) => !excludedMarketIds.has(id));
-  // A filled master sheet evaluates appetite_rules on its own so Markets can paint
-  // In appetite / Stretch / Skip. Shop-list loads and manual adds still overlay.
-  // This does not request quotes — Request Quotes stays an agent action.
-  const sheetReady = sheetHasMarketFacts(activeSheet?.values);
-  const evalMarkets = Boolean(risk && (sheetReady || shopMarketsAction || shopListIds.length > 0));
+  // Every MarketsPanel line (home HO3/MHO/DP, auto, flood, and the other sheet
+  // lines) scores appetite_rules from the filled sheet. Life and Health keep
+  // their own helpers. Shop lists and manual adds overlay carriers; they are
+  // not required to see In appetite / Stretch / Skip. This does not request quotes.
+  const sheetFilled = sheetHasMarketFacts(activeSheet?.values);
+  const marketsUseSheet = !isLifeHealthShopLine(sheetLine);
+  const sheetReady = marketsUseSheet && sheetFilled;
+  const evalMarkets = Boolean(risk && sheetReady);
   const rawMatches = evalMarkets ? await evaluateDealMarkets(risk, activeSheet.values, activeLob) : [];
   const matches = rawMatches.filter((row) => !excludedMarketIds.has(row.carrierId));
-  const listedMatches = matches.filter((row) => shopListIds.includes(row.carrierId));
   const agentMarketsAction = shopMarketsAction || manualCarrierIdsFromLogs(dealLogs).some((id) => !excludedMarketIds.has(id));
   const selectedProduct = resolveDealProduct({
     productParam: product,
@@ -386,7 +388,7 @@ export default async function DealPage({
     : resolveDealResumeTab({
         recordValues: dealValues,
         quotingUnlocked: unlocked,
-        sheetFilled: sheetReady,
+        sheetFilled,
         quotesRequested: hasShopMarketAction(
           dealLogs,
           lineQuotes.map((row) => row.quote),
@@ -991,7 +993,7 @@ export default async function DealPage({
                       <MarketsPanel
                         key={sheetReady || agentMarketsAction ? `markets-${activeSheet.id}` : "markets-empty"}
                         dealId={deal.id}
-                        matches={sheetReady || shopMarketsAction ? matches : listedMatches}
+                        matches={matches}
                         unlocked={unlocked}
                         manualIds={manualIds}
                         shopListIds={shopListIds}

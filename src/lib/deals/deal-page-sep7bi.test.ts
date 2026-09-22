@@ -102,15 +102,23 @@ describe("sep7bi builder rail Markets Quotes", () => {
     expect(filled).not.toMatch(/data-ff-markets-empty/);
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/hasShopMarketAction|hasExplicitMarketAction/);
-    expect(page).toMatch(/evaluateDealMarkets\(risk, activeSheet\.values/);
-    expect(page).toMatch(/sheetReady \|\| shopMarketsAction \|\| shopListIds\.length > 0/);
+    expect(page).toMatch(/evaluateDealMarkets\(risk, activeSheet\.values, activeLob\)/);
+    expect(page).toMatch(/const marketsUseSheet = !isLifeHealthShopLine\(sheetLine\)/);
+    expect(page).toMatch(/const sheetReady = marketsUseSheet && sheetFilled/);
+    expect(page).toMatch(/const evalMarkets = Boolean\(risk && sheetReady\)/);
+    expect(page).not.toMatch(/shopListIds\.length/);
+    expect(page).not.toMatch(/listedMatches/);
     expect(page).not.toMatch(/const matches = risk \? await evaluateDealMarkets\(risk\)/);
     expect(page).not.toMatch(/sheetReady \? await evaluateDealMarkets/);
     expect(page).toMatch(/sheetHasValues=\{sheetReady\}/);
-    expect(page).toMatch(/matches=\{sheetReady \|\| shopMarketsAction \? matches : listedMatches\}/);
+    expect(page).toMatch(/matches=\{matches\}/);
+    expect(page).toMatch(/shopListIds=\{shopListIds\}/);
     expect(page).toMatch(/explicitLookup=\{shopMarketsAction\}/);
     expect(page).not.toMatch(/explicitLookup=\{sheetReady && logs\.length > 0\}/);
     expect(page).not.toMatch(/requestAppetiteQuotesAction/);
+    expect(page).toMatch(/sheetLine === "life" \?/);
+    expect(page).toMatch(/<LifeAppetiteHelper/);
+    expect(page).toMatch(/<HealthMarketsEmpty/);
     expect(source("src/lib/appetite/evaluate-deal.ts")).toMatch(/sheetHasMarketFacts/);
   });
 

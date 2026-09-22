@@ -138,6 +138,6 @@ export async function evaluateDealShopFits(
   return rankFits(
     inputs
       .filter((rule) => writesDealLine(rule.writtenLines ?? [], dealLine))
-      .map((rule) => matchCarrier(riskFromRecord(risk), rule, prior)),
+      .map((rule) => matchCarrier(riskFromRecord(risk), rule, prior, undefined, dealLine)),
   ) as ShopFit[];
 }
