@@ -3,20 +3,11 @@ import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
 import type { QuoteFileRow } from "@/components/deal/quote-file-actions";
 import { IssuePolicyFromDec, type IssuedPolicyChip } from "@/components/deal/issue-policy-from-dec";
 import { Button } from "@/components/ui/button";
-import { isQuoteFileDoc } from "@/lib/deals/quote-docs";
+import { quoteFoldersByQuoteId } from "@/lib/deals/quote-docs";
 import { isBoundReadyForIssue } from "@/lib/policy/mint-gate";
 import { sortQuotesByRatingThenPremium } from "@/lib/deals/quote-sort";
 import { lifeHealthQuoteCarriers } from "@/lib/life/quote-writer";
 import type { Carrier, Document, DocumentVersion, Quote, QuoteNote } from "@/lib/db/schema";
-
-function quoteIdFromTags(tags: string[] | null | undefined): string | null {
-  for (const tag of tags ?? []) {
-    if (tag.startsWith("quote:") && tag.length > "quote:".length) {
-      return tag.slice("quote:".length);
-    }
-  }
-  return null;
-}
 
 function labelFromTags(tags: string[] | null | undefined, fallback: string): string {
   for (const tag of tags ?? []) {
@@ -25,16 +16,6 @@ function labelFromTags(tags: string[] | null | undefined, fallback: string): str
     }
   }
   return fallback;
-}
-
-function isCarrierQuoteDoc(doc: Document): boolean {
-  const tags = new Set(doc.tags ?? []);
-  return tags.has("source:carrier") || doc.docType === "carrier_quote";
-}
-
-function isAgencyQuoteDoc(doc: Document): boolean {
-  const tags = new Set(doc.tags ?? []);
-  return tags.has("source:agency") || doc.docType === "agency_quote";
 }
 
 function toQuoteFileRow(doc: Document, versions: DocumentVersion[]): QuoteFileRow {
@@ -125,16 +106,18 @@ export function LifeHealthQuotesPanel({
   for (const note of quoteNotes) {
     (notesByQuote[note.quoteId] ??= []).push(note);
   }
+  const foldersByQuote = quoteFoldersByQuoteId(docs);
   const quoteFilesByQuoteId: Record<string, { carrier: QuoteFileRow[]; agency: QuoteFileRow[] }> = {};
-  for (const doc of docs) {
-    if (!isQuoteFileDoc(doc)) continue;
-    const quoteId = quoteIdFromTags(doc.tags);
-    if (!quoteId) continue;
-    const bucket = (quoteFilesByQuoteId[quoteId] ??= { carrier: [], agency: [] });
-    const row = toQuoteFileRow(doc, fileVersions);
-    if (isCarrierQuoteDoc(doc)) bucket.carrier.push(row);
-    else if (isAgencyQuoteDoc(doc)) bucket.agency.push(row);
+  for (const [quoteId, bucket] of Object.entries(foldersByQuote)) {
+    quoteFilesByQuoteId[quoteId] = {
+      carrier: bucket.carrier.map((doc) => toQuoteFileRow(doc, fileVersions)),
+      agency: bucket.manual.map((doc) => toQuoteFileRow(doc, fileVersions)),
+    };
   }
+  const selectedHasFolderPolicy = selectedQuoteIds.some((id) => {
+    const bucket = foldersByQuote[id];
+    return Boolean(bucket && (bucket.manual.length > 0 || bucket.carrier.length > 0));
+  });
   const writerCarriers = lifeHealthQuoteCarriers(carriers, dealLine);
   const familyLabel = shopLine === "health" ? "Health" : "Life";
 
@@ -257,6 +240,7 @@ export function LifeHealthQuotesPanel({
             mintStatus={mintStatus}
             issued={issuedPolicy}
             autoOpen={autoIssue}
+            folderHasPolicy={selectedHasFolderPolicy}
           />
         </div>
       ) : null}

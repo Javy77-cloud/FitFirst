@@ -8,6 +8,7 @@ import {
   confirmMintField,
   evaluateMintGate,
   findDealDeclaration,
+  quoteIdsWithFolderPolicy,
   isBoundReadyForIssue,
   isDeclarationPdf,
   isPolicyIssuedStage,
@@ -225,7 +226,75 @@ describe("policy issued mint gate", () => {
     if (ignored.ok) expect(ignored.dec.id).toBe("dec");
   });
 
-  it("asks for an upload when Manual and carrier folders have no policy file", () => {
+  it("reuses a Manual folder file even when it was saved as an agency quote", () => {
+    const shopping = {
+      id: "shopping",
+      docType: "current_policy",
+      slot: "source_doc",
+      filename: "Domenic current policy.pdf",
+      mimeType: "application/pdf",
+      tags: ["line:auto"],
+    };
+    const manual = {
+      id: "manual-upload",
+      docType: "agency_quote",
+      slot: "quote_file",
+      filename: "Travelers.pdf",
+      mimeType: "application/pdf",
+      tags: ["quote:q-travelers", "source:agency", "label:Travelers.pdf"],
+    };
+    const docs = [shopping, manual];
+    expect(quoteIdsWithFolderPolicy(docs, "auto")).toEqual(["q-travelers"]);
+    const gate = evaluateMintGate({
+      currentStage: "bound",
+      selectedQuoteIds: ["q-travelers"],
+      liveQuoteIds: ["q-travelers"],
+      surface: "quotes",
+      shopLine: "auto",
+      docs,
+    });
+    expect(gate.ok).toBe(true);
+    if (gate.ok) expect(gate.dec.id).toBe("manual-upload");
+
+    const staleLine = evaluateMintGate({
+      currentStage: "bound",
+      selectedQuoteIds: ["q-travelers"],
+      liveQuoteIds: ["q-travelers"],
+      surface: "quotes",
+      shopLine: "auto",
+      docs: [
+        {
+          id: "stale-line",
+          docType: "agency_quote",
+          slot: "quote_file",
+          filename: "Iori.pdf",
+          mimeType: "application/pdf",
+          tags: ["quote:q-travelers", "source:agency", "line:home"],
+        },
+      ],
+    });
+    expect(staleLine.ok).toBe(true);
+    if (staleLine.ok) expect(staleLine.dec.id).toBe("stale-line");
+  });
+
+  it("asks for an upload when Manual and carrier folders are both empty", () => {
+    const shopping = {
+      id: "shopping",
+      docType: "current_policy",
+      slot: "source_doc",
+      filename: "Domenic current policy.pdf",
+      mimeType: "application/pdf",
+      tags: ["line:auto"],
+    };
+    const documentsDec = {
+      id: "docs-dec",
+      docType: "dec",
+      slot: "source_doc",
+      filename: "declaration.pdf",
+      mimeType: "application/pdf",
+      tags: ["quote:q-travelers", "source:agency", "dec", "mint"],
+    };
+    expect(quoteIdsWithFolderPolicy([shopping, documentsDec], "auto")).toEqual([]);
     expect(
       evaluateMintGate({
         currentStage: "bound",
@@ -233,24 +302,7 @@ describe("policy issued mint gate", () => {
         liveQuoteIds: ["q-travelers"],
         surface: "quotes",
         shopLine: "auto",
-        docs: [
-          {
-            id: "shopping",
-            docType: "current_policy",
-            slot: "source_doc",
-            filename: "Domenic current policy.pdf",
-            mimeType: "application/pdf",
-            tags: ["line:auto"],
-          },
-          {
-            id: "quote-pdf",
-            docType: "agency_quote",
-            slot: "quote_file",
-            filename: "Travelers quote.pdf",
-            mimeType: "application/pdf",
-            tags: ["quote:q-travelers", "source:agency", "line:auto"],
-          },
-        ],
+        docs: [shopping, documentsDec],
       }),
     ).toEqual({ ok: false, reason: "need_dec" });
 
@@ -294,6 +346,15 @@ describe("policy issued mint gate", () => {
       }),
     ).toEqual({ ok: false, reason: "need_dec" });
 
+    const carrierFile = {
+      id: "api",
+      docType: "carrier_quote",
+      slot: "quote_file",
+      filename: "download.pdf",
+      mimeType: "application/pdf",
+      tags: ["quote:q-api", "source:carrier"],
+    };
+    expect(quoteIdsWithFolderPolicy([carrierFile], "home")).toEqual(["q-api"]);
     const carrier = evaluateMintGate({
       currentStage: "bound",
       selectedQuoteIds: ["q-api"],
@@ -302,17 +363,48 @@ describe("policy issued mint gate", () => {
       shopLine: "home",
       docs: [
         {
-          id: "api",
-          docType: "carrier_quote",
-          slot: "quote_file",
-          filename: "carrier policy.pdf",
+          id: "shopping-home",
+          docType: "current_policy",
+          slot: "source_doc",
+          filename: "Domenic current policy.pdf",
           mimeType: "application/pdf",
-          tags: ["quote:q-api", "source:carrier", "line:home"],
+          tags: ["line:home"],
         },
+        carrierFile,
       ],
     });
     expect(carrier.ok).toBe(true);
     if (carrier.ok) expect(carrier.dec.id).toBe("api");
+  });
+
+  it("prefers a declaration in Manual when the folder also has a plain quote pdf", () => {
+    const gate = evaluateMintGate({
+      currentStage: "bound",
+      selectedQuoteIds: ["q1"],
+      liveQuoteIds: ["q1"],
+      surface: "quotes",
+      shopLine: "auto",
+      docs: [
+        {
+          id: "packet",
+          docType: "agency_quote",
+          slot: "quote_file",
+          filename: "quote.pdf",
+          mimeType: "application/pdf",
+          tags: ["quote:q1", "source:agency"],
+        },
+        {
+          id: "dec",
+          docType: "current_policy",
+          slot: "quote_file",
+          filename: "scan.pdf",
+          mimeType: "application/pdf",
+          tags: ["quote:q1", "source:agency", "dec", "mint", "line:auto"],
+        },
+      ],
+    });
+    expect(gate.ok).toBe(true);
+    if (gate.ok) expect(gate.dec.id).toBe("dec");
   });
 
   it("keeps one policy per product line", () => {

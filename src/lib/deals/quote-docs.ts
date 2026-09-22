@@ -5,17 +5,66 @@ import { isDeclarationDocType } from "@/lib/policy/dec-prompt";
 export type QuoteDocLike = {
   slot?: string | null;
   docType?: string | null;
-  tags?: string[] | null;
+  tags?: readonly string[] | null;
 };
+
+export type QuoteFolderKind = "manual" | "carrier";
+
+function normalizedTags(tags?: readonly string[] | null): string[] {
+  return (tags ?? []).map((tag) => tag.trim().toLowerCase());
+}
 
 /** True for Quote-tab uploads (slot quote_file, agency/carrier quote types, or quote: tags). */
 export function isQuoteFileDoc(doc: QuoteDocLike): boolean {
   if (isDeclarationDocType(doc.docType) && (doc.slot === "source_doc" || !doc.slot)) return false;
   if (doc.slot === "quote_file") return true;
-  if (doc.docType === "carrier_quote" || doc.docType === "agency_quote") return true;
-  const tags = doc.tags ?? [];
+  const type = (doc.docType ?? "").trim().toLowerCase();
+  if (type === "carrier_quote" || type === "agency_quote") return true;
+  const tags = normalizedTags(doc.tags);
   if (tags.some((tag) => tag === "source:agency" || tag === "source:carrier")) return true;
   return tags.some((tag) => tag.startsWith("quote:"));
+}
+
+/** Quote id from a `quote:{id}` tag. Prefix match is case-insensitive; the id keeps its spelling. */
+export function quoteIdFromDocTags(tags?: readonly string[] | null): string | null {
+  for (const tag of tags ?? []) {
+    const raw = tag.trim();
+    if (raw.length <= "quote:".length) continue;
+    if (raw.slice(0, "quote:".length).toLowerCase() !== "quote:") continue;
+    return raw.slice("quote:".length);
+  }
+  return null;
+}
+
+/**
+ * Manual (`source:agency` / agency_quote) or carrier (`source:carrier` / carrier_quote)
+ * membership for one quote. This is the Quotes folder badge: a file the agent can open
+ * there is a member. Shopping source docs (declaration type on `source_doc`, no quote folder)
+ * are not members.
+ */
+export function quoteFolderKind(doc: QuoteDocLike): QuoteFolderKind | null {
+  if (!isQuoteFileDoc(doc)) return null;
+  if (!quoteIdFromDocTags(doc.tags)) return null;
+  const tags = new Set(normalizedTags(doc.tags));
+  const type = (doc.docType ?? "").trim().toLowerCase();
+  if (tags.has("source:carrier") || type === "carrier_quote") return "carrier";
+  if (tags.has("source:agency") || type === "agency_quote") return "manual";
+  return null;
+}
+
+/** Same buckets the Manual and carrier badges render, keyed by quote id. */
+export function quoteFoldersByQuoteId<T extends QuoteDocLike>(
+  docs: readonly T[],
+): Record<string, { manual: T[]; carrier: T[] }> {
+  const out: Record<string, { manual: T[]; carrier: T[] }> = {};
+  for (const doc of docs) {
+    const quoteId = quoteIdFromDocTags(doc.tags);
+    const kind = quoteFolderKind(doc);
+    if (!quoteId || !kind) continue;
+    const bucket = (out[quoteId] ??= { manual: [], carrier: [] });
+    bucket[kind].push(doc);
+  }
+  return out;
 }
 
 /** Master-sheet / Documents list — exclude quote uploads and other non-source slots. */
