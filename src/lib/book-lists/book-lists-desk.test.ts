@@ -42,22 +42,36 @@ describe("command-card book lists", () => {
     expect(source("src/lib/book-lists/lenses.ts")).toMatch(/Skip/);
   });
 
-  it("Policies use attention bands, not a letter wall, and can open a Stack", () => {
+  it("Policies use attention bands, and List is the same two-row grid", () => {
     const page = source("src/app/policies/page.tsx");
+    const css = source("src/app/globals.css");
+    const card = source("src/components/book-lists/glance-card.tsx");
     expect(page).toMatch(/parseBookLayout/);
     expect(page).toMatch(/layout=\{layout\}/);
     expect(page).toMatch(/POLICY_COLUMNS/);
-    expect(source("src/components/book-lists/book-lenses.tsx")).toMatch(/data-ff-book-layout="stack"/);
+    expect(source("src/components/book-lists/book-lenses.tsx")).toMatch(/data-ff-book-layout="list"/);
     expect(source("src/components/book-lists/book-lenses.tsx")).toMatch(/data-ff-book-layout="bands"/);
-    expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/data-ff-policy-stack-card/);
-    expect(source("src/components/book-lists/glance-card.tsx")).toMatch(/data-ff-book-center/);
-    expect(source("src/app/globals.css")).toMatch(
-      /\.ff-party-center,\s*\.ff-carrier-center,\s*\.ff-policy-center,[\s\S]*?display:\s*contents/,
+    expect(source("src/lib/book-lists/lenses.ts")).toMatch(/value === "list" \|\| value === "stack"/);
+    expect(card).toMatch(/data-ff-policy-list-card/);
+    expect(card).toMatch(/ff-party-card/);
+    expect(card).toMatch(/data-ff-book-center/);
+    expect(card).toMatch(/data-ff-book-identity/);
+    expect(card).toMatch(/data-ff-book-rail/);
+    expect(css).toMatch(
+      /\.ff-book-grid \{[^}]*grid-template-columns:\s*15\.5rem minmax\(0, 1fr\) 12\.75rem;[^}]*grid-template-rows:\s*auto auto/,
     );
-    expect(source("src/app/globals.css")).not.toMatch(/\.ff-deal-host-center,/);
-    expect(source("src/app/globals.css")).toMatch(
-      /\.ff-policy-center \.ff-book-facts li,[\s\S]{0,700}?flex:\s*1 1 7\.5rem/,
+    expect(css).toMatch(
+      /\.ff-carrier-card \.ff-book-grid \{[^}]*grid-template-columns:\s*15\.5rem minmax\(0, 1fr\) 24\.25rem/,
     );
+    expect(css).toMatch(
+      /\[data-ff-priority-stack\] \.ff-deal-host-spread \{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*minmax\(6\.5rem,\s*max-content\) minmax\(0,\s*1fr\) max-content/,
+    );
+    expect(css).not.toMatch(/\.ff-deal-host-center,/);
+    expect(css).toMatch(
+      /\.ff-book-center \.ff-book-facts \{[^}]*grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);[^}]*grid-template-rows:\s*auto auto/,
+    );
+    expect(css).toMatch(/\.ff-policy-list-card \.ff-book-center \.ff-book-facts \{[^}]*repeat\(6, minmax\(0, 1fr\)\)/);
+    expect(css).not.toMatch(/\.ff-party-line/);
     expect(source("src/components/deals/deal-host-face.tsx")).toMatch(/data-ff-deal-center/);
     expect(page).not.toMatch(/Policy attention/);
     expect(page).not.toMatch(/StandardActivityShell/);

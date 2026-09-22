@@ -27,7 +27,8 @@ export function BookLenses({
   const saved = lensesFor(surface);
   const layoutHref = (next: BookLayout) => {
     const preserved = { ...(extra ?? {}) };
-    if (next === "stack") preserved.view = "stack";
+    if (next === "list") preserved.view = "list";
+    else if (next === "stack") preserved.view = "stack";
     else delete preserved.view;
     return bookListHref({ path, q, heat, lens, extra: preserved });
   };
@@ -57,15 +58,15 @@ export function BookLenses({
       {surface === "policies" ? (
         <div className={FF_CHIP_TAB_GROUP} aria-label="Policy layout" data-ff-book-layout-toggle="">
           <Link
-            href={layoutHref("stack")}
-            className={chipTabClass(layout === "stack")}
-            data-ff-book-layout="stack"
+            href={layoutHref("list")}
+            className={chipTabClass(layout === "list")}
+            data-ff-book-layout="list"
           >
-            Stack
+            List
           </Link>
           <Link
             href={layoutHref("bands")}
-            className={chipTabClass(layout !== "stack")}
+            className={chipTabClass(layout !== "list")}
             data-ff-book-layout="bands"
           >
             Bands

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { parseBookLayout } from "./lenses";
 import { presentCarrierCard, presentPartyCard, presentPolicyCard } from "./present";
 
 describe("account card glance", () => {
@@ -29,6 +30,47 @@ describe("account card glance", () => {
     ]);
     expect(card.flags.portalContact).toBe(false);
     expect(card.flags.neverTouched).toBe(true);
+  });
+
+  it("keeps a full account glance inside two rows of five columns", () => {
+    const card = presentPartyCard(
+      {
+        id: "full",
+        name: "Ruiz Tile LLC",
+        dba: "Ruiz Tile",
+        industry: "Tile",
+        entityType: "llc",
+        einLast4: "4321",
+        primaryContactName: "Elena Ruiz",
+        premiumBook: 12000,
+        linkedContactsCount: 2,
+        phone: "(321) 555-0188",
+        email: "office@ruiztile.example",
+        policyCount: 3,
+        activePolicyCount: 3,
+        nearestRenewalDays: 40,
+      },
+      "account",
+      {
+        asOf: new Date("2026-09-21T12:00:00.000Z"),
+        open: { count: 1, dealId: "deal-9" },
+      },
+    );
+    expect(card.facts?.map((fact) => fact.id)).toEqual([
+      "dba",
+      "industry",
+      "entity",
+      "fein",
+      "contact",
+      "premium",
+      "people",
+      "deals",
+      "policies",
+      "renewal",
+    ]);
+    expect(card.facts?.length).toBeLessThanOrEqual(10);
+    expect(card.phone).toBe("(321) 555-0188");
+    expect(card.email).toBe("office@ruiztile.example");
   });
 
   it("keeps contact chips to the facts an agent can use in two seconds", () => {
@@ -91,6 +133,40 @@ describe("account card glance", () => {
     ]);
     expect(card.facts?.some((fact) => /english/i.test(fact.label))).toBe(false);
     expect(card.mid).toBe("Not reached");
+  });
+
+  it("drops an empty dash under the name and keeps real phone, email, and facts", () => {
+    const card = presentPartyCard(
+      {
+        id: "dash",
+        firstName: "Ana",
+        lastName: "Dib",
+        clientStatus: "—",
+        city: "—",
+        source: "-",
+        preferredLanguage: "es",
+        phone: "(321) 555-0100",
+        email: "ana@example.com",
+        policyCount: 1,
+        activePolicyCount: 1,
+        nearestRenewalDays: 12,
+      },
+      "contact",
+      { asOf: new Date("2026-09-21T12:00:00.000Z") },
+    );
+    expect(card.subtitle).toBeUndefined();
+    expect(card.peek).toBeNull();
+    expect(card.facts?.some((fact) => /^(?:—|–|-)$/.test(fact.label))).toBe(false);
+    expect(card.facts?.map((fact) => fact.label)).toEqual(["Spanish", "1 in-force", "Renews in 12d"]);
+    expect(card.phone).toBe("(321) 555-0100");
+    expect(card.email).toBe("ana@example.com");
+    expect((card.facts ?? []).length).toBeLessThanOrEqual(10);
+  });
+
+  it("opens the policy list from the list url and the old stack url", () => {
+    expect(parseBookLayout("list")).toBe("list");
+    expect(parseBookLayout("stack")).toBe("list");
+    expect(parseBookLayout(undefined)).toBe("bands");
   });
 
   it("spreads policy term facts across the stack card", () => {
