@@ -86,6 +86,30 @@ describe("issued policy upload folder", () => {
     expect(popup).toMatch(/router\.push\(`\/policies\/\$\{result\.policyId\}`\)/);
   });
 
+  it("opens the upload popup when the quote folders have no policy, and does not Gemini first", () => {
+    const gate = source("src/lib/policy/mint-gate.ts");
+    const evaluate = gate.slice(gate.indexOf("export function evaluateMintGate"));
+    expect(evaluate).toMatch(/findQuoteFolderPolicy/);
+    expect(evaluate).not.toMatch(/findDealDeclaration/);
+    const mint = source("src/app/actions/policy-mint.ts");
+    const issue = mint.slice(
+      mint.indexOf("export async function issuePolicyFromDeclaration"),
+      mint.indexOf("export async function uploadDeclarationAndMint"),
+    );
+    expect(issue.indexOf("evaluateMintGate")).toBeLessThan(issue.indexOf("loadMintGeminiRows"));
+    expect(issue).toMatch(/shopLine: dealProductDef\(product\)\.shopLine/);
+    const header = source("src/components/deals/deal-header-stage.tsx");
+    expect(header).toMatch(/OPEN_ISSUED_POLICY_UPLOAD/);
+    expect(header).toMatch(/issuedFolderQuoteIds/);
+    expect(header).toMatch(/isBoundReadyForIssue\(value\)/);
+    expect(header).toMatch(/issue=1/);
+    const popup = source("src/components/deal/issue-policy-from-dec.tsx");
+    expect(popup).toMatch(/OPEN_ISSUED_POLICY_UPLOAD/);
+    expect(popup).toMatch(/data-ff-mint-dec-dialog/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/quoteIdsWithFolderPolicy/);
+    expect(source("src/lib/flash.ts")).toMatch(/The file stays in the folder/);
+  });
+
   it("offers a trash delete on Manual and carrier folders for that file only", () => {
     const actions = source("src/components/deal/quote-file-actions.tsx");
     expect(actions).toMatch(/data-ff-quote-file-delete/);

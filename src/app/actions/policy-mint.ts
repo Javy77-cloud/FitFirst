@@ -419,6 +419,7 @@ export async function issuePolicyFromDeclaration(input: {
     surface: input.surface ?? "quotes",
     mintStatus: current.mintStatus,
     preferredDocumentId: input.documentId,
+    shopLine: dealProductDef(product).shopLine,
   });
   if (!gate.ok) return gate;
 

@@ -24,7 +24,7 @@ export type MintGateReason =
   | "need_dec_fields";
 
 export const NEED_DEC_FIELDS_MESSAGE =
-  "Declaration extract did not return a policy number and premium. The uploaded file stays in the folder. No unpublished policy was created.";
+  "Could not extract the policy number, premium, or effective date from the policy file. The file stays in the folder.";
 
 export function mintFailureToast(reason: string): { key: string; kind: "error" | "success" } {
   switch (reason) {
@@ -57,6 +57,7 @@ export type DeclarationLike = {
   mimeType?: string | null;
   docType?: string | null;
   slot?: string | null;
+  tags?: readonly string[] | null;
   dealId?: string | null;
   policyId?: string | null;
   storagePath?: string | null;
@@ -282,6 +283,103 @@ export function findDealDeclaration(docs: readonly DeclarationLike[]): Declarati
   return scored[0]?.doc ?? null;
 }
 
+export function quoteIdFromDocTags(tags?: readonly string[] | null): string | null {
+  for (const tag of tags ?? []) {
+    const raw = tag.trim();
+    const lower = raw.toLowerCase();
+    const at = lower.indexOf("quote:");
+    if (at === 0 && raw.length > "quote:".length) return raw.slice("quote:".length);
+  }
+  return null;
+}
+
+function docTagSet(doc: DeclarationLike): Set<string> {
+  return new Set((doc.tags ?? []).map((tag) => tag.trim().toLowerCase()));
+}
+
+/** Manual folder is source:agency. Carrier / API folder is source:carrier. Both require quote:{id}. */
+export function quoteFolderKind(doc: DeclarationLike): "manual" | "carrier" | null {
+  if (!quoteIdFromDocTags(doc.tags)) return null;
+  const tags = docTagSet(doc);
+  const type = (doc.docType ?? "").toLowerCase();
+  if (tags.has("source:carrier") || type === "carrier_quote") return "carrier";
+  if (tags.has("source:agency") || type === "agency_quote") return "manual";
+  return null;
+}
+
+function lineTagOf(doc: DeclarationLike): string | null {
+  for (const tag of doc.tags ?? []) {
+    const raw = tag.trim().toLowerCase();
+    if (raw.startsWith("line:") && raw.length > "line:".length) return raw.slice("line:".length);
+  }
+  return null;
+}
+
+/** Policy / declaration sitting in a quote folder — not a shopping quote packet. */
+export function isFolderPolicyOrDeclaration(doc: DeclarationLike): boolean {
+  if (!quoteFolderKind(doc)) return false;
+  if (isDeclarationPdf(doc)) return true;
+  const tags = docTagSet(doc);
+  if (tags.has("dec") || tags.has("mint")) return true;
+  const name = (doc.filename ?? "").toLowerCase();
+  return /\b(policy|policies|dec(laration)?s?)\b/.test(name);
+}
+
+function scoreFolderPolicy(doc: DeclarationLike, index: number): number {
+  const type = (doc.docType ?? "").toLowerCase();
+  let score = index;
+  if (type === "dec" || type === "declaration" || type === "policy_dec") score += 40;
+  else if (type === "current_policy") score += 20;
+  if (docTagSet(doc).has("mint")) score += 10;
+  return score;
+}
+
+/**
+ * Issued-policy file for this quote/line.
+ * Shopping source docs (current-policy photos, risk-profile decs) are not in these folders
+ * and must not be sent to Gemini.
+ */
+export function findQuoteFolderPolicy(input: {
+  docs?: readonly DeclarationLike[] | null;
+  quoteIds?: readonly string[] | null;
+  shopLine?: string | null;
+}): DeclarationLike | null {
+  const wanted = new Set((input.quoteIds ?? []).map((id) => id.trim()).filter(Boolean));
+  if (!wanted.size) return null;
+  const line = (input.shopLine ?? "").trim().toLowerCase();
+  const hits = (input.docs ?? [])
+    .map((doc, index) => ({ doc, index }))
+    .filter(({ doc }) => {
+      const quoteId = quoteIdFromDocTags(doc.tags);
+      if (!quoteId || !wanted.has(quoteId)) return false;
+      if (!isFolderPolicyOrDeclaration(doc)) return false;
+      if (line) {
+        const tagged = lineTagOf(doc);
+        if (tagged && tagged !== line) return false;
+      }
+      return true;
+    });
+  if (!hits.length) return null;
+  hits.sort((a, b) => scoreFolderPolicy(b.doc, b.index) - scoreFolderPolicy(a.doc, a.index));
+  return hits[0]?.doc ?? null;
+}
+
+export function quoteIdsWithFolderPolicy(
+  docs?: readonly DeclarationLike[] | null,
+  shopLine?: string | null,
+): string[] {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  for (const doc of docs ?? []) {
+    const quoteId = quoteIdFromDocTags(doc.tags);
+    if (!quoteId || seen.has(quoteId)) continue;
+    if (!findQuoteFolderPolicy({ docs: [doc], quoteIds: [quoteId], shopLine })) continue;
+    seen.add(quoteId);
+    ids.push(quoteId);
+  }
+  return ids;
+}
+
 export function evaluateMintGate(input: {
   currentStage?: string | null;
   selectedQuoteIds?: readonly string[] | null;
@@ -291,6 +389,8 @@ export function evaluateMintGate(input: {
   mintStatus?: string | null;
   /** Popup upload. Wins over an older dec so Gemini reads the file the agent just saved. */
   preferredDocumentId?: string | null;
+  /** home / auto. A line tag on the folder file must match when present. */
+  shopLine?: string | null;
 }): { ok: true; dec: DeclarationLike } | { ok: false; reason: MintGateReason } {
   if (quotesOnlyStageBlocked(POLICY_ISSUED_STAGE, input.surface)) {
     return { ok: false, reason: "quotes_only" };
@@ -314,10 +414,14 @@ export function evaluateMintGate(input: {
   const preferred = preferredId
     ? (input.docs ?? []).find((doc) => doc.id === preferredId)
     : null;
-  const dec =
-    preferred && isDeclarationPdf(preferred)
-      ? preferred
-      : findDealDeclaration(input.docs ?? []);
+  // Explicit upload / Create policy pick. Stage changes do not pass this, so an
+  // empty Manual + carrier folder returns need_dec before Gemini.
+  if (preferred && isDeclarationPdf(preferred)) return { ok: true, dec: preferred };
+  const dec = findQuoteFolderPolicy({
+    docs: input.docs,
+    quoteIds: input.selectedQuoteIds,
+    shopLine: input.shopLine,
+  });
   if (!dec) return { ok: false, reason: "need_dec" };
   return { ok: true, dec };
 }

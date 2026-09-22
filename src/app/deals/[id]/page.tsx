@@ -108,6 +108,7 @@ import { PromiseChips } from "@/components/notifications/promise-chips";
 import { loadCommitmentsForEntities } from "@/lib/notifications/load-commitments";
 import { serializeCommitments } from "@/lib/notifications/commitments";
 import { DealHeaderStage } from "@/components/deals/deal-header-stage";
+import { quoteIdsWithFolderPolicy } from "@/lib/policy/mint-gate";
 import { relabelConvertActivityTitle } from "@/lib/crm/convert";
 import { dealStageView } from "@/lib/deals/deal-columns";
 import { uniqueDisplayPhones } from "@/lib/deals/header-addresses";
@@ -458,6 +459,7 @@ export default async function DealPage({
     activeProduct,
     stageView.slug ?? deal.pipelineStage,
   );
+  const issuedFolderQuoteIds = quoteIdsWithFolderPolicy(docs, dealProductDef(activeProduct).shopLine);
   const noticeFamily = familyForProducts(dealProducts);
   const dealNoticeTypes = noticeTypesForFamily(noticePicklists, noticeFamily);
   const dealNoticePicklist = noticePicklistForFamily(noticePicklists, noticeFamily);
@@ -723,6 +725,7 @@ export default async function DealPage({
                       selectedQuoteIds={activeProductState.selectedQuoteIds}
                       quoteChoices={quoteChoices}
                       workspaceTab={activeTab}
+                      issuedFolderQuoteIds={issuedFolderQuoteIds}
                     />
                     {!stampStage && noticeStampVisible ? (
                       <DealNotices {...noticeProps} placement="header" />

@@ -80,12 +80,31 @@ describe("policy issued mint gate", () => {
       }),
     ).toEqual({ ok: false, reason: "need_bound" });
 
+    expect(
+      evaluateMintGate({
+        currentStage: "bound",
+        selectedQuoteIds: ["q1"],
+        liveQuoteIds: ["q1"],
+        surface: "quotes",
+        docs: [{ id: "d1", docType: "dec", filename: "rosa-dec.pdf", mimeType: "application/pdf" }],
+      }),
+    ).toEqual({ ok: false, reason: "need_dec" });
+
     const ok = evaluateMintGate({
       currentStage: "bound",
       selectedQuoteIds: ["q1"],
       liveQuoteIds: ["q1"],
       surface: "quotes",
-      docs: [{ id: "d1", docType: "dec", filename: "rosa-dec.pdf", mimeType: "application/pdf" }],
+      docs: [
+        {
+          id: "d1",
+          docType: "dec",
+          filename: "rosa-dec.pdf",
+          mimeType: "application/pdf",
+          slot: "quote_file",
+          tags: ["quote:q1", "source:agency", "dec", "mint"],
+        },
+      ],
     });
     expect(ok.ok).toBe(true);
     if (ok.ok) expect(ok.dec.id).toBe("d1");
@@ -162,12 +181,117 @@ describe("policy issued mint gate", () => {
       surface: "quotes",
       preferredDocumentId: "packet",
       docs: [
-        { id: "packet", docType: "agency_quote", filename: "quote.pdf", mimeType: "application/pdf" },
-        { id: "dec", docType: "dec", filename: "dec.pdf", mimeType: "application/pdf" },
+        { id: "packet", docType: "agency_quote", filename: "quote.pdf", mimeType: "application/pdf", tags: ["quote:q1", "source:agency"] },
+        {
+          id: "shopping",
+          docType: "current_policy",
+          slot: "source_doc",
+          filename: "current-policy.pdf",
+          mimeType: "application/pdf",
+          tags: ["line:home"],
+        },
+        {
+          id: "dec",
+          docType: "dec",
+          filename: "dec.pdf",
+          mimeType: "application/pdf",
+          slot: "quote_file",
+          tags: ["quote:q1", "source:agency", "dec"],
+        },
       ],
     });
     expect(ignored.ok).toBe(true);
     if (ignored.ok) expect(ignored.dec.id).toBe("dec");
+  });
+
+  it("asks for an upload when Manual and carrier folders have no policy file", () => {
+    expect(
+      evaluateMintGate({
+        currentStage: "bound",
+        selectedQuoteIds: ["q-travelers"],
+        liveQuoteIds: ["q-travelers"],
+        surface: "quotes",
+        shopLine: "auto",
+        docs: [
+          {
+            id: "shopping",
+            docType: "current_policy",
+            slot: "source_doc",
+            filename: "Domenic current policy.pdf",
+            mimeType: "application/pdf",
+            tags: ["line:auto"],
+          },
+          {
+            id: "quote-pdf",
+            docType: "agency_quote",
+            slot: "quote_file",
+            filename: "Travelers quote.pdf",
+            mimeType: "application/pdf",
+            tags: ["quote:q-travelers", "source:agency", "line:auto"],
+          },
+        ],
+      }),
+    ).toEqual({ ok: false, reason: "need_dec" });
+
+    const manual = evaluateMintGate({
+      currentStage: "bound",
+      selectedQuoteIds: ["q-travelers"],
+      liveQuoteIds: ["q-travelers"],
+      surface: "quotes",
+      shopLine: "auto",
+      docs: [
+        {
+          id: "manual-pol",
+          docType: "current_policy",
+          slot: "quote_file",
+          filename: "Travelers policy.pdf",
+          mimeType: "application/pdf",
+          tags: ["quote:q-travelers", "source:agency", "dec", "mint", "line:auto"],
+        },
+      ],
+    });
+    expect(manual.ok).toBe(true);
+    if (manual.ok) expect(manual.dec.id).toBe("manual-pol");
+
+    expect(
+      evaluateMintGate({
+        currentStage: "bound",
+        selectedQuoteIds: ["q-travelers"],
+        liveQuoteIds: ["q-travelers"],
+        surface: "quotes",
+        shopLine: "auto",
+        docs: [
+          {
+            id: "other",
+            docType: "dec",
+            slot: "quote_file",
+            filename: "other-dec.pdf",
+            mimeType: "application/pdf",
+            tags: ["quote:q-other", "source:carrier", "dec", "line:auto"],
+          },
+        ],
+      }),
+    ).toEqual({ ok: false, reason: "need_dec" });
+
+    const carrier = evaluateMintGate({
+      currentStage: "bound",
+      selectedQuoteIds: ["q-api"],
+      liveQuoteIds: ["q-api"],
+      surface: "quotes",
+      shopLine: "home",
+      docs: [
+        {
+          id: "api",
+          docType: "carrier_quote",
+          slot: "quote_file",
+          filename: "carrier policy.pdf",
+          mimeType: "application/pdf",
+          tags: ["quote:q-api", "source:carrier", "line:home"],
+        },
+      ],
+    });
+    expect(carrier.ok).toBe(true);
+    if (carrier.ok) expect(carrier.dec.id).toBe("api");
   });
 
   it("keeps one policy per product line", () => {
