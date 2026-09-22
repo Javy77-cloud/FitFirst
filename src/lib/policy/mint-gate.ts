@@ -23,7 +23,8 @@ export type MintGateReason =
   | "need_dec_file"
   | "need_gemini"
   | "extract_failed"
-  | "need_dec_fields";
+  | "need_dec_fields"
+  | "need_policy_number";
 
 export const NEED_DEC_FIELDS_MESSAGE =
   "Could not extract the policy number, premium, or effective date from the policy file. The file stays in the folder.";
@@ -48,6 +49,8 @@ export function mintFailureToast(reason: string): { key: string; kind: "error" |
       return { key: "mint-confirm-invalid", kind: "error" };
     case "need_confirm":
       return { key: "need-confirm", kind: "error" };
+    case "need_policy_number":
+      return { key: "need-policy-number", kind: "error" };
     default:
       return { key: "deal-updated", kind: "success" };
   }
@@ -557,7 +560,24 @@ export type MintExtractGateOk = {
   policyNumber: string;
   premium: string;
   effectiveDate: string;
+  /** True when premium+dates exist but Gemini (and sheet fallback) left policy number blank. */
+  policyNumberPending?: boolean;
 };
+
+/** DB not-null stand-in until the agent types the real policy number on confirm. */
+export const MINT_PENDING_POLICY_NUMBER = "PENDING";
+
+export function isPendingPolicyNumber(raw?: string | null): boolean {
+  const value = (raw ?? "").trim();
+  if (!value) return true;
+  return /^(?:pending|tbd|n\/a|na|none|unknown|—|–|-)$/i.test(value);
+}
+
+/** Booked policy_number for insert — never invent a real number. */
+export function mintBookedPolicyNumber(extracted: string): string {
+  const value = (extracted ?? "").trim();
+  return value && !isPendingPolicyNumber(value) ? value : MINT_PENDING_POLICY_NUMBER;
+}
 
 export type MintExtractGateErr = {
   ok: false;
@@ -586,7 +606,10 @@ function fallbackText(raw?: string | null): string {
   return value;
 }
 
-/** Hard gate: refuse hollow mint unless policy number, premium, and effective date are known. */
+/**
+ * Soft gate for Bound→Policy issued: need premium + effective date to mint an unpublished draft.
+ * Policy number may be blank (Travelers etc.) — agent types it on confirm; publish stays locked until then.
+ */
 export function evaluateMintExtract(
   rows: readonly MintGeminiRow[] | undefined,
   context?: MintExtractFailureContext,
@@ -595,36 +618,24 @@ export function evaluateMintExtract(
   let policyNumber = mintGeminiValue(rows, "policy_number");
   const premium = mintGeminiValue(rows, "premium");
   const effectiveDate = mintGeminiValue(rows, "effective_date");
-  // Travelers (and similar) sometimes return premium + dates but omit policy_number.
-  // Prefer a printed Current Policy number already on the Risk Profile over failing the mint.
+  // Prefer a printed Current Policy number already on the Risk Profile when Gemini skipped it.
   if (!policyNumber && premium && effectiveDate) {
     policyNumber = fallbackText(fallbacks?.policyNumber);
   }
-  if (!policyNumber || !premium || !effectiveDate) {
+  if (!premium || !effectiveDate) {
     const failure = describeMintExtractFailure(rows ?? [], context ?? {}, (list, key) =>
       mintGeminiValue(list, key),
     );
-    const missing = failure.missing;
-    if (
-      missing.length === 1 &&
-      missing[0] === "policy number" &&
-      premium &&
-      effectiveDate
-    ) {
-      const fileLabel = (context?.filename ?? "").replace(/\s+/g, " ").trim();
-      const fileBit = fileLabel ? ` File: ${fileLabel}.` : "";
-      return {
-        ok: false,
-        reason: "need_dec_fields",
-        missing,
-        message:
-          `Gemini read the premium and dates but not the policy number.${fileBit} ` +
-          "Put the policy number on Risk Profile → Current Policy, then Issue again. The file stays in the folder.",
-      };
-    }
-    return { ok: false, reason: "need_dec_fields", message: failure.message, missing };
+    return { ok: false, reason: "need_dec_fields", message: failure.message, missing: failure.missing };
   }
-  return { ok: true, policyNumber, premium, effectiveDate };
+  const pending = !policyNumber;
+  return {
+    ok: true,
+    policyNumber: policyNumber || "",
+    premium,
+    effectiveDate,
+    ...(pending ? { policyNumberPending: true as const } : {}),
+  };
 }
 
 export type MintIdentity = {
@@ -981,7 +992,24 @@ export function mintNeedsConfirm(payload: MintPayload | null | undefined): boole
 
 export function canPublishMint(payload: MintPayload | null | undefined): boolean {
   if (!payload || payload.status === "published") return false;
-  return mintConfirmQueue(payload.fields).length === 0;
+  if (mintConfirmQueue(payload.fields).length > 0) return false;
+  const policyNumber =
+    payload.fields.find((field) => field.key === "policy_number")?.value ?? "";
+  // Agent must type a real policy number — PENDING / blank never unlocks Policy looks good.
+  if (isPendingPolicyNumber(policyNumber)) return false;
+  return true;
+}
+
+/** Why Policy looks good is still locked (empty queue but no typed policy number). */
+export function mintPublishBlockReason(payload: MintPayload | null | undefined): string | null {
+  if (!payload || payload.status === "published") return null;
+  if (mintConfirmQueue(payload.fields).length > 0) return null;
+  const policyNumber =
+    payload.fields.find((field) => field.key === "policy_number")?.value ?? "";
+  if (isPendingPolicyNumber(policyNumber)) {
+    return "Type the real policy number before Policy looks good. Gemini left it blank on this declaration.";
+  }
+  return null;
 }
 
 export function confirmMintField(

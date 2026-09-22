@@ -66,6 +66,8 @@ import {
   canPublishMint,
   confirmMintField,
   evaluateMintExtract,
+  mintBookedPolicyNumber,
+  isPendingPolicyNumber,
   evaluateMintGate,
   mintFieldPolicyPatch,
   parseMintPayload,
@@ -579,7 +581,8 @@ export async function issuePolicyFromDeclaration(input: {
   );
   const premium = extractGate.premium;
   const coverageA = booked.coverageA || quote.coverageA || risk?.coverageA || null;
-  const policyNumber = extractGate.policyNumber;
+  // DB policy_number is not-null; PENDING until the agent types the real number on confirm.
+  const policyNumber = mintBookedPolicyNumber(extractGate.policyNumber);
   const payload: MintPayload = {
     status: "unpublished",
     soldBasis: {
@@ -833,6 +836,9 @@ export async function confirmMintedPolicyField(formData: FormData) {
   const key = String(formData.get("key") ?? "").trim();
   const value = String(formData.get("value") ?? "").trim();
   if (!policyId || !key) return { ok: false as const, reason: "invalid" as const };
+  if (key === "policy_number" && isPendingPolicyNumber(value)) {
+    return { ok: false as const, reason: "need_policy_number" as const };
+  }
   const [policy] = await db
     .select()
     .from(policies)
@@ -840,6 +846,7 @@ export async function confirmMintedPolicyField(formData: FormData) {
   if (!policy) return { ok: false as const, reason: "missing" as const };
   const payload = parseMintPayload(policy.mintPayload);
   if (!payload) return { ok: false as const, reason: "invalid" as const };
+  const beforeField = payload.fields.find((row) => row.key === key);
   const fields = confirmMintField(payload.fields, key, value);
   const stored = fields.find((row) => row.key === key)?.value || value;
   const next: MintPayload = { ...payload, fields };
@@ -883,6 +890,28 @@ export async function confirmMintedPolicyField(formData: FormData) {
     knownState: booked.premisesState || policy.premisesState,
     knownZip: booked.premisesZip || policy.premisesZip,
   });
+  const session = await currentDeskSession();
+  const audit = buildAgentConfirmAudit({
+    userId: session.userId,
+    name: session.name || "Agent",
+  });
+  await db
+    .insert(policyChangeLogs)
+    .values({
+      tenantId: DEFAULT_TENANT_ID,
+      policyId,
+      changedBy: audit.userId,
+      changedByName: audit.name,
+      changedAt: new Date(audit.confirmedAt),
+      fieldKey: key,
+      fieldLabel: beforeField?.label || key,
+      beforeValue: beforeField?.value || null,
+      afterValue: stored,
+      source: "mint_confirm",
+    })
+    .catch((error) => {
+      console.error("[confirmMintedPolicyField] agent fill log", error);
+    });
   revalidatePath(`/policies/${policyId}`);
   return {
     ok: true as const,
@@ -900,7 +929,14 @@ export async function publishMintedPolicy(formData: FormData) {
     .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
   if (!policy) return { ok: false as const, reason: "missing" as const };
   const payload = parseMintPayload(policy.mintPayload);
-  if (!canPublishMint(payload)) return { ok: false as const, reason: "need_confirm" as const };
+  if (!canPublishMint(payload)) {
+    const number =
+      payload?.fields.find((row) => row.key === "policy_number")?.value ?? policy.policyNumber;
+    if (isPendingPolicyNumber(number)) {
+      return { ok: false as const, reason: "need_policy_number" as const };
+    }
+    return { ok: false as const, reason: "need_confirm" as const };
+  }
   const session = await currentDeskSession();
   const audit = buildAgentConfirmAudit({
     userId: session.userId,
