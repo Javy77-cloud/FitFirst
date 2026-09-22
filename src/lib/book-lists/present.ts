@@ -52,6 +52,8 @@ export type PartyListRow = {
   premiumBook?: number | null;
   nearestRenewalDays?: number | null;
   primaryContactName?: string | null;
+  operations?: string | null;
+  operationsDescription?: string | null;
 };
 
 export type OpenDealSignal = {
@@ -153,6 +155,28 @@ function contactStackFooter(row: PartyListRow): BookCueColumn[] {
     { id: "status", label: status ?? "" },
     { id: "dob", label: dobGlance(row.dateOfBirth) ?? "" },
     { id: "policies", label: String(row.policyCount ?? 0) },
+  ];
+}
+
+function stackCell(raw: string | null | undefined): string {
+  const value = raw?.replace(/\s+/g, " ").trim() ?? "";
+  return isEmptyDash(value) ? "" : value;
+}
+
+function renewalColumnLabel(days: number | null | undefined): string {
+  return renewalInFact(days)?.label ?? "";
+}
+
+/** Fixed Accounts Stack phone-row tracks — same five columns on every card. */
+function accountStackFooter(row: PartyListRow): BookCueColumn[] {
+  const statusRaw = row.clientStatus?.trim() ?? "";
+  const status = !isEmptyDash(statusRaw) ? clientStatusCue(statusRaw) : null;
+  return [
+    { id: "operations", label: stackCell(row.operations) || stackCell(row.operationsDescription) },
+    { id: "contact", label: stackCell(row.primaryContactName) },
+    { id: "policies", label: String(row.policyCount ?? 0) },
+    { id: "renewals", label: renewalColumnLabel(row.nearestRenewalDays) },
+    { id: "status", label: status ?? "" },
   ];
 }
 
@@ -452,7 +476,7 @@ export function presentPartyCard(
       healthBand: extra.health?.band ?? null,
     }),
     mid: reached,
-    columns: kind === "contact" ? contactStackFooter(row) : null,
+    columns: kind === "contact" ? contactStackFooter(row) : accountStackFooter(row),
     facts,
     peek: null,
     primaryAction: primaryPartyAction({

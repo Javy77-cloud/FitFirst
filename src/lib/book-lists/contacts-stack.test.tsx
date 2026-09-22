@@ -239,7 +239,7 @@ describe("Contacts Stack layout lock", () => {
     expect(card.columns?.find((column) => column.id === "language")?.label).toBe("English");
   });
 
-  it("leaves Accounts on the shared party grid card", () => {
+  it("does not paint the Contacts stack chrome on an account card", () => {
     const account = presentPartyCard(
       {
         id: "a1",
@@ -253,9 +253,8 @@ describe("Contacts Stack layout lock", () => {
       { asOf: new Date("2026-09-21T12:00:00.000Z") },
     ) as BookGlanceCard;
     const html = renderToStaticMarkup(<BookGlanceCardView card={account} layoutMode="stack" />);
-    expect(html).toContain("ff-party-card");
     expect(html).not.toContain("data-ff-contact-stack-card");
-    expect(html).toContain("ff-book-grid");
+    expect(html).not.toContain("data-ff-contact-stack-col");
     const stack = renderToStaticMarkup(
       <BookPriorityStack cards={[account]} empty="Nobody in this lens." layoutMode="stack" />,
     );
