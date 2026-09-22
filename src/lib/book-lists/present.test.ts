@@ -175,8 +175,8 @@ describe("account card glance", () => {
     expect((card.facts ?? []).length).toBeLessThanOrEqual(10);
   });
 
-  it("keeps policy bands, list, and stack as separate views", () => {
-    expect(parseBookLayout("list")).toBe("list");
+  it("keeps policy bands and stack, and returns list bookmarks to bands", () => {
+    expect(parseBookLayout("list")).toBe("bands");
     expect(parseBookLayout("stack")).toBe("stack");
     expect(parseBookLayout("bands")).toBe("bands");
     expect(parseBookLayout(undefined)).toBe("bands");
