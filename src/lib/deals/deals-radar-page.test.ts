@@ -184,8 +184,11 @@ describe("Deals Priority Stack + Radar", () => {
     expect(meter).toMatch(/layout === "stack"/);
     expect(meter).toMatch(/ff-renewal-health--stack/);
     expect(meter).toMatch(/data-ff-health-flag/);
-    expect(meter).toMatch(/Flag className="ff-renewal-health-flag-icon"/);
+    expect(meter).toMatch(/<Flag[\s\S]*?className="ff-renewal-health-flag-icon"/);
+    expect(meter).toMatch(/fill="currentColor"/);
     expect(meter).not.toMatch(/layout === "stack"[\s\S]{0,200}?>Flag</);
+    expect(face).toMatch(/stackHealthFlagged/);
+    expect(face).toMatch(/policyHealth:\s*card\.policyHealth/);
     expect(css).toMatch(/\.ff-stack-products li \{[^}]*grid-template-columns:\s*6\.75rem minmax\(0,\s*1fr\)/);
     expect(css).toMatch(/\.ff-stack-products \{[^}]*flex:\s*1 0 100%/);
     expect(css).toMatch(
@@ -202,8 +205,12 @@ describe("Deals Priority Stack + Radar", () => {
     expect(css).toMatch(
       /\[data-ff-priority-stack\] \.ff-deal-stack-header-lines,\s*\[data-ff-priority-stack\] \.ff-deal-host-lines \{[^}]*grid-template-columns:\s*var\(--ff-deal-stack-lines\)/,
     );
-    expect(css).toMatch(
+    // Quotes stay in the Quotes column — never span under Form/Stage on row 2
+    expect(css).not.toMatch(
       /\[data-ff-priority-stack\] \.ff-deal-host-job-single \.ff-deal-host-quotes \{[^}]*grid-row:\s*2/,
+    );
+    expect(css).not.toMatch(
+      /\[data-ff-priority-stack\] \.ff-deal-host-job-single \.ff-deal-host-quotes \{[^}]*grid-column:\s*1 \/ 5/,
     );
     expect(css).toMatch(/\[data-ff-priority-stack\] \.ff-deal-host-line \{[^}]*grid-column:\s*1 \/ -1/);
     expect(css).toMatch(/\[data-ff-priority-stack\] \.ff-deal-host-stamps \{[^}]*overflow:\s*visible/);
@@ -216,6 +223,9 @@ describe("Deals Priority Stack + Radar", () => {
       /\[data-ff-priority-stack\] \.ff-renewal-health--stack \.ff-renewal-health-pair \{[^}]*flex-direction:\s*column/,
     );
     expect(css).toMatch(
+      /\[data-ff-priority-stack\] \.ff-renewal-health--stack \.ff-renewal-health-flag-icon \{[^}]*fill:\s*currentColor/,
+    );
+    expect(css).toMatch(
       /\[data-ff-priority-stack\] \.ff-stack-product,\s*\[data-ff-priority-stack\] \.ff-deal-host-stage,\s*\[data-ff-priority-stack\] \.ff-deal-host-quotes \{[^}]*color:\s*var\(--ff-muted\);[^}]*font-weight:\s*500/,
     );
     expect(css).not.toMatch(/\.ff-deal-host-center,/);
@@ -224,5 +234,7 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/lib/deals/radar-desk.ts")).toMatch(/carrierName:\s*carriers\.name/);
     expect(source("src/lib/deals/radar-desk.ts")).toMatch(/selectedQuoteIds/);
     expect(source("src/lib/deals/card-glance.ts")).toMatch(/quotesSentGlanceLabel/);
+    expect(source("src/lib/deals/card-glance.ts")).toMatch(/stackHealthFlagged/);
+    expect(source("src/lib/deals/card-glance.ts")).toMatch(/isStackQuoteLanguage/);
   });
 });

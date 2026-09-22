@@ -2,9 +2,11 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
 import {
-  docsGlanceLabel,
   formatSilenceCue,
   quotesGlanceLabel,
+  stackHealthFlagged,
+  stackPlaceLabel,
+  stackProductName,
   type StackProductLine,
 } from "@/lib/deals/card-glance";
 import type { RadarDealCard } from "@/lib/deals/radar-desk";
@@ -109,17 +111,22 @@ function Health({ card }: { card: RadarDealCard }) {
         layout="stack"
         stars={card.clientHealth / 20}
         policyStars={card.policyHealth / 20}
-        flagged={card.heat === "cold" || card.clientHealth < 40}
+        flagged={stackHealthFlagged({
+          heat: card.heat,
+          clientHealth: card.clientHealth,
+          policyHealth: card.policyHealth,
+        })}
       />
     </div>
   );
 }
 
 function fallbackLine(card: RadarDealCard): StackProductLine {
+  const product = "deal";
   return {
-    product: "deal",
-    label: plainFact(card.productLabels[0] ?? card.lineOfBusiness),
-    stageLabel: docsGlanceLabel(card.docsSubmitted),
+    product,
+    label: stackProductName(product, card.productLabels[0] ?? card.lineOfBusiness),
+    stageLabel: stackPlaceLabel(card.docsSubmitted ? "bound" : "gathering"),
     stamps: card.stamps,
     quoteSummary: quotesGlanceLabel({
       count: card.quoteCount,
