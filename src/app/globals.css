@@ -5086,7 +5086,7 @@ tr[data-ff-activity-selected="true"] {
 .ff-inbox-desk [data-ff-inbox-band="read"],
 .ff-inbox-desk [data-ff-inbox-band="read"] > header,
 .ff-inbox-desk [data-ff-inbox-band="read"] li {
-  background-color: #d8d4ce;
+  background-color: #ebe9e5;
 }
 .ff-inbox-desk [data-ff-inbox-band="unread"],
 .ff-inbox-desk [data-ff-inbox-band="unread"] > header,
@@ -5097,10 +5097,10 @@ tr[data-ff-activity-selected="true"] {
   background-color: #fff;
 }
 .ff-inbox-row.is-read {
-  background-color: #d8d4ce;
+  background-color: #ebe9e5;
 }
 .ff-inbox-row.is-selected {
-  background-color: #b6d2f8;
+  background-color: #dae8fb;
   box-shadow: inset 4px 0 0 var(--ff-inbox-open-edge);
 }
 .ff-inbox-row:hover {
@@ -5118,9 +5118,9 @@ tr[data-ff-activity-selected="true"] {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--ff-navy);
-  font-size: 0.84rem;
-  font-weight: 550;
+  color: var(--ff-ink);
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 .ff-inbox-row.is-unread .ff-inbox-row-from::before {
   content: "";
@@ -5135,9 +5135,10 @@ tr[data-ff-activity-selected="true"] {
 .ff-inbox-row-when {
   order: 4;
   margin-left: auto;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: var(--ff-muted);
+  color: var(--ff-ink);
   white-space: nowrap;
 }
 .ff-inbox-row-subject {
@@ -5147,9 +5148,9 @@ tr[data-ff-activity-selected="true"] {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--ff-navy);
-  font-size: 0.8rem;
-  font-weight: 500;
+  color: var(--ff-ink);
+  font-size: 0.88rem;
+  font-weight: 700;
 }
 .ff-inbox-row-snippet {
   flex: 1 1 auto;
@@ -5157,13 +5158,11 @@ tr[data-ff-activity-selected="true"] {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.74rem;
-  color: var(--ff-muted);
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: var(--ff-ink);
 }
 .ff-inbox-row-snippet::before { content: "— "; }
-.ff-inbox-row.is-unread .ff-inbox-row-from,
-.ff-inbox-row.is-unread .ff-inbox-row-subject { font-weight: 750; }
-.ff-inbox-row.is-unread .ff-inbox-row-when { font-weight: 650; color: var(--ff-navy); }
 /* Outlook hook — reserved. Do not invent a Yahoo skin. */
 .ff-inbox-desk[data-ff-inbox-skin="outlook"] .ff-inbox-row { border-radius: 0; }
 .ff-inbox-detail {

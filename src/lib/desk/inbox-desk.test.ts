@@ -155,10 +155,11 @@ describe("inbox desk presentation", () => {
     expect(readFileSync("src/lib/desk/inbox-engine.ts", "utf8")).toMatch(
       /selectedId \? markDeskThreadRead\(live\.threads, selectedId\)/,
     );
-    expect(chrome).toMatch(/\.ff-inbox-row\.is-read \{[^}]*#d8d4ce/);
+    expect(chrome).toMatch(/\.ff-inbox-row\.is-read \{[^}]*#ebe9e5/);
+    expect(chrome).toMatch(/\[data-ff-inbox-band="read"\][\s\S]*#ebe9e5/);
     expect(chrome).toMatch(/\.ff-inbox-row\.is-unread \{[^}]*#fff/);
     expect(chrome).toMatch(/--ff-inbox-open-edge: var\(--ff-red\)/);
-    expect(chrome).toMatch(/\.ff-inbox-row\.is-selected \{[^}]*#b6d2f8/);
+    expect(chrome).toMatch(/\.ff-inbox-row\.is-selected \{[^}]*#dae8fb/);
     expect(chrome).toMatch(/\.ff-inbox-row\.is-selected \{[^}]*var\(--ff-inbox-open-edge\)/);
     expect(chrome).toMatch(/\.ff-inbox-row:hover \{[^}]*box-shadow/);
     expect(chrome).not.toMatch(/\.ff-inbox-row:hover \{[^}]*background/);
@@ -166,7 +167,12 @@ describe("inbox desk presentation", () => {
     expect(chrome).toMatch(/\.ff-inbox-detail \{[^}]*var\(--ff-inbox-open-edge\)/);
     expect(chrome).not.toMatch(/\.ff-inbox-row\.is-selected \{[^}]*var\(--ff-navy\)/);
     expect(chrome).not.toMatch(/#f2f6fc/);
+    expect(chrome).not.toMatch(/#d8d4ce|#b6d2f8/);
     expect(chrome).not.toMatch(/\.ff-inbox-row\.is-selected\.is-read \{[^}]*color-mix/);
+    expect(chrome).toMatch(/\.ff-inbox-row-from \{[\s\S]*color: var\(--ff-ink\);[\s\S]*font-size: 0\.9rem;[\s\S]*font-weight: 700;/);
+    expect(chrome).toMatch(/\.ff-inbox-row-subject \{[\s\S]*color: var\(--ff-ink\);[\s\S]*font-size: 0\.88rem;[\s\S]*font-weight: 700;/);
+    expect(chrome).toMatch(/\.ff-inbox-row-when \{[\s\S]*font-size: 0\.8rem;[\s\S]*font-weight: 700;[\s\S]*color: var\(--ff-ink\);/);
+    expect(chrome).toMatch(/\.ff-inbox-row-snippet \{[\s\S]*font-size: 0\.82rem;[\s\S]*color: var\(--ff-ink\);/);
     expect(chrome).toMatch(/\.ff-inbox-band h2 \{[\s\S]*font-size: 0\.84rem;/);
     expect(readFileSync("src/lib/integrations/oauth-specs.ts", "utf8")).toMatch(/gmail\.modify/);
     expect(desk).toMatch(/ff-inbox-body-html/);
