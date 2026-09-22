@@ -4,13 +4,13 @@ import { fieldsForLine } from "./catalog";
 import { PRIMARY_HEAT_OPTIONS, PRIMARY_PLUMBING_OPTIONS } from "./sheet-defaults";
 
 describe("sep7hl primary heat + plumbing picklists", () => {
-  it("exposes Primary heat and Primary plumbing type on the home 4-point block", () => {
+  it("exposes Primary heat and Primary plumbing type on the home Four-Point Inspection block", () => {
     const fields = fieldsForLine("home", "homeowners");
     const heat = fields.find((f) => f.key === "primary_heat");
     const plumbing = fields.find((f) => f.key === "primary_plumbing_type");
     expect(heat).toMatchObject({
       label: "Primary heat",
-      group: "4-point",
+      group: "Four-Point Inspection",
       input: "select",
     });
     expect(heat?.options).toEqual([...PRIMARY_HEAT_OPTIONS]);
@@ -19,7 +19,7 @@ describe("sep7hl primary heat + plumbing picklists", () => {
     );
     expect(plumbing).toMatchObject({
       label: "Primary plumbing type",
-      group: "4-point",
+      group: "Four-Point Inspection",
       input: "select",
     });
     expect(plumbing?.options).toEqual([...PRIMARY_PLUMBING_OPTIONS]);

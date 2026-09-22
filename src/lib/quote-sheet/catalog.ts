@@ -97,6 +97,7 @@ import {
 } from "./sheet-defaults";
 import { INDUSTRY_OPTIONS } from "@/lib/custom-fields/industry-occupation";
 import { COMMERCIAL_RISK_PROFILE_FIELDS, isCommercialSheetLine } from "./commercial-risk-profile";
+import { isInspectionSectionGroup, orderHomeGroups } from "./home-inspections";
 import { fieldIsVisible, visibleQuoteFields } from "./sheet-visibility";
 import type { SheetValueBag } from "./sheet-visibility";
 
@@ -178,30 +179,30 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "basement", label: "Basement", group: "Dwelling", input: "select", options: [...YES_NO_OPTIONS], products: [...HO_LL] },
   { key: "garage_type", label: "Garage", group: "Dwelling", extractKey: "garage", products: [...HO_LL] },
   { key: "carport", label: "Carport", group: "Dwelling", input: "select", options: [...YES_NO_OPTIONS], products: [...HO_LL] },
-  { key: "roof_year", label: "Roof year", group: "Roof / wind", input: "number", extractKey: "roof_year", products: [...HO_LL] },
-  { key: "roof_covering", label: "Roof covering", group: "Roof / wind", input: "select", options: [...ROOF_COVERING_OPTIONS], extractKey: "roof_covering", products: [...HO_LL] },
-  { key: "roof_shape", label: "Roof shape", group: "Roof / wind", input: "select", options: [...ROOF_SHAPE_OPTIONS], extractKey: "roof_shape", products: [...HO_LL] },
-  { key: "roof_deck", label: "Roof deck", group: "Roof / wind", input: "select", options: [...ROOF_DECK_ATTACHMENT_OPTIONS], extractKey: "roof_deck", products: [...HO_LL] },
-  { key: "roof_deck_attachment", label: "Roof deck attachment", group: "Roof / wind", input: "select", options: [...ROOF_DECK_ATTACHMENT_OPTIONS], extractKey: "roof_deck_attachment", products: [...HO_LL] },
-  { key: "roof_to_wall", label: "Roof-to-wall connection", group: "Roof / wind", input: "select", options: [...ROOF_TO_WALL_OPTIONS], extractKey: "roof_to_wall", products: [...HO_LL] },
+  { key: "roof_year", label: "Roof year", group: "Wind Mitigation", input: "number", extractKey: "roof_year", products: [...HO_LL] },
+  { key: "roof_covering", label: "Roof covering", group: "Wind Mitigation", input: "select", options: [...ROOF_COVERING_OPTIONS], extractKey: "roof_covering", products: [...HO_LL] },
+  { key: "roof_shape", label: "Roof shape", group: "Wind Mitigation", input: "select", options: [...ROOF_SHAPE_OPTIONS], extractKey: "roof_shape", products: [...HO_LL] },
+  { key: "roof_deck", label: "Roof deck", group: "Wind Mitigation", input: "select", options: [...ROOF_DECK_ATTACHMENT_OPTIONS], extractKey: "roof_deck", products: [...HO_LL] },
+  { key: "roof_deck_attachment", label: "Roof deck attachment", group: "Wind Mitigation", input: "select", options: [...ROOF_DECK_ATTACHMENT_OPTIONS], extractKey: "roof_deck_attachment", products: [...HO_LL] },
+  { key: "roof_to_wall", label: "Roof-to-wall connection", group: "Wind Mitigation", input: "select", options: [...ROOF_TO_WALL_OPTIONS], extractKey: "roof_to_wall", products: [...HO_LL] },
   {
     key: "opening_protection",
     label: "Opening protection",
-    group: "Roof / wind",
+    group: "Wind Mitigation",
     input: "select",
     options: [...OPENING_PROTECTION_OPTIONS],
     extractKey: "opening_protection",
     products: [...HO_LL],
   },
-  { key: "secondary_water", label: "Secondary water resistance", group: "Roof / wind", input: "select", options: [...YES_NO_UNKNOWN_OPTIONS], extractKey: "swr", products: [...HO_LL] },
-  { key: "terrain", label: "Terrain", group: "Roof / wind", input: "select", options: [...TERRAIN_OPTIONS], extractKey: "terrain", products: [...HO_LL] },
-  { key: "wind_speed", label: "Design wind speed", group: "Roof / wind", input: "select", options: [...WIND_SPEED_OPTIONS], extractKey: "wind_speed", products: [...HO_LL] },
-  { key: "wind_mit_form", label: "Wind mit form", group: "Roof / wind", extractKey: "wind_mit_form", products: [...HO_LL] },
-  { key: "wind_mit_date", label: "Wind mit date", group: "Roof / wind", extractKey: "wind_mit_date", products: [...HO_LL] },
-  { key: "wind_mit_inspector", label: "Wind mit inspector", group: "Roof / wind", extractKey: "wind_mit_inspector", products: [...HO_LL] },
-  { key: "inspection_company", label: "Inspection company", group: "Roof / wind", extractKey: "inspection_company", products: [...HO_LL] },
-  { key: "license_or_certificate_number", label: "License or certificate #", group: "Roof / wind", extractKey: "license_or_certificate_number", products: [...HO_LL] },
-  { key: "building_code", label: "Building code", group: "Roof / wind", input: "select", options: [...BUILDING_CODE_OPTIONS], extractKey: "building_code", products: [...HO_LL] },
+  { key: "secondary_water", label: "Secondary water resistance", group: "Wind Mitigation", input: "select", options: [...YES_NO_UNKNOWN_OPTIONS], extractKey: "swr", products: [...HO_LL] },
+  { key: "terrain", label: "Terrain", group: "Wind Mitigation", input: "select", options: [...TERRAIN_OPTIONS], extractKey: "terrain", products: [...HO_LL] },
+  { key: "wind_speed", label: "Design wind speed", group: "Wind Mitigation", input: "select", options: [...WIND_SPEED_OPTIONS], extractKey: "wind_speed", products: [...HO_LL] },
+  { key: "wind_mit_form", label: "Wind mit form", group: "Wind Mitigation", extractKey: "wind_mit_form", products: [...HO_LL] },
+  { key: "wind_mit_date", label: "Wind mit date", group: "Wind Mitigation", extractKey: "wind_mit_date", products: [...HO_LL] },
+  { key: "wind_mit_inspector", label: "Wind mit inspector", group: "Wind Mitigation", extractKey: "wind_mit_inspector", products: [...HO_LL] },
+  { key: "inspection_company", label: "Inspection company", group: "Wind Mitigation", extractKey: "inspection_company", products: [...HO_LL] },
+  { key: "license_or_certificate_number", label: "License or certificate #", group: "Wind Mitigation", extractKey: "license_or_certificate_number", products: [...HO_LL] },
+  { key: "building_code", label: "Building code", group: "Wind Mitigation", input: "select", options: [...BUILDING_CODE_OPTIONS], extractKey: "building_code", products: [...HO_LL] },
   {
     key: "protection_class",
     label: "Protection class",
@@ -240,23 +241,23 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "business_on_premises", label: "Business on premises", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "mobile_home", label: "Mobile / manufactured", group: "Hazards", input: "select", options: [...YES_NO_OPTIONS], extractKey: "mobile_home", products: [...HO_LL] },
   { key: "acres", label: "Acres", group: "Hazards", input: "number" },
-  { key: "date_inspected", label: "Date inspected", group: "4-point", extractKey: "date_inspected", products: [...HO_LL] },
-  { key: "four_point_date", label: "4-point date", group: "4-point", extractKey: "four_point_date", products: [...HO_LL] },
-  { key: "four_point_result", label: "4-point result", group: "4-point", extractKey: "four_point_result", products: [...HO_LL] },
-  { key: "plumbing_year", label: "Plumbing year", group: "4-point", input: "number", extractKey: "plumbing_year", products: [...HO_LL] },
-  { key: "electrical_year", label: "Electrical year", group: "4-point", input: "number", extractKey: "electrical_year", products: [...HO_LL] },
-  { key: "electrical_updated", label: "Electrical last updated", group: "4-point", input: "number", extractKey: "electrical_updated", products: [...HO_LL] },
-  { key: "electrical_update_type", label: "Electrical update type", group: "4-point", input: "select", options: [...FOUR_POINT_UPDATE_TYPE_OPTIONS], products: [...HO_LL] },
-  { key: "electrical_circuit_amps", label: "Electrical Circuit Amps", group: "4-point", input: "number", extractKey: "electrical_circuit_amps", products: [...HO_LL] },
-  { key: "primary_plumbing_type", label: "Primary plumbing type", group: "4-point", input: "select", options: [...PRIMARY_PLUMBING_OPTIONS], extractKey: "primary_plumbing_type", products: [...HO_LL] },
-  { key: "plumbing_update_type", label: "Plumbing update type", group: "4-point", input: "select", options: [...FOUR_POINT_UPDATE_TYPE_OPTIONS], products: [...HO_LL] },
-  { key: "water_heater_year", label: "Water heater year", group: "4-point", input: "number", extractKey: "water_heater_year", products: [...HO_LL] },
-  { key: "water_heater_location", label: "Water heater location", group: "4-point", input: "select", options: [...WATER_HEATER_LOCATION_OPTIONS], products: [...HO_LL] },
-  { key: "primary_heat", label: "Primary heat", group: "4-point", input: "select", options: [...PRIMARY_HEAT_OPTIONS], extractKey: "primary_heat", products: [...HO_LL] },
-  { key: "heat_update_type", label: "Heat update type", group: "4-point", input: "select", options: [...FOUR_POINT_UPDATE_TYPE_OPTIONS], products: [...HO_LL] },
-  { key: "hvac_year", label: "HVAC year", group: "4-point", input: "number", extractKey: "hvac_year", products: [...HO_LL] },
-  { key: "roof_condition", label: "Roof condition (4-point)", group: "4-point", products: [...HO_LL] },
-  { key: "roof_update_type", label: "Roof update type", group: "4-point", input: "select", options: [...ROOF_UPDATE_TYPE_OPTIONS], products: [...HO_LL] },
+  { key: "date_inspected", label: "Date inspected", group: "Four-Point Inspection", extractKey: "date_inspected", products: [...HO_LL] },
+  { key: "four_point_date", label: "4-point date", group: "Four-Point Inspection", extractKey: "four_point_date", products: [...HO_LL] },
+  { key: "four_point_result", label: "4-point result", group: "Four-Point Inspection", extractKey: "four_point_result", products: [...HO_LL] },
+  { key: "plumbing_year", label: "Plumbing year", group: "Four-Point Inspection", input: "number", extractKey: "plumbing_year", products: [...HO_LL] },
+  { key: "electrical_year", label: "Electrical year", group: "Four-Point Inspection", input: "number", extractKey: "electrical_year", products: [...HO_LL] },
+  { key: "electrical_updated", label: "Electrical last updated", group: "Four-Point Inspection", input: "number", extractKey: "electrical_updated", products: [...HO_LL] },
+  { key: "electrical_update_type", label: "Electrical update type", group: "Four-Point Inspection", input: "select", options: [...FOUR_POINT_UPDATE_TYPE_OPTIONS], products: [...HO_LL] },
+  { key: "electrical_circuit_amps", label: "Electrical Circuit Amps", group: "Four-Point Inspection", input: "number", extractKey: "electrical_circuit_amps", products: [...HO_LL] },
+  { key: "primary_plumbing_type", label: "Primary plumbing type", group: "Four-Point Inspection", input: "select", options: [...PRIMARY_PLUMBING_OPTIONS], extractKey: "primary_plumbing_type", products: [...HO_LL] },
+  { key: "plumbing_update_type", label: "Plumbing update type", group: "Four-Point Inspection", input: "select", options: [...FOUR_POINT_UPDATE_TYPE_OPTIONS], products: [...HO_LL] },
+  { key: "water_heater_year", label: "Water heater year", group: "Four-Point Inspection", input: "number", extractKey: "water_heater_year", products: [...HO_LL] },
+  { key: "water_heater_location", label: "Water heater location", group: "Four-Point Inspection", input: "select", options: [...WATER_HEATER_LOCATION_OPTIONS], products: [...HO_LL] },
+  { key: "primary_heat", label: "Primary heat", group: "Four-Point Inspection", input: "select", options: [...PRIMARY_HEAT_OPTIONS], extractKey: "primary_heat", products: [...HO_LL] },
+  { key: "heat_update_type", label: "Heat update type", group: "Four-Point Inspection", input: "select", options: [...FOUR_POINT_UPDATE_TYPE_OPTIONS], products: [...HO_LL] },
+  { key: "hvac_year", label: "HVAC year", group: "Four-Point Inspection", input: "number", extractKey: "hvac_year", products: [...HO_LL] },
+  { key: "roof_condition", label: "Roof condition (4-point)", group: "Four-Point Inspection", products: [...HO_LL] },
+  { key: "roof_update_type", label: "Roof update type", group: "Four-Point Inspection", input: "select", options: [...ROOF_UPDATE_TYPE_OPTIONS], products: [...HO_LL] },
   { key: "coverage_a", label: "Coverage A (dwelling)", group: "Coverages", input: "number", extractKey: "coverage_a", products: [...HO_LL] },
   { key: "coverage_b", label: "Coverage B (other structures)", group: "Coverages", input: "number", extractKey: "coverage_b", products: [...HO_LL] },
   { key: "coverage_c", label: "Coverage C (contents)", group: "Coverages", input: "number", extractKey: "coverage_c" },
@@ -294,27 +295,27 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   {
     key: "replacement_cost_estimate",
     label: "RCE / MSB (not Zillow)",
-    group: "Coverages",
+    group: "Cost",
     input: "number",
     extractKey: "replacement_cost_estimate",
     products: [...HO_LL],
   },
-  { key: "rce_source", label: "RCE source", group: "Coverages", products: [...HO_LL] },
-  { key: "named_insured", label: "Named insured (from dec)", group: "Current policy", extractKey: "named_insured" },
-  { key: "current_policy_named_insured", label: "Name insured (policy)", group: "Current policy", extractKey: "current_policy_named_insured" },
+  { key: "rce_source", label: "RCE source", group: "Cost", products: [...HO_LL] },
+  { key: "named_insured", label: "Named insured (from dec)", group: "Current Policy", extractKey: "named_insured" },
+  { key: "current_policy_named_insured", label: "Name insured (policy)", group: "Current Policy", extractKey: "current_policy_named_insured" },
   {
     key: "secondary_named_insured",
     label: "Additional named insured (from dec)",
-    group: "Current policy",
+    group: "Current Policy",
     extractKey: "secondary_named_insured",
   },
-  { key: "current_carrier", label: "Current carrier", group: "Current policy", extractKey: "current_carrier" },
-  { key: "policy_number", label: "Policy number", group: "Current policy", extractKey: "policy_number" },
-  { key: "current_premium", label: "Current premium", group: "Current policy", input: "number", extractKey: "current_premium" },
-  { key: "effective_date", label: "Effective date", group: "Current policy", extractKey: "effective_date" },
-  { key: "expiration_date", label: "Expiration date", group: "Current policy", extractKey: "expiration_date" },
-  { key: "years_with_carrier", label: "Years with carrier", group: "Current policy", input: "number" },
-  { key: "claims_5yr", label: "Claims last 5 years", group: "Current policy", input: "select", options: [...CLAIMS_5YR_OPTIONS] },
+  { key: "current_carrier", label: "Current carrier", group: "Current Policy", extractKey: "current_carrier" },
+  { key: "policy_number", label: "Policy number", group: "Current Policy", extractKey: "policy_number" },
+  { key: "current_premium", label: "Current premium", group: "Current Policy", input: "number", extractKey: "current_premium" },
+  { key: "effective_date", label: "Effective date", group: "Current Policy", extractKey: "effective_date" },
+  { key: "expiration_date", label: "Expiration date", group: "Current Policy", extractKey: "expiration_date" },
+  { key: "years_with_carrier", label: "Years with carrier", group: "Current Policy", input: "number" },
+  { key: "claims_5yr", label: "Claims last 5 years", group: "Current Policy", input: "select", options: [...CLAIMS_5YR_OPTIONS] },
   { key: "mortgagee_name", label: "Mortgagee", group: "Mortgagee", extractKey: "mortgagee" },
   { key: "mortgagee_address", label: "Mortgagee address", group: "Mortgagee", extractKey: "mortgagee_address" },
   { key: "loan_number", label: "Loan number", group: "Mortgagee", extractKey: "loan_number" },
@@ -1294,7 +1295,11 @@ export function fieldsForLine(line: ShopLine, product?: SheetProduct): QuoteFiel
   const identity = skipIdentity ? [] : [...APPLICANT_CORE_FIELDS, ...CO_APPLICANT_FIELDS];
   const raw = dedupeFields([...identity, ...(CATALOG[line] ?? [])]);
   if (!product) return raw;
-  return raw.filter((field) => !field.products || field.products.includes(product));
+  return raw.filter((field) => {
+    if (!field.products || field.products.includes(product)) return true;
+    // HO4 / renters / MDP share the inspection sections with HO and DP forms.
+    return line === "home" && product === "renters" && isInspectionSectionGroup(field.group);
+  });
 }
 
 export function sheetFieldIsVisible(
@@ -1435,7 +1440,7 @@ export function groupFields(
     if (existing) existing.fields.push(field);
     else groups.push({ group: field.group, fields: [field] });
   }
-  return groups;
+  return line === "home" ? orderHomeGroups(groups) : groups;
 }
 
 export function homeFieldCount(): number {

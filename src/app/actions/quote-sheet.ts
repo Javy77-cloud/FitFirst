@@ -158,6 +158,7 @@ import { dealTitleForRecords } from "@/lib/deals/deal-title";
 import { markShopFlowStaleAfterRiskChange, persistSheetRecheckCue } from "@/lib/deals/shop-flow-persist";
 import { restoreDealSourceDocuments } from "@/lib/documents/restore-deal-docs";
 import { filledKeysAreRatingCritical, ratingCriticalChanged } from "@/lib/deals/rating-critical";
+import { carrierTransferValues } from "@/lib/quote-sheet/home-inspections";
 import { sheetValuesFingerprint } from "@/lib/deals/shop-flow";
 
 function str(form: FormData, key: string) {
@@ -314,7 +315,10 @@ export async function persistQuoteSheetValues(
     // Keep Markets complete — cue Quotes Recheck; clear unlock only if rating-critical.
     await persistSheetRecheckCue(dealId, line);
     await markShopFlowStaleAfterRiskChange(dealId, line, {
-      ratingCritical: ratingCriticalChanged(sheet.values, values),
+      ratingCritical: ratingCriticalChanged(
+        line === "home" ? carrierTransferValues(sheet.values) : sheet.values,
+        line === "home" ? carrierTransferValues(values) : values,
+      ),
     });
   }
   // Sheet save / confirm / stale cue must never unlink or hide source docs.
@@ -1895,6 +1899,7 @@ export async function runFillQuoteSheet(
         overwriteWeakCheck: isFourPoint,
         recordMismatches: true,
         mismatchIncomingLabel: isFourPoint ? "4pt" : "Gemini",
+        docType: doc.docType,
       });
       values = applied.values;
       aggregateFilled.push(...applied.filledKeys);

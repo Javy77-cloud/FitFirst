@@ -11,6 +11,7 @@ import {
 } from "./records-check";
 import { collapseAutoDriverSheet, retargetAutoDriverFields } from "./auto-driver-dedupe";
 import { streetsAreSameLocation } from "./home-address-fill";
+import { applyInspectionExistenceFromDoc } from "./home-inspections";
 import { isSheetFormMetaKey, submittedSheetValues } from "./save-values";
 import {
   normalizeAutoDollarLimit,
@@ -139,6 +140,11 @@ export type ApplyFillOptions = {
   recordMismatches?: boolean;
   /** Label for mismatch lines (Gemini / 4pt / API). */
   mismatchIncomingLabel?: string;
+  /**
+   * Classified source document. Home inspection checkboxes turn on only for
+   * a real wind-mit or four-point doc — never a dec or liability policy.
+   */
+  docType?: string | null;
 };
 
 /** CHECK cells from weak sources that a 4pt re-Fill may replace. */
@@ -397,7 +403,9 @@ export function applyExtractedToSheet(
     return { values: collapsed, filledKeys, skippedKeys };
   }
 
-  return { values, filledKeys, skippedKeys };
+  const stamped =
+    line === "home" ? applyInspectionExistenceFromDoc(values, options?.docType, source) : values;
+  return { values: stamped, filledKeys, skippedKeys };
 }
 
 /** Gap-fill blanks from public records. Uploaded dec / agent / Javy always win. */

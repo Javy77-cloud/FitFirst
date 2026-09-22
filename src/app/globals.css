@@ -1180,13 +1180,20 @@ button:enabled:not([data-ff-no-hover]):active {
   width: 100%;
   box-sizing: border-box;
   padding: 0.4rem 0.75rem;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   background: #002868 !important;
   color: #ffffff !important;
   border-bottom: 1px solid var(--ff-sidebar-line, #1a3d7a);
+}
+.ff-sheet-group-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1.25;
+  text-transform: uppercase;
 }
 .ff-sheet-group-header [data-ff-section-density-control],
 .ff-sheet-group-header--emphasis [data-ff-section-density-control] {

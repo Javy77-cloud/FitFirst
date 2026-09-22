@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Contact, Document, QuoteSheet, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
 import { groupFields } from "@/lib/quote-sheet/catalog";
+import { inspectionSectionDefaultOpen } from "@/lib/quote-sheet/home-inspections";
 import { sheetCounts } from "@/lib/quote-sheet/apply";
 import { AddressAutofill, type AddressFillMap } from "@/components/address-autofill";
 import { MarkMappingWrong } from "@/components/deal/mark-mapping-wrong";
@@ -139,7 +140,11 @@ export function QuoteSheetForm({
           key={group.group}
           title={group.group}
           summary={sheetGroupSummary(group.fields, sheet.values)}
-          open={printable || editing || sheetGroupNeedsAttention(group.fields, sheet.values)}
+          open={
+            line === "home" && !inspectionSectionDefaultOpen(group.group, sheet.values)
+              ? false
+              : printable || editing || sheetGroupNeedsAttention(group.fields, sheet.values)
+          }
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 print:break-inside-avoid">
             {group.fields.map((field) => {

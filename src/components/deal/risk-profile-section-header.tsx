@@ -51,6 +51,8 @@ export function RiskProfileSectionBar({
   onDensityChange,
   extra,
   choices,
+  collapsed,
+  onToggleCollapse,
 }: {
   title: string;
   sectionId: string;
@@ -58,6 +60,8 @@ export function RiskProfileSectionBar({
   onDensityChange: (density: RiskProfileDensity) => void;
   extra?: ReactNode;
   choices?: readonly RiskProfileDensity[];
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   return (
     <div
@@ -65,8 +69,21 @@ export function RiskProfileSectionBar({
       style={SHEET_GROUP_HEADER_STYLE}
       data-ff-sheet-group-header={title}
     >
-      <span className="min-w-0">
-        {title}
+      <span className="flex min-w-0 items-center gap-2">
+        {onToggleCollapse ? (
+          <button
+            type="button"
+            className="shrink-0 rounded-sm border border-white/40 px-1.5 py-0.5 text-[11px] font-semibold normal-case tracking-normal text-white"
+            data-ff-section-toggle={title}
+            aria-expanded={collapsed ? "false" : "true"}
+            onClick={onToggleCollapse}
+          >
+            {collapsed ? "Expand" : "Collapse"}
+          </button>
+        ) : null}
+        <span className="ff-sheet-group-title min-w-0" data-ff-section-title={title}>
+          {title}
+        </span>
         {extra}
       </span>
       <SectionDensityControl
