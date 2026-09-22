@@ -82,6 +82,7 @@ export type RadarDealCard = {
   x: number;
   y: number;
   closed: boolean;
+  archivedAt: string | null;
   spark: number[];
   updatedAt: string | null;
   inboxCue?: string | null;
@@ -412,6 +413,7 @@ export function presentRadarCards(
         x: pos.x,
         y: pos.y,
         closed,
+        archivedAt: parseDate(deal.archivedAt)?.toISOString() ?? null,
         updatedAt: parseDate(deal.updatedAt)?.toISOString() ?? createdAt.toISOString(),
         spark: sparkBuckets(
           [lastCommAt, touches.lastDocByDeal.get(deal.id) ?? null, touches.lastQuoteByDeal.get(deal.id) ?? null, createdAt].filter(
