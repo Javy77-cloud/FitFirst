@@ -22,6 +22,7 @@ import {
   MASTER_FILL_REVIEW_NUDGE,
   MASTER_FILL_SKIP_NO_DOCS,
   MASTER_FILL_STEP_DEAL,
+  MASTER_FILL_STEP_PROPERTY,
   MASTER_FILL_STEP_TIMEOUT_MS,
   isMasterFillDocList,
   isMasterFillStepResult,
@@ -239,12 +240,37 @@ export function MasterSheetFillButton({
           stepResult = { ...stepResult, error: recovered.error };
         }
         results.push(stepResult);
-        if (stepResult.error) {
+        if (stepResult.error && step.id !== "property") {
           setSummary(masterFillDoneSummary(results));
           setDone(true);
           flashAction(stepResult.error, "error");
           router.refresh();
           return;
+        }
+      }
+      if (line !== "auto") {
+        currentLabel = MASTER_FILL_STEP_PROPERTY;
+        setStatus(MASTER_FILL_STEP_PROPERTY);
+        try {
+          const againRaw = await withClientDeadline(
+            fillMasterSheetStep({ dealId, line, step: "property" }),
+            MASTER_FILL_STEP_TIMEOUT_MS,
+            masterFillStepTimeoutMessage(MASTER_FILL_STEP_PROPERTY),
+          );
+          if (isMasterFillStepResult(againRaw) && (againRaw.filledCount > 0 || againRaw.error)) {
+            results.push({
+              ...againRaw,
+              note: [againRaw.note, "Property after docs"].filter(Boolean).join(" · "),
+            });
+          }
+        } catch (error) {
+          results.push({
+            step: "property",
+            filledCount: 0,
+            skippedCount: 0,
+            error: masterFillCaughtMessage(MASTER_FILL_STEP_PROPERTY, error),
+            note: "Property after docs",
+          });
         }
       }
       const text = masterFillDoneSummary(results);

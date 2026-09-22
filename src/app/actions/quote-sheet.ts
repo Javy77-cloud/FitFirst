@@ -88,6 +88,7 @@ import {
   enrichPropertyOnAddressConfirm,
 } from "@/lib/property-enrichment/service";
 import { applyPropertyRecordsToSheet } from "@/lib/florida-property/apply";
+import { moveSoleSheetMailingToProperty } from "@/lib/quote-sheet/home-address-fill";
 import { geocodePropertyAddress } from "@/lib/getparceldata/geocode";
 import {
   MILES_TO_COAST_SHEET_KEY,
@@ -629,6 +630,7 @@ export type PropertyFillRunResult = {
   sourcesUsed: string[];
   message: string;
   toast: string;
+  warnings?: string[];
 };
 
 /** Core Property Fill — returns counts (no redirect). Used by master Fill + form action. */
@@ -637,16 +639,19 @@ export async function runFillFromPropertyRecords(
   lineRaw: ShopLine,
 ): Promise<PropertyFillRunResult> {
   const sheet = await ensureQuoteSheet(dealId, lineRaw);
-  // Property Fill uses quote-sheet property address only (not applicant/Lead/PDF).
+  // Property Fill geocodes the Risk Profile property address.
+  // A sole mailing (Deal Details misfile) is moved onto property first so APIs can run.
   // One button → County PA + FloodZoneMap + FEMA (free) → GetParcelData → PermitStack.
   // Docs / Gemini stay on the separate docs Fill step.
-  const sheetAddr = addressFromSheet(sheet.values);
+  const freshForAddress = await loadFreshSheetValues(sheet.id, sheet.values);
+  const healed = moveSoleSheetMailingToProperty(freshForAddress);
+  const sheetAddr = addressFromSheet(healed.values);
   const address = {
     address1: sheetAddr.address1,
     city: sheetAddr.city,
     state: sheetAddr.state,
     zip: sheetAddr.zip,
-    county: sheet.values.county?.value?.trim() || "",
+    county: healed.values.county?.value?.trim() || "",
   };
   const [apiKey, permitStackKey] = await Promise.all([
     loadGetParcelDataApiKey(),
@@ -654,11 +659,16 @@ export async function runFillFromPropertyRecords(
   ]);
   const bundle = await orchestratePropertyFill({ address, apiKey, permitStackKey });
   // Re-read immediately before write — Gemini Fill may have landed while parcel APIs ran.
-  const freshPropertyValues = await loadFreshSheetValues(sheet.id, sheet.values);
-  const applied =
+  const freshPropertyValues = await loadFreshSheetValues(sheet.id, healed.values);
+  const moved = moveSoleSheetMailingToProperty(freshPropertyValues);
+  const appliedBase =
     bundle.status === "ok"
-      ? applyPropertyRecordsToSheet(lineRaw, freshPropertyValues, bundle.facts)
-      : { values: freshPropertyValues, filledKeys: [] as string[], skippedKeys: [] as string[] };
+      ? applyPropertyRecordsToSheet(lineRaw, moved.values, bundle.facts)
+      : { values: moved.values, filledKeys: [] as string[], skippedKeys: [] as string[] };
+  const applied = {
+    ...appliedBase,
+    filledKeys: [...moved.filledKeys, ...appliedBase.filledKeys],
+  };
 
   // Free INTERNAL miles-to-coast when coords/address available — empty-only (same overwrite rules).
   let coastCoords: { lat?: number; lng?: number } = {
@@ -671,7 +681,7 @@ export async function runFillFromPropertyRecords(
   }
   const withCoast = applyMilesToCoastIfBlank(applied, coastCoords);
 
-  if (bundle.status !== "ok" && !withCoast.filledKeys.includes(MILES_TO_COAST_SHEET_KEY)) {
+  if (bundle.status !== "ok" && withCoast.filledKeys.length === 0) {
     return {
       status: bundle.status,
       filledKeys: [],
@@ -679,6 +689,7 @@ export async function runFillFromPropertyRecords(
       sourcesUsed: bundle.sourcesUsed,
       message: bundle.message,
       toast: "",
+      warnings: bundle.warnings,
     };
   }
 
@@ -737,6 +748,7 @@ export async function runFillFromPropertyRecords(
     skippedKeys: withCoast.skippedKeys,
     sourcesUsed: bundle.sourcesUsed,
     message: bundle.message,
+    warnings: bundle.warnings,
     toast,
   };
 }
@@ -1129,27 +1141,41 @@ async function fillMasterSheetStepInner(input: {
     }
     const result = await runFillFromPropertyRecords(dealId, lineRaw);
     revalidatePath(`/deals/${dealId}`);
+    const warningNote = (result.warnings ?? []).filter((row) => row.trim()).join(" · ");
+    const withWarning = (note?: string) => [note, warningNote].filter(Boolean).join(" · ") || undefined;
     if (result.status === "no_address") {
-      return { step, filledCount: 0, skippedCount: 0, note: MASTER_FILL_SKIP_NO_ADDRESS };
+      return { step, filledCount: 0, skippedCount: 0, note: withWarning(MASTER_FILL_SKIP_NO_ADDRESS) };
     }
     if (result.status === "needs_key") {
-      return { step, filledCount: 0, skippedCount: 0, note: MASTER_FILL_SKIP_NEEDS_KEY };
+      return {
+        step,
+        filledCount: result.filledKeys.length,
+        skippedCount: 0,
+        note: withWarning(MASTER_FILL_SKIP_NEEDS_KEY),
+      };
     }
     if (result.status === "not_found") {
-      return { step, filledCount: 0, skippedCount: 0, note: MASTER_FILL_SKIP_NOT_FOUND };
+      return {
+        step,
+        filledCount: result.filledKeys.length,
+        skippedCount: result.skippedKeys.length,
+        note: withWarning(MASTER_FILL_SKIP_NOT_FOUND),
+      };
     }
     if (result.status !== "ok") {
       return {
         step,
-        filledCount: 0,
-        skippedCount: 0,
+        filledCount: result.filledKeys.length,
+        skippedCount: result.skippedKeys.length,
         error: result.message || "Property records error",
+        note: warningNote || undefined,
       };
     }
     return {
       step,
       filledCount: result.filledKeys.length,
       skippedCount: result.skippedKeys.length,
+      note: warningNote || undefined,
     };
   }
 

@@ -102,6 +102,7 @@ const LEGACY_INSURANCE_TYPE_TO_FORM: Record<string, QuotingFormId> = {
   "Boat/Watercraft": "BOAT",
   MH: "MHO",
   MHO: "MHO",
+  MMHO: "MHO",
   MDP: "MDP",
   "Mobile Home": "MHO",
   "Mobile Home Owners": "MHO",

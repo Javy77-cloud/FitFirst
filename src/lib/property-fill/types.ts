@@ -25,5 +25,7 @@ export type PropertyFillBundle = {
   facts: PropertyRecordsFact[];
   sourcesUsed: PropertyFillSourceId[];
   message: string;
+  /** Partial source failures. Facts that succeeded are still in `facts`. */
+  warnings?: string[];
   status: "ok" | "needs_key" | "no_address" | "not_found" | "error";
 };

@@ -4,7 +4,16 @@
  */
 
 export type GeocodeResult =
-  | { ok: true; lat: number; lng: number }
+  | {
+      ok: true;
+      lat: number;
+      lng: number;
+      /** ArcGIS Subregion, "County" suffix removed so county PA adapters match. */
+      county?: string;
+      city?: string;
+      state?: string;
+      zip?: string;
+    }
   | { ok: false; message: string };
 
 export type GeocodeAddress = {
@@ -34,20 +43,36 @@ export async function geocodePropertyAddress(
   if (!singleLine) {
     return { ok: false, message: "Add a property address on the sheet first. No lookup ran." };
   }
-  const url = `${ARCGIS_GEOCODE_URL}?f=json&singleLine=${encodeURIComponent(singleLine)}&maxLocations=1`;
+  const url = `${ARCGIS_GEOCODE_URL}?f=json&singleLine=${encodeURIComponent(singleLine)}&maxLocations=1&outFields=Subregion,City,Region,Postal`;
   try {
     const res = await fetchImpl(url, { signal: AbortSignal.timeout(6000) });
     if (!res.ok) {
       return { ok: false, message: `Geocoder returned ${res.status}. No parcel lookup ran.` };
     }
     const geoJson = (await res.json()) as {
-      candidates?: { location?: { x: number; y: number }; score?: number }[];
+      candidates?: {
+        location?: { x: number; y: number };
+        score?: number;
+        attributes?: Record<string, unknown>;
+      }[];
     };
-    const loc = geoJson.candidates?.[0]?.location;
+    const candidate = geoJson.candidates?.[0];
+    const loc = candidate?.location;
     if (!loc || !Number.isFinite(loc.x) || !Number.isFinite(loc.y)) {
       return { ok: false, message: "Could not geocode that property address. No parcel lookup ran." };
     }
-    return { ok: true, lat: loc.y, lng: loc.x };
+    const attrs = candidate?.attributes ?? {};
+    const text = (key: string) => String(attrs[key] ?? "").trim();
+    const county = text("Subregion").replace(/\s+county$/i, "").trim();
+    return {
+      ok: true,
+      lat: loc.y,
+      lng: loc.x,
+      county: county || undefined,
+      city: text("City") || undefined,
+      state: text("Region") || undefined,
+      zip: text("Postal").slice(0, 5) || undefined,
+    };
   } catch {
     return { ok: false, message: "Geocoder was not reachable. No parcel lookup ran." };
   }

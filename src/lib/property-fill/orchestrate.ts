@@ -48,6 +48,7 @@ export async function orchestratePropertyFill(
       facts: [],
       sourcesUsed: [],
       message: NO_ADDRESS_MESSAGE,
+      warnings: [],
       toast: "Add a property address on the quote sheet first.",
       lookup,
     };
@@ -56,7 +57,14 @@ export async function orchestratePropertyFill(
   const keyReady = getParcelDataKeyReady(input.apiKey);
   const permitKeyReady = permitStackKeyReady(input.permitStackKey);
   const geo = await geocodePropertyAddress(input.address, fetchImpl);
-  const addressLine = formatPropertyAddress(input.address);
+  const warnings: string[] = [];
+  if (!geo.ok) warnings.push(geo.message);
+  const countyName = (input.address.county ?? "").trim() || (geo.ok ? geo.county ?? "" : "");
+  if (!countyName) {
+    warnings.push("County property records skipped — no county on the address. Flood lookup still runs.");
+  }
+  const countyAddress = { ...input.address, county: countyName };
+  const addressLine = formatPropertyAddress(countyAddress);
 
   const getParcelPromise: Promise<GetParcelDataSearchResult> = keyReady
     ? searchGetParcelDataRecords(
@@ -86,7 +94,7 @@ export async function orchestratePropertyFill(
         called: false,
       });
 
-  const countyPromise = factsFromCountyPa(input.address, fetchImpl);
+  const countyPromise = factsFromCountyPa(countyAddress, fetchImpl);
 
   const floodZoneMapPromise = factsFromFloodZoneMap(
     geo.ok
@@ -108,13 +116,40 @@ export async function orchestratePropertyFill(
     femaPromise,
   ]);
 
-  const { facts, sourcesUsed } = mergePropertyFillFacts({
+  if (lookup.status === "needs_key") {
+    warnings.push("GetParcelData key missing — county and flood results still apply.");
+  } else if (lookup.status === "error") {
+    warnings.push(lookup.message || "GetParcelData failed. Other property sources still apply.");
+  }
+  if (permitStack.status === "error") {
+    warnings.push(permitStack.message || "PermitStack failed. Other property sources still apply.");
+  }
+  if (!county.adapterId && countyName) {
+    warnings.push(`No county property adapter for ${countyName}. Flood lookup still runs.`);
+  } else if (county.adapterId && !county.facts.length) {
+    warnings.push(`County property records (${county.adapterId}) returned no fields.`);
+  }
+  if (!floodZoneMapFacts.length && !femaFacts.length) {
+    warnings.push("Flood lookup returned no flood fields.");
+  }
+
+  const { facts: mergedFacts, sourcesUsed } = mergePropertyFillFacts({
     getParcel: lookup.status === "ok" ? lookup.facts : [],
     countyPa: county.facts,
     floodZoneMap: floodZoneMapFacts,
     fema: femaFacts,
     permitStack: permitStack.status === "ok" ? permitStack.facts : [],
   });
+  const facts = [...mergedFacts];
+  if (countyName && !facts.some((fact) => fact.sheetKey === "county")) {
+    facts.push({
+      fieldKey: "county",
+      sheetKey: "county",
+      value: countyName,
+      sourceLabel: geo.ok && geo.county ? "geocode" : "deal details",
+      kind: "county",
+    });
+  }
 
   const vintage =
     (lookup.hit ? parcelVintage(lookup.hit) : "") ||
@@ -132,20 +167,23 @@ export async function orchestratePropertyFill(
         status: "needs_key",
         facts: [],
         sourcesUsed: [],
-        message: lookup.message,
+        message: [lookup.message, ...warnings].filter(Boolean).join(" · "),
+        warnings,
         toast: "property-records-needs-key",
         lookup,
       };
     }
     const status = lookup.status === "error" && permitStack.status === "error" ? "error" : "not_found";
+    const baseMessage =
+      lookup.message ||
+      permitStack.message ||
+      "No parcel fields from county PA, FloodZoneMap, FEMA, GetParcel, or PermitStack.";
     return {
       status,
       facts: [],
       sourcesUsed,
-      message:
-        lookup.message ||
-        permitStack.message ||
-        "No parcel fields from county PA, FloodZoneMap, FEMA, GetParcel, or PermitStack.",
+      message: [baseMessage, ...warnings].filter(Boolean).join(" · "),
+      warnings,
       toast: status === "error" ? "property-records-error" : "property-records-not-found",
       lookup,
     };
@@ -162,8 +200,9 @@ export async function orchestratePropertyFill(
     .join(", ");
 
   const message = [
-    `Merged ${facts.length} field(s) from ${sourceNote} for empty-only fill`,
+    `Merged ${facts.length} field(s) from ${sourceNote || "geocode"} for empty-only fill`,
     vintage ? `vintage ${vintage}` : "",
+    warnings.length ? warnings.join(" · ") : "",
   ]
     .filter(Boolean)
     .join(". ")
@@ -174,6 +213,7 @@ export async function orchestratePropertyFill(
     facts,
     sourcesUsed,
     message,
+    warnings,
     toast: toastForPropertyFill({
       filledCount: facts.length,
       sourcesUsed,

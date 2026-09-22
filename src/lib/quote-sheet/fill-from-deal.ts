@@ -29,6 +29,12 @@ import {
 } from "./commercial-risk-profile";
 import { collapseAutoDriverSheet } from "./auto-driver-dedupe";
 import {
+  mailingSheetLine,
+  propertyOneLiner,
+  quotingFormIsManufacturedHome,
+  resolveHomeRiskAddresses,
+} from "./home-address-fill";
+import {
   DRIVER_BLOCK_FIELDS,
   PERSONAL_DRIVER_CAP,
   unitHasValue,
@@ -563,55 +569,90 @@ export function fillSheetFromDealDetails(
     }
   }
 
-  // Insured / property address (risk + deal insured fields)
-  const insuredStreet = firstFilled(
-    risk?.address1,
-    stored.mailing_address,
-    (input.propertyOneliner ?? "").split("·")[0],
-  );
-  const insuredCity = firstFilled(risk?.city, stored.city, contact?.city, lead?.city);
-  const insuredState = firstFilled(risk?.state, stored.state, contact?.state, lead?.state);
-  const insuredZip = firstFilled(risk?.zip, stored.zip, contact?.zip, lead?.zip);
+  // Home / MHO / HO3 / Flood: property address is the API location.
+  // Mailing stays blank unless Deal Details has a different mailing street.
+  // Commercial keeps the shared mailing_address copy above (business address).
+  const homePropertySheet =
+    !commercialSheet && Object.prototype.hasOwnProperty.call(values, "address1");
+  if (homePropertySheet) {
+    const resolved = resolveHomeRiskAddresses({
+      propertyOneliner: input.propertyOneliner,
+      stored,
+      risk,
+      contact,
+      lead,
+    });
+    put("address1", resolved.property.street);
+    put("city", resolved.property.city);
+    put("state", resolved.property.state);
+    put("zip", resolved.property.zip);
+    put("county", resolved.property.county);
+    put("property_address", propertyOneLiner(resolved.property));
+    if (resolved.mailingReason === "distinct") {
+      put("mailing_address", mailingSheetLine(resolved.mailing, resolved.property));
+      put("mailing_city", resolved.mailing.city);
+      put("mailing_state", resolved.mailing.state);
+      put("mailing_zip", resolved.mailing.zip);
+    }
+    if (
+      quotingFormIsManufacturedHome(
+        input.quotingForm,
+        input.policySubType,
+        stored.insurance_subtype,
+        stored.quoting_form,
+      )
+    ) {
+      put("mobile_home", "yes");
+      put("structure_type", "Manufactured Home");
+    }
+  } else {
+    const insuredStreet = firstFilled(
+      risk?.address1,
+      stored.mailing_address,
+      (input.propertyOneliner ?? "").split("·")[0],
+    );
+    const insuredCity = firstFilled(risk?.city, stored.city, contact?.city, lead?.city);
+    const insuredState = firstFilled(risk?.state, stored.state, contact?.state, lead?.state);
+    const insuredZip = firstFilled(risk?.zip, stored.zip, contact?.zip, lead?.zip);
 
-  put("address1", insuredStreet);
-  put("city", insuredCity);
-  put("state", insuredState);
-  put("zip", insuredZip);
-  put("county", risk?.county);
+    put("address1", insuredStreet);
+    put("city", insuredCity);
+    put("state", insuredState);
+    put("zip", insuredZip);
+    put("county", risk?.county);
 
-  // Mailing / applicant address — contact_mailing_* preferred, else insured
-  const mailStreet = firstFilled(
-    stored.contact_mailing_address,
-    stored.mailing_address,
-    contact?.mailingAddress,
-    lead?.mailingAddress,
-    insuredStreet,
-  );
-  const mailCity = firstFilled(
-    stored.contact_mailing_city,
-    contact?.city,
-    lead?.city,
-    insuredCity,
-  );
-  const mailState = firstFilled(
-    stored.contact_mailing_state,
-    contact?.state,
-    lead?.state,
-    insuredState,
-  );
-  const mailZip = firstFilled(
-    stored.contact_mailing_zip,
-    contact?.zip,
-    lead?.zip,
-    insuredZip,
-  );
+    const mailStreet = firstFilled(
+      stored.contact_mailing_address,
+      stored.mailing_address,
+      contact?.mailingAddress,
+      lead?.mailingAddress,
+      insuredStreet,
+    );
+    const mailCity = firstFilled(
+      stored.contact_mailing_city,
+      contact?.city,
+      lead?.city,
+      insuredCity,
+    );
+    const mailState = firstFilled(
+      stored.contact_mailing_state,
+      contact?.state,
+      lead?.state,
+      insuredState,
+    );
+    const mailZip = firstFilled(
+      stored.contact_mailing_zip,
+      contact?.zip,
+      lead?.zip,
+      insuredZip,
+    );
 
-  put("mailing_address", mailStreet);
-  put("applicant_address", mailStreet);
-  // Some sheets use discrete mailing city/state/zip — only fill if those keys exist blank later via put
-  put("mailing_city", mailCity);
-  put("mailing_state", mailState);
-  put("mailing_zip", mailZip);
+    put("mailing_address", mailStreet);
+    put("applicant_address", mailStreet);
+    put("mailing_city", mailCity);
+    put("mailing_state", mailState);
+    put("mailing_zip", mailZip);
+  }
 
   put("current_carrier", firstFilled(input.currentCarrier, stored.current_carrier));
 
