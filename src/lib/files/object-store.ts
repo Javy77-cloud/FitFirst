@@ -91,19 +91,6 @@ export function blobPathnameDecoded(url: string): string | null {
   }
 }
 
-async function headPrivateBlob(urlOrPathname: string): Promise<{ size: number } | null> {
-  try {
-    const { head } = await import("@vercel/blob");
-    const meta = await head(urlOrPathname);
-    if (meta && typeof meta.size === "number" && meta.size > 0) {
-      return { size: meta.size };
-    }
-  } catch {
-    /* missing token, wrong access, or not found */
-  }
-  return null;
-}
-
 async function readPrivateBlob(urlOrPathname: string): Promise<Buffer | null> {
   const attempts: Array<{ access: "private"; useCache?: boolean }> = [
     { access: "private", useCache: false },
@@ -195,22 +182,13 @@ async function writeLocalFile(relPath: string, buffer: Buffer): Promise<string> 
 }
 
 /**
- * Lightweight existence check for preview probes — prefer Blob head() so we do
- * not download the full PDF just to decide if View should open.
+ * Existence check for preview probes. Always requires a real byte read —
+ * Blob head() alone can succeed while get() streams empty, which previously
+ * mounted a blank PDF iframe after probe said ready.
  */
 export async function probeStoredFile(storagePath: string): Promise<boolean> {
   const raw = (storagePath ?? "").trim();
   if (!raw) return false;
-  if (isRemoteStoragePath(raw)) {
-    const pathname = blobPathnameFromUrl(raw);
-    if (pathname) {
-      if (await headPrivateBlob(raw)) return true;
-      if (await headPrivateBlob(pathname)) return true;
-      const decoded = blobPathnameDecoded(raw);
-      if (decoded && decoded !== pathname && (await headPrivateBlob(decoded))) return true;
-      // Fall through to a real read when head is unavailable (token/OIDC quirks).
-    }
-  }
   const bytes = await readStoredFile(raw);
   return Boolean(bytes && bytes.length > 0);
 }
