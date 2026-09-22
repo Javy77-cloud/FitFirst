@@ -93,7 +93,7 @@ describe("activity board and radar glance", () => {
     expect(css).not.toMatch(/ff-list-comms/);
     expect(css).toMatch(/ff-radar-banner/);
     expect(css).toMatch(/ff-radar-bars/);
-    expect(css).toMatch(/\.ff-inbox-row\.is-read \{[^}]*#ebe9e5/);
+    expect(css).toMatch(/\.ff-inbox-row\.is-read \{[^}]*#f1efeb/);
     expect(css).toMatch(/\.ff-inbox-row\.is-unread \{[^}]*#fff/);
     expect(css).toMatch(/\.ff-inbox-row:hover \{[^}]*box-shadow/);
     expect(css).not.toMatch(/\.ff-inbox-row\.is-read:hover \{[^}]*background/);

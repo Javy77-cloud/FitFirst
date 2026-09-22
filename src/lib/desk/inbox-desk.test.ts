@@ -155,8 +155,9 @@ describe("inbox desk presentation", () => {
     expect(readFileSync("src/lib/desk/inbox-engine.ts", "utf8")).toMatch(
       /selectedId \? markDeskThreadRead\(live\.threads, selectedId\)/,
     );
-    expect(chrome).toMatch(/\.ff-inbox-row\.is-read \{[^}]*#ebe9e5/);
-    expect(chrome).toMatch(/\[data-ff-inbox-band="read"\][\s\S]*#ebe9e5/);
+    expect(chrome).toMatch(/\.ff-inbox-row\.is-read \{[^}]*#f1efeb/);
+    expect(chrome).toMatch(/\[data-ff-inbox-band="read"\][\s\S]*#f1efeb/);
+    expect(chrome).toMatch(/\[data-ff-inbox-band="unread"\][\s\S]*#fff/);
     expect(chrome).toMatch(/\.ff-inbox-row\.is-unread \{[^}]*#fff/);
     expect(chrome).toMatch(/--ff-inbox-open-edge: var\(--ff-red\)/);
     expect(chrome).toMatch(/\.ff-inbox-row\.is-selected \{[^}]*#dae8fb/);
@@ -167,7 +168,8 @@ describe("inbox desk presentation", () => {
     expect(chrome).toMatch(/\.ff-inbox-detail \{[^}]*var\(--ff-inbox-open-edge\)/);
     expect(chrome).not.toMatch(/\.ff-inbox-row\.is-selected \{[^}]*var\(--ff-navy\)/);
     expect(chrome).not.toMatch(/#f2f6fc/);
-    expect(chrome).not.toMatch(/#d8d4ce|#b6d2f8/);
+    expect(chrome).not.toMatch(/#d8d4ce|#b6d2f8|#ebe9e5/);
+    expect(chrome).not.toMatch(/\.ff-inbox-row\.is-unread \{[^}]*color-mix/);
     expect(chrome).not.toMatch(/\.ff-inbox-row\.is-selected\.is-read \{[^}]*color-mix/);
     expect(chrome).toMatch(/\.ff-inbox-row-from \{[\s\S]*color: var\(--ff-ink\);[\s\S]*font-size: 0\.9rem;[\s\S]*font-weight: 700;/);
     expect(chrome).toMatch(/\.ff-inbox-row-subject \{[\s\S]*color: var\(--ff-ink\);[\s\S]*font-size: 0\.88rem;[\s\S]*font-weight: 700;/);
