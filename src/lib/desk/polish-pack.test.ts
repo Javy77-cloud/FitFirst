@@ -80,7 +80,6 @@ describe("activity board and radar glance", () => {
     expect(source("src/components/deals/deals-host-list.tsx")).toMatch(/ActivityGlyph/);
     expect(source("src/components/deals/deals-host-list.tsx")).not.toMatch(/>Comms</);
     expect(source("src/components/renewals/renewals-host-list.tsx")).toMatch(/ActivityGlyph/);
-    expect(source("src/components/leads/leads-host-list.tsx")).toMatch(/ActivityGlyph/);
     expect(css).toMatch(/--ff-activity-rail: 400px/);
     expect(css).toMatch(/grid-template-columns: minmax\(0, 1fr\) var\(--ff-activity-rail\)/);
     expect(source("src/components/deals/deals-command-workspace.tsx")).toMatch(/surface="deals-stack"/);

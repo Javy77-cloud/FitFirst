@@ -10,7 +10,7 @@ export function LeadsViewSwitch({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   return (
-    <span className={FF_CHIP_TAB_GROUP} data-ff-leads-views="" aria-label="Stack Queue List">
+    <span className={FF_CHIP_TAB_GROUP} data-ff-leads-views="" aria-label="Stack Queue">
       {LEADS_VIEW_OPTIONS.map(([id, label]) => (
         <Link
           key={id}
