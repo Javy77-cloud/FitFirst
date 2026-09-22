@@ -4,12 +4,14 @@ import { useMemo, useState } from "react";
 import { FileActionMenu } from "@/components/documents/file-action-menu";
 import { formatDay } from "@/lib/domain";
 import { autoTagDocType, docExpiryWarning } from "@/lib/policy/document-depth";
+import { termRoleFromTags, termRoleLabel } from "@/lib/documents/document-labels";
 
 export type PolicyDocRow = {
   id: string;
   filename: string;
   docType: string;
   slot?: string | null;
+  tags?: string[] | null;
   createdAt?: Date | string | null;
   expiresAt?: Date | string | null;
   versionCount?: number;
@@ -87,6 +89,7 @@ export function PolicyDocumentsTable({
           <tr>
             <th>File</th>
             <th>Type</th>
+            <th>Term</th>
             <th>Uploaded</th>
             <th>Expires</th>
             <th>Versions</th>
@@ -95,6 +98,8 @@ export function PolicyDocumentsTable({
         <tbody>
           {rows.map((file) => {
             const warn = docExpiryWarning(file.docType, file.expiresAt);
+            const termRole = termRoleFromTags(file.tags);
+            const termLabel = termRoleLabel(termRole);
             return (
               <tr key={file.id}>
                 <td className="font-medium">
@@ -103,6 +108,7 @@ export function PolicyDocumentsTable({
                     filename={file.filename}
                     slot={file.slot ?? undefined}
                     docType={file.docType}
+                    tags={file.tags}
                     dealId={dealId ?? null}
                     policyId={policyId}
                     returnTo={`/policies/${policyId}?tab=documents`}
@@ -114,6 +120,18 @@ export function PolicyDocumentsTable({
                   <span className="rounded-sm border border-border bg-white px-1.5 py-0.5 text-[11px] font-medium uppercase text-navy">
                     {autoTagDocType(file.docType)}
                   </span>
+                </td>
+                <td>
+                  {termLabel ? (
+                    <span
+                      className="rounded-sm border border-amber-300/80 bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-navy"
+                      data-ff-doc-term-role={termRole ?? undefined}
+                    >
+                      {termLabel}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
                 </td>
                 <td className="text-sm text-muted-foreground">
                   {file.createdAt ? formatDay(file.createdAt) : "—"}

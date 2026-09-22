@@ -15,6 +15,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Document, DocumentFolder } from "@/lib/db/schema";
+import { displayDocumentTags } from "@/lib/documents/document-labels";
 import { DOC_TYPE_LABELS, DOC_TYPES, FOLDER_KIND_LABELS, FOLDER_KINDS } from "@/lib/domain";
 import { fileGlyph, folderHref } from "@/lib/ops/documents";
 import { FileActionMenu } from "@/components/documents/file-action-menu";
@@ -124,6 +125,7 @@ export function FileGrid({
               mimeType={doc.mimeType}
               slot={doc.slot}
               docType={doc.docType}
+              tags={doc.tags}
               dealId={doc.dealId}
               policyId={doc.policyId}
               contactId={doc.contactId}
@@ -137,7 +139,7 @@ export function FileGrid({
                 <div className="line-clamp-2 text-sm font-semibold text-navy">{doc.filename}</div>
                 <div className="text-[11px] text-muted-foreground">
                   {DOC_TYPE_LABELS[doc.docType as keyof typeof DOC_TYPE_LABELS] ?? doc.docType}
-                  {(doc.tags ?? []).length ? ` · ${(doc.tags ?? []).join(", ")}` : ""}
+                  {displayDocumentTags(doc.tags).length ? ` · ${displayDocumentTags(doc.tags).join(", ")}` : ""}
                 </div>
               </div>
             </FileActionMenu>

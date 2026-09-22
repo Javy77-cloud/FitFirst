@@ -73,6 +73,7 @@ export function FileList({
                       mimeType={doc.mimeType}
                       slot={doc.slot}
                       docType={doc.docType}
+                      tags={doc.tags}
                       dealId={doc.dealId}
                       policyId={doc.policyId}
                       contactId={doc.contactId}

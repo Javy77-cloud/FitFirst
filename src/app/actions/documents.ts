@@ -77,6 +77,12 @@ import {
 import { isDocumentsSourceDoc, shopLineForGeminiExtract, shopLineFromSourceDoc } from "@/lib/deals/quote-docs";
 import { dealSourceSlotForUpload } from "@/lib/documents/restore-deal-docs";
 import { collectUploadedFiles, isUploadedFile } from "@/lib/documents/uploaded-file";
+import {
+  isDocumentTermRole,
+  isPolicyAttachDocType,
+  tagsWithTermRole,
+  termRoleFromTags,
+} from "@/lib/documents/document-labels";
 import { markShopFlowStaleAfterRiskChange } from "@/lib/deals/shop-flow-persist";
 import { assertStoredFileReadable, deleteStoredFile, readStoredFile, writeStoredFile } from "@/lib/files/object-store";
 import { getAgentFeatureToggles } from "@/lib/settings/agent-feature-toggles-prefs";
@@ -1139,4 +1145,81 @@ export async function deleteUploadedFile(formData: FormData) {
     returnTo: String(formData.get("returnTo") ?? "").trim(),
   });
   if (href) flashAction(href, "document-deleted");
+}
+
+/** Rename display filename on an uploaded document (policy + deal lists). */
+export async function renameUploadedFile(formData: FormData) {
+  const documentId = String(formData.get("documentId") ?? "").trim();
+  if (!documentId) return;
+  const rawName = String(formData.get("filename") ?? "").trim();
+  const filename = displayFilename(rawName);
+  if (!rawName) return;
+
+  const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
+  if (!doc) return;
+
+  await db.update(documents).set({ filename }).where(eq(documents.id, documentId));
+  revalidateDocumentPaths(doc);
+  const href = documentDeleteReturnHref({
+    policyId: doc.policyId || String(formData.get("policyId") ?? "").trim(),
+    dealId: doc.dealId || String(formData.get("dealId") ?? "").trim(),
+    returnTo: String(formData.get("returnTo") ?? "").trim(),
+  });
+  if (href) flashAction(href, "document-renamed");
+}
+
+/**
+ * Change document type label (Issued declaration page, Complete policy, AOR, …).
+ * Policy docs stay on the policy after update.
+ */
+export async function updateDocumentLabel(formData: FormData) {
+  const documentId = String(formData.get("documentId") ?? "").trim();
+  if (!documentId) return;
+  const docType = String(formData.get("docType") ?? "").trim();
+  if (!docType || !isPolicyAttachDocType(docType)) return;
+
+  const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
+  if (!doc) return;
+
+  await db.update(documents).set({ docType }).where(eq(documents.id, documentId));
+  revalidateDocumentPaths(doc);
+  const href = documentDeleteReturnHref({
+    policyId: doc.policyId || String(formData.get("policyId") ?? "").trim(),
+    dealId: doc.dealId || String(formData.get("dealId") ?? "").trim(),
+    returnTo: String(formData.get("returnTo") ?? "").trim(),
+  });
+  if (href) flashAction(href, "document-type-updated");
+}
+
+/** Set Prior / Current / Renewal term role (stored in documents.tags). */
+export async function setDocumentTermRole(formData: FormData) {
+  const documentId = String(formData.get("documentId") ?? "").trim();
+  if (!documentId) return;
+  const rawRole = String(formData.get("termRole") ?? "").trim();
+  const clear = rawRole === "" || rawRole === "clear";
+  if (!clear && !isDocumentTermRole(rawRole)) return;
+
+  const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
+  if (!doc) return;
+
+  const nextTags = tagsWithTermRole(doc.tags, clear ? null : rawRole);
+  // No-op if unchanged
+  if (termRoleFromTags(doc.tags) === termRoleFromTags(nextTags)) {
+    const href = documentDeleteReturnHref({
+      policyId: doc.policyId || String(formData.get("policyId") ?? "").trim(),
+      dealId: doc.dealId || String(formData.get("dealId") ?? "").trim(),
+      returnTo: String(formData.get("returnTo") ?? "").trim(),
+    });
+    if (href) flashAction(href, "document-term-role-updated");
+    return;
+  }
+
+  await db.update(documents).set({ tags: nextTags }).where(eq(documents.id, documentId));
+  revalidateDocumentPaths(doc);
+  const href = documentDeleteReturnHref({
+    policyId: doc.policyId || String(formData.get("policyId") ?? "").trim(),
+    dealId: doc.dealId || String(formData.get("dealId") ?? "").trim(),
+    returnTo: String(formData.get("returnTo") ?? "").trim(),
+  });
+  if (href) flashAction(href, "document-term-role-updated");
 }
