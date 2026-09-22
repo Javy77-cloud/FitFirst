@@ -48,6 +48,8 @@ import {
 import { asList } from "@/lib/safe-list";
 import { InsuredPropertyKindControl } from "@/components/deal/insured-property-kind-control";
 import { INSURED_PROPERTY_KIND_KEY } from "@/lib/deals/insured-property-kind";
+import { MhoDetailsSection } from "@/components/custom-fields/mho-details-section";
+import { dealPolicyFormIsMho } from "@/lib/custom-fields/mho-details-fields";
 
 /** Image upload must not be a nested <form> inside Deal Details save. */
 function DealFieldImageUpload({ dealId, fieldKey }: { dealId: string; fieldKey: string }) {
@@ -392,6 +394,10 @@ export function DealDetailsPanel({
   );
   const byKey = Object.fromEntries(fieldList.map((field) => [field.key, field]));
   const formId = "deal-details-save";
+  const [policyForm, setPolicyForm] = useState(
+    () => quotingForm || policySubType || values.insurance_subtype || "",
+  );
+  const showMho = dealPolicyFormIsMho(policyForm);
   const [liveValues, setLiveValues] = useState(() => {
     const merged = mergeCascadePrefill(values, {
       shopProducts: dealProducts,
@@ -476,6 +482,7 @@ export function DealDetailsPanel({
           activePackageLine={activePackageLine}
           lineSettings={lineSettings}
           variant="strip"
+          onPolicyFormChange={setPolicyForm}
         />
         <SellingAgencyStripField
           field={byKey[DEAL_SELLING_AGENCY_KEY] ?? DEAL_SELLING_AGENCY_FIELD}
@@ -593,6 +600,9 @@ export function DealDetailsPanel({
           </div>
         ))}
       </div>
+      {showMho ? (
+        <MhoDetailsSection values={liveValues} formId={formId} onValueChange={patchValue} />
+      ) : null}
       <div className="mt-3 flex justify-end">
         <button type="submit" className={buttonVariants()} data-ff-deal-details-save="">
           Save deal details

@@ -31,7 +31,6 @@ import { collapseAutoDriverSheet } from "./auto-driver-dedupe";
 import {
   mailingSheetLine,
   propertyOneLiner,
-  quotingFormIsManufacturedHome,
   resolveHomeRiskAddresses,
 } from "./home-address-fill";
 import {
@@ -39,6 +38,13 @@ import {
   PERSONAL_DRIVER_CAP,
   unitHasValue,
 } from "./repeatable-units";
+import {
+  dealPolicyFormIsMho,
+  MHO_PRIOR_RESIDENCE_SHEET_KEYS,
+  mhoDetailSheetWrites,
+  mhoYes,
+} from "@/lib/custom-fields/mho-details-fields";
+import { SHEET_DEFAULT_SOURCE_LABEL } from "@/lib/quote-sheet/sheet-defaults";
 
 export const DEAL_DETAILS_SOURCE_LABEL = "deal details";
 
@@ -328,6 +334,43 @@ export function fillSheetFromDealDetails(
     filledKeys.push(key);
   };
 
+  /** Replace blank cells and starter defaults. Leave agent-confirmed and extracted cells. */
+  const putOverDefault = (key: string, raw?: string | null) => {
+    const value = (raw ?? "").trim();
+    if (!value) return;
+    if (Object.keys(existing).length > 0 && !Object.prototype.hasOwnProperty.call(existing, key)) {
+      return;
+    }
+    const current = values[key];
+    const starter = (current?.sourceLabel ?? "").trim().toLowerCase() === SHEET_DEFAULT_SOURCE_LABEL;
+    if (!starter && (isLockedSheetField(current) || !fieldIsBlank(current))) {
+      if (!skippedKeys.includes(key)) skippedKeys.push(key);
+      return;
+    }
+    values[key] = {
+      value,
+      status: "check",
+      source: "agent",
+      sourceLabel: DEAL_DETAILS_SOURCE_LABEL,
+    };
+    const skipAt = skippedKeys.lastIndexOf(key);
+    if (skipAt >= 0) skippedKeys.splice(skipAt, 1);
+    if (!filledKeys.includes(key)) filledKeys.push(key);
+  };
+
+  const clearDealCopiedCell = (key: string) => {
+    const current = values[key];
+    if (!current) return;
+    if ((current.sourceLabel ?? "") !== DEAL_DETAILS_SOURCE_LABEL) return;
+    if (fieldIsBlank(current)) return;
+    values[key] = {
+      value: "",
+      status: "missing",
+      source: "blank",
+      sourceLabel: "",
+    };
+  };
+
   const named = firstFilled(
     input.primaryNamedInsured,
     stored.named_insured,
@@ -595,15 +638,19 @@ export function fillSheetFromDealDetails(
       put("mailing_zip", resolved.mailing.zip);
     }
     if (
-      quotingFormIsManufacturedHome(
+      dealPolicyFormIsMho(
         input.quotingForm,
         input.policySubType,
         stored.insurance_subtype,
         stored.quoting_form,
       )
     ) {
-      put("mobile_home", "yes");
-      put("structure_type", "Manufactured Home");
+      for (const write of mhoDetailSheetWrites(stored)) {
+        putOverDefault(write.sheetKey, write.value);
+      }
+      if (!mhoYes(stored.resided_under_2_years)) {
+        for (const key of MHO_PRIOR_RESIDENCE_SHEET_KEYS) clearDealCopiedCell(key);
+      }
     }
   } else {
     const insuredStreet = firstFilled(
