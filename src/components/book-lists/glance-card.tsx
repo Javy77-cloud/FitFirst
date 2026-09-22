@@ -119,6 +119,8 @@ function InboxCue({ card }: { card: BookGlanceCard }) {
   );
 }
 
+const CARRIER_STACK_COLUMN_IDS = new Set(["portal", "lines", "policies", "status", "last-use"]);
+
 function BookGridCard({
   card,
   leading,
@@ -134,7 +136,11 @@ function BookGridCard({
   tip: string;
   kind: "party" | "carrier" | "policy";
 }) {
-  const columns = (card.columns ?? []).filter((column) => !isEmptyDash(column.label));
+  const columns = (card.columns ?? []).filter((column) => {
+    if (isEmptyDash(column.label)) return false;
+    if (kind === "carrier" && CARRIER_STACK_COLUMN_IDS.has(column.id)) return false;
+    return true;
+  });
   return (
     <article
       className={cn(
@@ -244,6 +250,30 @@ const ACCOUNT_STACK_HEADER = [
   ["reach", "Reach"],
 ] as const;
 
+const CARRIER_STACK_HEADER = [
+  ["name", "Name"],
+  ["portal", "Portal"],
+  ["lines", "Lines"],
+  ["policies", "Policies"],
+  ["status", "Status"],
+  ["last-use", "Last use"],
+  ["open", "Open"],
+] as const;
+
+/** Labels only — same tracks as the Carriers Stack card. No sort controls. */
+export function CarrierStackColumnHeader() {
+  return (
+    <div className="ff-carrier-stack-header" data-ff-carrier-stack-header="" role="row">
+      <span className="ff-carrier-stack-header-gutter" aria-hidden="true" />
+      {CARRIER_STACK_HEADER.map(([id, label]) => (
+        <span key={id} data-ff-stack-col={id}>
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 /** Labels only — same tracks as the Accounts phone row. No sort controls. */
 export function AccountStackColumnHeader() {
   return (
@@ -266,7 +296,7 @@ function plainCell(value: string | null | undefined): string {
 /** Centered dash when phone/email is missing — keeps the field slot visible. */
 function EmptyFieldDash() {
   return (
-    <span className="ff-stack-empty-dash" aria-hidden="true">
+    <span className="ff-stack-empty-dash" data-ff-stack-empty-dash="" aria-hidden="true">
       —
     </span>
   );
@@ -513,6 +543,99 @@ function PolicyStackCard({
   );
 }
 
+const CARRIER_STACK_CENTER = ["portal", "lines", "policies"] as const;
+const CARRIER_STACK_BOTTOM = ["status", "last-use"] as const;
+
+/** Carriers Stack — three rows: name + activity, phone + portal/lines/policies, email + status/last use/open. */
+function CarrierStackCard({
+  card,
+  leading,
+  extra,
+  activity,
+  tip,
+}: {
+  card: BookGlanceCard;
+  leading?: ReactNode;
+  extra?: ReactNode;
+  activity?: ReactNode;
+  tip: string;
+}) {
+  const byId = new Map((card.columns ?? []).map((column) => [column.id, column.label]));
+  const phone = plainCell(card.phone);
+  const email = plainCell(card.email);
+  const tel = phone ? telHref(phone) : null;
+  const mail = email ? mailtoHref(email) : null;
+  const portalAction = (card.actions ?? []).find((action) => action.id === "portal");
+  const cell = (id: string, row: "phone" | "email") => {
+    const label = plainCell(byId.get(id));
+    const portalLink = id === "portal" && portalAction && label === "Portal";
+    return (
+      <span
+        key={id}
+        className="ff-carrier-stack-col"
+        data-ff-carrier-stack-col={id}
+        data-ff-carrier-stack-row={row}
+        title={label || undefined}
+      >
+        {portalLink ? (
+          <a href={portalAction.href} target="_blank" rel="noreferrer">
+            {label}
+          </a>
+        ) : (
+          label
+        )}
+      </span>
+    );
+  };
+  return (
+    <article
+      className={cn("ff-stack-card ff-book-card ff-carrier-card ff-carrier-stack-card", `ff-heat-${card.heat}`)}
+      data-ff-book-card={card.id}
+      data-ff-carrier-stack-card={card.id}
+      data-hay={card.hay}
+      data-ff-book-surface={card.surface}
+      data-ff-heat={card.heat}
+      data-ff-book-column={card.column}
+    >
+      <div className="ff-stack-card-body min-w-0 flex-1">
+        <div className="ff-carrier-stack-spread" data-ff-carrier-stack="">
+          <div className="ff-carrier-stack-check" data-ff-carrier-stack-check="" data-ff-carrier-stack-row="name">
+            {leading}
+          </div>
+          <div className="ff-carrier-stack-name" data-ff-carrier-stack-row="name">
+            <Link href={card.href} className="ff-stack-name">
+              {card.title}
+            </Link>
+            {activity ? (
+              <span className="ff-carrier-stack-heartbeat" data-ff-carrier-stack-heartbeat="">
+                {activity}
+              </span>
+            ) : null}
+          </div>
+          <span className="ff-carrier-stack-glyph" data-ff-carrier-stack-glyph="" data-ff-carrier-stack-row="phone">
+            <RiskGlyph heat={card.heat} tip={tip} />
+          </span>
+          <span className="ff-carrier-stack-phone" data-ff-carrier-stack-phone="" data-ff-carrier-stack-row="phone">
+            {tel ? <a href={tel}>{phone}</a> : <EmptyFieldDash />}
+          </span>
+          {CARRIER_STACK_CENTER.map((id) => cell(id, "phone"))}
+          <span className="ff-carrier-stack-email" data-ff-carrier-stack-email="" data-ff-carrier-stack-row="email">
+            {mail ? <a href={mail}>{email}</a> : <EmptyFieldDash />}
+          </span>
+          {CARRIER_STACK_BOTTOM.map((id) => cell(id, "email"))}
+          <div className="ff-carrier-stack-open" data-ff-carrier-stack-open="" data-ff-carrier-stack-row="email">
+            <Link href={card.primaryAction.href} className="ff-stack-action" data-ff-book-action="">
+              {card.primaryAction.label}
+            </Link>
+          </div>
+        </div>
+        <InboxCue card={card} />
+        {extra}
+      </div>
+    </article>
+  );
+}
+
 /** Narrow band column — one why line, not the wide list. */
 function BandCard({
   card,
@@ -579,6 +702,11 @@ export function BookGlanceCardView({
   }
   if (card.surface === "accounts") {
     return <BookGridCard card={card} leading={leading} extra={extra} activity={activity} tip={tip} kind="party" />;
+  }
+  if (card.surface === "carriers" && layoutMode === "stack") {
+    return (
+      <CarrierStackCard card={card} leading={leading} extra={extra} activity={activity} tip={tip} />
+    );
   }
   if (card.surface === "carriers") {
     return <BookGridCard card={card} leading={leading} extra={extra} tip={tip} kind="carrier" />;

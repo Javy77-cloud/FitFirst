@@ -248,7 +248,24 @@ describe("account card glance", () => {
       new Date("2026-09-21T12:00:00.000Z"),
       { writeLife: false, writeHealth: false },
     );
-    expect(card.columns?.map((column) => column.label)).toEqual(["Limited appetite", "No recent use"]);
+    expect(card.columns?.map((column) => column.id)).toEqual([
+      "posture",
+      "use",
+      "portal",
+      "lines",
+      "policies",
+      "status",
+      "last-use",
+    ]);
+    expect(card.columns?.map((column) => column.label)).toEqual([
+      "Limited appetite",
+      "No recent use",
+      "Portal",
+      "Home · Auto",
+      "4",
+      "Limited",
+      "No recent use",
+    ]);
     expect(card.peek).toBeNull();
     expect(card.facts?.map((fact) => fact.id)).toEqual([
       "line:home",

@@ -586,6 +586,24 @@ function carrierActions(row: CarrierListRow): BookCardAction[] {
   return actions;
 }
 
+/** Fixed Carriers Stack tracks — same five columns on every card. */
+function carrierStackFooter(
+  row: CarrierListRow,
+  signal: CarrierMarketSignal,
+  linesLabel: string,
+  status: string,
+  useCue: string,
+): BookCueColumn[] {
+  const portal = httpHref(row.portalUrl) || httpHref(row.agentPortalUrl);
+  return [
+    { id: "portal", label: portal ? "Portal" : "none" },
+    { id: "lines", label: linesLabel },
+    { id: "policies", label: String(signal.activePolicies ?? 0) },
+    { id: "status", label: status },
+    { id: "last-use", label: useCue },
+  ];
+}
+
 export function presentCarrierCard(
   row: CarrierListRow,
   signal: CarrierMarketSignal,
@@ -622,10 +640,12 @@ export function presentCarrierCard(
     (inactive ? "Inactive on desk" : null);
   const posture =
     column === "rateable" ? "Rateable" : column === "limited" ? "Limited appetite" : "Skip / decline";
+  const status = column === "rateable" ? "Rateable" : column === "limited" ? "Limited" : "Skip";
   const useCue = carrierUseCue(lastTouchDays, signal.lastUseKind);
   const columns: BookCueColumn[] = [
     { id: "posture", label: posture },
     { id: "use", label: useCue },
+    ...carrierStackFooter(row, signal, appetite, status, useCue),
   ];
   const premium = signal.premiumVolume ?? row.premiumVolume ?? 0;
   const appetiteNote = appetiteGlance(
@@ -663,7 +683,7 @@ export function presentCarrierCard(
     id: row.id,
     surface: "carriers",
     href: `/carriers/${row.id}`,
-    title: row.name,
+    title: row.name.trim() || "Untitled carrier",
     subtitle: isEmptyDash(row.agencyCode) ? undefined : row.agencyCode?.trim() || undefined,
     heat,
     column,
@@ -674,7 +694,7 @@ export function presentCarrierCard(
       {
         id: "rateable",
         label: "Status",
-        value: column === "rateable" ? "Rateable" : column === "limited" ? "Limited" : "Skip",
+        value: status,
         tone: column === "skip" ? "skip" : column === "limited" ? "cool" : "ok",
       },
       {
