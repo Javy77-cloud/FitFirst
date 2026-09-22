@@ -82,6 +82,7 @@ import {
   isPolicyAttachDocType,
   tagsWithTermRole,
   termRoleFromTags,
+  type DocumentTermRole,
 } from "@/lib/documents/document-labels";
 import { markShopFlowStaleAfterRiskChange } from "@/lib/deals/shop-flow-persist";
 import { assertStoredFileReadable, deleteStoredFile, readStoredFile, writeStoredFile } from "@/lib/files/object-store";
@@ -1223,3 +1224,30 @@ export async function setDocumentTermRole(formData: FormData) {
   });
   if (href) flashAction(href, "document-term-role-updated");
 }
+
+/** Inline Term role select — no redirect; client flashes + refreshes. */
+export async function setDocumentTermRoleInline(input: {
+  documentId: string;
+  termRole: string;
+  policyId?: string | null;
+  dealId?: string | null;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const documentId = (input.documentId ?? "").trim();
+  if (!documentId) return { ok: false, error: "Document required." };
+  const rawRole = (input.termRole ?? "").trim();
+  const clear = rawRole === "" || rawRole === "clear";
+  if (!clear && !isDocumentTermRole(rawRole)) {
+    return { ok: false, error: "Pick Prior, Current, or Renewal." };
+  }
+
+  const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
+  if (!doc) return { ok: false, error: "Document not found." };
+
+  const nextTags = tagsWithTermRole(doc.tags, clear ? null : (rawRole as DocumentTermRole));
+  if (termRoleFromTags(doc.tags) !== termRoleFromTags(nextTags)) {
+    await db.update(documents).set({ tags: nextTags }).where(eq(documents.id, documentId));
+    revalidateDocumentPaths(doc);
+  }
+  return { ok: true };
+}
+

@@ -1,4 +1,5 @@
 import { recordRenewalCompare, saveProposedTerm } from "@/app/actions/renewal";
+import { FillCompareFromDecsButton } from "@/components/policy/fill-compare-from-decs-button";
 import { PremiumChangeSummary } from "@/components/policy/premium-change";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,12 @@ export function ComparePanel({
 
   return (
     <div className="space-y-4">
+      <section className="ff-card flex flex-wrap items-center gap-3 p-4">
+        <FillCompareFromDecsButton policyId={policy.id} />
+        <p className="text-sm text-muted-foreground">
+          Pull premium and term dates from Documents tagged Prior/Current + Renewal.
+        </p>
+      </section>
       {change ? <PremiumChangeSummary change={change} /> : (
         <section className="ff-card p-4 text-base text-muted-foreground">
           Record the carrier&apos;s proposed term to see the premium-change summary. FitFirst

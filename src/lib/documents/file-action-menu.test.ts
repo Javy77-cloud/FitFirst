@@ -125,6 +125,7 @@ describe("standard file action menu", () => {
     expect(table).toMatch(/data-ff-doc-term-role/);
     expect(table).toMatch(/termRoleFromTags/);
     expect(table).toMatch(/tags=\{file\.tags\}/);
-    expect(table).toMatch(/<th>Term<\/th>/);
+    expect(table).toMatch(/<th>Term role<\/th>/);
+    expect(table).toMatch(/data-ff-doc-term-role-select/);
   });
 });

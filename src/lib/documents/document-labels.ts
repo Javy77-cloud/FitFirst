@@ -60,5 +60,54 @@ export function tagsWithTermRole(
 
 /** Tags safe for generic UI chips (hides internal term_role:*). */
 export function displayDocumentTags(tags: string[] | null | undefined): string[] {
-  return (tags ?? []).filter((tag) => !tag.startsWith(TERM_ROLE_TAG_PREFIX));
+  return (tags ?? []).filter(
+    (tag) => !tag.startsWith(TERM_ROLE_TAG_PREFIX) && !tag.startsWith("term_months:"),
+  );
 }
+
+export const TERM_MONTHS_TAG_PREFIX = "term_months:";
+
+export function termMonthsFromTags(tags: string[] | null | undefined): number | null {
+  for (const tag of tags ?? []) {
+    if (!tag.startsWith(TERM_MONTHS_TAG_PREFIX)) continue;
+    const n = Number(tag.slice(TERM_MONTHS_TAG_PREFIX.length));
+    if (Number.isFinite(n) && n > 0) return Math.round(n);
+  }
+  return null;
+}
+
+/** Replace any existing term_months:* tag; pass null to clear. */
+export function tagsWithTermMonths(
+  tags: string[] | null | undefined,
+  months: number | null,
+): string[] {
+  const next = (tags ?? []).filter((tag) => !tag.startsWith(TERM_MONTHS_TAG_PREFIX));
+  if (months != null && Number.isFinite(months) && months > 0) {
+    next.push(`${TERM_MONTHS_TAG_PREFIX}${Math.round(months)}`);
+  }
+  return next;
+}
+
+export function formatTermLengthMonths(months: number | null | undefined): string | null {
+  if (months == null || !Number.isFinite(months) || months <= 0) return null;
+  const n = Math.round(months);
+  return n === 1 ? "1 month" : `${n} months`;
+}
+
+/** Whole months between effective and expiration (noon-UTC safe). */
+export function monthsBetweenTermDates(
+  effective: Date | null | undefined,
+  expiration: Date | null | undefined,
+): number | null {
+  if (!effective || !expiration) return null;
+  const a = effective.getTime();
+  const b = expiration.getTime();
+  if (!Number.isFinite(a) || !Number.isFinite(b) || b <= a) return null;
+  const days = (b - a) / (1000 * 60 * 60 * 24);
+  // Prefer common policy lengths
+  if (days >= 350 && days <= 380) return 12;
+  if (days >= 170 && days <= 195) return 6;
+  if (days >= 85 && days <= 100) return 3;
+  return Math.max(1, Math.round(days / 30.4375));
+}
+
