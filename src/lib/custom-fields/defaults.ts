@@ -16,12 +16,24 @@ import { DEAL_PRODUCTS } from "@/lib/deals/deal-products";
 import { LIVED_AT_ADDRESS_5_YEARS_KEY } from "./mailing-same";
 import { isDealDetailsLandlordFieldKey } from "./deal-details-landlord";
 import { INSURED_PROPERTY_KIND_FIELD, INSURED_PROPERTY_KIND_KEY } from "@/lib/deals/insured-property-kind";
+import { mhoDetailsCatalogFields } from "./mho-details-fields";
 
 function section(id: string, label: string, fieldKeys: string[]): LayoutSection {
   return { id, label, fieldKeys };
 }
 
-export const CORE_FIELDS: CustomFieldDef[] = [
+function dedupeFieldDefs(fields: readonly CustomFieldDef[]): CustomFieldDef[] {
+  const seen = new Set<string>();
+  const out: CustomFieldDef[] = [];
+  for (const field of fields) {
+    if (seen.has(field.key)) continue;
+    seen.add(field.key);
+    out.push(field);
+  }
+  return out;
+}
+
+export const CORE_FIELDS: CustomFieldDef[] = dedupeFieldDefs([
   { key: "first_name", label: "First name", type: "single_line", systemKey: "firstName" },
   { key: "middle_name", label: "Middle name", type: "single_line", systemKey: "middleName" },
   { key: "last_name", label: "Last name", type: "single_line", systemKey: "lastName" },
@@ -105,7 +117,8 @@ export const CORE_FIELDS: CustomFieldDef[] = [
   ...catalogFieldsForProducts([...DEAL_PRODUCTS]).filter(
     (field) => !isDealDetailsLandlordFieldKey(field.key),
   ),
-];
+  ...mhoDetailsCatalogFields(),
+]);
 
 const LOB_FIELDS: Record<string, CustomFieldDef[]> = {
   HO: [

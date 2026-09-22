@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   cascadeFromDeal,
   categoriesForType,
@@ -49,6 +49,7 @@ export function InsuranceCascadeControl({
   activePackageLine = null,
   lineSettings,
   variant = "stack",
+  onPolicyFormChange,
 }: {
   /** Hidden input name for parent Insurance Type (PC / Life / Health). */
   typeName?: string;
@@ -76,6 +77,8 @@ export function InsuranceCascadeControl({
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   /** Horizontal required strip on Deal Details; stacked elsewhere. */
   variant?: "stack" | "strip";
+  /** Selected policy form label, so MHO-only Details can show or hide live. */
+  onPolicyFormChange?: (formLabel: string) => void;
 }) {
   const lifeOpts = lifeOptions.length
     ? lifeOptions
@@ -165,6 +168,9 @@ export function InsuranceCascadeControl({
     : undefined;
   const selected = subtypeId ? subtypes.find((s) => s.id === subtypeId) : undefined;
   const storedSubtype = selected?.label ?? selected?.id ?? "";
+  useEffect(() => {
+    onPolicyFormChange?.(storedSubtype);
+  }, [onPolicyFormChange, storedSubtype]);
   const storedType = typeId ? (typeChoices.find((t) => t.id === typeId)?.label ?? "") : "";
   const storedCategory = selectedCat?.label ?? "";
 
