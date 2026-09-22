@@ -24,6 +24,9 @@ export const HEALTHSHERPA_NEEDS_REVIEW_REASON =
 
 export const HEALTHSHERPA_LINKED_REASON = "Enrollment stored as an unpublished Health policy.";
 
+export const HEALTHSHERPA_IGNORED_TEST_REASON =
+  "Ignored HealthSherpa docs/sample/test payload — not written to Policies or contacts.";
+
 export const HEALTHSHERPA_REVIEW_PATH = "/contacts/healthsherpa-review";
 
 export const HEALTHSHERPA_MANUAL_LINES_NOTE =

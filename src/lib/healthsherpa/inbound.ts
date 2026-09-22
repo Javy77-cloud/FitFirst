@@ -10,9 +10,14 @@ import {
 } from "@/lib/db/schema";
 import { listDealLookup } from "@/lib/db/queries";
 import {
+  HEALTHSHERPA_IGNORED_TEST_REASON,
   HEALTHSHERPA_LINKED_REASON,
   HEALTHSHERPA_NEEDS_REVIEW_REASON,
 } from "./copy";
+import {
+  allowHealthSherpaTestPayloadWrites,
+  isHealthSherpaTestOrSamplePayload,
+} from "./test-payload";
 import {
   classifyHealthSherpaContactMatch,
   healthSherpaMatchStatus,
@@ -402,6 +407,16 @@ export async function ingestHealthSherpaWebhook(payload: unknown): Promise<Healt
   }
   if (!parsed.contact.firstName || !parsed.contact.lastName) {
     return { accepted: false, reason: "Enrollment contact is missing first or last name." };
+  }
+
+  if (isHealthSherpaTestOrSamplePayload(parsed) && !allowHealthSherpaTestPayloadWrites()) {
+    return {
+      accepted: true,
+      reason: HEALTHSHERPA_IGNORED_TEST_REASON,
+      product: parsed.product,
+      matchStatus: "unmatched",
+      matchReason: "none",
+    };
   }
 
   const existing = parsed.applicationId
