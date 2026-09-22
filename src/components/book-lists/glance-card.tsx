@@ -259,8 +259,17 @@ export function AccountStackColumnHeader() {
 }
 
 function plainCell(value: string | null | undefined): string {
-  const text = value?.trim() ?? "";
+  const text = (value ?? "").trim();
   return isEmptyDash(text) ? "" : text;
+}
+
+/** Centered dash when phone/email is missing — keeps the field slot visible. */
+function EmptyFieldDash() {
+  return (
+    <span className="ff-stack-empty-dash" aria-hidden="true">
+      —
+    </span>
+  );
 }
 
 /** Contacts Stack — three rows: name, phone + meta columns, email + reach. */
@@ -312,7 +321,7 @@ function ContactStackCard({
             <RiskGlyph heat={card.heat} tip={tip} />
           </span>
           <span className="ff-contact-stack-phone" data-ff-contact-stack-phone="" data-ff-contact-stack-row="phone">
-            {tel ? <a href={tel}>{phone}</a> : null}
+            {tel ? <a href={tel}>{phone}</a> : <EmptyFieldDash />}
           </span>
           {meta.map((column) => (
             <span
@@ -326,7 +335,7 @@ function ContactStackCard({
             </span>
           ))}
           <span className="ff-contact-stack-email" data-ff-contact-stack-email="" data-ff-contact-stack-row="email">
-            {mail ? <a href={mail}>{email}</a> : null}
+            {mail ? <a href={mail}>{email}</a> : <EmptyFieldDash />}
           </span>
           {reach ? (
             <p
@@ -396,7 +405,7 @@ function AccountStackCard({
             <RiskGlyph heat={card.heat} tip={tip} />
           </span>
           <span className="ff-account-stack-phone" data-ff-account-stack-phone="" data-ff-account-stack-row="phone">
-            {tel ? <a href={tel}>{phone}</a> : null}
+            {tel ? <a href={tel}>{phone}</a> : <EmptyFieldDash />}
           </span>
           {meta.map((column) => (
             <span
@@ -410,7 +419,7 @@ function AccountStackCard({
             </span>
           ))}
           <span className="ff-account-stack-email" data-ff-account-stack-email="" data-ff-account-stack-row="email">
-            {mail ? <a href={mail}>{email}</a> : null}
+            {mail ? <a href={mail}>{email}</a> : <EmptyFieldDash />}
           </span>
           {reach ? (
             <p
@@ -481,11 +490,11 @@ function PolicyStackCard({
             <RiskGlyph heat={card.heat} tip={tip} />
           </span>
           <span className="ff-policy-stack-phone" data-ff-policy-stack-phone="">
-            {tel ? <a href={tel}>{phone}</a> : null}
+            {tel ? <a href={tel}>{phone}</a> : <EmptyFieldDash />}
           </span>
           {POLICY_STACK_TOP.map((id) => cell(id))}
           <span className="ff-policy-stack-email" data-ff-policy-stack-row="email" data-ff-policy-stack-email="">
-            {mail ? <a href={mail}>{email}</a> : null}
+            {mail ? <a href={mail}>{email}</a> : <EmptyFieldDash />}
           </span>
           {POLICY_STACK_BOTTOM.map((id) => cell(id))}
           <div className="ff-policy-stack-open" data-ff-policy-stack-open="">
