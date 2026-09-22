@@ -262,6 +262,9 @@ describe("Deal Details tab", () => {
     expect(page).toMatch(/<DocumentsPanel/);
     expect(page).toMatch(/<MarketsPanel/);
     expect(page).toMatch(/<QuotesPanel/);
+    expect(page).not.toMatch(/data-ff-quote-doc-slots/);
+    expect(page).not.toMatch(/SourceDocsUpload/);
+    expect(source("src/components/deal/documents-panel.tsx")).toMatch(/<SourceDocsUpload/);
     expect(tabs).toMatch(/data-ff-deal-right-rail/);
     expect(page).toMatch(/QuickCommsBoard/);
     expect(page).toMatch(/RecordContextRail/);
