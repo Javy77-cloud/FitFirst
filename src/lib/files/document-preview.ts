@@ -1,3 +1,4 @@
+import { hasPdfMagicInHead } from "@/lib/files/pdf-magic";
 import { extensionOf } from "@/lib/files/urls";
 
 export type DocumentPreviewKind = "pdf" | "image" | "unsupported";
@@ -70,24 +71,25 @@ export function previewMimeFromResponse(
 }
 
 function headLooksLikeHtml(bytes: Uint8Array): boolean {
-  const head = new TextDecoder().decode(bytes.subarray(0, Math.min(bytes.length, 256))).trim().toLowerCase();
-  return (
-    head.startsWith("<!doctype html") ||
-    head.startsWith("<html") ||
-    head.includes("unauthorized") ||
-    head.includes("access denied")
-  );
+  // Only treat HTML-shaped / short auth bodies as errors — never scan arbitrary PDF
+  // binary for substrings like "unauthorized" (false missing after a successful get).
+  const head = new TextDecoder()
+    .decode(bytes.subarray(0, Math.min(bytes.length, 256)))
+    .replace(/^﻿/, "")
+    .trim()
+    .toLowerCase();
+  if (!head) return false;
+  if (head.startsWith("<!doctype html") || head.startsWith("<html")) return true;
+  if (head === "forbidden" || head === "unauthorized") return true;
+  if (head.length < 200 && (head.includes("access denied") || head.includes("blob access"))) {
+    return true;
+  }
+  return false;
 }
 
+/** Align with server looksLikePdf — BOM/whitespace/junk before %PDF is still a PDF. */
 function headLooksLikePdf(bytes: Uint8Array): boolean {
-  return (
-    bytes.length >= 5 &&
-    bytes[0] === 0x25 &&
-    bytes[1] === 0x50 &&
-    bytes[2] === 0x44 &&
-    bytes[3] === 0x46 &&
-    bytes[4] === 0x2d
-  );
+  return hasPdfMagicInHead(bytes);
 }
 
 /**

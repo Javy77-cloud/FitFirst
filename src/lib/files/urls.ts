@@ -1,4 +1,7 @@
 import { gunzipSync } from "node:zlib";
+import { hasPdfMagicInHead } from "@/lib/files/pdf-magic";
+
+export { hasPdfMagicInHead, pdfMagicOffset, stripLeadingJunkBeforePdf } from "@/lib/files/pdf-magic";
 
 /** Desk file URLs. View is inline; download forces a save. */
 
@@ -22,30 +25,6 @@ export function fileVersionHref(documentId: string, versionId: string, download 
 /** Gzip magic 1f 8b — Blob/CDN sometimes returns gzipped body with Content-Type: application/pdf. */
 export function isGzipMagic(bytes: Uint8Array | Buffer): boolean {
   return bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b;
-}
-
-/**
- * True when `%PDF` appears in the first 1KB, allowing leading BOM/whitespace/junk.
- * Accepts `%PDF-` (normal) or `%PDF` + version digit (tolerant of missing hyphen).
- */
-function hasPdfMagicInHead(bytes: Uint8Array | Buffer): boolean {
-  const limit = Math.min(bytes.length, 1024);
-  if (limit < 4) return false;
-  for (let i = 0; i <= limit - 4; i++) {
-    if (
-      bytes[i] === 0x25 && // %
-      bytes[i + 1] === 0x50 && // P
-      bytes[i + 2] === 0x44 && // D
-      bytes[i + 3] === 0x46 // F
-    ) {
-      if (i + 4 >= bytes.length) return false;
-      const next = bytes[i + 4]!;
-      // `%PDF-` or `%PDF1` / `%PDF2` …
-      if (next === 0x2d) return true;
-      if (next >= 0x30 && next <= 0x39) return true;
-    }
-  }
-  return false;
 }
 
 /** Inflate gzip body when present; otherwise return original bytes. */
