@@ -452,6 +452,40 @@ describe("unpublished confirm guard", () => {
   it("blocks hollow mint when Gemini is empty or missing policy number / premium", () => {
     expect(evaluateMintExtract([]).ok).toBe(false);
     expect(evaluateMintExtract([])).toMatchObject({ ok: false, reason: "need_dec_fields" });
+
+    // Travelers-style: premium + dates present, policy number only from Risk Profile sheet.
+    expect(
+      evaluateMintExtract(
+        [
+          { fieldKey: "current_premium", normalizedValue: "2109.00", confidence: 0.95, flagged: false },
+          { fieldKey: "effective_date", normalizedValue: "09/21/2026", confidence: 0.95, flagged: false },
+          { fieldKey: "expiration_date", normalizedValue: "03/21/2027", confidence: 0.95, flagged: false },
+          { fieldKey: "current_carrier", normalizedValue: "The Travelers Indemnity Company", confidence: 0.9, flagged: false },
+        ],
+        { filename: "Adriana Iori DEC Page Travelers.pdf" },
+        { policyNumber: "612345678 101 1" },
+      ),
+    ).toMatchObject({
+      ok: true,
+      policyNumber: "612345678 101 1",
+      premium: "2109.00",
+      effectiveDate: "09/21/2026",
+    });
+    // Same Gemini holes with no sheet fallback → clear policy-number guidance.
+    const onlyNumber = evaluateMintExtract(
+      [
+        { fieldKey: "current_premium", normalizedValue: "2109.00", confidence: 0.95, flagged: false },
+        { fieldKey: "effective_date", normalizedValue: "09/21/2026", confidence: 0.95, flagged: false },
+      ],
+      { filename: "Adriana Iori DEC Page Travelers.pdf" },
+    );
+    expect(onlyNumber.ok).toBe(false);
+    if (!onlyNumber.ok) {
+      expect(onlyNumber.missing).toEqual(["policy number"]);
+      expect(onlyNumber.message).toMatch(/Put the policy number on Risk Profile/);
+      expect(onlyNumber.message).toMatch(/Adriana Iori DEC Page Travelers\.pdf/);
+    }
+
     expect(
       evaluateMintExtract([
         {

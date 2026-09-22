@@ -574,19 +574,55 @@ export function mintFailureFlashText(result: { reason?: string | null; message?:
   return mintFailureToast(reason).key;
 }
 
-/** Hard gate: refuse hollow mint unless Gemini produced policy number, premium, and effective date. */
+export type MintExtractFallbacks = {
+  /** Risk Profile / sheet Current Policy number when Gemini skipped it. */
+  policyNumber?: string | null;
+};
+
+function fallbackText(raw?: string | null): string {
+  const value = (raw ?? "").trim();
+  if (!value) return "";
+  if (/^(?:—|–|-|n\/a|na|none|unknown|tbd|pending)$/i.test(value)) return "";
+  return value;
+}
+
+/** Hard gate: refuse hollow mint unless policy number, premium, and effective date are known. */
 export function evaluateMintExtract(
   rows: readonly MintGeminiRow[] | undefined,
   context?: MintExtractFailureContext,
+  fallbacks?: MintExtractFallbacks,
 ): MintExtractGateOk | MintExtractGateErr {
-  const policyNumber = mintGeminiValue(rows, "policy_number");
+  let policyNumber = mintGeminiValue(rows, "policy_number");
   const premium = mintGeminiValue(rows, "premium");
   const effectiveDate = mintGeminiValue(rows, "effective_date");
+  // Travelers (and similar) sometimes return premium + dates but omit policy_number.
+  // Prefer a printed Current Policy number already on the Risk Profile over failing the mint.
+  if (!policyNumber && premium && effectiveDate) {
+    policyNumber = fallbackText(fallbacks?.policyNumber);
+  }
   if (!policyNumber || !premium || !effectiveDate) {
     const failure = describeMintExtractFailure(rows ?? [], context ?? {}, (list, key) =>
       mintGeminiValue(list, key),
     );
-    return { ok: false, reason: "need_dec_fields", message: failure.message, missing: failure.missing };
+    const missing = failure.missing;
+    if (
+      missing.length === 1 &&
+      missing[0] === "policy number" &&
+      premium &&
+      effectiveDate
+    ) {
+      const fileLabel = (context?.filename ?? "").replace(/\s+/g, " ").trim();
+      const fileBit = fileLabel ? ` File: ${fileLabel}.` : "";
+      return {
+        ok: false,
+        reason: "need_dec_fields",
+        missing,
+        message:
+          `Gemini read the premium and dates but not the policy number.${fileBit} ` +
+          "Put the policy number on Risk Profile → Current Policy, then Issue again. The file stays in the folder.",
+      };
+    }
+    return { ok: false, reason: "need_dec_fields", message: failure.message, missing };
   }
   return { ok: true, policyNumber, premium, effectiveDate };
 }
