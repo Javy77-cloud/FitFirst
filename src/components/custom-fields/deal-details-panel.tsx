@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { Fragment, useMemo, useState, useTransition } from "react";
 import { saveDealFieldValues, uploadDealFieldImage } from "@/app/actions/custom-fields";
 import { FieldControl } from "@/components/custom-fields/field-control";
 import { InsuranceCascadeControl } from "@/components/custom-fields/insurance-cascade-control";
@@ -498,7 +498,10 @@ export function DealDetailsPanel({
         className="grid grid-cols-2 gap-4 max-[699px]:grid-cols-1"
         data-ff-deal-details-layout="two-col"
       >
-        {asList(safeLayout.columns).map((column) => (
+        {asList(safeLayout.columns).map((column) => {
+          let mhoPlacedInColumn = false;
+          const isRightColumn = column.id === "right";
+          return (
           <div key={column.id} className="min-w-0 space-y-3" data-ff-deal-details-col={column.id}>
             {asList(column.sections).map((section) => {
               if (isPipelineStripSection(section)) return null;
@@ -513,29 +516,41 @@ export function DealDetailsPanel({
                 sectionKeys.includes("co_applicant_first_name");
               if (!isCoAppSection && sectionKeys.length === 0) return null;
               if (isCoAppSection) {
+                // MHO Manufactured home sits under co-applicant on the right.
+                // Collapsed co-app keeps MHO tight under the header; expanded pushes it down.
+                const placeMhoHere = showMho && isRightColumn;
+                if (placeMhoHere) mhoPlacedInColumn = true;
                 return (
-                  <CoApplicantDealSection
-                    key={section.id}
-                    sectionLabel={section.label}
-                    density={section.density}
-                    fieldKeys={sectionKeys}
-                    byKey={byKey}
-                    values={liveValues}
-                    fieldList={fieldList}
-                    formId={formId}
-                    pipelineFamily={pipelineFamily}
-                    quotingForm={quotingForm}
-                    policySubType={policySubType}
-                    lifeHealthOptions={lifeHealthOptions}
-                    lifeOptions={lifeOptions}
-                    healthOptions={healthOptions}
-                    dealId={dealId}
-                    packageLines={packageLines}
-                    activePackageLine={activePackageLine}
-                    lineSettings={lineSettings}
-                    onValueChange={patchValue}
-                    onValuesPatch={patchValues}
-                  />
+                  <Fragment key={section.id}>
+                    <CoApplicantDealSection
+                      sectionLabel={section.label}
+                      density={section.density}
+                      fieldKeys={sectionKeys}
+                      byKey={byKey}
+                      values={liveValues}
+                      fieldList={fieldList}
+                      formId={formId}
+                      pipelineFamily={pipelineFamily}
+                      quotingForm={quotingForm}
+                      policySubType={policySubType}
+                      lifeHealthOptions={lifeHealthOptions}
+                      lifeOptions={lifeOptions}
+                      healthOptions={healthOptions}
+                      dealId={dealId}
+                      packageLines={packageLines}
+                      activePackageLine={activePackageLine}
+                      lineSettings={lineSettings}
+                      onValueChange={patchValue}
+                      onValuesPatch={patchValues}
+                    />
+                    {placeMhoHere ? (
+                      <MhoDetailsSection
+                        values={liveValues}
+                        formId={formId}
+                        onValueChange={patchValue}
+                      />
+                    ) : null}
+                  </Fragment>
                 );
               }
               const shared = isSharedDealSection(section);
@@ -597,12 +612,13 @@ export function DealDetailsPanel({
                 </section>
               );
             })}
+            {showMho && isRightColumn && !mhoPlacedInColumn ? (
+              <MhoDetailsSection values={liveValues} formId={formId} onValueChange={patchValue} />
+            ) : null}
           </div>
-        ))}
+          );
+        })}
       </div>
-      {showMho ? (
-        <MhoDetailsSection values={liveValues} formId={formId} onValueChange={patchValue} />
-      ) : null}
       <div className="mt-3 flex justify-end">
         <button type="submit" className={buttonVariants()} data-ff-deal-details-save="">
           Save deal details

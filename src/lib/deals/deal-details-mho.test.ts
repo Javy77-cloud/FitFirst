@@ -53,6 +53,25 @@ describe("MHO Deal Details section", () => {
     }
   });
 
+
+  it("sits on the right under co-applicant (not under insured address)", () => {
+    const html = renderDetails("MHO");
+    const right = html.indexOf('data-ff-deal-details-col="right"');
+    const left = html.indexOf('data-ff-deal-details-col="left"');
+    const coApp = html.indexOf('data-ff-deal-section="co_applicant"');
+    const mho = html.indexOf('data-ff-deal-section="mho"');
+    const insured = html.indexOf('data-ff-deal-section="insured_address"');
+    expect(right).toBeGreaterThan(-1);
+    expect(coApp).toBeGreaterThan(right);
+    expect(mho).toBeGreaterThan(coApp);
+    // Still inside the right column chunk (before mailing if present, after co-app).
+    expect(mho).toBeGreaterThan(right);
+    expect(insured).toBeGreaterThan(left);
+    expect(mho).toBeGreaterThan(insured); // right column renders after left in DOM
+    // MHO must not appear between left-column sections only — co-app precedes it on the right.
+    expect(html.slice(right, mho)).toMatch(/data-ff-deal-section="co_applicant"/);
+  });
+
   it("asks the manufactured-home questions and locks structure type", () => {
     const html = renderDetails("MHO");
     for (const row of MHO_DETAILS_FIELDS) {
