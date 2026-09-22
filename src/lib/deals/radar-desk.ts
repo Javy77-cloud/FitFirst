@@ -1,7 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { activityLogs, documents, quotes } from "@/lib/db/schema";
+import { activityLogs, carriers, documents, quotes } from "@/lib/db/schema";
 import type { DealListRow } from "@/lib/db/queries";
 import { inferDealProducts, dealProductDef } from "@/lib/deals/deal-products";
 import { RADAR_TREND_DAYS } from "@/lib/deals/radar-glance";
@@ -13,7 +13,7 @@ import {
   stackProductLines,
   type StackProductLine,
 } from "@/lib/deals/card-glance";
-import { listProductStageChips } from "@/lib/deals/product-stages";
+import { listProductStageChips, parseProductStages } from "@/lib/deals/product-stages";
 import { resolveDealStampStage } from "@/lib/deals/status-stamp";
 import { humanizeDealStage } from "@/lib/deals/package-lines";
 import { bookFamily } from "@/lib/desk/policy-line";
@@ -108,12 +108,14 @@ export type DealQuoteGlance = {
 };
 
 type DealQuoteRowGlance = {
+  id: string;
   premium: number | null;
   agentStatus: string | null;
   stub: boolean;
   shopLine: string | null;
   notes: string | null;
   quoteRunId: string | null;
+  carrierName: string | null;
 };
 
 function riskReady(row: DealListRow): boolean {
@@ -147,6 +149,7 @@ export async function loadDealVelocityTouches(dealIds: string[]) {
       .where(and(eq(documents.tenantId, tenant), inArray(documents.dealId, dealIds))),
     db
       .select({
+        id: quotes.id,
         dealId: quotes.dealId,
         createdAt: quotes.createdAt,
         premium: quotes.premium,
@@ -156,8 +159,10 @@ export async function loadDealVelocityTouches(dealIds: string[]) {
         shopLine: quotes.shopLine,
         notes: quotes.notes,
         quoteRunId: quotes.quoteRunId,
+        carrierName: carriers.name,
       })
       .from(quotes)
+      .leftJoin(carriers, eq(quotes.carrierId, carriers.id))
       .where(and(eq(quotes.tenantId, tenant), inArray(quotes.dealId, dealIds))),
     db
       .select({
@@ -208,12 +213,14 @@ export async function loadDealVelocityTouches(dealIds: string[]) {
     if (emptyStub) continue;
     const rows = quoteRowsByDeal.get(row.dealId) ?? [];
     rows.push({
+      id: row.id,
       premium: hasPremium ? premiumNumber : null,
       agentStatus: status,
       stub: Boolean(row.stub),
       shopLine: row.shopLine,
       notes: row.notes,
       quoteRunId: row.quoteRunId,
+      carrierName: row.carrierName ?? null,
     });
     quoteRowsByDeal.set(row.dealId, rows);
     const glance = quoteGlanceByDeal.get(row.dealId) ?? {
@@ -334,6 +341,10 @@ export function presentRadarCards(
         pipelineStage: deal.pipelineStageSlug || deal.pipelineStage,
       });
       const stageNotices = deal.shopFlow?.productStages ?? {};
+      const productStages = parseProductStages(deal.shopFlow?.productStages);
+      const selectedQuoteIds = Object.fromEntries(
+        chips.map((chip) => [chip.product, productStages[chip.product]?.selectedQuoteIds ?? []]),
+      );
       const productLines = stackProductLines({
         products: chips.map((chip) => ({
           product: chip.product,
@@ -344,6 +355,7 @@ export function presentRadarCards(
         })),
         quotes: touches.quoteRowsByDeal.get(deal.id) ?? [],
         quoteRuns: deal.shopFlow?.quoteRuns,
+        selectedQuoteIds,
       });
       const stamps = [...new Set(productLines.flatMap((line) => line.stamps))];
       const quoteSent = stamps.includes("Quote sent");

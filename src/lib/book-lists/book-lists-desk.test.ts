@@ -67,8 +67,9 @@ describe("command-card book lists", () => {
     expect(css).toMatch(
       /\.ff-carrier-card \.ff-book-grid \{[^}]*grid-template-columns:\s*15\.5rem minmax\(0, 1fr\) 24\.25rem/,
     );
+    expect(css).toMatch(/--ff-deal-stack-spread:\s*14\.5rem minmax\(0,\s*1fr\) 12\.75rem/);
     expect(css).toMatch(
-      /\[data-ff-priority-stack\] \.ff-deal-host-spread \{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*14\.5rem minmax\(0,\s*1fr\) 12\.75rem/,
+      /\[data-ff-priority-stack\] \.ff-deal-stack-header,\s*\[data-ff-priority-stack\] \.ff-deal-host-spread \{[^}]*grid-template-columns:\s*var\(--ff-deal-stack-spread\)/,
     );
     expect(css).not.toMatch(/\.ff-deal-host-center,/);
     expect(css).toMatch(

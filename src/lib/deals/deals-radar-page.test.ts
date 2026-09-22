@@ -150,6 +150,7 @@ describe("Deals Priority Stack + Radar", () => {
 
   it("keeps Stack product names on the left and that product's place, stamps, and quotes on the right", () => {
     const face = source("src/components/deals/deal-host-face.tsx");
+    const stack = source("src/components/deals/priority-stack.tsx");
     const css = source("src/app/globals.css");
     const meter = source("src/components/renewals/renewal-health-meter.tsx");
     expect(face).toMatch(/data-ff-product-lines/);
@@ -158,35 +159,70 @@ describe("Deals Priority Stack + Radar", () => {
     expect(face).toMatch(/data-ff-product-quotes/);
     expect(face).toMatch(/data-ff-deal-stamp/);
     expect(face).toMatch(/data-ff-deal-zone="name"/);
+    expect(face).toMatch(/ff-deal-host-name/);
     expect(face).toMatch(/data-ff-deal-zone="center"/);
     expect(face).toMatch(/data-ff-deal-zone="cue"/);
     expect(face).toMatch(/data-ff-deal-products/);
     expect(face).toMatch(/ff-deal-host-line/);
     expect(face).not.toMatch(/>\s*—\s*</);
     expect(face).toMatch(/RenewalHealthMeter/);
+    expect(face).toMatch(/layout="stack"/);
+    expect(face).toMatch(/glyph/);
+    expect(stack).toMatch(/data-ff-deal-stack-header/);
+    expect(stack).toMatch(/data-ff-stack-col="name"/);
+    expect(stack).toMatch(/data-ff-stack-col="form"/);
+    expect(stack).toMatch(/data-ff-stack-col="stage"/);
+    expect(stack).toMatch(/data-ff-stack-col="stamp"/);
+    expect(stack).toMatch(/data-ff-stack-col="quotes"/);
+    expect(stack).toMatch(/data-ff-stack-col="health"/);
+    expect(stack).toMatch(/Priority Stack/);
+    expect(stack).toMatch(/glyph=\{<span className="ff-stack-glyph"/);
+    expect(stack).toMatch(/<div className="ff-stack-card-body">/);
+    expect(stack).not.toMatch(/<article[^>]*>\s*<span className="ff-stack-glyph"/);
     expect(meter).toMatch(/ff-renewal-health-label">Client/);
     expect(meter).toMatch(/ff-renewal-health-label">Policy/);
+    expect(meter).toMatch(/layout === "stack"/);
+    expect(meter).toMatch(/ff-renewal-health--stack/);
+    expect(meter).toMatch(/data-ff-health-flag/);
+    expect(meter).toMatch(/Flag className="ff-renewal-health-flag-icon"/);
+    expect(meter).not.toMatch(/layout === "stack"[\s\S]{0,200}?>Flag</);
     expect(css).toMatch(/\.ff-stack-products li \{[^}]*grid-template-columns:\s*6\.75rem minmax\(0,\s*1fr\)/);
     expect(css).toMatch(/\.ff-stack-products \{[^}]*flex:\s*1 0 100%/);
     expect(css).toMatch(
-      /\[data-ff-priority-stack\] \.ff-deal-host-spread \{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*14\.5rem minmax\(0,\s*1fr\) 12\.75rem/,
+      /--ff-deal-stack-spread:\s*14\.5rem minmax\(0,\s*1fr\) 12\.75rem/,
+    );
+    expect(css).toMatch(/--ff-deal-stack-job:\s*minmax\(0,\s*1fr\) auto/);
+    expect(css).toMatch(/--ff-deal-stack-lines:\s*5\.75rem 5\.5rem 7\.75rem minmax\(0,\s*1fr\)/);
+    expect(css).toMatch(
+      /\[data-ff-priority-stack\] \.ff-deal-stack-header,\s*\[data-ff-priority-stack\] \.ff-deal-host-spread \{[^}]*grid-template-columns:\s*var\(--ff-deal-stack-spread\)/,
     );
     expect(css).toMatch(
-      /\[data-ff-priority-stack\] \.ff-deal-host-job-single,\s*\[data-ff-priority-stack\] \.ff-deal-host-job-multi \{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto/,
+      /\[data-ff-priority-stack\] \.ff-deal-host-job-single,\s*\[data-ff-priority-stack\] \.ff-deal-host-job-multi \{[^}]*grid-template-columns:\s*var\(--ff-deal-stack-job\)/,
+    );
+    expect(css).toMatch(
+      /\[data-ff-priority-stack\] \.ff-deal-stack-header-lines,\s*\[data-ff-priority-stack\] \.ff-deal-host-lines \{[^}]*grid-template-columns:\s*var\(--ff-deal-stack-lines\)/,
     );
     expect(css).toMatch(
       /\[data-ff-priority-stack\] \.ff-deal-host-job-single \.ff-deal-host-quotes \{[^}]*grid-row:\s*2/,
     );
-    expect(css).toMatch(
-      /\[data-ff-priority-stack\] \.ff-deal-host-lines \{[^}]*grid-template-columns:\s*5\.75rem 5\.5rem 7\.75rem minmax\(0,\s*1fr\)/,
-    );
     expect(css).toMatch(/\[data-ff-priority-stack\] \.ff-deal-host-line \{[^}]*grid-column:\s*1 \/ -1/);
     expect(css).toMatch(/\[data-ff-priority-stack\] \.ff-deal-host-stamps \{[^}]*overflow:\s*visible/);
+    expect(css).toMatch(/\[data-ff-priority-stack\] \.ff-deal-stack-header \{[^}]*position:\s*sticky/);
+    expect(css).toMatch(/\[data-ff-priority-stack\] \.ff-deal-host-name \{[^}]*display:\s*flex/);
+    expect(css).toMatch(
+      /\[data-ff-priority-stack\] \.ff-renewal-health--stack \{[^}]*grid-template-columns:\s*3\.35rem 3\.35rem auto/,
+    );
+    expect(css).toMatch(
+      /\[data-ff-priority-stack\] \.ff-renewal-health--stack \.ff-renewal-health-pair \{[^}]*flex-direction:\s*column/,
+    );
     expect(css).toMatch(
       /\[data-ff-priority-stack\] \.ff-stack-product,\s*\[data-ff-priority-stack\] \.ff-deal-host-stage,\s*\[data-ff-priority-stack\] \.ff-deal-host-quotes \{[^}]*color:\s*var\(--ff-muted\);[^}]*font-weight:\s*500/,
     );
     expect(css).not.toMatch(/\.ff-deal-host-center,/);
     expect(css).not.toMatch(/\.ff-deal-host-center \.ff-stack-product[\s\S]{0,250}?flex:\s*1 1 7\.5rem/);
     expect(source("src/lib/deals/velocity.ts")).not.toMatch(/label:\s*"Chase"/);
+    expect(source("src/lib/deals/radar-desk.ts")).toMatch(/carrierName:\s*carriers\.name/);
+    expect(source("src/lib/deals/radar-desk.ts")).toMatch(/selectedQuoteIds/);
+    expect(source("src/lib/deals/card-glance.ts")).toMatch(/quotesSentGlanceLabel/);
   });
 });
