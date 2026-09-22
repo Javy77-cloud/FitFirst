@@ -54,7 +54,7 @@ export function evaluateShopFits(input: {
 
   const matches = rankFitsByFirstWave(
     writers.map((rule) => {
-      const match = matchCarrier(risk, rule, input.prior, input.asOfYear);
+      const match = matchCarrier(risk, rule, input.prior, input.asOfYear, input.dealLine);
       return {
         ...match,
         firstWaveRank: firstWaveRank(input.dealLine, rule.carrierId, rule.carrierName),

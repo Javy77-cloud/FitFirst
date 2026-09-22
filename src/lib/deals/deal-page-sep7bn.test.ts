@@ -29,15 +29,22 @@ describe("sep7bn Markets paint from a filled sheet without a shop", () => {
   it("BN1 — a filled sheet evaluates appetite; leftover logs are not a shop and do not request quotes", () => {
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/hasShopMarketAction|hasExplicitMarketAction/);
-    expect(page).toMatch(/evaluateDealMarkets\(risk, activeSheet\.values/);
-    expect(page).toMatch(/sheetReady \|\| shopMarketsAction \|\| shopListIds\.length > 0/);
+    expect(page).toMatch(/evaluateDealMarkets\(risk, activeSheet\.values, activeLob\)/);
+    expect(page).toMatch(/const marketsUseSheet = !isLifeHealthShopLine\(sheetLine\)/);
+    expect(page).toMatch(/const sheetReady = marketsUseSheet && sheetFilled/);
+    expect(page).toMatch(/const evalMarkets = Boolean\(risk && sheetReady\)/);
+    expect(page).not.toMatch(/shopListIds\.length/);
+    expect(page).not.toMatch(/listedMatches/);
     expect(page).not.toMatch(/sheetReady \? await evaluateDealMarkets/);
     expect(page).not.toMatch(/const matches = risk \? await evaluateDealMarkets\(risk\)/);
     expect(page).not.toMatch(/explicitLookup=\{sheetReady && logs\.length > 0\}/);
     expect(page).toMatch(/explicitLookup=\{shopMarketsAction\}/);
     expect(page).toMatch(/sheetHasValues=\{sheetReady\}/);
-    expect(page).toMatch(/matches=\{sheetReady \|\| shopMarketsAction \? matches : listedMatches\}/);
+    expect(page).toMatch(/matches=\{matches\}/);
+    expect(page).toMatch(/shopListIds=\{shopListIds\}/);
     expect(page).not.toMatch(/requestAppetiteQuotesAction/);
+    expect(page).toMatch(/<LifeAppetiteHelper/);
+    expect(page).toMatch(/<HealthMarketsEmpty/);
     expect(page).not.toMatch(/localStorage/);
     expect(page).not.toMatch(/sessionStorage/);
     expect(hasExplicitMarketAction([{ why: "roof age" }], [{ notes: "Stub quote." }])).toBe(false);

@@ -1,5 +1,6 @@
 import {
   currentRoofAge,
+  writesDealLine,
   type AppetiteRuleInput,
   type FitBand,
   type PriorAttempt,
@@ -69,6 +70,8 @@ export function matchCarrier(
   rule: AppetiteRuleInput,
   prior: PriorAttempt[],
   asOfYear = new Date().getFullYear(),
+  /** When set, score this shop line. Omitted calls keep the homeowners check. */
+  dealLine?: string | null,
 ): CarrierMatch {
   const reasons: MatchReason[] = [];
   let fitScore = 100;
@@ -110,10 +113,14 @@ export function matchCarrier(
     });
   }
 
-  if (rule.writtenLines.length > 0 && !rule.writtenLines.includes("HO")) {
+  const shopLine = dealLine?.trim();
+  const writesShopLine = shopLine
+    ? writesDealLine(rule.writtenLines, shopLine)
+    : rule.writtenLines.length === 0 || rule.writtenLines.includes("HO");
+  if (!writesShopLine) {
     reasons.push({
       code: "line_not_written",
-      message: "Homeowners not a written line",
+      message: shopLine ? `${shopLine} is not a written line` : "Homeowners not a written line",
       severity: "fail",
     });
   }
