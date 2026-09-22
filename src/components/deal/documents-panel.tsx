@@ -10,6 +10,7 @@ import type { Document, ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db
 import type { ShopLine } from "@/lib/domain";
 import type { SheetProduct } from "@/lib/quote-sheet/products";
 import { listWorksheetSourceDocs } from "@/lib/documents/deal-docs-save";
+import type { DocSlotProduct } from "@/lib/documents/doc-slot-advance";
 import { asList } from "@/lib/safe-list";
 
 export function DocumentsPanel({
@@ -32,6 +33,11 @@ export function DocumentsPanel({
   productId,
   healthSherpa,
   insuredPropertyKind,
+  quotingForm,
+  docSlot,
+  marketsDone = false,
+  quotesDone = false,
+  packageProducts = [],
 }: {
   dealId: string;
   riskId: string;
@@ -55,6 +61,11 @@ export function DocumentsPanel({
     acaReady: boolean;
   };
   insuredPropertyKind?: string | null;
+  quotingForm?: string | null;
+  docSlot?: string | null;
+  marketsDone?: boolean;
+  quotesDone?: boolean;
+  packageProducts?: readonly DocSlotProduct[];
 }) {
   const { sourceDocs, lineDocs, otherSourceDocs } = listWorksheetSourceDocs(docs);
   const lineGroups = asList(groupDocsByLine(lineDocs));
@@ -94,7 +105,23 @@ export function DocumentsPanel({
               </ul>
             ) : null}
 
-            <SourceDocsUpload dealId={dealId} riskId={riskId} line={sheetLine} />
+            <SourceDocsUpload
+              dealId={dealId}
+              riskId={riskId}
+              line={sheetLine}
+              product={productId}
+              quotingForm={quotingForm}
+              surface="documents"
+              docSlot={docSlot}
+              marketsDone={marketsDone}
+              quotesDone={quotesDone}
+              savedDocs={asList(docs).map((row) => ({
+                docType: row.docType,
+                slot: row.slot,
+                tags: Array.isArray(row.tags) ? row.tags : [],
+              }))}
+              packageProducts={packageProducts}
+            />
           </section>
           <DealFormSends dealId={dealId} />
         </div>
