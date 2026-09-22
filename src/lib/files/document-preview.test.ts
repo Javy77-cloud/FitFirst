@@ -199,6 +199,47 @@ describe("interpretDocumentBytes", () => {
     ).toBe("missing");
   });
 
+
+  it("accepts BOM/whitespace-prefixed PDF magic (aligned with server looksLikePdf)", () => {
+    const bom = new Uint8Array([0xef, 0xbb, 0xbf, 0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]);
+    const spaced = new TextEncoder().encode("  \n%PDF-1.4 rest");
+    expect(
+      interpretDocumentBytes({
+        ok: true,
+        status: 200,
+        headers: headers({ "Content-Type": "application/pdf" }),
+        byteLength: bom.length,
+        head: bom,
+        kind: "pdf",
+      }),
+    ).toBe("ready");
+    expect(
+      interpretDocumentBytes({
+        ok: true,
+        status: 200,
+        headers: headers({ "Content-Type": "application/pdf" }),
+        byteLength: spaced.length,
+        head: spaced,
+        kind: "pdf",
+      }),
+    ).toBe("ready");
+  });
+
+  it("does not treat PDF binary containing 'unauthorized' as HTML missing", () => {
+    // Binary PDF that happens to include the ASCII word "unauthorized" in the head window.
+    const pdf = new TextEncoder().encode("%PDF-1.4\n% unauthorized stream placeholder\n");
+    expect(
+      interpretDocumentBytes({
+        ok: true,
+        status: 200,
+        headers: headers({ "Content-Type": "application/pdf" }),
+        byteLength: pdf.length,
+        head: pdf,
+        kind: "pdf",
+      }),
+    ).toBe("ready");
+  });
+
   it("rejects HTML error bodies", () => {
     const html = new TextEncoder().encode("<!doctype html><html>Unauthorized</html>");
     expect(

@@ -4,9 +4,11 @@ import { isUuid } from "@/lib/ids";
 import { db } from "@/lib/db";
 import { documents, documentVersions, type Document, type DocumentVersion } from "@/lib/db/schema";
 import { probeStoredFile, readStoredFile } from "@/lib/files/object-store";
+import { stripLeadingJunkBeforePdf } from "@/lib/files/pdf-magic";
 import {
   contentDisposition,
   isFilenameOnlyStub,
+  looksLikePdf,
   resolveFileMime,
   shouldWrapAsPdf,
 } from "./urls";
@@ -68,6 +70,10 @@ export async function loadDocumentBytes(doc: Document): Promise<{
   // Private-blob auth failures used to wrap HTML into a blank PDF.
   if (looksLikeHtmlError(buffer)) {
     return null;
+  }
+  // Strip BOM/leading junk so client View + browser PDF viewers see clean %PDF-.
+  if (looksLikePdf(buffer)) {
+    buffer = stripLeadingJunkBeforePdf(buffer);
   }
   if (shouldWrapAsPdf(docWithBytes(doc, buffer))) {
     buffer = await wrapTextAsPdf(doc.filename, buffer.toString("utf8"));

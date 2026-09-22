@@ -559,6 +559,22 @@ async function readPrivateBlob(urlOrPathname: string): Promise<Buffer | null> {
     if (viaPathSdk) return viaPathSdk;
   }
   if (isHttp) {
+    // Same as put-result: try downloadUrl shape via SDK get before raw URL.
+    const downloadUrlForSdk = (() => {
+      try {
+        const u = new URL(urlOrPathname);
+        u.hostname = u.hostname.toLowerCase();
+        if (u.searchParams.get("download") === "1") return u.toString();
+        u.searchParams.set("download", "1");
+        return u.toString();
+      } catch {
+        return null;
+      }
+    })();
+    if (downloadUrlForSdk && downloadUrlForSdk !== urlOrPathname) {
+      const viaDlSdk = await readViaSdkGet(downloadUrlForSdk);
+      if (viaDlSdk) return viaDlSdk;
+    }
     const viaUrlSdk = await readViaSdkGet(urlOrPathname);
     if (viaUrlSdk) return viaUrlSdk;
   }
@@ -627,11 +643,43 @@ export type PutBlobReadbackSource = {
   pathname?: string | null;
 };
 
+
+/** Build put-result-shaped source from a persisted storagePath (url or downloadUrl). */
+export function putReadbackSourceFromStoragePath(storagePath: string): PutBlobReadbackSource | null {
+  const raw = storagePath.trim();
+  if (!/^https?:\/\//i.test(raw)) return null;
+  const host = blobHostname(raw);
+  const isVercelBlob = Boolean(host && /\.blob\.vercel-storage\.com$/i.test(host));
+  if (!isVercelBlob) return null;
+  const pathname =
+    blobPathnameDecoded(raw) ||
+    blobPathnameFromUrl(raw);
+  let downloadUrl: string | null = null;
+  try {
+    const u = new URL(raw);
+    u.hostname = u.hostname.toLowerCase();
+    if (u.searchParams.get("download") === "1") {
+      downloadUrl = u.toString();
+    } else {
+      u.searchParams.set("download", "1");
+      downloadUrl = u.toString();
+    }
+  } catch {
+    downloadUrl = null;
+  }
+  return {
+    url: raw,
+    downloadUrl,
+    pathname,
+  };
+}
+
+
 /**
  * Read bytes using the same put() result object — prefer downloadUrl / pathname via
  * SDK get + presign. Do not re-fetch a bare private CDN URL with Bearer first.
  */
-async function readBytesFromPutResult(blob: PutBlobReadbackSource): Promise<Buffer | null> {
+export async function readBytesFromPutResult(blob: PutBlobReadbackSource): Promise<Buffer | null> {
   const pathname =
     (blob.pathname && posixKey(blob.pathname)) ||
     blobPathnameDecoded(blob.url) ||
@@ -723,6 +771,13 @@ export async function assertReadableFromPutResult(blob: PutBlobReadbackSource): 
 async function readRemoteUrl(url: string): Promise<Buffer | null> {
   // Private Vercel blobs: never fall through to bare fetch — that returns an
   // empty/unauthorized body that used to get wrapped into a blank PDF.
+  // Prefer the same put-result strategies that make attach assertReadable succeed
+  // (SDK get pathname/downloadUrl, then presign) so View/probe/serve match attach.
+  const putSource = putReadbackSourceFromStoragePath(url);
+  if (putSource) {
+    const viaPut = await readBytesFromPutResult(putSource);
+    if (viaPut) return viaPut;
+  }
   const pathname = blobPathnameFromUrl(url);
   const decoded = blobPathnameDecoded(url);
   if (pathname) {

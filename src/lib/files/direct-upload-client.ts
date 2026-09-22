@@ -20,5 +20,6 @@ export async function uploadBytesToBlob(input: {
   if (!blob?.url) {
     throw new Error(`“${input.file.name}” uploaded but Blob did not return a URL. Nothing was saved on the quote.`);
   }
-  return { url: blob.url };
+  // Prefer downloadUrl when present so View/probe hit the same shape as server put read-back.
+  return { url: blob.downloadUrl || blob.url };
 }

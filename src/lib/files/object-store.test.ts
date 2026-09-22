@@ -275,6 +275,7 @@ describe("private blob read hardening (source)", () => {
     expect(src).toMatch(/startsWith <!DOCTYPE/);
     expect(src).toMatch(/assertReadableFromPutResult/);
     expect(src).toMatch(/readBytesFromPutResult/);
+    expect(src).toMatch(/putReadbackSourceFromStoragePath/);
   });
 });
 
@@ -848,3 +849,74 @@ describe("acceptBytes gzip-wrapped PDF read-back", () => {
     expect(get).toHaveBeenCalled();
   });
 });
+
+
+describe("View/readStoredFile uses put-result strategies", () => {
+  const RW_TOKEN = "vercel_blob_rw_zsetpgqienornflj_testsecret";
+  const PUT_URL = "https://zsetpgqienornflj.private.blob.vercel-storage.com/tenant/deal/doc.pdf";
+  const DOWNLOAD_URL = `${PUT_URL}?download=1`;
+  const PDF = Buffer.from("%PDF-1.4 view-bytes");
+
+  beforeEach(() => {
+    vi.resetModules();
+    process.env.BLOB_READ_WRITE_TOKEN = RW_TOKEN;
+    delete process.env.BLOB_STORE_ID;
+    delete process.env.VERCEL;
+  });
+
+  it("putReadbackSourceFromStoragePath synthesizes downloadUrl + pathname", async () => {
+    const { putReadbackSourceFromStoragePath } = await import("./object-store");
+    const src = putReadbackSourceFromStoragePath(PUT_URL);
+    expect(src).not.toBeNull();
+    expect(src!.url).toBe(PUT_URL);
+    expect(src!.downloadUrl).toBe(DOWNLOAD_URL);
+    expect(src!.pathname).toMatch(/tenant\/deal\/doc\.pdf/);
+  });
+
+  it("readStoredFile on raw private URL succeeds via SDK get(pathname) like attach", async () => {
+    const get = vi.fn(async (urlOrPath: string) => {
+      expect(String(urlOrPath)).toMatch(/tenant\/deal\/doc\.pdf/);
+      return {
+        statusCode: 200 as const,
+        stream: new ReadableStream({
+          start(controller) {
+            controller.enqueue(PDF);
+            controller.close();
+          },
+        }),
+        headers: new Headers({ "content-type": "application/pdf" }),
+        blob: {
+          url: PUT_URL,
+          downloadUrl: DOWNLOAD_URL,
+          pathname: "tenant/deal/doc.pdf",
+          contentType: "application/pdf",
+          contentDisposition: "",
+          cacheControl: "",
+          size: PDF.length,
+          uploadedAt: new Date(),
+          etag: "e",
+        },
+      };
+    });
+    vi.doMock("@vercel/blob", () => ({
+      put: vi.fn(),
+      get,
+      del: vi.fn(),
+      list: vi.fn(),
+      issueSignedToken: vi.fn(),
+      presignUrl: vi.fn(),
+    }));
+    const fetchMock = vi.fn(async () => {
+      throw new Error("Bearer CDN must not be required when SDK get works");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { readStoredFile: readFresh, probeStoredFile: probeFresh } = await import("./object-store");
+    const bytes = await readFresh(PUT_URL);
+    expect(bytes?.equals(PDF)).toBe(true);
+    expect(await probeFresh(PUT_URL)).toBe(true);
+    expect(get).toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
