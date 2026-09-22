@@ -150,6 +150,8 @@ export function PolicyOverviewTab({
             <Link
               href={`/policies/${policy.id}/compare`}
               className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              title="Compare renewal terms"
+              aria-label="Renew / Compare — compare renewal terms"
             >
               Renew
             </Link>

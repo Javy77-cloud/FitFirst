@@ -14,6 +14,8 @@ import {
   type PolicyDocRow,
 } from "@/components/policy/tabs/documents-table";
 import { IdCardsUploadPanel } from "@/components/policy/id-cards-upload-panel";
+import { deskNow } from "@/lib/home/as-of";
+import { shouldShowManualRenewalHelp } from "@/lib/policy/care-strip";
 
 export function PolicyDocumentsTab({
   policy,
@@ -29,6 +31,8 @@ export function PolicyDocumentsTab({
     id: string;
     dealId: string | null;
     riskId: string | null;
+    status?: string | null;
+    expirationDate?: Date | string | null;
     esignStatus: string;
     esignRequestedAt: Date | null;
     esignSignedAt: Date | null;
@@ -52,8 +56,35 @@ export function PolicyDocumentsTab({
   }>;
   isAdmin?: boolean;
 }) {
+  const showManualRenewalHelp = shouldShowManualRenewalHelp({
+    expirationDate: policy.expirationDate,
+    status: policy.status,
+    asOf: deskNow(),
+  });
+
   return (
     <div className="space-y-4" data-ff-policy-tab="documents">
+      {showManualRenewalHelp ? (
+        <section
+          className="ff-card border-amber-200/80 bg-amber-50/40 p-4"
+          data-ff-manual-renewal-help=""
+        >
+          <h2 className="text-base font-semibold text-navy">Manual renewal upload</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            No AMS renewal API yet — park paper here, then compare terms.
+          </p>
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-navy/90">
+            <li>Upload current term DEC/complete as <strong>Issued declaration page</strong>.</li>
+            <li>Upload the new renewal DEC or binder.</li>
+            <li>
+              Then Overview → <strong>Renew</strong> opens Compare for terms.
+            </li>
+          </ol>
+          <p className="mt-2 text-xs text-muted-foreground">
+            AOR-change renewals use this same Documents home; API later drops into the same place.
+          </p>
+        </section>
+      ) : null}
       <section className="ff-card p-4">
         <h2 className="text-base font-semibold text-navy">Policy documents</h2>
         <p className="mt-1 text-base text-muted-foreground">

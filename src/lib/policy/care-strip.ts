@@ -22,6 +22,17 @@ export function formatMissingDocsWhy(count: number, names?: readonly string[] | 
   return `${n} ${noun}: ${head}, and ${last}`;
 }
 
+/** True when care strip would surface renewal — Documents shows manual-upload help. */
+export function shouldShowManualRenewalHelp(input: {
+  expirationDate?: Date | string | null;
+  status?: string | null;
+  asOf: Date;
+}): boolean {
+  const daysUntil = daysUntilDate(input.expirationDate ?? null, input.asOf);
+  const lapsed = /lapse|cancel|expired|terminated/i.test(input.status ?? "");
+  return lapsed || (daysUntil != null && daysUntil < 30);
+}
+
 export function buildPolicyCareItems(input: {
   expirationDate?: Date | string | null;
   updatedAt?: Date | string | null;
@@ -45,12 +56,12 @@ export function buildPolicyCareItems(input: {
   if (lapsed || (daysUntil != null && daysUntil < 30)) {
     items.push({
       key: "renewal",
-      tab: "overview",
-      label: "Renewal",
+      tab: "documents",
+      label: "Renewal docs",
       why:
         lapsed
-          ? "This term is off-book — confirm rewrite or cancel path."
-          : `Expires in ${daysUntil} day${daysUntil === 1 ? "" : "s"}.`,
+          ? "This term is off-book — upload rewrite paper here when not via API."
+          : `Expires in ${daysUntil} day${daysUntil === 1 ? "" : "s"} — upload current + renewal paper here when not via API.`,
       count: 1,
     });
   }
