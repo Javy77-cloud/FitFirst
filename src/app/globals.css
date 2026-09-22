@@ -4461,6 +4461,11 @@ tr[data-ff-activity-selected="true"] {
   align-items: center;
   gap: 0.45rem;
 }
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-heartbeat {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+}
 [data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-glyph {
   grid-column: 1;
   grid-row: 2;
@@ -4620,10 +4625,21 @@ tr[data-ff-activity-selected="true"] {
 [data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-check input[type="checkbox"] {
   margin: 0;
 }
-[data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-spread > .ff-stack-name {
+[data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-name-host {
   grid-column: 2 / -1;
   grid-row: 1;
   min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+[data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-name-host > .ff-stack-name {
+  min-width: 0;
+}
+[data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-heartbeat {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
 }
 [data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-glyph {
   grid-column: 1;
@@ -4785,10 +4801,21 @@ tr[data-ff-activity-selected="true"] {
 [data-ff-book-command="accounts"][data-ff-book-layout="stack"] .ff-account-stack-check input[type="checkbox"] {
   margin: 0;
 }
-[data-ff-book-command="accounts"][data-ff-book-layout="stack"] .ff-account-stack-spread > .ff-stack-name {
+[data-ff-book-command="accounts"][data-ff-book-layout="stack"] .ff-account-stack-name-host {
   grid-column: 2 / -1;
   grid-row: 1;
   min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+[data-ff-book-command="accounts"][data-ff-book-layout="stack"] .ff-account-stack-name-host > .ff-stack-name {
+  min-width: 0;
+}
+[data-ff-book-command="accounts"][data-ff-book-layout="stack"] .ff-account-stack-heartbeat {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
 }
 [data-ff-book-command="accounts"][data-ff-book-layout="stack"] .ff-account-stack-glyph {
   grid-column: 1;
