@@ -1,6 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { documentPreviewKind, interpretDocumentProbe } from "./document-preview";
+import {
+  documentPreviewKind,
+  interpretDocumentBytes,
+  interpretDocumentProbe,
+  previewMimeFromResponse,
+} from "./document-preview";
 
 function source(file: string) {
   return readFileSync(file, "utf8");
@@ -61,17 +66,22 @@ describe("in-app document View modal", () => {
     expect(dialog).toMatch(/fileDownloadHref/);
   });
 
-  it("probes storage and shows a missing-file message instead of a blank iframe", () => {
+  it("loads PDF/image bytes into a blob: URL and shows missing instead of a blank iframe", () => {
     const dialog = source("src/components/documents/document-preview-dialog.tsx");
-    expect(dialog).toMatch(/probe=1/);
-    expect(dialog).toMatch(/interpretDocumentProbe/);
+    expect(dialog).toMatch(/createObjectURL/);
+    expect(dialog).toMatch(/arrayBuffer/);
+    expect(dialog).toMatch(/interpretDocumentBytes/);
     expect(dialog).toMatch(/data-ff-document-preview-missing/);
     expect(dialog).toMatch(/is missing — re-upload/);
+    // Do not iframe-navigate /api/files for PDFs (Chrome blank viewer with no-store).
+    expect(dialog).not.toMatch(/<iframe[^>]*src=\{href\}/);
     const serve = source("src/lib/files/serve-document.ts");
     expect(serve).toMatch(/FILE_MISSING_HEADER/);
     expect(serve).toMatch(/FILE_OK_HEADER/);
     expect(serve).toMatch(/probeDeskDocument/);
     expect(serve).toMatch(/probeStoredFile/);
+    expect(serve).toMatch(/file-missing\.txt/);
+    expect(serve).toMatch(/max-age=0, must-revalidate/);
   });
 });
 
@@ -139,5 +149,78 @@ describe("interpretDocumentProbe", () => {
     expect(
       interpretDocumentProbe({ ok: false, status: 401, headers: headers({}) }),
     ).toBe("error");
+  });
+});
+
+describe("interpretDocumentBytes", () => {
+  it("treats empty body and missing header as missing", () => {
+    expect(
+      interpretDocumentBytes({
+        ok: true,
+        status: 200,
+        headers: headers({ "Content-Type": "application/pdf" }),
+        byteLength: 0,
+        kind: "pdf",
+      }),
+    ).toBe("missing");
+    expect(
+      interpretDocumentBytes({
+        ok: false,
+        status: 404,
+        headers: headers({ "X-FitFirst-File-Missing": "1" }),
+        byteLength: 12,
+        kind: "pdf",
+      }),
+    ).toBe("missing");
+  });
+
+  it("requires %PDF magic for pdf kind", () => {
+    const pdfHead = new TextEncoder().encode("%PDF-1.4 rest");
+    const textHead = new TextEncoder().encode("Not a pdf at all");
+    expect(
+      interpretDocumentBytes({
+        ok: true,
+        status: 200,
+        headers: headers({ "Content-Type": "application/pdf" }),
+        byteLength: pdfHead.length,
+        head: pdfHead,
+        kind: "pdf",
+      }),
+    ).toBe("ready");
+    expect(
+      interpretDocumentBytes({
+        ok: true,
+        status: 200,
+        headers: headers({ "Content-Type": "application/pdf" }),
+        byteLength: textHead.length,
+        head: textHead,
+        kind: "pdf",
+      }),
+    ).toBe("missing");
+  });
+
+  it("rejects HTML error bodies", () => {
+    const html = new TextEncoder().encode("<!doctype html><html>Unauthorized</html>");
+    expect(
+      interpretDocumentBytes({
+        ok: true,
+        status: 200,
+        headers: headers({ "Content-Type": "text/html" }),
+        byteLength: html.length,
+        head: html,
+        kind: "pdf",
+      }),
+    ).toBe("missing");
+  });
+});
+
+describe("previewMimeFromResponse", () => {
+  it("falls back to application/pdf for pdf kind when content-type is plain", () => {
+    expect(
+      previewMimeFromResponse(
+        { headers: headers({ "Content-Type": "text/plain" }) },
+        "pdf",
+      ),
+    ).toBe("application/pdf");
   });
 });

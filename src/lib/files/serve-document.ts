@@ -137,7 +137,7 @@ export async function serveDeskDocument(
       headers: {
         "Content-Type": file.mimeType,
         "Content-Disposition": contentDisposition(file.filename, Boolean(opts.download)),
-        "Cache-Control": "private, no-store",
+        "Cache-Control": "private, max-age=0, must-revalidate",
         "X-Content-Type-Options": "nosniff",
       },
     });
@@ -162,7 +162,7 @@ export async function serveDeskDocument(
     headers: {
       "Content-Type": file.mimeType,
       "Content-Disposition": contentDisposition(file.filename, Boolean(opts.download)),
-      "Cache-Control": "private, no-store",
+      "Cache-Control": "private, max-age=0, must-revalidate",
       "X-Content-Type-Options": "nosniff",
     },
   });
@@ -178,7 +178,9 @@ function missingFileResponse(filename: string, download: boolean): Response {
     status: 404,
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
-      "Content-Disposition": contentDisposition(filename, download),
+      // Do not reuse the .pdf filename here — Chrome's PDF viewer treats
+      // inline text/plain + *.pdf disposition as a blank PDF pane.
+      "Content-Disposition": contentDisposition("file-missing.txt", download),
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
       [FILE_MISSING_HEADER]: "1",
@@ -201,7 +203,7 @@ function readyProbeResponse(mimeType?: string | null): Response {
   });
 }
 
-/** Lightweight existence check for in-app preview (no blank iframe, no full PDF download). */
+/** Existence check for in-app preview — confirms bytes are readable before View mounts. */
 export async function probeDeskDocument(
   id: string,
   opts: { versionId?: string | null } = {},
@@ -237,7 +239,7 @@ export async function probeDeskDocument(
     mimeType = hit.version.mimeType;
   }
 
-  // Prefer Blob head() (no full download). Fall back to a real byte load.
+  // probeStoredFile requires readable bytes (not head-only).
   const exists = await probeStoredFile(storagePath);
   if (exists) return readyProbeResponse(mimeType);
 

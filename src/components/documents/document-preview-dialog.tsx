@@ -10,7 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { documentPreviewKind, interpretDocumentProbe } from "@/lib/files/document-preview";
+import {
+  documentPreviewKind,
+  interpretDocumentBytes,
+  previewMimeFromResponse,
+} from "@/lib/files/document-preview";
 import { fileDownloadHref, fileViewHref } from "@/lib/files/urls";
 import { cn } from "@/lib/utils";
 
@@ -41,39 +45,77 @@ export function DocumentPreviewDialog({
   const saveHref = downloadHref ?? (documentId ? fileDownloadHref(documentId) : "");
   const title = filename.trim() || "Document";
   const [loadState, setLoadState] = useState<LoadState>("idle");
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+
+  // Revoke prior blob: URLs when replaced or on unmount.
+  useEffect(() => {
+    return () => {
+      if (previewSrc?.startsWith("blob:")) URL.revokeObjectURL(previewSrc);
+    };
+  }, [previewSrc]);
 
   useEffect(() => {
     if (!open) {
       setLoadState("idle");
+      setPreviewSrc(null);
       return;
     }
     if (kind === "unsupported" || !href) {
       setLoadState("ready");
+      setPreviewSrc(null);
       return;
     }
+
     let cancelled = false;
     setLoadState("loading");
-    const probeUrl = href.includes("?") ? `${href}&probe=1` : `${href}?probe=1`;
-    fetch(probeUrl, { method: "GET", credentials: "same-origin", cache: "no-store", redirect: "manual" })
+    setPreviewSrc(null);
+
+    // Authenticated full GET → blob: URL. Avoids blank Chrome PDF viewer when
+    // iframe navigates to /api/files with Cache-Control: no-store, or when a
+    // text/plain missing body carries a .pdf Content-Disposition filename.
+    fetch(href, { method: "GET", credentials: "same-origin", cache: "no-store", redirect: "manual" })
       .then(async (res) => {
         if (cancelled) return;
-        // Opaque/manual redirects (e.g. login) must not look like a missing blob.
         if (res.type === "opaqueredirect" || (res.status >= 300 && res.status < 400)) {
           setLoadState("error");
           return;
         }
-        const verdict = interpretDocumentProbe(res);
-        setLoadState(verdict === "ready" ? "ready" : verdict === "missing" ? "missing" : "error");
+        const buf = await res.arrayBuffer();
+        if (cancelled) return;
+        const head = new Uint8Array(buf.slice(0, 256));
+        const verdict = interpretDocumentBytes({
+          ok: res.ok,
+          status: res.status,
+          headers: res.headers,
+          byteLength: buf.byteLength,
+          head,
+          kind,
+        });
+        if (verdict !== "ready") {
+          setLoadState(verdict === "missing" ? "missing" : "error");
+          return;
+        }
+        const mime =
+          kind === "pdf" ? "application/pdf" : previewMimeFromResponse(res, kind);
+        const objectUrl = URL.createObjectURL(new Blob([buf], { type: mime }));
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl);
+          return;
+        }
+        setPreviewSrc(objectUrl);
+        setLoadState("ready");
       })
       .catch(() => {
         if (!cancelled) setLoadState("error");
       });
+
     return () => {
       cancelled = true;
     };
   }, [open, href, kind]);
 
   const showMissing = loadState === "missing" || loadState === "error";
+  const frameSrc = previewSrc;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -115,13 +157,13 @@ export function DocumentPreviewDialog({
               ) : null}
             </div>
           ) : null}
-          {!showMissing && loadState === "ready" && kind === "pdf" && href ? (
-            <iframe title={title} src={href} className="h-[70vh] w-full border-0 bg-white" />
+          {!showMissing && loadState === "ready" && kind === "pdf" && frameSrc ? (
+            <iframe title={title} src={frameSrc} className="h-[70vh] w-full border-0 bg-white" />
           ) : null}
-          {!showMissing && loadState === "ready" && kind === "image" && href ? (
+          {!showMissing && loadState === "ready" && kind === "image" && frameSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={href}
+              src={frameSrc}
               alt={title}
               className="mx-auto max-h-[70vh] w-auto max-w-full object-contain"
             />

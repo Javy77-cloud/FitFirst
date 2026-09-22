@@ -56,3 +56,60 @@ export function interpretDocumentProbe(res: {
   if (!res.ok) return "missing";
   return "error";
 }
+
+/** Prefer Content-Type from the authenticated GET; fall back by preview kind. */
+export function previewMimeFromResponse(
+  res: { headers: { get(name: string): string | null } },
+  kind: DocumentPreviewKind,
+): string {
+  const ct = (res.headers.get("Content-Type") ?? "").split(";")[0].trim().toLowerCase();
+  if (ct && ct !== "application/octet-stream" && !ct.startsWith("text/plain")) return ct;
+  if (kind === "pdf") return "application/pdf";
+  if (kind === "image") return ct.startsWith("image/") ? ct : "image/jpeg";
+  return ct || "application/octet-stream";
+}
+
+function headLooksLikeHtml(bytes: Uint8Array): boolean {
+  const head = new TextDecoder().decode(bytes.subarray(0, Math.min(bytes.length, 256))).trim().toLowerCase();
+  return (
+    head.startsWith("<!doctype html") ||
+    head.startsWith("<html") ||
+    head.includes("unauthorized") ||
+    head.includes("access denied")
+  );
+}
+
+function headLooksLikePdf(bytes: Uint8Array): boolean {
+  return (
+    bytes.length >= 5 &&
+    bytes[0] === 0x25 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x44 &&
+    bytes[3] === 0x46 &&
+    bytes[4] === 0x2d
+  );
+}
+
+/**
+ * Interpret an authenticated full-file GET used for in-app preview.
+ * Empty bodies, HTML error pages, and missing markers are not "ready".
+ */
+export function interpretDocumentBytes(input: {
+  ok: boolean;
+  status: number;
+  headers: { get(name: string): string | null };
+  byteLength: number;
+  head?: Uint8Array;
+  kind?: DocumentPreviewKind;
+}): DocumentProbeVerdict {
+  const missingHeader = input.headers.get("X-FitFirst-File-Missing") === "1";
+  if (missingHeader || input.status === 404) return "missing";
+  if (input.status === 401 || input.status === 403) return "error";
+  if (!input.ok) return input.status >= 500 ? "error" : "missing";
+  if (!input.byteLength) return "missing";
+  if (input.head && headLooksLikeHtml(input.head)) return "missing";
+  // Real PDF responses must start with %PDF — never mount a blank viewer on error text.
+  if (input.kind === "pdf" && input.head && !headLooksLikePdf(input.head)) return "missing";
+  return "ready";
+}
+
