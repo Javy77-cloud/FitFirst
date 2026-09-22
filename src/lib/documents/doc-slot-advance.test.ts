@@ -1,7 +1,4 @@
-import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { DocSlotTabList } from "@/components/deal/doc-slot-tab-list";
 import {
   canonicalQuotingForm,
   docSaveStayError,
@@ -223,27 +220,5 @@ describe("advance after a document save", () => {
     ).toEqual(["dec"]);
     expect(initialDocSlot(slots, ["dec"], "photo")).toBe("photo");
     expect(initialDocSlot(slots, ["dec"])).toBe("wind_mit");
-  });
-});
-
-describe("document slot tabs", () => {
-  it("renders HO3 slots and marks the filled ones", () => {
-    const slots = requiredDocSlots(rosaHo3);
-    const html = renderToStaticMarkup(
-      createElement(DocSlotTabList, {
-        slots,
-        active: "wind_mit",
-        filled: ["dec"],
-        onSelect: () => undefined,
-      }),
-    );
-    expect(html).toContain('data-ff-doc-slot-tabs=""');
-    expect(html).toContain('data-ff-doc-slot="dec"');
-    expect(html).toContain('data-ff-doc-slot="wind_mit"');
-    expect(html).toContain('data-ff-doc-slot="four_point"');
-    expect(html).toContain('data-ff-doc-slot="photo"');
-    expect(html).toContain('data-ff-doc-slot-filled="dec"');
-    expect(html).toContain('aria-selected="true"');
-    expect(html).toContain("Wind mitigation");
   });
 });

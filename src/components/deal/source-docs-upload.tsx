@@ -7,7 +7,6 @@ import { messageFromUploadError, planUpload } from "@/lib/files/upload-plan";
 import { ChooseFileButton } from "@/components/choose-file-button";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { Button } from "@/components/ui/button";
-import { DocSlotTabList } from "@/components/deal/doc-slot-tab-list";
 import {
   DEAL_WORKSHEET_SOURCE_DOC_TYPES,
   SOURCE_DOC_ACCEPT,
@@ -60,15 +59,9 @@ export function SourceDocsUpload({
   const slots = requiredDocSlots({ product, quotingForm, shopLine: line });
   const filled = filledDocTypesForLine(savedDocs, line);
   const startingSlot = initialDocSlot(slots, filled, docSlot);
-  const [activeSlot, setActiveSlot] = useState(startingSlot);
   const [rows, setRows] = useState<UploadDocRow[]>([emptyUploadRow(0, startingSlot)]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  function selectSlot(docType: string) {
-    setActiveSlot(docType);
-    setRows((current) => current.map((row) => (row.file ? row : { ...row, docType })));
-  }
 
   function applyFiles(rowId: number, files: File[]) {
     setRows((current) => applyPickedFilesToRows(current, rowId, files));
@@ -194,7 +187,6 @@ export function SourceDocsUpload({
         return;
       }
       if (plan.action === "slot") {
-        setActiveSlot(plan.docType);
         setRows([emptyUploadRow(0, plan.docType)]);
         setError(null);
         flashAction("documents-saved");
@@ -220,7 +212,6 @@ export function SourceDocsUpload({
       <input type="hidden" name="riskId" value={riskId} />
       {line ? <input type="hidden" name="line" value={line} /> : null}
       <input type="hidden" name="rowCount" value={rows.length} />
-      <DocSlotTabList slots={slots} active={activeSlot} filled={filled} onSelect={selectSlot} />
       {error ? (
         <p className="text-sm text-destructive" role="alert" data-ff-doc-save-error="">
           {error}
@@ -234,11 +225,7 @@ export function SourceDocsUpload({
           <select
             name={`docType_${index}`}
             value={row.docType}
-            onChange={(event) => {
-              const docType = event.target.value;
-              patchRow(row.id, { docType });
-              if (slots.some((slot) => slot.docType === docType)) setActiveSlot(docType);
-            }}
+            onChange={(event) => patchRow(row.id, { docType: event.target.value })}
             aria-label="Doc type"
             className="h-8 w-[10rem] shrink-0 rounded-md border border-input bg-card px-2 text-sm"
           >

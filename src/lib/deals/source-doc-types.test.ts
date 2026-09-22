@@ -50,6 +50,9 @@ describe("deal worksheet source docs", () => {
     expect(form).toMatch(/applyPickedFilesToRows/);
     expect(form).toMatch(/onFiles/);
     expect(form).toMatch(/DEAL_WORKSHEET_SOURCE_DOC_TYPES/);
+    expect(form).not.toMatch(/DocSlotTabList/);
+    expect(form).not.toMatch(/data-ff-doc-slot/);
+    expect(form).toMatch(/emptyUploadRow\(0, plan\.docType\)/);
   });
 
   it("lets the file picker create N rows when several files are chosen", () => {
