@@ -2,10 +2,9 @@ import { readFileSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   BLOB_NOT_CONFIGURED_MESSAGE,
-  BLOB_READBACK_FAILED_MESSAGE,
   BLOB_READBACK_NEEDS_RW_TOKEN_MESSAGE,
   assertStoredFileReadable,
   blobStoreReady,
@@ -18,6 +17,11 @@ import {
   streamToBuffer,
   writeStoredFile,
   blobAuthOptions,
+  storeIdFromRwToken,
+  storeIdFromBlobUrl,
+  normalizeBlobStoreId,
+  privateBlobUrlForToken,
+  readbackFailureMessage,
 } from "./object-store";
 import { CASTELLANOS_WIND_MIT_FILENAME } from "./upload-plan";
 
@@ -26,6 +30,7 @@ const prevBlob = process.env.BLOB_READ_WRITE_TOKEN;
 const prevStoreId = process.env.BLOB_STORE_ID;
 const prevVercel = process.env.VERCEL;
 const prevLocalDurable = process.env.FF_LOCAL_DURABLE_UPLOADS;
+const prevOidc = process.env.VERCEL_OIDC_TOKEN;
 
 afterEach(() => {
   if (prevUpload === undefined) delete process.env.UPLOAD_DIR;
@@ -38,6 +43,11 @@ afterEach(() => {
   else process.env.VERCEL = prevVercel;
   if (prevLocalDurable === undefined) delete process.env.FF_LOCAL_DURABLE_UPLOADS;
   else process.env.FF_LOCAL_DURABLE_UPLOADS = prevLocalDurable;
+  if (prevOidc === undefined) delete process.env.VERCEL_OIDC_TOKEN;
+  else process.env.VERCEL_OIDC_TOKEN = prevOidc;
+  vi.unstubAllGlobals();
+  vi.resetModules();
+  vi.clearAllMocks();
 });
 
 describe("blobStoreReady", () => {
@@ -150,7 +160,6 @@ describe("private blob pathname", () => {
   });
 });
 
-
 describe("streamToBuffer", () => {
   it("reads a web ReadableStream via arrayBuffer", async () => {
     const stream = new Response(Buffer.from("%PDF-1.4 stream")).body!;
@@ -170,7 +179,7 @@ describe("probeStoredFile / assertStoredFileReadable local", () => {
     await expect(assertStoredFileReadable(stored)).resolves.toBeUndefined();
     expect(await probeStoredFile("docs/nope.pdf")).toBe(false);
     await expect(assertStoredFileReadable("docs/nope.pdf")).rejects.toThrow(
-      BLOB_READBACK_FAILED_MESSAGE,
+      /Document bytes were written but could not be read back from storage/,
     );
     await rm(root, { recursive: true, force: true });
   });
@@ -200,7 +209,6 @@ describe("streamToBuffer getReader path", () => {
   });
 });
 
-
 describe("readback auth messaging", () => {
   it("exposes RW-token guidance when only BLOB_STORE_ID is set", () => {
     delete process.env.BLOB_READ_WRITE_TOKEN;
@@ -211,17 +219,126 @@ describe("readback auth messaging", () => {
   });
 });
 
+describe("store id helpers", () => {
+  it("parses store id from RW token and blob URL without leaking secrets", () => {
+    expect(storeIdFromRwToken("vercel_blob_rw_zsetpgqienornflj_SECRETVALUE")).toBe(
+      "zsetpgqienornflj",
+    );
+    expect(storeIdFromBlobUrl("https://zsetpgqienornflj.private.blob.vercel-storage.com/a/b.pdf")).toBe(
+      "zsetpgqienornflj",
+    );
+    expect(normalizeBlobStoreId("store_zsetpgqienornflj")).toBe("zsetpgqienornflj");
+    expect(privateBlobUrlForToken("tenant/deal/x.pdf", "vercel_blob_rw_zsetpgqienornflj_SECRET")).toBe(
+      "https://zsetpgqienornflj.private.blob.vercel-storage.com/tenant/deal/x.pdf",
+    );
+  });
+});
+
 describe("private blob read hardening (source)", () => {
   it("prefers RW token on put/get, buffers via getReader, and falls back to presigned GET", () => {
     const src = readFileSync("src/lib/files/object-store.ts", "utf8");
     expect(src).toMatch(/export function blobAuthOptions/);
     expect(src).toMatch(/BLOB_READ_WRITE_TOKEN/);
-    expect(src).toMatch(/Authorization: `Bearer \$\{token\}`/);
+    expect(src).toMatch(/Authorization: `Bearer \$\{bearer\}`/);
     expect(src).toMatch(/getReader\(\)/);
     expect(src).toMatch(/looksLikePdf/);
     expect(src).toMatch(/\.\.\.blobAuthOptions\(\)/);
     expect(src).toMatch(/issueSignedToken/);
     expect(src).toMatch(/presignUrl/);
     expect(src).toMatch(/READBACK_RETRY_DELAYS_MS/);
+    expect(src).toMatch(/store_mismatch/);
+    expect(src).toMatch(/downloadUrl/);
+  });
+});
+
+describe("RW token put/get alignment (mocked @vercel/blob)", () => {
+  const RW_TOKEN = "vercel_blob_rw_zsetpgqienornflj_testsecret";
+  const PUT_URL = "https://zsetpgqienornflj.private.blob.vercel-storage.com/tenant/deal/doc.pdf";
+  const PDF = Buffer.from("%PDF-1.4 mock-bytes");
+
+  beforeEach(() => {
+    process.env.BLOB_READ_WRITE_TOKEN = RW_TOKEN;
+    process.env.BLOB_STORE_ID = "store_otherstoreid";
+    process.env.VERCEL = "1";
+    delete process.env.FF_LOCAL_DURABLE_UPLOADS;
+  });
+
+  it("put uses explicit RW token even when BLOB_STORE_ID is set for a different store", async () => {
+    const put = vi.fn(async (_key: string, _body: Buffer, opts: { token?: string }) => {
+      expect(opts.token).toBe(RW_TOKEN);
+      return {
+        url: PUT_URL,
+        downloadUrl: `${PUT_URL}?download=1`,
+        pathname: "tenant/deal/doc.pdf",
+        contentType: "application/pdf",
+        contentDisposition: "",
+        etag: "etag",
+      };
+    });
+    const del = vi.fn(async () => undefined);
+    vi.doMock("@vercel/blob", () => ({
+      put,
+      get: vi.fn(),
+      del,
+      list: vi.fn(),
+      issueSignedToken: vi.fn(),
+      presignUrl: vi.fn(),
+    }));
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        const auth = String((init?.headers as Record<string, string>)?.Authorization ?? "");
+        expect(auth).toBe(`Bearer ${RW_TOKEN}`);
+        expect(url).toContain("zsetpgqienornflj.private.blob.vercel-storage.com");
+        return new Response(PDF, { status: 200, headers: { "content-type": "application/pdf" } });
+      }),
+    );
+
+    const { writeStoredFile: writeFresh } = await import("./object-store");
+    const url = await writeFresh("tenant/deal/doc.pdf", PDF, "application/pdf", { durable: true });
+    expect(url).toBe(PUT_URL);
+    expect(put).toHaveBeenCalled();
+    const putOpts = put.mock.calls[0]![2] as { token?: string };
+    expect(putOpts.token).toBe(RW_TOKEN);
+  });
+
+  it("surfaces HTTP 403 in read-back message without leaking the token", async () => {
+    process.env.BLOB_READ_WRITE_TOKEN = RW_TOKEN;
+    delete process.env.BLOB_STORE_ID;
+    delete process.env.VERCEL;
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("Forbidden", { status: 403 })),
+    );
+
+    const { readStoredFile: readFresh, readbackFailureMessage: msgFresh, getLastReadbackDiag: diagFresh } =
+      await import("./object-store");
+
+    const result = await readFresh(PUT_URL);
+    expect(result).toBeNull();
+    const diag = diagFresh();
+    expect(diag?.reason).toBe("http_status");
+    expect(diag?.status).toBe(403);
+    expect(diag?.host).toBe("zsetpgqienornflj.private.blob.vercel-storage.com");
+    const message = msgFresh(diag);
+    expect(message).toMatch(/HTTP 403/);
+    expect(message).toMatch(/zsetpgqienornflj\.private\.blob\.vercel-storage\.com/);
+    expect(message).not.toContain("testsecret");
+    expect(message).not.toContain(RW_TOKEN);
+  });
+
+  it("readbackFailureMessage includes store mismatch guidance", () => {
+    process.env.BLOB_READ_WRITE_TOKEN = RW_TOKEN;
+    const message = readbackFailureMessage({
+      reason: "store_mismatch",
+      host: "otherstore.private.blob.vercel-storage.com",
+      detail: "put host otherstore vs RW token store zsetpgqienornflj",
+    });
+    expect(message).toMatch(/store mismatch|put host otherstore/i);
+    expect(message).toMatch(/Recreate BLOB_READ_WRITE_TOKEN/);
+    expect(message).not.toContain("testsecret");
   });
 });

@@ -40,8 +40,8 @@ export const BLOB_READBACK_NEEDS_RW_TOKEN_MESSAGE =
 
 /**
  * Prefer the static read-write token when present.
- * OIDC alone can succeed on `put` then fail on private CDN `get` in some runtimes;
- * an explicit token always takes priority in the SDK and keeps put/get aligned.
+ * Always pass this into put/get/del/list/presign so the SDK never falls through to
+ * OIDC+BLOB_STORE_ID (which would write to store A while Bearer/get use token store B).
  */
 export function blobAuthOptions(): { token?: string } {
   const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
@@ -52,10 +52,85 @@ export function hasBlobReadWriteToken(): boolean {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
 }
 
-function readbackFailureMessage(): string {
+/** `vercel_blob_rw_<storeId>_<secret>` — storeId segment only; never log the token. */
+export function storeIdFromRwToken(token: string): string | null {
+  const parts = token.trim().split("_");
+  if (parts.length < 5) return null;
+  if (parts[0] !== "vercel" || parts[1] !== "blob" || parts[2] !== "rw") return null;
+  const storeId = parts[3]?.trim();
+  return storeId || null;
+}
+
+/** Strip optional `store_` prefix (SDK normalizeStoreId). */
+export function normalizeBlobStoreId(raw: string | undefined | null): string | null {
+  const value = raw?.trim();
+  if (!value) return null;
+  return value.startsWith("store_") ? value.slice("store_".length) : value;
+}
+
+/** Host prefix from `https://{storeId}.private.blob.vercel-storage.com/...`. */
+export function storeIdFromBlobUrl(url: string): string | null {
+  try {
+    const host = new URL(url).hostname;
+    const match = /^([a-z0-9]+)\.(?:public|private)\.blob\.vercel-storage\.com$/i.exec(host);
+    return match?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function blobHostname(url: string): string | null {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
+
+export type ReadbackFailureReason = "http_status" | "empty" | "non_pdf" | "auth_body" | "store_mismatch";
+
+export type ReadbackDiag = {
+  reason: ReadbackFailureReason;
+  status?: number;
+  host?: string | null;
+  detail?: string;
+};
+
+/** Last read-back diagnosis (status + host only — never token). */
+let lastReadbackDiag: ReadbackDiag | null = null;
+
+export function getLastReadbackDiag(): ReadbackDiag | null {
+  return lastReadbackDiag;
+}
+
+function setReadbackDiag(diag: ReadbackDiag): void {
+  lastReadbackDiag = diag;
+}
+
+function formatReadbackDiag(diag: ReadbackDiag | null): string {
+  if (!diag) return "";
+  const bits: string[] = [];
+  if (diag.reason === "store_mismatch" && diag.detail) bits.push(diag.detail);
+  else if (diag.reason === "http_status" && diag.status != null) bits.push(`HTTP ${diag.status}`);
+  else if (diag.reason === "empty") bits.push("empty body");
+  else if (diag.reason === "non_pdf") bits.push("non-PDF body");
+  else if (diag.reason === "auth_body") bits.push("auth error body");
+  if (diag.host) bits.push(`host ${diag.host}`);
+  return bits.length ? ` (${bits.join(", ")})` : "";
+}
+
+export function readbackFailureMessage(diag?: ReadbackDiag | null): string {
+  const active = diag ?? lastReadbackDiag;
   // OIDC put + private CDN get mismatch: RW token is the durable Production fix.
   if (!hasBlobReadWriteToken() && process.env.BLOB_STORE_ID?.trim()) {
     return BLOB_READBACK_NEEDS_RW_TOKEN_MESSAGE;
+  }
+  if (active?.reason === "store_mismatch") {
+    return `Document bytes were written but could not be read back from storage${formatReadbackDiag(active)}. Recreate BLOB_READ_WRITE_TOKEN for the fitfirst-docs store on Production. Nothing was saved.`;
+  }
+  const suffix = formatReadbackDiag(active);
+  if (suffix) {
+    return `Document bytes were written but could not be read back from storage${suffix}. Nothing was saved.`;
   }
   return BLOB_READBACK_FAILED_MESSAGE;
 }
@@ -151,8 +226,31 @@ function looksLikeAuthErrorBody(bytes: Buffer): boolean {
   return false;
 }
 
+function acceptBytes(buf: Buffer, host?: string | null): Buffer | null {
+  if (!buf.length) {
+    setReadbackDiag({ reason: "empty", host: host ?? null });
+    return null;
+  }
+  if (looksLikeAuthErrorBody(buf)) {
+    setReadbackDiag({ reason: "auth_body", host: host ?? null });
+    return null;
+  }
+  return buf;
+}
+
+/** Build private CDN URL from RW token store id + pathname (same host put would use). */
+export function privateBlobUrlForToken(pathname: string, token: string): string | null {
+  const storeId = storeIdFromRwToken(token);
+  if (!storeId) return null;
+  const key = posixKey(pathname);
+  if (!key) return null;
+  return `https://${storeId}.private.blob.vercel-storage.com/${key}`;
+}
+
 async function readViaSdkGet(urlOrPathname: string): Promise<Buffer | null> {
   const auth = blobAuthOptions();
+  const hostHint =
+    /^https?:\/\//i.test(urlOrPathname) ? blobHostname(urlOrPathname) : storeIdFromRwToken(auth.token ?? "") ;
   const attempts: Array<{ access: "private"; useCache?: boolean }> = [
     { access: "private", useCache: false },
     { access: "private" },
@@ -161,42 +259,75 @@ async function readViaSdkGet(urlOrPathname: string): Promise<Buffer | null> {
     try {
       const { get } = await import("@vercel/blob");
       const result = await get(urlOrPathname, { ...opts, ...auth });
-      if (!result || result.statusCode !== 200 || !result.stream) continue;
+      if (!result || result.statusCode !== 200 || !result.stream) {
+        if (result == null) {
+          setReadbackDiag({ reason: "http_status", status: 404, host: hostHint });
+        }
+        continue;
+      }
       const buf = await streamToBuffer(result.stream);
-      if (buf.length > 0 && !looksLikeAuthErrorBody(buf)) return buf;
+      const ok = acceptBytes(buf, hostHint);
+      if (ok) return ok;
       // Metadata said size>0 but body empty/auth — try next strategy.
       if (result.blob?.size && result.blob.size > 0 && buf.length === 0) continue;
-    } catch {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const statusMatch = /Failed to fetch blob:\s*(\d{3})/i.exec(message);
+      if (statusMatch) {
+        setReadbackDiag({
+          reason: "http_status",
+          status: Number(statusMatch[1]),
+          host: hostHint,
+        });
+      }
       /* try next strategy */
     }
   }
   return null;
 }
 
-/** Direct private CDN fetch with the RW token — bypasses SDK/OIDC mismatch. */
-async function readViaBearerFetch(url: string): Promise<Buffer | null> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
-  if (!token || !/^https?:\/\//i.test(url)) return null;
+type BearerResult = { buf: Buffer | null; status?: number; host?: string | null };
+
+/** Direct private CDN fetch with Bearer — RW token preferred; OIDC as last resort. */
+async function bearerFetchOnce(url: string, bearer: string): Promise<BearerResult> {
+  const host = blobHostname(url);
   try {
     const res = await fetch(url, {
       method: "GET",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${bearer}` },
       cache: "no-store",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      setReadbackDiag({ reason: "http_status", status: res.status, host });
+      return { buf: null, status: res.status, host };
+    }
     const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length > 0 && !looksLikeAuthErrorBody(buf)) return buf;
+    return { buf: acceptBytes(buf, host), status: res.status, host };
   } catch {
-    /* missing token / network */
+    setReadbackDiag({ reason: "empty", host });
+    return { buf: null, host };
+  }
+}
+
+async function readViaBearerFetch(url: string): Promise<Buffer | null> {
+  if (!/^https?:\/\//i.test(url)) return null;
+  const rw = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  if (rw) {
+    const viaRw = await bearerFetchOnce(url, rw);
+    if (viaRw.buf) return viaRw.buf;
+  }
+  // OIDC put may have written to BLOB_STORE_ID; private CDN accepts VERCEL_OIDC_TOKEN.
+  const oidc = process.env.VERCEL_OIDC_TOKEN?.trim();
+  if (oidc && oidc !== rw) {
+    const viaOidc = await bearerFetchOnce(url, oidc);
+    if (viaOidc.buf) return viaOidc.buf;
   }
   return null;
 }
 
 /**
  * Control-plane issueSignedToken + client-side presign, then fetch the signed CDN URL.
- * `put` already proves OIDC/token can talk to the Blob API; private CDN Bearer `get` may
- * still 403 under OIDC-only. Presigned GET uses the same API auth as put, then reads
- * without a Bearer header on the CDN.
+ * Uses the same explicit RW token as put when present (never OIDC fallthrough).
  */
 async function readViaPresignedGet(pathname: string): Promise<Buffer | null> {
   const key = posixKey(pathname);
@@ -222,10 +353,14 @@ async function readViaPresignedGet(pathname: string): Promise<Buffer | null> {
       },
     );
     if (!presignedUrl) return null;
+    const host = blobHostname(presignedUrl);
     const res = await fetch(presignedUrl, { method: "GET", cache: "no-store" });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      setReadbackDiag({ reason: "http_status", status: res.status, host });
+      return null;
+    }
     const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length > 0 && !looksLikeAuthErrorBody(buf)) return buf;
+    return acceptBytes(buf, host);
   } catch {
     /* OIDC/token cannot issue, or CDN rejected signature */
   }
@@ -233,17 +368,62 @@ async function readViaPresignedGet(pathname: string): Promise<Buffer | null> {
 }
 
 async function readPrivateBlob(urlOrPathname: string): Promise<Buffer | null> {
-  const viaSdk = await readViaSdkGet(urlOrPathname);
-  if (viaSdk) return viaSdk;
-  if (/^https?:\/\//i.test(urlOrPathname)) {
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+
+  // When RW token is set: prefer Bearer on the put URL / token-constructed URL first
+  // (same credential put used — avoids OIDC/SDK mismatch and empty getReader streams).
+  if (token && /^https?:\/\//i.test(urlOrPathname)) {
     const viaBearer = await readViaBearerFetch(urlOrPathname);
     if (viaBearer) return viaBearer;
+    const downloadUrl = (() => {
+      try {
+        const u = new URL(urlOrPathname);
+        u.searchParams.set("download", "1");
+        return u.toString();
+      } catch {
+        return null;
+      }
+    })();
+    if (downloadUrl && downloadUrl !== urlOrPathname) {
+      const viaDownload = await readViaBearerFetch(downloadUrl);
+      if (viaDownload) return viaDownload;
+    }
+    const pathname = blobPathnameDecoded(urlOrPathname) ?? blobPathnameFromUrl(urlOrPathname);
+    if (pathname) {
+      const constructed = privateBlobUrlForToken(pathname, token);
+      if (constructed && constructed !== urlOrPathname) {
+        const viaConstructed = await readViaBearerFetch(constructed);
+        if (viaConstructed) return viaConstructed;
+      }
+    }
+  }
+
+  const viaSdk = await readViaSdkGet(urlOrPathname);
+  if (viaSdk) return viaSdk;
+
+  if (/^https?:\/\//i.test(urlOrPathname)) {
+    if (!token) {
+      const viaBearer = await readViaBearerFetch(urlOrPathname);
+      if (viaBearer) return viaBearer;
+    }
     const pathname = blobPathnameDecoded(urlOrPathname) ?? blobPathnameFromUrl(urlOrPathname);
     if (pathname) {
       const viaPresign = await readViaPresignedGet(pathname);
       if (viaPresign) return viaPresign;
+      if (token) {
+        const viaPathSdk = await readViaSdkGet(pathname);
+        if (viaPathSdk) return viaPathSdk;
+      }
     }
     return null;
+  }
+
+  if (token) {
+    const constructed = privateBlobUrlForToken(urlOrPathname, token);
+    if (constructed) {
+      const viaConstructed = await readViaBearerFetch(constructed);
+      if (viaConstructed) return viaConstructed;
+    }
   }
   const viaPresign = await readViaPresignedGet(urlOrPathname);
   if (viaPresign) return viaPresign;
@@ -276,7 +456,8 @@ async function readRemoteUrl(url: string): Promise<Buffer | null> {
     const stream = result?.stream;
     if (stream) {
       const buf = await streamToBuffer(stream);
-      if (buf.length > 0 && !looksLikeAuthErrorBody(buf)) return buf;
+      const ok = acceptBytes(buf, blobHostname(url));
+      if (ok) return ok;
     }
   } catch {
     /* public URL or older SDK */
@@ -285,9 +466,15 @@ async function readRemoteUrl(url: string): Promise<Buffer | null> {
   if (viaBearer) return viaBearer;
   try {
     const res = await fetch(url);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      setReadbackDiag({ reason: "http_status", status: res.status, host: blobHostname(url) });
+      return null;
+    }
     const buf = Buffer.from(await res.arrayBuffer());
-    if (looksLikeAuthErrorBody(buf)) return null;
+    if (looksLikeAuthErrorBody(buf)) {
+      setReadbackDiag({ reason: "auth_body", host: blobHostname(url) });
+      return null;
+    }
     return buf;
   } catch {
     return null;
@@ -342,12 +529,14 @@ export async function probeStoredFile(storagePath: string): Promise<boolean> {
 
 function expectDurableBytes(storagePath: string, bytes: Buffer): void {
   if (looksLikeAuthErrorBody(bytes)) {
+    setReadbackDiag({ reason: "auth_body", host: blobHostname(storagePath) });
     throw new Error(readbackFailureMessage());
   }
   const lower = storagePath.toLowerCase();
   const wantsPdf =
     lower.includes(".pdf") || lower.includes("application/pdf") || /\/[^/?#]+\.pdf(?:$|\?)/i.test(lower);
   if (wantsPdf && !looksLikePdf(bytes) && !looksLikeImageBuffer(bytes)) {
+    setReadbackDiag({ reason: "non_pdf", host: blobHostname(storagePath) });
     throw new Error(readbackFailureMessage());
   }
 }
@@ -371,12 +560,41 @@ export async function assertStoredFileReadable(storagePath: string): Promise<voi
         expectDurableBytes(storagePath, bytes);
         return;
       }
+      if (!lastReadbackDiag) {
+        setReadbackDiag({ reason: "empty", host: blobHostname(storagePath) });
+      }
       lastError = new Error(readbackFailureMessage());
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(readbackFailureMessage());
     }
   }
   throw lastError ?? new Error(readbackFailureMessage());
+}
+
+function assertPutUrlMatchesRwToken(putUrl: string): void {
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  if (!token) return;
+  const tokenStore = storeIdFromRwToken(token);
+  const urlStore = storeIdFromBlobUrl(putUrl);
+  const configured = normalizeBlobStoreId(process.env.BLOB_STORE_ID);
+  const host = blobHostname(putUrl);
+
+  if (tokenStore && urlStore && tokenStore !== urlStore) {
+    setReadbackDiag({
+      reason: "store_mismatch",
+      host,
+      detail: `put host ${urlStore} vs RW token store ${tokenStore}`,
+    });
+    throw new Error(readbackFailureMessage());
+  }
+  if (tokenStore && configured && tokenStore !== configured) {
+    setReadbackDiag({
+      reason: "store_mismatch",
+      host,
+      detail: `BLOB_STORE_ID ${configured} vs RW token store ${tokenStore}`,
+    });
+    // Do not throw yet — put may still be readable via the token. Surface on read failure.
+  }
 }
 
 /**
@@ -395,24 +613,38 @@ export async function writeStoredFile(
   if (blobStoreReady()) {
     try {
       const { put } = await import("@vercel/blob");
+      const auth = blobAuthOptions();
+      // Explicit token always — never rely on env default (OIDC wins over env RW token).
       const blob = await put(key, buffer, {
         access: "private",
         addRandomSuffix: false,
         allowOverwrite: true,
         contentType: contentType || "application/octet-stream",
-        ...blobAuthOptions(),
+        ...auth,
       });
       if (blob?.url) {
         try {
-          // Prefer put URL + same auth; retries inside assert cover CDN visibility races.
+          assertPutUrlMatchesRwToken(blob.url);
+          // Prefer put URL + same auth; also try pathname and downloadUrl.
           await assertStoredFileReadable(blob.url);
         } catch (error) {
-          // Pathname-based read (SDK builds CDN host from store id / token) before giving up.
+          // Pathname-based read (SDK builds CDN host from token store id) before giving up.
           if (blob.pathname) {
             try {
               const byPath = await readPrivateBlob(blob.pathname);
               if (byPath && byPath.length > 0) {
                 expectDurableBytes(blob.url, byPath);
+                return blob.url;
+              }
+            } catch {
+              /* fall through to cleanup */
+            }
+          }
+          if (blob.downloadUrl && blob.downloadUrl !== blob.url) {
+            try {
+              const byDownload = await readPrivateBlob(blob.downloadUrl);
+              if (byDownload && byDownload.length > 0) {
+                expectDurableBytes(blob.url, byDownload);
                 return blob.url;
               }
             } catch {
