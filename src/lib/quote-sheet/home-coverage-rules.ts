@@ -423,6 +423,12 @@ export function liveValuesAfterManualCoverageA(
     value: nextCoverageA,
     source: after.coverage_a?.source === "javy" ? "javy" : "agent",
   };
+  // Live onChange already wrote the typed Coverage A into prevLive. Compare
+  // against the last saved/stored amount so blur still sees a real change.
+  const storedA = stored.coverage_a;
+  before.coverage_a = storedA
+    ? { ...storedA }
+    : { value: "", status: "missing", source: "blank" };
   reapplyDefaultsAfterManualCoverageA(before, after, product);
   for (const key of Object.keys(HOME_COVERAGE_DEFAULTS)) {
     if (after[key]) nextLive[key] = after[key].value;
