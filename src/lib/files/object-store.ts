@@ -68,12 +68,28 @@ export function normalizeBlobStoreId(raw: string | undefined | null): string | n
   return value.startsWith("store_") ? value.slice("store_".length) : value;
 }
 
+/** Blob store ids / CDN host prefixes are case-insensitive (DNS + token segment). */
+export function sameBlobStoreId(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
+  if (!a || !b) return false;
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+/** Lowercase store id for CDN hostnames so put/get URLs match regardless of token casing. */
+export function canonicalBlobStoreId(raw: string | null | undefined): string | null {
+  const normalized = normalizeBlobStoreId(raw);
+  return normalized ? normalized.toLowerCase() : null;
+}
+
 /** Host prefix from `https://{storeId}.private.blob.vercel-storage.com/...`. */
 export function storeIdFromBlobUrl(url: string): string | null {
   try {
     const host = new URL(url).hostname;
     const match = /^([a-z0-9]+)\.(?:public|private)\.blob\.vercel-storage\.com$/i.exec(host);
-    return match?.[1] ?? null;
+    const id = match?.[1] ?? null;
+    return id ? id.toLowerCase() : null;
   } catch {
     return null;
   }
@@ -240,7 +256,7 @@ function acceptBytes(buf: Buffer, host?: string | null): Buffer | null {
 
 /** Build private CDN URL from RW token store id + pathname (same host put would use). */
 export function privateBlobUrlForToken(pathname: string, token: string): string | null {
-  const storeId = storeIdFromRwToken(token);
+  const storeId = canonicalBlobStoreId(storeIdFromRwToken(token));
   if (!storeId) return null;
   const key = posixKey(pathname);
   if (!key) return null;
@@ -375,23 +391,44 @@ async function readPrivateBlob(urlOrPathname: string): Promise<Buffer | null> {
   if (token && /^https?:\/\//i.test(urlOrPathname)) {
     const viaBearer = await readViaBearerFetch(urlOrPathname);
     if (viaBearer) return viaBearer;
+    // Normalize host to lowercase — DNS/CDN treat store ids as case-insensitive.
+    const lowerHostUrl = (() => {
+      try {
+        const u = new URL(urlOrPathname);
+        const lower = u.hostname.toLowerCase();
+        if (lower === u.hostname) return null;
+        u.hostname = lower;
+        return u.toString();
+      } catch {
+        return null;
+      }
+    })();
+    if (lowerHostUrl) {
+      const viaLower = await readViaBearerFetch(lowerHostUrl);
+      if (viaLower) return viaLower;
+    }
     const downloadUrl = (() => {
       try {
         const u = new URL(urlOrPathname);
+        u.hostname = u.hostname.toLowerCase();
         u.searchParams.set("download", "1");
         return u.toString();
       } catch {
         return null;
       }
     })();
-    if (downloadUrl && downloadUrl !== urlOrPathname) {
+    if (downloadUrl && downloadUrl !== urlOrPathname && downloadUrl !== lowerHostUrl) {
       const viaDownload = await readViaBearerFetch(downloadUrl);
       if (viaDownload) return viaDownload;
     }
     const pathname = blobPathnameDecoded(urlOrPathname) ?? blobPathnameFromUrl(urlOrPathname);
     if (pathname) {
       const constructed = privateBlobUrlForToken(pathname, token);
-      if (constructed && constructed !== urlOrPathname) {
+      if (
+        constructed &&
+        constructed.toLowerCase() !== urlOrPathname.toLowerCase() &&
+        constructed !== lowerHostUrl
+      ) {
         const viaConstructed = await readViaBearerFetch(constructed);
         if (viaConstructed) return viaConstructed;
       }
@@ -579,7 +616,9 @@ function assertPutUrlMatchesRwToken(putUrl: string): void {
   const configured = normalizeBlobStoreId(process.env.BLOB_STORE_ID);
   const host = blobHostname(putUrl);
 
-  if (tokenStore && urlStore && tokenStore !== urlStore) {
+  // Store ids are case-insensitive — do not treat casing-only differences as a mismatch
+  // (that falsely told users to recreate BLOB_READ_WRITE_TOKEN and skipped real read-back diags).
+  if (tokenStore && urlStore && !sameBlobStoreId(tokenStore, urlStore)) {
     setReadbackDiag({
       reason: "store_mismatch",
       host,
@@ -587,7 +626,7 @@ function assertPutUrlMatchesRwToken(putUrl: string): void {
     });
     throw new Error(readbackFailureMessage());
   }
-  if (tokenStore && configured && tokenStore !== configured) {
+  if (tokenStore && configured && !sameBlobStoreId(tokenStore, configured)) {
     setReadbackDiag({
       reason: "store_mismatch",
       host,
@@ -658,7 +697,9 @@ export async function writeStoredFile(
             /* best-effort cleanup */
           }
           if (requireRemote) {
-            throw error instanceof Error ? error : new Error(readbackFailureMessage());
+            // Prefer latest read-back diagnosis (HTTP status / empty / non-PDF) over a
+            // stale early error string — never leave users with a false recreate-token tip.
+            throw new Error(readbackFailureMessage());
           }
           // Non-durable local fallback below.
           return writeLocalFile(key, buffer);

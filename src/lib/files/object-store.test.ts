@@ -20,6 +20,8 @@ import {
   storeIdFromRwToken,
   storeIdFromBlobUrl,
   normalizeBlobStoreId,
+  sameBlobStoreId,
+  canonicalBlobStoreId,
   privateBlobUrlForToken,
   readbackFailureMessage,
 } from "./object-store";
@@ -232,6 +234,22 @@ describe("store id helpers", () => {
       "https://zsetpgqienornflj.private.blob.vercel-storage.com/tenant/deal/x.pdf",
     );
   });
+
+  it("treats the same store id with different casing as a match (not a mismatch)", () => {
+    // Toast after #281 showed put host lowercase vs RW token store mixed-case;
+    // store ids are DNS-like and must compare case-insensitively.
+    const lower = "zsetpgqienornflj";
+    const mixed = "zSETPGQIENORNFLJ";
+    expect(lower.toLowerCase()).toBe(mixed.toLowerCase());
+    expect(sameBlobStoreId(lower, mixed)).toBe(true);
+    expect(sameBlobStoreId(lower, "otherstoreidxx")).toBe(false);
+    expect(canonicalBlobStoreId(mixed)).toBe(lower);
+    expect(storeIdFromBlobUrl(`https://${lower}.private.blob.vercel-storage.com/a.pdf`)).toBe(lower);
+    expect(storeIdFromBlobUrl(`https://${mixed}.private.blob.vercel-storage.com/a.pdf`)).toBe(lower);
+    expect(
+      privateBlobUrlForToken("tenant/deal/x.pdf", `vercel_blob_rw_${mixed}_SECRET`),
+    ).toBe(`https://${lower}.private.blob.vercel-storage.com/tenant/deal/x.pdf`);
+  });
 });
 
 describe("private blob read hardening (source)", () => {
@@ -340,5 +358,96 @@ describe("RW token put/get alignment (mocked @vercel/blob)", () => {
     expect(message).toMatch(/store mismatch|put host otherstore/i);
     expect(message).toMatch(/Recreate BLOB_READ_WRITE_TOKEN/);
     expect(message).not.toContain("testsecret");
+  });
+
+  it("same store different casing is not a mismatch and does not tell user to recreate token", async () => {
+    const MIXED_TOKEN = "vercel_blob_rw_zSETPGQIENORNFLJ_testsecret";
+    process.env.BLOB_READ_WRITE_TOKEN = MIXED_TOKEN;
+    delete process.env.BLOB_STORE_ID;
+    process.env.VERCEL = "1";
+
+    const put = vi.fn(async () => ({
+      url: PUT_URL,
+      downloadUrl: `${PUT_URL}?download=1`,
+      pathname: "tenant/deal/doc.pdf",
+      contentType: "application/pdf",
+      contentDisposition: "",
+      etag: "etag",
+    }));
+    const del = vi.fn(async () => undefined);
+    vi.doMock("@vercel/blob", () => ({
+      put,
+      get: vi.fn(async () => null),
+      del,
+      list: vi.fn(),
+      issueSignedToken: vi.fn(),
+      presignUrl: vi.fn(),
+    }));
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        const auth = String((init?.headers as Record<string, string>)?.Authorization ?? "");
+        expect(auth).toBe(`Bearer ${MIXED_TOKEN}`);
+        // Host must be lowercase canonical form from put / constructed URL
+        expect(url.toLowerCase()).toContain("zsetpgqienornflj.private.blob.vercel-storage.com");
+        return new Response(PDF, { status: 200, headers: { "content-type": "application/pdf" } });
+      }),
+    );
+
+    const { writeStoredFile: writeFresh, readbackFailureMessage: msgFresh } = await import("./object-store");
+    const url = await writeFresh("tenant/deal/doc.pdf", PDF, "application/pdf", { durable: true });
+    expect(url).toBe(PUT_URL);
+    expect(put).toHaveBeenCalled();
+    // Must not surface recreate-token guidance for casing-only "mismatch"
+    expect(msgFresh()).not.toMatch(/Recreate BLOB_READ_WRITE_TOKEN/);
+  });
+
+  it("when read-back fails after case-insensitive store match, surfaces HTTP status not recreate-token", async () => {
+    const MIXED_TOKEN = "vercel_blob_rw_zSETPGQIENORNFLJ_testsecret";
+    process.env.BLOB_READ_WRITE_TOKEN = MIXED_TOKEN;
+    delete process.env.BLOB_STORE_ID;
+    process.env.VERCEL = "1";
+
+    const put = vi.fn(async () => ({
+      url: PUT_URL,
+      downloadUrl: `${PUT_URL}?download=1`,
+      pathname: "tenant/deal/doc.pdf",
+      contentType: "application/pdf",
+      contentDisposition: "",
+      etag: "etag",
+    }));
+    const del = vi.fn(async () => undefined);
+    vi.doMock("@vercel/blob", () => ({
+      put,
+      get: vi.fn(async () => {
+        throw new Error("Failed to fetch blob: 403");
+      }),
+      del,
+      list: vi.fn(),
+      issueSignedToken: vi.fn(async () => {
+        throw new Error("no sign");
+      }),
+      presignUrl: vi.fn(),
+    }));
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("Forbidden", { status: 403 })),
+    );
+
+    const { writeStoredFile: writeFresh } = await import("./object-store");
+    let message = "";
+    try {
+      await writeFresh("tenant/deal/doc.pdf", PDF, "application/pdf", { durable: true });
+      expect.unreachable("writeStoredFile should have thrown");
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error);
+    }
+    expect(message).toMatch(/HTTP 403/);
+    expect(message).not.toMatch(/Recreate BLOB_READ_WRITE_TOKEN/);
+    expect(message).not.toContain("testsecret");
+    expect(message).not.toContain(MIXED_TOKEN);
   });
 });
