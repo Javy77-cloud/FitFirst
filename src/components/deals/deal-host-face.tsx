@@ -9,10 +9,15 @@ import {
   stackProductName,
   type StackProductLine,
 } from "@/lib/deals/card-glance";
+import { primaryApplicantDisplayName } from "@/lib/deals/deal-display-name";
 import type { RadarDealCard } from "@/lib/deals/radar-desk";
 
+/** Stack / Radar / List party label — primary applicant only. */
 export function dealDisplayName(card: Pick<RadarDealCard, "insured" | "title">): string {
-  return card.insured !== "—" ? card.insured : card.title;
+  const insured = primaryApplicantDisplayName(card.insured);
+  if (insured) return insured;
+  // Prefer a cleaned insured over a mashed / UPPERCASE-duplicate title.
+  return primaryApplicantDisplayName(card.title) || (card.title ?? "").trim() || "—";
 }
 
 /** Blank cells stay empty. A dash is not a fact. */
