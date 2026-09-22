@@ -1,3 +1,4 @@
+import { Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function Pips({ stars, hot }: { stars: number; hot?: boolean }) {
@@ -20,21 +21,26 @@ export function RenewalHealthMeter({
   policyStars,
   flagged,
   source,
+  layout = "inline",
 }: {
   stars: number;
   policyStars?: number;
   flagged?: boolean;
   source?: "rated" | "model";
+  /** Deals Priority Stack: label over pips + icon-only flag. Renewals keep inline. */
+  layout?: "inline" | "stack";
 }) {
   const client = asStars(stars);
   const policy = policyStars == null ? undefined : asStars(policyStars);
+  const stack = layout === "stack";
   return (
     <div
-      className={cn("ff-renewal-health", flagged && "is-flagged")}
+      className={cn("ff-renewal-health", flagged && "is-flagged", stack && "ff-renewal-health--stack")}
       data-ff-client-health={Math.round(client)}
       data-ff-policy-health={policy != null ? Math.round(policy) : undefined}
       data-ff-health-flagged={flagged ? "true" : "false"}
       data-ff-health-source={source ?? "model"}
+      data-ff-health-layout={layout}
       title={
         flagged
           ? "Flagged — two ratings under 3"
@@ -51,7 +57,17 @@ export function RenewalHealthMeter({
           <Pips stars={policy} hot={policy <= 2} />
         </span>
       ) : null}
-      {flagged ? <span className="ff-renewal-health-flag">Flag</span> : null}
+      {stack ? (
+        <span
+          className={cn("ff-renewal-health-flag", flagged ? "is-alert" : "is-ok")}
+          data-ff-health-flag={flagged ? "alert" : "ok"}
+          aria-label={flagged ? "Flagged" : "Healthy"}
+        >
+          <Flag className="ff-renewal-health-flag-icon" aria-hidden strokeWidth={2.4} />
+        </span>
+      ) : flagged ? (
+        <span className="ff-renewal-health-flag">Flag</span>
+      ) : null}
     </div>
   );
 }

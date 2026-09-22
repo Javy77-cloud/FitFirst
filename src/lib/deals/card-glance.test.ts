@@ -9,6 +9,7 @@ import {
   productStageSlugsFromShopFlow,
   premiumColumnAmount,
   quotesGlanceLabel,
+  quotesSentGlanceLabel,
   stackProductLines,
 } from "./card-glance";
 
@@ -87,17 +88,26 @@ describe("deal card glance", () => {
         { product: "flood", stage: "quote_sent", noticeType: "inspection_before_bind" },
       ],
       quotes: [
-        { shopLine: "flood", premium: 487, agentStatus: "sent_to_client", stub: false },
-        { shopLine: "home", premium: 1840, agentStatus: "new", stub: false },
+        {
+          id: "q-flood",
+          shopLine: "flood",
+          premium: 487,
+          agentStatus: "sent_to_client",
+          carrierName: "Flow",
+          stub: false,
+        },
+        { id: "q-home", shopLine: "home", premium: 1840, agentStatus: "new", stub: false },
       ],
+      selectedQuoteIds: { flood: ["q-flood"] },
     });
     expect(heather.map((line) => line.label)).toEqual(["HO3", "Auto", "Flood"]);
     expect(heather.map((line) => line.stageLabel)).toEqual(["Documents", "Markets", "Quotes"]);
     expect(heather[0]?.quoteSummary).toBe("1 quote pulled · best $1,840 · 1 pending");
     expect(heather[0]?.stamps).not.toContain("Quote sent");
     expect(heather[1]?.quoteSummary).toBe("No quotes yet");
-    expect(heather[2]?.quoteSummary).toBe("1 quote pulled · best $487");
     expect(heather[2]?.stamps).toEqual(expect.arrayContaining(["Quote sent", "Inspection"]));
+    expect(heather[2]?.quoteSummary).toBe("$487 · Flow");
+    expect(heather[2]?.quoteSummary).not.toMatch(/pulled/i);
     expect(heather[2]?.quoteSummary).not.toContain("1,840");
 
     const gloria = stackProductLines({
@@ -113,7 +123,8 @@ describe("deal card glance", () => {
     ]);
     expect(gloria[0]?.stamps).toContain("Quote sent");
     expect(gloria[1]?.stamps).not.toContain("Quote sent");
-    expect(gloria[0]?.quoteSummary).toBe("No quotes yet");
+    expect(gloria[0]?.quoteSummary).toBe("");
+    expect(gloria[0]?.quoteSummary).not.toMatch(/pulled|No quotes yet/i);
     expect(gloria[1]?.quoteSummary).toContain("$900");
   });
 
@@ -132,5 +143,26 @@ describe("deal card glance", () => {
         products: [{ product: "homeowners", stage: "gathering" }],
       })[0]?.label,
     ).toBe("HO3");
+  });
+
+  it("shows sent quote premium/carrier when Quote sent — never pull count", () => {
+    expect(quotesSentGlanceLabel([{ premium: 2100, carrierName: "American Integrity" }])).toBe(
+      "$2,100 · American Integrity",
+    );
+    expect(quotesSentGlanceLabel([{ premium: null, carrierName: "Safepoint" }])).toBe("Safepoint");
+    expect(quotesSentGlanceLabel([{ premium: null, carrierName: null }])).toBe("");
+
+    const sent = stackProductLines({
+      products: [{ product: "homeowners", label: "HO3", stage: "quote_sent" }],
+      quotes: [
+        { id: "q1", shopLine: "home", premium: 2100, agentStatus: "sent_to_client", carrierName: "AI", stub: false },
+        { id: "q2", shopLine: "home", premium: 2400, agentStatus: "new", carrierName: "Other", stub: false },
+      ],
+      selectedQuoteIds: { homeowners: ["q1"] },
+    });
+    expect(sent[0]?.stamps).toContain("Quote sent");
+    expect(sent[0]?.quoteSummary).toBe("$2,100 · AI");
+    expect(sent[0]?.quoteSummary).not.toMatch(/pulled/i);
+    expect(sent[0]?.label).toBe("HO3");
   });
 });

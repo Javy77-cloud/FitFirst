@@ -22,11 +22,13 @@ function plainFact(value: string | null | undefined): string {
 
 export function DealHostSpread({
   card,
+  glyph,
   comms,
   center,
   rank,
 }: {
   card: RadarDealCard;
+  glyph?: ReactNode;
   comms?: ReactNode;
   center?: ReactNode;
   rank?: ReactNode;
@@ -37,9 +39,12 @@ export function DealHostSpread({
   const cueTitle = card.inboxCue || "Days since the last logged call, email, SMS, or meeting";
   return (
     <div className="ff-stack-card-spread ff-deal-host-spread" data-ff-deal-products={products}>
-      <Link href={card.href} className="ff-stack-name" data-ff-deal-zone="name">
-        {dealDisplayName(card)}
-      </Link>
+      <div className="ff-deal-host-name" data-ff-deal-zone="name">
+        {glyph}
+        <Link href={card.href} className="ff-stack-name">
+          {dealDisplayName(card)}
+        </Link>
+      </div>
       <div className="ff-deal-host-center" data-ff-deal-center="" data-ff-deal-zone="center">
         {center}
       </div>
@@ -101,6 +106,7 @@ function Health({ card }: { card: RadarDealCard }) {
   return (
     <div className="ff-deal-host-health">
       <RenewalHealthMeter
+        layout="stack"
         stars={card.clientHealth / 20}
         policyStars={card.policyHealth / 20}
         flagged={card.heat === "cold" || card.clientHealth < 40}

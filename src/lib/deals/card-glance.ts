@@ -97,6 +97,22 @@ export function quotesGlanceLabel(input: {
   return `${pulled}${best}${pending}`;
 }
 
+/** Sent quote line — premium / carrier only. Never invent numbers; never a pull count. */
+export function quotesSentGlanceLabel(
+  quotes: readonly { premium?: number | string | null; carrierName?: string | null }[],
+): string {
+  const parts: string[] = [];
+  for (const quote of quotes) {
+    const premium = premiumColumnAmount({ premium: quote.premium });
+    const carrier = (quote.carrierName ?? "").trim();
+    if (premium == null && !carrier) continue;
+    if (premium == null) parts.push(carrier);
+    else if (!carrier) parts.push(formatMoney(premium));
+    else parts.push(`${formatMoney(premium)} · ${carrier}`);
+  }
+  return parts.join("; ");
+}
+
 /** One silence cue. Hours stay words so a lone "1h" never sits under the name. */
 export function formatSilenceCue(days: number): string {
   if (!Number.isFinite(days) || days < 1) {
@@ -194,6 +210,7 @@ const STACK_PRODUCT_NAMES: Record<string, string> = {
   boat: "Boat",
   umbrella: "Umbrella",
   life: "Term Life",
+  life_term: "Term Life",
   term_life: "Term Life",
 };
 
@@ -216,12 +233,14 @@ const STACK_PLACE: Record<string, string> = {
 };
 
 export type StackProductQuote = {
+  id?: string | null;
   premium?: number | string | null;
   agentStatus?: string | null;
   stub?: boolean | null;
   shopLine?: string | null;
   notes?: string | null;
   quoteRunId?: string | null;
+  carrierName?: string | null;
 };
 
 export type StackProductLine = {
@@ -246,6 +265,7 @@ export function stackPlaceLabel(stage: string | null | undefined): string {
 /**
  * One row per open product. Quote totals and stamps stay on the product they
  * belong to — a Flood $487 never becomes the Home line.
+ * Quote sent → show selected/sent premium·carrier, never a pull count.
  */
 export function stackProductLines(input: {
   products: readonly {
@@ -257,6 +277,7 @@ export function stackProductLines(input: {
   }[];
   quotes?: readonly StackProductQuote[];
   quoteRuns?: Partial<Record<string, string>> | null;
+  selectedQuoteIds?: Partial<Record<string, readonly string[]>> | null;
 }): StackProductLine[] {
   const products = input.products.filter((row) => row.product.trim());
   const multiLine = products.length > 1;
@@ -292,22 +313,37 @@ export function stackProductLines(input: {
       key === "pending_inspection" || key === "inspection" || key === "waiting_on_inspection"
         ? null
         : resolveDealStampStage(stage);
+    const stamps = dealJobStamps({
+      stageStamp,
+      productStageSlugs: stage ? [stage] : [],
+      noticeSlugs,
+      quoteSent,
+      inspection,
+    });
+    const hasQuoteSentStamp = stamps.some((stamp) => stamp.toLowerCase() === "quote sent");
+    let quoteSummary: string;
+    if (hasQuoteSentStamp) {
+      const selected = new Set(
+        (input.selectedQuoteIds?.[product.product] ?? []).map((id) => String(id).trim()).filter(Boolean),
+      );
+      const picked = selected.size
+        ? mine.filter((quote) => quote.id && selected.has(String(quote.id)))
+        : [];
+      const sentStatus = mine.filter((quote) => isQuoteSentStatus(quote.agentStatus));
+      quoteSummary = quotesSentGlanceLabel(picked.length > 0 ? picked : sentStatus);
+    } else {
+      quoteSummary = quotesGlanceLabel({
+        count: mine.length,
+        bestPremium: bestQuotePremium(mine.map((quote) => quote.premium)),
+        pending: mine.filter((quote) => isPendingQuoteStatus(quote.agentStatus)).length,
+      });
+    }
     return {
       product: product.product,
       label: stackProductName(product.product, product.label),
       stageLabel: stackPlaceLabel(stage),
-      stamps: dealJobStamps({
-        stageStamp,
-        productStageSlugs: stage ? [stage] : [],
-        noticeSlugs,
-        quoteSent,
-        inspection,
-      }),
-      quoteSummary: quotesGlanceLabel({
-        count: mine.length,
-        bestPremium: bestQuotePremium(mine.map((quote) => quote.premium)),
-        pending: mine.filter((quote) => isPendingQuoteStatus(quote.agentStatus)).length,
-      }),
+      stamps,
+      quoteSummary,
     };
   });
 }
