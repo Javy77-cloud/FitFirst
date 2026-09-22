@@ -36,6 +36,8 @@ export const GEMINI_KEY_TO_SHEET: Record<string, string[]> = {
   coverage_a: ["coverage_a"],
   ordinance_law: ["ordinance_or_law"],
   water_backup: ["water_backup"],
+  screen_enclosure: ["screen_enclosure"],
+  screen_enclosure_limit: ["screen_enclosure"],
   hurricane_deductible: ["hurricane_deductible"],
   aop_deductible: ["aop_deductible"],
   wind_hail_deductible: ["wind_hail_deductible"],

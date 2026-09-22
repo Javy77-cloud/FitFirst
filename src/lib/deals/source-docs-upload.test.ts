@@ -28,7 +28,7 @@ describe("source docs upload type control", () => {
     expect(html).toContain("<select");
     expect(html).toContain("Declaration page");
     expect(html).toContain("Wind mitigation");
-    expect(html).toContain("4-point");
+    expect(html).toContain("Four-Point");
     expect(html).toContain("Photos");
     expect(html).toContain('value="wind_mit"');
   });

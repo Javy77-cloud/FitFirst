@@ -49,7 +49,7 @@ export function QuotingLinePicker({
       <p className="mt-1 text-helper text-muted-foreground">
         {sourceDocCount > 0
           ? `${sourceDocCount} source doc${sourceDocCount === 1 ? "" : "s"} on this deal. Choose Type → Category → Form before Fill Risk Profile can run.`
-          : "Drop a dec, 4-point, or wind mit, then choose Type → Category → Form."}
+          : "Drop a dec, Four-Point, or wind mit, then choose Type → Category → Form."}
       </p>
       {picked ? (
         <p className="mt-2 text-xs text-navy">

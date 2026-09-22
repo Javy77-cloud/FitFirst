@@ -74,8 +74,8 @@ function mapAttrs(attrs: ArcgisAttrs): PropertyRecordsFact[] {
   push(facts, "baths", attrString(attrs, ["BATHROOMS", "NBATHROOMS"]));
   push(facts, "square_feet", attrString(attrs, ["HEATEDAREA", "NHEATEDARE"]));
   push(facts, "stories", attrString(attrs, ["MAXSTORIES", "NMAXSTORIE"]));
-  const garage = ynFlag(attrString(attrs, ["GARAGE", "NGARAGE"]));
-  push(facts, "garage_type", garage === "yes" ? "garage" : garage === "no" ? "none" : garage);
+  const units = attrString(attrs, ["NUMUNITS"]);
+  if (units && Number(units) !== 0) push(facts, "living_units", units);
   const pool = ynFlag(attrString(attrs, ["POOL", "NPOOL"]));
   push(facts, "pool", pool);
   const carport = ynFlag(attrString(attrs, ["CARPORT", "NCARPORT"]));

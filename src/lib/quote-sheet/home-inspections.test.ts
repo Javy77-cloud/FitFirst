@@ -32,9 +32,13 @@ import {
   agentHomeSectionTitle,
   canonicalHomeForm,
   carrierTransferValues,
+  inspectionCheckBlock,
   inspectionExistenceFromDocType,
   inspectionInHand,
   inspectionSectionDefaultOpen,
+  inspectionUploadIds,
+  FOUR_POINT_UPLOAD_REQUIRED,
+  WIND_MIT_UPLOAD_REQUIRED,
   isResidentialHomeForm,
 } from "./home-inspections";
 
@@ -311,7 +315,15 @@ describe("Home inspection sections", () => {
       );
       expect(html, product).toContain(WIND_MIT_INSPECTION_LABEL);
       expect(html, product).toContain(FOUR_POINT_INSPECTION_LABEL);
-      expect(html, product).toContain('data-ff-inspection-ribbon=""');
+      expect(html, product).not.toContain("data-ff-inspection-ribbon");
+      expect(html, product).toContain('data-ff-inspection-banner="wind"');
+      expect(html, product).toContain('data-ff-inspection-banner="four"');
+      expect(html, product).toContain('data-ff-inspection-ready="false"');
+      expect(html, product).toContain('data-ff-section-arrow="up"');
+      expect(html, product).toContain('data-ff-section-arrow="down"');
+      expect(html, product).toContain("data-ff-columns-anchor");
+      expect(html, product).not.toMatch(/>Expand<|>Collapse</);
+      expect(html.toLowerCase(), product).not.toMatch(/4[-\s]point/);
       expect(sectionOpen(html, WIND_MIT_SECTION), product).toBe("false");
       expect(sectionOpen(html, FOUR_POINT_SECTION), product).toBe("false");
       expect(sectionOpen(html, "Property"), product).toBe("true");
@@ -356,5 +368,91 @@ describe("Home inspection sections", () => {
       expect(html, line).not.toContain("data-ff-inspection-ribbon");
       expect(html, line).not.toContain("data-ff-section-toggle");
     }
+  });
+
+  it("blocks the inspection check until that document is uploaded", () => {
+    expect(inspectionCheckBlock("wind", false)).toEqual({ ok: false, message: WIND_MIT_UPLOAD_REQUIRED });
+    expect(inspectionCheckBlock("four", false)).toEqual({ ok: false, message: FOUR_POINT_UPLOAD_REQUIRED });
+    expect(inspectionCheckBlock("wind", true)).toEqual({ ok: true });
+    expect(
+      inspectionUploadIds([
+        { id: "dec-1", docType: "dec", filename: "rosa-dec.pdf" },
+        { id: "wind-1", docType: "wind_mit", filename: "mit.pdf" },
+        { id: "four-1", docType: "four_point", filename: "inspection.pdf" },
+      ]),
+    ).toEqual({ windDocumentId: "wind-1", fourDocumentId: "four-1" });
+  });
+
+  it("uses the same inspection chrome on HO5, DP, and manufactured home sheets", () => {
+    for (const product of ["homeowners", "landlord"] as const) {
+      const keys = new Set(fieldsForLine("home", product).map((field) => field.key));
+      expect(keys.has("fire_alarm"), product).toBe(true);
+      expect(keys.has("garage_spaces"), product).toBe(true);
+      expect(keys.has("prior_residence_address"), product).toBe(true);
+      const html = renderToString(
+        createElement(MasterSheetCompare, {
+          dealId: `deal-${product}`,
+          line: "home",
+          fields: [],
+          values: emptySheetValues("home", product),
+          product,
+        }),
+      );
+      const windAt = html.indexOf(`data-ff-sheet-group-header="${WIND_MIT_SECTION}"`);
+      const fourAt = html.indexOf(`data-ff-sheet-group-header="${FOUR_POINT_SECTION}"`);
+      expect(windAt, product).toBeGreaterThan(-1);
+      expect(fourAt, product).toBeGreaterThan(-1);
+      expect(html.slice(windAt, windAt + 4000), product).toContain('data-ff-inspection-banner="wind"');
+      expect(html.slice(fourAt, fourAt + 4000), product).toContain('data-ff-inspection-banner="four"');
+    }
+    expect(sheetProductForQuotingForm("HO5")).toBe("homeowners");
+    expect(sheetProductForQuotingForm("DP3")).toBe("landlord");
+    expect(sheetProductForQuotingForm("MHO")).toBe("homeowners");
+    const prior = fieldsForLine("home", "homeowners").find((field) => field.key === "prior_residence_address");
+    expect(prior?.showWhen).toEqual({ key: "resided_under_2_years", values: ["yes"] });
+    expect(fieldsForLine("home", "homeowners").find((field) => field.key === "garage_spaces")?.label).toBe(
+      "Garage spaces",
+    );
+    expect(fieldsForLine("home", "homeowners").find((field) => field.key === "garage_type")?.options).toEqual([
+      "Attached",
+      "Detached",
+      "Carport",
+    ]);
+    expect(fieldsForLine("home", "landlord").find((field) => field.key === "fire_alarm")?.label).toBe("Fire alarm");
+  });
+
+  it("copies AOP into wind-hail only when the dec has no separate wind-hail", () => {
+    const blank = emptySheetValues("home", "homeowners");
+    const copied = applyExtractedToSheet(
+      "home",
+      blank,
+      [
+        { fieldKey: "named_insured", normalizedValue: "Rosa Castellanos" },
+        { fieldKey: "policy_number", normalizedValue: "FP-100" },
+        { fieldKey: "aop_deductible", normalizedValue: "$2,500" },
+        { fieldKey: "water_backup", normalizedValue: "10000" },
+        { fieldKey: "screen_enclosure", normalizedValue: "10000" },
+      ],
+      { docType: "dec" },
+    );
+    expect(copied.values.wind_hail_deductible?.value).toBe("2500");
+    expect(copied.values.aop_deductible?.value).toBe("$2,500");
+    expect(copied.values.water_backup?.value).toBe("$10,000");
+    expect(copied.values.screen_enclosure?.value).toBe("$10,000");
+    expect(copied.values.named_insured?.value).toBe("Rosa Castellanos");
+    expect(copied.values.policy_number?.value).toBe("FP-100");
+    expect(copied.values.year_built?.value ?? "").toBe("");
+    expect(copied.values.coverage_a?.value ?? "").toBe("");
+
+    const kept = applyExtractedToSheet(
+      "home",
+      blank,
+      [
+        { fieldKey: "aop_deductible", normalizedValue: "2500" },
+        { fieldKey: "wind_hail_deductible", normalizedValue: "2%" },
+      ],
+      { docType: "dec" },
+    );
+    expect(kept.values.wind_hail_deductible?.value).toBe("2%");
   });
 });

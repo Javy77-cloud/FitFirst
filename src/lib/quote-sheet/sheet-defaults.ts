@@ -309,6 +309,9 @@ export const INSURANCE_SCORE_RANGE_OPTIONS = [
   "Very Good",
 ] as const;
 
+/** Garage type on HO3 / HO5 / DP / manufactured home. Spaces stay a separate count. */
+export const GARAGE_TYPE_OPTIONS = ["Attached", "Detached", "Carport"] as const;
+
 /** FL HO screen-enclosure limit bands (lean quote — not a porch schedule). */
 export const SCREEN_ENCLOSURE_OPTIONS = [
   "None",
@@ -578,7 +581,7 @@ export const AOP_DEDUCTIBLE_OPTIONS = ["500", "1000", "1500", "2000", "2500", "5
  */
 export const MASTER_SHEET_EMPTY_DEFAULTS: Record<string, string> = {
   central_alarm: "no",
-  smoke_detectors: "no",
+  smoke_detectors: "yes",
   sprinkler: "no",
   deadbolts: "yes",
   pool: "no",
@@ -719,6 +722,72 @@ export function normalizeWaterBackup(raw: string | null | undefined): string {
   const digits = text.replace(/[^0-9]/g, "");
   if (WATER_BACKUP_BY_AMOUNT[digits]) return WATER_BACKUP_BY_AMOUNT[digits];
   return text;
+}
+
+const SCREEN_ENCLOSURE_BY_AMOUNT: Record<string, (typeof SCREEN_ENCLOSURE_OPTIONS)[number]> = {
+  "0": "None",
+  "5000": "$5,000",
+  "10000": "$10,000",
+  "25000": "$25,000",
+  "50000": "$50,000",
+};
+
+export function normalizeScreenEnclosure(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase();
+  if (lower === "none" || lower === "no" || lower === "n/a") return "None";
+  if (SCREEN_ENCLOSURE_OPTIONS.includes(text as (typeof SCREEN_ENCLOSURE_OPTIONS)[number])) return text;
+  const digits = text.replace(/[^0-9]/g, "");
+  if (SCREEN_ENCLOSURE_BY_AMOUNT[digits]) return SCREEN_ENCLOSURE_BY_AMOUNT[digits];
+  return text;
+}
+
+/** Keep a printed wind/hail amount. Match a known band when the dec uses $ or commas. */
+export function normalizeWindHailDeductible(raw: string | null | undefined): string {
+  const text = (raw ?? "").trim();
+  if (!text) return "";
+  if (WIND_HAIL_DEDUCTIBLE_OPTIONS.includes(text as (typeof WIND_HAIL_DEDUCTIBLE_OPTIONS)[number])) {
+    return text;
+  }
+  const percent = text.match(/^(\d+(?:\.\d+)?)\s*%$/);
+  if (percent) {
+    const band = `${percent[1]}%`;
+    if (WIND_HAIL_DEDUCTIBLE_OPTIONS.includes(band as (typeof WIND_HAIL_DEDUCTIBLE_OPTIONS)[number])) {
+      return band;
+    }
+  }
+  const digits = text.replace(/[^0-9.]/g, "");
+  const whole = digits.replace(/\.0+$/, "");
+  if (WIND_HAIL_DEDUCTIBLE_OPTIONS.includes(whole as (typeof WIND_HAIL_DEDUCTIBLE_OPTIONS)[number])) {
+    return whole;
+  }
+  return text;
+}
+
+/**
+ * Split a garage phrase into type and space count.
+ * "garage" / "yes" is not a type and is not a space count.
+ */
+export function parseGarageFact(raw: string | null | undefined): { type: string; spaces: string } {
+  const text = (raw ?? "").trim();
+  if (!text) return { type: "", spaces: "" };
+  const lower = text.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  let type = "";
+  if (/\bdetached\b/.test(lower)) type = "Detached";
+  else if (/\battached\b/.test(lower)) type = "Attached";
+  else if (/\bcarport\b/.test(lower)) type = "Carport";
+  const compact = text.replace(/,/g, "").trim();
+  let spaces = "";
+  const take = (n: number) => {
+    if (n > 0 && n <= 20) spaces = String(n);
+  };
+  if (/^\d+(?:\.0+)?$/.test(compact)) take(Number(compact));
+  else {
+    const match = lower.match(/\b(\d{1,2})\b/);
+    if (match && (type || /\b(?:car|space|stall|bay)s?\b/.test(lower))) take(Number(match[1]));
+  }
+  return { type, spaces };
 }
 
 export function normalizeInsuranceScoreRange(raw: string | null | undefined): string {

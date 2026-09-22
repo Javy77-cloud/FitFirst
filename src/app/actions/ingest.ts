@@ -38,7 +38,7 @@ export async function ingestDroppedDocuments(formData: FormData) {
   }
 
   if (files.length === 0) {
-    throw new Error("Drop a dec, wind mit, 4-point, or inspection.");
+    throw new Error("Drop a dec, wind mit, Four-Point, or inspection.");
   }
 
   let combinedText = "";

@@ -19,7 +19,7 @@ describe("required document slots", () => {
     expect(slots.map((slot) => slot.label)).toEqual([
       "Declaration page",
       "Wind mitigation",
-      "4-point",
+      "Four-Point",
       "Photos",
     ]);
   });

@@ -27,7 +27,7 @@ export default async function FillLearningLogsPage() {
     >
       <LogsTabs current="fill-learning" />
       <p className="mb-3 text-sm text-muted-foreground">
-        Agency memory for Quote Sheet field mapping from dec / wind mit / 4-point / other source
+        Agency memory for Quote Sheet field mapping from dec / wind mit / Four-Point / other source
         docs. Same idea as the appetite log: a desk correction here is reused on the next extract
         when the extracted string matches.
       </p>

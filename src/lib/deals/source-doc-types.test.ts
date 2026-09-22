@@ -17,7 +17,7 @@ describe("deal worksheet source docs", () => {
     expect(labels).toEqual([
       "Declaration page",
       "Wind mitigation",
-      "4-point",
+      "Four-Point",
       "Photos",
       "Inspections",
       "Reports",

@@ -5,7 +5,6 @@ import type { PropertyFillAddress } from "../types";
 import {
   compactAddress1,
   countyAliasMatches,
-  garageFromBays,
   isFlorida,
   likeContains,
   pushFact,
@@ -61,7 +60,7 @@ function mapAttrs(attrs: ArcgisAttrs): PropertyRecordsFact[] {
   pushFact(facts, "baths", skipZero(baths));
   pushFact(facts, "stories", skipZero(attrString(attrs, ["BLDG_R1_STORIES"])));
   pushFact(facts, "living_units", skipZero(attrString(attrs, ["BLDGS_LIVINGUNITS"])));
-  pushFact(facts, "garage_type", garageFromBays(attrString(attrs, ["BLDGS_GARAGE_BAYS"])));
+  pushFact(facts, "garage_spaces", skipZero(attrString(attrs, ["BLDGS_GARAGE_BAYS"])));
   pushFact(facts, "pool", ynFlag(attrString(attrs, ["PAR_SWIMPOOL_FLAG"])));
   pushFact(facts, "assessed_value", attrString(attrs, ["CAD_ASSESSED_CTY", "CAD_JUST_VALUE"]));
   pushFact(facts, "land_value", attrString(attrs, ["CAD_JUST_LNDVAL"]));

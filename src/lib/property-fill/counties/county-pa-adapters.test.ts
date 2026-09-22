@@ -275,7 +275,8 @@ describe("Manatee PA adapter", () => {
     );
     expect(facts.find((f) => f.sheetKey === "year_built")?.value).toBe("2023");
     expect(facts.find((f) => f.sheetKey === "square_feet")?.value).toBe("2650");
-    expect(facts.find((f) => f.sheetKey === "garage_type")?.value).toBe("garage");
+    expect(facts.find((f) => f.sheetKey === "garage_spaces")?.value).toBe("4");
+    expect(facts.find((f) => f.sheetKey === "garage_type")).toBeUndefined();
     expect(facts.find((f) => f.sheetKey === "pool")?.value).toBe("yes");
     expect(facts.find((f) => f.sheetKey === "exterior")?.value).toBe("STUCCO");
     expect(facts.find((f) => f.sheetKey === "year_purchased")?.value).toBe("2021");

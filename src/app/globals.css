@@ -1201,6 +1201,55 @@ button:enabled:not([data-ff-no-hover]):active {
   letter-spacing: 0;
   font-weight: 600;
 }
+.ff-sheet-group-header {
+  position: sticky;
+}
+.ff-sheet-group-lead {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #002868;
+  padding-right: 0.35rem;
+}
+.ff-sheet-section-arrow {
+  display: inline-flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 1.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.2rem;
+  color: #ffffff;
+  background: transparent;
+}
+.ff-sheet-section-arrow:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+.ff-sheet-group-title-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  display: flex;
+  max-width: calc(100% - 16rem);
+  transform: translate(-50%, -50%);
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  pointer-events: none;
+}
+.ff-sheet-group-title-center input,
+.ff-sheet-group-title-center label,
+.ff-sheet-group-title-center button {
+  pointer-events: auto;
+}
+/* First field label lines up with the C in "Columns" (header pad + arrow + gap − field pad). */
+[data-ff-section-chrome="home"] [data-ff-risk-profile-fields] {
+  padding-left: 2.5rem;
+  padding-right: 0.75rem;
+}
 
 /*
   Risk Profile columns. Inline grid-template-columns is the source of truth.

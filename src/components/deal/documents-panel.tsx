@@ -10,6 +10,7 @@ import type { Document, ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db
 import type { ShopLine } from "@/lib/domain";
 import type { SheetProduct } from "@/lib/quote-sheet/products";
 import { listWorksheetSourceDocs } from "@/lib/documents/deal-docs-save";
+import { inspectionUploadIds } from "@/lib/quote-sheet/home-inspections";
 import type { DocSlotProduct } from "@/lib/documents/doc-slot-advance";
 import { blobStoreReady } from "@/lib/files/object-store";
 import { quoteFileUploadMode } from "@/lib/files/upload-plan";
@@ -70,6 +71,13 @@ export function DocumentsPanel({
   packageProducts?: readonly DocSlotProduct[];
 }) {
   const { sourceDocs, lineDocs, otherSourceDocs } = listWorksheetSourceDocs(docs);
+  const inspectionUploads = inspectionUploadIds(
+    asList(docs).map((row) => ({
+      id: row.id,
+      docType: row.docType,
+      filename: row.filename,
+    })),
+  );
   const lineGroups = asList(groupDocsByLine(lineDocs));
 
   return (
@@ -146,6 +154,7 @@ export function DocumentsPanel({
             productId={productId}
             healthSherpa={healthSherpa}
             insuredPropertyKind={insuredPropertyKind}
+            inspectionUploads={inspectionUploads}
           />
           {health ? (
             <p className="text-helper text-muted-foreground">

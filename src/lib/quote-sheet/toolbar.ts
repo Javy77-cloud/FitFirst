@@ -2,7 +2,7 @@
 
 export const FILL_FROM_DOCS_LABEL = "Fill from source docs";
 export const FILL_FROM_DOCS_HINT =
-  "Reads an uploaded dec, 4-point, or wind mit into blank yellow fields. Leaves what you typed alone.";
+  "Reads an uploaded dec, Four-Point, or wind mit into blank yellow fields. Leaves what you typed alone.";
 
 export const COPY_SHEET_LABEL = "Copy Risk Profile";
 export const COPY_SHEET_HINT =

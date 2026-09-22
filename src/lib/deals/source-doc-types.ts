@@ -4,7 +4,7 @@ import { DOC_TYPE_LABELS, type DocType } from "@/lib/domain";
 export const DEAL_WORKSHEET_SOURCE_DOC_TYPES = [
   { value: "dec", label: "Declaration page", shortLabel: "Dec page" },
   { value: "wind_mit", label: "Wind mitigation", shortLabel: "Wind mit" },
-  { value: "four_point", label: "4-point", shortLabel: "4-point" },
+  { value: "four_point", label: "Four-Point", shortLabel: "Four-Point" },
   { value: "photo", label: "Photos", shortLabel: "Photos" },
   { value: "inspection", label: "Inspections", shortLabel: "Inspections" },
   { value: "report", label: "Reports", shortLabel: "Reports" },

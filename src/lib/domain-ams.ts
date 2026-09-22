@@ -862,7 +862,7 @@ export const INSPECTION_KINDS = ["four_point", "wind_mit", "roof", "photo"] as c
 export type InspectionKind = (typeof INSPECTION_KINDS)[number];
 
 export const INSPECTION_KIND_LABELS: Record<InspectionKind, string> = {
-  four_point: "4-point",
+  four_point: "Four-Point",
   wind_mit: "Wind mitigation",
   roof: "Roof",
   photo: "Photo / site",

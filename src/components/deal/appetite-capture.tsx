@@ -69,7 +69,7 @@ export function AppetiteCapture({
       </div>
       <div className="sm:col-span-2">
         <Label className="text-xs">Why / notes</Label>
-        <Input name="why" className="mt-1 h-8" placeholder="Portal declined roof age · maybe after 4-point" />
+        <Input name="why" className="mt-1 h-8" placeholder="Portal declined roof age · maybe after Four-Point" />
       </div>
       <div className="sm:col-span-2">
         <LostReasonSelect label="Lost / declined reason (required when declined)" />

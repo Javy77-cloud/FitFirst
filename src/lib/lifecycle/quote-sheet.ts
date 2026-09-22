@@ -47,7 +47,7 @@ export const HOME_SHEET_FIELDS: QuoteFieldDef[] = [
   { key: "hurricane_deductible", label: "Hurricane deductible", group: "Coverages", extractKey: "hurricane_deductible" },
   { key: "aop_deductible", label: "AOP deductible", group: "Coverages", extractKey: "aop_deductible" },
   { key: "current_carrier", label: "Current carrier", group: "Current Policy", extractKey: "current_carrier" },
-  { key: "four_point_date", label: "4-point date", group: "Four-Point Inspection", extractKey: "four_point_date" },
+  { key: "four_point_date", label: "Four-Point date", group: "Four-Point Inspection", extractKey: "four_point_date" },
   { key: "electrical_circuit_amps", label: "Electrical Circuit Amps", group: "Four-Point Inspection", extractKey: "electrical_circuit_amps" },
   { key: "wind_mit_form", label: "Wind mit form", group: "Wind Mitigation", extractKey: "wind_mit_form" },
   { key: "notes", label: "Shop notes", group: "Notes" },

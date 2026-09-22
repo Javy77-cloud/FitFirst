@@ -6,7 +6,10 @@ export const WIND_MIT_INSPECTION_KEY = "has_wind_mitigation_inspection";
 export const FOUR_POINT_INSPECTION_KEY = "has_four_point_inspection";
 
 export const WIND_MIT_INSPECTION_LABEL = "I have a wind mitigation inspection";
-export const FOUR_POINT_INSPECTION_LABEL = "I have a four-point inspection";
+export const FOUR_POINT_INSPECTION_LABEL = "I have a Four-Point inspection";
+
+export const WIND_MIT_UPLOAD_REQUIRED = "Upload a wind mitigation inspection first.";
+export const FOUR_POINT_UPLOAD_REQUIRED = "Upload a Four-Point inspection first.";
 
 /** Agent-visible section titles. Field keys stay on the old names. */
 export const WIND_MIT_SECTION = "Wind Mitigation";
@@ -283,6 +286,43 @@ export function applyInspectionExistenceFromDoc<T extends Record<string, QuoteSh
  * Unchecked inspections are omitted. Stored sheet values are not mutated.
  * The existence flags themselves are not carrier fields.
  */
+export type InspectionUploadIds = {
+  windDocumentId: string | null;
+  fourDocumentId: string | null;
+};
+
+/** Newest classified wind-mit / Four-Point file on the deal. Filename is a fallback. */
+export function inspectionUploadIds(
+  docs: readonly { id: string; docType?: string | null; filename?: string | null }[],
+): InspectionUploadIds {
+  let windDocumentId: string | null = null;
+  let fourDocumentId: string | null = null;
+  for (const doc of docs) {
+    const id = doc.id.trim();
+    if (!id) continue;
+    const fromType = inspectionExistenceFromDocType(doc.docType);
+    const name = (doc.filename ?? "").toLowerCase();
+    const wind = fromType.windMit || /wind[\s._-]*mit/.test(name);
+    const four =
+      fromType.fourPoint || /four[\s._-]*point|4[\s._-]*point/.test(name);
+    if (wind) windDocumentId = id;
+    if (four) fourDocumentId = id;
+  }
+  return { windDocumentId, fourDocumentId };
+}
+
+/** Checkmark stays off until that inspection file is already on the deal. */
+export function inspectionCheckBlock(
+  kind: "wind" | "four",
+  uploaded: boolean,
+): { ok: true } | { ok: false; message: string } {
+  if (uploaded) return { ok: true };
+  return {
+    ok: false,
+    message: kind === "wind" ? WIND_MIT_UPLOAD_REQUIRED : FOUR_POINT_UPLOAD_REQUIRED,
+  };
+}
+
 export function carrierTransferValues(
   values: Record<string, QuoteSheetFieldValue> | null | undefined,
 ): Record<string, QuoteSheetFieldValue> {

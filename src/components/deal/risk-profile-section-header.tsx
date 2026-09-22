@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { SectionDensityControl } from "@/components/custom-fields/section-density-control";
 import {
   clampRiskProfileDensity,
@@ -53,6 +54,7 @@ export function RiskProfileSectionBar({
   choices,
   collapsed,
   onToggleCollapse,
+  titleCheck,
 }: {
   title: string;
   sectionId: string;
@@ -62,6 +64,8 @@ export function RiskProfileSectionBar({
   choices?: readonly RiskProfileDensity[];
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  /** Checkbox centered with the section title (wind mitigation / Four-Point). */
+  titleCheck?: ReactNode;
 }) {
   return (
     <div
@@ -69,31 +73,39 @@ export function RiskProfileSectionBar({
       style={SHEET_GROUP_HEADER_STYLE}
       data-ff-sheet-group-header={title}
     >
-      <span className="flex min-w-0 items-center gap-2">
+      <span className="ff-sheet-group-lead">
         {onToggleCollapse ? (
           <button
             type="button"
-            className="shrink-0 rounded-sm border border-white/40 px-1.5 py-0.5 text-[11px] font-semibold normal-case tracking-normal text-white"
+            className="ff-sheet-section-arrow"
             data-ff-section-toggle={title}
+            data-ff-section-arrow={collapsed ? "up" : "down"}
+            data-ff-no-hover=""
             aria-expanded={collapsed ? "false" : "true"}
+            aria-label={collapsed ? `Expand ${title}` : `Collapse ${title}`}
             onClick={onToggleCollapse}
           >
-            {collapsed ? "Expand" : "Collapse"}
+            {collapsed ? <ChevronUp className="size-4" aria-hidden /> : <ChevronDown className="size-4" aria-hidden />}
           </button>
         ) : null}
+        <span data-ff-columns-anchor="">
+          <SectionDensityControl
+            sectionId={sectionId}
+            density={density}
+            onChange={onDensityChange}
+            choices={choices ?? riskProfileSectionChoices(RISK_PROFILE_LONG_TEXT_MAX)}
+            tone="onDark"
+            label="Columns"
+          />
+        </span>
+      </span>
+      <span className="ff-sheet-group-title-center">
+        {titleCheck}
         <span className="ff-sheet-group-title min-w-0" data-ff-section-title={title}>
           {title}
         </span>
         {extra}
       </span>
-      <SectionDensityControl
-        sectionId={sectionId}
-        density={density}
-        onChange={onDensityChange}
-        choices={choices ?? riskProfileSectionChoices(RISK_PROFILE_LONG_TEXT_MAX)}
-        tone="onDark"
-        label="Columns"
-      />
     </div>
   );
 }
