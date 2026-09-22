@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useRouter } from "next/navigation";
 import { confirmQuoteSheetField, saveQuoteSheet } from "@/app/actions/quote-sheet";
 import { MasterSheetFillButton } from "@/components/deal/master-sheet-fill-button";
@@ -74,12 +74,13 @@ import {
   inspectionSectionDefaultOpen,
   type InspectionUploadIds,
 } from "@/lib/quote-sheet/home-inspections";
-
-function sheetValuesToLive(values: Record<string, QuoteSheetFieldValue>): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(values).map(([key, cell]) => [key, cell?.value ?? ""]),
-  );
-}
+import {
+  mergeLiveWithServerValues,
+  sheetControlValue,
+  sheetDisplayValue,
+  sheetValuesFingerprint,
+  sheetValuesToLive,
+} from "@/lib/quote-sheet/sheet-live";
 
 const HOME_LIVE_COVERAGE_KEYS = new Set<string>([
   "coverage_a",
@@ -291,6 +292,17 @@ export function MasterSheetCompare({
   const catalog = asList(fieldsForLine(line, product, resolvedForm));
   const cascadeKeys = new Set(cascadeParentKeys(catalog));
   const [liveValues, setLiveValues] = useState(() => sheetValuesToLive(values));
+  const serverSnap = useRef(sheetValuesToLive(values));
+  const seenFingerprint = useRef(sheetValuesFingerprint(values));
+  const serverFingerprint = sheetValuesFingerprint(values);
+  useEffect(() => {
+    if (seenFingerprint.current === serverFingerprint) return;
+    const nextServer = sheetValuesToLive(values);
+    const prevServer = serverSnap.current;
+    serverSnap.current = nextServer;
+    seenFingerprint.current = serverFingerprint;
+    setLiveValues((prev) => mergeLiveWithServerValues(prev, prevServer, nextServer));
+  }, [serverFingerprint, values]);
   const groups = asList(groupFields(line, product, liveValues, resolvedForm));
   const usingHealthSherpa = line === "health" && isUsingHealthSherpa(liveValues[USING_HEALTHSHERPA_KEY]);
   const healthPlanType = liveValues.plan_type ?? values.plan_type?.value ?? "";
@@ -624,7 +636,7 @@ function SheetGroup({
             cascadeKey={field.showWhen ? field.showWhen.key : undefined}
             footer={
               <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0 text-[9px] leading-none text-muted-foreground">
-                {line === "home" && field.key === "coverage_a" && !(liveValues[field.key] ?? cell?.value ?? "").trim() ? (
+                {line === "home" && field.key === "coverage_a" && !sheetDisplayValue(liveValues[field.key], cell?.value).trim() ? (
                   <span data-ff-coverage-a-rce="">{COVERAGE_A_RCE_LABEL}</span>
                 ) : null}
                 {sourceText ? <span data-ff-sheet-source={field.key}>{sourceText}</span> : null}
@@ -655,7 +667,7 @@ function SheetGroup({
                   : field.options
               }
               cell={cell}
-              liveValue={liveValues[field.key] ?? cell?.value ?? ""}
+              liveValue={sheetControlValue(field.key, liveValues[field.key], cell?.value)}
               onLiveChange={
                 cascadeKeys.has(field.key) ||
                 field.input === "chips" ||
@@ -691,7 +703,7 @@ function SheetGroup({
           key={field.key}
           type="hidden"
           name={field.key}
-          value={liveValues[field.key] ?? values[field.key]?.value ?? ""}
+          value={sheetControlValue(field.key, liveValues[field.key], values[field.key]?.value)}
         />
       ))}
       {collapsible && groupVisible ? (
@@ -816,6 +828,7 @@ function SheetCell({
   onLiveChange?: (next: string, commit?: boolean) => void;
 }) {
   const locked = fieldKey === "coverage_a" && cell?.source === "javy";
+  const rehydrateKey = onLiveChange ? undefined : `${fieldKey}:${cell?.value ?? ""}`;
   const className = cn(
     "h-7 w-full min-w-0 text-xs cursor-text",
     cell?.status === "check" && "ff-field-check",
@@ -897,6 +910,7 @@ function SheetCell({
         )
       ) : input === "textarea" ? (
         <Textarea
+          key={rehydrateKey}
           id={`ff-sheet-input-${fieldKey}`}
           name={fieldKey}
           defaultValue={value}
@@ -907,6 +921,7 @@ function SheetCell({
         />
       ) : options && options.length > 0 ? (
         <select
+          key={rehydrateKey}
           id={`ff-sheet-input-${fieldKey}`}
           name={fieldKey}
           defaultValue={onLiveChange ? undefined : value}
@@ -937,6 +952,7 @@ function SheetCell({
         </select>
       ) : (
         <Input
+          key={rehydrateKey}
           id={`ff-sheet-input-${fieldKey}`}
           name={fieldKey}
           type={input === "select" ? "text" : input}
