@@ -60,7 +60,7 @@ import {
   manualCarrierIdsFromLogs,
   shopListCarrierIdsFromLogs,
 } from "@/lib/deals/manual-markets";
-import { persistDealWorkTab } from "@/lib/deals/work-tab";
+import { forceDealWorkTab, persistDealWorkTab } from "@/lib/deals/work-tab";
 import {
   clearBindRecheckAcks,
   loadLineRiskFingerprint,
@@ -111,7 +111,8 @@ async function finishRequestQuotes(
   dealId: string,
   extras: { line?: string; product?: string },
 ) {
-  await persistDealWorkTab(dealId, "quotes").catch(() => null);
+  // Force Quotes the same way RP Confirm forces Markets — never leave Markets after request.
+  await forceDealWorkTab(dealId, "quotes").catch(() => null);
   flashAction(quotesRequestedHref(dealId, extras), "quotes-requested");
 }
 

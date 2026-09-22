@@ -233,6 +233,15 @@ export function productQuoteCompleteness(input: {
       ),
   );
   if (productQuotes.length === 0) {
+    // Request quotes writes market logs before Fill/portal premiums. Still count as shopped
+    // so the Quotes tab checkmark lights after Markets → Quotes auto-advance.
+    const fromLogs = lineQuoteCompleteness({
+      line,
+      logs: input.logs,
+      quotes: input.quotes,
+      carriers: input.carriers,
+    });
+    if (fromLogs.shopped) return fromLogs;
     return {
       line,
       shopped: false,
