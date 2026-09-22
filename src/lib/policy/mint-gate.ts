@@ -1,4 +1,5 @@
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
+import { describeMintExtractFailure, type MintExtractFailureContext } from "@/lib/policy/mint-extract-failure";
 import { parseAgentConfirm, type AgentConfirmAudit } from "@/lib/policy/agent-confirm";
 import {
   isLateProductStage,
@@ -214,6 +215,18 @@ export const MINT_FIELD_ALIASES: Record<string, string[]> = {
     "premium_due",
     "total_premium_due",
     "six_month_premium",
+    "six_month_total_premium",
+    "6_month_premium",
+    "6_mo_premium",
+    "6_month_total_premium",
+    "total_6_month_premium",
+    "total_six_month_premium",
+    "semi_annual_premium",
+    "semiannual_premium",
+    "premium_for_the_policy_period",
+    "total_premium_for_the_policy_period",
+    "total_full_term_premium",
+    "full_term_premium_charges",
   ],
   coverage_a: ["coverage_a", "dwelling"],
   form: ["form", "policy_form", "quoting_form"],
@@ -466,9 +479,14 @@ export function normalizeMintValue(key: string, raw: string | number | null | un
     return value;
   }
   if (key.endsWith("_date") || key === "next_due") {
-    const iso = value.match(/^(\d{4}-\d{2}-\d{2})/);
+    const stripped = value
+      .replace(/\d{1,2}:\d{2}\s*(?:a\.?\s*m\.?|p\.?\s*m\.?)/gi, " ")
+      .replace(/\bstandard time\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const iso = stripped.match(/^(\d{4}-\d{2}-\d{2})/);
     if (iso) return iso[1]!;
-    const parsed = new Date(value);
+    const parsed = new Date(stripped);
     if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
   }
   return value;
@@ -545,15 +563,30 @@ export type MintExtractGateErr = {
   ok: false;
   reason: "need_dec_fields";
   message: string;
+  missing: string[];
 };
 
-/** Hard gate: refuse hollow mint unless Gemini produced policy number + premium. */
-export function evaluateMintExtract(rows: readonly MintGeminiRow[] | undefined): MintExtractGateOk | MintExtractGateErr {
+/** Prefer the specific mint message (missing fields, wind mit, ID card) over the static flash key. */
+export function mintFailureFlashText(result: { reason?: string | null; message?: string | null }): string {
+  const reason = (result.reason ?? "").trim();
+  const message = (result.message ?? "").trim();
+  if (reason === "need_dec_fields" && message) return message;
+  return mintFailureToast(reason).key;
+}
+
+/** Hard gate: refuse hollow mint unless Gemini produced policy number, premium, and effective date. */
+export function evaluateMintExtract(
+  rows: readonly MintGeminiRow[] | undefined,
+  context?: MintExtractFailureContext,
+): MintExtractGateOk | MintExtractGateErr {
   const policyNumber = mintGeminiValue(rows, "policy_number");
   const premium = mintGeminiValue(rows, "premium");
   const effectiveDate = mintGeminiValue(rows, "effective_date");
   if (!policyNumber || !premium || !effectiveDate) {
-    return { ok: false, reason: "need_dec_fields", message: NEED_DEC_FIELDS_MESSAGE };
+    const failure = describeMintExtractFailure(rows ?? [], context ?? {}, (list, key) =>
+      mintGeminiValue(list, key),
+    );
+    return { ok: false, reason: "need_dec_fields", message: failure.message, missing: failure.missing };
   }
   return { ok: true, policyNumber, premium, effectiveDate };
 }

@@ -85,6 +85,13 @@ describe("flash helper", () => {
     expect(resolveFlashMessage(null)).toBeNull();
   });
 
+  it("keeps a mint diagnostic that names missing fields and what Gemini returned", () => {
+    const message =
+      "Could not extract premium, effective date. Gemini returned: policy_number=612345678 101 1; premiums[0].premium=412.00. The file stays in the folder.";
+    expect(message.length).toBeGreaterThan(80);
+    expect(resolveFlashMessage(message)).toBe(message);
+  });
+
   it("appends ?flash= without dropping the existing tab or hash", () => {
     expect(withFlash("/deals/abc?tab=documents", "sheet-saved")).toBe(
       "/deals/abc?tab=documents&flash=sheet-saved",

@@ -16,8 +16,21 @@ import {
 } from "@/lib/extraction/gemini/client";
 import { HEIC_CONVERT_TIMEOUT_MS } from "@/lib/extraction/ocr";
 import { MASTER_FILL_STEP_TIMEOUT_MS } from "@/lib/quote-sheet/master-fill";
-import { TRAVELERS_ISSUED_AUTO_NESTED } from "@/lib/extraction/gemini/fixtures/travelers-issued-auto";
+import {
+  ADRIANA_IORI_DEC_PAGE_FILENAME,
+  ADRIANA_IORI_TRAVELERS_DEC_PAGE,
+  ADRIANA_IORI_TRAVELERS_DEC_PREMIUM_BOX,
+} from "@/lib/extraction/gemini/fixtures/adriana-iori-travelers-dec";
+import {
+  TRAVELERS_COVERAGE_SCHEDULE,
+  TRAVELERS_DECLARATIONS_ENVELOPE,
+  TRAVELERS_ISSUED_AUTO_NESTED,
+  TRAVELERS_ITEM_BLOCKS,
+  TRAVELERS_POLICY_PERIOD_WITH_CLOCK,
+  TRAVELERS_VEHICLE_TOTALS,
+} from "@/lib/extraction/gemini/fixtures/travelers-issued-auto";
 import { splitPolicyPeriod } from "@/lib/extraction/gemini/auto-layout";
+import { sanitizeGeminiPreview } from "@/lib/extraction/gemini/preview";
 import { fillableGeminiFields, mapGeminiJsonToFields } from "@/lib/extraction/gemini/map";
 import { evaluateMintExtract, mintGeminiValue } from "@/lib/policy/mint-gate";
 import { buildGeminiSystemPrompt, buildGeminiUserPrompt } from "@/lib/extraction/gemini/prompt";
@@ -164,6 +177,8 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(system).toMatch(/aaa_member/);
     expect(system).toMatch(/Never copy these sample values/);
     expect(system).toMatch(/Never invent/);
+    expect(system).toMatch(/Adriana Iori DEC Page Travelers\.pdf/);
+    expect(system).toMatch(/Begins and Ends/);
     expect(user).toMatch(/Auto policy or Auto declaration/);
     expect(user).toMatch(/not_declaration/);
     expect(user).toMatch(/Do not treat this as homeowners/);
@@ -407,11 +422,16 @@ describe("auto declaration extract → Auto risk profile", () => {
       expect(gate.effectiveDate).toMatch(/2026-09-21/);
     }
     expect(buildGeminiSystemPrompt("current_policy", "auto")).toMatch(/Full Term Premium/);
+    expect(buildGeminiSystemPrompt("current_policy", "auto")).toMatch(/6 Month Premium/);
+    expect(buildGeminiSystemPrompt("current_policy", "auto")).toMatch(/12:01 A\.M\./);
+    expect(buildGeminiSystemPrompt("current_policy", "auto")).toMatch(/wind mitigation/);
     expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/current_premium/);
     expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/Premium Due/);
     expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/HEIC/);
     expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/not a shopping quote/);
     expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/every page/);
+    expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/Adriana Iori DEC Page Travelers\.pdf/);
+    expect(buildGeminiUserPrompt("current_policy", "auto")).toMatch(/Begins and Ends/);
     expect(buildGeminiSystemPrompt("current_policy", "auto")).toMatch(/not a shopping quote/);
   });
 
@@ -450,6 +470,10 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(splitPolicyPeriod("From: 09/21/2026 12:01 A.M. To: 03/21/2027")).toEqual({
       effective: "09/21/2026",
       expiration: "03/21/2027",
+    });
+    expect(splitPolicyPeriod(TRAVELERS_POLICY_PERIOD_WITH_CLOCK)).toEqual({
+      effective: "September 21, 2026",
+      expiration: "March 21, 2027",
     });
     const mapped = mapGeminiJsonToFields(
       {
@@ -658,6 +682,317 @@ describe("auto declaration extract → Auto risk profile", () => {
     expect(values.driver_3_name.value).toBe("Maria Iori");
     expect(values.driver_4_name?.value ?? "").toBe("");
     expect(visibleUnitCount(values, "driver")).toBe(3);
+  });
+
+  function mintRows(json: Record<string, unknown>) {
+    const mapped = mapGeminiJsonToFields(json, "current_policy", "auto");
+    return {
+      mapped,
+      rows: mapped.fields.map((field) => ({
+        fieldKey: field.fieldKey,
+        normalizedValue: field.normalizedValue,
+        rawValue: field.rawValue,
+        confidence: field.confidence,
+        flagged: field.flagged,
+      })),
+    };
+  }
+
+  function expectIssuedTravelers(json: Record<string, unknown>) {
+    const { mapped, rows } = mintRows(json);
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.policy_number.value).toBe("612345678 101 1");
+    expect(applied.values.current_premium.value.replace(/\.00$/, "")).toMatch(/^2109/);
+    expect(applied.values.effective_date.value).toMatch(/2026/);
+    expect(applied.values.expiration_date.value).toMatch(/2027/);
+    const gate = evaluateMintExtract(rows, {
+      documentKind: mapped.documentKind,
+      geminiPreview: mapped.geminiPreview,
+      filename: "travelers-auto-dec.pdf",
+      docType: "current_policy",
+    });
+    expect(gate.ok).toBe(true);
+    if (gate.ok) {
+      expect(gate.policyNumber).toBe("612345678 101 1");
+      expect(gate.premium).toBe("2109");
+      expect(gate.effectiveDate).toMatch(/2026-09-21/);
+    }
+  }
+
+  it("reads a Travelers coverage-schedule total and a clock before each policy date", () => {
+    const mapped = mapGeminiJsonToFields(TRAVELERS_COVERAGE_SCHEDULE, "current_policy", "auto");
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.current_premium.value).toBe("2109.00");
+    expect(applied.values.effective_date.value).toBe("September 21, 2026");
+    expect(applied.values.expiration_date.value).toBe("March 21, 2027");
+    expect(applied.values.liability_bi.value).toBe("100/300");
+    expect(applied.values.current_carrier.value).toBe("The Standard Fire Insurance Company");
+    expect(applied.values.policy_number.value).toBe("612345678 101 1");
+    const gate = evaluateMintExtract(
+      mapped.fields.map((field) => ({
+        fieldKey: field.fieldKey,
+        normalizedValue: field.normalizedValue,
+        rawValue: field.rawValue,
+        confidence: field.confidence,
+        flagged: field.flagged,
+      })),
+    );
+    expect(gate.ok).toBe(true);
+  });
+
+  it("reads Travelers item two dates and the spelled-out item three premium", () => {
+    const mapped = mapGeminiJsonToFields(TRAVELERS_ITEM_BLOCKS, "current_policy", "auto");
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.effective_date.value).toBe("September 21, 2026");
+    expect(applied.values.expiration_date.value).toBe("March 21, 2027");
+    expect(applied.values.current_premium.value).toBe("2109.00");
+    expect(applied.values.policy_number.value).toBe("612345678 101 1");
+    const gate = evaluateMintExtract(
+      mapped.fields.map((field) => ({
+        fieldKey: field.fieldKey,
+        normalizedValue: field.normalizedValue,
+        rawValue: field.rawValue,
+        confidence: field.confidence,
+        flagged: field.flagged,
+      })),
+    );
+    expect(gate.ok).toBe(true);
+    if (gate.ok) expect(gate.effectiveDate).toMatch(/2026-09-21/);
+  });
+
+  it("reads a nested declarations block with 6 Month Premium and clocks on the dates", () => {
+    const mapped = mapGeminiJsonToFields(TRAVELERS_DECLARATIONS_ENVELOPE, "current_policy", "auto");
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.current_carrier.value).toBe("Travelers");
+    expect(applied.values.current_premium.value).toBe("2109.00");
+    expect(applied.values.effective_date.value).toBe("September 21, 2026");
+    expect(applied.values.expiration_date.value).toBe("March 21, 2027");
+    expect(applied.values.policy_number.value).toBe("612345678 101 1");
+    const gate = evaluateMintExtract(
+      mapped.fields.map((field) => ({
+        fieldKey: field.fieldKey,
+        normalizedValue: field.normalizedValue,
+        rawValue: field.rawValue,
+        confidence: field.confidence,
+        flagged: field.flagged,
+      })),
+    );
+    expect(gate.ok).toBe(true);
+  });
+
+  it("sums per-vehicle Travelers totals when the policy total is not printed", () => {
+    expectIssuedTravelers(TRAVELERS_VEHICLE_TOTALS);
+  });
+
+  it("reads the Adriana Iori Travelers DEC page across page 1 header and a later Full Term row", () => {
+    const first = mapGeminiJsonToFields(ADRIANA_IORI_TRAVELERS_DEC_PAGE, "current_policy", "auto");
+    const mapped = mapGeminiJsonToFields(ADRIANA_IORI_TRAVELERS_DEC_PAGE, "current_policy", "auto");
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.policy_number.value).toBe("612345678 101 1");
+    expect(applied.values.policy_number.value).not.toBe("1");
+    expect(applied.values.current_carrier.value).toBe("Travelers");
+    expect(applied.values.current_premium.value).toBe("2109.00");
+    expect(applied.values.current_premium.value).not.toMatch(/^412/);
+    expect(applied.values.current_premium.value).not.toMatch(/^1200/);
+    expect(applied.values.effective_date.value).toBe("September 21, 2026");
+    expect(applied.values.expiration_date.value).toBe("March 21, 2027");
+    expect(applied.values.vin.value).toBe("4T1B11HK5KU123456");
+    expect(applied.values.liability_bi.value).toBe("100/300");
+    expect(first.fields.find((field) => field.fieldKey === "current_premium")?.normalizedValue).toBe(
+      mapped.fields.find((field) => field.fieldKey === "current_premium")?.normalizedValue,
+    );
+    const gate = evaluateMintExtract(
+      mapped.fields.map((field) => ({
+        fieldKey: field.fieldKey,
+        normalizedValue: field.normalizedValue,
+        rawValue: field.rawValue,
+        confidence: field.confidence,
+        flagged: field.flagged,
+      })),
+      {
+        documentKind: mapped.documentKind,
+        filename: ADRIANA_IORI_DEC_PAGE_FILENAME,
+        docType: "current_policy",
+        geminiPreview: mapped.geminiPreview,
+      },
+    );
+    expect(gate.ok).toBe(true);
+    if (gate.ok) {
+      expect(gate.policyNumber).toBe("612345678 101 1");
+      expect(gate.premium).toBe("2109");
+      expect(gate.effectiveDate).toMatch(/2026-09-21/);
+    }
+  });
+
+  it("reads a nested Travelers premium box when the DEC header and the term premium are on different pages", () => {
+    const mapped = mapGeminiJsonToFields(ADRIANA_IORI_TRAVELERS_DEC_PREMIUM_BOX, "current_policy", "auto");
+    const applied = applyExtractedToSheet("auto", emptySheetValues("auto"), fillableGeminiFields(mapped.fields));
+    expect(applied.values.policy_number.value).toBe("612345678 101 1");
+    expect(applied.values.current_carrier.value).toBe("Travelers");
+    expect(applied.values.current_premium.value).toBe("2109.00");
+    expect(applied.values.effective_date.value).toBe("September 21, 2026");
+    expect(applied.values.expiration_date.value).toBe("March 21, 2027");
+    const gate = evaluateMintExtract(
+      mapped.fields.map((field) => ({
+        fieldKey: field.fieldKey,
+        normalizedValue: field.normalizedValue,
+        rawValue: field.rawValue,
+        confidence: field.confidence,
+        flagged: field.flagged,
+      })),
+      {
+        documentKind: "not_declaration",
+        filename: ADRIANA_IORI_DEC_PAGE_FILENAME,
+        docType: "current_policy",
+        geminiPreview: mapped.geminiPreview,
+      },
+    );
+    expect(gate.ok).toBe(true);
+    if (gate.ok) expect(gate.effectiveDate).toMatch(/2026-09-21/);
+  });
+
+  it("does not mint a coverage-line premium when the term total is missing", () => {
+    const { rows } = mintRows({
+      policy_number: "612345678 101 1",
+      effective_date: "09/21/2026",
+      premiums: { bodily_injury: "412.00" },
+    });
+    const gate = evaluateMintExtract(rows, {
+      documentKind: "declaration",
+      geminiPreview: sanitizeGeminiPreview({
+        policy_number: "612345678 101 1",
+        premiums: { bodily_injury: "412.00" },
+      }),
+    });
+    expect(gate.ok).toBe(false);
+    if (!gate.ok) {
+      expect(gate.missing).toEqual(["premium"]);
+      expect(gate.message).toMatch(/premium/);
+      expect(gate.message).toMatch(/412/);
+      expect(gate.message).not.toMatch(/wind mitigation/i);
+    }
+  });
+
+  it("says wind mit when the Manual file is not an issued policy", () => {
+    const mapped = mapGeminiJsonToFields(
+      {
+        document_kind: "wind_mit",
+        wind_mit_form: "OIR-B1-1802",
+        roof_shape: "A",
+        applicant_name: "Domenic Iori",
+      },
+      "current_policy",
+      "auto",
+    );
+    const gate = evaluateMintExtract(
+      mapped.fields.map((field) => ({
+        fieldKey: field.fieldKey,
+        normalizedValue: field.normalizedValue,
+        rawValue: field.rawValue,
+        confidence: field.confidence,
+        flagged: field.flagged,
+      })),
+      {
+        documentKind: mapped.documentKind,
+        filename: "iori-wind-mit.pdf",
+        docType: "wind_mit",
+        geminiPreview: mapped.geminiPreview,
+      },
+    );
+    expect(gate.ok).toBe(false);
+    if (!gate.ok) {
+      expect(gate.message).toMatch(/wind mitigation/i);
+      expect(gate.message).not.toMatch(/could not extract/i);
+      expect(gate.missing).toEqual(expect.arrayContaining(["premium", "effective date", "policy number"]));
+    }
+  });
+
+  it("lists the missing fields for a DEC page filename instead of calling it a non-policy", () => {
+    const gate = evaluateMintExtract([], {
+      documentKind: "not_declaration",
+      filename: ADRIANA_IORI_DEC_PAGE_FILENAME,
+      geminiPreview: "document_kind=not_declaration",
+    });
+    expect(gate.ok).toBe(false);
+    if (!gate.ok) {
+      expect(gate.missing).toEqual(["policy number", "premium", "effective date"]);
+      expect(gate.message).toMatch(/Could not extract policy number, premium, effective date/);
+      expect(gate.message).toMatch(/Expiration date was blank/);
+      expect(gate.message).toMatch(/Adriana Iori DEC Page Travelers\.pdf/);
+      expect(gate.message).toMatch(/The file stays in the folder/);
+      expect(gate.message).not.toMatch(/not an issued policy/i);
+      expect(gate.message).not.toMatch(/wind mitigation/i);
+    }
+  });
+
+  it("says the file is not an issued policy when Gemini marks not_declaration and finds no policy facts", () => {
+    const gate = evaluateMintExtract([], {
+      documentKind: "not_declaration",
+      filename: "shopping-quote.pdf",
+      geminiPreview: "named_insured=Domenic Iori",
+    });
+    expect(gate.ok).toBe(false);
+    if (!gate.ok) {
+      expect(gate.message).toMatch(/not an issued policy/i);
+      expect(gate.message).not.toMatch(/could not extract/i);
+    }
+  });
+
+  it("names the missing fields and the sanitized Gemini return when a dec is only partly read", () => {
+    const preview = sanitizeGeminiPreview({
+      policy_number: "612345678 101 1",
+      premiums: [{ description: "Bodily Injury", premium: "412.00" }],
+      notes: "ignore this very long blob " + "x".repeat(200),
+    });
+    expect(preview.length).toBeLessThanOrEqual(280);
+    expect(preview).not.toMatch(/x{20}/);
+    const gate = evaluateMintExtract(
+      [
+        {
+          fieldKey: "policy_number",
+          normalizedValue: "612345678 101 1",
+          rawValue: "612345678 101 1",
+          confidence: 0.9,
+          flagged: false,
+        },
+      ],
+      { documentKind: "declaration", filename: "travelers.pdf", geminiPreview: preview },
+    );
+    expect(gate.ok).toBe(false);
+    if (!gate.ok) {
+      expect(gate.missing).toEqual(["premium", "effective date"]);
+      expect(gate.message).toMatch(/Could not extract premium, effective date/);
+      expect(gate.message).toMatch(/612345678 101 1/);
+      expect(gate.message).toMatch(/412/);
+      expect(gate.message).toMatch(/The file stays in the folder/);
+    }
+  });
+
+  it("says an ID card is not the declarations page when the premium is missing", () => {
+    const gate = evaluateMintExtract(
+      [
+        {
+          fieldKey: "policy_number",
+          normalizedValue: "612345678 101 1",
+          rawValue: "612345678 101 1",
+          confidence: 0.9,
+          flagged: false,
+        },
+        {
+          fieldKey: "effective_date",
+          normalizedValue: "2026-09-21",
+          rawValue: "09/21/2026",
+          confidence: 0.9,
+          flagged: false,
+        },
+      ],
+      { documentKind: "id_card", filename: "auto-id-card.jpg" },
+    );
+    expect(gate.ok).toBe(false);
+    if (!gate.ok) {
+      expect(gate.message).toMatch(/ID card/i);
+      expect(gate.message).not.toMatch(/could not extract the premium/i);
+    }
   });
 
 });

@@ -21,6 +21,8 @@ export type LoadGeminiRowsOk = {
   ok: true;
   rows: GeminiMintRow[];
   cached: boolean;
+  documentKind?: string | null;
+  geminiPreview?: string | null;
 };
 
 export type LoadGeminiRowsErr = {
@@ -60,6 +62,8 @@ export type GeminiExtractFn = (
       confidence?: number | null;
       flagged?: boolean | null;
     }>;
+    documentKind?: string | null;
+    geminiPreview?: string | null;
   };
 }>;
 
@@ -130,7 +134,7 @@ export async function loadGeminiRows(
     const cached = await deps.loadCachedRows(input.docId);
     // Partial/empty cache must not skip Gemini — that is how hollow mints get result.ok.
     if (evaluateMintExtract(cached).ok) {
-      return { ok: true, rows: cached, cached: true };
+      return { ok: true, rows: cached, cached: true, documentKind: null, geminiPreview: null };
     }
   }
 
@@ -174,7 +178,13 @@ export async function loadGeminiRows(
       return { ok: false, reason: "extract_failed", message: DEC_EXTRACT_FAILED_MESSAGE };
     }
     await deps.persistRows?.(input.docId, rows);
-    return { ok: true, rows, cached: false };
+    return {
+      ok: true,
+      rows,
+      cached: false,
+      documentKind: gemini.result.documentKind ?? null,
+      geminiPreview: gemini.result.geminiPreview ?? null,
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : DEC_EXTRACT_FAILED_MESSAGE;
     log("dec extract: Gemini threw", { documentId: input.docId, message });

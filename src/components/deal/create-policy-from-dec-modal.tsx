@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { CreatePolicyBusyPanel } from "@/components/deal/create-policy-busy-panel";
 import { createPolicyPromptCopy } from "@/lib/policy/dec-prompt";
-import { mintFailureToast } from "@/lib/policy/mint-gate";
+import { mintFailureFlashText, mintFailureToast } from "@/lib/policy/mint-gate";
 import { flashAction } from "@/lib/flash-client";
 
 export function CreatePolicyFromDecModal({
@@ -64,7 +64,7 @@ export function CreatePolicyFromDecModal({
         });
         if (!result.ok) {
           const toast = mintFailureToast(result.reason);
-          flashAction(toast.key, toast.kind);
+          flashAction(mintFailureFlashText(result), toast.kind);
           return;
         }
         flashAction("policy-minted");

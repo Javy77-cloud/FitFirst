@@ -29,7 +29,33 @@ const VEHICLE_LIST_KEYS = [
 
 const DRIVER_LIST_KEYS = ["drivers", "operators", "listed_drivers", "driver_schedule", "driver_list"];
 
-const COVERAGE_LIST_KEYS = ["coverages", "coverage", "limits", "coverage_limits"];
+const COVERAGE_LIST_KEYS = [
+  "coverages",
+  "coverage",
+  "limits",
+  "coverage_limits",
+  "coverages_limits_and_premiums",
+  "coverage_premiums",
+  "coverage_and_premiums",
+  "schedule_of_coverages",
+];
+
+/** Gemini often keys a multi-page Travelers dec as page_1 (header) plus later coverage pages. */
+const PAGE_OBJECT_KEYS = [
+  "page_1",
+  "page_2",
+  "page_3",
+  "page_4",
+  "page_5",
+  "first_page",
+  "second_page",
+  "third_page",
+  "coverage_page",
+  "premium_page",
+  "declarations_page",
+  "declaration_page",
+  "dec_page",
+];
 
 function normKey(key: string): string {
   return key
@@ -65,6 +91,15 @@ function pull(rec: LooseJson, names: string[]): unknown {
     const value = rec[key];
     delete rec[key];
     return value;
+  }
+  return undefined;
+}
+
+/** Try names in the given order so Policy Number wins over a page or unit `number`. */
+function pullPreferred(rec: LooseJson, names: string[]): unknown {
+  for (const name of names) {
+    const value = pull(rec, [name]);
+    if (value !== undefined) return value;
   }
   return undefined;
 }
@@ -112,11 +147,22 @@ export function splitYearMakeModel(text: string): { year?: string; make?: string
 const MONTH_NAME =
   "Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?";
 const POLICY_DATE = `(?:\\d{1,2}[/.-]\\d{1,2}[/.-]\\d{2,4}|(?:${MONTH_NAME})\\s+\\d{1,2},?\\s+\\d{4})`;
+const POLICY_CLOCK = "\\d{1,2}:\\d{2}\\s*(?:a\\.?\\s*m\\.?|p\\.?\\s*m\\.?)";
+
+/** Travelers prints 12:01 A.M. before each policy-period date. Drop the clock so the dates match. */
+export function stripPolicyClocks(text: string): string {
+  return text
+    .replace(new RegExp(POLICY_CLOCK, "gi"), " ")
+    .replace(/\bstandard time\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 export function splitPolicyPeriod(text: string): { effective?: string; expiration?: string } {
-  const match = text.match(
+  const cleaned = stripPolicyClocks(text);
+  const match = cleaned.match(
     new RegExp(
-      `(${POLICY_DATE})(?:[\\s\\S]{0,40}?)(?:to|through|until|-)[:.]?\\s*(${POLICY_DATE})`,
+      `(${POLICY_DATE})(?:[\\s\\S]{0,80}?)(?:\\bto\\b|\\bthrough\\b|\\buntil\\b|-)[:.]?\\s*(${POLICY_DATE})`,
       "i",
     ),
   );
@@ -170,6 +216,19 @@ function applyVehicle(out: LooseJson, item: LooseJson, index: number) {
     if (split.model) setIfEmpty(out, vehicleKey(index, "model"), split.model);
   }
   setIfEmpty(out, vehicleKey(index, "usage"), pull(item, ["usage", "use", "vehicle_usage", "vehicle_use"]));
+  const vehicleTerm = pull(item, [
+    "full_term_premium",
+    "total_premium",
+    "total_policy_premium",
+    "6_month_premium",
+    "six_month_premium",
+    "vehicle_total",
+  ]);
+  if (hasPrinted(vehicleTerm)) rememberVehiclePremium(out, vehicleTerm);
+  for (const key of COVERAGE_LIST_KEYS) {
+    const raw = pull(item, [key]);
+    if (raw != null) applyCoverages(out, raw, hasPrinted(vehicleTerm) ? "limits" : "vehicle");
+  }
   const garagingZip = pull(item, ["garaging_zip", "garage_zip", "garaged_zip"]);
   const garagingAddress = pull(item, ["garaging_address", "garage_address", "garaging_location"]);
   if (index === 0) {
@@ -308,12 +367,47 @@ function isSplitBi(key: string, kind: "person" | "accident"): boolean {
   return /accident|occurrence/.test(key);
 }
 
-function applyCoverages(out: LooseJson, raw: unknown) {
+function scheduleLabel(item: LooseJson): string {
+  const wanted = new Set(["name", "coverage", "type", "label", "description"]);
+  for (const key of Object.keys(item)) {
+    if (!wanted.has(normKey(key))) continue;
+    const text = textOf(item[key]).trim();
+    if (text) return text;
+  }
+  return "";
+}
+
+function scheduleAmount(item: LooseJson): unknown {
+  const wanted = ["premium", "premium_amount", "full_term_premium", "total", "amount"];
+  for (const key of Object.keys(item)) {
+    if (!wanted.includes(normKey(key))) continue;
+    if (hasPrinted(item[key])) return item[key];
+  }
+  return undefined;
+}
+
+/** Coverage-schedule "Total" / "Full Term Premium" / "6 Month Premium" row. Line premiums stay out. */
+function noteSchedulePremium(out: LooseJson, item: LooseJson, mode: "policy" | "vehicle" | "limits") {
+  if (mode === "limits") return;
+  const rank = rankForPremiumKey(normKey(scheduleLabel(item)));
+  if (rank < 50) return;
+  const amount = scheduleAmount(item);
+  if (amount == null) return;
+  if (mode === "vehicle") {
+    rememberVehiclePremium(out, amount);
+    return;
+  }
+  setPremiumIfBetter(out, amount, rank);
+}
+
+function applyCoverages(out: LooseJson, raw: unknown, mode: "policy" | "vehicle" | "limits" = "policy") {
   const split: { person?: unknown; accident?: unknown } = {};
   const items = Array.isArray(raw) ? raw : isRecord(raw) ? [raw] : [];
-  for (const item of items) {
-    if (!isRecord(item)) continue;
-    const label = textOf(pull(item, ["name", "coverage", "type", "label"]));
+  for (const source of items) {
+    if (!isRecord(source)) continue;
+    const item = { ...source };
+    noteSchedulePremium(out, item, mode);
+    const label = textOf(pull(item, ["name", "coverage", "type", "label", "description"]));
     const limit = pull(item, ["limit", "value", "amount", "deductible"]);
     if (label && Object.keys(item).length === 0) {
       applyCoverageEntry(out, label, limit ?? label, split);
@@ -353,8 +447,38 @@ function applyCoverageEntry(
 
 function applyPolicyPeriod(out: LooseJson, raw: unknown) {
   if (isRecord(raw)) {
-    setIfEmpty(out, "effective_date", pull(raw, ["from", "start", "effective", "effective_date", "eff"]));
-    setIfEmpty(out, "expiration_date", pull(raw, ["to", "end", "expiration", "expiration_date", "exp"]));
+    const rec = { ...raw };
+    setIfEmpty(
+      out,
+      "effective_date",
+      pull(rec, [
+        "from",
+        "start",
+        "effective",
+        "effective_date",
+        "eff",
+        "begins",
+        "begin",
+        "inception",
+        "policy_begins",
+        "policy_inception",
+      ]),
+    );
+    setIfEmpty(
+      out,
+      "expiration_date",
+      pull(rec, [
+        "to",
+        "end",
+        "expiration",
+        "expiration_date",
+        "exp",
+        "ends",
+        "expires",
+        "policy_expires",
+        "policy_ends",
+      ]),
+    );
     return;
   }
   if (typeof raw !== "string" && typeof raw !== "number") return;
@@ -388,6 +512,17 @@ const PREMIUM_RANK: Record<string, number> = {
   premium_for_this_policy: 90,
   six_month_premium: 80,
   six_month_total_premium: 80,
+  "6_month_premium": 80,
+  "6_mo_premium": 80,
+  "6_month_total_premium": 100,
+  total_6_month_premium: 100,
+  total_six_month_premium: 100,
+  semi_annual_premium: 80,
+  semiannual_premium: 80,
+  premium_for_the_policy_period: 100,
+  total_premium_for_the_policy_period: 100,
+  total_full_term_premium: 100,
+  full_term_premium_charges: 90,
   premium_total: 80,
   written_premium: 70,
   term_premium: 70,
@@ -402,6 +537,25 @@ const PREMIUM_RANK: Record<string, number> = {
   premium: 10,
 };
 
+/** Exact ranks plus Travelers labels Gemini spells out ("6 Month Premium", "Premium for this policy"). */
+function rankForPremiumKey(norm: string): number {
+  if (!norm || norm === PREMIUM_RANK_KEY) return 0;
+  const exact = PREMIUM_RANK[norm];
+  if (exact) return exact;
+  if (/bodily|property_damage|collision|comprehensive|uninsured|underinsured|pip|medical|towing|rental|towing/.test(norm)) {
+    return 0;
+  }
+  if (/(?:^|_)(?:6|six)_months?(?:$|_)|(?:^|_)6_mo(?:$|_)/.test(norm) && /premium|total|charge/.test(norm)) {
+    return /total|full/.test(norm) ? 100 : 80;
+  }
+  if (/full_term/.test(norm) && /premium|charge/.test(norm)) return 100;
+  if (/total/.test(norm) && /premium/.test(norm)) return 100;
+  if (/premium_for_(?:this|the)_policy/.test(norm)) return 90;
+  if (norm === "full_term" || norm === "term_total" || norm === "total_policy") return 100;
+  if (norm === "total") return 100;
+  return 0;
+}
+
 const PREMIUM_BOX_KEYS = new Set([
   "premium",
   "premiums",
@@ -412,6 +566,21 @@ const PREMIUM_BOX_KEYS = new Set([
 ]);
 
 const PREMIUM_RANK_KEY = "__ffPremiumRank";
+
+function looksLikeVehicle(rec: LooseJson): boolean {
+  const keys = new Set(Object.keys(rec).map(normKey));
+  if (
+    keys.has("vin") ||
+    keys.has("vehicle_identification_number") ||
+    keys.has("vehicle_vin") ||
+    keys.has("v_i_n")
+  ) {
+    return true;
+  }
+  const hasYear = keys.has("year") || keys.has("model_year") || keys.has("vehicle_year");
+  const hasIdentity = keys.has("make") || keys.has("vehicle_make") || keys.has("model") || keys.has("vehicle_model");
+  return hasYear && hasIdentity;
+}
 
 function currentPremiumRank(out: LooseJson): number {
   const stored = out[PREMIUM_RANK_KEY];
@@ -436,14 +605,30 @@ function bestPrintedPremium(node: LooseJson, depth = 0): { rank: number; raw: un
   };
   for (const [key, value] of Object.entries(node)) {
     const norm = normKey(key);
-    if (norm === PREMIUM_RANK_KEY) continue;
-    if (depth < 3 && isRecord(value) && PREMIUM_BOX_KEYS.has(norm)) {
-      const inner = bestPrintedPremium(value, depth + 1);
-      if (inner) consider(inner.rank, inner.raw);
+    if (norm === PREMIUM_RANK_KEY || norm === "__ffvehiclepremiums") continue;
+    if (Array.isArray(value) && depth < 4) {
+      if ((VEHICLE_LIST_KEYS as readonly string[]).includes(norm)) continue;
+      for (const item of value) {
+        if (!isRecord(item)) continue;
+        const labelRank = rankForPremiumKey(normKey(scheduleLabel(item)));
+        if (labelRank >= 50) consider(labelRank, scheduleAmount(item));
+        const inner = bestPrintedPremium(item, depth + 1);
+        if (inner && inner.rank >= 50) consider(inner.rank, inner.raw);
+      }
       continue;
     }
+    if (depth < 3 && isRecord(value)) {
+      if (looksLikeVehicle(value) || (VEHICLE_LIST_KEYS as readonly string[]).includes(norm)) continue;
+      const walk =
+        PREMIUM_BOX_KEYS.has(norm) || /premium|full_term/.test(norm) || rankForPremiumKey(norm) > 0;
+      if (walk) {
+        const inner = bestPrintedPremium(value, depth + 1);
+        if (inner) consider(inner.rank, inner.raw);
+        continue;
+      }
+    }
     if (depth > 0 && (norm === "total" || norm === "amount")) consider(norm === "total" ? 100 : 45, value);
-    consider(PREMIUM_RANK[norm] ?? 0, value);
+    consider(rankForPremiumKey(norm), value);
   }
   return best;
 }
@@ -486,7 +671,7 @@ function applyPolicyRecord(out: LooseJson, rec: LooseJson) {
   setIfEmpty(
     out,
     "policy_number",
-    pull(rec, [
+    pullPreferred(rec, [
       "policy_number",
       "policy_no",
       "policy_num",
@@ -523,6 +708,15 @@ function applyPolicyRecord(out: LooseJson, rec: LooseJson) {
       "eff",
       "inception_date",
       "from_date",
+      "policy_period_from",
+      "period_from",
+      "from",
+      "inception",
+      "start_date",
+      "begins",
+      "begin",
+      "policy_begins",
+      "policy_inception",
     ]),
   );
   setIfEmpty(
@@ -535,6 +729,14 @@ function applyPolicyRecord(out: LooseJson, rec: LooseJson) {
       "exp_date",
       "exp",
       "to_date",
+      "policy_period_to",
+      "period_to",
+      "to",
+      "end_date",
+      "ends",
+      "expires",
+      "policy_expires",
+      "policy_ends",
     ]),
   );
   setIfEmpty(
@@ -550,6 +752,10 @@ function takePolicyEnvelopes(out: LooseJson) {
   for (const key of POLICY_ENVELOPES) {
     const raw = pull(out, [key]);
     if (raw == null) continue;
+    if (Array.isArray(raw)) {
+      applyCoverages(out, raw);
+      continue;
+    }
     if (isRecord(raw)) applyPolicyRecord(out, { ...raw });
     else out[key] = raw;
   }
@@ -678,21 +884,28 @@ function applyDriverList(out: LooseJson, raw: unknown) {
 }
 
 function absorbPage(out: LooseJson, page: LooseJson) {
+  const copy = { ...page };
+  for (const key of VEHICLE_LIST_KEYS) {
+    const raw = pull(copy, [key]);
+    if (raw == null) continue;
+    asItemList(raw).forEach((item, index) => applyVehicle(out, { ...item }, index));
+  }
   for (const key of DRIVER_LIST_KEYS) {
-    const raw = pull(page, [key]);
+    const raw = pull(copy, [key]);
     if (raw != null) applyDriverList(out, raw);
   }
   for (const key of COVERAGE_LIST_KEYS) {
-    const raw = pull(page, [key]);
+    const raw = pull(copy, [key]);
     if (raw != null) applyCoverages(out, raw);
   }
-  applyPolicyRecord(out, page);
-  for (const [key, value] of Object.entries(page)) {
+  applyPolicyRecord(out, copy);
+  absorbNestedPolicy(out, copy, 0);
+  for (const [key, value] of Object.entries(copy)) {
     if (coverageTargetForLabel(key)) applyCoverageEntry(out, key, value);
   }
 }
 
-/** Page 2 of a multi-page dec often holds the coverage table the summary page omits. */
+/** Page 1 holds the declarations header. Later pages hold the coverage schedule and term premium. */
 function absorbLaterPages(out: LooseJson) {
   const bundles: LooseJson[] = [];
   for (const key of ["pages", "dec_pages"]) {
@@ -703,11 +916,146 @@ function absorbLaterPages(out: LooseJson) {
       for (const page of Object.values(raw)) if (isRecord(page)) bundles.push({ ...page });
     }
   }
-  for (const key of ["page_2", "page_3", "second_page", "coverage_page"]) {
+  for (const key of PAGE_OBJECT_KEYS) {
     const raw = pull(out, [key]);
     if (isRecord(raw)) bundles.push({ ...raw });
   }
   for (const page of bundles) absorbPage(out, page);
+}
+
+const VEHICLE_PREMIUMS_KEY = "__ffVehiclePremiums";
+
+function rememberVehiclePremium(out: LooseJson, raw: unknown) {
+  if (!hasPrinted(raw)) return;
+  const list = Array.isArray(out[VEHICLE_PREMIUMS_KEY]) ? (out[VEHICLE_PREMIUMS_KEY] as unknown[]) : [];
+  list.push(raw);
+  out[VEHICLE_PREMIUMS_KEY] = list;
+}
+
+function moneyNumber(raw: unknown): number | null {
+  const match = textOf(raw).replace(/[$,]/g, "").trim().match(/\d+(?:\.\d+)?/);
+  if (!match) return null;
+  const n = Number(match[0]);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** Per-vehicle totals only fill the term premium when the policy total was not printed. */
+function applyVehiclePremiumSum(out: LooseJson) {
+  const list = out[VEHICLE_PREMIUMS_KEY];
+  delete out[VEHICLE_PREMIUMS_KEY];
+  if (currentPremiumRank(out) > 0 || !Array.isArray(list)) return;
+  let cents = 0;
+  let count = 0;
+  for (const raw of list) {
+    const n = moneyNumber(raw);
+    if (n == null) continue;
+    cents += Math.round(n * 100);
+    count += 1;
+  }
+  if (!count || cents <= 0) return;
+  const dollars = cents / 100;
+  setPremiumIfBetter(out, Number.isInteger(dollars) ? String(dollars) : dollars.toFixed(2), 75);
+}
+
+const POLICY_BLOCK_KEYS = new Set([
+  "policy_number",
+  "policy_no",
+  "policy_num",
+  "pol_no",
+  "pol_number",
+  "effective_date",
+  "expiration_date",
+  "policy_effective_date",
+  "policy_expiration_date",
+  "policy_period",
+  "policy_term",
+  "policy_period_from",
+  "policy_period_to",
+  "full_term_premium",
+  "total_premium",
+  "total_policy_premium",
+  "current_premium",
+  "6_month_premium",
+  "six_month_premium",
+  "full_term",
+  "writing_company",
+  "carrier",
+  "insurer",
+  "issuing_company",
+  "company_name",
+]);
+
+function looksLikePolicyBlock(rec: LooseJson): boolean {
+  const keys = Object.keys(rec).map(normKey);
+  if (keys.some((key) => POLICY_BLOCK_KEYS.has(key) || rankForPremiumKey(key) >= 50)) return true;
+  const set = new Set(keys);
+  const hasFrom =
+    set.has("from") ||
+    set.has("policy_period_from") ||
+    set.has("period_from") ||
+    set.has("begins") ||
+    set.has("begin") ||
+    set.has("inception") ||
+    set.has("policy_begins");
+  const hasTo =
+    set.has("to") ||
+    set.has("policy_period_to") ||
+    set.has("period_to") ||
+    set.has("ends") ||
+    set.has("expires") ||
+    set.has("policy_expires");
+  return hasFrom && hasTo;
+}
+
+const NEST_SKIP = new Set<string>([
+  ...VEHICLE_LIST_KEYS,
+  ...DRIVER_LIST_KEYS,
+  ...COVERAGE_LIST_KEYS,
+  "pages",
+  "dec_pages",
+  ...PAGE_OBJECT_KEYS,
+]);
+
+/** Header / policy_information / premium boxes nested under a page, without treating a VIN row as the policy. */
+function absorbNestedPolicy(out: LooseJson, node: LooseJson, depth: number) {
+  if (depth > 3 || looksLikeVehicle(node)) return;
+  if (looksLikePolicyBlock(node)) applyPolicyRecord(out, { ...node });
+  if (depth === 3) return;
+  for (const [key, value] of Object.entries(node)) {
+    if (!isRecord(value)) continue;
+    const norm = normKey(key);
+    if (NEST_SKIP.has(norm) || norm === PREMIUM_RANK_KEY || norm === VEHICLE_PREMIUMS_KEY || looksLikeVehicle(value)) {
+      continue;
+    }
+    absorbNestedPolicy(out, value, depth + 1);
+  }
+}
+
+/** Declarations / item-two blocks Gemini nests under a name we did not list as an envelope. */
+function absorbLoosePolicyBlocks(out: LooseJson) {
+  for (const [key, value] of Object.entries(out)) {
+    const norm = normKey(key);
+    if (!isRecord(value) || NEST_SKIP.has(norm) || norm === PREMIUM_RANK_KEY || norm === VEHICLE_PREMIUMS_KEY) continue;
+    if (looksLikeVehicle(value)) continue;
+    absorbNestedPolicy(out, value, 0);
+  }
+}
+
+function finalizePolicyDates(out: LooseJson) {
+  const effectiveText = textOf(out.effective_date).trim();
+  const split = effectiveText ? splitPolicyPeriod(effectiveText) : {};
+  if (split.effective && split.expiration) {
+    out.effective_date = split.effective;
+    const expirationText = textOf(out.expiration_date).trim();
+    const expirationSplit = expirationText ? splitPolicyPeriod(expirationText) : {};
+    if (!expirationText || expirationSplit.effective) out.expiration_date = split.expiration;
+  }
+  for (const key of ["effective_date", "expiration_date"] as const) {
+    const text = textOf(out[key]).trim();
+    if (!text) continue;
+    const cleaned = stripPolicyClocks(text);
+    if (cleaned) out[key] = cleaned;
+  }
 }
 
 /** Flatten ACORD / carrier auto-dec JSON onto Auto risk-profile keys. */
@@ -851,20 +1199,15 @@ export function expandAutoDecLayout(json: LooseJson, shopLine?: string | null): 
     else if (accidentText) setIfEmpty(out, "liability_bi", accidentText);
   }
 
-  const effective = out.effective_date;
-  if (typeof effective === "string" && !hasPrinted(out.expiration_date)) {
-    const split = splitPolicyPeriod(effective);
-    if (split.effective && split.expiration) {
-      out.effective_date = split.effective;
-      out.expiration_date = split.expiration;
-    }
-  }
-
-  setIfEmpty(out, "effective_date", pull(out, ["policy_effective_date", "from_date"]));
-  setIfEmpty(out, "expiration_date", pull(out, ["policy_expiration_date", "to_date"]));
+  setIfEmpty(out, "effective_date", pull(out, ["policy_effective_date", "policy_period_from", "from_date"]));
+  setIfEmpty(out, "expiration_date", pull(out, ["policy_expiration_date", "policy_period_to", "to_date"]));
+  absorbLoosePolicyBlocks(out);
+  finalizePolicyDates(out);
   absorbBestPremium(out, out);
+  applyVehiclePremiumSum(out);
   stripLosingPremiumKeys(out);
   delete out[PREMIUM_RANK_KEY];
+  delete out[VEHICLE_PREMIUMS_KEY];
 
   if (typeof out.current_premium === "string") {
     const digits = out.current_premium.replace(/[$,]/g, "").trim();

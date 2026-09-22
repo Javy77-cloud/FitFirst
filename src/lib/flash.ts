@@ -286,6 +286,9 @@ function splitHash(href: string) {
   return { path: href.slice(0, index), hash: href.slice(index) };
 }
 
+/** Mint diagnostics name the missing fields and a sanitized Gemini preview. */
+export const FLASH_MESSAGE_MAX = 420;
+
 /** Decode `?flash=` (known key or a short raw phrase) into toast copy. */
 export function resolveFlashMessage(raw: string | null | undefined): string | null {
   if (raw == null) return null;
@@ -299,7 +302,7 @@ export function resolveFlashMessage(raw: string | null | undefined): string | nu
     decoded = trimmed;
   }
   if (!decoded) return null;
-  return decoded.length > 80 ? decoded.slice(0, 80) : decoded;
+  return decoded.length > FLASH_MESSAGE_MAX ? decoded.slice(0, FLASH_MESSAGE_MAX) : decoded;
 }
 
 export function withFlash(href: string, message: string, kind: FlashKind = "success"): string {

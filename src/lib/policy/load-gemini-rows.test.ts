@@ -192,6 +192,8 @@ describe("loadGeminiRows document store", () => {
     expect(result).toEqual({
       ok: true,
       cached: true,
+      documentKind: null,
+      geminiPreview: null,
       rows: [
         expect.objectContaining({ fieldKey: "policy_number", normalizedValue: "HO-cached" }),
         expect.objectContaining({ fieldKey: "premium", normalizedValue: "3383" }),
@@ -313,6 +315,8 @@ describe("readDecPdfBytes + mint failure toast", () => {
     expect(source("src/components/deal/issue-policy-from-dec.tsx")).toMatch(/Re-read declaration/);
     expect(source("src/components/deal/issue-policy-from-dec.tsx")).toMatch(/mint\(undefined, true\)/);
     expect(source("src/app/actions/policy-mint.ts")).toMatch(/evaluateMintExtract/);
+    expect(source("src/app/actions/policy-mint.ts")).toMatch(/geminiPreview/);
+    expect(source("src/components/deal/issue-policy-from-dec.tsx")).toMatch(/mintFailureFlashText/);
     expect(source("src/app/actions/policy-mint.ts")).not.toMatch(/FF-MINT/);
     expect(source("src/lib/policy/mint-gate.ts")).toMatch(/need_dec_file/);
     expect(source("src/lib/policy/mint-gate.ts")).toMatch(/need_dec_fields/);
