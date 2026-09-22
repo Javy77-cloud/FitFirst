@@ -25,7 +25,8 @@ import {
 } from "@/lib/deals/product-stages";
 import { stageColorFromNameOrSlug } from "@/lib/desk/status-colors";
 import { flashAction } from "@/lib/flash-client";
-import { mintFailureToast } from "@/lib/policy/mint-gate";
+import { OPEN_ISSUED_POLICY_UPLOAD } from "@/components/deal/issue-policy-from-dec";
+import { isBoundReadyForIssue, isPolicyIssuedStage, mintFailureToast } from "@/lib/policy/mint-gate";
 import { cn } from "@/lib/utils";
 
 function colorForStage(stage: DealStageOption) {
@@ -49,6 +50,8 @@ export function DealHeaderStage({
   selectedQuoteIds = [],
   quoteChoices = [],
   workspaceTab = "details",
+  /** Quote ids that already have a policy/declaration in Manual or the carrier folder. */
+  issuedFolderQuoteIds = null,
 }: {
   dealId: string;
   pipelineSlug: string;
@@ -61,6 +64,7 @@ export function DealHeaderStage({
   quoteChoices?: HeaderQuoteChoice[];
   /** Late stages (Quote sent / Bound / Policy issued / closed) only from Quotes. */
   workspaceTab?: string;
+  issuedFolderQuoteIds?: readonly string[] | null;
 }) {
   const [value, setValue] = useState(stageSlug);
   const [open, setOpen] = useState(false);
@@ -118,6 +122,23 @@ export function DealHeaderStage({
       setPendingStage(next);
       setPickOpen(true);
       setOpen(false);
+      return;
+    }
+    if (
+      isPolicyIssuedStage(next) &&
+      isBoundReadyForIssue(value) &&
+      issuedFolderQuoteIds &&
+      !validIds.some((id) => issuedFolderQuoteIds.includes(id))
+    ) {
+      setOpen(false);
+      window.dispatchEvent(
+        new CustomEvent(OPEN_ISSUED_POLICY_UPLOAD, {
+          detail: { dealId, product: product || "homeowners" },
+        }),
+      );
+      router.push(
+        `/deals/${dealId}?tab=quotes&product=${product || "homeowners"}&issue=1`,
+      );
       return;
     }
     const prev = value;

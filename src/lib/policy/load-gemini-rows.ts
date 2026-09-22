@@ -4,7 +4,8 @@ import { evaluateMintExtract } from "@/lib/policy/mint-gate";
 export const DEC_FILE_MISSING_MESSAGE =
   "Could not read the declaration PDF from storage. Re-upload the file — local disk uploads do not survive Vercel deploys.";
 
-export const DEC_EXTRACT_FAILED_MESSAGE = "Could not extract fields from the declaration PDF.";
+export const DEC_EXTRACT_FAILED_MESSAGE =
+  "Could not extract the required fields from the policy file. The file stays in the folder.";
 
 export type GeminiMintRow = {
   fieldKey: string;

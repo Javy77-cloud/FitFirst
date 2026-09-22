@@ -16,6 +16,8 @@ import { ChooseFileButton } from "@/components/choose-file-button";
 import { isBoundReadyForIssue, mintFailureToast } from "@/lib/policy/mint-gate";
 import { flashAction } from "@/lib/flash-client";
 
+export const OPEN_ISSUED_POLICY_UPLOAD = "ff-open-issued-policy-upload";
+
 export type IssuedPolicyChip = {
   id: string;
   policyNumber?: string | null;
@@ -55,6 +57,17 @@ export function IssuePolicyFromDec({
   useEffect(() => {
     if (autoOpen && bound && hasQuote && !issued?.id) setOpen(true);
   }, [autoOpen, bound, hasQuote, issued?.id]);
+
+  useEffect(() => {
+    function onOpen(event: Event) {
+      const detail = (event as CustomEvent<{ dealId?: string; product?: string }>).detail;
+      if (detail?.dealId && detail.dealId !== dealId) return;
+      if (detail?.product && detail.product !== product) return;
+      if (bound && hasQuote && !issued?.id) setOpen(true);
+    }
+    window.addEventListener(OPEN_ISSUED_POLICY_UPLOAD, onOpen);
+    return () => window.removeEventListener(OPEN_ISSUED_POLICY_UPLOAD, onOpen);
+  }, [bound, dealId, hasQuote, issued?.id, product]);
 
   function mint(documentId?: string, force = false) {
     setCreating(true);
