@@ -4453,7 +4453,7 @@ tr[data-ff-activity-selected="true"] {
 [data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-header-open { grid-column: 7; }
 [data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-grid {
   grid-template-rows: auto auto auto;
-  row-gap: 0.16rem;
+  row-gap: 0.35rem;
 }
 [data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-name {
   grid-row: 1;
@@ -4543,6 +4543,9 @@ tr[data-ff-activity-selected="true"] {
   color: var(--ff-navy);
   font-weight: 750;
 }
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-card [data-ff-assign-tags]:not(:has([data-ff-tag-chip])) {
+  display: none;
+}
 /* Contacts Stack — 3 rows. Phone row carries language | status | DOB | policies. */
 [data-ff-book-command="contacts"][data-ff-book-layout="stack"] {
   --ff-contact-stack-cols: 1.15rem minmax(9rem, 1.35fr) minmax(5rem, 0.72fr) minmax(6.75rem, 0.95fr) minmax(5.25rem, 0.7fr) minmax(3.6rem, 0.42fr) minmax(6.75rem, 0.9fr);
@@ -4603,7 +4606,7 @@ tr[data-ff-activity-selected="true"] {
 }
 [data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-spread {
   grid-template-rows: auto auto auto;
-  row-gap: 0.16rem;
+  row-gap: 0.35rem;
 }
 [data-ff-book-command="contacts"][data-ff-book-layout="stack"] .ff-contact-stack-check {
   grid-column: 1;

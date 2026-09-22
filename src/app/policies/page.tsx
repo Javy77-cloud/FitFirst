@@ -262,6 +262,7 @@ export default async function PoliciesPage({
                 recordId={card.id}
                 tags={card.tags}
                 catalog={tagCatalog}
+                emptyPlaceholder="none"
               />
               <span className="sr-only">{tagSortText(card.tags)}</span>
             </>
