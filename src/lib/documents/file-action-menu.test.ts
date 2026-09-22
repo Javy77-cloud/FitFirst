@@ -45,6 +45,24 @@ describe("standard file action menu", () => {
     ]);
   });
 
+  it("splits filename View from a separate kebab menu trigger", () => {
+    const text = source(MENU);
+    expect(text).toMatch(/data-ff-file-action="view-trigger"/);
+    expect(text).toMatch(/data-ff-file-action="menu"/);
+    expect(text).toMatch(/data-ff-file-action-menu-trigger/);
+    expect(text).toMatch(/MoreVertical/);
+    // Filename/children open preview directly — not via DropdownMenuTrigger.
+    expect(text).toMatch(/data-ff-file-action="view-trigger"[\s\S]*onClick=\{\(\) => setPreviewOpen\(true\)\}/);
+    expect(text).toMatch(/data-ff-file-action="view-trigger"[\s\S]*\{children\}/);
+    expect(text).not.toMatch(/<DropdownMenuTrigger[\s\S]*?\{children\}/);
+    expect(text.indexOf('data-ff-file-action="view-trigger"')).toBeLessThan(
+      text.indexOf('data-ff-file-action="menu"'),
+    );
+    expect(text.indexOf('data-ff-file-action="menu"')).toBeLessThan(
+      text.indexOf('data-ff-file-action="delete-icon"'),
+    );
+  });
+
   it("renders rename, change-type, set-term-role with data-ff attributes", () => {
     const text = source(MENU);
     expect(text).toMatch(/data-ff-file-action="view"/);

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { CalendarRange, Download, Eye, Pencil, Replace, Tags, Trash2 } from "lucide-react";
+import { CalendarRange, Download, Eye, MoreVertical, Pencil, Replace, Tags, Trash2 } from "lucide-react";
 import {
   renameUploadedFile,
   deleteUploadedFile,
@@ -196,21 +196,30 @@ export function FileActionMenu({
         <button ref={deleteBtnRef} type="submit" tabIndex={-1} aria-hidden className="hidden" />
       </HardDeleteForm>
 
+      <button
+        type="button"
+        data-ff-file-action="view-trigger"
+        className={cn(
+          "flex min-w-0 flex-1 items-center gap-2 rounded-md border-0 bg-transparent p-0 text-left shadow-none outline-none hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-ring",
+          triggerClassName,
+        )}
+        onClick={() => setPreviewOpen(true)}
+      >
+        {children}
+      </button>
+
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={
-            <button
-              type="button"
-              className={cn(
-                "flex min-w-0 flex-1 items-center gap-2 rounded-md border-0 bg-transparent p-0 text-left shadow-none outline-none hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-ring",
-                triggerClassName,
-              )}
-            />
-          }
+          type="button"
+          aria-label="More file actions"
+          title="More actions"
+          data-ff-file-action="menu"
+          data-ff-file-action-menu-trigger=""
+          className="ml-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-0 bg-transparent text-muted-foreground outline-none hover:bg-secondary/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
         >
-          {children}
+          <MoreVertical className="size-4" aria-hidden />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="min-w-44" data-ff-file-action-menu-items="">
+        <DropdownMenuContent align="end" className="min-w-44" data-ff-file-action-menu-items="">
           <DropdownMenuGroup>
             <DropdownMenuItem
               data-ff-file-action="view"
@@ -296,14 +305,6 @@ export function FileActionMenu({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <DocumentPreviewDialog
-        open={previewOpen}
-        onOpenChange={setPreviewOpen}
-        documentId={documentId}
-        filename={filename}
-        mimeType={mimeType}
-      />
-
       <FileDeleteIcon
         type="button"
         label={mode === "hide" ? "Hide" : "Delete"}
@@ -314,6 +315,14 @@ export function FileActionMenu({
           if (policyDocDelete) requestPolicyDelete();
           else deleteBtnRef.current?.click();
         }}
+      />
+
+      <DocumentPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        documentId={documentId}
+        filename={filename}
+        mimeType={mimeType}
       />
     </div>
   );
