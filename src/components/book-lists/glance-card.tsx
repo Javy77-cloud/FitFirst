@@ -194,6 +194,82 @@ function policyFact(card: BookGlanceCard, id: string): string {
   return isEmptyDash(label) ? "" : label;
 }
 
+const CONTACT_STACK_META = ["language", "status", "dob", "policies"] as const;
+
+/** Contacts Stack — top name, center meta columns, bottom phone/email + reach. */
+function ContactStackCard({
+  card,
+  leading,
+  extra,
+  activity,
+  tip,
+}: {
+  card: BookGlanceCard;
+  leading?: ReactNode;
+  extra?: ReactNode;
+  activity?: ReactNode;
+  tip: string;
+}) {
+  const byId = new Map((card.columns ?? []).map((column) => [column.id, column.label]));
+  const meta = CONTACT_STACK_META.map((id) => ({
+    id,
+    label: byId.get(id) ?? (id === "policies" ? "0" : ""),
+  }));
+  const tel = telHref(card.phone);
+  const mail = mailtoHref(card.email);
+  const reach = card.mid?.trim() && !isEmptyDash(card.mid) ? card.mid.trim() : "";
+  return (
+    <article
+      className={cn("ff-stack-card ff-book-card ff-party-card ff-contact-stack-card", `ff-heat-${card.heat}`)}
+      data-ff-book-card={card.id}
+      data-ff-contact-stack-card={card.id}
+      data-hay={card.hay}
+      data-ff-book-surface={card.surface}
+      data-ff-heat={card.heat}
+      data-ff-book-column={card.column}
+    >
+      <div className="ff-stack-card-body min-w-0 flex-1">
+        <div className="ff-contact-stack-spread" data-ff-contact-stack="">
+          <div className="ff-contact-stack-row ff-contact-stack-name-row" data-ff-contact-stack-row="name">
+            <div className="ff-contact-stack-check" data-ff-contact-stack-check="">
+              {leading}
+            </div>
+            <Link href={card.href} className="ff-stack-name">
+              {card.title}
+            </Link>
+            {activity ? <div className="ff-contact-stack-activity">{activity}</div> : null}
+          </div>
+          <ul className="ff-contact-stack-meta" data-ff-contact-stack-meta="" data-ff-contact-stack-row="meta">
+            {meta.map((column) => (
+              <li key={column.id} data-ff-contact-stack-col={column.id} title={column.label || undefined}>
+                {column.label}
+              </li>
+            ))}
+          </ul>
+          <div className="ff-contact-stack-row ff-contact-stack-reach-row" data-ff-contact-stack-row="contact">
+            <RiskGlyph heat={card.heat} tip={tip} />
+            <div className="ff-contact-stack-channels">
+              <span className="ff-contact-stack-phone" data-ff-contact-stack-phone="">
+                {tel ? <a href={tel}>{card.phone}</a> : null}
+              </span>
+              <span className="ff-contact-stack-email" data-ff-contact-stack-email="">
+                {mail ? <a href={mail}>{card.email}</a> : null}
+              </span>
+            </div>
+            {reach ? (
+              <p className="ff-contact-stack-reach" data-ff-contact-stack-reach="" data-ff-stack-mid="" title={card.why}>
+                {reach}
+              </p>
+            ) : null}
+          </div>
+        </div>
+        <InboxCue card={card} />
+        {extra}
+      </div>
+    </article>
+  );
+}
+
 /** Policies Stack — same top-to-bottom card column as Deals/Renewals. Existing facts only. */
 function PolicyStackCard({
   card,
@@ -318,7 +394,12 @@ export function BookGlanceCardView({
   layoutMode?: "stack" | "bands" | "list";
 }) {
   const tip = card.health?.why || card.healthHint?.tip || card.why;
-  if (card.surface === "contacts" || card.surface === "accounts") {
+  if (card.surface === "contacts") {
+    return (
+      <ContactStackCard card={card} leading={leading} extra={extra} activity={activity} tip={tip} />
+    );
+  }
+  if (card.surface === "accounts") {
     return <BookGridCard card={card} leading={leading} extra={extra} activity={activity} tip={tip} kind="party" />;
   }
   if (card.surface === "carriers") {

@@ -133,6 +133,29 @@ function languageCue(row: PartyListRow): string | null {
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
+/** Contacts Stack footer — show the stored preference, including English. Empty stays blank. */
+function languageColumnCue(row: PartyListRow): string {
+  const raw = (row.preferredLanguage || row.language || "").trim();
+  if (!raw) return "";
+  const key = raw.toLowerCase();
+  if (key === "english" || key === "en" || key === "eng") return "English";
+  if (key === "spanish" || key === "es" || key === "spa") return "Spanish";
+  if (key === "creole" || key === "ht" || key === "haitian creole") return "Creole";
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+/** Fixed Contacts Stack footer tracks — same four columns on every card. */
+function contactStackFooter(row: PartyListRow): BookCueColumn[] {
+  const statusRaw = row.clientStatus?.trim() ?? "";
+  const status = !isEmptyDash(statusRaw) ? clientStatusCue(statusRaw) : null;
+  return [
+    { id: "language", label: languageColumnCue(row) },
+    { id: "status", label: status ?? "" },
+    { id: "dob", label: dobGlance(row.dateOfBirth) ?? "" },
+    { id: "policies", label: String(row.policyCount ?? 0) },
+  ];
+}
+
 function maskedFein(last4: string | null | undefined): string | null {
   const digits = (last4 ?? "").replace(/\D/g, "").slice(-4);
   if (digits.length < 4) return null;
@@ -429,6 +452,7 @@ export function presentPartyCard(
       healthBand: extra.health?.band ?? null,
     }),
     mid: reached,
+    columns: kind === "contact" ? contactStackFooter(row) : null,
     facts,
     peek: null,
     primaryAction: primaryPartyAction({

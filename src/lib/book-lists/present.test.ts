@@ -132,6 +132,18 @@ describe("account card glance", () => {
       "DOB 04/12",
     ]);
     expect(card.facts?.some((fact) => /english/i.test(fact.label))).toBe(false);
+    expect(card.columns?.map((column) => column.id)).toEqual([
+      "language",
+      "status",
+      "dob",
+      "policies",
+    ]);
+    expect(card.columns?.map((column) => column.label)).toEqual([
+      "English",
+      "Client",
+      "DOB 04/12",
+      "0",
+    ]);
     expect(card.mid).toBe("Not reached");
   });
 
