@@ -148,6 +148,15 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/lib/deals/radar-desk.ts")).toMatch(/updatedAt: parseDate\(deal\.updatedAt\)/);
   });
 
+  it("Stack party label is primary applicant only (no co-app append)", () => {
+    const desk = source("src/lib/deals/radar-desk.ts");
+    const face = source("src/components/deals/deal-host-face.tsx");
+    expect(desk).toMatch(/primaryApplicantDisplayName/);
+    expect(desk).not.toMatch(/secondaryNamedInsured:\s*deal\.secondaryNamedInsured/);
+    expect(face).toMatch(/primaryApplicantDisplayName/);
+    expect(face).toMatch(/dealDisplayName/);
+  });
+
   it("keeps Stack product names on the left and that product's place, stamps, and quotes on the right", () => {
     const face = source("src/components/deals/deal-host-face.tsx");
     const stack = source("src/components/deals/priority-stack.tsx");

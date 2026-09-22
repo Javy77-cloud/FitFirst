@@ -18,6 +18,7 @@ import { resolveDealStampStage } from "@/lib/deals/status-stamp";
 import { humanizeDealStage } from "@/lib/deals/package-lines";
 import { bookFamily } from "@/lib/desk/policy-line";
 import { insuredContactName } from "@/lib/crm/lists";
+import { primaryApplicantDisplayName } from "@/lib/deals/deal-display-name";
 import {
   buildVelocityClocks,
   clientHealthScore,
@@ -362,12 +363,15 @@ export function presentRadarCards(
       return {
         id: deal.id,
         title: visibleDealTitle(deal),
-        insured: insuredContactName({
-          primaryNamedInsured: deal.primaryNamedInsured,
-          secondaryNamedInsured: deal.secondaryNamedInsured,
-          contact: row.contact,
-          lead: row.lead,
-        }),
+        // Stack name is primary applicant only — never append co-applicant.
+        insured:
+          primaryApplicantDisplayName(
+            insuredContactName({
+              primaryNamedInsured: deal.primaryNamedInsured,
+              contact: row.contact,
+              lead: row.lead,
+            }),
+          ) || "—",
         lineOfBusiness: deal.lineOfBusiness,
         family: bookFamily(deal.lineOfBusiness),
         productLabels: products.map((id) => dealProductDef(id)?.label ?? id),
