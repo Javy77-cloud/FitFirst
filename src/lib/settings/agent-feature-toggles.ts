@@ -9,6 +9,7 @@
  *   existing home Team / agency-book widgets). Per-agent canSeeAgencyWidgets
  *   still controls book visibility.
  * - agentsMayAdvertiseGoogleBusiness: false — prefs-only until GBP advertise.
+ * - agentsMayDeletePolicyDocuments: true — admin can forbid agent deletes after policy create.
  */
 
 export const AGENT_FEATURE_TOGGLE_IDS = [
@@ -16,6 +17,7 @@ export const AGENT_FEATURE_TOGGLE_IDS = [
   "agentsMayUseMacros",
   "agentsMaySeeTeamScope",
   "agentsMayAdvertiseGoogleBusiness",
+  "agentsMayDeletePolicyDocuments",
 ] as const;
 
 export type AgentFeatureToggleId = (typeof AGENT_FEATURE_TOGGLE_IDS)[number];
@@ -27,6 +29,7 @@ export const DEFAULT_AGENT_FEATURE_TOGGLES: AgentFeatureToggles = {
   agentsMayUseMacros: false,
   agentsMaySeeTeamScope: false,
   agentsMayAdvertiseGoogleBusiness: false,
+  agentsMayDeletePolicyDocuments: true,
 };
 
 export const AGENT_FEATURE_TOGGLE_COPY: Record<
@@ -48,6 +51,10 @@ export const AGENT_FEATURE_TOGGLE_COPY: Record<
   agentsMayAdvertiseGoogleBusiness: {
     title: "Agents may advertise Google Business",
     hint: "Prefs-only until GBP advertise ships. Default off. Monitor GBP still has its own Social toggle.",
+  },
+  agentsMayDeletePolicyDocuments: {
+    title: "Agents may delete policy documents",
+    hint: "When off, agents cannot trash documents once a policy exists. Admins can still delete. Default on.",
   },
 };
 

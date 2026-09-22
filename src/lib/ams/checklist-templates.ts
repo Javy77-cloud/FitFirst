@@ -19,13 +19,17 @@ export function resolveChecklistLob(lineOfBusiness: string | null | undefined): 
   return "default";
 }
 
-/** Doc slots collected via packet upload. */
+/**
+ * Doc slots collected via packet upload.
+ * AOR and ID cards are never auto-required on policy create — agents add them
+ * only when they start those flows later.
+ */
 export const CHECKLIST_DOC_KEYS_BY_LOB: Record<ChecklistLobFamily, ServicingDocKey[]> = {
-  auto: ["dec", "id_card", "aor"],
-  homeowners: ["dec", "aor"],
-  life: ["dec", "aor"],
-  commercial: ["dec", "aor"],
-  default: ["dec", "id_card", "aor"],
+  auto: ["dec"],
+  homeowners: ["dec"],
+  life: ["dec"],
+  commercial: ["dec"],
+  default: ["dec"],
 };
 
 /** Toggleable desk checks per LOB. */

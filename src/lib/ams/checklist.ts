@@ -50,23 +50,32 @@ export type ServicingChecklist = {
   lobFamily: ChecklistLobFamily | "classic";
 };
 
-const DEC_TYPES = new Set(["policy_dec", "policy_complete"]);
-const ID_TYPES = new Set(["policy_id"]);
+/** Issued mint often stores current_policy / dec before policy_dec retag. */
+const DEC_TYPES = new Set([
+  "policy_dec",
+  "policy_complete",
+  "current_policy",
+  "dec",
+  "declaration",
+  "policy",
+]);
+const ID_TYPES = new Set(["policy_id", "id_card", "auto_id_card"]);
 const AOR_TYPES = new Set(["aor"]);
 
 export function hasServicingDoc(files: ServicingFile[], key: ServicingDocKey): boolean {
   const types =
     key === "dec" ? DEC_TYPES : key === "id_card" ? ID_TYPES : AOR_TYPES;
-  return files.some((file) => types.has(file.docType));
+  return files.some((file) => types.has(String(file.docType ?? "").toLowerCase()));
 }
 
+/** Auto-required packet slots only (never AOR / ID cards on create). */
 export function missingServicingDocs(
   files: ServicingFile[],
   lineOfBusiness?: string | null,
 ): ServicingDocKey[] {
   const keys = lineOfBusiness
     ? CHECKLIST_DOC_KEYS_BY_LOB[resolveChecklistLob(lineOfBusiness)]
-    : (["dec", "id_card", "aor"] as const);
+    : CHECKLIST_DOC_KEYS_BY_LOB.default;
   return keys.filter((key) => !hasServicingDoc(files, key));
 }
 

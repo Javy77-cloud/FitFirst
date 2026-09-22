@@ -35,6 +35,8 @@ describe("policy looks good audit", () => {
     expect(mint).toMatch(/Policy looks good/);
     const queue = source("src/components/policy/mint-confirm-queue.tsx");
     expect(queue).toMatch(/Policy looks good/);
+    expect(queue).toMatch(/Review every field/);
+    expect(queue).not.toMatch(/Eastern time, then publishes/);
     expect(queue).not.toMatch(/const published = await publishMintedPolicy\(publish\)/);
     const page = source("src/app/policies/[id]/page.tsx");
     expect(page).toMatch(/data-ff-policy-looks-good-audit/);

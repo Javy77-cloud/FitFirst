@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPolicyCareItems, policyTabCareCounts } from "./care-strip";
+import { buildPolicyCareItems, formatMissingDocsWhy, policyTabCareCounts } from "./care-strip";
 
 describe("policy care strip", () => {
   const asOf = new Date("2026-09-19T12:00:00.000Z");
@@ -24,12 +24,22 @@ describe("policy care strip", () => {
       updatedAt: "2026-09-01T12:00:00.000Z",
       status: "active",
       missingDocs: 2,
+      missingDocNames: ["Dec on file", "ID cards"],
       pendingEndorsements: 1,
       openClaims: 1,
       asOf,
     });
     expect(items.map((item) => item.tab)).toEqual(["overview", "documents", "endorsements", "claims"]);
+    expect(items.find((item) => item.key === "documents")?.why).toBe(
+      "2 servicing files still missing: Dec on file and ID cards",
+    );
     expect(policyTabCareCounts(items).documents).toBe(2);
     expect(policyTabCareCounts(items).coverage).toBeUndefined();
+  });
+
+  it("names a single missing servicing file", () => {
+    expect(formatMissingDocsWhy(1, ["Dec on file"])).toBe(
+      "1 servicing file still missing: Dec on file",
+    );
   });
 });

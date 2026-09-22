@@ -947,7 +947,9 @@ describe("rosa desk training mint proposals", () => {
       ],
     });
     expect(auto.find((row) => row.key === "billing_frequency")?.value).toBe("semiannual");
-    expect(auto.find((row) => row.key === "mortgagee")?.value).toBe("");
+    expect(auto.find((row) => row.key === "mortgagee")).toBeUndefined();
+    expect(auto.find((row) => row.key === "coverage_a")).toBeUndefined();
+    expect(auto.find((row) => row.key === "bodily_injury")).toBeTruthy();
     expect(auto.find((row) => row.key === "payment_method")?.value).toBe("");
     expect(auto.find((row) => row.key === "next_due")?.value).toBe("");
     expect(auto.find((row) => row.key === "renewal_date")?.value).toBe("2027-03-01");

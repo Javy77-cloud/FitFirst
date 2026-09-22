@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { deleteUploadedFileSubject, uploadedFileDeleteMode } from "@/lib/documents/delete-file";
+import { confirmPolicyDocumentDelete } from "@/lib/desk/confirm-policy-document-delete";
 import { DocumentPreviewDialog } from "@/components/documents/document-preview-dialog";
 import { FILE_ACTION_ACCEPT } from "@/lib/documents/file-action-menu";
 import { fileDownloadHref } from "@/lib/files/urls";
@@ -57,11 +58,22 @@ export function FileActionMenu({
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const replaceFormRef = useRef<HTMLFormElement>(null);
   const deleteBtnRef = useRef<HTMLButtonElement>(null);
+  const reasonInputRef = useRef<HTMLInputElement>(null);
   const [gone, setGone] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const downloadHref = fileDownloadHref(documentId);
   const mode = uploadedFileDeleteMode({ slot, docType });
   const subject = deleteUploadedFileSubject(filename, mode);
+  const policyDocDelete = Boolean(policyId);
+
+  function requestPolicyDelete() {
+    const reason = confirmPolicyDocumentDelete(subject);
+    if (!reason) return;
+    if (reasonInputRef.current) reasonInputRef.current.value = reason;
+    setGone(true);
+    onDeleted?.();
+    deleteBtnRef.current?.click();
+  }
 
   if (gone) return null;
 
@@ -89,7 +101,9 @@ export function FileActionMenu({
         action={deleteUploadedFile}
         subject={subject}
         className="hidden"
+        confirm={!policyDocDelete}
         onConfirmed={() => {
+          if (policyDocDelete) return;
           setGone(true);
           onDeleted?.();
         }}
@@ -100,6 +114,7 @@ export function FileActionMenu({
         {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
         {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
         {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+        <input ref={reasonInputRef} type="hidden" name="deleteReason" defaultValue="" />
         <button ref={deleteBtnRef} type="submit" tabIndex={-1} aria-hidden className="hidden" />
       </HardDeleteForm>
 
@@ -143,7 +158,10 @@ export function FileActionMenu({
             <DropdownMenuItem
               data-ff-file-action="delete"
               variant="destructive"
-              onClick={() => deleteBtnRef.current?.click()}
+              onClick={() => {
+                if (policyDocDelete) requestPolicyDelete();
+                else deleteBtnRef.current?.click();
+              }}
             >
               <Trash2 />
               Delete
@@ -167,7 +185,8 @@ export function FileActionMenu({
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
-          deleteBtnRef.current?.click();
+          if (policyDocDelete) requestPolicyDelete();
+          else deleteBtnRef.current?.click();
         }}
       />
     </div>

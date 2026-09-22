@@ -9,6 +9,7 @@ import {
   coerceDeclarationDocType,
   CREATE_POLICY_BUSY_COPY,
   CREATE_POLICY_BUSY_TITLE,
+  CREATE_POLICY_SUCCESS_TITLE,
   createPolicyPromptCopy,
   declarationRetagPatch,
   isDeclarationDocType,
@@ -76,8 +77,11 @@ describe("declaration create-policy prompt", () => {
     expect(createPolicyPromptCopy("Florida Peninsula")).toBe(
       "Declaration received from Florida Peninsula. Create the policy now?",
     );
-    expect(CREATE_POLICY_BUSY_TITLE).toMatch(/we’re on it|we're on it/);
+    expect(CREATE_POLICY_BUSY_TITLE).toMatch(/Hold on|processing your policy/);
     expect(CREATE_POLICY_BUSY_COPY).toMatch(/declaration/);
+    expect(CREATE_POLICY_SUCCESS_TITLE).toMatch(/Congratulations|new policy/);
+    expect(source("src/components/deal/policy-mint-success-panel.tsx")).toMatch(/ff-mint-fireworks|data-ff-mint-fireworks/);
+    expect(source("src/components/deal/issue-policy-from-dec.tsx")).toMatch(/PolicyMintSuccessPanel|CreatePolicyBusyPanel/);
     expect(parsePendingDecPrompt({ documentId: "d1", carrierName: "Citizens" })?.documentId).toBe("d1");
   });
 });
@@ -201,7 +205,7 @@ describe("rosa retag + 72h admin notify stub", () => {
       /setCreating\(true\)/,
     );
     expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(
-      /if \(!next && !creating\) closeWithoutMint/,
+      /if \(!next && !creating && !success\) closeWithoutMint/,
     );
     expect(source("src/components/deal/create-policy-from-dec-modal.tsx")).toMatch(
       /if \(!result\.ok\) \{\s*const toast = mintFailureToast\(result\.reason\);\s*flashAction\(mintFailureFlashText\(result\), toast\.kind\);\s*return;/,

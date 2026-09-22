@@ -14,9 +14,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CreatePolicyBusyPanel } from "@/components/deal/create-policy-busy-panel";
+import { PolicyMintSuccessPanel } from "@/components/deal/policy-mint-success-panel";
 import { createPolicyPromptCopy } from "@/lib/policy/dec-prompt";
 import { mintFailureFlashText, mintFailureToast } from "@/lib/policy/mint-gate";
 import { flashAction } from "@/lib/flash-client";
+
+const SUCCESS_HOLD_MS = 1800;
 
 export function CreatePolicyFromDecModal({
   dealId,
@@ -34,12 +37,13 @@ export function CreatePolicyFromDecModal({
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [pending, startTransition] = useTransition();
   const carrier = (carrierName ?? "").trim() || "the carrier";
-  const busy = creating || pending;
+  const busy = creating || pending || success;
 
   function closeWithoutMint() {
-    if (creating) return;
+    if (creating || success) return;
     const data = new FormData();
     data.set("dealId", dealId);
     startTransition(async () => {
@@ -51,7 +55,7 @@ export function CreatePolicyFromDecModal({
   }
 
   function createPolicy() {
-    if (creating || pending) return;
+    if (creating || pending || success) return;
     setCreating(true);
     startTransition(async () => {
       try {
@@ -68,6 +72,8 @@ export function CreatePolicyFromDecModal({
           return;
         }
         flashAction("policy-minted");
+        setSuccess(true);
+        await new Promise((resolve) => setTimeout(resolve, SUCCESS_HOLD_MS));
         setOpen(false);
         router.push(`/policies/${result.policyId}`);
         router.refresh();
@@ -81,43 +87,47 @@ export function CreatePolicyFromDecModal({
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next && !creating) closeWithoutMint();
+        if (!next && !creating && !success) closeWithoutMint();
       }}
     >
       <DialogContent
         className="sm:max-w-md"
-        showCloseButton={!creating}
+        showCloseButton={!creating && !success}
         data-ff-create-policy-from-dec=""
-        aria-busy={creating}
+        aria-busy={creating || success}
       >
         <DialogHeader>
-          <DialogTitle>Declaration received</DialogTitle>
-          <DialogDescription data-ff-create-policy-copy="">
-            {createPolicyPromptCopy(carrier)}
-          </DialogDescription>
+          <DialogTitle>{success ? "Policy created" : "Declaration received"}</DialogTitle>
+          {!creating && !success ? (
+            <DialogDescription data-ff-create-policy-copy="">
+              {createPolicyPromptCopy(carrier)}
+            </DialogDescription>
+          ) : null}
         </DialogHeader>
-        {creating ? <CreatePolicyBusyPanel /> : null}
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={busy}
-            data-ff-create-policy-not-now=""
-            onClick={closeWithoutMint}
-          >
-            Not now
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            disabled={busy}
-            data-ff-create-policy-now=""
-            onClick={createPolicy}
-          >
-            Create policy
-          </Button>
-        </DialogFooter>
+        {success ? <PolicyMintSuccessPanel /> : creating ? <CreatePolicyBusyPanel /> : null}
+        {!creating && !success ? (
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              data-ff-create-policy-not-now=""
+              onClick={closeWithoutMint}
+            >
+              Not now
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={busy}
+              data-ff-create-policy-now=""
+              onClick={createPolicy}
+            >
+              Create policy
+            </Button>
+          </DialogFooter>
+        ) : null}
       </DialogContent>
     </Dialog>
   );

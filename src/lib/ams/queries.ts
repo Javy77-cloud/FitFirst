@@ -340,7 +340,7 @@ export async function loadPolicyServicing(policyId: string) {
     notes: row.notes,
     taskId: row.taskId,
   }));
-  const missingPackets: ServicingDocKey[] = missingServicingDocs(files);
+  const missingPackets: ServicingDocKey[] = missingServicingDocs(files, policy.lineOfBusiness);
   return {
     policy,
     requests: requests.map((row) => row.request),

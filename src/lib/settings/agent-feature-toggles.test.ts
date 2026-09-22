@@ -12,8 +12,10 @@ describe("agent feature toggles", () => {
       agentsMayUseMacros: false,
       agentsMaySeeTeamScope: false,
       agentsMayAdvertiseGoogleBusiness: false,
+      agentsMayDeletePolicyDocuments: true,
     });
     expect(normalizeAgentFeatureToggles(null)).toEqual(DEFAULT_AGENT_FEATURE_TOGGLES);
+    expect(DEFAULT_AGENT_FEATURE_TOGGLES.agentsMayDeletePolicyDocuments).toBe(true);
   });
 
   it("keeps unknown keys out and patches one flag", () => {

@@ -103,6 +103,8 @@ export type MintPayload = {
   adminNotifiedAt?: string | null;
   /** Set when the agent marks Policy looks good. Unpublished until then. */
   agentConfirm?: AgentConfirmAudit | null;
+  /** Optional ID cards prompt after publish — dismiss forever when agent says No. */
+  idCardsPrompt?: { dismissed?: boolean; askedAt?: string | null } | null;
 };
 
 export const MINT_CONFIRM_FIELDS = [
@@ -126,6 +128,43 @@ export const MINT_CONFIRM_FIELDS = [
   { key: "next_due", label: "Next due" },
   { key: "payment_method", label: "Payment method" },
 ] as const;
+
+/** Auto product confirm set — no Coverage A / hurricane / AOP / roof / mortgagee. */
+export const AUTO_MINT_CONFIRM_FIELDS = [
+  { key: "policy_number", label: "Policy number" },
+  { key: "named_insured", label: "Named insured" },
+  { key: "effective_date", label: "Effective date" },
+  { key: "expiration_date", label: "Expiration date" },
+  { key: "premium", label: "Premium" },
+  { key: "bodily_injury", label: "Bodily injury (BI)" },
+  { key: "property_damage", label: "Property damage (PD)" },
+  { key: "med_pay", label: "MedPay" },
+  { key: "pip", label: "PIP" },
+  { key: "collision", label: "Collision" },
+  { key: "comprehensive", label: "Comprehensive" },
+  { key: "collision_deductible", label: "Collision deductible" },
+  { key: "comprehensive_deductible", label: "Comprehensive deductible" },
+  { key: "form", label: "Form" },
+  { key: "insurance_type", label: "Insurance type" },
+  { key: "mailing_address", label: "Insured location" },
+  { key: "selling_agency", label: "Selling agency" },
+  { key: "renewal_date", label: "Renewal date" },
+  { key: "producer", label: "Producer" },
+  { key: "billing_frequency", label: "Billing frequency" },
+  { key: "next_due", label: "Next due" },
+  { key: "payment_method", label: "Payment method" },
+] as const;
+
+const AUTO_MINT_PRODUCTS = new Set(["auto", "personal_auto", "pa", "motorcycle", "commercial_auto"]);
+
+export function isAutoMintProduct(product?: string | null): boolean {
+  const p = (product ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return AUTO_MINT_PRODUCTS.has(p);
+}
+
+export function mintConfirmFieldDefs(product?: string | null) {
+  return isAutoMintProduct(product) ? AUTO_MINT_CONFIRM_FIELDS : MINT_CONFIRM_FIELDS;
+}
 
 const SOLD_KEYS = new Set(["premium", "coverage_a", "hurricane_deductible", "aop_deductible"]);
 
@@ -845,7 +884,7 @@ export function buildMintFields(input: {
     aop_deductible: normalizeMintValue("aop_deductible", input.sold?.aopDeductible),
   };
 
-  const fields = MINT_CONFIRM_FIELDS.map((def) => {
+  const fields = mintConfirmFieldDefs(input.product).map((def) => {
     const aliases = MINT_FIELD_ALIASES[def.key] ?? [def.key];
     const soldValue = SOLD_KEYS.has(def.key)
       ? sold[def.key as keyof typeof sold] || ""
@@ -1093,6 +1132,16 @@ export function parseMintPayload(raw: unknown): MintPayload | null {
     mintedAt: typeof row.mintedAt === "string" ? row.mintedAt : null,
     adminNotifiedAt: typeof row.adminNotifiedAt === "string" ? row.adminNotifiedAt : null,
     agentConfirm: parseAgentConfirm(row.agentConfirm),
+    idCardsPrompt:
+      row.idCardsPrompt && typeof row.idCardsPrompt === "object"
+        ? {
+            dismissed: Boolean((row.idCardsPrompt as { dismissed?: unknown }).dismissed),
+            askedAt:
+              typeof (row.idCardsPrompt as { askedAt?: unknown }).askedAt === "string"
+                ? (row.idCardsPrompt as { askedAt: string }).askedAt
+                : null,
+          }
+        : null,
   };
 }
 

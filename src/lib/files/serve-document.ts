@@ -42,6 +42,17 @@ export async function getDeskDocumentVersion(
   return { doc, version };
 }
 
+function looksLikeHtmlError(bytes: Buffer): boolean {
+  const head = bytes.subarray(0, 256).toString("utf8").trim().toLowerCase();
+  return (
+    head.startsWith("<!doctype html") ||
+    head.startsWith("<html") ||
+    head.includes("unauthorized") ||
+    head.includes("access denied") ||
+    head.includes("blob access")
+  );
+}
+
 export async function loadDocumentBytes(doc: Document): Promise<{
   bytes: Uint8Array;
   mimeType: string;
@@ -50,6 +61,10 @@ export async function loadDocumentBytes(doc: Document): Promise<{
   let buffer = await readStoredFile(doc.storagePath);
 
   if (!buffer || isFilenameOnlyStub(doc.filename, buffer)) {
+    return null;
+  }
+  // Private-blob auth failures used to wrap HTML into a blank PDF.
+  if (looksLikeHtmlError(buffer)) {
     return null;
   }
   if (shouldWrapAsPdf(docWithBytes(doc, buffer))) {

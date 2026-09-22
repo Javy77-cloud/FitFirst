@@ -107,7 +107,7 @@ export function missingDocRows(
   const rows: MissingDocRow[] = [];
   for (const policy of policies) {
     if (!isInForceStatus(policy.status)) continue;
-    const missing = missingServicingDocs(filesByPolicy.get(policy.id) ?? []);
+    const missing = missingServicingDocs(filesByPolicy.get(policy.id) ?? [], policy.lineOfBusiness);
     if (missing.length === 0) continue;
     rows.push({
       policyId: policy.id,

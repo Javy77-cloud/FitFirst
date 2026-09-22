@@ -7,6 +7,7 @@ import {
   blobStoreReady,
   deleteStoredFile,
   isRemoteStoragePath,
+  blobPathnameFromUrl,
   readStoredFile,
   writeStoredFile,
 } from "./object-store";
@@ -127,5 +128,16 @@ describe("object-store local path", () => {
       BLOB_NOT_CONFIGURED_MESSAGE,
     );
     await rm(root, { recursive: true, force: true });
+  });
+});
+
+describe("private blob pathname", () => {
+  it("extracts the store pathname from a Vercel Blob URL", () => {
+    expect(
+      blobPathnameFromUrl(
+        "https://abc123.private.blob.vercel-storage.com/tenant/deal/file.pdf",
+      ),
+    ).toBe("tenant/deal/file.pdf");
+    expect(blobPathnameFromUrl("https://example.com/file.pdf")).toBeNull();
   });
 });

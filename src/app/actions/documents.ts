@@ -38,6 +38,7 @@ import {
   formFills,
   leads,
   policies,
+  policyChangeLogs,
   quoteSheets,
   risks,
   signatureEnvelopes,
@@ -77,6 +78,9 @@ import { dealSourceSlotForUpload } from "@/lib/documents/restore-deal-docs";
 import { collectUploadedFiles, isUploadedFile } from "@/lib/documents/uploaded-file";
 import { markShopFlowStaleAfterRiskChange } from "@/lib/deals/shop-flow-persist";
 import { deleteStoredFile, readStoredFile, writeStoredFile } from "@/lib/files/object-store";
+import { getAgentFeatureToggles } from "@/lib/settings/agent-feature-toggles-prefs";
+import { currentDeskSession } from "@/lib/auth/session";
+import { formatEasternConfirmStamp } from "@/lib/policy/agent-confirm";
 import {
   CLEAN_DEC_FILENAME,
   CLEAN_DEC_TEXT,
@@ -957,13 +961,52 @@ export async function deleteUploadedFile(formData: FormData) {
   const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
   if (!doc) return;
 
+  const deleteReason = String(formData.get("deleteReason") ?? "").trim();
+  const session = await currentDeskSession();
+  if (doc.policyId) {
+    // TODO(admin-settings): agentsMayDeletePolicyDocuments is the live gate; keep tied to Agency → Roles.
+    const toggles = await getAgentFeatureToggles();
+    if (!session.isAdmin && !toggles.agentsMayDeletePolicyDocuments) {
+      const returnTo = String(formData.get("returnTo") ?? "").trim();
+      const message = "Agent deletes are turned off for policy documents";
+      if (returnTo) redirect(withFlash(returnTo, message, "error"));
+      if (doc.policyId) flashAction(`/policies/${doc.policyId}?tab=documents`, message, "error");
+      return;
+    }
+    if (!deleteReason) {
+      const returnTo = String(formData.get("returnTo") ?? "").trim();
+      const message = "A delete reason is required for policy documents";
+      if (returnTo) redirect(withFlash(returnTo, message, "error"));
+      if (doc.policyId) flashAction(`/policies/${doc.policyId}?tab=documents`, message, "error");
+      return;
+    }
+  }
+
   const mode = uploadedFileDeleteMode(doc);
   if (mode === "hide") {
     await db.update(documents).set({ status: "hidden" }).where(eq(documents.id, documentId));
+    if (doc.policyId && deleteReason) {
+      const when = new Date();
+      await db.insert(policyChangeLogs).values({
+        tenantId: DEFAULT_TENANT_ID,
+        policyId: doc.policyId,
+        changedBy: session.userId || null,
+        changedByName: session.name || "Agent",
+        changedAt: when,
+        fieldKey: "document_delete",
+        fieldLabel: "Document deleted",
+        beforeValue: doc.filename,
+        afterValue: `${deleteReason} · ${formatEasternConfirmStamp(when)}`,
+        source: "document_delete",
+      }).catch((error) => {
+        console.error("[deleteUploadedFile] policy delete log", error);
+      });
+    }
     revalidateDocumentPaths(doc);
     const hiddenReturn = String(formData.get("returnTo") ?? "").trim();
     if (hiddenReturn) redirect(withFlash(hiddenReturn, "document-deleted"));
     if (doc.dealId) flashAction(`/deals/${doc.dealId}?tab=documents`, "document-deleted");
+    if (doc.policyId) flashAction(`/policies/${doc.policyId}?tab=documents`, "document-deleted");
     return;
   }
 
@@ -1056,6 +1099,24 @@ export async function deleteUploadedFile(formData: FormData) {
     throw error;
   }
 
+  if (doc.policyId && deleteReason) {
+    const when = new Date();
+    await db.insert(policyChangeLogs).values({
+      tenantId: DEFAULT_TENANT_ID,
+      policyId: doc.policyId,
+      changedBy: session.userId || null,
+      changedByName: session.name || "Agent",
+      changedAt: when,
+      fieldKey: "document_delete",
+      fieldLabel: "Document deleted",
+      beforeValue: doc.filename,
+      afterValue: `${deleteReason} · ${formatEasternConfirmStamp(when)}`,
+      source: "document_delete",
+    }).catch((error) => {
+      console.error("[deleteUploadedFile] policy delete log", error);
+    });
+  }
+
   revalidateDocumentPaths(doc);
   const returnTo = String(formData.get("returnTo") ?? "").trim();
   if (returnTo) {
@@ -1063,5 +1124,8 @@ export async function deleteUploadedFile(formData: FormData) {
   }
   if (doc.dealId) {
     flashAction(`/deals/${doc.dealId}?tab=documents`, "document-deleted");
+  }
+  if (doc.policyId) {
+    flashAction(`/policies/${doc.policyId}?tab=documents`, "document-deleted");
   }
 }

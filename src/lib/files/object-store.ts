@@ -64,7 +64,41 @@ async function streamToBuffer(stream: ReadableStream<Uint8Array> | NodeJS.Readab
   return Buffer.concat(chunks);
 }
 
+/** Pathname inside a Vercel Blob store URL (private blobs need auth via get()). */
+export function blobPathnameFromUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (!/\.blob\.vercel-storage\.com$/i.test(parsed.hostname)) return null;
+    const pathname = decodeURIComponent(parsed.pathname.replace(/^\/+/, ""));
+    return pathname || null;
+  } catch {
+    return null;
+  }
+}
+
+async function readPrivateBlob(urlOrPathname: string): Promise<Buffer | null> {
+  try {
+    const { get } = await import("@vercel/blob");
+    const result = await get(urlOrPathname, { access: "private", useCache: false });
+    const stream = result?.stream;
+    if (stream) return streamToBuffer(stream);
+  } catch {
+    /* missing token, wrong access, or not found */
+  }
+  return null;
+}
+
 async function readRemoteUrl(url: string): Promise<Buffer | null> {
+  // Private Vercel blobs: never fall through to bare fetch — that returns an
+  // empty/unauthorized body that used to get wrapped into a blank PDF.
+  const pathname = blobPathnameFromUrl(url);
+  if (pathname) {
+    const byUrl = await readPrivateBlob(url);
+    if (byUrl) return byUrl;
+    const byPath = await readPrivateBlob(pathname);
+    if (byPath) return byPath;
+    return null;
+  }
   try {
     const { get } = await import("@vercel/blob");
     const result = await get(url, { access: "private" });

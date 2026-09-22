@@ -6,7 +6,7 @@ const SURFACES: Array<{ file: string; label: string; stored: boolean }> = [
   { file: "src/components/deal/sheet-drop.tsx", label: "Quote Sheet drop", stored: true },
   { file: "src/components/deal/deal-files.tsx", label: "Deal source files table", stored: true },
   { file: "src/components/deal/source-vs-sheet.tsx", label: "Source vs sheet", stored: true },
-  { file: "src/app/policies/[id]/page.tsx", label: "Policy issued files + filing attachments", stored: true },
+  { file: "src/components/policy/tabs/documents-tab.tsx", label: "Policy issued files + filing attachments", stored: true },
   { file: "src/components/policy/policy-file-attach.tsx", label: "Policy file attach", stored: true },
   { file: "src/components/documents/file-list.tsx", label: "Documents library list", stored: true },
   { file: "src/components/ops/document-manager.tsx", label: "Ops document manager", stored: true },
@@ -43,7 +43,7 @@ describe("upload surfaces offer delete + one confirm", () => {
     expect(text).toMatch(/action=\{action\}/);
     expect(text).not.toMatch(/action=\{async/);
     expect(text).toMatch(/onClickCapture/);
-    expect(text).toMatch(/if \(!confirmHardDelete\(subject\)\)/);
+    expect(text).toMatch(/confirmHardDelete\(subject\)/);
     expect(text).toMatch(/preventDefault/);
     expect(text).toMatch(/stopPropagation/);
     expect(text).not.toMatch(/onSubmit/);
@@ -65,6 +65,9 @@ describe("upload surfaces offer delete + one confirm", () => {
     expect(action).toMatch(/delete\(extractedFields\)/);
     expect(action).toMatch(/clearExtractedSheetCells/);
     expect(action).toMatch(/unlinkStoredPath/);
+    expect(action).toMatch(/deleteReason/);
+    expect(action).toMatch(/document_delete/);
+    expect(action).toMatch(/agentsMayDeletePolicyDocuments/);
     const deleteBody = action.slice(action.indexOf("export async function deleteUploadedFile"));
     expect(deleteBody).not.toMatch(/fillDealSheetIfReady/);
     expect(action).not.toMatch(/await fillDealSheetIfReady\(doc\.dealId/);
