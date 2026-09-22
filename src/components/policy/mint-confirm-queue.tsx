@@ -95,7 +95,7 @@ export function MintConfirmQueue({
         <p className="text-sm text-muted-foreground">
           {blockReason
             ? blockReason
-            : "Review the policy number, premium, and dates on this record. Policy looks good records your name and the Eastern time, then publishes."}
+            : "Review every field on this policy. When everything looks correct, click Policy looks good to publish."}
         </p>
         <Button
           type="button"

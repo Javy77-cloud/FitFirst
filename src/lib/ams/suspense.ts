@@ -10,8 +10,15 @@ export function isSuspenseDocKey(value: string): value is SuspenseDocKey {
   return (SUSPENSE_DOC_KEYS as readonly string[]).includes(value);
 }
 
-export function suspenseKeysFromFiles(files: ServicingFile[]): SuspenseDocKey[] {
-  return SUSPENSE_DOC_KEYS.filter((key) => !hasServicingDoc(files, key));
+/**
+ * Auto suspense for ID cards / AOR is off — those start only when the agent
+ * opens that flow. Keep SUSPENSE_DOC_KEYS for typing existing tasks.
+ */
+export function suspenseKeysFromFiles(_files: ServicingFile[]): SuspenseDocKey[] {
+  void _files;
+  void SUSPENSE_DOC_KEYS;
+  void hasServicingDoc;
+  return [];
 }
 
 export function pendingSuspenseKeys(

@@ -13,6 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ChooseFileButton } from "@/components/choose-file-button";
+import { CreatePolicyBusyPanel } from "@/components/deal/create-policy-busy-panel";
+import { PolicyMintSuccessPanel } from "@/components/deal/policy-mint-success-panel";
 import { isBoundReadyForIssue, mintFailureFlashText, mintFailureToast } from "@/lib/policy/mint-gate";
 import {
   ISSUED_POLICY_ACCEPT,
@@ -22,6 +24,8 @@ import {
 import { flashAction } from "@/lib/flash-client";
 
 export const OPEN_ISSUED_POLICY_UPLOAD = "ff-open-issued-policy-upload";
+
+const SUCCESS_HOLD_MS = 1800;
 
 export type IssuedPolicyChip = {
   id: string;
@@ -54,9 +58,11 @@ export function IssuePolicyFromDec({
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(autoOpen && !folderHasPolicy);
   const [creating, setCreating] = useState(mintStatus === "creating");
+  const [successPolicyId, setSuccessPolicyId] = useState<string | null>(null);
   const [fileName, setFileName] = useState("");
   const bound = isBoundReadyForIssue(stage);
   const hasQuote = selectedQuoteIds.length > 0;
+  const holdOpen = creating || pending || Boolean(successPolicyId);
 
   useEffect(() => {
     setCreating(mintStatus === "creating");
@@ -78,6 +84,14 @@ export function IssuePolicyFromDec({
     window.addEventListener(OPEN_ISSUED_POLICY_UPLOAD, onOpen);
     return () => window.removeEventListener(OPEN_ISSUED_POLICY_UPLOAD, onOpen);
   }, [bound, dealId, folderHasPolicy, hasQuote, issued?.id, product]);
+
+  async function celebrateAndGo(policyId: string) {
+    flashAction("policy-minted");
+    setSuccessPolicyId(policyId);
+    await new Promise((resolve) => setTimeout(resolve, SUCCESS_HOLD_MS));
+    router.push(`/policies/${policyId}`);
+    router.refresh();
+  }
 
   function mint(documentId?: string, force = false) {
     setCreating(true);
@@ -101,9 +115,7 @@ export function IssuePolicyFromDec({
         return;
       }
       setOpen(false);
-      flashAction("policy-minted");
-      router.push(`/policies/${result.policyId}`);
-      router.refresh();
+      await celebrateAndGo(result.policyId);
     });
   }
 
@@ -147,20 +159,25 @@ export function IssuePolicyFromDec({
       flashAction(mintFailureFlashText(result), toast.kind);
       return;
     }
-    flashAction("policy-minted");
-    router.push(`/policies/${result.policyId}`);
-    router.refresh();
+    await celebrateAndGo(result.policyId);
   }
 
-  if (creating || pending) {
+  if (holdOpen) {
     return (
-      <p
-        className="inline-flex items-center gap-2 rounded-full border border-navy/15 bg-navy/5 px-3 py-1 text-[12px] font-semibold text-navy"
-        data-ff-creating-policy=""
-      >
-        <span className="size-1.5 animate-pulse rounded-full bg-navy" aria-hidden />
-        Creating policy…
-      </p>
+      <Dialog open onOpenChange={() => {}}>
+        <DialogContent
+          className="sm:max-w-md"
+          showCloseButton={false}
+          data-ff-creating-policy=""
+          data-ff-mint-hold=""
+          aria-busy="true"
+        >
+          <DialogHeader>
+            <DialogTitle>{successPolicyId ? "Policy created" : "Processing declaration"}</DialogTitle>
+          </DialogHeader>
+          {successPolicyId ? <PolicyMintSuccessPanel /> : <CreatePolicyBusyPanel />}
+        </DialogContent>
+      </Dialog>
     );
   }
 

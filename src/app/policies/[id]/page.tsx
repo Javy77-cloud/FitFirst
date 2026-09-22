@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
-import { formatDay, formatMoney, DEFAULT_TENANT_ID } from "@/lib/domain";
+import { formatDay, formatMoney, DEFAULT_TENANT_ID, SERVICING_DOC_LABELS } from "@/lib/domain";
 import { getLatestInDeskEnvelope, getPolicyWorkspace, listDocumentAccessLogsForPolicy, listRecordActivities } from "@/lib/db/queries";
 import { resolvePolicyProducerName } from "@/lib/activity/producer";
 import {
@@ -40,6 +40,8 @@ import { parseMintPayload, policyNeedsMintConfirm } from "@/lib/policy/mint-gate
 import { notifyAdminUnpublishedMint } from "@/app/actions/policy-mint";
 import { FromDealStrip } from "@/components/policy/from-deal-strip";
 import { MintConfirmQueue } from "@/components/policy/mint-confirm-queue";
+import { IdCardsPrompt } from "@/components/policy/id-cards-prompt";
+import { hasServicingDoc } from "@/lib/ams/checklist";
 import { db } from "@/lib/db";
 import { agencySettings } from "@/lib/db/schema";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
@@ -164,11 +166,13 @@ export default async function PolicyDetailPage({
     const status = (draft.status ?? "").toLowerCase();
     return status !== "withdrawn" && status !== "filed" && status !== "issued";
   }).length;
+  const missingPackets = servicing?.missingPackets ?? [];
   const careItems = buildPolicyCareItems({
     expirationDate: policy.expirationDate,
     updatedAt: policy.updatedAt,
     status: policy.status,
-    missingDocs: servicing?.missingPackets?.length ?? 0,
+    missingDocs: missingPackets.length,
+    missingDocNames: missingPackets.map((key) => SERVICING_DOC_LABELS[key]),
     pendingEndorsements,
     openClaims,
     asOf: deskNow(),
@@ -315,6 +319,12 @@ export default async function PolicyDetailPage({
         <p className="mb-3 text-sm text-navy" data-ff-policy-looks-good-audit="">
           Policy looks good · {agentConfirm.name} · {agentConfirm.confirmedAtEt}
         </p>
+      ) : null}
+
+      {agentConfirm?.confirmedAt &&
+      !mintPayload?.idCardsPrompt?.dismissed &&
+      !hasServicingDoc(files, "id_card") ? (
+        <IdCardsPrompt policyId={policy.id} dealId={policy.dealId} open />
       ) : null}
 
       <PolicyDetailWorkspace

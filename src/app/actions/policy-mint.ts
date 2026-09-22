@@ -678,9 +678,16 @@ export async function issuePolicyFromDeclaration(input: {
     knownZip: booked.premisesZip || risk?.zip,
   });
 
+  // Retag mint DEC onto the policy packet slot so Dec on file / hasServicingDoc clears.
   await db
     .update(documents)
-    .set({ policyId, dealId, contactId, docType: gate.dec.docType || "dec" })
+    .set({
+      policyId,
+      dealId,
+      contactId,
+      docType: "policy_dec",
+      slot: "policy_file",
+    })
     .where(eq(documents.id, gate.dec.id));
 
   await markMintStatus(dealId, product, {
@@ -1051,4 +1058,30 @@ export async function notifyAdminUnpublishedMint(policyId: string, now = new Dat
       .where(eq(policies.id, policyId));
   }
   return { ok: true as const, notified: true };
+}
+
+/** Persist forever-dismiss for the optional post-publish ID cards prompt. */
+export async function dismissIdCardsPrompt(formData: FormData) {
+  const policyId = String(formData.get("policyId") ?? "").trim();
+  if (!policyId) return { ok: false as const, reason: "invalid" as const };
+  const [policy] = await db
+    .select()
+    .from(policies)
+    .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
+  if (!policy) return { ok: false as const, reason: "missing" as const };
+  const payload = parseMintPayload(policy.mintPayload) ?? {
+    status: "published" as const,
+    soldBasis: { quoteId: "" },
+    fields: [],
+  };
+  const next = {
+    ...payload,
+    idCardsPrompt: { dismissed: true, askedAt: new Date().toISOString() },
+  };
+  await db
+    .update(policies)
+    .set({ mintPayload: next, updatedAt: new Date() })
+    .where(eq(policies.id, policyId));
+  revalidatePath(`/policies/${policyId}`);
+  return { ok: true as const };
 }

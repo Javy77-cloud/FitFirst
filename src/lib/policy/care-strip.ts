@@ -9,11 +9,25 @@ export type PolicyCareItem = {
   count: number;
 };
 
+/** e.g. "1 servicing file still missing: Dec on file" */
+export function formatMissingDocsWhy(count: number, names?: readonly string[] | null): string {
+  const n = Math.max(0, count);
+  const labels = (names ?? []).map((name) => name.trim()).filter(Boolean);
+  const noun = `servicing file${n === 1 ? "" : "s"} still missing`;
+  if (labels.length === 0) return `${n} ${noun}.`;
+  if (labels.length === 1) return `${n} ${noun}: ${labels[0]}`;
+  if (labels.length === 2) return `${n} ${noun}: ${labels[0]} and ${labels[1]}`;
+  const head = labels.slice(0, -1).join(", ");
+  const last = labels[labels.length - 1];
+  return `${n} ${noun}: ${head}, and ${last}`;
+}
+
 export function buildPolicyCareItems(input: {
   expirationDate?: Date | string | null;
   updatedAt?: Date | string | null;
   status?: string | null;
   missingDocs?: number;
+  missingDocNames?: readonly string[] | null;
   pendingEndorsements?: number;
   openClaims?: number;
   asOf: Date;
@@ -45,7 +59,7 @@ export function buildPolicyCareItems(input: {
       key: "documents",
       tab: "documents",
       label: "Documents",
-      why: `${input.missingDocs} servicing file${input.missingDocs === 1 ? "" : "s"} still missing.`,
+      why: formatMissingDocsWhy(input.missingDocs ?? 0, input.missingDocNames),
       count: input.missingDocs ?? 0,
     });
   }

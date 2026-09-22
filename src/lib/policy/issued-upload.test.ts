@@ -100,7 +100,8 @@ describe("issued policy upload folder", () => {
     expect(upload.indexOf("saveIssuedPolicyUpload")).toBeLessThan(upload.indexOf("router.refresh()"));
     expect(upload.indexOf("router.refresh()")).toBeLessThan(upload.indexOf("issuePolicyFromDeclaration"));
     expect(upload).toMatch(/ISSUED_POLICY_FOLDER_SAVED/);
-    expect(popup).toMatch(/router\.push\(`\/policies\/\$\{result\.policyId\}`\)/);
+    expect(popup).toMatch(/router\.push\(`\/policies\/\${policyId}`\)/);
+    expect(popup).toMatch(/celebrateAndGo|PolicyMintSuccessPanel|CreatePolicyBusyPanel/);
     expect(popup).toMatch(/ISSUED_POLICY_ACCEPT/);
     expect(source("src/components/deal/quote-file-actions.tsx")).toMatch(/ISSUED_POLICY_FOLDER_SAVED/);
     expect(source("src/components/deal/quote-file-actions.tsx")).toMatch(/agencyCount/);
