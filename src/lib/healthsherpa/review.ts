@@ -9,6 +9,11 @@ import {
 } from "./inbound";
 import { parseHealthSherpaPayload } from "./payload";
 import {
+  allowHealthSherpaTestPayloadWrites,
+  isHealthSherpaTestOrSamplePayload,
+} from "./test-payload";
+import { HEALTHSHERPA_IGNORED_TEST_REASON } from "./copy";
+import {
   healthSherpaMatchReasonLabel,
   type HealthSherpaMatchKind,
   type HealthSherpaMatchStatus,
@@ -148,6 +153,10 @@ export async function resolveHealthSherpaEnrollment(input: {
   const parsed = row.payload ? parseHealthSherpaPayload(row.payload) : null;
   if (!parsed?.contact.firstName || !parsed.contact.lastName) {
     return { ok: false, code: "payload", message: "Enrollment payload is missing a first or last name." };
+  }
+
+  if (isHealthSherpaTestOrSamplePayload(parsed) && !allowHealthSherpaTestPayloadWrites()) {
+    return { ok: false, code: "test_payload", message: HEALTHSHERPA_IGNORED_TEST_REASON };
   }
 
   let contactId = input.contactId?.trim() || null;
