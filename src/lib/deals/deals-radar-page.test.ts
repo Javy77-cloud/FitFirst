@@ -169,18 +169,22 @@ describe("Deals Priority Stack + Radar", () => {
     expect(css).toMatch(/\.ff-stack-products li \{[^}]*grid-template-columns:\s*6\.75rem minmax\(0,\s*1fr\)/);
     expect(css).toMatch(/\.ff-stack-products \{[^}]*flex:\s*1 0 100%/);
     expect(css).toMatch(
-      /\[data-ff-priority-stack\] \.ff-deal-host-spread \{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*minmax\(6\.5rem,\s*max-content\) minmax\(0,\s*1fr\) max-content/,
+      /\[data-ff-priority-stack\] \.ff-deal-host-spread \{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*14\.5rem minmax\(0,\s*1fr\) 12\.75rem/,
     );
     expect(css).toMatch(
-      /\[data-ff-priority-stack\] \.ff-deal-host-job-single \{[^}]*grid-template-rows:\s*auto auto/,
+      /\[data-ff-priority-stack\] \.ff-deal-host-job-single,\s*\[data-ff-priority-stack\] \.ff-deal-host-job-multi \{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto/,
     );
     expect(css).toMatch(
-      /\[data-ff-priority-stack\] \.ff-deal-host-job-single > \.ff-deal-host-quotes \{[^}]*grid-column:\s*1 \/ -1;[^}]*grid-row:\s*2/,
+      /\[data-ff-priority-stack\] \.ff-deal-host-job-single \.ff-deal-host-quotes \{[^}]*grid-row:\s*2/,
     );
     expect(css).toMatch(
-      /\[data-ff-priority-stack\] \.ff-deal-host-lines \{[^}]*grid-template-columns:\s*max-content max-content minmax\(0,\s*12rem\) minmax\(11\.5rem,\s*1fr\)/,
+      /\[data-ff-priority-stack\] \.ff-deal-host-lines \{[^}]*grid-template-columns:\s*5\.75rem 5\.5rem 7\.75rem minmax\(0,\s*1fr\)/,
     );
     expect(css).toMatch(/\[data-ff-priority-stack\] \.ff-deal-host-line \{[^}]*grid-column:\s*1 \/ -1/);
+    expect(css).toMatch(/\[data-ff-priority-stack\] \.ff-deal-host-stamps \{[^}]*overflow:\s*visible/);
+    expect(css).toMatch(
+      /\[data-ff-priority-stack\] \.ff-stack-product,\s*\[data-ff-priority-stack\] \.ff-deal-host-stage,\s*\[data-ff-priority-stack\] \.ff-deal-host-quotes \{[^}]*color:\s*var\(--ff-muted\);[^}]*font-weight:\s*500/,
+    );
     expect(css).not.toMatch(/\.ff-deal-host-center,/);
     expect(css).not.toMatch(/\.ff-deal-host-center \.ff-stack-product[\s\S]{0,250}?flex:\s*1 1 7\.5rem/);
     expect(source("src/lib/deals/velocity.ts")).not.toMatch(/label:\s*"Chase"/);

@@ -4457,6 +4457,31 @@ tr[data-ff-activity-selected="true"] {
 .ff-book-actions a:hover {
   color: var(--ff-accent);
 }
+/* Contacts / Accounts / Carriers only — Policies keep their own stack/list chrome */
+.ff-party-card .ff-stack-name,
+.ff-carrier-card .ff-stack-name {
+  color: var(--ff-navy);
+  font-weight: 750;
+}
+.ff-party-card .ff-book-facts li,
+.ff-carrier-card .ff-book-facts li,
+.ff-party-card .ff-book-rail .ff-stack-mid,
+.ff-party-card .ff-book-channels,
+.ff-party-card .ff-book-channels a,
+.ff-party-card .ff-book-actions,
+.ff-party-card .ff-book-actions a,
+.ff-carrier-card .ff-book-channels,
+.ff-carrier-card .ff-book-channels a,
+.ff-carrier-card .ff-book-actions,
+.ff-carrier-card .ff-book-actions a,
+.ff-carrier-card .ff-book-columns span {
+  color: var(--ff-muted);
+  font-weight: 500;
+}
+.ff-party-card .ff-book-facts li.is-hot,
+.ff-carrier-card .ff-book-facts li.is-hot {
+  color: var(--ff-terracotta);
+}
 .ff-book-why {
   margin: 0.28rem 0 0;
   font-size: 0.75rem;
@@ -4504,18 +4529,21 @@ tr[data-ff-activity-selected="true"] {
   }
 }
 
-/* Deals Priority Stack: three zones. One product is two rows. Each extra product is its own line. */
+/* Deals Priority Stack: fixed three zones. Name only is heavy; all other type is secondary. */
 [data-ff-priority-stack] .ff-deal-host-spread {
   display: grid;
-  grid-template-columns: minmax(6.5rem, max-content) minmax(0, 1fr) max-content;
+  grid-template-columns: 14.5rem minmax(0, 1fr) 12.75rem;
   align-items: center;
-  column-gap: 0.9rem;
+  column-gap: 0.75rem;
   width: 100%;
   min-width: 0;
 }
 [data-ff-priority-stack] .ff-deal-host-spread > .ff-stack-name {
   align-self: center;
-  max-width: 12.5rem;
+  max-width: none;
+  width: 100%;
+  color: var(--ff-navy);
+  font-weight: 750;
 }
 [data-ff-priority-stack] .ff-deal-host-center {
   display: block;
@@ -4534,56 +4562,31 @@ tr[data-ff-activity-selected="true"] {
   align-items: flex-end;
   gap: 0.05rem;
   min-width: 0;
-  max-width: 11rem;
+  max-width: 100%;
 }
 [data-ff-priority-stack] .ff-deal-host-cue .ff-stack-mid {
   flex: 0 1 auto;
-  max-width: 11rem;
+  max-width: 100%;
   text-align: right;
+  color: var(--ff-muted);
+  font-weight: 500;
 }
-[data-ff-priority-stack] .ff-deal-host-job-single {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto auto;
-  align-items: center;
-  column-gap: 0.85rem;
-  row-gap: 0.16rem;
-  min-width: 0;
-}
-[data-ff-priority-stack] .ff-deal-host-job-single > .ff-deal-host-facts {
-  grid-column: 1;
-  grid-row: 1;
-}
-[data-ff-priority-stack] .ff-deal-host-job-single > .ff-deal-host-quotes {
-  grid-column: 1 / -1;
-  grid-row: 2;
-}
-[data-ff-priority-stack] .ff-deal-host-job-single > .ff-deal-host-health {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: center;
-}
-[data-ff-priority-stack] .ff-deal-host-facts {
-  display: grid;
-  grid-template-columns: max-content minmax(0, max-content) minmax(0, max-content);
-  align-items: center;
-  column-gap: 0.65rem;
-  min-width: 0;
-  overflow: hidden;
-}
+[data-ff-priority-stack] .ff-deal-host-job-single,
 [data-ff-priority-stack] .ff-deal-host-job-multi {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
-  row-gap: 0.28rem;
+  column-gap: 0.75rem;
+  row-gap: 0.12rem;
   min-width: 0;
 }
+/* form | stage | stamps | quotes — same starts on every card */
 [data-ff-priority-stack] .ff-deal-host-lines {
   display: grid;
-  grid-template-columns: max-content max-content minmax(0, 12rem) minmax(11.5rem, 1fr);
+  grid-template-columns: 5.75rem 5.5rem 7.75rem minmax(0, 1fr);
   align-items: center;
-  column-gap: 0.65rem;
-  row-gap: 0.28rem;
+  column-gap: 0.55rem;
+  row-gap: 0.16rem;
   min-width: 0;
 }
 [data-ff-priority-stack] .ff-deal-host-line {
@@ -4591,8 +4594,33 @@ tr[data-ff-activity-selected="true"] {
   grid-template-columns: subgrid;
   grid-column: 1 / -1;
   align-items: center;
-  column-gap: 0.65rem;
   min-width: 0;
+}
+/* Single product: quotes on row 2 so both rows carry content */
+[data-ff-priority-stack] .ff-deal-host-job-single .ff-deal-host-line {
+  display: contents;
+}
+[data-ff-priority-stack] .ff-deal-host-job-single .ff-stack-product {
+  grid-column: 1;
+  grid-row: 1;
+}
+[data-ff-priority-stack] .ff-deal-host-job-single .ff-deal-host-stage {
+  grid-column: 2;
+  grid-row: 1;
+}
+[data-ff-priority-stack] .ff-deal-host-job-single .ff-deal-host-stamps {
+  grid-column: 3;
+  grid-row: 1;
+}
+[data-ff-priority-stack] .ff-deal-host-job-single .ff-deal-host-quotes {
+  grid-column: 1 / 5;
+  grid-row: 2;
+}
+[data-ff-priority-stack] .ff-deal-host-health {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
 }
 [data-ff-priority-stack] .ff-stack-product,
 [data-ff-priority-stack] .ff-deal-host-stage,
@@ -4601,28 +4629,27 @@ tr[data-ff-activity-selected="true"] {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-[data-ff-priority-stack] .ff-deal-host-stage,
-[data-ff-priority-stack] .ff-deal-host-quotes {
-  color: var(--ff-ink);
-  font-size: 0.9rem;
-  font-weight: 650;
+  color: var(--ff-muted);
+  font-size: 0.84rem;
+  font-weight: 500;
 }
 [data-ff-priority-stack] .ff-deal-host-stamps {
   display: inline-flex;
   align-items: center;
   gap: 0.28rem;
   min-width: 0;
-  max-width: 12rem;
-  min-height: 1.15rem;
-  overflow: hidden;
+  min-height: 1.55rem;
+  padding: 0.28rem 0.15rem;
+  overflow: visible;
   white-space: nowrap;
-}
-[data-ff-priority-stack] .ff-deal-host-health {
-  justify-self: end;
 }
 [data-ff-priority-stack] .ff-deal-host-health .ff-renewal-health {
   flex-wrap: nowrap;
+  margin-top: 0;
+}
+[data-ff-priority-stack] .ff-deal-host-health .ff-renewal-health-label {
+  color: var(--ff-muted);
+  font-weight: 500;
 }
 @media (max-width: 42rem) {
   [data-ff-priority-stack] .ff-deal-host-spread {
