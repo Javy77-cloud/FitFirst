@@ -5,19 +5,21 @@ import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel"
 import { CORE_FIELDS, defaultLayoutForLine } from "@/lib/custom-fields/defaults";
 import {
   GARAGE_TYPE_OPTIONS,
-  SCREEN_ENCLOSURE_OPTIONS,
-  STRUCTURE_TYPE_OPTIONS,
   USAGE_OPTIONS,
-  WATER_BACKUP_OPTIONS,
-  YES_NO_OPTIONS,
 } from "@/lib/quote-sheet/sheet-defaults";
 import { fieldsForLine } from "@/lib/quote-sheet/catalog";
 import {
   MHO_DETAILS_FIELDS,
   MHO_DETAILS_GROUPS,
+  MHO_DISTANCE_TO_HYDRANT_OPTIONS,
+  MHO_DISTANCE_TO_STATION_OPTIONS,
+  MHO_FOUNDATION_OPTIONS,
+  MHO_SCREEN_ENCLOSURE_OPTIONS,
   MHO_STRUCTURE_TYPE,
   MHO_MOBILE_HOME_TYPE,
   MHO_STRUCTURE_TYPE_OPTIONS,
+  MHO_WATER_BACKUP_OPTIONS,
+  MHO_YES_NO_OPTIONS,
   dealPolicyFormIsMho,
 } from "@/lib/custom-fields/mho-details-fields";
 
@@ -127,18 +129,12 @@ describe("MHO Deal Details section", () => {
   it("reuses Risk Profile option sets for shared picklists", () => {
     const home = Object.fromEntries(fieldsForLine("home", "homeowners").map((field) => [field.key, field]));
     const byKey = Object.fromEntries(MHO_DETAILS_FIELDS.map((field) => [field.key, field]));
-    expect(byKey.tie_downs.options).toEqual([...YES_NO_OPTIONS]);
     expect(byKey.garage_type.options).toEqual([...GARAGE_TYPE_OPTIONS]);
     expect(byKey.garage_type.options).toEqual(home.garage_type.options);
     expect(byKey.usage.options).toEqual([...USAGE_OPTIONS]);
     expect(byKey.usage.options).toEqual(home.usage.options);
-    expect(byKey.screen_enclosure.options).toEqual([...SCREEN_ENCLOSURE_OPTIONS]);
-    expect(byKey.water_backup.options).toEqual([...WATER_BACKUP_OPTIONS]);
     expect(byKey.structure_type.options).toEqual([...MHO_STRUCTURE_TYPE_OPTIONS]);
     expect(byKey.exterior.options).toEqual(home.exterior.options);
-    expect(byKey.foundation.options).toEqual(home.foundation.options);
-    expect(byKey.hydrant.options).toEqual(home.hydrant.options);
-    expect(byKey.miles_to_fire_station.options).toEqual(home.miles_to_fire_station.options);
     expect(byKey.months_occupied.options).toEqual(home.months_occupied.options);
     expect(home.tie_downs.extractKey).toBeUndefined();
     expect(home.hud_label.extractKey).toBeUndefined();
@@ -148,5 +144,46 @@ describe("MHO Deal Details section", () => {
     for (const row of MHO_DETAILS_FIELDS) {
       expect(catalog.has(row.key), row.key).toBe(true);
     }
+  });
+
+  it("orders MHO Manufactured home dropdown options as specified", () => {
+    const byKey = Object.fromEntries(MHO_DETAILS_FIELDS.map((field) => [field.key, field]));
+    expect(byKey.basement.options).toEqual([...MHO_YES_NO_OPTIONS]);
+    expect(byKey.foundation.options).toEqual([...MHO_FOUNDATION_OPTIONS]);
+    expect(byKey.carport.options).toEqual([...MHO_YES_NO_OPTIONS]);
+    expect(byKey.within_city_limits.options).toEqual([...MHO_YES_NO_OPTIONS]);
+    expect(byKey.screen_enclosure.options).toEqual([...MHO_SCREEN_ENCLOSURE_OPTIONS]);
+    expect(byKey.water_backup.options).toEqual([...MHO_WATER_BACKUP_OPTIONS]);
+    expect(byKey.trampoline.options).toEqual([...MHO_YES_NO_OPTIONS]);
+    expect(byKey.pool.options).toEqual([...MHO_YES_NO_OPTIONS]);
+    expect(byKey.animals.options).toEqual([...MHO_YES_NO_OPTIONS]);
+    expect(byKey.hydrant.options).toEqual([...MHO_DISTANCE_TO_HYDRANT_OPTIONS]);
+    expect(byKey.miles_to_fire_station.options).toEqual([...MHO_DISTANCE_TO_STATION_OPTIONS]);
+    expect(byKey.fire_alarm.options).toEqual([...MHO_YES_NO_OPTIONS]);
+    expect(byKey.smoke_detectors.options).toEqual([...MHO_YES_NO_OPTIONS]);
+    expect(byKey.resided_under_2_years.options).toEqual([...MHO_YES_NO_OPTIONS]);
+
+    const html = renderDetails("MHO");
+    const optionOrder = (key: string) => {
+      const marker = `data-ff-picklist="${key}"`;
+      const start = html.indexOf(marker);
+      expect(start, key).toBeGreaterThan(-1);
+      const chunk = html.slice(start, html.indexOf("</select>", start));
+      return [...chunk.matchAll(/<option[^>]*value="([^"]*)"/g)].map((m) => m[1]).filter(Boolean);
+    };
+    expect(optionOrder("basement")).toEqual(["yes", "no"]);
+    expect(optionOrder("foundation")).toEqual([...MHO_FOUNDATION_OPTIONS]);
+    expect(optionOrder("carport")).toEqual(["yes", "no"]);
+    expect(optionOrder("within_city_limits")).toEqual(["yes", "no"]);
+    expect(optionOrder("screen_enclosure")).toEqual([...MHO_SCREEN_ENCLOSURE_OPTIONS]);
+    expect(optionOrder("water_backup")).toEqual([...MHO_WATER_BACKUP_OPTIONS]);
+    expect(optionOrder("trampoline")).toEqual(["yes", "no"]);
+    expect(optionOrder("pool")).toEqual(["yes", "no"]);
+    expect(optionOrder("animals")).toEqual(["yes", "no"]);
+    expect(optionOrder("hydrant")).toEqual([...MHO_DISTANCE_TO_HYDRANT_OPTIONS]);
+    expect(optionOrder("miles_to_fire_station")).toEqual([...MHO_DISTANCE_TO_STATION_OPTIONS]);
+    expect(optionOrder("fire_alarm")).toEqual(["yes", "no"]);
+    expect(optionOrder("smoke_detectors")).toEqual(["yes", "no"]);
+    expect(optionOrder("resided_under_2_years")).toEqual(["yes", "no"]);
   });
 });

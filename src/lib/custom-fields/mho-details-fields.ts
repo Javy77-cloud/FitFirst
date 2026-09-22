@@ -1,16 +1,10 @@
 import type { CustomFieldDef } from "@/lib/custom-fields/types";
 import { quotingFormIsManufacturedHome } from "@/lib/quote-sheet/home-address-fill";
 import {
-  DISTANCE_TO_HYDRANT_OPTIONS,
-  DISTANCE_TO_STATION_OPTIONS,
   EXTERIOR_OPTIONS,
-  FOUNDATION_OPTIONS,
   GARAGE_TYPE_OPTIONS,
   MONTHS_OCCUPIED_OPTIONS,
-  SCREEN_ENCLOSURE_OPTIONS,
   USAGE_OPTIONS,
-  WATER_BACKUP_OPTIONS,
-  YES_NO_OPTIONS,
 } from "@/lib/quote-sheet/sheet-defaults";
 
 /** Manufactured / mobile home. Never label this HMO. */
@@ -21,7 +15,49 @@ export const MHO_STRUCTURE_TYPE_OPTIONS = [MHO_STRUCTURE_TYPE, MHO_MOBILE_HOME_T
 
 export const MHO_DETAILS_SECTION_ID = "mho";
 
-const YES_NO = [...YES_NO_OPTIONS];
+/** Deal Details MHO section only — preserve this order (FieldControl must not A–Z sort). */
+export const MHO_YES_NO_OPTIONS = ["yes", "no"] as const;
+
+/** Slab, then Basement, then the rest in prior relative order. */
+export const MHO_FOUNDATION_OPTIONS = [
+  "Slab",
+  "Basement",
+  "Open foundation",
+  "Crawl space 25%",
+  "Crawl space 50%",
+  "Crawl space 100%",
+  "Piers (elevated)",
+] as const;
+
+export const MHO_SCREEN_ENCLOSURE_OPTIONS = [
+  "$5,000",
+  "$10,000",
+  "$25,000",
+  "$50,000",
+] as const;
+
+export const MHO_WATER_BACKUP_OPTIONS = [
+  "$2,000",
+  "$5,000",
+  "$10,000",
+  "$15,000",
+  "$20,000",
+  "$25,000",
+  "$30,000",
+  "$50,000",
+] as const;
+
+export const MHO_DISTANCE_TO_HYDRANT_OPTIONS = [
+  "Within 1,000 feet",
+  "More than 1,000 feet",
+] as const;
+
+export const MHO_DISTANCE_TO_STATION_OPTIONS = [
+  "Within 5 miles",
+  "More than 5 miles",
+] as const;
+
+const YES_NO = [...MHO_YES_NO_OPTIONS];
 
 export type MhoDetailsGroupId =
   | "dwelling"
@@ -88,7 +124,7 @@ export const MHO_DETAILS_FIELDS: readonly MhoDetailsField[] = [
   field("living_units", "Living units", "dwelling", "number"),
   field("basement", "Basement", "dwelling", "picklist", { options: YES_NO }),
   field("exterior", "Exterior", "dwelling", "picklist", { options: [...EXTERIOR_OPTIONS] }),
-  field("foundation", "Foundation", "dwelling", "picklist", { options: [...FOUNDATION_OPTIONS] }),
+  field("foundation", "Foundation", "dwelling", "picklist", { options: [...MHO_FOUNDATION_OPTIONS] }),
   field("garage_spaces", "Garage spaces", "dwelling", "number"),
   field("garage_type", "Garage type", "dwelling", "picklist", { options: [...GARAGE_TYPE_OPTIONS] }),
   field("carport", "Carport", "dwelling", "picklist", { options: YES_NO }),
@@ -97,19 +133,19 @@ export const MHO_DETAILS_FIELDS: readonly MhoDetailsField[] = [
   field("within_city_limits", "Within city limits", "flood", "picklist", { options: YES_NO }),
   field("usage", "Usage", "flood", "picklist", { options: [...USAGE_OPTIONS] }),
   field("screen_enclosure", "Screen enclosure", "coverage", "picklist", {
-    options: [...SCREEN_ENCLOSURE_OPTIONS],
+    options: [...MHO_SCREEN_ENCLOSURE_OPTIONS],
   }),
   field("water_backup", "Water backup", "coverage", "picklist", {
-    options: [...WATER_BACKUP_OPTIONS],
+    options: [...MHO_WATER_BACKUP_OPTIONS],
   }),
   field("pool", "Pool", "hazards", "picklist", { options: YES_NO }),
   field("trampoline", "Trampoline", "hazards", "picklist", { options: YES_NO }),
   field("animals", "Animals", "hazards", "picklist", { options: YES_NO }),
   field("hydrant", "Distance to hydrant", "protection", "picklist", {
-    options: [...DISTANCE_TO_HYDRANT_OPTIONS],
+    options: [...MHO_DISTANCE_TO_HYDRANT_OPTIONS],
   }),
   field("miles_to_fire_station", "Distance to station", "protection", "picklist", {
-    options: [...DISTANCE_TO_STATION_OPTIONS],
+    options: [...MHO_DISTANCE_TO_STATION_OPTIONS],
   }),
   field("fire_alarm", "Fire alarm", "protection", "picklist", { options: YES_NO }),
   field("smoke_detectors", "Smoke detectors", "protection", "picklist", {
