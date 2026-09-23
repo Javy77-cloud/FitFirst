@@ -25,13 +25,14 @@ export function ContactDetailField({
   children: ReactNode;
 }) {
   const nameValue = isContactNameField(fieldKey);
+  const longText = isLongContactTextField(fieldKey);
   return (
     <div
       className="min-w-0 rounded-md border border-border bg-[var(--ff-card)]"
       data-ff-record-field={fieldKey}
       data-ff-contact-field={fieldKey}
       data-ff-contact-field-compact={compact ? "1" : undefined}
-      data-ff-long-text={isLongContactTextField(fieldKey) ? "1" : undefined}
+      data-ff-long-text={longText ? "1" : undefined}
     >
       <div
         className={
@@ -45,15 +46,15 @@ export function ContactDetailField({
           className={
             compact
               ? "border-b border-border bg-[var(--ff-wash)] px-2 py-0.5 text-[10px] font-medium uppercase leading-tight tracking-[0.04em] text-muted-foreground"
-              : "flex items-center border-r border-border bg-[var(--ff-wash)] px-2 py-1 text-[10px] font-medium uppercase leading-tight tracking-[0.04em] text-muted-foreground"
+              : "flex items-center border-r border-border bg-[var(--ff-wash)] px-2 py-0.5 text-[10px] font-medium uppercase leading-tight tracking-[0.04em] text-muted-foreground"
           }
         >
           {label}
         </label>
         <div
           className={cn(
-            "flex min-h-[2rem] min-w-0 items-center px-1.5 py-0.5",
-            isLongContactTextField(fieldKey) && "items-start py-1 [&_*]:break-all [&_*]:whitespace-normal",
+            "flex min-h-[1.75rem] min-w-0 items-center px-1.5 py-0.5",
+            longText && "items-start py-1 [&_*]:break-all [&_*]:whitespace-normal",
             nameValue && "[&_[data-ff-click-to-edit]]:text-base [&_[data-ff-click-to-edit]]:font-semibold",
           )}
         >

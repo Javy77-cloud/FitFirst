@@ -15,14 +15,13 @@ import {
   serializeExistingCoverageTypes,
 } from "@/lib/coverage/declared-coverage";
 import { gapLineLabel, type CoverageLine } from "@/lib/coverage/gaps";
-import { CONTACT_LABEL_VALUE_GRID } from "@/lib/contacts/contact-field-layout";
 import { flashAction } from "@/lib/flash-client";
 import { cn } from "@/lib/utils";
 
 const CHOICES = [
-  { id: "us", label: "With us" },
-  { id: "other", label: "Another carrier" },
-  { id: "none", label: "Not covered" },
+  { id: "us", label: "With us", short: "Us" },
+  { id: "other", label: "Another carrier", short: "Other" },
+  { id: "none", label: "Not covered", short: "None" },
 ] as const;
 
 type Choice = (typeof CHOICES)[number]["id"];
@@ -105,38 +104,41 @@ export function ContactCoverageRecord({
 
   return (
     <div
-      className={cn("min-w-0 space-y-1.5", pending && "opacity-60")}
+      className={cn("min-w-0 space-y-1", pending && "opacity-60")}
       data-ff-contact-coverage-record=""
+      data-ff-coverage-record-compact="1"
     >
       <input type="hidden" name={typesName} value={types} form={form} />
       <input type="hidden" name={recordName} value={record} form={form} />
       <p className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
         {CONTACT_EXTERNAL_COVERAGE_LABEL}
       </p>
-      <p className="text-[11px] text-muted-foreground">
-        Mark lines the household has with another carrier. Policies in force with this agency stay
-        on Policies — they are not stored here. Another carrier counts as covered, not a missing-line
-        gap.
+      <p className="text-[11px] leading-snug text-muted-foreground">
+        Mark lines with another carrier. Policies in force with this agency stay on Policies — they
+        are not stored here. Another carrier counts as covered, not a missing-line gap.
       </p>
-      <ul className="overflow-hidden rounded-md border border-border" data-ff-coverage-record-list="">
+      <ul
+        className="grid grid-cols-2 gap-1.5 max-[520px]:grid-cols-1"
+        data-ff-coverage-record-list=""
+      >
         {lines.map((line) => {
           const choice = coverageChoiceForLine({ line, declared, inForceLines });
           const locked = inForceLines.includes(line);
           return (
             <li
               key={line}
-              className={cn(
-                CONTACT_LABEL_VALUE_GRID,
-                "border-b border-border last:border-b-0",
-              )}
+              className="min-w-0 rounded-md border border-border bg-[var(--ff-card)] px-1.5 py-1"
               data-ff-coverage-record-line={line}
             >
-              <div className="flex min-w-0 items-center border-r border-border bg-[var(--ff-wash)] px-2 py-1.5">
-                <span className="text-[10px] font-medium uppercase leading-tight tracking-[0.04em] text-muted-foreground">
+              <div className="mb-0.5 flex min-w-0 items-center justify-between gap-1">
+                <span className="truncate text-[10px] font-medium uppercase leading-tight tracking-[0.04em] text-muted-foreground">
                   {gapLineLabel(line)}
                 </span>
+                {locked ? (
+                  <span className="shrink-0 text-[10px] text-muted-foreground">On the book</span>
+                ) : null}
               </div>
-              <div className="flex flex-wrap items-center gap-1 px-1.5 py-1">
+              <div className="flex flex-wrap items-center gap-0.5" role="group" aria-label={gapLineLabel(line)}>
                 {CHOICES.map((option) => {
                   const selected = choice === option.id;
                   const disabled = option.id === "us" || locked;
@@ -146,9 +148,11 @@ export function ContactCoverageRecord({
                       type="button"
                       disabled={disabled}
                       aria-pressed={selected}
+                      aria-label={option.label}
+                      title={option.label}
                       onClick={() => onChoose(line, option.id)}
                       className={cn(
-                        "rounded-sm px-2 py-1 text-[11px] leading-none",
+                        "rounded-sm px-1.5 py-0.5 text-[10px] leading-none",
                         selected
                           ? "bg-[#002868] font-semibold text-white"
                           : "bg-transparent text-muted-foreground hover:bg-muted",
@@ -156,13 +160,10 @@ export function ContactCoverageRecord({
                       )}
                       data-ff-coverage-record-choice={option.id}
                     >
-                      {option.label}
+                      {option.short}
                     </button>
                   );
                 })}
-                {locked ? (
-                  <span className="text-[10px] text-muted-foreground">On the book</span>
-                ) : null}
               </div>
             </li>
           );

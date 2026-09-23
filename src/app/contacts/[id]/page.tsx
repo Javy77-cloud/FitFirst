@@ -6,7 +6,7 @@ import { ClientStatusPill } from "@/components/record-links";
 import { getContactWorkspace, listRecordActivities } from "@/lib/db/queries";
 import { db } from "@/lib/db";
 import { agencySettings, contacts, documents } from "@/lib/db/schema";
-import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { DEFAULT_TENANT_ID, formatMoney } from "@/lib/domain";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { loadRecordContext } from "@/lib/record-context";
 import { mergeRecordSystemValues } from "@/lib/custom-fields/resolve-layout";
@@ -230,6 +230,13 @@ export default async function ContactDetailPage({
 
   const inForcePolicies = policies.filter((row) => isInForcePolicyStatus(row.policy.status));
   const inForceCount = inForcePolicies.length;
+  const inForcePremiumParts = inForcePolicies
+    .map((row) => Number(row.policy.premium))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  const inForcePremiumTotal =
+    inForcePremiumParts.length > 0
+      ? inForcePremiumParts.reduce((sum, n) => sum + n, 0)
+      : null;
   const inForceLines = [
     ...new Set(
       inForcePolicies
@@ -289,9 +296,21 @@ export default async function ContactDetailPage({
           </div>
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <h2 className="text-xl font-semibold text-navy">
-                {contact.lastName}, {contact.firstName}
-              </h2>
+              <div className="min-w-0 space-y-0.5">
+                <h2 className="text-xl font-semibold text-navy">
+                  {contact.lastName}, {contact.firstName}
+                </h2>
+                {inForceCount > 0 ? (
+                  <p className="text-xs text-muted-foreground" data-ff-contact-book-glance="">
+                    <a href="#policies" className="text-primary hover:underline">
+                      {inForceCount} active
+                      {inForcePremiumTotal != null
+                        ? ` · ~${formatMoney(inForcePremiumTotal)} premium`
+                        : ""}
+                    </a>
+                  </p>
+                ) : null}
+              </div>
               <div className="flex min-w-0 flex-wrap items-center gap-2 pl-1">
                 <ClientStatusPill status={clientStatus} />
                 {health.client ? <HealthScoreChip health={health.client} compact /> : null}
