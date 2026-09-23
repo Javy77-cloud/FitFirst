@@ -1,5 +1,5 @@
 import { plainFromInboxHtml } from "@/lib/desk/inbox-body";
-import { decodeMailText } from "@/lib/desk/mail-text";
+import { decodeMailText, encodeMimeSubject } from "@/lib/desk/mail-text";
 import type { MailInlineImage, MailThreadMessage, MailThreadPreview } from "./mail-contract";
 import { gmailScopesAllowModify } from "./oauth-specs";
 import { liveAccessToken } from "./oauth-exchange";
@@ -47,7 +47,12 @@ export type GmailComposeAttachment = {
   contentBase64: string;
 };
 
-function rfc2822(input: {
+function b64Utf8(value: string): string {
+  return Buffer.from(value, "utf8").toString("base64");
+}
+
+/** Build RFC 2822 / MIME for Gmail raw send. Exported for unit tests. */
+export function buildGmailRfc2822(input: {
   to: string;
   from?: string | null;
   subject: string;
@@ -60,35 +65,76 @@ function rfc2822(input: {
   const from = input.from?.trim() ? `From: ${input.from.trim()}\r\n` : "";
   const reply = input.inReplyTo?.trim() ? `In-Reply-To: ${input.inReplyTo.trim()}\r\n` : "";
   const refs = input.references?.trim() ? `References: ${input.references.trim()}\r\n` : "";
-  const subject = `Subject: ${input.subject.replace(/\r?\n/g, " ")}\r\n`;
+  const subject = `Subject: ${encodeMimeSubject(input.subject)}\r\n`;
   const head = `${from}To: ${input.to.trim()}\r\n${subject}${reply}${refs}`;
   const attachments = input.attachments?.filter((part) => part.contentBase64 && part.filename) ?? [];
-  const htmlBody = input.htmlBody?.trim();
+  const htmlBody = (input.htmlBody ?? "").trim();
+  const plainBody = input.body ?? "";
+
   if (!attachments.length && !htmlBody) {
-    return `${head}Content-Type: text/plain; charset=utf-8\r\n\r\n${input.body}`;
-  }
-  const boundary = `ff_qc_${Date.now().toString(36)}`;
-  const chunks: string[] = [
-    `${head}MIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary="${boundary}"\r\n`,
-  ];
-  if (htmlBody) {
-    chunks.push(
-      `--${boundary}\r\nContent-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: 7bit\r\n\r\n${htmlBody}\r\n`,
+    return (
+      `${head}MIME-Version: 1.0\r\n` +
+      `Content-Type: text/plain; charset=utf-8\r\n` +
+      `Content-Transfer-Encoding: base64\r\n\r\n` +
+      `${b64Utf8(plainBody)}\r\n`
     );
+  }
+
+  const boundary = `ff_qc_${Date.now().toString(36)}`;
+  const altBoundary = `ff_alt_${Date.now().toString(36)}`;
+  // Blank line after headers is required so Gmail parses body parts (empty-body bug).
+  const chunks: string[] = [
+    `${head}MIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n`,
+  ];
+
+  if (htmlBody) {
+    const plainForAlt = plainBody.trim() || plainFromInboxHtml(htmlBody) || htmlBody;
+    // Prefer HTML that preserves paragraphs: if compose HTML has no breaks but
+    // plain has newlines, render plain→HTML so Gmail shows line breaks.
+    const htmlForAlt =
+      /<(br|p|div|li)\b/i.test(htmlBody) || !plainForAlt.includes("\n")
+        ? htmlBody
+        : plainForAlt
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\n/g, "<br>\n");
+    chunks.push(
+      `--${boundary}\r\nContent-Type: multipart/alternative; boundary="${altBoundary}"\r\n\r\n`,
+    );
+    chunks.push(
+      `--${altBoundary}\r\nContent-Type: text/plain; charset=utf-8\r\n` +
+        `Content-Transfer-Encoding: base64\r\n\r\n${b64Utf8(plainForAlt)}\r\n`,
+    );
+    chunks.push(
+      `--${altBoundary}\r\nContent-Type: text/html; charset=utf-8\r\n` +
+        `Content-Transfer-Encoding: base64\r\n\r\n${b64Utf8(htmlForAlt)}\r\n`,
+    );
+    chunks.push(`--${altBoundary}--\r\n`);
   } else {
     chunks.push(
-      `--${boundary}\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: 7bit\r\n\r\n${input.body}\r\n`,
+      `--${boundary}\r\nContent-Type: text/plain; charset=utf-8\r\n` +
+        `Content-Transfer-Encoding: base64\r\n\r\n${b64Utf8(plainBody)}\r\n`,
     );
   }
+
   for (const part of attachments) {
     const mime = part.mimeType || "application/octet-stream";
     const safeName = part.filename.replace(/["\r\n]/g, "_");
     chunks.push(
-      `--${boundary}\r\nContent-Type: ${mime}; name="${safeName}"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="${safeName}"\r\n\r\n${part.contentBase64}\r\n`,
+      `--${boundary}\r\nContent-Type: ${mime}; name="${safeName}"\r\n` +
+        `Content-Transfer-Encoding: base64\r\n` +
+        `Content-Disposition: attachment; filename="${safeName}"\r\n\r\n` +
+        `${part.contentBase64}\r\n`,
     );
   }
   chunks.push(`--${boundary}--`);
   return chunks.join("");
+}
+
+/** @deprecated use buildGmailRfc2822 — kept as alias for any local callers */
+function rfc2822(input: Parameters<typeof buildGmailRfc2822>[0]): string {
+  return buildGmailRfc2822(input);
 }
 
 

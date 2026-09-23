@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodeMailText, decodeMimeWords, repairUtf8Mojibake } from "./mail-text";
+import { decodeMailText, decodeMimeWords, encodeMimeSubject, repairUtf8Mojibake } from "./mail-text";
 
 describe("mail-text", () => {
   it("decodes RFC 2047 UTF-8 base64 subjects", () => {
@@ -18,5 +18,12 @@ describe("mail-text", () => {
     expect(decodeMailText("Follow-up · Francisco Javier Garcia")).toBe(
       "Follow-up · Francisco Javier Garcia",
     );
+  });
+
+  it("encodeMimeSubject + decodeMimeWords round-trip middle dot", () => {
+    const subject = "Follow-up · Rosa Castellanos";
+    const encoded = encodeMimeSubject(subject);
+    expect(encoded).toMatch(/^=\?UTF-8\?B\?.+\?=$/);
+    expect(decodeMimeWords(encoded)).toBe(subject);
   });
 });
