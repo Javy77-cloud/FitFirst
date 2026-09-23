@@ -148,6 +148,9 @@ describe("inbox desk presentation", () => {
     expect(desk).toMatch(/data-ff-inbox-band-label=\{band\}/);
     expect(desk).toMatch(/is-read/);
     expect(desk).toMatch(/InboxLinkContactDialog/);
+    expect(desk).toMatch(/InboxAssignDialog/);
+    expect(readFileSync("src/app/actions/inbox.ts", "utf8")).toMatch(/assignInboxThread/);
+    expect(readFileSync("src/app/inbox/page.tsx", "utf8")).toMatch(/agents=\{agents\}/);
     expect(desk).toMatch(/data-ff-inbox-images/);
     expect(desk).toMatch(/connectLabel/);
     expect(desk).toMatch(/ff-inbox-reconnect/);

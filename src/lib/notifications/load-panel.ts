@@ -416,7 +416,7 @@ export async function loadColdChaseSignals(): Promise<PanelCard[]> {
 }
 
 export async function loadPanelCards(asOf = deskNow()): Promise<PanelCard[]> {
-  const [declines, renewals, autopilot, docs, nudges, cold, inbox, termStarts] = await Promise.all([
+  const [declines, renewals, autopilot, docs, nudges, cold, inbox, assigned, termStarts] = await Promise.all([
     loadQuoteDeclinedSignals(asOf).catch(() => []),
     loadRenewalSilenceSignals(asOf).catch(() => []),
     loadAutopilotSignals(asOf).catch(() => []),
@@ -424,6 +424,9 @@ export async function loadPanelCards(asOf = deskNow()): Promise<PanelCard[]> {
     loadCommitmentNudgeSignals(asOf).catch(() => []),
     loadColdChaseSignals().catch(() => []),
     import("@/lib/notifications/load-inbox").then((mod) => mod.loadInboxMailSignals(asOf).catch(() => [])),
+    import("@/lib/notifications/load-inbox-assigned").then((mod) =>
+      mod.loadInboxAssignedSignals().catch(() => []),
+    ),
     import("@/lib/notifications/load-term-start").then((mod) => mod.loadTermStartSignals(asOf).catch(() => [])),
   ]);
   const covered = autopilotCoveredPolicyIds(autopilot);
@@ -436,6 +439,7 @@ export async function loadPanelCards(asOf = deskNow()): Promise<PanelCard[]> {
     ...nudges,
     ...cold,
     ...inbox,
+    ...assigned,
     ...termStarts,
   ]);
 }

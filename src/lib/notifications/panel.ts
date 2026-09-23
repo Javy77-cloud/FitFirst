@@ -8,6 +8,7 @@ export const PANEL_SIGNAL_KINDS = [
   "commitment_nudge",
   "deal_cold_chase",
   "inbox_mail",
+  "inbox_assigned",
   "renewal_term_started",
 ] as const;
 
@@ -67,6 +68,7 @@ export const PANEL_KIND_LABEL: Record<PanelSignalKind, string> = {
   commitment_nudge: "Promise due",
   deal_cold_chase: "Deal went cold",
   inbox_mail: "Inbox needs you",
+  inbox_assigned: "Mail assigned to you",
   renewal_term_started: "Term started today",
 };
 
@@ -211,7 +213,7 @@ export function panelCardHref(card: Pick<PanelCard, "kind" | "dealId" | "policyI
   if (card.kind === "deal_cold_chase" && card.dealId) return `/deals/${card.dealId}?tab=quotes`;
   if (card.kind === "renewal_autopilot") return "/renewals";
   if (card.kind === "renewal_term_started" && card.policyId) return `/policies/${card.policyId}/compare`;
-  if (card.kind === "inbox_mail") return card.href;
+  if (card.kind === "inbox_mail" || card.kind === "inbox_assigned") return card.href;
   return card.href;
 }
 
@@ -222,7 +224,7 @@ export const PANEL_EMPTY_WORK =
   "No Work items. Quiet renewals, declines, Autopilot, and stale docs land here.";
 
 export const PANEL_EMPTY_INBOX =
-  "Inbox is clear. Day-of term starts and matched agency mail land here.";
+  "Inbox is clear. Day-of term starts, matched agency mail, and assigned threads land here.";
 
 export const PANEL_IN_APP_COPY =
   "System-found attention. One click advances the job. Nothing emails Javy or the agent.";

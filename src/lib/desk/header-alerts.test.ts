@@ -152,4 +152,31 @@ describe("toHeaderAlert", () => {
     expect(alert.href).toBe("/policies/p9/compare");
   });
 
+
+  it("deep-links assigned / matched mail onto the Inbox thread", () => {
+    const assigned = toHeaderAlert({
+      id: "ia1",
+      title: "Quote docs",
+      body: "<!--ff-panel:inbox_assigned:thr-9:u1-->\n<!--ff-href:/inbox?thread=thr-9-->\n\nJavy assigned agency mail from Elena",
+      severity: "critical",
+      kind: "inbox_assigned",
+      readAt: null,
+      entityType: "deal",
+      entityId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    });
+    expect(assigned.href).toBe("/inbox?thread=thr-9");
+
+    const mail = toHeaderAlert({
+      id: "im1",
+      title: "Elena",
+      body: "<!--ff-panel:inbox_mail:g-thr-->\n<!--ff-href:/inbox?thread=g-thr-->\n\nElena wrote · Quote",
+      severity: "warning",
+      kind: "inbox_mail",
+      readAt: null,
+      entityType: "deal",
+      entityId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    });
+    expect(mail.href).toBe("/inbox?thread=g-thr");
+  });
+
 });

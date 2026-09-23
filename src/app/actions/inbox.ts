@@ -14,10 +14,18 @@ import {
   normalizeInboxEmail,
   parseInboxAliasEmails,
 } from "@/lib/desk/inbox-match";
+import {
+  INBOX_ASSIGNED_KIND,
+  encodePanelHref,
+  inboxAssignNotification,
+  inboxAssignedKey,
+} from "@/lib/desk/inbox-assign";
+import { inboxSenderLabel } from "@/lib/desk/inbox";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
+import { isDeskUuid } from "@/lib/desk-id";
 import { db } from "@/lib/db";
-import { contacts } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { alerts, contacts, deals, policies, users } from "@/lib/db/schema";
+import { and, eq, isNull } from "drizzle-orm";
 import { flashAction } from "@/lib/flash-action";
 
 function str(form: FormData, key: string) {
@@ -152,4 +160,132 @@ export async function createContactFromInbox(formData: FormData) {
   if (result.ok) redirect(`/contacts/${result.id}`);
   if ("existingId" in result && result.existingId) redirect(`/contacts/${result.existingId}`);
   redirect(threadId ? `${inboxThreadHref(threadId)}&notice=inbox-need-record` : "/contacts");
+}
+
+
+/** Assign / forward an agency Inbox thread to an agent — Inbox-lane ping + optional ownership. */
+export async function assignInboxThread(formData: FormData) {
+  const session = await currentDeskSession();
+  if (!session.signedIn || !session.userId) return;
+  const threadId = str(formData, "threadId");
+  const agentId = str(formData, "agentId");
+  const contactId = str(formData, "contactId");
+  const dealId = str(formData, "dealId");
+  const policyId = str(formData, "policyId");
+  const subject = str(formData, "subject");
+  const from = str(formData, "from");
+  if (!threadId || !isDeskUuid(agentId)) {
+    flashAction(threadId ? inboxThreadHref(threadId) : "/inbox", "inbox-need-agent", "error");
+  }
+
+  const [agent] = await db
+    .select({ id: users.id, name: users.name, role: users.role })
+    .from(users)
+    .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.id, agentId)))
+    .limit(1);
+  if (!agent || agent.role === "developer") {
+    flashAction(inboxThreadHref(threadId), "inbox-need-agent", "error");
+  }
+
+  const patch = { ownerId: agent.id, updatedAt: new Date() };
+  if (isDeskUuid(dealId)) {
+    await db
+      .update(deals)
+      .set(patch)
+      .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.id, dealId)));
+  }
+  if (isDeskUuid(policyId)) {
+    await db
+      .update(policies)
+      .set(patch)
+      .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
+  }
+  if (isDeskUuid(contactId)) {
+    await db
+      .update(contacts)
+      .set(patch)
+      .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, contactId)));
+  }
+
+  const fromLabel = inboxSenderLabel(from) || from || "Sender";
+  const ping = inboxAssignNotification({
+    subject,
+    fromLabel,
+    assignerName: session.name || "Teammate",
+    threadId,
+  });
+  const key = inboxAssignedKey(threadId, agent.id);
+  const body = `<!--ff-panel:${key}-->\n${encodePanelHref(ping.href)}\n\n${ping.why}`;
+  const entityType = isDeskUuid(dealId)
+    ? "deal"
+    : isDeskUuid(policyId)
+      ? "policy"
+      : isDeskUuid(contactId)
+        ? "contact"
+        : null;
+  const entityId = isDeskUuid(dealId)
+    ? dealId
+    : isDeskUuid(policyId)
+      ? policyId
+      : isDeskUuid(contactId)
+        ? contactId
+        : null;
+
+  const open = await db
+    .select()
+    .from(alerts)
+    .where(
+      and(
+        eq(alerts.tenantId, DEFAULT_TENANT_ID),
+        eq(alerts.kind, INBOX_ASSIGNED_KIND),
+        eq(alerts.recipientUserId, agent.id),
+        isNull(alerts.readAt),
+      ),
+    );
+  const same = open.find((row) => row.body.includes(`<!--ff-panel:${key}-->`));
+  if (same) {
+    await db
+      .update(alerts)
+      .set({
+        title: ping.title,
+        body,
+        severity: "critical",
+        entityType,
+        entityId,
+      })
+      .where(eq(alerts.id, same.id));
+  } else {
+    await db.insert(alerts).values({
+      tenantId: DEFAULT_TENANT_ID,
+      kind: INBOX_ASSIGNED_KIND,
+      title: ping.title,
+      body,
+      severity: "critical",
+      entityType,
+      entityId,
+      userId: agent.id,
+      recipientUserId: agent.id,
+    });
+  }
+
+  const mail = await activeInboxMail();
+  if (mail && (isDeskUuid(contactId) || isDeskUuid(dealId) || isDeskUuid(policyId))) {
+    await writeDeskComms({
+      kind: "email",
+      title: `Assigned to ${agent.name}: ${subject || "Inbox thread"}`,
+      body: `${session.name || "Teammate"} assigned this agency thread to ${agent.name}.`,
+      subject: subject || "Inbox thread",
+      fromAddress: from || undefined,
+      direction: "inbound",
+      eventType: "logged",
+      contactId: isDeskUuid(contactId) ? contactId : null,
+      dealId: isDeskUuid(dealId) ? dealId : null,
+      policyId: isDeskUuid(policyId) ? policyId : null,
+      threadKey: mailThreadKey(mail.id, threadId),
+      actorId: session.userId,
+    }).catch(() => null);
+  }
+
+  refreshInbox(threadId);
+  flashAction(inboxThreadHref(threadId), "inbox-assigned");
 }

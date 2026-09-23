@@ -76,6 +76,8 @@ export const FLASH_COPY = {
   "inbox-need-reply": "Add a reply and a To address",
   "inbox-need-send": "Add a To address and message",
   "inbox-need-record": "Link a contact or deal before logging",
+  "inbox-need-agent": "Pick an agent to assign this thread",
+  "inbox-assigned": "Thread assigned — agent notified in Inbox",
   "docusign-ping": "DocuSign sandbox reachable",
   "yahoo-ping": "Yahoo identity confirmed",
   "owner-saved": "Owner saved",

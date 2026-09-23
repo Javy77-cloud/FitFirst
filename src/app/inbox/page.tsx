@@ -4,6 +4,7 @@ import { currentDeskSession } from "@/lib/auth/session";
 import { canConnectByoIntegration } from "@/lib/integrations/connect-policy";
 import { byoOauthWallCopy } from "@/lib/integrations/byo-credentials";
 import { loadInboxDesk } from "@/lib/desk/inbox-engine";
+import { listUsers } from "@/lib/db/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,14 @@ export default async function InboxPage({
   const query = await searchParams;
   const selectedId = typeof query.thread === "string" ? query.thread : null;
   const notice = typeof query.notice === "string" ? query.notice : null;
-  const [session, desk] = await Promise.all([currentDeskSession(), loadInboxDesk(selectedId)]);
+  const [session, desk, users] = await Promise.all([
+    currentDeskSession(),
+    loadInboxDesk(selectedId),
+    listUsers().catch(() => []),
+  ]);
+  const agents = users
+    .filter((row) => row.role !== "developer")
+    .map((row) => ({ id: row.id, name: row.name }));
 
   return (
     <AppShell title="Inbox" eyebrow={desk.label}>
@@ -41,6 +49,7 @@ export default async function InboxPage({
         mailProvider={desk.providerId}
         connectLabel={desk.connectLabel}
         connectOauthId={desk.connectOauthId}
+        agents={agents}
       />
     </AppShell>
   );
