@@ -15,7 +15,7 @@ import {
   shouldWriteCommsActivityLog,
 } from "@/lib/lifecycle/activity";
 import { and, eq } from "drizzle-orm";
-import { flashAction } from "@/lib/flash-action";
+import { flashStay } from "@/lib/flash-action";
 import { resolvePolicyProducerName } from "@/lib/activity/producer";
 import { parseDeskDateTimeLocal } from "@/lib/tasks/due-at";
 
@@ -402,7 +402,13 @@ export async function updateDeskActivity(formData: FormData) {
   revalidateRelated(activity);
   revalidatePath(`/tasks/${id}`);
   revalidatePath(`/meetings/${id}`);
-  flashAction(activity.kind === "meeting" ? `/meetings/${id}` : `/tasks/${id}`, "changes-saved");
+  revalidatePath("/calendar");
+  // Prefer in-form returnTo (Calendar passes /calendar?view=&date=) so edit-save stays on Calendar.
+  flashStay(
+    formData,
+    activity.kind === "meeting" ? `/meetings/${id}` : `/tasks/${id}`,
+    "changes-saved",
+  );
 }
 
 export async function rescheduleDeskActivity(formData: FormData) {
