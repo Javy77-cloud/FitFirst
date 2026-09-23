@@ -46,7 +46,7 @@ export function DealPackageShell({
   const columns: HeaderField[][] = [
     [
       { label: "Name", value: name || "—", key: "name" },
-      { label: "Stage", value: humanizeDealStage(stage), key: "stage", control: stageControl },
+      { label: "Pipeline", value: humanizeDealStage(stage), key: "stage", control: stageControl },
     ],
     [
       { label: "Phones", value: phoneText, key: "phones" },

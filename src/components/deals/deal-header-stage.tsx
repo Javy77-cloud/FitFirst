@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { markDealProductLost, setDealProductStage } from "@/app/actions/product-stage";
 import { ClosedDealArchivePopup } from "@/components/deals/closed-deal-archive-popup";
+import { OutsideStageOverrideDialog } from "@/components/deals/outside-stage-override-dialog";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +53,7 @@ export function DealHeaderStage({
   workspaceTab = "details",
   /** Quote ids that already have a policy/declaration in Manual or the carrier folder. */
   issuedFolderQuoteIds = null,
+  outsideOverride = false,
 }: {
   dealId: string;
   pipelineSlug: string;
@@ -65,6 +67,8 @@ export function DealHeaderStage({
   /** Late stages (Quote sent / Bound / Policy issued / closed) only from Quotes. */
   workspaceTab?: string;
   issuedFolderQuoteIds?: readonly string[] | null;
+  /** Quoting/binding happened outside FitFirst — late stages unlocked without live quotes. */
+  outsideOverride?: boolean;
 }) {
   const [value, setValue] = useState(stageSlug);
   const [open, setOpen] = useState(false);
@@ -75,6 +79,7 @@ export function DealHeaderStage({
   const [pendingStage, setPendingStage] = useState<string | null>(null);
   const [picked, setPicked] = useState<string[]>(selectedQuoteIds);
   const [lostReason, setLostReason] = useState("");
+  const [overrideOpen, setOverrideOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const surface = workspaceTab === "quotes" ? "quotes" : "header";
@@ -118,7 +123,7 @@ export function DealHeaderStage({
   function commit(next: string, quoteIds = picked) {
     if (!next || next === value || pending) return;
     const validIds = livePicked(quoteIds);
-    if (lateStageNeedsQuoteSelection({ stage: next, selectedQuoteIds: validIds, liveQuoteIds: [...quoteChoices.map((q) => q.id)] })) {
+    if (lateStageNeedsQuoteSelection({ stage: next, selectedQuoteIds: validIds, liveQuoteIds: [...quoteChoices.map((q) => q.id)], outsideOverride })) {
       setPendingStage(next);
       setPickOpen(true);
       setOpen(false);
@@ -207,6 +212,7 @@ export function DealHeaderStage({
         stage: next,
         selectedQuoteIds: livePicked(),
         liveQuoteIds: quoteChoices.map((quote) => quote.id),
+        outsideOverride,
       })
     ) {
       setPendingStage(next);
@@ -218,49 +224,90 @@ export function DealHeaderStage({
   }
 
   return (
-    <div className="relative min-w-0" ref={rootRef} data-ff-header-stage-control="" data-ff-product-stage={product ?? ""}>
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-haspopup="true"
-        aria-label={`Stage ${currentLabel}. Click to change.`}
-        data-ff-deal-stage=""
-        data-ff-header-stage-chip=""
-        data-stage-color={currentColor}
-        disabled={pending || options.length === 0}
-        title={currentLabel}
-        onClick={() => setOpen((v) => !v)}
-        className="inline-flex max-w-full items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy/30 disabled:opacity-60"
+    <div
+      className="relative min-w-0"
+      ref={rootRef}
+      data-ff-header-stage-control=""
+      data-ff-product-stage={product ?? ""}
+      data-ff-pipeline-chrome=""
+    >
+      <div
+        className="inline-flex max-w-full flex-col gap-1.5 rounded-lg border border-navy/20 bg-navy/[0.04] px-2.5 py-2 shadow-sm"
+        data-ff-pipeline-box=""
       >
-        <StatusBadge
-          color={currentColor}
-          uppercase={false}
-          className="max-w-none whitespace-nowrap rounded-full px-2"
-        >
-          {currentLabel}
-        </StatusBadge>
-      </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className="text-[10px] font-bold uppercase tracking-[0.12em] text-navy/70"
+            data-ff-pipeline-label=""
+          >
+            Pipeline
+          </span>
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-haspopup="true"
+            aria-label={`Stage ${currentLabel}. Click to change.`}
+            data-ff-deal-stage=""
+            data-ff-header-stage-chip=""
+            data-ff-pipeline-current=""
+            data-stage-color={currentColor}
+            disabled={pending || options.length === 0}
+            title={currentLabel}
+            onClick={() => setOpen((v) => !v)}
+            className="inline-flex max-w-full items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy/30 disabled:opacity-60"
+          >
+            <StatusBadge
+              color={currentColor}
+              uppercase={false}
+              className="max-w-none whitespace-nowrap rounded-full px-3 py-1 text-[13px] font-bold shadow-sm ring-2 ring-navy/25"
+            >
+              {currentLabel}
+            </StatusBadge>
+          </button>
+          {!outsideOverride ? (
+            <OutsideStageOverrideDialog
+              dealId={dealId}
+              product={product || "homeowners"}
+              pipelineSlug={pipelineSlug}
+              dealTitle={dealTitle}
+              currentStage={value}
+              buttonVariant="button"
+            />
+          ) : (
+            <span
+              className="rounded-full border border-amber-700/30 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-950"
+              data-ff-outside-stage-active=""
+            >
+              Outside FitFirst
+            </span>
+          )}
+        </div>
+      </div>
 
       {open ? (
         <div
-          className="absolute left-0 top-full z-20 mt-1 w-max min-w-[16rem] max-w-[min(36rem,calc(100vw-2rem))] rounded-md border border-border bg-card p-2 shadow-md"
+          className="absolute left-0 top-full z-20 mt-1 w-max min-w-[18rem] max-w-[min(42rem,calc(100vw-2rem))] rounded-lg border-2 border-navy/15 bg-card p-3 shadow-lg"
           data-ff-header-stage-strip=""
+          data-ff-pipeline-stepper=""
           role="listbox"
           aria-label="Product stages"
         >
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+            Deal pipeline
+          </p>
           {advance ? (
             <button
               type="button"
               data-ff-header-stage-advance=""
               disabled={pending}
               onClick={() => pick(advance.slug)}
-              className="mb-2 inline-flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-2 py-1.5 text-left text-[11px] font-semibold text-navy hover:bg-muted disabled:opacity-60"
+              className="mb-2 inline-flex w-full items-center justify-between gap-2 rounded-md border border-navy/20 bg-navy/5 px-2.5 py-2 text-left text-xs font-semibold text-navy hover:bg-navy/10 disabled:opacity-60"
             >
               <span>Advance to {stageChipLabel(advance)}</span>
               <span aria-hidden="true">→</span>
             </button>
           ) : null}
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {options.map((stage) => {
               const color = colorForStage(stage);
               const label = stageChipLabel(stage);
@@ -284,14 +331,19 @@ export function DealHeaderStage({
                   }
                   onClick={() => pick(stage.slug)}
                   className={cn(
-                    "rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy/30 disabled:opacity-60",
-                    selected && "ring-2 ring-navy/40",
+                    "rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy/30 disabled:opacity-45",
+                    selected
+                      ? "scale-[1.05] ring-2 ring-navy/50"
+                      : "opacity-80 hover:opacity-100",
                   )}
                 >
                   <StatusBadge
                     color={color}
                     uppercase={false}
-                    className="max-w-none whitespace-nowrap rounded-full px-2"
+                    className={cn(
+                      "max-w-none whitespace-nowrap rounded-full px-2.5",
+                      selected ? "py-1 text-[12px] font-bold" : "px-2 text-[11px] font-medium",
+                    )}
                   >
                     {label}
                   </StatusBadge>
@@ -299,6 +351,17 @@ export function DealHeaderStage({
               );
             })}
           </div>
+          {!outsideOverride ? (
+            <div className="mt-3 border-t border-border pt-2" data-ff-outside-stage-stepper="">
+              <OutsideStageOverrideDialog
+                dealId={dealId}
+                product={product || "homeowners"}
+                pipelineSlug={pipelineSlug}
+                dealTitle={dealTitle}
+                currentStage={value}
+              />
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -312,7 +375,24 @@ export function DealHeaderStage({
           </DialogHeader>
           <ul className="max-h-56 space-y-1.5 overflow-auto">
             {quoteChoices.length === 0 ? (
-              <li className="text-sm text-muted-foreground">No live quotes on this product yet.</li>
+              <li className="space-y-2 text-sm text-muted-foreground">
+                <p>No live quotes on this product yet.</p>
+                <p>
+                  If quoting or binding happened outside FitFirst, use{" "}
+                  <button
+                    type="button"
+                    className="font-semibold text-navy underline-offset-2 hover:underline"
+                    data-ff-outside-from-choose-quote=""
+                    onClick={() => {
+                      setPickOpen(false);
+                      setOverrideOpen(true);
+                    }}
+                  >
+                    Quoted outside FitFirst
+                  </button>
+                  .
+                </p>
+              </li>
             ) : (
               quoteChoices.map((quote) => (
                 <li key={quote.id}>
@@ -411,6 +491,17 @@ export function DealHeaderStage({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <OutsideStageOverrideDialog
+        dealId={dealId}
+        product={product || "homeowners"}
+        pipelineSlug={pipelineSlug}
+        dealTitle={dealTitle}
+        currentStage={value}
+        open={overrideOpen}
+        onOpenChange={setOverrideOpen}
+        trigger={false}
+      />
 
       <ClosedDealArchivePopup
         dealId={dealId}

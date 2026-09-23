@@ -1,3 +1,5 @@
+import { OutsideStageOverrideDialog } from "@/components/deals/outside-stage-override-dialog";
+import { OutsideFitFirstStamp } from "@/components/deal/outside-fitfirst-stamp";
 import Link from "next/link";
 import { QuotesBindableSignal } from "@/components/deal/quotes-bindable-signal";
 import { QuotesResultsTable } from "@/components/deal/quotes-results-table";
@@ -129,6 +131,9 @@ export function QuotesPanel({
   issuedPolicy = null,
   autoIssue = false,
   canLogGap = false,
+  outsideOverride = false,
+  outsideOverrideDetail = null,
+  pipelineSlug = "p-c",
 }: {
   dealId: string;
   quotes: { quote: Quote; carrier: Carrier }[];
@@ -162,6 +167,9 @@ export function QuotesPanel({
   issuedPolicy?: IssuedPolicyChip | null;
   autoIssue?: boolean;
   canLogGap?: boolean;
+  outsideOverride?: boolean;
+  outsideOverrideDetail?: import("@/lib/deals/outside-stage-override").OutsideStageOverride | null;
+  pipelineSlug?: string;
 }) {
   const activeLine: ShopLine | null = isShopLine(shopLine) ? shopLine : null;
   const lineLogs = logs.map((row) => row.log);
@@ -276,14 +284,26 @@ export function QuotesPanel({
           <div className="flex items-start justify-between gap-3">
             <h3 className="text-sm font-semibold text-navy">Quotes</h3>
           </div>
+          {outsideOverride ? (
+            <OutsideFitFirstStamp
+              override={outsideOverrideDetail ?? { reason: "Quoted outside FitFirst", at: "", toStage: "policy_issued" }}
+              variant="hero"
+            />
+          ) : null}
           <QuotesWarningStrip
             quotes={sorted.map((row) => row.quote)}
             sheetStale={sheetStale}
             completeness={completeness}
           />
+          {!outsideOverride ? (
           <p className="text-sm text-muted-foreground" data-ff-quotes-empty-stats="">
             0 quote rows · build carriers on Markets first
           </p>
+          ) : (
+          <p className="text-sm text-muted-foreground" data-ff-quotes-empty-stats="">
+            0 quote rows in FitFirst — empty is expected after an outside override. Upload the Issued declaration to mint.
+          </p>
+          )}
           <p className="text-sm text-muted-foreground">
             {manualQuoteCarriers.length > 0
               ? "Request Quotes does not write a premium. Enter the carrier premium below to create the quote row."
@@ -298,6 +318,14 @@ export function QuotesPanel({
               Go to Markets
             </Link>
             <LoadShopListButton dealId={dealId} dealLine={dealLine} />
+            {product && !outsideOverride ? (
+              <OutsideStageOverrideDialog
+                dealId={dealId}
+                product={product}
+                pipelineSlug={pipelineSlug}
+                currentStage={productStage}
+              />
+            ) : null}
           </div>
           <ManualCarrierAdd
             dealId={dealId}
@@ -306,6 +334,20 @@ export function QuotesPanel({
             dealLine={dealLine}
           />
           {manualQuoteForm}
+          {product &&
+          outsideOverride &&
+          (isBoundReadyForIssue(productStage) || mintStatus || issuedPolicy || autoIssue) ? (
+            <IssuePolicyFromDec
+              dealId={dealId}
+              product={product}
+              stage={productStage}
+              selectedQuoteIds={selectedQuoteIds}
+              outsideOverride={outsideOverride}
+              mintStatus={mintStatus}
+              issued={issuedPolicy}
+              autoOpen={autoIssue}
+            />
+          ) : null}
         </div>
       </div>
     );
@@ -320,13 +362,14 @@ export function QuotesPanel({
       />
       {manualQuoteForm}
       {product &&
-      (isBoundReadyForIssue(productStage) || mintStatus || issuedPolicy || autoIssue) ? (
+      (isBoundReadyForIssue(productStage) || mintStatus || issuedPolicy || autoIssue || outsideOverride) ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <IssuePolicyFromDec
             dealId={dealId}
             product={product}
             stage={productStage}
             selectedQuoteIds={selectedQuoteIds}
+            outsideOverride={outsideOverride}
             mintStatus={mintStatus}
             issued={issuedPolicy}
             autoOpen={autoIssue}

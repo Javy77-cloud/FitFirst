@@ -43,6 +43,7 @@ export function IssuePolicyFromDec({
   issued,
   autoOpen = false,
   folderHasPolicy = false,
+  outsideOverride = false,
 }: {
   dealId: string;
   product: string;
@@ -53,6 +54,8 @@ export function IssuePolicyFromDec({
   autoOpen?: boolean;
   /** Selected quote already has a Manual or carrier file. Do not reopen the upload popup. */
   folderHasPolicy?: boolean;
+  /** Quoted/bound outside FitFirst — upload DEC and mint without quote rows. */
+  outsideOverride?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -61,7 +64,7 @@ export function IssuePolicyFromDec({
   const [successPolicyId, setSuccessPolicyId] = useState<string | null>(null);
   const [fileName, setFileName] = useState("");
   const bound = isBoundReadyForIssue(stage);
-  const hasQuote = selectedQuoteIds.length > 0;
+  const hasQuote = selectedQuoteIds.length > 0 || outsideOverride;
   const holdOpen = creating || pending || Boolean(successPolicyId);
 
   useEffect(() => {
@@ -245,9 +248,9 @@ export function IssuePolicyFromDec({
           <DialogHeader>
             <DialogTitle>Declaration PDF</DialogTitle>
             <DialogDescription>
-              Upload the issued declaration or policy (PDF or a photo). It is saved on this quote’s Manual
-              folder, or the carrier folder when that quote already has carrier files, before Gemini reads
-              the policy number, premium, and dates.
+              {outsideOverride
+                ? "Upload the issued declaration or policy (PDF or a photo). Quoted outside FitFirst — the file is saved on this deal’s Documents, then Gemini reads the policy number, premium, and dates."
+                : "Upload the issued declaration or policy (PDF or a photo). It is saved on this quote’s Manual folder, or the carrier folder when that quote already has carrier files, before Gemini reads the policy number, premium, and dates."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
