@@ -81,7 +81,12 @@ export async function logDeskActivity(formData: FormData) {
   const kind = str(formData, "kind") || "task";
   const title = str(formData, "title") || defaultActivityTitle(kind);
   const requireRelated = str(formData, "allowOrphan") !== "1";
-  const related = relatedFromForm(formData, requireRelated);
+  let related: ReturnType<typeof relatedFromForm>;
+  try {
+    related = relatedFromForm(formData, requireRelated);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Could not save that activity." };
+  }
   const eventType = kind === "call" || kind === "email" || kind === "sms" ? "logged" : "created";
   const duePreview = when(formData, "dueAt") ?? when(formData, "startAt");
   const status =
@@ -116,14 +121,20 @@ export async function logDeskActivity(formData: FormData) {
     notes = notes ? `${notes}\n${line}` : line;
   }
 
-  const dueAt = when(formData, "dueAt");
-  const startAt = when(formData, "startAt") ?? dueAt;
-  const endAt = when(formData, "endAt") ?? (startAt ? new Date(startAt.getTime() + 30 * 60 * 1000) : null);
+  const startAt = when(formData, "startAt") ?? when(formData, "dueAt");
+  let dueAt = when(formData, "dueAt");
+  if (!dueAt && startAt && (kind === "task" || kind === "email" || kind === "sms")) {
+    dueAt = startAt;
+  }
+  let endAt = when(formData, "endAt") ?? (startAt ? new Date(startAt.getTime() + 30 * 60 * 1000) : null);
+  if (startAt && endAt && endAt.getTime() < startAt.getTime()) {
+    endAt = new Date(startAt.getTime() + 30 * 60 * 1000);
+  }
   const ignoreBusy = str(formData, "ignoreBusy") === "1";
   if ((kind === "meeting" || kind === "call") && startAt && endAt && !ignoreBusy) {
     const { busyConflictMessage, findBusyConflicts } = await import("@/lib/integrations/calendar-busy");
     const conflicts = await findBusyConflicts(startAt, endAt);
-    if (conflicts.length) throw new Error(busyConflictMessage(conflicts));
+    if (conflicts.length) return { error: busyConflictMessage(conflicts) };
   }
   let meetExternalId: string | null = null;
   if (kind === "meeting" && str(formData, "addGoogleMeet") === "1" && startAt && endAt) {
@@ -295,7 +306,10 @@ export async function updateDeskActivity(formData: FormData) {
   const notes = str(formData, "notes") || null;
   const dueAt = when(formData, "dueAt");
   const startAt = when(formData, "startAt") ?? activity.startAt;
-  const endAt = when(formData, "endAt") ?? activity.endAt;
+  let endAt = when(formData, "endAt") ?? activity.endAt;
+  if (startAt && endAt && new Date(endAt).getTime() < new Date(startAt).getTime()) {
+    endAt = new Date(new Date(startAt).getTime() + 30 * 60 * 1000);
+  }
   const status = str(formData, "status") || activity.status;
   await db
     .update(activities)

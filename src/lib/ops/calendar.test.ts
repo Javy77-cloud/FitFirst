@@ -22,6 +22,10 @@ import {
   startOfWeek,
   toDateParam,
   weekDays,
+  addMinutesToDateTimeLocal,
+  ensureEndAfterStart,
+  calendarKindNeedsEndRange,
+  toDateTimeLocal,
 } from "./calendar";
 
 const task = {
@@ -197,5 +201,30 @@ describe("calendar helpers", () => {
     expect(toDateParam(shiftCalendarAnchor("day", day, 1))).toBe("2026-09-14");
     expect(toDateParam(shiftCalendarAnchor("week", day, -1))).toBe("2026-09-06");
     expect(toDateParam(shiftCalendarAnchor("month", day, 1))).toBe("2026-10-13");
+  });
+});
+
+describe("calendar compose datetime helpers", () => {
+  it("adds minutes to datetime-local strings", () => {
+    expect(addMinutesToDateTimeLocal("2026-09-27T09:00", 30)).toBe("2026-09-27T09:30");
+    expect(addMinutesToDateTimeLocal("", 30)).toBe("");
+  });
+
+  it("bumps End when missing or before Start", () => {
+    expect(ensureEndAfterStart("2026-09-27T09:00", "")).toBe("2026-09-27T09:30");
+    expect(ensureEndAfterStart("2026-09-27T09:00", "2026-09-23T12:30")).toBe("2026-09-27T09:30");
+    expect(ensureEndAfterStart("2026-09-27T09:00", "2026-09-27T10:00")).toBe("2026-09-27T10:00");
+  });
+
+  it("only meetings and calls need an End range in the compose modal", () => {
+    expect(calendarKindNeedsEndRange("task")).toBe(false);
+    expect(calendarKindNeedsEndRange("email")).toBe(false);
+    expect(calendarKindNeedsEndRange("sms")).toBe(false);
+    expect(calendarKindNeedsEndRange("meeting")).toBe(true);
+    expect(calendarKindNeedsEndRange("call")).toBe(true);
+  });
+
+  it("round-trips local datetime formatting", () => {
+    expect(toDateTimeLocal(new Date(2026, 8, 27, 9, 0))).toBe("2026-09-27T09:00");
   });
 });

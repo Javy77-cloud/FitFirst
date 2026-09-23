@@ -48,6 +48,9 @@ import {
   serializeCalendarActivity,
   shiftCalendarAnchor,
   slotStart,
+  addMinutesToDateTimeLocal,
+  calendarKindNeedsEndRange,
+  ensureEndAfterStart,
   toDate,
   toDateParam,
   toDateTimeLocal,
@@ -986,7 +989,30 @@ function CalendarEditor({
   const isNew = !event;
   const external = event?.origin === "external";
   const [error, setError] = useState<string | null>(null);
+  const initialStart = toDateTimeLocal(event?.startAt ?? event?.dueAt) || defaultStart;
+  const initialEnd =
+    toDateTimeLocal(event?.endAt) ||
+    (initialStart ? addMinutesToDateTimeLocal(initialStart, 30) : "");
+  const [kind, setKind] = useState<(typeof KINDS)[number]>(
+    (event?.kind as (typeof KINDS)[number] | undefined) ?? defaultKind,
+  );
+  const [startAt, setStartAt] = useState(initialStart);
+  const [endAt, setEndAt] = useState(initialEnd);
+  const showEnd = calendarKindNeedsEndRange(kind);
   const providerLabel = event?.calendarProvider === "outlook_calendar" ? "Outlook" : "Google";
+
+  function onStartChange(next: string) {
+    setStartAt(next);
+    setEndAt((prev) => ensureEndAfterStart(next, prev));
+  }
+
+  function onKindChange(next: (typeof KINDS)[number]) {
+    setKind(next);
+    if (calendarKindNeedsEndRange(next)) {
+      setEndAt((prev) => ensureEndAfterStart(startAt, prev));
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-3 sm:items-center">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border border-border bg-card p-4 shadow-lg">
@@ -1030,12 +1056,55 @@ function CalendarEditor({
         <form
           action={async (formData) => {
             setError(null);
+            const contactId = String(formData.get("contactId") ?? "").trim();
+            const accountId = String(formData.get("accountId") ?? "").trim();
+            const policyId = String(formData.get("policyId") ?? "").trim();
+            const leadId = String(formData.get("leadId") ?? "").trim();
+            if (!contactId && !accountId && !policyId && !leadId) {
+              setError(
+                "Task, meeting, and call must assign to a Contact, Policy, Business, and/or Lead.",
+              );
+              return;
+            }
+            const startValue = String(formData.get("startAt") ?? "").trim() || startAt;
+            const endValue = ensureEndAfterStart(
+              startValue,
+              String(formData.get("endAt") ?? "").trim() || endAt,
+            );
+            if (startValue) formData.set("startAt", startValue);
+            if (endValue) formData.set("endAt", endValue);
+            // Tasks/email/sms hang on dueAt; keep calendar Start as the due time.
+            if (!calendarKindNeedsEndRange(String(formData.get("kind") ?? kind)) && startValue) {
+              formData.set("dueAt", startValue);
+            }
             try {
-              if (isNew) await logDeskActivity(formData);
-              else await updateDeskActivity(formData);
+              if (isNew) {
+                const result = await logDeskActivity(formData);
+                if (result && typeof result === "object" && "error" in result && result.error) {
+                  setError(String(result.error));
+                  return;
+                }
+              } else {
+                const result = await updateDeskActivity(formData);
+                if (result && typeof result === "object" && "error" in result && result.error) {
+                  setError(String(result.error));
+                  return;
+                }
+              }
               onClose();
             } catch (err) {
-              setError(err instanceof Error ? err.message : "Could not save that event.");
+              // updateDeskActivity may flashAction → redirect(); never swallow it.
+              const digest =
+                err && typeof err === "object" && "digest" in err
+                  ? String((err as { digest?: unknown }).digest ?? "")
+                  : "";
+              if (digest.startsWith("NEXT_REDIRECT")) throw err;
+              const message = err instanceof Error ? err.message : "Could not save that event.";
+              setError(
+                /Minified React error #441|Server Components render/i.test(message)
+                  ? "Task, meeting, and call must assign to a Contact, Policy, Business, and/or Lead."
+                  : message,
+              );
             }
           }}
           className="grid gap-2 sm:grid-cols-2"
@@ -1045,7 +1114,8 @@ function CalendarEditor({
             <Label className="text-xs">Type</Label>
             <select
               name="kind"
-              defaultValue={event?.kind ?? defaultKind}
+              value={kind}
+              onChange={(e) => onKindChange(e.target.value as (typeof KINDS)[number])}
               className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
             >
               {KINDS.map((k) => (
@@ -1064,14 +1134,26 @@ function CalendarEditor({
             <Input
               name="startAt"
               type="datetime-local"
-              defaultValue={toDateTimeLocal(event?.startAt ?? event?.dueAt) || defaultStart}
+              value={startAt}
+              onChange={(e) => onStartChange(e.target.value)}
               className="mt-1 h-8"
             />
           </div>
-          <div>
-            <Label className="text-xs">End</Label>
-            <Input name="endAt" type="datetime-local" defaultValue={toDateTimeLocal(event?.endAt)} className="mt-1 h-8" />
-          </div>
+          {showEnd ? (
+            <div>
+              <Label className="text-xs">End</Label>
+              <Input
+                name="endAt"
+                type="datetime-local"
+                value={endAt}
+                min={startAt || undefined}
+                onChange={(e) => setEndAt(ensureEndAfterStart(startAt, e.target.value))}
+                className="mt-1 h-8"
+              />
+            </div>
+          ) : (
+            <input type="hidden" name="endAt" value={ensureEndAfterStart(startAt, endAt)} />
+          )}
           <div>
             <Label className="text-xs">Status</Label>
             <select

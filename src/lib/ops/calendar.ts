@@ -347,6 +347,31 @@ export function toDateTimeLocal(value: Date | string | null | undefined): string
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+/** Add minutes to a datetime-local string; empty in → empty out. */
+export function addMinutesToDateTimeLocal(value: string, minutes: number): string {
+  const date = toDate(value);
+  if (!date) return "";
+  return toDateTimeLocal(new Date(date.getTime() + minutes * 60 * 1000));
+}
+
+/** Keep End >= Start; default End = Start + fallbackMinutes when missing or earlier. */
+export function ensureEndAfterStart(
+  startLocal: string,
+  endLocal: string,
+  fallbackMinutes = 30,
+): string {
+  if (!startLocal) return endLocal;
+  if (!endLocal || endLocal < startLocal) {
+    return addMinutesToDateTimeLocal(startLocal, fallbackMinutes);
+  }
+  return endLocal;
+}
+
+/** Meetings/calls need a real End range; tasks/email/sms are due-point items. */
+export function calendarKindNeedsEndRange(kind: string): boolean {
+  return kind === "meeting" || kind === "call";
+}
+
 export function formatTime(value: Date | string | null | undefined): string {
   const d = toDate(value);
   if (!d) return "";
