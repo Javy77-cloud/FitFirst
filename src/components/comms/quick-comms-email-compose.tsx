@@ -5,6 +5,7 @@ import { Bold, Italic, Paperclip, Type } from "lucide-react";
 import { sendDeskEmail } from "@/app/actions/comms";
 import {
   loadQuickCommsEmailSignature,
+  resolveComposeOpenPrefill,
   searchComposeRecipients,
   type ComposeRecipientHit,
 } from "@/app/actions/quick-comms-email";
@@ -139,6 +140,38 @@ export function QuickCommsEmailCompose({
     // Reset only when the dialog opens / seed props for this open change.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional open-gated reset
   }, [open, contactNameProp, initialSubject, initialBody, toAddressProp, toMode]);
+
+  // When Open Compose has record context but no To yet (deal CF-only parties),
+  // resolve contact → lead → account → Deal Details CF the same way search does.
+  useEffect(() => {
+    if (!open) return;
+    if ((toAddressProp ?? "").trim()) return;
+    const related = {
+      dealId: relatedProp.dealId,
+      leadId: relatedProp.leadId,
+      contactId: relatedProp.contactId,
+      accountId: relatedProp.accountId,
+    };
+    const hasRecord = Boolean(related.dealId || related.leadId || related.contactId || related.accountId);
+    if (!hasRecord) return;
+    let cancelled = false;
+    void resolveComposeOpenPrefill(related).then((prefill) => {
+      if (cancelled || !prefill.email) return;
+      setToDraft(prefill.email);
+      if (prefill.name) setPickedName(prefill.name);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // Depend on ids (not relatedProp object identity) so board re-renders do not re-fetch.
+  }, [
+    open,
+    toAddressProp,
+    relatedProp.dealId,
+    relatedProp.leadId,
+    relatedProp.contactId,
+    relatedProp.accountId,
+  ]);
 
   useEffect(() => {
     if (!open || toMode !== "search") return;
@@ -330,13 +363,20 @@ export function QuickCommsEmailCompose({
                 ) : null}
               </>
             ) : (
-              <Input
-                readOnly
-                value={toAddressProp}
-                className="mt-1 h-8 bg-muted/40"
-                placeholder="No email on contact"
-                data-ff-qc-compose-to=""
-              />
+              <>
+                <Input
+                  readOnly
+                  value={toAddressProp}
+                  className="mt-1 h-8 bg-muted/40"
+                  placeholder="No email on contact"
+                  data-ff-qc-compose-to=""
+                />
+                {contactNameProp.trim() ? (
+                  <p className="mt-1 text-[11px] text-muted-foreground" data-ff-compose-linked="">
+                    {contactNameProp.trim()}
+                  </p>
+                ) : null}
+              </>
             )}
           </div>
           <div>

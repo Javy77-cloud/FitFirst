@@ -126,7 +126,7 @@ import {
 import { loadDealMotivationStats } from "@/lib/deals/motivation-data";
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
-import { loadModuleLayoutBundle } from "@/lib/custom-fields/store";
+import { loadModuleLayoutBundle, loadRecordValues } from "@/lib/custom-fields/store";
 import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
 import { resolveLayoutFields } from "@/lib/custom-fields/resolve-layout";
 import { mergeDealSystemValues } from "@/lib/custom-fields/values";
@@ -197,6 +197,10 @@ export default async function DealPage({
     jobs,
     boundPolicies,
   } = workspace;
+  // Deal Details CF (email etc.) — do not rely only on layout bundle for Open Compose To.
+  const dealCfValuesPromise = loadRecordValues(deal.id, "deals").catch(
+    () => ({} as Record<string, string>),
+  );
   const [comms, scripts, carrierRows, allQuoteLogs, motivation, dealLayoutBundle, deskLineSettings, ownerRow, pipelines, context, agencyRow, noticePicklists, session, hsMedicare, hsAca, hsEnrollment, dealPromises] =
     await Promise.all([
       listRecordActivities({ dealId: deal.id }),
@@ -252,7 +256,8 @@ export default async function DealPage({
   );
   const dealLayout = dealLayoutBundle?.layout ?? null;
   const dealFields = dealLayoutBundle?.fields ?? [];
-  const dealValues = dealLayoutBundle?.stored ?? {};
+  const dealCfValues = await dealCfValuesPromise;
+  const dealValues = { ...dealCfValues, ...(dealLayoutBundle?.stored ?? {}) };
   const isAna = deal.id === DEAL_ID;
   const partyName =
     deal.primaryNamedInsured ??

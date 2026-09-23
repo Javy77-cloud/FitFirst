@@ -8,6 +8,11 @@ import { db } from "@/lib/db";
 import { accounts, contacts, deals, leads } from "@/lib/db/schema";
 import { resolvePartyEmail } from "@/lib/comms/resolve-party-email";
 import { loadRecordValuesForIds } from "@/lib/custom-fields/store";
+import type { ComposeOpenPrefill } from "@/lib/comms/compose-open-prefill";
+import {
+  composeOpenHasRecordContext,
+  composeOpenPrefillFromParty,
+} from "@/lib/comms/compose-open-prefill";
 
 export type QuickCommsEmailTemplateOption = {
   id: string;
@@ -192,4 +197,131 @@ export async function searchComposeRecipients(query: string): Promise<ComposeRec
   }));
 
   return [...contactsHits, ...leadHits, ...dealHits, ...accountHits].slice(0, 24);
+}
+
+/** Open Compose prefill: contact → lead → account → deal CF. Blank when no record ids (Inbox). */
+export async function resolveComposeOpenPrefill(related: {
+  dealId?: string | null;
+  leadId?: string | null;
+  contactId?: string | null;
+  accountId?: string | null;
+}): Promise<ComposeOpenPrefill> {
+  if (!composeOpenHasRecordContext(related)) {
+    return { email: null, name: null };
+  }
+
+  const [contactRow, leadRow, accountRow, dealRow, dealStoredMap] = await Promise.all([
+    related.contactId
+      ? db
+          .select({
+            email: contacts.email,
+            firstName: contacts.firstName,
+            lastName: contacts.lastName,
+          })
+          .from(contacts)
+          .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, related.contactId)))
+          .limit(1)
+          .then((rows) => rows[0] ?? null)
+      : Promise.resolve(null),
+    related.leadId
+      ? db
+          .select({
+            email: leads.email,
+            firstName: leads.firstName,
+            lastName: leads.lastName,
+          })
+          .from(leads)
+          .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, related.leadId)))
+          .limit(1)
+          .then((rows) => rows[0] ?? null)
+      : Promise.resolve(null),
+    related.accountId
+      ? db
+          .select({
+            email: accounts.email,
+            name: accounts.name,
+            dba: accounts.dba,
+          })
+          .from(accounts)
+          .where(and(eq(accounts.tenantId, DEFAULT_TENANT_ID), eq(accounts.id, related.accountId)))
+          .limit(1)
+          .then((rows) => rows[0] ?? null)
+      : Promise.resolve(null),
+    related.dealId
+      ? db
+          .select({
+            title: deals.title,
+            primaryNamedInsured: deals.primaryNamedInsured,
+            contactId: deals.contactId,
+            leadId: deals.leadId,
+            accountId: deals.accountId,
+          })
+          .from(deals)
+          .where(and(eq(deals.tenantId, DEFAULT_TENANT_ID), eq(deals.id, related.dealId)))
+          .limit(1)
+          .then((rows) => rows[0] ?? null)
+      : Promise.resolve(null),
+    related.dealId
+      ? loadRecordValuesForIds([related.dealId], "deals")
+      : Promise.resolve(new Map<string, Record<string, string>>()),
+  ]);
+
+  let contact = contactRow;
+  let lead = leadRow;
+  let account = accountRow;
+  if (dealRow && (!contact || !lead || !account)) {
+    const [linkedContact, linkedLead, linkedAccount] = await Promise.all([
+      !contact && dealRow.contactId
+        ? db
+            .select({
+              email: contacts.email,
+              firstName: contacts.firstName,
+              lastName: contacts.lastName,
+            })
+            .from(contacts)
+            .where(
+              and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, dealRow.contactId)),
+            )
+            .limit(1)
+            .then((rows) => rows[0] ?? null)
+        : Promise.resolve(contact),
+      !lead && dealRow.leadId
+        ? db
+            .select({
+              email: leads.email,
+              firstName: leads.firstName,
+              lastName: leads.lastName,
+            })
+            .from(leads)
+            .where(and(eq(leads.tenantId, DEFAULT_TENANT_ID), eq(leads.id, dealRow.leadId)))
+            .limit(1)
+            .then((rows) => rows[0] ?? null)
+        : Promise.resolve(lead),
+      !account && dealRow.accountId
+        ? db
+            .select({
+              email: accounts.email,
+              name: accounts.name,
+              dba: accounts.dba,
+            })
+            .from(accounts)
+            .where(
+              and(eq(accounts.tenantId, DEFAULT_TENANT_ID), eq(accounts.id, dealRow.accountId)),
+            )
+            .limit(1)
+            .then((rows) => rows[0] ?? null)
+        : Promise.resolve(account),
+    ]);
+    contact = linkedContact;
+    lead = linkedLead;
+    account = linkedAccount;
+  }
+
+  return composeOpenPrefillFromParty({
+    contact,
+    lead,
+    account,
+    deal: dealRow,
+    dealStored: related.dealId ? (dealStoredMap.get(related.dealId) ?? {}) : {},
+  });
 }

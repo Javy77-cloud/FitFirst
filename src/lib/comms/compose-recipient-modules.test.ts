@@ -23,4 +23,19 @@ describe("compose recipient modules", () => {
     expect(compose).not.toMatch(/w-\[min\(90vw,42rem\)\]/);
     expect(compose).not.toMatch(/max-h-\[56vh\]/);
   });
+
+  it("Open Compose resolves deal-CF To via resolveComposeOpenPrefill when prop is empty", () => {
+    const compose = source("src/components/comms/quick-comms-email-compose.tsx");
+    expect(compose).toMatch(/resolveComposeOpenPrefill/);
+    expect(compose).toMatch(/setToDraft\(prefill\.email\)/);
+  });
+
+  it("deal page merges loadRecordValues CF into dealValues for Open Compose To", () => {
+    const dealPage = source("src/app/deals/[id]/page.tsx");
+    expect(dealPage).toMatch(/loadRecordValues\(deal\.id, "deals"\)/);
+    expect(dealPage).toMatch(/dealCfValues/);
+    expect(dealPage).toMatch(
+      /resolvePartyEmail\(\{ contact, lead, account, dealStored: dealValues \}\)/,
+    );
+  });
 });
