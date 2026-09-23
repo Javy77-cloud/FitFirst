@@ -32,6 +32,8 @@ import { PolicyCoverageTab } from "@/components/policy/tabs/coverage-tab";
 import { PolicyEndorsementsTab } from "@/components/policy/tabs/endorsements-tab";
 import { PolicyBillingTab } from "@/components/policy/tabs/billing-tab";
 import { PolicyDocumentsTab } from "@/components/policy/tabs/documents-tab";
+import { blobStoreReady } from "@/lib/files/object-store";
+import { quoteFileUploadMode } from "@/lib/files/upload-plan";
 import { PolicyActivityTab } from "@/components/policy/tabs/activity-tab";
 import { PolicyClaimsTab } from "@/components/policy/tabs/claims-tab";
 import { PolicyAgencyTab } from "@/components/policy/tabs/agency-tab";
@@ -445,6 +447,10 @@ export default async function PolicyDetailPage({
             notice={notice}
             accessLog={accessLog}
             isAdmin={isAdmin}
+            uploadMode={quoteFileUploadMode({
+              vercel: process.env.VERCEL,
+              blobReady: blobStoreReady(),
+            })}
           />
         ) : null}
 

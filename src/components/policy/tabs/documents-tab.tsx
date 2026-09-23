@@ -1,11 +1,8 @@
-import { attachPolicyFiles } from "@/app/actions/policy-files";
 import { deletePolicyFilingAttachment } from "@/app/actions/policies";
-import { ChooseFiles } from "@/components/choose-files";
 import { HardDeleteForm } from "@/components/desk/hard-delete-form";
+import { PolicyDocumentsAttach } from "@/components/policy/policy-documents-attach";
 import { InDeskEsignPanel } from "@/components/esign/in-desk-panel";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { formatDay } from "@/lib/domain";
 import { autoTagDocType } from "@/lib/policy/document-depth";
 import type { Document } from "@/lib/db/schema";
@@ -16,7 +13,6 @@ import {
 import { IdCardsUploadPanel } from "@/components/policy/id-cards-upload-panel";
 import { deskNow } from "@/lib/home/as-of";
 import { shouldShowManualRenewalHelp } from "@/lib/policy/care-strip";
-import { DOCUMENT_CATEGORIES } from "@/lib/desk/policy-family";
 import { FillCompareFromDecsButton } from "@/components/policy/fill-compare-from-decs-button";
 import { canFillCompareFromTermRoleDocs } from "@/lib/renewal/fill-compare-from-decs";
 
@@ -29,6 +25,7 @@ export function PolicyDocumentsTab({
   notice,
   accessLog = [],
   isAdmin = false,
+  uploadMode = { onVercel: false, directBlob: false },
 }: {
   policy: {
     id: string;
@@ -58,6 +55,7 @@ export function PolicyDocumentsTab({
     filename?: string | null;
   }>;
   isAdmin?: boolean;
+  uploadMode?: { onVercel: boolean; directBlob: boolean };
 }) {
   const showManualRenewalHelp = shouldShowManualRenewalHelp({
     expirationDate: policy.expirationDate,
@@ -109,42 +107,11 @@ export function PolicyDocumentsTab({
           Auto-tagged by type. Filter / sort below. Re-upload keeps version history. ID / COI /
           inspection warn at 30 days when an expiry is set.
         </p>
-        <form
-          action={attachPolicyFiles}
-          className="my-3 grid gap-2 rounded-md border border-border p-3 sm:grid-cols-3"
-        >
-          <input type="hidden" name="policyId" value={policy.id} />
-          <input type="hidden" name="dealId" value={policy.dealId ?? ""} />
-          <div>
-            <Label className="text-xs">Type</Label>
-            <select
-              name="docType"
-              className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-              defaultValue="policy_dec"
-            >
-              {DOCUMENT_CATEGORIES.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <Label className="text-xs">Expires (optional)</Label>
-            <input
-              type="date"
-              name="expiresAt"
-              className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <Label className="text-xs">File</Label>
-            <ChooseFiles name="file" required className="mt-1" />
-          </div>
-          <Button type="submit" size="sm">
-            Attach file
-          </Button>
-        </form>
+        <PolicyDocumentsAttach
+          policyId={policy.id}
+          dealId={policy.dealId}
+          uploadMode={uploadMode}
+        />
         {canFillCompare && !showManualRenewalHelp ? (
           <div className="my-3 flex flex-wrap items-center gap-3 rounded-md border border-border bg-muted/20 p-3">
             <FillCompareFromDecsButton policyId={policy.id} />

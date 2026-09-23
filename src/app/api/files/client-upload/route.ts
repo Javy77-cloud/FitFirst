@@ -25,9 +25,9 @@ export async function POST(request: Request): Promise<Response> {
       // Force RW token — handleUpload cannot use OIDC; keep put store aligned with server read-back.
       ...(auth.token ? { token: auth.token } : {}),
       onBeforeGenerateToken: async (pathname, clientPayload) => {
-        const dealId = (clientPayload ?? "").trim();
-        if (!dealId) throw new Error("This upload is not tied to a deal. Nothing was saved.");
-        const pathError = clientUploadPathError(pathname, dealId);
+        const scopeId = (clientPayload ?? "").trim();
+        if (!scopeId) throw new Error("This upload is not tied to a deal or policy. Nothing was saved.");
+        const pathError = clientUploadPathError(pathname, scopeId);
         if (pathError) throw new Error(pathError);
         return {
           allowedContentTypes: [

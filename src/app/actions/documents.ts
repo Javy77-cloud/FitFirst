@@ -153,9 +153,10 @@ export async function persistFile(input: {
   const mimeType = storedMimeForUpload(input.filename, input.mimeType, input.buffer);
   let storagePath = (input.existingStoragePath ?? "").trim();
   if (storagePath) {
-    if (input.dealId && !isAllowedStoredUploadUrl(storagePath, input.dealId)) {
+    const scopeId = input.dealId || input.policyId || null;
+    if (scopeId && !isAllowedStoredUploadUrl(storagePath, scopeId)) {
       throw new Error(
-        `Could not attach “${display}”. The storage location is not on this deal. Nothing was saved.`,
+        `Could not attach “${display}”. The storage location is not on this record. Nothing was saved.`,
       );
     }
     // Existing browser/client Blob URL must still be readable or we create a ghost row.
