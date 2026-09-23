@@ -372,7 +372,7 @@ describe("universal_pc ≠ uicna identity", () => {
     expect(slugs.filter((s) => s === UNIVERSAL_PC_SLUG)).toHaveLength(1);
     expect(slugs.filter((s) => s === UICNA_SLUG)).toHaveLength(1);
     expect(new Set(slugs).size).toBe(catalog.length);
-    expect(catalog).toHaveLength(31);
+    expect(catalog).toHaveLength(32);
     const trident = catalog.find((c) => c.carrierId === "trident_reciprocal");
     expect(trident?.legalName).toBe("Trident Reciprocal Exchange");
     expect(trident?.notesForAgent).toBe(TRIDENT_HO_APPETITE.notesForAgent);

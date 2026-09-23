@@ -1,5 +1,13 @@
 # FitFirst carrier appetite packs
 
+## Personal-lines desk enrich (Javy 2026-09-22)
+
+Desk `carriers` rows are enriched from `src/data/appetite/personal-lines-carriers-2026-09-22.json`
+via seed `seedPersonalLinesCarriers` + migration `0151_personal_lines_carriers`. Match by name;
+American Modern is enrich-only (no duplicate). Footprints under 50 states leave states blank —
+do not invent. **UW→Risk Profile densify is PARKED** (carriers first). Portal quoting out.
+
+
 Two CSV packs write the same `carrier_appetite` table. Import is **upsert by
 `(tenant_id, carrier_id)`** — loading nationals does **not** wipe Florida
 specialty rows, and vice versa.
