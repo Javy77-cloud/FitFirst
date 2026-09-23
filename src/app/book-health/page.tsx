@@ -19,8 +19,8 @@ export default async function BookHealthPage({
       <p className="mb-4 text-base text-muted-foreground">
         Agency book is every in-force Policy. Producer book is the same rows grouped by owner.
         Use a producer filter to see that book’s missing packets. Lapse risk, monoline gaps, and
-        missing decs reuse the servicing gauges. Missing docs are actionable servicing slots —
-        dec, ID card, AOR. Quotes are not policies.
+        missing decs reuse the servicing gauges. Missing docs are auto-required servicing slots (dec on file).
+        AOR and ID cards stay optional on Documents. Quotes are not policies.
       </p>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -240,8 +240,8 @@ export default async function BookHealthPage({
         {health.missing.length === 0 ? (
           <p className="px-4 py-6 text-base text-muted-foreground">
             {health.ownerName
-              ? `Every in-force Policy on ${health.ownerName}'s book has a dec, ID card, and AOR packet on file.`
-              : "Every in-force Policy has a dec, ID card, and AOR packet on file."}
+              ? `Every in-force Policy on ${health.ownerName}'s book has the required dec on file.`
+              : "Every in-force Policy has the required dec on file."}
           </p>
         ) : (
           <table className="ff-table">

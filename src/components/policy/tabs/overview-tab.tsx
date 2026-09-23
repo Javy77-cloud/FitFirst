@@ -32,6 +32,7 @@ export function PolicyOverviewTab({
   checklist,
   packetByKey,
   missingPackets,
+  packetOnFile,
   interests,
   risk,
   readOnly = false,
@@ -97,6 +98,7 @@ export function PolicyOverviewTab({
   checklist: Parameters<typeof ServicingChecklistCard>[0]["checklist"] | null;
   packetByKey: Parameters<typeof ServicingChecklistCard>[0]["packetByKey"];
   missingPackets: Parameters<typeof ServicingChecklistCard>[0]["missingPackets"];
+  packetOnFile?: Parameters<typeof ServicingChecklistCard>[0]["packetOnFile"];
   interests: Array<{ kind: string }>;
   risk?: {
     roofYear?: number | null;
@@ -214,6 +216,7 @@ export function PolicyOverviewTab({
           policyId={policy.id}
           packetByKey={packetByKey}
           missingPackets={missingPackets}
+          packetOnFile={packetOnFile}
         />
       ) : null}
 

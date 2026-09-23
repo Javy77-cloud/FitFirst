@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { DESK_AS_OF } from "@/lib/home/as-of";
-import { buildServicingChecklist, hasServicingDoc, missingServicingDocs } from "./checklist";
+import {
+  buildServicingChecklist,
+  hasServicingDoc,
+  missingServicingDocs,
+  optionalExtraPacketKeys,
+  servicingPacketOnFile,
+} from "./checklist";
 import { CHECKLIST_DOC_KEYS_BY_LOB } from "./checklist-templates";
 
 describe("servicing checklist", () => {
@@ -78,4 +84,36 @@ describe("servicing checklist", () => {
     expect(checklist.readyCount).toBe(0);
     expect(checklist.missingCount).toBe(6);
   });
+
+  it("keeps AOR optional and accurate on-file for Auto checklist extras", () => {
+    const checklist = buildServicingChecklist({
+      files: [{ docType: "policy_dec" }],
+      expirationDate: "2027-09-01",
+      nextTask: null,
+      lineOfBusiness: "PA",
+      asOf: DESK_AS_OF,
+    });
+    expect(checklist.items.map((item) => item.key)).not.toContain("aor");
+    expect(missingServicingDocs([{ docType: "policy_dec" }], "PA")).toEqual([]);
+    expect(optionalExtraPacketKeys(checklist.items.map((item) => item.key))).toEqual(["aor"]);
+    expect(servicingPacketOnFile([{ docType: "policy_dec" }])).toEqual({
+      dec: true,
+      id_card: false,
+      aor: false,
+    });
+    expect(servicingPacketOnFile([{ docType: "policy_dec" }, { docType: "aor" }]).aor).toBe(true);
+  });
+
+  it("does not surface a duplicate ID packet row when id_cards check is listed", () => {
+    const checklist = buildServicingChecklist({
+      files: [],
+      expirationDate: null,
+      nextTask: null,
+      lineOfBusiness: "PA",
+      asOf: DESK_AS_OF,
+    });
+    expect(checklist.items.some((item) => item.key === "id_cards")).toBe(true);
+    expect(optionalExtraPacketKeys(checklist.items.map((item) => item.key))).toEqual(["aor"]);
+  });
+
 });

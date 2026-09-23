@@ -394,6 +394,7 @@ export default async function PolicyDetailPage({
             checklist={servicing?.checklist ?? null}
             packetByKey={servicing?.packetByKey ?? {}}
             missingPackets={servicing?.missingPackets ?? []}
+            packetOnFile={servicing?.packetOnFile ?? {}}
             interests={servicing?.interests ?? []}
             risk={risk}
             readOnly={!isAdmin}

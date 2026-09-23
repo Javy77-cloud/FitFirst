@@ -68,6 +68,38 @@ export function hasServicingDoc(files: ServicingFile[], key: ServicingDocKey): b
   return files.some((file) => types.has(String(file.docType ?? "").toLowerCase()));
 }
 
+/** Optional packets — never auto-required; never block policy completion. */
+export const OPTIONAL_SERVICING_DOC_KEYS = ["aor", "id_card"] as const;
+export type OptionalServicingDocKey = (typeof OPTIONAL_SERVICING_DOC_KEYS)[number];
+
+export function isOptionalServicingDocKey(key: string): key is OptionalServicingDocKey {
+  return (OPTIONAL_SERVICING_DOC_KEYS as readonly string[]).includes(key);
+}
+
+/**
+ * Extra checklist rows for optional packets not already covered by the LOB
+ * template (e.g. AOR; ID cards when the LOB uses the id_cards check instead).
+ * These rows are informational only — they must not count toward missing/complete.
+ */
+export function optionalExtraPacketKeys(listedItemKeys: Iterable<string>): ServicingDocKey[] {
+  const listed = new Set(listedItemKeys);
+  return OPTIONAL_SERVICING_DOC_KEYS.filter((key) => {
+    if (listed.has(key)) return false;
+    if (key === "id_card" && listed.has("id_cards")) return false;
+    return true;
+  });
+}
+
+/** Accurate on-file map for optional (and required) packet slots. */
+export function servicingPacketOnFile(
+  files: ServicingFile[],
+): Partial<Record<ServicingDocKey, boolean>> {
+  const keys: ServicingDocKey[] = ["dec", "id_card", "aor"];
+  const out: Partial<Record<ServicingDocKey, boolean>> = {};
+  for (const key of keys) out[key] = hasServicingDoc(files, key);
+  return out;
+}
+
 /** Auto-required packet slots only (never AOR / ID cards on create). */
 export function missingServicingDocs(
   files: ServicingFile[],

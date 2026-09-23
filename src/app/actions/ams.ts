@@ -60,12 +60,13 @@ import {
   isServicingCheckKey,
   isWorkDesk,
   SERVICING_DOC_KEYS,
+  SERVICING_DOC_LABELS,
   servicingTaskKind,
   type ServicingCheckKey,
   type ServicingDocKey,
 } from "@/lib/domain-ams";
 import { packetTaskTitle } from "@/lib/ams/packet-tasks";
-import { servicingTaskBody, servicingTaskTitle } from "@/lib/ams/checklist";
+import { isOptionalServicingDocKey, servicingTaskBody, servicingTaskTitle } from "@/lib/ams/checklist";
 import { ensureWorkItem, setWorkStatus, toggleWorkFlag } from "@/lib/work-queue/service";
 import {
   getCertificateRequest,
@@ -962,6 +963,16 @@ export async function createPacketTask(formData: FormData) {
   if (!workspace || !servicing) bounce(`/policies/${policyId}`, "Policy not found.");
   const missing = servicing.missingPackets;
   if (!missing.includes(key)) {
+    // Optional AOR / ID are never in missingPackets — do not claim they are "on file".
+    if (isOptionalServicingDocKey(key)) {
+      const onFile = Boolean(servicing.packetOnFile?.[key]);
+      bounce(
+        `/policies/${policyId}`,
+        onFile
+          ? `${SERVICING_DOC_LABELS[key]} is already on file.`
+          : `${SERVICING_DOC_LABELS[key]} is optional — attach it on Documents if you need it. It does not block completion.`,
+      );
+    }
     bounce(`/policies/${policyId}`, `${key.replaceAll("_", " ")} is already on file.`);
   }
   if (servicing.packetByKey[key]) {
