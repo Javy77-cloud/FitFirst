@@ -279,6 +279,29 @@ describe("account card glance", () => {
     expect(card.flags.families).toEqual(["pc"]);
   });
 
+  it("points Renew chip at the policy detail, not the renewals board", () => {
+    const card = presentPolicyCard(
+      {
+        id: "p-renew",
+        policyNumber: "HO-RENEW",
+        displayName: "Renew Chip",
+        status: "active",
+        lineOfBusiness: "HO",
+        formType: "HO3",
+        premium: "1800",
+        expirationDate: "2026-10-09T00:00:00.000Z",
+        updatedAt: "2026-09-22T12:00:00.000Z",
+        partyName: "Renew Chip",
+        carrierName: "Carrier",
+      },
+      { openClaims: 0, pendingEndorsements: 0, missingDocs: 0, renewalHandled: false },
+      new Date("2026-09-23T12:00:00.000Z"),
+    );
+    expect(card.column).toBe("now");
+    expect(card.href).toBe("/policies/p-renew");
+    expect(card.primaryAction).toEqual({ label: "Renew", href: "/policies/p-renew" });
+  });
+
   it("clears Needs care band when renewal is Handled", () => {
     const card = presentPolicyCard(
       {
