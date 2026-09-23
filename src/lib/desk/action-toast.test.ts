@@ -125,6 +125,9 @@ describe("site-wide action confirmation toast", () => {
       /flashSettings\("\/settings\/communications", "communications-saved"\)/,
     );
     expect(source("src/app/actions/activities-desk.ts")).toMatch(/"changes-saved"/);
+    expect(source("src/app/actions/activities-desk.ts")).toMatch(/flashStay\(\s*formData,/);
+    expect(source("src/components/calendar/desk-calendar.tsx")).toMatch(/name="returnTo"/);
+    expect(source("src/components/calendar/desk-calendar.tsx")).toMatch(/returnTo=\{hrefFor\(view, anchor\)\}/);
     expect(source("src/app/actions/alerts.ts")).toMatch(/flashAction\(`\/tasks\/\$\{id\}`, "changes-saved"\)/);
     expect(source("src/app/actions/desk.ts")).toMatch(/flashBack\("columns-saved"\)/);
     expect(source("src/app/actions/pipeline-admin.ts")).toMatch(

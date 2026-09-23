@@ -474,6 +474,7 @@ export function DeskCalendar({
           defaultStart={draftStart}
           defaultKind={draftKind}
           meetHelper={meetHelper}
+          returnTo={hrefFor(view, anchor)}
           onClose={() => {
             setEditing(null);
             router.refresh();
@@ -977,6 +978,7 @@ function CalendarEditor({
   defaultStart,
   defaultKind = "task",
   meetHelper = false,
+  returnTo = "/calendar",
   onClose,
 }: {
   event: CalendarEvent | null;
@@ -984,6 +986,7 @@ function CalendarEditor({
   defaultStart: string;
   defaultKind?: (typeof KINDS)[number];
   meetHelper?: boolean;
+  returnTo?: string;
   onClose: () => void;
 }) {
   const isNew = !event;
@@ -1110,6 +1113,7 @@ function CalendarEditor({
           className="grid gap-2 sm:grid-cols-2"
         >
           {event ? <input type="hidden" name="activityId" value={event.id} /> : null}
+          <input type="hidden" name="returnTo" value={returnTo} />
           <div>
             <Label className="text-xs">Type</Label>
             <select
