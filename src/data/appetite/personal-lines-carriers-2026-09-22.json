@@ -1,0 +1,1071 @@
+[
+  {
+    "seedId": "33333333-3333-4333-8333-333333333345",
+    "name": "State Farm",
+    "matchNeedles": [
+      "state farm"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "UMBRELLA",
+      "RV",
+      "BOAT"
+    ],
+    "territory": "All 50 states",
+    "statesToken": "US",
+    "tags": [
+      "personal-lines",
+      "preferred",
+      "national"
+    ],
+    "likes": "preferred risks, good credit, newer roofs/HVAC",
+    "dislikes": "older roofs, prior claims, high-value coastal",
+    "specialtyNotes": "Auto, HO-3, umbrella, RV, boat, motorcycle, manufactured home (limited).",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "UMB"
+    ]
+  },
+  {
+    "seedId": "1d29f707-67e5-4e64-8528-2a0f58ad92a4",
+    "name": "Progressive",
+    "matchNeedles": [
+      "progressive"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "UMBRELLA",
+      "RV",
+      "BOAT"
+    ],
+    "territory": "All 50 states",
+    "statesToken": "US",
+    "tags": [
+      "personal-lines",
+      "nonstandard-auto",
+      "national"
+    ],
+    "likes": "non-standard auto",
+    "dislikes": "very old homes, high-value coastal without mitigation",
+    "specialtyNotes": "Auto, home (via partners), RV, boat, motorcycle, umbrella. Auto-first \u2014 not a property leader; no new DP-3.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "RV",
+      "BOAT"
+    ]
+  },
+  {
+    "seedId": "eaf069fd-d37e-41ed-8965-3d4ddc61ddf0",
+    "name": "Geico",
+    "matchNeedles": [
+      "geico"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "RV",
+      "BOAT"
+    ],
+    "territory": "All 50 states",
+    "statesToken": "US",
+    "tags": [
+      "personal-lines",
+      "national",
+      "berkshire-hathaway"
+    ],
+    "likes": "clean records",
+    "dislikes": "older homes, high-value coastal",
+    "specialtyNotes": "Berkshire Hathaway / GEICO. Auto, home, RV, boat, motorcycle. Quietly routes MH customers to Foremost.",
+    "appetiteLobs": [
+      "AUTO"
+    ]
+  },
+  {
+    "seedId": "4848e59a-0a78-4d69-8364-cb1c8a3ef037",
+    "name": "Allstate",
+    "matchNeedles": [
+      "allstate"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "UMBRELLA",
+      "RV",
+      "BOAT"
+    ],
+    "territory": "All 50 states",
+    "statesToken": "US",
+    "tags": [
+      "personal-lines",
+      "national",
+      "bundle"
+    ],
+    "likes": "bundling",
+    "dislikes": "older roofs, prior water claims",
+    "specialtyNotes": "Auto, home, umbrella, RV, boat.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "UMB"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333346",
+    "name": "USAA",
+    "matchNeedles": [
+      "usaa"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "UMBRELLA",
+      "RV",
+      "BOAT"
+    ],
+    "territory": "All 50 states \u2014 military only",
+    "statesToken": "US",
+    "tags": [
+      "personal-lines",
+      "military-only",
+      "national"
+    ],
+    "likes": "preferred military",
+    "dislikes": "older homes",
+    "specialtyNotes": "Military membership only \u2014 not an open market. Auto, home, umbrella, RV, boat. Quietly routes MH to Foremost.",
+    "dontWrite": "Non-military / ineligible members",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "UMB"
+    ]
+  },
+  {
+    "seedId": "3b11b057-541b-4112-8361-44c175539d3c",
+    "name": "Liberty Mutual",
+    "matchNeedles": [
+      "liberty mutual"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "UMBRELLA",
+      "RV",
+      "BOAT"
+    ],
+    "territory": "All 50 states",
+    "statesToken": "US",
+    "tags": [
+      "personal-lines",
+      "national",
+      "bundle"
+    ],
+    "likes": "bundling",
+    "dislikes": "older roofs, high-value coastal",
+    "specialtyNotes": "Auto, home, umbrella, RV, boat, motorcycle. Distinct from Safeco.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "UMB"
+    ]
+  },
+  {
+    "seedId": "bbb8f6b3-a170-4841-8be2-656c5e89575a",
+    "name": "Travelers",
+    "matchNeedles": [
+      "travelers"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "UMBRELLA",
+      "COMMERCIAL"
+    ],
+    "territory": "All 50 states",
+    "statesToken": "US",
+    "tags": [
+      "personal-lines",
+      "national",
+      "commercial"
+    ],
+    "likes": "standard homes",
+    "dislikes": "older roofs, high-value coastal",
+    "specialtyNotes": "Auto, home, umbrella, commercial.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "UMB",
+      "BOP"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333347",
+    "name": "Farmers",
+    "matchNeedles": [
+      "farmers"
+    ],
+    "matchExclude": [
+      "farm bureau",
+      "southern farm"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "UMBRELLA",
+      "RV",
+      "BOAT"
+    ],
+    "territory": "All 50 states (confirm appointment)",
+    "statesToken": "US",
+    "tags": [
+      "personal-lines",
+      "national",
+      "hard-to-place"
+    ],
+    "likes": "older/hard-to-place homes",
+    "dislikes": "very high-value coastal without mitigation",
+    "specialtyNotes": "Farmers / Foremost family. Auto, home, manufactured home, RV, boat, motorcycle, vacant, seasonal. Shop Foremost for MH/vacant first.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "MHO"
+    ]
+  },
+  {
+    "seedId": "e5b1223c-52cd-4c47-83cd-5f2c3045bc26",
+    "name": "Foremost",
+    "matchNeedles": [
+      "foremost"
+    ],
+    "writtenLines": [
+      "HO",
+      "AUTO",
+      "RV"
+    ],
+    "territory": "All 50 states",
+    "statesToken": "US",
+    "tags": [
+      "personal-lines",
+      "specialty",
+      "manufactured",
+      "mho-default"
+    ],
+    "likes": "homes any age/model/make/value (rare); seniors 50+, newer homes, approved parks, bundling",
+    "dislikes": "standard preferred HO when a specialty market is not needed",
+    "specialtyNotes": "Default first call for manufactured / mobile. GEICO/USAA quietly route MH here. FL MHO appetite: any age/model/make/value. Discounts: seniors 50+, newer homes, approved parks, bundling.",
+    "appetiteLobs": [
+      "MHO",
+      "DP1",
+      "DP3",
+      "VACANT"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333344",
+    "name": "American Modern",
+    "matchNeedles": [
+      "american modern"
+    ],
+    "writtenLines": [
+      "HO"
+    ],
+    "territory": "Manufactured and mobile: all 50 states, no age cap",
+    "statesToken": "US",
+    "tags": [
+      "personal-lines",
+      "specialty",
+      "manufactured",
+      "mho"
+    ],
+    "likes": "older homes in fair condition; manufactured/mobile",
+    "dislikes": "very high-value coastal",
+    "specialtyNotes": "Already on desk \u2014 enrich only, never duplicate. MHO / DP1 / DP3. Collector cars, powersports, boats, pet, farm/ranch (nine states). Does not write standard personal auto, standard HO-3, or life.",
+    "dontWrite": "Standard personal auto, standard HO-3 homeowners, life",
+    "enrichOnly": true,
+    "appetiteLobs": [
+      "MHO",
+      "DP1",
+      "DP3"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333348",
+    "name": "American Family",
+    "matchNeedles": [
+      "american family",
+      "amfam"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "UMBRELLA",
+      "RV",
+      "BOAT"
+    ],
+    "territory": "~19 states (Midwest/Southeast) \u2014 list unknown",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "regional",
+      "bundle"
+    ],
+    "likes": "bundling",
+    "dislikes": "older roofs",
+    "specialtyNotes": "Midwest/Southeast regional. Auto, home, umbrella, RV, boat.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "UMB"
+    ]
+  },
+  {
+    "seedId": "59ce34a0-1bca-477a-879a-95d2127bff9e",
+    "name": "Nationwide",
+    "matchNeedles": [
+      "nationwide"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "UMBRELLA",
+      "RV",
+      "BOAT",
+      "COMMERCIAL"
+    ],
+    "territory": "~46 states \u2014 exact list on nationals pack; confirm HO footprint",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "national",
+      "powersports"
+    ],
+    "likes": "standard homes",
+    "dislikes": "older roofs, high-value coastal",
+    "specialtyNotes": "Auto, home, umbrella, RV, boat, commercial. Powersports (boat/moto/RV) notes already on desk.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "RV",
+      "BOAT"
+    ]
+  },
+  {
+    "seedId": "22f3242e-fdfa-4fb7-8bd7-406d0d6a1d3e",
+    "name": "The Hartford",
+    "matchNeedles": [
+      "hartford"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "UMBRELLA",
+      "COMMERCIAL"
+    ],
+    "territory": "All 50 states (personal often via AARP / affinity)",
+    "statesToken": "US",
+    "tags": [
+      "personal-lines",
+      "national",
+      "aarp"
+    ],
+    "likes": "standard homes",
+    "dislikes": "older roofs",
+    "specialtyNotes": "Auto, home, umbrella, commercial. Personal lines often via AARP / affinity.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "UMB"
+    ]
+  },
+  {
+    "seedId": "2ff82334-c0a6-4668-8cbb-4d42ca509d49",
+    "name": "Chubb",
+    "matchNeedles": [
+      "chubb"
+    ],
+    "writtenLines": [
+      "HO",
+      "AUTO",
+      "UMBRELLA",
+      "BOAT"
+    ],
+    "territory": "All 50 states \u2014 high-value selective",
+    "statesToken": "US",
+    "tags": [
+      "personal-lines",
+      "high-value",
+      "hnw"
+    ],
+    "likes": "high-value homes",
+    "dislikes": "older/standard homes",
+    "specialtyNotes": "High-value home, auto, umbrella, boat, jewelry. Not a mass-market HO shop.",
+    "dontWrite": "Mass-market / standard preferred HO as primary play",
+    "appetiteLobs": [
+      "HO3",
+      "HO5",
+      "UMB"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333349",
+    "name": "Erie",
+    "matchNeedles": [
+      "erie"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "UMBRELLA"
+    ],
+    "territory": "~12 states + DC \u2014 list unknown",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "regional",
+      "preferred"
+    ],
+    "likes": "preferred",
+    "dislikes": "older homes",
+    "specialtyNotes": "Regional preferred auto/home/umbrella.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "UMB"
+    ],
+    "matchExclude": [
+      "coterie"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333350",
+    "name": "Amica",
+    "matchNeedles": [
+      "amica"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "UMBRELLA"
+    ],
+    "territory": "~48 states \u2014 list unknown",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "preferred"
+    ],
+    "likes": "preferred",
+    "dislikes": "older roofs",
+    "specialtyNotes": "Preferred auto/home/umbrella.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "UMB"
+    ],
+    "matchExclude": [
+      "amicable",
+      "american amicable"
+    ]
+  },
+  {
+    "seedId": "05750826-2f3b-425c-8314-e76d1f2c12bc",
+    "name": "Mercury",
+    "matchNeedles": [
+      "mercury"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO"
+    ],
+    "territory": "~10 states (CA-focused) \u2014 list unknown",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "regional",
+      "ca-focused"
+    ],
+    "likes": "standard",
+    "dislikes": "older roofs",
+    "specialtyNotes": "CA-focused regional. Auto, home.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3"
+    ]
+  },
+  {
+    "seedId": "ff89f4a7-158b-4ad8-81c4-8f52059ca114",
+    "name": "AAA",
+    "matchNeedles": [
+      "aaa",
+      "csaa"
+    ],
+    "matchExclude": [
+      "auto club enterprises"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "RV"
+    ],
+    "territory": "~10 states (CSAA / AAA) \u2014 list unknown",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "regional",
+      "aaa",
+      "csaa"
+    ],
+    "likes": "members",
+    "dislikes": "older homes",
+    "specialtyNotes": "CSAA / AAA. Auto, home, RV. Member-oriented.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "RV"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333351",
+    "name": "Auto Club Enterprises",
+    "matchNeedles": [
+      "auto club enterprises",
+      "ace aaa"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO"
+    ],
+    "territory": "~10 states \u2014 list unknown",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "regional",
+      "aaa"
+    ],
+    "likes": "standard",
+    "dislikes": "older roofs",
+    "specialtyNotes": "Auto Club Enterprises (distinct AAA club). Auto, home.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333352",
+    "name": "Shelter",
+    "matchNeedles": [
+      "shelter"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO"
+    ],
+    "territory": "~10 states \u2014 list unknown",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "regional",
+      "preferred"
+    ],
+    "likes": "preferred",
+    "dislikes": "older homes",
+    "specialtyNotes": "Regional preferred auto/home.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333353",
+    "name": "COUNTRY Financial",
+    "matchNeedles": [
+      "country financial",
+      "country mutual"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO"
+    ],
+    "territory": "~17 states \u2014 list unknown",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "regional",
+      "preferred"
+    ],
+    "likes": "preferred",
+    "dislikes": "older roofs",
+    "specialtyNotes": "COUNTRY Financial. Preferred auto/home.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333354",
+    "name": "NJM",
+    "matchNeedles": [
+      "njm",
+      "new jersey manufacturers"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO"
+    ],
+    "territory": "NJ only",
+    "statesToken": "NJ",
+    "tags": [
+      "personal-lines",
+      "nj-only",
+      "preferred"
+    ],
+    "likes": "preferred",
+    "dislikes": "older homes",
+    "specialtyNotes": "New Jersey Manufacturers \u2014 NJ only.",
+    "dontWrite": "Risks outside NJ",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333355",
+    "name": "Westfield",
+    "matchNeedles": [
+      "westfield"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO"
+    ],
+    "territory": "~10 states \u2014 list unknown",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "regional",
+      "preferred"
+    ],
+    "likes": "preferred",
+    "dislikes": "older roofs",
+    "specialtyNotes": "Regional preferred auto/home.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333356",
+    "name": "Utica National",
+    "matchNeedles": [
+      "utica"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "COMMERCIAL"
+    ],
+    "territory": "~10 states \u2014 list unknown",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "regional"
+    ],
+    "likes": "standard",
+    "dislikes": "older roofs",
+    "specialtyNotes": "Utica National. Auto, home, commercial.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "BOP"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333357",
+    "name": "West Bend",
+    "matchNeedles": [
+      "west bend"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "COMMERCIAL"
+    ],
+    "territory": "~10 states \u2014 list unknown",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "regional"
+    ],
+    "likes": "standard",
+    "dislikes": "older roofs",
+    "specialtyNotes": "West Bend. Auto, home, commercial.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "BOP"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333358",
+    "name": "Acuity",
+    "matchNeedles": [
+      "acuity"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "COMMERCIAL"
+    ],
+    "territory": "~30 states \u2014 list unknown",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "regional"
+    ],
+    "likes": "standard",
+    "dislikes": "older roofs",
+    "specialtyNotes": "Acuity. Auto, home, commercial.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "BOP"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333359",
+    "name": "Federated Mutual",
+    "matchNeedles": [
+      "federated mutual",
+      "federated insurance"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO",
+      "COMMERCIAL"
+    ],
+    "territory": "~10 states \u2014 list unknown",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "regional",
+      "commercial"
+    ],
+    "likes": "standard",
+    "dislikes": "older roofs",
+    "specialtyNotes": "Federated Mutual. Auto, home, commercial.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3",
+      "BOP"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333360",
+    "name": "Alfa",
+    "matchNeedles": [
+      "alfa"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO"
+    ],
+    "territory": "~10 states \u2014 list unknown",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "regional",
+      "preferred"
+    ],
+    "likes": "preferred",
+    "dislikes": "older roofs",
+    "specialtyNotes": "Alfa. Preferred auto/home.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333361",
+    "name": "Southern Farm Bureau",
+    "matchNeedles": [
+      "southern farm bureau"
+    ],
+    "writtenLines": [
+      "AUTO",
+      "HO"
+    ],
+    "territory": "~15 states \u2014 list unknown; other Farm Bureau groups are state-specific",
+    "statesToken": "",
+    "tags": [
+      "personal-lines",
+      "regional",
+      "farm-bureau",
+      "preferred"
+    ],
+    "likes": "preferred",
+    "dislikes": "older roofs",
+    "specialtyNotes": "Southern Farm Bureau. Other Farm Bureau groups are state-specific \u2014 do not invent a merged national Farm Bureau carrier.",
+    "appetiteLobs": [
+      "AUTO",
+      "HO3"
+    ]
+  },
+  {
+    "seedId": "6b053cdf-0199-473c-8b0f-e8c2177642b2",
+    "name": "Citizens",
+    "matchNeedles": [
+      "citizens"
+    ],
+    "writtenLines": [
+      "HO"
+    ],
+    "territory": "FL only \u2014 residual / last resort property",
+    "statesToken": "FL",
+    "tags": [
+      "personal-lines",
+      "fl-only",
+      "residual"
+    ],
+    "likes": "high-risk coastal (takes what others decline)",
+    "dislikes": "nothing \u2014 residual market",
+    "specialtyNotes": "Florida residual property. Home last resort. Quoting depends on appointment.",
+    "dontWrite": "Non-FL risks",
+    "appetiteLobs": [
+      "HO3",
+      "DP1",
+      "DP3"
+    ]
+  },
+  {
+    "seedId": "6a0f669f-1489-4501-83cf-197b0c90db93",
+    "name": "Florida Peninsula",
+    "matchNeedles": [
+      "florida peninsula"
+    ],
+    "writtenLines": [
+      "HO"
+    ],
+    "territory": "FL only",
+    "statesToken": "FL",
+    "tags": [
+      "personal-lines",
+      "fl-only",
+      "fl-specialty"
+    ],
+    "likes": "Florida risks",
+    "dislikes": "older roofs without mitigation",
+    "specialtyNotes": "FL-focused home/auto takeout writer.",
+    "appetiteLobs": [
+      "HO3",
+      "DP3"
+    ]
+  },
+  {
+    "seedId": "a11e04a4-7fa6-43fe-8db5-f2d1afae4c85",
+    "name": "Tower Hill",
+    "matchNeedles": [
+      "tower hill"
+    ],
+    "writtenLines": [
+      "HO"
+    ],
+    "territory": "FL / SE select",
+    "statesToken": "FL",
+    "tags": [
+      "personal-lines",
+      "fl-specialty",
+      "mho"
+    ],
+    "likes": "FL residential; MH no age cap, value up to $300k; up to 2 claims in 3 years; short-term rentals OK",
+    "dislikes": "older roofs on site-built without mitigation",
+    "specialtyNotes": "FL MHO: no age cap on MH, value up to $300k. RC on homes \u226430 years, ACV older. Up to 2 claims in past 3 years OK. Short-term rentals (Airbnb) allowed. Common MH threads: tie-down cert, roof age/condition, 4-point on homes over 30 years.",
+    "appetiteLobs": [
+      "HO3",
+      "MHO",
+      "DP1",
+      "DP3"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333309",
+    "name": "American Integrity",
+    "matchNeedles": [
+      "american integrity"
+    ],
+    "writtenLines": [
+      "HO"
+    ],
+    "territory": "FL / SE",
+    "statesToken": "FL",
+    "tags": [
+      "personal-lines",
+      "fl-specialty"
+    ],
+    "likes": "Florida risks; seasonal",
+    "dislikes": "older roofs without mitigation; mobile home",
+    "specialtyNotes": "FL-focused. Good SE HO/DP and seasonal. Not a mobile-home market.",
+    "dontWrite": "Mobile / manufactured home",
+    "appetiteLobs": [
+      "HO3",
+      "DP3",
+      "SEASONAL"
+    ]
+  },
+  {
+    "seedId": "e66c7eef-e6a2-44e5-8255-9fe15b11803d",
+    "name": "American Traditions",
+    "matchNeedles": [
+      "american traditions"
+    ],
+    "writtenLines": [
+      "HO"
+    ],
+    "territory": "FL \u2014 manufactured-home leader",
+    "statesToken": "FL",
+    "tags": [
+      "personal-lines",
+      "fl-specialty",
+      "mho",
+      "manufactured"
+    ],
+    "likes": "Florida manufactured homes; tiers SA (full RC), SSH (RC contents / ACV home), DP1 (straight ACV); top tier back to ~1970",
+    "dislikes": "older roofs without mitigation",
+    "specialtyNotes": "Florida manufactured-home leader. Water damage capped $10k on homes older than 40 years. Roof wind/hail may settle on payment schedule by roof age (discount trade, not decline). Common MH threads: tie-down cert, roof age/condition, 4-point over 30 years.",
+    "appetiteLobs": [
+      "MHO",
+      "DP1",
+      "HO3"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333363",
+    "name": "Safe Harbor",
+    "matchNeedles": [
+      "safe harbor"
+    ],
+    "writtenLines": [
+      "HO"
+    ],
+    "territory": "FL-focused",
+    "statesToken": "FL",
+    "tags": [
+      "personal-lines",
+      "fl-specialty"
+    ],
+    "likes": "Florida risks",
+    "dislikes": "older roofs without mitigation",
+    "specialtyNotes": "FL-focused home/auto group note (Javy 2026-09-22).",
+    "appetiteLobs": [
+      "HO3"
+    ]
+  },
+  {
+    "seedId": "cfcca399-1f0f-46be-8603-861d06258508",
+    "name": "Heritage",
+    "matchNeedles": [
+      "heritage"
+    ],
+    "matchExclude": [
+      "florida heritage"
+    ],
+    "writtenLines": [
+      "HO"
+    ],
+    "territory": "FL / SE coastal",
+    "statesToken": "FL",
+    "tags": [
+      "personal-lines",
+      "fl-specialty",
+      "mho-strict-roof"
+    ],
+    "likes": "coastal habitational; newer roofs",
+    "dislikes": "older roofs \u2014 strictest of FL MHO four on roofs",
+    "specialtyNotes": "FL specialist. MH: older roofs often ACV, sometimes 50\u201370% depreciation; wind shingle damage often \u201ccosmetic\u201d with little/no pay. Binding guidelines with appointed agents, not public site. Common MH threads: tie-down cert, roof age/condition, 4-point over 30 years.",
+    "appetiteLobs": [
+      "HO3",
+      "MHO",
+      "DP"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333364",
+    "name": "Florida Specialty",
+    "matchNeedles": [
+      "florida specialty"
+    ],
+    "writtenLines": [
+      "HO",
+      "AUTO"
+    ],
+    "territory": "FL-focused",
+    "statesToken": "FL",
+    "tags": [
+      "personal-lines",
+      "fl-specialty"
+    ],
+    "likes": "Florida risks",
+    "dislikes": "older roofs without mitigation",
+    "specialtyNotes": "FL-focused home/auto (Javy group note 2026-09-22).",
+    "appetiteLobs": [
+      "HO3",
+      "AUTO"
+    ]
+  },
+  {
+    "seedId": "76ccf3a7-68c2-436b-8642-554cf96391c2",
+    "name": "Universal P&C",
+    "matchNeedles": [
+      "universal p&c",
+      "universal property"
+    ],
+    "matchExclude": [
+      "north america",
+      "uicna"
+    ],
+    "writtenLines": [
+      "HO"
+    ],
+    "territory": "FL / TX",
+    "statesToken": "FL|TX",
+    "tags": [
+      "personal-lines",
+      "fl-specialty",
+      "high-risk"
+    ],
+    "likes": "high-risk habitational",
+    "dislikes": "older roofs",
+    "specialtyNotes": "Universal Property & Casualty. Home. Distinct from UICNA.",
+    "appetiteLobs": [
+      "HO3",
+      "DP1",
+      "DP3"
+    ]
+  },
+  {
+    "seedId": "33333333-3333-4333-8333-333333333362",
+    "name": "Assurant",
+    "matchNeedles": [
+      "assurant"
+    ],
+    "writtenLines": [
+      "HO"
+    ],
+    "territory": "All 50 states (via partners)",
+    "statesToken": "US",
+    "tags": [
+      "personal-lines",
+      "specialty",
+      "manufactured",
+      "renters"
+    ],
+    "likes": "older homes; manufactured / mobile / renters",
+    "dislikes": "very high-value coastal",
+    "specialtyNotes": "Manufactured home, renters, mobile via partners.",
+    "appetiteLobs": [
+      "MHO",
+      "HO4"
+    ]
+  }
+]
