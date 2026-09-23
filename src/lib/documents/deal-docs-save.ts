@@ -3,6 +3,7 @@ import { worksheetDocTypeLabel } from "@/lib/deals/source-doc-types";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 import { isAgencyLetterDocType } from "@/lib/document-pipeline/types";
 import { docCardKeyFromTags } from "@/lib/leads/line-documents";
+import { parseDealProduct } from "@/lib/deals/deal-products";
 
 /** Stay under next.config serverActions.bodySizeLimit so the action is invoked. */
 export const DEAL_DOCUMENTS_BODY_LIMIT_BYTES = 45 * 1024 * 1024;
@@ -10,7 +11,12 @@ export const DEAL_DOCUMENTS_BODY_LIMIT_BYTES = 45 * 1024 * 1024;
 export function dealDocumentsTabHref(dealId: string, line?: string | null): string {
   const query = new URLSearchParams({ tab: "documents" });
   const trimmed = (line ?? "").trim();
-  if (trimmed) query.set("line", trimmed);
+  if (trimmed) {
+    query.set("line", trimmed);
+    // Keep Flood / Auto product chips selected after type / term / unlink redirects.
+    const product = parseDealProduct(trimmed);
+    if (product) query.set("product", product);
+  }
   return `/deals/${dealId}?${query.toString()}`;
 }
 

@@ -114,6 +114,17 @@ describe("documentDeleteReturnHref", () => {
     ).toBe("/deals/bc96afba-3443-4585-ae74-40dcc274fc63?tab=documents");
   });
 
+
+  it("preserves shop line on deal Documents fallback (Flood window)", () => {
+    expect(
+      documentDeleteReturnHref({
+        dealId: "bc96afba-3443-4585-ae74-40dcc274fc63",
+        returnTo: "",
+        line: "flood",
+      }),
+    ).toBe("/deals/bc96afba-3443-4585-ae74-40dcc274fc63?tab=documents&line=flood&product=flood");
+  });
+
   it("rejects protocol-relative returnTo", () => {
     expect(
       documentDeleteReturnHref({

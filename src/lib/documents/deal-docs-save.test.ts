@@ -75,7 +75,8 @@ describe("deal Documents save must not open error.tsx", () => {
 
   it("builds the Documents tab href used after save", () => {
     expect(dealDocumentsTabHref("deal-1")).toBe("/deals/deal-1?tab=documents");
-    expect(dealDocumentsTabHref("deal-1", "auto")).toBe("/deals/deal-1?tab=documents&line=auto");
+    expect(dealDocumentsTabHref("deal-1", "flood")).toBe("/deals/deal-1?tab=documents&line=flood&product=flood");
+    expect(dealDocumentsTabHref("deal-1", "auto")).toBe("/deals/deal-1?tab=documents&line=auto&product=auto");
   });
 
   it("lists newly uploaded photos and floor plans without throwing on bad rows", () => {

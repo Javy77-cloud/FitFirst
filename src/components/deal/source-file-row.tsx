@@ -5,6 +5,7 @@ import { extractExisting, unlinkDealDocumentFromProduct } from "@/app/actions/do
 import { retagDocumentAsDeclarationAction } from "@/app/actions/declaration";
 import { isDeclarationDocType } from "@/lib/policy/dec-prompt";
 import { FileActionMenu } from "@/components/documents/file-action-menu";
+import { dealDocumentsTabHref } from "@/lib/documents/deal-docs-save";
 import { Button } from "@/components/ui/button";
 import {
   sourceDocDisplayName,
@@ -54,6 +55,7 @@ export function SourceFileRow({
         dealId={dealId}
         line={line}
         quotingForm={quotingForm}
+        returnTo={line ? dealDocumentsTabHref(dealId, line) : dealDocumentsTabHref(dealId)}
         className="min-w-0 flex-1"
         onDeleted={() => setGone(true)}
         onUnlinked={() => setGone(true)}
@@ -94,6 +96,7 @@ export function SourceFileRow({
         <form action={extractExisting}>
           <input type="hidden" name="documentId" value={doc.id} />
           <input type="hidden" name="dealId" value={dealId} />
+          {line ? <input type="hidden" name="line" value={line} /> : null}
           <Button type="submit" variant="ghost" size="xs">
             Re-extract
           </Button>
