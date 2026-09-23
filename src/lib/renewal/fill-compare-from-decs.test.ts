@@ -277,10 +277,11 @@ describe("buildOverviewWriteBackFromGemini", () => {
     expect(patch.written.length).toBeGreaterThan(0);
   });
 
-  it("skips write-back when Gemini returned empty values", () => {
+  it("skips dwelling/premises write-back when Gemini only returned premium", () => {
     const patch = buildOverviewWriteBackFromGemini({
       policy: {
         renewalDate: null,
+        premium: null,
         premisesAddress: null,
         premisesCity: null,
         premisesState: null,
@@ -302,20 +303,98 @@ describe("buildOverviewWriteBackFromGemini", () => {
         { fieldKey: "premium", normalizedValue: "2109", rawValue: null, confidence: 0.9, flagged: false },
       ],
     });
+    expect(patch.policy).toEqual({ premium: "2109.00" });
+    expect(patch.risk).toEqual({});
+    expect(patch.written).toEqual(["premium"]);
+  });
+
+  it("writes nothing when Gemini rows are empty", () => {
+    const patch = buildOverviewWriteBackFromGemini({
+      policy: {
+        renewalDate: null,
+        premium: null,
+        premisesAddress: null,
+        premisesCity: null,
+        premisesState: null,
+        premisesZip: null,
+        coverageA: null,
+      },
+      risk: {
+        yearBuilt: null,
+        construction: null,
+        roofYear: null,
+        coverageA: null,
+        address1: null,
+        city: null,
+        state: null,
+        zip: null,
+      },
+      baselineRows: [],
+      renewalRows: [],
+    });
     expect(patch.policy).toEqual({});
     expect(patch.risk).toEqual({});
     expect(patch.written).toEqual([]);
+    expect(patch.carrierName ?? null).toBeNull();
+  });
+
+  it("fills blank premium, form, and coverage limit keys without inventing", () => {
+    const patch = buildOverviewWriteBackFromGemini({
+      policy: {
+        renewalDate: null,
+        premium: null,
+        premisesAddress: "Kept",
+        premisesCity: "Kept",
+        premisesState: "FL",
+        premisesZip: "34102",
+        coverageA: 310000,
+        coverageLimits: { coverage_a: "310000" },
+        formType: null,
+        insuranceType: null,
+        sellingAgency: null,
+        producer: null,
+        billingFrequency: null,
+        carrierId: null,
+      },
+      risk: null,
+      baselineRows: [
+        { fieldKey: "current_premium", normalizedValue: "3576.00", rawValue: null, confidence: 0.9, flagged: false },
+        { fieldKey: "form", normalizedValue: "HO3", rawValue: null, confidence: 0.9, flagged: false },
+        { fieldKey: "coverage_b", normalizedValue: "31000", rawValue: null, confidence: 0.9, flagged: false },
+        { fieldKey: "coverage_a", normalizedValue: "310000", rawValue: null, confidence: 0.9, flagged: false },
+        { fieldKey: "carrier_name", normalizedValue: "Citizens", rawValue: null, confidence: 0.9, flagged: false },
+      ],
+      renewalRows: [],
+    });
+    expect(patch.policy.premium).toBe("3576.00");
+    expect(patch.policy.formType).toBe("HO3");
+    expect(patch.policy.coverageLimits).toEqual({
+      coverage_a: "310000",
+      coverage_b: "31000",
+    });
+    expect(patch.carrierName).toBe("Citizens");
+    expect(patch.written).toEqual(
+      expect.arrayContaining(["premium", "formType", "coverageLimits.coverage_b", "carrierName"]),
+    );
   });
 
   it("does not overwrite already-filled policy/risk fields", () => {
     const patch = buildOverviewWriteBackFromGemini({
       policy: {
         renewalDate: new Date("2026-01-01T12:00:00.000Z"),
+        premium: "9999.00",
         premisesAddress: "Existing St",
         premisesCity: "Existing",
         premisesState: "FL",
         premisesZip: "33333",
         coverageA: 200000,
+        coverageLimits: { coverage_a: "200000", coverage_b: "20000" },
+        formType: "HO3",
+        insuranceType: "Homeowners",
+        sellingAgency: "FitFirst",
+        producer: "Agent",
+        billingFrequency: "annual",
+        carrierId: "carrier-1",
       },
       risk: {
         yearBuilt: 1980,
@@ -333,5 +412,6 @@ describe("buildOverviewWriteBackFromGemini", () => {
     expect(patch.policy).toEqual({});
     expect(patch.risk).toEqual({});
     expect(patch.written).toEqual([]);
+    expect(patch.carrierName ?? null).toBeNull();
   });
 });

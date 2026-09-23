@@ -10,7 +10,10 @@ import { RenewalCompareDrawer } from "@/components/renewals/renewal-compare-draw
 import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
 import { RenewalMiniReview } from "@/components/renewals/renewal-mini-review";
 import { Button } from "@/components/ui/button";
-import { formatSignedMoney } from "@/lib/renewal/compare";
+import {
+  formatBoardPremiumDelta,
+  premiumShopStayChip,
+} from "@/lib/renewal/compare";
 import { autopilotConfirmLabel } from "@/lib/renewal/autopilot";
 import { chaseTemplateFor, primaryActionLabel, primaryRenewalAction } from "@/lib/renewal/chase";
 import type { RenewalBoardCard } from "@/lib/renewal/board-data";
@@ -23,20 +26,38 @@ import {
 } from "@/lib/renewal/urgency";
 import { cn } from "@/lib/utils";
 
-function PremiumDeltaArrow({ delta }: { delta: number }) {
+function PremiumDeltaArrow({
+  delta,
+  pct,
+}: {
+  delta: number;
+  pct: number | null;
+}) {
+  const label = formatBoardPremiumDelta(delta, pct);
+  const chip = premiumShopStayChip({
+    pct,
+    direction: delta > 0 ? "up" : delta < 0 ? "down" : "flat",
+  });
+  const chipEl = chip ? (
+    <span className="ff-renewal-delta-chip" data-ff-premium-chip={chip.toLowerCase()}>
+      {chip}
+    </span>
+  ) : null;
   if (delta > 0) {
     return (
-      <span className="ff-renewal-delta ff-renewal-delta-up" data-ff-premium-delta="up" title={`Premium up ${formatSignedMoney(delta)}`}>
+      <span className="ff-renewal-delta ff-renewal-delta-up" data-ff-premium-delta="up" title={`Premium up ${label}`}>
         <ArrowUp className="size-3.5" aria-hidden />
-        <span>{formatSignedMoney(delta)}</span>
+        <span>{label}</span>
+        {chipEl}
       </span>
     );
   }
   if (delta < 0) {
     return (
-      <span className="ff-renewal-delta ff-renewal-delta-down" data-ff-premium-delta="down" title={`Premium down ${formatSignedMoney(Math.abs(delta))}`}>
+      <span className="ff-renewal-delta ff-renewal-delta-down" data-ff-premium-delta="down" title={`Premium down ${label}`}>
         <ArrowDown className="size-3.5" aria-hidden />
-        <span>{formatSignedMoney(delta)}</span>
+        <span>{label}</span>
+        {chipEl}
       </span>
     );
   }
@@ -44,6 +65,7 @@ function PremiumDeltaArrow({ delta }: { delta: number }) {
     <span className="ff-renewal-delta ff-renewal-delta-flat" data-ff-premium-delta="flat" title="Premium unchanged">
       <Minus className="size-3.5" aria-hidden />
       <span>Flat</span>
+      {chipEl}
     </span>
   );
 }
@@ -192,7 +214,9 @@ export function RenewalBoardCardView({
           i
         </button>
       </div>
-      {card.premiumDelta != null ? <PremiumDeltaArrow delta={card.premiumDelta} /> : null}
+      {card.premiumDelta != null ? (
+        <PremiumDeltaArrow delta={card.premiumDelta} pct={card.premiumDeltaPct} />
+      ) : null}
       <p className="ff-renewal-why" title={why}>
         {why}
       </p>

@@ -53,6 +53,8 @@ export type RenewalBoardCard = {
   premium: string | null;
   proposedPremium: string | null;
   premiumDelta: number | null;
+  /** Fraction (0.033 = +3.3%); null when current premium is zero. */
+  premiumDeltaPct: number | null;
   ownerId: string | null;
   ownerName: string | null;
   partyKey: string;
@@ -238,6 +240,7 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
       premium: built.currentPremium,
       proposedPremium: built.proposedPremium,
       premiumDelta: built.delta,
+      premiumDeltaPct: built.pct,
       ownerId: row.policy.ownerId ?? row.contact?.ownerId ?? null,
       ownerName: null,
       partyKey: "",

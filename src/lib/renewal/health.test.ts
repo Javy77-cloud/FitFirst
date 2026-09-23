@@ -29,6 +29,7 @@ function card(partial: Partial<RenewalBoardCard>): RenewalBoardCard {
     premium: "2184",
     proposedPremium: "2547",
     premiumDelta: 363,
+    premiumDeltaPct: 363 / 2184,
     ownerId: "agent-1",
     ownerName: "Maya",
     partyKey: "c:c1",
