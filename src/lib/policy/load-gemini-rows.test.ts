@@ -261,6 +261,42 @@ describe("loadGeminiRows document store", () => {
     expect(mintFailureToast("need_gemini")).toEqual({ key: "gemini-needs-key", kind: "error" });
   });
 
+  it("treats persistRows failure as best-effort and still returns rows", async () => {
+    const persistRows = vi.fn(async () => {
+      throw new Error(
+        'Failed query: insert into "extracted_fields" ("risk_id") values (null)',
+      );
+    });
+    const log = vi.fn();
+    const result = await loadGeminiRows(
+      {
+        docId: "43ebbf5d-0000-0000-0000-000000000001",
+        storagePath: ROSA_BLOB_KEY,
+      },
+      {
+        readStoredFile: async () => Buffer.from("%PDF-1.4 compare-dec"),
+        loadGeminiApiKey: async () => "test-key",
+        extractWithGeminiPdf: extractOk([
+          { fieldKey: "current_carrier", normalizedValue: "America" },
+          { fieldKey: "current_premium", normalizedValue: "2547.00" },
+          { fieldKey: "effective_date", normalizedValue: "2026-10-01" },
+          { fieldKey: "expiration_date", normalizedValue: "2027-10-01" },
+        ]),
+        persistRows,
+        log,
+      },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.cached).toBe(false);
+    expect(result.rows.map((r) => r.fieldKey)).toContain("current_carrier");
+    expect(persistRows).toHaveBeenCalledTimes(1);
+    expect(log).toHaveBeenCalledWith(
+      "dec extract: persist cache failed (best-effort)",
+      expect.objectContaining({ documentId: "43ebbf5d-0000-0000-0000-000000000001" }),
+    );
+  });
+
   it("re-extracts when force is set even if cache exists", async () => {
     const readStoredFile = vi.fn(async () => Buffer.from("%PDF-1.4 remint"));
     const extractWithGeminiPdf = extractOk([{ fieldKey: "premium", normalizedValue: "3383" }]);

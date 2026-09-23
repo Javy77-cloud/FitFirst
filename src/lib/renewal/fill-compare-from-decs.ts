@@ -211,3 +211,19 @@ export function mapGeminiRowsToTermFields(
     },
   };
 }
+
+/**
+ * extracted_fields.risk_id is NOT NULL in Postgres. Prefer the document's risk,
+ * then the policy's. When neither exists, callers must skip the cache write —
+ * Fill Compare maps premiums into policy_terms without depending on the cache.
+ */
+export function riskIdForExtractedFieldsCache(
+  docRiskId: string | null | undefined,
+  policyRiskId: string | null | undefined,
+): string | null {
+  const fromDoc = (docRiskId ?? "").trim();
+  if (fromDoc) return fromDoc;
+  const fromPolicy = (policyRiskId ?? "").trim();
+  if (fromPolicy) return fromPolicy;
+  return null;
+}

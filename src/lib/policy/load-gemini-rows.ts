@@ -177,7 +177,15 @@ export async function loadGeminiRows(
       log("dec extract: Gemini returned no fields", { documentId: input.docId });
       return { ok: false, reason: "extract_failed", message: DEC_EXTRACT_FAILED_MESSAGE };
     }
-    await deps.persistRows?.(input.docId, rows);
+    try {
+      await deps.persistRows?.(input.docId, rows);
+    } catch (error) {
+      // Field cache is best-effort — callers (Fill Compare, mint) still need rows.
+      log("dec extract: persist cache failed (best-effort)", {
+        documentId: input.docId,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
     return {
       ok: true,
       rows,

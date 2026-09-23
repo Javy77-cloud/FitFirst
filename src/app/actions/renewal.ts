@@ -34,6 +34,7 @@ import {
 } from "@/lib/renewal/compare";
 import {
   mapGeminiRowsToTermFields,
+  riskIdForExtractedFieldsCache,
   selectCompareTermRoleDocs,
   type MappedTermFields,
   type TermRoleDocLike,
@@ -251,28 +252,47 @@ async function loadCachedGeminiRows(docId: string): Promise<GeminiMintRow[]> {
   }));
 }
 
-async function persistExtractRows(docId: string, rows: GeminiMintRow[]) {
-  const [doc] = await db
-    .select({ riskId: documents.riskId })
-    .from(documents)
-    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.id, docId)));
-  await db
-    .delete(extractedFields)
-    .where(and(eq(extractedFields.tenantId, DEFAULT_TENANT_ID), eq(extractedFields.documentId, docId)));
-  for (const field of rows) {
-    const normalized = field.normalizedValue?.trim() || "";
-    const raw = field.rawValue?.trim() || normalized;
-    if (!normalized && !raw) continue;
-    await db.insert(extractedFields).values({
-      tenantId: DEFAULT_TENANT_ID,
+async function persistExtractRows(
+  docId: string,
+  rows: GeminiMintRow[],
+  policyRiskId?: string | null,
+) {
+  // Field cache is best-effort for Fill Compare. Never throw — policy_terms
+  // mapping must succeed even when extracted_fields.risk_id cannot be written.
+  try {
+    const [doc] = await db
+      .select({ riskId: documents.riskId })
+      .from(documents)
+      .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.id, docId)));
+    const riskId = riskIdForExtractedFieldsCache(doc?.riskId, policyRiskId);
+    // Postgres extracted_fields.risk_id is NOT NULL — skip cache when no risk.
+    if (!riskId) {
+      console.error("fill compare: skip extracted_fields cache (no risk_id)", { documentId: docId });
+      return;
+    }
+    await db
+      .delete(extractedFields)
+      .where(and(eq(extractedFields.tenantId, DEFAULT_TENANT_ID), eq(extractedFields.documentId, docId)));
+    for (const field of rows) {
+      const normalized = field.normalizedValue?.trim() || "";
+      const raw = field.rawValue?.trim() || normalized;
+      if (!normalized && !raw) continue;
+      await db.insert(extractedFields).values({
+        tenantId: DEFAULT_TENANT_ID,
+        documentId: docId,
+        riskId,
+        fieldKey: field.fieldKey,
+        rawValue: raw,
+        normalizedValue: normalized || raw,
+        confidence: field.confidence.toFixed(3),
+        flagged: field.flagged,
+        appliedToRisk: false,
+      });
+    }
+  } catch (error) {
+    console.error("fill compare: extracted_fields cache failed (best-effort)", {
       documentId: docId,
-      riskId: doc?.riskId ?? null,
-      fieldKey: field.fieldKey,
-      rawValue: raw,
-      normalizedValue: normalized || raw,
-      confidence: field.confidence.toFixed(3),
-      flagged: field.flagged,
-      appliedToRisk: false,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 }
@@ -435,7 +455,7 @@ export async function fillCompareFromTermRoleDocs(
         loadCachedRows: loadCachedGeminiRows,
         loadGeminiApiKey,
         extractWithGeminiPdf,
-        persistRows: persistExtractRows,
+        persistRows: (id, rows) => persistExtractRows(id, rows, policy.riskId),
       },
     );
     if (!gemini.ok) {
