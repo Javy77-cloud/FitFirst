@@ -4,7 +4,7 @@ import {
   LINE_TAG_PREFIX,
   formTag,
   lineTag,
-} from "@/lib/leads/line-documents";
+} from "@/lib/documents/doc-line-tags";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 
 /** Tags that carry product-window membership (multi-membership allowed). */

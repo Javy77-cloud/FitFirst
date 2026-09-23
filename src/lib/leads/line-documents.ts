@@ -7,11 +7,15 @@ import {
   type QuotingFormId,
   type ShopLine,
 } from "@/lib/domain";
-import { shopLinesForConvert } from "@/lib/crm/convert";
 import { coerceQuotingFormId, isQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
+import {
+  FORM_TAG_PREFIX,
+  LINE_TAG_PREFIX,
+  formTag,
+  lineTag,
+} from "@/lib/documents/doc-line-tags";
 
-export const LINE_TAG_PREFIX = "line:";
-export const FORM_TAG_PREFIX = "form:";
+export { FORM_TAG_PREFIX, LINE_TAG_PREFIX, formTag, lineTag };
 
 /** Extra lead-doc cards not in QUOTING_FORMS (still useful on the lead desk). */
 export const EXTRA_LEAD_DOC_FORMS = [
@@ -48,14 +52,6 @@ const LEAD_DOC_FORM_BY_ID = new Map(LEAD_DOC_FORMS.map((form) => [form.id, form]
 
 /** Legacy personal-lines set. Lead cards no longer pre-render these. */
 export const DEFAULT_LEAD_DOC_LINES: readonly ShopLine[] = ["home", "auto", "flood"];
-
-export function lineTag(line: ShopLine): string {
-  return `${LINE_TAG_PREFIX}${line}`;
-}
-
-export function formTag(formId: string): string {
-  return `${FORM_TAG_PREFIX}${formId}`;
-}
 
 export function leadDocFormById(id: string | null | undefined): LeadDocFormOption | null {
   const raw = (id ?? "").trim();
@@ -219,7 +215,10 @@ export function shopLinesForConvertWithDocs(
   documentLines: readonly ShopLine[] = [],
   selectedLines: readonly ShopLine[] = [],
 ): ShopLine[] {
-  const selected = new Set<ShopLine>(shopLinesForConvert(primaryLine));
+  // Same primary mapping as shopLinesForConvert — kept here to avoid importing
+  // @/lib/crm/convert (that module pulls deal-title → package-lines and cycles
+  // with shop-flow → product-doc-membership → this file).
+  const selected = new Set<ShopLine>([desiredShopLine(primaryLine)]);
   for (const line of documentLines) selected.add(line);
   for (const line of selectedLines) selected.add(line);
   return SHOP_LINES.filter((line) => selected.has(line));
