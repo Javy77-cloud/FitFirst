@@ -4,13 +4,11 @@ import {
   PolicyInlineStatus,
   PolicyInlineText,
 } from "@/components/policy/policy-inline-fields";
-import { PolicyLobField } from "@/components/policy/policy-lob-field";
 import { CorrectTermDatesDialog } from "@/components/policy/correct-term-dates-dialog";
 import { formatDay } from "@/lib/domain";
 import { RecordLink } from "@/components/record-links";
 import { POLICY_STATUSES } from "@/lib/policy/status";
 import { partyLabel } from "@/lib/desk/policy-name";
-import { distinctMailingLabel, mailingAddressLine } from "@/lib/desk/policy-information";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import {
   formatPremisesDisplay,
@@ -24,8 +22,7 @@ export function PolicyInformationCard({
   carrierName,
   contact,
   account,
-  locationLabel,
-  mailing,
+  producerDisplayName,
   readOnly = false,
   showCommission = true,
 }: {
@@ -56,13 +53,8 @@ export function PolicyInformationCard({
   carrierName?: string | null;
   contact?: { id: string; firstName: string; lastName: string } | null;
   account?: { id: string; name: string } | null;
-  locationLabel?: string | null;
-  mailing?: {
-    address?: string | null;
-    city?: string | null;
-    state?: string | null;
-    zip?: string | null;
-  } | null;
+  /** Resolved person name (owner profile Name); never AFA / selling agency. */
+  producerDisplayName?: string | null;
   /** Agents: Overview is fully read-only. Admins can edit (sensitive fields confirm). */
   readOnly?: boolean;
   showCommission?: boolean;
@@ -88,20 +80,7 @@ export function PolicyInformationCard({
     zip: policy.premisesZip,
   });
   const insuredStacked = formatPremisesStacked(premisesParts);
-  const mailingLine = mailingAddressLine(mailing);
-  const mailingShown = distinctMailingLabel({
-    premises: insuredLocation,
-    mailing: mailingLine,
-    locationLabel,
-  });
-  // Prefer structured mailing parts; fall back to parsing the distinct one-liner (locationLabel).
-  const mailingStacked = mailingShown
-    ? formatPremisesStacked(
-        mailingLine && mailingLine === mailingShown && mailing
-          ? mailing
-          : { address: mailingShown },
-      ) ?? mailingShown
-    : null;
+  const producerPerson = producerDisplayName?.trim() || "";
 
   return (
     <section id="policy-information" className="ff-card mb-4 p-4" data-ff-policy-information="">
@@ -114,6 +93,7 @@ export function PolicyInformationCard({
           : "Click a field to edit. Policy number asks for confirmation. Term dates stay locked (carrier/API truth); use Correct term dates for agency overrides. Commission % and auto-label stay locked."}
       </p>
       <dl className="mt-3 grid gap-x-3 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        {/* Row 1: Insured | Carrier | Policy number | Status */}
         <div>
           <dt className="text-helper text-muted-foreground">Insured</dt>
           <dd className="font-medium text-navy">
@@ -130,11 +110,21 @@ export function PolicyInformationCard({
           carrierName={carrierName}
           readOnly={readOnly}
         />
-        <PolicyLobField
+        <PolicyInlineText
           policyId={policy.id}
-          value={policy.lineOfBusiness}
+          fieldKey="policyNumber"
+          label="Policy number"
+          value={policy.policyNumber}
           readOnly={readOnly}
         />
+        <PolicyInlineStatus
+          policyId={policy.id}
+          value={policy.status}
+          options={POLICY_STATUSES}
+          readOnly={readOnly}
+        />
+
+        {/* Row 2: Form / Subtype | Insurance type | Selling agency | Producer */}
         <PolicyInlineText
           policyId={policy.id}
           fieldKey="policySubType"
@@ -151,26 +141,29 @@ export function PolicyInformationCard({
         />
         <PolicyInlineText
           policyId={policy.id}
-          fieldKey="producer"
-          label="Producer"
-          value={policy.producer ?? ""}
-          readOnly={readOnly}
-        />
-        <PolicyInlineText
-          policyId={policy.id}
           fieldKey="sellingAgency"
           label="Selling agency"
           value={policy.sellingAgency ?? ""}
           readOnly={readOnly}
         />
-        <PolicyInlineText
-          policyId={policy.id}
-          fieldKey="premisesAddress"
-          label={homePc ? "Insured location" : "Premises"}
-          value={insuredLocation || streetOnly}
-          displayText={insuredStacked ?? undefined}
-          readOnly={readOnly}
-        />
+        <div data-ff-policy-inline="producer" data-ff-producer-person="">
+          <dt className="text-helper text-muted-foreground">Producer</dt>
+          <dd className="font-medium text-navy">{producerPerson || "—"}</dd>
+        </div>
+
+        {/* Row 3: Insured location / Premises — always shown; spans for readability */}
+        <div className="sm:col-span-2 lg:col-span-4" data-ff-policy-premises-row="">
+          <PolicyInlineText
+            policyId={policy.id}
+            fieldKey="premisesAddress"
+            label={homePc ? "Insured location" : "Premises"}
+            value={insuredLocation || streetOnly}
+            displayText={insuredStacked ?? undefined}
+            readOnly={readOnly}
+          />
+        </div>
+
+        {/* Row 4: Effective | Expiration | Renewal | commission or spacer */}
         <div data-ff-policy-inline="effectiveDate" data-ff-term-date-locked="">
           <dt className="text-helper text-muted-foreground">Effective date</dt>
           <dd className="font-medium text-navy">{formatDay(policy.effectiveDate)}</dd>
@@ -214,6 +207,8 @@ export function PolicyInformationCard({
             </p>
           </div>
         ) : null}
+
+        {/* Row 5: Billing | Premium | two empty cells reserved */}
         <PolicyInlineText
           policyId={policy.id}
           fieldKey="billingFrequency"
@@ -228,30 +223,8 @@ export function PolicyInformationCard({
           value={policy.premium != null ? String(policy.premium) : ""}
           readOnly={readOnly}
         />
-        <PolicyInlineText
-          policyId={policy.id}
-          fieldKey="policyNumber"
-          label="Policy number"
-          value={policy.policyNumber}
-          readOnly={readOnly}
-        />
-        <PolicyInlineStatus
-          policyId={policy.id}
-          value={policy.status}
-          options={POLICY_STATUSES}
-          readOnly={readOnly}
-        />
-        {mailingStacked ? (
-          <div data-ff-address-compact="">
-            <dt className="text-helper text-muted-foreground">Mailing address</dt>
-            <dd
-              className="whitespace-pre-line font-medium leading-snug text-navy"
-              data-ff-mailing-address=""
-            >
-              {mailingStacked}
-            </dd>
-          </div>
-        ) : null}
+        <div className="hidden lg:block" aria-hidden="true" data-ff-billing-row-spacer="1" />
+        <div className="hidden lg:block" aria-hidden="true" data-ff-billing-row-spacer="2" />
       </dl>
       {carrierId ? (
         <p className="mt-3 text-xs text-muted-foreground">

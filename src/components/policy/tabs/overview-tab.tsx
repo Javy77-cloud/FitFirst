@@ -23,8 +23,6 @@ export function PolicyOverviewTab({
   contact,
   account,
   deal,
-  locationLabel,
-  mailing,
   sheet,
   vehicles,
   isAuto,
@@ -36,6 +34,7 @@ export function PolicyOverviewTab({
   packetOnFile,
   interests,
   risk,
+  producerDisplayName,
   readOnly = false,
   showCommission = true,
 }: {
@@ -84,13 +83,6 @@ export function PolicyOverviewTab({
     operationsDescription?: string | null;
   } | null;
   deal?: { id: string; title: string } | null;
-  locationLabel?: string | null;
-  mailing?: {
-    address?: string | null;
-    city?: string | null;
-    state?: string | null;
-    zip?: string | null;
-  } | null;
   sheet?: Record<string, { value?: string | null } | undefined> | null;
   vehicles: Parameters<typeof VehiclesList>[0]["vehicles"];
   isAuto: boolean;
@@ -106,6 +98,8 @@ export function PolicyOverviewTab({
     yearBuilt?: number | null;
     construction?: string | null;
   } | null;
+  /** Owner profile Name (person), never AFA / selling agency. */
+  producerDisplayName?: string | null;
   readOnly?: boolean;
   showCommission?: boolean;
 }) {
@@ -130,8 +124,7 @@ export function PolicyOverviewTab({
         carrierName={carrierName}
         contact={contact}
         account={account}
-        locationLabel={locationLabel}
-        mailing={mailing}
+        producerDisplayName={producerDisplayName}
         readOnly={readOnly}
         showCommission={showCommission}
       />
