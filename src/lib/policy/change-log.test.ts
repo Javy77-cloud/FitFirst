@@ -75,6 +75,7 @@ describe("policy change history", () => {
     expect(sourceLabel("mint")).toBe("Policy created");
     expect(sourceLabel("mint")).not.toMatch(/mint|meant/i);
     expect(sourceLabel("term_override")).toBe("Term date correction");
+    expect(sourceLabel("renewal_term_advance")).toBe("Renewal term advance");
   });
 
   it("does not log form defaults that were already shown as blanks", () => {

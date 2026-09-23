@@ -1217,6 +1217,19 @@ export async function setDocumentTermRole(formData: FormData) {
   }
 
   await db.update(documents).set({ tags: nextTags }).where(eq(documents.id, documentId));
+  const nextRole = termRoleFromTags(nextTags);
+  if (nextRole === "current" && doc.policyId) {
+    const { advancePolicyCurrentTerm } = await import("@/lib/policy/advance-current-term-apply");
+    await advancePolicyCurrentTerm({
+      policyId: doc.policyId,
+      trigger: "document_term_role",
+    });
+    const { syncPolicyDateAutomations } = await import("@/app/actions/policy-record");
+    await syncPolicyDateAutomations(doc.policyId);
+    revalidatePath(`/policies/${doc.policyId}`);
+    revalidatePath("/policies");
+    revalidatePath("/renewals");
+  }
   revalidateDocumentPaths(doc);
   const href = documentDeleteReturnHref({
     policyId: doc.policyId || String(formData.get("policyId") ?? "").trim(),
@@ -1247,6 +1260,25 @@ export async function setDocumentTermRoleInline(input: {
   const nextTags = tagsWithTermRole(doc.tags, clear ? null : (rawRole as DocumentTermRole));
   if (termRoleFromTags(doc.tags) !== termRoleFromTags(nextTags)) {
     await db.update(documents).set({ tags: nextTags }).where(eq(documents.id, documentId));
+    const nextRole = termRoleFromTags(nextTags);
+    if (nextRole === "current" && (doc.policyId || input.policyId)) {
+      const { advancePolicyCurrentTerm } = await import("@/lib/policy/advance-current-term-apply");
+      const policyIdForAdvance = doc.policyId || String(input.policyId ?? "").trim();
+      const advanced = await advancePolicyCurrentTerm({
+        policyId: policyIdForAdvance,
+        trigger: "document_term_role",
+      });
+      if (!advanced.ok) {
+        return { ok: false, error: advanced.error };
+      }
+      if (advanced.advanced) {
+        const { syncPolicyDateAutomations } = await import("@/app/actions/policy-record");
+        await syncPolicyDateAutomations(policyIdForAdvance);
+        revalidatePath(`/policies/${policyIdForAdvance}`);
+        revalidatePath("/policies");
+        revalidatePath("/renewals");
+      }
+    }
     revalidateDocumentPaths(doc);
   }
   return { ok: true };

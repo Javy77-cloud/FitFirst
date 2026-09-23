@@ -265,8 +265,21 @@ export async function markClientStaying(formData: FormData) {
     outcome: RENEWAL_HANDLED_EVENT,
   });
 
+  // When a Current-term DEC is already on the policy, advance book dates + term history
+  // so Policies → Current shows days left (not the expired prior term).
+  const { advancePolicyCurrentTerm } = await import("@/lib/policy/advance-current-term-apply");
+  await advancePolicyCurrentTerm({
+    policyId,
+    requireCurrentDec: true,
+    trigger: "client_staying",
+    actorName: session.name,
+  });
+  const { syncPolicyDateAutomations } = await import("@/app/actions/policy-record");
+  await syncPolicyDateAutomations(policyId);
+
   void renewalQueueLine(policy.policyNumber ?? "policy", RENEWAL_HANDLED_STAGE);
   refreshBoard(policyId);
   revalidatePath("/notifications");
   revalidatePath("/");
+  revalidatePath("/policies");
 }
