@@ -6206,3 +6206,27 @@ tr[data-ff-activity-selected="true"] {
   20% { opacity: 1; }
   100% { transform: translate3d(calc((var(--i) - 9) * 6px), -70px, 0) scale(1.2); opacity: 0; }
 }
+
+
+/* Quiet Archive term-role — muted vs Prior/Current/Renewal */
+.ff-term-role-archive,
+[data-ff-doc-term-role="archive"] {
+  color: var(--muted-foreground);
+  opacity: 0.8;
+}
+[data-ff-doc-term-role="archive"] select {
+  color: var(--muted-foreground);
+  border-style: dashed;
+}
+.ff-renewal-handled-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px dashed var(--border);
+  padding: 0.1rem 0.55rem;
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+}
+.ff-client-staying-btn {
+  white-space: nowrap;
+}

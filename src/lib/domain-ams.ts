@@ -802,6 +802,7 @@ export const RENEWAL_QUEUE_STAGES = [
   "quoted",
   "bound",
   "lost",
+  "handled",
 ] as const;
 export type RenewalQueueStage = (typeof RENEWAL_QUEUE_STAGES)[number];
 
@@ -811,6 +812,7 @@ export const RENEWAL_QUEUE_STAGE_LABELS: Record<RenewalQueueStage, string> = {
   quoted: "Quoted",
   bound: "Bound",
   lost: "Lost",
+  handled: "Handled",
 };
 
 /** Short column hints for the renewals board (deals-style). */
@@ -820,6 +822,7 @@ export const RENEWAL_QUEUE_STAGE_HINTS: Record<RenewalQueueStage, string> = {
   quoted: "Renewal quote delivered",
   bound: "Renewal bound (desk stub — same Policy)",
   lost: "Did not renew",
+  handled: "Client staying — quiet until next term start",
 };
 
 export function isRenewalQueueStage(value: string): value is RenewalQueueStage {
@@ -848,6 +851,7 @@ export const RENEWAL_QUEUE_NEXT_STEPS: Record<RenewalQueueStage, string> = {
   quoted: "Quote delivered. Bound is a desk stub and does not rewrite the Policy.",
   bound: "Stub only. The same Policy stays in force. No new bind from this board.",
   lost: "Logged as lost. Policy status stays as-is.",
+  handled: "Client staying. Chase is clear; day-of term start removes this quietly.",
 };
 
 export function renewalQueueNextStep(stage: string): string {

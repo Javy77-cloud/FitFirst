@@ -122,3 +122,18 @@ describe("renewal desk filters", () => {
     expect(renewalStagesForPipeline(stages, "archive")).toEqual([]);
   });
 });
+
+describe("handled collection filter", () => {
+  it("excludes handled from All shopping and shows them on Handled pipeline", () => {
+    const rows = [
+      card({ stage: "upcoming", lineOfBusiness: "HO3", policyNumber: "HO-1" }),
+      card({ stage: "handled", lineOfBusiness: "HO3", policyNumber: "HO-H" }),
+    ];
+    expect(filterRenewalCards(rows, {}, DEFAULT_DESK_LINE_SETTINGS).map((r) => r.policyNumber)).toEqual([
+      "HO-1",
+    ]);
+    expect(
+      filterRenewalCards(rows, { pipeline: "handled" }, DEFAULT_DESK_LINE_SETTINGS).map((r) => r.policyNumber),
+    ).toEqual(["HO-H"]);
+  });
+});

@@ -1,4 +1,5 @@
 import { recordRenewalCompare, saveProposedTerm } from "@/app/actions/renewal";
+import { ClientStayingButton } from "@/components/renewals/client-staying-button";
 import { FillCompareFromDecsButton } from "@/components/policy/fill-compare-from-decs-button";
 import { PremiumChangeSummary } from "@/components/policy/premium-change";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,7 @@ export function ComparePanel({
     <div className="space-y-4">
       <section className="ff-card flex flex-wrap items-center gap-3 p-4">
         <FillCompareFromDecsButton policyId={policy.id} />
+        <ClientStayingButton policyId={policy.id} size="sm" />
         <p className="text-sm text-muted-foreground">
           Pull premium and term dates from Documents tagged Prior/Current + Renewal.
         </p>

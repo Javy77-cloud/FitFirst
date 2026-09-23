@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
@@ -200,4 +200,73 @@ export async function createRenewalCrossSellDeal(formData: FormData) {
   fd.set("source", "cross-sell");
   // createDeal redirects to the new deal
   await createDeal(fd);
+}
+
+/** Client staying — leave active chase, land in quiet Handled filter (not archive). */
+export async function markClientStaying(formData: FormData) {
+  const session = await currentDeskSession();
+  if (!session.signedIn) throw new Error("Sign in required.");
+  const policyId = str(formData, "policyId");
+  if (!isUuid(policyId)) throw new Error("Policy required.");
+
+  const [policy] = await db
+    .select({ id: policies.id, policyNumber: policies.policyNumber, status: policies.status })
+    .from(policies)
+    .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
+  if (!policy) throw new Error("Policy not found.");
+
+  const {
+    RENEWAL_HANDLED_STAGE,
+    RENEWAL_HANDLED_EVENT,
+    RENEWAL_HANDLED_CLEAR_KINDS,
+  } = await import("@/lib/renewal/handled");
+
+  const [existing] = await db
+    .select()
+    .from(renewalQueue)
+    .where(and(eq(renewalQueue.tenantId, DEFAULT_TENANT_ID), eq(renewalQueue.policyId, policyId)));
+
+  if (existing) {
+    if (existing.stage !== RENEWAL_HANDLED_STAGE) {
+      await db
+        .update(renewalQueue)
+        .set({ stage: RENEWAL_HANDLED_STAGE, updatedAt: new Date() })
+        .where(eq(renewalQueue.id, existing.id));
+    }
+  } else {
+    await db.insert(renewalQueue).values({
+      tenantId: DEFAULT_TENANT_ID,
+      policyId,
+      stage: RENEWAL_HANDLED_STAGE,
+    });
+  }
+
+  await db
+    .update(alerts)
+    .set({ readAt: new Date() })
+    .where(
+      and(
+        eq(alerts.tenantId, DEFAULT_TENANT_ID),
+        eq(alerts.entityType, "policy"),
+        eq(alerts.entityId, policyId),
+        inArray(alerts.kind, [...RENEWAL_HANDLED_CLEAR_KINDS]),
+      ),
+    );
+
+  await db.insert(activities).values({
+    tenantId: DEFAULT_TENANT_ID,
+    kind: "note",
+    title: "Client staying",
+    notes:
+      "Renewal handled. Policy stays live; Work-lane chase cleared. Day-of term start will flip document roles and leave Handled.",
+    status: "completed",
+    policyId,
+    assignee: session.userId,
+    outcome: RENEWAL_HANDLED_EVENT,
+  });
+
+  void renewalQueueLine(policy.policyNumber ?? "policy", RENEWAL_HANDLED_STAGE);
+  refreshBoard(policyId);
+  revalidatePath("/notifications");
+  revalidatePath("/");
 }

@@ -1,5 +1,5 @@
 /**
- * Document display meta: attach types (from policy-family) + Prior/Current/Renewal term role.
+ * Document display meta: attach types (from policy-family) + Prior/Current/Renewal/Archive term role.
  * Term role is stored on documents.tags as `term_role:<value>` (no schema migration).
  */
 
@@ -13,7 +13,16 @@ export const DOCUMENT_TERM_ROLES = [
   { value: "prior", label: "Prior term" },
   { value: "current", label: "Current term" },
   { value: "renewal", label: "Renewal / upcoming term" },
+  { value: "archive", label: "Archive" },
 ] as const;
+
+/** Roles Fill Compare may read — archive is never a compare side. */
+export const COMPARE_TERM_ROLES = ["prior", "current", "renewal"] as const;
+export type CompareTermRole = (typeof COMPARE_TERM_ROLES)[number];
+
+export function isCompareTermRole(value: string): value is CompareTermRole {
+  return (COMPARE_TERM_ROLES as readonly string[]).includes(value);
+}
 
 export type DocumentTermRole = (typeof DOCUMENT_TERM_ROLES)[number]["value"];
 
@@ -111,3 +120,65 @@ export function monthsBetweenTermDates(
   return Math.max(1, Math.round(days / 30.4375));
 }
 
+export type TermRoleFlipDoc = {
+  id: string;
+  tags?: string[] | null;
+  createdAt?: Date | string | null;
+};
+
+export type TermRoleFlipChange = {
+  id: string;
+  from: DocumentTermRole;
+  to: DocumentTermRole;
+};
+
+function flipCreatedAtMs(doc: TermRoleFlipDoc): number {
+  if (!doc.createdAt) return 0;
+  const t = new Date(doc.createdAt).getTime();
+  return Number.isFinite(t) ? t : 0;
+}
+
+function newestFirst(docs: TermRoleFlipDoc[]): TermRoleFlipDoc[] {
+  return [...docs].sort(
+    (a, b) => flipCreatedAtMs(b) - flipCreatedAtMs(a) || a.id.localeCompare(b.id),
+  );
+}
+
+/**
+ * Day-of term-start role flip. Idempotent when no `renewal` remains:
+ * renewal → current, current → prior, other priors (+ extras) → archive.
+ * Fill Compare never reads archive.
+ */
+export function planTermStartRoleFlip(
+  docs: readonly TermRoleFlipDoc[],
+): TermRoleFlipChange[] {
+  const renewals = newestFirst(docs.filter((doc) => termRoleFromTags(doc.tags) === "renewal"));
+  if (renewals.length === 0) return [];
+
+  const currents = newestFirst(docs.filter((doc) => termRoleFromTags(doc.tags) === "current"));
+  const priors = newestFirst(docs.filter((doc) => termRoleFromTags(doc.tags) === "prior"));
+
+  const keepCurrentId = renewals[0]!.id;
+  const priorPool = [...currents, ...renewals.slice(1), ...priors];
+  const keepPriorId = priorPool[0]?.id ?? null;
+
+  const changes: TermRoleFlipChange[] = [];
+  for (const doc of docs) {
+    const from = termRoleFromTags(doc.tags);
+    if (!from || from === "archive") continue;
+    let to: DocumentTermRole;
+    if (doc.id === keepCurrentId) to = "current";
+    else if (keepPriorId && doc.id === keepPriorId) to = "prior";
+    else if (from === "renewal" || from === "current" || from === "prior") to = "archive";
+    else continue;
+    if (to !== from) changes.push({ id: doc.id, from, to });
+  }
+  return changes;
+}
+
+export function shortTermRoleLabel(role: DocumentTermRole): string {
+  if (role === "prior") return "Prior";
+  if (role === "current") return "Current";
+  if (role === "renewal") return "Renewal";
+  return "Archive";
+}

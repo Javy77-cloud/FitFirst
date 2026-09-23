@@ -10,6 +10,7 @@ import { RenewalCompareDrawer } from "@/components/renewals/renewal-compare-draw
 import { RenewalHealthMeter } from "@/components/renewals/renewal-health-meter";
 import { RenewalMiniReview } from "@/components/renewals/renewal-mini-review";
 import { Button } from "@/components/ui/button";
+import { ClientStayingButton } from "@/components/renewals/client-staying-button";
 import {
   formatBoardPremiumDelta,
   PREMIUM_LAPSE_RISK_LABEL,
@@ -269,6 +270,11 @@ export function RenewalBoardCardView({
           {renewalPolicyTypeLabel(card)}
         </span>
         <div className="ff-renewal-card-footer-actions" data-ff-no-compare="">
+          {card.stage !== "handled" ? (
+            <ClientStayingButton policyId={card.policyId} />
+          ) : (
+            <span className="ff-renewal-handled-pill" data-ff-renewal-handled="">Handled</span>
+          )}
           <Button
             type="button"
             size="xs"

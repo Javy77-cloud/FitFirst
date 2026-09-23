@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ClientStayingButton } from "@/components/renewals/client-staying-button";
 import { PolicyInformationCard } from "@/components/policy/policy-information";
 import { LobOverviewSections } from "@/components/policy/lob-overview-sections";
 import { PremiumChangeSummary } from "@/components/policy/premium-change";
@@ -168,6 +169,9 @@ export function PolicyOverviewTab({
             >
               Compare terms
             </Link>
+          ) : null}
+          {isInForceStatus(policy.status) ? (
+            <ClientStayingButton policyId={policy.id} size="sm" />
           ) : null}
         </div>
       </section>

@@ -109,6 +109,13 @@ export const SEEDED_PIPELINES: SeededPipeline[] = [
     ],
   },
   {
+    slug: "handled",
+    name: "Handled",
+    kind: "parking",
+    seeded: true,
+    stages: [{ slug: "handled", name: "Handled" }],
+  },
+  {
     slug: "archive",
     name: "Archived",
     kind: "parking",

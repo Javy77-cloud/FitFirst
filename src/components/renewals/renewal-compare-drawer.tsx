@@ -7,6 +7,7 @@ import {
   type RenewalCompareDrawerPayload,
 } from "@/app/actions/renewals-wedge";
 import { Button } from "@/components/ui/button";
+import { ClientStayingButton } from "@/components/renewals/client-staying-button";
 import {
   Sheet,
   SheetContent,
@@ -86,6 +87,7 @@ export function RenewalCompareDrawer({
         >
           <SheetHeader>
             <SheetTitle>Compare terms</SheetTitle>
+            <div className="pt-2"><ClientStayingButton policyId={policyId} size="sm" /></div>
             <SheetDescription>
               {canCompare
                 ? `${clientName} — current vs proposed. Matched lines stay green.`
