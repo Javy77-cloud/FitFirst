@@ -701,9 +701,18 @@ export function fillSheetFromDealDetails(
     put("mailing_zip", mailZip);
   }
 
-  put("current_carrier", firstFilled(input.currentCarrier, stored.current_carrier));
+  // Flood current carrier/premium come from the flood DEC — never bleed HO deal carrier.
+  const floodSheet = (input.quotingLine ?? "").trim().toLowerCase() === "flood";
+  if (!floodSheet) {
+    put("current_carrier", firstFilled(input.currentCarrier, stored.current_carrier));
+  }
 
-  if (input.coverageAmount != null && Number.isFinite(input.coverageAmount) && input.coverageAmount > 0) {
+  if (
+    !floodSheet &&
+    input.coverageAmount != null &&
+    Number.isFinite(input.coverageAmount) &&
+    input.coverageAmount > 0
+  ) {
     put("coverage_a", String(Math.round(input.coverageAmount)));
   }
 

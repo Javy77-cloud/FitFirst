@@ -896,10 +896,10 @@ export const FLOOD_FIELDS: QuoteFieldDef[] = [
     options: [...FLOOD_QUOTE_REASON_OPTIONS],
   },
   { key: "has_nfip", label: "Currently have flood/NFIP?", group: "Current policy", input: "select", options: [...YES_NO_OPTIONS] },
-  { key: "nfip_policy", label: "Current NFIP / flood policy number", group: "Current policy" },
-  { key: "current_carrier", label: "Current carrier", group: "Current policy" },
-  { key: "current_premium", label: "Current premium", group: "Current policy", input: "number" },
-  { key: "expiration_date", label: "Expiration date", group: "Current policy" },
+  { key: "nfip_policy", label: "Current NFIP / flood policy number", group: "Current policy", extractKey: "policy_number" },
+  { key: "current_carrier", label: "Current carrier", group: "Current policy", extractKey: "current_carrier" },
+  { key: "current_premium", label: "Current premium", group: "Current policy", input: "number", extractKey: "current_premium" },
+  { key: "expiration_date", label: "Expiration date", group: "Current policy", extractKey: "expiration_date" },
   { key: "notes", label: "Notes", group: "Notes", input: "textarea" },
 ];
 
@@ -1495,6 +1495,13 @@ const LINE_SHEET_KEY_ALIASES: Partial<Record<ShopLine, Record<string, string>>> 
     num_stories: "number_of_floors",
     number_of_stories: "number_of_floors",
     floors: "number_of_floors",
+    // Flood sheet uses nfip_policy (not policy_number) for the current flood/NFIP id.
+    policy_number: "nfip_policy",
+    policy: "nfip_policy",
+    pol: "nfip_policy",
+    policy_no: "nfip_policy",
+    current_policy_id: "nfip_policy",
+    current_policy_number: "nfip_policy",
   },
   workers_comp: COMMERCIAL_EXTRACT_ALIASES,
   general_liability: COMMERCIAL_EXTRACT_ALIASES,

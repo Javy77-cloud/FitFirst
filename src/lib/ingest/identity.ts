@@ -82,9 +82,22 @@ export function looksLikeAutoPacket(text: string): boolean {
 }
 
 /** Home first. Only move off Home when the packet is clearly another line. */
+/** Filename/title signals a flood product DEC (NFIP / private flood), not HO flood-zone chatter. */
+export function looksLikeFloodPolicyDoc(filename: string, text = ""): boolean {
+  const name = filename.toLowerCase();
+  const blob = `${filename}\n${text}`.toLowerCase();
+  if (/wind\s*mit|4[- ]?point|four[- ]?point/.test(name)) return false;
+  if (/\bflood\b/.test(name)) return true;
+  if (/national flood insurance|\bnfip\b|flood insurance program/.test(blob)) return true;
+  if (/flood policy|flood declarations|flood dec\b/.test(blob)) return true;
+  return false;
+}
+
 export function inferShopLine(text: string, filename: string, docType: string): ShopLine {
   const blob = `${filename}\n${text}`.toLowerCase();
   if (docType === "quote" || docType === "quote_pdf") return "home";
+  // Flood DECs print Coverage A (building) — do not let that veto flood for a Flood-named file.
+  if (looksLikeFloodPolicyDoc(filename, text)) return "flood";
   if (sourceDocFillsHome(docType)) {
     if (looksLikeAutoPacket(blob) && !/homeowners|coverage a|wind mit|4[- ]?point|four[- ]?point/.test(blob)) {
       return "auto";
@@ -112,12 +125,27 @@ export function trustSheetLineForFill(opts: {
   mimeType?: string | null;
   text?: string | null;
   filename?: string | null;
+  /** Doc already passed product-window membership for this sheet (post-#332 Fill). */
+  productWindowMatch?: boolean;
+  /** Document tags like line:flood / form:FLOOD. */
+  tags?: readonly string[] | null;
 }): boolean {
   if (opts.inferred === opts.sheetLine) return true;
+  if (opts.productWindowMatch) return true;
   if (sourceDocFillsHome(String(opts.docType ?? "")) && opts.sheetLine === "home") return true;
   const mime = String(opts.mimeType ?? "").toLowerCase();
   const doc = String(opts.docType ?? "").toLowerCase();
   const name = String(opts.filename ?? "").toLowerCase();
+  const sheet = String(opts.sheetLine ?? "").trim().toLowerCase();
+  const tagBlob = (opts.tags ?? []).join(" ").toLowerCase();
+  if (
+    sheet === "flood" &&
+    (looksLikeFloodPolicyDoc(name, opts.text ?? "") ||
+      /\bline:flood\b/.test(tagBlob) ||
+      /\bform:flood\b/.test(tagBlob))
+  ) {
+    return true;
+  }
   const isPhoto =
     doc === "photo" ||
     mime.startsWith("image/") ||
