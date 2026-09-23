@@ -6230,3 +6230,17 @@ tr[data-ff-activity-selected="true"] {
 .ff-client-staying-btn {
   white-space: nowrap;
 }
+
+
+/* Quick Comms recipient heartbeat — same Activity glyph energy as stack cards, soft. */
+@keyframes ff-qc-heartbeat {
+  0%, 100% { transform: scale(1); opacity: 0.72; }
+  50% { transform: scale(1.14); opacity: 1; }
+}
+.ff-qc-recipient-heartbeat {
+  animation: ff-qc-heartbeat 2.4s ease-in-out infinite;
+  color: var(--ff-navy, #0b1f33);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ff-qc-recipient-heartbeat { animation: none; }
+}

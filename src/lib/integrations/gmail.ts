@@ -41,19 +41,56 @@ const MAX_INLINE_IMAGE_BYTES = 1_500_000;
 
 export type GmailThreadPreview = MailThreadPreview;
 
+export type GmailComposeAttachment = {
+  filename: string;
+  mimeType: string;
+  contentBase64: string;
+};
+
 function rfc2822(input: {
   to: string;
   from?: string | null;
   subject: string;
   body: string;
+  htmlBody?: string | null;
+  attachments?: GmailComposeAttachment[];
   inReplyTo?: string | null;
   references?: string | null;
 }): string {
   const from = input.from?.trim() ? `From: ${input.from.trim()}\r\n` : "";
   const reply = input.inReplyTo?.trim() ? `In-Reply-To: ${input.inReplyTo.trim()}\r\n` : "";
   const refs = input.references?.trim() ? `References: ${input.references.trim()}\r\n` : "";
-  return `${from}To: ${input.to.trim()}\r\nSubject: ${input.subject.replace(/\r?\n/g, " ")}\r\n${reply}${refs}Content-Type: text/plain; charset=utf-8\r\n\r\n${input.body}`;
+  const subject = `Subject: ${input.subject.replace(/\r?\n/g, " ")}\r\n`;
+  const head = `${from}To: ${input.to.trim()}\r\n${subject}${reply}${refs}`;
+  const attachments = input.attachments?.filter((part) => part.contentBase64 && part.filename) ?? [];
+  const htmlBody = input.htmlBody?.trim();
+  if (!attachments.length && !htmlBody) {
+    return `${head}Content-Type: text/plain; charset=utf-8\r\n\r\n${input.body}`;
+  }
+  const boundary = `ff_qc_${Date.now().toString(36)}`;
+  const chunks: string[] = [
+    `${head}MIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary="${boundary}"\r\n`,
+  ];
+  if (htmlBody) {
+    chunks.push(
+      `--${boundary}\r\nContent-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: 7bit\r\n\r\n${htmlBody}\r\n`,
+    );
+  } else {
+    chunks.push(
+      `--${boundary}\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: 7bit\r\n\r\n${input.body}\r\n`,
+    );
+  }
+  for (const part of attachments) {
+    const mime = part.mimeType || "application/octet-stream";
+    const safeName = part.filename.replace(/["\r\n]/g, "_");
+    chunks.push(
+      `--${boundary}\r\nContent-Type: ${mime}; name="${safeName}"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="${safeName}"\r\n\r\n${part.contentBase64}\r\n`,
+    );
+  }
+  chunks.push(`--${boundary}--`);
+  return chunks.join("");
 }
+
 
 function toBase64Url(value: string): string {
   return Buffer.from(value, "utf8").toString("base64url");
@@ -399,6 +436,8 @@ export async function sendGmailMessage(input: {
   to: string;
   subject: string;
   body: string;
+  htmlBody?: string | null;
+  attachments?: GmailComposeAttachment[];
   threadId?: string;
   inReplyTo?: string | null;
   references?: string | null;
@@ -410,6 +449,8 @@ export async function sendGmailMessage(input: {
       from: row?.tokenAccountEmail,
       subject: input.subject,
       body: input.body,
+      htmlBody: input.htmlBody,
+      attachments: input.attachments,
       inReplyTo: input.inReplyTo,
       references: input.references,
     }),

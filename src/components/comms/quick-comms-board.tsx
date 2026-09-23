@@ -23,6 +23,12 @@ import { type MeetingType } from "@/lib/meetings/types";
 const QC_MEETING_ORDER: MeetingType[] = ["in_office", "in_home", "video"];
 import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
 import { cn } from "@/lib/utils";
+import { Activity } from "lucide-react";
+import { QuickCommsEmailCompose } from "@/components/comms/quick-comms-email-compose";
+import {
+  loadQuickCommsEmailTemplates,
+  type QuickCommsEmailTemplateOption,
+} from "@/app/actions/quick-comms-email";
 import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import type { TaskRecordType } from "@/lib/tasks/task-types";
 
@@ -130,6 +136,15 @@ export function QuickCommsBoard({
   const [meetingType, setMeetingType] = useState<MeetingType>("in_office");
   const [callMode, setCallMode] = useState<"now" | "schedule">("now");
   const [emailMode, setEmailMode] = useState<"now" | "remind" | "schedule">("now");
+  const [emailGate, setEmailGate] = useState<"menu" | "here" | "templates">(
+    initialKind === "email" ? "here" : "menu",
+  );
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [templates, setTemplates] = useState<QuickCommsEmailTemplateOption[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templateId, setTemplateId] = useState<string | null>(null);
+  const [templateSubject, setTemplateSubject] = useState<string | null>(null);
+  const [templateBody, setTemplateBody] = useState<string | null>(null);
   const [smsMode, setSmsMode] = useState<"now" | "schedule">("now");
   const [callBusy, setCallBusy] = useState(false);
 
@@ -153,6 +168,7 @@ export function QuickCommsBoard({
       if (detail.accountId && accountId && detail.accountId !== accountId) return;
       if (detail.policyId && policyId && detail.policyId !== policyId) return;
       setKind(detail.kind);
+      if (detail.kind === "email") setEmailGate("menu");
     }
     window.addEventListener(QUICK_COMMS_EVENT, onOpen);
     return () => window.removeEventListener(QUICK_COMMS_EVENT, onOpen);
@@ -356,7 +372,17 @@ export function QuickCommsBoard({
           <button
             key={value}
             type="button"
-            onClick={() => setKind(value)}
+            onClick={() => {
+              if (value === "email") {
+                setKind("email");
+                setEmailGate("menu");
+                setTemplateId(null);
+                setTemplateSubject(null);
+                setTemplateBody(null);
+                return;
+              }
+              setKind(value);
+            }}
             className={cn(
               "inline-flex h-7 min-w-0 flex-1 items-center justify-center rounded-md px-1.5 text-xs font-medium whitespace-nowrap",
               RECORD_ACTIVITY_ACTION_WIDTH_CLASS,
@@ -368,11 +394,30 @@ export function QuickCommsBoard({
         ))}
       </div>
 
-      {toLine ? (
-        <p className="mt-2 truncate text-xs text-muted-foreground" data-ff-quick-comms-to="">
-          To: {toLine}
-        </p>
-      ) : null}
+      <div
+        className="mt-3 flex items-center gap-2"
+        data-ff-quick-comms-recipient=""
+      >
+        <Activity
+          className="ff-qc-recipient-heartbeat size-4 shrink-0 text-navy"
+          strokeWidth={2.25}
+          aria-hidden
+          data-ff-qc-recipient-heartbeat=""
+        />
+        <div className="min-w-0">
+          <p
+            className="truncate text-sm font-semibold leading-tight text-navy"
+            data-ff-quick-comms-recipient-name=""
+          >
+            {contactName?.trim() || party}
+          </p>
+          {toLine ? (
+            <p className="truncate text-[11px] text-muted-foreground" data-ff-quick-comms-to="">
+              {toLine}
+            </p>
+          ) : null}
+        </div>
+      </div>
 
       {kind === "task" ? (
         <div
@@ -599,7 +644,94 @@ export function QuickCommsBoard({
           </>
         ) : null}
 
-        {kind === "email" ? (
+        {kind === "email" && emailGate === "menu" ? (
+          <div className="space-y-2" data-ff-qc-email-menu="">
+            <p className="text-xs text-muted-foreground">How do you want to email?</p>
+            <Button
+              type="button"
+              size="sm"
+              className="w-full"
+              data-ff-qc-email-choice="here"
+              onClick={() => setEmailGate("here")}
+            >
+              Send from here
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="w-full"
+              data-ff-qc-email-choice="templates"
+              onClick={() => {
+                setEmailGate("templates");
+                if (!templates.length && !templatesLoading) {
+                  setTemplatesLoading(true);
+                  loadQuickCommsEmailTemplates()
+                    .then((rows) => setTemplates(rows))
+                    .catch(() => setTemplates([]))
+                    .finally(() => setTemplatesLoading(false));
+                }
+              }}
+            >
+              Choose a template
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="w-full"
+              data-ff-qc-email-choice="compose"
+              onClick={() => setComposeOpen(true)}
+            >
+              Open compose
+            </Button>
+          </div>
+        ) : null}
+
+        {kind === "email" && emailGate === "templates" ? (
+          <div className="space-y-2" data-ff-qc-email-templates="">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-medium text-navy">Agency templates</p>
+              <button
+                type="button"
+                className="text-[11px] text-muted-foreground underline"
+                onClick={() => setEmailGate("menu")}
+              >
+                Back
+              </button>
+            </div>
+            {templatesLoading ? (
+              <p className="text-xs text-muted-foreground">Loading templates…</p>
+            ) : templates.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No email templates yet.</p>
+            ) : (
+              <ul className="max-h-40 space-y-1 overflow-y-auto">
+                {templates.map((tpl) => (
+                  <li key={tpl.id}>
+                    <button
+                      type="button"
+                      className="w-full rounded-md border border-border px-2 py-1.5 text-left text-xs hover:bg-muted/50"
+                      data-ff-qc-email-template={tpl.id}
+                      onClick={() => {
+                        setTemplateId(tpl.id);
+                        setTemplateSubject(tpl.subject);
+                        setTemplateBody(tpl.body);
+                        setEmailGate("here");
+                      }}
+                    >
+                      <span className="font-medium text-navy">{tpl.name}</span>
+                      <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                        {tpl.subject}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
+
+        {kind === "email" && emailGate === "here" ? (
           <>
             <div>
               <Label className="text-xs">Mode</Label>
@@ -627,11 +759,11 @@ export function QuickCommsBoard({
             </div>
             <div>
               <Label className="text-xs">Subject</Label>
-              <Input name="subject" required className="mt-1 h-8" defaultValue={defaultTitle} />
+              <Input name="subject" required className="mt-1 h-8" defaultValue={templateSubject ?? defaultTitle} key={templateId ?? "email-subject"} />
             </div>
             <div>
               <Label className="text-xs">Body</Label>
-              <Textarea name="body" className="mt-1 min-h-20" defaultValue={`Hi ${party},\n\n`} />
+              <Textarea name="body" className="mt-1 min-h-20" defaultValue={templateBody ?? `Hi ${party},\n\n`} key={templateId ?? "email-body"} />
             </div>
             {emailMode !== "now" ? (
               <>
@@ -671,6 +803,7 @@ export function QuickCommsBoard({
                 No agency/carrier quote files on this deal yet.
               </p>
             ) : null}
+            {templateId ? <input type="hidden" name="templateId" value={templateId} /> : null}
             <input type="hidden" name="intent" value={emailMode} />
             <Button type="submit" size="sm" className="mt-1 w-full">
               {emailMode === "remind"
@@ -791,6 +924,17 @@ export function QuickCommsBoard({
           ))}
         </ol>
       )}
+
+      <QuickCommsEmailCompose
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        toAddress={contactEmail ?? ""}
+        contactName={contactName ?? party}
+        related={{ dealId, leadId, contactId, accountId, policyId }}
+        initialSubject={templateSubject ?? undefined}
+        initialBody={templateBody ?? undefined}
+        templateId={templateId}
+      />
     </section>
   );
 }
