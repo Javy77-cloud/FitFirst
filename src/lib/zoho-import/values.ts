@@ -39,11 +39,37 @@ export function isSystemZohoField(key: string): boolean {
 }
 
 export function zohoIdOf(record: ZohoRecord): string | null {
-  const raw = record.id ?? record.Id ?? record.zoho_id;
+  return normalizeZohoId(record.id ?? record.Id ?? record.zoho_id);
+}
+
+export function normalizeZohoId(raw: unknown): string | null {
   if (raw == null) return null;
-  const text = String(raw).trim();
+  let text = String(raw).trim();
+  if (!text) return null;
+  if (text.startsWith("zcrm_")) text = text.slice(5);
   return text || null;
 }
+
+export function looksLikeZohoId(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return /^(zcrm_)?\d{10,}$/.test(value.trim());
+}
+
+export function lookupZohoRef(
+  record: ZohoRecord,
+  nameKey: string,
+  idKey?: string,
+): string | null {
+  if (idKey) {
+    const fromId = normalizeZohoId(record[idKey]);
+    if (fromId) return fromId;
+  }
+  const raw = record[nameKey];
+  const fromLookup = lookupId(raw);
+  if (fromLookup && looksLikeZohoId(fromLookup)) return normalizeZohoId(fromLookup);
+  return null;
+}
+
 
 export function lookupId(value: unknown): string | null {
   if (value == null) return null;
