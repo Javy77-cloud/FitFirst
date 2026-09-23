@@ -114,19 +114,16 @@ export function PolicyInformationCard({
           : "Click a field to edit. Policy number asks for confirmation. Term dates stay locked (carrier/API truth); use Correct term dates for agency overrides. Commission % and auto-label stay locked."}
       </p>
       <dl className="mt-3 grid gap-x-3 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
-        <PolicyInlineText
-          policyId={policy.id}
-          fieldKey="policyNumber"
-          label="Policy number"
-          value={policy.policyNumber}
-          readOnly={readOnly}
-        />
-        <PolicyInlineStatus
-          policyId={policy.id}
-          value={policy.status}
-          options={POLICY_STATUSES}
-          readOnly={readOnly}
-        />
+        <div>
+          <dt className="text-helper text-muted-foreground">Insured</dt>
+          <dd className="font-medium text-navy">
+            {insuredHref && insured ? (
+              <RecordLink href={insuredHref}>{insured}</RecordLink>
+            ) : (
+              insured || "—"
+            )}
+          </dd>
+        </div>
         <PolicyCarrierLookup
           policyId={policy.id}
           carrierId={carrierId}
@@ -152,6 +149,28 @@ export function PolicyInformationCard({
           value={policy.insuranceType ?? ""}
           readOnly={readOnly}
         />
+        <PolicyInlineText
+          policyId={policy.id}
+          fieldKey="producer"
+          label="Producer"
+          value={policy.producer ?? ""}
+          readOnly={readOnly}
+        />
+        <PolicyInlineText
+          policyId={policy.id}
+          fieldKey="sellingAgency"
+          label="Selling agency"
+          value={policy.sellingAgency ?? ""}
+          readOnly={readOnly}
+        />
+        <PolicyInlineText
+          policyId={policy.id}
+          fieldKey="premisesAddress"
+          label={homePc ? "Insured location" : "Premises"}
+          value={insuredLocation || streetOnly}
+          displayText={insuredStacked ?? undefined}
+          readOnly={readOnly}
+        />
         <div data-ff-policy-inline="effectiveDate" data-ff-term-date-locked="">
           <dt className="text-helper text-muted-foreground">Effective date</dt>
           <dd className="font-medium text-navy">{formatDay(policy.effectiveDate)}</dd>
@@ -169,6 +188,19 @@ export function PolicyInformationCard({
           </dd>
           <p className="text-[11px] text-muted-foreground">Locked · carrier/API truth</p>
         </div>
+        {showCommission ? (
+          <div data-ff-policy-inline="commission4Pct-locked">
+            <dt className="text-helper text-muted-foreground">Commission %</dt>
+            <dd className="font-medium text-navy">
+              {policy.commission4Pct != null && String(policy.commission4Pct).trim()
+                ? `${policy.commission4Pct}%`
+                : "—"}
+            </dd>
+            <p className="text-[11px] text-muted-foreground">Locked · from carrier schedule</p>
+          </div>
+        ) : (
+          <div className="hidden lg:block" aria-hidden="true" data-ff-date-row-spacer="" />
+        )}
         {!readOnly ? (
           <div className="sm:col-span-2 lg:col-span-4" data-ff-term-override-control="">
             <CorrectTermDatesDialog
@@ -184,6 +216,13 @@ export function PolicyInformationCard({
         ) : null}
         <PolicyInlineText
           policyId={policy.id}
+          fieldKey="billingFrequency"
+          label="Billing"
+          value={billing}
+          readOnly={readOnly}
+        />
+        <PolicyInlineText
+          policyId={policy.id}
           fieldKey="premium"
           label="Premium"
           value={policy.premium != null ? String(policy.premium) : ""}
@@ -191,27 +230,15 @@ export function PolicyInformationCard({
         />
         <PolicyInlineText
           policyId={policy.id}
-          fieldKey="billingFrequency"
-          label="Billing"
-          value={billing}
+          fieldKey="policyNumber"
+          label="Policy number"
+          value={policy.policyNumber}
           readOnly={readOnly}
         />
-        <div>
-          <dt className="text-helper text-muted-foreground">Insured</dt>
-          <dd className="font-medium text-navy">
-            {insuredHref && insured ? (
-              <RecordLink href={insuredHref}>{insured}</RecordLink>
-            ) : (
-              insured || "—"
-            )}
-          </dd>
-        </div>
-        <PolicyInlineText
+        <PolicyInlineStatus
           policyId={policy.id}
-          fieldKey="premisesAddress"
-          label={homePc ? "Insured location" : "Premises"}
-          value={insuredLocation || streetOnly}
-          displayText={insuredStacked ?? undefined}
+          value={policy.status}
+          options={POLICY_STATUSES}
           readOnly={readOnly}
         />
         {mailingStacked ? (
@@ -225,31 +252,6 @@ export function PolicyInformationCard({
             </dd>
           </div>
         ) : null}
-        {showCommission ? (
-          <div data-ff-policy-inline="commission4Pct-locked">
-            <dt className="text-helper text-muted-foreground">Commission %</dt>
-            <dd className="font-medium text-navy">
-              {policy.commission4Pct != null && String(policy.commission4Pct).trim()
-                ? `${policy.commission4Pct}%`
-                : "—"}
-            </dd>
-            <p className="text-[11px] text-muted-foreground">Locked · from carrier schedule</p>
-          </div>
-        ) : null}
-        <PolicyInlineText
-          policyId={policy.id}
-          fieldKey="producer"
-          label="Producer"
-          value={policy.producer ?? ""}
-          readOnly={readOnly}
-        />
-        <PolicyInlineText
-          policyId={policy.id}
-          fieldKey="sellingAgency"
-          label="Selling agency"
-          value={policy.sellingAgency ?? ""}
-          readOnly={readOnly}
-        />
       </dl>
       {carrierId ? (
         <p className="mt-3 text-xs text-muted-foreground">
