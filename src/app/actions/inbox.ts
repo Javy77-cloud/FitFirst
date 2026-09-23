@@ -20,6 +20,16 @@ import {
   inboxAssignNotification,
   inboxAssignedKey,
 } from "@/lib/desk/inbox-assign";
+import {
+  ensureMatchedThreadLogged,
+  mailMessageOccurredAt,
+  mailMessageSourceId,
+  resolveEmailThreadAssignee,
+  stampThreadEmailAssignee,
+} from "@/lib/desk/inbox-autolog";
+import { decodeMailText } from "@/lib/desk/mail-text";
+import { loadInboxMatchIndex } from "@/lib/desk/load-inbox-index";
+import { presentInboxThread } from "@/lib/desk/inbox-desk";
 import { inboxSenderLabel } from "@/lib/desk/inbox";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isDeskUuid } from "@/lib/desk-id";
@@ -41,9 +51,65 @@ function refreshInbox(threadId?: string) {
   if (threadId) revalidatePath(inboxThreadHref(threadId));
 }
 
+async function matchForThread(threadId: string) {
+  const mail = await activeInboxMail();
+  if (!mail) return null;
+  const loaded = await mail.getThread(threadId).catch(() => null);
+  if (!loaded) return null;
+  const index = await loadInboxMatchIndex();
+  const desk = presentInboxThread(loaded.preview, index);
+  return { mail, loaded, match: desk.match, threadKey: mailThreadKey(mail.id, threadId) };
+}
+
+async function logOutboundSend(input: {
+  threadId: string;
+  to: string;
+  subject: string;
+  body: string;
+  messageId?: string;
+  actorId: string;
+}) {
+  const ctx = await matchForThread(input.threadId);
+  if (!ctx) return;
+  const { mail, match, threadKey, loaded } = ctx;
+  if (!match.contact && !match.deal && !match.renewal) return;
+  const occurredAt = new Date();
+  const subject = decodeMailText(input.subject) || "Email sent";
+  const sourceId = input.messageId ? mailMessageSourceId(mail.id, input.messageId) : undefined;
+  await writeDeskComms({
+    kind: "email",
+    title: subject,
+    body: input.body,
+    subject,
+    fromAddress: (await mail.accountEmail().catch(() => null)) || undefined,
+    toAddress: input.to,
+    direction: "outbound",
+    eventType: "sent",
+    contactId: match.contact?.id ?? null,
+    dealId: match.deal?.id ?? null,
+    policyId: match.renewal?.policyId ?? null,
+    threadKey,
+    occurredAt,
+    startAt: occurredAt,
+    assignee: input.actorId,
+    actorId: input.actorId,
+    sourceId,
+    logEmailJob: false,
+  });
+  // Also backfill any inbound replies already on the thread.
+  await ensureMatchedThreadLogged({
+    providerId: mail.id,
+    threadId: input.threadId,
+    messages: loaded.messages,
+    match,
+    sessionUserId: input.actorId,
+    inboundOnly: true,
+  }).catch(() => null);
+}
+
 export async function replyInboxThread(formData: FormData) {
   const session = await currentDeskSession();
-  if (!session.signedIn) return;
+  if (!session.signedIn || !session.userId) return;
   const threadId = str(formData, "threadId");
   const to = str(formData, "to");
   const subject = str(formData, "subject");
@@ -53,7 +119,7 @@ export async function replyInboxThread(formData: FormData) {
   }
   const mail = await activeInboxMail();
   if (!mail) flashAction("/inbox", "inbox-need-reply", "error");
-  await mail.reply({
+  const sent = await mail.reply({
     threadId,
     to,
     subject: subject || "Re:",
@@ -61,22 +127,40 @@ export async function replyInboxThread(formData: FormData) {
     inReplyTo: str(formData, "inReplyTo") || null,
     references: str(formData, "references") || null,
   });
+  await logOutboundSend({
+    threadId,
+    to,
+    subject: subject || "Re:",
+    body,
+    messageId: sent?.id,
+    actorId: session.userId,
+  }).catch(() => null);
   refreshInbox(threadId);
   flashAction(inboxThreadHref(threadId), "inbox-sent");
 }
 
 export async function sendInboxMessage(formData: FormData) {
   const session = await currentDeskSession();
-  if (!session.signedIn) return;
+  if (!session.signedIn || !session.userId) return;
   const to = str(formData, "to");
   const subject = str(formData, "subject");
   const body = str(formData, "body");
   if (!to || !body) flashAction("/inbox", "inbox-need-send", "error");
   const mail = await activeInboxMail();
   if (!mail) flashAction("/inbox", "inbox-need-send", "error");
-  await mail.send({ to, subject: subject || "(no subject)", body });
-  refreshInbox();
-  flashAction("/inbox", "inbox-sent");
+  const sent = await mail.send({ to, subject: subject || "(no subject)", body });
+  if (sent?.threadId) {
+    await logOutboundSend({
+      threadId: sent.threadId,
+      to,
+      subject: subject || "(no subject)",
+      body,
+      messageId: sent.id,
+      actorId: session.userId,
+    }).catch(() => null);
+  }
+  refreshInbox(sent?.threadId);
+  flashAction(sent?.threadId ? inboxThreadHref(sent.threadId) : "/inbox", "inbox-sent");
 }
 
 export async function logInboxThread(formData: FormData) {
@@ -91,25 +175,60 @@ export async function logInboxThread(formData: FormData) {
   if (!mail) flashAction("/inbox", "inbox-need-record", "error");
   const loaded = await mail.getThread(threadId);
   const last = loaded?.messages[loaded.messages.length - 1];
-  const subject = loaded?.preview.subject || str(formData, "subject") || "Inbox thread";
+  const subject =
+    decodeMailText(loaded?.preview.subject) ||
+    decodeMailText(str(formData, "subject")) ||
+    "Inbox thread";
   if (!contactId && !dealId && !policyId) {
     flashAction(inboxThreadHref(threadId), "inbox-need-record", "error");
   }
-  await writeDeskComms({
-    kind: "email",
-    title: subject,
-    body: last?.body || loaded?.preview.snippet || "",
-    subject,
-    fromAddress: last?.from || loaded?.preview.from,
-    toAddress: last?.to || loaded?.preview.to,
-    direction: last?.inbound ? "inbound" : "outbound",
-    eventType: last?.inbound ? "received" : "logged",
-    contactId,
-    dealId,
-    policyId,
-    threadKey: mailThreadKey(mail.id, threadId),
-    actorId: session.userId,
-  });
+  const match = {
+    emails: [] as string[],
+    contact: contactId ? { id: contactId, name: "", email: "" } : null,
+    deal: dealId ? { id: dealId, title: "", contactId, closed: false } : null,
+    renewal: policyId
+      ? { policyId, contactId, clientName: "", daysUntil: 0 }
+      : null,
+    unmatched: false,
+  };
+  // Idempotent: log every message with real Gmail times; skip ones already on the thread.
+  if (loaded?.messages?.length) {
+    await ensureMatchedThreadLogged({
+      providerId: mail.id,
+      threadId,
+      messages: loaded.messages,
+      match,
+      sessionUserId: session.userId,
+      inboundOnly: false,
+    });
+  } else {
+    const threadKey = mailThreadKey(mail.id, threadId);
+    const occurredAt = last ? mailMessageOccurredAt(last) : new Date();
+    const assignee = await resolveEmailThreadAssignee({
+      threadKey,
+      providerId: mail.id,
+      sessionUserId: session.userId,
+    });
+    await writeDeskComms({
+      kind: "email",
+      title: subject,
+      body: last?.body || loaded?.preview.snippet || "",
+      subject,
+      fromAddress: last?.from || loaded?.preview.from,
+      toAddress: last?.to || loaded?.preview.to,
+      direction: last?.inbound ? "inbound" : "outbound",
+      eventType: last?.inbound ? "received" : "logged",
+      contactId,
+      dealId,
+      policyId,
+      threadKey,
+      occurredAt,
+      startAt: occurredAt,
+      assignee,
+      actorId: session.userId,
+      sourceId: last?.id ? mailMessageSourceId(mail.id, last.id) : undefined,
+    });
+  }
   refreshInbox(threadId);
   flashAction(inboxThreadHref(threadId), "inbox-logged");
 }
@@ -139,6 +258,20 @@ export async function linkInboxContact(formData: FormData): Promise<{ ok: true }
     const aliases = new Set(parseInboxAliasEmails(stored[INBOX_EMAIL_ALIAS_KEY]));
     aliases.add(email);
     await writeRecordValues(contactId, { [INBOX_EMAIL_ALIAS_KEY]: [...aliases].join(", ") }, "contacts");
+  }
+  // Linked → auto-log the thread onto the contact.
+  if (threadId) {
+    const ctx = await matchForThread(threadId).catch(() => null);
+    if (ctx) {
+      await ensureMatchedThreadLogged({
+        providerId: ctx.mail.id,
+        threadId,
+        messages: ctx.loaded.messages,
+        match: { ...ctx.match, contact: { id: contactId, name: "", email }, unmatched: false },
+        sessionUserId: session.userId,
+        inboundOnly: false,
+      }).catch(() => null);
+    }
   }
   refreshInbox(threadId);
   return { ok: true };
@@ -172,7 +305,7 @@ export async function assignInboxThread(formData: FormData) {
   const contactId = str(formData, "contactId");
   const dealId = str(formData, "dealId");
   const policyId = str(formData, "policyId");
-  const subject = str(formData, "subject");
+  const subject = decodeMailText(str(formData, "subject"));
   const from = str(formData, "from");
   if (!threadId || !isDeskUuid(agentId)) {
     flashAction(threadId ? inboxThreadHref(threadId) : "/inbox", "inbox-need-agent", "error");
@@ -269,21 +402,26 @@ export async function assignInboxThread(formData: FormData) {
   }
 
   const mail = await activeInboxMail();
-  if (mail && (isDeskUuid(contactId) || isDeskUuid(dealId) || isDeskUuid(policyId))) {
-    await writeDeskComms({
-      kind: "email",
-      title: `Assigned to ${agent.name}: ${subject || "Inbox thread"}`,
-      body: `${session.name || "Teammate"} assigned this agency thread to ${agent.name}.`,
-      subject: subject || "Inbox thread",
-      fromAddress: from || undefined,
-      direction: "inbound",
-      eventType: "logged",
-      contactId: isDeskUuid(contactId) ? contactId : null,
-      dealId: isDeskUuid(dealId) ? dealId : null,
-      policyId: isDeskUuid(policyId) ? policyId : null,
-      threadKey: mailThreadKey(mail.id, threadId),
-      actorId: session.userId,
-    }).catch(() => null);
+  if (mail) {
+    const threadKey = mailThreadKey(mail.id, threadId);
+    await stampThreadEmailAssignee(threadKey, agent.id).catch(() => null);
+    if (isDeskUuid(contactId) || isDeskUuid(dealId) || isDeskUuid(policyId)) {
+      await writeDeskComms({
+        kind: "email",
+        title: `Assigned to ${agent.name}: ${subject || "Inbox thread"}`,
+        body: `${session.name || "Teammate"} assigned this agency thread to ${agent.name}.`,
+        subject: subject || "Inbox thread",
+        fromAddress: from || undefined,
+        direction: "inbound",
+        eventType: "logged",
+        contactId: isDeskUuid(contactId) ? contactId : null,
+        dealId: isDeskUuid(dealId) ? dealId : null,
+        policyId: isDeskUuid(policyId) ? policyId : null,
+        threadKey,
+        assignee: agent.id,
+        actorId: session.userId,
+      }).catch(() => null);
+    }
   }
 
   refreshInbox(threadId);

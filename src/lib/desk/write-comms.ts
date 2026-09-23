@@ -15,6 +15,7 @@ import {
   defaultCommsEventType,
   type CommsDirection,
 } from "@/lib/desk/comms";
+import { decodeMailText } from "@/lib/desk/mail-text";
 
 export type WriteCommsInput = RelatedRecordIds & {
   kind: string;
@@ -43,6 +44,7 @@ export type WriteCommsInput = RelatedRecordIds & {
   logEmailJob?: boolean;
   actorId?: string | null;
   actorName?: string | null;
+  sourceId?: string | null;
 };
 
 export async function writeDeskComms(input: WriteCommsInput) {
@@ -63,11 +65,14 @@ export async function writeDeskComms(input: WriteCommsInput) {
     input.status ||
     (kind === "call" || kind === "email" || kind === "sms" ? "completed" : "open");
   const fullBody = (input.body || input.notes || "").trim();
-  const subject = input.subject?.trim() || (kind === "email" ? input.title : null);
+  const rawTitle = kind === "email" ? decodeMailText(input.title) || input.title : input.title;
+  const subject =
+    (kind === "email" ? decodeMailText(input.subject) : input.subject)?.trim() ||
+    (kind === "email" ? rawTitle : null);
   const threadKey =
     input.threadKey ||
     commsThreadKey({ channel: kind, subject, related });
-  const stamp = activityLogBody(kind, eventType, input.title, {
+  const stamp = activityLogBody(kind, eventType, kind === "email" ? rawTitle : input.title, {
     durationSeconds: input.durationSeconds,
     outcome: input.outcome,
   });
@@ -91,7 +96,7 @@ export async function writeDeskComms(input: WriteCommsInput) {
       ...(input.id ? { id: input.id } : {}),
       tenantId: DEFAULT_TENANT_ID,
       kind,
-      title: input.title,
+      title: kind === "email" ? rawTitle : input.title,
       notes: fullBody || null,
       status,
       dueAt: input.dueAt ?? null,
@@ -105,6 +110,8 @@ export async function writeDeskComms(input: WriteCommsInput) {
       meetingLocation: input.meetingLocation ?? null,
       videoProvider: input.videoProvider ?? null,
       assignee: input.assignee ?? null,
+      createdByUserId: input.actorId ?? null,
+      sourceId: input.sourceId ?? null,
       contactId: related.contactId,
       accountId: related.accountId,
       policyId: related.policyId,
@@ -168,7 +175,7 @@ export async function writeDeskComms(input: WriteCommsInput) {
       related.policyId || related.dealId || related.contactId || related.accountId || related.leadId || null;
     await writeEoAuditSafe({
       action: eoAction,
-      summary: input.title || `${eoAction} logged`,
+      summary: (kind === "email" ? rawTitle : input.title) || `${eoAction} logged`,
       occurredAt: input.occurredAt ?? undefined,
       actorId: input.actorId,
       actorName: input.actorName,

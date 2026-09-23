@@ -1,4 +1,5 @@
 import { plainFromInboxHtml } from "@/lib/desk/inbox-body";
+import { decodeMailText } from "@/lib/desk/mail-text";
 import type { MailInlineImage, MailThreadMessage, MailThreadPreview } from "./mail-contract";
 import { gmailScopesAllowModify } from "./oauth-specs";
 import { liveAccessToken } from "./oauth-exchange";
@@ -96,7 +97,7 @@ export function gmailHeadersFrom(payload?: {
 }): GmailHeaderMap {
   const headers = payload?.headers ?? [];
   return {
-    subject: pickHeader(headers, "Subject") || "(no subject)",
+    subject: decodeMailText(pickHeader(headers, "Subject")) || "(no subject)",
     from: pickHeader(headers, "From"),
     to: pickHeader(headers, "To"),
     cc: pickHeader(headers, "Cc"),
@@ -267,7 +268,7 @@ export async function listRecentGmail(limit = 5): Promise<GmailMessagePreview[]>
       headers.find((h) => (h.name ?? "").toLowerCase() === name.toLowerCase())?.value ?? "";
     out.push({
       id: msg.id ?? row.id,
-      subject: pick("Subject") || "(no subject)",
+      subject: decodeMailText(pick("Subject")) || "(no subject)",
       from: pick("From"),
       date: pick("Date"),
     });

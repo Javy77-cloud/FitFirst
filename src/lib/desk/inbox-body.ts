@@ -1,3 +1,5 @@
+import { decodeMailText } from "@/lib/desk/mail-text";
+
 /** Fit an agency mail body inside the reading pane. Never a horizontal scroller. */
 
 const DROPPED_BLOCK =
@@ -26,13 +28,18 @@ export function sanitizeInboxHtml(raw: string | null | undefined): string {
 }
 
 /** Shared reading-pane step for every mailbox: keep image data URLs and rewrite cid:. */
-export function paintInboxMessage<T extends { bodyHtml: string; images: { contentId: string; filename: string; dataUrl: string }[] }>(
-  message: T,
-): T {
+export function paintInboxMessage<T extends {
+  bodyHtml: string;
+  images: { contentId: string; filename: string; dataUrl: string }[];
+  subject?: string;
+  snippet?: string;
+}>(message: T): T {
   const images = message.images.filter((image) => image.dataUrl.startsWith("data:image/"));
   return {
     ...message,
     images,
+    subject: message.subject != null ? decodeMailText(message.subject) || message.subject : message.subject,
+    snippet: message.snippet != null ? decodeMailText(message.snippet) || message.snippet : message.snippet,
     bodyHtml: applyInboxInlineImages(message.bodyHtml, images),
   };
 }

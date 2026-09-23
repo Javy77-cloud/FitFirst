@@ -88,8 +88,8 @@ export type MailProvider = {
   markReadReconnectCopy(): string | null;
   /** False when stored scopes are known to block mark-read. Unknown scopes may still try the API. */
   scopesAllowMarkRead(): Promise<boolean>;
-  reply(input: MailCompose & { threadId: string }): Promise<void>;
-  send(input: MailCompose): Promise<void>;
+  reply(input: MailCompose & { threadId: string }): Promise<{ id: string; threadId?: string }>;
+  send(input: MailCompose): Promise<{ id: string; threadId?: string }>;
 };
 
 /** Activity-log key. Gmail keeps the historical `gmail:` prefix. */

@@ -24,10 +24,10 @@ export const gmailMailProvider: MailProvider = {
   },
 
   async reply(input) {
-    await replyGmailThread(input);
+    return replyGmailThread(input);
   },
 
   async send(input) {
-    await sendGmailMessage(input);
+    return sendGmailMessage(input);
   },
 };

@@ -1,6 +1,13 @@
 /** Inbox helpers. Live Gmail threads sit on /inbox; activity-log rows stay as book fallback. */
 
 import { parseEmailFrom } from "@/lib/home/lead-offers";
+import {
+  deskDateKey,
+  formatDeskClock,
+  formatDeskDateTime,
+  formatDeskMonthDay,
+  formatDeskMonthDayYear,
+} from "@/lib/desk/desk-timezone";
 
 export type InboxStubKind = "email" | "sms" | "inbound_email";
 export type InboxStubStatus = "queued" | "received";
@@ -108,12 +115,7 @@ export function formatInboxWhen(iso: string | number | Date | null | undefined):
   if (iso == null || iso === "") return "";
   const date = iso instanceof Date ? iso : typeof iso === "number" ? new Date(iso) : new Date(iso);
   if (Number.isNaN(date.getTime())) return String(iso);
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatDeskDateTime(date);
 }
 
 /** Gmail-like list date: time today, month+day this year, else month+day+year. */
@@ -124,13 +126,15 @@ export function formatInboxListWhen(
   if (iso == null || iso === "") return "";
   const date = iso instanceof Date ? iso : typeof iso === "number" ? new Date(iso) : new Date(iso);
   if (Number.isNaN(date.getTime())) return String(iso);
-  if (date.toDateString() === asOf.toDateString()) {
-    return date.toLocaleString("en-US", { hour: "numeric", minute: "2-digit" });
+  if (deskDateKey(date) === deskDateKey(asOf)) {
+    return formatDeskClock(date);
   }
-  if (date.getFullYear() === asOf.getFullYear()) {
-    return date.toLocaleString("en-US", { month: "short", day: "numeric" });
+  const yearDate = deskDateKey(date).slice(0, 4);
+  const yearAsOf = deskDateKey(asOf).slice(0, 4);
+  if (yearDate === yearAsOf) {
+    return formatDeskMonthDay(date);
   }
-  return date.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return formatDeskMonthDayYear(date);
 }
 
 export function inboxSenderLabel(from: string, contactName?: string | null): string {

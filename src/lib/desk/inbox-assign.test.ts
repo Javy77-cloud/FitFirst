@@ -14,7 +14,15 @@ import {
 import { displayNoticeBody } from "@/lib/coverage/notices";
 
 describe("inbox assign / forward", () => {
-  it("prefers deal owner, then policy, then contact", () => {
+  it("prefers thread agent, then deal, policy, contact", () => {
+    expect(
+      suggestedInboxAssignee({
+        threadAgentId: "thread-agent",
+        dealOwnerId: "d-owner",
+        policyOwnerId: "p-owner",
+        contactOwnerId: "c-owner",
+      }),
+    ).toBe("thread-agent");
     expect(
       suggestedInboxAssignee({
         dealOwnerId: "d-owner",
