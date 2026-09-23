@@ -45,12 +45,15 @@ export function PolicyInlineText({
   fieldKey,
   label,
   value,
+  displayText,
   readOnly = false,
 }: {
   policyId: string;
   fieldKey: string;
   label: string;
   value: string;
+  /** Optional denser display (e.g. stacked address); edit still uses `value`. */
+  displayText?: string;
   readOnly?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
@@ -102,12 +105,21 @@ export function PolicyInlineText({
     });
   }
 
+  const shown = displayText?.trim() ? displayText : value;
+  const stacked = Boolean(displayText?.includes("\n"));
+
   return (
     <div data-ff-policy-inline={fieldKey}>
       <dt className="text-helper text-muted-foreground">{label}</dt>
-      <dd className="font-medium text-navy">
+      <dd
+        className={cn(
+          "font-medium text-navy",
+          stacked && "whitespace-pre-line leading-snug",
+        )}
+        data-ff-address-compact={stacked ? "" : undefined}
+      >
         {readOnly ? (
-          displayValue(value)
+          displayValue(shown)
         ) : editing ? (
           <input
             autoFocus
@@ -131,11 +143,12 @@ export function PolicyInlineText({
             type="button"
             className={cn(
               "w-full rounded-sm px-0.5 text-left hover:bg-[#002868]/5",
+              stacked && "whitespace-pre-line leading-snug",
               !value?.trim() && "text-muted-foreground",
             )}
             onClick={() => setEditing(true)}
           >
-            {displayValue(value)}
+            {displayValue(shown)}
           </button>
         )}
       </dd>

@@ -122,6 +122,44 @@ export function formatPremisesDisplay(input: {
   return line || null;
 }
 
+export type PremisesDisplayLines = {
+  street: string;
+  /** City, ST ZIP — short second line for denser Overview cells. */
+  locality: string;
+};
+
+/** Street + locality lines for stacked Overview address cells (no long wrap). */
+export function formatPremisesLines(input: {
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+}): PremisesDisplayLines | null {
+  const parts = splitPremisesAddress(input.address, {
+    city: input.city,
+    state: input.state,
+    zip: input.zip,
+  });
+  const street = parts.street.trim();
+  const locality = [parts.city, [parts.state, parts.zip].filter(Boolean).join(" ")]
+    .filter(Boolean)
+    .join(", ");
+  if (!street && !locality) return null;
+  return { street, locality };
+}
+
+/** Newline-joined street / city-state-zip for whitespace-pre-line display. */
+export function formatPremisesStacked(input: {
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+}): string | null {
+  const lines = formatPremisesLines(input);
+  if (!lines) return null;
+  return [lines.street, lines.locality].filter(Boolean).join("\n");
+}
+
 export function premisesLinesEqual(
   left: string | null | undefined,
   right: string | null | undefined,

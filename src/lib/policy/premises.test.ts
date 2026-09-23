@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   formatPremisesDisplay,
+  formatPremisesLines,
+  formatPremisesStacked,
   premisesLinesEqual,
   splitPremisesAddress,
   streetOnlyPremises,
@@ -57,5 +59,26 @@ describe("street-only premises", () => {
     expect(premisesLinesEqual("PO Box 100", "15280 Tropic Ct, Fort Myers, FL, 33967")).toBe(
       false,
     );
+  });
+
+  it("stacks street over city-state-zip for denser Overview cells", () => {
+    const lines = formatPremisesLines({
+      address: "15280 Tropic Ct, Fort Myers, FL 33967",
+      city: "Fort Myers",
+      state: "FL",
+      zip: "33967",
+    });
+    expect(lines).toEqual({
+      street: "15280 Tropic Ct",
+      locality: "Fort Myers, FL 33967",
+    });
+    expect(
+      formatPremisesStacked({
+        address: "15280 Tropic Ct",
+        city: "Fort Myers",
+        state: "FL",
+        zip: "33967",
+      }),
+    ).toBe("15280 Tropic Ct\nFort Myers, FL 33967");
   });
 });

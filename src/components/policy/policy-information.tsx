@@ -12,7 +12,11 @@ import { POLICY_STATUSES } from "@/lib/policy/status";
 import { partyLabel } from "@/lib/desk/policy-name";
 import { distinctMailingLabel, mailingAddressLine } from "@/lib/desk/policy-information";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
-import { formatPremisesDisplay, streetOnlyPremises } from "@/lib/policy/premises";
+import {
+  formatPremisesDisplay,
+  formatPremisesStacked,
+  streetOnlyPremises,
+} from "@/lib/policy/premises";
 
 export function PolicyInformationCard({
   policy,
@@ -71,22 +75,33 @@ export function PolicyInformationCard({
       : undefined;
   const billing = policy.billingFrequency || policy.premiumFrequency || "";
   const homePc = resolveLobOverviewFamily(policy) === "homeowners";
-  const insuredLocation = formatPremisesDisplay({
+  const premisesParts = {
     address: policy.premisesAddress,
     city: policy.premisesCity,
     state: policy.premisesState,
     zip: policy.premisesZip,
-  });
+  };
+  const insuredLocation = formatPremisesDisplay(premisesParts);
   const streetOnly = streetOnlyPremises(policy.premisesAddress, {
     city: policy.premisesCity,
     state: policy.premisesState,
     zip: policy.premisesZip,
   });
+  const insuredStacked = formatPremisesStacked(premisesParts);
+  const mailingLine = mailingAddressLine(mailing);
   const mailingShown = distinctMailingLabel({
     premises: insuredLocation,
-    mailing: mailingAddressLine(mailing),
+    mailing: mailingLine,
     locationLabel,
   });
+  // Prefer structured mailing parts; fall back to parsing the distinct one-liner (locationLabel).
+  const mailingStacked = mailingShown
+    ? formatPremisesStacked(
+        mailingLine && mailingLine === mailingShown && mailing
+          ? mailing
+          : { address: mailingShown },
+      ) ?? mailingShown
+    : null;
 
   return (
     <section id="policy-information" className="ff-card mb-4 p-4" data-ff-policy-information="">
@@ -98,7 +113,7 @@ export function PolicyInformationCard({
           ? "Read-only for agents. Admins can edit fields from Overview. Term dates stay locked — agency corrects them with a reason."
           : "Click a field to edit. Policy number asks for confirmation. Term dates stay locked (carrier/API truth); use Correct term dates for agency overrides. Commission % and auto-label stay locked."}
       </p>
-      <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+      <dl className="mt-3 grid gap-x-3 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <PolicyInlineText
           policyId={policy.id}
           fieldKey="policyNumber"
@@ -155,7 +170,7 @@ export function PolicyInformationCard({
           <p className="text-[11px] text-muted-foreground">Locked · carrier/API truth</p>
         </div>
         {!readOnly ? (
-          <div className="sm:col-span-2 lg:col-span-3" data-ff-term-override-control="">
+          <div className="sm:col-span-2 lg:col-span-4" data-ff-term-override-control="">
             <CorrectTermDatesDialog
               policyId={policy.id}
               effectiveDate={policy.effectiveDate}
@@ -196,13 +211,17 @@ export function PolicyInformationCard({
           fieldKey="premisesAddress"
           label={homePc ? "Insured location" : "Premises"}
           value={insuredLocation || streetOnly}
+          displayText={insuredStacked ?? undefined}
           readOnly={readOnly}
         />
-        {mailingShown ? (
-          <div>
+        {mailingStacked ? (
+          <div data-ff-address-compact="">
             <dt className="text-helper text-muted-foreground">Mailing address</dt>
-            <dd className="font-medium text-navy" data-ff-mailing-address="">
-              {mailingShown}
+            <dd
+              className="whitespace-pre-line font-medium leading-snug text-navy"
+              data-ff-mailing-address=""
+            >
+              {mailingStacked}
             </dd>
           </div>
         ) : null}
