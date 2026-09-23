@@ -265,20 +265,46 @@ export type ActivitySurface =
   | "policies-stack"
   | "carriers-stack";
 
-/** List and Stack desks: the shared Activity board is on by default and keeps its column. */
+function activityEmptyCopy(surface: ActivitySurface): string {
+  if (surface.startsWith("deals-")) {
+    return "Select a deal. Call, SMS, email, meeting, and task log on this board.";
+  }
+  if (surface.startsWith("renewals-")) {
+    return "Select a renewal. Call, SMS, email, meeting, and task log on this board.";
+  }
+  if (surface === "contacts-stack") {
+    return "Select a contact. Call, SMS, email, meeting, and task log on this board.";
+  }
+  if (surface === "accounts-stack") {
+    return "Select an account. Call, SMS, email, meeting, and task log on this board.";
+  }
+  if (surface === "policies-stack") {
+    return "Select a policy. Call, SMS, email, meeting, and task log on this board.";
+  }
+  if (surface === "carriers-stack") {
+    return "Select a carrier. Call, SMS, email, meeting, and task log on this board.";
+  }
+  return "Select a record. Call, SMS, email, meeting, and task log on this board.";
+}
+
+/** List and Stack desks: Activity rail stays reserved; selection is opt-in (click or ?rail=). */
 export function StandardActivityShell({
   rows,
   officeAddress = null,
   surface,
+  initialId = null,
   children,
 }: {
   rows: ActivityPanelRow[];
   officeAddress?: string | null;
   surface: ActivitySurface;
+  /** Deep-link / intentional focus only — never auto-pick rows[0]. */
+  initialId?: string | null;
   children: ReactNode;
 }) {
+  const seedId = initialId && rows.some((row) => row.id === initialId) ? initialId : null;
   return (
-    <ActivityDeskProvider initialId={rows[0]?.id ?? null}>
+    <ActivityDeskProvider initialId={seedId}>
       <ActivityDeskLayout rows={rows} officeAddress={officeAddress} surface={surface}>
         {children}
       </ActivityDeskLayout>
@@ -298,11 +324,13 @@ function ActivityDeskLayout({
   children: ReactNode;
 }) {
   const desk = useActivityPick();
-  const row = rows.find((item) => item.id === desk?.selectedId) ?? rows[0] ?? null;
+  const selectedId = desk?.selectedId ?? null;
+  const row = selectedId ? rows.find((item) => item.id === selectedId) ?? null : null;
+  const showRail = rows.length > 0;
   return (
     <div
-      className={cn("ff-activity-desk", row && "is-open")}
-      data-ff-activity-desk={row ? "open" : "off"}
+      className={cn("ff-activity-desk", showRail && "is-open")}
+      data-ff-activity-desk={showRail ? "open" : "off"}
       data-ff-activity-surface={surface}
       data-ff-renewals-list-rail={surface === "renewals-list" ? "" : undefined}
       data-ff-deals-list-rail={surface === "deals-list" ? "" : undefined}
@@ -310,13 +338,25 @@ function ActivityDeskLayout({
       data-ff-deals-stack-rail={surface === "deals-stack" ? "" : undefined}
     >
       <div className="min-w-0">{children}</div>
-      {row ? (
-        <ActivityAside
-          row={row}
-          kind={desk?.kind ?? null}
-          nonce={desk?.nonce ?? 0}
-          officeAddress={officeAddress}
-        />
+      {showRail ? (
+        row ? (
+          <ActivityAside
+            row={row}
+            kind={desk?.kind ?? null}
+            nonce={desk?.nonce ?? 0}
+            officeAddress={officeAddress}
+          />
+        ) : (
+          <aside
+            className={ACTIVITY_RAIL_ASIDE_CLASS}
+            data-ff-standard-activity=""
+            data-ff-deal-right-rail=""
+            data-ff-deal-rail-lock={ACTIVITY_RAIL_LOCK}
+            data-ff-activity-empty=""
+          >
+            <div className="ff-card p-4 text-sm text-muted-foreground">{activityEmptyCopy(surface)}</div>
+          </aside>
+        )
       ) : null}
     </div>
   );

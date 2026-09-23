@@ -17,6 +17,7 @@ export function DealsCommandWorkspace({
   canSeeTeam,
   scorecards,
   rankLabel,
+  activityId = null,
 }: {
   view: DealsViewId;
   cards: RadarDealCard[];
@@ -37,6 +38,8 @@ export function DealsCommandWorkspace({
   canSeeTeam: boolean;
   scorecards: { open: number; cold: number; coldRate: number; medianPostQuoteGap: number; hot: number };
   rankLabel: string | null;
+  /** Optional ?rail= deep-link — only then pre-select a deal on open. */
+  activityId?: string | null;
 }) {
   const shownHeats = cards.map((card) => card.heat);
   const pulse = (
@@ -61,6 +64,7 @@ export function DealsCommandWorkspace({
       ) : view === "list" ? (
         <StandardActivityShell
           surface="deals-list"
+          initialId={activityId}
           rows={cards.map((card) => ({
             id: card.id,
             name: dealDisplayName(card),
@@ -79,6 +83,7 @@ export function DealsCommandWorkspace({
           {pulse}
           <StandardActivityShell
             surface="deals-stack"
+            initialId={activityId}
             rows={cards.map((card) => ({
               id: card.id,
               name: dealDisplayName(card),

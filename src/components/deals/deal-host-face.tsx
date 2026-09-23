@@ -41,7 +41,6 @@ export function DealHostSpread({
   rank?: ReactNode;
 }) {
   const silence = formatSilenceCue(card.silenceDays);
-  const nextLabel = plainFact(card.primaryAction.label);
   const products = card.productLines.length > 1 ? "multi" : "single";
   const cueTitle = card.inboxCue || "Days since the last logged call, email, SMS, or meeting";
   return (
@@ -66,11 +65,6 @@ export function DealHostSpread({
           >
             {silence}
           </Link>
-          {nextLabel ? (
-            <Link href={card.primaryAction.href} className="ff-stack-mid" data-ff-next-action="">
-              {`Next ${nextLabel}`}
-            </Link>
-          ) : null}
         </span>
         {comms}
         {rank}

@@ -65,6 +65,7 @@ export default async function DealsPage({
   const lens = first(params.lens);
   const scope = first(params.scope);
   const valueBand = first(params.valueBand);
+  const rail = first(params.rail);
   const columnFilter = pickFilterParams(params, [...DEAL_PIPELINE_FILTER_KEYS]);
   const filter: DealListFilter = {
     stage: columnFilter.stage,
@@ -283,6 +284,7 @@ export default async function DealsPage({
           canSeeTeam={canSeeTeam}
           scorecards={ownerScorecards(filtered)}
           rankLabel={rankLabel}
+          activityId={rail ?? null}
           href={{
             view,
             pipeline: selectedPipeline,

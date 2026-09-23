@@ -157,6 +157,14 @@ describe("Deals Priority Stack + Radar", () => {
     expect(face).toMatch(/dealDisplayName/);
   });
 
+
+  it("stack cue keeps silence only — no Next: subtitle under the silent line", () => {
+    const face = source("src/components/deals/deal-host-face.tsx");
+    expect(face).toMatch(/data-ff-silence-cue/);
+    expect(face).not.toMatch(/data-ff-next-action/);
+    expect(face).not.toMatch(/Next \$\{nextLabel\}/);
+  });
+
   it("keeps Stack product names on the left and that product's place, stamps, and quotes on the right", () => {
     const face = source("src/components/deals/deal-host-face.tsx");
     const stack = source("src/components/deals/priority-stack.tsx");

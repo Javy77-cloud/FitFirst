@@ -66,7 +66,8 @@ describe("activity board and radar glance", () => {
     expect(panel).toMatch(/QuickCommsBoard/);
     expect(panel).toMatch(/data-ff-deal-rail-lock=\{ACTIVITY_RAIL_LOCK\}/);
     expect(panel).toMatch(/ACTIVITY_RAIL_ASIDE_CLASS/);
-    expect(panel).toMatch(/rows\[0\]\?\.id/);
+    expect(panel).toMatch(/initialId = null/);
+    expect(panel).not.toMatch(/initialId=\{rows\[0\]\?\.id/);
     expect(panel).not.toMatch(/>Comms</);
     expect(leads).toMatch(/data-ff-leads-list-layout="list-rail"/);
     expect(leads).toMatch(/LeadQuickComms/);

@@ -37,7 +37,11 @@ describe("deal card glance", () => {
     );
     expect(formatSilenceCue(16)).toBe("16 days silent");
     expect(formatSilenceCue(1)).toBe("1 day silent");
+    expect(formatSilenceCue(0)).toBe("Just contacted");
+    expect(formatSilenceCue(0.5 / 24)).toBe("Just contacted");
     expect(formatSilenceCue(1 / 24)).toBe("1 hour silent");
+    expect(formatSilenceCue(2 / 24)).toBe("2 hours silent");
+    expect(formatSilenceCue(0.2)).toBe("5 hours silent");
     expect(formatSilenceCue(0.2)).not.toMatch(/^1h$/);
   });
 
