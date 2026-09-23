@@ -6,7 +6,8 @@ export type PolicyChangeSource =
   | "bind"
   | "mint"
   | "seed"
-  | "term_override";
+  | "term_override"
+  | "renewal_term_advance";
 
 export type PolicyFieldChange = {
   fieldKey: string;
@@ -140,6 +141,7 @@ export function sourceLabel(source: string): string {
   if (source === "mint") return "Policy created";
   if (source === "seed") return "Seeded";
   if (source === "term_override") return "Term date correction";
+  if (source === "renewal_term_advance") return "Renewal term advance";
   return source.replaceAll("_", " ");
 }
 
