@@ -18,13 +18,17 @@ describe("shared Activity rail", () => {
     expect(css).toMatch(/\.ff-activity-desk\.is-open \{[^}]*var\(--ff-activity-rail\)/);
   });
 
-  it("reserves the list and stack columns with the board on by default", () => {
+  it("reserves the list and stack columns without auto-picking the first row", () => {
     const panel = source("src/components/desk/standard-activity-panel.tsx");
-    expect(panel).toMatch(/initialId=\{rows\[0\]\?\.id/);
-    expect(panel).toMatch(/rows\.find\(\(item\) => item\.id === desk\?\.selectedId\) \?\? rows\[0\]/);
-    expect(panel).toMatch(/row && "is-open"/);
+    expect(panel).toMatch(/initialId = null/);
+    expect(panel).toMatch(/never auto-pick rows\[0\]/);
+    expect(panel).not.toMatch(/initialId=\{rows\[0\]\?\.id/);
+    expect(panel).not.toMatch(/\?\? rows\[0\]/);
+    expect(panel).toMatch(/showRail && "is-open"/);
+    expect(panel).toMatch(/data-ff-activity-empty/);
     expect(panel).toMatch(/surface="deals-list"|deals-list/);
     expect(source("src/components/deals/deals-command-workspace.tsx")).toMatch(/surface="deals-stack"/);
+    expect(source("src/components/deals/deals-command-workspace.tsx")).toMatch(/initialId=\{activityId\}/);
     expect(source("src/components/renewals/renewals-filtered-views.tsx")).toMatch(/surface="renewals-stack"/);
     expect(source("src/app/leads/page.tsx")).toMatch(/ff-leads-banner-row/);
     expect(source("src/app/leads/page.tsx")).toMatch(/ACTIVITY_RAIL_COLUMNS/);

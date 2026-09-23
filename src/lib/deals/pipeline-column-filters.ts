@@ -41,6 +41,7 @@ export const DEAL_PIPELINE_PRESERVE_PARAMS = [
   "lens",
   "scope",
   "valueBand",
+  "rail",
 ] as const;
 
 export type DealPipelineFilterRow = {
