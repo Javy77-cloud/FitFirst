@@ -1800,7 +1800,7 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   flex: 0 0 auto;
   border-radius: 999px;
   padding: 0.12rem 0.45rem;
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   font-weight: 750;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1849,23 +1849,23 @@ button.ff-renewal-risk-badge {
   align-items: center;
   gap: 0.2rem;
   margin-top: 0.35rem;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 650;
 }
 .ff-renewal-delta-up {
-  color: var(--ff-terracotta);
+  color: var(--ff-red);
 }
 .ff-renewal-delta-down {
   color: var(--ff-green);
 }
 .ff-renewal-delta-flat {
-  color: var(--ff-muted);
+  color: var(--ff-green);
 }
 .ff-renewal-delta-chip {
   margin-left: 0.25rem;
   border-radius: 999px;
   padding: 0.05rem 0.4rem;
-  font-size: 0.62rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1954,7 +1954,7 @@ button.ff-renewal-risk-badge {
 }
 .ff-renewal-why {
   margin-top: 0.3rem;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   line-height: 1.35;
   color: var(--ff-muted);
 }
@@ -1970,7 +1970,7 @@ button.ff-renewal-risk-badge {
   gap: 0.28rem;
 }
 .ff-renewal-health-label {
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -2256,7 +2256,7 @@ button.ff-renewal-risk-badge {
   background: color-mix(in srgb, var(--ff-navy) 8%, white);
 }
 .ff-renewal-compare-premium span {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -2265,8 +2265,13 @@ button.ff-renewal-risk-badge {
   font-size: 1.35rem;
   line-height: 1;
 }
+.ff-renewal-compare-premium em {
+  font-size: 0.82rem;
+  font-style: normal;
+  color: var(--ff-muted);
+}
 .ff-renewal-compare-premium[data-ff-compare-premium="red"] strong {
-  color: var(--ff-terracotta);
+  color: var(--ff-red);
 }
 .ff-renewal-compare-premium[data-ff-compare-premium="green"] strong {
   color: var(--ff-green);
@@ -2277,7 +2282,7 @@ button.ff-renewal-risk-badge {
 .ff-renewal-compare-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
 }
 .ff-renewal-compare-table th,
 .ff-renewal-compare-table td {
@@ -2298,7 +2303,7 @@ button.ff-renewal-risk-badge {
   padding: 0.7rem 0.8rem;
   border-radius: 0.6rem;
   background: color-mix(in srgb, var(--ff-navy) 7%, white);
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   line-height: 1.4;
 }
 .ff-renewal-compare-dark .ff-renewal-compare-note,
@@ -4412,7 +4417,7 @@ tr[data-ff-activity-selected="true"] {
 .ff-autopilot-badge {
   border-radius: 999px;
   padding: 0.05rem 0.35rem;
-  font-size: 0.58rem;
+  font-size: 0.65rem;
   font-weight: 750;
   letter-spacing: 0.04em;
   text-transform: uppercase;

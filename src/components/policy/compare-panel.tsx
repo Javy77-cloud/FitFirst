@@ -125,7 +125,7 @@ export function ComparePanel({
           <input type="hidden" name="coverageCount" value={coverageList(proposed?.coverages).length} />
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label className="text-xs">Proposed premium</Label>
+              <Label className="text-[0.8125rem]">Proposed premium</Label>
               <Input
                 name="premium"
                 required
@@ -134,7 +134,7 @@ export function ComparePanel({
               />
             </div>
             <div>
-              <Label className="text-xs">Effective</Label>
+              <Label className="text-[0.8125rem]">Effective</Label>
               <Input
                 type="date"
                 name="termEffective"
@@ -144,7 +144,7 @@ export function ComparePanel({
               />
             </div>
             <div>
-              <Label className="text-xs">Expiration</Label>
+              <Label className="text-[0.8125rem]">Expiration</Label>
               <Input
                 type="date"
                 name="termExpiration"
@@ -155,7 +155,7 @@ export function ComparePanel({
             </div>
             {deductibleDefs.map((field) => (
               <div key={field.key}>
-                <Label className="text-xs">{field.label}</Label>
+                <Label className="text-[0.8125rem]">{field.label}</Label>
                 <Input
                   name={field.key}
                   defaultValue={proposed?.[field.key] ?? ""}
@@ -165,12 +165,12 @@ export function ComparePanel({
             ))}
           </div>
           <div className="space-y-2">
-            <div className="text-xs font-medium text-muted-foreground">Key coverages</div>
+            <div className="text-[0.8125rem] font-medium text-muted-foreground">Key coverages</div>
             {coverageList(proposed?.coverages).map((line, index) => (
               <div key={line.key} className="grid gap-2 sm:grid-cols-[1fr_1fr]">
                 <input type="hidden" name={`coverageKey_${index}`} value={line.key} />
                 <input type="hidden" name={`coverageLabel_${index}`} value={line.label} />
-                <Label className="text-xs sm:col-span-2">{line.label}</Label>
+                <Label className="text-[0.8125rem] sm:col-span-2">{line.label}</Label>
                 <Input
                   name={`coverageValue_${index}`}
                   defaultValue={line.value}
@@ -180,7 +180,7 @@ export function ComparePanel({
             ))}
           </div>
           <div>
-            <Label className="text-xs">Notes</Label>
+            <Label className="text-[0.8125rem]">Notes</Label>
             <Textarea name="notes" defaultValue={proposed?.notes ?? ""} className="mt-1" />
           </div>
           <Button type="submit" size="sm">
@@ -216,11 +216,11 @@ export function ComparePanel({
               <tbody>
                 {logs.map((log) => (
                   <tr key={log.id}>
-                    <td className="whitespace-nowrap text-xs">
+                    <td className="whitespace-nowrap text-[0.8125rem]">
                       {formatDay(log.createdAt)}
                     </td>
-                    <td className="uppercase text-xs">{log.eventType.replaceAll("_", " ")}</td>
-                    <td className="text-xs">{log.summary}</td>
+                    <td className="uppercase text-[0.8125rem]">{log.eventType.replaceAll("_", " ")}</td>
+                    <td className="text-[0.8125rem]">{log.summary}</td>
                   </tr>
                 ))}
               </tbody>

@@ -28,11 +28,9 @@ export function buildFallbackDiffNote(input: {
   const premiumTone =
     input.change == null
       ? null
-      : input.change.direction === "up" && (input.change.pct ?? 0) >= 0.08
+      : input.change.direction === "up"
         ? "red"
-        : input.change.direction === "flat"
-          ? "green"
-          : "amber";
+        : "green";
   const text = fallbackDiffSummary({
     bothSides: input.bothSides,
     premiumTone,

@@ -95,6 +95,12 @@ describe("Renewals desk chrome", () => {
     expect(card).toMatch(/formatBoardPremiumDelta/);
     expect(card).toMatch(/premiumLapseRiskBoardChip/);
     expect(card).toMatch(/ff-renewal-delta-chip|data-ff-premium-lapse/);
+    expect(card).toMatch(/Premium renewal risk/);
+    expect(card).not.toMatch(/lapse risk|\} lapse/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-renewal-delta-up[\s\S]*?--ff-red/);
+    expect(source("src/app/globals.css")).toMatch(/\.ff-renewal-delta-flat[\s\S]*?--ff-green/);
+    expect(source("src/components/policy/premium-change.tsx")).toMatch(/Premium renewal risk/);
+    expect(source("src/components/policy/premium-change.tsx")).not.toMatch(/Premium lapse risk/);
     expect(card).toMatch(/data-ff-renewal-compare-open/);
     expect(card).toMatch(/ff-renewal-compare-btn/);
     expect(card).toMatch(/hideTrigger/);
