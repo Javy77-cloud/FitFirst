@@ -14,6 +14,8 @@ import {
   GMAIL_NOT_CONNECTED_MESSAGE,
 } from "@/lib/desk/desk-email-delivery";
 import { gmailAccountEmail, gmailIsReady, sendGmailMessage } from "@/lib/integrations/gmail";
+import { currentDeskSession } from "@/lib/auth/session";
+import { mailMessageSourceId } from "@/lib/desk/inbox-autolog";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -40,6 +42,7 @@ function revalidate(ids: ReturnType<typeof related>) {
 
 /** Send now / schedule-due-now through connected Gmail; remind and future schedule do not send. */
 export async function sendDeskEmail(formData: FormData) {
+  const session = await currentDeskSession();
   const ids = related(formData);
   const brand = await loadAgencyBrand();
   const templateId = str(formData, "templateId");
@@ -83,6 +86,8 @@ export async function sendDeskEmail(formData: FormData) {
 
   const liveSend = delivery === "send" && hold.status !== "held";
   let gmailThreadId: string | undefined;
+  let gmailMessageId: string | undefined;
+  const occurredAt = new Date();
   if (liveSend) {
     if (!(await gmailIsReady())) {
       throw new Error(GMAIL_NOT_CONNECTED_MESSAGE);
@@ -93,8 +98,10 @@ export async function sendDeskEmail(formData: FormData) {
       body,
     });
     gmailThreadId = sent.threadId;
+    gmailMessageId = sent.id;
   }
 
+  const actorId = session.signedIn ? session.userId : null;
   const written = await writeDeskComms({
     kind: "email",
     title: subject || (liveSend ? "Email sent" : "Email queued"),
@@ -106,8 +113,12 @@ export async function sendDeskEmail(formData: FormData) {
     toAddress,
     fromAddress,
     dueAt: liveSend ? null : dueAtSafe,
-    startAt: liveSend ? null : dueAtSafe,
+    startAt: liveSend ? occurredAt : dueAtSafe,
+    occurredAt: liveSend ? occurredAt : null,
     threadKey: gmailThreadId ? `gmail:${gmailThreadId}` : undefined,
+    assignee: actorId,
+    actorId,
+    sourceId: gmailMessageId ? mailMessageSourceId("gmail", gmailMessageId) : undefined,
     logEmailJob: false,
     ...ids,
   });

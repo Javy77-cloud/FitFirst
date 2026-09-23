@@ -46,6 +46,29 @@ function InboxMessageBody({
   );
 }
 
+
+function InboxThreadMessages({ messages }: { messages: MailThreadMessage[] }) {
+  const latestInboundId = [...messages].reverse().find((msg) => msg.inbound)?.id ?? messages.at(-1)?.id ?? null;
+  return (
+    <ol className="ff-inbox-thread">
+      {messages.map((msg) => {
+        const open = msg.id === latestInboundId;
+        return (
+          <li key={msg.id} className={cn("ff-inbox-msg", msg.inbound ? "is-in" : "is-out")}>
+            <details open={open}>
+              <summary className="ff-inbox-msg-meta">
+                {msg.inbound ? "Inbound" : "Sent"} · {inboxSenderLabel(msg.from) || "Unknown"} ·{" "}
+                {formatInboxWhen(msg.internalDate || msg.date)}
+              </summary>
+              <InboxMessageBody text={msg.body || msg.snippet} html={msg.bodyHtml} images={msg.images} />
+            </details>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 function ReplyForm({ thread }: { thread: InboxDeskThread }) {
   const replyTo = thread.match.emails[0] || thread.from;
   return (
@@ -271,17 +294,7 @@ export function InboxDesk({
               ) : null}
               <ThreadActions thread={selected} agents={agents} />
               {messages.length > 0 ? (
-                <ol className="ff-inbox-thread">
-                  {messages.map((msg) => (
-                    <li key={msg.id} className={cn("ff-inbox-msg", msg.inbound ? "is-in" : "is-out")}>
-                      <p className="ff-inbox-msg-meta">
-                        {msg.inbound ? "Inbound" : "Sent"} · {inboxSenderLabel(msg.from) || "Unknown"} ·{" "}
-                        {formatInboxWhen(msg.internalDate || msg.date)}
-                      </p>
-                      <InboxMessageBody text={msg.body || msg.snippet} html={msg.bodyHtml} images={msg.images} />
-                    </li>
-                  ))}
-                </ol>
+                <InboxThreadMessages messages={messages} />
               ) : (
                 <InboxMessageBody text={selected.snippet} />
               )}

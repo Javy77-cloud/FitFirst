@@ -2,7 +2,9 @@ import { completeDeskActivity } from "@/app/actions/activities-desk";
 import { RecordLink } from "@/components/record-links";
 import { Button } from "@/components/ui/button";
 import { formatDay } from "@/lib/domain";
+import { formatWhen } from "@/lib/activities/format";
 import { ACTIVITY_COLORS, groupCommsByStoredKey } from "@/lib/desk/comms";
+import { decodeMailText } from "@/lib/desk/mail-text";
 import type { TimelineItem } from "@/lib/db/queries";
 
 const COMMS_KINDS = new Set(["email", "sms", "call", "meeting", "task"]);
@@ -60,7 +62,7 @@ export function RecordAutoTimeline({ items }: { items: TimelineItem[] }) {
                   {thread.channel}
                 </span>
                 <span className="text-sm font-medium text-navy">
-                  {thread.channel === "email" ? thread.subject : thread.channel}
+                  {thread.channel === "email" ? decodeMailText(thread.subject) || thread.subject : thread.channel}
                 </span>
                 {thread.messages.length > 1 ? (
                   <span className="text-[11px] text-muted-foreground">
@@ -74,7 +76,7 @@ export function RecordAutoTimeline({ items }: { items: TimelineItem[] }) {
                     <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase text-muted-foreground">
                       <span>{msg.direction}</span>
                       <span>{msg.eventType}</span>
-                      <span>{formatDay(msg.occurredAt)}</span>
+                      <span>{formatWhen(msg.occurredAt)}</span>
                     </div>
                     {msg.fromAddress || msg.toAddress ? (
                       <p className="mt-1 text-xs text-muted-foreground">

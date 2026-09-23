@@ -7,13 +7,19 @@ export const INBOX_ASSIGNED_KIND = "inbox_assigned" as const;
 
 export type InboxAssignAgent = { id: string; name: string };
 
-/** Prefer open-deal owner, then renewal policy owner, then contact owner. */
+/**
+ * Manual Assign dialog default.
+ * Prefer the agent already stamped on the email thread, then deal / policy owners.
+ * Contact owner is last — names can collide with agent users.
+ */
 export function suggestedInboxAssignee(input: {
+  threadAgentId?: string | null;
   dealOwnerId?: string | null;
   policyOwnerId?: string | null;
   contactOwnerId?: string | null;
 }): string | null {
   return (
+    input.threadAgentId?.trim() ||
     input.dealOwnerId?.trim() ||
     input.policyOwnerId?.trim() ||
     input.contactOwnerId?.trim() ||
@@ -21,8 +27,12 @@ export function suggestedInboxAssignee(input: {
   );
 }
 
-export function suggestedAssigneeFromMatch(match: InboxMatch): string | null {
+export function suggestedAssigneeFromMatch(
+  match: InboxMatch,
+  threadAgentId?: string | null,
+): string | null {
   return suggestedInboxAssignee({
+    threadAgentId,
     dealOwnerId: match.deal?.ownerId,
     policyOwnerId: match.renewal?.ownerId,
     contactOwnerId: match.contact?.ownerId,

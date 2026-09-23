@@ -1,4 +1,5 @@
 import type { MailThreadPreview } from "@/lib/integrations/mail-contract";
+import { decodeMailText } from "@/lib/desk/mail-text";
 import {
   counterpartEmails,
   inboxAttentionFor,
@@ -47,6 +48,8 @@ export function presentInboxThread(row: MailThreadPreview, index: InboxMatchInde
   });
   return {
     ...row,
+    subject: decodeMailText(row.subject) || row.subject,
+    snippet: decodeMailText(row.snippet) || row.snippet,
     attention,
     match,
     why: inboxMailWhy({
