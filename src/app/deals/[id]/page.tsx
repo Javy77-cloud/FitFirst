@@ -42,6 +42,7 @@ import {
 } from "@/lib/deals/tabs";
 import { DEAL_ID } from "@/lib/fixtures/ids";
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
+import { resolvePartyEmail } from "@/lib/comms/resolve-party-email";
 import { ACTIVITY_RAIL_ASIDE_CLASS, ACTIVITY_RAIL_LOCK } from "@/lib/desk/activity-rail";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { reportFromSheet } from "@/lib/completeness/report";
@@ -623,7 +624,7 @@ export default async function DealPage({
         accountId: deal.accountId,
         name: partyName,
         phone: contact?.phone ?? lead?.phone,
-        email: contact?.email ?? lead?.email,
+        email: resolvePartyEmail({ contact, lead, account }),
       }}
     >
       <DeskPageTrail
@@ -879,7 +880,7 @@ export default async function DealPage({
                   accountId={deal.accountId}
                   contactName={partyName}
                   contactPhone={contact?.phone ?? lead?.phone}
-                  contactEmail={contact?.email ?? lead?.email}
+                  contactEmail={resolvePartyEmail({ contact, lead, account })}
                   officeAddress={officeAddress}
                   clientAddress={clientAddress}
                   initialKind={parseQuickCommsKind(qc)}

@@ -934,6 +934,7 @@ export function QuickCommsBoard({
         initialSubject={templateSubject ?? undefined}
         initialBody={templateBody ?? undefined}
         templateId={templateId}
+        toMode={(contactEmail ?? "").trim() ? "fixed" : "search"}
       />
     </section>
   );
