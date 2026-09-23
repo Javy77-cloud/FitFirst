@@ -58,6 +58,30 @@ export function compareSummary(change: PremiumChange): string {
   return `Premium ${verb} ${formatSignedMoney(change.delta)} (${formatDeltaPct(change.pct)}) from ${formatMoney(change.current)} to ${formatMoney(change.proposed)}.`;
 }
 
+/**
+ * One-line shop/stay hint from simple % thresholds — not AI, never invents premiums.
+ * <5% modest stay; 5–15% review/shop if needed; ≥15% shop strong alternatives.
+ */
+export function premiumShopStayHint(change: PremiumChange): string {
+  if (change.direction === "flat") {
+    return "Flat renewal — stay with carrier unless coverage gaps.";
+  }
+  if (change.direction === "down") {
+    return "Premium down — stay is usually the easy call.";
+  }
+  const pctPoints = change.pct == null || !Number.isFinite(change.pct) ? null : change.pct * 100;
+  if (pctPoints == null) {
+    return "Premium up — open Compare and confirm with the client.";
+  }
+  if (pctPoints < 5) {
+    return "Modest increase — often stay; confirm coverages match.";
+  }
+  if (pctPoints < 15) {
+    return "Material increase — review Compare and shop if needed.";
+  }
+  return "Sharp increase — shop strong alternatives before renewing.";
+}
+
 function asCoverageLines(
   value: PolicyCoverageLine[] | Record<string, string> | null | undefined,
 ): PolicyCoverageLine[] {

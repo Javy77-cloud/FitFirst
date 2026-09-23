@@ -8,6 +8,7 @@ import {
   formatSignedMoney,
   parseMoney,
   premiumChange,
+  premiumShopStayHint,
 } from "./compare";
 
 describe("premiumChange", () => {
@@ -82,5 +83,15 @@ describe("Ana Dib fixture stays unbound at $321k", () => {
     expect(DEAL_ID).toBe("22222222-2222-4222-8222-222222222222");
     expect(HALE_POLICY_ID).not.toBe(CONTACT_ID);
     expect(NAIR_POLICY_ID).not.toBe(DEAL_ID);
+  });
+});
+
+describe("premiumShopStayHint", () => {
+  it("hints modest stay under 5% and shop when sharp", () => {
+    expect(premiumShopStayHint(premiumChange(3000, 3090))).toMatch(/Modest increase/i);
+    expect(premiumShopStayHint(premiumChange(2184, 2547))).toMatch(/Sharp increase|shop strong/i);
+    expect(premiumShopStayHint(premiumChange(2000, 2200))).toMatch(/Material increase|shop if needed/i);
+    expect(premiumShopStayHint(premiumChange(1800, 1800))).toMatch(/Flat renewal/i);
+    expect(premiumShopStayHint(premiumChange(1428, 1356))).toMatch(/Premium down/i);
   });
 });
