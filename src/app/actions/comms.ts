@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { emailTemplates } from "@/lib/db/schema";
-import { loadAgencyBrand } from "@/lib/desk/brand";
+import { resolveOutboundEmailSignature } from "@/lib/desk/outbound-email-signature";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import { enqueueOutboundJob, loadContactOptOuts, decideOutboundStatus } from "@/lib/desk/outbound-queue";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
@@ -13,7 +13,12 @@ import {
   decideDeskEmailDelivery,
   GMAIL_NOT_CONNECTED_MESSAGE,
 } from "@/lib/desk/desk-email-delivery";
-import { gmailAccountEmail, gmailIsReady, sendGmailMessage } from "@/lib/integrations/gmail";
+import {
+  gmailAccountEmail,
+  gmailIsReady,
+  sendGmailMessage,
+  type GmailComposeAttachment,
+} from "@/lib/integrations/gmail";
 import { currentDeskSession } from "@/lib/auth/session";
 import { mailMessageSourceId } from "@/lib/desk/inbox-autolog";
 
@@ -44,7 +49,6 @@ function revalidate(ids: ReturnType<typeof related>) {
 export async function sendDeskEmail(formData: FormData) {
   const session = await currentDeskSession();
   const ids = related(formData);
-  const brand = await loadAgencyBrand();
   const templateId = str(formData, "templateId");
   let subject = str(formData, "subject");
   let body = str(formData, "body");
@@ -58,8 +62,11 @@ export async function sendDeskEmail(formData: FormData) {
       body = body || tpl.body;
     }
   }
-  if (brand.emailSignature && body && !body.includes(brand.emailSignature)) {
-    body = `${body}\n\n${brand.emailSignature}`;
+  const signature = await resolveOutboundEmailSignature();
+  if (signature && body && !body.includes(signature)) {
+    body = `${body}
+
+${signature}`;
   }
   const toAddress = str(formData, "toAddress") || str(formData, "email");
   const optOuts = await loadContactOptOuts(ids.contactId);
@@ -81,6 +88,19 @@ export async function sendDeskEmail(formData: FormData) {
     .getAll("attachDoc")
     .map((value) => String(value ?? "").trim())
     .filter(Boolean);
+
+  const composeAttachments: GmailComposeAttachment[] = [];
+  for (const entry of formData.getAll("composeFile")) {
+    if (!(entry instanceof File) || entry.size <= 0) continue;
+    if (entry.size > 8 * 1024 * 1024) continue;
+    const buf = Buffer.from(await entry.arrayBuffer());
+    composeAttachments.push({
+      filename: entry.name || "attachment",
+      mimeType: entry.type || "application/octet-stream",
+      contentBase64: buf.toString("base64"),
+    });
+  }
+  const htmlBody = str(formData, "bodyHtml") || null;
   const mailbox = await gmailAccountEmail();
   const fromAddress = str(formData, "fromAddress") || mailbox || "desk@agency.local";
 
@@ -96,6 +116,8 @@ export async function sendDeskEmail(formData: FormData) {
       to: toAddress,
       subject: subject || "Email",
       body,
+      htmlBody,
+      attachments: composeAttachments,
     });
     gmailThreadId = sent.threadId;
     gmailMessageId = sent.id;
