@@ -34,6 +34,16 @@ export function rotateReviewPrompt(seed: string): (typeof REVIEW_PROMPTS)[number
   return REVIEW_PROMPTS[Math.abs(hash) % REVIEW_PROMPTS.length] ?? REVIEW_PROMPTS[0];
 }
 
+
+/** True only for a finished call log — not an open schedule / reminder. */
+export function isLoggedCallPulseCandidate(row: {
+  kind?: string | null;
+  status?: string | null;
+}): boolean {
+  if ((row.kind || "").trim().toLowerCase() !== "call") return false;
+  return (row.status || "").trim().toLowerCase() === "completed";
+}
+
 export function shouldOfferReview(input: {
   alreadyRated: boolean;
   skipCount: number;

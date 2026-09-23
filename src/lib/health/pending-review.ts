@@ -13,6 +13,7 @@ import {
 import { REVIEW_EVENT } from "@/lib/renewal/chase";
 import { addUtcDays, deskNow } from "@/lib/home/as-of";
 import {
+  isLoggedCallPulseCandidate,
   isReviewMoment,
   rotateReviewPrompt,
   shouldOfferReview,
@@ -87,6 +88,7 @@ async function loadPendingReviewPromptUnsafe(
           eq(activities.tenantId, DEFAULT_TENANT_ID),
           gte(activities.createdAt, since),
           eq(activities.kind, "call"),
+          eq(activities.status, "completed"),
         ),
       )
       .orderBy(desc(activities.createdAt))
@@ -179,7 +181,8 @@ async function loadPendingReviewPromptUnsafe(
   }
 
   for (const row of recentComms) {
-    if (row.kind !== "call") continue;
+    // Schedule reminder creates kind=call with status open + dueAt — never pulse those.
+    if (!isLoggedCallPulseCandidate(row)) continue;
     const at = asDate(row.createdAt);
     if (!at) continue;
     candidates.push({

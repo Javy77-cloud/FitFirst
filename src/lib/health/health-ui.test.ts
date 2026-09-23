@@ -57,6 +57,10 @@ describe("client health chrome", () => {
     expect(pending).toMatch(/moment: "bind"/);
     expect(pending).toMatch(/REVIEW_EVENT/);
     expect(pending).not.toMatch(/logged_email/);
+    expect(pending).toMatch(/isLoggedCallPulseCandidate/);
+    expect(pending).toMatch(/eq\(activities\.status, "completed"\)/);
+    expect(source("src/lib/health/reviews.ts")).toMatch(/status.*completed/);
+    expect(pending).toMatch(/Schedule reminder creates kind=call/);
     expect(pending).toMatch(/function asDate/);
     expect(pending).toMatch(/loadPendingReviewPromptUnsafe/);
     expect(reviewHost).toMatch(/try \{/);
