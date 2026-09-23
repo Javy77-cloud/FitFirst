@@ -137,4 +137,19 @@ describe("toHeaderAlert", () => {
     });
     expect(alert.href).toBe("/leads/lead-9");
   });
+
+  it("deep-links a day-of term start onto Compare", () => {
+    const alert = toHeaderAlert({
+      id: "term-1",
+      title: "Ruiz, Camila · HO3",
+      body: "<!--ff-panel:renewal_term_started:p9:2026-10-01-->\n\nHeritage 2026–27 term started today",
+      severity: "info",
+      kind: "renewal_term_started",
+      readAt: null,
+      entityType: "policy",
+      entityId: "p9",
+    });
+    expect(alert.href).toBe("/policies/p9/compare");
+  });
+
 });

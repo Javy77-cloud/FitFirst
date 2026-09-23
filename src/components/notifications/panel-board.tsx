@@ -1,21 +1,28 @@
 import { NotificationUrgencyCard } from "@/components/notifications/urgency-card";
 import {
-  PANEL_EMPTY_BOARD,
   PANEL_URGENCY,
   PANEL_URGENCY_META,
   groupPanelByUrgency,
   type PanelCard,
 } from "@/lib/notifications/panel";
+import { PANEL_LANE_META, type PanelLane } from "@/lib/notifications/lanes";
 import { cn } from "@/lib/utils";
 
-export function NotificationPanelBoard({ cards }: { cards: PanelCard[] }) {
+export function NotificationPanelBoard({
+  cards,
+  lane = "work",
+}: {
+  cards: PanelCard[];
+  lane?: PanelLane;
+}) {
   const groups = groupPanelByUrgency(cards);
+  const empty = PANEL_LANE_META[lane].empty;
 
   return (
-    <div className="ff-panel-board" data-ff-notification-panel-board="">
+    <div className="ff-panel-board" data-ff-notification-panel-board="" data-ff-panel-active-lane={lane}>
       {cards.length === 0 ? (
         <p className="ff-panel-empty-hero" data-ff-panel-empty="">
-          {PANEL_EMPTY_BOARD}
+          {empty}
         </p>
       ) : null}
       <div className="ff-renewals-urgency-board ff-panel-urgency-board">

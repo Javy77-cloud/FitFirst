@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { NotificationPanelBoard } from "@/components/notifications/panel-board";
+import { NotificationPanelLaneToggle } from "@/components/notifications/panel-lane-toggle";
 import { CommitmentsTimeline } from "@/components/notifications/commitments-timeline";
 import { currentDeskSession } from "@/lib/auth/session";
 import { defaultFieldsForModule, defaultLayoutForModule } from "@/lib/custom-fields/modules";
@@ -9,6 +10,12 @@ import { serializeCommitments } from "@/lib/notifications/commitments";
 import { loadPanelCards } from "@/lib/notifications/load-panel";
 import { attachAlertIds, syncPanelSignals } from "@/lib/notifications/sync-panel";
 import { PANEL_IN_APP_COPY } from "@/lib/notifications/panel";
+import {
+  PANEL_LANE_META,
+  countCardsByLane,
+  filterCardsByLane,
+  parsePanelLane,
+} from "@/lib/notifications/lanes";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +25,10 @@ export default async function NotificationBoardPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
+  const lane = parsePanelLane(typeof params.lane === "string" ? params.lane : undefined);
   const newCommitment = (typeof params.newCommitment === "string" ? params.newCommitment : "") === "1";
   const session = await currentDeskSession();
-  const [cards, commitments, taskLayout, taskFields] = await Promise.all([
+  const [allCards, commitments, taskLayout, taskFields] = await Promise.all([
     syncPanelSignals().catch(async () =>
       attachAlertIds(await loadPanelCards().catch(() => [])),
     ),
@@ -29,20 +37,30 @@ export default async function NotificationBoardPage({
     listFieldDefs("tasks").catch(() => defaultFieldsForModule("tasks")),
   ]);
 
+  const counts = countCardsByLane(allCards);
+  const cards = filterCardsByLane(allCards, lane);
+  const laneMeta = PANEL_LANE_META[lane];
+
   return (
     <AppShell title="Notifications" eyebrow="System attention">
-      <p className="mb-4 max-w-3xl text-base text-muted-foreground">{PANEL_IN_APP_COPY}</p>
+      <p className="mb-3 max-w-3xl text-base text-muted-foreground">{PANEL_IN_APP_COPY}</p>
+      <NotificationPanelLaneToggle lane={lane} counts={counts} />
+      <p className="mb-4 max-w-3xl text-sm text-muted-foreground" data-ff-panel-lane-hint="">
+        {laneMeta.hint}
+      </p>
       {(typeof params.notice === "string" ? params.notice : "") === "autopilot_sent" ? (
         <p className="mb-3 text-sm text-navy">Autopilot confirmed. That band will not nag again.</p>
       ) : null}
-      <NotificationPanelBoard cards={cards} />
-      <CommitmentsTimeline
-        commitments={serializeCommitments(commitments)}
-        currentUserId={session.userId}
-        layout={taskLayout}
-        fields={taskFields}
-        defaultOpenCreate={newCommitment}
-      />
+      <NotificationPanelBoard cards={cards} lane={lane} />
+      {lane === "work" ? (
+        <CommitmentsTimeline
+          commitments={serializeCommitments(commitments)}
+          currentUserId={session.userId}
+          layout={taskLayout}
+          fields={taskFields}
+          defaultOpenCreate={newCommitment}
+        />
+      ) : null}
     </AppShell>
   );
 }

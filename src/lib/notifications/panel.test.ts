@@ -78,7 +78,9 @@ describe("notification panel signals", () => {
     expect(PANEL_KIND_LABEL.renewal_autopilot).toMatch(/Autopilot/);
     expect(PANEL_SIGNAL_KINDS).toContain("renewal_autopilot");
     expect(PANEL_SIGNAL_KINDS).toContain("inbox_mail");
+    expect(PANEL_SIGNAL_KINDS).toContain("renewal_term_started");
     expect(PANEL_KIND_LABEL.inbox_mail).toMatch(/Inbox/);
+    expect(PANEL_KIND_LABEL.renewal_term_started).toMatch(/Term started/);
     const page = readFileSync("src/app/notifications/page.tsx", "utf8");
     const sync = readFileSync("src/lib/notifications/sync-panel.ts", "utf8");
     expect(page).toMatch(/loadPanelCards/);
