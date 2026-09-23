@@ -40,6 +40,10 @@ import {
   type CrmListModule,
 } from "@/lib/lists/selection-actions";
 import { dealTransferNotification } from "@/lib/deals/transfer";
+import {
+  demoteCurrentOnOffBookStatusMany,
+  shouldDemoteCurrentForStatus,
+} from "@/lib/policy/offbook-demote-current";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -530,6 +534,9 @@ async function applyPolicyColumn(columnId: string, ids: string[], value: string)
       .update(policies)
       .set({ status: value, updatedAt: new Date() })
       .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), inArray(policies.id, ids)));
+    if (shouldDemoteCurrentForStatus(value)) {
+      await demoteCurrentOnOffBookStatusMany(ids);
+    }
     return null;
   }
   if (columnId === "premium") {
