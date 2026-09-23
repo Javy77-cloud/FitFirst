@@ -20,6 +20,7 @@ import { applyPolicyChange, parseIsoDate, type PolicyChangeInput } from "./workf
 import { writeEoAuditSafe } from "@/lib/eo-audit/write";
 import { recordPolicyFieldChanges } from "./record-changes";
 import { appendTermFromEndorsement } from "@/lib/ams/ensure-term";
+import { demoteCurrentOnOffBookStatus } from "@/lib/policy/offbook-demote-current";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -153,6 +154,7 @@ export async function filePolicyChange(input: FilePolicyChangeInput) {
       .update(reviewTasks)
       .set({ status: "done", completedAt: new Date() })
       .where(and(eq(reviewTasks.policyId, policy.id), eq(reviewTasks.status, "open")));
+    await demoteCurrentOnOffBookStatus(policy.id);
   }
 
   const attachments = [];

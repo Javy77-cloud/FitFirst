@@ -32,6 +32,10 @@ import {
   buildTermOverridePatch,
   termOverrideSummary,
 } from "@/lib/policy/term-override";
+import {
+  demoteCurrentOnOffBookStatus,
+  shouldDemoteCurrentForStatus,
+} from "@/lib/policy/offbook-demote-current";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -118,6 +122,10 @@ export async function updatePolicyRecord(formData: FormData) {
       updatedAt: new Date(),
     })
     .where(eq(policies.id, id));
+
+  if (shouldDemoteCurrentForStatus(next.status)) {
+    await demoteCurrentOnOffBookStatus(id);
+  }
 
   const shownFamily = insuranceFamilyFromPolicy(existing);
   await recordPolicyFieldChanges({
@@ -439,6 +447,11 @@ export async function updatePolicyField(input: {
     after: { ...(existing as unknown as Record<string, unknown>), ...patch },
     source: "record_edit",
   });
+
+
+  if (fieldKey === "status" && shouldDemoteCurrentForStatus(raw)) {
+    await demoteCurrentOnOffBookStatus(id);
+  }
 
   if (fieldKey === "effectiveDate" || fieldKey === "expirationDate" || fieldKey === "renewalDate") {
     await syncPolicyDateAutomations(id);
