@@ -167,6 +167,7 @@ export const FLASH_COPY = {
   "letter-sandbox-error": "DocuSign sandbox rejected the envelope. Check the Integration Key and try again.",
   "letter-need-signer": "Deal contact needs an email before send.",
   "letter-status-refreshed": "Envelope status refreshed",
+  "client-staying": "Nice work — client staying. Moved to Handled; see you at the next renewal.",
 } as const;
 
 export type FlashKey = keyof typeof FLASH_COPY;

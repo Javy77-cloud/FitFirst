@@ -14,3 +14,11 @@ export const RENEWAL_HANDLED_CLEAR_KINDS = [
 export function isRenewalHandledStageValue(stage: string | null | undefined): boolean {
   return stage === RENEWAL_HANDLED_STAGE;
 }
+
+/** Post-mark confirmation (dialog) — calmer than Policy published. */
+export const RENEWAL_HANDLED_SUCCESS_TITLE = "Client staying" as const;
+export const RENEWAL_HANDLED_SUCCESS_CONGRATS = "Nice work keeping them." as const;
+export const RENEWAL_HANDLED_SUCCESS_BODY =
+  "Chase is cleared and this renewal sits quietly in Handled. The policy stays live — you'll see them again at the next renewal." as const;
+export const RENEWAL_HANDLED_SUCCESS_DONE = "Got it" as const;
+
