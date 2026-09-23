@@ -22,6 +22,18 @@ export function assertRelatedRecord(related: RelatedRecordIds): RelatedRecordIds
       "Task, meeting, and call must assign to a Contact, Policy, Business, and/or Lead.",
     );
   }
+  return normalizeRelated(related);
+}
+
+/** Call / email / SMS may hang on Deal alone (Quick Comms on a deal with no Contact yet). */
+export function assertCommsRecord(related: RelatedRecordIds): RelatedRecordIds {
+  if (!hasCommsRecord(related)) {
+    throw new Error("Call, email, and text need a Deal, Contact, Policy, Business, or Lead.");
+  }
+  return normalizeRelated(related);
+}
+
+function normalizeRelated(related: RelatedRecordIds): RelatedRecordIds {
   return {
     contactId: related.contactId || null,
     accountId: related.accountId || null,

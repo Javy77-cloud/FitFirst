@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   activityLogBody,
+  assertCommsRecord,
   assertRelatedRecord,
+  hasCommsRecord,
   hasRelatedRecord,
   shouldWriteCommsActivityLog,
 } from "./activity";
@@ -15,6 +17,18 @@ describe("activity related-record FKs", () => {
     );
   });
 
+
+  it("allows call/email/sms to hang on Deal alone", () => {
+    expect(hasCommsRecord({ dealId: "deal-only" })).toBe(true);
+    expect(assertCommsRecord({ dealId: "deal-only" })).toEqual({
+      contactId: null,
+      accountId: null,
+      policyId: null,
+      dealId: "deal-only",
+      leadId: null,
+    });
+    expect(() => assertCommsRecord({})).toThrow(/Deal, Contact, Policy, Business, or Lead/);
+  });
   it("accepts contact and/or policy and/or business", () => {
     expect(hasRelatedRecord({ contactId: "c" })).toBe(true);
     expect(hasRelatedRecord({ policyId: "p" })).toBe(true);
