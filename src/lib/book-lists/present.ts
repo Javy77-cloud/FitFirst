@@ -887,7 +887,7 @@ export function presentPolicyCard(
   } else if (needs.pendingEndorsements > 0) {
     action = { label: "Endorse", href: `/policies/${row.id}?tab=endorsements` };
   } else if (attention.column === "now" && daysUntil != null && daysUntil < 30) {
-    action = { label: "Renew", href: `/renewals?policy=${row.id}` };
+    action = { label: "Renew", href: `/policies/${row.id}` };
   }
   return {
     id: row.id,
