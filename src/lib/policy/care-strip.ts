@@ -1,6 +1,7 @@
 import { daysUntilDate, relativeTouchLabel } from "@/lib/book-lists/heat";
 import type { AgentPolicyTab } from "@/lib/policy/tabs";
 import { renewalProximityDrivesCare } from "@/lib/renewal/handled";
+import { renewalDaysPhrase } from "@/lib/renewal/urgency";
 
 export type PolicyCareItem = {
   key: string;
@@ -67,7 +68,7 @@ export function buildPolicyCareItems(input: {
       why:
         lapsed
           ? "This term is off-book — upload rewrite paper here when not via API."
-          : `Expires in ${daysUntil} day${daysUntil === 1 ? "" : "s"} — upload current + renewal paper here when not via API.`,
+          : `${renewalDaysPhrase(daysUntil!)} — upload current + renewal paper here when not via API.`,
       count: 1,
     });
   }

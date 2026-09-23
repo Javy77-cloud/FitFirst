@@ -80,6 +80,33 @@ describe("book-list heat", () => {
     expect(ranked.map((row) => row.lastTouchDays)).toEqual([90, 12, 2]);
   });
 
+  it("labels past expiration without a future countdown", () => {
+    expect(
+      policyAttention({
+        daysUntil: -176,
+        lastTouchDays: 2,
+        lapsed: false,
+        openClaims: 0,
+        pendingEndorsements: 0,
+        missingDocs: 0,
+        expirationLabel: "Mar 31, 2026",
+      }),
+    ).toMatchObject({
+      column: "now",
+      why: "Expired Mar 31, 2026",
+    });
+    expect(
+      policyAttention({
+        daysUntil: -176,
+        lastTouchDays: 2,
+        lapsed: false,
+        openClaims: 0,
+        pendingEndorsements: 0,
+        missingDocs: 0,
+      }).why,
+    ).toBe("Past expiration");
+  });
+
   it("keeps Handled renewals out of care and midterm bands", () => {
     expect(
       policyAttention({

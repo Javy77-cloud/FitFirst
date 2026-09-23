@@ -111,4 +111,42 @@ describe("policy care strip", () => {
     ).toBe(false);
   });
 
+  it("frames past expiration as overdue, not a future countdown", () => {
+    const items = buildPolicyCareItems({
+      expirationDate: "2026-03-31T00:00:00.000Z",
+      updatedAt: "2026-09-18T12:00:00.000Z",
+      status: "active",
+      missingDocs: 0,
+      pendingEndorsements: 0,
+      openClaims: 0,
+      asOf,
+    });
+    expect(items).toHaveLength(1);
+    expect(items[0]?.key).toBe("renewal");
+    expect(items[0]?.why).toMatch(/^172 days overdue — upload current \+ renewal paper here/);
+    expect(items[0]?.why).not.toMatch(/Expires in/);
+    expect(
+      shouldShowManualRenewalHelp({
+        expirationDate: "2026-03-31T00:00:00.000Z",
+        status: "active",
+        asOf,
+      }),
+    ).toBe(true);
+  });
+
+  it("still skips past-expiration renewal care when Handled", () => {
+    expect(
+      buildPolicyCareItems({
+        expirationDate: "2026-03-31T00:00:00.000Z",
+        updatedAt: "2026-09-18T12:00:00.000Z",
+        status: "active",
+        missingDocs: 0,
+        pendingEndorsements: 0,
+        openClaims: 0,
+        asOf,
+        renewalHandled: true,
+      }),
+    ).toEqual([]);
+  });
+
 });
