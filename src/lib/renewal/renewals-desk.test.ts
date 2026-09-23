@@ -91,6 +91,10 @@ describe("Renewals desk chrome", () => {
     expect(card).toMatch(/clientName/);
     expect(card).toMatch(/data-ff-risk-badge/);
     expect(card).toMatch(/premiumDelta/);
+    expect(card).toMatch(/premiumDeltaPct/);
+    expect(card).toMatch(/formatBoardPremiumDelta/);
+    expect(card).toMatch(/premiumShopStayChip/);
+    expect(card).toMatch(/ff-renewal-delta-chip|data-ff-premium-chip/);
     expect(card).toMatch(/renewalWhyLine/);
     expect(card).toMatch(/RenewalCompareDrawer/);
     expect(card).toMatch(/RenewalHealthMeter/);

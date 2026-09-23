@@ -82,6 +82,23 @@ export function premiumShopStayHint(change: PremiumChange): string {
   return "Sharp increase — shop strong alternatives before renewing.";
 }
 
+/** One-word board chip — only when the signal is obvious; skip modest bumps (no clutter). */
+export function premiumShopStayChip(
+  change: Pick<PremiumChange, "pct" | "direction">,
+): "Shop" | "Stay" | null {
+  if (change.direction === "flat" || change.direction === "down") return "Stay";
+  const pctPoints = change.pct == null || !Number.isFinite(change.pct) ? null : change.pct * 100;
+  if (pctPoints != null && pctPoints >= 8) return "Shop";
+  return null;
+}
+
+/** Board glance: +$118 +3.3% (never invents % when current premium is zero). */
+export function formatBoardPremiumDelta(delta: number, pct: number | null): string {
+  const money = formatSignedMoney(delta);
+  if (pct == null || !Number.isFinite(pct)) return money;
+  return `${money} ${formatDeltaPct(pct)}`;
+}
+
 function asCoverageLines(
   value: PolicyCoverageLine[] | Record<string, string> | null | undefined,
 ): PolicyCoverageLine[] {

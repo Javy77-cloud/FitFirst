@@ -1861,6 +1861,25 @@ button.ff-renewal-risk-badge {
 .ff-renewal-delta-flat {
   color: var(--ff-muted);
 }
+.ff-renewal-delta-chip {
+  margin-left: 0.25rem;
+  border-radius: 999px;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: var(--ff-secondary, #eef2f7);
+  color: var(--ff-navy, #0b1f33);
+}
+.ff-renewal-delta-chip[data-ff-premium-chip="shop"] {
+  background: color-mix(in srgb, var(--ff-terracotta, #c45c26) 18%, white);
+  color: var(--ff-terracotta, #c45c26);
+}
+.ff-renewal-delta-chip[data-ff-premium-chip="stay"] {
+  background: color-mix(in srgb, var(--ff-green, #1f7a4d) 16%, white);
+  color: var(--ff-green, #1f7a4d);
+}
 .ff-renewal-why {
   margin-top: 0.3rem;
   font-size: 0.72rem;

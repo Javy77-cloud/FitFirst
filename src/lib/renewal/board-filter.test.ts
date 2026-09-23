@@ -24,6 +24,7 @@ function card(partial: Partial<RenewalBoardCard> & Pick<RenewalBoardCard, "stage
     premium: null,
     proposedPremium: null,
     premiumDelta: null,
+    premiumDeltaPct: null,
     policySubType: partial.policySubType ?? null,
     insuranceType: partial.insuranceType ?? null,
     commissionFamily: partial.commissionFamily ?? null,

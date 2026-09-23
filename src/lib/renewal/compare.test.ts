@@ -9,6 +9,8 @@ import {
   parseMoney,
   premiumChange,
   premiumShopStayHint,
+  premiumShopStayChip,
+  formatBoardPremiumDelta,
 } from "./compare";
 
 describe("premiumChange", () => {
@@ -93,5 +95,16 @@ describe("premiumShopStayHint", () => {
     expect(premiumShopStayHint(premiumChange(2000, 2200))).toMatch(/Material increase|shop if needed/i);
     expect(premiumShopStayHint(premiumChange(1800, 1800))).toMatch(/Flat renewal/i);
     expect(premiumShopStayHint(premiumChange(1428, 1356))).toMatch(/Premium down/i);
+  });
+});
+
+describe("formatBoardPremiumDelta + premiumShopStayChip", () => {
+  it("shows dollars and percent together for the renewals board card", () => {
+    const change = premiumChange(3576, 3694);
+    expect(formatBoardPremiumDelta(change.delta, change.pct)).toBe("+$118 +3.3%");
+    expect(premiumShopStayChip(change)).toBeNull();
+    expect(premiumShopStayChip(premiumChange(2184, 2547))).toBe("Shop");
+    expect(premiumShopStayChip(premiumChange(1800, 1800))).toBe("Stay");
+    expect(premiumShopStayChip(premiumChange(1428, 1356))).toBe("Stay");
   });
 });
