@@ -15,12 +15,56 @@ import {
   quoteSheets,
   type Risk,
 } from "@/lib/db/schema";
+import { matchFloodShopCarriers } from "./javy-flood-shop-list";
 import { matchCarrier, rankFits, riskFromRecord, type CarrierMatch } from "./match";
 import { evaluateShopFits, type ShopFit } from "./shop-fits";
 import { isMatchPriorResult } from "@/lib/quoting/forms";
 import { hasMarketLookupInput, sheetHasMarketFacts } from "@/lib/deals/manual-markets";
 
 type SheetValues = Record<string, { value?: string | null } | null> | null;
+
+/** Permissive Flood stub — first-wave list until real Flood appetite_rules exist. */
+function floodFirstWaveRule(
+  carrier: {
+    id: string;
+    name: string;
+    portalStatus: string | null;
+    dontWriteNotes: string | null;
+    appetiteNotes: string | null;
+  },
+  appointed: boolean | null,
+): AppetiteRuleInput {
+  return {
+    carrierId: carrier.id,
+    carrierName: carrier.name,
+    lineOfBusiness: "FLOOD",
+    minCovA: null,
+    maxCovA: null,
+    minYearBuilt: null,
+    maxRoofAge: null,
+    allowedRoofCoverings: null,
+    coastalAllowed: true,
+    minMilesToCoast: null,
+    maxMilesToCoast: null,
+    mobileAllowed: true,
+    requiresOpeningProtection: false,
+    maxStories: null,
+    allowedConstruction: null,
+    allowedOccupancy: null,
+    allowedCounties: null,
+    excludedCounties: null,
+    countyMinCovA: null,
+    requireReplacementCost: false,
+    rceFloorRatio: null,
+    portalStatus: (carrier.portalStatus ?? "open") as AppetiteRuleInput["portalStatus"],
+    dontWriteNotes: carrier.dontWriteNotes,
+    writtenLines: ["FLOOD"],
+    appointed: appointed ?? true,
+    appetiteNotes:
+      carrier.appetiteNotes?.trim() ||
+      "First-wave Flood market — Neptune / Selective / Tower Hill / Wright.",
+  };
+}
 
 /** Markets matcher (legacy appetite_rules). Portal skip-decline lives in shopDealQuotes + quote-gate. */
 export async function evaluateDealMarkets(
@@ -46,7 +90,7 @@ export async function evaluateDealShopFits(
     .innerJoin(carriers, eq(appetiteRules.carrierId, carriers.id))
     .where(eq(appetiteRules.tenantId, DEFAULT_TENANT_ID));
 
-  const [appointments, logs, sheets] = await Promise.all([
+  const [appointments, logs, sheets, deskCarriers] = await Promise.all([
     db
       .select()
       .from(carrierAppointments)
@@ -56,6 +100,16 @@ export async function evaluateDealShopFits(
       .select()
       .from(quoteSheets)
       .where(eq(quoteSheets.dealId, risk.dealId)),
+    db
+      .select({
+        id: carriers.id,
+        name: carriers.name,
+        portalStatus: carriers.portalStatus,
+        dontWriteNotes: carriers.dontWriteNotes,
+        appetiteNotes: carriers.appetiteNotes,
+      })
+      .from(carriers)
+      .where(eq(carriers.tenantId, DEFAULT_TENANT_ID)),
   ]);
 
   const prior: PriorAttempt[] = logs
@@ -91,7 +145,7 @@ export async function evaluateDealShopFits(
     return [];
   }
 
-  const inputs: AppetiteRuleInput[] = rules.map(({ rule, carrier }) => {
+  const fromRules: AppetiteRuleInput[] = rules.map(({ rule, carrier }) => {
     const appointment = appointments.find(
       (row) => row.carrierId === carrier.id && row.writtenLine === dealLine,
     );
@@ -124,6 +178,18 @@ export async function evaluateDealShopFits(
       appetiteNotes: rule.notes?.trim() || carrier.appetiteNotes || null,
     };
   });
+
+  // Flood Markets: gate to Load my Flood list (FIRST_WAVE_FLOOD). Pure flood writers
+  // often have no appetite_rules row, so HO carriers with a mistaken FLOOD tag used to win.
+  const inputs: AppetiteRuleInput[] =
+    dealLine === "FLOOD"
+      ? matchFloodShopCarriers(deskCarriers).map((carrier) => {
+          const appointment = appointments.find(
+            (row) => row.carrierId === carrier.id && row.writtenLine === "FLOOD",
+          );
+          return floodFirstWaveRule(carrier, appointment ? appointment.appointed : true);
+        })
+      : fromRules;
 
   if (appointments.length || sheet) {
     return evaluateShopFits({

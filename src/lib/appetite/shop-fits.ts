@@ -1,5 +1,5 @@
 import type { AppetiteRuleInput, FitBand, PriorAttempt, RiskSnapshot } from "@/lib/domain";
-import { writesDealLine } from "@/lib/domain";
+import { appointmentLine, writesDealLine } from "@/lib/domain";
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import { riskFromQuoteSheet } from "@/lib/quote-sheet/risk-from-sheet";
 import { firstWaveRank } from "./first-wave";
@@ -41,6 +41,23 @@ export function rankFitsByFirstWave(matches: ShopFit[]): ShopFit[] {
   });
 }
 
+/**
+ * Writers for this shop line. Flood prefers FIRST_WAVE_FLOOD (Neptune / Selective /
+ * Tower Hill / Wright) when any of those are in the rule set — stops HO carriers that
+ * wrongly carry FLOOD in written_lines from auto-filling Flood Markets.
+ */
+export function writersForDealLine(
+  rules: AppetiteRuleInput[],
+  dealLine: string,
+): AppetiteRuleInput[] {
+  const writers = rules.filter((rule) => writesDealLine(rule.writtenLines, dealLine));
+  if (appointmentLine(dealLine) !== "FLOOD") return writers;
+  const firstWave = writers.filter(
+    (rule) => firstWaveRank(dealLine, rule.carrierId, rule.carrierName) !== null,
+  );
+  return firstWave.length > 0 ? firstWave : writers;
+}
+
 export function evaluateShopFits(input: {
   risk: RiskSnapshot;
   dealLine: string;
@@ -50,7 +67,7 @@ export function evaluateShopFits(input: {
   asOfYear?: number;
 }): ShopFitsResult {
   const risk = riskFromQuoteSheet(input.risk, input.sheetValues);
-  const writers = input.rules.filter((rule) => writesDealLine(rule.writtenLines, input.dealLine));
+  const writers = writersForDealLine(input.rules, input.dealLine);
 
   const matches = rankFitsByFirstWave(
     writers.map((rule) => {

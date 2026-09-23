@@ -114,8 +114,9 @@ export async function seedSouthernOak() {
   const byId = existing.find((row) => row.id === SOUTHERN_OAK_CARRIER_ID);
   const current = byName ?? byId;
   const id = current?.id ?? SOUTHERN_OAK_CARRIER_ID;
-  const written = new Set(current?.writtenLines ?? ["HO", "RENTERS LANDLORD", "FLOOD"]);
+  const written = new Set(current?.writtenLines ?? ["HO", "RENTERS LANDLORD"]);
   written.add("HO");
+  written.delete("FLOOD"); // Javy: Southern Oak does not write flood
 
   const values = {
     name: current && isSouthernOakName(current.name) ? current.name : SOUTHERN_OAK_CARRIER_NAME,
