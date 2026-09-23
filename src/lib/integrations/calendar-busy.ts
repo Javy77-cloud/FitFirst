@@ -10,6 +10,7 @@ import {
   googleCalendarHttpError,
   isByoBusyConnection,
 } from "./calendar-sync";
+import { busyCoveredByTitledEvent } from "./calendar-event-map";
 
 export type BusyWindow = {
   id: string;
@@ -81,6 +82,46 @@ export function busyConflictMessage(conflicts: BusyWindow[]): string {
   return `That slot overlaps ${vendor} busy (${when}). Pick another time or force the booking.`;
 }
 
+
+async function fitfirstTitledWindows(): Promise<
+  { origin: "fitfirst"; startAt: Date; endAt: Date }[]
+> {
+  const { activities } = await import("@/lib/db/schema");
+  const { and, eq, isNotNull } = await import("drizzle-orm");
+  const rows = await db
+    .select({ startAt: activities.startAt, endAt: activities.endAt })
+    .from(activities)
+    .where(
+      and(
+        eq(activities.tenantId, DEFAULT_TENANT_ID),
+        isNotNull(activities.startAt),
+        isNotNull(activities.endAt),
+      ),
+    );
+  return rows
+    .filter((row) => row.startAt && row.endAt)
+    .map((row) => ({
+      origin: "fitfirst" as const,
+      startAt: new Date(row.startAt!),
+      endAt: new Date(row.endAt!),
+    }));
+}
+
+/** Drop FreeBusy slots that are just mirrors of FitFirst desk events we already show. */
+export function filterBusyAgainstTitledEvents<T extends { start: Date; end: Date }>(
+  blocks: T[],
+  events: { origin?: string; calendarProvider?: string | null; startAt?: Date | string | null; endAt?: Date | string | null }[],
+  provider: string,
+): T[] {
+  return blocks.filter(
+    (block) =>
+      !busyCoveredByTitledEvent(
+        { provider, startAt: block.start, endAt: block.end },
+        events,
+      ),
+  );
+}
+
 async function replaceBusy(provider: ByoOauthProviderId, blocks: { id: string; start: Date; end: Date; title: string }[]) {
   await db
     .delete(calendarBusyBlocks)
@@ -135,7 +176,9 @@ export async function syncGoogleBusy(): Promise<number> {
       return { id: `gcal-${start.getTime()}-${end.getTime()}-${index}`, start, end, title: "Busy" };
     })
     .filter((row): row is { id: string; start: Date; end: Date; title: string } => Boolean(row));
-  const count = await replaceBusy("google_calendar", blocks);
+  const titled = await fitfirstTitledWindows();
+  const kept = filterBusyAgainstTitledEvents(blocks, titled, "google_calendar");
+  const count = await replaceBusy("google_calendar", kept);
   await stampBusySync("google_calendar");
   return count;
 }
@@ -182,7 +225,9 @@ export async function syncOutlookBusy(): Promise<number> {
       };
     })
     .filter((row): row is { id: string; start: Date; end: Date; title: string } => Boolean(row));
-  const count = await replaceBusy("outlook_calendar", blocks);
+  const titled = await fitfirstTitledWindows();
+  const kept = filterBusyAgainstTitledEvents(blocks, titled, "outlook_calendar");
+  const count = await replaceBusy("outlook_calendar", kept);
   await stampBusySync("outlook_calendar");
   return count;
 }
