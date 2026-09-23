@@ -25,6 +25,7 @@ export function PolicyDocumentsTab({
   notice,
   accessLog = [],
   isAdmin = false,
+  renewalHandled = false,
   uploadMode = { onVercel: false, directBlob: false },
 }: {
   policy: {
@@ -55,12 +56,14 @@ export function PolicyDocumentsTab({
     filename?: string | null;
   }>;
   isAdmin?: boolean;
+  renewalHandled?: boolean;
   uploadMode?: { onVercel: boolean; directBlob: boolean };
 }) {
   const showManualRenewalHelp = shouldShowManualRenewalHelp({
     expirationDate: policy.expirationDate,
     status: policy.status,
     asOf: deskNow(),
+    renewalHandled,
   });
   const canFillCompare = canFillCompareFromTermRoleDocs(files);
 

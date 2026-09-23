@@ -22,3 +22,14 @@ export const RENEWAL_HANDLED_SUCCESS_BODY =
   "Chase is cleared and this renewal sits quietly in Handled. The policy stays live — you'll see them again at the next renewal." as const;
 export const RENEWAL_HANDLED_SUCCESS_DONE = "Got it" as const;
 
+/**
+ * While Client staying / Handled is active, renewal proximity must not drive
+ * Policies care bands, Events care chips, or the in-policy care banner.
+ * Day-of term-start deletes the Handled queue row, so care returns naturally.
+ */
+export function renewalProximityDrivesCare(
+  renewalHandled: boolean | null | undefined,
+): boolean {
+  return !Boolean(renewalHandled);
+}
+

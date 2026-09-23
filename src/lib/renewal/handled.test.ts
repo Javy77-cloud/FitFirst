@@ -17,6 +17,7 @@ import {
   RENEWAL_HANDLED_SUCCESS_CONGRATS,
   RENEWAL_HANDLED_SUCCESS_DONE,
   RENEWAL_HANDLED_SUCCESS_TITLE,
+  renewalProximityDrivesCare,
 } from "@/lib/renewal/handled";
 import { FLASH_COPY, resolveFlashMessage } from "@/lib/flash";
 
@@ -80,6 +81,8 @@ describe("Client staying / Handled", () => {
     expect(RENEWAL_HANDLED_SUCCESS_BODY).toMatch(/Handled/);
     expect(RENEWAL_HANDLED_SUCCESS_BODY).toMatch(/next renewal/i);
     expect(RENEWAL_HANDLED_SUCCESS_DONE).toBe("Got it");
+    expect(renewalProximityDrivesCare(true)).toBe(false);
+    expect(renewalProximityDrivesCare(false)).toBe(true);
     expect(FLASH_COPY["client-staying"]).toMatch(/client staying/i);
     expect(resolveFlashMessage("client-staying")).toBe(FLASH_COPY["client-staying"]);
   });
@@ -118,6 +121,10 @@ describe("Client staying / Handled", () => {
       /planTermStartRoleFlip/,
     );
     expect(readFileSync("src/lib/notifications/sync-panel.ts", "utf8")).toMatch(/applyTermStartEffects/);
+    expect(readFileSync("src/lib/book-lists/heat.ts", "utf8")).toMatch(/renewalProximityDrivesCare/);
+    expect(readFileSync("src/lib/policy/care-strip.ts", "utf8")).toMatch(/renewalProximityDrivesCare/);
+    expect(readFileSync("src/lib/book-lists/load.ts", "utf8")).toMatch(/RENEWAL_HANDLED_STAGE/);
+    expect(readFileSync("src/app/policies/[id]/page.tsx", "utf8")).toMatch(/renewalHandled/);
     const button = readFileSync("src/components/renewals/client-staying-button.tsx", "utf8");
     expect(button).toMatch(/flashAction\("client-staying"\)/);
     expect(button).toMatch(/data-ff-client-staying-success/);

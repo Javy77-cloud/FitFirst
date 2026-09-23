@@ -1,5 +1,6 @@
 import { daysUntilDate, relativeTouchLabel } from "@/lib/book-lists/heat";
 import type { AgentPolicyTab } from "@/lib/policy/tabs";
+import { renewalProximityDrivesCare } from "@/lib/renewal/handled";
 
 export type PolicyCareItem = {
   key: string;
@@ -27,7 +28,9 @@ export function shouldShowManualRenewalHelp(input: {
   expirationDate?: Date | string | null;
   status?: string | null;
   asOf: Date;
+  renewalHandled?: boolean;
 }): boolean {
+  if (!renewalProximityDrivesCare(input.renewalHandled)) return false;
   const daysUntil = daysUntilDate(input.expirationDate ?? null, input.asOf);
   const lapsed = /lapse|cancel|expired|terminated/i.test(input.status ?? "");
   return lapsed || (daysUntil != null && daysUntil < 30);
@@ -42,6 +45,8 @@ export function buildPolicyCareItems(input: {
   pendingEndorsements?: number;
   openClaims?: number;
   asOf: Date;
+  /** Client staying / Handled — skip renewal proximity care. */
+  renewalHandled?: boolean;
 }): PolicyCareItem[] {
   const items: PolicyCareItem[] = [];
   const daysUntil = daysUntilDate(input.expirationDate ?? null, input.asOf);
@@ -52,8 +57,9 @@ export function buildPolicyCareItems(input: {
       )
     : null;
   const lapsed = /lapse|cancel|expired|terminated/i.test(input.status ?? "");
+  const countRenewal = renewalProximityDrivesCare(input.renewalHandled);
 
-  if (lapsed || (daysUntil != null && daysUntil < 30)) {
+  if (countRenewal && (lapsed || (daysUntil != null && daysUntil < 30))) {
     items.push({
       key: "renewal",
       tab: "documents",

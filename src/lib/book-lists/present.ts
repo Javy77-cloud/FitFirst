@@ -808,6 +808,8 @@ export type PolicyNeedSignal = {
   openClaims: number;
   pendingEndorsements: number;
   missingDocs: number;
+  /** renewal_queue stage === handled (Client staying). */
+  renewalHandled?: boolean;
 };
 
 export function presentPolicyCard(
@@ -827,6 +829,7 @@ export function presentPolicyCard(
     pendingEndorsements: needs.pendingEndorsements,
     missingDocs: needs.missingDocs,
     expirationLabel: expires,
+    renewalHandled: needs.renewalHandled,
   });
   const why = withSecondFact(attention.why, premiumCue(row.premium));
   const insured = row.partyName?.trim() || row.displayName || row.policyNumber;
@@ -852,7 +855,16 @@ export function presentPolicyCard(
       proposedPremium != null ? { id: "renewal-premium", label: `Renewal ${formatMoney(proposedPremium)}` } : null,
       delta ? { id: "delta", label: delta, tone: delta.startsWith("+") ? ("hot" as const) : ("ok" as const) } : null,
       expires ? { id: "expires", label: `Expires ${expires}` } : null,
-      renews ? { id: "renews", label: renews, tone: daysUntil != null && daysUntil < 60 ? ("hot" as const) : undefined } : null,
+      renews
+        ? {
+            id: "renews",
+            label: renews,
+            tone:
+              !needs.renewalHandled && daysUntil != null && daysUntil < 60
+                ? ("hot" as const)
+                : undefined,
+          }
+        : null,
       row.status ? { id: "status", label: policyStatusLabel(row.status) } : null,
       { id: "band", label: POLICY_BAND_LABEL[attention.column] ?? "Current" },
       needs.openClaims > 0

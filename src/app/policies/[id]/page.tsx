@@ -26,6 +26,7 @@ import { PolicyDetailWorkspace } from "@/components/policy/policy-detail-workspa
 import { PolicyTabsNav } from "@/components/policy/policy-tabs";
 import { PolicyCareStrip } from "@/components/policy/policy-care-strip";
 import { buildPolicyCareItems, policyTabCareCounts } from "@/lib/policy/care-strip";
+import { isRenewalHandledStageValue } from "@/lib/renewal/handled";
 import { deskNow } from "@/lib/home/as-of";
 import { PolicyOverviewTab } from "@/components/policy/tabs/overview-tab";
 import { PolicyCoverageTab } from "@/components/policy/tabs/coverage-tab";
@@ -169,6 +170,7 @@ export default async function PolicyDetailPage({
     return status !== "withdrawn" && status !== "filed" && status !== "issued";
   }).length;
   const missingPackets = servicing?.missingPackets ?? [];
+  const renewalHandled = isRenewalHandledStageValue(renewalQueueRow?.stage);
   const careItems = buildPolicyCareItems({
     expirationDate: policy.expirationDate,
     updatedAt: policy.updatedAt,
@@ -178,6 +180,7 @@ export default async function PolicyDetailPage({
     pendingEndorsements,
     openClaims,
     asOf: deskNow(),
+    renewalHandled,
   });
   const tabCareCounts = policyTabCareCounts(careItems);
 
@@ -447,6 +450,7 @@ export default async function PolicyDetailPage({
             notice={notice}
             accessLog={accessLog}
             isAdmin={isAdmin}
+            renewalHandled={renewalHandled}
             uploadMode={quoteFileUploadMode({
               vercel: process.env.VERCEL,
               blobReady: blobStoreReady(),

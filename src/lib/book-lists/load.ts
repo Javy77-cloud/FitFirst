@@ -11,8 +11,10 @@ import {
   policies,
   policyTerms,
   quoteAttemptLogs,
+  renewalQueue,
 } from "@/lib/db/schema";
 import type { PolicyNeedSignal } from "./present";
+import { RENEWAL_HANDLED_STAGE } from "@/lib/renewal/handled";
 import { slugFromCarrierName } from "@/lib/appetite/gate/identity";
 import { OPEN_DEAL_STAGES } from "@/lib/home/kpis";
 import { loadPartyHealthMap } from "@/lib/health/load";
@@ -234,12 +236,18 @@ export async function loadCarrierMarketSignals(
 
 export async function loadPolicyNeedSignals(): Promise<Map<string, PolicyNeedSignal>> {
   const out = new Map<string, PolicyNeedSignal>();
+  const empty = (): PolicyNeedSignal => ({
+    openClaims: 0,
+    pendingEndorsements: 0,
+    missingDocs: 0,
+    renewalHandled: false,
+  });
   const bump = (id: string, patch: Partial<PolicyNeedSignal>) => {
-    const prev = out.get(id) ?? { openClaims: 0, pendingEndorsements: 0, missingDocs: 0 };
+    const prev = out.get(id) ?? empty();
     out.set(id, { ...prev, ...patch });
   };
   try {
-    const [claimRows, draftRows] = await Promise.all([
+    const [claimRows, draftRows, handledRows] = await Promise.all([
       db
         .select({
           policyId: claims.policyId,
@@ -256,19 +264,30 @@ export async function loadPolicyNeedSignals(): Promise<Map<string, PolicyNeedSig
         .from(endorsementDrafts)
         .where(eq(endorsementDrafts.tenantId, tenant()))
         .catch(() => []),
+      db
+        .select({ policyId: renewalQueue.policyId })
+        .from(renewalQueue)
+        .where(
+          and(eq(renewalQueue.tenantId, tenant()), eq(renewalQueue.stage, RENEWAL_HANDLED_STAGE)),
+        )
+        .catch(() => []),
     ]);
     for (const row of claimRows) {
       if (!row.policyId) continue;
       const status = (row.status ?? "").toLowerCase();
       if (status === "closed" || status === "denied" || status === "withdrawn") continue;
-      const prev = out.get(row.policyId) ?? { openClaims: 0, pendingEndorsements: 0, missingDocs: 0 };
+      const prev = out.get(row.policyId) ?? empty();
       bump(row.policyId, { openClaims: prev.openClaims + 1 });
     }
     for (const row of draftRows) {
       const status = (row.status ?? "").toLowerCase();
       if (status === "withdrawn" || status === "filed" || status === "issued") continue;
-      const prev = out.get(row.policyId) ?? { openClaims: 0, pendingEndorsements: 0, missingDocs: 0 };
+      const prev = out.get(row.policyId) ?? empty();
       bump(row.policyId, { pendingEndorsements: prev.pendingEndorsements + 1 });
+    }
+    for (const row of handledRows) {
+      if (!row.policyId) continue;
+      bump(row.policyId, { renewalHandled: true });
     }
   } catch {
     return out;

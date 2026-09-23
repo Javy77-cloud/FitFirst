@@ -198,7 +198,7 @@ export default async function PoliciesPage({
           phone: contact?.phone ?? account?.phone,
           email: contact?.email ?? account?.email,
         },
-        needs.get(policy.id) ?? { openClaims: 0, pendingEndorsements: 0, missingDocs: 0 },
+        needs.get(policy.id) ?? { openClaims: 0, pendingEndorsements: 0, missingDocs: 0, renewalHandled: false },
         asOf,
       );
     })

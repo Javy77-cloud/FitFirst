@@ -1,5 +1,6 @@
 import type { HeatLevel } from "@/lib/desk/truth-strip";
 import type { BookColumnId, BookHeat } from "./types";
+import { renewalProximityDrivesCare } from "@/lib/renewal/handled";
 
 export function daysSinceTouch(iso: string | Date | null | undefined, asOf: Date): number | null {
   if (!iso) return null;
@@ -104,10 +105,13 @@ export function policyAttention(input: {
   pendingEndorsements: number;
   missingDocs: number;
   expirationLabel?: string | null;
+  /** Client staying / Handled — renewal proximity must not drive care. */
+  renewalHandled?: boolean;
 }): { heat: BookHeat; column: BookColumnId; why: string } {
+  const countRenewal = renewalProximityDrivesCare(input.renewalHandled);
   const reasons: string[] = [];
   if (input.lapsed) reasons.push("Lapsed or cancelled");
-  if (input.daysUntil != null && input.daysUntil < 30) {
+  if (countRenewal && input.daysUntil != null && input.daysUntil < 30) {
     reasons.push(renewsIn(input.daysUntil, input.expirationLabel));
   }
   if (input.openClaims > 0) {
@@ -118,7 +122,7 @@ export function policyAttention(input: {
   }
   const now =
     input.lapsed ||
-    (input.daysUntil != null && input.daysUntil < 30) ||
+    (countRenewal && input.daysUntil != null && input.daysUntil < 30) ||
     input.openClaims > 0 ||
     input.missingDocs > 0;
   if (now) {
@@ -131,13 +135,13 @@ export function policyAttention(input: {
   if (input.lastTouchDays == null || input.lastTouchDays >= 21) {
     reasons.push(input.lastTouchDays == null ? "Not reached" : `Silent ${relativeTouchLabel(input.lastTouchDays)}`);
   }
-  if (input.daysUntil != null && input.daysUntil < 90) {
+  if (countRenewal && input.daysUntil != null && input.daysUntil < 90) {
     reasons.push(renewsIn(input.daysUntil, input.expirationLabel));
   }
   const watch =
     input.pendingEndorsements > 0 ||
     (input.lastTouchDays == null || input.lastTouchDays >= 21) ||
-    (input.daysUntil != null && input.daysUntil < 90);
+    (countRenewal && input.daysUntil != null && input.daysUntil < 90);
   if (watch) {
     return {
       heat: "cooling",
