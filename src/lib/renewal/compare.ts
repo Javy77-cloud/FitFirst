@@ -44,6 +44,11 @@ export function formatSignedMoney(n: number): string {
   return abs;
 }
 
+/** Board + Compare drawer: increase = red, flat/decrease = green (match Overview up = fit-red). */
+export function premiumDeltaTone(direction: PremiumChange["direction"]): "red" | "green" {
+  return direction === "up" ? "red" : "green";
+}
+
 export function formatDeltaPct(pct: number | null): string {
   if (pct == null || !Number.isFinite(pct)) return "—";
   const body = `${(pct * 100).toFixed(1)}%`;
@@ -92,7 +97,7 @@ export function premiumShopStayChip(
   return null;
 }
 
-/** Tunable premium-% bands for desk lapse-risk chips (not AI). */
+/** Tunable premium-% bands for desk renewal-risk chips (not AI). */
 export const PREMIUM_LAPSE_RISK_LOW_MAX = 5;
 export const PREMIUM_LAPSE_RISK_MEDIUM_MAX = 12;
 
@@ -105,8 +110,8 @@ export const PREMIUM_LAPSE_RISK_LABEL: Record<PremiumLapseRisk, string> = {
 };
 
 /**
- * Premium-driven lapse risk from proposed % change.
- * <5% Low; 5–12% Medium; ≥12% High. Flat/down → Low (cheaper renewals rarely drive lapse).
+ * Premium-driven renewal risk (shopping risk) from proposed % change — not payment lapse.
+ * <5% Low; 5–12% Medium; ≥12% High. Flat/down → Low (cheaper renewals rarely drive shopping).
  */
 export function premiumLapseRisk(
   change: Pick<PremiumChange, "pct" | "direction">,
@@ -119,7 +124,7 @@ export function premiumLapseRisk(
   return "high";
 }
 
-/** Board clutter control — only surface Medium/High premium lapse risk. */
+/** Board clutter control — only surface Medium/High premium renewal risk. */
 export function premiumLapseRiskBoardChip(
   change: Pick<PremiumChange, "pct" | "direction">,
 ): PremiumLapseRisk | null {

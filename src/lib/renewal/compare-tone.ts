@@ -18,7 +18,10 @@ export function compareLineTone(input: {
   if (input.kind === "premium") {
     const cur = parseMoney(current);
     const next = parseMoney(proposed);
-    if (cur != null && next != null && cur > 0 && next >= cur * 1.08) return "red";
+    if (cur != null && next != null) {
+      // Increase = red; flat or decrease = green (board / Compare drawer premium line).
+      return next > cur ? "red" : "green";
+    }
   }
   return "amber";
 }

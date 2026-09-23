@@ -13,8 +13,10 @@ import { sendDeskEmail } from "@/app/actions/comms";
 import {
   coverageRows,
   deductiblesForLine,
+  formatSignedMoney,
   parseMoney,
   premiumChange,
+  premiumDeltaTone,
 } from "@/lib/renewal/compare";
 import { compareLineTone, toneCoverageRows } from "@/lib/renewal/compare-tone";
 import { summarizeRenewalDiff, type GeminiDiffNote } from "@/lib/renewal/gemini-diff";
@@ -155,8 +157,10 @@ export async function loadRenewalCompareDrawer(
     dark: !bothSides,
     currentPremium: formatMoney(currentPremium === "—" ? null : currentPremium),
     proposedPremium: formatMoney(proposedPremium === "—" ? null : proposedPremium),
-    premiumDelta: change ? `${change.delta > 0 ? "+" : ""}${formatMoney(Math.abs(change.delta))}` : null,
-    premiumTone: rows.find((row) => row.key === "premium")?.tone ?? "amber",
+    premiumDelta: change ? formatSignedMoney(change.delta) : null,
+    premiumTone: change
+      ? premiumDeltaTone(change.direction)
+      : (rows.find((row) => row.key === "premium")?.tone ?? "amber"),
     rows,
     note,
     clientHealth: health.client,

@@ -41,9 +41,10 @@ function PremiumDeltaArrow({
     <span
       className={cn("ff-renewal-delta-chip", `ff-premium-lapse-${lapse}`)}
       data-ff-premium-lapse={lapse}
-      title="Premium-driven lapse risk from the proposed % change — not AI"
+      title="Premium renewal risk from the proposed % change — not payment lapse"
+      aria-label={`Premium renewal risk ${PREMIUM_LAPSE_RISK_LABEL[lapse]}`}
     >
-      {PREMIUM_LAPSE_RISK_LABEL[lapse]} lapse
+      {PREMIUM_LAPSE_RISK_LABEL[lapse]}
     </span>
   ) : null;
   if (delta > 0) {
@@ -138,7 +139,7 @@ export function RenewalBoardCardView({
         <div className="flex min-w-0 items-center gap-1">
           <button
             type="button"
-            className="min-w-0 truncate text-left text-sm font-semibold text-navy hover:text-primary hover:underline"
+            className="min-w-0 truncate text-left text-[0.9375rem] font-semibold text-navy hover:text-primary hover:underline"
             title={`${card.clientName} — compare terms`}
             onClick={() => setCompareOpen(true)}
             data-ff-compare-name=""

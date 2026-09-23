@@ -47,6 +47,9 @@ describe("compare tones + Gemini fallback", () => {
     expect(compareLineTone({ currentValue: "$10,000", proposedValue: "$12,000" })).toBe("amber");
     expect(compareLineTone({ currentValue: "$10,000", proposedValue: "—" })).toBe("red");
     expect(compareLineTone({ currentValue: "2184", proposedValue: "2547", kind: "premium" })).toBe("red");
+    expect(compareLineTone({ currentValue: "2000", proposedValue: "2050", kind: "premium" })).toBe("red");
+    expect(compareLineTone({ currentValue: "2000", proposedValue: "1900", kind: "premium" })).toBe("green");
+    expect(compareLineTone({ currentValue: "2000", proposedValue: "2000", kind: "premium" })).toBe("green");
     expect(fallbackDiffSummary({ bothSides: false, changedCount: 0, missingCount: 0 })).toMatch(
       /Snapshot only/,
     );

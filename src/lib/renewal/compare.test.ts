@@ -11,6 +11,7 @@ import {
   premiumShopStayHint,
   premiumShopStayChip,
   formatBoardPremiumDelta,
+  premiumDeltaTone,
   premiumLapseRisk,
   premiumLapseRiskBoardChip,
   PREMIUM_LAPSE_RISK_LOW_MAX,
@@ -136,5 +137,13 @@ describe("premiumLapseRisk thresholds", () => {
     expect(premiumLapseRiskBoardChip(premiumChange(1000, 1080))).toBe("medium");
     expect(premiumLapseRiskBoardChip(premiumChange(2184, 2547))).toBe("high");
     expect(premiumLapseRiskBoardChip(premiumChange(1800, 1800))).toBeNull();
+  });
+});
+
+describe("premiumDeltaTone", () => {
+  it("maps increase to red and flat/decrease to green", () => {
+    expect(premiumDeltaTone("up")).toBe("red");
+    expect(premiumDeltaTone("down")).toBe("green");
+    expect(premiumDeltaTone("flat")).toBe("green");
   });
 });

@@ -11,7 +11,7 @@ describe("PremiumChangeSummary", () => {
     expect(source).not.toMatch(/compareSummary/);
     expect(source).not.toMatch(/premiumShopStayHint/);
     expect(source).toMatch(/premiumLapseRisk/);
-    expect(source).toMatch(/Premium lapse risk/);
+    expect(source).toMatch(/Premium renewal risk/);
     expect(source).toMatch(/Open full compare/);
     expect(source).toMatch(/data-ff-premium-lapse/);
   });

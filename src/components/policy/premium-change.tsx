@@ -45,9 +45,10 @@ export function PremiumChangeSummary({
         <span
           className={cn("ff-premium-lapse-chip", `ff-premium-lapse-${lapse}`)}
           data-ff-premium-lapse={lapse}
-          title="Premium-driven lapse risk from the proposed % change — not AI"
+          title="Premium-driven renewal risk from the proposed % change — not payment lapse; shopping risk — not AI"
+          aria-label={`Premium renewal risk ${PREMIUM_LAPSE_RISK_LABEL[lapse]}`}
         >
-          <span className="ff-premium-lapse-label">Premium lapse risk</span>
+          <span className="ff-premium-lapse-label">Premium renewal risk</span>
           <strong>{PREMIUM_LAPSE_RISK_LABEL[lapse]}</strong>
         </span>
         {compareHref ? (
