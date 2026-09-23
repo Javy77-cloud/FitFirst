@@ -12,6 +12,8 @@ import { formatDay } from "@/lib/domain";
 import { isInForceStatus } from "@/lib/policy/status";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import { resolveDwellingFacts } from "@/lib/policy/dwelling-facts";
+import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
+import { PropertyProtectionSection } from "@/components/policy/property-protection-section";
 
 export function PolicyOverviewTab({
   policy,
@@ -62,6 +64,11 @@ export function PolicyOverviewTab({
     coverageLimits?: Record<string, string> | null;
     contactId?: string | null;
     accountId?: string | null;
+    propertyProtection?: {
+      values?: Record<string, string>;
+      updatedAt?: string | null;
+      source?: string | null;
+    } | null;
   };
   carrierId?: string | null;
   carrierName?: string | null;
@@ -192,6 +199,12 @@ export function PolicyOverviewTab({
           additionalInsuredCount,
         }}
       />
+
+      {family === "homeowners" ? (
+        <PropertyProtectionSection
+          snapshot={parsePropertyProtectionSnapshot(policy.propertyProtection)}
+        />
+      ) : null}
 
       {isAuto || family === "auto" ? <VehiclesList vehicles={vehicles} /> : null}
 

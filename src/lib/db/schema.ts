@@ -1098,6 +1098,12 @@ export const policies = pgTable(
       mintedAt?: string | null;
       adminNotifiedAt?: string | null;
     } | null>(),
+    /** Home/HO3/MHO wind mit, 4-point, roof/systems, alarms — snapshot at mint/DEC transfer. */
+    propertyProtection: jsonb("property_protection").$type<{
+      values?: Record<string, string>;
+      updatedAt?: string | null;
+      source?: "mint" | "dec_transfer" | "sheet" | "gemini" | "merge" | null;
+    } | null>(),
     ...timestamps,
   },
   (t) => [

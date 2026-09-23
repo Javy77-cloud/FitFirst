@@ -28,6 +28,11 @@ import {
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { insuranceFamilyFromPolicy } from "@/lib/desk/policy-family";
 import { parsePropertyYear } from "@/lib/policy/dwelling-facts";
+import {
+  buildPropertyProtectionSnapshot,
+  parsePropertyProtectionSnapshot,
+  propertyProtectionHasData,
+} from "@/lib/policy/property-protection";
 import { splitPremisesAddress, streetOnlyPremises } from "@/lib/policy/premises";
 import { dealProductDef, inferDealProducts, parseDealProduct, type DealProductId } from "@/lib/deals/deal-products";
 import {
@@ -600,6 +605,16 @@ export async function issuePolicyFromDeclaration(input: {
     mintedAt: new Date().toISOString(),
   };
 
+  const propertyProtection =
+    def.shopLine === "home"
+      ? buildPropertyProtectionSnapshot({
+          existing: parsePropertyProtectionSnapshot(existing?.propertyProtection),
+          sheet: sheetValues,
+          gemini: geminiRows,
+          source: "mint",
+        })
+      : null;
+
   const values = {
     contactId,
     accountId: deal.accountId,
@@ -638,6 +653,11 @@ export async function issuePolicyFromDeclaration(input: {
     sourceProduct: product,
     publishedAt: null as Date | null,
     mintPayload: payload,
+    ...(propertyProtection && propertyProtectionHasData(propertyProtection)
+      ? { propertyProtection }
+      : existing?.propertyProtection
+        ? { propertyProtection: existing.propertyProtection }
+        : {}),
     updatedAt: new Date(),
   };
 

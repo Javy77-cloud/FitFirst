@@ -12,6 +12,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:apply-0145": "tsx scripts/apply-0145-experience-reviews.ts",
     "db:apply-0146": "tsx scripts/apply-0146-agent-feature-toggles.ts",
+    "db:apply-0150": "tsx scripts/apply-0150-policy-property-protection.ts",
     "db:seed": "tsx --env-file=.env scripts/seed.ts",
     "db:wipe-crm": "tsx --env-file=.env scripts/wipe-crm.ts",
     "db:import-zoho": "tsx --env-file=.env scripts/import-zoho.ts",
