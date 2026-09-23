@@ -254,24 +254,78 @@ export async function setDealProductStage(input: {
 }
 
 
-/** Stage stepper: mark quoting/binding done outside FitFirst (confirm + reason). */
+/** Stage stepper: outside-quote override OR Closed lost (went elsewhere) with Captain reason. */
 export async function overrideDealProductStageOutside(input: {
   dealId: string;
   product: string;
   stageSlug: string;
   pipelineSlug: string;
   reason: string;
+  lostReason?: string | null;
 }) {
   const dealId = input.dealId.trim();
   const product = parseDealProduct(input.product);
+  if (!dealId || !product) return { ok: false as const, error: "Deal and product are required." };
+
+  const stageSlug = canonicalizeProductStage(input.stageSlug);
+  const session = await currentDeskSession();
+  const label = dealProductDef(product).label;
+
+  // Closed lost — separate from outside-quote stamp. Captain reason required.
+  if (stageSlug === "closed_lost") {
+    const lostReason = (input.lostReason ?? "").trim();
+    if (!isProductLostReason(lostReason)) {
+      return { ok: false as const, error: "Pick a lost reason (e.g. Bound with competitor)." };
+    }
+    const result = await setDealProductStage({
+      dealId,
+      product,
+      stageSlug: "closed_lost",
+      pipelineSlug: input.pipelineSlug,
+      selectedQuoteIds: [],
+      lostReason,
+      surface: "quotes",
+    });
+    if (!result.ok) {
+      return { ok: false as const, error: "Could not mark product lost." };
+    }
+    const note = (input.reason ?? "").trim();
+    const deal = await loadDeal(dealId);
+    await writeDeskComms({
+      kind: "note",
+      title: `Lost · ${label} · ${lostReason}`,
+      body: `${session.name || "Agent"} closed ${label}: ${lostReason}.${note ? ` ${note}` : ""}`,
+      status: "completed",
+      eventType: "logged",
+      occurredAt: new Date(),
+      dealId,
+      contactId: deal?.contactId ?? null,
+      accountId: deal?.accountId ?? null,
+      leadId: deal?.leadId ?? null,
+      assignee: session.name || null,
+      actorId: session.userId,
+      actorName: session.name || null,
+    });
+    await writeCrmSignalsSafe({
+      kind: "stage_moved",
+      title: `Lost · ${label} · ${lostReason}`,
+      body: `${session.name || "Agent"} closed ${label}: ${lostReason}.${note ? ` ${note}` : ""}`,
+      entityType: "deal",
+      entityId: dealId,
+      dealId,
+      createTask: false,
+    });
+    revalidatePath(`/deals/${dealId}`);
+    revalidatePath("/deals");
+    return { ok: true as const, stage: "closed_lost" as const, label: "Closed lost" };
+  }
+
   const built = buildOutsideStageOverride({
-    stageSlug: input.stageSlug,
+    stageSlug,
     reason: input.reason,
   });
-  if (!dealId || !product) return { ok: false as const, error: "Deal and product are required." };
   if (!built.ok) return { ok: false as const, error: built.error };
 
-  const session = await currentDeskSession();
   const override = {
     ...built.override,
     agent: session.name || null,
@@ -301,7 +355,6 @@ export async function overrideDealProductStageOutside(input: {
     await persistDealShopFlow(dealId, { ...saved, productStages: next });
   }
 
-  const label = dealProductDef(product).label;
   await writeDeskComms({
     kind: "note",
     title: outsideOverrideActivityTitle({

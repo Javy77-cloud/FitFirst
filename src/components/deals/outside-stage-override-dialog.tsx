@@ -17,14 +17,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { isClosedOutcomeStage } from "@/lib/deals/archive-reminder";
 import {
-  OUTSIDE_OVERRIDE_STAGES,
-  outsideOverrideStageLabel,
-  type OutsideOverrideStage,
+  OUTSIDE_FORCE_OUTCOMES,
+  outsideForceOutcomeLabel,
+  type OutsideForceOutcome,
 } from "@/lib/deals/outside-stage-override";
+import {
+  PRODUCT_LOST_REASON_LABELS,
+  PRODUCT_LOST_REASONS,
+  type ProductLostReason,
+} from "@/lib/deals/product-stages";
 import { flashAction } from "@/lib/flash-client";
 import { cn } from "@/lib/utils";
 
-/** Stage control — unlock Policy issued when quoting happened off FitFirst. Notes required. */
+/** Stage control — unlock Policy issued when quoted off FitFirst, or Closed lost when they went elsewhere. */
 export function OutsideStageOverrideDialog({
   dealId,
   product,
@@ -43,9 +48,7 @@ export function OutsideStageOverrideDialog({
   currentStage?: string | null;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** Render the trigger; false when parent owns the open state only. */
   trigger?: boolean;
-  /** link = underline text in stepper; button = chrome next to current stage. */
   buttonVariant?: "link" | "button";
 }) {
   const router = useRouter();
@@ -57,14 +60,20 @@ export function OutsideStageOverrideDialog({
     onOpenChange?.(next);
   };
   const [pending, start] = useTransition();
-  const [stage, setStage] = useState<OutsideOverrideStage>("policy_issued");
+  const [stage, setStage] = useState<OutsideForceOutcome>("policy_issued");
   const [reason, setReason] = useState("");
+  const [lostReason, setLostReason] = useState<ProductLostReason | "">("");
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const isLost = stage === "closed_lost";
+  const canConfirm = isLost
+    ? Boolean(lostReason)
+    : Boolean(reason.trim());
 
   useEffect(() => {
     if (!open) return;
     setStage("policy_issued");
     setReason("");
+    setLostReason("");
   }, [open, currentStage]);
 
   return (
@@ -101,12 +110,11 @@ export function OutsideStageOverrideDialog({
           data-ff-outside-stage-override-dialog=""
         >
           <DialogHeader>
-            <DialogTitle>Override — quoted outside FitFirst</DialogTitle>
+            <DialogTitle>Override stage</DialogTitle>
             <DialogDescription>
-              Unlock this product’s pipeline when quoting or binding happened on a carrier portal,
-              legacy system, or one-portal quick bind. Does not invent quote rows — after Policy
-              issued, upload the Issued declaration to mint like any other deal. Notes why are
-              required and logged.
+              Unlock Policy issued when quoting happened on a carrier portal or legacy system
+              (no fake quote rows — upload the Issued declaration to mint). Or mark Closed lost
+              when they went elsewhere — Captain reason required.
             </DialogDescription>
           </DialogHeader>
 
@@ -116,10 +124,10 @@ export function OutsideStageOverrideDialog({
               <div
                 className="grid gap-1.5"
                 role="listbox"
-                aria-label="Outside FitFirst stage"
+                aria-label="Override stage"
                 data-ff-outside-stage-options=""
               >
-                {OUTSIDE_OVERRIDE_STAGES.map((slug) => (
+                {OUTSIDE_FORCE_OUTCOMES.map((slug) => (
                   <button
                     key={slug}
                     type="button"
@@ -134,26 +142,66 @@ export function OutsideStageOverrideDialog({
                         : "border-border bg-background text-foreground hover:bg-muted",
                     )}
                   >
-                    {outsideOverrideStageLabel(slug)}
+                    {outsideForceOutcomeLabel(slug)}
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="ff-outside-reason" className="text-xs">
-                Notes why <span className="text-fit-flag">(required)</span>
-              </Label>
-              <Textarea
-                id="ff-outside-reason"
-                rows={3}
-                required
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-                placeholder="e.g. Quoted & bound in Progressive portal offline — Diaflavia legacy GL"
-                data-ff-outside-stage-reason=""
-              />
-            </div>
+            {isLost ? (
+              <div className="space-y-1.5">
+                <Label className="text-xs">
+                  Why lost <span className="text-fit-flag">(required)</span>
+                </Label>
+                <div
+                  className="grid gap-1.5"
+                  role="listbox"
+                  aria-label="Lost reason"
+                  data-ff-outside-lost-reasons=""
+                >
+                  {PRODUCT_LOST_REASONS.map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      role="option"
+                      aria-selected={lostReason === key}
+                      data-ff-outside-lost-reason={key}
+                      onClick={() => setLostReason(key)}
+                      className={cn(
+                        "rounded-md border px-2 py-1.5 text-left text-sm",
+                        lostReason === key
+                          ? "border-navy bg-navy/5 text-navy"
+                          : "border-border bg-background text-foreground hover:bg-muted",
+                      )}
+                    >
+                      {PRODUCT_LOST_REASON_LABELS[key]}
+                    </button>
+                  ))}
+                </div>
+                <Textarea
+                  rows={2}
+                  value={reason}
+                  onChange={(event) => setReason(event.target.value)}
+                  placeholder="Optional note (e.g. Bound with competitor on Progressive)"
+                  data-ff-outside-stage-reason=""
+                />
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label htmlFor="ff-outside-reason" className="text-xs">
+                  Notes why <span className="text-fit-flag">(required)</span>
+                </Label>
+                <Textarea
+                  id="ff-outside-reason"
+                  rows={3}
+                  required
+                  value={reason}
+                  onChange={(event) => setReason(event.target.value)}
+                  placeholder="e.g. Quoted & bound in Progressive portal offline — Diaflavia legacy GL"
+                  data-ff-outside-stage-reason=""
+                />
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -163,7 +211,7 @@ export function OutsideStageOverrideDialog({
             <Button
               type="button"
               size="sm"
-              disabled={pending || !reason.trim()}
+              disabled={pending || !canConfirm}
               data-ff-outside-stage-confirm=""
               onClick={() => {
                 start(async () => {
@@ -172,20 +220,28 @@ export function OutsideStageOverrideDialog({
                     product,
                     stageSlug: stage,
                     pipelineSlug,
-                    reason,
+                    reason: isLost
+                      ? reason.trim() ||
+                        (lostReason ? PRODUCT_LOST_REASON_LABELS[lostReason] : "")
+                      : reason,
+                    lostReason: isLost ? lostReason || null : null,
                   });
                   if (!result.ok) {
                     flashAction(result.error ?? "Could not apply override", "error");
                     return;
                   }
-                  flashAction(`Marked ${result.label} outside FitFirst`);
+                  flashAction(
+                    isLost
+                      ? "Product marked lost"
+                      : `Marked ${result.label} outside FitFirst`,
+                  );
                   setOpen(false);
                   if (isClosedOutcomeStage(stage)) setArchiveOpen(true);
                   router.refresh();
                 });
               }}
             >
-              Confirm override
+              {isLost ? "Mark lost" : "Confirm override"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -96,7 +96,16 @@ describe("outside FitFirst stage override", () => {
       /Notes why/,
     );
     expect(source("src/components/deals/outside-stage-override-dialog.tsx")).toMatch(
-      /disabled=\{pending \|\| !reason\.trim\(\)\}/,
+      /disabled=\{pending \|\| !canConfirm\}/,
+    );
+    expect(source("src/components/deals/outside-stage-override-dialog.tsx")).toMatch(
+      /PRODUCT_LOST_REASONS/,
+    );
+    expect(source("src/components/deals/outside-stage-override-dialog.tsx")).toMatch(
+      /OUTSIDE_FORCE_OUTCOMES/,
+    );
+    expect(source("src/app/actions/product-stage.ts")).toMatch(
+      /Pick a lost reason/,
     );
     expect(source("src/app/actions/product-stage.ts")).toMatch(
       /overrideDealProductStageOutside/,

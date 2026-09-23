@@ -141,3 +141,23 @@ export function outsideFitFirstStampLabel(override?: OutsideStageOverride | null
   if (!hasActiveOutsideOverride(override)) return null;
   return OUTSIDE_FITFIRST_STAMP;
 }
+
+/** Outcomes offered on the Override / stage dialog (includes Closed lost). */
+export const OUTSIDE_FORCE_OUTCOMES = [
+  ...OUTSIDE_OVERRIDE_STAGES,
+  "closed_lost",
+] as const;
+
+export type OutsideForceOutcome = (typeof OUTSIDE_FORCE_OUTCOMES)[number];
+
+export function isOutsideForceOutcome(stage?: string | null): stage is OutsideForceOutcome {
+  const key = normalizeStageSlug(stage);
+  return (OUTSIDE_FORCE_OUTCOMES as readonly string[]).includes(key);
+}
+
+export function outsideForceOutcomeLabel(stage?: string | null): string {
+  const key = normalizeStageSlug(stage);
+  if (key === "closed_lost") return "Closed lost";
+  return outsideOverrideStageLabel(key);
+}
+
