@@ -64,4 +64,15 @@ describe("inbox body fit", () => {
     expect(painted.bodyHtml).not.toMatch(/cid:/i);
     expect(painted.images).toHaveLength(1);
   });
+
+  it("does not smash contenteditable paragraphs (Hi Edmerson,This is)", () => {
+    const plain = plainFromInboxHtml(
+      "Hi Edmerson,<div>This is a quick follow-up on your HO3 quotes.</div><div><br></div>Javy",
+    );
+    expect(plain).toContain("Hi Edmerson,");
+    expect(plain).toContain("This is a quick follow-up");
+    expect(plain).not.toMatch(/Hi Edmerson,This is/);
+    expect(plain.indexOf("Hi Edmerson,")).toBeLessThan(plain.indexOf("This is"));
+  });
+
 });

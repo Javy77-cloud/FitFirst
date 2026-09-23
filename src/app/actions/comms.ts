@@ -100,7 +100,11 @@ ${signature}`;
       contentBase64: buf.toString("base64"),
     });
   }
-  const htmlBody = str(formData, "bodyHtml") || null;
+  let htmlBody = str(formData, "bodyHtml") || null;
+  if (signature && htmlBody && !htmlBody.includes(signature)) {
+    const sigHtml = signature.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+    htmlBody = `${htmlBody}<br><br>${sigHtml}`;
+  }
   const mailbox = await gmailAccountEmail();
   const fromAddress = str(formData, "fromAddress") || mailbox || "desk@agency.local";
 

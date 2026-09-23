@@ -20,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { plainFromInboxHtml } from "@/lib/desk/inbox-body";
 import { cn } from "@/lib/utils";
 
 export type QuickCommsComposeRelated = {
@@ -53,9 +54,9 @@ const FONT_SIZES = [
 
 const COLORS = ["#0b1f33", "#b45309", "#b91c1c", "#047857", "#1d4ed8"] as const;
 
+/** Block tags → newlines so "Hi Edmerson," + next paragraph is not smashed. */
 function htmlToPlain(html: string) {
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  return (doc.body.textContent ?? "").replace(/\u00a0/g, " ").trim();
+  return plainFromInboxHtml(html).replace(/\u00a0/g, " ").trim();
 }
 
 function looksLikeEmail(value: string) {

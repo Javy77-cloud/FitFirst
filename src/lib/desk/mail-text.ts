@@ -107,3 +107,13 @@ export function repairUtf8Mojibake(value: string | null | undefined): string {
 export function decodeMailText(value: string | null | undefined): string {
   return repairUtf8Mojibake(decodeMimeWords(value)).trim();
 }
+
+/** RFC 2047 encoded-word for Subject when non-ASCII (keeps · readable in Gmail). */
+export function encodeMimeSubject(value: string | null | undefined): string {
+  const cleaned = (value ?? "").replace(/\r?\n/g, " ").trim();
+  if (!cleaned) return "";
+  // Printable ASCII only — leave unencoded.
+  if (/^[\x20-\x7E]*$/.test(cleaned)) return cleaned;
+  const b64 = Buffer.from(cleaned, "utf8").toString("base64");
+  return `=?UTF-8?B?${b64}?=`;
+}
