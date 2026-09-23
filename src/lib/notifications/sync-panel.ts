@@ -6,6 +6,8 @@ import { alerts } from "@/lib/db/schema";
 import { loadPanelCards } from "@/lib/notifications/load-panel";
 import { PANEL_SIGNAL_KINDS, type PanelCard } from "@/lib/notifications/panel";
 import { migrateOrphanCommitments } from "@/lib/notifications/load-commitments";
+import { applyTermStartEffects } from "@/lib/notifications/term-start-effects";
+import { TERM_START_KIND } from "@/lib/notifications/term-start";
 
 export function panelAlertBody(why: string, key: string): string {
   return `<!--ff-panel:${key}-->\n\n${why}`;
@@ -19,6 +21,15 @@ function severityFor(card: PanelCard): string {
   if (card.urgency === "high") return "critical";
   if (card.urgency === "medium") return "warning";
   return "info";
+}
+
+/** Lane counts + board must hide dismissed / future-snoozed cards. */
+export function visiblePanelCards(
+  cards: readonly PanelCard[],
+  dismissedKeys: ReadonlySet<string>,
+  snoozedKeys: ReadonlySet<string>,
+): PanelCard[] {
+  return cards.filter((card) => !dismissedKeys.has(card.key) && !snoozedKeys.has(card.key));
 }
 
 export async function syncPanelSignals(): Promise<PanelCard[]> {
@@ -50,10 +61,17 @@ export async function syncPanelSignals(): Promise<PanelCard[]> {
 
   for (const card of cards) {
     if (dismissedKeys.has(card.key) || snoozedKeys.has(card.key)) continue;
+    if (card.alertId) {
+      const unread = unreadByKey.get(card.key);
+      if (unread) card.alertId = unread.id;
+      continue;
+    }
     const unread = unreadByKey.get(card.key);
-    const body = card.metaBody
-      ? `${panelAlertBody(card.why, card.key)}\n${card.metaBody}`
-      : panelAlertBody(card.why, card.key);
+    const body = card.metaBody?.includes("<!--ff-href:")
+      ? `<!--ff-panel:${card.key}-->\n${card.metaBody}\n\n${card.why}`
+      : card.metaBody
+        ? `${panelAlertBody(card.why, card.key)}\n${card.metaBody}`
+        : panelAlertBody(card.why, card.key);
     if (unread) {
       card.alertId = unread.id;
       if (unread.title !== card.entityLine || unread.body !== body) {
@@ -77,14 +95,22 @@ export async function syncPanelSignals(): Promise<PanelCard[]> {
         body,
         severity: severityFor(card),
         entityType: card.entityType,
-        entityId: card.entityId,
+        entityId: card.entityId || null,
       })
       .returning({ id: alerts.id });
     card.alertId = inserted?.id ?? null;
+    if (card.kind === TERM_START_KIND && card.policyId && card.deadline) {
+      await applyTermStartEffects({
+        policyId: card.policyId,
+        termEffective: card.deadline,
+      }).catch(() => undefined);
+    }
   }
 
   for (const [key, row] of unreadByKey) {
     if (liveKeys.has(key)) continue;
+    // User-targeted pings (assign / forward) stay until the assignee dismisses.
+    if (row.userId || row.recipientUserId) continue;
     await db.update(alerts).set({ readAt: now }).where(eq(alerts.id, row.id));
   }
 
@@ -95,7 +121,9 @@ export async function syncPanelSignals(): Promise<PanelCard[]> {
   } catch {
     // Render-time sync has no revalidate store; still return live cards.
   }
-  return cards.map((card) => {
+
+  const visible = visiblePanelCards(cards, dismissedKeys, snoozedKeys);
+  return visible.map((card) => {
     const unread = unreadByKey.get(card.key);
     return {
       ...card,

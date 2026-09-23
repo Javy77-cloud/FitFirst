@@ -30,6 +30,7 @@ const SHORT_TERM_ROLE_LABEL: Record<DocumentTermRole, string> = {
   prior: "Prior",
   current: "Current",
   renewal: "Renewal",
+  archive: "Archive",
 };
 
 function TermRoleSelect({

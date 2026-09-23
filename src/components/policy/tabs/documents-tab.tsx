@@ -80,7 +80,7 @@ export function PolicyDocumentsTab({
           <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-navy/90">
             <li>Upload Prior/Current and Renewal DECs.</li>
             <li>
-              Set <strong>Term role</strong> on each row (Prior / Current / Renewal), or click the
+              Set <strong>Term role</strong> on each row (Prior / Current / Renewal / Archive), or click the
               filename → <strong>Set term role</strong>.
             </li>
             <li>

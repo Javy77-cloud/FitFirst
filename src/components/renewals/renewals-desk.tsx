@@ -73,7 +73,7 @@ export async function RenewalsDesk({
 
   const boards = visiblePipelineBoards(
     SEEDED_PIPELINES.filter((board) =>
-      ["p-c", "health", "life", "won-lost", "archive"].includes(board.slug),
+      ["p-c", "health", "life", "won-lost", "handled", "archive"].includes(board.slug),
     ),
     settings,
   );

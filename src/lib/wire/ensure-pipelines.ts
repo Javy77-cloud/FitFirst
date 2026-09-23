@@ -239,6 +239,7 @@ const RENEWALS_STAGE_COLORS: Record<string, string> = {
   quoted: "amber",
   bound: "green",
   lost: "red",
+  handled: "zinc",
 };
 
 /** Seeded renewals board — not a deals switcher tab. Inserts missing row/stages only (keeps admin edits). */

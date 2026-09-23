@@ -41,7 +41,7 @@ describe("document labels + term role", () => {
     ]);
     expect(tagsWithTermRole(["dec", "term_role:current"], null)).toEqual(["dec"]);
     expect(displayDocumentTags(["dec", "term_role:prior"])).toEqual(["dec"]);
-    expect(DOCUMENT_TERM_ROLES.map((r) => r.value)).toEqual(["prior", "current", "renewal"]);
+    expect(DOCUMENT_TERM_ROLES.map((r) => r.value)).toEqual(["prior", "current", "renewal", "archive"]);
   });
 
   it("wires rename / type / term-role server actions in documents.ts", () => {

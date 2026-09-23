@@ -9,9 +9,12 @@ import type { RenewalBoardCard } from "@/lib/renewal/board-data";
 export const RENEWAL_SHOPPING_STAGES = ["upcoming", "contacted", "quoted"] as const;
 export const RENEWAL_WON_LOST_STAGES = ["bound", "lost"] as const;
 export const RENEWAL_ARCHIVE_STAGES = ["archive", "archived"] as const;
+/** Quiet collection: client staying / renewal handled — not archived, not active chase. */
+export const RENEWAL_HANDLED_STAGES = ["handled"] as const;
 
 const WON_LOST = new Set<string>(RENEWAL_WON_LOST_STAGES);
 const ARCHIVE = new Set<string>(RENEWAL_ARCHIVE_STAGES);
+const HANDLED = new Set<string>(RENEWAL_HANDLED_STAGES);
 
 export type RenewalDeskFilter = {
   pipeline?: string | null;
@@ -23,7 +26,7 @@ export type RenewalDeskFilter = {
 
 /** Shopping = not parking. Custom admin stages stay on All / LOB boards. */
 export function isRenewalShoppingStage(slug: string): boolean {
-  return !WON_LOST.has(slug) && !ARCHIVE.has(slug);
+  return !WON_LOST.has(slug) && !ARCHIVE.has(slug) && !HANDLED.has(slug);
 }
 
 export function isRenewalWonLostStage(slug: string): boolean {
@@ -32,6 +35,10 @@ export function isRenewalWonLostStage(slug: string): boolean {
 
 export function isRenewalArchiveStage(slug: string): boolean {
   return ARCHIVE.has(slug);
+}
+
+export function isRenewalHandledStage(slug: string): boolean {
+  return HANDLED.has(slug);
 }
 
 /** LOB → filter chip: Home/Auto/Flood/Commercial/… → p-c; Health* → health; Life* → life. */
@@ -61,6 +68,7 @@ export function renewalStagesForPipeline<T extends { slug: string }>(
 ): T[] {
   if (pipeline === "won-lost") return stages.filter((stage) => isRenewalWonLostStage(stage.slug));
   if (pipeline === "archive") return stages.filter((stage) => isRenewalArchiveStage(stage.slug));
+  if (pipeline === "handled") return stages.filter((stage) => isRenewalHandledStage(stage.slug));
   return stages.filter((stage) => isRenewalShoppingStage(stage.slug));
 }
 
@@ -80,6 +88,9 @@ export function filterRenewalCards(
     }
     if (pipeline === "archive") {
       return isRenewalArchiveStage(card.stage);
+    }
+    if (pipeline === "handled") {
+      return isRenewalHandledStage(card.stage);
     }
     if (pipeline === "p-c" || pipeline === "health" || pipeline === "life") {
       if (!isRenewalShoppingStage(card.stage)) return false;
