@@ -7,6 +7,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { accounts, contacts, deals, leads } from "@/lib/db/schema";
 import { resolvePartyEmail } from "@/lib/comms/resolve-party-email";
+import { loadRecordValuesForIds } from "@/lib/custom-fields/store";
 
 export type QuickCommsEmailTemplateOption = {
   id: string;
@@ -169,6 +170,11 @@ export async function searchComposeRecipients(query: string): Promise<ComposeRec
     email: row.email,
     leadId: row.id,
   }));
+  const dealStoredById = await loadRecordValuesForIds(
+    dealRows.map((row) => row.id),
+    "deals",
+  );
+
   const dealHits: ComposeRecipientHit[] = dealRows.map((row) => ({
     kind: "deal",
     id: row.id,
@@ -177,6 +183,7 @@ export async function searchComposeRecipients(query: string): Promise<ComposeRec
       contact: { email: row.contactEmail },
       lead: { email: row.leadEmail },
       account: { email: row.accountEmail },
+      dealStored: dealStoredById.get(row.id) ?? {},
     }),
     dealId: row.id,
     contactId: row.contactId,

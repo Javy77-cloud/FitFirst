@@ -72,6 +72,8 @@ describe("inbox compose shared upgrade", () => {
     expect(actions).toMatch(/from\(leads\)/);
     expect(actions).toMatch(/from\(deals\)/);
     expect(actions).toMatch(/resolvePartyEmail/);
+    expect(actions).toMatch(/loadRecordValuesForIds/);
+    expect(actions).toMatch(/dealStored/);
   });
 
   it("leaves Log to activity and Assign to agent alone", () => {

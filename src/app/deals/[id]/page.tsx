@@ -624,7 +624,7 @@ export default async function DealPage({
         accountId: deal.accountId,
         name: partyName,
         phone: contact?.phone ?? lead?.phone,
-        email: resolvePartyEmail({ contact, lead, account }),
+        email: resolvePartyEmail({ contact, lead, account, dealStored: dealValues }),
       }}
     >
       <DeskPageTrail
@@ -880,7 +880,7 @@ export default async function DealPage({
                   accountId={deal.accountId}
                   contactName={partyName}
                   contactPhone={contact?.phone ?? lead?.phone}
-                  contactEmail={resolvePartyEmail({ contact, lead, account })}
+                  contactEmail={resolvePartyEmail({ contact, lead, account, dealStored: dealValues })}
                   officeAddress={officeAddress}
                   clientAddress={clientAddress}
                   initialKind={parseQuickCommsKind(qc)}
