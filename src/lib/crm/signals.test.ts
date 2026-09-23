@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { crmSignalDefaults, shouldCreateStageTask } from "./signals";
+import { createsUserFacingAlert, crmSignalDefaults, shouldCreateStageTask } from "./signals";
 
 describe("CRM action signals", () => {
   it("opens a follow-up task when a lead converts", () => {
@@ -19,6 +19,13 @@ describe("CRM action signals", () => {
       createTask: false,
       taskKind: "comms_sent",
     });
+  });
+
+  it("does not create a user-facing alert for own outbound send or queue", () => {
+    expect(createsUserFacingAlert("comms_sent")).toBe(false);
+    expect(createsUserFacingAlert("comms_queued")).toBe(false);
+    expect(createsUserFacingAlert("comms_held")).toBe(true);
+    expect(createsUserFacingAlert("meeting_scheduled")).toBe(true);
   });
 
   it("never auto-creates a task on stage moves, including quote sent / review", () => {

@@ -61,26 +61,35 @@ export function shouldCreateStageTask(_stageSlug: string) {
   return false;
 }
 
+/** Own outbound send/queue is Activity history — do not ping the sender's bell. */
+export function createsUserFacingAlert(kind: CrmSignalKind): boolean {
+  return kind !== "comms_sent" && kind !== "comms_queued";
+}
+
 export async function writeCrmSignals(input: CrmSignalInput) {
   const defaults = crmSignalDefaults(input.kind);
   const createTask = input.kind === "stage_moved" ? false : (input.createTask ?? defaults.createTask);
   const due = new Date();
   due.setUTCDate(due.getUTCDate() + (input.dueInDays ?? defaults.dueInDays));
 
-  const [alert] = await db
-    .insert(alerts)
-    .values({
-      tenantId: DEFAULT_TENANT_ID,
-      kind: input.kind,
-      title: input.title,
-      body: input.body,
-      severity: input.severity ?? defaults.severity,
-      entityType: input.entityType ?? (input.dealId ? "deal" : input.contactId ? "contact" : input.accountId ? "account" : null),
-      entityId: input.entityId ?? input.dealId ?? input.contactId ?? input.accountId ?? input.policyId ?? null,
-      userId: input.userId ?? null,
-      recipientUserId: input.userId ?? null,
-    })
-    .returning();
+  let alert: typeof alerts.$inferSelect | null = null;
+  if (createsUserFacingAlert(input.kind)) {
+    const [row] = await db
+      .insert(alerts)
+      .values({
+        tenantId: DEFAULT_TENANT_ID,
+        kind: input.kind,
+        title: input.title,
+        body: input.body,
+        severity: input.severity ?? defaults.severity,
+        entityType: input.entityType ?? (input.dealId ? "deal" : input.contactId ? "contact" : input.accountId ? "account" : null),
+        entityId: input.entityId ?? input.dealId ?? input.contactId ?? input.accountId ?? input.policyId ?? null,
+        userId: input.userId ?? null,
+        recipientUserId: input.userId ?? null,
+      })
+      .returning();
+    alert = row ?? null;
+  }
 
   if (input.kind === "stage_moved") {
     await writeDeskComms({

@@ -63,11 +63,24 @@ export function parseKindsParam(raw: string | string[] | undefined | null): stri
   return kinds;
 }
 
+/** Completed email/SMS/call are Activity desk history — not Calendar items. */
+export function showsOnDeskCalendar(activity: {
+  kind: string;
+  status?: string | null;
+}): boolean {
+  const status = (activity.status ?? "").toLowerCase();
+  const completed = status === "completed" || status === "done";
+  if (!completed) return true;
+  const kind = (activity.kind ?? "").toLowerCase();
+  return kind !== "email" && kind !== "sms" && kind !== "call";
+}
+
 export function filterCalendarActivities(
   activities: CalendarActivity[],
-  filters: { kinds?: string[]; assignee?: string | null },
+  filters: { kinds?: string[]; assignee?: string | null } = {},
 ): CalendarActivity[] {
   return activities.filter((row) => {
+    if (!showsOnDeskCalendar(row)) return false;
     if (filters.kinds && filters.kinds.length > 0 && !filters.kinds.includes(row.kind)) {
       return false;
     }

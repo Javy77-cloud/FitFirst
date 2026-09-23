@@ -408,10 +408,14 @@ export async function listCalendarActivities(_from: Date, _to: Date) {
     : session.name
       ? or(eq(activities.assignee, session.name), eq(activities.assignee, session.userId ?? ""), invited)
       : invited;
+  const notLoggedComms = sql`NOT (
+    lower(coalesce(${activities.status}, '')) IN ('completed', 'done')
+    AND lower(coalesce(${activities.kind}, '')) IN ('email', 'sms', 'call')
+  )`;
   return db
     .select()
     .from(activities)
-    .where(and(eq(activities.tenantId, tenant()), scope))
+    .where(and(eq(activities.tenantId, tenant()), scope, notLoggedComms))
     .orderBy(asc(activities.startAt), asc(activities.dueAt));
 }
 
