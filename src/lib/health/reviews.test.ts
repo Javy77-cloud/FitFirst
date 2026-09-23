@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   REVIEW_MOMENTS,
   REVIEW_PROMPTS,
+  isLoggedCallPulseCandidate,
   parseReviewStars,
   rotateReviewPrompt,
   shouldOfferReview,
@@ -28,5 +29,15 @@ describe("mini-review capture", () => {
     const b = rotateReviewPrompt("logged_call:act-2");
     expect(REVIEW_PROMPTS.map((row) => row.id)).toContain(a.id);
     expect(REVIEW_PROMPTS.map((row) => row.id)).toContain(b.id);
+  });
+
+  it("pulses only completed logged calls, not schedule reminders", () => {
+    expect(isLoggedCallPulseCandidate({ kind: "call", status: "completed" })).toBe(true);
+    expect(isLoggedCallPulseCandidate({ kind: "call", status: "Completed" })).toBe(true);
+    expect(isLoggedCallPulseCandidate({ kind: "call", status: "open" })).toBe(false);
+    expect(isLoggedCallPulseCandidate({ kind: "call", status: "scheduled" })).toBe(false);
+    expect(isLoggedCallPulseCandidate({ kind: "call", status: null })).toBe(false);
+    expect(isLoggedCallPulseCandidate({ kind: "email", status: "completed" })).toBe(false);
+    expect(isLoggedCallPulseCandidate({ kind: "task", status: "open" })).toBe(false);
   });
 });
