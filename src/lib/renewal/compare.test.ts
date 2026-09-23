@@ -11,6 +11,10 @@ import {
   premiumShopStayHint,
   premiumShopStayChip,
   formatBoardPremiumDelta,
+  premiumLapseRisk,
+  premiumLapseRiskBoardChip,
+  PREMIUM_LAPSE_RISK_LOW_MAX,
+  PREMIUM_LAPSE_RISK_MEDIUM_MAX,
 } from "./compare";
 
 describe("premiumChange", () => {
@@ -106,5 +110,31 @@ describe("formatBoardPremiumDelta + premiumShopStayChip", () => {
     expect(premiumShopStayChip(premiumChange(2184, 2547))).toBe("Shop");
     expect(premiumShopStayChip(premiumChange(1800, 1800))).toBe("Stay");
     expect(premiumShopStayChip(premiumChange(1428, 1356))).toBe("Stay");
+  });
+});
+
+describe("premiumLapseRisk thresholds", () => {
+  it("maps premium % to Low / Medium / High with tunable constants", () => {
+    expect(PREMIUM_LAPSE_RISK_LOW_MAX).toBe(5);
+    expect(PREMIUM_LAPSE_RISK_MEDIUM_MAX).toBe(12);
+    // <5% Low
+    expect(premiumLapseRisk(premiumChange(3560, 3678))).toBe("low"); // ~3.3%
+    expect(premiumLapseRisk(premiumChange(1000, 1049))).toBe("low");
+    // 5–12% Medium (inclusive of 5, exclusive of 12)
+    expect(premiumLapseRisk(premiumChange(1000, 1050))).toBe("medium");
+    expect(premiumLapseRisk(premiumChange(1000, 1119))).toBe("medium");
+    // ≥12% High
+    expect(premiumLapseRisk(premiumChange(1000, 1120))).toBe("high");
+    expect(premiumLapseRisk(premiumChange(2184, 2547))).toBe("high");
+    // flat / down → Low
+    expect(premiumLapseRisk(premiumChange(1800, 1800))).toBe("low");
+    expect(premiumLapseRisk(premiumChange(1428, 1356))).toBe("low");
+  });
+
+  it("board chip only surfaces Medium and High", () => {
+    expect(premiumLapseRiskBoardChip(premiumChange(3560, 3678))).toBeNull();
+    expect(premiumLapseRiskBoardChip(premiumChange(1000, 1080))).toBe("medium");
+    expect(premiumLapseRiskBoardChip(premiumChange(2184, 2547))).toBe("high");
+    expect(premiumLapseRiskBoardChip(premiumChange(1800, 1800))).toBeNull();
   });
 });
