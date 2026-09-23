@@ -2,7 +2,7 @@ import { appointmentLine } from "@/lib/domain";
 import { CARRIER_IDS } from "@/lib/fixtures/ids";
 
 /**
- * Javy's first-wave Home (12), Auto (8), and Flood (5) shop templates.
+ * Javy's first-wave Home (12), Auto (8), and Flood (4) shop templates.
  * Rank among fits only — not a pick list, not a filter.
  * Auto + Flood templates (2026-09-10) until appetite predicts those markets.
  */
@@ -32,13 +32,12 @@ export const FIRST_WAVE_AUTO = [
   "nationwide",
 ] as const;
 
-/** Locked Flood markets (2026-09-10; NFIP→Flow Flood 2026-09-10 eve). Not Hartford. */
+/** Locked Flood markets (2026-09-23). Neptune · Selective · Tower Hill · Wright. Not Hartford / Beyond / Flow. */
 export const FIRST_WAVE_FLOOD = [
-  "beyondFloods",
   "neptune",
   "selective",
+  "towerHill",
   "wright",
-  "flowFlood",
 ] as const;
 
 const HOME_NAME_ALIASES: Record<(typeof FIRST_WAVE_HOME)[number], string[]> = {
@@ -69,11 +68,10 @@ const AUTO_NAME_ALIASES: Record<(typeof FIRST_WAVE_AUTO)[number], string[]> = {
 
 /** Match carrier display names in DB for Flood first-wave rank / shop load. */
 export const FLOOD_NAME_ALIASES: Record<(typeof FIRST_WAVE_FLOOD)[number], string[]> = {
-  beyondFloods: ["beyond floods", "national general"],
   neptune: ["neptune"],
   selective: ["selective"],
-  wright: ["wright"],
-  flowFlood: ["flow flood", "flowflood"],
+  towerHill: ["tower hill"],
+  wright: ["wright national", "wright flood", "wright"],
 };
 
 function aliasesForLine(dealLine: string): Record<string, string[]> {

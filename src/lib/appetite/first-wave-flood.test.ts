@@ -7,40 +7,40 @@ import {
 } from "./first-wave";
 
 describe("Flood first-wave", () => {
-  it("firstWaveKeys(flood) returns the five locked markets", () => {
+  it("firstWaveKeys(flood) returns the four locked markets", () => {
     expect(firstWaveKeys("flood")).toEqual([
-      "beyondFloods",
       "neptune",
       "selective",
+      "towerHill",
       "wright",
-      "flowFlood",
     ]);
-    expect(firstWaveKeys("FLOOD")).toHaveLength(5);
+    expect(firstWaveKeys("FLOOD")).toHaveLength(4);
     expect([...FIRST_WAVE_FLOOD]).toEqual(firstWaveKeys("flood"));
   });
 
-  it("ranks Beyond Floods / Neptune / Selective / Wright / Flow Flood; excludes Hartford + NFIP", () => {
-    expect(firstWaveRank("FLOOD", "x", "Beyond Floods")).toBe(0);
-    expect(firstWaveRank("FLOOD", "x", "National General Beyond Floods")).toBe(0);
-    expect(firstWaveRank("FLOOD", "x", "Neptune")).toBe(1);
-    expect(firstWaveRank("FLOOD", "x", "Selective")).toBe(2);
+  it("ranks Neptune / Selective / Tower Hill / Wright; excludes Hartford + Beyond + Flow + NFIP", () => {
+    expect(firstWaveRank("FLOOD", "x", "Neptune")).toBe(0);
+    expect(firstWaveRank("FLOOD", "x", "Selective")).toBe(1);
+    expect(firstWaveRank("FLOOD", "x", "Tower Hill")).toBe(2);
     expect(firstWaveRank("FLOOD", "x", "Wright National")).toBe(3);
-    expect(firstWaveRank("FLOOD", "x", "Flow Flood")).toBe(4);
+    expect(firstWaveRank("FLOOD", "x", "Wright Flood")).toBe(3);
     expect(firstWaveRank("FLOOD", "x", "The Hartford")).toBeNull();
     expect(firstWaveRank("FLOOD", "x", "Hartford")).toBeNull();
+    expect(firstWaveRank("FLOOD", "x", "Beyond Floods")).toBeNull();
+    expect(firstWaveRank("FLOOD", "x", "National General")).toBeNull();
+    expect(firstWaveRank("FLOOD", "x", "Flow Flood")).toBeNull();
     expect(firstWaveRank("FLOOD", "x", "NFIP")).toBeNull();
     expect(firstWaveRank("FLOOD", "x", "NFIP Direct")).toBeNull();
   });
 
   it("exposes FLOOD_NAME_ALIASES for DB name matching", () => {
-    expect(FLOOD_NAME_ALIASES.beyondFloods).toEqual(
-      expect.arrayContaining(["beyond floods", "national general"]),
-    );
     expect(FLOOD_NAME_ALIASES.neptune).toContain("neptune");
     expect(FLOOD_NAME_ALIASES.selective).toContain("selective");
-    expect(FLOOD_NAME_ALIASES.wright).toContain("wright");
-    expect(FLOOD_NAME_ALIASES.flowFlood).toEqual(
-      expect.arrayContaining(["flow flood", "flowflood"]),
+    expect(FLOOD_NAME_ALIASES.towerHill).toContain("tower hill");
+    expect(FLOOD_NAME_ALIASES.wright).toEqual(
+      expect.arrayContaining(["wright national", "wright flood", "wright"]),
     );
+    expect(FLOOD_NAME_ALIASES).not.toHaveProperty("beyondFloods");
+    expect(FLOOD_NAME_ALIASES).not.toHaveProperty("flowFlood");
   });
 });
