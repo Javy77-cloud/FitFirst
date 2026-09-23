@@ -27,6 +27,7 @@ export async function loadInboxMatchIndex(asOf = deskNow()): Promise<InboxMatchI
         firstName: contacts.firstName,
         lastName: contacts.lastName,
         email: contacts.email,
+        ownerId: contacts.ownerId,
       })
       .from(contacts)
       .where(
@@ -37,6 +38,7 @@ export async function loadInboxMatchIndex(asOf = deskNow()): Promise<InboxMatchI
         id: deals.id,
         title: deals.title,
         contactId: deals.contactId,
+        ownerId: deals.ownerId,
         pipelineStage: deals.pipelineStage,
         pipelineStageSlug: deals.pipelineStageSlug,
         boundAt: deals.boundAt,
@@ -48,6 +50,7 @@ export async function loadInboxMatchIndex(asOf = deskNow()): Promise<InboxMatchI
       .select({
         id: policies.id,
         contactId: policies.contactId,
+        ownerId: policies.ownerId,
         expirationDate: policies.expirationDate,
         status: policies.status,
         firstName: contacts.firstName,
@@ -85,7 +88,7 @@ export async function loadInboxMatchIndex(asOf = deskNow()): Promise<InboxMatchI
     if (primary) emails.add(primary);
     for (const alias of aliasesByContact.get(row.id) ?? []) emails.add(alias);
     for (const email of emails) {
-      contactHits.push({ id: row.id, name, email });
+      contactHits.push({ id: row.id, name, email, ownerId: row.ownerId });
     }
   }
 
@@ -94,6 +97,7 @@ export async function loadInboxMatchIndex(asOf = deskNow()): Promise<InboxMatchI
     title: row.title,
     contactId: row.contactId,
     closed: dealClosedForInbox(row),
+    ownerId: row.ownerId,
   }));
 
   const renewalHits: InboxRenewalHit[] = [];
@@ -112,6 +116,7 @@ export async function loadInboxMatchIndex(asOf = deskNow()): Promise<InboxMatchI
           null,
         ) || "Client",
       daysUntil: days,
+      ownerId: row.ownerId,
     });
   }
 

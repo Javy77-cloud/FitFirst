@@ -5,6 +5,7 @@ export type InboxContactHit = {
   id: string;
   name: string;
   email: string;
+  ownerId?: string | null;
 };
 
 export type InboxDealHit = {
@@ -12,6 +13,7 @@ export type InboxDealHit = {
   title: string;
   contactId: string | null;
   closed: boolean;
+  ownerId?: string | null;
 };
 
 export type InboxRenewalHit = {
@@ -19,6 +21,7 @@ export type InboxRenewalHit = {
   contactId: string | null;
   clientName: string;
   daysUntil: number;
+  ownerId?: string | null;
 };
 
 export type InboxMatchIndex = {

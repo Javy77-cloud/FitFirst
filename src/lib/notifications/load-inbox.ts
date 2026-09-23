@@ -1,5 +1,6 @@
 import { deskNow } from "@/lib/home/as-of";
 import { inboxCuesFromThreads } from "@/lib/desk/inbox-desk";
+import { encodePanelHref } from "@/lib/desk/inbox-assign";
 import { loadLiveInboxThreads } from "@/lib/desk/load-inbox-live";
 import { shouldSilenceInboxSignal } from "@/lib/desk/inbox-match";
 import type { PanelCard } from "@/lib/notifications/panel";
@@ -32,8 +33,8 @@ export async function loadInboxMailSignals(asOf = deskNow()): Promise<PanelCard[
       why: row.why,
       primary: {
         id: "open_inbox",
-        label: row.match.deal ? "Open deal" : "Open thread",
-        href: row.match.deal ? `/deals/${row.match.deal.id}` : row.href,
+        label: "Open thread",
+        href: row.href,
         action: "open_entity",
       },
       href: row.href,
@@ -44,6 +45,7 @@ export async function loadInboxMailSignals(asOf = deskNow()): Promise<PanelCard[
       contactId: row.match.contact?.id ?? null,
       dealId: row.match.deal?.id ?? null,
       policyId: row.match.renewal?.policyId ?? null,
+      metaBody: encodePanelHref(row.href),
     });
   }
   return cards;

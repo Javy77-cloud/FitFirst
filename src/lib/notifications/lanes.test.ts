@@ -36,9 +36,11 @@ describe("notification Work | Inbox lanes", () => {
     expect(panelLaneForKind("commitment_nudge")).toBe("work");
     expect(panelLaneForKind("deal_cold_chase")).toBe("work");
     expect(panelLaneForKind("inbox_mail")).toBe("inbox");
+    expect(panelLaneForKind("inbox_assigned")).toBe("inbox");
     expect(panelLaneForKind("renewal_term_started")).toBe("inbox");
     expect(PANEL_INBOX_KINDS).toContain("renewal_term_started");
     expect(PANEL_INBOX_KINDS).toContain("inbox_mail");
+    expect(PANEL_INBOX_KINDS).toContain("inbox_assigned");
   });
 
   it("covers every panel signal kind", () => {

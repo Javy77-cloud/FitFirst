@@ -1,6 +1,7 @@
 import { displayNoticeBody, noticeHrefFromAlert } from "@/lib/coverage/notices";
 import { coldChaseHref, isDealColdChaseKind } from "@/lib/deals/cold-chase";
 import { followUpLeadHref, notificationWhen } from "@/lib/desk/notifications";
+import { inboxMailDeepLink } from "@/lib/desk/inbox-assign";
 import { isPanelSignalKind } from "@/lib/notifications/panel";
 import { recordHref } from "@/lib/desk/record-href";
 
@@ -35,12 +36,12 @@ export function alertRecordHref(row: {
     if (row.kind === "renewal_term_started" && row.entityId) {
       return `/policies/${row.entityId}/compare`;
     }
-    if (row.kind === "inbox_mail") {
-      return row.entityType === "deal" && row.entityId
-        ? `/deals/${row.entityId}`
-        : row.entityType === "contact" && row.entityId
-          ? `/contacts/${row.entityId}`
-          : "/inbox";
+    if (row.kind === "inbox_mail" || row.kind === "inbox_assigned") {
+      return inboxMailDeepLink({
+        body: row.body,
+        entityType: row.entityType,
+        entityId: row.entityId,
+      });
     }
   }
   return (

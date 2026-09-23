@@ -9,6 +9,8 @@ import { formatInboxListWhen, formatInboxWhen, inboxSenderLabel, snippetOf } fro
 import { looksLikeHtml, sanitizeInboxHtml } from "@/lib/desk/inbox-body";
 import { INBOX_BANDS, groupInboxThreads, type InboxDeskThread } from "@/lib/desk/inbox-desk";
 import { InboxLinkContactDialog } from "@/components/inbox/inbox-link-contact-dialog";
+import { InboxAssignDialog } from "@/components/inbox/inbox-assign-dialog";
+import { suggestedAssigneeFromMatch, type InboxAssignAgent } from "@/lib/desk/inbox-assign";
 import { inboxBandLabel } from "@/lib/desk/inbox-match";
 import { inboxSkinListRole, resolveInboxSkin, type InboxMailProvider } from "@/lib/desk/inbox-skin";
 import type { MailThreadMessage } from "@/lib/integrations/mail-contract";
@@ -67,7 +69,13 @@ function ReplyForm({ thread }: { thread: InboxDeskThread }) {
   );
 }
 
-function ThreadActions({ thread }: { thread: InboxDeskThread }) {
+function ThreadActions({
+  thread,
+  agents,
+}: {
+  thread: InboxDeskThread;
+  agents: InboxAssignAgent[];
+}) {
   return (
     <div className="ff-inbox-actions">
       {thread.match.contact ? (
@@ -111,6 +119,16 @@ function ThreadActions({ thread }: { thread: InboxDeskThread }) {
           email={thread.match.emails[0] ?? ""}
         />
       )}
+      <InboxAssignDialog
+        threadId={thread.id}
+        subject={thread.subject}
+        from={thread.from}
+        contactId={thread.match.contact?.id}
+        dealId={thread.match.deal?.id}
+        policyId={thread.match.renewal?.policyId}
+        suggestedAgentId={suggestedAssigneeFromMatch(thread.match)}
+        agents={agents}
+      />
     </div>
   );
 }
@@ -127,6 +145,7 @@ export function InboxDesk({
   mailProvider = "gmail",
   connectLabel = "Gmail",
   connectOauthId = "gmail",
+  agents = [],
 }: {
   threads: InboxDeskThread[];
   selectedId: string | null;
@@ -139,6 +158,7 @@ export function InboxDesk({
   mailProvider?: InboxMailProvider;
   connectLabel?: string;
   connectOauthId?: string;
+  agents?: InboxAssignAgent[];
 }) {
   const selected = threads.find((row) => row.id === selectedId) ?? threads[0] ?? null;
   const groups = groupInboxThreads(threads);
@@ -249,7 +269,7 @@ export function InboxDesk({
               {selected.match.unmatched ? (
                 <p className="mt-2 text-sm text-navy">No contact for this address yet.</p>
               ) : null}
-              <ThreadActions thread={selected} />
+              <ThreadActions thread={selected} agents={agents} />
               {messages.length > 0 ? (
                 <ol className="ff-inbox-thread">
                   {messages.map((msg) => (

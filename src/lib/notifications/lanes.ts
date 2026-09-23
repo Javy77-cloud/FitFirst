@@ -28,7 +28,7 @@ export const PANEL_LANE_META: Record<
 };
 
 /** Kinds that belong on the Inbox awareness lane. Everything else is Work. */
-export const PANEL_INBOX_KINDS = ["inbox_mail", "renewal_term_started"] as const satisfies readonly PanelSignalKind[];
+export const PANEL_INBOX_KINDS = ["inbox_mail", "inbox_assigned", "renewal_term_started"] as const satisfies readonly PanelSignalKind[];
 
 const INBOX_KIND_SET = new Set<string>(PANEL_INBOX_KINDS);
 
