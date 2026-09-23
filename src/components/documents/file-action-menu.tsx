@@ -35,6 +35,7 @@ import {
   termRoleFromTags,
   type DocumentTermRole,
 } from "@/lib/documents/document-labels";
+import { dealDocumentsTabHref } from "@/lib/documents/deal-docs-save";
 import { fileDownloadHref } from "@/lib/files/urls";
 import { cn } from "@/lib/utils";
 
@@ -95,6 +96,9 @@ export function FileActionMenu({
   const [gone, setGone] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const downloadHref = fileDownloadHref(documentId);
+  const effectiveReturnTo =
+    returnTo ||
+    (dealId && line ? dealDocumentsTabHref(dealId, line) : dealId ? dealDocumentsTabHref(dealId) : undefined);
   const mode = uploadedFileDeleteMode({ slot, docType });
   const subject = deleteUploadedFileSubject(filename, mode);
   const multiWarning = multiProductMembershipWarning(tags);
@@ -152,7 +156,8 @@ export function FileActionMenu({
         {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}
         {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
         {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
-        {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+        {effectiveReturnTo ? <input type="hidden" name="returnTo" value={effectiveReturnTo} /> : null}
+        {line ? <input type="hidden" name="line" value={line} /> : null}
         <input
           ref={replaceInputRef}
           type="file"
@@ -169,7 +174,8 @@ export function FileActionMenu({
         {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}
         {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
         {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
-        {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+        {effectiveReturnTo ? <input type="hidden" name="returnTo" value={effectiveReturnTo} /> : null}
+        {line ? <input type="hidden" name="line" value={line} /> : null}
         <input ref={renameInputRef} type="hidden" name="filename" defaultValue="" />
       </form>
       <form ref={typeFormRef} action={updateDocumentLabel} className="hidden">
@@ -178,7 +184,8 @@ export function FileActionMenu({
         {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}
         {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
         {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
-        {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+        {effectiveReturnTo ? <input type="hidden" name="returnTo" value={effectiveReturnTo} /> : null}
+        {line ? <input type="hidden" name="line" value={line} /> : null}
         <input ref={typeInputRef} type="hidden" name="docType" defaultValue="" />
       </form>
       <form ref={termFormRef} action={setDocumentTermRole} className="hidden">
@@ -187,7 +194,8 @@ export function FileActionMenu({
         {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}
         {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
         {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
-        {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+        {effectiveReturnTo ? <input type="hidden" name="returnTo" value={effectiveReturnTo} /> : null}
+        {line ? <input type="hidden" name="line" value={line} /> : null}
         <input ref={termInputRef} type="hidden" name="termRole" defaultValue="" />
       </form>
       {/* One HardDeleteForm: menu Delete + visible trash both click this submitter (one confirm). */}
@@ -197,7 +205,7 @@ export function FileActionMenu({
           {dealId ? <input type="hidden" name="dealId" value={dealId} /> : null}
           {line ? <input type="hidden" name="line" value={line} /> : null}
           {quotingForm ? <input type="hidden" name="quotingForm" value={quotingForm} /> : null}
-          {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+          {effectiveReturnTo ? <input type="hidden" name="returnTo" value={effectiveReturnTo} /> : null}
         </form>
       ) : null}
       <HardDeleteForm
@@ -216,7 +224,8 @@ export function FileActionMenu({
         {policyId ? <input type="hidden" name="policyId" value={policyId} /> : null}
         {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
         {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
-        {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+        {effectiveReturnTo ? <input type="hidden" name="returnTo" value={effectiveReturnTo} /> : null}
+        {line ? <input type="hidden" name="line" value={line} /> : null}
         <input ref={reasonInputRef} type="hidden" name="deleteReason" defaultValue="" />
         <button ref={deleteBtnRef} type="submit" tabIndex={-1} aria-hidden className="hidden" />
       </HardDeleteForm>

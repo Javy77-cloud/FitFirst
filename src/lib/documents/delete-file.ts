@@ -1,4 +1,5 @@
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
+import { dealDocumentsTabHref } from "@/lib/documents/deal-docs-save";
 
 export type UploadedFileDeleteMode = "hard" | "hide";
 
@@ -67,12 +68,14 @@ export function documentDeleteReturnHref(input: {
   policyId?: string | null;
   dealId?: string | null;
   returnTo?: string | null;
+  /** Active product shop line — preserves Flood window after Change type. */
+  line?: string | null;
 }): string | null {
   const policyId = (input.policyId ?? "").trim();
   if (policyId) return `/policies/${policyId}?tab=documents`;
   const returnTo = (input.returnTo ?? "").trim();
   if (returnTo.startsWith("/") && !returnTo.startsWith("//")) return returnTo;
   const dealId = (input.dealId ?? "").trim();
-  if (dealId) return `/deals/${dealId}?tab=documents`;
+  if (dealId) return dealDocumentsTabHref(dealId, input.line);
   return null;
 }

@@ -746,10 +746,19 @@ export async function uploadSampleDocument(formData: FormData) {
 }
 
 export async function markDocumentType(formData: FormData) {
-  const documentId = String(formData.get("documentId") ?? "");
-  const dealId = String(formData.get("dealId") ?? "");
+  const documentId = String(formData.get("documentId") ?? "").trim();
+  const dealId = String(formData.get("dealId") ?? "").trim();
+  const [doc] = documentId
+    ? await db.select().from(documents).where(eq(documents.id, documentId))
+    : [];
+  // Prefer the document's product tags over deal.quotingLine (home) so Flood DEC
+  // Re-extract never lands HO fields on the home sheet — or vice versa.
+  const line =
+    String(formData.get("line") ?? "").trim() ||
+    shopLineFromSourceDoc(doc ?? {}) ||
+    "";
   await runExtraction(documentId, dealId);
-  await fillDealSheetIfReady(dealId, String(formData.get("line") ?? ""));
+  await fillDealSheetIfReady(dealId, line);
   revalidatePath(`/deals/${dealId}`);
 }
 
@@ -997,6 +1006,7 @@ export async function deleteUploadedFile(formData: FormData) {
         policyId: doc.policyId,
         dealId: doc.dealId,
         returnTo: String(formData.get("returnTo") ?? "").trim(),
+    line: String(formData.get("line") ?? "").trim() || null,
       });
       if (href) flashAction(href, message, "error");
       return;
@@ -1007,6 +1017,7 @@ export async function deleteUploadedFile(formData: FormData) {
         policyId: doc.policyId,
         dealId: doc.dealId,
         returnTo: String(formData.get("returnTo") ?? "").trim(),
+    line: String(formData.get("line") ?? "").trim() || null,
       });
       if (href) flashAction(href, message, "error");
       return;
@@ -1038,6 +1049,7 @@ export async function deleteUploadedFile(formData: FormData) {
       policyId: doc.policyId,
       dealId: doc.dealId,
       returnTo: String(formData.get("returnTo") ?? "").trim(),
+    line: String(formData.get("line") ?? "").trim() || null,
     });
     if (hiddenHref) flashAction(hiddenHref, "document-deleted");
     return;
@@ -1129,6 +1141,7 @@ export async function deleteUploadedFile(formData: FormData) {
       policyId: doc.policyId || String(formData.get("policyId") ?? "").trim(),
       dealId: doc.dealId || String(formData.get("dealId") ?? "").trim(),
       returnTo: String(formData.get("returnTo") ?? "").trim(),
+    line: String(formData.get("line") ?? "").trim() || null,
     });
     if (href) flashAction(href, message, "error");
     throw error;
@@ -1157,6 +1170,7 @@ export async function deleteUploadedFile(formData: FormData) {
     policyId: doc.policyId,
     dealId: doc.dealId,
     returnTo: String(formData.get("returnTo") ?? "").trim(),
+    line: String(formData.get("line") ?? "").trim() || null,
   });
   if (href) flashAction(href, "document-deleted");
 }
@@ -1178,6 +1192,7 @@ export async function renameUploadedFile(formData: FormData) {
     policyId: doc.policyId || String(formData.get("policyId") ?? "").trim(),
     dealId: doc.dealId || String(formData.get("dealId") ?? "").trim(),
     returnTo: String(formData.get("returnTo") ?? "").trim(),
+    line: String(formData.get("line") ?? "").trim() || null,
   });
   if (href) flashAction(href, "document-renamed");
 }
@@ -1196,11 +1211,40 @@ export async function updateDocumentLabel(formData: FormData) {
   if (!doc) return;
 
   await db.update(documents).set({ docType }).where(eq(documents.id, documentId));
+
+  // Active product window (Flood Documents) — never fall back to the deal default home line.
+  const formLine = String(formData.get("line") ?? "").trim();
+  const docLine = shopLineFromSourceDoc({
+    slot: doc.slot,
+    docType,
+    tags: doc.tags,
+  });
+  const shopLine = docLine || formLine || "";
+
+  // Issued declaration on a product-tagged deal source file → extract into THAT
+  // product sheet only (line:flood DEC → Flood). Skip when tags have no line so we
+  // never fall through to the deal's default home sheet and bleed HO into Flood.
+  if (
+    doc.dealId &&
+    !doc.policyId &&
+    isDeclarationDocType(docType) &&
+    docLine &&
+    (doc.slot === "source_doc" || !doc.slot)
+  ) {
+    try {
+      await runExtraction(documentId, doc.dealId);
+      await fillDealSheetIfReady(doc.dealId, docLine);
+    } catch {
+      /* type update already persisted; extract failure stays on extraction_jobs */
+    }
+  }
+
   revalidateDocumentPaths(doc);
   const href = documentDeleteReturnHref({
     policyId: doc.policyId || String(formData.get("policyId") ?? "").trim(),
     dealId: doc.dealId || String(formData.get("dealId") ?? "").trim(),
     returnTo: String(formData.get("returnTo") ?? "").trim(),
+    line: shopLine || formLine || null,
   });
   if (href) flashAction(href, "document-type-updated");
 }
@@ -1223,6 +1267,7 @@ export async function setDocumentTermRole(formData: FormData) {
       policyId: doc.policyId || String(formData.get("policyId") ?? "").trim(),
       dealId: doc.dealId || String(formData.get("dealId") ?? "").trim(),
       returnTo: String(formData.get("returnTo") ?? "").trim(),
+    line: String(formData.get("line") ?? "").trim() || null,
     });
     if (href) flashAction(href, "document-term-role-updated");
     return;
@@ -1247,6 +1292,7 @@ export async function setDocumentTermRole(formData: FormData) {
     policyId: doc.policyId || String(formData.get("policyId") ?? "").trim(),
     dealId: doc.dealId || String(formData.get("dealId") ?? "").trim(),
     returnTo: String(formData.get("returnTo") ?? "").trim(),
+    line: String(formData.get("line") ?? "").trim() || null,
   });
   if (href) flashAction(href, "document-term-role-updated");
 }
