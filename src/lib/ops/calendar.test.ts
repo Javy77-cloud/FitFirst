@@ -6,6 +6,7 @@ import {
   CALENDAR_ADMIN_ADD,
   CALENDAR_TOOLBAR_ROWS,
   filterCalendarActivities,
+  showsOnDeskCalendar,
   formatCalendarTitle,
   formatWhen,
   isActivityKind,
@@ -118,6 +119,41 @@ describe("calendar helpers", () => {
     const rows = filterCalendarActivities([task, meeting], { kinds: ["meeting"] });
     expect(rows.map((r) => r.id)).toEqual(["m1"]);
     expect(parseKindsParam("task,call,quote")).toEqual(["task", "call"]);
+  });
+
+
+  it("excludes completed email/sms/call from calendar surface; keeps open schedule + meetings", () => {
+    const doneEmail = {
+      ...task,
+      id: "e-done",
+      kind: "email",
+      title: "Email sent · Heather",
+      status: "completed",
+      startAt: new Date(2026, 8, 23, 10, 0),
+      dueAt: null,
+    };
+    const openEmail = {
+      ...task,
+      id: "e-open",
+      kind: "email",
+      title: "Follow up email",
+      status: "open",
+      dueAt: new Date(2026, 8, 24, 9, 0),
+      startAt: null,
+    };
+    const doneCall = { ...task, id: "c-done", kind: "call", status: "completed", title: "Call logged" };
+    const doneMeeting = {
+      ...meeting,
+      id: "m-done",
+      status: "completed",
+      title: "Past meeting",
+    };
+    expect(showsOnDeskCalendar(doneEmail)).toBe(false);
+    expect(showsOnDeskCalendar(doneCall)).toBe(false);
+    expect(showsOnDeskCalendar(openEmail)).toBe(true);
+    expect(showsOnDeskCalendar(doneMeeting)).toBe(true);
+    const rows = filterCalendarActivities([doneEmail, openEmail, doneCall, doneMeeting, task]);
+    expect(rows.map((r) => r.id).sort()).toEqual(["e-open", "m-done", "t1"].sort());
   });
 
   it("preserves duration when dropped on a new slot", () => {

@@ -3,6 +3,19 @@ import type { listRelatedOptions } from "@/lib/db/activity-queries";
 
 export type RelatedOptions = Awaited<ReturnType<typeof listRelatedOptions>>;
 
+/** activities.assignee may be a user id (email auto-log) or a legacy display name. */
+export function resolveAssigneeSelectValue(
+  assignee: string | null | undefined,
+  users: { id: string; name: string }[],
+): string {
+  if (!assignee) return "";
+  const byId = users.find((u) => u.id === assignee);
+  if (byId) return byId.id;
+  const byName = users.find((u) => u.name === assignee);
+  if (byName) return byName.id;
+  return "";
+}
+
 export function RelatedRecordFields({
   options,
   defaults,
@@ -98,12 +111,12 @@ export function RelatedRecordFields({
         <Label className="text-xs">Assignee</Label>
         <select
           name="assignee"
-          defaultValue={defaults?.assignee ?? ""}
+          defaultValue={resolveAssigneeSelectValue(defaults?.assignee, options.users)}
           className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
         >
           <option value="">None</option>
           {options.users.map((u) => (
-            <option key={u.id} value={u.name}>
+            <option key={u.id} value={u.id}>
               {u.name}
             </option>
           ))}

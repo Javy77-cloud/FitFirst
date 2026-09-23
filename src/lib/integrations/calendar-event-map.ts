@@ -204,7 +204,14 @@ export function eventSyncWindow(
 export function shouldPushDeskActivity(activity: {
   startAt?: Date | string | null;
   endAt?: Date | string | null;
+  kind?: string | null;
+  status?: string | null;
 }): boolean {
+  const kind = (activity.kind ?? "").toLowerCase();
+  const status = (activity.status ?? "").toLowerCase();
+  const completed = status === "completed" || status === "done";
+  // Logged completed email/SMS/call stay on Activity — never push to Google/Outlook.
+  if (completed && (kind === "email" || kind === "sms" || kind === "call")) return false;
   const start = activity.startAt ? new Date(activity.startAt) : null;
   const end = activity.endAt ? new Date(activity.endAt) : null;
   return Boolean(start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()));

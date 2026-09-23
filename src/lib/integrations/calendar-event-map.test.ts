@@ -109,6 +109,42 @@ describe("calendar event mapping", () => {
     expect(window.to.getTime()).toBeGreaterThan(asOf.getTime());
   });
 
+
+  it("does not push completed email/sms/call logs to connected calendars", () => {
+    expect(
+      shouldPushDeskActivity({
+        startAt: "2026-09-23T14:00:00Z",
+        endAt: "2026-09-23T14:15:00Z",
+        kind: "email",
+        status: "completed",
+      }),
+    ).toBe(false);
+    expect(
+      shouldPushDeskActivity({
+        startAt: "2026-09-23T15:00:00Z",
+        endAt: "2026-09-23T15:15:00Z",
+        kind: "sms",
+        status: "completed",
+      }),
+    ).toBe(false);
+    expect(
+      shouldPushDeskActivity({
+        startAt: "2026-09-23T16:00:00Z",
+        endAt: "2026-09-23T16:30:00Z",
+        kind: "meeting",
+        status: "completed",
+      }),
+    ).toBe(true);
+    expect(
+      shouldPushDeskActivity({
+        startAt: "2026-09-24T14:00:00Z",
+        endAt: "2026-09-24T14:15:00Z",
+        kind: "email",
+        status: "open",
+      }),
+    ).toBe(true);
+  });
+
   it("hides a busy overlay when a titled external event already covers the slot", () => {
     const covered = busyCoveredByTitledEvent(
       { provider: "google_calendar", startAt: "2026-09-19T16:00:00.000Z", endAt: "2026-09-19T17:00:00.000Z" },

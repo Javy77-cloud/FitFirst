@@ -34,6 +34,7 @@ import {
   parseKindsParam,
   rangeForView,
   serializeCalendarActivity,
+  showsOnDeskCalendar,
 } from "@/lib/ops/calendar";
 
 export const dynamic = "force-dynamic";
@@ -104,7 +105,7 @@ export default async function CalendarPage({
     meetHelperAvailable().catch(() => false),
     listSyncedEvents(range.from, range.to).catch(() => []),
   ]);
-  const deskEvents = rows.map((row) => serializeCalendarActivity({ ...row, origin: "fitfirst" }));
+  const deskEvents = rows.filter(showsOnDeskCalendar).map((row) => serializeCalendarActivity({ ...row, origin: "fitfirst" }));
   const externalEvents = syncedRows.map((row) => serializeCalendarActivity(syncedEventToDeskActivity(row)));
   const events = [...deskEvents, ...externalEvents];
   const busyBlocks = busyRows
