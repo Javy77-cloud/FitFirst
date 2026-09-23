@@ -20,9 +20,10 @@ export function resolveChecklistLob(lineOfBusiness: string | null | undefined): 
 }
 
 /**
- * Doc slots collected via packet upload.
- * AOR and ID cards are never auto-required on policy create — agents add them
- * only when they start those flows later.
+ * Auto-required doc slots collected via packet upload.
+ * AOR and ID cards are never required for completion — agents may attach them
+ * later on Documents. Checklist extras must not treat them as Missing / On file
+ * blockers.
  */
 export const CHECKLIST_DOC_KEYS_BY_LOB: Record<ChecklistLobFamily, ServicingDocKey[]> = {
   auto: ["dec"],

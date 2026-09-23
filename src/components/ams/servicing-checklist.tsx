@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { toggleServicingCheck } from "@/app/actions/ams";
 import { CreateServicingTaskDialog } from "@/components/ams/create-servicing-task-dialog";
-import { Button } from "@/components/ui/button";
-import type { ServicingChecklist } from "@/lib/ams/checklist";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import {
+  optionalExtraPacketKeys,
+  type ServicingChecklist,
+} from "@/lib/ams/checklist";
 import type { PacketTask } from "@/lib/ams/packet-tasks";
 import { SERVICING_DOC_KEYS, SERVICING_DOC_LABELS, type ServicingDocKey } from "@/lib/domain-ams";
 
@@ -11,18 +15,18 @@ export function ServicingChecklistCard({
   checklist,
   packetByKey = {},
   missingPackets = [],
+  packetOnFile = {},
 }: {
   policyId: string;
   checklist: ServicingChecklist;
   packetByKey?: Partial<Record<ServicingDocKey, PacketTask>>;
+  /** Auto-required missing slots only (dec). Optional AOR / ID never live here. */
   missingPackets?: ServicingDocKey[];
+  /** Accurate file presence for packet slots — used for optional AOR / ID rows. */
+  packetOnFile?: Partial<Record<ServicingDocKey, boolean>>;
 }) {
   const listedKeys = new Set(checklist.items.map((item) => item.key));
-  const extraPackets = SERVICING_DOC_KEYS.filter((key) => {
-    if (listedKeys.has(key)) return false;
-    if (key === "id_card" && listedKeys.has("id_cards")) return false;
-    return true;
-  });
+  const optionalPackets = optionalExtraPacketKeys(listedKeys);
 
   const total = checklist.readyCount + checklist.missingCount;
   const pct = total > 0 ? Math.round((checklist.readyCount / total) * 100) : 0;
@@ -55,7 +59,8 @@ export function ServicingChecklistCard({
       <p className="mt-2 text-base text-muted-foreground">
         Template by line. Each incomplete item opens a task or collects a packet. Auto-filled from
         files on the policy when possible — no busywork re-entry. Lender not in system: create the
-        contact once from Coverage.
+        contact once from Coverage. AOR is optional — attach on Documents when you need it; it
+        does not block completion.
       </p>
       <ul className="mt-3 divide-y divide-border rounded-md border border-border">
         {checklist.items.map((item) => {
@@ -129,7 +134,7 @@ export function ServicingChecklistCard({
                     ) : null}
                   </>
                 ) : null}
-                {!item.ok && packetKey && !openTask ? (
+                {!item.ok && packetKey && missingPackets.includes(packetKey) && !openTask ? (
                   <CreateServicingTaskDialog
                     policyId={policyId}
                     itemKey={packetKey}
@@ -142,27 +147,31 @@ export function ServicingChecklistCard({
             </li>
           );
         })}
-        {extraPackets.map((key) => {
+        {optionalPackets.map((key) => {
           const openTask = packetByKey[key];
-          const missing = missingPackets.includes(key);
+          const onFile = Boolean(packetOnFile[key]);
           return (
             <li
               key={key}
               className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-start sm:gap-3"
+              data-ff-checklist-item={key}
+              data-ff-optional-packet=""
+              data-ok={onFile ? "true" : "false"}
+              data-optional="true"
             >
               <span
                 className={`shrink-0 text-xs font-semibold uppercase ${
-                  missing ? "text-muted-foreground" : "text-[var(--ff-green)]"
+                  onFile ? "text-[var(--ff-green)]" : "text-muted-foreground"
                 }`}
               >
-                {missing ? "Missing" : "On file"}
+                {onFile ? "On file" : "Optional"}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="font-medium text-navy">{SERVICING_DOC_LABELS[key]}</div>
                 <div className="text-sm text-muted-foreground">
-                  {missing
-                    ? "Upload on this Policy — shopping docs stay on the Deal."
-                    : "Issued packet is on this record."}
+                  {onFile
+                    ? "On this Policy."
+                    : "Optional — upload on Documents when needed. Does not block completion."}
                 </div>
                 {openTask ? (
                   <p className="mt-1 text-sm">
@@ -175,14 +184,14 @@ export function ServicingChecklistCard({
                   </p>
                 ) : null}
               </div>
-              {missing && !openTask ? (
-                <CreateServicingTaskDialog
-                  policyId={policyId}
-                  itemKey={key}
-                  mode="packet"
-                  label="Create task"
-                  triggerVariant="outline"
-                />
+              {!onFile ? (
+                <Link
+                  href={`/policies/${policyId}?tab=documents`}
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                  data-ff-optional-packet-docs=""
+                >
+                  Documents
+                </Link>
               ) : null}
             </li>
           );

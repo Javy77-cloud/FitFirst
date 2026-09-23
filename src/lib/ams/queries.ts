@@ -61,6 +61,7 @@ import {
 import {
   buildServicingChecklist,
   missingServicingDocs,
+  servicingPacketOnFile,
   type ServicingCheck,
   type ServicingFile,
   type ServicingTask,
@@ -341,6 +342,7 @@ export async function loadPolicyServicing(policyId: string) {
     taskId: row.taskId,
   }));
   const missingPackets: ServicingDocKey[] = missingServicingDocs(files, policy.lineOfBusiness);
+  const packetOnFile = servicingPacketOnFile(files);
   return {
     policy,
     requests: requests.map((row) => row.request),
@@ -352,6 +354,7 @@ export async function loadPolicyServicing(policyId: string) {
     packetTasks,
     packetByKey: packetTasksByKey(packetTasks),
     missingPackets,
+    packetOnFile,
     events,
     checks,
     claims: claimDesk.claims,

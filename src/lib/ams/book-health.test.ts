@@ -24,7 +24,7 @@ describe("book health", () => {
     expect(counts).toEqual({ active: 3, lapsed: 3, other: 1, total: 7 });
   });
 
-  it("lists in-force policies that are missing dec, ID, or AOR", () => {
+  it("lists in-force policies missing auto-required packets (dec only; AOR/ID optional)", () => {
     const rows = missingDocRows(
       [
         {
@@ -62,9 +62,10 @@ describe("book health", () => {
         ],
       ]),
     );
-    expect(rows.map((row) => row.policyNumber)).toEqual(["HP-FL-88421", "HO3-ELENA-2026"]);
-    expect(rows[0].labels).toEqual(["Dec on file", "ID cards", "AOR packet"]);
-    expect(rows[1].labels).toEqual(["AOR packet"]);
+    // Elena has a dec — not missing. Hale has no files — missing dec only.
+    // AOR / ID cards are optional and never block book-health missing docs.
+    expect(rows.map((row) => row.policyNumber)).toEqual(["HP-FL-88421"]);
+    expect(rows[0].labels).toEqual(["Dec on file"]);
     expect(missingDecRows(rows).map((row) => row.policyNumber)).toEqual(["HP-FL-88421"]);
   });
 
@@ -168,9 +169,9 @@ describe("book health", () => {
     expect(agency).toEqual({ active: 2, lapsed: 1, other: 0, total: 3 });
     expect(producers.map((row) => row.ownerName)).toEqual(["Javy Rivera", "Maya Chen"]);
     expect(producers[0].counts).toEqual({ active: 1, lapsed: 1, other: 0, total: 2 });
-    expect(producers[0].missingCount).toBe(1);
+    expect(producers[0].missingCount).toBe(1); // Hale missing dec
     expect(producers[1].counts.active).toBe(1);
-    expect(producers[1].missingCount).toBe(1);
+    expect(producers[1].missingCount).toBe(0); // Elena has dec; AOR optional
   });
 
   it("filters the book to one producer without dropping agency rollup helpers", () => {

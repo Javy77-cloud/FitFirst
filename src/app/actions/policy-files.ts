@@ -7,13 +7,14 @@ import { persistFile } from "@/app/actions/documents";
 import { dismissIdCardsPrompt } from "@/app/actions/policy-mint";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { documents, policies } from "@/lib/db/schema";
+import { activities, documents, policies, reviewTasks } from "@/lib/db/schema";
 import { isUploadedFile, readUploadedBytes, uploadedFileName } from "@/lib/documents/uploaded-file";
 import { displayFilename } from "@/lib/files/upload-plan";
 import {
   DOMENIC_IORI_DEC_DOCUMENT_ID,
   DOMENIC_IORI_POLICY_ID,
 } from "@/lib/policy/dec-prompt";
+import { SERVICING_TASK_KINDS } from "@/lib/domain-ams";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -203,4 +204,53 @@ export async function ensureDomenicMintDecRetag() {
     docType: "policy_dec",
     previousDocType: doc.docType,
   };
+}
+
+
+/**
+ * One-shot: close leftover Collect AOR packet tasks on Domenic Iori Travelers.
+ * AOR is optional for Auto completion — open servicing_aor tasks must not linger
+ * as a desk blocker. Does not invent or delete document bytes.
+ */
+export async function ensureDomenicOptionalAorCleared() {
+  const open = await db
+    .select()
+    .from(reviewTasks)
+    .where(
+      and(
+        eq(reviewTasks.tenantId, DEFAULT_TENANT_ID),
+        eq(reviewTasks.policyId, DOMENIC_IORI_POLICY_ID),
+        eq(reviewTasks.kind, SERVICING_TASK_KINDS.aor),
+        eq(reviewTasks.status, "open"),
+      ),
+    );
+  if (open.length === 0) {
+    return { ok: true as const, changed: false as const, closed: 0 };
+  }
+  const now = new Date();
+  for (const task of open) {
+    await db
+      .update(reviewTasks)
+      .set({ status: "completed" })
+      .where(eq(reviewTasks.id, task.id));
+    if (task.title) {
+      await db
+        .update(activities)
+        .set({ status: "completed", updatedAt: now })
+        .where(
+          and(
+            eq(activities.tenantId, DEFAULT_TENANT_ID),
+            eq(activities.policyId, DOMENIC_IORI_POLICY_ID),
+            eq(activities.kind, "task"),
+            eq(activities.status, "open"),
+            eq(activities.title, task.title),
+          ),
+        );
+    }
+  }
+  revalidatePath(`/policies/${DOMENIC_IORI_POLICY_ID}`);
+  revalidatePath("/tasks");
+  revalidatePath("/suspense");
+  revalidatePath("/book-health");
+  return { ok: true as const, changed: true as const, closed: open.length };
 }
