@@ -373,24 +373,6 @@ export default async function PolicyDetailPage({
             contact={contact}
             account={account}
             deal={deal}
-            locationLabel={location?.label ?? location?.address1 ?? location?.street ?? null}
-            mailing={
-              contact
-                ? {
-                    address: contact.mailingAddress,
-                    city: contact.city,
-                    state: contact.state,
-                    zip: contact.zip,
-                  }
-                : account
-                  ? {
-                      address: account.mailingAddress,
-                      city: account.city,
-                      state: account.state,
-                      zip: account.zip,
-                    }
-                  : null
-            }
             sheet={(quoteSheet?.values ?? null) as Record<string, { value?: string | null } | undefined> | null}
             vehicles={vehicles}
             isAuto={isAuto}
@@ -402,6 +384,7 @@ export default async function PolicyDetailPage({
             packetOnFile={servicing?.packetOnFile ?? {}}
             interests={servicing?.interests ?? []}
             risk={risk}
+            producerDisplayName={producerDisplayName}
             readOnly={!isAdmin}
             showCommission={viewer.commissionBreakdown.read}
           />
