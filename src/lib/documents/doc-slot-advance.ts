@@ -1,4 +1,5 @@
-import { isDocumentsSourceDoc, shopLineFromSourceDoc } from "@/lib/deals/quote-docs";
+import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
+import { docBelongsToProductWindow } from "@/lib/documents/product-doc-membership";
 import { FLASH_COPY } from "@/lib/flash";
 
 /**
@@ -181,8 +182,7 @@ export function filledDocTypesForLine(
   const found = new Set<string>();
   for (const doc of docs ?? []) {
     if (!doc || !isDocumentsSourceDoc(doc)) continue;
-    const tagged = shopLineFromSourceDoc(doc);
-    if (wanted && tagged && tagged !== wanted) continue;
+    if (wanted && !docBelongsToProductWindow(doc, { shopLine: wanted })) continue;
     const type = String(doc.docType ?? "").trim();
     if (type) found.add(type);
   }

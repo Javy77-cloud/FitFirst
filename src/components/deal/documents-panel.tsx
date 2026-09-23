@@ -10,6 +10,11 @@ import type { Document, ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db
 import type { ShopLine } from "@/lib/domain";
 import type { SheetProduct } from "@/lib/quote-sheet/products";
 import { listWorksheetSourceDocs } from "@/lib/documents/deal-docs-save";
+import {
+  filterDocsForProductWindow,
+  libraryDocsNotInProductWindow,
+} from "@/lib/documents/product-doc-membership";
+import { LinkDealDocToProduct } from "@/components/deal/link-deal-doc-to-product";
 import { inspectionUploadIds } from "@/lib/quote-sheet/home-inspections";
 import type { DocSlotProduct } from "@/lib/documents/doc-slot-advance";
 import { blobStoreReady } from "@/lib/files/object-store";
@@ -73,7 +78,14 @@ export function DocumentsPanel({
   quotesDone?: boolean;
   packageProducts?: readonly DocSlotProduct[];
 }) {
+  const productWindow = {
+    shopLine: sheetLine,
+    quotingForm: quotingForm ?? sheetQuotingForm ?? null,
+  };
   const { sourceDocs, lineDocs, otherSourceDocs } = listWorksheetSourceDocs(docs);
+  const windowLineDocs = filterDocsForProductWindow(lineDocs, productWindow);
+  const windowOtherDocs = filterDocsForProductWindow(otherSourceDocs, productWindow);
+  const libraryCandidates = libraryDocsNotInProductWindow(sourceDocs, productWindow);
   const inspectionUploads = inspectionUploadIds(
     asList(docs).map((row) => ({
       id: row.id,
@@ -81,7 +93,7 @@ export function DocumentsPanel({
       filename: row.filename,
     })),
   );
-  const lineGroups = asList(groupDocsByLine(lineDocs));
+  const lineGroups = asList(groupDocsByLine(windowLineDocs));
 
   return (
     <DealDocsErrorBoundary>
@@ -102,7 +114,7 @@ export function DocumentsPanel({
                     </p>
                     <ul className="mt-1 space-y-1.5">
                       {group.docs.map((doc) => (
-                        <SourceFileRow key={doc.id} doc={doc} dealId={dealId} />
+                        <SourceFileRow key={doc.id} doc={doc} dealId={dealId} line={sheetLine} quotingForm={quotingForm ?? sheetQuotingForm} />
                       ))}
                     </ul>
                   </div>
@@ -110,13 +122,30 @@ export function DocumentsPanel({
               </div>
             ) : null}
 
-            {otherSourceDocs.length > 0 ? (
+            {windowOtherDocs.length > 0 ? (
               <ul className="mb-2 space-y-1.5">
-                {otherSourceDocs.map((doc) => (
-                  <SourceFileRow key={doc.id} doc={doc} dealId={dealId} />
+                {windowOtherDocs.map((doc) => (
+                  <SourceFileRow key={doc.id} doc={doc} dealId={dealId} line={sheetLine} quotingForm={quotingForm ?? sheetQuotingForm} />
                 ))}
               </ul>
             ) : null}
+
+            {lineGroups.length === 0 && windowOtherDocs.length === 0 ? (
+              <p className="mb-2 text-helper text-muted-foreground" data-ff-product-docs-empty="">
+                No files on this product yet. Upload here or link one from the deal library.
+              </p>
+            ) : null}
+            <LinkDealDocToProduct
+              dealId={dealId}
+              line={sheetLine}
+              quotingForm={quotingForm ?? sheetQuotingForm}
+              candidates={libraryCandidates.map((doc) => ({
+                id: doc.id,
+                filename: doc.filename,
+                docType: doc.docType,
+                tags: Array.isArray(doc.tags) ? doc.tags : [],
+              }))}
+            />
 
             <SourceDocsUpload
               dealId={dealId}

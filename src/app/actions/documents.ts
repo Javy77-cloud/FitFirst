@@ -12,6 +12,11 @@ import { flashAction } from "@/lib/flash-action";
 import { dealDocumentsTabHref, type DealDocumentsSaveResult } from "@/lib/documents/deal-docs-save";
 import { isRedirectError } from "@/lib/lifecycle/shop";
 import { formTag, leadDocFormById, lineTag } from "@/lib/leads/line-documents";
+import {
+  linkDocToProductTags,
+  membershipTagsForUpload,
+  unlinkDocFromProductTags,
+} from "@/lib/documents/product-doc-membership";
 import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
 import { coerceDealUploadDocType, matchDealLookup, slotForDocType } from "@/lib/deals/lookup";
 import {
@@ -287,7 +292,11 @@ export async function persistDealSourceUploads(
       hasFolder: Boolean(resolvedFolder),
     });
     const lineRaw = String(formData.get("line") ?? "").trim();
-    const lineTags = dealId && isShopLine(lineRaw) ? [lineTag(lineRaw)] : [];
+    const quotingFormRaw = String(formData.get("quotingForm") ?? formData.get("form") ?? "").trim();
+    const lineTags =
+      dealId && isShopLine(lineRaw)
+        ? membershipTagsForUpload({ shopLine: lineRaw, quotingForm: quotingFormRaw || null })
+        : [];
     let doc: Awaited<ReturnType<typeof persistFile>> | null = null;
     try {
       doc = await persistFile({
@@ -452,7 +461,10 @@ export async function saveDealDocumentFromBlob(formData: FormData): Promise<Deal
   const docType =
     rawType && rawType !== "auto" ? coerceDealUploadDocType(rawType) : coerceDealUploadDocType(inferDocType(filename, rawType));
   const lineRaw = String(formData.get("line") ?? "").trim();
-  const lineTags = isShopLine(lineRaw) ? [lineTag(lineRaw)] : [];
+  const quotingFormRaw = String(formData.get("quotingForm") ?? formData.get("form") ?? "").trim();
+  const lineTags = isShopLine(lineRaw)
+    ? membershipTagsForUpload({ shopLine: lineRaw, quotingForm: quotingFormRaw || null })
+    : [];
   try {
     const doc = await persistFile({
       dealId,
@@ -1284,3 +1296,48 @@ export async function setDocumentTermRoleInline(input: {
   return { ok: true };
 }
 
+
+function dealDocumentsReturnHref(formData: FormData, dealId: string | null | undefined): string | null {
+  const returnTo = String(formData.get("returnTo") ?? "").trim();
+  if (returnTo.startsWith("/") && !returnTo.startsWith("//")) return returnTo;
+  const id = (dealId ?? "").trim();
+  if (!id) return null;
+  const line = String(formData.get("line") ?? "").trim();
+  return dealDocumentsTabHref(id, line || null);
+}
+
+/** Unlink a deal file from the active product window — does not delete the file. */
+export async function unlinkDealDocumentFromProduct(formData: FormData) {
+  const documentId = String(formData.get("documentId") ?? "").trim();
+  if (!documentId) return;
+  const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
+  if (!doc || !doc.dealId) return;
+  const lineRaw = String(formData.get("line") ?? "").trim();
+  const quotingForm = String(formData.get("quotingForm") ?? formData.get("form") ?? "").trim();
+  const nextTags = unlinkDocFromProductTags(doc.tags, {
+    shopLine: lineRaw || null,
+    quotingForm: quotingForm || null,
+  });
+  await db.update(documents).set({ tags: nextTags }).where(eq(documents.id, documentId));
+  revalidateDocumentPaths(doc);
+  const href = dealDocumentsReturnHref(formData, doc.dealId);
+  if (href) flashAction(href, "document-unlinked-from-product");
+}
+
+/** Link an existing deal-library file into the active product window. */
+export async function linkDealDocumentToProduct(formData: FormData) {
+  const documentId = String(formData.get("documentId") ?? "").trim();
+  if (!documentId) return;
+  const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
+  if (!doc || !doc.dealId) return;
+  const lineRaw = String(formData.get("line") ?? "").trim();
+  const quotingForm = String(formData.get("quotingForm") ?? formData.get("form") ?? "").trim();
+  const nextTags = linkDocToProductTags(doc.tags, {
+    shopLine: lineRaw || null,
+    quotingForm: quotingForm || null,
+  });
+  await db.update(documents).set({ tags: nextTags }).where(eq(documents.id, documentId));
+  revalidateDocumentPaths(doc);
+  const href = dealDocumentsReturnHref(formData, doc.dealId);
+  if (href) flashAction(href, "document-linked-to-product");
+}

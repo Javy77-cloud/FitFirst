@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { extractExisting } from "@/app/actions/documents";
+import { extractExisting, unlinkDealDocumentFromProduct } from "@/app/actions/documents";
 import { retagDocumentAsDeclarationAction } from "@/app/actions/declaration";
 import { isDeclarationDocType } from "@/lib/policy/dec-prompt";
 import { FileActionMenu } from "@/components/documents/file-action-menu";
@@ -18,9 +18,13 @@ import type { Document } from "@/lib/db/schema";
 export function SourceFileRow({
   doc,
   dealId,
+  line,
+  quotingForm,
 }: {
   doc: Document;
   dealId: string;
+  line?: string | null;
+  quotingForm?: string | null;
 }) {
   const [gone, setGone] = useState(false);
   if (gone) return null;
@@ -48,8 +52,11 @@ export function SourceFileRow({
         docType={doc.docType}
         tags={doc.tags}
         dealId={dealId}
+        line={line}
+        quotingForm={quotingForm}
         className="min-w-0 flex-1"
         onDeleted={() => setGone(true)}
+        onUnlinked={() => setGone(true)}
       >
         {photo ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -63,6 +70,17 @@ export function SourceFileRow({
           {listLabel}
         </span>
       </FileActionMenu>
+      {line ? (
+        <form action={unlinkDealDocumentFromProduct}>
+          <input type="hidden" name="documentId" value={doc.id} />
+          <input type="hidden" name="dealId" value={dealId} />
+          <input type="hidden" name="line" value={line} />
+          {quotingForm ? <input type="hidden" name="quotingForm" value={quotingForm} /> : null}
+          <Button type="submit" variant="ghost" size="xs" data-ff-unlink-from-product="">
+            Remove from product
+          </Button>
+        </form>
+      ) : null}
       {!isDeclarationDocType(doc.docType) ? (
         <form action={retagDocumentAsDeclarationAction}>
           <input type="hidden" name="documentId" value={doc.id} />
