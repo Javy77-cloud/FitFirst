@@ -562,7 +562,8 @@ async function seedOlympus() {
   ];
   const values = {
     name: current && isOlympusName(current.name) ? current.name : OLYMPUS_CARRIER_NAME,
-    writtenLines: addLines(current?.writtenLines, ["HO"]),
+    // Javy: Olympus does not write flood — strip stale FLOOD from desk rows.
+    writtenLines: addLines(current?.writtenLines, ["HO"]).filter((line) => line !== "FLOOD"),
     portalStatus: "open" as const,
     portalLogin: current?.portalLogin?.trim() || OLYMPUS_HO_APPETITE.placement,
     website: current?.website?.trim() || OLYMPUS_HO_APPETITE.website,

@@ -264,3 +264,66 @@ describe("shop-fits wiring", () => {
     expect(home.matches.map((row) => row.carrierId)).toEqual(["home-co"]);
   });
 });
+
+describe("Flood Markets first-wave gate", () => {
+  it("drops HO false writers when Neptune/Selective/Tower Hill/Wright are in the rule set", () => {
+    const base = fixtureRules(true)[0];
+    function writer(
+      line: "HO" | "FLOOD",
+      id: string,
+      name: string,
+      written: string[],
+    ): AppetiteRuleInput {
+      return {
+        ...base,
+        carrierId: id,
+        carrierName: name,
+        lineOfBusiness: line,
+        writtenLines: written,
+        minCovA: null,
+        maxCovA: null,
+        minYearBuilt: null,
+        maxRoofAge: null,
+        allowedRoofCoverings: null,
+        minMilesToCoast: null,
+        maxMilesToCoast: null,
+        mobileAllowed: true,
+        allowedConstruction: null,
+        allowedOccupancy: null,
+        allowedCounties: null,
+        excludedCounties: null,
+        countyMinCovA: null,
+        portalStatus: "open",
+        dontWriteNotes: null,
+        appetiteNotes: null,
+        appointed: true,
+      };
+    }
+    const result = evaluateShopFits({
+      risk: ortega,
+      dealLine: "FLOOD",
+      rules: [
+        writer("FLOOD", "so", "Southern Oak", ["HO", "FLOOD"]),
+        writer("FLOOD", "oly", "Olympus", ["HO", "FLOOD"]),
+        writer("FLOOD", "nep", "Neptune", ["FLOOD"]),
+        writer("FLOOD", "sel", "Selective", ["FLOOD"]),
+        writer("FLOOD", "th", "Tower Hill", ["HO", "FLOOD"]),
+        writer("FLOOD", "wr", "Wright National", ["FLOOD"]),
+      ],
+      prior: [],
+      sheetValues: {
+        flood_zone: { value: "X", status: "confirmed", source: "agent" },
+      },
+      asOfYear: 2026,
+    });
+    expect(result.matches.map((row) => row.carrierName)).toEqual([
+      "Neptune",
+      "Selective",
+      "Tower Hill",
+      "Wright National",
+    ]);
+    expect(result.matches.some((row) => /Southern Oak|Olympus/i.test(row.carrierName))).toBe(
+      false,
+    );
+  });
+});
