@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   buildPropertyProtectionDisplay,
+  propertyProtectionFilledCount,
   propertyProtectionHasData,
 } from "@/lib/policy/property-protection";
 
@@ -10,12 +11,14 @@ function source(file: string) {
 }
 
 describe("Property & protection section wiring", () => {
-  it("is collapsed by default and only mounts for homeowners with snapshot data", () => {
+  it("is collapsed by default and always mounts for homeowners (incl. empty)", () => {
     const section = source("src/components/policy/property-protection-section.tsx");
     expect(section).toMatch(/Property & protection/);
     expect(section).toMatch(/defaultOpen=\{false\}/);
     expect(section).toMatch(/data-ff="policy-property-protection"/);
-    expect(section).toMatch(/if \(!groups\.length\) return null/);
+    expect(section).toMatch(/\$\{filled\} on file/);
+    expect(section).toMatch(/Fills at mint from Risk Profile \/ DEC\./);
+    expect(section).not.toMatch(/if \(!groups\.length\) return null/);
 
     const overview = source("src/components/policy/tabs/overview-tab.tsx");
     expect(overview).toMatch(/PropertyProtectionSection/);
@@ -34,8 +37,9 @@ describe("Property & protection section wiring", () => {
     expect(schema).toMatch(/propertyProtection: jsonb\("property_protection"\)/);
   });
 
-  it("hides the section when snapshot is empty and shows groups when data exists", () => {
+  it("shows empty shell (0 on file) and groups when data exists", () => {
     expect(propertyProtectionHasData({ values: {} })).toBe(false);
+    expect(propertyProtectionFilledCount({ values: {} })).toBe(0);
     expect(buildPropertyProtectionDisplay({ values: {} })).toEqual([]);
     const groups = buildPropertyProtectionDisplay({
       values: { roof_year: "2020", electrical_year: "2010", smoke_detectors: "Yes" },
@@ -44,5 +48,8 @@ describe("Property & protection section wiring", () => {
     expect(groups.some((g) => g.id === "wind")).toBe(true);
     expect(groups.some((g) => g.id === "four_point")).toBe(true);
     expect(groups.some((g) => g.id === "protection")).toBe(true);
+    expect(propertyProtectionFilledCount({
+      values: { roof_year: "2020", electrical_year: "2010", smoke_detectors: "Yes" },
+    })).toBe(3);
   });
 });
