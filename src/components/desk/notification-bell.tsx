@@ -16,6 +16,7 @@ import {
   notificationHref,
   recentNotifications,
 } from "@/lib/desk/notifications";
+import { PANEL_LANE_META, panelLaneHref } from "@/lib/notifications/lanes";
 import { cn } from "@/lib/utils";
 
 export function NotificationBell({
@@ -101,6 +102,27 @@ export function NotificationBell({
           >
             {NOTIFICATION_BOARD_LABEL}
           </Link>
+          <div
+            className="flex shrink-0 gap-1 border-b border-border px-2 py-1.5"
+            data-ff-bell-lane-links=""
+          >
+            <Link
+              href={panelLaneHref("work")}
+              data-ff-bell-lane="work"
+              onClick={() => setOpen(false)}
+              className="flex-1 rounded-md px-2 py-1.5 text-center text-xs font-semibold text-navy hover:bg-secondary"
+            >
+              {PANEL_LANE_META.work.label}
+            </Link>
+            <Link
+              href={panelLaneHref("inbox")}
+              data-ff-bell-lane="inbox"
+              onClick={() => setOpen(false)}
+              className="flex-1 rounded-md px-2 py-1.5 text-center text-xs font-semibold text-navy hover:bg-secondary"
+            >
+              {PANEL_LANE_META.inbox.label}
+            </Link>
+          </div>
           <p className="shrink-0 border-b border-border px-3 py-2 text-xs text-muted-foreground">
             {NOTIFICATION_IN_APP_COPY}
           </p>
