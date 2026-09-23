@@ -46,9 +46,9 @@ describe("inbox compose shared upgrade", () => {
   it("reuses one compose editor — does not fork a second body editor for Inbox", () => {
     expect(inboxCompose).toMatch(/from \"@\/components\/comms\/quick-comms-email-compose\"/);
     expect(board).toMatch(/QuickCommsEmailCompose/);
-    expect(compose).toMatch(/max-h-\[56vh\]/);
-    expect(compose).toMatch(/w-\[min\(90vw,42rem\)\]/);
-    expect(compose).toMatch(/sm:max-w-\[42rem\]/);
+    expect(compose).toMatch(/max-h-\[min\(80vh,56rem\)\]/);
+    expect(compose).toMatch(/w-\[min\(92vw,74rem\)\]/);
+    expect(compose).toMatch(/sm:max-w-\[74rem\]/);
     expect(compose).not.toMatch(/sm:max-w-md/);
     expect(compose).not.toMatch(/28rem/);
     expect(compose).toMatch(/contentEditable/);
@@ -59,16 +59,19 @@ describe("inbox compose shared upgrade", () => {
     expect(inboxCompose).not.toMatch(/contentEditable/);
   });
 
-  it("searches contacts and accounts live for To and still allows raw email", () => {
+  it("searches contacts, leads, deals, and accounts live for To and still allows raw email", () => {
     expect(compose).toMatch(/toMode/);
     expect(compose).toMatch(/searchComposeRecipients/);
     expect(compose).toMatch(/data-ff-compose-to-search/);
     expect(compose).toMatch(/data-ff-compose-recipient-hits/);
     expect(compose).toMatch(/looksLikeEmail/);
     expect(actions).toMatch(/export async function searchComposeRecipients/);
-    expect(actions).toMatch(/kind: \"contact\" \| \"account\"/);
+    expect(actions).toMatch(/kind: \"contact\" \| \"account\" \| \"deal\" \| \"lead\"/);
     expect(actions).toMatch(/from\(contacts\)/);
     expect(actions).toMatch(/from\(accounts\)/);
+    expect(actions).toMatch(/from\(leads\)/);
+    expect(actions).toMatch(/from\(deals\)/);
+    expect(actions).toMatch(/resolvePartyEmail/);
   });
 
   it("leaves Log to activity and Assign to agent alone", () => {

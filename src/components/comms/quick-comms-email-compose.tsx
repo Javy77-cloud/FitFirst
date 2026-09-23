@@ -93,7 +93,7 @@ export function QuickCommsEmailCompose({
 
   useEffect(() => {
     if (!open) return;
-    setSubject(initialSubject ?? (toMode === "search" ? "" : `Follow-up · ${contactNameProp || "client"}`));
+    setSubject(initialSubject ?? (toMode === "search" && !contactNameProp ? "" : `Follow-up · ${contactNameProp || "client"}`));
     setFiles([]);
     setError(null);
     setToDraft(toAddressProp);
@@ -108,7 +108,7 @@ export function QuickCommsEmailCompose({
         setSignature(sig);
         const greeting =
           initialBody?.trim() ||
-          (toMode === "search"
+          (toMode === "search" && !contactNameProp
             ? ""
             : `Hi ${contactNameProp || "there"},\n\n`);
         const withSig =
@@ -127,7 +127,9 @@ export function QuickCommsEmailCompose({
           if (editorRef.current) {
             editorRef.current.innerText =
               initialBody?.trim() ||
-              (toMode === "search" ? "" : `Hi ${contactNameProp || "there"},\n\n`);
+              (toMode === "search" && !contactNameProp
+                ? ""
+                : `Hi ${contactNameProp || "there"},\n\n`);
           }
         });
       });
@@ -191,8 +193,10 @@ export function QuickCommsEmailCompose({
     setToDraft(hit.email?.trim() || "");
     setPickedName(hit.name);
     setRelated({
-      contactId: hit.kind === "contact" ? hit.id : null,
-      accountId: hit.kind === "account" ? hit.id : null,
+      contactId: hit.kind === "contact" ? hit.id : hit.contactId ?? null,
+      accountId: hit.kind === "account" ? hit.id : hit.accountId ?? null,
+      leadId: hit.kind === "lead" ? hit.id : hit.leadId ?? null,
+      dealId: hit.kind === "deal" ? hit.id : hit.dealId ?? null,
     });
     setHits([]);
     setListOpen(false);
@@ -211,7 +215,7 @@ export function QuickCommsEmailCompose({
     const html = editorRef.current?.innerHTML ?? "";
     const plain = htmlToPlain(html);
     if (!toAddress.trim()) {
-      setError(toMode === "search" ? "Add a To address or pick a contact/account." : "No email on this contact.");
+      setError(toMode === "search" ? "Add a To address or pick a contact, lead, deal, or account." : "No email on this contact.");
       return;
     }
     if (!looksLikeEmail(toAddress)) {
@@ -255,7 +259,7 @@ export function QuickCommsEmailCompose({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "flex max-h-[56vh] w-[min(90vw,42rem)] flex-col gap-3 overflow-hidden p-4 sm:max-w-[42rem]",
+          "flex max-h-[min(80vh,56rem)] w-[min(92vw,74rem)] flex-col gap-3 overflow-hidden p-4 sm:max-w-[74rem]",
         )}
         data-ff-qc-email-compose=""
       >
@@ -276,7 +280,7 @@ export function QuickCommsEmailCompose({
                   onChange={(event) => onToChange(event.target.value)}
                   onFocus={() => setListOpen(hits.length > 0)}
                   className="mt-1 h-8"
-                  placeholder="Search contacts or accounts, or type an email"
+                  placeholder="Search contacts, leads, deals, or accounts — or type an email"
                   autoComplete="off"
                   data-ff-qc-compose-to=""
                   data-ff-compose-to-search=""
@@ -297,7 +301,13 @@ export function QuickCommsEmailCompose({
                         >
                           <span className="font-medium text-navy">{hit.name}</span>
                           <span className="text-[11px] text-muted-foreground">
-                            {hit.kind === "contact" ? "Contact" : "Account"}
+                            {hit.kind === "contact"
+                              ? "Contact"
+                              : hit.kind === "lead"
+                                ? "Lead"
+                                : hit.kind === "deal"
+                                  ? "Deal"
+                                  : "Account"}
                             {hit.email ? ` · ${hit.email}` : " · no email"}
                           </span>
                         </button>
@@ -305,9 +315,17 @@ export function QuickCommsEmailCompose({
                     ))}
                   </ul>
                 ) : null}
-                {pickedName && (related.contactId || related.accountId) ? (
+                {pickedName && (related.contactId || related.accountId || related.leadId || related.dealId) ? (
                   <p className="mt-1 text-[11px] text-muted-foreground" data-ff-compose-linked="">
-                    Linked {related.contactId ? "contact" : "account"}: {pickedName}
+                    Linked{" "}
+                    {related.contactId
+                      ? "contact"
+                      : related.leadId
+                        ? "lead"
+                        : related.dealId
+                          ? "deal"
+                          : "account"}
+                    : {pickedName}
                   </p>
                 ) : null}
               </>
@@ -381,7 +399,7 @@ export function QuickCommsEmailCompose({
               role="textbox"
               aria-label="Email body"
               data-ff-qc-compose-body=""
-              className="mt-1 min-h-[8rem] max-h-[18vh] overflow-y-auto rounded-md border border-input bg-card px-2 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="mt-1 min-h-[12rem] max-h-[min(36vh,22rem)] overflow-y-auto rounded-md border border-input bg-card px-2 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onPaste={onPaste}
               suppressContentEditableWarning
             />

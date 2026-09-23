@@ -37,9 +37,13 @@ describe("quick comms email upgrade", () => {
     expect(board).toMatch(/setEmailGate\("here"\)/);
   });
 
+  it("falls back to searchable To when the record has no email", () => {
+    expect(board).toMatch(/toMode=\{\(contactEmail \?\? ""\)\.trim\(\) \? "fixed" : "search"\}/);
+  });
+
   it("ships a compact same-page compose with formatting, attach, paste, signature", () => {
     expect(board).toMatch(/QuickCommsEmailCompose/);
-    expect(compose).toMatch(/max-h-\[50vh\]/);
+    expect(compose).toMatch(/max-h-\[min\(80vh,56rem\)\]/);
     expect(compose).toMatch(/contentEditable/);
     expect(compose).toMatch(/insertImage/);
     expect(compose).toMatch(/composeFile/);
