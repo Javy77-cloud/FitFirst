@@ -23,5 +23,9 @@ describe("docTypeUsesGemini photos", () => {
     expect(docTypeUsesGemini("inspection")).toBe(true);
     expect(docTypeUsesGemini("report")).toBe(true);
     expect(docTypeUsesGemini("dec")).toBe(true);
+    expect(docTypeUsesGemini("wind_mit")).toBe(true);
+    expect(docTypeUsesGemini("alarm_certificate")).toBe(true);
+    expect(docTypeUsesGemini("certificate")).toBe(true);
+    expect(docTypeUsesGemini("other")).toBe(false);
   });
 });

@@ -28,18 +28,22 @@ export function parseNamedInsured(text: string): ParsedInsured | null {
   };
 }
 
-export function inferDocType(filename: string, declared?: string | null): DocType {
-  const declaredType = declared?.trim().toLowerCase();
-  if (
-    declaredType &&
-    ((SOURCE_DOC_TYPES as readonly string[]).includes(declaredType) ||
-      declaredType === "quote" ||
-      declaredType === "proposal" ||
-      declaredType === "signed_app" ||
-      declaredType === "other")
-  ) {
-    return (declaredType === "quote" ? "quote_pdf" : declaredType) as DocType;
-  }
+/**
+ * Blank, "auto", and "other" do not lock the type. A picked dec / inspection / wind mit still wins
+ * over the filename so a flood policy saved as inspection stays inspection.
+ */
+function declaredTypeLocksFilename(declaredType: string): boolean {
+  if (!declaredType || declaredType === "auto" || declaredType === "other") return false;
+  return (
+    (SOURCE_DOC_TYPES as readonly string[]).includes(declaredType) ||
+    declaredType === "quote" ||
+    declaredType === "proposal" ||
+    declaredType === "signed_app"
+  );
+}
+
+/** Specific filename rules. Null when nothing in the name identifies the packet. */
+function docTypeFromFilename(filename: string): DocType | null {
   const name = filename.toLowerCase();
   if (/signed[-_ ]?app|application/.test(name)) return "signed_app";
   if (/permit/.test(name)) return "permits";
@@ -50,9 +54,25 @@ export function inferDocType(filename: string, declared?: string | null): DocTyp
   if (/wind/.test(name)) return "wind_mit";
   if (/4[-_ ]?point|four[-_ ]?point/.test(name)) return "four_point";
   if (/floor[-_ ]?plan/.test(name)) return "floor_plan";
+  // Alarm / ADT before inspection so "alarm inspection" is not a generic inspection.
+  // Certificate stays after dec so a declarations page is not retitled as an alarm cert.
+  if (/alarm|\badt\b|central[-_ ]?station|burglar/.test(name)) return "alarm_certificate";
   if (/inspect/.test(name)) return "inspection";
   if (/\.(png|jpe?g|gif|webp|tiff?|heic|bmp)$/.test(name)) return "photo";
   if (/dec|declaration/.test(name)) return "dec";
+  if (/\bcertificates?\b/.test(name)) return "alarm_certificate";
+  return null;
+}
+
+export function inferDocType(filename: string, declared?: string | null): DocType {
+  const declaredType = declared?.trim().toLowerCase() ?? "";
+  if (declaredTypeLocksFilename(declaredType)) {
+    return (declaredType === "quote" ? "quote_pdf" : declaredType) as DocType;
+  }
+  const fromName = docTypeFromFilename(filename);
+  if (fromName) return fromName;
+  // An explicit Other with no filename signal stays Other. Blank ingest still defaults to a dec.
+  if (declaredType === "other") return "other";
   return "dec";
 }
 
@@ -66,7 +86,14 @@ export function isQuoteAttachment(docType: string, filename?: string): boolean {
   return Boolean(filename && /(?:^|[^a-z])quote(?:[^a-z]|$)/i.test(filename));
 }
 
-const HO_SOURCE_TYPES = new Set(["dec", "wind_mit", "four_point", "inspection", "current_policy"]);
+const HO_SOURCE_TYPES = new Set([
+  "dec",
+  "wind_mit",
+  "four_point",
+  "inspection",
+  "alarm_certificate",
+  "current_policy",
+]);
 
 /** Dec / wind mit / 4-point stay on the homeowners sheet unless they are clearly another line. */
 export function sourceDocFillsHome(docType: string): boolean {

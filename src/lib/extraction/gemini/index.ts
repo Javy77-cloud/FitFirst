@@ -45,6 +45,7 @@ export function docTypeUsesGemini(docType?: string | null): boolean {
       "related_insured",
       "photo",
       "inspection",
+      "alarm_certificate",
       "report",
       "cancellation",
       "aor",
@@ -60,5 +61,6 @@ export function docTypeUsesGemini(docType?: string | null): boolean {
   }
   if (t.includes("dec") || t.includes("declar") || t.includes("policy")) return true;
   if (t.includes("photo") || t.includes("inspect") || t.includes("report")) return true;
+  if (t.includes("alarm") || t === "certificate" || t.includes("certificate")) return true;
   return false;
 }
