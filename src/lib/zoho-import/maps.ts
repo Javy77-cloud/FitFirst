@@ -11,6 +11,8 @@ import {
   isSystemZohoField,
   lookupId,
   lookupName,
+  lookupZohoRef,
+  normalizeZohoId,
   parseTermMonths,
   presentKeys,
   splitName,
@@ -200,6 +202,7 @@ const CONTACT_MAPPED = [
 
 const ACCOUNT_MAPPED = [
   "Account_Name",
+  "Legal_Business_Name",
   "DBA",
   "Business_Email",
   "Email",
@@ -216,8 +219,14 @@ const ACCOUNT_MAPPED = [
   "Workers_Comp_Class_Code",
   "Claims_Summary",
   "Industry1",
+  "Industry",
   "Client_Since",
   "Primary_Contact",
+  "Primary_Contact_id",
+  "Primary_Business_Address_Street_Address",
+  "Primary_Business_Address_City",
+  "Primary_Business_Address_State_Province",
+  "Primary_Business_Address_Zip_Postal_Code",
   "Mailing_Address",
   "Mailing_Address_Street_Address",
   "Mailing_Address_City",
@@ -302,28 +311,45 @@ const VENDOR_MAPPED = [
 
 const POLICY_MAPPED = [
   "Name",
+  "Policy_Name",
   "Policy_Number",
   "Status",
+  "Policy_Status",
   "Policy_Type",
   "Policy_Sub_Type",
   "Insurance_Type",
   "Effective_Date",
   "Policy_Term",
   "AFA_P_C_Annual_Premium",
+  "Policy_Premium",
   "Gross_Written_Premium",
   "Premium_Frequency",
   "Selling_Agency",
   "Policy_Notes",
   "Contact",
+  "Contact_id",
   "Insured_1",
+  "Insured_1_id",
   "Business",
+  "Business_id",
   "Related_Deal",
+  "Related_Deal_id",
   "Source_Deal",
+  "Source_Deal_id",
   "Writing_Carrier",
+  "Carrier",
+  "Carrier_id",
   "Commission4",
+  "Commission",
+  "P_C_Commission",
+  "Initial_Commission",
+  "MONTHLY_COMMISSION",
+  "TOTAL_ANNUAL_COMMISSION",
   "Number_of_Insured",
   "Open_Enrollment_Start",
+  "OEP_Start",
   "X_Date",
+  "Expiration_Renewal",
 ];
 
 const TASK_MAPPED = [
@@ -385,8 +411,8 @@ function mapLineOfBusiness(parts: Array<string | null>): string {
   if (/\blife\b/.test(blob)) return "LIFE";
   if (/\bhealth|medicare|supple/.test(blob)) return "HEALTH";
   if (/\brv\b/.test(blob)) return "RV";
-  if (/\bdp|dwelling\b/.test(blob)) return "DP";
-  if (/\bho3|ho-3|homeowners|home\b/.test(blob)) return "HO";
+  if (/\bho3|ho-3|homeowners|\bhome\b/.test(blob)) return "HO";
+  if (/\bdp\d?\b|dwelling/.test(blob)) return "DP";
   if (/\bcommercial\b/.test(blob)) return "GL";
   return "HO";
 }
@@ -432,7 +458,7 @@ export function mapContact(record: ZohoRecord, zohoId: string): MappedContact {
 }
 
 export function mapAccount(record: ZohoRecord, zohoId: string): MappedAccount {
-  const name = firstText(record, ["Account_Name"]) ?? "Unnamed business";
+  const name = firstText(record, ["Account_Name", "Legal_Business_Name"]) ?? "Unnamed business";
   return {
     zohoId,
     name,
@@ -445,10 +471,10 @@ export function mapAccount(record: ZohoRecord, zohoId: string): MappedAccount {
     city: firstText(record, ["Mailing_Address_City"]),
     state: firstText(record, ["Mailing_Address_State_Province"]),
     zip: firstText(record, ["Mailing_Address_Zip_Postal_Code"]),
-    primaryAddress1: firstText(record, ["Address_1_Street_Address", "Address_1"]),
-    primaryCity: firstText(record, ["Address_1_City"]),
-    primaryState: firstText(record, ["Address_1_State_Province"]),
-    primaryZip: firstText(record, ["Address_1_Zip_Postal_Code"]),
+    primaryAddress1: firstText(record, ["Address_1_Street_Address", "Address_1", "Primary_Business_Address_Street_Address"]),
+    primaryCity: firstText(record, ["Address_1_City", "Primary_Business_Address_City"]),
+    primaryState: firstText(record, ["Address_1_State_Province", "Primary_Business_Address_State_Province"]),
+    primaryZip: firstText(record, ["Address_1_Zip_Postal_Code", "Primary_Business_Address_Zip_Postal_Code"]),
     notes: firstText(record, ["Description", "Claims_Summary"]),
     fein: firstText(record, ["FEIN"]),
     employeeCount: asNumber(record.Full_Time_Employees),
@@ -457,9 +483,9 @@ export function mapAccount(record: ZohoRecord, zohoId: string): MappedAccount {
       asNumber(record.Total_Annual_Payroll) != null ? String(asNumber(record.Total_Annual_Payroll)) : null,
     yearsInBusiness: asNumber(record.Years_in_Business),
     wcClassCode: firstText(record, ["Workers_Comp_Class_Code"]),
-    operations: firstText(record, ["Industry1", "Description"]),
+    operations: firstText(record, ["Industry1", "Industry", "Description"]),
     clientSince: asDate(record.Client_Since),
-    officerZohoId: lookupId(record.Primary_Contact),
+    officerZohoId: lookupZohoRef(record, "Primary_Contact", "Primary_Contact_id"),
     unmatched: unmatchedOf(record, ACCOUNT_MAPPED),
   };
 }
@@ -546,22 +572,28 @@ export function mapPolicy(record: ZohoRecord, zohoId: string): MappedPolicy | { 
   if (!effective) return { skip: "Effective_Date is required.", unmatched: unmatchedOf(record, POLICY_MAPPED) };
   const termMonths = parseTermMonths(record.Policy_Term);
   const expiration = asDate(record.X_Date) ?? asDate(record.Expiration_Renewal) ?? addMonthsSafe(effective, termMonths);
+  // Prefer Policy_Type / Insurance_Type over Sub_Type so Home+DP3 stays HO when type says Home.
   const line = mapLineOfBusiness([
-    asText(record.Policy_Sub_Type),
     asText(record.Policy_Type),
     asText(record.Insurance_Type),
-    asText(record.Name),
+    asText(record.Policy_Sub_Type),
+    asText(record.Name) ?? asText(record.Policy_Name),
   ]);
-  const premium = asNumber(record.AFA_P_C_Annual_Premium) ?? asNumber(record.Gross_Written_Premium);
+  const premium =
+    asNumber(record.Policy_Premium) ??
+    asNumber(record.AFA_P_C_Annual_Premium) ??
+    asNumber(record.Gross_Written_Premium);
+  const commissionPct =
+    asNumber(record.P_C_Commission) ?? asNumber(record.Commission4) ?? asNumber(record.Commission);
   return {
-    zohoId,
+    zohoId: normalizeZohoId(zohoId) ?? zohoId,
     policyNumber: number,
     lineOfBusiness: line,
     formType: firstText(record, ["Policy_Sub_Type"]),
     policyType: firstText(record, ["Policy_Type"]),
     policySubType: firstText(record, ["Policy_Sub_Type"]),
     insuranceType: firstText(record, ["Insurance_Type"]),
-    status: mapPolicyStatus(firstText(record, ["Status"])),
+    status: mapPolicyStatus(firstText(record, ["Policy_Status", "Status"])),
     effectiveDate: effective,
     expirationDate: expiration,
     premium: premium != null ? String(premium) : null,
@@ -572,14 +604,19 @@ export function mapPolicy(record: ZohoRecord, zohoId: string): MappedPolicy | { 
     sellingAgency: firstText(record, ["Selling_Agency"]),
     notes: firstText(record, ["Policy_Notes"]),
     producer: firstText(record, ["Selling_Agency"]),
-    contactZohoId: lookupId(record.Contact) ?? lookupId(record.Insured_1),
-    accountZohoId: lookupId(record.Business),
-    dealZohoId: lookupId(record.Related_Deal) ?? lookupId(record.Source_Deal),
-    carrierZohoId: lookupId(record.Writing_Carrier),
-    carrierName: lookupName(record.Writing_Carrier),
-    commission4Pct: asNumber(record.Commission4) != null ? String(asNumber(record.Commission4)) : null,
+    contactZohoId:
+      lookupZohoRef(record, "Contact", "Contact_id") ?? lookupZohoRef(record, "Insured_1", "Insured_1_id"),
+    accountZohoId: lookupZohoRef(record, "Business", "Business_id"),
+    dealZohoId:
+      lookupZohoRef(record, "Related_Deal", "Related_Deal_id") ??
+      lookupZohoRef(record, "Source_Deal", "Source_Deal_id"),
+    carrierZohoId:
+      lookupZohoRef(record, "Writing_Carrier", "Writing_Carrier_id") ??
+      lookupZohoRef(record, "Carrier", "Carrier_id"),
+    carrierName: lookupName(record.Writing_Carrier) ?? firstText(record, ["Carrier"]),
+    commission4Pct: commissionPct != null ? String(commissionPct) : null,
     numberOfInsured: asNumber(record.Number_of_Insured),
-    oepStart: asDate(record.Open_Enrollment_Start),
+    oepStart: asDate(record.Open_Enrollment_Start) ?? asDate(record.OEP_Start),
     owner: extractZohoOwner(record),
     createdBy: extractZohoOwner(record, "Created_By"),
     unmatched: unmatchedOf(record, POLICY_MAPPED),

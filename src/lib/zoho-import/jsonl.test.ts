@@ -113,7 +113,41 @@ describe("Zoho field maps", () => {
     expect(mapped.expirationDate.toISOString().startsWith("2027-08-29")).toBe(true);
   });
 
-  it("does not treat a same-name vendor as a new carrier key", () => {
+  
+  it("maps CSV-export shaped Policies (Contact_id, Carrier, P_C_Commission, Policy_Premium)", () => {
+    const mapped = mapPolicy(
+      {
+        Policy_Number: "PFL677036-00",
+        Policy_Status: "Pending",
+        Policy_Type: "Renter & Landord",
+        Policy_Sub_Type: "DP3",
+        Insurance_Type: "P&C",
+        Effective_Date: "2026-09-10",
+        Policy_Term: "12 Months",
+        X_Date: "2027-09-09",
+        Policy_Premium: "3158",
+        Gross_Written_Premium: "3158",
+        Premium_Frequency: "Annual",
+        Contact: "Mario Cromartie",
+        Contact_id: "zcrm_6742853000009030030",
+        Carrier: "People's Trust",
+        Carrier_id: "zcrm_6742853000010557565",
+        Commission: "10.0",
+        P_C_Commission: "12",
+      },
+      "zcrm_6742853000009104349",
+    );
+    if ("skip" in mapped) throw new Error(mapped.skip);
+    expect(mapped.zohoId).toBe("6742853000009104349");
+    expect(mapped.contactZohoId).toBe("6742853000009030030");
+    expect(mapped.carrierName).toBe("People's Trust");
+    expect(mapped.carrierZohoId).toBe("6742853000010557565");
+    expect(mapped.commission4Pct).toBe("12");
+    expect(mapped.premium).toBe("3158");
+    expect(mapped.status).toBe("pending");
+  });
+
+it("does not treat a same-name vendor as a new carrier key", () => {
     const mapped = mapVendor({ Vendor_Name: "Tailrow Specialty Ins.", Written_Lines: ["HO"] }, "v1");
     expect(normalizeCarrierName(mapped.name)).toBe(normalizeCarrierName("Tailrow Specialty"));
   });
