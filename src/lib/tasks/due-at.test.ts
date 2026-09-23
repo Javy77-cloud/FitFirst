@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   DATE_ONLY_TASK_DUE_TIME,
   formatTaskDueAt,
+  parseDeskDateTimeLocal,
   parseTaskDueAt,
   TASK_DUE_TIMEZONE,
   taskDueFromForm,
@@ -93,5 +94,29 @@ describe("due time wired on create/edit and lists", () => {
     const detail = readFileSync("src/components/record-context/activity-record-page.tsx", "utf8");
     expect(detail).toMatch(/formatTaskDueAt\(task\.dueDate\)/);
     expect(detail).toMatch(/name="dueTime"/);
+  });
+});
+
+
+describe("parseDeskDateTimeLocal", () => {
+  it("treats datetime-local as America/New_York, not UTC", () => {
+    // 7:00 AM Eastern on Sep 24 2026 (EDT = UTC-4) → 11:00Z
+    expect(parseDeskDateTimeLocal("2026-09-24T07:00")?.toISOString()).toBe(
+      "2026-09-24T11:00:00.000Z",
+    );
+    expect(parseDeskDateTimeLocal("2026-09-24T17:25")?.toISOString()).toBe(
+      "2026-09-24T21:25:00.000Z",
+    );
+  });
+
+  it("keeps absolute ISO instants", () => {
+    expect(parseDeskDateTimeLocal("2026-09-24T11:00:00.000Z")?.toISOString()).toBe(
+      "2026-09-24T11:00:00.000Z",
+    );
+  });
+
+  it("returns null for empty input", () => {
+    expect(parseDeskDateTimeLocal("")).toBeNull();
+    expect(parseDeskDateTimeLocal(null)).toBeNull();
   });
 });

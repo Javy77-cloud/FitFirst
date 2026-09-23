@@ -25,6 +25,7 @@ import {
   addMinutesToDateTimeLocal,
   ensureEndAfterStart,
   calendarKindNeedsEndRange,
+  toDate,
   toDateTimeLocal,
 } from "./calendar";
 
@@ -224,7 +225,12 @@ describe("calendar compose datetime helpers", () => {
     expect(calendarKindNeedsEndRange("call")).toBe(true);
   });
 
-  it("round-trips local datetime formatting", () => {
-    expect(toDateTimeLocal(new Date(2026, 8, 27, 9, 0))).toBe("2026-09-27T09:00");
+  it("formats datetime-local in America/New_York wall clock", () => {
+    // 9:00 AM Eastern (EDT) on Sep 27 2026
+    expect(toDateTimeLocal(new Date("2026-09-27T13:00:00.000Z"))).toBe("2026-09-27T09:00");
+  });
+
+  it("parses datetime-local strings as Eastern for drag/reschedule", () => {
+    expect(toDate("2026-09-24T07:00")?.toISOString()).toBe("2026-09-24T11:00:00.000Z");
   });
 });

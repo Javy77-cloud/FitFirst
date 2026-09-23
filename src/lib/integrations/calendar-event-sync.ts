@@ -41,13 +41,29 @@ function draftFromActivity(activity: {
   title: string;
   notes?: string | null;
   meetingLocation?: string | null;
+  phoneNumber?: string | null;
   startAt: Date | string | null;
   endAt: Date | string | null;
 }): CalendarEventDraft | null {
   if (!shouldPushDeskActivity(activity)) return null;
+  const rawTitle = (activity.title ?? "").trim();
+  const titleDigits = rawTitle.replace(/\D/g, "");
+  const phoneDigits = (activity.phoneNumber ?? "").replace(/\D/g, "");
+  const titleIsPhone =
+    titleDigits.length >= 10 &&
+    !/[a-zA-Z]/.test(rawTitle) &&
+    (!phoneDigits || titleDigits === phoneDigits);
+  // Always push a human summary — never a bare phone number as Google/Outlook title.
+  const notesLine = (activity.notes ?? "").split("\n")[0]?.trim() || "";
+  const title =
+    !rawTitle || titleIsPhone
+      ? notesLine && !/^\+?[\d\s().-]{10,}$/.test(notesLine)
+        ? notesLine
+        : "Call"
+      : rawTitle;
   return {
     activityId: activity.id,
-    title: activity.title,
+    title,
     startAt: new Date(activity.startAt!),
     endAt: new Date(activity.endAt!),
     notes: activity.notes ?? null,

@@ -298,7 +298,15 @@ export function QuickCommsBoard({
     if (kind === "call") {
       formData.set("direction", formData.get("direction") || "outbound");
       if (!formData.get("phone") && contactPhone) formData.set("phone", contactPhone);
-      if (!String(formData.get("title") ?? "").trim()) formData.set("title", defaultTitle);
+      const rawTitle = String(formData.get("title") ?? "").trim();
+      const phoneDigits = String(formData.get("phone") ?? contactPhone ?? "").replace(/\D/g, "");
+      const titleDigits = rawTitle.replace(/\D/g, "");
+      const titleIsPhone =
+        Boolean(phoneDigits) &&
+        phoneDigits.length >= 10 &&
+        titleDigits === phoneDigits &&
+        !/[a-zA-Z]/.test(rawTitle);
+      if (!rawTitle || titleIsPhone) formData.set("title", defaultTitle);
       formData.set("status", "open");
     }
 
@@ -597,7 +605,13 @@ export function QuickCommsBoard({
               <>
                 <div>
                   <Label className="text-xs">Title</Label>
-                  <Input name="title" required className="mt-1 h-8" defaultValue={defaultTitle} />
+                  <Input
+                    name="title"
+                    required
+                    autoComplete="off"
+                    className="mt-1 h-8"
+                    defaultValue={defaultTitle}
+                  />
                 </div>
                 <div>
                   <Label className="text-xs">Date</Label>
