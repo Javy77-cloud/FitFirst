@@ -6,6 +6,7 @@ import {
   DEAL_COLD_CHASE_TITLE,
   isDealColdChaseKind,
   planColdChaseNotices,
+  planColdChaseSync,
 } from "./cold-chase";
 
 describe("deal cold chase", () => {
@@ -30,5 +31,51 @@ describe("deal cold chase", () => {
     expect(coldChaseOpenLabel("lead_follow_up")).toBe("Open lead");
     expect(coldChaseOpenLabel("quote_declined")).toBe("Retry carriers");
     expect(coldChaseOpenLabel("ask")).toBe("Open");
+  });
+
+  it("does not re-insert after mark-as-read while the deal is still cold", () => {
+    const planned = planColdChaseNotices([
+      { id: "cold-1", heat: "cold", closed: false, insured: "Ana", title: "Ana", ownerId: "u1" },
+    ]);
+    const plan = planColdChaseSync(planned, [
+      { id: "alert-read", entityId: "cold-1", readAt: new Date("2026-09-23T12:00:00Z") },
+    ]);
+    expect(plan.insertDealIds).toEqual([]);
+    expect(plan.endEpisodeAlertIds).toEqual([]);
+  });
+
+  it("skips insert when an unread chase already exists for the deal", () => {
+    const planned = planColdChaseNotices([
+      { id: "cold-1", heat: "cold", closed: false, insured: "Ana", title: "Ana", ownerId: "u1" },
+    ]);
+    const plan = planColdChaseSync(planned, [
+      { id: "alert-unread", entityId: "cold-1", readAt: null },
+    ]);
+    expect(plan.insertDealIds).toEqual([]);
+  });
+
+  it("inserts once for a newly cold deal with no prior chase", () => {
+    const planned = planColdChaseNotices([
+      { id: "cold-1", heat: "cold", closed: false, insured: "Ana", title: "Ana", ownerId: "u1" },
+      { id: "cold-2", heat: "cold", closed: false, insured: "Bea", title: "Bea", ownerId: "u1" },
+    ]);
+    const plan = planColdChaseSync(planned, [
+      { id: "alert-read", entityId: "cold-1", readAt: new Date("2026-09-23T12:00:00Z") },
+    ]);
+    expect(plan.insertDealIds).toEqual(["cold-2"]);
+    expect(plan.endEpisodeAlertIds).toEqual([]);
+  });
+
+  it("ends the cold episode when the deal leaves cold so a later episode can re-alert", () => {
+    const planned = planColdChaseNotices([
+      { id: "still-cold", heat: "cold", closed: false, insured: "Ana", title: "Ana", ownerId: "u1" },
+    ]);
+    const plan = planColdChaseSync(planned, [
+      { id: "keep", entityId: "still-cold", readAt: new Date() },
+      { id: "drop-read", entityId: "was-cold", readAt: new Date() },
+      { id: "drop-unread", entityId: "was-cold-2", readAt: null },
+    ]);
+    expect(plan.insertDealIds).toEqual([]);
+    expect(plan.endEpisodeAlertIds.sort()).toEqual(["drop-read", "drop-unread"]);
   });
 });
