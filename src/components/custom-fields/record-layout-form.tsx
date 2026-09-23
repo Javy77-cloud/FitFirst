@@ -115,7 +115,7 @@ export function RecordLayoutFields({
       {activeColumns.map((column) => (
         <div
           key={column.id}
-          className={contactDesk ? "min-w-0 space-y-2" : "min-w-0 space-y-3"}
+          className={contactDesk ? "min-w-0 space-y-1.5" : "min-w-0 space-y-3"}
           data-ff-record-layout-col={column.id}
         >
           {asList(column.sections).map((section) => {
@@ -125,7 +125,7 @@ export function RecordLayoutFields({
               key={section.id}
               className={
                 contactDesk
-                  ? "space-y-2 rounded-lg border border-border/70 px-3 py-2.5"
+                  ? "space-y-1.5 rounded-lg border border-border/70 px-2.5 py-2"
                   : "ff-card space-y-3 border border-border/60 px-5 py-4"
               }
               data-ff-record-section={section.id}

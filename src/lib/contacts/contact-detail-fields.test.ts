@@ -123,13 +123,14 @@ describe("contact detail field system", () => {
     );
     expect(html).toMatch(/data-ff-coverage-record-line="HO"/);
     expect(html).toMatch(/data-ff-coverage-record-line="AUTO"/);
+    expect(html).toMatch(/data-ff-coverage-record-compact="1"/);
     expect(html).toMatch(/Coverage with other carriers/);
-    expect(html).toMatch(/Another carrier/);
+    expect(html).toMatch(/aria-label="Another carrier"/);
     expect(html).toMatch(/On the book/);
     expect(html).toMatch(/not stored here/);
     expect(html).toMatch(/not a missing-line gap/);
-    expect(html).toMatch(/grid-cols-\[10\.5rem_minmax\(0,1fr\)\]/);
+    expect(html).toMatch(/grid-cols-2/);
     expect(html).toMatch(/Homeowners/);
-    expect(html).not.toMatch(/grid-cols-\[6\.75rem/);
+    expect(html).not.toMatch(/grid-cols-\[10\.5rem_minmax\(0,1fr\)\]/);
   });
 });

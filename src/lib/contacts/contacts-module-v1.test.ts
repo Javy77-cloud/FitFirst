@@ -55,6 +55,7 @@ describe("Contacts module v1 standards", () => {
     expect(page).toMatch(/ContactPolicyRows/);
     expect(page).toMatch(/ContactDealRows/);
     expect(page).toMatch(/ContactAtAGlanceCards/);
+    expect(page).toMatch(/data-ff-contact-book-glance/);
     expect(page).toMatch(/QuickCommsBoard/);
     expect(page).toMatch(/listRecordActivities\(\{ contactId/);
     expect(page).toMatch(/RecordContextRail/);
