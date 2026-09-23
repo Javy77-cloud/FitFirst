@@ -6,6 +6,7 @@ import { CalendarRange, Download, Eye, MoreVertical, Pencil, Replace, Tags, Tras
 import {
   renameUploadedFile,
   deleteUploadedFile,
+  unlinkDealDocumentFromProduct,
   setDocumentTermRole,
   updateDocumentLabel,
 } from "@/app/actions/documents";
@@ -24,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { deleteUploadedFileSubject, uploadedFileDeleteMode } from "@/lib/documents/delete-file";
+import { multiProductMembershipWarning, shopLinesFromDocTags } from "@/lib/documents/product-doc-membership";
 import { confirmPolicyDocumentDelete } from "@/lib/desk/confirm-policy-document-delete";
 import { DocumentPreviewDialog } from "@/components/documents/document-preview-dialog";
 import { FILE_ACTION_ACCEPT } from "@/lib/documents/file-action-menu";
@@ -52,6 +54,10 @@ export type FileActionMenuProps = {
   triggerClassName?: string;
   /** Optimistic hide after the one confirm (deal Documents list). */
   onDeleted?: () => void;
+  /** Active product shop line — enables Remove from this product. */
+  line?: string | null;
+  quotingForm?: string | null;
+  onUnlinked?: () => void;
   children: ReactNode;
 };
 
@@ -70,6 +76,9 @@ export function FileActionMenu({
   className,
   triggerClassName,
   onDeleted,
+  line,
+  quotingForm,
+  onUnlinked,
   children,
 }: FileActionMenuProps) {
   const replaceInputRef = useRef<HTMLInputElement>(null);
@@ -81,12 +90,19 @@ export function FileActionMenu({
   const termFormRef = useRef<HTMLFormElement>(null);
   const termInputRef = useRef<HTMLInputElement>(null);
   const deleteBtnRef = useRef<HTMLButtonElement>(null);
+  const unlinkFormRef = useRef<HTMLFormElement>(null);
   const reasonInputRef = useRef<HTMLInputElement>(null);
   const [gone, setGone] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const downloadHref = fileDownloadHref(documentId);
   const mode = uploadedFileDeleteMode({ slot, docType });
   const subject = deleteUploadedFileSubject(filename, mode);
+  const multiWarning = multiProductMembershipWarning(tags);
+  const membershipLines = shopLinesFromDocTags(tags);
+  const deleteSubject = multiWarning
+    ? `${subject}. ${multiWarning}`
+    : subject;
+  const canUnlink = Boolean(dealId && line && membershipLines.includes(line as never));
   const policyDocDelete = Boolean(policyId);
   const currentTermRole = termRoleFromTags(tags);
 
@@ -175,9 +191,18 @@ export function FileActionMenu({
         <input ref={termInputRef} type="hidden" name="termRole" defaultValue="" />
       </form>
       {/* One HardDeleteForm: menu Delete + visible trash both click this submitter (one confirm). */}
+      {canUnlink ? (
+        <form ref={unlinkFormRef} action={unlinkDealDocumentFromProduct} className="hidden">
+          <input type="hidden" name="documentId" value={documentId} />
+          {dealId ? <input type="hidden" name="dealId" value={dealId} /> : null}
+          {line ? <input type="hidden" name="line" value={line} /> : null}
+          {quotingForm ? <input type="hidden" name="quotingForm" value={quotingForm} /> : null}
+          {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+        </form>
+      ) : null}
       <HardDeleteForm
         action={deleteUploadedFile}
-        subject={subject}
+        subject={deleteSubject}
         className="hidden"
         confirm={!policyDocDelete}
         onConfirmed={() => {
@@ -290,6 +315,18 @@ export function FileActionMenu({
               <Replace />
               Replace
             </DropdownMenuItem>
+            {canUnlink ? (
+              <DropdownMenuItem
+                data-ff-file-action="unlink-product"
+                onClick={() => {
+                  setGone(true);
+                  onUnlinked?.();
+                  unlinkFormRef.current?.requestSubmit();
+                }}
+              >
+                Remove from this product
+              </DropdownMenuItem>
+            ) : null}
             <DropdownMenuItem
               data-ff-file-action="delete"
               variant="destructive"

@@ -107,7 +107,10 @@ describe("standard file action menu", () => {
     expect(text).toMatch(/<HardDeleteForm/);
     expect(text.match(/<HardDeleteForm/g)).toHaveLength(1);
     expect(text).toMatch(/action=\{deleteUploadedFile\}/);
-    expect(text).toMatch(/subject=\{subject\}/);
+    expect(text).toMatch(/subject=\{(deleteSubject|subject)\}/);
+    expect(text).toMatch(/unlinkDealDocumentFromProduct/);
+    expect(text).toMatch(/Remove from this product/);
+    expect(text).toMatch(/multiProductMembershipWarning/);
     expect(text).toMatch(/deleteBtnRef\.current\?\.click\(\)/);
     expect((text.match(/deleteBtnRef\.current\?\.click\(\)/g) || []).length).toBeGreaterThanOrEqual(2);
     expect(text).not.toMatch(/confirmHardDelete\(/);

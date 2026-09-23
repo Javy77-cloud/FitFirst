@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { LOB_TO_SHOP_LINE, SHOP_LINE_TO_LOB, isShopLine, type ShopLine } from "@/lib/domain";
-import { isDocumentsSourceDoc, shopLineFromSourceDoc } from "@/lib/deals/quote-docs";
+import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
+import { docBelongsToProductWindow } from "@/lib/documents/product-doc-membership";
 import type { DealFlowStepId } from "@/lib/deals/product-ui";
 import { dealProductDef, parseDealProduct } from "@/lib/deals/deal-products";
 import {
@@ -132,7 +133,7 @@ export function lineRiskFingerprint(input: {
   docs?: readonly DocFingerprintInput[] | null;
 }): string {
   const sheets = (input.sheets ?? []).filter((sheet) => sheet.line === input.line);
-  const docs = (input.docs ?? []).filter((doc) => shopLineFromSourceDoc(doc) === input.line);
+  const docs = (input.docs ?? []).filter((doc) => docBelongsToProductWindow(doc, { shopLine: input.line }));
   return riskFingerprint({ sheets, docs });
 }
 

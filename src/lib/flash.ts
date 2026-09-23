@@ -109,6 +109,8 @@ export const FLASH_COPY = {
   "tag-created": "Tag created",
   "tag-color-saved": "Tag color saved",
   "document-deleted": "Document deleted",
+  "document-unlinked-from-product": "Removed from this product (file stays on the deal)",
+  "document-linked-to-product": "Linked to this product",
   "document-replaced": "Document replaced",
   "document-renamed": "Document renamed",
   "document-type-updated": "Document type updated",
