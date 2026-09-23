@@ -75,6 +75,9 @@ describe("flash helper", () => {
     expect(FLASH_COPY["letter-send-later"]).toMatch(/never auto-sends/);
     expect(FLASH_COPY["busy-synced"]).toBe("Calendar events synced");
     expect(FLASH_COPY["busy-sync-failed"]).toMatch(/Calendar sync failed/);
+    expect(FLASH_COPY["client-staying"]).toMatch(/client staying/i);
+    expect(resolveFlashMessage("client-staying")).toBe(FLASH_COPY["client-staying"]);
+    expect(resolveFlashMessage("client-staying")).not.toBe("client-staying");
   });
 
   it("accepts a short raw phrase and ignores blanks", () => {

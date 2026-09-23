@@ -13,7 +13,12 @@ import {
   RENEWAL_HANDLED_FILTER_LABEL,
   RENEWAL_HANDLED_LABEL,
   RENEWAL_HANDLED_STAGE,
+  RENEWAL_HANDLED_SUCCESS_BODY,
+  RENEWAL_HANDLED_SUCCESS_CONGRATS,
+  RENEWAL_HANDLED_SUCCESS_DONE,
+  RENEWAL_HANDLED_SUCCESS_TITLE,
 } from "@/lib/renewal/handled";
+import { FLASH_COPY, resolveFlashMessage } from "@/lib/flash";
 
 function card(
   partial: Partial<RenewalBoardCard> & Pick<RenewalBoardCard, "stage" | "lineOfBusiness">,
@@ -70,6 +75,13 @@ describe("Client staying / Handled", () => {
     expect(RENEWAL_HANDLED_FILTER_LABEL).toBe("Handled");
     expect(RENEWAL_HANDLED_STAGE).toBe("handled");
     expect([...RENEWAL_HANDLED_CLEAR_KINDS]).toEqual(["renewal_silence", "renewal_autopilot"]);
+    expect(RENEWAL_HANDLED_SUCCESS_TITLE).toBe("Client staying");
+    expect(RENEWAL_HANDLED_SUCCESS_CONGRATS).toMatch(/keeping them/i);
+    expect(RENEWAL_HANDLED_SUCCESS_BODY).toMatch(/Handled/);
+    expect(RENEWAL_HANDLED_SUCCESS_BODY).toMatch(/next renewal/i);
+    expect(RENEWAL_HANDLED_SUCCESS_DONE).toBe("Got it");
+    expect(FLASH_COPY["client-staying"]).toMatch(/client staying/i);
+    expect(resolveFlashMessage("client-staying")).toBe(FLASH_COPY["client-staying"]);
   });
 
   it("keeps handled out of shopping; Handled pipeline shows them", () => {
@@ -106,5 +118,11 @@ describe("Client staying / Handled", () => {
       /planTermStartRoleFlip/,
     );
     expect(readFileSync("src/lib/notifications/sync-panel.ts", "utf8")).toMatch(/applyTermStartEffects/);
+    const button = readFileSync("src/components/renewals/client-staying-button.tsx", "utf8");
+    expect(button).toMatch(/flashAction\("client-staying"\)/);
+    expect(button).toMatch(/data-ff-client-staying-success/);
+    expect(button).toMatch(/RENEWAL_HANDLED_SUCCESS_TITLE/);
+    expect(button).toMatch(/setSuccessOpen\(true\)/);
+    expect(button).toMatch(/Got it|RENEWAL_HANDLED_SUCCESS_DONE/);
   });
 });
