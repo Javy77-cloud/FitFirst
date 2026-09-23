@@ -278,4 +278,29 @@ describe("account card glance", () => {
     expect(card.actions?.map((action) => action.id)).toEqual(["portal", "phone", "email"]);
     expect(card.flags.families).toEqual(["pc"]);
   });
+
+  it("clears Needs care band when renewal is Handled", () => {
+    const card = presentPolicyCard(
+      {
+        id: "p-handled",
+        policyNumber: "HO-HANDLED",
+        displayName: "George Rigby",
+        status: "active",
+        lineOfBusiness: "HO",
+        formType: "HO3",
+        premium: "1800",
+        expirationDate: "2026-10-09T00:00:00.000Z",
+        updatedAt: "2026-09-22T12:00:00.000Z",
+        partyName: "George Rigby",
+        carrierName: "Carrier",
+      },
+      { openClaims: 0, pendingEndorsements: 0, missingDocs: 0, renewalHandled: true },
+      new Date("2026-09-23T12:00:00.000Z"),
+    );
+    expect(card.column).toBe("current");
+    expect(card.flags.needsCare).toBe(false);
+    expect(card.facts?.find((f) => f.id === "band")?.label).toBe("Current");
+    expect(card.facts?.find((f) => f.id === "renews")?.tone).toBeUndefined();
+  });
+
 });

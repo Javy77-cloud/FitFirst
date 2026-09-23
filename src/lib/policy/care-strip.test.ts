@@ -87,4 +87,28 @@ describe("policy care strip", () => {
       }),
     ).toBe(false);
   });
+
+  it("skips renewal care when Client staying / Handled is active", () => {
+    expect(
+      buildPolicyCareItems({
+        expirationDate: "2026-10-06T00:00:00.000Z",
+        updatedAt: "2026-09-18T12:00:00.000Z",
+        status: "active",
+        missingDocs: 0,
+        pendingEndorsements: 0,
+        openClaims: 0,
+        asOf,
+        renewalHandled: true,
+      }),
+    ).toEqual([]);
+    expect(
+      shouldShowManualRenewalHelp({
+        expirationDate: "2026-10-06T00:00:00.000Z",
+        status: "active",
+        asOf,
+        renewalHandled: true,
+      }),
+    ).toBe(false);
+  });
+
 });

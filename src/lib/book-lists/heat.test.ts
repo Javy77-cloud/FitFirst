@@ -79,4 +79,41 @@ describe("book-list heat", () => {
     ]);
     expect(ranked.map((row) => row.lastTouchDays)).toEqual([90, 12, 2]);
   });
+
+  it("keeps Handled renewals out of care and midterm bands", () => {
+    expect(
+      policyAttention({
+        daysUntil: 16,
+        lastTouchDays: 2,
+        lapsed: false,
+        openClaims: 0,
+        pendingEndorsements: 0,
+        missingDocs: 0,
+        renewalHandled: true,
+      }).column,
+    ).toBe("current");
+    expect(
+      policyAttention({
+        daysUntil: 45,
+        lastTouchDays: 2,
+        lapsed: false,
+        openClaims: 0,
+        pendingEndorsements: 0,
+        missingDocs: 0,
+        renewalHandled: true,
+      }).column,
+    ).toBe("current");
+    expect(
+      policyAttention({
+        daysUntil: 16,
+        lastTouchDays: 2,
+        lapsed: false,
+        openClaims: 1,
+        pendingEndorsements: 0,
+        missingDocs: 0,
+        renewalHandled: true,
+      }).column,
+    ).toBe("now");
+  });
+
 });
