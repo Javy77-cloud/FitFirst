@@ -132,7 +132,9 @@ describe("inbox desk presentation", () => {
     expect(desk).toMatch(/startByoOauth/);
     expect(desk).toMatch(/messages\.map/);
     expect(desk).toMatch(/replyInboxThread/);
-    expect(desk).toMatch(/sendInboxMessage/);
+    expect(desk).toMatch(/InboxCompose/);
+    expect(desk).not.toMatch(/sendInboxMessage/);
+    expect(desk).not.toMatch(/client@email\.com/);
     expect(desk).toMatch(/logInboxThread/);
     expect(desk).toMatch(/createContactFromInbox/);
     expect(desk).toMatch(/ff-inbox-row/);

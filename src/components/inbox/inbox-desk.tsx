@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { startByoOauth } from "@/app/actions/byo-oauth";
-import { createContactFromInbox, logInboxThread, replyInboxThread, sendInboxMessage } from "@/app/actions/inbox";
+import { createContactFromInbox, logInboxThread, replyInboxThread } from "@/app/actions/inbox";
 import { InboxSplit } from "@/components/inbox/inbox-split";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { looksLikeHtml, sanitizeInboxHtml } from "@/lib/desk/inbox-body";
 import { INBOX_BANDS, groupInboxThreads, type InboxDeskThread } from "@/lib/desk/inbox-desk";
 import { InboxLinkContactDialog } from "@/components/inbox/inbox-link-contact-dialog";
 import { InboxAssignDialog } from "@/components/inbox/inbox-assign-dialog";
+import { InboxCompose } from "@/components/inbox/inbox-compose";
 import { suggestedAssigneeFromMatch, type InboxAssignAgent } from "@/lib/desk/inbox-assign";
 import { inboxBandLabel } from "@/lib/desk/inbox-match";
 import { inboxSkinListRole, resolveInboxSkin, type InboxMailProvider } from "@/lib/desk/inbox-skin";
@@ -303,17 +304,7 @@ export function InboxDesk({
           ) : null
         }
       />
-      <form action={sendInboxMessage} className="ff-inbox-compose ff-inbox-new" data-ff-inbox-compose="">
-        <p className="text-sm font-semibold text-navy">New message</p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Input name="to" type="email" placeholder="client@email.com" required />
-          <Input name="subject" placeholder="Subject" />
-        </div>
-        <Textarea name="body" rows={3} placeholder="Send from the connected agency mailbox." required />
-        <Button type="submit" size="sm" variant="outline">
-          Send
-        </Button>
-      </form>
+      <InboxCompose />
     </div>
   );
 }
