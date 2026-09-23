@@ -81,4 +81,26 @@ describe("street-only premises", () => {
       }),
     ).toBe("15280 Tropic Ct\nFort Myers, FL 33967");
   });
+
+  it("always returns two lines even when street or locality is missing", () => {
+    expect(
+      formatPremisesStacked({
+        address: "15280 Tropic Ct",
+        city: null,
+        state: null,
+        zip: null,
+      }),
+    ).toBe("15280 Tropic Ct\n");
+    expect(
+      formatPremisesStacked({
+        address: "",
+        city: "Fort Myers",
+        state: "FL",
+        zip: "33967",
+      }),
+    ).toBe("\nFort Myers, FL 33967");
+    expect(formatPremisesStacked({ address: null, city: null, state: null, zip: null })).toBe(
+      null,
+    );
+  });
 });

@@ -131,13 +131,14 @@ export function PolicyInformationCard({
         />
 
         {/* Row 2: Insured location (1 cell) | Insurance type | Selling agency | Producer */}
+        {/* Single cell (row2 col1): always two-line stack — never full-span, never one-line. */}
         <div data-ff-policy-premises-row="">
           <PolicyInlineText
             policyId={policy.id}
             fieldKey="premisesAddress"
             label={homePc ? "Insured location" : "Premises"}
             value={insuredLocation || streetOnly}
-            displayText={insuredStacked ?? undefined}
+            displayText={insuredStacked ?? "—\n"}
             readOnly={readOnly}
           />
         </div>
