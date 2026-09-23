@@ -214,6 +214,49 @@ function promoteLoneMailingToProperty(
   if (index >= 0) filledKeys.splice(index, 1);
 }
 
+
+/** Flood DEC / NFIP extract → Currently have flood/NFIP? = yes (overrides empty-sheet default no). */
+export function markFloodHasNfipFromExtract(
+  values: Record<string, QuoteSheetFieldValue>,
+  filledKeys: string[],
+  extracted: ExtractedInput[],
+  source: QuoteSheetFieldValue["source"] = "extracted",
+): void {
+  const policyKeys = new Set(["nfip_policy", "current_premium", "expiration_date", "current_carrier"]);
+  const filledPolicy = filledKeys.some((key) => policyKeys.has(key));
+  const extractedPolicy = extracted.some((row) => {
+    const key = (row.fieldKey || "").trim().toLowerCase();
+    const val = String(row.normalizedValue ?? "").trim();
+    if (!val) return false;
+    return (
+      key === "policy_number" ||
+      key === "nfip_policy" ||
+      key === "current_premium" ||
+      key === "expiration_date" ||
+      key === "current_carrier" ||
+      key === "premium"
+    );
+  });
+  if (!filledPolicy && !extractedPolicy) return;
+  const current = values.has_nfip;
+  const curVal = (current?.value ?? "").trim().toLowerCase();
+  const isDefaultNo =
+    !current ||
+    fieldIsBlank(current) ||
+    curVal === "no" ||
+    (current.sourceLabel ?? "").trim().toLowerCase() === "default";
+  if (!isDefaultNo && curVal === "yes") {
+    return;
+  }
+  values.has_nfip = {
+    value: "yes",
+    status: "check",
+    source,
+    sourceLabel: "flood dec",
+  };
+  if (!filledKeys.includes("has_nfip")) filledKeys.push("has_nfip");
+}
+
 export function applyExtractedToSheet(
   line: ShopLine,
   existing: Record<string, QuoteSheetFieldValue>,
@@ -438,6 +481,10 @@ export function applyExtractedToSheet(
 
   if (line === "home") {
     finalizeHomeDeclarationCoverages(values, filledKeys, options?.docType, extracted);
+  }
+
+  if (line === "flood") {
+    markFloodHasNfipFromExtract(values, filledKeys, extracted, source);
   }
 
   const stamped =

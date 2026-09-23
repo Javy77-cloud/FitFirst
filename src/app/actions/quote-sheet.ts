@@ -46,7 +46,7 @@ import {
   MISSING_GEMINI_KEY_MESSAGE,
 } from "@/lib/extraction/gemini";
 import { classifyIngest } from "@/lib/extraction/ocr";
-import { inferShopLine, isQuoteAttachment, sourceDocFillsHome, trustSheetLineForFill } from "@/lib/ingest/identity";
+import { inferShopLine, isQuoteAttachment, looksLikeFloodPolicyDoc, sourceDocFillsHome, trustSheetLineForFill } from "@/lib/ingest/identity";
 import { readUploadText } from "@/lib/extraction/pdf";
 import {
   MELBOURNE_DEC_FILENAME,
@@ -1694,6 +1694,43 @@ export async function runFillQuoteSheet(
   let geminiMapped = 0;
   let passiveNote: string | undefined;
 
+  // Flood product window already has a flood DEC → Currently have flood/NFIP? = yes
+  // even before Gemini (Rosa: default "no" stayed wrong when DEC was skipped).
+  if (line === "flood") {
+    const floodDecInWindow = scoped.some((doc) => {
+      const tags = (doc.tags ?? []).map((t) => String(t).toLowerCase());
+      const tagged =
+        tags.some((t) => t === "line:flood" || t === "form:flood") ||
+        looksLikeFloodPolicyDoc(doc.filename || "", "");
+      const decLike = /^(dec|declaration|current_policy|policy)$/i.test(doc.docType || "") ||
+        /dec|declaration|policy/i.test(doc.docType || "");
+      return tagged && (decLike || looksLikeFloodPolicyDoc(doc.filename || "", ""));
+    });
+    if (floodDecInWindow) {
+      const cur = values.has_nfip;
+      const curVal = (cur?.value ?? "").trim().toLowerCase();
+      const replaceable =
+        !cur ||
+        !(cur.value ?? "").trim() ||
+        curVal === "no" ||
+        (cur.sourceLabel ?? "").trim().toLowerCase() === "default";
+      if (replaceable) {
+        values.has_nfip = {
+          value: "yes",
+          status: "check",
+          source: "extracted",
+          sourceLabel: "flood dec",
+        };
+        aggregateFilled.push("has_nfip");
+      }
+      // Drop HO deal-details carrier bleed so flood DEC carrier can land.
+      const carrierLabel = (values.current_carrier?.sourceLabel ?? "").trim().toLowerCase();
+      if (carrierLabel === "deal details") {
+        values.current_carrier = { value: "", status: "missing", source: "blank" };
+      }
+    }
+  }
+
   for (const doc of scoped) {
     if (isQuoteAttachment(doc.docType, doc.filename) || isQuoteFileDoc(doc)) continue;
     const startedAt = new Date();
@@ -1781,6 +1818,9 @@ export async function runFillQuoteSheet(
         mimeType: doc.mimeType,
         text: textForLine,
         filename: doc.filename,
+        // Product-window filter already scoped this PDF to the active sheet (#332).
+        productWindowMatch: true,
+        tags: doc.tags,
       });
       if (inferred !== line && !hoOntoHome && !trustSheet) {
         await insertExtractionAttempt({
