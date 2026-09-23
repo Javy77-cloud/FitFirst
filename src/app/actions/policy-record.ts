@@ -28,6 +28,10 @@ import { isPolicySensitiveInlineKey, sensitiveFieldConfirmCopy } from "@/lib/pol
 import { getAllowPolicyLabelOverride } from "@/lib/policy/auto-label-prefs";
 import { splitPremisesAddress, streetOnlyPremises } from "@/lib/policy/premises";
 import { requireStoredLobCode } from "@/lib/db/line-settings";
+import {
+  buildTermOverridePatch,
+  termOverrideSummary,
+} from "@/lib/policy/term-override";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -319,6 +323,10 @@ const POLICY_INLINE_KEYS = new Set([
   "faceAmount",
   "policyTerm",
   "carrierId",
+]);
+
+/** Term dates are agency-only via correctPolicyTermDates (reason + audit). */
+const TERM_DATE_INLINE_KEYS = new Set([
   "effectiveDate",
   "expirationDate",
   "renewalDate",
@@ -353,6 +361,12 @@ export async function updatePolicyField(input: {
   }
   if (LOCKED_COMPUTED_KEYS.has(fieldKey)) {
     return { ok: false, error: "That field is locked." };
+  }
+  if (TERM_DATE_INLINE_KEYS.has(fieldKey)) {
+    return {
+      ok: false,
+      error: "Term dates are locked. Use Correct term dates (agency) with a reason.",
+    };
   }
   if (!POLICY_INLINE_KEYS.has(fieldKey)) {
     return { ok: false, error: "Unknown field." };
@@ -520,3 +534,89 @@ export async function searchCarriersForPolicyLink(
     .limit(12);
   return rows;
 }
+
+/** Agency (admin/owner) corrects book term dates with mandatory reason + full audit. */
+export async function correctPolicyTermDates(input: {
+  policyId: string;
+  effectiveDate: string;
+  expirationDate: string;
+  renewalDate: string;
+  reason: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await currentDeskSession();
+  if (!session.isAdmin) {
+    return { ok: false, error: "Only agency admins can correct term dates." };
+  }
+
+  const id = input.policyId?.trim();
+  if (!id) return { ok: false, error: "Policy not found." };
+
+  const [existing] = await db
+    .select()
+    .from(policies)
+    .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, id)));
+  if (!existing) return { ok: false, error: "Policy not found." };
+
+  const built = buildTermOverridePatch(
+    {
+      effectiveDate: input.effectiveDate ?? "",
+      expirationDate: input.expirationDate ?? "",
+      renewalDate: input.renewalDate ?? "",
+      reason: input.reason ?? "",
+    },
+    existing,
+  );
+  if (!built.ok) return { ok: false, error: built.error };
+  if (!built.changed) {
+    return { ok: false, error: "No date changes to save." };
+  }
+
+  const { patch, meta } = built;
+  await db
+    .update(policies)
+    .set({
+      effectiveDate: patch.effectiveDate,
+      expirationDate: patch.expirationDate,
+      renewalDate: patch.renewalDate,
+      updatedAt: new Date(),
+    })
+    .where(eq(policies.id, id));
+
+  const before = withHistoryDefaults(existing as unknown as Record<string, unknown>, {});
+  const after = {
+    ...before,
+    effectiveDate: patch.effectiveDate,
+    expirationDate: patch.expirationDate,
+    renewalDate: patch.renewalDate,
+    termOverrideReason: meta.reason,
+  };
+  await recordPolicyFieldChanges({
+    policyId: id,
+    before,
+    after,
+    source: "term_override",
+  });
+
+  await writeEoAuditSafe({
+    action: "policy_change",
+    summary: termOverrideSummary(meta, existing.policyNumber),
+    actorId: session.userId,
+    actorName: session.name,
+    entityType: "policy",
+    entityId: id,
+    contactId: existing.contactId,
+    accountId: existing.accountId,
+    policyId: id,
+    dealId: existing.dealId,
+    meta,
+  });
+
+  await syncPolicyDateAutomations(id);
+  revalidatePath(`/policies/${id}`);
+  revalidatePath("/policies");
+  revalidatePath("/renewals");
+  revalidatePath("/tasks");
+  scheduleContactCoverageNotices(existing.contactId);
+  return { ok: true };
+}
+

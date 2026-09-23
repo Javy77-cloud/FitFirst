@@ -5,7 +5,8 @@ export type PolicyChangeSource =
   | "non_renewal"
   | "bind"
   | "mint"
-  | "seed";
+  | "seed"
+  | "term_override";
 
 export type PolicyFieldChange = {
   fieldKey: string;
@@ -63,6 +64,7 @@ export const POLICY_HISTORY_FIELDS = [
   { key: "premisesState", label: "Insured state" },
   { key: "premisesZip", label: "Insured ZIP" },
   { key: "labelOverride", label: "Display name" },
+  { key: "termOverrideReason", label: "Correction reason" },
 ] as const;
 
 const FIELD_LABELS = Object.fromEntries(
@@ -137,6 +139,7 @@ export function sourceLabel(source: string): string {
   if (source === "bind") return "Bind";
   if (source === "mint") return "Policy created";
   if (source === "seed") return "Seeded";
+  if (source === "term_override") return "Term date correction";
   return source.replaceAll("_", " ");
 }
 
