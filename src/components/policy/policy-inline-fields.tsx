@@ -387,11 +387,14 @@ export function PolicyInlineStatus({
   value,
   options,
   readOnly = false,
+  /** Header chip next to section title — no Status label. */
+  variant = "field",
 }: {
   policyId: string;
   value: string;
   options: readonly string[];
   readOnly?: boolean;
+  variant?: "field" | "header";
 }) {
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -417,34 +420,46 @@ export function PolicyInlineStatus({
     });
   }
 
+  const chip = readOnly ? (
+    <PolicyStatusBadge status={value} />
+  ) : editing ? (
+    <select
+      autoFocus
+      className={cn(
+        "h-8 rounded-md border border-input bg-card px-2 text-sm",
+        variant === "header" ? "w-auto min-w-[7rem]" : "w-full",
+      )}
+      defaultValue={value}
+      disabled={pending}
+      onBlur={(e) => persist(e.target.value)}
+      onChange={(e) => persist(e.target.value)}
+      aria-label="Status"
+    >
+      <option value="">None</option>
+      {options.map((opt) => (
+        <option key={opt} value={opt}>
+          {opt}
+        </option>
+      ))}
+    </select>
+  ) : (
+    <button type="button" className="rounded-sm hover:bg-[#002868]/5" onClick={() => setEditing(true)}>
+      <PolicyStatusBadge status={value} />
+    </button>
+  );
+
+  if (variant === "header") {
+    return (
+      <div className="inline-flex items-center" data-ff-policy-inline="status" data-ff-status-header="">
+        {chip}
+      </div>
+    );
+  }
+
   return (
     <div data-ff-policy-inline="status">
       <dt className="text-helper text-muted-foreground">Status</dt>
-      <dd className="font-medium text-navy">
-        {readOnly ? (
-          <PolicyStatusBadge status={value} />
-        ) : editing ? (
-          <select
-            autoFocus
-            className="h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
-            defaultValue={value}
-            disabled={pending}
-            onBlur={(e) => persist(e.target.value)}
-            onChange={(e) => persist(e.target.value)}
-          >
-            <option value="">None</option>
-            {options.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <button type="button" className="rounded-sm hover:bg-[#002868]/5" onClick={() => setEditing(true)}>
-            <PolicyStatusBadge status={value} />
-          </button>
-        )}
-      </dd>
+      <dd className="font-medium text-navy">{chip}</dd>
     </div>
   );
 }

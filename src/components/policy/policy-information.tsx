@@ -84,16 +84,21 @@ export function PolicyInformationCard({
 
   return (
     <section id="policy-information" className="ff-card mb-4 p-4" data-ff-policy-information="">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
+      <div className="flex flex-wrap items-center gap-2" data-ff-policy-info-header="">
         <h2 className="text-base font-semibold text-navy">Policy Information</h2>
+        <span className="text-muted-foreground" aria-hidden="true">
+          —
+        </span>
+        <PolicyInlineStatus
+          policyId={policy.id}
+          value={policy.status}
+          options={POLICY_STATUSES}
+          readOnly={readOnly}
+          variant="header"
+        />
       </div>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {readOnly
-          ? "Read-only for agents. Admins can edit fields from Overview. Term dates stay locked — agency corrects them with a reason."
-          : "Click a field to edit. Policy number asks for confirmation. Term dates stay locked (carrier/API truth); use Correct term dates for agency overrides. Commission % and auto-label stay locked."}
-      </p>
       <dl className="mt-3 grid gap-x-3 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
-        {/* Row 1: Insured | Carrier | Policy number | Status */}
+        {/* Row 1: Insured | Carrier | Policy number | Form */}
         <div>
           <dt className="text-helper text-muted-foreground">Insured</dt>
           <dd className="font-medium text-navy">
@@ -117,14 +122,6 @@ export function PolicyInformationCard({
           value={policy.policyNumber}
           readOnly={readOnly}
         />
-        <PolicyInlineStatus
-          policyId={policy.id}
-          value={policy.status}
-          options={POLICY_STATUSES}
-          readOnly={readOnly}
-        />
-
-        {/* Row 2: Form / Subtype | Insurance type | Selling agency | Producer */}
         <PolicyInlineText
           policyId={policy.id}
           fieldKey="policySubType"
@@ -132,6 +129,18 @@ export function PolicyInformationCard({
           value={policy.policySubType ?? ""}
           readOnly={readOnly}
         />
+
+        {/* Row 2: Insured location (1 cell) | Insurance type | Selling agency | Producer */}
+        <div data-ff-policy-premises-row="">
+          <PolicyInlineText
+            policyId={policy.id}
+            fieldKey="premisesAddress"
+            label={homePc ? "Insured location" : "Premises"}
+            value={insuredLocation || streetOnly}
+            displayText={insuredStacked ?? undefined}
+            readOnly={readOnly}
+          />
+        </div>
         <PolicyInlineText
           policyId={policy.id}
           fieldKey="insuranceType"
@@ -151,19 +160,7 @@ export function PolicyInformationCard({
           <dd className="font-medium text-navy">{producerPerson || "—"}</dd>
         </div>
 
-        {/* Row 3: Insured location / Premises — always shown; spans for readability */}
-        <div className="sm:col-span-2 lg:col-span-4" data-ff-policy-premises-row="">
-          <PolicyInlineText
-            policyId={policy.id}
-            fieldKey="premisesAddress"
-            label={homePc ? "Insured location" : "Premises"}
-            value={insuredLocation || streetOnly}
-            displayText={insuredStacked ?? undefined}
-            readOnly={readOnly}
-          />
-        </div>
-
-        {/* Row 4: Effective | Expiration | Renewal | commission or spacer */}
+        {/* Row 3: Effective | Expiration | Renewal | commission or spacer */}
         <div data-ff-policy-inline="effectiveDate" data-ff-term-date-locked="">
           <dt className="text-helper text-muted-foreground">Effective date</dt>
           <dd className="font-medium text-navy">{formatDay(policy.effectiveDate)}</dd>
@@ -208,7 +205,7 @@ export function PolicyInformationCard({
           </div>
         ) : null}
 
-        {/* Row 5: Billing | Premium | two empty cells reserved */}
+        {/* Row 4: Billing | Premium | two empty cells reserved */}
         <PolicyInlineText
           policyId={policy.id}
           fieldKey="billingFrequency"
