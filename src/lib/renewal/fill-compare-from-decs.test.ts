@@ -4,6 +4,7 @@ import {
   canFillCompareFromTermRoleDocs,
   docsForTermRole,
   mapGeminiRowsToTermFields,
+  riskIdForExtractedFieldsCache,
   selectCompareTermRoleDocs,
 } from "./fill-compare-from-decs";
 
@@ -144,6 +145,26 @@ describe("mapGeminiRowsToTermFields", () => {
   });
 });
 
+describe("riskIdForExtractedFieldsCache", () => {
+  it("prefers document riskId over policy riskId", () => {
+    expect(
+      riskIdForExtractedFieldsCache("doc-risk", "policy-risk"),
+    ).toBe("doc-risk");
+  });
+
+  it("falls back to policy.riskId when document has none", () => {
+    expect(riskIdForExtractedFieldsCache(null, "policy-risk")).toBe("policy-risk");
+    expect(riskIdForExtractedFieldsCache("", "policy-risk")).toBe("policy-risk");
+    expect(riskIdForExtractedFieldsCache(undefined, "  policy-risk  ")).toBe("policy-risk");
+  });
+
+  it("returns null when neither document nor policy has a risk (skip cache)", () => {
+    expect(riskIdForExtractedFieldsCache(null, null)).toBeNull();
+    expect(riskIdForExtractedFieldsCache("", undefined)).toBeNull();
+    expect(riskIdForExtractedFieldsCache("   ", "")).toBeNull();
+  });
+});
+
 describe("fillCompare From DECs wiring", () => {
   it("exposes fillCompareFromTermRoleDocs action and Fill Compare button", () => {
     const action = readFileSync("src/app/actions/renewal.ts", "utf8");
@@ -151,6 +172,10 @@ describe("fillCompare From DECs wiring", () => {
     expect(action).toMatch(/stampDocTermMeta/);
     expect(action).toMatch(/expiresAt/);
     expect(action).toMatch(/eventType: "dec_fill"/);
+    expect(action).toMatch(/riskIdForExtractedFieldsCache/);
+    expect(action).toMatch(/persistExtractRows\(id, rows, policy\.riskId\)/);
+    expect(action).toMatch(/skip extracted_fields cache \(no risk_id\)/);
+    expect(action).toMatch(/extracted_fields cache failed \(best-effort\)/);
     const button = readFileSync("src/components/policy/fill-compare-from-decs-button.tsx", "utf8");
     expect(button).toMatch(/data-ff-fill-compare-from-decs/);
     expect(button).toMatch(/Fill Compare from DECs/);
