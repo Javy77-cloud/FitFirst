@@ -1,11 +1,12 @@
 import Link from "next/link";
 import {
   PolicyCarrierLookup,
-  PolicyInlineDate,
   PolicyInlineStatus,
   PolicyInlineText,
 } from "@/components/policy/policy-inline-fields";
 import { PolicyLobField } from "@/components/policy/policy-lob-field";
+import { CorrectTermDatesDialog } from "@/components/policy/correct-term-dates-dialog";
+import { formatDay } from "@/lib/domain";
 import { RecordLink } from "@/components/record-links";
 import { POLICY_STATUSES } from "@/lib/policy/status";
 import { partyLabel } from "@/lib/desk/policy-name";
@@ -94,8 +95,8 @@ export function PolicyInformationCard({
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
         {readOnly
-          ? "Read-only for agents. Admins can edit fields from Overview."
-          : "Click a field to edit. Sensitive dates and the policy number ask for confirmation. Commission % and auto-label stay locked."}
+          ? "Read-only for agents. Admins can edit fields from Overview. Term dates stay locked — agency corrects them with a reason."
+          : "Click a field to edit. Policy number asks for confirmation. Term dates stay locked (carrier/API truth); use Correct term dates for agency overrides. Commission % and auto-label stay locked."}
       </p>
       <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
         <PolicyInlineText
@@ -136,28 +137,36 @@ export function PolicyInformationCard({
           value={policy.insuranceType ?? ""}
           readOnly={readOnly}
         />
-        <PolicyInlineDate
-          policyId={policy.id}
-          fieldKey="effectiveDate"
-          label="Effective date"
-          value={policy.effectiveDate}
-          readOnly={readOnly}
-        />
-        <PolicyInlineDate
-          policyId={policy.id}
-          fieldKey="expirationDate"
-          label="Expiration date"
-          value={policy.expirationDate}
-          readOnly={readOnly}
-        />
-        <PolicyInlineDate
-          policyId={policy.id}
-          fieldKey="renewalDate"
-          label="Renewal date"
-          value={policy.renewalDate}
-          readOnly={readOnly}
-          allowEmpty
-        />
+        <div data-ff-policy-inline="effectiveDate" data-ff-term-date-locked="">
+          <dt className="text-helper text-muted-foreground">Effective date</dt>
+          <dd className="font-medium text-navy">{formatDay(policy.effectiveDate)}</dd>
+          <p className="text-[11px] text-muted-foreground">Locked · carrier/API truth</p>
+        </div>
+        <div data-ff-policy-inline="expirationDate" data-ff-term-date-locked="">
+          <dt className="text-helper text-muted-foreground">Expiration date</dt>
+          <dd className="font-medium text-navy">{formatDay(policy.expirationDate)}</dd>
+          <p className="text-[11px] text-muted-foreground">Locked · carrier/API truth</p>
+        </div>
+        <div data-ff-policy-inline="renewalDate" data-ff-term-date-locked="">
+          <dt className="text-helper text-muted-foreground">Renewal date</dt>
+          <dd className="font-medium text-navy">
+            {policy.renewalDate ? formatDay(policy.renewalDate) : "—"}
+          </dd>
+          <p className="text-[11px] text-muted-foreground">Locked · carrier/API truth</p>
+        </div>
+        {!readOnly ? (
+          <div className="sm:col-span-2 lg:col-span-3" data-ff-term-override-control="">
+            <CorrectTermDatesDialog
+              policyId={policy.id}
+              effectiveDate={policy.effectiveDate}
+              expirationDate={policy.expirationDate}
+              renewalDate={policy.renewalDate}
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Agency only (admin/owner). Requires a reason; writes Activity + E&O audit.
+            </p>
+          </div>
+        ) : null}
         <PolicyInlineText
           policyId={policy.id}
           fieldKey="premium"
