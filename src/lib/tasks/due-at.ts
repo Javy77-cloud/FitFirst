@@ -57,6 +57,34 @@ function zonedLocalToUtc(localIso: string, timeZone: string): Date {
   return utc;
 }
 
+const LOCAL_DT_RE =
+  /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
+
+/**
+ * Parse a form datetime for desk activities / calendar.
+ * - `YYYY-MM-DDTHH:MM` (datetime-local / Quick Comms combineLocal) → America/New_York wall clock
+ * - Absolute ISO with `Z` or ±offset → that instant
+ * Never treat bare local strings as UTC or server-local.
+ */
+export function parseDeskDateTimeLocal(raw: string | null | undefined): Date | null {
+  const s = String(raw ?? "").trim();
+  if (!s) return null;
+  if (/[zZ]$|[+-]\d{2}:\d{2}$/.test(s)) {
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const m = LOCAL_DT_RE.exec(s);
+  if (!m) {
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const [, y, mo, day, hh, mm, ss] = m;
+  const hour = hh ?? "00";
+  const minute = mm ?? "00";
+  const second = ss ?? "00";
+  return zonedLocalToUtc(`${y}-${mo}-${day}T${hour}:${minute}:${second}`, TASK_DUE_TIMEZONE);
+}
+
 export function parseTaskDueAt(
   dateRaw: string | null | undefined,
   timeRaw?: string | null,

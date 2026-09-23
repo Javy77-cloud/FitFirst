@@ -9,6 +9,7 @@ import { loadInviteCatalog } from "@/lib/db/office-queries";
 import { activities, activityLogs, alerts, calendarInvites } from "@/lib/db/schema";
 import { ADMIN_USER_ID } from "@/lib/fixtures/ids";
 import { activityLogBody } from "@/lib/lifecycle/activity";
+import { parseDeskDateTimeLocal } from "@/lib/tasks/due-at";
 import {
   COMPANY_EVENT_TYPE_LABEL,
   INVITE_AUDIENCE_LABEL,
@@ -25,10 +26,7 @@ function str(form: FormData, key: string) {
 }
 
 function when(form: FormData, key: string) {
-  const raw = str(form, key);
-  if (!raw) return null;
-  const d = new Date(raw);
-  return Number.isNaN(d.getTime()) ? null : d;
+  return parseDeskDateTimeLocal(str(form, key));
 }
 
 function parseCompanyForm(form: FormData) {

@@ -1,5 +1,7 @@
 import { contactActionButtonClass, isContactActionKind } from "@/lib/desk/contact-actions";
 import type { ActivityKind } from "@/lib/domain";
+import { DESK_TIME_ZONE } from "@/lib/desk/desk-timezone";
+import { parseDeskDateTimeLocal } from "@/lib/tasks/due-at";
 
 export type CalendarActivity = {
   id: string;
@@ -184,8 +186,8 @@ export function serializeCalendarActivity(row: CalendarActivity) {
 
 export function toDate(value: Date | string | null | undefined): Date | null {
   if (!value) return null;
-  const d = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  return parseDeskDateTimeLocal(value);
 }
 
 export function toDateParam(d: Date): string {
@@ -343,8 +345,19 @@ export function parseTags(raw: string | null | undefined): string[] {
 export function toDateTimeLocal(value: Date | string | null | undefined): string {
   const date = toDate(value);
   if (!date) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  // datetime-local is wall clock without zone — always America/New_York parts.
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: DESK_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "00";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
 }
 
 /** Add minutes to a datetime-local string; empty in → empty out. */
@@ -375,20 +388,25 @@ export function calendarKindNeedsEndRange(kind: string): boolean {
 export function formatTime(value: Date | string | null | undefined): string {
   const d = toDate(value);
   if (!d) return "";
-  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleTimeString("en-US", {
+    timeZone: DESK_TIME_ZONE,
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 export function formatWhen(activity: CalendarActivity): string {
   if (activity.kind === "task" || activity.kind === "sms" || activity.kind === "email") {
     const due = toDate(activity.dueAt);
     return due
-      ? `Due ${due.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`
+      ? `Due ${due.toLocaleString("en-US", { timeZone: DESK_TIME_ZONE, month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`
       : "No due date";
   }
   const start = toDate(activity.startAt);
   const end = toDate(activity.endAt);
   if (!start) return "No start time";
   const startLabel = start.toLocaleString("en-US", {
+    timeZone: DESK_TIME_ZONE,
     month: "short",
     day: "numeric",
     hour: "numeric",

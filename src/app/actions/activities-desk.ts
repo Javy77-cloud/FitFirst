@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { activities, activityLogs, alerts, calendarInvites } from "@/lib/db/schema";
+import { activities, activityLogs, alerts, calendarInvites, contacts } from "@/lib/db/schema";
 import { canCloseCall } from "@/lib/activities/rules";
 import {
   activityLogBody,
@@ -15,16 +15,40 @@ import {
 import { and, eq } from "drizzle-orm";
 import { flashAction } from "@/lib/flash-action";
 import { resolvePolicyProducerName } from "@/lib/activity/producer";
+import { parseDeskDateTimeLocal } from "@/lib/tasks/due-at";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
 }
 
 function when(form: FormData, key: string) {
-  const raw = str(form, key);
-  if (!raw) return null;
-  const d = new Date(raw);
-  return Number.isNaN(d.getTime()) ? null : d;
+  return parseDeskDateTimeLocal(str(form, key));
+}
+
+function digitsOnly(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+/** Browser autofill often dumps the phone into Title; keep a human call title. */
+async function resolveCallTitle(title: string, phoneNumber: string | null, contactId: string | null) {
+  const trimmed = title.trim();
+  const phoneDigits = phoneNumber ? digitsOnly(phoneNumber) : "";
+  const titleIsPhone =
+    Boolean(phoneDigits) &&
+    phoneDigits.length >= 10 &&
+    digitsOnly(trimmed) === phoneDigits &&
+    !/[a-zA-Z]/.test(trimmed);
+  if (!titleIsPhone) return trimmed || "Call";
+  if (contactId) {
+    const [contact] = await db
+      .select({ firstName: contacts.firstName, lastName: contacts.lastName })
+      .from(contacts)
+      .where(eq(contacts.id, contactId))
+      .limit(1);
+    const name = [contact?.firstName, contact?.lastName].filter(Boolean).join(" ").trim();
+    if (name) return `Call · ${name}`;
+  }
+  return phoneNumber ? `Call · ${phoneNumber}` : "Call";
 }
 
 function optionalInt(form: FormData, key: string) {
@@ -53,6 +77,7 @@ async function pushAfterSave(activity: {
   title: string;
   notes?: string | null;
   meetingLocation?: string | null;
+  phoneNumber?: string | null;
   startAt: Date | string | null;
   endAt: Date | string | null;
 }) {
@@ -79,13 +104,17 @@ function revalidateRelated(related: {
 
 export async function logDeskActivity(formData: FormData) {
   const kind = str(formData, "kind") || "task";
-  const title = str(formData, "title") || defaultActivityTitle(kind);
   const requireRelated = str(formData, "allowOrphan") !== "1";
   let related: ReturnType<typeof relatedFromForm>;
   try {
     related = relatedFromForm(formData, requireRelated);
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Could not save that activity." };
+  }
+  const phoneNumber = str(formData, "phone") || str(formData, "phoneNumber") || null;
+  let title = str(formData, "title") || defaultActivityTitle(kind);
+  if (kind === "call") {
+    title = await resolveCallTitle(title, phoneNumber, related.contactId);
   }
   const eventType = kind === "call" || kind === "email" || kind === "sms" ? "logged" : "created";
   const duePreview = when(formData, "dueAt") ?? when(formData, "startAt");
@@ -97,7 +126,6 @@ export async function logDeskActivity(formData: FormData) {
       : str(formData, "status") || "open";
   const outcome = str(formData, "outcome") || null;
   const durationSeconds = optionalInt(formData, "durationSeconds");
-  const phoneNumber = str(formData, "phone") || str(formData, "phoneNumber") || null;
   const direction =
     str(formData, "direction") || (kind === "call" ? "outbound" : kind === "email" || kind === "sms" ? "outbound" : null);
 
@@ -302,7 +330,12 @@ export async function updateDeskActivity(formData: FormData) {
     .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), eq(activities.id, id)));
   if (!activity) return;
 
-  const title = str(formData, "title") || activity.title;
+  let title = str(formData, "title") || activity.title;
+  if (activity.kind === "call") {
+    const phone =
+      activity.phoneNumber || str(formData, "phone") || str(formData, "phoneNumber") || null;
+    title = await resolveCallTitle(title, phone, activity.contactId);
+  }
   const notes = str(formData, "notes") || null;
   const dueAt = when(formData, "dueAt");
   const startAt = when(formData, "startAt") ?? activity.startAt;
@@ -369,10 +402,8 @@ export async function rescheduleDeskActivity(formData: FormData) {
     const conflicts = await findBusyConflicts(startAt, endAt);
     if (conflicts.length) return { error: busyConflictMessage(conflicts) };
   }
-  const dueAt =
-    activity.kind === "task" || activity.kind === "sms" || activity.kind === "email"
-      ? startAt
-      : activity.dueAt ?? startAt;
+  // Keep dueAt aligned with the dragged start for all timed desk items (incl. calls).
+  const dueAt = startAt;
 
   await db
     .update(activities)
