@@ -7,8 +7,10 @@ import { activities, activityLogs, alerts, calendarInvites, contacts } from "@/l
 import { canCloseCall } from "@/lib/activities/rules";
 import {
   activityLogBody,
+  assertCommsRecord,
   assertRelatedRecord,
   defaultActivityTitle,
+  hasCommsRecord,
   hasRelatedRecord,
   shouldWriteCommsActivityLog,
 } from "@/lib/lifecycle/activity";
@@ -58,18 +60,36 @@ function optionalInt(form: FormData, key: string) {
   return Number.isFinite(n) ? Math.max(0, Math.round(n)) : null;
 }
 
-function relatedFromForm(form: FormData, requireRelated: boolean) {
-  const related = {
+function relatedIdsFromForm(form: FormData) {
+  return {
     contactId: str(form, "contactId") || null,
     accountId: str(form, "accountId") || null,
     policyId: str(form, "policyId") || null,
     dealId: str(form, "dealId") || null,
     leadId: str(form, "leadId") || null,
   };
+}
+
+/** Tasks/meetings need Contact/Policy/Business/Lead; call/email/sms may hang on Deal alone. */
+function relatedFromForm(form: FormData, requireRelated: boolean, kind: string) {
+  const related = relatedIdsFromForm(form);
+  const isComms = kind === "call" || kind === "email" || kind === "sms";
+  if (isComms) {
+    if (requireRelated || hasCommsRecord(related)) {
+      return assertCommsRecord(related);
+    }
+    return related;
+  }
   if (requireRelated || hasRelatedRecord(related)) {
     return assertRelatedRecord(related);
   }
   return related;
+}
+
+function asInstant(value: Date | string | null | undefined): Date | null {
+  if (value == null || value === "") return null;
+  const d = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 async function pushAfterSave(activity: {
@@ -107,10 +127,11 @@ export async function logDeskActivity(formData: FormData) {
   const requireRelated = str(formData, "allowOrphan") !== "1";
   let related: ReturnType<typeof relatedFromForm>;
   try {
-    related = relatedFromForm(formData, requireRelated);
+    related = relatedFromForm(formData, requireRelated, kind);
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Could not save that activity." };
   }
+  try {
   const phoneNumber = str(formData, "phone") || str(formData, "phoneNumber") || null;
   let title = str(formData, "title") || defaultActivityTitle(kind);
   if (kind === "call") {
@@ -151,7 +172,8 @@ export async function logDeskActivity(formData: FormData) {
 
   const startAt = when(formData, "startAt") ?? when(formData, "dueAt");
   let dueAt = when(formData, "dueAt");
-  if (!dueAt && startAt && (kind === "task" || kind === "email" || kind === "sms")) {
+  // Timed desk items (incl. scheduled call reminders) need dueAt so they land on Calendar.
+  if (!dueAt && startAt && (kind === "task" || kind === "email" || kind === "sms" || kind === "call")) {
     dueAt = startAt;
   }
   let endAt = when(formData, "endAt") ?? (startAt ? new Date(startAt.getTime() + 30 * 60 * 1000) : null);
@@ -225,7 +247,7 @@ export async function logDeskActivity(formData: FormData) {
   }
 
   // In-app popup reminder (task / call / email draft). Always popup — never emails the agent by default.
-  const due = activity.dueAt ?? activity.startAt;
+  const due = asInstant(activity.dueAt) ?? asInstant(activity.startAt);
   const wantsOffsetReminder =
     (kind === "task" || kind === "call") && reminderMinutes != null && reminderMinutes > 0 && due;
   const wantsDueReminder = createReminder && due && (kind === "email" || kind === "task" || kind === "call");
@@ -265,6 +287,11 @@ export async function logDeskActivity(formData: FormData) {
   if (kind === "call") revalidatePath("/phone");
   revalidatePath("/notifications");
   revalidatePath("/alerts");
+  return { ok: true as const, activityId: activity.id };
+  } catch (err) {
+    // Never throw to the client form action — prod wraps throws as React #441 white screen.
+    return { error: err instanceof Error ? err.message : "Could not save that activity." };
+  }
 }
 
 export async function completeDeskActivity(formData: FormData) {

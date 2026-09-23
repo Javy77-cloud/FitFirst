@@ -147,6 +147,7 @@ export function QuickCommsBoard({
   const [templateBody, setTemplateBody] = useState<string | null>(null);
   const [smsMode, setSmsMode] = useState<"now" | "schedule">("now");
   const [callBusy, setCallBusy] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const filtered = items.filter((item) => item.kind === kind);
   const party = (contactName ?? "").trim() || (carrierId ? "this carrier" : dealId ? "this deal" : "this lead");
@@ -223,9 +224,11 @@ export function QuickCommsBoard({
   }
 
   async function submitKind(formData: FormData) {
+    setFormError(null);
     applyDueFields(formData);
     const intent = String(formData.get("intent") ?? "").trim();
 
+    try {
     if (kind === "email") {
       const subject = String(formData.get("subject") ?? "").trim();
       formData.set("title", subject || defaultTitle);
@@ -249,7 +252,11 @@ export function QuickCommsBoard({
         formData.set("direction", "outbound");
         formData.set("intent", "remind");
         stampRelated(formData);
-        await logDeskActivity(formData);
+        const remindResult = await logDeskActivity(formData);
+        if (remindResult && typeof remindResult === "object" && "error" in remindResult && remindResult.error) {
+          setFormError(String(remindResult.error));
+          return;
+        }
         if (attach.length) await persistDealEmailAttachments(formData);
         await afterCarrierComms("Email Reminder");
         return;
@@ -308,6 +315,10 @@ export function QuickCommsBoard({
         !/[a-zA-Z]/.test(rawTitle);
       if (!rawTitle || titleIsPhone) formData.set("title", defaultTitle);
       formData.set("status", "open");
+      // Schedule reminder must have a due/start so it lands on Calendar (Call now uses dialer only).
+      if (callMode === "schedule" && !formData.get("dueAt") && !formData.get("startAt")) {
+        throw new Error("Pick date and time to schedule the call reminder.");
+      }
     }
 
     if (kind === "meeting") {
@@ -340,7 +351,11 @@ export function QuickCommsBoard({
     }
 
     stampRelated(formData);
-    await logDeskActivity(formData);
+    const result = await logDeskActivity(formData);
+    if (result && typeof result === "object" && "error" in result && result.error) {
+      setFormError(String(result.error));
+      return;
+    }
     const label =
       kind === "call"
         ? "Call"
@@ -350,6 +365,19 @@ export function QuickCommsBoard({
             ? "Task"
             : "Quick Comms";
     await afterCarrierComms(label);
+    } catch (err) {
+      const digest =
+        err && typeof err === "object" && "digest" in err
+          ? String((err as { digest?: unknown }).digest ?? "")
+          : "";
+      if (digest.startsWith("NEXT_REDIRECT")) throw err;
+      const message = err instanceof Error ? err.message : "Could not save that activity.";
+      setFormError(
+        /Minified React error #441|Server Components render/i.test(message)
+          ? "Could not save that activity. Check the related record and try again."
+          : message,
+      );
+    }
   }
 
   function callNow() {
@@ -381,6 +409,7 @@ export function QuickCommsBoard({
             key={value}
             type="button"
             onClick={() => {
+              setFormError(null);
               if (value === "email") {
                 setKind("email");
                 setEmailGate("menu");
@@ -465,6 +494,11 @@ export function QuickCommsBoard({
         className="my-3 flex flex-col gap-2 rounded-md border border-border p-3"
         data-ff-quick-comms-form={kind}
       >
+        {formError ? (
+          <p className="text-sm text-destructive" data-ff-quick-comms-error="">
+            {formError}
+          </p>
+        ) : null}
         {dealId ? <input type="hidden" name="dealId" value={dealId} /> : null}
         {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
         {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
