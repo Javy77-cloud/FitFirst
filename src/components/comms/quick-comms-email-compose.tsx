@@ -255,7 +255,7 @@ export function QuickCommsEmailCompose({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "flex max-h-[50vh] w-[min(100%,28rem)] flex-col gap-3 overflow-hidden p-4 sm:max-w-md",
+          "flex max-h-[56vh] w-[min(90vw,42rem)] flex-col gap-3 overflow-hidden p-4 sm:max-w-[42rem]",
         )}
         data-ff-qc-email-compose=""
       >
@@ -381,7 +381,7 @@ export function QuickCommsEmailCompose({
               role="textbox"
               aria-label="Email body"
               data-ff-qc-compose-body=""
-              className="mt-1 min-h-[7rem] max-h-[14vh] overflow-y-auto rounded-md border border-input bg-card px-2 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="mt-1 min-h-[8rem] max-h-[18vh] overflow-y-auto rounded-md border border-input bg-card px-2 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onPaste={onPaste}
               suppressContentEditableWarning
             />
