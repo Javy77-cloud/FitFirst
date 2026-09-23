@@ -148,7 +148,11 @@ export function formatPremisesLines(input: {
   return { street, locality };
 }
 
-/** Newline-joined street / city-state-zip for whitespace-pre-line display. */
+/**
+ * Newline-joined street / city-state-zip for Overview stacked display.
+ * Always returns exactly two lines (either may be empty) so short addresses
+ * never collapse to a single-line cell height.
+ */
 export function formatPremisesStacked(input: {
   address?: string | null;
   city?: string | null;
@@ -157,7 +161,7 @@ export function formatPremisesStacked(input: {
 }): string | null {
   const lines = formatPremisesLines(input);
   if (!lines) return null;
-  return [lines.street, lines.locality].filter(Boolean).join("\n");
+  return `${lines.street}\n${lines.locality}`;
 }
 
 export function premisesLinesEqual(

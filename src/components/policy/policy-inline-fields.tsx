@@ -20,6 +20,20 @@ function displayValue(value: string | null | undefined) {
   return v ? v : "—";
 }
 
+/** Two stacked lines for Overview address cells — never collapses via trim. */
+function displayStackedValue(raw: string) {
+  const parts = raw.split("\n");
+  const street = (parts[0] ?? "").trim();
+  const locality = parts.slice(1).join("\n").trim();
+  const empty = !street && !locality;
+  return (
+    <span className="block min-h-[2.5em] whitespace-normal break-words leading-snug">
+      <span className="block">{empty ? "—" : street || "\u00A0"}</span>
+      <span className="block">{empty ? "\u00A0" : locality || "\u00A0"}</span>
+    </span>
+  );
+}
+
 function toDateInputValue(value: string | Date | null | undefined): string {
   if (!value) return "";
   if (typeof value === "string") {
@@ -105,21 +119,21 @@ export function PolicyInlineText({
     });
   }
 
-  const shown = displayText?.trim() ? displayText : value;
-  const stacked = Boolean(displayText?.includes("\n"));
+  // Prefer displayText whenever provided (incl. "—\n" empty stack); do not trim
+  // away a trailing newline — that would collapse short addresses to one line.
+  const stacked = displayText != null && displayText.includes("\n");
+  const shown = stacked ? displayText! : displayText?.trim() ? displayText : value;
+  const rendered = stacked ? displayStackedValue(shown) : displayValue(shown);
 
   return (
     <div data-ff-policy-inline={fieldKey}>
       <dt className="text-helper text-muted-foreground">{label}</dt>
       <dd
-        className={cn(
-          "font-medium text-navy",
-          stacked && "whitespace-pre-line leading-snug",
-        )}
+        className={cn("font-medium text-navy", stacked && "leading-snug")}
         data-ff-address-compact={stacked ? "" : undefined}
       >
         {readOnly ? (
-          displayValue(shown)
+          rendered
         ) : editing ? (
           <input
             autoFocus
@@ -143,12 +157,12 @@ export function PolicyInlineText({
             type="button"
             className={cn(
               "w-full rounded-sm px-0.5 text-left hover:bg-[#002868]/5",
-              stacked && "whitespace-pre-line leading-snug",
+              stacked && "leading-snug",
               !value?.trim() && "text-muted-foreground",
             )}
             onClick={() => setEditing(true)}
           >
-            {displayValue(shown)}
+            {rendered}
           </button>
         )}
       </dd>
