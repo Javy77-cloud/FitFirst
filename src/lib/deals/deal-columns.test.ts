@@ -11,6 +11,7 @@ import {
   DEAD_DEAL_COLUMN_IDS,
   dealFieldRawValue,
   dealRecordPhone,
+  dealRecordEmail,
   dealStageView,
   dealsColumnsFromFields,
 } from "./deal-columns";
@@ -283,3 +284,11 @@ describe("list Pipeline / subtype columns fall back to Details cascade", () => {
   });
 });
 
+describe("dealRecordEmail", () => {
+  it("reads Deal Details CF keys email → applicant_email → co_applicant_email", () => {
+    expect(dealRecordEmail({ email: "a@x.com", applicant_email: "b@x.com" })).toBe("a@x.com");
+    expect(dealRecordEmail({ applicant_email: "b@x.com" })).toBe("b@x.com");
+    expect(dealRecordEmail({ co_applicant_email: "c@x.com" })).toBe("c@x.com");
+    expect(dealRecordEmail({})).toBe("");
+  });
+});

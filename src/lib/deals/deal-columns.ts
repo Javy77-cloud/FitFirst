@@ -344,8 +344,14 @@ export function dealRecordPhone(stored: Record<string, string>): string {
   return stored.phone?.trim() ?? "";
 }
 
+/** Deal Details CF email — never Contact/Lead. Prefer email, then applicant_email, then co_applicant. */
 export function dealRecordEmail(stored: Record<string, string>): string {
-  return stored.email?.trim() ?? "";
+  return (
+    stored.email?.trim() ||
+    stored.applicant_email?.trim() ||
+    stored.co_applicant_email?.trim() ||
+    ""
+  );
 }
 
 export function dealRecordAddress(

@@ -6,9 +6,11 @@ function source(file: string) {
 }
 
 describe("compose recipient modules", () => {
-  it("resolves deal Quick Comms email via contact → lead → account", () => {
+  it("resolves deal Quick Comms email via contact → lead → account → deal CF", () => {
     const dealPage = source("src/app/deals/[id]/page.tsx");
-    expect(dealPage).toMatch(/resolvePartyEmail\(\{ contact, lead, account \}\)/);
+    expect(dealPage).toMatch(
+      /resolvePartyEmail\(\{ contact, lead, account, dealStored: dealValues \}\)/,
+    );
     expect(dealPage).not.toMatch(/contactEmail=\{contact\?\.email \?\? lead\?\.email\}/);
   });
 
