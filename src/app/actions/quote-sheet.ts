@@ -152,7 +152,8 @@ import {
   packageCreateDraft,
 } from "@/lib/deals/package-lines";
 import { flashAction } from "@/lib/flash-action";
-import { isDocumentsSourceDoc, isQuoteFileDoc } from "@/lib/deals/quote-docs";
+import { isQuoteFileDoc } from "@/lib/deals/quote-docs";
+import { selectFillDocsForProductWindow } from "@/lib/quote-sheet/fill-docs-for-product";
 import { withFlash } from "@/lib/flash";
 import { dealTitleForRecords } from "@/lib/deals/deal-title";
 import { markShopFlowStaleAfterRiskChange, persistSheetRecheckCue } from "@/lib/deals/shop-flow-persist";
@@ -1249,12 +1250,7 @@ export async function listMasterFillDocs(input: {
       .from(documents)
       .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)))
       .orderBy(asc(documents.createdAt));
-    const docs = rows.filter(
-      (doc) =>
-        isDocumentsSourceDoc(doc) &&
-        !isQuoteFileDoc(doc) &&
-        !isQuoteAttachment(doc.docType, doc.filename),
-    );
+    const docs = selectFillDocsForProductWindow(rows, { shopLine: lineRaw });
     if (docs.length === 0) {
       return { ok: true, docs: [], note: MASTER_FILL_SKIP_NO_DOCS };
     }
@@ -1671,12 +1667,16 @@ export async function runFillQuoteSheet(
     .select()
     .from(documents)
     .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)));
-  const scoped = onlyId ? docs.filter((doc) => doc.id === onlyId) : docs;
+  const productDocs = selectFillDocsForProductWindow(docs, { shopLine: line });
+  const scoped = onlyId ? productDocs.filter((doc) => doc.id === onlyId) : productDocs;
   if (onlyId && scoped.length === 0) {
+    const onDeal = docs.some((doc) => doc.id === onlyId);
     return {
       filledKeys: [],
       skippedKeys: [],
-      error: "Docs failed. That file is not on this deal.",
+      error: onDeal
+        ? `Docs failed. That file is not on this product (${line}).`
+        : "Docs failed. That file is not on this deal.",
     };
   }
   const corrections = await loadFillCorrections();
