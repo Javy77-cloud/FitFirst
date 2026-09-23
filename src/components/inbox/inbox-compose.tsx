@@ -6,30 +6,23 @@ import { PenSquare } from "lucide-react";
 import { QuickCommsEmailCompose } from "@/components/comms/quick-comms-email-compose";
 import { Button } from "@/components/ui/button";
 
-/** Inbox New message entry — opens the shared Quick Comms compact compose. */
+/** Inbox Compose entry — Gmail-style top-left control opening the shared Quick Comms popup. */
 export function InboxCompose() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="ff-inbox-compose ff-inbox-new" data-ff-inbox-compose="">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="text-sm font-semibold text-navy">New message</p>
-          <p className="text-xs text-muted-foreground">
-            Compose from the agency mailbox · search contacts &amp; accounts for To
-          </p>
-        </div>
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => setOpen(true)}
-          data-ff-inbox-compose-open=""
-        >
-          <PenSquare className="size-3.5" />
-          Compose
-        </Button>
-      </div>
+    <div className="ff-inbox-compose-trigger" data-ff-inbox-compose="">
+      <Button
+        type="button"
+        size="sm"
+        onClick={() => setOpen(true)}
+        data-ff-inbox-compose-open=""
+        aria-label="Compose new message"
+      >
+        <PenSquare className="size-3.5" />
+        Compose
+      </Button>
 
       <QuickCommsEmailCompose
         open={open}

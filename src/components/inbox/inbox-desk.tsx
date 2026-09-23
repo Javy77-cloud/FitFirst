@@ -218,7 +218,10 @@ export function InboxDesk({
       data-ff-inbox-list-role={inboxSkinListRole(skin)}
     >
       <header className="ff-inbox-toolbar">
-        <p className="ff-inbox-mailbox">{accountEmail || "Inbox"}</p>
+        <div className="ff-inbox-toolbar-start">
+          <InboxCompose />
+          <p className="ff-inbox-mailbox">{accountEmail || "Inbox"}</p>
+        </div>
         <Link href={`/settings/email#${mailProvider}`} className="text-sm text-primary hover:underline">
           Settings
         </Link>
@@ -304,7 +307,6 @@ export function InboxDesk({
           ) : null
         }
       />
-      <InboxCompose />
     </div>
   );
 }

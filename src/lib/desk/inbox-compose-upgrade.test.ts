@@ -11,6 +11,7 @@ describe("inbox compose shared upgrade", () => {
   const compose = source("src/components/comms/quick-comms-email-compose.tsx");
   const actions = source("src/app/actions/quick-comms-email.ts");
   const board = source("src/components/comms/quick-comms-board.tsx");
+  const chrome = source("src/app/globals.css");
 
   it("elevates Inbox New message into Compose opening the shared popup", () => {
     expect(desk).toMatch(/InboxCompose/);
@@ -23,10 +24,33 @@ describe("inbox compose shared upgrade", () => {
     expect(inboxCompose).toMatch(/Stays in Inbox/);
   });
 
+  it("places Compose top-left in the toolbar, not a bottom New message strip", () => {
+    expect(desk).toMatch(/ff-inbox-toolbar-start/);
+    expect(desk).toMatch(/<InboxCompose \/>/);
+    const toolbarIdx = desk.indexOf("ff-inbox-toolbar");
+    const composeIdx = desk.indexOf("<InboxCompose");
+    const splitIdx = desk.indexOf("<InboxSplit");
+    expect(toolbarIdx).toBeGreaterThan(-1);
+    expect(composeIdx).toBeGreaterThan(toolbarIdx);
+    expect(composeIdx).toBeLessThan(splitIdx);
+    expect(inboxCompose).not.toMatch(/New message/);
+    expect(inboxCompose).toMatch(/ff-inbox-compose-trigger/);
+    expect(chrome).not.toMatch(/\.ff-inbox-new \{/);
+  });
+
+  it("lets the reading pane use freed vertical space after removing the bottom strip", () => {
+    expect(chrome).toMatch(/max-height: min\(56rem, calc\(100dvh - 8\.5rem\)\)/);
+    expect(chrome).not.toMatch(/max-height: min\(46rem, calc\(100dvh - 13rem\)\)/);
+  });
+
   it("reuses one compose editor — does not fork a second body editor for Inbox", () => {
     expect(inboxCompose).toMatch(/from \"@\/components\/comms\/quick-comms-email-compose\"/);
     expect(board).toMatch(/QuickCommsEmailCompose/);
-    expect(compose).toMatch(/max-h-\[50vh\]/);
+    expect(compose).toMatch(/max-h-\[56vh\]/);
+    expect(compose).toMatch(/w-\[min\(90vw,42rem\)\]/);
+    expect(compose).toMatch(/sm:max-w-\[42rem\]/);
+    expect(compose).not.toMatch(/sm:max-w-md/);
+    expect(compose).not.toMatch(/28rem/);
     expect(compose).toMatch(/contentEditable/);
     expect(compose).toMatch(/sendDeskEmail/);
     expect(compose).toMatch(/loadQuickCommsEmailSignature/);

@@ -5851,9 +5851,19 @@ tr[data-ff-activity-selected="true"] {
 .ff-inbox-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+}
+.ff-inbox-toolbar-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+.ff-inbox-compose-trigger {
+  flex: 0 0 auto;
 }
 .ff-inbox-mailbox {
   margin: 0;
@@ -5885,7 +5895,7 @@ tr[data-ff-activity-selected="true"] {
   flex: 0 0 auto;
   width: clamp(15rem, var(--ff-inbox-list-width, 52%), calc(100% - 18.5rem));
   min-width: 0;
-  max-height: min(46rem, calc(100dvh - 13rem));
+  max-height: min(56rem, calc(100dvh - 8.5rem));
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -5897,7 +5907,7 @@ tr[data-ff-activity-selected="true"] {
   flex: 1 1 auto;
   min-width: 0;
   max-width: 100%;
-  max-height: min(46rem, calc(100dvh - 13rem));
+  max-height: min(56rem, calc(100dvh - 8.5rem));
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -6172,7 +6182,7 @@ tr[data-ff-activity-selected="true"] {
 }
 .ff-inbox-msg-meta { margin: 0 0 0.25rem; font-size: 0.68rem; font-weight: 650; color: var(--ff-muted); }
 .ff-inbox-compose { display: grid; gap: 0.45rem; margin-top: 0.85rem; }
-.ff-inbox-new { padding-top: 0.5rem; border-top: 1px dashed var(--ff-border); }
+/* Bottom New message strip removed — Compose lives in the toolbar (Gmail-style). */
 .ff-inbox-cue { margin: 0.25rem 0 0; font-size: 0.72rem; font-weight: 650; color: #c45c26; }
 /* Last-sync lives in the toolbar Sync popover — do not restore a full-width ribbon. */
 [data-ff-calendar-sync] {
