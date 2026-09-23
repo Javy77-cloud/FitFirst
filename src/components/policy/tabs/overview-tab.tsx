@@ -149,11 +149,15 @@ export function PolicyOverviewTab({
           {isInForceStatus(policy.status) ? (
             <Link
               href={`/policies/${policy.id}/compare`}
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-              title="Compare renewal terms"
-              aria-label="Renew / Compare — compare renewal terms"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "sm" }),
+                "ff-compare-terms-btn",
+              )}
+              title="Opens current vs upcoming comparison — does not bind"
+              aria-label="Compare terms — opens current vs upcoming comparison, does not bind"
+              data-ff-compare-terms=""
             >
-              Renew
+              Compare terms
             </Link>
           ) : null}
         </div>

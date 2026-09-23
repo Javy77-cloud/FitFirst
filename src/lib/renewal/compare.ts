@@ -92,6 +92,41 @@ export function premiumShopStayChip(
   return null;
 }
 
+/** Tunable premium-% bands for desk lapse-risk chips (not AI). */
+export const PREMIUM_LAPSE_RISK_LOW_MAX = 5;
+export const PREMIUM_LAPSE_RISK_MEDIUM_MAX = 12;
+
+export type PremiumLapseRisk = "low" | "medium" | "high";
+
+export const PREMIUM_LAPSE_RISK_LABEL: Record<PremiumLapseRisk, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
+
+/**
+ * Premium-driven lapse risk from proposed % change.
+ * <5% Low; 5–12% Medium; ≥12% High. Flat/down → Low (cheaper renewals rarely drive lapse).
+ */
+export function premiumLapseRisk(
+  change: Pick<PremiumChange, "pct" | "direction">,
+): PremiumLapseRisk {
+  if (change.direction === "flat" || change.direction === "down") return "low";
+  const pctPoints = change.pct == null || !Number.isFinite(change.pct) ? null : change.pct * 100;
+  if (pctPoints == null) return "medium";
+  if (pctPoints < PREMIUM_LAPSE_RISK_LOW_MAX) return "low";
+  if (pctPoints < PREMIUM_LAPSE_RISK_MEDIUM_MAX) return "medium";
+  return "high";
+}
+
+/** Board clutter control — only surface Medium/High premium lapse risk. */
+export function premiumLapseRiskBoardChip(
+  change: Pick<PremiumChange, "pct" | "direction">,
+): PremiumLapseRisk | null {
+  const level = premiumLapseRisk(change);
+  return level === "low" ? null : level;
+}
+
 /** Board glance: +$118 +3.3% (never invents % when current premium is zero). */
 export function formatBoardPremiumDelta(delta: number, pct: number | null): string {
   const money = formatSignedMoney(delta);

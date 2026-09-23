@@ -84,7 +84,7 @@ export function PolicyDocumentsTab({
               filename → <strong>Set term role</strong>.
             </li>
             <li>
-              Click <strong>Fill Compare from DECs</strong>, then Overview → <strong>Renew</strong> to
+              Click <strong>Fill Compare from DECs</strong>, then Overview → <strong>Compare terms</strong> to
               see $ and % change.
             </li>
           </ol>

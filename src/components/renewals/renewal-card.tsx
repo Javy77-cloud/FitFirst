@@ -12,7 +12,8 @@ import { RenewalMiniReview } from "@/components/renewals/renewal-mini-review";
 import { Button } from "@/components/ui/button";
 import {
   formatBoardPremiumDelta,
-  premiumShopStayChip,
+  PREMIUM_LAPSE_RISK_LABEL,
+  premiumLapseRiskBoardChip,
 } from "@/lib/renewal/compare";
 import { autopilotConfirmLabel } from "@/lib/renewal/autopilot";
 import { chaseTemplateFor, primaryActionLabel, primaryRenewalAction } from "@/lib/renewal/chase";
@@ -34,13 +35,15 @@ function PremiumDeltaArrow({
   pct: number | null;
 }) {
   const label = formatBoardPremiumDelta(delta, pct);
-  const chip = premiumShopStayChip({
-    pct,
-    direction: delta > 0 ? "up" : delta < 0 ? "down" : "flat",
-  });
-  const chipEl = chip ? (
-    <span className="ff-renewal-delta-chip" data-ff-premium-chip={chip.toLowerCase()}>
-      {chip}
+  const direction = delta > 0 ? "up" : delta < 0 ? "down" : "flat";
+  const lapse = premiumLapseRiskBoardChip({ pct, direction });
+  const chipEl = lapse ? (
+    <span
+      className={cn("ff-renewal-delta-chip", `ff-premium-lapse-${lapse}`)}
+      data-ff-premium-lapse={lapse}
+      title="Premium-driven lapse risk from the proposed % change — not AI"
+    >
+      {PREMIUM_LAPSE_RISK_LABEL[lapse]} lapse
     </span>
   ) : null;
   if (delta > 0) {
@@ -157,6 +160,7 @@ export function RenewalBoardCardView({
             canCompare={card.canCompare}
             open={compareOpen}
             onOpenChange={setCompareOpen}
+            hideTrigger
             clientHealth={card.clientHealth}
             policyHealth={card.policyHealth}
           />
@@ -263,19 +267,35 @@ export function RenewalBoardCardView({
         <span className="ff-renewal-policy-type" title={renewalPolicyTypeLabel(card)}>
           {renewalPolicyTypeLabel(card)}
         </span>
-        <Link
-          href={`/policies/${card.policyId}`}
-          className="ff-renewal-policy-scroll"
-          data-ff-renewal-policy-scroll=""
-          data-ff-no-compare=""
-          aria-label={`Open policy for ${card.clientName}`}
-          title={`Open policy for ${card.clientName}`}
-          onClick={(event) => event.stopPropagation()}
-        >
-          <span className="ff-renewal-policy-scroll-roll" aria-hidden="true" />
-          <span className="ff-renewal-policy-scroll-face">Policy</span>
-          <span className="ff-renewal-policy-scroll-roll" aria-hidden="true" />
-        </Link>
+        <div className="ff-renewal-card-footer-actions" data-ff-no-compare="">
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            className="ff-renewal-compare-btn"
+            data-ff-renewal-compare-open=""
+            title="Opens current vs proposed comparison — does not bind"
+            aria-label={`Compare terms for ${card.clientName}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              setCompareOpen(true);
+            }}
+          >
+            Compare
+          </Button>
+          <Link
+            href={`/policies/${card.policyId}`}
+            className="ff-renewal-policy-scroll"
+            data-ff-renewal-policy-scroll=""
+            aria-label={`Open policy for ${card.clientName}`}
+            title={`Open policy for ${card.clientName}`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <span className="ff-renewal-policy-scroll-roll" aria-hidden="true" />
+            <span className="ff-renewal-policy-scroll-face">Policy</span>
+            <span className="ff-renewal-policy-scroll-roll" aria-hidden="true" />
+          </Link>
+        </div>
       </div>
     </article>
   );

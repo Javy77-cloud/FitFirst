@@ -1880,6 +1880,78 @@ button.ff-renewal-risk-badge {
   background: color-mix(in srgb, var(--ff-green, #1f7a4d) 16%, white);
   color: var(--ff-green, #1f7a4d);
 }
+.ff-renewal-delta-chip.ff-premium-lapse-medium,
+.ff-premium-lapse-chip.ff-premium-lapse-medium {
+  background: color-mix(in srgb, var(--ff-urgency-amber, #c4872a) 22%, white);
+  color: #8a5a12;
+}
+.ff-renewal-delta-chip.ff-premium-lapse-high,
+.ff-premium-lapse-chip.ff-premium-lapse-high {
+  background: color-mix(in srgb, var(--ff-terracotta, #b4532a) 20%, white);
+  color: var(--ff-terracotta, #b4532a);
+}
+.ff-premium-lapse-chip.ff-premium-lapse-low {
+  background: color-mix(in srgb, var(--ff-green, #1f7a4d) 14%, white);
+  color: var(--ff-green, #1f7a4d);
+}
+.ff-premium-lapse-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+}
+.ff-premium-lapse-label {
+  font-weight: 550;
+  opacity: 0.85;
+}
+.ff-premium-lapse-chip strong {
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.ff-premium-change {
+  border-color: color-mix(in srgb, var(--ff-urgency-amber, #c4872a) 22%, var(--border, #e5e7eb));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--ff-urgency-amber) 6%, white), white 42%),
+    white;
+}
+.ff-premium-compare-link {
+  color: var(--ff-terracotta, #b4532a);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.ff-premium-compare-link:hover {
+  color: color-mix(in srgb, var(--ff-terracotta, #b4532a) 80%, black);
+}
+.ff-compare-terms-btn {
+  border-color: color-mix(in srgb, var(--ff-terracotta, #b4532a) 55%, var(--ff-urgency-amber, #c4872a)) !important;
+  color: var(--ff-terracotta, #b4532a) !important;
+  background: color-mix(in srgb, var(--ff-urgency-amber, #c4872a) 10%, white) !important;
+  font-weight: 600;
+}
+.ff-compare-terms-btn:hover {
+  background: color-mix(in srgb, var(--ff-urgency-amber, #c4872a) 18%, white) !important;
+  border-color: var(--ff-terracotta, #b4532a) !important;
+}
+.ff-renewal-card-footer-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.ff-renewal-compare-btn {
+  border-color: color-mix(in srgb, var(--ff-terracotta, #b4532a) 50%, var(--ff-urgency-amber, #c4872a)) !important;
+  color: var(--ff-terracotta, #b4532a) !important;
+  background: color-mix(in srgb, var(--ff-urgency-amber, #c4872a) 9%, white) !important;
+  font-weight: 650;
+}
+.ff-renewal-compare-btn:hover {
+  background: color-mix(in srgb, var(--ff-urgency-amber, #c4872a) 18%, white) !important;
+}
 .ff-renewal-why {
   margin-top: 0.3rem;
   font-size: 0.72rem;
