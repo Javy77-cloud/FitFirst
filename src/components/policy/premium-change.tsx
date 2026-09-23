@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import {
   compareSummary,
   formatDeltaPct,
   formatSignedMoney,
+  premiumShopStayHint,
   type PremiumChange,
 } from "@/lib/renewal/compare";
 import { formatMoney } from "@/lib/domain";
@@ -10,9 +12,12 @@ import { formatMoney } from "@/lib/domain";
 export function PremiumChangeSummary({
   change,
   className,
+  compareHref,
 }: {
   change: PremiumChange;
   className?: string;
+  /** Optional link to Compare — Overview shows Renew; keep this light. */
+  compareHref?: string | null;
 }) {
   const tone =
     change.direction === "up"
@@ -20,9 +25,10 @@ export function PremiumChangeSummary({
       : change.direction === "down"
         ? "bg-fit-green-bg text-fit-green"
         : "bg-secondary text-navy";
+  const hint = premiumShopStayHint(change);
 
   return (
-    <section className={cn("ff-card p-4", className)}>
+    <section className={cn("ff-card p-4", className)} data-ff-premium-change="">
       <div className="text-caption uppercase tracking-wide text-muted-foreground">
         Premium change
       </div>
@@ -36,6 +42,21 @@ export function PremiumChangeSummary({
         </div>
       </div>
       <p className="mt-2 text-base text-muted-foreground">{compareSummary(change)}</p>
+      <p className="mt-1 text-sm text-muted-foreground" data-ff-premium-shop-stay-hint="">
+        {hint}
+        {compareHref ? (
+          <>
+            {" "}
+            <Link
+              href={compareHref}
+              className="font-medium text-primary hover:underline"
+              data-ff-premium-compare-link=""
+            >
+              Open Compare
+            </Link>
+          </>
+        ) : null}
+      </p>
     </section>
   );
 }

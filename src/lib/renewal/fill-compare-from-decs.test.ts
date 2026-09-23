@@ -1,9 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  buildOverviewWriteBackFromGemini,
   canFillCompareFromTermRoleDocs,
   docsForTermRole,
   mapGeminiRowsToTermFields,
+  normalizeDeductibleDisplay,
   riskIdForExtractedFieldsCache,
   selectCompareTermRoleDocs,
 } from "./fill-compare-from-decs";
@@ -176,6 +178,8 @@ describe("fillCompare From DECs wiring", () => {
     expect(action).toMatch(/persistExtractRows\(id, rows, policy\.riskId\)/);
     expect(action).toMatch(/skip extracted_fields cache \(no risk_id\)/);
     expect(action).toMatch(/extracted_fields cache failed \(best-effort\)/);
+    expect(action).toMatch(/buildOverviewWriteBackFromGemini/);
+    expect(action).toMatch(/overviewWritten/);
     const button = readFileSync("src/components/policy/fill-compare-from-decs-button.tsx", "utf8");
     expect(button).toMatch(/data-ff-fill-compare-from-decs/);
     expect(button).toMatch(/Fill Compare from DECs/);
@@ -185,5 +189,149 @@ describe("fillCompare From DECs wiring", () => {
     expect(docs).toMatch(/Term role/);
     const compare = readFileSync("src/components/policy/compare-panel.tsx", "utf8");
     expect(compare).toMatch(/FillCompareFromDecsButton/);
+  });
+});
+
+describe("normalizeDeductibleDisplay", () => {
+  it("strips OCR junk before a hurricane percent", () => {
+    expect(normalizeDeductibleDisplay("26 forward last 2%")).toBe("2%");
+    expect(normalizeDeductibleDisplay("forward last 5 %")).toBe("5%");
+    expect(normalizeDeductibleDisplay("2%")).toBe("2%");
+  });
+
+  it("normalizes dollar deductibles without inventing", () => {
+    expect(normalizeDeductibleDisplay("$2,500")).toBe("2500");
+    expect(normalizeDeductibleDisplay("1,000")).toBe("1000");
+    expect(normalizeDeductibleDisplay("")).toBeNull();
+    expect(normalizeDeductibleDisplay(null)).toBeNull();
+    expect(normalizeDeductibleDisplay("   ")).toBeNull();
+  });
+
+  it("is applied when mapping Gemini term deductibles", () => {
+    const mapped = mapGeminiRowsToTermFields([
+      { fieldKey: "current_premium", normalizedValue: "2547.00", rawValue: null, confidence: 0.9, flagged: false },
+      { fieldKey: "effective_date", normalizedValue: "2026-10-01", rawValue: null, confidence: 0.9, flagged: false },
+      { fieldKey: "expiration_date", normalizedValue: "2027-10-01", rawValue: null, confidence: 0.9, flagged: false },
+      {
+        fieldKey: "hurricane_deductible",
+        normalizedValue: "26 forward last 2%",
+        rawValue: "26 forward last 2%",
+        confidence: 0.7,
+        flagged: false,
+      },
+    ]);
+    expect(mapped.ok).toBe(true);
+    if (!mapped.ok) return;
+    expect(mapped.fields.hurricaneDeductible).toBe("2%");
+  });
+});
+
+describe("buildOverviewWriteBackFromGemini", () => {
+  const renewalRows = [
+    { fieldKey: "renewal_date", normalizedValue: "2027-10-01", rawValue: null, confidence: 0.9, flagged: false },
+    {
+      fieldKey: "location_description",
+      normalizedValue: "123 Palm Ave, Naples, FL 34102",
+      rawValue: null,
+      confidence: 0.9,
+      flagged: false,
+    },
+    { fieldKey: "coverage_a", normalizedValue: "310000", rawValue: null, confidence: 0.9, flagged: false },
+    { fieldKey: "year_built", normalizedValue: "1998", rawValue: null, confidence: 0.9, flagged: false },
+    { fieldKey: "construction", normalizedValue: "masonry", rawValue: null, confidence: 0.9, flagged: false },
+    { fieldKey: "roof_year", normalizedValue: "2016", rawValue: null, confidence: 0.9, flagged: false },
+  ];
+
+  it("writes blank policy/risk Overview gaps from Gemini values", () => {
+    const patch = buildOverviewWriteBackFromGemini({
+      policy: {
+        renewalDate: null,
+        premisesAddress: null,
+        premisesCity: null,
+        premisesState: null,
+        premisesZip: null,
+        coverageA: null,
+      },
+      risk: {
+        yearBuilt: null,
+        construction: null,
+        roofYear: null,
+        coverageA: null,
+        address1: null,
+        city: null,
+        state: null,
+        zip: null,
+      },
+      baselineRows: [],
+      renewalRows,
+    });
+    expect(patch.policy.renewalDate?.toISOString().slice(0, 10)).toBe("2027-10-01");
+    expect(patch.policy.premisesAddress).toMatch(/Palm/i);
+    expect(patch.policy.premisesCity).toBe("Naples");
+    expect(patch.policy.premisesState).toBe("FL");
+    expect(patch.policy.premisesZip).toBe("34102");
+    expect(patch.policy.coverageA).toBe(310000);
+    expect(patch.risk.yearBuilt).toBe(1998);
+    expect(patch.risk.construction).toBe("masonry");
+    expect(patch.risk.roofYear).toBe(2016);
+    expect(patch.written.length).toBeGreaterThan(0);
+  });
+
+  it("skips write-back when Gemini returned empty values", () => {
+    const patch = buildOverviewWriteBackFromGemini({
+      policy: {
+        renewalDate: null,
+        premisesAddress: null,
+        premisesCity: null,
+        premisesState: null,
+        premisesZip: null,
+        coverageA: null,
+      },
+      risk: {
+        yearBuilt: null,
+        construction: null,
+        roofYear: null,
+        coverageA: null,
+        address1: null,
+        city: null,
+        state: null,
+        zip: null,
+      },
+      baselineRows: [],
+      renewalRows: [
+        { fieldKey: "premium", normalizedValue: "2109", rawValue: null, confidence: 0.9, flagged: false },
+      ],
+    });
+    expect(patch.policy).toEqual({});
+    expect(patch.risk).toEqual({});
+    expect(patch.written).toEqual([]);
+  });
+
+  it("does not overwrite already-filled policy/risk fields", () => {
+    const patch = buildOverviewWriteBackFromGemini({
+      policy: {
+        renewalDate: new Date("2026-01-01T12:00:00.000Z"),
+        premisesAddress: "Existing St",
+        premisesCity: "Existing",
+        premisesState: "FL",
+        premisesZip: "33333",
+        coverageA: 200000,
+      },
+      risk: {
+        yearBuilt: 1980,
+        construction: "frame",
+        roofYear: 2000,
+        coverageA: 200000,
+        address1: "Existing St",
+        city: "Existing",
+        state: "FL",
+        zip: "33333",
+      },
+      baselineRows: [],
+      renewalRows,
+    });
+    expect(patch.policy).toEqual({});
+    expect(patch.risk).toEqual({});
+    expect(patch.written).toEqual([]);
   });
 });

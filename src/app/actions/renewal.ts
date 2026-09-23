@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { flashAction } from "@/lib/flash-action";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { appointmentLine } from "@/lib/domain-ams";
@@ -12,8 +12,10 @@ import { db } from "@/lib/db";
 import {
   documents,
   extractedFields,
+  carriers,
   policies,
   policyTerms,
+  risks,
   renewalCompareLogs,
   type PolicyCoverageLine,
 } from "@/lib/db/schema";
@@ -33,6 +35,7 @@ import {
   premiumChange,
 } from "@/lib/renewal/compare";
 import {
+  buildOverviewWriteBackFromGemini,
   mapGeminiRowsToTermFields,
   riskIdForExtractedFieldsCache,
   selectCompareTermRoleDocs,
@@ -388,6 +391,8 @@ export type FillCompareFromDecsResult =
       baselineFilename: string;
       renewalFilename: string;
       gaps: string[];
+      /** Overview header fields filled from Gemini when blank (never invented). */
+      overviewWritten: string[];
     }
   | { ok: false; error: string; gaps?: string[] };
 
@@ -432,7 +437,7 @@ export async function fillCompareFromTermRoleDocs(
     doc: TermRoleDocLike,
     sideLabel: string,
   ): Promise<
-    | { ok: true; fields: MappedTermFields }
+    | { ok: true; fields: MappedTermFields; rows: GeminiMintRow[] }
     | { ok: false; error: string; gaps?: string[] }
   > {
     if (!doc.storagePath?.trim()) {
@@ -469,7 +474,7 @@ export async function fillCompareFromTermRoleDocs(
         gaps: mapped.gaps,
       };
     }
-    return { ok: true, fields: mapped.fields };
+    return { ok: true, fields: mapped.fields, rows: gemini.rows };
   }
 
   const baselineLabel =
@@ -527,6 +532,102 @@ export async function fillCompareFromTermRoleDocs(
     };
   }
 
+  // Overview write-back: fill blank policy/risk gaps from Gemini (never invent).
+  let overviewWritten: string[] = [];
+  try {
+    let riskSnap: {
+      yearBuilt: number | null;
+      construction: string | null;
+      roofYear: number | null;
+      coverageA: number | null;
+      address1: string | null;
+      city: string | null;
+      state: string | null;
+      zip: string | null;
+    } | null = null;
+    if (policy.riskId) {
+      const [riskRow] = await db
+        .select({
+          yearBuilt: risks.yearBuilt,
+          construction: risks.construction,
+          roofYear: risks.roofYear,
+          coverageA: risks.coverageA,
+          address1: risks.address1,
+          city: risks.city,
+          state: risks.state,
+          zip: risks.zip,
+        })
+        .from(risks)
+        .where(and(eq(risks.tenantId, DEFAULT_TENANT_ID), eq(risks.id, policy.riskId)));
+      riskSnap = riskRow ?? null;
+    }
+    const writeBack = buildOverviewWriteBackFromGemini({
+      policy: {
+        renewalDate: policy.renewalDate,
+        premium: policy.premium,
+        premisesAddress: policy.premisesAddress,
+        premisesCity: policy.premisesCity,
+        premisesState: policy.premisesState,
+        premisesZip: policy.premisesZip,
+        coverageA: policy.coverageA,
+        coverageLimits: policy.coverageLimits,
+        formType: policy.formType,
+        insuranceType: policy.insuranceType,
+        sellingAgency: policy.sellingAgency,
+        producer: policy.producer,
+        billingFrequency: policy.billingFrequency,
+        carrierId: policy.carrierId,
+      },
+      risk: riskSnap,
+      baselineRows: baselineExtract.rows,
+      renewalRows: renewalExtract.rows,
+    });
+    overviewWritten = writeBack.written;
+    const policyUpdate: Record<string, unknown> = {
+      ...writeBack.policy,
+      updatedAt: new Date(),
+    };
+    // Carrier only when blank + exact name match (never invent / fuzzy overwrite).
+    if (!policy.carrierId && writeBack.carrierName?.trim()) {
+      const needle = writeBack.carrierName.trim().toLowerCase();
+      const [matched] = await db
+        .select({ id: carriers.id, name: carriers.name })
+        .from(carriers)
+        .where(
+          and(
+            eq(carriers.tenantId, DEFAULT_TENANT_ID),
+            sql`lower(trim(${carriers.name})) = ${needle}`,
+          ),
+        )
+        .limit(1);
+      if (matched) {
+        policyUpdate.carrierId = matched.id;
+        overviewWritten = [...overviewWritten, "carrierId"];
+      } else {
+        overviewWritten = overviewWritten.filter((k) => k !== "carrierName");
+      }
+    } else {
+      overviewWritten = overviewWritten.filter((k) => k !== "carrierName");
+    }
+    if (Object.keys(writeBack.policy).length > 0 || policyUpdate.carrierId) {
+      await db
+        .update(policies)
+        .set(policyUpdate)
+        .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
+    }
+    if (policy.riskId && Object.keys(writeBack.risk).length > 0) {
+      await db
+        .update(risks)
+        .set({ ...writeBack.risk, updatedAt: new Date() })
+        .where(and(eq(risks.tenantId, DEFAULT_TENANT_ID), eq(risks.id, policy.riskId)));
+    }
+  } catch (error) {
+    console.error("fill compare: overview write-back failed (best-effort)", {
+      policyId,
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+
   const curMoney = parseMoney(current.premium);
   const nextMoney = parseMoney(proposed.premium);
   if (curMoney == null || nextMoney == null) {
@@ -555,5 +656,6 @@ export async function fillCompareFromTermRoleDocs(
     baselineFilename: selected.baseline.filename ?? selected.baseline.id,
     renewalFilename: selected.renewal.filename ?? selected.renewal.id,
     gaps,
+    overviewWritten,
   };
 }

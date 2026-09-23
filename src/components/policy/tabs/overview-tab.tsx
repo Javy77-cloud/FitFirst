@@ -159,7 +159,9 @@ export function PolicyOverviewTab({
         </div>
       </section>
 
-      {change && isInForceStatus(policy.status) ? <PremiumChangeSummary change={change} /> : null}
+      {change && isInForceStatus(policy.status) ? (
+        <PremiumChangeSummary change={change} compareHref={`/policies/${policy.id}/compare`} />
+      ) : null}
 
       <LobOverviewSections
         readOnly={readOnly}
