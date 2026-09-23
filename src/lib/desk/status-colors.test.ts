@@ -67,7 +67,9 @@ describe("policy and client status colors", () => {
     expect(clientStatusColor("prospect")).toBe("blue");
     expect(clientStatusColor("lead")).toBe("teal");
     expect(displayStatusLabel("former_client")).toBe("Former Client");
-    expect(displayStatusLabel("non_renewal")).toBe("Non-renewal");
+    expect(displayStatusLabel("non_renewal")).toBe("Non-renewed");
+    expect(displayStatusLabel("non_renewed")).toBe("Non-renewed");
+    expect(displayStatusLabel("lapsed")).toBe("Lapsed");
   });
 
   it("returns accessible light-UI classes, never neon solids", () => {

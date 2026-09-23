@@ -24,7 +24,7 @@ import { formatDay } from "@/lib/domain";
 import { formatTaskDueAt } from "@/lib/tasks/due-at";
 
 export const IN_FORCE_STATUSES = new Set(["active", "bound"]);
-export const LAPSE_STATUSES = new Set(["lapsed", "lapse", "cancelled", "canceled", "expired"]);
+export const LAPSE_STATUSES = new Set(["lapsed", "lapse", "cancelled", "canceled", "cancellation", "non_renewed", "non_renewal", "expired", "terminated"]);
 export const OPEN_QUOTE_STAGES = new Set([
   "shopping",
   "quoting",

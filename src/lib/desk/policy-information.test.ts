@@ -139,4 +139,29 @@ describe("policy information fields", () => {
     expect(byKey.location.label).toBe("Mailing address");
     expect(byKey.location.value).toContain("PO Box 100");
   });
+
+  it("Flood Overview says Insured location (not Premises)", () => {
+    const fields = policyInformationFields({
+      policy: {
+        policyNumber: "ASR4409531",
+        status: "lapsed",
+        lineOfBusiness: "FLOOD",
+        policyType: "Flood",
+        effectiveDate: new Date("2026-08-08T05:00:00.000Z"),
+        expirationDate: new Date("2027-08-07T05:00:00.000Z"),
+        premium: "1200.00",
+        premisesAddress: "1 Flood Ln",
+        premisesCity: "Melbourne",
+        premisesState: "FL",
+        premisesZip: "32935",
+      },
+      carrierName: "Neptune Flood",
+      contact: { id: "robert", firstName: "Robert", lastName: "De Swartz Junior" },
+    });
+    const byKey = Object.fromEntries(fields.map((field) => [field.key, field]));
+    expect(byKey.premises.label).toBe("Insured location");
+    expect(byKey.subType?.label).not.toBe("Insured location");
+  });
+
+
 });

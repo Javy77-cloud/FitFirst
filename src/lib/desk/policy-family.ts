@@ -9,15 +9,14 @@ export type InsuranceFamily = (typeof INSURANCE_FAMILIES)[number];
 export type PolicyStatusTone = "green" | "yellow" | "red";
 
 export const POLICY_STATUS_OPTIONS = [
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
+  { value: "unpublished", label: "Unpublished" },
   { value: "bound", label: "Bound" },
   { value: "pending", label: "Pending" },
-  { value: "lapse", label: "Lapse" },
-  { value: "cancellation", label: "Cancellation" },
-  { value: "non_renewal", label: "Non-renewal" },
-  { value: "expired", label: "Expired" },
+  { value: "active", label: "Active" },
+  { value: "lapsed", label: "Lapsed" },
   { value: "cancelled", label: "Cancelled" },
+  { value: "non_renewed", label: "Non-renewed" },
+  { value: "expired", label: "Expired" },
 ] as const;
 
 /** Active green; Lapse / Bound yellow; everything else red. */
@@ -25,6 +24,7 @@ export function policyStatusTone(status: string | null | undefined): PolicyStatu
   const value = (status ?? "").trim().toLowerCase();
   if (value === "active") return "green";
   if (value === "bound" || value === "lapse" || value === "lapsed") return "yellow";
+  if (value === "non_renewed" || value === "non_renewal") return "red";
   return "red";
 }
 

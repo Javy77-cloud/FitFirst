@@ -66,7 +66,7 @@ describe("policy change workflow", () => {
     expect(filed.ok).toBe(true);
     if (!filed.ok) return;
     expect(filed.policy.id).toBe(active.id);
-    expect(filed.policy.status).toBe("cancellation");
+    expect(filed.policy.status).toBe("cancelled");
     expect(filed.policy.endedAt?.toISOString()).toBe("2026-09-01T12:00:00.000Z");
     expect(filed.policy.endReason).toBe("insured_request");
 
@@ -86,7 +86,7 @@ describe("policy change workflow", () => {
     });
     expect(filed.ok).toBe(true);
     if (!filed.ok) return;
-    expect(filed.policy.status).toBe("non_renewal");
+    expect(filed.policy.status).toBe("non_renewed");
     expect(isEndedStatus(filed.policy.status)).toBe(true);
     expect(filed.event.kind).toBe("non_renewal");
   });

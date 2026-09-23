@@ -177,7 +177,7 @@ export function policyInformationFields(input: {
   push(fields, "faceAmount", "Face amount", policy.faceAmount != null ? formatMoney(policy.faceAmount) : null);
   push(fields, "insured", "Insured", insured || null, insuredHref, { always: true });
   const insuredLocation = premisesLine(policy);
-  push(fields, "premises", homePc ? "Insured location" : "Premises", insuredLocation);
+  push(fields, "premises", "Insured location", insuredLocation);
   const mailing = distinctMailingLabel({
     premises: insuredLocation,
     mailing: mailingAddressLine(input.mailing),

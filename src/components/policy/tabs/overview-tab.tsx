@@ -10,7 +10,7 @@ import { ServicingChecklistCard } from "@/components/ams/servicing-checklist";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatDay } from "@/lib/domain";
-import { isInForceStatus } from "@/lib/policy/status";
+import { isInForceStatus, isOffBookStatus, policyStatusLabel } from "@/lib/policy/status";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import { resolveDwellingFacts } from "@/lib/policy/dwelling-facts";
 import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
@@ -103,9 +103,11 @@ export function PolicyOverviewTab({
   readOnly?: boolean;
   showCommission?: boolean;
 }) {
-  const renewalLine = policy.renewalDate
-    ? `Renewal ${formatDay(policy.renewalDate)}`
-    : `Expires ${formatDay(policy.expirationDate)}`;
+  const renewalLine = isOffBookStatus(policy.status)
+    ? policyStatusLabel(policy.status)
+    : policy.renewalDate
+      ? `Renewal ${formatDay(policy.renewalDate)}`
+      : `Expires ${formatDay(policy.expirationDate)}`;
   const family = resolveLobOverviewFamily(policy);
   const mortgageeCount = interests.filter((row) => row.kind === "mortgagee").length;
   const additionalInsuredCount = interests.filter(

@@ -1,5 +1,6 @@
 import { daysUntilDate, relativeTouchLabel } from "@/lib/book-lists/heat";
 import type { AgentPolicyTab } from "@/lib/policy/tabs";
+import { isOffBookStatus } from "@/lib/policy/status";
 import { renewalProximityDrivesCare } from "@/lib/renewal/handled";
 import { renewalDaysPhrase } from "@/lib/renewal/urgency";
 
@@ -31,10 +32,10 @@ export function shouldShowManualRenewalHelp(input: {
   asOf: Date;
   renewalHandled?: boolean;
 }): boolean {
+  if (isOffBookStatus(input.status)) return false;
   if (!renewalProximityDrivesCare(input.renewalHandled)) return false;
   const daysUntil = daysUntilDate(input.expirationDate ?? null, input.asOf);
-  const lapsed = /lapse|cancel|expired|terminated/i.test(input.status ?? "");
-  return lapsed || (daysUntil != null && daysUntil < 30);
+  return daysUntil != null && daysUntil < 30;
 }
 
 export function buildPolicyCareItems(input: {
@@ -57,18 +58,16 @@ export function buildPolicyCareItems(input: {
         Math.floor((input.asOf.getTime() - new Date(input.updatedAt).getTime()) / 86_400_000),
       )
     : null;
-  const lapsed = /lapse|cancel|expired|terminated/i.test(input.status ?? "");
-  const countRenewal = renewalProximityDrivesCare(input.renewalHandled);
+  const offBook = isOffBookStatus(input.status);
+  const countRenewal = !offBook && renewalProximityDrivesCare(input.renewalHandled);
 
-  if (countRenewal && (lapsed || (daysUntil != null && daysUntil < 30))) {
+  // Terminal / off-book statuses must NOT drive "Renewal docs due" from a printed expiration.
+  if (countRenewal && daysUntil != null && daysUntil < 30) {
     items.push({
       key: "renewal",
       tab: "documents",
       label: "Renewal docs",
-      why:
-        lapsed
-          ? "This term is off-book — upload rewrite paper here when not via API."
-          : `${renewalDaysPhrase(daysUntil!)} — upload current + renewal paper here when not via API.`,
+      why: `${renewalDaysPhrase(daysUntil)} — upload current + renewal paper here when not via API.`,
       count: 1,
     });
   }
@@ -99,7 +98,7 @@ export function buildPolicyCareItems(input: {
       count: input.openClaims ?? 0,
     });
   }
-  if (!lapsed && lastTouch != null && lastTouch >= 21 && items.length === 0) {
+  if (!offBook && lastTouch != null && lastTouch >= 21 && items.length === 0) {
     items.push({
       key: "silence",
       tab: "activity",

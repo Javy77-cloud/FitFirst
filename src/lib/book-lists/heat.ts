@@ -100,6 +100,7 @@ function renewsIn(daysUntil: number, expirationLabel?: string | null): string {
 export function policyAttention(input: {
   daysUntil: number | null;
   lastTouchDays: number | null;
+  /** Off-book / terminal (lapsed, cancelled, non_renewed, expired). Not renewal heat. */
   lapsed: boolean;
   openClaims: number;
   pendingEndorsements: number;
@@ -107,26 +108,37 @@ export function policyAttention(input: {
   expirationLabel?: string | null;
   /** Client staying / Handled — renewal proximity must not drive care. */
   renewalHandled?: boolean;
+  /** Explicit status label when off-book (e.g. Lapsed / Cancelled). */
+  offBookLabel?: string | null;
 }): { heat: BookHeat; column: BookColumnId; why: string } {
-  const countRenewal = renewalProximityDrivesCare(input.renewalHandled);
+  const offBook = input.lapsed;
+  // Off-book must not enter Needs care / Watch via renewal or "lapsed" heat alone.
+  const countRenewal = !offBook && renewalProximityDrivesCare(input.renewalHandled);
   const reasons: string[] = [];
-  if (input.lapsed) reasons.push("Lapsed or cancelled");
-  if (countRenewal && input.daysUntil != null && input.daysUntil < 30) {
-    reasons.push(renewsIn(input.daysUntil, input.expirationLabel));
-  }
   if (input.openClaims > 0) {
     reasons.push(`${input.openClaims} open claim${input.openClaims === 1 ? "" : "s"}`);
   }
   if (input.missingDocs > 0) {
     reasons.push(`${input.missingDocs} doc${input.missingDocs === 1 ? "" : "s"} waiting`);
   }
+  if (countRenewal && input.daysUntil != null && input.daysUntil < 30) {
+    reasons.push(renewsIn(input.daysUntil, input.expirationLabel));
+  }
   const now =
-    input.lapsed ||
-    (countRenewal && input.daysUntil != null && input.daysUntil < 30) ||
     input.openClaims > 0 ||
-    input.missingDocs > 0;
+    input.missingDocs > 0 ||
+    (countRenewal && input.daysUntil != null && input.daysUntil < 30);
   if (now) {
     return { heat: "hot", column: "now", why: reasons.slice(0, 2).join(" · ") || "Needs care now" };
+  }
+
+  if (offBook) {
+    const label = input.offBookLabel?.trim() || "Off-book";
+    return {
+      heat: "cold",
+      column: "current",
+      why: label,
+    };
   }
 
   if (input.pendingEndorsements > 0) {

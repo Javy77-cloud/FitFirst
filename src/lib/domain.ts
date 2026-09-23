@@ -224,7 +224,9 @@ export const POLICY_STATUSES = [
   "bound",
   "pending",
   "active",
+  "lapsed",
   "cancelled",
+  "non_renewed",
   "expired",
 ] as const;
 export type PolicyStatus = (typeof POLICY_STATUSES)[number];

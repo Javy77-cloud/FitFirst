@@ -2,7 +2,7 @@ import { mailtoHref, telHref } from "@/lib/desk/contact-actions";
 import { bookFamily } from "@/lib/desk/policy-line";
 import { formatMoney } from "@/lib/domain";
 import { homeLineLabel } from "@/lib/home/lines";
-import { policyStatusLabel } from "@/lib/policy/status";
+import { isOffBookStatus, policyStatusLabel } from "@/lib/policy/status";
 import { contactHealthScore } from "@/lib/contacts/health-score";
 import type { HealthChipView } from "@/lib/health/model";
 import { haystack } from "@/lib/search/live-query";
@@ -819,17 +819,19 @@ export function presentPolicyCard(
 ): BookGlanceCard {
   const lastTouchDays = daysSinceTouch(row.updatedAt, asOf);
   const daysUntil = daysUntilDate(row.expirationDate, asOf);
-  const lapsed = /lapse|cancel|expired|terminated/i.test(row.status);
+  const offBook = isOffBookStatus(row.status);
+  const statusLabel = row.status ? policyStatusLabel(row.status) : null;
   const expires = glanceDate(row.expirationDate);
   const attention = policyAttention({
     daysUntil,
     lastTouchDays,
-    lapsed,
+    lapsed: offBook,
     openClaims: needs.openClaims,
     pendingEndorsements: needs.pendingEndorsements,
     missingDocs: needs.missingDocs,
     expirationLabel: expires,
     renewalHandled: needs.renewalHandled,
+    offBookLabel: statusLabel,
   });
   const why = withSecondFact(attention.why, premiumCue(row.premium));
   const insured = row.partyName?.trim() || row.displayName || row.policyNumber;
@@ -839,7 +841,7 @@ export function presentPolicyCard(
   const currentPremium = moneyAmount(row.premium);
   const proposedPremium = moneyAmount(row.renewalPremium);
   const renews =
-    daysUntil == null
+    offBook || daysUntil == null
       ? null
       : daysUntil < 0
         ? `Past expiration ${Math.abs(daysUntil)}d`
@@ -854,7 +856,12 @@ export function presentPolicyCard(
       currentPremium != null ? { id: "premium", label: formatMoney(currentPremium) } : null,
       proposedPremium != null ? { id: "renewal-premium", label: `Renewal ${formatMoney(proposedPremium)}` } : null,
       delta ? { id: "delta", label: delta, tone: delta.startsWith("+") ? ("hot" as const) : ("ok" as const) } : null,
-      expires ? { id: "expires", label: `Expires ${expires}` } : null,
+      expires
+        ? {
+            id: "expires",
+            label: offBook && statusLabel ? statusLabel : `Expires ${expires}`,
+          }
+        : null,
       renews
         ? {
             id: "renews",
@@ -865,7 +872,7 @@ export function presentPolicyCard(
                 : undefined,
           }
         : null,
-      row.status ? { id: "status", label: policyStatusLabel(row.status) } : null,
+      statusLabel ? { id: "status", label: statusLabel } : null,
       { id: "band", label: POLICY_BAND_LABEL[attention.column] ?? "Current" },
       needs.openClaims > 0
         ? {
@@ -894,7 +901,7 @@ export function presentPolicyCard(
     surface: "policies",
     href: `/policies/${row.id}`,
     title: insured,
-    subtitle: row.status,
+    subtitle: statusLabel ?? row.status,
     heat: attention.heat,
     column: attention.column,
     health: null,
@@ -914,11 +921,11 @@ export function presentPolicyCard(
     email: row.email,
     lastTouchDays,
     flags: {
-      renewalSoon: daysUntil != null && daysUntil >= 0 && daysUntil <= 60,
-      silent: lastTouchDays == null || lastTouchDays >= 21,
+      renewalSoon: !offBook && daysUntil != null && daysUntil >= 0 && daysUntil <= 60,
+      silent: !offBook && (lastTouchDays == null || lastTouchDays >= 21),
       needsCare: attention.column === "now",
-      lapsed,
-      writtenBook: !lapsed,
+      lapsed: offBook,
+      writtenBook: !offBook,
       family: bookFamily(row.lineOfBusiness),
       hasPhone: filled(row.phone),
       hasEmail: filled(row.email),
