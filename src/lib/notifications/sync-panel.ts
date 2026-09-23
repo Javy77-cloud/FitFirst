@@ -46,7 +46,22 @@ export async function syncPanelSignals(): Promise<PanelCard[]> {
   const snoozedKeys = new Set<string>();
   const now = new Date();
 
+  // Cold-chase is one ping per cold episode. When the deal leaves cold, drop
+  // prior rows (read or unread) so a later cold episode can notify again.
+  const endedColdChaseIds = existing
+    .filter((row) => {
+      if (row.kind !== "deal_cold_chase") return false;
+      const key = parsePanelKey(row.body) ?? `${row.kind}:${row.entityId ?? row.id}`;
+      return !liveKeys.has(key);
+    })
+    .map((row) => row.id);
+  if (endedColdChaseIds.length) {
+    await db.delete(alerts).where(inArray(alerts.id, endedColdChaseIds));
+  }
+  const endedColdChase = new Set(endedColdChaseIds);
+
   for (const row of existing) {
+    if (endedColdChase.has(row.id)) continue;
     const key = parsePanelKey(row.body) ?? `${row.kind}:${row.entityId ?? row.id}`;
     if (row.createdAt.getTime() > now.getTime()) {
       snoozedKeys.add(key);

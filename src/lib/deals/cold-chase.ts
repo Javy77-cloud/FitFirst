@@ -51,3 +51,49 @@ export function planColdChaseNotices(cards: readonly ColdChaseCard[]): ColdChase
       };
     });
 }
+
+export type ColdChaseAlertRow = {
+  id: string;
+  entityId: string | null;
+  readAt: Date | null;
+};
+
+export type ColdChaseSyncPlan = {
+  /** Deals that still need a first unread chase this cold episode. */
+  insertDealIds: string[];
+  /** Alert ids to drop because the deal left cold (episode ended → re-eligible later). */
+  endEpisodeAlertIds: string[];
+};
+
+/**
+ * One chase per cold episode per deal.
+ * - While still cold: any prior alert (read or unread) suppresses a new insert.
+ * - When no longer cold: drop prior alerts so a later cold episode can notify again.
+ */
+export function planColdChaseSync(
+  planned: readonly ColdChaseNotice[],
+  existing: readonly ColdChaseAlertRow[],
+): ColdChaseSyncPlan {
+  const byDeal = new Map<string, ColdChaseAlertRow[]>();
+  for (const row of existing) {
+    if (!row.entityId) continue;
+    const list = byDeal.get(row.entityId) ?? [];
+    list.push(row);
+    byDeal.set(row.entityId, list);
+  }
+
+  const plannedIds = new Set(planned.map((notice) => notice.dealId));
+  const insertDealIds: string[] = [];
+  for (const notice of planned) {
+    if (byDeal.has(notice.dealId)) continue;
+    insertDealIds.push(notice.dealId);
+  }
+
+  const endEpisodeAlertIds: string[] = [];
+  for (const [dealId, rows] of byDeal) {
+    if (plannedIds.has(dealId)) continue;
+    for (const row of rows) endEpisodeAlertIds.push(row.id);
+  }
+
+  return { insertDealIds, endEpisodeAlertIds };
+}
