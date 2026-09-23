@@ -14,6 +14,7 @@ import {
   sensitiveFieldConfirmCopy,
 } from "@/lib/policy/sensitive-fields";
 import { cn } from "@/lib/utils";
+import { policyStatusLabel } from "@/lib/policy/status";
 
 function displayValue(value: string | null | undefined) {
   const v = (value ?? "").trim();
@@ -452,7 +453,7 @@ export function PolicyInlineStatus({
       <option value="">None</option>
       {options.map((opt) => (
         <option key={opt} value={opt}>
-          {opt}
+          {policyStatusLabel(opt)}
         </option>
       ))}
     </select>

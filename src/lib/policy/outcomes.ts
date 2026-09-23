@@ -1,5 +1,5 @@
 import { reasonLabel } from "./reasons";
-import { isEndedStatus, isInForceStatus, policyStatusLabel, type PolicyChangeKind } from "./status";
+import { isEndedStatus, isInForceStatus, normalizePolicyStatus, policyStatusLabel, type PolicyChangeKind } from "./status";
 
 export type PolicyOutcome = {
   kind: PolicyChangeKind | "in_force" | "ended";
@@ -75,7 +75,7 @@ export function policyRecordOutcome(policy: {
     };
   }
   if (isEndedStatus(policy.status)) {
-    const kind = policy.status === "non_renewal" ? "non_renewal" : "cancellation";
+    const kind = normalizePolicyStatus(policy.status) === "non_renewed" ? "non_renewal" : "cancellation";
     return filedChangeOutcome(kind, policy);
   }
   return {

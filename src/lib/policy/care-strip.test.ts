@@ -149,4 +149,44 @@ describe("policy care strip", () => {
     ).toEqual([]);
   });
 
+
+  it("keeps terminal / off-book statuses out of renewal care even with a future printed expiration", () => {
+    for (const status of ["expired", "lapsed", "cancelled", "canceled", "cancellation", "non_renewed", "non_renewal", "lapse"] as const) {
+      expect(
+        buildPolicyCareItems({
+          expirationDate: "2027-08-07T00:00:00.000Z",
+          updatedAt: "2026-09-18T12:00:00.000Z",
+          status,
+          missingDocs: 0,
+          pendingEndorsements: 0,
+          openClaims: 0,
+          asOf,
+        }),
+        status,
+      ).toEqual([]);
+      expect(
+        shouldShowManualRenewalHelp({
+          expirationDate: "2027-08-07T00:00:00.000Z",
+          status,
+          asOf,
+        }),
+        status,
+      ).toBe(false);
+    }
+  });
+
+  it("still surfaces open claims on an off-book policy without renewal docs", () => {
+    const items = buildPolicyCareItems({
+      expirationDate: "2027-08-07T00:00:00.000Z",
+      updatedAt: "2026-09-18T12:00:00.000Z",
+      status: "lapsed",
+      missingDocs: 0,
+      pendingEndorsements: 0,
+      openClaims: 1,
+      asOf,
+    });
+    expect(items.map((item) => item.key)).toEqual(["claims"]);
+  });
+
+
 });

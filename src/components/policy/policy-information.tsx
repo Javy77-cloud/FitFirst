@@ -136,7 +136,7 @@ export function PolicyInformationCard({
           <PolicyInlineText
             policyId={policy.id}
             fieldKey="premisesAddress"
-            label={homePc ? "Insured location" : "Premises"}
+            label={"Insured location"}
             value={insuredLocation || streetOnly}
             displayText={insuredStacked ?? "—\n"}
             readOnly={readOnly}

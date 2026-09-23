@@ -64,7 +64,7 @@ describe("service request pipeline", () => {
     );
     expect(filed.ok).toBe(true);
     if (!filed.ok) return;
-    expect(filed.policy.status).toBe("cancellation");
+    expect(filed.policy.status).toBe("cancelled");
     expect(filed.policy.endReason).toBe("insured_request");
   });
 

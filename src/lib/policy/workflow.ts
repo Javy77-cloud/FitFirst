@@ -69,7 +69,7 @@ export function applyPolicyChange(
     return { ok: false, error: "This policy is already off the book." };
   }
 
-  const endedStatus = input.kind === "cancellation" ? "cancellation" : "non_renewal";
+  const endedStatus = input.kind === "cancellation" ? "cancelled" : "non_renewed";
   const noun = input.kind === "cancellation" ? "Cancellation" : "Non-renewal";
   return {
     ok: true,

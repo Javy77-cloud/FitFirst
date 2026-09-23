@@ -143,4 +143,35 @@ describe("book-list heat", () => {
     ).toBe("now");
   });
 
+
+  it("keeps off-book statuses out of Needs care / Watch via lapsed or renewal heat", () => {
+    for (const label of ["Lapsed", "Cancelled", "Non-renewed", "Expired"]) {
+      expect(
+        policyAttention({
+          daysUntil: 318,
+          lastTouchDays: 2,
+          lapsed: true,
+          openClaims: 0,
+          pendingEndorsements: 0,
+          missingDocs: 0,
+          expirationLabel: "Aug 7, 2027",
+          offBookLabel: label,
+        }),
+      ).toMatchObject({ column: "current", heat: "cold", why: label });
+    }
+    // Open claims still escalate
+    expect(
+      policyAttention({
+        daysUntil: 318,
+        lastTouchDays: 2,
+        lapsed: true,
+        openClaims: 1,
+        pendingEndorsements: 0,
+        missingDocs: 0,
+        offBookLabel: "Lapsed",
+      }).column,
+    ).toBe("now");
+  });
+
+
 });

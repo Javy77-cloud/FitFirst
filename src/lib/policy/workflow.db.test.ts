@@ -129,7 +129,7 @@ describe("seeded book + policy workflow", () => {
     expect(cancelled.ok).toBe(true);
 
     const [row] = await db.select().from(policies).where(eq(policies.id, TEMP_POLICY_ID));
-    expect(row?.status).toBe("cancellation");
+    expect(row?.status).toBe("cancelled");
     expect(row?.coverageA).toBe(410000);
     expect(row?.endReason).toBe("insured_request");
 
@@ -185,7 +185,7 @@ describe("seeded book + policy workflow", () => {
     expect(cancelled.ok).toBe(true);
 
     const [row] = await db.select().from(policies).where(eq(policies.id, scratchId));
-    expect(row?.status).toBe("cancellation");
+    expect(row?.status).toBe("cancelled");
     expect(row?.coverageA).toBe(410000);
     expect(row?.endReason).toBe("insured_request");
 
