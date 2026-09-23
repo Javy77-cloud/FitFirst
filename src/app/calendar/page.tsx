@@ -109,7 +109,7 @@ export default async function CalendarPage({
   const externalEvents = syncedRows.map((row) => serializeCalendarActivity(syncedEventToDeskActivity(row)));
   const events = [...deskEvents, ...externalEvents];
   const busyBlocks = busyRows
-    .filter((block) => !busyCoveredByTitledEvent(block, externalEvents))
+    .filter((block) => !busyCoveredByTitledEvent(block, events))
     .map(serializeBusyBlock);
   const openEventId = typeof query.event === "string" ? query.event : null;
   const notice = typeof query.notice === "string" ? query.notice : null;

@@ -99,4 +99,13 @@ describe("calendar busy auto-sync", () => {
     expect(calendar).toMatch(/syncControl/);
     expect(chrome).not.toMatch(/\.ff-calendar-sync \{[\s\S]*margin-bottom: 0\.75rem;/);
   });
+
+  it("suppresses FreeBusy mirrors of FitFirst desk events at sync and render", () => {
+    const busy = readFileSync("src/lib/integrations/calendar-busy.ts", "utf8");
+    const page = readFileSync("src/app/calendar/page.tsx", "utf8");
+    expect(busy).toMatch(/filterBusyAgainstTitledEvents/);
+    expect(busy).toMatch(/fitfirstTitledWindows/);
+    expect(page).toMatch(/busyCoveredByTitledEvent\(block, events\)/);
+  });
+
 });

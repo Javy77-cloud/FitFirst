@@ -252,6 +252,15 @@ export function rangesOverlapMs(aStart: Date, aEnd: Date, bStart: Date, bEnd: Da
   return aStart.getTime() < bEnd.getTime() && aEnd.getTime() > bStart.getTime();
 }
 
+/**
+ * True when a FreeBusy "Busy" block should stay hidden on the desk because a
+ * titled calendar event already covers the same window:
+ * - FitFirst desk activities (origin fitfirst) — including ones we pushed to Google/Outlook
+ * - External titled overlays (origin external) from the same provider
+ *
+ * FreeBusy has no event ids, so overlap with a titled event is the dedupe key.
+ * Without this, every FF-pushed Google event also paints a beige Busy twin.
+ */
 export function busyCoveredByTitledEvent(
   busy: { provider: string; startAt: Date | string; endAt: Date | string },
   events: { origin?: string; calendarProvider?: string | null; startAt?: Date | string | null; endAt?: Date | string | null }[],
@@ -259,8 +268,11 @@ export function busyCoveredByTitledEvent(
   const bStart = new Date(busy.startAt);
   const bEnd = new Date(busy.endAt);
   return events.some((event) => {
-    if (event.origin !== "external") return false;
-    if (event.calendarProvider && event.calendarProvider !== busy.provider) return false;
+    const origin = event.origin ?? "fitfirst";
+    if (origin !== "external" && origin !== "fitfirst") return false;
+    if (origin === "external" && event.calendarProvider && event.calendarProvider !== busy.provider) {
+      return false;
+    }
     if (!event.startAt || !event.endAt) return false;
     return rangesOverlapMs(bStart, bEnd, new Date(event.startAt), new Date(event.endAt));
   });

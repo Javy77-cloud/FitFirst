@@ -169,6 +169,30 @@ describe("calendar event mapping", () => {
     ).toBe(false);
   });
 
+  it("hides Busy when a FitFirst desk event covers the same FreeBusy window", () => {
+    // Google FreeBusy returns a Busy twin for every FF-pushed event; suppress it.
+    expect(
+      busyCoveredByTitledEvent(
+        { provider: "google_calendar", startAt: "2026-09-24T21:25:00.000Z", endAt: "2026-09-24T21:55:00.000Z" },
+        [{
+          origin: "fitfirst",
+          startAt: "2026-09-24T21:25:00.000Z",
+          endAt: "2026-09-24T21:55:00.000Z",
+        }],
+      ),
+    ).toBe(true);
+    expect(
+      busyCoveredByTitledEvent(
+        { provider: "google_calendar", startAt: "2026-09-24T21:25:00.000Z", endAt: "2026-09-24T21:55:00.000Z" },
+        [{
+          origin: "fitfirst",
+          startAt: "2026-09-24T11:00:00.000Z",
+          endAt: "2026-09-24T11:30:00.000Z",
+        }],
+      ),
+    ).toBe(false);
+  });
+
   it("registers Google and Outlook on the same provider contract", () => {
     expect(listCalendarProviders().map((row) => row.id)).toEqual(["google_calendar", "outlook_calendar"]);
     const google = readFileSync("src/lib/integrations/calendar-providers/google.ts", "utf8");
