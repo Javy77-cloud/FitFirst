@@ -249,8 +249,8 @@ export function messageFromUploadError(error: unknown, filename: string): string
   return `Could not store “${display}”. ${cleaned}`;
 }
 
-/** Browser Blob uploads may only land on this deal's folder in our store. */
-export function clientUploadPathError(pathname: string, dealId?: string | null): string | null {
+/** Browser Blob uploads may only land on this record's folder (deal or policy) in our store. */
+export function clientUploadPathError(pathname: string, scopeId?: string | null): string | null {
   const key = pathname.trim();
   if (!key || storageObjectKey(key) !== key) {
     return `Refusing storage path “${key || "(empty)"}”. It is not a safe object key. Nothing was saved.`;
@@ -258,13 +258,13 @@ export function clientUploadPathError(pathname: string, dealId?: string | null):
   if (storagePathProblems(key).length > 0) {
     return `Refusing storage path “${key}”. It still has ${storagePathProblems(key).join(", ")}. Nothing was saved.`;
   }
-  if (dealId && !key.includes(`/${dealId}/`)) {
-    return `Refusing storage path “${key}”. It is not on this deal. Nothing was saved.`;
+  if (scopeId && !key.includes(`/${scopeId}/`)) {
+    return `Refusing storage path “${key}”. It is not on this record. Nothing was saved.`;
   }
   return null;
 }
 
-export function isAllowedStoredUploadUrl(storagePath: string, dealId: string): boolean {
+export function isAllowedStoredUploadUrl(storagePath: string, scopeId: string): boolean {
   const raw = storagePath.trim();
   if (!raw) return false;
   if (/^https?:\/\//i.test(raw)) {
@@ -272,13 +272,13 @@ export function isAllowedStoredUploadUrl(storagePath: string, dealId: string): b
       const url = new URL(raw);
       if (!url.hostname.endsWith(".blob.vercel-storage.com")) return false;
       const path = decodeURIComponent(url.pathname);
-      return path.includes(`/${dealId}/`) && !path.includes("..") && !path.includes("&");
+      return path.includes(`/${scopeId}/`) && !path.includes("..") && !path.includes("&");
     } catch {
       return false;
     }
   }
   return (
-    raw.includes(`/${dealId}/`) &&
+    raw.includes(`/${scopeId}/`) &&
     storageObjectKey(raw) === raw &&
     storagePathProblems(raw).length === 0
   );

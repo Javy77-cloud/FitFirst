@@ -132,7 +132,7 @@ export function SourceDocsUpload({
               pathname: prepared.pathname,
               file: row.file,
               contentType: prepared.mimeType,
-              dealId,
+              scopeId: dealId,
             });
             const commit = new FormData();
             commit.set("dealId", dealId);

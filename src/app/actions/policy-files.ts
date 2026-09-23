@@ -1,7 +1,8 @@
 "use server";
 
+import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { flashAction } from "@/lib/flash-action";
 import { and, eq } from "drizzle-orm";
 import { persistFile } from "@/app/actions/documents";
 import { dismissIdCardsPrompt } from "@/app/actions/policy-mint";
@@ -9,12 +10,26 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { activities, documents, policies, reviewTasks } from "@/lib/db/schema";
 import { isUploadedFile, readUploadedBytes, uploadedFileName } from "@/lib/documents/uploaded-file";
-import { displayFilename } from "@/lib/files/upload-plan";
+import {
+  clientUploadPathError,
+  displayFilename,
+  isAllowedStoredUploadUrl,
+  messageFromUploadError,
+  planUpload,
+  storageObjectKey,
+} from "@/lib/files/upload-plan";
+import { blobStoreReady } from "@/lib/files/object-store";
 import {
   DOMENIC_IORI_DEC_DOCUMENT_ID,
   DOMENIC_IORI_POLICY_ID,
 } from "@/lib/policy/dec-prompt";
 import { SERVICING_TASK_KINDS } from "@/lib/domain-ams";
+
+export type PolicyAttachResult = {
+  ok: boolean;
+  count: number;
+  message?: string;
+};
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -33,27 +48,78 @@ function withExtension(display: string, original: string): string {
   return ext ? `${trimmed}${ext}` : trimmed;
 }
 
-/** Multi-file attach on a Policy. Durable via Vercel Blob when configured. */
-export async function attachPolicyFiles(formData: FormData) {
-  const policyId = str(formData, "policyId");
-  const dealId = str(formData, "dealId") || null;
-  if (!policyId) return;
-
+async function loadPolicyForAttach(policyId: string) {
   const [policy] = await db
     .select()
     .from(policies)
     .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
-  if (!policy) return;
+  return policy ?? null;
+}
+
+function policyStorageScope(policy: { id: string; dealId: string | null }, dealId?: string | null) {
+  return (dealId || policy.dealId || policy.id).trim();
+}
+
+async function applyPolicyExpiresAt(documentId: string, expiresAt: string) {
+  if (!expiresAt) return;
+  const parsed = new Date(`${expiresAt}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return;
+  await db.update(documents).set({ expiresAt: parsed }).where(eq(documents.id, documentId));
+}
+
+function revalidatePolicyAttach(policyId: string, dealId: string | null) {
+  revalidatePath(`/policies/${policyId}`);
+  if (dealId) revalidatePath(`/deals/${dealId}`);
+}
+
+/**
+ * Multi-file attach on a Policy via Server Action body.
+ * On Vercel, keep each file under ~4.5MB — larger PDFs must use preparePolicyBlobUpload
+ * + savePolicyDocumentFromBlob (browser → Blob) so the platform does not reject the request.
+ */
+export async function attachPolicyFiles(formData: FormData): Promise<PolicyAttachResult> {
+  const policyId = str(formData, "policyId");
+  const dealId = str(formData, "dealId") || null;
+  if (!policyId) {
+    return { ok: false, count: 0, message: "This policy is missing, so the file was not saved." };
+  }
+
+  const policy = await loadPolicyForAttach(policyId);
+  if (!policy) {
+    return { ok: false, count: 0, message: "This policy is missing, so the file was not saved." };
+  }
 
   const files = formData.getAll("file");
   const categories = formData.getAll("category").map((value) => String(value ?? "").trim() || "other");
   const expiresRaw = formData.getAll("expiresAt").map((value) => String(value ?? "").trim());
+  const onVercel = Boolean(process.env.VERCEL);
+  const directBlob = onVercel && blobStoreReady();
 
   let count = 0;
   let index = 0;
   let lastError: string | null = null;
   for (const file of files) {
     if (!isUploadedFile(file)) {
+      index += 1;
+      continue;
+    }
+    const filename = uploadedFileName(file);
+    const plan = planUpload({
+      filename,
+      byteLength: file.size || 0,
+      mimeType: file.type,
+      onVercel,
+      directBlob,
+    });
+    if (!plan.ok) {
+      lastError = plan.error;
+      index += 1;
+      continue;
+    }
+    if (plan.via === "blob-client") {
+      lastError =
+        `“${displayFilename(filename)}” is too large for a direct attach on this server. ` +
+        `Use the Policy Documents uploader (it sends large inspection PDFs straight to storage). Nothing was saved.`;
       index += 1;
       continue;
     }
@@ -70,33 +136,118 @@ export async function attachPolicyFiles(formData: FormData) {
         dealId: dealId || policy.dealId,
         contactId: policy.contactId,
         riskId: policy.riskId,
-        filename: uploadedFileName(file),
-        mimeType: file.type || "application/octet-stream",
+        filename,
+        mimeType: plan.mimeType,
         buffer: bytes,
         docType,
         slot: "policy_file",
       });
-      if (expiresAt) {
-        const parsed = new Date(`${expiresAt}T12:00:00`);
-        if (!Number.isNaN(parsed.getTime())) {
-          await db
-            .update(documents)
-            .set({ expiresAt: parsed })
-            .where(eq(documents.id, doc.id));
-        }
-      }
+      await applyPolicyExpiresAt(doc.id, expiresAt);
       count += 1;
     } catch (error) {
-      lastError = error instanceof Error ? error.message : "Could not store the document.";
+      lastError = messageFromUploadError(error, filename);
       console.error("[attachPolicyFiles]", lastError);
     }
     index += 1;
   }
 
-  revalidatePath(`/policies/${policyId}`);
-  if (dealId || policy.dealId) revalidatePath(`/deals/${dealId || policy.dealId}`);
-  if (count === 0 && lastError) {
-    flashAction(`/policies/${policyId}?tab=documents`, lastError, "error");
+  revalidatePolicyAttach(policyId, dealId || policy.dealId);
+  if (count === 0) {
+    return {
+      ok: false,
+      count: 0,
+      message: lastError ?? "Choose a file to attach. Nothing was saved.",
+    };
+  }
+  return { ok: true, count, message: lastError || undefined };
+}
+
+/** Browser → Blob prep for inspection PDFs larger than Vercel's ~4.5MB request body. */
+export async function preparePolicyBlobUpload(formData: FormData): Promise<
+  | { ok: true; pathname: string; mimeType: string; displayName: string; scopeId: string }
+  | { ok: false; error: string }
+> {
+  const policyId = str(formData, "policyId");
+  const dealId = str(formData, "dealId") || null;
+  const filename = str(formData, "filename");
+  const byteLength = Number(formData.get("byteLength") ?? 0);
+  const mimeType = str(formData, "mimeType");
+  if (!policyId) return { ok: false, error: "This policy is missing, so the file was not saved." };
+  const policy = await loadPolicyForAttach(policyId);
+  if (!policy) return { ok: false, error: "This policy is missing, so the file was not saved." };
+  const plan = planUpload({
+    filename,
+    byteLength,
+    mimeType,
+    onVercel: true,
+    directBlob: true,
+  });
+  if (!plan.ok) return { ok: false, error: plan.error };
+  const scopeId = policyStorageScope(policy, dealId);
+  const pathname = storageObjectKey(
+    path.posix.join(DEFAULT_TENANT_ID, scopeId, `${randomUUID()}-${filename}`),
+  );
+  const pathError = clientUploadPathError(pathname, scopeId);
+  if (pathError) return { ok: false, error: pathError };
+  return { ok: true, pathname, mimeType: plan.mimeType, displayName: plan.displayName, scopeId };
+}
+
+/** Attach a browser Blob upload onto the policy. Inserts one row. Does not delete other files. */
+export async function savePolicyDocumentFromBlob(formData: FormData): Promise<PolicyAttachResult> {
+  const policyId = str(formData, "policyId");
+  const dealId = str(formData, "dealId") || null;
+  const filename = str(formData, "filename");
+  const storageUrl = str(formData, "storageUrl");
+  const mimeType = str(formData, "mimeType");
+  const byteLength = Number(formData.get("byteLength") ?? 0);
+  const docType = str(formData, "docType") || str(formData, "category") || "other";
+  const expiresAt = str(formData, "expiresAt");
+  if (!policyId) {
+    return { ok: false, count: 0, message: "This policy is missing, so the file was not saved." };
+  }
+  const policy = await loadPolicyForAttach(policyId);
+  if (!policy) {
+    return { ok: false, count: 0, message: "This policy is missing, so the file was not saved." };
+  }
+  const plan = planUpload({
+    filename,
+    byteLength,
+    mimeType,
+    onVercel: true,
+    directBlob: true,
+  });
+  if (!plan.ok) {
+    return { ok: false, count: 0, message: plan.error };
+  }
+  const scopeId = policyStorageScope(policy, dealId);
+  if (!isAllowedStoredUploadUrl(storageUrl, scopeId)) {
+    return {
+      ok: false,
+      count: 0,
+      message: `Could not attach “${displayFilename(filename)}”. The stored file is not on this policy. Nothing was saved.`,
+    };
+  }
+  try {
+    const doc = await persistFile({
+      policyId,
+      dealId: dealId || policy.dealId,
+      contactId: policy.contactId,
+      riskId: policy.riskId,
+      filename,
+      mimeType: plan.mimeType,
+      existingStoragePath: storageUrl,
+      docType,
+      slot: "policy_file",
+    });
+    await applyPolicyExpiresAt(doc.id, expiresAt);
+    revalidatePolicyAttach(policyId, dealId || policy.dealId);
+    return { ok: true, count: 1 };
+  } catch (error) {
+    return {
+      ok: false,
+      count: 0,
+      message: messageFromUploadError(error, filename),
+    };
   }
 }
 

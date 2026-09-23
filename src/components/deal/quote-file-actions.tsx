@@ -290,7 +290,7 @@ export function QuoteFileActions({
             pathname: prepared.pathname,
             file,
             contentType: prepared.mimeType,
-            dealId,
+            scopeId: dealId,
           });
           const committed = await commitAgencyQuoteBlob(blobCommit(file, displayName, blob.url, prepared.mimeType));
           if (!committed.ok) {

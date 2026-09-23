@@ -33,8 +33,15 @@ describe("ID cards prompt + quiet upload", () => {
     const docs = source("src/components/policy/tabs/documents-tab.tsx");
     expect(docs).toMatch(/data-ff-id-cards-quiet/);
     expect(docs).toMatch(/IdCardsUploadPanel/);
-    expect(docs).toMatch(/attachPolicyFiles/);
+    expect(docs).toMatch(/PolicyDocumentsAttach/);
     expect(docs).not.toMatch(/uploadDealSlot/);
+
+    const attach = source("src/components/policy/policy-documents-attach.tsx");
+    expect(attach).toMatch(/attachPolicyFiles/);
+    expect(attach).toMatch(/preparePolicyBlobUpload/);
+    expect(attach).toMatch(/savePolicyDocumentFromBlob/);
+    expect(attach).toMatch(/planUpload/);
+    expect(attach).toMatch(/blob-client/);
   });
 
   it("keeps Domenic mint DEC retag path for policy_dec", () => {
