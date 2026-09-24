@@ -3,6 +3,7 @@
 **Date:** 2026-09-24
 **Scope:** Read-only comparison of this Next.js + Neon desk to the locked product design. No product code was changed.
 **Live desk:** https://fit-first-seven.vercel.app
+**Design sources used to sharpen this pass:** Captain handoff pack (2026-09-24 ~1:30pm ET, including Appendix C) and the running changelog standing decisions `D-2026-09-24-01` through `D-2026-09-24-04`. Those files are handoff context, not repo code. Where the pack said a fix was still in flight, `origin/main` has since landed `#367` (deal-only activity link + ET datetime round-trip).
 
 Routes walked: `/` (owner desk), `/deals`, `/deals/[id]` (Risk Profile, Markets, Quotes, header stage), `/quotes`, `/policies`, `/renewals`, `/notifications`, `/developer/healthsherpa`, `/settings/developer-hub/api-vault`, plus server actions under `src/app/actions/` and schema in `src/lib/db/schema.ts`.
 
@@ -10,12 +11,12 @@ Routes walked: `/` (owner desk), `/deals`, `/deals/[id]` (Risk Profile, Markets,
 
 ## Executive summary
 
-- **Quote sent / Bound / Outside are not send-gated.** The header stepper and the outside-FitFirst dialog advance those stages from a selected quote id or a free-text reason. Nothing checks that a client email, SMS, or proposal was actually sent. The action that maps quote status `sent_to_client` → pipeline `quote_sent` is never called from the UI.
+- **Quote sent / Selected / Outside are not send-gated.** This is the Rosa rollback from 2026-09-24: those stamps moved with no client email. The header stepper and the outside-FitFirst dialog (`#345`) still advance them from a selected quote id or a free-text reason. “Selected” is not its own stage slug; it is `selectedQuoteIds`. The action that maps `sent_to_client` → `quote_sent` is never called from the UI.
 - **Ana Dib can be bound.** Macros, mass update, list selection, and outbound templates skip her fixture ids. Policy mint (`issuePolicyFromDeclaration`) does not. Deal copy says “do not bind”; the mint path will still issue a policy if a declaration is present.
 - **Session cookies are unsigned, and demo passwords still work after a real hash is stored.** Proxy admin gates trust the `ff_role` cookie. `passwordMatchesUser` falls through to hardcoded `javy` / `javier` / `logan` / `maya` passwords. Several mutating actions never load the session.
 - **A dead quote can red-out that carrier for the whole book.** Marking a quote lost writes a `declined` attempt with empty risk snaps and line `HO`. Request Quotes loads every tenant attempt as “prior.” A null snapshot matches every risk, and a learned decline is a hard fail (red), so the appetite pass will not shop that carrier again.
-- **Flood “skip Southern Oak and Olympus” is only on the Markets matcher.** `writersForDealLine` drops them when Neptune / Selective / Tower Hill / Wright are in the rule set, and seed strips `FLOOD` from their written lines. `shopDealQuotes` (Request Quotes) does not use that filter.
-- **Agency day math is split.** Display clock is Eastern (`src/lib/time/et.ts`). Renewal day counts, home month KPIs, and several policy date writers still use UTC / `toISOString().slice(0, 10)`. After 8pm ET a renewal can change band.
+- **Flood skip of Southern Oak and Olympus is a data migration plus the Markets matcher, not the burn path.** `drizzle/0152_strip_false_flood_writers.sql` strips `FLOOD` by carrier id and name. `shopDealQuotes` never checks those names, and the first-wave filter falls back to every flood writer when Neptune / Selective / Tower Hill / Wright are absent.
+- **M1 “Current term is law” is not done.** Display clock is Eastern. Days-left on the policy care strip and renewal bands still use UTC or raw millisecond diffs. Gemini does not rewrite DEC `LAST FIRST` into First Last. Two different name splitters disagree. Renewal Fill Compare writes year built, roof, and construction onto the risk when those cells are blank, which the lock says it does not own.
 - **Request Quotes does not invent premiums, and every carrier portal is `EmptyPortalAdapter`.** It writes `quoteAttemptLogs` only (`result: "maybe"`, `bindable: false`). Quote rows are created by manual desk actions.
 - **HealthSherpa, Gemini DEC, FL chips (HO3 / Flood / MHO), life/health override, and renewal 30/60/90 are built**, with the gaps called out below. Per-market quote cutoffs are not built. Notifications are single-writer for cold-chase only.
 
@@ -25,17 +26,18 @@ Routes walked: `/` (owner desk), `/deals`, `/deals/[id]` (Risk Profile, Markets,
 
 ### 1. Quote sent, Selected, and Outside advance with no client send
 
-**Severity:** P0 — stage and policy truth can be wrong.
+**Severity:** P0 — this is the Rosa incident. Stage stamps that imply the client was contacted can be written with no email, SMS, or thread.
 
 **Evidence:**
 
-- Locked stages live in `LATE_PRODUCT_STAGES` (`quote_sent`, `bound`, `policy_issued`, `closed_won`) in `src/lib/deals/product-stages.ts`. The gate is “a live selected quote id, or an outside override,” not a send. `lateStageNeedsQuoteSelection` returns false when `outsideOverride` is set (`src/lib/deals/product-stages.ts`).
-- `setDealProductStage` (`src/app/actions/product-stage.ts`, route surface `/deals/[id]`) accepts `surface: "quotes" | "header" | "chip"`. From the Quotes tab, `quotesOnlyStageBlocked` is false (`src/lib/policy/mint-gate.ts`), so Quote sent commits as soon as a quote id is picked. `DealHeaderStage.commit` (`src/components/deals/deal-header-stage.tsx`) calls that action directly.
-- Outside path: `overrideDealProductStageOutside` builds an override from a reason string (`src/lib/deals/outside-stage-override.ts`, dialog `src/components/deals/outside-stage-override-dialog.tsx`). Allowed targets include `quote_sent`, `bound`, `policy_issued`, `closed_won`. No outbound message is required. Policy issued with an outside override skips mint and only stamps the stage; a later DEC upload can still mint.
-- The status that *sounds* like a send is unwired. `pipelineSlugForAgentStatus("sent_to_client")` returns `"quote_sent"` (`src/lib/quotes/outcomes.ts`). `saveQuoteAgentStatusAction` (`src/app/actions/quotes.ts`) is the only caller of that map, and no component imports it. There is no `sent_to_client` control in `src/components/`.
-- Quotes and policies are separate tables, which matches “a quote row is not a policy.” Moving the product to Policy issued with a selected quote calls `issuePolicyFromDeclaration` in the same action. A declaration file plus a stage click creates a policy without a client send.
+- Captain lock (handoff §4 and Appendix C, confirmed after the 2026-09-24 rollback): never advance Quote sent / Selected / Outside, or any similar client-facing stamp, without a real client send. Javy rolled Rosa’s Private quotes back when a desk bot set those stamps with no send. Confirm on the Quotes tab and the client thread first.
+- There is no stage slug `selected`. “Selected” is `selectedQuoteIds` on the product stage (`src/lib/deals/product-stages.ts`). Picking a quote id is enough for `lateStageNeedsQuoteSelection` to allow `quote_sent`. An outside override makes that check return false even with zero quotes.
+- `setDealProductStage` (`src/app/actions/product-stage.ts`, `/deals/[id]`) accepts `surface: "quotes" | "header" | "chip"`. From the Quotes tab, `quotesOnlyStageBlocked` is false (`src/lib/policy/mint-gate.ts`), so Quote sent commits as soon as a quote id is picked. `DealHeaderStage.commit` (`src/components/deals/deal-header-stage.tsx`) calls that action directly. No lookup of sent mail, SMS, or a proposal `sentAt`.
+- `#345` outside path is the bypass, not a send. `overrideDealProductStageOutside` builds an override from a reason string (`src/lib/deals/outside-stage-override.ts`, dialog `src/components/deals/outside-stage-override-dialog.tsx`). Targets include `quote_sent`, `bound`, `policy_issued`, `closed_won`. Policy issued with an outside override skips mint and only stamps the stage; a later DEC upload can still mint. The later lock says Outside itself needs a real client send. The dialog does not ask for one.
+- The status that sounds like a send is unwired. `pipelineSlugForAgentStatus("sent_to_client")` returns `"quote_sent"` (`src/lib/quotes/outcomes.ts`). `saveQuoteAgentStatusAction` (`src/app/actions/quotes.ts`) is the only caller, and no component imports it.
+- Quotes and policies are separate tables, which matches “quotes never mint policies.” The policy row is supposed to appear on Bind / Policy issued (`issuePolicyFromDeclaration`). That part is right. What is wrong is reaching Quote sent / Selected / Outside, and then Policy issued, with no send on the file.
 
-**Impact:** The board can show Quote sent, Bound, or Policy issued, and `/policies` can gain a row, when the client was never sent the quote. Renewals, 30/60/90 tasks, and owner-desk “quote sent” counts (`src/lib/home/aggregate.ts`) follow that stamp.
+**Impact:** The same Rosa mistake can be repeated from the header or the outside dialog. `/deals?stage=quote_sent`, owner-desk quote-sent counts (`src/lib/home/aggregate.ts`), and the quote-follow-up sequence (anchored on “quote sent” in `src/lib/campaign-sequences/catalog.ts`) all treat the stamp as “the client has the quote.”
 
 ---
 
@@ -94,47 +96,51 @@ Routes walked: `/` (owner desk), `/deals`, `/deals/[id]` (Risk Profile, Markets,
 
 ## P1 Design mismatches
 
-### 5. Flood shop skip of Southern Oak and Olympus is not on the burn path
+### 5. Flood shop skip of Southern Oak and Olympus is not enforced on Request Quotes
 
-**Severity:** P1 — Markets and Request Quotes disagree.
+**Severity:** P1 — Markets, the migration, and Request Quotes are three different rules. Handoff §4 / §11 and Private’s procedure: do not shop Southern Oak or Olympus for Flood. First wave is Neptune, Selective, Tower Hill, Wright only.
 
 **Evidence:**
 
-- Lock is implemented for the **Markets matcher**. `writersForDealLine` (`src/lib/appetite/shop-fits.ts`) keeps only first-wave flood writers when any of them exist. First wave is Neptune, Selective, Tower Hill, Wright (`FIRST_WAVE_FLOOD` in `src/lib/appetite/first-wave.ts`). Test in `src/lib/appetite/shop-fits.test.ts` expects Southern Oak and Olympus absent when those four are present.
-- If **no** first-wave flood writer is in the rule set, the function returns every flood writer, including Southern Oak and Olympus.
-- Seed strips the line: `written.delete("FLOOD")` in `src/lib/db/seed-southern-oak.ts`, and the same comment for Olympus in `src/lib/db/seed-javy-bulletins.ts`. That only helps after seed. Stale Neon `written_lines` still containing `FLOOD` are what the burn path reads.
-- `shopDealQuotes` filters with `writesDealLine(carrier.writtenLines, lob)` and `rankFits`. It never calls `writersForDealLine` or `matchFloodShopCarriers` (`src/lib/appetite/javy-flood-shop-list.ts`). Manual ids are added even when the band is not green (shop-list ids that are already green are skipped; other manual ids are added).
+- Data lock, if the migration ran: `drizzle/0152_strip_false_flood_writers.sql` removes `FLOOD` from `written_lines` for Southern Oak id `1a0bfaf1-9888-45b3-84ea-2425eff3d3c2`, Olympus id `575e1105-3a65-4aa3-83f9-31ee4e6891de`, and any name matching `%southern oak%` or `%olympus%`. Seed does the same in `src/lib/db/seed-southern-oak.ts` and `src/lib/db/seed-javy-bulletins.ts`. Re-adding `FLOOD` on the carrier row undoes it. Nothing in the shop action re-checks the names.
+- Markets matcher: `writersForDealLine` (`src/lib/appetite/shop-fits.ts`) keeps only first-wave flood writers when any of them exist (`FIRST_WAVE_FLOOD` in `src/lib/appetite/first-wave.ts`). Test in `src/lib/appetite/shop-fits.test.ts` expects Southern Oak and Olympus absent when those four are present. If none of the four are in the rule set, the function returns every flood writer, including Southern Oak and Olympus.
+- Request Quotes: `shopDealQuotes` (`src/app/actions/quotes.ts`) filters with `writesDealLine(carrier.writtenLines, lob)` and `rankFits`. It never calls `writersForDealLine` or `matchFloodShopCarriers` (`src/lib/appetite/javy-flood-shop-list.ts`). Manual ids are added even when the band is not green.
 
-**Impact:** The Flood Markets panel can hide Southern Oak and Olympus while Request Quotes still opens an attempt log for them, or the reverse if first-wave rows are missing and written lines were not stripped.
+**Impact:** After `0152`, a clean Neon book hides those two carriers because they no longer “write flood.” A re-tag, a missed migration, or a flood shop with no first-wave rows puts them back on the burn list while the Markets panel may still hide them. Portal quoting is paused; the desk burn path is what would still log the attempt.
 
 ---
 
-### 6. Named insured is not forced to First Last
+### 6. Named insured is not forced to First Last, and Gemini does not reorder LAST FIRST
 
-**Severity:** P1 — DEC fill and contact create can store a bad legal name.
+**Severity:** P1 — M1 requires the Current term insured to be First Last. Appendix C: Gemini normalizes a DEC printed `LAST FIRST` into First Last.
 
 **Evidence:**
 
-- `splitNamedInsured` (`src/lib/quote-sheet/apply.ts`) splits on spaces. One token is copied into **both** first and last (`"Ana"` → first Ana, last Ana). The last token is always the surname, so `"Robert De Swartz Junior"` becomes last name `Junior` (fixture used in `src/lib/desk/policy-information.test.ts`). `"Last, First"` is not parsed.
-- `primaryApplicantDisplayName` (`src/lib/deals/deal-display-name.ts`) only strips a `·` co-applicant and a duplicated `"Rosa Castellanos ROSA CASTELLANOS"` pair. It does not reorder Last, First.
-- `fillContactBlanksFromSheet` writes that split onto the contact when the name looks like a placeholder. Mint confirm label is “Named insured” (`src/lib/policy/mint-gate.ts`) and Gemini is told to copy the printed name (`src/lib/extraction/gemini/prompt.ts`). There is no First Last normalizer on the way into `contacts.first_name` / `last_name` or `deals.primary_named_insured`.
+- The Gemini prompt (`src/lib/extraction/gemini/prompt.ts`, named-insured line and the “Dates: keep as printed” rule) says extract the primary named insured as written. It does not mention `LAST FIRST`, swapping tokens, or First Last. A search of `src/lib/extraction` finds no reorder helper.
+- Two splitters disagree:
+  - `src/lib/quote-sheet/apply.ts` `splitNamedInsured`: one token is copied into both first and last (`"Ana"` → Ana / Ana). The last token is the surname, so `"Robert De Swartz Junior"` becomes last name `Junior`.
+  - `src/lib/lifecycle/lead-match.ts` `splitNamedInsured`: one token becomes first name plus last name `"Lead"`. The first token is the given name and the rest is the surname, so `"Rosa Maria Castellanos"` becomes last name `"Maria Castellanos"`. Packet drop (`parseLeadFromPacket`) and co-applicant matching use this one. Sheet fill and contact blanks use the other.
+- `primaryApplicantDisplayName` (`src/lib/deals/deal-display-name.ts`) only strips a `·` co-applicant and a duplicated `"Rosa Castellanos ROSA CASTELLANOS"` pair. It does not reorder Last, First. That helper is what keeps a doubled Rosa label from showing twice. It is not a DEC normalizer.
+- Mint confirm stores the string it was given (`named_insured` in `src/lib/policy/mint-gate.ts`). `fillContactBlanksFromSheet` writes the sheet splitter onto the contact when the name looks like a placeholder.
 
-**Impact:** Policies, proposals, and HealthSherpa contact sync can show “Junior” as the surname or a doubled single name. The lock is a display and storage rule, not just a DEC prompt.
+**Impact:** A Citizens-style `CASTELLANOS ROSA` dec can land on the policy, the contact, and HealthSherpa as last-name-first, or be split differently depending on whether the name entered through a packet drop or a sheet fill. M1 cannot treat Current term insured as law until one normalizer sits in front of both paths.
 
 ---
 
-### 7. Eastern desk clock is not the day bucket
+### 7. Current-term days-left and renewal bands are not ET calendar days
 
-**Severity:** P1 — renewal 30/60/90 and “this month” KPIs slip a day after 8pm ET (7pm EST).
+**Severity:** P1 — M1 says days-left and status are computed in ET. Handoff gotcha 1: never bucket “today” with `toISOString().slice`. `#365` fixed task scheduling. Policy and renewal day counts did not follow.
 
 **Evidence:**
 
-- Correct helper: `etDateKey` / `etTodayDateKey` in `src/lib/time/et.ts`. Comment: never `toISOString().slice`. Display uses it via `src/lib/desk/desk-timezone.ts`. Task due parsing tests in `src/lib/tasks/due-at.test.ts` do use ET wall time.
-- Renewal bands do not. `daysUntilExpiration` (`src/lib/ams/renewals.ts`) diffs **UTC** calendar dates of `deskNow()` (`new Date()` in `src/lib/home/as-of.ts`). Bands are `under30` / `30to60` / `60to90` / `90plus` (`src/lib/renewal/urgency.ts`). A policy that expires “tomorrow” ET can sit in Under 30, or look overdue, between 8pm and midnight ET.
+- Correct helper: `etDateKey` / `etTodayDateKey` in `src/lib/time/et.ts`. Display uses it via `src/lib/desk/desk-timezone.ts`. Task due parsing (`src/lib/tasks/due-at.test.ts`) and notification timestamps (`#366`) use ET. `#367` round-trips the activity edit modal in ET.
+- Policy care strip does not. `daysUntilDate` (`src/lib/book-lists/heat.ts`) is `(date - asOf) / 86_400_000`, not an ET date-key diff. `src/lib/policy/care-strip.ts` uses it for “renewal docs due” inside 30 days. `glanceDate` in the same file formats with `getUTC*` and comments that UTC is intentional so a date-only term does not slip. That is the opposite of M1 for an instant that is evening ET.
+- Renewal bands: `daysUntilExpiration` (`src/lib/ams/renewals.ts`) diffs UTC calendar dates of `deskNow()` (`new Date()` in `src/lib/home/as-of.ts`). Bands are `under30` / `30to60` / `60to90` / `90plus` (`src/lib/renewal/urgency.ts`). Between 8pm and midnight ET, “tomorrow” ET is already “today” UTC.
 - Owner-desk month math is UTC: `startOfUtcMonth`, `sameUtcMonth`, `isoDate` → `toISOString().slice(0, 10)` (`src/lib/home/as-of.ts`), used by `src/lib/home/kpis.ts`, `src/lib/home/aggregate.ts`, `src/lib/home/birthdays.ts`, `src/lib/home/attention-window.ts`.
-- Policy term roll (`src/lib/policy/advance-current-term.ts` `asNoonUtc`) and mint date normalize (`normalizeMintValue` in `src/lib/policy/mint-gate.ts`) parse arbitrary date strings with `toISOString().slice(0, 10)`. A Gemini date that `Date` reads as US local midnight can store the previous UTC day. Same pattern on policy forms (`src/components/policy/policy-inline-fields.tsx`, `correct-term-dates-dialog.tsx`) and renewal cross-sell (`src/components/renewals/cross-sell-panel.tsx`).
+- Term roll (`asNoonUtc` in `src/lib/policy/advance-current-term.ts`) and mint dates (`normalizeMintValue` in `src/lib/policy/mint-gate.ts`) still slice `toISOString()` for arbitrary date strings. A Gemini date that `Date` reads as US local midnight can store the previous UTC day. Same pattern on `src/components/policy/policy-inline-fields.tsx`, `correct-term-dates-dialog.tsx`, and `src/components/renewals/cross-sell-panel.tsx`.
+- More than one `role = current` term can exist. Advance takes `terms.find(role === current)` (`src/lib/policy/advance-current-term-apply.ts`) while demote lists every current id (`src/lib/policy/offbook-demote-current.ts`). M1’s “one correct Current term” is not a unique constraint.
 
-**Impact:** `/renewals` urgency, Client staying’s 90-day window (`CLIENT_STAYING_WINDOW_DAYS` in `src/lib/renewal/handled.ts` still keys off `renewalDate`), and home “written this month” disagree with the ET clock on the desk header.
+**Impact:** `/renewals` urgency, Client staying’s 90-day window (`src/lib/renewal/handled.ts`), Policies Overview days-left, and “written this month” on `/` disagree with the ET clock on the desk header. Off-book demote to Prior (`#326` / `#327`) can leave a second current row behind if two were stored.
 
 ---
 
@@ -191,41 +197,55 @@ Routes walked: `/` (owner desk), `/deals`, `/deals/[id]` (Risk Profile, Markets,
 
 ---
 
-## P2 Missing pieces
+### 12. Renewal Fill Compare writes property facts it does not own
 
-### 12. No per-market cutoff. Florida 5pm is not hardcoded — the feature is absent
+**Severity:** P1 — Appendix C. Fill Compare owns premiums, term dates, deductibles, and coverages on the DEC. It does not own year built, construction, or roof. Those flow from the Risk Profile onto the policy at Policy issued. DEC vs RP conflicts are flagged, not silently overwritten (handoff gotcha 9). Rosa Flood is the live example: RP deductibles $1,000 / $1,000 vs DEC $5,000 / $5,000.
 
-**Severity:** P2 — lock says cutoffs are configurable per market, desk clock stays ET.
+**Evidence:**
 
-**Evidence:** Desk “as of” on `/` uses the ET display clock (`src/components/home/owner-desk.tsx`, `src/lib/home/as-of.ts` `deskNow`). Search of `src/` finds no carrier or market `cutoff`, `closeHour`, or 5:00pm shop window. `17:00` hits are seed timestamps and calendar tests, not a Florida cutoff constant.
+- `buildRenewalRiskAndPolicyPatch` in `src/lib/renewal/fill-compare-from-decs.ts` copies Gemini `year_built`, `roof_year` / `roof_age`, and `construction` onto the risk when the risk cell is blank (tests in `src/lib/renewal/fill-compare-from-decs.test.ts` expect year 1998, masonry, roof 2016). It also copies coverage A onto the risk when blank.
+- Sheet apply (`src/lib/quote-sheet/apply.ts`) refuses to overwrite a confirmed agent value, including Ana’s Cov A. It does not raise a conflict chip when the DEC value differs. A filled RP deductible stays; the DEC number is dropped with no Rosa-style flag on the deal.
+- Flood DEC fill into NFIP fields is implemented and scoped (`src/lib/quote-sheet/flood-dec-fill.test.ts`, `has_nfip` absent on the home sheet). That part of “chips don’t bleed” holds. The renewal patch above is a second writer into the risk, not into the compare columns only.
 
-**Impact:** Nothing warns or blocks a shop after a carrier’s same-day deadline. Making it configurable later is greenfield, not a change to a hardcoded 5pm.
+**Impact:** A blank roof or year built on a renewal gets the DEC’s number and then shops from it. A disagreement on a field the agent already confirmed is invisible. M1’s “property facts come from the Risk Profile” is not what the renewal apply path does.
 
 ---
 
-### 13. Renewal 30/60/90 bands exist; outcomes and delivery are only partly extended
+## P2 Missing pieces
 
-**Severity:** P2 — do not rebuild the bands. Extend outcomes and the send path.
+### 13. No per-market cutoff. Florida 5pm is not hardcoded — the feature is absent
+
+**Severity:** P2 — `D-2026-09-24-02`. Agency clock stays `America/New_York`. Cutoffs are a timezone plus a wall time per carrier or market. Split ET/CT counties and storm binding freezes are in scope. Do not invent a Florida statutory 5pm bind law.
+
+**Evidence:** Desk “as of” on `/` uses the ET display clock (`src/components/home/owner-desk.tsx`, `src/lib/home/as-of.ts` `deskNow`). Search of `src/` finds no carrier or market `cutoff`, `closeHour`, or freeze flag. `17:00` hits are seed timestamps and calendar tests, not a Florida cutoff constant. Carrier rows have appetite and portal status, not a cutoff timezone.
+
+**Impact:** Nothing warns or blocks a shop after a carrier’s same-day deadline, and nothing can represent a Mountain Time rush window or a CAT freeze. The absence of a hardcoded 5pm is correct. The missing columns are the gap.
+
+---
+
+### 14. Renewal 30/60/90 bands exist; M3 outcomes and campaign sends do not
+
+**Severity:** P2 — `D-2026-09-24-04` and handoff M3. Extend outcomes. Do not rebuild the bands. Keyboard density (`D-2026-09-24-01`) stays parked until the AMS phase; its absence is not a gap.
 
 **Evidence (built):**
 
-- Bands and heat: `src/lib/renewal/urgency.ts`. Board: `/renewals` via `src/lib/renewal/board-data.ts` and `src/app/renewals/page.tsx`. Queue: `/renewals/queue`.
-- Composite risk is on the board (`scoreRenewalRisk` in `src/lib/renewal/board-enrich.ts`). `stubRenewalRisk` in `urgency.ts` is leftover; the board does not call it. `riskScore` is filled in enrich, not left at 0.
-- Client staying is gated to 90 days before `renewalDate` (`src/lib/renewal/handled.ts`). Won/Lost stages are `bound` and `lost` (`src/lib/renewal/board-filter.ts`).
-- Bind still plans 30/60/90 review tasks (`src/lib/crm/bind.ts`). `/reviews` copy points at those tasks.
+- Bands and heat: `src/lib/renewal/urgency.ts` (`under30`, `30to60`, `60to90`, `90plus`). Board: `/renewals`. Queue: `/renewals/queue`.
+- Chase copy is 90/60/30, not a second board: `src/lib/renewal/chase.ts` and `shouldQueueAutopilot` in `src/lib/renewal/autopilot.ts` (one nag per band, escalate after silence). Client staying is server-gated to 90 days before `renewalDate` (`src/lib/renewal/handled.ts`, `#364`).
+- Composite risk is on the board (`scoreRenewalRisk` in `src/lib/renewal/board-enrich.ts`). `stubRenewalRisk` is leftover and unused by the board.
+- Bind still plans 30/60/90 review tasks (`src/lib/crm/bind.ts`).
 
 **Evidence (not built / stub):**
 
-- Day math is UTC (P1 #7), so the bands are real but the clock is wrong at night.
-- Cross-sell email is a desk stub: “nothing sends until a vendor is wired” (`src/components/renewals/cross-sell-panel.tsx`).
-- No outcome for “remarketed,” “non-renewed by carrier,” or “rewrite to a new policy id” beyond bound/lost and client-staying. Autopilot queues an internal mark (`src/lib/renewal/autopilot.ts`) and does not send.
-- Renewal compare can fill from Gemini DEC (`src/lib/renewal/fill-compare-from-decs.ts`) and refuses to invent premium. The drawer says so when the key is missing (`src/components/renewals/renewal-compare-drawer.tsx`).
+- Day math is UTC (P1 #7), so the bands are real and the clock is wrong at night.
+- M3 outcomes stay / shop / rewrite / non-renew are not server-gated paths. The board’s won/lost stages are only `bound` and `lost` (`src/lib/renewal/board-filter.ts`).
+- Automations sequence `renewal_60_30` is a task plus email-template stub. `src/lib/campaign-sequences/types.ts` says “Task + email template stubs — nothing sends.” The catalog summary says the same (`src/lib/campaign-sequences/catalog.ts`). Cross-sell on the renewal drawer is the same kind of stub (`src/components/renewals/cross-sell-panel.tsx`).
+- Renewal compare refuses to invent premium (`src/lib/renewal/fill-compare-from-decs.ts`). It does write property facts onto the risk (P1 #12).
 
-**Impact:** The 30/60/90 board is the right base. Outcome extension and a real client touch are still open. Rebuilding the bands would duplicate this.
+**Impact:** `/renewals` is the right base for the next outcome (shop, rewrite, or non-renew). Building a new 30/60/90 board, or starting HawkSoft hotkeys in the shopping loop, would ignore standing decisions.
 
 ---
 
-### 14. HealthSherpa is integrated, but ACA does not rate inside the desk and keys fail closed
+### 15. HealthSherpa is integrated, but ACA does not rate inside the desk and keys fail closed
 
 **Severity:** P2 — present, not a stub, easy to think it is live when the vault is empty.
 
@@ -240,7 +260,7 @@ Routes walked: `/` (owner desk), `/deals`, `/deals/[id]` (Risk Profile, Markets,
 
 ---
 
-### 15. Gemini DEC read/fill is real and fails closed; date and name normalization are not
+### 16. Gemini DEC read/fill is real and fails closed; date and name normalization are not
 
 **Severity:** P2 — the integration exists. The holes are the date bucket (P1 #7) and named insured (P1 #6), plus key setup.
 
@@ -255,7 +275,7 @@ Routes walked: `/` (owner desk), `/deals`, `/deals/[id]` (Risk Profile, Markets,
 
 ---
 
-### 16. Filter-first Markets is a second code path from Request Quotes
+### 17. Filter-first Markets is a second code path from Request Quotes
 
 **Severity:** P2 — the idea is on the Markets panel; the burn does not call it.
 
@@ -270,7 +290,7 @@ Routes walked: `/` (owner desk), `/deals`, `/deals/[id]` (Risk Profile, Markets,
 
 ---
 
-### 17. Authz inside the tenant is “any signed-in user, any record”
+### 18. Authz inside the tenant is “any signed-in user, any record”
 
 **Severity:** P2 — related to P0 #3, called out separately because even a legitimate agent session is unscoped.
 
@@ -280,11 +300,25 @@ Routes walked: `/` (owner desk), `/deals`, `/deals/[id]` (Risk Profile, Markets,
 
 ---
 
+### 19. Click-to-call points at a softphone the shell does not render
+
+**Severity:** P2 — lifecycle lock is “no softphone.” The desk both says that and offers a control that goes nowhere.
+
+**Evidence:**
+
+- `/settings/communications` copy: “Call log on the desk. … No softphone.” Activity close comment in `src/app/actions/activities-desk.ts`: “Not a softphone.” `/phone` renders `DialerStub` (`src/app/phone/page.tsx`).
+- `CallButton` (`src/components/activities/call-button.tsx`) links to `/tasks/${id}?softphone=1#desk-softphone`. `SoftphoneDock` (`src/components/softphone/softphone-dock.tsx`) is the only element with `id="desk-softphone"`, and nothing imports it. Settings accordion text still describes an in-desk softphone with a microphone (`src/components/settings/settings-accordion.tsx`). `/ff-softphone.js` is a public path (`src/lib/auth/access.ts`).
+
+**Impact:** An agent following “call” lands on a task URL with a hash that matches no node. The lock (log the call, do not dial in FitFirst) and the button disagree.
+
+---
+
 ## P3 Nice-to-have observations
 
 - **HO3 companion sheets.** `companionLines("HO3")` prepares Auto, GL, and workers comp (`src/lib/quoting/forms.ts`). A home shop can sprout worksheets the agent did not ask for.
 - **`stubRenewalRisk` is dead on the board** but still exported. Easy to wire the wrong score later.
-- **Phone, social, and several settings surfaces are stubs** and look like product: `/phone` (`DialerStub`), social BYO cards (`src/lib/social/byo.ts` “nothing posts”), Developer Hub API and connections (`src/app/settings/developer-hub/api/page.tsx`, `connections/page.tsx`), `/onboarding/purchase` (“not linked from the sidebar”), COI/ID portal pages described as stubs (`/portal/[token]`).
+- **Parked on purpose, not missing.** HawkSoft-style keyboard density is `D-2026-09-24-01` until the AMS phase. MHO denser fields (Catherine) and Gemini Auto photo density stay open teaching items in the handoff; do not treat them as forgotten screens. Portal quoting is paused; `EmptyPortalAdapter` matches that pause. Manual Quotes-tab entry is the agreed path (`recordManualQuote` / life-health writer).
+- **Other stubs that look like product:** social BYO cards (`src/lib/social/byo.ts`), Developer Hub API and connections pages, `/onboarding/purchase`, COI/ID portal copy on `/portal/[token]`. The phone contradiction is P2 #19, not a stub to finish.
 - **MFA demo bypass** is a user flag `mfaDemoBypass` honored in `sessionFromUser`. Combined with demo passwords this is a softer door than P0 #3, still worth removing on the live book.
 - **`isoDate` and many `toISOString().slice(0, 10)` displays** (claims FNOL default, FedEx “today,” compliance log, carrier AM Best date) will drift after 8pm ET even when the underlying instant is correct. Prefer `etDateKey` when the value is “the agency’s day.”
 - **Quote attempt `why` strings are doing too much work** (manual marker, shop-list marker, portal message). A structured column would stop Markets from parsing English to decide who is on the list (`marketCarriersForManualQuote`).
@@ -308,7 +342,14 @@ Routes walked: `/` (owner desk), `/deals`, `/deals/[id]` (Risk Profile, Markets,
 | Life/health manual quotes | `LifeHealthQuotesPanel` + `saveLifeHealthQuoteResultAction`. No fake P&C rate. |
 | HealthSherpa review before book write | `/developer/healthsherpa`, `resolveHealthSherpaEnrollment`. |
 | Gemini does not invent | Prompt + mint `need_dec_fields`. Renewal compare fails loud without premium. |
-| Renewal 30/60/90 | `renewalUrgencyBand`, `/renewals`, bind task plan. |
+| Renewal 30/60/90 bands and 90/60/30 chase | `renewalUrgencyBand`, `src/lib/renewal/chase.ts`, autopilot one-nag-per-band. Campaign emails still do not send (P2 #14). |
+| Client status is derived | `clientStatusFromCounts` in `src/lib/lifecycle/client-status.ts`. Not a typed field. In-force → client, lifetime only → former, none → not a client. |
+| Lead match-on-create | `findOrCreateLead` + `isSameLead` in `src/app/actions/crm.ts`. Name alone does not match (`src/lib/lifecycle/lead-match.ts`). |
+| One policy per product line | `policyForProduct` tested in `src/lib/policy/mint-gate.test.ts`. |
+| Document membership | Unlink vs delete warning in `src/lib/documents/product-doc-membership.ts`. Flood DEC fills `has_nfip` and does not put that key on the home sheet. |
+| Off-book demotes current → prior | `src/lib/policy/offbook-demote-current.ts`. Unique “one current term” is still open (P1 #7). |
+| Deal-only activity link | Shipped after the handoff pack, as `#367`. The pack listed it in flight. |
+| Confirmed sheet cells are not overwritten | `src/lib/quote-sheet/apply.ts`. Conflict is not flagged (P1 #12). |
 
 ---
 
@@ -327,3 +368,6 @@ No credentials are assumed. Do these only in a session you already have. Do not 
 9. **Chips.** Deals list should show HO3, Flood, and MHO (manufactured) chips with their own stage, not one shared stage.
 10. **Life/health override.** Open a term-life or health deal. Markets should not be the P&C filter. Override / outside control should still be on the header. Saving a quote writer result should land on Quote review without sending the client anything.
 11. **Login surface.** `/login` should not advertise the demo passwords. If those emails accept `javy` / `javier` / `logan`, finding 3 is live. This audit did not sign in.
+12. **Names.** On a policy whose DEC prints `LAST FIRST`, Policy Overview and the contact should read First Last. Code does not reorder, so expect the printed order unless someone typed it.
+13. **Renewal compare.** Run Fill Compare on a policy with a blank year built. Code writes year, roof, and construction onto the risk from the DEC. A filled RP deductible that disagrees with the DEC should stay, with no conflict chip.
+14. **Call.** From a task, use the call control. It targets `#desk-softphone`. The dock component is not mounted, so the page should not open a dialer. `/phone` is a stub. Settings → Communications says there is no softphone.
