@@ -14,6 +14,13 @@ import {
   type NoticeType,
 } from "@/lib/deals/notices";
 import { resolveDealStampStage, type DealStampStage } from "@/lib/deals/status-stamp";
+import {
+  hasActiveOutsideOverride,
+  parseOutsideStageOverride,
+  type OutsideStageOverride,
+} from "@/lib/deals/outside-stage-override";
+
+export type { OutsideStageOverride };
 import type { AgentDealTab } from "@/lib/deals/tabs";
 
 /** Locked per-product pipeline — product chip owns this, tabs are workspaces. */
@@ -126,6 +133,8 @@ export type DealProductStageState = {
   noticeNotes?: NoticeNoteLogEntry[];
   /** Per-product pipeline-list notes (right-hand Notes column). */
   listNote?: string | null;
+  /** Quoting/binding happened outside FitFirst — late stage allowed without live quotes. */
+  outsideOverride?: OutsideStageOverride | null;
 };
 
 export type NoticeNoteLogEntry = {
@@ -245,6 +254,7 @@ export function parseProductStages(raw: unknown): DealProductStages {
       noticeNote?: unknown;
       noticeNotes?: unknown;
       listNote?: unknown;
+      outsideOverride?: unknown;
     };
     const rawStage = typeof row.stage === "string" ? normalizeStageSlug(row.stage) : "";
     const selectedQuoteIds = Array.isArray(row.selectedQuoteIds)
@@ -269,6 +279,7 @@ export function parseProductStages(raw: unknown): DealProductStages {
     const noticeNotes = parseNoticeNoteLog(row.noticeNotes);
     const listNote =
       typeof row.listNote === "string" && row.listNote.trim() ? row.listNote.trim() : null;
+    const outsideOverride = parseOutsideStageOverride(row.outsideOverride);
     if (
       !rawStage &&
       !selectedQuoteIds.length &&
@@ -281,7 +292,8 @@ export function parseProductStages(raw: unknown): DealProductStages {
       !escrowNote &&
       !noticeNote &&
       !noticeNotes.length &&
-      !listNote
+      !listNote &&
+      !outsideOverride
     ) {
       continue;
     }
@@ -305,14 +317,23 @@ export function parseProductStages(raw: unknown): DealProductStages {
       noticeNote,
       noticeNotes,
       listNote,
+      outsideOverride,
     };
   }
   return out;
 }
 
-function stageWithoutLeftoverQuoteSent(stage: string, selectedQuoteIds: readonly string[]): string {
+function stageWithoutLeftoverQuoteSent(
+  stage: string,
+  selectedQuoteIds: readonly string[],
+  outsideOverride?: OutsideStageOverride | null,
+): string {
   const canonical = canonicalizeProductStage(stage);
-  if (isLateProductStage(canonical) && selectedQuoteIds.filter(Boolean).length === 0) {
+  if (
+    isLateProductStage(canonical) &&
+    selectedQuoteIds.filter(Boolean).length === 0 &&
+    !hasActiveOutsideOverride(outsideOverride)
+  ) {
     return "quote_review";
   }
   return canonical;
@@ -327,8 +348,13 @@ export function productStageFor(
   if (stored) {
     const selectedQuoteIds = stored.selectedQuoteIds ?? [];
     const noticeType = stored.noticeType ?? stored.inspectionStatus ?? "none";
+    const outsideOverride = stored.outsideOverride ?? null;
     return {
-      stage: stageWithoutLeftoverQuoteSent(stored.stage || fallbackStage || "gathering", selectedQuoteIds),
+      stage: stageWithoutLeftoverQuoteSent(
+        stored.stage || fallbackStage || "gathering",
+        selectedQuoteIds,
+        outsideOverride,
+      ),
       selectedQuoteIds,
       lostReason: stored.lostReason ?? null,
       policyId: stored.policyId ?? null,
@@ -341,6 +367,7 @@ export function productStageFor(
       noticeNote: stored.noticeNote ?? null,
       noticeNotes: stored.noticeNotes ?? [],
       listNote: stored.listNote ?? null,
+      outsideOverride,
     };
   }
   const selectedQuoteIds: string[] = [];
@@ -360,6 +387,7 @@ export function productStageFor(
     noticeNote: null,
     noticeNotes: [],
     listNote: null,
+    outsideOverride: null,
   };
 }
 
@@ -390,11 +418,21 @@ export function setProductStage(
     noticeNote: patch.noticeNote === undefined ? current.noticeNote ?? null : patch.noticeNote,
     noticeNotes: patch.noticeNotes === undefined ? current.noticeNotes ?? [] : patch.noticeNotes,
     listNote: patch.listNote === undefined ? current.listNote ?? null : patch.listNote,
+    outsideOverride:
+      patch.outsideOverride === undefined ? current.outsideOverride ?? null : patch.outsideOverride,
   };
   if (normalizeStageSlug(next.stage) !== "closed_lost") {
     next.lostReason = next.lostReason ?? null;
   }
-  if (isLateProductStage(next.stage) && next.selectedQuoteIds.filter(Boolean).length === 0) {
+  // Early / lost stages clear the outside stamp — default pipeline stays strict.
+  if (!isLateProductStage(next.stage) || normalizeStageSlug(next.stage) === "closed_lost") {
+    next.outsideOverride = null;
+  }
+  if (
+    isLateProductStage(next.stage) &&
+    next.selectedQuoteIds.filter(Boolean).length === 0 &&
+    !hasActiveOutsideOverride(next.outsideOverride)
+  ) {
     next.stage = "quote_review";
   }
   return { ...stages, [product]: next };
@@ -430,8 +468,10 @@ export function lateStageNeedsQuoteSelection(input: {
   stage?: string | null;
   selectedQuoteIds?: readonly string[] | null;
   liveQuoteIds?: readonly string[] | null;
+  outsideOverride?: OutsideStageOverride | null | boolean;
 }): boolean {
   if (!isLateProductStage(input.stage)) return false;
+  if (hasActiveOutsideOverride(input.outsideOverride)) return false;
   return liveSelectedQuoteIds(input.selectedQuoteIds, input.liveQuoteIds).length === 0;
 }
 
@@ -532,6 +572,7 @@ export function productChipStageLabelForState(input: {
   selectedQuoteIds?: readonly string[] | null;
   liveQuoteIds?: readonly string[] | null;
   issuedDone?: boolean | null;
+  outsideOverride?: OutsideStageOverride | null | boolean;
 }): string | null {
   if (input.issuedDone) return productChipStageLabel("done");
   if (lateStageNeedsQuoteSelection(input)) return productChipStageLabel("quote_review");
@@ -544,6 +585,7 @@ export function displayProductStage(input: {
   selectedQuoteIds?: readonly string[] | null;
   fallback?: string | null;
   liveQuoteIds?: readonly string[] | null;
+  outsideOverride?: OutsideStageOverride | null | boolean;
 }): string {
   if (lateStageNeedsQuoteSelection(input)) return "quote_review";
   return canonicalizeProductStage(input.stage || input.fallback);
@@ -917,6 +959,7 @@ export function listProductStageChips(input: {
       stage: state.stage,
       selectedQuoteIds: state.selectedQuoteIds,
       fallback: input.pipelineStage,
+      outsideOverride: state.outsideOverride,
     });
     return {
       product,
@@ -949,9 +992,11 @@ export function productStampStage(
   liveQuoteIds?: readonly string[] | null,
 ): DealStampStage | null {
   const selected = liveSelectedQuoteIds(productState?.selectedQuoteIds, liveQuoteIds);
+  const outside = hasActiveOutsideOverride(productState?.outsideOverride);
   // Never stamp Quote sent / Bound / Inspection without a live selected quote
   // on this product — leftover deal Quote sent or boundAt is not enough.
-  if (selected.length === 0) return null;
+  // Outside FitFirst override is the exception (quoted/bound off-desk).
+  if (selected.length === 0 && !outside) return null;
   if (productState?.issuedDone) return "done";
   const candidate = productState?.stage ?? fallbackStage;
   if (!isLateProductStage(candidate) && !boundAt) return null;

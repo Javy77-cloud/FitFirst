@@ -462,6 +462,8 @@ export function evaluateMintGate(input: {
   preferredDocumentId?: string | null;
   /** home / auto. Prefer a same-line folder file when several are already in Manual or carrier. */
   shopLine?: string | null;
+  /** Quoted/bound outside FitFirst — mint from uploaded DEC without inventing quote rows. */
+  outsideOverride?: boolean | null;
 }): { ok: true; dec: DeclarationLike } | { ok: false; reason: MintGateReason } {
   if (quotesOnlyStageBlocked(POLICY_ISSUED_STAGE, input.surface)) {
     return { ok: false, reason: "quotes_only" };
@@ -474,6 +476,7 @@ export function evaluateMintGate(input: {
       stage: POLICY_ISSUED_STAGE,
       selectedQuoteIds: input.selectedQuoteIds,
       liveQuoteIds: input.liveQuoteIds,
+      outsideOverride: Boolean(input.outsideOverride),
     })
   ) {
     return { ok: false, reason: "need_quote" };
@@ -493,8 +496,13 @@ export function evaluateMintGate(input: {
     quoteIds: input.selectedQuoteIds,
     shopLine: input.shopLine,
   });
-  if (!dec) return { ok: false, reason: "need_dec" };
-  return { ok: true, dec };
+  if (dec) return { ok: true, dec };
+  // Outside FitFirst: DEC may live on the deal Documents tab (no quote folder).
+  if (input.outsideOverride) {
+    const dealDec = findDealDeclaration(input.docs ?? []);
+    if (dealDec) return { ok: true, dec: dealDec };
+  }
+  return { ok: false, reason: "need_dec" };
 }
 
 export function normalizeMintValue(key: string, raw: string | number | null | undefined): string {

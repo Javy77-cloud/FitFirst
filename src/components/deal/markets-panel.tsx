@@ -1,3 +1,4 @@
+import { OutsideFitFirstStamp } from "@/components/deal/outside-fitfirst-stamp";
 "use client";
 
 import { useState } from "react";
@@ -25,6 +26,8 @@ export function MarketsPanel({
   shopLine,
   product,
   lastRequestCarrierIds = [],
+  outsideOverride = false,
+  outsideOverrideDetail = null,
 }: {
   dealId: string;
   matches: CarrierMatch[];
@@ -39,6 +42,8 @@ export function MarketsPanel({
   shopLine?: string;
   product?: string;
   lastRequestCarrierIds?: string[];
+  outsideOverride?: boolean;
+  outsideOverrideDetail?: import("@/lib/deals/outside-stage-override").OutsideStageOverride | null;
 }) {
   const [selected, setSelected] = useState<string[]>(() =>
     lastRequestCarrierIds.map((id) => id.trim()).filter(Boolean),
@@ -107,11 +112,25 @@ export function MarketsPanel({
       <div className="space-y-3" data-ff-deal-markets="" data-ff-markets-empty="">
         <div className="ff-card space-y-3 p-4">
           <h3 className="text-sm font-semibold text-navy">Markets</h3>
+          {outsideOverride ? (
+            <OutsideFitFirstStamp
+              override={
+                outsideOverrideDetail ?? {
+                  reason: "Quoted outside FitFirst",
+                  at: "",
+                  toStage: "policy_issued",
+                }
+              }
+              variant="hero"
+            />
+          ) : null}
           <p className="text-sm text-muted-foreground" data-ff-deal-markets-stats="">
             0 in appetite · 0 stretch · 0 skip · 0 appointed
           </p>
           <p className="text-sm text-muted-foreground">
-            {sheetHasValues
+            {outsideOverride
+              ? "Empty Markets is expected — this product was quoted outside FitFirst. Use Quotes → upload Issued declaration to mint."
+              : sheetHasValues
               ? "No carriers matched this sheet. Load a shop list or add carriers below."
               : "No carriers on this deal yet. Load a shop list or add carriers below, then request quotes — or confirm the sheet to unlock shopping."}
           </p>

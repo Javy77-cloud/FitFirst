@@ -40,6 +40,7 @@ import {
   productStageFor,
   setProductStage,
 } from "@/lib/deals/product-stages";
+import { hasActiveOutsideOverride } from "@/lib/deals/outside-stage-override";
 import { parseShopFlow } from "@/lib/deals/shop-flow";
 import { persistDealShopFlow } from "@/lib/deals/shop-flow-persist";
 import { maybeArchiveDealWhenAllProductsTerminal } from "@/lib/deals/archive-when-terminal";
@@ -422,6 +423,7 @@ export async function issuePolicyFromDeclaration(input: {
   ]);
 
   const liveQuoteIds = quoteRows.filter((row) => row.stub !== true).map((row) => row.id);
+  const outside = hasActiveOutsideOverride(current.outsideOverride);
   const pickedDoc = input.documentId ? docs.find((row) => row.id === input.documentId) : null;
   const gate = evaluateMintGate({
     currentStage: current.stage,
@@ -432,13 +434,16 @@ export async function issuePolicyFromDeclaration(input: {
     mintStatus: current.mintStatus,
     preferredDocumentId: input.documentId,
     shopLine: dealProductDef(product).shopLine,
+    outsideOverride: outside,
   });
   if (!gate.ok) return gate;
 
   const quote =
     quoteRows.find((row) => selectedQuoteIds.includes(row.id) && row.stub !== true) ??
-    quoteRows.find((row) => row.id === selectedQuoteIds[0]);
-  if (!quote) return { ok: false as const, reason: "need_quote" as const };
+    quoteRows.find((row) => row.id === selectedQuoteIds[0]) ??
+    null;
+  // Outside FitFirst: mint from the uploaded DEC without inventing a fake quote row.
+  if (!quote && !outside) return { ok: false as const, reason: "need_quote" as const };
 
   const def = dealProductDef(product);
   const existing = policyForProduct(dealPolicies, product, def.lob);
@@ -554,10 +559,10 @@ export async function issuePolicyFromDeclaration(input: {
     sheet: sheetValues,
     product,
     sold: {
-      premium: quote.premium,
-      coverageA: quote.coverageA,
-      hurricaneDeductible: quote.hurricaneDeductible,
-      aopDeductible: quote.aopDeductible,
+      premium: quote?.premium ?? null,
+      coverageA: quote?.coverageA ?? null,
+      hurricaneDeductible: quote?.hurricaneDeductible ?? null,
+      aopDeductible: quote?.aopDeductible ?? null,
     },
     identity: {
       namedInsured: deal.primaryNamedInsured,
@@ -585,18 +590,18 @@ export async function issuePolicyFromDeclaration(input: {
     new Date(effective.getTime() + 365 * 24 * 60 * 60 * 1000),
   );
   const premium = extractGate.premium;
-  const coverageA = booked.coverageA || quote.coverageA || risk?.coverageA || null;
+  const coverageA = booked.coverageA || quote?.coverageA || risk?.coverageA || null;
   // DB policy_number is not-null; PENDING until the agent types the real number on confirm.
   const policyNumber = mintBookedPolicyNumber(extractGate.policyNumber);
   const payload: MintPayload = {
     status: "unpublished",
     soldBasis: {
-      quoteId: quote.id,
-      carrierId: quote.carrierId,
-      premium: quote.premium,
-      coverageA: quote.coverageA,
-      hurricaneDeductible: quote.hurricaneDeductible,
-      aopDeductible: quote.aopDeductible,
+      quoteId: quote?.id ?? "",
+      carrierId: quote?.carrierId ?? null,
+      premium: quote?.premium ?? null,
+      coverageA: quote?.coverageA ?? null,
+      hurricaneDeductible: quote?.hurricaneDeductible ?? null,
+      aopDeductible: quote?.aopDeductible ?? null,
     },
     fields,
     decDocumentId: gate.dec.id,
@@ -620,7 +625,7 @@ export async function issuePolicyFromDeclaration(input: {
     accountId: deal.accountId,
     dealId,
     riskId: risk?.id ?? null,
-    carrierId: quote.carrierId,
+    carrierId: quote?.carrierId ?? null,
     policyNumber,
     lineOfBusiness: def.lob,
     status: "unpublished" as const,
@@ -648,7 +653,7 @@ export async function issuePolicyFromDeclaration(input: {
     premisesState: booked.premisesState || risk?.state || null,
     premisesZip: booked.premisesZip || risk?.zip || null,
     ownerId: deal.ownerId ?? null,
-    sourceQuoteId: quote.id,
+    sourceQuoteId: quote?.id ?? null,
     sourceDocumentId: gate.dec.id,
     sourceProduct: product,
     publishedAt: null as Date | null,

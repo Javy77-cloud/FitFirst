@@ -8,12 +8,13 @@ import { db } from "@/lib/db";
 import { alerts, deals, quoteAttemptLogs, quotes, reviewTasks } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
+  dealProductDef,
   inferDealProducts,
   parseDealProduct,
+  sheetLineForProduct,
   splitHomeProducts,
   type DealProductId,
 } from "@/lib/deals/deal-products";
-import { sheetLineForProduct } from "@/lib/deals/deal-products";
 import {
   noticeCompleteLogBody,
   noticeDeleteLogBody,
@@ -55,6 +56,13 @@ import { persistDealShopFlow } from "@/lib/deals/shop-flow-persist";
 import { maybeArchiveDealWhenAllProductsTerminal } from "@/lib/deals/archive-when-terminal";
 import { flashAction, flashStay } from "@/lib/flash-action";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
+import {
+  buildOutsideStageOverride,
+  hasActiveOutsideOverride,
+  outsideOverrideActivityBody,
+  outsideOverrideActivityTitle,
+  outsideOverrideStageLabel,
+} from "@/lib/deals/outside-stage-override";
 
 async function loadDeal(dealId: string) {
   const [deal] = await db
@@ -145,6 +153,8 @@ export async function setDealProductStage(input: {
   selectedQuoteIds?: string[];
   lostReason?: string | null;
   surface?: "quotes" | "header" | "chip";
+  /** Confirmed outside-FitFirst override — skips quote gate; does not mint a policy. */
+  outsideOverride?: { reason: string } | null;
 }) {
   const dealId = input.dealId.trim();
   const product = parseDealProduct(input.product);
@@ -161,7 +171,28 @@ export async function setDealProductStage(input: {
     input.selectedQuoteIds ?? current.selectedQuoteIds,
     liveQuoteIds,
   );
-  if (lateStageNeedsQuoteSelection({ stage: stageSlug, selectedQuoteIds, liveQuoteIds })) {
+  const outsideBuilt = input.outsideOverride
+    ? buildOutsideStageOverride({
+        stageSlug,
+        reason: input.outsideOverride.reason,
+      })
+    : null;
+  if (outsideBuilt && !outsideBuilt.ok) {
+    return { ok: false as const, reason: "need_reason" as const, message: outsideBuilt.error };
+  }
+  const outsideOverride = outsideBuilt?.ok
+    ? outsideBuilt.override
+    : hasActiveOutsideOverride(current.outsideOverride)
+      ? current.outsideOverride
+      : null;
+  if (
+    lateStageNeedsQuoteSelection({
+      stage: stageSlug,
+      selectedQuoteIds,
+      liveQuoteIds,
+      outsideOverride,
+    })
+  ) {
     return { ok: false as const, reason: "need_quote" };
   }
   if (quotesOnlyStageBlocked(stageSlug, input.surface)) {
@@ -170,7 +201,9 @@ export async function setDealProductStage(input: {
   if (stageSlug === "closed_lost" && input.lostReason && !isProductLostReason(input.lostReason)) {
     return { ok: false as const, reason: "need_lost_reason" };
   }
-  if (isPolicyIssuedStage(stageSlug)) {
+  // Policy issued with live quotes still mints. Outside FitFirst only advances stage —
+  // agent uploads the Issued declaration next (Gemini → mint) without fake quote rows.
+  if (isPolicyIssuedStage(stageSlug) && !hasActiveOutsideOverride(outsideOverride)) {
     const minted = await issuePolicyFromDeclaration({
       dealId,
       product,
@@ -189,6 +222,7 @@ export async function setDealProductStage(input: {
     stage: stageSlug,
     selectedQuoteIds,
     lostReason: stageSlug === "closed_lost" ? input.lostReason ?? current.lostReason : null,
+    outsideOverride: hasActiveOutsideOverride(outsideOverride) ? outsideOverride : null,
   });
   await persistDealShopFlow(dealId, { ...saved, productStages: nextStages });
 
@@ -217,6 +251,158 @@ export async function setDealProductStage(input: {
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/deals");
   return { ok: true as const };
+}
+
+
+/** Stage stepper: outside-quote override OR Closed lost (went elsewhere) with Captain reason. */
+export async function overrideDealProductStageOutside(input: {
+  dealId: string;
+  product: string;
+  stageSlug: string;
+  pipelineSlug: string;
+  reason: string;
+  lostReason?: string | null;
+}) {
+  const dealId = input.dealId.trim();
+  const product = parseDealProduct(input.product);
+  if (!dealId || !product) return { ok: false as const, error: "Deal and product are required." };
+
+  const stageSlug = canonicalizeProductStage(input.stageSlug);
+  const session = await currentDeskSession();
+  const label = dealProductDef(product).label;
+
+  // Closed lost — separate from outside-quote stamp. Captain reason required.
+  if (stageSlug === "closed_lost") {
+    const lostReason = (input.lostReason ?? "").trim();
+    if (!isProductLostReason(lostReason)) {
+      return { ok: false as const, error: "Pick a lost reason (e.g. Bound with competitor)." };
+    }
+    const result = await setDealProductStage({
+      dealId,
+      product,
+      stageSlug: "closed_lost",
+      pipelineSlug: input.pipelineSlug,
+      selectedQuoteIds: [],
+      lostReason,
+      surface: "quotes",
+    });
+    if (!result.ok) {
+      return { ok: false as const, error: "Could not mark product lost." };
+    }
+    const note = (input.reason ?? "").trim();
+    const deal = await loadDeal(dealId);
+    await writeDeskComms({
+      kind: "note",
+      title: `Lost · ${label} · ${lostReason}`,
+      body: `${session.name || "Agent"} closed ${label}: ${lostReason}.${note ? ` ${note}` : ""}`,
+      status: "completed",
+      eventType: "logged",
+      occurredAt: new Date(),
+      dealId,
+      contactId: deal?.contactId ?? null,
+      accountId: deal?.accountId ?? null,
+      leadId: deal?.leadId ?? null,
+      assignee: session.name || null,
+      actorId: session.userId,
+      actorName: session.name || null,
+    });
+    await writeCrmSignalsSafe({
+      kind: "stage_moved",
+      title: `Lost · ${label} · ${lostReason}`,
+      body: `${session.name || "Agent"} closed ${label}: ${lostReason}.${note ? ` ${note}` : ""}`,
+      entityType: "deal",
+      entityId: dealId,
+      dealId,
+      createTask: false,
+    });
+    revalidatePath(`/deals/${dealId}`);
+    revalidatePath("/deals");
+    return { ok: true as const, stage: "closed_lost" as const, label: "Closed lost" };
+  }
+
+  const built = buildOutsideStageOverride({
+    stageSlug,
+    reason: input.reason,
+  });
+  if (!built.ok) return { ok: false as const, error: built.error };
+
+  const override = {
+    ...built.override,
+    agent: session.name || null,
+  };
+  const result = await setDealProductStage({
+    dealId,
+    product,
+    stageSlug: override.toStage,
+    pipelineSlug: input.pipelineSlug,
+    selectedQuoteIds: [],
+    surface: "quotes",
+    outsideOverride: { reason: override.reason },
+  });
+  if (!result.ok) {
+    if (result.reason === "need_reason" && "message" in result && result.message) {
+      return { ok: false as const, error: String(result.message) };
+    }
+    return { ok: false as const, error: "Could not apply the outside FitFirst override." };
+  }
+
+  // Persist agent name on the audit blob (setDealProductStage rebuilds without session).
+  const deal = await loadDeal(dealId);
+  if (deal) {
+    const saved = parseShopFlow(deal.shopFlow);
+    const stages = parseProductStages(saved.productStages);
+    const next = setProductStage(stages, product, { outsideOverride: override });
+    await persistDealShopFlow(dealId, { ...saved, productStages: next });
+  }
+
+  await writeDeskComms({
+    kind: "note",
+    title: outsideOverrideActivityTitle({
+      productLabel: label,
+      toStage: override.toStage,
+    }),
+    body: outsideOverrideActivityBody({
+      agent: session.name || "Agent",
+      productLabel: label,
+      toStage: override.toStage,
+      reason: override.reason,
+    }),
+    status: "completed",
+    eventType: "logged",
+    occurredAt: new Date(),
+    dealId,
+    contactId: deal?.contactId ?? null,
+    accountId: deal?.accountId ?? null,
+    leadId: deal?.leadId ?? null,
+    assignee: session.name || null,
+    actorId: session.userId,
+    actorName: session.name || null,
+  });
+  await writeCrmSignalsSafe({
+    kind: "stage_moved",
+    title: outsideOverrideActivityTitle({
+      productLabel: label,
+      toStage: override.toStage,
+    }),
+    body: outsideOverrideActivityBody({
+      agent: session.name || "Agent",
+      productLabel: label,
+      toStage: override.toStage,
+      reason: override.reason,
+    }),
+    entityType: "deal",
+    entityId: dealId,
+    dealId,
+    createTask: false,
+  });
+
+  revalidatePath(`/deals/${dealId}`);
+  revalidatePath("/deals");
+  return {
+    ok: true as const,
+    stage: override.toStage,
+    label: outsideOverrideStageLabel(override.toStage),
+  };
 }
 
 export async function selectDealProductQuotes(formData: FormData) {

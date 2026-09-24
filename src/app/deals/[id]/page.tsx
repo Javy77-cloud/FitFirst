@@ -73,6 +73,7 @@ import {
 import { productSectionComplete, productSectionProgress } from "@/lib/deals/product-layout";
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
 import { DealStatusStamp } from "@/components/deal/deal-status-stamp";
+import { OutsideFitFirstStamp } from "@/components/deal/outside-fitfirst-stamp";
 import { CreatePolicyFromDecModal } from "@/components/deal/create-policy-from-dec-modal";
 import { ensureRosaDeclarationRetag } from "@/app/actions/declaration";
 import { allowCreatePolicyPrompt, ROSA_DEC_DEAL_ID } from "@/lib/policy/dec-prompt";
@@ -676,6 +677,7 @@ export default async function DealPage({
         <div className="ff-deal-stamp-row" data-ff-deal-stamps="">
           <div className="ff-deal-stamp-stack">
             <DealStatusStamp stage={stampStage} />
+            <OutsideFitFirstStamp override={activeProductState.outsideOverride} />
             {stampStage && noticeStampVisible ? (
               <DealNotices {...noticeProps} placement="overlay" />
             ) : null}
@@ -753,6 +755,7 @@ export default async function DealPage({
                         selectedQuoteIds: activeProductState.selectedQuoteIds,
                         fallback: stageView.slug,
                         liveQuoteIds,
+                        outsideOverride: activeProductState.outsideOverride,
                       })}
                       stages={stageView.stages}
                       dealTitle={visibleDealTitle}
@@ -762,6 +765,7 @@ export default async function DealPage({
                       quoteChoices={quoteChoices}
                       workspaceTab={activeTab}
                       issuedFolderQuoteIds={issuedFolderQuoteIds}
+                      outsideOverride={Boolean(activeProductState.outsideOverride)}
                     />
                     {!stampStage && noticeStampVisible ? (
                       <DealNotices {...noticeProps} placement="header" />
@@ -1022,6 +1026,8 @@ export default async function DealPage({
                         shopLine={sheetLine}
                         product={activeProduct}
                         lastRequestCarrierIds={requestScopeForLine(shopFlow, sheetLine)}
+                        outsideOverride={Boolean(activeProductState.outsideOverride)}
+                        outsideOverrideDetail={activeProductState.outsideOverride ?? null}
                       />
                         )}
                       </div>
@@ -1044,6 +1050,7 @@ export default async function DealPage({
                           selectedQuoteIds: activeProductState.selectedQuoteIds,
                           fallback: stageView.slug,
                           liveQuoteIds,
+                          outsideOverride: activeProductState.outsideOverride,
                         })}
                         boundQuoteId={boundQuoteId}
                         selectedQuoteIds={activeProductState.selectedQuoteIds}
@@ -1094,6 +1101,7 @@ export default async function DealPage({
                           selectedQuoteIds: activeProductState.selectedQuoteIds,
                           fallback: stageView.slug,
                           liveQuoteIds,
+                          outsideOverride: activeProductState.outsideOverride,
                         })}
                         confirmLogs={allQuoteLogs.map((row) => ({
                           carrierId: row.log.carrierId,
@@ -1106,6 +1114,9 @@ export default async function DealPage({
                         dealLine={activeLob}
                         product={activeProduct}
                         selectedQuoteIds={activeProductState.selectedQuoteIds}
+                        outsideOverride={Boolean(activeProductState.outsideOverride)}
+                        outsideOverrideDetail={activeProductState.outsideOverride ?? null}
+                        pipelineSlug={stageView.pipelineSlug}
                         sheetStale={sheetStale}
                         splitHomeProducts={splitHome}
                         quoteRuns={shopFlow.quoteRuns}
