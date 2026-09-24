@@ -1,6 +1,8 @@
 /** Day-of renewal term-start awareness (Inbox lane). */
 
 import { isoDate } from "@/lib/home/as-of";
+import { businessDateKey } from "@/lib/policies/current-term";
+import { etDateKey } from "@/lib/time/et";
 import type { PanelUrgency } from "@/lib/notifications/panel";
 
 export const TERM_START_KIND = "renewal_term_started" as const;
@@ -28,15 +30,16 @@ export function isRenewalTermStartCandidate(input: {
   hasPriorTerm: boolean;
   originalEffectiveDate: Date | null;
 }): boolean {
-  if (!isSameUtcDay(input.termEffective, input.asOf)) return false;
+  const effective = businessDateKey(input.termEffective);
+  if (!effective || effective !== etDateKey(input.asOf)) return false;
   if (input.hasPriorTerm) return true;
   if (!input.originalEffectiveDate) return false;
-  return isoDate(input.originalEffectiveDate) !== isoDate(input.termEffective);
+  return businessDateKey(input.originalEffectiveDate) !== effective;
 }
 
 /** Idempotent key: one alert per policy + term start day. */
 export function termStartKey(policyId: string, termEffective: Date): string {
-  return `${TERM_START_KIND}:${policyId}:${isoDate(termEffective)}`;
+  return `${TERM_START_KIND}:${policyId}:${businessDateKey(termEffective) ?? isoDate(termEffective)}`;
 }
 
 export function termStartCompareHref(policyId: string): string {

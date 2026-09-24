@@ -65,13 +65,14 @@ export function evaluateShopFits(input: {
   prior: PriorAttempt[];
   sheetValues?: Record<string, QuoteSheetFieldValue> | null;
   asOfYear?: number;
+  dealId?: string | null;
 }): ShopFitsResult {
   const risk = riskFromQuoteSheet(input.risk, input.sheetValues);
   const writers = writersForDealLine(input.rules, input.dealLine);
 
   const matches = rankFitsByFirstWave(
     writers.map((rule) => {
-      const match = matchCarrier(risk, rule, input.prior, input.asOfYear, input.dealLine);
+      const match = matchCarrier(risk, rule, input.prior, input.asOfYear, input.dealLine, input.dealId);
       return {
         ...match,
         firstWaveRank: firstWaveRank(input.dealLine, rule.carrierId, rule.carrierName),

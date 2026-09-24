@@ -33,6 +33,9 @@ export async function loadHouseholdGapPolicies(input: {
       status: policies.status,
       lineOfBusiness: policies.lineOfBusiness,
       policyNumber: policies.policyNumber,
+      effectiveDate: policies.effectiveDate,
+      expirationDate: policies.expirationDate,
+      premium: policies.premium,
     })
     .from(policies)
     .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), partyClause));
@@ -93,6 +96,9 @@ export async function loadRenewalGapCounts(
       status: policies.status,
       lineOfBusiness: policies.lineOfBusiness,
       policyNumber: policies.policyNumber,
+      effectiveDate: policies.effectiveDate,
+      expirationDate: policies.expirationDate,
+      premium: policies.premium,
       contactId: policies.contactId,
       accountId: policies.accountId,
     })

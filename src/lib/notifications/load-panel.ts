@@ -13,7 +13,7 @@ import {
 } from "@/lib/db/schema";
 import { daysUntilExpiration, expirationDay } from "@/lib/ams/renewals";
 import { addUtcDays, deskNow } from "@/lib/home/as-of";
-import { isInForceStatus } from "@/lib/policy/status";
+import { resolveCurrentTerm } from "@/lib/policies/current-term";
 import { docExpiryWarning, isExpiringDocType } from "@/lib/policy/document-depth";
 import { partyLabel } from "@/lib/desk/policy-name";
 import {
@@ -136,6 +136,7 @@ export async function loadRenewalSilenceSignals(asOf = deskNow()): Promise<Panel
       policyId: policies.id,
       policyNumber: policies.policyNumber,
       lineOfBusiness: policies.lineOfBusiness,
+      effectiveDate: policies.effectiveDate,
       expirationDate: policies.expirationDate,
       status: policies.status,
       contactId: policies.contactId,
@@ -153,10 +154,20 @@ export async function loadRenewalSilenceSignals(asOf = deskNow()): Promise<Panel
     );
 
   const candidates = rows.filter((row) => {
-    if (!isInForceStatus(row.status)) return false;
-    const exp = expirationDay(row.expirationDate);
+    const resolved = resolveCurrentTerm(
+      {
+        status: row.status,
+        lineOfBusiness: row.lineOfBusiness,
+        policyNumber: row.policyNumber,
+        effectiveDate: row.effectiveDate,
+        expirationDate: row.expirationDate,
+      },
+      asOf,
+    );
+    if (!resolved.countsAsInForce) return false;
+    const exp = expirationDay(resolved.bookExpiration ?? row.expirationDate);
     if (!exp) return false;
-    const days = daysUntilExpiration(exp, asOf);
+    const days = resolved.daysLeft ?? daysUntilExpiration(exp, asOf);
     return isRenewalSilenceWindow(days) || days < 30;
   });
   if (candidates.length === 0) return [];
@@ -198,9 +209,18 @@ export async function loadRenewalSilenceSignals(asOf = deskNow()): Promise<Panel
 
   const cards: PanelCard[] = [];
   for (const row of candidates) {
-    const exp = expirationDay(row.expirationDate);
-    if (!exp) continue;
-    const days = daysUntilExpiration(exp, asOf);
+    const resolved = resolveCurrentTerm(
+      {
+        status: row.status,
+        lineOfBusiness: row.lineOfBusiness,
+        policyNumber: row.policyNumber,
+        effectiveDate: row.effectiveDate,
+        expirationDate: row.expirationDate,
+      },
+      asOf,
+    );
+    const days = resolved.daysLeft;
+    if (days == null) continue;
     const last =
       lastByPolicy.get(row.policyId) ?? (row.contactId ? lastByContact.get(row.contactId) ?? null : null);
     if (!isRenewalSilent(last ?? null, asOf) && !isRenewalSilenceWindow(days)) continue;
@@ -226,7 +246,7 @@ export async function loadRenewalSilenceSignals(asOf = deskNow()): Promise<Panel
       href: `/policies/${row.policyId}`,
       entityType: "policy",
       entityId: row.policyId,
-      deadline: exp,
+      deadline: row.expirationDate,
       source: "live",
       policyId: row.policyId,
       contactId: row.contactId,

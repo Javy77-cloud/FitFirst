@@ -766,6 +766,10 @@ export type PolicyListRow = {
   carrierName?: string | null;
   phone?: string | null;
   email?: string | null;
+  /** Precomputed from the current-term resolver so the card matches Overview. */
+  daysUntil?: number | null;
+  statusLabel?: string | null;
+  offBook?: boolean;
 };
 
 function moneyAmount(premium: string | number | null | undefined): number | null {
@@ -818,9 +822,9 @@ export function presentPolicyCard(
   asOf: Date,
 ): BookGlanceCard {
   const lastTouchDays = daysSinceTouch(row.updatedAt, asOf);
-  const daysUntil = daysUntilDate(row.expirationDate, asOf);
-  const offBook = isOffBookStatus(row.status);
-  const statusLabel = row.status ? policyStatusLabel(row.status) : null;
+  const daysUntil = row.daysUntil !== undefined ? row.daysUntil : daysUntilDate(row.expirationDate, asOf);
+  const offBook = row.offBook ?? isOffBookStatus(row.status);
+  const statusLabel = row.statusLabel ?? (row.status ? policyStatusLabel(row.status) : null);
   const expires = glanceDate(row.expirationDate);
   const attention = policyAttention({
     daysUntil,

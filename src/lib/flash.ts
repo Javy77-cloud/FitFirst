@@ -155,6 +155,8 @@ export const FLASH_COPY = {
   "need-confirm": "Confirm remaining declaration fields before publishing.",
   "need-policy-number": "Type the real policy number before Policy looks good. Gemini left it blank on this declaration.",
   "need-quote": "Pick a live quote first",
+  "quote-send-failed": "Quote email did not send. The stage was not changed.",
+  "ana-unbound": "Ana Dib stays unbound. Coverage A stays $321,000.",
   "declaration-received": "Declaration received",
   "letter-extracting": "Extracting letter fields",
   "letter-needs-review": "Letter ready for review",

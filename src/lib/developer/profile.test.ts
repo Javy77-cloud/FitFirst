@@ -39,11 +39,12 @@ describe("developer profile gates", () => {
     const login = readFileSync("src/app/login/page.tsx", "utf8");
     const page = readFileSync("src/app/developer/page.tsx", "utf8");
     const session = readFileSync("src/lib/auth/session.ts", "utf8");
-    expect(login).toMatch(/who" value="developer"/);
-    expect(login).toMatch(/Sign in as Developer/);
-    expect(session).toMatch(/logan@fitfirst\.local/);
-    expect(session).toMatch(/Natasha Logan/);
-    expect(session).toMatch(/password: "logan"/);
+    expect(login).toMatch(/name="email"/);
+    expect(login).toMatch(/Sign in/);
+    expect(login).not.toMatch(/who" value="developer"/);
+    expect(session).not.toMatch(/DEMO_USERS/);
+    expect(session).not.toMatch(/password: "logan"/);
+    expect(readFileSync("src/lib/auth/dev-passwords.ts", "utf8")).toMatch(/NODE_ENV|isFitFirstProduction/);
     expect(page).toMatch(/requireDeveloperPage/);
     expect(page).toMatch(/loadDeveloperUsageTiles/);
     expect(page).toMatch(/DEVELOPER_UPCOMING/);

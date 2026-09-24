@@ -42,6 +42,9 @@ export async function loadContactNoticeInputs(contactId: string) {
         status: policies.status,
         lineOfBusiness: policies.lineOfBusiness,
         policyNumber: policies.policyNumber,
+        effectiveDate: policies.effectiveDate,
+        expirationDate: policies.expirationDate,
+        premium: policies.premium,
       })
       .from(policies)
       .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.contactId, contactId))),

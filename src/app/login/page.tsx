@@ -2,7 +2,6 @@ import { loginDesk } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DEMO_USERS } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -15,13 +14,13 @@ export default async function LoginPage({
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6">
-      <div className="w-full max-w-5xl space-y-5">
+      <div className="w-full max-w-lg space-y-5">
         <div className="text-center sm:text-left">
           <div className="text-caption uppercase tracking-wide text-muted-foreground">FitFirst desk</div>
           <h1 className="text-2xl font-semibold text-navy">Sign in</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Admin sees the whole book. Agent sees their own book. Developer is a third profile
-            for API meters — not Admin settings.
+            Use the email or username an Admin created. Admin sees the whole book. Agent sees their
+            own book. Developer is a third profile for API meters — not Admin settings.
           </p>
         </div>
 
@@ -31,7 +30,7 @@ export default async function LoginPage({
           </p>
         ) : null}
         {error ? (
-          <p className="rounded-md bg-fit-red-bg px-3 py-2 text-sm text-fit-red">
+          <p className="rounded-md bg-fit-red-bg px-3 py-2 text-sm text-fit-red" role="alert">
             {error === "frozen"
               ? "This login is frozen. Ask an Admin to unfreeze it."
               : error === "removed"
@@ -44,6 +43,8 @@ export default async function LoginPage({
                       ? "Sign in again, then complete 2-step."
                       : error === "recover"
                         ? "That recovery link is missing or expired."
+                        : error === "session"
+                          ? "Desk session secret is not configured. Set SESSION_SECRET before signing in."
                     : "Email, username, or password did not match an active desk user."}
           </p>
         ) : null}
@@ -58,124 +59,36 @@ export default async function LoginPage({
           </p>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <form action={loginDesk} className="ff-card flex flex-col gap-3 p-5">
-            <input type="hidden" name="who" value="admin" />
-            <div className="flex items-center justify-between gap-2">
-              <span className="rounded-md bg-navy px-2 py-0.5 text-caption font-semibold uppercase tracking-wide text-white">
-                Admin
-              </span>
-              <span className="text-helper text-muted-foreground">All book</span>
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-navy">{DEMO_USERS.admin.name}</h2>
-              <p className="text-sm text-muted-foreground">{DEMO_USERS.admin.email}</p>
-            </div>
-            <p className="text-sm text-navy/80">{DEMO_USERS.admin.summary}</p>
-            <div>
-              <Label className="text-sm">Password</Label>
-              <Input
-                name="password"
-                type="password"
-                required
-                autoComplete="current-password"
-                className="mt-1"
-              />
-            </div>
-            <Button type="submit" className="mt-auto">
-              Sign in as Admin
-            </Button>
-          </form>
-
-          <form action={loginDesk} className="ff-card flex flex-col gap-3 p-5">
-            <input type="hidden" name="who" value="agent" />
-            <div className="flex items-center justify-between gap-2">
-              <span className="rounded-md bg-primary px-2 py-0.5 text-caption font-semibold uppercase tracking-wide text-primary-foreground">
-                Agent
-              </span>
-              <span className="text-helper text-muted-foreground">Own book</span>
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-navy">{DEMO_USERS.agent.name}</h2>
-              <p className="text-sm text-muted-foreground">{DEMO_USERS.agent.email}</p>
-            </div>
-            <p className="text-sm text-navy/80">{DEMO_USERS.agent.summary}</p>
-            <ul className="list-disc space-y-1 pl-5 text-helper text-muted-foreground">
-              <li>Leads, contacts, deals, and policies she owns</li>
-              <li>Send client email / SMS when the agency line is connected</li>
-              <li>Calendar items assigned to her, plus company / training invites</li>
-              <li>Pipeline deals on her book — no Admin settings</li>
-            </ul>
-            <div>
-              <Label className="text-sm">Password</Label>
-              <Input
-                name="password"
-                type="password"
-                required
-                autoComplete="current-password"
-                className="mt-1"
-              />
-            </div>
-            <Button type="submit" className="mt-auto">
-              Sign in as Agent
-            </Button>
-          </form>
-
-          <form action={loginDesk} className="ff-card flex flex-col gap-3 p-5">
-            <input type="hidden" name="who" value="developer" />
-            <div className="flex items-center justify-between gap-2">
-              <span className="rounded-md bg-secondary px-2 py-0.5 text-caption font-semibold uppercase tracking-wide text-navy">
-                Developer
-              </span>
-              <span className="text-helper text-muted-foreground">API meters</span>
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-navy">{DEMO_USERS.developer.name}</h2>
-              <p className="text-sm text-muted-foreground">{DEMO_USERS.developer.email}</p>
-            </div>
-            <p className="text-sm text-navy/80">{DEMO_USERS.developer.summary}</p>
-            <ul className="list-disc space-y-1 pl-5 text-helper text-muted-foreground">
-              <li>Developer nav and hub only when this profile is signed in</li>
-              <li>Tiles count real Mapbox, Gemini, FedEx, and parcel HTTP</li>
-              <li>Uninstrumented vendors stay labeled not counted yet</li>
-            </ul>
-            <div>
-              <Label className="text-sm">Password</Label>
-              <Input
-                name="password"
-                type="password"
-                required
-                autoComplete="current-password"
-                className="mt-1"
-              />
-            </div>
-            <Button type="submit" className="mt-auto">
-              Sign in as Developer
-            </Button>
-          </form>
-        </div>
-
         <form action={loginDesk} className="ff-card space-y-3 p-5">
           <div>
             <h2 className="text-sm font-semibold text-navy">Email or username</h2>
             <p className="text-helper text-muted-foreground">
-              Any desk login Admin created. After sign-in the rail shows Admin · all book,
+              Password is the one stored for this login. After sign-in the rail shows Admin · all book,
               Agent · own book, or Developer · API meters.
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3">
             <div>
-              <Label className="text-sm">Email or username</Label>
-              <Input name="email" required defaultValue={DEMO_USERS.admin.email} className="mt-1" />
+              <Label className="text-sm" htmlFor="desk-login">
+                Email or username
+              </Label>
+              <Input id="desk-login" name="email" required autoComplete="username" className="mt-1" />
             </div>
             <div>
-              <Label className="text-sm">Password</Label>
-              <Input name="password" type="password" required className="mt-1" />
+              <Label className="text-sm" htmlFor="desk-password">
+                Password
+              </Label>
+              <Input
+                id="desk-password"
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+                className="mt-1"
+              />
             </div>
           </div>
-          <Button type="submit" variant="outline">
-            Sign in
-          </Button>
+          <Button type="submit">Sign in</Button>
         </form>
       </div>
     </div>
