@@ -4517,6 +4517,38 @@ tr[data-ff-activity-selected="true"] {
 .ff-book-card {
   align-items: flex-start;
 }
+/* Current-band corner chip. Sits above the renews line so a 16rem column stays readable. */
+.ff-book-card.is-renewal-agreed {
+  position: relative;
+  /* Reserved strip so the corner chip stays off the name and the Open action. */
+  padding-top: 1.85rem;
+}
+.ff-renewal-agreed-badge {
+  position: absolute;
+  top: 0.28rem;
+  right: 0.4rem;
+  z-index: 1;
+  max-width: calc(100% - 0.8rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  border-radius: 999px;
+  padding: 0.08rem 0.4rem;
+  background: color-mix(in srgb, var(--ff-green) 14%, white);
+  color: var(--ff-green);
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+}
+@media (max-width: 22rem) {
+  .ff-renewal-agreed-badge {
+    font-size: 0.58rem;
+    letter-spacing: 0;
+    padding-inline: 0.32rem;
+  }
+}
 .ff-book-activity-hit {
   display: contents;
 }

@@ -7,6 +7,7 @@ import {
   showRenewalAgreedStamp,
   stackRenewCueText,
 } from "@/lib/book-lists/renewal-agreed-stamp";
+import { showRenewalAgreedBadge } from "@/lib/book-lists/renewal-agreed";
 import type { BookCardAction, BookCardFact, BookGlanceCard } from "@/lib/book-lists/types";
 import { cn } from "@/lib/utils";
 
@@ -660,6 +661,12 @@ function CarrierStackCard({
   );
 }
 
+/** Current-band Client staying policies only. The helper clears it on the renewal effective date. */
+function showRenewalAgreedCorner(card: BookGlanceCard): boolean {
+  if (card.surface !== "policies" || card.column !== "current" || !card.renewalAgreed) return false;
+  return showRenewalAgreedBadge(card.renewalAgreed);
+}
+
 /** Narrow band column — one why line, not the wide list. */
 function BandCard({
   card,
@@ -672,15 +679,21 @@ function BandCard({
   extra?: ReactNode;
   tip: string;
 }) {
+  const renewalAgreed = showRenewalAgreedCorner(card);
   return (
     <article
-      className={cn("ff-stack-card ff-book-card", `ff-heat-${card.heat}`)}
+      className={cn("ff-stack-card ff-book-card", `ff-heat-${card.heat}`, renewalAgreed && "is-renewal-agreed")}
       data-ff-book-card={card.id}
       data-hay={card.hay}
       data-ff-book-surface={card.surface}
       data-ff-heat={card.heat}
       data-ff-book-column={card.column}
     >
+      {renewalAgreed ? (
+        <span className="ff-renewal-agreed-badge" data-ff-renewal-agreed="">
+          {RENEWAL_AGREED_LABEL}
+        </span>
+      ) : null}
       {leading}
       <RiskGlyph heat={card.heat} tip={tip} />
       <div className="ff-stack-card-body min-w-0 flex-1">

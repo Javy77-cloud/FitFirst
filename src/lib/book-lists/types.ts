@@ -102,8 +102,9 @@ export type BookGlanceCard = {
   inboxCue?: string | null;
   inboxHref?: string | null;
   /**
-   * Policies stack only. Dates for the render-time "Renewal agreed" stamp.
-   * Visibility is not stored here — the stack card computes it.
+   * Dates for the render-time "Renewal agreed" mark.
+   * The stack stamp and the Current-band badge both read this.
+   * Visibility is not stored here — each surface computes it.
    */
   renewalAgreed?: {
     handled: boolean;
