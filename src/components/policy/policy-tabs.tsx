@@ -18,7 +18,7 @@ export function PolicyTabsNav({
   active: AgentPolicyTab;
   tabs: AgentPolicyTab[];
   counts?: Partial<Record<AgentPolicyTab, number>>;
-  /** Right edge of the main column — policy overflow menu lives here. */
+  /** Right edge of the main column — record pager, with policy actions beside it. */
   endSlot?: ReactNode;
 }) {
   return (
@@ -53,7 +53,7 @@ export function PolicyTabsNav({
         })}
       </nav>
       {endSlot ? (
-        <div className="ml-auto flex shrink-0 items-center" data-ff-policy-nav-end="">
+        <div className="ml-auto flex shrink-0 items-center gap-1" data-ff-policy-nav-end="">
           {endSlot}
         </div>
       ) : null}

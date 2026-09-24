@@ -1,6 +1,6 @@
 /** Persist the filtered/sorted list order so detail pages can prev/next in that order. */
 
-export type RecordListModule = "contacts" | "accounts";
+export type RecordListModule = "contacts" | "accounts" | "policies";
 
 const PREFIX = "ff:list-order:";
 
@@ -57,7 +57,31 @@ export function detailHref(
   id: string,
   tab: string | null | undefined,
 ): string {
-  const base = module === "contacts" ? `/contacts/${id}` : `/accounts/${id}`;
+  const base =
+    module === "contacts"
+      ? `/contacts/${id}`
+      : module === "accounts"
+        ? `/accounts/${id}`
+        : `/policies/${id}`;
   if (tab && tab.trim()) return `${base}?tab=${encodeURIComponent(tab.trim())}`;
   return base;
+}
+
+/**
+ * Left-to-right band order, matching the Policies board columns.
+ * Cards stay in the order they were passed (already filtered).
+ */
+export function columnOrderIds(
+  cards: readonly { id: string; column: string }[],
+  columns: readonly { id: string }[],
+): string[] {
+  const buckets = new Map<string, string[]>();
+  for (const column of columns) buckets.set(column.id, []);
+  const fallback = columns[0]?.id;
+  for (const card of cards) {
+    const key = buckets.has(card.column) ? card.column : fallback;
+    if (!key) continue;
+    buckets.get(key)!.push(card.id);
+  }
+  return columns.flatMap((column) => buckets.get(column.id) ?? []);
 }

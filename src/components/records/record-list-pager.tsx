@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 
 /**
- * Header prev/next for Contact / Account detail.
+ * Prev/next for Contact, Account, and Policy detail.
  * Uses sessionStorage order written by the list page; hides when no list context.
  */
 export function RecordListPager({
@@ -65,7 +65,8 @@ export function RecordListPager({
 
   if (!pos) return null;
 
-  const noun = module === "contacts" ? "contact" : "account";
+  const noun =
+    module === "contacts" ? "contact" : module === "accounts" ? "account" : "policy";
   const prevId = pos.index > 0 ? ids[pos.index - 1] : null;
   const nextId = pos.index < pos.total - 1 ? ids[pos.index + 1] : null;
 
