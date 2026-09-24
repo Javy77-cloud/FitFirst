@@ -29,6 +29,7 @@ import {
   isPreviousAddressFieldKey,
   shouldShowPreviousAddressFields,
 } from "@/lib/custom-fields/mailing-same";
+import { isDealPreferencesSection } from "@/lib/custom-fields/contact-parity-fields";
 import { COVERAGE_CARRIER_FIELD_KEY } from "@/lib/coverage/declared-coverage";
 import type { CoverageLine } from "@/lib/coverage/gaps";
 import { asList } from "@/lib/safe-list";
@@ -129,6 +130,7 @@ export function RecordLayoutFields({
           data-ff-record-layout-col={column.id}
         >
           {asList(column.sections).map((section) => {
+            if (module === "deals" && isDealPreferencesSection(section)) return null;
             const pipelineStrip = isPipelineStripSection(section);
             return (
             <section

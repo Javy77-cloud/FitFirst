@@ -23,9 +23,11 @@ describe("Deal Details Contact parity", () => {
       expect(keys.has(field.key)).toBe(true);
     }
     const layoutKeys = allLayoutFieldKeys(defaultLayoutForLine("HO"));
-    expect(layoutKeys).toEqual(
-      expect.arrayContaining(["nickname", "referral", "secondary_phone", "dependents", "campaign_tag", "spouse_link"]),
-    );
+    expect(layoutKeys).toEqual(expect.arrayContaining(["referral", "campaign_tag"]));
+    expect(layoutKeys).not.toContain("nickname");
+    expect(layoutKeys).not.toContain("secondary_phone");
+    expect(layoutKeys).not.toContain("dependents");
+    expect(layoutKeys).not.toContain("spouse_link");
     expect(layoutKeys).not.toContain("drivers_license_number");
   });
 
@@ -107,12 +109,7 @@ describe("Deal Details Contact parity", () => {
     expect(patch.nickname).toBe("Ellie");
   });
 
-  it("keeps spouse trio consecutive on Deal Preferences for three-equal-cell packing", () => {
-    const prefs = defaultLayoutForLine("HO").columns[1]?.sections.find((s) => s.id === "prefs");
-    expect(prefs?.fieldKeys.join(",")).toContain("spouse_name,spouse_dob,spouse_link");
-  });
-
-  it("migrates saved Deal layouts missing Preferences / Intake / spouse_link", () => {
+  it("does not put Preferences back when Intake is the only missing parity section", () => {
     const skinny = {
       columns: [
         { id: "left" as const, sections: [{ id: "contact", label: "Contact", fieldKeys: ["first_name"] }] },
@@ -128,10 +125,38 @@ describe("Deal Details Contact parity", () => {
     expect(needsContactParityDealLayout(skinny)).toBe(true);
     const next = ensureContactParityDealLayout(skinny);
     expect(needsContactParityDealLayout(next)).toBe(false);
-    const prefs = next.columns[1]!.sections.find((s) => s.id === "prefs");
-    expect(prefs?.fieldKeys.join(",")).toContain("spouse_name,spouse_dob,spouse_link");
-    expect(next.columns[1]!.sections.map((s) => s.id)).toEqual(
-      expect.arrayContaining(["prefs", "intake", "pipeline"]),
+    expect(next.columns[1]!.sections.find((s) => s.id === "prefs")).toBeUndefined();
+    expect(next.columns[1]!.sections.map((s) => s.id)).toEqual([
+      "mailing_address",
+      "intake",
+      "pipeline",
+    ]);
+    expect(next.columns[1]!.sections.find((s) => s.id === "intake")?.fieldKeys).toEqual([
+      "source",
+      "referral",
+      "campaign_tag",
+    ]);
+  });
+
+  it("leaves a deleted Preferences section deleted on the load-after-save repair", () => {
+    const removed = {
+      columns: [
+        { id: "left" as const, sections: [{ id: "contact", label: "Contact", fieldKeys: ["first_name"] }] },
+        {
+          id: "right" as const,
+          sections: [
+            { id: "mailing_address", label: "Mailing Address", fieldKeys: ["contact_mailing_address"] },
+            { id: "intake", label: "Intake", fieldKeys: ["source", "referral", "campaign_tag"] },
+            { id: "pipeline", label: "Pipeline", fieldKeys: ["insurance_type"] },
+          ],
+        },
+      ],
+    };
+    expect(needsContactParityDealLayout(removed)).toBe(false);
+    const next = ensureContactParityDealLayout(removed);
+    expect(next).toBe(removed);
+    expect(next.columns.flatMap((column) => column.sections).some((section) => section.id === "prefs")).toBe(
+      false,
     );
   });
 
