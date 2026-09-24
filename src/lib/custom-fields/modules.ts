@@ -165,6 +165,12 @@ const POLICY_FIELDS: CustomFieldDef[] = [
 
 const BUSINESS_FIELDS: CustomFieldDef[] = [
   { key: "business_name", label: "Account Name", type: "single_line", systemKey: "name" },
+  {
+    key: "primary_contact",
+    label: "Primary Contact",
+    type: "lookup",
+    lookupModule: "contacts",
+  },
   { key: "dba", label: "DBA", type: "single_line", systemKey: "dba" },
   { key: "legal_name", label: "Legal Name", type: "single_line", systemKey: "legalName" },
   { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
@@ -174,7 +180,7 @@ const BUSINESS_FIELDS: CustomFieldDef[] = [
   { key: "city", label: "City", type: "single_line", systemKey: "city" },
   { key: "state", label: "State", type: "single_line", systemKey: "state" },
   { key: "zip", label: "ZIP", type: "single_line", systemKey: "zip" },
-  { key: "ein", label: "EIN", type: "single_line", systemKey: "ein" },
+  { key: "ein", label: "FEIN", type: "single_line", systemKey: "ein" },
   {
     key: "entity_type",
     label: "Business Type",
@@ -349,9 +355,10 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
     );
   }
   if (module === "businesses") {
-    // Party pair with Contacts: label-above desk chrome + density-4 grids.
-    // Even left|right. Keep Account Name on left; Phone (and email/website) on
-    // right so name + phone are not stacked in one column.
+    // Javy sketch row map: LEFT Business Info → Location → Contact (phone|email,
+    // website wide, source|referral). RIGHT Operations (keeps legal_name) then
+    // CRM Notes. Business Info + Contact at density 2; website stays wide via
+    // isWideLayoutField. Do NOT stack Operations under the left column.
     return twoCol(
       [
         section(
@@ -359,24 +366,28 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
           "Business Info",
           [
             "business_name",
+            "primary_contact",
             "dba",
-            "legal_name",
             "ein",
             "entity_type",
             "industry",
           ],
-          4,
+          2,
         ),
         section("location", "Location", ["mailing_address", "city", "state", "zip"], 4),
-        section("crm_notes", "CRM Notes", ["life_notes", "health_notes", "pc_notes", "notes"], 4),
+        section(
+          "contact",
+          "Business Contact",
+          ["phone", "email", "website", "source", "referral"],
+          2,
+        ),
       ],
       [
-        section("contact", "Business Contact", ["phone", "email", "website"], 4),
-        section("intake", "Intake", ["source", "referral"], 4),
         section(
           "operations",
           "Operations",
           [
+            "legal_name",
             "employee_count",
             "annual_sales",
             "payroll_w2",
@@ -387,6 +398,7 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
           ],
           4,
         ),
+        section("crm_notes", "CRM Notes", ["life_notes", "health_notes", "pc_notes", "notes"], 4),
       ],
     );
   }

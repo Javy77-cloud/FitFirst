@@ -73,7 +73,9 @@ import {
 import { ensureBusinessDetailPicklists } from "@/lib/businesses/business-detail-picklists";
 import {
   migrateBusinessDetailsParity,
+  migrateBusinessDetailsRowMap,
   needsBusinessDetailsParityUpgrade,
+  needsBusinessDetailsRowMap,
 } from "@/lib/businesses/business-detail-layout";
 import {
   contactCardLayout,
@@ -608,29 +610,45 @@ export function migrateBusinessPhoneOppositeColumn(layout: FieldLayout): FieldLa
  * Business Edit Layout: seed stock default only when missing/broken or force=true.
  * Agency-saved layouts win — deleted sections/fields must stay deleted.
  * Does NOT re-merge default keys on every desk load (that brought CRM Notes back).
- * One-time feel migrate moves phone opposite business_name without clobbering the rest.
+ * Soft-migrates party-parity chrome + Javy row-map (left Details / right Operations).
  */
 export async function ensureBusinessDetailLayout(force = false): Promise<FieldLayout> {
   await ensureBusinessDetailPicklists().catch(() => null);
+  // Stock primary_contact + FEIN label — insertMissing may already seed; upsert keeps label.
+  await upsertFieldDef(
+    {
+      key: "primary_contact",
+      label: "Primary Contact",
+      type: "lookup",
+      lookupModule: "contacts",
+    },
+    "businesses",
+  ).catch(() => null);
+  await upsertFieldDef(
+    { key: "ein", label: "FEIN", type: "single_line", systemKey: "ein" },
+    "businesses",
+  ).catch(() => null);
   const next = defaultLayoutForModule("businesses");
   const rows = await loadSavedLayoutRows("businesses").catch(() => []);
   const preferred = MODULE_LAYOUT_LINE;
   const picked = pickSavedModuleLayout(rows, "businesses", preferred);
   // Agency-saved layouts win. An empty right column can be intentional — do NOT
   // reseed stock (that re-injects CRM Notes). Only seed when missing or force.
-  // Phone/name same-column + party-parity labels/density migrate below.
+  // Party-parity labels/density + sketch row-map migrate below.
   if (force || !picked) {
     await saveLayoutForModule("businesses", next);
     return next;
   }
-  // Classic (Dense) keeps an empty right on purpose — do not split phone into a second column.
-  const oneCol = !(picked.columns[1]?.sections?.length);
+  const fieldHints = await listFieldDefs("businesses")
+    .then((defs) => defs.map((field) => ({ key: field.key, label: field.label })))
+    .catch(() => [] as { key: string; label: string }[]);
   let migrated = picked;
-  if (!oneCol && businessNamePhoneSameColumn(migrated)) {
-    migrated = migrateBusinessPhoneOppositeColumn(migrated);
-  }
   if (needsBusinessDetailsParityUpgrade(migrated)) {
     migrated = migrateBusinessDetailsParity(migrated);
+  }
+  // Row map supersedes phone-opposite: sketch puts Contact under Location on the left.
+  if (needsBusinessDetailsRowMap(migrated, fieldHints)) {
+    migrated = migrateBusinessDetailsRowMap(migrated, fieldHints);
   }
   if (JSON.stringify(migrated.columns) !== JSON.stringify(picked.columns)) {
     await saveLayoutForModule("businesses", migrated);
