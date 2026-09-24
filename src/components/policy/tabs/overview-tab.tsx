@@ -160,18 +160,15 @@ export function PolicyOverviewTab({
         showCommission={showCommission}
       />
 
-      <section className="ff-card space-y-3 overflow-visible p-4">
-        <h2 className="text-base font-semibold text-navy">Links & renewal</h2>
-        {showRenewalAgreed ? (
-          <div className="flex justify-center overflow-visible px-2 py-5">
-            <RenewalAgreedStamp />
-          </div>
-        ) : null}
-        <p className="text-sm text-muted-foreground" data-ff-policy-renewal-status="">
-          Renewal status · {renewalLine}
-          {inForce ? " · Active term" : ""}
-        </p>
-        <div className="flex flex-wrap gap-2 text-sm">
+      <section className="ff-card relative p-4" data-ff-policy-links-renewal="">
+        {showRenewalAgreed ? <RenewalAgreedStamp /> : null}
+        <div className="ff-links-renewal-copy space-y-3">
+          <h2 className="text-base font-semibold text-navy">Links & renewal</h2>
+          <p className="text-sm text-muted-foreground" data-ff-policy-renewal-status="">
+            Renewal status · {renewalLine}
+            {inForce ? " · Active term" : ""}
+          </p>
+          <div className="flex flex-wrap gap-2 text-sm">
           {contact ? (
             <RecordLink href={`/contacts/${contact.id}?fromPolicy=${policy.id}`}>
               Contact {contact.lastName}, {contact.firstName}
@@ -199,9 +196,10 @@ export function PolicyOverviewTab({
               Compare terms
             </Link>
           ) : null}
-          {inForce ? (
-            <ClientStayingButton policyId={policy.id} renewalDate={stayingDate} size="sm" />
-          ) : null}
+            {inForce ? (
+              <ClientStayingButton policyId={policy.id} renewalDate={stayingDate} size="sm" />
+            ) : null}
+          </div>
         </div>
       </section>
 

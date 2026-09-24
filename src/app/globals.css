@@ -1589,6 +1589,55 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   }
 }
 
+/* Policy overview: compact Renewal agreed ink beside the renewal text.
+   Tilt stays the deal stamp's rotate(-8deg) from ff-stamp-ink-hit. */
+[data-ff-policy-links-renewal] {
+  container-type: inline-size;
+  overflow: visible;
+}
+.ff-renewal-agreed-stamp {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  /* In the open area beside the renewal text, inset from the card edge. */
+  left: 68%;
+  width: max-content;
+  max-width: 40%;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+[data-ff-renewal-agreed-stamp] .ff-deal-status-stamp {
+  max-width: 10rem;
+}
+[data-ff-renewal-agreed-stamp] .ff-deal-status-stamp-ink {
+  min-height: 0;
+  min-width: 0;
+  padding: 0.28rem 0.55rem;
+  border-width: 3px;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+@container (max-width: 40rem) {
+  .ff-renewal-agreed-stamp {
+    top: 0.5rem;
+    right: 0.55rem;
+    left: auto;
+    max-width: 46%;
+    transform: none;
+  }
+  [data-ff-renewal-agreed-stamp] .ff-deal-status-stamp-ink {
+    padding: 0.12rem 0.38rem;
+    border-width: 2px;
+    font-size: 0.58rem;
+    letter-spacing: 0.02em;
+  }
+  [data-ff-policy-links-renewal]:has([data-ff-renewal-agreed-stamp]) .ff-links-renewal-copy h2 {
+    padding-right: 7.25rem;
+  }
+}
+
 /* Renewals Milestone 1 — urgency board, pulse, corner Today Activity. */
 /* Renewals heat uses the same Hot / Cooling / Near cold / Cold tokens as Deals. */
 .ff-urgency-tone-terracotta {
