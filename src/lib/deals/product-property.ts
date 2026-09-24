@@ -334,13 +334,13 @@ export function sheetAddressCells(
 const SHARED_SHEET_ADDRESS_FIELDS = ["address1", "mailing_unit", "city", "state", "zip", "county", "property_address"] as const;
 
 /** Put a product address onto the form without writing the shared sheet's address. */
-export function overlaySheetAddress<T extends Record<string, QuoteSheetFieldValue>>(
-  values: T,
+export function overlaySheetAddress(
+  values: Record<string, QuoteSheetFieldValue>,
   address: PropertyAddress,
   ownsSheet: boolean,
-): T {
+): Record<string, QuoteSheetFieldValue> {
   if (ownsSheet) return values;
-  const next = { ...values };
+  const next: Record<string, QuoteSheetFieldValue> = { ...values };
   const cell = (value: string): QuoteSheetFieldValue => ({
     value,
     status: value.trim() ? "confirmed" : "missing",
@@ -380,11 +380,11 @@ function characteristicSidecarCells(
  * Show this product's address and its own (often still blank) characteristics
  * on a sheet it shares with the first property. Does not mutate the stored sheet.
  */
-export function overlaySharedProductSheet<T extends Record<string, QuoteSheetFieldValue>>(
-  values: T,
+export function overlaySharedProductSheet(
+  values: Record<string, QuoteSheetFieldValue>,
   instanceKey: string,
   address: PropertyAddress,
-): T {
+): Record<string, QuoteSheetFieldValue> {
   const next = overlaySheetAddress(values, address, false);
   for (const field of PROPERTY_CHARACTERISTIC_FIELDS) {
     const text = cellValue(values, sidecarField(instanceKey, field));

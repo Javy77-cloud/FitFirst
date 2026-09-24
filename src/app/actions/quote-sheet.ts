@@ -298,7 +298,7 @@ export async function ensureQuoteSheet(dealId: string, line: string) {
   }
   // First-open Auto Risk Profile: same Deal Details → driver mapping as Fill (empty cells only).
   // A second Auto copy starts blank so it does not inherit the first vehicle.
-  if (opened.shopLine === "auto" && !opened.instanceKey) {
+  if (line === "auto") {
     const input = await loadDealSheetCopyInput(dealId, opened.shopLine);
     if (input) {
       Object.assign(values, fillSheetFromDealDetails(input, values).values);
@@ -416,7 +416,7 @@ export async function persistQuoteSheetValues(
   // Sheet save / confirm / stale cue must never unlink or hide source docs.
   await restoreDealSourceDocuments(dealId).catch(() => null);
   let vinDecode: VinDecodeRun | null = null;
-  if (opened.shopLine === "auto") {
+  if (opened.shopLine === "auto" || line === "auto") {
     const product = (values.sheet_product?.value ?? "").trim() || null;
     // VIN set/changed, or year/make/model/body/fuel/engine still blank.
     // Save already landed; a vPIC failure must not fail the save. Agent and
