@@ -551,7 +551,7 @@ Full roster on Settings → People / Agents. Keep this — do not replace with r
 
 Parallel auth-security track. Keep **with** People / Agents — enroll, challenge, and hashed recovery tokens.
 
-- Password required on login. Hashed on `users.password_hash`; demo javy/maya still match.
+- Password required on login. Hashed on `users.password_hash`. Production accepts only that hash. Local test passwords are ignored when `NODE_ENV` or `VERCEL_ENV` is `production`.
 - 2FA enroll: SMS stub, email stub, or TOTP at `/enroll-mfa` and Settings → Security. Desk gated until `mfa_enrolled`.
 - Seed Javy (TOTP) + Maya (email) already enrolled with `mfa_demo_bypass`. `FF_MFA_DEMO_BYPASS=1` (default) skips the 2FA prompt so 7pm desk-test opens. Set `0` to type TOTP (`JBSWY3DPEHPK3PXP`).
 - Admin recovery: `/recover/password` and `/recover/mfa` stub links (hashed in `auth_recovery_tokens`) plus People `/login/*` stubs. Nothing emails.
@@ -941,7 +941,7 @@ npm run db:seed
 npm run dev -- --port 43147
 ```
 
-Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana.
+Then Chrome http://localhost:43147 — **javy@fitfirst.local**. Do not bind Ana.
 
 ## Feel-pass FIX pack A — Home (`cursor/fp-home-layouts-resize-a094`)
 
@@ -962,7 +962,7 @@ npm run db:seed
 npm run dev -- --port 43147
 ```
 
-Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Home → Layout → Create layout… / Rename. Widget settings → Resize tiles. Do not bind Ana.
+Then Chrome http://localhost:43147 — **javy@fitfirst.local**. Home → Layout → Create layout… / Rename. Widget settings → Resize tiles. Do not bind Ana.
 
 ## Feel-pass consolidate Sep 5 (`cursor/feel-pass-consolidate-sep5-fed3`)
 
@@ -1023,7 +1023,7 @@ npm run db:seed
 npm run dev -- --port 43147
 ```
 
-Superseded for Air retest by **`cursor/feel-pass-consolidate-sep5b-6195`**. Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana.
+Superseded for Air retest by **`cursor/feel-pass-consolidate-sep5b-6195`**. Then Chrome http://localhost:43147 — **javy@fitfirst.local**. Do not bind Ana.
 
 ## AMS wave 6 — desk depth (`cursor/ams-wave6-depth-1040`)
 
@@ -1153,7 +1153,7 @@ Owner: feel-pass fix. Additive on `cursor/feel-pass-consolidate-sep5b-6195`. Reu
 
 ### Click path
 
-1. Sign in **javy@fitfirst.local** / **javy**. Settings → Automations & Developer → **Macros** (`/automations/macros`). Open **Mark contacted + follow-up** — editor is `/settings/developer-hub/macros/<id>`. Confirm modules, kind follow-up, enable.
+1. Sign in **javy@fitfirst.local**. Settings → Automations & Developer → **Macros** (`/automations/macros`). Open **Mark contacted + follow-up** — editor is `/settings/developer-hub/macros/<id>`. Confirm modules, kind follow-up, enable.
 2. **New macro** — check target modules, pick field update / task / email stub / stage move, save. Still one Macros row on the Setup card.
 3. **Leads** — tick a non-Ana row (Elena is fine). **Run Macro** uses *Stamp lead notes*. **Run Follow-up Macro** uses *Mark contacted + follow-up*. Open that lead: both buttons on the record.
 4. **Tasks** — tick a row or open a task record. **Run Macro** (*Keep task open + confirm*). Works on review tasks and activity tasks.
@@ -1194,7 +1194,7 @@ npm run db:seed
 npm run dev -- --port 43147
 ```
 
-Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana.
+Then Chrome http://localhost:43147 — **javy@fitfirst.local**. Do not bind Ana.
 
 ## LIVE-TEST + Zoho JSONL (`cursor/live-ff-zoho-data-1809`)
 
@@ -1219,7 +1219,7 @@ npm run db:import-zoho
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Wipe keeps that user. Do not run `db:seed` after wipe.
+Login **javy@fitfirst.local**. Wipe keeps that user. Do not run `db:seed` after wipe.
 
 ## LIVE-TEST tip Sep 6 nav (`cursor/live-ff-tip-sep6-nav`)
 
@@ -1249,7 +1249,7 @@ npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
-Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana. Do not seed.
+Then Chrome http://localhost:43147 — **javy@fitfirst.local**. Do not bind Ana. Do not seed.
 
 ## LIVE-TEST tip Sep 6b (`cursor/live-ff-tip-sep6b`)
 
@@ -1272,7 +1272,7 @@ npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
-Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana. Do not seed.
+Then Chrome http://localhost:43147 — **javy@fitfirst.local**. Do not bind Ana. Do not seed.
 
 ## LIVE-TEST tip Sep 6c (`cursor/live-ff-tip-sep6c`)
 
@@ -1297,7 +1297,7 @@ npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
-Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana. Do not seed.
+Then Chrome http://localhost:43147 — **javy@fitfirst.local**. Do not bind Ana. Do not seed.
 
 ## LIVE-TEST tip Sep 6d (`cursor/live-ff-tip-sep6d`)
 
@@ -1320,7 +1320,7 @@ npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
-Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana. Do not seed.
+Then Chrome http://localhost:43147 — **javy@fitfirst.local**. Do not bind Ana. Do not seed.
 
 ## LIVE-TEST tip Sep 6e (`cursor/live-ff-tip-sep6e`)
 
@@ -1341,7 +1341,7 @@ npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
-Then Chrome http://localhost:43147 — **javy@fitfirst.local** / **javy**. Do not bind Ana. Do not seed.
+Then Chrome http://localhost:43147 — **javy@fitfirst.local**. Do not bind Ana. Do not seed.
 
 ## Developer profile starter (`cursor/developer-hub-starter-f6ac`)
 
@@ -1349,7 +1349,7 @@ Third desk profile, separate from Admin and Agent. Lean scaffold only — no BI,
 
 - Role `developer` + `seeDeveloperHub` capability. Site-developer flag (`users.is_site_developer` / `FF_SITE_DEVELOPER_EMAILS`) also opens the hub. Admin settings stay Admin-only.
 - Gated left-nav **Developer** → `/developer`. Agents and plain Admins never see it.
-- Login card: **logan@fitfirst.local** / **logan** (Natasha Logan). Seed sets `is_site_developer`.
+- Login card: **logan@fitfirst.local** (Natasha Logan). Seed sets `is_site_developer`.
 - API usage tiles increment only after real vendor HTTP: Mapbox suggest, Gemini extract, FedEx verify, GetParcelData, FL property. Month is UTC `YYYY-MM`. Optional cap via `developer_api_meter_settings` or `FF_API_LIMIT_<PROVIDER>`. Uninstrumented tiles (PermitStack, VIN decode) stay **not counted yet**.
 - Upcoming notes list: feature-request heat, error watch, revenue BI — later.
 - Migration `0134_developer_profile`. Ana fixture untouched.

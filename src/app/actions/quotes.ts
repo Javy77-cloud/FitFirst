@@ -53,6 +53,7 @@ import { moveDealToStage } from "@/app/actions/pipeline";
 import { applySavedSheetToDeal } from "@/app/actions/quote-sheet";
 import { attachFinalizedQuotePdfs } from "@/lib/lifecycle/hooks";
 import { isMatchPriorResult, quotingUnlockedForLine } from "@/lib/quoting/forms";
+import { priorDeclineScope, quoteDeletePlan, quoteRowDeclineWhy } from "@/lib/quotes/decline-scope";
 import {
   EXPLICIT_MARKET_ACTION_MARKER,
   MANUAL_MARKET_MARKER,
@@ -302,6 +303,8 @@ export async function shopDealQuotes(
       snapCounty: log.snapCounty,
       snapMilesToCoast: log.snapMilesToCoast,
       snapCoverageA: log.snapCoverageA,
+      dealId: log.dealId,
+      declineScope: priorDeclineScope(log.why),
     }));
 
   const lineRules = rules.filter(({ carrier }) =>
@@ -312,7 +315,7 @@ export async function shopDealQuotes(
       const line = appointmentLine(rule.lineOfBusiness);
       const key = `${carrier.id}:${line}`;
       const appointed = appointedMap.has(key) ? appointedMap.get(key)! : null;
-      return matchCarrier(snapshot, toAppetiteInput(carrier, rule, appointed), prior, undefined, resolved.lob);
+      return matchCarrier(snapshot, toAppetiteInput(carrier, rule, appointed), prior, undefined, resolved.lob, dealId);
     }),
   );
 
@@ -676,16 +679,54 @@ export async function deleteSelectedQuotesAction(formData: FormData) {
     .filter(Boolean);
   if (!dealId) throw new Error("Deal is missing.");
   if (ids.length === 0) throw new Error("Select at least one quote to delete.");
+  const plan = quoteDeletePlan({ dealId, quoteIds: ids });
+  if (!plan.dealId || plan.quoteIds.length === 0 || plan.bookWide) {
+    throw new Error("Select quotes on this deal.");
+  }
 
   await db
     .delete(quotes)
-    .where(and(eq(quotes.dealId, dealId), inArray(quotes.id, ids), eq(quotes.tenantId, DEFAULT_TENANT_ID)));
+    .where(
+      and(
+        eq(quotes.dealId, plan.dealId),
+        inArray(quotes.id, plan.quoteIds),
+        eq(quotes.tenantId, DEFAULT_TENANT_ID),
+      ),
+    );
+
+  const [deal] = await db.select({ shopFlow: deals.shopFlow }).from(deals).where(eq(deals.id, plan.dealId));
+  if (deal) {
+    const saved = parseShopFlow(deal.shopFlow);
+    const stages = parseProductStages(saved.productStages);
+    const removed = new Set(plan.quoteIds);
+    let changed = false;
+    const nextStages = { ...stages };
+    for (const [product, state] of Object.entries(stages)) {
+      const parsed = parseDealProduct(product);
+      if (!parsed || !state) continue;
+      const selected = (state.selectedQuoteIds ?? []).filter((id) => !removed.has(id));
+      if (selected.length === (state.selectedQuoteIds ?? []).length) continue;
+      const updated = setProductStage(nextStages, parsed, { selectedQuoteIds: selected })[parsed];
+      if (!updated) continue;
+      nextStages[product] = updated;
+      changed = true;
+    }
+    if (changed) await persistDealShopFlow(plan.dealId, { ...saved, productStages: nextStages });
+  }
 
   revalidatePath(`/deals/${dealId}`);
   flashAction(
     `/deals/${dealId}?tab=quotes`,
     ids.length === 1 ? "Quote deleted" : `${ids.length} quotes deleted`,
   );
+}
+
+function lobForQuoteRow(shopLine?: string | null): string {
+  const line = (shopLine ?? "").trim().toLowerCase();
+  if (line === "auto") return "AUTO";
+  if (line === "flood") return "FLOOD";
+  if (line === "home" || line === "homeowners") return "HO";
+  return line ? line.toUpperCase() : "HO";
 }
 
 function dealQuotesPath(dealId: string) {
@@ -825,10 +866,13 @@ export async function saveQuoteAgentStatusAction(formData: FormData) {
       dealId,
       riskId: existing.riskId,
       carrierId: existing.carrierId,
-      lineOfBusiness: "HO",
+      lineOfBusiness: lobForQuoteRow(existing.shopLine),
       result: "declined",
       bindable: false,
-      why: `Agent marked dead · reason_for_no=${reasonForNo}`,
+      why: quoteRowDeclineWhy({
+        quoteId,
+        detail: `Agent marked dead · reason_for_no=${reasonForNo}`,
+      }),
       lostReason: reasonForNo,
       quoteNumber: existing.quoteNumber,
       premium: existing.premium,
@@ -859,10 +903,13 @@ export async function saveQuoteReasonForNoAction(formData: FormData) {
     dealId,
     riskId: existing.riskId,
     carrierId: existing.carrierId,
-    lineOfBusiness: "HO",
+    lineOfBusiness: lobForQuoteRow(existing.shopLine),
     result: "declined",
     bindable: false,
-    why: `Agent reason_for_no=${reasonRaw}`,
+    why: quoteRowDeclineWhy({
+      quoteId,
+      detail: `Agent reason_for_no=${reasonRaw}`,
+    }),
     lostReason: reasonRaw,
     quoteNumber: existing.quoteNumber,
     premium: existing.premium,

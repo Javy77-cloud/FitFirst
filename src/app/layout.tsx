@@ -9,6 +9,7 @@ import { NavigationProgress } from "@/components/desk/navigation-progress";
 import { SheetBoot } from "@/components/sheet/sheet-boot";
 import { TitleTipHost } from "@/components/desk/title-tip-host";
 import { SESSION_COOKIES } from "@/lib/auth/cookies";
+import { verifySessionToken } from "@/lib/auth/signed-session";
 import { preloadDeskShell } from "@/lib/desk/shell-preload";
 import "./globals.css";
 
@@ -34,15 +35,15 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const jar = await cookies();
-  const userId = jar.get(SESSION_COOKIES.actorId)?.value ?? "";
-  if (userId) {
+  const claims = verifySessionToken(jar.get(SESSION_COOKIES.session)?.value);
+  if (claims?.sub) {
     preloadDeskShell();
   }
   return (
     <html
       lang="en"
       className={`${plex.variable} ${plexMono.variable} h-full`}
-      data-ff-user-id={userId}
+      data-ff-user-id={claims?.sub ?? ""}
     >
       <body className="min-h-full">
         {children}

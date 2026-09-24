@@ -514,6 +514,9 @@ export type PriorAttempt = {
   snapCounty: string | null;
   snapMilesToCoast: number | null;
   snapCoverageA: number | null;
+  /** Set when the log is one quote marked dead or deleted. Not a book-wide appetite lesson. */
+  dealId?: string | null;
+  declineScope?: "deal" | "book" | null;
 };
 
 export function currentRoofAge(

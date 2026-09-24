@@ -51,6 +51,10 @@ export function mintFailureToast(reason: string): { key: string; kind: "error" |
       return { key: "need-confirm", kind: "error" };
     case "need_policy_number":
       return { key: "need-policy-number", kind: "error" };
+    case "ana_locked":
+      return { key: "ana-unbound", kind: "error" };
+    case "need_send":
+      return { key: "quote-send-failed", kind: "error" };
     default:
       return { key: "deal-updated", kind: "success" };
   }

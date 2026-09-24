@@ -135,6 +135,10 @@ export type DealProductStageState = {
   listNote?: string | null;
   /** Quoting/binding happened outside FitFirst — late stage allowed without live quotes. */
   outsideOverride?: OutsideStageOverride | null;
+  /** Provider message id from the client quote email that unlocked a late stamp. */
+  clientSendMessageId?: string | null;
+  /** Set when a later bounce or complaint voids that send. */
+  clientSendFlag?: "bounce" | "complaint" | null;
 };
 
 export type NoticeNoteLogEntry = {
@@ -255,6 +259,8 @@ export function parseProductStages(raw: unknown): DealProductStages {
       noticeNotes?: unknown;
       listNote?: unknown;
       outsideOverride?: unknown;
+      clientSendMessageId?: unknown;
+      clientSendFlag?: unknown;
     };
     const rawStage = typeof row.stage === "string" ? normalizeStageSlug(row.stage) : "";
     const selectedQuoteIds = Array.isArray(row.selectedQuoteIds)
@@ -280,6 +286,12 @@ export function parseProductStages(raw: unknown): DealProductStages {
     const listNote =
       typeof row.listNote === "string" && row.listNote.trim() ? row.listNote.trim() : null;
     const outsideOverride = parseOutsideStageOverride(row.outsideOverride);
+    const clientSendMessageId =
+      typeof row.clientSendMessageId === "string" && row.clientSendMessageId.trim()
+        ? row.clientSendMessageId.trim()
+        : null;
+    const clientSendFlag =
+      row.clientSendFlag === "bounce" || row.clientSendFlag === "complaint" ? row.clientSendFlag : null;
     if (
       !rawStage &&
       !selectedQuoteIds.length &&
@@ -293,7 +305,9 @@ export function parseProductStages(raw: unknown): DealProductStages {
       !noticeNote &&
       !noticeNotes.length &&
       !listNote &&
-      !outsideOverride
+      !outsideOverride &&
+      !clientSendMessageId &&
+      !clientSendFlag
     ) {
       continue;
     }
@@ -318,6 +332,8 @@ export function parseProductStages(raw: unknown): DealProductStages {
       noticeNotes,
       listNote,
       outsideOverride,
+      clientSendMessageId,
+      clientSendFlag,
     };
   }
   return out;
@@ -368,6 +384,8 @@ export function productStageFor(
       noticeNotes: stored.noticeNotes ?? [],
       listNote: stored.listNote ?? null,
       outsideOverride,
+      clientSendMessageId: stored.clientSendMessageId ?? null,
+      clientSendFlag: stored.clientSendFlag ?? null,
     };
   }
   const selectedQuoteIds: string[] = [];
@@ -388,6 +406,8 @@ export function productStageFor(
     noticeNotes: [],
     listNote: null,
     outsideOverride: null,
+    clientSendMessageId: null,
+    clientSendFlag: null,
   };
 }
 
@@ -420,6 +440,12 @@ export function setProductStage(
     listNote: patch.listNote === undefined ? current.listNote ?? null : patch.listNote,
     outsideOverride:
       patch.outsideOverride === undefined ? current.outsideOverride ?? null : patch.outsideOverride,
+    clientSendMessageId:
+      patch.clientSendMessageId === undefined
+        ? current.clientSendMessageId ?? null
+        : patch.clientSendMessageId,
+    clientSendFlag:
+      patch.clientSendFlag === undefined ? current.clientSendFlag ?? null : patch.clientSendFlag,
   };
   if (normalizeStageSlug(next.stage) !== "closed_lost") {
     next.lostReason = next.lostReason ?? null;

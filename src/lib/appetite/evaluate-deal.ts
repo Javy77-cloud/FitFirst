@@ -19,6 +19,7 @@ import { matchFloodShopCarriers } from "./javy-flood-shop-list";
 import { matchCarrier, rankFits, riskFromRecord, type CarrierMatch } from "./match";
 import { evaluateShopFits, type ShopFit } from "./shop-fits";
 import { isMatchPriorResult } from "@/lib/quoting/forms";
+import { priorDeclineScope } from "@/lib/quotes/decline-scope";
 import { hasMarketLookupInput, sheetHasMarketFacts } from "@/lib/deals/manual-markets";
 
 type SheetValues = Record<string, { value?: string | null } | null> | null;
@@ -126,6 +127,8 @@ export async function evaluateDealShopFits(
       snapCounty: log.snapCounty,
       snapMilesToCoast: log.snapMilesToCoast,
       snapCoverageA: log.snapCoverageA,
+      dealId: log.dealId,
+      declineScope: priorDeclineScope(log.why),
     }));
 
   const dealLine = appointmentLine(
@@ -198,12 +201,13 @@ export async function evaluateDealShopFits(
       rules: inputs,
       prior,
       sheetValues: sheet,
+      dealId: risk.dealId,
     }).matches;
   }
 
   return rankFits(
     inputs
       .filter((rule) => writesDealLine(rule.writtenLines ?? [], dealLine))
-      .map((rule) => matchCarrier(riskFromRecord(risk), rule, prior, undefined, dealLine)),
+      .map((rule) => matchCarrier(riskFromRecord(risk), rule, prior, undefined, dealLine, risk.dealId)),
   ) as ShopFit[];
 }

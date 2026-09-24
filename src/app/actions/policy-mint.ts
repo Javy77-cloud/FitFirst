@@ -35,6 +35,7 @@ import {
 } from "@/lib/policy/property-protection";
 import { splitPremisesAddress, streetOnlyPremises } from "@/lib/policy/premises";
 import { dealProductDef, inferDealProducts, parseDealProduct, type DealProductId } from "@/lib/deals/deal-products";
+import { refuseAnaPolicyMint } from "@/lib/policy/ana-mint";
 import {
   parseProductStages,
   productStageFor,
@@ -421,6 +422,16 @@ export async function issuePolicyFromDeclaration(input: {
       .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.dealId, dealId))),
     db.select().from(risks).where(eq(risks.dealId, dealId)),
   ]);
+
+  const ana = refuseAnaPolicyMint({
+    dealId: deal.id,
+    contactId: deal.contactId,
+    leadId: deal.leadId,
+    riskIds: riskRows.map((row) => row.id),
+    namedInsured: deal.primaryNamedInsured,
+    coverageA: riskRows[0]?.coverageA ?? deal.coverageAmount,
+  });
+  if (ana.refused) return { ok: false as const, reason: "ana_locked" as const, message: ana.message };
 
   const liveQuoteIds = quoteRows.filter((row) => row.stub !== true).map((row) => row.id);
   const outside = hasActiveOutsideOverride(current.outsideOverride);

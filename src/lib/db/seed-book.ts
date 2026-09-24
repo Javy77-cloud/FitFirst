@@ -40,7 +40,7 @@ import {
   TENANT_ID,
 } from "../fixtures/ids";
 import { DEMO_JAVY_TOTP_SECRET } from "../auth/totp";
-import { hashPassword } from "../auth/password";
+import { optionalLocalSeedPasswordHash } from "../auth/seed-password";
 import { db } from "./index";
 import {
   agencySettings,
@@ -333,7 +333,7 @@ export async function seedUsersAndBook() {
       },
     });
 
-  const garciaPasswordHash = hashPassword("javier");
+  const garciaPasswordHash = optionalLocalSeedPasswordHash("DEV_AGENT_PASSWORD");
   await db
     .insert(users)
     .values({
@@ -367,7 +367,7 @@ export async function seedUsersAndBook() {
         email: "javier@fitfirst.local",
         username: "javier",
         role: "agent",
-        passwordHash: garciaPasswordHash,
+        ...(garciaPasswordHash ? { passwordHash: garciaPasswordHash } : {}),
         active: true,
         accessStatus: "active",
         canAccessModules: true,

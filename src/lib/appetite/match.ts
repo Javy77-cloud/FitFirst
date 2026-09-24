@@ -6,6 +6,7 @@ import {
   type PriorAttempt,
   type RiskSnapshot,
 } from "@/lib/domain";
+import { isQuoteRowScopedDecline } from "@/lib/quotes/decline-scope";
 
 export type MatchReason = {
   code: string;
@@ -23,29 +24,43 @@ export type CarrierMatch = {
   shoppable: boolean;
 };
 
-function similarSnapshot(log: PriorAttempt, risk: RiskSnapshot): boolean {
-  const yearOk =
-    log.snapYearBuilt == null ||
-    risk.yearBuilt == null ||
-    Math.abs(log.snapYearBuilt - risk.yearBuilt) <= 1;
-  const roofOk =
-    log.snapRoofYear == null ||
-    risk.roofYear == null ||
-    Math.abs(log.snapRoofYear - risk.roofYear) <= 1;
-  const coveringOk =
-    !log.snapRoofCovering ||
-    !risk.roofCovering ||
-    risk.roofCovering.toLowerCase().includes(log.snapRoofCovering.toLowerCase()) ||
-    log.snapRoofCovering.toLowerCase().includes(risk.roofCovering.toLowerCase());
-  const constOk =
-    !log.snapConstruction ||
-    !risk.construction ||
-    log.snapConstruction.toLowerCase() === risk.construction.toLowerCase();
-  const countyOk =
-    !log.snapCounty ||
-    !risk.county ||
-    log.snapCounty.toLowerCase() === risk.county.toLowerCase();
-  return yearOk && roofOk && coveringOk && constOk && countyOk;
+function fieldClose(left: number | null | undefined, right: number | null | undefined, slack: number): boolean | null {
+  if (left == null || right == null) return null;
+  return Math.abs(left - right) <= slack;
+}
+
+function textClose(left?: string | null, right?: string | null, loose = false): boolean | null {
+  const a = (left ?? "").trim().toLowerCase();
+  const b = (right ?? "").trim().toLowerCase();
+  if (!a || !b) return null;
+  if (loose) return b.includes(a) || a.includes(b);
+  return a === b;
+}
+
+/**
+ * A prior matches only when at least one snap is present and every present snap agrees.
+ * Null snaps are unknown — they do not match every later risk.
+ */
+export function similarSnapshot(log: PriorAttempt, risk: RiskSnapshot): boolean {
+  const checks = [
+    fieldClose(log.snapYearBuilt, risk.yearBuilt, 1),
+    fieldClose(log.snapRoofYear, risk.roofYear, 1),
+    textClose(log.snapRoofCovering, risk.roofCovering, true),
+    textClose(log.snapConstruction, risk.construction),
+    textClose(log.snapCounty, risk.county),
+  ].filter((check): check is boolean => check != null);
+  if (checks.length === 0) return false;
+  return checks.every(Boolean);
+}
+
+function priorTeachesThisRisk(
+  log: PriorAttempt,
+  risk: RiskSnapshot,
+  viewingDealId?: string | null,
+): boolean {
+  const dealScoped = log.declineScope === "deal" || isQuoteRowScopedDecline(log.why);
+  if (dealScoped && log.dealId !== viewingDealId) return false;
+  return similarSnapshot(log, risk);
 }
 
 function inList(value: string | null, allowed: string[] | null): boolean {
@@ -72,6 +87,8 @@ export function matchCarrier(
   asOfYear = new Date().getFullYear(),
   /** When set, score this shop line. Omitted calls keep the homeowners check. */
   dealLine?: string | null,
+  /** Deal being shopped. Quote-row declines from other deals are ignored. */
+  viewingDealId?: string | null,
 ): CarrierMatch {
   const reasons: MatchReason[] = [];
   let fitScore = 100;
@@ -80,7 +97,7 @@ export function matchCarrier(
     (p) =>
       p.carrierId === rule.carrierId &&
       !p.bindable &&
-      similarSnapshot(p, risk),
+      priorTeachesThisRisk(p, risk, viewingDealId),
   );
   if (learned) {
     reasons.push({
