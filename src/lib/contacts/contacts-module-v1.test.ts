@@ -85,35 +85,49 @@ describe("Contacts module v1 standards", () => {
     expect(defaultFieldsForModule("contacts")).toBe(CONTACT_MODULE_FIELDS);
     expect(defaultLayoutForModule("contacts")).toEqual(contactCardLayout());
     const sections = contactCardLayout().columns.flatMap((column) => column.sections);
-    expect(sections.map((section) => section.id)).toEqual(
-      expect.arrayContaining(["coverage", "opportunities"]),
-    );
+    // Coverage / Opportunities are page tabs — not inside Contact Details layout.
+    expect(sections.map((section) => section.id)).toEqual(["identity", "prefs", "intake"]);
     expect(sections.find((section) => section.label === "Coverage & Opportunities")).toBeUndefined();
     expect(contactCardLayout().columns[0].sections.map((section) => section.id)).toEqual([
       "identity",
       "prefs",
+      "intake",
     ]);
-    expect(sections.find((section) => section.id === "identity")?.fieldKeys).toEqual([
-      "first_name",
-      "last_name",
-      "email",
-      "phone",
-      "date_of_birth",
-      "marital_status",
-      "mailing_address",
-      "city",
-      "state",
-      "zip",
-    ]);
-    expect(sections.find((section) => section.id === "coverage")?.fieldKeys).toEqual([
-      "existing_coverage_types",
-      "is_homeowner",
-      "is_business_owner",
-    ]);
-    expect(sections.find((section) => section.id === "opportunities")?.fieldKeys).toEqual([
-      "recent_life_events",
-      "cross_selling_opportunity",
-    ]);
+    expect(sections.find((section) => section.id === "identity")?.fieldKeys).toEqual(
+      expect.arrayContaining([
+        "first_name",
+        "middle_name",
+        "last_name",
+        "nickname",
+        "date_of_birth",
+        "phone",
+        "secondary_phone",
+        "email",
+        "mailing_address",
+        "city",
+        "state",
+        "zip",
+        "dl_state",
+        "drivers_license_number",
+        "dl_expiration",
+      ]),
+    );
+    expect(sections.find((section) => section.id === "identity")?.fieldKeys).not.toContain(
+      "education_level",
+    );
+    expect(sections.find((section) => section.id === "prefs")?.fieldKeys).toEqual(
+      expect.arrayContaining([
+        "preferred_language",
+        "marital_status",
+        "occupation",
+        "gender",
+        "spouse_name",
+        "dependents",
+      ]),
+    );
+    expect(sections.find((section) => section.id === "prefs")?.fieldKeys).not.toContain(
+      "education_level",
+    );
     expect(CONTACT_MODULE_FIELDS.find((field) => field.key === "existing_coverage_types")?.label).toBe(
       CONTACT_EXTERNAL_COVERAGE_LABEL,
     );
@@ -250,13 +264,17 @@ describe("Contacts module v1 standards", () => {
     expect(ws).toMatch(/data-ff-contact-top-nav-slot/);
   });
 
-  it("sticky top chip nav + max-8 customize + section anchors; co-app section absent", () => {
+  it("true swapping tabs via ?tab=; sticky chip nav; co-app section absent", () => {
     const page = readFileSync("src/app/contacts/[id]/page.tsx", "utf8");
     const nav = readFileSync("src/components/contact-section-nav.tsx", "utf8");
     const sections = readFileSync("src/lib/desk/contact-sections.ts", "utf8");
+    const tabs = readFileSync("src/lib/desk/contact-tabs.ts", "utf8");
     expect(page).toMatch(/ContactDetailSections/);
-    expect(readFileSync("src/components/contact-section-nav.tsx", "utf8")).toMatch(/onNavigate\?:/);
-    expect(page).toMatch(/id="at-a-glance"/);
+    expect(page).toMatch(/parseContactTab/);
+    expect(page).toMatch(/activeTab=\{activeTab\}/);
+    expect(page).toMatch(/basePath=\{`\/contacts\/\$\{contact\.id\}`\}/);
+    expect(page).toMatch(/id: "at-a-glance"/);
+    expect(page).toMatch(/id: "contact-details"/);
     expect(page).toMatch(/id: "coverage"/);
     expect(page).toMatch(/id: "opportunities"/);
     expect(page).toMatch(/id: "policies"/);
@@ -270,17 +288,23 @@ describe("Contacts module v1 standards", () => {
     expect(page).toMatch(/id: "meetings"/);
     expect(page).toMatch(/id: "documents"/);
     expect(page).toMatch(/id: "notes"/);
+    expect(page).not.toMatch(/RecordModuleMacros/);
+    expect(page).toMatch(/endSlot=/);
+    expect(page).toMatch(/RecordListPager/);
+    expect(page).toMatch(/module="contacts"/);
+    expect(page).toMatch(/ContactOverflowMenu/);
+    expect(page).not.toMatch(/ml-auto shrink-0[\s\S]{0,80}ContactOverflowMenu/);
+    expect(readFileSync("src/components/comms/quick-comms-board.tsx", "utf8")).toMatch(
+      /contactId\s*\?[\s\S]*?"contact"/,
+    );
     const timeline = readFileSync("src/components/contacts/contact-timeline-section.tsx", "utf8");
-    const accordion = readFileSync("src/components/contacts/contact-detail-sections.tsx", "utf8");
-    const collapse = readFileSync("src/components/contacts/collapsible-section.tsx", "utf8");
+    const panels = readFileSync("src/components/contacts/contact-detail-sections.tsx", "utf8");
+    const shell = readFileSync("src/components/records/record-tab-shell.tsx", "utf8");
     expect(page).toMatch(/id="contact-details"/);
-    expect(accordion).toMatch(/id=\{section\.id\}/);
-    expect(accordion).toMatch(/CONTACT_ACCORDION_IDS/);
-    expect(accordion).toMatch(/initialOpenId/);
-    expect(accordion).toMatch(/onNavigate/);
-    expect(collapse).toMatch(/ChevronDown/);
-    expect(collapse).toMatch(/ChevronUp/);
-    expect(collapse).not.toMatch(/ChevronRight/);
+    expect(panels).toMatch(/RecordTabShell/);
+    expect(panels).toMatch(/mode="tabs"/);
+    expect(shell).toMatch(/data-ff-record-tab-shell/);
+    expect(tabs).toMatch(/parseContactTab/);
     expect(timeline).toMatch(/data-ff-contact-timeline/);
     expect(page).toMatch(/title="Contacts"/);
     expect(page).toMatch(/ContactDetailSections/);
@@ -289,20 +313,18 @@ describe("Contacts module v1 standards", () => {
     expect(page).not.toMatch(/data-ff="contact-coapplicants"/);
     expect(page).not.toMatch(/ContactQuickActions/);
     expect(nav).toMatch(/data-ff-contact-section-nav="top"/);
-    expect(nav).not.toMatch(/data-ff-contact-section-nav="desktop"/);
-    expect(nav).not.toMatch(/data-ff-contact-section-nav="mobile"/);
+    expect(nav).toMatch(/mode\?: "tabs" \| "scroll"/);
+    expect(nav).toMatch(/\?tab=/);
     expect(nav).toMatch(/fixed/);
     expect(nav).toMatch(/pinned/);
     expect(nav).toMatch(/chipTabClass/);
     expect(nav).toMatch(/FF_CHIP_TAB_GROUP/);
-    expect(nav).toMatch(/#002868/);
     expect(nav).toMatch(/CONTACT_SECTION_NAV_MAX/);
     expect(nav).toMatch(/Edit Nav/);
     expect(nav).toMatch(/Customize/);
     expect(nav).toMatch(/data-ff-contact-nav-selected/);
     expect(nav).toMatch(/data-ff-contact-nav-available/);
     expect(nav).toMatch(/Reset/);
-    expect(nav).not.toMatch(/max-w-\[180px\]/);
     expect(sections).toMatch(/CONTACT_SECTION_NAV_MAX = 12/);
     expect(sections).toMatch(/DEFAULT_CONTACT_SECTION_NAV_IDS/);
     expect(sections).toMatch(/id: "coverage"/);

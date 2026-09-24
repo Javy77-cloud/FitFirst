@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { PersistListOrder } from "@/components/records/persist-list-order";
 import { BookLiveScope } from "@/components/book-lists/book-live-scope";
 import { BookBoard } from "@/components/book-lists/book-board";
 import { BookKpiStrip } from "@/components/book-lists/book-kpi-strip";
@@ -80,6 +81,8 @@ export function BookCommandWorkspace({
   const activity =
     surface === "contacts" || surface === "accounts" || surface === "policies" || surface === "carriers";
   const ranked = sortCommandStack(cards);
+  const listOrderModule =
+    surface === "contacts" ? "contacts" : surface === "accounts" ? "accounts" : null;
   const activityRows = ranked.map((card) => ({
     id: card.id,
     name: card.title,
@@ -89,6 +92,10 @@ export function BookCommandWorkspace({
     accountId: surface === "accounts" ? card.id : null,
     policyId: surface === "policies" ? card.id : null,
   }));
+  const persist =
+    listOrderModule ? (
+      <PersistListOrder module={listOrderModule} ids={ranked.map((card) => card.id)} />
+    ) : null;
   const stack = (
     <BookPriorityStack
       cards={cards}
@@ -102,6 +109,7 @@ export function BookCommandWorkspace({
 
   return (
     <div className="ff-deals-command" data-ff-book-command={surface} data-ff-book-layout={layout}>
+      {persist}
       {kpi ? (
         <BookKpiStrip label={kpi.label} items={kpi.items} share={kpi.share} shareTitle={kpi.shareLabel} />
       ) : null}

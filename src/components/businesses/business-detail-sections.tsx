@@ -55,11 +55,14 @@ export function BusinessDetailSections({
   counts,
   before,
   sections,
+  endSlot,
 }: {
   selectedIds: BusinessSectionId[];
   counts?: BusinessSectionCounts;
   before: ReactNode;
   sections: AccordionSectionSlot[];
+  /** ··· overflow menu — rendered at end of tab row. */
+  endSlot?: ReactNode;
 }) {
   const [openMap, setOpenMap] = useState<Record<BusinessAccordionId, boolean>>(emptyOpenMap);
 
@@ -83,6 +86,7 @@ export function BusinessDetailSections({
           selectedIds={selectedIds}
           counts={counts}
           onNavigate={onNavigate}
+          endSlot={endSlot}
         />
       </div>
       {before}

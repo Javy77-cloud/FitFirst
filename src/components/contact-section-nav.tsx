@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { ChevronDown, GripVertical, Settings2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -24,6 +24,11 @@ import {
   reorderNavTreatingCommunications,
   type ContactSectionId,
 } from "@/lib/desk/contact-sections";
+import {
+  contactTabFromSection,
+  parseContactTab,
+  type ContactTabSlug,
+} from "@/lib/desk/contact-tabs";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -47,16 +52,40 @@ export function ContactSectionNav({
   selectedIds,
   counts = {},
   onNavigate,
+  activeTab,
+  basePath,
+  mode = "tabs",
+  endSlot,
 }: {
   selectedIds: ContactSectionId[];
   counts?: ContactSectionCounts;
   /** Called when a chip is clicked (after/with jump). Accordion host uses this. */
   onNavigate?: (id: ContactSectionId) => void;
+  /** Active URL tab slug when mode is tabs. */
+  activeTab?: ContactTabSlug | string | null;
+  /** Contact path for tab hrefs, e.g. `/contacts/<id>`. */
+  basePath?: string;
+  /** `tabs` = true panels via ?tab=; `scroll` = legacy anchor jump. */
+  mode?: "tabs" | "scroll";
+  /** Right-aligned slot after Customize (e.g. ··· overflow menu). */
+  endSlot?: ReactNode;
 }) {
   const router = useRouter();
-  const [active, setActive] = useState<ContactSectionId>(
-    normalizeContactSectionNavIds(selectedIds)[0] ?? "at-a-glance",
-  );
+  const resolvedTab = parseContactTab(activeTab ?? null, null);
+  const [active, setActive] = useState<ContactSectionId>(() => {
+    if (mode === "tabs") {
+      const fromTab =
+        resolvedTab === "communications"
+          ? "emails"
+          : resolvedTab === "glance"
+            ? "at-a-glance"
+            : resolvedTab === "details"
+              ? "contact-details"
+              : (resolvedTab as ContactSectionId);
+      return fromTab;
+    }
+    return normalizeContactSectionNavIds(selectedIds)[0] ?? "at-a-glance";
+  });
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [draftSelected, setDraftSelected] = useState<ContactSectionId[]>(() =>
     normalizeContactSectionNavIds(selectedIds),
@@ -82,11 +111,10 @@ export function ContactSectionNav({
     [chips],
   );
 
-  useEffect(() => {
-    setDraftSelected(normalizeContactSectionNavIds(selectedIds));
-  }, [selectedIds]);
+
 
   useEffect(() => {
+    if (mode === "tabs") return;
     const nodes = sections
       .map((section) => document.getElementById(section.id))
       .filter((node): node is HTMLElement => Boolean(node));
@@ -104,7 +132,7 @@ export function ContactSectionNav({
     );
     for (const node of nodes) observer.observe(node);
     return () => observer.disconnect();
-  }, [sections]);
+  }, [sections, mode]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -141,12 +169,22 @@ export function ContactSectionNav({
   }, [sections, pinned]);
 
 
+  function tabHref(id: ContactSectionId): string {
+    const tab = contactTabFromSection(id);
+    const base = basePath || (typeof window !== "undefined" ? window.location.pathname : "");
+    return `${base}?tab=${tab}`;
+  }
+
   function jump(id: ContactSectionId) {
     setActive(id);
     onNavigate?.(id);
     if (chipsRef.current) chipsRef.current.scrollLeft = 0;
+    if (mode === "tabs") {
+      const href = tabHref(id);
+      router.push(href, { scroll: false });
+      return;
+    }
     history.replaceState(null, "", `#${id}`);
-    // Defer scroll so accordion expand commits before measuring.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const target = document.getElementById(id);
@@ -241,7 +279,10 @@ export function ContactSectionNav({
   const customize = contactCustomizeDefs(draftSelected);
   const available = customize.available;
   const selectedDefs = customize.selected;
-  const commsActive = isContactCommunicationSectionId(active);
+  const commsActive =
+    mode === "tabs"
+      ? resolvedTab === "communications"
+      : isContactCommunicationSectionId(active);
   const commsCount = communicationCountSum(counts);
 
   const chipExtras =
@@ -270,7 +311,7 @@ export function ContactSectionNav({
           ref={chipsRef}
           className={cn(
             FF_CHIP_TAB_GROUP,
-            "max-w-full flex-wrap items-center",
+            "w-full max-w-full flex-wrap items-center",
           )}
           onScroll={(e) => {
             // Never let chip focus scroll the strip sideways.
@@ -325,7 +366,10 @@ export function ContactSectionNav({
               );
             }
             const count = counts[chip.id] ?? 0;
-            const isActive = active === chip.id;
+            const isActive =
+              mode === "tabs"
+                ? contactTabFromSection(chip.id) === resolvedTab
+                : active === chip.id;
             return (
               <button
                 key={chip.id}
@@ -362,6 +406,11 @@ export function ContactSectionNav({
             <Settings2 className="size-3 shrink-0" />
             Customize
           </button>
+          {endSlot ? (
+            <div className="ml-auto flex shrink-0 items-center" data-ff-contact-nav-end="">
+              {endSlot}
+            </div>
+          ) : null}
         </div>
       </nav>
 
@@ -370,8 +419,8 @@ export function ContactSectionNav({
           <DialogHeader>
             <DialogTitle>Edit Nav</DialogTitle>
             <DialogDescription>
-              Choose up to {CONTACT_SECTION_NAV_MAX} sections for the jump list. Hidden
-              sections stay on the page. Saved for the whole agency.
+              Choose up to {CONTACT_SECTION_NAV_MAX} tabs for the Contact page. Hidden
+              tabs stay available here. Saved for the whole agency.
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3">

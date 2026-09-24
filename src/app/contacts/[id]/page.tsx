@@ -11,7 +11,6 @@ import { RecordContextRail } from "@/components/record-context/record-context-ra
 import { loadRecordContext } from "@/lib/record-context";
 import { mergeRecordSystemValues } from "@/lib/custom-fields/resolve-layout";
 import { loadModuleLayoutBundle } from "@/lib/custom-fields/store";
-import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { sourceLabel } from "@/lib/crm/sources";
 import { listModuleTags } from "@/app/actions/record-tags";
 import { AssignRecordTags } from "@/components/tags/assign-record-tags";
@@ -19,6 +18,7 @@ import { ContactDetailWorkspace } from "@/components/contacts/contact-detail-wor
 import { ContactDetailSections } from "@/components/contacts/contact-detail-sections";
 import { ClientStatusDot } from "@/components/contacts/client-status-dot";
 import { ContactOverflowMenu } from "@/components/contacts/contact-overflow-menu";
+import { RecordListPager } from "@/components/records/record-list-pager";
 import { LinkedBusinessLine } from "@/components/contacts/linked-business-line";
 import { RecordLayoutForm } from "@/components/custom-fields/record-layout-form";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
@@ -40,7 +40,8 @@ import { softEmailPhoneDups } from "@/lib/contacts/soft-dup";
 import { buildPolicyCoApplicantLinks } from "@/lib/contacts/policy-co-applicants";
 import { getAgencyContactSectionNav } from "@/lib/contacts/contact-section-nav-prefs";
 import { homeAddressFromRecords, officeMeetingAddress } from "@/lib/meetings/types";
-import { isContactSectionId, type ContactSectionId } from "@/lib/desk/contact-sections";
+import { type ContactSectionId } from "@/lib/desk/contact-sections";
+import { parseContactTab } from "@/lib/desk/contact-tabs";
 import { prepareContactDealHeal } from "@/app/actions/contacts-ops";
 import { ContactSecondaryAddressCue } from "@/components/contacts/contact-secondary-address-cue";
 import { loadCommitmentsForEntities } from "@/lib/notifications/load-commitments";
@@ -67,6 +68,8 @@ export default async function ContactDetailPage({
   const focusPolicy = typeof paramsIn.focusPolicy === "string" ? paramsIn.focusPolicy : undefined;
   const focusDeal = typeof paramsIn.focusDeal === "string" ? paramsIn.focusDeal : undefined;
   const sectionParam = typeof paramsIn.section === "string" ? paramsIn.section : undefined;
+  const tabParam = typeof paramsIn.tab === "string" ? paramsIn.tab : undefined;
+  const activeTab = parseContactTab(tabParam, sectionParam);
   const workspace = await getContactWorkspace(id);
   if (!workspace) notFound();
   const {
@@ -162,6 +165,12 @@ export default async function ContactDetailPage({
     contactLayout?.stored ?? {},
     contactLayout?.fields ?? [],
   );
+  // Dependents live as jsonb on contacts — serialize for the editor.
+  if (Array.isArray(contact.dependents) && !fieldValues.dependents) {
+    fieldValues.dependents = JSON.stringify(contact.dependents);
+  }
+  // Never surface raw last4 as the DL field value — MaskedPiiField owns display.
+  delete fieldValues.drivers_license_number;
   const dealHeal = await prepareContactDealHeal(contact.id);
   if (dealHeal.healed && dealHeal.dateOfBirth) {
     fieldValues.date_of_birth = dealHeal.dateOfBirth;
@@ -289,7 +298,10 @@ export default async function ContactDetailPage({
           { label: "Contact" },
         ]}
       />
-      <div className="mb-3 space-y-1" data-ff-contact-header-bar="">
+      <div
+        className="sticky top-0 z-30 mb-3 space-y-1 bg-[var(--ff-wash,#f3efe6)]/95 pb-2 backdrop-blur supports-[backdrop-filter]:bg-[var(--ff-wash,#f3efe6)]/90"
+        data-ff-contact-header-bar=""
+      >
         <div className="flex flex-wrap items-start gap-2">
           <div className="mt-2 shrink-0">
             <ClientStatusDot status={clientStatus} />
@@ -330,15 +342,7 @@ export default async function ContactDetailPage({
                   </span>
                 ) : null}
               </div>
-              <div className="ml-auto shrink-0">
-                <ContactOverflowMenu
-                  contactId={contact.id}
-                  emailOptOut={contact.emailOptOut}
-                  smsOptOut={contact.smsOptOut}
-                  tags={contact.tags}
-                  tagExtra={tagExtra}
-                />
-              </div>
+              <RecordListPager module="contacts" recordId={contact.id} />
             </div>
             <div className="max-w-xl" data-ff-contact-header-tags="">
               <AssignRecordTags
@@ -399,92 +403,110 @@ export default async function ContactDetailPage({
         <ContactDetailSections
           selectedIds={resolvedNavIds}
           counts={sectionCounts}
-          initialOpenId={sectionParam && isContactSectionId(sectionParam) ? sectionParam : undefined}
-          before={
-            <div className="mb-3 space-y-3">
-              <section
-                id="at-a-glance"
-                className="ff-card space-y-3 p-4 scroll-mt-14"
-                data-ff-at-a-glance=""
-              >
-                <h2 className="text-base font-semibold text-[#002868]">At a Glance</h2>
-                <ContactAtAGlanceCards
-                  contactId={contact.id}
-                  policies={policies.map(({ policy }) => ({
-                    id: policy.id,
-                    lineOfBusiness: policy.lineOfBusiness,
-                    policyType: policy.policyType,
-                    status: policy.status,
-                    effectiveDate: policy.effectiveDate,
-                    renewalDate: policy.renewalDate,
-                  }))}
-                  deals={deals.map((deal) => ({
-                    id: deal.id,
-                    title: deal.title,
-                    pipelineStage: deal.pipelineStage,
-                    lineOfBusiness: deal.lineOfBusiness,
-                  }))}
-                  activityCount={timeline.length}
-                  lastActivity={
-                    timeline[0]
-                      ? {
-                          kind: (timeline[0] as { kind?: string }).kind ?? null,
-                          title:
-                            (timeline[0] as { activityTitle?: string; body?: string }).activityTitle ??
-                            (timeline[0] as { body?: string }).body ??
-                            null,
-                          occurredAt:
-                            (timeline[0] as { occurredAt?: Date | string }).occurredAt ?? null,
-                        }
-                      : null
-                  }
-                  emailOptOut={contact.emailOptOut}
-                  smsOptOut={contact.smsOptOut}
-                  commitments={serializeCommitments(contactPromises)}
-                />
-                <LinkedBusinessLine
-                  contactId={contact.id}
-                  businesses={businesses.map((b) => ({ id: b.id, name: b.name }))}
-                />
-              </section>
-
-              {dealHeal.cue ? (
-                <ContactSecondaryAddressCue
-                  dealId={dealHeal.cue.dealId}
-                  insuredAddress={dealHeal.cue.insuredAddress}
-                />
-              ) : null}
-
-              <section
-                id="contact-details"
-                className="ff-card space-y-2 p-2.5 scroll-mt-14"
-                data-ff-contact-details=""
-                data-ff-contact-inline-fields=""
-              >
-                <div
-                  className="flex items-center justify-between gap-3"
-                  data-ff-contact-details-header=""
-                >
-                  <h2 className="text-sm font-semibold text-[#002868]">Contact Details</h2>
-                  <div className="shrink-0" data-ff-contact-edit-layout="">
-                    <EditLayoutLink module="contacts" />
-                  </div>
-                </div>
-                <RecordLayoutForm
-                  module="contacts"
-                  recordId={contact.id}
-                  layout={contactLayout?.layout ?? defaultLayoutForModule("contacts")}
-                  fields={contactLayout?.fields ?? []}
-                  values={fieldValues}
-                  saveLabel="Save Contact"
-                  clickToEdit
-                  inForceLines={inForceLines}
-                />
-              </section>
-              <RecordModuleMacros module="contacts" recordId={contact.id} />
-            </div>
+          activeTab={activeTab}
+          basePath={`/contacts/${contact.id}`}
+          endSlot={
+            <ContactOverflowMenu
+              contactId={contact.id}
+              emailOptOut={contact.emailOptOut}
+              smsOptOut={contact.smsOptOut}
+              tags={contact.tags}
+              tagExtra={tagExtra}
+            />
           }
-          sections={[
+          panels={[
+            {
+              id: "at-a-glance",
+              bare: true,
+              "data-ff": "at-a-glance",
+              children: (
+                <section
+                  id="at-a-glance"
+                  className="ff-card space-y-3 p-4"
+                  data-ff-at-a-glance=""
+                >
+                  <h2 className="text-base font-semibold text-[#002868]">At a Glance</h2>
+                  <ContactAtAGlanceCards
+                    contactId={contact.id}
+                    policies={policies.map(({ policy }) => ({
+                      id: policy.id,
+                      lineOfBusiness: policy.lineOfBusiness,
+                      policyType: policy.policyType,
+                      status: policy.status,
+                      effectiveDate: policy.effectiveDate,
+                      renewalDate: policy.renewalDate,
+                    }))}
+                    deals={deals.map((deal) => ({
+                      id: deal.id,
+                      title: deal.title,
+                      pipelineStage: deal.pipelineStage,
+                      lineOfBusiness: deal.lineOfBusiness,
+                    }))}
+                    activityCount={timeline.length}
+                    lastActivity={
+                      timeline[0]
+                        ? {
+                            kind: (timeline[0] as { kind?: string }).kind ?? null,
+                            title:
+                              (timeline[0] as { activityTitle?: string; body?: string }).activityTitle ??
+                              (timeline[0] as { body?: string }).body ??
+                              null,
+                            occurredAt:
+                              (timeline[0] as { occurredAt?: Date | string }).occurredAt ?? null,
+                          }
+                        : null
+                    }
+                    emailOptOut={contact.emailOptOut}
+                    smsOptOut={contact.smsOptOut}
+                    commitments={serializeCommitments(contactPromises)}
+                  />
+                  <LinkedBusinessLine
+                    contactId={contact.id}
+                    businesses={businesses.map((b) => ({ id: b.id, name: b.name }))}
+                  />
+                  {dealHeal.cue ? (
+                    <ContactSecondaryAddressCue
+                      dealId={dealHeal.cue.dealId}
+                      insuredAddress={dealHeal.cue.insuredAddress}
+                    />
+                  ) : null}
+                </section>
+              ),
+            },
+            {
+              id: "contact-details",
+              bare: true,
+              "data-ff": "contact-details",
+              children: (
+                <section
+                  id="contact-details"
+                  className="ff-card space-y-2 p-2.5"
+                  data-ff-contact-details=""
+                  data-ff-contact-inline-fields=""
+                >
+                  <div
+                    className="flex items-center justify-between gap-3"
+                    data-ff-contact-details-header=""
+                  >
+                    <h2 className="text-sm font-semibold text-[#002868]">Contact Details</h2>
+                    <div className="shrink-0" data-ff-contact-edit-layout="">
+                      <EditLayoutLink module="contacts" />
+                    </div>
+                  </div>
+                  <RecordLayoutForm
+                    module="contacts"
+                    recordId={contact.id}
+                    layout={contactLayout?.layout ?? defaultLayoutForModule("contacts")}
+                    fields={contactLayout?.fields ?? []}
+                    values={fieldValues}
+                    saveLabel="Save Contact"
+                    clickToEdit
+                    inForceLines={inForceLines}
+                    licenseLast4={contact.licenseNumberLast4 ?? null}
+                  />
+                </section>
+              ),
+            },
             {
               id: "coverage",
               title: "Coverage",

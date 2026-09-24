@@ -19,6 +19,8 @@ import { ContactCoverageRecord } from "@/components/contacts/contact-coverage-re
 import { ContactDetailField } from "@/components/contacts/contact-detail-field";
 import { ContactGeneratedOpportunities } from "@/components/contacts/contact-generated-opportunities";
 import { ContactOwnerFlags } from "@/components/contacts/contact-owner-flags";
+import { ContactDependentsEditor } from "@/components/contacts/contact-dependents-editor";
+import { ContactLicenseField } from "@/components/contacts/contact-license-field";
 import {
   MAILING_SAME_AS_INSURED_KEY,
   isMailingAddressFieldKey,
@@ -53,6 +55,8 @@ export function RecordLayoutFields({
   healthOptions = [],
   lineSettings,
   inForceLines = [],
+  licenseLast4 = null,
+  canRevealLicense = true,
 }: {
   module: FieldLayoutModule;
   layout: FieldLayout;
@@ -67,6 +71,9 @@ export function RecordLayoutFields({
   healthOptions?: Array<{ slug?: string; label: string }>;
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   inForceLines?: CoverageLine[];
+  /** Contact DL vault last4 for masked display. */
+  licenseLast4?: string | null;
+  canRevealLicense?: boolean;
 }) {
   const safeLayout = parseLayout(layout);
   const fieldList = resolveLayoutFields(
@@ -237,6 +244,55 @@ export function RecordLayoutFields({
                       </div>
                     );
                   }
+                  if (contactDesk && key === "dependents" && recordId) {
+                    return (
+                      <ContactDependentsEditor
+                        recordId={inline ? recordId : undefined}
+                        value={liveValues.dependents ?? ""}
+                        form={form}
+                        onChange={(next) => patchValue("dependents", next)}
+                      />
+                    );
+                  }
+                  if (contactDesk && key === "drivers_license_number" && recordId) {
+                    return (
+                      <ContactDetailField fieldKey={key} label={field.label} compact>
+                        <ContactLicenseField
+                          contactId={recordId}
+                          last4={licenseLast4}
+                          canReveal={canRevealLicense}
+                          form={form}
+                        />
+                      </ContactDetailField>
+                    );
+                  }
+                  if (contactDesk && key === "mailing_same_as_insured") {
+                    const same = isMailingSameAsInsured(liveValues);
+                    return (
+                      <ContactDetailField fieldKey={key} label={field.label} compact>
+                        <select
+                          className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                          name={`field_${key}`}
+                          form={form}
+                          value={same ? "Same as above" : "Different…"}
+                          onChange={(e) => {
+                            const nextSame = e.target.value === "Same as above";
+                            patchValue(MAILING_SAME_AS_INSURED_KEY, nextSame ? "true" : "false");
+                            if (inline && recordId) {
+                              const data = new FormData();
+                              data.set("module", "contacts");
+                              data.set("recordId", recordId);
+                              data.set(`field_${MAILING_SAME_AS_INSURED_KEY}`, nextSame ? "true" : "false");
+                              void saveModuleRecordValues(data);
+                            }
+                          }}
+                        >
+                          <option>Same as above</option>
+                          <option>Different…</option>
+                        </select>
+                      </ContactDetailField>
+                    );
+                  }
                   const selling = isSellingAgencyField(field);
                   const controlField = selling
                     ? { ...field, key: DEAL_SELLING_AGENCY_KEY, required: true, label: "Selling agency" }
@@ -334,6 +390,8 @@ export function RecordLayoutForm({
   saveLabel = "Save",
   clickToEdit = false,
   inForceLines = [],
+  licenseLast4 = null,
+  canRevealLicense = true,
 }: {
   module: FieldLayoutModule;
   recordId: string;
@@ -344,6 +402,8 @@ export function RecordLayoutForm({
   /** When true, fields are plain text until clicked; blur saves. */
   clickToEdit?: boolean;
   inForceLines?: CoverageLine[];
+  licenseLast4?: string | null;
+  canRevealLicense?: boolean;
 }) {
   const formId = `ff-layout-save-${module}`;
   const inline = Boolean(clickToEdit);
@@ -368,6 +428,8 @@ export function RecordLayoutForm({
         clickToEdit={inline}
         recordId={recordId}
         inForceLines={inForceLines}
+        licenseLast4={licenseLast4}
+        canRevealLicense={canRevealLicense}
       />
       {!inline ? (
         <div className="flex justify-end">

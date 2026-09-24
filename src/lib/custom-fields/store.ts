@@ -70,6 +70,7 @@ import { ensureBusinessDetailPicklists } from "@/lib/businesses/business-detail-
 import {
   contactCardLayout,
   CONTACT_MODULE_FIELDS,
+  needsContactDetailsV4Upgrade,
   rebalanceContactDetailLayout,
   splitCoverageOpportunitiesLayout,
 } from "@/lib/contacts/contact-field-catalog";
@@ -473,7 +474,22 @@ async function ensureContactCatalogUpgrades() {
       field.key === "coverage_carrier_of_record" ||
       field.key === "cross_selling_opportunity" ||
       field.key === "is_homeowner" ||
-      field.key === "is_business_owner"
+      field.key === "is_business_owner" ||
+      field.key === "nickname" ||
+      field.key === "secondary_phone" ||
+      field.key === "gender" ||
+      field.key === "dl_state" ||
+      field.key === "drivers_license_number" ||
+      field.key === "dl_expiration" ||
+      field.key === "mailing_same_as_insured" ||
+      field.key === "spouse_name" ||
+      field.key === "spouse_dob" ||
+      field.key === "spouse_link" ||
+      field.key === "dependents" ||
+      field.key === "campaign_tag" ||
+      field.key === "middle_name" ||
+      field.key === "preferred_language" ||
+      field.key === "notes"
     ) {
       await upsertFieldDef(field, "contacts");
     }
@@ -482,14 +498,15 @@ async function ensureContactCatalogUpgrades() {
   await ensureContactDetailPicklistBindings();
 }
 
-/** Force Contact Details Edit Layout to the two-column card when missing new fields. */
+/** Force Contact Details to sketch v4 when the saved layout is still pre-v4 stock. */
 export async function ensureContactDetailLayout(): Promise<FieldLayout> {
   const next = contactCardLayout();
   const rows = await loadSavedLayoutRows("contacts").catch(() => []);
   const preferred = MODULE_LAYOUT_LINE;
   const picked = pickSavedModuleLayout(rows, "contacts", preferred);
-  // Agency-saved layouts win. Empty right = Classic (Dense) one-column — never reseed Card.
-  if (!picked) {
+  // Empty / missing → seed v4. Pre-v4 stock (coverage in Details, no nickname) → reseed.
+  // Agency layouts that already include nickname keep their edits.
+  if (!picked || needsContactDetailsV4Upgrade(picked)) {
     await saveLayoutForModule("contacts", next);
     return next;
   }

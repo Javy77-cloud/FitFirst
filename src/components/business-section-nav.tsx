@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { GripVertical, Settings2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -33,11 +33,14 @@ export function BusinessSectionNav({
   selectedIds,
   counts = {},
   onNavigate,
+  endSlot,
 }: {
   selectedIds: BusinessSectionId[];
   counts?: BusinessSectionCounts;
   /** Called when a chip is clicked (after/with jump). Accordion host uses this. */
   onNavigate?: (id: BusinessSectionId) => void;
+  /** Right-aligned slot after Customize (e.g. ··· overflow menu). */
+  endSlot?: ReactNode;
 }) {
   const router = useRouter();
   const [active, setActive] = useState<BusinessSectionId>(
@@ -228,7 +231,7 @@ export function BusinessSectionNav({
           ref={chipsRef}
           className={cn(
             FF_CHIP_TAB_GROUP,
-            "max-w-full flex-wrap items-center",
+            "w-full max-w-full flex-wrap items-center",
           )}
           onScroll={(e) => {
             // Never let chip focus scroll the strip sideways.
@@ -274,6 +277,11 @@ export function BusinessSectionNav({
             <Settings2 className="size-3 shrink-0" />
             Customize
           </button>
+          {endSlot ? (
+            <div className="ml-auto flex shrink-0 items-center" data-ff-business-nav-end="">
+              {endSlot}
+            </div>
+          ) : null}
         </div>
       </nav>
 
