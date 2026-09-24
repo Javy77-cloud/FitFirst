@@ -16,7 +16,9 @@ psql "$DATABASE_URL" -f scripts/flag-marketplace-medicare-insured-location.sql
 psql "$DATABASE_URL" -f scripts/backfill-marketplace-medicare-insured-location.sql
 ```
 
-Preview lists policies that will be filled (`policies_to_fill`, policy id, policy number, contact name, the address parts to copy). The flag list is Marketplace or Medicare policies that stay blank (`policies_flagged`, policy id, policy number, First Last, `missing_field`). Run preview and the flag list before the backfill. The backfill is one transaction and is safe to re-run. To see `RETURNING` without keeping the write, change the final `COMMIT` to `ROLLBACK`.
+A contact street is copied only when it contains a digit and is not a country-only placeholder (`United States`, `USA`, or `US`). Those policies are flagged `contact has no real address` and are not filled. Contact `state` is written as a USPS code: a trailing ` (United States)` is removed, full state names map to codes, and 2-letter values are upper-cased. An unmapped state is flagged `contacts.state` and is not filled. Preview `copy_state` and flag `copy_state` show that code.
+
+Preview lists policies that will be filled (`policies_to_fill`, policy id, policy number, contact name, the address parts to copy, including the normalized state). The flag list is Marketplace or Medicare policies that stay blank (`policies_flagged`, policy id, policy number, First Last, `missing_field`, `copy_state`). Run preview and the flag list before the backfill. The backfill is one transaction and is safe to re-run. To see `RETURNING` without keeping the write, change the final `COMMIT` to `ROLLBACK`.
 
 Filled and flagged counts are only known after these queries run on the live database.
 

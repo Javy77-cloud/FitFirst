@@ -54,4 +54,14 @@ describe("marketplace / medicare insured-location SQL", () => {
     expect(backfill.trimEnd().endsWith("COMMIT;")).toBe(true);
     expect(backfill).not.toMatch(/^\s*(renewal_date|premium|policy_number|status|updated_at)\s*=/im);
   });
+
+  it("rejects country-only streets and writes a USPS state code", () => {
+    expect(shared).toMatch(/contact has no real address/);
+    expect(shared).toMatch(/\('tennessee', 'TN'\)/);
+    expect(shared).toMatch(/\('utah', 'UT'\)/);
+    expect(shared).toMatch(/\('florida', 'FL'\)/);
+    expect(shared).toMatch(/united states/);
+    expect(flag).toMatch(/copy_state/);
+    expect(preview).toMatch(/copy_state/);
+  });
 });

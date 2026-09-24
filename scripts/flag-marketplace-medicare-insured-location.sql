@@ -11,6 +11,8 @@
 -- policy_id is included because policy_number is not unique.
 -- policies_flagged is the count, repeated on each listed row. When nothing matches,
 -- the query returns one row with policies_flagged = 0.
+-- copy_state is the USPS code that would be written. It is blank when the contact
+-- state is blank or cannot be mapped.
 -- Flagged counts are only known after this runs on the live database.
 
 -- SHARED-START
@@ -40,7 +42,14 @@
 --   policies.deal_id = deals.id AND policies.tenant_id = deals.tenant_id
 --   flag when both contact ids are set and they differ.
 -- Also flag: no policies.contact_id, dangling contact id, contacts.merged_into_id set,
--- or all four contact address parts blank. Do not follow merged_into_id.
+-- a contact with no real address, or a contact state that is not a USPS code.
+-- Do not follow merged_into_id.
+-- A street is usable only when it contains a digit and is not a country-only
+-- placeholder (United States / USA / US, ignoring punctuation and case).
+-- Those contacts are flagged 'contact has no real address' and nothing is copied.
+-- Contact state is written as a USPS code: strip a trailing ' (United States)',
+-- map full state names case-insensitively, and upper-case 2-letter values.
+-- An unmapped state flags the row and nothing is copied. A blank state stays blank.
 --
 -- Product (any one match). Not "every HEALTH policy".
 -- Haystack: policy_sub_type, policy_type, form_type, insurance_type, source_product,
@@ -60,10 +69,67 @@
 -- Copy is part-for-part. premises_address stays street-only: a trailing
 -- ", City, ST ZIP" that repeats the contact parts is removed. When city, state,
 -- and zip are all blank and mailing_address is "street, city, ST ZIP", it is split.
--- Only NULL is written for a missing part. No other policies column is updated.
+-- premises_state is the USPS code. Only NULL is written for a missing part.
+-- No other policies column is updated.
 WITH
 params AS (
   SELECT '11111111-1111-4111-8111-111111111111'::uuid AS tenant_id
+),
+state_codes AS (
+  SELECT *
+  FROM (VALUES
+    ('alabama', 'AL'),
+    ('alaska', 'AK'),
+    ('arizona', 'AZ'),
+    ('arkansas', 'AR'),
+    ('california', 'CA'),
+    ('colorado', 'CO'),
+    ('connecticut', 'CT'),
+    ('delaware', 'DE'),
+    ('district of columbia', 'DC'),
+    ('florida', 'FL'),
+    ('georgia', 'GA'),
+    ('hawaii', 'HI'),
+    ('idaho', 'ID'),
+    ('illinois', 'IL'),
+    ('indiana', 'IN'),
+    ('iowa', 'IA'),
+    ('kansas', 'KS'),
+    ('kentucky', 'KY'),
+    ('louisiana', 'LA'),
+    ('maine', 'ME'),
+    ('maryland', 'MD'),
+    ('massachusetts', 'MA'),
+    ('michigan', 'MI'),
+    ('minnesota', 'MN'),
+    ('mississippi', 'MS'),
+    ('missouri', 'MO'),
+    ('montana', 'MT'),
+    ('nebraska', 'NE'),
+    ('nevada', 'NV'),
+    ('new hampshire', 'NH'),
+    ('new jersey', 'NJ'),
+    ('new mexico', 'NM'),
+    ('new york', 'NY'),
+    ('north carolina', 'NC'),
+    ('north dakota', 'ND'),
+    ('ohio', 'OH'),
+    ('oklahoma', 'OK'),
+    ('oregon', 'OR'),
+    ('pennsylvania', 'PA'),
+    ('rhode island', 'RI'),
+    ('south carolina', 'SC'),
+    ('south dakota', 'SD'),
+    ('tennessee', 'TN'),
+    ('texas', 'TX'),
+    ('utah', 'UT'),
+    ('vermont', 'VT'),
+    ('virginia', 'VA'),
+    ('washington', 'WA'),
+    ('west virginia', 'WV'),
+    ('wisconsin', 'WI'),
+    ('wyoming', 'WY')
+  ) AS codes(name, code)
 ),
 policy_text AS (
   SELECT
@@ -208,6 +274,44 @@ contact_parts AS (
     END AS zip
   FROM contact_parsed AS p
 ),
+contact_normalized AS (
+  SELECT
+    cp.contact_id,
+    cp.tenant_id,
+    cp.merged_into_id,
+    cp.first_name,
+    cp.last_name,
+    cp.street1,
+    cp.city,
+    cp.zip,
+    NULLIF(
+      btrim(
+        regexp_replace(
+          btrim(coalesce(cp.state, '')),
+          '[[:space:]]*\([[:space:]]*united states[[:space:]]*\)[[:space:]]*$',
+          '',
+          'i'
+        )
+      ),
+      ''
+    ) AS state_label
+  FROM contact_parts AS cp
+),
+contact_state AS (
+  SELECT
+    n.*,
+    CASE
+      WHEN n.state_label ~ '^[A-Za-z]{2}$' THEN upper(n.state_label)
+      ELSE codes.code
+    END AS state_code,
+    n.state_label IS NOT NULL
+      AND CASE
+        WHEN n.state_label ~ '^[A-Za-z]{2}$' THEN upper(n.state_label)
+        ELSE codes.code
+      END IS NULL AS state_unmapped
+  FROM contact_normalized AS n
+  LEFT JOIN state_codes AS codes ON codes.name = lower(n.state_label)
+),
 contact_address AS (
   SELECT
     cp.contact_id,
@@ -216,35 +320,45 @@ contact_address AS (
     cp.first_name,
     cp.last_name,
     cp.city,
-    cp.state,
+    cp.state_code,
+    cp.state_unmapped,
     cp.zip,
     COALESCE(
       (
         SELECT NULLIF(btrim(left(cp.street1, length(cp.street1) - length(suf.s)), ' ,'), '')
         FROM unnest(ARRAY[
+          cp.state_code,
           CASE
-            WHEN cp.city IS NOT NULL AND cp.state IS NOT NULL AND cp.zip IS NOT NULL
-            THEN ', ' || cp.city || ', ' || cp.state || ' ' || cp.zip
-          END,
-          CASE
-            WHEN cp.city IS NOT NULL AND cp.state IS NOT NULL AND cp.zip IS NOT NULL
-            THEN ', ' || cp.city || ', ' || cp.state || ', ' || cp.zip
-          END,
-          CASE
-            WHEN cp.city IS NOT NULL AND cp.state IS NOT NULL AND cp.zip IS NOT NULL
-            THEN ', ' || cp.city || ' ' || cp.state || ' ' || cp.zip
-          END,
-          CASE
-            WHEN cp.city IS NOT NULL AND cp.state IS NOT NULL
-            THEN ', ' || cp.city || ', ' || cp.state
-          END,
-          CASE
-            WHEN cp.state IS NOT NULL AND cp.zip IS NOT NULL
-            THEN ', ' || cp.state || ' ' || cp.zip
-          END,
-          CASE WHEN cp.zip IS NOT NULL THEN ', ' || cp.zip END,
-          CASE WHEN cp.city IS NOT NULL THEN ', ' || cp.city END
-        ]) AS suf(s)
+            WHEN cp.state_label IS DISTINCT FROM cp.state_code THEN cp.state_label
+          END
+        ]) AS st(token)
+        CROSS JOIN LATERAL (
+          SELECT candidate
+          FROM (VALUES
+            (CASE
+              WHEN cp.city IS NOT NULL AND st.token IS NOT NULL AND cp.zip IS NOT NULL
+              THEN ', ' || cp.city || ', ' || st.token || ' ' || cp.zip
+            END),
+            (CASE
+              WHEN cp.city IS NOT NULL AND st.token IS NOT NULL AND cp.zip IS NOT NULL
+              THEN ', ' || cp.city || ', ' || st.token || ', ' || cp.zip
+            END),
+            (CASE
+              WHEN cp.city IS NOT NULL AND st.token IS NOT NULL AND cp.zip IS NOT NULL
+              THEN ', ' || cp.city || ' ' || st.token || ' ' || cp.zip
+            END),
+            (CASE
+              WHEN cp.city IS NOT NULL AND st.token IS NOT NULL
+              THEN ', ' || cp.city || ', ' || st.token
+            END),
+            (CASE
+              WHEN st.token IS NOT NULL AND cp.zip IS NOT NULL
+              THEN ', ' || st.token || ' ' || cp.zip
+            END),
+            (CASE WHEN cp.zip IS NOT NULL THEN ', ' || cp.zip END),
+            (CASE WHEN cp.city IS NOT NULL THEN ', ' || cp.city END)
+          ) AS candidates(candidate)
+        ) AS suf(s)
         WHERE suf.s IS NOT NULL
           AND cp.street1 IS NOT NULL
           AND length(cp.street1) > length(suf.s)
@@ -255,7 +369,21 @@ contact_address AS (
       ),
       cp.street1
     ) AS street
-  FROM contact_parts AS cp
+  FROM contact_state AS cp
+),
+contact_ready AS (
+  SELECT
+    ca.*,
+    ca.street IS NOT NULL
+      AND ca.street ~ '[[:digit:]]'
+      AND btrim(regexp_replace(lower(btrim(ca.street)), '[^a-z0-9]+', ' ', 'g')) NOT IN (
+        'united states',
+        'usa',
+        'us',
+        'u s',
+        'u s a'
+      ) AS street_usable
+  FROM contact_address AS ca
 ),
 insured_location_work AS (
   SELECT
@@ -275,7 +403,13 @@ insured_location_work AS (
       WHEN d.contact_id IS NOT NULL
         AND p.contact_id IS NOT NULL
         AND d.contact_id <> p.contact_id THEN 'flag'
-      WHEN ca.street IS NULL AND ca.city IS NULL AND ca.state IS NULL AND ca.zip IS NULL THEN 'flag'
+      WHEN ca.contact_id IS NOT NULL
+        AND NOT ca.street_usable
+        AND (
+          ca.street IS NOT NULL
+          OR (ca.city IS NULL AND ca.state_code IS NULL AND ca.zip IS NULL)
+        ) THEN 'flag'
+      WHEN ca.state_unmapped THEN 'flag'
       ELSE 'fill'
     END AS action,
     NULLIF(concat_ws('; ',
@@ -297,25 +431,27 @@ insured_location_work AS (
       END,
       CASE
         WHEN ca.contact_id IS NOT NULL
-          AND ca.street IS NULL
-          AND ca.city IS NULL
-          AND ca.state IS NULL
-          AND ca.zip IS NULL
-        THEN 'contacts.mailing_address, contacts.city, contacts.state, contacts.zip'
-      END
+          AND NOT ca.street_usable
+          AND (
+            ca.street IS NOT NULL
+            OR (ca.city IS NULL AND ca.state_code IS NULL AND ca.zip IS NULL)
+          )
+        THEN 'contact has no real address'
+      END,
+      CASE WHEN ca.state_unmapped THEN 'contacts.state' END
     ), '') AS missing_field,
-    ca.street AS copy_street,
+    CASE WHEN ca.street_usable THEN ca.street END AS copy_street,
     ca.city AS copy_city,
-    ca.state AS copy_state,
+    ca.state_code AS copy_state,
     ca.zip AS copy_zip,
     NULLIF(concat_ws(', ',
-      ca.street,
-      NULLIF(concat_ws(', ', ca.city, ca.state, ca.zip), '')
+      CASE WHEN ca.street_usable THEN ca.street END,
+      NULLIF(concat_ws(', ', ca.city, ca.state_code, ca.zip), '')
     ), '') AS copy_display
   FROM policies AS p
   JOIN params ON p.tenant_id = params.tenant_id
   JOIN policy_product AS pp ON pp.id = p.id
-  LEFT JOIN contact_address AS ca
+  LEFT JOIN contact_ready AS ca
     ON ca.contact_id = p.contact_id
    AND ca.tenant_id = p.tenant_id
   LEFT JOIN deals AS d
@@ -333,13 +469,15 @@ SELECT
   policy_id,
   policy_number,
   contact_name,
-  missing_field
+  missing_field,
+  copy_state
 FROM insured_location_work
 WHERE action = 'flag'
 UNION ALL
 SELECT
   0::bigint,
   NULL::uuid,
+  NULL::text,
   NULL::text,
   NULL::text,
   NULL::text
