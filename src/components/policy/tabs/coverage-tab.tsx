@@ -151,6 +151,7 @@ function buildSchedule(
 export function PolicyCoverageTab({
   policy,
   terms,
+  currentTerm,
   interests = [],
   contactId,
   accountId,
@@ -168,12 +169,17 @@ export function PolicyCoverageTab({
     policySubType?: string | null;
   };
   terms: TermRow[];
+  /** Term the current-term resolver chose. Null means nothing is in force. */
+  currentTerm?: TermRow | null;
   interests?: Parameters<typeof AdditionalInterestPanel>[0]["interests"];
   contactId?: string | null;
   accountId?: string | null;
   readOnly?: boolean;
 }) {
-  const current = terms.find((term) => term.role === "current") ?? terms[0] ?? null;
+  const current =
+    currentTerm !== undefined
+      ? currentTerm
+      : (terms.find((term) => term.role === "current") ?? null);
   const schedule = buildSchedule(policy, current);
   const showInterests = canHoldInterests({
     ...policy,

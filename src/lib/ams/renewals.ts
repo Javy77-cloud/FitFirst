@@ -1,5 +1,6 @@
 import { isInForceStatus } from "@/lib/policy/status";
 import { addUtcDays, deskNow } from "@/lib/home/as-of";
+import { daysLeftEt, resolveCurrentTerm } from "@/lib/policies/current-term";
 import { parseMoney, premiumChange } from "@/lib/renewal/compare";
 
 export type RenewalPolicy = {
@@ -30,25 +31,34 @@ export function expirationDay(value: Date | string | null | undefined): Date | n
 }
 
 export function daysUntilExpiration(expiration: Date, asOf = deskNow()): number {
-  const start = Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), asOf.getUTCDate());
-  const end = Date.UTC(
-    expiration.getUTCFullYear(),
-    expiration.getUTCMonth(),
-    expiration.getUTCDate(),
-  );
-  return Math.round((end - start) / 86_400_000);
+  return daysLeftEt(expiration, asOf) ?? 0;
 }
 
 export function isUpcomingRenewal(
-  policy: Pick<RenewalPolicy, "status" | "expirationDate">,
+  policy: Pick<RenewalPolicy, "status" | "expirationDate"> & {
+    effectiveDate?: Date | string | null;
+    lineOfBusiness?: string | null;
+    policyNumber?: string | null;
+    premium?: string | null;
+  },
   windowDays = 60,
   asOf = deskNow(),
 ): boolean {
   if (!isInForceStatus(policy.status)) return false;
-  const exp = expirationDay(policy.expirationDate);
-  if (!exp) return false;
-  const days = daysUntilExpiration(exp, asOf);
-  return days >= 0 && days <= windowDays;
+  const resolved = resolveCurrentTerm(
+    {
+      status: policy.status,
+      expirationDate: policy.expirationDate,
+      effectiveDate: policy.effectiveDate,
+      lineOfBusiness: policy.lineOfBusiness,
+      policyNumber: policy.policyNumber,
+      premium: policy.premium,
+    },
+    asOf,
+  );
+  if (!resolved.countsAsInForce) return false;
+  const days = resolved.daysLeft;
+  return days != null && days >= 0 && days <= windowDays;
 }
 
 export function upcomingHorizon(windowDays = 60, asOf = deskNow()): Date {

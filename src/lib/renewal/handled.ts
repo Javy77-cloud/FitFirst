@@ -1,6 +1,7 @@
 /** Client staying / renewal handled — quiet Renewals collection, not archive. */
 
-import { addUtcDays } from "@/lib/home/as-of";
+import { calendarDaysBetween, businessDateKey } from "@/lib/policies/current-term";
+import { etDateKey } from "@/lib/time/et";
 
 export const RENEWAL_HANDLED_STAGE = "handled" as const;
 export const RENEWAL_HANDLED_EVENT = "renewal_handled" as const;
@@ -53,12 +54,10 @@ export function isClientStayingAvailable(
   renewalDate: Date | string | null | undefined,
   asOf: Date = new Date(),
 ): boolean {
-  if (renewalDate == null || renewalDate === "") return false;
-  const anchor = renewalDate instanceof Date ? renewalDate : new Date(String(renewalDate));
-  if (Number.isNaN(anchor.getTime())) return false;
-  const windowStart = addUtcDays(anchor, -CLIENT_STAYING_WINDOW_DAYS);
-  const t = asOf.getTime();
-  return t >= windowStart.getTime() && t <= anchor.getTime();
+  const anchor = businessDateKey(renewalDate);
+  if (!anchor) return false;
+  const days = calendarDaysBetween(etDateKey(asOf), anchor);
+  return days >= 0 && days <= CLIENT_STAYING_WINDOW_DAYS;
 }
 
 /** Throws when Client staying must be blocked (server gate). */
@@ -66,14 +65,10 @@ export function assertClientStayingAvailable(
   renewalDate: Date | string | null | undefined,
   asOf: Date = new Date(),
 ): void {
-  if (renewalDate == null || renewalDate === "") {
+  if (!businessDateKey(renewalDate)) {
     throw new Error(CLIENT_STAYING_NO_RENEWAL_DATE);
   }
-  const anchor = renewalDate instanceof Date ? renewalDate : new Date(String(renewalDate));
-  if (Number.isNaN(anchor.getTime())) {
-    throw new Error(CLIENT_STAYING_NO_RENEWAL_DATE);
-  }
-  if (!isClientStayingAvailable(anchor, asOf)) {
+  if (!isClientStayingAvailable(renewalDate, asOf)) {
     throw new Error(CLIENT_STAYING_TOO_EARLY);
   }
 }
@@ -83,8 +78,6 @@ export function clientStayingUnavailableReason(
   asOf: Date = new Date(),
 ): string | null {
   if (isClientStayingAvailable(renewalDate, asOf)) return null;
-  if (renewalDate == null || renewalDate === "") return CLIENT_STAYING_NO_RENEWAL_DATE;
-  const anchor = renewalDate instanceof Date ? renewalDate : new Date(String(renewalDate));
-  if (Number.isNaN(anchor.getTime())) return CLIENT_STAYING_NO_RENEWAL_DATE;
+  if (!businessDateKey(renewalDate)) return CLIENT_STAYING_NO_RENEWAL_DATE;
   return CLIENT_STAYING_TOO_EARLY;
 }

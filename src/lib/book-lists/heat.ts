@@ -1,6 +1,7 @@
 import type { HeatLevel } from "@/lib/desk/truth-strip";
 import type { BookColumnId, BookHeat } from "./types";
 import { renewalProximityDrivesCare } from "@/lib/renewal/handled";
+import { businessDateKey, daysLeftEt } from "@/lib/policies/current-term";
 
 export function daysSinceTouch(iso: string | Date | null | undefined, asOf: Date): number | null {
   if (!iso) return null;
@@ -75,20 +76,18 @@ export function heatFromLevels(levels: BookHeat[]): Record<HeatLevel, number> {
 }
 
 export function daysUntilDate(iso: string | Date | null | undefined, asOf: Date): number | null {
-  if (!iso) return null;
-  const date = iso instanceof Date ? iso : new Date(iso);
-  if (Number.isNaN(date.getTime())) return null;
-  return Math.round((date.getTime() - asOf.getTime()) / 86_400_000);
+  return daysLeftEt(iso, asOf);
 }
 
 const GLANCE_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 
-/** Short expiration for a card glance. UTC so a date-only term does not slip a day. */
+/** Short expiration for a card glance. Uses the term's calendar day, not UTC-shifted ET. */
 export function glanceDate(iso: string | Date | null | undefined): string | null {
-  if (!iso) return null;
-  const date = iso instanceof Date ? iso : new Date(iso);
-  if (Number.isNaN(date.getTime())) return null;
-  return `${GLANCE_MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}, ${date.getUTCFullYear()}`;
+  const key = businessDateKey(iso);
+  if (!key) return null;
+  const [, month, day] = key.split("-");
+  const year = key.slice(0, 4);
+  return `${GLANCE_MONTHS[Number(month) - 1]} ${Number(day)}, ${year}`;
 }
 
 function renewsIn(daysUntil: number, expirationLabel?: string | null): string {

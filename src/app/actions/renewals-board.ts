@@ -13,6 +13,7 @@ import {
   alerts,
   emailTemplates,
   policies,
+  policyTerms,
   renewalQueue,
 } from "@/lib/db/schema";
 import {
@@ -214,11 +215,26 @@ export async function markClientStaying(formData: FormData) {
       id: policies.id,
       policyNumber: policies.policyNumber,
       status: policies.status,
+      lineOfBusiness: policies.lineOfBusiness,
+      effectiveDate: policies.effectiveDate,
+      expirationDate: policies.expirationDate,
       renewalDate: policies.renewalDate,
+      premium: policies.premium,
     })
     .from(policies)
     .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
   if (!policy) throw new Error("Policy not found.");
+
+  const terms = await db
+    .select({
+      id: policyTerms.id,
+      role: policyTerms.role,
+      effective: policyTerms.termEffective,
+      expiration: policyTerms.termExpiration,
+      premium: policyTerms.premium,
+    })
+    .from(policyTerms)
+    .where(and(eq(policyTerms.tenantId, DEFAULT_TENANT_ID), eq(policyTerms.policyId, policyId)));
 
   const {
     RENEWAL_HANDLED_STAGE,
@@ -227,7 +243,9 @@ export async function markClientStaying(formData: FormData) {
     assertClientStayingAvailable,
   } = await import("@/lib/renewal/handled");
   const { deskNow } = await import("@/lib/home/as-of");
-  assertClientStayingAvailable(policy.renewalDate, deskNow());
+  const { resolveCurrentTerm } = await import("@/lib/policies/current-term");
+  const resolved = resolveCurrentTerm({ ...policy, terms }, deskNow());
+  assertClientStayingAvailable(resolved.renewalAnchor ?? policy.renewalDate, deskNow());
 
   const [existing] = await db
     .select()

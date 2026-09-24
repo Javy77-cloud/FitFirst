@@ -2,8 +2,8 @@ import { and, eq, isNull } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { contacts, deals, deskCustomFieldValues, policies } from "@/lib/db/schema";
-import { isInForceStatus } from "@/lib/policy/status";
 import { daysUntilExpiration, expirationDay } from "@/lib/ams/renewals";
+import { resolveCurrentTerm } from "@/lib/policies/current-term";
 import { deskNow } from "@/lib/home/as-of";
 import { partyLabel } from "@/lib/desk/policy-name";
 import { activeInboxMail } from "@/lib/integrations/mail-provider";
@@ -51,7 +51,10 @@ export async function loadInboxMatchIndex(asOf = deskNow()): Promise<InboxMatchI
         id: policies.id,
         contactId: policies.contactId,
         ownerId: policies.ownerId,
+        effectiveDate: policies.effectiveDate,
         expirationDate: policies.expirationDate,
+        lineOfBusiness: policies.lineOfBusiness,
+        policyNumber: policies.policyNumber,
         status: policies.status,
         firstName: contacts.firstName,
         lastName: contacts.lastName,
@@ -102,10 +105,20 @@ export async function loadInboxMatchIndex(asOf = deskNow()): Promise<InboxMatchI
 
   const renewalHits: InboxRenewalHit[] = [];
   for (const row of policyRows) {
-    if (!isInForceStatus(row.status)) continue;
-    const exp = expirationDay(row.expirationDate);
+    const resolved = resolveCurrentTerm(
+      {
+        status: row.status,
+        lineOfBusiness: row.lineOfBusiness,
+        policyNumber: row.policyNumber,
+        effectiveDate: row.effectiveDate,
+        expirationDate: row.expirationDate,
+      },
+      asOf,
+    );
+    if (!resolved.countsAsInForce && resolved.band !== "expired") continue;
+    const exp = expirationDay(resolved.bookExpiration ?? row.expirationDate);
     if (!exp) continue;
-    const days = daysUntilExpiration(exp, asOf);
+    const days = resolved.daysLeft ?? daysUntilExpiration(exp, asOf);
     if (days > 90 || days < -7) continue;
     renewalHits.push({
       policyId: row.id,
