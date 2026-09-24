@@ -22,7 +22,12 @@ export type RenewalAgreedTerm = {
 };
 
 export type RenewalAgreedWindow = {
-  /** In-force term start. Used only to derive the next term when none is stored. */
+  /**
+   * Stored `policies.renewal_date`. Preferred when set.
+   * Pass `renewalDateFor(policy)` here once that helper is on main.
+   */
+  renewalDate?: Date | string | null;
+  /** In-force term start. Used only to derive the next term when renewal date is blank. */
   effectiveDate?: Date | string | null;
   /** In-force term end. Exclusive end, or the last covered day on a DEC. */
   expirationDate?: Date | string | null;
@@ -113,8 +118,13 @@ function recordedRenewedEffective(
   return dates[0] ?? null;
 }
 
-/** Effective date of the renewed term. Recorded date wins; otherwise derived. */
+/**
+ * Effective date of the renewed term.
+ * Stored policy renewal date wins. Term derivation runs only when that field is blank.
+ */
 export function renewalAgreedEffectiveDate(input: RenewalAgreedWindow): string | null {
+  const storedRenewal = businessDateKey(input.renewalDate);
+  if (storedRenewal) return storedRenewal;
   const explicit = businessDateKey(input.renewedEffectiveDate);
   if (explicit) return explicit;
   const effective = businessDateKey(input.effectiveDate);

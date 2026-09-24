@@ -25,6 +25,35 @@ describe("renewal agreed stamp", () => {
     expect(derivedNextTermStart("2026-07-30", "2027-07-29")).toBe("2027-07-30");
   });
 
+  it("prefers a stored policy renewal date and derives only when it is blank", () => {
+    const calendarYear = {
+      effectiveDate: "2026-01-01",
+      expirationDate: "2026-12-31",
+      renewedEffectiveDate: "2026-11-01",
+      terms: [{ role: "proposed", termEffective: "2026-11-01", termExpiration: "2027-11-01" }],
+    };
+    expect(renewalAgreedEffectiveDate({ ...calendarYear, renewalDate: "2027-02-01" })).toBe("2027-02-01");
+    expect(renewalAgreedEffectiveDate({ ...calendarYear, renewalDate: null })).toBe("2026-11-01");
+    expect(renewalAgreedEffectiveDate({ ...calendarYear, renewalDate: "" })).toBe("2026-11-01");
+  });
+
+  it("Marketplace, Medicare, and PNC calendar terms renew January 1 when renewal date is blank", () => {
+    expect(derivedNextTermStart("2026-01-01", "2026-12-31")).toBe("2027-01-01");
+    const calendarYear = {
+      clientStaying: true,
+      effectiveDate: "2026-01-01",
+      expirationDate: "2026-12-31",
+      renewalDate: null as string | null,
+    };
+    expect(renewalAgreedEffectiveDate(calendarYear)).toBe("2027-01-01");
+    expect(showRenewalAgreedStamp(calendarYear, new Date("2026-12-31T17:00:00.000Z"))).toBe(true);
+    expect(showRenewalAgreedStamp(calendarYear, new Date("2027-01-01T17:00:00.000Z"))).toBe(false);
+    // 7:30 PM EST on Dec 31 is 00:30 UTC on Jan 1. Still the day before.
+    expect(showRenewalAgreedStamp(calendarYear, new Date("2027-01-01T00:30:00.000Z"))).toBe(true);
+    // 12:30 AM EST on Jan 1 is 05:30 UTC.
+    expect(showRenewalAgreedStamp(calendarYear, new Date("2027-01-01T05:30:00.000Z"))).toBe(false);
+  });
+
   it("uses a recorded renewed-term effective date", () => {
     expect(
       renewalAgreedEffectiveDate({
@@ -98,6 +127,7 @@ describe("renewal agreed stamp", () => {
     expect(linksAt).toBeGreaterThan(-1);
     expect(stampAt).toBeGreaterThan(linksAt);
     expect(overview).toMatch(/showRenewalAgreedStamp/);
+    expect(overview).toMatch(/renewalDate:\s*policy\.renewalDate/);
     expect(stamp).toMatch(/ff-deal-status-stamp/);
     expect(stamp).toMatch(/ff-deal-status-stamp-ink/);
     expect(stamp).toMatch(/RENEWAL_AGREED_LABEL/);

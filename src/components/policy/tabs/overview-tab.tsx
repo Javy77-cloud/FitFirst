@@ -139,6 +139,8 @@ export function PolicyOverviewTab({
   const dwelling = resolveDwellingFacts({ risk, sheet });
   const showRenewalAgreed = showRenewalAgreedStamp({
     clientStaying: renewalHandled,
+    // Stored policies.renewal_date. Swap for renewalDateFor(policy) when that helper lands.
+    renewalDate: policy.renewalDate,
     effectiveDate: termView?.current?.effective ?? termView?.bookEffective ?? policy.effectiveDate,
     expirationDate: termView?.current?.expiration ?? termView?.bookExpiration ?? policy.expirationDate,
     renewedEffectiveDate: termView?.upcoming?.effective,
