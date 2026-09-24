@@ -58,8 +58,13 @@ export const FIELD_LAYOUT_MODULE_LIST_HREF: Record<FieldLayoutModule, string> = 
 /** Sentinel LOB for modules that share one layout (not per-line deals). */
 export const MODULE_LAYOUT_LINE = "ALL";
 
-function section(id: string, label: string, fieldKeys: string[]): LayoutSection {
-  return { id, label, fieldKeys };
+function section(
+  id: string,
+  label: string,
+  fieldKeys: string[],
+  density?: LayoutSection["density"],
+): LayoutSection {
+  return density ? { id, label, fieldKeys, density } : { id, label, fieldKeys };
 }
 
 function twoCol(left: LayoutSection[], right: LayoutSection[]): FieldLayout {
@@ -344,33 +349,44 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
     );
   }
   if (module === "businesses") {
-    // Even left|right like Contacts. Keep Account Name on left; Phone (and
-    // email/website) on right so name + phone are not stacked in one column.
+    // Party pair with Contacts: label-above desk chrome + density-4 grids.
+    // Even left|right. Keep Account Name on left; Phone (and email/website) on
+    // right so name + phone are not stacked in one column.
     return twoCol(
       [
-        section("business", "Business Info", [
-          "business_name",
-          "dba",
-          "legal_name",
-          "ein",
-          "entity_type",
-          "industry",
-        ]),
-        section("location", "Location", ["mailing_address", "city", "state", "zip"]),
-        section("crm_notes", "CRM Notes", ["life_notes", "health_notes", "pc_notes", "notes"]),
+        section(
+          "business",
+          "Business Info",
+          [
+            "business_name",
+            "dba",
+            "legal_name",
+            "ein",
+            "entity_type",
+            "industry",
+          ],
+          4,
+        ),
+        section("location", "Location", ["mailing_address", "city", "state", "zip"], 4),
+        section("crm_notes", "CRM Notes", ["life_notes", "health_notes", "pc_notes", "notes"], 4),
       ],
       [
-        section("contact", "Business Contact", ["phone", "email", "website"]),
-        section("intake", "Intake", ["source", "referral"]),
-        section("operations", "Operations", [
-          "employee_count",
-          "annual_sales",
-          "payroll_w2",
-          "payroll_1099",
-          "years_in_business",
-          "naics",
+        section("contact", "Business Contact", ["phone", "email", "website"], 4),
+        section("intake", "Intake", ["source", "referral"], 4),
+        section(
           "operations",
-        ]),
+          "Operations",
+          [
+            "employee_count",
+            "annual_sales",
+            "payroll_w2",
+            "payroll_1099",
+            "years_in_business",
+            "naics",
+            "operations",
+          ],
+          4,
+        ),
       ],
     );
   }

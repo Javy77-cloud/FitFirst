@@ -72,6 +72,10 @@ import {
 } from "@/lib/contacts/contact-detail-picklists";
 import { ensureBusinessDetailPicklists } from "@/lib/businesses/business-detail-picklists";
 import {
+  migrateBusinessDetailsParity,
+  needsBusinessDetailsParityUpgrade,
+} from "@/lib/businesses/business-detail-layout";
+import {
   contactCardLayout,
   CONTACT_MODULE_FIELDS,
   needsContactDetailsV4Upgrade,
@@ -614,15 +618,21 @@ export async function ensureBusinessDetailLayout(force = false): Promise<FieldLa
   const picked = pickSavedModuleLayout(rows, "businesses", preferred);
   // Agency-saved layouts win. An empty right column can be intentional — do NOT
   // reseed stock (that re-injects CRM Notes). Only seed when missing or force.
-  // Phone/name same-column is handled by migrate below (creates right if needed).
+  // Phone/name same-column + party-parity labels/density migrate below.
   if (force || !picked) {
     await saveLayoutForModule("businesses", next);
     return next;
   }
   // Classic (Dense) keeps an empty right on purpose — do not split phone into a second column.
   const oneCol = !(picked.columns[1]?.sections?.length);
-  if (!oneCol && businessNamePhoneSameColumn(picked)) {
-    const migrated = migrateBusinessPhoneOppositeColumn(picked);
+  let migrated = picked;
+  if (!oneCol && businessNamePhoneSameColumn(migrated)) {
+    migrated = migrateBusinessPhoneOppositeColumn(migrated);
+  }
+  if (needsBusinessDetailsParityUpgrade(migrated)) {
+    migrated = migrateBusinessDetailsParity(migrated);
+  }
+  if (JSON.stringify(migrated.columns) !== JSON.stringify(picked.columns)) {
     await saveLayoutForModule("businesses", migrated);
     return migrated;
   }
