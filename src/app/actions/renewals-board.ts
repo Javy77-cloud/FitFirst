@@ -245,7 +245,7 @@ export async function markClientStaying(formData: FormData) {
   const { deskNow } = await import("@/lib/home/as-of");
   const { resolveCurrentTerm } = await import("@/lib/policies/current-term");
   const resolved = resolveCurrentTerm({ ...policy, terms }, deskNow());
-  assertClientStayingAvailable(resolved.renewalAnchor ?? policy.renewalDate, deskNow());
+  assertClientStayingAvailable(policy.renewalDate ?? resolved.renewalAnchor, deskNow());
 
   const [existing] = await db
     .select()

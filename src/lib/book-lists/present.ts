@@ -3,6 +3,8 @@ import { bookFamily } from "@/lib/desk/policy-line";
 import { formatMoney } from "@/lib/domain";
 import { homeLineLabel } from "@/lib/home/lines";
 import { isOffBookStatus, policyStatusLabel } from "@/lib/policy/status";
+import { businessDateKey } from "@/lib/policies/current-term";
+import { daysUntilRenewal, renewsOnPhrase } from "@/lib/policies/renewal-date";
 import { contactHealthScore } from "@/lib/contacts/health-score";
 import type { HealthChipView } from "@/lib/health/model";
 import { haystack } from "@/lib/search/live-query";
@@ -12,7 +14,6 @@ import {
   carrierColumnFor,
   carrierMarketHeat,
   daysSinceTouch,
-  daysUntilDate,
   glanceDate,
   partyAttentionHeat,
   partyColumnForHeat,
@@ -760,13 +761,15 @@ export type PolicyListRow = {
   billingFrequency?: string | null;
   premiumFrequency?: string | null;
   expirationDate: Date | string;
+  /** Stored policies.renewal_date. Blank keeps the expiration countdown. */
+  renewalDate?: Date | string | null;
   updatedAt?: Date | string | null;
   tags?: string[] | null;
   partyName?: string | null;
   carrierName?: string | null;
   phone?: string | null;
   email?: string | null;
-  /** Precomputed from the current-term resolver so the card matches Overview. */
+  /** Countdown to renewalDateFor (stored renewal date, else expiration). */
   daysUntil?: number | null;
   statusLabel?: string | null;
   offBook?: boolean;
@@ -823,10 +826,18 @@ export function presentPolicyCard(
   asOf: Date,
 ): BookGlanceCard {
   const lastTouchDays = daysSinceTouch(row.updatedAt, asOf);
-  const daysUntil = row.daysUntil !== undefined ? row.daysUntil : daysUntilDate(row.expirationDate, asOf);
+  const storedRenewal = businessDateKey(row.renewalDate);
+  const daysUntil =
+    row.daysUntil !== undefined
+      ? row.daysUntil
+      : daysUntilRenewal(
+          { renewalDate: row.renewalDate, expirationDate: row.expirationDate },
+          asOf,
+        );
   const offBook = row.offBook ?? isOffBookStatus(row.status);
   const statusLabel = row.statusLabel ?? (row.status ? policyStatusLabel(row.status) : null);
   const expires = glanceDate(row.expirationDate);
+  const renewsWhen = storedRenewal ? glanceDate(storedRenewal) : expires;
   const attention = policyAttention({
     daysUntil,
     lastTouchDays,
@@ -834,7 +845,7 @@ export function presentPolicyCard(
     openClaims: needs.openClaims,
     pendingEndorsements: needs.pendingEndorsements,
     missingDocs: needs.missingDocs,
-    expirationLabel: expires,
+    expirationLabel: renewsWhen,
     renewalHandled: needs.renewalHandled,
     offBookLabel: statusLabel,
   });
@@ -850,7 +861,9 @@ export function presentPolicyCard(
       ? null
       : daysUntil < 0
         ? `Past expiration ${Math.abs(daysUntil)}d`
-        : `Renews in ${daysUntil}d`;
+        : storedRenewal
+          ? renewsOnPhrase(storedRenewal)
+          : `Renews in ${daysUntil}d`;
   const delta = renewalDeltaLabel(currentPremium, proposedPremium);
   const billing = billingCue(row.billingFrequency || row.premiumFrequency);
   const facts = takeFacts(

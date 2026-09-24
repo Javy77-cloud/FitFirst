@@ -113,7 +113,7 @@ export function PolicyOverviewTab({
 }) {
   const offBook = termView ? bandIsOffBook(termView.band) : isOffBookStatus(policy.status);
   const inForce = termView ? termView.countsAsInForce : isInForceStatus(policy.status);
-  const stayingDate = termView?.renewalAnchor ?? policy.renewalDate;
+  const stayingDate = policy.renewalDate ?? termView?.renewalAnchor;
   const renewalLine = offBook
     ? termView
       ? deskTermBandLabel(termView.band, policy.status)
