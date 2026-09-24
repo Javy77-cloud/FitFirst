@@ -1,5 +1,5 @@
 import { commitmentNudgePanelKey } from "@/lib/notifications/commitments";
-import { and, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, isNull, lte, or } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
@@ -11,7 +11,8 @@ import {
   policies,
   quotes,
 } from "@/lib/db/schema";
-import { daysUntilExpiration, expirationDay } from "@/lib/ams/renewals";
+import { expirationDay } from "@/lib/ams/renewals";
+import { daysUntilRenewal } from "@/lib/policies/renewal-date";
 import { addUtcDays, deskNow } from "@/lib/home/as-of";
 import { resolveCurrentTerm } from "@/lib/policies/current-term";
 import { docExpiryWarning, isExpiringDocType } from "@/lib/policy/document-depth";
@@ -138,6 +139,7 @@ export async function loadRenewalSilenceSignals(asOf = deskNow()): Promise<Panel
       lineOfBusiness: policies.lineOfBusiness,
       effectiveDate: policies.effectiveDate,
       expirationDate: policies.expirationDate,
+      renewalDate: policies.renewalDate,
       status: policies.status,
       contactId: policies.contactId,
       firstName: contacts.firstName,
@@ -148,8 +150,14 @@ export async function loadRenewalSilenceSignals(asOf = deskNow()): Promise<Panel
     .where(
       and(
         eq(policies.tenantId, DEFAULT_TENANT_ID),
-        gte(policies.expirationDate, floor),
-        lte(policies.expirationDate, horizon),
+        or(
+          and(gte(policies.expirationDate, floor), lte(policies.expirationDate, horizon)),
+          and(
+            isNotNull(policies.renewalDate),
+            gte(policies.renewalDate, floor),
+            lte(policies.renewalDate, horizon),
+          ),
+        ),
       ),
     );
 
@@ -166,8 +174,16 @@ export async function loadRenewalSilenceSignals(asOf = deskNow()): Promise<Panel
     );
     if (!resolved.countsAsInForce) return false;
     const exp = expirationDay(resolved.bookExpiration ?? row.expirationDate);
-    if (!exp) return false;
-    const days = resolved.daysLeft ?? daysUntilExpiration(exp, asOf);
+    if (!exp && !row.renewalDate) return false;
+    const days = daysUntilRenewal(
+      {
+        renewalDate: row.renewalDate,
+        bookExpiration: resolved.bookExpiration,
+        expirationDate: row.expirationDate,
+      },
+      asOf,
+    );
+    if (days == null) return false;
     return isRenewalSilenceWindow(days) || days < 30;
   });
   if (candidates.length === 0) return [];
@@ -219,7 +235,14 @@ export async function loadRenewalSilenceSignals(asOf = deskNow()): Promise<Panel
       },
       asOf,
     );
-    const days = resolved.daysLeft;
+    const days = daysUntilRenewal(
+      {
+        renewalDate: row.renewalDate,
+        bookExpiration: resolved.bookExpiration,
+        expirationDate: row.expirationDate,
+      },
+      asOf,
+    );
     if (days == null) continue;
     const last =
       lastByPolicy.get(row.policyId) ?? (row.contactId ? lastByContact.get(row.contactId) ?? null : null);
@@ -246,7 +269,7 @@ export async function loadRenewalSilenceSignals(asOf = deskNow()): Promise<Panel
       href: `/policies/${row.policyId}`,
       entityType: "policy",
       entityId: row.policyId,
-      deadline: row.expirationDate,
+      deadline: row.renewalDate ?? row.expirationDate,
       source: "live",
       policyId: row.policyId,
       contactId: row.contactId,

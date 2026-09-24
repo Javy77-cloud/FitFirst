@@ -29,6 +29,7 @@ import { getAgencyPolicyLabelTemplate } from "@/lib/policy/auto-label-prefs";
 import { enrichRenewalCards } from "@/lib/renewal/board-enrich";
 import type { HealthChipView } from "@/lib/health/model";
 import { loadRenewalHealthMap } from "@/lib/health/load";
+import { daysUntilRenewal } from "@/lib/policies/renewal-date";
 import { renewalWhyLine, type RenewalRiskLevel } from "@/lib/renewal/urgency";
 
 export type RenewalBoardCard = {
@@ -222,7 +223,15 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
     if (!exp) continue;
     // Keep lost/bound cards even outside window; filter others to window.
     const stage = normalizeRenewalQueueStage(row.queue.stage) ?? row.queue.stage ?? "upcoming";
-    const days = resolved.daysLeft ?? daysUntilExpiration(exp, asOf);
+    const days =
+      daysUntilRenewal(
+        {
+          renewalDate: row.policy.renewalDate,
+          bookExpiration: resolved.bookExpiration,
+          expirationDate: row.policy.expirationDate,
+        },
+        asOf,
+      ) ?? daysUntilExpiration(exp, asOf);
     if (stage !== "lost" && stage !== "bound" && stage !== "archive" && stage !== "archived") {
       if (days < -14 || days > windowDays) continue;
       if (!resolved.countsAsInForce && stage === "upcoming") continue;
@@ -275,7 +284,7 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
       commissionFamily: row.policy.commissionFamily ?? null,
       carrierName: row.carrier?.name ?? "Carrier TBD",
       expirationDate: resolved.bookExpiration ?? row.policy.expirationDate,
-      renewalDate: resolved.renewalAnchor ?? row.policy.renewalDate ?? null,
+      renewalDate: row.policy.renewalDate ?? resolved.renewalAnchor ?? null,
       daysUntil: days,
       premium: built.currentPremium,
       proposedPremium: built.proposedPremium,

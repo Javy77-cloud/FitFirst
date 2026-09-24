@@ -38,6 +38,7 @@ import {
   normalizeNamedInsured,
   resolveCurrentTerm,
 } from "@/lib/policies/current-term";
+import { daysUntilRenewal } from "@/lib/policies/renewal-date";
 import { etDateKey } from "@/lib/time/et";
 
 function policyListLabel(
@@ -215,7 +216,15 @@ export default async function PoliciesPage({
           status: offBook ? resolved.band : policy.status,
           statusLabel: deskTermBandLabel(resolved.band, policy.status),
           offBook,
-          daysUntil: resolved.daysLeft,
+          daysUntil: daysUntilRenewal(
+            {
+              renewalDate: policy.renewalDate,
+              bookExpiration: resolved.bookExpiration,
+              expirationDate: policy.expirationDate,
+            },
+            asOf,
+          ),
+          renewalDate: policy.renewalDate,
           lineOfBusiness: policy.lineOfBusiness,
           premium: resolved.current?.premium ?? policy.premium,
           renewalPremium: resolved.upcoming?.premium ?? renewalPremiums.get(policy.id) ?? null,

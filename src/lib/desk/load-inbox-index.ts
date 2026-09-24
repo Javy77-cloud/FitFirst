@@ -2,8 +2,9 @@ import { and, eq, isNull } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { contacts, deals, deskCustomFieldValues, policies } from "@/lib/db/schema";
-import { daysUntilExpiration, expirationDay } from "@/lib/ams/renewals";
+import { expirationDay } from "@/lib/ams/renewals";
 import { resolveCurrentTerm } from "@/lib/policies/current-term";
+import { daysUntilRenewal } from "@/lib/policies/renewal-date";
 import { deskNow } from "@/lib/home/as-of";
 import { partyLabel } from "@/lib/desk/policy-name";
 import { activeInboxMail } from "@/lib/integrations/mail-provider";
@@ -53,6 +54,7 @@ export async function loadInboxMatchIndex(asOf = deskNow()): Promise<InboxMatchI
         ownerId: policies.ownerId,
         effectiveDate: policies.effectiveDate,
         expirationDate: policies.expirationDate,
+        renewalDate: policies.renewalDate,
         lineOfBusiness: policies.lineOfBusiness,
         policyNumber: policies.policyNumber,
         status: policies.status,
@@ -117,8 +119,16 @@ export async function loadInboxMatchIndex(asOf = deskNow()): Promise<InboxMatchI
     );
     if (!resolved.countsAsInForce && resolved.band !== "expired") continue;
     const exp = expirationDay(resolved.bookExpiration ?? row.expirationDate);
-    if (!exp) continue;
-    const days = resolved.daysLeft ?? daysUntilExpiration(exp, asOf);
+    if (!exp && !row.renewalDate) continue;
+    const days = daysUntilRenewal(
+      {
+        renewalDate: row.renewalDate,
+        bookExpiration: resolved.bookExpiration,
+        expirationDate: row.expirationDate,
+      },
+      asOf,
+    );
+    if (days == null) continue;
     if (days > 90 || days < -7) continue;
     renewalHits.push({
       policyId: row.id,
