@@ -4777,6 +4777,51 @@ tr[data-ff-activity-selected="true"] {
 [data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-stack-open .ff-stack-action {
   justify-self: end;
   flex: 0 0 auto;
+  white-space: nowrap;
+}
+/* Renew countdown and Renewal agreed share one line. The date used to sit here. */
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-renew-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-renew-line .ff-stack-mid {
+  flex: 1 1 auto;
+  width: auto;
+}
+[data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-policy-renewal-agreed {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 1.35rem;
+  padding: 0.08rem 0.38rem;
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in srgb, #f3e6c6 88%, currentColor 12%) 0 2px,
+      color-mix(in srgb, #fff8e8 82%, currentColor 8%) 2px 4px
+    );
+  box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 28%, transparent);
+  color: #0f7a3a;
+  font-family: "Palatino Linotype", Palatino, "Book Antiqua", "Times New Roman", serif;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation: none;
+  transform: none;
+  opacity: 0.9;
+  pointer-events: none;
 }
 [data-ff-book-command="policies"][data-ff-book-layout="stack"] .ff-stack-name {
   color: var(--ff-navy);

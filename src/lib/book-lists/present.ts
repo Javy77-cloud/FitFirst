@@ -2,6 +2,7 @@ import { mailtoHref, telHref } from "@/lib/desk/contact-actions";
 import { bookFamily } from "@/lib/desk/policy-line";
 import { formatMoney } from "@/lib/domain";
 import { homeLineLabel } from "@/lib/home/lines";
+import { businessDateKey } from "@/lib/policies/current-term";
 import { isOffBookStatus, policyStatusLabel } from "@/lib/policy/status";
 import { contactHealthScore } from "@/lib/contacts/health-score";
 import type { HealthChipView } from "@/lib/health/model";
@@ -770,6 +771,12 @@ export type PolicyListRow = {
   daysUntil?: number | null;
   statusLabel?: string | null;
   offBook?: boolean;
+  /** Book term effective (current, else latest). */
+  effectiveDate?: Date | string | null;
+  /** Stored renewed / upcoming term effective, when one exists. */
+  renewedEffective?: Date | string | null;
+  /** Prior term expiration — day-of roll clears the stack stamp. */
+  priorExpiration?: Date | string | null;
 };
 
 function moneyAmount(premium: string | number | null | undefined): number | null {
@@ -944,5 +951,13 @@ export function presentPolicyCard(
       row.carrierName,
       ...(row.tags ?? []),
     ]),
+    renewalAgreed: {
+      handled: Boolean(needs.renewalHandled),
+      renewedEffective: businessDateKey(row.renewedEffective),
+      termEffective: businessDateKey(row.effectiveDate),
+      termExpiration: businessDateKey(row.expirationDate),
+      priorExpiration: businessDateKey(row.priorExpiration),
+      asOf,
+    },
   };
 }
