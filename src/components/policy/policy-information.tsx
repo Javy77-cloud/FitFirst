@@ -15,6 +15,8 @@ import {
   formatPremisesStacked,
   streetOnlyPremises,
 } from "@/lib/policy/premises";
+import { distinctMailingLabel, mailingAddressLine } from "@/lib/desk/policy-information";
+import { DWELLING_MAILING_ADDRESS_LABEL } from "@/lib/deals/dwelling-addresses";
 
 export function PolicyInformationCard({
   policy,
@@ -25,6 +27,7 @@ export function PolicyInformationCard({
   producerDisplayName,
   readOnly = false,
   showCommission = true,
+  mailing = null,
 }: {
   policy: {
     id: string;
@@ -58,6 +61,13 @@ export function PolicyInformationCard({
   /** Agents: Overview is fully read-only. Admins can edit (sensitive fields confirm). */
   readOnly?: boolean;
   showCommission?: boolean;
+  /** DP1/DP3 owner mailing. Omitted for other products. */
+  mailing?: {
+    address?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+  } | null;
 }) {
   const insured = partyLabel(contact, account);
   const insuredHref = contact
@@ -81,6 +91,10 @@ export function PolicyInformationCard({
   });
   const insuredStacked = formatPremisesStacked(premisesParts);
   const producerPerson = producerDisplayName?.trim() || "";
+  const ownerMailing = distinctMailingLabel({
+    premises: insuredLocation,
+    mailing: mailingAddressLine(mailing),
+  });
 
   return (
     <section id="policy-information" className="ff-card mb-4 p-4" data-ff-policy-information="">
@@ -142,6 +156,12 @@ export function PolicyInformationCard({
             readOnly={readOnly}
           />
         </div>
+        {ownerMailing ? (
+          <div data-ff-policy-mailing="">
+            <dt className="text-helper text-muted-foreground">{DWELLING_MAILING_ADDRESS_LABEL}</dt>
+            <dd className="font-medium text-navy">{ownerMailing}</dd>
+          </div>
+        ) : null}
         <PolicyInlineText
           policyId={policy.id}
           fieldKey="insuranceType"

@@ -30,6 +30,7 @@ import type { ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { ApplicantHousehold } from "@/components/deal/applicant-household";
 import { RepeatableUnitBlocks } from "@/components/deal/repeatable-unit-blocks";
 import { fieldsForLine, groupFields, sheetFieldIsVisible, sheetGroupIsVisible } from "@/lib/quote-sheet/catalog";
+import { dwellingRiskFieldLabel, isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
 import { RECORDS_CHECK_KEY, recordsCheckHiddenOnRiskProfile } from "@/lib/quote-sheet/records-check";
 import { parseSheetProduct } from "@/lib/quote-sheet/products";
 import { InsuredPropertyKindControl } from "@/components/deal/insured-property-kind-control";
@@ -563,6 +564,7 @@ function SheetGroup({
   onInspectionChange?: (kind: "wind" | "four", checked: boolean) => void;
 }) {
   const rows = asList(groupFields).filter((field) => field.key !== USING_HEALTHSHERPA_KEY);
+  const dwellingFire = isDwellingFireProduct(quotingForm, product);
   const groupVisible = sheetGroupIsVisible(rows, liveValues);
   const visibleFields = rows.filter((field) => groupVisible && sheetFieldIsVisible(field, liveValues));
   const maxColumns = riskProfileSectionMaxColumns(title, visibleFields);
@@ -639,7 +641,7 @@ function SheetGroup({
         return (
           <RiskProfileFieldShell
             fieldKey={field.key}
-            label={field.label}
+            label={dwellingRiskFieldLabel(field.key, dwellingFire, field.label)}
             field={field}
             cascadeKey={field.showWhen ? field.showWhen.key : undefined}
             footer={

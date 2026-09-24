@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Contact, Document, QuoteSheet, QuoteSheetFieldValue } from "@/lib/db/schema";
 import { SHOP_LINE_LABELS, type ShopLine } from "@/lib/domain";
 import { groupFields } from "@/lib/quote-sheet/catalog";
+import { dwellingRiskFieldLabel, isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
 import { inspectionSectionDefaultOpen } from "@/lib/quote-sheet/home-inspections";
 import { sheetCounts } from "@/lib/quote-sheet/apply";
 import { COVERAGE_A_RCE_LABEL } from "@/lib/quote-sheet/home-coverage-rules";
@@ -58,6 +59,10 @@ export function QuoteSheetForm({
   const [editing, setEditing] = useState(startEditing && !printable);
   const [formKey, setFormKey] = useState(0);
   const groups = groupFields(line, undefined, sheet.values, sheet.values.quoting_form?.value);
+  const dwellingFire = isDwellingFireProduct(
+    sheet.values.quoting_form?.value,
+    sheet.values.sheet_product?.value,
+  );
   const contactName = contact ? `${contact.firstName} ${contact.lastName}` : null;
   const locked = printable || !editing;
   const editLabel = editSheetLabel(blankSheet);
@@ -161,7 +166,7 @@ export function QuoteSheetForm({
                     dealId={dealId}
                     line={line}
                     fieldKey={field.key}
-                    label={field.label}
+                    label={dwellingRiskFieldLabel(field.key, dwellingFire, field.label)}
                     cell={cell}
                     input={field.input}
                     options={field.options}

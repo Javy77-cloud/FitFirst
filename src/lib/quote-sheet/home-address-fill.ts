@@ -71,6 +71,11 @@ export type HomeAddressDealInput = {
   } | null;
   contact?: PartyAddress | null;
   lead?: PartyAddress | null;
+  /**
+   * DP1/DP3: the contact/lead home is mailing, never a stand-in for the rental.
+   * HO3 and other products keep the party-home fallback.
+   */
+  dwellingFire?: boolean;
 };
 
 function compactStreet(raw: string): string {
@@ -119,14 +124,22 @@ export function resolveHomeRiskAddresses(input: HomeAddressDealInput): ResolvedH
     );
   } else if (insuredStreet) {
     propertyKind = "insured";
-    property = parts(
-      insuredStreet,
-      firstFilled(stored.city, input.contact?.city, input.lead?.city),
-      firstFilled(stored.state, input.contact?.state, input.lead?.state),
-      firstFilled(stored.zip, input.contact?.zip, input.lead?.zip),
-      firstFilled(stored.county, stored.contact_mailing_county, input.risk?.county),
-    );
-  } else if (detailsMail) {
+    property = input.dwellingFire
+      ? parts(
+          insuredStreet,
+          firstFilled(stored.city),
+          firstFilled(stored.state),
+          firstFilled(stored.zip),
+          firstFilled(stored.county, input.risk?.county),
+        )
+      : parts(
+          insuredStreet,
+          firstFilled(stored.city, input.contact?.city, input.lead?.city),
+          firstFilled(stored.state, input.contact?.state, input.lead?.state),
+          firstFilled(stored.zip, input.contact?.zip, input.lead?.zip),
+          firstFilled(stored.county, stored.contact_mailing_county, input.risk?.county),
+        );
+  } else if (detailsMail && !input.dwellingFire) {
     propertyKind = "details_mailing";
     property = parts(
       detailsMail,
@@ -135,7 +148,7 @@ export function resolveHomeRiskAddresses(input: HomeAddressDealInput): ResolvedH
       firstFilled(stored.contact_mailing_zip, stored.zip, input.contact?.zip),
       firstFilled(stored.contact_mailing_county, stored.county, input.risk?.county),
     );
-  } else if (partyMail) {
+  } else if (partyMail && !input.dwellingFire) {
     propertyKind = "party";
     property = parts(
       partyMail,
@@ -234,9 +247,12 @@ const BLANK_CELL: QuoteSheetFieldValue = { value: "", status: "missing", source:
  */
 export function moveSoleSheetMailingToProperty(
   existing: Record<string, QuoteSheetFieldValue>,
+  opts?: { dwellingFire?: boolean },
 ): { values: Record<string, QuoteSheetFieldValue>; filledKeys: string[] } {
   const values: Record<string, QuoteSheetFieldValue> = { ...existing };
   const filledKeys: string[] = [];
+  // DP1/DP3 mailing is the owner's home. Do not move it onto the rental.
+  if (opts?.dwellingFire) return { values, filledKeys };
   const propertyStreet = firstFilled(values.address1?.value, values.property_address?.value);
   const mailing = values.mailing_address;
   const mailStreet = (mailing?.value ?? "").trim();

@@ -23,6 +23,7 @@ import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import { resolveDwellingFacts } from "@/lib/policy/dwelling-facts";
 import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
 import { PropertyProtectionSection } from "@/components/policy/property-protection-section";
+import { isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
 
 export function PolicyOverviewTab({
   policy,
@@ -83,7 +84,15 @@ export function PolicyOverviewTab({
   };
   carrierId?: string | null;
   carrierName?: string | null;
-  contact?: { id: string; firstName: string; lastName: string } | null;
+  contact?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    mailingAddress?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+  } | null;
   account?: {
     id: string;
     name: string;
@@ -158,6 +167,16 @@ export function PolicyOverviewTab({
         producerDisplayName={producerDisplayName}
         readOnly={readOnly}
         showCommission={showCommission}
+        mailing={
+          isDwellingFireProduct(policy.policySubType, policy.formType) && contact
+            ? {
+                address: contact.mailingAddress,
+                city: contact.city,
+                state: contact.state,
+                zip: contact.zip,
+              }
+            : null
+        }
       />
 
       <section className="ff-card space-y-3 overflow-visible p-4">

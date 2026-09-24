@@ -50,6 +50,11 @@ import { InsuredPropertyKindControl } from "@/components/deal/insured-property-k
 import { INSURED_PROPERTY_KIND_KEY } from "@/lib/deals/insured-property-kind";
 import { MhoDetailsSection } from "@/components/custom-fields/mho-details-section";
 import { dealPolicyFormIsMho } from "@/lib/custom-fields/mho-details-fields";
+import {
+  dwellingDetailsFieldLabel,
+  dwellingDetailsSectionLabel,
+  isDwellingFireProduct,
+} from "@/lib/deals/dwelling-addresses";
 
 /** Image upload must not be a nested <form> inside Deal Details save. */
 function DealFieldImageUpload({ dealId, fieldKey }: { dealId: string; fieldKey: string }) {
@@ -223,6 +228,7 @@ function DealDetailsField({
   lineSettings,
   onValueChange,
   onValuesPatch,
+  dwellingFire = false,
 }: {
   fieldKey: string;
   field: CustomFieldDef;
@@ -240,6 +246,7 @@ function DealDetailsField({
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
   onValueChange?: (key: string, value: string) => void;
   onValuesPatch?: (parts: Record<string, string>) => void;
+  dwellingFire?: boolean;
 }) {
   if (fieldKey === INSURED_PROPERTY_KIND_KEY) {
     return (
@@ -260,7 +267,7 @@ function DealDetailsField({
     <div className="space-y-1" data-ff-deal-field={fieldKey}>
       {fieldKey === "insurance_type" ? null : (
         <label className="text-xs font-medium text-navy" htmlFor={`field_${fieldKey}`}>
-          {field.label}
+          {dwellingDetailsFieldLabel(fieldKey, dwellingFire === true, field.label)}
         </label>
       )}
       <FieldControl
@@ -409,6 +416,13 @@ export function DealDetailsPanel({
       defaultSellingAgencyValue((byKey[DEAL_SELLING_AGENCY_KEY] ?? DEAL_SELLING_AGENCY_FIELD).options);
     return selling ? { ...merged, [DEAL_SELLING_AGENCY_KEY]: selling } : merged;
   });
+  const dwellingFire = isDwellingFireProduct(
+    policyForm,
+    liveValues.insurance_subtype,
+    quotingForm,
+    policySubType,
+    activeProduct,
+  );
   const layoutKeySet = new Set(
     asList(safeLayout.columns).flatMap((column) =>
       asList(column.sections).flatMap((section) => asList(section.fieldKeys)),
@@ -447,6 +461,7 @@ export function DealDetailsPanel({
       data-ff-deal-details
       data-ff-pipeline-family={pipelineFamily}
       data-ff-deal-details-kind={commercial ? "commercial" : "personal"}
+      data-ff-dwelling-fire={dwellingFire ? "1" : "0"}
     >
       <form action={saveDealFieldValues} id={formId} data-ff-deal-details-form="">
         <input type="hidden" name="dealId" value={dealId} />
@@ -562,7 +577,7 @@ export function DealDetailsPanel({
                   data-ff-deal-section-kind={shared ? "shared" : "other"}
                 >
                   <LayoutSectionHeader
-                    title={section.label}
+                    title={dwellingDetailsSectionLabel(section, dwellingFire)}
                   />
                   {isMailingAddressSection(section) ? (
                     <MailingSameSwitch
@@ -606,6 +621,7 @@ export function DealDetailsPanel({
                         lineSettings={lineSettings}
                         onValueChange={patchValue}
                         onValuesPatch={patchValues}
+                        dwellingFire={dwellingFire}
                       />
                     )}
                   />
