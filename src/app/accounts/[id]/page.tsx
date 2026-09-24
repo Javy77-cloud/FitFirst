@@ -6,7 +6,7 @@ import { ClientStatusPill } from "@/components/record-links";
 import { getAccountWorkspace, listRecordActivities } from "@/lib/db/queries";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
-import { DEFAULT_TENANT_ID, isCertifiableLine } from "@/lib/domain";
+import { DEFAULT_TENANT_ID, formatMoney, isCertifiableLine } from "@/lib/domain";
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { loadRecordContext } from "@/lib/record-context";
@@ -37,6 +37,18 @@ import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { defaultLayoutForModule } from "@/lib/custom-fields/modules";
 import { getAgencyBusinessSectionNav } from "@/lib/businesses/business-section-nav-prefs";
 import type { BusinessSectionId } from "@/lib/desk/business-sections";
+import { parseBusinessTab } from "@/lib/desk/business-tabs";
+import { AccountCoveragePanel } from "@/components/businesses/account-coverage-panel";
+import { AccountOpportunitiesPanel } from "@/components/businesses/account-opportunities-panel";
+import {
+  declaredCoverageFromElsewhere,
+  mergeDeclaredCoverage,
+  parseElsewhereCoverage,
+  seedElsewhereFromDeclared,
+} from "@/lib/coverage/elsewhere-coverage";
+import { classifyCoverageLine } from "@/lib/coverage/gaps";
+import { isOpenDealStage } from "@/lib/coverage/notices";
+import { isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +66,11 @@ export default async function AccountDetailPage({
   const { id } = await params;
   const paramsIn = await searchParams;
   const fromPolicy = typeof paramsIn.fromPolicy === "string" ? paramsIn.fromPolicy : undefined;
+  const focusPolicy = typeof paramsIn.focusPolicy === "string" ? paramsIn.focusPolicy : undefined;
+  const focusDeal = typeof paramsIn.focusDeal === "string" ? paramsIn.focusDeal : undefined;
+  const sectionParam = typeof paramsIn.section === "string" ? paramsIn.section : undefined;
+  const tabParam = typeof paramsIn.tab === "string" ? paramsIn.tab : undefined;
+  const activeTab = parseBusinessTab(tabParam, sectionParam);
   const workspace = await getAccountWorkspace(id);
   if (!workspace) notFound();
   const {
@@ -158,7 +175,35 @@ export default async function AccountDetailPage({
     account.pcNotes ? { id: "pc-notes", title: "P&C Notes", meta: account.pcNotes } : null,
   ].filter(Boolean) as { id: string; title: string; meta: string }[];
 
+  const inForcePolicies = policies.filter((row) => isInForcePolicyStatus(row.policy.status));
+  const inForceCount = inForcePolicies.length;
+  const inForcePremiumParts = inForcePolicies
+    .map((row) => Number(row.policy.premium))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  const inForcePremiumTotal =
+    inForcePremiumParts.length > 0
+      ? inForcePremiumParts.reduce((sum, n) => sum + n, 0)
+      : null;
+  const inForceLines = [
+    ...new Set(
+      inForcePolicies
+        .map((row) => classifyCoverageLine(row.policy.lineOfBusiness))
+        .filter((line) => line !== "OTHER"),
+    ),
+  ];
+  const elsewhereCoverage = seedElsewhereFromDeclared(
+    [],
+    parseElsewhereCoverage(account.elsewhereCoverage),
+  );
+  const declaredCoverage = mergeDeclaredCoverage(
+    [],
+    declaredCoverageFromElsewhere(elsewhereCoverage),
+  );
+  const openDealCount = deals.filter((deal) => isOpenDealStage(deal.pipelineStage)).length;
+
   const sectionCounts: Partial<Record<BusinessSectionId, number>> = {
+    coverage: inForceCount,
+    opportunities: openDealCount,
     locations: locations.length,
     policies: policies.length,
     deals: deals.length,
@@ -177,6 +222,15 @@ export default async function AccountDetailPage({
       policyId: row.policy.id,
       policyNumber: row.policy.policyNumber,
     }));
+
+  const employeeCount =
+    typeof account.employeeCount === "number"
+      ? account.employeeCount
+      : typeof fieldValues.employee_count === "number"
+        ? Number(fieldValues.employee_count)
+        : typeof fieldValues.employee_count === "string" && fieldValues.employee_count.trim()
+          ? Number(fieldValues.employee_count)
+          : null;
 
   return (
     <AppShell
@@ -201,7 +255,10 @@ export default async function AccountDetailPage({
           { label: "Account" },
         ]}
       />
-      <div className="mb-3 space-y-1" data-ff-business-header-bar="">
+      <div
+        className="sticky top-0 z-30 mb-3 space-y-1 bg-[var(--ff-wash,#f3efe6)]/95 pb-2 backdrop-blur supports-[backdrop-filter]:bg-[var(--ff-wash,#f3efe6)]/90"
+        data-ff-business-header-bar=""
+      >
         <div className="flex flex-wrap items-start gap-2">
           <div className="mt-2 shrink-0">
             <BusinessHealthBadge
@@ -212,7 +269,19 @@ export default async function AccountDetailPage({
           </div>
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <h2 className="text-xl font-semibold text-[#002868]">{account.name}</h2>
+              <div className="min-w-0 space-y-0.5">
+                <h2 className="text-xl font-semibold text-[#002868]">{account.name}</h2>
+                {inForceCount > 0 ? (
+                  <p className="text-xs text-muted-foreground" data-ff-account-book-glance="">
+                    <a href="?tab=policies" className="text-primary hover:underline">
+                      {inForceCount} active
+                      {inForcePremiumTotal != null
+                        ? ` · ~${formatMoney(inForcePremiumTotal)} premium`
+                        : ""}
+                    </a>
+                  </p>
+                ) : null}
+              </div>
               <div className="flex min-w-0 flex-wrap items-center gap-2 pl-1">
                 <ClientStatusPill status={clientStatus} />
                 <span className="text-sm text-muted-foreground">
@@ -262,6 +331,9 @@ export default async function AccountDetailPage({
       >
         <BusinessDetailSections
           selectedIds={resolvedNavIds}
+          counts={sectionCounts}
+          activeTab={activeTab}
+          basePath={`/accounts/${account.id}`}
           endSlot={
             <BusinessOverflowMenu
               accountId={account.id}
@@ -270,24 +342,153 @@ export default async function AccountDetailPage({
               tagExtra={tagExtra}
             />
           }
-          counts={sectionCounts}
-          before={
-            <div className="mb-3 space-y-3">
-              <section
-                id="at-a-glance"
-                className="ff-card space-y-3 p-4 scroll-mt-14"
-                data-ff-at-a-glance=""
-              >
-                <h2 className="text-base font-semibold text-[#002868]">At a Glance</h2>
-                <BusinessAtAGlanceCards
+          panels={[
+            {
+              id: "at-a-glance",
+              bare: true,
+              "data-ff": "at-a-glance",
+              children: (
+                <section
+                  id="at-a-glance"
+                  className="ff-card space-y-3 p-4"
+                  data-ff-at-a-glance=""
+                >
+                  <h2 className="text-base font-semibold text-[#002868]">At a Glance</h2>
+                  <BusinessAtAGlanceCards
+                    accountId={account.id}
+                    policies={policies.map(({ policy }) => ({
+                      id: policy.id,
+                      lineOfBusiness: policy.lineOfBusiness,
+                      policyType: policy.policyType,
+                      status: policy.status,
+                      effectiveDate: policy.effectiveDate,
+                      renewalDate: policy.renewalDate,
+                    }))}
+                    deals={deals.map((deal) => ({
+                      id: deal.id,
+                      title: deal.title,
+                      pipelineStage: deal.pipelineStage,
+                      lineOfBusiness: deal.lineOfBusiness,
+                    }))}
+                    activityCount={timeline.length}
+                    lastActivity={
+                      timeline[0]
+                        ? {
+                            kind: (timeline[0] as { kind?: string }).kind ?? null,
+                            title:
+                              (timeline[0] as { activityTitle?: string; body?: string }).activityTitle ??
+                              (timeline[0] as { body?: string }).body ??
+                              null,
+                            occurredAt:
+                              (timeline[0] as { occurredAt?: Date | string }).occurredAt ?? null,
+                          }
+                        : null
+                    }
+                    emailOptOut={false}
+                    smsOptOut={false}
+                  />
+                  <LinkedContactsSection
+                    accountId={account.id}
+                    contacts={contacts.map((c) => ({
+                      id: c.id,
+                      firstName: c.firstName,
+                      lastName: c.lastName,
+                      email: c.email,
+                    }))}
+                  />
+                </section>
+              ),
+            },
+            {
+              id: "business-details",
+              bare: true,
+              "data-ff": "business-details",
+              children: (
+                <section
+                  id="business-details"
+                  className="ff-card space-y-2 p-2.5"
+                  data-ff-business-details=""
+                  data-ff-business-inline-fields=""
+                >
+                  <div
+                    className="flex items-center justify-between gap-3"
+                    data-ff-business-details-header=""
+                  >
+                    <h2 className="text-sm font-semibold text-[#002868]">Business Details</h2>
+                    <div className="shrink-0" data-ff-business-edit-layout="">
+                      <EditLayoutLink module="businesses" />
+                    </div>
+                  </div>
+                  <RecordLayoutForm
+                    module="businesses"
+                    recordId={account.id}
+                    layout={businessLayout?.layout ?? defaultLayoutForModule("businesses")}
+                    fields={businessLayout?.fields ?? []}
+                    values={fieldValues}
+                    saveLabel="Save Account"
+                    clickToEdit
+                    inForceLines={inForceLines}
+                  />
+                </section>
+              ),
+            },
+            {
+              id: "coverage",
+              title: "Coverage",
+              badge: inForceCount || undefined,
+              "data-ff": "account-coverage",
+              children: (
+                <AccountCoveragePanel
                   accountId={account.id}
+                  partyName={account.name}
+                  focusPolicyId={focusPolicy}
+                  declaredCoverage={declaredCoverage}
+                  elsewhereCoverage={elsewhereCoverage}
+                  policies={policies.map(({ policy, carrier }) => ({
+                    id: policy.id,
+                    status: policy.status,
+                    lineOfBusiness: policy.lineOfBusiness,
+                    policyNumber: policy.policyNumber,
+                    premium: policy.premium,
+                    renewalDate: policy.renewalDate,
+                    expirationDate: policy.expirationDate,
+                    carrierName: carrier?.name ?? null,
+                    policyType: policy.policyType,
+                  }))}
+                />
+              ),
+            },
+            {
+              id: "opportunities",
+              title: "Opportunities",
+              badge: openDealCount || undefined,
+              "data-ff": "account-opportunities",
+              children: (
+                <AccountOpportunitiesPanel
+                  accountId={account.id}
+                  partyName={account.name}
+                  focusDealId={focusDeal}
+                  declaredCoverage={declaredCoverage}
+                  elsewhereCoverage={elsewhereCoverage}
+                  employeeCount={employeeCount}
+                  industry={
+                    typeof fieldValues.industry === "string"
+                      ? fieldValues.industry
+                      : account.industry
+                  }
+                  operations={
+                    typeof fieldValues.operations === "string"
+                      ? fieldValues.operations
+                      : account.operationsDescription
+                  }
+                  website={
+                    typeof fieldValues.website === "string" ? fieldValues.website : account.website
+                  }
                   policies={policies.map(({ policy }) => ({
                     id: policy.id,
-                    lineOfBusiness: policy.lineOfBusiness,
-                    policyType: policy.policyType,
                     status: policy.status,
-                    effectiveDate: policy.effectiveDate,
-                    renewalDate: policy.renewalDate,
+                    lineOfBusiness: policy.lineOfBusiness,
+                    policyNumber: policy.policyNumber,
                   }))}
                   deals={deals.map((deal) => ({
                     id: deal.id,
@@ -295,62 +496,9 @@ export default async function AccountDetailPage({
                     pipelineStage: deal.pipelineStage,
                     lineOfBusiness: deal.lineOfBusiness,
                   }))}
-                  activityCount={timeline.length}
-                  lastActivity={
-                    timeline[0]
-                      ? {
-                          kind: (timeline[0] as { kind?: string }).kind ?? null,
-                          title:
-                            (timeline[0] as { activityTitle?: string; body?: string }).activityTitle ??
-                            (timeline[0] as { body?: string }).body ??
-                            null,
-                          occurredAt:
-                            (timeline[0] as { occurredAt?: Date | string }).occurredAt ?? null,
-                        }
-                      : null
-                  }
-                  emailOptOut={false}
-                  smsOptOut={false}
                 />
-                <LinkedContactsSection
-                  accountId={account.id}
-                  contacts={contacts.map((c) => ({
-                    id: c.id,
-                    firstName: c.firstName,
-                    lastName: c.lastName,
-                    email: c.email,
-                  }))}
-                />
-              </section>
-
-              <section
-                id="business-details"
-                className="ff-card space-y-3 p-3 scroll-mt-14"
-                data-ff-business-details=""
-                data-ff-business-inline-fields=""
-              >
-                <div
-                  className="flex items-center justify-between gap-3"
-                  data-ff-business-details-header=""
-                >
-                  <h2 className="text-base font-semibold text-[#002868]">Account Details</h2>
-                  <div className="shrink-0" data-ff-business-edit-layout="">
-                    <EditLayoutLink module="businesses" />
-                  </div>
-                </div>
-                <RecordLayoutForm
-                  module="businesses"
-                  recordId={account.id}
-                  layout={businessLayout?.layout ?? defaultLayoutForModule("businesses")}
-                  fields={businessLayout?.fields ?? []}
-                  values={fieldValues}
-                  saveLabel="Save Account"
-                  clickToEdit
-                />
-              </section>
-</div>
-          }
-          sections={[
+              ),
+            },
             {
               id: "locations",
               title: "Insured Locations",
@@ -514,7 +662,7 @@ export default async function AccountDetailPage({
                   id="notes"
                   title="Notes"
                   count={noteBits.length}
-                  emptyLabel="No notes yet. Add notes in Account Details."
+                  emptyLabel="No notes yet. Add notes in Business Details."
                   items={noteBits.map((n) => ({
                     id: n.id,
                     title: n.title,

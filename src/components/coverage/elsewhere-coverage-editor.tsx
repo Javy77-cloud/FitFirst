@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { updateContactElsewhereCoverage } from "@/app/actions/contacts-ops";
+import { updateAccountElsewhereCoverage } from "@/app/actions/businesses-ops";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,19 +18,22 @@ import { cn } from "@/lib/utils";
 
 /**
  * Agent-entered Elsewhere coverage rows (line / carrier / renewal / rough premium).
- * Built for Contact Coverage; Accounts can reuse the same component later.
+ * Shared Elsewhere editor for Contact and Account Coverage tabs.
  */
 export function ElsewhereCoverageEditor({
   recordId,
   value,
   onChange,
   persist = true,
+  party = "contact",
 }: {
   recordId?: string;
   value: ElsewhereCoverageRow[] | string;
   onChange?: (next: ElsewhereCoverageRow[]) => void;
   /** When false, only updates local/parent state (form embed). */
   persist?: boolean;
+  /** Persist target — Contact or Account Coverage Elsewhere. */
+  party?: "contact" | "account";
 }) {
   const initial = useMemo(
     () => (typeof value === "string" ? parseElsewhereCoverage(value) : parseElsewhereCoverage(value)),
@@ -43,10 +47,16 @@ export function ElsewhereCoverageEditor({
     onChange?.(next);
     if (!persist || !recordId) return;
     start(async () => {
-      const result = await updateContactElsewhereCoverage({
-        contactId: recordId,
-        rows: next,
-      });
+      const result =
+        party === "account"
+          ? await updateAccountElsewhereCoverage({
+              accountId: recordId,
+              rows: next,
+            })
+          : await updateContactElsewhereCoverage({
+              contactId: recordId,
+              rows: next,
+            });
       if (!result.ok) {
         flashAction(result.error ?? "Could Not Save", "error");
         setRows(initial);
@@ -65,7 +75,7 @@ export function ElsewhereCoverageEditor({
       <input type="hidden" name="field_elsewhere_coverage" value={serializeElsewhereCoverage(rows)} />
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground" data-ff-elsewhere-empty="">
-          No coverage on file with another carrier. Add a row when the household has a line elsewhere —
+          No coverage on file with another carrier. Add a row when this party has a line elsewhere —
           renewal date is the chase trigger.
         </p>
       ) : (

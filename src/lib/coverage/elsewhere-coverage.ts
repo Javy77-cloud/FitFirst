@@ -18,6 +18,7 @@ export const ELSEWHERE_LINE_OPTIONS: CoverageLine[] = [
   "GL",
   "BOP",
   "WC",
+  "CYBER",
 ];
 
 export function elsewhereLineLabel(line: string): string {

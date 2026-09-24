@@ -1,22 +1,41 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
-import { GripVertical, Settings2 } from "lucide-react";
+import { ChevronDown, GripVertical, Settings2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   resetBusinessSectionNav,
   saveBusinessSectionNav,
 } from "@/app/actions/business-section-nav";
 import {
+  BUSINESS_COMMUNICATIONS_CHIP_ID,
+  BUSINESS_COMMUNICATION_SECTION_IDS,
   BUSINESS_SECTION_NAV_MAX,
   BUSINESS_SECTION_POOL,
   DEFAULT_BUSINESS_SECTION_NAV_IDS,
-  availableBusinessSectionDefs,
-  businessSectionDefsForNav,
+  addBusinessCommunicationsToNav,
+  businessCommunicationCountSum,
+  businessCustomizeDefs,
+  businessNavChips,
+  isBusinessCommunicationSectionId,
+  isBusinessSectionId,
   normalizeBusinessSectionNavIds,
+  removeBusinessCommunicationsFromNav,
+  reorderBusinessNavTreatingCommunications,
   type BusinessSectionId,
 } from "@/lib/desk/business-sections";
+import {
+  businessTabFromSection,
+  parseBusinessTab,
+  type BusinessTabSlug,
+} from "@/lib/desk/business-tabs";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -33,19 +52,42 @@ export function BusinessSectionNav({
   selectedIds,
   counts = {},
   onNavigate,
+  activeTab,
+  basePath,
+  mode = "tabs",
   endSlot,
 }: {
   selectedIds: BusinessSectionId[];
   counts?: BusinessSectionCounts;
   /** Called when a chip is clicked (after/with jump). Accordion host uses this. */
   onNavigate?: (id: BusinessSectionId) => void;
+  /** Active URL tab slug when mode is tabs. */
+  activeTab?: BusinessTabSlug | string | null;
+  /** Account path for tab hrefs, e.g. `/accounts/<id>`. */
+  basePath?: string;
+  /** `tabs` = true panels via ?tab=; `scroll` = legacy anchor jump. */
+  mode?: "tabs" | "scroll";
   /** Right-aligned slot after Customize (e.g. ··· overflow menu). */
   endSlot?: ReactNode;
 }) {
   const router = useRouter();
-  const [active, setActive] = useState<BusinessSectionId>(
-    normalizeBusinessSectionNavIds(selectedIds)[0] ?? "at-a-glance",
-  );
+  const resolvedTab = parseBusinessTab(activeTab ?? null, null);
+  const [active, setActive] = useState<BusinessSectionId>(() => {
+    if (mode === "tabs") {
+      const fromTab =
+        resolvedTab === "communications"
+          ? "emails"
+          : resolvedTab === "glance"
+            ? "at-a-glance"
+            : resolvedTab === "details"
+              ? "business-details"
+              : resolvedTab === "locations"
+                ? "locations"
+                : (resolvedTab as BusinessSectionId);
+      return fromTab;
+    }
+    return normalizeBusinessSectionNavIds(selectedIds)[0] ?? "at-a-glance";
+  });
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [draftSelected, setDraftSelected] = useState<BusinessSectionId[]>(() =>
     normalizeBusinessSectionNavIds(selectedIds),
@@ -60,17 +102,21 @@ export function BusinessSectionNav({
   const sentinelRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const chipsRef = useRef<HTMLDivElement>(null);
+  const didHashJump = useRef(false);
 
+  const chips = useMemo(() => businessNavChips(selectedIds), [selectedIds]);
   const sections = useMemo(
-    () => businessSectionDefsForNav(selectedIds),
-    [selectedIds],
+    () =>
+      chips.flatMap((chip) =>
+        chip.kind === "communications" ? chip.children : [{ id: chip.id, label: chip.label }],
+      ),
+    [chips],
   );
 
-  useEffect(() => {
-    setDraftSelected(normalizeBusinessSectionNavIds(selectedIds));
-  }, [selectedIds]);
+
 
   useEffect(() => {
+    if (mode === "tabs") return;
     const nodes = sections
       .map((section) => document.getElementById(section.id))
       .filter((node): node is HTMLElement => Boolean(node));
@@ -88,7 +134,7 @@ export function BusinessSectionNav({
     );
     for (const node of nodes) observer.observe(node);
     return () => observer.disconnect();
-  }, [sections]);
+  }, [sections, mode]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -125,12 +171,22 @@ export function BusinessSectionNav({
   }, [sections, pinned]);
 
 
+  function tabHref(id: BusinessSectionId): string {
+    const tab = businessTabFromSection(id);
+    const base = basePath || (typeof window !== "undefined" ? window.location.pathname : "");
+    return `${base}?tab=${tab}`;
+  }
+
   function jump(id: BusinessSectionId) {
     setActive(id);
     onNavigate?.(id);
     if (chipsRef.current) chipsRef.current.scrollLeft = 0;
+    if (mode === "tabs") {
+      const href = tabHref(id);
+      router.push(href, { scroll: false });
+      return;
+    }
     history.replaceState(null, "", `#${id}`);
-    // Defer scroll so accordion expand commits before measuring.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const target = document.getElementById(id);
@@ -142,15 +198,39 @@ export function BusinessSectionNav({
     });
   }
 
+  useEffect(() => {
+    if (didHashJump.current) return;
+    const hash = window.location.hash.replace(/^#/, "");
+    if (!hash || !isBusinessSectionId(hash)) return;
+    didHashJump.current = true;
+    const target = document.getElementById(hash);
+    if (!target) return;
+    const offset = Math.max(navHeight, 56) + 8;
+    window.scrollTo({
+      top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset),
+      behavior: "smooth",
+    });
+  }, [sections, navHeight]);
+
   function openCustomize() {
     setError(null);
     setDraftSelected(normalizeBusinessSectionNavIds(selectedIds));
     setCustomizeOpen(true);
   }
 
-  function moveToSelected(id: BusinessSectionId) {
+  function moveToSelected(id: string) {
     setDraftSelected((prev) => {
-      if (prev.includes(id)) return prev;
+      if (id === BUSINESS_COMMUNICATIONS_CHIP_ID) {
+        if (prev.some(isBusinessCommunicationSectionId)) return prev;
+        const next = addBusinessCommunicationsToNav(prev);
+        if (!next.some(isBusinessCommunicationSectionId)) {
+          setError(`Select at most ${BUSINESS_SECTION_NAV_MAX} sections.`);
+          return prev;
+        }
+        setError(null);
+        return next;
+      }
+      if (!isBusinessSectionId(id) || prev.includes(id)) return prev;
       if (prev.length >= BUSINESS_SECTION_NAV_MAX) {
         setError(`Select at most ${BUSINESS_SECTION_NAV_MAX} sections.`);
         return prev;
@@ -160,21 +240,17 @@ export function BusinessSectionNav({
     });
   }
 
-  function moveToAvailable(id: BusinessSectionId) {
+  function moveToAvailable(id: string) {
     setError(null);
+    if (id === BUSINESS_COMMUNICATIONS_CHIP_ID) {
+      setDraftSelected((prev) => removeBusinessCommunicationsFromNav(prev));
+      return;
+    }
     setDraftSelected((prev) => prev.filter((x) => x !== id));
   }
 
   function reorderSelected(fromId: string, toId: string) {
-    setDraftSelected((prev) => {
-      const next = [...prev];
-      const from = next.indexOf(fromId as BusinessSectionId);
-      const to = next.indexOf(toId as BusinessSectionId);
-      if (from < 0 || to < 0 || from === to) return prev;
-      const [item] = next.splice(from, 1);
-      next.splice(to, 0, item);
-      return next;
-    });
+    setDraftSelected((prev) => reorderBusinessNavTreatingCommunications(prev, fromId, toId));
   }
 
   function onSave() {
@@ -202,8 +278,14 @@ export function BusinessSectionNav({
     });
   }
 
-  const available = availableBusinessSectionDefs(draftSelected);
-  const selectedDefs = businessSectionDefsForNav(draftSelected);
+  const customize = businessCustomizeDefs(draftSelected);
+  const available = customize.available;
+  const selectedDefs = customize.selected;
+  const commsActive =
+    mode === "tabs"
+      ? resolvedTab === "communications"
+      : isBusinessCommunicationSectionId(active);
+  const commsCount = businessCommunicationCountSum(counts);
 
   const chipExtras =
     "inline-flex h-7 shrink-0 items-center gap-1.5 whitespace-nowrap !text-xs !font-medium leading-none";
@@ -238,19 +320,68 @@ export function BusinessSectionNav({
             e.currentTarget.scrollLeft = 0;
           }}
         >
-          {sections.map((section) => {
-            const count = counts[section.id] ?? 0;
-            const isActive = active === section.id;
+          {chips.map((chip) => {
+            if (chip.kind === "communications") {
+              return (
+                <DropdownMenu key={chip.id}>
+                  <DropdownMenuTrigger
+                    className={chipTabClass(commsActive, chipExtras)}
+                    data-ff-business-nav-item={BUSINESS_COMMUNICATIONS_CHIP_ID}
+                    data-active={commsActive ? "true" : "false"}
+                    aria-label="Communications"
+                  >
+                    <span>Communications</span>
+                    <span
+                      className={cn(
+                        "inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums leading-none",
+                        commsCount > 0 ? "bg-[#BF0A30] text-white" : "invisible",
+                      )}
+                      data-ff-business-nav-badge={BUSINESS_COMMUNICATIONS_CHIP_ID}
+                      aria-hidden={commsCount > 0 ? undefined : true}
+                    >
+                      {commsCount}
+                    </span>
+                    <ChevronDown className="size-3 shrink-0 opacity-70" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" data-ff-business-nav-comms="">
+                    {BUSINESS_COMMUNICATION_SECTION_IDS.map((id) => {
+                      const child = chip.children.find((item) => item.id === id);
+                      const count = counts[id] ?? 0;
+                      return (
+                        <DropdownMenuItem
+                          key={id}
+                          onClick={() => jump(id)}
+                          data-ff-business-nav-comms-item={id}
+                        >
+                          <span className="min-w-0 flex-1">{child?.label ?? id}</span>
+                          <span
+                            className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-muted px-1 text-[10px] font-semibold tabular-nums leading-none"
+                            data-ff-business-nav-comms-count={id}
+                          >
+                            {count}
+                          </span>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+            }
+            const count = counts[chip.id] ?? 0;
+            const isActive =
+              mode === "tabs"
+                ? businessTabFromSection(chip.id) === resolvedTab
+                : active === chip.id;
             return (
               <button
-                key={section.id}
+                key={chip.id}
                 type="button"
-                onClick={() => jump(section.id)}
-                data-ff-business-nav-item={section.id}
+                onClick={() => jump(chip.id)}
+                data-ff-business-nav-item={chip.id}
                 data-active={isActive ? "true" : "false"}
                 className={chipTabClass(isActive, chipExtras)}
               >
-                <span>{section.label}</span>
+                <span>{chip.label}</span>
                 <span
                   className={cn(
                     "inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums leading-none",
@@ -258,7 +389,7 @@ export function BusinessSectionNav({
                       ? "bg-[#BF0A30] text-white"
                       : "invisible",
                   )}
-                  data-ff-business-nav-badge={section.id}
+                  data-ff-business-nav-badge={chip.id}
                   aria-hidden={count > 0 ? undefined : true}
                 >
                   {count > 0 ? count : 0}
@@ -290,8 +421,8 @@ export function BusinessSectionNav({
           <DialogHeader>
             <DialogTitle>Edit Nav</DialogTitle>
             <DialogDescription>
-              Choose up to {BUSINESS_SECTION_NAV_MAX} sections for the jump list. Hidden
-              sections stay on the page. Saved for the whole agency.
+              Choose up to {BUSINESS_SECTION_NAV_MAX} tabs for the Account page. Hidden
+              tabs stay available here. Saved for the whole agency.
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3">

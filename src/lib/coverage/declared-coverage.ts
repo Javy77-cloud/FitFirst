@@ -35,6 +35,7 @@ export const DECLARED_LINE_LABEL: Partial<Record<CoverageLine, string>> = {
   LIFE: "Term Life",
   HEALTH: "Individual Health",
   RV: "RV",
+  CYBER: "Cyber Liability",
 };
 
 export const COVERAGE_CARRIER_FIELD_KEY = "coverage_carrier_of_record";
@@ -75,6 +76,7 @@ export function classifyDeclaredCoverageType(raw: string | null | undefined): Co
   if (upper.includes("FLOOD") || upper === "NFIP") return "FLOOD";
   if (upper.includes("UMBRELLA") || upper.includes("EXCESS LIABILITY")) return "UMBRELLA";
   if (upper.includes("WORKERS")) return "WC";
+  if (upper.includes("CYBER")) return "CYBER";
   if (upper.includes("BUSINESS OWNERS") || /\bBOP\b/.test(upper)) return "BOP";
   if (upper.includes("GENERAL LIABILITY") || upper === "CGL") return "GL";
   if (

@@ -13,6 +13,7 @@ export type CoverageLine =
   | "LIFE"
   | "HEALTH"
   | "RV"
+  | "CYBER"
   | "OTHER";
 
 export type GapRuleId =
@@ -60,7 +61,7 @@ export type CoverageGapReport = {
 };
 
 const PERSONAL: CoverageLine[] = ["HO", "AUTO", "FLOOD", "UMBRELLA", "RV"];
-const COMMERCIAL: CoverageLine[] = ["GL", "BOP", "WC"];
+const COMMERCIAL: CoverageLine[] = ["GL", "BOP", "WC", "CYBER"];
 
 export function classifyCoverageLine(lineOfBusiness: string): CoverageLine {
   const raw = lineOfBusiness.trim().toUpperCase();
@@ -78,6 +79,7 @@ export function classifyCoverageLine(lineOfBusiness: string): CoverageLine {
   if (raw === "LIFE") return "LIFE";
   if (raw === "HEALTH" || raw === "ACCIDENT") return "HEALTH";
   if (raw === "RV" || raw === "REC") return "RV";
+  if (raw === "CYBER" || raw === "CYBER LIABILITY" || raw.includes("CYBER")) return "CYBER";
   return "OTHER";
 }
 
@@ -289,6 +291,8 @@ export function gapLineLabel(line: CoverageLine): string {
       return "Health";
     case "RV":
       return "Rec / RV";
+    case "CYBER":
+      return "Cyber";
     default:
       return "Other";
   }
