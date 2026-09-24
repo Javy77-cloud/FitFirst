@@ -6,6 +6,12 @@ import { alerts, contacts, deals, policies } from "@/lib/db/schema";
 import { loadRecordValues } from "@/lib/custom-fields/store";
 import { COVERAGE_CARRIER_FIELD_KEY, declaredCoverageFromFields } from "./declared-coverage";
 import {
+  declaredCoverageFromElsewhere,
+  mergeDeclaredCoverage,
+  parseElsewhereCoverage,
+} from "./elsewhere-coverage";
+import { ensureElsewhereCoverageColumn } from "@/lib/db/ensure-elsewhere-coverage";
+import {
   COVERAGE_NOTICE_KINDS,
   parseNoticeKey,
   planContactNotices,
@@ -13,12 +19,14 @@ import {
 } from "./notices";
 
 export async function loadContactNoticeInputs(contactId: string) {
+  await ensureElsewhereCoverageColumn().catch(() => false);
   const [contact] = await db
     .select({
       id: contacts.id,
       firstName: contacts.firstName,
       lastName: contacts.lastName,
       ownerId: contacts.ownerId,
+      elsewhereCoverage: contacts.elsewhereCoverage,
     })
     .from(contacts)
     .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, contactId)))
@@ -47,10 +55,13 @@ export async function loadContactNoticeInputs(contactId: string) {
     loadRecordValues(contactId, "contacts").catch(() => ({}) as Record<string, string>),
   ]);
 
-  const declaredCoverage = declaredCoverageFromFields({
-    existingCoverageTypes: custom.existing_coverage_types,
-    carrierOfRecord: custom[COVERAGE_CARRIER_FIELD_KEY],
-  });
+  const declaredCoverage = mergeDeclaredCoverage(
+    declaredCoverageFromFields({
+      existingCoverageTypes: custom.existing_coverage_types,
+      carrierOfRecord: custom[COVERAGE_CARRIER_FIELD_KEY],
+    }),
+    declaredCoverageFromElsewhere(parseElsewhereCoverage(contact.elsewhereCoverage)),
+  );
 
   return {
     contact,

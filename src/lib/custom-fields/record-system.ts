@@ -148,6 +148,16 @@ export async function applyModuleSystemValues(
             return existing.dependents;
           }
         })(),
+        elsewhereCoverage: (() => {
+          const raw = str(values, "elsewhere_coverage", "elsewhereCoverage");
+          if (!raw) return existing.elsewhereCoverage ?? [];
+          try {
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : (existing.elsewhereCoverage ?? []);
+          } catch {
+            return existing.elsewhereCoverage ?? [];
+          }
+        })(),
         ...(() => {
           const incoming = str(values, "drivers_license_number");
           const next = replaceLicense(incoming, {
