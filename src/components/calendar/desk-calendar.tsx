@@ -58,6 +58,7 @@ import {
   type CalendarActivity,
   type CalendarView,
 } from "@/lib/ops/calendar";
+import { etWallClockParts } from "@/lib/time/et";
 import {
   holidayOnDay,
   usFederalHolidaysInRange,
@@ -191,7 +192,8 @@ export function DeskCalendar({
         ? (() => {
             const event = events.find((row) => row.id === selectedId);
             const prev = event ? toDate(event.startAt) ?? toDate(event.dueAt) : null;
-            return new Date(day.getFullYear(), day.getMonth(), day.getDate(), prev?.getHours() ?? 9, prev?.getMinutes() ?? 0);
+            const wall = prev ? etWallClockParts(prev) : { hour: 9, minute: 0 };
+            return new Date(day.getFullYear(), day.getMonth(), day.getDate(), wall.hour, wall.minute);
           })()
         : slotStart(day, hour);
     if (selectedId) {
@@ -388,12 +390,13 @@ export function DeskCalendar({
           onDropDay={(id, day) => {
             const event = events.find((row) => row.id === id);
             const prev = event ? toDate(event.startAt) ?? toDate(event.dueAt) : null;
+            const wall = prev ? etWallClockParts(prev) : { hour: 9, minute: 0 };
             const next = new Date(
               day.getFullYear(),
               day.getMonth(),
               day.getDate(),
-              prev?.getHours() ?? 9,
-              prev?.getMinutes() ?? 0,
+              wall.hour,
+              wall.minute,
             );
             void dropOn(id, next);
             setDragging(null);
@@ -830,7 +833,7 @@ function TimeGrid({
           const dayItems = activitiesOnDay(rows, day).filter((item) => {
             const start = activityAnchor(item);
             if (!start) return false;
-            const h = start.getHours();
+            const h = etWallClockParts(start).hour;
             return h >= gridStart && h <= HOURS[HOURS.length - 1];
           });
           return (
@@ -866,7 +869,7 @@ function TimeGrid({
                   const start = new Date(block.startAt);
                   const end = new Date(block.endAt);
                   const top =
-                    (start.getHours() - gridStart) * HOUR_H + (start.getMinutes() / 60) * HOUR_H;
+                    (etWallClockParts(start).hour - gridStart) * HOUR_H + (etWallClockParts(start).minute / 60) * HOUR_H;
                   const minutes = Math.max(15, (end.getTime() - start.getTime()) / 60000);
                   return (
                     <div
@@ -883,8 +886,8 @@ function TimeGrid({
                 const start = activityAnchor(item);
                 if (!start) return null;
                 const top =
-                  (start.getHours() - gridStart) * HOUR_H +
-                  (start.getMinutes() / 60) * HOUR_H;
+                  (etWallClockParts(start).hour - gridStart) * HOUR_H +
+                  (etWallClockParts(start).minute / 60) * HOUR_H;
                 const height = Math.min(eventHeightPx(item, HOUR_H), HOUR_H * 4);
                 const external = item.origin === "external";
                 return (
@@ -1063,9 +1066,10 @@ function CalendarEditor({
             const accountId = String(formData.get("accountId") ?? "").trim();
             const policyId = String(formData.get("policyId") ?? "").trim();
             const leadId = String(formData.get("leadId") ?? "").trim();
-            if (!contactId && !accountId && !policyId && !leadId) {
+            const dealId = String(formData.get("dealId") ?? "").trim();
+            if (!contactId && !accountId && !policyId && !leadId && !dealId) {
               setError(
-                "Task, meeting, and call must assign to a Contact, Policy, Business, and/or Lead.",
+                "Task, meeting, and call must assign to a Deal, Contact, Policy, Business, and/or Lead.",
               );
               return;
             }
@@ -1105,7 +1109,7 @@ function CalendarEditor({
               const message = err instanceof Error ? err.message : "Could not save that event.";
               setError(
                 /Minified React error #441|Server Components render/i.test(message)
-                  ? "Task, meeting, and call must assign to a Contact, Policy, Business, and/or Lead."
+                  ? "Task, meeting, and call must assign to a Deal, Contact, Policy, Business, and/or Lead."
                   : message,
               );
             }

@@ -54,12 +54,15 @@ export function etWallClockParts(value: Date): {
     minute: "2-digit",
     hourCycle: "h23",
   });
+  let hour = part(parts, "hour");
+  // Some engines report midnight as "24" with hour12:false — normalize to 00.
+  if (hour === "24") hour = "00";
   const date = `${part(parts, "year")}-${part(parts, "month")}-${part(parts, "day")}`;
-  const time = `${part(parts, "hour")}:${part(parts, "minute")}`;
+  const time = `${hour}:${part(parts, "minute")}`;
   return {
     date,
     time,
-    hour: Number(part(parts, "hour")),
+    hour: Number(hour),
     minute: Number(part(parts, "minute")),
   };
 }
@@ -203,6 +206,16 @@ export function urgencyFromTaskPriority(
   if (priority === "low") return "low";
   if (priority === "normal" && timeBased == null) return "medium";
   return timeBased;
+}
+
+
+/** `YYYY-MM-DDTHH:MM` for `<input type="datetime-local">` — Eastern wall clock. */
+export function toEtDateTimeLocal(value: Date | string | null | undefined): string {
+  if (value == null || value === "") return "";
+  const d = value instanceof Date ? value : parseEtDateTimeLocal(String(value));
+  if (!d || Number.isNaN(d.getTime())) return "";
+  const wall = etWallClockParts(d);
+  return `${wall.date}T${wall.time}`;
 }
 
 /** Stable source_id linking calendar activities ↔ review_tasks. */

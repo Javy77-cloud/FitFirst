@@ -9,14 +9,23 @@ import {
 } from "./activity";
 
 describe("activity related-record FKs", () => {
-  it("rejects an orphan task with no contact, policy, or business", () => {
+  it("rejects an orphan task with no deal, contact, policy, business, or lead", () => {
     expect(hasRelatedRecord({})).toBe(false);
-    expect(hasRelatedRecord({ dealId: "deal-only" })).toBe(false);
-    expect(() => assertRelatedRecord({ dealId: "deal-only" })).toThrow(
-      /Contact, Policy, Business, and\/or Lead/,
+    expect(() => assertRelatedRecord({})).toThrow(
+      /Deal, Contact, Policy, Business, and\/or Lead/,
     );
   });
 
+  it("allows task/meeting/call to hang on Deal alone", () => {
+    expect(hasRelatedRecord({ dealId: "deal-only" })).toBe(true);
+    expect(assertRelatedRecord({ dealId: "deal-only" })).toEqual({
+      contactId: null,
+      accountId: null,
+      policyId: null,
+      dealId: "deal-only",
+      leadId: null,
+    });
+  });
 
   it("allows call/email/sms to hang on Deal alone", () => {
     expect(hasCommsRecord({ dealId: "deal-only" })).toBe(true);
@@ -29,10 +38,11 @@ describe("activity related-record FKs", () => {
     });
     expect(() => assertCommsRecord({})).toThrow(/Deal, Contact, Policy, Business, or Lead/);
   });
-  it("accepts contact and/or policy and/or business", () => {
+  it("accepts contact and/or policy and/or business and/or lead", () => {
     expect(hasRelatedRecord({ contactId: "c" })).toBe(true);
     expect(hasRelatedRecord({ policyId: "p" })).toBe(true);
     expect(hasRelatedRecord({ accountId: "a" })).toBe(true);
+    expect(hasRelatedRecord({ leadId: "l" })).toBe(true);
     expect(hasRelatedRecord({ contactId: "c", policyId: "p" })).toBe(true);
     expect(hasRelatedRecord({ contactId: "c", accountId: "a" })).toBe(true);
   });

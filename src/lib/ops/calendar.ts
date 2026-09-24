@@ -2,7 +2,14 @@ import { contactActionButtonClass, isContactActionKind } from "@/lib/desk/contac
 import type { ActivityKind } from "@/lib/domain";
 import { DESK_TIME_ZONE } from "@/lib/desk/desk-timezone";
 import { parseDeskDateTimeLocal } from "@/lib/tasks/due-at";
-import { etDateKey, etEndOfDay, etStartOfDay, sameEtDay } from "@/lib/time/et";
+import {
+  etDateKey,
+  etEndOfDay,
+  etStartOfDay,
+  etWallClockParts,
+  sameEtDay,
+  toEtDateTimeLocal,
+} from "@/lib/time/et";
 
 export type CalendarActivity = {
   id: string;
@@ -140,7 +147,8 @@ export function slotStart(day: Date, hour: number, minute = 0): Date {
 export function minutesFromHour(activity: CalendarActivity, hour: number): number {
   const start = activityAnchor(activity);
   if (!start) return 0;
-  return Math.max(0, start.getMinutes() + (start.getHours() - hour) * 60);
+  const wall = etWallClockParts(start);
+  return Math.max(0, wall.minute + (wall.hour - hour) * 60);
 }
 
 export function eventHeightPx(activity: CalendarActivity, hourHeight = 48): number {
@@ -342,21 +350,8 @@ export function parseTags(raw: string | null | undefined): string[] {
 }
 
 export function toDateTimeLocal(value: Date | string | null | undefined): string {
-  const date = toDate(value);
-  if (!date) return "";
-  // datetime-local is wall clock without zone — always America/New_York parts.
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: DESK_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(date);
-  const get = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((p) => p.type === type)?.value ?? "00";
-  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+  // datetime-local is wall clock without zone — always America/New_York via et.ts.
+  return toEtDateTimeLocal(value);
 }
 
 /** Add minutes to a datetime-local string; empty in → empty out. */

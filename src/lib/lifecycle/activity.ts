@@ -6,20 +6,22 @@ export type RelatedRecordIds = {
   leadId?: string | null;
 };
 
-/** A task / meeting / call must hang on a Contact, Policy, Business, or Lead. */
+/** A task / meeting / call must hang on a Contact, Policy, Business, Lead, and/or Deal. */
 export function hasRelatedRecord(related: RelatedRecordIds): boolean {
-  return Boolean(related.contactId || related.accountId || related.policyId || related.leadId);
+  return Boolean(
+    related.contactId || related.accountId || related.policyId || related.leadId || related.dealId,
+  );
 }
 
-/** Deal-row comms (call / email / sms) may hang on the Deal when no Contact is bound yet. */
+/** Call / email / sms — same link set as tasks (Deal alone is enough). */
 export function hasCommsRecord(related: RelatedRecordIds): boolean {
-  return hasRelatedRecord(related) || Boolean(related.dealId);
+  return hasRelatedRecord(related);
 }
 
 export function assertRelatedRecord(related: RelatedRecordIds): RelatedRecordIds {
   if (!hasRelatedRecord(related)) {
     throw new Error(
-      "Task, meeting, and call must assign to a Contact, Policy, Business, and/or Lead.",
+      "Task, meeting, and call must assign to a Deal, Contact, Policy, Business, and/or Lead.",
     );
   }
   return normalizeRelated(related);

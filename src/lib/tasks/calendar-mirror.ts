@@ -5,8 +5,8 @@
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { activities } from "@/lib/db/schema";
-import { reviewTaskActivitySourceId } from "@/lib/time/et";
+import { activities, reviewTasks } from "@/lib/db/schema";
+import { parseReviewTaskIdFromSource, reviewTaskActivitySourceId } from "@/lib/time/et";
 
 export async function upsertReviewTaskCalendarActivity(input: {
   taskId: string;
@@ -86,4 +86,48 @@ async function pushCalendar(
   } catch {
     /* optional Google push */
   }
+}
+
+/**
+ * When a calendar activity that mirrors a review_task is edited/rescheduled,
+ * push title / due / status back so the desk task never diverges.
+ * Does not create commitment nudges — panel keys stay on review:<taskId>.
+ */
+export async function syncActivityMirrorToReviewTask(input: {
+  sourceId?: string | null;
+  title?: string | null;
+  dueAt?: Date | null;
+  status?: string | null;
+}): Promise<string | null> {
+  const taskId = parseReviewTaskIdFromSource(input.sourceId);
+  if (!taskId) return null;
+  const patch: {
+    title?: string;
+    dueDate?: Date;
+    status?: string;
+    completedAt?: Date | null;
+  } = {};
+  if (input.title != null && String(input.title).trim()) {
+    patch.title = String(input.title).trim();
+  }
+  if (input.dueAt && !Number.isNaN(input.dueAt.getTime())) {
+    patch.dueDate = input.dueAt;
+  }
+  if (input.status != null) {
+    const s = String(input.status).toLowerCase();
+    if (s === "completed" || s === "done") {
+      patch.status = "done";
+      patch.completedAt = new Date();
+    } else if (s === "open") {
+      patch.status = "open";
+      patch.completedAt = null;
+    }
+    // canceled activity: leave review_task status alone (still due / dismissible on Tasks)
+  }
+  if (Object.keys(patch).length === 0) return taskId;
+  await db
+    .update(reviewTasks)
+    .set(patch)
+    .where(and(eq(reviewTasks.tenantId, DEFAULT_TENANT_ID), eq(reviewTasks.id, taskId)));
+  return taskId;
 }

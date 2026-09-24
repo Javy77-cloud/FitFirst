@@ -70,7 +70,7 @@ function relatedIdsFromForm(form: FormData) {
   };
 }
 
-/** Tasks/meetings need Contact/Policy/Business/Lead; call/email/sms may hang on Deal alone. */
+/** Tasks/meetings/calls need Deal/Contact/Policy/Business/Lead; email/sms same via assertCommsRecord. */
 function relatedFromForm(form: FormData, requireRelated: boolean, kind: string) {
   const related = relatedIdsFromForm(form);
   const isComms = kind === "call" || kind === "email" || kind === "sms";
@@ -357,11 +357,18 @@ export async function updateDeskActivity(formData: FormData) {
     .where(and(eq(activities.tenantId, DEFAULT_TENANT_ID), eq(activities.id, id)));
   if (!activity) return;
 
+  let related: ReturnType<typeof relatedFromForm>;
+  try {
+    related = relatedFromForm(formData, true, activity.kind);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Related record required." };
+  }
+
   let title = str(formData, "title") || activity.title;
   if (activity.kind === "call") {
     const phone =
       activity.phoneNumber || str(formData, "phone") || str(formData, "phoneNumber") || null;
-    title = await resolveCallTitle(title, phone, activity.contactId);
+    title = await resolveCallTitle(title, phone, related.contactId ?? activity.contactId);
   }
   const notes = str(formData, "notes") || null;
   const dueAt = when(formData, "dueAt");
@@ -371,38 +378,54 @@ export async function updateDeskActivity(formData: FormData) {
     endAt = new Date(new Date(startAt).getTime() + 30 * 60 * 1000);
   }
   const status = str(formData, "status") || activity.status;
+  const nextDue = dueAt ?? startAt ?? activity.dueAt;
   await db
     .update(activities)
     .set({
       title,
       notes,
       status,
-      dueAt: dueAt ?? startAt ?? activity.dueAt,
+      dueAt: nextDue,
       startAt,
       endAt,
+      contactId: related.contactId,
+      accountId: related.accountId,
+      policyId: related.policyId,
+      dealId: related.dealId,
+      leadId: related.leadId,
       updatedAt: new Date(),
     })
     .where(eq(activities.id, id));
   await pushAfterSave({ ...activity, title, notes, startAt, endAt });
 
-  const producerName = await resolvePolicyProducerName(activity.policyId);
+  const { syncActivityMirrorToReviewTask } = await import("@/lib/tasks/calendar-mirror");
+  await syncActivityMirrorToReviewTask({
+    sourceId: activity.sourceId,
+    title,
+    dueAt: nextDue instanceof Date ? nextDue : nextDue ? new Date(nextDue) : null,
+    status,
+  });
+
+  const producerName = await resolvePolicyProducerName(related.policyId ?? activity.policyId);
   await db.insert(activityLogs).values({
     tenantId: DEFAULT_TENANT_ID,
     activityId: activity.id,
     kind: activity.kind,
     eventType: "logged",
     body: activityLogBody(activity.kind, "logged", title),
-    contactId: activity.contactId,
-    accountId: activity.accountId,
-    policyId: activity.policyId,
-    dealId: activity.dealId,
+    contactId: related.contactId,
+    accountId: related.accountId,
+    policyId: related.policyId,
+    dealId: related.dealId,
+    leadId: related.leadId,
     producerName,
   });
 
-  revalidateRelated(activity);
+  revalidateRelated({ ...activity, ...related });
   revalidatePath(`/tasks/${id}`);
   revalidatePath(`/meetings/${id}`);
   revalidatePath("/calendar");
+  revalidatePath("/tasks");
   // Prefer in-form returnTo (Calendar passes /calendar?view=&date=) so edit-save stays on Calendar.
   flashStay(
     formData,
@@ -448,6 +471,14 @@ export async function rescheduleDeskActivity(formData: FormData) {
     })
     .where(eq(activities.id, id));
 
+  const { syncActivityMirrorToReviewTask } = await import("@/lib/tasks/calendar-mirror");
+  await syncActivityMirrorToReviewTask({
+    sourceId: activity.sourceId,
+    title: activity.title,
+    dueAt,
+    status: activity.status,
+  });
+
   const producerName = await resolvePolicyProducerName(activity.policyId);
   await db.insert(activityLogs).values({
     tenantId: DEFAULT_TENANT_ID,
@@ -467,6 +498,7 @@ export async function rescheduleDeskActivity(formData: FormData) {
   await pushAfterSave({ ...activity, startAt, endAt });
   revalidateRelated(activity);
   revalidatePath("/phone");
+  revalidatePath("/tasks");
   return { ok: true };
 }
 
