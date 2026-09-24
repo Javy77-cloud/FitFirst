@@ -88,7 +88,11 @@ export function RecordLayoutFields({
   const activeColumns = layoutColumns.filter((column) => asList(column.sections).length > 0);
   const oneCol = activeColumns.length <= 1;
   const commercial = module === "businesses" || fieldList.some((field) => field.key === "business_name");
-  const contactDesk = module === "contacts";
+  /** Party pair (Contacts ≡ Accounts): shared label-above desk chrome. Deals stay off. */
+  const partyDesk = module === "contacts" || module === "businesses";
+  /** Contact-only widgets (coverage matrix, dependents, DL vault, …). */
+  const contactOnly = module === "contacts";
+  const contactDesk = partyDesk;
   const [liveValues, setLiveValues] = useState<Record<string, string>>(() => {
     const selling =
       values[DEAL_SELLING_AGENCY_KEY] ||
@@ -185,7 +189,7 @@ export function RecordLayoutFields({
                   }
                   if (key === COVERAGE_CARRIER_FIELD_KEY) return false;
                   if (
-                    contactDesk &&
+                    contactOnly &&
                     key === "is_business_owner" &&
                     asList(section.fieldKeys).includes("is_homeowner")
                   ) {
@@ -201,7 +205,7 @@ export function RecordLayoutFields({
                     label: key,
                     type: "single_line" as const,
                   };
-                  if (contactDesk && key === "existing_coverage_types") {
+                  if (contactOnly && key === "existing_coverage_types") {
                     return (
                       <div className="col-span-full min-w-0" data-ff-record-field={key}>
                         <ContactCoverageRecord
@@ -218,7 +222,7 @@ export function RecordLayoutFields({
                       </div>
                     );
                   }
-                  if (contactDesk && (key === "is_homeowner" || key === "is_business_owner")) {
+                  if (contactOnly && (key === "is_homeowner" || key === "is_business_owner")) {
                     const ownerKeys = asList(section.fieldKeys).filter(
                       (item) => item === "is_homeowner" || item === "is_business_owner",
                     );
@@ -232,7 +236,7 @@ export function RecordLayoutFields({
                       />
                     );
                   }
-                  if (contactDesk && key === "cross_selling_opportunity") {
+                  if (contactOnly && key === "cross_selling_opportunity") {
                     return (
                       <div className="col-span-full min-w-0" data-ff-record-field={key}>
                         <ContactGeneratedOpportunities
@@ -244,7 +248,7 @@ export function RecordLayoutFields({
                       </div>
                     );
                   }
-                  if (contactDesk && key === "dependents" && recordId) {
+                  if (contactOnly && key === "dependents" && recordId) {
                     return (
                       <ContactDependentsEditor
                         recordId={inline ? recordId : undefined}
@@ -254,7 +258,7 @@ export function RecordLayoutFields({
                       />
                     );
                   }
-                  if (contactDesk && key === "drivers_license_number" && recordId) {
+                  if (contactOnly && key === "drivers_license_number" && recordId) {
                     return (
                       <ContactDetailField fieldKey={key} label={field.label} compact>
                         <ContactLicenseField
@@ -266,7 +270,7 @@ export function RecordLayoutFields({
                       </ContactDetailField>
                     );
                   }
-                  if (contactDesk && key === "mailing_same_as_insured") {
+                  if (contactOnly && key === "mailing_same_as_insured") {
                     const same = isMailingSameAsInsured(liveValues);
                     return (
                       <ContactDetailField fieldKey={key} label={field.label} compact>
