@@ -63,6 +63,7 @@ import {
 import { forceDealWorkTab, persistDealWorkTab } from "@/lib/deals/work-tab";
 import {
   clearBindRecheckAcks,
+  clearSheetInvalidatedAfterShop,
   loadLineRiskFingerprint,
   persistDealShopFlow,
 } from "@/lib/deals/shop-flow-persist";
@@ -207,6 +208,7 @@ async function persistShopFlowAfterQuoteRequest(
       requestCarrierIds: opts.requestCarrierIds,
     }),
   );
+  await clearSheetInvalidatedAfterShop(dealId, line).catch(() => undefined);
   await autoAdvanceDealProductStage({
     dealId,
     stageSlug: "quote_review",

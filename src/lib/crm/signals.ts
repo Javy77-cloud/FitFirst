@@ -1,7 +1,15 @@
+import { and, eq, inArray } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts, reviewTasks } from "@/lib/db/schema";
 import { writeDeskComms } from "@/lib/desk/write-comms";
+import {
+  parseEpisodeKey,
+  sheetInvalidatedEpisodeKey,
+  shouldInsertEpisode,
+  withEpisodeKey,
+  type EpisodeAlertRow,
+} from "@/lib/alerts/episode";
 
 export type CrmSignalKind =
   | "lead_converted"
@@ -27,6 +35,8 @@ export type CrmSignalInput = {
   dueInDays?: number;
   createTask?: boolean;
   severity?: string;
+  /** Optional line scope for sheet_invalidated episode keys. */
+  shopLine?: string | null;
 };
 
 export function crmSignalDefaults(kind: CrmSignalKind): {
@@ -61,9 +71,56 @@ export function shouldCreateStageTask(_stageSlug: string) {
   return false;
 }
 
-/** Own outbound send/queue is Activity history — do not ping the sender's bell. */
+/**
+ * Own outbound send/queue is Activity history — do not ping the sender's bell.
+ * Stage moves stay on the deal UI + Activity note; no bell (multi-product floods).
+ */
 export function createsUserFacingAlert(kind: CrmSignalKind): boolean {
-  return kind !== "comms_sent" && kind !== "comms_queued";
+  return kind !== "comms_sent" && kind !== "comms_queued" && kind !== "stage_moved";
+}
+
+function sheetInvalidatedKey(input: CrmSignalInput): string | null {
+  if (input.kind !== "sheet_invalidated") return null;
+  const dealId = (input.dealId ?? input.entityId ?? "").trim();
+  if (!dealId) return null;
+  return sheetInvalidatedEpisodeKey(dealId, input.shopLine);
+}
+
+async function existingSheetInvalidatedEpisodes(dealId: string): Promise<EpisodeAlertRow[]> {
+  const rows = await db
+    .select({ id: alerts.id, body: alerts.body, entityId: alerts.entityId })
+    .from(alerts)
+    .where(
+      and(
+        eq(alerts.tenantId, DEFAULT_TENANT_ID),
+        eq(alerts.kind, "sheet_invalidated"),
+        eq(alerts.entityType, "deal"),
+        eq(alerts.entityId, dealId),
+      ),
+    );
+  return rows.map((row) => {
+    const parsed = parseEpisodeKey(row.body);
+    const fallback = sheetInvalidatedEpisodeKey(dealId, null);
+    return { id: row.id, key: parsed ?? fallback };
+  });
+}
+
+/** Drop sheet_invalidated rows for a deal(+line) so a later RP edit can notify once. */
+export async function endSheetInvalidatedEpisodes(dealId: string, line?: string | null) {
+  const id = dealId.trim();
+  if (!id) return 0;
+  const rows = await existingSheetInvalidatedEpisodes(id);
+  if (!rows.length) return 0;
+  const target = line != null && String(line).trim() ? sheetInvalidatedEpisodeKey(id, line) : null;
+  const dropIds = rows
+    .filter((row) => {
+      if (!target) return true;
+      return row.key === target || row.key === sheetInvalidatedEpisodeKey(id, null);
+    })
+    .map((row) => row.id);
+  if (!dropIds.length) return 0;
+  await db.delete(alerts).where(inArray(alerts.id, dropIds));
+  return dropIds.length;
 }
 
 export async function writeCrmSignals(input: CrmSignalInput) {
@@ -74,21 +131,38 @@ export async function writeCrmSignals(input: CrmSignalInput) {
 
   let alert: typeof alerts.$inferSelect | null = null;
   if (createsUserFacingAlert(input.kind)) {
-    const [row] = await db
-      .insert(alerts)
-      .values({
-        tenantId: DEFAULT_TENANT_ID,
-        kind: input.kind,
-        title: input.title,
-        body: input.body,
-        severity: input.severity ?? defaults.severity,
-        entityType: input.entityType ?? (input.dealId ? "deal" : input.contactId ? "contact" : input.accountId ? "account" : null),
-        entityId: input.entityId ?? input.dealId ?? input.contactId ?? input.accountId ?? input.policyId ?? null,
-        userId: input.userId ?? null,
-        recipientUserId: input.userId ?? null,
-      })
-      .returning();
-    alert = row ?? null;
+    const episodeKey = sheetInvalidatedKey(input);
+    let body = input.body;
+    let skipInsert = false;
+    if (episodeKey) {
+      const dealId = (input.dealId ?? input.entityId ?? "").trim();
+      const existing = await existingSheetInvalidatedEpisodes(dealId);
+      if (!shouldInsertEpisode(episodeKey, existing)) {
+        skipInsert = true;
+      } else {
+        body = withEpisodeKey(input.body, episodeKey);
+      }
+    }
+    if (!skipInsert) {
+      const [row] = await db
+        .insert(alerts)
+        .values({
+          tenantId: DEFAULT_TENANT_ID,
+          kind: input.kind,
+          title: input.title,
+          body,
+          severity: input.severity ?? defaults.severity,
+          entityType:
+            input.entityType ??
+            (input.dealId ? "deal" : input.contactId ? "contact" : input.accountId ? "account" : null),
+          entityId:
+            input.entityId ?? input.dealId ?? input.contactId ?? input.accountId ?? input.policyId ?? null,
+          userId: input.userId ?? null,
+          recipientUserId: input.userId ?? null,
+        })
+        .returning();
+      alert = row ?? null;
+    }
   }
 
   if (input.kind === "stage_moved") {

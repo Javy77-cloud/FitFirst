@@ -4,6 +4,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts, contacts, deals, policies } from "@/lib/db/schema";
 import { loadRecordValues } from "@/lib/custom-fields/store";
+import { planEpisodeSync } from "@/lib/alerts/episode";
 import { COVERAGE_CARRIER_FIELD_KEY, declaredCoverageFromFields } from "./declared-coverage";
 import {
   declaredCoverageFromElsewhere,
@@ -100,19 +101,24 @@ export async function syncContactCoverageNotices(contactId: string): Promise<Pla
       ),
     );
 
-  const plannedKeys = new Set(planned.map((row) => `${row.kind}:${row.key}`));
-  const unreadByKey = new Map<string, (typeof existing)[number]>();
-  for (const row of existing) {
-    if (row.readAt) continue;
-    const key = parseNoticeKey(row.body);
-    if (!key) continue;
-    unreadByKey.set(`${row.kind}:${key}`, row);
-  }
+  // One notice per gap/opportunity episode: any prior (read or unread) suppresses
+  // re-insert while the condition still holds; drop when the gap clears.
+  const existingEpisodes = existing
+    .map((row) => {
+      const noticeKey = parseNoticeKey(row.body);
+      if (!noticeKey) return null;
+      return { id: row.id, key: `${row.kind}:${noticeKey}`, readAt: row.readAt };
+    })
+    .filter(Boolean) as { id: string; key: string; readAt: Date | null }[];
+
+  const liveKeys = planned.map((row) => `${row.kind}:${row.key}`);
+  const { insertKeys, endEpisodeAlertIds } = planEpisodeSync(liveKeys, existingEpisodes);
+  const insertSet = new Set(insertKeys);
 
   const ownerId = loaded.contact.ownerId ?? null;
   for (const notice of planned) {
     const mapKey = `${notice.kind}:${notice.key}`;
-    if (unreadByKey.has(mapKey)) continue;
+    if (!insertSet.has(mapKey)) continue;
     await db.insert(alerts).values({
       tenantId: DEFAULT_TENANT_ID,
       kind: notice.kind,
@@ -126,10 +132,8 @@ export async function syncContactCoverageNotices(contactId: string): Promise<Pla
     });
   }
 
-  const now = new Date();
-  for (const [mapKey, row] of unreadByKey) {
-    if (plannedKeys.has(mapKey)) continue;
-    await db.update(alerts).set({ readAt: now }).where(eq(alerts.id, row.id));
+  if (endEpisodeAlertIds.length) {
+    await db.delete(alerts).where(inArray(alerts.id, endEpisodeAlertIds));
   }
 
   revalidatePath("/");

@@ -1,5 +1,7 @@
 /** Notification Panel chase when a shopping deal hits the 14-day no-comms cold rule. */
 
+import { planEpisodeSync } from "@/lib/alerts/episode";
+
 export const DEAL_COLD_CHASE_KIND = "deal_cold_chase";
 export const DEAL_COLD_CHASE_TITLE = "Deal went cold — one-click chase";
 
@@ -76,26 +78,10 @@ export function planColdChaseSync(
   planned: readonly ColdChaseNotice[],
   existing: readonly ColdChaseAlertRow[],
 ): ColdChaseSyncPlan {
-  const byDeal = new Map<string, ColdChaseAlertRow[]>();
-  for (const row of existing) {
-    if (!row.entityId) continue;
-    const list = byDeal.get(row.entityId) ?? [];
-    list.push(row);
-    byDeal.set(row.entityId, list);
-  }
-
-  const plannedIds = new Set(planned.map((notice) => notice.dealId));
-  const insertDealIds: string[] = [];
-  for (const notice of planned) {
-    if (byDeal.has(notice.dealId)) continue;
-    insertDealIds.push(notice.dealId);
-  }
-
-  const endEpisodeAlertIds: string[] = [];
-  for (const [dealId, rows] of byDeal) {
-    if (plannedIds.has(dealId)) continue;
-    for (const row of rows) endEpisodeAlertIds.push(row.id);
-  }
-
-  return { insertDealIds, endEpisodeAlertIds };
+  const liveKeys = planned.map((notice) => notice.dealId);
+  const episodes = existing
+    .filter((row) => row.entityId)
+    .map((row) => ({ id: row.id, key: row.entityId as string }));
+  const plan = planEpisodeSync(liveKeys, episodes);
+  return { insertDealIds: plan.insertKeys, endEpisodeAlertIds: plan.endEpisodeAlertIds };
 }

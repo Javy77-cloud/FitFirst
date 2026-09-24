@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { deals, documents, quoteAttemptLogs, quoteSheets, quotes } from "@/lib/db/schema";
 import { BIND_RECHECK_CLEAR_PATCH } from "@/lib/deals/bind-gate";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
-import { writeCrmSignalsSafe } from "@/lib/crm/signals";
+import { endSheetInvalidatedEpisodes, writeCrmSignalsSafe } from "@/lib/crm/signals";
 import {
   lineRiskFingerprint,
   nextShopFlowAfterSheetConfirm,
@@ -136,6 +136,7 @@ async function quoteIdsOnLine(dealId: string, line: string): Promise<string[]> {
 }
 
 async function logSheetInvalidation(dealId: string, line?: string | null) {
+  // One ping per deal(+line) stale episode; mark-as-read suppresses until Quotes re-run.
   await writeCrmSignalsSafe({
     kind: "sheet_invalidated",
     title: line
@@ -147,9 +148,16 @@ async function logSheetInvalidation(dealId: string, line?: string | null) {
     entityType: "deal",
     entityId: dealId,
     dealId,
+    shopLine: line,
     createTask: false,
     severity: "info",
   });
+}
+
+/** After Markets/Quotes re-run, clear the RP-invalidated episode so a later edit can notify once. */
+export async function clearSheetInvalidatedAfterShop(dealId: string, line?: string | null) {
+  if (!dealId) return;
+  await endSheetInvalidatedEpisodes(dealId, line).catch(() => 0);
 }
 
 /** Sheet save/fill: keep Markets complete; cue Quotes to Recheck. */
