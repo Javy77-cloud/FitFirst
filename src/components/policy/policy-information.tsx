@@ -144,7 +144,7 @@ export function PolicyInformationCard({
           readOnly={readOnly}
         />
 
-        {/* Row 2: Insured location (1 cell) | Insurance type | Selling agency | Producer */}
+        {/* Row 2: Insured location | owner mailing (or empty slot) | Insurance type | Selling agency */}
         {/* Single cell (row2 col1): always two-line stack — never full-span, never one-line. */}
         <div data-ff-policy-premises-row="">
           <PolicyInlineText
@@ -161,7 +161,9 @@ export function PolicyInformationCard({
             <dt className="text-helper text-muted-foreground">{DWELLING_MAILING_ADDRESS_LABEL}</dt>
             <dd className="font-medium text-navy">{ownerMailing}</dd>
           </div>
-        ) : null}
+        ) : (
+          <div aria-hidden="true" data-ff-policy-mailing-placeholder="" />
+        )}
         <PolicyInlineText
           policyId={policy.id}
           fieldKey="insuranceType"
@@ -176,12 +178,12 @@ export function PolicyInformationCard({
           value={policy.sellingAgency ?? ""}
           readOnly={readOnly}
         />
+
+        {/* Row 3–4 (lg): Producer | Effective | Expiration | Renewal, then Billing | Premium | Commission */}
         <div data-ff-policy-inline="producer" data-ff-producer-person="">
           <dt className="text-helper text-muted-foreground">Producer</dt>
           <dd className="font-medium text-navy">{producerPerson || "—"}</dd>
         </div>
-
-        {/* Row 3: Effective | Expiration | Renewal | commission or spacer */}
         <div data-ff-policy-inline="effectiveDate" data-ff-term-date-locked="">
           <dt className="text-helper text-muted-foreground">Effective date</dt>
           <dd className="font-medium text-navy">{formatDay(policy.effectiveDate)}</dd>
@@ -199,6 +201,20 @@ export function PolicyInformationCard({
           </dd>
           <p className="text-[11px] text-muted-foreground">Locked · carrier/API truth</p>
         </div>
+        <PolicyInlineText
+          policyId={policy.id}
+          fieldKey="billingFrequency"
+          label="Billing"
+          value={billing}
+          readOnly={readOnly}
+        />
+        <PolicyInlineText
+          policyId={policy.id}
+          fieldKey="premium"
+          label="Premium"
+          value={policy.premium != null ? String(policy.premium) : ""}
+          readOnly={readOnly}
+        />
         {showCommission ? (
           <div data-ff-policy-inline="commission4Pct-locked">
             <dt className="text-helper text-muted-foreground">Commission %</dt>
@@ -225,24 +241,6 @@ export function PolicyInformationCard({
             </p>
           </div>
         ) : null}
-
-        {/* Row 4: Billing | Premium | two empty cells reserved */}
-        <PolicyInlineText
-          policyId={policy.id}
-          fieldKey="billingFrequency"
-          label="Billing"
-          value={billing}
-          readOnly={readOnly}
-        />
-        <PolicyInlineText
-          policyId={policy.id}
-          fieldKey="premium"
-          label="Premium"
-          value={policy.premium != null ? String(policy.premium) : ""}
-          readOnly={readOnly}
-        />
-        <div className="hidden lg:block" aria-hidden="true" data-ff-billing-row-spacer="1" />
-        <div className="hidden lg:block" aria-hidden="true" data-ff-billing-row-spacer="2" />
       </dl>
       {carrierId ? (
         <p className="mt-3 text-xs text-muted-foreground">
