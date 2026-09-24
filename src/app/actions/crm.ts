@@ -38,6 +38,7 @@ import {
 import { NEW_DEAL_PIPELINE_STAGE, seedNewDealShopFlow } from "@/lib/deals/new-deal-write";
 import { requireInsertedRisk } from "@/lib/deals/ensure-risk";
 import { assertAnaUnbound } from "@/lib/crm/bind-path";
+import { refuseAnaPolicyMint } from "@/lib/policy/ana-mint";
 import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices";
 import { formatPersonName } from "@/lib/crm/display";
 import { isOutreachKind, outreachLabel, slugifyStage } from "@/lib/crm/lists";
@@ -1384,12 +1385,25 @@ export async function bindDeal(formData: FormData) {
   const actor = await getActor();
   const dealId = str(formData, "dealId");
   assertAnaUnbound(dealId);
+  const anaMint = refuseAnaPolicyMint({ dealId });
+  if (anaMint.refused) throw new Error(anaMint.message);
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) throw new Error("Deal not found");
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
   const [lead] = deal.leadId
     ? await db.select().from(leads).where(eq(leads.id, deal.leadId))
     : [];
+  const anaIdentity = refuseAnaPolicyMint({
+    dealId,
+    contactId: deal.contactId,
+    leadId: deal.leadId,
+    riskId: risk?.id,
+    namedInsured: deal.primaryNamedInsured,
+    firstName: lead?.firstName,
+    lastName: lead?.lastName,
+    coverageA: risk?.coverageA ?? deal.coverageAmount,
+  });
+  if (anaIdentity.refused) throw new Error(anaIdentity.message);
 
   const dealProducts = inferDealProducts({
     shopProducts: deal.shopProducts,
