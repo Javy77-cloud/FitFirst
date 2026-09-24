@@ -1,4 +1,4 @@
-export const DEAL_STAMP_STAGES = ["quote_sent", "bound", "policy_issued", "closed_won", "done"] as const;
+export const DEAL_STAMP_STAGES = ["quote_sent", "bound", "policy_issued", "closed_won", "closed_lost", "done"] as const;
 export type DealStampStage = (typeof DEAL_STAMP_STAGES)[number];
 
 export const DEAL_STAMP_LABELS: Record<DealStampStage, string> = {
@@ -6,6 +6,7 @@ export const DEAL_STAMP_LABELS: Record<DealStampStage, string> = {
   bound: "BOUND",
   policy_issued: "POLICY ISSUED",
   closed_won: "CLOSED WON",
+  closed_lost: "LOST",
   done: "DONE",
 };
 
@@ -19,6 +20,9 @@ const SLUG_ALIASES: Record<string, DealStampStage> = {
   closed_won: "closed_won",
   closedwon: "closed_won",
   won: "closed_won",
+  closed_lost: "closed_lost",
+  closedlost: "closed_lost",
+  lost: "closed_lost",
   done: "done",
   issued_done: "done",
   issueddone: "done",

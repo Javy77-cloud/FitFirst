@@ -34,6 +34,7 @@ export function SectionTabs({
   sidePanel,
   heading,
   corner,
+  subnav,
   tabSize = "default",
 }: {
   tabs: SectionTab[];
@@ -49,6 +50,8 @@ export function SectionTabs({
   heading?: ReactNode;
   /** Quotes-pulled chip — always top-right, never under tabs. */
   corner?: ReactNode;
+  /** Products row — grouped with module tabs, below pipeline chrome. */
+  subnav?: ReactNode;
   tabSize?: "default" | "deal";
 }) {
   const current = tabs.find((tab) => tab.id === active) ?? tabs.find((tab) => tab.id === defaultValue) ?? tabs[0];
@@ -121,7 +124,12 @@ export function SectionTabs({
         {/* Name + tabs share left cell so the tall quotes chip cannot push tabs down. */}
         <div className="min-w-0" style={{ gridColumn: 1, gridRow: 1 }} data-ff-deal-heading="">
           {heading}
-          <div className="mt-2.5" data-ff-deal-tab-row-wrap="">
+          <div
+            className="mt-5 space-y-2"
+            data-ff-deal-tab-row-wrap=""
+            data-ff-deal-products-tabs-group=""
+          >
+            {subnav ? <div data-ff-deal-products-row="">{subnav}</div> : null}
             {tabList}
             {banner}
           </div>

@@ -9,6 +9,7 @@ const STAMP_LABEL: Record<DealStampStage, string> = {
   bound: "Bound",
   policy_issued: "Policy issued",
   closed_won: "Closed won",
+  closed_lost: "Lost",
   done: "Done",
 };
 

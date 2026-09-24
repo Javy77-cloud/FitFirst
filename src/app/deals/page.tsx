@@ -112,13 +112,19 @@ export default async function DealsPage({
   }
   const agents = userRows.map((user) => ({ id: user.id, name: user.name }));
   const board = boardData?.board ?? null;
-  const rawRows = (listRows ?? [])
+  // Won-Lost / Archived: listDeals drops archived + never filters by parking board,
+  // so those tabs looked inert. Use getPipelineBoard cards (dealMatchesBoard).
+  const parkingBoard = pipeline === "won-lost" || pipeline === "archive";
+  const sourceRows = parkingBoard ? (boardData?.cards ?? []) : (listRows ?? []);
+  const rawRows = sourceRows
     .filter((row) => matchesDealPipelineColumnFilters(row.deal, columnFilter))
     .filter((row) =>
-      includeDealInActiveFeed(row.deal.tags, {
-        tags: columnFilter.tags,
-        attention: filter.attention,
-      }),
+      parkingBoard
+        ? true
+        : includeDealInActiveFeed(row.deal.tags, {
+            tags: columnFilter.tags,
+            attention: filter.attention,
+          }),
     );
   const optionDeals = rawRows.map((row) => row.deal);
   const pipelineFilterFields = buildDealPipelineFilterFields({

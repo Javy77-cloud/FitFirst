@@ -236,6 +236,11 @@ export function OutsideStageOverrideDialog({
                       : `Marked ${result.label} outside FitFirst`,
                   );
                   setOpen(false);
+                  if (isLost) {
+                    // Don't leave the agent on the lost deal — back to active list.
+                    router.push("/deals");
+                    return;
+                  }
                   if (isClosedOutcomeStage(stage)) setArchiveOpen(true);
                   router.refresh();
                 });

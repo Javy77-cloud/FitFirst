@@ -17,7 +17,12 @@ describe("deal status stamp", () => {
     expect(resolveDealStampStage("bound")).toBe("bound");
     expect(resolveDealStampStage("policy_issued")).toBe("policy_issued");
     expect(resolveDealStampStage("closed_won")).toBe("closed_won");
+    expect(resolveDealStampStage("closed_lost")).toBe("closed_lost");
+    expect(resolveDealStampStage("lost")).toBe("closed_lost");
     expect(resolveDealStampStage("done")).toBe("done");
+    const lost = renderToString(createElement(DealStatusStamp, { stage: "closed_lost" }));
+    expect(lost).toMatch(/data-ff-deal-status-stamp="closed_lost"/);
+    expect(lost).toContain("LOST");
     const done = renderToString(createElement(DealStatusStamp, { stage: "done" }));
     expect(done).toMatch(/data-ff-deal-status-stamp="done"/);
     expect(done).toContain("DONE");

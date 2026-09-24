@@ -991,6 +991,9 @@ export function productStampStage(
   boundAt?: Date | string | null,
   liveQuoteIds?: readonly string[] | null,
 ): DealStampStage | null {
+  const candidate = productState?.stage ?? fallbackStage;
+  // Closed lost always gets a LOST stamp — no quote pick required.
+  if (resolveDealStampStage(candidate) === "closed_lost") return "closed_lost";
   const selected = liveSelectedQuoteIds(productState?.selectedQuoteIds, liveQuoteIds);
   const outside = hasActiveOutsideOverride(productState?.outsideOverride);
   // Never stamp Quote sent / Bound / Inspection without a live selected quote
@@ -998,7 +1001,6 @@ export function productStampStage(
   // Outside FitFirst override is the exception (quoted/bound off-desk).
   if (selected.length === 0 && !outside) return null;
   if (productState?.issuedDone) return "done";
-  const candidate = productState?.stage ?? fallbackStage;
   if (!isLateProductStage(candidate) && !boundAt) return null;
   return resolveDealStampStage(candidate, null, boundAt);
 }
