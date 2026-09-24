@@ -17,6 +17,7 @@ import {
   PRIMARY_HEAT_OPTIONS,
 } from "@/lib/quote-sheet/sheet-defaults";
 import { dealProductDef, parseDealProduct, type DealProductId } from "./deal-products";
+import { AUTO_DL_FIELDS } from "@/lib/custom-fields/contact-parity-fields";
 
 /**
  * One Deal Details page per deal — not a full personal layout per product.
@@ -33,6 +34,8 @@ export const SHARED_DEAL_SECTION_IDS = [
   "co_applicant",
   "insured_address",
   "mailing_address",
+  "prefs",
+  "intake",
 ] as const;
 
 export const PRODUCT_SECTION_PREFIX = "product_";
@@ -49,6 +52,8 @@ export function isSharedDealSection(section: { id?: string; label?: string }): b
     return true;
   }
   if (id === "mailing_address" || label.includes("mailing address")) return true;
+  if (id === "prefs" || label === "preferences" || label.includes("preference")) return true;
+  if (id === "intake" || label === "intake") return true;
   if (isCommercialDealSection(section)) return true;
   return false;
 }
@@ -93,6 +98,7 @@ const AUTO_CORE: CustomFieldDef[] = [
   field("vehicle_year", "Year", "number"),
   field("make", "Make"),
   field("model", "Model"),
+  ...AUTO_DL_FIELDS,
 ];
 
 const PRODUCT_FIELDS: Record<DealProductId, { label: string; fields: CustomFieldDef[] }> = {

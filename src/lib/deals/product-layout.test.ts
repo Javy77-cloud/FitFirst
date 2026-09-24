@@ -47,6 +47,8 @@ describe("deal details shared body + product overlay", () => {
       "co_applicant",
       "insured_address",
       "mailing_address",
+      "prefs",
+      "intake",
     ]);
     expect(isSharedDealSection({ id: "contact" })).toBe(true);
     expect(isSharedDealSection({ id: "details" })).toBe(false);

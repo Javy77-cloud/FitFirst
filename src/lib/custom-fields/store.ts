@@ -274,6 +274,15 @@ const LEAD_CATALOG_UPGRADE_KEYS = new Set([
   "insurance_type_desired",
   "preferred_language",
   "source",
+  "referral",
+  "nickname",
+  "secondary_phone",
+  "preferred_contact_method",
+  "preferred_contact_time",
+  "spouse_name",
+  "spouse_dob",
+  "dependents",
+  "campaign_tag",
   "mailing_address",
   "contact_mailing_address",
   "pipeline",
@@ -322,6 +331,10 @@ async function ensureDealCoreLabelUpgrades() {
       await upsertFieldDef({ ...toFieldDef(row), label: "Insured Address", type: "address" }, "deals");
     }
     if (field.key === "preferred_language" && row.type === "single_line") {
+      await upsertFieldDef(field, "deals");
+    }
+    // Contact parity: dependents list (json) must not stay as Health headcount number.
+    if (field.key === "dependents" && field.type === "multi_line" && row.type !== "multi_line") {
       await upsertFieldDef(field, "deals");
     }
     if (

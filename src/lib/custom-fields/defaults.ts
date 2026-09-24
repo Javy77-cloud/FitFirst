@@ -17,6 +17,11 @@ import { LIVED_AT_ADDRESS_5_YEARS_KEY } from "./mailing-same";
 import { isDealDetailsLandlordFieldKey } from "./deal-details-landlord";
 import { INSURED_PROPERTY_KIND_FIELD, INSURED_PROPERTY_KIND_KEY } from "@/lib/deals/insured-property-kind";
 import { mhoDetailsCatalogFields } from "./mho-details-fields";
+import {
+  CONTACT_PARITY_CRM_FIELDS,
+  contactParityIntakeSection,
+  contactParityPersonSection,
+} from "./contact-parity-fields";
 
 function section(id: string, label: string, fieldKeys: string[]): LayoutSection {
   return { id, label, fieldKeys };
@@ -114,6 +119,7 @@ export const CORE_FIELDS: CustomFieldDef[] = dedupeFieldDefs([
     (field) =>
       !(BUSINESS_IDENTITY_REUSED_CORE_KEYS as readonly string[]).includes(field.key),
   ),
+  ...CONTACT_PARITY_CRM_FIELDS,
   ...catalogFieldsForProducts([...DEAL_PRODUCTS]).filter(
     (field) => !isDealDetailsLandlordFieldKey(field.key),
   ),
@@ -229,6 +235,8 @@ function essentialSections(): { left: LayoutSection[]; right: LayoutSection[] } 
         "contact_mailing_zip",
         "contact_mailing_county",
       ]),
+      contactParityPersonSection(),
+      contactParityIntakeSection(),
       section("pipeline", "Pipeline", [
         "insurance_type",
         "insurance_category",

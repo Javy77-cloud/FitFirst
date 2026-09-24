@@ -33,6 +33,10 @@ describe("Deal Details personal / identity layout", () => {
     expect(keys).not.toContain("applicant_employment");
     expect(keys).not.toContain("co_applicant_employment");
     expect(keys).toContain("epolicy");
+    expect(keys).toContain("nickname");
+    expect(keys).toContain("referral");
+    expect(keys).toContain("secondary_phone");
+    expect(keys).not.toContain("drivers_license_number");
     expect(layout.columns[0].sections.map((s) => s.id)).toEqual([
       "contact",
       "applicant",
@@ -41,6 +45,8 @@ describe("Deal Details personal / identity layout", () => {
     expect(layout.columns[1].sections.map((s) => s.id)).toEqual([
       "co_applicant",
       "mailing_address",
+      "prefs",
+      "intake",
       "pipeline",
     ]);
     expect(layout.columns[0].sections.find((s) => s.id === "contact")?.fieldKeys[0]).toBe(
@@ -100,7 +106,10 @@ describe("Deal Details personal / identity layout", () => {
     expect(html).toMatch(/data-ff-deal-section="insured_address"/);
     expect(html).toMatch(/data-ff-deal-section="mailing_address"/);
     expect(html).not.toMatch(/data-ff-deal-section="details"/);
+    expect(html).toMatch(/data-ff-deal-section="prefs"/);
+    expect(html).toMatch(/data-ff-deal-section="intake"/);
     expect(html).toMatch(/data-ff-deal-section="pipeline"/);
+    expect(html).not.toMatch(/data-ff-deal-field="drivers_license_number"/);
     expect(html).toMatch(/data-ff-pipeline-strip/);
     expect(html).toMatch(/aria-label="Pipeline"/);
     expect(html).toMatch(/aria-label="Insurance type"/);

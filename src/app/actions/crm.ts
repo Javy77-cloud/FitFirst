@@ -133,7 +133,7 @@ import {
   isSameContact,
   normalizeEin,
 } from "@/lib/wire/match-party";
-import { writeEin, writeSsn } from "@/lib/pii/write";
+import { writeEin, writeLicense, writeSsn } from "@/lib/pii/write";
 import { piiLookupHash } from "@/lib/pii/vault";
 import { scheduleWonClientEmails } from "@/lib/wire/email-jobs";
 import { carryLeadTagsToContact, mergeTags } from "@/lib/tags/module-tags";
@@ -1167,7 +1167,12 @@ async function sheetValuesForDeal(dealId: string): Promise<Record<string, QuoteS
     .from(quoteSheets)
     .where(and(eq(quoteSheets.tenantId, DEFAULT_TENANT_ID), eq(quoteSheets.dealId, dealId)));
   const home = sheets.find((s) => s.line === "home");
-  return (home ?? sheets[0])?.values ?? {};
+  const auto = sheets.find((s) => s.line === "auto");
+  const merged: Record<string, QuoteSheetFieldValue> = {};
+  for (const row of sheets) Object.assign(merged, row.values ?? {});
+  if (auto?.values) Object.assign(merged, auto.values);
+  if (home?.values) Object.assign(merged, home.values);
+  return merged;
 }
 
 
@@ -1237,28 +1242,52 @@ async function applyEmptyOnlyContactBind(opts: {
     health_notes: existing.healthNotes ?? "",
     notes: existing.notes ?? "",
     source: existing.source ?? "",
+    nickname: existing.nickname ?? "",
+    secondary_phone: existing.secondaryPhone ?? "",
+    gender: existing.gender ?? "",
+    spouse_name: existing.spouseName ?? "",
+    spouse_dob: existing.spouseDob ?? "",
+    dependents: Array.isArray(existing.dependents) ? JSON.stringify(existing.dependents) : "",
+    dl_state: existing.dlState ?? "",
+    dl_expiration: existing.licenseExpiration ?? "",
+    // Treat vaulted DL as filled so empty-only bind never re-encrypts over an existing license.
+    drivers_license_number: existing.licenseNumberEnc ? "(set)" : "",
   };
 
   const patch = emptyOnlyContactValues(existingValues, incoming);
   const systemPatch = contactSystemPatchFromValues(patch);
   const customPatch = contactCustomPatchFromValues(patch);
 
-  if (Object.keys(systemPatch).length) {
+  const dependentsRaw = patch.dependents?.trim();
+  let dependentsPatch: typeof existing.dependents | undefined;
+  if (dependentsRaw) {
+    try {
+      const parsed = JSON.parse(dependentsRaw);
+      if (Array.isArray(parsed)) dependentsPatch = parsed;
+    } catch {
+      dependentsPatch = undefined;
+    }
+  }
+  const licensePatch = patch.drivers_license_number
+    ? writeLicense(patch.drivers_license_number)
+    : null;
+
+  if (Object.keys(systemPatch).length || dependentsPatch || licensePatch || opts.lead?.tags?.length) {
     await db
       .update(contacts)
       .set({
         ...systemPatch,
+        ...(dependentsPatch ? { dependents: dependentsPatch } : {}),
+        ...(licensePatch
+          ? {
+              licenseNumberEnc: licensePatch.licenseNumberEnc,
+              licenseNumberIv: licensePatch.licenseNumberIv,
+              licenseNumberLast4: licensePatch.licenseNumberLast4,
+              licenseNumber: null,
+            }
+          : {}),
         source: existing.source || opts.dealSource || opts.lead?.source || null,
         tags: mergeTags(existing.tags, carryLeadTagsToContact(opts.lead?.tags)),
-        updatedAt: new Date(),
-      })
-      .where(eq(contacts.id, opts.contactId));
-  } else if (opts.lead?.tags?.length) {
-    await db
-      .update(contacts)
-      .set({
-        tags: mergeTags(existing.tags, carryLeadTagsToContact(opts.lead?.tags)),
-        source: existing.source || opts.dealSource || opts.lead?.source || null,
         updatedAt: new Date(),
       })
       .where(eq(contacts.id, opts.contactId));
@@ -1379,8 +1408,14 @@ export async function bindDeal(formData: FormData) {
   let accountId = deal.accountId;
   const allSheets = await db.select().from(quoteSheets).where(eq(quoteSheets.dealId, dealId));
   const homeSheet = allSheets.find((row) => row.line === "home");
-  const sheet = homeSheet ?? allSheets[0];
-  const sheetValues = sheet?.values ?? {};
+  const autoSheet = allSheets.find((row) => row.line === "auto");
+  // Merge sheets so auto driver_1_license reaches Contact bind; home wins shared identity keys.
+  const sheetValues: Record<string, QuoteSheetFieldValue> = {};
+  for (const row of allSheets) {
+    Object.assign(sheetValues, row.values ?? {});
+  }
+  if (autoSheet?.values) Object.assign(sheetValues, autoSheet.values);
+  if (homeSheet?.values) Object.assign(sheetValues, homeSheet.values);
 
   if (bindTarget === "account") {
     const identity = {
