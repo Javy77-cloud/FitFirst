@@ -21,6 +21,7 @@ import {
   CONTACT_MODULE_FIELDS,
   contactCardLayout,
 } from "@/lib/contacts/contact-field-catalog";
+import { CONTACT_PARITY_CRM_FIELDS } from "./contact-parity-fields";
 
 export const FIELD_LAYOUT_MODULES = [
   "leads",
@@ -136,6 +137,8 @@ const LEAD_FIELDS: CustomFieldDef[] = [
     options: [...LEAD_LANGUAGE_OPTIONS],
     systemKey: "preferredLanguage",
   },
+  { key: "referral", label: "Referred by", type: "single_line" },
+  ...CONTACT_PARITY_CRM_FIELDS.filter((field) => field.key !== "source" && field.key !== "referral"),
   ...APPLICANT_CRM_FIELDS,
 ];
 
@@ -316,6 +319,7 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
       [
         section("details", "Details", [
           "source",
+          "referral",
           "cadence",
           "status",
           "temperature",

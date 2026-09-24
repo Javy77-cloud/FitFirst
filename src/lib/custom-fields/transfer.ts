@@ -2,6 +2,7 @@ import type { ConvertLead } from "@/lib/crm/convert";
 import { mergeDealListCascadeSync } from "@/lib/deals/insurance-cascade";
 import { canonicalizeSellingAgencyValues } from "@/lib/deals/selling-agency";
 import { APPLICANT_CUSTOM_KEYS } from "./applicant-fields";
+import { CONTACT_PARITY_CUSTOM_KEYS } from "./contact-parity-fields";
 
 export const LEAD_CARRY_FIELDS = [
   { key: "firstName", label: "First name" },
@@ -150,6 +151,7 @@ export const LEAD_TO_DEAL_CUSTOM_KEYS = [
   "insurance_category",
   "insurance_subtype",
   "picklist_yp0c",
+  ...CONTACT_PARITY_CUSTOM_KEYS,
   ...APPLICANT_CUSTOM_KEYS,
   "co_applicant_first_name",
   "co_applicant_last_name",

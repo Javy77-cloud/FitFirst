@@ -32,6 +32,10 @@ import { AGENCY_LAYOUT_REVISION, allLayoutFieldKeys, withLayoutRevision } from "
 import { splitInsuredMailingAddressSections, needsAddressSectionSplit } from "./split-address-sections";
 import { migrateDealLayoutParity, needsDealLayoutParity } from "./migrate-deal-layout-parity";
 import {
+  ensureContactParityDealLayout,
+  needsContactParityDealLayout,
+} from "./contact-parity-fields";
+import {
   needsDealDetailsLandlordStrip,
   stripDealDetailsLandlordFields,
 } from "./deal-details-landlord";
@@ -274,6 +278,16 @@ const LEAD_CATALOG_UPGRADE_KEYS = new Set([
   "insurance_type_desired",
   "preferred_language",
   "source",
+  "referral",
+  "nickname",
+  "secondary_phone",
+  "preferred_contact_method",
+  "preferred_contact_time",
+  "spouse_name",
+  "spouse_dob",
+  "spouse_link",
+  "dependents",
+  "campaign_tag",
   "mailing_address",
   "contact_mailing_address",
   "pipeline",
@@ -322,6 +336,10 @@ async function ensureDealCoreLabelUpgrades() {
       await upsertFieldDef({ ...toFieldDef(row), label: "Insured Address", type: "address" }, "deals");
     }
     if (field.key === "preferred_language" && row.type === "single_line") {
+      await upsertFieldDef(field, "deals");
+    }
+    // Contact parity: dependents list (json) must not stay as Health headcount number.
+    if (field.key === "dependents" && field.type === "multi_line" && row.type !== "multi_line") {
       await upsertFieldDef(field, "deals");
     }
     if (
@@ -815,6 +833,25 @@ async function migrateInsuredPropertyKindLayout(
   return next;
 }
 
+
+async function migrateContactParityDealLayouts(
+  rows: { id: string; columns: unknown }[],
+  picked: FieldLayout,
+): Promise<FieldLayout> {
+  if (!needsContactParityDealLayout(picked)) return picked;
+  const next = ensureContactParityDealLayout(picked);
+  for (const row of rows) {
+    const parsed = parseLayout(row.columns);
+    const remapped = ensureContactParityDealLayout(parsed);
+    if (JSON.stringify(parsed.columns) === JSON.stringify(remapped.columns)) continue;
+    await db
+      .update(deskFieldLayouts)
+      .set({ columns: remapped, updatedAt: new Date() })
+      .where(eq(deskFieldLayouts.id, row.id));
+  }
+  return next;
+}
+
 async function migrateDealLandlordStrip(
   rows: { id: string; columns: unknown }[],
   picked: FieldLayout,
@@ -875,8 +912,9 @@ export async function loadLayoutForModule(module: FieldLayoutModule, line = "HO"
         const withParity = await migrateDealParityLayouts(rows, withAddresses);
         const stripped = await migrateDealLandlordStrip(rows, withParity);
         const withPropertyKind = await migrateInsuredPropertyKindLayout(rows, stripped);
+        const withContactParity = await migrateContactParityDealLayouts(rows, withPropertyKind);
         const fields = await listFieldDefs("deals").catch(() => []);
-        return persistCanonicalSellingAgencyLayout("deals", rows, withPropertyKind, fields);
+        return persistCanonicalSellingAgencyLayout("deals", rows, withContactParity, fields);
       }
       // Tip sep7hk: carriers sparse seed still gets full catalog in Edit Layout.
       // Tip sep7jr: leads/contacts/etc keep agency removals — do not resurrect deleted fields.

@@ -40,7 +40,24 @@ export function LayoutSectionFieldGrid({
       data-ff-collapse={collapseOnNarrow ? "1" : undefined}
     >
       {rows.map((row) => {
-        const key = row.keys[0]!;
+        const primary = row.keys[0]!;
+        // Spouse name + DOB + link: one full-width row of three equal cells.
+        if (row.span === 3 && row.keys.length === 3) {
+          return (
+            <div
+              key={row.keys.join("|")}
+              className="col-span-full min-w-0 grid grid-cols-3 gap-x-3 gap-y-2"
+              data-ff-field-span="3"
+              data-ff-spouse-trio=""
+            >
+              {row.keys.map((key) => (
+                <div key={key} className="min-w-0" data-ff-field-span="1">
+                  {renderField(key)}
+                </div>
+              ))}
+            </div>
+          );
+        }
         const span = row.span && row.span > 1 ? row.span : undefined;
         const cellClass =
           row.kind === "wide"
@@ -50,11 +67,11 @@ export function LayoutSectionFieldGrid({
               : "min-w-0";
         return (
           <div
-            key={key}
+            key={primary}
             className={cellClass}
             data-ff-field-span={span === 2 ? "2" : row.kind === "wide" ? "full" : "1"}
           >
-            {renderField(key)}
+            {renderField(primary)}
           </div>
         );
       })}
