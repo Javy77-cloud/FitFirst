@@ -170,7 +170,10 @@ describe("policies stack view", () => {
     );
     const datedOpen = dated.slice(dated.indexOf("data-ff-policy-renew-cue"));
     expect(datedOpen.startsWith('data-ff-policy-renew-cue=""')).toBe(true);
-    expect(datedOpen.indexOf("Renews in 12d, Oct 3, 2026")).toBeLessThan(datedOpen.indexOf("data-ff-book-action"));
+    expect(datedOpen.indexOf("Renews in 12d")).toBeLessThan(datedOpen.indexOf("data-ff-book-action"));
+    expect(datedOpen).not.toContain("Oct 3, 2026");
+    expect(dated).toContain("Expires Oct 3, 2026");
+    expect(datedOpen).not.toContain("data-ff-renewal-agreed");
 
     const bare = renderToStaticMarkup(
       <BookGlanceCardView
@@ -201,6 +204,88 @@ describe("policies stack view", () => {
     const bands = renderToStaticMarkup(<BookGlanceCardView card={card} layoutMode="bands" />);
     expect(bands).not.toContain("data-ff-policy-stack-card");
     expect(bands).toContain("Expires soon");
+
+    const bandWhy = renderToStaticMarkup(
+      <BookGlanceCardView
+        card={{
+          ...card,
+          why: "Renews in 12d, Oct 3, 2026",
+          renewalAgreed: {
+            handled: true,
+            termEffective: "2025-10-10",
+            termExpiration: "2026-10-09",
+            asOf: new Date("2026-09-24T16:00:00.000Z"),
+          },
+        }}
+        layoutMode="bands"
+      />,
+    );
+    expect(bandWhy).toContain("Renews in 12d, Oct 3, 2026");
+    expect(bandWhy).not.toContain("data-ff-renewal-agreed");
+    expect(bandWhy).not.toContain("data-ff-policy-stack-card");
+  });
+
+  it("stamps Renewal agreed beside the countdown and keeps the line from wrapping", () => {
+    const css = source("src/app/globals.css");
+    expect(css).toMatch(
+      /\[data-ff-book-command="policies"\]\[data-ff-book-layout="stack"\] \.ff-policy-renew-line \{[^}]*display:\s*flex;[^}]*flex-wrap:\s*nowrap;[^}]*overflow:\s*hidden/,
+    );
+    expect(css).toMatch(
+      /\[data-ff-book-command="policies"\]\[data-ff-book-layout="stack"\] \.ff-policy-renewal-agreed \{[^}]*flex:\s*0 0 auto;[^}]*white-space:\s*nowrap/,
+    );
+    expect(css).toMatch(
+      /\[data-ff-book-command="policies"\]\[data-ff-book-layout="stack"\] \.ff-policy-renew-line \{[^}]*flex-wrap:\s*nowrap/,
+    );
+    expect(css).not.toMatch(
+      /\[data-ff-book-command="policies"\]\[data-ff-book-layout="stack"\] \.ff-policy-renew-line \{[^}]*flex-wrap:\s*wrap/,
+    );
+
+    const waiting = renderToStaticMarkup(
+      <BookGlanceCardView
+        card={{
+          ...card,
+          why: "Renews in 16d, Oct 9, 2026",
+          renewalAgreed: {
+            handled: true,
+            termEffective: "2025-10-10",
+            termExpiration: "2026-10-09",
+            asOf: new Date("2026-09-24T16:00:00.000Z"),
+          },
+        }}
+        layoutMode="stack"
+      />,
+    );
+    const line = waiting.slice(
+      waiting.indexOf('data-ff-policy-renew-line=""'),
+      waiting.indexOf('data-ff-book-action=""'),
+    );
+    expect(line).toContain("Renews in 16d");
+    expect(line).not.toContain("Oct 9, 2026");
+    expect(line).toContain('data-ff-renewal-agreed=""');
+    expect(line).toContain("Renewal agreed");
+    expect(line.indexOf("Renews in 16d")).toBeLessThan(line.indexOf("Renewal agreed"));
+    expect(line).toContain("ff-deal-notice-compact-ink");
+    expect(line).toContain("ff-policy-renewal-agreed");
+
+    const arrived = renderToStaticMarkup(
+      <BookGlanceCardView
+        card={{
+          ...card,
+          why: "Renews in 0d, Oct 9, 2026",
+          renewalAgreed: {
+            handled: true,
+            termEffective: "2026-10-10",
+            termExpiration: "2027-10-09",
+            priorExpiration: "2026-10-09",
+            asOf: new Date("2026-10-10T16:00:00.000Z"),
+          },
+        }}
+        layoutMode="stack"
+      />,
+    );
+    const arrivedOpen = arrived.slice(arrived.indexOf('data-ff-policy-stack-open=""'));
+    expect(arrivedOpen).not.toContain("data-ff-renewal-agreed");
+    expect(arrivedOpen).toContain("Renews in 0d");
   });
 
   it("sticks a label-only column header between the lenses and the first card", () => {

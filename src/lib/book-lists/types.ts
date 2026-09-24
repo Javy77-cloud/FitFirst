@@ -101,6 +101,20 @@ export type BookGlanceCard = {
   flags: BookCardFlags;
   inboxCue?: string | null;
   inboxHref?: string | null;
+  /**
+   * Policies stack only. Dates for the render-time "Renewal agreed" stamp.
+   * Visibility is not stored here — the stack card computes it.
+   */
+  renewalAgreed?: {
+    handled: boolean;
+    /** policies.renewal_date. Swap the source for renewalDateFor(policy) later. */
+    renewalDate?: string | null;
+    renewedEffective?: string | null;
+    termEffective?: string | null;
+    termExpiration?: string | null;
+    priorExpiration?: string | null;
+    asOf?: Date;
+  } | null;
 };
 
 export type BookLensId =

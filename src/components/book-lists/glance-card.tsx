@@ -2,6 +2,11 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ClientStatusDot } from "@/components/contacts/client-status-dot";
 import { mailtoHref, telHref } from "@/lib/desk/contact-actions";
+import {
+  RENEWAL_AGREED_LABEL,
+  showRenewalAgreedStamp,
+  stackRenewCueText,
+} from "@/lib/book-lists/renewal-agreed-stamp";
 import type { BookCardAction, BookCardFact, BookGlanceCard } from "@/lib/book-lists/types";
 import { cn } from "@/lib/utils";
 
@@ -209,8 +214,8 @@ function policyOpenCue(card: BookGlanceCard): string {
     .split(" · ")
     .map((bit) => bit.trim())
     .filter((bit) => bit && !isEmptyDash(bit) && /^(?:renews|expires|expired|past expiration)\b/i.test(bit));
-  if (bits.length > 0) return bits.join(" · ");
-  return policyFact(card, "renews") || policyFact(card, "expires");
+  const raw = bits.length > 0 ? bits.join(" · ") : policyFact(card, "renews") || policyFact(card, "expires");
+  return stackRenewCueText(raw);
 }
 
 const CONTACT_STACK_META = ["language", "status", "dob", "policies"] as const;
@@ -489,6 +494,15 @@ function PolicyStackCard({
   const tel = phone ? telHref(phone) : null;
   const mail = email ? mailtoHref(email) : null;
   const cue = policyOpenCue(card);
+  const renewalAgreed = showRenewalAgreedStamp({
+    renewalHandled: card.renewalAgreed?.handled,
+    renewalDate: card.renewalAgreed?.renewalDate,
+    renewedEffective: card.renewalAgreed?.renewedEffective,
+    termEffective: card.renewalAgreed?.termEffective,
+    termExpiration: card.renewalAgreed?.termExpiration,
+    priorExpiration: card.renewalAgreed?.priorExpiration,
+    asOf: card.renewalAgreed?.asOf ?? new Date(),
+  });
   const cell = (id: string) => {
     const label = policyFact(card, id);
     return (
@@ -528,9 +542,19 @@ function PolicyStackCard({
           </span>
           {POLICY_STACK_BOTTOM.map((id) => cell(id))}
           <div className="ff-policy-stack-open" data-ff-policy-stack-open="">
-            <p className="ff-stack-mid" data-ff-stack-mid="" data-ff-policy-renew-cue="" title={cue || undefined}>
-              {cue}
-            </p>
+            <div className="ff-policy-renew-line" data-ff-policy-renew-line="">
+              <p className="ff-stack-mid" data-ff-stack-mid="" data-ff-policy-renew-cue="" title={cue || undefined}>
+                {cue}
+              </p>
+              {renewalAgreed ? (
+                <span
+                  className="ff-deal-status-stamp-ink ff-deal-notice-compact-ink ff-policy-renewal-agreed"
+                  data-ff-renewal-agreed=""
+                >
+                  {RENEWAL_AGREED_LABEL}
+                </span>
+              ) : null}
+            </div>
             <Link href={card.primaryAction.href} className="ff-stack-action" data-ff-book-action="">
               {card.primaryAction.label}
             </Link>

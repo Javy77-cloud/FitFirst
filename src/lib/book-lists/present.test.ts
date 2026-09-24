@@ -326,4 +326,34 @@ describe("account card glance", () => {
     expect(card.facts?.find((f) => f.id === "renews")?.tone).toBeUndefined();
   });
 
+  it("carries Client staying dates for the stack stamp without deciding visibility", () => {
+    const asOf = new Date("2026-09-24T16:00:00.000Z");
+    const card = presentPolicyCard(
+      {
+        id: "p-stamp",
+        policyNumber: "HO-STAMP",
+        displayName: "Stamp",
+        status: "active",
+        lineOfBusiness: "HO",
+        expirationDate: "2026-10-09",
+        effectiveDate: "2025-10-10",
+        renewedEffective: "2026-10-10",
+        priorExpiration: "2025-10-09",
+        updatedAt: "2026-09-23T16:00:00.000Z",
+      },
+      { openClaims: 0, pendingEndorsements: 0, missingDocs: 0, renewalHandled: true },
+      asOf,
+    );
+    expect(card.renewalAgreed).toEqual({
+      handled: true,
+      renewalDate: null,
+      renewedEffective: "2026-10-10",
+      termEffective: "2025-10-10",
+      termExpiration: "2026-10-09",
+      priorExpiration: "2025-10-09",
+      asOf,
+    });
+    expect(card.why).toBe("Renews in 15d, Oct 9, 2026");
+  });
+
 });
