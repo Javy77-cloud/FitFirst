@@ -6,12 +6,18 @@
  * This flattens that shape onto the real Auto risk-profile keys before mapping.
  */
 
+import { normalizeNamedInsured } from "@/lib/people/named-insured";
 import {
   AUTO_DRIVER_PARTS,
   autoDriversSamePerson,
   collapseDriverRecords,
   normalizeAutoDriverName,
 } from "@/lib/quote-sheet/auto-driver-dedupe";
+import {
+  AUTO_ANNUAL_MILES_OPTIONS,
+  AUTO_VEHICLE_USAGE_OPTIONS,
+  VEHICLE_LIENHOLDER_OPTIONS,
+} from "@/lib/quote-sheet/sheet-defaults";
 
 export type LooseJson = Record<string, unknown>;
 
@@ -183,16 +189,79 @@ function looksLikeAuto(json: LooseJson, shopLine?: string | null): boolean {
   );
 }
 
+const VEHICLE_PART_KEY: Record<string, string> = {
+  vin: "vin",
+  year: "vehicle_year",
+  make: "vehicle_make",
+  model: "vehicle_model",
+  usage: "vehicle_usage",
+  annual_miles: "annual_miles",
+  garaging_zip: "garaging_zip",
+  garaging_address: "garaging_address",
+  lienholder: "vehicle_lienholder",
+  lienholder_other: "vehicle_lienholder_other",
+};
+
 function vehicleKey(index: number, part: string): string {
-  if (index === 0) {
-    if (part === "vin") return "vin";
-    if (part === "year") return "vehicle_year";
-    if (part === "make") return "vehicle_make";
-    if (part === "model") return "vehicle_model";
-    if (part === "usage") return "vehicle_usage";
-    return part;
-  }
+  if (index === 0) return VEHICLE_PART_KEY[part] ?? part;
   return `vehicle_${index + 1}_${part}`;
+}
+
+/** Printed annual miles → the Risk Profile bucket. Unknown text stays as printed. */
+export function bucketAnnualMiles(raw: string): string {
+  const text = raw.trim();
+  if (!text) return "";
+  const exact = AUTO_ANNUAL_MILES_OPTIONS.find((option) => option.toLowerCase() === text.toLowerCase());
+  if (exact) return exact;
+  const digits = text.replace(/[, ]/g, "").match(/\d+/);
+  if (!digits) return text;
+  const miles = Number(digits[0]);
+  if (!Number.isFinite(miles)) return text;
+  if (miles >= 25000) return "25,000+";
+  const ranges: Array<[number, number, string]> = [
+    [0, 2999, "0 – 2,999"],
+    [3000, 3999, "3,000 – 3,999"],
+    [4000, 4999, "4,000 – 4,999"],
+    [5000, 5999, "5,000 – 5,999"],
+    [6000, 6999, "6,000 – 6,999"],
+    [7000, 7999, "7,000 – 7,999"],
+    [8000, 8999, "8,000 – 8,999"],
+    [9000, 9999, "9,000 – 9,999"],
+    [10000, 10999, "10,000 – 10,999"],
+    [11000, 11999, "11,000 – 11,999"],
+    [12000, 14999, "12,000 – 14,999"],
+    [15000, 19999, "15,000 – 19,999"],
+    [20000, 24999, "20,000 – 24,999"],
+  ];
+  return ranges.find(([lo, hi]) => miles >= lo && miles <= hi)?.[2] ?? text;
+}
+
+export function normalizeVehicleUsage(raw: string): string {
+  const text = raw.trim();
+  if (!text) return "";
+  const exact = AUTO_VEHICLE_USAGE_OPTIONS.find((option) => option.toLowerCase() === text.toLowerCase());
+  if (exact) return exact;
+  const low = text.toLowerCase();
+  if (/pleasure|personal|errand/.test(low)) return "Personal";
+  if (/commut|work|school/.test(low)) return "Commute";
+  if (/business|commercial|artisan/.test(low)) return "Business";
+  if (/farm/.test(low)) return "Farm";
+  return text;
+}
+
+function placeLienholder(out: LooseJson, index: number, raw: unknown) {
+  const text = textOf(raw).trim();
+  if (!text) return;
+  const low = text.toLowerCase();
+  const hit = VEHICLE_LIENHOLDER_OPTIONS.find(
+    (option) => option !== "Other" && (option.toLowerCase() === low || low.includes(option.toLowerCase())),
+  );
+  if (hit) {
+    setIfEmpty(out, vehicleKey(index, "lienholder"), hit);
+    return;
+  }
+  setIfEmpty(out, vehicleKey(index, "lienholder"), "Other");
+  setIfEmpty(out, vehicleKey(index, "lienholder_other"), text);
 }
 
 function applyVehicle(out: LooseJson, item: LooseJson, index: number) {
@@ -215,7 +284,14 @@ function applyVehicle(out: LooseJson, item: LooseJson, index: number) {
     if (split.make) setIfEmpty(out, vehicleKey(index, "make"), split.make);
     if (split.model) setIfEmpty(out, vehicleKey(index, "model"), split.model);
   }
-  setIfEmpty(out, vehicleKey(index, "usage"), pull(item, ["usage", "use", "vehicle_usage", "vehicle_use"]));
+  setIfEmpty(out, vehicleKey(index, "usage"), pull(item, ["usage", "use", "vehicle_usage", "vehicle_use", "primary_use"]));
+  const miles = pull(item, ["annual_miles", "annual_mileage", "miles_per_year", "yearly_miles"]);
+  if (hasPrinted(miles)) setIfEmpty(out, vehicleKey(index, "annual_miles"), bucketAnnualMiles(textOf(miles)));
+  placeLienholder(
+    out,
+    index,
+    pull(item, ["lienholder", "loss_payee", "lien_holder", "additional_interest", "finance_company"]),
+  );
   const vehicleTerm = pull(item, [
     "full_term_premium",
     "total_premium",
@@ -223,21 +299,21 @@ function applyVehicle(out: LooseJson, item: LooseJson, index: number) {
     "6_month_premium",
     "six_month_premium",
     "vehicle_total",
+    "vehicle_premium",
+    "premium",
   ]);
-  if (hasPrinted(vehicleTerm)) rememberVehiclePremium(out, vehicleTerm);
+  if (hasPrinted(vehicleTerm)) {
+    rememberVehiclePremium(out, vehicleTerm);
+    setIfEmpty(out, `fill_gap_vehicle_${index + 1}_premium`, textOf(vehicleTerm).replace(/[$,]/g, "").trim());
+  }
   for (const key of COVERAGE_LIST_KEYS) {
     const raw = pull(item, [key]);
-    if (raw != null) applyCoverages(out, raw, hasPrinted(vehicleTerm) ? "limits" : "vehicle");
+    if (raw != null) applyCoverages(out, raw, hasPrinted(vehicleTerm) ? "limits" : "vehicle", index);
   }
   const garagingZip = pull(item, ["garaging_zip", "garage_zip", "garaged_zip"]);
-  const garagingAddress = pull(item, ["garaging_address", "garage_address", "garaging_location"]);
-  if (index === 0) {
-    setIfEmpty(out, "garaging_zip", garagingZip);
-    setIfEmpty(out, "garaging_address", garagingAddress);
-  } else {
-    setIfEmpty(out, vehicleKey(index, "garaging_zip"), garagingZip);
-    setIfEmpty(out, vehicleKey(index, "garaging_address"), garagingAddress);
-  }
+  const garagingAddress = pull(item, ["garaging_address", "garage_address", "garaging_location", "garaged_at"]);
+  setIfEmpty(out, vehicleKey(index, "garaging_zip"), garagingZip);
+  setIfEmpty(out, vehicleKey(index, "garaging_address"), garagingAddress);
 }
 
 function fieldText(item: LooseJson, names: string[]): string {
@@ -321,10 +397,17 @@ function applyDriver(out: LooseJson, item: LooseJson, index: number) {
   setIfEmpty(out, `${prefix}status`, pull(item, ["status", "license_status"]));
   setIfEmpty(out, `${prefix}years_licensed`, pull(item, ["years_licensed"]));
   setIfEmpty(out, `${prefix}household_status`, pull(item, ["household_status"]));
+  const licenseState = pull(item, ["license_state", "dl_state", "licensed_state", "state_licensed"]);
+  if (hasPrinted(licenseState)) setIfEmpty(out, `fill_gap_driver_${n}_license_state`, licenseState);
+  const excluded = pull(item, ["excluded", "is_excluded", "excluded_driver"]);
+  if (/^(y|yes|true|excluded)$/i.test(textOf(excluded).trim())) {
+    setIfEmpty(out, `${prefix}household_status`, "Excluded driver");
+  }
+  const relationship = pull(item, ["relationship", "relation", "relation_to_insured"]);
   if (n > 1) {
-    setIfEmpty(out, `${prefix}relationship`, pull(item, ["relationship", "relation"]));
-  } else {
-    pull(item, ["relationship", "relation"]);
+    setIfEmpty(out, `${prefix}relationship`, relationship);
+  } else if (hasPrinted(relationship)) {
+    setIfEmpty(out, "fill_gap_driver_1_relationship", relationship);
   }
 }
 
@@ -400,7 +483,20 @@ function noteSchedulePremium(out: LooseJson, item: LooseJson, mode: "policy" | "
   setPremiumIfBetter(out, amount, rank);
 }
 
-function applyCoverages(out: LooseJson, raw: unknown, mode: "policy" | "vehicle" | "limits" = "policy") {
+function fillGapCoverageKey(label: string): string | null {
+  const key = normKey(label);
+  if (/medical_payments|med_pay|medpay/.test(key)) return "fill_gap_med_pay";
+  if (/(^|_)rental($|_)|transportation_expense|extended_transportation/.test(key)) return "fill_gap_rental";
+  if (/towing|roadside/.test(key)) return "fill_gap_towing";
+  return null;
+}
+
+function applyCoverages(
+  out: LooseJson,
+  raw: unknown,
+  mode: "policy" | "vehicle" | "limits" = "policy",
+  vehicleIndex?: number,
+) {
   const split: { person?: unknown; accident?: unknown } = {};
   const items = Array.isArray(raw) ? raw : isRecord(raw) ? [raw] : [];
   for (const source of items) {
@@ -410,12 +506,12 @@ function applyCoverages(out: LooseJson, raw: unknown, mode: "policy" | "vehicle"
     const label = textOf(pull(item, ["name", "coverage", "type", "label", "description"]));
     const limit = pull(item, ["limit", "value", "amount", "deductible"]);
     if (label && Object.keys(item).length === 0) {
-      applyCoverageEntry(out, label, limit ?? label, split);
+      applyCoverageEntry(out, label, limit ?? label, split, vehicleIndex);
       continue;
     }
-    if (label && limit != null) applyCoverageEntry(out, label, limit, split);
+    if (label && limit != null) applyCoverageEntry(out, label, limit, split, vehicleIndex);
     for (const [key, value] of Object.entries(item)) {
-      applyCoverageEntry(out, key, value, split);
+      applyCoverageEntry(out, key, value, split, vehicleIndex);
     }
   }
   if (!hasPrinted(out.liability_bi) && split.person != null && split.accident != null) {
@@ -430,6 +526,7 @@ function applyCoverageEntry(
   label: string,
   raw: unknown,
   split?: { person?: unknown; accident?: unknown },
+  vehicleIndex?: number,
 ) {
   const key = normKey(label);
   if (split && isSplitBi(key, "person")) {
@@ -440,8 +537,26 @@ function applyCoverageEntry(
     split.accident = raw;
     return;
   }
+  const gap = fillGapCoverageKey(label);
+  if (gap) {
+    const stored =
+      vehicleIndex != null && vehicleIndex > 0
+        ? `fill_gap_vehicle_${vehicleIndex + 1}_${gap.slice("fill_gap_".length)}`
+        : gap;
+    setIfEmpty(out, stored, raw);
+    return;
+  }
   const target = coverageTargetForLabel(label);
   if (!target) return;
+  if (
+    vehicleIndex != null &&
+    vehicleIndex > 0 &&
+    hasPrinted(out[target]) &&
+    textOf(out[target]).trim() !== textOf(raw).trim()
+  ) {
+    setIfEmpty(out, `fill_gap_vehicle_${vehicleIndex + 1}_${target}`, raw);
+    return;
+  }
   setIfEmpty(out, target, raw);
 }
 
@@ -1214,5 +1329,73 @@ export function expandAutoDecLayout(json: LooseJson, shopLine?: string | null): 
     if (digits) out.current_premium = digits;
   }
 
+  captureAutoFillGaps(out);
+  canonicalizeAutoSheetValues(out);
+  normalizeAutoPeople(out);
+
   return out;
+}
+
+/** Facts the Auto Risk Profile has no column for. Kept as fill_gap_* so they stay unmapped. */
+function captureAutoFillGaps(out: LooseJson) {
+  const term = pull(out, ["term_length", "policy_term_length", "term_months", "policy_term_months"]);
+  if (hasPrinted(term)) setIfEmpty(out, "fill_gap_term_length", term);
+  const discounts = pull(out, ["discounts", "discount", "applied_discounts", "policy_discounts"]);
+  if (Array.isArray(discounts)) {
+    const text = discounts
+      .map((item) => textOf(item).trim())
+      .filter(Boolean)
+      .join("; ");
+    if (text) setIfEmpty(out, "fill_gap_discounts", text);
+  } else if (hasPrinted(discounts)) {
+    setIfEmpty(out, "fill_gap_discounts", discounts);
+  }
+  const medPay = pull(out, ["med_pay", "medical_payments", "medical_payments_coverage"]);
+  if (hasPrinted(medPay)) setIfEmpty(out, "fill_gap_med_pay", medPay);
+  const rental = pull(out, ["rental", "rental_reimbursement", "transportation_expense"]);
+  if (hasPrinted(rental)) setIfEmpty(out, "fill_gap_rental", rental);
+  const towing = pull(out, ["towing", "towing_and_labor", "roadside"]);
+  if (hasPrinted(towing)) setIfEmpty(out, "fill_gap_towing", towing);
+}
+
+function canonicalizeAutoSheetValues(out: LooseJson) {
+  for (const key of Object.keys(out)) {
+    if (key === "annual_miles" || /_annual_miles$/.test(key)) {
+      const text = textOf(out[key]).trim();
+      if (text) out[key] = rewritePrinted(out[key], bucketAnnualMiles(text));
+    }
+    if (key === "vehicle_usage" || /_usage$/.test(key)) {
+      const text = textOf(out[key]).trim();
+      if (text) out[key] = rewritePrinted(out[key], normalizeVehicleUsage(text));
+    }
+  }
+}
+
+function rewritePrinted(raw: unknown, next: string): unknown {
+  if (!next) return raw;
+  if (isRecord(raw) && (raw.value != null || raw.text != null || raw.limit != null)) {
+    return { ...raw, value: next };
+  }
+  return next;
+}
+
+function normalizeAutoPeople(out: LooseJson) {
+  for (const key of [
+    "named_insured",
+    "applicant_name",
+    "current_policy_name_insured",
+    "secondary_named_insured",
+  ]) {
+    rewritePerson(out, key);
+  }
+  for (const key of Object.keys(out)) {
+    if (/^driver_\d+_name$/.test(key)) rewritePerson(out, key);
+  }
+}
+
+function rewritePerson(out: LooseJson, key: string) {
+  if (!hasPrinted(out[key])) return;
+  const next = normalizeNamedInsured(textOf(out[key]));
+  if (!next) return;
+  out[key] = rewritePrinted(out[key], next);
 }

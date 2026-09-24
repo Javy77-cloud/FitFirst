@@ -1,5 +1,6 @@
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
+import { normalizeNamedInsured } from "@/lib/people/named-insured";
 import { extractKeyToSheetKey, fieldsForLine } from "./catalog";
 import type { SheetProduct } from "./products";
 import {
@@ -72,6 +73,8 @@ export type ApplyFillResult = {
   values: Record<string, QuoteSheetFieldValue>;
   filledKeys: string[];
   skippedKeys: string[];
+  /** Existing cells left alone. Each line is the DEC value versus the sheet value. */
+  diffs?: string[];
 };
 
 /** Dec Rating Information "None" / "No" → sheet yes/no (or leave letter codes alone). */
@@ -266,6 +269,7 @@ export function applyExtractedToSheet(
   const values: Record<string, QuoteSheetFieldValue> = { ...existing };
   const filledKeys: string[] = [];
   const skippedKeys: string[] = [];
+  const diffs: string[] = [];
   const source = options?.source ?? "extracted";
   const overwriteWeakCheck = Boolean(options?.overwriteWeakCheck);
   const recordMismatches = Boolean(options?.recordMismatches);
@@ -340,6 +344,15 @@ export function applyExtractedToSheet(
     if (key === "driver_1_status" || (key.startsWith("driver_") && key.endsWith("_status"))) {
       nextValue = normalizeLicenseStatus(nextValue);
     }
+    if (
+      key === "named_insured" ||
+      key === "applicant_name" ||
+      key === "secondary_named_insured" ||
+      key === "current_policy_named_insured" ||
+      /^driver_\d+_name$/.test(key)
+    ) {
+      nextValue = normalizeNamedInsured(nextValue) ?? "";
+    }
     if (key === "liability_bi" || key === "um_uim") nextValue = normalizeAutoSplitLimit(nextValue);
     if (
       key === "liability_pd" ||
@@ -396,16 +409,15 @@ export function applyExtractedToSheet(
         !fieldIsBlank(current) &&
         valuesDiffer(nextValue, current.value)
       ) {
-        appendRecordsCheck(
-          values,
-          mismatchLine(
-            fieldLabelFor(key),
-            nextValue,
-            current.value,
-            sheetSourcePhrase(current),
-            mismatchIncomingLabel,
-          ),
+        const line = mismatchLine(
+          fieldLabelFor(key),
+          nextValue,
+          current.value,
+          sheetSourcePhrase(current),
+          mismatchIncomingLabel,
         );
+        diffs.push(line);
+        appendRecordsCheck(values, line);
       }
       continue;
     }
@@ -476,7 +488,7 @@ export function applyExtractedToSheet(
         filledKeys.push(key);
       }
     }
-    return { values: collapsed, filledKeys, skippedKeys };
+    return { values: collapsed, filledKeys, skippedKeys, diffs };
   }
 
   if (line === "home") {
@@ -489,7 +501,7 @@ export function applyExtractedToSheet(
 
   const stamped =
     line === "home" ? applyInspectionExistenceFromDoc(values, options?.docType, source) : values;
-  return { values: stamped, filledKeys, skippedKeys };
+  return { values: stamped, filledKeys, skippedKeys, diffs };
 }
 
 /** Gap-fill blanks from public records. Uploaded dec / agent / Javy always win. */
@@ -529,7 +541,7 @@ export function applyPublicToSheet(
     filledKeys.push(key);
   }
 
-  return { values, filledKeys, skippedKeys };
+  return { values, filledKeys, skippedKeys, diffs: [] };
 }
 
 function isBlockedPublicKey(key: string): boolean {

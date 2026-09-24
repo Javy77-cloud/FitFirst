@@ -1,0 +1,200 @@
+import { describe, expect, it } from "vitest";
+import { extractWithGeminiPdf } from "./client";
+import { mapGeminiJsonToFields, type GeminiExtractJson } from "./map";
+import { applyExtractedToSheet } from "@/lib/quote-sheet/apply";
+
+/**
+ * Mocked Gemini JSON for Domenic Iori's Auto dec: two drivers, three vehicles,
+ * LAST FIRST name, and optional coverages the page does not print.
+ */
+const DOMENIC_DEC = {
+  named_insured: { value: "IORI, DOMENIC", confidence: 0.96 },
+  current_carrier: { value: "Travelers", confidence: 0.95 },
+  policy_number: { value: "612345678 101 1", confidence: 0.94 },
+  effective_date: { value: "09/21/2026", confidence: 0.95 },
+  expiration_date: { value: "03/21/2027", confidence: 0.95 },
+  current_premium: { value: "2109.00", confidence: 0.93 },
+  term_length: { value: "6 month", confidence: 0.9 },
+  discounts: ["Multi-car", "Paperless"],
+  drivers: [
+    {
+      name: "IORI DOMENIC",
+      dob: "04/02/1984",
+      license: "I123-456-78-901",
+      license_state: "FL",
+      relationship: "Named insured",
+      excluded: "no",
+    },
+    {
+      name: "IORI, ADRIANA",
+      dob: "06/11/1986",
+      license: "I999-000-11-222",
+      license_state: "FL",
+      relationship: "Spouse",
+      excluded: "yes",
+    },
+  ],
+  vehicles: [
+    {
+      year: "2019",
+      make: "TOYOTA",
+      model: "CAMRY",
+      vin: "4T1B11HK5KU123456",
+      use: "Pleasure",
+      annual_miles: "12000",
+      garaging_address: "100 Main St, Tampa FL 33602",
+      lienholder: "Toyota Financial Services",
+      premium: "900.00",
+      coverages: {
+        comprehensive: { deductible: "500" },
+        collision: { deductible: "500" },
+      },
+    },
+    {
+      year: "2016",
+      make: "HONDA",
+      model: "CR-V",
+      vin: "2HKRM4H75GH123456",
+      use: "Commute",
+      annual_miles: "8000",
+      garaging_address: "100 Main St, Tampa FL 33602",
+      lienholder: "Some Local Credit Union",
+      premium: "700.00",
+      coverages: { comprehensive: { deductible: "1000" } },
+    },
+    {
+      year: "2012",
+      make: "FORD",
+      model: "F150",
+      vin: "1FTEW1EP5CFC12345",
+      use: "Business",
+    },
+  ],
+  liability_bi: { value: "100/300", confidence: 0.92 },
+  liability_pd: { value: "100000", confidence: 0.9 },
+  rental: { value: "30/day", confidence: 0.88 },
+};
+
+function byKey(result: ReturnType<typeof mapGeminiJsonToFields>) {
+  return Object.fromEntries(result.fields.map((field) => [field.fieldKey, field]));
+}
+
+describe("Auto DEC fill mapping", () => {
+  const mapped = mapGeminiJsonToFields(DOMENIC_DEC as GeminiExtractJson, "dec", "auto");
+  const fields = byKey(mapped);
+
+  it("normalizes LAST FIRST and fills two drivers and three vehicles", () => {
+    expect(fields.named_insured?.normalizedValue).toBe("Domenic Iori");
+    expect(fields.named_insured?.flagged).toBe(false);
+    expect(fields.driver_1_name?.normalizedValue).toBe("Domenic Iori");
+    expect(fields.driver_2_name?.normalizedValue).toBe("Adriana Iori");
+    expect(fields.driver_2_relationship?.normalizedValue).toBe("Spouse");
+    expect(fields.driver_2_household_status?.normalizedValue).toBe("Excluded driver");
+    expect(fields.driver_1_relationship).toBeUndefined();
+    expect(fields.vin?.normalizedValue).toBe("4T1B11HK5KU123456");
+    expect(fields.vehicle_2_vin?.normalizedValue).toBe("2HKRM4H75GH123456");
+    expect(fields.vehicle_3_vin?.normalizedValue).toBe("1FTEW1EP5CFC12345");
+    expect(fields.vehicle_3_make?.normalizedValue).toBe("FORD");
+  });
+
+  it("maps use, miles, garaging, and lienholder onto existing columns", () => {
+    expect(fields.vehicle_usage?.normalizedValue).toBe("Personal");
+    expect(fields.vehicle_2_usage?.normalizedValue).toBe("Commute");
+    expect(fields.vehicle_3_usage?.normalizedValue).toBe("Business");
+    expect(fields.annual_miles?.normalizedValue).toBe("12,000 – 14,999");
+    expect(fields.vehicle_2_annual_miles?.normalizedValue).toBe("8,000 – 8,999");
+    expect(fields.garaging_address?.normalizedValue).toMatch(/100 Main St/);
+    expect(fields.vehicle_lienholder?.normalizedValue).toBe("Toyota Financial Services");
+    expect(fields.vehicle_2_lienholder?.normalizedValue).toBe("Other");
+    expect(fields.vehicle_2_lienholder_other?.normalizedValue).toBe("Some Local Credit Union");
+  });
+
+  it("fills printed coverages and leaves missing optional coverages blank", () => {
+    expect(fields.liability_bi?.normalizedValue).toBe("100/300");
+    expect(fields.liability_pd?.normalizedValue).toBe("100000");
+    expect(fields.comp_deductible?.normalizedValue).toBe("500");
+    expect(fields.collision_deductible?.normalizedValue).toBe("500");
+    expect(fields.pip).toBeUndefined();
+    expect(fields.um_uim).toBeUndefined();
+    expect(fields.current_premium?.normalizedValue).toBe("2109.00");
+  });
+
+  it("keeps facts with no Risk Profile column on the fill-gap list", () => {
+    const labels = mapped.unmappedLabels.map((row) => row.sourceLabel);
+    expect(labels).toEqual(
+      expect.arrayContaining([
+        "fill_gap_term_length",
+        "fill_gap_discounts",
+        "fill_gap_rental",
+        "fill_gap_driver_1_license_state",
+        "fill_gap_driver_2_license_state",
+        "fill_gap_driver_1_relationship",
+        "fill_gap_vehicle_1_premium",
+        "fill_gap_vehicle_2_premium",
+        "fill_gap_vehicle_2_comp_deductible",
+      ]),
+    );
+    const term = mapped.unmappedLabels.find((row) => row.sourceLabel === "fill_gap_term_length");
+    expect(term?.rawValue).toBe("6 month");
+  });
+
+  it("fills blanks and leaves an agent edit, with a diff", () => {
+    const cell = (value: string, source: "agent" | "blank" = "blank") =>
+      source === "agent"
+        ? { value, status: "confirmed" as const, source: "agent" as const }
+        : { value: "", status: "missing" as const, source: "blank" as const };
+    const applied = applyExtractedToSheet(
+      "auto",
+      {
+        vehicle_year: cell("2018", "agent"),
+        driver_1_name: cell(""),
+      },
+      mapped.fields.map((field) => ({
+        fieldKey: field.fieldKey,
+        normalizedValue: field.normalizedValue,
+      })),
+      { source: "extracted", recordMismatches: true, mismatchIncomingLabel: "Gemini" },
+    );
+    expect(applied.values.vehicle_year?.value).toBe("2018");
+    expect(applied.values.driver_1_name?.value).toBe("Domenic Iori");
+    expect(applied.values.driver_2_name?.value).toBe("Adriana Iori");
+    expect(applied.values.vin?.value).toBe("4T1B11HK5KU123456");
+    expect(applied.skippedKeys).toContain("vehicle_year");
+    expect(applied.diffs?.join(" ")).toMatch(/2019/);
+    expect(applied.diffs?.join(" ")).toMatch(/2018/);
+  });
+});
+
+describe("Auto DEC photo and PDF both reach Gemini as the file", () => {
+  it("sends a PDF declaration as a PDF and fills the same Auto profile", async () => {
+    let inlineMime = "";
+    const fetchImpl = (async (_url: RequestInfo | URL, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as {
+        contents?: Array<{ parts?: Array<{ inlineData?: { mimeType?: string } }> }>;
+      };
+      inlineMime = body.contents?.[0]?.parts?.find((part) => part.inlineData)?.inlineData?.mimeType ?? "";
+      return new Response(
+        JSON.stringify({
+          candidates: [{ content: { parts: [{ text: JSON.stringify(DOMENIC_DEC) }] } }],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof fetch;
+
+    const result = await extractWithGeminiPdf(Buffer.from("%PDF-1.4 domenic"), "dec", {
+      apiKey: "test-key",
+      mimeType: "application/pdf",
+      filename: "domenic-iori-dec.pdf",
+      shopLine: "auto",
+      purpose: "fill",
+      fetchImpl,
+    });
+    expect(inlineMime).toBe("application/pdf");
+    expect(result.ok).toBe(true);
+    const name = result.result.fields.find((field) => field.fieldKey === "named_insured");
+    const third = result.result.fields.find((field) => field.fieldKey === "vehicle_3_vin");
+    expect(name?.normalizedValue).toBe("Domenic Iori");
+    expect(name?.flagged).toBe(false);
+    expect(third?.normalizedValue).toBe("1FTEW1EP5CFC12345");
+  });
+});

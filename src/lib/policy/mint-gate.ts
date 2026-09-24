@@ -8,6 +8,7 @@ import {
 } from "@/lib/deals/product-stages";
 import { quoteFolderKind, quoteFoldersByQuoteId } from "@/lib/deals/quote-docs";
 import { splitPremisesAddress } from "@/lib/policy/premises";
+import { normalizeNamedInsured } from "@/lib/people/named-insured";
 
 export const POLICY_ISSUED_STAGE = "policy_issued";
 
@@ -508,6 +509,9 @@ export function evaluateMintGate(input: {
 export function normalizeMintValue(key: string, raw: string | number | null | undefined): string {
   const value = raw == null ? "" : String(raw).trim();
   if (!value) return "";
+  if (key === "named_insured" || key === "secondary_named_insured") {
+    return normalizeNamedInsured(value) ?? value;
+  }
   if (key === "premium" || key === "coverage_a") {
     const n = Number(value.replace(/[$,]/g, ""));
     return Number.isFinite(n) ? String(Math.round(n * 100) / 100) : value;

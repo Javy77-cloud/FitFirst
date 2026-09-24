@@ -1959,7 +1959,10 @@ export async function runFillQuoteSheet(
         filledCount: applied.filledKeys.length,
         skippedCount: applied.skippedKeys.length,
       });
-      const doneMessage = `${countsToast} (${doc.filename}). CHECK = use the value. Source files stay on Files.`;
+      const diffNote = (applied.diffs ?? []).slice(0, 4).join(" ");
+      const doneMessage = diffNote
+        ? `${countsToast} (${doc.filename}). Left existing values. ${diffNote}`.slice(0, 900)
+        : `${countsToast} (${doc.filename}). CHECK = use the value. Source files stay on Files.`;
 
       try {
         const attempt = await insertExtractionAttempt({
