@@ -25,6 +25,7 @@ function card(partial: Partial<RenewalBoardCard>): RenewalBoardCard {
     commissionFamily: null,
     carrierName: "Citizens",
     expirationDate: null,
+    renewalDate: null,
     daysUntil: 28,
     premium: "2184",
     proposedPremium: "2547",

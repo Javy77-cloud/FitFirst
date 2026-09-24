@@ -20,6 +20,7 @@ function card(partial: Partial<RenewalBoardCard> & Pick<RenewalBoardCard, "stage
     phone: null,
     carrierName: "Carrier",
     expirationDate: null,
+    renewalDate: null,
     daysUntil: 30,
     premium: null,
     proposedPremium: null,

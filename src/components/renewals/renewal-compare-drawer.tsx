@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 
 export function RenewalCompareDrawer({
   policyId,
+  renewalDate = null,
   clientName,
   canCompare,
   open,
@@ -30,6 +31,7 @@ export function RenewalCompareDrawer({
   policyHealth = null,
 }: {
   policyId: string;
+  renewalDate?: Date | string | null;
   clientName: string;
   canCompare: boolean;
   open?: boolean;
@@ -87,7 +89,7 @@ export function RenewalCompareDrawer({
         >
           <SheetHeader>
             <SheetTitle>Compare terms</SheetTitle>
-            <div className="pt-2"><ClientStayingButton policyId={policyId} size="sm" /></div>
+            <div className="pt-2"><ClientStayingButton policyId={policyId} renewalDate={payload?.renewalDate ?? renewalDate} size="sm" /></div>
             <SheetDescription>
               {canCompare
                 ? `${clientName} — current vs proposed. Matched lines stay green.`

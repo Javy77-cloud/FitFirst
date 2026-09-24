@@ -158,6 +158,7 @@ export function RenewalBoardCardView({
           </span>
           <RenewalCompareDrawer
             policyId={card.policyId}
+            renewalDate={card.renewalDate}
             clientName={card.clientName}
             canCompare={card.canCompare}
             open={compareOpen}
@@ -271,7 +272,7 @@ export function RenewalBoardCardView({
         </span>
         <div className="ff-renewal-card-footer-actions" data-ff-no-compare="">
           {card.stage !== "handled" ? (
-            <ClientStayingButton policyId={card.policyId} />
+            <ClientStayingButton policyId={card.policyId} renewalDate={card.renewalDate} />
           ) : (
             <span className="ff-renewal-handled-pill" data-ff-renewal-handled="">Handled</span>
           )}

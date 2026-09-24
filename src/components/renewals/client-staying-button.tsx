@@ -18,17 +18,22 @@ import {
   RENEWAL_HANDLED_SUCCESS_CONGRATS,
   RENEWAL_HANDLED_SUCCESS_DONE,
   RENEWAL_HANDLED_SUCCESS_TITLE,
+  clientStayingUnavailableReason,
+  isClientStayingAvailable,
 } from "@/lib/renewal/handled";
 import { flashAction } from "@/lib/flash-client";
 import { cn } from "@/lib/utils";
 
 export function ClientStayingButton({
   policyId,
+  renewalDate,
   className,
   size = "xs",
   variant = "outline",
 }: {
   policyId: string;
+  /** Policy renewalDate — required for the 90-day gate. Missing → not shown. */
+  renewalDate?: Date | string | null;
   className?: string;
   size?: "xs" | "sm" | "default";
   variant?: "outline" | "ghost" | "secondary";
@@ -36,6 +41,27 @@ export function ClientStayingButton({
   const router = useRouter();
   const [pending, start] = useTransition();
   const [successOpen, setSuccessOpen] = useState(false);
+
+  const available = isClientStayingAvailable(renewalDate);
+  const blockedReason = clientStayingUnavailableReason(renewalDate);
+
+  if (!available) {
+    return (
+      <Button
+        type="button"
+        size={size}
+        variant={variant}
+        className={cn("ff-client-staying-btn", className)}
+        data-ff-client-staying=""
+        data-ff-client-staying-blocked=""
+        disabled
+        title={blockedReason ?? undefined}
+        aria-label={blockedReason ?? "Client staying unavailable"}
+      >
+        {RENEWAL_HANDLED_LABEL}
+      </Button>
+    );
+  }
 
   return (
     <>
