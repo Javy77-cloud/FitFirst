@@ -119,18 +119,35 @@ describe("renewal agreed stamp", () => {
     expect(renewalAgreedEffectiveDate({})).toBeNull();
   });
 
-  it("places the dossier stamp in the policy overview Links & renewal section", () => {
+  it("places a compact right-side stamp in the policy overview Links & renewal section", () => {
     const overview = readFileSync("src/components/policy/tabs/overview-tab.tsx", "utf8");
     const stamp = readFileSync("src/components/policy/renewal-agreed-stamp.tsx", "utf8");
-    const linksAt = overview.indexOf("Links & renewal");
-    const stampAt = overview.indexOf("<RenewalAgreedStamp");
-    expect(linksAt).toBeGreaterThan(-1);
-    expect(stampAt).toBeGreaterThan(linksAt);
+    const css = readFileSync("src/app/globals.css", "utf8");
+    const sectionStart = overview.indexOf('data-ff-policy-links-renewal=""');
+    const sectionEnd = overview.indexOf("<PremiumChangeSummary");
+    const section = overview.slice(sectionStart, sectionEnd);
+    expect(sectionStart).toBeGreaterThan(-1);
+    expect(section).toContain("Links & renewal");
+    expect(section).toContain("<RenewalAgreedStamp");
+    expect(section).toContain("ff-links-renewal-copy");
+    expect(section).not.toMatch(/justify-center|py-5/);
     expect(overview).toMatch(/showRenewalAgreedStamp/);
     expect(overview).toMatch(/renewalDate:\s*policy\.renewalDate/);
     expect(stamp).toMatch(/ff-deal-status-stamp/);
     expect(stamp).toMatch(/ff-deal-status-stamp-ink/);
+    expect(stamp).toMatch(/data-ff-deal-status-stamp="done"/);
+    expect(stamp).toMatch(/data-ff-renewal-agreed-stamp/);
     expect(stamp).toMatch(/RENEWAL_AGREED_LABEL/);
+    expect(css).toMatch(/\.ff-renewal-agreed-stamp\s*\{[^}]*position:\s*absolute/);
+    expect(css).toMatch(/\.ff-renewal-agreed-stamp\s*\{[^}]*left:\s*68%/);
+    expect(css).toMatch(/\[data-ff-renewal-agreed-stamp\] \.ff-deal-status-stamp-ink\s*\{[^}]*font-size:\s*0\.72rem/);
+    expect(css).not.toMatch(/ff-renewal-agreed-ink-hit/);
+    expect(css).toMatch(/@keyframes ff-stamp-ink-hit[\s\S]*?100%[\s\S]*?rotate\(-8deg\)/);
+    const inkRule =
+      css.match(/\[data-ff-renewal-agreed-stamp\] \.ff-deal-status-stamp-ink \{[^}]*\}/)?.[0] ?? "";
+    expect(inkRule).not.toMatch(/rotate\(/);
+    expect(css).toMatch(/@container \(max-width: 40rem\)/);
+    expect(css).not.toMatch(/max-width:\s*calc\(100% - 13rem\)/);
     expect(readFileSync("src/lib/policies/renewal-agreed.ts", "utf8")).toContain("Renewal agreed");
     expect(readFileSync("src/app/policies/[id]/page.tsx", "utf8")).toMatch(/renewalHandled=\{renewalHandled\}/);
   });
