@@ -17,11 +17,13 @@ export function LinkDealDocToProduct({
   dealId,
   line,
   quotingForm,
+  productInstance,
   candidates,
 }: {
   dealId: string;
   line?: string | null;
   quotingForm?: string | null;
+  productInstance?: string | null;
   candidates: LibraryCandidate[];
 }) {
   const [open, setOpen] = useState(false);
@@ -61,6 +63,7 @@ export function LinkDealDocToProduct({
                   form.set("dealId", dealId);
                   if (line) form.set("line", line);
                   if (quotingForm) form.set("quotingForm", quotingForm);
+                  if (productInstance) form.set("productInstance", productInstance);
                   startTransition(async () => {
                     await linkDealDocumentToProduct(form);
                   });

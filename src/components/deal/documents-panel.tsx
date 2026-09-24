@@ -84,7 +84,10 @@ export function DocumentsPanel({
   const productWindow = {
     shopLine: sheetLine,
     quotingForm: quotingForm ?? sheetQuotingForm ?? null,
-    instanceKey: formLine.includes("~") ? formLine.slice(formLine.indexOf("~") + 1) : null,
+    instanceKey:
+      productId ||
+      (formLine.includes("~") ? formLine.slice(formLine.indexOf("~") + 1) : null),
+    legacyLineOwner: !formLine.includes("~"),
   };
   const { sourceDocs, lineDocs, otherSourceDocs } = listWorksheetSourceDocs(docs);
   const windowLineDocs = filterDocsForProductWindow(lineDocs, productWindow);
@@ -143,6 +146,7 @@ export function DocumentsPanel({
               dealId={dealId}
               line={formLine}
               quotingForm={quotingForm ?? sheetQuotingForm}
+              productInstance={productId}
               candidates={libraryCandidates.map((doc) => ({
                 id: doc.id,
                 filename: doc.filename,

@@ -1,22 +1,14 @@
-import { and, asc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db, sql } from "@/lib/db";
-import { quoteSheets, risks, type QuoteSheetFieldValue, type Risk } from "@/lib/db/schema";
+import { risks, type Risk } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
-  addressFromRiskRow,
-  addressHasLocation,
-  dealLevelPropertyAddress,
-  instanceOwnsSheet,
-  isPropertyCoveringProduct,
-  legacyPropertyOwnerKey,
-  resolveProductPropertyAddress,
-  sheetAddressCells,
-  sheetAddressNeedsPrefill,
+  autoVehicleRiskKey,
+  type AutoVehicleFacts,
   type PropertyAddress,
 } from "@/lib/deals/product-property";
 import {
   resolveVisibleProductInstances,
-  storageLineForInstance,
   type ProductInstance,
 } from "@/lib/deals/product-instances";
 
@@ -46,7 +38,10 @@ export async function risksProductKeyColumnExists(): Promise<boolean> {
   return productKeyColumn;
 }
 
-function mapRawRisk(row: Record<string, unknown>): Risk {
+/** product_key is not on the Drizzle schema so list queries work before 0157. */
+export type ScopedRisk = Risk & { productKey: string | null };
+
+function mapRawRisk(row: Record<string, unknown>): ScopedRisk {
   const text = (key: string) => {
     const value = row[key];
     return value == null ? null : String(value);
@@ -95,36 +90,22 @@ function mapRawRisk(row: Record<string, unknown>): Risk {
 }
 
 /** Oldest first so the original unscoped row stays first when product_key is null. */
-export async function listDealRisks(dealId: string, tenantId = DEFAULT_TENANT_ID): Promise<Risk[]> {
-  const hasColumn = await risksProductKeyColumnExists();
-  if (!hasColumn) {
-    const rows = await sql<Record<string, unknown>[]>`
-      select *
-      from risks
-      where tenant_id = ${tenantId}
-        and deal_id = ${dealId}
-      order by created_at asc
-    `;
-    return rows.map((row) => mapRawRisk({ ...row, productKey: null }));
-  }
-  try {
-    return await db
-      .select()
-      .from(risks)
-      .where(and(eq(risks.tenantId, tenantId), eq(risks.dealId, dealId)))
-      .orderBy(asc(risks.createdAt));
-  } catch (error) {
-    if (!missingProductKeyColumn(error)) throw error;
-    productKeyColumn = false;
-    return listDealRisks(dealId, tenantId);
-  }
+export async function listDealRisks(dealId: string, tenantId = DEFAULT_TENANT_ID): Promise<ScopedRisk[]> {
+  const rows = await sql<Record<string, unknown>[]>`
+    select *
+    from risks
+    where tenant_id = ${tenantId}
+      and deal_id = ${dealId}
+    order by created_at asc
+  `;
+  return rows.map((row) => mapRawRisk(row));
 }
 
 export function riskForInstance(
-  rows: readonly Risk[],
+  rows: readonly ScopedRisk[],
   instanceKey: string,
   legacyOwnerKey: string | null,
-): Risk | null {
+): ScopedRisk | null {
   const keyed = rows.find((row) => (row.productKey ?? "").trim() === instanceKey);
   if (keyed) return keyed;
   if (legacyOwnerKey && instanceKey === legacyOwnerKey) {
@@ -143,31 +124,23 @@ async function insertProductRisk(input: {
   const hasColumn = await risksProductKeyColumnExists();
   const state = input.address.state.trim() || "FL";
   if (!hasColumn) return;
-  await db.insert(risks).values({
-    tenantId: input.tenantId,
-    dealId: input.dealId,
-    contactId: input.contactId ?? null,
-    riskType: "property",
-    address1: input.address.street || null,
-    city: input.address.city || null,
-    county: input.address.county || null,
-    state,
-    zip: input.address.zip || null,
-    productKey: input.instanceKey,
-    yearBuilt: null,
-    construction: null,
-    occupancy: null,
-    stories: null,
-    squareFeet: null,
-    coverageA: null,
-    roofYear: null,
-    roofCovering: null,
-    openingProtection: null,
-    pool: null,
-    protectionClass: null,
-    milesToCoast: null,
-    replacementCostEstimate: null,
-  });
+  await sql`
+    insert into risks (
+      tenant_id, deal_id, contact_id, risk_type,
+      address1, city, county, state, zip, product_key
+    ) values (
+      ${input.tenantId},
+      ${input.dealId},
+      ${input.contactId ?? null},
+      'property',
+      ${input.address.street || null},
+      ${input.address.city || null},
+      ${input.address.county || null},
+      ${state},
+      ${input.address.zip || null},
+      ${input.instanceKey}
+    )
+  `;
 }
 
 async function updateRiskAddress(riskId: string, address: PropertyAddress): Promise<void> {
@@ -184,86 +157,92 @@ async function updateRiskAddress(riskId: string, address: PropertyAddress): Prom
     .where(eq(risks.id, riskId));
 }
 
-function sheetForInstance(
-  sheets: readonly { id: string; line: string; values: Record<string, QuoteSheetFieldValue> }[],
-  instance: ProductInstance,
-) {
-  const line = storageLineForInstance(instance);
-  return sheets.find((row) => row.line === line) ?? null;
+async function updateVehicleFacts(riskId: string, vehicle: AutoVehicleFacts): Promise<void> {
+  const year = Number(vehicle.year);
+  await db
+    .update(risks)
+    .set({
+      riskType: "auto",
+      ...(vehicle.vin ? { vin: vehicle.vin } : {}),
+      ...(Number.isFinite(year) && year > 0 ? { vehicleYear: year } : {}),
+      ...(vehicle.make ? { vehicleMake: vehicle.make } : {}),
+      ...(vehicle.model ? { vehicleModel: vehicle.model } : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(risks.id, riskId));
+}
+
+async function insertVehicleRisk(input: {
+  dealId: string;
+  tenantId: string;
+  contactId?: string | null;
+  productKey: string;
+  vehicle: AutoVehicleFacts;
+}): Promise<void> {
+  const year = Number(input.vehicle.year);
+  await sql`
+    insert into risks (
+      tenant_id, deal_id, contact_id, risk_type, state, product_key,
+      vin, vehicle_year, vehicle_make, vehicle_model
+    ) values (
+      ${input.tenantId},
+      ${input.dealId},
+      ${input.contactId ?? null},
+      'auto',
+      'FL',
+      ${input.productKey},
+      ${input.vehicle.vin || null},
+      ${Number.isFinite(year) && year > 0 ? year : null},
+      ${input.vehicle.make || null},
+      ${input.vehicle.model || null}
+    )
+  `;
 }
 
 /**
- * Give every property product after the first its own address copy.
- * The original null product_key row is left on the first property product.
- * A new copy is pre-filled from the deal address only. Characteristics stay blank.
+ * Each vehicle on an auto product gets its own risks row on save.
+ * Vehicle 1 on an auto-only deal updates the original null row.
+ * A house deal never receives a VIN on that row.
+ * Extra rows are skipped until risks.product_key exists.
  */
-export async function ensureSeparatedProductProperties(input: {
+export async function saveAutoVehicleRisks(input: {
   dealId: string;
   tenantId?: string;
   contactId?: string | null;
-  instances: readonly ProductInstance[];
-  stored: Record<string, string | null | undefined>;
-  sheets: { id: string; line: string; values: Record<string, QuoteSheetFieldValue> }[];
-}): Promise<Risk[]> {
+  instanceKey: string;
+  legacyAutoOwnerKey: string | null;
+  vehicles: readonly AutoVehicleFacts[];
+}): Promise<void> {
+  if (!input.vehicles.length) return;
   const tenantId = input.tenantId || DEFAULT_TENANT_ID;
-  const legacyKey = legacyPropertyOwnerKey(input.instances);
+  const hasColumn = await risksProductKeyColumnExists();
   let rows = await listDealRisks(input.dealId, tenantId);
-  const prefill = dealLevelPropertyAddress(input.stored);
-
-  for (const instance of input.instances) {
-    if (!isPropertyCoveringProduct(instance.productId)) continue;
-    const legacyOwner = instance.key === legacyKey;
-    if (legacyOwner) continue;
-    const ownsSheet = instanceOwnsSheet(instance, input.instances);
-    const sheet = sheetForInstance(input.sheets, instance);
-    const ownRisk = riskForInstance(rows, instance.key, legacyKey);
-    const storedAddress = resolveProductPropertyAddress({
-      instanceKey: instance.key,
-      ownsSheet,
-      legacyOwner: false,
-      storedDeal: {},
-      sheetValues: sheet?.values,
-      ownRisk,
-    });
-    if (storedAddress.source === "sheet" || storedAddress.source === "sidecar" || storedAddress.source === "risk") {
-      if (!ownRisk && storedAddress.source !== "risk") {
-        await insertProductRisk({
-          dealId: input.dealId,
-          tenantId,
-          contactId: input.contactId,
-          instanceKey: instance.key,
-          address: storedAddress.address,
-        });
-      }
+  for (const vehicle of input.vehicles) {
+    const onLegacy =
+      vehicle.index === 1 &&
+      Boolean(input.legacyAutoOwnerKey) &&
+      input.instanceKey === input.legacyAutoOwnerKey;
+    if (onLegacy) {
+      const legacy = rows.find((row) => !String(row.productKey ?? "").trim());
+      if (legacy) await updateVehicleFacts(legacy.id, vehicle);
       continue;
     }
-    if (!addressHasLocation(prefill)) continue;
-    if (sheet && sheetAddressNeedsPrefill(sheet.values, instance.key, ownsSheet)) {
-      const values = {
-        ...sheet.values,
-        ...sheetAddressCells(prefill, instance.key, ownsSheet),
-      };
-      await db
-        .update(quoteSheets)
-        .set({ values, updatedAt: new Date() })
-        .where(eq(quoteSheets.id, sheet.id));
-      sheet.values = values;
+    if (!hasColumn) continue;
+    const key = autoVehicleRiskKey(input.instanceKey, vehicle.index);
+    const existing = rows.find((row) => (row.productKey ?? "").trim() === key);
+    if (existing) {
+      await updateVehicleFacts(existing.id, vehicle);
+      continue;
     }
-    if (!ownRisk) {
-      await insertProductRisk({
-        dealId: input.dealId,
-        tenantId,
-        contactId: input.contactId,
-        instanceKey: instance.key,
-        address: prefill,
-      });
-    } else if (!addressHasLocation(addressFromRiskRow(ownRisk))) {
-      await updateRiskAddress(ownRisk.id, prefill);
-    }
+    await insertVehicleRisk({
+      dealId: input.dealId,
+      tenantId,
+      contactId: input.contactId,
+      productKey: key,
+      vehicle,
+    });
+    rows = await listDealRisks(input.dealId, tenantId);
   }
-
-  rows = await listDealRisks(input.dealId, tenantId);
-  return rows;
 }
 
 export async function saveInstancePropertyAddress(input: {

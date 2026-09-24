@@ -411,7 +411,7 @@ export async function saveDealFieldValues(formData: FormData) {
       address: productAddress,
       legacyOwnerKey: legacyKey,
     });
-    const line = storageLineForInstance(instance);
+    const line = storageLineForInstance(instance, instances);
     const ownsSheet = instanceOwnsSheet(instance, instances);
     const [sheet] = await db
       .select()

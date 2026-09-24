@@ -6,6 +6,7 @@ import {
   normalizeProductInstanceList,
   removeProductInstance,
   resolveVisibleProductInstances,
+  parseStorageLine,
   storageLineForInstance,
 } from "@/lib/deals/product-instances";
 
@@ -41,6 +42,18 @@ describe("duplicate product instances", () => {
     const [primary, copy] = normalizeProductInstanceList(["homeowners", "homeowners~k7f3a2"]);
     expect(storageLineForInstance(primary!)).toBe("home");
     expect(storageLineForInstance(copy!)).toBe("home~homeowners~k7f3a2");
+  });
+
+  it("gives landlord its own sheet when homeowners already owns home", () => {
+    const rows = normalizeProductInstanceList(["homeowners", "landlord", "homeowners~88uvyj"]);
+    expect(storageLineForInstance(rows[0]!, rows)).toBe("home");
+    expect(storageLineForInstance(rows[1]!, rows)).toBe("home~landlord");
+    expect(storageLineForInstance(rows[2]!, rows)).toBe("home~homeowners~88uvyj");
+    expect(parseStorageLine("home~landlord")).toEqual({
+      shopLine: "home",
+      storageLine: "home~landlord",
+      instanceKey: "landlord",
+    });
   });
 
   it("removes only the instance that was asked for", () => {

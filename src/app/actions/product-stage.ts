@@ -578,11 +578,15 @@ function productForLine(
   line?: string | null,
 ): string | null {
   const products = productsOnDeal(deal);
+  const instances = resolveVisibleProductInstances(deal);
   if (line) {
     const match = products.find((id) => {
       const parsed = parseProductInstanceToken(id);
       if (!parsed) return false;
-      return sheetLineForProduct(parsed.productId) === line || storageLineForInstance(parsed) === line;
+      return (
+        sheetLineForProduct(parsed.productId) === line ||
+        storageLineForInstance(parsed, instances) === line
+      );
     });
     if (match) return match;
     const fromLine = parseDealProduct(line);

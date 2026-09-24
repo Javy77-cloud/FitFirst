@@ -111,9 +111,25 @@ export type StorageLine = {
   instanceKey: string | null;
 };
 
-export function storageLineForInstance(instance: ProductInstance): string {
+/**
+ * Quote-sheet line for one product tab.
+ * Without peers, the first plain id keeps the shop line (`home`) and a `~suffix`
+ * copy gets `home~homeowners~k7f3a2` — existing rows stay valid.
+ * With peers, only the first product on that shop line keeps the plain line.
+ * Homeowners and landlord are different houses, so landlord stores `home~landlord`
+ * instead of sharing the homeowners sheet.
+ */
+export function storageLineForInstance(
+  instance: ProductInstance,
+  peers?: readonly ProductInstance[],
+): string {
   const shopLine = dealProductDef(instance.productId).shopLine;
-  if (instance.key === instance.productId) return shopLine;
+  if (!peers?.length) {
+    if (instance.key === instance.productId) return shopLine;
+    return `${shopLine}${PRODUCT_INSTANCE_SEPARATOR}${instance.key}`;
+  }
+  const first = peers.find((row) => dealProductDef(row.productId).shopLine === shopLine);
+  if (first?.key === instance.key) return shopLine;
   return `${shopLine}${PRODUCT_INSTANCE_SEPARATOR}${instance.key}`;
 }
 
@@ -126,7 +142,7 @@ export function parseStorageLine(raw: string | null | undefined): StorageLine | 
   const shopLine = value.slice(0, sep);
   if (!isShopLine(shopLine)) return null;
   const instance = parseProductInstanceToken(value.slice(sep + 1));
-  if (!instance || instance.key === instance.productId) return null;
+  if (!instance) return null;
   return {
     shopLine,
     instanceKey: instance.key,

@@ -57,6 +57,39 @@ describe("product document membership", () => {
     expect(filterDocsForProductWindow(rosa, { shopLine: "flood" })).toHaveLength(0);
   });
 
+  it("keeps an untagged home file on the first home product only", () => {
+    expect(
+      docBelongsToProductWindow(
+        { tags: ["line:home", "form:HO3"] },
+        { shopLine: "home", quotingForm: "HO3", instanceKey: "homeowners", legacyLineOwner: true },
+      ),
+    ).toBe(true);
+    expect(
+      docBelongsToProductWindow(
+        { tags: ["line:home", "form:HO3"] },
+        { shopLine: "home", quotingForm: "DP3", instanceKey: "landlord", legacyLineOwner: false },
+      ),
+    ).toBe(false);
+    expect(
+      docBelongsToProductWindow(
+        { tags: ["line:home", "form:DP3", "instance:landlord"] },
+        { shopLine: "home", quotingForm: "HO3", instanceKey: "homeowners", legacyLineOwner: true },
+      ),
+    ).toBe(false);
+    expect(
+      docBelongsToProductWindow(
+        { tags: ["line:home", "form:DP3", "instance:landlord"] },
+        { shopLine: "home~landlord", quotingForm: "DP3", instanceKey: "landlord", legacyLineOwner: false },
+      ),
+    ).toBe(true);
+  });
+
+  it("stamps an instance tag for a plain product key", () => {
+    expect(
+      membershipTagsForUpload({ shopLine: "home", quotingForm: "DP3", instanceKey: "landlord" }),
+    ).toEqual(["line:home", "form:DP3", "instance:landlord"]);
+  });
+
   it("upload tags stamp the active product only", () => {
     expect(membershipTagsForUpload({ shopLine: "flood", quotingForm: "FLOOD" })).toEqual([
       "line:flood",

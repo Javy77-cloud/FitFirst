@@ -251,7 +251,8 @@ export async function persistDealSourceUploads(
       policyId = policyId ?? folder.policyId ?? null;
     }
   }
-  if (dealId && !riskId) {
+  const uploadInstanceKey = optionalId(formData, "productInstance");
+  if (dealId && !riskId && !uploadInstanceKey) {
     const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
     riskId = risk?.id ?? null;
     if (!contactId) contactId = risk?.contactId ?? null;
@@ -296,7 +297,11 @@ export async function persistDealSourceUploads(
     const quotingFormRaw = String(formData.get("quotingForm") ?? formData.get("form") ?? "").trim();
     const lineTags =
       dealId && (isShopLine(lineRaw) || parseStorageLine(lineRaw))
-        ? membershipTagsForUpload({ shopLine: lineRaw, quotingForm: quotingFormRaw || null })
+        ? membershipTagsForUpload({
+            shopLine: lineRaw,
+            quotingForm: quotingFormRaw || null,
+            instanceKey: uploadInstanceKey,
+          })
         : [];
     let doc: Awaited<ReturnType<typeof persistFile>> | null = null;
     try {
@@ -455,7 +460,8 @@ export async function saveDealDocumentFromBlob(formData: FormData): Promise<Deal
     };
   }
   let riskId = optionalId(formData, "riskId");
-  if (!riskId) {
+  const uploadInstanceKey = optionalId(formData, "productInstance");
+  if (!riskId && !uploadInstanceKey) {
     const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
     riskId = risk?.id ?? null;
   }
@@ -464,7 +470,11 @@ export async function saveDealDocumentFromBlob(formData: FormData): Promise<Deal
   const lineRaw = String(formData.get("line") ?? "").trim();
   const quotingFormRaw = String(formData.get("quotingForm") ?? formData.get("form") ?? "").trim();
   const lineTags = isShopLine(lineRaw) || parseStorageLine(lineRaw)
-    ? membershipTagsForUpload({ shopLine: lineRaw, quotingForm: quotingFormRaw || null })
+    ? membershipTagsForUpload({
+        shopLine: lineRaw,
+        quotingForm: quotingFormRaw || null,
+        instanceKey: uploadInstanceKey,
+      })
     : [];
   try {
     const doc = await persistFile({
@@ -1382,6 +1392,7 @@ export async function linkDealDocumentToProduct(formData: FormData) {
   const nextTags = linkDocToProductTags(doc.tags, {
     shopLine: lineRaw || null,
     quotingForm: quotingForm || null,
+    instanceKey: optionalId(formData, "productInstance"),
   });
   await db.update(documents).set({ tags: nextTags }).where(eq(documents.id, documentId));
   revalidateDocumentPaths(doc);

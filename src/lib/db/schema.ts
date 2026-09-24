@@ -1027,18 +1027,11 @@ export const risks = pgTable(
     vehicleModel: text("vehicle_model"),
     vehicleUsage: text("vehicle_usage"),
     garagingZip: text("garaging_zip"),
-    /**
-     * Which product copy this property belongs to (`homeowners`, `landlord`,
-     * `homeowners~88uvyj`). Null = the original deal risk, attached at read
-     * time to the first property product. Absent until drizzle/0157 is applied.
-     */
-    productKey: text("product_key"),
     ...timestamps,
   },
   (t) => [
     index("risks_tenant_idx").on(t.tenantId),
     index("risks_deal_idx").on(t.tenantId, t.dealId),
-    index("risks_deal_product_key_idx").on(t.tenantId, t.dealId, t.productKey),
   ],
 );
 

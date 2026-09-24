@@ -8,6 +8,7 @@ import { parseProductStages } from "@/lib/deals/product-stages";
 import { productQuoteCompleteness } from "@/lib/deals/quote-completeness";
 import { EXPLICIT_MARKET_ACTION_MARKER } from "@/lib/deals/manual-markets";
 import {
+  autoVehicleRiskKey,
   blankPropertyCharacteristics,
   dealLevelPropertyAddress,
   DEAL_INSURED_ADDRESS_KEYS,
@@ -15,6 +16,7 @@ import {
   editProductAddress,
   legacyPropertyOwnerKey,
   newCopyPropertySeed,
+  vehiclesOnAutoSheet,
   overlaySharedProductSheet,
   productTabShowsError,
   resolveProductPropertyAddress,
@@ -72,6 +74,36 @@ describe("second property product", () => {
     expect(mailingOnly.street).toBe("9 Mail St");
     expect(mailingOnly.unit).toBe("2");
     expect(mailingOnly.city).toBe("Hialeah");
+
+    const rental = dealLevelPropertyAddress(
+      {
+        [DEAL_MAILING_ADDRESS_KEYS.street]: "9 Mail St",
+        [DEAL_MAILING_ADDRESS_KEYS.city]: "Hialeah",
+        [DEAL_MAILING_ADDRESS_KEYS.state]: "FL",
+        [DEAL_MAILING_ADDRESS_KEYS.zip]: "33016",
+      },
+      { dwellingFire: true },
+    );
+    expect(rental.street).toBe("");
+    expect(rental.city).toBe("");
+  });
+
+  it("gives each later auto vehicle its own risk key", () => {
+    expect(autoVehicleRiskKey("auto", 1)).toBe("auto");
+    expect(autoVehicleRiskKey("auto", 2)).toBe("auto#v2");
+    const vehicles = vehiclesOnAutoSheet({
+      vin: { value: "1HGCM82633A004352" },
+      vehicle_year: { value: "2019" },
+      vehicle_make: { value: "Toyota" },
+      vehicle_model: { value: "Camry" },
+      vehicle_2_vin: { value: "2HGCM82633A004353" },
+      vehicle_2_year: { value: "2021" },
+      vehicle_2_make: { value: "Honda" },
+      vehicle_2_model: { value: "Civic" },
+    });
+    expect(vehicles.map((row) => row.index)).toEqual([1, 2]);
+    expect(vehicles[1]).toMatchObject({ vin: "2HGCM82633A004353", make: "Honda", model: "Civic" });
+    expect(vehicles[1]?.vin).not.toBe(vehicles[0]?.vin);
   });
 
   it("starts a new copy at Gathering with no error chip", () => {

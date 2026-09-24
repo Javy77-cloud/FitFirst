@@ -104,10 +104,11 @@ export function instanceOwnsSheet(
   instance: Pick<ProductInstance, "key" | "productId">,
   instances: readonly Pick<ProductInstance, "key" | "productId">[],
 ): boolean {
-  const line = storageLineForInstance(instance as ProductInstance);
+  const peers = instances as ProductInstance[];
+  const line = storageLineForInstance(instance as ProductInstance, peers);
   if (line.includes("~")) return true;
   const first = instances.find(
-    (row) => storageLineForInstance(row as ProductInstance) === line,
+    (row) => storageLineForInstance(row as ProductInstance, peers) === line,
   );
   return first?.key === instance.key;
 }
@@ -132,10 +133,16 @@ export function addressHasLocation(address: PropertyAddress | null | undefined):
 /**
  * Starting address for a property that does not yet have its own.
  * Reads the deal's insured address fields. If that street is blank, the
- * deal's mailing address. Never a product risk or another tab's sheet.
+ * deal's mailing address — except DP1/DP3, where mailing is the owner's home
+ * and must not become the rental.
+ * Never a product risk or another tab's sheet.
  */
-export function dealLevelPropertyAddress(stored: StoredValues): PropertyAddress {
+export function dealLevelPropertyAddress(
+  stored: StoredValues,
+  options?: { dwellingFire?: boolean },
+): PropertyAddress {
   const insured = readMapped(stored, DEAL_INSURED_ADDRESS_KEYS);
+  if (options?.dwellingFire) return insured;
   if (insured.street) return insured;
   return readMapped(stored, DEAL_MAILING_ADDRESS_KEYS);
 }
@@ -147,14 +154,54 @@ export function blankPropertyCharacteristics(): Record<(typeof PROPERTY_CHARACTE
   >;
 }
 
-export function newCopyPropertySeed(stored: StoredValues): {
+export function newCopyPropertySeed(
+  stored: StoredValues,
+  options?: { dwellingFire?: boolean },
+): {
   address: PropertyAddress;
   characteristics: Record<(typeof PROPERTY_CHARACTERISTIC_FIELDS)[number], string>;
 } {
   return {
-    address: dealLevelPropertyAddress(stored),
+    address: dealLevelPropertyAddress(stored, options),
     characteristics: blankPropertyCharacteristics(),
   };
+}
+
+/** First auto product on an auto-only deal owns the original null risk (vehicle 1). */
+export function legacyAutoOwnerKey(
+  instances: readonly Pick<ProductInstance, "key" | "productId">[],
+): string | null {
+  if (instances.some((row) => isPropertyCoveringProduct(row.productId))) return null;
+  return instances.find((row) => dealProductDef(row.productId).shopLine === "auto")?.key ?? null;
+}
+
+/** Vehicle 1 uses the product key. Later vehicles never share that row. */
+export function autoVehicleRiskKey(instanceKey: string, index: number): string {
+  if (index <= 1) return instanceKey;
+  return `${instanceKey}#v${index}`;
+}
+
+export type AutoVehicleFacts = {
+  index: number;
+  vin: string;
+  year: string;
+  make: string;
+  model: string;
+};
+
+const PERSONAL_AUTO_VEHICLE_CAP = 4;
+
+export function vehiclesOnAutoSheet(values: SheetValues): AutoVehicleFacts[] {
+  const out: AutoVehicleFacts[] = [];
+  for (let index = 1; index <= PERSONAL_AUTO_VEHICLE_CAP; index += 1) {
+    const vin = cellValue(values, index === 1 ? "vin" : `vehicle_${index}_vin`);
+    const year = cellValue(values, index === 1 ? "vehicle_year" : `vehicle_${index}_year`);
+    const make = cellValue(values, index === 1 ? "vehicle_make" : `vehicle_${index}_make`);
+    const model = cellValue(values, index === 1 ? "vehicle_model" : `vehicle_${index}_model`);
+    if (!vin && !year && !make && !model) continue;
+    out.push({ index, vin, year, make, model });
+  }
+  return out;
 }
 
 /** Sheet cells that hold one product's address when it does not own the shared line. */
@@ -236,6 +283,8 @@ export function resolveProductPropertyAddress(input: {
   legacyOwner: boolean;
   storedDeal: StoredValues;
   sheetValues?: SheetValues;
+  /** DP1/DP3: do not treat the owner's mailing address as the rental. */
+  dwellingFire?: boolean;
   ownRisk?: {
     address1?: string | null;
     city?: string | null;
@@ -252,14 +301,8 @@ export function resolveProductPropertyAddress(input: {
   if (addressHasLocation(fromRisk)) {
     return { address: { ...fromRisk, unit: fromSheet.unit }, source: "risk" };
   }
-  if (!input.legacyOwner) {
-    const prefill = dealLevelPropertyAddress(input.storedDeal);
-    if (addressHasLocation(prefill)) return { address: prefill, source: "deal" };
-  }
-  if (input.legacyOwner) {
-    const deal = dealLevelPropertyAddress(input.storedDeal);
-    if (addressHasLocation(deal)) return { address: deal, source: "deal" };
-  }
+  const prefill = dealLevelPropertyAddress(input.storedDeal, { dwellingFire: input.dwellingFire });
+  if (addressHasLocation(prefill)) return { address: prefill, source: "deal" };
   return { address: { ...EMPTY_PROPERTY_ADDRESS }, source: "blank" };
 }
 

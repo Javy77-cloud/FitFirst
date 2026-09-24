@@ -48,8 +48,16 @@ export type ProductDocWindow = {
   shopLine: string | null | undefined;
   /** When set, prefer form membership; line-only legacy docs still match the shop line. */
   quotingForm?: string | null;
-  /** Second copy of a product. Untagged files stay on the first copy. */
+  /**
+   * Product tab this window is showing (`homeowners`, `landlord`, `homeowners~88uvyj`).
+   * When omitted, membership stays line/form scoped (existing single-product windows).
+   */
   instanceKey?: string | null;
+  /**
+   * Untagged `line:` / `form:` files stay on the first product of that shop line.
+   * A later product (landlord beside homeowners) sets this false.
+   */
+  legacyLineOwner?: boolean;
 };
 
 export function instanceKeysFromDocTags(tags: readonly string[] | null | undefined): string[] {
@@ -67,6 +75,22 @@ export function instanceKeysFromDocTags(tags: readonly string[] | null | undefin
  * Membership is additive `line:` / `form:` tags — a file can be on HO3 and Flood.
  * Untagged source docs are deal-library only (not auto-shown on a product window).
  */
+function matchesLineOrForm(
+  doc: { tags?: readonly string[] | null },
+  wantedLine: string,
+  wantedForm: string,
+): boolean {
+  const lines = shopLinesFromDocTags(doc.tags);
+  const forms = formIdsFromDocTags(doc.tags);
+  if (wantedForm && forms.some((id) => id.toUpperCase() === wantedForm.toUpperCase())) {
+    return true;
+  }
+  if (wantedLine && lines.some((line) => line === wantedLine)) {
+    return true;
+  }
+  return false;
+}
+
 export function docBelongsToProductWindow(
   doc: { tags?: readonly string[] | null },
   window: ProductDocWindow,
@@ -76,20 +100,18 @@ export function docBelongsToProductWindow(
   const wantedForm = String(window.quotingForm ?? "").trim();
   const wantedInstance = (window.instanceKey ?? opened?.instanceKey ?? "").trim();
   const taggedInstances = instanceKeysFromDocTags(doc.tags);
-  if (wantedInstance.includes("~")) {
-    return taggedInstances.includes(wantedInstance);
-  }
-  if (taggedInstances.length) return false;
-  const lines = shopLinesFromDocTags(doc.tags);
-  const forms = formIdsFromDocTags(doc.tags);
+  const storageHasCopy = Boolean(opened?.storageLine.includes("~"));
 
-  if (wantedForm && forms.some((id) => id.toUpperCase() === wantedForm.toUpperCase())) {
-    return true;
+  if (!wantedInstance) {
+    if (taggedInstances.length) return false;
+    return matchesLineOrForm(doc, wantedLine, wantedForm);
   }
-  if (wantedLine && lines.some((line) => line === wantedLine)) {
-    return true;
-  }
-  return false;
+  if (taggedInstances.includes(wantedInstance)) return true;
+  if (taggedInstances.length) return false;
+  const legacy =
+    window.legacyLineOwner !== false && !wantedInstance.includes("~") && !storageHasCopy;
+  if (!legacy) return false;
+  return matchesLineOrForm(doc, wantedLine, wantedForm);
 }
 
 /** Tags to stamp on upload into a product window (idempotent). */
@@ -105,14 +127,14 @@ export function membershipTagsForUpload(input: {
   const form = String(input.quotingForm ?? "").trim();
   if (form) tags.push(formTag(form));
   const instanceKey = (input.instanceKey ?? opened?.instanceKey ?? "").trim();
-  if (instanceKey.includes("~")) tags.push(instanceTag(instanceKey));
+  if (instanceKey) tags.push(instanceTag(instanceKey));
   return tags;
 }
 
 /** Add product membership without removing other products' tags. */
 export function linkDocToProductTags(
   tags: readonly string[] | null | undefined,
-  input: { shopLine?: string | null; quotingForm?: string | null },
+  input: { shopLine?: string | null; quotingForm?: string | null; instanceKey?: string | null },
 ): string[] {
   const next = [...(tags ?? [])];
   for (const tag of membershipTagsForUpload(input)) {
@@ -133,8 +155,10 @@ export function unlinkDocFromProductTags(
   const line = opened?.shopLine ?? String(input.shopLine ?? "").trim();
   const form = String(input.quotingForm ?? "").trim();
   const instanceKey = (opened?.instanceKey ?? "").trim();
-  const dropLine = isShopLine(line) && !instanceKey ? lineTag(line) : null;
-  const dropForm = form && !instanceKey ? formTag(form) : null;
+  const remainingInstances = instanceKeysFromDocTags(tags).filter((key) => key !== instanceKey);
+  const exclusive = Boolean(instanceKey) && remainingInstances.length === 0;
+  const dropLine = isShopLine(line) && (!instanceKey || exclusive) ? lineTag(line) : null;
+  const dropForm = form && (!instanceKey || exclusive) ? formTag(form) : null;
   const dropInstance = instanceKey ? instanceTag(instanceKey) : null;
   return (tags ?? []).filter((tag) => {
     if (dropLine && tag === dropLine) return false;
