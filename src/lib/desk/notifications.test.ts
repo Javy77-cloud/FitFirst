@@ -95,9 +95,15 @@ describe("notification board helpers", () => {
     expect(notificationHref("")).toBe(NOTIFICATION_BOARD_HREF);
   });
 
-  it("formats a timestamp for the panel and board", () => {
+  it("formats timestamps in America/New_York (never UTC wall clock)", () => {
+    // 14:00Z = 10:00 AM ET on Sep 5
     expect(notificationWhen("2026-09-05T14:00:00.000Z")).toMatch(/Sep 5/);
-    expect(notificationWhen(new Date("2026-08-01T00:00:00.000Z"))).toMatch(/Aug 1/);
+    expect(notificationWhen("2026-09-05T14:00:00.000Z")).toMatch(/10:00/);
+    // 15:08Z must show 11:08 AM ET — not "3:08 PM" (UTC mistaken as local)
+    expect(notificationWhen("2026-09-24T15:08:17.736Z")).toBe("Sep 24, 11:08 AM");
+    expect(notificationWhen("2026-09-24T13:13:09.254Z")).toBe("Sep 24, 9:13 AM");
+    // Midnight UTC Aug 1 = Jul 31 evening ET
+    expect(notificationWhen(new Date("2026-08-01T00:00:00.000Z"))).toMatch(/Jul 31/);
     expect(notificationWhen(null)).toBe("");
   });
 

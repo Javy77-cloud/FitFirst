@@ -9,6 +9,8 @@ import {
   isHotCommitment,
   matchOrphanToName,
   shouldNudgeCommitment,
+  commitmentNudgePanelKey,
+  isReviewTaskCalendarMirror,
 } from "./commitments";
 
 const asOf = new Date("2026-09-19T13:00:00.000Z");
@@ -97,5 +99,28 @@ describe("commitments dissolve into entities", () => {
     ];
     expect(commitmentsForEntity(rows, { dealId: "d1" }).map((row) => row.id)).toEqual(["1"]);
     expect(commitmentsForEntity(rows, { contactId: "c1" }).map((row) => row.id)).toEqual(["1"]);
+  });
+});
+
+describe("commitment nudge episode key (one per desk task)", () => {
+  const taskId = "e35a1a90-2195-4589-ba37-7d3e608a3ff2";
+  const activityId = "3665ed9f-a4db-4ef7-8827-d61eff2ac17c";
+
+  it("collapses calendar mirrors onto the review_task key", () => {
+    expect(isReviewTaskCalendarMirror(`review_task:${taskId}`)).toBe(true);
+    expect(isReviewTaskCalendarMirror(null)).toBe(false);
+    expect(
+      commitmentNudgePanelKey({
+        source: "activity",
+        id: activityId,
+        sourceId: `review_task:${taskId}`,
+      }),
+    ).toBe(`commitment_nudge:review:${taskId}`);
+    expect(commitmentNudgePanelKey({ source: "review", id: taskId })).toBe(
+      `commitment_nudge:review:${taskId}`,
+    );
+    expect(commitmentNudgePanelKey({ source: "activity", id: activityId })).toBe(
+      `commitment_nudge:activity:${activityId}`,
+    );
   });
 });

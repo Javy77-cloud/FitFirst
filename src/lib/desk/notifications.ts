@@ -1,3 +1,4 @@
+import { ET_TIME_ZONE } from "@/lib/time/et";
 /** In-desk notification board. Internal alerts never email Javy or the agent. */
 
 export const NOTIFICATION_BOARD_HREF = "/notifications";
@@ -70,7 +71,9 @@ export function notificationWhen(iso: string | Date | null | undefined): string 
     const raw = iso instanceof Date ? iso.toISOString() : String(iso);
     return raw.slice(0, 10);
   }
+  // Always America/New_York — server is UTC; never show a UTC wall clock as local.
   return date.toLocaleString("en-US", {
+    timeZone: ET_TIME_ZONE,
     month: "short",
     day: "numeric",
     hour: "numeric",
