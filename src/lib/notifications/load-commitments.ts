@@ -10,6 +10,7 @@ import {
   commitmentHasEntity,
   commitmentHeat,
   commitmentRecordType,
+  isReviewTaskCalendarMirror,
   matchOrphanToName,
   type Commitment,
   type CommitmentRecordType,
@@ -143,7 +144,9 @@ export async function loadOpenCommitments(asOf = deskNow()): Promise<Commitment[
         : sql`false`,
     );
   }
-  const activityRows = await db.select().from(activities).where(and(...clauses));
+  const activityRowsRaw = await db.select().from(activities).where(and(...clauses));
+  // #365 mirrored review_tasks onto activities for Calendar — do not double-nudge.
+  const activityRows = activityRowsRaw.filter((row) => !isReviewTaskCalendarMirror(row.sourceId));
 
   const names = await loadLinkedNames([
     ...review.map((row) => ({

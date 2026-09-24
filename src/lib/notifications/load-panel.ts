@@ -1,3 +1,4 @@
+import { commitmentNudgePanelKey } from "@/lib/notifications/commitments";
 import { and, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
@@ -373,7 +374,7 @@ export async function loadCommitmentNudgeSignals(asOf = deskNow()): Promise<Pane
     const urgency = commitmentNudgeUrgency(row.dueAt, asOf, row.priority);
     if (!urgency) continue;
     cards.push({
-      key: `commitment_nudge:${row.source}:${row.id}`,
+      key: commitmentNudgePanelKey({ source: row.source, id: row.id }),
       kind: "commitment_nudge",
       urgency,
       entityLine: row.recordName || row.title,

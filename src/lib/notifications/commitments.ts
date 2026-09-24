@@ -1,4 +1,5 @@
 import { commitmentNudgeUrgency } from "@/lib/notifications/panel";
+import { parseReviewTaskIdFromSource } from "@/lib/time/et";
 
 export type CommitmentRecordType = "contact" | "deal" | "policy" | "lead" | "account";
 
@@ -134,3 +135,21 @@ export function serializeCommitment(row: Commitment): SerializedCommitment {
 export function serializeCommitments(rows: readonly Commitment[]): SerializedCommitment[] {
   return rows.map(serializeCommitment);
 }
+
+/** Panel / alert episode key — one live nudge per desk task. */
+export function commitmentNudgePanelKey(input: {
+  source: "review" | "activity";
+  id: string;
+  /** activities.source_id — when set to review_task:<uuid>, collapse onto that review. */
+  sourceId?: string | null;
+}): string {
+  const mirrored = parseReviewTaskIdFromSource(input.sourceId);
+  if (mirrored) return `commitment_nudge:review:${mirrored}`;
+  return `commitment_nudge:${input.source}:${input.id}`;
+}
+
+/** Calendar mirrors of review_tasks must not spawn a second commitment. */
+export function isReviewTaskCalendarMirror(sourceId: string | null | undefined): boolean {
+  return parseReviewTaskIdFromSource(sourceId) != null;
+}
+

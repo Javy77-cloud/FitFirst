@@ -187,12 +187,22 @@ async function syncPanelSignalsOnce(): Promise<PanelCard[]> {
     if (dismissedKeys.has(card.key)) continue;
   }
 
+  const purgeIds: string[] = [];
   for (const [key, row] of unreadByKey) {
     if (liveKeys.has(key)) continue;
     if (row.kind === DEAL_COLD_CHASE_KIND) continue; // episode delete owns this
     // User-targeted pings (assign / forward) stay until the assignee dismisses.
     if (row.userId || row.recipientUserId) continue;
+    // Calendar mirrors of review_tasks (#365) used a second commitment_nudge:activity:*
+    // key — delete those orphans so bell + board show one row; mark other stale keys read.
+    if (row.kind === "commitment_nudge" && key.startsWith("commitment_nudge:activity:")) {
+      purgeIds.push(row.id);
+      continue;
+    }
     await db.update(alerts).set({ readAt: now }).where(eq(alerts.id, row.id));
+  }
+  if (purgeIds.length) {
+    await db.delete(alerts).where(inArray(alerts.id, purgeIds));
   }
 
   try {

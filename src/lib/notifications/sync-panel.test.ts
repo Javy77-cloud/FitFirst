@@ -39,3 +39,12 @@ describe("panel alert persistence", () => {
     expect(src).toMatch(/if \(!panelOwnsInsert\(card\.kind\)\)/);
   });
 });
+
+describe("commitment_nudge activity mirror cleanup", () => {
+  it("purges orphan activity-keyed nudges when they leave liveKeys", () => {
+    const src = readFileSync("src/lib/notifications/sync-panel.ts", "utf8");
+    expect(src).toContain('commitment_nudge:activity:');
+    expect(src).toContain("purgeIds");
+    expect(src).toMatch(/delete\(alerts\).*purgeIds|purgeIds.*delete\(alerts\)/s);
+  });
+});
