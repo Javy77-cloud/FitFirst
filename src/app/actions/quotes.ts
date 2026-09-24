@@ -19,6 +19,13 @@ import {
 import { appointmentLine, DEFAULT_TENANT_ID, writesDealLine, type PriorAttempt } from "@/lib/domain";
 import { resolveShopLineAndLob } from "@/lib/deals/package-lines";
 import {
+  attemptLogMatchesInstance,
+  instanceKeyFromAttemptWhy,
+  parseProductInstanceToken,
+  parseStorageLine,
+  tagAttemptWhy,
+} from "@/lib/deals/product-instances";
+import {
   MANUAL_QUOTE_NOTE,
   manualQuoteTarget,
   manualQuoteWrite,
@@ -152,10 +159,11 @@ export async function shopInAppetite(dealId: string) {
 
 async function persistShopFlowAfterQuoteRequest(
   dealId: string,
-  line: ReturnType<typeof resolveShopLineAndLob>["line"],
+  line: string,
   opts: {
     logs: { id: string; lineOfBusiness?: string | null }[];
     requestCarrierIds?: string[];
+    product?: string | null;
   },
 ) {
   const fingerprint = await loadLineRiskFingerprint(dealId, line);
@@ -214,18 +222,21 @@ async function persistShopFlowAfterQuoteRequest(
     dealId,
     stageSlug: "quote_review",
     line,
+    product: opts.product ?? undefined,
   }).catch(() => null);
 }
 
 async function archiveLineQuotesForNewRun(input: {
   dealId: string;
-  line: ReturnType<typeof resolveShopLineAndLob>["line"];
+  line: string;
   logs: { id: string; lineOfBusiness?: string | null }[];
   requestCarrierIds?: string[];
+  product?: string | null;
 }) {
   await persistShopFlowAfterQuoteRequest(input.dealId, input.line, {
     logs: input.logs,
     requestCarrierIds: input.requestCarrierIds,
+    product: input.product,
   });
 }
 
@@ -236,13 +247,16 @@ export async function shopDealQuotes(
   shopLineOrLob?: string,
 ) {
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  const openedLine = parseStorageLine(shopLineOrLob);
   const resolved = resolveShopLineAndLob({
-    override: shopLineOrLob,
+    override: openedLine?.shopLine ?? shopLineOrLob,
     quotingLine: deal?.quotingLine,
     lineOfBusiness: deal?.lineOfBusiness,
   });
+  const storageLine = openedLine?.storageLine ?? resolved.line;
+  const instanceKey = openedLine?.instanceKey ?? null;
   if (deal) {
-    await applySavedSheetToDeal(dealId, resolved.line);
+    await applySavedSheetToDeal(dealId, storageLine);
   }
   const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
   if (!deal || !risk) throw new Error("Deal or master risk is missing");
@@ -253,7 +267,7 @@ export async function shopDealQuotes(
       and(
         eq(quoteSheets.tenantId, DEFAULT_TENANT_ID),
         eq(quoteSheets.dealId, dealId),
-        eq(quoteSheets.line, resolved.line),
+        eq(quoteSheets.line, storageLine),
       ),
     );
   if (!quotingUnlockedForLine({ deal, sheet: lineSheet })) {
@@ -319,7 +333,11 @@ export async function shopDealQuotes(
     }),
   );
 
-  const dealLogs = logs.filter((log) => log.dealId === dealId);
+  const dealLogs = logs.filter((log) => {
+    if (log.dealId !== dealId) return false;
+    if (instanceKey) return attemptLogMatchesInstance(log.why, instanceKey);
+    return !instanceKeyFromAttemptWhy(log.why);
+  });
   const manualIds = new Set(manualCarrierIdsFromLogs(dealLogs));
   const shopListIds = new Set(shopListCarrierIdsFromLogs(dealLogs));
   const excludedIds = new Set(excludedCarrierIdsFromLogs(dealLogs));
@@ -337,9 +355,10 @@ export async function shopDealQuotes(
     }
     await archiveLineQuotesForNewRun({
       dealId,
-      line: resolved.line,
+      line: storageLine,
       logs: dealLogs,
       requestCarrierIds: selectedCarrierIds,
+      product: instanceKey,
     });
   } else {
     const existing = await db.select().from(quotes).where(eq(quotes.dealId, dealId));
@@ -415,7 +434,10 @@ export async function shopDealQuotes(
       lineOfBusiness: shopLob,
       result: "maybe",
       bindable: false,
-      why: `${EXPLICIT_MARKET_ACTION_MARKER} ${pass} shop · ${portalWhy}${manual ? ` ${MANUAL_MARKET_MARKER}` : ""} · no stub premium (Fill/portal for real quote). Fit ${match?.fitScore ?? "—"}.`,
+      why: tagAttemptWhy(
+        `${EXPLICIT_MARKET_ACTION_MARKER} ${pass} shop · ${portalWhy}${manual ? ` ${MANUAL_MARKET_MARKER}` : ""} · no stub premium (Fill/portal for real quote). Fit ${match?.fitScore ?? "—"}.`,
+        instanceKey,
+      ),
       snapYearBuilt: risk.yearBuilt,
       snapRoofYear: risk.roofYear,
       snapRoofCovering: risk.roofCovering,
@@ -428,8 +450,9 @@ export async function shopDealQuotes(
   }
 
   if (pass === "stretch") {
-    await persistShopFlowAfterQuoteRequest(dealId, resolved.line, {
+    await persistShopFlowAfterQuoteRequest(dealId, storageLine, {
       logs: dealLogs,
+      product: instanceKey,
     });
   }
 
@@ -548,11 +571,15 @@ export async function recordManualQuoteAction(formData: FormData) {
     .where(and(eq(carriers.id, carrierId), eq(carriers.tenantId, DEFAULT_TENANT_ID)));
   if (!carrier) throw new Error("Carrier not found.");
 
+  const openedLine = parseStorageLine(shopLineRaw);
   const resolved = resolveShopLineAndLob({
-    override: shopLineRaw,
+    override: openedLine?.shopLine ?? shopLineRaw,
     quotingLine: deal.quotingLine,
     lineOfBusiness: deal.lineOfBusiness,
   });
+  const quoteShopLine = openedLine?.storageLine ?? resolved.line;
+  const instanceKey =
+    openedLine?.instanceKey ?? parseProductInstanceToken(productRaw)?.key ?? null;
   const dealLogs = await db
     .select()
     .from(quoteAttemptLogs)
@@ -586,7 +613,7 @@ export async function recordManualQuoteAction(formData: FormData) {
       result: "quoted",
       bindable: true,
       premium,
-      why: MANUAL_QUOTE_NOTE,
+      why: tagAttemptWhy(MANUAL_QUOTE_NOTE, instanceKey),
       covATried: risk.coverageA,
     })
     .returning();
@@ -602,11 +629,11 @@ export async function recordManualQuoteAction(formData: FormData) {
         eq(quotes.tenantId, DEFAULT_TENANT_ID),
       ),
     );
-  const target = manualQuoteTarget(existing, resolved.line);
+  const target = manualQuoteTarget(existing, quoteShopLine);
   const quoteWrite = manualQuoteWrite({
     existing: target,
     premium,
-    shopLine: resolved.line,
+    shopLine: quoteShopLine,
     quoteRunId,
     attemptLogId: log.id,
     riskOutcome: synced.riskOutcome,
@@ -641,7 +668,7 @@ export async function recordManualQuoteAction(formData: FormData) {
   }
   if (!quoteId) throw new Error("Could not save the quote.");
 
-  const product = parseDealProduct(productRaw);
+  const product = instanceKey || parseDealProduct(productRaw);
   const stages = parseProductStages(saved.productStages);
   const selected = new Set(
     product ? (stages[product]?.selectedQuoteIds ?? []).filter(Boolean) : [],

@@ -1,5 +1,6 @@
 import { EXCLUDE_MARKET_MARKER, isExplicitMarketActionText } from "@/lib/deals/manual-markets";
-import { dealProductDef, type DealProductId } from "@/lib/deals/deal-products";
+import { dealProductDef } from "@/lib/deals/deal-products";
+import { parseProductInstanceToken } from "@/lib/deals/product-instances";
 import { quoteMatchesDealProduct, quoteMatchesShopLine } from "@/lib/deals/shop-flow";
 import { SHOP_LINE_TO_LOB, isShopLine, type ShopLine } from "@/lib/domain";
 
@@ -189,7 +190,7 @@ export function lineQuoteCompleteness(input: {
 
 /** Gloria HO3 vs DP3 share the home shop line — ready is per product, not the sheet. */
 export function productQuoteCompleteness(input: {
-  product: DealProductId;
+  product: string;
   logs: readonly {
     id: string;
     carrierId: string;
@@ -211,7 +212,19 @@ export function productQuoteCompleteness(input: {
   splitHomeProducts?: boolean;
   quoteRuns?: Partial<Record<string, string>> | null;
 }): LineQuoteCompleteness {
-  const line = dealProductDef(input.product).shopLine;
+  const productId = parseProductInstanceToken(input.product)?.productId;
+  if (!productId) {
+    return {
+      line: "home",
+      shopped: false,
+      complete: false,
+      expected: 0,
+      retrieved: 0,
+      missing: [],
+      summary: "",
+    };
+  }
+  const line = dealProductDef(productId).shopLine;
   const productQuotes = input.quotes.filter(
     (quote) =>
       !quote.stub &&

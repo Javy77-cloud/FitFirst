@@ -5,9 +5,17 @@ import {
   DEAL_PRODUCT_DEFS,
   DEAL_PRODUCT_GROUPS,
   isDealProductId,
-  normalizeDealProducts,
   type DealProductId,
 } from "@/lib/deals/deal-products";
+import {
+  addProductInstance,
+  normalizeProductInstanceList,
+  removeProductInstance,
+} from "@/lib/deals/product-instances";
+import {
+  labelProductInstances,
+  type VehicleLabelFact,
+} from "@/lib/deals/product-instance-label";
 import { DEAL_GROUP_THEMES } from "@/lib/deals/product-ui";
 import { cn } from "@/lib/utils";
 
@@ -17,14 +25,28 @@ export function ProductPicker({
   name = "shopProducts",
   disabled,
   idPrefix = "deal-product",
+  labelFacts,
 }: {
-  selected: readonly DealProductId[];
-  onChange?: (next: DealProductId[]) => void;
+  selected: readonly string[];
+  onChange?: (next: string[]) => void;
   name?: string;
   disabled?: boolean;
   idPrefix?: string;
+  labelFacts?: Partial<
+    Record<
+      string,
+      {
+        quotingForm?: string | null;
+        sheetForm?: string | null;
+        address?: string | null;
+        city?: string | null;
+        vehicles?: readonly VehicleLabelFact[] | null;
+      }
+    >
+  >;
 }) {
   const catalog = useAgencyLobs();
+  const instances = normalizeProductInstanceList(selected);
   const allowed = new Set(
     catalog
       .filter((row) => row.active)
@@ -32,19 +54,29 @@ export function ProductPicker({
       .filter(isDealProductId),
   );
   const labelById = new Map(catalog.map((row) => [row.productId, row.label]));
-  const defs = DEAL_PRODUCT_DEFS.filter((row) => allowed.has(row.id) || selected.includes(row.id)).map(
+  const pickedIds = new Set(instances.map((row) => row.productId));
+  const defs = DEAL_PRODUCT_DEFS.filter((row) => allowed.has(row.id) || pickedIds.has(row.id)).map(
     (row) => ({ ...row, label: labelById.get(row.id) ?? row.label }),
   );
   const groups = DEAL_PRODUCT_GROUPS.filter((group) => defs.some((row) => row.group === group.id));
-  const picked = new Set(selected);
-  const labels = defs.filter((row) => picked.has(row.id)).map((row) => row.label);
+  const instanceLabels = labelProductInstances(
+    instances.map((row) => ({
+      key: row.key,
+      productId: row.productId,
+      ...labelFacts?.[row.key],
+    })),
+  );
 
-  function toggle(id: DealProductId, checked: boolean) {
-    if (!onChange) return;
-    const next = defs.filter((row) => (row.id === id ? checked : picked.has(row.id))).map(
-      (row) => row.id,
-    );
-    onChange(normalizeDealProducts(next));
+  function commit(next: { key: string }[]) {
+    onChange?.(next.map((row) => row.key));
+  }
+
+  function add(id: DealProductId) {
+    commit(addProductInstance(instances.map((row) => row.key), id));
+  }
+
+  function remove(key: string) {
+    commit(removeProductInstance(instances.map((row) => row.key), key));
   }
 
   return (
@@ -52,26 +84,40 @@ export function ProductPicker({
       <legend className="text-sm font-semibold text-navy">Products on this deal</legend>
       <p className="text-[13px] leading-snug text-muted-foreground">
         Mix Personal, Commercial, Life, and Health on <span className="font-medium text-navy">one deal</span>.
-        Shared questions once — each product keeps its own layout. Nothing is saved until Save Deal.
+        The same product can be added again for another home or vehicle. Nothing is saved until Save Deal.
       </p>
       <div className="flex flex-wrap items-center gap-1.5" data-ff-product-picker-summary="">
         <span className="rounded-full bg-navy px-2 py-0.5 text-[11px] font-semibold text-white">
-          {`${picked.size} selected`}
+          {`${instances.length} selected`}
         </span>
-        {labels.map((label) => (
+        {instances.map((row) => (
           <span
-            key={label}
-            className="rounded-full border border-navy/25 bg-[var(--ff-card)] px-2 py-0.5 text-[11px] font-medium text-navy"
+            key={row.key}
+            className="inline-flex items-center gap-1 rounded-full border border-navy/25 bg-[var(--ff-card)] px-2 py-0.5 text-[11px] font-medium text-navy"
+            data-ff-product-instance={row.key}
           >
-            {label}
+            {instanceLabels.get(row.key) ?? labelById.get(row.productId) ?? row.productId}
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-navy"
+              aria-label={`Remove ${instanceLabels.get(row.key) ?? row.productId}`}
+              disabled={disabled}
+              data-ff-remove-product-instance={row.key}
+              onClick={() => remove(row.key)}
+            >
+              ×
+            </button>
           </span>
         ))}
       </div>
+      {instances.map((row) => (
+        <input key={row.key} type="hidden" name={name} value={row.key} />
+      ))}
       <div className="space-y-3">
         {groups.map((group) => {
           const theme = DEAL_GROUP_THEMES[group.id];
           const items = defs.filter((row) => row.group === group.id);
-          const groupCount = items.filter((row) => picked.has(row.id)).length;
+          const groupCount = instances.filter((row) => items.some((item) => item.id === row.productId)).length;
           return (
             <div
               key={group.id}
@@ -94,7 +140,8 @@ export function ProductPicker({
                 <div className="flex flex-wrap gap-1.5">
                   {items.map((item) => {
                     const id = `${idPrefix}-${item.id}`;
-                    const checked = picked.has(item.id);
+                    const copies = instances.filter((row) => row.productId === item.id);
+                    const checked = copies.length > 0;
                     return (
                       <label
                         key={item.id}
@@ -108,14 +155,16 @@ export function ProductPicker({
                         <input
                           id={id}
                           type="checkbox"
-                          name={name}
                           value={item.id}
                           checked={checked}
                           disabled={disabled}
                           className="sr-only"
                           data-ff-package-line={item.id}
                           data-ff-deal-product={item.id}
-                          onChange={(event) => toggle(item.id, event.target.checked)}
+                          onChange={(event) => {
+                            if (event.target.checked) add(item.id);
+                            else if (copies[copies.length - 1]) remove(copies[copies.length - 1]!.key);
+                          }}
                         />
                         {checked ? (
                           <span className="text-[11px] leading-none" aria-hidden>
@@ -123,6 +172,22 @@ export function ProductPicker({
                           </span>
                         ) : null}
                         {item.label}
+                        {copies.length > 1 ? <span className="text-xs">×{copies.length}</span> : null}
+                        {checked ? (
+                          <button
+                            type="button"
+                            className="ml-1 text-xs underline"
+                            disabled={disabled}
+                            data-ff-add-product-instance={item.id}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              add(item.id);
+                            }}
+                          >
+                            Add another
+                          </button>
+                        ) : null}
                       </label>
                     );
                   })}

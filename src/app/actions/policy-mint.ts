@@ -35,6 +35,11 @@ import {
 } from "@/lib/policy/property-protection";
 import { splitPremisesAddress, streetOnlyPremises } from "@/lib/policy/premises";
 import { dealProductDef, inferDealProducts, parseDealProduct, type DealProductId } from "@/lib/deals/deal-products";
+import {
+  parseProductInstanceToken,
+  productIdFromInstanceKey,
+  resolveVisibleProductInstances,
+} from "@/lib/deals/product-instances";
 import { refuseAnaPolicyMint } from "@/lib/policy/ana-mint";
 import {
   parseProductStages,
@@ -269,7 +274,7 @@ async function loadDeal(dealId: string) {
 
 async function markMintStatus(
   dealId: string,
-  product: DealProductId,
+  product: string,
   patch: {
     stage?: string;
     policyId?: string | null;
@@ -395,14 +400,15 @@ export async function issuePolicyFromDeclaration(input: {
   force?: boolean;
 }) {
   const dealId = input.dealId.trim();
-  const product = parseDealProduct(input.product);
-  if (!dealId || !product) return { ok: false as const, reason: "invalid" as const };
+  const productKey = parseProductInstanceToken(input.product)?.key ?? null;
+  const product = productKey ? productIdFromInstanceKey(productKey) : null;
+  if (!dealId || !product || !productKey) return { ok: false as const, reason: "invalid" as const };
   const deal = await loadDeal(dealId);
   if (!deal) return { ok: false as const, reason: "missing" as const };
 
   const saved = parseShopFlow(deal.shopFlow);
   const stages = parseProductStages(saved.productStages);
-  const current = productStageFor(stages, product, deal.pipelineStageSlug ?? deal.pipelineStage);
+  const current = productStageFor(stages, productKey, deal.pipelineStageSlug ?? deal.pipelineStage);
   const selectedQuoteIds = (input.selectedQuoteIds?.length
     ? input.selectedQuoteIds
     : current.selectedQuoteIds
@@ -494,7 +500,7 @@ export async function issuePolicyFromDeclaration(input: {
         },
       }).catch(() => null);
     }
-    await markMintStatus(dealId, product, {
+    await markMintStatus(dealId, productKey, {
       stage: "policy_issued",
       policyId: existing.id,
       mintStatus: "published",
@@ -509,7 +515,7 @@ export async function issuePolicyFromDeclaration(input: {
       ? current.mintStatus
       : null;
   const remintUnpublished = Boolean(existing && policyMintUnpublished(existing));
-  await markMintStatus(dealId, product, {
+  await markMintStatus(dealId, productKey, {
     mintStatus: "creating",
     selectedQuoteIds,
     policyId: existing?.id ?? current.policyId ?? null,
@@ -541,7 +547,7 @@ export async function issuePolicyFromDeclaration(input: {
     docType: decRow?.docType || issuedPolicyDocType(def.shopLine),
   });
   if (!extracted.ok) {
-    await markMintStatus(dealId, product, { mintStatus: previousMint, selectedQuoteIds });
+    await markMintStatus(dealId, productKey, { mintStatus: previousMint, selectedQuoteIds });
     return extracted;
   }
   const extractGate = evaluateMintExtract(
@@ -567,7 +573,7 @@ export async function issuePolicyFromDeclaration(input: {
       fieldKeys: extracted.rows.map((row) => row.fieldKey),
       sheetPolicyNumber: sheetPolicyNumber || null,
     });
-    await markMintStatus(dealId, product, { mintStatus: previousMint, selectedQuoteIds });
+    await markMintStatus(dealId, productKey, { mintStatus: previousMint, selectedQuoteIds });
     return extractGate;
   }
   const geminiRows = extracted.rows;
@@ -693,7 +699,7 @@ export async function issuePolicyFromDeclaration(input: {
     ownerId: deal.ownerId ?? null,
     sourceQuoteId: quote?.id ?? null,
     sourceDocumentId: gate.dec.id,
-    sourceProduct: product,
+    sourceProduct: productKey,
     publishedAt: null as Date | null,
     mintPayload: payload,
     ...(propertyProtection && propertyProtectionHasData(propertyProtection)
@@ -768,7 +774,7 @@ export async function issuePolicyFromDeclaration(input: {
     },
   });
 
-  await markMintStatus(dealId, product, {
+  await markMintStatus(dealId, productKey, {
     stage: "policy_issued",
     policyId,
     mintStatus: "unpublished",
@@ -818,7 +824,7 @@ export async function issuePolicyFromDeclaration(input: {
   revalidatePath("/deals");
   return { ok: true as const, policyId };
   } catch (error) {
-    await markMintStatus(dealId, product, { mintStatus: previousMint, selectedQuoteIds });
+    await markMintStatus(dealId, productKey, { mintStatus: previousMint, selectedQuoteIds });
     throw error;
   }
 }
@@ -1055,21 +1061,21 @@ export async function publishMintedPolicy(formData: FormData) {
     })
     .where(eq(policies.id, policyId));
   if (policy.dealId && policy.sourceProduct) {
-    const product = parseDealProduct(policy.sourceProduct);
+    const product = parseProductInstanceToken(policy.sourceProduct)?.key ?? null;
     if (product) {
       const deal = await loadDeal(policy.dealId);
       if (deal) {
         const saved = parseShopFlow(deal.shopFlow);
         const nextStages = markProductIssuedDone(saved.productStages, product, { policyId });
         await persistDealShopFlow(policy.dealId, { ...saved, productStages: nextStages });
-        const products = inferDealProducts({
+        const products = resolveVisibleProductInstances({
           shopProducts: deal.shopProducts,
           shopLines: deal.shopLines,
           lineOfBusiness: deal.lineOfBusiness,
           quotingLine: deal.quotingLine,
           quotingForm: deal.quotingForm,
           policySubType: deal.policySubType,
-        });
+        }).map((row) => row.key);
         if (allProductsClosedForDealWon(products, nextStages)) {
           await moveDealToStage({
             dealId: policy.dealId,

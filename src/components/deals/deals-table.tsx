@@ -39,6 +39,7 @@ import {
   listProductStageChips,
 } from "@/lib/deals/product-stages";
 import { productSectionComplete } from "@/lib/deals/product-layout";
+import { parseProductInstanceToken } from "@/lib/deals/product-instances";
 import { formatDay } from "@/lib/domain";
 import type { DeskUserOption } from "@/lib/deals/transfer";
 import type { DealListRow } from "@/lib/db/queries";
@@ -149,9 +150,10 @@ export async function DealsTable({
           initialQuery={initialQuery}
           columns={columns}
           empty="No deals match this filter. Shopping stays on the deal list — quotes are not policies."
-          rows={rows.map(({ deal, contact, account, lead, risk }) => {
+          rows={rows.map((row) => {
+            const { deal, contact, account, lead } = row;
             const stored = valueMap.get(deal.id) ?? {};
-            const value = dealValue({ deal, contact, account, risk });
+            const value = dealValue(row);
             const phone = dealRecordPhone(stored);
             const email = dealRecordEmail(stored);
             const address = dealRecordAddress(deal, stored);
@@ -160,7 +162,10 @@ export async function DealsTable({
             const productChips = attachListProductStageHrefs(rawChips, {
               dealId: deal.id,
               detailsCompleteByProduct: Object.fromEntries(
-                rawChips.map((chip) => [chip.product, productSectionComplete(chip.product, stored)]),
+                rawChips.map((chip) => {
+                  const productId = parseProductInstanceToken(chip.product)?.productId;
+                  return [chip.product, productId ? productSectionComplete(productId, stored) : false];
+                }),
               ),
             });
             const productNotes = listProductNotes({

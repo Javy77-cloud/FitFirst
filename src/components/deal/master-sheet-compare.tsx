@@ -132,6 +132,7 @@ function appendSourceDocUploads(data: FormData) {
 export function MasterSheetWorkspace({
   dealId,
   line,
+  storageLine,
   fields,
   values,
   product,
@@ -150,6 +151,7 @@ export function MasterSheetWorkspace({
 }: {
   dealId: string;
   line: ShopLine;
+  storageLine?: string;
   fields: ExtractedFieldRow[];
   values: Record<string, QuoteSheetFieldValue>;
   product?: string | null;
@@ -227,9 +229,11 @@ export function MasterSheetWorkspace({
       <MasterSheetCompare
         dealId={dealId}
         line={line}
+        storageLine={storageLine}
         fields={fields}
         values={values}
         product={product}
+        productId={productId}
         sourceDocCount={sourceDocCount}
         formId={MASTER_SHEET_FORM_ID}
         persistSheet={() => persistSheet()}
@@ -241,7 +245,7 @@ export function MasterSheetWorkspace({
       />
       <SheetApproveGate
         dealId={dealId}
-        line={line}
+        line={storageLine || line}
         product={productId}
         formLabel={formLabel}
         unlocked={unlocked}
@@ -257,9 +261,11 @@ export function MasterSheetWorkspace({
 export function MasterSheetCompare({
   dealId,
   line,
+  storageLine,
   fields,
   values,
   product: productParam,
+  productId,
   sourceDocCount = 0,
   formId = MASTER_SHEET_FORM_ID,
   persistSheet,
@@ -271,9 +277,11 @@ export function MasterSheetCompare({
 }: {
   dealId: string;
   line: ShopLine;
+  storageLine?: string;
   fields: ExtractedFieldRow[];
   values: Record<string, QuoteSheetFieldValue>;
   product?: string | null;
+  productId?: string | null;
   sourceDocCount?: number;
   formId?: string;
   persistSheet?: () => Promise<void>;
@@ -408,7 +416,7 @@ export function MasterSheetCompare({
         data-ff-risk-profile-density="per-section"
       >
         <input type="hidden" name="dealId" value={dealId} />
-        <input type="hidden" name="line" value={line} />
+        <input type="hidden" name="line" value={storageLine || line} />
         {line === "health" ? (
           <input type="hidden" name={USING_HEALTHSHERPA_KEY} value={usingHealthSherpa ? "yes" : "no"} />
         ) : null}
@@ -430,7 +438,7 @@ export function MasterSheetCompare({
         <input
           type="hidden"
           name="returnTo"
-          value={`/deals/${dealId}?tab=documents&line=${line}#${SHEET_CONFIRM_HASH}`}
+          value={`/deals/${dealId}?tab=documents&line=${storageLine || line}&product=${productId ?? ""}#${SHEET_CONFIRM_HASH}`}
         />
         <div data-ff-master-sheet-scroll="" className="overflow-visible">
           {groups.map((group) => {

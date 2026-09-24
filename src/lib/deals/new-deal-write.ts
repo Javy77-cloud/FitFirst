@@ -1,4 +1,5 @@
 import { inferDealProducts, normalizeDealProducts } from "@/lib/deals/deal-products";
+import { normalizeProductInstanceList } from "@/lib/deals/product-instances";
 import {
   productStageFor,
   type DealProductStages,
@@ -26,8 +27,12 @@ export function gatheringProductStageDefaults() {
 export function seedGatheringProductStages(
   products: readonly string[] | null | undefined,
 ): DealProductStages {
+  const instances = normalizeProductInstanceList(products);
+  const keys = instances.length
+    ? instances.map((row) => row.key)
+    : normalizeDealProducts(products);
   const out: DealProductStages = {};
-  for (const product of normalizeDealProducts(products)) {
+  for (const product of keys) {
     out[product] = productStageFor({}, product);
   }
   return out;
@@ -83,7 +88,8 @@ export function shopFlowNeedsProductStageSeed(
 ): boolean {
   if (!shopFlow || typeof shopFlow !== "object" || Array.isArray(shopFlow)) return true;
   const saved = parseShopFlow(shopFlow);
-  const wanted = normalizeDealProducts(products);
+  const instances = normalizeProductInstanceList(products);
+  const wanted = instances.length ? instances.map((row) => row.key) : normalizeDealProducts(products);
   if (!wanted.length) return !saved.productStages || !Object.keys(saved.productStages).length;
   return wanted.some((product) => !saved.productStages?.[product]?.stage);
 }

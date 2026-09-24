@@ -1,7 +1,7 @@
 "use client";
 
 import { ProductPicker } from "@/components/deals/product-picker";
-import { normalizeDealProducts, type DealProductId } from "@/lib/deals/deal-products";
+import { normalizeDealProducts } from "@/lib/deals/deal-products";
 
 /** Grouped product picker — keeps the old export name for existing create-form wiring. */
 export function PackageLineCheckboxes({
@@ -12,7 +12,7 @@ export function PackageLineCheckboxes({
   idPrefix = "package-line",
 }: {
   selected: readonly string[];
-  onChange?: (next: DealProductId[]) => void;
+  onChange?: (next: string[]) => void;
   name?: string;
   disabled?: boolean;
   idPrefix?: string;

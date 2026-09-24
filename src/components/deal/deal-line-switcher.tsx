@@ -5,6 +5,8 @@ import {
   dealProductSwitcherHref,
   type DealProductId,
 } from "@/lib/deals/deal-products";
+import { parseProductInstanceToken } from "@/lib/deals/product-instances";
+import type { VehicleLabelFact } from "@/lib/deals/product-instance-label";
 import {
   productChipBound,
   productChipLabel,
@@ -46,16 +48,31 @@ export function DealLineSwitcher({
   quoteGaps = {},
   stages = {},
   formLabels = {},
+  labels = {},
+  labelFacts,
 }: {
   dealId: string;
-  products: readonly DealProductId[];
-  active: DealProductId;
+  products: readonly string[];
+  active: string;
   tab?: string | null;
-  complete?: Partial<Record<DealProductId, boolean>>;
-  progress?: Partial<Record<DealProductId, DealProductChipProgress>>;
-  quoteGaps?: Partial<Record<DealProductId, DealProductQuoteGap>>;
-  stages?: Partial<Record<DealProductId, DealProductStageChip>>;
-  formLabels?: Partial<Record<DealProductId, string>>;
+  complete?: Partial<Record<string, boolean>>;
+  progress?: Partial<Record<string, DealProductChipProgress>>;
+  quoteGaps?: Partial<Record<string, DealProductQuoteGap>>;
+  stages?: Partial<Record<string, DealProductStageChip>>;
+  formLabels?: Partial<Record<string, string>>;
+  labels?: Partial<Record<string, string>>;
+  labelFacts?: Partial<
+    Record<
+      string,
+      {
+        quotingForm?: string | null;
+        sheetForm?: string | null;
+        address?: string | null;
+        city?: string | null;
+        vehicles?: readonly VehicleLabelFact[] | null;
+      }
+    >
+  >;
 }) {
   if (!products.length) return null;
   return (
@@ -64,7 +81,13 @@ export function DealLineSwitcher({
         <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           Products
         </p>
-        <DealPackageLinesForm dealId={dealId} selected={products} tab={tab} />
+        <DealPackageLinesForm
+          dealId={dealId}
+          selected={products}
+          tab={tab}
+          activeLine={active}
+          labelFacts={labelFacts}
+        />
       </div>
       <nav
         aria-label="Deal products"
@@ -85,9 +108,12 @@ export function DealLineSwitcher({
           const issuedDone = Boolean(stages[product]?.issuedDone);
           const done = bound || issuedDone;
           const pct = quotesMissing ? 0 : bound ? 100 : quotesIn ? 70 : (stat?.pct ?? 0);
-          const theme = themeForProduct(product);
-          const def = dealProductDef(product);
-          const label = productChipLabel({ product, quotingForm: formLabels[product] });
+          const productId = (parseProductInstanceToken(product)?.productId ?? "homeowners") as DealProductId;
+          const theme = themeForProduct(productId);
+          const def = dealProductDef(productId);
+          const label =
+            labels[product] ??
+            productChipLabel({ product: productId, quotingForm: formLabels[product] ?? formLabels[productId] });
           const stageLabel = productChipStageLabelForState({
             stage,
             selectedQuoteIds: stages[product]?.selectedQuoteIds,

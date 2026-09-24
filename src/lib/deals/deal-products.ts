@@ -346,6 +346,8 @@ export function dealProductDef(id: DealProductId): DealProductDef {
 export function parseDealProduct(raw: string | null | undefined): DealProductId | null {
   const value = String(raw ?? "").trim();
   if (!value) return null;
+  const head = value.includes("~") ? value.slice(0, value.indexOf("~")) : value;
+  if (isDealProductId(head)) return head;
   if (isDealProductId(value)) return value;
   const alias = ALIAS_TO_PRODUCT[value.toLowerCase()];
   if (alias) return alias;
@@ -656,14 +658,23 @@ export function resolveActiveDealProduct(input: {
 
 export function dealProductSwitcherHref(input: {
   dealId: string;
-  product: DealProductId;
+  product: string;
   tab?: string | null;
 }): string {
-  const def = dealProductDef(input.product);
+  const raw = String(input.product ?? "").trim();
+  const sep = raw.indexOf("~");
+  const product = parseDealProduct(sep === -1 ? raw : raw.slice(0, sep)) ?? "homeowners";
+  const def = dealProductDef(product);
   const query = new URLSearchParams();
   if (input.tab) query.set("tab", input.tab);
-  query.set("line", def.shopLine);
-  query.set("product", def.sheetProduct);
+  if (sep === -1) {
+    query.set("line", def.shopLine);
+    query.set("product", def.sheetProduct);
+  } else {
+    const key = `${product}~${raw.slice(sep + 1).toLowerCase()}`;
+    query.set("line", `${def.shopLine}~${key}`);
+    query.set("product", key);
+  }
   return `/deals/${input.dealId}?${query.toString()}`;
 }
 

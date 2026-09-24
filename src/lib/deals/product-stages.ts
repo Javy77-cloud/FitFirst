@@ -1,11 +1,16 @@
 import {
   dealProductDef,
   dealProductSwitcherHref,
-  inferDealProducts,
   isDealProductId,
   parseDealProduct,
-  type DealProductId,
 } from "@/lib/deals/deal-products";
+import { isDuplicateInstance, parseProductInstanceToken, resolveVisibleProductInstances } from "@/lib/deals/product-instances";
+import {
+  addressFactsFromSheetValues,
+  labelProductInstances,
+  vehiclesFromSheetValues,
+} from "@/lib/deals/product-instance-label";
+import { productChipLabel } from "@/lib/deals/product-chip-label";
 import { humanizeDealStage } from "@/lib/deals/package-lines";
 import {
   parseNoticeType,
@@ -357,17 +362,21 @@ function stageWithoutLeftoverQuoteSent(
 
 export function productStageFor(
   stages: DealProductStages | null | undefined,
-  product: DealProductId,
+  product: string,
   fallbackStage?: string | null,
 ): DealProductStageState {
   const stored = stages?.[product];
+  const fallback =
+    !stored && isDuplicateInstance(parseProductInstanceToken(product))
+      ? "gathering"
+      : fallbackStage;
   if (stored) {
     const selectedQuoteIds = stored.selectedQuoteIds ?? [];
     const noticeType = stored.noticeType ?? stored.inspectionStatus ?? "none";
     const outsideOverride = stored.outsideOverride ?? null;
     return {
       stage: stageWithoutLeftoverQuoteSent(
-        stored.stage || fallbackStage || "gathering",
+        stored.stage || fallback || "gathering",
         selectedQuoteIds,
         outsideOverride,
       ),
@@ -390,9 +399,9 @@ export function productStageFor(
   }
   const selectedQuoteIds: string[] = [];
   const leftoverNotice =
-    normalizeStageSlug(fallbackStage) === "pending_inspection" ? "inspection_before_bind" : "none";
+    normalizeStageSlug(fallback) === "pending_inspection" ? "inspection_before_bind" : "none";
   return {
-    stage: stageWithoutLeftoverQuoteSent(fallbackStage || "gathering", selectedQuoteIds),
+    stage: stageWithoutLeftoverQuoteSent(fallback || "gathering", selectedQuoteIds),
     selectedQuoteIds,
     lostReason: null,
     policyId: null,
@@ -413,7 +422,7 @@ export function productStageFor(
 
 export function setProductStage(
   stages: DealProductStages | null | undefined,
-  product: DealProductId,
+  product: string,
   patch: Partial<DealProductStageState>,
 ): DealProductStages {
   const current = productStageFor(stages, product);
@@ -519,58 +528,7 @@ export function isSelectedQuote(
   return (selectedQuoteIds ?? []).includes(quoteId);
 }
 
-const PC_FORM_LEFTOVER = /^(ho[1-8]?|mho|dp[13]|pa|flood|homeowners|landlord)$/i;
-
-/** Use the sheet form only when it belongs to this product (HO3 ≠ DP3 on a shared home sheet). */
-export function sheetFormForProduct(
-  product: DealProductId,
-  sheetForm?: string | null,
-): string | null {
-  const form = (sheetForm ?? "").trim();
-  if (!form) return null;
-  const group = dealProductDef(product).group;
-  if (group === "life" || group === "health") {
-    return PC_FORM_LEFTOVER.test(form) ? null : form;
-  }
-  if (product === "homeowners") return /^ho|^mho/i.test(form) ? form : null;
-  if (product === "landlord") return /^dp/i.test(form) ? form : null;
-  if (product === "renters") return /^ho4$/i.test(form) ? form : null;
-  if (product === "auto" || product === "motorcycle") return /auto|pa|moto/i.test(form) ? form : null;
-  if (product === "flood") return /flood/i.test(form) ? form : null;
-  return form;
-}
-
-/** HO3 / DP3 / Auto / Flood — never cryptic PA / FLOT. */
-export function productChipLabel(input: {
-  product: DealProductId;
-  quotingForm?: string | null;
-  sheetForm?: string | null;
-}): string {
-  const def = dealProductDef(input.product);
-  const raw = (input.sheetForm || input.quotingForm || "").trim();
-  const scoped = sheetFormForProduct(input.product, raw);
-  if (def.group === "life" || def.group === "health") {
-    return scoped || def.label;
-  }
-  const form = (scoped || def.quotingForm || "").trim();
-  if (input.product === "homeowners") {
-    if (/^ho[3568]$/i.test(form) || /^mho$/i.test(form)) return form.toUpperCase();
-    return form && form !== "Homeowners" ? form : "HO3";
-  }
-  if (input.product === "landlord") {
-    if (/^dp[13]$/i.test(form)) return form.toUpperCase();
-    return form && !/landlord/i.test(form) ? form : "DP3";
-  }
-  if (input.product === "renters") return /^ho4$/i.test(form) ? "HO4" : form || "HO4";
-  if (input.product === "auto") {
-    if (!form || /^pa$/i.test(form) || /^auto$/i.test(form) || /personal\s*auto/i.test(form)) {
-      return "Auto";
-    }
-    return form;
-  }
-  if (input.product === "flood") return "Flood";
-  return form || def.label;
-}
+export { productChipLabel, sheetFormForProduct } from "@/lib/deals/product-chip-label";
 
 const CHIP_STAGE_LABELS: Record<string, string> = {
   gathering: "Gathering",
@@ -623,7 +581,7 @@ export function productChipBound(stage?: string | null): boolean {
 }
 
 export type ListProductStageChip = {
-  product: DealProductId;
+  product: string;
   label: string;
   stage: string;
   stageLabel: string;
@@ -653,7 +611,7 @@ export function workspaceTabForProductStage(
 
 export function listProductStageHref(input: {
   dealId: string;
-  product: DealProductId;
+  product: string;
   stage?: string | null;
   detailsComplete?: boolean;
 }): string {
@@ -732,7 +690,7 @@ export function appendNoticeNoteLog(
 }
 
 export type ListProductNote = {
-  product: DealProductId;
+  product: string;
   label: string;
   note: string;
 };
@@ -764,8 +722,10 @@ function unwrapOwnProductLabel(note: string, label: string): string {
 }
 
 function productNoteLabelAliases(chip: ProductNoteChip): string[] {
-  const def = dealProductDef(chip.product);
-  return [chip.label, productChipLabel({ product: chip.product }), def.label, chip.product]
+  const productId = parseProductInstanceToken(chip.product)?.productId;
+  if (!productId) return [chip.label, chip.product].filter(Boolean);
+  const def = dealProductDef(productId);
+  return [chip.label, productChipLabel({ product: productId }), def.label, chip.product]
     .map((label) => label.trim())
     .filter(Boolean);
 }
@@ -777,11 +737,11 @@ function productNoteLabelAliases(chip: ProductNoteChip): string[] {
 export function splitConcatenatedProductListNotes(
   blob: string | null | undefined,
   chips: readonly ProductNoteChip[],
-): Partial<Record<DealProductId, string>> | null {
+): Partial<Record<string, string>> | null {
   const text = (blob ?? "").replace(/\r\n/g, "\n").trim();
   if (!text || chips.length < 2) return null;
 
-  const aliases = new Map<string, DealProductId>();
+  const aliases = new Map<string, string>();
   for (const chip of chips) {
     for (const label of productNoteLabelAliases(chip)) {
       aliases.set(label.toLowerCase(), chip.product);
@@ -791,9 +751,9 @@ export function splitConcatenatedProductListNotes(
   if (labels.length < 2) return null;
 
   const prefix = new RegExp(`^(${labels.map(escapeNoteLabel).join("|")}):\\s*`, "i");
-  const matched = new Set<DealProductId>();
-  const sections: { product: DealProductId | null; lines: string[] }[] = [];
-  let current: { product: DealProductId | null; lines: string[] } = { product: null, lines: [] };
+  const matched = new Set<string>();
+  const sections: { product: string | null; lines: string[] }[] = [];
+  let current: { product: string | null; lines: string[] } = { product: null, lines: [] };
 
   for (const line of text.split("\n")) {
     const match = line.match(prefix);
@@ -809,7 +769,7 @@ export function splitConcatenatedProductListNotes(
   if (current.product != null || current.lines.length) sections.push(current);
   if (matched.size < 2) return null;
 
-  const out: Partial<Record<DealProductId, string>> = {};
+  const out: Partial<Record<string, string>> = {};
   for (const section of sections) {
     const body = section.lines.join("\n").trim();
     if (!body) continue;
@@ -828,8 +788,8 @@ function mergedSplitProductNotes(
   chips: readonly ProductNoteChip[],
   stages: DealProductStages,
   fallback: string,
-): Partial<Record<DealProductId, string>> {
-  const merged: Partial<Record<DealProductId, string>> = {};
+): Partial<Record<string, string>> {
+  const merged: Partial<Record<string, string>> = {};
   const sources = [
     fallback,
     ...chips.map((chip) => (stages[chip.product]?.listNote ?? "").trim()),
@@ -888,7 +848,7 @@ export function syncProductListNotes(input: {
   policySubType?: string | null;
   shopFlow?: unknown;
   fallbackNote?: string | null;
-  product: DealProductId;
+  product: string;
   note: string;
 }): { productStages: DealProductStages; notes: ListProductNote[] } {
   const stages = productStagesFromShopFlow(input.shopFlow);
@@ -966,7 +926,7 @@ export function listProductStageLabel(stage?: string | null): string {
   return CHIP_STAGE_LABELS[key] ?? PRODUCT_STAGE_LABELS[key] ?? humanizeDealStage(key) ?? "Gathering";
 }
 
-/** One chip per product (HO3 / DP3 / Auto / Flood…) with that product’s stage. */
+/** One chip per product copy (HO3 / DP3 / a second HO3) with that copy’s stage. */
 export function listProductStageChips(input: {
   shopProducts?: string[] | null;
   shopLines?: string[] | null;
@@ -976,11 +936,30 @@ export function listProductStageChips(input: {
   policySubType?: string | null;
   shopFlow?: unknown;
   pipelineStage?: string | null;
+  sheets?: readonly { line: string; values?: Record<string, { value?: string | null } | null> | null }[] | null;
 }): ListProductStageChip[] {
-  const products = inferDealProducts(input);
+  const instances = resolveVisibleProductInstances(input);
   const stages = productStagesFromShopFlow(input.shopFlow);
-  return products.map((product) => {
-    const state = productStageFor(stages, product, input.pipelineStage);
+  const sheetByLine = new Map((input.sheets ?? []).map((sheet) => [sheet.line, sheet.values ?? {}]));
+  const labels = labelProductInstances(
+    instances.map((instance) => {
+      const shopLine = dealProductDef(instance.productId).shopLine;
+      const line = instance.key === instance.productId ? shopLine : `${shopLine}~${instance.key}`;
+      const values = sheetByLine.get(line);
+      const facts = addressFactsFromSheetValues(values as never);
+      return {
+        key: instance.key,
+        productId: instance.productId,
+        quotingForm: input.quotingForm,
+        sheetForm: typeof values?.quoting_form?.value === "string" ? values.quoting_form.value : null,
+        address: facts.address,
+        city: facts.city,
+        vehicles: vehiclesFromSheetValues(values as never),
+      };
+    }),
+  );
+  return instances.map((instance) => {
+    const state = productStageFor(stages, instance.key, input.pipelineStage);
     const stage = displayProductStage({
       stage: state.stage,
       selectedQuoteIds: state.selectedQuoteIds,
@@ -988,8 +967,10 @@ export function listProductStageChips(input: {
       outsideOverride: state.outsideOverride,
     });
     return {
-      product,
-      label: productChipLabel({ product, quotingForm: input.quotingForm }),
+      product: instance.key,
+      label:
+        labels.get(instance.key) ??
+        productChipLabel({ product: instance.productId, quotingForm: input.quotingForm }),
       stage,
       stageLabel: listProductStageLabel(stage),
     };

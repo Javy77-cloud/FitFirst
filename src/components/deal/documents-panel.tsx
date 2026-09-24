@@ -29,6 +29,7 @@ export function DocumentsPanel({
   jobs,
   health,
   sheetLine,
+  storageLine,
   sheetValues,
   formLabel,
   unlocked,
@@ -55,6 +56,7 @@ export function DocumentsPanel({
   jobs?: unknown[];
   health: CompletenessReport | null;
   sheetLine: ShopLine;
+  storageLine?: string;
   sheetValues: Record<string, QuoteSheetFieldValue>;
   formLabel: string;
   unlocked: boolean;
@@ -78,9 +80,11 @@ export function DocumentsPanel({
   quotesDone?: boolean;
   packageProducts?: readonly DocSlotProduct[];
 }) {
+  const formLine = storageLine || sheetLine;
   const productWindow = {
     shopLine: sheetLine,
     quotingForm: quotingForm ?? sheetQuotingForm ?? null,
+    instanceKey: formLine.includes("~") ? formLine.slice(formLine.indexOf("~") + 1) : null,
   };
   const { sourceDocs, lineDocs, otherSourceDocs } = listWorksheetSourceDocs(docs);
   const windowLineDocs = filterDocsForProductWindow(lineDocs, productWindow);
@@ -114,7 +118,7 @@ export function DocumentsPanel({
                     </p>
                     <ul className="mt-1 space-y-1.5">
                       {group.docs.map((doc) => (
-                        <SourceFileRow key={doc.id} doc={doc} dealId={dealId} line={sheetLine} quotingForm={quotingForm ?? sheetQuotingForm} />
+                        <SourceFileRow key={doc.id} doc={doc} dealId={dealId} line={formLine} quotingForm={quotingForm ?? sheetQuotingForm} />
                       ))}
                     </ul>
                   </div>
@@ -125,7 +129,7 @@ export function DocumentsPanel({
             {windowOtherDocs.length > 0 ? (
               <ul className="mb-2 space-y-1.5">
                 {windowOtherDocs.map((doc) => (
-                  <SourceFileRow key={doc.id} doc={doc} dealId={dealId} line={sheetLine} quotingForm={quotingForm ?? sheetQuotingForm} />
+                  <SourceFileRow key={doc.id} doc={doc} dealId={dealId} line={formLine} quotingForm={quotingForm ?? sheetQuotingForm} />
                 ))}
               </ul>
             ) : null}
@@ -137,7 +141,7 @@ export function DocumentsPanel({
             ) : null}
             <LinkDealDocToProduct
               dealId={dealId}
-              line={sheetLine}
+              line={formLine}
               quotingForm={quotingForm ?? sheetQuotingForm}
               candidates={libraryCandidates.map((doc) => ({
                 id: doc.id,
@@ -150,7 +154,7 @@ export function DocumentsPanel({
             <SourceDocsUpload
               dealId={dealId}
               riskId={riskId}
-              line={sheetLine}
+              line={formLine}
               product={productId}
               quotingForm={quotingForm}
               surface="documents"
@@ -173,6 +177,7 @@ export function DocumentsPanel({
           <MasterSheetWorkspace
             dealId={dealId}
             line={sheetLine}
+            storageLine={formLine}
             fields={asList(fields)}
             values={sheetValues ?? {}}
             product={product}

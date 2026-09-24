@@ -9,12 +9,16 @@ import { alerts, contacts, deals, leads, quoteAttemptLogs, quotes, reviewTasks }
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
   dealProductDef,
-  inferDealProducts,
   parseDealProduct,
   sheetLineForProduct,
   splitHomeProducts,
-  type DealProductId,
 } from "@/lib/deals/deal-products";
+import {
+  parseProductInstanceToken,
+  productIdFromInstanceKey,
+  resolveVisibleProductInstances,
+  storageLineForInstance,
+} from "@/lib/deals/product-instances";
 import {
   noticeCompleteLogBody,
   noticeDeleteLogBody,
@@ -114,6 +118,10 @@ async function loadDeal(dealId: string) {
   return deal ?? null;
 }
 
+function stageProductKey(raw: string | null | undefined): string | null {
+  return parseProductInstanceToken(raw)?.key ?? null;
+}
+
 function productsOnDeal(deal: {
   shopProducts?: string[] | null;
   shopLines?: string[] | null;
@@ -121,20 +129,20 @@ function productsOnDeal(deal: {
   quotingLine?: string | null;
   quotingForm?: string | null;
   policySubType?: string | null;
-}): DealProductId[] {
-  return inferDealProducts({
+}): string[] {
+  return resolveVisibleProductInstances({
     shopProducts: deal.shopProducts,
     shopLines: deal.shopLines,
     lineOfBusiness: deal.lineOfBusiness,
     quotingLine: deal.quotingLine,
     quotingForm: deal.quotingForm,
     policySubType: deal.policySubType,
-  });
+  }).map((row) => row.key);
 }
 
 async function liveQuoteIdsForProduct(
   dealId: string,
-  product: DealProductId,
+  product: string,
   deal: {
     shopFlow?: unknown;
     shopProducts?: string[] | null;
@@ -199,7 +207,7 @@ export async function setDealProductStage(input: {
   outsideOverride?: { reason: string } | null;
 }) {
   const dealId = input.dealId.trim();
-  const product = parseDealProduct(input.product);
+  const product = stageProductKey(input.product);
   const stageSlug = canonicalizeProductStage(input.stageSlug);
   if (!dealId || !product || !stageSlug) return { ok: false as const, reason: "invalid" };
   const deal = await loadDeal(dealId);
@@ -349,12 +357,12 @@ export async function overrideDealProductStageOutside(input: {
   lostReason?: string | null;
 }) {
   const dealId = input.dealId.trim();
-  const product = parseDealProduct(input.product);
+  const product = stageProductKey(input.product);
   if (!dealId || !product) return { ok: false as const, error: "Deal and product are required." };
 
   const stageSlug = canonicalizeProductStage(input.stageSlug);
   const session = await currentDeskSession();
-  const label = dealProductDef(product).label;
+  const label = dealProductDef(productIdFromInstanceKey(product) ?? "homeowners").label;
 
   // Closed lost — separate from outside-quote stamp. Captain reason required.
   if (stageSlug === "closed_lost") {
@@ -496,7 +504,7 @@ export async function overrideDealProductStageOutside(input: {
 export async function selectDealProductQuotes(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "").trim();
   const productRaw = String(formData.get("product") ?? "").trim();
-  const product = parseDealProduct(productRaw);
+  const product = stageProductKey(productRaw);
   const quoteIds = formData
     .getAll("quoteId")
     .map((value) => String(value ?? "").trim())
@@ -514,7 +522,7 @@ export async function selectDealProductQuotes(formData: FormData) {
 
 export async function toggleDealProductQuote(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "").trim();
-  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const product = stageProductKey(String(formData.get("product") ?? ""));
   const quoteId = String(formData.get("quoteId") ?? "").trim();
   if (!dealId || !product || !quoteId) throw new Error("Deal, product, and quote are required.");
   const deal = await loadDeal(dealId);
@@ -532,7 +540,7 @@ export async function toggleDealProductQuote(formData: FormData) {
 
 export async function markDealProductLost(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "").trim();
-  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const product = stageProductKey(String(formData.get("product") ?? ""));
   const reason = String(formData.get("lostReason") ?? "").trim();
   const pipelineSlug = String(formData.get("pipelineSlug") ?? "p-c").trim() || "p-c";
   if (!dealId || !product) throw new Error("Deal and product are required.");
@@ -568,10 +576,14 @@ function productForLine(
     policySubType?: string | null;
   },
   line?: string | null,
-): DealProductId | null {
+): string | null {
   const products = productsOnDeal(deal);
   if (line) {
-    const match = products.find((id) => sheetLineForProduct(id) === line);
+    const match = products.find((id) => {
+      const parsed = parseProductInstanceToken(id);
+      if (!parsed) return false;
+      return sheetLineForProduct(parsed.productId) === line || storageLineForInstance(parsed) === line;
+    });
     if (match) return match;
     const fromLine = parseDealProduct(line);
     if (fromLine) return fromLine;
@@ -590,7 +602,7 @@ export async function autoAdvanceDealProductStage(input: {
   const deal = await loadDeal(input.dealId);
   if (!deal) return { ok: false as const, reason: "missing" };
   const product =
-    parseDealProduct(input.product ?? "") ?? productForLine(deal, input.line);
+    stageProductKey(input.product ?? "") ?? productForLine(deal, input.line);
   if (!product) return { ok: false as const, reason: "invalid" };
   const saved = parseShopFlow(deal.shopFlow);
   const stages = parseProductStages(saved.productStages);
@@ -607,7 +619,7 @@ export async function autoAdvanceDealProductStage(input: {
   });
 }
 
-function noticeReturnTo(formData: FormData, dealId: string, product: DealProductId) {
+function noticeReturnTo(formData: FormData, dealId: string, product: string) {
   const fromForm = String(formData.get("returnTo") ?? "").trim();
   if (fromForm.startsWith(`/deals/${dealId}`)) return fromForm;
   return `/deals/${dealId}?tab=quotes&product=${product}`;
@@ -622,7 +634,7 @@ function revalidateNotice(dealId: string, taskId?: string | null) {
 
 async function persistProductNotice(
   dealId: string,
-  product: DealProductId,
+  product: string,
   patch: {
     noticeType?: string;
     noticeTaskId?: string | null;
@@ -655,7 +667,7 @@ export async function linkDealProductNoticeTask(input: {
   noticeType: string;
   taskId: string;
 }) {
-  const product = parseDealProduct(input.product);
+  const product = stageProductKey(input.product);
   const noticeType = parseNoticeType(input.noticeType);
   const taskId = input.taskId.trim();
   if (!input.dealId || !product || noticeType === "none" || !taskId) return;
@@ -666,7 +678,7 @@ export async function linkDealProductNoticeTask(input: {
 /** Set or change a product notice chip. Reminder is createDeskTask — never a second engine. */
 export async function setDealProductNotice(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "").trim();
-  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const product = stageProductKey(String(formData.get("product") ?? ""));
   const noticeType = parseNoticeType(
     formData.get("noticeType") ?? formData.get("inspectionStatus"),
   );
@@ -685,7 +697,7 @@ export async function setDealProductNotice(formData: FormData) {
 
 async function clearProductNoticeOnDeal(input: {
   dealId: string;
-  product: DealProductId;
+  product: string;
   notes: string;
 }) {
   const session = await currentDeskSession();
@@ -767,7 +779,7 @@ async function cancelLinkedNoticeTask(taskId: string | null | undefined) {
 /** Remove a junk / never-needed flag. Not Complete — no work-done log, cancel the reminder. */
 export async function deleteDealProductNotice(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "").trim();
-  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const product = stageProductKey(String(formData.get("product") ?? ""));
   if (!dealId || !product) throw new Error("Deal and product are required.");
   const session = await currentDeskSession();
   const deal = await loadDeal(dealId);
@@ -811,7 +823,7 @@ export async function deleteDealProductNotice(formData: FormData) {
 
 export async function completeDealProductNotice(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "").trim();
-  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const product = stageProductKey(String(formData.get("product") ?? ""));
   const notes = String(formData.get("notes") ?? "").trim();
   if (!dealId || !product) throw new Error("Deal and product are required.");
   await clearProductNoticeOnDeal({ dealId, product, notes });
@@ -833,7 +845,7 @@ export async function completeLinkedDealNoticeForTask(taskId: string, notes: str
   const stages = parseProductStages(parseShopFlow(deal.shopFlow).productStages);
   const found = findProductNoticeForTask(stages, id);
   if (!found) return { cleared: false as const };
-  const product = parseDealProduct(found.product);
+  const product = stageProductKey(found.product);
   if (!product) return { cleared: false as const };
   await clearProductNoticeOnDeal({ dealId: task.dealId, product, notes: notes.trim() });
   return { cleared: true as const };
@@ -842,7 +854,7 @@ export async function completeLinkedDealNoticeForTask(taskId: string, notes: str
 /** Leftover Inspection dropdown — maps old slugs, does not create a task. */
 export async function setDealProductInspection(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "").trim();
-  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const product = stageProductKey(String(formData.get("product") ?? ""));
   const status = parseNoticeType(formData.get("inspectionStatus") ?? formData.get("noticeType"));
   if (!dealId || !product) throw new Error("Deal, product, and notice type are required.");
   await persistProductNotice(dealId, product, { noticeType: status });
@@ -852,7 +864,7 @@ export async function setDealProductInspection(formData: FormData) {
 /** Speak/type complete-notes — appends the notice log and fills Complete notes. */
 export async function saveDealNoticeNote(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "").trim();
-  const product = parseDealProduct(String(formData.get("product") ?? ""));
+  const product = stageProductKey(String(formData.get("product") ?? ""));
   const notes = String(formData.get("notes") ?? "");
   if (!dealId || !product) throw new Error("Deal and product are required.");
   const session = await currentDeskSession();
@@ -881,7 +893,7 @@ export async function saveDealProductListNote(input: {
   columnId?: string | null;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const dealId = input.dealId.trim();
-  const product = parseDealProduct(input.product);
+  const product = stageProductKey(input.product);
   if (!dealId || !product) return { ok: false, error: "Deal and product are required." };
   const deal = await loadDeal(dealId);
   if (!deal) return { ok: false, error: "Deal not found." };
@@ -981,7 +993,7 @@ export async function saveDealNoticeTypes(formData: FormData) {
   const labels = noticeTypeLabelsFromForm(formData);
   if (!dealId) throw new Error("Deal is required.");
   await persistNoticeTypeLabels({ dealId, family, picklistId, labels });
-  const product = parseDealProduct(String(formData.get("product") ?? "")) ?? "homeowners";
+  const product = stageProductKey(String(formData.get("product") ?? "")) ?? "homeowners";
   flashStay(formData, noticeReturnTo(formData, dealId, product), "Notice types saved");
 }
 

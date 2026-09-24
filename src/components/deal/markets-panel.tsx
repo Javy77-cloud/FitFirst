@@ -25,6 +25,7 @@ export function MarketsPanel({
   dealLine = "HO",
   shopLine,
   product,
+  productLabel,
   lastRequestCarrierIds = [],
   outsideOverride = false,
   outsideOverrideDetail = null,
@@ -41,6 +42,7 @@ export function MarketsPanel({
   dealLine?: string;
   shopLine?: string;
   product?: string;
+  productLabel?: string | null;
   lastRequestCarrierIds?: string[];
   outsideOverride?: boolean;
   outsideOverrideDetail?: import("@/lib/deals/outside-stage-override").OutsideStageOverride | null;
@@ -111,7 +113,9 @@ export function MarketsPanel({
     return (
       <div className="space-y-3" data-ff-deal-markets="" data-ff-markets-empty="">
         <div className="ff-card space-y-3 p-4">
-          <h3 className="text-sm font-semibold text-navy">Markets</h3>
+          <h3 className="text-sm font-semibold text-navy">
+            {productLabel ? `Markets · ${productLabel}` : "Markets"}
+          </h3>
           {outsideOverride ? (
             <OutsideFitFirstStamp
               override={
@@ -181,6 +185,9 @@ export function MarketsPanel({
 
   return (
     <div className="space-y-3" data-ff-deal-markets="">
+      {productLabel ? (
+        <h3 className="text-sm font-semibold text-navy">{`Markets · ${productLabel}`}</h3>
+      ) : null}
       {appetite.length > 0 ? (
         <MarketsSelectTable
           dealId={dealId}
