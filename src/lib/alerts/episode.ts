@@ -2,6 +2,9 @@
  * One alert per episode: mark-as-read (or any prior row) suppresses re-insert
  * while the condition still holds; ending the episode clears rows so a later
  * trigger can legitimately notify again (same idea as deal_cold_chase #342).
+ *
+ * Also collapses duplicate rows for the same live key (concurrent writers /
+ * dual panel+desk paths) so mark-as-read of one copy cannot leave siblings.
  */
 
 export type EpisodeAlertRow = {
@@ -13,7 +16,8 @@ export type EpisodeAlertRow = {
 export type EpisodeSyncPlan = {
   /** Live keys with no prior alert this episode. */
   insertKeys: string[];
-  /** Alert ids whose live condition cleared — drop so a later episode can fire. */
+  /** Alert ids whose live condition cleared — drop so a later episode can fire.
+   *  Also includes duplicate extras for still-live keys (keep one row). */
   endEpisodeAlertIds: string[];
 };
 
@@ -31,12 +35,19 @@ export function planEpisodeSync(
 
   const live = new Set(liveKeys);
   const insertKeys: string[] = [];
+  const endEpisodeAlertIds: string[] = [];
+
   for (const key of liveKeys) {
-    if (byKey.has(key)) continue;
-    insertKeys.push(key);
+    const rows = byKey.get(key);
+    if (!rows?.length) {
+      insertKeys.push(key);
+      continue;
+    }
+    // Concurrent writers can leave N rows for one episode — keep the first,
+    // drop the rest so mark-as-read of one copy cannot leave siblings unread.
+    for (const extra of rows.slice(1)) endEpisodeAlertIds.push(extra.id);
   }
 
-  const endEpisodeAlertIds: string[] = [];
   for (const [key, rows] of byKey) {
     if (live.has(key)) continue;
     for (const row of rows) endEpisodeAlertIds.push(row.id);

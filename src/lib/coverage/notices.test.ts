@@ -169,3 +169,22 @@ describe("coverage notice episode suppress (mark-as-read)", () => {
     expect(src).not.toMatch(/if \(row\.readAt\) continue/);
   });
 });
+
+  it("collapses duplicate coverage-gap rows for the same live key", () => {
+    const live = ["coverage_gap:no-umbrella", "coverage_gap:home-no-auto"];
+    const plan = planEpisodeSync(live, [
+      { id: "keep-umb", key: "coverage_gap:no-umbrella" },
+      { id: "dupe-umb-1", key: "coverage_gap:no-umbrella" },
+      { id: "dupe-umb-2", key: "coverage_gap:no-umbrella" },
+      { id: "dupe-umb-3", key: "coverage_gap:no-umbrella" },
+      { id: "keep-auto", key: "coverage_gap:home-no-auto" },
+    ]);
+    expect(plan.insertKeys).toEqual([]);
+    expect(plan.endEpisodeAlertIds.sort()).toEqual(["dupe-umb-1", "dupe-umb-2", "dupe-umb-3"]);
+  });
+
+  it("coverage sync coalesces concurrent contact writers", () => {
+    const src = readFileSync("src/lib/coverage/sync-notices.ts", "utf8");
+    expect(src).toMatch(/coalesceAsync/);
+    expect(src).toMatch(/coverage-notices:/);
+  });

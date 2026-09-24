@@ -1,8 +1,11 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { coalesceAsync } from "@/lib/alerts/coalesce";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts } from "@/lib/db/schema";
+import { syncLiveDealColdChaseNotices } from "@/lib/deals/cold-chase-sync";
+import { DEAL_COLD_CHASE_KIND } from "@/lib/deals/cold-chase";
 import { loadPanelCards } from "@/lib/notifications/load-panel";
 import { PANEL_SIGNAL_KINDS, type PanelCard } from "@/lib/notifications/panel";
 import { migrateOrphanCommitments } from "@/lib/notifications/load-commitments";
@@ -32,9 +35,27 @@ export function visiblePanelCards(
   return cards.filter((card) => !dismissedKeys.has(card.key) && !snoozedKeys.has(card.key));
 }
 
+/**
+ * Panel sync must never insert deal_cold_chase — Deals page + AppShell both
+ * schedule writers; racing inserts double Petersen/Palacios/Hamilton. The
+ * canonical writer is syncDealColdChaseNotices (episode suppress + coalesce).
+ */
+export function panelOwnsInsert(kind: string): boolean {
+  return kind !== DEAL_COLD_CHASE_KIND;
+}
+
 export async function syncPanelSignals(): Promise<PanelCard[]> {
+  return coalesceAsync("panel-signals", () => syncPanelSignalsOnce());
+}
+
+async function syncPanelSignalsOnce(): Promise<PanelCard[]> {
   await migrateOrphanCommitments().catch(() => 0);
   const cards = await loadPanelCards();
+
+  // Sole insert path for cold chase (episode suppress + coalesce). Panel never
+  // inserts this kind — dual AppShell+/deals writers raced into ×2 bells.
+  await syncLiveDealColdChaseNotices().catch(() => 0);
+
   const existing = await db
     .select()
     .from(alerts)
@@ -44,25 +65,32 @@ export async function syncPanelSignals(): Promise<PanelCard[]> {
   const unreadByKey = new Map<string, (typeof existing)[number]>();
   const dismissedKeys = new Set<string>();
   const snoozedKeys = new Set<string>();
+  const collapseDupIds: string[] = [];
   const now = new Date();
 
-  // Cold-chase is one ping per cold episode. When the deal leaves cold, drop
-  // prior rows (read or unread) so a later cold episode can notify again.
-  const endedColdChaseIds = existing
-    .filter((row) => {
-      if (row.kind !== "deal_cold_chase") return false;
-      const key = parsePanelKey(row.body) ?? `${row.kind}:${row.entityId ?? row.id}`;
-      return !liveKeys.has(key);
-    })
-    .map((row) => row.id);
-  if (endedColdChaseIds.length) {
-    await db.delete(alerts).where(inArray(alerts.id, endedColdChaseIds));
-  }
-  const endedColdChase = new Set(endedColdChaseIds);
-
+  // Cold-chase episode end is owned by syncDealColdChaseNotices. For other
+  // panel kinds, drop unread rows whose live key cleared (user-targeted stay).
   for (const row of existing) {
-    if (endedColdChase.has(row.id)) continue;
     const key = parsePanelKey(row.body) ?? `${row.kind}:${row.entityId ?? row.id}`;
+    if (row.kind === DEAL_COLD_CHASE_KIND) {
+      // Attach / dismiss only — inserts + episode deletes happen above.
+      if (row.readAt) {
+        dismissedKeys.add(key);
+        continue;
+      }
+      if (row.createdAt.getTime() > now.getTime()) {
+        snoozedKeys.add(key);
+        continue;
+      }
+      const prior = unreadByKey.get(key);
+      if (prior) {
+        collapseDupIds.push(row.id);
+        continue;
+      }
+      unreadByKey.set(key, row);
+      continue;
+    }
+
     if (row.createdAt.getTime() > now.getTime()) {
       snoozedKeys.add(key);
       continue;
@@ -71,7 +99,16 @@ export async function syncPanelSignals(): Promise<PanelCard[]> {
       dismissedKeys.add(key);
       continue;
     }
+    const prior = unreadByKey.get(key);
+    if (prior) {
+      collapseDupIds.push(row.id);
+      continue;
+    }
     unreadByKey.set(key, row);
+  }
+
+  if (collapseDupIds.length) {
+    await db.delete(alerts).where(inArray(alerts.id, collapseDupIds));
   }
 
   for (const card of cards) {
@@ -101,6 +138,10 @@ export async function syncPanelSignals(): Promise<PanelCard[]> {
       }
       continue;
     }
+    if (!panelOwnsInsert(card.kind)) {
+      // Cold chase: attach if a row already exists (writer ran above).
+      continue;
+    }
     const [inserted] = await db
       .insert(alerts)
       .values({
@@ -122,8 +163,33 @@ export async function syncPanelSignals(): Promise<PanelCard[]> {
     }
   }
 
+  // Re-attach cold-chase alert ids after the canonical writer.
+  const coldExisting = await db
+    .select({ id: alerts.id, body: alerts.body, entityId: alerts.entityId, readAt: alerts.readAt })
+    .from(alerts)
+    .where(
+      and(
+        eq(alerts.tenantId, DEFAULT_TENANT_ID),
+        eq(alerts.kind, DEAL_COLD_CHASE_KIND),
+        isNull(alerts.readAt),
+      ),
+    );
+  const coldByKey = new Map<string, string>();
+  for (const row of coldExisting) {
+    const key = parsePanelKey(row.body) ?? `${DEAL_COLD_CHASE_KIND}:${row.entityId ?? row.id}`;
+    if (!coldByKey.has(key)) coldByKey.set(key, row.id);
+  }
+  for (const card of cards) {
+    if (card.kind !== DEAL_COLD_CHASE_KIND) continue;
+    card.alertId = coldByKey.get(card.key) ?? card.alertId ?? null;
+    if (card.alertId) continue;
+    // Mark-as-read suppress: a read row for this key keeps the card dismissed.
+    if (dismissedKeys.has(card.key)) continue;
+  }
+
   for (const [key, row] of unreadByKey) {
     if (liveKeys.has(key)) continue;
+    if (row.kind === DEAL_COLD_CHASE_KIND) continue; // episode delete owns this
     // User-targeted pings (assign / forward) stay until the assignee dismisses.
     if (row.userId || row.recipientUserId) continue;
     await db.update(alerts).set({ readAt: now }).where(eq(alerts.id, row.id));
@@ -142,7 +208,7 @@ export async function syncPanelSignals(): Promise<PanelCard[]> {
     const unread = unreadByKey.get(card.key);
     return {
       ...card,
-      alertId: card.alertId ?? unread?.id ?? null,
+      alertId: card.alertId ?? unread?.id ?? coldByKey.get(card.key) ?? null,
     };
   });
 }
@@ -165,7 +231,7 @@ export async function attachAlertIds(cards: PanelCard[]): Promise<PanelCard[]> {
   const byKey = new Map<string, string>();
   for (const row of existing) {
     const key = parsePanelKey(row.body);
-    if (key) byKey.set(key, row.id);
+    if (key && !byKey.has(key)) byKey.set(key, row.id);
   }
   return cards.map((card) => ({ ...card, alertId: card.alertId ?? byKey.get(card.key) ?? null }));
 }

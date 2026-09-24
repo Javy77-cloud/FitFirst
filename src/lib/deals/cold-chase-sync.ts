@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { coalesceAsync } from "@/lib/alerts/coalesce";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts } from "@/lib/db/schema";
@@ -11,7 +12,27 @@ import {
   type ColdChaseCard,
 } from "@/lib/deals/cold-chase";
 
+/**
+ * Canonical writer for deal_cold_chase. Panel sync must not insert this kind —
+ * it races AppShell + /deals after() and doubles Petersen/Palacios/Hamilton.
+ */
 export async function syncDealColdChaseNotices(cards: readonly ColdChaseCard[]): Promise<number> {
+  return coalesceAsync("deal-cold-chase", () => syncDealColdChaseNoticesOnce(cards));
+}
+
+/** Full radar scan — used by panel sync so owner ids stay correct without /deals. */
+export async function syncLiveDealColdChaseNotices(): Promise<number> {
+  return coalesceAsync("deal-cold-chase", async () => {
+    const { listDeals } = await import("@/lib/db/queries");
+    const { loadDealVelocityTouches, presentRadarCards } = await import("@/lib/deals/radar-desk");
+    const rows = await listDeals({});
+    const touches = await loadDealVelocityTouches(rows.map((row) => row.deal.id));
+    const cards = presentRadarCards(rows, touches, new Map());
+    return syncDealColdChaseNoticesOnce(cards);
+  });
+}
+
+async function syncDealColdChaseNoticesOnce(cards: readonly ColdChaseCard[]): Promise<number> {
   const planned = planColdChaseNotices(cards);
   const existing = await db
     .select({

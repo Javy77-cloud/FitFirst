@@ -1,5 +1,6 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { coalesceAsync } from "@/lib/alerts/coalesce";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { alerts, contacts, deals, policies } from "@/lib/db/schema";
@@ -76,7 +77,11 @@ export async function loadContactNoticeInputs(contactId: string) {
 export async function syncContactCoverageNotices(contactId: string): Promise<PlannedCoverageNotice[]> {
   const id = contactId.trim();
   if (!id) return [];
-  const loaded = await loadContactNoticeInputs(id);
+  return coalesceAsync(`coverage-notices:${id}`, () => syncContactCoverageNoticesOnce(id));
+}
+
+async function syncContactCoverageNoticesOnce(contactId: string): Promise<PlannedCoverageNotice[]> {
+  const loaded = await loadContactNoticeInputs(contactId);
   if (!loaded) return [];
 
   const planned = planContactNotices({
@@ -96,13 +101,14 @@ export async function syncContactCoverageNotices(contactId: string): Promise<Pla
       and(
         eq(alerts.tenantId, DEFAULT_TENANT_ID),
         eq(alerts.entityType, "contact"),
-        eq(alerts.entityId, id),
+        eq(alerts.entityId, contactId),
         inArray(alerts.kind, [...COVERAGE_NOTICE_KINDS]),
       ),
     );
 
   // One notice per gap/opportunity episode: any prior (read or unread) suppresses
   // re-insert while the condition still holds; drop when the gap clears.
+  // planEpisodeSync also collapses duplicate rows for the same live key.
   const existingEpisodes = existing
     .map((row) => {
       const noticeKey = parseNoticeKey(row.body);
@@ -126,7 +132,7 @@ export async function syncContactCoverageNotices(contactId: string): Promise<Pla
       body: notice.body,
       severity: notice.severity,
       entityType: "contact",
-      entityId: id,
+      entityId: contactId,
       userId: ownerId,
       recipientUserId: ownerId,
     });
@@ -139,7 +145,7 @@ export async function syncContactCoverageNotices(contactId: string): Promise<Pla
   revalidatePath("/");
   revalidatePath("/notifications");
   revalidatePath("/alerts");
-  revalidatePath(`/contacts/${id}`);
+  revalidatePath(`/contacts/${contactId}`);
   return planned;
 }
 

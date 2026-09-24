@@ -58,3 +58,14 @@ describe("alert episode suppress-after-read", () => {
     expect(sheetInvalidatedEpisodeKey("a", null)).toBe("sheet_invalidated:a:*");
   });
 });
+
+  it("collapses duplicate rows for the same live episode key", () => {
+    const key = sheetInvalidatedEpisodeKey("deal-1", "flood");
+    const plan = planEpisodeSync([key], [
+      { id: "keep", key },
+      { id: "dupe-a", key },
+      { id: "dupe-b", key },
+    ]);
+    expect(plan.insertKeys).toEqual([]);
+    expect(plan.endEpisodeAlertIds.sort()).toEqual(["dupe-a", "dupe-b"]);
+  });
