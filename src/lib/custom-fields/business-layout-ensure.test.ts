@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import { defaultLayoutForModule } from "./modules";
 import { allLayoutFieldKeys, type FieldLayout } from "./types";
 import { migrateBusinessPhoneOppositeColumn } from "./store";
+import {
+  migrateBusinessDetailsRowMap,
+  needsBusinessDetailsRowMap,
+} from "@/lib/businesses/business-detail-layout";
 
 function twoCol(
   left: { id: string; label: string; fieldKeys: string[] }[],
@@ -16,17 +20,19 @@ function twoCol(
 }
 
 describe("business detail layout feel-pass", () => {
-  it("default puts business_name and phone in opposite columns", () => {
+  it("default puts Details on left and Operations on right", () => {
     const layout = defaultLayoutForModule("businesses");
+    const leftIds = layout.columns[0].sections.map((s) => s.id);
+    const rightIds = layout.columns[1].sections.map((s) => s.id);
+    expect(leftIds).toEqual(["business", "location", "contact"]);
+    expect(rightIds).toEqual(["operations", "crm_notes"]);
     const left = new Set(layout.columns[0].sections.flatMap((s) => s.fieldKeys));
     const right = new Set(layout.columns[1].sections.flatMap((s) => s.fieldKeys));
     expect(left.has("business_name")).toBe(true);
-    expect(left.has("phone")).toBe(false);
-    expect(right.has("phone")).toBe(true);
+    expect(left.has("phone")).toBe(true);
+    expect(right.has("legal_name")).toBe(true);
     expect(right.has("business_name")).toBe(false);
-    const leftCount = left.size;
-    const rightCount = right.size;
-    expect(Math.abs(leftCount - rightCount)).toBeLessThanOrEqual(4);
+    expect(needsBusinessDetailsRowMap(layout)).toBe(false);
   });
 
   it("migrate moves phone opposite name without restoring deleted CRM Notes", () => {
@@ -48,7 +54,6 @@ describe("business detail layout feel-pass", () => {
         },
       ],
     );
-    // Agency deleted CRM Notes and moved notes into Operations — must stay gone.
     expect(allLayoutFieldKeys(agency)).not.toContain("life_notes");
     expect(agency.columns.flatMap((c) => c.sections.map((s) => s.id))).not.toContain("crm_notes");
 
@@ -66,7 +71,6 @@ describe("business detail layout feel-pass", () => {
     const ops = next.columns[1].sections.find((s) => s.id === "operations");
     expect(ops?.fieldKeys).toContain("notes");
   });
-
 
   it("migrate creates right column when agency left everything in one column", () => {
     const agency = twoCol(
@@ -89,9 +93,54 @@ describe("business detail layout feel-pass", () => {
     expect(next.columns.flatMap((c) => c.sections.map((s) => s.id))).not.toContain("crm_notes");
   });
 
-  it("migrate is a no-op when name and phone already opposite", () => {
-    const layout = defaultLayoutForModule("businesses");
-    const next = migrateBusinessPhoneOppositeColumn(layout);
-    expect(next).toEqual(layout);
+  it("phone opposite migrate is a no-op when name and phone already opposite", () => {
+    const opposite = twoCol(
+      [
+        {
+          id: "business",
+          label: "Business Info",
+          fieldKeys: ["business_name", "dba", "ein"],
+        },
+      ],
+      [{ id: "contact", label: "Business Contact", fieldKeys: ["phone", "email", "website"] }],
+    );
+    const next = migrateBusinessPhoneOppositeColumn(opposite);
+    expect(next).toEqual(opposite);
+  });
+
+  it("row-map migrate keeps Operations on the right after agency left-stack mistake", () => {
+    const agency = twoCol(
+      [
+        {
+          id: "business",
+          label: "Business Info",
+          fieldKeys: ["business_name", "dba", "ein", "entity_type", "industry"],
+          density: 4,
+        },
+        { id: "location", label: "Location", fieldKeys: ["mailing_address", "city", "state", "zip"] },
+        {
+          id: "contact",
+          label: "Business Contact",
+          fieldKeys: ["phone", "email", "website", "source", "referral"],
+          density: 4,
+        },
+        {
+          id: "operations",
+          label: "Operations",
+          fieldKeys: ["legal_name", "employee_count"],
+          density: 4,
+        },
+      ],
+      [{ id: "crm_notes", label: "CRM Notes", fieldKeys: ["notes"] }],
+    );
+    expect(needsBusinessDetailsRowMap(agency)).toBe(true);
+    const next = migrateBusinessDetailsRowMap(agency);
+    expect(next.columns[0].sections.map((s) => s.id)).toEqual([
+      "business",
+      "location",
+      "contact",
+    ]);
+    expect(next.columns[1].sections.map((s) => s.id)[0]).toBe("operations");
+    expect(needsBusinessDetailsRowMap(next)).toBe(false);
   });
 });
