@@ -370,7 +370,7 @@ export async function loadCommitmentNudgeSignals(asOf = deskNow()): Promise<Pane
   const cards: PanelCard[] = [];
   for (const row of commitments) {
     if (row.orphan) continue;
-    const urgency = commitmentNudgeUrgency(row.dueAt, asOf);
+    const urgency = commitmentNudgeUrgency(row.dueAt, asOf, row.priority);
     if (!urgency) continue;
     cards.push({
       key: `commitment_nudge:${row.source}:${row.id}`,

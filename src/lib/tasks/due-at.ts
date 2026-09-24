@@ -8,9 +8,18 @@
  * (blank or missing time — including legacy forms) default to **23:59 Eastern**
  * (end of that local day). Existing rows keep whatever timestamp is already
  * stored (historically `YYYY-MM-DDT16:00:00.000Z`).
+ *
+ * Conversions live in `@/lib/time/et` — the single Eastern scheduling module.
  */
 
-export const TASK_DUE_TIMEZONE = "America/New_York";
+import {
+  ET_TIME_ZONE,
+  etWallClockParts,
+  etWallToUtc,
+  parseEtDateTimeLocal,
+} from "@/lib/time/et";
+
+export const TASK_DUE_TIMEZONE = ET_TIME_ZONE;
 export const DATE_ONLY_TASK_DUE_TIME = "23:59";
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -23,66 +32,13 @@ function part(
   return parts.find((p) => p.type === type)?.value ?? "";
 }
 
-/** Offset of `timeZone` at `instant`, in milliseconds (negative west of UTC). */
-function tzOffsetMs(instant: Date, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(instant);
-  const asZone = Date.UTC(
-    Number(part(parts, "year")),
-    Number(part(parts, "month")) - 1,
-    Number(part(parts, "day")),
-    Number(part(parts, "hour")),
-    Number(part(parts, "minute")),
-    Number(part(parts, "second")),
-  );
-  return asZone - instant.getTime();
-}
-
-/** Convert a zone wall-clock `YYYY-MM-DDTHH:MM:SS` to a UTC Date. */
-function zonedLocalToUtc(localIso: string, timeZone: string): Date {
-  const asUtc = new Date(`${localIso}Z`);
-  if (Number.isNaN(asUtc.getTime())) return asUtc;
-  const first = tzOffsetMs(asUtc, timeZone);
-  let utc = new Date(asUtc.getTime() - first);
-  const second = tzOffsetMs(utc, timeZone);
-  if (second !== first) utc = new Date(asUtc.getTime() - second);
-  return utc;
-}
-
-const LOCAL_DT_RE =
-  /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
-
 /**
  * Parse a form datetime for desk activities / calendar.
- * - `YYYY-MM-DDTHH:MM` (datetime-local / Quick Comms combineLocal) → America/New_York wall clock
+ * - `YYYY-MM-DDTHH:MM` → America/New_York wall clock
  * - Absolute ISO with `Z` or ±offset → that instant
- * Never treat bare local strings as UTC or server-local.
  */
 export function parseDeskDateTimeLocal(raw: string | null | undefined): Date | null {
-  const s = String(raw ?? "").trim();
-  if (!s) return null;
-  if (/[zZ]$|[+-]\d{2}:\d{2}$/.test(s)) {
-    const d = new Date(s);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
-  const m = LOCAL_DT_RE.exec(s);
-  if (!m) {
-    const d = new Date(s);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
-  const [, y, mo, day, hh, mm, ss] = m;
-  const hour = hh ?? "00";
-  const minute = mm ?? "00";
-  const second = ss ?? "00";
-  return zonedLocalToUtc(`${y}-${mo}-${day}T${hour}:${minute}:${second}`, TASK_DUE_TIMEZONE);
+  return parseEtDateTimeLocal(raw);
 }
 
 export function parseTaskDueAt(
@@ -94,7 +50,7 @@ export function parseTaskDueAt(
   const trimmedTime = String(timeRaw ?? "").trim();
   const time = trimmedTime || DATE_ONLY_TASK_DUE_TIME;
   if (!TIME_RE.test(time)) return null;
-  return zonedLocalToUtc(`${date}T${time}:00`, TASK_DUE_TIMEZONE);
+  return etWallToUtc(date, time);
 }
 
 /** Read `dueDate` + optional `dueTime` from a task form. */
@@ -111,19 +67,8 @@ export function taskDueInputParts(
   if (value == null || value === "") return { date: "", time: "" };
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return { date: "", time: "" };
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: TASK_DUE_TIMEZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(d);
-  return {
-    date: `${part(parts, "year")}-${part(parts, "month")}-${part(parts, "day")}`,
-    time: `${part(parts, "hour")}:${part(parts, "minute")}`,
-  };
+  const wall = etWallClockParts(d);
+  return { date: wall.date, time: wall.time };
 }
 
 /** Popup `createdAt` — future dues wait until that instant; past dues fire now. */

@@ -32,6 +32,7 @@ import {
   type DeskTaskType,
   type TaskRecordType,
 } from "@/lib/tasks/task-types";
+import { etTodayDateKey } from "@/lib/time/et";
 
 /** Layout keys with locked special UX — never FieldControl. */
 const SPECIAL_LAYOUT_KEYS = new Set([
@@ -158,13 +159,8 @@ export function CreateTaskForm({
     return composeDeskTaskTitle(taskType, notes);
   }, [defaults?.fixedTitle, taskType, notes]);
 
-  const defaultDue =
-    defaults?.dueDate ??
-    (() => {
-      const d = new Date();
-      d.setDate(d.getDate() + 1);
-      return d.toISOString().slice(0, 10);
-    })();
+  // Default to *today* Eastern — never tomorrow, never toISOString().slice (UTC off-by-one).
+  const defaultDue = defaults?.dueDate ?? etTodayDateKey();
   const defaultDueTime = defaults?.dueTime ?? "";
 
   useEffect(() => {

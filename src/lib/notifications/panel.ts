@@ -1,3 +1,4 @@
+import { normalizeTaskPriority, urgencyFromTaskPriority, type TaskPriority } from "@/lib/time/et";
 /** System-found attention cards for the Notification Panel. */
 
 export const PANEL_SIGNAL_KINDS = [
@@ -185,12 +186,23 @@ export function staleDocsWhy(input: {
   return `${input.label} requested · ${input.daysQuiet} day${input.daysQuiet === 1 ? "" : "s"} without upload`;
 }
 
-export function commitmentNudgeUrgency(dueAt: Date, asOf: Date): PanelUrgency | null {
+function commitmentNudgeUrgencyFromDue(dueAt: Date, asOf: Date): PanelUrgency | null {
   const ms = dueAt.getTime() - asOf.getTime();
   if (ms < 0) return "high";
   if (ms <= 24 * 60 * 60 * 1000) return "high";
   if (ms <= COMMITMENT_DUE_SOON_HOURS * 60 * 60 * 1000) return "medium";
   return null;
+}
+
+/** Time-based urgency, overridden by the task's chosen priority (high/low always win). */
+export function commitmentNudgeUrgency(
+  dueAt: Date,
+  asOf: Date,
+  priorityRaw?: string | null,
+): PanelUrgency | null {
+  const timeBased = commitmentNudgeUrgencyFromDue(dueAt, asOf);
+  const priority = normalizeTaskPriority(priorityRaw) as TaskPriority | null;
+  return urgencyFromTaskPriority(priority, timeBased);
 }
 
 export function commitmentNudgeWhy(input: { title: string; dueAt: Date; asOf: Date }): string {

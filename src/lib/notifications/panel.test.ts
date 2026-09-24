@@ -124,3 +124,13 @@ describe("notification panel signals", () => {
     expect(groups.low).toHaveLength(1);
   });
 });
+
+
+describe("commitmentNudgeUrgency respects task priority", () => {
+  const asOf = new Date("2026-09-20T12:00:00.000Z");
+  it("HIGH priority stays high even when due in ~1 day (was medium)", () => {
+    const due = new Date("2026-09-21T18:00:00.000Z"); // ~30h out → time-based medium
+    expect(commitmentNudgeUrgency(due, asOf)).toBe("medium");
+    expect(commitmentNudgeUrgency(due, asOf, "high")).toBe("high");
+  });
+});

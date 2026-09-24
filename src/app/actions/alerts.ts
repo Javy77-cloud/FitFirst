@@ -13,6 +13,7 @@ import { alerts, reviewTasks } from "@/lib/db/schema";
 import { flashAction } from "@/lib/flash-action";
 import { isSnoozeDelayUnit, snoozeDueAt } from "@/lib/leads/follow-up-templates";
 import { taskDueFromForm, taskReminderFireAt } from "@/lib/tasks/due-at";
+import { upsertReviewTaskCalendarActivity } from "@/lib/tasks/calendar-mirror";
 import {
   composeDeskTaskTitle,
   isDeskTaskType,
@@ -213,6 +214,18 @@ export async function createDeskTask(formData: FormData) {
       dueDate,
       userId: assigneeId ?? session.userId,
     });
+    await upsertReviewTaskCalendarActivity({
+      taskId: row.id,
+      title,
+      dueDate,
+      status: statusFromField || initialStatus,
+      assigneeId: assigneeId ?? session.userId,
+      contactId: contact,
+      dealId: deal,
+      policyId: policy,
+      accountId: account,
+      leadId: lead,
+    });
     const noticeType = parseNoticeType(formData.get("noticeType"));
     const noticeProduct = parseDealProduct(String(formData.get("noticeProduct") ?? ""));
     if (deal && noticeProduct && isActiveNotice(noticeType)) {
@@ -320,6 +333,7 @@ function revalidateTasks(task?: { contactId?: string | null; policyId?: string |
   revalidatePath("/");
   revalidatePath("/reviews");
   revalidatePath("/tasks");
+  revalidatePath("/calendar");
   revalidatePath("/alerts");
   revalidatePath("/policies");
   revalidatePath("/contacts");
@@ -380,6 +394,18 @@ export async function updateTask(formData: FormData) {
       dueDate,
       userId: task?.assigneeId,
     });
+    await upsertReviewTaskCalendarActivity({
+      taskId: id,
+      title,
+      dueDate,
+      status,
+      assigneeId: task?.assigneeId,
+      contactId: task?.contactId,
+      dealId: task?.dealId,
+      policyId: task?.policyId,
+      accountId: task?.accountId,
+      leadId: task?.leadId,
+    });
   }
   revalidateTasks(task);
   flashAction("/tasks", "task-saved");
@@ -411,6 +437,19 @@ export async function updateReviewTask(formData: FormData) {
     .where(eq(reviewTasks.id, id));
   if (dueDate) {
     await scheduleDeskTaskReminder({ taskId: id, title, dueDate });
+    const [taskRow] = await db.select().from(reviewTasks).where(eq(reviewTasks.id, id));
+    await upsertReviewTaskCalendarActivity({
+      taskId: id,
+      title,
+      dueDate,
+      status: status || "open",
+      assigneeId: taskRow?.assigneeId,
+      contactId: taskRow?.contactId,
+      dealId: taskRow?.dealId,
+      policyId: taskRow?.policyId,
+      accountId: taskRow?.accountId,
+      leadId: taskRow?.leadId,
+    });
   }
   revalidatePath("/tasks");
   revalidatePath(`/tasks/${id}`);

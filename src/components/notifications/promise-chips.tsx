@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { Commitment, SerializedCommitment } from "@/lib/notifications/commitments";
+import { formatEtWeekdayMonthDay } from "@/lib/time/et";
 import { cn } from "@/lib/utils";
 
 export function PromiseChips({
@@ -24,7 +25,7 @@ export function PromiseChips({
           >
             <span className="ff-promise-chip-title">{row.title}</span>
             <span className="ff-promise-chip-when">
-              {due.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+              {formatEtWeekdayMonthDay(due)}
             </span>
           </Link>
         );

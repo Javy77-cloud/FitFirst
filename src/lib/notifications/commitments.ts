@@ -11,6 +11,8 @@ export type Commitment = {
   dueAt: Date;
   status: string;
   kind: string;
+  /** Task layout priority (high/normal/low/none) when known. */
+  priority: string | null;
   heat: CommitmentHeat;
   contactId: string | null;
   dealId: string | null;
