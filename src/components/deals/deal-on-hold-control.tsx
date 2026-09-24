@@ -150,7 +150,8 @@ export function DealOnHoldControl({
                   flashAction(`${ON_HOLD_LABEL} — parked out of the active stack`);
                   setOpen(false);
                   setNote("");
-                  router.refresh();
+                  // Holding a deal removes it from the active list; leave the detail screen too.
+                  router.push("/deals");
                 });
               }}
             >

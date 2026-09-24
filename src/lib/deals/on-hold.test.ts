@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   dealHasOnHoldTag,
@@ -47,5 +48,14 @@ describe("deal on hold tag", () => {
     expect(onHoldHistoryBody("Waiting on Marioja")).toContain("Waiting on Marioja");
     expect(onHoldHistoryBody("")).toContain("active priority stack");
     expect(onHoldRestoredHistoryBody()).toContain("Stage unchanged");
+  });
+});
+
+
+describe("deal on hold navigation", () => {
+  it("returns to the active deals list after a successful hold", () => {
+    const control = readFileSync("src/components/deals/deal-on-hold-control.tsx", "utf8");
+    expect(control).toMatch(/flashAction\(`\$\{ON_HOLD_LABEL\} — parked out of the active stack`\);[\s\S]*router\.push\(\"\/deals\"\)/);
+    expect(control).not.toMatch(/flashAction\(`\$\{ON_HOLD_LABEL\} — parked out of the active stack`\);[\s\S]*router\.refresh\(\)/);
   });
 });
