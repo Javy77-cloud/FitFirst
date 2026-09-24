@@ -21,7 +21,9 @@ describe("contact detail field system", () => {
     expect(html).toMatch(/uppercase/);
     expect(html).toMatch(/text-muted-foreground/);
     expect(html).toMatch(/Rosa/);
-    expect(html).toMatch(/grid-cols-\[10\.5rem_minmax\(0,1fr\)\]/);
+    expect(html).toMatch(/data-ff-contact-label-orientation="above"/);
+    expect(html).toMatch(/flex min-w-0 flex-col/);
+    expect(html).not.toMatch(/grid-cols-\[10\.5rem/);
     expect(CONTACT_LABEL_COL).toBe("10.5rem");
     expect(CONTACT_LABEL_VALUE_GRID).toContain("10.5rem");
   });
@@ -79,26 +81,18 @@ describe("contact detail field system", () => {
     );
     expect(html).toMatch(/data-ff-contact-section="identity"/);
     expect(html).toMatch(/data-ff-contact-section="prefs"/);
-    expect(html).toMatch(/data-ff-contact-section="coverage"/);
-    expect(html).toMatch(/data-ff-contact-section="opportunities"/);
     expect(html).toMatch(/data-ff-contact-section="intake"/);
+    expect(html).not.toMatch(/data-ff-contact-section="coverage"/);
+    expect(html).not.toMatch(/data-ff-contact-section="opportunities"/);
     expect(html).toMatch(/data-ff-contact-field="first_name"/);
-    expect(html).toMatch(/data-ff-contact-field="source"/);
-    expect(html).toMatch(/data-ff-contact-coverage-record/);
-    expect(html).toMatch(/Coverage with other carriers/);
-    expect(html).toMatch(/data-ff-generated-opportunities/);
-    expect(html).toMatch(/data-ff-generated-opportunity="FLOOD"/);
-    expect(html).toMatch(/data-ff-generated-opportunity="UMBRELLA"/);
-    expect(html).not.toMatch(/data-ff-generated-opportunity="HO"/);
-    expect(html).not.toMatch(/data-ff-generated-opportunity="AUTO"/);
+    expect(html).toMatch(/data-ff-contact-field="email"/);
+    expect(html).toMatch(/data-ff-contact-label-orientation="above"/);
+    expect(html).not.toMatch(/data-ff-contact-label-orientation="beside"/);
     expect(html).not.toMatch(/data-ff-compact-row/);
-    expect(html).toMatch(/data-ff-contact-field-compact="1"/);
-    expect(html).not.toMatch(/text-center text-lg font-semibold/);
-    expect(html).not.toMatch(/data-ff-click-to-edit="cross_selling_opportunity"/);
-    expect(html).toMatch(/data-ff-contact-owner-flags/);
-    expect(html).toMatch(/data-ff-independent-flag="is_homeowner"/);
-    expect(html).toMatch(/data-ff-independent-flag="is_business_owner"/);
-    expect(html).not.toMatch(/role="radiogroup"/);
+    expect(html).toMatch(/data-ff-contact-desk="1"/);
+    expect(html).toMatch(/data-ff-field-span="2"/);
+    // Email must not be full-row wide on Contact Details.
+    expect(html).not.toMatch(/data-ff-field-span="full"[^>]*email|col-span-full[^>]*email/);
   });
 
   it("keeps homeowner and business owner as independent checkboxes", () => {
