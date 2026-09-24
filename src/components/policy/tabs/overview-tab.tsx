@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ClientStayingButton } from "@/components/renewals/client-staying-button";
+import { RenewalAgreedStamp } from "@/components/policy/renewal-agreed-stamp";
 import { PolicyInformationCard } from "@/components/policy/policy-information";
 import { LobOverviewSections } from "@/components/policy/lob-overview-sections";
 import { PremiumChangeSummary } from "@/components/policy/premium-change";
@@ -17,6 +18,7 @@ import {
   type CurrentTermResolution,
 } from "@/lib/policies/current-term";
 import { renewalDaysPhrase } from "@/lib/renewal/urgency";
+import { showRenewalAgreedStamp } from "@/lib/policies/renewal-agreed";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import { resolveDwellingFacts } from "@/lib/policy/dwelling-facts";
 import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
@@ -44,6 +46,7 @@ export function PolicyOverviewTab({
   readOnly = false,
   showCommission = true,
   termView = null,
+  renewalHandled = false,
 }: {
   policy: {
     id: string;
@@ -110,6 +113,8 @@ export function PolicyOverviewTab({
   readOnly?: boolean;
   showCommission?: boolean;
   termView?: CurrentTermResolution | null;
+  /** renewal_queue stage === handled ("Client staying"). */
+  renewalHandled?: boolean;
 }) {
   const offBook = termView ? bandIsOffBook(termView.band) : isOffBookStatus(policy.status);
   const inForce = termView ? termView.countsAsInForce : isInForceStatus(policy.status);
@@ -132,6 +137,13 @@ export function PolicyOverviewTab({
       row.kind === "certificate_holder",
   ).length;
   const dwelling = resolveDwellingFacts({ risk, sheet });
+  const showRenewalAgreed = showRenewalAgreedStamp({
+    clientStaying: renewalHandled,
+    effectiveDate: termView?.current?.effective ?? termView?.bookEffective ?? policy.effectiveDate,
+    expirationDate: termView?.current?.expiration ?? termView?.bookExpiration ?? policy.expirationDate,
+    renewedEffectiveDate: termView?.upcoming?.effective,
+    terms,
+  });
 
   return (
     <div className="space-y-4" data-ff-policy-tab="overview">
@@ -146,8 +158,13 @@ export function PolicyOverviewTab({
         showCommission={showCommission}
       />
 
-      <section className="ff-card space-y-3 p-4">
+      <section className="ff-card space-y-3 overflow-visible p-4">
         <h2 className="text-base font-semibold text-navy">Links & renewal</h2>
+        {showRenewalAgreed ? (
+          <div className="flex justify-center overflow-visible px-2 py-5">
+            <RenewalAgreedStamp />
+          </div>
+        ) : null}
         <p className="text-sm text-muted-foreground" data-ff-policy-renewal-status="">
           Renewal status · {renewalLine}
           {inForce ? " · Active term" : ""}
