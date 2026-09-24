@@ -31,6 +31,7 @@ import { reassignAliasOwnedRecords } from "@/lib/auth/canonical-owner-backfill";
 import { mineScopeForViewer } from "@/lib/auth/producer-identity";
 import { matchesDealLens, resolveDealScope } from "@/lib/deals/deals-lenses";
 import { scheduleDealColdChaseNotices } from "@/lib/deals/cold-chase-sync";
+import { includeDealInActiveFeed } from "@/lib/deals/on-hold";
 import { loadDealVelocityTouches, ownerScorecards, presentRadarCards, agentVelocityScores } from "@/lib/deals/radar-desk";
 import { heatCounts, rankByScore } from "@/lib/deals/velocity";
 
@@ -111,7 +112,14 @@ export default async function DealsPage({
   }
   const agents = userRows.map((user) => ({ id: user.id, name: user.name }));
   const board = boardData?.board ?? null;
-  const rawRows = (listRows ?? []).filter((row) => matchesDealPipelineColumnFilters(row.deal, columnFilter));
+  const rawRows = (listRows ?? [])
+    .filter((row) => matchesDealPipelineColumnFilters(row.deal, columnFilter))
+    .filter((row) =>
+      includeDealInActiveFeed(row.deal.tags, {
+        tags: columnFilter.tags,
+        attention: filter.attention,
+      }),
+    );
   const optionDeals = rawRows.map((row) => row.deal);
   const pipelineFilterFields = buildDealPipelineFilterFields({
     deals: optionDeals,
@@ -296,6 +304,7 @@ export default async function DealsPage({
             lens,
             scope: viewScope,
             valueBand,
+            attention: filter.attention,
             q,
           }}
         />

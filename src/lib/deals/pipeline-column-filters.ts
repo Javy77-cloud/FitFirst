@@ -1,3 +1,4 @@
+import { ON_HOLD_LABEL, ON_HOLD_TAG } from "@/lib/deals/on-hold";
 import { sourceFilterOptions, sourceLabel } from "@/lib/crm/sources";
 import { LINES } from "@/lib/domain";
 import {
@@ -152,8 +153,10 @@ export function buildDealPipelineFilterFields(input: {
       key: "tags",
       label: "Tags",
       options: uniqueOptions(
-        deals.flatMap((deal) => deal.tags ?? []),
-        tagExtras,
+        [...deals.flatMap((deal) => deal.tags ?? []), ON_HOLD_TAG],
+        [...tagExtras, { value: ON_HOLD_TAG, label: ON_HOLD_LABEL }],
+      ).map((option) =>
+        option.value === ON_HOLD_TAG ? { value: ON_HOLD_TAG, label: ON_HOLD_LABEL } : option,
       ),
     },
     {

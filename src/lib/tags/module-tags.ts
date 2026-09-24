@@ -32,7 +32,7 @@ export const TAG_MODULE_PATHS: Record<TagModule, { list: string; detail: (id: st
 export const SUGGESTED_MODULE_TAGS: Record<TagModule, readonly string[]> = {
   leads: ["hot", "referral", "inbound", "web", "renewal"],
   contacts: ["client", "referral", "vip", "review-due", "do-not-solicit"],
-  deals: ["shopping", "urgent", "multi-line", "referral"],
+  deals: ["shopping", "urgent", "multi-line", "referral", "on_hold"],
   accounts: ["client", "commercial", "target", "vip", "review-due"],
   policies: ["renewal", "review-due", "claim", "endorsement"],
   carriers: ["preferred", "surplus", "admitted", "review", "do-not-write"],
@@ -97,6 +97,7 @@ export function mergeTags(...groups: unknown[]): string[] {
 }
 
 export function formatTagLabel(tag: string): string {
+  if (tag === "on_hold") return "On hold";
   return tag
     .split("-")
     .filter(Boolean)

@@ -10,6 +10,7 @@ import {
 } from "@/lib/deals/deals-lenses";
 import { HEAT_LABELS, HEAT_RULE_HELP, type HeatState } from "@/lib/deals/velocity";
 import { chipTabClass, FF_CHIP_TAB_GROUP } from "@/lib/ui/chip-tabs";
+import { ON_HOLD_ATTENTION, ON_HOLD_LABEL } from "@/lib/deals/on-hold";
 import { cn } from "@/lib/utils";
 
 type LensHrefOpts = {
@@ -24,6 +25,8 @@ type LensHrefOpts = {
   scope?: string | null;
   valueBand?: string | null;
   q?: string | null;
+  attention?: string | null;
+  tags?: string | null;
 };
 
 const HEAT_TITLES: Record<HeatState, string> = {
@@ -60,11 +63,13 @@ export function DealsLenses({
     lens: null,
     scope: defaultDealScope({ canSeeTeam, view: href.view }),
     valueBand: null,
+    attention: null,
   });
   const showClear = lensesAreActive({
     heat: href.heat,
     lens: href.lens,
     scope: href.scope,
+    attention: href.attention,
     canSeeTeam,
     view: href.view,
   });
@@ -144,6 +149,25 @@ export function DealsLenses({
           ))}
         </div>
       ) : null}
+
+      <div className={FF_CHIP_TAB_GROUP} aria-label="Parking">
+        <Link
+          href={dealsViewHref({
+            ...base,
+            heat: null,
+            lens: null,
+            scope: href.scope,
+            valueBand: null,
+            attention: href.attention === ON_HOLD_ATTENTION ? null : ON_HOLD_ATTENTION,
+          })}
+          className={chipTabClass(href.attention === ON_HOLD_ATTENTION)}
+          data-ff-deal-on-hold-filter=""
+          title="Soft-parked deals — not Lost. Restore returns them to the active stack."
+        >
+          {ON_HOLD_LABEL}
+        </Link>
+      </div>
+
       {showClear ? (
         <Link href={clearHref} className="ff-clear-lenses" data-ff-clear-lenses="">
           Clear lenses

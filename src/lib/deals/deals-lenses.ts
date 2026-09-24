@@ -139,12 +139,18 @@ export function lensesAreActive(filter: {
   heat?: string | null;
   lens?: string | null;
   scope?: string | null;
+  attention?: string | null;
   canSeeTeam?: boolean;
   view?: DealsViewId | null;
 }): boolean {
   const resolved = resolveDealFilters(filter);
   const defaultScope = defaultDealScope({ canSeeTeam: Boolean(filter.canSeeTeam), view: filter.view });
-  return Boolean(resolved.heat || resolved.lens || resolved.scope !== defaultScope);
+  return Boolean(
+    resolved.heat ||
+      resolved.lens ||
+      resolved.scope !== defaultScope ||
+      (filter.attention ?? "").trim(),
+  );
 }
 
 export function visibleLenses(canSeeTeam: boolean) {

@@ -34,6 +34,7 @@ export function DealsCommandWorkspace({
     scope?: string | null;
     valueBand?: string | null;
     q?: string | null;
+    attention?: string | null;
   };
   canSeeTeam: boolean;
   scorecards: { open: number; cold: number; coldRate: number; medianPostQuoteGap: number; hot: number };
