@@ -235,13 +235,8 @@ export function DealHeaderStage({
         className="inline-flex max-w-full flex-col gap-1.5 rounded-lg border border-navy/20 bg-navy/[0.04] px-2.5 py-2 shadow-sm"
         data-ff-pipeline-box=""
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className="text-[10px] font-bold uppercase tracking-[0.12em] text-navy/70"
-            data-ff-pipeline-label=""
-          >
-            Pipeline
-          </span>
+        {/* Shell dt already says Pipeline — stage chip + Override sit under that one title. */}
+        <div className="flex flex-wrap items-center gap-2" data-ff-pipeline-stage-row="">
           <button
             type="button"
             aria-expanded={open}
@@ -483,6 +478,8 @@ export function DealHeaderStage({
                   await markDealProductLost(data);
                   setValue("closed_lost");
                   setLostOpen(false);
+                  // Leave the lost deal screen — back to active deals list.
+                  router.push("/deals");
                 });
               }}
             >

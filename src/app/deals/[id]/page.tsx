@@ -780,7 +780,10 @@ export default async function DealPage({
                   </div>
                 }
               />
-              {dealProducts.length ? (
+            </div>
+          }
+          subnav={
+              dealProducts.length ? (
                 <>
                   <DealLineSwitcher
                     dealId={deal.id}
@@ -861,8 +864,7 @@ export default async function DealPage({
                     )}
                   />
                 </>
-              ) : null}
-            </div>
+              ) : null
           }
           corner={
             <div

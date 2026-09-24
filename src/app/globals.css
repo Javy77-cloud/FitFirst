@@ -1486,6 +1486,9 @@ a[data-ff-carrier-portal-status="connected"]:hover {
 [data-ff-deal-status-stamp="closed_won"] .ff-deal-status-stamp-ink {
   color: #0f7a3a;
 }
+[data-ff-deal-status-stamp="closed_lost"] .ff-deal-status-stamp-ink {
+  color: #9f1239;
+}
 [data-ff-deal-status-stamp="pending_inspection"] .ff-deal-status-stamp-ink {
   color: #8a6500;
 }

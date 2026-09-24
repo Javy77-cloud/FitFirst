@@ -131,5 +131,29 @@ describe("outside FitFirst stage override", () => {
     expect(source("src/components/deal/deal-package-shell.tsx")).toMatch(
       /label: "Pipeline"/,
     );
+    // One Pipeline title (shell) — header chrome must not repeat it.
+    expect(source("src/components/deals/deal-header-stage.tsx")).not.toMatch(
+      /data-ff-pipeline-label/,
+    );
+    expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(
+      /data-ff-pipeline-stage-row/,
+    );
+    expect(source("src/components/deals/deal-header-stage.tsx")).toMatch(
+      /router\.push\("\/deals"\)/,
+    );
+    expect(source("src/components/deals/outside-stage-override-dialog.tsx")).toMatch(
+      /router\.push\("\/deals"\)/,
+    );
+  });
+
+  it("stamps Closed lost without needing selected quotes", () => {
+    expect(
+      productStampStage(
+        { stage: "closed_lost", selectedQuoteIds: [], lostReason: "price" },
+        "closed_lost",
+        null,
+        [],
+      ),
+    ).toBe("closed_lost");
   });
 });
