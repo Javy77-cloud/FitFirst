@@ -1,61 +1,95 @@
 import Link from "next/link";
 import { RecordLink } from "@/components/record-links";
 import type { DeclaredCoverageLine } from "@/lib/coverage/declared-coverage";
+import { classifyCoverageLine, type GapPolicyInput } from "@/lib/coverage/gaps";
 import {
-  analyzeCoverageGaps,
-  gapLineLabel,
-  type CoverageLine,
-  type GapPolicyInput,
-} from "@/lib/coverage/gaps";
-import { generateContactOpportunities } from "@/lib/coverage/opportunities";
+  generateContactOpportunities,
+  type GeneratedOpportunity,
+} from "@/lib/coverage/opportunities";
 import {
   classifyOpportunityLine,
-  householdCoveredLines,
   isOpenDealStage,
   type NoticeDealInput,
 } from "@/lib/coverage/notices";
 import { displayStatusLabel } from "@/lib/desk/status-colors";
+import type { ContactDependent, ElsewhereCoverageRow } from "@/lib/db/schema";
+import { isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
 import { cn } from "@/lib/utils";
 
 export type OpportunityDealRow = NoticeDealInput;
 
-function CrossSellRow({
+function OpportunityCard({
   title,
   detail,
   href,
+  ctaLabel,
   focused,
   testId,
+  reason,
 }: {
   title: string;
   detail: string;
   href?: string;
+  ctaLabel?: string;
   focused?: boolean;
   testId?: string;
+  reason?: string;
 }) {
   const className = cn(
     "px-3 py-2 text-sm",
     focused && "bg-amber-50 ring-1 ring-amber-300",
   );
-  const inner = (
+  const body = (
     <>
-      <p className="font-medium text-navy">{title}</p>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="font-medium text-navy">{title}</p>
+        {reason ? (
+          <span className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
+            {reason.replace("_", " ")}
+          </span>
+        ) : null}
+      </div>
       <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>
+      {ctaLabel ? (
+        <p className="mt-1 text-[11px] font-semibold text-primary">{ctaLabel}</p>
+      ) : null}
     </>
   );
   if (href) {
     return (
-      <li className={className} data-ff={testId} data-ff-focus={focused ? "1" : undefined}>
-        <RecordLink href={href}>{inner}</RecordLink>
+      <li
+        className={className}
+        data-ff={testId}
+        data-ff-opportunity-reason={reason}
+        data-ff-focus={focused ? "1" : undefined}
+      >
+        <RecordLink href={href}>{body}</RecordLink>
       </li>
     );
   }
   return (
-    <li className={className} data-ff={testId} data-ff-focus={focused ? "1" : undefined}>
-      {inner}
+    <li
+      className={className}
+      data-ff={testId}
+      data-ff-opportunity-reason={reason}
+      data-ff-focus={focused ? "1" : undefined}
+    >
+      {body}
     </li>
   );
 }
 
+function ctaHref(row: GeneratedOpportunity, contactId: string): string | undefined {
+  if (!row.cta) return undefined;
+  if (row.cta.kind === "start_deal") {
+    return `/deals/new?contactId=${contactId}&line=${encodeURIComponent(row.suggestedLine)}`;
+  }
+  return `/contacts/${contactId}?tab=coverage`;
+}
+
+/**
+ * Opportunities tab — actionable gaps from coverage, household facts, and renewal signals.
+ */
 export function ContactOpportunitiesPanel({
   contactId,
   partyName,
@@ -65,6 +99,10 @@ export function ContactOpportunitiesPanel({
   recentLifeEvents,
   focusDealId,
   declaredCoverage,
+  elsewhereCoverage = [],
+  dependents = [],
+  spouseName,
+  occupation,
 }: {
   contactId: string;
   partyName: string;
@@ -74,36 +112,45 @@ export function ContactOpportunitiesPanel({
   recentLifeEvents?: string | null;
   focusDealId?: string | null;
   declaredCoverage?: DeclaredCoverageLine[];
+  elsewhereCoverage?: ElsewhereCoverageRow[];
+  dependents?: ContactDependent[];
+  spouseName?: string | null;
+  occupation?: string | null;
 }) {
-  const report = analyzeCoverageGaps({ policies, partyName, isAna, declaredCoverage });
-  const inForceLines = householdCoveredLines(policies, declaredCoverage);
   const openDeals = deals.filter((deal) => isOpenDealStage(deal.pipelineStage));
-  const crossSellDeals = openDeals.filter((deal) => {
-    const line = classifyOpportunityLine(deal.lineOfBusiness);
-    return line !== "OTHER" && !inForceLines.has(line);
-  });
+  const openDealLines = openDeals
+    .map((deal) => classifyOpportunityLine(deal.lineOfBusiness))
+    .filter((line) => line !== "OTHER");
+
   const generated = generateContactOpportunities({
     policies,
     declaredCoverage,
+    elsewhereCoverage,
     recentLifeEvents,
     partyName,
+    dependents,
+    spouseName,
+    occupation,
+    openDealLines,
+    contactId,
   });
-  const uniqueMissing: CoverageLine[] = generated
-    .map((row) => row.line)
-    .filter((line) => !crossSellDeals.some((deal) => classifyOpportunityLine(deal.lineOfBusiness) === line));
 
-  const empty =
-    crossSellDeals.length === 0 &&
-    uniqueMissing.length === 0 &&
-    report.rewrites.length === 0 &&
-    !isAna;
+  const dealRows = openDeals.filter((deal) => {
+    const line = classifyOpportunityLine(deal.lineOfBusiness);
+    if (line === "OTHER") return false;
+    return !policies.some(
+      (p) =>
+        classifyCoverageLine(p.lineOfBusiness) === line && isInForcePolicyStatus(p.status),
+    );
+  });
+
+  const empty = dealRows.length === 0 && generated.length === 0 && !isAna;
 
   return (
     <div className="space-y-4" data-ff-contact-opportunities="">
       <p className="text-xs text-muted-foreground">
-        Open deals that fill a missing household line, plus generated opportunities from in-force
-        policies, coverage with other carriers, and recent life events. Closed / bound shops stay on
-        Deals. Renewals stay on the Renewals board — this is not a second queue.
+        Actionable gaps from coverage (with us vs elsewhere), household facts on Contact Details, and
+        life-event / renewal signals. Each row has a short title, why it matters, and an optional CTA.
       </p>
       {isAna ? (
         <p className="text-sm text-muted-foreground" data-ff-contact-opportunities-ana="">
@@ -111,65 +158,52 @@ export function ContactOpportunitiesPanel({
           opportunities. Coverage A is $321,000. Do not bind Ana.
         </p>
       ) : null}
-      {crossSellDeals.length > 0 ? (
+
+      {dealRows.length > 0 ? (
         <ul
           className="divide-y divide-border rounded-md border border-border"
           data-ff-contact-opportunities-deals=""
         >
-          {crossSellDeals.map((deal) => {
-            const line = classifyOpportunityLine(deal.lineOfBusiness);
-            return (
-              <CrossSellRow
-                key={deal.id}
-                testId="opportunity-deal"
-                focused={focusDealId === deal.id}
-                href={`/deals/${deal.id}`}
-                title={deal.title || "Open deal"}
-                detail={`${displayStatusLabel(deal.pipelineStage)} · ${gapLineLabel(line)} — household is not covered for ${gapLineLabel(line)}.`}
-              />
-            );
-          })}
-        </ul>
-      ) : null}
-      {uniqueMissing.length > 0 ? (
-        <ul className="space-y-2" data-ff-contact-opportunities-gaps="">
-          {uniqueMissing.map((line) => {
-            const generatedRow = generated.find((row) => row.line === line);
-            return (
-              <CrossSellRow
-                key={line}
-                testId="opportunity-gap"
-                title={gapLineLabel(line)}
-                detail={
-                  generatedRow?.reason === "life_event"
-                    ? generatedRow.detail
-                    : `${partyName} is not covered for ${gapLineLabel(line)}. Start a shop from this contact — do not invent a deal here.`
-                }
-                href={`/deals/new?contactId=${contactId}`}
-              />
-            );
-          })}
-        </ul>
-      ) : null}
-      {report.rewrites.length > 0 ? (
-        <ul className="space-y-2" data-ff-contact-opportunities-rewrites="">
-          {report.rewrites.map((row) => (
-            <CrossSellRow
-              key={row.line}
-              testId="opportunity-rewrite"
-              title={`${gapLineLabel(row.line)} with another carrier`}
-              detail={row.plainEnglish}
+          {dealRows.map((deal) => (
+            <OpportunityCard
+              key={deal.id}
+              testId="opportunity-deal"
+              focused={focusDealId === deal.id}
+              href={`/deals/${deal.id}`}
+              title={deal.title || "Open deal"}
+              detail={`${displayStatusLabel(deal.pipelineStage)} · open shop for a household gap.`}
+              ctaLabel="Open deal"
+              reason="deal"
             />
           ))}
         </ul>
       ) : null}
+
+      {generated.length > 0 ? (
+        <ul
+          className="divide-y divide-border rounded-md border border-border"
+          data-ff-contact-opportunities-generated=""
+        >
+          {generated.map((row) => (
+            <OpportunityCard
+              key={row.id}
+              testId="opportunity-gap"
+              href={ctaHref(row, contactId)}
+              title={row.title}
+              detail={row.detail}
+              ctaLabel={row.cta?.label}
+              reason={row.reason}
+            />
+          ))}
+        </ul>
+      ) : null}
+
       {empty ? (
         <p className="text-sm text-muted-foreground" data-ff-contact-opportunities-empty="">
-          {report.inForceCount === 0 && report.coveredLines.length === 0
-            ? `${partyName} has no in-force policy yet, so there is no household cross-sell to work.`
-            : `${partyName} has no open household gaps on the lines this desk checks.`}
+          {partyName} has no open household gaps on the lines this desk checks.
         </p>
       ) : null}
+
       <p className="text-[11px] text-muted-foreground">
         Every deal, including won and lost, is under{" "}
         <Link href="#deals" className="text-primary hover:underline">

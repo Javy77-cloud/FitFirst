@@ -33,6 +33,12 @@ import { ContactOpportunitiesPanel } from "@/components/contacts/contact-opportu
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
 import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices";
 import { COVERAGE_CARRIER_FIELD_KEY, declaredCoverageFromFields } from "@/lib/coverage/declared-coverage";
+import {
+  declaredCoverageFromElsewhere,
+  mergeDeclaredCoverage,
+  parseElsewhereCoverage,
+  seedElsewhereFromDeclared,
+} from "@/lib/coverage/elsewhere-coverage";
 import { classifyCoverageLine } from "@/lib/coverage/gaps";
 import { isAnaCoverageParty, isOpenDealStage } from "@/lib/coverage/notices";
 import { isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
@@ -253,7 +259,7 @@ export default async function ContactDetailPage({
         .filter((line) => line !== "OTHER"),
     ),
   ];
-  const declaredCoverage = declaredCoverageFromFields({
+  const declaredFromFields = declaredCoverageFromFields({
     existingCoverageTypes:
       typeof fieldValues.existing_coverage_types === "string" ? fieldValues.existing_coverage_types : "",
     carrierOfRecord:
@@ -261,6 +267,14 @@ export default async function ContactDetailPage({
         ? fieldValues[COVERAGE_CARRIER_FIELD_KEY]
         : "",
   });
+  const elsewhereCoverage = seedElsewhereFromDeclared(
+    declaredFromFields,
+    parseElsewhereCoverage(contact.elsewhereCoverage),
+  );
+  const declaredCoverage = mergeDeclaredCoverage(
+    declaredFromFields,
+    declaredCoverageFromElsewhere(elsewhereCoverage),
+  );
   const openDealCount = deals.filter((deal) => isOpenDealStage(deal.pipelineStage)).length;
   const sectionCounts: Partial<Record<ContactSectionId, number>> = {
     coverage: inForceCount,
@@ -514,11 +528,13 @@ export default async function ContactDetailPage({
               "data-ff": "contact-coverage",
               children: (
                 <ContactCoveragePanel
+                  contactId={contact.id}
                   partyName={partyName}
                   isAna={isAna}
                   quoteCount={deals.length}
                   focusPolicyId={focusPolicy}
                   declaredCoverage={declaredCoverage}
+                  elsewhereCoverage={elsewhereCoverage}
                   policies={policies.map(({ policy, carrier }) => ({
                     id: policy.id,
                     status: policy.status,
@@ -545,6 +561,12 @@ export default async function ContactDetailPage({
                   isAna={isAna}
                   focusDealId={focusDeal}
                   declaredCoverage={declaredCoverage}
+                  elsewhereCoverage={elsewhereCoverage}
+                  dependents={Array.isArray(contact.dependents) ? contact.dependents : []}
+                  spouseName={contact.spouseName}
+                  occupation={
+                    typeof fieldValues.occupation === "string" ? fieldValues.occupation : null
+                  }
                   recentLifeEvents={
                     typeof fieldValues.recent_life_events === "string"
                       ? fieldValues.recent_life_events

@@ -642,6 +642,15 @@ export type ContactDependent = {
   relation: "Child" | "Other" | string;
 };
 
+/** Agent-entered coverage held with another carrier (Coverage tab → Elsewhere). */
+export type ElsewhereCoverageRow = {
+  id: string;
+  line: string;
+  carrier: string;
+  renewalDate: string;
+  roughPremium: string;
+};
+
 export const contacts = pgTable(
   "contacts",
   {
@@ -689,6 +698,7 @@ export const contacts = pgTable(
     spouseName: text("spouse_name"),
     spouseDob: text("spouse_dob"),
     dependents: jsonb("dependents").$type<ContactDependent[]>().notNull().default([]),
+    elsewhereCoverage: jsonb("elsewhere_coverage").$type<ElsewhereCoverageRow[]>().notNull().default([]),
     dlState: text("dl_state"),
     licenseNumberEnc: text("license_number_enc"),
     licenseNumberIv: text("license_number_iv"),

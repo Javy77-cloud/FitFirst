@@ -62,7 +62,7 @@ export function ContactGeneratedOpportunities({
                 </span>
               </div>
               <div className={cn("px-2 py-1.5 text-[11px] leading-snug text-muted-foreground")}>
-                {row.reason === "life_event" ? row.detail : `Household is not covered for ${row.label.toLowerCase()}.`}
+                {row.detail || `Household is not covered for ${row.label.toLowerCase()}.`}
               </div>
             </li>
           ))}

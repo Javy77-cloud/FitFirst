@@ -513,6 +513,37 @@ export async function updateContactCoverageRecord(input: {
   return { ok: true as const };
 }
 
+/** Persist Coverage → Elsewhere rows (line / carrier / renewal / rough premium). */
+export async function updateContactElsewhereCoverage(input: {
+  contactId: string;
+  rows: import("@/lib/db/schema").ElsewhereCoverageRow[] | string;
+}) {
+  const contactId = String(input.contactId ?? "").trim();
+  if (!contactId) return { ok: false as const, error: "Missing contact." };
+
+  const { parseElsewhereCoverage } = await import("@/lib/coverage/elsewhere-coverage");
+  const { ensureElsewhereCoverageColumn } = await import("@/lib/db/ensure-elsewhere-coverage");
+  await ensureElsewhereCoverageColumn().catch(() => false);
+
+  const [existing] = await db
+    .select({ id: contacts.id })
+    .from(contacts)
+    .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, contactId)));
+  if (!existing) return { ok: false as const, error: "Contact not found." };
+
+  const rows = parseElsewhereCoverage(input.rows);
+  await db
+    .update(contacts)
+    .set({ elsewhereCoverage: rows, updatedAt: new Date() })
+    .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, contactId)));
+
+  await emitDeskEvent("record.updated", { entityType: "contact", entityId: contactId });
+  revalidatePath(`/contacts/${contactId}`);
+  revalidatePath("/contacts");
+  scheduleContactCoverageNotices(contactId);
+  return { ok: true as const };
+}
+
 export async function searchContactsForLink(query: string, excludeId?: string) {
   const q = query.trim();
   const clauses = [
