@@ -6,6 +6,8 @@ import {
   type CallOutcome,
   type TaskPipelineStage,
 } from "@/lib/domain";
+import { deskDateKey } from "@/lib/desk/desk-timezone";
+import { parseDeskDateTimeLocal } from "@/lib/tasks/due-at";
 
 export type RelatedIds = {
   contactId?: string | null;
@@ -129,8 +131,10 @@ export function whenForActivity(row: {
   return row.dueAt ?? row.startAt ?? row.scheduledAt ?? null;
 }
 
+/** Start of the desk calendar day (America/New_York), not process-local/UTC. */
 export function startOfLocalDay(value: Date): Date {
-  return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  const key = deskDateKey(value);
+  return parseDeskDateTimeLocal(`${key}T00:00`) ?? new Date(value);
 }
 
 export function addDays(value: Date, days: number): Date {
@@ -144,11 +148,10 @@ export function isOverdue(when: Date | null, now = new Date(), status?: string):
   return when.getTime() < now.getTime();
 }
 
+/** Open work whose when falls on the same America/New_York calendar day as `now`. */
 export function isDueToday(when: Date | null, now = new Date(), status?: string): boolean {
   if (!when || isClosedStatus(status ?? "incomplete")) return false;
-  const start = startOfLocalDay(now);
-  const end = addDays(start, 1);
-  return when.getTime() >= start.getTime() && when.getTime() < end.getTime();
+  return deskDateKey(when) === deskDateKey(now);
 }
 
 export function isDueSoon(

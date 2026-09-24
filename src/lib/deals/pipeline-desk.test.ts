@@ -38,6 +38,41 @@ describe("Deals today activity strip", () => {
     });
   });
 
+  it("does not count tomorrow-ET events toward Today Activity after UTC midnight", () => {
+    const eveningEt = new Date("2026-09-24T01:00:00.000Z"); // Wed 9pm ET
+    const rowsEvening = [
+      {
+        id: "tonight",
+        kind: "call",
+        title: "Tonight",
+        status: "open",
+        dueAt: new Date("2026-09-24T02:00:00.000Z"), // Wed 10pm ET
+      },
+      {
+        id: "tomorrow",
+        kind: "task",
+        title: "Tomorrow",
+        status: "open",
+        dueAt: new Date("2026-09-24T14:00:00.000Z"), // Thu 10am ET
+      },
+      {
+        id: "meeting-thu",
+        kind: "meeting",
+        title: "Thu meet",
+        status: "open",
+        startAt: new Date("2026-09-24T16:00:00.000Z"), // Thu noon ET
+      },
+    ];
+    expect(countTodayDealActivity(rowsEvening, eveningEt)).toEqual({
+      task: 0,
+      call: 1,
+      email: 0,
+      meeting: 0,
+      training: 0,
+    });
+    expect(formatTodayActivityDate(eveningEt)).toBe("Wednesday, Sep 23");
+  });
+
   it("filters the work queue to one type", () => {
     expect(filterTodayDealActivity(rows, "training", now).map((row) => row.id)).toEqual(["5"]);
     expect(todayActivityWorkHref("call")).toBe("/deals?queue=call");

@@ -143,6 +143,22 @@ describe("due notifications", () => {
     ).toBe(false);
   });
 
+  it("buckets today by America/New_York, not UTC midnight", () => {
+    // 9:00 PM ET Wed Sep 23 = 01:00Z Thu — UTC day already rolled; desk day has not.
+    const eveningEt = new Date("2026-09-24T01:00:00.000Z");
+    const tomorrowMorningEt = new Date("2026-09-24T14:00:00.000Z"); // 10:00 AM ET Thu
+    const laterTonightEt = new Date("2026-09-24T02:30:00.000Z"); // 10:30 PM ET Wed
+    expect(isDueToday(tomorrowMorningEt, eveningEt, "incomplete")).toBe(false);
+    expect(isDueToday(laterTonightEt, eveningEt, "incomplete")).toBe(true);
+
+    // 1:00 AM ET Thu — early morning stays on Thursday Eastern.
+    const earlyEt = new Date("2026-09-24T05:00:00.000Z");
+    const wedNightEt = new Date("2026-09-24T02:00:00.000Z"); // 10:00 PM ET Wed
+    const thuMorningEt = new Date("2026-09-24T13:00:00.000Z"); // 9:00 AM ET Thu
+    expect(isDueToday(wedNightEt, earlyEt, "incomplete")).toBe(false);
+    expect(isDueToday(thuMorningEt, earlyEt, "incomplete")).toBe(true);
+  });
+
   it("uses scheduled_at for calls", () => {
     expect(
       whenForActivity({
