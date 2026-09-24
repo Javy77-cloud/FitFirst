@@ -112,7 +112,6 @@ import { PromiseChips } from "@/components/notifications/promise-chips";
 import { loadCommitmentsForEntities } from "@/lib/notifications/load-commitments";
 import { serializeCommitments } from "@/lib/notifications/commitments";
 import { DealHeaderStage } from "@/components/deals/deal-header-stage";
-import { DealOnHoldControl } from "@/components/deals/deal-on-hold-control";
 import { dealHasOnHoldTag } from "@/lib/deals/on-hold";
 import { quoteIdsWithFolderPolicy } from "@/lib/policy/mint-gate";
 import { relabelConvertActivityTitle } from "@/lib/crm/convert";
@@ -768,11 +767,7 @@ export default async function DealPage({
                       workspaceTab={activeTab}
                       issuedFolderQuoteIds={issuedFolderQuoteIds}
                       outsideOverride={Boolean(activeProductState.outsideOverride)}
-                    />
-                    <DealOnHoldControl
-                      dealId={deal.id}
                       onHold={dealHasOnHoldTag(deal.tags)}
-                      dealTitle={visibleDealTitle}
                     />
                     {!stampStage && noticeStampVisible ? (
                       <DealNotices {...noticeProps} placement="header" />

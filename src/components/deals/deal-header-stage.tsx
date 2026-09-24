@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { markDealProductLost, setDealProductStage } from "@/app/actions/product-stage";
 import { ClosedDealArchivePopup } from "@/components/deals/closed-deal-archive-popup";
+import { DealPipelineActions } from "@/components/deals/deal-pipeline-actions";
 import { OutsideStageOverrideDialog } from "@/components/deals/outside-stage-override-dialog";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,7 @@ export function DealHeaderStage({
   /** Quote ids that already have a policy/declaration in Manual or the carrier folder. */
   issuedFolderQuoteIds = null,
   outsideOverride = false,
+  onHold = false,
 }: {
   dealId: string;
   pipelineSlug: string;
@@ -69,6 +71,8 @@ export function DealHeaderStage({
   issuedFolderQuoteIds?: readonly string[] | null;
   /** Quoting/binding happened outside FitFirst — late stages unlocked without live quotes. */
   outsideOverride?: boolean;
+  /** Soft-parked via On hold tag (#349). */
+  onHold?: boolean;
 }) {
   const [value, setValue] = useState(stageSlug);
   const [open, setOpen] = useState(false);
@@ -235,7 +239,7 @@ export function DealHeaderStage({
         className="inline-flex max-w-full flex-col gap-1.5 rounded-lg border border-navy/20 bg-navy/[0.04] px-2.5 py-2 shadow-sm"
         data-ff-pipeline-box=""
       >
-        {/* Shell dt already says Pipeline — stage chip + Override sit under that one title. */}
+        {/* Shell dt already says Pipeline — stage chip + Actions sit under that one title. */}
         <div className="flex flex-wrap items-center gap-2" data-ff-pipeline-stage-row="">
           <button
             type="button"
@@ -259,23 +263,15 @@ export function DealHeaderStage({
               {currentLabel}
             </StatusBadge>
           </button>
-          {!outsideOverride ? (
-            <OutsideStageOverrideDialog
-              dealId={dealId}
-              product={product || "homeowners"}
-              pipelineSlug={pipelineSlug}
-              dealTitle={dealTitle}
-              currentStage={value}
-              buttonVariant="button"
-            />
-          ) : (
-            <span
-              className="rounded-full border border-amber-700/30 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-950"
-              data-ff-outside-stage-active=""
-            >
-              Outside FitFirst
-            </span>
-          )}
+          <DealPipelineActions
+            dealId={dealId}
+            product={product || "homeowners"}
+            pipelineSlug={pipelineSlug}
+            dealTitle={dealTitle}
+            currentStage={value}
+            onHold={onHold}
+            outsideOverride={outsideOverride}
+          />
         </div>
       </div>
 
