@@ -100,6 +100,8 @@ export function sheetValuesFingerprint(
   if (!values) return "";
   const pairs: string[] = [];
   for (const key of Object.keys(values).sort()) {
+    // Per-product address sidecars live on a shared line. They are not the owner's rating facts.
+    if (key.startsWith("ffpa:")) continue;
     const value = String(values[key]?.value ?? "").trim();
     if (!value) continue;
     pairs.push(`${key}=${value}`);

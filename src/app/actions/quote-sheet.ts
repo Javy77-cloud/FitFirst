@@ -5,7 +5,28 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID, type ShopLine } from "@/lib/domain";
-import { parseStorageLine, requireStorageLine } from "@/lib/deals/product-instances";
+import {
+  parseProductInstanceToken,
+  parseStorageLine,
+  requireStorageLine,
+} from "@/lib/deals/product-instances";
+import { dealProductDef } from "@/lib/deals/deal-products";
+import {
+  addressFromSheetSubmission,
+  addressFromSheetValues,
+  instanceOwnsSheet,
+  isPropertyCoveringProduct,
+  legacyPropertyOwnerKey,
+  newCopyPropertySeed,
+  riskSyncValuesForInstance,
+  sheetAddressCells,
+  splitSharedSheetAddressSave,
+} from "@/lib/deals/product-property";
+import {
+  instancesFromDeal,
+  listDealRisks,
+  saveInstancePropertyAddress,
+} from "@/lib/deals/product-property-store";
 import { db } from "@/lib/db";
 import {
   accounts,
@@ -185,7 +206,8 @@ async function loadDealSheetCopyInput(
 ): Promise<DealSheetCopyInput | null> {
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) return null;
-  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+  const riskRows = await listDealRisks(dealId);
+  const risk = riskRows.find((row) => !String(row.productKey ?? "").trim()) ?? riskRows[0];
   const [contact] = deal.contactId
     ? await db.select().from(contacts).where(eq(contacts.id, deal.contactId))
     : [];
@@ -282,6 +304,15 @@ export async function ensureQuoteSheet(dealId: string, line: string) {
       Object.assign(values, fillSheetFromDealDetails(input, values).values);
     }
   }
+  const copy = opened.instanceKey ? parseProductInstanceToken(opened.instanceKey) : null;
+  if (copy && isPropertyCoveringProduct(copy.productId)) {
+    const quotingForm = dealProductDef(copy.productId).quotingForm;
+    values.quoting_form = { value: quotingForm, status: "confirmed", source: "agent" };
+    values.sheet_product = { value: copy.productId, status: "confirmed", source: "agent" };
+    const stored = await loadRecordValues(dealId, "deals").catch(() => ({} as Record<string, string>));
+    const seed = newCopyPropertySeed(stored);
+    Object.assign(values, sheetAddressCells(seed.address, copy.key, true));
+  }
   const [created] = await db
     .insert(quoteSheets)
     .values({
@@ -299,16 +330,55 @@ export async function persistQuoteSheetValues(
   line: string,
   submitted: Record<string, string>,
   formId?: string,
+  instanceKey?: string | null,
 ) {
   const opened = requireStorageLine(line);
   const sheet = await ensureQuoteSheet(dealId, opened.storageLine);
   const productRaw = submitted.sheet_product?.trim();
   const product = productRaw && isSheetProduct(productRaw) ? (productRaw as SheetProduct) : undefined;
-  const values = mergeAgentEdits(sheet.values, submitted, opened.shopLine, product);
+  let values = mergeAgentEdits(sheet.values, submitted, opened.shopLine, product);
   if (productRaw) {
     values.sheet_product = { value: productRaw, status: "confirmed", source: "agent" };
   }
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  const instance = parseProductInstanceToken(instanceKey ?? opened.instanceKey);
+  let separateProperty = false;
+  if (instance && isPropertyCoveringProduct(instance.productId) && deal) {
+    const instances = instancesFromDeal(deal);
+    const legacyKey = legacyPropertyOwnerKey(instances);
+    const ownsSheet = instanceOwnsSheet(instance, instances);
+    const separate = Boolean(legacyKey) && instance.key !== legacyKey;
+    if (separate) {
+      separateProperty = true;
+      const submittedAddress = addressFromSheetSubmission(submitted);
+      if (!ownsSheet) {
+        values = splitSharedSheetAddressSave({
+          previous: sheet.values,
+          merged: values,
+          instanceKey: instance.key,
+          submitted: submittedAddress,
+          characteristicSource: submitted,
+        });
+      }
+      await saveInstancePropertyAddress({
+        dealId,
+        tenantId: deal.tenantId,
+        contactId: deal.contactId,
+        instanceKey: instance.key,
+        address: ownsSheet ? addressFromSheetValues(values, instance.key, true) : submittedAddress,
+        legacyOwnerKey: legacyKey,
+      });
+      const ownRows = await listDealRisks(dealId, deal.tenantId);
+      const own = ownRows.find((row) => (row.productKey ?? "").trim() === instance.key);
+      if (own) {
+        await applySheetToRiskRow(
+          own,
+          riskSyncValuesForInstance(values, instance.key, ownsSheet),
+          "save",
+        );
+      }
+    }
+  }
   await logSheetCorrections({
     dealId,
     sheetId: sheet.id,
@@ -321,18 +391,25 @@ export async function persistQuoteSheetValues(
     .update(quoteSheets)
     .set({ values, updatedAt: new Date() })
     .where(eq(quoteSheets.id, sheet.id));
-  // A second copy keeps its own property. Do not write it onto the shared deal risk.
-  if (!opened.instanceKey) {
+  // The original sheet still mirrors the original risk. A later product does not.
+  if (!separateProperty) {
     await syncRiskFromSheet(dealId, values, "save");
     await syncHeaderFromSheet(dealId, values, "save");
   }
   if (sheetValuesFingerprint(sheet.values) !== sheetValuesFingerprint(values)) {
     // Keep Markets complete — cue Quotes Recheck; clear unlock only if rating-critical.
     await persistSheetRecheckCue(dealId, opened.storageLine);
+    const dropPropertySidecars = (rows: Record<string, QuoteSheetFieldValue>) => {
+      const next = { ...rows };
+      for (const key of Object.keys(next)) {
+        if (key.startsWith("ffpa:")) delete next[key];
+      }
+      return next;
+    };
     await markShopFlowStaleAfterRiskChange(dealId, opened.storageLine, {
       ratingCritical: ratingCriticalChanged(
-        opened.shopLine === "home" ? carrierTransferValues(sheet.values) : sheet.values,
-        opened.shopLine === "home" ? carrierTransferValues(values) : values,
+        dropPropertySidecars(opened.shopLine === "home" ? carrierTransferValues(sheet.values) : sheet.values),
+        dropPropertySidecars(opened.shopLine === "home" ? carrierTransferValues(values) : values),
       ),
     });
   }
@@ -397,7 +474,13 @@ export async function saveQuoteSheet(formData: FormData) {
   if (product) submitted.sheet_product = product;
   const { persistDealSourceUploads } = await import("@/app/actions/documents");
   await persistDealSourceUploads(formData);
-  const persisted = await persistQuoteSheetValues(dealId, openedLine.storageLine, submitted, str(formData, "formId"));
+  const persisted = await persistQuoteSheetValues(
+    dealId,
+    openedLine.storageLine,
+    submitted,
+    str(formData, "formId"),
+    str(formData, "productInstance") || null,
+  );
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/quotes/fill-feedback");
   const vinDecodeError =
@@ -1091,6 +1174,12 @@ export async function runFillFromDealDetails(
     return { filledKeys: [], skippedKeys: [], note: MASTER_FILL_SKIP_NO_DEAL };
   }
   const fresh = await loadFreshSheetValues(sheet.id, sheet.values);
+  if (opened.instanceKey) {
+    input.propertyOneliner = null;
+    if (input.risk) {
+      input.risk = { address1: null, city: null, county: null, state: null, zip: null };
+    }
+  }
   const applied = fillSheetFromDealDetails(input, fresh);
   if (!applied.filledKeys.length) {
     return {
@@ -2283,13 +2372,11 @@ async function syncHeaderFromSheet(
     .where(eq(deals.id, dealId));
 }
 
-async function syncRiskFromSheet(
-  dealId: string,
+async function applySheetToRiskRow(
+  risk: NonNullable<Awaited<ReturnType<typeof listDealRisks>>[number]>,
   values: Record<string, QuoteSheetFieldValue>,
   mode: "fill" | "save",
 ) {
-  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
-  if (!risk) return;
   const extractToSheet: Record<string, string> = {
     address: "address1",
     city: "city",
@@ -2344,4 +2431,15 @@ async function syncRiskFromSheet(
     .update(risks)
     .set({ ...patch, updatedAt: new Date() })
     .where(eq(risks.id, risk.id));
+}
+
+async function syncRiskFromSheet(
+  dealId: string,
+  values: Record<string, QuoteSheetFieldValue>,
+  mode: "fill" | "save",
+) {
+  const rows = await listDealRisks(dealId);
+  const risk = rows.find((row) => !String(row.productKey ?? "").trim());
+  if (!risk) return;
+  await applySheetToRiskRow(risk, values, mode);
 }

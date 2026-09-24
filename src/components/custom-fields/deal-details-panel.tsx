@@ -359,6 +359,7 @@ export function DealDetailsPanel({
   packageLines = [],
   activePackageLine = null,
   activeProduct = null,
+  productInstance = null,
   accountKind = null,
   dealProducts = [],
   lineSettings,
@@ -377,6 +378,8 @@ export function DealDetailsPanel({
   packageLines?: readonly string[];
   activePackageLine?: string | null;
   activeProduct?: DealProductId | null;
+  /** Shop product instance key (`homeowners`, `homeowners~88uvyj`). */
+  productInstance?: string | null;
   accountKind?: string | null;
   dealProducts?: readonly string[];
   lineSettings?: Pick<DeskLineSettings, "writeLife" | "writeHealth">;
@@ -468,6 +471,7 @@ export function DealDetailsPanel({
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="line" value={line} />
         <input type="hidden" name="pipelineFamily" value={pipelineFamily} />
+        {productInstance ? <input type="hidden" name="productInstance" value={productInstance} /> : null}
         {activePackageLine ? <input type="hidden" name="activePackageLine" value={activePackageLine} /> : null}
       <section
         className="mb-3 rounded-md border border-border/70 bg-background p-3"

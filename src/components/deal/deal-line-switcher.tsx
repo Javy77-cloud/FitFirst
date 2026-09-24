@@ -13,6 +13,7 @@ import {
   productChipStageLabelForState,
   productReadyFromQuotes,
 } from "@/lib/deals/product-stages";
+import { productTabShowsError } from "@/lib/deals/product-property";
 import { themeForProduct } from "@/lib/deals/product-ui";
 import { cn } from "@/lib/utils";
 
@@ -99,7 +100,7 @@ export function DealLineSwitcher({
           const selected = product === active;
           const stat = progress[product];
           const gap = quoteGaps[product];
-          const quotesMissing = Boolean(gap && !gap.complete);
+          const quotesMissing = productTabShowsError(gap);
           const quotesIn = productReadyFromQuotes({
             complete: gap?.complete ?? complete[product],
           });
