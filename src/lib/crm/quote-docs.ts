@@ -2,9 +2,13 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
+import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { carriers, deals, documents, quotes, risks } from "@/lib/db/schema";
+import { documentFileAuditInput } from "@/lib/documents/file-audit";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
+import { writeEoAuditSafe } from "@/lib/eo-audit/write";
 import { QUOTE_PDF_DOC_TYPE, buildStubQuotePdf, quotePdfFilename } from "./quote-pdf";
 
 export { QUOTE_PDF_DOC_TYPE, buildStubQuotePdf, quotePdfFilename } from "./quote-pdf";
@@ -26,9 +30,36 @@ export async function attachFinalizedQuotePdfs(dealId: string): Promise<number> 
     .innerJoin(carriers, eq(quotes.carrierId, carriers.id))
     .where(and(eq(quotes.tenantId, DEFAULT_TENANT_ID), eq(quotes.dealId, dealId)));
 
-  await db
-    .delete(documents)
-    .where(and(eq(documents.dealId, dealId), eq(documents.docType, QUOTE_PDF_DOC_TYPE)));
+  const existing = await db
+    .select()
+    .from(documents)
+    .where(
+      and(eq(documents.dealId, dealId), eq(documents.docType, QUOTE_PDF_DOC_TYPE), notHiddenDocument()),
+    );
+  let actorId: string | null = null;
+  let actorName: string | null = null;
+  if (existing.length > 0) {
+    try {
+      const session = await currentDeskSession();
+      actorId = session.userId || null;
+      actorName = session.name || null;
+    } catch {
+      // Regeneration can run outside a desk request. The hide still audits.
+    }
+  }
+  for (const doc of existing) {
+    await writeEoAuditSafe(
+      documentFileAuditInput({
+        action: "doc_delete",
+        doc,
+        mode: "hidden",
+        actorId,
+        actorName,
+        extra: { reason: "quote_pdf_regenerate" },
+      }),
+    );
+    await db.update(documents).set({ status: "hidden" }).where(eq(documents.id, doc.id));
+  }
 
   for (const { quote, carrier } of rows) {
     const filename = quotePdfFilename(carrier.name, quote.quoteNumber);

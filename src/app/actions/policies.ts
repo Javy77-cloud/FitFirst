@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { currentDeskSession } from "@/lib/auth/session";
 import { attachToPolicy, filePolicyChange, removePolicyAttachment } from "@/lib/policy/service";
 
 function str(form: FormData, key: string) {
@@ -90,6 +91,7 @@ export async function deletePolicyFilingAttachment(formData: FormData) {
   const policyId = str(formData, "policyId");
   const attachmentId = str(formData, "attachmentId");
   if (!attachmentId) return;
-  await removePolicyAttachment(attachmentId);
+  const session = await currentDeskSession();
+  await removePolicyAttachment(attachmentId, { userId: session.userId, name: session.name });
   revalidatePath(`/policies/${policyId}`);
 }

@@ -6,6 +6,7 @@ import { FolderTree } from "@/components/documents/folder-tree";
 import { FormSendLoop } from "@/components/documents/form-send-loop";
 import { LibraryTabs } from "@/components/documents/library-tabs";
 import { LibraryUpload } from "@/components/documents/library-upload";
+import { RecentlyDeletedFiles } from "@/components/documents/recently-deleted";
 import { TypeCarrierBrowse } from "@/components/documents/type-carrier-browse";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -227,6 +228,7 @@ export default async function DocumentsPage({
               }
             />
           </section>
+          <RecentlyDeletedFiles library={library} returnTo={libraryHref({ library, folderId: folder?.id })} />
         </div>
       </div>
     </AppShell>

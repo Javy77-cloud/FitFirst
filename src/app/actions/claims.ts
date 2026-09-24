@@ -25,6 +25,8 @@ import { claimDiaryLine, nextClaimDiaryStatus, validateClaimDiaryDraft } from "@
 import { parseIsoDate } from "@/lib/policy/workflow";
 import { isUuid } from "@/lib/ids";
 import { getClaimDiaryEntry } from "@/lib/ams/queries";
+import { documentFileAuditInput } from "@/lib/documents/file-audit";
+import { writeEoAudit } from "@/lib/eo-audit/write";
 
 const uploadRoot = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
 
@@ -425,6 +427,28 @@ export async function deleteClaimAttachment(formData: FormData) {
     .where(and(eq(claims.tenantId, DEFAULT_TENANT_ID), eq(claims.id, file.claimId)));
   if (!claim) return;
 
+  const audited = await writeEoAudit(
+    documentFileAuditInput({
+      action: "doc_delete",
+      doc: {
+        id: file.id,
+        filename: file.filename,
+        docType: file.docType,
+        slot: "claim_attachment",
+        contactId: claim.contactId,
+        policyId: claim.policyId,
+      },
+      mode: "hard",
+      actorId: session.userId || null,
+      actorName: session.name || "Desk",
+      entityType: "claim_attachment",
+      recordAsDocument: false,
+      extra: { reason: "claim_attachment", claimId: claim.id },
+    }),
+  );
+  if (!audited) {
+    throw new Error("Could not record the file purge. Nothing was deleted.");
+  }
   await db.delete(claimAttachments).where(eq(claimAttachments.id, file.id));
   try {
     await unlink(path.join(uploadRoot, file.storagePath));

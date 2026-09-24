@@ -1,4 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { deals, documents, quoteAttemptLogs, quoteSheets, quotes } from "@/lib/db/schema";
@@ -49,7 +50,7 @@ async function loadDealRiskInputs(dealId: string) {
         tags: documents.tags,
       })
       .from(documents)
-      .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId))),
+      .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId), notHiddenDocument())),
   ]);
   return { sheets, docs: docs.filter((doc) => isDocumentsSourceDoc(doc)) };
 }

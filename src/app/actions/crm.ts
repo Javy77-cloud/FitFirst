@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { resolveWriteOwnerId } from "@/lib/auth/canonical-owner-backfill";
 import { getActor } from "@/lib/auth/session";
 import { periodKey, splitCommission } from "@/lib/commissions/math";
@@ -322,7 +323,7 @@ export async function convertLeadToDeal(
       and(
         eq(documents.tenantId, DEFAULT_TENANT_ID),
         eq(documents.leadId, leadId),
-        ne(documents.status, "hidden"),
+        notHiddenDocument(),
       ),
     );
   const shopLines = shopLinesForConvertWithDocs(
@@ -428,7 +429,7 @@ export async function convertLeadToDeal(
         and(
           eq(documents.tenantId, DEFAULT_TENANT_ID),
           eq(documents.leadId, leadId),
-          ne(documents.status, "hidden"),
+          notHiddenDocument(),
         ),
       );
   }

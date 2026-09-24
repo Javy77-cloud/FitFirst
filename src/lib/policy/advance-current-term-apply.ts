@@ -2,6 +2,7 @@
  * DB apply for renewal current-term advance (Current DEC mark / Client staying).
  */
 import { and, eq } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { activities, documents, extractedFields, policies, policyTerms } from "@/lib/db/schema";
@@ -53,7 +54,7 @@ async function loadCurrentDecExtractDates(policyId: string): Promise<{
       createdAt: documents.createdAt,
     })
     .from(documents)
-    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.policyId, policyId)));
+    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.policyId, policyId), notHiddenDocument()));
 
   const currentDocs = docs
     .filter((doc) => termRoleFromTags(doc.tags) === "current")
@@ -291,6 +292,6 @@ export async function policyHasCurrentTermDec(policyId: string): Promise<boolean
   const docs = await db
     .select({ tags: documents.tags })
     .from(documents)
-    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.policyId, policyId)));
+    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.policyId, policyId), notHiddenDocument()));
   return docs.some((doc) => termRoleFromTags(doc.tags) === "current");
 }

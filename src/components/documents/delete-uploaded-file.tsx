@@ -46,7 +46,7 @@ export function DeleteUploadedFileButton({
       {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
       {leadId ? <input type="hidden" name="leadId" value={leadId} /> : null}
       {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-      <FileDeleteIcon label={label ?? (mode === "hide" ? "Hide" : "Delete")} />
+      <FileDeleteIcon label={label ?? "Delete"} />
     </HardDeleteForm>
   );
 }

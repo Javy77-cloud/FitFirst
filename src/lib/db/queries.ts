@@ -1,6 +1,7 @@
 import { cache } from "react";
-import { and, asc, desc, eq, exists, gte, inArray, isNull, lte, ne, notInArray, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, exists, gte, inArray, isNull, lte, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { alias, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { canSeeOwned } from "@/lib/auth/rbac";
 import { currentDeskSession, getActor, sessionSeesAgencyBook, type DeskSession } from "@/lib/auth/session";
 import { alertVisibleWhere } from "@/lib/alerts/visibility";
@@ -1112,7 +1113,7 @@ export async function getLead(id: string) {
       and(
         eq(documents.tenantId, tenant()),
         eq(documents.leadId, id),
-        ne(documents.status, "hidden"),
+        notHiddenDocument(),
       ),
     )
     .orderBy(desc(documents.createdAt));
@@ -1457,7 +1458,7 @@ export async function getPolicyWorkspace(id: string) {
       and(
         eq(documents.tenantId, tenant()),
         eq(documents.policyId, id),
-        ne(documents.status, "hidden"),
+        notHiddenDocument(),
       ),
     )
     .orderBy(desc(documents.createdAt));
@@ -2457,7 +2458,7 @@ export async function getDealWorkspace(dealId: string) {
         and(
           eq(documents.tenantId, tenant()),
           eq(documents.dealId, dealId),
-          ne(documents.status, "hidden"),
+          notHiddenDocument(),
         ),
       )
       .orderBy(desc(documents.createdAt)),
@@ -3457,6 +3458,7 @@ export async function listQuoteTrackingShops(dealId?: string) {
         and(
           eq(documents.tenantId, tenant()),
           dealId ? eq(documents.dealId, dealId) : undefined,
+          notHiddenDocument(),
           or(eq(documents.slot, "quote_pdf"), eq(documents.docType, "quote_pdf"), eq(documents.docType, "quote")),
         ),
       ),

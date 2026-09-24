@@ -1,4 +1,5 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
@@ -100,7 +101,10 @@ export async function loadEoGapFlags(asOf: Date = deskNow()): Promise<EoGapFlag[
     await Promise.all([
       db.select().from(policies).where(eq(policies.tenantId, DEFAULT_TENANT_ID)),
       db.select().from(deals).where(eq(deals.tenantId, DEFAULT_TENANT_ID)),
-      db.select().from(documents).where(eq(documents.tenantId, DEFAULT_TENANT_ID)),
+      db
+        .select()
+        .from(documents)
+        .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), notHiddenDocument())),
       db.select().from(activities).where(eq(activities.tenantId, DEFAULT_TENANT_ID)),
       db.select().from(activityLogs).where(eq(activityLogs.tenantId, DEFAULT_TENANT_ID)),
       db.select().from(eoAuditLogs).where(eq(eoAuditLogs.tenantId, DEFAULT_TENANT_ID)),

@@ -7,6 +7,8 @@ export const EO_AUDIT_ACTIONS = [
   "reveal_pii",
   "policy_change",
   "role_switch",
+  "doc_delete",
+  "doc_restore",
 ] as const;
 
 export type EoAuditAction = (typeof EO_AUDIT_ACTIONS)[number];
@@ -31,6 +33,8 @@ export const EO_ACTION_LABEL: Record<EoAuditAction, string> = {
   reveal_pii: "Reveal PII",
   policy_change: "Policy change",
   role_switch: "Switch role",
+  doc_delete: "Document delete",
+  doc_restore: "Document restore",
 };
 
 export const EO_GAP_LABEL: Record<EoGapKind, string> = {

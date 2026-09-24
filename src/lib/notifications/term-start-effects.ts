@@ -4,6 +4,7 @@
  * - Quietly drop Handled renewals queue rows so the policy leaves the Handled filter
  */
 import { and, eq } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { documents, renewalQueue } from "@/lib/db/schema";
@@ -35,7 +36,13 @@ export async function applyTermStartEffects(input: {
       createdAt: documents.createdAt,
     })
     .from(documents)
-    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.policyId, input.policyId)));
+    .where(
+      and(
+        eq(documents.tenantId, DEFAULT_TENANT_ID),
+        eq(documents.policyId, input.policyId),
+        notHiddenDocument(),
+      ),
+    );
 
   const plan = planTermStartRoleFlip(docs);
   for (const change of plan) {

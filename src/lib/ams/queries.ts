@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { alias } from "drizzle-orm/pg-core";
 import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
@@ -209,7 +210,7 @@ export async function ensureServicingSuspense(policyId: string) {
     db
       .select({ docType: documents.docType, slot: documents.slot })
       .from(documents)
-      .where(and(eq(documents.tenantId, tenant()), eq(documents.policyId, policyId))),
+      .where(and(eq(documents.tenantId, tenant()), eq(documents.policyId, policyId), notHiddenDocument())),
     db
       .select()
       .from(reviewTasks)
@@ -290,7 +291,7 @@ export async function loadPolicyServicing(policyId: string) {
     db
       .select({ docType: documents.docType, slot: documents.slot })
       .from(documents)
-      .where(and(eq(documents.tenantId, tenant()), eq(documents.policyId, policyId))),
+      .where(and(eq(documents.tenantId, tenant()), eq(documents.policyId, policyId), notHiddenDocument())),
     listServiceRequests(policyId),
     nextServiceTask(policyId),
     db
@@ -380,7 +381,7 @@ export async function loadBookHealth(ownerId?: string) {
           slot: documents.slot,
         })
         .from(documents)
-        .where(and(eq(documents.tenantId, tenant()), inArray(documents.policyId, policyIds)))
+        .where(and(eq(documents.tenantId, tenant()), inArray(documents.policyId, policyIds), notHiddenDocument()))
     : [];
   const filesByPolicy = new Map<string, ServicingFile[]>();
   for (const file of files) {

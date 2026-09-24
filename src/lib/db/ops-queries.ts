@@ -1,4 +1,5 @@
-import { and, asc, desc, eq, isNull, ne, or } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, or } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { isUuid } from "@/lib/ids";
 import { db } from "./index";
@@ -149,7 +150,7 @@ export async function listLibraryDocuments(library: string, folderId: string | n
   const filters = [
     eq(documents.tenantId, tenant()),
     eq(documents.library, library),
-    ne(documents.status, "hidden"),
+    notHiddenDocument(),
     safeFolder ? eq(documents.folderId, safeFolder) : isNull(documents.folderId),
     safeFolder ? undefined : isNull(documents.dealId),
     safeFolder ? undefined : isNull(documents.contactId),
@@ -163,13 +164,13 @@ export async function listDocumentsInFolder(folderId: string | null) {
     return db
       .select()
       .from(documents)
-      .where(and(eq(documents.tenantId, tenant()), isNull(documents.folderId), ne(documents.status, "hidden")))
+      .where(and(eq(documents.tenantId, tenant()), isNull(documents.folderId), notHiddenDocument()))
       .orderBy(desc(documents.createdAt));
   }
   return db
     .select()
     .from(documents)
-    .where(and(eq(documents.tenantId, tenant()), eq(documents.folderId, folderId), ne(documents.status, "hidden")))
+    .where(and(eq(documents.tenantId, tenant()), eq(documents.folderId, folderId), notHiddenDocument()))
     .orderBy(desc(documents.createdAt));
 }
 
@@ -180,7 +181,7 @@ export async function folderFileCounts() {
       id: documents.id,
     })
     .from(documents)
-    .where(eq(documents.tenantId, tenant()));
+    .where(and(eq(documents.tenantId, tenant()), notHiddenDocument()));
   const counts = new Map<string, number>();
   let unfiled = 0;
   for (const row of rows) {
@@ -197,7 +198,7 @@ export async function listDocumentsWithExtracted() {
   const docs = await db
     .select()
     .from(documents)
-    .where(and(eq(documents.tenantId, tenant()), ne(documents.status, "hidden")))
+    .where(and(eq(documents.tenantId, tenant()), notHiddenDocument()))
     .orderBy(desc(documents.createdAt));
   const fields = await db
     .select()
@@ -220,7 +221,7 @@ export async function documentsForEntity(input: {
   return db
     .select()
     .from(documents)
-    .where(and(eq(documents.tenantId, tenant()), or(...filters)))
+    .where(and(eq(documents.tenantId, tenant()), notHiddenDocument(), or(...filters)))
     .orderBy(desc(documents.createdAt));
 }
 
@@ -234,7 +235,7 @@ export async function getContactWorkspace(contactId: string) {
     db
       .select()
       .from(documents)
-      .where(and(eq(documents.tenantId, tenant()), eq(documents.contactId, contactId)))
+      .where(and(eq(documents.tenantId, tenant()), eq(documents.contactId, contactId), notHiddenDocument()))
       .orderBy(desc(documents.createdAt)),
     db
       .select()
@@ -267,7 +268,7 @@ export async function getPolicyWorkspace(policyId: string) {
     db
       .select()
       .from(documents)
-      .where(and(eq(documents.tenantId, tenant()), eq(documents.policyId, policyId)))
+      .where(and(eq(documents.tenantId, tenant()), eq(documents.policyId, policyId), notHiddenDocument()))
       .orderBy(desc(documents.createdAt)),
     db
       .select()
@@ -359,7 +360,7 @@ export async function listEnvelopes() {
     })
     .from(signatureEnvelopes)
     .innerJoin(documents, eq(signatureEnvelopes.documentId, documents.id))
-    .where(eq(signatureEnvelopes.tenantId, tenant()))
+    .where(and(eq(signatureEnvelopes.tenantId, tenant()), notHiddenDocument()))
     .orderBy(desc(signatureEnvelopes.updatedAt));
 }
 
@@ -375,7 +376,7 @@ export async function distinctDocumentTags() {
   const rows = await db
     .select({ tags: documents.tags })
     .from(documents)
-    .where(eq(documents.tenantId, tenant()));
+    .where(and(eq(documents.tenantId, tenant()), notHiddenDocument()));
   const set = new Set<string>();
   for (const row of rows) {
     for (const tag of row.tags ?? []) set.add(tag);

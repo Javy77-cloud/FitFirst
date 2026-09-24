@@ -141,7 +141,8 @@ describe("issued policy upload folder", () => {
     const del = source("src/app/actions/documents.ts");
     const body = del.slice(del.indexOf("export async function deleteUploadedFile"));
     expect(body).toMatch(/documentId/);
-    expect(body).toMatch(/delete\(documents\)/);
+    expect(body).toMatch(/status: "hidden"/);
+    expect(body).not.toMatch(/delete\(documents\)/);
     expect(body).not.toMatch(/delete\(deals\)/);
     expect(body).not.toMatch(/delete\(quotes\)/);
     expect(body).not.toMatch(/delete\(contacts\)/);

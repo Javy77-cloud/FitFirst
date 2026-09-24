@@ -9,15 +9,12 @@ import {
 } from "./delete-file";
 
 describe("uploadedFileDeleteMode", () => {
-  it("hard-deletes deal source docs and quote PDFs", () => {
-    expect(uploadedFileDeleteMode({ slot: "source_doc", docType: "dec" })).toBe("hard");
-    expect(uploadedFileDeleteMode({ slot: "source_doc", docType: "four_point" })).toBe("hard");
-    expect(uploadedFileDeleteMode({ slot: "source_doc", docType: "wind_mit" })).toBe("hard");
-    expect(uploadedFileDeleteMode({ slot: "quote_pdf", docType: "quote_pdf" })).toBe("hard");
-    expect(uploadedFileDeleteMode({ slot: "library_file", docType: "acord" })).toBe("hard");
-  });
-
-  it("hides issued policy files for retention", () => {
+  it("hides shopping files and issued policy files", () => {
+    expect(uploadedFileDeleteMode({ slot: "source_doc", docType: "dec" })).toBe("hide");
+    expect(uploadedFileDeleteMode({ slot: "source_doc", docType: "four_point" })).toBe("hide");
+    expect(uploadedFileDeleteMode({ slot: "source_doc", docType: "wind_mit" })).toBe("hide");
+    expect(uploadedFileDeleteMode({ slot: "quote_pdf", docType: "quote_pdf" })).toBe("hide");
+    expect(uploadedFileDeleteMode({ slot: "library_file", docType: "acord" })).toBe("hide");
     expect(uploadedFileDeleteMode({ slot: "policy_file", docType: "policy_dec" })).toBe("hide");
     expect(uploadedFileDeleteMode({ slot: "policy_file", docType: "other" })).toBe("hide");
     expect(uploadedFileDeleteMode({ slot: "source_doc", docType: "policy_complete" })).toBe("hide");
@@ -25,10 +22,13 @@ describe("uploadedFileDeleteMode", () => {
 });
 
 describe("deleteUploadedFileSubject", () => {
-  it("names the file for the double confirm", () => {
-    expect(deleteUploadedFileSubject("wind-mit.pdf", "hard")).toBe('the file “wind-mit.pdf”');
-    expect(deleteUploadedFileSubject("issued-dec.pdf", "hide")).toMatch(/issued policy file/);
-    expect(deleteUploadedFileSubject("issued-dec.pdf", "hide")).toMatch(/retention/);
+  it("says the file is hidden and can be restored", () => {
+    expect(deleteUploadedFileSubject("wind-mit.pdf", "hide")).toBe(
+      "the file “wind-mit.pdf” (it will be hidden from the list; an admin can restore it)",
+    );
+    expect(deleteUploadedFileSubject("issued-dec.pdf", "hide")).toMatch(/hidden from the list/);
+    expect(deleteUploadedFileSubject("issued-dec.pdf", "hide")).toMatch(/restore/);
+    expect(deleteUploadedFileSubject("issued-dec.pdf", "hide")).not.toMatch(/wiped/);
   });
 });
 

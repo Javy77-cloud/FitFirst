@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { SourceFileRow } from "@/components/deal/source-file-row";
+import { libraryDocsNotInProductWindow } from "@/lib/documents/product-doc-membership";
 import {
   dealDocumentsTabHref,
   isHiddenAgencyLetterDoc,
@@ -176,5 +177,29 @@ describe("deal Documents save must not open error.tsx", () => {
     expect(listed.sourceDocs).toHaveLength(1);
     expect(listed.otherSourceDocs).toHaveLength(1);
     expect(listed.lineDocs).toHaveLength(0);
+  });
+
+  it("keeps hidden files out of the product list and the deal library", () => {
+    const listed = listWorksheetSourceDocs([
+      {
+        filename: "dec.pdf",
+        slot: "source_doc",
+        docType: "dec",
+        tags: ["line:home"],
+        status: "uploaded",
+      },
+      {
+        filename: "gone.jpg",
+        slot: "source_doc",
+        docType: "photo",
+        tags: ["line:home"],
+        status: "hidden",
+      },
+    ]);
+    expect(listed.sourceDocs.map((row) => row.filename)).toEqual(["dec.pdf"]);
+    expect(listed.lineDocs.map((row) => row.filename)).toEqual(["dec.pdf"]);
+    expect(
+      libraryDocsNotInProductWindow(listed.sourceDocs, { shopLine: "flood" }).map((row) => row.filename),
+    ).toEqual(["dec.pdf"]);
   });
 });

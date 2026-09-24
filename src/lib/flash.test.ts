@@ -52,7 +52,10 @@ describe("flash helper", () => {
     expect(resolveFlashMessage("sheet-saved")).toBe("Risk Profile saved");
     expect(resolveFlashMessage("tag-added")).toBe("Tag added");
     expect(resolveFlashMessage("tag-created")).toBe("Tag created");
-    expect(resolveFlashMessage("document-deleted")).toBe("Document deleted");
+    expect(resolveFlashMessage("document-deleted")).toBe(
+      "File hidden. An admin can restore it from Recently deleted.",
+    );
+    expect(resolveFlashMessage("document-restored")).toBe("File restored");
     expect(resolveFlashMessage("documents-saved")).toBe("Documents saved");
     expect(FLASH_COPY["documents-saved"]).toBe("Documents saved");
     expect(FLASH_COPY["choose-file"]).toBe("Choose a file to upload.");

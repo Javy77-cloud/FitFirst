@@ -15,6 +15,7 @@ import { deskNow } from "@/lib/home/as-of";
 import { shouldShowManualRenewalHelp } from "@/lib/policy/care-strip";
 import { FillCompareFromDecsButton } from "@/components/policy/fill-compare-from-decs-button";
 import { canFillCompareFromTermRoleDocs } from "@/lib/renewal/fill-compare-from-decs";
+import { RecentlyDeletedFiles } from "@/components/documents/recently-deleted";
 
 export function PolicyDocumentsTab({
   policy,
@@ -148,6 +149,12 @@ export function PolicyDocumentsTab({
           policyId={policy.id}
           dealId={policy.dealId}
         />
+        <div className="mt-4">
+          <RecentlyDeletedFiles
+            policyId={policy.id}
+            returnTo={`/policies/${policy.id}?tab=documents`}
+          />
+        </div>
         {filingAttachments.length > 0 ? (
           <div className="mt-4">
             <h3 className="text-sm font-semibold text-navy">Change / notice files</h3>

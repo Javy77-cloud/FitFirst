@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { AGENCY_BRAND, DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
@@ -195,6 +196,7 @@ export async function latestProposalForDeal(dealId: string) {
         eq(documents.tenantId, DEFAULT_TENANT_ID),
         eq(documents.dealId, dealId),
         eq(documents.slot, PROPOSAL_SLOT),
+        notHiddenDocument(),
       ),
     )
     .orderBy(desc(documents.createdAt))

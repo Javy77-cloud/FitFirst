@@ -4,7 +4,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID, isShopLine, type ShopLine } from "@/lib/domain";
 import { parseStorageLine } from "@/lib/deals/product-instances";
@@ -33,22 +33,15 @@ import {
   alerts,
   deals,
   documentFolders,
-  documentVersions,
   documents,
+  eoAuditLogs,
   extractedFields,
-  extractionAttempts,
-  extractionCorrections,
   extractionJobs,
-  fillFeedbackLogs,
-  fillLearningLogs,
-  formFills,
   leads,
   policies,
   policyChangeLogs,
   quoteSheets,
   risks,
-  signatureEnvelopes,
-  synonymCandidates,
 } from "@/lib/db/schema";
 import {
   clearExtractedSheetCells,
@@ -91,8 +84,11 @@ import {
   type DocumentTermRole,
 } from "@/lib/documents/document-labels";
 import { markShopFlowStaleAfterRiskChange } from "@/lib/deals/shop-flow-persist";
-import { assertStoredFileReadable, deleteStoredFile, readStoredFile, writeStoredFile } from "@/lib/files/object-store";
+import { documentFileAuditInput, restoredStatusFromDeleteMeta } from "@/lib/documents/file-audit";
+import { writeEoAuditSafe } from "@/lib/eo-audit/write";
+import { assertStoredFileReadable, readStoredFile, writeStoredFile } from "@/lib/files/object-store";
 import { getAgentFeatureToggles } from "@/lib/settings/agent-feature-toggles-prefs";
+import { requireAdminAction } from "@/lib/auth/guards";
 import { currentDeskSession } from "@/lib/auth/session";
 import { formatEasternConfirmStamp } from "@/lib/policy/agent-confirm";
 import {
@@ -503,6 +499,7 @@ function revalidateDocumentPaths(doc: {
   dealId: string | null;
   leadId?: string | null;
   contactId: string | null;
+  accountId?: string | null;
   policyId: string | null;
 }) {
   revalidatePath("/documents");
@@ -510,6 +507,7 @@ function revalidateDocumentPaths(doc: {
   if (doc.dealId) revalidatePath(`/deals/${doc.dealId}`);
   if (doc.leadId) revalidatePath(`/leads/${doc.leadId}`);
   if (doc.contactId) revalidatePath(`/contacts/${doc.contactId}`);
+  if (doc.accountId) revalidatePath(`/accounts/${doc.accountId}`);
   if (doc.policyId) revalidatePath(`/policies/${doc.policyId}`);
 }
 
@@ -995,16 +993,43 @@ export async function acceptExtractedField(formData: FormData) {
   revalidatePath(`/deals/${dealId}`);
 }
 
-async function unlinkStoredPath(storagePath: string) {
-  await deleteStoredFile(storagePath);
+async function clearCitedSheetCells(doc: { dealId: string | null; filename: string }) {
+  if (!doc.dealId) return;
+  const remaining = await db.select().from(documents).where(eq(documents.dealId, doc.dealId));
+  const hasSource = remaining.some((row) => row.slot === "source_doc" && row.status !== "hidden");
+  const sheets = await db.select().from(quoteSheets).where(eq(quoteSheets.dealId, doc.dealId));
+  for (const sheet of sheets) {
+    // Only clear this file's extract cells (or all extract cells if no visible source docs remain).
+    // Clearing everything before refill left Javy with an empty sheet when Fill raced/failed.
+    // Sheet cells stay blank after Restore — extracted_fields on the file are kept.
+    const nextValues = hasSource
+      ? clearExtractedSheetCellsFromDoc(sheet.values, doc.filename)
+      : clearExtractedSheetCells(sheet.values);
+    await db
+      .update(quoteSheets)
+      .set({
+        values: nextValues,
+        updatedAt: new Date(),
+      })
+      .where(eq(quoteSheets.id, sheet.id));
+  }
 }
 
-/** Double-confirmed in the UI. Hard-deletes shopping/library files. Hides issued policy files. */
+function deleteReturnHref(doc: { policyId: string | null; dealId: string | null }, formData: FormData) {
+  return documentDeleteReturnHref({
+    policyId: doc.policyId || String(formData.get("policyId") ?? "").trim(),
+    dealId: doc.dealId || String(formData.get("dealId") ?? "").trim(),
+    returnTo: String(formData.get("returnTo") ?? "").trim(),
+    line: String(formData.get("line") ?? "").trim() || null,
+  });
+}
+
+/** Double-confirmed in the UI. Hides the file. Does not delete the row or the blob. */
 export async function deleteUploadedFile(formData: FormData) {
   const documentId = String(formData.get("documentId") ?? "").trim();
   if (!documentId) return;
   const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
-  if (!doc) return;
+  if (!doc || doc.status === "hidden") return;
 
   const deleteReason = String(formData.get("deleteReason") ?? "").trim();
   const session = await currentDeskSession();
@@ -1013,153 +1038,37 @@ export async function deleteUploadedFile(formData: FormData) {
     const toggles = await getAgentFeatureToggles();
     if (!session.isAdmin && !toggles.agentsMayDeletePolicyDocuments) {
       const message = "Agent deletes are turned off for policy documents";
-      const href = documentDeleteReturnHref({
-        policyId: doc.policyId,
-        dealId: doc.dealId,
-        returnTo: String(formData.get("returnTo") ?? "").trim(),
-    line: String(formData.get("line") ?? "").trim() || null,
-      });
+      const href = deleteReturnHref(doc, formData);
       if (href) flashAction(href, message, "error");
       return;
     }
     if (!deleteReason) {
       const message = "A delete reason is required for policy documents";
-      const href = documentDeleteReturnHref({
-        policyId: doc.policyId,
-        dealId: doc.dealId,
-        returnTo: String(formData.get("returnTo") ?? "").trim(),
-    line: String(formData.get("line") ?? "").trim() || null,
-      });
+      const href = deleteReturnHref(doc, formData);
       if (href) flashAction(href, message, "error");
       return;
     }
   }
 
-  const mode = uploadedFileDeleteMode(doc);
-  if (mode === "hide") {
-    await db.update(documents).set({ status: "hidden" }).where(eq(documents.id, documentId));
-    if (doc.policyId && deleteReason) {
-      const when = new Date();
-      await db.insert(policyChangeLogs).values({
-        tenantId: DEFAULT_TENANT_ID,
-        policyId: doc.policyId,
-        changedBy: session.userId || null,
-        changedByName: session.name || "Agent",
-        changedAt: when,
-        fieldKey: "document_delete",
-        fieldLabel: "Document deleted",
-        beforeValue: doc.filename,
-        afterValue: `${deleteReason} · ${formatEasternConfirmStamp(when)}`,
-        source: "document_delete",
-      }).catch((error) => {
-        console.error("[deleteUploadedFile] policy delete log", error);
-      });
-    }
-    revalidateDocumentPaths(doc);
-    const hiddenHref = documentDeleteReturnHref({
-      policyId: doc.policyId,
-      dealId: doc.dealId,
-      returnTo: String(formData.get("returnTo") ?? "").trim(),
-    line: String(formData.get("line") ?? "").trim() || null,
-    });
-    if (hiddenHref) flashAction(hiddenHref, "document-deleted");
-    return;
-  }
-
-  try {
-    const versions = await db
-      .select()
-      .from(documentVersions)
-      .where(eq(documentVersions.documentId, documentId));
-
-    await db.delete(extractedFields).where(eq(extractedFields.documentId, documentId));
-    await db
-      .update(extractionJobs)
-      .set({ documentId: null })
-      .where(eq(extractionJobs.documentId, documentId));
-    await db
-      .update(fillFeedbackLogs)
-      .set({ documentId: null })
-      .where(eq(fillFeedbackLogs.documentId, documentId));
-    await db
-      .update(fillLearningLogs)
-      .set({ documentId: null })
-      .where(eq(fillLearningLogs.documentId, documentId));
-    // sep7cg audit: delete doc-tied corrections + attempts (field_attempts CASCADE).
-    // Learning retained in fill_learning_logs (nulled above). Synonym proposals kept.
-    const correctionRows = await db
-      .select({ id: extractionCorrections.id })
-      .from(extractionCorrections)
-      .where(eq(extractionCorrections.documentId, documentId));
-    const correctionIds = correctionRows.map((row) => row.id);
-    if (correctionIds.length > 0) {
-      await db
-        .update(synonymCandidates)
-        .set({ evidenceCorrectionId: null, updatedAt: new Date() })
-        .where(inArray(synonymCandidates.evidenceCorrectionId, correctionIds));
-      await db.delete(extractionCorrections).where(inArray(extractionCorrections.id, correctionIds));
-    }
-    const attemptRows = await db
-      .select({ id: extractionAttempts.id })
-      .from(extractionAttempts)
-      .where(eq(extractionAttempts.documentId, documentId));
-    const attemptIds = attemptRows.map((row) => row.id);
-    if (attemptIds.length > 0) {
-      await db
-        .update(synonymCandidates)
-        .set({ evidenceAttemptId: null, updatedAt: new Date() })
-        .where(inArray(synonymCandidates.evidenceAttemptId, attemptIds));
-      await db.delete(extractionAttempts).where(inArray(extractionAttempts.id, attemptIds));
-    }
-    await db
-      .update(formFills)
-      .set({ sourceDocumentId: null })
-      .where(eq(formFills.sourceDocumentId, documentId));
-    await db.delete(signatureEnvelopes).where(eq(signatureEnvelopes.documentId, documentId));
-    await db.delete(documentVersions).where(eq(documentVersions.documentId, documentId));
-    await db.delete(documents).where(eq(documents.id, documentId));
-
-    await unlinkStoredPath(doc.storagePath);
-    for (const version of versions) {
-      if (version.storagePath !== doc.storagePath) {
-        await unlinkStoredPath(version.storagePath);
-      }
-    }
-
-    if (doc.dealId) {
-      const remaining = await db.select().from(documents).where(eq(documents.dealId, doc.dealId));
-      const hasSource = remaining.some((row) => row.slot === "source_doc" && row.status !== "hidden");
-      const sheets = await db.select().from(quoteSheets).where(eq(quoteSheets.dealId, doc.dealId));
-      for (const sheet of sheets) {
-        // Only wipe this file's extract cells (or all extract cells if no source docs remain).
-        // Clearing everything before refill left Javy with an empty sheet when Fill raced/failed.
-        const nextValues = hasSource
-          ? clearExtractedSheetCellsFromDoc(sheet.values, doc.filename)
-          : clearExtractedSheetCells(sheet.values);
-        await db
-          .update(quoteSheets)
-          .set({
-            values: nextValues,
-            updatedAt: new Date(),
-          })
-          .where(eq(quoteSheets.id, sheet.id));
-      }
-    }
-  } catch (error) {
-    console.error("[deleteUploadedFile]", error);
-    const message = "Could not delete document";
-    const href = documentDeleteReturnHref({
-      policyId: doc.policyId || String(formData.get("policyId") ?? "").trim(),
-      dealId: doc.dealId || String(formData.get("dealId") ?? "").trim(),
-      returnTo: String(formData.get("returnTo") ?? "").trim(),
-    line: String(formData.get("line") ?? "").trim() || null,
-    });
-    if (href) flashAction(href, message, "error");
-    throw error;
-  }
+  const deleteMode = uploadedFileDeleteMode(doc);
+  const when = new Date();
+  await writeEoAuditSafe(
+    documentFileAuditInput({
+      action: "doc_delete",
+      doc,
+      mode: "hidden",
+      actorId: session.userId || null,
+      actorName: session.name || "Desk",
+      occurredAt: when,
+      extra: {
+        deleteMode,
+        ...(deleteReason ? { deleteReason } : {}),
+      },
+    }),
+  );
+  await db.update(documents).set({ status: "hidden" }).where(eq(documents.id, documentId));
 
   if (doc.policyId && deleteReason) {
-    const when = new Date();
     await db.insert(policyChangeLogs).values({
       tenantId: DEFAULT_TENANT_ID,
       policyId: doc.policyId,
@@ -1167,7 +1076,7 @@ export async function deleteUploadedFile(formData: FormData) {
       changedByName: session.name || "Agent",
       changedAt: when,
       fieldKey: "document_delete",
-      fieldLabel: "Document deleted",
+      fieldLabel: "Document hidden",
       beforeValue: doc.filename,
       afterValue: `${deleteReason} · ${formatEasternConfirmStamp(when)}`,
       source: "document_delete",
@@ -1176,14 +1085,55 @@ export async function deleteUploadedFile(formData: FormData) {
     });
   }
 
+  try {
+    await clearCitedSheetCells(doc);
+  } catch (error) {
+    console.error("[deleteUploadedFile] sheet cells", error);
+  }
+
   revalidateDocumentPaths(doc);
-  const href = documentDeleteReturnHref({
-    policyId: doc.policyId,
-    dealId: doc.dealId,
-    returnTo: String(formData.get("returnTo") ?? "").trim(),
-    line: String(formData.get("line") ?? "").trim() || null,
-  });
+  const href = deleteReturnHref(doc, formData);
   if (href) flashAction(href, "document-deleted");
+}
+
+/** Admin only. Puts a hidden file back on the list. Does not refill cleared sheet cells. */
+export async function restoreUploadedFile(formData: FormData) {
+  const session = await requireAdminAction("Only an admin can restore a hidden file.");
+  const documentId = String(formData.get("documentId") ?? "").trim();
+  if (!documentId) return;
+  const [doc] = await db.select().from(documents).where(eq(documents.id, documentId));
+  if (!doc || doc.status !== "hidden") return;
+
+  const [audit] = await db
+    .select({ meta: eoAuditLogs.meta })
+    .from(eoAuditLogs)
+    .where(
+      and(
+        eq(eoAuditLogs.tenantId, DEFAULT_TENANT_ID),
+        eq(eoAuditLogs.documentId, documentId),
+        eq(eoAuditLogs.action, "doc_delete"),
+      ),
+    )
+    .orderBy(desc(eoAuditLogs.occurredAt))
+    .limit(1);
+  const status = restoredStatusFromDeleteMeta(audit?.meta);
+  const when = new Date();
+  await writeEoAuditSafe(
+    documentFileAuditInput({
+      action: "doc_restore",
+      doc,
+      mode: "restored",
+      actorId: session.userId || null,
+      actorName: session.name || "Desk",
+      occurredAt: when,
+      extra: { restoredStatus: status },
+    }),
+  );
+  await db.update(documents).set({ status }).where(eq(documents.id, documentId));
+
+  revalidateDocumentPaths(doc);
+  const href = deleteReturnHref(doc, formData);
+  if (href) flashAction(href, "document-restored");
 }
 
 /** Rename display filename on an uploaded document (policy + deal lists). */

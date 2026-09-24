@@ -57,20 +57,32 @@ describe("upload surfaces offer delete + one confirm", () => {
     expect(icon).not.toMatch(/\bformAction=/);
   });
 
-  it("delete action hard-deletes shopping docs and hides issued policy files", () => {
+  it("delete action hides every file, audits first, and does not purge the row or blob", () => {
     const action = source("src/app/actions/documents.ts");
     expect(action).toMatch(/export async function deleteUploadedFile/);
     expect(action).toMatch(/uploadedFileDeleteMode/);
     expect(action).toMatch(/status: "hidden"/);
-    expect(action).toMatch(/delete\(extractedFields\)/);
     expect(action).toMatch(/clearExtractedSheetCells/);
-    expect(action).toMatch(/unlinkStoredPath/);
+    expect(action).toMatch(/writeEoAuditSafe/);
+    expect(action).toMatch(/doc_delete/);
     expect(action).toMatch(/deleteReason/);
     expect(action).toMatch(/document_delete/);
     expect(action).toMatch(/agentsMayDeletePolicyDocuments/);
-    const deleteBody = action.slice(action.indexOf("export async function deleteUploadedFile"));
+    const deleteBody = action.slice(
+      action.indexOf("export async function deleteUploadedFile"),
+      action.indexOf("export async function restoreUploadedFile"),
+    );
+    expect(deleteBody.indexOf("writeEoAuditSafe")).toBeLessThan(deleteBody.indexOf('status: "hidden"'));
+    expect(deleteBody).not.toMatch(/delete\(documents\)/);
+    expect(deleteBody).not.toMatch(/delete\(extractedFields\)/);
+    expect(deleteBody).not.toMatch(/delete\(documentVersions\)/);
+    expect(deleteBody).not.toMatch(/deleteStoredFile/);
+    expect(deleteBody).not.toMatch(/unlinkStoredPath/);
     expect(deleteBody).not.toMatch(/fillDealSheetIfReady/);
-    expect(action).not.toMatch(/await fillDealSheetIfReady\(doc\.dealId/);
+    const restoreBody = action.slice(action.indexOf("export async function restoreUploadedFile"));
+    expect(restoreBody).toMatch(/requireAdminAction/);
+    expect(restoreBody).toMatch(/doc_restore/);
+    expect(restoreBody).toMatch(/writeEoAuditSafe/);
   });
 
   it("Javy confirm asks Are you sure you want to delete … once", () => {

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { persistFile } from "@/app/actions/documents";
 import { findMatchingContact } from "@/app/actions/crm";
 import { findOrCreateLocationFromAddress } from "@/app/actions/locations";
@@ -437,7 +438,7 @@ export async function issuePolicyFromDeclaration(input: {
     db
       .select()
       .from(documents)
-      .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId))),
+      .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId), notHiddenDocument())),
     db
       .select()
       .from(quotes)
@@ -929,7 +930,7 @@ export async function saveIssuedPolicyUpload(formData: FormData) {
       const tagged = await db
         .select({ tags: documents.tags, docType: documents.docType })
         .from(documents)
-        .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)));
+        .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId), notHiddenDocument()));
       hasCarrierDownload = tagged.some((row) => {
         const tags = row.tags ?? [];
         return (

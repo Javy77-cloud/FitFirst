@@ -351,9 +351,9 @@ export function FileActionMenu({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <FileDeleteIcon
+        <FileDeleteIcon
         type="button"
-        label={mode === "hide" ? "Hide" : "Delete"}
+        label="Delete"
         data-ff-file-action="delete-icon"
         onClick={(event) => {
           event.preventDefault();

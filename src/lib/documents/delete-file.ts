@@ -3,20 +3,19 @@ import { dealDocumentsTabHref } from "@/lib/documents/deal-docs-save";
 
 export type UploadedFileDeleteMode = "hard" | "hide";
 
-/** Issued policy files stay on disk for retention. Shopping / library files hard-delete. */
+/**
+ * User deletes hide every file. The row, blob, versions, and extracted fields stay.
+ * `hard` remains on the type for genuine purges (claim/filing attachments) that audit first.
+ */
 export function uploadedFileDeleteMode(doc: { slot: string; docType: string }): UploadedFileDeleteMode {
-  if (doc.slot === "policy_file") return "hide";
-  if (doc.docType === "policy_dec" || doc.docType === "policy_complete" || doc.docType === "policy_id") {
-    return "hide";
-  }
-  return "hard";
+  // Slot and doc type stay on the signature so callers do not branch. Every user delete hides.
+  void doc;
+  return "hide";
 }
 
-export function deleteUploadedFileSubject(filename: string, mode: UploadedFileDeleteMode): string {
-  if (mode === "hide") {
-    return `the issued policy file “${filename}” (it will be hidden for retention, not wiped from storage)`;
-  }
-  return `the file “${filename}”`;
+export function deleteUploadedFileSubject(filename: string, mode?: UploadedFileDeleteMode): string {
+  void mode;
+  return `the file “${filename}” (it will be hidden from the list; an admin can restore it)`;
 }
 
 export function isHiddenUploadedFile(status: string): boolean {

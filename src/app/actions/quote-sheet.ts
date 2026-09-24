@@ -4,6 +4,7 @@ import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, asc, desc, eq } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { DEFAULT_TENANT_ID, type ShopLine } from "@/lib/domain";
 import {
   parseProductInstanceToken,
@@ -1422,7 +1423,7 @@ export async function listMasterFillDocs(input: {
         createdAt: documents.createdAt,
       })
       .from(documents)
-      .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)))
+      .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId), notHiddenDocument()))
       .orderBy(asc(documents.createdAt));
     const docs = selectFillDocsForProductWindow(rows, await fillWindowForLine(dealId, lineRaw));
     if (docs.length === 0) {
@@ -1843,7 +1844,7 @@ export async function runFillQuoteSheet(
   const docs = await db
     .select()
     .from(documents)
-    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)));
+    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId), notHiddenDocument()));
   const productDocs = selectFillDocsForProductWindow(docs, await fillWindowForLine(dealId, opened.storageLine));
   const scoped = onlyId ? productDocs.filter((doc) => doc.id === onlyId) : productDocs;
   if (onlyId && scoped.length === 0) {

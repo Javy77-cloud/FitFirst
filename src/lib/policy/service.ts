@@ -17,7 +17,8 @@ import { normalizePremises, type PremisesParts } from "./premises";
 import { reasonLabel } from "./reasons";
 import { isInForceStatus } from "./status";
 import { applyPolicyChange, parseIsoDate, type PolicyChangeInput } from "./workflow";
-import { writeEoAuditSafe } from "@/lib/eo-audit/write";
+import { documentFileAuditInput } from "@/lib/documents/file-audit";
+import { writeEoAudit, writeEoAuditSafe } from "@/lib/eo-audit/write";
 import { recordPolicyFieldChanges } from "./record-changes";
 import { appendTermFromEndorsement } from "@/lib/ams/ensure-term";
 import { demoteCurrentOnOffBookStatus } from "@/lib/policy/offbook-demote-current";
@@ -271,12 +272,36 @@ export async function attachToPolicy(input: {
   });
 }
 
-export async function removePolicyAttachment(attachmentId: string) {
+export async function removePolicyAttachment(
+  attachmentId: string,
+  actor?: { userId?: string | null; name?: string | null },
+) {
   const [row] = await db
     .select()
     .from(policyAttachments)
     .where(and(eq(policyAttachments.tenantId, DEFAULT_TENANT_ID), eq(policyAttachments.id, attachmentId)));
   if (!row) return null;
+  const audited = await writeEoAudit(
+    documentFileAuditInput({
+      action: "doc_delete",
+      doc: {
+        id: row.id,
+        filename: row.filename,
+        docType: row.docType,
+        slot: "policy_attachment",
+        policyId: row.policyId,
+      },
+      mode: "hard",
+      actorId: actor?.userId || null,
+      actorName: actor?.name || null,
+      entityType: "policy_attachment",
+      recordAsDocument: false,
+      extra: { reason: "policy_filing_attachment" },
+    }),
+  );
+  if (!audited) {
+    throw new Error("Could not record the file purge. Nothing was deleted.");
+  }
   await db.delete(policyAttachments).where(eq(policyAttachments.id, row.id));
   try {
     await unlink(path.join(uploadRoot, row.storagePath));
