@@ -4,6 +4,10 @@ import { alias, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { canSeeOwned } from "@/lib/auth/rbac";
 import { currentDeskSession, getActor, sessionSeesAgencyBook, type DeskSession } from "@/lib/auth/session";
 import { alertVisibleWhere } from "@/lib/alerts/visibility";
+import {
+  coverageGapAlertsHiddenWhere,
+  coverageGapUnreadCountExclusion,
+} from "@/lib/coverage/notification-flag";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { sessionCanRevealPortal } from "@/lib/policy/agent-policy-access-prefs";
 import { isUuid } from "@/lib/ids";
@@ -2296,9 +2300,10 @@ export const listAlerts = cache(async function listAlerts(unreadOnly = false) {
   const visible = alertVisibleWhere(session, tenant());
   /** Future createdAt = scheduled in-app reminder (not due yet). Hide until fire time. */
   const due = lte(alerts.createdAt, new Date());
+  const hideCoverageGaps = coverageGapAlertsHiddenWhere();
   const where = unreadOnly
-    ? and(visible, due, isNull(alerts.readAt))
-    : and(visible, due);
+    ? and(visible, due, isNull(alerts.readAt), hideCoverageGaps)
+    : and(visible, due, hideCoverageGaps);
   return db.select().from(alerts).where(where).orderBy(desc(alerts.createdAt));
 });
 
@@ -2629,7 +2634,7 @@ export async function dashboardStats() {
         sessionSeesAgencyBook(session) || !session.userId
           ? sql``
           : sql` and (user_id is null or user_id = ${session.userId})`
-      })`,
+      }${coverageGapUnreadCountExclusion()})`,
     })
     .from(tenants)
     .where(eq(tenants.id, tenant()));
