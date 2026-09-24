@@ -141,12 +141,13 @@ export function stackHealthFlagged(input: {
 
 /**
  * One silence cue. Hours stay words so a lone "1h" never sits under the name.
- * Under one hour since last platform-logged touch → "Just contacted" (not "1 hour silent").
+ * Under one hour since last platform-logged touch → blank; at 1h+ keep the
+ * hour/day silence labels.
  */
 export function formatSilenceCue(days: number): string {
   const safe = Number.isFinite(days) ? Math.max(0, days) : 0;
   const hoursExact = safe * 24;
-  if (hoursExact < 1) return "Just contacted";
+  if (hoursExact < 1) return "";
   if (safe < 1) {
     const hours = Math.max(1, Math.round(hoursExact));
     return hours === 1 ? "1 hour silent" : `${hours} hours silent`;
