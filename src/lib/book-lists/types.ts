@@ -106,6 +106,8 @@ export type BookGlanceCard = {
    */
   renewalAgreed?: {
     handled: boolean;
+    /** policies.renewal_date. Swap the source for renewalDateFor(policy) later. */
+    renewalDate?: string | null;
     renewedEffective?: string | null;
     termEffective?: string | null;
     termExpiration?: string | null;

@@ -346,6 +346,7 @@ describe("account card glance", () => {
     );
     expect(card.renewalAgreed).toEqual({
       handled: true,
+      renewalDate: null,
       renewedEffective: "2026-10-10",
       termEffective: "2025-10-10",
       termExpiration: "2026-10-09",

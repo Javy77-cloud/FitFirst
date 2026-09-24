@@ -771,6 +771,11 @@ export type PolicyListRow = {
   daysUntil?: number | null;
   statusLabel?: string | null;
   offBook?: boolean;
+  /**
+   * Stored policies.renewal_date. The stack stamp prefers this.
+   * Swap the caller for renewalDateFor(policy) when that helper is on main.
+   */
+  renewalDate?: Date | string | null;
   /** Book term effective (current, else latest). */
   effectiveDate?: Date | string | null;
   /** Stored renewed / upcoming term effective, when one exists. */
@@ -953,6 +958,7 @@ export function presentPolicyCard(
     ]),
     renewalAgreed: {
       handled: Boolean(needs.renewalHandled),
+      renewalDate: businessDateKey(row.renewalDate),
       renewedEffective: businessDateKey(row.renewedEffective),
       termEffective: businessDateKey(row.effectiveDate),
       termExpiration: businessDateKey(row.expirationDate),

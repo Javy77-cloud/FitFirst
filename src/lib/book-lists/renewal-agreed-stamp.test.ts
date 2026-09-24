@@ -27,6 +27,13 @@ describe("deriveNextTermStart", () => {
     expect(deriveNextTermStart("2026-12-31", "2026-01-01")).toBe("2027-01-01");
   });
 
+  it("renews Marketplace, Medicare, and PNC Jan 1 terms on the next Jan 1", () => {
+    expect(deriveNextTermStart("2026-12-31", "2026-01-01")).toBe("2027-01-01");
+    expect(deriveNextTermStart(new Date("2026-12-31T00:00:00.000Z"), "2026-01-01T12:00:00.000Z")).toBe(
+      "2027-01-01",
+    );
+  });
+
   it("falls back to the effective anniversary when expiration is missing", () => {
     expect(deriveNextTermStart(null, "2025-10-10")).toBe("2026-10-10");
     expect(deriveNextTermStart(null, null)).toBeNull();
@@ -100,6 +107,59 @@ describe("showRenewalAgreedStamp", () => {
         asOf: justAfterMidnightEt,
       }),
     ).toBe(false);
+  });
+
+  it("prefers a stored policy renewal date and falls back only when it is blank", () => {
+    const janTerm = { termEffective: "2026-01-01", termExpiration: "2026-12-31" };
+    expect(
+      showRenewalAgreedStamp({
+        renewalHandled: true,
+        renewalDate: "2027-03-15",
+        renewedEffective: "2026-10-10",
+        ...TERM,
+        asOf: new Date("2026-10-10T16:00:00.000Z"),
+      }),
+    ).toBe(true);
+    expect(
+      renewalAgreedEffectiveKey({
+        renewalDate: "2027-03-15",
+        renewedEffective: "2026-10-10",
+        ...TERM,
+      }),
+    ).toBe("2027-03-15");
+    expect(
+      showRenewalAgreedStamp({
+        renewalHandled: true,
+        renewalDate: "2027-01-01",
+        ...janTerm,
+        asOf: new Date("2027-01-01T17:00:00.000Z"),
+      }),
+    ).toBe(false);
+    expect(
+      showRenewalAgreedStamp({
+        renewalHandled: true,
+        renewalDate: "",
+        ...janTerm,
+        asOf: new Date("2026-09-24T16:00:00.000Z"),
+      }),
+    ).toBe(true);
+    expect(renewalAgreedEffectiveKey({ renewalDate: "  ", ...janTerm })).toBe("2027-01-01");
+    expect(renewalAgreedEffectiveKey({ renewalDate: null, ...janTerm })).toBe("2027-01-01");
+  });
+
+  it("clears a Jan 1 renewal on the Eastern day, not the UTC day", () => {
+    const janTerm = {
+      renewalHandled: true,
+      renewalDate: null,
+      termEffective: "2026-01-01",
+      termExpiration: "2026-12-31",
+    };
+    const stillDecember = new Date("2027-01-01T04:30:00.000Z");
+    expect(etDateKey(stillDecember)).toBe("2026-12-31");
+    expect(showRenewalAgreedStamp({ ...janTerm, asOf: stillDecember })).toBe(true);
+    const newYearEt = new Date("2027-01-01T05:30:00.000Z");
+    expect(etDateKey(newYearEt)).toBe("2027-01-01");
+    expect(showRenewalAgreedStamp({ ...janTerm, asOf: newYearEt })).toBe(false);
   });
 
   it("uses a stored renewed effective and ignores the derived date", () => {

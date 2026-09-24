@@ -496,6 +496,7 @@ function PolicyStackCard({
   const cue = policyOpenCue(card);
   const renewalAgreed = showRenewalAgreedStamp({
     renewalHandled: card.renewalAgreed?.handled,
+    renewalDate: card.renewalAgreed?.renewalDate,
     renewedEffective: card.renewalAgreed?.renewedEffective,
     termEffective: card.renewalAgreed?.termEffective,
     termExpiration: card.renewalAgreed?.termExpiration,
