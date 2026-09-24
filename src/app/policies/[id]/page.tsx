@@ -285,13 +285,6 @@ export default async function PolicyDetailPage({
                   accountId={account?.id ?? policy.accountId}
                 />
               </div>
-              <div className="ml-auto shrink-0">
-                <PolicyOverflowMenu
-                  policyId={policy.id}
-                  contactId={contact?.id}
-                  isAdmin={isAdmin}
-                />
-              </div>
             </div>
             {labelOverride ? (
               <span
@@ -364,7 +357,21 @@ export default async function PolicyDetailPage({
       ) : null}
 
       <PolicyDetailWorkspace
-        nav={<PolicyTabsNav policyId={policy.id} active={activeTab} tabs={viewerTabs} counts={tabCareCounts} />}
+        nav={
+          <PolicyTabsNav
+            policyId={policy.id}
+            active={activeTab}
+            tabs={viewerTabs}
+            counts={tabCareCounts}
+            endSlot={
+              <PolicyOverflowMenu
+                policyId={policy.id}
+                contactId={contact?.id}
+                isAdmin={isAdmin}
+              />
+            }
+          />
+        }
         rail={
           <>
             <div className="min-w-0 w-full max-w-full" data-ff-policy-quick-comms="">
