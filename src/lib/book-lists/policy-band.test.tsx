@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { BookBoard } from "@/components/book-lists/book-board";
@@ -135,8 +136,32 @@ describe("policies board banding", () => {
     );
     const lapsed = html.match(/data-ff-book-column="lapsed"[\s\S]*?(?=<section|$)/)?.[0] ?? "";
     const current = html.match(/data-ff-book-column="current"[\s\S]*?(?=<section|$)/)?.[0] ?? "";
+    const lapsedSection = html.match(/<section[^>]*data-ff-book-column="lapsed"[^>]*>/)?.[0] ?? "";
+    const currentSection = html.match(/<section[^>]*data-ff-book-column="current"[^>]*>/)?.[0] ?? "";
     expect(lapsed).toContain("Robert De Swartz Junior");
     expect(lapsed).toContain("Lapsed");
     expect(current).not.toContain("Robert De Swartz Junior");
+    expect(lapsedSection).toContain("ff-urgency-tone-violet");
+    expect(lapsedSection).not.toContain("ff-urgency-tone-gray");
+    expect(lapsedSection).not.toContain("ff-urgency-tone-navy");
+    expect(currentSection).toContain("ff-urgency-tone-navy");
+  });
+
+  it("paints Lapsed with its own violet token and leaves Current on navy blue", () => {
+    expect(POLICY_COLUMNS.find((column) => column.id === "lapsed")?.tone).toBe("violet");
+    expect(POLICY_COLUMNS.find((column) => column.id === "current")?.tone).toBe("navy");
+    expect(POLICY_COLUMNS.find((column) => column.id === "now")?.tone).toBe("terracotta");
+    expect(POLICY_COLUMNS.find((column) => column.id === "watch")?.tone).toBe("amber");
+    const css = readFileSync("src/app/globals.css", "utf8");
+    expect(css).toMatch(/--ff-urgency-violet:\s*#6D28D9;/);
+    expect(css).toMatch(
+      /\.ff-urgency-tone-violet \{\s*--ff-urgency: var\(--ff-urgency-violet\);\s*--ff-urgency-wash: color-mix\(in srgb, var\(--ff-urgency-violet\) 18%, #fff\);/,
+    );
+    expect(css).toMatch(
+      /\.ff-urgency-tone-navy \{\s*--ff-urgency: var\(--ff-heat-near-cold\);\s*--ff-urgency-wash: color-mix\(in srgb, var\(--ff-heat-near-cold\) 18%, #fff\);/,
+    );
+    expect(css).toMatch(
+      /\.ff-urgency-tone-gray \{\s*--ff-urgency: var\(--ff-heat-cold\);\s*--ff-urgency-wash: color-mix\(in srgb, var\(--ff-heat-cold\) 12%, #fff\);/,
+    );
   });
 });
