@@ -772,7 +772,7 @@ export type PolicyListRow = {
   statusLabel?: string | null;
   offBook?: boolean;
   /**
-   * Stored policies.renewal_date. The stack stamp prefers this.
+   * Stored policies.renewal_date. The Current-band badge and stack stamp prefer this.
    * Swap the caller for renewalDateFor(policy) when that helper is on main.
    */
   renewalDate?: Date | string | null;
