@@ -157,7 +157,7 @@ describe("book-list heat", () => {
           expirationLabel: "Aug 7, 2027",
           offBookLabel: label,
         }),
-      ).toMatchObject({ column: "current", heat: "cold", why: label });
+      ).toMatchObject({ column: "lapsed", heat: "cold", why: label });
     }
     // Open claims still escalate
     expect(

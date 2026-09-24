@@ -111,8 +111,18 @@ export function policyAttention(input: {
   offBookLabel?: string | null;
 }): { heat: BookHeat; column: BookColumnId; why: string } {
   const offBook = input.lapsed;
-  // Off-book must not enter Needs care / Watch via renewal or "lapsed" heat alone.
+  // Terminal status is not renewal heat. Client staying must not put it back in Current.
   const countRenewal = !offBook && renewalProximityDrivesCare(input.renewalHandled);
+  // Status beats term dates, Renewal soon, and Client staying.
+  // Open claims and waiting documents still belong in Needs care.
+  if (offBook && input.openClaims === 0 && input.missingDocs === 0) {
+    const label = input.offBookLabel?.trim() || "Off-book";
+    return {
+      heat: "cold",
+      column: "lapsed",
+      why: label,
+    };
+  }
   const reasons: string[] = [];
   if (input.openClaims > 0) {
     reasons.push(`${input.openClaims} open claim${input.openClaims === 1 ? "" : "s"}`);
@@ -129,15 +139,6 @@ export function policyAttention(input: {
     (countRenewal && input.daysUntil != null && input.daysUntil < 30);
   if (now) {
     return { heat: "hot", column: "now", why: reasons.slice(0, 2).join(" · ") || "Needs care now" };
-  }
-
-  if (offBook) {
-    const label = input.offBookLabel?.trim() || "Off-book";
-    return {
-      heat: "cold",
-      column: "current",
-      why: label,
-    };
   }
 
   if (input.pendingEndorsements > 0) {

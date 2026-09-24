@@ -9,6 +9,7 @@ export type BookColumnId =
   | "touch"
   | "watch"
   | "current"
+  | "lapsed"
   | "rateable"
   | "limited"
   | "skip"
@@ -129,4 +130,5 @@ export const POLICY_COLUMNS: BookColumnMeta[] = [
   { id: "now", label: "Needs care now", tone: "terracotta" },
   { id: "watch", label: "Watch", tone: "amber" },
   { id: "current", label: "Current", tone: "navy" },
+  { id: "lapsed", label: "Lapsed", tone: "gray" },
 ];
