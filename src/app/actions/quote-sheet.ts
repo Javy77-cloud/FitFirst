@@ -5,7 +5,31 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID, type ShopLine } from "@/lib/domain";
-import { parseStorageLine, requireStorageLine } from "@/lib/deals/product-instances";
+import {
+  parseProductInstanceToken,
+  parseStorageLine,
+  requireStorageLine,
+} from "@/lib/deals/product-instances";
+import { dealProductDef } from "@/lib/deals/deal-products";
+import {
+  addressFromSheetSubmission,
+  addressFromSheetValues,
+  instanceOwnsSheet,
+  isPropertyCoveringProduct,
+  legacyAutoOwnerKey,
+  legacyPropertyOwnerKey,
+  newCopyPropertySeed,
+  riskSyncValuesForInstance,
+  sheetAddressCells,
+  splitSharedSheetAddressSave,
+  vehiclesOnAutoSheet,
+} from "@/lib/deals/product-property";
+import {
+  instancesFromDeal,
+  listDealRisks,
+  saveAutoVehicleRisks,
+  saveInstancePropertyAddress,
+} from "@/lib/deals/product-property-store";
 import { db } from "@/lib/db";
 import {
   accounts,
@@ -185,7 +209,8 @@ async function loadDealSheetCopyInput(
 ): Promise<DealSheetCopyInput | null> {
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) return null;
-  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+  const riskRows = await listDealRisks(dealId);
+  const risk = riskRows.find((row) => !String(row.productKey ?? "").trim()) ?? riskRows[0];
   const [contact] = deal.contactId
     ? await db.select().from(contacts).where(eq(contacts.id, deal.contactId))
     : [];
@@ -276,11 +301,21 @@ export async function ensureQuoteSheet(dealId: string, line: string) {
   }
   // First-open Auto Risk Profile: same Deal Details → driver mapping as Fill (empty cells only).
   // A second Auto copy starts blank so it does not inherit the first vehicle.
-  if (opened.shopLine === "auto" && !opened.instanceKey) {
+  if (line === "auto") {
     const input = await loadDealSheetCopyInput(dealId, opened.shopLine);
     if (input) {
       Object.assign(values, fillSheetFromDealDetails(input, values).values);
     }
+  }
+  const copy = opened.instanceKey ? parseProductInstanceToken(opened.instanceKey) : null;
+  if (copy && isPropertyCoveringProduct(copy.productId)) {
+    const quotingForm = dealProductDef(copy.productId).quotingForm;
+    values.quoting_form = { value: quotingForm, status: "confirmed", source: "agent" };
+    values.sheet_product = { value: copy.productId, status: "confirmed", source: "agent" };
+    const stored = await loadRecordValues(dealId, "deals").catch(() => ({} as Record<string, string>));
+    const dwellingFire = isDwellingFireProduct(quotingForm, copy.productId);
+    const seed = newCopyPropertySeed(stored, { dwellingFire });
+    Object.assign(values, sheetAddressCells(seed.address, copy.key, true));
   }
   const [created] = await db
     .insert(quoteSheets)
@@ -299,16 +334,55 @@ export async function persistQuoteSheetValues(
   line: string,
   submitted: Record<string, string>,
   formId?: string,
+  instanceKey?: string | null,
 ) {
   const opened = requireStorageLine(line);
   const sheet = await ensureQuoteSheet(dealId, opened.storageLine);
   const productRaw = submitted.sheet_product?.trim();
   const product = productRaw && isSheetProduct(productRaw) ? (productRaw as SheetProduct) : undefined;
-  const values = mergeAgentEdits(sheet.values, submitted, opened.shopLine, product);
+  let values = mergeAgentEdits(sheet.values, submitted, opened.shopLine, product);
   if (productRaw) {
     values.sheet_product = { value: productRaw, status: "confirmed", source: "agent" };
   }
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  const instances = deal ? instancesFromDeal(deal) : [];
+  const instance = parseProductInstanceToken(instanceKey ?? opened.instanceKey);
+  let separateProperty = false;
+  if (instance && isPropertyCoveringProduct(instance.productId) && deal) {
+    const legacyKey = legacyPropertyOwnerKey(instances);
+    const ownsSheet = instanceOwnsSheet(instance, instances);
+    const separate = Boolean(legacyKey) && instance.key !== legacyKey;
+    if (separate) {
+      separateProperty = true;
+      const submittedAddress = addressFromSheetSubmission(submitted);
+      if (!ownsSheet) {
+        values = splitSharedSheetAddressSave({
+          previous: sheet.values,
+          merged: values,
+          instanceKey: instance.key,
+          submitted: submittedAddress,
+          characteristicSource: submitted,
+        });
+      }
+      await saveInstancePropertyAddress({
+        dealId,
+        tenantId: deal.tenantId,
+        contactId: deal.contactId,
+        instanceKey: instance.key,
+        address: ownsSheet ? addressFromSheetValues(values, instance.key, true) : submittedAddress,
+        legacyOwnerKey: legacyKey,
+      });
+      const ownRows = await listDealRisks(dealId, deal.tenantId);
+      const own = ownRows.find((row) => (row.productKey ?? "").trim() === instance.key);
+      if (own) {
+        await applySheetToRiskRow(
+          own,
+          riskSyncValuesForInstance(values, instance.key, ownsSheet),
+          "save",
+        );
+      }
+    }
+  }
   await logSheetCorrections({
     dealId,
     sheetId: sheet.id,
@@ -321,25 +395,39 @@ export async function persistQuoteSheetValues(
     .update(quoteSheets)
     .set({ values, updatedAt: new Date() })
     .where(eq(quoteSheets.id, sheet.id));
-  // A second copy keeps its own property. Do not write it onto the shared deal risk.
-  if (!opened.instanceKey) {
-    await syncRiskFromSheet(dealId, values, "save");
-    await syncHeaderFromSheet(dealId, values, "save");
+  // The original sheet still mirrors the original risk. A later product does not.
+  if (!separateProperty) {
+    await syncRiskFromSheet(dealId, values, "save", {
+      shopLine: opened.shopLine,
+      storageLine: opened.storageLine,
+      instanceKey: instance?.key ?? opened.instanceKey,
+    });
+    const propertyOwnsHeader = Boolean(legacyPropertyOwnerKey(instances));
+    if (!(opened.shopLine === "auto" && propertyOwnsHeader)) {
+      await syncHeaderFromSheet(dealId, values, "save");
+    }
   }
   if (sheetValuesFingerprint(sheet.values) !== sheetValuesFingerprint(values)) {
     // Keep Markets complete — cue Quotes Recheck; clear unlock only if rating-critical.
     await persistSheetRecheckCue(dealId, opened.storageLine);
+    const dropPropertySidecars = (rows: Record<string, QuoteSheetFieldValue>) => {
+      const next = { ...rows };
+      for (const key of Object.keys(next)) {
+        if (key.startsWith("ffpa:")) delete next[key];
+      }
+      return next;
+    };
     await markShopFlowStaleAfterRiskChange(dealId, opened.storageLine, {
       ratingCritical: ratingCriticalChanged(
-        opened.shopLine === "home" ? carrierTransferValues(sheet.values) : sheet.values,
-        opened.shopLine === "home" ? carrierTransferValues(values) : values,
+        dropPropertySidecars(opened.shopLine === "home" ? carrierTransferValues(sheet.values) : sheet.values),
+        dropPropertySidecars(opened.shopLine === "home" ? carrierTransferValues(values) : values),
       ),
     });
   }
   // Sheet save / confirm / stale cue must never unlink or hide source docs.
   await restoreDealSourceDocuments(dealId).catch(() => null);
   let vinDecode: VinDecodeRun | null = null;
-  if (opened.shopLine === "auto") {
+  if (opened.shopLine === "auto" || line === "auto") {
     const product = (values.sheet_product?.value ?? "").trim() || null;
     // VIN set/changed, or year/make/model/body/fuel/engine still blank.
     // Save already landed; a vPIC failure must not fail the save. Agent and
@@ -379,7 +467,13 @@ export async function applySavedSheetToDeal(dealId: string, line: string) {
       ),
     );
   if (!sheet) return null;
-  if (!opened?.instanceKey) {
+  if (opened?.shopLine === "auto") {
+    await syncRiskFromSheet(dealId, sheet.values, "save", {
+      shopLine: "auto",
+      storageLine: opened.storageLine,
+      instanceKey: opened.instanceKey,
+    });
+  } else if (!opened?.instanceKey) {
     await syncRiskFromSheet(dealId, sheet.values, "save");
     await syncHeaderFromSheet(dealId, sheet.values, "save");
   }
@@ -397,7 +491,13 @@ export async function saveQuoteSheet(formData: FormData) {
   if (product) submitted.sheet_product = product;
   const { persistDealSourceUploads } = await import("@/app/actions/documents");
   await persistDealSourceUploads(formData);
-  const persisted = await persistQuoteSheetValues(dealId, openedLine.storageLine, submitted, str(formData, "formId"));
+  const persisted = await persistQuoteSheetValues(
+    dealId,
+    openedLine.storageLine,
+    submitted,
+    str(formData, "formId"),
+    str(formData, "productInstance") || null,
+  );
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/quotes/fill-feedback");
   const vinDecodeError =
@@ -574,7 +674,7 @@ export async function addShopLine(formData: FormData) {
   redirect(withFlash(`/deals/${dealId}?tab=documents&line=${lineRaw}`, "deal-updated"));
 }
 
-/** Add/remove products on one deal. New shop lines get a sheet; removed lines stay stored if they have data. */
+/** Add/remove products on one deal. New shop lines get a sheet. Removed products and orphan copy sheets (a line whose instance is not on the deal) stay stored. */
 export async function setDealPackageLines(formData: FormData) {
   const dealId = str(formData, "dealId");
   const tab = str(formData, "tab");
@@ -603,7 +703,7 @@ export async function setDealPackageLines(formData: FormData) {
   const added = nextInstances.filter((row) => !previousKeys.has(row.key));
   const removedKeys = new Set(previous.filter((row) => !nextKeys.includes(row.key)).map((row) => row.key));
   for (const instance of nextInstances) {
-    await ensureQuoteSheet(dealId, storageLineForInstance(instance));
+    await ensureQuoteSheet(dealId, storageLineForInstance(instance, nextInstances));
   }
   const next = mergeShopLinesKeepExisting(deal.shopLines, draft.shopLines);
   const saved = parseShopFlow(deal.shopFlow);
@@ -614,7 +714,7 @@ export async function setDealPackageLines(formData: FormData) {
   }
   const focus =
     added[0] ??
-    nextInstances.find((row) => row.key === currentLine || storageLineForInstance(row) === currentLine) ??
+    nextInstances.find((row) => row.key === currentLine || storageLineForInstance(row, nextInstances) === currentLine) ??
     nextInstances[0]!;
   await db
     .update(deals)
@@ -649,7 +749,7 @@ export async function setDealPackageLines(formData: FormData) {
   revalidatePath(`/deals/${dealId}`);
   const query = new URLSearchParams();
   if (tab) query.set("tab", tab);
-  query.set("line", storageLineForInstance(focus));
+  query.set("line", storageLineForInstance(focus, nextInstances));
   query.set("product", focus.key);
   redirect(withFlash(`/deals/${dealId}?${query.toString()}`, "deal-updated"));
 }
@@ -1091,6 +1191,12 @@ export async function runFillFromDealDetails(
     return { filledKeys: [], skippedKeys: [], note: MASTER_FILL_SKIP_NO_DEAL };
   }
   const fresh = await loadFreshSheetValues(sheet.id, sheet.values);
+  if (opened.instanceKey) {
+    input.propertyOneliner = null;
+    if (input.risk) {
+      input.risk = { address1: null, city: null, county: null, state: null, zip: null };
+    }
+  }
   const applied = fillSheetFromDealDetails(input, fresh);
   if (!applied.filledKeys.length) {
     return {
@@ -1318,7 +1424,7 @@ export async function listMasterFillDocs(input: {
       .from(documents)
       .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)))
       .orderBy(asc(documents.createdAt));
-    const docs = selectFillDocsForProductWindow(rows, { shopLine: lineRaw });
+    const docs = selectFillDocsForProductWindow(rows, await fillWindowForLine(dealId, lineRaw));
     if (docs.length === 0) {
       return { ok: true, docs: [], note: MASTER_FILL_SKIP_NO_DOCS };
     }
@@ -1738,10 +1844,7 @@ export async function runFillQuoteSheet(
     .select()
     .from(documents)
     .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)));
-  const productDocs = selectFillDocsForProductWindow(docs, {
-    shopLine: line,
-    instanceKey: opened.instanceKey,
-  });
+  const productDocs = selectFillDocsForProductWindow(docs, await fillWindowForLine(dealId, opened.storageLine));
   const scoped = onlyId ? productDocs.filter((doc) => doc.id === onlyId) : productDocs;
   if (onlyId && scoped.length === 0) {
     const onDeal = docs.some((doc) => doc.id === onlyId);
@@ -2195,7 +2298,20 @@ export async function runFillQuoteSheet(
 
   await persistSheetValues(sheet.id, values);
 
-  if (!opened.instanceKey) {
+  if (opened.shopLine === "auto") {
+    await syncRiskFromSheet(dealId, values, "fill", {
+      shopLine: "auto",
+      storageLine: opened.storageLine,
+      instanceKey: opened.instanceKey,
+    });
+    if (!opened.instanceKey) {
+      const [dealRow] = await db.select().from(deals).where(eq(deals.id, dealId));
+      const propertyOwnsHeader = Boolean(
+        dealRow && legacyPropertyOwnerKey(instancesFromDeal(dealRow)),
+      );
+      if (!propertyOwnsHeader) await syncHeaderFromSheet(dealId, values, "fill");
+    }
+  } else if (!opened.instanceKey) {
     await syncRiskFromSheet(dealId, values, "fill");
     await syncHeaderFromSheet(dealId, values, "fill");
   }
@@ -2283,13 +2399,12 @@ async function syncHeaderFromSheet(
     .where(eq(deals.id, dealId));
 }
 
-async function syncRiskFromSheet(
-  dealId: string,
+async function applySheetToRiskRow(
+  risk: NonNullable<Awaited<ReturnType<typeof listDealRisks>>[number]>,
   values: Record<string, QuoteSheetFieldValue>,
   mode: "fill" | "save",
+  options?: { skipVehicle?: boolean },
 ) {
-  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
-  if (!risk) return;
   const extractToSheet: Record<string, string> = {
     address: "address1",
     city: "city",
@@ -2331,17 +2446,67 @@ async function syncRiskFromSheet(
   if (values.address1?.value.trim() && (mode === "fill" ? !risk.address1 : true)) {
     if (mode === "save" || !risk.address1) patch.address1 = values.address1.value;
   }
-  const sheetVin = values.vin?.value?.trim();
-  if (sheetVin && !risk.vin) patch.vin = sheetVin;
-  const yearNum = Number(values.vehicle_year?.value?.trim());
-  if (Number.isFinite(yearNum) && yearNum > 0 && risk.vehicleYear == null) patch.vehicleYear = yearNum;
-  const sheetMake = values.vehicle_make?.value?.trim();
-  if (sheetMake && !risk.vehicleMake) patch.vehicleMake = sheetMake;
-  const sheetModel = values.vehicle_model?.value?.trim();
-  if (sheetModel && !risk.vehicleModel) patch.vehicleModel = sheetModel;
+  if (!options?.skipVehicle) {
+    const sheetVin = values.vin?.value?.trim();
+    if (sheetVin && !risk.vin) patch.vin = sheetVin;
+    const yearNum = Number(values.vehicle_year?.value?.trim());
+    if (Number.isFinite(yearNum) && yearNum > 0 && risk.vehicleYear == null) patch.vehicleYear = yearNum;
+    const sheetMake = values.vehicle_make?.value?.trim();
+    if (sheetMake && !risk.vehicleMake) patch.vehicleMake = sheetMake;
+    const sheetModel = values.vehicle_model?.value?.trim();
+    if (sheetModel && !risk.vehicleModel) patch.vehicleModel = sheetModel;
+  }
   if (Object.keys(patch).length === 0) return;
   await db
     .update(risks)
     .set({ ...patch, updatedAt: new Date() })
     .where(eq(risks.id, risk.id));
+}
+
+async function fillWindowForLine(dealId: string, lineInput: string) {
+  const opened = requireStorageLine(lineInput);
+  const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+  const instances = deal ? instancesFromDeal(deal) : [];
+  const owner = instances.find(
+    (row) => storageLineForInstance(row, instances) === opened.storageLine,
+  );
+  return {
+    shopLine: opened.shopLine,
+    instanceKey: opened.instanceKey ?? owner?.key ?? null,
+    legacyLineOwner: !opened.storageLine.includes("~"),
+  };
+}
+
+async function syncRiskFromSheet(
+  dealId: string,
+  values: Record<string, QuoteSheetFieldValue>,
+  mode: "fill" | "save",
+  options?: { shopLine?: string | null; storageLine?: string | null; instanceKey?: string | null },
+) {
+  const rows = await listDealRisks(dealId);
+  const risk = rows.find((row) => !String(row.productKey ?? "").trim());
+  if (options?.shopLine === "auto") {
+    const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
+    if (deal) {
+      const instances = instancesFromDeal(deal);
+      const autoOwner = legacyAutoOwnerKey(instances);
+      const sheetOwner = instances.find(
+        (row) => storageLineForInstance(row, instances) === (options.storageLine || "auto"),
+      );
+      const instanceKey = options.instanceKey || sheetOwner?.key || autoOwner || "auto";
+      await saveAutoVehicleRisks({
+        dealId,
+        tenantId: deal.tenantId,
+        contactId: deal.contactId,
+        instanceKey,
+        legacyAutoOwnerKey: autoOwner,
+        vehicles: vehiclesOnAutoSheet(values),
+      });
+      const propertyOwnsNull = Boolean(legacyPropertyOwnerKey(instances));
+      const isLegacyAuto = Boolean(autoOwner && instanceKey === autoOwner);
+      if (propertyOwnsNull || !isLegacyAuto) return;
+    }
+  }
+  if (!risk) return;
+  await applySheetToRiskRow(risk, values, mode, { skipVehicle: options?.shopLine === "auto" && Boolean(options.instanceKey) });
 }

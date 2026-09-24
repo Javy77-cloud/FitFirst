@@ -103,7 +103,7 @@ async function addProductToExistingDeal(dealId: string, productId: DealProductId
   const added = nextInstances[nextInstances.length - 1]!;
   const nextKeys = nextInstances.map((row) => row.key);
   const draft = packageCreateDraft(nextInstances.map((row) => row.productId));
-  await ensureQuoteSheet(dealId, storageLineForInstance(added));
+  await ensureQuoteSheet(dealId, storageLineForInstance(added, nextInstances));
   await db
     .update(deals)
     .set({

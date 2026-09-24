@@ -247,7 +247,11 @@ export function parseProductStages(raw: unknown): DealProductStages {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   const out: DealProductStages = {};
   for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (!isDealProductId(key) && !parseDealProduct(key)) continue;
+    const instanceToken = key.includes("~") ? parseProductInstanceToken(key) : null;
+    if (key.includes("~")) {
+      if (!instanceToken || instanceToken.key === instanceToken.productId) continue;
+    } else if (!isDealProductId(key) && !parseDealProduct(key)) continue;
+    const storeKey = instanceToken?.key ?? key;
     if (!value || typeof value !== "object" || Array.isArray(value)) continue;
     const row = value as {
       stage?: unknown;
@@ -322,7 +326,7 @@ export function parseProductStages(raw: unknown): DealProductStages {
       inspectionStatus === "none" && rawStage === "pending_inspection" && !explicitNotice
         ? "inspection_before_bind"
         : inspectionStatus;
-    out[key] = {
+    out[storeKey] = {
       stage,
       selectedQuoteIds,
       lostReason,

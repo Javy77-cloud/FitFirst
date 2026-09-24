@@ -6,6 +6,17 @@ import { persistFile } from "@/app/actions/documents";
 import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices";
 import { db } from "@/lib/db";
 import { contacts, deals, quoteSheets, risks } from "@/lib/db/schema";
+import { parseProductInstanceToken, storageLineForInstance } from "@/lib/deals/product-instances";
+import {
+  addressFromInsuredFields,
+  INSURED_ADDRESS_FIELD_KEYS,
+  instanceOwnsSheet,
+  isPropertyCoveringProduct,
+  legacyPropertyOwnerKey,
+  restoreDealInsuredFields,
+  sheetAddressCells,
+} from "@/lib/deals/product-property";
+import { instancesFromDeal, listDealRisks, saveInstancePropertyAddress } from "@/lib/deals/product-property-store";
 import {
   deleteFieldDef,
   ensureFieldsForLine,
@@ -354,6 +365,28 @@ export async function saveDealFieldValues(formData: FormData) {
       system[field.systemKey] = custom[field.key];
     }
   }
+  const instance = parseProductInstanceToken(str(formData, "productInstance"));
+  const instances = instancesFromDeal(deal);
+  const legacyKey = legacyPropertyOwnerKey(instances);
+  const separateProperty = Boolean(
+    instance &&
+      isPropertyCoveringProduct(instance.productId) &&
+      legacyKey &&
+      instance.key !== legacyKey,
+  );
+  const productAddress = separateProperty ? addressFromInsuredFields(custom) : null;
+  if (separateProperty) {
+    const previous = await loadRecordValues(dealId, "deals");
+    const restored = restoreDealInsuredFields(custom, previous);
+    for (const key of INSURED_ADDRESS_FIELD_KEYS) {
+      if (Object.prototype.hasOwnProperty.call(restored, key)) custom[key] = restored[key];
+      else delete custom[key];
+    }
+    delete system.mailingAddress;
+    delete system.city;
+    delete system.state;
+    delete system.zip;
+  }
   const pipelineFamily = str(formData, "pipelineFamily");
   if (pipelineFamily) system.pipelineFamily = pipelineFamily;
   if (!custom[INSURED_PROPERTY_KIND_KEY]) {
@@ -368,6 +401,37 @@ export async function saveDealFieldValues(formData: FormData) {
   }
   if (Object.keys(system).length) {
     await applySystemDealValues(dealId, system);
+  }
+  if (separateProperty && productAddress && instance) {
+    await saveInstancePropertyAddress({
+      dealId,
+      tenantId: deal.tenantId,
+      contactId: deal.contactId,
+      instanceKey: instance.key,
+      address: productAddress,
+      legacyOwnerKey: legacyKey,
+    });
+    const line = storageLineForInstance(instance, instances);
+    const ownsSheet = instanceOwnsSheet(instance, instances);
+    const [sheet] = await db
+      .select()
+      .from(quoteSheets)
+      .where(
+        and(
+          eq(quoteSheets.tenantId, deal.tenantId),
+          eq(quoteSheets.dealId, dealId),
+          eq(quoteSheets.line, line),
+        ),
+      );
+    if (sheet) {
+      await db
+        .update(quoteSheets)
+        .set({
+          values: { ...sheet.values, ...sheetAddressCells(productAddress, instance.key, ownsSheet) },
+          updatedAt: new Date(),
+        })
+        .where(eq(quoteSheets.id, sheet.id));
+    }
   }
   await syncDealDobOntoBlankContact(dealId, custom.date_of_birth || custom.applicant_dob);
   await persistDealWorkTab(dealId, "documents").catch(() => null);
@@ -392,7 +456,7 @@ export async function saveDealFieldValues(formData: FormData) {
   flashAction(
     dealDetailsSavedHref(dealId, {
       line: flashLine,
-      product: product || str(formData, "product"),
+      product: instance?.key || product || str(formData, "product"),
     }),
     "deal-details-saved",
   );
@@ -576,7 +640,8 @@ export async function applySystemDealValues(dealId: string, system: Record<strin
         .where(eq(quoteSheets.id, sheet.id));
     }
   }
-  const [risk] = await db.select().from(risks).where(eq(risks.dealId, dealId));
+  const riskRows = await listDealRisks(dealId, existing.tenantId);
+  const risk = riskRows.find((row) => !String(row.productKey ?? "").trim()) ?? null;
   if (risk) {
     await db
       .update(risks)

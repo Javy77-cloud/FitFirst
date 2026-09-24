@@ -84,7 +84,10 @@ export function DocumentsPanel({
   const productWindow = {
     shopLine: sheetLine,
     quotingForm: quotingForm ?? sheetQuotingForm ?? null,
-    instanceKey: formLine.includes("~") ? formLine.slice(formLine.indexOf("~") + 1) : null,
+    instanceKey:
+      productId ||
+      (formLine.includes("~") ? formLine.slice(formLine.indexOf("~") + 1) : null),
+    legacyLineOwner: !formLine.includes("~"),
   };
   const { sourceDocs, lineDocs, otherSourceDocs } = listWorksheetSourceDocs(docs);
   const windowLineDocs = filterDocsForProductWindow(lineDocs, productWindow);
@@ -118,7 +121,7 @@ export function DocumentsPanel({
                     </p>
                     <ul className="mt-1 space-y-1.5">
                       {group.docs.map((doc) => (
-                        <SourceFileRow key={doc.id} doc={doc} dealId={dealId} line={formLine} quotingForm={quotingForm ?? sheetQuotingForm} />
+                        <SourceFileRow key={doc.id} doc={doc} dealId={dealId} line={formLine} quotingForm={quotingForm ?? sheetQuotingForm} productInstance={productId} />
                       ))}
                     </ul>
                   </div>
@@ -129,7 +132,7 @@ export function DocumentsPanel({
             {windowOtherDocs.length > 0 ? (
               <ul className="mb-2 space-y-1.5">
                 {windowOtherDocs.map((doc) => (
-                  <SourceFileRow key={doc.id} doc={doc} dealId={dealId} line={formLine} quotingForm={quotingForm ?? sheetQuotingForm} />
+                  <SourceFileRow key={doc.id} doc={doc} dealId={dealId} line={formLine} quotingForm={quotingForm ?? sheetQuotingForm} productInstance={productId} />
                 ))}
               </ul>
             ) : null}
@@ -143,6 +146,7 @@ export function DocumentsPanel({
               dealId={dealId}
               line={formLine}
               quotingForm={quotingForm ?? sheetQuotingForm}
+              productInstance={productId}
               candidates={libraryCandidates.map((doc) => ({
                 id: doc.id,
                 filename: doc.filename,

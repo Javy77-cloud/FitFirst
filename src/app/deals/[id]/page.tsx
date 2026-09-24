@@ -85,6 +85,18 @@ import {
   resolveVisibleProductInstances,
   storageLineForInstance,
 } from "@/lib/deals/product-instances";
+import {
+  instanceOwnsSheet,
+  insuredFieldsFromAddress,
+  isPropertyCoveringProduct,
+  legacyPropertyOwnerKey,
+  overlaySharedProductSheet,
+  resolveProductPropertyAddress,
+} from "@/lib/deals/product-property";
+import {
+  listDealRisks,
+  riskForInstance,
+} from "@/lib/deals/product-property-store";
 import { productSectionComplete, productSectionProgress } from "@/lib/deals/product-layout";
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
 import { DealStatusStamp } from "@/components/deal/deal-status-stamp";
@@ -336,9 +348,37 @@ export default async function DealPage({
       quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
       lineOfBusiness: deal.lineOfBusiness,
     });
-  const storageLine = storageLineForInstance(activeInstance);
+  const storageLine = storageLineForInstance(activeInstance, productInstances);
   const activeSheet =
     sheets.find((row) => row.line === storageLine) ?? (await ensureQuoteSheet(deal.id, storageLine));
+  const sheetsForProperties = sheets.some((row) => row.id === activeSheet.id)
+    ? sheets
+    : [...sheets, activeSheet];
+  const propertyRiskRows = await listDealRisks(deal.id, deal.tenantId);
+  const legacyPropertyKey = legacyPropertyOwnerKey(productInstances);
+  const activeOwnsPropertySheet = instanceOwnsSheet(activeInstance, productInstances);
+  const activePropertyRisk = isPropertyCoveringProduct(activeProduct)
+    ? riskForInstance(propertyRiskRows, activeInstance.key, legacyPropertyKey)
+    : null;
+  const activePropertyAddress = isPropertyCoveringProduct(activeProduct)
+    ? resolveProductPropertyAddress({
+        instanceKey: activeInstance.key,
+        ownsSheet: activeOwnsPropertySheet,
+        legacyOwner: activeInstance.key === legacyPropertyKey,
+        storedDeal: dealValues,
+        sheetValues: activeSheet.values,
+        dwellingFire: isDwellingFireProduct(dealProductDef(activeProduct).quotingForm, activeProduct),
+        ownRisk: activePropertyRisk,
+      })
+    : null;
+  const profileValues =
+    activePropertyAddress && !activeOwnsPropertySheet
+      ? overlaySharedProductSheet(activeSheet.values, activeInstance.key, activePropertyAddress.address)
+      : activeSheet.values;
+  const detailsAddressOverlay =
+    activePropertyAddress && activeInstance.key !== legacyPropertyKey
+      ? insuredFieldsFromAddress(activePropertyAddress.address)
+      : null;
   const lineForm = resolveLineQuotingForm({
     sheetValues: activeSheet.values,
     sheetLine,
@@ -389,11 +429,15 @@ export default async function DealPage({
   // lines) scores appetite_rules from the filled sheet. Life and Health keep
   // their own helpers. Shop lists and manual adds overlay carriers; they are
   // not required to see In appetite / Stretch / Skip. This does not request quotes.
-  const sheetFilled = sheetHasMarketFacts(activeSheet?.values);
+  const sheetFilled = sheetHasMarketFacts(profileValues);
   const marketsUseSheet = !isLifeHealthShopLine(sheetLine);
   const sheetReady = marketsUseSheet && sheetFilled;
-  const evalMarkets = Boolean(risk && sheetReady);
-  const rawMatches = evalMarkets ? await evaluateDealMarkets(risk, activeSheet.values, activeLob) : [];
+  const scoringRisk = activePropertyRisk ?? risk;
+  const evalMarkets = Boolean(scoringRisk && sheetReady);
+  const rawMatches =
+    evalMarkets && scoringRisk
+      ? await evaluateDealMarkets(scoringRisk, profileValues, activeLob)
+      : [];
   const matches = rawMatches.filter((row) => !excludedMarketIds.has(row.carrierId));
   const agentMarketsAction = shopMarketsAction || manualCarrierIdsFromLogs(dealLogs).some((id) => !excludedMarketIds.has(id));
   const selectedProduct = resolveDealProduct({
@@ -414,7 +458,7 @@ export default async function DealPage({
       : selectedProduct === "health"
         ? "Health"
         : "HO3");
-  const health = activeSheet ? reportFromSheet(sheetLine, activeSheet.values) : null;
+  const health = activeSheet ? reportFromSheet(sheetLine, profileValues) : null;
   const unlocked = quotingUnlockedForLine({ deal, sheet: activeSheet });
   const tabParam = tab;
   const activeTab = tabParam
@@ -461,16 +505,34 @@ export default async function DealPage({
     ]),
   );
   const instanceLabelRows = productInstances.map((instance) => {
-    const line = storageLineForInstance(instance);
-    const sheet = sheets.find((row) => row.line === line) ?? (instance.key === activeInstance.key ? activeSheet : null);
+    const line = storageLineForInstance(instance, productInstances);
+    const sheet =
+      sheetsForProperties.find((row) => row.line === line) ??
+      (instance.key === activeInstance.key ? activeSheet : null);
     const facts = addressFactsFromSheetValues(sheet?.values);
+    const owns = instanceOwnsSheet(instance, productInstances);
+    let address = facts.address;
+    let city = facts.city;
+    if (isPropertyCoveringProduct(instance.productId)) {
+      const resolved = resolveProductPropertyAddress({
+        instanceKey: instance.key,
+        ownsSheet: owns,
+        legacyOwner: instance.key === legacyPropertyKey,
+        storedDeal: dealValues,
+        sheetValues: sheet?.values,
+        dwellingFire: isDwellingFireProduct(dealProductDef(instance.productId).quotingForm, instance.productId),
+        ownRisk: riskForInstance(propertyRiskRows, instance.key, legacyPropertyKey),
+      });
+      address = resolved.address.street;
+      city = resolved.address.city;
+    }
     return {
       key: instance.key,
       productId: instance.productId,
       quotingForm: deal.quotingForm,
       sheetForm: sheet?.values?.quoting_form?.value ?? null,
-      address: facts.address,
-      city: facts.city,
+      address,
+      city,
       vehicles: vehiclesFromSheetValues(sheet?.values),
     };
   });
@@ -873,7 +935,7 @@ export default async function DealPage({
                     )}
                     formLabels={Object.fromEntries(
                       productInstances.map((instance) => {
-                        const line = storageLineForInstance(instance);
+                        const line = storageLineForInstance(instance, productInstances);
                         const sheet = sheets.find((row) => row.line === line);
                         const fromSheet =
                           quotingFormFromSheet(sheet?.values) ??
@@ -985,7 +1047,7 @@ export default async function DealPage({
                   <div>
                     {id === "details" ? (
                       <DealDetailsPanel
-                        key={`${deal.id}:${activeProduct}:${lineForm}`}
+                        key={`${deal.id}:${activeInstance.key}:${lineForm}`}
                         dealId={deal.id}
                         line={activeLob}
                         layout={dealLayout ?? defaultLayoutForModule("deals")}
@@ -995,7 +1057,9 @@ export default async function DealPage({
                           ...(deal.accountKind === "commercial" && !dealValues.business_name
                             ? { business_name: deal.primaryNamedInsured ?? "" }
                             : {}),
+                          ...(detailsAddressOverlay ?? {}),
                         }}
+                        productInstance={activeInstance.key}
                         pipelineFamily={familyForProducts(dealProducts)}
                         quotingForm={lineForm}
                         policySubType={lineQuotingForm?.label ?? deal.policySubType}
@@ -1012,14 +1076,17 @@ export default async function DealPage({
                     ) : id === "documents" ? (
                       <DocumentsPanel
                         dealId={deal.id}
-                        riskId={risk.id}
+                        riskId={
+                          activePropertyRisk?.id ??
+                          (activeInstance.key === legacyPropertyKey ? risk.id : "")
+                        }
                         docs={docs}
                         fields={fields}
                         jobs={jobs}
                         pendingFill={notice === "filled"}
                         health={health}
                         sheetLine={sheetLine}
-                        sheetValues={activeSheet.values}
+                        sheetValues={profileValues}
                         formLabel={masterFormLabel}
                         unlocked={unlocked}
                         approvedBy={deal.sheetApprovedBy}

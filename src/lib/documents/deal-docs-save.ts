@@ -4,19 +4,25 @@ import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 import { isAgencyLetterDocType } from "@/lib/document-pipeline/types";
 import { docCardKeyFromTags } from "@/lib/leads/line-documents";
 import { parseDealProduct } from "@/lib/deals/deal-products";
+import { parseStorageLine } from "@/lib/deals/product-instances";
 
 /** Stay under next.config serverActions.bodySizeLimit so the action is invoked. */
 export const DEAL_DOCUMENTS_BODY_LIMIT_BYTES = 45 * 1024 * 1024;
 
-export function dealDocumentsTabHref(dealId: string, line?: string | null): string {
+export function dealDocumentsTabHref(
+  dealId: string,
+  line?: string | null,
+  productInstance?: string | null,
+): string {
   const query = new URLSearchParams({ tab: "documents" });
   const trimmed = (line ?? "").trim();
-  if (trimmed) {
-    query.set("line", trimmed);
-    // Keep Flood / Auto product chips selected after type / term / unlink redirects.
-    const product = parseDealProduct(trimmed);
-    if (product) query.set("product", product);
-  }
+  if (trimmed) query.set("line", trimmed);
+  const product =
+    String(productInstance ?? "").trim() ||
+    parseStorageLine(trimmed)?.instanceKey ||
+    parseDealProduct(trimmed) ||
+    "";
+  if (product) query.set("product", product);
   return `/deals/${dealId}?${query.toString()}`;
 }
 

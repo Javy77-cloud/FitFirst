@@ -79,6 +79,7 @@ export function buildDealDocumentRowForm(input: {
   riskId?: string | null;
   line?: string | null;
   quotingForm?: string | null;
+  productInstance?: string | null;
   docType: string;
   file: File;
 }): FormData {
@@ -87,6 +88,7 @@ export function buildDealDocumentRowForm(input: {
   if (input.riskId) form.set("riskId", input.riskId);
   if (input.line) form.set("line", input.line);
   if (input.quotingForm) form.set("quotingForm", input.quotingForm);
+  if (input.productInstance) form.set("productInstance", input.productInstance);
   form.set("rowCount", "1");
   form.set("docType_0", input.docType);
   form.set("files_0", input.file);

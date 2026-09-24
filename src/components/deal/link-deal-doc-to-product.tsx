@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { linkDealDocumentToProduct } from "@/app/actions/documents";
 import { Button } from "@/components/ui/button";
 import { sourceDocUploadedListLabel } from "@/lib/documents/deal-docs-save";
@@ -17,29 +17,27 @@ export function LinkDealDocToProduct({
   dealId,
   line,
   quotingForm,
+  productInstance,
   candidates,
 }: {
   dealId: string;
   line?: string | null;
   quotingForm?: string | null;
+  productInstance?: string | null;
   candidates: LibraryCandidate[];
 }) {
-  const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   if (candidates.length === 0) return null;
 
   return (
-    <div className="mb-2 rounded-md border border-dashed border-border/80 p-2" data-ff-link-deal-doc="">
-      <button
-        type="button"
-        className="text-xs font-medium text-navy underline-offset-2 hover:underline"
-        onClick={() => setOpen((value) => !value)}
-        data-ff-link-deal-doc-toggle=""
-      >
-        {open ? "Hide deal library" : `Link from deal library (${candidates.length})`}
-      </button>
-      {open ? (
-        <ul className="mt-2 space-y-1.5">
+    <div className="mb-2 rounded-md border border-dashed border-border/80 p-2" data-ff-link-deal-doc="" data-ff-deal-library="">
+      <p className="text-xs font-semibold text-navy" data-ff-deal-library-heading="">
+        Deal library ({candidates.length})
+      </p>
+      <p className="mb-2 text-helper text-muted-foreground">
+        On this deal, not on this form yet. Link adds this form and leaves the file on any other form.
+      </p>
+      <ul className="space-y-1.5">
           {candidates.map((doc) => (
             <li key={doc.id} className="flex items-center gap-2 text-sm">
               <span className="min-w-0 flex-1 truncate text-muted-foreground">
@@ -61,6 +59,7 @@ export function LinkDealDocToProduct({
                   form.set("dealId", dealId);
                   if (line) form.set("line", line);
                   if (quotingForm) form.set("quotingForm", quotingForm);
+                  if (productInstance) form.set("productInstance", productInstance);
                   startTransition(async () => {
                     await linkDealDocumentToProduct(form);
                   });
@@ -70,8 +69,7 @@ export function LinkDealDocToProduct({
               </Button>
             </li>
           ))}
-        </ul>
-      ) : null}
+      </ul>
     </div>
   );
 }

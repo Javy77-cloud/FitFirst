@@ -63,6 +63,7 @@ import {
 } from "@/lib/appetite/auto-premium-learning";
 import type { PartyRecord } from "@/lib/crm/party-typeahead";
 import { partyLabel } from "@/lib/deals/lookup";
+import { listDealRisks } from "@/lib/deals/product-property-store";
 import { db, sql as rawSql } from "./index";
 import { ensureContactDetailsV4Columns } from "@/lib/db/ensure-contact-details-v4";
 import { ensureElsewhereCoverageColumn } from "@/lib/db/ensure-elsewhere-coverage";
@@ -662,7 +663,7 @@ export async function listDeals(filter: DealListFilter = {}) {
     .leftJoin(risks, eq(risks.dealId, deals.id))
     .where(eq(deals.tenantId, tenant()))
     // Tip sep7ga: stable pipeline list order — stage changes touch updatedAt, not createdAt.
-    .orderBy(desc(deals.createdAt), asc(deals.id));
+    .orderBy(desc(deals.createdAt), asc(deals.id), asc(risks.createdAt));
   const session = await currentDeskSession();
   const seen = new Set<string>();
   return rows.filter(({ deal }) => {
@@ -2448,10 +2449,7 @@ export async function getDealWorkspace(dealId: string) {
     boundPolicies,
     timeline,
   ] = await Promise.all([
-    db
-      .select()
-      .from(risks)
-      .where(and(eq(risks.tenantId, tenant()), eq(risks.dealId, dealId))),
+    listDealRisks(dealId, tenant()),
     db
       .select()
       .from(documents)
@@ -2507,7 +2505,7 @@ export async function getDealWorkspace(dealId: string) {
     listActivityTimeline({ dealId }),
   ]);
 
-  let risk = riskRows[0];
+  let risk = riskRows.find((row) => !String(row.productKey ?? "").trim()) ?? riskRows[0];
   if (!risk) {
     try {
       const { ensureDealRisk } = await import("@/lib/deals/ensure-risk");
@@ -2716,7 +2714,7 @@ export async function getPipelineBoard(
     .leftJoin(risks, eq(risks.dealId, deals.id))
     .where(eq(deals.tenantId, tenant()))
     // Tip sep7ga: stable board/list order — stage changes touch updatedAt, not createdAt.
-    .orderBy(desc(deals.createdAt), asc(deals.id));
+    .orderBy(desc(deals.createdAt), asc(deals.id), asc(risks.createdAt));
   const session = await currentDeskSession();
   const seen = new Set<string>();
   const cards = [];

@@ -418,6 +418,7 @@ export function MasterSheetCompare({
       >
         <input type="hidden" name="dealId" value={dealId} />
         <input type="hidden" name="line" value={storageLine || line} />
+        {productId ? <input type="hidden" name="productInstance" value={productId} /> : null}
         {line === "health" ? (
           <input type="hidden" name={USING_HEALTHSHERPA_KEY} value={usingHealthSherpa ? "yes" : "no"} />
         ) : null}

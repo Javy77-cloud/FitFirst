@@ -139,6 +139,7 @@ export function SourceDocsUpload({
             commit.set("riskId", riskId);
             if (line) commit.set("line", line);
             if (quotingForm) commit.set("quotingForm", quotingForm);
+            if (product) commit.set("productInstance", product);
             commit.set("docType", row.docType);
             commit.set("filename", row.file.name);
             commit.set("byteLength", String(row.file.size));
@@ -153,6 +154,7 @@ export function SourceDocsUpload({
               riskId,
               line,
               quotingForm,
+              productInstance: product,
               docType: row.docType,
               file: row.file,
             });
@@ -213,6 +215,7 @@ export function SourceDocsUpload({
       <input type="hidden" name="dealId" value={dealId} />
       <input type="hidden" name="riskId" value={riskId} />
       {line ? <input type="hidden" name="line" value={line} /> : null}
+      {product ? <input type="hidden" name="productInstance" value={product} /> : null}
       <input type="hidden" name="rowCount" value={rows.length} />
       {error ? (
         <p className="text-sm text-destructive" role="alert" data-ff-doc-save-error="">

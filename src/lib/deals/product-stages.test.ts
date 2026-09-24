@@ -260,7 +260,10 @@ describe("per-product stages", () => {
     expect(writesDealLine(["HO"], "AUTO")).toBe(false);
     expect(writesDealLine(["FLOOD"], "FLOOD")).toBe(true);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(
-      /evaluateDealMarkets\(risk, activeSheet\.values, activeLob\)/,
+      /const scoringRisk = activePropertyRisk \?\? risk/,
+    );
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(
+      /evaluateDealMarkets\(scoringRisk, profileValues, activeLob\)/,
     );
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/carriersForDealLine/);
     expect(source("src/app/deals/[id]/page.tsx")).toMatch(/lastRequestCarrierIds/);

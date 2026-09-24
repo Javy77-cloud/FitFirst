@@ -21,11 +21,13 @@ export function SourceFileRow({
   dealId,
   line,
   quotingForm,
+  productInstance,
 }: {
   doc: Document;
   dealId: string;
   line?: string | null;
   quotingForm?: string | null;
+  productInstance?: string | null;
 }) {
   const [gone, setGone] = useState(false);
   if (gone) return null;
@@ -78,6 +80,7 @@ export function SourceFileRow({
           <input type="hidden" name="dealId" value={dealId} />
           <input type="hidden" name="line" value={line} />
           {quotingForm ? <input type="hidden" name="quotingForm" value={quotingForm} /> : null}
+          {productInstance ? <input type="hidden" name="productInstance" value={productInstance} /> : null}
           <Button type="submit" variant="ghost" size="xs" data-ff-unlink-from-product="">
             Remove from product
           </Button>

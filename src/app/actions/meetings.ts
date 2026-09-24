@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
 import { flashSettings } from "@/lib/flash-action";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
@@ -63,7 +63,8 @@ export async function loadMeetingDefaults(dealId: string): Promise<MeetingDefaul
       .leftJoin(contacts, eq(deals.contactId, contacts.id))
       .leftJoin(leads, eq(deals.leadId, leads.id))
       .leftJoin(risks, eq(risks.dealId, deals.id))
-      .where(eq(deals.id, deal.id));
+      .where(eq(deals.id, deal.id))
+      .orderBy(asc(risks.createdAt));
     homeAddress = homeAddressFromRecords({
       risk: row?.risk ?? null,
       lead: row?.lead ?? null,

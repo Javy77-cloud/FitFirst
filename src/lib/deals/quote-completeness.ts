@@ -1,6 +1,6 @@
 import { EXCLUDE_MARKET_MARKER, isExplicitMarketActionText } from "@/lib/deals/manual-markets";
 import { dealProductDef } from "@/lib/deals/deal-products";
-import { parseProductInstanceToken } from "@/lib/deals/product-instances";
+import { isDuplicateInstance, parseProductInstanceToken } from "@/lib/deals/product-instances";
 import { quoteMatchesDealProduct, quoteMatchesShopLine } from "@/lib/deals/shop-flow";
 import { SHOP_LINE_TO_LOB, isShopLine, type ShopLine } from "@/lib/domain";
 
@@ -212,7 +212,8 @@ export function productQuoteCompleteness(input: {
   splitHomeProducts?: boolean;
   quoteRuns?: Partial<Record<string, string>> | null;
 }): LineQuoteCompleteness {
-  const productId = parseProductInstanceToken(input.product)?.productId;
+  const instance = parseProductInstanceToken(input.product);
+  const productId = instance?.productId;
   if (!productId) {
     return {
       line: "home",
@@ -246,6 +247,24 @@ export function productQuoteCompleteness(input: {
       ),
   );
   if (productQuotes.length === 0) {
+    // A second copy has not been shopped. Sibling home quotes and logs are not its error.
+    if (isDuplicateInstance(instance)) {
+      return {
+        line,
+        shopped: false,
+        complete: false,
+        expected: 0,
+        retrieved: 0,
+        missing: [
+          {
+            carrierName: "This product",
+            reason: "not_shopped",
+            why: "No quotes on this product yet",
+          },
+        ],
+        summary: "Missing quotes",
+      };
+    }
     // Request quotes writes market logs before Fill/portal premiums. Still count as shopped
     // so the Quotes tab checkmark lights after Markets → Quotes auto-advance.
     const fromLogs = lineQuoteCompleteness({
