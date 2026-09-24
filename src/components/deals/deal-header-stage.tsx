@@ -29,6 +29,7 @@ import { stageColorFromNameOrSlug } from "@/lib/desk/status-colors";
 import { flashAction } from "@/lib/flash-client";
 import { OPEN_ISSUED_POLICY_UPLOAD } from "@/components/deal/issue-policy-from-dec";
 import { isBoundReadyForIssue, isPolicyIssuedStage, mintFailureFlashText, mintFailureToast } from "@/lib/policy/mint-gate";
+import { OPEN_TRACKING_NOTE } from "@/lib/comms/quote-delivery";
 import { cn } from "@/lib/utils";
 
 function colorForStage(stage: DealStageOption) {
@@ -84,6 +85,7 @@ export function DealHeaderStage({
   const [picked, setPicked] = useState<string[]>(selectedQuoteIds);
   const [lostReason, setLostReason] = useState("");
   const [overrideOpen, setOverrideOpen] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const surface = workspaceTab === "quotes" ? "quotes" : "header";
@@ -153,6 +155,7 @@ export function DealHeaderStage({
     const prev = value;
     setValue(next);
     setOpen(false);
+    setSendError(null);
     startTransition(async () => {
       const result = await setDealProductStage({
         dealId,
@@ -164,7 +167,21 @@ export function DealHeaderStage({
       });
       if (!result.ok) {
         setValue(prev);
-        if (result.reason === "need_quote") {
+        if (result.reason === "need_send") {
+          const message =
+            "message" in result && result.message
+              ? String(result.message)
+              : "Quote email did not send. The stage was not changed.";
+          setSendError(message);
+          flashAction(message, "error");
+        } else if (result.reason === "ana_locked") {
+          const message =
+            "message" in result && result.message
+              ? String(result.message)
+              : "Ana Dib stays unbound. Coverage A stays $321,000.";
+          setSendError(message);
+          flashAction("ana-unbound", "error");
+        } else if (result.reason === "need_quote") {
           setPendingStage(next);
           setPickOpen(true);
         } else if (result.reason === "quotes_only" || result.reason === "need_dec") {
@@ -240,6 +257,14 @@ export function DealHeaderStage({
         data-ff-pipeline-box=""
       >
         {/* Shell dt already says Pipeline — stage chip + Actions sit under that one title. */}
+        {sendError ? (
+          <p className="text-sm text-fit-red" role="alert" data-ff-quote-send-error="">
+            {sendError}
+          </p>
+        ) : null}
+        <p className="text-helper text-muted-foreground" data-ff-open-tracking-note="">
+          {OPEN_TRACKING_NOTE}
+        </p>
         <div className="flex flex-wrap items-center gap-2" data-ff-pipeline-stage-row="">
           <button
             type="button"

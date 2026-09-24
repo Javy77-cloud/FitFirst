@@ -5,7 +5,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { moveDealToStage } from "@/app/actions/pipeline";
 import { currentDeskSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { alerts, deals, quoteAttemptLogs, quotes, reviewTasks } from "@/lib/db/schema";
+import { alerts, contacts, deals, leads, quoteAttemptLogs, quotes, reviewTasks } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import {
   dealProductDef,
@@ -63,6 +63,48 @@ import {
   outsideOverrideActivityTitle,
   outsideOverrideStageLabel,
 } from "@/lib/deals/outside-stage-override";
+import {
+  CLIENT_SEND_REQUIRED_MESSAGE,
+  hasProviderMessageId,
+  isClientFacingLateStage,
+  lateStageSendBlocked,
+} from "@/lib/deals/client-send-gate";
+import { deliverClientQuoteEmail } from "@/lib/comms/quote-delivery-store";
+
+function reusableClientSendId(state: {
+  clientSendMessageId?: string | null;
+  clientSendFlag?: string | null;
+}): string | null {
+  if (state.clientSendFlag === "bounce" || state.clientSendFlag === "complaint") return null;
+  const id = state.clientSendMessageId ?? "";
+  return hasProviderMessageId(id) ? id.trim() : null;
+}
+
+async function clientParty(deal: {
+  contactId?: string | null;
+  leadId?: string | null;
+  primaryNamedInsured?: string | null;
+}): Promise<{ email: string | null; name: string | null }> {
+  let email: string | null = null;
+  let name = (deal.primaryNamedInsured ?? "").trim() || null;
+  if (deal.contactId) {
+    const [contact] = await db
+      .select({ email: contacts.email, firstName: contacts.firstName, lastName: contacts.lastName })
+      .from(contacts)
+      .where(and(eq(contacts.id, deal.contactId), eq(contacts.tenantId, DEFAULT_TENANT_ID)));
+    if (contact?.email?.trim()) email = contact.email.trim();
+    if (!name && contact) name = `${contact.firstName ?? ""} ${contact.lastName ?? ""}`.trim() || null;
+  }
+  if (!email && deal.leadId) {
+    const [lead] = await db
+      .select({ email: leads.email, firstName: leads.firstName, lastName: leads.lastName })
+      .from(leads)
+      .where(and(eq(leads.id, deal.leadId), eq(leads.tenantId, DEFAULT_TENANT_ID)));
+    if (lead?.email?.trim()) email = lead.email.trim();
+    if (!name && lead) name = `${lead.firstName ?? ""} ${lead.lastName ?? ""}`.trim() || null;
+  }
+  return { email, name };
+}
 
 async function loadDeal(dealId: string) {
   const [deal] = await db
@@ -198,6 +240,46 @@ export async function setDealProductStage(input: {
   if (quotesOnlyStageBlocked(stageSlug, input.surface)) {
     return { ok: false as const, reason: "quotes_only" };
   }
+  let clientSendMessageId = reusableClientSendId(current);
+  if (
+    lateStageSendBlocked({
+      stage: stageSlug,
+      messageId: clientSendMessageId,
+      outsideOverride,
+    })
+  ) {
+    const party = await clientParty(deal);
+    const sent = await deliverClientQuoteEmail({
+      dealId,
+      product,
+      stageSlug,
+      to: party.email,
+      clientName: party.name,
+      quoteId: selectedQuoteIds[0] ?? null,
+    });
+    if (!sent.ok) {
+      return {
+        ok: false as const,
+        reason: "need_send" as const,
+        message: sent.error || CLIENT_SEND_REQUIRED_MESSAGE,
+      };
+    }
+    if (!hasProviderMessageId(sent.messageId)) {
+      return {
+        ok: false as const,
+        reason: "need_send" as const,
+        message: CLIENT_SEND_REQUIRED_MESSAGE,
+      };
+    }
+    clientSendMessageId = sent.messageId;
+    await persistDealShopFlow(dealId, {
+      ...saved,
+      productStages: setProductStage(stages, product, {
+        clientSendMessageId,
+        clientSendFlag: null,
+      }),
+    });
+  }
   if (stageSlug === "closed_lost" && input.lostReason && !isProductLostReason(input.lostReason)) {
     return { ok: false as const, reason: "need_lost_reason" };
   }
@@ -223,6 +305,9 @@ export async function setDealProductStage(input: {
     selectedQuoteIds,
     lostReason: stageSlug === "closed_lost" ? input.lostReason ?? current.lostReason : null,
     outsideOverride: hasActiveOutsideOverride(outsideOverride) ? outsideOverride : null,
+    ...(isClientFacingLateStage(stageSlug)
+      ? { clientSendMessageId, clientSendFlag: null }
+      : {}),
   });
   await persistDealShopFlow(dealId, { ...saved, productStages: nextStages });
 
@@ -341,6 +426,9 @@ export async function overrideDealProductStageOutside(input: {
   });
   if (!result.ok) {
     if (result.reason === "need_reason" && "message" in result && result.message) {
+      return { ok: false as const, error: String(result.message) };
+    }
+    if (result.reason === "need_send" && "message" in result && result.message) {
       return { ok: false as const, error: String(result.message) };
     }
     return { ok: false as const, error: "Could not apply the outside FitFirst override." };

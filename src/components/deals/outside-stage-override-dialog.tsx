@@ -27,6 +27,7 @@ import {
   type ProductLostReason,
 } from "@/lib/deals/product-stages";
 import { flashAction } from "@/lib/flash-client";
+import { OPEN_TRACKING_NOTE } from "@/lib/comms/quote-delivery";
 import { cn } from "@/lib/utils";
 
 /** Stage control — unlock Policy issued when quoted off FitFirst, or Closed lost when they went elsewhere. */
@@ -64,6 +65,7 @@ export function OutsideStageOverrideDialog({
   const [reason, setReason] = useState("");
   const [lostReason, setLostReason] = useState<ProductLostReason | "">("");
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const isLost = stage === "closed_lost";
   const canConfirm = isLost
     ? Boolean(lostReason)
@@ -114,11 +116,20 @@ export function OutsideStageOverrideDialog({
             <DialogDescription>
               Unlock Policy issued when quoting happened on a carrier portal or legacy system
               (no fake quote rows — upload the Issued declaration to mint). Or mark Closed lost
-              when they went elsewhere — Captain reason required.
+              when they went elsewhere — Captain reason required. Quote sent, Bound, Policy issued,
+              and Closed won still need a real client email. A reason does not skip that send.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3">
+            <p className="text-helper text-muted-foreground" data-ff-open-tracking-note="">
+              {OPEN_TRACKING_NOTE}
+            </p>
+            {sendError ? (
+              <p className="text-sm text-fit-red" role="alert" data-ff-quote-send-error="">
+                {sendError}
+              </p>
+            ) : null}
             <div className="space-y-1.5">
               <Label className="text-xs">Force stage to</Label>
               <div
@@ -215,6 +226,7 @@ export function OutsideStageOverrideDialog({
               data-ff-outside-stage-confirm=""
               onClick={() => {
                 start(async () => {
+                  setSendError(null);
                   const result = await overrideDealProductStageOutside({
                     dealId,
                     product,
@@ -227,7 +239,9 @@ export function OutsideStageOverrideDialog({
                     lostReason: isLost ? lostReason || null : null,
                   });
                   if (!result.ok) {
-                    flashAction(result.error ?? "Could not apply override", "error");
+                    const message = result.error ?? "Could not apply override";
+                    setSendError(message);
+                    flashAction(message, "error");
                     return;
                   }
                   flashAction(

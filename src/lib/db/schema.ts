@@ -1604,6 +1604,29 @@ export const quoteAttemptLogs = pgTable(
   ],
 );
 
+/** One row per quote-email send, delivery, bounce, complaint, or open. Tied to deal + provider message id. */
+export const quoteDeliveryEvents = pgTable(
+  "quote_delivery_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    dealId: uuid("deal_id").references(() => deals.id),
+    product: text("product"),
+    quoteId: uuid("quote_id"),
+    messageId: text("message_id").notNull(),
+    kind: text("kind").notNull(),
+    stageSlug: text("stage_slug"),
+    detail: text("detail"),
+    token: text("token"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("quote_delivery_events_message_idx").on(t.tenantId, t.messageId),
+    index("quote_delivery_events_deal_idx").on(t.tenantId, t.dealId),
+    index("quote_delivery_events_token_idx").on(t.tenantId, t.token),
+  ],
+);
+
 export const quotes = pgTable(
   "quotes",
   {
