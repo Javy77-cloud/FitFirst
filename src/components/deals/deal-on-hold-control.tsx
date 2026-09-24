@@ -22,18 +22,31 @@ export function DealOnHoldControl({
   onHold,
   dealTitle,
   buttonVariant = "button",
+  trigger = true,
+  open: openProp,
+  onOpenChange,
 }: {
   dealId: string;
   onHold: boolean;
   dealTitle?: string;
   buttonVariant?: "button" | "link";
+  /** When false, only the hold dialog is rendered (for Pipeline Actions menu). */
+  trigger?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const controlled = openProp !== undefined;
+  const open = controlled ? Boolean(openProp) : internalOpen;
+  const setOpen = (next: boolean) => {
+    if (!controlled) setInternalOpen(next);
+    onOpenChange?.(next);
+  };
   const [note, setNote] = useState("");
   const [pending, start] = useTransition();
 
-  if (onHold) {
+  if (onHold && trigger) {
     return (
       <Button
         type="button"
@@ -59,29 +72,35 @@ export function DealOnHoldControl({
     );
   }
 
+  if (onHold && !trigger) {
+    return null;
+  }
+
   return (
     <>
-      {buttonVariant === "link" ? (
-        <button
-          type="button"
-          data-ff-deal-hold=""
-          className="text-[11px] font-medium text-navy underline-offset-2 hover:underline"
-          onClick={() => setOpen(true)}
-        >
-          Hold
-        </button>
-      ) : (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          data-ff-deal-hold=""
-          className="h-7 px-2 text-[11px] font-semibold"
-          onClick={() => setOpen(true)}
-        >
-          Hold
-        </Button>
-      )}
+      {trigger ? (
+        buttonVariant === "link" ? (
+          <button
+            type="button"
+            data-ff-deal-hold=""
+            className="text-[11px] font-medium text-navy underline-offset-2 hover:underline"
+            onClick={() => setOpen(true)}
+          >
+            Hold
+          </button>
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            data-ff-deal-hold=""
+            className="h-7 px-2 text-[11px] font-semibold"
+            onClick={() => setOpen(true)}
+          >
+            Hold
+          </Button>
+        )
+      ) : null}
 
       <Dialog
         open={open}
