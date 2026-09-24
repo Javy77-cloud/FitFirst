@@ -84,6 +84,7 @@ describe("Deal Details tab", () => {
     expect(layout.columns[1].sections.map((section) => section.id)).toEqual([
       "co_applicant",
       "mailing_address",
+      "intake",
       "pipeline",
     ]);
   });

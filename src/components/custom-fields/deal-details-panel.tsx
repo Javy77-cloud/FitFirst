@@ -36,6 +36,7 @@ import {
   isSellingAgencyFieldKey,
 } from "@/lib/deals/selling-agency";
 import { isDealDetailsLandlordFieldKey } from "@/lib/custom-fields/deal-details-landlord";
+import { isDealPreferencesSection } from "@/lib/custom-fields/contact-parity-fields";
 import { MailingSameSwitch } from "@/components/custom-fields/mailing-same-switch";
 import {
   MAILING_SAME_AS_INSURED_KEY,
@@ -505,6 +506,7 @@ export function DealDetailsPanel({
           <div key={column.id} className="min-w-0 space-y-3" data-ff-deal-details-col={column.id}>
             {asList(column.sections).map((section) => {
               if (isPipelineStripSection(section)) return null;
+              if (isDealPreferencesSection(section)) return null;
               const sectionKeys = asList(section.fieldKeys).filter((key) => {
                 if (isDealDetailsLandlordFieldKey(key)) return false;
                 if (isDuplicateDealDetailsField(key, layoutKeySet, seenFieldKeys)) return false;

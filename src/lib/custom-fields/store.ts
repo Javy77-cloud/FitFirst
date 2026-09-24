@@ -862,6 +862,7 @@ async function migrateInsuredPropertyKindLayout(
 }
 
 
+/** Intake backfill only. Must not recreate a deleted Deal Preferences section. */
 async function migrateContactParityDealLayouts(
   rows: { id: string; columns: unknown }[],
   picked: FieldLayout,

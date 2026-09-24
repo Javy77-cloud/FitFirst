@@ -20,7 +20,6 @@ import { mhoDetailsCatalogFields } from "./mho-details-fields";
 import {
   CONTACT_PARITY_CRM_FIELDS,
   contactParityIntakeSection,
-  contactParityPersonSection,
 } from "./contact-parity-fields";
 
 function section(id: string, label: string, fieldKeys: string[]): LayoutSection {
@@ -235,7 +234,6 @@ function essentialSections(): { left: LayoutSection[]; right: LayoutSection[] } 
         "contact_mailing_zip",
         "contact_mailing_county",
       ]),
-      contactParityPersonSection(),
       contactParityIntakeSection(),
       section("pipeline", "Pipeline", [
         "insurance_type",

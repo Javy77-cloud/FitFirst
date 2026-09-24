@@ -17,7 +17,10 @@ import {
   PRIMARY_HEAT_OPTIONS,
 } from "@/lib/quote-sheet/sheet-defaults";
 import { dealProductDef, parseDealProduct, type DealProductId } from "./deal-products";
-import { AUTO_DL_FIELDS } from "@/lib/custom-fields/contact-parity-fields";
+import {
+  AUTO_DL_FIELDS,
+  isDealPreferencesSection,
+} from "@/lib/custom-fields/contact-parity-fields";
 
 /**
  * One Deal Details page per deal — not a full personal layout per product.
@@ -378,9 +381,11 @@ export function layoutForActiveProduct(
 ): FieldLayout {
   const left = layout.columns[0] ?? { id: "left", sections: [] };
   const right = layout.columns[1] ?? { id: "right", sections: [] };
-  const sharedLeft = left.sections.filter(isSharedDealSection);
+  const keepOnDetails = (section: LayoutSection) =>
+    isSharedDealSection(section) && !isDealPreferencesSection(section);
+  const sharedLeft = left.sections.filter(keepOnDetails);
   const sharedRight = right.sections.filter(
-    (section) => isSharedDealSection(section) && !isPipelineStripSection(section),
+    (section) => keepOnDetails(section) && !isPipelineStripSection(section),
   );
   const dropLandlord = (section: LayoutSection): LayoutSection => ({
     ...section,

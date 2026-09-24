@@ -15,8 +15,10 @@ import { allLayoutFieldKeys } from "./types";
  * DEAL_TO_CONTACT_FIELD_MAP maps it onto Contact `gender`.
  *
  * DL keys belong on Auto product catalog only — see AUTO_DL_FIELDS.
- * Spouse name + DOB + link stay consecutive so section packing keeps one
- * three-equal-cell row (never span-2 the name over the link).
+ *
+ * The Deal Details "Preferences" card (nickname, phones, spouse, dependents)
+ * is retired. Field definitions stay so stored values and lead→deal→contact
+ * copy still work. Do not put that card back on a deal layout.
  */
 export const CONTACT_PARITY_CRM_FIELDS: CustomFieldDef[] = [
   { key: "nickname", label: "Nickname", type: "single_line" },
@@ -83,14 +85,6 @@ export const CONTACT_PARITY_CUSTOM_KEYS = [
   ...CONTACT_PARITY_INTAKE_FIELD_KEYS,
 ] as const;
 
-export function contactParityPersonSection(): LayoutSection {
-  return {
-    id: "prefs",
-    label: "Preferences",
-    fieldKeys: [...CONTACT_PARITY_SECTION_FIELD_KEYS],
-  };
-}
-
 export function contactParityIntakeSection(): LayoutSection {
   return {
     id: "intake",
@@ -99,31 +93,48 @@ export function contactParityIntakeSection(): LayoutSection {
   };
 }
 
-function layoutHasParitySections(layout: FieldLayout): boolean {
+const PREFERENCE_FIELD_KEYS = new Set<string>(CONTACT_PARITY_SECTION_FIELD_KEYS);
+
+/**
+ * Deal Details card the owner retired. True for the stock section (id `prefs`
+ * or title Preferences) and for a section whose keys are only that card.
+ * Contact and lead layouts must not use this — deal detail only.
+ */
+export function isDealPreferencesSection(section: {
+  id?: string;
+  label?: string;
+  fieldKeys?: readonly string[];
+}): boolean {
+  const id = (section.id ?? "").trim().toLowerCase();
+  const label = (section.label ?? "").trim().toLowerCase();
+  if (id === "prefs" || label === "preferences") return true;
+  const keys = section.fieldKeys ?? [];
+  if (keys.length === 0) return false;
+  return keys.every((key) => PREFERENCE_FIELD_KEYS.has(key));
+}
+
+function layoutHasIntake(layout: FieldLayout): boolean {
   const keys = new Set(allLayoutFieldKeys(layout));
-  const sections = layout.columns.flatMap((column) => column.sections);
-  const hasPrefs = sections.some((section) => section.id === "prefs");
-  const hasIntake = sections.some((section) => section.id === "intake");
-  if (!hasPrefs || !hasIntake) return false;
-  for (const key of CONTACT_PARITY_CUSTOM_KEYS) {
-    if (!keys.has(key)) return false;
-  }
-  // Spouse trio must stay consecutive inside prefs for three-equal-cell packing.
-  const prefs = sections.find((section) => section.id === "prefs");
-  if (!prefs) return false;
-  const joined = prefs.fieldKeys.join(",");
-  return joined.includes("spouse_name,spouse_dob,spouse_link");
+  const intake = layout.columns
+    .flatMap((column) => column.sections)
+    .find((section) => section.id === "intake");
+  if (!intake) return false;
+  return CONTACT_PARITY_INTAKE_FIELD_KEYS.every((key) => keys.has(key));
 }
 
+/** Intake only. A missing Preferences section is intentional and must stay gone. */
 export function needsContactParityDealLayout(layout: FieldLayout): boolean {
-  return !layoutHasParitySections(layout);
+  return !layoutHasIntake(layout);
 }
 
-/** Inject Preferences + Intake (Contact v4 parity) onto saved Deal layouts. */
+/**
+ * Ensure Intake on saved Deal layouts.
+ * Never creates or repairs Preferences — load after Save used to write that
+ * card back onto every line of business.
+ */
 export function ensureContactParityDealLayout(layout: FieldLayout): FieldLayout {
   if (!needsContactParityDealLayout(layout)) return layout;
 
-  const prefs = contactParityPersonSection();
   const intake = contactParityIntakeSection();
 
   return {
@@ -135,37 +146,10 @@ export function ensureContactParityDealLayout(layout: FieldLayout): FieldLayout 
       if (!isTarget) return column;
 
       const sections = [...column.sections];
-      const prefsAt = sections.findIndex((section) => section.id === "prefs");
       const intakeAt = sections.findIndex((section) => section.id === "intake");
       const pipelineAt = sections.findIndex(
         (section) => section.id === "pipeline" || section.id === "insurance_quote",
       );
-
-      if (prefsAt >= 0) {
-        const existing = sections[prefsAt]!;
-        const keys = [...existing.fieldKeys];
-        for (const key of CONTACT_PARITY_SECTION_FIELD_KEYS) {
-          if (!keys.includes(key)) keys.push(key);
-        }
-        // Keep spouse trio consecutive.
-        for (const key of ["spouse_name", "spouse_dob", "spouse_link"] as const) {
-          const at = keys.indexOf(key);
-          if (at >= 0) keys.splice(at, 1);
-        }
-        const insertAt = (() => {
-          const timeAt = keys.indexOf("preferred_contact_time");
-          if (timeAt >= 0) return timeAt + 1;
-          const methodAt = keys.indexOf("preferred_contact_method");
-          if (methodAt >= 0) return methodAt + 1;
-          return keys.length;
-        })();
-        keys.splice(insertAt, 0, "spouse_name", "spouse_dob", "spouse_link");
-        sections[prefsAt] = { ...existing, fieldKeys: keys };
-      } else if (pipelineAt >= 0) {
-        sections.splice(pipelineAt, 0, prefs);
-      } else {
-        sections.push(prefs);
-      }
 
       if (intakeAt >= 0) {
         const existing = sections[intakeAt]!;
@@ -175,11 +159,7 @@ export function ensureContactParityDealLayout(layout: FieldLayout): FieldLayout 
         }
         sections[intakeAt] = { ...existing, fieldKeys: keys };
       } else {
-        const prefsNow = sections.findIndex((section) => section.id === "prefs");
-        const pipeNow = sections.findIndex(
-          (section) => section.id === "pipeline" || section.id === "insurance_quote",
-        );
-        const at = pipeNow >= 0 ? pipeNow : prefsNow >= 0 ? prefsNow + 1 : sections.length;
+        const at = pipelineAt >= 0 ? pipelineAt : sections.length;
         sections.splice(at, 0, intake);
       }
 
