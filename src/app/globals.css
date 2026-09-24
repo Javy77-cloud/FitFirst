@@ -1591,52 +1591,70 @@ a[data-ff-carrier-portal-status="connected"]:hover {
   }
 }
 
-/* Policy overview: compact Renewal agreed ink beside the renewal text.
+/* Policy overview: Renewal agreed ink beside Client staying.
+   Larger than the #382 compact ink, still under the pre-#382 dossier ink.
    Tilt stays the deal stamp's rotate(-8deg) from ff-stamp-ink-hit. */
 [data-ff-policy-links-renewal] {
   container-type: inline-size;
   overflow: visible;
 }
+.ff-links-renewal-staying {
+  display: inline-flex;
+  anchor-name: --ff-links-renewal-staying;
+}
 .ff-renewal-agreed-stamp {
   position: absolute;
   z-index: 2;
   top: 50%;
-  /* In the open area beside the renewal text, inset from the card edge. */
-  left: 68%;
+  /* Fallback when Client staying is not in the card: near the horizontal center. */
+  left: 46%;
   width: max-content;
-  max-width: 40%;
   pointer-events: none;
-  transform: translateY(-50%);
+  /* 10px below card center so the -8° corner clears the renewal line. */
+  transform: translateY(calc(-50% + 10px));
+}
+[data-ff-policy-links-renewal]:has(.ff-links-renewal-staying) .ff-renewal-agreed-stamp {
+  position-anchor: --ff-links-renewal-staying;
+  /* 12px past the button; the tilt leaves about a 10px visible gap. */
+  left: calc(anchor(right) + 12px);
 }
 [data-ff-renewal-agreed-stamp] .ff-deal-status-stamp {
-  max-width: 10rem;
+  max-width: none;
 }
 [data-ff-renewal-agreed-stamp] .ff-deal-status-stamp-ink {
   min-height: 0;
   min-width: 0;
-  padding: 0.28rem 0.55rem;
-  border-width: 3px;
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
+  padding: 0.36rem 1.05rem;
+  border-width: 6px;
+  font-size: 2.05rem;
+  letter-spacing: 0.06em;
   line-height: 1.05;
   white-space: nowrap;
 }
+@container (max-width: 54rem) {
+  [data-ff-renewal-agreed-stamp] .ff-deal-status-stamp-ink {
+    padding: 0.3rem 0.78rem;
+    border-width: 5px;
+    font-size: 1.55rem;
+    letter-spacing: 0.05em;
+  }
+}
 @container (max-width: 40rem) {
+  [data-ff-policy-links-renewal]:has(.ff-links-renewal-staying) .ff-renewal-agreed-stamp,
   .ff-renewal-agreed-stamp {
-    top: 0.5rem;
-    right: 0.55rem;
+    top: 0.45rem;
+    right: 0.45rem;
     left: auto;
-    max-width: 46%;
     transform: none;
   }
   [data-ff-renewal-agreed-stamp] .ff-deal-status-stamp-ink {
-    padding: 0.12rem 0.38rem;
-    border-width: 2px;
-    font-size: 0.58rem;
-    letter-spacing: 0.02em;
+    padding: 0.2rem 0.48rem;
+    border-width: 3px;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
   }
   [data-ff-policy-links-renewal]:has([data-ff-renewal-agreed-stamp]) .ff-links-renewal-copy h2 {
-    padding-right: 7.25rem;
+    padding-right: 11rem;
   }
 }
 
