@@ -2,6 +2,7 @@ import { contactActionButtonClass, isContactActionKind } from "@/lib/desk/contac
 import type { ActivityKind } from "@/lib/domain";
 import { DESK_TIME_ZONE } from "@/lib/desk/desk-timezone";
 import { parseDeskDateTimeLocal } from "@/lib/tasks/due-at";
+import { etDateKey, etEndOfDay, etStartOfDay, sameEtDay } from "@/lib/time/et";
 
 export type CalendarActivity = {
   id: string;
@@ -248,19 +249,17 @@ export function activityEnd(activity: CalendarActivity): Date | null {
 }
 
 export function sameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
+  return sameEtDay(a, b);
 }
 
 export function activityOnDay(activity: CalendarActivity, day: Date): boolean {
   const start = activityAnchor(activity);
   if (!start) return false;
   const end = activityEnd(activity) ?? start;
-  const dayStart = startOfDay(day).getTime();
-  const dayEnd = endOfDay(day).getTime();
+  // Bucket by Eastern calendar day — day grid cells are ET wall dates.
+  const key = etDateKey(day);
+  const dayStart = etStartOfDay(key).getTime();
+  const dayEnd = etEndOfDay(key).getTime();
   return start.getTime() <= dayEnd && end.getTime() >= dayStart;
 }
 

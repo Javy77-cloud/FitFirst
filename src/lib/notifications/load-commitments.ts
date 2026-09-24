@@ -1,7 +1,7 @@
 import { and, eq, inArray, notInArray, or, sql } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { accounts, activities, contacts, deals, leads, policies, reviewTasks } from "@/lib/db/schema";
+import { accounts, activities, contacts, deals, deskCustomFieldValues, leads, policies, reviewTasks } from "@/lib/db/schema";
 import { deskNow } from "@/lib/home/as-of";
 import { currentDeskSession } from "@/lib/auth/session";
 import {
@@ -162,6 +162,26 @@ export async function loadOpenCommitments(asOf = deskNow()): Promise<Commitment[
     })),
   ]);
 
+  const reviewIds = review.map((row) => row.id);
+  const priorityRows =
+    reviewIds.length > 0
+      ? await db
+          .select({
+            recordId: deskCustomFieldValues.recordId,
+            value: deskCustomFieldValues.value,
+          })
+          .from(deskCustomFieldValues)
+          .where(
+            and(
+              eq(deskCustomFieldValues.tenantId, tenant()),
+              eq(deskCustomFieldValues.module, "tasks"),
+              eq(deskCustomFieldValues.fieldKey, "priority"),
+              inArray(deskCustomFieldValues.recordId, reviewIds),
+            ),
+          )
+      : [];
+  const priorityByTask = new Map(priorityRows.map((row) => [row.recordId, String(row.value ?? "")]));
+
   function toCommitment(input: {
     id: string;
     source: "review" | "activity";
@@ -169,6 +189,7 @@ export async function loadOpenCommitments(asOf = deskNow()): Promise<Commitment[
     dueAt: Date;
     status: string;
     kind: string;
+    priority: string | null;
     contactId: string | null;
     dealId: string | null;
     policyId: string | null;
@@ -203,6 +224,7 @@ export async function loadOpenCommitments(asOf = deskNow()): Promise<Commitment[
         dueAt: row.dueDate,
         status: row.status,
         kind: row.kind,
+        priority: priorityByTask.get(row.id) || null,
         contactId: row.contactId,
         dealId: row.dealId,
         policyId: row.policyId,
@@ -218,6 +240,7 @@ export async function loadOpenCommitments(asOf = deskNow()): Promise<Commitment[
         dueAt: row.dueAt ?? row.startAt ?? asOf,
         status: row.status,
         kind: row.kind,
+        priority: null,
         contactId: row.contactId,
         dealId: row.dealId,
         policyId: row.policyId,
