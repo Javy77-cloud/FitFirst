@@ -25,6 +25,12 @@ import { streetOnlyPremises } from "@/lib/policy/premises";
 import { BindBlockedError, isCommercialLine } from "@/lib/crm/bind";
 import { sheetProductForQuotingForm } from "@/lib/deals/deal-line";
 import {
+  dwellingSheetAddressCells,
+  isDwellingFireProduct,
+  seedDwellingFireAddresses,
+  dwellingPolicyAddresses,
+} from "@/lib/deals/dwelling-addresses";
+import {
   defaultFormForShopLine,
   lobsToBindForDeal,
   pickQuoteForLine,
@@ -93,7 +99,6 @@ import {
   INSURED_PROPERTY_KIND_KEY,
   insuredPropertyKindLabel,
 } from "@/lib/deals/insured-property-kind";
-import { listFieldDefs, writeRecordValues } from "@/lib/custom-fields/store";
 import { normalizeLeadCadence } from "@/lib/leads/queue";
 import { fillBlankParty, fillSheetFromLead, leadOntoRisk } from "@/lib/desk/copy-once";
 import {
@@ -111,7 +116,7 @@ import {
   pipelineSlugForLine,
   resolveConvertLine,
 } from "@/lib/crm/convert";
-import { loadRecordValues, writeCarriedLeadValues } from "@/lib/custom-fields/store";
+import { listFieldDefs, loadRecordValues, writeCarriedLeadValues, writeRecordValues } from "@/lib/custom-fields/store";
 import { persistDealWorkTab } from "@/lib/deals/work-tab";
 import {
   documentLinesFromDocs,
@@ -548,31 +553,24 @@ export async function createDeal(formData: FormData) {
     pickedContact?.phone ||
     pickedAccount?.phone ||
     null;
-  const mailingAddress =
+  const typedInsuredStreet =
     str(formData, "address1") ||
     str(formData, "mailingAddress") ||
     str(formData, "field_mailing_address") ||
-    pickedContact?.mailingAddress ||
-    pickedAccount?.mailingAddress ||
     null;
-  const city =
-    str(formData, "city") ||
-    str(formData, "field_city") ||
-    pickedContact?.city ||
-    pickedAccount?.city ||
-    null;
-  const state =
-    str(formData, "state") ||
-    str(formData, "field_state") ||
-    pickedContact?.state ||
-    pickedAccount?.state ||
-    null;
-  const zip =
-    str(formData, "zip") ||
-    str(formData, "field_zip") ||
-    pickedContact?.zip ||
-    pickedAccount?.zip ||
-    null;
+  const typedCity = str(formData, "city") || str(formData, "field_city") || null;
+  const typedState = str(formData, "state") || str(formData, "field_state") || null;
+  const typedZip = str(formData, "zip") || str(formData, "field_zip") || null;
+  const partyHome = {
+    street: pickedContact?.mailingAddress || pickedAccount?.mailingAddress || "",
+    city: pickedContact?.city || pickedAccount?.city || "",
+    state: pickedContact?.state || pickedAccount?.state || "",
+    zip: pickedContact?.zip || pickedAccount?.zip || "",
+  };
+  const mailingAddress = typedInsuredStreet || partyHome.street || null;
+  const city = typedCity || partyHome.city || null;
+  const state = typedState || partyHome.state || null;
+  const zip = typedZip || partyHome.zip || null;
   const source =
     str(formData, "source") ||
     str(formData, "field_source") ||
@@ -721,6 +719,31 @@ export async function createDeal(formData: FormData) {
     const [sourceRisk] = sourceDealId
       ? await db.select().from(risks).where(eq(risks.dealId, sourceDealId)).then((rows) => rows.slice(0, 1))
       : [];
+    const dwellingFire = isDwellingFireProduct(quotingForm, policySubType);
+    const postedCustom = dwellingFire
+      ? await loadRecordValues(deal.id, "deals").catch(() => ({} as Record<string, string>))
+      : null;
+    const dwellingSeed = dwellingFire
+      ? seedDwellingFireAddresses({
+          insured: {
+            street: postedCustom?.mailing_address || typedInsuredStreet || sourceRisk?.address1 || "",
+            city: postedCustom?.city || typedCity || sourceRisk?.city || "",
+            state: postedCustom?.state || typedState || sourceRisk?.state || "",
+            zip: postedCustom?.zip || typedZip || sourceRisk?.zip || "",
+          },
+          mailing: {
+            street: postedCustom?.contact_mailing_address || "",
+            city: postedCustom?.contact_mailing_city || "",
+            state: postedCustom?.contact_mailing_state || "",
+            zip: postedCustom?.contact_mailing_zip || "",
+          },
+          partyHome,
+          sameFlag: postedCustom?.mailing_same_as_insured,
+        })
+      : null;
+    if (dwellingSeed) {
+      await writeRecordValues(deal.id, dwellingSeed.custom, "deals");
+    }
     const [createdRisk] = await db.insert(risks).values({
       tenantId: DEFAULT_TENANT_ID,
       dealId: deal.id,
@@ -730,11 +753,19 @@ export async function createDeal(formData: FormData) {
         (deal.lineOfBusiness === "AUTO" || deal.quotingLine === "auto"
           ? "auto"
           : sourceRisk?.riskType ?? "property"),
-      address1: mailingAddress || sourceRisk?.address1 || fromLead.address1,
-      city: city || sourceRisk?.city || fromLead.city,
+      address1: dwellingSeed
+        ? dwellingSeed.insured.street || null
+        : mailingAddress || sourceRisk?.address1 || fromLead.address1,
+      city: dwellingSeed
+        ? dwellingSeed.insured.city || null
+        : city || sourceRisk?.city || fromLead.city,
       county: str(formData, "county") || str(formData, "field_county") || sourceRisk?.county || null,
-      state: state || sourceRisk?.state || fromLead.state,
-      zip: zip || sourceRisk?.zip || fromLead.zip,
+      state: dwellingSeed
+        ? dwellingSeed.insured.state || state || "FL"
+        : state || sourceRisk?.state || fromLead.state,
+      zip: dwellingSeed
+        ? dwellingSeed.insured.zip || null
+        : zip || sourceRisk?.zip || fromLead.zip,
       yearBuilt: sourceRisk?.yearBuilt ?? null,
       construction: sourceRisk?.construction ?? null,
       occupancy: sourceRisk?.occupancy ?? null,
@@ -765,6 +796,7 @@ export async function createDeal(formData: FormData) {
       values: {
         ...seededSheetValues(quotingLine, shopProducts),
         ...(fillSheetFromLead(lead) as typeof quoteSheets.$inferInsert.values),
+        ...(dwellingSeed ? dwellingSheetAddressCells(dwellingSeed) : {}),
       },
     });
     await insertSheetsForDeal(deal.id, shopLines, shopProducts);
@@ -1633,6 +1665,21 @@ export async function bindDeal(formData: FormData) {
   const formPremium = str(formData, "premium");
   const formPolicyNumber = str(formData, "policyNumber");
 
+  const dwellingFireBind = isDwellingFireProduct(deal.quotingForm, deal.policySubType);
+  const dwellingBind = dwellingFireBind
+    ? dwellingPolicyAddresses({
+        stored: await loadRecordValues(dealId, "deals").catch(() => ({} as Record<string, string>)),
+        risk,
+        partyHome: lead
+          ? {
+              mailingAddress: lead.mailingAddress,
+              city: lead.city,
+              state: lead.state,
+              zip: lead.zip,
+            }
+          : null,
+      })
+    : null;
   const boundPolicies: (typeof policies.$inferSelect)[] = [];
   for (const [index, lob] of (linesToBind.length ? linesToBind : [deal.lineOfBusiness]).entries()) {
     const copiedQuote = pickQuoteForLine(dealQuotes, bindLogs, lob, { primaryLob });
@@ -1656,14 +1703,30 @@ export async function bindDeal(formData: FormData) {
         expirationDate: expiration,
         premium: premiumRaw,
         coverageA: risk?.coverageA ?? copiedQuote?.coverageA ?? null,
-        premisesAddress: streetOnlyPremises(risk?.address1 || lead?.mailingAddress, {
-          city: risk?.city || lead?.city,
-          state: risk?.state || lead?.state,
-          zip: risk?.zip || lead?.zip,
-        }) || null,
-        premisesCity: risk?.city || lead?.city || null,
-        premisesState: risk?.state || lead?.state || null,
-        premisesZip: risk?.zip || lead?.zip || null,
+        premisesAddress: streetOnlyPremises(
+          dwellingBind ? dwellingBind.premises.street : risk?.address1 || lead?.mailingAddress,
+          dwellingBind
+            ? {
+                city: dwellingBind.premises.city,
+                state: dwellingBind.premises.state,
+                zip: dwellingBind.premises.zip,
+              }
+            : {
+                city: risk?.city || lead?.city,
+                state: risk?.state || lead?.state,
+                zip: risk?.zip || lead?.zip,
+              },
+        ) || null,
+        premisesCity: dwellingBind
+          ? dwellingBind.premises.city || null
+          : risk?.city || lead?.city || null,
+        premisesState: dwellingBind
+          ? dwellingBind.premises.state || null
+          : risk?.state || lead?.state || null,
+        premisesZip: dwellingBind
+          ? dwellingBind.premises.zip || null
+          : risk?.zip || lead?.zip || null,
+        ...(dwellingBind ? { insuredSameAsMailing: dwellingBind.insuredSameAsMailing } : {}),
       })
       .returning();
     boundPolicies.push(policy);

@@ -48,6 +48,8 @@ export type DealHeaderAddressSource = {
   contact?: PartyAddress | null;
   lead?: PartyAddress | null;
   account?: AccountAddress | null;
+  /** DP1/DP3: contact/lead home is mailing, not the insured rental. */
+  dwellingFire?: boolean;
 };
 
 export function isHeaderAddressEmpty(parts: HeaderAddressParts | null | undefined): boolean {
@@ -150,44 +152,79 @@ export function resolveDealHeaderAddresses(input: DealHeaderAddressSource): {
 } {
   const stored = input.stored ?? {};
   const accountMail = accountMailing(input.account);
+  const dwellingFire = input.dwellingFire === true;
 
-  const insured = partsFrom(
-    firstFilled(
-      stored.mailing_address,
-      input.risk?.address1,
-      input.contact?.mailingAddress,
-      input.lead?.mailingAddress,
-      input.account?.primaryAddress1,
-    ),
-    firstFilled(
-      stored.city,
-      input.risk?.city,
-      input.contact?.city,
-      input.lead?.city,
-      input.account?.primaryCity,
-    ),
-    firstFilled(
-      stored.state,
-      input.risk?.state,
-      input.contact?.state,
-      input.lead?.state,
-      input.account?.primaryState,
-    ),
-    firstFilled(
-      stored.zip,
-      input.risk?.zip,
-      input.contact?.zip,
-      input.lead?.zip,
-      input.account?.primaryZip,
-    ),
-  );
+  const insured = dwellingFire
+    ? partsFrom(
+        firstFilled(stored.mailing_address, input.risk?.address1),
+        firstFilled(stored.city, input.risk?.city),
+        firstFilled(stored.state, input.risk?.state),
+        firstFilled(stored.zip, input.risk?.zip),
+      )
+    : partsFrom(
+        firstFilled(
+          stored.mailing_address,
+          input.risk?.address1,
+          input.contact?.mailingAddress,
+          input.lead?.mailingAddress,
+          input.account?.primaryAddress1,
+        ),
+        firstFilled(
+          stored.city,
+          input.risk?.city,
+          input.contact?.city,
+          input.lead?.city,
+          input.account?.primaryCity,
+        ),
+        firstFilled(
+          stored.state,
+          input.risk?.state,
+          input.contact?.state,
+          input.lead?.state,
+          input.account?.primaryState,
+        ),
+        firstFilled(
+          stored.zip,
+          input.risk?.zip,
+          input.contact?.zip,
+          input.lead?.zip,
+          input.account?.primaryZip,
+        ),
+      );
 
-  const mailing = partsFrom(
-    firstFilled(stored.contact_mailing_address, accountMail.address1),
-    firstFilled(stored.contact_mailing_city, accountMail.city),
-    firstFilled(stored.contact_mailing_state, accountMail.state),
-    firstFilled(stored.contact_mailing_zip, accountMail.zip),
-  );
+  const mailing = dwellingFire
+    ? partsFrom(
+        firstFilled(
+          stored.contact_mailing_address,
+          accountMail.address1,
+          input.contact?.mailingAddress,
+          input.lead?.mailingAddress,
+        ),
+        firstFilled(
+          stored.contact_mailing_city,
+          accountMail.city,
+          input.contact?.city,
+          input.lead?.city,
+        ),
+        firstFilled(
+          stored.contact_mailing_state,
+          accountMail.state,
+          input.contact?.state,
+          input.lead?.state,
+        ),
+        firstFilled(
+          stored.contact_mailing_zip,
+          accountMail.zip,
+          input.contact?.zip,
+          input.lead?.zip,
+        ),
+      )
+    : partsFrom(
+        firstFilled(stored.contact_mailing_address, accountMail.address1),
+        firstFilled(stored.contact_mailing_city, accountMail.city),
+        firstFilled(stored.contact_mailing_state, accountMail.state),
+        firstFilled(stored.contact_mailing_zip, accountMail.zip),
+      );
 
   return {
     insured,

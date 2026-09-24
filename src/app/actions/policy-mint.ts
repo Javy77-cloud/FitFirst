@@ -6,6 +6,12 @@ import { persistFile } from "@/app/actions/documents";
 import { findMatchingContact } from "@/app/actions/crm";
 import { findOrCreateLocationFromAddress } from "@/app/actions/locations";
 import { currentDeskSession } from "@/lib/auth/session";
+import { loadRecordValues } from "@/lib/custom-fields/store";
+import {
+  dwellingAddressLine,
+  dwellingPolicyAddresses,
+  isDwellingFireProduct,
+} from "@/lib/deals/dwelling-addresses";
 import { db } from "@/lib/db";
 import {
   alerts,
@@ -369,12 +375,25 @@ async function ensureDealContact(deal: typeof deals.$inferSelect) {
     await db.update(deals).set({ contactId: existing.id, updatedAt: new Date() }).where(eq(deals.id, deal.id));
     return existing.id;
   }
+  const dwellingFire = isDwellingFireProduct(deal.quotingForm, deal.policySubType);
+  const stored = dwellingFire
+    ? await loadRecordValues(deal.id, "deals").catch(() => ({} as Record<string, string>))
+    : {};
+  const split = dwellingFire
+    ? dwellingPolicyAddresses({
+        stored,
+        risk,
+        partyHome: lead
+          ? { mailingAddress: lead.mailingAddress, city: lead.city, state: lead.state, zip: lead.zip }
+          : null,
+      })
+    : null;
   const copied = contactFieldsFromSheet(values, {
     ...identity,
-    mailingAddress: risk?.address1 || lead?.mailingAddress,
-    city: risk?.city || lead?.city,
-    state: risk?.state || lead?.state || "FL",
-    zip: risk?.zip || lead?.zip,
+    mailingAddress: split ? split.mailing.street || lead?.mailingAddress : risk?.address1 || lead?.mailingAddress,
+    city: split ? split.mailing.city || lead?.city : risk?.city || lead?.city,
+    state: split ? split.mailing.state || lead?.state || "FL" : risk?.state || lead?.state || "FL",
+    zip: split ? split.mailing.zip || lead?.zip : risk?.zip || lead?.zip,
     dateOfBirth: lead?.dateOfBirth ? String(lead.dateOfBirth) : null,
   });
   const [contact] = await db
@@ -582,11 +601,41 @@ export async function issuePolicyFromDeclaration(input: {
     ? await db.select({ name: users.name }).from(users).where(eq(users.id, deal.ownerId))
     : [];
   const session = await currentDeskSession();
-  const propertyStreet = streetOnlyPremises(risk?.address1 || deal.propertyOneliner, {
-    city: risk?.city,
-    state: risk?.state,
-    zip: risk?.zip,
-  });
+  const dwellingFire = isDwellingFireProduct(deal.quotingForm, deal.policySubType, product, def.quotingForm);
+  const dealCustom = dwellingFire
+    ? await loadRecordValues(dealId, "deals").catch(() => ({} as Record<string, string>))
+    : null;
+  const [mintLead] = dwellingFire && deal.leadId
+    ? await db.select().from(leads).where(eq(leads.id, deal.leadId))
+    : [];
+  const dwellingSplit = dwellingFire
+    ? dwellingPolicyAddresses({
+        stored: dealCustom,
+        risk,
+        partyHome: mintLead
+          ? {
+              mailingAddress: mintLead.mailingAddress,
+              city: mintLead.city,
+              state: mintLead.state,
+              zip: mintLead.zip,
+            }
+          : null,
+      })
+    : null;
+  const propertyStreet = streetOnlyPremises(
+    dwellingSplit ? dwellingSplit.premises.street || null : risk?.address1 || deal.propertyOneliner,
+    dwellingSplit
+      ? {
+          city: dwellingSplit.premises.city,
+          state: dwellingSplit.premises.state,
+          zip: dwellingSplit.premises.zip,
+        }
+      : {
+          city: risk?.city,
+          state: risk?.state,
+          zip: risk?.zip,
+        },
+  );
   const yearBuilt =
     parsePropertyYear(sheetValue(sheetValues, "year_built", "yearBuilt", "yr_built")) ??
     parsePropertyYear(geminiRows.find((row) => /year_built|yr_built/i.test(row.fieldKey))?.normalizedValue) ??
@@ -610,8 +659,12 @@ export async function issuePolicyFromDeclaration(input: {
     },
     identity: {
       namedInsured: deal.primaryNamedInsured,
-      mailingAddress: propertyStreet || risk?.address1 || null,
-      propertyAddress: propertyStreet || null,
+      mailingAddress: dwellingSplit
+        ? dwellingAddressLine(dwellingSplit.mailing) || null
+        : propertyStreet || risk?.address1 || null,
+      propertyAddress: dwellingSplit
+        ? dwellingAddressLine(dwellingSplit.premises) || propertyStreet || null
+        : propertyStreet || null,
       sellingAgency: sheetValue(sheetValues, "selling_agency"),
       producer: owner?.name || session.name || null,
       insuranceType: insuranceFamilyFromPolicy({
@@ -688,14 +741,18 @@ export async function issuePolicyFromDeclaration(input: {
     billingFrequency: booked.billingFrequency,
     renewalDate: booked.renewalDate ? dateOrFallback(booked.renewalDate, expiration) : null,
     premisesAddress:
-      streetOnlyPremises(booked.premisesAddress || risk?.address1, {
-        city: booked.premisesCity || risk?.city,
-        state: booked.premisesState || risk?.state,
-        zip: booked.premisesZip || risk?.zip,
-      }) || null,
-    premisesCity: booked.premisesCity || risk?.city || null,
-    premisesState: booked.premisesState || risk?.state || null,
-    premisesZip: booked.premisesZip || risk?.zip || null,
+      streetOnlyPremises(
+        booked.premisesAddress || (dwellingSplit ? dwellingSplit.premises.street : risk?.address1),
+        {
+          city: booked.premisesCity || (dwellingSplit ? dwellingSplit.premises.city : risk?.city),
+          state: booked.premisesState || (dwellingSplit ? dwellingSplit.premises.state : risk?.state),
+          zip: booked.premisesZip || (dwellingSplit ? dwellingSplit.premises.zip : risk?.zip),
+        },
+      ) || null,
+    premisesCity: booked.premisesCity || (dwellingSplit ? dwellingSplit.premises.city : risk?.city) || null,
+    premisesState: booked.premisesState || (dwellingSplit ? dwellingSplit.premises.state : risk?.state) || null,
+    premisesZip: booked.premisesZip || (dwellingSplit ? dwellingSplit.premises.zip : risk?.zip) || null,
+    ...(dwellingSplit ? { insuredSameAsMailing: dwellingSplit.insuredSameAsMailing } : {}),
     ownerId: deal.ownerId ?? null,
     sourceQuoteId: quote?.id ?? null,
     sourceDocumentId: gate.dec.id,

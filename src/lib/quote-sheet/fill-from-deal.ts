@@ -28,6 +28,7 @@ import {
   storedValueForCommercialDealKey,
 } from "./commercial-risk-profile";
 import { collapseAutoDriverSheet } from "./auto-driver-dedupe";
+import { isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
 import {
   mailingSheetLine,
   propertyOneLiner,
@@ -624,6 +625,12 @@ export function fillSheetFromDealDetails(
       risk,
       contact,
       lead,
+      dwellingFire: isDwellingFireProduct(
+        input.quotingForm,
+        input.policySubType,
+        stored.insurance_subtype,
+        stored.quoting_form,
+      ),
     });
     put("address1", resolved.property.street);
     put("city", resolved.property.city);

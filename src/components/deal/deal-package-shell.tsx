@@ -24,6 +24,8 @@ export function DealPackageShell({
   dob,
   insuredAddress,
   mailingAddress,
+  insuredLabel = INSURED_ADDRESS_LABEL,
+  mailingLabel = MAILING_ADDRESS_LABEL,
   stage,
   owner,
   activity,
@@ -34,6 +36,8 @@ export function DealPackageShell({
   dob?: string | null;
   insuredAddress?: HeaderAddressParts | null;
   mailingAddress?: HeaderAddressParts | null;
+  insuredLabel?: string;
+  mailingLabel?: string;
   stage?: string | null;
   owner?: string | null;
   activity?: string | null;
@@ -57,8 +61,8 @@ export function DealPackageShell({
       { label: "Activity", value: activity?.trim() || "—", key: "activity" },
     ],
     [
-      { label: INSURED_ADDRESS_LABEL, value: insuredLine, key: "insured" },
-      { label: MAILING_ADDRESS_LABEL, value: mailingLine, key: "mailing" },
+      { label: insuredLabel, value: insuredLine, key: "insured" },
+      { label: mailingLabel, value: mailingLine, key: "mailing" },
     ],
   ];
   return (
