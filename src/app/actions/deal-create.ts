@@ -21,6 +21,7 @@ import {
   type CreateDealPickHit,
 } from "@/lib/deals/create-from-source";
 import { sheetProductForQuotingForm } from "@/lib/deals/deal-line";
+import { isDwellingFireProduct, seedDwellingFireAddresses } from "@/lib/deals/dwelling-addresses";
 import {
   defaultFormForShopLine,
   packageCreateDraft,
@@ -210,6 +211,30 @@ async function createCopiedDeal(
     })
     .returning();
 
+  const dwellingCopy = isDwellingFireProduct(quotingForm, draft?.quotingForm ?? row.policySubType);
+  const dwellingSeed = dwellingCopy
+    ? seedDwellingFireAddresses({
+        insured: {
+          street: risk?.address1 || custom.mailing_address || "",
+          city: risk?.city || custom.city || "",
+          state: risk?.state || custom.state || "",
+          zip: risk?.zip || custom.zip || "",
+        },
+        mailing: {
+          street: custom.contact_mailing_address || "",
+          city: custom.contact_mailing_city || "",
+          state: custom.contact_mailing_state || "",
+          zip: custom.contact_mailing_zip || "",
+        },
+        partyHome: {
+          street: contact?.mailingAddress || "",
+          city: contact?.city || "",
+          state: contact?.state || "",
+          zip: contact?.zip || "",
+        },
+        sameFlag: custom.mailing_same_as_insured,
+      })
+    : null;
   const [copiedRisk] = await db
     .insert(risks)
     .values({
@@ -217,11 +242,11 @@ async function createCopiedDeal(
       dealId: deal.id,
       contactId: risk?.contactId ?? row.contactId,
       riskType: risk?.riskType ?? riskTypeForDeal(row),
-      address1: risk?.address1,
-      city: risk?.city,
+      address1: dwellingSeed ? dwellingSeed.insured.street || null : risk?.address1,
+      city: dwellingSeed ? dwellingSeed.insured.city || null : risk?.city,
       county: risk?.county,
-      state: risk?.state || row.state || "FL",
-      zip: risk?.zip,
+      state: dwellingSeed ? dwellingSeed.insured.state || risk?.state || row.state || "FL" : risk?.state || row.state || "FL",
+      zip: dwellingSeed ? dwellingSeed.insured.zip || null : risk?.zip,
       yearBuilt: risk?.yearBuilt,
       construction: risk?.construction,
       occupancy: risk?.occupancy,
@@ -248,7 +273,7 @@ async function createCopiedDeal(
 
   await insertBlankSheets(deal.id, shopLines);
 
-  const details = mergeCascadePrefill(copyDealDetailValues(custom), {
+  const details = mergeCascadePrefill({ ...copyDealDetailValues(custom), ...(dwellingSeed?.custom ?? {}) }, {
     shopProducts: draft?.products ?? shopLines,
     shopLines,
     lineOfBusiness,
@@ -373,6 +398,17 @@ export async function createDealFromExistingPick(
     })
     .returning();
 
+  const dwellingFromContact = isDwellingFireProduct(draft.quotingForm);
+  const contactSeed = dwellingFromContact
+    ? seedDwellingFireAddresses({
+        partyHome: {
+          street: contact.mailingAddress || "",
+          city: contact.city || "",
+          state: contact.state || "",
+          zip: contact.zip || "",
+        },
+      })
+    : null;
   const [contactRisk] = await db
     .insert(risks)
     .values({
@@ -380,10 +416,10 @@ export async function createDealFromExistingPick(
       dealId: deal.id,
       contactId: contact.id,
       riskType: draft.riskType,
-      address1: contact.mailingAddress,
-      city: contact.city,
-      state: contact.state || "FL",
-      zip: contact.zip,
+      address1: contactSeed ? contactSeed.insured.street || null : contact.mailingAddress,
+      city: contactSeed ? contactSeed.insured.city || null : contact.city,
+      state: contactSeed ? contactSeed.insured.state || contact.state || "FL" : contact.state || "FL",
+      zip: contactSeed ? contactSeed.insured.zip || null : contact.zip,
     })
     .returning();
   requireInsertedRisk(contactRisk, "Contact deal");
@@ -394,10 +430,14 @@ export async function createDealFromExistingPick(
   if (contact.lastName) seeded.last_name = contact.lastName;
   if (contact.email) seeded.email = contact.email;
   if (contact.phone) seeded.phone = contact.phone;
-  if (contact.mailingAddress) seeded.mailing_address = contact.mailingAddress;
-  if (contact.city) seeded.city = contact.city;
-  if (contact.state) seeded.state = contact.state;
-  if (contact.zip) seeded.zip = contact.zip;
+  if (contactSeed) {
+    Object.assign(seeded, contactSeed.custom);
+  } else {
+    if (contact.mailingAddress) seeded.mailing_address = contact.mailingAddress;
+    if (contact.city) seeded.city = contact.city;
+    if (contact.state) seeded.state = contact.state;
+    if (contact.zip) seeded.zip = contact.zip;
+  }
   if (contact.notes) seeded.notes = contact.notes;
   if (seeded.first_name || seeded.last_name) {
     seeded.named_insured = [seeded.first_name, seeded.last_name].filter(Boolean).join(" ");

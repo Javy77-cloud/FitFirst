@@ -9,6 +9,7 @@ import {
   resolveInsuredPropertyKind,
   type InsuredPropertyKind,
 } from "@/lib/deals/insured-property-kind";
+import { isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
 import { firstFilled } from "@/lib/desk/copy-once";
 
 function blank(value: string | null | undefined): boolean {
@@ -133,6 +134,15 @@ export function incomingContactValuesFromDeal(opts: {
     incoming.city = firstFilled(dealCustom.city, opts.risk?.city, opts.lead?.city, sheetStr(sheet, "city"));
     incoming.state = firstFilled(dealCustom.state, opts.risk?.state, opts.lead?.state, sheetStr(sheet, "state"));
     incoming.zip = firstFilled(dealCustom.zip, opts.risk?.zip, opts.lead?.zip, sheetStr(sheet, "zip"));
+  } else if (isDwellingFireProduct(opts.product, opts.quotingForm)) {
+    // Owner mailing — never the rental premises — lands on the contact.
+    incoming.mailing_address = firstFilled(
+      dealCustom.contact_mailing_address,
+      opts.lead?.mailingAddress,
+    );
+    incoming.city = firstFilled(dealCustom.contact_mailing_city, opts.lead?.city);
+    incoming.state = firstFilled(dealCustom.contact_mailing_state, opts.lead?.state);
+    incoming.zip = firstFilled(dealCustom.contact_mailing_zip, opts.lead?.zip);
   } else {
     incoming.mailing_address = firstFilled(opts.lead?.mailingAddress);
     incoming.city = firstFilled(opts.lead?.city);

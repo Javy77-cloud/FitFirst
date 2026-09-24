@@ -90,6 +90,7 @@ import {
 } from "@/lib/property-enrichment/service";
 import { applyPropertyRecordsToSheet } from "@/lib/florida-property/apply";
 import { moveSoleSheetMailingToProperty } from "@/lib/quote-sheet/home-address-fill";
+import { isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
 import { geocodePropertyAddress } from "@/lib/getparceldata/geocode";
 import {
   MILES_TO_COAST_SHEET_KEY,
@@ -691,12 +692,23 @@ export async function runFillFromPropertyRecords(
   const opened = requireStorageLine(lineInput);
   const lineRaw = opened.shopLine;
   const sheet = await ensureQuoteSheet(dealId, opened.storageLine);
+  const [dealRow] = await db
+    .select({ quotingForm: deals.quotingForm, policySubType: deals.policySubType })
+    .from(deals)
+    .where(eq(deals.id, dealId));
+  const dwellingFire = isDwellingFireProduct(
+    dealRow?.quotingForm,
+    dealRow?.policySubType,
+    sheet.values.quoting_form?.value,
+    sheet.values.sheet_product?.value,
+  );
   // Property Fill geocodes the Risk Profile property address.
   // A sole mailing (Deal Details misfile) is moved onto property first so APIs can run.
+  // DP1/DP3 keeps that mailing as the owner's home and does not geocode it as the rental.
   // One button → County PA + FloodZoneMap + FEMA (free) → GetParcelData → PermitStack.
   // Docs / Gemini stay on the separate docs Fill step.
   const freshForAddress = await loadFreshSheetValues(sheet.id, sheet.values);
-  const healed = moveSoleSheetMailingToProperty(freshForAddress);
+  const healed = moveSoleSheetMailingToProperty(freshForAddress, { dwellingFire });
   const sheetAddr = addressFromSheet(healed.values);
   const address = {
     address1: sheetAddr.address1,
@@ -712,7 +724,7 @@ export async function runFillFromPropertyRecords(
   const bundle = await orchestratePropertyFill({ address, apiKey, permitStackKey });
   // Re-read immediately before write — Gemini Fill may have landed while parcel APIs ran.
   const freshPropertyValues = await loadFreshSheetValues(sheet.id, healed.values);
-  const moved = moveSoleSheetMailingToProperty(freshPropertyValues);
+  const moved = moveSoleSheetMailingToProperty(freshPropertyValues, { dwellingFire });
   const appliedBase =
     bundle.status === "ok"
       ? applyPropertyRecordsToSheet(lineRaw, moved.values, bundle.facts)
