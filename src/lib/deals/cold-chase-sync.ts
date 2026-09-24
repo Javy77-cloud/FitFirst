@@ -68,6 +68,7 @@ export function scheduleDealColdChaseNotices(cards: readonly ColdChaseCard[]) {
     insured: card.insured,
     title: card.title,
     ownerId: card.ownerId,
+    onHold: Boolean(card.onHold),
   }));
   after(() => {
     void syncDealColdChaseNotices(snapshot).catch(() => {

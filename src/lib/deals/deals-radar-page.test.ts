@@ -254,4 +254,11 @@ describe("Deals Priority Stack + Radar", () => {
     expect(source("src/lib/deals/card-glance.ts")).toMatch(/stackHealthFlagged/);
     expect(source("src/lib/deals/card-glance.ts")).toMatch(/isStackQuoteLanguage/);
   });
+
+  it("parks On hold out of the default Stack/Radar/List feed", () => {
+    const page = source("src/app/deals/page.tsx");
+    expect(page).toMatch(/includeDealInActiveFeed/);
+    expect(source("src/lib/deals/on-hold.ts")).toMatch(/ON_HOLD_TAG = "on_hold"/);
+    expect(source("src/lib/deals/cold-chase.ts")).toMatch(/!card\.onHold/);
+  });
 });

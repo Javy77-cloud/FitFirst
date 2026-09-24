@@ -22,6 +22,8 @@ describe("per-module tags", () => {
     expect(SUGGESTED_MODULE_TAGS.leads).toContain("referral");
     expect(SUGGESTED_MODULE_TAGS.contacts).toContain("client");
     expect(SUGGESTED_MODULE_TAGS.deals).toContain("shopping");
+    expect(SUGGESTED_MODULE_TAGS.deals).toContain("on_hold");
+    expect(formatTagLabel("on_hold")).toBe("On hold");
     expect(SUGGESTED_MODULE_TAGS.accounts).toContain("commercial");
     expect(SUGGESTED_MODULE_TAGS.policies).toContain("renewal");
     expect(SUGGESTED_MODULE_TAGS.carriers).toContain("preferred");

@@ -10,6 +10,8 @@ export type ColdChaseCard = {
   insured: string;
   title: string;
   ownerId: string | null;
+  /** Soft-parked — never cold-chase while On hold. */
+  onHold?: boolean;
 };
 
 export type ColdChaseNotice = {
@@ -39,7 +41,7 @@ export function coldChaseOpenLabel(kind?: string | null): string {
 
 export function planColdChaseNotices(cards: readonly ColdChaseCard[]): ColdChaseNotice[] {
   return cards
-    .filter((card) => !card.closed && card.heat === "cold")
+    .filter((card) => !card.closed && !card.onHold && card.heat === "cold")
     .map((card) => {
       const name = card.insured !== "—" && card.insured.trim() ? card.insured : card.title;
       return {

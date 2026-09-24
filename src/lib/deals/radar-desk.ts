@@ -1,3 +1,4 @@
+import { dealHasOnHoldTag } from "@/lib/deals/on-hold";
 import { and, eq, inArray } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
@@ -84,6 +85,8 @@ export type RadarDealCard = {
   y: number;
   closed: boolean;
   archivedAt: string | null;
+  tags: string[];
+  onHold: boolean;
   spark: number[];
   updatedAt: string | null;
   inboxCue?: string | null;
@@ -430,6 +433,8 @@ export function presentRadarCards(
         y: pos.y,
         closed,
         archivedAt: parseDate(deal.archivedAt)?.toISOString() ?? null,
+        tags: Array.isArray(deal.tags) ? deal.tags : [],
+        onHold: dealHasOnHoldTag(deal.tags),
         updatedAt: parseDate(deal.updatedAt)?.toISOString() ?? createdAt.toISOString(),
         spark: sparkBuckets(
           [lastCommAt, touches.lastDocByDeal.get(deal.id) ?? null, touches.lastQuoteByDeal.get(deal.id) ?? null, createdAt].filter(

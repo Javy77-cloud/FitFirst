@@ -78,4 +78,12 @@ describe("deal cold chase", () => {
     expect(plan.insertDealIds).toEqual([]);
     expect(plan.endEpisodeAlertIds.sort()).toEqual(["drop-read", "drop-unread"]);
   });
+
+  it("skips On hold deals even when cold", () => {
+    const notices = planColdChaseNotices([
+      { id: "held-1", heat: "cold", closed: false, onHold: true, insured: "Marioja", title: "Marioja", ownerId: "u1" },
+      { id: "cold-1", heat: "cold", closed: false, onHold: false, insured: "Ana", title: "Ana", ownerId: "u1" },
+    ]);
+    expect(notices.map((n) => n.dealId)).toEqual(["cold-1"]);
+  });
 });
