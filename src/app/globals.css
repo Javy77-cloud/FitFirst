@@ -4450,7 +4450,7 @@ tr[data-ff-activity-selected="true"] {
 
 .ff-book-board {
   display: grid;
-  grid-template-columns: repeat(3, minmax(16rem, 1fr));
+  grid-template-columns: repeat(4, minmax(16rem, 1fr));
   gap: 0.75rem;
   overflow-x: auto;
   padding-bottom: 0.35rem;

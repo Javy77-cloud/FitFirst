@@ -806,6 +806,7 @@ const POLICY_BAND_LABEL: Record<string, string> = {
   now: "Needs care",
   watch: "Watch",
   current: "Current",
+  lapsed: "Lapsed",
 };
 
 export type PolicyNeedSignal = {
