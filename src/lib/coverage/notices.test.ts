@@ -11,6 +11,8 @@ import {
   parseNoticeRelated,
   planContactNotices,
 } from "./notices";
+import { planEpisodeSync } from "@/lib/alerts/episode";
+import { readFileSync } from "node:fs";
 
 function policy(partial: { id: string; status?: string; lineOfBusiness?: string }) {
   return {
@@ -139,5 +141,31 @@ describe("contact coverage / opportunity notices", () => {
       deals: [],
     });
     expect(planned).toEqual([]);
+  });
+});
+
+describe("coverage notice episode suppress (mark-as-read)", () => {
+  it("does not re-insert after mark-as-read while the gap key is still live", () => {
+    const live = ["coverage_gap:home-no-flood", "opportunity:deal:flood-shop"];
+    const plan = planEpisodeSync(live, [
+      { id: "read-gap", key: "coverage_gap:home-no-flood" },
+    ]);
+    expect(plan.insertKeys).toEqual(["opportunity:deal:flood-shop"]);
+    expect(plan.endEpisodeAlertIds).toEqual([]);
+  });
+
+  it("ends the episode when the gap clears so a later gap can re-alert", () => {
+    const plan = planEpisodeSync(["opportunity:deal:flood-shop"], [
+      { id: "old-gap", key: "coverage_gap:home-no-flood" },
+      { id: "keep", key: "opportunity:deal:flood-shop" },
+    ]);
+    expect(plan.insertKeys).toEqual([]);
+    expect(plan.endEpisodeAlertIds).toEqual(["old-gap"]);
+  });
+
+  it("sync-notices uses planEpisodeSync (not unread-only)", () => {
+    const src = readFileSync("src/lib/coverage/sync-notices.ts", "utf8");
+    expect(src).toMatch(/planEpisodeSync/);
+    expect(src).not.toMatch(/if \(row\.readAt\) continue/);
   });
 });
