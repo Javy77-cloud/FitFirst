@@ -12,7 +12,6 @@ import { RecordContextRail } from "@/components/record-context/record-context-ra
 import { loadRecordContext } from "@/lib/record-context";
 import { mergeRecordSystemValues } from "@/lib/custom-fields/resolve-layout";
 import { loadModuleLayoutBundle } from "@/lib/custom-fields/store";
-import { RecordModuleMacros } from "@/components/developer-hub/record-module-macros";
 import { sourceLabel } from "@/lib/crm/sources";
 import { listModuleTags } from "@/app/actions/record-tags";
 import { AssignRecordTags } from "@/components/tags/assign-record-tags";
@@ -20,6 +19,7 @@ import { BusinessDetailWorkspace } from "@/components/businesses/business-detail
 import { BusinessDetailSections } from "@/components/businesses/business-detail-sections";
 import { BusinessHealthBadge } from "@/components/businesses/business-health-badge";
 import { BusinessOverflowMenu } from "@/components/businesses/business-overflow-menu";
+import { RecordListPager } from "@/components/records/record-list-pager";
 import { LinkedContactsSection } from "@/components/businesses/linked-contacts-section";
 import { BusinessLocationsSection } from "@/components/businesses/business-locations-section";
 import { BusinessPolicyRows } from "@/components/businesses/business-policy-rows";
@@ -219,14 +219,7 @@ export default async function AccountDetailPage({
                   Source · {sourceLabel(account.source)}
                 </span>
               </div>
-              <div className="ml-auto shrink-0">
-                <BusinessOverflowMenu
-                  accountId={account.id}
-                  accountName={account.name}
-                  tags={account.tags}
-                  tagExtra={tagExtra}
-                />
-              </div>
+              <RecordListPager module="accounts" recordId={account.id} />
             </div>
             <div className="max-w-xl" data-ff-business-header-tags="">
               <AssignRecordTags
@@ -269,6 +262,14 @@ export default async function AccountDetailPage({
       >
         <BusinessDetailSections
           selectedIds={resolvedNavIds}
+          endSlot={
+            <BusinessOverflowMenu
+              accountId={account.id}
+              accountName={account.name}
+              tags={account.tags}
+              tagExtra={tagExtra}
+            />
+          }
           counts={sectionCounts}
           before={
             <div className="mb-3 space-y-3">
@@ -347,8 +348,7 @@ export default async function AccountDetailPage({
                   clickToEdit
                 />
               </section>
-              <RecordModuleMacros module="businesses" recordId={account.id} />
-            </div>
+</div>
           }
           sections={[
             {

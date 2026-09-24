@@ -78,8 +78,14 @@ export const CONTACT_EMPLOYMENT_OPTIONS = [
   "Student",
 ] as const;
 
-export const CONTACT_METHOD_OPTIONS = ["Phone", "Email", "Text", "Mail"] as const;
+export const CONTACT_METHOD_OPTIONS = ["Phone", "Email", "Text", "Mail", "Calls", "SMS", "Any"] as const;
 export const CONTACT_TIME_OPTIONS = ["Morning", "Afternoon", "Evening", "Anytime"] as const;
+export const CONTACT_GENDER_OPTIONS = ["Female", "Male", "Other"] as const;
+export const CONTACT_DEPENDENT_RELATION_OPTIONS = ["Child", "Other"] as const;
+export const CONTACT_MAILING_SAME_OPTIONS = ["Same as above", "Different…"] as const;
+export const CONTACT_SPOUSE_LINK_OPTIONS = ["None yet", "Create / link later…"] as const;
+/** Layout revision that ships Contact Details sketch v4 (force-upgrade stock layouts). */
+export const CONTACT_DETAILS_V4_REVISION = "contact-details-v4";
 
 /** Starter options for Settings → Picklists → Recent Life Events. */
 export const CONTACT_RECENT_LIFE_EVENT_OPTIONS = [
@@ -128,6 +134,8 @@ export const CONTACT_MODULE_FIELDS: CustomFieldDef[] = [
   { key: "last_name", label: "Last Name", type: "single_line", systemKey: "lastName", required: true },
   { key: "email", label: "Email", type: "email", systemKey: "email" },
   { key: "phone", label: "Phone", type: "phone", systemKey: "phone" },
+  { key: "nickname", label: "Nickname", type: "single_line", systemKey: "nickname" },
+  { key: "secondary_phone", label: "Secondary Phone", type: "phone", systemKey: "secondaryPhone" },
   { key: "date_of_birth", label: "Date Of Birth", type: "dob", systemKey: "dateOfBirth" },
   /** Options come from global Settings picklist "Occupations" — never hardcode in UI. */
   { key: "occupation", label: "Occupation", type: "picklist", options: [] },
@@ -154,7 +162,14 @@ export const CONTACT_MODULE_FIELDS: CustomFieldDef[] = [
     type: "picklist",
     options: [...CONTACT_EMPLOYMENT_OPTIONS],
   },
-  { key: "mailing_address", label: "Address", type: "address", systemKey: "mailingAddress" },
+  {
+    key: "gender",
+    label: "Gender",
+    type: "picklist",
+    options: [...CONTACT_GENDER_OPTIONS],
+    systemKey: "gender",
+  },
+  { key: "mailing_address", label: "Street", type: "single_line", systemKey: "mailingAddress" },
   { key: "city", label: "City", type: "single_line", systemKey: "city" },
   { key: "state", label: "State", type: "single_line", systemKey: "state" },
   { key: "zip", label: "ZIP", type: "single_line", systemKey: "zip" },
@@ -199,6 +214,35 @@ export const CONTACT_MODULE_FIELDS: CustomFieldDef[] = [
   },
   { key: "is_homeowner", label: "Homeowner", type: "checkbox" },
   { key: "is_business_owner", label: "Business Owner", type: "checkbox" },
+  { key: "dl_state", label: "DL State", type: "single_line", systemKey: "dlState" },
+  {
+    key: "drivers_license_number",
+    label: "Driver's License #",
+    type: "single_line",
+    systemKey: "licenseNumberLast4",
+  },
+  {
+    key: "dl_expiration",
+    label: "DL Expiration",
+    type: "single_line",
+    systemKey: "licenseExpiration",
+  },
+  {
+    key: "mailing_same_as_insured",
+    label: "Mailing Address",
+    type: "picklist",
+    options: [...CONTACT_MAILING_SAME_OPTIONS],
+  },
+  { key: "spouse_name", label: "Spouse Name", type: "single_line", systemKey: "spouseName" },
+  { key: "spouse_dob", label: "Spouse Date Of Birth", type: "dob", systemKey: "spouseDob" },
+  {
+    key: "spouse_link",
+    label: "Link Spouse Contact",
+    type: "picklist",
+    options: [...CONTACT_SPOUSE_LINK_OPTIONS],
+  },
+  { key: "dependents", label: "Dependents", type: "multi_line", systemKey: "dependents" },
+  { key: "campaign_tag", label: "Campaign / Tag", type: "single_line" },
   /** Options from Global List "Lead Source" — bound in contact-detail-picklists. */
   { key: "source", label: "Lead Source", type: "picklist", options: [], systemKey: "source" },
   { key: "referral", label: "Referred By", type: "single_line" },
@@ -209,8 +253,13 @@ export const CONTACT_MODULE_FIELDS: CustomFieldDef[] = [
   { key: "client_status", label: "Client Status", type: "single_line", systemKey: "clientStatus" },
 ];
 
-function section(id: string, label: string, fieldKeys: string[]) {
-  return { id, label, fieldKeys };
+function section(
+  id: string,
+  label: string,
+  fieldKeys: string[],
+  density?: 1 | 2 | 3 | 4 | 5,
+) {
+  return density ? { id, label, fieldKeys, density } : { id, label, fieldKeys };
 }
 
 function twoCol(left: ReturnType<typeof section>[], right: ReturnType<typeof section>[]): FieldLayout {
@@ -344,33 +393,66 @@ export function splitCoverageOpportunitiesLayout(layout: FieldLayout): FieldLayo
  * Left: Contact + Preferences. Right: Coverage, Opportunities, Lead Source.
  * Fields inside each section use the same 2-col grid (city/state/zip is the only trio).
  */
+/**
+ * Contact Details sketch v4 — single stacked column, 4-field density.
+ * Coverage / Opportunities live on their own page tabs (not inside Details).
+ * Education / Title / ePolicy stay off Contact Details (education remains on Deal).
+ */
 export function contactCardLayout(): FieldLayout {
   return twoCol(
     [
-      section("identity", "Contact", [
-        "first_name",
-        "last_name",
-        "email",
-        "phone",
-        "date_of_birth",
-        "marital_status",
-        "mailing_address",
-        "city",
-        "state",
-        "zip",
-      ]),
-      section("prefs", "Preferences", [
-        "occupation",
-        "education_level",
-        "preferred_contact_method",
-        "preferred_contact_time",
-      ]),
+      section(
+        "identity",
+        "Contact",
+        [
+          "first_name",
+          "middle_name",
+          "last_name",
+          "nickname",
+          "date_of_birth",
+          "phone",
+          "secondary_phone",
+          "email",
+          "mailing_address",
+          "city",
+          "state",
+          "zip",
+          "dl_state",
+          "drivers_license_number",
+          "dl_expiration",
+          "mailing_same_as_insured",
+          "contact_mailing_address",
+          "contact_mailing_city",
+          "contact_mailing_state",
+          "contact_mailing_zip",
+        ],
+        4,
+      ),
+      section(
+        "prefs",
+        "Preferences & Household",
+        [
+          "preferred_language",
+          "marital_status",
+          "occupation",
+          "gender",
+          "preferred_contact_method",
+          "preferred_contact_time",
+          "spouse_name",
+          "spouse_dob",
+          "spouse_link",
+          "dependents",
+        ],
+        4,
+      ),
+      section(
+        "intake",
+        "Lead Source",
+        ["source", "referral", "campaign_tag", "notes"],
+        4,
+      ),
     ],
-    [
-      section("coverage", "Coverage", [...CONTACT_COVERAGE_FIELD_KEYS]),
-      section("opportunities", "Opportunities", [...CONTACT_OPPORTUNITY_FIELD_KEYS]),
-      section("intake", "Lead Source", ["source", "referral"]),
-    ],
+    [],
   );
 }
 
@@ -386,6 +468,23 @@ export function contactClassicLayout(): FieldLayout {
     ...card.columns[1].sections,
   ];
   return twoCol(stacked, []);
+}
+
+
+/** True when a saved Contact Details layout still needs the sketch v4 reseed. */
+export function needsContactDetailsV4Upgrade(layout: FieldLayout): boolean {
+  const keys = new Set(
+    layout.columns.flatMap((column) => column.sections.flatMap((section) => section.fieldKeys)),
+  );
+  if (!keys.has("nickname")) return true;
+  if (!keys.has("dependents")) return true;
+  const sectionIds = layout.columns.flatMap((column) => column.sections.map((section) => section.id));
+  if (sectionIds.includes("coverage") || sectionIds.includes("opportunities")) return true;
+  const prefs = layout.columns
+    .flatMap((column) => column.sections)
+    .find((section) => section.id === "prefs");
+  if (prefs?.fieldKeys.includes("education_level")) return true;
+  return false;
 }
 
 /** Deal/Lead custom keys → Contact field keys for empty-only bind transfer. */
@@ -415,6 +514,14 @@ export const DEAL_TO_CONTACT_FIELD_MAP: Record<string, string> = {
   applicant_education_level: "education_level",
   source: "source",
   referral: "referral",
+  nickname: "nickname",
+  secondary_phone: "secondary_phone",
+  gender: "gender",
+  spouse_name: "spouse_name",
+  spouse_dob: "spouse_dob",
+  dl_state: "dl_state",
+  dl_expiration: "dl_expiration",
+  campaign_tag: "campaign_tag",
   life_notes: "life_notes",
   health_notes: "health_notes",
   pc_notes: "pc_notes",

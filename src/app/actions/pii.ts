@@ -71,6 +71,20 @@ export async function revealPiiField(input: {
       allowed = owned.length > 0 || linked.length > 0 || session.isAdmin;
     }
     if (allowed) plaintext = decryptPii(row.einEnc, row.einIv);
+  } else if (input.entityType === "contact" && input.field === "license_number") {
+    const [row] = await db
+      .select({
+        ownerId: contacts.ownerId,
+        licenseNumberEnc: contacts.licenseNumberEnc,
+        licenseNumberIv: contacts.licenseNumberIv,
+      })
+      .from(contacts)
+      .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, input.entityId)));
+    if (!row?.licenseNumberEnc || !row.licenseNumberIv) {
+      return { ok: false, error: "No license on file." };
+    }
+    allowed = canReveal(session.isAdmin, row.ownerId, session.userId);
+    if (allowed) plaintext = decryptPii(row.licenseNumberEnc, row.licenseNumberIv);
   } else if (input.entityType === "driver" && input.field === "license_number") {
     const [row] = await db
       .select({

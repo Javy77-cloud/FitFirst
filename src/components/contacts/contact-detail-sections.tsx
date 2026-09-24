@@ -1,93 +1,47 @@
 "use client";
 
-import { useCallback, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { ContactSectionNav, type ContactSectionCounts } from "@/components/contact-section-nav";
-import { CollapsibleSection } from "@/components/contacts/collapsible-section";
+import { RecordTabShell } from "@/components/records/record-tab-shell";
+import {
+  contactPanelIdForSection,
+  parseContactTab,
+  type ContactTabSlug,
+} from "@/lib/desk/contact-tabs";
 import type { ContactSectionId } from "@/lib/desk/contact-sections";
 
-/** Sections under Contact Details that participate in chip-driven accordion. */
-export const CONTACT_ACCORDION_IDS = [
-  "coverage",
-  "opportunities",
-  "policies",
-  "deals",
-  "timeline",
-  "emails",
-  "sms",
-  "meetings",
-  "documents",
-  "notes",
-] as const;
-
-export type ContactAccordionId = (typeof CONTACT_ACCORDION_IDS)[number];
-
-function isAccordionId(id: ContactSectionId): id is ContactAccordionId {
-  return (CONTACT_ACCORDION_IDS as readonly string[]).includes(id);
-}
-
-function emptyOpenMap(): Record<ContactAccordionId, boolean> {
-  return {
-    coverage: false,
-    opportunities: false,
-    policies: false,
-    deals: false,
-    timeline: false,
-    emails: false,
-    sms: false,
-    meetings: false,
-    documents: false,
-    notes: false,
-  };
-}
-
-function openMapWith(id?: ContactSectionId | null): Record<ContactAccordionId, boolean> {
-  const next = emptyOpenMap();
-  if (id && isAccordionId(id)) next[id] = true;
-  return next;
-}
-
-export type AccordionSectionSlot = {
-  id: ContactAccordionId;
-  title: string;
+export type ContactPanelSlot = {
+  id: ContactSectionId;
+  title?: string;
   badge?: ReactNode;
   "data-ff"?: string;
+  /** Extra class on the panel card (At a Glance / Details already wrap themselves). */
+  bare?: boolean;
   children: ReactNode;
 };
 
 /**
- * Owns chip accordion vs manual multi-open for post–Contact Details sections.
- * At a Glance / Contact Details stay outside (always open) — pass as `before`.
+ * True swapping tabs for Contact — only the active panel is shown.
+ * Sticky chip nav stays above; Quick Comms rail stays outside (page owns rail).
  */
 export function ContactDetailSections({
   selectedIds,
   counts,
-  before,
-  sections,
-  initialOpenId,
+  panels,
+  activeTab,
+  basePath,
+  endSlot,
 }: {
   selectedIds: ContactSectionId[];
   counts?: ContactSectionCounts;
-  before: ReactNode;
-  sections: AccordionSectionSlot[];
-  /** From notification deep-link `?section=coverage|opportunities`. */
-  initialOpenId?: ContactSectionId | null;
+  panels: ContactPanelSlot[];
+  activeTab?: string | null;
+  basePath: string;
+  /** ··· overflow menu — rendered at end of tab row. */
+  endSlot?: ReactNode;
 }) {
-  const [openMap, setOpenMap] = useState<Record<ContactAccordionId, boolean>>(() =>
-    openMapWith(initialOpenId),
-  );
-
-  const onNavigate = useCallback((id: ContactSectionId) => {
-    if (!isAccordionId(id)) return;
-    setOpenMap(() => {
-      const next = emptyOpenMap();
-      next[id] = true;
-      return next;
-    });
-  }, []);
-
-  const onManualOpenChange = useCallback((id: ContactAccordionId, open: boolean) => {
-    setOpenMap((prev) => ({ ...prev, [id]: open }));
-  }, []);
+  const resolved = parseContactTab(activeTab, null);
+  const shellPanels = groupPanels(panels);
 
   return (
     <>
@@ -95,25 +49,63 @@ export function ContactDetailSections({
         <ContactSectionNav
           selectedIds={selectedIds}
           counts={counts}
-          onNavigate={onNavigate}
+          activeTab={resolved}
+          basePath={basePath}
+          mode="tabs"
+          endSlot={endSlot}
         />
       </div>
-      {before}
-      <div className="space-y-3" data-ff-contact-accordion-sections="">
-        {sections.map((section) => (
-          <CollapsibleSection
-            key={section.id}
-            id={section.id}
-            title={section.title}
-            badge={section.badge}
-            open={openMap[section.id]}
-            onOpenChange={(v) => onManualOpenChange(section.id, v)}
-            data-ff={section["data-ff"]}
-          >
-            {section.children}
-          </CollapsibleSection>
-        ))}
-      </div>
+      <RecordTabShell activeId={resolved} panels={shellPanels} />
     </>
   );
+}
+
+function groupPanels(
+  panels: ContactPanelSlot[],
+): Array<{ id: ContactTabSlug; children: ReactNode }> {
+  const order: ContactTabSlug[] = [];
+  const byTab = new Map<ContactTabSlug, ContactPanelSlot[]>();
+  for (const panel of panels) {
+    const tab = contactPanelIdForSection(panel.id);
+    if (!byTab.has(tab)) {
+      byTab.set(tab, []);
+      order.push(tab);
+    }
+    byTab.get(tab)!.push(panel);
+  }
+  return order.map((tab) => {
+    const group = byTab.get(tab) ?? [];
+    return {
+      id: tab,
+      children: (
+        <div className="space-y-3" data-ff-contact-tab-body={tab}>
+          {group.map((panel) =>
+            panel.bare ? (
+              <div key={panel.id} id={panel.id} data-ff={panel["data-ff"]} data-ff-contact-panel={panel.id}>
+                {panel.children}
+              </div>
+            ) : (
+              <section
+                key={panel.id}
+                id={panel.id}
+                className="ff-card space-y-3 p-4"
+                data-ff={panel["data-ff"]}
+                data-ff-contact-panel={panel.id}
+              >
+                {panel.title ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-base font-semibold text-[#002868]">{panel.title}</h2>
+                    {panel.badge != null ? (
+                      <span className="text-xs text-muted-foreground">{panel.badge}</span>
+                    ) : null}
+                  </div>
+                ) : null}
+                {panel.children}
+              </section>
+            ),
+          )}
+        </div>
+      ),
+    };
+  });
 }

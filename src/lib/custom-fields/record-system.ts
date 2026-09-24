@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { accounts, carriers, contacts, deals, leads, policies, reviewTasks } from "@/lib/db/schema";
 import type { FieldLayoutModule } from "./modules";
 import type { CustomFieldDef } from "./types";
-import { replaceEin } from "@/lib/pii/write";
+import { replaceEin, replaceLicense } from "@/lib/pii/write";
 import { formatPhoneStandard } from "@/lib/phone/format";
 import { normalizeTags } from "@/lib/tags/module-tags";
 
@@ -123,6 +123,45 @@ export async function applyModuleSystemValues(
           str(values, "preferred_language", "preferredLanguage"),
           existing.preferredLanguage,
         ) as typeof existing.preferredLanguage,
+        nickname: keep(str(values, "nickname"), existing.nickname) as typeof existing.nickname,
+        secondaryPhone: keep(
+          formatPhoneStandard(str(values, "secondary_phone", "secondaryPhone")) ||
+            str(values, "secondary_phone", "secondaryPhone") ||
+            null,
+          existing.secondaryPhone,
+        ) as typeof existing.secondaryPhone,
+        gender: keep(str(values, "gender"), existing.gender) as typeof existing.gender,
+        spouseName: keep(str(values, "spouse_name", "spouseName"), existing.spouseName) as typeof existing.spouseName,
+        spouseDob: keep(str(values, "spouse_dob", "spouseDob"), existing.spouseDob) as typeof existing.spouseDob,
+        dlState: keep(str(values, "dl_state", "dlState"), existing.dlState) as typeof existing.dlState,
+        licenseExpiration: keep(
+          str(values, "dl_expiration", "licenseExpiration"),
+          existing.licenseExpiration,
+        ) as typeof existing.licenseExpiration,
+        dependents: (() => {
+          const raw = str(values, "dependents");
+          if (!raw) return existing.dependents;
+          try {
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : existing.dependents;
+          } catch {
+            return existing.dependents;
+          }
+        })(),
+        ...(() => {
+          const incoming = str(values, "drivers_license_number");
+          const next = replaceLicense(incoming, {
+            licenseNumber: null,
+            licenseNumberEnc: existing.licenseNumberEnc,
+            licenseNumberIv: existing.licenseNumberIv,
+            licenseNumberLast4: existing.licenseNumberLast4,
+          });
+          return {
+            licenseNumberEnc: next.licenseNumberEnc,
+            licenseNumberIv: next.licenseNumberIv,
+            licenseNumberLast4: next.licenseNumberLast4,
+          };
+        })(),
         notes: keep(str(values, "notes"), existing.notes) as typeof existing.notes,
         lifeNotes: keep(str(values, "life_notes", "lifeNotes"), existing.lifeNotes) as typeof existing.lifeNotes,
         healthNotes: keep(

@@ -635,6 +635,13 @@ export const leads = pgTable(
   ],
 );
 
+export type ContactDependent = {
+  id: string;
+  name: string;
+  dobOrAge: string;
+  relation: "Child" | "Other" | string;
+};
+
 export const contacts = pgTable(
   "contacts",
   {
@@ -676,6 +683,17 @@ export const contacts = pgTable(
     ssnEnc: text("ssn_enc"),
     ssnIv: text("ssn_iv"),
     ssnLast4: text("ssn_last4"),
+    nickname: text("nickname"),
+    secondaryPhone: text("secondary_phone"),
+    gender: text("gender"),
+    spouseName: text("spouse_name"),
+    spouseDob: text("spouse_dob"),
+    dependents: jsonb("dependents").$type<ContactDependent[]>().notNull().default([]),
+    dlState: text("dl_state"),
+    licenseNumberEnc: text("license_number_enc"),
+    licenseNumberIv: text("license_number_iv"),
+    licenseNumberLast4: text("license_number_last4"),
+    licenseExpiration: text("license_expiration"),
     ...timestamps,
   },
   (t) => [

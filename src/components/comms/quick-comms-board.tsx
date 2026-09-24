@@ -150,7 +150,19 @@ export function QuickCommsBoard({
   const [formError, setFormError] = useState<string | null>(null);
 
   const filtered = items.filter((item) => item.kind === kind);
-  const party = (contactName ?? "").trim() || (carrierId ? "this carrier" : dealId ? "this deal" : "this lead");
+  const party =
+    (contactName ?? "").trim() ||
+    (carrierId
+      ? "this carrier"
+      : contactId
+        ? "this contact"
+        : accountId
+          ? "this account"
+          : dealId
+            ? "this deal"
+            : policyId
+              ? "this policy"
+              : "this lead");
   const toLine = contextLine([contactName, contactPhone, contactEmail]);
   const dial = telHref(contactPhone);
   const firstName = party.split(" ")[0] || party;
@@ -400,7 +412,17 @@ export function QuickCommsBoard({
       <p className="mt-1 text-base text-muted-foreground">
         {carrierId
           ? "Task, meeting, call, email, and SMS on this carrier. Updates Last Contacted."
-          : `Task, meeting, call, email, and SMS on this ${dealId ? "deal" : policyId ? "policy" : "lead"}. Email Send now uses the connected Gmail mailbox.`}
+          : `Task, meeting, call, email, and SMS on this ${
+              contactId
+                ? "contact"
+                : accountId
+                  ? "account"
+                  : dealId
+                    ? "deal"
+                    : policyId
+                      ? "policy"
+                      : "lead"
+            }. Email Send now uses the connected Gmail mailbox.`}
       </p>
 
       <div className="mt-3 flex flex-nowrap items-center gap-1" data-ff-quick-comms-kinds="">
