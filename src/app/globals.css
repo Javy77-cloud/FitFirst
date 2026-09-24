@@ -30,6 +30,8 @@
   --ff-urgency-amber: #c4872a;
   --ff-urgency-navy: #3d5a80;
   --ff-urgency-gray: #7b8494;
+  /* Policies Lapsed band only. Gray tone is cold blue and blends with Current. */
+  --ff-urgency-violet: #6D28D9;
   --ff-wash: #f3eee6;
   --ff-canvas: #f7f3ec;
   --ff-ink: #1c2430;
@@ -1606,6 +1608,10 @@ a[data-ff-carrier-portal-status="connected"]:hover {
 .ff-urgency-tone-gray {
   --ff-urgency: var(--ff-heat-cold);
   --ff-urgency-wash: color-mix(in srgb, var(--ff-heat-cold) 12%, #fff);
+}
+.ff-urgency-tone-violet {
+  --ff-urgency: var(--ff-urgency-violet);
+  --ff-urgency-wash: color-mix(in srgb, var(--ff-urgency-violet) 18%, #fff);
 }
 
 [data-ff-renewals-desk] {

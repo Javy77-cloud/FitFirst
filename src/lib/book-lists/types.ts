@@ -137,12 +137,12 @@ export type BookLensId =
 export type BookColumnMeta = {
   id: BookColumnId;
   label: string;
-  tone: "terracotta" | "amber" | "navy" | "gray";
+  tone: "terracotta" | "amber" | "navy" | "gray" | "violet";
 };
 
 export const POLICY_COLUMNS: BookColumnMeta[] = [
   { id: "now", label: "Needs care now", tone: "terracotta" },
   { id: "watch", label: "Watch", tone: "amber" },
   { id: "current", label: "Current", tone: "navy" },
-  { id: "lapsed", label: "Lapsed", tone: "gray" },
+  { id: "lapsed", label: "Lapsed", tone: "violet" },
 ];
