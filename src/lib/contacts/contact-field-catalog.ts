@@ -531,6 +531,7 @@ export const DEAL_TO_CONTACT_FIELD_MAP: Record<string, string> = {
   gender: "gender",
   spouse_name: "spouse_name",
   spouse_dob: "spouse_dob",
+  spouse_link: "spouse_link",
   dependents: "dependents",
   dl_state: "dl_state",
   drivers_license_number: "drivers_license_number",
