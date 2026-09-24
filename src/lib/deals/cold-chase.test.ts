@@ -87,3 +87,15 @@ describe("deal cold chase", () => {
     expect(notices.map((n) => n.dealId)).toEqual(["cold-1"]);
   });
 });
+
+  it("collapses duplicate chase rows for the same still-cold deal", () => {
+    const planned = planColdChaseNotices([
+      { id: "cold-1", heat: "cold", closed: false, insured: "Ana", title: "Ana", ownerId: "u1" },
+    ]);
+    const plan = planColdChaseSync(planned, [
+      { id: "keep", entityId: "cold-1", readAt: null },
+      { id: "dupe", entityId: "cold-1", readAt: new Date() },
+    ]);
+    expect(plan.insertDealIds).toEqual([]);
+    expect(plan.endEpisodeAlertIds).toEqual(["dupe"]);
+  });

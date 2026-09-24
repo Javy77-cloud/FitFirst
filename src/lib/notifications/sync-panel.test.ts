@@ -1,5 +1,6 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { panelAlertBody, parsePanelKey, visiblePanelCards } from "./sync-panel";
+import { panelAlertBody, panelOwnsInsert, parsePanelKey, visiblePanelCards } from "./sync-panel";
 import { displayNoticeBody } from "@/lib/coverage/notices";
 import type { PanelCard } from "./panel";
 
@@ -28,5 +29,13 @@ describe("panel alert persistence", () => {
     expect(
       visiblePanelCards(rows, new Set(["gone"]), new Set(["later"])).map((c) => c.key),
     ).toEqual(["keep"]);
+  });
+
+  it("does not insert deal_cold_chase — sole writer is cold-chase-sync", () => {
+    expect(panelOwnsInsert("deal_cold_chase")).toBe(false);
+    expect(panelOwnsInsert("quote_declined")).toBe(true);
+    const src = readFileSync("src/lib/notifications/sync-panel.ts", "utf8");
+    expect(src).toMatch(/syncLiveDealColdChaseNotices/);
+    expect(src).toMatch(/if \(!panelOwnsInsert\(card\.kind\)\)/);
   });
 });
