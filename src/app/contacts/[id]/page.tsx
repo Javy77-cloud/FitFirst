@@ -31,7 +31,6 @@ import { ContactAtAGlanceCards } from "@/components/contacts/contact-at-a-glance
 import { ContactCoveragePanel } from "@/components/contacts/contact-coverage-panel";
 import { ContactOpportunitiesPanel } from "@/components/contacts/contact-opportunities-panel";
 import { QuickCommsBoard } from "@/components/comms/quick-comms-board";
-import { scheduleContactCoverageNotices } from "@/lib/coverage/schedule-notices";
 import { COVERAGE_CARRIER_FIELD_KEY, declaredCoverageFromFields } from "@/lib/coverage/declared-coverage";
 import {
   declaredCoverageFromElsewhere,
@@ -95,7 +94,6 @@ export default async function ContactDetailPage({
     firstName: contact.firstName,
     lastName: contact.lastName,
   });
-  scheduleContactCoverageNotices(contact.id);
 
   const [tagExtra, contactLayout, book, comms, agencyRow, resolvedNavIds, contactDocs, contactPromises] =
     await Promise.all([

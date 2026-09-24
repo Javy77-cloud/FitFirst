@@ -281,7 +281,8 @@ describe("Contacts module v1 standards", () => {
     expect(page).toMatch(/id: "deals"/);
     expect(page).toMatch(/ContactCoveragePanel/);
     expect(page).toMatch(/ContactOpportunitiesPanel/);
-    expect(page).toMatch(/scheduleContactCoverageNotices/);
+    expect(page).not.toMatch(/scheduleContactCoverageNotices/);
+    expect(page).not.toMatch(/syncContactCoverageNotices/);
     expect(page).toMatch(/id: "timeline"/);
     expect(page).toMatch(/id: "emails"/);
     expect(page).toMatch(/id: "sms"/);

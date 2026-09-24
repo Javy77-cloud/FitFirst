@@ -13,6 +13,7 @@ import {
   parseElsewhereCoverage,
 } from "./elsewhere-coverage";
 import { ensureElsewhereCoverageColumn } from "@/lib/db/ensure-elsewhere-coverage";
+import { coverageGapNotificationsEnabled } from "./notification-flag";
 import {
   COVERAGE_NOTICE_KINDS,
   parseNoticeKey,
@@ -78,6 +79,8 @@ export async function loadContactNoticeInputs(contactId: string) {
 }
 
 export async function syncContactCoverageNotices(contactId: string): Promise<PlannedCoverageNotice[]> {
+  // Flag off: do not insert, update, or delete alert rows. Gap planning stays available.
+  if (!coverageGapNotificationsEnabled()) return [];
   const id = contactId.trim();
   if (!id) return [];
   return coalesceAsync(`coverage-notices:${id}`, () => syncContactCoverageNoticesOnce(id));

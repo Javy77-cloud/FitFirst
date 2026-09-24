@@ -2,6 +2,7 @@ import { cache } from "react";
 import { and, desc, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { currentDeskSession } from "@/lib/auth/session";
 import { alertVisibleWhere } from "@/lib/alerts/visibility";
+import { coverageGapAlertsHiddenWhere } from "@/lib/coverage/notification-flag";
 import { toHeaderAlert, type HeaderAlert } from "@/lib/desk/header-alerts";
 import { RECENT_NOTIFICATION_LIMIT, recentNotifications } from "@/lib/desk/notifications";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
@@ -15,21 +16,22 @@ export const loadHeaderNotificationState = cache(async function loadHeaderNotifi
   const session = await currentDeskSession();
   const visible = alertVisibleWhere(session, DEFAULT_TENANT_ID);
   const due = lte(alerts.createdAt, new Date());
+  const hideCoverageGaps = coverageGapAlertsHiddenWhere();
   const [countRow, unreadRows, readRows] = await Promise.all([
     db
       .select({ n: sql<number>`count(*)::int` })
       .from(alerts)
-      .where(and(visible, due, isNull(alerts.readAt))),
+      .where(and(visible, due, isNull(alerts.readAt), hideCoverageGaps)),
     db
       .select()
       .from(alerts)
-      .where(and(visible, due, isNull(alerts.readAt)))
+      .where(and(visible, due, isNull(alerts.readAt), hideCoverageGaps))
       .orderBy(desc(alerts.createdAt))
       .limit(RECENT_NOTIFICATION_LIMIT),
     db
       .select()
       .from(alerts)
-      .where(and(visible, due, isNotNull(alerts.readAt)))
+      .where(and(visible, due, isNotNull(alerts.readAt), hideCoverageGaps))
       .orderBy(desc(alerts.createdAt))
       .limit(RECENT_NOTIFICATION_LIMIT),
   ]);
