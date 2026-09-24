@@ -73,6 +73,7 @@ import {
   canPublishMint,
   confirmMintField,
   evaluateMintExtract,
+  mintGeminiValue,
   mintBookedPolicyNumber,
   isPendingPolicyNumber,
   evaluateMintGate,
@@ -84,6 +85,7 @@ import {
   type MintPayload,
 } from "@/lib/policy/mint-gate";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
+import { writeIssuedTermForPolicy } from "@/lib/policies/apply-issued-term";
 import { contactFieldsFromSheet } from "@/lib/wire/match-party";
 
 function dateOrFallback(raw: string | null | undefined, fallback: Date) {
@@ -467,6 +469,31 @@ export async function issuePolicyFromDeclaration(input: {
       .update(documents)
       .set({ policyId: existing.id, dealId })
       .where(eq(documents.id, gate.dec.id));
+    const lateDec = docs.find((row) => row.id === gate.dec.id) ?? pickedDoc;
+    const lateExtract = await loadMintGeminiRows({
+      docId: gate.dec.id,
+      storagePath: lateDec?.storagePath ?? gate.dec.storagePath,
+      mimeType: lateDec?.mimeType ?? "application/pdf",
+      filename: lateDec?.filename ?? gate.dec.filename,
+      shopLine: def.shopLine,
+      docType: lateDec?.docType || issuedPolicyDocType(def.shopLine),
+    }).catch(() => null);
+    if (lateExtract?.ok) {
+      await writeIssuedTermForPolicy({
+        policyId: existing.id,
+        product,
+        lineOfBusiness: def.lob,
+        documentId: gate.dec.id,
+        dec: {
+          effective: mintGeminiValue(lateExtract.rows, "effective_date"),
+          expiration: mintGeminiValue(lateExtract.rows, "expiration_date"),
+          premium: mintGeminiValue(lateExtract.rows, "premium"),
+          policyNumber: mintGeminiValue(lateExtract.rows, "policy_number"),
+          namedInsured: mintGeminiValue(lateExtract.rows, "named_insured"),
+          lineOfBusiness: def.lob,
+        },
+      }).catch(() => null);
+    }
     await markMintStatus(dealId, product, {
       stage: "policy_issued",
       policyId: existing.id,
@@ -725,6 +752,21 @@ export async function issuePolicyFromDeclaration(input: {
       slot: "policy_file",
     })
     .where(eq(documents.id, gate.dec.id));
+
+  await writeIssuedTermForPolicy({
+    policyId,
+    product,
+    lineOfBusiness: def.lob,
+    documentId: gate.dec.id,
+    dec: {
+      effective: extractGate.effectiveDate || fieldValue(fields, "effective_date"),
+      expiration: fieldValue(fields, "expiration_date"),
+      premium: extractGate.premium,
+      policyNumber: isPendingPolicyNumber(extractGate.policyNumber) ? null : extractGate.policyNumber,
+      namedInsured: fieldValue(fields, "named_insured") || deal.primaryNamedInsured,
+      lineOfBusiness: def.lob,
+    },
+  });
 
   await markMintStatus(dealId, product, {
     stage: "policy_issued",

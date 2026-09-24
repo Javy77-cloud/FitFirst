@@ -1,5 +1,6 @@
 import type { DeclaredCoverageLine } from "@/lib/coverage/declared-coverage";
 import { isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
+import { resolveCurrentTerm } from "@/lib/policies/current-term";
 
 /** Lines the gap engine can see. Quotes never appear here. */
 export type CoverageLine =
@@ -31,6 +32,9 @@ export type GapPolicyInput = {
   status: string;
   lineOfBusiness: string;
   policyNumber?: string | null;
+  effectiveDate?: Date | string | null;
+  expirationDate?: Date | string | null;
+  premium?: string | number | null;
 };
 
 export type CoverageGapFinding = {
@@ -83,8 +87,22 @@ export function classifyCoverageLine(lineOfBusiness: string): CoverageLine {
   return "OTHER";
 }
 
-export function inForceGapPolicies(policies: GapPolicyInput[]): GapPolicyInput[] {
-  return policies.filter((policy) => isInForcePolicyStatus(policy.status));
+export function inForceGapPolicies(policies: GapPolicyInput[], asOf: Date = new Date()): GapPolicyInput[] {
+  return policies.filter((policy) => {
+    const hasDates = policy.effectiveDate != null || policy.expirationDate != null;
+    if (!hasDates) return isInForcePolicyStatus(policy.status);
+    return resolveCurrentTerm(
+      {
+        status: policy.status,
+        lineOfBusiness: policy.lineOfBusiness,
+        policyNumber: policy.policyNumber,
+        effectiveDate: policy.effectiveDate,
+        expirationDate: policy.expirationDate,
+        premium: policy.premium,
+      },
+      asOf,
+    ).countsAsInForce;
+  });
 }
 
 function lineSet(policies: GapPolicyInput[]): Set<CoverageLine> {

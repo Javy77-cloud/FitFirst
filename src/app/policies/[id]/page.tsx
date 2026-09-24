@@ -28,6 +28,13 @@ import { PolicyCareStrip } from "@/components/policy/policy-care-strip";
 import { buildPolicyCareItems, policyTabCareCounts } from "@/lib/policy/care-strip";
 import { isRenewalHandledStageValue } from "@/lib/renewal/handled";
 import { deskNow } from "@/lib/home/as-of";
+import {
+  bandIsOffBook,
+  deskTermBandLabel,
+  matchingCurrentTerm,
+  normalizeNamedInsured,
+  resolveCurrentTerm,
+} from "@/lib/policies/current-term";
 import { PolicyOverviewTab } from "@/components/policy/tabs/overview-tab";
 import { PolicyCoverageTab } from "@/components/policy/tabs/coverage-tab";
 import { PolicyEndorsementsTab } from "@/components/policy/tabs/endorsements-tab";
@@ -126,9 +133,35 @@ export default async function PolicyDetailPage({
   const filed = typeof query.filed === "string" ? query.filed : undefined;
   const notice = typeof query.notice === "string" ? query.notice : filed;
   const tabParam = typeof query.tab === "string" ? query.tab : undefined;
-  const partyName = contact
+  const partyNameRaw = contact
     ? `${contact.firstName} ${contact.lastName}`
     : account?.name ?? policy.policyNumber;
+  const partyName = contact ? (normalizeNamedInsured(partyNameRaw) ?? partyNameRaw) : partyNameRaw;
+  const asOf = deskNow();
+  const termView = resolveCurrentTerm(
+    {
+      status: policy.status,
+      lineOfBusiness: policy.lineOfBusiness,
+      policyNumber: policy.policyNumber,
+      carrierName: carrier?.name,
+      namedInsured: partyNameRaw,
+      effectiveDate: policy.effectiveDate,
+      expirationDate: policy.expirationDate,
+      renewalDate: policy.renewalDate,
+      premium: policy.premium,
+      sourceDocumentId: policy.sourceDocumentId,
+      terms: terms.map((term) => ({
+        id: term.id,
+        role: term.role,
+        effective: term.termEffective,
+        expiration: term.termExpiration,
+        premium: term.premium,
+        source: term.source,
+      })),
+    },
+    asOf,
+  );
+  const currentTermRow = matchingCurrentTerm(terms, termView);
   const isAuto = policy.lineOfBusiness.toUpperCase() === "AUTO";
   const context = await loadRecordContext({
     contactId: contact?.id,
@@ -136,10 +169,8 @@ export default async function PolicyDetailPage({
     dealId: deal?.id,
     policyId: policy.id,
   });
-  const current = terms.find((term) => term.role === "current");
-  const proposed = terms.find((term) => term.role === "proposed");
-  const currentPremium = parseMoney(current?.premium ?? policy.premium);
-  const proposedPremium = parseMoney(proposed?.premium);
+  const currentPremium = parseMoney(termView.current?.premium ?? policy.premium);
+  const proposedPremium = parseMoney(termView.upcoming?.premium);
   const change =
     currentPremium != null && proposedPremium != null
       ? premiumChange(currentPremium, proposedPremium)
@@ -172,14 +203,14 @@ export default async function PolicyDetailPage({
   const missingPackets = servicing?.missingPackets ?? [];
   const renewalHandled = isRenewalHandledStageValue(renewalQueueRow?.stage);
   const careItems = buildPolicyCareItems({
-    expirationDate: policy.expirationDate,
+    expirationDate: termView.bookExpiration ?? policy.expirationDate,
     updatedAt: policy.updatedAt,
-    status: policy.status,
+    status: bandIsOffBook(termView.band) ? "expired" : policy.status,
     missingDocs: missingPackets.length,
     missingDocNames: missingPackets.map((key) => SERVICING_DOC_LABELS[key]),
     pendingEndorsements,
     openClaims,
-    asOf: deskNow(),
+    asOf,
     renewalHandled,
   });
   const tabCareCounts = policyTabCareCounts(careItems);
@@ -355,11 +386,11 @@ export default async function PolicyDetailPage({
               defaultTab="info"
               policyFacts={{
                 number: policy.policyNumber,
-                status: policy.status,
+                status: deskTermBandLabel(termView.band, policy.status),
                 carrier: carrier?.name ?? "Carrier TBD",
-                effective: formatDay(policy.effectiveDate),
-                expiration: formatDay(policy.expirationDate),
-                premium: formatMoney(policy.premium),
+                effective: formatDay(termView.bookEffective ?? policy.effectiveDate),
+                expiration: formatDay(termView.bookExpiration ?? policy.expirationDate),
+                premium: formatMoney(termView.current?.premium ?? policy.premium),
               }}
             />
           </>
@@ -387,6 +418,7 @@ export default async function PolicyDetailPage({
             producerDisplayName={producerDisplayName}
             readOnly={!isAdmin}
             showCommission={viewer.commissionBreakdown.read}
+            termView={termView}
           />
         ) : null}
 
@@ -394,6 +426,7 @@ export default async function PolicyDetailPage({
           <PolicyCoverageTab
             policy={policy}
             terms={terms}
+            currentTerm={currentTermRow}
             interests={servicing?.interests ?? []}
             contactId={contact?.id}
             accountId={account?.id}

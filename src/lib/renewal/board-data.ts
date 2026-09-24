@@ -9,7 +9,7 @@ import {
   policyTerms,
   renewalQueue,
 } from "@/lib/db/schema";
-import { isInForceStatus } from "@/lib/policy/status";
+import { resolveCurrentTerm, type TermCandidate } from "@/lib/policies/current-term";
 import { addUtcDays, deskNow } from "@/lib/home/as-of";
 import {
   buildRenewalRow,
@@ -112,7 +112,21 @@ export async function ensureRenewalsBoardRows(windowDays = 180) {
       ),
     );
 
-  const inForce = rows.filter(({ policy }) => isInForceStatus(policy.status));
+  const inForce = rows.filter(({ policy }) => {
+    const resolved = resolveCurrentTerm(
+      {
+        status: policy.status,
+        lineOfBusiness: policy.lineOfBusiness,
+        policyNumber: policy.policyNumber,
+        effectiveDate: policy.effectiveDate,
+        expirationDate: policy.expirationDate,
+        renewalDate: policy.renewalDate,
+        premium: policy.premium,
+      },
+      deskNow(),
+    );
+    return resolved.countsAsInForce;
+  });
   if (inForce.length === 0) return { ensured: 0 };
 
   const ids = inForce.map(({ policy }) => policy.id);
@@ -143,9 +157,6 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
   const labelTemplate = await getAgencyPolicyLabelTemplate();
   const renewalsPipeline = await ensureRenewalsPipeline().catch(() => null);
 
-  const horizon = addUtcDays(deskNow(), windowDays);
-  const floor = addUtcDays(deskNow(), -14);
-
   const queueRows = await db
     .select({
       queue: renewalQueue,
@@ -165,45 +176,71 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
   const termRows = policyIds.length
     ? await db
         .select({
+          id: policyTerms.id,
           policyId: policyTerms.policyId,
           role: policyTerms.role,
           premium: policyTerms.premium,
+          termEffective: policyTerms.termEffective,
+          termExpiration: policyTerms.termExpiration,
         })
         .from(policyTerms)
         .where(and(eq(policyTerms.tenantId, DEFAULT_TENANT_ID), inArray(policyTerms.policyId, policyIds)))
     : [];
-  const currentByPolicy = new Map<string, string | null>();
-  const proposedByPolicy = new Map<string, string | null>();
+  const termsByPolicy = new Map<string, TermCandidate[]>();
   for (const term of termRows) {
-    if (term.role === "current") currentByPolicy.set(term.policyId, term.premium);
-    if (term.role === "proposed") proposedByPolicy.set(term.policyId, term.premium);
+    const list = termsByPolicy.get(term.policyId) ?? [];
+    list.push({
+      id: term.id,
+      role: term.role,
+      effective: term.termEffective,
+      expiration: term.termExpiration,
+      premium: term.premium,
+    });
+    termsByPolicy.set(term.policyId, list);
   }
 
   const cards: RenewalBoardCard[] = [];
   for (const row of queueRows) {
-    const exp = expirationDay(row.policy.expirationDate);
+    const asOf = deskNow();
+    const resolved = resolveCurrentTerm(
+      {
+        status: row.policy.status,
+        lineOfBusiness: row.policy.lineOfBusiness,
+        policyNumber: row.policy.policyNumber,
+        carrierName: row.carrier?.name,
+        namedInsured: partyName(row.contact, row.account),
+        effectiveDate: row.policy.effectiveDate,
+        expirationDate: row.policy.expirationDate,
+        renewalDate: row.policy.renewalDate,
+        premium: row.policy.premium,
+        sourceDocumentId: row.policy.sourceDocumentId,
+        terms: termsByPolicy.get(row.policy.id) ?? [],
+      },
+      asOf,
+    );
+    const exp = expirationDay(resolved.bookExpiration ?? row.policy.expirationDate);
     if (!exp) continue;
     // Keep lost/bound cards even outside window; filter others to window.
     const stage = normalizeRenewalQueueStage(row.queue.stage) ?? row.queue.stage ?? "upcoming";
-    const days = daysUntilExpiration(exp, deskNow());
+    const days = resolved.daysLeft ?? daysUntilExpiration(exp, asOf);
     if (stage !== "lost" && stage !== "bound" && stage !== "archive" && stage !== "archived") {
-      if (exp.getTime() < floor.getTime() || exp.getTime() > horizon.getTime()) continue;
-      if (!isInForceStatus(row.policy.status) && stage === "upcoming") continue;
+      if (days < -14 || days > windowDays) continue;
+      if (!resolved.countsAsInForce && stage === "upcoming") continue;
     }
     const built = buildRenewalRow(
       {
         id: row.policy.id,
         policyNumber: row.policy.policyNumber,
-        status: row.policy.status,
+        status: resolved.countsAsInForce ? row.policy.status : resolved.band,
         lineOfBusiness: row.policy.lineOfBusiness,
-        expirationDate: row.policy.expirationDate,
-        premium: row.policy.premium,
+        expirationDate: resolved.bookExpiration ?? row.policy.expirationDate,
+        premium: resolved.current?.premium ?? row.policy.premium,
         partyName: partyName(row.contact, row.account),
         carrierName: row.carrier?.name ?? "Carrier TBD",
-        currentPremium: currentByPolicy.get(row.policy.id) ?? row.policy.premium,
-        proposedPremium: proposedByPolicy.get(row.policy.id) ?? null,
+        currentPremium: resolved.current?.premium ?? row.policy.premium,
+        proposedPremium: resolved.upcoming?.premium ?? null,
       },
-      deskNow(),
+      asOf,
     );
     if (!built) continue;
     const ownerName = partyName(row.contact, row.account);
@@ -237,8 +274,8 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
       insuranceType: row.policy.insuranceType ?? null,
       commissionFamily: row.policy.commissionFamily ?? null,
       carrierName: row.carrier?.name ?? "Carrier TBD",
-      expirationDate: row.policy.expirationDate,
-      renewalDate: row.policy.renewalDate ?? null,
+      expirationDate: resolved.bookExpiration ?? row.policy.expirationDate,
+      renewalDate: resolved.renewalAnchor ?? row.policy.renewalDate ?? null,
       daysUntil: days,
       premium: built.currentPremium,
       proposedPremium: built.proposedPremium,
@@ -251,7 +288,7 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
       riskScore: 0,
       why: "",
       whyExtra: null,
-      hasCurrentTerm: Boolean(built.currentPremium),
+      hasCurrentTerm: Boolean(resolved.current),
       hasProposedTerm: Boolean(built.proposedPremium),
       canCompare: Boolean(built.currentPremium && built.proposedPremium),
       chasedThisBand: false,

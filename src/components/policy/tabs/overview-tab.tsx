@@ -11,6 +11,12 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatDay } from "@/lib/domain";
 import { isInForceStatus, isOffBookStatus, policyStatusLabel } from "@/lib/policy/status";
+import {
+  bandIsOffBook,
+  deskTermBandLabel,
+  type CurrentTermResolution,
+} from "@/lib/policies/current-term";
+import { renewalDaysPhrase } from "@/lib/renewal/urgency";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import { resolveDwellingFacts } from "@/lib/policy/dwelling-facts";
 import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
@@ -37,6 +43,7 @@ export function PolicyOverviewTab({
   producerDisplayName,
   readOnly = false,
   showCommission = true,
+  termView = null,
 }: {
   policy: {
     id: string;
@@ -102,12 +109,20 @@ export function PolicyOverviewTab({
   producerDisplayName?: string | null;
   readOnly?: boolean;
   showCommission?: boolean;
+  termView?: CurrentTermResolution | null;
 }) {
-  const renewalLine = isOffBookStatus(policy.status)
-    ? policyStatusLabel(policy.status)
-    : policy.renewalDate
-      ? `Renewal ${formatDay(policy.renewalDate)}`
-      : `Expires ${formatDay(policy.expirationDate)}`;
+  const offBook = termView ? bandIsOffBook(termView.band) : isOffBookStatus(policy.status);
+  const inForce = termView ? termView.countsAsInForce : isInForceStatus(policy.status);
+  const stayingDate = termView?.renewalAnchor ?? policy.renewalDate;
+  const renewalLine = offBook
+    ? termView
+      ? deskTermBandLabel(termView.band, policy.status)
+      : policyStatusLabel(policy.status)
+    : termView?.current
+      ? `${deskTermBandLabel(termView.band, policy.status)} · ${renewalDaysPhrase(termView.daysLeft ?? 0)} · Expires ${formatDay(termView.current.expiration)}`
+      : policy.renewalDate
+        ? `Renewal ${formatDay(policy.renewalDate)}`
+        : `Expires ${formatDay(policy.expirationDate)}`;
   const family = resolveLobOverviewFamily(policy);
   const mortgageeCount = interests.filter((row) => row.kind === "mortgagee").length;
   const additionalInsuredCount = interests.filter(
@@ -135,7 +150,7 @@ export function PolicyOverviewTab({
         <h2 className="text-base font-semibold text-navy">Links & renewal</h2>
         <p className="text-sm text-muted-foreground" data-ff-policy-renewal-status="">
           Renewal status · {renewalLine}
-          {isInForceStatus(policy.status) ? " · Active term" : ""}
+          {inForce ? " · Active term" : ""}
         </p>
         <div className="flex flex-wrap gap-2 text-sm">
           {contact ? (
@@ -151,7 +166,7 @@ export function PolicyOverviewTab({
           {deal ? (
             <RecordLink href={`/deals/${deal.id}?fromPolicy=${policy.id}`}>Deal {deal.title}</RecordLink>
           ) : null}
-          {isInForceStatus(policy.status) ? (
+          {inForce ? (
             <Link
               href={`/policies/${policy.id}/compare`}
               className={cn(
@@ -165,13 +180,13 @@ export function PolicyOverviewTab({
               Compare terms
             </Link>
           ) : null}
-          {isInForceStatus(policy.status) ? (
-            <ClientStayingButton policyId={policy.id} renewalDate={policy.renewalDate} size="sm" />
+          {inForce ? (
+            <ClientStayingButton policyId={policy.id} renewalDate={stayingDate} size="sm" />
           ) : null}
         </div>
       </section>
 
-      {change && isInForceStatus(policy.status) ? (
+      {change && inForce ? (
         <PremiumChangeSummary change={change} compareHref={`/policies/${policy.id}/compare`} />
       ) : null}
 

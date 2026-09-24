@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { activityLogs, alerts, contacts, policies } from "@/lib/db/schema";
 import { daysUntilExpiration, expirationDay } from "@/lib/ams/renewals";
 import { addUtcDays, deskNow } from "@/lib/home/as-of";
-import { isInForceStatus } from "@/lib/policy/status";
+import { resolveCurrentTerm } from "@/lib/policies/current-term";
 import { partyLabel } from "@/lib/desk/policy-name";
 import { CHASE_EVENT, CHASE_MARK, parseChaseBand } from "@/lib/renewal/chase";
 import {
@@ -53,6 +53,7 @@ export async function loadAutopilotSignals(asOf = deskNow()): Promise<PanelCard[
       policyId: policies.id,
       policyNumber: policies.policyNumber,
       lineOfBusiness: policies.lineOfBusiness,
+      effectiveDate: policies.effectiveDate,
       expirationDate: policies.expirationDate,
       status: policies.status,
       contactId: policies.contactId,
@@ -71,10 +72,21 @@ export async function loadAutopilotSignals(asOf = deskNow()): Promise<PanelCard[
     );
 
   const candidates = rows.filter((row) => {
-    if (!isInForceStatus(row.status)) return false;
-    const exp = expirationDay(row.expirationDate);
+    const resolved = resolveCurrentTerm(
+      {
+        status: row.status,
+        lineOfBusiness: row.lineOfBusiness,
+        policyNumber: row.policyNumber,
+        effectiveDate: row.effectiveDate,
+        expirationDate: row.expirationDate,
+      },
+      asOf,
+    );
+    if (!resolved.countsAsInForce) return false;
+    const exp = expirationDay(resolved.bookExpiration ?? row.expirationDate);
     if (!exp) return false;
-    return autopilotBandFor(daysUntilExpiration(exp, asOf)) != null;
+    const days = resolved.daysLeft ?? daysUntilExpiration(exp, asOf);
+    return autopilotBandFor(days) != null;
   });
   if (candidates.length === 0) return [];
 
@@ -129,9 +141,18 @@ export async function loadAutopilotSignals(asOf = deskNow()): Promise<PanelCard[
 
   const cards: PanelCard[] = [];
   for (const row of candidates) {
-    const exp = expirationDay(row.expirationDate);
-    if (!exp) continue;
-    const days = daysUntilExpiration(exp, asOf);
+    const resolved = resolveCurrentTerm(
+      {
+        status: row.status,
+        lineOfBusiness: row.lineOfBusiness,
+        policyNumber: row.policyNumber,
+        effectiveDate: row.effectiveDate,
+        expirationDate: row.expirationDate,
+      },
+      asOf,
+    );
+    const days = resolved.daysLeft;
+    if (days == null) continue;
     const band = autopilotBandFor(days);
     if (!band) continue;
     const partyLogs = [
@@ -182,7 +203,7 @@ export async function loadAutopilotSignals(asOf = deskNow()): Promise<PanelCard[
       href: `/renewals`,
       entityType: "policy",
       entityId: row.policyId,
-      deadline: exp,
+      deadline: row.expirationDate,
       source: "live",
       policyId: row.policyId,
       contactId: row.contactId,

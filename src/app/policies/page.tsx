@@ -21,14 +21,8 @@ import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
 import { buildPolicyLabel } from "@/lib/policy/auto-label";
 import { getAgencyPolicyLabelTemplate } from "@/lib/policy/auto-label-prefs";
-import { IN_FORCE_STATUSES, LAPSE_STATUSES } from "@/lib/home/aggregate";
-import {
-  addUtcDays,
-  deskNow,
-  endOfUtcMonth,
-  priorMonth,
-  startOfUtcMonth,
-} from "@/lib/home/as-of";
+import { LAPSE_STATUSES } from "@/lib/home/aggregate";
+import { deskNow } from "@/lib/home/as-of";
 import { partyLabel } from "@/lib/desk/policy-name";
 import { BookCommandWorkspace } from "@/components/book-lists/book-workspace";
 import { loadPolicyNeedSignals, loadRenewalPremiums } from "@/lib/book-lists/load";
@@ -36,6 +30,15 @@ import { loadDeskLineSettings } from "@/lib/db/line-settings";
 import { matchesBookLens, parseBookHeat, parseBookLayout, parseBookLens } from "@/lib/book-lists/lenses";
 import { presentPolicyCard } from "@/lib/book-lists/present";
 import { POLICY_COLUMNS } from "@/lib/book-lists/types";
+import { loadPolicyTermCandidates } from "@/lib/policies/load-terms";
+import {
+  bandIsOffBook,
+  businessDateKey,
+  deskTermBandLabel,
+  normalizeNamedInsured,
+  resolveCurrentTerm,
+} from "@/lib/policies/current-term";
+import { etDateKey } from "@/lib/time/et";
 
 function policyListLabel(
   labelTemplate: Parameters<typeof buildPolicyLabel>[0],
@@ -68,41 +71,42 @@ function policyListLabel(
   });
 }
 
+function etMonthKey(asOf: Date, monthOffset = 0): string {
+  const today = etDateKey(asOf);
+  const year = Number(today.slice(0, 4));
+  const month = Number(today.slice(5, 7));
+  const cursor = new Date(Date.UTC(year, month - 1 + monthOffset, 1));
+  return `${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
 function policyFilterValues(
   policy: {
     status: string;
     lineOfBusiness: string;
-    effectiveDate: Date;
-    expirationDate: Date;
     carrierId?: string | null;
   },
+  resolved: ReturnType<typeof resolveCurrentTerm>,
   carrierName?: string | null,
 ) {
   const status = policy.status.toLowerCase();
   const statusValues = [policy.status];
-  if (IN_FORCE_STATUSES.has(status)) statusValues.push("in_force");
+  if (resolved.countsAsInForce) statusValues.push("in_force");
 
   const written: string[] = [];
   const renewal: string[] = [];
   const attention: string[] = [];
   const asOf = deskNow();
 
-  if (LAPSE_STATUSES.has(status)) attention.push("lapse");
+  if (bandIsOffBook(resolved.band) || LAPSE_STATUSES.has(status)) attention.push("lapse");
 
-  if (IN_FORCE_STATUSES.has(status)) {
-    const effective = policy.effectiveDate;
-    if (effective >= startOfUtcMonth(asOf) && effective <= endOfUtcMonth(asOf)) {
-      written.push("this_month");
-    }
-    const last = priorMonth(asOf);
-    if (effective >= startOfUtcMonth(last) && effective <= endOfUtcMonth(last)) {
-      written.push("last_month");
-    }
-    if (policy.expirationDate > asOf) {
-      for (const days of [30, 60, 90] as const) {
-        if (policy.expirationDate <= addUtcDays(asOf, days)) {
-          renewal.push(String(days));
-        }
+  if (resolved.countsAsInForce) {
+    const effective = resolved.bookEffective ?? businessDateKey(resolved.current?.effective);
+    if (effective?.startsWith(etMonthKey(asOf, 0))) written.push("this_month");
+    if (effective?.startsWith(etMonthKey(asOf, -1))) written.push("last_month");
+    const days = resolved.daysLeft;
+    if (days != null && days >= 0) {
+      for (const window of [30, 60, 90] as const) {
+        if (days <= window) renewal.push(String(window));
       }
     }
   }
@@ -150,14 +154,37 @@ export default async function PoliciesPage({
     loadDeskLineSettings(),
   ]);
   const renewalPremiums = await loadRenewalPremiums(all.map(({ policy }) => policy.id));
+  const termIndex = await loadPolicyTermCandidates(all.map(({ policy }) => policy.id));
+  const asOf = deskNow();
+  const resolvedFor = (row: (typeof all)[number]) => {
+    const named = row.contact
+      ? `${row.contact.firstName} ${row.contact.lastName}`
+      : row.account?.name ?? null;
+    return resolveCurrentTerm(
+      {
+        status: row.policy.status,
+        lineOfBusiness: row.policy.lineOfBusiness,
+        policyNumber: row.policy.policyNumber,
+        carrierName: row.carrier?.name,
+        namedInsured: named,
+        effectiveDate: row.policy.effectiveDate,
+        expirationDate: row.policy.expirationDate,
+        renewalDate: row.policy.renewalDate,
+        premium: row.policy.premium,
+        sourceDocumentId: row.policy.sourceDocumentId,
+        terms: termIndex.get(row.policy.id) ?? [],
+      },
+      asOf,
+    );
+  };
   const visibleFilters = mergeLiveOptions(enabledPageFilters(pageFilters), {
     line: all.map(({ policy }) => policy.lineOfBusiness),
     carrier: all.map(({ carrier }) => carrier?.name ?? ""),
     status: all.map(({ policy }) => policy.status),
   });
   const filter = pickFilterParams(params, pageFilterParamKeys(visibleFilters));
-  const rows = all.filter(({ policy, carrier }) =>
-    matchesPageFilters(policyFilterValues(policy, carrier?.name), filter),
+  const rows = all.filter((row) =>
+    matchesPageFilters(policyFilterValues(row.policy, resolvedFor(row), row.carrier?.name), filter),
   );
   const key = Object.entries(filter)
     .filter(([, value]) => value)
@@ -169,31 +196,38 @@ export default async function PoliciesPage({
     (key
       ? `Filtered · ${key}`
       : "Urgency first: renewal proximity, cold silence, and open needs.");
-  const asOf = deskNow();
   const cards = rows
-    .map(({ policy, contact, account, carrier }) => {
+    .map((row) => {
+      const { policy, contact, account, carrier } = row;
+      const resolved = resolvedFor(row);
+      const namedRaw = partyLabel(contact, account);
+      const named = contact ? (normalizeNamedInsured(namedRaw) ?? namedRaw) : namedRaw;
       const displayName = policyListLabel(labelTemplate, policy, {
-        ownerName: partyLabel(contact, account),
+        ownerName: named,
         carrier: carrier?.name,
       });
+      const offBook = bandIsOffBook(resolved.band);
       return presentPolicyCard(
         {
           id: policy.id,
           policyNumber: policy.policyNumber,
           displayName,
-          status: policy.status,
+          status: offBook ? resolved.band : policy.status,
+          statusLabel: deskTermBandLabel(resolved.band, policy.status),
+          offBook,
+          daysUntil: resolved.daysLeft,
           lineOfBusiness: policy.lineOfBusiness,
-          premium: policy.premium,
-          renewalPremium: renewalPremiums.get(policy.id) ?? null,
+          premium: resolved.current?.premium ?? policy.premium,
+          renewalPremium: resolved.upcoming?.premium ?? renewalPremiums.get(policy.id) ?? null,
           formType: policy.formType,
           policyType: policy.policyType,
           policySubType: policy.policySubType,
           billingFrequency: policy.billingFrequency,
           premiumFrequency: policy.premiumFrequency,
-          expirationDate: policy.expirationDate,
+          expirationDate: resolved.bookExpiration ?? policy.expirationDate,
           updatedAt: policy.updatedAt,
           tags: policy.tags,
-          partyName: partyLabel(contact, account),
+          partyName: named,
           carrierName: carrier?.name,
           phone: contact?.phone ?? account?.phone,
           email: contact?.email ?? account?.email,

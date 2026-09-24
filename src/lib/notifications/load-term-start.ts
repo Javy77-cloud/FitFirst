@@ -3,7 +3,8 @@ import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { carriers, contacts, policies, policyTerms } from "@/lib/db/schema";
 import { addUtcDays, deskNow } from "@/lib/home/as-of";
-import { isInForceStatus } from "@/lib/policy/status";
+import { resolveCurrentTerm } from "@/lib/policies/current-term";
+import { etDayBounds } from "@/lib/time/et";
 import { partyLabel } from "@/lib/desk/policy-name";
 import { expirationDay } from "@/lib/ams/renewals";
 import type { PanelCard } from "@/lib/notifications/panel";
@@ -19,17 +20,14 @@ import {
   termYearLabel,
 } from "@/lib/notifications/term-start";
 
-function utcDayFloor(asOf: Date): Date {
-  return new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), asOf.getUTCDate(), 0, 0, 0, 0));
-}
-
 /**
  * Silent Inbox awareness when a renewal term's effective day is today.
  * Idempotent via key renewal_term_started:policyId:YYYY-MM-DD (sync-panel + dismiss).
  */
 export async function loadTermStartSignals(asOf = deskNow()): Promise<PanelCard[]> {
-  const floor = utcDayFloor(asOf);
-  const ceil = addUtcDays(floor, 1);
+  const { start } = etDayBounds(asOf);
+  const floor = addUtcDays(start, -1);
+  const ceil = addUtcDays(start, 2);
 
   const termRows = await db
     .select({
@@ -93,7 +91,18 @@ export async function loadTermStartSignals(asOf = deskNow()): Promise<PanelCard[
 
   for (const term of termRows) {
     const policy = byPolicy.get(term.policyId);
-    if (!policy || !isInForceStatus(policy.status)) continue;
+    if (!policy) continue;
+    const resolved = resolveCurrentTerm(
+      {
+        status: policy.status,
+        lineOfBusiness: policy.lineOfBusiness,
+        policyNumber: policy.policyNumber,
+        effectiveDate: term.termEffective,
+        expirationDate: term.termExpiration,
+      },
+      asOf,
+    );
+    if (!resolved.countsAsInForce && resolved.band !== "upcoming") continue;
     if (
       !isRenewalTermStartCandidate({
         termEffective: term.termEffective,
@@ -194,7 +203,17 @@ async function loadFromPolicyEffective(
 
   const cards: PanelCard[] = [];
   for (const row of rows) {
-    if (!isInForceStatus(row.status)) continue;
+    const resolved = resolveCurrentTerm(
+      {
+        status: row.status,
+        lineOfBusiness: row.lineOfBusiness,
+        policyNumber: row.policyNumber,
+        effectiveDate: row.effectiveDate,
+        expirationDate: row.expirationDate,
+      },
+      asOf,
+    );
+    if (!resolved.countsAsInForce && resolved.band !== "upcoming") continue;
     if (
       !isRenewalTermStartCandidate({
         termEffective: row.effectiveDate,
