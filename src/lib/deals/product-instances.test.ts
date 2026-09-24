@@ -6,7 +6,9 @@ import {
   normalizeProductInstanceList,
   removeProductInstance,
   resolveVisibleProductInstances,
+  orphanQuoteSheetLines,
   parseStorageLine,
+  resolveActiveProductInstance,
   storageLineForInstance,
 } from "@/lib/deals/product-instances";
 
@@ -49,6 +51,17 @@ describe("duplicate product instances", () => {
     expect(storageLineForInstance(rows[0]!, rows)).toBe("home");
     expect(storageLineForInstance(rows[1]!, rows)).toBe("home~landlord");
     expect(storageLineForInstance(rows[2]!, rows)).toBe("home~homeowners~88uvyj");
+    expect(
+      orphanQuoteSheetLines(
+        ["home", "home~homeowners~wwr8p9"],
+        resolveVisibleProductInstances({ shopProducts: ["homeowners"], quotingForm: "HO3" }),
+      ),
+    ).toEqual(["home~homeowners~wwr8p9"]);
+    const active = resolveActiveProductInstance({
+      lineParam: "home~homeowners~wwr8p9",
+      instances: resolveVisibleProductInstances({ shopProducts: ["homeowners"], quotingForm: "HO3" }),
+    });
+    expect(active.key).toBe("homeowners");
     expect(parseStorageLine("home~landlord")).toEqual({
       shopLine: "home",
       storageLine: "home~landlord",

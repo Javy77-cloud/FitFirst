@@ -1360,7 +1360,8 @@ function dealDocumentsReturnHref(formData: FormData, dealId: string | null | und
   const id = (dealId ?? "").trim();
   if (!id) return null;
   const line = String(formData.get("line") ?? "").trim();
-  return dealDocumentsTabHref(id, line || null);
+  const product = String(formData.get("productInstance") ?? "").trim();
+  return dealDocumentsTabHref(id, line || null, product || null);
 }
 
 /** Unlink a deal file from the active product window — does not delete the file. */
@@ -1374,6 +1375,7 @@ export async function unlinkDealDocumentFromProduct(formData: FormData) {
   const nextTags = unlinkDocFromProductTags(doc.tags, {
     shopLine: lineRaw || null,
     quotingForm: quotingForm || null,
+    instanceKey: optionalId(formData, "productInstance"),
   });
   await db.update(documents).set({ tags: nextTags }).where(eq(documents.id, documentId));
   revalidateDocumentPaths(doc);

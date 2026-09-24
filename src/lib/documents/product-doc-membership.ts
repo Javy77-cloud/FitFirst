@@ -72,8 +72,11 @@ export function instanceKeysFromDocTags(tags: readonly string[] | null | undefin
 
 /**
  * True when the file belongs in this product's Documents window.
- * Membership is additive `line:` / `form:` tags — a file can be on HO3 and Flood.
- * Untagged source docs are deal-library only (not auto-shown on a product window).
+ * Membership is additive. A file can be on HO3 and on a second HO3 copy.
+ * An `instance:` tag adds that form. It does not remove line/form membership
+ * from the original tabs (that hid Gloria's DP3 DEC after Link on the copy).
+ * A `~` copy does not inherit line/form files until Link stamps its instance tag.
+ * Files with no line, form, or instance tag stay in the deal library.
  */
 function matchesLineOrForm(
   doc: { tags?: readonly string[] | null },
@@ -99,18 +102,10 @@ export function docBelongsToProductWindow(
   const wantedLine = (opened?.shopLine ?? String(window.shopLine ?? "").trim().toLowerCase());
   const wantedForm = String(window.quotingForm ?? "").trim();
   const wantedInstance = (window.instanceKey ?? opened?.instanceKey ?? "").trim();
-  const taggedInstances = instanceKeysFromDocTags(doc.tags);
-  const storageHasCopy = Boolean(opened?.storageLine.includes("~"));
-
-  if (!wantedInstance) {
-    if (taggedInstances.length) return false;
-    return matchesLineOrForm(doc, wantedLine, wantedForm);
-  }
-  if (taggedInstances.includes(wantedInstance)) return true;
-  if (taggedInstances.length) return false;
-  const legacy =
-    window.legacyLineOwner !== false && !wantedInstance.includes("~") && !storageHasCopy;
-  if (!legacy) return false;
+  if (wantedInstance && instanceKeysFromDocTags(doc.tags).includes(wantedInstance)) return true;
+  // Second copy: explicit instance tag only. Do not list every line:home file.
+  if (wantedInstance.includes("~")) return false;
+  // Original tabs keep line/form matches. Another form's instance tag is not a veto.
   return matchesLineOrForm(doc, wantedLine, wantedForm);
 }
 
@@ -149,17 +144,19 @@ export function linkDocToProductTags(
  */
 export function unlinkDocFromProductTags(
   tags: readonly string[] | null | undefined,
-  input: { shopLine?: string | null; quotingForm?: string | null },
+  input: { shopLine?: string | null; quotingForm?: string | null; instanceKey?: string | null },
 ): string[] {
   const opened = parseStorageLine(input.shopLine);
   const line = opened?.shopLine ?? String(input.shopLine ?? "").trim();
   const form = String(input.quotingForm ?? "").trim();
-  const instanceKey = (opened?.instanceKey ?? "").trim();
-  const remainingInstances = instanceKeysFromDocTags(tags).filter((key) => key !== instanceKey);
-  const exclusive = Boolean(instanceKey) && remainingInstances.length === 0;
-  const dropLine = isShopLine(line) && (!instanceKey || exclusive) ? lineTag(line) : null;
-  const dropForm = form && (!instanceKey || exclusive) ? formTag(form) : null;
+  const instanceKey = (input.instanceKey ?? opened?.instanceKey ?? "").trim();
   const dropInstance = instanceKey ? instanceTag(instanceKey) : null;
+  // Copy tab: remove only this copy's instance tag. Original line/form tags stay.
+  if (instanceKey.includes("~")) {
+    return (tags ?? []).filter((tag) => tag !== dropInstance);
+  }
+  const dropLine = isShopLine(line) ? lineTag(line) : null;
+  const dropForm = form ? formTag(form) : null;
   return (tags ?? []).filter((tag) => {
     if (dropLine && tag === dropLine) return false;
     if (dropForm && tag === dropForm) return false;

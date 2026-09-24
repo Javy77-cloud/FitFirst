@@ -150,6 +150,22 @@ export function parseStorageLine(raw: string | null | undefined): StorageLine | 
   };
 }
 
+/**
+ * Quote-sheet lines whose product copy is not on the deal anymore.
+ * Rosa's `home~homeowners~wwr8p9` is one of these. Keep the row.
+ */
+export function orphanQuoteSheetLines(
+  lines: readonly string[],
+  instances: readonly ProductInstance[],
+): string[] {
+  const owned = new Set(instances.map((row) => storageLineForInstance(row, instances)));
+  return lines.filter((line) => {
+    const parsed = parseStorageLine(line);
+    if (!parsed) return false;
+    return !owned.has(parsed.storageLine);
+  });
+}
+
 export function requireStorageLine(raw: string | null | undefined): StorageLine {
   const parsed = parseStorageLine(raw);
   if (!parsed) throw new Error("Unknown line");

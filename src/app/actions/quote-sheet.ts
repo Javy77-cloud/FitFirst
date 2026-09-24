@@ -674,7 +674,7 @@ export async function addShopLine(formData: FormData) {
   redirect(withFlash(`/deals/${dealId}?tab=documents&line=${lineRaw}`, "deal-updated"));
 }
 
-/** Add/remove products on one deal. New shop lines get a sheet; removed lines stay stored if they have data. */
+/** Add/remove products on one deal. New shop lines get a sheet. Removed products and orphan copy sheets (a line whose instance is not on the deal) stay stored. */
 export async function setDealPackageLines(formData: FormData) {
   const dealId = str(formData, "dealId");
   const tab = str(formData, "tab");

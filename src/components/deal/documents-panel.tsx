@@ -121,7 +121,7 @@ export function DocumentsPanel({
                     </p>
                     <ul className="mt-1 space-y-1.5">
                       {group.docs.map((doc) => (
-                        <SourceFileRow key={doc.id} doc={doc} dealId={dealId} line={formLine} quotingForm={quotingForm ?? sheetQuotingForm} />
+                        <SourceFileRow key={doc.id} doc={doc} dealId={dealId} line={formLine} quotingForm={quotingForm ?? sheetQuotingForm} productInstance={productId} />
                       ))}
                     </ul>
                   </div>
@@ -132,7 +132,7 @@ export function DocumentsPanel({
             {windowOtherDocs.length > 0 ? (
               <ul className="mb-2 space-y-1.5">
                 {windowOtherDocs.map((doc) => (
-                  <SourceFileRow key={doc.id} doc={doc} dealId={dealId} line={formLine} quotingForm={quotingForm ?? sheetQuotingForm} />
+                  <SourceFileRow key={doc.id} doc={doc} dealId={dealId} line={formLine} quotingForm={quotingForm ?? sheetQuotingForm} productInstance={productId} />
                 ))}
               </ul>
             ) : null}
