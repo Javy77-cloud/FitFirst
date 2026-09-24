@@ -5,7 +5,7 @@ export type LayoutFieldKind = "compact" | "wide" | "standard";
 export type SectionFieldRow = {
   keys: string[];
   kind: LayoutFieldKind;
-  /** Contact Details sketch spans (street / spouse ≈ 2). */
+  /** Contact street/campaign ≈ 2; spouse trio uses span 3 (full-width equal cells). */
   span?: number;
 };
 
@@ -207,7 +207,8 @@ export function layoutFieldKind(
 }
 
 /**
- * Contact Details sketch spans: Street(~2), spouse name(2), campaign(~2).
+ * Contact Details sketch spans: Street(~2) and campaign(~2).
+ * Spouse fields stay equal-width so all three can share one row.
  * Wide fields still use col-span-full via kind.
  */
 export function contactDeskFieldSpan(
@@ -221,8 +222,18 @@ export function contactDeskFieldSpan(
   if (k === "mailing_address" || k === "address1" || k === "address" || /(^|_)street$/.test(k)) {
     return 2;
   }
-  if (k === "spouse_name" || k === "campaign_tag") return 2;
+  if (k === "campaign_tag") return 2;
   return 1;
+}
+
+/** Spouse name + DOB + link — one row, three equal cells (Contact + Deal). */
+export const SPOUSE_TRIO_KEYS = ["spouse_name", "spouse_dob", "spouse_link"] as const;
+
+export function spouseTrioRun(keys: readonly string[], start: number): string[] | null {
+  if (keys[start] !== "spouse_name") return null;
+  if (keys[start + 1] !== "spouse_dob") return null;
+  if (keys[start + 2] !== "spouse_link") return null;
+  return [...SPOUSE_TRIO_KEYS];
 }
 
 function isAddressPartKey(key: string): boolean {
@@ -271,7 +282,9 @@ function kindAtDensity(
  * Honest N-column packing: density only chooses the parent CSS column count.
  * Each field is exactly one cell. Wide fields (notes / chips / true address) may
  * still span the full row. Compact yes/no pairs are not re-bucketed into a nested grid.
- * Contact Details (`contactDesk`) uses equal cells + optional span-2 for street/spouse.
+ * Contact Details (`contactDesk`) uses equal cells + optional span-2 for street/campaign.
+ * Spouse name + DOB + link always pack as one full-width row of three equal cells
+ * (Contact + Deal) — never span-2 the name over the link.
  */
 export function groupSectionFieldRows(
   keys: readonly string[],
@@ -280,14 +293,25 @@ export function groupSectionFieldRows(
   ctx?: LayoutDensityContext,
 ): SectionFieldRow[] {
   const pack = clampSectionColumns(density);
-  return keys.filter((key) => key).map((key) => {
+  const list = keys.filter((key) => key);
+  const rows: SectionFieldRow[] = [];
+  for (let i = 0; i < list.length; ) {
+    const trio = spouseTrioRun(list, i);
+    if (trio) {
+      rows.push({ keys: trio, kind: "standard", span: 3 });
+      i += 3;
+      continue;
+    }
+    const key = list[i]!;
     const field = fieldOf?.(key);
     const kind = kindAtDensity(key, field, pack, ctx);
     const span = contactDeskFieldSpan(key, field, ctx);
-    return {
+    rows.push({
       keys: [key],
       kind,
       ...(span > 1 && kind !== "wide" ? { span } : {}),
-    };
-  });
+    });
+    i += 1;
+  }
+  return rows;
 }

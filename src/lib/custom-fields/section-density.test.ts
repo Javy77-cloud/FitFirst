@@ -428,14 +428,57 @@ describe("contact desk density (sketch v4)", () => {
     expect(readRenderedColumnCount(html)).toBe(4);
   });
 
-  it("spans spouse_name across two columns on contact desk", () => {
-    const rows = groupSectionFieldRows(
-      ["spouse_name", "spouse_dob", "spouse_link"],
-      () => ({ type: "single_line" as const }),
-      4,
-      desk,
+  it("packs spouse fields as three equal cells on one contact row", () => {
+    const keys = [
+      "preferred_language",
+      "marital_status",
+      "occupation",
+      "gender",
+      "preferred_contact_method",
+      "preferred_contact_time",
+      "spouse_name",
+      "spouse_dob",
+      "spouse_link",
+      "dependents",
+    ];
+    const rows = groupSectionFieldRows(keys, () => ({ type: "single_line" as const }), 4, desk);
+    const trio = rows.find((row) => row.span === 3);
+    expect(trio).toMatchObject({
+      keys: ["spouse_name", "spouse_dob", "spouse_link"],
+      kind: "standard",
+      span: 3,
+    });
+    expect(rows.some((row) => row.keys[0] === "dependents" && row.span !== 3)).toBe(true);
+
+    const html = renderToStaticMarkup(
+      createElement(LayoutSectionFieldGrid, {
+        density: 4,
+        keys,
+        contactDesk: true,
+        fieldOf: () => ({ type: "single_line" as const }),
+        renderField: (key: string) => createElement("span", { "data-ff-cell": key }, key),
+        collapse: false,
+      }),
     );
-    expect(rows[0]).toMatchObject({ keys: ["spouse_name"], span: 2, kind: "standard" });
+    expect(html).toMatch(/data-ff-spouse-trio=""/);
+    expect(html).toMatch(/data-ff-field-span="3"/);
+    expect(html).not.toMatch(/data-ff-field-span="2"[^>]*>[^<]*spouse_name|spouse_name[^<]*data-ff-field-span="2"/);
+  });
+
+  it("packs Deal spouse_* the same three-equal-cell row (no contactDesk)", () => {
+    const rows = groupSectionFieldRows(
+      ["nickname", "spouse_name", "spouse_dob", "spouse_link", "dependents"],
+      () => ({ type: "single_line" as const }),
+      2,
+    );
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          keys: ["spouse_name", "spouse_dob", "spouse_link"],
+          span: 3,
+        }),
+      ]),
+    );
   });
 });
 
