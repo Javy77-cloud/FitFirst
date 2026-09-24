@@ -1,6 +1,6 @@
-import { OutsideFitFirstStamp } from "@/components/deal/outside-fitfirst-stamp";
 "use client";
 
+import { OutsideFitFirstStamp } from "@/components/deal/outside-fitfirst-stamp";
 import { useState } from "react";
 import { requestAppetiteQuotesAction, requestStretchQuotesAction } from "@/app/actions/quotes";
 import { Button } from "@/components/ui/button";
