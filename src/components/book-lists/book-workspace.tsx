@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { PersistListOrder } from "@/components/records/persist-list-order";
+import { columnOrderIds } from "@/lib/desk/record-list-order";
 import { BookLiveScope } from "@/components/book-lists/book-live-scope";
 import { BookBoard } from "@/components/book-lists/book-board";
 import { BookKpiStrip } from "@/components/book-lists/book-kpi-strip";
@@ -82,7 +83,19 @@ export function BookCommandWorkspace({
     surface === "contacts" || surface === "accounts" || surface === "policies" || surface === "carriers";
   const ranked = sortCommandStack(cards);
   const listOrderModule =
-    surface === "contacts" ? "contacts" : surface === "accounts" ? "accounts" : null;
+    surface === "contacts"
+      ? "contacts"
+      : surface === "accounts"
+        ? "accounts"
+        : surface === "policies"
+          ? "policies"
+          : null;
+  // Contacts and accounts persist the stack rank. Policies bands follow the board
+  // columns the user was looking at; stack/list uses the same rank as contacts.
+  const listOrderIds =
+    surface === "policies" && layout === "bands"
+      ? columnOrderIds(cards, columns)
+      : ranked.map((card) => card.id);
   const activityRows = ranked.map((card) => ({
     id: card.id,
     name: card.title,
@@ -94,7 +107,7 @@ export function BookCommandWorkspace({
   }));
   const persist =
     listOrderModule ? (
-      <PersistListOrder module={listOrderModule} ids={ranked.map((card) => card.id)} />
+      <PersistListOrder module={listOrderModule} ids={listOrderIds} />
     ) : null;
   const stack = (
     <BookPriorityStack

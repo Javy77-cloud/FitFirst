@@ -142,5 +142,16 @@ describe("command-card book lists", () => {
     expect(detail).toMatch(/counts=\{tabCareCounts\}/);
     expect(source("src/components/policy/policy-tabs.tsx")).toMatch(/ff-policy-tab-wait/);
     expect(source("src/components/policy/policy-tabs.tsx")).toMatch(/waiting > 0/);
+    expect(detail).toMatch(/endSlot=/);
+    expect(detail).toMatch(/RecordListPager module="policies"/);
+    expect(detail).toMatch(/PolicyOverflowMenu/);
+    expect(detail).not.toMatch(/ml-auto shrink-0[\s\S]{0,160}PolicyOverflowMenu/);
+    const tabs = source("src/components/policy/policy-tabs.tsx");
+    expect(tabs).toMatch(/data-ff-policy-nav-end/);
+    expect(tabs).toMatch(/data-ff-policy-tab-row/);
+    const board = source("src/components/book-lists/book-workspace.tsx");
+    expect(board).toMatch(/surface === "policies"[\s\S]{0,40}\? "policies"/);
+    expect(board).toMatch(/columnOrderIds/);
+    expect(source("src/components/records/record-list-pager.tsx")).toMatch(/"policy"/);
   });
 });

@@ -15,6 +15,7 @@ import { PolicyOutcomeBanner } from "@/components/policy/change-desk";
 import { PolicyStatusDot } from "@/components/policy/policy-status-dot";
 import { PolicyQuickActions } from "@/components/policy/policy-quick-actions";
 import { PolicyOverflowMenu } from "@/components/policy/policy-overflow-menu";
+import { RecordListPager } from "@/components/records/record-list-pager";
 import { PolicyBreadcrumb } from "@/components/policy/policy-breadcrumb";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
 import { loadRecordContext } from "@/lib/record-context";
@@ -285,13 +286,6 @@ export default async function PolicyDetailPage({
                   accountId={account?.id ?? policy.accountId}
                 />
               </div>
-              <div className="ml-auto shrink-0">
-                <PolicyOverflowMenu
-                  policyId={policy.id}
-                  contactId={contact?.id}
-                  isAdmin={isAdmin}
-                />
-              </div>
             </div>
             {labelOverride ? (
               <span
@@ -364,7 +358,24 @@ export default async function PolicyDetailPage({
       ) : null}
 
       <PolicyDetailWorkspace
-        nav={<PolicyTabsNav policyId={policy.id} active={activeTab} tabs={viewerTabs} counts={tabCareCounts} />}
+        nav={
+          <PolicyTabsNav
+            policyId={policy.id}
+            active={activeTab}
+            tabs={viewerTabs}
+            counts={tabCareCounts}
+            endSlot={
+              <>
+                <PolicyOverflowMenu
+                  policyId={policy.id}
+                  contactId={contact?.id}
+                  isAdmin={isAdmin}
+                />
+                <RecordListPager module="policies" recordId={policy.id} />
+              </>
+            }
+          />
+        }
         rail={
           <>
             <div className="min-w-0 w-full max-w-full" data-ff-policy-quick-comms="">

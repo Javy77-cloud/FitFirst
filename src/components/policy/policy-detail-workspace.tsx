@@ -22,7 +22,7 @@ export function PolicyDetailWorkspace({
     >
       <div className="min-w-0 w-full space-y-3" data-ff-policy-main="">
         {nav ? (
-          <div className="min-w-0 overflow-x-auto" data-ff-policy-top-nav-slot="">
+          <div className="min-w-0" data-ff-policy-top-nav-slot="">
             {nav}
           </div>
         ) : null}
