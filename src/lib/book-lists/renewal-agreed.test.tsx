@@ -195,9 +195,10 @@ describe("Current band Renewal agreed badge", () => {
     expect(html).not.toMatch(/Renews in 12d[^<]*Renewal agreed/);
   });
 
-  it("does not render on the stack view, other bands, or policies that are not Client staying", () => {
+  it("keeps the corner badge off the stack view, other bands, and policies that are not Client staying", () => {
     const stack = renderToStaticMarkup(<BookGlanceCardView card={policyCard()} layoutMode="stack" />);
-    expect(stack).not.toContain("data-ff-renewal-agreed");
+    expect(stack).not.toContain("ff-renewal-agreed-badge");
+    expect(stack).not.toContain("is-renewal-agreed");
     expect(stack).toContain("Renews in 12d");
 
     const watch = renderToStaticMarkup(
