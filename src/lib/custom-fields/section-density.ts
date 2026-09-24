@@ -5,6 +5,13 @@ export type LayoutFieldKind = "compact" | "wide" | "standard";
 export type SectionFieldRow = {
   keys: string[];
   kind: LayoutFieldKind;
+  /** Contact Details sketch spans (street / spouse ≈ 2). */
+  span?: number;
+};
+
+/** Scoped Contact Details packing so Deal email/address stay wide. */
+export type LayoutDensityContext = {
+  contactDesk?: boolean;
 };
 
 export type LayoutFieldHint = {
@@ -113,12 +120,21 @@ export function isCountyFieldKey(key: string): boolean {
   return /(^|_)county$/.test(key.toLowerCase());
 }
 
-/** Street line that can sit with city/state/zip/county at 4–5 density. */
-export function isStreetAddressFieldKey(key: string): boolean {
+/**
+ * Street line that can sit with city/state/zip/county at 4–5 density.
+ * Contact Details keys insured street as `mailing_address` (label "Street");
+ * real mailing remains `contact_mailing_*` and stays excluded.
+ */
+export function isStreetAddressFieldKey(
+  key: string,
+  ctx?: LayoutDensityContext,
+): boolean {
   const k = key.toLowerCase();
-  if (k.includes("mailing") || k.includes("legal") || k.includes("email") || k.includes("website")) {
+  if (k.includes("legal") || k.includes("email") || k.includes("website")) {
     return false;
   }
+  if (ctx?.contactDesk && k === "mailing_address") return true;
+  if (k.includes("mailing")) return false;
   return (
     k === "address1" ||
     k === "address" ||
@@ -153,23 +169,60 @@ export function isCompactLayoutField(key: string, field?: LayoutFieldHint): bool
   return false;
 }
 
-export function isWideLayoutField(key: string, field?: LayoutFieldHint): boolean {
-  if (field?.type === "multi_line" || field?.type === "address" || field?.type === "image" || field?.type === "formula") {
+export function isWideLayoutField(
+  key: string,
+  field?: LayoutFieldHint,
+  ctx?: LayoutDensityContext,
+): boolean {
+  const k = key.toLowerCase();
+  // Contact insured street may be typed `address` in some defs — still a grid cell at density 4.
+  if (
+    field?.type === "multi_line" ||
+    field?.type === "image" ||
+    field?.type === "formula" ||
+    (field?.type === "address" && !(ctx?.contactDesk && isStreetAddressFieldKey(key, ctx)))
+  ) {
     return true;
   }
-  const k = key.toLowerCase();
   if (k === "insurance_type" || k === "pipeline" || field?.systemKey === "quotingForm") return true;
   if (k === "existing_coverage_types" || k === "cross_selling_opportunity") return true;
+  // Contact Details sketch v4: email shares DOB · Phone · Secondary · Email.
+  if (ctx?.contactDesk && (k === "email" || k.endsWith("_email"))) return false;
   if (k === "email" || k.endsWith("_email") || k === "website" || k.endsWith("_website")) {
     return true;
   }
   return false;
 }
 
-export function layoutFieldKind(key: string, field?: LayoutFieldHint): LayoutFieldKind {
-  if (isWideLayoutField(key, field)) return "wide";
+export function layoutFieldKind(
+  key: string,
+  field?: LayoutFieldHint,
+  ctx?: LayoutDensityContext,
+): LayoutFieldKind {
+  if (isWideLayoutField(key, field, ctx)) return "wide";
+  // Contact Details density-4: equal cells — never shrink compact into thin strips.
+  if (ctx?.contactDesk) return "standard";
   if (isCompactLayoutField(key, field)) return "compact";
   return "standard";
+}
+
+/**
+ * Contact Details sketch spans: Street(~2), spouse name(2), campaign(~2).
+ * Wide fields still use col-span-full via kind.
+ */
+export function contactDeskFieldSpan(
+  key: string,
+  field?: LayoutFieldHint,
+  ctx?: LayoutDensityContext,
+): number {
+  if (!ctx?.contactDesk) return 1;
+  if (isWideLayoutField(key, field, ctx)) return 1;
+  const k = key.toLowerCase();
+  if (k === "mailing_address" || k === "address1" || k === "address" || /(^|_)street$/.test(k)) {
+    return 2;
+  }
+  if (k === "spouse_name" || k === "campaign_tag") return 2;
+  return 1;
 }
 
 function isAddressPartKey(key: string): boolean {
@@ -186,10 +239,11 @@ export function propertyAddressRun(
   keys: string[],
   start: number,
   density: number,
+  ctx?: LayoutDensityContext,
 ): string[] | null {
   if (density < 4) return null;
   const first = keys[start];
-  if (!first || !isStreetAddressFieldKey(first)) return null;
+  if (!first || !isStreetAddressFieldKey(first, ctx)) return null;
   const rest: string[] = [];
   let i = start + 1;
   while (i < keys.length && rest.length < density - 1) {
@@ -206,9 +260,10 @@ function kindAtDensity(
   key: string,
   field: LayoutFieldHint | undefined,
   density: number,
+  ctx?: LayoutDensityContext,
 ): LayoutFieldKind {
-  const kind = layoutFieldKind(key, field);
-  if (density >= 4 && kind === "wide" && isStreetAddressFieldKey(key)) return "standard";
+  const kind = layoutFieldKind(key, field, ctx);
+  if (density >= 4 && kind === "wide" && isStreetAddressFieldKey(key, ctx)) return "standard";
   return kind;
 }
 
@@ -216,15 +271,23 @@ function kindAtDensity(
  * Honest N-column packing: density only chooses the parent CSS column count.
  * Each field is exactly one cell. Wide fields (notes / chips / true address) may
  * still span the full row. Compact yes/no pairs are not re-bucketed into a nested grid.
+ * Contact Details (`contactDesk`) uses equal cells + optional span-2 for street/spouse.
  */
 export function groupSectionFieldRows(
   keys: readonly string[],
   fieldOf?: (key: string) => LayoutFieldHint | undefined,
   density: number = DEFAULT_SECTION_DENSITY,
+  ctx?: LayoutDensityContext,
 ): SectionFieldRow[] {
   const pack = clampSectionColumns(density);
-  return keys.filter((key) => key).map((key) => ({
-    keys: [key],
-    kind: kindAtDensity(key, fieldOf?.(key), pack),
-  }));
+  return keys.filter((key) => key).map((key) => {
+    const field = fieldOf?.(key);
+    const kind = kindAtDensity(key, field, pack, ctx);
+    const span = contactDeskFieldSpan(key, field, ctx);
+    return {
+      keys: [key],
+      kind,
+      ...(span > 1 && kind !== "wide" ? { span } : {}),
+    };
+  });
 }

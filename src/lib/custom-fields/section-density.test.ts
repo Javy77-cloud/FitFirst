@@ -212,9 +212,9 @@ describe("section field packing", () => {
     expect(readRenderedColumnCount(html)).toBe(5);
     expect(html).toMatch(/grid-cols-5/);
     expect(html).not.toMatch(/data-ff-compact-row/);
-    expect(html).toMatch(/<div class="min-w-0"><span data-ff-cell="address1"/);
-    expect(html).not.toMatch(/<div class="col-span-full min-w-0"><span data-ff-cell="address1"/);
-    expect(html).toMatch(/<div class="col-span-full min-w-0"><span data-ff-cell="mailing_address"/);
+    expect(html).toMatch(/data-ff-field-span="1"[^>]*><span data-ff-cell="address1"/);
+    expect(html).not.toMatch(/data-ff-field-span="full"[^>]*><span data-ff-cell="address1"/);
+    expect(html).toMatch(/data-ff-field-span="full"[^>]*><span data-ff-cell="mailing_address"/);
   });
 
   it("changes grid column classes and styles from 3 to 4 to 5 on a short-field section", () => {
@@ -362,6 +362,82 @@ describe("section field packing", () => {
 function allKeys(layout: ReturnType<typeof parseLayout>): string[] {
   return layout.columns.flatMap((column) => column.sections.flatMap((section) => section.fieldKeys));
 }
+
+
+describe("contact desk density (sketch v4)", () => {
+  const desk = { contactDesk: true as const };
+
+  it("keeps email standard on contact desk so it shares the phones row", () => {
+    expect(layoutFieldKind("email")).toBe("wide");
+    expect(layoutFieldKind("email", { type: "single_line" }, desk)).toBe("standard");
+    expect(layoutFieldKind("co_applicant_email")).toBe("wide");
+    expect(layoutFieldKind("co_applicant_email", undefined, desk)).toBe("standard");
+    const rows = groupSectionFieldRows(
+      ["date_of_birth", "phone", "secondary_phone", "email"],
+      () => ({ type: "single_line" as const }),
+      4,
+      desk,
+    );
+    expect(rows.every((row) => row.kind !== "wide")).toBe(true);
+    expect(rows.map((row) => row.keys[0])).toEqual([
+      "date_of_birth",
+      "phone",
+      "secondary_phone",
+      "email",
+    ]);
+  });
+
+  it("treats contact mailing_address as street span-2; contact_mailing_* stay out of the run", () => {
+    expect(isStreetAddressFieldKey("mailing_address")).toBe(false);
+    expect(isStreetAddressFieldKey("mailing_address", desk)).toBe(true);
+    expect(isStreetAddressFieldKey("contact_mailing_address", desk)).toBe(false);
+    expect(
+      propertyAddressRun(["mailing_address", "city", "state", "zip"], 0, 4, desk),
+    ).toEqual(["mailing_address", "city", "state", "zip"]);
+    expect(propertyAddressRun(["mailing_address", "city", "state", "zip"], 0, 4)).toBeNull();
+
+    const rows = groupSectionFieldRows(
+      ["mailing_address", "city", "state", "zip"],
+      (key) => (key === "mailing_address" ? { type: "address" as const } : { type: "single_line" as const }),
+      4,
+      desk,
+    );
+    expect(rows[0]).toMatchObject({ keys: ["mailing_address"], kind: "standard", span: 2 });
+    expect(rows.slice(1).every((row) => row.kind === "standard" && !row.span)).toBe(true);
+  });
+
+  it("uses equal standard cells for prefs (no compact strips) on contact desk", () => {
+    const keys = ["preferred_language", "marital_status", "occupation", "gender"];
+    const packed = groupSectionFieldRows(keys, () => ({ type: "single_line" as const }), 4, desk);
+    expect(packed.every((row) => row.kind === "standard")).toBe(true);
+    expect(isCompactLayoutField("marital_status")).toBe(true);
+    expect(layoutFieldKind("marital_status", undefined, desk)).toBe("standard");
+
+    const html = renderToStaticMarkup(
+      createElement(LayoutSectionFieldGrid, {
+        density: 4,
+        keys,
+        contactDesk: true,
+        fieldOf: () => ({ type: "single_line" as const }),
+        renderField: (key: string) => createElement("span", { "data-ff-cell": key }, key),
+        collapse: false,
+      }),
+    );
+    expect(html).toMatch(/data-ff-contact-desk="1"/);
+    expect(html).not.toMatch(/col-span-full/);
+    expect(readRenderedColumnCount(html)).toBe(4);
+  });
+
+  it("spans spouse_name across two columns on contact desk", () => {
+    const rows = groupSectionFieldRows(
+      ["spouse_name", "spouse_dob", "spouse_link"],
+      () => ({ type: "single_line" as const }),
+      4,
+      desk,
+    );
+    expect(rows[0]).toMatchObject({ keys: ["spouse_name"], span: 2, kind: "standard" });
+  });
+});
 
 describe("shared layout engine wiring", () => {
   it("uses one header + density grid on Deal Details, record forms, and the builder", () => {

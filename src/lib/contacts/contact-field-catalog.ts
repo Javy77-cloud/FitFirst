@@ -484,6 +484,17 @@ export function needsContactDetailsV4Upgrade(layout: FieldLayout): boolean {
     .flatMap((column) => column.sections)
     .find((section) => section.id === "prefs");
   if (prefs?.fieldKeys.includes("education_level")) return true;
+  // Pre-v4 identity order put email before phones / alone on a row — reseed sketch order.
+  const identity = layout.columns
+    .flatMap((column) => column.sections)
+    .find((section) => section.id === "identity" || section.id === "contact");
+  if (identity) {
+    const ordered = identity.fieldKeys;
+    const emailAt = ordered.indexOf("email");
+    const phoneAt = ordered.indexOf("phone");
+    if (emailAt >= 0 && phoneAt >= 0 && emailAt < phoneAt) return true;
+    if (identity.density != null && identity.density !== 4) return true;
+  }
   return false;
 }
 

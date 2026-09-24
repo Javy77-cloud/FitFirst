@@ -60,6 +60,7 @@ import {
 import type { PartyRecord } from "@/lib/crm/party-typeahead";
 import { partyLabel } from "@/lib/deals/lookup";
 import { db, sql as rawSql } from "./index";
+import { ensureContactDetailsV4Columns } from "@/lib/db/ensure-contact-details-v4";
 import {
   accounts,
   activities,
@@ -1120,6 +1121,7 @@ export async function getLead(id: string) {
 
 export async function getContactWorkspace(id: string) {
   if (!isUuid(id)) return null;
+  await ensureContactDetailsV4Columns().catch(() => false);
   const [contact] = await db
     .select()
     .from(contacts)
@@ -1238,6 +1240,8 @@ export async function matchReplacementNotice(input: {
 
 export async function getAccountWorkspace(id: string) {
   if (!isUuid(id)) return null;
+  // Account workspace joins contacts — ensure v4 columns before bare contact select.
+  await ensureContactDetailsV4Columns().catch(() => false);
   const [account] = await db
     .select()
     .from(accounts)
