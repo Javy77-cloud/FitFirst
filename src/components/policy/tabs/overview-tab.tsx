@@ -197,7 +197,9 @@ export function PolicyOverviewTab({
             </Link>
           ) : null}
             {inForce ? (
-              <ClientStayingButton policyId={policy.id} renewalDate={stayingDate} size="sm" />
+              <span className="ff-links-renewal-staying">
+                <ClientStayingButton policyId={policy.id} renewalDate={stayingDate} size="sm" />
+              </span>
             ) : null}
           </div>
         </div>

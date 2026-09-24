@@ -1,7 +1,7 @@
 import { RENEWAL_AGREED_LABEL } from "@/lib/policies/renewal-agreed";
 
 /**
- * Compact dossier ink beside the renewal text.
+ * Dossier ink just to the right of Client staying.
  * Same paper, green done tone, and rotate(-8deg) as the deal stamp.
  */
 export function RenewalAgreedStamp() {
