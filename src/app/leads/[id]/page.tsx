@@ -11,6 +11,7 @@ import { sourceLabel } from "@/lib/crm/sources";
 import { LINE_LABELS } from "@/lib/crm/bind";
 import { AwardLeadForm } from "@/components/leads/award-form";
 import { LeadActivityPanels } from "@/components/leads/lead-activity-panels";
+import { RecentlyDeletedFiles } from "@/components/documents/recently-deleted";
 import { LeadDetailWorkspace } from "@/components/leads/lead-detail-workspace";
 import { LeadQuickComms } from "@/components/leads/lead-quick-comms";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
@@ -223,6 +224,7 @@ export default async function LeadDetailPage({
         }
         afterFields={
           <>
+            <RecentlyDeletedFiles leadId={lead.id} returnTo={`/leads/${lead.id}`} />
             <section id="activity" className="ff-card space-y-3 p-4" data-ff-lead-activity-section="">
               <div>
                 <h2 className="text-base font-semibold text-navy">Activity</h2>

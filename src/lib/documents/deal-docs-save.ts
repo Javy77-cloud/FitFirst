@@ -31,6 +31,7 @@ export type WorksheetSourceDoc = {
   docType?: string | null;
   filename?: string | null;
   tags?: unknown;
+  status?: string | null;
 };
 
 export type DealDocumentsSaveResult = {
@@ -83,6 +84,7 @@ export function listWorksheetSourceDocs<T extends WorksheetSourceDoc>(
     const sourceDocs = asList(docs).filter((doc) => {
       try {
         if (!doc || typeof doc !== "object") return false;
+        if (doc.status === "hidden") return false;
         if (isHiddenAgencyLetterDoc(doc)) return false;
         const tags = worksheetDocTags(doc.tags);
         return isDocumentsSourceDoc({ ...doc, tags });

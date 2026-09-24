@@ -1,5 +1,6 @@
 import { commitmentNudgePanelKey } from "@/lib/notifications/commitments";
 import { and, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
@@ -267,7 +268,7 @@ export async function loadStaleDocSignals(asOf = deskNow()): Promise<PanelCard[]
       contactId: documents.contactId,
     })
     .from(documents)
-    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID)));
+    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), notHiddenDocument()));
 
   const cards: PanelCard[] = [];
   for (const doc of expiring) {
@@ -340,7 +341,13 @@ export async function loadStaleDocSignals(asOf = deskNow()): Promise<PanelCard[]
           tags: documents.tags,
         })
         .from(documents)
-        .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), inArray(documents.dealId, gatheringIds)))
+        .where(
+          and(
+            eq(documents.tenantId, DEFAULT_TENANT_ID),
+            inArray(documents.dealId, gatheringIds),
+            notHiddenDocument(),
+          ),
+        )
     : [];
   const dealsWithSource = new Set(
     sourceDocs.filter((doc) => isDocumentsSourceDoc(doc) && doc.dealId).map((doc) => doc.dealId as string),

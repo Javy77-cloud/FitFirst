@@ -15,6 +15,7 @@ export type FillDocCandidate = {
   slot?: string | null;
   docType?: string | null;
   tags?: readonly string[] | null;
+  status?: string | null;
 };
 
 /** Source (non-quote) deal docs that belong to this product window. */
@@ -24,6 +25,7 @@ export function selectFillDocsForProductWindow<T extends FillDocCandidate>(
 ): T[] {
   const source = (docs ?? []).filter(
     (doc) =>
+      doc.status !== "hidden" &&
       isDocumentsSourceDoc(doc) &&
       !isQuoteFileDoc(doc) &&
       !isQuoteAttachment(doc.docType || "", doc.filename || undefined),

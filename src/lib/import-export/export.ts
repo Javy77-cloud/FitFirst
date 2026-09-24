@@ -1,4 +1,5 @@
 import { and, asc, desc, eq } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import {
@@ -408,7 +409,7 @@ async function exportDocuments(): Promise<CsvRow[]> {
     .leftJoin(accounts, eq(documents.accountId, accounts.id))
     .leftJoin(deals, eq(documents.dealId, deals.id))
     .leftJoin(policies, eq(documents.policyId, policies.id))
-    .where(eq(documents.tenantId, tenant()))
+    .where(and(eq(documents.tenantId, tenant()), notHiddenDocument()))
     .orderBy(desc(documents.createdAt));
   return rows.map(({ doc, contact, account, deal, policy }) => ({
     id: doc.id,

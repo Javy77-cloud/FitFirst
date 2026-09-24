@@ -9,7 +9,8 @@ import type { CompletenessReport } from "@/lib/completeness/report";
 import type { Document, ExtractedFieldRow, QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { ShopLine } from "@/lib/domain";
 import type { SheetProduct } from "@/lib/quote-sheet/products";
-import { listWorksheetSourceDocs } from "@/lib/documents/deal-docs-save";
+import { dealDocumentsTabHref, listWorksheetSourceDocs } from "@/lib/documents/deal-docs-save";
+import { RecentlyDeletedFiles } from "@/components/documents/recently-deleted";
 import {
   filterDocsForProductWindow,
   libraryDocsNotInProductWindow,
@@ -175,6 +176,7 @@ export function DocumentsPanel({
             />
           </section>
           <DealFormSends dealId={dealId} />
+          <RecentlyDeletedFiles dealId={dealId} returnTo={dealDocumentsTabHref(dealId, formLine)} />
         </div>
 
         <div className="w-full min-w-0 space-y-3" data-ff-deal-docs-sheet>

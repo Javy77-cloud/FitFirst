@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray, or } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { AGENCY_BRAND, DEFAULT_TENANT_ID, isCertifiableLine } from "@/lib/domain";
 import { CONTACT_ID } from "@/lib/fixtures/ids";
 import { isUuid } from "@/lib/ids";
@@ -129,6 +130,7 @@ export async function resolvePortalToken(rawToken: string): Promise<PortalResolv
               eq(documents.tenantId, tenantId()),
               inArray(documents.policyId, policyIds),
               eq(documents.slot, "policy_file"),
+              notHiddenDocument(),
             ),
           );
 

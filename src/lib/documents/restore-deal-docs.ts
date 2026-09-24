@@ -4,7 +4,6 @@ import { db } from "@/lib/db";
 import { documentFolders, documents, risks } from "@/lib/db/schema";
 import { slotForDocType } from "@/lib/deals/lookup";
 import { isDocumentsSourceDoc, isQuoteFileDoc } from "@/lib/deals/quote-docs";
-import { uploadedFileDeleteMode } from "@/lib/documents/delete-file";
 
 export function dealSourceSlotForUpload(input: {
   dealId?: string | null;
@@ -33,7 +32,8 @@ function shouldRestoreDealSourceDoc(doc: {
   if (doc.slot === "quote_pdf" || doc.slot === "quote_file" || doc.slot === "policy_file") {
     return false;
   }
-  if (uploadedFileDeleteMode(doc) === "hide") return false;
+  // User deletes set status === "hidden". Only Recently deleted → Restore unhides them.
+  if (doc.status === "hidden") return false;
   return isDocumentsSourceDoc(doc) || doc.slot === "library_file";
 }
 
@@ -73,7 +73,7 @@ export async function restoreDealSourceDocuments(dealId: string): Promise<number
       doc.slot === "library_file" && slotForDocType(doc.docType) === "source_doc"
         ? "source_doc"
         : doc.slot;
-    const nextStatus = doc.status === "hidden" ? "uploaded" : doc.status;
+    const nextStatus = doc.status;
     const nextDealId = doc.dealId ?? dealId;
     const nextRiskId = doc.riskId ?? risk?.id ?? null;
     if (

@@ -7,6 +7,7 @@
  * if a Current tag somehow remains). No-op when next status is still in force.
  */
 import { and, eq, inArray } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { documents, policyTerms } from "@/lib/db/schema";
@@ -74,7 +75,7 @@ export async function demoteCurrentOnOffBookStatus(
   const docs = await db
     .select({ id: documents.id, tags: documents.tags })
     .from(documents)
-    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.policyId, id)));
+    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.policyId, id), notHiddenDocument()));
 
   const docPlan = planOffBookDocumentDemotions(docs);
   for (const change of docPlan) {
@@ -110,7 +111,7 @@ export async function demoteCurrentOnOffBookStatusMany(
   const docs = await db
     .select({ id: documents.id, tags: documents.tags, policyId: documents.policyId })
     .from(documents)
-    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), inArray(documents.policyId, ids)));
+    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), inArray(documents.policyId, ids), notHiddenDocument()));
 
   const docPlan = planOffBookDocumentDemotions(docs);
   for (const change of docPlan) {

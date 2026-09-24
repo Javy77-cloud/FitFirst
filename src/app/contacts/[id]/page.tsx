@@ -5,6 +5,8 @@ import { DeskPageTrail } from "@/components/desk/desk-page-trail";
 import { ClientStatusPill } from "@/components/record-links";
 import { getContactWorkspace, listRecordActivities } from "@/lib/db/queries";
 import { db } from "@/lib/db";
+import { RecentlyDeletedFiles } from "@/components/documents/recently-deleted";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { agencySettings, contacts, documents } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID, formatMoney } from "@/lib/domain";
 import { RecordContextRail } from "@/components/record-context/record-context-rail";
@@ -140,7 +142,7 @@ export default async function ContactDetailPage({
           and(
             eq(documents.tenantId, DEFAULT_TENANT_ID),
             eq(documents.contactId, contact.id),
-            ne(documents.status, "hidden"),
+            notHiddenDocument(),
           ),
         )
         .orderBy(desc(documents.createdAt))
@@ -697,15 +699,21 @@ export default async function ContactDetailPage({
               badge: docItems.length || undefined,
               "data-ff": "contact-section-documents",
               children: (
-                <ContactSectionBlock
-                  id="documents"
-                  title="Documents"
-                  count={docItems.length}
-                  emptyLabel="No documents yet."
-                  emptyCtaLabel="Upload from the desk library"
-                  items={docItems}
-                  bare
-                />
+                <>
+                  <ContactSectionBlock
+                    id="documents"
+                    title="Documents"
+                    count={docItems.length}
+                    emptyLabel="No documents yet."
+                    emptyCtaLabel="Upload from the desk library"
+                    items={docItems}
+                    bare
+                  />
+                  <RecentlyDeletedFiles
+                    contactId={contact.id}
+                    returnTo={`/contacts/${contact.id}`}
+                  />
+                </>
               ),
             },
             {

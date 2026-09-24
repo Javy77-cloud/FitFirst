@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { flashAction } from "@/lib/flash-action";
 import { and, eq, sql } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { currentDeskSession } from "@/lib/auth/session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { appointmentLine } from "@/lib/domain-ams";
@@ -425,7 +426,7 @@ export async function fillCompareFromTermRoleDocs(
       createdAt: documents.createdAt,
     })
     .from(documents)
-    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.policyId, policyId)));
+    .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.policyId, policyId), notHiddenDocument()));
 
   const selected = selectCompareTermRoleDocs(docs);
   if (!selected.ok) return { ok: false, error: selected.message };

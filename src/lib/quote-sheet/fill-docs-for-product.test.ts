@@ -43,6 +43,24 @@ describe("selectFillDocsForProductWindow", () => {
     expect(home.map((d) => d.id)).not.toContain("flood-dec");
   });
 
+  it("drops hidden files from a product fill list", () => {
+    const flood = selectFillDocsForProductWindow(
+      [
+        ...rosaDealDocs,
+        {
+          id: "hidden-flood",
+          filename: "old flood.jpg",
+          slot: "source_doc",
+          docType: "photo",
+          tags: ["line:flood"],
+          status: "hidden",
+        },
+      ],
+      { shopLine: "flood" },
+    );
+    expect(flood.map((doc) => doc.id)).toEqual(["flood-dec"]);
+  });
+
   it("drops quote files and untagged library docs from Fill", () => {
     const flood = selectFillDocsForProductWindow(rosaDealDocs, { shopLine: "flood" });
     expect(flood.map((d) => d.id)).not.toContain("quote");
@@ -62,7 +80,9 @@ describe("selectFillDocsForProductWindow", () => {
     const fillSlice = action.slice(fillIdx, fillIdx + 900);
     expect(listSlice).toMatch(/selectFillDocsForProductWindow/);
     expect(fillSlice).toMatch(/selectFillDocsForProductWindow/);
-    expect(listSlice).toMatch(/shopLine:\s*lineRaw/);
-    expect(fillSlice).toMatch(/shopLine:\s*line/);
+    expect(listSlice).toMatch(/fillWindowForLine\(dealId, lineRaw\)/);
+    expect(fillSlice).toMatch(/fillWindowForLine\(dealId, opened\.storageLine\)/);
+    expect(listSlice).toMatch(/notHiddenDocument\(\)/);
+    expect(fillSlice).toMatch(/notHiddenDocument\(\)/);
   });
 });

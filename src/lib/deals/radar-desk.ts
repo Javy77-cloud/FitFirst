@@ -1,5 +1,6 @@
 import { dealHasOnHoldTag } from "@/lib/deals/on-hold";
 import { and, eq, inArray } from "drizzle-orm";
+import { notHiddenDocument } from "@/lib/documents/visible-docs";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { activityLogs, carriers, documents, quotes } from "@/lib/db/schema";
@@ -150,7 +151,7 @@ export async function loadDealVelocityTouches(dealIds: string[]) {
         slot: documents.slot,
       })
       .from(documents)
-      .where(and(eq(documents.tenantId, tenant), inArray(documents.dealId, dealIds))),
+      .where(and(eq(documents.tenantId, tenant), inArray(documents.dealId, dealIds), notHiddenDocument())),
     db
       .select({
         id: quotes.id,
