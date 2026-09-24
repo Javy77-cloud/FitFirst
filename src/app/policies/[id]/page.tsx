@@ -419,6 +419,7 @@ export default async function PolicyDetailPage({
             readOnly={!isAdmin}
             showCommission={viewer.commissionBreakdown.read}
             termView={termView}
+            renewalHandled={renewalHandled}
           />
         ) : null}
 
