@@ -5,9 +5,30 @@ import {
   GEMINI_IMAGE_MAX_EDGE,
   GEMINI_INLINE_HARD_CAP_BYTES,
   GEMINI_INLINE_MAX_BYTES,
+  jpegExifOrientation,
   prepareGeminiInlineBytes,
   resizeRasterForGemini,
 } from "./image-bytes";
+
+/** Minimal EXIF APP1 so a landscape JPEG claims it should display rotated 90° CW. */
+function jpegWithOrientation(jpeg: Buffer, orientation: number): Buffer {
+  const payload = Buffer.alloc(8 + 2 + 12 + 4);
+  payload.write("Exif\0\0", 0, "ascii");
+  payload.write("II", 6, "ascii");
+  payload.writeUInt16LE(0x2a, 8);
+  payload.writeUInt32LE(8, 10);
+  payload.writeUInt16LE(1, 14);
+  payload.writeUInt16LE(0x0112, 16);
+  payload.writeUInt16LE(3, 18);
+  payload.writeUInt32LE(1, 20);
+  payload.writeUInt16LE(orientation, 24);
+  const app1 = Buffer.alloc(2 + 2 + payload.length);
+  app1[0] = 0xff;
+  app1[1] = 0xe1;
+  app1.writeUInt16BE(payload.length + 2, 2);
+  payload.copy(app1, 4);
+  return Buffer.concat([jpeg.subarray(0, 2), app1, jpeg.subarray(2)]);
+}
 
 function widePng(): Buffer {
   const canvas = createCanvas(2200, 1400);
@@ -41,6 +62,37 @@ describe("prepareGeminiInlineBytes", () => {
     });
     expect(prepared.ok).toBe(false);
     if (!prepared.ok) expect(prepared.message).toMatch(/too large/i);
+  });
+
+  it("turns a sideways phone JPEG upright before Gemini", async () => {
+    const canvas = createCanvas(80, 40);
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, 80, 40);
+    ctx.fillStyle = "#ff0000";
+    ctx.fillRect(0, 0, 16, 16);
+    const jpeg = canvas.toBuffer("image/jpeg", 95);
+    const tagged = jpegWithOrientation(jpeg, 6);
+    expect(jpegExifOrientation(tagged)).toBe(6);
+    const prepared = await prepareGeminiInlineBytes({
+      bytes: tagged,
+      mimeType: "image/jpeg",
+      filename: "domenic-dec.jpg",
+    });
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.mimeType).toBe("image/jpeg");
+    expect(prepared.shrunk).toBe(true);
+    const { loadImage } = await import("@napi-rs/canvas");
+    const image = await loadImage(prepared.bytes);
+    expect(image.width).toBe(40);
+    expect(image.height).toBe(80);
+    const check = createCanvas(image.width, image.height);
+    const checkCtx = check.getContext("2d");
+    checkCtx.drawImage(image, 0, 0);
+    const pixel = checkCtx.getImageData(image.width - 4, 4, 1, 1).data;
+    expect(pixel[0]).toBeGreaterThan(200);
+    expect(pixel[1]).toBeLessThan(40);
   });
 
   it("leaves a small JPEG alone", async () => {

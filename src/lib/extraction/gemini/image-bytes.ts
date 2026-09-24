@@ -24,18 +24,129 @@ function byteMessage(bytes: number): string {
   return `${mb}MB`;
 }
 
+/** JPEG EXIF orientation 1–8. Missing or non-JPEG returns 1 (already upright). */
+export function jpegExifOrientation(bytes: Buffer): number {
+  if (bytes.length < 12 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return 1;
+  let offset = 2;
+  while (offset + 4 < bytes.length) {
+    if (bytes[offset] !== 0xff) break;
+    const marker = bytes[offset + 1] ?? 0;
+    if (marker === 0xda || marker === 0xd9) break;
+    const size = bytes.readUInt16BE(offset + 2);
+    if (size < 2 || offset + 2 + size > bytes.length) break;
+    if (marker === 0xe1) {
+      const start = offset + 4;
+      if (bytes.toString("ascii", start, start + 6) === "Exif\0\0") {
+        return orientationFromTiff(bytes, start + 6);
+      }
+    }
+    offset += 2 + size;
+  }
+  return 1;
+}
+
+function orientationFromTiff(bytes: Buffer, tiff: number): number {
+  if (tiff + 8 > bytes.length) return 1;
+  const little = bytes.toString("ascii", tiff, tiff + 2) === "II";
+  const read16 = (pos: number) => (little ? bytes.readUInt16LE(pos) : bytes.readUInt16BE(pos));
+  const read32 = (pos: number) => (little ? bytes.readUInt32LE(pos) : bytes.readUInt32BE(pos));
+  if (read16(tiff + 2) !== 0x2a) return 1;
+  const ifd = tiff + read32(tiff + 4);
+  if (ifd + 2 > bytes.length) return 1;
+  const count = read16(ifd);
+  for (let i = 0; i < count; i += 1) {
+    const entry = ifd + 2 + i * 12;
+    if (entry + 12 > bytes.length) break;
+    if (read16(entry) !== 0x0112) continue;
+    const value = read16(entry + 8);
+    if (value >= 1 && value <= 8) return value;
+  }
+  return 1;
+}
+
+function orientedSize(width: number, height: number, orientation: number): { width: number; height: number } {
+  if (orientation >= 5 && orientation <= 8) return { width: height, height: width };
+  return { width, height };
+}
+
+/** Bake EXIF orientation into pixels so a sideways phone shot is upright for Gemini. */
+function drawUpright(
+  ctx: {
+    save: () => void;
+    restore: () => void;
+    translate: (x: number, y: number) => void;
+    scale: (x: number, y: number) => void;
+    rotate: (angle: number) => void;
+    drawImage: (image: unknown, x: number, y: number, w: number, h: number) => void;
+  },
+  image: unknown,
+  orientation: number,
+  canvasWidth: number,
+  canvasHeight: number,
+  drawWidth: number,
+  drawHeight: number,
+) {
+  ctx.save();
+  switch (orientation) {
+    case 2:
+      ctx.translate(canvasWidth, 0);
+      ctx.scale(-1, 1);
+      break;
+    case 3:
+      ctx.translate(canvasWidth, canvasHeight);
+      ctx.rotate(Math.PI);
+      break;
+    case 4:
+      ctx.translate(0, canvasHeight);
+      ctx.scale(1, -1);
+      break;
+    case 5:
+      ctx.rotate(Math.PI / 2);
+      ctx.scale(1, -1);
+      break;
+    case 6:
+      ctx.translate(canvasWidth, 0);
+      ctx.rotate(Math.PI / 2);
+      break;
+    case 7:
+      ctx.translate(canvasWidth, 0);
+      ctx.rotate(Math.PI / 2);
+      ctx.translate(drawWidth, 0);
+      ctx.scale(-1, 1);
+      break;
+    case 8:
+      ctx.translate(0, canvasHeight);
+      ctx.rotate(-Math.PI / 2);
+      break;
+    default:
+      break;
+  }
+  ctx.drawImage(image, 0, 0, drawWidth, drawHeight);
+  ctx.restore();
+}
+
 export async function resizeRasterForGemini(
   buffer: Buffer,
 ): Promise<{ bytes: Buffer; width: number; height: number }> {
+  const orientation = jpegExifOrientation(buffer);
   const { createCanvas, loadImage } = await import("@napi-rs/canvas");
   const image = await loadImage(buffer);
-  const edge = Math.max(image.width, image.height) || 1;
+  const oriented = orientedSize(image.width, image.height, orientation);
+  const edge = Math.max(oriented.width, oriented.height) || 1;
   const scale = edge > GEMINI_IMAGE_MAX_EDGE ? GEMINI_IMAGE_MAX_EDGE / edge : 1;
-  const width = Math.max(1, Math.round(image.width * scale));
-  const height = Math.max(1, Math.round(image.height * scale));
+  const width = Math.max(1, Math.round(oriented.width * scale));
+  const height = Math.max(1, Math.round(oriented.height * scale));
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
-  ctx.drawImage(image, 0, 0, width, height);
+  drawUpright(
+    ctx as unknown as Parameters<typeof drawUpright>[0],
+    image,
+    orientation,
+    width,
+    height,
+    Math.max(1, Math.round(image.width * scale)),
+    Math.max(1, Math.round(image.height * scale)),
+  );
   let quality = GEMINI_IMAGE_JPEG_QUALITY;
   let bytes = canvas.toBuffer("image/jpeg", quality);
   while (bytes.length > GEMINI_INLINE_MAX_BYTES && quality > 40) {
@@ -80,7 +191,8 @@ export async function prepareGeminiInlineBytes(input: {
     return { ok: false, message };
   }
 
-  if (bytes.length <= GEMINI_INLINE_MAX_BYTES && !isHeicUpload(mimeType, filename)) {
+  const sideways = jpegExifOrientation(bytes) > 1;
+  if (bytes.length <= GEMINI_INLINE_MAX_BYTES && !isHeicUpload(mimeType, filename) && !sideways) {
     return { ok: true, bytes, mimeType: mimeType || "image/jpeg", shrunk: false };
   }
 

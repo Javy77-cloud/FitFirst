@@ -446,6 +446,19 @@ describe("unpublished confirm guard", () => {
       expect.arrayContaining(["premium", "named_insured"]),
     );
     expect(queue.map((row) => row.key)).not.toContain("coverage_a");
+
+    const matched = buildMintFields({
+      identity: { namedInsured: "Domenic Iori" },
+      sheet: { named_insured: { value: "Domenic Iori" } },
+      gemini: [
+        { fieldKey: "named_insured", normalizedValue: "IORI, DOMENIC", confidence: 0.96, flagged: false },
+        { fieldKey: "policy_number", normalizedValue: "612345678 101 1", confidence: 0.94, flagged: false },
+        { fieldKey: "premium", normalizedValue: "2109", confidence: 0.93, flagged: false },
+        { fieldKey: "effective_date", normalizedValue: "2026-09-21", confidence: 0.95, flagged: false },
+      ],
+    });
+    expect(matched.find((row) => row.key === "named_insured")?.value).toBe("Domenic Iori");
+    expect(mintConfirmQueue(matched).map((row) => row.key)).not.toContain("named_insured");
     expect(queue.length).toBeLessThan(fields.length);
     expect(mintNeedsConfirm({ status: "unpublished", soldBasis: { quoteId: "q1" }, fields })).toBe(
       true,

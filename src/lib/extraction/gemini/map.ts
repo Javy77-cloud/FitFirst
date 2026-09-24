@@ -1,5 +1,7 @@
 import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
 import type { ExtractedField, ExtractionResult, UnmappedExtractLabel } from "@/lib/extraction/extract";
+import { normalizeNamedInsured } from "@/lib/people/named-insured";
+import { isRepeatableSheetKey } from "@/lib/quote-sheet/repeatable-units";
 import { expandAutoDecLayout } from "./auto-layout";
 import { readGeminiDocumentKind, sanitizeGeminiPreview } from "./preview";
 import { GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, GEMINI_LETTER_EXTRACT_JSON_KEYS, type GeminiExtractKey } from "./prompt";
@@ -289,7 +291,11 @@ export function normalizeGeminiJsonKey(key: string): string {
 
 export function sheetKeysForGeminiKey(geminiKey: string): string[] {
   const normalized = normalizeGeminiJsonKey(geminiKey);
-  return GEMINI_KEY_TO_SHEET[normalized] ?? GEMINI_KEY_TO_SHEET[geminiKey] ?? [];
+  const mapped = GEMINI_KEY_TO_SHEET[normalized] ?? GEMINI_KEY_TO_SHEET[geminiKey] ?? [];
+  if (mapped.length > 0) return mapped;
+  // vehicle_2_annual_miles and the other repeatable Auto columns are real sheet keys.
+  if (isRepeatableSheetKey(normalized)) return [normalized];
+  return [];
 }
 
 function clampConfidence(n: number): number {
@@ -492,6 +498,15 @@ export function normalizeAutoPolicyValue(fieldKey: string, raw: string): string 
   }
   if (fieldKey === "currently_insured") return normalizeCurrentlyInsured(raw);
   if (fieldKey === "aaa_member") return normalizeAaaMember(raw);
+  if (
+    fieldKey === "named_insured" ||
+    fieldKey === "applicant_name" ||
+    fieldKey === "secondary_named_insured" ||
+    fieldKey === "current_policy_named_insured" ||
+    /^driver_\d+_name$/.test(fieldKey)
+  ) {
+    return normalizeNamedInsured(raw) ?? raw.trim();
+  }
   return raw;
 }
 
