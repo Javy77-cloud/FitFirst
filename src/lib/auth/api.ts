@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
-import { ACTOR_COOKIE, SESSION_COOKIES } from "@/lib/auth/cookies";
+import { SESSION_COOKIES } from "@/lib/auth/cookies";
+import { verifySessionToken } from "@/lib/auth/signed-session";
 import { isAdmin, type Actor } from "@/lib/auth/rbac";
 import { DEMO_API_TOKEN, generateApiToken, hashToken, parseBearer, readCookie } from "@/lib/auth/token-crypto";
 import { isDeskLoginAllowed } from "@/lib/people/status";
@@ -87,9 +88,8 @@ export async function resolveApiActor(request: Request): Promise<ApiActor | null
   if (bearer) return actorFromBearer(bearer);
 
   const cookieHeader = request.headers.get("cookie");
-  const cookieId =
-    readCookie(cookieHeader, SESSION_COOKIES.actorId) ?? readCookie(cookieHeader, ACTOR_COOKIE);
-  if (cookieId && cookieId !== "admin" && cookieId !== "agent") return loadUser(cookieId);
+  const claims = verifySessionToken(readCookie(cookieHeader, SESSION_COOKIES.session));
+  if (claims?.sub) return loadUser(claims.sub);
   return null;
 }
 

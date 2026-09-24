@@ -8,6 +8,7 @@ import {
   isPublicPath,
 } from "@/lib/auth/access";
 import { SESSION_COOKIES } from "@/lib/auth/cookies";
+import { verifySessionToken } from "@/lib/auth/signed-session";
 import { isMfaChallengePath, isMfaSetupPath } from "@/lib/auth/mfa";
 import { isInvalidDeskRecordPath } from "@/lib/desk-id";
 import { isModulePath } from "@/lib/people/privileges";
@@ -53,17 +54,12 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const userId = request.cookies.get(SESSION_COOKIES.actorId)?.value;
-  const role = request.cookies.get(SESSION_COOKIES.role)?.value ?? request.cookies.get(SESSION_COOKIES.actor)?.value;
-  const mfa = request.cookies.get(SESSION_COOKIES.mfa)?.value;
+  const claims = verifySessionToken(request.cookies.get(SESSION_COOKIES.session)?.value);
+  const userId = claims?.sub;
+  const role = claims?.role;
+  const mfa = claims?.mfa;
   if (!userId) {
-    const pending = request.cookies.get(SESSION_COOKIES.mfaPending)?.value;
     const dest = request.nextUrl.clone();
-    if (pending) {
-      dest.pathname = "/login/mfa";
-      dest.search = "";
-      return NextResponse.redirect(dest);
-    }
     dest.pathname = "/login";
     dest.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname)}`;
     return NextResponse.redirect(dest);
@@ -85,7 +81,7 @@ export function proxy(request: NextRequest) {
 
   const isAdmin = role === "admin" || role === "owner";
   const isDeveloper = role === "developer";
-  const canModules = request.cookies.get(SESSION_COOKIES.modules)?.value !== "0";
+  const canModules = claims?.mod !== "0";
   if (!isAdmin && !canModules && isModulePath(pathname)) {
     const dest = request.nextUrl.clone();
     dest.pathname = "/";

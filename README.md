@@ -50,7 +50,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh. Open **Deals → any deal → Documents → Master sheet**. Confirm **Fill from property records** is above the sheet next to Fill from source. Click it without a key: toast says the key is missing and cells stay put. With a key and a blank Year built / Parcel ID: those fill and show **property records**. A Year built that came from 4-point / wind mit / dec stays; Records check gets the mismatch line. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh. Open **Deals → any deal → Documents → Master sheet**. Confirm **Fill from property records** is above the sheet next to Fill from source. Click it without a key: toast says the key is missing and cells stay put. With a key and a blank Year built / Parcel ID: those fill and show **property records**. A Year built that came from 4-point / wind mit / dec stays; Records check gets the mismatch line. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### CE — Fill from property records
 
@@ -79,7 +79,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh. Open **Deals → any deal → Documents → Master sheet**. Fill from a dec / 4-point / wind mit (or an existing source doc). Applicant, property, roof, and coverage cells should show real values (`Ana Unbound`, `$321,000`, `hip`) — not question text like “activities” or “what is the roof shape”. A label with nothing after the colon stays yellow and empty. Source column reads **dec page**, **4pt inspection**, or **wind mitigation**. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh. Open **Deals → any deal → Documents → Master sheet**. Fill from a dec / 4-point / wind mit (or an existing source doc). Applicant, property, roof, and coverage cells should show real values (`Ana Unbound`, `$321,000`, `hip`) — not question text like “activities” or “what is the roof shape”. A label with nothing after the colon stays yellow and empty. Source column reads **dec page**, **4pt inspection**, or **wind mitigation**. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### CD — Synonym dictionary + value-after-delimiter
 
@@ -99,7 +99,7 @@ Login **javy@fitfirst.local** / **javy**. Hard refresh. Open **Deals → any dea
 
 Keeps prior desk tip work on this branch: Pipeline **List** + **Grid**, FedEx address + vault, Edit Layout, BX tags, builder DnD, Dashboard, rail 320, Save toasts. No migrate. No `db:seed`. Ana unbound. Cov A **$321,000**.
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh. Open a Deal → Documents. Each uploaded source file shows a trash can on the right. Confirm once — the row disappears. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh. Open a Deal → Documents. Each uploaded source file shows a trash can on the right. Confirm once — the row disappears. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### Documents trash
 
@@ -140,7 +140,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh. Open a Lead or Deal Details address field — type freely (plain input) if no FedEx key is saved. Settings → Developer Hub → **API vault**: Javy-as-admin sees the mask only. After adding `FF_SITE_DEVELOPER_EMAILS`, Unlock vault, paste sandbox API key + secret, Save. Return to an address field and type a street — suggestions appear; picking one fills city / state / ZIP and shows **Address confirmed**. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh. Open a Lead or Deal Details address field — type freely (plain input) if no FedEx key is saved. Settings → Developer Hub → **API vault**: Javy-as-admin sees the mask only. After adding `FF_SITE_DEVELOPER_EMAILS`, Unlock vault, paste sandbox API key + secret, Save. Return to an address field and type a street — suggestions appear; picking one fills city / state / ZIP and shows **Address confirmed**. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### CA — FedEx address + developer vault
 
@@ -166,7 +166,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh. **Settings → Deal field builder**. Drag **Phone** above **First name** in Contact, then drag **Email** into Address (before City). Drop line should appear. **Save**. Reload — order stays. Toggle **Preview** and drag again. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh. **Settings → Deal field builder**. Drag **Phone** above **First name** in Contact, then drag **Email** into Address (before City). Drop line should appear. **Save**. Reload — order stays. Toggle **Preview** and drag again. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### BT — Field builder reorder / cross-section drag
 
@@ -191,7 +191,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads** (or Deals, Contacts, Business, Policies, Carriers). Open **⋯** next to Columns → **Manage tags**. Create or recolor a tag. Click the Tags cell on a row — pick any subset. On **Deals → Pipeline → Board**, click tags on a card the same way. Deal rail Tags assigns from the catalog only. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Leads** (or Deals, Contacts, Business, Policies, Carriers). Open **⋯** next to Columns → **Manage tags**. Create or recolor a tag. Click the Tags cell on a row — pick any subset. On **Deals → Pipeline → Board**, click tags on a card the same way. Deal rail Tags assigns from the catalog only. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### BX — Module tag catalog + assign popup
 
@@ -216,7 +216,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh. Left nav first item is **Dashboard**, not Home. Dashboard page title matches. Customize nav catalog shows Dashboard for that row. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh. Left nav first item is **Dashboard**, not Home. Dashboard page title matches. Customize nav catalog shows Dashboard for that row. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### BW — Home → Dashboard
 
@@ -240,7 +240,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh a deal (Ana Dib is fine). Confirm **TAGS** + **Quick Communications** are visible on the right rail. In DevTools, `document.querySelector('[data-ff-deal-right-rail]').getBoundingClientRect().width` must be **320**. Open Sheet health — still 320. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh a deal (Ana Dib is fine). Confirm **TAGS** + **Quick Communications** are visible on the right rail. In DevTools, `document.querySelector('[data-ff-deal-right-rail]').getBoundingClientRect().width` must be **320**. Open Sheet health — still 320. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### BY — Deal right rail exactly 320px
 
@@ -264,7 +264,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh. Open **Settings → Deal field builder**, change a field or leave it, click **Save**. A top-center **Deal layout saved** toast should appear every time. Then spot-check another Save (Save deal details, Save sheet, Save policy, Save lead, Save settings). Fail a save (or a validation miss) and you should not see a success toast. Same host as **Save deal details**. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh. Open **Settings → Deal field builder**, change a field or leave it, click **Save**. A top-center **Deal layout saved** toast should appear every time. Then spot-check another Save (Save deal details, Save sheet, Save policy, Save lead, Save settings). Fail a save (or a validation miss) and you should not see a success toast. Same host as **Save deal details**. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### BU — Sitewide Save toast
 
@@ -289,7 +289,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh. Open **Settings → Field layouts** — chips in the left palette are one width. From Leads, Deals, Policies, Contacts, Business, or Carriers, click **Edit Layout** and confirm that module’s builder. Save a field on Carriers, then open Leads — layouts stay separate. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh. Open **Settings → Field layouts** — chips in the left palette are one width. From Leads, Deals, Policies, Contacts, Business, or Carriers, click **Edit Layout** and confirm that module’s builder. Save a field on Carriers, then open Leads — layouts stay separate. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### BV — Equal chips + Edit Layout everywhere
 
@@ -314,7 +314,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deal Details**. Open any picklist (including a new builder picklist that still has blank option rows). No React duplicate-key overlay. Select still saves. Do not bind or edit Ana Cov A (**$321,000**). Do not redesign builder layout, Pipeline, Markets, or the bell.
+Login **javy@fitfirst.local**. Hard refresh **Deal Details**. Open any picklist (including a new builder picklist that still has blank option rows). No React duplicate-key overlay. Select still saves. Do not bind or edit Ana Cov A (**$321,000**). Do not redesign builder layout, Pipeline, Markets, or the bell.
 
 ### BS — Picklist FieldControl keys
 
@@ -339,7 +339,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh. Unread alerts → number on the bell, icon otherwise normal. Open the panel — unread rows highlighted. Mark as read — badge drops, row highlight gone. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh. Unread alerts → number on the bell, icon otherwise normal. Open the panel — unread rows highlighted. Mark as read — badge drops, row highlight gone. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### BR — Unread badge + row highlight
 
@@ -364,7 +364,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals → Pipeline → Table**. Stage cells should match Board colors. Deal names should read `First Last / Lob`. Open **Settings → Picklists** — US states, lines of business, and common carriers are there; **Use a global list** on a picklist field lists them. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals → Pipeline → Table**. Stage cells should match Board colors. Deal names should read `First Last / Lob`. Open **Settings → Picklists** — US states, lines of business, and common carriers are there; **Use a global list** on a picklist field lists them. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### BQ — Stage colors, First Last / Lob, picklists
 
@@ -393,7 +393,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh. **Settings → Deal field builder**: three equal columns side by side; every field-type chip the same width. Open a deal: right rail is **320px**; Sheet health does not blow it out. **Markets** with no agent add/shop is completely blank (no "In appetite") even if evaluateDeal would have matches. **Quotes** with no rows is blank — no dashed box. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh. **Settings → Deal field builder**: three equal columns side by side; every field-type chip the same width. Open a deal: right rail is **320px**; Sheet health does not blow it out. **Markets** with no agent add/shop is completely blank (no "In appetite") even if evaluateDeal would have matches. **Quotes** with no rows is blank — no dashed box. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### BI — Equal builder, 320 rail, empty Markets/Quotes
 
@@ -419,7 +419,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh. Convert or create a deal — title is **First Last Home** (or Auto / Flood). Change line of business — title updates. Search **Javier** on Deals / Pipeline and find Javier Canales Home. Confirm the table has no Contact column. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh. Convert or create a deal — title is **First Last Home** (or Auto / Flood). Change line of business — title updates. Search **Javier** on Deals / Pipeline and find Javier Canales Home. Confirm the table has no Contact column. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### BH — Deal name, search, no Contact column
 
@@ -452,7 +452,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh, open a deal with **no** matches and **no** manual carriers → **Markets** is empty (no "In appetite"). Open **Documents** — there is no Fit / 100% toggle; the sheet is 100%. Confirm the right rail is **320px**. On **Deal Details**, Contact and Address are equal width. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh, open a deal with **no** matches and **no** manual carriers → **Markets** is empty (no "In appetite"). Open **Documents** — there is no Fit / 100% toggle; the sheet is 100%. Confirm the right rail is **320px**. On **Deal Details**, Contact and Address are equal width. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### BG — Deal page four fixes
 
@@ -478,7 +478,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh, open **Ana Dib** (unbound, do not bind). **Documents**: open a long sheet, click **Fit to screen** — zero scroll at any window size; **100%** may scroll. Type sheet values, **Save sheet**, refresh — values return. **Confirm & request quotes** uses those saved values. **Settings → Deal field builder**: no LOB chips; three columns; drag a type onto left/right; Save. Do not bind or edit Ana Cov A (**$321,000**).
+Login **javy@fitfirst.local**. Hard refresh, open **Ana Dib** (unbound, do not bind). **Documents**: open a long sheet, click **Fit to screen** — zero scroll at any window size; **100%** may scroll. Type sheet values, **Save sheet**, refresh — values return. **Confirm & request quotes** uses those saved values. **Settings → Deal field builder**: no LOB chips; three columns; drag a type onto left/right; Save. Do not bind or edit Ana Cov A (**$321,000**).
 
 ### BE — Fit, save sheet, builder redo
 
@@ -505,7 +505,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh, open **Ana Dib** (unbound, do not bind). **Documents**: toggle Fit to screen / 100% — fit mode should not scroll the tab. **Tags** on the 300px rail: create a tag with a color, then edit the color; confirm the chip color on Deals / Leads / Contacts / Policies lists. **Markets** on a deal with no carriers: the tab is empty (no "In appetite"). Add a carrier or open a deal that already has a lookup — appetite UI returns. Do not bind or edit Ana (Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh, open **Ana Dib** (unbound, do not bind). **Documents**: toggle Fit to screen / 100% — fit mode should not scroll the tab. **Tags** on the 300px rail: create a tag with a color, then edit the color; confirm the chip color on Deals / Leads / Contacts / Policies lists. **Markets** on a deal with no carriers: the tab is empty (no "In appetite"). Add a carrier or open a deal that already has a lookup — appetite UI returns. Do not bind or edit Ana (Cov A **$321,000**).
 
 ### BB — Documents zoom, tag colors, blank Markets
 
@@ -532,7 +532,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail (Deal Details tab + 300px rail). Open **Documents** and confirm the upload box stays top / full-width. Also open a shopping deal (not Ana): drop a wind mit / 4-point / dec and confirm the street for enrichment stubs. Purchase consent on `/onboarding/purchase` stays **unchecked**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail (Deal Details tab + 300px rail). Open **Documents** and confirm the upload box stays top / full-width. Also open a shopping deal (not Ana): drop a wind mit / 4-point / dec and confirm the street for enrichment stubs. Purchase consent on `/onboarding/purchase` stays **unchecked**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
 ### AW — Deal Details strip-down
 
@@ -682,7 +682,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
 ## Mac test prior (`cursor/live-ff-tip-sep7at`)
 
@@ -697,7 +697,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals**, open a shopping deal (not Ana). Drop a wind mit / 4-point / dec; mapped labels fill CHECK cells. Confirm the street to trigger enrichment. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals**, open a shopping deal (not Ana). Drop a wind mit / 4-point / dec; mapped labels fill CHECK cells. Confirm the street to trigger enrichment. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
 ## Mac test prior (`cursor/live-ff-tip-sep7aq`)
 
@@ -712,7 +712,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
 ## Mac test prior (`cursor/live-ff-tip-sep7ao`)
 
@@ -727,7 +727,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
 ### AO — Deal detail layout
 
@@ -752,7 +752,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
 ### AH — Pipeline list (sep7ah, locked)
 
@@ -777,7 +777,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
 ### AH — Pipeline list (sep7ah, locked)
 
@@ -834,7 +834,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
 ### AH — Pipeline list (sep7ah, locked)
 
@@ -883,7 +883,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
 ### AH — Pipeline list (sep7ah)
 
@@ -905,7 +905,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
 ### AD — Pipeline list (sep7ad)
 
@@ -927,7 +927,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
 ### AC — Pipeline list (sep7ac)
 
@@ -950,7 +950,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deal detail** (Ana unbound). Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deal detail** (Ana unbound). Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
 ### AG — Deal detail
 
@@ -973,7 +973,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deal detail** (Ana unbound) and **Settings → Integrations**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deal detail** (Ana unbound) and **Settings → Integrations**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
 ### AB — Deal detail
 
@@ -1012,7 +1012,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
 ### AA — Pipeline list (sep7aa)
 
@@ -1043,7 +1043,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**, then open **Ana Dib** on Deal detail. Do not bind or edit Ana (unbound, Cov A **$321,000**).
 
 ### A — Pipeline list (sep7w @ `8f9bc84`)
 
@@ -1075,7 +1075,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
 
 ### W — Pipeline list (sep7w)
 
@@ -1097,7 +1097,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Open **Ana Dib** on Deal detail. Do not bind (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Open **Ana Dib** on Deal detail. Do not bind (unbound, Cov A **$321,000**).
 
 ### X — Deal detail (sep7x)
 
@@ -1121,7 +1121,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
 
 ### V — Pipeline list (sep7v)
 
@@ -1147,7 +1147,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open a **Deal**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**, then open a **Deal**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
 
 ### A — Pipeline list (sep7t @ `b9f0521`)
 
@@ -1194,7 +1194,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
 
 ### R — Pipeline list (sep7r)
 
@@ -1219,7 +1219,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
 
 ### Q — Pipeline list (sep7q)
 
@@ -1244,7 +1244,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
 
 ### P — Pipeline list (sep7p)
 
@@ -1269,7 +1269,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**, then open a **Deal**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**, then open a **Deal**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
 
 ### A — Pipeline list (sep7m @ `cecc68f`)
 
@@ -1306,7 +1306,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
+Login **javy@fitfirst.local**. Hard refresh **Deals / Pipeline**. Do not bind or edit Ana Dib (unbound, Cov A **$321,000**).
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -1330,7 +1330,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead**, then **Deals**.
+Login **javy@fitfirst.local**. Hard refresh **Leads**, open a **Lead**, then **Deals**.
 
 ### A — Leads (sep7g @ `93ee4db`)
 
@@ -1398,7 +1398,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, open a **Lead**, then **Deals**.
+Login **javy@fitfirst.local**. Hard refresh **Leads**, open a **Lead**, then **Deals**.
 
 ### A — Crash / clock / follow-up (sep7a + sep7e)
 
@@ -1480,7 +1480,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, then **Contacts** or **Documents**.
+Login **javy@fitfirst.local**. Hard refresh **Leads**, then **Contacts** or **Documents**.
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -1506,7 +1506,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Deals**.
+Login **javy@fitfirst.local**. Hard refresh **Deals**.
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -1538,7 +1538,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Open a Lead.
+Login **javy@fitfirst.local**. Open a Lead.
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -1561,7 +1561,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**.
+Login **javy@fitfirst.local**. Hard refresh **Leads**.
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -1590,7 +1590,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**.
+Login **javy@fitfirst.local**. Hard refresh **Leads**.
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -1618,7 +1618,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, then **Contacts** or **Deals**.
+Login **javy@fitfirst.local**. Hard refresh **Leads**, then **Contacts** or **Deals**.
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -1642,7 +1642,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, then the bell.
+Login **javy@fitfirst.local**. Hard refresh **Leads**, then the bell.
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -1674,7 +1674,7 @@ npm install
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads** and **Calendar**.
+Login **javy@fitfirst.local**. Hard refresh **Leads** and **Calendar**.
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -1702,7 +1702,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**.
+Login **javy@fitfirst.local**. Hard refresh **Leads**.
 
 **Migrate only after checkout.** `0074_lead_follow_up_default` inserts the Default template (same four Hot steps + Remind via Task) and runs a scoped one-time data fix: stamp `first_contact_at` from the earliest logged call / email / sms when missing; reset status to `new` only for leads with no first-contact stamp and no logged comms (converted leads stay put); cancel queued follow-ups on those untouched new leads. The Leads page also runs the same fix idempotently. `0075_list_column_layout` adds `desk_column_prefs.widths` and `.sort` on the same per-user row as Manage Columns — no second prefs system. Do **not** `db:seed` or wipe the Zoho book.
 
@@ -1737,7 +1737,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**, then the other list pages.
+Login **javy@fitfirst.local**. Hard refresh **Leads**, then the other list pages.
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -1769,7 +1769,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**.
+Login **javy@fitfirst.local**. Hard refresh **Leads**.
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -1800,7 +1800,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Hard refresh **Leads**. Confirm no script-tag console error and no hydration overlay on the response timer.
+Login **javy@fitfirst.local**. Hard refresh **Leads**. Confirm no script-tag console error and no hydration overlay on the response timer.
 
 | # | Check | Pass when |
 | --- | --- | --- |
@@ -1853,7 +1853,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-Login **javy@fitfirst.local** / **javy**. Open a Deal → Documents. Each source-doc row has Delete. Confirm twice. The row disappears. Quote Sheet extract cells from that file clear. Re-upload a dec / 4-point / wind mit still fills the sheet (sep6h ingest).
+Login **javy@fitfirst.local**. Open a Deal → Documents. Each source-doc row has Delete. Confirm twice. The row disappears. Quote Sheet extract cells from that file clear. Re-upload a dec / 4-point / wind mit still fills the sheet (sep6h ingest).
 
 ## Quote Sheet PDF ingest (prior tip)
 
@@ -1879,7 +1879,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-1. Sign in **javy@fitfirst.local** / **javy**.
+1. Sign in **javy@fitfirst.local**.
 2. Open deal `f2b63b87-c183-4681-8469-3072455b6dd1` → Documents (or Quote Sheet).
 3. Re-upload the former dec + 4-point + wind mit, **or** on each source file use extract / Fill from source docs.
 4. Quote Sheet should show a **majority** of HO fields as Confirmed or Needs review with real values — not almost-all Missing.
@@ -1924,7 +1924,7 @@ npm run dev -- --port 43147
 
 Do **not** run `db:wipe-crm` or `db:seed` if the live Zoho book is already loaded. This slice adds no table.
 
-Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Leads → tick a row → **Actions** → **Delete** (two confirms). Open Actions on Contacts / Policies and confirm the menu is wide enough that labels do not wrap. Policies still have no Delete.
+Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local**. Leads → tick a row → **Actions** → **Delete** (two confirms). Open Actions on Contacts / Policies and confirm the menu is wide enough that labels do not wrap. Policies still have no Delete.
 
 ## Empty Policies submenu + Leads no-dec (this slice)
 
@@ -1989,7 +1989,7 @@ npm run db:assign-owner
 npm run dev -- --port 43147
 ```
 
-Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local** / **javy**. Function first; no redesign. Do **not** run `db:wipe-crm` or `db:seed` on a live book.
+Then Chrome [http://localhost:43147](http://localhost:43147). Login **javy@fitfirst.local**. Function first; no redesign. Do **not** run `db:wipe-crm` or `db:seed` on a live book.
 
 ### Selection Actions (this slice)
 
@@ -2037,7 +2037,7 @@ The sliders icon on the last table header is **Manage columns**. Same shared `Co
 
 ### Deals = Pipeline (this slice)
 
-1. Sign in as **javy@fitfirst.local** / **javy**.
+1. Sign in as **javy@fitfirst.local**.
 2. Left nav **Deals**. There is no Pipeline row.
 3. Table is the default. Same list as before — columns, comms, upload.
 4. Filter chips: **All · P&C · Health · Life · Flood · Won-Lost · Archive**. Board | Table | Funnel on the right.
@@ -2047,14 +2047,14 @@ The sliders icon on the last table header is **Manage columns**. Same shared `Co
 
 ### Home custom layouts + corner resize (this slice)
 
-1. Home (signed in as **javy@fitfirst.local** / **javy**).
+1. Home (signed in as **javy@fitfirst.local**).
 2. **Layout** (same outline dropdown as Book) → pick a preset, or **Save as custom layout…**, name it, then pick it later. **Rename current layout…** while a custom layout is active.
 3. **Widget settings** → check **Resize tiles** → pull the bottom-right corner of any card. Neighbors keep their size. Preset chips still work.
 4. Management lead offers still show language / state (Montana licensed producers). After wipe+import the book is Zoho data, not the Ana demo.
 
 First-time only: `cp .env.example .env`. Postgres on `DATABASE_URL` (default `postgres://fitfirst:fitfirst_dev@127.0.0.1:5432/fitfirst`). `docker compose up -d db` if you need the local database.
 
-Demo login (MFA bypass): **javy@fitfirst.local** / **javy** (Admin) or **maya@fitfirst.local** / **maya** (Agent). Switch users from the top-right avatar **Switch role** (Admin) or `/login`.
+Demo login (MFA bypass): **javy@fitfirst.local** (Admin) or **maya@fitfirst.local** (Agent). Switch users from the top-right avatar **Switch role** (Admin) or `/login`.
 
 ## Zoho JSONL import (Air desk — records only)
 
@@ -2093,7 +2093,7 @@ Top-right Home / shell **bell** (orange, next to Mail) opens a **scrollable** pa
 
 ### Click path
 
-1. Sign in as **javy@fitfirst.local** / **javy**.
+1. Sign in as **javy@fitfirst.local**.
 2. Home — top-right orange **bell**. Badge is the unread count.
 3. Click the bell. Panel opens. First row: **Notification board**.
 4. Below that, recent pings. Click a title to open the record. **Mark as read** on the row, or **Mark all as read**.
@@ -2240,7 +2240,7 @@ Function first. Same Policies. No redesign. IVANS stays **Not connected**. Wave 
 
 After `npm run db:migrate && npm run db:seed` and `npm run dev`:
 
-1. Sign in as **javy@fitfirst.local** / **javy**.
+1. Sign in as **javy@fitfirst.local**.
 2. Open Elena Policy — AOR suspense still open, prior + current terms, loss-run CSV, CSR endorsement **in progress**, drafted mortgagee wording stub, service timeline note, scheduled roof inspection, October installment. Do not file. Do not bind Ana.
 3. Open Hale Policy — ID + AOR suspense auto-opened, producer endorsement **requested**, drafted non-renew notice, renewal queue **quoting**, requested wind mit, past-due August installment. Do not file, mail, or cancel.
 4. Harbor Policy / `/certificates` — Brevard AI on the open request; Palm Bay issued stub shows additional insured + wording + waiver + PNC. `/certificates/holders` lists both.
@@ -2286,7 +2286,7 @@ npm run db:migrate
 npm run dev -- --port 43147
 ```
 
-1. Sign in as **javy@fitfirst.local** / **javy**.
+1. Sign in as **javy@fitfirst.local**.
 2. Open a Deal → Documents. Upload sits on the left. Desk on the right has a person, email/call, sheet status, and open activities.
 3. Ana Dib HO3 stays shopping / unbound / Cov A **$321,000**. Do not bind.
 
@@ -2296,7 +2296,7 @@ npm run dev -- --port 43147
 
 ### Local click-path (localhost:43147)
 
-1. Sign in as **javy@fitfirst.local** / **javy**.
+1. Sign in as **javy@fitfirst.local**.
 2. Policies → `HO3-ELENA-2026` — American Integrity, effective 2026-09-01, $2,840, Cov A $385,000, Elena Ruiz, 412 Harbor Isle Dr. Servicing + files still on the page.
 3. Policies → `HP-FL-88421` (Hale) — Heritage, effective 2025-10-01, Cov A $275,000.
 4. Policies → `GL-HARBOR-2026` — Harbor Key Marine LLC, effective 2026-08-15, 88 Harbor Key Blvd.
@@ -2366,7 +2366,7 @@ On **Quote Sheet**:
 
 ### How to test at localhost:43147
 
-1. Log in as **javy@fitfirst.local** / **javy**.
+1. Log in as **javy@fitfirst.local**.
 2. Open Ana: [http://localhost:43147/deals/22222222-2222-4222-8222-222222222222?tab=quote-sheet&line=home](http://localhost:43147/deals/22222222-2222-4222-8222-222222222222?tab=quote-sheet&line=home). Confirm Cov A is $321,000, shopping / unbound. Do not bind.
 3. Click **Edit**. Change a yellow or notes field (leave Cov A alone if you want the Javy-tested tag). **Save Quote Sheet**. Confirm the value stuck. **Cancel** discards an in-progress edit.
 4. Confirm there is no **Master Risk** tab. **Markets** and **Quotes** still open. Documents + Quick communications stay on the Deal.

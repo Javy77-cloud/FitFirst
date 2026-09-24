@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { parseBookScope, type BookScope } from "./presets";
 import type { BookScopeKind } from "@/lib/org/book-scope";
@@ -58,17 +57,13 @@ export async function currentOwnerHomeScope(bookScope?: BookScope): Promise<Owne
         canToggleBook: false,
       };
     }
-    const jar = await cookies();
-    const raw = jar.get("ff_actor")?.value ?? jar.get("ff_role")?.value ?? "";
-    const role = normalizeRole(raw || "agent");
-    const mine = role === "agent" || parseBookScope(scope) === "my_book";
     return {
       tenantId,
-      role,
-      agentUserId: mine ? jar.get("ff_actor_id")?.value ?? null : null,
-      label: mine ? "My book" : "Agency-wide",
-      bookScope: role === "agent" ? "my_book" : parseBookScope(scope),
-      canToggleBook: role !== "agent",
+      role: "agent",
+      agentUserId: null,
+      label: "Sign in",
+      bookScope: "my_book",
+      canToggleBook: false,
     };
   } catch {
     return {

@@ -5,7 +5,10 @@ import { isAdmin, type Actor } from "@/lib/auth/rbac";
 import { capabilitiesFor, type DeskCapabilities } from "@/lib/auth/access";
 import { ACTOR_COOKIE, SESSION_COOKIE_OPTS, SESSION_COOKIES } from "@/lib/auth/cookies";
 import { resolveMfaStatus, type MfaStatus } from "@/lib/auth/mfa";
+import { localTestPasswordMatches } from "@/lib/auth/dev-passwords";
+import { isFitFirstProduction } from "@/lib/auth/production";
 import { verifyPassword } from "@/lib/auth/password";
+import { verifySessionToken } from "@/lib/auth/signed-session";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
 import { users, type User } from "@/lib/db/schema";
@@ -46,58 +49,14 @@ export type DeskSession = {
   isImpersonating: boolean;
 };
 
-const DEMO_PASSWORDS: Record<string, string> = {
-  "javy@fitfirst.local": "javy",
-  "maya@fitfirst.local": "maya",
-  "javier@fitfirst.local": "javier",
-  "logan@fitfirst.local": "logan",
-};
-
-export const DEMO_USERS = {
-  admin: {
-    email: "javy@fitfirst.local",
-    password: "javy",
-    name: "Javy Rivera",
-    role: "admin" as const,
-    label: "Admin",
-    summary: "Whole book. Settings, integrations, global lists, Ask a teammate.",
-  },
-  agent: {
-    email: "javier@fitfirst.local",
-    password: "javier",
-    name: "Javier Garcia",
-    role: "agent" as const,
-    label: "Agent",
-    summary:
-      "Same agency book as admin (Policies, Contacts, Deals). Agent chrome still applies via Agent Policy Access.",
-  },
-  developer: {
-    email: "logan@fitfirst.local",
-    password: "logan",
-    name: "Natasha Logan",
-    role: "developer" as const,
-    label: "Developer",
-    summary: "API usage meters and upcoming platform notes. Not Admin settings. Not a producer book.",
-  },
-} as const;
-
-export function demoPasswordFor(email: string): string | null {
-  return DEMO_PASSWORDS[email.trim().toLowerCase()] ?? null;
-}
-
-export function checkDemoPassword(email: string, password: string): boolean {
-  const expected = demoPasswordFor(email);
-  if (!expected) return false;
-  return password === expected;
-}
-
 export function passwordMatchesUser(
   user: Pick<User, "email" | "passwordHash">,
   password: string,
 ): boolean {
   if (!password) return false;
   if (user.passwordHash && verifyPassword(password, user.passwordHash)) return true;
-  return checkDemoPassword(user.email, password);
+  if (isFitFirstProduction()) return false;
+  return localTestPasswordMatches(user.email, password);
 }
 
 export async function findUserByLogin(login: string): Promise<User | null> {
@@ -176,7 +135,8 @@ function sessionFromUser(
 export const currentDeskSession = cache(async function currentDeskSession(): Promise<DeskSession> {
   try {
     const jar = await cookies();
-    const userId = jar.get(SESSION_COOKIES.actorId)?.value ?? null;
+    const claims = verifySessionToken(jar.get(SESSION_COOKIES.session)?.value);
+    const userId = claims?.sub ?? null;
     if (!userId) return guestSession();
     const [user] = await db
       .select()
@@ -184,7 +144,7 @@ export const currentDeskSession = cache(async function currentDeskSession(): Pro
       .where(and(eq(users.tenantId, DEFAULT_TENANT_ID), eq(users.id, userId), eq(users.active, true)));
     if (!user) return guestSession();
     if (!isDeskLoginAllowed(user.accessStatus ?? "active")) return guestSession();
-    const impersonatorId = jar.get(SESSION_COOKIES.impersonatorId)?.value ?? null;
+    const impersonatorId = claims?.imp || null;
     let impersonator: { id: string; name: string } | null = null;
     if (impersonatorId && impersonatorId !== user.id) {
       const source = await findUser(impersonatorId);
@@ -193,7 +153,7 @@ export const currentDeskSession = cache(async function currentDeskSession(): Pro
         impersonator = { id: source.id, name: source.name };
       }
     }
-    return sessionFromUser(user, jar.get(SESSION_COOKIES.mfa)?.value, impersonator);
+    return sessionFromUser(user, claims?.mfa, impersonator);
   } catch {
     return guestSession();
   }
@@ -202,11 +162,8 @@ export const currentDeskSession = cache(async function currentDeskSession(): Pro
 export async function pendingMfaUser(): Promise<User | null> {
   try {
     const jar = await cookies();
-    const pendingId = jar.get(SESSION_COOKIES.mfaPending)?.value ?? null;
-    if (pendingId) return findUser(pendingId);
-    const userId = jar.get(SESSION_COOKIES.actorId)?.value ?? null;
-    const mfa = jar.get(SESSION_COOKIES.mfa)?.value;
-    if (userId && (mfa === "challenge" || mfa === "pending")) return findUser(userId);
+    const claims = verifySessionToken(jar.get(SESSION_COOKIES.session)?.value);
+    if (claims && (claims.mfa === "challenge" || claims.mfa === "pending")) return findUser(claims.sub);
     return null;
   } catch {
     return null;

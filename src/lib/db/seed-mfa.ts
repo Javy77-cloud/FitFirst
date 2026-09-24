@@ -1,17 +1,19 @@
 import { eq } from "drizzle-orm";
-import { hashPassword } from "@/lib/auth/password";
+import { optionalLocalSeedPasswordHash } from "@/lib/auth/seed-password";
 import { SEED_TOTP_SECRET } from "@/lib/auth/totp";
 import { ADMIN_USER_ID, AGENT_USER_ID } from "@/lib/fixtures/ids";
 import { db } from "./index";
 import { users } from "./schema";
 
-/** Javy + Maya: password hash + 2FA already enrolled so Mac desk-test is not gated. */
+/** Enroll 2FA on the seeded Admin and Agent. Password hashes come only from local env, never a baked-in password. */
 export async function seedMfaDemo() {
   const now = new Date();
+  const adminHash = optionalLocalSeedPasswordHash("DEV_ADMIN_PASSWORD");
+  const agentHash = optionalLocalSeedPasswordHash("DEV_AGENT_PASSWORD");
   await db
     .update(users)
     .set({
-      passwordHash: hashPassword("javy"),
+      ...(adminHash ? { passwordHash: adminHash } : {}),
       mfaEnrolled: true,
       mustEnrollMfa: false,
       mfaMethod: "totp",
@@ -24,7 +26,7 @@ export async function seedMfaDemo() {
   await db
     .update(users)
     .set({
-      passwordHash: hashPassword("maya"),
+      ...(agentHash ? { passwordHash: agentHash } : {}),
       mfaEnrolled: true,
       mustEnrollMfa: false,
       mfaMethod: "email",

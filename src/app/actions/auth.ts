@@ -3,12 +3,12 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
-  DEMO_USERS,
   findUserByLogin,
   passwordMatchesUser,
-  SESSION_COOKIE_OPTS,
   SESSION_COOKIES,
 } from "@/lib/auth/session";
+import { sessionCookieOptions } from "@/lib/auth/cookies";
+import { sessionExpiryEpoch, sessionSecretFromEnv, signSessionToken } from "@/lib/auth/signed-session";
 import { isMfaMethod, userSkipsMfaChallenge, type MfaStatus } from "@/lib/auth/mfa";
 import { isDeskLoginAllowed } from "@/lib/people/status";
 import { DESK_ROLE_COOKIE } from "@/lib/brand/desk-role";
@@ -17,28 +17,55 @@ import { normalizeRole } from "@/lib/home/scope";
 import { issueStubChallenge } from "@/lib/auth/store";
 import type { User } from "@/lib/db/schema";
 
-export async function establishSession(user: User, mfaStatus: MfaStatus) {
+function seal(user: User, mfaStatus: MfaStatus, impersonatorId = "") {
+  const secret = sessionSecretFromEnv();
+  if (!secret) return null;
   const role = normalizeRole(user.role);
-  const jar = await cookies();
-  jar.set(SESSION_COOKIES.role, role, SESSION_COOKIE_OPTS);
-  jar.set(SESSION_COOKIES.actor, role, SESSION_COOKIE_OPTS);
-  jar.set(SESSION_COOKIES.actorId, user.id, SESSION_COOKIE_OPTS);
-  jar.set(SESSION_COOKIES.name, user.name, SESSION_COOKIE_OPTS);
-  jar.set(SESSION_COOKIES.mfa, mfaStatus, SESSION_COOKIE_OPTS);
-  jar.set(SESSION_COOKIES.modules, user.canAccessModules === false ? "0" : "1", SESSION_COOKIE_OPTS);
-  jar.set(
-    DESK_ROLE_COOKIE,
-    role === "admin" || role === "owner" ? "admin" : "agent",
-    SESSION_COOKIE_OPTS,
+  return signSessionToken(
+    {
+      sub: user.id,
+      role,
+      mfa: mfaStatus,
+      mod: user.canAccessModules === false ? "0" : "1",
+      name: user.name,
+      imp: impersonatorId,
+      exp: sessionExpiryEpoch(),
+    },
+    secret,
   );
-  jar.set(DESK_AGENT_COOKIE, user.id, SESSION_COOKIE_OPTS);
+}
+
+export async function establishSession(user: User, mfaStatus: MfaStatus) {
+  const token = seal(user, mfaStatus);
+  if (!token) redirect("/login?error=session");
+  const role = normalizeRole(user.role);
+  const opts = sessionCookieOptions();
+  const jar = await cookies();
+  jar.set(SESSION_COOKIES.session, token, opts);
+  jar.set(SESSION_COOKIES.role, role, opts);
+  jar.set(SESSION_COOKIES.actor, role, opts);
+  jar.set(SESSION_COOKIES.actorId, user.id, opts);
+  jar.set(SESSION_COOKIES.name, user.name, opts);
+  jar.set(SESSION_COOKIES.mfa, mfaStatus, opts);
+  jar.set(SESSION_COOKIES.modules, user.canAccessModules === false ? "0" : "1", opts);
+  jar.set(DESK_ROLE_COOKIE, role === "admin" || role === "owner" ? "admin" : "agent", opts);
+  jar.set(DESK_AGENT_COOKIE, user.id, opts);
   jar.delete(SESSION_COOKIES.impersonatorId);
   if (mfaStatus === "ok") jar.delete(SESSION_COOKIES.mfaPending);
 }
 
 export async function setMfaCookie(status: MfaStatus) {
   const jar = await cookies();
-  jar.set(SESSION_COOKIES.mfa, status, SESSION_COOKIE_OPTS);
+  const { verifySessionToken } = await import("@/lib/auth/signed-session");
+  const current = verifySessionToken(jar.get(SESSION_COOKIES.session)?.value);
+  if (!current) redirect("/login?error=session");
+  const secret = sessionSecretFromEnv();
+  if (!secret) redirect("/login?error=session");
+  const token = signSessionToken({ ...current, mfa: status }, secret);
+  if (!token) redirect("/login?error=session");
+  const opts = sessionCookieOptions();
+  jar.set(SESSION_COOKIES.session, token, opts);
+  jar.set(SESSION_COOKIES.mfa, status, opts);
 }
 
 async function signInUser(user: User) {
@@ -80,17 +107,7 @@ async function signInByLogin(login: string, password: string) {
 }
 
 export async function loginDesk(formData: FormData) {
-  const who = String(formData.get("who") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
-  if (who === "admin" || who === "javy") {
-    await signInByLogin(DEMO_USERS.admin.email, password);
-  }
-  if (who === "agent" || who === "maya") {
-    await signInByLogin(DEMO_USERS.agent.email, password);
-  }
-  if (who === "developer" || who === "logan") {
-    await signInByLogin(DEMO_USERS.developer.email, password);
-  }
   const login = String(formData.get("email") ?? formData.get("username") ?? "").trim();
   await signInByLogin(login, password);
 }
