@@ -286,6 +286,7 @@ export default async function PolicyDetailPage({
                   accountId={account?.id ?? policy.accountId}
                 />
               </div>
+              <RecordListPager module="policies" recordId={policy.id} />
             </div>
             {labelOverride ? (
               <span
@@ -365,14 +366,11 @@ export default async function PolicyDetailPage({
             tabs={viewerTabs}
             counts={tabCareCounts}
             endSlot={
-              <>
-                <PolicyOverflowMenu
-                  policyId={policy.id}
-                  contactId={contact?.id}
-                  isAdmin={isAdmin}
-                />
-                <RecordListPager module="policies" recordId={policy.id} />
-              </>
+              <PolicyOverflowMenu
+                policyId={policy.id}
+                contactId={contact?.id}
+                isAdmin={isAdmin}
+              />
             }
           />
         }

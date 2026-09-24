@@ -18,7 +18,7 @@ export function PolicyTabsNav({
   active: AgentPolicyTab;
   tabs: AgentPolicyTab[];
   counts?: Partial<Record<AgentPolicyTab, number>>;
-  /** Right edge of the main column — record pager, with policy actions beside it. */
+  /** Right end of the chip row — same slot as the contact and account overflow menus. */
   endSlot?: ReactNode;
 }) {
   return (
