@@ -434,3 +434,33 @@ export async function applyBusinessLayoutTemplate(formData: FormData) {
   revalidatePath("/settings/field-builder");
   return { ok: true as const, template: kind as LayoutTemplateKind };
 }
+
+/** Persist Account Coverage → Elsewhere rows (line / carrier / renewal / rough premium). */
+export async function updateAccountElsewhereCoverage(input: {
+  accountId: string;
+  rows: import("@/lib/db/schema").ElsewhereCoverageRow[] | string;
+}) {
+  const accountId = String(input.accountId ?? "").trim();
+  if (!accountId) return { ok: false as const, error: "Missing account." };
+
+  const { parseElsewhereCoverage } = await import("@/lib/coverage/elsewhere-coverage");
+  const { ensureElsewhereCoverageColumn } = await import("@/lib/db/ensure-elsewhere-coverage");
+  await ensureElsewhereCoverageColumn().catch(() => false);
+
+  const [existing] = await db
+    .select({ id: accounts.id })
+    .from(accounts)
+    .where(and(eq(accounts.tenantId, DEFAULT_TENANT_ID), eq(accounts.id, accountId)));
+  if (!existing) return { ok: false as const, error: "Account not found." };
+
+  const rows = parseElsewhereCoverage(input.rows);
+  await db
+    .update(accounts)
+    .set({ elsewhereCoverage: rows, updatedAt: new Date() })
+    .where(and(eq(accounts.tenantId, DEFAULT_TENANT_ID), eq(accounts.id, accountId)));
+
+  await emitDeskEvent("record.updated", { entityType: "account", entityId: accountId });
+  revalidatePath(`/accounts/${accountId}`);
+  revalidatePath("/accounts");
+  return { ok: true as const };
+}

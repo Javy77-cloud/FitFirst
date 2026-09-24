@@ -51,6 +51,7 @@ const LINE_ORDER: CoverageLine[] = [
   "GL",
   "BOP",
   "WC",
+  "CYBER",
   "LIFE",
   "HEALTH",
 ];
@@ -281,6 +282,179 @@ export function generateContactOpportunities(input: {
       reason: "household",
       detail: `${occ || "This occupation"} often needs professional / general liability — none is on the household yet.`,
       suggestedLine: "GL",
+      cta: { kind: "start_deal", label: "Start deal" },
+    });
+  }
+
+  for (const row of elsewhereRenewalsInWindow(elsewhere, {
+    withinDays: RENEWAL_WINDOW_DAYS,
+    asOf,
+  })) {
+    const classified = classifyDeclaredCoverageType(row.line);
+    if (classified === "OTHER") continue;
+    const hasOpen = openDealLines.has(classified);
+    pushUnique(byKey, {
+      id: `renewal-${row.id}`,
+      line: classified,
+      label: gapLineLabel(classified),
+      title: `${gapLineLabel(classified)} renews in ${row.daysUntil} day${row.daysUntil === 1 ? "" : "s"}`,
+      reason: "renewal",
+      detail: hasOpen
+        ? `${row.carrier || "Another carrier"} renews ${gapLineLabel(classified).toLowerCase()} soon — there is already an open deal for this line.`
+        : `${row.carrier || "Another carrier"} renews ${gapLineLabel(classified).toLowerCase()} within ~${RENEWAL_WINDOW_DAYS} days — chase before they rebind elsewhere.`,
+      suggestedLine: classified,
+      cta: hasOpen
+        ? { kind: "open_coverage", label: "Open coverage" }
+        : { kind: "start_deal", label: "Start deal" },
+    });
+  }
+
+  return sortOpportunities([...byKey.values()]);
+}
+
+const COMMERCIAL_CORE: CoverageLine[] = ["BOP", "GL", "WC", "UMBRELLA", "CYBER"];
+
+/** Industries / ops text that commonly need cyber liability. */
+const CYBER_SIGNAL_RE =
+  /\b(tech|software|saas|it\b|msp|data|cloud|e-?commerce|online|healthcare|medical|finance|bank|insurance|law\s*firm|attorney|accountant|cpa|realtor|real\s*estate)\b/i;
+
+export function accountSuggestsCyber(input: {
+  industry?: string | null;
+  operations?: string | null;
+  website?: string | null;
+}): boolean {
+  const blob = [input.industry, input.operations, input.website].filter(Boolean).join(" ");
+  return CYBER_SIGNAL_RE.test(blob);
+}
+
+/**
+ * Commercial Opportunities for Accounts.
+ * Covered = in-force with us ∪ elsewhere rows.
+ * Sources: commercial gap engine, ops facts (employees → WC, industry → cyber),
+ * elsewhere renewals, open deals for missing lines.
+ */
+export function generateAccountOpportunities(input: {
+  policies?: GapPolicyInput[];
+  inForceLines?: Iterable<CoverageLine>;
+  declaredCoverage?: DeclaredCoverageLine[] | null;
+  elsewhereCoverage?: ElsewhereCoverageRow[] | null;
+  partyName?: string;
+  employeeCount?: number | null;
+  industry?: string | null;
+  operations?: string | null;
+  website?: string | null;
+  openDealLines?: Iterable<CoverageLine> | null;
+  asOf?: Date;
+  accountId?: string;
+}): GeneratedOpportunity[] {
+  const elsewhere = input.elsewhereCoverage ?? [];
+  const declaredMerged = mergeDeclaredCoverage(
+    input.declaredCoverage,
+    declaredCoverageFromElsewhere(elsewhere),
+  );
+  const policies = input.policies ?? syntheticPolicies(input.inForceLines ?? []);
+  const declaredOther = declaredMerged.filter(
+    (row) => row.line !== "OTHER" && row.carrierOfRecord !== "us",
+  );
+  const declared = applyInForceCarrierLock(declaredOther, input.inForceLines ?? []);
+  const partyName = input.partyName?.trim() || "This account";
+  const asOf = input.asOf ?? new Date();
+  const report = analyzeCoverageGaps({
+    policies,
+    partyName,
+    declaredCoverage: declared,
+  });
+  const covered = householdCoveredLines(policies, declared);
+  const openDealLines = new Set(
+    [...(input.openDealLines ?? [])].filter((line) => line !== "OTHER"),
+  );
+  const byKey = new Map<string, GeneratedOpportunity>();
+  const employees =
+    input.employeeCount != null && Number.isFinite(Number(input.employeeCount))
+      ? Number(input.employeeCount)
+      : null;
+
+  for (const finding of report.findings) {
+    for (const line of finding.missing) {
+      if (covered.has(line)) continue;
+      // Prefer commercial companion findings on Accounts.
+      if (!COMMERCIAL_CORE.includes(line) && line !== "UMBRELLA") continue;
+      pushUnique(byKey, {
+        id: `gap-${line}`,
+        line,
+        label: gapLineLabel(line),
+        title: `Missing ${gapLineLabel(line)}`,
+        reason: "gap",
+        detail: finding.plainEnglish,
+        suggestedLine: line,
+        cta: { kind: "start_deal", label: "Start deal" },
+      });
+    }
+  }
+
+  for (const rewrite of report.rewrites) {
+    if (!COMMERCIAL_CORE.includes(rewrite.line) && rewrite.line !== "UMBRELLA") continue;
+    pushUnique(byKey, {
+      id: `rewrite-${rewrite.line}`,
+      line: rewrite.line,
+      label: gapLineLabel(rewrite.line),
+      title: `${gapLineLabel(rewrite.line)} with another carrier`,
+      reason: "rewrite",
+      detail: rewrite.plainEnglish,
+      suggestedLine: rewrite.line,
+      cta: { kind: "open_coverage", label: "Open coverage" },
+    });
+  }
+
+  const hasCommercialLiability = covered.has("GL") || covered.has("BOP");
+  if (!hasCommercialLiability) {
+    pushUnique(byKey, {
+      id: "gap-commercial-liability",
+      line: "BOP",
+      label: gapLineLabel("BOP"),
+      title: "No BOP / GL on file",
+      reason: "gap",
+      detail: `${partyName} has no business owners policy or general liability with us or elsewhere — core commercial liability is a common first ask.`,
+      suggestedLine: "BOP",
+      cta: { kind: "start_deal", label: "Start deal" },
+    });
+  }
+
+  if (employees != null && employees > 0 && !covered.has("WC")) {
+    pushUnique(byKey, {
+      id: "hh-employees-wc",
+      line: "WC",
+      label: gapLineLabel("WC"),
+      title: "Employees without workers comp",
+      reason: "household",
+      detail: `${partyName} shows ${employees} employee${employees === 1 ? "" : "s"} and no workers comp on file — payroll without WC is a commercial cross-sell.`,
+      suggestedLine: "WC",
+      cta: { kind: "start_deal", label: "Start deal" },
+    });
+  }
+
+  if (accountSuggestsCyber(input) && !covered.has("CYBER")) {
+    pushUnique(byKey, {
+      id: "hh-cyber",
+      line: "CYBER",
+      label: gapLineLabel("CYBER"),
+      title: "Cyber liability check",
+      reason: "household",
+      detail: `${input.industry?.trim() || input.operations?.trim() || "This business"} often needs cyber liability — none is on the account yet.`,
+      suggestedLine: "CYBER",
+      cta: { kind: "start_deal", label: "Start deal" },
+    });
+  }
+
+  if (hasCommercialLiability && !covered.has("UMBRELLA")) {
+    pushUnique(byKey, {
+      id: "gap-commercial-umbrella",
+      line: "UMBRELLA",
+      label: gapLineLabel("UMBRELLA"),
+      title: "No commercial umbrella",
+      reason: "gap",
+      detail: `${partyName} has commercial liability and no umbrella — one bad claim can exceed those limits.`,
+      suggestedLine: "UMBRELLA",
       cta: { kind: "start_deal", label: "Start deal" },
     });
   }

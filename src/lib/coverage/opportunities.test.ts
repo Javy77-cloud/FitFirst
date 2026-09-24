@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  accountSuggestsCyber,
   dependentsNearingAutoAge,
+  generateAccountOpportunities,
   generateContactOpportunities,
   linesForLifeEvent,
   occupationSuggestsProfessional,
@@ -142,5 +144,51 @@ describe("generateContactOpportunities", () => {
       partyName: "Rosa Castellanos",
     });
     expect(rows.filter((row) => row.reason === "gap").map((row) => row.line)).not.toContain("AUTO");
+  });
+});
+
+
+describe("generateAccountOpportunities", () => {
+  it("flags missing BOP/GL when the account has no commercial liability", () => {
+    const rows = generateAccountOpportunities({
+      policies: [],
+      partyName: "Ruiz Tile",
+    });
+    expect(rows.some((row) => row.id === "gap-commercial-liability")).toBe(true);
+    expect(rows.find((row) => row.id === "gap-commercial-liability")?.suggestedLine).toBe("BOP");
+  });
+
+  it("flags WC when employees are on file without workers comp", () => {
+    const rows = generateAccountOpportunities({
+      policies: [policy({ id: "gl", lineOfBusiness: "GL" })],
+      employeeCount: 12,
+      partyName: "Harbor Key LLC",
+    });
+    expect(rows.some((row) => row.line === "WC" && row.reason === "household")).toBe(true);
+  });
+
+  it("surfaces cyber when industry signals and no cyber on file", () => {
+    expect(accountSuggestsCyber({ industry: "Software / SaaS" })).toBe(true);
+    const rows = generateAccountOpportunities({
+      policies: [policy({ id: "bop", lineOfBusiness: "BOP" })],
+      industry: "Software",
+      partyName: "Byte Desk",
+    });
+    expect(rows.some((row) => row.line === "CYBER")).toBe(true);
+  });
+
+  it("chases elsewhere commercial renewals inside the window", () => {
+    const soon = new Date();
+    soon.setDate(soon.getDate() + 20);
+    const iso = soon.toISOString().slice(0, 10);
+    const rows = generateAccountOpportunities({
+      policies: [policy({ id: "gl", lineOfBusiness: "GL" })],
+      elsewhereCoverage: [
+        { id: "e1", line: "WC", carrier: "Hartford", renewalDate: iso, roughPremium: "4k" },
+      ],
+      partyName: "Harbor Key LLC",
+      asOf: new Date(),
+    });
+    expect(rows.some((row) => row.reason === "renewal" && row.line === "WC")).toBe(true);
   });
 });

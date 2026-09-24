@@ -348,7 +348,7 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
     // email/website) on right so name + phone are not stacked in one column.
     return twoCol(
       [
-        section("business", "Account", [
+        section("business", "Business Info", [
           "business_name",
           "dba",
           "legal_name",
@@ -360,7 +360,7 @@ export function defaultLayoutForModule(module: FieldLayoutModule): FieldLayout {
         section("crm_notes", "CRM Notes", ["life_notes", "health_notes", "pc_notes", "notes"]),
       ],
       [
-        section("contact", "Contact", ["phone", "email", "website"]),
+        section("contact", "Business Contact", ["phone", "email", "website"]),
         section("intake", "Intake", ["source", "referral"]),
         section("operations", "Operations", [
           "employee_count",
