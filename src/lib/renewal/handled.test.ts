@@ -9,6 +9,12 @@ import {
   renewalStagesForPipeline,
 } from "@/lib/renewal/board-filter";
 import {
+  assertClientStayingAvailable,
+  CLIENT_STAYING_NO_RENEWAL_DATE,
+  CLIENT_STAYING_TOO_EARLY,
+  CLIENT_STAYING_WINDOW_DAYS,
+  clientStayingUnavailableReason,
+  isClientStayingAvailable,
   RENEWAL_HANDLED_CLEAR_KINDS,
   RENEWAL_HANDLED_FILTER_LABEL,
   RENEWAL_HANDLED_LABEL,
@@ -36,6 +42,7 @@ function card(
     phone: null,
     carrierName: "Carrier",
     expirationDate: null,
+    renewalDate: null,
     daysUntil: 30,
     premium: null,
     proposedPremium: null,
@@ -131,5 +138,38 @@ describe("Client staying / Handled", () => {
     expect(button).toMatch(/RENEWAL_HANDLED_SUCCESS_TITLE/);
     expect(button).toMatch(/setSuccessOpen\(true\)/);
     expect(button).toMatch(/Got it|RENEWAL_HANDLED_SUCCESS_DONE/);
+    expect(button).toMatch(/isClientStayingAvailable/);
+    expect(button).toMatch(/data-ff-client-staying-blocked/);
+    expect(button).toMatch(/renewalDate/);
+    expect(readFileSync("src/app/actions/renewals-board.ts", "utf8")).toMatch(
+      /assertClientStayingAvailable/,
+    );
+  });
+
+  it("gates Client staying to the last 90 days before renewalDate", () => {
+    expect(CLIENT_STAYING_WINDOW_DAYS).toBe(90);
+    const asOf = new Date("2026-09-24T12:00:00.000Z");
+    expect(isClientStayingAvailable(null, asOf)).toBe(false);
+    expect(isClientStayingAvailable(undefined, asOf)).toBe(false);
+    expect(isClientStayingAvailable("", asOf)).toBe(false);
+    expect(clientStayingUnavailableReason(null, asOf)).toBe(CLIENT_STAYING_NO_RENEWAL_DATE);
+    expect(isClientStayingAvailable("2027-09-24T12:00:00.000Z", asOf)).toBe(false);
+    expect(clientStayingUnavailableReason("2027-09-24T12:00:00.000Z", asOf)).toBe(
+      CLIENT_STAYING_TOO_EARLY,
+    );
+    // asOf inside [renewalDate-90d, renewalDate]
+    expect(isClientStayingAvailable("2026-12-01T12:00:00.000Z", asOf)).toBe(true);
+    expect(isClientStayingAvailable("2026-09-24T12:00:00.000Z", asOf)).toBe(true);
+    // exactly 90 days out: windowStart == asOf
+    expect(isClientStayingAvailable("2026-12-23T12:00:00.000Z", asOf)).toBe(true);
+    // 91 days out: still too early
+    expect(isClientStayingAvailable("2026-12-24T12:00:00.000Z", asOf)).toBe(false);
+    // past renewal date
+    expect(isClientStayingAvailable("2026-09-23T12:00:00.000Z", asOf)).toBe(false);
+    expect(() => assertClientStayingAvailable(null, asOf)).toThrow(CLIENT_STAYING_NO_RENEWAL_DATE);
+    expect(() => assertClientStayingAvailable("2027-01-01T12:00:00.000Z", asOf)).toThrow(
+      CLIENT_STAYING_TOO_EARLY,
+    );
+    expect(() => assertClientStayingAvailable("2026-10-01T12:00:00.000Z", asOf)).not.toThrow();
   });
 });

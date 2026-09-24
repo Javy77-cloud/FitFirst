@@ -52,7 +52,7 @@ export function ComparePanel({
     <div className="space-y-4">
       <section className="ff-card flex flex-wrap items-center gap-3 p-4">
         <FillCompareFromDecsButton policyId={policy.id} />
-        <ClientStayingButton policyId={policy.id} size="sm" />
+        <ClientStayingButton policyId={policy.id} renewalDate={policy.renewalDate} size="sm" />
         <p className="text-sm text-muted-foreground">
           Pull premium and term dates from Documents tagged Prior/Current + Renewal.
         </p>

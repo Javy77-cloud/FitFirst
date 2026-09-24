@@ -210,7 +210,12 @@ export async function markClientStaying(formData: FormData) {
   if (!isUuid(policyId)) throw new Error("Policy required.");
 
   const [policy] = await db
-    .select({ id: policies.id, policyNumber: policies.policyNumber, status: policies.status })
+    .select({
+      id: policies.id,
+      policyNumber: policies.policyNumber,
+      status: policies.status,
+      renewalDate: policies.renewalDate,
+    })
     .from(policies)
     .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, policyId)));
   if (!policy) throw new Error("Policy not found.");
@@ -219,7 +224,10 @@ export async function markClientStaying(formData: FormData) {
     RENEWAL_HANDLED_STAGE,
     RENEWAL_HANDLED_EVENT,
     RENEWAL_HANDLED_CLEAR_KINDS,
+    assertClientStayingAvailable,
   } = await import("@/lib/renewal/handled");
+  const { deskNow } = await import("@/lib/home/as-of");
+  assertClientStayingAvailable(policy.renewalDate, deskNow());
 
   const [existing] = await db
     .select()

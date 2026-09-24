@@ -44,6 +44,8 @@ export type RenewalCompareDrawerPayload = {
   clientName: string;
   policyNumber: string;
   lineOfBusiness: string;
+  /** ISO renewal date for Client staying 90-day gate; null when missing. */
+  renewalDate: string | null;
   bothSides: boolean;
   dark: boolean;
   currentPremium: string;
@@ -153,6 +155,7 @@ export async function loadRenewalCompareDrawer(
     clientName: policy.policyNumber,
     policyNumber: policy.policyNumber,
     lineOfBusiness: policy.lineOfBusiness,
+    renewalDate: policy.renewalDate ? policy.renewalDate.toISOString() : null,
     bothSides,
     dark: !bothSides,
     currentPremium: formatMoney(currentPremium === "—" ? null : currentPremium),

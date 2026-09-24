@@ -49,6 +49,8 @@ export type RenewalBoardCard = {
   commissionFamily: string | null;
   carrierName: string;
   expirationDate: Date | string | null;
+  /** Policy renewalDate — Client staying 90-day gate (no expiration fallback). */
+  renewalDate: Date | string | null;
   daysUntil: number;
   premium: string | null;
   proposedPremium: string | null;
@@ -236,6 +238,7 @@ export async function loadRenewalsBoard(windowDays = 180): Promise<{
       commissionFamily: row.policy.commissionFamily ?? null,
       carrierName: row.carrier?.name ?? "Carrier TBD",
       expirationDate: row.policy.expirationDate,
+      renewalDate: row.policy.renewalDate ?? null,
       daysUntil: days,
       premium: built.currentPremium,
       proposedPremium: built.proposedPremium,

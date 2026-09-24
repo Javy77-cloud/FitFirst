@@ -166,7 +166,7 @@ export function PolicyOverviewTab({
             </Link>
           ) : null}
           {isInForceStatus(policy.status) ? (
-            <ClientStayingButton policyId={policy.id} size="sm" />
+            <ClientStayingButton policyId={policy.id} renewalDate={policy.renewalDate} size="sm" />
           ) : null}
         </div>
       </section>

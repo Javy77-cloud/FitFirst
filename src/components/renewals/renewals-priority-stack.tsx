@@ -79,6 +79,7 @@ export function RenewalsPriorityStack({ cards }: { cards: RenewalBoardCard[] }) 
                     menuTestId={`renewal-stack-activity-${card.queueId}`}
                     listTestId={`renewal-stack-activity-menu-${card.queueId}`}
                     policyId={card.policyId}
+                          renewalDate={card.renewalDate}
                     contactId={card.contactId}
                     accountId={card.accountId}
                   />
