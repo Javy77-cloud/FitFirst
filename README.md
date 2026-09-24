@@ -4,6 +4,22 @@ Owner desk for a Florida P&C agency: filter-first shopping, Quote Sheet, bind to
 
 This is not a Zoho clone and does not call a live CRM or rater. Runtime is single-tenant (`TENANT_ID`). Every table has `tenant_id`.
 
+## Marketplace and Medicare insured-location backfill
+
+Owner-run data repair for a blank policy insured location. It is not a drizzle migration, so `npm run db:migrate` does not apply it. No schema change and no `db:seed`. It writes only `policies.premises_address`, `premises_city`, `premises_state`, and `premises_zip`, and only when all four are blank. Renewal fields are not touched.
+
+The default tenant in the scripts is `11111111-1111-4111-8111-111111111111`. If live `TENANT_ID` differs, change that uuid in the shared block of all three files before running.
+
+```bash
+psql "$DATABASE_URL" -f scripts/preview-marketplace-medicare-insured-location.sql
+psql "$DATABASE_URL" -f scripts/flag-marketplace-medicare-insured-location.sql
+psql "$DATABASE_URL" -f scripts/backfill-marketplace-medicare-insured-location.sql
+```
+
+Preview lists policies that will be filled (`policies_to_fill`, policy id, policy number, contact name, the address parts to copy). The flag list is Marketplace or Medicare policies that stay blank (`policies_flagged`, policy id, policy number, First Last, `missing_field`). Run preview and the flag list before the backfill. The backfill is one transaction and is safe to re-run. To see `RETURNING` without keeping the write, change the final `COMMIT` to `ROLLBACK`.
+
+Filled and flagged counts are only known after these queries run on the live database.
+
 ## Neon migration (`0126_policy_mint_from_dec`)
 
 Adds unpublished policy mint columns and the **Policy issued** shopping stage (after Bound). Apply on the live Zoho book — do not `db:seed`.
