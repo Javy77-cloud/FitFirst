@@ -72,7 +72,6 @@ export function ContactSectionNav({
 }) {
   const router = useRouter();
   const resolvedTab = parseContactTab(activeTab ?? null, null);
-          : (resolvedTab as ContactSectionId);
   const [active, setActive] = useState<ContactSectionId>(() => {
     if (mode === "tabs") {
       const fromTab =
@@ -112,9 +111,6 @@ export function ContactSectionNav({
     [chips],
   );
 
-  useEffect(() => {
-    setDraftSelected(normalizeContactSectionNavIds(selectedIds));
-  }, [selectedIds]);
 
 
   useEffect(() => {
