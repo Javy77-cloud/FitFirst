@@ -8,10 +8,7 @@ import {
   defaultCommercialDealLayout,
 } from "@/lib/custom-fields/business-identity-fields";
 import type { CustomFieldDef, FieldLayout } from "@/lib/custom-fields/types";
-import {
-  normalizeDealProducts,
-  type DealProductId,
-} from "@/lib/deals/deal-products";
+import { normalizeDealProducts } from "@/lib/deals/deal-products";
 import { usesBusinessIdentityDetails } from "@/lib/deals/product-layout";
 
 export function NewDealFormBody({
@@ -27,7 +24,7 @@ export function NewDealFormBody({
   fields: CustomFieldDef[];
   values: Record<string, string>;
 }) {
-  const [products, setProducts] = useState<DealProductId[]>(() =>
+  const [products, setProducts] = useState<string[]>(() =>
     normalizeDealProducts(initialLines),
   );
   const commercial = usesBusinessIdentityDetails({ products });

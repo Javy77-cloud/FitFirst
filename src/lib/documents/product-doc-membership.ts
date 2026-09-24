@@ -1,10 +1,13 @@
 import { isShopLine, type ShopLine } from "@/lib/domain";
 import {
   FORM_TAG_PREFIX,
+  INSTANCE_TAG_PREFIX,
   LINE_TAG_PREFIX,
   formTag,
+  instanceTag,
   lineTag,
 } from "@/lib/documents/doc-line-tags";
+import { parseStorageLine } from "@/lib/deals/product-instances";
 import { isDocumentsSourceDoc } from "@/lib/deals/quote-docs";
 
 /** Tags that carry product-window membership (multi-membership allowed). */
@@ -45,7 +48,19 @@ export type ProductDocWindow = {
   shopLine: string | null | undefined;
   /** When set, prefer form membership; line-only legacy docs still match the shop line. */
   quotingForm?: string | null;
+  /** Second copy of a product. Untagged files stay on the first copy. */
+  instanceKey?: string | null;
 };
+
+export function instanceKeysFromDocTags(tags: readonly string[] | null | undefined): string[] {
+  const found: string[] = [];
+  for (const tag of tags ?? []) {
+    if (!tag.startsWith(INSTANCE_TAG_PREFIX)) continue;
+    const key = tag.slice(INSTANCE_TAG_PREFIX.length).trim();
+    if (key && !found.includes(key)) found.push(key);
+  }
+  return found;
+}
 
 /**
  * True when the file belongs in this product's Documents window.
@@ -56,8 +71,15 @@ export function docBelongsToProductWindow(
   doc: { tags?: readonly string[] | null },
   window: ProductDocWindow,
 ): boolean {
-  const wantedLine = String(window.shopLine ?? "").trim().toLowerCase();
+  const opened = parseStorageLine(window.shopLine);
+  const wantedLine = (opened?.shopLine ?? String(window.shopLine ?? "").trim().toLowerCase());
   const wantedForm = String(window.quotingForm ?? "").trim();
+  const wantedInstance = (window.instanceKey ?? opened?.instanceKey ?? "").trim();
+  const taggedInstances = instanceKeysFromDocTags(doc.tags);
+  if (wantedInstance.includes("~")) {
+    return taggedInstances.includes(wantedInstance);
+  }
+  if (taggedInstances.length) return false;
   const lines = shopLinesFromDocTags(doc.tags);
   const forms = formIdsFromDocTags(doc.tags);
 
@@ -74,12 +96,16 @@ export function docBelongsToProductWindow(
 export function membershipTagsForUpload(input: {
   shopLine?: string | null;
   quotingForm?: string | null;
+  instanceKey?: string | null;
 }): string[] {
   const tags: string[] = [];
-  const line = String(input.shopLine ?? "").trim();
+  const opened = parseStorageLine(input.shopLine);
+  const line = opened?.shopLine ?? (isShopLine(input.shopLine) ? input.shopLine : "");
   if (isShopLine(line)) tags.push(lineTag(line));
   const form = String(input.quotingForm ?? "").trim();
   if (form) tags.push(formTag(form));
+  const instanceKey = (input.instanceKey ?? opened?.instanceKey ?? "").trim();
+  if (instanceKey.includes("~")) tags.push(instanceTag(instanceKey));
   return tags;
 }
 
@@ -103,14 +129,18 @@ export function unlinkDocFromProductTags(
   tags: readonly string[] | null | undefined,
   input: { shopLine?: string | null; quotingForm?: string | null },
 ): string[] {
-  const line = String(input.shopLine ?? "").trim();
+  const opened = parseStorageLine(input.shopLine);
+  const line = opened?.shopLine ?? String(input.shopLine ?? "").trim();
   const form = String(input.quotingForm ?? "").trim();
-  const dropLine = isShopLine(line) ? lineTag(line) : null;
-  const dropForm = form ? formTag(form) : null;
+  const instanceKey = (opened?.instanceKey ?? "").trim();
+  const dropLine = isShopLine(line) && !instanceKey ? lineTag(line) : null;
+  const dropForm = form && !instanceKey ? formTag(form) : null;
+  const dropInstance = instanceKey ? instanceTag(instanceKey) : null;
   return (tags ?? []).filter((tag) => {
     if (dropLine && tag === dropLine) return false;
     if (dropForm && tag === dropForm) return false;
     if (dropForm && tag.toLowerCase() === dropForm.toLowerCase()) return false;
+    if (dropInstance && tag === dropInstance) return false;
     return true;
   });
 }

@@ -19,13 +19,16 @@ import { db } from "@/lib/db";
 import { deals, policies } from "@/lib/db/schema";
 import {
   dealProductSwitcherHref,
-  inferDealProducts,
-  mergeDealProducts,
   parseDealProduct,
   type DealProductId,
 } from "@/lib/deals/deal-products";
 import { cascadeValuesFromDealHints } from "@/lib/deals/insurance-cascade";
-import { packageCreateDraft } from "@/lib/deals/package-lines";
+import { mergeShopLinesKeepExisting, packageCreateDraft } from "@/lib/deals/package-lines";
+import {
+  addProductInstance,
+  resolveVisibleProductInstances,
+  storageLineForInstance,
+} from "@/lib/deals/product-instances";
 import { mergeShopFlowProductStages } from "@/lib/deals/new-deal-write";
 import { withFlash } from "@/lib/flash";
 import { isUuid } from "@/lib/ids";
@@ -85,7 +88,7 @@ export async function dismissCoverageGap(formData: FormData) {
 async function addProductToExistingDeal(dealId: string, productId: DealProductId) {
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) throw new Error("Deal not found.");
-  const existing = inferDealProducts({
+  const existing = resolveVisibleProductInstances({
     shopProducts: deal.shopProducts,
     shopLines: deal.shopLines,
     lineOfBusiness: deal.lineOfBusiness,
@@ -93,21 +96,22 @@ async function addProductToExistingDeal(dealId: string, productId: DealProductId
     quotingForm: deal.quotingForm,
     policySubType: deal.policySubType,
   });
-  const already = existing.includes(productId);
-  const nextProducts = mergeDealProducts(existing, [productId]);
-  const draft = packageCreateDraft(nextProducts);
-  const added = draft.shopLines.filter((line) => !(deal.shopLines ?? []).includes(line));
-  for (const line of added) {
-    await ensureQuoteSheet(dealId, line);
-  }
+  const nextInstances = addProductInstance(
+    existing.map((row) => row.key),
+    productId,
+  );
+  const added = nextInstances[nextInstances.length - 1]!;
+  const nextKeys = nextInstances.map((row) => row.key);
+  const draft = packageCreateDraft(nextInstances.map((row) => row.productId));
+  await ensureQuoteSheet(dealId, storageLineForInstance(added));
   await db
     .update(deals)
     .set({
-      shopLines: draft.shopLines,
-      shopProducts: draft.products,
-      quotingLine: already ? deal.quotingLine : draft.quotingLine,
-      quotingForm: already ? deal.quotingForm : draft.quotingForm,
-      shopFlow: mergeShopFlowProductStages(deal.shopFlow, nextProducts),
+      shopLines: mergeShopLinesKeepExisting(deal.shopLines, draft.shopLines),
+      shopProducts: nextKeys,
+      quotingLine: deal.quotingLine || draft.quotingLine,
+      quotingForm: deal.quotingForm || draft.quotingForm,
+      shopFlow: mergeShopFlowProductStages(deal.shopFlow, nextKeys),
       updatedAt: new Date(),
     })
     .where(eq(deals.id, dealId));
@@ -130,8 +134,8 @@ async function addProductToExistingDeal(dealId: string, productId: DealProductId
   revalidatePath(`/deals/${dealId}`);
   redirect(
     withFlash(
-      dealProductSwitcherHref({ dealId, product: productId, tab: "details" }),
-      already ? "product-already-on-package" : "product-added-to-package",
+      dealProductSwitcherHref({ dealId, product: added.key, tab: "details" }),
+      "product-added-to-package",
     ),
   );
 }

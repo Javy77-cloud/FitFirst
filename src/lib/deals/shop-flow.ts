@@ -5,6 +5,10 @@ import { docBelongsToProductWindow } from "@/lib/documents/product-doc-membershi
 import type { DealFlowStepId } from "@/lib/deals/product-ui";
 import { dealProductDef, parseDealProduct } from "@/lib/deals/deal-products";
 import {
+  instanceKeyFromShopLine,
+  parseProductInstanceToken,
+} from "@/lib/deals/product-instances";
+import {
   parseProductStages,
   type DealProductStages,
 } from "@/lib/deals/product-stages";
@@ -315,7 +319,13 @@ export function quoteMatchesDealProduct(
   product: string,
   opts?: { multiLine?: boolean; isPrimaryLine?: boolean; splitHomeProducts?: boolean },
 ): boolean {
-  const wanted = parseDealProduct(product);
+  const taggedInstance = instanceKeyFromShopLine(input.shopLine);
+  const instance = parseProductInstanceToken(product);
+  if (taggedInstance) {
+    return Boolean(instance && taggedInstance === instance.key);
+  }
+  if (instance && instance.key !== instance.productId) return false;
+  const wanted = instance?.productId ?? parseDealProduct(product);
   if (!wanted) return quoteMatchesShopLine(input, "home", opts);
   const defShop = dealProductDef(wanted).shopLine;
   if (defShop !== "home") {
@@ -350,9 +360,12 @@ export function quoteMatchesShopLine(
     quoteRunId?: string | null;
     quoteRuns?: Partial<Record<string, string>> | null;
   },
-  wanted: ShopLine,
+  wanted: string,
   opts?: { multiLine?: boolean; isPrimaryLine?: boolean },
 ): boolean {
+  const opened = instanceKeyFromShopLine(wanted);
+  if (opened) return instanceKeyFromShopLine(input.shopLine) === opened;
+  if (instanceKeyFromShopLine(input.shopLine)) return false;
   const resolved = resolveQuoteShopLine(input);
   if (resolved) return resolved === wanted;
   if (opts?.multiLine) return false;
@@ -506,7 +519,7 @@ export function quoteRunIdAfterRequest(input: {
 
 export function nextShopFlowAfterQuoteRun(input: {
   saved?: DealShopFlowState | null;
-  line: ShopLine;
+  line: string;
   fingerprint: string;
   newRunId: string;
   requestCarrierIds?: readonly string[] | null;

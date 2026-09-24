@@ -24,6 +24,7 @@ import {
   quoteMatchesShopLine,
   shopLineLabel,
 } from "@/lib/deals/shop-flow";
+import { displayAttemptWhy } from "@/lib/deals/product-instances";
 import { isShopLine, type ShopLine } from "@/lib/domain";
 import type { Carrier, Document, DocumentVersion, Quote, QuoteAttemptLog, QuoteNote } from "@/lib/db/schema";
 
@@ -120,6 +121,7 @@ export function QuotesPanel({
   completeness = null,
   boundQuoteId = null,
   product = null,
+  productLabel = null,
   productStage = null,
   selectedQuoteIds = [],
   sheetStale = false,
@@ -154,6 +156,7 @@ export function QuotesPanel({
   completeness?: LineQuoteCompleteness | null;
   boundQuoteId?: string | null;
   product?: string | null;
+  productLabel?: string | null;
   productStage?: string | null;
   selectedQuoteIds?: string[];
   sheetStale?: boolean;
@@ -211,7 +214,9 @@ export function QuotesPanel({
       return 0;
     });
   }
-  const whyByCarrier = Object.fromEntries(logs.map((row) => [row.log.carrierId, row.log.why]));
+  const whyByCarrier = Object.fromEntries(
+    logs.map((row) => [row.log.carrierId, displayAttemptWhy(row.log.why)]),
+  );
   const lostReasonByCarrier = Object.fromEntries(
     logs.map((row) => [row.log.carrierId, row.log.lostReason]),
   );
@@ -256,7 +261,7 @@ export function QuotesPanel({
   const manualQuoteCarriers = marketCarriersForManualQuote(
     logs.map((row) => ({
       carrierId: row.log.carrierId,
-      why: row.log.why,
+      why: displayAttemptWhy(row.log.why),
       lineOfBusiness: row.log.lineOfBusiness,
       carrierName: row.carrier.name,
     })),
@@ -282,7 +287,9 @@ export function QuotesPanel({
       >
         <div className="ff-card space-y-3 p-4">
           <div className="flex items-start justify-between gap-3">
-            <h3 className="text-sm font-semibold text-navy">Quotes</h3>
+            <h3 className="text-sm font-semibold text-navy">
+              {productLabel ? `Quotes · ${productLabel}` : "Quotes"}
+            </h3>
           </div>
           {outsideOverride ? (
             <OutsideFitFirstStamp
@@ -403,7 +410,11 @@ export function QuotesPanel({
         <div className="ff-card space-y-2 p-4" data-ff-quotes-current="" data-ff-quotes-current-empty="">
           <div className="flex items-start justify-between gap-3">
             <h3 className="text-sm font-semibold text-navy">
-              {lineLabel ? `Current ${lineLabel} quotes` : "Current quotes"}
+              {productLabel
+                ? `Quotes · ${productLabel}`
+                : lineLabel
+                  ? `Current ${lineLabel} quotes`
+                  : "Current quotes"}
             </h3>
           </div>
           <p className="text-sm text-muted-foreground">

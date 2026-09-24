@@ -45,6 +45,7 @@ export function LifeHealthQuotesPanel({
   dealLine = "LIFE",
   shopLine = "life",
   product = null,
+  productLabel = null,
   productStage = null,
   selectedQuoteIds = [],
   boundQuoteId = null,
@@ -65,6 +66,7 @@ export function LifeHealthQuotesPanel({
   dealLine?: string;
   shopLine?: string;
   product?: string | null;
+  productLabel?: string | null;
   productStage?: string | null;
   selectedQuoteIds?: string[];
   boundQuoteId?: string | null;
@@ -143,7 +145,9 @@ export function LifeHealthQuotesPanel({
       ) : null}
       <section className="ff-card space-y-3 p-4" data-ff-life-health-quote-writer="">
         <div>
-          <h3 className="text-sm font-semibold text-navy">{familyLabel} quote writer</h3>
+          <h3 className="text-sm font-semibold text-navy">
+            {productLabel ? `${familyLabel} · ${productLabel}` : `${familyLabel} quote writer`}
+          </h3>
           <p className="mt-1 text-xs text-muted-foreground">
             Record quote-writer notes and results here. This is not a P&amp;C rate pull — stage and
             notice stay on the deal header.

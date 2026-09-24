@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { DealFlowRail } from "@/components/deals/deal-flow-rail";
 import { ProductPicker } from "@/components/deals/product-picker";
-import { normalizeDealProducts, type DealProductId } from "@/lib/deals/deal-products";
+import { normalizeDealProducts } from "@/lib/deals/deal-products";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +38,7 @@ export function AddNewDealDialog({
   const debounced = useDebouncedValue(query, 200);
   const [hits, setHits] = useState<CreateDealPickHit[]>([]);
   const [searching, setSearching] = useState(false);
-  const [products, setProducts] = useState<DealProductId[]>(["homeowners"]);
+  const [products, setProducts] = useState<string[]>(["homeowners"]);
 
   useEffect(() => {
     if (!open || step !== "search") return;

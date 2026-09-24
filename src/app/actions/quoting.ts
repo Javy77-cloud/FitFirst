@@ -26,6 +26,7 @@ import { forceDealWorkTab } from "@/lib/deals/work-tab";
 import { persistSheetConfirmClear } from "@/lib/deals/shop-flow-persist";
 import { lineAlreadyShopped, riskConfirmTab } from "@/lib/deals/risk-confirm-next";
 import { parseDealProduct } from "@/lib/deals/deal-products";
+import { parseProductInstanceToken } from "@/lib/deals/product-instances";
 import { productStageFor } from "@/lib/deals/product-stages";
 import { parseShopFlow, requestScopeForLine } from "@/lib/deals/shop-flow";
 import { allowCreatePolicyPrompt } from "@/lib/policy/dec-prompt";
@@ -177,7 +178,7 @@ export async function approveMasterSheet(formData: FormData) {
   }
 
   const product = str(formData, "product");
-  const productId = parseDealProduct(product);
+  const productId = parseProductInstanceToken(product)?.key ?? parseDealProduct(product);
   const flow = parseShopFlow(deal.shopFlow);
   const stage = productId
     ? productStageFor(flow.productStages, productId, deal.pipelineStage).stage

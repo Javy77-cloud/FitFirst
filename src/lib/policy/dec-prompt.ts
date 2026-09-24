@@ -161,7 +161,7 @@ export function isProductClosedForDealWon(state?: DealProductStageState | null):
 
 export function markProductIssuedDone(
   stages: DealProductStages | null | undefined,
-  product: DealProductId,
+  product: string,
   patch?: Partial<DealProductStageState>,
 ): DealProductStages {
   const current = (stages ?? {})[product];
@@ -192,7 +192,7 @@ export function activeShoppingProducts(
 
 /** Only the minted line is won. Siblings stay open until they publish too. */
 export function allProductsClosedForDealWon(
-  products: readonly DealProductId[],
+  products: readonly string[],
   stages: DealProductStages | null | undefined,
 ): boolean {
   if (!products.length) return false;

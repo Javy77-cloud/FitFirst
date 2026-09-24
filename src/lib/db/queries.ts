@@ -2368,7 +2368,7 @@ export async function getDealWorkspace(dealId: string) {
 
   const { restoreDealSourceDocuments } = await import("@/lib/documents/restore-deal-docs");
   await restoreDealSourceDocuments(dealId).catch(() => null);
-  const { inferDealProducts, lifeHealthShopRepair } = await import("@/lib/deals/deal-products");
+  const { lifeHealthShopRepair } = await import("@/lib/deals/deal-products");
   const shopRepair = lifeHealthShopRepair(deal);
   if (shopRepair) {
     await db
@@ -2387,7 +2387,8 @@ export async function getDealWorkspace(dealId: string) {
     mergeShopFlowProductStages,
     shopFlowNeedsProductStageSeed,
   } = await import("@/lib/deals/new-deal-write");
-  const visibleProducts = inferDealProducts(deal);
+  const { resolveVisibleProductInstances } = await import("@/lib/deals/product-instances");
+  const visibleProducts = resolveVisibleProductInstances(deal).map((row) => row.key);
   const stagePatch = leftoverCreateStageNeedsRepair(deal);
   const needsFlow = shopFlowNeedsProductStageSeed(deal.shopFlow, visibleProducts);
   if (stagePatch || needsFlow) {

@@ -168,7 +168,10 @@ export async function persistSheetRecheckCue(dealId: string, line: string) {
     .from(deals)
     .where(and(eq(deals.id, dealId), eq(deals.tenantId, DEFAULT_TENANT_ID)));
   if (!deal) return;
-  await persistDealShopFlow(dealId, nextShopFlowAfterSheetEdit({ saved: deal.shopFlow, line }));
+  await persistDealShopFlow(
+    dealId,
+    nextShopFlowAfterSheetEdit({ saved: parseShopFlow(deal.shopFlow), line }),
+  );
 }
 
 /** Visual confirm after a later edit — drop the Recheck cue, keep Markets. */
@@ -186,7 +189,7 @@ export async function persistSheetConfirmClear(
   await persistDealShopFlow(
     dealId,
     nextShopFlowAfterSheetConfirm({
-      saved: deal.shopFlow,
+      saved: parseShopFlow(deal.shopFlow),
       line,
       clearCreatePolicyPrompt: opts?.clearCreatePolicyPrompt,
     }),

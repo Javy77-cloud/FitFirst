@@ -1,7 +1,13 @@
 import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: () => undefined, replace: () => undefined, push: () => undefined }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/deals/deal-1",
+}));
 import { DealFlowRail } from "@/components/deals/deal-flow-rail";
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import type { Carrier, Quote } from "@/lib/db/schema";
@@ -646,8 +652,10 @@ describe("deal page + action wiring", () => {
     expect(page).toMatch(/complete: flowCompletion\.isComplete\(id\)/);
     expect(page).not.toMatch(/DealFlowRail/);
     expect(page).toMatch(/currentQuoteRunId=\{shopFlow\.quoteRuns/);
-    expect(page).toMatch(/multiLine=\{dealProducts\.length > 1\}/);
-    expect(page).toMatch(/isPrimaryLine=\{dealProducts\[0\] === activeProduct\}/);
+    expect(page).toMatch(/multiLine=\{productInstances\.length > 1\}/);
+    expect(page).toMatch(
+      /isPrimaryLine=\{dealProducts\[0\] === activeProduct && activeInstance\.key === activeInstance\.productId\}/,
+    );
     expect(page).toMatch(/preScoped/);
     expect(page).toMatch(/shopLine: row\.quote\.shopLine/);
     expect(page).not.toMatch(/packageQuotesComplete/);

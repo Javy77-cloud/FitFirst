@@ -39,7 +39,7 @@ describe("request quotes landing + leftover Quote sent gate", () => {
     expect(action).toMatch(/Do not archive or restamp live premiums/);
     const panel = source("src/components/deal/markets-panel.tsx");
     expect(panel).toMatch(/name="product"/);
-    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/product=\{activeProduct\}/);
+    expect(source("src/app/deals/[id]/page.tsx")).toMatch(/product=\{activeInstance\.key\}/);
   });
 
   it("does not hide existing premiums behind a newly minted empty run", () => {

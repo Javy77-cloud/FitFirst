@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID, type ShopLine } from "@/lib/domain";
+import { parseStorageLine, requireStorageLine } from "@/lib/deals/product-instances";
 import { db } from "@/lib/db";
 import {
   accounts,
@@ -160,7 +161,13 @@ import { markShopFlowStaleAfterRiskChange, persistSheetRecheckCue } from "@/lib/
 import { restoreDealSourceDocuments } from "@/lib/documents/restore-deal-docs";
 import { filledKeysAreRatingCritical, ratingCriticalChanged } from "@/lib/deals/rating-critical";
 import { carrierTransferValues } from "@/lib/quote-sheet/home-inspections";
-import { sheetValuesFingerprint } from "@/lib/deals/shop-flow";
+import { parseShopFlow, sheetValuesFingerprint } from "@/lib/deals/shop-flow";
+import {
+  normalizeProductInstanceList,
+  resolveVisibleProductInstances,
+  storageLineForInstance,
+} from "@/lib/deals/product-instances";
+import { productStageFor } from "@/lib/deals/product-stages";
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -228,7 +235,8 @@ async function loadDealSheetCopyInput(
   };
 }
 
-export async function ensureQuoteSheet(dealId: string, line: ShopLine) {
+export async function ensureQuoteSheet(dealId: string, line: string) {
+  const opened = requireStorageLine(line);
   const [existing] = await db
     .select()
     .from(quoteSheets)
@@ -236,12 +244,12 @@ export async function ensureQuoteSheet(dealId: string, line: ShopLine) {
       and(
         eq(quoteSheets.tenantId, DEFAULT_TENANT_ID),
         eq(quoteSheets.dealId, dealId),
-        eq(quoteSheets.line, line),
+        eq(quoteSheets.line, opened.storageLine),
       ),
     );
   if (existing) return existing;
-  const values = blankSheetWithDefaults(line);
-  const form = defaultFormForShopLine(line);
+  const values = blankSheetWithDefaults(opened.shopLine);
+  const form = defaultFormForShopLine(opened.shopLine);
   if (form) {
     values.quoting_form = { value: form, status: "confirmed", source: "agent" };
     const product = sheetProductForQuotingForm(form);
@@ -249,13 +257,13 @@ export async function ensureQuoteSheet(dealId: string, line: ShopLine) {
       values.sheet_product = { value: product, status: "confirmed", source: "agent" };
     }
   }
-  if (isCommercialSheetLine(line)) {
+  if (isCommercialSheetLine(opened.shopLine)) {
     const [deal] = await db
       .select({ shopProducts: deals.shopProducts, quotingLine: deals.quotingLine })
       .from(deals)
       .where(eq(deals.id, dealId));
     const coverage = coverageLinesValueForDeal({
-      line,
+      line: opened.shopLine,
       products: deal?.shopProducts,
     });
     if (coverage) {
@@ -266,8 +274,9 @@ export async function ensureQuoteSheet(dealId: string, line: ShopLine) {
     }
   }
   // First-open Auto Risk Profile: same Deal Details → driver mapping as Fill (empty cells only).
-  if (line === "auto") {
-    const input = await loadDealSheetCopyInput(dealId, line);
+  // A second Auto copy starts blank so it does not inherit the first vehicle.
+  if (opened.shopLine === "auto" && !opened.instanceKey) {
+    const input = await loadDealSheetCopyInput(dealId, opened.shopLine);
     if (input) {
       Object.assign(values, fillSheetFromDealDetails(input, values).values);
     }
@@ -277,7 +286,7 @@ export async function ensureQuoteSheet(dealId: string, line: ShopLine) {
     .values({
       tenantId: DEFAULT_TENANT_ID,
       dealId,
-      line,
+      line: opened.storageLine,
       values,
     })
     .returning();
@@ -286,14 +295,15 @@ export async function ensureQuoteSheet(dealId: string, line: ShopLine) {
 
 export async function persistQuoteSheetValues(
   dealId: string,
-  line: ShopLine,
+  line: string,
   submitted: Record<string, string>,
   formId?: string,
 ) {
-  const sheet = await ensureQuoteSheet(dealId, line);
+  const opened = requireStorageLine(line);
+  const sheet = await ensureQuoteSheet(dealId, opened.storageLine);
   const productRaw = submitted.sheet_product?.trim();
   const product = productRaw && isSheetProduct(productRaw) ? (productRaw as SheetProduct) : undefined;
-  const values = mergeAgentEdits(sheet.values, submitted, line, product);
+  const values = mergeAgentEdits(sheet.values, submitted, opened.shopLine, product);
   if (productRaw) {
     values.sheet_product = { value: productRaw, status: "confirmed", source: "agent" };
   }
@@ -301,7 +311,7 @@ export async function persistQuoteSheetValues(
   await logSheetCorrections({
     dealId,
     sheetId: sheet.id,
-    line,
+    line: opened.shopLine,
     before: sheet.values,
     after: values,
     formId: formId || deal?.quotingForm || "HO3",
@@ -310,29 +320,32 @@ export async function persistQuoteSheetValues(
     .update(quoteSheets)
     .set({ values, updatedAt: new Date() })
     .where(eq(quoteSheets.id, sheet.id));
-  await syncRiskFromSheet(dealId, values, "save");
-  await syncHeaderFromSheet(dealId, values, "save");
+  // A second copy keeps its own property. Do not write it onto the shared deal risk.
+  if (!opened.instanceKey) {
+    await syncRiskFromSheet(dealId, values, "save");
+    await syncHeaderFromSheet(dealId, values, "save");
+  }
   if (sheetValuesFingerprint(sheet.values) !== sheetValuesFingerprint(values)) {
     // Keep Markets complete — cue Quotes Recheck; clear unlock only if rating-critical.
-    await persistSheetRecheckCue(dealId, line);
-    await markShopFlowStaleAfterRiskChange(dealId, line, {
+    await persistSheetRecheckCue(dealId, opened.storageLine);
+    await markShopFlowStaleAfterRiskChange(dealId, opened.storageLine, {
       ratingCritical: ratingCriticalChanged(
-        line === "home" ? carrierTransferValues(sheet.values) : sheet.values,
-        line === "home" ? carrierTransferValues(values) : values,
+        opened.shopLine === "home" ? carrierTransferValues(sheet.values) : sheet.values,
+        opened.shopLine === "home" ? carrierTransferValues(values) : values,
       ),
     });
   }
   // Sheet save / confirm / stale cue must never unlink or hide source docs.
   await restoreDealSourceDocuments(dealId).catch(() => null);
   let vinDecode: VinDecodeRun | null = null;
-  if (line === "auto") {
+  if (opened.shopLine === "auto") {
     const product = (values.sheet_product?.value ?? "").trim() || null;
     // VIN set/changed, or year/make/model/body/fuel/engine still blank.
     // Save already landed; a vPIC failure must not fail the save. Agent and
     // Gemini values stay put (empty-only merge).
     if (shouldRunVinDecode(sheet.values, values, product)) {
       try {
-        vinDecode = await runFillFromVinDecode(dealId, line);
+        vinDecode = await runFillFromVinDecode(dealId, opened.storageLine);
       } catch (error) {
         const message = error instanceof Error ? error.message : "NHTSA vPIC decode failed";
         console.error("[persistQuoteSheetValues] vin decode", message.slice(0, 300));
@@ -351,7 +364,9 @@ export async function persistQuoteSheetValues(
   return { values, vinDecode };
 }
 
-export async function applySavedSheetToDeal(dealId: string, line: ShopLine) {
+export async function applySavedSheetToDeal(dealId: string, line: string) {
+  const opened = parseStorageLine(line);
+  const storageLine = opened?.storageLine ?? line;
   const [sheet] = await db
     .select()
     .from(quoteSheets)
@@ -359,12 +374,14 @@ export async function applySavedSheetToDeal(dealId: string, line: ShopLine) {
       and(
         eq(quoteSheets.tenantId, DEFAULT_TENANT_ID),
         eq(quoteSheets.dealId, dealId),
-        eq(quoteSheets.line, line),
+        eq(quoteSheets.line, storageLine),
       ),
     );
   if (!sheet) return null;
-  await syncRiskFromSheet(dealId, sheet.values, "save");
-  await syncHeaderFromSheet(dealId, sheet.values, "save");
+  if (!opened?.instanceKey) {
+    await syncRiskFromSheet(dealId, sheet.values, "save");
+    await syncHeaderFromSheet(dealId, sheet.values, "save");
+  }
   await restoreDealSourceDocuments(dealId).catch(() => null);
   return sheet.values;
 }
@@ -372,13 +389,14 @@ export async function applySavedSheetToDeal(dealId: string, line: ShopLine) {
 export async function saveQuoteSheet(formData: FormData) {
   const dealId = str(formData, "dealId");
   const lineRaw = str(formData, "line");
-  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+  const openedLine = parseStorageLine(lineRaw);
+  if (!openedLine) throw new Error("Unknown line");
   const submitted = submittedSheetValues(formData);
   const product = str(formData, "sheet_product");
   if (product) submitted.sheet_product = product;
   const { persistDealSourceUploads } = await import("@/app/actions/documents");
   await persistDealSourceUploads(formData);
-  const persisted = await persistQuoteSheetValues(dealId, lineRaw, submitted, str(formData, "formId"));
+  const persisted = await persistQuoteSheetValues(dealId, openedLine.storageLine, submitted, str(formData, "formId"));
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/quotes/fill-feedback");
   const vinDecodeError =
@@ -414,14 +432,17 @@ export async function confirmQuoteSheetField(formData: FormData) {
   const dealId = str(formData, "dealId");
   const lineRaw = str(formData, "line");
   const fieldKey = str(formData, "fieldKey");
-  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
-  const sheet = await ensureQuoteSheet(dealId, lineRaw);
+  const openedLine = parseStorageLine(lineRaw);
+  if (!openedLine) throw new Error("Unknown line");
+  const shopLine = openedLine.shopLine;
+  const storageLine = openedLine.storageLine;
+  const sheet = await ensureQuoteSheet(dealId, storageLine);
   let values = confirmField(sheet.values, fieldKey);
   if (ADDRESS_CONFIRM_KEYS.has(fieldKey)) {
     const enriched = await enrichPropertyOnAddressConfirm(addressFromSheet(values));
     if (enriched.triggered) {
       if (enriched.facts.length) {
-        const applied = applyPublicToSheet(lineRaw, values, enriched.facts);
+        const applied = applyPublicToSheet(shopLine, values, enriched.facts);
         values = applied.values;
         await db.insert(extractionJobs).values({
           tenantId: DEFAULT_TENANT_ID,
@@ -561,26 +582,50 @@ export async function setDealPackageLines(formData: FormData) {
     ...formData.getAll("shopProducts").map((value) => String(value)),
     ...formData.getAll("shopLines").map((value) => String(value)),
   ];
-  const draft = packageCreateDraft(raw);
+  const instances = normalizeProductInstanceList(raw);
+  const nextInstances = instances.length
+    ? instances
+    : [{ key: "homeowners" as const, productId: "homeowners" as const }];
+  const draft = packageCreateDraft(nextInstances.map((row) => row.productId));
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) throw new Error("Deal not found");
-  const next = mergeShopLinesKeepExisting(deal.shopLines, draft.shopLines);
-  const added = draft.shopLines.filter((line) => !(deal.shopLines ?? []).includes(line));
-  for (const line of added) {
-    await ensureQuoteSheet(dealId, line);
+  const previous = resolveVisibleProductInstances({
+    shopProducts: deal.shopProducts,
+    shopLines: deal.shopLines,
+    lineOfBusiness: deal.lineOfBusiness,
+    quotingLine: deal.quotingLine,
+    quotingForm: deal.quotingForm,
+    policySubType: deal.policySubType,
+  });
+  const previousKeys = new Set(previous.map((row) => row.key));
+  const nextKeys = nextInstances.map((row) => row.key);
+  const added = nextInstances.filter((row) => !previousKeys.has(row.key));
+  const removedKeys = new Set(previous.filter((row) => !nextKeys.includes(row.key)).map((row) => row.key));
+  for (const instance of nextInstances) {
+    await ensureQuoteSheet(dealId, storageLineForInstance(instance));
   }
-  const keepCurrent = draft.shopLines.includes(currentLine as (typeof draft.shopLines)[number]);
-  const active = keepCurrent ? currentLine : draft.quotingLine;
+  const next = mergeShopLinesKeepExisting(deal.shopLines, draft.shopLines);
+  const saved = parseShopFlow(deal.shopFlow);
+  const stages = { ...(saved.productStages ?? {}) };
+  for (const key of removedKeys) delete stages[key];
+  for (const instance of added) {
+    if (!stages[instance.key]) stages[instance.key] = productStageFor({}, instance.key);
+  }
+  const focus =
+    added[0] ??
+    nextInstances.find((row) => row.key === currentLine || storageLineForInstance(row) === currentLine) ??
+    nextInstances[0]!;
   await db
     .update(deals)
     .set({
       shopLines: next,
-      shopProducts: draft.products,
-      quotingLine: active || deal.quotingLine,
+      shopProducts: nextKeys,
+      quotingLine: draft.quotingLine,
       quotingForm: draft.quotingForm,
       lineOfBusiness: draft.lineOfBusiness,
       accountKind: draft.accountKind,
       bindTarget: draft.bindTarget,
+      shopFlow: { ...saved, productStages: stages },
       updatedAt: new Date(),
     })
     .where(eq(deals.id, dealId));
@@ -603,8 +648,8 @@ export async function setDealPackageLines(formData: FormData) {
   revalidatePath(`/deals/${dealId}`);
   const query = new URLSearchParams();
   if (tab) query.set("tab", tab);
-  query.set("line", active || draft.quotingLine);
-  query.set("product", draft.products[0] ?? "");
+  query.set("line", storageLineForInstance(focus));
+  query.set("product", focus.key);
   redirect(withFlash(`/deals/${dealId}?${query.toString()}`, "deal-updated"));
 }
 
@@ -641,9 +686,11 @@ export type PropertyFillRunResult = {
 /** Core Property Fill — returns counts (no redirect). Used by master Fill + form action. */
 export async function runFillFromPropertyRecords(
   dealId: string,
-  lineRaw: ShopLine,
+  lineInput: string,
 ): Promise<PropertyFillRunResult> {
-  const sheet = await ensureQuoteSheet(dealId, lineRaw);
+  const opened = requireStorageLine(lineInput);
+  const lineRaw = opened.shopLine;
+  const sheet = await ensureQuoteSheet(dealId, opened.storageLine);
   // Property Fill geocodes the Risk Profile property address.
   // A sole mailing (Deal Details misfile) is moved onto property first so APIs can run.
   // One button → County PA + FloodZoneMap + FEMA (free) → GetParcelData → PermitStack.
@@ -729,8 +776,10 @@ export async function runFillFromPropertyRecords(
       ...bundle.sourcesUsed,
     ],
   });
-  await syncRiskFromSheet(dealId, withCoast.values, "fill");
-  await syncHeaderFromSheet(dealId, withCoast.values, "fill");
+  if (!opened.instanceKey) {
+    await syncRiskFromSheet(dealId, withCoast.values, "fill");
+    await syncHeaderFromSheet(dealId, withCoast.values, "fill");
+  }
   const zoneXNoBfe = isZoneXNoBfe(bundle.facts ?? []);
   let toast =
     withCoast.filledKeys.length || withCoast.skippedKeys.length
@@ -807,7 +856,7 @@ export async function runComputeMilesToCoast(input: {
   const dealId = String(input.dealId ?? "").trim();
   const lineRaw = String(input.line ?? "home").trim() || "home";
   if (!dealId) return { ok: false, error: "Missing deal" };
-  if (!isShopLine(lineRaw)) return { ok: false, error: "Unknown line" };
+  if (!parseStorageLine(lineRaw)) return { ok: false, error: "Unknown line" };
 
   const sheet = await ensureQuoteSheet(dealId, lineRaw);
   const sheetAddr = addressFromSheet(sheet.values);
@@ -836,7 +885,7 @@ export async function runComputeMilesToCoast(input: {
     .update(quoteSheets)
     .set({ values, updatedAt: new Date() })
     .where(eq(quoteSheets.id, sheet.id));
-  await syncRiskFromSheet(dealId, values, "save");
+  if (!parseStorageLine(lineRaw)?.instanceKey) await syncRiskFromSheet(dealId, values, "save");
   revalidatePath(`/deals/${dealId}`);
   return { ok: true, miles: cell.value };
 }
@@ -881,12 +930,14 @@ function sanitizePrefetched(
 /** Empty-only NHTSA vPIC VIN decode for Auto master sheet (no vault key). */
 export async function runFillFromVinDecode(
   dealId: string,
-  lineRaw: ShopLine,
+  lineInput: string,
   options?: {
     formVins?: Record<string, string>;
     prefetched?: ReadonlyArray<{ vin: string; values: VinDecodeValues }>;
   },
 ): Promise<VinDecodeRun> {
+  const opened = parseStorageLine(lineInput);
+  const lineRaw = opened?.shopLine ?? "home";
   if (lineRaw !== "auto") {
     return {
       filledKeys: [],
@@ -897,7 +948,7 @@ export async function runFillFromVinDecode(
       status: "skipped_line",
     };
   }
-  const sheet = await ensureQuoteSheet(dealId, lineRaw);
+  const sheet = await ensureQuoteSheet(dealId, opened?.storageLine ?? lineRaw);
   const fresh = await loadFreshSheetValues(sheet.id, sheet.values);
   const overlaid = overlayFormVins(fresh, options?.formVins);
   const product = (overlaid.values.sheet_product?.value ?? "").trim() || null;
@@ -932,7 +983,7 @@ export async function runFillFromVinDecode(
   }
   if (bundle.filledKeys.length || overlaid.changed) {
     await persistSheetValues(sheet.id, bundle.values);
-    await syncRiskFromSheet(dealId, bundle.values, "fill");
+    if (!opened?.instanceKey) await syncRiskFromSheet(dealId, bundle.values, "fill");
   }
   await logExtractionJob({
     dealId,
@@ -967,7 +1018,7 @@ export async function runDecodeVin(input: {
   const dealId = String(input.dealId ?? "").trim();
   const lineRaw = String(input.line ?? "auto").trim() || "auto";
   if (!dealId) return { ok: false, error: "Missing deal" };
-  if (!isShopLine(lineRaw)) return { ok: false, error: "Unknown line" };
+  if (!parseStorageLine(lineRaw)) return { ok: false, error: "Unknown line" };
   if (lineRaw !== "auto") return { ok: false, error: "VIN decode is Auto-only." };
   const result = await runFillFromVinDecode(dealId, lineRaw, {
     formVins: input.formVins,
@@ -991,7 +1042,7 @@ export async function runDecodeVin(input: {
 export async function fillFromPropertyRecords(formData: FormData) {
   const dealId = str(formData, "dealId");
   const lineRaw = str(formData, "line") || "home";
-  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+  if (!parseStorageLine(lineRaw)) throw new Error("Unknown line");
   const dest = `/deals/${dealId}?tab=documents&line=${lineRaw}`;
   const result = await runFillFromPropertyRecords(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);
@@ -1018,9 +1069,11 @@ export type DealFillRunResult = {
 /** Deal page → blank master-sheet fields (CHECK only — never auto-confirm). */
 export async function runFillFromDealDetails(
   dealId: string,
-  lineRaw: ShopLine,
+  lineInput: string,
 ): Promise<DealFillRunResult> {
-  const sheet = await ensureQuoteSheet(dealId, lineRaw);
+  const opened = requireStorageLine(lineInput);
+  const lineRaw = opened.shopLine;
+  const sheet = await ensureQuoteSheet(dealId, opened.storageLine);
   const input = await loadDealSheetCopyInput(dealId, lineRaw);
   if (!input) {
     return { filledKeys: [], skippedKeys: [], note: MASTER_FILL_SKIP_NO_DEAL };
@@ -1048,17 +1101,20 @@ export async function runFillFromDealDetails(
     skippedKeys: applied.skippedKeys,
     message: "Copied deal details into blank master-sheet fields (CHECK).",
   });
-  await syncRiskFromSheet(dealId, applied.values, "fill");
-  await syncHeaderFromSheet(dealId, applied.values, "fill");
+  if (!opened.instanceKey) {
+    await syncRiskFromSheet(dealId, applied.values, "fill");
+    await syncHeaderFromSheet(dealId, applied.values, "fill");
+  }
   return { filledKeys: applied.filledKeys, skippedKeys: applied.skippedKeys };
 }
 
 
 /** Empty-only protection/hazard defaults after a Fill step (never overwrites agent cells). */
-async function persistMasterSheetDefaults(dealId: string, lineRaw: ShopLine): Promise<number> {
-  const sheet = await ensureQuoteSheet(dealId, lineRaw);
+async function persistMasterSheetDefaults(dealId: string, lineInput: string): Promise<number> {
+  const opened = requireStorageLine(lineInput);
+  const sheet = await ensureQuoteSheet(dealId, opened.storageLine);
   const fresh = await loadFreshSheetValues(sheet.id, sheet.values);
-  const applied = applyMasterSheetDefaults(fresh, emptyDefaultsForLine(lineRaw));
+  const applied = applyMasterSheetDefaults(fresh, emptyDefaultsForLine(opened.shopLine));
   if (!applied.filledKeys.length) return 0;
   await db
     .update(quoteSheets)
@@ -1119,7 +1175,7 @@ async function fillMasterSheetStepInner(input: {
   const dealId = String(input.dealId ?? "").trim();
   const lineRaw = String(input.line ?? "home").trim() || "home";
   if (!dealId) throw new Error("Missing deal");
-  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+  if (!parseStorageLine(lineRaw)) throw new Error("Unknown line");
   const step = input.step;
 
   if (step === "deal") {
@@ -1229,7 +1285,7 @@ export async function listMasterFillDocs(input: {
     const dealId = String(input.dealId ?? "").trim();
     const lineRaw = String(input.line ?? "home").trim() || "home";
     if (!dealId) return { ok: false, docs: [], error: "Docs failed. Missing deal." };
-    if (!isShopLine(lineRaw)) return { ok: false, docs: [], error: "Docs failed. Unknown line." };
+    if (!parseStorageLine(lineRaw)) return { ok: false, docs: [], error: "Docs failed. Unknown line." };
     const geminiKey = await loadGeminiApiKey();
     if (!geminiKeyReady(geminiKey)) {
       return {
@@ -1317,7 +1373,7 @@ async function fillMasterSheetDocumentInner(input: {
   const lineRaw = String(input.line ?? "home").trim() || "home";
   const documentId = String(input.documentId ?? "").trim();
   if (!dealId) throw new Error("Missing deal");
-  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+  if (!parseStorageLine(lineRaw)) throw new Error("Unknown line");
   if (!documentId) throw new Error("Missing document");
   const counts = await runFillQuoteSheet(dealId, lineRaw, { documentId });
   revalidatePath(`/deals/${dealId}`);
@@ -1344,7 +1400,7 @@ async function fillMasterSheetDocumentInner(input: {
 export async function fillQuoteSheet(formData: FormData) {
   const dealId = str(formData, "dealId");
   const lineRaw = str(formData, "line") || "home";
-  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+  if (!parseStorageLine(lineRaw)) throw new Error("Unknown line");
   const geminiKey = await loadGeminiApiKey();
   if (!geminiKeyReady(geminiKey)) {
     flashAction(`/deals/${dealId}?tab=documents&line=${lineRaw}`, "gemini-needs-key", "error");
@@ -1370,13 +1426,14 @@ export type FillDealCounts = {
 
 export async function runFillDealSheets(
   dealId: string,
-  primary: ShopLine,
+  primary: string,
   options?: { onlyLine?: boolean },
 ): Promise<FillDealCounts> {
-  const primaryCounts = await runFillQuoteSheet(dealId, primary);
-  const other = options?.onlyLine
+  const opened = requireStorageLine(primary);
+  const primaryCounts = await runFillQuoteSheet(dealId, opened.storageLine);
+  const other = options?.onlyLine || opened.instanceKey
     ? { filledKeys: [] as string[], skippedKeys: [] as string[], error: undefined }
-    : await fillOtherShopLines(dealId, primary);
+    : await fillOtherShopLines(dealId, opened.shopLine);
   const counts = {
     filledKeys: [...primaryCounts.filledKeys, ...other.filledKeys],
     skippedKeys: [...primaryCounts.skippedKeys, ...other.skippedKeys],
@@ -1384,7 +1441,7 @@ export async function runFillDealSheets(
   };
   if (primaryCounts.filledKeys.length) {
     await persistSheetRecheckCue(dealId, primary);
-    await markShopFlowStaleAfterRiskChange(dealId, primary, {
+    await markShopFlowStaleAfterRiskChange(dealId, opened.storageLine, {
       ratingCritical: filledKeysAreRatingCritical(primaryCounts.filledKeys),
     });
   }
@@ -1542,7 +1599,7 @@ export async function markPasteFieldWrong(formData: FormData) {
   const wrongValue = str(formData, "wrongValue") || str(formData, fieldKey);
   const note = str(formData, "note") || "Marked wrong on paste / review";
   if (!dealId || !fieldKey || !wrongValue) throw new Error("Pick a field that was pasted wrong.");
-  if (!isShopLine(lineRaw)) throw new Error("Unknown line");
+  if (!parseStorageLine(lineRaw)) throw new Error("Unknown line");
   const sheet = await ensureQuoteSheet(dealId, lineRaw);
   const session = await currentDeskSession().catch(() => null);
   const docType = str(formData, "docType") || "dec";
@@ -1658,16 +1715,21 @@ async function logExtractionJob(input: {
 
 export async function runFillQuoteSheet(
   dealId: string,
-  line: ShopLine,
+  lineInput: string,
   options?: { documentId?: string },
 ): Promise<FillDealCounts> {
+  const opened = requireStorageLine(lineInput);
+  const line = opened.shopLine;
   const onlyId = String(options?.documentId ?? "").trim();
-  const sheet = await ensureQuoteSheet(dealId, line);
+  const sheet = await ensureQuoteSheet(dealId, opened.storageLine);
   const docs = await db
     .select()
     .from(documents)
     .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.dealId, dealId)));
-  const productDocs = selectFillDocsForProductWindow(docs, { shopLine: line });
+  const productDocs = selectFillDocsForProductWindow(docs, {
+    shopLine: line,
+    instanceKey: opened.instanceKey,
+  });
   const scoped = onlyId ? productDocs.filter((doc) => doc.id === onlyId) : productDocs;
   if (onlyId && scoped.length === 0) {
     const onDeal = docs.some((doc) => doc.id === onlyId);
@@ -2121,8 +2183,10 @@ export async function runFillQuoteSheet(
 
   await persistSheetValues(sheet.id, values);
 
-  await syncRiskFromSheet(dealId, values, "fill");
-  await syncHeaderFromSheet(dealId, values, "fill");
+  if (!opened.instanceKey) {
+    await syncRiskFromSheet(dealId, values, "fill");
+    await syncHeaderFromSheet(dealId, values, "fill");
+  }
   // Batch Fill can vPIC here. A single photo (documentId) leaves VIN to the
   // master Fill VIN step so one file's deadline stays on Gemini.
   // Empty-only: agent / Gemini values are not overwritten.
@@ -2130,7 +2194,7 @@ export async function runFillQuoteSheet(
   const vinLanded = aggregateFilled.some((key) => isVehicleVinSheetKey(key));
   if (!onlyId && line === "auto" && (vinLanded || blankVinCoreFacts(values, vinProduct).length > 0)) {
     try {
-      const decoded = await runFillFromVinDecode(dealId, line);
+      const decoded = await runFillFromVinDecode(dealId, opened.storageLine);
       if (decoded.filledKeys.length) aggregateFilled.push(...decoded.filledKeys);
       if (decoded.skippedKeys.length) aggregateSkipped.push(...decoded.skippedKeys);
       if (decoded.status === "error" && decoded.message) {

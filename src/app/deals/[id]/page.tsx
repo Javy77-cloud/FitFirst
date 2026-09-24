@@ -64,12 +64,22 @@ import {
 import {
   dealProductDef,
   familyForProducts,
-  resolveActiveDealProduct,
   resolveVisibleDealProducts,
   isLifeHealthShopLine,
   sheetLineForProduct,
   splitHomeProducts,
 } from "@/lib/deals/deal-products";
+import {
+  addressFactsFromSheetValues,
+  labelProductInstances,
+  vehiclesFromSheetValues,
+} from "@/lib/deals/product-instance-label";
+import {
+  attemptLogMatchesInstance,
+  resolveActiveProductInstance,
+  resolveVisibleProductInstances,
+  storageLineForInstance,
+} from "@/lib/deals/product-instances";
 import { productSectionComplete, productSectionProgress } from "@/lib/deals/product-layout";
 import { DealLineSwitcher } from "@/components/deal/deal-line-switcher";
 import { DealStatusStamp } from "@/components/deal/deal-status-stamp";
@@ -278,14 +288,16 @@ export default async function DealPage({
   });
   // Do NOT invent HO3 when quotingForm is blank — LIFE/HEALTH would open Homeowners.
   const quotingForm = quotingFormById(deal.quotingForm ?? "");
-  const dealProducts = resolveVisibleDealProducts({
+  const productHint = {
     shopProducts: (deal as { shopProducts?: string[] | null }).shopProducts,
     shopLines: deal.shopLines,
     lineOfBusiness: deal.lineOfBusiness,
     quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
     quotingForm: deal.quotingForm,
     policySubType: deal.policySubType,
-  });
+  };
+  const productInstances = resolveVisibleProductInstances(productHint);
+  const dealProducts = resolveVisibleDealProducts(productHint);
   const packageLines = resolveVisiblePackageLines({
     shopProducts: (deal as { shopProducts?: string[] | null }).shopProducts,
     shopLines: deal.shopLines,
@@ -295,14 +307,14 @@ export default async function DealPage({
     policySubType: deal.policySubType,
   });
   const splitHome = splitHomeProducts(dealProducts);
-  const activeProduct = resolveActiveDealProduct({
+  const activeInstance = resolveActiveProductInstance({
     productParam: product,
     lineParam,
-    products: dealProducts,
+    instances: productInstances,
     quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
     quotingForm: deal.quotingForm,
-    lineOfBusiness: deal.lineOfBusiness,
   });
+  const activeProduct = activeInstance.productId;
   const activePackageLine = resolveActivePackageLine({
     lineParam,
     packageLines,
@@ -317,8 +329,9 @@ export default async function DealPage({
       quotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
       lineOfBusiness: deal.lineOfBusiness,
     });
+  const storageLine = storageLineForInstance(activeInstance);
   const activeSheet =
-    sheets.find((row) => row.line === sheetLine) ?? (await ensureQuoteSheet(deal.id, sheetLine));
+    sheets.find((row) => row.line === storageLine) ?? (await ensureQuoteSheet(deal.id, storageLine));
   const lineForm = resolveLineQuotingForm({
     sheetValues: activeSheet.values,
     sheetLine,
@@ -334,7 +347,10 @@ export default async function DealPage({
       ? logs.filter((row) => logBelongsToLine(row.log.lineOfBusiness, activeLob, isPrimaryPackageLine))
       : logs;
   const allQuoteLogsForMatch = logs.map((item) => item.log);
-  const shopFlow = mergeShopFlowProductStages(deal.shopFlow, dealProducts);
+  const shopFlow = mergeShopFlowProductStages(
+    deal.shopFlow,
+    productInstances.map((row) => row.key),
+  );
   const lineQuotes = quotes.filter((row) =>
     quoteMatchesDealProduct(
       {
@@ -345,15 +361,17 @@ export default async function DealPage({
         quoteRunId: row.quote.quoteRunId,
         quoteRuns: shopFlow.quoteRuns,
       },
-      activeProduct,
+      activeInstance.key,
       {
-        multiLine: dealProducts.length > 1,
-        isPrimaryLine: dealProducts[0] === activeProduct,
+        multiLine: productInstances.length > 1,
+        isPrimaryLine: dealProducts[0] === activeProduct && activeInstance.key === activeInstance.productId,
         splitHomeProducts: splitHome,
       },
     ),
   );
-  const dealLogs = lineLogs.map((row) => row.log);
+  const dealLogs = lineLogs
+    .map((row) => row.log)
+    .filter((log) => attemptLogMatchesInstance(log.why, activeInstance.key));
   const excludedMarketIds = new Set(excludedCarrierIdsFromLogs(dealLogs));
   const shopMarketsAction = hasShopMarketAction(
     dealLogs,
@@ -411,7 +429,7 @@ export default async function DealPage({
     docs: sourceDocs,
   });
   const currentFingerprint = lineRiskFingerprint({
-    line: sheetLine,
+    line: storageLine,
     sheets,
     docs: sourceDocs,
   });
@@ -435,15 +453,33 @@ export default async function DealPage({
       }),
     ]),
   );
+  const instanceLabelRows = productInstances.map((instance) => {
+    const line = storageLineForInstance(instance);
+    const sheet = sheets.find((row) => row.line === line) ?? (instance.key === activeInstance.key ? activeSheet : null);
+    const facts = addressFactsFromSheetValues(sheet?.values);
+    return {
+      key: instance.key,
+      productId: instance.productId,
+      quotingForm: deal.quotingForm,
+      sheetForm: sheet?.values?.quoting_form?.value ?? null,
+      address: facts.address,
+      city: facts.city,
+      vehicles: vehiclesFromSheetValues(sheet?.values),
+    };
+  });
+  const instanceLabels = labelProductInstances(instanceLabelRows);
+  const activeInstanceLabel = instanceLabels.get(activeInstance.key) ?? dealProductDef(activeProduct).label;
   const quoteCompletenessByProduct = Object.fromEntries(
-    dealProducts.map((id) => [
-      id,
+    productInstances.map((instance) => [
+      instance.key,
       productQuoteCompleteness({
-        product: id,
-        logs: logs.map((row) => row.log),
+        product: instance.key,
+        logs: logs
+          .map((row) => row.log)
+          .filter((log) => attemptLogMatchesInstance(log.why, instance.key)),
         quotes: quotes.map((row) => row.quote),
         carriers: carrierRows.map((row) => ({ id: row.carrier.id, name: row.carrier.name })),
-        multiLine: dealProducts.length > 1,
+        multiLine: productInstances.length > 1,
         splitHomeProducts: splitHome,
         quoteRuns: shopFlow.quoteRuns,
       }),
@@ -459,21 +495,21 @@ export default async function DealPage({
     hasMarkets: shopMarketsAction || agentMarketsAction,
     // Request quotes writes market logs + fingerprints before premiums arrive.
     hasQuotes: Boolean(
-      quoteCompletenessByProduct[activeProduct]?.shopped ||
-        quoteCompletenessByProduct[activeProduct]?.complete ||
+      quoteCompletenessByProduct[activeInstance.key]?.shopped ||
+        quoteCompletenessByProduct[activeInstance.key]?.complete ||
         lineQuotes.some((row) => row.quote.stub !== true) ||
         shopMarketsAction,
     ),
     currentFingerprint,
     saved: shopFlowLive,
-    line: sheetLine,
+    line: storageLine,
   });
   const productStages = isHeatherCamirandDeal(deal)
     ? stripStaleCamirandProductNotices(parseProductStages(shopFlow.productStages))
     : parseProductStages(shopFlow.productStages);
   const activeProductState = productStageFor(
     productStages,
-    activeProduct,
+    activeInstance.key,
     stageView.slug ?? deal.pipelineStage,
   );
   const issuedFolderQuoteIds = quoteIdsWithFolderPolicy(docs, dealProductDef(activeProduct).shopLine);
@@ -484,7 +520,7 @@ export default async function DealPage({
     ? await getReviewTask(activeProductState.noticeTaskId)
     : null;
   const noticeDue = taskDueInputParts(noticeTask?.dueDate);
-  const noticeReturnTo = `/deals/${deal.id}?tab=${activeTab}&product=${activeProduct}`;
+  const noticeReturnTo = `/deals/${deal.id}?tab=${activeTab}&product=${activeInstance.key}`;
   const noticeProps = {
     dealId: deal.id,
     dealName: deal.title,
@@ -552,6 +588,7 @@ export default async function DealPage({
     product: activeProduct,
     quotingForm: titleForm,
     sheetForm: titleForm,
+    label: activeInstanceLabel,
   });
   const quoteChoices = lineQuotes
     .filter((row) => row.quote.stub !== true)
@@ -704,7 +741,7 @@ export default async function DealPage({
         <SectionTabs
           defaultValue="details"
           active={activeTab}
-          extraQuery={{ line: sheetLine, product: activeProduct }}
+          extraQuery={{ line: storageLine, product: activeInstance.key }}
           panelClassName="mt-0"
           tabSize="deal"
           toolbar={activeTab === "details" ? <EditLayoutLink module="deals" line={activeLob} /> : null}
@@ -761,7 +798,7 @@ export default async function DealPage({
                       stages={stageView.stages}
                       dealTitle={visibleDealTitle}
                       toastOnSave
-                      product={activeProduct}
+                      product={activeInstance.key}
                       selectedQuoteIds={activeProductState.selectedQuoteIds}
                       quoteChoices={quoteChoices}
                       workspaceTab={activeTab}
@@ -782,11 +819,16 @@ export default async function DealPage({
                 <>
                   <DealLineSwitcher
                     dealId={deal.id}
-                    products={dealProducts}
-                    active={activeProduct}
+                    products={productInstances.map((row) => row.key)}
+                    active={activeInstance.key}
                     tab={activeTab}
+                    labels={Object.fromEntries(instanceLabels)}
+                    labelFacts={Object.fromEntries(
+                      instanceLabelRows.map((row) => [row.key, row]),
+                    )}
                     quoteGaps={Object.fromEntries(
-                      dealProducts.map((id) => {
+                      productInstances.map((instance) => {
+                        const id = instance.key;
                         const gap = quoteCompletenessByProduct[id];
                         return [
                           id,
@@ -801,14 +843,14 @@ export default async function DealPage({
                       }),
                     )}
                     stages={Object.fromEntries(
-                      dealProducts.map((id) => {
+                      productInstances.map((instance) => {
                         const state = productStageFor(
                           productStages,
-                          id,
+                          instance.key,
                           stageView.slug ?? deal.pipelineStage,
                         );
                         return [
-                          id,
+                          instance.key,
                           {
                             stage: state.stage,
                             lostReason: state.lostReason,
@@ -821,36 +863,37 @@ export default async function DealPage({
                       }),
                     )}
                     formLabels={Object.fromEntries(
-                      dealProducts.map((id) => {
-                        const line = sheetLineForProduct(id);
+                      productInstances.map((instance) => {
+                        const line = storageLineForInstance(instance);
                         const sheet = sheets.find((row) => row.line === line);
                         const fromSheet =
                           quotingFormFromSheet(sheet?.values) ??
                           resolveLineQuotingForm({
                             sheetValues: sheet?.values,
-                            sheetLine: line ?? sheetLine,
+                            sheetLine: sheetLine,
                             dealQuotingForm: deal.quotingForm,
                             dealQuotingLine: deal.quotingLine ?? quotingForm?.shopLine ?? null,
                             dealLineOfBusiness: deal.lineOfBusiness,
                           });
                         return [
-                          id,
-                          sheetFormForProduct(id, fromSheet) ?? dealProductDef(id).quotingForm,
+                          instance.key,
+                          sheetFormForProduct(instance.productId, fromSheet) ??
+                            dealProductDef(instance.productId).quotingForm,
                         ];
                       }),
                     )}
                     complete={Object.fromEntries(
-                      dealProducts.map((id) => [
-                        id,
-                        Boolean(quoteCompletenessByProduct[id]?.complete),
+                      productInstances.map((instance) => [
+                        instance.key,
+                        Boolean(quoteCompletenessByProduct[instance.key]?.complete),
                       ]),
                     )}
                     progress={Object.fromEntries(
-                      dealProducts.map((id) => {
-                        const gap = quoteCompletenessByProduct[id];
-                        const fromFields = productSectionProgress(id, dealValues);
+                      productInstances.map((instance) => {
+                        const gap = quoteCompletenessByProduct[instance.key];
+                        const fromFields = productSectionProgress(instance.productId, dealValues);
                         return [
-                          id,
+                          instance.key,
                           gap?.complete
                             ? { ...fromFields, complete: true, pct: 100 }
                             : { ...fromFields, complete: false, pct: 0 },
@@ -976,7 +1019,8 @@ export default async function DealPage({
                         insuredPropertyKind={dealValues.insured_property_kind ?? null}
                         needsReapprove={needsVisualReapprove}
                         hasRequestedQuotes={hasRequestedQuotes}
-                        productId={activeProduct}
+                        productId={activeInstance.key}
+                        storageLine={storageLine}
                         quotingForm={titleForm}
                         sheetQuotingForm={
                           quotingFormIsManufacturedHome(
@@ -1027,9 +1071,10 @@ export default async function DealPage({
                         sheetHasValues={sheetReady}
                         carriers={carrierOptions}
                         dealLine={activeLob}
-                        shopLine={sheetLine}
-                        product={activeProduct}
-                        lastRequestCarrierIds={requestScopeForLine(shopFlow, sheetLine)}
+                        shopLine={storageLine}
+                        product={activeInstance.key}
+                        productLabel={activeInstanceLabel}
+                        lastRequestCarrierIds={requestScopeForLine(shopFlow, storageLine)}
                         outsideOverride={Boolean(activeProductState.outsideOverride)}
                         outsideOverrideDetail={activeProductState.outsideOverride ?? null}
                       />
@@ -1043,12 +1088,13 @@ export default async function DealPage({
                         quoteNotes={quoteNotes}
                         canLogGap={session.isAdmin || session.isDeveloper}
                         formId={lineQuotingForm?.id ?? lineForm ?? masterFormLabel}
-                        shopLine={sheetLine}
+                        shopLine={storageLine}
                         docs={docs}
                         fileVersions={fileVersions}
                         carriers={allCarrierOptions}
                         dealLine={activeLob}
-                        product={activeProduct}
+                        product={activeInstance.key}
+                        productLabel={activeInstanceLabel}
                         productStage={displayProductStage({
                           stage: activeProductState.stage,
                           selectedQuoteIds: activeProductState.selectedQuoteIds,
@@ -1062,7 +1108,7 @@ export default async function DealPage({
                         issuedPolicy={(() => {
                           const linked =
                             boundPolicies.find((row) => row.id === activeProductState.policyId) ??
-                            boundPolicies.find((row) => row.sourceProduct === activeProduct);
+                            boundPolicies.find((row) => row.sourceProduct === activeInstance.key);
                           if (!linked) return null;
                           return {
                             id: linked.id,
@@ -1092,12 +1138,13 @@ export default async function DealPage({
                         canLogGap={session.isAdmin || session.isDeveloper}
                         quoteResultsNote={deal.quoteResultsNote}
                         formId={lineQuotingForm?.id ?? lineForm ?? masterFormLabel}
-                        shopLine={sheetLine}
-                        currentQuoteRunId={shopFlow.quoteRuns?.[sheetLine] ?? null}
-                        multiLine={dealProducts.length > 1}
-                        isPrimaryLine={dealProducts[0] === activeProduct}
+                        shopLine={storageLine}
+                        productLabel={activeInstanceLabel}
+                        currentQuoteRunId={shopFlow.quoteRuns?.[storageLine] ?? null}
+                        multiLine={productInstances.length > 1}
+                        isPrimaryLine={dealProducts[0] === activeProduct && activeInstance.key === activeInstance.productId}
                         completeness={
-                          quoteCompletenessByProduct[activeProduct] ?? activeQuoteCompleteness
+                          quoteCompletenessByProduct[activeInstance.key] ?? activeQuoteCompleteness
                         }
                         boundQuoteId={boundQuoteId}
                         productStage={displayProductStage({
@@ -1116,7 +1163,7 @@ export default async function DealPage({
                         fileVersions={fileVersions}
                         carriers={carrierOptions}
                         dealLine={activeLob}
-                        product={activeProduct}
+                        product={activeInstance.key}
                         selectedQuoteIds={activeProductState.selectedQuoteIds}
                         outsideOverride={Boolean(activeProductState.outsideOverride)}
                         outsideOverrideDetail={activeProductState.outsideOverride ?? null}
@@ -1129,7 +1176,7 @@ export default async function DealPage({
                         issuedPolicy={(() => {
                           const linked =
                             boundPolicies.find((row) => row.id === activeProductState.policyId) ??
-                            boundPolicies.find((row) => row.sourceProduct === activeProduct);
+                            boundPolicies.find((row) => row.sourceProduct === activeInstance.key);
                           if (!linked) return null;
                           return {
                             id: linked.id,

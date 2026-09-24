@@ -1,7 +1,13 @@
 import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: () => undefined, replace: () => undefined, push: () => undefined }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/deals/deal-1",
+}));
 import { QuotesPanel } from "@/components/deal/quotes-panel";
 import type { Carrier, Quote } from "@/lib/db/schema";
 import { writesDealLine } from "@/lib/domain";

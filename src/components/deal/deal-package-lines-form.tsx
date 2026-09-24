@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { setDealPackageLines } from "@/app/actions/quote-sheet";
 import { ProductPicker } from "@/components/deals/product-picker";
-import { normalizeDealProducts, type DealProductId } from "@/lib/deals/deal-products";
+import type { VehicleLabelFact } from "@/lib/deals/product-instance-label";
 import { cn } from "@/lib/utils";
 
 export function DealPackageLinesForm({
@@ -11,13 +11,26 @@ export function DealPackageLinesForm({
   selected,
   activeLine,
   tab,
+  labelFacts,
 }: {
   dealId: string;
   selected: readonly string[];
   activeLine?: string | null;
   tab?: string | null;
+  labelFacts?: Partial<
+    Record<
+      string,
+      {
+        quotingForm?: string | null;
+        sheetForm?: string | null;
+        address?: string | null;
+        city?: string | null;
+        vehicles?: readonly VehicleLabelFact[] | null;
+      }
+    >
+  >;
 }) {
-  const [products, setProducts] = useState<DealProductId[]>(() => normalizeDealProducts(selected));
+  const [products, setProducts] = useState<string[]>(() => [...selected]);
   const [open, setOpen] = useState(false);
 
   return (
@@ -45,6 +58,7 @@ export function DealPackageLinesForm({
             selected={products}
             onChange={setProducts}
             idPrefix={`deal-${dealId}-pkg`}
+            labelFacts={labelFacts}
           />
           <button
             type="submit"

@@ -7,6 +7,7 @@ import { after } from "next/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { CONFIDENCE_THRESHOLD, DEFAULT_TENANT_ID, isShopLine, type ShopLine } from "@/lib/domain";
+import { parseStorageLine } from "@/lib/deals/product-instances";
 import { withFlash } from "@/lib/flash";
 import { flashAction } from "@/lib/flash-action";
 import { dealDocumentsTabHref, type DealDocumentsSaveResult } from "@/lib/documents/deal-docs-save";
@@ -294,7 +295,7 @@ export async function persistDealSourceUploads(
     const lineRaw = String(formData.get("line") ?? "").trim();
     const quotingFormRaw = String(formData.get("quotingForm") ?? formData.get("form") ?? "").trim();
     const lineTags =
-      dealId && isShopLine(lineRaw)
+      dealId && (isShopLine(lineRaw) || parseStorageLine(lineRaw))
         ? membershipTagsForUpload({ shopLine: lineRaw, quotingForm: quotingFormRaw || null })
         : [];
     let doc: Awaited<ReturnType<typeof persistFile>> | null = null;
@@ -462,7 +463,7 @@ export async function saveDealDocumentFromBlob(formData: FormData): Promise<Deal
     rawType && rawType !== "auto" ? coerceDealUploadDocType(rawType) : coerceDealUploadDocType(inferDocType(filename, rawType));
   const lineRaw = String(formData.get("line") ?? "").trim();
   const quotingFormRaw = String(formData.get("quotingForm") ?? formData.get("form") ?? "").trim();
-  const lineTags = isShopLine(lineRaw)
+  const lineTags = isShopLine(lineRaw) || parseStorageLine(lineRaw)
     ? membershipTagsForUpload({ shopLine: lineRaw, quotingForm: quotingFormRaw || null })
     : [];
   try {

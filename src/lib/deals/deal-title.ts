@@ -220,13 +220,16 @@ export function dealTitleForActiveProduct(input: {
   product: DealProductId;
   quotingForm?: string | null;
   sheetForm?: string | null;
+  label?: string | null;
 }): string {
   const name = stripDealTitleLob(input.title);
-  const suffix = productChipLabel({
-    product: input.product,
-    quotingForm: input.quotingForm,
-    sheetForm: input.sheetForm,
-  });
+  const suffix =
+    input.label?.trim() ||
+    productChipLabel({
+      product: input.product,
+      quotingForm: input.quotingForm,
+      sheetForm: input.sheetForm,
+    });
   if (!name) return suffix;
   return joinDealTitleParts(name, suffix);
 }
