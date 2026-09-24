@@ -1,22 +1,9 @@
 import { formatDuration, pipelineLabel, statusLabel } from "@/lib/domain";
 import { DESK_TIME_ZONE, formatDeskDateTime } from "@/lib/desk/desk-timezone";
+import { toEtDateTimeLocal } from "@/lib/time/et";
 
 export function toDateTimeLocal(value: Date | string | null | undefined): string {
-  if (!value) return "";
-  const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return "";
-  // datetime-local is wall-clock without zone; stamp America/New_York parts.
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: DESK_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(d);
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
-  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+  return toEtDateTimeLocal(value);
 }
 
 export function formatWhen(value: Date | string | null | undefined): string {

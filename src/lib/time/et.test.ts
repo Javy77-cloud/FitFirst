@@ -7,6 +7,7 @@ import {
   normalizeTaskPriority,
   parseEtDateTimeLocal,
   sameEtDay,
+  toEtDateTimeLocal,
   urgencyFromTaskPriority,
   zonedLocalToUtc,
 } from "./et";
@@ -84,5 +85,26 @@ describe("zonedLocalToUtc stability", () => {
   it("round-trips a known EDT offset", () => {
     const utc = zonedLocalToUtc("2026-09-24T14:30:00", "America/New_York");
     expect(utc.toISOString()).toBe("2026-09-24T18:30:00.000Z");
+  });
+});
+
+describe("datetime-local ET round-trip", () => {
+  it("afternoon 2:30 PM ET open+save does not move the instant", () => {
+    const stored = new Date("2026-09-24T18:30:00.000Z");
+    const local = toEtDateTimeLocal(stored);
+    expect(local).toBe("2026-09-24T14:30");
+    expect(parseEtDateTimeLocal(local)?.toISOString()).toBe(stored.toISOString());
+  });
+
+  it("after 8 PM ET stays on the Eastern calendar day through round-trip", () => {
+    const stored = new Date("2026-09-25T01:00:00.000Z"); // Thu Sep 24 9:00 PM ET
+    const local = toEtDateTimeLocal(stored);
+    expect(local).toBe("2026-09-24T21:00");
+    expect(parseEtDateTimeLocal(local)?.toISOString()).toBe(stored.toISOString());
+    expect(etDateKey(parseEtDateTimeLocal(local)!)).toBe("2026-09-24");
+  });
+
+  it("accepts ISO-with-Z input the same as Date for the edit modal", () => {
+    expect(toEtDateTimeLocal("2026-09-24T18:30:00.000Z")).toBe("2026-09-24T14:30");
   });
 });

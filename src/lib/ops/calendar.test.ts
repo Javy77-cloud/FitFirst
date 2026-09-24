@@ -230,6 +230,18 @@ describe("calendar compose datetime helpers", () => {
     expect(toDateTimeLocal(new Date("2026-09-27T13:00:00.000Z"))).toBe("2026-09-27T09:00");
   });
 
+  it("round-trips Gloria afternoon task 2:30 PM ET without shifting", () => {
+    const iso = "2026-09-24T18:30:00.000Z";
+    expect(toDateTimeLocal(iso)).toBe("2026-09-24T14:30");
+    expect(toDate(toDateTimeLocal(iso))?.toISOString()).toBe(iso);
+  });
+
+  it("round-trips after-8PM ET without rolling the Eastern day", () => {
+    const iso = "2026-09-25T01:15:00.000Z"; // Thu Sep 24 9:15 PM ET
+    expect(toDateTimeLocal(iso)).toBe("2026-09-24T21:15");
+    expect(toDate("2026-09-24T21:15")?.toISOString()).toBe(iso);
+  });
+
   it("parses datetime-local strings as Eastern for drag/reschedule", () => {
     expect(toDate("2026-09-24T07:00")?.toISOString()).toBe("2026-09-24T11:00:00.000Z");
   });
