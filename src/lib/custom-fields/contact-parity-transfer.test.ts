@@ -8,6 +8,8 @@ import {
   AUTO_DL_FIELDS,
   CONTACT_PARITY_CUSTOM_KEYS,
   CONTACT_PARITY_CRM_FIELDS,
+  ensureContactParityDealLayout,
+  needsContactParityDealLayout,
 } from "@/lib/custom-fields/contact-parity-fields";
 import { CORE_FIELDS, defaultLayoutForLine } from "@/lib/custom-fields/defaults";
 import { dealValuesFromLead, LEAD_TO_DEAL_CUSTOM_KEYS } from "@/lib/custom-fields/transfer";
@@ -22,7 +24,7 @@ describe("Deal Details Contact parity", () => {
     }
     const layoutKeys = allLayoutFieldKeys(defaultLayoutForLine("HO"));
     expect(layoutKeys).toEqual(
-      expect.arrayContaining(["nickname", "referral", "secondary_phone", "dependents", "campaign_tag"]),
+      expect.arrayContaining(["nickname", "referral", "secondary_phone", "dependents", "campaign_tag", "spouse_link"]),
     );
     expect(layoutKeys).not.toContain("drivers_license_number");
   });
@@ -104,4 +106,33 @@ describe("Deal Details Contact parity", () => {
     expect(patch.referral).toBe("Neighbor");
     expect(patch.nickname).toBe("Ellie");
   });
+
+  it("keeps spouse trio consecutive on Deal Preferences for three-equal-cell packing", () => {
+    const prefs = defaultLayoutForLine("HO").columns[1]?.sections.find((s) => s.id === "prefs");
+    expect(prefs?.fieldKeys.join(",")).toContain("spouse_name,spouse_dob,spouse_link");
+  });
+
+  it("migrates saved Deal layouts missing Preferences / Intake / spouse_link", () => {
+    const skinny = {
+      columns: [
+        { id: "left" as const, sections: [{ id: "contact", label: "Contact", fieldKeys: ["first_name"] }] },
+        {
+          id: "right" as const,
+          sections: [
+            { id: "mailing_address", label: "Mailing Address", fieldKeys: ["contact_mailing_address"] },
+            { id: "pipeline", label: "Pipeline", fieldKeys: ["insurance_type"] },
+          ],
+        },
+      ],
+    };
+    expect(needsContactParityDealLayout(skinny)).toBe(true);
+    const next = ensureContactParityDealLayout(skinny);
+    expect(needsContactParityDealLayout(next)).toBe(false);
+    const prefs = next.columns[1]!.sections.find((s) => s.id === "prefs");
+    expect(prefs?.fieldKeys.join(",")).toContain("spouse_name,spouse_dob,spouse_link");
+    expect(next.columns[1]!.sections.map((s) => s.id)).toEqual(
+      expect.arrayContaining(["prefs", "intake", "pipeline"]),
+    );
+  });
+
 });

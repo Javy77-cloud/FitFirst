@@ -36,6 +36,7 @@ describe("Deal Details personal / identity layout", () => {
     expect(keys).toContain("nickname");
     expect(keys).toContain("referral");
     expect(keys).toContain("secondary_phone");
+    expect(keys).toContain("spouse_link");
     expect(keys).not.toContain("drivers_license_number");
     expect(layout.columns[0].sections.map((s) => s.id)).toEqual([
       "contact",
