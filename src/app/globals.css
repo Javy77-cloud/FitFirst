@@ -4465,7 +4465,8 @@ tr[data-ff-activity-selected="true"] {
 /* Current-band corner chip. Sits above the renews line so a 16rem column stays readable. */
 .ff-book-card.is-renewal-agreed {
   position: relative;
-  padding-top: 1.45rem;
+  /* Reserved strip so the corner chip stays off the name and the Open action. */
+  padding-top: 1.85rem;
 }
 .ff-renewal-agreed-badge {
   position: absolute;
