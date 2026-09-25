@@ -1,5 +1,6 @@
 /** Agency-configurable policy display-name template. Empty fields are skipped — no double separators. */
 
+import { policyFormProductLabel, policyFormCode } from "@/lib/policy/form-label";
 import { policyProductDisplayLabel } from "@/lib/policy/eo";
 
 export const POLICY_LABEL_FIELD_IDS = [
@@ -26,7 +27,7 @@ export type PolicyLabelFieldDef = {
 export const POLICY_LABEL_FIELDS: PolicyLabelFieldDef[] = [
   { id: "ownerName", label: "Owner / insured name", hint: "Contact or business on the policy" },
   { id: "carrier", label: "Carrier", hint: "Writing carrier name" },
-  { id: "policyType", label: "Policy type", hint: "policyType, else formType / line" },
+  { id: "policyType", label: "Policy type", hint: "Form code when known (HO3, DP3, WC), else policy type" },
   { id: "policyNumber", label: "Policy number", hint: "Carrier policy #" },
   { id: "lineOfBusiness", label: "Line of business", hint: "HO / Auto / Flood…" },
   { id: "formType", label: "Form type", hint: "HO3, PA, …" },
@@ -103,19 +104,15 @@ function resolveFieldValue(id: PolicyLabelFieldId, values: PolicyLabelValues): s
     case "carrier":
       return (values.carrier ?? "").trim();
     case "policyType":
-      return policyProductDisplayLabel(
-        (values.policyType ?? "").trim() ||
-          (values.formType ?? "").trim() ||
-          (values.lineOfBusiness ?? "").trim(),
-      );
+      return policyFormProductLabel(values);
     case "policyNumber":
       return (values.policyNumber ?? "").trim();
     case "lineOfBusiness":
       return (values.lineOfBusiness ?? "").trim();
     case "formType":
-      return policyProductDisplayLabel(values.formType);
+      return policyFormCode(values.formType) || policyProductDisplayLabel(values.formType);
     case "policySubType":
-      return policyProductDisplayLabel(values.policySubType);
+      return policyFormCode(values.policySubType) || policyProductDisplayLabel(values.policySubType);
     case "status":
       return (values.status ?? "").trim().replaceAll("_", " ");
     case "effectiveDate":

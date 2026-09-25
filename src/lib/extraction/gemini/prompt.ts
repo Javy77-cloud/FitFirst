@@ -95,6 +95,8 @@ export const GEMINI_EXTRACT_JSON_KEYS = [
   "limited_fungi_premium",
   "unit_owners_coverage_a",
   "unit_owners_coverage_a_premium",
+  "catastrophic_ground_cover_collapse",
+  "catastrophic_ground_cover_collapse_premium",
   "property_and_liability_coverages_premium",
   "extended_replacement_cost_dwelling",
   "replacement_cost_contents",
@@ -501,7 +503,7 @@ Field meaning guidance (from desk synonym brief):
   Coverage B/C/D/E/F limits and the premium on each row → coverage_b_premium through coverage_f_premium (Included or a dollar);
   Section I deductibles are their own rows, never a deductible on Coverage A–F — All Other Perils → aop_deductible,
   Windstorm or Hail (Other Than Hurricane) → wind_hail_deductible, Hurricane → hurricane_deductible
-  (store 2% or 2% of Coverage A, not only the parenthetical dollar), Sinkhole Not Included → sinkhole_deductible Not Included or None; Sinkhole Loss Coverage Incl → sinkhole_deductible Included (do not invent a dollar, and do not copy Catastrophic Ground Cover Collapse onto sinkhole);
+  (store 2% or 2% of Coverage A, not only the parenthetical dollar), Sinkhole Not Included → sinkhole_deductible Not Included or None; Sinkhole Loss Coverage Incl → sinkhole_deductible Included (do not invent a dollar). Catastrophic Ground Cover Collapse Coverage is its own row, not sinkhole: blank limit + Incl → catastrophic_ground_cover_collapse_premium Included;
   aop_deductible copies only the All Other Perils line. Leave it null when that line is missing. Do not invent $1,000;
   policy number (Policy No / Pol # / Policy # → policy_number); premium / current_premium / total premium / annual premium
   (issued total — not a prior quote); effective_date (Eff date / policy period start); expiration_date;
@@ -519,7 +521,7 @@ Field meaning guidance (from desk synonym brief):
   personal property replacement cost / Replacement Cost Contents (Included or Y/N, plus personal_property_replacement_cost_premium only when a premium is printed);
   home computer (home_computer + home_computer_premium);
   theft (Theft limit such as $130,900 — do not invent theft_premium);
-  Notary / HO-6 / unit-owners Policy Endorsement Information: Loss Assessment Coverage → loss_assessment + loss_assessment_premium; Limited Fungi, Wet or Dry Rot, or Bacteria → limited_fungi (keep $10,000/$10,000) + limited_fungi_premium (Incl stays Included); Unit-Owners Coverage A - Special Coverage is an endorsement, not Coverage A and not the form — when the limit column is blank and the premium is Incl, set unit_owners_coverage_a_premium to Included and leave the limit null. property_and_liability_coverages_premium is the package subtotal only — never coverage_a_premium and never current_premium. Do not turn rating credits into coverages or deductibles: Age of Dwelling Credit, Age of Insured Credit, Deductible Options, Protective Devices Credit, BCEGS Credit (Incl is not bceg_grade), Residential Windstorm Loss Mitigation Devices Credit. EMPAT, FIGA, MGA, and Surplus Contribution stay off the schedule.
+  Notary / HO-6 / unit-owners Policy Endorsement Information: Loss Assessment Coverage → loss_assessment + loss_assessment_premium; Limited Fungi, Wet or Dry Rot, or Bacteria → limited_fungi (keep $10,000/$10,000) + limited_fungi_premium (Incl stays Included); Catastrophic Ground Cover Collapse Coverage → catastrophic_ground_cover_collapse_premium Included when the premium is Incl and the limit is blank (never sinkhole_deductible); Unit-Owners Coverage A - Special Coverage is an endorsement, not Coverage A and not the form — when the limit column is blank and the premium is Incl, set unit_owners_coverage_a_premium to Included and leave the limit null. A blank Unit-Owners premium stays null. property_and_liability_coverages_premium is the package subtotal only — never coverage_a_premium and never current_premium. Do not turn rating credits into coverages or deductibles: Age of Dwelling Credit, Age of Insured Credit, Deductible Options, Protective Devices Credit, BCEGS Credit (Incl is not bceg_grade), Residential Windstorm Loss Mitigation Devices Credit. EMPAT, FIGA, MGA, and Surplus Contribution stay off the schedule.
   extended_replacement_cost_dwelling (Extended Replacement Cost - Dwelling: No Extended Coverage or the printed limit — do not invent a premium);
   scheduled personal property;
   Cov B–F when printed (B/C/D and ordinance: keep a printed percent as 10%; keep a printed dollar limit as $130,000; E/F are dollar limits as $100,000); sinkhole_deductible; current_carrier (company/writing company); secondary_named_insured;

@@ -15,7 +15,7 @@ import { formatDay } from "@/lib/domain";
 import { RecordLink } from "@/components/record-links";
 import { POLICY_STATUSES } from "@/lib/policy/status";
 import { partyLabel } from "@/lib/desk/policy-name";
-import { policyProductDisplayLabel } from "@/lib/policy/eo";
+import { policyFormProductLabel } from "@/lib/policy/form-label";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import {
   formatPremisesDisplay,
@@ -140,7 +140,11 @@ export function PolicyInformationCard({
           fieldKey="policySubType"
           label={homePc ? "Form" : "Subtype"}
           value={policy.policySubType ?? ""}
-          displayText={policyProductDisplayLabel(policy.policySubType || policy.formType)}
+          displayText={policyFormProductLabel({
+            formType: policy.formType,
+            policySubType: policy.policySubType,
+            policyType: policy.policyType,
+          })}
           readOnly={readOnly}
       />
     ),

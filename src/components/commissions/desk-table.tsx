@@ -4,6 +4,7 @@ import { DeskColumnTable } from "@/components/lists/desk-column-table";
 import { RecordLink } from "@/components/record-links";
 import { formatDay, formatMoney } from "@/lib/domain";
 import { insuranceFamilyFromPolicy } from "@/lib/desk/policy-family";
+import { policyFormProductLabel } from "@/lib/policy/form-label";
 import { COMMISSIONS_LIST_COLUMNS } from "@/lib/list-columns";
 
 export type CommissionDeskRow = {
@@ -31,7 +32,13 @@ function bookLabel(row: CommissionDeskRow): string {
 }
 
 function subtypeLabel(row: CommissionDeskRow): string {
-  return row.policySubType || row.policyType || row.lineOfBusiness || "—";
+  return (
+    policyFormProductLabel({
+      policySubType: row.policySubType,
+      policyType: row.policyType,
+      lineOfBusiness: row.lineOfBusiness,
+    }) || "—"
+  );
 }
 
 export function CommissionDeskTable({

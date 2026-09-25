@@ -544,6 +544,35 @@ describe("auto fill confirm does not re-read Gemini", () => {
       },
     ];
     expect(homeDecCacheSupportsFill(rated)).toBe(true);
+    const unitOwner: GeminiMintRow[] = [
+      {
+        fieldKey: "loss_assessment",
+        normalizedValue: "2000",
+        rawValue: "2000",
+        confidence: 0.9,
+        flagged: false,
+      },
+      {
+        fieldKey: "limited_fungi",
+        normalizedValue: "10000/10000",
+        rawValue: "10000/10000",
+        confidence: 0.9,
+        flagged: false,
+      },
+    ];
+    expect(homeDecCacheSupportsFill(unitOwner)).toBe(false);
+    expect(
+      homeDecCacheSupportsFill([
+        ...unitOwner,
+        {
+          fieldKey: "catastrophic_ground_cover_collapse_premium",
+          normalizedValue: "Included",
+          rawValue: "Incl",
+          confidence: 0.9,
+          flagged: false,
+        },
+      ]),
+    ).toBe(true);
     expect(
       shouldForceHomeDecReread({
         manualHome: true,

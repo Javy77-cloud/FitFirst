@@ -788,6 +788,23 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   );
   putOptionalCoverage(
     out,
+    "catastrophicGroundCoverCollapse",
+    "catastrophicGroundCoverCollapsePremium",
+    rawCell(
+      rows,
+      "catastrophic_ground_cover_collapse",
+      "catastrophic_ground_cover_collapse_coverage",
+      "ground_cover_collapse",
+      "ground_cover_collapse_coverage",
+    ),
+    rawCell(
+      rows,
+      "catastrophic_ground_cover_collapse_premium",
+      "catastrophic_ground_cover_collapse_coverage_premium",
+    ),
+  );
+  putOptionalCoverage(
+    out,
     "unitOwnersCoverageA",
     "unitOwnersCoverageAPremium",
     rawCell(rows, "unit_owners_coverage_a", "unit_owners_coverage_a_special", "unit_owners_coverage_a_special_coverage"),
@@ -1235,6 +1252,8 @@ const LIMIT_KEYS: Record<string, string> = {
   limited_fungi_premium: "limitedFungiPremium",
   unit_owners_coverage_a: "unitOwnersCoverageA",
   unit_owners_coverage_a_premium: "unitOwnersCoverageAPremium",
+  catastrophic_ground_cover_collapse: "catastrophicGroundCoverCollapse",
+  catastrophic_ground_cover_collapse_premium: "catastrophicGroundCoverCollapsePremium",
   unit_year: "unitYear",
   unit_make: "unitMake",
   unit_serial: "unitSerial",
@@ -1583,6 +1602,8 @@ export function groupAppliedFill(
     ["limitedFungiPremium", "limited_fungi_premium"],
     ["unitOwnersCoverageA", "unit_owners_coverage_a"],
     ["unitOwnersCoverageAPremium", "unit_owners_coverage_a_premium"],
+    ["catastrophicGroundCoverCollapse", "catastrophic_ground_cover_collapse"],
+    ["catastrophicGroundCoverCollapsePremium", "catastrophic_ground_cover_collapse_premium"],
     ["unitYear", "unit_year"],
     ["unitMake", "unit_make"],
     ["unitSerial", "unit_serial"],

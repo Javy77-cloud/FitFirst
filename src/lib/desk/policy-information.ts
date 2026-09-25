@@ -5,6 +5,7 @@ import {
   sellingAgencyLabel,
 } from "@/lib/domain";
 import { partyLabel } from "@/lib/desk/policy-name";
+import { policyFormProductLabel } from "@/lib/policy/form-label";
 import { displayHomeCoverageLimit } from "@/lib/extraction/gemini/home-dollar";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
 import { formatPremisesDisplay, premisesLinesEqual } from "@/lib/policy/premises";
@@ -138,7 +139,8 @@ export function policyInformationFields(input: {
   const { policy } = input;
   const homePc = resolveLobOverviewFamily(policy) === "homeowners";
   const fields: PolicyInfoField[] = [];
-  const lineProduct = [policy.lineOfBusiness, policy.policyType || policy.formType]
+  const product = policyFormProductLabel(policy);
+  const lineProduct = [policy.lineOfBusiness, product]
     .map((part) => part?.trim())
     .filter((part): part is string => Boolean(part))
     .filter((part, index, all) => all.findIndex((other) => other.toLowerCase() === part.toLowerCase()) === index)

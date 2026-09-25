@@ -10,6 +10,7 @@ import {
   policyCoApplicantLabel,
   type PolicyCoApplicantLink,
 } from "@/lib/contacts/policy-co-applicants";
+import { policyFormProductLabel } from "@/lib/policy/form-label";
 
 type PolicyRow = {
   id: string;
@@ -20,6 +21,8 @@ type PolicyRow = {
   expirationDate: Date | string | null;
   lineOfBusiness: string;
   policyType?: string | null;
+  policySubType?: string | null;
+  formType?: string | null;
   carrierName?: string | null;
   dealId?: string | null;
   dealTitle?: string | null;
@@ -28,6 +31,7 @@ type PolicyRow = {
 function Row({ row }: { row: PolicyRow }) {
   const [open, setOpen] = useState(false);
   const renewal = row.renewalDate ?? row.expirationDate;
+  const product = policyFormProductLabel(row);
   return (
     <li className="border-b border-border last:border-b-0" data-ff-contact-policy-row={row.id}>
       <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-1 py-2 text-sm">
@@ -47,15 +51,13 @@ function Row({ row }: { row: PolicyRow }) {
         {row.carrierName ? (
           <span className="text-xs text-muted-foreground">{row.carrierName}</span>
         ) : null}
-        {row.policyType || row.lineOfBusiness ? (
-          <span className="text-xs text-muted-foreground">
-            {row.policyType || row.lineOfBusiness}
-          </span>
+        {product ? (
+          <span className="text-xs text-muted-foreground">{product}</span>
         ) : null}
       </div>
       {open ? (
         <div className="space-y-1 px-6 pb-2 text-xs text-muted-foreground">
-          <div>Type · {row.policyType || row.lineOfBusiness || "—"}</div>
+          <div>Type · {product || "—"}</div>
           <div>Expires · {formatDay(row.expirationDate)}</div>
           {row.dealId ? (
             <div>

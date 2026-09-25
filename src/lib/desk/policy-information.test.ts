@@ -52,6 +52,7 @@ describe("policy information fields", () => {
     expect(byKey.insured.href).toBe("/contacts/elena-contact");
     expect(byKey.premises.label).toBe("Insured location");
     expect(byKey.subType.label).toBe("Form");
+    expect(byKey.line.value).toBe("HO · HO3");
     expect(byKey.effective.label).toBe("Effective date");
     expect(byKey.expiration.label).toBe("Expiration date");
     expect(byKey.premises.value).toBe("412 Harbor Isle Dr, Melbourne, FL, 32935");

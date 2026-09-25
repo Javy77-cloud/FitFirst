@@ -74,6 +74,7 @@ const LABELS: Record<string, string> = {
   loss_assessment: "Loss Assessment",
   limited_fungi: "Limited Fungi, Wet or Dry Rot, or Bacteria",
   unit_owners_coverage_a: "Unit-Owners Coverage A - Special Coverage",
+  catastrophic_ground_cover_collapse: "Catastrophic Ground Cover Collapse",
   aop_deductible: "All Other Perils (AOP)",
   wind_hail_deductible: "Windstorm or Hail (Other Than Hurricane)",
   hurricane_deductible: "Hurricane (% of Cov A)",
@@ -118,6 +119,9 @@ const COVERAGE_KEY_ALIASES: Record<string, string> = {
   unit_owners_coverage_a_special: "unit_owners_coverage_a",
   unit_owners_coverage_a_special_coverage: "unit_owners_coverage_a",
   ordinance_or_law_coverage: "ordinance_or_law",
+  catastrophic_ground_cover_collapse_coverage: "catastrophic_ground_cover_collapse",
+  ground_cover_collapse: "catastrophic_ground_cover_collapse",
+  ground_cover_collapse_coverage: "catastrophic_ground_cover_collapse",
 };
 
 export type HomeCoverageScheduleRow = {

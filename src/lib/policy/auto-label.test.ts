@@ -19,6 +19,53 @@ describe("policy auto-label", () => {
     expect(label).not.toMatch(/\/\s*\//);
   });
 
+  it("shows the form code in the policy name when Home is only the line", () => {
+    const label = buildPolicyLabel(DEFAULT_POLICY_LABEL_TEMPLATE, {
+      ownerName: "Claudia Gaviria Edison",
+      carrier: "Notary",
+      policyType: "Home",
+      formType: "HO3",
+      policySubType: "HO6 ( Condo)",
+      policyNumber: "203",
+    });
+    expect(label).toBe("Claudia Gaviria Edison / Notary / HO3 / 203");
+    expect(label).not.toContain("Home");
+
+    const fromSubtype = buildPolicyLabel(DEFAULT_POLICY_LABEL_TEMPLATE, {
+      ownerName: "Claudia Gaviria Edison",
+      carrier: "Notary",
+      policyType: "Home",
+      policySubType: "HO6 ( Condo)",
+      policyNumber: "203",
+    });
+    expect(fromSubtype).toBe("Claudia Gaviria Edison / Notary / HO6 / 203");
+
+    const fallback = buildPolicyLabel(DEFAULT_POLICY_LABEL_TEMPLATE, {
+      ownerName: "Claudia Gaviria Edison",
+      carrier: "Notary",
+      policyType: "Home",
+      policyNumber: "203",
+    });
+    expect(fallback).toBe("Claudia Gaviria Edison / Notary / Home / 203");
+
+    const workers = buildPolicyLabel(DEFAULT_POLICY_LABEL_TEMPLATE, {
+      ownerName: "Northstar",
+      carrier: "Pie",
+      policyType: "Workers' Comp",
+      policyNumber: "WC-1",
+    });
+    expect(workers).toBe("Northstar / Pie / WC / WC-1");
+
+    const liability = buildPolicyLabel(DEFAULT_POLICY_LABEL_TEMPLATE, {
+      ownerName: "Harbor",
+      carrier: "Next",
+      policyType: "Commercial",
+      policySubType: "General Liability",
+      policyNumber: "GL-1",
+    });
+    expect(liability).toBe("Harbor / Next / General Liability / GL-1");
+  });
+
   it("falls back to policy number when everything empty", () => {
     expect(buildPolicyLabel(DEFAULT_POLICY_LABEL_TEMPLATE, {})).toBe("Policy");
     expect(
