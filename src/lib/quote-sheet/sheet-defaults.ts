@@ -561,6 +561,14 @@ export const CONSTRUCTION_OPTIONS = [
   "Asbestos",
 ] as const;
 
+/** Sheet stores "masonry"; the Construction type control and Overview show "Masonry". */
+export function displayConstructionType(raw: string | null | undefined): string {
+  const text = String(raw ?? "").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  const hit = CONSTRUCTION_OPTIONS.find((option) => option.toLowerCase() === text.toLowerCase());
+  return hit ?? text;
+}
+
 /** Expanded toward QuoteRUSH Coverage-tab deductibles (full harvest not listed). */
 export const WIND_HAIL_DEDUCTIBLE_OPTIONS = [
   "500",

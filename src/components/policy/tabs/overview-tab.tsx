@@ -299,7 +299,7 @@ export function PolicyOverviewTab({
           account,
           mortgageeCount,
           additionalInsuredCount,
-          occupancy: risk?.occupancy,
+          occupancy: dwelling.occupancy,
           families: limits.number_of_families,
           dwellingType: limits.dwelling_type,
           county: risk?.county,

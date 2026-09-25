@@ -1,9 +1,12 @@
 /** Year built / roof year from master sheet or risk — policy detail fallback when risk is null. */
 
+import { displayConstructionType } from "@/lib/quote-sheet/sheet-defaults";
+
 export type DwellingFacts = {
   yearBuilt: number | null;
   roofYear: number | null;
   construction: string | null;
+  occupancy: string | null;
 };
 
 function cell(
@@ -52,7 +55,15 @@ export function dwellingFactsFromSheet(
       cell(sheet, "year_built", "yearBuilt", "yr_built", "year_of_construction", "year_constructed"),
     ),
     roofYear: parsePropertyYear(cell(sheet, "roof_year", "roofYear", "roof_age", "year_roof")),
-    construction: cell(sheet, "construction", "construction_type") || null,
+    construction:
+      cell(
+        sheet,
+        "construction",
+        "construction_type",
+        "type_of_construction",
+        "const_type",
+      ) || null,
+    occupancy: cell(sheet, "occupancy") || null,
   };
 }
 
@@ -61,13 +72,16 @@ export function resolveDwellingFacts(input: {
     yearBuilt?: number | null;
     roofYear?: number | null;
     construction?: string | null;
+    occupancy?: string | null;
   } | null;
   sheet?: Record<string, { value?: string | null } | undefined> | null;
 }): DwellingFacts {
   const fromSheet = dwellingFactsFromSheet(input.sheet);
+  const construction = input.risk?.construction?.trim() || fromSheet.construction;
   return {
     yearBuilt: input.risk?.yearBuilt ?? fromSheet.yearBuilt,
     roofYear: input.risk?.roofYear ?? fromSheet.roofYear,
-    construction: input.risk?.construction?.trim() || fromSheet.construction,
+    construction: displayConstructionType(construction) || null,
+    occupancy: input.risk?.occupancy?.trim() || fromSheet.occupancy,
   };
 }

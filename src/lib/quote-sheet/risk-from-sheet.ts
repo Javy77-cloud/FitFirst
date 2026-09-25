@@ -1,5 +1,6 @@
 import type { QuoteSheetFieldValue } from "@/lib/db/schema";
 import type { RiskSnapshot } from "@/lib/domain";
+import { parsePropertyYear } from "@/lib/policy/dwelling-facts";
 import { carrierTransferValues } from "./home-inspections";
 import { storiesAsNumber } from "./sheet-defaults";
 
@@ -44,7 +45,12 @@ export function riskFromQuoteSheet(
 
   // Wind-mit credits rate only when that inspection is in hand.
   const transferable = carrierTransferValues(values);
-  const yearBuilt = sheetNumber(values, "year_built");
+  const yearBuilt = parsePropertyYear(
+    sheetValue(values, "year_built") ??
+      sheetValue(values, "year_of_construction") ??
+      sheetValue(values, "year_constructed") ??
+      sheetValue(values, "yr_built"),
+  );
   const roofYear = sheetNumber(transferable, "roof_year");
   const stories = storiesAsNumber(sheetValue(values, "stories"));
   const milesToCoast = sheetNumber(values, "miles_to_coast");
@@ -57,7 +63,10 @@ export function riskFromQuoteSheet(
     yearBuilt: yearBuilt ?? risk.yearBuilt,
     roofYear: roofYear ?? risk.roofYear,
     roofCovering: sheetValue(transferable, "roof_covering") ?? risk.roofCovering,
-    construction: sheetValue(values, "construction") ?? risk.construction,
+    construction:
+      sheetValue(values, "construction") ??
+      sheetValue(values, "construction_type") ??
+      risk.construction,
     openingProtection: sheetValue(transferable, "opening_protection") ?? risk.openingProtection,
     occupancy: sheetValue(values, "occupancy") ?? risk.occupancy,
     stories: stories ?? risk.stories,

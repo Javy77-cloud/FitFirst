@@ -12,6 +12,7 @@ import {
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { displayDealTitle } from "@/lib/deals/deal-title";
 import { sessionCanRevealPortal } from "@/lib/policy/agent-policy-access-prefs";
+import { selectPolicyQuoteSheet } from "@/lib/policy/policy-quote-sheet";
 import { isUuid } from "@/lib/ids";
 import { partyPolicyGlance } from "@/lib/book-lists/party-stats";
 import { clientStatusFromCounts, isInForcePolicyStatus } from "@/lib/lifecycle/client-status";
@@ -1488,10 +1489,11 @@ export async function getPolicyWorkspace(id: string) {
         .from(quoteSheets)
         .where(and(eq(quoteSheets.tenantId, tenant()), eq(quoteSheets.dealId, row.policy.dealId)))
     : [];
-  const quoteSheet =
-    sheetRows.find((row) => row.line === "home") ??
-    sheetRows[0] ??
-    null;
+  const quoteSheet = selectPolicyQuoteSheet(sheetRows, {
+    sourceProduct: row.policy.sourceProduct,
+    policyNumber: row.policy.policyNumber,
+    lineOfBusiness: row.policy.lineOfBusiness,
+  });
   const [terms, compareLogs, vehicleRows, work] = await Promise.all([
     db
       .select()

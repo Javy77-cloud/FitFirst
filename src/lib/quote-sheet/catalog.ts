@@ -243,7 +243,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "square_feet", label: "Square footage", group: "Dwelling", input: "number", extractKey: "square_feet", products: [...HO_LL] },
   { key: "beds", label: "Bedrooms", group: "Dwelling", input: "number", extractKey: "beds" },
   { key: "baths", label: "Bathrooms", group: "Dwelling", input: "number", extractKey: "baths" },
-  { key: "construction", label: "Construction", group: "Dwelling", input: "select", options: [...CONSTRUCTION_OPTIONS], extractKey: "construction", products: [...HO_LL] },
+  { key: "construction", label: "Construction type", group: "Dwelling", input: "select", options: [...CONSTRUCTION_OPTIONS], extractKey: "construction", products: [...HO_LL] },
   { key: "exterior", label: "Exterior", group: "Dwelling", input: "select", options: [...EXTERIOR_OPTIONS], extractKey: "exterior", products: [...HO_LL] },
   { key: "foundation", label: "Foundation", group: "Dwelling", input: "select", options: [...FOUNDATION_OPTIONS], products: [...HO_LL] },
   { key: "living_units", label: "Living units", group: "Dwelling", input: "number", products: [...HO_LL] },
