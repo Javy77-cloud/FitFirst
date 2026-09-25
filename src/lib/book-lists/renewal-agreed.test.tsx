@@ -185,18 +185,59 @@ function policyCard(overrides: Partial<BookGlanceCard> = {}): BookGlanceCard {
 }
 
 describe("Policy band Renewal agreed badge", () => {
-  it("renders the same corner badge on every band and leaves the renews line alone", () => {
+  it("puts Renewal agreed on the renew-in row, after the countdown and clear of Open", () => {
     for (const column of ["now", "watch", "current", "lapsed"] as const) {
       const html = renderToStaticMarkup(
         <BookGlanceCardView card={policyCard({ column })} layoutMode="bands" />,
       );
+      const renewRow = html.slice(html.indexOf('data-ff-policy-band-renew=""'));
       expect(html, column).toContain(`>${RENEWAL_AGREED_LABEL}<`);
       expect(html, column).toContain('data-ff-renewal-agreed=""');
       expect(html, column).toContain("ff-renewal-agreed-badge");
       expect(html, column).toContain("is-renewal-agreed");
-      expect(html, column).toContain("Renews in 12d");
-      expect(html, column).not.toMatch(/Renews in 12d[^<]*Renewal agreed/);
+      expect(renewRow, column).toContain("Renews in 12d");
+      expect(renewRow.indexOf("Renews in 12d"), column).toBeLessThan(renewRow.indexOf(RENEWAL_AGREED_LABEL));
+      expect(html.indexOf("ff-band-open"), column).toBeLessThan(html.indexOf("ff-renewal-agreed-badge"));
+      expect(html, column).not.toMatch(/<article[^>]*>\s*<span class="ff-renewal-agreed-badge"/);
     }
+  });
+
+  it("parks the date and premium at the right of the renew-in row", () => {
+    const html = renderToStaticMarkup(
+      <BookGlanceCardView
+        card={policyCard({
+          why: "Renews in 12d, Oct 3, 2026 · $2,184",
+          facts: [
+            { id: "form", label: "HO3" },
+            { id: "premium", label: "$2,184" },
+            { id: "expires", label: "Expires Oct 3, 2026" },
+            { id: "renews", label: "Renews in 12d" },
+          ],
+        })}
+        layoutMode="bands"
+      />,
+    );
+    const renewRow = html.slice(
+      html.indexOf('data-ff-policy-band-renew=""'),
+      html.indexOf("</article>"),
+    );
+    const corner = renewRow.slice(renewRow.indexOf("ff-policy-band-renew-corner"));
+    const lead = renewRow.slice(
+      renewRow.indexOf("ff-policy-band-renew-lead"),
+      renewRow.indexOf("ff-renewal-agreed-badge"),
+    );
+    expect(lead).toContain("Renews in 12d");
+    expect(lead).not.toContain("Oct 3, 2026");
+    expect(renewRow.indexOf("Renews in 12d")).toBeLessThan(renewRow.indexOf(RENEWAL_AGREED_LABEL));
+    expect(renewRow.indexOf(RENEWAL_AGREED_LABEL)).toBeLessThan(renewRow.indexOf("ff-policy-band-renew-corner"));
+    expect(corner).toContain('data-ff-policy-band-date=""');
+    expect(corner).toContain("Oct 3, 2026");
+    expect(corner).toContain('data-ff-policy-band-premium=""');
+    expect(corner).toContain("$2,184");
+    expect(corner.indexOf("Oct 3, 2026")).toBeLessThan(corner.indexOf("$2,184"));
+    expect(renewRow).toContain('title="Renews in 12d, Oct 3, 2026 · $2,184"');
+    expect(html).toContain("· HO3");
+    expect(html.indexOf("ff-band-open")).toBeLessThan(html.indexOf('data-ff-policy-band-renew=""'));
   });
 
   it("keeps the corner badge off the stack view and off policies that are not Client staying", () => {

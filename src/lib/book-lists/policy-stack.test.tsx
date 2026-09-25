@@ -227,12 +227,17 @@ describe("policies stack view", () => {
         layoutMode="bands"
       />,
     );
-    expect(bandWhy).toContain("Renews in 12d, Oct 3, 2026");
+    expect(bandWhy).toContain('title="Renews in 12d, Oct 3, 2026"');
     expect(bandWhy).toContain("ff-renewal-agreed-badge");
     expect(bandWhy).toContain("Renewal agreed");
     expect(bandWhy).not.toContain("ff-policy-renewal-agreed");
     expect(bandWhy).not.toContain("data-ff-policy-stack-card");
-    expect(bandWhy).not.toMatch(/Renews in 12d, Oct 3, 2026[^<]*Renewal agreed/);
+    const renewRow = bandWhy.slice(bandWhy.indexOf('data-ff-policy-band-renew=""'));
+    expect(renewRow.indexOf("Renews in 12d")).toBeLessThan(renewRow.indexOf("Renewal agreed"));
+    expect(renewRow.indexOf("Renewal agreed")).toBeLessThan(renewRow.indexOf("data-ff-policy-band-date"));
+    expect(renewRow).toContain("Oct 3, 2026");
+    expect(renewRow).toContain("$2,184");
+    expect(bandWhy.indexOf("ff-band-open")).toBeLessThan(bandWhy.indexOf("ff-renewal-agreed-badge"));
   });
 
   it("stamps Renewal agreed beside the countdown and keeps the line from wrapping", () => {
