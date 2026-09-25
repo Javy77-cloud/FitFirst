@@ -1017,6 +1017,18 @@ a.ff-pending-link:has([data-ff-link-pending="1"]) {
   width: var(--ff-activity-rail) !important;
   max-width: var(--ff-activity-rail) !important;
 }
+/* Quote-close chart sits in the gap above Quick Communications, same column
+   width, out of flow so Monthly momentum and Quick Communications stay put. */
+[data-ff-deal-quick-comms] {
+  position: relative;
+}
+[data-ff-deal-quote-close-slot] {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 1rem);
+  z-index: 2;
+}
 [data-ff-deal-right-rail] {
   width: var(--ff-activity-rail) !important;
   min-width: var(--ff-activity-rail) !important;
