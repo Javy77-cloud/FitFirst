@@ -91,6 +91,15 @@ function field(
   };
 }
 
+function present(
+  key: string,
+  label: string,
+  value: string | null | undefined,
+): LobOverviewField | null {
+  const row = field(key, label, value, { hint: "" });
+  return row.empty ? null : row;
+}
+
 function limit(limits: Record<string, string> | null | undefined, ...keys: string[]): string | null {
   if (!limits) return null;
   for (const key of keys) {
@@ -132,6 +141,17 @@ export type LobOverviewInput = {
   ridersLabel?: string | null;
   additionalInsuredCount?: number;
   mortgageeCount?: number;
+  occupancy?: string | null;
+  families?: string | null;
+  dwellingType?: string | null;
+  county?: string | null;
+  dwellingReplacementCost?: string | null;
+  personalPropertyReplacementCost?: string | null;
+  mailingAddress?: string | null;
+  mobileHomeUnit?: string | null;
+  roofMaterial?: string | null;
+  roofInstallDate?: string | null;
+  scheduledStructures?: string | null;
 };
 
 export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSection[] {
@@ -178,6 +198,21 @@ export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSe
             { hint: "Year built not on the risk or Risk Profile yet." },
           ),
           field("construction", "Construction", input.construction),
+          ...[
+            present("occupancy", "Occupied", input.occupancy),
+            present("families", "Number of families", input.families),
+            present("dwellingType", "Dwelling type", input.dwellingType),
+            present("county", "County", input.county),
+            present("dwellingRc", "Dwelling replacement cost", input.dwellingReplacementCost),
+            present(
+              "personalPropertyRc",
+              "Personal property replacement cost",
+              input.personalPropertyReplacementCost,
+            ),
+            present("mailingAddress", "Mailing address", input.mailingAddress),
+            present("mobileHomeUnit", "Mobile home unit", input.mobileHomeUnit),
+            present("scheduledStructures", "Scheduled structures", input.scheduledStructures),
+          ].filter((row): row is LobOverviewField => row != null),
         ],
       },
       {
@@ -192,6 +227,10 @@ export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSe
             "Roof year",
             input.roofYear != null ? String(input.roofYear) : null,
           ),
+          ...[
+            present("roofMaterial", "Roof material", input.roofMaterial),
+            present("roofInstallDate", "Roof installation", input.roofInstallDate),
+          ].filter((row): row is LobOverviewField => row != null),
         ],
       },
       {

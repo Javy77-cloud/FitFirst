@@ -129,6 +129,9 @@ export function priorTermIsExpiredOrDue(
   return exp.getTime() <= today.getTime();
 }
 
+export const ADVANCE_NOTHING_TO_ADVANCE =
+  "No DEC extract or proposed term to advance, and prior term is not yet due for annual roll.";
+
 export function resolveAdvanceTermDates(
   input: ResolveAdvanceTermDatesInput,
 ): ResolveAdvanceTermDatesResult {
@@ -224,9 +227,22 @@ export function resolveAdvanceTermDates(
 
   return {
     ok: false,
-    reason:
-      "No DEC extract or proposed term to advance, and prior term is not yet due for annual roll.",
+    reason: ADVANCE_NOTHING_TO_ADVANCE,
   };
+}
+
+export type AdvanceTermTrigger = "document_term_role" | "client_staying" | "manual_fix";
+
+/**
+ * A Current mark with nothing to roll is still a successful tag change.
+ * Policy-missing and manual_fix stay hard failures at the caller.
+ */
+export function unresolvedAdvanceResult(
+  trigger: AdvanceTermTrigger,
+  reason: string,
+): { ok: true; advanced: false; reason: string } | { ok: false; error: string } {
+  if (trigger === "manual_fix") return { ok: false, error: reason };
+  return { ok: true, advanced: false, reason };
 }
 
 /** True when book dates already match the resolved renewed term (idempotent skip). */

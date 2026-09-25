@@ -12,6 +12,7 @@ import { db } from "@/lib/db";
 import { documents, risks } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { parseDealProduct } from "@/lib/deals/deal-products";
+import { tagsWithTermRole } from "@/lib/documents/document-labels";
 import {
   declarationRetagPatch,
   isDeclarationDocType,
@@ -117,7 +118,7 @@ export async function receiveCarrierDeclaration(input: {
     buffer: input.buffer,
     docType: "dec",
     slot: "source_doc",
-    tags: ["dec", "mint", "source:carrier"],
+    tags: tagsWithTermRole(["dec", "mint", "source:carrier"], "current"),
   });
   if (!doc) return { ok: false as const, reason: "need_dec" as const, promptCreatePolicy: false };
   const carrierName = input.carrierName?.trim() || (await resolveDeclarationCarrierName(dealId, product));

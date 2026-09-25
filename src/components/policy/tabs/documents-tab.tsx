@@ -14,6 +14,7 @@ import { IdCardsUploadPanel } from "@/components/policy/id-cards-upload-panel";
 import { deskNow } from "@/lib/home/as-of";
 import { shouldShowManualRenewalHelp } from "@/lib/policy/care-strip";
 import { FillCompareFromDecsButton } from "@/components/policy/fill-compare-from-decs-button";
+import { FillPolicyFromDecButton } from "@/components/policy/fill-policy-from-dec-button";
 import { canFillCompareFromTermRoleDocs } from "@/lib/renewal/fill-compare-from-decs";
 import { RecentlyDeletedFiles } from "@/components/documents/recently-deleted";
 
@@ -108,10 +109,15 @@ export function PolicyDocumentsTab({
         />
         {canFillCompare && !showManualRenewalHelp ? (
           <div className="my-3 flex flex-wrap items-center gap-3 rounded-md border border-border bg-muted/20 p-3">
+            <FillPolicyFromDecButton policyId={policy.id} />
             <FillCompareFromDecsButton policyId={policy.id} />
 
           </div>
-        ) : null}
+        ) : (
+          <div className="my-3">
+            <FillPolicyFromDecButton policyId={policy.id} />
+          </div>
+        )}
         <div className="my-3 space-y-2 rounded-md border border-dashed border-border p-3" data-ff-id-cards-quiet="">
           <div>
             <h3 className="text-sm font-semibold text-navy">Upload ID cards</h3>

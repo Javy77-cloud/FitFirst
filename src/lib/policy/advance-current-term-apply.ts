@@ -14,6 +14,7 @@ import {
   formatAdvanceTermIso,
   planPolicyTermDemotions,
   resolveAdvanceTermDates,
+  unresolvedAdvanceResult,
   type AdvanceTermDateSource,
 } from "@/lib/policy/advance-current-term";
 import { recordPolicyFieldChanges } from "@/lib/policy/record-changes";
@@ -148,11 +149,8 @@ export async function advancePolicyCurrentTerm(input: {
   });
 
   if (!resolved.ok) {
-    // Soft-fail for Client staying so Handled still lands; loud for explicit Current mark.
-    if (input.trigger === "client_staying") {
-      return { ok: true, advanced: false, reason: resolved.reason };
-    }
-    return { ok: false, error: resolved.reason };
+    // Client staying and a Current term-role tag still succeed when there is nothing to roll.
+    return unresolvedAdvanceResult(input.trigger, resolved.reason);
   }
 
   if (advanceTermAlreadyApplied(currentTerm, resolved.dates)) {

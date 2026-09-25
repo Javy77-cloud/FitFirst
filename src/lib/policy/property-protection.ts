@@ -36,6 +36,7 @@ export const PROTECTION_FIELD_KEYS = [
   "hydrant",
   "miles_to_fire_station",
   "central_alarm",
+  "burglar_alarm",
   "fire_alarm",
   "sprinkler",
   "smoke_detectors",
@@ -84,6 +85,7 @@ const LABELS: Record<string, string> = {
   hydrant: "Distance to hydrant",
   miles_to_fire_station: "Distance to station",
   central_alarm: "Central alarm",
+  burglar_alarm: "Burglar",
   fire_alarm: "Fire alarm",
   sprinkler: "Sprinkler",
   smoke_detectors: "Smoke detectors",
@@ -130,6 +132,8 @@ const GEMINI_ALIASES: Record<string, string> = {
   distance_to_hydrant: "hydrant",
   distance_to_station: "miles_to_fire_station",
   fire_station: "miles_to_fire_station",
+  burglar: "burglar_alarm",
+  burglar_alarm: "burglar_alarm",
 };
 
 export function propertyProtectionLabel(key: string): string {

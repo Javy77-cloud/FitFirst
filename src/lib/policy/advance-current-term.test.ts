@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  ADVANCE_NOTHING_TO_ADVANCE,
   advanceTermAlreadyApplied,
   inferAnnualRollTermDates,
   planPolicyTermDemotions,
   resolveAdvanceTermDates,
+  unresolvedAdvanceResult,
 } from "./advance-current-term";
 
 describe("inferAnnualRollTermDates", () => {
@@ -124,7 +126,25 @@ describe("resolveAdvanceTermDates", () => {
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.reason).toMatch(/not yet due/i);
+    expect(result.reason).toBe(ADVANCE_NOTHING_TO_ADVANCE);
+  });
+});
+
+describe("unresolvedAdvanceResult", () => {
+  it("soft-fails a first Current mark when there is nothing to roll", () => {
+    expect(unresolvedAdvanceResult("document_term_role", ADVANCE_NOTHING_TO_ADVANCE)).toEqual({
+      ok: true,
+      advanced: false,
+      reason: ADVANCE_NOTHING_TO_ADVANCE,
+    });
+    expect(unresolvedAdvanceResult("client_staying", ADVANCE_NOTHING_TO_ADVANCE).ok).toBe(true);
+  });
+
+  it("keeps manual_fix date failures as errors", () => {
+    expect(unresolvedAdvanceResult("manual_fix", ADVANCE_NOTHING_TO_ADVANCE)).toEqual({
+      ok: false,
+      error: ADVANCE_NOTHING_TO_ADVANCE,
+    });
   });
 });
 

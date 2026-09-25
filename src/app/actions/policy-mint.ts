@@ -80,6 +80,7 @@ import { loadGeminiApiKey } from "@/lib/extraction/gemini/key";
 import { readStoredFile } from "@/lib/files/object-store";
 import { writeCrmSignalsSafe } from "@/lib/crm/signals";
 import { loadGeminiRows, type GeminiMintRow } from "@/lib/policy/load-gemini-rows";
+import { fillPolicyFromDecOnIssue } from "@/app/actions/policy-fill-from-dec";
 import {
   buildMintFields,
   canPublishMint,
@@ -520,6 +521,7 @@ export async function issuePolicyFromDeclaration(input: {
         },
       }).catch(() => null);
     }
+    await fillPolicyFromDecOnIssue({ policyId: existing.id, documentId: gate.dec.id });
     await markMintStatus(dealId, productKey, {
       stage: "policy_issued",
       policyId: existing.id,
@@ -831,6 +833,8 @@ export async function issuePolicyFromDeclaration(input: {
       lineOfBusiness: def.lob,
     },
   });
+
+  await fillPolicyFromDecOnIssue({ policyId, documentId: gate.dec.id });
 
   await markMintStatus(dealId, productKey, {
     stage: "policy_issued",
