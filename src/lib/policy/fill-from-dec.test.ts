@@ -636,8 +636,11 @@ describe("fillPolicyFromDec wiring", () => {
     expect(docs).toMatch(/FillPolicyFromDecButton/);
     const button = source("src/components/policy/fill-policy-from-dec-button.tsx");
     expect(button).toMatch(/Fill from declaration page/);
-    expect(button).toMatch(/fillOverwriteWarning/);
     expect(button).toMatch(/Reason/);
+    expect(button).toMatch(/"Confirm"/);
+    expect(button).not.toMatch(/fillOverwriteWarning/);
+    expect(button).not.toMatch(/replaces /);
+    expect(button).not.toMatch(/data-ff-fill-policy-from-dec-overwrite/);
     const openFn = button.slice(button.indexOf("function openModal"), button.indexOf("function confirm"));
     const peekCall = openFn.indexOf("peekFillPolicyFromDec(policyId)");
     const previewCall = openFn.indexOf("previewFillPolicyFromDec(policyId)");

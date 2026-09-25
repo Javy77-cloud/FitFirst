@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { FILL_DEC_CURRENT_NOTICE, fillDecCaughtError, fillOverwriteWarning } from "@/lib/policy/fill-from-dec";
+import { FILL_DEC_CURRENT_NOTICE, fillDecCaughtError } from "@/lib/policy/fill-from-dec";
 import { flashAction } from "@/lib/flash-client";
 
 type FillMeta = {
@@ -151,8 +151,6 @@ export function FillPolicyFromDecButton({ policyId }: { policyId: string }) {
   }
 
   const meta = preview ?? peek;
-  const overwriteCount = preview?.overwriteCount ?? 0;
-  const warning = phase === "warn" ? fillOverwriteWarning(overwriteCount) : null;
   const showWorking = pending || collecting;
   const showForm = !pending && (meta != null || !collecting);
 
@@ -219,11 +217,6 @@ export function FillPolicyFromDecButton({ policyId }: { policyId: string }) {
                       data-ff-fill-policy-from-dec-reason=""
                     />
                   </label>
-                ) : null}
-                {warning ? (
-                  <p className="text-sm font-medium text-navy" data-ff-fill-policy-from-dec-overwrite="">
-                    {warning}
-                  </p>
                 ) : null}
                 {error ? (
                   <p className="text-sm text-fit-red" data-ff-fill-policy-from-dec-error="">
