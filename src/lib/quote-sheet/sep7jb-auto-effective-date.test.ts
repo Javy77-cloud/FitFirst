@@ -6,13 +6,13 @@ describe("Auto effective_date on master sheet (sep7jb / Gaya standing)", () => {
     const fields = fieldsForLine("auto");
     const effective = fields.find((f) => f.key === "effective_date");
     expect(effective).toBeDefined();
-    expect(effective?.label).toBe("Effective date");
+    expect(effective?.label).toBe("Current policy effective date");
     expect(effective?.group).toBe("Current policy");
     expect(effective?.extractKey).toBe("effective_date");
 
     const expiration = fields.find((f) => f.key === "expiration_date");
     expect(expiration).toBeDefined();
-    expect(expiration?.label).toBe("Expiration date");
+    expect(expiration?.label).toBe("Current policy expiration date");
     expect(expiration?.group).toBe("Current policy");
   });
 });

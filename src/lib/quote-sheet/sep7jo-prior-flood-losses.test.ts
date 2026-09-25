@@ -40,7 +40,7 @@ describe("sep7jo Flood prior_flood_losses + quote reason + effective date", () =
 
   it("fieldsForLine(flood) includes effective_date and effective_date_type", () => {
     const fields = fieldsForLine("flood");
-    expect(fields.find((f) => f.key === "effective_date")?.label).toMatch(/30 days/);
+    expect(fields.find((f) => f.key === "effective_date")?.label).toBe("Quote effective date");
     const typ = fields.find((f) => f.key === "effective_date_type");
     expect(typ?.options).toEqual([...FLOOD_EFFECTIVE_DATE_TYPE_OPTIONS]);
   });

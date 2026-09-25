@@ -127,6 +127,45 @@ const HO_LL = ["homeowners", "landlord"] as const;
 const RENT = ["renters"] as const;
 const LL = ["landlord"] as const;
 
+export const QUOTE_EFFECTIVE_DATE_KEY = "quote_effective_date";
+export const QUOTE_EFFECTIVE_DATE_LABEL = "Quote effective date";
+export const CURRENT_POLICY_EFFECTIVE_LABEL = "Current policy effective date";
+export const CURRENT_POLICY_EXPIRATION_LABEL = "Current policy expiration date";
+
+/**
+ * New-business submission date plus the in-force term, in one Current policy block.
+ * Home and Auto already store the in-force term on effective_date / expiration_date
+ * (DEC extract keys stay on those keys). Flood already stores the new-business date
+ * on effective_date, so that line passes a different quote key.
+ * No extractKey on the quote date — a DEC effective date is the in-force term.
+ */
+export function currentPolicyDateFields(opts: {
+  group: string;
+  /** Omit DEC extract keys when this line has no declaration map for the term. */
+  dec?: boolean;
+  quoteKey?: string;
+  currentEffectiveKey?: string;
+}): QuoteFieldDef[] {
+  const dec = opts.dec !== false;
+  const quoteKey = opts.quoteKey ?? QUOTE_EFFECTIVE_DATE_KEY;
+  const currentEffectiveKey = opts.currentEffectiveKey ?? "effective_date";
+  return [
+    { key: quoteKey, label: QUOTE_EFFECTIVE_DATE_LABEL, group: opts.group },
+    {
+      key: currentEffectiveKey,
+      label: CURRENT_POLICY_EFFECTIVE_LABEL,
+      group: opts.group,
+      ...(dec && currentEffectiveKey === "effective_date" ? { extractKey: "effective_date" } : {}),
+    },
+    {
+      key: "expiration_date",
+      label: CURRENT_POLICY_EXPIRATION_LABEL,
+      group: opts.group,
+      ...(dec ? { extractKey: "expiration_date" } : {}),
+    },
+  ];
+}
+
 export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "address1", label: "Property address", group: "Property", extractKey: "address" },
   { key: "city", label: "City", group: "Property", extractKey: "city" },
@@ -394,8 +433,7 @@ export const HOME_FIELDS: QuoteFieldDef[] = [
   { key: "current_carrier", label: "Current carrier", group: "Current Policy", extractKey: "current_carrier" },
   { key: "policy_number", label: "Policy number", group: "Current Policy", extractKey: "policy_number" },
   { key: "current_premium", label: "Current premium", group: "Current Policy", input: "number", extractKey: "current_premium" },
-  { key: "effective_date", label: "Effective date", group: "Current Policy", extractKey: "effective_date" },
-  { key: "expiration_date", label: "Expiration date", group: "Current Policy", extractKey: "expiration_date" },
+  ...currentPolicyDateFields({ group: "Current Policy" }),
   { key: "years_with_carrier", label: "Years with carrier", group: "Current Policy", input: "number" },
   { key: "claims_5yr", label: "Claims last 5 years", group: "Current Policy", input: "select", options: [...CLAIMS_5YR_OPTIONS] },
   { key: "mortgagee_name", label: "Mortgagee", group: "Mortgagee", extractKey: "mortgagee" },
@@ -736,8 +774,7 @@ export const AUTO_FIELDS: QuoteFieldDef[] = [
   { key: "current_carrier", label: "Current carrier", group: "Current policy", extractKey: "current_carrier" },
   { key: "current_premium", label: "Current premium", group: "Current policy", input: "number" },
   { key: "years_with_carrier", label: "Years with carrier", group: "Current policy", input: "number" },
-  { key: "effective_date", label: "Effective date", group: "Current policy", extractKey: "effective_date" },
-  { key: "expiration_date", label: "Expiration date", group: "Current policy", extractKey: "expiration_date" },
+  ...currentPolicyDateFields({ group: "Current policy" }),
   { key: "policy_number", label: "Current policy ID", group: "Current policy", extractKey: "policy_number" },
   {
     key: "currently_insured",
@@ -768,6 +805,7 @@ export const REC_RV_FIELDS: QuoteFieldDef[] = [
   { key: "slideouts", label: "Slide-outs", group: "Unit" },
   { key: "full_timer", label: "Full-timer", group: "Unit" },
   { key: "current_carrier", label: "Current carrier", group: "Current policy" },
+  ...currentPolicyDateFields({ group: "Current policy", dec: false }),
   { key: "notes", label: "Notes", group: "Notes", input: "textarea" },
 ];
 
@@ -880,7 +918,11 @@ export const FLOOD_FIELDS: QuoteFieldDef[] = [
   { key: "purchased_within_last_year", label: "Building purchased within last year?", group: "Loss history", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "prior_owner_nfip_at_closing", label: "Prior owner had active NFIP at closing?", group: "Loss history", input: "select", options: [...YES_NO_OPTIONS] },
   { key: "prior_flood_losses", label: "Any prior flood losses?", group: "Loss history", input: "select", options: [...YES_NO_OPTIONS] },
-  { key: "effective_date", label: "Effective date (≈ app + 30 days unless new house)", group: "Current policy" },
+  ...currentPolicyDateFields({
+    group: "Current policy",
+    quoteKey: "effective_date",
+    currentEffectiveKey: "current_policy_effective_date",
+  }),
   {
     key: "effective_date_type",
     label: "Effective date type",
@@ -899,7 +941,6 @@ export const FLOOD_FIELDS: QuoteFieldDef[] = [
   { key: "nfip_policy", label: "Current NFIP / flood policy number", group: "Current policy", extractKey: "policy_number" },
   { key: "current_carrier", label: "Current carrier", group: "Current policy", extractKey: "current_carrier" },
   { key: "current_premium", label: "Current premium", group: "Current policy", input: "number", extractKey: "current_premium" },
-  { key: "expiration_date", label: "Expiration date", group: "Current policy", extractKey: "expiration_date" },
   { key: "notes", label: "Notes", group: "Notes", input: "textarea" },
 ];
 
@@ -909,6 +950,7 @@ export const UMBRELLA_FIELDS: QuoteFieldDef[] = [
   { key: "underlying_auto", label: "Underlying auto", group: "Underlying" },
   { key: "um_uim", label: "UM / UIM", group: "Underlying" },
   { key: "current_carrier", label: "Current carrier", group: "Current policy" },
+  ...currentPolicyDateFields({ group: "Current policy", dec: false }),
   { key: "notes", label: "Notes", group: "Notes", input: "textarea" },
 ];
 

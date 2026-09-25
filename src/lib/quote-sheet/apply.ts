@@ -724,7 +724,9 @@ export function parseSheetDate(raw: string | null | undefined): Date | null {
 /** Current policy cells Confirm must not blank when the posted value is empty. */
 export const CURRENT_POLICY_CONFIRM_KEYS = [
   "policy_number",
+  "quote_effective_date",
   "effective_date",
+  "current_policy_effective_date",
   "expiration_date",
   "current_carrier",
   "current_premium",
