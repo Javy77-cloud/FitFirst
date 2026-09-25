@@ -21,8 +21,8 @@ export type SectionTab = {
  *   [ name / producer / phone / addresses ] [ momentum ]
  *   [ tabs + section under them           ] [ side panel ]
  *   The tab row and the panel share one surface, separated from the name block.
- *   The main column sits just under the tabs. The side panel keeps the 50px top;
- *   a negative margin cancels the extra tab gap so Quick Communication does not move.
+ *   Side panel keeps the 50px top; a negative margin cancels the extra tab gap
+ *   so Quick Communication does not move.
  */
 export function SectionTabs({
   tabs,
@@ -147,7 +147,7 @@ export function SectionTabs({
           role="tabpanel"
           data-ff-deal-tab-panel=""
           className={cn("min-w-0", panelClassName)}
-          style={{ gridColumn: 1, gridRow: 2, paddingTop: 12 }}
+          style={{ gridColumn: 1, gridRow: 2, paddingTop: 50 }}
         >
           {current?.content}
         </div>

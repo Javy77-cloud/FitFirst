@@ -111,7 +111,7 @@ export function MarketsPanel({
 
   if (!hasData) {
     return (
-      <div className="space-y-2" data-ff-deal-markets="" data-ff-markets-empty="">
+      <div className="space-y-3" data-ff-deal-markets="" data-ff-markets-empty="">
         <div className="ff-card space-y-3 p-4">
           <h3 className="text-sm font-semibold text-navy">
             {productLabel ? `Markets · ${productLabel}` : "Markets"}
@@ -179,7 +179,7 @@ export function MarketsPanel({
   const marketsLead = productLabel ? `Markets · ${productLabel}` : null;
 
   return (
-    <div className="space-y-2" data-ff-deal-markets="">
+    <div className="space-y-3" data-ff-deal-markets="">
       {appetite.length > 0 ? (
         <MarketsSelectTable
           dealId={dealId}

@@ -107,7 +107,7 @@ export function DocumentsPanel({
 
   return (
     <DealDocsErrorBoundary>
-      <div className="flex w-full flex-col space-y-2" data-ff-deal-docs data-ff-docs-zoom="100">
+      <div className="flex w-full flex-col space-y-4" data-ff-deal-docs data-ff-docs-zoom="100">
         <BackgroundFillRefresh dealId={dealId} jobs={(jobs as { engine?: string; status?: string; filledKeys?: string[]; skippedKeys?: string[]; message?: string | null }[]) ?? []} enabled={pendingFill} />
         <div className="w-full min-w-0" data-ff-deal-upload>
           <details open className="ff-card w-full p-3" data-ff-document-upload="">
@@ -196,7 +196,7 @@ export function DocumentsPanel({
           <RecentlyDeletedFiles dealId={dealId} returnTo={dealDocumentsTabHref(dealId, formLine)} />
         </div>
 
-        <div className="w-full min-w-0 space-y-2" data-ff-deal-docs-sheet>
+        <div className="w-full min-w-0 space-y-3" data-ff-deal-docs-sheet>
           <MasterSheetWorkspace
             dealId={dealId}
             line={sheetLine}

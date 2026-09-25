@@ -294,7 +294,7 @@ export function QuotesPanel({
   if (sorted.length === 0) {
     return (
       <div
-        className="relative flex flex-col gap-2"
+        className="relative flex flex-col gap-3"
         data-ff-deal-quotes=""
         data-ff-deal-quotes-empty=""
         data-ff-quotes-empty=""
@@ -379,7 +379,7 @@ export function QuotesPanel({
     ) : null;
 
   return (
-    <div className="relative flex flex-col gap-2" data-ff-deal-quotes="" data-ff-quotes-line={activeLine ?? ""}>
+    <div className="relative flex flex-col gap-4" data-ff-deal-quotes="" data-ff-quotes-line={activeLine ?? ""}>
       {grouped.current.length ? (
         <section className="ff-card overflow-hidden" data-ff-quotes-current="">
           <div className="border-b border-border px-4 py-3">{quotesHead}</div>
