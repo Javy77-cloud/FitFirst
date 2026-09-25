@@ -5,6 +5,7 @@ import { saveDealFieldValues, uploadDealFieldImage } from "@/app/actions/custom-
 import { FieldControl } from "@/components/custom-fields/field-control";
 import { InsuranceCascadeControl } from "@/components/custom-fields/insurance-cascade-control";
 import { LayoutSectionFieldGrid } from "@/components/custom-fields/layout-section-field-grid";
+import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { LayoutSectionHeader } from "@/components/custom-fields/layout-section-header";
 import { buttonVariants } from "@/components/ui/button";
 import { mergeCascadePrefill, type PipelineFamily } from "@/lib/deals/insurance-cascade";
@@ -474,11 +475,14 @@ export function DealDetailsPanel({
         {productInstance ? <input type="hidden" name="productInstance" value={productInstance} /> : null}
         {activePackageLine ? <input type="hidden" name="activePackageLine" value={activePackageLine} /> : null}
       <section
-        className="ff-card mb-3 space-y-2 overflow-hidden p-3"
+        className="ff-card relative mb-3 space-y-2 overflow-hidden p-3"
         data-ff-deal-section="pipeline"
         data-ff-pipeline-strip=""
         data-ff-pipeline-row="1"
       >
+        <div className="absolute top-3 right-3 z-10" data-ff-pipeline-edit-layout="">
+          <EditLayoutLink module="deals" line={line} />
+        </div>
         <LayoutSectionHeader title="Pipeline" tone="required" />
         <InsuranceCascadeControl
           typeName="field_insurance_type"
