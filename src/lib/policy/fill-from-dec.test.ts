@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { MintGeminiRow } from "@/lib/policy/mint-gate";
 import { sheetKeysForGeminiKey } from "@/lib/extraction/gemini/map";
+import { autoCoverageExtras, autoCoverageSchedule } from "@/lib/policy/auto-coverage";
 import {
   buildPolicyFillAuditInsert,
   classifyFillFields,
@@ -250,6 +251,84 @@ describe("fillPolicyFromDec field map", () => {
     expect(camry?.lienholder).toBe("Toyota Financial");
     expect(camry?.write).toEqual(expect.arrayContaining(["usage", "annualMiles", "lienholder", "premium"]));
     expect(patch.drivers[0]?.licenseState).toBe("FL");
+  });
+
+  it("writes every PAP coverage cell that the dec printed and leaves the rest empty", () => {
+    const proposed = proposeFillFromDec({
+      family: "auto",
+      rows: rows({
+        liability_bi: "100/300",
+        liability_bi_premium: "412",
+        liability_pd: "100000",
+        liability_pd_premium: "188",
+        pip: "10000",
+        pip_deductible: "1000",
+        pip_premium: "220",
+        med_pay: "5000",
+        med_pay_premium: "18",
+        um_uim: "100/300",
+        um_uim_premium: "64",
+        um_pd: "100000",
+        um_pd_premium: "22",
+        um_stacked: "No",
+        comp_deductible: "500",
+        comp_premium: "90",
+        collision_deductible: "500",
+        collision_premium: "310",
+        rental: "30/900",
+        rental_premium: "12",
+        towing: "100",
+        towing_premium: "6",
+        glass: "50",
+        glass_premium: "4",
+        discounts: "Multi-car",
+      }),
+    });
+    expect(proposed.umStacked).toBe("Non-stacked");
+    const patch = groupAppliedFill(proposed, Object.keys(proposed));
+    const schedule = autoCoverageSchedule({
+      coverageLimits: patch.coverageLimits,
+      comprehensiveDeductible: patch.term.comprehensiveDeductible,
+      collisionDeductible: patch.term.collisionDeductible,
+    });
+    const byKey = Object.fromEntries(schedule.map((row) => [row.key, row]));
+    expect(byKey.liability_bi).toMatchObject({ limit: "$100/$300", premium: "$412" });
+    expect(byKey.liability_pd).toMatchObject({ limit: "$100,000", premium: "$188" });
+    expect(byKey.pip).toMatchObject({ limit: "$10,000", deductible: "1000", premium: "$220" });
+    expect(byKey.med_pay).toMatchObject({ limit: "$5,000", premium: "$18" });
+    expect(byKey.um_uim).toMatchObject({ limit: "$100/$300", premium: "$64" });
+    expect(byKey.um_pd).toMatchObject({ limit: "$100,000", premium: "$22" });
+    expect(byKey.comprehensive).toMatchObject({ deductible: "500", premium: "$90" });
+    expect(byKey.collision).toMatchObject({ deductible: "500", premium: "$310" });
+    expect(byKey.rental).toMatchObject({ limit: "$30/$900", premium: "$12" });
+    expect(byKey.towing).toMatchObject({ limit: "$100", premium: "$6" });
+    expect(byKey.glass?.deductible).toMatch(/50/);
+    expect(byKey.glass?.premium).toMatch(/4/);
+    expect(autoCoverageExtras({ coverageLimits: patch.coverageLimits })).toEqual([
+      { key: "um_stacked", label: "UM stacked", value: "Non-stacked" },
+      { key: "discounts", label: "Discounts", value: "Multi-car" },
+    ]);
+
+    const stackedPhrase = proposeFillFromDec({
+      family: "auto",
+      rows: rows({ um_stacked: "Stacked: No", um_uim: "100/300" }),
+    });
+    expect(stackedPhrase.umStacked).toBe("Non-stacked");
+    const embedded = proposeFillFromDec({
+      family: "auto",
+      rows: rows({ um_uim: "100/300 Non-stacked" }),
+    });
+    expect(embedded.umStacked).toBe("Non-stacked");
+    const limitOnly = proposeFillFromDec({
+      family: "auto",
+      rows: rows({ liability_bi: "100/300", um_uim: "100/300" }),
+    });
+    expect(limitOnly.liabilityBiPremium).toBeUndefined();
+    expect(limitOnly.umPd).toBeUndefined();
+    expect(limitOnly.umStacked).toBeUndefined();
+    expect(limitOnly.glass).toBeUndefined();
+    expect(limitOnly.discounts).toBeUndefined();
+    expect(limitOnly.pipDeductible).toBeUndefined();
   });
 });
 

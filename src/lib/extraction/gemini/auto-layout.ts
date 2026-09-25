@@ -988,6 +988,59 @@ function applyPolicyRecord(out: LooseJson, rec: LooseJson) {
   applyPolicyPeriod(out, pull(rec, ["policy_period", "policy_term"]));
 }
 
+/**
+ * Premiums boxes print line amounts (Bodily Injury 412), not BI limits.
+ * A split limit that landed in the box (100/300) stays a limit.
+ */
+function captureCoveragePremiumBox(out: LooseJson, rec: LooseJson) {
+  for (const [key, value] of Object.entries(rec)) {
+    const norm = normKey(key);
+    if (rankForPremiumKey(norm) >= 50) continue;
+    if (PREMIUM_BOX_KEYS.has(norm)) continue;
+    if (isRecord(value) || Array.isArray(value)) {
+      applyCoverageValue(out, key, value, {});
+      continue;
+    }
+    if (!hasPrinted(value)) continue;
+    const kind = coverageKind(key);
+    if (!kind) continue;
+    const text = textOf(value).trim();
+    if (/\d\s*\/\s*\d/.test(text)) {
+      applyCoverageEntry(out, key, value);
+      continue;
+    }
+    const premiumKey = COVERAGE_PREMIUM_KEY[kind];
+    if (premiumKey) setIfEmpty(out, premiumKey, value);
+  }
+}
+
+/** Copy deductible / premium / stacked off a coverage object before asPayload keeps only the limit. */
+function liftCoverageSiblings(out: LooseJson) {
+  for (const key of [...Object.keys(out)]) {
+    const value = out[key];
+    if (!isRecord(value)) continue;
+    const kind = coverageKind(key);
+    if (!kind) continue;
+    rememberCoverageSiblings(out, key, {
+      deductible: partValue(value, ["deductible", "ded"]),
+      premium: partValue(value, ["premium", "premium_amount", "coverage_premium"]),
+      stacked: partValue(value, ["stacked", "stacking"]),
+    });
+    if (normKey(key) === kind) continue;
+    const deductible = partValue(value, ["deductible", "ded"]);
+    const limit = partValue(value, ["limit", "limits", "value", "amount", "text"]);
+    const primary =
+      (kind === "comp_deductible" || kind === "collision_deductible" || kind === "glass") &&
+      hasPrinted(deductible)
+        ? deductible
+        : hasPrinted(limit)
+          ? limit
+          : deductible;
+    if (hasPrinted(primary)) setIfEmpty(out, kind, primary);
+    delete out[key];
+  }
+}
+
 function takePolicyEnvelopes(out: LooseJson) {
   for (const key of POLICY_ENVELOPES) {
     const raw = pull(out, [key]);
@@ -996,8 +1049,10 @@ function takePolicyEnvelopes(out: LooseJson) {
       applyCoverages(out, raw);
       continue;
     }
-    if (isRecord(raw)) applyPolicyRecord(out, { ...raw });
-    else out[key] = raw;
+    if (isRecord(raw)) {
+      if (PREMIUM_BOX_KEYS.has(normKey(key))) captureCoveragePremiumBox(out, raw);
+      applyPolicyRecord(out, { ...raw });
+    } else out[key] = raw;
   }
   if (isRecord(out.policy)) {
     const raw = pull(out, ["policy"]);
@@ -1454,6 +1509,7 @@ export function expandAutoDecLayout(json: LooseJson, shopLine?: string | null): 
     if (digits) out.current_premium = digits;
   }
 
+  liftCoverageSiblings(out);
   captureAutoFillGaps(out);
   promoteAutoPolicyFillKeys(out);
   canonicalizeAutoSheetValues(out);

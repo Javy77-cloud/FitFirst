@@ -616,12 +616,22 @@ function pipDeductibleFromLimit(raw: string): string {
   return match ? formatDecDeductible(match[1]!) : "";
 }
 
-function formatUmStacked(raw: string): string {
-  const low = raw.toLowerCase();
-  if (!low) return "";
-  if (/non[-\s]?stacked/.test(low)) return "Non-stacked";
-  if (/\bstacked\b/.test(low)) return "Stacked";
-  return "";
+function formatUmStacked(raw: string, source: "field" | "embedded"): string {
+  const trimmed = raw.replace(/\s+/g, " ").trim();
+  if (!trimmed) return "";
+  const low = trimmed.toLowerCase();
+  if (
+    /non[-\s]?stacked|unstacked|not stacked/.test(low) ||
+    /stack(?:ed|ing)\s*:\s*no\b/.test(low) ||
+    /^(no|n|false)$/.test(low)
+  ) {
+    return "Non-stacked";
+  }
+  if (/stack(?:ed|ing)\s*:\s*yes\b/.test(low) || /^(yes|y|true|stacked)$/.test(low) || /\bstacked\b/.test(low)) {
+    return "Stacked";
+  }
+  // A dedicated stacking cell keeps whatever the dec printed. A BI/UM limit does not.
+  return source === "field" ? trimmed : "";
 }
 
 function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
@@ -642,7 +652,8 @@ function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
   put(
     out,
     "umStacked",
-    formatUmStacked(rawCell(rows, "um_stacked")) || formatUmStacked(rawCell(rows, "um_uim")),
+    formatUmStacked(rawCell(rows, "um_stacked", "um_stacking", "stacking"), "field") ||
+      formatUmStacked(rawCell(rows, "um_uim"), "embedded"),
   );
   const pipRaw = rawCell(rows, "pip");
   put(out, "pip", formatDecLimit(pipRaw));
