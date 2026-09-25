@@ -29,6 +29,11 @@ describe("Won-Lost + Archived parking tabs", () => {
     expect(page).toMatch(/DealLineSwitcher/);
     expect(page).toMatch(/layout="rail"/);
     expect(page).toMatch(/data-ff-deal-products-column/);
+    expect(page).toMatch(/absolute inset-x-0 bottom-full/);
+    const css = source("src/app/globals.css");
+    expect(css).toMatch(
+      /\[data-ff-deal-workspace\] \[data-ff-deal-quick-comms\]:has\(\[data-ff-deal-products-column\]\) \{\s*margin-top:\s*9\.5rem;/,
+    );
     // Products no longer sit inside the top-left heading stack with Pipeline.
     const headingSlice = page.slice(
       page.indexOf("data-ff-deal-top-left"),

@@ -1025,6 +1025,12 @@ a.ff-pending-link:has([data-ff-link-pending="1"]) {
 [data-ff-deal-workspace] [data-ff-deal-right-rail] {
   overflow: visible !important;
 }
+/* Five product rows of fixed headroom (chip ~26.5px + 4px gap).
+   The column is absolute against the top of Quick Communication, so this
+   margin lowers that anchor without letting product count move or resize it. */
+[data-ff-deal-workspace] [data-ff-deal-quick-comms]:has([data-ff-deal-products-column]) {
+  margin-top: 9.5rem;
+}
 [data-ff-quick-comms-kinds] {
   display: flex !important;
   flex-wrap: nowrap !important;
