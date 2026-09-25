@@ -5,6 +5,7 @@
 
 import { appointmentLine } from "@/lib/domain-ams";
 import { formatDay, formatMoney } from "@/lib/domain";
+import { ratingOccupancyValue } from "@/lib/policy/rating-occupancy";
 import { isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
 import {
   ERRORS_OMISSIONS_SHORT,
@@ -200,9 +201,13 @@ export function buildLobOverviewSections(input: LobOverviewInput): LobOverviewSe
             input.yearBuilt != null ? String(input.yearBuilt) : null,
             { hint: "Year built not on the risk or Risk Profile yet." },
           ),
-          field("construction", "Construction", input.construction),
+          field(
+            "occupancy",
+            "Occupancy",
+            ratingOccupancyValue(input.occupancy, input.typeOfResidence) || null,
+            { hint: "" },
+          ),
           ...[
-            present("occupancy", "Occupancy", input.occupancy),
             present("typeOfResidence", "Type of residence", input.typeOfResidence),
             present("monthsOccupied", "Months occupied", input.monthsOccupied),
             present(

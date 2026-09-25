@@ -13,6 +13,7 @@ import {
 import { parsePropertyYear } from "@/lib/policy/dwelling-facts";
 import { splitPremisesAddress, type PremisesAddressParts } from "@/lib/policy/premises";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
+import { ratingOccupancyValue } from "@/lib/policy/rating-occupancy";
 import { businessDateKey, noonUtcFromBusinessDate } from "@/lib/policies/current-term";
 import {
   formatAutoDollarDeductible,
@@ -528,10 +529,14 @@ function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   }
 
   put(out, "families", rawCell(rows, "number_of_families", "families"));
-  const occupied = rawCell(rows, "occupancy", "occupied");
-  const occupiedYn = yesNo(occupied);
-  if (occupiedYn === "Yes" || occupiedYn === "No") put(out, "occupancy", occupiedYn);
-  else put(out, "occupancy", ratingText(occupied));
+  put(
+    out,
+    "occupancy",
+    ratingOccupancyValue(
+      rawCell(rows, "occupancy", "occupied"),
+      rawCell(rows, "type_of_residence", "residence_type"),
+    ),
+  );
 
   put(out, "protectionClass", rawCell(rows, "protection_class"));
   put(out, "bceg", rawCell(rows, "bceg_grade", "bceg"));
