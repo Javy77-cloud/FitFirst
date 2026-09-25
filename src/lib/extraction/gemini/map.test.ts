@@ -79,6 +79,8 @@ describe("gemini map key mapping", () => {
       "license_or_certificate_number",
     ]);
     expect(sheetKeysForGeminiKey("construction_type")).toEqual(["construction"]);
+    expect(sheetKeysForGeminiKey("construction")).toEqual(["construction"]);
+    expect(sheetKeysForGeminiKey("Construction")).toEqual(["construction"]);
     expect(sheetKeysForGeminiKey("ordinance_law")).toEqual(["ordinance_or_law"]);
     expect(sheetKeysForGeminiKey("current_policy_name_insured")).toEqual([
       "named_insured",

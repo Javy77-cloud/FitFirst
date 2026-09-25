@@ -1,5 +1,5 @@
 import { MISSING_GEMINI_KEY_MESSAGE } from "@/lib/extraction/gemini/key";
-import { evaluateMintExtract } from "@/lib/policy/mint-gate";
+import { evaluateMintExtract, normalizeMintFieldKey } from "@/lib/policy/mint-gate";
 
 export const DEC_FILE_MISSING_MESSAGE =
   "Could not read the declaration PDF from storage. Re-upload the file — local disk uploads do not survive Vercel deploys.";
@@ -148,23 +148,46 @@ const HOME_DWELLING_COVERAGE_KEYS = new Set([
   "dwelling",
 ]);
 
+const HOME_YEAR_KEYS = new Set([
+  "year_built",
+  "year_of_construction",
+  "year_constructed",
+  "construction_year",
+  "yr_of_construction",
+  "yr_built",
+]);
+
+const HOME_CONSTRUCTION_KEYS = new Set([
+  "construction",
+  "construction_type",
+  "type_of_construction",
+  "const_type",
+  "exterior_construction",
+  "building_construction",
+]);
+
 /**
- * A home cache from before coverage-row premiums has dwelling limits and no
- * Coverage A–F premium. Re-Fill must read the DEC again. Liability-only caches
- * with no dwelling limit are left alone.
+ * A dwelling cache is reusable only when it already has coverage-row premiums,
+ * a year of construction, and a construction type. A cache that filled Coverage
+ * A–F and dropped Year of Construction / Masonry must be read again.
+ * Liability-only caches with no dwelling limit are left alone.
  */
 export function homeDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boolean {
   let sawDwellingCoverage = false;
   let sawLinePremium = false;
+  let sawYear = false;
+  let sawConstruction = false;
   for (const row of rows) {
     const value = (row.normalizedValue ?? row.rawValue ?? "").trim();
     if (!value) continue;
-    const key = row.fieldKey.trim().toLowerCase();
+    const key = normalizeMintFieldKey(row.fieldKey);
     if (HOME_DWELLING_COVERAGE_KEYS.has(key)) sawDwellingCoverage = true;
     if (HOME_COVERAGE_LINE_PREMIUM_KEYS.has(key)) sawLinePremium = true;
+    if (HOME_YEAR_KEYS.has(key)) sawYear = true;
+    if (HOME_CONSTRUCTION_KEYS.has(key)) sawConstruction = true;
   }
-  if (sawDwellingCoverage && !sawLinePremium) return false;
-  return true;
+  if (!sawDwellingCoverage) return true;
+  return sawLinePremium && sawYear && sawConstruction;
 }
 
 /** A cached auto extract from before the PAP map has mint fields but no deductibles or line premiums. */
@@ -202,7 +225,7 @@ export function shouldForceAutoDecReread(input: {
   return true;
 }
 
-/** Manual home Fill re-reads a cache that has dwelling limits and no coverage-row premiums. */
+/** Manual home Fill re-reads a dwelling cache missing premiums, year built, or construction. */
 export function shouldForceHomeDecReread(input: {
   manualHome: boolean;
   rows: readonly GeminiMintRow[];

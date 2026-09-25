@@ -37,6 +37,7 @@ import {
   resolveCurrentTerm,
 } from "@/lib/policies/current-term";
 import { PolicyOverviewTab } from "@/components/policy/tabs/overview-tab";
+import { pickPolicyDecDocument } from "@/lib/policy/fill-from-dec";
 import { PolicyCoverageTab } from "@/components/policy/tabs/coverage-tab";
 import { PolicyEndorsementsTab } from "@/components/policy/tabs/endorsements-tab";
 import { PolicyBillingTab } from "@/components/policy/tabs/billing-tab";
@@ -259,6 +260,16 @@ export default async function PolicyDetailPage({
     ...file,
     versionCount: Math.max(1, versionCountByDoc.get(file.id) ?? 1),
   }));
+  const declarationFile = pickPolicyDecDocument(files, {
+    sourceDocumentId: policy.sourceDocumentId,
+  });
+  const declaration = declarationFile
+    ? {
+        id: declarationFile.id,
+        filename: declarationFile.filename?.trim() || "Declaration",
+        mimeType: declarationFile.mimeType,
+      }
+    : null;
   const accessLog = (accessLogRows ?? []).map((row) => {
     const file = files.find((f) => f.id === row.documentId);
     return {
@@ -412,6 +423,7 @@ export default async function PolicyDetailPage({
         {activeTab === "overview" ? (
           <PolicyOverviewTab
             policy={policy}
+            declaration={declaration}
             carrierId={carrier?.id ?? policy.carrierId}
             carrierName={carrier?.name}
             contact={contact}

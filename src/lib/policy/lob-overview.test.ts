@@ -46,7 +46,7 @@ describe("LOB overview templates", () => {
     expect(dwelling.map((f) => f.key)).toEqual(["coverageA", "yearBuilt", "construction", "occupancy"]);
     expect(dwelling.find((f) => f.key === "yearBuilt")?.label).toBe("Year built");
     expect(dwelling.find((f) => f.key === "yearBuilt")?.value).toBe("1992");
-    expect(dwelling.find((f) => f.key === "construction")?.label).toBe("Construction");
+    expect(dwelling.find((f) => f.key === "construction")?.label).toBe("Construction type");
     expect(dwelling.find((f) => f.key === "construction")?.value).toBe("—");
     expect(dwelling.find((f) => f.key === "occupancy")?.label).toBe("Occupancy");
     expect(dwelling.find((f) => f.key === "occupancy")?.value).toBe("—");
@@ -70,7 +70,7 @@ describe("LOB overview templates", () => {
     expect(dwelling.find((f) => f.key === "yearBuilt")?.label).toBe("Year built");
     expect(dwelling.find((f) => f.key === "yearBuilt")?.value).toBe("2024");
     expect(dwelling.some((f) => f.label === "Year of Construction")).toBe(false);
-    expect(dwelling.find((f) => f.key === "construction")?.label).toBe("Construction");
+    expect(dwelling.find((f) => f.key === "construction")?.label).toBe("Construction type");
     expect(dwelling.find((f) => f.key === "construction")?.value).toBe("Masonry");
     expect(dwelling.find((f) => f.key === "roofYear")?.value).toBe("2024");
     expect(dwelling.find((f) => f.key === "occupancy")?.label).toBe("Occupancy");
@@ -102,7 +102,7 @@ describe("LOB overview templates", () => {
     expect(html).toContain("2024");
     expect(html).toContain("Occupancy");
     expect(html).toContain("Owner");
-    expect(html).toContain(">Construction<");
+    expect(html).toContain("Construction type");
     expect(html).toContain("Masonry");
     expect(html).toContain("Dwelling type");
     expect(html).toContain("Single Family");

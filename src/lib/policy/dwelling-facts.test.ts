@@ -6,6 +6,10 @@ describe("dwelling facts from sheet / risk", () => {
     expect(parsePropertyYear("1998")).toBe(1998);
     expect(parsePropertyYear("roof 2018")).toBe(2018);
     expect(parsePropertyYear("12 years")).toBe(new Date().getUTCFullYear() - 12);
+    expect(parsePropertyYear("24", 2026)).toBe(2024);
+    expect(parsePropertyYear("'24", 2026)).toBe(2024);
+    expect(parsePropertyYear("2024", 2026)).toBe(2024);
+    expect(parsePropertyYear("85", 2026)).toBe(1985);
     expect(dwellingFactsFromSheet({
       year_built: { value: "2004" },
       roof_year: { value: "2019" },
@@ -32,7 +36,7 @@ describe("dwelling facts from sheet / risk", () => {
   it("reads Year of Construction when year built is blank on the sheet", () => {
     expect(
       dwellingFactsFromSheet({
-        year_of_construction: { value: "2024" },
+        year_of_construction: { value: "24" },
         construction_type: { value: "Masonry" },
       }),
     ).toEqual({

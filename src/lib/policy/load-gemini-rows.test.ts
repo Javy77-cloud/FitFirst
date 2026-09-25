@@ -516,11 +516,38 @@ describe("auto fill confirm does not re-read Gemini", () => {
         flagged: false,
       },
     ];
-    expect(homeDecCacheSupportsFill(fresh)).toBe(true);
+    expect(homeDecCacheSupportsFill(fresh)).toBe(false);
     expect(
       shouldForceHomeDecReread({
         manualHome: true,
         rows: fresh,
+        newestAt: new Date("2026-01-01T00:00:00.000Z"),
+        now,
+        reuseFresh: false,
+      }),
+    ).toBe(true);
+    const rated: GeminiMintRow[] = [
+      ...fresh,
+      {
+        fieldKey: "year_of_construction",
+        normalizedValue: "24",
+        rawValue: "24",
+        confidence: 0.9,
+        flagged: false,
+      },
+      {
+        fieldKey: "construction_type",
+        normalizedValue: "Masonry",
+        rawValue: "Masonry",
+        confidence: 0.9,
+        flagged: false,
+      },
+    ];
+    expect(homeDecCacheSupportsFill(rated)).toBe(true);
+    expect(
+      shouldForceHomeDecReread({
+        manualHome: true,
+        rows: rated,
         newestAt: new Date("2026-01-01T00:00:00.000Z"),
         now,
         reuseFresh: false,
