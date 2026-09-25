@@ -24,6 +24,7 @@ import { resolveDwellingFacts } from "@/lib/policy/dwelling-facts";
 import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
 import { PropertyProtectionSection } from "@/components/policy/property-protection-section";
 import { isDwellingFireProduct } from "@/lib/deals/dwelling-addresses";
+import { mailingAddressLine } from "@/lib/desk/policy-information";
 
 export function PolicyOverviewTab({
   policy,
@@ -116,6 +117,9 @@ export function PolicyOverviewTab({
     roofYear?: number | null;
     yearBuilt?: number | null;
     construction?: string | null;
+    occupancy?: string | null;
+    county?: string | null;
+    roofCovering?: string | null;
   } | null;
   /** Owner profile Name (person), never AFA / selling agency. */
   producerDisplayName?: string | null;
@@ -138,6 +142,24 @@ export function PolicyOverviewTab({
         ? `Renewal ${formatDay(policy.renewalDate)}`
         : `Expires ${formatDay(policy.expirationDate)}`;
   const family = resolveLobOverviewFamily(policy);
+  const limits = policy.coverageLimits ?? {};
+  const protectionValues = parsePropertyProtectionSnapshot(policy.propertyProtection)?.values ?? {};
+  const mobileHomeUnit = [
+    limits.unit_year,
+    limits.unit_make,
+    limits.unit_serial,
+    limits.unit_length && limits.unit_width ? `${limits.unit_length} x ${limits.unit_width}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const scheduledStructures = [
+    limits.scheduled_carport ? `Carport ${limits.scheduled_carport}` : null,
+    limits.scheduled_screen_room ? `Screen room ${limits.scheduled_screen_room}` : null,
+    limits.scheduled_shed ? `Shed ${limits.scheduled_shed}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const showDwellingMailing = !isDwellingFireProduct(policy.policySubType, policy.formType);
   const mortgageeCount = interests.filter((row) => row.kind === "mortgagee").length;
   const additionalInsuredCount = interests.filter(
     (row) =>
@@ -251,6 +273,24 @@ export function PolicyOverviewTab({
           account,
           mortgageeCount,
           additionalInsuredCount,
+          occupancy: risk?.occupancy,
+          families: limits.number_of_families,
+          dwellingType: limits.dwelling_type,
+          county: risk?.county,
+          dwellingReplacementCost: limits.dwelling_replacement_cost,
+          personalPropertyReplacementCost: limits.personal_property_replacement_cost,
+          mailingAddress: showDwellingMailing
+            ? mailingAddressLine({
+                address: contact?.mailingAddress,
+                city: contact?.city,
+                state: contact?.state,
+                zip: contact?.zip,
+              })
+            : null,
+          mobileHomeUnit: mobileHomeUnit || null,
+          roofMaterial: risk?.roofCovering || protectionValues.roof_covering,
+          roofInstallDate: limits.date_of_roof_installation,
+          scheduledStructures: scheduledStructures || null,
         }}
       />
 

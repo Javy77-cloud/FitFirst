@@ -1187,6 +1187,35 @@ export const policyChangeLogs = pgTable(
   ],
 );
 
+/**
+ * Append-only audit of fillPolicyFromDec.
+ * No updated_at — application code inserts rows and never updates or deletes them.
+ */
+export const policyFillAudit = pgTable(
+  "policy_fill_audit",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: tenantCol(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => policies.id, { onDelete: "cascade" }),
+    policyNumber: text("policy_number").notNull(),
+    source: text("source").notNull(),
+    agentId: uuid("agent_id").references(() => users.id),
+    agentName: text("agent_name").notNull(),
+    reason: text("reason"),
+    documentId: uuid("document_id"),
+    documentFilename: text("document_filename"),
+    fieldsWritten: jsonb("fields_written").$type<string[]>().notNull().default([]),
+    fieldsOverwritten: jsonb("fields_overwritten").$type<string[]>().notNull().default([]),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("policy_fill_audit_policy_idx").on(t.tenantId, t.policyId, t.createdAt),
+    index("policy_fill_audit_number_idx").on(t.tenantId, t.policyNumber),
+  ],
+);
+
 export const reviewTasks = pgTable(
   "review_tasks",
   {

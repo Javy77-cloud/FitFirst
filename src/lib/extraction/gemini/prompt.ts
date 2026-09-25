@@ -83,6 +83,21 @@ export const GEMINI_EXTRACT_JSON_KEYS = [
   "fire_alarm",
   "central_alarm",
   "bceg_grade",
+  "dwelling_type",
+  "townhouse_rowhouse",
+  "dwelling_replacement_cost",
+  "personal_property_replacement_cost",
+  "burglar_alarm",
+  "unit_year",
+  "unit_make",
+  "unit_serial",
+  "unit_length",
+  "unit_width",
+  "roof_material",
+  "date_of_roof_installation",
+  "scheduled_carport",
+  "scheduled_screen_room",
+  "scheduled_shed",
   "loss_of_rents",
   "landlord_liability",
   "fair_rental_value",
@@ -192,6 +207,22 @@ export const GEMINI_AUTO_EXTRACT_JSON_KEYS = [
   "pip",
   "comp_deductible",
   "collision_deductible",
+  "med_pay",
+  "rental",
+  "towing",
+  "ers",
+  "vehicle_2_comp_deductible",
+  "vehicle_2_collision_deductible",
+  "vehicle_2_rental",
+  "vehicle_2_towing",
+  "vehicle_3_comp_deductible",
+  "vehicle_3_collision_deductible",
+  "vehicle_3_rental",
+  "vehicle_3_towing",
+  "vehicle_4_comp_deductible",
+  "vehicle_4_collision_deductible",
+  "vehicle_4_rental",
+  "vehicle_4_towing",
   "policy_number",
   "current_premium",
   "current_carrier",
@@ -306,7 +337,7 @@ Fill these first, in this order, when printed. Current Policy comes before vehic
    - years_with_carrier, currently_insured, and aaa_member only when that fact is printed. Do not calculate years from the dates. Do not treat a declarations page as "Currently insured 6 months or more". Do not guess AAA tenure. Leave those three out when the page does not state them.
 2. Vehicles and VIN. vin is the 17-character vehicle identification number (labels: VIN, V.I.N., Vehicle Identification No). vehicle_year, vehicle_make, vehicle_model from columns or from one cell such as "2019 TOYOTA CAMRY". More vehicles: vehicle_2_*, vehicle_3_*, vehicle_4_* (vin, year, make, model, plus use, garaging address, annual miles, and lienholder when that car prints them).
 3. Drivers. List each person once. The same name and date of birth is one driver — do not repeat them as driver 2 and driver 3. driver_1_name is the full printed legal name: first, middle name or middle initial, and the complete last name. Do not truncate. "Domenic M Iori" stays "Domenic M Iori" — never "Domenic Ic", "Domenic I", or "D. Iori". If First / Middle / Last are separate columns, join them in that order. Then driver_1_dob, driver_1_license, and driver_2_* only for a different person. Add gender (Male/Female only), marital status, and relationship for drivers 2+ when printed. Never fill driver_1_relationship. Never fill employment — use industry and occupation only when printed.
-4. Coverage limits, only when a page prints them. Do not invent coverages. Page 1 of a dec often has the carrier and vehicles and no BI/PD/UM/PIP/comp/collision table — omit those keys. Read every page of a multi-page PDF. If page 2 or a later page prints the coverage table, fill from that page: Bodily Injury or Liability Bodily Injury → liability_bi as 100/300 (not 100000/300000). If Each Person and Each Accident are separate cells, join them as 100/300. Property Damage → liability_pd digits (100000). Uninsured or Underinsured Motorist, including Uninsured Motorist Bodily Injury → um_uim. PIP or Personal Injury Protection → pip digits. Comprehensive or Other Than Collision → comp_deductible (comprehensive deductible). Collision → collision_deductible. Medical payments, rental reimbursement, and towing are separate from PIP — include them only when printed (med_pay, rental, towing).
+4. Coverage limits, only when a page prints them. Do not invent coverages. Page 1 of a dec often has the carrier and vehicles and no BI/PD/UM/PIP/comp/collision table — omit those keys. Read every page of a multi-page PDF. If page 2 or a later page prints the coverage table, fill from that page: Bodily Injury or Liability Bodily Injury → liability_bi as 100/300 (not 100000/300000). If Each Person and Each Accident are separate cells, join them as 100/300. Property Damage → liability_pd digits (100000). Uninsured or Underinsured Motorist, including Uninsured Motorist Bodily Injury → um_uim. PIP or Personal Injury Protection → pip digits. Comprehensive or Other Than Collision → comp_deductible (comprehensive deductible). Collision → collision_deductible. Medical payments, rental reimbursement, and towing / emergency road service are separate from PIP — include them only when printed (med_pay, rental, towing, ers). Per-vehicle physical damage when the table is per car: vehicle_2_comp_deductible, vehicle_2_collision_deductible, vehicle_2_rental, vehicle_2_towing (and vehicle_3_* / vehicle_4_*).
 5. When printed, also include: term_length (6 month or 12 month — do not calculate it from the dates), each driver's license_state, relationship, and excluded yes/no, each vehicle's use, garaging address, annual miles, lienholder or loss payee, and that vehicle's own premium. List discounts in a discounts array. Named insured may be printed LAST FIRST or LAST, FIRST — copy it as printed. A phone photo may be sideways, upside down, or skewed; read the page as if it were upright.
 
 Current Policy example (emit a key only when that fact is printed. Never copy these sample values):
@@ -383,6 +414,13 @@ Field meaning guidance (from desk synonym brief):
   Cov B–F when printed (B/C/D and ordinance: keep a printed percent as 10%; keep a printed dollar limit as digits; E/F are dollar limits); sinkhole_deductible; current_carrier (company/writing company); secondary_named_insured;
   opening_protection; sprinkler; fire_alarm/central_alarm; bceg_grade; roof_covering/shape;
   loss_of_rents/fair_rental_value; landlord_liability (Cov L on DP).
+  When printed, also: dwelling_type or townhouse_rowhouse (Y when Townhouse/Rowhouse is checked);
+  dwelling_replacement_cost and personal_property_replacement_cost (Y/N);
+  burglar_alarm (Protective Device Burglar credit);
+  unit_year, unit_make, unit_serial, unit_length, unit_width (mobile home unit);
+  roof_material; date_of_roof_installation;
+  scheduled_carport, scheduled_screen_room, scheduled_shed dollar limits.
+  Do not invent those when the dec omits them.
 `;
 }
 
