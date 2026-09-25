@@ -25,7 +25,11 @@ import { loadGeminiApiKey } from "@/lib/extraction/gemini/key";
 import { readStoredFile } from "@/lib/files/object-store";
 import { isUuid } from "@/lib/ids";
 import { issuedPolicyDocType } from "@/lib/policy/issued-upload";
-import { loadGeminiRows, type GeminiMintRow } from "@/lib/policy/load-gemini-rows";
+import {
+  loadGeminiRows,
+  shouldForceAutoDecReread,
+  type GeminiMintRow,
+} from "@/lib/policy/load-gemini-rows";
 import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
 import { writeLicense } from "@/lib/pii/write";
 import { termRoleFromTags } from "@/lib/documents/document-labels";
@@ -73,18 +77,23 @@ function shopLineForPolicy(lineOfBusiness: string | null | undefined): string | 
   return shopLineFromLob(lob) ?? (lob === "HO" ? "home" : lob === "AUTO" ? "auto" : null);
 }
 
-async function loadCachedGeminiRows(docId: string): Promise<GeminiMintRow[]> {
+async function readCachedExtract(docId: string): Promise<{ rows: GeminiMintRow[]; newestAt: Date | null }> {
   const existing = await db
     .select()
     .from(extractedFields)
     .where(and(eq(extractedFields.tenantId, DEFAULT_TENANT_ID), eq(extractedFields.documentId, docId)));
-  return existing.map((row) => ({
-    fieldKey: row.fieldKey,
-    normalizedValue: row.normalizedValue,
-    rawValue: row.rawValue,
-    confidence: Number(row.confidence ?? 0),
-    flagged: row.flagged,
-  }));
+  let newestAt: Date | null = null;
+  const rows = existing.map((row) => {
+    if (row.createdAt && (!newestAt || row.createdAt > newestAt)) newestAt = row.createdAt;
+    return {
+      fieldKey: row.fieldKey,
+      normalizedValue: row.normalizedValue,
+      rawValue: row.rawValue,
+      confidence: Number(row.confidence ?? 0),
+      flagged: row.flagged,
+    };
+  });
+  return { rows, newestAt };
 }
 
 async function persistExtractRows(docId: string, rows: GeminiMintRow[], policyRiskId?: string | null) {
@@ -95,25 +104,28 @@ async function persistExtractRows(docId: string, rows: GeminiMintRow[], policyRi
       .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.id, docId)));
     const riskId = riskIdForExtractedFieldsCache(doc?.riskId, policyRiskId);
     if (!riskId) return;
+    const values = rows.flatMap((field) => {
+      const normalized = field.normalizedValue?.trim() || "";
+      const raw = field.rawValue?.trim() || normalized;
+      if (!normalized && !raw) return [];
+      return [
+        {
+          tenantId: DEFAULT_TENANT_ID,
+          documentId: docId,
+          riskId,
+          fieldKey: field.fieldKey,
+          rawValue: raw,
+          normalizedValue: normalized || raw,
+          confidence: field.confidence.toFixed(3),
+          flagged: field.flagged,
+          appliedToRisk: false,
+        },
+      ];
+    });
     await db
       .delete(extractedFields)
       .where(and(eq(extractedFields.tenantId, DEFAULT_TENANT_ID), eq(extractedFields.documentId, docId)));
-    for (const field of rows) {
-      const normalized = field.normalizedValue?.trim() || "";
-      const raw = field.rawValue?.trim() || normalized;
-      if (!normalized && !raw) continue;
-      await db.insert(extractedFields).values({
-        tenantId: DEFAULT_TENANT_ID,
-        documentId: docId,
-        riskId,
-        fieldKey: field.fieldKey,
-        rawValue: raw,
-        normalizedValue: normalized || raw,
-        confidence: field.confidence.toFixed(3),
-        flagged: field.flagged,
-        appliedToRisk: false,
-      });
-    }
+    if (values.length > 0) await db.insert(extractedFields).values(values);
   } catch (error) {
     console.error("fillPolicyFromDec: extracted_fields cache failed", {
       documentId: docId,
@@ -133,8 +145,10 @@ type PreparedFill = {
 async function prepareFill(input: {
   policyId: string;
   documentId?: string | null;
-  /** Manual auto Fill re-reads the DEC. A cached extract from before the PAP field map drops deductibles and premiums. */
+  /** Manual auto Fill re-reads a hollow DEC cache. A cached extract from before the PAP field map drops deductibles and premiums. */
   forceExtract?: boolean;
+  /** Confirm step: the preview click already read the DEC. Do not call Gemini again. */
+  reuseFreshAutoExtract?: boolean;
 }): Promise<{ ok: true; prepared: PreparedFill } | { ok: false; error: string }> {
   if (!isUuid(input.policyId)) return { ok: false, error: "Policy required." };
   const [policy] = await db
@@ -190,6 +204,14 @@ async function prepareFill(input: {
 
   const shopLine = shopLineForPolicy(policy.lineOfBusiness);
   const familyForExtract = fillFamilyForPolicy(policy);
+  const cached = await readCachedExtract(doc.id);
+  const force = shouldForceAutoDecReread({
+    manualAuto: Boolean(input.forceExtract) && familyForExtract === "auto",
+    rows: cached.rows,
+    newestAt: cached.newestAt,
+    now: new Date(),
+    reuseFresh: Boolean(input.reuseFreshAutoExtract),
+  });
   const gemini = await loadGeminiRows(
     {
       docId: doc.id,
@@ -198,11 +220,12 @@ async function prepareFill(input: {
       filename: doc.filename,
       shopLine,
       docType: doc.docType || issuedPolicyDocType(shopLine),
-      force: Boolean(input.forceExtract) && familyForExtract === "auto",
+      force,
+      extractPurpose: "fill",
     },
     {
       readStoredFile,
-      loadCachedRows: loadCachedGeminiRows,
+      loadCachedRows: async () => cached.rows,
       loadGeminiApiKey,
       extractWithGeminiPdf,
       persistRows: (id, rows) => persistExtractRows(id, rows, policy.riskId),
@@ -345,6 +368,7 @@ export async function fillPolicyFromDec(input: {
     policyId: input.policyId,
     documentId: input.documentId,
     forceExtract: input.source === "manual",
+    reuseFreshAutoExtract: input.source === "manual",
   });
   if (!prepared.ok) return prepared;
   const { policy, doc, proposed, classified } = prepared.prepared;

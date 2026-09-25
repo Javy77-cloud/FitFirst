@@ -63,6 +63,8 @@ import { getAgentPolicyAccess } from "@/lib/policy/agent-policy-access-prefs";
 import { resolvePolicyViewerAccess } from "@/lib/policy/agent-policy-access";
 
 export const dynamic = "force-dynamic";
+/** Fill from declaration reads a DEC with Gemini. Same ceiling as the deal Fill page. */
+export const maxDuration = 300;
 
 export default async function PolicyDetailPage({
   params,

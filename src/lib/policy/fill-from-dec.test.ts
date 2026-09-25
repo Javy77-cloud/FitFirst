@@ -613,6 +613,10 @@ describe("fillPolicyFromDec wiring", () => {
     expect(action).toMatch(/policySet\.termMonths = patch\.policy\.termMonths/);
     expect(action).toMatch(/source: input\.source/);
     expect(action).toMatch(/forceExtract: input\.source === "manual"/);
+    expect(action).toMatch(/reuseFreshAutoExtract: input\.source === "manual"/);
+    expect(action).toMatch(/extractPurpose: "fill"/);
+    expect(action).toMatch(/shouldForceAutoDecReread/);
+    expect(source("src/app/policies/[id]/page.tsx")).toMatch(/export const maxDuration = 300/);
     expect(action).not.toMatch(/quoteSheets|quote_sheets|fillQuoteSheet/);
     const mint = source("src/app/actions/policy-mint.ts");
     expect(mint).toMatch(/fillPolicyFromDecOnIssue/);

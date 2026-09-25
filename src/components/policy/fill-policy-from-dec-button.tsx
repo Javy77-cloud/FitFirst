@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { FILL_DEC_CURRENT_NOTICE, fillOverwriteWarning } from "@/lib/policy/fill-from-dec";
+import { FILL_DEC_CURRENT_NOTICE, fillDecCaughtError, fillOverwriteWarning } from "@/lib/policy/fill-from-dec";
 import { flashAction } from "@/lib/flash-client";
 
 export function FillPolicyFromDecButton({ policyId }: { policyId: string }) {
@@ -72,12 +72,20 @@ export function FillPolicyFromDecButton({ policyId }: { policyId: string }) {
     }
     setError(null);
     startTransition(async () => {
-      const result = await fillPolicyFromDec({
-        policyId,
-        reason: trimmed,
-        source: "manual",
-        confirmOverwrite: phase === "warn" || (preview?.overwriteCount ?? 0) === 0,
-      });
+      let result: Awaited<ReturnType<typeof fillPolicyFromDec>>;
+      try {
+        result = await fillPolicyFromDec({
+          policyId,
+          reason: trimmed,
+          source: "manual",
+          confirmOverwrite: phase === "warn" || (preview?.overwriteCount ?? 0) === 0,
+        });
+      } catch (error) {
+        const message = fillDecCaughtError(error);
+        setError(message);
+        flashAction(message, "error");
+        return;
+      }
       if (!result.ok) {
         if (result.overwriteCount && result.overwriteCount > 0) {
           setPreview((current) =>

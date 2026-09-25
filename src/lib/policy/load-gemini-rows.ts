@@ -45,12 +45,20 @@ export type LoadGeminiRowsInput = {
   shopLine?: string | null;
   /** dec or current_policy. Defaults to dec for homeowners. */
   docType?: string | null;
+  /** Fill from declaration — cap retries so a long PDF cannot outlive the function. */
+  extractPurpose?: "fill" | "extract";
 };
 
 export type GeminiExtractFn = (
   buffer: Buffer,
   docType: string,
-  options: { apiKey: string; mimeType: string; filename: string; shopLine?: string | null },
+  options: {
+    apiKey: string;
+    mimeType: string;
+    filename: string;
+    shopLine?: string | null;
+    purpose?: "fill" | "extract";
+  },
 ) => Promise<{
   ok: boolean;
   message?: string;
@@ -120,6 +128,44 @@ export async function readDecPdfBytes(
   return { ok: true, buffer };
 }
 
+/** Policy-level premium is on old caches. Coverage deductibles and line premiums are not. */
+const POLICY_LEVEL_PREMIUM_KEYS = new Set(["premium", "current_premium"]);
+
+/** A cached auto extract from before the PAP map has mint fields but no deductibles or line premiums. */
+export function autoDecCacheSupportsFill(rows: readonly GeminiMintRow[]): boolean {
+  return rows.some((row) => {
+    const value = (row.normalizedValue ?? row.rawValue ?? "").trim();
+    if (!value) return false;
+    const key = row.fieldKey.trim().toLowerCase();
+    if (!key || POLICY_LEVEL_PREMIUM_KEYS.has(key)) return false;
+    return key.includes("deductible") || key.endsWith("_premium");
+  });
+}
+
+/** Preview may re-read a hollow auto cache. Confirm must not call Gemini again when that read just landed. */
+export const AUTO_FILL_CACHE_FRESH_MS = 15 * 60 * 1000;
+
+export function shouldForceAutoDecReread(input: {
+  manualAuto: boolean;
+  rows: readonly GeminiMintRow[];
+  newestAt: Date | null;
+  now: Date;
+  reuseFresh: boolean;
+}): boolean {
+  if (!input.manualAuto) return false;
+  if (!evaluateMintExtract(input.rows).ok) return true;
+  if (autoDecCacheSupportsFill(input.rows)) return false;
+  if (
+    input.reuseFresh &&
+    input.newestAt &&
+    input.now.getTime() - input.newestAt.getTime() < AUTO_FILL_CACHE_FRESH_MS &&
+    input.now.getTime() >= input.newestAt.getTime()
+  ) {
+    return false;
+  }
+  return true;
+}
+
 /**
  * Load Gemini rows for policy mint. Uses the shared document store (Blob or disk).
  * Missing file / missing key / failed extract return a loud error — never [].
@@ -163,6 +209,7 @@ export async function loadGeminiRows(
       mimeType: input.mimeType ?? "application/pdf",
       filename: input.filename ?? "declaration.pdf",
       shopLine: input.shopLine ?? null,
+      purpose: input.extractPurpose,
     });
     if (!gemini.ok) {
       log("dec extract: Gemini failed", { documentId: input.docId, message: gemini.message });

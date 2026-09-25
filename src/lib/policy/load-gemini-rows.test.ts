@@ -3,9 +3,12 @@ import { readFileSync } from "node:fs";
 import { MISSING_GEMINI_KEY_MESSAGE } from "@/lib/extraction/gemini/key";
 import { mintFailureToast } from "./mint-gate";
 import {
+  autoDecCacheSupportsFill,
   DEC_FILE_MISSING_MESSAGE,
   loadGeminiRows,
   readDecPdfBytes,
+  shouldForceAutoDecReread,
+  type GeminiMintRow,
 } from "./load-gemini-rows";
 
 const ROSA_BLOB_KEY =
@@ -356,5 +359,90 @@ describe("readDecPdfBytes + mint failure toast", () => {
     expect(source("src/app/actions/policy-mint.ts")).not.toMatch(/FF-MINT/);
     expect(source("src/lib/policy/mint-gate.ts")).toMatch(/need_dec_file/);
     expect(source("src/lib/policy/mint-gate.ts")).toMatch(/need_dec_fields/);
+  });
+});
+
+const mintCache: GeminiMintRow[] = [
+  { fieldKey: "premium", normalizedValue: "1200.00", rawValue: "1200.00", confidence: 0.9, flagged: false },
+  { fieldKey: "effective_date", normalizedValue: "2026-06-01", rawValue: "2026-06-01", confidence: 0.9, flagged: false },
+];
+
+describe("auto fill confirm does not re-read Gemini", () => {
+  it("treats policy premium alone as a hollow auto cache", () => {
+    expect(autoDecCacheSupportsFill(mintCache)).toBe(false);
+    expect(
+      autoDecCacheSupportsFill([
+        ...mintCache,
+        {
+          fieldKey: "vehicle_1_comp_deductible",
+          normalizedValue: "500",
+          rawValue: "500",
+          confidence: 0.9,
+          flagged: false,
+        },
+      ]),
+    ).toBe(true);
+  });
+
+  it("re-reads on the first click when the saved extract has no coverage amounts", () => {
+    const now = new Date("2026-09-25T20:00:00.000Z");
+    expect(
+      shouldForceAutoDecReread({
+        manualAuto: true,
+        rows: mintCache,
+        newestAt: new Date("2026-09-25T19:59:00.000Z"),
+        now,
+        reuseFresh: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("skips Gemini on confirm when preview just stored the extract", () => {
+    const now = new Date("2026-09-25T20:00:00.000Z");
+    expect(
+      shouldForceAutoDecReread({
+        manualAuto: true,
+        rows: mintCache,
+        newestAt: new Date("2026-09-25T19:50:00.000Z"),
+        now,
+        reuseFresh: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("re-reads a hollow cache that is older than this preview", () => {
+    const now = new Date("2026-09-25T20:00:00.000Z");
+    expect(
+      shouldForceAutoDecReread({
+        manualAuto: true,
+        rows: mintCache,
+        newestAt: new Date("2026-09-20T20:00:00.000Z"),
+        now,
+        reuseFresh: true,
+      }),
+    ).toBe(true);
+  });
+
+  it("keeps an older cache once deductibles are already stored", () => {
+    const now = new Date("2026-09-25T20:00:00.000Z");
+    const rows: GeminiMintRow[] = [
+      ...mintCache,
+      {
+        fieldKey: "liability_bi_premium",
+        normalizedValue: "640",
+        rawValue: "640",
+        confidence: 0.9,
+        flagged: false,
+      },
+    ];
+    expect(
+      shouldForceAutoDecReread({
+        manualAuto: true,
+        rows,
+        newestAt: new Date("2026-01-01T00:00:00.000Z"),
+        now,
+        reuseFresh: false,
+      }),
+    ).toBe(false);
   });
 });
