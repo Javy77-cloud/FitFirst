@@ -139,6 +139,7 @@ export default async function PolicyDetailPage({
     location,
     risk,
     quoteSheet,
+    overviewSheet,
     fileVersions,
   } = workspace;
   const error = typeof query.error === "string" ? query.error : undefined;
@@ -429,7 +430,11 @@ export default async function PolicyDetailPage({
             contact={contact}
             account={account}
             deal={deal}
-            sheet={(quoteSheet?.values ?? null) as Record<string, { value?: string | null } | undefined> | null}
+            sheet={
+              (overviewSheet ??
+                quoteSheet?.values ??
+                null) as Record<string, { value?: string | null } | undefined> | null
+            }
             vehicles={vehicles}
             isAuto={isAuto}
             terms={terms}

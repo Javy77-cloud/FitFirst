@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { buildLobOverviewSections } from "./lob-overview";
-import { dwellingFactsFromSheet, parsePropertyYear, resolveDwellingFacts } from "./dwelling-facts";
+import {
+  dwellingFactsFromSheet,
+  overviewDwellingSheet,
+  parsePropertyYear,
+  propertyProtectionWithDwelling,
+  resolveDwellingFacts,
+} from "./dwelling-facts";
 
 describe("dwelling facts from sheet / risk", () => {
   it("parses year built and roof year from the master sheet", () => {
@@ -88,5 +94,79 @@ describe("dwelling facts from sheet / risk", () => {
     expect(dwelling.find((field) => field.key === "construction")?.label).toBe("Construction type");
     expect(dwelling.find((field) => field.key === "construction")?.value).toBe("Masonry");
     expect(dwelling.find((field) => field.key === "occupancy")?.value).toBe("Owner");
+  });
+
+  it("shows Occupancy from sheet occupancy when the risk occupancy is blank", () => {
+    const facts = resolveDwellingFacts({
+      risk: { yearBuilt: null, construction: null, occupancy: null },
+      sheet: {
+        year_built: { value: "1998" },
+        construction: { value: "masonry" },
+        occupancy: { value: "Owner" },
+      },
+    });
+    expect(facts.yearBuilt).toBe(1998);
+    expect(facts.construction).toBe("Masonry");
+    expect(facts.occupancy).toBe("Owner");
+
+    const dwelling =
+      buildLobOverviewSections({
+        policyId: "49e212ee-94fc-42c8-8877-c36988b0c1f2",
+        lineOfBusiness: "HO",
+        formType: "HO3",
+        coverageA: 442000,
+        yearBuilt: facts.yearBuilt,
+        construction: facts.construction,
+        occupancy: facts.occupancy,
+      }).find((section) => section.id === "dwelling")?.fields ?? [];
+    expect(dwelling.find((field) => field.key === "yearBuilt")?.value).toBe("1998");
+    expect(dwelling.find((field) => field.key === "construction")?.label).toBe("Construction type");
+    expect(dwelling.find((field) => field.key === "construction")?.value).toBe("Masonry");
+    expect(dwelling.find((field) => field.key === "occupancy")?.label).toBe("Occupancy");
+    expect(dwelling.find((field) => field.key === "occupancy")?.value).toBe("Owner");
+  });
+
+  it("reads occupancy, year built, and construction for a book policy with no quote sheet", () => {
+    const saved = propertyProtectionWithDwelling(null, {
+      yearBuilt: 1988,
+      construction: "masonry",
+      occupancy: "Owner",
+      updatedAt: "2026-09-25T22:48:55.000Z",
+    });
+    const sheet = overviewDwellingSheet({
+      sheet: null,
+      protection: saved,
+      extracted: [
+        { fieldKey: "occupancy", normalizedValue: "Tenant", createdAt: "2026-09-25T22:00:00.000Z" },
+        { fieldKey: "coverage_a", normalizedValue: "442000", createdAt: "2026-09-25T22:48:55.000Z" },
+      ],
+    });
+    const facts = resolveDwellingFacts({ risk: null, sheet });
+    expect(facts.yearBuilt).toBe(1988);
+    expect(facts.construction).toBe("Masonry");
+    expect(facts.occupancy).toBe("Owner");
+    expect(saved?.dwelling).toEqual({
+      year_built: "1988",
+      construction: "masonry",
+      occupancy: "Owner",
+    });
+  });
+
+  it("fills a blank sheet occupancy from the declaration extract", () => {
+    const sheet = overviewDwellingSheet({
+      sheet: {
+        year_built: { value: "2004" },
+        construction: { value: "Frame" },
+        occupancy: { value: "" },
+      },
+      extracted: [
+        { fieldKey: "occupancy", normalizedValue: "Owner", createdAt: "2026-09-25T22:48:55.000Z" },
+        { fieldKey: "construction_type", normalizedValue: "Masonry", createdAt: "2026-09-25T22:48:55.000Z" },
+      ],
+    });
+    const facts = resolveDwellingFacts({ risk: null, sheet });
+    expect(facts.yearBuilt).toBe(2004);
+    expect(facts.construction).toBe("Frame");
+    expect(facts.occupancy).toBe("Owner");
   });
 });

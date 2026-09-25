@@ -34,7 +34,7 @@ import {
 } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { insuranceFamilyFromPolicy } from "@/lib/desk/policy-family";
-import { parsePropertyYear } from "@/lib/policy/dwelling-facts";
+import { dwellingSnapshotFromProtection, parsePropertyYear } from "@/lib/policy/dwelling-facts";
 import {
   buildPropertyProtectionSnapshot,
   parsePropertyProtectionSnapshot,
@@ -710,14 +710,18 @@ export async function issuePolicyFromDeclaration(input: {
     mintedAt: new Date().toISOString(),
   };
 
+  const keptDwelling = dwellingSnapshotFromProtection(existing?.propertyProtection);
   const propertyProtection =
     def.shopLine === "home"
-      ? buildPropertyProtectionSnapshot({
-          existing: parsePropertyProtectionSnapshot(existing?.propertyProtection),
-          sheet: sheetValues,
-          gemini: geminiRows,
-          source: "mint",
-        })
+      ? {
+          ...buildPropertyProtectionSnapshot({
+            existing: parsePropertyProtectionSnapshot(existing?.propertyProtection),
+            sheet: sheetValues,
+            gemini: geminiRows,
+            source: "mint",
+          }),
+          ...(Object.keys(keptDwelling).length ? { dwelling: keptDwelling } : {}),
+        }
       : null;
 
   const values = {

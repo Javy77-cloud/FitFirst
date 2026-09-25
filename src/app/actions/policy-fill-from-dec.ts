@@ -31,6 +31,7 @@ import {
   shouldForceHomeDecReread,
   type GeminiMintRow,
 } from "@/lib/policy/load-gemini-rows";
+import { propertyProtectionWithDwelling } from "@/lib/policy/dwelling-facts";
 import { parsePropertyProtectionSnapshot } from "@/lib/policy/property-protection";
 import { writeLicense } from "@/lib/pii/write";
 import { termRoleFromTags } from "@/lib/documents/document-labels";
@@ -104,7 +105,6 @@ async function persistExtractRows(docId: string, rows: GeminiMintRow[], policyRi
       .from(documents)
       .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.id, docId)));
     const riskId = riskIdForExtractedFieldsCache(doc?.riskId, policyRiskId);
-    if (!riskId) return;
     const values = rows.flatMap((field) => {
       const normalized = field.normalizedValue?.trim() || "";
       const raw = field.rawValue?.trim() || normalized;
@@ -113,7 +113,7 @@ async function persistExtractRows(docId: string, rows: GeminiMintRow[], policyRi
         {
           tenantId: DEFAULT_TENANT_ID,
           documentId: docId,
-          riskId,
+          riskId: riskId ?? null,
           fieldKey: field.fieldKey,
           rawValue: raw,
           normalizedValue: normalized || raw,
@@ -450,14 +450,14 @@ export async function fillPolicyFromDec(input: {
     if (Object.keys(patch.coverageLimits).length > 0) {
       policySet.coverageLimits = { ...(policy.coverageLimits ?? {}), ...patch.coverageLimits };
     }
-    if (Object.keys(patch.protection).length > 0) {
-      const existing = parsePropertyProtectionSnapshot(policy.propertyProtection);
-      policySet.propertyProtection = {
-        values: { ...(existing?.values ?? {}), ...patch.protection },
-        updatedAt: new Date().toISOString(),
-        source: "gemini" as const,
-      };
-    }
+    const nextProtection = propertyProtectionWithDwelling(policy.propertyProtection, {
+      protection: patch.protection,
+      yearBuilt: patch.risk.yearBuilt,
+      construction: patch.risk.construction,
+      occupancy: patch.risk.occupancy,
+      source: "gemini",
+    });
+    if (nextProtection) policySet.propertyProtection = nextProtection;
 
     const riskKeys = Object.keys(patch.risk);
     if (riskKeys.length > 0) {
