@@ -142,14 +142,24 @@ type PreparedFill = {
   classified: ReturnType<typeof classifyFillFields>;
 };
 
-async function prepareFill(input: {
+const decDocColumns = {
+  id: documents.id,
+  filename: documents.filename,
+  storagePath: documents.storagePath,
+  mimeType: documents.mimeType,
+  docType: documents.docType,
+  slot: documents.slot,
+  createdAt: documents.createdAt,
+};
+
+/** Policy + declaration file only. No Gemini. The popup can show agent, time, and filename while the read runs. */
+async function loadFillDecDocument(input: {
   policyId: string;
   documentId?: string | null;
-  /** Manual auto Fill re-reads a hollow DEC cache. A cached extract from before the PAP field map drops deductibles and premiums. */
-  forceExtract?: boolean;
-  /** Confirm step: the preview click already read the DEC. Do not call Gemini again. */
-  reuseFreshAutoExtract?: boolean;
-}): Promise<{ ok: true; prepared: PreparedFill } | { ok: false; error: string }> {
+}): Promise<
+  | { ok: true; policy: typeof policies.$inferSelect; doc: DecDocLike & { storagePath?: string | null } }
+  | { ok: false; error: string }
+> {
   if (!isUuid(input.policyId)) return { ok: false, error: "Policy required." };
   const [policy] = await db
     .select()
@@ -158,15 +168,7 @@ async function prepareFill(input: {
   if (!policy) return { ok: false, error: "Policy not found." };
 
   const docs = await db
-    .select({
-      id: documents.id,
-      filename: documents.filename,
-      storagePath: documents.storagePath,
-      mimeType: documents.mimeType,
-      docType: documents.docType,
-      slot: documents.slot,
-      createdAt: documents.createdAt,
-    })
+    .select(decDocColumns)
     .from(documents)
     .where(
       and(
@@ -179,15 +181,7 @@ async function prepareFill(input: {
   let pool = docs;
   if (policy.sourceDocumentId && !pool.some((doc) => doc.id === policy.sourceDocumentId)) {
     const [source] = await db
-      .select({
-        id: documents.id,
-        filename: documents.filename,
-        storagePath: documents.storagePath,
-        mimeType: documents.mimeType,
-        docType: documents.docType,
-        slot: documents.slot,
-        createdAt: documents.createdAt,
-      })
+      .select(decDocColumns)
       .from(documents)
       .where(and(eq(documents.tenantId, DEFAULT_TENANT_ID), eq(documents.id, policy.sourceDocumentId)));
     if (source) pool = [...pool, source];
@@ -201,42 +195,24 @@ async function prepareFill(input: {
     sourceDocumentId: policy.sourceDocumentId,
   });
   if (!doc) return { ok: false, error: "No declaration page on this policy." };
+  return { ok: true, policy, doc };
+}
+
+async function prepareFill(input: {
+  policyId: string;
+  documentId?: string | null;
+  /** Manual auto Fill re-reads a hollow DEC cache. A cached extract from before the PAP field map drops deductibles and premiums. */
+  forceExtract?: boolean;
+  /** Confirm step: the preview click already read the DEC. Do not call Gemini again. */
+  reuseFreshAutoExtract?: boolean;
+}): Promise<{ ok: true; prepared: PreparedFill } | { ok: false; error: string }> {
+  const loaded = await loadFillDecDocument({ policyId: input.policyId, documentId: input.documentId });
+  if (!loaded.ok) return loaded;
+  const { policy, doc } = loaded;
 
   const shopLine = shopLineForPolicy(policy.lineOfBusiness);
   const familyForExtract = fillFamilyForPolicy(policy);
-  const cached = await readCachedExtract(doc.id);
-  const force = shouldForceAutoDecReread({
-    manualAuto: Boolean(input.forceExtract) && familyForExtract === "auto",
-    rows: cached.rows,
-    newestAt: cached.newestAt,
-    now: new Date(),
-    reuseFresh: Boolean(input.reuseFreshAutoExtract),
-  });
-  const gemini = await loadGeminiRows(
-    {
-      docId: doc.id,
-      storagePath: doc.storagePath,
-      mimeType: doc.mimeType,
-      filename: doc.filename,
-      shopLine,
-      docType: doc.docType || issuedPolicyDocType(shopLine),
-      force,
-      extractPurpose: "fill",
-    },
-    {
-      readStoredFile,
-      loadCachedRows: async () => cached.rows,
-      loadGeminiApiKey,
-      extractWithGeminiPdf,
-      persistRows: (id, rows) => persistExtractRows(id, rows, policy.riskId),
-    },
-  );
-  if (!gemini.ok) return { ok: false, error: gemini.message };
-
-  const family = fillFamilyForPolicy(policy);
-  const proposed = proposeFillFromDec({ family, rows: gemini.rows });
-
-  const [risk, contact, mortgagees, terms, vehicleRows, driverRows] = await Promise.all([
+  const snapshotPromise = Promise.all([
     policy.riskId
       ? db
           .select()
@@ -288,6 +264,41 @@ async function prepareFill(input: {
       .from(drivers)
       .where(and(eq(drivers.tenantId, DEFAULT_TENANT_ID), eq(drivers.policyId, policy.id))),
   ]);
+  const cached = await readCachedExtract(doc.id);
+  const force = shouldForceAutoDecReread({
+    manualAuto: Boolean(input.forceExtract) && familyForExtract === "auto",
+    rows: cached.rows,
+    newestAt: cached.newestAt,
+    now: new Date(),
+    reuseFresh: Boolean(input.reuseFreshAutoExtract),
+  });
+  const gemini = await loadGeminiRows(
+    {
+      docId: doc.id,
+      storagePath: doc.storagePath,
+      mimeType: doc.mimeType,
+      filename: doc.filename,
+      shopLine,
+      docType: doc.docType || issuedPolicyDocType(shopLine),
+      force,
+      extractPurpose: "fill",
+    },
+    {
+      readStoredFile,
+      loadCachedRows: async () => cached.rows,
+      loadGeminiApiKey,
+      extractWithGeminiPdf,
+      persistRows: (id, rows) => persistExtractRows(id, rows, policy.riskId),
+    },
+  );
+  if (!gemini.ok) {
+    void snapshotPromise.catch(() => undefined);
+    return { ok: false, error: gemini.message };
+  }
+
+  const family = fillFamilyForPolicy(policy);
+  const proposed = proposeFillFromDec({ family, rows: gemini.rows });
+  const [risk, contact, mortgagees, terms, vehicleRows, driverRows] = await snapshotPromise;
 
   const protection = parsePropertyProtectionSnapshot(policy.propertyProtection);
   const existing = snapshotFillTargets({
@@ -308,6 +319,24 @@ async function prepareFill(input: {
   });
   const classified = classifyFillFields(existing, proposed);
   return { ok: true, prepared: { policy, doc, proposed, existing, classified } };
+}
+
+/** Agent, clock, and declaration name. Does not read the PDF. */
+export async function peekFillPolicyFromDec(policyId: string): Promise<
+  | { ok: true; agentName: string; serverNow: string; documentId: string; filename: string }
+  | { ok: false; error: string }
+> {
+  const session = await currentDeskSession();
+  if (!session.signedIn) return { ok: false, error: "Sign in required." };
+  const loaded = await loadFillDecDocument({ policyId });
+  if (!loaded.ok) return loaded;
+  return {
+    ok: true,
+    agentName: session.name?.trim() || session.email || "Agent",
+    serverNow: formatFillServerTime(new Date()),
+    documentId: loaded.doc.id,
+    filename: loaded.doc.filename ?? "",
+  };
 }
 
 export async function previewFillPolicyFromDec(policyId: string): Promise<
