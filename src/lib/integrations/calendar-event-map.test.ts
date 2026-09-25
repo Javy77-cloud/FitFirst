@@ -94,6 +94,8 @@ describe("calendar event mapping", () => {
       notes: "Bring roof year",
     };
     expect(googleEventWriteBody(draft).extendedProperties.private.fitfirstActivityId).toBe("act-77");
+    expect(googleEventWriteBody(draft).reminders).toEqual({ useDefault: false });
+    expect(outlookEventWriteBody(draft).isReminderOn).toBe(false);
     expect(outlookEventWriteBody(draft).singleValueExtendedProperties[0]).toEqual({
       id: OUTLOOK_FITFIRST_PROP_ID,
       value: "act-77",

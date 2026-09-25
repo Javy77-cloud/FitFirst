@@ -48,11 +48,13 @@ describe("commitments dissolve into entities", () => {
 
   it("expands the timeline only for overdue or due-soon heat", () => {
     expect(commitmentHeat(new Date("2026-09-18T13:00:00.000Z"), asOf)).toBe("overdue");
-    expect(commitmentHeat(new Date("2026-09-20T12:00:00.000Z"), asOf)).toBe("due_soon");
+    expect(commitmentHeat(new Date("2026-09-19T13:40:00.000Z"), asOf)).toBe("due_soon");
+    expect(commitmentHeat(new Date("2026-09-20T12:00:00.000Z"), asOf)).toBe("later");
     expect(commitmentHeat(new Date("2026-09-25T13:00:00.000Z"), asOf)).toBe("later");
     expect(isHotCommitment("later")).toBe(false);
     expect(isHotCommitment("due_soon")).toBe(true);
-    expect(shouldNudgeCommitment(new Date("2026-09-25T13:00:00.000Z"), asOf)).toBe(false);
+    expect(shouldNudgeCommitment(new Date("2026-09-21T13:00:00.000Z"), asOf)).toBe(false);
+    expect(shouldNudgeCommitment(new Date("2026-09-19T13:30:00.000Z"), asOf)).toBe(true);
     expect(shouldNudgeCommitment(new Date("2026-09-19T10:00:00.000Z"), asOf)).toBe(true);
   });
 

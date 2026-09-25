@@ -7,7 +7,7 @@ import {
   type TaskPipelineStage,
 } from "@/lib/domain";
 import { deskDateKey } from "@/lib/desk/desk-timezone";
-import { parseDeskDateTimeLocal } from "@/lib/tasks/due-at";
+import { AUTO_REMIND_LEAD_MS, parseDeskDateTimeLocal } from "@/lib/tasks/due-at";
 
 export type RelatedIds = {
   contactId?: string | null;
@@ -158,7 +158,7 @@ export function isDueSoon(
   when: Date | null,
   now = new Date(),
   status?: string,
-  hours = 36,
+  hours = AUTO_REMIND_LEAD_MS / 3_600_000,
 ): boolean {
   if (!when || isClosedStatus(status ?? "incomplete")) return false;
   const delta = when.getTime() - now.getTime();
@@ -191,8 +191,7 @@ export function shouldNotifyCall(input: {
   const now = input.now ?? new Date();
   return (
     isOverdue(input.when, now, input.status) ||
-    isDueToday(input.when, now, input.status) ||
-    isDueSoon(input.when, now, input.status, 36) ||
+    isDueSoon(input.when, now, input.status) ||
     reminderHasFired({
       when: input.when,
       reminderMinutes: input.reminderMinutes,

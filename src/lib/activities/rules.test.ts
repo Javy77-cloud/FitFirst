@@ -107,6 +107,9 @@ describe("due notifications", () => {
     expect(isOverdue(yesterday, now, "incomplete")).toBe(true);
     expect(isDueToday(laterToday, now, "incomplete")).toBe(true);
     expect(isDueSoon(tomorrow, now, "incomplete", 36)).toBe(true);
+    expect(isDueSoon(tomorrow, now, "incomplete")).toBe(false);
+    expect(isDueSoon(new Date(now.getTime() + 30 * 60 * 1000), now, "incomplete")).toBe(true);
+    expect(isDueSoon(laterToday, now, "incomplete")).toBe(false);
     expect(
       reminderHasFired({
         when: tomorrow,
@@ -132,6 +135,22 @@ describe("due notifications", () => {
         status: "incomplete",
       }),
     ).toBe(false);
+    expect(
+      shouldNotifyCall({
+        kind: "call",
+        when: laterToday,
+        now,
+        status: "incomplete",
+      }),
+    ).toBe(false);
+    expect(
+      shouldNotifyCall({
+        kind: "call",
+        when: new Date(now.getTime() + 30 * 60 * 1000),
+        now,
+        status: "incomplete",
+      }),
+    ).toBe(true);
     expect(
       shouldNotifyCall({
         kind: "call",

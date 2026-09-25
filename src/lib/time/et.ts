@@ -195,16 +195,17 @@ export function normalizeTaskPriority(raw: unknown): TaskPriority | null {
 }
 
 /**
- * Panel urgency from chosen task priority + time-until-due fallback.
- * Chosen HIGH/LOW always win; normal/none keep time-based urgency (no silent medium).
+ * Panel urgency from chosen task priority once the item is already inside
+ * the auto-remind window. Priority colors that nudge; it does not open one
+ * while the due instant is still hours or days away.
  */
 export function urgencyFromTaskPriority(
   priority: TaskPriority | null | undefined,
   timeBased: "high" | "medium" | "low" | null,
 ): "high" | "medium" | "low" | null {
+  if (timeBased == null) return null;
   if (priority === "high") return "high";
   if (priority === "low") return "low";
-  if (priority === "normal" && timeBased == null) return "medium";
   return timeBased;
 }
 
