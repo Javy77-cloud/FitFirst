@@ -6,7 +6,7 @@ const MIX_COLOR: Record<AppetiteMixSlice["key"], string> = {
   skip: "#94a3b8",
 };
 
-/** Two rail graphs only: this deal's shopping progress, and the active product's appetite mix. */
+/** Two rail graphs only: active-product appetite mix on top, this deal's shopping progress below. */
 export function DealRailCharts({
   progress,
   mix,
@@ -16,8 +16,8 @@ export function DealRailCharts({
 }) {
   return (
     <div className="flex w-full flex-col gap-2" data-ff-deal-rail-charts="">
-      <ShoppingProgressChart rows={progress} />
       <AppetiteMixChart mix={mix} />
+      <ShoppingProgressChart rows={progress} />
     </div>
   );
 }

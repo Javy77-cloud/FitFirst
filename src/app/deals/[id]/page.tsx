@@ -148,7 +148,11 @@ import {
   sheetHasMarketFacts,
   shopListCarrierIdsFromLogs,
 } from "@/lib/deals/manual-markets";
-import { appetiteMixForActiveProduct, shoppingProgressForDeal } from "@/lib/deals/rail-charts";
+import {
+  appetiteMixForActiveProduct,
+  chartShopListCarrierIds,
+  shoppingProgressForDeal,
+} from "@/lib/deals/rail-charts";
 import { DealDetailsPanel } from "@/components/custom-fields/deal-details-panel";
 import { EditLayoutLink } from "@/components/custom-fields/edit-layout-link";
 import { loadModuleLayoutBundle, loadRecordValues } from "@/lib/custom-fields/store";
@@ -738,7 +742,7 @@ export default async function DealPage({
   const appetiteMix = appetiteMixForActiveProduct({
     matches: matches.map((row) => ({ carrierId: row.carrierId, band: row.band })),
     manualIds,
-    shopListIds,
+    shopListIds: chartShopListCarrierIds(dealLogs).filter((id) => !excludedMarketIds.has(id)),
     lifeOutcomes: sheetLine === "life" ? lifeAppetite.predictions.map((row) => row.outcome) : [],
   });
 
