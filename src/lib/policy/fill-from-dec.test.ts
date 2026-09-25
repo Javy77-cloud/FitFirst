@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { MintGeminiRow } from "@/lib/policy/mint-gate";
+import { sheetKeysForGeminiKey } from "@/lib/extraction/gemini/map";
 import {
   buildPolicyFillAuditInsert,
   classifyFillFields,
@@ -9,6 +10,7 @@ import {
   formatDecDeductible,
   groupAppliedFill,
   manualFillReasonError,
+  parseDecTermDate,
   pickPolicyDecDocument,
   proposeFillFromDec,
   snapshotFillTargets,
@@ -57,6 +59,8 @@ const gloria = rows({
   hurricane_deductible: "2.0% of Coverage A - $8,672",
   ordinance_or_law: "25%",
   premium: "6567.76",
+  effective_date: "06/28/2026",
+  expiration_date: "06/28/2027",
 });
 
 describe("fillPolicyFromDec field map", () => {
@@ -91,7 +95,14 @@ describe("fillPolicyFromDec field map", () => {
     expect(proposed.hurricaneDeductible).toBe("2% ($8,672)");
     expect(proposed.ordinanceOrLaw).toBe("25%");
     expect(proposed.premium).toBe("6567.76");
+    expect(proposed.effectiveDate).toBe("2026-06-28");
+    expect(proposed.expirationDate).toBe("2027-06-28");
+    expect(proposed.termMonths).toBe("12");
     expect(formatDecDeductible("2.0% of Coverage A - $8,672")).toBe("2% ($8,672)");
+    expect(parseDecTermDate("Sept 29, 2026")).toBe("2026-09-29");
+    expect(sheetKeysForGeminiKey("effective_date")).toContain("effective_date");
+    expect(sheetKeysForGeminiKey("expiration_date")).toContain("expiration_date");
+    expect(sheetKeysForGeminiKey("term_length")).toContain("term_months");
   });
 
   it("maps mobile-home unit, roof, and scheduled structures when printed", () => {
@@ -143,6 +154,9 @@ describe("fillPolicyFromDec field map", () => {
         driver_1_license: "D123-456-78-9012",
         driver_2_name: "Claudia Patricia Gaviria",
         premium: "2074",
+        effective_date: "09/21/2026",
+        expiration_date: "03/21/2027",
+        term_length: "6 month",
       }),
     });
     expect(proposed["vehicle:vin:4T1BF1FK5FU485898.vin"]).toBe("4T1BF1FK5FU485898");
@@ -158,6 +172,9 @@ describe("fillPolicyFromDec field map", () => {
     expect(proposed["driver:andres felipe laguna gaviria.name"]).toMatch(/Andres Felipe/);
     expect(proposed["driver:claudia patricia gaviria.name"]).toMatch(/Claudia/);
     expect(proposed.coverageA).toBeUndefined();
+    expect(proposed.effectiveDate).toBe("2026-09-21");
+    expect(proposed.expirationDate).toBe("2027-03-21");
+    expect(proposed.termMonths).toBe("6");
   });
 });
 
@@ -176,6 +193,36 @@ describe("fill overwrite count", () => {
     expect(countFillOverwrites(classified)).toBe(2);
     expect(fillOverwriteWarning(countFillOverwrites(classified))).toBe("replaces 2 fields");
     expect(fillOverwriteWarning(1)).toBe("replaces 1 field");
+  });
+
+  it("counts a non-blank policy term the DEC would replace", () => {
+    const existing = snapshotFillTargets({
+      policy: {
+        effectiveDate: new Date("2025-06-28T12:00:00.000Z"),
+        expirationDate: new Date("2026-06-28T12:00:00.000Z"),
+        termMonths: 6,
+        formType: "HO3",
+      },
+    });
+    const classified = classifyFillFields(existing, proposed);
+    expect(classified.overwritten).toEqual(
+      expect.arrayContaining(["effectiveDate", "expirationDate", "termMonths"]),
+    );
+    expect(classified.skipped).toContain("formType");
+    const same = snapshotFillTargets({
+      policy: {
+        effectiveDate: "2026-06-28",
+        expirationDate: "2027-06-28T12:00:00.000Z",
+        termMonths: 12,
+      },
+    });
+    const unchanged = classifyFillFields(same, proposed);
+    expect(unchanged.skipped).toEqual(
+      expect.arrayContaining(["effectiveDate", "expirationDate", "termMonths"]),
+    );
+    expect(unchanged.overwritten).not.toContain("effectiveDate");
+    expect(unchanged.overwritten).not.toContain("expirationDate");
+    expect(unchanged.overwritten).not.toContain("termMonths");
   });
 
   it("does not count an identical value as an overwrite", () => {
@@ -285,6 +332,12 @@ describe("policy fill audit insert", () => {
     });
     expect(patch.protection.burglar_alarm).toBe("Yes");
     expect(patch.policy.coverageA).toBeUndefined();
+    const dates = groupAppliedFill(proposed, ["effectiveDate", "expirationDate", "termMonths"]);
+    expect(dates.policy.effectiveDate?.toISOString()).toBe("2026-06-28T12:00:00.000Z");
+    expect(dates.policy.expirationDate?.toISOString()).toBe("2027-06-28T12:00:00.000Z");
+    expect(dates.policy.termMonths).toBe(12);
+    expect(dates.term.termEffective?.toISOString()).toBe("2026-06-28T12:00:00.000Z");
+    expect(dates.term.termExpiration?.toISOString()).toBe("2027-06-28T12:00:00.000Z");
   });
 });
 
@@ -296,6 +349,9 @@ describe("fillPolicyFromDec wiring", () => {
     expect(action).toMatch(/export async function fillPolicyFromDecOnIssue/);
     expect(action.indexOf("manualFillReasonError")).toBeLessThan(action.indexOf("prepareFill"));
     expect(action).toMatch(/insert\(policyFillAudit\)/);
+    expect(action).toMatch(/policySet\.effectiveDate = patch\.policy\.effectiveDate/);
+    expect(action).toMatch(/policySet\.expirationDate = patch\.policy\.expirationDate/);
+    expect(action).toMatch(/policySet\.termMonths = patch\.policy\.termMonths/);
     expect(action).toMatch(/source: input\.source/);
     expect(action).not.toMatch(/quoteSheets|quote_sheets|fillQuoteSheet/);
     const mint = source("src/app/actions/policy-mint.ts");

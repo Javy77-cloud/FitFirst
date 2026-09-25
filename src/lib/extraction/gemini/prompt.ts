@@ -43,6 +43,8 @@ export const GEMINI_EXTRACT_JSON_KEYS = [
   "current_premium",
   "effective_date",
   "expiration_date",
+  "term_months",
+  "term_length",
   "mortgagee",
   "loan_number",
   // helpful extras often on the same forms
@@ -228,6 +230,8 @@ export const GEMINI_AUTO_EXTRACT_JSON_KEYS = [
   "current_carrier",
   "effective_date",
   "expiration_date",
+  "term_months",
+  "term_length",
   "years_with_carrier",
   "currently_insured",
   "aaa_member",
@@ -402,6 +406,7 @@ Field meaning guidance (from desk synonym brief):
   Coverage A / dwelling; hurricane / AOP / wind-hail deductibles;
   policy number (Policy No / Pol # / Policy # → policy_number); premium / current_premium / total premium / annual premium
   (issued total — not a prior quote); effective_date (Eff date / policy period start); expiration_date;
+  term_months or term_length when a length is printed (6 or 12) — do not invent a length;
   renewal_date = policy expiration date from the dec (same as expiration_date);
   selling_agency; producer; insurance_type; form (HO3/DP-3);
   Homeowners billing_frequency is always annual / yearly (do not invent 6-month on HO; Auto may be 6 or 12 months);

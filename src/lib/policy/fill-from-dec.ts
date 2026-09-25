@@ -2,6 +2,7 @@
  * Map one declaration extract onto a policy's Overview + Coverage (HO/DP)
  * or Vehicles + Coverage (Auto). Does not touch deal quote_sheets.
  */
+import { monthsBetweenTermDates } from "@/lib/documents/document-labels";
 import type { MintGeminiRow } from "@/lib/policy/mint-gate";
 import {
   isDeclarationPdf,
@@ -12,6 +13,7 @@ import {
 import { parsePropertyYear } from "@/lib/policy/dwelling-facts";
 import { splitPremisesAddress, type PremisesAddressParts } from "@/lib/policy/premises";
 import { resolveLobOverviewFamily } from "@/lib/policy/lob-overview";
+import { businessDateKey, noonUtcFromBusinessDate } from "@/lib/policies/current-term";
 import { normalizeDeductibleDisplay } from "@/lib/renewal/fill-compare-from-decs";
 import { parseMoney } from "@/lib/renewal/compare";
 
@@ -84,6 +86,9 @@ export type AppliedFillPatch = {
     coverageA?: number;
     formType?: string;
     premium?: string;
+    effectiveDate?: Date;
+    expirationDate?: Date;
+    termMonths?: number;
   };
   risk: {
     yearBuilt?: number;
@@ -114,6 +119,8 @@ export type AppliedFillPatch = {
     hurricaneDeductible?: string;
     comprehensiveDeductible?: string;
     collisionDeductible?: string;
+    termEffective?: Date;
+    termExpiration?: Date;
   };
   vehicles: AppliedVehicle[];
   drivers: AppliedDriver[];
@@ -330,6 +337,102 @@ function putAddress(
   put(out, zipKey, parts.zip);
 }
 
+const TERM_MONTH_NAMES: Record<string, number> = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
+};
+
+function ymd(year: number, month: number, day: number): string | null {
+  if (year < 1900 || year > 2200 || month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    return null;
+  }
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+/** Calendar day printed on a DEC. Storage key is YYYY-MM-DD. */
+export function parseDecTermDate(raw: string | null | undefined): string | null {
+  const text = (raw ?? "").trim();
+  if (!text) return null;
+  const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return ymd(Number(iso[1]), Number(iso[2]), Number(iso[3]));
+  const slash = text.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})\b/);
+  if (slash) {
+    let year = Number(slash[3]);
+    if (year < 100) year += year >= 70 ? 1900 : 2000;
+    return ymd(year, Number(slash[1]), Number(slash[2]));
+  }
+  const named = text.match(/^([A-Za-z]+)\.?\s+(\d{1,2}),?\s+(\d{4})\b/);
+  if (named) {
+    const month = TERM_MONTH_NAMES[named[1]!.toLowerCase()];
+    if (!month) return null;
+    return ymd(Number(named[3]), month, Number(named[2]));
+  }
+  return null;
+}
+
+/** Printed "6 month" / "semi-annual" / "12". Null when the dec does not say. */
+export function parsePrintedTermMonths(raw: string | null | undefined): number | null {
+  const text = (raw ?? "").trim().toLowerCase();
+  if (!text) return null;
+  if (/semi[-\s]?annual|\b6\s*-?\s*months?\b/.test(text)) return 6;
+  if (/\b12\s*-?\s*months?\b|\bannual\b|\byearly\b|\bone year\b/.test(text)) return 12;
+  if (/^\d{1,2}$/.test(text)) {
+    const months = Number(text);
+    if (months >= 1 && months <= 36) return months;
+  }
+  return null;
+}
+
+function proposeTermDates(out: Record<string, string>, rows: readonly MintGeminiRow[]) {
+  const effective = parseDecTermDate(
+    rawCell(rows, "effective_date", "policy_effective_date", "policy_period_from", "eff_date", "from_date"),
+  );
+  const expiration = parseDecTermDate(
+    rawCell(rows, "expiration_date", "policy_expiration_date", "policy_period_to", "exp_date", "to_date"),
+  );
+  const spanOk = Boolean(effective && expiration && expiration > effective);
+  if (spanOk) {
+    put(out, "effectiveDate", effective);
+    put(out, "expirationDate", expiration);
+  } else {
+    if (effective && !expiration) put(out, "effectiveDate", effective);
+    if (expiration && !effective) put(out, "expirationDate", expiration);
+  }
+  const printed = parsePrintedTermMonths(
+    rawCell(rows, "term_months", "term_length", "policy_term_length", "policy_term_months"),
+  );
+  const derived =
+    spanOk && effective && expiration
+      ? monthsBetweenTermDates(noonUtcFromBusinessDate(effective), noonUtcFromBusinessDate(expiration))
+      : null;
+  const months = derived ?? printed;
+  if (months) put(out, "termMonths", String(months));
+}
+
 function coverageMoney(rows: readonly MintGeminiRow[], ...keys: string[]): string {
   const raw = rawCell(rows, ...keys);
   return raw ? formatDecLimit(raw) : "";
@@ -337,6 +440,7 @@ function coverageMoney(rows: readonly MintGeminiRow[], ...keys: string[]): strin
 
 function proposeHome(rows: readonly MintGeminiRow[]): Record<string, string> {
   const out: Record<string, string> = {};
+  proposeTermDates(out, rows);
   putAddress(
     out,
     "premises",
@@ -470,6 +574,7 @@ function vehicleSuffix(index: number, suffix: string): string[] {
 
 function proposeAuto(rows: readonly MintGeminiRow[]): Record<string, string> {
   const out: Record<string, string> = {};
+  proposeTermDates(out, rows);
   putAddress(out, "mailing", rawCell(rows, "mailing_address", "contact_mailing_address"));
   const premium = parseMoney(rawCell(rows, "premium", "current_premium"));
   if (premium != null) put(out, "premium", premium.toFixed(2));
@@ -628,6 +733,9 @@ export type FillSnapshotInput = {
     formType?: string | null;
     premium?: string | number | null;
     coverageLimits?: Record<string, string> | null;
+    effectiveDate?: Date | string | null;
+    expirationDate?: Date | string | null;
+    termMonths?: number | null;
   } | null;
   risk?: {
     yearBuilt?: number | null;
@@ -681,6 +789,11 @@ export function snapshotFillTargets(input: FillSnapshotInput): Record<string, st
     put(out, "coverageA", String(policy.coverageA));
   }
   put(out, "formType", policy?.formType);
+  put(out, "effectiveDate", businessDateKey(policy?.effectiveDate));
+  put(out, "expirationDate", businessDateKey(policy?.expirationDate));
+  if (policy?.termMonths != null && Number.isFinite(policy.termMonths) && policy.termMonths > 0) {
+    put(out, "termMonths", String(Math.round(policy.termMonths)));
+  }
   const premium = policy?.premium ?? input.term?.premium;
   if (premium != null && String(premium).trim()) put(out, "premium", String(premium));
   for (const [limitKey, fieldKey] of Object.entries(LIMIT_KEYS)) {
@@ -829,6 +942,23 @@ export function groupAppliedFill(
   }
   const formType = take("formType");
   if (formType) patch.policy.formType = formType;
+  const effectiveDate = take("effectiveDate");
+  const expirationDate = take("expirationDate");
+  const effective = effectiveDate ? noonUtcFromBusinessDate(effectiveDate) : null;
+  const expiration = expirationDate ? noonUtcFromBusinessDate(expirationDate) : null;
+  if (effective) {
+    patch.policy.effectiveDate = effective;
+    patch.term.termEffective = effective;
+  }
+  if (expiration) {
+    patch.policy.expirationDate = expiration;
+    patch.term.termExpiration = expiration;
+  }
+  const termMonths = take("termMonths");
+  if (termMonths) {
+    const months = Number(termMonths);
+    if (Number.isFinite(months) && months > 0) patch.policy.termMonths = Math.round(months);
+  }
   const premium = take("premium");
   if (premium) {
     patch.policy.premium = premium;

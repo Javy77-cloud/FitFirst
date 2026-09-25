@@ -368,6 +368,9 @@ export async function fillPolicyFromDec(input: {
     if (patch.policy.coverageA != null) policySet.coverageA = patch.policy.coverageA;
     if (patch.policy.formType) policySet.formType = patch.policy.formType;
     if (patch.policy.premium) policySet.premium = patch.policy.premium;
+    if (patch.policy.effectiveDate) policySet.effectiveDate = patch.policy.effectiveDate;
+    if (patch.policy.expirationDate) policySet.expirationDate = patch.policy.expirationDate;
+    if (patch.policy.termMonths != null) policySet.termMonths = patch.policy.termMonths;
     if (Object.keys(patch.coverageLimits).length > 0) {
       policySet.coverageLimits = { ...(policy.coverageLimits ?? {}), ...patch.coverageLimits };
     }
