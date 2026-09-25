@@ -1,3 +1,5 @@
+import { isErrorsOmissionsProduct } from "@/lib/policy/eo";
+
 /** Live Zoho Policies picklists. Copied from the live module — do not invent values. */
 
 export const INSURANCE_TYPES = ["Life", "Health", "P&C"] as const;
@@ -15,6 +17,7 @@ export const POLICY_TYPES = [
   "Recreational Vehicle",
   "Other",
   "Workers' Comp",
+  "E&O",
 ] as const;
 export type PolicyType = (typeof POLICY_TYPES)[number];
 
@@ -149,7 +152,9 @@ export function subTypeFitsLine(
 ): boolean {
   const sub = (policySubType ?? "").trim();
   if (!sub) return false;
-  return policySubTypesFor(insuranceType, policyType).includes(sub);
+  const allowed = policySubTypesFor(insuranceType, policyType);
+  if (allowed.includes(sub)) return true;
+  return isErrorsOmissionsProduct(sub) && allowed.some((option) => isErrorsOmissionsProduct(option));
 }
 
 export function policySubTypesFor(
@@ -160,7 +165,14 @@ export function policySubTypesFor(
   if (insuranceType === "Health") return [...HEALTH_SUBS];
   if (policyType === "Home" || policyType === "Renter & Landord") return [...HOME_SUBS];
   if (policyType === "Auto") return [...AUTO_SUBS];
-  if (policyType === "Commercial" || policyType === "Workers' Comp") return [...COMMERCIAL_SUBS];
+  if (
+    policyType === "Commercial" ||
+    policyType === "Workers' Comp" ||
+    policyType === "E&O" ||
+    isErrorsOmissionsProduct(policyType)
+  ) {
+    return [...COMMERCIAL_SUBS];
+  }
   if (policyType === "Flood") return [...FLOOD_SUBS];
   if (policyType === "Umbrella") return [...UMBRELLA_SUBS];
   if (policyType === "Recreational Vehicle") return [...RV_SUBS];
@@ -184,9 +196,11 @@ export function lineOfBusinessFromZoho(
   if (sub === "Business Owners Policy (BOP)") return "BOP";
   if (
     sub === "General Liability" ||
-    sub === "Errors & Omissions" ||
+    isErrorsOmissionsProduct(sub) ||
+    isErrorsOmissionsProduct(policyType) ||
     sub === "Workers' Comp" ||
-    policyType === "Commercial"
+    policyType === "Commercial" ||
+    policyType === "E&O"
   ) {
     return "GL";
   }

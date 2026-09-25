@@ -1,4 +1,5 @@
 import { QUOTING_FORMS, type QuotingFormId } from "@/lib/domain";
+import { ERRORS_OMISSIONS_LABEL, productMenuTitle } from "@/lib/policy/eo";
 import { coerceQuotingFormId, quotingFormById } from "@/lib/quoting/forms";
 import { isPcPackageLine, type PcPackageLine } from "@/lib/deals/package-lines";
 import {
@@ -37,7 +38,12 @@ export type InsuranceCategoryOption = { id: InsuranceCategoryId; label: string }
 export type PolicySubtypeOption = {
   /** Stored quotingForm id for P&C, or life/health option label. */
   id: string;
+  /** Visible menu text. */
   label: string;
+  /** Tooltip. E&O uses the long name. */
+  title?: string;
+  /** Value written onto policy_sub_type. E&O keeps "Errors & Omissions". */
+  storedLabel?: string;
 };
 
 /** Exact Insurance Type picklist labels (prefer "PC" over "P&C"). */
@@ -173,7 +179,12 @@ export function formsForCategory(
     CATEGORY_FORMS[categoryId as Exclude<InsuranceCategoryId, "life" | "health">] ?? [];
   return forms.map((formId) => {
     const form = quotingFormById(formId)!;
-    return { id: form.id, label: form.label };
+    return {
+      id: form.id,
+      label: form.label,
+      title: productMenuTitle(form.id) ?? productMenuTitle(form.label),
+      storedLabel: form.id === "EO" ? ERRORS_OMISSIONS_LABEL : form.label,
+    };
   });
 }
 
@@ -197,6 +208,8 @@ export function policySubtypesForType(
   return QUOTING_FORMS.map((form) => ({
     id: form.id,
     label: form.label,
+    title: productMenuTitle(form.id) ?? productMenuTitle(form.label),
+    storedLabel: form.id === "EO" ? ERRORS_OMISSIONS_LABEL : form.label,
   }));
 }
 
@@ -237,7 +250,7 @@ export function cascadeFromDeal(input: {
       typeId,
       categoryId: catHit?.id ?? "",
       subtypeId: formHit?.id ?? wantedForm,
-      subtypeLabel: formHit?.label ?? wantedForm,
+      subtypeLabel: formHit?.storedLabel ?? formHit?.label ?? wantedForm,
     };
   }
 
@@ -254,7 +267,7 @@ export function cascadeFromDeal(input: {
     typeId,
     categoryId,
     subtypeId: hit?.id ?? "HO3",
-    subtypeLabel: hit?.label ?? "HO3",
+    subtypeLabel: hit?.storedLabel ?? hit?.label ?? "HO3",
   };
 }
 
@@ -314,6 +327,10 @@ export function categoryIdFromLabel(raw: string | null | undefined): InsuranceCa
   if (
     v === "commercial" ||
     v === "gl" ||
+    v === "eo" ||
+    v === "e&o" ||
+    v === "e & o" ||
+    (v.includes("errors") && v.includes("omission")) ||
     v === "wc" ||
     v === "bop" ||
     v === "ca" ||

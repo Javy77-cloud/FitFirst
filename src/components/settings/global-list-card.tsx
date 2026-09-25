@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { FileDeleteIcon } from "@/components/ui/file-delete-icon";
 import { Input } from "@/components/ui/input";
 import type { GlobalListRow } from "@/lib/db/schema";
+import { policyProductDisplayLabel, productMenuTitle } from "@/lib/policy/eo";
 import type { GlobalListKey } from "@/lib/desk/global-lists";
 import { INSURANCE_FAMILIES } from "@/lib/desk/policy-family";
 import { collapsedGlobalListPersistFields } from "@/lib/settings/list-editor";
@@ -68,9 +69,10 @@ export function GlobalListCard({
             <ListOptionInput
               form={saveFormId}
               name="labels"
-              committedValue={row.label}
+              committedValue={policyProductDisplayLabel(row.label)}
+              title={productMenuTitle(row.label)}
               className="h-8 min-w-40 max-w-sm flex-1"
-              aria-label={`Name for ${row.label}`}
+              aria-label={`Name for ${policyProductDisplayLabel(row.label)}`}
             />
             {familyPicker ? (
               <select
@@ -97,7 +99,9 @@ export function GlobalListCard({
           </>
         ) : (
           <>
-            <span className="min-w-0 flex-1 font-medium text-navy">{row.label}</span>
+            <span className="min-w-0 flex-1 font-medium text-navy" title={productMenuTitle(row.label)}>
+              {policyProductDisplayLabel(row.label)}
+            </span>
             {row.family ? <span className="text-helper text-muted-foreground">{row.family}</span> : null}
           </>
         )}

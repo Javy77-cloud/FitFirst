@@ -20,12 +20,17 @@ import { defaultProductForLine } from "@/lib/quote-sheet/products";
 import { dealCreateFieldsFromPick } from "@/lib/quoting/forms";
 import { titleCaseLabel } from "@/lib/ui/title-case";
 import { buildLobOverviewSections, resolveLobOverviewFamily } from "./lob-overview";
+import { formsForCategory } from "@/lib/deals/insurance-cascade";
+import { quotingFormById } from "@/lib/quoting/forms";
 import {
+  commercialLineMenuOptions,
   isErrorsOmissionsProduct,
   liabilityDeductible,
   liabilityLimitText,
   liabilityRetroDate,
+  matchesCommercialLineChoice,
   policyProductDisplayLabel,
+  productMenuTitle,
 } from "./eo";
 
 const LIVE_POLICY = {
@@ -46,6 +51,10 @@ describe("Errors & Omissions product", () => {
     expect(isErrorsOmissionsProduct("General Liability")).toBe(false);
     expect(isErrorsOmissionsProduct("Workers' Comp")).toBe(false);
     expect(policyProductDisplayLabel("Errors & Omissions")).toBe("E&O");
+    expect(policyProductDisplayLabel("E&O")).toBe("E&O");
+    expect(productMenuTitle("Errors & Omissions")).toBe("Errors and Omissions");
+    expect(productMenuTitle("E&O")).toBe("Errors and Omissions");
+    expect(productMenuTitle("General Liability")).toBeUndefined();
     expect(policyProductDisplayLabel("HO3")).toBe("HO3");
     expect(policyProductDisplayLabel("General Liability")).toBe("General Liability");
     expect(policyProductDisplayLabel("Professional Liability (E&O)")).toBe(
@@ -74,6 +83,7 @@ describe("Errors & Omissions product", () => {
       quotingLine: "workers_comp",
     });
     expect(lineOfBusinessFromZoho("P&C", "Commercial", "Errors & Omissions")).toBe("GL");
+    expect(lineOfBusinessFromZoho("P&C", "E&O", "E&O")).toBe("GL");
     expect(lineOfBusinessFromZoho("P&C", "Commercial", "General Liability")).toBe("GL");
     expect(lineOfBusinessFromZoho("P&C", "Commercial", "Workers' Comp")).toBe("GL");
     expect(lineOfBusinessFromZoho("P&C", "Commercial", "Business Owners Policy (BOP)")).toBe("BOP");
@@ -105,14 +115,33 @@ describe("Errors & Omissions product", () => {
     expect(dealProductForCoverageLine("GL")).toBe("gl");
     expect(productChipLabel({ product: "eo" })).toBe("E&O");
     expect(productChipLabel({ product: "gl" })).toBe("GL");
-    expect(coverageLinesFromProducts(["eo"])).toEqual(["General Liability"]);
+    expect(coverageLinesFromProducts(["eo"])).toEqual(["E&O"]);
     expect(coverageLinesFromProducts(["workers_comp"])).toEqual(["Workers' Comp"]);
-    expect(normalizeWrittenLine("Errors & Omissions")).toBe("GL");
+    expect(normalizeWrittenLine("Errors & Omissions")).toBe("EO");
+    expect(normalizeWrittenLine("General Liability")).toBe("GL");
     expect(normalizeWrittenLine("HO3")).toBe("HO");
     const seed = defaultGlobalLists().find(
       (row) => row.listKey === "policy_sub_type" && row.label === "Errors & Omissions",
     );
     expect(seed).toMatchObject({ slug: "errors-and-omissions", family: "P&C" });
+    expect(quotingFormById("EO")?.label).toBe("E&O");
+    const commercial = formsForCategory("pc", "commercial");
+    const eoForm = commercial.find((row) => row.id === "EO");
+    expect(eoForm).toMatchObject({
+      label: "E&O",
+      title: "Errors and Omissions",
+      storedLabel: "Errors & Omissions",
+    });
+    const menu = commercialLineMenuOptions(["HO", "GL", "WC"], (value) => value);
+    expect(menu.map((row) => row.value)).toEqual(["HO", "GL", "EO", "WC"]);
+    expect(menu.find((row) => row.value === "EO")).toMatchObject({
+      label: "E&O",
+      title: "Errors and Omissions",
+    });
+    expect(matchesCommercialLineChoice("GL", "GL", "Errors & Omissions")).toBe(true);
+    expect(matchesCommercialLineChoice("EO", "GL", "Errors & Omissions")).toBe(true);
+    expect(matchesCommercialLineChoice("EO", "GL", "General Liability")).toBe(false);
+    expect(matchesCommercialLineChoice("WC", "GL", "Errors & Omissions")).toBe(false);
   });
 
   it("uses liability fields on the policy overview and does not take workers' comp fields", () => {

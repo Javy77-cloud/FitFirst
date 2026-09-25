@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SELLING_AGENCIES, formatMoney, formatRatePct } from "@/lib/domain";
 import {
+  menuOptionValue,
+  policyProductDisplayLabel,
+  productMenuTitle,
+  withCurrentProductOption,
+} from "@/lib/policy/eo";
+import {
   coerceLine,
   suggestCommission4,
   suggestPremiumFrequency,
@@ -65,8 +71,7 @@ function Field({
 }
 
 function withCurrent(options: readonly string[], current: string): string[] {
-  if (current && !options.includes(current)) return [current, ...options];
-  return [...options];
+  return withCurrentProductOption(options, current);
 }
 
 function applyLineDefaults(
@@ -219,14 +224,14 @@ export function PolicyCommissionBlock({
             <select
               aria-label="Policy type"
               className={selectClass}
-              value={form.policyType}
+              value={menuOptionValue(typeOptions, form.policyType)}
               disabled={readOnly}
               onChange={(e) => setLine({ policyType: e.target.value })}
             >
               <option value="">None</option>
               {typeOptions.map((value) => (
-                <option key={value} value={value}>
-                  {value}
+                <option key={value} value={value} title={productMenuTitle(value)}>
+                  {policyProductDisplayLabel(value)}
                 </option>
               ))}
             </select>
@@ -235,14 +240,14 @@ export function PolicyCommissionBlock({
             <select
               aria-label="Policy sub type"
               className={selectClass}
-              value={form.policySubType}
+              value={menuOptionValue(subOptions, form.policySubType)}
               disabled={readOnly}
               onChange={(e) => setLine({ policySubType: e.target.value })}
             >
               <option value="">None</option>
               {subOptions.map((value) => (
-                <option key={value} value={value}>
-                  {value}
+                <option key={value} value={value} title={productMenuTitle(value)}>
+                  {policyProductDisplayLabel(value)}
                 </option>
               ))}
             </select>

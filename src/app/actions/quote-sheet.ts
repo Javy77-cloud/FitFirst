@@ -163,6 +163,7 @@ import {
 import { DeadlineError, withDeadline } from "@/lib/async/deadline";
 import { isImageUpload } from "@/lib/extraction/ocr";
 import { SHOP_LINES } from "@/lib/domain";
+import { ERRORS_OMISSIONS_LABEL, isErrorsOmissionsProduct } from "@/lib/policy/eo";
 import { currentDeskSession } from "@/lib/auth/session";
 import { applyLearningToExtracted } from "@/lib/fill-learning/lookup";
 import { listFillLearningForLookup } from "@/lib/db/queries";
@@ -655,7 +656,9 @@ export async function setDealSheetProduct(formData: FormData) {
 
 export async function addShopLine(formData: FormData) {
   const dealId = str(formData, "dealId");
-  const lineRaw = str(formData, "line");
+  const requested = str(formData, "line");
+  const addingEo = isErrorsOmissionsProduct(requested);
+  const lineRaw = addingEo ? "general_liability" : requested;
   if (!isShopLine(lineRaw)) throw new Error("Unknown line");
   const { loadDeskLineSettings } = await import("@/lib/db/line-settings");
   const { visibleShopLines } = await import("@/lib/desk/line-settings");
@@ -666,9 +669,21 @@ export async function addShopLine(formData: FormData) {
   const [deal] = await db.select().from(deals).where(eq(deals.id, dealId));
   if (!deal) throw new Error("Deal not found");
   const next = Array.from(new Set([...(deal.shopLines ?? []), lineRaw]));
+  const products = Array.from(new Set([...(deal.shopProducts ?? []), ...(addingEo ? ["eo"] : [])]));
   await db
     .update(deals)
-    .set({ shopLines: next, updatedAt: new Date() })
+    .set({
+      shopLines: next,
+      ...(addingEo
+        ? {
+            shopProducts: products,
+            quotingLine: deal.quotingLine || "general_liability",
+            quotingForm: deal.quotingForm || ERRORS_OMISSIONS_LABEL,
+            policySubType: deal.policySubType || ERRORS_OMISSIONS_LABEL,
+          }
+        : {}),
+      updatedAt: new Date(),
+    })
     .where(eq(deals.id, dealId));
   await ensureQuoteSheet(dealId, lineRaw);
   revalidatePath(`/deals/${dealId}`);

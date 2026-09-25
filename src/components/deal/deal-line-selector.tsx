@@ -4,6 +4,7 @@ import { setDealSheetProduct } from "@/app/actions/quote-sheet";
 import { Label } from "@/components/ui/label";
 import { useAgencyLobs } from "@/components/desk/agency-lob-context";
 import { DEAL_LINE_OPTIONS } from "@/lib/deals/deal-line";
+import { productMenuTitle } from "@/lib/policy/eo";
 import { isSheetProduct, type SheetProduct } from "@/lib/quote-sheet/products";
 
 export function DealLineSelector({
@@ -37,7 +38,11 @@ export function DealLineSelector({
         onChange={(event) => event.currentTarget.form?.requestSubmit()}
       >
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option
+            key={option.value}
+            value={option.value}
+            title={productMenuTitle(option.label) ?? productMenuTitle(option.value)}
+          >
             {option.label}
           </option>
         ))}

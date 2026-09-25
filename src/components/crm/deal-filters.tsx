@@ -3,6 +3,7 @@
 import type { PipelineStageRow } from "@/lib/db/schema";
 import { LINES } from "@/lib/domain";
 import { LINE_LABELS } from "@/lib/crm/bind";
+import { commercialLineMenuOptions } from "@/lib/policy/eo";
 import type { DealListFilter } from "@/lib/crm/lists";
 import { HiddenLiveQuery } from "@/components/search/hidden-live-query";
 import { LiveContainsInput } from "@/components/search/live-contains-input";
@@ -53,11 +54,13 @@ export function DealFilters({
           className="mt-1 block h-8 rounded-md border border-input bg-card px-2 text-sm text-navy"
         >
           <option value="all">All lines</option>
-          {LINES.map((line) => (
-            <option key={line} value={line}>
-              {LINE_LABELS[line]}
-            </option>
-          ))}
+          {commercialLineMenuOptions(LINES, (line) => LINE_LABELS[line as keyof typeof LINE_LABELS] ?? line).map(
+            (line) => (
+              <option key={line.value} value={line.value} title={line.title}>
+                {line.label}
+              </option>
+            ),
+          )}
         </select>
       </label>
       <label className="text-xs text-muted-foreground">

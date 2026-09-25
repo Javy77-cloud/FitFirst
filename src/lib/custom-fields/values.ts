@@ -1,4 +1,5 @@
 import type { CustomFieldDef } from "./types";
+import { ERRORS_OMISSIONS_LABEL, isErrorsOmissionsProduct } from "@/lib/policy/eo";
 import { coerceQuotingFormId, quotingFormLabel } from "@/lib/quoting/forms";
 
 function insuranceSubtypeField(fields: readonly CustomFieldDef[] | undefined) {
@@ -56,10 +57,16 @@ export function mergeDealSystemValues(
   if (!subtype) return merged;
   const fromDeal = quotingFormLabel(deal.quotingForm ?? "");
   if (fromDeal) {
-    merged[subtype.key] = fromDeal;
+    merged[subtype.key] =
+      isErrorsOmissionsProduct(fromDeal) || isErrorsOmissionsProduct(deal.quotingForm)
+        ? ERRORS_OMISSIONS_LABEL
+        : fromDeal;
     return merged;
   }
   const coerced = coerceQuotingFormId(merged[subtype.key]);
-  if (coerced) merged[subtype.key] = quotingFormLabel(coerced);
+  if (coerced) {
+    const label = quotingFormLabel(coerced);
+    merged[subtype.key] = isErrorsOmissionsProduct(label) ? ERRORS_OMISSIONS_LABEL : label;
+  }
   return merged;
 }

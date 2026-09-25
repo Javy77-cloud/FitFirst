@@ -5,6 +5,7 @@ import type { CustomFieldDef } from "@/lib/custom-fields/types";
 import { evaluateFormula, formatFormulaValue } from "@/lib/custom-fields/formula";
 import { formatCurrencyDisplay, parseNumericInput } from "@/lib/custom-fields/format";
 import { resolvedFieldValue, sanitizePicklistOptions } from "@/lib/custom-fields/picklists";
+import { policyProductDisplayLabel, productMenuTitle } from "@/lib/policy/eo";
 import {
   InsuranceCascadeControl,
   isInsuranceCategoryField,
@@ -315,8 +316,8 @@ function TypedControl({
           <option value="">Select</option>
         )}
         {pickOptions.map((option, index) => (
-          <option key={`${field.key}:${index}:${option}`} value={option}>
-            {option}
+          <option key={`${field.key}:${index}:${option}`} value={option} title={productMenuTitle(option)}>
+            {policyProductDisplayLabel(option)}
           </option>
         ))}
       </select>

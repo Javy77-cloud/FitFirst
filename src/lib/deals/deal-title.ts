@@ -24,6 +24,7 @@ export const DEAL_TITLE_LOB_WORDS: Record<string, string> = {
   HEALTH: "Health",
   RV: "RV",
   WC: "Workers Comp",
+  EO: "E&O",
 };
 
 /** Sheet product ids / generic words that are not cascade form labels. */

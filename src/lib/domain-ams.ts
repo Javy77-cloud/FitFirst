@@ -1,4 +1,5 @@
 import { formatDobMdy } from "@/lib/contacts/dob-sync";
+import { isErrorsOmissionsProduct } from "@/lib/policy/eo";
 import { formatDisplayDate } from "@/lib/dates/display-format";
 /** Additive constants consumed by later desk slices. Re-exported from domain.ts. */
 
@@ -14,6 +15,7 @@ export const WRITTEN_LINE_LABELS: Record<string, string> = {
   FLOOD: "Flood",
   UMBRELLA: "Umbrella",
   GL: "General liability",
+  EO: "E&O",
   BOP: "BOP",
   LANDLORD: "Landlord",
   LIFE: "Life",
@@ -39,6 +41,7 @@ export function appointmentLine(lineOfBusiness: string): string {
   if (raw === "PA" || raw === "PERSONAL_AUTO" || raw === "MOTORCYCLE" || raw === "MCY") return "AUTO";
   if (raw === "CA" || raw === "COMMERCIAL_AUTO") return "AUTO";
   if (raw === "PU" || raw === "PUP") return "UMBRELLA";
+  if (isErrorsOmissionsProduct(lineOfBusiness)) return "EO";
   return raw;
 }
 

@@ -2,6 +2,13 @@ import { ON_HOLD_LABEL, ON_HOLD_TAG } from "@/lib/deals/on-hold";
 import { sourceFilterOptions, sourceLabel } from "@/lib/crm/sources";
 import { LINES } from "@/lib/domain";
 import {
+  commercialLineMenuOptions,
+  matchesCommercialLineChoice,
+  matchesProductChoice,
+  policyProductDisplayLabel,
+  productMenuTitle,
+} from "@/lib/policy/eo";
+import {
   matchesField,
   uniqueOptions,
   type FilterField,
@@ -75,8 +82,13 @@ export function matchesDealPipelineColumnFilters(
       matchesField(deal.pipelineStageSlug, filter.stage);
     if (!hit) return false;
   }
-  if (filter.line && !matchesField(deal.lineOfBusiness, filter.line)) return false;
-  if (filter.subType && !matchesField(deal.policySubType, filter.subType)) return false;
+  if (
+    filter.line &&
+    !matchesCommercialLineChoice(filter.line, deal.lineOfBusiness, deal.policySubType)
+  ) {
+    return false;
+  }
+  if (filter.subType && !matchesProductChoice(deal.policySubType, filter.subType)) return false;
   if (filter.source && !matchesField(deal.source, filter.source)) return false;
   if (filter.assigned && deal.ownerId !== filter.assigned) return false;
   if (filter.tags) {
@@ -101,7 +113,7 @@ export function buildDealPipelineFilterFields(input: {
     value: row.value,
     label: row.label,
   }));
-  const lineExtras = LINES.map((value) => ({ value, label: value }));
+  const lineExtras = commercialLineMenuOptions(LINES, (value) => value);
   const assignedExtras = agents.map((agent) => ({ value: agent.id, label: agent.name }));
   const tagExtras = tags.map((tag) => ({ value: tag, label: tag }));
 
@@ -125,7 +137,11 @@ export function buildDealPipelineFilterFields(input: {
     {
       key: "subType",
       label: "Subtype",
-      options: uniqueOptions(deals.map((deal) => deal.policySubType)),
+      options: uniqueOptions(deals.map((deal) => deal.policySubType)).map((option) => ({
+        ...option,
+        label: policyProductDisplayLabel(option.label),
+        title: productMenuTitle(option.value) ?? productMenuTitle(option.label),
+      })),
     },
     {
       key: "source",

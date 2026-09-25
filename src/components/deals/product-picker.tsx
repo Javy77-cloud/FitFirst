@@ -17,6 +17,7 @@ import {
   type VehicleLabelFact,
 } from "@/lib/deals/product-instance-label";
 import { DEAL_GROUP_THEMES } from "@/lib/deals/product-ui";
+import { productMenuTitle } from "@/lib/policy/eo";
 import { cn } from "@/lib/utils";
 
 export function ProductPicker({
@@ -171,7 +172,7 @@ export function ProductPicker({
                             ✓
                           </span>
                         ) : null}
-                        {item.label}
+                        <span title={productMenuTitle(item.label) ?? productMenuTitle(item.id)}>{item.label}</span>
                         {copies.length > 1 ? <span className="text-xs">×{copies.length}</span> : null}
                         {checked ? (
                           <button

@@ -65,6 +65,8 @@ export function DealListTable({
         title: deal.title,
         pipelineStage: deal.pipelineStage,
         lineOfBusiness: deal.lineOfBusiness,
+        quotingForm: deal.quotingForm,
+        policySubType: deal.policySubType,
         state: deal.state,
         insured: insuredContactName({
           primaryNamedInsured: deal.primaryNamedInsured,

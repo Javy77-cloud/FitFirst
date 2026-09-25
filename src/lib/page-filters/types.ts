@@ -14,6 +14,7 @@ export type PageFilterOption = {
   value: string;
   label: string;
   color?: string | null;
+  title?: string;
 };
 
 export type PageFilter = {

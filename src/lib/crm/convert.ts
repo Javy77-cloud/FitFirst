@@ -1,4 +1,5 @@
 import { LINES, LOB_TO_SHOP_LINE, type ShopLine } from "@/lib/domain";
+import { isErrorsOmissionsProduct } from "@/lib/policy/eo";
 import { namedInsuredFromLead } from "@/lib/crm/lead-fields";
 import { sourceLabel } from "@/lib/crm/sources";
 import { fillSheetFromLead, leadOntoRisk, type LeadCopyFields } from "@/lib/desk/copy-once";
@@ -23,6 +24,9 @@ export type ConvertLead = LeadCopyFields & {
 };
 
 export function shopLinesForConvert(primaryLine: string): ShopLine[] {
+  if (isErrorsOmissionsProduct(primaryLine) || primaryLine.trim().toUpperCase() === "EO") {
+    return ["general_liability"];
+  }
   const fromLob = LOB_TO_SHOP_LINE[primaryLine];
   return fromLob ? [fromLob] : ["home"];
 }
@@ -156,11 +160,18 @@ export function convertFieldCopy(
   const pcFormId =
     coerceQuotingFormId(subtypeRaw) ??
     (line === "LIFE" || line === "HEALTH" ? null : coerceQuotingFormId(typeRaw)) ??
+    (isErrorsOmissionsProduct(lead.insuranceTypeDesired) ? coerceQuotingFormId(lead.insuranceTypeDesired) : null) ??
     null;
   const form = pcFormId ? quotingFormById(pcFormId) : null;
   let policySubType = subtypeRaw || form?.label || null;
   let quotingForm = form?.id ?? (line === "LIFE" || line === "HEALTH" ? subtypeRaw || null : null);
   let quotingLine = (form?.shopLine ?? shopLines[0] ?? "home") as ShopLine;
+  if (isErrorsOmissionsProduct(subtypeRaw, typeRaw, lead.insuranceTypeDesired, form?.id)) {
+    const picked = dealCreateFieldsFromPick(subtypeRaw || typeRaw || lead.insuranceTypeDesired || "E&O");
+    quotingForm = picked.quotingForm;
+    policySubType = picked.policySubType;
+    quotingLine = picked.quotingLine;
+  }
   if (line === "LIFE" || line === "HEALTH") {
     const picked = dealCreateFieldsFromPick(
       subtypeRaw || typeRaw || (line === "LIFE" ? "Life" : "Health"),

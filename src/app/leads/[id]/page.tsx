@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { formatPersonName } from "@/lib/crm/display";
 import { sourceLabel } from "@/lib/crm/sources";
 import { LINE_LABELS } from "@/lib/crm/bind";
+import { policyProductDisplayLabel } from "@/lib/policy/eo";
 import { AwardLeadForm } from "@/components/leads/award-form";
 import { LeadActivityPanels } from "@/components/leads/lead-activity-panels";
 import { RecentlyDeletedFiles } from "@/components/documents/recently-deleted";
@@ -96,7 +97,9 @@ export default async function LeadDetailPage({
   const clientAddress = homeAddressFromRecords({ lead });
   const activityByKind = leadActivityByKind(timeline);
   const lineLabel = lead.insuranceTypeDesired
-    ? (LINE_LABELS[lead.insuranceTypeDesired as LineOfBusiness] ?? lead.insuranceTypeDesired)
+    ? policyProductDisplayLabel(
+        LINE_LABELS[lead.insuranceTypeDesired as LineOfBusiness] ?? lead.insuranceTypeDesired,
+      )
     : null;
 
   return (

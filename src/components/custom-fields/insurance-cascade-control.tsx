@@ -167,7 +167,7 @@ export function InsuranceCascadeControl({
     ? categories.find((c) => c.id === categoryId)
     : undefined;
   const selected = subtypeId ? subtypes.find((s) => s.id === subtypeId) : undefined;
-  const storedSubtype = selected?.label ?? selected?.id ?? "";
+  const storedSubtype = selected?.storedLabel ?? selected?.label ?? selected?.id ?? "";
   useEffect(() => {
     onPolicyFormChange?.(storedSubtype);
   }, [onPolicyFormChange, storedSubtype]);
@@ -273,7 +273,7 @@ export function InsuranceCascadeControl({
         >
           <option value="">None</option>
           {subtypes.map((sub) => (
-            <option key={sub.id} value={sub.id}>
+            <option key={sub.id} value={sub.id} title={sub.title}>
               {sub.label}
             </option>
           ))}

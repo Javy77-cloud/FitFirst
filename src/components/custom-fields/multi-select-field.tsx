@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, X } from "lucide-react";
+import { policyProductDisplayLabel, productMenuTitle } from "@/lib/policy/eo";
 import { cn } from "@/lib/utils";
 
 function optionDomId(fieldKey: string, option: string) {
@@ -112,7 +113,12 @@ export function MultiSelectField({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return options;
-    return options.filter((option) => option.toLowerCase().includes(q));
+    return options.filter((option) => {
+      const haystack = [option, policyProductDisplayLabel(option), productMenuTitle(option) ?? ""]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(q);
+    });
   }, [options, query]);
 
   const emit = (next: string[]) => {
@@ -188,7 +194,9 @@ export function MultiSelectField({
                           onChange={() => toggle(option)}
                           data-ff-multi-option={option}
                         />
-                        <span className="min-w-0 flex-1 truncate">{option}</span>
+                        <span className="min-w-0 flex-1 truncate" title={productMenuTitle(option)}>
+                          {policyProductDisplayLabel(option)}
+                        </span>
                       </label>
                     </li>
                   );
@@ -261,7 +269,7 @@ export function MultiSelectField({
                 style={{ color: "#002868", fontSize: "0.9375rem", fontFamily: "inherit", fontWeight: 400 }}
               >
                 <span className="truncate" style={{ color: "#002868" }}>
-                  {option}
+                  <span title={productMenuTitle(option)}>{policyProductDisplayLabel(option)}</span>
                 </span>
                 {!disabled ? (
                   <span

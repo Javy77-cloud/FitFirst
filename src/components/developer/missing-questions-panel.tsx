@@ -13,6 +13,7 @@ import {
   GAP_SURFACES,
   type GapStatus,
 } from "@/lib/carrier-gaps/types";
+import { policyProductDisplayLabel, productMenuTitle } from "@/lib/policy/eo";
 
 const fieldClass =
   "mt-0.5 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-navy";
@@ -40,10 +41,12 @@ function ProductLineSelect({
     <select name={name} defaultValue={defaultValue ?? ""} required={required} className={fieldClass}>
       <option value="">Product line</option>
       {defaultValue && !GAP_PRODUCT_LINES.some((row) => row.label === defaultValue) ? (
-        <option value={defaultValue}>{defaultValue}</option>
+        <option value={defaultValue} title={productMenuTitle(defaultValue)}>
+          {policyProductDisplayLabel(defaultValue)}
+        </option>
       ) : null}
       {GAP_PRODUCT_LINES.map((row) => (
-        <option key={row.id} value={row.label}>
+        <option key={row.id} value={row.label} title={productMenuTitle(row.label) ?? productMenuTitle(row.id)}>
           {row.label}
         </option>
       ))}

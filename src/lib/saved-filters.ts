@@ -1,6 +1,6 @@
 export const FILTER_STORAGE_PREFIX = "ff-saved-filters:v1";
 
-export type FilterOption = { value: string; label: string };
+export type FilterOption = { value: string; label: string; title?: string };
 export type FilterField = { key: string; label: string; options: FilterOption[] };
 export type SavedNamedFilter = {
   id: string;

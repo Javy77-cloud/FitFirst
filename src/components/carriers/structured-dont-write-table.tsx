@@ -9,6 +9,7 @@ import {
   type DontWriteNoteRow,
 } from "@/lib/carriers/appetite-rows";
 import { LINES } from "@/lib/domain";
+import { commercialLineMenuOptions } from "@/lib/policy/eo";
 import { flashAction } from "@/lib/flash-client";
 
 const LOB_OPTIONS = ["HO", "DP", "AUTO", "FLOOD", "UMBRELLA", "GL", "BOP", "LIFE", "RV", "WC", "HEALTH", ...LINES];
@@ -104,9 +105,9 @@ export function StructuredDontWriteTable({
                     onChange={(e) => update(row.id, { lob: e.target.value })}
                   >
                     <option value="">—</option>
-                    {[...new Set(LOB_OPTIONS)].map((lob) => (
-                      <option key={lob} value={lob}>
-                        {lob}
+                    {commercialLineMenuOptions([...new Set(LOB_OPTIONS)], (lob) => lob).map((lob) => (
+                      <option key={lob.value} value={lob.value} title={lob.title}>
+                        {lob.label}
                       </option>
                     ))}
                   </select>

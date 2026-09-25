@@ -25,6 +25,7 @@ import {
   type PlaybookVisibility,
 } from "@/lib/automations/types";
 import { DEAL_STAGES, LINES } from "@/lib/domain";
+import { commercialLineMenuOptions } from "@/lib/policy/eo";
 
 type TemplateOption = { id: string; name: string };
 
@@ -181,9 +182,9 @@ export function AutomationBuilderForm({
             className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2 text-sm"
             defaultValue="HO"
           >
-            {LINES.map((line) => (
-              <option key={line} value={line}>
-                {line}
+            {commercialLineMenuOptions(LINES, (line) => line).map((line) => (
+              <option key={line.value} value={line.value} title={line.title}>
+                {line.label}
               </option>
             ))}
           </select>

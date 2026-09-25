@@ -1,4 +1,5 @@
 import { healthKind, normalizeSellingAgency } from "./policy-math";
+import { isErrorsOmissionsProduct } from "@/lib/policy/eo";
 import { policyTypesFor, subTypeFitsLine } from "./zoho-fields";
 
 /**
@@ -61,7 +62,7 @@ export function inferPolicyType(
   if (sub === "Commercial Auto") return "Auto";
   if (
     sub === "General Liability" ||
-    sub === "Errors & Omissions" ||
+    isErrorsOmissionsProduct(sub) ||
     sub === "Workers' Comp" ||
     sub === "Business Owners Policy (BOP)" ||
     sub === "Commercial Property"

@@ -20,6 +20,7 @@ import { AssignRecordTags } from "@/components/tags/assign-record-tags";
 import { tagSortText } from "@/lib/tags/module-tags";
 import { listModuleTags } from "@/app/actions/record-tags";
 import { buildPolicyLabel } from "@/lib/policy/auto-label";
+import { ERRORS_OMISSIONS_MENU_VALUE, isErrorsOmissionsProduct } from "@/lib/policy/eo";
 import { getAgencyPolicyLabelTemplate } from "@/lib/policy/auto-label-prefs";
 import { LAPSE_STATUSES } from "@/lib/home/aggregate";
 import { deskNow } from "@/lib/home/as-of";
@@ -83,6 +84,8 @@ function policyFilterValues(
   policy: {
     status: string;
     lineOfBusiness: string;
+    formType?: string | null;
+    policySubType?: string | null;
     carrierId?: string | null;
   },
   resolved: ReturnType<typeof resolveCurrentTerm>,
@@ -111,9 +114,17 @@ function policyFilterValues(
     }
   }
 
+  const line = [policy.lineOfBusiness];
+  if (
+    isErrorsOmissionsProduct(policy.formType, policy.policySubType, policy.lineOfBusiness) &&
+    !line.some((value) => value.toUpperCase() === ERRORS_OMISSIONS_MENU_VALUE)
+  ) {
+    line.push(ERRORS_OMISSIONS_MENU_VALUE);
+  }
+
   return {
     status: statusValues,
-    line: policy.lineOfBusiness,
+    line,
     written,
     renewal,
     attention,
