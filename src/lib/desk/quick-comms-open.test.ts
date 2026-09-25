@@ -106,5 +106,7 @@ describe("quick comms row actions", () => {
     expect(board).toMatch(/data-ff-quick-comms-deal/);
     expect(board).toMatch(/data-ff-quick-comms-lead/);
     expect(board).not.toMatch(/px-2\.5/);
+    expect(board).toMatch(/contextLine\(\[contactPhone, contactEmail\]\)/);
+    expect(board).not.toMatch(/contextLine\(\[contactName, contactPhone, contactEmail\]\)/);
   });
 });
