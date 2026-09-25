@@ -124,6 +124,139 @@ describe("policies board banding", () => {
     expect(matchesBookLens(card, { lens: "lapse" })).toBe(false);
   });
 
+  it("shows the form beside the holder name on every band and omits a missing form", () => {
+    const needs = { openClaims: 0, pendingEndorsements: 0, missingDocs: 0 };
+    const current = presentPolicyCard(
+      {
+        id: "laguna-ho3",
+        policyNumber: "HO-1",
+        displayName: "Sara Laguna",
+        status: "active",
+        lineOfBusiness: "HO",
+        formType: "HO3",
+        premium: "2184",
+        expirationDate: "2027-04-12",
+        updatedAt: "2026-09-22T12:00:00.000Z",
+        partyName: "Sara Laguna",
+      },
+      needs,
+      AS_OF,
+    );
+    const renewing = presentPolicyCard(
+      {
+        id: "rippey-auto",
+        policyNumber: "AU-1",
+        displayName: "George Rippey",
+        status: "active",
+        lineOfBusiness: "AUTO",
+        formType: "Auto",
+        premium: "980",
+        expirationDate: "2026-10-10",
+        partyName: "George Rippey",
+      },
+      needs,
+      AS_OF,
+    );
+    const lapsed = presentPolicyCard(
+      {
+        id: "laguna-dp3",
+        policyNumber: "DP-1",
+        displayName: "Sara Laguna",
+        status: "lapsed",
+        offBook: true,
+        statusLabel: "Lapsed",
+        lineOfBusiness: "HO",
+        formType: "DP3",
+        premium: "1400",
+        expirationDate: "2027-08-01",
+        partyName: "Sara Laguna",
+      },
+      needs,
+      AS_OF,
+    );
+    const eo = presentPolicyCard(
+      {
+        id: "eo",
+        policyNumber: "EO-1",
+        displayName: "Northstar",
+        status: "active",
+        lineOfBusiness: "GL",
+        formType: "Errors & Omissions",
+        expirationDate: "2027-04-12",
+        updatedAt: "2026-09-22T12:00:00.000Z",
+        partyName: "Northstar",
+      },
+      needs,
+      AS_OF,
+    );
+    const missing = presentPolicyCard(
+      {
+        id: "missing-form",
+        policyNumber: "BL-1",
+        displayName: "No Form",
+        status: "active",
+        lineOfBusiness: "HO",
+        formType: null,
+        expirationDate: "2027-04-12",
+        updatedAt: "2026-09-22T12:00:00.000Z",
+        partyName: "No Form",
+      },
+      needs,
+      AS_OF,
+    );
+    const unset = presentPolicyCard(
+      {
+        id: "unset-form",
+        policyNumber: "UN-1",
+        displayName: "Unset Form",
+        status: "active",
+        lineOfBusiness: "HO",
+        formType: "undefined",
+        expirationDate: "2027-04-12",
+        updatedAt: "2026-09-22T12:00:00.000Z",
+        partyName: "Unset Form",
+      },
+      needs,
+      AS_OF,
+    );
+
+    expect(current.column).toBe("current");
+    expect(renewing.column).toBe("now");
+    expect(lapsed.column).toBe("lapsed");
+    expect(current.title).toBe("Sara Laguna");
+    expect(current.facts?.find((fact) => fact.id === "form")?.label).toBe("HO3");
+
+    const html = renderToStaticMarkup(
+      <BookBoard
+        columns={POLICY_COLUMNS}
+        cards={[current, renewing, lapsed, eo, missing, unset]}
+        empty="No policies in this lens."
+      />,
+    );
+    const cardHtml = (id: string) =>
+      html.match(new RegExp(`data-ff-book-card="${id}"[\\s\\S]*?</article>`))?.[0] ?? "";
+
+    expect(cardHtml("laguna-ho3")).toContain("Sara Laguna");
+    expect(cardHtml("laguna-ho3")).toContain("· HO3");
+    expect(cardHtml("laguna-ho3")).toContain("ff-band-open");
+    expect(cardHtml("rippey-auto")).toContain("George Rippey");
+    expect(cardHtml("rippey-auto")).toContain("· Auto");
+    expect(cardHtml("laguna-dp3")).toContain("Sara Laguna");
+    expect(cardHtml("laguna-dp3")).toContain("· DP3");
+    expect(cardHtml("eo")).toContain("Northstar");
+    expect(cardHtml("eo")).toContain("· E&amp;O");
+    expect(cardHtml("eo")).not.toContain("Errors");
+
+    for (const id of ["missing-form", "unset-form"]) {
+      const card = cardHtml(id);
+      expect(card, id).not.toContain("data-ff-policy-band-form");
+      expect(card, id).not.toContain("undefined");
+      expect(card, id).not.toContain("·");
+    }
+    expect(cardHtml("missing-form")).toContain("No Form");
+    expect(cardHtml("unset-form")).toContain("Unset Form");
+  });
+
   it("renders the lapsed card inside the Lapsed band when the Lapse lens matches", () => {
     const { card } = boardCard({
       status: "lapsed",
@@ -162,6 +295,9 @@ describe("policies board banding", () => {
     );
     expect(css).toMatch(
       /\.ff-urgency-tone-gray \{\s*--ff-urgency: var\(--ff-heat-cold\);\s*--ff-urgency-wash: color-mix\(in srgb, var\(--ff-heat-cold\) 12%, #fff\);/,
+    );
+    expect(css).toMatch(
+      /\.ff-book-board \.ff-band-open \{[^}]*padding:\s*0\.12rem 1rem;[^}]*white-space:\s*nowrap/,
     );
   });
 });

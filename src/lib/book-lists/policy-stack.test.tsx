@@ -204,6 +204,13 @@ describe("policies stack view", () => {
     const bands = renderToStaticMarkup(<BookGlanceCardView card={card} layoutMode="bands" />);
     expect(bands).not.toContain("data-ff-policy-stack-card");
     expect(bands).toContain("Expires soon");
+    expect(bands).toContain("Pat Hale");
+    expect(bands).toContain('data-ff-policy-band-form=""');
+    expect(bands).toContain("· HO3");
+    const bandName = bands.slice(bands.indexOf('class="ff-stack-name'), bands.indexOf("</a>"));
+    expect(bandName).toContain("Pat Hale");
+    expect(bandName).toContain("HO3");
+    expect(bandName).not.toContain("Heritage");
 
     const bandWhy = renderToStaticMarkup(
       <BookGlanceCardView
@@ -221,8 +228,11 @@ describe("policies stack view", () => {
       />,
     );
     expect(bandWhy).toContain("Renews in 12d, Oct 3, 2026");
-    expect(bandWhy).not.toContain("data-ff-renewal-agreed");
+    expect(bandWhy).toContain("ff-renewal-agreed-badge");
+    expect(bandWhy).toContain("Renewal agreed");
+    expect(bandWhy).not.toContain("ff-policy-renewal-agreed");
     expect(bandWhy).not.toContain("data-ff-policy-stack-card");
+    expect(bandWhy).not.toMatch(/Renews in 12d, Oct 3, 2026[^<]*Renewal agreed/);
   });
 
   it("stamps Renewal agreed beside the countdown and keeps the line from wrapping", () => {

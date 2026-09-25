@@ -95,16 +95,25 @@ function ReachCue({ card }: { card: BookGlanceCard }) {
   );
 }
 
-function NameLink({ card }: { card: BookGlanceCard }) {
+function NameLink({ card, form }: { card: BookGlanceCard; form?: string }) {
   const status =
     card.subtitle && (card.surface === "contacts" || card.surface === "accounts") && !isEmptyDash(card.subtitle)
       ? card.subtitle
       : null;
+  const product = form?.trim() ?? "";
   return (
     <div className="ff-book-name">
       {status ? <ClientStatusDot status={status} /> : null}
-      <Link href={card.href} className="ff-stack-name">
-        {card.title}
+      <Link
+        href={card.href}
+        className={cn("ff-stack-name", product && "ff-stack-name-with-form")}
+      >
+        {product ? <span className="ff-policy-band-insured">{card.title}</span> : card.title}
+        {product ? (
+          <span className="ff-policy-band-form" data-ff-policy-band-form="">
+            · {product}
+          </span>
+        ) : null}
       </Link>
     </div>
   );
@@ -204,6 +213,14 @@ function BookGridCard({
 function policyFact(card: BookGlanceCard, id: string): string {
   const label = card.facts?.find((fact) => fact.id === id)?.label?.trim() ?? "";
   return isEmptyDash(label) ? "" : label;
+}
+
+/** Short form already on the card (HO3, Auto, E&O). Blank, dash, and unset values stay off the name. */
+function policyBandForm(card: BookGlanceCard): string {
+  if (card.surface !== "policies") return "";
+  const form = policyFact(card, "form");
+  if (!form || /^(?:undefined|null)$/i.test(form)) return "";
+  return form;
 }
 
 const POLICY_STACK_TOP = ["form", "carrier", "status", "premium"] as const;
@@ -661,9 +678,9 @@ function CarrierStackCard({
   );
 }
 
-/** Current-band Client staying policies only. The helper clears it on the renewal effective date. */
+/** Every policy band. The helper clears it on the renewal effective date. */
 function showRenewalAgreedCorner(card: BookGlanceCard): boolean {
-  if (card.surface !== "policies" || card.column !== "current" || !card.renewalAgreed) return false;
+  if (card.surface !== "policies" || !card.renewalAgreed) return false;
   return showRenewalAgreedBadge(card.renewalAgreed);
 }
 
@@ -697,7 +714,7 @@ function BandCard({
       {leading}
       <RiskGlyph heat={card.heat} tip={tip} />
       <div className="ff-stack-card-body min-w-0 flex-1">
-        <NameLink card={card} />
+        <NameLink card={card} form={policyBandForm(card)} />
         {card.why && !isEmptyDash(card.why) ? (
           <p className="ff-book-why" data-ff-book-why="" title={card.why}>
             {card.why}
@@ -706,7 +723,7 @@ function BandCard({
         <InboxCue card={card} />
         {extra}
       </div>
-      <Link href={card.primaryAction.href} className="ff-stack-action" data-ff-book-action="">
+      <Link href={card.primaryAction.href} className="ff-stack-action ff-band-open" data-ff-book-action="">
         {card.primaryAction.label}
       </Link>
     </article>

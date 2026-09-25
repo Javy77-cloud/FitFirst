@@ -1,5 +1,5 @@
 /**
- * Current-band "Renewal agreed" badge.
+ * Policy-band "Renewal agreed" badge. Same mark on every band.
  *
  * Shown while a policy is Client staying and today (America/New_York) is
  * still before the renewed term's effective date. Cleared on that date.
