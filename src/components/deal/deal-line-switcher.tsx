@@ -159,13 +159,12 @@ export function DealLineSwitcher({
     const activeOption = options.find((row) => row.selected) ?? options[0];
     return (
       <div
-        className="flex w-full min-w-0 items-center gap-2"
+        className="flex w-full min-w-0 flex-col gap-1"
         data-ff-deal-product-chip-row=""
         data-ff-deal-products-rail=""
         data-ff-policy-form-line=""
         data-ff-deal-line-switcher=""
       >
-        <p className="shrink-0 text-[13px] font-semibold text-[var(--ff-red)]">Products</p>
         <PolicyFormDropup label={activeOption?.menuLabel ?? ""}>
           <div className="flex flex-col" data-ff-deal-product-chips="">
             {options.map((row) => (
@@ -216,7 +215,10 @@ export function DealLineSwitcher({
             ))}
           </div>
         </PolicyFormDropup>
-        {picker}
+        <div className="flex items-center justify-between gap-2" data-ff-policy-form-caption="">
+          <p className="shrink-0 text-[13px] font-semibold text-[var(--ff-red)]">Products</p>
+          {picker}
+        </div>
       </div>
     );
   }

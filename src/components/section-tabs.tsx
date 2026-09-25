@@ -37,6 +37,7 @@ export function SectionTabs({
   heading,
   corner,
   subnav,
+  tabRowField,
   tabSize = "default",
 }: {
   tabs: SectionTab[];
@@ -54,6 +55,8 @@ export function SectionTabs({
   corner?: ReactNode;
   /** Products row — grouped with module tabs, below pipeline chrome. */
   subnav?: ReactNode;
+  /** Active-product address field, on the same row as the module tabs. */
+  tabRowField?: ReactNode;
   tabSize?: "default" | "deal";
 }) {
   const current = tabs.find((tab) => tab.id === active) ?? tabs.find((tab) => tab.id === defaultValue) ?? tabs[0];
@@ -98,7 +101,14 @@ export function SectionTabs({
     </div>
   );
   const tabList = (
-    <div className="flex flex-wrap items-center justify-between gap-2" data-ff-deal-tab-row="">
+    <div
+      className={
+        tabRowField
+          ? "flex items-start gap-3"
+          : "flex flex-wrap items-center justify-between gap-2"
+      }
+      data-ff-deal-tab-row=""
+    >
       <Suspense fallback={tabFallback}>
         <PendingTabList
           currentId={current?.id ?? defaultValue}
@@ -106,6 +116,11 @@ export function SectionTabs({
           size={tabSize}
         />
       </Suspense>
+      {tabRowField ? (
+        <div className="min-w-0 flex-1" data-ff-deal-tab-row-field="">
+          {tabRowField}
+        </div>
+      ) : null}
       {toolbar}
     </div>
   );

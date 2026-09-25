@@ -23,12 +23,15 @@ describe("Won-Lost + Archived parking tabs", () => {
     const tabs = source("src/components/section-tabs.tsx");
     expect(tabs).toMatch(/subnav/);
     expect(tabs).toMatch(/data-ff-deal-products-tabs-group/);
+    expect(tabs).toMatch(/data-ff-deal-tab-row-field/);
+    expect(tabs).toMatch(/tabRowField/);
     expect(tabs).toMatch(/mt-5/);
     const page = source("src/app/deals/[id]/page.tsx");
     expect(page).toMatch(/subnav=/);
     expect(page).toMatch(/DealLineSwitcher/);
     expect(page).toMatch(/layout="rail"/);
-    expect(page).toMatch(/data-ff-deal-products-header/);
+    expect(page).toMatch(/tabRowField=/);
+    expect(page).not.toMatch(/data-ff-deal-products-header/);
     expect(page).not.toMatch(/data-ff-deal-products-column/);
     expect(page).not.toMatch(/leading=\{/);
     const css = source("src/app/globals.css");
@@ -55,20 +58,30 @@ describe("Won-Lost + Archived parking tabs", () => {
     expect(css).toMatch(
       /margin-top:\s*calc\(-1 \* \(var\(--ff-deal-tab-group-gap\) \+ var\(--ff-deal-tab-group-pad\)\)\);/,
     );
-    // Products sit in the deal header under the address block, on every tab.
+    // Address field sits on the tab row. Products stay out of the header and the rail.
     const headingSlice = page.slice(
       page.indexOf("data-ff-deal-top-left"),
-      page.indexOf("subnav="),
+      page.indexOf("tabRowField="),
     );
     expect(headingSlice).toMatch(/DealPackageShell/);
     expect(headingSlice).toMatch(/mailingAddress=/);
-    expect(headingSlice).toMatch(/data-ff-deal-products-header/);
-    expect(headingSlice).toMatch(/DealLineSwitcher/);
-    expect(headingSlice.indexOf("mailingAddress=")).toBeLessThan(
-      headingSlice.indexOf("DealLineSwitcher"),
+    expect(headingSlice).not.toMatch(/DealLineSwitcher/);
+    expect(headingSlice).not.toMatch(/data-ff-deal-products-header/);
+    const tabFieldSlice = page.slice(page.indexOf("tabRowField="), page.indexOf("subnav="));
+    expect(tabFieldSlice).toMatch(/DealLineSwitcher/);
+    expect(tabFieldSlice).toMatch(/layout="rail"/);
+    const tabsSource = source("src/components/section-tabs.tsx");
+    const row = tabsSource.slice(tabsSource.indexOf("data-ff-deal-tab-row"));
+    expect(row.indexOf("data-ff-deal-tab-row")).toBeLessThan(row.indexOf("data-ff-deal-tab-row-field"));
+    const switcher = source("src/components/deal/deal-line-switcher.tsx");
+    const railLayout = switcher.slice(switcher.indexOf("if (rail)"), switcher.indexOf("const chips"));
+    expect(railLayout.indexOf("</PolicyFormDropup>")).toBeLessThan(
+      railLayout.indexOf("data-ff-policy-form-caption"),
     );
+    expect(railLayout.indexOf(">Products<")).toBeGreaterThan(railLayout.indexOf("data-ff-policy-form-caption"));
     const railSlice = page.slice(page.indexOf("sidePanel="));
     expect(railSlice).not.toMatch(/DealLineSwitcher/);
     expect(railSlice).not.toMatch(/data-ff-deal-products-header/);
+    expect(railSlice).not.toMatch(/tabRowField/);
   });
 });
