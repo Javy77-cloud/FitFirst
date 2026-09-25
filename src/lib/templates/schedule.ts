@@ -24,6 +24,7 @@ import { CONTACT_ID } from "@/lib/fixtures/ids";
 import { addDelay, subtractDelay } from "./dates";
 import { isProtectedAnaContact, pickEmailLocale } from "./locale";
 import { mergeTemplate } from "./merge";
+import { resolveTemplateText } from "./revision";
 
 export type WonScheduleInput = {
   tenantId?: string;
@@ -56,13 +57,15 @@ function blocked(contact: Contact): boolean {
   return contact.id === CONTACT_ID || isProtectedAnaContact(contact);
 }
 
-function render(template: EmailTemplate, locale: "en" | "es", values: Parameters<typeof mergeTemplate>[1]) {
+function templateSource(
+  template: EmailTemplate,
+  locale: "en" | "es",
+): { subject: string; body: string } | null {
   const subject = (locale === "es" ? template.subjectEs : template.subjectEn) ?? template.subject ?? "";
   const body = (locale === "es" ? template.bodyEs : template.bodyEn) ?? template.body ?? "";
-  return {
-    subject: mergeTemplate(subject, values),
-    body: mergeTemplate(body, values),
-  };
+  const resolved = resolveTemplateText(template.slug, locale, { subject, body });
+  if (!resolved.send) return null;
+  return { subject: resolved.subject, body: resolved.body };
 }
 
 async function alreadyScheduled(input: {
@@ -139,6 +142,8 @@ async function queueJob(input: {
   }
 
   const locale = pickEmailLocale(input.contact.preferredLanguage);
+  const source = templateSource(input.template, locale);
+  if (!source) return null;
   const [brand] = await db
     .select()
     .from(agencyBrand)
@@ -154,7 +159,7 @@ async function queueJob(input: {
       ? signature.bodyEs
       : signature.bodyEn
     : "";
-  const { subject, body } = render(input.template, locale, {
+  const mergeValues = {
     contactFirstName: input.contact.firstName,
     agencyName: brand?.agencyName || AGENCY_BRAND.name,
     policyType: input.policyType,
@@ -162,7 +167,9 @@ async function queueJob(input: {
     reviewLink: AGENCY_BRAND.reviewLinkPlaceholder,
     agentPhone: AGENCY_BRAND.phone,
     signature: signatureBody,
-  });
+  };
+  const subject = mergeTemplate(source.subject, mergeValues);
+  const body = mergeTemplate(source.body, mergeValues);
   const bodyWithSig =
     signatureBody && !body.includes(signatureBody) ? `${body}\n\n${signatureBody}` : body;
 

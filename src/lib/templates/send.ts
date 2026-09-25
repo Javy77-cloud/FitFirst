@@ -1,7 +1,8 @@
 import { and, eq, lte } from "drizzle-orm";
 import { DEFAULT_TENANT_ID, EMAIL_JOB_HOLD, type SendFromProvider } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { clientHistory, contacts, emailSendJobs } from "@/lib/db/schema";
+import { clientHistory, contacts, emailSendJobs, emailTemplates } from "@/lib/db/schema";
+import { jobBlockedByChosenDrop } from "@/lib/templates/revision";
 import { CONTACT_ID } from "@/lib/fixtures/ids";
 import { sendThroughConnectedInbox } from "./connectors";
 import { isProtectedAnaContact } from "./locale";
@@ -41,6 +42,35 @@ export async function processDueEmailJobs(now = new Date(), tenantId = DEFAULT_T
         .where(eq(emailSendJobs.id, job.id));
       failed += 1;
       continue;
+    }
+
+    if (job.templateId) {
+      const [template] = await db
+        .select()
+        .from(emailTemplates)
+        .where(and(eq(emailTemplates.tenantId, tenantId), eq(emailTemplates.id, job.templateId)));
+      const templateBody = (template?.bodyEn || template?.body || "").trim();
+      if (
+        template &&
+        jobBlockedByChosenDrop({
+          slug: template.slug,
+          jobBody: job.body,
+          templateBody,
+        })
+      ) {
+        await db
+          .update(emailSendJobs)
+          .set({
+            status: "failed",
+            lastError: "blocked: template dropped",
+            holdReason: null,
+            attemptCount: job.attemptCount + 1,
+            updatedAt: new Date(),
+          })
+          .where(eq(emailSendJobs.id, job.id));
+        failed += 1;
+        continue;
+      }
     }
 
     if (!job.toEmail) {

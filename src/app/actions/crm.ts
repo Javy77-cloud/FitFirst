@@ -143,6 +143,7 @@ import {
 import { writeEin, writeLicense, writeSsn } from "@/lib/pii/write";
 import { piiLookupHash } from "@/lib/pii/vault";
 import { scheduleWonClientEmails } from "@/lib/wire/email-jobs";
+import { wireJobAllowed } from "@/lib/templates/revision";
 import { carryLeadTagsToContact, mergeTags } from "@/lib/tags/module-tags";
 
 function str(form: FormData, key: string) {
@@ -1867,6 +1868,7 @@ export async function bindDeal(formData: FormData) {
     .where(eq(emailTriggers.tenantId, DEFAULT_TENANT_ID));
   const drafts = scheduleWonClientEmails(wonAt);
   for (const draft of drafts) {
+    if (!wireJobAllowed(draft.kind)) continue;
     const trigger = triggers.find((row) => row.kind === draft.kind);
     await db.insert(emailSendJobs).values({
       tenantId: DEFAULT_TENANT_ID,

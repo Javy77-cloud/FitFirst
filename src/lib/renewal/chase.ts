@@ -1,4 +1,5 @@
 import { renewalDaysPhrase, type RenewalUrgencyBand } from "@/lib/renewal/urgency";
+import { fillNamedTokens, resolveTemplateText } from "@/lib/templates/revision";
 
 export const CHASE_EVENT = "renewal_chase";
 export const REVIEW_EVENT = "renewal_review";
@@ -18,7 +19,29 @@ export type ChaseTemplate = {
   actionLabel: string;
   subject: string;
   body: string;
+  /** False only after a chosen drop. Draft revisions stay sendable. */
+  send: boolean;
 };
+
+function finishChase(
+  template: Omit<ChaseTemplate, "send">,
+  tokens: Record<string, string>,
+): ChaseTemplate {
+  const resolved = resolveTemplateText(template.slug, "en", {
+    subject: template.subject,
+    body: template.body,
+  });
+  if (!resolved.send) return { ...template, send: false };
+  if (resolved.subject === template.subject && resolved.body === template.body) {
+    return { ...template, send: true };
+  }
+  return {
+    ...template,
+    send: true,
+    subject: fillNamedTokens(resolved.subject, tokens).trim(),
+    body: fillNamedTokens(resolved.body, tokens).trim(),
+  };
+}
 
 /** Agreed 90/60/30 copy: we know it is renewing, we are watching, we will shop if needed. */
 export function chaseTemplateFor(input: {
@@ -33,45 +56,64 @@ export function chaseTemplateFor(input: {
   const days = renewalDaysPhrase(input.daysUntil);
   const policy = input.policyNumber?.trim();
   const policyBit = policy ? ` (${policy})` : "";
+  const tokens = {
+    contact_first_name: first,
+    policy_bit: policyBit,
+    days_phrase: days,
+    days_phrase_lower: days.toLowerCase(),
+    signature: "",
+  };
 
   if (input.band === "under30") {
-    return {
-      band: "under30",
-      slug: "renewal-chase-under30",
-      label: "30-day note",
-      actionLabel: "Send 30-day note",
-      subject: `We're on your renewal — ${days.toLowerCase()}`,
-      body: `Hi ${first},\n\nWe know your policy${policyBit} is renewing. ${days}. We are watching it and working more quotes if we need them.\n\nNo action needed unless something changed — reply here and we will handle it.\n\n— Your FitFirst agent`,
-    };
+    return finishChase(
+      {
+        band: "under30",
+        slug: "renewal-chase-under30",
+        label: "30-day note",
+        actionLabel: "Send 30-day note",
+        subject: `We're on your renewal — ${days.toLowerCase()}`,
+        body: `Hi ${first},\n\nWe know your policy${policyBit} is renewing. ${days}. We are watching it and working more quotes if we need them.\n\nNo action needed unless something changed — reply here and we will handle it.\n\n— Your FitFirst agent`,
+      },
+      tokens,
+    );
   }
   if (input.band === "30to60") {
-    return {
-      band: "30to60",
-      slug: "renewal-chase-30to60",
-      label: "60-day note",
-      actionLabel: "Send 60-day note",
-      subject: `Watching your renewal — ${days.toLowerCase()}`,
-      body: `Hi ${first},\n\nWe know your policy${policyBit} is coming up for renewal. ${days}. We are watching the carrier offer and will shop more quotes if we need a better option.\n\nSit tight unless something at the house or with drivers changed.\n\n— Your FitFirst agent`,
-    };
+    return finishChase(
+      {
+        band: "30to60",
+        slug: "renewal-chase-30to60",
+        label: "60-day note",
+        actionLabel: "Send 60-day note",
+        subject: `Watching your renewal — ${days.toLowerCase()}`,
+        body: `Hi ${first},\n\nWe know your policy${policyBit} is coming up for renewal. ${days}. We are watching the carrier offer and will shop more quotes if we need a better option.\n\nSit tight unless something at the house or with drivers changed.\n\n— Your FitFirst agent`,
+      },
+      tokens,
+    );
   }
   if (input.band === "60to90") {
-    return {
-      band: "60to90",
-      slug: "renewal-chase-60to90",
+    return finishChase(
+      {
+        band: "60to90",
+        slug: "renewal-chase-60to90",
+        label: "90-day note",
+        actionLabel: "Send 90-day note",
+        subject: `We know this is renewing — ${days.toLowerCase()}`,
+        body: `Hi ${first},\n\nJust a note that we know your policy${policyBit} is renewing. ${days}. We are already watching it and will work more quotes if needed.\n\nNothing for you to do today.\n\n— Your FitFirst agent`,
+      },
+      tokens,
+    );
+  }
+  return finishChase(
+    {
+      band: "90plus",
+      slug: "renewal-chase-90plus",
       label: "90-day note",
       actionLabel: "Send 90-day note",
       subject: `We know this is renewing — ${days.toLowerCase()}`,
-      body: `Hi ${first},\n\nJust a note that we know your policy${policyBit} is renewing. ${days}. We are already watching it and will work more quotes if needed.\n\nNothing for you to do today.\n\n— Your FitFirst agent`,
-    };
-  }
-  return {
-    band: "90plus",
-    slug: "renewal-chase-90plus",
-    label: "90-day note",
-    actionLabel: "Send 90-day note",
-    subject: `We know this is renewing — ${days.toLowerCase()}`,
-    body: `Hi ${first},\n\nWe know your policy${policyBit} is on the renewal calendar. ${days}. We are watching it early and will shop more quotes if we need them.\n\nNo homework on your side unless something changed.\n\n— Your FitFirst agent`,
-  };
+      body: `Hi ${first},\n\nWe know your policy${policyBit} is on the renewal calendar. ${days}. We are watching it early and will shop more quotes if we need them.\n\nNo homework on your side unless something changed.\n\n— Your FitFirst agent`,
+    },
+    tokens,
+  );
 }
 
 export function parseChaseBand(text: string | null | undefined): RenewalUrgencyBand | null {
@@ -96,7 +138,7 @@ export function primaryRenewalAction(input: {
 
 export function primaryActionLabel(
   action: PrimaryRenewalAction,
-  template: Pick<ChaseTemplate, "actionLabel">,
+  template: Pick<ChaseTemplate, "actionLabel" | "label">,
 ): string {
   if (action === "chase") return template.actionLabel;
   if (action === "compare") return "Open compare";

@@ -13,33 +13,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { listCampaigns, listContactTags } from "@/lib/db/ops-queries";
 import { CAMPAIGN_AUDIENCE_TYPES, DEAL_STAGES } from "@/lib/domain";
+import { CAMPAIGN_EMAIL_PRESETS } from "@/lib/templates/campaign-presets";
+import { chosenDrop, resolveTemplateText } from "@/lib/templates/revision";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-const TEMPLATES = [
-  {
-    name: "Wind mit chase",
-    subject: "Need your wind mitigation inspection",
-    body: "Please send the wind mit so we can finish shopping.",
-    audienceType: "tag",
-    audienceValue: "ho3",
-  },
-  {
-    name: "Hurricane season reminder",
-    subject: "Review your deductible before storm season",
-    body: "A short reminder to review hurricane deductibles. No SMTP in this build.",
-    audienceType: "pipeline_stage",
-    audienceValue: "shopping",
-  },
-  {
-    name: "Renewal-watch note",
-    subject: "We will shop your renewal 60 days out",
-    body: "Placeholder renewal template. Audience is the renewal-watch tag when you add it.",
-    audienceType: "tag",
-    audienceValue: "renewal-watch",
-  },
-] as const;
+const TEMPLATES = CAMPAIGN_EMAIL_PRESETS.filter((preset) => !chosenDrop(preset.key)).map((preset) => {
+  const resolved = resolveTemplateText(preset.key, "en", {
+    subject: preset.subject,
+    body: preset.body,
+  });
+  return {
+    name: preset.name,
+    subject: resolved.send ? resolved.subject : preset.subject,
+    body: resolved.send ? resolved.body : preset.body,
+    audienceType: preset.audienceType,
+    audienceValue: preset.audienceValue,
+  };
+});
 
 export default async function CampaignsPage({
   searchParams,

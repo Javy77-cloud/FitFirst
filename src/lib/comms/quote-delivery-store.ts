@@ -4,6 +4,9 @@ import { db } from "@/lib/db";
 import { deals, quoteDeliveryEvents } from "@/lib/db/schema";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { GMAIL_NOT_CONNECTED_MESSAGE } from "@/lib/desk/desk-email-delivery";
+import { resolveOutboundEmailSignature } from "@/lib/desk/outbound-email-signature";
+import { mergeTemplate } from "@/lib/templates/merge";
+import { resolveTemplateText } from "@/lib/templates/revision";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import { gmailIsReady, sendGmailMessage } from "@/lib/integrations/gmail";
 import {
@@ -66,11 +69,33 @@ export async function deliverClientQuoteEmail(input: {
   if (!(await gmailIsReady())) return { ok: false, error: GMAIL_NOT_CONNECTED_MESSAGE };
   const token = randomUUID();
   const who = (input.clientName ?? "").trim() || "there";
-  const text = `Hi ${who},\n\nYour quote is ready to review. Reply to this email if you want to walk through it.`;
+  const currentSubject = "Your FitFirst quote";
+  const currentBody = `Hi ${who},\n\nYour quote is ready to review. Reply to this email if you want to walk through it.`;
+  const resolved = resolveTemplateText("client-quote", "en", {
+    subject: currentSubject,
+    body: currentBody,
+  });
+  if (!resolved.send) return { ok: false, error: CLIENT_SEND_REQUIRED_MESSAGE };
+  let subject = resolved.subject;
+  let text = resolved.body;
+  if (subject.includes("{{") || text.includes("{{")) {
+    const signature =
+      subject.includes("{{signature}}") || text.includes("{{signature}}")
+        ? await resolveOutboundEmailSignature()
+        : "";
+    const values = {
+      contactFirstName: who.split(/\s+/)[0] || "there",
+      policyType: input.product,
+      wonDate: null,
+      signature,
+    };
+    subject = mergeTemplate(subject, values);
+    text = mergeTemplate(text, values);
+  }
   try {
     const sent = await sendGmailMessage({
       to,
-      subject: "Your FitFirst quote",
+      subject,
       body: quoteEmailText(text),
       htmlBody: quoteEmailHtml({ text, pixelUrl: openPixelUrl(token) }),
     });

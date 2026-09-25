@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { DEFAULT_TENANT_ID } from "@/lib/domain";
 import { db } from "@/lib/db";
-import { emailTemplates } from "@/lib/db/schema";
+import { contacts, emailTemplates, policies } from "@/lib/db/schema";
+import { mergeTemplate } from "@/lib/templates/merge";
+import { deskFallbackCopy } from "@/lib/templates/revision";
 import { resolveOutboundEmailSignature } from "@/lib/desk/outbound-email-signature";
 import { writeDeskComms } from "@/lib/desk/write-comms";
 import { enqueueOutboundJob, loadContactOptOuts, decideOutboundStatus } from "@/lib/desk/outbound-queue";
@@ -52,17 +54,47 @@ export async function sendDeskEmail(formData: FormData) {
   const templateId = str(formData, "templateId");
   let subject = str(formData, "subject");
   let body = str(formData, "body");
-  if (templateId) {
+  if (templateId && (!subject || !body)) {
     const [tpl] = await db
       .select()
       .from(emailTemplates)
       .where(and(eq(emailTemplates.tenantId, DEFAULT_TENANT_ID), eq(emailTemplates.id, templateId)));
     if (tpl) {
-      subject = subject || tpl.subject;
-      body = body || tpl.body;
+      const resolved = deskFallbackCopy(tpl.slug, tpl);
+      if (!resolved.send && !subject && !body) return;
+      if (resolved.send) {
+        if (!subject) subject = resolved.subject;
+        if (!body) body = resolved.body;
+      }
     }
   }
   const signature = await resolveOutboundEmailSignature();
+  if (subject.includes("{{") || body.includes("{{")) {
+    let firstName = "";
+    let policyType = "";
+    if (ids.contactId) {
+      const [contact] = await db
+        .select({ firstName: contacts.firstName })
+        .from(contacts)
+        .where(and(eq(contacts.tenantId, DEFAULT_TENANT_ID), eq(contacts.id, ids.contactId)));
+      firstName = contact?.firstName ?? "";
+    }
+    if (ids.policyId) {
+      const [policy] = await db
+        .select({ lineOfBusiness: policies.lineOfBusiness })
+        .from(policies)
+        .where(and(eq(policies.tenantId, DEFAULT_TENANT_ID), eq(policies.id, ids.policyId)));
+      policyType = policy?.lineOfBusiness ?? "";
+    }
+    const values = {
+      contactFirstName: firstName,
+      policyType,
+      wonDate: null,
+      signature,
+    };
+    subject = mergeTemplate(subject, values);
+    body = mergeTemplate(body, values);
+  }
   if (signature && body && !body.includes(signature)) {
     body = `${body}
 

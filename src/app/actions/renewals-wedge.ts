@@ -197,8 +197,9 @@ export async function sendRenewalChase(formData: FormData) {
   });
   const mark = CHASE_MARK[band];
   const body = `${mark}\n\n${template.body}`;
+  const canSend = template.send !== false && Boolean(email || contactId || accountId);
 
-  if (email || contactId || accountId) {
+  if (canSend) {
     const fd = new FormData();
     fd.set("policyId", policyId);
     if (contactId) fd.set("contactId", contactId);
@@ -221,10 +222,16 @@ export async function sendRenewalChase(formData: FormData) {
     });
   }
 
+  const chaseDetail =
+    canSend && email
+      ? "Outbound email queued — nothing left the desk."
+      : email
+        ? ""
+        : "No email on file — chase logged only.";
   await writeDeskComms({
     kind: "task",
     title: `Renewal chase · ${template.label}`,
-    body: `${mark} Logged ${template.label}. ${email ? "Outbound email queued — nothing left the desk." : "No email on file — chase logged only."}`,
+    body: `${mark} Logged ${template.label}.${chaseDetail ? ` ${chaseDetail}` : ""}`,
     eventType: CHASE_EVENT,
     status: "completed",
     policyId,
