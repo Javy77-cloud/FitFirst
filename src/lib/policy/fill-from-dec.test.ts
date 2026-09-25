@@ -167,8 +167,10 @@ describe("fillPolicyFromDec field map", () => {
     expect(proposed.liabilityBi).toBe("$10,000/$20,000");
     expect(proposed.liabilityPd).toBe("$10,000");
     expect(proposed.umUim).toBe("Insured Rejects");
-    expect(proposed.comprehensiveDeductible).toBe("500");
-    expect(proposed.collisionDeductible).toBe("500");
+    expect(proposed.comprehensiveDeductible).toBe("$500");
+    expect(proposed.collisionDeductible).toBe("$500");
+    expect(proposed.compLimit).toBe("✓");
+    expect(proposed.collisionLimit).toBe("✓");
     expect(proposed.towing).toBe("ERS FULL");
     expect(proposed["driver:andres felipe laguna gaviria.name"]).toMatch(/Andres Felipe/);
     expect(proposed["driver:claudia patricia gaviria.name"]).toMatch(/Claudia/);
@@ -176,7 +178,7 @@ describe("fillPolicyFromDec field map", () => {
     expect(proposed.effectiveDate).toBe("2026-09-21");
     expect(proposed.expirationDate).toBe("2027-03-21");
     expect(proposed.termMonths).toBe("6");
-    expect(proposed.pipDeductible).toBe("1000");
+    expect(proposed.pipDeductible).toBe("$1,000");
   });
 
   it("maps PAP deductibles, line premiums, vehicle use, and per-car facts", () => {
@@ -221,13 +223,13 @@ describe("fillPolicyFromDec field map", () => {
     expect(proposed["vehicle:vin:4T1BF1FK5FU485898.annualMiles"]).toBe("12000");
     expect(proposed["vehicle:vin:4T1BF1FK5FU485898.lienholder"]).toBe("Toyota Financial");
     expect(proposed["vehicle:vin:4T1BF1FK5FU485898.premium"]).toBe("$900");
-    expect(proposed["vehicle:vin:4T1BF1FK5FU485898.comprehensiveDeductible"]).toBe("500");
+    expect(proposed["vehicle:vin:4T1BF1FK5FU485898.comprehensiveDeductible"]).toBe("$500");
     expect(proposed["vehicle:vin:2HKRM4H75GH123456.usage"]).toBe("Commute");
-    expect(proposed["vehicle:vin:2HKRM4H75GH123456.comprehensiveDeductible"]).toBe("1000");
+    expect(proposed["vehicle:vin:2HKRM4H75GH123456.comprehensiveDeductible"]).toBe("$1,000");
     expect(proposed["vehicle:vin:2HKRM4H75GH123456.premium"]).toBe("$700");
     expect(proposed.liabilityBiPremium).toBe("$412");
     expect(proposed.liabilityPdPremium).toBe("$188");
-    expect(proposed.pipDeductible).toBe("1000");
+    expect(proposed.pipDeductible).toBe("$1,000");
     expect(proposed.pipPremium).toBe("$220");
     expect(proposed.umStacked).toBe("Non-stacked");
     expect(proposed.medPay).toBe("$5,000");
@@ -247,8 +249,8 @@ describe("fillPolicyFromDec field map", () => {
     expect(proposed.glass).toBe("None");
     expect(proposed.glassLimit).toBe("None");
     expect(proposed.glassPremium).toBe("None");
-    expect(proposed.compLimit).toBe("None");
-    expect(proposed.collisionLimit).toBe("None");
+    expect(proposed.compLimit).toBe("✓");
+    expect(proposed.collisionLimit).toBe("✓");
     expect(proposed.rentalDeductible).toBe("None");
     expect(proposed.rentalPremium).toBe("None");
     // Per-vehicle overview fields are filled, with None when the dec omits them.
@@ -300,12 +302,14 @@ describe("fillPolicyFromDec field map", () => {
 
     const patch = groupAppliedFill(proposed, Object.keys(proposed));
     expect(patch.coverageLimits.liability_bi_premium).toBe("$412");
-    expect(patch.coverageLimits.pip_deductible).toBe("1000");
+    expect(patch.coverageLimits.pip_deductible).toBe("$1,000");
+    expect(patch.coverageLimits.comp_limit).toBe("✓");
+    expect(patch.coverageLimits.collision_limit).toBe("✓");
     expect(patch.coverageLimits.comp_premium).toBe("$140");
     expect(patch.coverageLimits.discounts).toBe("Multi-car; Paperless");
     expect(patch.coverageLimits.um_stacked).toBe("Non-stacked");
-    expect(patch.term.comprehensiveDeductible).toBe("500");
-    expect(patch.term.collisionDeductible).toBe("500");
+    expect(patch.term.comprehensiveDeductible).toBe("$500");
+    expect(patch.term.collisionDeductible).toBe("$500");
     const camry = patch.vehicles.find((row) => row.vin === "4T1BF1FK5FU485898");
     expect(camry?.usage).toBe("Pleasure");
     expect(camry?.annualMiles).toBe("12000");
@@ -355,12 +359,12 @@ describe("fillPolicyFromDec field map", () => {
     const byKey = Object.fromEntries(schedule.map((row) => [row.key, row]));
     expect(byKey.liability_bi).toMatchObject({ limit: "$100/$300", premium: "$412" });
     expect(byKey.liability_pd).toMatchObject({ limit: "$100,000", premium: "$188" });
-    expect(byKey.pip).toMatchObject({ limit: "$10,000", deductible: "1000", premium: "$220" });
+    expect(byKey.pip).toMatchObject({ limit: "$10,000", deductible: "$1,000", premium: "$220" });
     expect(byKey.med_pay).toMatchObject({ limit: "$5,000", premium: "$18" });
     expect(byKey.um_uim).toMatchObject({ limit: "$100/$300", premium: "$64" });
     expect(byKey.um_pd).toMatchObject({ limit: "$100,000", premium: "$22" });
-    expect(byKey.comprehensive).toMatchObject({ deductible: "500", premium: "$90" });
-    expect(byKey.collision).toMatchObject({ deductible: "500", premium: "$310" });
+    expect(byKey.comprehensive).toMatchObject({ limit: "✓", deductible: "$500", premium: "$90" });
+    expect(byKey.collision).toMatchObject({ limit: "✓", deductible: "$500", premium: "$310" });
     expect(byKey.rental).toMatchObject({ limit: "$30/$900", premium: "$12" });
     expect(byKey.towing).toMatchObject({ limit: "$100", premium: "$6" });
     expect(byKey.glass?.deductible).toMatch(/50/);
@@ -390,6 +394,38 @@ describe("fillPolicyFromDec field map", () => {
     expect(limitOnly.glass).toBe("None");
     expect(limitOnly.discounts).toBe("None");
     expect(limitOnly.pipDeductible).toBe("None");
+    expect(limitOnly.compLimit).toBe("None");
+    expect(limitOnly.collisionLimit).toBe("None");
+    const printedAcv = proposeFillFromDec({
+      family: "auto",
+      rows: rows({ comp_limit: "ACV", comp_deductible: "1000", collision_deductible: "500", collision_limit: "None" }),
+    });
+    expect(printedAcv.comprehensiveDeductible).toBe("$1,000");
+    expect(printedAcv.compLimit).toBe("ACV");
+    expect(printedAcv.collisionDeductible).toBe("$500");
+    expect(printedAcv.collisionLimit).toBe("✓");
+    const laguna = proposeFillFromDec({
+      family: "auto",
+      rows: rows({ comp_limit: "None", comp_deductible: "1000", collision_limit: "None", collision_deductible: "1000" }),
+    });
+    expect(laguna.comprehensiveDeductible).toBe("$1,000");
+    expect(laguna.collisionDeductible).toBe("$1,000");
+    expect(laguna.compLimit).toBe("✓");
+    expect(laguna.collisionLimit).toBe("✓");
+    const vehicleOnly = proposeFillFromDec({
+      family: "auto",
+      rows: rows({
+        comp_limit: "None",
+        comp_deductible: "None",
+        vehicle_1_comp_deductible: "1000",
+        collision_limit: "None",
+        vehicle_1_collision_deductible: "500",
+      }),
+    });
+    expect(vehicleOnly.comprehensiveDeductible).toBe("$1,000");
+    expect(vehicleOnly.collisionDeductible).toBe("$500");
+    expect(vehicleOnly.compLimit).toBe("✓");
+    expect(vehicleOnly.collisionLimit).toBe("✓");
   });
 });
 

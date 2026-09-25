@@ -114,8 +114,10 @@ describe("Auto DEC fill mapping", () => {
   it("fills printed coverages and leaves missing optional coverages blank", () => {
     expect(fields.liability_bi?.normalizedValue).toBe("100/300");
     expect(fields.liability_pd?.normalizedValue).toBe("100000");
-    expect(fields.comp_deductible?.normalizedValue).toBe("500");
-    expect(fields.collision_deductible?.normalizedValue).toBe("500");
+    expect(fields.comp_deductible?.normalizedValue).toBe("$500");
+    expect(fields.collision_deductible?.normalizedValue).toBe("$500");
+    expect(fields.comp_limit?.normalizedValue).toBe("✓");
+    expect(fields.collision_limit?.normalizedValue).toBe("✓");
     expect(fields.pip).toBeUndefined();
     expect(fields.um_uim).toBeUndefined();
     expect(fields.current_premium?.normalizedValue).toBe("2109.00");
@@ -170,9 +172,9 @@ describe("Auto DEC fill mapping", () => {
     expect(fields.liability_bi_premium?.normalizedValue).toBe("412.00");
     expect(fields.liability_pd_premium?.normalizedValue).toBe("188");
     expect(fields.pip?.normalizedValue).toBe("10000");
-    expect(fields.pip_deductible?.normalizedValue).toBe("1000");
+    expect(fields.pip_deductible?.normalizedValue).toBe("$1,000");
     expect(fields.pip_premium?.normalizedValue).toBe("220");
-    expect(fields.comp_deductible?.normalizedValue).toBe("500");
+    expect(fields.comp_deductible?.normalizedValue).toBe("$500");
     expect(fields.comp_premium?.normalizedValue).toBe("90");
     expect(fields.collision_premium?.normalizedValue).toBe("310");
     expect(fields.vehicle_usage?.normalizedValue).toBe("Personal");
@@ -239,11 +241,11 @@ describe("Auto DEC fill mapping", () => {
     expect(fields.liability_bi_premium?.normalizedValue).toBe("412.00");
     expect(fields.um_pd?.normalizedValue).toBe("100000");
     expect(fields.um_stacked?.normalizedValue).toBe("No");
-    expect(fields.glass?.normalizedValue).toBe("50");
+    expect(fields.glass?.normalizedValue).toBe("$50");
     expect(fields.discounts?.normalizedValue).toMatch(/Multi-car/);
     expect(fields.current_premium?.normalizedValue).toBe("2109.00");
     expect(fields.pip?.normalizedValue).toBe("10000");
-    expect(fields.pip_deductible?.normalizedValue).toBe("1000");
+    expect(fields.pip_deductible?.normalizedValue).toBe("$1,000");
     expect(fields.med_pay?.normalizedValue).toBe("5000");
     expect(fields.rental_premium?.normalizedValue).toBe("12");
     expect(fields.towing_premium?.normalizedValue).toBe("6");

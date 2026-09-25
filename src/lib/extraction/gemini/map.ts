@@ -2,6 +2,7 @@ import { CONFIDENCE_THRESHOLD } from "@/lib/domain";
 import type { ExtractedField, ExtractionResult, UnmappedExtractLabel } from "@/lib/extraction/extract";
 import { normalizeNamedInsured } from "@/lib/people/named-insured";
 import { isRepeatableSheetKey } from "@/lib/quote-sheet/repeatable-units";
+import { enforceAutoPhysDam, formatAutoDollarDeductible, isAutoDeductibleField } from "./auto-deductible";
 import { expandAutoDecLayout } from "./auto-layout";
 import { readGeminiDocumentKind, sanitizeGeminiPreview } from "./preview";
 import { GEMINI_AUTO_EXTRACT_JSON_KEYS, GEMINI_EXTRACT_JSON_KEYS, GEMINI_LETTER_EXTRACT_JSON_KEYS, type GeminiExtractKey } from "./prompt";
@@ -605,6 +606,7 @@ export function normalizeAutoPolicyValue(fieldKey: string, raw: string): string 
   }
   if (fieldKey === "currently_insured") return normalizeCurrentlyInsured(raw);
   if (fieldKey === "aaa_member") return normalizeAaaMember(raw);
+  if (isAutoDeductibleField(fieldKey)) return formatAutoDollarDeductible(raw);
   if (
     fieldKey === "named_insured" ||
     fieldKey === "applicant_name" ||
@@ -760,6 +762,8 @@ export function mapGeminiJsonToFields(
       label: "date inspected",
     });
   }
+
+  enforceAutoPhysDam(fields, shopLine);
 
   const glanceRequired = fields.some((f) => f.flagged || f.blankAfterMatch) || unmappedLabels.length > 0;
   return {
